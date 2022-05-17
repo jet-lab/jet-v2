@@ -1,7 +1,7 @@
 <div align="center">
   <img height="170" src="https://293354890-files.gitbook.io/~/files/v0/b/gitbook-legacy-files/o/assets%2F-M_72skN1dye71puMdjs%2F-Miqzl5oK1cXXAkARfER%2F-Mis-yeKp1Krh7JOFzQG%2Fjet_logomark_color.png?alt=media&token=0b8dfc84-37d7-455d-9dfd-7bb59cee5a1a" />
 
-  <h1>Jet Margin</h1>
+  <h1>Jet V2</h1>
 
   <p>
     <a target="_blank" href="https://github.com/jet-lab/jet-v2/actions/workflows/rust_coverage.yml">
