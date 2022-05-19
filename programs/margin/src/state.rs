@@ -215,6 +215,10 @@ impl MarginAccount {
                 msg!("Account unhealty. C-ratio: {}", c_ratio.to_string());
                 err!(ErrorCode::Unhealthy)
             }
+            _ if !info.past_due() => {
+                msg!("Account unhealty. Debt is past due");
+                err!(ErrorCode::Unhealthy)
+            }
             _ => Ok(()),
         }
     }
@@ -233,6 +237,7 @@ impl MarginAccount {
 
         match info.c_ratio() {
             Some(c_ratio) if c_ratio < min_ratio => Ok(()),
+            _ if !info.past_due() => Ok(()),
             _ => Err(error!(ErrorCode::Healthy)),
         }
     }
@@ -248,6 +253,7 @@ impl MarginAccount {
         let mut fresh_collateral = Number128::ZERO;
         let mut stale_collateral = Number128::ZERO;
         let mut claims = Number128::ZERO;
+        let mut past_due = false;
 
         let mut stale_collateral_list = vec![];
 
@@ -276,7 +282,11 @@ impl MarginAccount {
             match (kind, stale_reason) {
                 (PositionKind::NoValue, _) => (),
                 (PositionKind::Claim, None) => claims += position.value(),
-                (PositionKind::Claim, Some(error)) => return Err(error!(error)),
+                (PositionKind::PastDueClaim, None) => {
+                    claims += position.value();
+                    past_due = true;
+                },
+                (PositionKind::Claim | PositionKind::PastDueClaim, Some(error)) => return Err(error!(error)),
 
                 (PositionKind::Deposit, None) => fresh_collateral += position.collateral_value(),
                 (PositionKind::Deposit, Some(e)) => {
@@ -291,6 +301,7 @@ impl MarginAccount {
             stale_collateral,
             stale_collateral_list,
             claims,
+            past_due,
         })
     }
 
@@ -363,6 +374,9 @@ pub enum PositionKind {
 
     /// The position contains a balance of tokens that are owed as a part of some debt.
     Claim,
+
+    /// Debt that must be repaid immediately
+    PastDueClaim,
 }
 
 #[assert_size(192)]
@@ -643,6 +657,7 @@ pub struct Valuation {
     stale_collateral: Number128,
     stale_collateral_list: Vec<(Pubkey, ErrorCode)>,
     claims: Number128,
+    past_due: bool,
 }
 
 impl Valuation {
@@ -664,6 +679,10 @@ impl Valuation {
 
     pub fn collateral(&self) -> Number128 {
         self.fresh_collateral
+    }
+
+    pub fn past_due(&self) -> bool {
+        self.past_due
     }
 }
 
