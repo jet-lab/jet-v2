@@ -1,6 +1,6 @@
 import assert from 'assert';
 import { blob, struct, u8 } from 'buffer-layout';
-import { BN, InstructionNamespace } from '@project-serum/anchor';
+import { AnchorProvider, BN, InstructionNamespace } from '@project-serum/anchor';
 import {
   decodeEventQueue,
   decodeRequestQueue,
@@ -43,12 +43,14 @@ import {
 } from '@solana/web3.js';
 
 import { buildInstructions } from '../../utils/idlBuilder';
-import { IDL as JetControlIDL, JetControl } from '../../types/jet_control';
-import { IDL as JetMarginIDL, JetMargin } from '../../types/jet_margin';
-import { IDL as JetMarginSerumIDL, JetMarginSerum } from '../../types/jet_margin_serum';
+import { IDL as JetControlIDL, JetControl } from '../../types/jetControl';
+import { IDL as JetMarginIDL, JetMargin } from '../../types/jetMargin';
+import { IDL as JetMarginSerumIDL, JetMarginSerum } from '../../types/jetMarginSerum';
 import { MarginAccount } from '../marginAccount';
+import { MarginPrograms } from '../marginClient';
 
 export class Market {
+  private _programs: MarginPrograms;
   _decoded: any;
   private _baseSplTokenDecimals: number;
   private _quoteSplTokenDecimals: number;
@@ -84,6 +86,7 @@ export class Market {
   private metadataProgramId: PublicKey;
 
   constructor(
+    programs: MarginPrograms,
     decoded,
     baseMintDecimals: number,
     quoteMintDecimals: number,
@@ -100,6 +103,7 @@ export class Market {
     if (!decoded.accountFlags.initialized || !decoded.accountFlags.market) {
       throw new Error('Invalid market state');
     }
+    this._programs = programs;
     this._decoded = decoded;
     this._baseSplTokenDecimals = baseMintDecimals;
     this._quoteSplTokenDecimals = quoteMintDecimals;
@@ -141,7 +145,7 @@ export class Market {
   }
 
   static async load(
-    connection: Connection,
+    programs: MarginPrograms,
     address: PublicKey,
     options: MarketOptions = {},
     serumProgramId: PublicKey,
@@ -152,7 +156,7 @@ export class Market {
     layoutOverride?: any,
   ) {
     const { owner, data } = throwIfNull(
-      await connection.getAccountInfo(address),
+      await programs.connection.getAccountInfo(address),
       'Market not found',
     );
     if (!owner.equals(serumProgramId)) {
@@ -167,10 +171,11 @@ export class Market {
       throw new Error('Invalid market');
     }
     const [baseMintDecimals, quoteMintDecimals] = await Promise.all([
-      getMintDecimals(connection, decoded.baseMint),
-      getMintDecimals(connection, decoded.quoteMint),
+      getMintDecimals(programs.connection, decoded.baseMint),
+      getMintDecimals(programs.connection, decoded.quoteMint),
     ]);
     return new Market(
+      programs,
       decoded,
       baseMintDecimals,
       quoteMintDecimals,
@@ -341,7 +346,6 @@ export class Market {
   }
 
   async placeOrder(
-    connection: Connection,
     marginAccount: MarginAccount,
     {
       owner,
@@ -357,7 +361,7 @@ export class Market {
     }: OrderParams,
   ) {
     const { transaction, signers } = await this.makePlaceOrderTransaction<Account>(
-      connection,
+      marginAccount.provider.connection,
       marginAccount,
       {
         owner,
@@ -372,7 +376,7 @@ export class Market {
         feeDiscountPubkey,
       }
     );
-    return await this.sendTransaction(connection, transaction, [marginAccount.owner, ...signers]);
+    return await marginAccount.provider.sendAndConfirm(transaction,signers);
   }
 
   getSplTokenBalanceFromAccountInfo(
@@ -604,7 +608,7 @@ export class Market {
         lamports = Math.max(lamports, 0) + 1e7;
         transaction.add(
           SystemProgram.createAccount({
-            fromPubkey: marginAccount.owner.publicKey,
+            fromPubkey: marginAccount.owner,
             newAccountPubkey: wrappedSolAccount.publicKey,
             lamports,
             space: 165,
@@ -681,7 +685,7 @@ export class Market {
     if (this.usesRequestQueue) {
       throw new Error('Not supported.');
     } else {
-      return this.makeAdapterInvokeInstruction(marginAccount.owner.publicKey, marginAccount.address, this.marginSerumProgramId, this.marginSerumAdapterMetadata, this.makeNewOrderV3Instruction(marginAccount, params));
+      return this.makeAdapterInvokeInstruction(marginAccount.owner, marginAccount.address, this.marginSerumProgramId, this.marginSerumAdapterMetadata, this.makeNewOrderV3Instruction(marginAccount, params));
     }
   }
 
@@ -762,7 +766,6 @@ export class Market {
   }
 
   async cancelOrderByClientId(
-    connection: Connection,
     marginAccount: MarginAccount,
     openOrders: PublicKey,
     clientId: BN,
@@ -772,7 +775,7 @@ export class Market {
       openOrders,
       clientId,
     );
-    return await this.sendTransaction(connection, transaction, [marginAccount.owner]);
+    return await marginAccount.provider.sendAndConfirm( transaction);
   }
 
   async makeCancelOrderByClientIdTransaction(
@@ -785,7 +788,7 @@ export class Market {
       throw new Error('Not supported.');
     } else {
       transaction.add(
-        this.makeAdapterInvokeInstruction(marginAccount.owner.publicKey, marginAccount.address, this.marginSerumProgramId, this.marginSerumAdapterMetadata,
+        this.makeAdapterInvokeInstruction(marginAccount.owner, marginAccount.address, this.marginSerumProgramId, this.marginSerumAdapterMetadata,
           this.marginSerumInstructions.cancelOrderByClientIdV2(clientId, {
             accounts: {
               marginAccount: marginAccount.address,
@@ -803,9 +806,9 @@ export class Market {
     return transaction;
   }
 
-  async cancelOrder(connection: Connection, marginAccount: MarginAccount, order: Order) {
+  async cancelOrder(marginAccount: MarginAccount, order: Order) {
     const transaction = await this.makeCancelOrderTransaction(marginAccount, order);
-    return await this.sendTransaction(connection, transaction, [marginAccount.owner]);
+    return await marginAccount.provider.sendAndConfirm(transaction);
   }
 
   async makeCancelOrderTransaction(
@@ -815,7 +818,7 @@ export class Market {
     const transaction = new Transaction();
     transaction.add(
       this.makeAdapterInvokeInstruction(
-        marginAccount.owner.publicKey,
+        marginAccount.owner,
         marginAccount.address,
         this.marginSerumProgramId,
         this.marginSerumAdapterMetadata,
@@ -832,7 +835,7 @@ export class Market {
     if (this.usesRequestQueue) {
       throw new Error('Not supported.');
     } else {
-      return this.makeAdapterInvokeInstruction(marginAccount.owner.publicKey, marginAccount.address, this.marginSerumProgramId, this.marginSerumAdapterMetadata,
+      return this.makeAdapterInvokeInstruction(marginAccount.owner, marginAccount.address, this.marginSerumProgramId, this.marginSerumAdapterMetadata,
         this.marginSerumInstructions.cancelOrderV2(
           this.encodeSide(order.side),
           order.orderId,
@@ -853,7 +856,6 @@ export class Market {
   }
 
   async settleFunds(
-    connection: Connection,
     marginAccount: MarginAccount,
     openOrders: OpenOrders,
     baseWallet: PublicKey,
@@ -867,18 +869,16 @@ export class Market {
       throw new Error('This program ID does not support referrerQuoteWallet');
     }
     const { transaction, signers } = await this.makeSettleFundsTransaction(
-      connection,
       marginAccount,
       openOrders,
       baseWallet,
       quoteWallet,
       referrerQuoteWallet,
     );
-    return await this.sendTransaction(connection, transaction, [marginAccount.owner, ...signers]);
+    return await marginAccount.provider.sendAndConfirm(transaction,signers);
   }
 
   async makeSettleFundsTransaction(
-    connection: Connection,
     marginAccount: MarginAccount,
     openOrders: OpenOrders,
     baseWallet: PublicKey,
@@ -909,7 +909,7 @@ export class Market {
         SystemProgram.createAccount({
           fromPubkey: openOrders.owner,
           newAccountPubkey: wrappedSolAccount.publicKey,
-          lamports: await connection.getMinimumBalanceForRentExemption(165),
+          lamports: await marginAccount.provider.connection.getMinimumBalanceForRentExemption(165),
           space: 165,
           programId: TOKEN_PROGRAM_ID,
         }),
@@ -925,7 +925,7 @@ export class Market {
     }
 
     transaction.add(
-      this.makeAdapterInvokeInstruction(marginAccount.owner.publicKey, marginAccount.address, this.marginSerumProgramId, this.marginSerumAdapterMetadata,
+      this.makeAdapterInvokeInstruction(marginAccount.owner, marginAccount.address, this.marginSerumProgramId, this.marginSerumAdapterMetadata,
         this.marginSerumInstructions.settleFunds({
           accounts: {
             marginAccount: marginAccount.address,
