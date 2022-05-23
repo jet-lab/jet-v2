@@ -52,9 +52,9 @@ pub const MAX_LIQUIDATION_COLLATERAL_RATIO: u16 = 15_000;
 #[constant]
 pub const MAX_ORACLE_CONFIDENCE: u16 = 500;
 
-/// The maximum number of slots since the last price was by an oracle, before
+/// The maximum number of seconds since the last price was by an oracle, before
 /// rejecting the price as too stale.
-pub const MAX_ORACLE_STALENESS: u64 = 10;
+pub const MAX_ORACLE_STALENESS: i64 = 10;
 
 /// The maximum age to allow for a quoted price for a position (seconds)
 #[constant]

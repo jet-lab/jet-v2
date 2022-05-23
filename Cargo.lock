@@ -909,6 +909,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "dyn-clone"
+version = "1.0.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "21e50f3adc76d6a43f5ed73b698a87d0760ca74617f60f7c3b879003536fdd28"
+
+[[package]]
 name = "ed25519"
 version = "1.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1281,6 +1287,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "hex"
+version = "0.4.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7f24254aa9a54b5c858eaee2f5bccdb46aaf0e486a595ed5fd8f86ba55232a70"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "hidapi"
 version = "1.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1525,7 +1540,6 @@ dependencies = [
  "jet-proto-math",
  "jet-proto-metadata",
  "jet-proto-proc-macros",
- "pyth-client",
  "serde",
  "serde_test",
  "static_assertions",
@@ -1542,7 +1556,7 @@ dependencies = [
  "jet-proto-margin",
  "jet-proto-math",
  "jet-proto-metadata",
- "pyth-client",
+ "pyth-sdk-solana",
  "static_assertions",
 ]
 
@@ -2195,6 +2209,36 @@ dependencies = [
 ]
 
 [[package]]
+name = "pyth-sdk"
+version = "0.4.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f262b88557d8f152a247e1be786a8359d63112fac0a6e49fa41082a8ef789e8d"
+dependencies = [
+ "borsh 0.9.3",
+ "borsh-derive 0.9.3",
+ "hex",
+ "schemars",
+ "serde",
+]
+
+[[package]]
+name = "pyth-sdk-solana"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cb250e58d1106e47b4348af87f738b8381d6c98c33f4ad13401ab9d82300daa9"
+dependencies = [
+ "borsh 0.9.3",
+ "borsh-derive 0.9.3",
+ "bytemuck",
+ "num-derive",
+ "num-traits",
+ "pyth-sdk",
+ "serde",
+ "solana-program",
+ "thiserror",
+]
+
+[[package]]
 name = "qstring"
 version = "0.7.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2495,6 +2539,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "schemars"
+version = "0.8.10"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1847b767a3d62d95cbf3d8a9f0e421cf57a0d8aa4f411d4b16525afb0284d4ed"
+dependencies = [
+ "dyn-clone",
+ "schemars_derive",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "schemars_derive"
+version = "0.8.10"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "af4d7e1b012cb3d9129567661a63755ea4b8a7386d339dc945ae187e403c6743"
+dependencies = [
+ "proc-macro2 1.0.37",
+ "quote 1.0.18",
+ "serde_derive_internals",
+ "syn 1.0.91",
+]
+
+[[package]]
 name = "scopeguard"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2539,6 +2607,17 @@ name = "serde_derive"
 version = "1.0.136"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "08597e7152fcd306f41838ed3e37be9eaeed2b61c42e2117266a554fab4662f9"
+dependencies = [
+ "proc-macro2 1.0.37",
+ "quote 1.0.18",
+ "syn 1.0.91",
+]
+
+[[package]]
+name = "serde_derive_internals"
+version = "0.26.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "85bf8229e7920a9f636479437026331ce11aa132b4dde37d121944a44d6e5f3c"
 dependencies = [
  "proc-macro2 1.0.37",
  "quote 1.0.18",

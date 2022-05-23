@@ -15,6 +15,8 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+use anchor_spl::token::Token;
+
 use crate::*;
 
 #[derive(Accounts)]
@@ -54,8 +56,7 @@ pub struct MarginSplSwap<'info> {
 
     pub margin_pool_program: Program<'info, JetMarginPool>,
 
-    /// CHECK:
-    pub token_program: UncheckedAccount<'info>,
+    pub token_program: Program<'info, Token>,
 }
 
 impl<'info> MarginSplSwap<'info> {

@@ -17,8 +17,10 @@
 
 use anchor_lang::prelude::*;
 
-use crate::state::*;
 use jet_metadata::ControlAuthority;
+
+use crate::state::*;
+use crate::ErrorCode;
 
 #[derive(Accounts)]
 pub struct Configure<'info> {
@@ -53,7 +55,28 @@ pub fn configure_handler(
     }
 
     if *ctx.accounts.pyth_price.key != Pubkey::default() {
-        // FIXME: validate pyth product
+        let product_data = ctx.accounts.pyth_product.try_borrow_data()?;
+        let product_account = pyth_sdk_solana::state::load_product_account(&**product_data)
+            .map_err(|_| ErrorCode::InvalidOracle)?;
+
+        let expected_price_key = Pubkey::new_from_array(product_account.px_acc.val);
+        if expected_price_key != *ctx.accounts.pyth_price.key {
+            msg!("oracle product account does not match price account");
+            return err!(ErrorCode::InvalidOracle);
+        }
+
+        let quote_currency = product_account
+            .iter()
+            .find_map(|(k, v)| match k {
+                "quote_currency" => Some(v),
+                _ => None,
+            })
+            .expect("product has no quote_currency");
+
+        if quote_currency != "USD" {
+            msg!("this oracle does not quote prices in USD");
+            return err!(ErrorCode::InvalidOracle);
+        }
 
         pool.token_price_oracle = ctx.accounts.pyth_price.key();
         msg!("oracle = {}", &pool.token_price_oracle);
