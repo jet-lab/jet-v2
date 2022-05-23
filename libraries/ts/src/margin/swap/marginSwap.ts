@@ -1,5 +1,5 @@
 import assert from "assert";
-import * as BufferLayout from "buffer-layout";
+import * as BufferLayout from "@solana/buffer-layout";
 import { BN, InstructionNamespace } from "@project-serum/anchor";
 import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
@@ -199,7 +199,7 @@ export class MarginSwap {
     owner: PublicKey,
     amount: BN
   ): TransactionInstruction {
-    const dataLayout = BufferLayout.struct([
+    const dataLayout = BufferLayout.struct<any>([
       BufferLayout.u8("instruction"),
       BufferLayout.blob(8, "amount"),
     ]);
@@ -261,7 +261,7 @@ export class MarginSwap {
       { pubkey: owner, isSigner: false, isWritable: false },
       { pubkey: SYSVAR_RENT_PUBKEY, isSigner: false, isWritable: false },
     ];
-    const dataLayout = BufferLayout.struct([BufferLayout.u8("instruction")]);
+    const dataLayout = BufferLayout.struct<any>([BufferLayout.u8("instruction")]);
     const data = Buffer.alloc(dataLayout.span);
     dataLayout.encode(
       {

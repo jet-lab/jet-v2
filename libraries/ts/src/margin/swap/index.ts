@@ -1,4 +1,4 @@
-import * as BufferLayout from "buffer-layout";
+import * as BufferLayout from "@solana/buffer-layout";
 import BN from "bn.js";
 import {
   Account,
@@ -15,7 +15,7 @@ import {
 import * as Layout from "../../utils/layout";
 import { u64 } from "../../utils/layout";
 
-export const TokenSwapLayout = BufferLayout.struct([
+export const TokenSwapLayout = BufferLayout.struct<any>([
   BufferLayout.u8("version"),
   BufferLayout.u8("isInitialized"),
   BufferLayout.u8("bumpSeed"),
@@ -162,7 +162,7 @@ export class TokenSwap {
       { pubkey: tokenAccountPool, isSigner: false, isWritable: true },
       { pubkey: tokenProgramId, isSigner: false, isWritable: false },
     ];
-    const commandDataLayout = BufferLayout.struct([
+    const commandDataLayout = BufferLayout.struct<any>([
       BufferLayout.u8("instruction"),
       BufferLayout.nu64("tradeFeeNumerator"),
       BufferLayout.nu64("tradeFeeDenominator"),
@@ -472,7 +472,7 @@ export class TokenSwap {
     amountIn: BN,
     minimumAmountOut: BN
   ): TransactionInstruction {
-    const dataLayout = BufferLayout.struct([
+    const dataLayout = BufferLayout.struct<any>([
       BufferLayout.u8("instruction"),
       Layout.u64("amountIn"),
       Layout.u64("minimumAmountOut"),
@@ -571,7 +571,7 @@ export class TokenSwap {
     maximumTokenA: BN,
     maximumTokenB: BN
   ): TransactionInstruction {
-    const dataLayout = BufferLayout.struct([
+    const dataLayout = BufferLayout.struct<any>([
       BufferLayout.u8("instruction"),
       Layout.u64("poolTokenAmount"),
       Layout.u64("maximumTokenA"),
@@ -672,7 +672,7 @@ export class TokenSwap {
     minimumTokenA: BN,
     minimumTokenB: BN
   ): TransactionInstruction {
-    const dataLayout = BufferLayout.struct([
+    const dataLayout = BufferLayout.struct<any>([
       BufferLayout.u8("instruction"),
       Layout.u64("poolTokenAmount"),
       Layout.u64("minimumTokenA"),
@@ -763,7 +763,7 @@ export class TokenSwap {
     sourceTokenAmount: BN,
     minimumPoolTokenAmount: BN
   ): TransactionInstruction {
-    const dataLayout = BufferLayout.struct([
+    const dataLayout = BufferLayout.struct<any>([
       BufferLayout.u8("instruction"),
       Layout.u64("sourceTokenAmount"),
       Layout.u64("minimumPoolTokenAmount"),
@@ -853,7 +853,7 @@ export class TokenSwap {
     destinationTokenAmount: BN,
     maximumPoolTokenAmount: BN
   ): TransactionInstruction {
-    const dataLayout = BufferLayout.struct([
+    const dataLayout = BufferLayout.struct<any>([
       BufferLayout.u8("instruction"),
       u64("destinationTokenAmount"),
       u64("maximumPoolTokenAmount"),
