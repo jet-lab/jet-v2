@@ -1,0 +1,8 @@
+.anchor/
+.github/
+libraries/ts
+node_modules/
+scripts/
+target/
+!target/deploy
+tests/integration
