@@ -140,3 +140,30 @@ pub fn configure_token(
 pub fn get_authority_address() -> Pubkey {
     Pubkey::find_program_address(&[], &jet_control::ID).0
 }
+
+pub fn set_liquidator(
+    authority: &Pubkey,
+    payer: &Pubkey,
+    liquidator: &Pubkey,
+    is_liquidator: bool,
+) -> Instruction {
+    let accounts = jet_control::accounts::SetLiquidator {
+        requester: *authority,
+        authority: get_authority_address(),
+
+        liquidator: *liquidator,
+        metadata_account: get_metadata_address(liquidator),
+
+        payer: *payer,
+
+        metadata_program: jet_metadata::ID,
+        system_program: SYSTEM_PROGRAM_ID,
+    }
+    .to_account_metas(None);
+
+    Instruction {
+        accounts,
+        program_id: jet_control::ID,
+        data: jet_control::instruction::SetLiquidator { is_liquidator }.data(),
+    }
+}
