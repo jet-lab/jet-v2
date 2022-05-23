@@ -1,6 +1,4 @@
-ARG ARCH=""
-
-FROM ${ARCH}ubuntu:latest as programs
+FROM ubuntu:latest as programs
 
 ARG SOLANA_VERSION="1.9.13"
 
@@ -14,7 +12,7 @@ RUN if [ ! -d "./target/deploy" ]; then echo "Deployment programs not found"; ex
 
 # -------------------------------------------
 
-FROM ${ARCH}ubuntu:latest
+FROM ubuntu:latest
 
 COPY --from=programs /root/.local/share/solana/install/active_release/bin/solana-test-validator /usr/bin/solana-test-validator
 COPY --from=programs /v2/target/deploy/*.so /root/programs/
