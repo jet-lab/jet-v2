@@ -107,14 +107,6 @@ impl MarginAccount {
         }
     }
 
-    pub fn signer_seeds(&self) -> [&[u8]; 3] {
-        [
-            self.owner.as_ref(),
-            self.user_seed.as_ref(),
-            self.bump_seed.as_ref(),
-        ]
-    }
-
     pub fn initialize(&mut self, owner: Pubkey, seed: u16, bump_seed: u8) {
         self.owner = owner;
         self.bump_seed = [bump_seed];
@@ -303,6 +295,38 @@ impl MarginAccount {
     }
 }
 
+pub trait SignerSeeds<const SIZE: usize> {
+    fn signer_seeds(&self) -> [&[u8]; SIZE];
+    fn signer_seeds_owned(&self) -> Box<dyn SignerSeeds<SIZE>>;
+}
+
+impl<const A: usize, const B: usize, const C: usize> SignerSeeds<3>
+    for ([u8; A], [u8; B], [u8; C])
+{
+    fn signer_seeds(&self) -> [&[u8]; 3] {
+        let (s0, s1, s2) = self;
+        [s0, s1, s2]
+    }
+
+    fn signer_seeds_owned(&self) -> Box<dyn SignerSeeds<3>> {
+        Box::new(self.clone())
+    }
+}
+
+impl SignerSeeds<3> for MarginAccount {
+    fn signer_seeds(&self) -> [&[u8]; 3] {
+        [
+            self.owner.as_ref(),
+            self.user_seed.as_ref(),
+            self.bump_seed.as_ref(),
+        ]
+    }
+
+    fn signer_seeds_owned(&self) -> Box<dyn SignerSeeds<3>> {
+        Box::new((self.owner.to_bytes(), self.user_seed, self.bump_seed))
+    }
+}
+
 #[assert_size(24)]
 #[derive(
     Pod, Zeroable, AnchorSerialize, AnchorDeserialize, Debug, Default, Clone, Copy, Eq, PartialEq,
@@ -408,11 +432,10 @@ pub struct AccountPosition {
     _reserved: [u8; 23],
 }
 
-
 bitflags::bitflags! {
     #[derive(AnchorSerialize, AnchorDeserialize, Default)]
     pub struct AdapterPositionFlags: u8 {
-        /// The position may never be removed by the user, even if the balance remains at zero, 
+        /// The position may never be removed by the user, even if the balance remains at zero,
         /// until the adapter explicitly unsets this flag.
         const REQUIRED = 1 << 0;
     }
