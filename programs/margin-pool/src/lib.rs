@@ -140,4 +140,10 @@ pub enum ErrorCode {
     /// This is used when a `TokenAmount` has an invalid value
     #[msg("An invalid amount has been supplied")]
     InvalidAmount,
+
+    /// 141105 - The oracle is not reporting a valid price
+    InvalidPrice,
+
+    /// 141106 - The oracle account is not valid
+    InvalidOracle,
 }

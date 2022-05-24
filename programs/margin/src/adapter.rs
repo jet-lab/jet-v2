@@ -81,8 +81,8 @@ pub struct PriceChangeInfo {
     /// The recent average price
     pub twap: i64,
 
-    /// The slot number that the price was published in
-    pub slot: u64,
+    /// The time that the price was published at
+    pub publish_time: i64,
 
     /// The exponent for the price values
     pub exponent: i32,
@@ -214,9 +214,11 @@ fn update_price(
     let twap = Number128::from_decimal(entry.twap, entry.exponent);
     let confidence = Number128::from_decimal(entry.confidence, entry.exponent);
 
-    let price = match (confidence, entry.slot) {
+    let price = match (confidence, entry.publish_time) {
         (c, _) if (c / twap) > max_confidence => PriceInfo::new_invalid(),
-        (_, slot) if (clock.slot - slot) > MAX_ORACLE_STALENESS => PriceInfo::new_invalid(),
+        (_, publish_time) if (clock.unix_timestamp - publish_time) > MAX_ORACLE_STALENESS => {
+            PriceInfo::new_invalid()
+        }
         _ => PriceInfo::new_valid(entry.exponent, entry.value, clock.unix_timestamp as u64),
     };
 
