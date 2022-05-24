@@ -184,7 +184,7 @@ impl MarginAccount {
         let position = self.position_list_mut().get_mut(mint)?;
 
         if position.address != *account {
-            return err!(ErrorCode::PositionNotOwned);
+            return err!(ErrorCode::PositionNotRegistered);
         }
 
         position.set_balance(balance);
@@ -412,7 +412,8 @@ pub struct AccountPosition {
 bitflags::bitflags! {
     #[derive(AnchorSerialize, AnchorDeserialize, Default)]
     pub struct AdapterPositionFlags: u8 {
-        /// The position may not be removed
+        /// The position may never be removed by the user, even if the balance remains at zero, 
+        /// until the adapter explicitly unsets this flag.
         const REQUIRED = 1 << 0;
     }
 }
@@ -560,7 +561,7 @@ impl AccountPositionList {
         let position = self.positions[map.index];
         // Check that the position is correct
         if &position.address != account {
-            return err!(ErrorCode::PositionNotOwned);
+            return err!(ErrorCode::PositionNotRegistered);
         }
         // Remove the position
         let freed_position = bytemuck::bytes_of_mut(&mut self.positions[map.index]);

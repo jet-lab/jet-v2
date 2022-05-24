@@ -60,6 +60,14 @@ pub enum PositionChange {
     /// Flags that are true here will be set to the bool in the position
     /// Flags that are false here will be unchanged in the position
     Flags(AdapterPositionFlags, bool),
+
+    /// The margin program will fail the current instruction if this position is not registered.
+    ///
+    /// Example: This instruction involves an action by the owner of the margin
+    /// account that increases a claim balance in their account, so the margin
+    /// program must verify that the claim is registered as a position before
+    /// allowing the instruction to complete successfully.
+    ExpectPosition,
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy)]
@@ -164,6 +172,7 @@ fn handle_adapter_result(ctx: &InvokeAdapter) -> Result<()> {
                 PositionChange::Price(px) => update_price(ctx, position, px)?,
                 PositionChange::Flags(flags, true) => position.flags |= flags,
                 PositionChange::Flags(flags, false) => position.flags &= !flags,
+                PositionChange::ExpectPosition => (), // get_position_mut verified that the position exists
             }
         }
     }
@@ -176,11 +185,17 @@ fn update_balances(ctx: &InvokeAdapter) -> Result<()> {
         if account_info.owner == &TokenAccount::owner() {
             let account = TokenAccount::try_deserialize(&mut &**account_info.try_borrow_data()?)?;
             if account.owner == ctx.margin_account.key() {
-                ctx.margin_account.load_mut()?.set_position_balance(
+                if let Err(err) = ctx.margin_account.load_mut()?.set_position_balance(
                     &account.mint,
                     account_info.key,
                     account.amount,
-                )?;
+                ) {
+                    match err {
+                        Error::AnchorError(a)
+                            if a.error_code_number == ErrorCode::PositionNotRegistered.into() => {}
+                        _ => Err(err)?,
+                    }
+                }
             }
         }
     }
