@@ -186,9 +186,9 @@ pub enum ErrorCode {
     #[msg("attempting to close non-empty margin account")]
     AccountNotEmpty,
 
-    /// 141015 - Attempting to use a position not owned by the account
-    #[msg("attempting to use un-owned position")]
-    PositionNotOwned,
+    /// 141015 - Attempting to use a position not registered by the account
+    #[msg("attempting to use unregistered position")]
+    PositionNotRegistered,
 
     /// 141016 - Attempting to close a position that is required by the adapter
     #[msg("attempting to close a position that is required by the adapter")]
