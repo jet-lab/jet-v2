@@ -169,89 +169,19 @@ impl MarginClient {
         Ok(())
     }
 
-    pub async fn set_liquidator_metadata(&self, liquidator: Pubkey) -> Result<(), Error> {
-        let metadata = LiquidatorMetadata { liquidator };
-
-        self.set_metadata(liquidator, &metadata).await
-    }
-
-    pub async fn set_adapter_metadata(&self, program: Pubkey) -> Result<(), Error> {
-        let metadata = MarginAdapterMetadata {
-            adapter_program: program,
-        };
-
-        self.set_metadata(program, &metadata).await
-    }
-
-    // async fn set_position_token_metadata(
-    //     &self,
-    //     adapter_program: Pubkey,
-    //     position_token_mint: Pubkey,
-    //     underlying_token_mint: Pubkey,
-    //     token_kind: TokenKind,
-    //     collateral_weight: u16,
-    // ) -> Result<(), Error> {
-    //     let metadata = PositionTokenMetadata {
-    //         adapter_program,
-    //         position_token_mint,
-    //         underlying_token_mint,
-    //         token_kind,
-    //         collateral_weight,
-    //         collateral_max_staleness: 0,
-    //     };
-
-    //     self.set_metadata(position_token_mint, &metadata).await?;
-
-    //     Ok(())
-    // }
-
-    pub async fn set_token_metadata(
+    pub async fn set_liquidator_metadata(
         &self,
-        mint: &Pubkey,
-        metadata: &TokenMetadata,
+        liquidator: Pubkey,
+        is_liquidator: bool,
     ) -> Result<(), Error> {
-        self.set_metadata(*mint, metadata).await
-    }
+        let ix = jet_margin_sdk::instructions::control::set_liquidator(
+            &self.rpc.payer().pubkey(),
+            &self.rpc.payer().pubkey(),
+            &liquidator,
+            is_liquidator,
+        );
 
-    async fn set_metadata<T: AccountSerialize>(
-        &self,
-        key: Pubkey,
-        metadata: &T,
-    ) -> Result<(), Error> {
-        let mut data = vec![];
-        metadata.try_serialize(&mut data)?;
-
-        // FIXME: support metadata >512 bytes
-        data.resize(std::cmp::min(8 + std::mem::size_of::<T>(), 512), 0);
-
-        let (md_address, _) = Pubkey::find_program_address(&[key.as_ref()], &jet_metadata::ID);
-        let ix_create = Instruction {
-            program_id: jet_metadata::ID,
-            data: jet_metadata::instruction::CreateEntry {
-                seed: String::new(),
-                space: 8 + std::mem::size_of::<T>() as u64,
-            }
-            .data(),
-            accounts: jet_metadata::accounts::CreateEntry {
-                authority: get_authority_address(),
-                payer: self.rpc.payer().pubkey(),
-                key_account: key,
-                metadata_account: md_address,
-                system_program: system_program::ID,
-            }
-            .to_account_metas(None),
-        };
-        let ix_set = Instruction {
-            program_id: jet_metadata::ID,
-            data: jet_metadata::instruction::SetEntry { offset: 0, data }.data(),
-            accounts: jet_metadata::accounts::SetEntry {
-                authority: get_authority_address(),
-                metadata_account: md_address,
-            }
-            .to_account_metas(None),
-        };
-
-        send_and_confirm(&self.rpc, &[ix_create, ix_set], &[]).await?;
+        send_and_confirm(&self.rpc, &[ix], &[]).await?;
 
         Ok(())
     }

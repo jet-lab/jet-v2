@@ -20,7 +20,7 @@ use std::cmp::Ordering;
 use anchor_lang::{prelude::*, solana_program::clock::UnixTimestamp};
 
 use jet_proto_math::Number;
-use pyth_client::Price;
+use pyth_sdk_solana::PriceFeed;
 
 use crate::{util, Amount, AmountKind, ErrorCode};
 
@@ -241,10 +241,15 @@ impl MarginPool {
 
     /// Calculate the prices for the deposit and loan notes, based on
     /// the price of the underlying token.
-    pub fn calculate_prices(&self, pyth_price: &Price) -> PriceResult {
-        let price_value = Number::from_decimal(pyth_price.agg.price, pyth_price.expo);
-        let twap_value = Number::from_decimal(pyth_price.twap.val, pyth_price.expo);
-        let conf_value = Number::from_decimal(pyth_price.agg.conf, pyth_price.expo);
+    pub fn calculate_prices(&self, pyth_price: &PriceFeed) -> Result<PriceResult> {
+        let price_obj = pyth_price
+            .get_current_price()
+            .ok_or(ErrorCode::InvalidPrice)?;
+        let ema_obj = pyth_price.get_ema_price().ok_or(ErrorCode::InvalidPrice)?;
+
+        let price_value = Number::from_decimal(price_obj.price, price_obj.expo);
+        let conf_value = Number::from_decimal(price_obj.conf, price_obj.expo);
+        let twap_value = Number::from_decimal(ema_obj.price, ema_obj.expo);
 
         let deposit_note_price = (price_value * self.deposit_note_exchange_rate())
             .as_u64_rounded(pyth_price.expo) as i64;
@@ -259,14 +264,14 @@ impl MarginPool {
         let loan_note_twap =
             (twap_value * self.loan_note_exchange_rate()).as_u64_rounded(pyth_price.expo) as i64;
 
-        PriceResult {
+        Ok(PriceResult {
             deposit_note_price,
             deposit_note_conf,
             deposit_note_twap,
             loan_note_price,
             loan_note_conf,
             loan_note_twap,
-        }
+        })
     }
 
     /// Convert the amount to be representable by tokens and notes for deposits
@@ -495,21 +500,6 @@ bitflags::bitflags! {
         /// The pool is allowed to lend out deposits for borrowing
         const ALLOW_LENDING = 1 << 1;
     }
-}
-
-#[account]
-pub struct MarginPoolOracle {
-    /// The mint for the token being priced
-    token_mint: Pubkey,
-
-    /// The current price/value of the token
-    price: [u8; 24],
-
-    /// The lower bound of the price based on the confidence
-    price_lower: [u8; 24],
-
-    /// The upper bound of the price based on the confidence
-    price_upper: [u8; 24],
 }
 
 #[cfg(test)]

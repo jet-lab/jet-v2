@@ -18,8 +18,9 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{Mint, Token, TokenAccount};
 
+use jet_metadata::ControlAuthority;
+
 use crate::state::*;
-use jet_metadata::CONTROL_PROGRAM_ID;
 
 #[derive(Accounts)]
 pub struct CreatePool<'info> {
@@ -73,8 +74,8 @@ pub struct CreatePool<'info> {
     pub token_mint: Box<Account<'info, Mint>>,
 
     /// The authority to create pools, which must sign
-    #[account(owner = CONTROL_PROGRAM_ID)]
-    pub authority: Signer<'info>,
+    #[account(signer)]
+    pub authority: Box<Account<'info, ControlAuthority>>,
 
     /// The payer of rent for new accounts
     #[account(mut)]

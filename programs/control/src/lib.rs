@@ -64,4 +64,10 @@ mod jet_control {
     ) -> Result<()> {
         instructions::configure_token_handler(ctx, metadata, pool_param, pool_config)
     }
+
+    /// Configure an address as being allowed to perform the functions
+    /// of a liquidator.
+    pub fn set_liquidator(ctx: Context<SetLiquidator>, is_liquidator: bool) -> Result<()> {
+        instructions::set_liquidator_handler(ctx, is_liquidator)
+    }
 }

@@ -21,6 +21,7 @@ use std::sync::Arc;
 use anyhow::{bail, Error};
 use bytemuck::Zeroable;
 
+use pyth_client::PriceStatus;
 use solana_sdk::instruction::Instruction;
 use solana_sdk::program_pack::Pack;
 use solana_sdk::pubkey::Pubkey;
@@ -228,6 +229,7 @@ impl TokenManager {
 
         price_data.agg.price = price_value;
         price_data.agg.conf = price.confidence;
+        price_data.agg.status = PriceStatus::Trading;
         price_data.twap.val = twap_value;
 
         let (price_address, _) = Pubkey::find_program_address(
