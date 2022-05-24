@@ -19,7 +19,7 @@ use anchor_lang::prelude::*;
 
 use jet_metadata::ControlAuthority;
 
-use crate::state::*;
+use crate::{events, state::*};
 use crate::ErrorCode;
 
 #[derive(Accounts)]
@@ -49,7 +49,7 @@ pub fn configure_handler(
     if let Some(new_fee_destination) = fee_destination {
         pool.fee_destination = new_fee_destination;
     }
-
+    let config_copy = config.clone();
     if let Some(new_config) = config {
         pool.config = new_config;
     }
@@ -83,6 +83,15 @@ pub fn configure_handler(
         pool.token_price_oracle = ctx.accounts.pyth_price.key();
         msg!("oracle = {}", &pool.token_price_oracle);
     }
+
+    emit!(events::PoolConfigured {
+        margin_pool: ctx.accounts.margin_pool.key(),
+        authority: ctx.accounts.authority.key(),
+        pyth_product: ctx.accounts.pyth_product.key(),
+        pyth_price: ctx.accounts.pyth_price.key(),
+        config: config_copy.unwrap()
+    });
+
 
     Ok(())
 }

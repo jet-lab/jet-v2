@@ -18,7 +18,7 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Burn, Token, Transfer};
 
-use crate::state::*;
+use crate::{state::*, events};
 use crate::{Amount, ErrorCode};
 
 #[derive(Accounts)]
@@ -104,6 +104,14 @@ pub fn withdraw_handler(ctx: Context<Withdraw>, amount: Amount) -> Result<()> {
         ctx.accounts.burn_note_context().with_signer(&signer),
         withdraw_amount.notes,
     )?;
-
+    emit!(events::Withdraw {
+        margin_pool: ctx.accounts.margin_pool.key(),
+        vault: ctx.accounts.vault.key(),
+        deposit_note_mint: ctx.accounts.deposit_note_mint.key(),
+        depositor: ctx.accounts.depositor.key(),
+        source: ctx.accounts.source.key(),
+        destination: ctx.accounts.destination.key(),
+        token_amount: amount,
+    });
     Ok(())
 }

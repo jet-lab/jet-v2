@@ -18,7 +18,7 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, MintTo, Token, Transfer};
 
-use crate::{state::*, AmountKind};
+use crate::{state::*, AmountKind, events};
 use crate::{Amount, ErrorCode};
 
 #[derive(Accounts)]
@@ -105,6 +105,15 @@ pub fn deposit_handler(ctx: Context<Deposit>, token_amount: u64) -> Result<()> {
         ctx.accounts.mint_note_context().with_signer(&signer),
         deposit_amount.notes,
     )?;
-
+    emit!(events::Deposit {
+        margin_pool: ctx.accounts.margin_pool.key(),
+        vault: ctx.accounts.vault.key(),
+        deposit_note_mint: ctx.accounts.deposit_note_mint.key(),
+        depositor: ctx.accounts.depositor.key(),
+        source: ctx.accounts.source.key(),
+        destination: ctx.accounts.destination.key(),
+        token_amount: token_amount,
+    });
+      
     Ok(())
 }

@@ -23,6 +23,7 @@ mod util;
 use instructions::*;
 
 pub use state::{MarginPool, MarginPoolConfig, PoolFlags};
+pub mod events;
 
 declare_id!("JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ");
 
