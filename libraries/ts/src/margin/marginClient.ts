@@ -1,7 +1,6 @@
-import { Program } from "@project-serum/anchor"
+import { Program, AnchorProvider } from "@project-serum/anchor"
 import { JetMargin, JetMarginPool, JetMarginSerum, JetMarginSwap, JetMetadata } from ".."
 import JET_CONFIG from "../margin/config.json"
-import Provider, { AnchorProvider, Wallet } from "@project-serum/anchor/dist/cjs/provider"
 import {
   JetControl,
   JetControlIdl,

@@ -1,13 +1,24 @@
 import assert from "assert"
 import { Address, AnchorProvider, BN, translateAddress } from "@project-serum/anchor"
-import { TOKEN_PROGRAM_ID } from "@solana/spl-token"
+import { Mint, TOKEN_PROGRAM_ID } from "@solana/spl-token"
 import { PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY, Transaction, TransactionInstruction } from "@solana/web3.js"
 
 import { Amount } from "../../amount"
-import { TokenKind } from "../../token"
 import { MarginAccount } from "../marginAccount"
 import { MarginPrograms } from "../marginClient"
 import { findDerivedAccount } from "../../utils/pda"
+import { AssociatedToken } from "../../token"
+import { MarginPoolData } from "./state"
+import { MarginTokenConfig, MarginTokens } from "../config"
+
+type TokenKindNonCollateral = { nonCollateral: Record<string, never> };
+type TokenKindCollateral = { collateral: Record<string, never> };
+type TokenKindClaim = { claim: Record<string, never> };
+
+export type TokenKind =
+  | TokenKindNonCollateral
+  | TokenKindCollateral
+  | TokenKindClaim;
 
 export interface MarginPoolAddresses {
   /** The pool's token mint i.e. BTC or SOL mint address*/
@@ -49,10 +60,20 @@ export interface MarginPoolConfig {
 
 export class MarginPool {
   public address: PublicKey
+  public tokenConfig: MarginTokenConfig
+  public info?: {
+    marginPool: MarginPoolData,
+    tokenMint: Mint
+    vault: AssociatedToken
+    depositNoteMint: Mint
+    loanNoteMint: Mint
+  }
   constructor(public programs: MarginPrograms, public addresses: MarginPoolAddresses) {
     assert(programs)
     assert(addresses)
     this.address = addresses.marginPool
+    const mintAddress = addresses.tokenMint.toBase58();
+    this.tokenConfig = Object.values(this.programs.config.tokens).find(token => token.mint === mintAddress)!;
   }
 
   /**
@@ -97,7 +118,48 @@ export class MarginPool {
     assert(tokenMint)
 
     const addresses = this.derive(programs, tokenMint)
-    return new MarginPool(programs, addresses)
+    const marginPool = new MarginPool(programs, addresses)
+    await marginPool.refresh()
+    return marginPool;
+  }
+
+  /**
+   * Load every Margin Pool in the config.
+   * @param programs
+   * @returns
+   */
+   static async loadAll(programs: MarginPrograms): Promise<Record<MarginTokens, MarginPool>> {
+    // FIXME: This could be faster with fewer round trips to rpc
+    const pools: Record<string, MarginPool> = {}
+    for (const token of Object.values(programs.config.tokens)) {
+      const pool = await this.load(programs, token.mint)
+      pools[token.symbol.toString()] = pool
+    }
+    return pools
+  }
+
+  async refresh() {
+    const [marginPoolInfo, poolTokenMintInfo, vaultMintInfo, depositNoteMintInfo, loanNoteMintInfo] =
+    await this.programs.marginPool.provider.connection.getMultipleAccountsInfo([
+      this.addresses.marginPool,
+      this.addresses.tokenMint,
+      this.addresses.vault,
+      this.addresses.depositNoteMint,
+      this.addresses.loanNoteMint
+    ])
+
+    if (!marginPoolInfo || !poolTokenMintInfo || !vaultMintInfo || !depositNoteMintInfo || !loanNoteMintInfo) {
+      this.info = undefined;
+    } else {
+      
+      this.info = {
+        marginPool: this.programs.marginPool.coder.accounts.decode<MarginPoolData>("marginPool", marginPoolInfo.data),
+        tokenMint: AssociatedToken.parseMintAccount(poolTokenMintInfo, this.addresses.tokenMint),
+        vault:  AssociatedToken.parseTokenAccount(vaultMintInfo, this.addresses.vault, this.tokenConfig.decimals),
+        depositNoteMint:  AssociatedToken.parseMintAccount(depositNoteMintInfo, this.addresses.depositNoteMint),
+        loanNoteMint:  AssociatedToken.parseMintAccount(loanNoteMintInfo, this.addresses.loanNoteMint),
+      }
+    }
   }
 
   async create(
