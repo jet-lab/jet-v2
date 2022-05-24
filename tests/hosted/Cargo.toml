@@ -25,12 +25,12 @@ anchor-spl = { git = "https://github.com/jet-lab/anchor", branch = "master" }
 spl-token = "3"
 pyth-client = "0.5"
 
-jet-proto-control = { path = "../../programs/control", features = ["no-entrypoint", "devnet"] }
-jet-proto-margin = { path = "../../programs/margin", features = ["no-entrypoint"] }
-jet-proto-margin-pool = { path = "../../programs/margin-pool", features = ["no-entrypoint", "devnet"] }
-jet-proto-margin-swap = { path = "../../programs/margin-swap", features = ["no-entrypoint"] }
-jet-proto-metadata = { path = "../../programs/metadata", features = ["no-entrypoint", "devnet"] }
+jet-control = { path = "../../programs/control", features = ["no-entrypoint", "devnet"] }
+jet-margin = { path = "../../programs/margin", features = ["no-entrypoint"] }
+jet-margin-pool = { path = "../../programs/margin-pool", features = ["no-entrypoint", "devnet"] }
+jet-margin-swap = { path = "../../programs/margin-swap", features = ["no-entrypoint"] }
+jet-metadata = { path = "../../programs/metadata", features = ["no-entrypoint", "devnet"] }
 
-jet-proto-solana-rpc-api = { path = "../../libraries/solana-rpc-api" }
-jet-proto-margin-sdk = { path = "../../libraries/rust", features = ["devnet"] }
-jet-proto-simulation = { path = "../../libraries/simulation", features = ["margin"] }
+jet-solana-rpc-api = { path = "../../libraries/solana-rpc-api" }
+jet-margin-sdk = { path = "../../libraries/rust", features = ["devnet"] }
+jet-simulation = { path = "../../libraries/simulation", features = ["margin"] }

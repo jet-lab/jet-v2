@@ -1,5 +1,5 @@
 [package]
-name = "jet-proto-simulation"
+name = "jet-simulation"
 version = "0.1.0"
 edition = "2021"
 
@@ -10,9 +10,9 @@ path = "src/lib.rs"
 [features]
 default = ["margin"]
 margin = [
-    "jet-proto-margin-sdk",
-    "jet-proto-margin",
-    "jet-proto-margin-pool"
+    "jet-margin-sdk",
+    "jet-margin",
+    "jet-margin-pool"
 ]
 
 [dependencies]
@@ -36,13 +36,13 @@ pyth-client = "0.5"
 
 anchor-lang = { git = "https://github.com/jet-lab/anchor", branch = "master" }
 
-jet-proto-solana-rpc-api = { path = "../solana-rpc-api" }
-jet-proto-control = { path = "../../programs/control" }
+jet-solana-rpc-api = { path = "../solana-rpc-api" }
+jet-control = { path = "../../programs/control" }
 
-jet-proto-metadata = { path = "../../programs/metadata", features = ["no-entrypoint"] }
+jet-metadata = { path = "../../programs/metadata", features = ["no-entrypoint"] }
 jet-proto-math = "1"
 
-jet-proto-margin-sdk = { path = "../rust", optional = true }
-jet-proto-margin = { path = "../../programs/margin", optional = true }
-jet-proto-margin-pool = { path = "../../programs/margin-pool", optional = true }
+jet-margin-sdk = { path = "../rust", optional = true }
+jet-margin = { path = "../../programs/margin", optional = true }
+jet-margin-pool = { path = "../../programs/margin-pool", optional = true }
 

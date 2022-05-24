@@ -1,5 +1,5 @@
 [package]
-name = "jet-proto-margin-pool"
+name = "jet-margin-pool"
 version = "0.1.0"
 description = "Created with Anchor"
 edition = "2018"
@@ -28,5 +28,5 @@ anchor-spl = { git = "https://github.com/jet-lab/anchor", branch = "master" }
 pyth-sdk-solana = "0.4"
 
 jet-proto-math = { git = "https://github.com/jet-lab/program-libraries", branch = "main" }
-jet-proto-margin = { path = "../margin", features = ["cpi"] }
-jet-proto-metadata = { path = "../metadata", features = ["cpi"] }
+jet-margin = { path = "../margin", features = ["cpi"] }
+jet-metadata = { path = "../metadata", features = ["cpi"] }
