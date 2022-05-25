@@ -23,7 +23,7 @@ anchor-lang = { git = "https://github.com/jet-lab/anchor", branch = "master" }
 anchor-spl = { git = "https://github.com/jet-lab/anchor", branch = "master" }
 
 spl-token = "3"
-pyth-client = "0.5"
+pyth-sdk-solana = "0.4"
 
 jet-control = { path = "../../programs/control", features = ["no-entrypoint", "devnet"] }
 jet-margin = { path = "../../programs/margin", features = ["no-entrypoint"] }
