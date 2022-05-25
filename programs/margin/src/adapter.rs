@@ -25,7 +25,7 @@ use jet_proto_math::Number128;
 
 use crate::{
     AccountPosition, AdapterPositionFlags, ErrorCode, MarginAccount, PriceInfo, SignerSeeds,
-    MAX_ORACLE_CONFIDENCE, MAX_ORACLE_STALENESS,
+    MAX_ORACLE_CONFIDENCE, MAX_ORACLE_STALENESS, util::RequirePosition,
 };
 
 pub struct InvokeAdapter<'a, 'info> {
@@ -156,19 +156,15 @@ fn handle_adapter_result(ctx: &InvokeAdapter) -> Result<()> {
     let result = match program::get_return_data() {
         None => AdapterResult::default(),
         Some((program_id, _)) if program_id != ctx.adapter_program.key() => {
-            return Err(ErrorCode::WrongProgramAdapterResult.into())
+            msg!("expected adapter: {}\nactual return from: {}", ctx.adapter_program.key(), program_id);
+            return Err(error!(ErrorCode::WrongProgramAdapterResult))
         }
         Some((_, data)) => AdapterResult::deserialize(&mut &data[..])?,
     };
 
     let mut margin_account = ctx.margin_account.load_mut()?;
     for (mint, changes) in result.position_changes {
-        let legal: u32 = ErrorCode::UnknownPosition.into();
-        let mut position = match margin_account.get_position_mut(&mint) {
-            Ok(pos) => Some(pos),
-            Err(Error::AnchorError(a)) if a.error_code_number == legal => None,
-            Err(err) => Err(err)?,
-        };
+        let mut position = margin_account.get_position_mut(&mint);
         for change in changes {
             match change {
                 PositionChange::Price(px) => {
@@ -176,11 +172,11 @@ fn handle_adapter_result(ctx: &InvokeAdapter) -> Result<()> {
                         update_price(ctx, *pos, px)?;
                     }
                 }
-                PositionChange::Flags(flags, true) => position.require()?.flags |= flags,
-                PositionChange::Flags(flags, false) => position.require()?.flags &= !flags,
+                PositionChange::Flags(flags, true) => position.require_mut()?.flags |= flags,
+                PositionChange::Flags(flags, false) => position.require_mut()?.flags &= !flags,
                 PositionChange::ExpectPosition(pubkey) => {
-                    if position.require()?.address != pubkey {
-                        return err!(ErrorCode::PositionNotRegistered);
+                    if position.require_mut()?.address != pubkey {
+                        return Err(error!(ErrorCode::PositionNotRegistered));
                     }
                 }
             }
@@ -190,34 +186,21 @@ fn handle_adapter_result(ctx: &InvokeAdapter) -> Result<()> {
     Ok(())
 }
 
-trait Require<T> {
-    fn require(&mut self) -> Result<&mut T>;
-}
-
-impl<T> Require<T> for Option<T> {
-    fn require(&mut self) -> Result<&mut T> {
-        Ok(self.as_mut().ok_or(ErrorCode::PositionNotRegistered)?)
-    }
-}
-
 fn update_balances(ctx: &InvokeAdapter) -> Result<()> {
     for account_info in ctx.remaining_accounts {
         if account_info.owner == &TokenAccount::owner() {
             if let Ok(account) =
                 TokenAccount::try_deserialize(&mut &**account_info.try_borrow_data()?)
-            { // todo security: should this check if it's a token account some other way?
+            {
+                // todo security: should this check if it's a token account some other way?
                 if account.owner == ctx.margin_account.key() {
-                    if let Err(err) = ctx.margin_account.load_mut()?.set_position_balance(
+                    match ctx.margin_account.load_mut()?.set_position_balance(
                         &account.mint,
                         account_info.key,
                         account.amount,
                     ) {
-                        match err {
-                            Error::AnchorError(a)
-                                if a.error_code_number
-                                    == ErrorCode::PositionNotRegistered.into() => {}
-                            _ => Err(err)?,
-                        }
+                        Ok(()) | Err(ErrorCode::PositionNotRegistered) => (),
+                        Err(err) => Err(err)?,
                     }
                 }
             }
@@ -245,15 +228,6 @@ fn update_price(
         }
         _ => PriceInfo::new_valid(entry.exponent, entry.value, clock.unix_timestamp as u64),
     };
-
-    match position.set_price(ctx.adapter_program.key, &price) {
-        Err(Error::AnchorError(e))
-            if e.error_code_number
-                == (ErrorCode::UnknownPosition as u32 + anchor_lang::error::ERROR_CODE_OFFSET) =>
-        {
-            Ok(())
-        }
-        Err(e) => Err(e),
-        Ok(()) => Ok(()),
-    }
+    
+    position.set_price(ctx.adapter_program.key, &price).map_err(|e| error!(e))
 }
