@@ -22,6 +22,7 @@ use anchor_spl::token::Token;
 
 use jet_margin::{AdapterResult, MarginAccount};
 
+use crate::events;
 use crate::state::*;
 use crate::Amount;
 
@@ -87,5 +88,15 @@ pub fn margin_withdraw_handler(ctx: Context<MarginWithdraw>, amount: Amount) -> 
         .source
         .key()]))?;
 
+    emit!(events::MarginWithdraw {
+        margin_account: ctx.accounts.margin_account.key(),
+        margin_pool: ctx.accounts.margin_pool.key(),
+        vault: ctx.accounts.vault.key(),
+        deposit_note_mint: ctx.accounts.deposit_note_mint.key(),
+        source: ctx.accounts.source.key(),
+        destination: ctx.accounts.destination.key(),
+        withdraw_amount: amount
+    });
+    
     Ok(())
 }

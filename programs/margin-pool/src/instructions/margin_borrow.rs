@@ -20,7 +20,7 @@ use anchor_spl::token::{self, MintTo, Token, TokenAccount};
 
 use jet_margin::{AdapterResult, MarginAccount};
 
-use crate::{state::*, AmountKind};
+use crate::{state::*, AmountKind, events};
 use crate::{Amount, ErrorCode};
 
 #[derive(Accounts)]
@@ -130,6 +130,17 @@ pub fn margin_borrow_handler(ctx: Context<MarginBorrow>, token_amount: u64) -> R
         ctx.accounts.loan_account.key(),
         ctx.accounts.deposit_account.key(),
     ]))?;
+    
+    emit!(events::MarginBorrow {
+        margin_account: ctx.accounts.margin_account.key(),
+        margin_pool: ctx.accounts.margin_pool.key(),
+        loan_note_mint: ctx.accounts.loan_note_mint.key(),
+        deposit_note_mint: ctx.accounts.deposit_note_mint.key(),
+        loan_account:  ctx.accounts.loan_account.key(),
+        deposit_account: ctx.accounts.deposit_account.key(),
+        borrow_tokens_amount: borrow_amount.tokens,
+        borrow_notes_amount: borrow_amount.notes,
+    });
 
     Ok(())
 }
