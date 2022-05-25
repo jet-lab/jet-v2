@@ -1,121 +1,186 @@
 import { PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
-import * as BufferLayout from "buffer-layout";
+import * as BL from "@solana/buffer-layout";
 
 /**
  * Layout for a public key
+ * @export
+ * @param {string} [property]
+ * @returns {PubkeyField}
  */
-export const publicKey = (property = "publicKey"): unknown => {
-  const publicKeyLayout = BufferLayout.blob(32, property);
+export function pubkey(property?: string): PubkeyField {
+  return new PubkeyField(property);
+}
 
-  const _decode = publicKeyLayout.decode.bind(publicKeyLayout);
-  const _encode = publicKeyLayout.encode.bind(publicKeyLayout);
+/**
+ * Layout for a public key
+ * @export
+ * @class PubkeyField
+ * @extends {BL.Layout}
+ */
+export class PubkeyField extends BL.Layout<PublicKey> {
+  /**
+   * Creates an instance of PubkeyField.
+   * @param {string} [property]
+   * @memberof PubkeyField
+   */
+  constructor(property?: string) {
+    super(32, property);
+  }
 
-  publicKeyLayout.decode = (buffer: Buffer, offset: number) => {
-    const data = _decode(buffer, offset);
+  /**
+   * TODO:
+   * @param {Uint8Array} b
+   * @param {number} [offset]
+   * @returns {PublicKey}
+   * @memberof PubkeyField
+   */
+  decode(b: Uint8Array, offset?: number): PublicKey {
+    const start = offset ?? 0;
+    const data = b.slice(start, start + this.span);
     return new PublicKey(data);
-  };
+  }
 
-  publicKeyLayout.encode = (key: PublicKey, buffer: Buffer, offset: number) => {
-    return _encode(key.toBuffer(), buffer, offset);
-  };
-
-  return publicKeyLayout;
-};
-
-/**
- * Layout for a 64bit unsigned value
- */
-export const uint64 = (property = "uint64"): unknown => {
-  const layout = BufferLayout.blob(8, property);
-
-  const _decode = layout.decode.bind(layout);
-  const _encode = layout.encode.bind(layout);
-
-  layout.decode = (buffer: Buffer, offset: number) => {
-    const data = _decode(buffer, offset);
-    return new BN(
-      [...data]
-        .reverse()
-        .map((i) => `00${i.toString(16)}`.slice(-2))
-        .join(""),
-      16
-    );
-  };
-
-  layout.encode = (num: BN, buffer: Buffer, offset: number) => {
-    const a = num.toArray().reverse();
-    let b = Buffer.from(a);
-    if (b.length !== 8) {
-      const zeroPad = Buffer.alloc(8);
-      b.copy(zeroPad);
-      b = zeroPad;
-    }
-    return _encode(b, buffer, offset);
-  };
-
-  return layout;
-};
-
-// TODO: wrap in BN (what about decimals?)
-export const uint128 = (property = "uint128"): unknown => {
-  const layout = BufferLayout.blob(16, property);
-
-  const _decode = layout.decode.bind(layout);
-  const _encode = layout.encode.bind(layout);
-
-  layout.decode = (buffer: Buffer, offset: number) => {
-    const data = _decode(buffer, offset);
-    return new BN(
-      [...data]
-        .reverse()
-        .map((i) => `00${i.toString(16)}`.slice(-2))
-        .join(""),
-      16
-    );
-  };
-
-  layout.encode = (num: BN, buffer: Buffer, offset: number) => {
-    const a = num.toArray().reverse();
-    let b = Buffer.from(a);
-    if (b.length !== 16) {
-      const zeroPad = Buffer.alloc(16);
-      b.copy(zeroPad);
-      b = zeroPad;
-    }
-
-    return _encode(b, buffer, offset);
-  };
-
-  return layout;
-};
+  /**
+   * TODO:
+   * @param {PublicKey} src
+   * @param {Uint8Array} b
+   * @param {number} [offset]
+   * @returns {number}
+   * @memberof PubkeyField
+   */
+  encode(src: PublicKey, b: Uint8Array, offset?: number): number {
+    const start = offset ?? 0;
+    b.set(src.toBytes(), start);
+    return this.span;
+  }
+}
 
 /**
- * Layout for a Rust String type
+ * Layout for an arbitrary sized unsigned int
+ * @export
+ * @class NumberField
+ * @extends {BL.Layout}
  */
-export const rustString = (property = "string"): unknown => {
-  const rsl = BufferLayout.struct(
-    [
-      BufferLayout.u32("length"),
-      BufferLayout.u32("lengthPadding"),
-      BufferLayout.blob(BufferLayout.offset(BufferLayout.u32(), -8), "chars"),
-    ],
-    property
-  );
-  const _decode = rsl.decode.bind(rsl);
-  const _encode = rsl.encode.bind(rsl);
+export class NumberField extends BL.Layout<BN> {
+  /**
+   * Creates an instance of NumberField which decodes to a BN.
+   * @param span The number of bytes in the number
+   * @param property Field name within in a struct
+   */
+  constructor(span: number, property?: string) {
+    super(span, property);
+  }
 
-  rsl.decode = (buffer: Buffer, offset: number) => {
-    const data = _decode(buffer, offset);
-    return data.chars.toString("utf8");
-  };
+  /**
+   * TODO:
+   * @param {Uint8Array} b
+   * @param {number} [offset]
+   * @returns {BN}
+   * @memberof NumberField
+   */
+  decode(b: Uint8Array, offset?: number): BN {
+    const start = offset ?? 0;
+    const data = b.slice(start, start + this.span);
+    return new BN(data, undefined, "le");
+  }
 
-  rsl.encode = (str: string, buffer: Buffer, offset: number) => {
-    const data = {
-      chars: Buffer.from(str, "utf8"),
-    };
-    return _encode(data, buffer, offset);
-  };
+  /**
+   * TODO:
+   * @param {BN} src
+   * @param {Uint8Array} b
+   * @param {number} [offset]
+   * @returns {number}
+   * @memberof NumberField
+   */
+  encode(src: BN, b: Uint8Array, offset?: number): number {
+    const start = offset ?? 0;
+    b.set(src.toArray("le"), start);
+    return this.span;
+  }
+}
 
-  return rsl;
-};
+/**
+ * Returns an unsigned number field that is 64 bits wide
+ * @param property
+ * @returns
+ */
+export function u64(property?: string): NumberField {
+  return new NumberField(8, property);
+}
+
+/**
+ * Returns an unsigned number field that is 128 bts wide
+ * @export
+ * @param {string} [property]
+ * @returns {NumberField}
+ */
+export function number128(property?: string): NumberField {
+  return new NumberField(16, property);
+}
+
+/**
+ * Returns an unsigned number field that is 192 bits wide
+ * @export
+ * @param {string} [property]
+ * @returns {NumberField}
+ */
+export function number192(property?: string): NumberField {
+  return new NumberField(24, property);
+}
+
+/**
+ * Layout for an arbitrary sized signed int
+ * @export
+ * @class SignedNumberField
+ * @extends {BL.Layout}
+ */
+export class SignedNumberField extends BL.Layout<BN> {
+  /**
+   * Creates an instance of SignedNumberField.
+   * @param {number} span
+   * @param {string} [property]
+   * @memberof SignedNumberField
+   */
+  constructor(span: number, property?: string) {
+    super(span, property);
+  }
+
+  /**
+   * TODO:
+   * @param {Uint8Array} b
+   * @param {number} [offset]
+   * @returns {BN}
+   * @memberof SignedNumberField
+   */
+  decode(b: Uint8Array, offset?: number): BN {
+    const start = offset == undefined ? 0 : offset;
+    const data = b.slice(start, start + this.span);
+    return new BN(data, undefined, "le").fromTwos(this.span * 8);
+  }
+
+  /**
+   * TODO:
+   * @param {BN} src
+   * @param {Uint8Array} b
+   * @param {number} [offset]
+   * @returns {number}
+   * @memberof SignedNumberField
+   */
+  encode(src: BN, b: Uint8Array, offset?: number): number {
+    const start = offset == undefined ? 0 : offset;
+    b.set(src.toTwos(this.span * 8).toArray("le"), start);
+
+    return this.span;
+  }
+}
+
+/**
+ * Returns a signed number field that is 8 bytes wide
+ * @export
+ * @param {string} [property]
+ * @returns {SignedNumberField}
+ */
+export function i64Field(property?: string): SignedNumberField {
+  return new SignedNumberField(8, property);
+}

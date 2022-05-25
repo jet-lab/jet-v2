@@ -1,33 +1,42 @@
 import camelCase from "camelcase";
-import { AccountsCoder, BorshAccountsCoder, BorshInstructionCoder, InstructionCoder } from '@project-serum/anchor';
-import { Commitment, Connection, PublicKey, TransactionInstruction } from '@solana/web3.js';
+import {
+  AccountsCoder,
+  BorshAccountsCoder,
+  BorshInstructionCoder,
+  Idl,
+  InstructionCoder,
+} from "@project-serum/anchor";
+import {
+  Commitment,
+  Connection,
+  PublicKey,
+  TransactionInstruction,
+} from "@solana/web3.js";
+import {
+  IdlAccountDef,
+  IdlInstruction,
+} from "@project-serum/anchor/dist/cjs/idl";
 
-export function buildAccounts(
-  IDL,
-) {
+export function buildAccounts(IDL: Idl) {
   const accountCoder: AccountsCoder = new BorshAccountsCoder(IDL);
 
   const accounts = {};
 
-  IDL.accounts.forEach((idlAccount) => {
-    accounts[camelCase(idlAccount.name)] = new AccountClient(idlAccount, accountCoder);
+  IDL.accounts?.forEach((idlAccount) => {
+    accounts[camelCase(idlAccount.name)] = new AccountClient(
+      idlAccount,
+      accountCoder
+    );
   });
 
   return accounts;
 }
 
-class AccountClient
-{
-  private _coder;
-  private _idlAccount;
-
+class AccountClient {
   constructor(
-    idlAccount,
-    coder: AccountsCoder,
-  ) {
-    this._idlAccount = idlAccount;
-    this._coder = coder;
-  }
+    private _idlAccount: IdlAccountDef,
+    private _coder: AccountsCoder
+  ) {}
 
   /**
    * Returns a deserialized account, returning null if it doesn't exist.
@@ -39,14 +48,15 @@ class AccountClient
     address: PublicKey,
     commitment?: Commitment
   ) {
-    const accountInfo = await this.getAccountInfo(connection, address, commitment);
+    const accountInfo = await this.getAccountInfo(
+      connection,
+      address,
+      commitment
+    );
     if (accountInfo === null) {
       return null;
     }
-    return this._coder.decode(
-      this._idlAccount.name,
-      accountInfo.data
-    );
+    return this._coder.decode(this._idlAccount.name, accountInfo.data);
   }
 
   /**
@@ -54,7 +64,11 @@ class AccountClient
    *
    * @param address The address of the account to fetch.
    */
-  async fetch(connection: Connection, address: PublicKey, commitment?: Commitment) {
+  async fetch(
+    connection: Connection,
+    address: PublicKey,
+    commitment?: Commitment
+  ) {
     const data = await this.fetchNullable(connection, address, commitment);
     if (data === null) {
       throw new Error(`Account does not exist ${address.toString()}`);
@@ -74,12 +88,7 @@ class AccountClient
   }
 }
 
-
-
-export function buildInstructions(
-  IDL,
-  programId: PublicKey,
-) {
+export function buildInstructions(IDL: Idl, programId: PublicKey) {
   const instructionCoder: InstructionCoder = new BorshInstructionCoder(IDL);
   const instructions = {};
   IDL.instructions.forEach((idlIx) => {
@@ -93,13 +102,11 @@ export function buildInstructions(
 }
 
 export function buildInstruction(
-  idlIx,
+  idlIx: IdlInstruction,
   encodeFn,
   programId: PublicKey
 ) {
-  const ix = (
-    ...args
-  ): TransactionInstruction => {
+  const ix = (...args): TransactionInstruction => {
     const [ixArgs, ctx] = splitArgsAndCtx(idlIx, [...args]);
     validateAccounts(idlIx.accounts, ctx.accounts);
     //validateInstruction(idlIx, ...args);
@@ -119,24 +126,13 @@ export function buildInstruction(
 
   // Utility fn for ordering the accounts for this instruction.
   ix["accounts"] = (accs) => {
-    return accountsArray(
-      accs,
-      idlIx.accounts,
-      idlIx.name
-    );
+    return accountsArray(accs, idlIx.accounts, idlIx.name);
   };
 
   return ix;
 }
 
-
-
-
-function accountsArray(
-  ctx,
-  accounts,
-  ixName?: string
-) {
+function accountsArray(ctx, accounts, ixName?: string) {
   if (!ctx) {
     return [];
   }
@@ -144,15 +140,10 @@ function accountsArray(
   return accounts
     .map((acc) => {
       // Nested accounts.
-      const nestedAccounts =
-        "accounts" in acc ? acc.accounts : undefined;
+      const nestedAccounts = "accounts" in acc ? acc.accounts : undefined;
       if (nestedAccounts !== undefined) {
         const rpcAccs = ctx[acc.name];
-        return accountsArray(
-          rpcAccs,
-          (acc).accounts,
-          ixName
-        ).flat();
+        return accountsArray(rpcAccs, acc.accounts, ixName).flat();
       } else {
         const account = acc;
         let pubkey;
@@ -177,10 +168,7 @@ function accountsArray(
     .flat();
 }
 
-function splitArgsAndCtx(
-  idlIx,
-  args
-) {
+function splitArgsAndCtx(idlIx, args) {
   let options = {};
 
   const inputLen = idlIx.args ? idlIx.args.length : 0;
@@ -199,10 +187,7 @@ function splitArgsAndCtx(
 }
 
 // Allow either IdLInstruction or IdlStateMethod since the types share fields.
-function toInstruction(
-  idlIx,
-  ...args: any[]
-) {
+function toInstruction(idlIx, ...args: any[]) {
   if (idlIx.args.length != args.length) {
     throw new Error("Invalid argument length");
   }
@@ -221,10 +206,7 @@ function translateAddress(address): PublicKey {
   return address instanceof PublicKey ? address : new PublicKey(address);
 }
 
-function validateAccounts(
-  ixAccounts,
-  accounts
-) {
+function validateAccounts(ixAccounts, accounts) {
   ixAccounts.forEach((acc) => {
     if ("accounts" in acc) {
       validateAccounts(acc.accounts, accounts[acc.name]);
