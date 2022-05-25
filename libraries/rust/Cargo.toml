@@ -1,5 +1,5 @@
 [package]
-name = "jet-proto-margin-sdk"
+name = "jet-margin-sdk"
 version = "0.1.0"
 edition = "2021"
 
@@ -24,12 +24,12 @@ anchor-lang = { git = "https://github.com/jet-lab/anchor", branch = "master" }
 anchor-spl = { git = "https://github.com/jet-lab/anchor", branch = "master" }
 anchor-client = { git = "https://github.com/jet-lab/anchor", branch = "master" }
 
-jet-proto-solana-rpc-api = { path = "../solana-rpc-api" }
-jet-proto-control = { path = "../../programs/control", features = ["no-entrypoint"] }
-jet-proto-margin = { path = "../../programs/margin", features = ["no-entrypoint"] }
-jet-proto-metadata = { path = "../../programs/metadata", features = ["no-entrypoint"] }
-jet-proto-margin-pool = { path = "../../programs/margin-pool", features = ["no-entrypoint"] }
-jet-proto-margin-swap = { path = "../../programs/margin-swap", features = ["no-entrypoint"] }
+jet-solana-rpc-api = { path = "../solana-rpc-api" }
+jet-control = { path = "../../programs/control", features = ["no-entrypoint"] }
+jet-margin = { path = "../../programs/margin", features = ["no-entrypoint"] }
+jet-metadata = { path = "../../programs/metadata", features = ["no-entrypoint"] }
+jet-margin-pool = { path = "../../programs/margin-pool", features = ["no-entrypoint"] }
+jet-margin-swap = { path = "../../programs/margin-swap", features = ["no-entrypoint"] }
 
 # Token swaps
 spl-token = "3"

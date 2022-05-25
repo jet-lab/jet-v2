@@ -91,7 +91,7 @@ impl MarginTestContext {
         let liquidator = self.create_wallet(sol_amount).await?;
 
         self.margin
-            .set_liquidator_metadata(liquidator.pubkey())
+            .set_liquidator_metadata(liquidator.pubkey(), true)
             .await?;
         Ok(liquidator)
     }
