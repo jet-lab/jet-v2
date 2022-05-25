@@ -1366,7 +1366,7 @@ dependencies = [
  "jet-simulation",
  "jet-solana-rpc-api",
  "parking_lot 0.12.0",
- "pyth-client",
+ "pyth-sdk-solana",
  "rand 0.7.3",
  "solana-sdk",
  "spl-token",
@@ -1556,7 +1556,6 @@ dependencies = [
  "jet-margin",
  "jet-metadata",
  "jet-proto-math",
- "pyth-client",
  "pyth-sdk-solana",
  "static_assertions",
 ]
@@ -1645,7 +1644,7 @@ dependencies = [
  "jet-proto-math",
  "jet-solana-rpc-api",
  "parking_lot 0.12.0",
- "pyth-client",
+ "pyth-sdk-solana",
  "rand 0.7.3",
  "solana-client",
  "solana-sdk",
@@ -2191,22 +2190,6 @@ dependencies = [
  "anchor-lang",
  "arrayref",
  "bytemuck",
-]
-
-[[package]]
-name = "pyth-client"
-version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f779e98b8c8016d0c1409247a204bd4fcdea8b67ceeef545f04e324d66c49e52"
-dependencies = [
- "borsh 0.9.3",
- "borsh-derive 0.9.3",
- "bytemuck",
- "num-derive",
- "num-traits",
- "serde",
- "solana-program",
- "thiserror",
 ]
 
 [[package]]
