@@ -87,11 +87,11 @@ pub fn configure_handler(
     emit!(events::PoolConfigured {
         margin_pool: ctx.accounts.margin_pool.key(),
         authority: ctx.accounts.authority.key(),
+        fee_destination: fee_destination.unwrap_or(Pubkey::default()),
         pyth_product: ctx.accounts.pyth_product.key(),
         pyth_price: ctx.accounts.pyth_price.key(),
-        config: config_copy.unwrap()
+        config: config_copy.unwrap_or(MarginPoolConfig::default())
     });
-
 
     Ok(())
 }

@@ -93,7 +93,7 @@ pub fn deposit_handler(ctx: Context<Deposit>, token_amount: u64) -> Result<()> {
     let deposit_amount =
         pool.convert_deposit_amount(Amount::tokens(token_amount), deposit_rounding)?;
     pool.deposit(&deposit_amount);
-
+    
     let pool = &ctx.accounts.margin_pool;
     let signer = [&pool.signer_seeds()?[..]];
 
@@ -112,7 +112,8 @@ pub fn deposit_handler(ctx: Context<Deposit>, token_amount: u64) -> Result<()> {
         depositor: ctx.accounts.depositor.key(),
         source: ctx.accounts.source.key(),
         destination: ctx.accounts.destination.key(),
-        token_amount: token_amount,
+        deposit_tokens: deposit_amount.tokens,
+        deposit_notes: deposit_amount.notes,
     });
       
     Ok(())

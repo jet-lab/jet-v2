@@ -111,7 +111,8 @@ pub fn withdraw_handler(ctx: Context<Withdraw>, amount: Amount) -> Result<()> {
         depositor: ctx.accounts.depositor.key(),
         source: ctx.accounts.source.key(),
         destination: ctx.accounts.destination.key(),
-        token_amount: amount,
+        withdraw_tokens: withdraw_amount.tokens,
+        withdraw_notes: withdraw_amount.notes,
     });
     Ok(())
 }

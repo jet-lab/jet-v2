@@ -19,6 +19,7 @@ pub struct PoolCreated {
 pub struct PoolConfigured {
     pub margin_pool: Pubkey,
     pub authority: Pubkey,
+    pub fee_destination: Pubkey,
     pub pyth_product: Pubkey, 
     pub pyth_price: Pubkey, 
     pub config: MarginPoolConfig, 
@@ -32,7 +33,9 @@ pub struct Deposit {
     pub depositor: Pubkey,
     pub source: Pubkey,
     pub destination: Pubkey,
-    pub token_amount: u64,
+    pub deposit_tokens: u64,
+    pub deposit_notes: u64,
+
 }
 
 #[event]
@@ -43,5 +46,6 @@ pub struct Withdraw {
     pub depositor: Pubkey,
     pub source: Pubkey,
     pub destination: Pubkey,
-    pub token_amount: Amount,
+    pub withdraw_tokens: u64,
+    pub withdraw_notes: u64,
 }
