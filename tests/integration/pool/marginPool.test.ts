@@ -22,7 +22,7 @@ import {
 } from "../util"
 import { MarginClient } from "../../../libraries/ts/src/margin/marginClient"
 
-describe("margin account", () => {
+describe("margin pool", () => {
   const controlProgramId: PublicKey = new PublicKey(MARGIN_CONFIG.localnet.controlProgramId)
   const marginProgramId: PublicKey = new PublicKey(MARGIN_CONFIG.localnet.marginProgramId)
   const marginPoolProgramId: PublicKey = new PublicKey(MARGIN_CONFIG.localnet.marginPoolProgramId)

@@ -3,22 +3,19 @@ import { Address, AnchorProvider, BN, translateAddress } from "@project-serum/an
 import { Mint, TOKEN_PROGRAM_ID } from "@solana/spl-token"
 import { PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY, Transaction, TransactionInstruction } from "@solana/web3.js"
 
-import { Amount } from "../../amount"
 import { MarginAccount } from "../marginAccount"
 import { MarginPrograms } from "../marginClient"
 import { findDerivedAccount } from "../../utils/pda"
 import { AssociatedToken } from "../../token"
 import { MarginPoolData } from "./state"
 import { MarginTokenConfig, MarginTokens } from "../config"
+import { PoolAmount } from "./poolAmount"
 
-type TokenKindNonCollateral = { nonCollateral: Record<string, never> };
-type TokenKindCollateral = { collateral: Record<string, never> };
-type TokenKindClaim = { claim: Record<string, never> };
+type TokenKindNonCollateral = { nonCollateral: Record<string, never> }
+type TokenKindCollateral = { collateral: Record<string, never> }
+type TokenKindClaim = { claim: Record<string, never> }
 
-export type TokenKind =
-  | TokenKindNonCollateral
-  | TokenKindCollateral
-  | TokenKindClaim;
+export type TokenKind = TokenKindNonCollateral | TokenKindCollateral | TokenKindClaim
 
 export interface MarginPoolAddresses {
   /** The pool's token mint i.e. BTC or SOL mint address*/
@@ -62,7 +59,7 @@ export class MarginPool {
   public address: PublicKey
   public tokenConfig: MarginTokenConfig
   public info?: {
-    marginPool: MarginPoolData,
+    marginPool: MarginPoolData
     tokenMint: Mint
     vault: AssociatedToken
     depositNoteMint: Mint
@@ -72,8 +69,8 @@ export class MarginPool {
     assert(programs)
     assert(addresses)
     this.address = addresses.marginPool
-    const mintAddress = addresses.tokenMint.toBase58();
-    this.tokenConfig = Object.values(this.programs.config.tokens).find(token => token.mint === mintAddress)!;
+    const mintAddress = addresses.tokenMint.toBase58()
+    this.tokenConfig = Object.values(this.programs.config.tokens).find(token => token.mint === mintAddress)!
   }
 
   /**
@@ -120,7 +117,7 @@ export class MarginPool {
     const addresses = this.derive(programs, tokenMint)
     const marginPool = new MarginPool(programs, addresses)
     await marginPool.refresh()
-    return marginPool;
+    return marginPool
   }
 
   /**
@@ -128,7 +125,7 @@ export class MarginPool {
    * @param programs
    * @returns
    */
-   static async loadAll(programs: MarginPrograms): Promise<Record<MarginTokens, MarginPool>> {
+  static async loadAll(programs: MarginPrograms): Promise<Record<MarginTokens, MarginPool>> {
     // FIXME: This could be faster with fewer round trips to rpc
     const pools: Record<string, MarginPool> = {}
     for (const token of Object.values(programs.config.tokens)) {
@@ -140,24 +137,23 @@ export class MarginPool {
 
   async refresh() {
     const [marginPoolInfo, poolTokenMintInfo, vaultMintInfo, depositNoteMintInfo, loanNoteMintInfo] =
-    await this.programs.marginPool.provider.connection.getMultipleAccountsInfo([
-      this.addresses.marginPool,
-      this.addresses.tokenMint,
-      this.addresses.vault,
-      this.addresses.depositNoteMint,
-      this.addresses.loanNoteMint
-    ])
+      await this.programs.marginPool.provider.connection.getMultipleAccountsInfo([
+        this.addresses.marginPool,
+        this.addresses.tokenMint,
+        this.addresses.vault,
+        this.addresses.depositNoteMint,
+        this.addresses.loanNoteMint
+      ])
 
     if (!marginPoolInfo || !poolTokenMintInfo || !vaultMintInfo || !depositNoteMintInfo || !loanNoteMintInfo) {
-      this.info = undefined;
+      this.info = undefined
     } else {
-      
       this.info = {
         marginPool: this.programs.marginPool.coder.accounts.decode<MarginPoolData>("marginPool", marginPoolInfo.data),
-        tokenMint: AssociatedToken.parseMintAccount(poolTokenMintInfo, this.addresses.tokenMint),
-        vault:  AssociatedToken.parseTokenAccount(vaultMintInfo, this.addresses.vault, this.tokenConfig.decimals),
-        depositNoteMint:  AssociatedToken.parseMintAccount(depositNoteMintInfo, this.addresses.depositNoteMint),
-        loanNoteMint:  AssociatedToken.parseMintAccount(loanNoteMintInfo, this.addresses.loanNoteMint),
+        tokenMint: AssociatedToken.decodeMint(poolTokenMintInfo, this.addresses.tokenMint),
+        vault: AssociatedToken.decodeAccount(vaultMintInfo, this.addresses.vault, this.tokenConfig.decimals),
+        depositNoteMint: AssociatedToken.decodeMint(depositNoteMintInfo, this.addresses.depositNoteMint),
+        loanNoteMint: AssociatedToken.decodeMint(loanNoteMintInfo, this.addresses.loanNoteMint)
       }
     }
   }
@@ -442,7 +438,7 @@ export class MarginPool {
         marginAccount.address,
         deposit_position.address,
         loan_position.address,
-        Amount.notes(amount)
+        PoolAmount.notes(amount)
       )
     )
     tx.add(ix)
@@ -454,7 +450,7 @@ export class MarginPool {
     marginAccount: Address,
     deposit_account: Address,
     loan_account: Address,
-    amount: Amount
+    amount: PoolAmount
   ): Promise<TransactionInstruction> {
     return await this.programs.marginPool.methods
       .marginRepay(amount.toRpcArg())
@@ -479,7 +475,7 @@ export class MarginPool {
   /// `margin_account` - The margin account with the deposit to be withdrawn
   /// `source` - The token account that has the deposit notes to be exchanged
   /// `destination` - The token account to send the withdrawn deposit
-  /// `amount` - The amount of the deposit
+  /// `PoolAmount` - The amount of the deposit
   async marginWithdraw(marginAccount: MarginAccount, destination: Address, amount: BN) {
     const depositPosition = await marginAccount.getOrCreatePosition(this.addresses.depositNoteMint)
     assert(depositPosition)
@@ -494,7 +490,7 @@ export class MarginPool {
         marginAccount.address,
         depositPosition.address,
         destination,
-        Amount.tokens(amount)
+        PoolAmount.tokens(amount)
       )
     )
     tx.add(ix)
@@ -506,7 +502,7 @@ export class MarginPool {
     marginAccount: Address,
     source: Address,
     destination: Address,
-    amount: Amount
+    amount: PoolAmount
   ): Promise<TransactionInstruction> {
     return await this.programs.marginPool.methods
       .marginWithdraw(amount.toRpcArg())

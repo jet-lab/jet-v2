@@ -1,6 +1,6 @@
 import assert from "assert"
 import { Address, AnchorProvider, BN, translateAddress } from "@project-serum/anchor"
-import { AccountLayout, TOKEN_PROGRAM_ID } from "@solana/spl-token"
+import { AccountLayout, NATIVE_MINT, TOKEN_PROGRAM_ID } from "@solana/spl-token"
 import {
   Connection,
   PublicKey,
@@ -14,16 +14,17 @@ import { MarginPool } from "./pool"
 import { AccountPositionList, AccountPositionListLayout, MarginAccountData } from "./state"
 import { MarginPrograms } from "./marginClient"
 import { findDerivedAccount } from "../utils/pda"
+import { AssociatedToken, MarginTokens } from ".."
 
 export class MarginAccount {
   static readonly SEED_MAX_VALUE = 65535
-  public address: PublicKey;
-  public owner: PublicKey;
+  public address: PublicKey
+  public owner: PublicKey
 
   /**
    * Creates an instance of margin account.
    * @param {MarginPrograms} programs
-   * @param {Provider} provider
+   * @param {Provider} provider The provider and wallet that can sign for this margin account
    * @param {PublicKey} address The address of the margin account
    * @param {Address} owner
    * @param {number} seed
@@ -40,8 +41,25 @@ export class MarginAccount {
     public info: MarginAccountData | null,
     private positions: AccountPositionList | null
   ) {
-    this.address = translateAddress(address);
-    this.owner = translateAddress(owner);
+    this.address = translateAddress(address)
+    this.owner = translateAddress(owner)
+  }
+
+  static async loadTokens(programs: MarginPrograms, owner: Address): Promise<Record<MarginTokens, AssociatedToken>> {
+    const tokenConfigs = Object.values(programs.config.tokens).filter(
+      token => !translateAddress(token.mint).equals(NATIVE_MINT)
+    )
+
+    const mints = tokenConfigs.map(token => token.mint)
+    const decimals = tokenConfigs.map(token => token.decimals)
+
+    const tokens = await AssociatedToken.loadMultiple(programs.margin.provider.connection, mints, decimals, owner)
+
+    const tokensMap: Record<string, AssociatedToken> = {}
+    for (let i = 0; i < tokens.length; i++) {
+      tokensMap[tokenConfigs[i].symbol] = tokens[i]
+    }
+    return tokensMap
   }
 
   /**
@@ -72,6 +90,7 @@ export class MarginAccount {
   /**
    *
    * @param {MarginPrograms} programs
+   * @param {AnchorProvider} provider The provider and wallet that can sign for this margin account
    * @param {Address} owner
    * @param {number} seed
    * @returns {Promise<MarginAccount>}
@@ -113,13 +132,13 @@ export class MarginAccount {
   /// Get instruction to create the account
   async makeCreateAccountInstruction(): Promise<TransactionInstruction> {
     const ownerAddress = translateAddress(this.owner)
-    const marginAccount = MarginAccount.derive(this.programs, this.owner, this.seed)
+
     return await this.programs.margin.methods
       .createAccount(this.seed)
       .accounts({
         owner: this.owner,
         payer: this.provider.wallet.publicKey,
-        marginAccount: marginAccount,
+        marginAccount: this.address,
         systemProgram: SystemProgram.programId
       })
       .instruction()

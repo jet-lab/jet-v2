@@ -1,6 +1,6 @@
 {
-  "name": "@jet-lab/jet-engine-v2",
-  "version": "0.0.1",
+  "name": "@jet-lab/margin",
+  "version": "0.1.0",
   "description": "Library for interacting with the Jet on-chain programs",
   "keywords": [
     "solana",
