@@ -6,7 +6,7 @@
     "marginSerumProgramId": "JPSmU9t1Hc6CqjPxqxUSAZLtAAdxxCSdH8Y1vo4xuWG",
     "marginSwapProgramId": "JPMAa5dnWLFRvUsumawFcGhnwikqZziLLfqn9SLNXPN",
     "metadataProgramId": "JPMetawzxw7WyH3qHUVScYHWFBGhjwqDnM2R9qVbRLp",
-    "pythProgramId": "ASfdvRMCan2aoWtbDi5HLXhz2CFfgEkuDoxc57bJLKLX",
+    "pythProgramId": "FT9EZnpdo3tPfUCGn8SBkvN9DMpSStAg3YvAqvYrtSvL",
     "serumProgramId": "DESVgJVGajEgKGXhb6XmqDHGz3VjdgP7rEVESBgxmroY",
     "serumReferralAuthority": "11111111111111111111111111111111",
     "splTokenFaucet": "4bXpkKSV8swHSnwqtzuboGPaPDeEgAn4Vt8GfarV5rZt",
@@ -65,30 +65,30 @@
     "oracles": {
       "BTC_USD": {
         "symbol": "BTC/USD",
-        "address": "F3PLdJAtv2LwUptjTdAhzVkBQ2ApH9hM9B6EF37n8oAC",
-        "price": 28912.5,
-        "confidence": 8.47000001,
+        "address": "4RYTmhUNkpQqNLA9Gp2QUN63EZYwBwwUo2MMvVTRe71i",
+        "price": 29539.24566211,
+        "confidence": 19.1114032,
         "exponent": -8
       },
       "ETH_USD": {
         "symbol": "ETH/USD",
-        "address": "FkubqJcbt9jPT6yVP8a5HCZSReUkkEuvYjQT7FL4bM1P",
-        "price": 1939.9225375,
-        "confidence": 1.31338128,
+        "address": "FpuoqZhdDNXxkzSABQkDQq8SNCw93b3ARSb3ZybB3f9B",
+        "price": 1957.050078,
+        "confidence": 0.64144299,
         "exponent": -8
       },
       "SOL_USD": {
         "symbol": "SOL/USD",
-        "address": "bu3cPtYBgBYiG4Eq32TRgrRFBMgP49va1gGsTQ99wXP",
-        "price": 48.73330171,
-        "confidence": 0.028181710000000002,
+        "address": "7LbECWVP2geWgVbAj769QzuuJMtE3VkarGiqBZFMTwUW",
+        "price": 48.07448,
+        "confidence": 0.021335,
         "exponent": -8
       },
       "SRM_USD": {
         "symbol": "SRM/USD",
-        "address": "894wA3XR7ZP5SboqiooWAh8qRbySGPwGYdaVUNnH5JRs",
-        "price": 1.08724583,
-        "confidence": 0.0005802,
+        "address": "4MyPsYiYPAoN6aZcrPsg5pC8d7Ju3z88yXe1WWfBJHYg",
+        "price": 1.12140525,
+        "confidence": 0.00058469,
         "exponent": -8
       }
     },
