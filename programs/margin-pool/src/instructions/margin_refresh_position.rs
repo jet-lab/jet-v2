@@ -25,7 +25,6 @@ use crate::ErrorCode;
 #[derive(Accounts)]
 pub struct MarginRefreshPosition<'info> {
     /// The margin account being executed on
-    #[account(signer)]
     pub margin_account: AccountLoader<'info, MarginAccount>,
 
     /// The pool to be refreshed

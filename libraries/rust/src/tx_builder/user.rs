@@ -67,6 +67,10 @@ impl MarginTxBuilder {
         self.rpc.create_transaction(&signers, instructions).await
     }
 
+    async fn create_unsigned_transaction(&self, instructions: &[Instruction]) -> Result<Transaction> {
+        self.rpc.create_transaction(&[], instructions).await
+    }
+
     pub fn signer(&self) -> Pubkey {
         self.signer.as_ref().unwrap().pubkey()
     }
@@ -362,14 +366,14 @@ impl MarginTxBuilder {
                 .get_token_metadata(&p_metadata.underlying_token_mint)
                 .await?;
             let ix_builder = MarginPoolIxBuilder::new(p_metadata.underlying_token_mint);
-            let ix = self.ix.adapter_invoke(
+            let ix = self.ix.accounting_invoke(
                 ix_builder.margin_refresh_position(self.ix.address, t_metadata.pyth_price),
             );
 
             instructions.push(ix);
         }
 
-        futures::future::join_all(instructions.chunks(12).map(|c| self.create_transaction(c)))
+        futures::future::join_all(instructions.chunks(12).map(|c| self.create_unsigned_transaction(c)))
             .await
             .into_iter()
             .collect()
