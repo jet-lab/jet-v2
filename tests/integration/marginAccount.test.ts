@@ -12,21 +12,15 @@ import {
   SystemProgram
 } from "@solana/web3.js"
 
-import CONFIG from "../../libraries/ts/src/margin/config.json"
 import { MarginAccount } from "../../libraries/ts/src/margin"
 import { createAuthority, createUserWallet } from "./util"
 import { MarginClient } from "../../libraries/ts/src/margin/marginClient"
 
 describe("margin account", () => {
-  const controlProgramId: PublicKey = new PublicKey(CONFIG.localnet.controlProgramId)
-  const marginProgramId: PublicKey = new PublicKey(CONFIG.localnet.marginProgramId)
-  const metadataProgramId: PublicKey = new PublicKey(CONFIG.localnet.metadataProgramId)
-
   const opts: ConfirmOptions = {
     preflightCommitment: "processed",
     commitment: "processed"
   }
-
   const connection = new Connection("http://localhost:8899", opts.preflightCommitment)
 
   const payer = Keypair.generate()

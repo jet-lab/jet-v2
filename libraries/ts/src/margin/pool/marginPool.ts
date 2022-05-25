@@ -168,29 +168,28 @@ export class MarginPool {
     pythPrice: Address,
     marginPoolConfig: MarginPoolConfig
   ) {
-    const tx1 = new Transaction()
-    tx1.add(await this.makeRegisterTokenInstruction(requester))
-    await provider.sendAndConfirm(tx1)
+    const ix1: TransactionInstruction[] = []
+    await this.withRegisterToken(ix1, requester)
+    await provider.sendAndConfirm(new Transaction().add(...ix1))
 
-    const tx2 = new Transaction()
-    tx2.add(
-      await this.makeConfigureTokenInstruction(
-        requester,
-        collateralWeight,
-        collateralMaxStaleness,
-        feeDestination,
-        pythProduct,
-        pythPrice,
-        marginPoolConfig
-      )
+    const ix2: TransactionInstruction[] = []
+    await this.withConfigureToken(
+      ix2,
+      requester,
+      collateralWeight,
+      collateralMaxStaleness,
+      feeDestination,
+      pythProduct,
+      pythPrice,
+      marginPoolConfig
     )
-    return await provider.sendAndConfirm(tx2)
+    return await provider.sendAndConfirm(new Transaction().add(...ix2))
   }
 
-  async makeRegisterTokenInstruction(requester: Address): Promise<TransactionInstruction> {
+  async withRegisterToken(instructions: TransactionInstruction[], requester: Address): Promise<void> {
     const authority = findDerivedAccount(this.programs.config.controlProgramId)
 
-    return await this.programs.control.methods
+    const ix = await this.programs.control.methods
       .registerToken()
       .accounts({
         requester,
@@ -210,9 +209,11 @@ export class MarginPool {
         rent: SYSVAR_RENT_PUBKEY
       })
       .instruction()
+    instructions.push(ix)
   }
 
-  async makeConfigureTokenInstruction(
+  async withConfigureToken(
+    instructions: TransactionInstruction[],
     requester: Address,
     collateralWeight: number,
     collateralMaxStaleness: BN,
@@ -220,7 +221,7 @@ export class MarginPool {
     pythProduct: Address,
     pythPrice: Address,
     marginPoolConfig: MarginPoolConfig
-  ): Promise<TransactionInstruction> {
+  ): Promise<void> {
     const metadata: TokenMetadataParams = {
       tokenKind: { collateral: {} },
       collateralWeight: collateralWeight,
@@ -230,7 +231,7 @@ export class MarginPool {
       feeDestination: translateAddress(feeDestination)
     }
 
-    return await this.programs.control.methods
+    const ix = await this.programs.control.methods
       .configureToken(
         {
           tokenKind: metadata.tokenKind as never,
@@ -253,6 +254,7 @@ export class MarginPool {
         metadataProgram: this.programs.config.metadataProgramId
       })
       .instruction()
+    instructions.push(ix)
   }
 
   /// Instruction to deposit tokens into the pool in exchange for deposit notes
@@ -268,21 +270,22 @@ export class MarginPool {
     const position = await marginAccount.getOrCreatePosition(this.addresses.depositNoteMint)
     assert(position)
 
-    const tx = new Transaction()
-    tx.add(
-      await this.makeDepositInstruction(marginAccount.address, source, position.address, new BN(amount)),
-      await marginAccount.makeUpdatePositionBalanceInstruction(position.address)
-    )
-    return await marginAccount.provider.sendAndConfirm(tx)
+    const ix: TransactionInstruction[] = []
+
+    await this.withDeposit(ix, marginAccount.address, source, position.address, new BN(amount))
+    await marginAccount.withUpdatePositionBalance(ix, position.address)
+
+    return await marginAccount.provider.sendAndConfirm(new Transaction().add(...ix))
   }
 
-  async makeDepositInstruction(
+  async withDeposit(
+    instructions: TransactionInstruction[],
     depositor: Address,
     source: Address,
     destination: Address,
     amount: BN
-  ): Promise<TransactionInstruction> {
-    return await this.programs.marginPool.methods
+  ): Promise<void> {
+    const ix = await this.programs.marginPool.methods
       .deposit(amount)
       .accounts({
         marginPool: this.address,
@@ -294,6 +297,7 @@ export class MarginPool {
         tokenProgram: TOKEN_PROGRAM_ID
       })
       .instruction()
+    instructions.push(ix)
   }
 
   // async refreshAllPoolPositions(
@@ -307,16 +311,16 @@ export class MarginPool {
   async refreshPosition(marginAccount: MarginAccount) {
     const token_metadata = await marginAccount.getTokenMetadata(this.addresses.tokenMint)
 
-    const tx = new Transaction()
-    const ix = await this.makeAdapterInvokeInstruction(
+    const ix: TransactionInstruction[] = []
+    await this.withAdapterInvoke(
+      ix,
       marginAccount.owner,
       marginAccount.address,
       this.programs.config.marginPoolProgramId,
       this.addresses.marginPoolAdapterMetadata,
       await this.makeMarginRefreshPositionInstruction(marginAccount.address, token_metadata.pythPrice)
     )
-    tx.add(ix)
-    return await marginAccount.provider.sendAndConfirm(tx)
+    return await marginAccount.provider.sendAndConfirm(new Transaction().add(...ix))
   }
 
   async marginBorrow(marginAccount: MarginAccount, amount: BN) {
@@ -335,32 +339,29 @@ export class MarginPool {
       programId: new PublicKey("ComputeBudget111111111111111111111111111111"),
       data
     })
-    const tx = new Transaction()
-      .add(additionalComputeBudgetInstruction)
-      .add(
-        await this.makeAdapterInvokeInstruction(
-          marginAccount.owner,
-          marginAccount.address,
-          this.programs.config.marginPoolProgramId,
-          this.addresses.marginPoolAdapterMetadata,
-          await this.makeMarginRefreshPositionInstruction(marginAccount.address, token_metadata.pythPrice)
-        )
+    const ix: TransactionInstruction[] = [additionalComputeBudgetInstruction]
+    await this.withAdapterInvoke(
+      ix,
+      marginAccount.owner,
+      marginAccount.address,
+      this.programs.config.marginPoolProgramId,
+      this.addresses.marginPoolAdapterMetadata,
+      await this.makeMarginRefreshPositionInstruction(marginAccount.address, token_metadata.pythPrice)
+    )
+    await this.withAdapterInvoke(
+      ix,
+      marginAccount.owner,
+      marginAccount.address,
+      this.programs.config.marginPoolProgramId,
+      this.addresses.marginPoolAdapterMetadata,
+      await this.makeMarginBorrowInstruction(
+        marginAccount.address,
+        deposit_position.address,
+        loan_position.address,
+        amount
       )
-      .add(
-        await this.makeAdapterInvokeInstruction(
-          marginAccount.owner,
-          marginAccount.address,
-          this.programs.config.marginPoolProgramId,
-          this.addresses.marginPoolAdapterMetadata,
-          await this.makeMarginBorrowInstruction(
-            marginAccount.address,
-            deposit_position.address,
-            loan_position.address,
-            amount
-          )
-        )
-      )
-    return await marginAccount.provider.sendAndConfirm(tx)
+    )
+    return await marginAccount.provider.sendAndConfirm(new Transaction().add(...ix))
   }
 
   async makeMarginRefreshPositionInstruction(
@@ -428,8 +429,9 @@ export class MarginPool {
     const loan_position = await marginAccount.getOrCreatePosition(this.addresses.loanNoteMint)
     assert(loan_position)
 
-    const tx = new Transaction()
-    const ix = await this.makeAdapterInvokeInstruction(
+    const ix: TransactionInstruction[] = []
+    await this.withAdapterInvoke(
+      ix,
       marginAccount.owner,
       marginAccount.address,
       this.programs.config.marginPoolProgramId,
@@ -441,9 +443,8 @@ export class MarginPool {
         PoolAmount.notes(amount)
       )
     )
-    tx.add(ix)
 
-    return await marginAccount.provider.sendAndConfirm(tx)
+    return await marginAccount.provider.sendAndConfirm(new Transaction().add(...ix))
   }
 
   async makeMarginRepayInstruction(
@@ -481,7 +482,9 @@ export class MarginPool {
     assert(depositPosition)
 
     const tx = new Transaction()
-    const ix = await this.makeAdapterInvokeInstruction(
+    const ix: TransactionInstruction[] = []
+    await this.withAdapterInvoke(
+      ix,
       marginAccount.owner,
       marginAccount.address,
       this.programs.config.marginPoolProgramId,
@@ -493,7 +496,7 @@ export class MarginPool {
         PoolAmount.tokens(amount)
       )
     )
-    tx.add(ix)
+    tx.add(...ix)
 
     return await marginAccount.provider.sendAndConfirm(tx)
   }
@@ -518,14 +521,15 @@ export class MarginPool {
       .instruction()
   }
 
-  async makeAdapterInvokeInstruction(
+  async withAdapterInvoke(
+    instructions: TransactionInstruction[],
     owner: Address,
     marginAccount: Address,
     adapterProgram: Address,
     adapterMetadata: Address,
     adapterInstruction: TransactionInstruction
-  ): Promise<TransactionInstruction> {
-    return await this.programs.margin.methods
+  ): Promise<void> {
+    const ix = await this.programs.margin.methods
       .adapterInvoke(
         adapterInstruction.keys.slice(1).map(accountMeta => {
           return { isSigner: false, isWritable: accountMeta.isWritable }
@@ -548,5 +552,6 @@ export class MarginPool {
         })
       )
       .instruction()
+    instructions.push(ix)
   }
 }

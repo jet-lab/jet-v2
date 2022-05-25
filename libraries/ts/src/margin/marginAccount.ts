@@ -123,25 +123,30 @@ export class MarginAccount {
     return !!info
   }
 
+  async exists(): Promise<boolean> {
+    return await MarginAccount.exists(this.programs, this.owner, this.seed)
+  }
+
   async createAccount() {
-    const tx = new Transaction()
-    tx.add(await this.makeCreateAccountInstruction())
-    return await this.provider.sendAndConfirm!(tx)
+    const ix: TransactionInstruction[] = []
+    await this.withCreateAccount(ix)
+    return await this.provider.sendAndConfirm(new Transaction().add(...ix))
   }
 
   /// Get instruction to create the account
-  async makeCreateAccountInstruction(): Promise<TransactionInstruction> {
-    const ownerAddress = translateAddress(this.owner)
-
-    return await this.programs.margin.methods
-      .createAccount(this.seed)
-      .accounts({
-        owner: this.owner,
-        payer: this.provider.wallet.publicKey,
-        marginAccount: this.address,
-        systemProgram: SystemProgram.programId
-      })
-      .instruction()
+  async withCreateAccount(instructions: TransactionInstruction[]): Promise<void> {
+    if (!(await this.exists())) {
+      const ix = await this.programs.margin.methods
+        .createAccount(this.seed)
+        .accounts({
+          owner: this.owner,
+          payer: this.provider.wallet.publicKey,
+          marginAccount: this.address,
+          systemProgram: SystemProgram.programId
+        })
+        .instruction()
+      instructions.push(ix)
+    }
   }
 
   //Deposit
@@ -157,12 +162,10 @@ export class MarginAccount {
     const position = await this.getOrCreatePosition(marginPool.addresses.depositNoteMint)
     assert(position)
 
-    const tx = new Transaction()
-    tx.add(
-      await marginPool.makeDepositInstruction(this.owner, source, position.address, amount),
-      await this.makeUpdatePositionBalanceInstruction(position.address)
-    )
-    return await this.provider.sendAndConfirm!(tx)
+    const ix: TransactionInstruction[] = []
+    await marginPool.withDeposit(ix, this.owner, source, position.address, amount)
+    await this.withUpdatePositionBalance(ix, position.address)
+    return await this.provider.sendAndConfirm(new Transaction().add(...ix))
   }
 
   //TODO Withdraw
@@ -197,9 +200,9 @@ export class MarginAccount {
   }
 
   async updatePositionBalance(account: PublicKey) {
-    const tx = new Transaction()
-    tx.add(await this.makeUpdatePositionBalanceInstruction(account))
-    return await this.provider.sendAndConfirm!(tx)
+    const ix: TransactionInstruction[] = []
+    await this.withUpdatePositionBalance(ix, account)
+    return await this.provider.sendAndConfirm(new Transaction().add(...ix))
   }
 
   /// Get instruction to update the accounting for assets in
@@ -208,21 +211,21 @@ export class MarginAccount {
   /// # Params
   ///
   /// `account` - The account address that has had a balance change
-  async makeUpdatePositionBalanceInstruction(account: PublicKey): Promise<TransactionInstruction> {
-    return await this.programs.margin.methods
+  async withUpdatePositionBalance(instructions: TransactionInstruction[], account: PublicKey): Promise<void> {
+    const ix = await this.programs.margin.methods
       .updatePositionBalance()
       .accounts({
         marginAccount: this.address,
         tokenAccount: account
       })
       .instruction()
+    instructions.push(ix)
   }
 
   async registerPosition(token_mint: PublicKey): Promise<TransactionSignature> {
-    let tx = new Transaction()
-    const [tokenAccount, ix] = await this.makeRegisterPositionInstruction(token_mint)
-    tx.add(ix)
-    return this.provider.sendAndConfirm!(tx)
+    let ix: TransactionInstruction[] = []
+    const tokenAccount = await this.withRegisterPosition(ix, token_mint)
+    return this.provider.sendAndConfirm(new Transaction().add(...ix))
   }
 
   /// Get instruction to register new position
@@ -236,7 +239,7 @@ export class MarginAccount {
   ///
   /// Returns the instruction, and the address of the token account to be
   /// created for the position.
-  async makeRegisterPositionInstruction(token_mint: PublicKey): Promise<[PublicKey, TransactionInstruction]> {
+  async withRegisterPosition(instructions: TransactionInstruction[], token_mint: PublicKey): Promise<PublicKey> {
     const token_account = findDerivedAccount(this.programs.config.marginProgramId, this.address, token_mint)
 
     const metadata = findDerivedAccount(this.programs.config.metadataProgramId, token_mint)
@@ -255,14 +258,14 @@ export class MarginAccount {
         systemProgram: SystemProgram.programId
       })
       .instruction()
-    return [token_account, ix]
+    instructions.push(ix)
+    return token_account
   }
 
   async closePosition(tokenAccount: PublicKey) {
-    const tx = new Transaction()
-    const ix = await this.makeClosePositionInstruction(tokenAccount)
-    tx.add(ix)
-    return await this.provider.sendAndConfirm(tx)
+    const ix: TransactionInstruction[] = []
+    await this.withClosePosition(ix, tokenAccount)
+    return await this.provider.sendAndConfirm(new Transaction().add(...ix))
   }
 
   /// Get instruction to close a position
@@ -270,10 +273,10 @@ export class MarginAccount {
   /// # Params
   ///
   /// `token_account` - The address of the token account for the position being closed
-  async makeClosePositionInstruction(tokenAccount: PublicKey): Promise<TransactionInstruction> {
+  async withClosePosition(instructions: TransactionInstruction[], tokenAccount: PublicKey): Promise<void> {
     const authority = findDerivedAccount(this.programs.config.controlProgramId)
 
-    return await this.programs.margin.methods
+    const ix = await this.programs.margin.methods
       .closePosition()
       .accounts({
         authority: authority,
@@ -283,6 +286,7 @@ export class MarginAccount {
         tokenProgram: TOKEN_PROGRAM_ID
       })
       .instruction()
+    instructions.push(ix)
   }
 
   static async getTokenAccountInfo(connection: Connection, address: PublicKey) {
