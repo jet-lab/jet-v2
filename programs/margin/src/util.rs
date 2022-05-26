@@ -19,6 +19,8 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use anchor_lang::prelude::{Clock, SolanaSysvar};
 
+use crate::ErrorCode;
+
 /// Get the current timestamp in seconds since Unix epoch
 ///
 /// The function returns a [anchor_lang::prelude::Clock] value in the bpf arch,
@@ -39,5 +41,25 @@ pub fn get_timestamp() -> u64 {
             let time = SystemTime::now();
             time.duration_since(UNIX_EPOCH).unwrap().as_secs()
         }
+    }
+}
+
+pub trait RequirePosition<T> {
+    fn require(self) -> std::result::Result<T, ErrorCode>;
+    fn require_ref(&self) -> std::result::Result<&T, ErrorCode>;
+    fn require_mut(&mut self) -> std::result::Result<&mut T, ErrorCode>;
+}
+
+impl<T> RequirePosition<T> for Option<T> {
+    fn require(self) -> std::result::Result<T, ErrorCode> {
+        self.ok_or(ErrorCode::PositionNotRegistered)
+    }
+
+    fn require_ref(&self) -> std::result::Result<&T, ErrorCode> {
+        self.as_ref().ok_or(ErrorCode::PositionNotRegistered)
+    }
+
+    fn require_mut(&mut self) -> std::result::Result<&mut T, ErrorCode> {
+        self.as_mut().ok_or(ErrorCode::PositionNotRegistered)
     }
 }

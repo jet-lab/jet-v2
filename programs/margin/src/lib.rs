@@ -159,7 +159,8 @@ pub enum ErrorCode {
     /// 141000 - An adapter did not return anything
     NoAdapterResult = 135_000,
 
-    /// 141001 - The program that set the result wat not the adapter
+    /// 141001
+    #[msg("The program that set the result was not the adapter")]
     WrongProgramAdapterResult = 135_001,
 
     /// 141002

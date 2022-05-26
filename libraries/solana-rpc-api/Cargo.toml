@@ -1,5 +1,5 @@
 [package]
-name = "jet-proto-solana-rpc-api"
+name = "jet-solana-rpc-api"
 version = "1.0.0"
 edition = "2021"
 

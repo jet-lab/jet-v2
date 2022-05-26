@@ -1,5 +1,5 @@
 [package]
-name = "jet-proto-margin"
+name = "jet-margin"
 version = "0.1.0"
 description = "Manager for margin accounts"
 edition = "2018"
@@ -28,7 +28,7 @@ anchor-spl = { git = "https://github.com/jet-lab/anchor", branch = "master" }
 
 jet-proto-math = { git = "https://github.com/jet-lab/program-libraries", branch = "main" }
 jet-proto-proc-macros = "1"
-jet-proto-metadata = { path = "../metadata", features = ["no-entrypoint"] }
+jet-metadata = { path = "../metadata", features = ["no-entrypoint"] }
 
 [dev-dependencies]
 serde = { version = "1.0", features = ["derive"] }

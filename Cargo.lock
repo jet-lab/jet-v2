@@ -1357,17 +1357,18 @@ dependencies = [
  "bincode",
  "bytemuck",
  "bytes",
- "jet-proto-control",
- "jet-proto-margin",
- "jet-proto-margin-pool",
- "jet-proto-margin-sdk",
- "jet-proto-margin-swap",
- "jet-proto-metadata",
- "jet-proto-simulation",
- "jet-proto-solana-rpc-api",
+ "jet-control",
+ "jet-margin",
+ "jet-margin-pool",
+ "jet-margin-sdk",
+ "jet-margin-swap",
+ "jet-metadata",
+ "jet-simulation",
+ "jet-solana-rpc-api",
  "parking_lot 0.12.0",
- "pyth-client",
+ "pyth-sdk-solana",
  "rand 0.7.3",
+ "serial_test",
  "solana-sdk",
  "spl-token",
  "tokio",
@@ -1520,26 +1521,26 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1aab8fc367588b89dcee83ab0fd66b72b50b72fa1904d7095045ace2b0c81c35"
 
 [[package]]
-name = "jet-proto-control"
+name = "jet-control"
 version = "0.1.0"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
- "jet-proto-margin-pool",
- "jet-proto-metadata",
+ "jet-margin-pool",
+ "jet-metadata",
  "solana-program",
 ]
 
 [[package]]
-name = "jet-proto-margin"
+name = "jet-margin"
 version = "0.1.0"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
  "bitflags",
  "bytemuck",
+ "jet-metadata",
  "jet-proto-math",
- "jet-proto-metadata",
  "jet-proto-proc-macros",
  "serde",
  "serde_test",
@@ -1547,22 +1548,22 @@ dependencies = [
 ]
 
 [[package]]
-name = "jet-proto-margin-pool"
+name = "jet-margin-pool"
 version = "0.1.0"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
  "bitflags",
  "bytemuck",
- "jet-proto-margin",
+ "jet-margin",
+ "jet-metadata",
  "jet-proto-math",
- "jet-proto-metadata",
  "pyth-sdk-solana",
  "static_assertions",
 ]
 
 [[package]]
-name = "jet-proto-margin-sdk"
+name = "jet-margin-sdk"
 version = "0.1.0"
 dependencies = [
  "anchor-client",
@@ -1572,12 +1573,12 @@ dependencies = [
  "async-trait",
  "bytemuck",
  "futures",
- "jet-proto-control",
- "jet-proto-margin",
- "jet-proto-margin-pool",
- "jet-proto-margin-swap",
- "jet-proto-metadata",
- "jet-proto-solana-rpc-api",
+ "jet-control",
+ "jet-margin",
+ "jet-margin-pool",
+ "jet-margin-swap",
+ "jet-metadata",
+ "jet-solana-rpc-api",
  "solana-sdk",
  "spl-token",
  "spl-token-swap",
@@ -1586,14 +1587,22 @@ dependencies = [
 ]
 
 [[package]]
-name = "jet-proto-margin-swap"
+name = "jet-margin-swap"
 version = "0.1.0"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
- "jet-proto-margin",
- "jet-proto-margin-pool",
+ "jet-margin",
+ "jet-margin-pool",
  "spl-token-swap",
+]
+
+[[package]]
+name = "jet-metadata"
+version = "0.1.0"
+dependencies = [
+ "anchor-lang",
+ "solana-program",
 ]
 
 [[package]]
@@ -1605,14 +1614,6 @@ dependencies = [
  "static_assertions",
  "thiserror",
  "uint",
-]
-
-[[package]]
-name = "jet-proto-metadata"
-version = "0.1.0"
-dependencies = [
- "anchor-lang",
- "solana-program",
 ]
 
 [[package]]
@@ -1628,7 +1629,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "jet-proto-simulation"
+name = "jet-simulation"
 version = "0.1.0"
 dependencies = [
  "anchor-lang",
@@ -1637,15 +1638,15 @@ dependencies = [
  "bincode",
  "bytemuck",
  "futures",
- "jet-proto-control",
- "jet-proto-margin",
- "jet-proto-margin-pool",
- "jet-proto-margin-sdk",
+ "jet-control",
+ "jet-margin",
+ "jet-margin-pool",
+ "jet-margin-sdk",
+ "jet-metadata",
  "jet-proto-math",
- "jet-proto-metadata",
- "jet-proto-solana-rpc-api",
+ "jet-solana-rpc-api",
  "parking_lot 0.12.0",
- "pyth-client",
+ "pyth-sdk-solana",
  "rand 0.7.3",
  "solana-client",
  "solana-sdk",
@@ -1656,7 +1657,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "jet-proto-solana-rpc-api"
+name = "jet-solana-rpc-api"
 version = "1.0.0"
 dependencies = [
  "anyhow",
@@ -2194,22 +2195,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "pyth-client"
-version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f779e98b8c8016d0c1409247a204bd4fcdea8b67ceeef545f04e324d66c49e52"
-dependencies = [
- "borsh 0.9.3",
- "borsh-derive 0.9.3",
- "bytemuck",
- "num-derive",
- "num-traits",
- "serde",
- "solana-program",
- "thiserror",
-]
-
-[[package]]
 name = "pyth-sdk"
 version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2667,6 +2652,30 @@ dependencies = [
  "ryu",
  "serde",
  "yaml-rust",
+]
+
+[[package]]
+name = "serial_test"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e5bcc41d18f7a1d50525d080fd3e953be87c4f9f1a974f3c21798ca00d54ec15"
+dependencies = [
+ "lazy_static",
+ "parking_lot 0.11.2",
+ "serial_test_derive",
+]
+
+[[package]]
+name = "serial_test_derive"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2881bccd7d60fb32dfa3d7b3136385312f8ad75e2674aab2852867a09790cae8"
+dependencies = [
+ "proc-macro-error",
+ "proc-macro2 1.0.37",
+ "quote 1.0.18",
+ "rustversion",
+ "syn 1.0.91",
 ]
 
 [[package]]

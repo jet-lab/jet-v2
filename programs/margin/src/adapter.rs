@@ -24,8 +24,8 @@ use anchor_spl::token::TokenAccount;
 use jet_proto_math::Number128;
 
 use crate::{
-    AccountPosition, AdapterPositionFlags, ErrorCode, MarginAccount, PriceInfo,
-    MAX_ORACLE_CONFIDENCE, MAX_ORACLE_STALENESS,
+    AccountPosition, AdapterPositionFlags, ErrorCode, MarginAccount, PriceInfo, SignerSeeds,
+    MAX_ORACLE_CONFIDENCE, MAX_ORACLE_STALENESS, util::RequirePosition,
 };
 
 pub struct InvokeAdapter<'a, 'info> {
@@ -62,12 +62,13 @@ pub enum PositionChange {
     Flags(AdapterPositionFlags, bool),
 
     /// The margin program will fail the current instruction if this position is not registered.
+    /// The included Pubkey is the token account containing the balance for this position
     ///
     /// Example: This instruction involves an action by the owner of the margin
     /// account that increases a claim balance in their account, so the margin
     /// program must verify that the claim is registered as a position before
     /// allowing the instruction to complete successfully.
-    ExpectPosition,
+    ExpectPosition(Pubkey),
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy)]
@@ -107,14 +108,10 @@ pub fn invoke_signed(
     account_metas: Vec<CompactAccountMeta>,
     data: Vec<u8>,
 ) -> Result<()> {
+    let signer = ctx.margin_account.load()?.signer_seeds_owned();
     let (instruction, account_infos) = construct_invocation(ctx, account_metas, data);
 
-    let ma = ctx.margin_account.load()?;
-    program::invoke_signed(
-        &instruction,
-        &account_infos,
-        &[&[ma.owner.as_ref(), &ma.user_seed, &[ma.bump_seed[0]]]],
-    )?;
+    program::invoke_signed(&instruction, &account_infos, &[&signer.signer_seeds()])?;
 
     handle_adapter_result(ctx)
 }
@@ -158,21 +155,27 @@ fn handle_adapter_result(ctx: &InvokeAdapter) -> Result<()> {
 
     let result = match program::get_return_data() {
         None => AdapterResult::default(),
-        Some((program_id, _)) if program_id != ctx.adapter_program.key() => {
-            return Err(ErrorCode::WrongProgramAdapterResult.into())
-        }
+        Some((program_id, _)) if program_id != ctx.adapter_program.key() => AdapterResult::default(),
         Some((_, data)) => AdapterResult::deserialize(&mut &data[..])?,
     };
 
     let mut margin_account = ctx.margin_account.load_mut()?;
     for (mint, changes) in result.position_changes {
-        let position = margin_account.get_position_mut(&mint)?;
+        let mut position = margin_account.get_position_mut(&mint);
         for change in changes {
             match change {
-                PositionChange::Price(px) => update_price(ctx, position, px)?,
-                PositionChange::Flags(flags, true) => position.flags |= flags,
-                PositionChange::Flags(flags, false) => position.flags &= !flags,
-                PositionChange::ExpectPosition => (), // get_position_mut verified that the position exists
+                PositionChange::Price(px) => {
+                    if let Some(pos) = &mut position {
+                        update_price(ctx, *pos, px)?;
+                    }
+                }
+                PositionChange::Flags(flags, true) => position.require_mut()?.flags |= flags,
+                PositionChange::Flags(flags, false) => position.require_mut()?.flags &= !flags,
+                PositionChange::ExpectPosition(pubkey) => {
+                    if position.require_mut()?.address != pubkey {
+                        return Err(error!(ErrorCode::PositionNotRegistered));
+                    }
+                }
             }
         }
     }
@@ -183,17 +186,18 @@ fn handle_adapter_result(ctx: &InvokeAdapter) -> Result<()> {
 fn update_balances(ctx: &InvokeAdapter) -> Result<()> {
     for account_info in ctx.remaining_accounts {
         if account_info.owner == &TokenAccount::owner() {
-            let account = TokenAccount::try_deserialize(&mut &**account_info.try_borrow_data()?)?;
-            if account.owner == ctx.margin_account.key() {
-                if let Err(err) = ctx.margin_account.load_mut()?.set_position_balance(
-                    &account.mint,
-                    account_info.key,
-                    account.amount,
-                ) {
-                    match err {
-                        Error::AnchorError(a)
-                            if a.error_code_number == ErrorCode::PositionNotRegistered.into() => {}
-                        _ => Err(err)?,
+            if let Ok(account) =
+                TokenAccount::try_deserialize(&mut &**account_info.try_borrow_data()?)
+            {
+                // todo security: should this check if it's a token account some other way?
+                if account.owner == ctx.margin_account.key() {
+                    match ctx.margin_account.load_mut()?.set_position_balance(
+                        &account.mint,
+                        account_info.key,
+                        account.amount,
+                    ) {
+                        Ok(()) | Err(ErrorCode::PositionNotRegistered) => (),
+                        Err(err) => Err(err)?,
                     }
                 }
             }
@@ -221,15 +225,6 @@ fn update_price(
         }
         _ => PriceInfo::new_valid(entry.exponent, entry.value, clock.unix_timestamp as u64),
     };
-
-    match position.set_price(ctx.adapter_program.key, &price) {
-        Err(Error::AnchorError(e))
-            if e.error_code_number
-                == (ErrorCode::UnknownPosition as u32 + anchor_lang::error::ERROR_CODE_OFFSET) =>
-        {
-            Ok(())
-        }
-        Err(e) => Err(e),
-        Ok(()) => Ok(()),
-    }
+    
+    position.set_price(ctx.adapter_program.key, &price).map_err(|e| error!(e))
 }
