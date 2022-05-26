@@ -104,6 +104,7 @@ pub fn withdraw_handler(ctx: Context<Withdraw>, amount: Amount) -> Result<()> {
         ctx.accounts.burn_note_context().with_signer(&signer),
         withdraw_amount.notes,
     )?;
+
     emit!(events::Withdraw {
         margin_pool: ctx.accounts.margin_pool.key(),
         vault: ctx.accounts.vault.key(),
@@ -113,6 +114,10 @@ pub fn withdraw_handler(ctx: Context<Withdraw>, amount: Amount) -> Result<()> {
         destination: ctx.accounts.destination.key(),
         withdraw_tokens: withdraw_amount.tokens,
         withdraw_notes: withdraw_amount.notes,
+        new_pool_deposit_tokens: pool.deposit_tokens, 
+        new_pool_deposit_notes: pool.deposit_notes, 
+        new_pool_loan_notes: pool.loan_notes, 
+        accrued_until: pool.accrued_until, 
     });
     Ok(())
 }

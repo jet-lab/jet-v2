@@ -105,6 +105,7 @@ pub fn deposit_handler(ctx: Context<Deposit>, token_amount: u64) -> Result<()> {
         ctx.accounts.mint_note_context().with_signer(&signer),
         deposit_amount.notes,
     )?;
+    
     emit!(events::Deposit {
         margin_pool: ctx.accounts.margin_pool.key(),
         vault: ctx.accounts.vault.key(),
@@ -114,6 +115,10 @@ pub fn deposit_handler(ctx: Context<Deposit>, token_amount: u64) -> Result<()> {
         destination: ctx.accounts.destination.key(),
         deposit_tokens: deposit_amount.tokens,
         deposit_notes: deposit_amount.notes,
+        new_pool_deposit_tokens: pool.deposit_tokens, 
+        new_pool_deposit_notes: pool.deposit_notes, 
+        new_pool_loan_notes: pool.loan_notes, 
+        accrued_until: pool.accrued_until, 
     });
       
     Ok(())

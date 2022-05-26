@@ -87,7 +87,9 @@ pub fn margin_withdraw_handler(ctx: Context<MarginWithdraw>, amount: Amount) -> 
         .accounts
         .source
         .key()]))?;
-
+        
+    let pool = &ctx.accounts.margin_pool;
+    
     emit!(events::MarginWithdraw {
         margin_account: ctx.accounts.margin_account.key(),
         margin_pool: ctx.accounts.margin_pool.key(),
@@ -95,8 +97,12 @@ pub fn margin_withdraw_handler(ctx: Context<MarginWithdraw>, amount: Amount) -> 
         deposit_note_mint: ctx.accounts.deposit_note_mint.key(),
         source: ctx.accounts.source.key(),
         destination: ctx.accounts.destination.key(),
-        withdraw_amount: amount
+        withdraw_amount: amount,
+        new_pool_deposit_tokens: pool.deposit_tokens, 
+        new_pool_deposit_notes: pool.deposit_notes, 
+        new_pool_loan_notes: pool.loan_notes, 
+        accrued_until: pool.accrued_until, 
     });
-    
+
     Ok(())
 }

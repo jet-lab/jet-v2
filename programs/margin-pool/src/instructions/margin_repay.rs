@@ -160,6 +160,10 @@ pub fn margin_repay_handler(ctx: Context<MarginRepay>, max_amount: Amount) -> Re
         deposit_account: ctx.accounts.deposit_account.key(),
         repay_tokens_amount: repay_amount.tokens,
         repay_notes_amount: repay_amount.notes,
+        new_pool_deposit_tokens: pool.deposit_tokens, 
+        new_pool_deposit_notes: pool.deposit_notes, 
+        new_pool_loan_notes: pool.loan_notes, 
+        accrued_until: pool.accrued_until, 
     });
 
     Ok(())

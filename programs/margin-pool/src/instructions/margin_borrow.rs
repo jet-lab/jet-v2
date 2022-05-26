@@ -130,7 +130,7 @@ pub fn margin_borrow_handler(ctx: Context<MarginBorrow>, token_amount: u64) -> R
         ctx.accounts.loan_account.key(),
         ctx.accounts.deposit_account.key(),
     ]))?;
-    
+
     emit!(events::MarginBorrow {
         margin_account: ctx.accounts.margin_account.key(),
         margin_pool: ctx.accounts.margin_pool.key(),
@@ -140,6 +140,10 @@ pub fn margin_borrow_handler(ctx: Context<MarginBorrow>, token_amount: u64) -> R
         deposit_account: ctx.accounts.deposit_account.key(),
         borrow_tokens_amount: borrow_amount.tokens,
         borrow_notes_amount: borrow_amount.notes,
+        new_pool_deposit_tokens: pool.deposit_tokens, 
+        new_pool_deposit_notes: pool.deposit_notes, 
+        new_pool_loan_notes: pool.loan_notes, 
+        accrued_until: pool.accrued_until, 
     });
 
     Ok(())
