@@ -155,10 +155,7 @@ fn handle_adapter_result(ctx: &InvokeAdapter) -> Result<()> {
 
     let result = match program::get_return_data() {
         None => AdapterResult::default(),
-        Some((program_id, _)) if program_id != ctx.adapter_program.key() => {
-            msg!("expected adapter: {}\nactual return from: {}", ctx.adapter_program.key(), program_id);
-            return Err(error!(ErrorCode::WrongProgramAdapterResult))
-        }
+        Some((program_id, _)) if program_id != ctx.adapter_program.key() => AdapterResult::default(),
         Some((_, data)) => AdapterResult::deserialize(&mut &data[..])?,
     };
 

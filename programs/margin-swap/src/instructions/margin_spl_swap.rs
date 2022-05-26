@@ -16,7 +16,6 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 use anchor_spl::token::Token;
-use jet_margin::AdapterResult;
 
 use crate::*;
 
@@ -174,10 +173,6 @@ pub fn margin_spl_swap_handler(
         ctx.accounts.deposit_destination_context(),
         destination_amount,
     )?;
-    
-    // this is only here to clear the adapter result that was set by the cpi to margin-pools
-    // based on the assumption from hosted tests that this state leaks to the margin program.
-    jet_margin::write_adapter_result(&AdapterResult::default())?;
 
     Ok(())
 }
