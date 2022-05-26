@@ -1,19 +1,35 @@
-import assert from 'assert';
-import * as BufferLayout from "buffer-layout";
-import { BN, InstructionNamespace } from '@project-serum/anchor';
-import { ASSOCIATED_TOKEN_PROGRAM_ID, createAssociatedTokenAccountInstruction, getAssociatedTokenAddress, MintLayout, TOKEN_PROGRAM_ID } from '@solana/spl-token';
-import { Account, Connection, PublicKey, sendAndConfirmTransaction, Signer, SYSVAR_RENT_PUBKEY, Transaction, TransactionInstruction } from '@solana/web3.js';
+import assert from "assert";
+import * as BufferLayout from "@solana/buffer-layout";
+import { BN, InstructionNamespace } from "@project-serum/anchor";
+import {
+  ASSOCIATED_TOKEN_PROGRAM_ID,
+  createAssociatedTokenAccountInstruction,
+  getAssociatedTokenAddress,
+  MintLayout,
+  TOKEN_PROGRAM_ID,
+} from "@solana/spl-token";
+import {
+  Account,
+  Connection,
+  PublicKey,
+  sendAndConfirmTransaction,
+  Signer,
+  SYSVAR_RENT_PUBKEY,
+  Transaction,
+  TransactionInstruction,
+} from "@solana/web3.js";
 
-import { buildInstructions } from '../../utils/idlBuilder';
-import { IDL as JetControlIDL, JetControl } from '../../types/jet_control';
-import { IDL as JetMarginIDL, JetMargin } from '../../types/jet_margin';
-import { IDL as JetMarginSwapIDL, JetMarginSwap } from '../../types/jet_margin_swap';
-import { MarginAccount } from '../marginAccount';
+import { buildInstructions } from "../../utils/idlBuilder";
+import { IDL as JetMarginIDL, JetMargin } from "../../types/jetMargin";
+import {
+  IDL as JetMarginSwapIDL,
+  JetMarginSwap,
+} from "../../types/jetMarginSwap";
 
-import { TokenSwap } from './index';
+import { TokenSwap } from "./index";
+import { JetControl, JetControlIdl } from "../..";
 
 export class MarginSwap {
-
   // Token swap
   tokenSwap: TokenSwap;
 
@@ -37,20 +53,29 @@ export class MarginSwap {
     marginSwapProgramId: PublicKey,
     marginSwapAdapterMetadata: PublicKey,
     metadataProgramId: PublicKey,
-    splTokenSwapProgramId: PublicKey,
+    splTokenSwapProgramId: PublicKey
   ) {
     this.tokenSwap = tokenSwap;
 
     assert(controlProgramId);
     this.controlProgramId = controlProgramId;
-    this.controlInstructions = buildInstructions(JetControlIDL, controlProgramId) as InstructionNamespace<JetControl>;
+    this.controlInstructions = buildInstructions(
+      JetControlIdl,
+      controlProgramId
+    ) as InstructionNamespace<JetControl>;
 
     assert(marginProgramId);
-    this.marginInstructions = buildInstructions(JetMarginIDL, marginProgramId) as InstructionNamespace<JetMargin>;
+    this.marginInstructions = buildInstructions(
+      JetMarginIDL,
+      marginProgramId
+    ) as InstructionNamespace<JetMargin>;
 
     assert(marginSwapProgramId);
     this.marginSwapProgramId = marginSwapProgramId;
-    this.marginSwapInstructions = buildInstructions(JetMarginSwapIDL, marginSwapProgramId) as InstructionNamespace<JetMarginSwap>;
+    this.marginSwapInstructions = buildInstructions(
+      JetMarginSwapIDL,
+      marginSwapProgramId
+    ) as InstructionNamespace<JetMarginSwap>;
     this.marginSwapAdapterMetadata = marginSwapAdapterMetadata;
 
     assert(metadataProgramId);
@@ -68,7 +93,7 @@ export class MarginSwap {
     marginProgramId: PublicKey,
     marginSwapProgramId: PublicKey,
     metadataProgramId: PublicKey,
-    splTokenSwapProgramId: PublicKey,
+    splTokenSwapProgramId: PublicKey
   ) {
     assert(controlProgramId);
     assert(marginSwapProgramId);
@@ -77,7 +102,7 @@ export class MarginSwap {
       connection,
       tokenSwapAddress,
       splTokenSwapProgramId,
-      payer,
+      payer
     );
     return new MarginSwap(
       tokenSwap,
@@ -85,8 +110,13 @@ export class MarginSwap {
       marginProgramId,
       marginSwapProgramId,
       metadataProgramId,
-      (await PublicKey.findProgramAddress([marginSwapProgramId.toBuffer()], metadataProgramId))[0],
-      splTokenSwapProgramId,
+      (
+        await PublicKey.findProgramAddress(
+          [marginSwapProgramId.toBuffer()],
+          metadataProgramId
+        )
+      )[0],
+      splTokenSwapProgramId
     );
   }
 
@@ -111,9 +141,8 @@ export class MarginSwap {
     ownerWithdrawFeeDenominator: number,
     hostFeeNumerator: number,
     hostFeeDenominator: number,
-    curveType: number,
+    curveType: number
   ): Promise<TokenSwap> {
-
     const tokenSwap: TokenSwap = await TokenSwap.createTokenSwap(
       connection,
       payer,
@@ -136,7 +165,7 @@ export class MarginSwap {
       ownerWithdrawFeeDenominator,
       hostFeeNumerator,
       hostFeeDenominator,
-      curveType,
+      curveType
     );
 
     return tokenSwap;
@@ -148,7 +177,7 @@ export class MarginSwap {
     delegate: PublicKey,
     owner: Account,
     amount: BN,
-    payer: Account,
+    payer: Account
   ): Promise<void> {
     let tx: Transaction = new Transaction();
     tx.add(
@@ -157,8 +186,8 @@ export class MarginSwap {
         account,
         delegate,
         owner.publicKey,
-        amount,
-      ),
+        amount
+      )
     );
     await sendAndConfirmTransaction(connection, tx, [payer, owner]);
   }
@@ -168,11 +197,11 @@ export class MarginSwap {
     account: PublicKey,
     delegate: PublicKey,
     owner: PublicKey,
-    amount: BN,
+    amount: BN
   ): TransactionInstruction {
-    const dataLayout = BufferLayout.struct([
-      BufferLayout.u8('instruction'),
-      BufferLayout.blob(8, 'amount'),
+    const dataLayout = BufferLayout.struct<any>([
+      BufferLayout.u8("instruction"),
+      BufferLayout.blob(8, "amount"),
     ]);
     const data = Buffer.alloc(dataLayout.span);
     dataLayout.encode(
@@ -180,12 +209,12 @@ export class MarginSwap {
         instruction: 4, // Approve instruction
         amount: new BN(amount).toArrayLike(Buffer, "le", 8),
       },
-      data,
+      data
     );
     let keys = [
-      {pubkey: account, isSigner: false, isWritable: true},
-      {pubkey: delegate, isSigner: false, isWritable: false},
-      {pubkey: owner, isSigner: true, isWritable: false},
+      { pubkey: account, isSigner: false, isWritable: true },
+      { pubkey: delegate, isSigner: false, isWritable: false },
+      { pubkey: owner, isSigner: true, isWritable: false },
     ];
     return new TransactionInstruction({
       keys,
@@ -198,7 +227,7 @@ export class MarginSwap {
     connection: Connection,
     payer: Signer,
     mint: PublicKey,
-    owner: PublicKey,
+    owner: PublicKey
   ): Promise<PublicKey> {
     const associatedToken = await getAssociatedTokenAddress(mint, owner, true);
 
@@ -209,11 +238,13 @@ export class MarginSwap {
         owner,
         mint,
         TOKEN_PROGRAM_ID,
-        ASSOCIATED_TOKEN_PROGRAM_ID,
+        ASSOCIATED_TOKEN_PROGRAM_ID
       )
     );
 
-    await sendAndConfirmTransaction(connection, transaction, [payer], { skipPreflight: true });
+    await sendAndConfirmTransaction(connection, transaction, [payer], {
+      skipPreflight: true,
+    });
 
     return associatedToken;
   }
@@ -222,21 +253,21 @@ export class MarginSwap {
     programId: PublicKey,
     mint: PublicKey,
     account: PublicKey,
-    owner: PublicKey,
+    owner: PublicKey
   ): TransactionInstruction {
     const keys = [
-      {pubkey: account, isSigner: false, isWritable: true},
-      {pubkey: mint, isSigner: false, isWritable: false},
-      {pubkey: owner, isSigner: false, isWritable: false},
-      {pubkey: SYSVAR_RENT_PUBKEY, isSigner: false, isWritable: false},
+      { pubkey: account, isSigner: false, isWritable: true },
+      { pubkey: mint, isSigner: false, isWritable: false },
+      { pubkey: owner, isSigner: false, isWritable: false },
+      { pubkey: SYSVAR_RENT_PUBKEY, isSigner: false, isWritable: false },
     ];
-    const dataLayout = BufferLayout.struct([BufferLayout.u8('instruction')]);
+    const dataLayout = BufferLayout.struct<any>([BufferLayout.u8("instruction")]);
     const data = Buffer.alloc(dataLayout.span);
     dataLayout.encode(
       {
         instruction: 1, // InitializeAccount instruction
       },
-      data,
+      data
     );
 
     return new TransactionInstruction({
@@ -246,13 +277,10 @@ export class MarginSwap {
     });
   }
 
-  static async getMintInfo(
-    connection: Connection,
-    mint: PublicKey,
-  ) {
+  static async getMintInfo(connection: Connection, mint: PublicKey) {
     const info = await connection.getAccountInfo(mint);
     if (info === null) {
-      throw new Error('Failed to find mint account');
+      throw new Error("Failed to find mint account");
     }
     if (!info.owner.equals(TOKEN_PROGRAM_ID)) {
       throw new Error(`Invalid mint owner: ${JSON.stringify(info.owner)}`);
@@ -263,5 +291,4 @@ export class MarginSwap {
     const data = Buffer.from(info.data);
     return MintLayout.decode(data);
   }
-
 }

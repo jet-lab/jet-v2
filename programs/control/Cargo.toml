@@ -1,5 +1,5 @@
 [package]
-name = "jet-proto-control"
+name = "jet-control"
 version = "0.1.0"
 description = "Created with Anchor"
 edition = "2018"
@@ -22,5 +22,5 @@ solana-program = "1.9"
 anchor-lang = { git = "https://github.com/jet-lab/anchor", branch = "master" }
 anchor-spl = { git = "https://github.com/jet-lab/anchor", branch = "master" }
 
-jet-proto-metadata = { path = "../metadata", features = ["cpi"] }
-jet-proto-margin-pool = { path = "../margin-pool", features = ["cpi"] }
+jet-metadata = { path = "../metadata", features = ["cpi"] }
+jet-margin-pool = { path = "../margin-pool", features = ["cpi"] }
