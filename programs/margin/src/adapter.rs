@@ -61,14 +61,14 @@ pub enum PositionChange {
     /// Flags that are false here will be unchanged in the position
     Flags(AdapterPositionFlags, bool),
 
-    /// The margin program will fail the current instruction if this position is not registered.
-    /// The included Pubkey is the token account containing the balance for this position
+    /// The margin program will fail the current instruction if this position is 
+    /// not registered at the provided address.
     ///
     /// Example: This instruction involves an action by the owner of the margin
     /// account that increases a claim balance in their account, so the margin
     /// program must verify that the claim is registered as a position before
     /// allowing the instruction to complete successfully.
-    ExpectPosition(Pubkey),
+    Expect(Pubkey),
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy)]
@@ -171,7 +171,7 @@ fn handle_adapter_result(ctx: &InvokeAdapter) -> Result<()> {
                 }
                 PositionChange::Flags(flags, true) => position.require_mut()?.flags |= flags,
                 PositionChange::Flags(flags, false) => position.require_mut()?.flags &= !flags,
-                PositionChange::ExpectPosition(pubkey) => {
+                PositionChange::Expect(pubkey) => {
                     if position.require_mut()?.address != pubkey {
                         return Err(error!(ErrorCode::PositionNotRegistered));
                     }
