@@ -65,6 +65,12 @@ impl TestRuntime {
             .entry(spl_token_swap::ID)
             .or_insert_with(|| Box::new(spl_token_swap::processor::Processor::process));
 
+        programs
+            .entry(spl_associated_token_account::ID)
+            .or_insert_with(|| {
+                Box::new(spl_associated_token_account::processor::process_instruction)
+            });
+
         let accounts = Mutex::new(HashMap::with_capacity(ACCOUNT_TABLE_SIZE));
         let signatures = Mutex::new(HashMap::new());
         let call_stack = parking_lot::ReentrantMutex::new(RefCell::new(vec![]));
