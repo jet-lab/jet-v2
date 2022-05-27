@@ -70,6 +70,7 @@ pub fn register_position_handler(ctx: Context<RegisterPosition>) -> Result<()> {
         TokenKind::NonCollateral => PositionKind::NoValue,
         TokenKind::Collateral => PositionKind::Deposit,
         TokenKind::Claim => PositionKind::Claim,
+        TokenKind::PastDueClaim => PositionKind::PastDueClaim,
     };
 
     account.register_position(
