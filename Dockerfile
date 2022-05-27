@@ -1,6 +1,6 @@
 FROM ubuntu:latest as programs
 
-ARG SOLANA_VERSION="1.9.13"
+ARG SOLANA_VERSION="1.10.8"
 
 COPY . /v2
 WORKDIR /v2
