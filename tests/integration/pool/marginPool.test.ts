@@ -75,7 +75,6 @@ describe("margin pool", () => {
     url: "http://127.0.0.1:8899/"
   })
 
-  /*
   it("Create oracles", async () => {
     USDC_oracle = Keypair.generate()
     await pythClient.createPriceAccount(ownerKeypair, USDC_oracle, 1, 0.01, -8)
@@ -87,6 +86,7 @@ describe("margin pool", () => {
     await createAuthority(connection, ownerKeypair)
   })
 
+  /*
   it("Register adapter", async () => {
     await registerAdapter(connection, ownerKeypair, marginPoolProgramId, ownerKeypair)
   })

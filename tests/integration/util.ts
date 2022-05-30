@@ -40,6 +40,11 @@ const controlInstructions = buildInstructions(JetControlIDL, controlProgramId) a
 export async function createAuthority(connection: Connection, payer: Keypair): Promise<void> {
   const [authority] = await PublicKey.findProgramAddress([], controlProgramId)
 
+  if (await connection.getAccountInfo(authority, 'processed' as Commitment)) {
+    // Account already exists.
+    return;
+  }
+
   const lamports = 1 * LAMPORTS_PER_SOL
   const airdropSignature = await connection.requestAirdrop(authority, lamports)
   await connection.confirmTransaction(airdropSignature)
