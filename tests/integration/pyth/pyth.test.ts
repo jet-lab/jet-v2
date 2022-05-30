@@ -28,6 +28,7 @@ describe('pyth-oracle', () => {
 
   const pythClient = new PythClient({ pythProgramId: "ASfdvRMCan2aoWtbDi5HLXhz2CFfgEkuDoxc57bJLKLX", url: "http://127.0.0.1:8899/" });
 
+  /*
   it('initialize', async () => {
     const price = 50000
     const expo = -6
@@ -54,5 +55,6 @@ describe('pyth-oracle', () => {
     assert.ok(feedDataAfter.price === newPrice)
     assert.ok(feedDataAfter.exponent === expo)
   })
+  */
 
 })
