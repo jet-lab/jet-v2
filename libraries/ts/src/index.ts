@@ -15,8 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-export * from "./utils/faucet";
-export * from "./amount";
-export * from "./margin";
-export * from "./token";
-export * from "./types";
+export * from "./utils/faucet"
+export * from "./margin"
+export * from "./token"
+export * from "./types"

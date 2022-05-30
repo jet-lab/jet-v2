@@ -1,18 +1,10 @@
 {
-  "extends": "@tsconfig/recommended/tsconfig.json",
+  "extends": "./tsconfig.base.json",
   "compilerOptions": {
-    "outDir": "lib",
-    "target": "es6",
-    "lib": ["es2019"],
-    "allowJs": true,
-    "checkJs": true,
-    "declaration": true,
-    "declarationMap": true,
-    "noImplicitAny": false,
-    "resolveJsonModule": true,
-    "sourceMap": true,
-    "esModuleInterop": true
-  },
-  "include": ["./src/**/*"],
-  "exclude": ["./src/**/*.test.js", "node_modules", "**/node_modules"]
+    "moduleResolution": "node",
+    "module": "es2022",
+    "target": "es2019",
+    "outDir": "dist/esm/",
+    "rootDir": "./src",
+  }
 }
