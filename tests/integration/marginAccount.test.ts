@@ -1,15 +1,11 @@
 import { assert } from "chai"
 import * as anchor from "@project-serum/anchor"
-import { AnchorProvider, Provider } from "@project-serum/anchor"
+import { AnchorProvider } from "@project-serum/anchor"
 import NodeWallet from "@project-serum/anchor/dist/cjs/nodewallet"
 import {
-  Account,
   ConfirmOptions,
-  Connection,
   Keypair,
   LAMPORTS_PER_SOL,
-  PublicKey,
-  SystemProgram
 } from "@solana/web3.js"
 
 import { MarginAccount } from "../../libraries/ts/src/margin"
@@ -17,23 +13,20 @@ import { createAuthority, createUserWallet } from "./util"
 import { MarginClient } from "../../libraries/ts/src/margin/marginClient"
 
 describe("margin account", () => {
-  const opts: ConfirmOptions = {
-    preflightCommitment: "processed",
-    commitment: "processed"
-  }
-  const connection = new Connection("http://localhost:8899", opts.preflightCommitment)
 
-  const payer = Keypair.generate()
-  const wallet = new NodeWallet(payer)
+  const confirmOptions: ConfirmOptions = { preflightCommitment: "processed", commitment: "processed" }
 
-  const provider = new AnchorProvider(connection, wallet, opts)
+  const provider = AnchorProvider.local(undefined, confirmOptions)
   anchor.setProvider(provider)
+
+  // @ts-ignore
+  const payer: Keypair = provider.wallet.payer;
 
   const programs = MarginClient.getPrograms(provider, "localnet")
 
   it("Fund payer", async () => {
-    const airdropSignature = await connection.requestAirdrop(payer.publicKey, 300 * LAMPORTS_PER_SOL)
-    await connection.confirmTransaction(airdropSignature)
+    const airdropSignature = await provider.connection.requestAirdrop(provider.wallet.publicKey, 300 * LAMPORTS_PER_SOL)
+    await provider.connection.confirmTransaction(airdropSignature)
   })
 
   let wallet_a: NodeWallet
@@ -44,14 +37,14 @@ describe("margin account", () => {
 
   it("Create two user wallets", async () => {
     // Create our two user wallets, with some SOL funding to get started
-    wallet_a = await createUserWallet(connection, 10 * LAMPORTS_PER_SOL)
-    wallet_b = await createUserWallet(connection, 10 * LAMPORTS_PER_SOL)
-    provider_a = new AnchorProvider(connection, wallet_a, opts)
-    provider_b = new AnchorProvider(connection, wallet_b, opts)
+    wallet_a = await createUserWallet(provider.connection, 10 * LAMPORTS_PER_SOL)
+    wallet_b = await createUserWallet(provider.connection, 10 * LAMPORTS_PER_SOL)
+    provider_a = new AnchorProvider(provider.connection, wallet_a, confirmOptions)
+    provider_b = new AnchorProvider(provider.connection, wallet_b, confirmOptions)
   })
 
   it("Create authority", async () => {
-    await createAuthority(connection, payer)
+    await createAuthority(provider.connection, payer)
   })
 
   it("Create margin accounts", async () => {

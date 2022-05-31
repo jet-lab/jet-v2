@@ -28,39 +28,35 @@ describe("margin pool", () => {
   const marginPoolProgramId: PublicKey = new PublicKey(MARGIN_CONFIG.localnet.marginPoolProgramId)
   const metadataProgramId: PublicKey = new PublicKey(MARGIN_CONFIG.localnet.metadataProgramId)
 
-  const opts: ConfirmOptions = { preflightCommitment: "processed", commitment: "processed" }
+  const confirmOptions: ConfirmOptions = { preflightCommitment: "processed", commitment: "processed" }
 
-  const connection = new Connection("http://localhost:8899", opts.preflightCommitment)
-
-  const payer = Keypair.generate()
-  const wallet = new NodeWallet(payer)
-  const ownerAccount: Account = new Account((wallet as NodeWallet).payer.secretKey)
-  const ownerKeypair: Keypair = Keypair.fromSecretKey((wallet as NodeWallet).payer.secretKey)
-
-  const provider = new AnchorProvider(connection, wallet, opts)
+  const provider = AnchorProvider.local(undefined, confirmOptions)
   anchor.setProvider(provider)
+
+  // @ts-ignore
+  const payer: Keypair = provider.wallet.payer;
 
   const programs = MarginClient.getPrograms(provider, "localnet")
 
   it("Fund payer", async () => {
-    const airdropSignature = await connection.requestAirdrop(payer.publicKey, 300 * LAMPORTS_PER_SOL)
-    await connection.confirmTransaction(airdropSignature)
+    const airdropSignature = await provider.connection.requestAirdrop(provider.wallet.publicKey, 300 * LAMPORTS_PER_SOL)
+    await provider.connection.confirmTransaction(airdropSignature)
   })
 
   let USDC: [PublicKey, PublicKey]
   let TSOL: [PublicKey, PublicKey]
 
   it("Create tokens", async () => {
-    USDC = await createToken(connection, ownerKeypair, 6, 10_000_000)
-    const usdc_supply = await getMintSupply(connection, USDC[0], 6)
+    USDC = await createToken(provider.connection, payer, 6, 10_000_000)
+    const usdc_supply = await getMintSupply(provider.connection, USDC[0], 6)
     assert(usdc_supply > 0)
-    const usdc_balance = await getTokenBalance(connection, opts.commitment, USDC[1])
+    const usdc_balance = await getTokenBalance(provider.connection, confirmOptions.commitment, USDC[1])
     assert(usdc_balance > 0)
 
-    TSOL = await createToken(connection, ownerKeypair, 9, 10_000)
-    const tsol_supply = await getMintSupply(connection, TSOL[0], 9)
+    TSOL = await createToken(provider.connection, payer, 9, 10_000)
+    const tsol_supply = await getMintSupply(provider.connection, TSOL[0], 9)
     assert(tsol_supply > 0)
-    const tsol_balance = await getTokenBalance(connection, opts.commitment, TSOL[1])
+    const tsol_balance = await getTokenBalance(provider.connection, confirmOptions.commitment, TSOL[1])
     assert(tsol_balance > 0)
   })
 
@@ -77,18 +73,18 @@ describe("margin pool", () => {
 
   it("Create oracles", async () => {
     USDC_oracle = Keypair.generate()
-    await pythClient.createPriceAccount(ownerKeypair, USDC_oracle, 1, 0.01, -8)
+    await pythClient.createPriceAccount(payer, USDC_oracle, 1, 0.01, -8)
     TSOL_oracle = Keypair.generate()
-    await pythClient.createPriceAccount(ownerKeypair, TSOL_oracle, 100, 1, -8)
+    await pythClient.createPriceAccount(payer, TSOL_oracle, 100, 1, -8)
   })
 
   it("Create authority", async () => {
-    await createAuthority(connection, ownerKeypair)
+    await createAuthority(provider.connection, payer)
   })
 
   /*
   it("Register adapter", async () => {
-    await registerAdapter(connection, ownerKeypair, marginPoolProgramId, ownerKeypair)
+    await registerAdapter(provider.connection, payer, marginPoolProgramId, payer)
   })
 
   const ONE_USDC: number = 1_000_000

@@ -26,6 +26,7 @@ import {
   Transaction,
   TransactionSignature
 } from "@solana/web3.js"
+import assert from 'assert'
 
 import MARGIN_CONFIG from "../../libraries/ts/src/margin/config.json"
 
@@ -73,6 +74,7 @@ export async function registerAdapter(
   console.log(await connection.getAccountInfo(metadataAccount, "processed" as Commitment))
   if (await connection.getAccountInfo(metadataAccount, "processed" as Commitment)) {
     // Metadata account already exists.
+    assert(false);
     return
   }
 
