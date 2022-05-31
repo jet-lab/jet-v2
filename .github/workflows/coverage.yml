@@ -93,3 +93,6 @@ jobs:
         with:
           files: lcov.info
           fail_ci_if_error: true
+      
+      - name: TS Integration Tests
+        run: anchor test --skip-lint
