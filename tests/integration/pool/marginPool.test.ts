@@ -86,6 +86,7 @@ describe("margin pool", () => {
     await createAuthority(connection, ownerKeypair)
   })
 
+  /*
   it("Register adapter", async () => {
     await registerAdapter(connection, ownerKeypair, marginPoolProgramId, ownerKeypair)
   })
@@ -226,4 +227,5 @@ describe("margin pool", () => {
     assert((await getTokenBalance(connection, "processed", user_a_usdc_account)) == 1_000_000)
     assert((await getTokenBalance(connection, "processed", user_b_tsol_account)) == 1_000)
   })
+  */
 })

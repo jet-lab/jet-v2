@@ -40,6 +40,11 @@ const controlInstructions = buildInstructions(JetControlIDL, controlProgramId) a
 export async function createAuthority(connection: Connection, payer: Keypair): Promise<void> {
   const [authority] = await PublicKey.findProgramAddress([], controlProgramId)
 
+  if (await connection.getAccountInfo(authority, "processed" as Commitment)) {
+    // Authority account already exists.
+    return
+  }
+
   const lamports = 1 * LAMPORTS_PER_SOL
   const airdropSignature = await connection.requestAirdrop(authority, lamports)
   await connection.confirmTransaction(airdropSignature)
@@ -63,6 +68,14 @@ export async function registerAdapter(
   adapterProgramId: PublicKey,
   payer: Keypair
 ): Promise<void> {
+  const [metadataAccount] = await PublicKey.findProgramAddress([adapterProgramId.toBuffer()], marginMetadataProgramId)
+
+  console.log(await connection.getAccountInfo(metadataAccount, "processed" as Commitment))
+  if (await connection.getAccountInfo(metadataAccount, "processed" as Commitment)) {
+    // Metadata account already exists.
+    return
+  }
+
   const [authority] = await PublicKey.findProgramAddress([], controlProgramId)
 
   const ix = controlInstructions.registerAdapter({
@@ -70,7 +83,7 @@ export async function registerAdapter(
       requester: requester.publicKey,
       authority,
       adapter: adapterProgramId,
-      metadataAccount: (await PublicKey.findProgramAddress([adapterProgramId.toBuffer()], marginMetadataProgramId))[0],
+      metadataAccount: metadataAccount,
       payer: payer.publicKey,
       metadataProgram: marginMetadataProgramId,
       systemProgram: SystemProgram.programId
