@@ -6,6 +6,7 @@
     "fmt:fix": "prettier --write '**/*.{ts,js}'",
     "fmt": "prettier --check '**/*.{ts,js}'",
     "lint": "eslint . --ext ts --fix",
+    "test": "anchor test --skip-lint",
     "precommit": "npm run compile && npm run fmt:fix && npm run lint && npm run test"
   },
   "dependencies": {
