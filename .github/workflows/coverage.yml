@@ -35,6 +35,14 @@ jobs:
         if: steps.cache-cli-deps.outputs.cache-hit != 'true'
         run: cargo install --git https://github.com/jet-lab/anchor anchor-cli --locked
 
+      - name: Setup Nodejs
+        uses: actions/setup-node@v2
+        with:
+          cache: npm
+
+      - name: Setup NPM dependencies
+        run: npm ci
+
   build_aarch64:
     runs-on: macos-latest
     steps:
