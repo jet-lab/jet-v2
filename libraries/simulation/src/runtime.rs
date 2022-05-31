@@ -584,6 +584,34 @@ impl SolanaRpcClient for crate::TestRuntime {
         }))
     }
 
+    async fn get_multiple_accounts(
+        &self,
+        pubkeys: &[Pubkey],
+    ) -> anyhow::Result<Vec<Option<StoredAccount>>> {
+        let infos = pubkeys
+            .iter()
+            .map(|address| {
+                let info = self.get_account_info(address);
+                if info.data_is_empty() {
+                    None
+                } else {
+                    let lamports = **info.lamports.borrow();
+                    let data = info.data.borrow().to_vec();
+
+                    Some(StoredAccount {
+                        data,
+                        lamports,
+                        owner: *info.owner,
+                        executable: info.executable,
+                        rent_epoch: info.rent_epoch,
+                    })
+                }
+            })
+            .collect();
+
+        Ok(infos)
+    }
+
     async fn get_program_accounts(
         &self,
         program_id: &Pubkey,
