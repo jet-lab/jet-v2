@@ -2,7 +2,8 @@
   "license": "AGPL-3.0-or-later",
   "scripts": {
     "prepare": "husky install",
-    "precommit": "npm run compile && npm run fmt:fix && npm run lint && npm run test"
+    "compile": "npx tsc --noEmit",
+    "precommit": "npm run compile && anchor test --skip-lint"
   },
   "dependencies": {
     "@project-serum/anchor": "^0.24.2",
