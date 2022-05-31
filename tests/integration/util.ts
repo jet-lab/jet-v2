@@ -40,9 +40,9 @@ const controlInstructions = buildInstructions(JetControlIDL, controlProgramId) a
 export async function createAuthority(connection: Connection, payer: Keypair): Promise<void> {
   const [authority] = await PublicKey.findProgramAddress([], controlProgramId)
 
-  if (await connection.getAccountInfo(authority, 'processed' as Commitment)) {
+  if (await connection.getAccountInfo(authority, "processed" as Commitment)) {
     // Authority account already exists.
-    return;
+    return
   }
 
   const lamports = 1 * LAMPORTS_PER_SOL
@@ -68,12 +68,12 @@ export async function registerAdapter(
   adapterProgramId: PublicKey,
   payer: Keypair
 ): Promise<void> {
-  const [metadataAccount] = await PublicKey.findProgramAddress([adapterProgramId.toBuffer()], marginMetadataProgramId);
+  const [metadataAccount] = await PublicKey.findProgramAddress([adapterProgramId.toBuffer()], marginMetadataProgramId)
 
-  console.log(await connection.getAccountInfo(metadataAccount, 'processed' as Commitment));
-  if (await connection.getAccountInfo(metadataAccount, 'processed' as Commitment)) {
+  console.log(await connection.getAccountInfo(metadataAccount, "processed" as Commitment))
+  if (await connection.getAccountInfo(metadataAccount, "processed" as Commitment)) {
     // Metadata account already exists.
-    return;
+    return
   }
 
   const [authority] = await PublicKey.findProgramAddress([], controlProgramId)
