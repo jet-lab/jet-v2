@@ -51,7 +51,10 @@ jobs:
       - name: Install Anchor CLI
         if: steps.CacheTSDeps.outputs.cache-hit != 'true'
         run: npm i -g @project-serum/anchor-cli@${{ env.ANCHOR_CLI_VERSION }}
+
       - run: npm ci
+
       - run: solana-keygen new --no-bip39-passphrase
+      
       - name: TS Test
         run: anchor test --skip-lint
