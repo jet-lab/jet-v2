@@ -37,8 +37,6 @@ jobs:
 
       - name: Setup Nodejs
         uses: actions/setup-node@v2
-        with:
-          cache: npm
 
       - name: Setup NPM dependencies
         run: npm ci
