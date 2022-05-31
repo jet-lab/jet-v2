@@ -1,34 +1,33 @@
-import { BN } from "@project-serum/anchor";
-import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
-import { Connection, Keypair, PublicKey, sendAndConfirmTransaction, Transaction, TransactionInstruction } from '@solana/web3.js';
+import { BN } from "@project-serum/anchor"
+import { TOKEN_PROGRAM_ID } from "@solana/spl-token"
+import {
+  Connection,
+  Keypair,
+  PublicKey,
+  sendAndConfirmTransaction,
+  Transaction,
+  TransactionInstruction
+} from "@solana/web3.js"
 
 const FAUCET_PROGRAM_ID = new PublicKey("4bXpkKSV8swHSnwqtzuboGPaPDeEgAn4Vt8GfarV5rZt")
 
 function getPDA() {
-  return PublicKey.findProgramAddress([Buffer.from("faucet")], FAUCET_PROGRAM_ID);
+  return PublicKey.findProgramAddress([Buffer.from("faucet")], FAUCET_PROGRAM_ID)
 }
 
-const getMintPubkeyFromTokenAccountPubkey = async (
-  connection: Connection,
-  tokenAccountPubkey: PublicKey
-) => {
+const getMintPubkeyFromTokenAccountPubkey = async (connection: Connection, tokenAccountPubkey: PublicKey) => {
   try {
-    const tokenMintData = (
-      await connection.getParsedAccountInfo(
-        tokenAccountPubkey,
-        "singleGossip"
-      )
-    ).value!.data;
+    const tokenMintData = (await connection.getParsedAccountInfo(tokenAccountPubkey, "singleGossip")).value!.data
     //@ts-expect-error (doing the data parsing into steps so this ignore line is not moved around by formatting)
-    const tokenMintAddress = tokenMintData.parsed.info.mint;
+    const tokenMintAddress = tokenMintData.parsed.info.mint
 
-    return new PublicKey(tokenMintAddress);
+    return new PublicKey(tokenMintAddress)
   } catch (err) {
     throw new Error(
       "Error calculating mint address from token account. Are you sure you inserted a valid token account address"
-    );
+    )
   }
-};
+}
 
 const buildAirdropTokensIx = async (
   amount: BN,
@@ -36,7 +35,7 @@ const buildAirdropTokensIx = async (
   destinationAccountPubkey: PublicKey,
   faucetPubkey: PublicKey
 ) => {
-  const pubkeyNonce = await getPDA();
+  const pubkeyNonce = await getPDA()
 
   const keys = [
     { pubkey: pubkeyNonce[0], isSigner: false, isWritable: false },
@@ -48,14 +47,14 @@ const buildAirdropTokensIx = async (
     { pubkey: destinationAccountPubkey, isSigner: false, isWritable: true },
     { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
     { pubkey: faucetPubkey, isSigner: false, isWritable: false }
-  ];
+  ]
 
   return new TransactionInstruction({
     programId: FAUCET_PROGRAM_ID,
     data: Buffer.from([1, ...amount.toArray("le", 8)]),
     keys
-  });
-};
+  })
+}
 
 export const airdropTokens = async (
   connection: Connection,
@@ -64,13 +63,16 @@ export const airdropTokens = async (
   tokenDestinationAddress: PublicKey,
   amount: BN
 ) => {
-  const tx = new Transaction()
-    .add(await buildAirdropTokensIx(
+  const tx = new Transaction().add(
+    await buildAirdropTokensIx(
       amount,
       await getMintPubkeyFromTokenAccountPubkey(connection, tokenDestinationAddress),
       tokenDestinationAddress,
       faucetAddress
     )
-  );
-  await sendAndConfirmTransaction(connection, tx, [feePayerAccount], { skipPreflight: false, commitment: "singleGossip" });
-};
+  )
+  await sendAndConfirmTransaction(connection, tx, [feePayerAccount], {
+    skipPreflight: false,
+    commitment: "singleGossip"
+  })
+}

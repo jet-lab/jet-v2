@@ -1,365 +1,365 @@
 export type JetMetadata = {
-  "version": "0.1.0",
-  "name": "jet_metadata",
-  "instructions": [
+  version: "0.1.0"
+  name: "jet_metadata"
+  instructions: [
     {
-      "name": "createEntry",
-      "accounts": [
+      name: "createEntry"
+      accounts: [
         {
-          "name": "keyAccount",
-          "isMut": false,
-          "isSigner": false
+          name: "keyAccount"
+          isMut: false
+          isSigner: false
         },
         {
-          "name": "metadataAccount",
-          "isMut": true,
-          "isSigner": false
+          name: "metadataAccount"
+          isMut: true
+          isSigner: false
         },
         {
-          "name": "authority",
-          "isMut": false,
-          "isSigner": true
+          name: "authority"
+          isMut: false
+          isSigner: true
         },
         {
-          "name": "payer",
-          "isMut": true,
-          "isSigner": true
+          name: "payer"
+          isMut: true
+          isSigner: true
         },
         {
-          "name": "systemProgram",
-          "isMut": false,
-          "isSigner": false
+          name: "systemProgram"
+          isMut: false
+          isSigner: false
         }
-      ],
-      "args": [
+      ]
+      args: [
         {
-          "name": "seed",
-          "type": "string"
+          name: "seed"
+          type: "string"
         },
         {
-          "name": "space",
-          "type": "u64"
+          name: "space"
+          type: "u64"
         }
       ]
     },
     {
-      "name": "setEntry",
-      "accounts": [
+      name: "setEntry"
+      accounts: [
         {
-          "name": "metadataAccount",
-          "isMut": true,
-          "isSigner": false
+          name: "metadataAccount"
+          isMut: true
+          isSigner: false
         },
         {
-          "name": "authority",
-          "isMut": false,
-          "isSigner": true
+          name: "authority"
+          isMut: false
+          isSigner: true
         }
-      ],
-      "args": [
+      ]
+      args: [
         {
-          "name": "offset",
-          "type": "u64"
+          name: "offset"
+          type: "u64"
         },
         {
-          "name": "data",
-          "type": "bytes"
+          name: "data"
+          type: "bytes"
         }
       ]
     }
-  ],
-  "accounts": [
+  ]
+  accounts: [
     {
-      "name": "positionTokenMetadata",
-      "type": {
-        "kind": "struct",
-        "fields": [
+      name: "positionTokenMetadata"
+      type: {
+        kind: "struct"
+        fields: [
           {
-            "name": "positionTokenMint",
-            "type": "publicKey"
+            name: "positionTokenMint"
+            type: "publicKey"
           },
           {
-            "name": "underlyingTokenMint",
-            "type": "publicKey"
+            name: "underlyingTokenMint"
+            type: "publicKey"
           },
           {
-            "name": "adapterProgram",
-            "type": "publicKey"
+            name: "adapterProgram"
+            type: "publicKey"
           },
           {
-            "name": "tokenKind",
-            "type": {
-              "defined": "TokenKind"
+            name: "tokenKind"
+            type: {
+              defined: "TokenKind"
             }
           },
           {
-            "name": "collateralWeight",
-            "type": "u16"
+            name: "collateralWeight"
+            type: "u16"
           },
           {
-            "name": "collateralMaxStaleness",
-            "type": "u64"
+            name: "collateralMaxStaleness"
+            type: "u64"
           }
         ]
       }
     },
     {
-      "name": "tokenMetadata",
-      "type": {
-        "kind": "struct",
-        "fields": [
+      name: "tokenMetadata"
+      type: {
+        kind: "struct"
+        fields: [
           {
-            "name": "tokenMint",
-            "type": "publicKey"
+            name: "tokenMint"
+            type: "publicKey"
           },
           {
-            "name": "pythPrice",
-            "type": "publicKey"
+            name: "pythPrice"
+            type: "publicKey"
           },
           {
-            "name": "pythProduct",
-            "type": "publicKey"
+            name: "pythProduct"
+            type: "publicKey"
           }
         ]
       }
     },
     {
-      "name": "marginAdapterMetadata",
-      "type": {
-        "kind": "struct",
-        "fields": [
+      name: "marginAdapterMetadata"
+      type: {
+        kind: "struct"
+        fields: [
           {
-            "name": "adapterProgram",
-            "type": "publicKey"
+            name: "adapterProgram"
+            type: "publicKey"
           }
         ]
       }
     },
     {
-      "name": "liquidatorAdapterMetadata",
-      "type": {
-        "kind": "struct",
-        "fields": [
+      name: "liquidatorAdapterMetadata"
+      type: {
+        kind: "struct"
+        fields: [
           {
-            "name": "adapterProgram",
-            "type": "publicKey"
+            name: "adapterProgram"
+            type: "publicKey"
           }
         ]
       }
     },
     {
-      "name": "liquidatorMetadata",
-      "type": {
-        "kind": "struct",
-        "fields": [
+      name: "liquidatorMetadata"
+      type: {
+        kind: "struct"
+        fields: [
           {
-            "name": "liquidator",
-            "type": "publicKey"
-          }
-        ]
-      }
-    }
-  ],
-  "types": [
-    {
-      "name": "TokenKind",
-      "type": {
-        "kind": "enum",
-        "variants": [
-          {
-            "name": "NonCollateral"
-          },
-          {
-            "name": "Collateral"
-          },
-          {
-            "name": "Claim"
+            name: "liquidator"
+            type: "publicKey"
           }
         ]
       }
     }
   ]
-};
+  types: [
+    {
+      name: "TokenKind"
+      type: {
+        kind: "enum"
+        variants: [
+          {
+            name: "NonCollateral"
+          },
+          {
+            name: "Collateral"
+          },
+          {
+            name: "Claim"
+          }
+        ]
+      }
+    }
+  ]
+}
 
 export const IDL: JetMetadata = {
-  "version": "0.1.0",
-  "name": "jet_metadata",
-  "instructions": [
+  version: "0.1.0",
+  name: "jet_metadata",
+  instructions: [
     {
-      "name": "createEntry",
-      "accounts": [
+      name: "createEntry",
+      accounts: [
         {
-          "name": "keyAccount",
-          "isMut": false,
-          "isSigner": false
+          name: "keyAccount",
+          isMut: false,
+          isSigner: false
         },
         {
-          "name": "metadataAccount",
-          "isMut": true,
-          "isSigner": false
+          name: "metadataAccount",
+          isMut: true,
+          isSigner: false
         },
         {
-          "name": "authority",
-          "isMut": false,
-          "isSigner": true
+          name: "authority",
+          isMut: false,
+          isSigner: true
         },
         {
-          "name": "payer",
-          "isMut": true,
-          "isSigner": true
+          name: "payer",
+          isMut: true,
+          isSigner: true
         },
         {
-          "name": "systemProgram",
-          "isMut": false,
-          "isSigner": false
+          name: "systemProgram",
+          isMut: false,
+          isSigner: false
         }
       ],
-      "args": [
+      args: [
         {
-          "name": "seed",
-          "type": "string"
+          name: "seed",
+          type: "string"
         },
         {
-          "name": "space",
-          "type": "u64"
+          name: "space",
+          type: "u64"
         }
       ]
     },
     {
-      "name": "setEntry",
-      "accounts": [
+      name: "setEntry",
+      accounts: [
         {
-          "name": "metadataAccount",
-          "isMut": true,
-          "isSigner": false
+          name: "metadataAccount",
+          isMut: true,
+          isSigner: false
         },
         {
-          "name": "authority",
-          "isMut": false,
-          "isSigner": true
+          name: "authority",
+          isMut: false,
+          isSigner: true
         }
       ],
-      "args": [
+      args: [
         {
-          "name": "offset",
-          "type": "u64"
+          name: "offset",
+          type: "u64"
         },
         {
-          "name": "data",
-          "type": "bytes"
+          name: "data",
+          type: "bytes"
         }
       ]
     }
   ],
-  "accounts": [
+  accounts: [
     {
-      "name": "positionTokenMetadata",
-      "type": {
-        "kind": "struct",
-        "fields": [
+      name: "positionTokenMetadata",
+      type: {
+        kind: "struct",
+        fields: [
           {
-            "name": "positionTokenMint",
-            "type": "publicKey"
+            name: "positionTokenMint",
+            type: "publicKey"
           },
           {
-            "name": "underlyingTokenMint",
-            "type": "publicKey"
+            name: "underlyingTokenMint",
+            type: "publicKey"
           },
           {
-            "name": "adapterProgram",
-            "type": "publicKey"
+            name: "adapterProgram",
+            type: "publicKey"
           },
           {
-            "name": "tokenKind",
-            "type": {
-              "defined": "TokenKind"
+            name: "tokenKind",
+            type: {
+              defined: "TokenKind"
             }
           },
           {
-            "name": "collateralWeight",
-            "type": "u16"
+            name: "collateralWeight",
+            type: "u16"
           },
           {
-            "name": "collateralMaxStaleness",
-            "type": "u64"
+            name: "collateralMaxStaleness",
+            type: "u64"
           }
         ]
       }
     },
     {
-      "name": "tokenMetadata",
-      "type": {
-        "kind": "struct",
-        "fields": [
+      name: "tokenMetadata",
+      type: {
+        kind: "struct",
+        fields: [
           {
-            "name": "tokenMint",
-            "type": "publicKey"
+            name: "tokenMint",
+            type: "publicKey"
           },
           {
-            "name": "pythPrice",
-            "type": "publicKey"
+            name: "pythPrice",
+            type: "publicKey"
           },
           {
-            "name": "pythProduct",
-            "type": "publicKey"
+            name: "pythProduct",
+            type: "publicKey"
           }
         ]
       }
     },
     {
-      "name": "marginAdapterMetadata",
-      "type": {
-        "kind": "struct",
-        "fields": [
+      name: "marginAdapterMetadata",
+      type: {
+        kind: "struct",
+        fields: [
           {
-            "name": "adapterProgram",
-            "type": "publicKey"
+            name: "adapterProgram",
+            type: "publicKey"
           }
         ]
       }
     },
     {
-      "name": "liquidatorAdapterMetadata",
-      "type": {
-        "kind": "struct",
-        "fields": [
+      name: "liquidatorAdapterMetadata",
+      type: {
+        kind: "struct",
+        fields: [
           {
-            "name": "adapterProgram",
-            "type": "publicKey"
+            name: "adapterProgram",
+            type: "publicKey"
           }
         ]
       }
     },
     {
-      "name": "liquidatorMetadata",
-      "type": {
-        "kind": "struct",
-        "fields": [
+      name: "liquidatorMetadata",
+      type: {
+        kind: "struct",
+        fields: [
           {
-            "name": "liquidator",
-            "type": "publicKey"
+            name: "liquidator",
+            type: "publicKey"
           }
         ]
       }
     }
   ],
-  "types": [
+  types: [
     {
-      "name": "TokenKind",
-      "type": {
-        "kind": "enum",
-        "variants": [
+      name: "TokenKind",
+      type: {
+        kind: "enum",
+        variants: [
           {
-            "name": "NonCollateral"
+            name: "NonCollateral"
           },
           {
-            "name": "Collateral"
+            name: "Collateral"
           },
           {
-            "name": "Claim"
+            name: "Claim"
           }
         ]
       }
     }
   ]
-};
+}

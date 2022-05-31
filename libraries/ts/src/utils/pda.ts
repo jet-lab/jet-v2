@@ -12,24 +12,24 @@ export type AccountSeed = { toBytes(): Uint8Array } | { publicKey: PublicKey } |
  * @returns {Promise<PublicKey>}
  * @memberof JetClient
  */
- export function findDerivedAccount(programId: Address, ...seeds: AccountSeed[]): PublicKey {
-    const seedBytes = seeds.map(s => {
-      if (typeof s == "string") {
-        const pubkeyBytes = bs58.decodeUnsafe(s)
-        if (!pubkeyBytes || pubkeyBytes.length !== 32) {
-          return Buffer.from(s)
-        } else {
-          return translateAddress(s).toBytes()
-        }
-      } else if ("publicKey" in s) {
-        return s.publicKey.toBytes()
-      } else if ("toBytes" in s) {
-        return s.toBytes()
+export function findDerivedAccount(programId: Address, ...seeds: AccountSeed[]): PublicKey {
+  const seedBytes = seeds.map(s => {
+    if (typeof s == "string") {
+      const pubkeyBytes = bs58.decodeUnsafe(s)
+      if (!pubkeyBytes || pubkeyBytes.length !== 32) {
+        return Buffer.from(s)
       } else {
-        return s
+        return translateAddress(s).toBytes()
       }
-    })
-  
-    const [address] = findProgramAddressSync(seedBytes, translateAddress(programId))
-    return address
-  }
+    } else if ("publicKey" in s) {
+      return s.publicKey.toBytes()
+    } else if ("toBytes" in s) {
+      return s.toBytes()
+    } else {
+      return s
+    }
+  })
+
+  const [address] = findProgramAddressSync(seedBytes, translateAddress(programId))
+  return address
+}

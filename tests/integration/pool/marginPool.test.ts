@@ -228,5 +228,4 @@ describe("margin pool", () => {
     assert((await getTokenBalance(connection, "processed", user_b_tsol_account)) == 1_000)
   })
   */
-
 })
