@@ -12,7 +12,7 @@ on:
 
 jobs:
   ts_test:
-    name: Install Dependencies
+    name: Typescript Integration Tests
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
