@@ -1,5 +1,5 @@
 [package]
-name = "jet-proto-margin-swap"
+name = "jet-margin-swap"
 version = "0.1.0"
 description = "Created with Anchor"
 edition = "2018"
@@ -22,5 +22,5 @@ anchor-lang = { git = "https://github.com/jet-lab/anchor", branch = "master" }
 anchor-spl = { git = "https://github.com/jet-lab/anchor", branch = "master" }
 spl-token-swap = { version = "2.1", features = ["no-entrypoint"] }
 
-jet-proto-margin-pool = { path = "../margin-pool", features = ["cpi", "no-entrypoint"] }
-jet-proto-margin = { path = "../margin", features = ["cpi", "no-entrypoint"] }
+jet-margin-pool = { path = "../margin-pool", features = ["cpi", "no-entrypoint"] }
+jet-margin = { path = "../margin", features = ["cpi", "no-entrypoint"] }

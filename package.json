@@ -1,5 +1,9 @@
 {
   "license": "AGPL-3.0-or-later",
+  "scripts": {
+    "prepare": "husky install",
+    "precommit": "npm run compile && npm run fmt:fix && npm run lint && npm run test"
+  },
   "dependencies": {
     "@project-serum/anchor": "^0.24.2",
     "@project-serum/serum": "^0.13.65",

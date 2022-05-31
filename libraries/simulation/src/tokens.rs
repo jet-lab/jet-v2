@@ -141,7 +141,7 @@ impl TokenManager {
             &jet_metadata::ID,
         );
 
-        let ix_create = |address, _, seed| Instruction {
+        let ix_create = |address, _, seed, space| Instruction {
             program_id: jet_metadata::ID,
             accounts: jet_metadata::accounts::CreateEntry {
                 key_account: *mint,
@@ -153,26 +153,35 @@ impl TokenManager {
             .to_account_metas(None),
             data: jet_metadata::instruction::CreateEntry {
                 seed,
-                space: std::mem::size_of::<pyth_client::Price>() as u64,
+                space: space as u64,
             }
             .data(),
         };
 
-        let ix_create_price = ix_create(price_address, price_bump, "oracle:price".to_string());
-        let ix_create_product =
-            ix_create(product_address, product_bump, "oracle:product".to_string());
+        let ix_create_price = ix_create(
+            price_address,
+            price_bump,
+            "oracle:price".to_string(),
+            std::mem::size_of::<pyth_sdk_solana::state::PriceAccount>(),
+        );
+        let ix_create_product = ix_create(
+            product_address,
+            product_bump,
+            "oracle:product".to_string(),
+            std::mem::size_of::<pyth_sdk_solana::state::ProductAccount>(),
+        );
 
         send_and_confirm(&self.rpc, &[ix_create_price, ix_create_product], &[]).await?;
 
-        let mut product_account = pyth_client::Product {
-            ver: pyth_client::VERSION,
-            magic: pyth_client::MAGIC,
-            size: std::mem::size_of::<pyth_client::Price>() as u32,
-            atype: pyth_client::AccountType::Product as u32,
-            px_acc: pyth_client::AccKey {
+        let mut product_account = pyth_sdk_solana::state::ProductAccount {
+            ver: pyth_sdk_solana::state::VERSION,
+            magic: pyth_sdk_solana::state::MAGIC,
+            size: std::mem::size_of::<pyth_sdk_solana::Price>() as u32,
+            atype: pyth_sdk_solana::state::AccountType::Product as u32,
+            px_acc: pyth_sdk_solana::state::AccKey {
                 val: price_address.to_bytes(),
             },
-            attr: [0u8; pyth_client::PROD_ATTR_SIZE],
+            attr: [0u8; pyth_sdk_solana::state::PROD_ATTR_SIZE],
         };
 
         write_pyth_product_attributes(
@@ -228,7 +237,8 @@ impl TokenManager {
 
         price_data.agg.price = price_value;
         price_data.agg.conf = price.confidence;
-        price_data.twap.val = twap_value;
+        price_data.agg.status = pyth_sdk_solana::state::PriceStatus::Trading;
+        price_data.ema_price.val = twap_value;
 
         let (price_address, _) = Pubkey::find_program_address(
             &[mint.as_ref(), b"oracle:price".as_ref()],
@@ -308,15 +318,15 @@ fn write_pyth_product_attributes(mut storage: &mut [u8], attributes: &[(&str, &s
     }
 }
 
-fn default_price() -> pyth_client::Price {
-    pyth_client::Price {
-        ver: pyth_client::VERSION,
-        magic: pyth_client::MAGIC,
-        atype: pyth_client::AccountType::Price as u32,
-        size: std::mem::size_of::<pyth_client::Price>() as u32,
+fn default_price() -> pyth_sdk_solana::state::PriceAccount {
+    pyth_sdk_solana::state::PriceAccount {
+        ver: pyth_sdk_solana::state::VERSION,
+        magic: pyth_sdk_solana::state::MAGIC,
+        atype: pyth_sdk_solana::state::AccountType::Price as u32,
+        size: std::mem::size_of::<pyth_sdk_solana::state::PriceAccount>() as u32,
         expo: -8,
-        next: pyth_client::AccKey { val: [0u8; 32] },
-        ptype: pyth_client::PriceType::Price,
-        ..pyth_client::Price::zeroed()
+        next: pyth_sdk_solana::state::AccKey { val: [0u8; 32] },
+        ptype: pyth_sdk_solana::state::PriceType::Price,
+        ..pyth_sdk_solana::state::PriceAccount::zeroed()
     }
 }

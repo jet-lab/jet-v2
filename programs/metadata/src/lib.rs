@@ -69,6 +69,22 @@ pub struct SetEntry<'info> {
     pub authority: Account<'info, ControlAuthority>,
 }
 
+#[derive(Accounts)]
+pub struct RemoveEntry<'info> {
+    /// The account containing the metadata to change
+    /// CHECK:
+    #[account(mut)]
+    pub metadata_account: AccountInfo<'info>,
+
+    /// The authority that must sign to make this change
+    #[cfg_attr(not(feature = "devnet"), account(signer))]
+    pub authority: Account<'info, ControlAuthority>,
+
+    /// The address receiving the rent
+    #[account(mut)]
+    pub receiver: AccountInfo<'info>,
+}
+
 #[program]
 mod jet_metadata {
     use super::*;
@@ -84,6 +100,21 @@ mod jet_metadata {
 
         let offset: usize = offset as usize;
         (&mut metadata[offset..offset + data.len()]).copy_from_slice(&data);
+        Ok(())
+    }
+
+    pub fn remove_entry(ctx: Context<RemoveEntry>) -> Result<()> {
+        let mut source = ctx.accounts.metadata_account.try_borrow_mut_lamports()?;
+        let mut dest = ctx.accounts.receiver.try_borrow_mut_lamports()?;
+
+        **dest = dest.checked_add(**source).unwrap();
+        **source = 0;
+
+        let mut data = ctx.accounts.metadata_account.try_borrow_mut_data()?;
+        for i in 0..8 {
+            data[i] = 0;
+        }
+
         Ok(())
     }
 }
@@ -150,15 +181,6 @@ pub struct TokenMetadata {
 #[account]
 #[derive(Default)]
 pub struct MarginAdapterMetadata {
-    /// The address of the allowed program
-    pub adapter_program: Pubkey,
-}
-
-/// An account that references a program that's allowed to be invoked by
-/// proxy via a margin account for liquidation purposes.
-#[account]
-#[derive(Default)]
-pub struct LiquidatorAdapterMetadata {
     /// The address of the allowed program
     pub adapter_program: Pubkey,
 }

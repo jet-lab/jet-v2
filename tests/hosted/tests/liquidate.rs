@@ -13,7 +13,7 @@ use hosted_tests::context::{test_context, MarginTestContext};
 use jet_margin_pool::{Amount, MarginPoolConfig, PoolFlags};
 use jet_metadata::TokenKind;
 use jet_simulation::margin::{MarginPoolSetupInfo, MarginUser};
-use jet_simulation::{assert_program_error, create_wallet};
+use jet_simulation::{assert_program_error, assert_program_error_code, create_wallet};
 
 const ONE_USDC: u64 = 1_000_000;
 const ONE_TSOL: u64 = LAMPORTS_PER_SOL;
@@ -480,6 +480,25 @@ async fn owner_cannot_end_liquidation_before_timeout() -> Result<()> {
         .liquidate_end(Some(scen.user_b_liq.signer()))
         .await;
     assert_program_error!(ErrorCode::UnauthorizedLiquidator, result);
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn liquidator_permission_is_removable() -> Result<()> {
+    let ctx = test_context().await;
+    let scen = scenario1().await?;
+
+    ctx.margin
+        .set_liquidator_metadata(scen.liquidator, false)
+        .await?;
+
+    // A liquidator tries to liquidate User B, it should no longer have authority to do that
+    let result = scen.user_b_liq.liquidate_begin().await;
+    assert_program_error_code!(
+        anchor_lang::error::ErrorCode::AccountDiscriminatorMismatch as u32,
+        result
+    );
 
     Ok(())
 }
