@@ -41,26 +41,24 @@ const controlInstructions = buildInstructions(JetControlIDL, controlProgramId) a
 export async function createAuthority(connection: Connection, payer: Keypair): Promise<void> {
   const [authority] = await PublicKey.findProgramAddress([], controlProgramId)
 
-  if (await connection.getAccountInfo(authority, "processed" as Commitment)) {
-    // Authority account already exists.
-    return
+  const accountInfo = await connection.getAccountInfo(authority, "processed" as Commitment);
+  if (!accountInfo) {
+    const lamports = 1 * LAMPORTS_PER_SOL
+    const airdropSignature = await connection.requestAirdrop(authority, lamports)
+    await connection.confirmTransaction(airdropSignature)
+
+    const ix = controlInstructions.createAuthority({
+      accounts: {
+        authority: authority,
+        payer: payer.publicKey,
+        systemProgram: SystemProgram.programId
+      }
+    })
+
+    const tx = new Transaction().add(ix)
+
+    await sendTransaction(connection, tx, [new Account(payer.secretKey)])
   }
-
-  const lamports = 1 * LAMPORTS_PER_SOL
-  const airdropSignature = await connection.requestAirdrop(authority, lamports)
-  await connection.confirmTransaction(airdropSignature)
-
-  const ix = controlInstructions.createAuthority({
-    accounts: {
-      authority: authority,
-      payer: payer.publicKey,
-      systemProgram: SystemProgram.programId
-    }
-  })
-
-  const tx = new Transaction().add(ix)
-
-  await sendTransaction(connection, tx, [new Account(payer.secretKey)])
 }
 
 export async function registerAdapter(
@@ -71,28 +69,24 @@ export async function registerAdapter(
 ): Promise<void> {
   const [metadataAccount] = await PublicKey.findProgramAddress([adapterProgramId.toBuffer()], marginMetadataProgramId)
 
-  console.log(await connection.getAccountInfo(metadataAccount, "processed" as Commitment))
-  if (await connection.getAccountInfo(metadataAccount, "processed" as Commitment)) {
-    // Metadata account already exists.
-    assert(false);
-    return
+  const accountInfo = await connection.getAccountInfo(metadataAccount, "processed" as Commitment);
+  if (!accountInfo) {
+    const [authority] = await PublicKey.findProgramAddress([], controlProgramId)
+
+    const ix = controlInstructions.registerAdapter({
+      accounts: {
+        requester: requester.publicKey,
+        authority,
+        adapter: adapterProgramId,
+        metadataAccount: metadataAccount,
+        payer: payer.publicKey,
+        metadataProgram: marginMetadataProgramId,
+        systemProgram: SystemProgram.programId
+      }
+    })
+    const tx = new Transaction().add(ix)
+    await sendTransaction(connection, tx, [new Account(payer.secretKey)])
   }
-
-  const [authority] = await PublicKey.findProgramAddress([], controlProgramId)
-
-  const ix = controlInstructions.registerAdapter({
-    accounts: {
-      requester: requester.publicKey,
-      authority,
-      adapter: adapterProgramId,
-      metadataAccount: metadataAccount,
-      payer: payer.publicKey,
-      metadataProgram: marginMetadataProgramId,
-      systemProgram: SystemProgram.programId
-    }
-  })
-  const tx = new Transaction().add(ix)
-  await sendTransaction(connection, tx, [new Account(payer.secretKey)])
 }
 
 async function sendTransaction(
