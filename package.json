@@ -1,6 +1,11 @@
 {
   "license": "AGPL-3.0-or-later",
   "scripts": {
+    "build": "craco build",
+    "compile": "npx tsc --noEmit",
+    "fmt": "prettier --check .",
+    "fmt:fix": "prettier --write .",
+    "lint": "eslint . --ext ts",
     "prepare": "husky install",
     "compile": "npx tsc --noEmit",
     "fmt:fix": "prettier --write '**/*.{ts,js}'",

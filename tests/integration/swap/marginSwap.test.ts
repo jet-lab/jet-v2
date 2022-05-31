@@ -163,7 +163,7 @@ describe("margin swap", () => {
 
   it("deposit all token types", async () => {
     const poolMintInfo = await MarginSwap.getMintInfo(connection, marginSwap.tokenSwap.poolToken)
-    const supply = Number(poolMintInfo.supply)
+    const supply: number = Number(poolMintInfo.supply)
     const swapTokenA = await MarginAccount.getTokenAccountInfo(connection, tokenAccountA)
     const tokenA = Math.floor((Number(swapTokenA.amount) * 10000000) / supply)
     const swapTokenB = await MarginAccount.getTokenAccountInfo(connection, tokenAccountB)
@@ -208,10 +208,10 @@ describe("margin swap", () => {
 
   it("withdraw all token types", async () => {
     const poolMintInfo = await MarginSwap.getMintInfo(connection, marginSwap.tokenSwap.poolToken)
-    const supply = Number(poolMintInfo.supply)
+    const supply: number = Number(poolMintInfo.supply)
     let swapTokenA = await MarginAccount.getTokenAccountInfo(connection, tokenAccountA)
     let swapTokenB = await MarginAccount.getTokenAccountInfo(connection, tokenAccountB)
-    const feeAmount = Math.floor(10000000 / 6)
+    let feeAmount = Math.floor(10000000 / 6)
     const poolTokenAmount = 10000000 - feeAmount
     const tokenA = Math.floor((Number(swapTokenA.amount) * poolTokenAmount) / supply)
     const tokenB = Math.floor((Number(swapTokenB.amount) * poolTokenAmount) / supply)
@@ -377,7 +377,7 @@ describe("margin swap", () => {
     const depositAmount = 10000
 
     const poolMintInfo = await MarginSwap.getMintInfo(connection, marginSwap.tokenSwap.poolToken)
-    const supply = Number(poolMintInfo.supply)
+    const supply: number = Number(poolMintInfo.supply)
     const swapTokenA = await MarginAccount.getTokenAccountInfo(connection, tokenAccountA)
     const poolTokenA = tradingTokensToPoolTokens(depositAmount, Number(swapTokenA.amount), supply)
     const swapTokenB = await MarginAccount.getTokenAccountInfo(connection, tokenAccountB)
@@ -436,8 +436,7 @@ describe("margin swap", () => {
     const roundingAmount = 1.0001 // make math a little easier
 
     const poolMintInfo = await MarginSwap.getMintInfo(connection, marginSwap.tokenSwap.poolToken)
-    const supply = Number(poolMintInfo.supply)
-
+    const supply: number = Number(poolMintInfo.supply)
     const swapTokenA = await MarginAccount.getTokenAccountInfo(connection, tokenAccountA)
     const swapTokenAPost = Number(swapTokenA.amount) - withdrawAmount
     const poolTokenA = tradingTokensToPoolTokens(withdrawAmount, swapTokenAPost, supply)
