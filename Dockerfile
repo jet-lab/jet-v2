@@ -32,5 +32,5 @@ CMD solana-test-validator --reset \
       --bpf-program ASfdvRMCan2aoWtbDi5HLXhz2CFfgEkuDoxc57bJLKLX /root/programs/pyth.so \
       --bpf-program 9xQeWvG816bUx9EPjHmaT23yvVM2ZWbrrpZb9PusVFin /root/programs/serum_dex_v3.so \
       --bpf-program 4bXpkKSV8swHSnwqtzuboGPaPDeEgAn4Vt8GfarV5rZt /root/programs/spl_token_faucet.so \
-      --bpf-program SwaPpA9LAaLfeLi3a68M4DjnLqgtticKg6CnyNwgAC8  /root/programs/spl_token_swap.so \
+      --bpf-program SwaPpA9LAaLfeLi3a68M4DjnLqgtticKg6CnyNwgAC8  /root/programs/spl_token_swap.so
 
