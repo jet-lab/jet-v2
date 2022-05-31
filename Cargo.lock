@@ -1605,8 +1605,8 @@ dependencies = [
 
 [[package]]
 name = "jet-proto-math"
-version = "1.0.5"
-source = "git+https://github.com/jet-lab/program-libraries?branch=main#0a3c00ab7b0c49666ef082526909675cfa1d0c32"
+version = "1.0.6"
+source = "git+https://github.com/jet-lab/program-libraries?branch=main#7162d6562715d8ae1cc9a2fd40ec53bfb850451b"
 dependencies = [
  "bytemuck",
  "static_assertions",
@@ -1649,6 +1649,7 @@ dependencies = [
  "solana-client",
  "solana-sdk",
  "solana-transaction-status",
+ "spl-associated-token-account",
  "spl-token",
  "spl-token-swap",
  "tokio",

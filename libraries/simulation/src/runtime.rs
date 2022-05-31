@@ -65,6 +65,12 @@ impl TestRuntime {
             .entry(spl_token_swap::ID)
             .or_insert_with(|| Box::new(spl_token_swap::processor::Processor::process));
 
+        programs
+            .entry(spl_associated_token_account::ID)
+            .or_insert_with(|| {
+                Box::new(spl_associated_token_account::processor::process_instruction)
+            });
+
         let accounts = Mutex::new(HashMap::with_capacity(ACCOUNT_TABLE_SIZE));
         let signatures = Mutex::new(HashMap::new());
         let call_stack = parking_lot::ReentrantMutex::new(RefCell::new(vec![]));
@@ -576,6 +582,34 @@ impl SolanaRpcClient for crate::TestRuntime {
             executable: info.executable,
             rent_epoch: info.rent_epoch,
         }))
+    }
+
+    async fn get_multiple_accounts(
+        &self,
+        pubkeys: &[Pubkey],
+    ) -> anyhow::Result<Vec<Option<StoredAccount>>> {
+        let infos = pubkeys
+            .iter()
+            .map(|address| {
+                let info = self.get_account_info(address);
+                if info.data_is_empty() {
+                    None
+                } else {
+                    let lamports = **info.lamports.borrow();
+                    let data = info.data.borrow().to_vec();
+
+                    Some(StoredAccount {
+                        data,
+                        lamports,
+                        owner: *info.owner,
+                        executable: info.executable,
+                        rent_epoch: info.rent_epoch,
+                    })
+                }
+            })
+            .collect();
+
+        Ok(infos)
     }
 
     async fn get_program_accounts(
