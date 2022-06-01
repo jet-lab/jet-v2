@@ -23,7 +23,7 @@ use jet_proto_math::Number128;
 use crate::adapter::{self, CompactAccountMeta, InvokeAdapter};
 use crate::{
     AdapterResult, ErrorCode, Liquidation, MarginAccount, Valuation,
-    MAX_LIQUIDATION_COLLATERAL_RATIO, MAX_LIQUIDATION_C_RATIO_SLIPPAGE,
+    MAX_LIQUIDATION_COLLATERAL_RATIO, MAX_LIQUIDATION_C_RATIO_SLIPPAGE, events,
 };
 
 #[derive(Accounts)]
@@ -67,6 +67,19 @@ pub fn liquidator_invoke_handler<'info>(
         account_metas,
         data,
     )?;
+
+    
+    emit!(events::InvokedLiquidation {
+         margin_account: ctx.accounts.margin_account.key(),
+         liquidator: ctx.accounts.liquidator.key(),
+         liquidation: ctx.accounts.liquidation.key(),
+         adapter_program: ctx.accounts.adapter_program.key(),
+         adapter_metadata: ctx.accounts.adapter_metadata.key(),
+         result: result.clone(),
+         fresh_collateral: start_value.collateral().to_i128(),
+         stale_collateral: start_value.stale_collateral().to_i128(),
+         claims: start_value.claims().to_i128() 
+    });
 
     match result {
         AdapterResult::NewBalanceChange(_) => {

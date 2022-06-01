@@ -17,7 +17,7 @@
 
 use anchor_lang::prelude::*;
 
-use crate::MarginAccount;
+use crate::{MarginAccount, events};
 
 #[derive(Accounts)]
 #[instruction(seed: u16)]
@@ -48,6 +48,9 @@ pub fn create_account_handler(ctx: Context<CreateAccount>, seed: u16) -> Result<
         seed,
         *ctx.bumps.get("margin_account").unwrap(),
     );
-
+    emit!(events::AccountCreated {
+        owner: ctx.accounts.owner.key(), 
+        margin_account: ctx.accounts.margin_account.key(),
+    });
     Ok(())
 }

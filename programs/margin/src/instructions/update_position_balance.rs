@@ -18,7 +18,7 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::TokenAccount;
 
-use crate::MarginAccount;
+use crate::{MarginAccount, events};
 
 #[derive(Accounts)]
 pub struct UpdatePositionBalance<'info> {
@@ -40,5 +40,11 @@ pub fn update_position_balance_handler(ctx: Context<UpdatePositionBalance>) -> R
         token_account.amount,
     )?;
 
+    emit!(events::PositionBalanceUpdated {
+        margin_account:ctx.accounts.margin_account.key(),
+        token_account:ctx.accounts.token_account.key(),
+        new_balance: token_account.amount
+    });
+    
     Ok(())
 }

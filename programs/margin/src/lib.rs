@@ -23,6 +23,8 @@ declare_id!("JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ");
 mod adapter;
 mod instructions;
 mod state;
+pub mod events;
+
 /// Utilities used only in this crate
 pub(crate) mod util;
 

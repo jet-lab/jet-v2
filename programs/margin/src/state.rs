@@ -648,6 +648,10 @@ impl Valuation {
     pub fn collateral(&self) -> Number128 {
         self.fresh_collateral
     }
+
+    pub fn stale_collateral(&self) -> Number128 {
+        self.stale_collateral
+    }
 }
 
 #[cfg(test)]

@@ -15,6 +15,8 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+use core::fmt;
+
 use anchor_lang::prelude::*;
 use anchor_lang::Discriminator;
 use solana_program::pubkey;
@@ -135,6 +137,16 @@ pub enum TokenKind {
 impl Default for TokenKind {
     fn default() -> TokenKind {
         Self::NonCollateral
+    }
+}
+
+impl fmt::Display for TokenKind {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            TokenKind::NonCollateral => write!(f, "NonCollateral"),
+            TokenKind::Collateral => write!(f, "Collateral"),
+            TokenKind::Claim => write!(f, "Claim"),
+        }
     }
 }
 
