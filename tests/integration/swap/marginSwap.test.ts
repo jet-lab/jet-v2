@@ -1,6 +1,7 @@
 import assert from "assert"
 import * as anchor from "@project-serum/anchor"
 import { AnchorProvider, BN } from "@project-serum/anchor"
+import NodeWallet from "@project-serum/anchor/dist/cjs/nodewallet"
 import { AccountLayout, approve, createAccount, createMint, mintTo, TOKEN_PROGRAM_ID } from "@solana/spl-token"
 import {
   Account,

@@ -21,10 +21,10 @@ import {
 } from "../util"
 
 describe("margin pool", () => {
-  const controlProgramId: PublicKey = new PublicKey(MARGIN_CONFIG.localnet.controlProgramId)
-  const marginProgramId: PublicKey = new PublicKey(MARGIN_CONFIG.localnet.marginProgramId)
+  //const controlProgramId: PublicKey = new PublicKey(MARGIN_CONFIG.localnet.controlProgramId)
+  //const marginProgramId: PublicKey = new PublicKey(MARGIN_CONFIG.localnet.marginProgramId)
   const marginPoolProgramId: PublicKey = new PublicKey(MARGIN_CONFIG.localnet.marginPoolProgramId)
-  const metadataProgramId: PublicKey = new PublicKey(MARGIN_CONFIG.localnet.metadataProgramId)
+  //const metadataProgramId: PublicKey = new PublicKey(MARGIN_CONFIG.localnet.metadataProgramId)
 
   const confirmOptions: ConfirmOptions = { preflightCommitment: "processed", commitment: "processed" }
 
@@ -33,7 +33,7 @@ describe("margin pool", () => {
 
   const payer = (provider.wallet as NodeWallet).payer
   const ownerKeypair = payer
-  
+
   const programs = MarginClient.getPrograms(provider, "localnet")
 
   it("Fund payer", async () => {
