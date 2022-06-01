@@ -75,7 +75,7 @@ export async function registerAdapter(
     const tx = new Transaction().add(ix)
     try {
       await provider.sendAndConfirm(tx, [])
-    } catch(err) {
+    } catch (err) {
       console.log(err)
       throw err
     }

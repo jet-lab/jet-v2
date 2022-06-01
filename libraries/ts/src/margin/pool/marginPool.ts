@@ -179,7 +179,7 @@ export class MarginPool {
     )
     try {
       return await provider.sendAndConfirm(new Transaction().add(...ix2))
-    } catch(err) {
+    } catch (err) {
       console.log(err)
       throw err
     }
