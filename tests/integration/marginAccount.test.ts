@@ -12,9 +12,8 @@ import {
   SystemProgram
 } from "@solana/web3.js"
 
-import { MarginAccount } from "../../libraries/ts/src/margin"
+import { MarginAccount, MarginClient } from "../../libraries/ts"
 import { createAuthority, createUserWallet } from "./util"
-import { MarginClient } from "../../libraries/ts/src/margin/marginClient"
 
 describe("margin account", () => {
   const opts: ConfirmOptions = {

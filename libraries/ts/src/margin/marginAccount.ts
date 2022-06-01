@@ -119,6 +119,10 @@ export class MarginAccount {
     return { marginAccount, owner: ownerAddress, positions }
   }
 
+  static deriveLiquidation(programs: MarginPrograms, marginAccount: MarginAccount, liquidator: Address) {
+    return findDerivedAccount(programs.config.marginProgramId, marginAccount.address, liquidator)
+  }
+
   static deriveTokenMetadata(programs: MarginPrograms, tokenMint: Address) {
     const tokenMintAddress = translateAddress(tokenMint)
     return findDerivedAccount(programs.config.metadataProgramId, tokenMintAddress)

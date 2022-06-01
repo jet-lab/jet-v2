@@ -6,8 +6,7 @@ import { ConfirmOptions, Connection, Keypair, LAMPORTS_PER_SOL, PublicKey } from
 
 import MARGIN_CONFIG from "../../../libraries/ts/src/margin/config.json"
 
-import { MarginAccount, PoolAmount } from "../../../libraries/ts/src"
-import { MarginPool, MarginPoolConfig } from "../../../libraries/ts/src"
+import { MarginAccount, PoolAmount, MarginClient, MarginPool, MarginPoolConfig } from "../../../libraries/ts"
 
 import { PythClient } from "../pyth/pythClient"
 import {
@@ -20,7 +19,6 @@ import {
   registerAdapter,
   sendToken
 } from "../util"
-import { MarginClient } from "../../../libraries/ts/src/margin/marginClient"
 
 describe("margin pool", () => {
   const controlProgramId: PublicKey = new PublicKey(MARGIN_CONFIG.localnet.controlProgramId)
