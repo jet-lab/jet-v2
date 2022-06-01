@@ -14,6 +14,10 @@ RUN if [ ! -d "./target/deploy" ]; then echo "Deployment programs not found"; ex
 
 FROM ubuntu:latest
 
+RUN apt-get update && \
+    apt-get install -y bzip2 && \
+    rm -rf /var/lib/apt/lists/*
+
 COPY --from=programs /root/.local/share/solana/install/active_release/bin/solana-test-validator /usr/bin/solana-test-validator
 COPY --from=programs /v2/target/deploy/*.so /root/programs/
 COPY --from=programs /v2/deps/*.so /root/programs/
