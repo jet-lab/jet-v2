@@ -1,4 +1,4 @@
-import { InstructionNamespace } from "@project-serum/anchor"
+import { AnchorProvider, InstructionNamespace } from "@project-serum/anchor"
 import NodeWallet from "@project-serum/anchor/dist/cjs/nodewallet"
 import {
   ACCOUNT_SIZE,
@@ -17,16 +17,13 @@ import {
 import {
   Account,
   Commitment,
-  Connection,
   Keypair,
   LAMPORTS_PER_SOL,
   PublicKey,
-  sendAndConfirmTransaction,
   SystemProgram,
   Transaction,
   TransactionSignature
 } from "@solana/web3.js"
-import assert from "assert"
 
 import MARGIN_CONFIG from "../../libraries/ts/src/margin/config.json"
 
@@ -38,14 +35,14 @@ const marginMetadataProgramId: PublicKey = new PublicKey(MARGIN_CONFIG.localnet.
 
 const controlInstructions = buildInstructions(JetControlIDL, controlProgramId) as InstructionNamespace<JetControl>
 
-export async function createAuthority(connection: Connection, payer: Keypair): Promise<void> {
+export async function createAuthority(provider: AnchorProvider, payer: Keypair): Promise<void> {
   const [authority] = await PublicKey.findProgramAddress([], controlProgramId)
 
-  const accountInfo = await connection.getAccountInfo(authority, "processed" as Commitment)
+  const accountInfo = await provider.connection.getAccountInfo(authority, "processed" as Commitment)
   if (!accountInfo) {
     const lamports = 1 * LAMPORTS_PER_SOL
-    const airdropSignature = await connection.requestAirdrop(authority, lamports)
-    await connection.confirmTransaction(airdropSignature)
+    const airdropSignature = await provider.connection.requestAirdrop(authority, lamports)
+    await provider.connection.confirmTransaction(airdropSignature)
 
     const ix = controlInstructions.createAuthority({
       accounts: {
@@ -57,19 +54,19 @@ export async function createAuthority(connection: Connection, payer: Keypair): P
 
     const tx = new Transaction().add(ix)
 
-    await sendTransaction(connection, tx, [new Account(payer.secretKey)])
+    await provider.sendAndConfirm(tx, [payer])
   }
 }
 
 export async function registerAdapter(
-  connection: Connection,
+  provider: AnchorProvider,
   requester: Keypair,
   adapterProgramId: PublicKey,
   payer: Keypair
 ): Promise<void> {
   const [metadataAccount] = await PublicKey.findProgramAddress([adapterProgramId.toBuffer()], marginMetadataProgramId)
 
-  const accountInfo = await connection.getAccountInfo(metadataAccount, "processed" as Commitment)
+  const accountInfo = await provider.connection.getAccountInfo(metadataAccount, "processed" as Commitment)
   if (!accountInfo) {
     const [authority] = await PublicKey.findProgramAddress([], controlProgramId)
 
@@ -85,19 +82,19 @@ export async function registerAdapter(
       }
     })
     const tx = new Transaction().add(ix)
-    await sendTransaction(connection, tx, [new Account(payer.secretKey)])
+    await provider.sendAndConfirm(tx, [payer])
   }
 }
 
 async function sendTransaction(
-  connection: Connection,
+  provider: AnchorProvider,
   transaction: Transaction,
   signers: Array<Account>
 ): Promise<TransactionSignature> {
-  const signature = await connection.sendTransaction(transaction, signers, {
+  const signature = await provider.connection.sendTransaction(transaction, signers, {
     skipPreflight: false
   })
-  const { value } = await connection.confirmTransaction(signature, "recent")
+  const { value } = await provider.connection.confirmTransaction(signature, "recent")
   if (value?.err) {
     throw new Error(JSON.stringify(value.err))
   }
@@ -105,7 +102,7 @@ async function sendTransaction(
 }
 
 export async function createToken(
-  connection: Connection,
+  provider: AnchorProvider,
   owner: Keypair,
   decimals: number,
   supply: number
@@ -117,7 +114,7 @@ export async function createToken(
       fromPubkey: owner.publicKey,
       newAccountPubkey: mint.publicKey,
       space: MINT_SIZE,
-      lamports: await getMinimumBalanceForRentExemptMint(connection),
+      lamports: await getMinimumBalanceForRentExemptMint(provider.connection),
       programId: TOKEN_PROGRAM_ID
     }),
     createInitializeMintInstruction(mint.publicKey, decimals, owner.publicKey, null),
@@ -125,7 +122,7 @@ export async function createToken(
       fromPubkey: owner.publicKey,
       newAccountPubkey: vault.publicKey,
       space: ACCOUNT_SIZE,
-      lamports: await getMinimumBalanceForRentExemptAccount(connection),
+      lamports: await getMinimumBalanceForRentExemptAccount(provider.connection),
       programId: TOKEN_PROGRAM_ID
     }),
     createInitializeAccountInstruction(vault.publicKey, mint.publicKey, owner.publicKey),
@@ -137,35 +134,35 @@ export async function createToken(
       decimals
     )
   )
-  await sendAndConfirmTransaction(connection, transaction, [owner, mint, vault])
+  await provider.sendAndConfirm(transaction, [owner, mint, vault])
   return [mint.publicKey, vault.publicKey]
 }
 
-export async function createTokenAccount(connection: Connection, mint: PublicKey, owner: PublicKey, payer: Keypair) {
+export async function createTokenAccount(provider: AnchorProvider, mint: PublicKey, owner: PublicKey) {
   const tokenAddress = await getAssociatedTokenAddress(mint, owner, true)
   const transaction = new Transaction().add(
-    createAssociatedTokenAccountInstruction(payer.publicKey, tokenAddress, owner, mint)
+    createAssociatedTokenAccountInstruction(provider.wallet.publicKey, tokenAddress, owner, mint)
   )
-  await sendAndConfirmTransaction(connection, transaction, [payer])
+  await provider.sendAndConfirm(transaction)
   return tokenAddress
 }
 
-export async function createUserWallet(connection: Connection, lamports: number): Promise<NodeWallet> {
+export async function createUserWallet(provider: AnchorProvider, lamports: number): Promise<NodeWallet> {
   const account = Keypair.generate()
   const wallet = new NodeWallet(account)
-  const airdropSignature = await connection.requestAirdrop(account.publicKey, lamports)
-  await connection.confirmTransaction(airdropSignature)
+  const airdropSignature = await provider.connection.requestAirdrop(account.publicKey, lamports)
+  await provider.connection.confirmTransaction(airdropSignature)
   return wallet
 }
 
-export async function getMintSupply(connection: Connection, mintPublicKey: PublicKey, decimals: number) {
-  const mintAccount = await connection.getAccountInfo(mintPublicKey)
+export async function getMintSupply(provider: AnchorProvider, mintPublicKey: PublicKey, decimals: number) {
+  const mintAccount = await provider.connection.getAccountInfo(mintPublicKey)
   const mintInfo = MintLayout.decode(Buffer.from(mintAccount!.data))
   return Number(mintInfo.supply) / pow10(decimals)
 }
 
-export async function getTokenBalance(connection: Connection, commitment: Commitment, tokenAddress: PublicKey) {
-  const balance = await connection.getTokenAccountBalance(tokenAddress, commitment)
+export async function getTokenBalance(provider: AnchorProvider, commitment: Commitment, tokenAddress: PublicKey) {
+  const balance = await provider.connection.getTokenAccountBalance(tokenAddress, commitment)
   return balance.value.uiAmount
 }
 
@@ -185,11 +182,10 @@ export function pow10(decimals: number): number {
 }
 
 export async function sendToken(
-  connection: Connection,
+  provider: AnchorProvider,
   mint: PublicKey,
   amount: number,
   decimals: number,
-  owner: Keypair,
   fromTokenAccount: PublicKey,
   toTokenAccount: PublicKey
 ) {
@@ -198,10 +194,10 @@ export async function sendToken(
       fromTokenAccount,
       mint,
       toTokenAccount,
-      owner.publicKey,
+      provider.wallet.publicKey,
       amount * pow10(decimals),
       decimals
     )
   )
-  await sendAndConfirmTransaction(connection, transaction, [owner])
+  await provider.sendAndConfirm(transaction)
 }
