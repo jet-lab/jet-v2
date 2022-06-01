@@ -49,8 +49,8 @@ pub fn configure_handler(
     if let Some(new_fee_destination) = fee_destination {
         pool.fee_destination = new_fee_destination;
     }
-    let config_copy = config.clone();
-    if let Some(new_config) = config {
+
+    if let Some(new_config) = config.clone() {
         pool.config = new_config;
     }
 
@@ -90,7 +90,7 @@ pub fn configure_handler(
         fee_destination: fee_destination.unwrap_or(Pubkey::default()),
         pyth_product: ctx.accounts.pyth_product.key(),
         pyth_price: ctx.accounts.pyth_price.key(),
-        config: config_copy.unwrap_or(MarginPoolConfig::default())
+        config: config.unwrap_or(MarginPoolConfig::default())
     });
 
     Ok(())
