@@ -163,7 +163,7 @@ describe("margin swap", () => {
 
   it("deposit all token types", async () => {
     const poolMintInfo = await MarginSwap.getMintInfo(connection, marginSwap.tokenSwap.poolToken)
-    const supply: number = Number(poolMintInfo.supply)
+    const supply = Number(poolMintInfo.supply)
     const swapTokenA = await MarginAccount.getTokenAccountInfo(connection, tokenAccountA)
     const tokenA = Math.floor((Number(swapTokenA.amount) * 10000000) / supply)
     const swapTokenB = await MarginAccount.getTokenAccountInfo(connection, tokenAccountB)
@@ -208,16 +208,16 @@ describe("margin swap", () => {
 
   it("withdraw all token types", async () => {
     const poolMintInfo = await MarginSwap.getMintInfo(connection, marginSwap.tokenSwap.poolToken)
-    const supply: number = Number(poolMintInfo.supply)
+    const supply = Number(poolMintInfo.supply)
     let swapTokenA = await MarginAccount.getTokenAccountInfo(connection, tokenAccountA)
     let swapTokenB = await MarginAccount.getTokenAccountInfo(connection, tokenAccountB)
-    let feeAmount = Math.floor(10000000 / 6)
+    const feeAmount = Math.floor(10000000 / 6)
     const poolTokenAmount = 10000000 - feeAmount
     const tokenA = Math.floor((Number(swapTokenA.amount) * poolTokenAmount) / supply)
     const tokenB = Math.floor((Number(swapTokenB.amount) * poolTokenAmount) / supply)
 
-    let userAccountA = await createAccount(connection, payer, mintA, owner.publicKey, Keypair.generate())
-    let userAccountB = await createAccount(connection, payer, mintB, owner.publicKey, Keypair.generate())
+    const userAccountA = await createAccount(connection, payer, mintA, owner.publicKey, Keypair.generate())
+    const userAccountB = await createAccount(connection, payer, mintB, owner.publicKey, Keypair.generate())
 
     const userTransferAuthority = new Account()
     await marginSwap.approve(
@@ -258,13 +258,13 @@ describe("margin swap", () => {
   })
 
   it("swap", async () => {
-    let userAccountA = await createAccount(connection, payer, mintA, owner.publicKey, Keypair.generate())
+    const userAccountA = await createAccount(connection, payer, mintA, owner.publicKey, Keypair.generate())
     await mintTo(connection, payer, mintA, userAccountA, owner, 100000)
     const userTransferAuthority = new Account()
     await approve(connection, payer, userAccountA, userTransferAuthority.publicKey, owner, 100000)
 
-    let userAccountB = await createAccount(connection, payer, mintB, owner.publicKey, Keypair.generate())
-    let poolAccount = null
+    const userAccountB = await createAccount(connection, payer, mintB, owner.publicKey, Keypair.generate())
+    const poolAccount = null
 
     await marginSwap.tokenSwap.swap(
       userAccountA,
@@ -307,7 +307,7 @@ describe("margin swap", () => {
   })
 
   it("create account, approve, swap all at once", async () => {
-    let userAccountA = await createAccount(connection, payer, mintA, owner.publicKey, Keypair.generate())
+    const userAccountA = await createAccount(connection, payer, mintA, owner.publicKey, Keypair.generate())
     await mintTo(connection, payer, mintA, userAccountA, owner, 100000)
 
     const newAccount = new Account()
@@ -377,7 +377,7 @@ describe("margin swap", () => {
     const depositAmount = 10000
 
     const poolMintInfo = await MarginSwap.getMintInfo(connection, marginSwap.tokenSwap.poolToken)
-    const supply: number = Number(poolMintInfo.supply)
+    const supply = Number(poolMintInfo.supply)
     const swapTokenA = await MarginAccount.getTokenAccountInfo(connection, tokenAccountA)
     const poolTokenA = tradingTokensToPoolTokens(depositAmount, Number(swapTokenA.amount), supply)
     const swapTokenB = await MarginAccount.getTokenAccountInfo(connection, tokenAccountB)
@@ -436,8 +436,7 @@ describe("margin swap", () => {
     const roundingAmount = 1.0001 // make math a little easier
 
     const poolMintInfo = await MarginSwap.getMintInfo(connection, marginSwap.tokenSwap.poolToken)
-    const supply: number = Number(poolMintInfo.supply)
-
+    const supply = Number(poolMintInfo.supply)
     const swapTokenA = await MarginAccount.getTokenAccountInfo(connection, tokenAccountA)
     const swapTokenAPost = Number(swapTokenA.amount) - withdrawAmount
     const poolTokenA = tradingTokensToPoolTokens(withdrawAmount, swapTokenAPost, supply)

@@ -160,7 +160,7 @@ export class MarginSwap {
     amount: BN,
     payer: Account
   ): Promise<void> {
-    let tx: Transaction = new Transaction()
+    const tx: Transaction = new Transaction()
     tx.add(this.createApproveInstruction(TOKEN_PROGRAM_ID, account, delegate, owner.publicKey, amount))
     await sendAndConfirmTransaction(connection, tx, [payer, owner])
   }
@@ -181,7 +181,8 @@ export class MarginSwap {
       },
       data
     )
-    let keys = [
+
+    const keys = [
       { pubkey: account, isSigner: false, isWritable: true },
       { pubkey: delegate, isSigner: false, isWritable: false },
       { pubkey: owner, isSigner: true, isWritable: false }

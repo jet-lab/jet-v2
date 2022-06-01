@@ -223,7 +223,7 @@ export class MarginAccount {
   }
 
   async registerPosition(token_mint: PublicKey): Promise<TransactionSignature> {
-    let ix: TransactionInstruction[] = []
+    const ix: TransactionInstruction[] = []
     const tokenAccount = await this.withRegisterPosition(ix, token_mint)
     return this.provider.sendAndConfirm(new Transaction().add(...ix))
   }

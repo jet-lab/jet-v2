@@ -45,7 +45,7 @@ export class PythClient {
     assert(price)
     assert(confidence)
     assert(exponent)
-    let tx = new Transaction()
+    const tx = new Transaction()
     tx.add(
       SystemProgram.createAccount({
         fromPubkey: payer.publicKey,
@@ -75,7 +75,7 @@ export class PythClient {
   async setPythPrice(payer: Keypair, priceFeed: PublicKey, price: number, confidence: number, exponent: number) {
     const info = await this.connection.getAccountInfo(priceFeed)
     const data = parsePriceData(info!.data)
-    let tx = new Transaction()
+    const tx = new Transaction()
     tx.add(
       await this.pythInstruction.setPrice(new BN(price * 10 ** -exponent), new BN(confidence * 10 ** -exponent), {
         accounts: { price: priceFeed }
