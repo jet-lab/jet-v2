@@ -23,9 +23,7 @@ export interface MarginPoolAddresses {
   marginPool: PublicKey
   vault: PublicKey
   depositNoteMint: PublicKey
-  depositNoteOracle: PublicKey
   loanNoteMint: PublicKey
-  loanNoteOracle: PublicKey
   marginPoolAdapterMetadata: PublicKey
   tokenMetadata: PublicKey
   depositNoteMetadata: PublicKey
@@ -85,9 +83,7 @@ export class MarginPool {
     const marginPool = findDerivedAccount(programId, tokenMintAddress)
     const vault = findDerivedAccount(programId, marginPool, "vault")
     const depositNoteMint = findDerivedAccount(programId, marginPool, "deposit-notes")
-    const depositNoteOracle = findDerivedAccount(programId, marginPool, "deposit-oracle")
     const loanNoteMint = findDerivedAccount(programId, marginPool, "loan-notes")
-    const loanNoteOracle = findDerivedAccount(programId, marginPool, "loan-oracle")
     const marginPoolAdapterMetadata = findDerivedAccount(programs.config.metadataProgramId, programId)
     const tokenMetadata = findDerivedAccount(programs.config.metadataProgramId, tokenMint)
     const depositNoteMetadata = findDerivedAccount(programs.config.metadataProgramId, depositNoteMint)
@@ -99,9 +95,7 @@ export class MarginPool {
       marginPool,
       vault,
       depositNoteMint,
-      depositNoteOracle,
       loanNoteMint,
-      loanNoteOracle,
       marginPoolAdapterMetadata,
       tokenMetadata,
       depositNoteMetadata,
