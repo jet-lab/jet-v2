@@ -4,9 +4,9 @@ import { AnchorProvider, BN } from "@project-serum/anchor"
 import NodeWallet from "@project-serum/anchor/dist/cjs/nodewallet"
 import { ConfirmOptions, Connection, Keypair, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js"
 
-import MARGIN_CONFIG from "../../../libraries/ts/src/src/margin/config.json"
+import MARGIN_CONFIG from "../../../libraries/ts/src/margin/config.json"
 
-import { MarginAccount, PoolAmount, MarginClient, MarginPool, MarginPoolConfig } from "../../../libraries/ts/src/src"
+import { MarginAccount, PoolAmount, MarginClient, MarginPool, MarginPoolConfig } from "../../../libraries/ts/src"
 
 import { PythClient } from "../pyth/pythClient"
 import {
