@@ -6,7 +6,7 @@
     "fmt:fix": "prettier --write .",
     "lint": "eslint . --ext ts",
     "prepare": "husky install",
-    "precommit": "npm run compile && npm run fmt:fix && npm run lint && npm run test",
+    "precommit": "npm run compile && npm run fmt:fix && npm run lint && npm test",
     "test": "anchor test -- --features devnet"
   },
   "dependencies": {
