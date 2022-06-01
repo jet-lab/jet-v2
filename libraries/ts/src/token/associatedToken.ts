@@ -23,6 +23,7 @@ import { findDerivedAccount } from "../utils/pda"
 import { TokenAmount } from "./tokenAmount"
 
 export class AssociatedToken {
+  static readonly NATIVE_DECIMALS = 9
   exists: boolean
   /**
    * Get the address for the associated token account
@@ -70,11 +71,7 @@ export class AssociatedToken {
   static async loadAux(connection: Connection, address: Address, decimals: number) {
     const pubkey = translateAddress(address)
     const account = await connection.getAccountInfo(pubkey)
-    if (account) {
-      return AssociatedToken.decodeAccount(account, pubkey, decimals)
-    } else {
-      return AssociatedToken.zeroAux(address, decimals)
-    }
+    return AssociatedToken.decodeAccount(account, pubkey, decimals)
   }
 
   static zero(mint: Address, owner: Address, decimals: number) {
@@ -89,6 +86,7 @@ export class AssociatedToken {
     return new AssociatedToken(pubkey, info, amount)
   }
 
+  /** Loads multiple token accounts, loads wrapped SOL. */
   static async loadMultiple(
     connection: Connection,
     mints: Address[],
@@ -112,6 +110,53 @@ export class AssociatedToken {
     return await this.loadMultipleAux(connection, addresses, decimals)
   }
 
+  /** Loads multiple token accounts. If the native mint is provided, loads the native SOL balance of the owner instead. */
+  static async loadMultipleOrNative(
+    connection: Connection,
+    mints: Address[],
+    decimals: number | number[],
+    owners: Address | Address[]
+  ): Promise<AssociatedToken[]> {
+    if (Array.isArray(owners) && owners.length !== mints.length) {
+      throw new Error("Owners array length does not equal mints array length")
+    }
+    if (Array.isArray(decimals) && decimals.length !== mints.length) {
+      throw new Error("Decimals array length does not equal mints array length")
+    }
+
+    const mintAddresses = mints.map(translateAddress)
+    const addresses: PublicKey[] = []
+    for (let i = 0; i < mintAddresses.length; i++) {
+      const mint = mintAddresses[i]
+      const owner = translateAddress(Array.isArray(owners) ? owners[i] : owners)
+
+      if (mint.equals(NATIVE_MINT)) {
+        // Load the owner and read their SOL balance
+        addresses.push(owner)
+      } else {
+        // Load the token account
+        addresses.push(AssociatedToken.derive(mint, owner))
+      }
+    }
+
+    const infos = await connection.getMultipleAccountsInfo(addresses)
+    const accounts: AssociatedToken[] = []
+    for (let i = 0; i < mintAddresses.length; i++) {
+      const mint = mintAddresses[i]
+      const address = addresses[i]
+      const decimal = Array.isArray(decimals) ? decimals[i] : decimals
+      const info = infos[i]
+      if (mint.equals(NATIVE_MINT)) {
+        // Load the owner and read their SOL balance
+        accounts.push(AssociatedToken.decodeNative(info, address))
+      } else {
+        // Load the token account
+        accounts.push(AssociatedToken.decodeAccount(info, addresses[i], decimal))
+      }
+    }
+    return accounts
+  }
+
   static async loadMultipleAux(
     connection: Connection,
     addresses: Address[],
@@ -126,9 +171,7 @@ export class AssociatedToken {
     const accounts = await connection.getMultipleAccountsInfo(pubkeys)
     return accounts.map((account, i) => {
       const decimal = Array.isArray(decimals) ? decimals[i] : decimals
-      return account
-        ? AssociatedToken.decodeAccount(account, pubkeys[i], decimal)
-        : AssociatedToken.zeroAux(pubkeys[i], decimal)
+      return AssociatedToken.decodeAccount(account, pubkeys[i], decimal)
     })
   }
 
@@ -167,11 +210,14 @@ export class AssociatedToken {
    * @param {PublicKey} address
    * @returns
    */
-  static decodeAccount(data: AccountInfo<Buffer>, address: Address, decimals: number) {
+  static decodeAccount(data: AccountInfo<Buffer> | null, address: Address, decimals: number) {
     const publicKey = translateAddress(address)
-    if (!data) throw new TokenAccountNotFoundError()
-    if (!data.owner.equals(TOKEN_PROGRAM_ID)) throw new TokenInvalidAccountOwnerError()
-    if (data.data.length != ACCOUNT_SIZE) throw new TokenInvalidAccountSizeError()
+    if (!data) {
+      return AssociatedToken.zeroAux(publicKey, decimals)
+    }
+
+    if (data && !data.owner.equals(TOKEN_PROGRAM_ID)) throw new TokenInvalidAccountOwnerError()
+    if (data && data.data.length != ACCOUNT_SIZE) throw new TokenInvalidAccountSizeError()
 
     const rawAccount = AccountLayout.decode(data.data)
 
@@ -212,6 +258,23 @@ export class AssociatedToken {
       isInitialized: rawMint.isInitialized,
       freezeAuthority: rawMint.freezeAuthorityOption ? rawMint.freezeAuthority : null
     }
+  }
+
+  /**
+   * Decode a token account. From @solana/spl-token
+   * @param {AccountInfo<Buffer>} inifo
+   * @param {PublicKey} address
+   * @returns
+   */
+  static decodeNative(info: AccountInfo<Buffer> | null, address: Address) {
+    const publicKey = translateAddress(address)
+    if (info && info.data.length != 0) throw new TokenInvalidAccountSizeError()
+
+    return new AssociatedToken(
+      translateAddress(address),
+      null,
+      TokenAmount.lamports(new BN(info?.lamports.toString() ?? "0"), this.NATIVE_DECIMALS)
+    )
   }
 
   /**

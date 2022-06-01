@@ -84,9 +84,9 @@ export class MarginPool {
     const programId = translateAddress(programs.config.marginPoolProgramId)
     const marginPool = findDerivedAccount(programId, tokenMintAddress)
     const vault = findDerivedAccount(programId, marginPool, "vault")
-    const depositNoteMint = findDerivedAccount(programId, marginPool, "deposit-note-mint")
+    const depositNoteMint = findDerivedAccount(programId, marginPool, "deposit-notes")
     const depositNoteOracle = findDerivedAccount(programId, marginPool, "deposit-oracle")
-    const loanNoteMint = findDerivedAccount(programId, marginPool, "loan-note-mint")
+    const loanNoteMint = findDerivedAccount(programId, marginPool, "loan-notes")
     const loanNoteOracle = findDerivedAccount(programId, marginPool, "loan-oracle")
     const marginPoolAdapterMetadata = findDerivedAccount(programs.config.metadataProgramId, programId)
     const tokenMetadata = findDerivedAccount(programs.config.metadataProgramId, tokenMint)
@@ -309,7 +309,7 @@ export class MarginPool {
   // }
 
   async refreshPosition(marginAccount: MarginAccount) {
-    const token_metadata = await marginAccount.getTokenMetadata(this.addresses.tokenMint)
+    const tokenMetadata = await marginAccount.getTokenMetadata(this.addresses.tokenMint)
 
     const ix: TransactionInstruction[] = []
     await this.withAdapterInvoke(
@@ -318,7 +318,7 @@ export class MarginPool {
       marginAccount.address,
       this.programs.config.marginPoolProgramId,
       this.addresses.marginPoolAdapterMetadata,
-      await this.makeMarginRefreshPositionInstruction(marginAccount.address, token_metadata.pythPrice)
+      await this.makeMarginRefreshPositionInstruction(marginAccount.address, tokenMetadata.pythPrice)
     )
     return await marginAccount.provider.sendAndConfirm(new Transaction().add(...ix))
   }
@@ -331,7 +331,7 @@ export class MarginPool {
     const loan_position = await marginAccount.getOrCreatePosition(this.addresses.loanNoteMint)
     assert(loan_position)
 
-    const token_metadata = await marginAccount.getTokenMetadata(this.addresses.tokenMint)
+    const tokenMetadata = await marginAccount.getTokenMetadata(this.addresses.tokenMint)
 
     const data = Buffer.from(Uint8Array.of(0, ...new BN(500000).toArray("le", 4)))
     const additionalComputeBudgetInstruction = new TransactionInstruction({
@@ -346,7 +346,7 @@ export class MarginPool {
       marginAccount.address,
       this.programs.config.marginPoolProgramId,
       this.addresses.marginPoolAdapterMetadata,
-      await this.makeMarginRefreshPositionInstruction(marginAccount.address, token_metadata.pythPrice)
+      await this.makeMarginRefreshPositionInstruction(marginAccount.address, tokenMetadata.pythPrice)
     )
     await this.withAdapterInvoke(
       ix,
@@ -421,7 +421,7 @@ export class MarginPool {
   /// `deposit_account` - The account with notes to repay the loan
   /// `loan_account` - The account with the loan debt to be reduced
   /// `amount` - The amount to be repaid
-  async marginRepay(marginAccount: MarginAccount, amount: BN) {
+  async marginRepay(marginAccount: MarginAccount, amount: PoolAmount) {
     await marginAccount.refresh()
     const deposit_position = await marginAccount.getOrCreatePosition(this.addresses.depositNoteMint)
     assert(deposit_position)
@@ -440,7 +440,7 @@ export class MarginPool {
         marginAccount.address,
         deposit_position.address,
         loan_position.address,
-        PoolAmount.notes(amount)
+        amount
       )
     )
 
@@ -477,7 +477,7 @@ export class MarginPool {
   /// `source` - The token account that has the deposit notes to be exchanged
   /// `destination` - The token account to send the withdrawn deposit
   /// `PoolAmount` - The amount of the deposit
-  async marginWithdraw(marginAccount: MarginAccount, destination: Address, amount: BN) {
+  async marginWithdraw(marginAccount: MarginAccount, destination: Address, amount: PoolAmount) {
     const depositPosition = await marginAccount.getOrCreatePosition(this.addresses.depositNoteMint)
     assert(depositPosition)
 
@@ -489,12 +489,7 @@ export class MarginPool {
       marginAccount.address,
       this.programs.config.marginPoolProgramId,
       this.addresses.marginPoolAdapterMetadata,
-      await this.makeMarginWithdrawInstruction(
-        marginAccount.address,
-        depositPosition.address,
-        destination,
-        PoolAmount.tokens(amount)
-      )
+      await this.makeMarginWithdrawInstruction(marginAccount.address, depositPosition.address, destination, amount)
     )
     tx.add(...ix)
 

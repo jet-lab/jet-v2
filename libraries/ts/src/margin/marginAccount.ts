@@ -1,6 +1,6 @@
 import assert from "assert"
 import { Address, AnchorProvider, BN, translateAddress } from "@project-serum/anchor"
-import { AccountLayout, NATIVE_MINT, TOKEN_PROGRAM_ID } from "@solana/spl-token"
+import { AccountLayout, TOKEN_PROGRAM_ID } from "@solana/spl-token"
 import {
   Connection,
   PublicKey,
@@ -16,10 +16,27 @@ import { MarginPrograms } from "./marginClient"
 import { findDerivedAccount } from "../utils/pda"
 import { AssociatedToken, MarginTokens } from ".."
 
+export interface MarginAccountAddresses {
+  marginAccount: PublicKey
+  owner: PublicKey
+  positions: Record<string, MarginPositionAddresses>
+}
+
+export interface MarginPositionAddresses {
+  account: PublicKey
+  tokenAccount: PublicKey
+  tokenMint: PublicKey
+  tokenMetadata: PublicKey
+}
+
 export class MarginAccount {
   static readonly SEED_MAX_VALUE = 65535
-  public address: PublicKey
-  public owner: PublicKey
+  get address() {
+    return this.addresses.marginAccount
+  }
+  get owner() {
+    return this.addresses.owner
+  }
 
   /**
    * Creates an instance of margin account.
@@ -35,25 +52,24 @@ export class MarginAccount {
   constructor(
     public programs: MarginPrograms,
     public provider: AnchorProvider,
-    address: Address,
-    owner: Address,
+    public addresses: MarginAccountAddresses,
     public seed: number,
     public info: MarginAccountData | null,
     private positions: AccountPositionList | null
-  ) {
-    this.address = translateAddress(address)
-    this.owner = translateAddress(owner)
-  }
+  ) {}
 
   static async loadTokens(programs: MarginPrograms, owner: Address): Promise<Record<MarginTokens, AssociatedToken>> {
-    const tokenConfigs = Object.values(programs.config.tokens).filter(
-      token => !translateAddress(token.mint).equals(NATIVE_MINT)
-    )
+    const tokenConfigs = Object.values(programs.config.tokens)
 
     const mints = tokenConfigs.map(token => token.mint)
     const decimals = tokenConfigs.map(token => token.decimals)
 
-    const tokens = await AssociatedToken.loadMultiple(programs.margin.provider.connection, mints, decimals, owner)
+    const tokens = await AssociatedToken.loadMultipleOrNative(
+      programs.margin.provider.connection,
+      mints,
+      decimals,
+      owner
+    )
 
     const tokensMap: Record<string, AssociatedToken> = {}
     for (let i = 0; i < tokens.length; i++) {
@@ -73,13 +89,34 @@ export class MarginAccount {
    * @return {PublicKey}
    * @memberof MarginAccount
    */
-  static derive(programs: MarginPrograms, owner: Address, seed: number): PublicKey {
+  static derive(programs: MarginPrograms, owner: Address, seed: number): MarginAccountAddresses {
     if (seed > this.SEED_MAX_VALUE || seed < 0) {
       console.log(`Seed is not within the range: 0 <= seed <= ${this.SEED_MAX_VALUE}.`)
     }
+    const ownerAddress = translateAddress(owner)
     const buffer = Buffer.alloc(2)
     buffer.writeUInt16LE(seed)
-    return findDerivedAccount(programs.config.marginProgramId, owner, buffer)
+    const marginAccount = findDerivedAccount(programs.config.marginProgramId, owner, buffer)
+
+    const tokenConfigs = Object.values(programs.config.tokens)
+    const positionAddressesList: MarginPositionAddresses[] = tokenConfigs.map(tokenConfig => {
+      const tokenMint = translateAddress(tokenConfig.mint)
+      const account = findDerivedAccount(programs.config.marginProgramId, marginAccount, tokenMint)
+      const tokenAccount = findDerivedAccount(programs.config.marginProgramId, marginAccount, tokenMint)
+      const tokenMetadata = findDerivedAccount(programs.config.metadataProgramId, tokenMint)
+      return {
+        tokenMint,
+        account,
+        tokenAccount,
+        tokenMetadata
+      }
+    })
+
+    const positions: Record<string, MarginPositionAddresses> = {}
+    for (let i = 0; i < positionAddressesList.length; i++) {
+      positions[translateAddress(tokenConfigs[i].mint).toBase58()] = positionAddressesList[i]
+    }
+    return { marginAccount, owner: ownerAddress, positions }
   }
 
   static deriveTokenMetadata(programs: MarginPrograms, tokenMint: Address) {
@@ -102,8 +139,8 @@ export class MarginAccount {
     seed: number
   ): Promise<MarginAccount> {
     const ownerPubkey = translateAddress(owner)
-    const address = this.derive(programs, ownerPubkey, seed)
-    const marginAccount = new MarginAccount(programs, provider, address, ownerPubkey, seed, null, null)
+    const addresses = this.derive(programs, ownerPubkey, seed)
+    const marginAccount = new MarginAccount(programs, provider, addresses, seed, null, null)
 
     await marginAccount.refresh()
 
@@ -112,14 +149,13 @@ export class MarginAccount {
 
   async refresh() {
     this.info = await this.programs.margin.account.marginAccount.fetchNullable(this.address)
-
     this.positions = this.info ? AccountPositionListLayout.decode(new Uint8Array(this.info.positions)) : null
   }
 
   static async exists(programs: MarginPrograms, owner: Address, seed: number): Promise<boolean> {
     const ownerPubkey = translateAddress(owner)
-    const address = this.derive(programs, ownerPubkey, seed)
-    const info = await programs.margin.provider.connection.getAccountInfo(address)
+    const { marginAccount } = this.derive(programs, ownerPubkey, seed)
+    const info = await programs.margin.provider.connection.getAccountInfo(marginAccount)
     return !!info
   }
 
@@ -169,7 +205,6 @@ export class MarginAccount {
   }
 
   //TODO Withdraw
-
   async getOrCreatePosition(tokenMint: Address) {
     assert(this.positions)
     const tokenMintAddress = translateAddress(tokenMint)
@@ -222,10 +257,11 @@ export class MarginAccount {
     instructions.push(ix)
   }
 
-  async registerPosition(token_mint: PublicKey): Promise<TransactionSignature> {
+  async registerPosition(tokenMint: Address): Promise<TransactionSignature> {
+    const tokenMintAddress = translateAddress(tokenMint)
     const ix: TransactionInstruction[] = []
-    const tokenAccount = await this.withRegisterPosition(ix, token_mint)
-    return this.provider.sendAndConfirm(new Transaction().add(...ix))
+    const tokenAccount = await this.withRegisterPosition(ix, tokenMintAddress)
+    return await this.provider.sendAndConfirm(new Transaction().add(...ix))
   }
 
   /// Get instruction to register new position
@@ -239,27 +275,26 @@ export class MarginAccount {
   ///
   /// Returns the instruction, and the address of the token account to be
   /// created for the position.
-  async withRegisterPosition(instructions: TransactionInstruction[], token_mint: PublicKey): Promise<PublicKey> {
-    const token_account = findDerivedAccount(this.programs.config.marginProgramId, this.address, token_mint)
-
-    const metadata = findDerivedAccount(this.programs.config.metadataProgramId, token_mint)
+  async withRegisterPosition(instructions: TransactionInstruction[], tokenMint: Address): Promise<PublicKey> {
+    const tokenAccount = findDerivedAccount(this.programs.config.marginProgramId, this.address, tokenMint)
+    const metadata = findDerivedAccount(this.programs.config.metadataProgramId, tokenMint)
 
     const ix = await this.programs.margin.methods
       .registerPosition()
       .accounts({
-        authority: this.owner, //this.authority,
+        authority: this.owner,
         payer: this.provider.wallet.publicKey,
         marginAccount: this.address,
-        positionTokenMint: token_mint,
+        positionTokenMint: tokenMint,
         metadata,
-        tokenAccount: token_account,
+        tokenAccount,
         tokenProgram: TOKEN_PROGRAM_ID,
         rent: SYSVAR_RENT_PUBKEY,
         systemProgram: SystemProgram.programId
       })
       .instruction()
     instructions.push(ix)
-    return token_account
+    return tokenAccount
   }
 
   async closePosition(tokenAccount: PublicKey) {
