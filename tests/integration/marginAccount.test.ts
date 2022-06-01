@@ -12,7 +12,7 @@ import {
   SystemProgram
 } from "@solana/web3.js"
 
-import { MarginAccount, MarginClient } from "../../libraries/ts"
+import { MarginAccount, MarginClient } from "../../libraries/ts/src"
 import { createAuthority, createUserWallet } from "./util"
 
 describe("margin account", () => {
