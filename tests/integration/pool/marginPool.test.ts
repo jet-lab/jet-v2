@@ -31,8 +31,7 @@ describe("margin pool", () => {
   const provider = AnchorProvider.local(undefined, confirmOptions)
   anchor.setProvider(provider)
 
-  // @ts-ignore
-  const payer: Keypair = provider.wallet.payer;
+  const payer: Keypair = (provider.wallet as NodeWallet).payer
 
   const programs = MarginClient.getPrograms(provider, "localnet")
 

@@ -26,7 +26,7 @@ import {
   Transaction,
   TransactionSignature
 } from "@solana/web3.js"
-import assert from 'assert'
+import assert from "assert"
 
 import MARGIN_CONFIG from "../../libraries/ts/src/margin/config.json"
 
@@ -41,7 +41,7 @@ const controlInstructions = buildInstructions(JetControlIDL, controlProgramId) a
 export async function createAuthority(connection: Connection, payer: Keypair): Promise<void> {
   const [authority] = await PublicKey.findProgramAddress([], controlProgramId)
 
-  const accountInfo = await connection.getAccountInfo(authority, "processed" as Commitment);
+  const accountInfo = await connection.getAccountInfo(authority, "processed" as Commitment)
   if (!accountInfo) {
     const lamports = 1 * LAMPORTS_PER_SOL
     const airdropSignature = await connection.requestAirdrop(authority, lamports)
@@ -69,7 +69,7 @@ export async function registerAdapter(
 ): Promise<void> {
   const [metadataAccount] = await PublicKey.findProgramAddress([adapterProgramId.toBuffer()], marginMetadataProgramId)
 
-  const accountInfo = await connection.getAccountInfo(metadataAccount, "processed" as Commitment);
+  const accountInfo = await connection.getAccountInfo(metadataAccount, "processed" as Commitment)
   if (!accountInfo) {
     const [authority] = await PublicKey.findProgramAddress([], controlProgramId)
 

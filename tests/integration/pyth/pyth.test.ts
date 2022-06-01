@@ -7,14 +7,12 @@ import { ConfirmOptions, Connection, Keypair, LAMPORTS_PER_SOL } from "@solana/w
 import { PythClient } from "./pythClient"
 
 describe("pyth-oracle", () => {
-
   const confirmOptions: ConfirmOptions = { preflightCommitment: "processed", commitment: "processed" }
 
   const provider = AnchorProvider.local(undefined, confirmOptions)
   anchor.setProvider(provider)
 
-  // @ts-ignore
-  const payer: Keypair = provider.wallet.payer;
+  const payer: Keypair = (provider.wallet as NodeWallet).payer
 
   it("Fund payer", async () => {
     const airdropSignature = await provider.connection.requestAirdrop(provider.wallet.publicKey, 300 * LAMPORTS_PER_SOL)
