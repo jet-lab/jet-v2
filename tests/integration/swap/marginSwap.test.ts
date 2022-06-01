@@ -17,9 +17,7 @@ import {
 
 import MARGIN_CONFIG from "../../../libraries/ts/src/margin/config.json"
 
-import { MarginAccount } from "../../../libraries/ts/src/margin/marginAccount"
-import { TokenSwap, CurveType } from "../../../libraries/ts/src/margin/swap"
-import { MarginSwap } from "../../../libraries/ts/src/margin/swap/marginSwap"
+import { MarginAccount, TokenSwap, CurveType, MarginSwap } from "../../../libraries/ts/src"
 
 function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms))

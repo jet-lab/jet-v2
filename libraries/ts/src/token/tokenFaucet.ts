@@ -30,7 +30,8 @@ export class TokenFaucet {
     instructions: TransactionInstruction[],
     tokenMint: PublicKey,
     tokenFaucet: PublicKey,
-    tokenAccount: PublicKey
+    tokenAccount: PublicKey,
+    lamports: BN
   ) {
     const pubkeyNonce = await PublicKey.findProgramAddress([Buffer.from("faucet", "utf8")], this.FAUCET_PROGRAM_ID)
 
@@ -48,7 +49,7 @@ export class TokenFaucet {
 
     const faucetIx = new TransactionInstruction({
       programId: this.FAUCET_PROGRAM_ID,
-      data: Buffer.from([1, ...new BN(10000000000000).toArray("le", 8)]),
+      data: Buffer.from([1, ...lamports.toArray("le", 8)]),
       keys
     })
 
@@ -69,7 +70,8 @@ export class TokenFaucet {
     provider: AnchorProvider,
     faucet: PublicKey,
     user: PublicKey,
-    mint: PublicKey
+    mint: PublicKey,
+    lamports: BN
   ): Promise<string> {
     const instructions: TransactionInstruction[] = []
 
@@ -78,12 +80,13 @@ export class TokenFaucet {
     const address = await AssociatedToken.withCreate(instructions, provider, user, mint)
 
     // Create airdrop instructions
-    await this.withAirdrop(instructions, mint, faucet, address)
+    await this.withAirdrop(instructions, mint, faucet, address, lamports)
 
     // Execute airdrop
     return provider.sendAndConfirm(new Transaction().add(...instructions))
   }
 
+  /** Airdrops native SOL if the mint is the native mint. */
   static async airdrop(
     provider: AnchorProvider,
     lamports: BN,
@@ -118,7 +121,7 @@ export class TokenFaucet {
       return airdropTxnId
     } else if (faucet) {
       // Faucet airdrop
-      await this.withAirdrop(ix, mintAddress, translateAddress(faucet), destination)
+      await this.withAirdrop(ix, mintAddress, translateAddress(faucet), destination, lamports)
       return await provider.sendAndConfirm(new Transaction().add(...ix))
     } else {
       // Mint to the destination token account
@@ -126,32 +129,5 @@ export class TokenFaucet {
       ix.push(mintToIx)
       return await provider.sendAndConfirm(new Transaction().add(...ix))
     }
-  }
-
-  static async buildFaucetAirdropIx(
-    amount: BN,
-    tokenMintPublicKey: PublicKey,
-    destinationAccountPubkey: PublicKey,
-    faucetPubkey: PublicKey
-  ) {
-    const pubkeyNonce = await PublicKey.findProgramAddress([new TextEncoder().encode("faucet")], this.FAUCET_PROGRAM_ID)
-
-    const keys = [
-      { pubkey: pubkeyNonce[0], isSigner: false, isWritable: false },
-      {
-        pubkey: tokenMintPublicKey,
-        isSigner: false,
-        isWritable: true
-      },
-      { pubkey: destinationAccountPubkey, isSigner: false, isWritable: true },
-      { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
-      { pubkey: faucetPubkey, isSigner: false, isWritable: false }
-    ]
-
-    return new TransactionInstruction({
-      programId: this.FAUCET_PROGRAM_ID,
-      data: Buffer.from([1, ...amount.toArray("le", 8)]),
-      keys
-    })
   }
 }

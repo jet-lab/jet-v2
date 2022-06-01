@@ -76,6 +76,17 @@ export class TokenAmount {
   }
 
   /**
+   * @static
+   * @param {BN} lamports
+   * @param {number} decimals
+   * @return {TokenAmount}
+   * @memberof TokenAmount
+   */
+  public static lamports(lamports: BN, decimals: number): TokenAmount {
+    return new TokenAmount(lamports, decimals)
+  }
+
+  /**
    * @private
    * @static
    * @param {BN} lamports
