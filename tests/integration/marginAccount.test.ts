@@ -1,4 +1,3 @@
-import { assert } from "chai"
 import * as anchor from "@project-serum/anchor"
 import { AnchorProvider } from "@project-serum/anchor"
 import NodeWallet from "@project-serum/anchor/dist/cjs/nodewallet"
@@ -30,14 +29,14 @@ describe("margin account", () => {
 
   it("Create two user wallets", async () => {
     // Create our two user wallets, with some SOL funding to get started
-    wallet_a = await createUserWallet(provider.connection, 10 * LAMPORTS_PER_SOL)
-    wallet_b = await createUserWallet(provider.connection, 10 * LAMPORTS_PER_SOL)
+    wallet_a = await createUserWallet(provider, 10 * LAMPORTS_PER_SOL)
+    wallet_b = await createUserWallet(provider, 10 * LAMPORTS_PER_SOL)
     provider_a = new AnchorProvider(provider.connection, wallet_a, confirmOptions)
     provider_b = new AnchorProvider(provider.connection, wallet_b, confirmOptions)
   })
 
   it("Create authority", async () => {
-    await createAuthority(provider.connection, payer)
+    await createAuthority(provider, payer)
   })
 
   it("Create margin accounts", async () => {

@@ -2,7 +2,7 @@ import { assert } from "chai"
 import * as anchor from "@project-serum/anchor"
 import { AnchorProvider, BN } from "@project-serum/anchor"
 import NodeWallet from "@project-serum/anchor/dist/cjs/nodewallet"
-import { ConfirmOptions, Connection, Keypair, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js"
+import { ConfirmOptions, Keypair, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js"
 
 import MARGIN_CONFIG from "../../../libraries/ts/src/margin/config.json"
 
@@ -31,8 +31,9 @@ describe("margin pool", () => {
   const provider = AnchorProvider.local(undefined, confirmOptions)
   anchor.setProvider(provider)
 
-  const payer: Keypair = (provider.wallet as NodeWallet).payer
-
+  const payer = (provider.wallet as NodeWallet).payer
+  const ownerKeypair = payer
+  
   const programs = MarginClient.getPrograms(provider, "localnet")
 
   it("Fund payer", async () => {
@@ -44,16 +45,16 @@ describe("margin pool", () => {
   let TSOL: [PublicKey, PublicKey]
 
   it("Create tokens", async () => {
-    USDC = await createToken(provider.connection, payer, 6, 10_000_000)
-    const usdc_supply = await getMintSupply(provider.connection, USDC[0], 6)
+    USDC = await createToken(provider, payer, 6, 10_000_000)
+    const usdc_supply = await getMintSupply(provider, USDC[0], 6)
     assert(usdc_supply > 0)
-    const usdc_balance = await getTokenBalance(provider.connection, confirmOptions.commitment, USDC[1])
+    const usdc_balance = await getTokenBalance(provider, confirmOptions.commitment, USDC[1])
     assert(usdc_balance > 0)
 
-    TSOL = await createToken(provider.connection, payer, 9, 10_000)
-    const tsol_supply = await getMintSupply(provider.connection, TSOL[0], 9)
+    TSOL = await createToken(provider, payer, 9, 10_000)
+    const tsol_supply = await getMintSupply(provider, TSOL[0], 9)
     assert(tsol_supply > 0)
-    const tsol_balance = await getTokenBalance(provider.connection, confirmOptions.commitment, TSOL[1])
+    const tsol_balance = await getTokenBalance(provider, confirmOptions.commitment, TSOL[1])
     assert(tsol_balance > 0)
   })
 
@@ -76,12 +77,11 @@ describe("margin pool", () => {
   })
 
   it("Create authority", async () => {
-    await createAuthority(provider.connection, payer)
+    await createAuthority(provider, payer)
   })
 
-  /*
   it("Register adapter", async () => {
-    await registerAdapter(provider.connection, payer, marginPoolProgramId, payer)
+    await registerAdapter(provider, payer, marginPoolProgramId, payer)
   })
 
   const ONE_USDC: number = 1_000_000
@@ -148,11 +148,11 @@ describe("margin pool", () => {
   let provider_b: AnchorProvider
 
   it("Create our two user wallets, with some SOL funding to get started", async () => {
-    wallet_a = await createUserWallet(connection, 10 * LAMPORTS_PER_SOL)
-    wallet_b = await createUserWallet(connection, 10 * LAMPORTS_PER_SOL)
+    wallet_a = await createUserWallet(provider, 10 * LAMPORTS_PER_SOL)
+    wallet_b = await createUserWallet(provider, 10 * LAMPORTS_PER_SOL)
 
-    provider_a = new AnchorProvider(connection, wallet_a, opts)
-    provider_b = new AnchorProvider(connection, wallet_b, opts)
+    provider_a = new AnchorProvider(provider.connection, wallet_a, confirmOptions)
+    provider_b = new AnchorProvider(provider.connection, wallet_b, confirmOptions)
   })
 
   let maginAccount_A: MarginAccount
@@ -173,12 +173,12 @@ describe("margin pool", () => {
 
   it("Create some tokens for each user to deposit", async () => {
     const payer_A: Keypair = Keypair.fromSecretKey((wallet_a as NodeWallet).payer.secretKey)
-    user_a_usdc_account = await createTokenAccount(connection, USDC[0], wallet_a.publicKey, payer_A)
-    await sendToken(connection, USDC[0], 1_000_000, 6, ownerKeypair, new PublicKey(USDC[1]), user_a_usdc_account)
+    user_a_usdc_account = await createTokenAccount(provider, USDC[0], wallet_a.publicKey, payer_A)
+    await sendToken(provider, USDC[0], 1_000_000, 6, ownerKeypair, new PublicKey(USDC[1]), user_a_usdc_account)
 
     const payer_B: Keypair = Keypair.fromSecretKey((wallet_b as NodeWallet).payer.secretKey)
-    user_b_tsol_account = await createTokenAccount(connection, TSOL[0], wallet_b.publicKey, payer_B)
-    await sendToken(connection, TSOL[0], 1_000, 9, ownerKeypair, new PublicKey(TSOL[1]), user_b_tsol_account)
+    user_b_tsol_account = await createTokenAccount(provider, TSOL[0], wallet_b.publicKey, payer_B)
+    await sendToken(provider, TSOL[0], 1_000, 9, ownerKeypair, new PublicKey(TSOL[1]), user_b_tsol_account)
   })
 
   it("Set the prices for each token", async () => {
@@ -188,11 +188,11 @@ describe("margin pool", () => {
 
   it("Deposit user funds into their margin accounts", async () => {
     await maginAccount_A.deposit(maginPool_USDC, user_a_usdc_account, new BN(1_000_000 * ONE_USDC))
-    assert((await getTokenBalance(connection, "processed", user_a_usdc_account)) == 0)
+    assert((await getTokenBalance(provider, "processed", user_a_usdc_account)) == 0)
     await maginPool_USDC.refreshPosition(maginAccount_A)
 
     await maginAccount_B.deposit(maginPool_TSOL, user_b_tsol_account, new BN(1_000 * ONE_TSOL))
-    assert((await getTokenBalance(connection, "processed", user_b_tsol_account)) == 0)
+    assert((await getTokenBalance(provider, "processed", user_b_tsol_account)) == 0)
     await maginPool_TSOL.refreshPosition(maginAccount_B)
   })
 
@@ -225,8 +225,7 @@ describe("margin pool", () => {
   })
 
   it("Now verify that the users got all their tokens back", async () => {
-    assert((await getTokenBalance(connection, "processed", user_a_usdc_account)) == 1_000_000)
-    assert((await getTokenBalance(connection, "processed", user_b_tsol_account)) == 1_000)
+    assert((await getTokenBalance(provider, "processed", user_a_usdc_account)) == 1_000_000)
+    assert((await getTokenBalance(provider, "processed", user_b_tsol_account)) == 1_000)
   })
-  */
 })

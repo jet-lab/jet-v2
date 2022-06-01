@@ -1,8 +1,7 @@
 import assert from "assert"
 import * as anchor from "@project-serum/anchor"
 import { AnchorProvider } from "@project-serum/anchor"
-import NodeWallet from "@project-serum/anchor/dist/cjs/nodewallet"
-import { ConfirmOptions, Connection, Keypair, LAMPORTS_PER_SOL } from "@solana/web3.js"
+import { ConfirmOptions, Keypair, LAMPORTS_PER_SOL } from "@solana/web3.js"
 
 import { PythClient } from "./pythClient"
 
