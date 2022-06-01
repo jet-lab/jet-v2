@@ -1,13 +1,12 @@
 import { assert } from "chai"
 import * as anchor from "@project-serum/anchor"
-import { AnchorProvider, BN, Provider } from "@project-serum/anchor"
+import { AnchorProvider, BN } from "@project-serum/anchor"
 import NodeWallet from "@project-serum/anchor/dist/cjs/nodewallet"
-import { Account, ConfirmOptions, Connection, Keypair, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js"
+import { ConfirmOptions, Connection, Keypair, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js"
 
 import MARGIN_CONFIG from "../../../libraries/ts/src/margin/config.json"
 
-import { MarginAccount } from "../../../libraries/ts/src/margin"
-import { MarginPool, MarginPoolConfig } from "../../../libraries/ts/src/margin/pool/marginPool"
+import { MarginAccount, PoolAmount, MarginClient, MarginPool, MarginPoolConfig } from "../../../libraries/ts/src"
 
 import { PythClient } from "../pyth/pythClient"
 import {
@@ -20,7 +19,6 @@ import {
   registerAdapter,
   sendToken
 } from "../util"
-import { MarginClient } from "../../../libraries/ts/src/margin/marginClient"
 
 describe("margin pool", () => {
   const controlProgramId: PublicKey = new PublicKey(MARGIN_CONFIG.localnet.controlProgramId)
@@ -122,7 +120,7 @@ describe("margin pool", () => {
     maginPool_USDC = await MarginPool.load(programs, USDC[0])
     await maginPool_USDC.create(
       provider,
-      ownerAccount.publicKey,
+      ownerKeypair.publicKey,
       10_000,
       new BN(0),
       FEE_VAULT_USDC,
@@ -134,7 +132,7 @@ describe("margin pool", () => {
     maginPool_TSOL = await MarginPool.load(programs, TSOL[0])
     await maginPool_TSOL.create(
       provider,
-      ownerAccount.publicKey,
+      ownerKeypair.publicKey,
       9_500,
       new BN(0),
       FEE_VAULT_TSOL,
@@ -210,13 +208,21 @@ describe("margin pool", () => {
   })
 
   it("Users repay their loans", async () => {
-    await maginPool_TSOL.marginRepay(maginAccount_A, new BN(10 * ONE_TSOL))
-    await maginPool_USDC.marginRepay(maginAccount_B, new BN(1_000 * ONE_USDC))
+    await maginPool_TSOL.marginRepay(maginAccount_A, PoolAmount.tokens(new BN(10 * ONE_TSOL)))
+    await maginPool_USDC.marginRepay(maginAccount_B, PoolAmount.tokens(new BN(1_000 * ONE_USDC)))
   })
 
   it("Users withdraw their funds", async () => {
-    await maginPool_USDC.marginWithdraw(maginAccount_A, user_a_usdc_account, new BN(1_000_000 * ONE_USDC))
-    await maginPool_TSOL.marginWithdraw(maginAccount_B, user_b_tsol_account, new BN(1_000 * ONE_TSOL))
+    await maginPool_USDC.marginWithdraw(
+      maginAccount_A,
+      user_a_usdc_account,
+      PoolAmount.tokens(new BN(1_000_000 * ONE_USDC))
+    )
+    await maginPool_TSOL.marginWithdraw(
+      maginAccount_B,
+      user_b_tsol_account,
+      PoolAmount.tokens(new BN(1_000 * ONE_TSOL))
+    )
   })
 
   it("Now verify that the users got all their tokens back", async () => {

@@ -1,4 +1,4 @@
-import { BN, InstructionNamespace } from "@project-serum/anchor"
+import { InstructionNamespace } from "@project-serum/anchor"
 import NodeWallet from "@project-serum/anchor/dist/cjs/nodewallet"
 import {
   ACCOUNT_SIZE,
@@ -112,7 +112,7 @@ export async function createToken(
 ): Promise<[PublicKey, PublicKey]> {
   const mint = Keypair.generate()
   const vault = Keypair.generate()
-  let transaction = new Transaction().add(
+  const transaction = new Transaction().add(
     SystemProgram.createAccount({
       fromPubkey: owner.publicKey,
       newAccountPubkey: mint.publicKey,

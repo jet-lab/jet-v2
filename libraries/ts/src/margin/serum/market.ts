@@ -840,7 +840,6 @@ export class Market {
     quoteWallet: PublicKey,
     referrerQuoteWallet: PublicKey | null = null
   ) {
-    // @ts-ignore
     const vaultSigner = await PublicKey.createProgramAddress(
       [this.address.toBuffer(), this._decoded.vaultSignerNonce.toArrayLike(Buffer, "le", 8)],
       this._serumProgramId
