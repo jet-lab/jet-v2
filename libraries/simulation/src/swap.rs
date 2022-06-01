@@ -35,12 +35,13 @@ use crate::tokens::TokenManager;
 pub struct SwapPool {
     pub pool: Pubkey,
     pub pool_authority: Pubkey,
+    pub pool_mint: Pubkey,
     pub mint_a: Pubkey,
     pub mint_b: Pubkey,
     pub token_a: Pubkey,
     pub token_b: Pubkey,
-    pub pool_mint: Pubkey,
     pub fee_account: Pubkey,
+    pub program: Pubkey,
 }
 
 impl SwapPool {
@@ -111,12 +112,12 @@ impl SwapPool {
             Fees {
                 // The fee parameters are taken from one of spl-token-swap tests
                 trade_fee_numerator: 1,
-                trade_fee_denominator: 40,
+                trade_fee_denominator: 400,
                 owner_trade_fee_numerator: 2,
-                owner_trade_fee_denominator: 50,
+                owner_trade_fee_denominator: 500,
                 owner_withdraw_fee_numerator: 4,
                 owner_withdraw_fee_denominator: 100,
-                host_fee_numerator: 10,
+                host_fee_numerator: 1,
                 host_fee_denominator: 100,
             },
             SwapCurve {
@@ -140,6 +141,7 @@ impl SwapPool {
             token_b,
             pool_mint,
             fee_account: token_fee,
+            program: spl_token_swap::ID,
         })
     }
 }
