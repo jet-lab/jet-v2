@@ -14,14 +14,7 @@ import {
   MINT_SIZE,
   TOKEN_PROGRAM_ID
 } from "@solana/spl-token"
-import {
-  Commitment,
-  Keypair,
-  LAMPORTS_PER_SOL,
-  PublicKey,
-  SystemProgram,
-  Transaction,
-} from "@solana/web3.js"
+import { Commitment, Keypair, LAMPORTS_PER_SOL, PublicKey, SystemProgram, Transaction } from "@solana/web3.js"
 
 import MARGIN_CONFIG from "../../libraries/ts/src/margin/config.json"
 
@@ -36,7 +29,7 @@ const controlInstructions = buildInstructions(JetControlIDL, controlProgramId) a
 export async function createAuthority(provider: AnchorProvider, payer: Keypair): Promise<void> {
   const [authority] = await PublicKey.findProgramAddress([], controlProgramId)
 
-  const accountInfo = await provider.connection.getAccountInfo(authority, "processed" as Commitment);
+  const accountInfo = await provider.connection.getAccountInfo(authority, "processed" as Commitment)
   if (!accountInfo) {
     const lamports = 1 * LAMPORTS_PER_SOL
     const airdropSignature = await provider.connection.requestAirdrop(authority, lamports)
@@ -64,7 +57,7 @@ export async function registerAdapter(
 ): Promise<void> {
   const [metadataAccount] = await PublicKey.findProgramAddress([adapterProgramId.toBuffer()], marginMetadataProgramId)
 
-  const accountInfo = await provider.connection.getAccountInfo(metadataAccount, "processed" as Commitment);
+  const accountInfo = await provider.connection.getAccountInfo(metadataAccount, "processed" as Commitment)
   if (!accountInfo) {
     const [authority] = await PublicKey.findProgramAddress([], controlProgramId)
 
@@ -80,7 +73,12 @@ export async function registerAdapter(
       }
     })
     const tx = new Transaction().add(ix)
-    await provider.sendAndConfirm(tx, [payer])
+    try {
+      await provider.sendAndConfirm(tx, [])
+    } catch(err) {
+      console.log(err)
+      throw err
+    }
   }
 }
 

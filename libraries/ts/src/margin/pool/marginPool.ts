@@ -177,7 +177,12 @@ export class MarginPool {
       pythPrice,
       marginPoolConfig
     )
-    return await provider.sendAndConfirm(new Transaction().add(...ix2))
+    try {
+      return await provider.sendAndConfirm(new Transaction().add(...ix2))
+    } catch(err) {
+      console.log(err)
+      throw err
+    }
   }
 
   async withRegisterToken(instructions: TransactionInstruction[], requester: Address): Promise<void> {

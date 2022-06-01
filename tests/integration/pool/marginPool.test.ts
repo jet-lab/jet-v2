@@ -84,7 +84,7 @@ describe("margin pool", () => {
     await registerAdapter(provider, payer, marginPoolProgramId, payer)
   })
 
-  const ONE_USDC: number = 1_000_000
+  const ONE_USDC = 1_000_000
   const ONE_TSOL: number = LAMPORTS_PER_SOL
 
   const DEFAULT_POOL_CONFIG: MarginPoolConfig = {
