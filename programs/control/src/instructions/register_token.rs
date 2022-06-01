@@ -25,6 +25,8 @@ use jet_metadata::cpi::accounts::{CreateEntry, SetEntry};
 use jet_metadata::program::JetMetadata;
 use jet_metadata::{PositionTokenMetadata, TokenKind, TokenMetadata};
 
+use crate::events;
+
 use super::Authority;
 
 #[derive(Accounts)]
@@ -249,6 +251,21 @@ pub fn register_token_handler(ctx: Context<RegisterToken>) -> Result<()> {
         0,
         token_md_data,
     )?;
+
+    emit!(events::TokenRegistered { 
+        requester: ctx.accounts.requester.key(), 
+        authority: ctx.accounts.authority.key(),
+        margin_pool: ctx.accounts.margin_pool.key(),
+        vault: ctx.accounts.vault.key(),
+        deposit_note_mint: ctx.accounts.deposit_note_mint.key(),
+        loan_note_mint: ctx.accounts.loan_note_mint.key(),
+        token_mint: ctx.accounts.token_mint.key(),
+        token_metadata: ctx.accounts.token_metadata.key(),
+        deposit_note_metadata: ctx.accounts.deposit_note_metadata.key(), 
+        loan_note_metadata: ctx.accounts.loan_note_metadata.key(), 
+        margin_pool_program: ctx.accounts.margin_pool_program.key(), 
+        metadata_program: ctx.accounts.metadata_program.key() 
+    });
 
     Ok(())
 }

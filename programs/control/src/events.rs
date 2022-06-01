@@ -15,8 +15,8 @@ pub struct TokenConfigured {
     pub pyth_price: Pubkey,
     pub margin_pool_program: Pubkey,
     pub metadata_program: Pubkey,
-    pub token_metadata_params: TokenMetadataParams,
-    pub margin_pool_params: MarginPoolParams,
+    pub token_metadata_params: Option<TokenMetadataParams>,
+    pub margin_pool_params: Option<MarginPoolParams>,
 }
 
 #[event]
