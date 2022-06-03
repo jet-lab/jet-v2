@@ -18,7 +18,7 @@ jet_margin = "JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ"
 jet_margin_pool = "JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ"
 jet_margin_swap = "JPMAa5dnWLFRvUsumawFcGhnwikqZziLLfqn9SLNXPN"
 jet_metadata = "JPMetawzxw7WyH3qHUVScYHWFBGhjwqDnM2R9qVbRLp"
-pyth = "ASfdvRMCan2aoWtbDi5HLXhz2CFfgEkuDoxc57bJLKLX"
+pyth = "FT9EZnpdo3tPfUCGn8SBkvN9DMpSStAg3YvAqvYrtSvL"
 
 [[test.genesis]]
 address = "9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP"

@@ -21,10 +21,7 @@ import {
 } from "../util"
 
 describe("margin pool", () => {
-  //const controlProgramId: PublicKey = new PublicKey(MARGIN_CONFIG.localnet.controlProgramId)
-  //const marginProgramId: PublicKey = new PublicKey(MARGIN_CONFIG.localnet.marginProgramId)
   const marginPoolProgramId: PublicKey = new PublicKey(MARGIN_CONFIG.localnet.marginPoolProgramId)
-  //const metadataProgramId: PublicKey = new PublicKey(MARGIN_CONFIG.localnet.metadataProgramId)
 
   const confirmOptions: ConfirmOptions = { preflightCommitment: "processed", commitment: "processed" }
 
@@ -61,19 +58,19 @@ describe("margin pool", () => {
   const FEE_VAULT_USDC: PublicKey = new PublicKey("FEEVAULTUSDC1111111111111111111111111111111")
   const FEE_VAULT_TSOL: PublicKey = new PublicKey("FEEVAULTTSoL1111111111111111111111111111111")
 
-  let USDC_oracle: Keypair
-  let TSOL_oracle: Keypair
+  let USDC_oracle: Keypair[]
+  let TSOL_oracle: Keypair[]
 
   const pythClient = new PythClient({
-    pythProgramId: "ASfdvRMCan2aoWtbDi5HLXhz2CFfgEkuDoxc57bJLKLX",
+    pythProgramId: "FT9EZnpdo3tPfUCGn8SBkvN9DMpSStAg3YvAqvYrtSvL",
     url: "http://127.0.0.1:8899/"
   })
 
   it("Create oracles", async () => {
-    USDC_oracle = Keypair.generate()
-    await pythClient.createPriceAccount(payer, USDC_oracle, 1, 0.01, -8)
-    TSOL_oracle = Keypair.generate()
-    await pythClient.createPriceAccount(payer, TSOL_oracle, 100, 1, -8)
+    USDC_oracle = [Keypair.generate(), Keypair.generate()]
+    await pythClient.createPriceAccount(payer, USDC_oracle[0], "USD", USDC_oracle[1], 1, 0.01, -8)
+    TSOL_oracle = [Keypair.generate(), Keypair.generate()]
+    await pythClient.createPriceAccount(payer, TSOL_oracle[0], "USD", TSOL_oracle[1], 100, 1, -8)
   })
 
   it("Create authority", async () => {
@@ -123,8 +120,8 @@ describe("margin pool", () => {
       10_000,
       new BN(0),
       FEE_VAULT_USDC,
-      Keypair.generate().publicKey,
-      USDC_oracle.publicKey,
+      USDC_oracle[0].publicKey,
+      USDC_oracle[1].publicKey,
       POOLS[0].config
     )
 
@@ -135,8 +132,8 @@ describe("margin pool", () => {
       9_500,
       new BN(0),
       FEE_VAULT_TSOL,
-      Keypair.generate().publicKey,
-      TSOL_oracle.publicKey,
+      TSOL_oracle[0].publicKey,
+      TSOL_oracle[1].publicKey,
       POOLS[1].config
     )
   })
@@ -182,8 +179,8 @@ describe("margin pool", () => {
   })
 
   it("Set the prices for each token", async () => {
-    await pythClient.setPythPrice(ownerKeypair, USDC_oracle.publicKey, 1, 0.01, -8)
-    await pythClient.setPythPrice(ownerKeypair, TSOL_oracle.publicKey, 100, 1, -8)
+    await pythClient.setPythPrice(ownerKeypair, USDC_oracle[1].publicKey, 1, 0.01, -8)
+    await pythClient.setPythPrice(ownerKeypair, TSOL_oracle[1].publicKey, 100, 1, -8)
   })
 
   it("Deposit user funds into their margin accounts", async () => {
@@ -197,8 +194,8 @@ describe("margin pool", () => {
   })
 
   it("Set the prices for each token", async () => {
-    await pythClient.setPythPrice(ownerKeypair, USDC_oracle.publicKey, 1, 0.01, -8)
-    await pythClient.setPythPrice(ownerKeypair, TSOL_oracle.publicKey, 100, 1, -8)
+    await pythClient.setPythPrice(ownerKeypair, USDC_oracle[1].publicKey, 1, 0.01, -8)
+    await pythClient.setPythPrice(ownerKeypair, TSOL_oracle[1].publicKey, 100, 1, -8)
   })
 
   it("Have each user borrow the other's funds", async () => {

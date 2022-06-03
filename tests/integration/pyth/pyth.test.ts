@@ -22,16 +22,17 @@ describe("pyth-oracle", () => {
   })
 
   const pythClient = new PythClient({
-    pythProgramId: "ASfdvRMCan2aoWtbDi5HLXhz2CFfgEkuDoxc57bJLKLX",
+    pythProgramId: "FT9EZnpdo3tPfUCGn8SBkvN9DMpSStAg3YvAqvYrtSvL",
     url: "http://127.0.0.1:8899/"
   })
 
   it("initialize", async () => {
     const price = 50000
     const expo = -6
+    const productAccount = Keypair.generate()
     const priceAccount = Keypair.generate()
     const confidence = price / 10
-    await pythClient.createPriceAccount(payer, priceAccount, price, confidence, expo)
+    await pythClient.createPriceAccount(payer, productAccount, "USD", priceAccount, price, confidence, expo)
     const feedData = await pythClient.getPythPrice(priceAccount.publicKey)
     assert.ok(feedData.price === price)
   })
@@ -39,9 +40,10 @@ describe("pyth-oracle", () => {
   it("change feed price", async () => {
     const price = 50000
     const expo = -7
+    const productAccount = Keypair.generate()
     const priceAccount = Keypair.generate()
     const confidence = price / 10
-    await pythClient.createPriceAccount(payer, priceAccount, price, confidence, expo)
+    await pythClient.createPriceAccount(payer, productAccount, "USD", priceAccount, price, confidence, expo)
     const feedDataBefore = await pythClient.getPythPrice(priceAccount.publicKey)
     assert.ok(feedDataBefore.price === price)
     assert.ok(feedDataBefore.exponent === expo)

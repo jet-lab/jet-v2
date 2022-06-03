@@ -37,16 +37,26 @@ export class PythClient {
 
   async createPriceAccount(
     payer: Keypair,
+    productAccount: Keypair,
+    quoteCurrency: string,
     priceAccount: Keypair,
     price: number,
     confidence: number,
     exponent: number
   ): Promise<void> {
+    assert(quoteCurrency == "USD")
     assert(price)
     assert(confidence)
     assert(exponent)
     const tx = new Transaction()
     tx.add(
+      SystemProgram.createAccount({
+        fromPubkey: payer.publicKey,
+        newAccountPubkey: productAccount.publicKey,
+        space: 512,
+        lamports: await this.connection.getMinimumBalanceForRentExemption(512),
+        programId: this.pythProgramId
+      }),
       SystemProgram.createAccount({
         fromPubkey: payer.publicKey,
         newAccountPubkey: priceAccount.publicKey,
@@ -59,12 +69,20 @@ export class PythClient {
         exponent,
         new BN(confidence * 10 ** -exponent),
         {
-          accounts: { price: priceAccount.publicKey }
+          accounts: {
+            product: productAccount.publicKey,
+            price: priceAccount.publicKey
+          }
         }
       )
     )
-    const signature = await this.connection.sendTransaction(tx, [payer, priceAccount])
-    const { value } = await this.connection.confirmTransaction(signature, "confirmed")
+    try {
+      const signature = await this.connection.sendTransaction(tx, [payer, productAccount, priceAccount])
+      const { value } = await this.connection.confirmTransaction(signature, "confirmed")
+    } catch (err) {
+      console.log(err)
+      throw err
+    }
   }
 
   async getPythPrice(priceFeed: PublicKey) {
@@ -77,7 +95,7 @@ export class PythClient {
     const data = parsePriceData(info!.data)
     const tx = new Transaction()
     tx.add(
-      await this.pythInstruction.setPrice(new BN(price * 10 ** -exponent), new BN(confidence * 10 ** -exponent), {
+      await this.pythInstruction.updatePrice(new BN(price * 10 ** -exponent), new BN(confidence * 10 ** -exponent), {
         accounts: { price: priceFeed }
       })
     )
