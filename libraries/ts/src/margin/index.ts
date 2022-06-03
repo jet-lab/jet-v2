@@ -15,6 +15,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-export * from './marginAccount';
-export * from './pool';
-export * from './serum';
+export * from "./config"
+export * from "./marginAccount"
+export * from "./marginClient"
+export * from "./pool"
+export * from "./serum"
+export * from "./state"
+export * from "./swap"

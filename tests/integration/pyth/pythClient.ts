@@ -1,39 +1,38 @@
-import assert from 'assert';
-import { Buffer } from 'buffer'
-import { BN, BorshInstructionCoder, InstructionCoder, InstructionNamespace, web3 } from '@project-serum/anchor';
-import { Commitment, Connection, Keypair, PublicKey, SystemProgram, Transaction } from '@solana/web3.js';
+import assert from "assert"
+import { Buffer } from "buffer"
+import { BN, BorshInstructionCoder, InstructionCoder, InstructionNamespace, web3 } from "@project-serum/anchor"
+import { Commitment, Connection, Keypair, PublicKey, SystemProgram, Transaction } from "@solana/web3.js"
 
-import { buildInstruction } from '../../../libraries/ts/src/utils/idlBuilder';
+import { buildInstruction } from "../../../libraries/ts/src/utils/idlBuilder"
 
-import { IDL, Pyth } from './types';
+import { IDL, Pyth } from "./types"
 
-export class PythClient {buildInstruction
-  commitment: Commitment = 'confirmed';
-  configuration;
-  connection: Connection;
+export class PythClient {
+  buildInstruction
+  commitment: Commitment = "confirmed"
+  configuration
+  connection: Connection
 
-  private pythProgramId: PublicKey;
-  private pythInstruction: InstructionNamespace<Pyth>;
+  private pythProgramId: PublicKey
+  private pythInstruction: InstructionNamespace<Pyth>
 
-  constructor(
-    configuration,
-  ) {
-    this.configuration = configuration;
-    assert(configuration.url);
-    this.connection = new Connection(configuration.url, this.commitment);
+  constructor(configuration) {
+    this.configuration = configuration
+    assert(configuration.url)
+    this.connection = new Connection(configuration.url, this.commitment)
 
-    this.pythProgramId = new PublicKey(configuration.pythProgramId);
+    this.pythProgramId = new PublicKey(configuration.pythProgramId)
 
-    const instructionCoder: InstructionCoder = new BorshInstructionCoder(IDL);
-    const instruction = {};
-    IDL.instructions.forEach((idlIx) => {
+    const instructionCoder: InstructionCoder = new BorshInstructionCoder(IDL)
+    const instruction = {}
+    IDL.instructions.forEach(idlIx => {
       instruction[idlIx.name] = buildInstruction(
         idlIx,
         (ixName: string, ix: any) => instructionCoder.encode(ixName, ix),
         this.pythProgramId
-      );
-    });
-    this.pythInstruction = instruction as InstructionNamespace<Pyth>;
+      )
+    })
+    this.pythInstruction = instruction as InstructionNamespace<Pyth>
   }
 
   async createPriceAccount(
@@ -41,65 +40,57 @@ export class PythClient {buildInstruction
     priceAccount: Keypair,
     price: number,
     confidence: number,
-    exponent: number,
-  ) : Promise<void> {
-    assert(price);
-    assert(confidence);
-    assert(exponent);
-    let tx = new Transaction();
+    exponent: number
+  ): Promise<void> {
+    assert(price)
+    assert(confidence)
+    assert(exponent)
+    const tx = new Transaction()
     tx.add(
       SystemProgram.createAccount({
         fromPubkey: payer.publicKey,
         newAccountPubkey: priceAccount.publicKey,
         space: 3312,
         lamports: await this.connection.getMinimumBalanceForRentExemption(3312),
-        programId: this.pythProgramId,
+        programId: this.pythProgramId
       }),
-      await this.pythInstruction.initialize(new BN(price * 10 ** -exponent), exponent, new BN(confidence * 10 ** -exponent), {
-        accounts: { price: priceAccount.publicKey },
-      })
-    );
-    const signature = await this.connection.sendTransaction(tx, [payer, priceAccount]);
-    const { value } = await this.connection.confirmTransaction(signature, 'confirmed');
+      await this.pythInstruction.initialize(
+        new BN(price * 10 ** -exponent),
+        exponent,
+        new BN(confidence * 10 ** -exponent),
+        {
+          accounts: { price: priceAccount.publicKey }
+        }
+      )
+    )
+    const signature = await this.connection.sendTransaction(tx, [payer, priceAccount])
+    const { value } = await this.connection.confirmTransaction(signature, "confirmed")
   }
 
   async getPythPrice(priceFeed: PublicKey) {
-    const info = await this.connection.getAccountInfo(priceFeed);
-    return parsePriceData(info!.data);
+    const info = await this.connection.getAccountInfo(priceFeed)
+    return parsePriceData(info!.data)
   }
 
-  async setPythPrice(
-    payer: Keypair,
-    priceFeed: PublicKey,
-    price: number,
-    confidence: number,
-    exponent: number,
-  ) {
-    const info = await this.connection.getAccountInfo(priceFeed);
-    const data = parsePriceData(info!.data);
-    let tx = new Transaction();
+  async setPythPrice(payer: Keypair, priceFeed: PublicKey, price: number, confidence: number, exponent: number) {
+    const info = await this.connection.getAccountInfo(priceFeed)
+    const data = parsePriceData(info!.data)
+    const tx = new Transaction()
     tx.add(
       await this.pythInstruction.setPrice(new BN(price * 10 ** -exponent), new BN(confidence * 10 ** -exponent), {
-        accounts: { price: priceFeed },
+        accounts: { price: priceFeed }
       })
-    );
-    const signature = await this.connection.sendTransaction(tx, [payer]);
-    const { value } = await this.connection.confirmTransaction(signature, 'confirmed');
+    )
+    const signature = await this.connection.sendTransaction(tx, [payer])
+    const { value } = await this.connection.confirmTransaction(signature, "confirmed")
   }
-
 }
-
-
-
-
-
-
 
 const empty32Buffer = Buffer.alloc(32)
 const PKorNull = (data: Buffer) => (data.equals(empty32Buffer) ? null : new web3.PublicKey(data))
 
 // https://github.com/nodejs/node/blob/v14.17.0/lib/internal/errors.js#L758
-const ERR_BUFFER_OUT_OF_BOUNDS = () => new Error('Attempt to access memory outside buffer bounds')
+const ERR_BUFFER_OUT_OF_BOUNDS = () => new Error("Attempt to access memory outside buffer bounds")
 
 // https://github.com/nodejs/node/blob/v14.17.0/lib/internal/errors.js#L968
 const ERR_INVALID_ARG_TYPE = (name: string, expected: string, actual: any) =>
@@ -111,50 +102,45 @@ const ERR_OUT_OF_RANGE = (str: string, range: string, received: number) =>
 
 // https://github.com/nodejs/node/blob/v14.17.0/lib/internal/validators.js#L127-L130
 function validateNumber(value: any, name: string) {
-  if (typeof value !== 'number') throw ERR_INVALID_ARG_TYPE(name, 'number', value)
+  if (typeof value !== "number") throw ERR_INVALID_ARG_TYPE(name, "number", value)
 }
 
 // https://github.com/nodejs/node/blob/v14.17.0/lib/internal/buffer.js#L68-L80
 function boundsError(value: number, length: number) {
   if (Math.floor(value) !== value) {
-    validateNumber(value, 'offset');
-    throw ERR_OUT_OF_RANGE('offset', 'an integer', value);
+    validateNumber(value, "offset")
+    throw ERR_OUT_OF_RANGE("offset", "an integer", value)
   }
 
-  if (length < 0) throw ERR_BUFFER_OUT_OF_BOUNDS();
+  if (length < 0) throw ERR_BUFFER_OUT_OF_BOUNDS()
 
-  throw ERR_OUT_OF_RANGE('offset', `>= 0 and <= ${length}`, value);
+  throw ERR_OUT_OF_RANGE("offset", `>= 0 and <= ${length}`, value)
 }
 
 export function readBigInt64LE(buffer: Buffer, offset = 0): bigint {
-  validateNumber(offset, 'offset');
-  const first = buffer[offset];
-  const last = buffer[offset + 7];
+  validateNumber(offset, "offset")
+  const first = buffer[offset]
+  const last = buffer[offset + 7]
   if (first === undefined || last === undefined) boundsError(offset, buffer.length - 8)
-  const val =
-    buffer[offset + 4] + buffer[offset + 5] * 2 ** 8 + buffer[offset + 6] * 2 ** 16 + (last << 24); // Overflow
+  const val = buffer[offset + 4] + buffer[offset + 5] * 2 ** 8 + buffer[offset + 6] * 2 ** 16 + (last << 24) // Overflow
   return (
     (BigInt(val) << BigInt(32)) +
-    BigInt(
-      first + buffer[++offset] * 2 ** 8 + buffer[++offset] * 2 ** 16 + buffer[++offset] * 2 ** 24
-    )
-  );
+    BigInt(first + buffer[++offset] * 2 ** 8 + buffer[++offset] * 2 ** 16 + buffer[++offset] * 2 ** 24)
+  )
 }
 
 // https://github.com/nodejs/node/blob/v14.17.0/lib/internal/buffer.js#L89-L107
 export function readBigUInt64LE(buffer: Buffer, offset = 0): bigint {
-  validateNumber(offset, 'offset');
-  const first = buffer[offset];
-  const last = buffer[offset + 7];
-  if (first === undefined || last === undefined) boundsError(offset, buffer.length - 8);
+  validateNumber(offset, "offset")
+  const first = buffer[offset]
+  const last = buffer[offset + 7]
+  if (first === undefined || last === undefined) boundsError(offset, buffer.length - 8)
 
-  const lo =
-    first + buffer[++offset] * 2 ** 8 + buffer[++offset] * 2 ** 16 + buffer[++offset] * 2 ** 24;
+  const lo = first + buffer[++offset] * 2 ** 8 + buffer[++offset] * 2 ** 16 + buffer[++offset] * 2 ** 24
 
-  const hi =
-    buffer[++offset] + buffer[++offset] * 2 ** 8 + buffer[++offset] * 2 ** 16 + last * 2 ** 24;
+  const hi = buffer[++offset] + buffer[++offset] * 2 ** 8 + buffer[++offset] * 2 ** 16 + last * 2 ** 24
 
-  return BigInt(lo) + (BigInt(hi) << BigInt(32)); // tslint:disable-line:no-bitwise
+  return BigInt(lo) + (BigInt(hi) << BigInt(32)) // tslint:disable-line:no-bitwise
 }
 
 export const parsePriceData = (data: Buffer) => {
@@ -251,7 +237,7 @@ export const parsePriceData = (data: Buffer) => {
     nextPriceAccountKey,
     aggregatePriceUpdaterAccountKey,
     ...aggregatePriceInfo,
-    priceComponents,
+    priceComponents
   }
 }
 
@@ -275,6 +261,6 @@ const parsePriceInfo = (data: Buffer, exponent: number) => {
     confidence,
     status,
     corporateAction,
-    publishSlot,
+    publishSlot
   }
 }

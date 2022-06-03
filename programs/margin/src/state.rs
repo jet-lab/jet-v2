@@ -634,6 +634,7 @@ unsafe impl Pod for AccountPosition {}
 
 /// State of an in-progress liquidation
 #[account(zero_copy)]
+#[repr(C, align(8))]
 #[derive(Debug)]
 pub struct Liquidation {
     /// time that liquidate_begin initialized this liquidation

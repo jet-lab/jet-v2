@@ -1,4 +1,4 @@
-import { BN, InstructionNamespace } from "@project-serum/anchor"
+import { InstructionNamespace } from "@project-serum/anchor"
 import NodeWallet from "@project-serum/anchor/dist/cjs/nodewallet"
 import {
   ACCOUNT_SIZE,
@@ -26,6 +26,7 @@ import {
   Transaction,
   TransactionSignature
 } from "@solana/web3.js"
+import assert from "assert"
 
 import MARGIN_CONFIG from "../../libraries/ts/src/margin/config.json"
 
@@ -40,21 +41,24 @@ const controlInstructions = buildInstructions(JetControlIDL, controlProgramId) a
 export async function createAuthority(connection: Connection, payer: Keypair): Promise<void> {
   const [authority] = await PublicKey.findProgramAddress([], controlProgramId)
 
-  const lamports = 1 * LAMPORTS_PER_SOL
-  const airdropSignature = await connection.requestAirdrop(authority, lamports)
-  await connection.confirmTransaction(airdropSignature)
+  const accountInfo = await connection.getAccountInfo(authority, "processed" as Commitment)
+  if (!accountInfo) {
+    const lamports = 1 * LAMPORTS_PER_SOL
+    const airdropSignature = await connection.requestAirdrop(authority, lamports)
+    await connection.confirmTransaction(airdropSignature)
 
-  const ix = controlInstructions.createAuthority({
-    accounts: {
-      authority: authority,
-      payer: payer.publicKey,
-      systemProgram: SystemProgram.programId
-    }
-  })
+    const ix = controlInstructions.createAuthority({
+      accounts: {
+        authority: authority,
+        payer: payer.publicKey,
+        systemProgram: SystemProgram.programId
+      }
+    })
 
-  const tx = new Transaction().add(ix)
+    const tx = new Transaction().add(ix)
 
-  await sendTransaction(connection, tx, [new Account(payer.secretKey)])
+    await sendTransaction(connection, tx, [new Account(payer.secretKey)])
+  }
 }
 
 export async function registerAdapter(
@@ -63,21 +67,26 @@ export async function registerAdapter(
   adapterProgramId: PublicKey,
   payer: Keypair
 ): Promise<void> {
-  const [authority] = await PublicKey.findProgramAddress([], controlProgramId)
+  const [metadataAccount] = await PublicKey.findProgramAddress([adapterProgramId.toBuffer()], marginMetadataProgramId)
 
-  const ix = controlInstructions.registerAdapter({
-    accounts: {
-      requester: requester.publicKey,
-      authority,
-      adapter: adapterProgramId,
-      metadataAccount: (await PublicKey.findProgramAddress([adapterProgramId.toBuffer()], marginMetadataProgramId))[0],
-      payer: payer.publicKey,
-      metadataProgram: marginMetadataProgramId,
-      systemProgram: SystemProgram.programId
-    }
-  })
-  const tx = new Transaction().add(ix)
-  await sendTransaction(connection, tx, [new Account(payer.secretKey)])
+  const accountInfo = await connection.getAccountInfo(metadataAccount, "processed" as Commitment)
+  if (!accountInfo) {
+    const [authority] = await PublicKey.findProgramAddress([], controlProgramId)
+
+    const ix = controlInstructions.registerAdapter({
+      accounts: {
+        requester: requester.publicKey,
+        authority,
+        adapter: adapterProgramId,
+        metadataAccount: metadataAccount,
+        payer: payer.publicKey,
+        metadataProgram: marginMetadataProgramId,
+        systemProgram: SystemProgram.programId
+      }
+    })
+    const tx = new Transaction().add(ix)
+    await sendTransaction(connection, tx, [new Account(payer.secretKey)])
+  }
 }
 
 async function sendTransaction(
@@ -103,7 +112,7 @@ export async function createToken(
 ): Promise<[PublicKey, PublicKey]> {
   const mint = Keypair.generate()
   const vault = Keypair.generate()
-  let transaction = new Transaction().add(
+  const transaction = new Transaction().add(
     SystemProgram.createAccount({
       fromPubkey: owner.publicKey,
       newAccountPubkey: mint.publicKey,

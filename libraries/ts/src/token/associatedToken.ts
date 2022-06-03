@@ -23,6 +23,7 @@ import { findDerivedAccount } from "../utils/pda"
 import { TokenAmount } from "./tokenAmount"
 
 export class AssociatedToken {
+  static readonly NATIVE_DECIMALS = 9
   exists: boolean
   /**
    * Get the address for the associated token account
@@ -48,12 +49,7 @@ export class AssociatedToken {
    * @returns {(Promise<AssociatedToken>)}
    * @memberof AssociatedToken
    */
-  static async load(
-    connection: Connection,
-    mint: Address,
-    owner: Address,
-    decimals: number
-  ): Promise<AssociatedToken> {
+  static async load(connection: Connection, mint: Address, owner: Address, decimals: number): Promise<AssociatedToken> {
     const mintAddress = translateAddress(mint)
     const ownerAddress = translateAddress(owner)
     const address = this.derive(mintAddress, ownerAddress)
@@ -64,24 +60,18 @@ export class AssociatedToken {
     return token
   }
 
-  static async exists(connection: Connection, 
-    mint: Address,
-    owner: Address,) {
-      const mintAddress = translateAddress(mint)
-      const ownerAddress = translateAddress(owner)
-      const address = this.derive(mintAddress, ownerAddress)
-      const account = await connection.getAccountInfo(address)
-      return !!account;
-    }
+  static async exists(connection: Connection, mint: Address, owner: Address) {
+    const mintAddress = translateAddress(mint)
+    const ownerAddress = translateAddress(owner)
+    const address = this.derive(mintAddress, ownerAddress)
+    const account = await connection.getAccountInfo(address)
+    return !!account
+  }
 
   static async loadAux(connection: Connection, address: Address, decimals: number) {
     const pubkey = translateAddress(address)
     const account = await connection.getAccountInfo(pubkey)
-    if (account) {
-      return AssociatedToken.parseTokenAccount(account, pubkey, decimals)
-    } else {
-      return AssociatedToken.zeroAux(address, decimals)
-    }
+    return AssociatedToken.decodeAccount(account, pubkey, decimals)
   }
 
   static zero(mint: Address, owner: Address, decimals: number) {
@@ -96,6 +86,7 @@ export class AssociatedToken {
     return new AssociatedToken(pubkey, info, amount)
   }
 
+  /** Loads multiple token accounts, loads wrapped SOL. */
   static async loadMultiple(
     connection: Connection,
     mints: Address[],
@@ -119,6 +110,53 @@ export class AssociatedToken {
     return await this.loadMultipleAux(connection, addresses, decimals)
   }
 
+  /** Loads multiple token accounts. If the native mint is provided, loads the native SOL balance of the owner instead. */
+  static async loadMultipleOrNative(
+    connection: Connection,
+    mints: Address[],
+    decimals: number | number[],
+    owners: Address | Address[]
+  ): Promise<AssociatedToken[]> {
+    if (Array.isArray(owners) && owners.length !== mints.length) {
+      throw new Error("Owners array length does not equal mints array length")
+    }
+    if (Array.isArray(decimals) && decimals.length !== mints.length) {
+      throw new Error("Decimals array length does not equal mints array length")
+    }
+
+    const mintAddresses = mints.map(translateAddress)
+    const addresses: PublicKey[] = []
+    for (let i = 0; i < mintAddresses.length; i++) {
+      const mint = mintAddresses[i]
+      const owner = translateAddress(Array.isArray(owners) ? owners[i] : owners)
+
+      if (mint.equals(NATIVE_MINT)) {
+        // Load the owner and read their SOL balance
+        addresses.push(owner)
+      } else {
+        // Load the token account
+        addresses.push(AssociatedToken.derive(mint, owner))
+      }
+    }
+
+    const infos = await connection.getMultipleAccountsInfo(addresses)
+    const accounts: AssociatedToken[] = []
+    for (let i = 0; i < mintAddresses.length; i++) {
+      const mint = mintAddresses[i]
+      const address = addresses[i]
+      const decimal = Array.isArray(decimals) ? decimals[i] : decimals
+      const info = infos[i]
+      if (mint.equals(NATIVE_MINT)) {
+        // Load the owner and read their SOL balance
+        accounts.push(AssociatedToken.decodeNative(info, address))
+      } else {
+        // Load the token account
+        accounts.push(AssociatedToken.decodeAccount(info, addresses[i], decimal))
+      }
+    }
+    return accounts
+  }
+
   static async loadMultipleAux(
     connection: Connection,
     addresses: Address[],
@@ -133,7 +171,7 @@ export class AssociatedToken {
     const accounts = await connection.getMultipleAccountsInfo(pubkeys)
     return accounts.map((account, i) => {
       const decimal = Array.isArray(decimals) ? decimals[i] : decimals
-      return account ? AssociatedToken.parseTokenAccount(account, pubkeys[i], decimal) : AssociatedToken.zeroAux(pubkeys[i], decimal)
+      return AssociatedToken.decodeAccount(account, pubkeys[i], decimal)
     })
   }
 
@@ -151,7 +189,7 @@ export class AssociatedToken {
     if (!mintInfo) {
       return undefined
     }
-    return AssociatedToken.parseMintAccount(mintInfo, mintAddress)
+    return AssociatedToken.decodeMint(mintInfo, mintAddress)
   }
 
   /**
@@ -172,11 +210,14 @@ export class AssociatedToken {
    * @param {PublicKey} address
    * @returns
    */
-  static parseTokenAccount  (data: AccountInfo<Buffer>, address: Address, decimals: number) {
-    const publicKey = translateAddress(address);
-    if (!data) throw new TokenAccountNotFoundError()
-    if (!data.owner.equals(TOKEN_PROGRAM_ID)) throw new TokenInvalidAccountOwnerError()
-    if (data.data.length != ACCOUNT_SIZE) throw new TokenInvalidAccountSizeError()
+  static decodeAccount(data: AccountInfo<Buffer> | null, address: Address, decimals: number) {
+    const publicKey = translateAddress(address)
+    if (!data) {
+      return AssociatedToken.zeroAux(publicKey, decimals)
+    }
+
+    if (data && !data.owner.equals(TOKEN_PROGRAM_ID)) throw new TokenInvalidAccountOwnerError()
+    if (data && data.data.length != ACCOUNT_SIZE) throw new TokenInvalidAccountSizeError()
 
     const rawAccount = AccountLayout.decode(data.data)
 
@@ -202,7 +243,7 @@ export class AssociatedToken {
    * @param {PublicKey} address
    * @returns {Mint}
    */
-   static parseMintAccount  (info: AccountInfo<Buffer>, address: PublicKey): Mint {
+  static decodeMint(info: AccountInfo<Buffer>, address: PublicKey): Mint {
     if (!info) throw new TokenAccountNotFoundError()
     if (!info.owner.equals(TOKEN_PROGRAM_ID)) throw new TokenInvalidAccountOwnerError()
     if (info.data.length != MINT_SIZE) throw new TokenInvalidAccountSizeError()
@@ -219,6 +260,22 @@ export class AssociatedToken {
     }
   }
 
+  /**
+   * Decode a token account. From @solana/spl-token
+   * @param {AccountInfo<Buffer>} inifo
+   * @param {PublicKey} address
+   * @returns
+   */
+  static decodeNative(info: AccountInfo<Buffer> | null, address: Address) {
+    const publicKey = translateAddress(address)
+    if (info && info.data.length != 0) throw new TokenInvalidAccountSizeError()
+
+    return new AssociatedToken(
+      translateAddress(address),
+      null,
+      TokenAmount.lamports(new BN(info?.lamports.toString() ?? "0"), this.NATIVE_DECIMALS)
+    )
+  }
 
   /**
    * If the associated token account does not exist for this mint, add instruction to create the token account.If ATA exists, do nothing.
@@ -238,7 +295,7 @@ export class AssociatedToken {
   ): Promise<PublicKey> {
     const tokenAddress = this.derive(mint, owner)
 
-    if (!await AssociatedToken.exists(provider.connection, mint, owner)) {
+    if (!(await AssociatedToken.exists(provider.connection, mint, owner))) {
       const ix = createAssociatedTokenAccountInstruction(provider.wallet.publicKey, tokenAddress, owner, mint)
       instructions.push(ix)
     }
@@ -330,7 +387,7 @@ export class AssociatedToken {
  * @param {BN} [bn]
  * @returns {number}
  */
- export const bnToNumber = (bn: BN | null | undefined): number => {
+export const bnToNumber = (bn: BN | null | undefined): number => {
   return bn ? parseFloat(bn.toString()) : 0
 }
 
