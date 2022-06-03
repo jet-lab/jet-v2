@@ -1,207 +1,245 @@
 export type Pyth = {
-  version: "0.1.0"
-  name: "pyth"
-  instructions: [
+  "version": "0.1.0",
+  "name": "pyth",
+  "instructions": [
     {
-      name: "initialize"
-      accounts: [
+      "name": "initialize",
+      "accounts": [
         {
-          name: "price"
-          isMut: true
-          isSigner: false
-        }
-      ]
-      args: [
-        {
-          name: "price"
-          type: "i64"
+          "name": "product",
+          "isMut": true,
+          "isSigner": false
         },
         {
-          name: "expo"
-          type: "i32"
-        },
-        {
-          name: "conf"
-          type: "u64"
-        }
-      ]
-    },
-    {
-      name: "setPrice"
-      accounts: [
-        {
-          name: "price"
-          isMut: true
-          isSigner: false
-        }
-      ]
-      args: [
-        {
-          name: "price"
-          type: "i64"
-        },
-        {
-          name: "conf"
-          type: "u64"
-        }
-      ]
-    }
-  ]
-  types: [
-    {
-      name: "PriceStatus"
-      type: {
-        kind: "enum"
-        variants: [
-          {
-            name: "Unknown"
-          },
-          {
-            name: "Trading"
-          },
-          {
-            name: "Halted"
-          },
-          {
-            name: "Auction"
-          }
-        ]
-      }
-    },
-    {
-      name: "CorpAction"
-      type: {
-        kind: "enum"
-        variants: [
-          {
-            name: "NoCorpAct"
-          }
-        ]
-      }
-    },
-    {
-      name: "PriceType"
-      type: {
-        kind: "enum"
-        variants: [
-          {
-            name: "Unknown"
-          },
-          {
-            name: "Price"
-          },
-          {
-            name: "Twap"
-          },
-          {
-            name: "Volatility"
-          }
-        ]
-      }
-    }
-  ]
-}
-
-export const IDL: Pyth = {
-  version: "0.1.0",
-  name: "pyth",
-  instructions: [
-    {
-      name: "initialize",
-      accounts: [
-        {
-          name: "price",
-          isMut: true,
-          isSigner: false
+          "name": "price",
+          "isMut": true,
+          "isSigner": false
         }
       ],
-      args: [
+      "args": [
         {
-          name: "price",
-          type: "i64"
+          "name": "price",
+          "type": "i64"
         },
         {
-          name: "expo",
-          type: "i32"
+          "name": "expo",
+          "type": "i32"
         },
         {
-          name: "conf",
-          type: "u64"
+          "name": "conf",
+          "type": "u64"
         }
       ]
     },
     {
-      name: "setPrice",
-      accounts: [
+      "name": "updatePrice",
+      "accounts": [
         {
-          name: "price",
-          isMut: true,
-          isSigner: false
+          "name": "price",
+          "isMut": true,
+          "isSigner": false
         }
       ],
-      args: [
+      "args": [
         {
-          name: "price",
-          type: "i64"
+          "name": "price",
+          "type": "i64"
         },
         {
-          name: "conf",
-          type: "u64"
+          "name": "conf",
+          "type": "u64"
         }
       ]
     }
   ],
-  types: [
+  "types": [
     {
-      name: "PriceStatus",
-      type: {
-        kind: "enum",
-        variants: [
+      "name": "AccountType",
+      "type": {
+        "kind": "enum",
+        "variants": [
           {
-            name: "Unknown"
+            "name": "Unknown"
           },
           {
-            name: "Trading"
+            "name": "Mapping"
           },
           {
-            name: "Halted"
+            "name": "Product"
           },
           {
-            name: "Auction"
+            "name": "Price"
           }
         ]
       }
     },
     {
-      name: "CorpAction",
-      type: {
-        kind: "enum",
-        variants: [
+      "name": "CorpAction",
+      "type": {
+        "kind": "enum",
+        "variants": [
           {
-            name: "NoCorpAct"
+            "name": "NoCorpAct"
           }
         ]
       }
     },
     {
-      name: "PriceType",
-      type: {
-        kind: "enum",
-        variants: [
+      "name": "PriceStatus",
+      "type": {
+        "kind": "enum",
+        "variants": [
           {
-            name: "Unknown"
+            "name": "Unknown"
           },
           {
-            name: "Price"
+            "name": "Trading"
           },
           {
-            name: "Twap"
+            "name": "Halted"
           },
           {
-            name: "Volatility"
+            "name": "Auction"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PriceType",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Unknown"
+          },
+          {
+            "name": "Price"
           }
         ]
       }
     }
   ]
-}
+};
+
+export const IDL: Pyth = {
+  "version": "0.1.0",
+  "name": "pyth",
+  "instructions": [
+    {
+      "name": "initialize",
+      "accounts": [
+        {
+          "name": "product",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "price",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "price",
+          "type": "i64"
+        },
+        {
+          "name": "expo",
+          "type": "i32"
+        },
+        {
+          "name": "conf",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "updatePrice",
+      "accounts": [
+        {
+          "name": "price",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "price",
+          "type": "i64"
+        },
+        {
+          "name": "conf",
+          "type": "u64"
+        }
+      ]
+    }
+  ],
+  "types": [
+    {
+      "name": "AccountType",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Unknown"
+          },
+          {
+            "name": "Mapping"
+          },
+          {
+            "name": "Product"
+          },
+          {
+            "name": "Price"
+          }
+        ]
+      }
+    },
+    {
+      "name": "CorpAction",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "NoCorpAct"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PriceStatus",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Unknown"
+          },
+          {
+            "name": "Trading"
+          },
+          {
+            "name": "Halted"
+          },
+          {
+            "name": "Auction"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PriceType",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Unknown"
+          },
+          {
+            "name": "Price"
+          }
+        ]
+      }
+    }
+  ]
+};

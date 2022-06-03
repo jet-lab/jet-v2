@@ -319,7 +319,12 @@ export class MarginPool {
       this.addresses.marginPoolAdapterMetadata,
       await this.makeMarginRefreshPositionInstruction(marginAccount.address, tokenMetadata.pythPrice)
     )
-    return await marginAccount.provider.sendAndConfirm(new Transaction().add(...ix))
+    try {
+      return await marginAccount.provider.sendAndConfirm(new Transaction().add(...ix))
+    } catch (err) {
+      console.log(err)
+      throw err
+    }
   }
 
   async marginBorrow(marginAccount: MarginAccount, amount: BN) {
