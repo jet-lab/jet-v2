@@ -177,7 +177,12 @@ export class MarginPool {
       pythPrice,
       marginPoolConfig
     )
-    return await provider.sendAndConfirm(new Transaction().add(...ix2))
+    try {
+      return await provider.sendAndConfirm(new Transaction().add(...ix2))
+    } catch (err) {
+      console.log(err)
+      throw err
+    }
   }
 
   async withRegisterToken(instructions: TransactionInstruction[], requester: Address): Promise<void> {
@@ -314,7 +319,12 @@ export class MarginPool {
       this.addresses.marginPoolAdapterMetadata,
       await this.makeMarginRefreshPositionInstruction(marginAccount.address, tokenMetadata.pythPrice)
     )
-    return await marginAccount.provider.sendAndConfirm(new Transaction().add(...ix))
+    try {
+      return await marginAccount.provider.sendAndConfirm(new Transaction().add(...ix))
+    } catch (err) {
+      console.log(err)
+      throw err
+    }
   }
 
   async marginBorrow(marginAccount: MarginAccount, amount: BN) {

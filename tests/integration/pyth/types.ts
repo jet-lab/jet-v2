@@ -6,6 +6,11 @@ export type Pyth = {
       name: "initialize"
       accounts: [
         {
+          name: "product"
+          isMut: true
+          isSigner: false
+        },
+        {
           name: "price"
           isMut: true
           isSigner: false
@@ -27,7 +32,7 @@ export type Pyth = {
       ]
     },
     {
-      name: "setPrice"
+      name: "updatePrice"
       accounts: [
         {
           name: "price"
@@ -49,6 +54,37 @@ export type Pyth = {
   ]
   types: [
     {
+      name: "AccountType"
+      type: {
+        kind: "enum"
+        variants: [
+          {
+            name: "Unknown"
+          },
+          {
+            name: "Mapping"
+          },
+          {
+            name: "Product"
+          },
+          {
+            name: "Price"
+          }
+        ]
+      }
+    },
+    {
+      name: "CorpAction"
+      type: {
+        kind: "enum"
+        variants: [
+          {
+            name: "NoCorpAct"
+          }
+        ]
+      }
+    },
+    {
       name: "PriceStatus"
       type: {
         kind: "enum"
@@ -69,17 +105,6 @@ export type Pyth = {
       }
     },
     {
-      name: "CorpAction"
-      type: {
-        kind: "enum"
-        variants: [
-          {
-            name: "NoCorpAct"
-          }
-        ]
-      }
-    },
-    {
       name: "PriceType"
       type: {
         kind: "enum"
@@ -89,12 +114,6 @@ export type Pyth = {
           },
           {
             name: "Price"
-          },
-          {
-            name: "Twap"
-          },
-          {
-            name: "Volatility"
           }
         ]
       }
@@ -109,6 +128,11 @@ export const IDL: Pyth = {
     {
       name: "initialize",
       accounts: [
+        {
+          name: "product",
+          isMut: true,
+          isSigner: false
+        },
         {
           name: "price",
           isMut: true,
@@ -131,7 +155,7 @@ export const IDL: Pyth = {
       ]
     },
     {
-      name: "setPrice",
+      name: "updatePrice",
       accounts: [
         {
           name: "price",
@@ -153,6 +177,37 @@ export const IDL: Pyth = {
   ],
   types: [
     {
+      name: "AccountType",
+      type: {
+        kind: "enum",
+        variants: [
+          {
+            name: "Unknown"
+          },
+          {
+            name: "Mapping"
+          },
+          {
+            name: "Product"
+          },
+          {
+            name: "Price"
+          }
+        ]
+      }
+    },
+    {
+      name: "CorpAction",
+      type: {
+        kind: "enum",
+        variants: [
+          {
+            name: "NoCorpAct"
+          }
+        ]
+      }
+    },
+    {
       name: "PriceStatus",
       type: {
         kind: "enum",
@@ -173,17 +228,6 @@ export const IDL: Pyth = {
       }
     },
     {
-      name: "CorpAction",
-      type: {
-        kind: "enum",
-        variants: [
-          {
-            name: "NoCorpAct"
-          }
-        ]
-      }
-    },
-    {
       name: "PriceType",
       type: {
         kind: "enum",
@@ -193,12 +237,6 @@ export const IDL: Pyth = {
           },
           {
             name: "Price"
-          },
-          {
-            name: "Twap"
-          },
-          {
-            name: "Volatility"
           }
         ]
       }
