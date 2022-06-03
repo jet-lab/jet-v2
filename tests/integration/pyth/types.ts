@@ -1,245 +1,245 @@
 export type Pyth = {
-  "version": "0.1.0",
-  "name": "pyth",
-  "instructions": [
+  version: "0.1.0"
+  name: "pyth"
+  instructions: [
     {
-      "name": "initialize",
-      "accounts": [
+      name: "initialize"
+      accounts: [
         {
-          "name": "product",
-          "isMut": true,
-          "isSigner": false
+          name: "product"
+          isMut: true
+          isSigner: false
         },
         {
-          "name": "price",
-          "isMut": true,
-          "isSigner": false
+          name: "price"
+          isMut: true
+          isSigner: false
         }
-      ],
-      "args": [
+      ]
+      args: [
         {
-          "name": "price",
-          "type": "i64"
+          name: "price"
+          type: "i64"
         },
         {
-          "name": "expo",
-          "type": "i32"
+          name: "expo"
+          type: "i32"
         },
         {
-          "name": "conf",
-          "type": "u64"
+          name: "conf"
+          type: "u64"
         }
       ]
     },
     {
-      "name": "updatePrice",
-      "accounts": [
+      name: "updatePrice"
+      accounts: [
         {
-          "name": "price",
-          "isMut": true,
-          "isSigner": false
+          name: "price"
+          isMut: true
+          isSigner: false
         }
-      ],
-      "args": [
+      ]
+      args: [
         {
-          "name": "price",
-          "type": "i64"
+          name: "price"
+          type: "i64"
         },
         {
-          "name": "conf",
-          "type": "u64"
+          name: "conf"
+          type: "u64"
         }
       ]
     }
-  ],
-  "types": [
+  ]
+  types: [
     {
-      "name": "AccountType",
-      "type": {
-        "kind": "enum",
-        "variants": [
+      name: "AccountType"
+      type: {
+        kind: "enum"
+        variants: [
           {
-            "name": "Unknown"
+            name: "Unknown"
           },
           {
-            "name": "Mapping"
+            name: "Mapping"
           },
           {
-            "name": "Product"
+            name: "Product"
           },
           {
-            "name": "Price"
+            name: "Price"
           }
         ]
       }
     },
     {
-      "name": "CorpAction",
-      "type": {
-        "kind": "enum",
-        "variants": [
+      name: "CorpAction"
+      type: {
+        kind: "enum"
+        variants: [
           {
-            "name": "NoCorpAct"
+            name: "NoCorpAct"
           }
         ]
       }
     },
     {
-      "name": "PriceStatus",
-      "type": {
-        "kind": "enum",
-        "variants": [
+      name: "PriceStatus"
+      type: {
+        kind: "enum"
+        variants: [
           {
-            "name": "Unknown"
+            name: "Unknown"
           },
           {
-            "name": "Trading"
+            name: "Trading"
           },
           {
-            "name": "Halted"
+            name: "Halted"
           },
           {
-            "name": "Auction"
+            name: "Auction"
           }
         ]
       }
     },
     {
-      "name": "PriceType",
-      "type": {
-        "kind": "enum",
-        "variants": [
+      name: "PriceType"
+      type: {
+        kind: "enum"
+        variants: [
           {
-            "name": "Unknown"
+            name: "Unknown"
           },
           {
-            "name": "Price"
+            name: "Price"
           }
         ]
       }
     }
   ]
-};
+}
 
 export const IDL: Pyth = {
-  "version": "0.1.0",
-  "name": "pyth",
-  "instructions": [
+  version: "0.1.0",
+  name: "pyth",
+  instructions: [
     {
-      "name": "initialize",
-      "accounts": [
+      name: "initialize",
+      accounts: [
         {
-          "name": "product",
-          "isMut": true,
-          "isSigner": false
+          name: "product",
+          isMut: true,
+          isSigner: false
         },
         {
-          "name": "price",
-          "isMut": true,
-          "isSigner": false
+          name: "price",
+          isMut: true,
+          isSigner: false
         }
       ],
-      "args": [
+      args: [
         {
-          "name": "price",
-          "type": "i64"
+          name: "price",
+          type: "i64"
         },
         {
-          "name": "expo",
-          "type": "i32"
+          name: "expo",
+          type: "i32"
         },
         {
-          "name": "conf",
-          "type": "u64"
+          name: "conf",
+          type: "u64"
         }
       ]
     },
     {
-      "name": "updatePrice",
-      "accounts": [
+      name: "updatePrice",
+      accounts: [
         {
-          "name": "price",
-          "isMut": true,
-          "isSigner": false
+          name: "price",
+          isMut: true,
+          isSigner: false
         }
       ],
-      "args": [
+      args: [
         {
-          "name": "price",
-          "type": "i64"
+          name: "price",
+          type: "i64"
         },
         {
-          "name": "conf",
-          "type": "u64"
+          name: "conf",
+          type: "u64"
         }
       ]
     }
   ],
-  "types": [
+  types: [
     {
-      "name": "AccountType",
-      "type": {
-        "kind": "enum",
-        "variants": [
+      name: "AccountType",
+      type: {
+        kind: "enum",
+        variants: [
           {
-            "name": "Unknown"
+            name: "Unknown"
           },
           {
-            "name": "Mapping"
+            name: "Mapping"
           },
           {
-            "name": "Product"
+            name: "Product"
           },
           {
-            "name": "Price"
+            name: "Price"
           }
         ]
       }
     },
     {
-      "name": "CorpAction",
-      "type": {
-        "kind": "enum",
-        "variants": [
+      name: "CorpAction",
+      type: {
+        kind: "enum",
+        variants: [
           {
-            "name": "NoCorpAct"
+            name: "NoCorpAct"
           }
         ]
       }
     },
     {
-      "name": "PriceStatus",
-      "type": {
-        "kind": "enum",
-        "variants": [
+      name: "PriceStatus",
+      type: {
+        kind: "enum",
+        variants: [
           {
-            "name": "Unknown"
+            name: "Unknown"
           },
           {
-            "name": "Trading"
+            name: "Trading"
           },
           {
-            "name": "Halted"
+            name: "Halted"
           },
           {
-            "name": "Auction"
+            name: "Auction"
           }
         ]
       }
     },
     {
-      "name": "PriceType",
-      "type": {
-        "kind": "enum",
-        "variants": [
+      name: "PriceType",
+      type: {
+        kind: "enum",
+        variants: [
           {
-            "name": "Unknown"
+            name: "Unknown"
           },
           {
-            "name": "Price"
+            name: "Price"
           }
         ]
       }
     }
   ]
-};
+}

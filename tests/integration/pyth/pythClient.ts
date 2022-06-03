@@ -71,7 +71,7 @@ export class PythClient {
         {
           accounts: {
             product: productAccount.publicKey,
-            price: priceAccount.publicKey,
+            price: priceAccount.publicKey
           }
         }
       )
