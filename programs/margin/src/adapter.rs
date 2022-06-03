@@ -21,12 +21,11 @@ use anchor_lang::{
 };
 use anchor_spl::token::TokenAccount;
 
-use bytemuck::Contiguous;
 use jet_proto_math::Number128;
 
 use crate::{
     util::RequirePosition, AccountPosition, AdapterPositionFlags, ErrorCode, MarginAccount,
-    PositionKind, PriceInfo, SignerSeeds, MAX_ORACLE_CONFIDENCE, MAX_ORACLE_STALENESS,
+    PriceInfo, SignerSeeds, MAX_ORACLE_CONFIDENCE, MAX_ORACLE_STALENESS,
 };
 
 pub struct InvokeAdapter<'a, 'info> {
