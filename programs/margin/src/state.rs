@@ -210,7 +210,7 @@ impl MarginAccount {
                 msg!("Account unhealty. C-ratio: {}", c_ratio.to_string());
                 err!(ErrorCode::Unhealthy)
             }
-            _ if !info.past_due() => {
+            _ if info.past_due() => {
                 msg!("Account unhealty. Debt is past due");
                 err!(ErrorCode::Unhealthy)
             }
@@ -232,7 +232,7 @@ impl MarginAccount {
 
         match info.c_ratio() {
             Some(c_ratio) if c_ratio < min_ratio => Ok(()),
-            _ if !info.past_due() => Ok(()),
+            _ if info.past_due() => Ok(()),
             _ => Err(error!(ErrorCode::Healthy)),
         }
     }
