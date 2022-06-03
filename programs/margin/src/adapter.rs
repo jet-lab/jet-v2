@@ -21,11 +21,12 @@ use anchor_lang::{
 };
 use anchor_spl::token::TokenAccount;
 
+use bytemuck::Contiguous;
 use jet_proto_math::Number128;
 
 use crate::{
-    AccountPosition, AdapterPositionFlags, ErrorCode, MarginAccount, PriceInfo, SignerSeeds,
-    MAX_ORACLE_CONFIDENCE, MAX_ORACLE_STALENESS, util::RequirePosition,
+    util::RequirePosition, AccountPosition, AdapterPositionFlags, ErrorCode, MarginAccount,
+    PositionKind, PriceInfo, SignerSeeds, MAX_ORACLE_CONFIDENCE, MAX_ORACLE_STALENESS,
 };
 
 pub struct InvokeAdapter<'a, 'info> {
@@ -61,7 +62,7 @@ pub enum PositionChange {
     /// Flags that are false here will be unchanged in the position
     Flags(AdapterPositionFlags, bool),
 
-    /// The margin program will fail the current instruction if this position is 
+    /// The margin program will fail the current instruction if this position is
     /// not registered at the provided address.
     ///
     /// Example: This instruction involves an action by the owner of the margin
@@ -155,7 +156,9 @@ fn handle_adapter_result(ctx: &InvokeAdapter) -> Result<()> {
 
     let result = match program::get_return_data() {
         None => AdapterResult::default(),
-        Some((program_id, _)) if program_id != ctx.adapter_program.key() => AdapterResult::default(),
+        Some((program_id, _)) if program_id != ctx.adapter_program.key() => {
+            AdapterResult::default()
+        }
         Some((_, data)) => AdapterResult::deserialize(&mut &data[..])?,
     };
 
@@ -184,21 +187,18 @@ fn handle_adapter_result(ctx: &InvokeAdapter) -> Result<()> {
 }
 
 fn update_balances(ctx: &InvokeAdapter) -> Result<()> {
+    let mut margin_account = ctx.margin_account.load_mut()?;
     for account_info in ctx.remaining_accounts {
         if account_info.owner == &TokenAccount::owner() {
-            if let Ok(account) =
-                TokenAccount::try_deserialize(&mut &**account_info.try_borrow_data()?)
-            {
-                // todo security: should this check if it's a token account some other way?
-                if account.owner == ctx.margin_account.key() {
-                    match ctx.margin_account.load_mut()?.set_position_balance(
-                        &account.mint,
-                        account_info.key,
-                        account.amount,
-                    ) {
-                        Ok(()) | Err(ErrorCode::PositionNotRegistered) => (),
-                        Err(err) => Err(err)?,
-                    }
+            let data = &mut &**account_info.try_borrow_data()?;
+            if let Ok(account) = TokenAccount::try_deserialize(data) {
+                match margin_account.set_position_balance(
+                    &account.mint,
+                    account_info.key,
+                    account.amount,
+                ) {
+                    Ok(()) | Err(ErrorCode::PositionNotRegistered) => (),
+                    Err(err) => Err(err)?,
                 }
             }
         }
@@ -225,6 +225,8 @@ fn update_price(
         }
         _ => PriceInfo::new_valid(entry.exponent, entry.value, clock.unix_timestamp as u64),
     };
-    
-    position.set_price(ctx.adapter_program.key, &price).map_err(|e| error!(e))
+
+    position
+        .set_price(ctx.adapter_program.key, &price)
+        .map_err(|e| error!(e))
 }

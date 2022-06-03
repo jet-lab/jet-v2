@@ -1,346 +1,346 @@
 export type JetControl = {
-  version: "0.1.0";
-  name: "jet_control";
+  version: "0.1.0"
+  name: "jet_control"
   instructions: [
     {
-      name: "createAuthority";
+      name: "createAuthority"
       accounts: [
         {
-          name: "authority";
-          isMut: true;
-          isSigner: false;
+          name: "authority"
+          isMut: true
+          isSigner: false
         },
         {
-          name: "payer";
-          isMut: true;
-          isSigner: true;
+          name: "payer"
+          isMut: true
+          isSigner: true
         },
         {
-          name: "systemProgram";
-          isMut: false;
-          isSigner: false;
+          name: "systemProgram"
+          isMut: false
+          isSigner: false
         }
-      ];
-      args: [];
+      ]
+      args: []
     },
     {
-      name: "registerToken";
+      name: "registerToken"
       accounts: [
         {
-          name: "requester";
-          isMut: true;
-          isSigner: true;
+          name: "requester"
+          isMut: true
+          isSigner: true
         },
         {
-          name: "authority";
-          isMut: false;
-          isSigner: false;
+          name: "authority"
+          isMut: false
+          isSigner: false
         },
         {
-          name: "marginPool";
-          isMut: true;
-          isSigner: false;
+          name: "marginPool"
+          isMut: true
+          isSigner: false
         },
         {
-          name: "vault";
-          isMut: true;
-          isSigner: false;
+          name: "vault"
+          isMut: true
+          isSigner: false
         },
         {
-          name: "depositNoteMint";
-          isMut: true;
-          isSigner: false;
+          name: "depositNoteMint"
+          isMut: true
+          isSigner: false
         },
         {
-          name: "loanNoteMint";
-          isMut: true;
-          isSigner: false;
+          name: "loanNoteMint"
+          isMut: true
+          isSigner: false
         },
         {
-          name: "tokenMint";
-          isMut: false;
-          isSigner: false;
+          name: "tokenMint"
+          isMut: false
+          isSigner: false
         },
         {
-          name: "tokenMetadata";
-          isMut: true;
-          isSigner: false;
+          name: "tokenMetadata"
+          isMut: true
+          isSigner: false
         },
         {
-          name: "depositNoteMetadata";
-          isMut: true;
-          isSigner: false;
+          name: "depositNoteMetadata"
+          isMut: true
+          isSigner: false
         },
         {
-          name: "loanNoteMetadata";
-          isMut: true;
-          isSigner: false;
+          name: "loanNoteMetadata"
+          isMut: true
+          isSigner: false
         },
         {
-          name: "marginPoolProgram";
-          isMut: false;
-          isSigner: false;
+          name: "marginPoolProgram"
+          isMut: false
+          isSigner: false
         },
         {
-          name: "metadataProgram";
-          isMut: false;
-          isSigner: false;
+          name: "metadataProgram"
+          isMut: false
+          isSigner: false
         },
         {
-          name: "tokenProgram";
-          isMut: false;
-          isSigner: false;
+          name: "tokenProgram"
+          isMut: false
+          isSigner: false
         },
         {
-          name: "systemProgram";
-          isMut: false;
-          isSigner: false;
+          name: "systemProgram"
+          isMut: false
+          isSigner: false
         },
         {
-          name: "rent";
-          isMut: false;
-          isSigner: false;
+          name: "rent"
+          isMut: false
+          isSigner: false
         }
-      ];
-      args: [];
+      ]
+      args: []
     },
     {
-      name: "registerAdapter";
+      name: "registerAdapter"
       accounts: [
         {
-          name: "requester";
-          isMut: false;
-          isSigner: true;
+          name: "requester"
+          isMut: false
+          isSigner: true
         },
         {
-          name: "authority";
-          isMut: false;
-          isSigner: false;
+          name: "authority"
+          isMut: false
+          isSigner: false
         },
         {
-          name: "adapter";
-          isMut: false;
-          isSigner: false;
+          name: "adapter"
+          isMut: false
+          isSigner: false
         },
         {
-          name: "metadataAccount";
-          isMut: true;
-          isSigner: false;
+          name: "metadataAccount"
+          isMut: true
+          isSigner: false
         },
         {
-          name: "payer";
-          isMut: true;
-          isSigner: true;
+          name: "payer"
+          isMut: true
+          isSigner: true
         },
         {
-          name: "metadataProgram";
-          isMut: false;
-          isSigner: false;
+          name: "metadataProgram"
+          isMut: false
+          isSigner: false
         },
         {
-          name: "systemProgram";
-          isMut: false;
-          isSigner: false;
+          name: "systemProgram"
+          isMut: false
+          isSigner: false
         }
-      ];
-      args: [];
+      ]
+      args: []
     },
     {
-      name: "configureToken";
+      name: "configureToken"
       accounts: [
         {
-          name: "requester";
-          isMut: false;
-          isSigner: true;
+          name: "requester"
+          isMut: false
+          isSigner: true
         },
         {
-          name: "authority";
-          isMut: false;
-          isSigner: false;
+          name: "authority"
+          isMut: false
+          isSigner: false
         },
         {
-          name: "tokenMint";
-          isMut: false;
-          isSigner: false;
+          name: "tokenMint"
+          isMut: false
+          isSigner: false
         },
         {
-          name: "marginPool";
-          isMut: true;
-          isSigner: false;
+          name: "marginPool"
+          isMut: true
+          isSigner: false
         },
         {
-          name: "tokenMetadata";
-          isMut: true;
-          isSigner: false;
+          name: "tokenMetadata"
+          isMut: true
+          isSigner: false
         },
         {
-          name: "depositMetadata";
-          isMut: true;
-          isSigner: false;
+          name: "depositMetadata"
+          isMut: true
+          isSigner: false
         },
         {
-          name: "pythProduct";
-          isMut: false;
-          isSigner: false;
+          name: "pythProduct"
+          isMut: false
+          isSigner: false
         },
         {
-          name: "pythPrice";
-          isMut: false;
-          isSigner: false;
+          name: "pythPrice"
+          isMut: false
+          isSigner: false
         },
         {
-          name: "marginPoolProgram";
-          isMut: false;
-          isSigner: false;
+          name: "marginPoolProgram"
+          isMut: false
+          isSigner: false
         },
         {
-          name: "metadataProgram";
-          isMut: false;
-          isSigner: false;
+          name: "metadataProgram"
+          isMut: false
+          isSigner: false
         }
-      ];
+      ]
       args: [
         {
-          name: "metadata";
+          name: "metadata"
           type: {
             option: {
-              defined: "TokenMetadataParams";
-            };
-          };
+              defined: "TokenMetadataParams"
+            }
+          }
         },
         {
-          name: "poolParam";
+          name: "poolParam"
           type: {
             option: {
-              defined: "MarginPoolParams";
-            };
-          };
+              defined: "MarginPoolParams"
+            }
+          }
         },
         {
-          name: "poolConfig";
+          name: "poolConfig"
           type: {
             option: {
-              defined: "MarginPoolConfig";
-            };
-          };
+              defined: "MarginPoolConfig"
+            }
+          }
         }
-      ];
+      ]
     }
-  ];
+  ]
   accounts: [
     {
-      name: "authority";
+      name: "authority"
       type: {
-        kind: "struct";
+        kind: "struct"
         fields: [
           {
-            name: "seed";
+            name: "seed"
             type: {
-              array: ["u8", 1];
-            };
+              array: ["u8", 1]
+            }
           }
-        ];
-      };
+        ]
+      }
     }
-  ];
+  ]
   types: [
     {
-      name: "TokenKind";
+      name: "TokenKind"
       type: {
-        kind: "enum";
+        kind: "enum"
         variants: [
           {
-            name: "NonCollateral";
+            name: "NonCollateral"
           },
           {
-            name: "Collateral";
+            name: "Collateral"
           },
           {
-            name: "Claim";
+            name: "Claim"
           }
-        ];
-      };
+        ]
+      }
     },
     {
-      name: "TokenMetadataParams";
+      name: "TokenMetadataParams"
       type: {
-        kind: "struct";
+        kind: "struct"
         fields: [
           {
-            name: "tokenKind";
+            name: "tokenKind"
             type: {
-              defined: "TokenKind";
-            };
+              defined: "TokenKind"
+            }
           },
           {
-            name: "collateralWeight";
-            type: "u16";
+            name: "collateralWeight"
+            type: "u16"
           },
           {
-            name: "collateralMaxStaleness";
-            type: "u64";
+            name: "collateralMaxStaleness"
+            type: "u64"
           }
-        ];
-      };
+        ]
+      }
     },
     {
-      name: "MarginPoolConfig";
+      name: "MarginPoolConfig"
       type: {
-        kind: "struct";
+        kind: "struct"
         fields: [
           {
-            name: "flags";
-            type: "u64";
+            name: "flags"
+            type: "u64"
           },
           {
-            name: "utilizationRate1";
-            type: "u16";
+            name: "utilizationRate1"
+            type: "u16"
           },
           {
-            name: "utilizationRate2";
-            type: "u16";
+            name: "utilizationRate2"
+            type: "u16"
           },
           {
-            name: "borrowRate0";
-            type: "u16";
+            name: "borrowRate0"
+            type: "u16"
           },
           {
-            name: "borrowRate1";
-            type: "u16";
+            name: "borrowRate1"
+            type: "u16"
           },
           {
-            name: "borrowRate2";
-            type: "u16";
+            name: "borrowRate2"
+            type: "u16"
           },
           {
-            name: "borrowRate3";
-            type: "u16";
+            name: "borrowRate3"
+            type: "u16"
           },
           {
-            name: "managementFeeRate";
-            type: "u16";
+            name: "managementFeeRate"
+            type: "u16"
           },
           {
-            name: "managementFeeCollectThreshold";
-            type: "u64";
+            name: "managementFeeCollectThreshold"
+            type: "u64"
           }
-        ];
-      };
+        ]
+      }
     },
     {
-      name: "MarginPoolParams";
+      name: "MarginPoolParams"
       type: {
-        kind: "struct";
+        kind: "struct"
         fields: [
           {
-            name: "feeDestination";
-            type: "publicKey";
+            name: "feeDestination"
+            type: "publicKey"
           }
-        ];
-      };
+        ]
+      }
     }
-  ];
-};
+  ]
+}
 
 export const IDL: JetControl = {
   version: "0.1.0",
@@ -352,20 +352,20 @@ export const IDL: JetControl = {
         {
           name: "authority",
           isMut: true,
-          isSigner: false,
+          isSigner: false
         },
         {
           name: "payer",
           isMut: true,
-          isSigner: true,
+          isSigner: true
         },
         {
           name: "systemProgram",
           isMut: false,
-          isSigner: false,
-        },
+          isSigner: false
+        }
       ],
-      args: [],
+      args: []
     },
     {
       name: "registerToken",
@@ -373,80 +373,80 @@ export const IDL: JetControl = {
         {
           name: "requester",
           isMut: true,
-          isSigner: true,
+          isSigner: true
         },
         {
           name: "authority",
           isMut: false,
-          isSigner: false,
+          isSigner: false
         },
         {
           name: "marginPool",
           isMut: true,
-          isSigner: false,
+          isSigner: false
         },
         {
           name: "vault",
           isMut: true,
-          isSigner: false,
+          isSigner: false
         },
         {
           name: "depositNoteMint",
           isMut: true,
-          isSigner: false,
+          isSigner: false
         },
         {
           name: "loanNoteMint",
           isMut: true,
-          isSigner: false,
+          isSigner: false
         },
         {
           name: "tokenMint",
           isMut: false,
-          isSigner: false,
+          isSigner: false
         },
         {
           name: "tokenMetadata",
           isMut: true,
-          isSigner: false,
+          isSigner: false
         },
         {
           name: "depositNoteMetadata",
           isMut: true,
-          isSigner: false,
+          isSigner: false
         },
         {
           name: "loanNoteMetadata",
           isMut: true,
-          isSigner: false,
+          isSigner: false
         },
         {
           name: "marginPoolProgram",
           isMut: false,
-          isSigner: false,
+          isSigner: false
         },
         {
           name: "metadataProgram",
           isMut: false,
-          isSigner: false,
+          isSigner: false
         },
         {
           name: "tokenProgram",
           isMut: false,
-          isSigner: false,
+          isSigner: false
         },
         {
           name: "systemProgram",
           isMut: false,
-          isSigner: false,
+          isSigner: false
         },
         {
           name: "rent",
           isMut: false,
-          isSigner: false,
-        },
+          isSigner: false
+        }
       ],
-      args: [],
+      args: []
     },
     {
       name: "registerAdapter",
@@ -454,40 +454,40 @@ export const IDL: JetControl = {
         {
           name: "requester",
           isMut: false,
-          isSigner: true,
+          isSigner: true
         },
         {
           name: "authority",
           isMut: false,
-          isSigner: false,
+          isSigner: false
         },
         {
           name: "adapter",
           isMut: false,
-          isSigner: false,
+          isSigner: false
         },
         {
           name: "metadataAccount",
           isMut: true,
-          isSigner: false,
+          isSigner: false
         },
         {
           name: "payer",
           isMut: true,
-          isSigner: true,
+          isSigner: true
         },
         {
           name: "metadataProgram",
           isMut: false,
-          isSigner: false,
+          isSigner: false
         },
         {
           name: "systemProgram",
           isMut: false,
-          isSigner: false,
-        },
+          isSigner: false
+        }
       ],
-      args: [],
+      args: []
     },
     {
       name: "configureToken",
@@ -495,81 +495,81 @@ export const IDL: JetControl = {
         {
           name: "requester",
           isMut: false,
-          isSigner: true,
+          isSigner: true
         },
         {
           name: "authority",
           isMut: false,
-          isSigner: false,
+          isSigner: false
         },
         {
           name: "tokenMint",
           isMut: false,
-          isSigner: false,
+          isSigner: false
         },
         {
           name: "marginPool",
           isMut: true,
-          isSigner: false,
+          isSigner: false
         },
         {
           name: "tokenMetadata",
           isMut: true,
-          isSigner: false,
+          isSigner: false
         },
         {
           name: "depositMetadata",
           isMut: true,
-          isSigner: false,
+          isSigner: false
         },
         {
           name: "pythProduct",
           isMut: false,
-          isSigner: false,
+          isSigner: false
         },
         {
           name: "pythPrice",
           isMut: false,
-          isSigner: false,
+          isSigner: false
         },
         {
           name: "marginPoolProgram",
           isMut: false,
-          isSigner: false,
+          isSigner: false
         },
         {
           name: "metadataProgram",
           isMut: false,
-          isSigner: false,
-        },
+          isSigner: false
+        }
       ],
       args: [
         {
           name: "metadata",
           type: {
             option: {
-              defined: "TokenMetadataParams",
-            },
-          },
+              defined: "TokenMetadataParams"
+            }
+          }
         },
         {
           name: "poolParam",
           type: {
             option: {
-              defined: "MarginPoolParams",
-            },
-          },
+              defined: "MarginPoolParams"
+            }
+          }
         },
         {
           name: "poolConfig",
           type: {
             option: {
-              defined: "MarginPoolConfig",
-            },
-          },
-        },
-      ],
-    },
+              defined: "MarginPoolConfig"
+            }
+          }
+        }
+      ]
+    }
   ],
   accounts: [
     {
@@ -580,12 +580,12 @@ export const IDL: JetControl = {
           {
             name: "seed",
             type: {
-              array: ["u8", 1],
-            },
-          },
-        ],
-      },
-    },
+              array: ["u8", 1]
+            }
+          }
+        ]
+      }
+    }
   ],
   types: [
     {
@@ -594,16 +594,16 @@ export const IDL: JetControl = {
         kind: "enum",
         variants: [
           {
-            name: "NonCollateral",
+            name: "NonCollateral"
           },
           {
-            name: "Collateral",
+            name: "Collateral"
           },
           {
-            name: "Claim",
-          },
-        ],
-      },
+            name: "Claim"
+          }
+        ]
+      }
     },
     {
       name: "TokenMetadataParams",
@@ -613,19 +613,19 @@ export const IDL: JetControl = {
           {
             name: "tokenKind",
             type: {
-              defined: "TokenKind",
-            },
+              defined: "TokenKind"
+            }
           },
           {
             name: "collateralWeight",
-            type: "u16",
+            type: "u16"
           },
           {
             name: "collateralMaxStaleness",
-            type: "u64",
-          },
-        ],
-      },
+            type: "u64"
+          }
+        ]
+      }
     },
     {
       name: "MarginPoolConfig",
@@ -634,42 +634,42 @@ export const IDL: JetControl = {
         fields: [
           {
             name: "flags",
-            type: "u64",
+            type: "u64"
           },
           {
             name: "utilizationRate1",
-            type: "u16",
+            type: "u16"
           },
           {
             name: "utilizationRate2",
-            type: "u16",
+            type: "u16"
           },
           {
             name: "borrowRate0",
-            type: "u16",
+            type: "u16"
           },
           {
             name: "borrowRate1",
-            type: "u16",
+            type: "u16"
           },
           {
             name: "borrowRate2",
-            type: "u16",
+            type: "u16"
           },
           {
             name: "borrowRate3",
-            type: "u16",
+            type: "u16"
           },
           {
             name: "managementFeeRate",
-            type: "u16",
+            type: "u16"
           },
           {
             name: "managementFeeCollectThreshold",
-            type: "u64",
-          },
-        ],
-      },
+            type: "u64"
+          }
+        ]
+      }
     },
     {
       name: "MarginPoolParams",
@@ -678,10 +678,10 @@ export const IDL: JetControl = {
         fields: [
           {
             name: "feeDestination",
-            type: "publicKey",
-          },
-        ],
-      },
-    },
-  ],
-};
+            type: "publicKey"
+          }
+        ]
+      }
+    }
+  ]
+}

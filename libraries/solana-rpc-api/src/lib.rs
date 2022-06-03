@@ -39,6 +39,7 @@ use solana_transaction_status::TransactionStatus;
 #[async_trait]
 pub trait SolanaRpcClient: Send + Sync {
     async fn get_account(&self, address: &Pubkey) -> Result<Option<Account>>;
+    async fn get_multiple_accounts(&self, pubkeys: &[Pubkey]) -> Result<Vec<Option<Account>>>;
     async fn get_latest_blockhash(&self) -> Result<Hash>;
     async fn get_minimum_balance_for_rent_exemption(&self, length: usize) -> Result<u64>;
     async fn send_transaction(&self, transaction: &Transaction) -> Result<Signature>;
@@ -128,6 +129,13 @@ impl SolanaRpcClient for RpcConnection {
                 .map(|mut list| list.pop().unwrap())
         })
         .await??)
+    }
+
+    async fn get_multiple_accounts(&self, pubkeys: &[Pubkey]) -> Result<Vec<Option<Account>>> {
+        let ctx = self.0.clone();
+        let pubkeys = pubkeys.to_vec();
+
+        Ok(tokio::task::spawn_blocking(move || ctx.rpc.get_multiple_accounts(&pubkeys)).await??)
     }
 
     async fn get_program_accounts(

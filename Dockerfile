@@ -1,6 +1,6 @@
 FROM ubuntu:latest as programs
 
-ARG SOLANA_VERSION="1.9.13"
+ARG SOLANA_VERSION="1.10.8"
 
 COPY . /v2
 WORKDIR /v2
@@ -13,6 +13,10 @@ RUN if [ ! -d "./target/deploy" ]; then echo "Deployment programs not found"; ex
 # -------------------------------------------
 
 FROM ubuntu:latest
+
+RUN apt-get update && \
+    apt-get install -y bzip2 && \
+    rm -rf /var/lib/apt/lists/*
 
 COPY --from=programs /root/.local/share/solana/install/active_release/bin/solana-test-validator /usr/bin/solana-test-validator
 COPY --from=programs /v2/target/deploy/*.so /root/programs/
@@ -28,8 +32,9 @@ CMD solana-test-validator --reset \
       --bpf-program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ  /root/programs/jet_margin_pool.so \
       --bpf-program JPMAa5dnWLFRvUsumawFcGhnwikqZziLLfqn9SLNXPN  /root/programs/jet_margin_swap.so \
       --bpf-program JPMetawzxw7WyH3qHUVScYHWFBGhjwqDnM2R9qVbRLp  /root/programs/jet_metadata.so \
-      --bpf-program ASfdvRMCan2aoWtbDi5HLXhz2CFfgEkuDoxc57bJLKLX /root/programs/pyth.so \
       --bpf-program 9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP /root/programs/orca_token_swap_v2.so \
+      --bpf-program ASfdvRMCan2aoWtbDi5HLXhz2CFfgEkuDoxc57bJLKLX /root/programs/pyth.so \
+      --bpf-program 9xQeWvG816bUx9EPjHmaT23yvVM2ZWbrrpZb9PusVFin /root/programs/serum_dex_v3.so \
       --bpf-program 4bXpkKSV8swHSnwqtzuboGPaPDeEgAn4Vt8GfarV5rZt /root/programs/spl_token_faucet.so \
       --bpf-program SwaPpA9LAaLfeLi3a68M4DjnLqgtticKg6CnyNwgAC8  /root/programs/spl_token_swap.so
 

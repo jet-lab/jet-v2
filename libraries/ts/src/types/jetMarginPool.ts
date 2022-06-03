@@ -1,604 +1,604 @@
 export type JetMarginPool = {
-  version: "0.1.0";
-  name: "jet_margin_pool";
+  version: "0.1.0"
+  name: "jet_margin_pool"
   instructions: [
     {
-      name: "createPool";
+      name: "createPool"
       accounts: [
         {
-          name: "marginPool";
-          isMut: true;
-          isSigner: false;
+          name: "marginPool"
+          isMut: true
+          isSigner: false
         },
         {
-          name: "vault";
-          isMut: true;
-          isSigner: false;
+          name: "vault"
+          isMut: true
+          isSigner: false
         },
         {
-          name: "depositNoteMint";
-          isMut: true;
-          isSigner: false;
+          name: "depositNoteMint"
+          isMut: true
+          isSigner: false
         },
         {
-          name: "loanNoteMint";
-          isMut: true;
-          isSigner: false;
+          name: "loanNoteMint"
+          isMut: true
+          isSigner: false
         },
         {
-          name: "tokenMint";
-          isMut: false;
-          isSigner: false;
+          name: "tokenMint"
+          isMut: false
+          isSigner: false
         },
         {
-          name: "authority";
-          isMut: false;
-          isSigner: true;
+          name: "authority"
+          isMut: false
+          isSigner: true
         },
         {
-          name: "payer";
-          isMut: true;
-          isSigner: true;
+          name: "payer"
+          isMut: true
+          isSigner: true
         },
         {
-          name: "tokenProgram";
-          isMut: false;
-          isSigner: false;
+          name: "tokenProgram"
+          isMut: false
+          isSigner: false
         },
         {
-          name: "systemProgram";
-          isMut: false;
-          isSigner: false;
+          name: "systemProgram"
+          isMut: false
+          isSigner: false
         },
         {
-          name: "rent";
-          isMut: false;
-          isSigner: false;
+          name: "rent"
+          isMut: false
+          isSigner: false
         }
-      ];
-      args: [];
+      ]
+      args: []
     },
     {
-      name: "configure";
+      name: "configure"
       accounts: [
         {
-          name: "marginPool";
-          isMut: true;
-          isSigner: false;
+          name: "marginPool"
+          isMut: true
+          isSigner: false
         },
         {
-          name: "authority";
-          isMut: false;
-          isSigner: true;
+          name: "authority"
+          isMut: false
+          isSigner: true
         },
         {
-          name: "pythProduct";
-          isMut: false;
-          isSigner: false;
+          name: "pythProduct"
+          isMut: false
+          isSigner: false
         },
         {
-          name: "pythPrice";
-          isMut: false;
-          isSigner: false;
+          name: "pythPrice"
+          isMut: false
+          isSigner: false
         }
-      ];
+      ]
       args: [
         {
-          name: "feeDestination";
+          name: "feeDestination"
           type: {
-            option: "publicKey";
-          };
+            option: "publicKey"
+          }
         },
         {
-          name: "config";
+          name: "config"
           type: {
             option: {
-              defined: "MarginPoolConfig";
-            };
-          };
+              defined: "MarginPoolConfig"
+            }
+          }
         }
-      ];
+      ]
     },
     {
-      name: "collect";
+      name: "collect"
       accounts: [
         {
-          name: "marginPool";
-          isMut: true;
-          isSigner: false;
+          name: "marginPool"
+          isMut: true
+          isSigner: false
         },
         {
-          name: "vault";
-          isMut: true;
-          isSigner: false;
+          name: "vault"
+          isMut: true
+          isSigner: false
         },
         {
-          name: "feeDestination";
-          isMut: true;
-          isSigner: false;
+          name: "feeDestination"
+          isMut: true
+          isSigner: false
         },
         {
-          name: "depositNoteMint";
-          isMut: true;
-          isSigner: false;
+          name: "depositNoteMint"
+          isMut: true
+          isSigner: false
         },
         {
-          name: "tokenProgram";
-          isMut: false;
-          isSigner: false;
+          name: "tokenProgram"
+          isMut: false
+          isSigner: false
         }
-      ];
-      args: [];
+      ]
+      args: []
     },
     {
-      name: "deposit";
+      name: "deposit"
       accounts: [
         {
-          name: "marginPool";
-          isMut: true;
-          isSigner: false;
+          name: "marginPool"
+          isMut: true
+          isSigner: false
         },
         {
-          name: "vault";
-          isMut: true;
-          isSigner: false;
+          name: "vault"
+          isMut: true
+          isSigner: false
         },
         {
-          name: "depositNoteMint";
-          isMut: true;
-          isSigner: false;
+          name: "depositNoteMint"
+          isMut: true
+          isSigner: false
         },
         {
-          name: "depositor";
-          isMut: false;
-          isSigner: true;
+          name: "depositor"
+          isMut: false
+          isSigner: true
         },
         {
-          name: "source";
-          isMut: true;
-          isSigner: false;
+          name: "source"
+          isMut: true
+          isSigner: false
         },
         {
-          name: "destination";
-          isMut: true;
-          isSigner: false;
+          name: "destination"
+          isMut: true
+          isSigner: false
         },
         {
-          name: "tokenProgram";
-          isMut: false;
-          isSigner: false;
+          name: "tokenProgram"
+          isMut: false
+          isSigner: false
         }
-      ];
+      ]
       args: [
         {
-          name: "amount";
-          type: "u64";
+          name: "amount"
+          type: "u64"
         }
-      ];
+      ]
     },
     {
-      name: "withdraw";
+      name: "withdraw"
       accounts: [
         {
-          name: "marginPool";
-          isMut: true;
-          isSigner: false;
+          name: "marginPool"
+          isMut: true
+          isSigner: false
         },
         {
-          name: "vault";
-          isMut: true;
-          isSigner: false;
+          name: "vault"
+          isMut: true
+          isSigner: false
         },
         {
-          name: "depositNoteMint";
-          isMut: true;
-          isSigner: false;
+          name: "depositNoteMint"
+          isMut: true
+          isSigner: false
         },
         {
-          name: "depositor";
-          isMut: false;
-          isSigner: true;
+          name: "depositor"
+          isMut: false
+          isSigner: true
         },
         {
-          name: "source";
-          isMut: true;
-          isSigner: false;
+          name: "source"
+          isMut: true
+          isSigner: false
         },
         {
-          name: "destination";
-          isMut: true;
-          isSigner: false;
+          name: "destination"
+          isMut: true
+          isSigner: false
         },
         {
-          name: "tokenProgram";
-          isMut: false;
-          isSigner: false;
+          name: "tokenProgram"
+          isMut: false
+          isSigner: false
         }
-      ];
+      ]
       args: [
         {
-          name: "amount";
+          name: "amount"
           type: {
-            defined: "Amount";
-          };
+            defined: "Amount"
+          }
         }
-      ];
+      ]
     },
     {
-      name: "marginBorrow";
+      name: "marginBorrow"
       accounts: [
         {
-          name: "marginAccount";
-          isMut: false;
-          isSigner: true;
+          name: "marginAccount"
+          isMut: false
+          isSigner: true
         },
         {
-          name: "marginPool";
-          isMut: true;
-          isSigner: false;
+          name: "marginPool"
+          isMut: true
+          isSigner: false
         },
         {
-          name: "loanNoteMint";
-          isMut: true;
-          isSigner: false;
+          name: "loanNoteMint"
+          isMut: true
+          isSigner: false
         },
         {
-          name: "depositNoteMint";
-          isMut: true;
-          isSigner: false;
+          name: "depositNoteMint"
+          isMut: true
+          isSigner: false
         },
         {
-          name: "loanAccount";
-          isMut: true;
-          isSigner: false;
+          name: "loanAccount"
+          isMut: true
+          isSigner: false
         },
         {
-          name: "depositAccount";
-          isMut: true;
-          isSigner: false;
+          name: "depositAccount"
+          isMut: true
+          isSigner: false
         },
         {
-          name: "tokenProgram";
-          isMut: false;
-          isSigner: false;
+          name: "tokenProgram"
+          isMut: false
+          isSigner: false
         }
-      ];
+      ]
       args: [
         {
-          name: "amount";
-          type: "u64";
+          name: "amount"
+          type: "u64"
         }
-      ];
+      ]
     },
     {
-      name: "marginRepay";
+      name: "marginRepay"
       accounts: [
         {
-          name: "marginAccount";
-          isMut: false;
-          isSigner: true;
+          name: "marginAccount"
+          isMut: false
+          isSigner: true
         },
         {
-          name: "marginPool";
-          isMut: true;
-          isSigner: false;
+          name: "marginPool"
+          isMut: true
+          isSigner: false
         },
         {
-          name: "loanNoteMint";
-          isMut: true;
-          isSigner: false;
+          name: "loanNoteMint"
+          isMut: true
+          isSigner: false
         },
         {
-          name: "depositNoteMint";
-          isMut: true;
-          isSigner: false;
+          name: "depositNoteMint"
+          isMut: true
+          isSigner: false
         },
         {
-          name: "loanAccount";
-          isMut: true;
-          isSigner: false;
+          name: "loanAccount"
+          isMut: true
+          isSigner: false
         },
         {
-          name: "depositAccount";
-          isMut: true;
-          isSigner: false;
+          name: "depositAccount"
+          isMut: true
+          isSigner: false
         },
         {
-          name: "tokenProgram";
-          isMut: false;
-          isSigner: false;
+          name: "tokenProgram"
+          isMut: false
+          isSigner: false
         }
-      ];
+      ]
       args: [
         {
-          name: "amount";
+          name: "amount"
           type: {
-            defined: "Amount";
-          };
+            defined: "Amount"
+          }
         }
-      ];
+      ]
     },
     {
-      name: "marginWithdraw";
+      name: "marginWithdraw"
       accounts: [
         {
-          name: "marginAccount";
-          isMut: false;
-          isSigner: true;
+          name: "marginAccount"
+          isMut: false
+          isSigner: true
         },
         {
-          name: "marginPool";
-          isMut: true;
-          isSigner: false;
+          name: "marginPool"
+          isMut: true
+          isSigner: false
         },
         {
-          name: "vault";
-          isMut: true;
-          isSigner: false;
+          name: "vault"
+          isMut: true
+          isSigner: false
         },
         {
-          name: "depositNoteMint";
-          isMut: true;
-          isSigner: false;
+          name: "depositNoteMint"
+          isMut: true
+          isSigner: false
         },
         {
-          name: "source";
-          isMut: true;
-          isSigner: false;
+          name: "source"
+          isMut: true
+          isSigner: false
         },
         {
-          name: "destination";
-          isMut: true;
-          isSigner: false;
+          name: "destination"
+          isMut: true
+          isSigner: false
         },
         {
-          name: "tokenProgram";
-          isMut: false;
-          isSigner: false;
+          name: "tokenProgram"
+          isMut: false
+          isSigner: false
         }
-      ];
+      ]
       args: [
         {
-          name: "amount";
+          name: "amount"
           type: {
-            defined: "Amount";
-          };
+            defined: "Amount"
+          }
         }
-      ];
+      ]
     },
     {
-      name: "marginRefreshPosition";
+      name: "marginRefreshPosition"
       accounts: [
         {
-          name: "marginAccount";
-          isMut: false;
-          isSigner: true;
+          name: "marginAccount"
+          isMut: false
+          isSigner: true
         },
         {
-          name: "marginPool";
-          isMut: false;
-          isSigner: false;
+          name: "marginPool"
+          isMut: false
+          isSigner: false
         },
         {
-          name: "tokenPriceOracle";
-          isMut: false;
-          isSigner: false;
+          name: "tokenPriceOracle"
+          isMut: false
+          isSigner: false
         }
-      ];
-      args: [];
+      ]
+      args: []
     }
-  ];
+  ]
   accounts: [
     {
-      name: "marginPool";
+      name: "marginPool"
       type: {
-        kind: "struct";
+        kind: "struct"
         fields: [
           {
-            name: "version";
-            type: "u8";
+            name: "version"
+            type: "u8"
           },
           {
-            name: "poolBump";
+            name: "poolBump"
             type: {
-              array: ["u8", 1];
-            };
+              array: ["u8", 1]
+            }
           },
           {
-            name: "vault";
-            type: "publicKey";
+            name: "vault"
+            type: "publicKey"
           },
           {
-            name: "feeDestination";
-            type: "publicKey";
+            name: "feeDestination"
+            type: "publicKey"
           },
           {
-            name: "depositNoteMint";
-            type: "publicKey";
+            name: "depositNoteMint"
+            type: "publicKey"
           },
           {
-            name: "loanNoteMint";
-            type: "publicKey";
+            name: "loanNoteMint"
+            type: "publicKey"
           },
           {
-            name: "tokenMint";
-            type: "publicKey";
+            name: "tokenMint"
+            type: "publicKey"
           },
           {
-            name: "tokenPriceOracle";
-            type: "publicKey";
+            name: "tokenPriceOracle"
+            type: "publicKey"
           },
           {
-            name: "address";
-            type: "publicKey";
+            name: "address"
+            type: "publicKey"
           },
           {
-            name: "config";
+            name: "config"
             type: {
-              defined: "MarginPoolConfig";
-            };
+              defined: "MarginPoolConfig"
+            }
           },
           {
-            name: "borrowedTokens";
+            name: "borrowedTokens"
             type: {
-              array: ["u8", 24];
-            };
+              array: ["u8", 24]
+            }
           },
           {
-            name: "uncollectedFees";
+            name: "uncollectedFees"
             type: {
-              array: ["u8", 24];
-            };
+              array: ["u8", 24]
+            }
           },
           {
-            name: "depositTokens";
-            type: "u64";
+            name: "depositTokens"
+            type: "u64"
           },
           {
-            name: "depositNotes";
-            type: "u64";
+            name: "depositNotes"
+            type: "u64"
           },
           {
-            name: "loanNotes";
-            type: "u64";
+            name: "loanNotes"
+            type: "u64"
           },
           {
-            name: "accruedUntil";
-            type: "i64";
+            name: "accruedUntil"
+            type: "i64"
           }
-        ];
-      };
+        ]
+      }
     },
     {
-      name: "marginPoolOracle";
+      name: "marginPoolOracle"
       type: {
-        kind: "struct";
+        kind: "struct"
         fields: [
           {
-            name: "tokenMint";
-            type: "publicKey";
+            name: "tokenMint"
+            type: "publicKey"
           },
           {
-            name: "price";
+            name: "price"
             type: {
-              array: ["u8", 24];
-            };
+              array: ["u8", 24]
+            }
           },
           {
-            name: "priceLower";
+            name: "priceLower"
             type: {
-              array: ["u8", 24];
-            };
+              array: ["u8", 24]
+            }
           },
           {
-            name: "priceUpper";
+            name: "priceUpper"
             type: {
-              array: ["u8", 24];
-            };
+              array: ["u8", 24]
+            }
           }
-        ];
-      };
+        ]
+      }
     }
-  ];
+  ]
   types: [
     {
-      name: "Amount";
+      name: "Amount"
       type: {
-        kind: "struct";
+        kind: "struct"
         fields: [
           {
-            name: "kind";
+            name: "kind"
             type: {
-              defined: "AmountKind";
-            };
+              defined: "AmountKind"
+            }
           },
           {
-            name: "value";
-            type: "u64";
+            name: "value"
+            type: "u64"
           }
-        ];
-      };
+        ]
+      }
     },
     {
-      name: "MarginPoolConfig";
+      name: "MarginPoolConfig"
       type: {
-        kind: "struct";
+        kind: "struct"
         fields: [
           {
-            name: "flags";
-            type: "u64";
+            name: "flags"
+            type: "u64"
           },
           {
-            name: "utilizationRate1";
-            type: "u16";
+            name: "utilizationRate1"
+            type: "u16"
           },
           {
-            name: "utilizationRate2";
-            type: "u16";
+            name: "utilizationRate2"
+            type: "u16"
           },
           {
-            name: "borrowRate0";
-            type: "u16";
+            name: "borrowRate0"
+            type: "u16"
           },
           {
-            name: "borrowRate1";
-            type: "u16";
+            name: "borrowRate1"
+            type: "u16"
           },
           {
-            name: "borrowRate2";
-            type: "u16";
+            name: "borrowRate2"
+            type: "u16"
           },
           {
-            name: "borrowRate3";
-            type: "u16";
+            name: "borrowRate3"
+            type: "u16"
           },
           {
-            name: "managementFeeRate";
-            type: "u16";
+            name: "managementFeeRate"
+            type: "u16"
           },
           {
-            name: "managementFeeCollectThreshold";
-            type: "u64";
+            name: "managementFeeCollectThreshold"
+            type: "u64"
           }
-        ];
-      };
+        ]
+      }
     },
     {
-      name: "AmountKind";
+      name: "AmountKind"
       type: {
-        kind: "enum";
+        kind: "enum"
         variants: [
           {
-            name: "Tokens";
+            name: "Tokens"
           },
           {
-            name: "Notes";
+            name: "Notes"
           }
-        ];
-      };
+        ]
+      }
     },
     {
-      name: "ErrorCode";
+      name: "ErrorCode"
       type: {
-        kind: "enum";
+        kind: "enum"
         variants: [
           {
-            name: "Disabled";
+            name: "Disabled"
           },
           {
-            name: "InterestAccrualBehind";
+            name: "InterestAccrualBehind"
           },
           {
-            name: "DepositsOnly";
+            name: "DepositsOnly"
           },
           {
-            name: "InsufficientLiquidity";
+            name: "InsufficientLiquidity"
           }
-        ];
-      };
+        ]
+      }
     }
-  ];
-};
+  ]
+}
 
 export const IDL: JetMarginPool = {
   version: "0.1.0",
@@ -610,55 +610,55 @@ export const IDL: JetMarginPool = {
         {
           name: "marginPool",
           isMut: true,
-          isSigner: false,
+          isSigner: false
         },
         {
           name: "vault",
           isMut: true,
-          isSigner: false,
+          isSigner: false
         },
         {
           name: "depositNoteMint",
           isMut: true,
-          isSigner: false,
+          isSigner: false
         },
         {
           name: "loanNoteMint",
           isMut: true,
-          isSigner: false,
+          isSigner: false
         },
         {
           name: "tokenMint",
           isMut: false,
-          isSigner: false,
+          isSigner: false
         },
         {
           name: "authority",
           isMut: false,
-          isSigner: true,
+          isSigner: true
         },
         {
           name: "payer",
           isMut: true,
-          isSigner: true,
+          isSigner: true
         },
         {
           name: "tokenProgram",
           isMut: false,
-          isSigner: false,
+          isSigner: false
         },
         {
           name: "systemProgram",
           isMut: false,
-          isSigner: false,
+          isSigner: false
         },
         {
           name: "rent",
           isMut: false,
-          isSigner: false,
-        },
+          isSigner: false
+        }
       ],
-      args: [],
+      args: []
     },
     {
       name: "configure",
@@ -666,40 +666,40 @@ export const IDL: JetMarginPool = {
         {
           name: "marginPool",
           isMut: true,
-          isSigner: false,
+          isSigner: false
         },
         {
           name: "authority",
           isMut: false,
-          isSigner: true,
+          isSigner: true
         },
         {
           name: "pythProduct",
           isMut: false,
-          isSigner: false,
+          isSigner: false
         },
         {
           name: "pythPrice",
           isMut: false,
-          isSigner: false,
-        },
+          isSigner: false
+        }
       ],
       args: [
         {
           name: "feeDestination",
           type: {
-            option: "publicKey",
-          },
+            option: "publicKey"
+          }
         },
         {
           name: "config",
           type: {
             option: {
-              defined: "MarginPoolConfig",
-            },
-          },
-        },
-      ],
+              defined: "MarginPoolConfig"
+            }
+          }
+        }
+      ]
     },
     {
       name: "collect",
@@ -707,30 +707,30 @@ export const IDL: JetMarginPool = {
         {
           name: "marginPool",
           isMut: true,
-          isSigner: false,
+          isSigner: false
         },
         {
           name: "vault",
           isMut: true,
-          isSigner: false,
+          isSigner: false
         },
         {
           name: "feeDestination",
           isMut: true,
-          isSigner: false,
+          isSigner: false
         },
         {
           name: "depositNoteMint",
           isMut: true,
-          isSigner: false,
+          isSigner: false
         },
         {
           name: "tokenProgram",
           isMut: false,
-          isSigner: false,
-        },
+          isSigner: false
+        }
       ],
-      args: [],
+      args: []
     },
     {
       name: "deposit",
@@ -738,45 +738,45 @@ export const IDL: JetMarginPool = {
         {
           name: "marginPool",
           isMut: true,
-          isSigner: false,
+          isSigner: false
         },
         {
           name: "vault",
           isMut: true,
-          isSigner: false,
+          isSigner: false
         },
         {
           name: "depositNoteMint",
           isMut: true,
-          isSigner: false,
+          isSigner: false
         },
         {
           name: "depositor",
           isMut: false,
-          isSigner: true,
+          isSigner: true
         },
         {
           name: "source",
           isMut: true,
-          isSigner: false,
+          isSigner: false
         },
         {
           name: "destination",
           isMut: true,
-          isSigner: false,
+          isSigner: false
         },
         {
           name: "tokenProgram",
           isMut: false,
-          isSigner: false,
-        },
+          isSigner: false
+        }
       ],
       args: [
         {
           name: "amount",
-          type: "u64",
-        },
-      ],
+          type: "u64"
+        }
+      ]
     },
     {
       name: "withdraw",
@@ -784,47 +784,47 @@ export const IDL: JetMarginPool = {
         {
           name: "marginPool",
           isMut: true,
-          isSigner: false,
+          isSigner: false
         },
         {
           name: "vault",
           isMut: true,
-          isSigner: false,
+          isSigner: false
         },
         {
           name: "depositNoteMint",
           isMut: true,
-          isSigner: false,
+          isSigner: false
         },
         {
           name: "depositor",
           isMut: false,
-          isSigner: true,
+          isSigner: true
         },
         {
           name: "source",
           isMut: true,
-          isSigner: false,
+          isSigner: false
         },
         {
           name: "destination",
           isMut: true,
-          isSigner: false,
+          isSigner: false
         },
         {
           name: "tokenProgram",
           isMut: false,
-          isSigner: false,
-        },
+          isSigner: false
+        }
       ],
       args: [
         {
           name: "amount",
           type: {
-            defined: "Amount",
-          },
-        },
-      ],
+            defined: "Amount"
+          }
+        }
+      ]
     },
     {
       name: "marginBorrow",
@@ -832,45 +832,45 @@ export const IDL: JetMarginPool = {
         {
           name: "marginAccount",
           isMut: false,
-          isSigner: true,
+          isSigner: true
         },
         {
           name: "marginPool",
           isMut: true,
-          isSigner: false,
+          isSigner: false
         },
         {
           name: "loanNoteMint",
           isMut: true,
-          isSigner: false,
+          isSigner: false
         },
         {
           name: "depositNoteMint",
           isMut: true,
-          isSigner: false,
+          isSigner: false
         },
         {
           name: "loanAccount",
           isMut: true,
-          isSigner: false,
+          isSigner: false
         },
         {
           name: "depositAccount",
           isMut: true,
-          isSigner: false,
+          isSigner: false
         },
         {
           name: "tokenProgram",
           isMut: false,
-          isSigner: false,
-        },
+          isSigner: false
+        }
       ],
       args: [
         {
           name: "amount",
-          type: "u64",
-        },
-      ],
+          type: "u64"
+        }
+      ]
     },
     {
       name: "marginRepay",
@@ -878,47 +878,47 @@ export const IDL: JetMarginPool = {
         {
           name: "marginAccount",
           isMut: false,
-          isSigner: true,
+          isSigner: true
         },
         {
           name: "marginPool",
           isMut: true,
-          isSigner: false,
+          isSigner: false
         },
         {
           name: "loanNoteMint",
           isMut: true,
-          isSigner: false,
+          isSigner: false
         },
         {
           name: "depositNoteMint",
           isMut: true,
-          isSigner: false,
+          isSigner: false
         },
         {
           name: "loanAccount",
           isMut: true,
-          isSigner: false,
+          isSigner: false
         },
         {
           name: "depositAccount",
           isMut: true,
-          isSigner: false,
+          isSigner: false
         },
         {
           name: "tokenProgram",
           isMut: false,
-          isSigner: false,
-        },
+          isSigner: false
+        }
       ],
       args: [
         {
           name: "amount",
           type: {
-            defined: "Amount",
-          },
-        },
-      ],
+            defined: "Amount"
+          }
+        }
+      ]
     },
     {
       name: "marginWithdraw",
@@ -926,47 +926,47 @@ export const IDL: JetMarginPool = {
         {
           name: "marginAccount",
           isMut: false,
-          isSigner: true,
+          isSigner: true
         },
         {
           name: "marginPool",
           isMut: true,
-          isSigner: false,
+          isSigner: false
         },
         {
           name: "vault",
           isMut: true,
-          isSigner: false,
+          isSigner: false
         },
         {
           name: "depositNoteMint",
           isMut: true,
-          isSigner: false,
+          isSigner: false
         },
         {
           name: "source",
           isMut: true,
-          isSigner: false,
+          isSigner: false
         },
         {
           name: "destination",
           isMut: true,
-          isSigner: false,
+          isSigner: false
         },
         {
           name: "tokenProgram",
           isMut: false,
-          isSigner: false,
-        },
+          isSigner: false
+        }
       ],
       args: [
         {
           name: "amount",
           type: {
-            defined: "Amount",
-          },
-        },
-      ],
+            defined: "Amount"
+          }
+        }
+      ]
     },
     {
       name: "marginRefreshPosition",
@@ -974,21 +974,21 @@ export const IDL: JetMarginPool = {
         {
           name: "marginAccount",
           isMut: false,
-          isSigner: true,
+          isSigner: true
         },
         {
           name: "marginPool",
           isMut: false,
-          isSigner: false,
+          isSigner: false
         },
         {
           name: "tokenPriceOracle",
           isMut: false,
-          isSigner: false,
-        },
+          isSigner: false
+        }
       ],
-      args: [],
-    },
+      args: []
+    }
   ],
   accounts: [
     {
@@ -998,78 +998,78 @@ export const IDL: JetMarginPool = {
         fields: [
           {
             name: "version",
-            type: "u8",
+            type: "u8"
           },
           {
             name: "poolBump",
             type: {
-              array: ["u8", 1],
-            },
+              array: ["u8", 1]
+            }
           },
           {
             name: "vault",
-            type: "publicKey",
+            type: "publicKey"
           },
           {
             name: "feeDestination",
-            type: "publicKey",
+            type: "publicKey"
           },
           {
             name: "depositNoteMint",
-            type: "publicKey",
+            type: "publicKey"
           },
           {
             name: "loanNoteMint",
-            type: "publicKey",
+            type: "publicKey"
           },
           {
             name: "tokenMint",
-            type: "publicKey",
+            type: "publicKey"
           },
           {
             name: "tokenPriceOracle",
-            type: "publicKey",
+            type: "publicKey"
           },
           {
             name: "address",
-            type: "publicKey",
+            type: "publicKey"
           },
           {
             name: "config",
             type: {
-              defined: "MarginPoolConfig",
-            },
+              defined: "MarginPoolConfig"
+            }
           },
           {
             name: "borrowedTokens",
             type: {
-              array: ["u8", 24],
-            },
+              array: ["u8", 24]
+            }
           },
           {
             name: "uncollectedFees",
             type: {
-              array: ["u8", 24],
-            },
+              array: ["u8", 24]
+            }
           },
           {
             name: "depositTokens",
-            type: "u64",
+            type: "u64"
           },
           {
             name: "depositNotes",
-            type: "u64",
+            type: "u64"
           },
           {
             name: "loanNotes",
-            type: "u64",
+            type: "u64"
           },
           {
             name: "accruedUntil",
-            type: "i64",
-          },
-        ],
-      },
+            type: "i64"
+          }
+        ]
+      }
     },
     {
       name: "marginPoolOracle",
@@ -1078,29 +1078,29 @@ export const IDL: JetMarginPool = {
         fields: [
           {
             name: "tokenMint",
-            type: "publicKey",
+            type: "publicKey"
           },
           {
             name: "price",
             type: {
-              array: ["u8", 24],
-            },
+              array: ["u8", 24]
+            }
           },
           {
             name: "priceLower",
             type: {
-              array: ["u8", 24],
-            },
+              array: ["u8", 24]
+            }
           },
           {
             name: "priceUpper",
             type: {
-              array: ["u8", 24],
-            },
-          },
-        ],
-      },
-    },
+              array: ["u8", 24]
+            }
+          }
+        ]
+      }
+    }
   ],
   types: [
     {
@@ -1111,15 +1111,15 @@ export const IDL: JetMarginPool = {
           {
             name: "kind",
             type: {
-              defined: "AmountKind",
-            },
+              defined: "AmountKind"
+            }
           },
           {
             name: "value",
-            type: "u64",
-          },
-        ],
-      },
+            type: "u64"
+          }
+        ]
+      }
     },
     {
       name: "MarginPoolConfig",
@@ -1128,42 +1128,42 @@ export const IDL: JetMarginPool = {
         fields: [
           {
             name: "flags",
-            type: "u64",
+            type: "u64"
           },
           {
             name: "utilizationRate1",
-            type: "u16",
+            type: "u16"
           },
           {
             name: "utilizationRate2",
-            type: "u16",
+            type: "u16"
           },
           {
             name: "borrowRate0",
-            type: "u16",
+            type: "u16"
           },
           {
             name: "borrowRate1",
-            type: "u16",
+            type: "u16"
           },
           {
             name: "borrowRate2",
-            type: "u16",
+            type: "u16"
           },
           {
             name: "borrowRate3",
-            type: "u16",
+            type: "u16"
           },
           {
             name: "managementFeeRate",
-            type: "u16",
+            type: "u16"
           },
           {
             name: "managementFeeCollectThreshold",
-            type: "u64",
-          },
-        ],
-      },
+            type: "u64"
+          }
+        ]
+      }
     },
     {
       name: "AmountKind",
@@ -1171,13 +1171,13 @@ export const IDL: JetMarginPool = {
         kind: "enum",
         variants: [
           {
-            name: "Tokens",
+            name: "Tokens"
           },
           {
-            name: "Notes",
-          },
-        ],
-      },
+            name: "Notes"
+          }
+        ]
+      }
     },
     {
       name: "ErrorCode",
@@ -1185,19 +1185,19 @@ export const IDL: JetMarginPool = {
         kind: "enum",
         variants: [
           {
-            name: "Disabled",
+            name: "Disabled"
           },
           {
-            name: "InterestAccrualBehind",
+            name: "InterestAccrualBehind"
           },
           {
-            name: "DepositsOnly",
+            name: "DepositsOnly"
           },
           {
-            name: "InsufficientLiquidity",
-          },
-        ],
-      },
-    },
-  ],
-};
+            name: "InsufficientLiquidity"
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -103,14 +103,14 @@ fn verify_liquidation_step_is_allowed(
 
     if liquidation.value_change < liquidation.min_value_change {
         msg!(
-            "Illegal liquidation: net loss of {:?} value caused by liquidation instructions which exceeds the min value change of {:?}",
+            "Illegal liquidation: net loss of {} value caused by liquidation instructions which exceeds the min value change of {}",
             liquidation.value_change,
             liquidation.min_value_change
         );
         err!(ErrorCode::LiquidationLostValue)
     } else if liquidation.c_ratio_change < Number128::ZERO - max_c_ratio_slippage {
         msg!(
-            "Illegal liquidation: net loss of {:?}% in c-ratio caused by liquidation instructions which exceeds the {:?} bps of allowed slippage",
+            "Illegal liquidation: net loss of {}% in c-ratio caused by liquidation instructions which exceeds the {} bps of allowed slippage",
             liquidation.c_ratio_change,
             max_c_ratio_slippage,
         );
