@@ -56,4 +56,4 @@ jobs:
       - run: solana-keygen new --no-bip39-passphrase
 
       - name: TS Test
-        run: anchor test --skip-lint
+        run: anchor test --skip-lint -- --features devnet
