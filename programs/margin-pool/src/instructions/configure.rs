@@ -65,6 +65,9 @@ pub fn configure_handler(
             return err!(ErrorCode::InvalidOracle);
         }
 
+        //TODO JV2M-359
+        //TODO this needs to be set in the product account.
+        /*
         let quote_currency = product_account
             .iter()
             .find_map(|(k, v)| match k {
@@ -77,6 +80,7 @@ pub fn configure_handler(
             msg!("this oracle does not quote prices in USD");
             return err!(ErrorCode::InvalidOracle);
         }
+        */
 
         pool.token_price_oracle = ctx.accounts.pyth_price.key();
         msg!("oracle = {}", &pool.token_price_oracle);

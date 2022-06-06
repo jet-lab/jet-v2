@@ -45,6 +45,7 @@ pub mod pyth {
 
         productData.px_acc = *ctx.accounts.price.to_account_info().key;
 
+        //TODO JV2M-359
         //TODO set the quote_currency to USD
 
         let price_account = &ctx.accounts.price;
@@ -59,7 +60,7 @@ pub mod pyth {
         priceData.agg.conf = conf;
         priceData.agg.status = PriceStatus::Trading;
 
-        priceData.twap = price;
+        priceData.ema_price = Rational { val: price, numer: price, denom: 1 };
         priceData.expo = expo;
         priceData.ptype = PriceType::Price;
 
@@ -72,14 +73,17 @@ pub mod pyth {
 
         let clock = Clock::get().unwrap();
 
-        price_oracle.twap = price;
-
         price_oracle.agg.price = price;
         price_oracle.agg.conf = conf;
         price_oracle.agg.status = PriceStatus::Trading;
+        price_oracle.agg.pub_slot = clock.slot;
 
-        price_oracle.curr_slot = clock.slot;
+        price_oracle.ema_price = Rational { val: price, numer: price, denom: 1 };
+        price_oracle.ema_conf = Rational { val: conf as i64, numer: conf as i64, denom: 1 };
+
+        price_oracle.last_slot = clock.slot;
         price_oracle.valid_slot = clock.slot;
+        price_oracle.timestamp = clock.unix_timestamp;
 
         Ok(())
     }
@@ -205,32 +209,78 @@ impl Default for PriceType {
 
 
 
+/// An number represented as both `value` and also in rational as `numer/denom`.
+#[derive(
+    Copy,
+    Clone,
+    Debug,
+    Default,
+    PartialEq,
+    Eq,
+    BorshSerialize,
+    BorshDeserialize,
+)]
+#[repr(C)]
+pub struct Rational {
+    pub val:   i64,
+    pub numer: i64,
+    pub denom: i64,
+}
+
+/// Price accounts represent a continuously-updating price feed for a product.
 #[derive(Default, Copy, Clone)]
 #[repr(C)]
 pub struct Price {
-    pub magic: u32,         // Pyth magic number.
-    pub ver: u32,           // Program version.
-    pub atype: AccountType, // Account type.
-    pub size: u32,          // Price account size.
-    pub ptype: PriceType,   // Price or calculation type.
-    pub expo: i32,          // Price exponent.
-    pub num: u32,           // Number of component prices.
-    pub unused: u32,
-    pub curr_slot: u64,        // Currently accumulating price slot.
-    pub valid_slot: u64,       // Valid slot-time of agg. price.
-    pub twap: i64,             // Time-weighted average price.
-    pub avol: u64,             // Annualized price volatility.
-    pub drv0: i64,             // Space for future derived values.
-    pub drv1: i64,             // Space for future derived values.
-    pub drv2: i64,             // Space for future derived values.
-    pub drv3: i64,             // Space for future derived values.
-    pub drv4: i64,             // Space for future derived values.
-    pub drv5: i64,             // Space for future derived values.
-    pub prod: AccKey,          // Product account key.
-    pub next: AccKey,          // Next Price account in linked list.
-    pub agg_pub: AccKey,       // Quoter who computed last aggregate price.
-    pub agg: PriceInfo,        // Aggregate price info.
-    pub comp: [PriceComp; 32], // Price components one per quoter.
+    /// pyth magic number
+    pub magic:          u32,
+    /// program version
+    pub ver:            u32,
+    /// account type
+    pub atype:          AccountType,
+    /// price account size
+    pub size:           u32,
+    /// price or calculation type
+    pub ptype:          PriceType,
+    /// price exponent
+    pub expo:           i32,
+    /// number of component prices
+    pub num:            u32,
+    /// number of quoters that make up aggregate
+    pub num_qt:         u32,
+    /// slot of last valid (not unknown) aggregate price
+    pub last_slot:      u64,
+    /// valid slot-time of agg. price
+    pub valid_slot:     u64,
+    /// exponentially moving average price
+    pub ema_price:      Rational,
+    /// exponentially moving average confidence interval
+    pub ema_conf:       Rational,
+    /// unix timestamp of aggregate price
+    pub timestamp:      i64,
+    /// min publishers for valid price
+    pub min_pub:        u8,
+    /// space for future derived values
+    pub drv2:           u8,
+    /// space for future derived values
+    pub drv3:           u16,
+    /// space for future derived values
+    pub drv4:           u32,
+    /// product account key
+    pub prod:           AccKey,
+    /// next Price account in linked list
+    pub next:           AccKey,
+    /// valid slot of previous update
+    pub prev_slot:      u64,
+    /// aggregate price of previous update with TRADING status
+    pub prev_price:     i64,
+    /// confidence interval of previous update with TRADING status
+    pub prev_conf:      u64,
+    /// unix timestamp of previous aggregate with TRADING status
+    pub prev_timestamp: i64,
+    /// aggregate price info
+    pub agg:            PriceInfo,
+    /// price components one per quoter
+    pub comp:           [PriceComp; 32],
 }
 
 impl Price {
