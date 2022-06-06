@@ -205,7 +205,10 @@ describe("margin pool", () => {
 
   it("Users repay their loans", async () => {
     await maginPool_TSOL.marginRepay(maginAccount_A, PoolAmount.tokens(new BN(10 * ONE_TSOL)))
+    await maginPool_TSOL.refreshPosition(maginAccount_A)
+
     await maginPool_USDC.marginRepay(maginAccount_B, PoolAmount.tokens(new BN(1_000 * ONE_USDC)))
+    await maginPool_USDC.refreshPosition(maginAccount_B)
   })
 
   it("Users withdraw their funds", async () => {
@@ -214,6 +217,7 @@ describe("margin pool", () => {
       user_a_usdc_account,
       PoolAmount.tokens(new BN(1_000_000 * ONE_USDC))
     )
+
     await maginPool_TSOL.marginWithdraw(
       maginAccount_B,
       user_b_tsol_account,

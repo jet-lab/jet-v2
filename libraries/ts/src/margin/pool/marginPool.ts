@@ -502,7 +502,12 @@ export class MarginPool {
     )
     tx.add(...ix)
 
-    return await marginAccount.provider.sendAndConfirm(tx)
+    try {
+      return await marginAccount.provider.sendAndConfirm(tx)
+    } catch (err) {
+      console.log(err)
+      throw err
+    }
   }
 
   async makeMarginWithdrawInstruction(

@@ -65,7 +65,8 @@ pub fn configure_handler(
             return err!(ErrorCode::InvalidOracle);
         }
 
-        //TODO mas
+        //TODO JV2M-359
+        //TODO this needs to be set in the product account.
         /*
         let quote_currency = product_account
             .iter()

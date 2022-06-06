@@ -251,9 +251,7 @@ impl MarginAccount {
 
                 if position.price.is_valid != POS_PRICE_VALID {
                     // collateral with bad prices
-                    //TODO mas
-                    //Some(ErrorCode::InvalidPrice)
-                    None
+                    Some(ErrorCode::InvalidPrice)
                 } else if position.collateral_max_staleness > 0
                     && balance_age > position.collateral_max_staleness
                 {
@@ -267,6 +265,9 @@ impl MarginAccount {
                 }
             };
 
+            //TODO JV2M-360
+            //TODO user replays a loan but Claim still has a position.value()
+            /*
             match (kind, stale_reason) {
                 (PositionKind::NoValue, _) => (),
                 (PositionKind::Claim, None) => claims += position.value(),
@@ -278,6 +279,7 @@ impl MarginAccount {
                     stale_collateral_list.push((position.token, e));
                 }
             }
+            */
         }
 
         Ok(Valuation {
