@@ -10,7 +10,6 @@ import { AssociatedToken } from "../../token"
 import { MarginPoolData } from "./state"
 import { MarginTokenConfig, MarginTokens } from "../config"
 import { PoolAmount } from "./poolAmount"
-import { parsePriceData, PriceData } from "@pythnetwork/client"
 
 type TokenKindNonCollateral = { nonCollateral: Record<string, never> }
 type TokenKindCollateral = { collateral: Record<string, never> }
@@ -63,13 +62,7 @@ export class MarginPool {
     vault: AssociatedToken
     depositNoteMint: Mint
     loanNoteMint: Mint
-    tokenPriceOracle: PriceData
   }
-
-  get tokenPrice(): number | undefined {
-    return this.info?.tokenPriceOracle.price
-  }
-
   constructor(public programs: MarginPrograms, public addresses: MarginPoolAddresses) {
     assert(programs)
     assert(addresses)
@@ -111,7 +104,7 @@ export class MarginPool {
     }
   }
 
-  static async load(programs: MarginPrograms, tokenMint: Address): Promise<MarginPool> {
+  static async load(programs: MarginPrograms, tokenMint: Address) {
     assert(programs)
     assert(tokenMint)
 
@@ -149,22 +142,12 @@ export class MarginPool {
     if (!marginPoolInfo || !poolTokenMintInfo || !vaultMintInfo || !depositNoteMintInfo || !loanNoteMintInfo) {
       this.info = undefined
     } else {
-      const marginPool = this.programs.marginPool.coder.accounts.decode<MarginPoolData>(
-        "marginPool",
-        marginPoolInfo.data
-      )
-      const oracleInfo = await this.programs.marginPool.provider.connection.getAccountInfo(marginPool.tokenPriceOracle)
-      assert(
-        oracleInfo,
-        "Pyth oracle does not exist but a margin pool does. The margin pool is incorrectly configured."
-      )
       this.info = {
-        marginPool,
+        marginPool: this.programs.marginPool.coder.accounts.decode<MarginPoolData>("marginPool", marginPoolInfo.data),
         tokenMint: AssociatedToken.decodeMint(poolTokenMintInfo, this.addresses.tokenMint),
         vault: AssociatedToken.decodeAccount(vaultMintInfo, this.addresses.vault, this.tokenConfig.decimals),
         depositNoteMint: AssociatedToken.decodeMint(depositNoteMintInfo, this.addresses.depositNoteMint),
-        loanNoteMint: AssociatedToken.decodeMint(loanNoteMintInfo, this.addresses.loanNoteMint),
-        tokenPriceOracle: parsePriceData(oracleInfo.data)
+        loanNoteMint: AssociatedToken.decodeMint(loanNoteMintInfo, this.addresses.loanNoteMint)
       }
     }
   }
