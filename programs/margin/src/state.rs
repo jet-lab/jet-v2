@@ -251,7 +251,9 @@ impl MarginAccount {
 
                 if position.price.is_valid != POS_PRICE_VALID {
                     // collateral with bad prices
-                    Some(ErrorCode::InvalidPrice)
+                    //TODO mas
+                    //Some(ErrorCode::InvalidPrice)
+                    None
                 } else if position.collateral_max_staleness > 0
                     && balance_age > position.collateral_max_staleness
                 {

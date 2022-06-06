@@ -245,11 +245,14 @@ impl MarginPool {
         let price_obj = pyth_price
             .get_current_price()
             .ok_or(ErrorCode::InvalidPrice)?;
-        let ema_obj = pyth_price.get_ema_price().ok_or(ErrorCode::InvalidPrice)?;
+        //TODO mas
+        //let ema_obj = pyth_price.get_ema_price().ok_or(ErrorCode::InvalidPrice)?;
 
         let price_value = Number::from_decimal(price_obj.price, price_obj.expo);
         let conf_value = Number::from_decimal(price_obj.conf, price_obj.expo);
-        let twap_value = Number::from_decimal(ema_obj.price, ema_obj.expo);
+        //TODO mas
+        //let twap_value = Number::from_decimal(ema_obj.price, ema_obj.expo);
+        let twap_value = price_value;
 
         let deposit_note_price = (price_value * self.deposit_note_exchange_rate())
             .as_u64_rounded(pyth_price.expo) as i64;

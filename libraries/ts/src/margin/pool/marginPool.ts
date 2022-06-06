@@ -365,7 +365,12 @@ export class MarginPool {
         amount
       )
     )
-    return await marginAccount.provider.sendAndConfirm(new Transaction().add(...ix))
+    try {
+      return await marginAccount.provider.sendAndConfirm(new Transaction().add(...ix))
+    } catch (err) {
+      console.log(err)
+      throw err
+    }
   }
 
   async makeMarginRefreshPositionInstruction(

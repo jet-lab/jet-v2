@@ -72,11 +72,12 @@ pub mod pyth {
 
         let clock = Clock::get().unwrap();
 
-        price_oracle.twap = price;
-
         price_oracle.agg.price = price;
         price_oracle.agg.conf = conf;
         price_oracle.agg.status = PriceStatus::Trading;
+        price_oracle.agg.pub_slot = clock.slot;
+
+        price_oracle.twap = price;
 
         price_oracle.curr_slot = clock.slot;
         price_oracle.valid_slot = clock.slot;
