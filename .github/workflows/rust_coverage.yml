@@ -1,7 +1,7 @@
 name: build
 
 env:
-  cli-id: anchor-v0.24.dev-solana-1.9.16
+  cli-id: anchor-v0.24.dev-solana-1.9.2
   rust-version: stable
 
 on:
