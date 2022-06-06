@@ -19,10 +19,7 @@ use anchor_lang::prelude::*;
 use bytemuck::{cast_slice_mut, from_bytes_mut, try_cast_slice_mut, Pod, Zeroable};
 use std::cell::RefMut;
 
-use borsh::{
-    BorshDeserialize,
-    BorshSerialize,
-};
+use borsh::{BorshDeserialize, BorshSerialize};
 
 #[cfg(feature = "mainnet-beta")]
 declare_id!("GWXu4vLvXFN87dePFvM7Ejt8HEALEG9GNmwimNKHZrXG");
@@ -34,7 +31,6 @@ pub mod pyth {
     use super::*;
 
     pub fn initialize(ctx: Context<Initialize>, price: i64, expo: i32, conf: u64) -> Result<()> {
-
         let product_account = &ctx.accounts.product;
 
         let mut productData = Product::load(product_account).unwrap();
@@ -60,7 +56,11 @@ pub mod pyth {
         priceData.agg.conf = conf;
         priceData.agg.status = PriceStatus::Trading;
 
-        priceData.ema_price = Rational { val: price, numer: price, denom: 1 };
+        priceData.ema_price = Rational {
+            val: price,
+            numer: price,
+            denom: 1,
+        };
         priceData.expo = expo;
         priceData.ptype = PriceType::Price;
 
@@ -78,8 +78,16 @@ pub mod pyth {
         price_oracle.agg.status = PriceStatus::Trading;
         price_oracle.agg.pub_slot = clock.slot;
 
-        price_oracle.ema_price = Rational { val: price, numer: price, denom: 1 };
-        price_oracle.ema_conf = Rational { val: conf as i64, numer: conf as i64, denom: 1 };
+        price_oracle.ema_price = Rational {
+            val: price,
+            numer: price,
+            denom: 1,
+        };
+        price_oracle.ema_conf = Rational {
+            val: conf as i64,
+            numer: conf as i64,
+            denom: 1,
+        };
 
         price_oracle.last_slot = clock.slot;
         price_oracle.valid_slot = clock.slot;
@@ -107,17 +115,12 @@ pub struct Initialize<'info> {
     pub price: AccountInfo<'info>,
 }
 
-
-
-
-
-
-pub const MAGIC               : u32   = 0xa1b2c3d4;
-pub const VERSION_2           : u32   = 2;
-pub const VERSION             : u32   = VERSION_2;
-pub const PROD_ACCT_SIZE      : usize = 512;
-pub const PROD_HDR_SIZE       : usize = 48;
-pub const PROD_ATTR_SIZE      : usize = PROD_ACCT_SIZE - PROD_HDR_SIZE;
+pub const MAGIC: u32 = 0xa1b2c3d4;
+pub const VERSION_2: u32 = 2;
+pub const VERSION: u32 = VERSION_2;
+pub const PROD_ACCT_SIZE: usize = 512;
+pub const PROD_HDR_SIZE: usize = 48;
+pub const PROD_ATTR_SIZE: usize = PROD_ACCT_SIZE - PROD_HDR_SIZE;
 
 #[derive(Default, Copy, Clone)]
 #[repr(C)]
@@ -128,18 +131,17 @@ pub struct AccKey {
 /// The type of Pyth account determines what data it contains
 #[derive(Copy, Clone, Debug, PartialEq, Eq, BorshSerialize, BorshDeserialize)]
 #[repr(C)]
-pub enum AccountType
-{
-  Unknown,
-  Mapping,
-  Product,
-  Price
+pub enum AccountType {
+    Unknown,
+    Mapping,
+    Product,
+    Price,
 }
 
 impl Default for AccountType {
-  fn default() -> Self {
-    AccountType::Unknown
-  }
+    fn default() -> Self {
+        AccountType::Unknown
+    }
 }
 
 #[derive(Copy, Clone)]
@@ -207,22 +209,11 @@ impl Default for PriceType {
     }
 }
 
-
-
 /// An number represented as both `value` and also in rational as `numer/denom`.
-#[derive(
-    Copy,
-    Clone,
-    Debug,
-    Default,
-    PartialEq,
-    Eq,
-    BorshSerialize,
-    BorshDeserialize,
-)]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, BorshSerialize, BorshDeserialize)]
 #[repr(C)]
 pub struct Rational {
-    pub val:   i64,
+    pub val: i64,
     pub numer: i64,
     pub denom: i64,
 }
@@ -232,55 +223,55 @@ pub struct Rational {
 #[repr(C)]
 pub struct Price {
     /// pyth magic number
-    pub magic:          u32,
+    pub magic: u32,
     /// program version
-    pub ver:            u32,
+    pub ver: u32,
     /// account type
-    pub atype:          AccountType,
+    pub atype: AccountType,
     /// price account size
-    pub size:           u32,
+    pub size: u32,
     /// price or calculation type
-    pub ptype:          PriceType,
+    pub ptype: PriceType,
     /// price exponent
-    pub expo:           i32,
+    pub expo: i32,
     /// number of component prices
-    pub num:            u32,
+    pub num: u32,
     /// number of quoters that make up aggregate
-    pub num_qt:         u32,
+    pub num_qt: u32,
     /// slot of last valid (not unknown) aggregate price
-    pub last_slot:      u64,
+    pub last_slot: u64,
     /// valid slot-time of agg. price
-    pub valid_slot:     u64,
+    pub valid_slot: u64,
     /// exponentially moving average price
-    pub ema_price:      Rational,
+    pub ema_price: Rational,
     /// exponentially moving average confidence interval
-    pub ema_conf:       Rational,
+    pub ema_conf: Rational,
     /// unix timestamp of aggregate price
-    pub timestamp:      i64,
+    pub timestamp: i64,
     /// min publishers for valid price
-    pub min_pub:        u8,
+    pub min_pub: u8,
     /// space for future derived values
-    pub drv2:           u8,
+    pub drv2: u8,
     /// space for future derived values
-    pub drv3:           u16,
+    pub drv3: u16,
     /// space for future derived values
-    pub drv4:           u32,
+    pub drv4: u32,
     /// product account key
-    pub prod:           AccKey,
+    pub prod: AccKey,
     /// next Price account in linked list
-    pub next:           AccKey,
+    pub next: AccKey,
     /// valid slot of previous update
-    pub prev_slot:      u64,
+    pub prev_slot: u64,
     /// aggregate price of previous update with TRADING status
-    pub prev_price:     i64,
+    pub prev_price: i64,
     /// confidence interval of previous update with TRADING status
-    pub prev_conf:      u64,
+    pub prev_conf: u64,
     /// unix timestamp of previous aggregate with TRADING status
     pub prev_timestamp: i64,
     /// aggregate price info
-    pub agg:            PriceInfo,
+    pub agg: PriceInfo,
     /// price components one per quoter
-    pub comp:           [PriceComp; 32],
+    pub comp: [PriceComp; 32],
 }
 
 impl Price {
@@ -300,25 +291,23 @@ unsafe impl Zeroable for Price {}
 #[cfg(target_endian = "little")]
 unsafe impl Pod for Price {}
 
-
-
 /// Product accounts contain metadata for a single product, such as its symbol ("Crypto.BTC/USD")
 /// and its base/quote currencies.
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Product {
     /// pyth magic number
-    pub magic:  u32,
+    pub magic: u32,
     /// program version
-    pub ver:    u32,
+    pub ver: u32,
     /// account type
-    pub atype:  AccountType,
+    pub atype: AccountType,
     /// price account size
-    pub size:   u32,
+    pub size: u32,
     /// first price account in list
     pub px_acc: Pubkey,
     /// key/value pairs of reference attr.
-    pub attr:   [u8; PROD_ATTR_SIZE],
+    pub attr: [u8; PROD_ATTR_SIZE],
 }
 
 impl Product {
