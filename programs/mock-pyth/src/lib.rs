@@ -33,36 +33,36 @@ pub mod pyth {
     pub fn initialize(ctx: Context<Initialize>, price: i64, expo: i32, conf: u64) -> Result<()> {
         let product_account = &ctx.accounts.product;
 
-        let mut productData = Product::load(product_account).unwrap();
+        let mut product_data = Product::load(product_account).unwrap();
 
-        productData.magic = MAGIC;
-        productData.ver = VERSION;
-        productData.atype = AccountType::Product;
+        product_data.magic = MAGIC;
+        product_data.ver = VERSION;
+        product_data.atype = AccountType::Product;
 
-        productData.px_acc = *ctx.accounts.price.to_account_info().key;
+        product_data.px_acc = *ctx.accounts.price.to_account_info().key;
 
         //TODO JV2M-359
         //TODO set the quote_currency to USD
 
         let price_account = &ctx.accounts.price;
 
-        let mut priceData = Price::load(price_account).unwrap();
+        let mut price_data = Price::load(price_account).unwrap();
 
-        priceData.magic = MAGIC;
-        priceData.ver = VERSION;
-        priceData.atype = AccountType::Price;
+        price_data.magic = MAGIC;
+        price_data.ver = VERSION;
+        price_data.atype = AccountType::Price;
 
-        priceData.agg.price = price;
-        priceData.agg.conf = conf;
-        priceData.agg.status = PriceStatus::Trading;
+        price_data.agg.price = price;
+        price_data.agg.conf = conf;
+        price_data.agg.status = PriceStatus::Trading;
 
-        priceData.ema_price = Rational {
+        price_data.ema_price = Rational {
             val: price,
             numer: price,
             denom: 1,
         };
-        priceData.expo = expo;
-        priceData.ptype = PriceType::Price;
+        price_data.expo = expo;
+        price_data.ptype = PriceType::Price;
 
         Ok(())
     }
