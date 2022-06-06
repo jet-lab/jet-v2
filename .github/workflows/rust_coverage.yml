@@ -27,7 +27,7 @@ jobs:
 
       - id: install-solana-tools
         if: steps.cache-cli-deps.outputs.cache-hit != 'true'
-        run: sh -c "$(curl -sSfL https://release.solana.com/v1.9.16/install)"
+        run: sh -c "$(curl -sSfL https://release.solana.com/v1.9.2/install)"
 
       - run: echo "PATH=$HOME/.local/share/solana/install/active_release/bin:$PATH" >> $GITHUB_ENV
 
