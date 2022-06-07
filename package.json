@@ -1,7 +1,7 @@
 {
   "license": "AGPL-3.0-or-later",
   "scripts": {
-    "compile": "npx tsc --noEmit",
+    "compile": "npx tsc",
     "fmt": "prettier --check .",
     "fmt:fix": "prettier --write .",
     "lint": "eslint . --ext ts",
