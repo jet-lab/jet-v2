@@ -15,12 +15,12 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use std::cmp::Ordering;
-
 use anchor_lang::{prelude::*, solana_program::clock::UnixTimestamp};
-
 use jet_proto_math::Number;
 use pyth_sdk_solana::PriceFeed;
+#[cfg(any(test, feature = "cli"))]
+use serde::ser::{Serialize, SerializeStruct, Serializer};
+use std::cmp::Ordering;
 
 use crate::{util, Amount, AmountKind, ErrorCode};
 
@@ -28,7 +28,7 @@ use crate::{util, Amount, AmountKind, ErrorCode};
 /// services lending/borrowing operations.
 #[account]
 #[repr(C, align(8))]
-#[derive(Default)]
+#[derive(Debug, Default)]
 pub struct MarginPool {
     pub version: u8,
 
@@ -80,6 +80,33 @@ pub struct MarginPool {
 
     /// The time the interest was last accrued up to
     pub accrued_until: i64,
+}
+
+#[cfg(any(test, feature = "cli"))]
+impl Serialize for MarginPool {
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut s = serializer.serialize_struct("MarginPool", 13)?;
+        s.serialize_field("version", &self.version)?;
+        s.serialize_field("vault", &self.vault.to_string())?;
+        s.serialize_field("feeDestination", &self.fee_destination.to_string())?;
+        s.serialize_field("depositNoteMint", &self.deposit_note_mint.to_string())?;
+        s.serialize_field("loanNoteMint", &self.loan_note_mint.to_string())?;
+        s.serialize_field("tokenMint", &self.token_mint.to_string())?;
+        s.serialize_field("tokenPriceOracle", &self.token_price_oracle.to_string())?;
+        s.serialize_field("borrowedTokens", &self.total_borrowed().to_string())?;
+        s.serialize_field(
+            "uncollectedFees",
+            &self.total_uncollected_fees().to_string(),
+        )?;
+        s.serialize_field("depositTokens", &self.deposit_tokens)?;
+        s.serialize_field("depositNotes", &self.deposit_notes)?;
+        s.serialize_field("loanNotes", &self.loan_notes)?;
+        s.serialize_field("accruedUntil", &self.accrued_until)?;
+        s.end()
+    }
 }
 
 impl MarginPool {
@@ -461,7 +488,7 @@ pub struct PriceResult {
 }
 
 /// Configuration for a margin pool
-#[derive(Default, AnchorDeserialize, AnchorSerialize, Clone)]
+#[derive(Debug, Default, AnchorDeserialize, AnchorSerialize, Clone)]
 pub struct MarginPoolConfig {
     /// Space for binary settings
     pub flags: u64,
@@ -505,6 +532,7 @@ bitflags::bitflags! {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serde_test::{assert_ser_tokens, Token};
 
     #[test]
     fn test_deposit_note_rounding() -> Result<()> {
@@ -752,5 +780,46 @@ mod tests {
         assert_eq!(RoundingDirection::Up, direction);
 
         Ok(())
+    }
+
+    #[test]
+    fn margin_pool_serialization() {
+        let pool = MarginPool::default();
+        assert_ser_tokens(
+            &pool,
+            &[
+                Token::Struct {
+                    name: "MarginPool",
+                    len: 13,
+                },
+                Token::Str("version"),
+                Token::U8(0),
+                Token::Str("vault"),
+                Token::Str("11111111111111111111111111111111"),
+                Token::Str("feeDestination"),
+                Token::Str("11111111111111111111111111111111"),
+                Token::Str("depositNoteMint"),
+                Token::Str("11111111111111111111111111111111"),
+                Token::Str("loanNoteMint"),
+                Token::Str("11111111111111111111111111111111"),
+                Token::Str("tokenMint"),
+                Token::Str("11111111111111111111111111111111"),
+                Token::Str("tokenPriceOracle"),
+                Token::Str("11111111111111111111111111111111"),
+                Token::Str("borrowedTokens"),
+                Token::Str("0.0"),
+                Token::Str("uncollectedFees"),
+                Token::Str("0.0"),
+                Token::Str("depositTokens"),
+                Token::U64(0),
+                Token::Str("depositNotes"),
+                Token::U64(0),
+                Token::Str("loanNotes"),
+                Token::U64(0),
+                Token::Str("accruedUntil"),
+                Token::I64(0),
+                Token::StructEnd,
+            ],
+        );
     }
 }
