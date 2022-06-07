@@ -57,3 +57,9 @@ jobs:
 
       - name: TS Test
         run: npm run test
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v2
+        with:
+          files: ts_coverage/lcov.info
+          fail_ci_if_error: true

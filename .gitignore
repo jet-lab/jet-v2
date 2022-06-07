@@ -11,3 +11,4 @@ target
 node_modules
 lcov.info
 .nyc_output
+ts_coverage
