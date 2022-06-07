@@ -14,19 +14,7 @@ import {
   MINT_SIZE,
   TOKEN_PROGRAM_ID
 } from "@solana/spl-token"
-import {
-  Account,
-  Commitment,
-  Connection,
-  Keypair,
-  LAMPORTS_PER_SOL,
-  PublicKey,
-  sendAndConfirmTransaction,
-  SystemProgram,
-  Transaction,
-  TransactionSignature
-} from "@solana/web3.js"
-import assert from "assert"
+import { Commitment, Keypair, LAMPORTS_PER_SOL, PublicKey, SystemProgram, Transaction } from "@solana/web3.js"
 
 import MARGIN_CONFIG from "../../libraries/ts/src/margin/config.json"
 

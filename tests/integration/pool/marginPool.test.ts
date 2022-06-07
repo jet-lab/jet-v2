@@ -39,7 +39,7 @@ describe("margin pool", () => {
   })
 
   let USDC: [PublicKey, PublicKey]
-  let TSOL: [PublicKey, PublicKey]
+  let SOL: [PublicKey, PublicKey]
 
   it("Create tokens", async () => {
     USDC = await createToken(provider, payer, 6, 10_000_000)
@@ -48,18 +48,18 @@ describe("margin pool", () => {
     const usdc_balance = await getTokenBalance(provider, confirmOptions.commitment, USDC[1])
     assert(usdc_balance > 0)
 
-    TSOL = await createToken(provider, payer, 9, 10_000)
-    const tsol_supply = await getMintSupply(provider, TSOL[0], 9)
-    assert(tsol_supply > 0)
-    const tsol_balance = await getTokenBalance(provider, confirmOptions.commitment, TSOL[1])
-    assert(tsol_balance > 0)
+    SOL = await createToken(provider, payer, 9, 10_000)
+    const sol_supply = await getMintSupply(provider, SOL[0], 9)
+    assert(sol_supply > 0)
+    const sol_balance = await getTokenBalance(provider, confirmOptions.commitment, SOL[1])
+    assert(sol_balance > 0)
   })
 
   const FEE_VAULT_USDC: PublicKey = new PublicKey("FEEVAULTUSDC1111111111111111111111111111111")
-  const FEE_VAULT_TSOL: PublicKey = new PublicKey("FEEVAULTTSoL1111111111111111111111111111111")
+  const FEE_VAULT_SOL: PublicKey = new PublicKey("FEEVAULTTSoL1111111111111111111111111111111")
 
   let USDC_oracle: Keypair[]
-  let TSOL_oracle: Keypair[]
+  let SOL_oracle: Keypair[]
 
   const pythClient = new PythClient({
     pythProgramId: "FT9EZnpdo3tPfUCGn8SBkvN9DMpSStAg3YvAqvYrtSvL",
@@ -69,8 +69,8 @@ describe("margin pool", () => {
   it("Create oracles", async () => {
     USDC_oracle = [Keypair.generate(), Keypair.generate()]
     await pythClient.createPriceAccount(payer, USDC_oracle[0], "USD", USDC_oracle[1], 1, 0.01, -8)
-    TSOL_oracle = [Keypair.generate(), Keypair.generate()]
-    await pythClient.createPriceAccount(payer, TSOL_oracle[0], "USD", TSOL_oracle[1], 100, 1, -8)
+    SOL_oracle = [Keypair.generate(), Keypair.generate()]
+    await pythClient.createPriceAccount(payer, SOL_oracle[0], "USD", SOL_oracle[1], 100, 1, -8)
   })
 
   it("Create authority", async () => {
@@ -82,7 +82,7 @@ describe("margin pool", () => {
   })
 
   const ONE_USDC = 1_000_000
-  const ONE_TSOL: number = LAMPORTS_PER_SOL
+  const ONE_SOL: number = LAMPORTS_PER_SOL
 
   const DEFAULT_POOL_CONFIG: MarginPoolConfig = {
     borrowRate0: 10,
@@ -103,14 +103,14 @@ describe("margin pool", () => {
       config: DEFAULT_POOL_CONFIG
     },
     {
-      mintAndVault: TSOL,
+      mintAndVault: SOL,
       weight: 9_500,
       config: DEFAULT_POOL_CONFIG
     }
   ]
 
   let maginPool_USDC: MarginPool
-  let maginPool_TSOL: MarginPool
+  let maginPool_SOL: MarginPool
 
   it("Create margin pools", async () => {
     maginPool_USDC = await MarginPool.load(programs, USDC[0])
@@ -125,15 +125,15 @@ describe("margin pool", () => {
       POOLS[0].config
     )
 
-    maginPool_TSOL = await MarginPool.load(programs, TSOL[0])
-    await maginPool_TSOL.create(
+    maginPool_SOL = await MarginPool.load(programs, SOL[0])
+    await maginPool_SOL.create(
       provider,
       ownerKeypair.publicKey,
       9_500,
       new BN(0),
-      FEE_VAULT_TSOL,
-      TSOL_oracle[0].publicKey,
-      TSOL_oracle[1].publicKey,
+      FEE_VAULT_SOL,
+      SOL_oracle[0].publicKey,
+      SOL_oracle[1].publicKey,
       POOLS[1].config
     )
   })
@@ -166,7 +166,7 @@ describe("margin pool", () => {
   })
 
   let user_a_usdc_account
-  let user_b_tsol_account
+  let user_b_sol_account
 
   it("Create some tokens for each user to deposit", async () => {
     const payer_A: Keypair = Keypair.fromSecretKey((wallet_a as NodeWallet).payer.secretKey)
@@ -174,13 +174,13 @@ describe("margin pool", () => {
     await sendToken(provider, USDC[0], 1_000_000, 6, ownerKeypair, new PublicKey(USDC[1]), user_a_usdc_account)
 
     const payer_B: Keypair = Keypair.fromSecretKey((wallet_b as NodeWallet).payer.secretKey)
-    user_b_tsol_account = await createTokenAccount(provider, TSOL[0], wallet_b.publicKey, payer_B)
-    await sendToken(provider, TSOL[0], 1_000, 9, ownerKeypair, new PublicKey(TSOL[1]), user_b_tsol_account)
+    user_b_sol_account = await createTokenAccount(provider, SOL[0], wallet_b.publicKey, payer_B)
+    await sendToken(provider, SOL[0], 1_000, 9, ownerKeypair, new PublicKey(SOL[1]), user_b_sol_account)
   })
 
   it("Set the prices for each token", async () => {
     await pythClient.setPythPrice(ownerKeypair, USDC_oracle[1].publicKey, 1, 0.01, -8)
-    await pythClient.setPythPrice(ownerKeypair, TSOL_oracle[1].publicKey, 100, 1, -8)
+    await pythClient.setPythPrice(ownerKeypair, SOL_oracle[1].publicKey, 100, 1, -8)
   })
 
   it("Deposit user funds into their margin accounts", async () => {
@@ -188,24 +188,24 @@ describe("margin pool", () => {
     assert((await getTokenBalance(provider, "processed", user_a_usdc_account)) == 0)
     await maginPool_USDC.refreshPosition(maginAccount_A)
 
-    await maginAccount_B.deposit(maginPool_TSOL, user_b_tsol_account, new BN(1_000 * ONE_TSOL))
-    assert((await getTokenBalance(provider, "processed", user_b_tsol_account)) == 0)
-    await maginPool_TSOL.refreshPosition(maginAccount_B)
+    await maginAccount_B.deposit(maginPool_SOL, user_b_sol_account, new BN(1_000 * ONE_SOL))
+    assert((await getTokenBalance(provider, "processed", user_b_sol_account)) == 0)
+    await maginPool_SOL.refreshPosition(maginAccount_B)
   })
 
   it("Set the prices for each token", async () => {
     await pythClient.setPythPrice(ownerKeypair, USDC_oracle[1].publicKey, 1, 0.01, -8)
-    await pythClient.setPythPrice(ownerKeypair, TSOL_oracle[1].publicKey, 100, 1, -8)
+    await pythClient.setPythPrice(ownerKeypair, SOL_oracle[1].publicKey, 100, 1, -8)
   })
 
   it("Have each user borrow the other's funds", async () => {
-    await maginPool_TSOL.marginBorrow(maginAccount_A, new BN(10 * ONE_TSOL))
+    await maginPool_SOL.marginBorrow(maginAccount_A, new BN(10 * ONE_SOL))
     await maginPool_USDC.marginBorrow(maginAccount_B, new BN(1_000 * ONE_USDC))
   })
 
   it("Users repay their loans", async () => {
-    await maginPool_TSOL.marginRepay(maginAccount_A, PoolAmount.tokens(new BN(10 * ONE_TSOL)))
-    await maginPool_TSOL.refreshPosition(maginAccount_A)
+    await maginPool_SOL.marginRepay(maginAccount_A, PoolAmount.tokens(new BN(10 * ONE_SOL)))
+    await maginPool_SOL.refreshPosition(maginAccount_A)
 
     await maginPool_USDC.marginRepay(maginAccount_B, PoolAmount.tokens(new BN(1_000 * ONE_USDC)))
     await maginPool_USDC.refreshPosition(maginAccount_B)
@@ -218,12 +218,12 @@ describe("margin pool", () => {
       PoolAmount.tokens(new BN(900_000 * ONE_USDC))
     )
 
-    await maginPool_TSOL.marginWithdraw(maginAccount_B, user_b_tsol_account, PoolAmount.tokens(new BN(900 * ONE_TSOL)))
+    await maginPool_SOL.marginWithdraw(maginAccount_B, user_b_sol_account, PoolAmount.tokens(new BN(900 * ONE_SOL)))
   })
 
   it("Now verify that the users got their requested tokens back", async () => {
     const tokenBalanceA = await getTokenBalance(provider, "processed", user_a_usdc_account)
-    const tokenBalanceB = await getTokenBalance(provider, "processed", user_b_tsol_account)
+    const tokenBalanceB = await getTokenBalance(provider, "processed", user_b_sol_account)
     assert(tokenBalanceA == 900_000)
     assert(tokenBalanceB == 900)
   })

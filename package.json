@@ -6,7 +6,7 @@
     "fmt:fix": "prettier --write .",
     "lint": "eslint . --ext ts",
     "prepare": "husky install",
-    "precommit": "npm run compile && npm run fmt:fix && npm run lint && npm test",
+    "precommit": "npm run compile && npm run fmt:fix && npm run lint && git add .",
     "test": "anchor test --skip-lint -- --features devnet"
   },
   "dependencies": {
@@ -19,9 +19,10 @@
     "@tsconfig/recommended": "^1.0.1",
     "@types/chai": "^4.3.1",
     "@types/mocha": "^9.1.1",
-    "@typescript-eslint/eslint-plugin": "^4.33.0",
-    "@typescript-eslint/parser": "^4.33.0",
+    "@typescript-eslint/eslint-plugin": "^5.27.1",
+    "@typescript-eslint/parser": "^5.27.1",
     "chai": "^4.3.6",
+    "eslint": "^8.17.0",
     "husky": "^8.0.1",
     "mocha": "^10.0.0",
     "prettier": "^2.5.1",
