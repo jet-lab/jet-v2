@@ -214,13 +214,13 @@ impl MarginPoolIxBuilder {
     /// `margin_account` - The account with the loan to be repaid
     /// `deposit_account` - The account with notes to repay the loan
     /// `loan_account` - The account with the loan debt to be reduced
-    /// `amount` - The amount to be repaid
+    /// `max_amount` - The maximum amount to be repaid
     pub fn margin_repay(
         &self,
         margin_account: Pubkey,
         deposit_account: Pubkey,
         loan_account: Pubkey,
-        amount: Amount,
+        max_amount: Amount,
     ) -> Instruction {
         let accounts = ix_accounts::MarginRepay {
             margin_account,
@@ -235,7 +235,7 @@ impl MarginPoolIxBuilder {
 
         Instruction {
             program_id: jet_margin_pool::ID,
-            data: ix_data::MarginRepay { amount }.data(),
+            data: ix_data::MarginRepay { max_amount }.data(),
             accounts,
         }
     }
