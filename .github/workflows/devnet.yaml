@@ -127,10 +127,6 @@ jobs:
           solana program deploy -u d --program-id JPMAa5dnWLFRvUsumawFcGhnwikqZziLLfqn9SLNXPN target/deploy/jet_margin_swap.so
           anchor idl upgrade -f ./target/idl/jet_margin_swap.json JPMAa5dnWLFRvUsumawFcGhnwikqZziLLfqn9SLNXPN --provider.cluster devnet
 
-      - name: Reset Program Builds without Devnet
-        run: |
-          anchor build --skip-lint
-
       - name: Build Docker
         uses: docker/build-push-action@v2
         with:
