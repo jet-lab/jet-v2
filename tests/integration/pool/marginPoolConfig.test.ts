@@ -8,7 +8,7 @@ import { MarginClient, MarginPool, MarginTokens } from "../../../libraries/ts/sr
 describe("margin pool devnet config", () => {
   const config = MarginClient.getConfig("devnet")
   const confirmOptions: ConfirmOptions = { preflightCommitment: "processed", commitment: "processed" }
-  const provider = AnchorProvider.local(config.url, confirmOptions)
+  const provider = AnchorProvider.local("https://mango.devnet.rpcpool.com/", confirmOptions)
   const { connection } = provider
   anchor.setProvider(provider)
 
