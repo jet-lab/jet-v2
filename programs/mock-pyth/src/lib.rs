@@ -26,10 +26,12 @@ declare_id!("GWXu4vLvXFN87dePFvM7Ejt8HEALEG9GNmwimNKHZrXG");
 #[cfg(not(feature = "mainnet-beta"))]
 declare_id!("FT9EZnpdo3tPfUCGn8SBkvN9DMpSStAg3YvAqvYrtSvL");
 
+
 #[program]
 pub mod pyth {
     use super::*;
-
+    
+    #[cfg_attr(coverage_nightly, no_coverage)]
     pub fn initialize(ctx: Context<Initialize>, price: i64, expo: i32, conf: u64) -> Result<()> {
         let product_account = &ctx.accounts.product;
 
@@ -67,6 +69,7 @@ pub mod pyth {
         Ok(())
     }
 
+    #[cfg_attr(coverage_nightly, no_coverage)]
     pub fn update_price(ctx: Context<UpdatePrice>, price: i64, conf: u64) -> Result<()> {
         let oracle = &ctx.accounts.price;
         let mut price_oracle = Price::load(oracle).unwrap();
@@ -275,6 +278,7 @@ pub struct Price {
 }
 
 impl Price {
+    #[cfg_attr(coverage_nightly, no_coverage)]
     #[inline]
     pub fn load<'a>(price_feed: &'a AccountInfo) -> Result<RefMut<'a, Price>> {
         let account_data = RefMut::map(price_feed.try_borrow_mut_data().unwrap(), |data| *data);
@@ -311,6 +315,7 @@ pub struct Product {
 }
 
 impl Product {
+    #[cfg_attr(coverage_nightly, no_coverage)]
     #[inline]
     pub fn load<'a>(product: &'a AccountInfo) -> Result<RefMut<'a, Product>> {
         let account_data = RefMut::map(product.try_borrow_mut_data().unwrap(), |data| *data);
