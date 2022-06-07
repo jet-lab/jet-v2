@@ -15,6 +15,8 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+use std::ops::Deref;
+
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Burn, Token, Transfer};
 
@@ -107,17 +109,13 @@ pub fn withdraw_handler(ctx: Context<Withdraw>, amount: Amount) -> Result<()> {
 
     emit!(events::Withdraw {
         margin_pool: ctx.accounts.margin_pool.key(),
-        vault: ctx.accounts.vault.key(),
-        deposit_note_mint: ctx.accounts.deposit_note_mint.key(),
         depositor: ctx.accounts.depositor.key(),
         source: ctx.accounts.source.key(),
         destination: ctx.accounts.destination.key(),
         withdraw_tokens: withdraw_amount.tokens,
         withdraw_notes: withdraw_amount.notes,
-        new_pool_deposit_tokens: pool.deposit_tokens, 
-        new_pool_deposit_notes: pool.deposit_notes, 
-        new_pool_loan_notes: pool.loan_notes, 
-        accrued_until: pool.accrued_until, 
+        summary: pool.deref().into(),
     });
+
     Ok(())
 }

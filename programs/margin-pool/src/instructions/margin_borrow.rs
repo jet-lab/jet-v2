@@ -15,6 +15,8 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+use std::ops::Deref;
+
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, MintTo, Token, TokenAccount};
 
@@ -114,8 +116,6 @@ pub fn margin_borrow_handler(ctx: Context<MarginBorrow>, token_amount: u64) -> R
     let pool = &ctx.accounts.margin_pool;
     let signer = [&pool.signer_seeds()?[..]];
 
-    msg!("borrow_amount.notes =  {}", borrow_amount.notes);
-    msg!("deposit_amount.notes =  {}\n", deposit_amount.notes);
     token::mint_to(
         ctx.accounts.mint_loan_context().with_signer(&signer),
         borrow_amount.notes,
@@ -134,16 +134,12 @@ pub fn margin_borrow_handler(ctx: Context<MarginBorrow>, token_amount: u64) -> R
     emit!(events::MarginBorrow {
         margin_account: ctx.accounts.margin_account.key(),
         margin_pool: ctx.accounts.margin_pool.key(),
-        loan_note_mint: ctx.accounts.loan_note_mint.key(),
-        deposit_note_mint: ctx.accounts.deposit_note_mint.key(),
         loan_account:  ctx.accounts.loan_account.key(),
         deposit_account: ctx.accounts.deposit_account.key(),
-        borrow_tokens_amount: borrow_amount.tokens,
-        borrow_notes_amount: borrow_amount.notes,
-        new_pool_deposit_tokens: pool.deposit_tokens, 
-        new_pool_deposit_notes: pool.deposit_notes, 
-        new_pool_loan_notes: pool.loan_notes, 
-        accrued_until: pool.accrued_until, 
+        tokens: token_amount,
+        loan_notes: borrow_amount.notes,
+        deposit_notes: deposit_amount.notes,
+        summary: pool.deref().into(),
     });
 
     Ok(())
