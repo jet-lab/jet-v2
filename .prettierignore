@@ -3,3 +3,6 @@ tsconfig.tsbuildinfo
 build
 target
 dist
+.nyc_output
+test-ledger
+ts_coverage
