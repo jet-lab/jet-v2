@@ -215,18 +215,18 @@ describe("margin pool", () => {
     await maginPool_USDC.marginWithdraw(
       maginAccount_A,
       user_a_usdc_account,
-      PoolAmount.tokens(new BN(1_000_000 * ONE_USDC))
+      PoolAmount.tokens(new BN(900_000 * ONE_USDC))
     )
 
-    await maginPool_TSOL.marginWithdraw(
-      maginAccount_B,
-      user_b_tsol_account,
-      PoolAmount.tokens(new BN(1_000 * ONE_TSOL))
-    )
+    await maginPool_TSOL.marginWithdraw(maginAccount_B, user_b_tsol_account, PoolAmount.tokens(new BN(900 * ONE_TSOL)))
   })
 
-  it("Now verify that the users got all their tokens back", async () => {
-    assert((await getTokenBalance(provider, "processed", user_a_usdc_account)) == 1_000_000)
-    assert((await getTokenBalance(provider, "processed", user_b_tsol_account)) == 1_000)
+  it("Now verify that the users got their requested tokens back", async () => {
+    const tokenBalanceA = await getTokenBalance(provider, "processed", user_a_usdc_account)
+    const tokenBalanceB = await getTokenBalance(provider, "processed", user_b_tsol_account)
+    assert(tokenBalanceA == 900_000)
+    assert(tokenBalanceB == 900)
   })
+
+  // TODO: get the balance of the deposits, and withdraw all of it
 })

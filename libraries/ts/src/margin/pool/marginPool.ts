@@ -211,6 +211,13 @@ export class MarginPool {
     instructions.push(ix)
   }
 
+  /**
+   * Create a margin pool by configuring the token with the control program.
+   *
+   * # Instructions
+   *
+   * - jet_control::configure_token - configures an SPL token and creates its pool
+   */
   async withConfigureToken(
     instructions: TransactionInstruction[],
     requester: Address,
@@ -221,6 +228,7 @@ export class MarginPool {
     pythPrice: Address,
     marginPoolConfig: MarginPoolConfig
   ): Promise<void> {
+    // Set the token configuration, e.g. collateral weight
     const metadata: TokenMetadataParams = {
       tokenKind: { collateral: {} },
       collateralWeight: collateralWeight,
