@@ -95,12 +95,12 @@ jobs:
           && mkdir -p ./target/deploy \
           && echo ${{ secrets.SOLANA_DEVNET_DEPLOYER_KEYPAIR }} > ~/.config/solana/id.json
 
-      - name: Build Programs
+      - name: Build Programs with Devnet
         run: |
           yarn install
           cargo fmt -- --check
           cargo clippy -- -D warnings
-          anchor build --skip-lint
+          anchor build --skip-lint -- --features devnet
 
       - name: Deploy Metadata
         run: |
@@ -126,6 +126,10 @@ jobs:
         run: |
           solana program deploy -u d --program-id JPMAa5dnWLFRvUsumawFcGhnwikqZziLLfqn9SLNXPN target/deploy/jet_margin_swap.so
           anchor idl upgrade -f ./target/idl/jet_margin_swap.json JPMAa5dnWLFRvUsumawFcGhnwikqZziLLfqn9SLNXPN --provider.cluster devnet
+
+      - name: Reset Program Builds without Devnet
+        run: |
+          anchor build --skip-lint
 
       - name: Build Docker
         uses: docker/build-push-action@v2
