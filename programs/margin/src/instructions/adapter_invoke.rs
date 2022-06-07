@@ -20,7 +20,7 @@ use anchor_lang::prelude::*;
 use jet_metadata::MarginAdapterMetadata;
 
 use crate::adapter::{self, CompactAccountMeta, InvokeAdapter};
-use crate::{AdapterResult, ErrorCode, MarginAccount, events};
+use crate::{events, AdapterResult, ErrorCode, MarginAccount};
 
 #[derive(Accounts)]
 pub struct AdapterInvoke<'info> {
@@ -61,15 +61,15 @@ pub fn adapter_invoke_handler<'info>(
     )?;
 
     let margin_account = ctx.accounts.margin_account.load_mut()?;
-    
+
     emit!(events::AdapterInvoked {
         owner: ctx.accounts.owner.key(),
-        margin_account:ctx.accounts.margin_account.key(),
-        adapter_program:ctx.accounts.adapter_program.key(),
-        adapter_metadata:ctx.accounts.adapter_metadata.key(),
-        result: result.clone(), 
+        margin_account: ctx.accounts.margin_account.key(),
+        adapter_program: ctx.accounts.adapter_program.key(),
+        adapter_metadata: ctx.accounts.adapter_metadata.key(),
+        result: result.clone(),
     });
-    
+
     match result {
         AdapterResult::NewBalanceChange(_) => margin_account.verify_healthy_positions()?,
         AdapterResult::PriceChange(_) => (),

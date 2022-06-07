@@ -20,7 +20,7 @@ use anchor_spl::token::{self, Burn, Token, TokenAccount};
 
 use jet_margin::{AdapterResult, MarginAccount};
 
-use crate::{state::*, events};
+use crate::{events, state::*};
 use crate::{Amount, ErrorCode};
 
 #[derive(Accounts)]
@@ -156,14 +156,14 @@ pub fn margin_repay_handler(ctx: Context<MarginRepay>, max_amount: Amount) -> Re
         margin_pool: ctx.accounts.margin_pool.key(),
         loan_note_mint: ctx.accounts.loan_note_mint.key(),
         deposit_note_mint: ctx.accounts.deposit_note_mint.key(),
-        loan_account:  ctx.accounts.loan_account.key(),
+        loan_account: ctx.accounts.loan_account.key(),
         deposit_account: ctx.accounts.deposit_account.key(),
         repay_tokens_amount: repay_amount.tokens,
         repay_notes_amount: repay_amount.notes,
-        new_pool_deposit_tokens: pool.deposit_tokens, 
-        new_pool_deposit_notes: pool.deposit_notes, 
-        new_pool_loan_notes: pool.loan_notes, 
-        accrued_until: pool.accrued_until, 
+        new_pool_deposit_tokens: pool.deposit_tokens,
+        new_pool_deposit_notes: pool.deposit_notes,
+        new_pool_loan_notes: pool.loan_notes,
+        accrued_until: pool.accrued_until,
     });
 
     Ok(())

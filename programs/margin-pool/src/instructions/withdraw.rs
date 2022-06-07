@@ -20,7 +20,7 @@ use std::ops::Deref;
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Burn, Token, Transfer};
 
-use crate::{state::*, events};
+use crate::{events, state::*};
 use crate::{Amount, ErrorCode};
 
 #[derive(Accounts)]

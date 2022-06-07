@@ -1,7 +1,5 @@
+use crate::{MarginPool, MarginPoolConfig};
 use anchor_lang::prelude::*;
-use crate::{
-    MarginPoolConfig, Amount, MarginPool,
-};
 
 #[event]
 pub struct PoolCreated {
@@ -107,7 +105,7 @@ impl From<&MarginPool> for MarginPoolSummary {
             deposit_tokens: pool.deposit_tokens,
             deposit_notes: pool.deposit_notes,
             loan_notes: pool.loan_notes,
-            accrued_until: pool.accrued_until
+            accrued_until: pool.accrued_until,
         }
     }
 }

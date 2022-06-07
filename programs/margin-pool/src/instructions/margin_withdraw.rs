@@ -91,6 +91,6 @@ pub fn margin_withdraw_handler(ctx: Context<MarginWithdraw>, amount: Amount) -> 
         .accounts
         .source
         .key()]))?;
-        
+
     Ok(())
 }

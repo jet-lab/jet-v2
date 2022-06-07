@@ -20,8 +20,8 @@ use anchor_lang::prelude::*;
 use jet_proto_math::Number128;
 
 use crate::{
-    ErrorCode, Liquidation, MarginAccount, IDEAL_LIQUIDATION_COLLATERAL_RATIO,
-    MAX_LIQUIDATION_VALUE_SLIPPAGE, events,
+    events, ErrorCode, Liquidation, MarginAccount, IDEAL_LIQUIDATION_COLLATERAL_RATIO,
+    MAX_LIQUIDATION_VALUE_SLIPPAGE,
 };
 use jet_metadata::LiquidatorMetadata;
 
@@ -93,7 +93,7 @@ pub fn liquidate_begin_handler(ctx: Context<LiquidateBegin>) -> Result<()> {
 
     let min_value_change = Number128::ZERO
         - Number128::from_bps(MAX_LIQUIDATION_VALUE_SLIPPAGE) * ideal_value_liquidated;
-    
+
     *ctx.accounts.liquidation.load_init()? = Liquidation {
         start_time: Clock::get()?.unix_timestamp,
         value_change: Number128::ZERO,
@@ -101,18 +101,18 @@ pub fn liquidate_begin_handler(ctx: Context<LiquidateBegin>) -> Result<()> {
         min_value_change,
     };
 
-    emit!(events::LiquationStarted { 
-        margin_account: ctx.accounts.margin_account.key(), 
-        liquidator: ctx.accounts.liquidator.key(), 
-        liquidator_metadata: ctx.accounts.liquidator_metadata.key(), 
-        liquidation_account: ctx.accounts.liquidation.key(), 
-        start_time: Clock::get()?.unix_timestamp, 
-        min_value_change: min_value_change.to_i128(), 
-        ideal_c_ratio: ideal_c_ratio.to_i128(), 
-        ideal_value_liquidated: ideal_value_liquidated.to_i128(), 
-        fresh_collateral: valuation.collateral().to_i128(), 
-        stale_collateral: valuation.stale_collateral().to_i128(), 
-        claims: valuation.claims().to_i128() 
+    emit!(events::LiquationStarted {
+        margin_account: ctx.accounts.margin_account.key(),
+        liquidator: ctx.accounts.liquidator.key(),
+        liquidator_metadata: ctx.accounts.liquidator_metadata.key(),
+        liquidation_account: ctx.accounts.liquidation.key(),
+        start_time: Clock::get()?.unix_timestamp,
+        min_value_change: min_value_change.to_i128(),
+        ideal_c_ratio: ideal_c_ratio.to_i128(),
+        ideal_value_liquidated: ideal_value_liquidated.to_i128(),
+        fresh_collateral: valuation.collateral().to_i128(),
+        stale_collateral: valuation.stale_collateral().to_i128(),
+        claims: valuation.claims().to_i128()
     });
 
     Ok(())

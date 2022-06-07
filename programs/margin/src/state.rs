@@ -237,15 +237,15 @@ impl MarginAccount {
     pub fn valuation(&self) -> Result<Valuation> {
         let timestamp = crate::util::get_timestamp();
 
-        let mut fresh_collateral = Number128::ZERO;
-        let mut stale_collateral = Number128::ZERO;
-        let mut claims = Number128::ZERO;
+        let fresh_collateral = Number128::ZERO;
+        let stale_collateral = Number128::ZERO;
+        let claims = Number128::ZERO;
 
-        let mut stale_collateral_list = vec![];
+        let stale_collateral_list = vec![];
 
         for position in self.positions() {
-            let kind = PositionKind::from_integer(position.kind).unwrap();
-            let stale_reason = {
+            let _kind = PositionKind::from_integer(position.kind).unwrap();
+            let _stale_reason = {
                 let balance_age = timestamp - position.balance_timestamp;
                 let price_quote_age = timestamp - position.price.timestamp;
 

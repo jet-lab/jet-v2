@@ -21,9 +21,9 @@ use anchor_lang::solana_program::clock::UnixTimestamp;
 declare_id!("JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ");
 
 mod adapter;
+pub mod events;
 mod instructions;
 mod state;
-pub mod events;
 
 /// Utilities used only in this crate
 pub(crate) mod util;

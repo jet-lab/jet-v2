@@ -44,10 +44,10 @@ pub struct Authority {
 
 pub fn create_authority_handler(ctx: Context<CreateAuthority>) -> Result<()> {
     ctx.accounts.authority.seed[0] = *ctx.bumps.get("authority").unwrap();
-   
-    emit!(events::AuthorityCreated { 
-        authority:  ctx.accounts.authority.key(), 
-        payer:  ctx.accounts.payer.key()
+
+    emit!(events::AuthorityCreated {
+        authority: ctx.accounts.authority.key(),
+        payer: ctx.accounts.payer.key()
     });
 
     Ok(())

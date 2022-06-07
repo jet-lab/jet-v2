@@ -20,7 +20,7 @@ use std::ops::Deref;
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, MintTo, Token, Transfer};
 
-use crate::{state::*, AmountKind, events};
+use crate::{events, state::*, AmountKind};
 use crate::{Amount, ErrorCode};
 
 #[derive(Accounts)]
@@ -95,7 +95,7 @@ pub fn deposit_handler(ctx: Context<Deposit>, token_amount: u64) -> Result<()> {
     let deposit_amount =
         pool.convert_deposit_amount(Amount::tokens(token_amount), deposit_rounding)?;
     pool.deposit(&deposit_amount);
-    
+
     let pool = &ctx.accounts.margin_pool;
     let signer = [&pool.signer_seeds()?[..]];
 

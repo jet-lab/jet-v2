@@ -100,15 +100,15 @@ pub fn create_pool_handler(ctx: Context<CreatePool>) -> Result<()> {
     pool.accrued_until = clock.unix_timestamp;
 
     emit!(events::PoolCreated {
-      margin_pool: ctx.accounts.margin_pool.key(),
-      vault: ctx.accounts.vault.key(),
-      deposit_note_mint: ctx.accounts.deposit_note_mint.key(),
-      loan_note_mint: ctx.accounts.loan_note_mint.key(),
-      token_mint: ctx.accounts.token_mint.key(),
-      authority: ctx.accounts.authority.key(),
-      payer: ctx.accounts.payer.key(),
-      accured_until: clock.unix_timestamp,
-  });
-  
+        margin_pool: ctx.accounts.margin_pool.key(),
+        vault: ctx.accounts.vault.key(),
+        deposit_note_mint: ctx.accounts.deposit_note_mint.key(),
+        loan_note_mint: ctx.accounts.loan_note_mint.key(),
+        token_mint: ctx.accounts.token_mint.key(),
+        authority: ctx.accounts.authority.key(),
+        payer: ctx.accounts.payer.key(),
+        accured_until: clock.unix_timestamp,
+    });
+
     Ok(())
 }

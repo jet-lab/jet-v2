@@ -55,17 +55,17 @@ pub fn liquidate_end_handler(ctx: Context<LiquidateEnd>) -> Result<()> {
     ctx.accounts
         .liquidation
         .close(ctx.accounts.authority.to_account_info())?;
-    
+
     let liquidation_account = ctx.accounts.liquidation.load()?;
 
     emit!(events::LiquidationEnded {
         margin_account: ctx.accounts.margin_account.key(),
         liquidation_account: ctx.accounts.liquidation.key(),
-        start_time: start_time,
+        start_time,
         authority: ctx.accounts.authority.key(),
         value_change: liquidation_account.value_change.to_i128(),
         c_ratio_change: liquidation_account.c_ratio_change.to_i128(),
-        min_value_change:  liquidation_account.min_value_change.to_i128()
+        min_value_change: liquidation_account.min_value_change.to_i128()
     });
 
     Ok(())

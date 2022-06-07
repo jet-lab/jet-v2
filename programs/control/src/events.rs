@@ -1,7 +1,6 @@
-
 use anchor_lang::prelude::*;
 
-use crate::{TokenMetadataParams, MarginPoolParams};
+use crate::{MarginPoolParams, TokenMetadataParams};
 
 #[event]
 pub struct TokenConfigured {

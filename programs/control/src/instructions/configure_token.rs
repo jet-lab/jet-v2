@@ -166,19 +166,19 @@ pub fn configure_token_handler(
             data,
         )?;
     }
-    
-    emit!(events::TokenConfigured { 
-        requester: ctx.accounts.deposit_metadata.key(), 
-        authority: ctx.accounts.authority.key(), 
-        token_mint: ctx.accounts.token_mint.key(), 
-        margin_pool: ctx.accounts.margin_pool.key(), 
-        token_metadata: ctx.accounts.token_metadata.key(), 
-        deposit_metadata: ctx.accounts.deposit_metadata.key(), 
-        pyth_product: ctx.accounts.pyth_product.key(), 
-        pyth_price: ctx.accounts.pyth_price.key(), 
-        margin_pool_program: ctx.accounts.margin_pool_program.key(), 
-        metadata_program: ctx.accounts.metadata_program.key(), 
-        token_metadata_params: metadata, 
+
+    emit!(events::TokenConfigured {
+        requester: ctx.accounts.deposit_metadata.key(),
+        authority: ctx.accounts.authority.key(),
+        token_mint: ctx.accounts.token_mint.key(),
+        margin_pool: ctx.accounts.margin_pool.key(),
+        token_metadata: ctx.accounts.token_metadata.key(),
+        deposit_metadata: ctx.accounts.deposit_metadata.key(),
+        pyth_product: ctx.accounts.pyth_product.key(),
+        pyth_price: ctx.accounts.pyth_price.key(),
+        margin_pool_program: ctx.accounts.margin_pool_program.key(),
+        metadata_program: ctx.accounts.metadata_program.key(),
+        token_metadata_params: metadata,
         margin_pool_params: pool_param
     });
 

@@ -19,8 +19,8 @@ use anchor_lang::prelude::*;
 
 use jet_metadata::ControlAuthority;
 
-use crate::{events, state::*};
 use crate::ErrorCode;
+use crate::{events, state::*};
 
 #[derive(Accounts)]
 pub struct Configure<'info> {
@@ -86,10 +86,10 @@ pub fn configure_handler(
 
     emit!(events::PoolConfigured {
         margin_pool: ctx.accounts.margin_pool.key(),
-        fee_destination: fee_destination.unwrap_or(Pubkey::default()),
+        fee_destination: fee_destination.unwrap_or_default(),
         pyth_product: ctx.accounts.pyth_product.key(),
         pyth_price: ctx.accounts.pyth_price.key(),
-        config: config.unwrap_or(MarginPoolConfig::default())
+        config: config.unwrap_or_default()
     });
 
     Ok(())

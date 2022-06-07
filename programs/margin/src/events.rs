@@ -1,14 +1,12 @@
+use crate::AdapterResult;
 use anchor_lang::prelude::*;
-use crate::{
-    AdapterResult
-};
 
 #[event]
 pub struct AccountingInvoked {
     pub margin_account: Pubkey,
     pub adapter_program: Pubkey,
     pub adapter_metadata: Pubkey,
-    pub result: AdapterResult
+    pub result: AdapterResult,
 }
 
 #[event]
@@ -17,7 +15,7 @@ pub struct AdapterInvoked {
     pub margin_account: Pubkey,
     pub adapter_program: Pubkey,
     pub adapter_metadata: Pubkey,
-    pub result: AdapterResult
+    pub result: AdapterResult,
 }
 
 #[event]
@@ -89,12 +87,12 @@ pub struct PositionRegistered {
     pub metadata: Pubkey,
     pub token_account: Pubkey,
     pub kind: String,
-    pub position_decimal: u8
+    pub position_decimal: u8,
 }
 
 #[event]
 pub struct PositionBalanceUpdated {
     pub margin_account: Pubkey,
     pub token_account: Pubkey,
-    pub new_balance: u64
+    pub new_balance: u64,
 }
