@@ -33,4 +33,4 @@ address = "SwaPpA9LAaLfeLi3a68M4DjnLqgtticKg6CnyNwgAC8"
 program = "./deps/spl_token_swap.so"
 
 [scripts]
-test = "npx ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.test.ts"
+test = "npx nyc ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.test.ts --watch-extensions ts"
