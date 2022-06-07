@@ -86,7 +86,7 @@ jobs:
       - run: solana-keygen new --no-bip39-passphrase
 
       - name: Generate code coverage
-        run: cargo llvm-cov --workspace --lcov --output-path lcov.info
+        run: cargo llvm-cov --workspace --lcov --output-path lcov.info --ignore-filename-regex programs/mock-pyth/src/lib.rs
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v2
