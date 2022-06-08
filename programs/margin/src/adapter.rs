@@ -24,7 +24,7 @@ use anchor_spl::token::TokenAccount;
 use jet_proto_math::Number128;
 
 use crate::{
-    util::RequirePosition, AccountPosition, AdapterPositionFlags, ErrorCode, MarginAccount,
+    util::Require, AccountPosition, AdapterPositionFlags, ErrorCode, MarginAccount,
     PriceInfo, SignerSeeds, MAX_ORACLE_CONFIDENCE, MAX_ORACLE_STALENESS,
 };
 
