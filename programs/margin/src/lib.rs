@@ -29,7 +29,7 @@ pub(crate) mod util;
 use instructions::*;
 pub use state::*;
 
-pub use adapter::{AdapterResult, CompactAccountMeta, PriceChangeInfo};
+pub use adapter::{AdapterResult, CompactAccountMeta, PositionChange, PriceChangeInfo};
 
 /// The minimum collateral ratio that a margin account must maintain before
 /// being subject to liquidation
@@ -159,7 +159,8 @@ pub enum ErrorCode {
     /// 141000 - An adapter did not return anything
     NoAdapterResult = 135_000,
 
-    /// 141001 - The program that set the result wat not the adapter
+    /// 141001
+    #[msg("The program that set the result was not the adapter")]
     WrongProgramAdapterResult = 135_001,
 
     /// 141002
@@ -186,9 +187,13 @@ pub enum ErrorCode {
     #[msg("attempting to close non-empty margin account")]
     AccountNotEmpty,
 
-    /// 141015 - Attempting to use a position not owned by the account
-    #[msg("attempting to use un-owned position")]
-    PositionNotOwned,
+    /// 141015 - Attempting to use a position not registered by the account
+    #[msg("attempting to use unregistered position")]
+    PositionNotRegistered,
+
+    /// 141016 - Attempting to close a position that is required by the adapter
+    #[msg("attempting to close a position that is required by the adapter")]
+    CloseRequiredPosition,
 
     /// 141020 - The adapter providing a price value is incorrect for an asset
     #[msg("wrong adapter to provide the price")]
