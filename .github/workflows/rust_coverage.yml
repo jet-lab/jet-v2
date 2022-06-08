@@ -85,6 +85,9 @@ jobs:
       - run: echo "PATH=$HOME/.local/share/solana/install/active_release/bin:$PATH" >> $GITHUB_ENV
       - run: solana-keygen new --no-bip39-passphrase
 
+      - name: Clippy Check
+        run: cargo clippy --all-targets -- -Dwarnings
+
       - name: Generate code coverage
         run: cargo llvm-cov --workspace --lcov --output-path lcov.info --ignore-filename-regex programs/mock-pyth/src/lib.rs
 
