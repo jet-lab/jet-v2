@@ -18,7 +18,7 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, CloseAccount, Mint, Token, TokenAccount};
 
-use crate::MarginAccount;
+use crate::{MarginAccount, SignerSeeds};
 
 #[derive(Accounts)]
 pub struct ClosePosition<'info> {

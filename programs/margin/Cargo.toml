@@ -21,6 +21,7 @@ cli = ["no-entrypoint", "serde"]
 static_assertions = "1.1.0"
 bytemuck = { version = "1.7", features = ["derive"] }
 serde = { version = "1.0", features = ["derive"], optional = true }
+bitflags = "1.3"
 
 anchor-lang = { git = "https://github.com/jet-lab/anchor", branch = "master" }
 anchor-spl = { git = "https://github.com/jet-lab/anchor", branch = "master" }

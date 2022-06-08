@@ -174,11 +174,5 @@ pub fn margin_spl_swap_handler(
         destination_amount,
     )?;
 
-    // Tell the margin program what accounts changed
-    jet_margin::write_adapter_result(&AdapterResult::NewBalanceChange(vec![
-        ctx.accounts.source_account.key(),
-        ctx.accounts.destination_account.key(),
-    ]))?;
-
     Ok(())
 }

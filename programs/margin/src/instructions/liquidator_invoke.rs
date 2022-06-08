@@ -22,7 +22,7 @@ use jet_proto_math::Number128;
 
 use crate::adapter::{self, CompactAccountMeta, InvokeAdapter};
 use crate::{
-    AdapterResult, ErrorCode, Liquidation, MarginAccount, Valuation,
+    ErrorCode, Liquidation, MarginAccount, Valuation,
     MAX_LIQUIDATION_COLLATERAL_RATIO, MAX_LIQUIDATION_C_RATIO_SLIPPAGE,
 };
 
@@ -58,7 +58,7 @@ pub fn liquidator_invoke_handler<'info>(
     let margin_account = &ctx.accounts.margin_account;
     let start_value = margin_account.load()?.valuation()?;
 
-    let result = adapter::invoke(
+    adapter::invoke_signed(
         &InvokeAdapter {
             margin_account: &ctx.accounts.margin_account,
             adapter_program: &ctx.accounts.adapter_program,
@@ -68,34 +68,36 @@ pub fn liquidator_invoke_handler<'info>(
         data,
     )?;
 
-    match result {
-        AdapterResult::NewBalanceChange(_) => {
-            let mut liquidation = ctx.accounts.liquidation.load_mut()?;
-            let end_value = margin_account.load()?.valuation()?;
-            let end_c_ratio = end_value
-                .c_ratio()
-                .unwrap_or_else(|| Number128::from_bps(u16::MAX));
-            let start_c_ratio = start_value
-                .c_ratio()
-                .unwrap_or_else(|| Number128::from_bps(u16::MAX));
+    update_and_verify_liquidation(
+        &*ctx.accounts.margin_account.load()?,
+        &mut *ctx.accounts.liquidation.load_mut()?,
+        start_value,
+    )
+}
 
-            liquidation.value_change += end_value.net() - start_value.net(); // side effects
-            liquidation.c_ratio_change += end_c_ratio - start_c_ratio; // side effects
+fn update_and_verify_liquidation(
+    margin_account: &MarginAccount,
+    liquidation: &mut Liquidation,
+    start_value: Valuation,
+) -> Result<()> {
+    let end_value = margin_account.valuation()?;
+    let end_c_ratio = end_value
+        .c_ratio()
+        .unwrap_or_else(|| Number128::from_bps(u16::MAX));
+    let start_c_ratio = start_value
+        .c_ratio()
+        .unwrap_or_else(|| Number128::from_bps(u16::MAX));
 
-            verify_liquidation_step_is_allowed(&liquidation, end_value)
-        }
-        AdapterResult::PriceChange(_) => Ok(()),
-        AdapterResult::PriorBalanceChange(_) => Ok(()),
-    }
+    liquidation.value_change += end_value.net() - start_value.net(); // side effects
+    liquidation.c_ratio_change += end_c_ratio - start_c_ratio; // side effects
+    
+    verify_liquidation_step_is_allowed(liquidation, end_c_ratio)
 }
 
 fn verify_liquidation_step_is_allowed(
     liquidation: &Liquidation,
-    end_value: Valuation,
+    end_c_ratio: Number128,
 ) -> Result<()> {
-    let end_c_ratio = end_value
-        .c_ratio()
-        .unwrap_or_else(|| Number128::from_bps(u16::MAX));
     let max_c_ratio = Number128::from_bps(MAX_LIQUIDATION_COLLATERAL_RATIO);
     let max_c_ratio_slippage = Number128::from_bps(MAX_LIQUIDATION_C_RATIO_SLIPPAGE);
 

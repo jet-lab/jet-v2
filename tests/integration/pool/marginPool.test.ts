@@ -6,7 +6,7 @@ import { ConfirmOptions, Keypair, LAMPORTS_PER_SOL, PublicKey } from "@solana/we
 
 import MARGIN_CONFIG from "../../../libraries/ts/src/margin/config.json"
 
-import { MarginAccount, PoolAmount, MarginClient, MarginPool, MarginPoolConfig } from "../../../libraries/ts/src"
+import { MarginAccount, PoolAmount, MarginClient, MarginPool, MarginPoolConfigData } from "../../../libraries/ts/src"
 
 import { PythClient } from "../pyth/pythClient"
 import {
@@ -84,7 +84,7 @@ describe("margin pool", () => {
   const ONE_USDC = 1_000_000
   const ONE_SOL: number = LAMPORTS_PER_SOL
 
-  const DEFAULT_POOL_CONFIG: MarginPoolConfig = {
+  const DEFAULT_POOL_CONFIG: MarginPoolConfigData = {
     borrowRate0: 10,
     borrowRate1: 20,
     borrowRate2: 30,
