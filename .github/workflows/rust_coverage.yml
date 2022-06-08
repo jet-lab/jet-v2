@@ -88,6 +88,9 @@ jobs:
       - name: Clippy Check
         run: cargo clippy --all-targets -- -Dwarnings
 
+      - name: Check formatting
+        run: cargo fmt --all --check
+
       - name: Generate code coverage
         run: cargo llvm-cov --workspace --lcov --output-path lcov.info --ignore-filename-regex programs/mock-pyth/src/lib.rs
 

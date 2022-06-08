@@ -24,8 +24,8 @@ use anchor_spl::token::TokenAccount;
 use jet_proto_math::Number128;
 
 use crate::{
-    util::Require, AccountPosition, AdapterPositionFlags, ErrorCode, MarginAccount,
-    PriceInfo, SignerSeeds, MAX_ORACLE_CONFIDENCE, MAX_ORACLE_STALENESS,
+    util::Require, AccountPosition, AdapterPositionFlags, ErrorCode, MarginAccount, PriceInfo,
+    SignerSeeds, MAX_ORACLE_CONFIDENCE, MAX_ORACLE_STALENESS,
 };
 
 pub struct InvokeAdapter<'a, 'info> {
@@ -197,7 +197,7 @@ fn update_balances(ctx: &InvokeAdapter) -> Result<()> {
                     account.amount,
                 ) {
                     Ok(()) | Err(ErrorCode::PositionNotRegistered) => (),
-                    Err(err) => Err(err)?,
+                    Err(err) => return Err(err.into()),
                 }
             }
         }

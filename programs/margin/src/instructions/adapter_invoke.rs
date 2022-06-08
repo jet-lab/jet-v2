@@ -60,7 +60,10 @@ pub fn adapter_invoke_handler<'info>(
         data,
     )?;
 
-    ctx.accounts.margin_account.load()?.verify_healthy_positions()?;
+    ctx.accounts
+        .margin_account
+        .load()?
+        .verify_healthy_positions()?;
 
     Ok(())
 }

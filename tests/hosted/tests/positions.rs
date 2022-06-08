@@ -1,7 +1,6 @@
 // use anyhow::Result;
 // use serial_test::serial;
 
-
 // #[tokio::test]
 // #[serial]
 // async fn cannot_liquidate_healthy_user() -> Result<()> {
