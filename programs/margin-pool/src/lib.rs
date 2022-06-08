@@ -92,11 +92,11 @@ mod jet_margin_pool {
 
 #[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone, Copy)]
 pub enum AmountKind {
-    Tokens,
-    Notes,
+    ShiftBalance,
+    SetBalance,
 }
 
-/// Represent an amount of some value (like tokens, or notes)
+/// Represent an amount of tokens
 #[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone, Copy)]
 pub struct Amount {
     pub kind: AmountKind,
@@ -104,16 +104,16 @@ pub struct Amount {
 }
 
 impl Amount {
-    pub const fn tokens(value: u64) -> Self {
+    pub const fn shift(value: u64) -> Self {
         Self {
-            kind: AmountKind::Tokens,
+            kind: AmountKind::ShiftBalance,
             value,
         }
     }
 
     pub const fn notes(value: u64) -> Self {
         Self {
-            kind: AmountKind::Notes,
+            kind: AmountKind::SetBalance,
             value,
         }
     }

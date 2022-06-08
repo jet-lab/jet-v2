@@ -80,7 +80,7 @@ impl<'info> MarginRepay<'info> {
     }
 }
 
-pub fn margin_repay_handler(ctx: Context<MarginRepay>, max_amount: Amount) -> Result<()> {
+pub fn margin_repay_handler(ctx: Context<MarginRepay>, amount: Amount) -> Result<()> {
     let pool = &mut ctx.accounts.margin_pool;
     let clock = Clock::get()?;
 

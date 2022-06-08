@@ -89,7 +89,7 @@ impl<'info> MarginBorrow<'info> {
     }
 }
 
-pub fn margin_borrow_handler(ctx: Context<MarginBorrow>, token_amount: u64) -> Result<()> {
+pub fn margin_borrow_handler(ctx: Context<MarginBorrow>, amount: Amount) -> Result<()> {
     let pool = &mut ctx.accounts.margin_pool;
     let clock = Clock::get()?;
 

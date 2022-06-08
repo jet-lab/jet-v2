@@ -79,7 +79,7 @@ impl<'info> Deposit<'info> {
     }
 }
 
-pub fn deposit_handler(ctx: Context<Deposit>, token_amount: u64) -> Result<()> {
+pub fn deposit_handler(ctx: Context<Deposit>, amount: Amount) -> Result<()> {
     let pool = &mut ctx.accounts.margin_pool;
     let clock = Clock::get()?;
 
