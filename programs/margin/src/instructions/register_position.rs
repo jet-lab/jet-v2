@@ -80,9 +80,9 @@ pub fn register_position_handler(ctx: Context<RegisterPosition>) -> Result<()> {
     Ok(())
 }
 
-impl Into<PositionKind> for TokenKind {
-    fn into(self) -> PositionKind {
-        match self {
+impl From<TokenKind> for PositionKind {
+    fn from(token: TokenKind) -> Self {
+        match token {
             TokenKind::NonCollateral => PositionKind::NoValue,
             TokenKind::Collateral => PositionKind::Deposit,
             TokenKind::Claim => PositionKind::Claim,

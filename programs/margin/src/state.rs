@@ -991,7 +991,7 @@ mod tests {
         let key = Pubkey::find_program_address(&[&[index]], &crate::id()).0;
         acc.register_position(key, 2, key, key, kind.into(), 10000, 0)
             .unwrap();
-        
+
         key
     }
 
