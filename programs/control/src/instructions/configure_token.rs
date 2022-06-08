@@ -105,6 +105,7 @@ impl<'info> ConfigureToken<'info> {
     }
 }
 
+#[inline(never)]
 pub fn configure_token_handler(
     ctx: Context<ConfigureToken>,
     metadata: Option<TokenMetadataParams>,

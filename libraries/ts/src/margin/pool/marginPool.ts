@@ -449,13 +449,7 @@ export class MarginPool {
 
     const tokenMetadata = await marginAccount.getTokenMetadata(this.addresses.tokenMint)
 
-    const data = Buffer.from(Uint8Array.of(0, ...new BN(500000).toArray("le", 4)))
-    const additionalComputeBudgetInstruction = new TransactionInstruction({
-      keys: [],
-      programId: new PublicKey("ComputeBudget111111111111111111111111111111"),
-      data
-    })
-    const ix: TransactionInstruction[] = [additionalComputeBudgetInstruction]
+    const ix: TransactionInstruction[] = []
     await this.withAdapterInvoke(
       ix,
       marginAccount.owner,
