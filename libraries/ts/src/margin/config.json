@@ -1,11 +1,11 @@
 {
   "devnet": {
-    "controlProgramId": "JPCtrLreUqsEbdhtxZ8zpd8wBydKz4nuEjX5u9Eg5H8",
-    "marginProgramId": "JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ",
-    "marginPoolProgramId": "JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ",
+    "controlProgramId": "26DwSU4Vas5m9X8xJJ92Zoy4o8Jfcbk6z8zWf31KTUJ7",
+    "marginProgramId": "9umbgKQDsCKBTsUeFe87LzmZR6T87VuKnKWeHHb9oQ98",
+    "marginPoolProgramId": "FkoUCF6kJqTksKMFQKgYum2NDCgvwfeXSbq46BgECxBz",
     "marginSerumProgramId": "JPSmU9t1Hc6CqjPxqxUSAZLtAAdxxCSdH8Y1vo4xuWG",
     "marginSwapProgramId": "JPMAa5dnWLFRvUsumawFcGhnwikqZziLLfqn9SLNXPN",
-    "metadataProgramId": "JPMetawzxw7WyH3qHUVScYHWFBGhjwqDnM2R9qVbRLp",
+    "metadataProgramId": "7Prv4aCMBUXWXvfqFjA9KfVQ1Wqhw7Fw3aULBYdvq3t6",
     "pythProgramId": "FT9EZnpdo3tPfUCGn8SBkvN9DMpSStAg3YvAqvYrtSvL",
     "serumProgramId": "DESVgJVGajEgKGXhb6XmqDHGz3VjdgP7rEVESBgxmroY",
     "serumReferralAuthority": "11111111111111111111111111111111",

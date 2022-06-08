@@ -19,9 +19,9 @@ use anchor_lang::prelude::*;
 use anchor_lang::Discriminator;
 use solana_program::pubkey;
 
-declare_id!("JPMetawzxw7WyH3qHUVScYHWFBGhjwqDnM2R9qVbRLp");
+declare_id!("7Prv4aCMBUXWXvfqFjA9KfVQ1Wqhw7Fw3aULBYdvq3t6");
 
-pub static CONTROL_PROGRAM_ID: Pubkey = pubkey!("JPCtrLreUqsEbdhtxZ8zpd8wBydKz4nuEjX5u9Eg5H8");
+pub static CONTROL_PROGRAM_ID: Pubkey = pubkey!("26DwSU4Vas5m9X8xJJ92Zoy4o8Jfcbk6z8zWf31KTUJ7");
 
 mod authority {
     use super::*;

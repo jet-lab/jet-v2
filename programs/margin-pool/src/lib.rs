@@ -24,7 +24,7 @@ use instructions::*;
 
 pub use state::{MarginPool, MarginPoolConfig, PoolFlags};
 
-declare_id!("JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ");
+declare_id!("FkoUCF6kJqTksKMFQKgYum2NDCgvwfeXSbq46BgECxBz");
 
 pub mod authority {
     use super::*;

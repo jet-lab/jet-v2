@@ -26,7 +26,7 @@ use instructions::*;
 
 pub use instructions::{MarginPoolParams, TokenMetadataParams};
 
-declare_id!("JPCtrLreUqsEbdhtxZ8zpd8wBydKz4nuEjX5u9Eg5H8");
+declare_id!("26DwSU4Vas5m9X8xJJ92Zoy4o8Jfcbk6z8zWf31KTUJ7");
 
 #[cfg(not(feature = "devnet"))]
 static ROOT_AUTHORITY: Pubkey = pubkey!("FqXoGb9Zxy4uzG12N1jvHyktNG3Zsez367vAzJeiyMF1");
