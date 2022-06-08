@@ -160,6 +160,7 @@ impl<'info> RegisterToken<'info> {
     }
 }
 
+#[inline(never)]
 pub fn register_token_handler(ctx: Context<RegisterToken>) -> Result<()> {
     let authority = [&ctx.accounts.authority.seed[..]];
 

@@ -84,7 +84,7 @@ pub async fn setup_token(
             &token,
             &TokenPrice {
                 exponent: -8,
-                price: price * (100_000_000 as i64),
+                price: price * 100_000_000_i64,
                 confidence: 1_000_000,
                 twap: 100_000_000,
             },
@@ -107,7 +107,7 @@ pub async fn setup_user(
     let user = ctx.margin.user(&wallet).await?;
     let user_liq = ctx
         .margin
-        .liquidator(&liquidator_wallet, &wallet.pubkey())
+        .liquidator(liquidator_wallet, &wallet.pubkey())
         .await?;
 
     // Initialize the margin accounts for each user

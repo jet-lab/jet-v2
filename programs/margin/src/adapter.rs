@@ -197,7 +197,7 @@ fn update_balances(ctx: &InvokeAdapter) -> Result<()> {
                     account.amount,
                 ) {
                     Ok(()) | Err(ErrorCode::PositionNotRegistered) => (),
-                    Err(err) => Err(err)?,
+                    Err(err) => return Err(err.into()),
                 }
             }
         }

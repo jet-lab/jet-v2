@@ -329,7 +329,7 @@ impl<const A: usize, const B: usize, const C: usize> SignerSeeds<3>
     }
 
     fn signer_seeds_owned(&self) -> Box<dyn SignerSeeds<3>> {
-        Box::new(self.clone())
+        Box::new(*self)
     }
 }
 

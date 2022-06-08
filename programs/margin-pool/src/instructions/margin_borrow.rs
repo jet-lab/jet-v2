@@ -58,9 +58,6 @@ pub struct MarginBorrow<'info> {
 
 impl<'info> MarginBorrow<'info> {
     fn mint_loan_context(&self) -> CpiContext<'_, '_, '_, 'info, MintTo<'info>> {
-        msg!("loan_mint = {:?}", self.loan_note_mint.to_account_info());
-        msg!("loan_to = {:?}", self.loan_account.to_account_info());
-        msg!("loan_authority = {:?}", self.margin_pool.to_account_info());
         CpiContext::new(
             self.token_program.to_account_info(),
             MintTo {
@@ -72,12 +69,6 @@ impl<'info> MarginBorrow<'info> {
     }
 
     fn mint_deposit_context(&self) -> CpiContext<'_, '_, '_, 'info, MintTo<'info>> {
-        msg!("deposit_mint = {:?}", self.loan_note_mint.to_account_info());
-        msg!("deposit_to = {:?}", self.loan_account.to_account_info());
-        msg!(
-            "deposit_authority = {:?}",
-            self.margin_pool.to_account_info()
-        );
         CpiContext::new(
             self.token_program.to_account_info(),
             MintTo {
@@ -114,8 +105,6 @@ pub fn margin_borrow_handler(ctx: Context<MarginBorrow>, token_amount: u64) -> R
     let pool = &ctx.accounts.margin_pool;
     let signer = [&pool.signer_seeds()?[..]];
 
-    msg!("borrow_amount.notes =  {}", borrow_amount.notes);
-    msg!("deposit_amount.notes =  {}\n", deposit_amount.notes);
     token::mint_to(
         ctx.accounts.mint_loan_context().with_signer(&signer),
         borrow_amount.notes,
