@@ -7,15 +7,9 @@ import {
 import { Connection, PublicKey, Transaction, TransactionInstruction } from "@solana/web3.js"
 import { AssociatedToken } from "./associatedToken"
 import { Address, BN, AnchorProvider, translateAddress } from "@project-serum/anchor"
+import { MarginPrograms } from "src/margin"
 
 export class TokenFaucet {
-  /**
-   * Airdrop faucet program public key.
-   * @static
-   * @memberof TokenFaucet
-   */
-  static readonly FAUCET_PROGRAM_ID = new PublicKey("4bXpkKSV8swHSnwqtzuboGPaPDeEgAn4Vt8GfarV5rZt")
-
   /**
    * TODO:
    * @private
@@ -28,12 +22,16 @@ export class TokenFaucet {
    */
   private static async withAirdrop(
     instructions: TransactionInstruction[],
+    programs: MarginPrograms,
     tokenMint: PublicKey,
     tokenFaucet: PublicKey,
     tokenAccount: PublicKey,
     lamports: BN
   ) {
-    const pubkeyNonce = await PublicKey.findProgramAddress([Buffer.from("faucet", "utf8")], this.FAUCET_PROGRAM_ID)
+    const pubkeyNonce = await PublicKey.findProgramAddress(
+      [Buffer.from("faucet", "utf8")],
+      translateAddress(programs.config.splTokenFaucet)
+    )
 
     const keys = [
       { pubkey: pubkeyNonce[0], isSigner: false, isWritable: false },
@@ -48,7 +46,7 @@ export class TokenFaucet {
     ]
 
     const faucetIx = new TransactionInstruction({
-      programId: this.FAUCET_PROGRAM_ID,
+      programId: translateAddress(programs.config.splTokenFaucet),
       data: Buffer.from([1, ...lamports.toArray("le", 8)]),
       keys
     })
@@ -67,6 +65,7 @@ export class TokenFaucet {
    * @memberof TokenFaucet
    */
   static async airdropToken(
+    programs: MarginPrograms,
     provider: AnchorProvider,
     faucet: PublicKey,
     user: PublicKey,
@@ -80,7 +79,7 @@ export class TokenFaucet {
     const address = await AssociatedToken.withCreate(instructions, provider, user, mint)
 
     // Create airdrop instructions
-    await this.withAirdrop(instructions, mint, faucet, address, lamports)
+    await this.withAirdrop(instructions, programs, mint, faucet, address, lamports)
 
     // Execute airdrop
     return provider.sendAndConfirm(new Transaction().add(...instructions))
@@ -88,6 +87,7 @@ export class TokenFaucet {
 
   /** Airdrops native SOL if the mint is the native mint. */
   static async airdrop(
+    programs: MarginPrograms,
     provider: AnchorProvider,
     lamports: BN,
     mint: Address,
@@ -121,7 +121,7 @@ export class TokenFaucet {
       return airdropTxnId
     } else if (faucet) {
       // Faucet airdrop
-      await this.withAirdrop(ix, mintAddress, translateAddress(faucet), destination, lamports)
+      await this.withAirdrop(ix, programs, mintAddress, translateAddress(faucet), destination, lamports)
       return await provider.sendAndConfirm(new Transaction().add(...ix))
     } else {
       // Mint to the destination token account
