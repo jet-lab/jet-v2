@@ -281,9 +281,13 @@ impl MarginAccount {
                 (PositionKind::Claim, None) => claims += position.value(),
                 (PositionKind::PastDueClaim, None) => {
                     claims += position.value();
-                    past_due = true;
-                },
-                (PositionKind::Claim | PositionKind::PastDueClaim, Some(error)) => return Err(error!(error)),
+                    if position.balance > 0 {
+                        past_due = true;
+                    }
+                }
+                (PositionKind::Claim | PositionKind::PastDueClaim, Some(error)) => {
+                    return Err(error!(error))
+                }
 
                 (PositionKind::Deposit, None) => fresh_collateral += position.collateral_value(),
                 (PositionKind::Deposit, Some(e)) => {
@@ -949,5 +953,38 @@ mod tests {
         // There should be no positions left
         assert_eq!(margin_account.positions().count(), 0);
         assert_eq!(margin_account.positions, [0; 7432]);
+    }
+
+    #[test]
+    fn margin_account_past_due() {
+        let mut acc = MarginAccount {
+            version: 1,
+            bump_seed: [0],
+            user_seed: [0; 2],
+            reserved0: [0; 4],
+            owner: Pubkey::default(),
+            liquidation: Pubkey::default(),
+            liquidator: Pubkey::default(),
+            positions: [0; 7432],
+        };
+        // use a non-default pubkey
+        let key = crate::id();
+        acc.register_position(key, 2, key, key, PositionKind::PastDueClaim, 0, 0)
+            .unwrap();
+        acc.set_position_price(
+            &key,
+            &key,
+            &PriceInfo {
+                value: 1,
+                timestamp: crate::util::get_timestamp(),
+                exponent: 1,
+                is_valid: 1,
+                _reserved: [0; 3],
+            },
+        )
+        .unwrap();
+        acc.verify_healthy_positions().unwrap();
+        acc.set_position_balance(&key, &key, 1).unwrap();
+        acc.verify_unhealthy_positions().unwrap();
     }
 }
