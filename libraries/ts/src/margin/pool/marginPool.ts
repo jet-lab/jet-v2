@@ -49,7 +49,7 @@ export class MarginPool {
   get name(): string {
     return this.tokenConfig?.name ?? "N/A"
   }
-  get symbol(): string {
+  get symbol(): MarginTokens | "N/A" {
     return this.tokenConfig?.symbol ?? "N/A"
   }
   get availableLiquidity(): TokenAmount {
