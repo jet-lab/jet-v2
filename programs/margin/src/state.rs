@@ -968,25 +968,55 @@ mod tests {
             positions: [0; 7432],
         };
         // use a non-default pubkey
-        let key = crate::id();
-        acc.register_position(key, 2, key, key, PositionKind::PastDueClaim, 0, 0)
+        let collateral = Pubkey::find_program_address(&[&[0]], &crate::id()).0;
+        let claim = Pubkey::find_program_address(&[&[1]], &crate::id()).0;
+        let past_due_claim = Pubkey::find_program_address(&[&[2]], &crate::id()).0;
+        register_position(&mut acc, collateral, PositionKind::Deposit);
+        register_position(&mut acc, claim, PositionKind::Claim);
+        register_position(&mut acc, past_due_claim, PositionKind::PastDueClaim);
+        set_price(&mut acc, collateral, 100);
+        set_price(&mut acc, claim, 100);
+        set_price(&mut acc, past_due_claim, 100);
+        acc.set_position_balance(&claim, &claim, 1).unwrap();
+        assert_unhealthy(&acc);
+        // show that this collateral is sufficient to cover the debt
+        acc.set_position_balance(&collateral, &collateral, 100)
             .unwrap();
+        assert_healthy(&acc);
+        // but an equivalent debt that is past due results in bad health
+        acc.set_position_balance(&past_due_claim, &past_due_claim, 1)
+            .unwrap();
+        acc.set_position_balance(&claim, &claim, 0).unwrap();
+        assert_unhealthy(&acc);
+    }
+
+    fn register_position(acc: &mut MarginAccount, key: Pubkey, kind: PositionKind) {
+        acc.register_position(key, 2, key, key, kind, 10000, 0)
+            .unwrap();
+    }
+
+    fn assert_unhealthy(acc: &MarginAccount) {
+        acc.verify_healthy_positions().unwrap_err();
+        acc.verify_unhealthy_positions().unwrap();
+    }
+
+    fn assert_healthy(acc: &MarginAccount) {
+        acc.verify_healthy_positions().unwrap();
+        acc.verify_unhealthy_positions().unwrap_err();
+    }
+
+    fn set_price(acc: &mut MarginAccount, key: Pubkey, price: i64) {
         acc.set_position_price(
             &key,
             &key,
             &PriceInfo {
-                value: 1,
+                value: price,
                 timestamp: crate::util::get_timestamp(),
                 exponent: 1,
                 is_valid: 1,
                 _reserved: [0; 3],
             },
         )
-        .unwrap();
-        acc.verify_healthy_positions().unwrap();
-        acc.verify_unhealthy_positions().unwrap_err();
-        acc.set_position_balance(&key, &key, 1).unwrap();
-        acc.verify_healthy_positions().unwrap_err();
-        acc.verify_unhealthy_positions().unwrap();
+        .unwrap()
     }
 }
