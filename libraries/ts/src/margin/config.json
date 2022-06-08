@@ -98,6 +98,14 @@
         "price": 1.0471709,
         "confidence": 0.0041709,
         "exponent": -8
+      },
+      "USDC_USD": {
+        "symbol": "USDC/USD",
+        "address": "AQGSisqrjZMKaxiiE3xGJ5aRtf8zzKs5MQUmXX6F6JAm",
+        "product": "2wsVafE5PnSaaawN38JhEUPeRFMfLEKa7EZyo476Hoc3",
+        "price": 1,
+        "confidence": 0.00025100000000000003,
+        "exponent": -8
       }
     },
     "pools": {
@@ -128,6 +136,13 @@
         "oracle": "JDhzaj9F3Fh5kbDCy94qPReC6v8STLWTaUy94S9CtRUC",
         "product": "4rmzFz9BazqhXEXo9BS2Nvcq1TRemE58Us5uz6ZANmwR",
         "feesVault": "EeytQheGzr9PiVVr7BmvUFJXudMhvMGZj99V499o6qna"
+      },
+      "USDC": {
+        "symbol": "USDC",
+        "tokenMint": "J9n7rmgGgaiysVGnspchnCk4riWC9qDeh9wp8rc2PzGG",
+        "oracle": "AQGSisqrjZMKaxiiE3xGJ5aRtf8zzKs5MQUmXX6F6JAm",
+        "product": "2wsVafE5PnSaaawN38JhEUPeRFMfLEKa7EZyo476Hoc3",
+        "feesVault": "D4eK2txT7YRN36mA71HFjdxGmfHQv8W4pmX5PwP14aiG"
       }
     },
     "markets": {
@@ -313,6 +328,14 @@
         "price": 1.0471709,
         "confidence": 0.0041709,
         "exponent": -8
+      },
+      "USDC_USD": {
+        "symbol": "USDC/USD",
+        "address": "AQGSisqrjZMKaxiiE3xGJ5aRtf8zzKs5MQUmXX6F6JAm",
+        "product": "2wsVafE5PnSaaawN38JhEUPeRFMfLEKa7EZyo476Hoc3",
+        "price": 1,
+        "confidence": 0.00025100000000000003,
+        "exponent": -8
       }
     },
     "pools": {
@@ -343,6 +366,13 @@
         "oracle": "JDhzaj9F3Fh5kbDCy94qPReC6v8STLWTaUy94S9CtRUC",
         "product": "4rmzFz9BazqhXEXo9BS2Nvcq1TRemE58Us5uz6ZANmwR",
         "feesVault": "EeytQheGzr9PiVVr7BmvUFJXudMhvMGZj99V499o6qna"
+      },
+      "USDC": {
+        "symbol": "USDC",
+        "tokenMint": "J9n7rmgGgaiysVGnspchnCk4riWC9qDeh9wp8rc2PzGG",
+        "oracle": "AQGSisqrjZMKaxiiE3xGJ5aRtf8zzKs5MQUmXX6F6JAm",
+        "product": "2wsVafE5PnSaaawN38JhEUPeRFMfLEKa7EZyo476Hoc3",
+        "feesVault": "D4eK2txT7YRN36mA71HFjdxGmfHQv8W4pmX5PwP14aiG"
       }
     },
     "markets": {
@@ -513,6 +543,13 @@
         "quoteSymbol": "USD",
         "product": "6T1eJbKWyhZXEjmuBej9gPk3SRTagzrEQovCSwAWD57P",
         "address": "3NBReDRTLKMQEKiLD5tGcx4kXbTf88b7f2xLS9UuGjym"
+      },
+      "USDC_USD": {
+        "symbol": "USDC/USD",
+        "baseSymbol": "USDC",
+        "quoteSymbol": "USD",
+        "product": "8GWTTbNiXdmyZREXbjsZBmCRuzdPrW55dnZGDkTRjWvb",
+        "address": "Gnt27xtC473ZT2Mw5u8wZ68Z3gULkSTb5DuxJy7eJotD"
       }
     },
     "pools": {},
