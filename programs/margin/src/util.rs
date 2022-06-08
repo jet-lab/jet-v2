@@ -64,7 +64,7 @@ impl<T: RequirablePosition> Require<T> for Option<T> {
     }
 }
 
-trait RequirablePosition {}
+pub trait RequirablePosition {}
 
 impl RequirablePosition for &mut AccountPosition {}
 impl RequirablePosition for usize {}
