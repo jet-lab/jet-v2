@@ -43,9 +43,17 @@ interface MarginPoolParams {
 }
 
 export class MarginPool {
+  public addresses: MarginPoolAddresses
   public address: PublicKey
-  public poolConfig: MarginPoolConfig | undefined
-  public tokenConfig: MarginTokenConfig | undefined
+
+  get tokenPrice(): number | undefined {
+    return this.info?.tokenPriceOracle.price
+  }
+
+  get availableLiquidity(): number | undefined {
+    return 0
+  }
+
   public info?: {
     marginPool: MarginPoolData
     tokenMint: Mint
@@ -55,20 +63,16 @@ export class MarginPool {
     tokenPriceOracle: PriceData
   }
 
-  get tokenPrice(): number | undefined {
-    return this.info?.tokenPriceOracle.price
-  }
-
-  constructor(public programs: MarginPrograms, public addresses: MarginPoolAddresses) {
+  constructor(
+    public programs: MarginPrograms,
+    public tokenMint: Address,
+    public poolConfig?: MarginPoolConfig,
+    public tokenConfig?: MarginTokenConfig
+  ) {
     assert(programs)
-    assert(addresses)
-    this.address = addresses.marginPool
-    this.poolConfig = Object.values(this.programs.config.pools).find(pool =>
-      translateAddress(pool.tokenMint).equals(addresses.tokenMint)
-    )
-    this.tokenConfig = Object.values(this.programs.config.tokens).find(token =>
-      translateAddress(token.mint).equals(addresses.tokenMint)
-    )
+    assert(tokenMint)
+    this.addresses = MarginPool.derive(programs, tokenMint)
+    this.address = this.addresses.marginPool
   }
 
   /**
@@ -104,12 +108,16 @@ export class MarginPool {
     }
   }
 
-  static async load(programs: MarginPrograms, tokenMint: Address): Promise<MarginPool> {
+  static async load(
+    programs: MarginPrograms,
+    tokenMint: Address,
+    poolConfig?: MarginPoolConfig,
+    tokenConfig?: MarginTokenConfig
+  ): Promise<MarginPool> {
     assert(programs)
     assert(tokenMint)
 
-    const addresses = this.derive(programs, tokenMint)
-    const marginPool = new MarginPool(programs, addresses)
+    const marginPool = new MarginPool(programs, tokenMint, poolConfig, tokenConfig)
     await marginPool.refresh()
     return marginPool
   }
@@ -122,9 +130,13 @@ export class MarginPool {
   static async loadAll(programs: MarginPrograms): Promise<Record<MarginTokens, MarginPool>> {
     // FIXME: This could be faster with fewer round trips to rpc
     const pools: Record<string, MarginPool> = {}
-    for (const token of Object.values(programs.config.pools)) {
-      const pool = await this.load(programs, token.tokenMint)
-      pools[token.symbol] = pool
+    for (const poolConfig of Object.values(programs.config.pools)) {
+      const poolTokenMint = translateAddress(poolConfig.tokenMint)
+      const tokenConfig = Object.values(programs.config.tokens).find(token =>
+        translateAddress(token.mint).equals(poolTokenMint)
+      )
+      const pool = await this.load(programs, poolConfig.tokenMint, poolConfig, tokenConfig)
+      pools[poolConfig.symbol] = pool
     }
     return pools
   }
@@ -146,12 +158,12 @@ export class MarginPool {
         "marginPool",
         marginPoolInfo.data
       )
+      const tokenMint = AssociatedToken.decodeMint(poolTokenMintInfo, this.addresses.tokenMint)
       const oracleInfo = await this.programs.marginPool.provider.connection.getAccountInfo(marginPool.tokenPriceOracle)
       assert(
         oracleInfo,
         "Pyth oracle does not exist but a margin pool does. The margin pool is incorrectly configured."
       )
-      const tokenMint = AssociatedToken.decodeMint(poolTokenMintInfo, this.addresses.tokenMint)
       this.info = {
         marginPool,
         tokenMint,
