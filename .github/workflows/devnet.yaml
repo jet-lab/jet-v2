@@ -95,12 +95,12 @@ jobs:
           && mkdir -p ./target/deploy \
           && echo ${{ secrets.SOLANA_DEVNET_DEPLOYER_KEYPAIR }} > ~/.config/solana/id.json
 
-      - name: Build Programs
+      - name: Build Programs with Devnet
         run: |
           yarn install
           cargo fmt -- --check
           cargo clippy -- -D warnings
-          anchor build --skip-lint
+          anchor build --skip-lint -- --features devnet
 
       - name: Deploy Metadata
         run: |

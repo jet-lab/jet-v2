@@ -15,92 +15,145 @@
     "tokens": {
       "BTC": {
         "symbol": "BTC",
+        "name": "Bitcoin",
         "decimals": 6,
-        "faucet": "EGahoFJQkVJPgsXrErmJDbGvsQrgRBJzn3r53yQqcG2c",
+        "precision": 4,
+        "faucet": "6EMa1PwSXVPquFypB3bPvcSEgYQFVXFYQSeLvQ9x7qJk",
         "faucetLimit": 1000000000,
-        "mint": "495mEVWjcH9CxM45V77phNByuJA7GjvR9bLg1Cd8dHjP",
-        "supply": 10000000000000
+        "mint": "EDg8oL2FoK7pmCvR8iRGmbW2HioUaDNWRihkQA5rEqDj"
       },
       "ETH": {
         "symbol": "ETH",
+        "name": "Ethereum",
         "decimals": 6,
-        "faucet": "GM6RrbaBjUDs9SV7gWuJ9gw2da6mhge8Atva8A4y3oKY",
+        "precision": 3,
+        "faucet": "H2H8vFYpqgh4Y6xZm8mx1xyXcPogqhTNaA5ixzLstk2k",
         "faucetLimit": 1000000000,
-        "mint": "n2sgaGxhP7yf3UDtCxD3Pay18dmekDqCJPDUTyHrMUP",
-        "supply": 10000000000000
+        "mint": "B3eLmrgua1VBJypACnNSTC9tUvQaXFUW36CFnGHAPGd7"
       },
       "MSRM": {
         "symbol": "MSRM",
+        "name": "MegaSerum",
         "decimals": 0,
+        "precision": 0,
         "faucet": "5xEXRCpiJJLxbzAofPRcUTtCjWL5iJ52dSUTLahmJLcm",
         "faucetLimit": 1000000000,
-        "mint": "HiihFm4YSoiMLnp4Y35riBu9ieDj9LzTA3NwbDEe9mc3",
-        "supply": 10000000000000
+        "mint": "HiihFm4YSoiMLnp4Y35riBu9ieDj9LzTA3NwbDEe9mc3"
       },
       "SOL": {
         "symbol": "SOL",
+        "name": "Solana",
         "decimals": 9,
-        "faucet": "6xcxwUnLtkiydA7cdwz3UNr3HyDKuyBMvpXvYMMp4yj3",
-        "faucetLimit": 1000000000,
-        "mint": "DYGpBeMHHB6fiJXr6gxhAhfLa4p2s6oypKceMyVzVHtZ",
-        "supply": 10000000000000
+        "precision": 2,
+        "mint": "So11111111111111111111111111111111111111112"
       },
       "SRM": {
         "symbol": "SRM",
+        "name": "Serum",
         "decimals": 6,
+        "precision": 2,
         "faucet": "2pUWPKjuACUqLGqUJATHc7eTYhYQqtSWbKE77Hu5G74Q",
         "faucetLimit": 1000000000,
-        "mint": "5zq1tdJfRZ8boTGjKE9dCA77nyFEm4c1uji8Q3nfWfaY",
-        "supply": 10000000000000
+        "mint": "5zq1tdJfRZ8boTGjKE9dCA77nyFEm4c1uji8Q3nfWfaY"
       },
       "USDC": {
         "symbol": "USDC",
+        "name": "USD Coin",
         "decimals": 6,
-        "faucet": "3rSN4N4Uq2DLDjetQKpbWuRZJcdQLnqhqEE7PqV3xMJj",
+        "precision": 2,
+        "faucet": "6XtNFokiZoyFAmb939FAR5UxVDsE6TPwDvLKrK3FrdcU",
         "faucetLimit": 1000000000,
-        "mint": "5z5H8vnNS4BiipeZstRdwgLRTn1EVngr9xAiSpyQLoUS",
-        "supply": 10000000000000
+        "mint": "J9n7rmgGgaiysVGnspchnCk4riWC9qDeh9wp8rc2PzGG"
       }
     },
     "oracles": {
       "BTC_USD": {
         "symbol": "BTC/USD",
-        "address": "4RYTmhUNkpQqNLA9Gp2QUN63EZYwBwwUo2MMvVTRe71i",
-        "price": 29539.24566211,
-        "confidence": 19.1114032,
+        "address": "GJp622VronyrMkbS423pVgdx19FwCEVzNfMvDbrRriV1",
+        "product": "5MhM4ooa18waRNZhkg99YF5W5TuXRmTokkL9qtcztXUe",
+        "price": 31364.65,
+        "confidence": 94.62929149,
         "exponent": -8
       },
       "ETH_USD": {
         "symbol": "ETH/USD",
-        "address": "FpuoqZhdDNXxkzSABQkDQq8SNCw93b3ARSb3ZybB3f9B",
-        "price": 1957.050078,
-        "confidence": 0.64144299,
+        "address": "F5fNwugAVRtJeJogyw3TxqesbFXu278tHnyFtH9ZoDFG",
+        "product": "87x7TCN8iXBi37MPhUmMvVWAjho7RquR2KtfmcSXCFJh",
+        "price": 1820.88333332,
+        "confidence": 3.78469268,
         "exponent": -8
       },
       "SOL_USD": {
         "symbol": "SOL/USD",
-        "address": "7LbECWVP2geWgVbAj769QzuuJMtE3VkarGiqBZFMTwUW",
-        "price": 48.07448,
-        "confidence": 0.021335,
+        "address": "3x8ApfZMMmT33FP4EWBNPCxvyBwzj7JJGuesxiFrGmUG",
+        "product": "3QHdRrzVGrzKmAzdFh5EpSwoaUq5xEbFxJzq4YtQoAoa",
+        "price": 39.68499999,
+        "confidence": 0.044999990000000004,
         "exponent": -8
       },
       "SRM_USD": {
         "symbol": "SRM/USD",
-        "address": "4MyPsYiYPAoN6aZcrPsg5pC8d7Ju3z88yXe1WWfBJHYg",
-        "price": 1.12140525,
-        "confidence": 0.00058469,
+        "address": "JDhzaj9F3Fh5kbDCy94qPReC6v8STLWTaUy94S9CtRUC",
+        "product": "4rmzFz9BazqhXEXo9BS2Nvcq1TRemE58Us5uz6ZANmwR",
+        "price": 1.0471709,
+        "confidence": 0.0041709,
         "exponent": -8
+      },
+      "USDC_USD": {
+        "symbol": "USDC/USD",
+        "address": "AQGSisqrjZMKaxiiE3xGJ5aRtf8zzKs5MQUmXX6F6JAm",
+        "product": "2wsVafE5PnSaaawN38JhEUPeRFMfLEKa7EZyo476Hoc3",
+        "price": 1,
+        "confidence": 0.00025100000000000003,
+        "exponent": -8
+      }
+    },
+    "pools": {
+      "BTC": {
+        "symbol": "BTC",
+        "tokenMint": "EDg8oL2FoK7pmCvR8iRGmbW2HioUaDNWRihkQA5rEqDj",
+        "oracle": "GJp622VronyrMkbS423pVgdx19FwCEVzNfMvDbrRriV1",
+        "product": "5MhM4ooa18waRNZhkg99YF5W5TuXRmTokkL9qtcztXUe",
+        "feesVault": "E2PMURkH6RWJRqMYLThCKWdZAsQAmxRuFYErb8JbzX6d"
+      },
+      "ETH": {
+        "symbol": "ETH",
+        "tokenMint": "B3eLmrgua1VBJypACnNSTC9tUvQaXFUW36CFnGHAPGd7",
+        "oracle": "F5fNwugAVRtJeJogyw3TxqesbFXu278tHnyFtH9ZoDFG",
+        "product": "87x7TCN8iXBi37MPhUmMvVWAjho7RquR2KtfmcSXCFJh",
+        "feesVault": "9FK75RNjvfcw1tX14SUm6GFgAfw26ddM2YJKgPuBKQcK"
+      },
+      "SOL": {
+        "symbol": "SOL",
+        "tokenMint": "So11111111111111111111111111111111111111112",
+        "oracle": "3x8ApfZMMmT33FP4EWBNPCxvyBwzj7JJGuesxiFrGmUG",
+        "product": "3QHdRrzVGrzKmAzdFh5EpSwoaUq5xEbFxJzq4YtQoAoa",
+        "feesVault": "BbeRjzczNfQVC3vqztY7i3vYtPoAitwTvE8bBPaFUdtH"
+      },
+      "SRM": {
+        "symbol": "SRM",
+        "tokenMint": "5zq1tdJfRZ8boTGjKE9dCA77nyFEm4c1uji8Q3nfWfaY",
+        "oracle": "JDhzaj9F3Fh5kbDCy94qPReC6v8STLWTaUy94S9CtRUC",
+        "product": "4rmzFz9BazqhXEXo9BS2Nvcq1TRemE58Us5uz6ZANmwR",
+        "feesVault": "EeytQheGzr9PiVVr7BmvUFJXudMhvMGZj99V499o6qna"
+      },
+      "USDC": {
+        "symbol": "USDC",
+        "tokenMint": "J9n7rmgGgaiysVGnspchnCk4riWC9qDeh9wp8rc2PzGG",
+        "oracle": "AQGSisqrjZMKaxiiE3xGJ5aRtf8zzKs5MQUmXX6F6JAm",
+        "product": "2wsVafE5PnSaaawN38JhEUPeRFMfLEKa7EZyo476Hoc3",
+        "feesVault": "D4eK2txT7YRN36mA71HFjdxGmfHQv8W4pmX5PwP14aiG"
       }
     },
     "markets": {
       "BTC_USDC": {
         "symbol": "BTC/USDC",
         "market": "EENSuyGsoHjegZ42smjrDHLtxBDZUsuRG5TyeyNyZUf",
-        "baseMint": "495mEVWjcH9CxM45V77phNByuJA7GjvR9bLg1Cd8dHjP",
+        "baseMint": "EDg8oL2FoK7pmCvR8iRGmbW2HioUaDNWRihkQA5rEqDj",
         "baseDecimals": 6,
         "baseVault": "FmdrVvKqfpg8qCHX1H7kXNxXcg2FgrF22YYLxVYuFfWL",
         "baseSymbol": "BTC",
-        "quoteMint": "5z5H8vnNS4BiipeZstRdwgLRTn1EVngr9xAiSpyQLoUS",
+        "quoteMint": "J9n7rmgGgaiysVGnspchnCk4riWC9qDeh9wp8rc2PzGG",
         "quoteDecimals": 6,
         "quoteVault": "7M8ajrsrtchqVeknGCa3jFKUhSCdghEapoAUX7t4ApT6",
         "quoteSymbol": "USDC",
@@ -116,11 +169,11 @@
       "ETH_USDC": {
         "symbol": "ETH/USDC",
         "market": "8UkLjogcF31MoW5jgJ93QtyM2Mk7vUAADbTcEFz48PVM",
-        "baseMint": "n2sgaGxhP7yf3UDtCxD3Pay18dmekDqCJPDUTyHrMUP",
+        "baseMint": "B3eLmrgua1VBJypACnNSTC9tUvQaXFUW36CFnGHAPGd7",
         "baseDecimals": 6,
         "baseVault": "7bLAVKmHCqVBFzPrzK2ndCrpJKDXnPRpqdW6iBjdbP9b",
         "baseSymbol": "ETH",
-        "quoteMint": "5z5H8vnNS4BiipeZstRdwgLRTn1EVngr9xAiSpyQLoUS",
+        "quoteMint": "J9n7rmgGgaiysVGnspchnCk4riWC9qDeh9wp8rc2PzGG",
         "quoteDecimals": 6,
         "quoteVault": "2NbawvR6gaW2U5jj2tDCZPwh2k3j3GYgQs3pa59CRdyJ",
         "quoteSymbol": "USDC",
@@ -136,11 +189,11 @@
       "SOL_USDC": {
         "symbol": "SOL/USDC",
         "market": "Boew26ihsFv5HffXPNxYwr1uN9rfYDjxYKeQcpLsjWx2",
-        "baseMint": "DYGpBeMHHB6fiJXr6gxhAhfLa4p2s6oypKceMyVzVHtZ",
+        "baseMint": "So11111111111111111111111111111111111111112",
         "baseDecimals": 9,
         "baseVault": "5Bs4hEx7vsA3UzoEgcshaEy9Xskomz2zFMS2qRa4vBjC",
         "baseSymbol": "SOL",
-        "quoteMint": "5z5H8vnNS4BiipeZstRdwgLRTn1EVngr9xAiSpyQLoUS",
+        "quoteMint": "J9n7rmgGgaiysVGnspchnCk4riWC9qDeh9wp8rc2PzGG",
         "quoteDecimals": 6,
         "quoteVault": "3RsYt5cV3Ew8eE6Uzoov5UMpw9xM7Fz41vZAo29QdPmw",
         "quoteSymbol": "USDC",
@@ -160,7 +213,7 @@
         "baseDecimals": 6,
         "baseVault": "DUnQSxgQFDycAVwoab71JSLbiddpDpcXwUJLdMKSMYoo",
         "baseSymbol": "SRM",
-        "quoteMint": "5z5H8vnNS4BiipeZstRdwgLRTn1EVngr9xAiSpyQLoUS",
+        "quoteMint": "J9n7rmgGgaiysVGnspchnCk4riWC9qDeh9wp8rc2PzGG",
         "quoteDecimals": 6,
         "quoteVault": "8Wy4SFGS6hCXUcKWtZ6BBbiiTMwMhqXf7A1uGuTrPouS",
         "quoteSymbol": "USDC",
@@ -183,7 +236,7 @@
     "marginSerumProgramId": "JPSmU9t1Hc6CqjPxqxUSAZLtAAdxxCSdH8Y1vo4xuWG",
     "marginSwapProgramId": "JPMAa5dnWLFRvUsumawFcGhnwikqZziLLfqn9SLNXPN",
     "metadataProgramId": "JPMetawzxw7WyH3qHUVScYHWFBGhjwqDnM2R9qVbRLp",
-    "pythProgramId": "ASfdvRMCan2aoWtbDi5HLXhz2CFfgEkuDoxc57bJLKLX",
+    "pythProgramId": "FT9EZnpdo3tPfUCGn8SBkvN9DMpSStAg3YvAqvYrtSvL",
     "serumProgramId": "9xQeWvG816bUx9EPjHmaT23yvVM2ZWbrrpZb9PusVFin",
     "serumReferralAuthority": "11111111111111111111111111111111",
     "splTokenFaucet": "4bXpkKSV8swHSnwqtzuboGPaPDeEgAn4Vt8GfarV5rZt",
@@ -192,92 +245,145 @@
     "tokens": {
       "BTC": {
         "symbol": "BTC",
+        "name": "Bitcoin",
         "decimals": 6,
-        "faucet": "EGahoFJQkVJPgsXrErmJDbGvsQrgRBJzn3r53yQqcG2c",
+        "precision": 4,
+        "faucet": "6EMa1PwSXVPquFypB3bPvcSEgYQFVXFYQSeLvQ9x7qJk",
         "faucetLimit": 1000000000,
-        "mint": "495mEVWjcH9CxM45V77phNByuJA7GjvR9bLg1Cd8dHjP",
-        "supply": 10000000000000
+        "mint": "EDg8oL2FoK7pmCvR8iRGmbW2HioUaDNWRihkQA5rEqDj"
       },
       "ETH": {
         "symbol": "ETH",
+        "name": "Ethereum",
         "decimals": 6,
-        "faucet": "GM6RrbaBjUDs9SV7gWuJ9gw2da6mhge8Atva8A4y3oKY",
+        "precision": 3,
+        "faucet": "H2H8vFYpqgh4Y6xZm8mx1xyXcPogqhTNaA5ixzLstk2k",
         "faucetLimit": 1000000000,
-        "mint": "n2sgaGxhP7yf3UDtCxD3Pay18dmekDqCJPDUTyHrMUP",
-        "supply": 10000000000000
+        "mint": "B3eLmrgua1VBJypACnNSTC9tUvQaXFUW36CFnGHAPGd7"
       },
       "MSRM": {
         "symbol": "MSRM",
+        "name": "MegaSerum",
         "decimals": 0,
+        "precision": 0,
         "faucet": "5xEXRCpiJJLxbzAofPRcUTtCjWL5iJ52dSUTLahmJLcm",
         "faucetLimit": 1000000000,
-        "mint": "HiihFm4YSoiMLnp4Y35riBu9ieDj9LzTA3NwbDEe9mc3",
-        "supply": 10000000000000
+        "mint": "HiihFm4YSoiMLnp4Y35riBu9ieDj9LzTA3NwbDEe9mc3"
       },
       "SOL": {
         "symbol": "SOL",
+        "name": "Solana",
         "decimals": 9,
-        "faucet": "6xcxwUnLtkiydA7cdwz3UNr3HyDKuyBMvpXvYMMp4yj3",
-        "faucetLimit": 1000000000,
-        "mint": "DYGpBeMHHB6fiJXr6gxhAhfLa4p2s6oypKceMyVzVHtZ",
-        "supply": 10000000000000
+        "precision": 2,
+        "mint": "So11111111111111111111111111111111111111112"
       },
       "SRM": {
         "symbol": "SRM",
+        "name": "Serum",
         "decimals": 6,
+        "precision": 2,
         "faucet": "2pUWPKjuACUqLGqUJATHc7eTYhYQqtSWbKE77Hu5G74Q",
         "faucetLimit": 1000000000,
-        "mint": "5zq1tdJfRZ8boTGjKE9dCA77nyFEm4c1uji8Q3nfWfaY",
-        "supply": 10000000000000
+        "mint": "5zq1tdJfRZ8boTGjKE9dCA77nyFEm4c1uji8Q3nfWfaY"
       },
       "USDC": {
         "symbol": "USDC",
+        "name": "USD Coin",
         "decimals": 6,
-        "faucet": "3rSN4N4Uq2DLDjetQKpbWuRZJcdQLnqhqEE7PqV3xMJj",
+        "precision": 2,
+        "faucet": "6XtNFokiZoyFAmb939FAR5UxVDsE6TPwDvLKrK3FrdcU",
         "faucetLimit": 1000000000,
-        "mint": "5z5H8vnNS4BiipeZstRdwgLRTn1EVngr9xAiSpyQLoUS",
-        "supply": 10000000000000
+        "mint": "J9n7rmgGgaiysVGnspchnCk4riWC9qDeh9wp8rc2PzGG"
       }
     },
     "oracles": {
       "BTC_USD": {
         "symbol": "BTC/USD",
-        "address": "F3PLdJAtv2LwUptjTdAhzVkBQ2ApH9hM9B6EF37n8oAC",
-        "price": 28912.5,
-        "confidence": 8.47000001,
+        "address": "GJp622VronyrMkbS423pVgdx19FwCEVzNfMvDbrRriV1",
+        "product": "5MhM4ooa18waRNZhkg99YF5W5TuXRmTokkL9qtcztXUe",
+        "price": 31364.65,
+        "confidence": 94.62929149,
         "exponent": -8
       },
       "ETH_USD": {
         "symbol": "ETH/USD",
-        "address": "FkubqJcbt9jPT6yVP8a5HCZSReUkkEuvYjQT7FL4bM1P",
-        "price": 1939.9225375,
-        "confidence": 1.31338128,
+        "address": "F5fNwugAVRtJeJogyw3TxqesbFXu278tHnyFtH9ZoDFG",
+        "product": "87x7TCN8iXBi37MPhUmMvVWAjho7RquR2KtfmcSXCFJh",
+        "price": 1820.88333332,
+        "confidence": 3.78469268,
         "exponent": -8
       },
       "SOL_USD": {
         "symbol": "SOL/USD",
-        "address": "bu3cPtYBgBYiG4Eq32TRgrRFBMgP49va1gGsTQ99wXP",
-        "price": 48.73330171,
-        "confidence": 0.028181710000000002,
+        "address": "3x8ApfZMMmT33FP4EWBNPCxvyBwzj7JJGuesxiFrGmUG",
+        "product": "3QHdRrzVGrzKmAzdFh5EpSwoaUq5xEbFxJzq4YtQoAoa",
+        "price": 39.68499999,
+        "confidence": 0.044999990000000004,
         "exponent": -8
       },
       "SRM_USD": {
         "symbol": "SRM/USD",
-        "address": "894wA3XR7ZP5SboqiooWAh8qRbySGPwGYdaVUNnH5JRs",
-        "price": 1.08724583,
-        "confidence": 0.0005802,
+        "address": "JDhzaj9F3Fh5kbDCy94qPReC6v8STLWTaUy94S9CtRUC",
+        "product": "4rmzFz9BazqhXEXo9BS2Nvcq1TRemE58Us5uz6ZANmwR",
+        "price": 1.0471709,
+        "confidence": 0.0041709,
         "exponent": -8
+      },
+      "USDC_USD": {
+        "symbol": "USDC/USD",
+        "address": "AQGSisqrjZMKaxiiE3xGJ5aRtf8zzKs5MQUmXX6F6JAm",
+        "product": "2wsVafE5PnSaaawN38JhEUPeRFMfLEKa7EZyo476Hoc3",
+        "price": 1,
+        "confidence": 0.00025100000000000003,
+        "exponent": -8
+      }
+    },
+    "pools": {
+      "BTC": {
+        "symbol": "BTC",
+        "tokenMint": "EDg8oL2FoK7pmCvR8iRGmbW2HioUaDNWRihkQA5rEqDj",
+        "oracle": "GJp622VronyrMkbS423pVgdx19FwCEVzNfMvDbrRriV1",
+        "product": "5MhM4ooa18waRNZhkg99YF5W5TuXRmTokkL9qtcztXUe",
+        "feesVault": "E2PMURkH6RWJRqMYLThCKWdZAsQAmxRuFYErb8JbzX6d"
+      },
+      "ETH": {
+        "symbol": "ETH",
+        "tokenMint": "B3eLmrgua1VBJypACnNSTC9tUvQaXFUW36CFnGHAPGd7",
+        "oracle": "F5fNwugAVRtJeJogyw3TxqesbFXu278tHnyFtH9ZoDFG",
+        "product": "87x7TCN8iXBi37MPhUmMvVWAjho7RquR2KtfmcSXCFJh",
+        "feesVault": "9FK75RNjvfcw1tX14SUm6GFgAfw26ddM2YJKgPuBKQcK"
+      },
+      "SOL": {
+        "symbol": "SOL",
+        "tokenMint": "So11111111111111111111111111111111111111112",
+        "oracle": "3x8ApfZMMmT33FP4EWBNPCxvyBwzj7JJGuesxiFrGmUG",
+        "product": "3QHdRrzVGrzKmAzdFh5EpSwoaUq5xEbFxJzq4YtQoAoa",
+        "feesVault": "BbeRjzczNfQVC3vqztY7i3vYtPoAitwTvE8bBPaFUdtH"
+      },
+      "SRM": {
+        "symbol": "SRM",
+        "tokenMint": "5zq1tdJfRZ8boTGjKE9dCA77nyFEm4c1uji8Q3nfWfaY",
+        "oracle": "JDhzaj9F3Fh5kbDCy94qPReC6v8STLWTaUy94S9CtRUC",
+        "product": "4rmzFz9BazqhXEXo9BS2Nvcq1TRemE58Us5uz6ZANmwR",
+        "feesVault": "EeytQheGzr9PiVVr7BmvUFJXudMhvMGZj99V499o6qna"
+      },
+      "USDC": {
+        "symbol": "USDC",
+        "tokenMint": "J9n7rmgGgaiysVGnspchnCk4riWC9qDeh9wp8rc2PzGG",
+        "oracle": "AQGSisqrjZMKaxiiE3xGJ5aRtf8zzKs5MQUmXX6F6JAm",
+        "product": "2wsVafE5PnSaaawN38JhEUPeRFMfLEKa7EZyo476Hoc3",
+        "feesVault": "D4eK2txT7YRN36mA71HFjdxGmfHQv8W4pmX5PwP14aiG"
       }
     },
     "markets": {
       "BTC_USDC": {
         "symbol": "BTC/USDC",
         "market": "EENSuyGsoHjegZ42smjrDHLtxBDZUsuRG5TyeyNyZUf",
-        "baseMint": "495mEVWjcH9CxM45V77phNByuJA7GjvR9bLg1Cd8dHjP",
+        "baseMint": "EDg8oL2FoK7pmCvR8iRGmbW2HioUaDNWRihkQA5rEqDj",
         "baseDecimals": 6,
         "baseVault": "FmdrVvKqfpg8qCHX1H7kXNxXcg2FgrF22YYLxVYuFfWL",
         "baseSymbol": "BTC",
-        "quoteMint": "5z5H8vnNS4BiipeZstRdwgLRTn1EVngr9xAiSpyQLoUS",
+        "quoteMint": "J9n7rmgGgaiysVGnspchnCk4riWC9qDeh9wp8rc2PzGG",
         "quoteDecimals": 6,
         "quoteVault": "7M8ajrsrtchqVeknGCa3jFKUhSCdghEapoAUX7t4ApT6",
         "quoteSymbol": "USDC",
@@ -293,11 +399,11 @@
       "ETH_USDC": {
         "symbol": "ETH/USDC",
         "market": "8UkLjogcF31MoW5jgJ93QtyM2Mk7vUAADbTcEFz48PVM",
-        "baseMint": "n2sgaGxhP7yf3UDtCxD3Pay18dmekDqCJPDUTyHrMUP",
+        "baseMint": "B3eLmrgua1VBJypACnNSTC9tUvQaXFUW36CFnGHAPGd7",
         "baseDecimals": 6,
         "baseVault": "7bLAVKmHCqVBFzPrzK2ndCrpJKDXnPRpqdW6iBjdbP9b",
         "baseSymbol": "ETH",
-        "quoteMint": "5z5H8vnNS4BiipeZstRdwgLRTn1EVngr9xAiSpyQLoUS",
+        "quoteMint": "J9n7rmgGgaiysVGnspchnCk4riWC9qDeh9wp8rc2PzGG",
         "quoteDecimals": 6,
         "quoteVault": "2NbawvR6gaW2U5jj2tDCZPwh2k3j3GYgQs3pa59CRdyJ",
         "quoteSymbol": "USDC",
@@ -313,11 +419,11 @@
       "SOL_USDC": {
         "symbol": "SOL/USDC",
         "market": "Boew26ihsFv5HffXPNxYwr1uN9rfYDjxYKeQcpLsjWx2",
-        "baseMint": "DYGpBeMHHB6fiJXr6gxhAhfLa4p2s6oypKceMyVzVHtZ",
+        "baseMint": "So11111111111111111111111111111111111111112",
         "baseDecimals": 9,
         "baseVault": "5Bs4hEx7vsA3UzoEgcshaEy9Xskomz2zFMS2qRa4vBjC",
         "baseSymbol": "SOL",
-        "quoteMint": "5z5H8vnNS4BiipeZstRdwgLRTn1EVngr9xAiSpyQLoUS",
+        "quoteMint": "J9n7rmgGgaiysVGnspchnCk4riWC9qDeh9wp8rc2PzGG",
         "quoteDecimals": 6,
         "quoteVault": "3RsYt5cV3Ew8eE6Uzoov5UMpw9xM7Fz41vZAo29QdPmw",
         "quoteSymbol": "USDC",
@@ -337,7 +443,7 @@
         "baseDecimals": 6,
         "baseVault": "DUnQSxgQFDycAVwoab71JSLbiddpDpcXwUJLdMKSMYoo",
         "baseSymbol": "SRM",
-        "quoteMint": "5z5H8vnNS4BiipeZstRdwgLRTn1EVngr9xAiSpyQLoUS",
+        "quoteMint": "J9n7rmgGgaiysVGnspchnCk4riWC9qDeh9wp8rc2PzGG",
         "quoteDecimals": 6,
         "quoteVault": "8Wy4SFGS6hCXUcKWtZ6BBbiiTMwMhqXf7A1uGuTrPouS",
         "quoteSymbol": "USDC",
@@ -351,95 +457,7 @@
         "feeRateBps": 0
       }
     },
-    "swaps": {
-      "BTC_USDC": {
-        "symbol": "BTC/USDC",
-        "swap": "5eXALoAGT2BGjUt79BXKXmkifdJskr1f7ZQvBWFbTgNe",
-        "authority": "9YMxHkQaPMgv1JdG4h9GdQBKzE7GTAFcBrdqV5bL2QtM",
-        "poolTokenMint": "62wt1dNzWhoNT5jDYsHMdg3KobuyBSWeAoqUNvn2M9B3",
-        "poolTokenDecimals": 6,
-        "baseAmount": 30,
-        "baseDecimals": 6,
-        "baseMint": "495mEVWjcH9CxM45V77phNByuJA7GjvR9bLg1Cd8dHjP",
-        "baseSymbol": "BTC",
-        "baseVault": "9WhPT5sYdwKhq1YCkGTtnMDowCQdHQswNXAA9mte5pgY",
-        "quoteAmount": 852354,
-        "quoteDecimals": 6,
-        "quoteMint": "5z5H8vnNS4BiipeZstRdwgLRTn1EVngr9xAiSpyQLoUS",
-        "quoteSymbol": "USDC",
-        "quoteVault": "J2o6oNfE6SfFRPA7x9Q27y9gwjqSsJ2GFY2YFBRcmask",
-        "feeAccount": "EqMbaNdMfuLH6vN6ZNfpTNvAZmC9FutyMexd9oePQimH",
-        "feeAccountOwner": "8C6NpiuxtUBrWdhvAp11ew9tLzUSLsuSzbvmwTrodrsd",
-        "recipientAccount": "6EbJTf7QwKTmKc934rnT9jrwereUmxCmkryNYue7B1sR",
-        "recipientAccountOwner": "AN5MAEif5EGJ9DVCFbvECr8DnMq26eheuUNXzYCbQ3Ky",
-        "tradeFeeNumerator": 25,
-        "tradeFeeDenominator": 10000,
-        "ownerTradeFeeNumerator": 5,
-        "ownerTradeFeeDenominator": 10000,
-        "ownerWithdrawFeeNumerator": 0,
-        "ownerWithdrawFeeDenominator": 0,
-        "hostFeeNumerator": 0,
-        "hostFeeDenominator": 0
-      },
-      "ETH_USDC": {
-        "symbol": "ETH/USDC",
-        "swap": "8xko9t598DsJp9Zqvi5jA9wtfCF6efkUrEcm5Xc3WKa8",
-        "authority": "M9Q3N4vsUjdWQPHxXEdyrU3JYHeevBp8kbzv8WpoDme",
-        "poolTokenMint": "42MngB4GCE7f33pbVvE7u2D6CaMFbPcdyoQuy6nPTRyy",
-        "poolTokenDecimals": 6,
-        "baseAmount": 581,
-        "baseDecimals": 6,
-        "baseMint": "n2sgaGxhP7yf3UDtCxD3Pay18dmekDqCJPDUTyHrMUP",
-        "baseSymbol": "ETH",
-        "baseVault": "FUfQpMQcMb99DiGEz6cUnAMDRE6JK343DLiR4K93y4n5",
-        "quoteAmount": 1109379,
-        "quoteDecimals": 6,
-        "quoteMint": "5z5H8vnNS4BiipeZstRdwgLRTn1EVngr9xAiSpyQLoUS",
-        "quoteSymbol": "USDC",
-        "quoteVault": "3b8FQNjGdcXN3NphfhDqPwNgqvmZx8CiybSH73GCxCrb",
-        "feeAccount": "BVTuYKX7JbkcxrwfvAvmxaTdQaAq5ou9bi1STV92pmmA",
-        "feeAccountOwner": "8qPUVB9o9uAi8c9z6TeExcfSX3m27rapVJ5rcCcU3vbx",
-        "recipientAccount": "53ebnntLBQCYq7MxPxox3FEuesev8eSufkY5jW677zhx",
-        "recipientAccountOwner": "DwSM7dZ8uGKZKhEiQaJcQ4oRc6DjNBXA88NN3zhJRgnu",
-        "tradeFeeNumerator": 25,
-        "tradeFeeDenominator": 10000,
-        "ownerTradeFeeNumerator": 5,
-        "ownerTradeFeeDenominator": 10000,
-        "ownerWithdrawFeeNumerator": 0,
-        "ownerWithdrawFeeDenominator": 0,
-        "hostFeeNumerator": 0,
-        "hostFeeDenominator": 0
-      },
-      "SOL_USDC": {
-        "symbol": "SOL/USDC",
-        "swap": "AgM48zTeRDaYDSk1yQGEVGigh7M1WfpgvJFJpU7SypK8",
-        "authority": "4FaTt86yKVo9u1rp8TDY3WdFpJyQnSe9Y3pVt39HWAhL",
-        "poolTokenMint": "7PrZRq9PgWsZwwupooF729X4fK9MjrpnE6rgCJumGUSY",
-        "poolTokenDecimals": 6,
-        "baseAmount": 825683,
-        "baseDecimals": 9,
-        "baseMint": "DYGpBeMHHB6fiJXr6gxhAhfLa4p2s6oypKceMyVzVHtZ",
-        "baseSymbol": "SOL",
-        "baseVault": "FwaES3iUDXAYnG52avu6y7gpRv7SauN2KbJxAqiZD2a2",
-        "quoteAmount": 35503163,
-        "quoteDecimals": 6,
-        "quoteMint": "5z5H8vnNS4BiipeZstRdwgLRTn1EVngr9xAiSpyQLoUS",
-        "quoteSymbol": "USDC",
-        "quoteVault": "FMyZumVyqFtmoQEWjJyHMgTYPTwLLB4AiBp5o1n9M5u7",
-        "feeAccount": "BJs1mkeQPURZ9fBzDGTn1gApXZheYpbDqHZGTxdoRbVf",
-        "feeAccountOwner": "9cWZiBNJQT9Y3dZCTTcd9YEm1UPGC48ToWPKmzBJM9U8",
-        "recipientAccount": "AooXZhbqkAhxRxcp2U6mTLf4dCv7gw4TvzEi7wHRjKm3",
-        "recipientAccountOwner": "8NFV9RBeigNDMRDUMS7ua4w7j6e3uYfttQxCZvGBbrZr",
-        "tradeFeeNumerator": 25,
-        "tradeFeeDenominator": 10000,
-        "ownerTradeFeeNumerator": 5,
-        "ownerTradeFeeDenominator": 10000,
-        "ownerWithdrawFeeNumerator": 0,
-        "ownerWithdrawFeeDenominator": 0,
-        "hostFeeNumerator": 0,
-        "hostFeeDenominator": 0
-      }
-    }
+    "swaps": {}
   },
   "mainnet-beta": {
     "controlProgramId": "JPCtrLreUqsEbdhtxZ8zpd8wBydKz4nuEjX5u9Eg5H8",
@@ -456,33 +474,45 @@
     "tokens": {
       "BTC": {
         "symbol": "BTC",
+        "name": "Bitcoin",
         "mint": "9n4nbM75f5Ui33ZbPYXn59EwSgE8CGsHtAeTH5YFeJ9E",
-        "decimals": 6
+        "decimals": 6,
+        "precision": 4
       },
       "ETH": {
         "symbol": "ETH",
-        "mint": "2FPyTwcZLUg1MDrwsyoP4D6s1tM7hAkHYRjkNb5w6Pxk",
-        "decimals": 6
+        "name": "Ethereum",
+        "mint": "7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs",
+        "decimals": 6,
+        "precision": 3
       },
       "MSRM": {
         "symbol": "MSRM",
+        "name": "MegaSerum",
         "mint": "MSRMcoVyrFxnSgo5uXwone5SKcGhT1KEJMFEkMEWf9L",
-        "decimals": 0
+        "decimals": 0,
+        "precision": 0
       },
       "SOL": {
         "symbol": "SOL",
+        "name": "Solana",
         "mint": "So11111111111111111111111111111111111111112",
-        "decimals": 9
+        "decimals": 9,
+        "precision": 2
       },
       "SRM": {
         "symbol": "SRM",
+        "name": "Serum",
         "mint": "SRMuApVNdxXokk5GT7XD5cUUgXMBCoAz2LHeuAoKWRt",
-        "decimals": 6
+        "decimals": 6,
+        "precision": 2
       },
       "USDC": {
         "symbol": "USDC",
+        "name": "USD Coin",
         "mint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
-        "decimals": 6
+        "decimals": 6,
+        "precision": 2
       }
     },
     "oracles": {
@@ -513,8 +543,16 @@
         "quoteSymbol": "USD",
         "product": "6T1eJbKWyhZXEjmuBej9gPk3SRTagzrEQovCSwAWD57P",
         "address": "3NBReDRTLKMQEKiLD5tGcx4kXbTf88b7f2xLS9UuGjym"
+      },
+      "USDC_USD": {
+        "symbol": "USDC/USD",
+        "baseSymbol": "USDC",
+        "quoteSymbol": "USD",
+        "product": "8GWTTbNiXdmyZREXbjsZBmCRuzdPrW55dnZGDkTRjWvb",
+        "address": "Gnt27xtC473ZT2Mw5u8wZ68Z3gULkSTb5DuxJy7eJotD"
       }
     },
+    "pools": {},
     "markets": {
       "BTC_USDC": {
         "symbol": "BTC/USDC",
@@ -609,88 +647,6 @@
         "feeRateBps": 0
       }
     },
-    "swaps": {
-      "BTC_USDC": {
-        "symbol": "BTC/USDC",
-        "swap": "2dwHmCoAGxCXvTbLTMjqAhvEFAHWUt9kZaroJJJdmoD4",
-        "authority": "CJwF2x5y67D8FwDg6ZgRCCwLzc1fEZcU43KzR5jNhCyR",
-        "poolTokenMint": "J3kvcay3N16FBdawgnqoJ9v9p6XCvyCLE2Z9F5RLvGkj",
-        "poolTokenDecimals": 6,
-        "baseAmount": 30,
-        "baseDecimals": 6,
-        "baseMint": "9n4nbM75f5Ui33ZbPYXn59EwSgE8CGsHtAeTH5YFeJ9E",
-        "baseSymbol": "BTC",
-        "baseVault": "3s6vQK1mLer3N71h57D3p9qHuoD8ryVJTKStUF8h5qji",
-        "quoteAmount": 852354,
-        "quoteDecimals": 6,
-        "quoteMint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
-        "quoteSymbol": "USDC",
-        "quoteVault": "AEAEYp5KPNwi6gYtyt4HbSTkJEmz87h8fd5cvjpynRJa",
-        "feeAccount": "HR7c67SkeLvCpHrVSu7MiiAERQh6iD1NrCJsj3kWiZnK",
-        "feeAccountOwner": "2YM8LrJGRtsDcWeqsjX2EQwJfhArxyDdtDzgt7vrwwbV",
-        "tradeFeeNumerator": 25,
-        "tradeFeeDenominator": 10000,
-        "ownerTradeFeeNumerator": 5,
-        "ownerTradeFeeDenominator": 10000,
-        "ownerWithdrawFeeNumerator": 0,
-        "ownerWithdrawFeeDenominator": 0,
-        "hostFeeNumerator": 0,
-        "hostFeeDenominator": 0
-      },
-      "ETH_USDC": {
-        "symbol": "ETH/USDC",
-        "swap": "FgZut2qVQEyPBibaTJbbX2PxaMZvT1vjDebiVaDp5BWP",
-        "authority": "8f8M522WFXkq6qSowZX7roTcNU6eMG6ef4joGeCfSPH3",
-        "poolTokenMint": "3e1W6Aqcbuk2DfHUwRiRcyzpyYRRjg6yhZZcyEARydUX",
-        "poolTokenDecimals": 6,
-        "baseAmount": 581,
-        "baseDecimals": 6,
-        "baseMint": "2FPyTwcZLUg1MDrwsyoP4D6s1tM7hAkHYRjkNb5w6Pxk",
-        "baseSymbol": "ETH",
-        "baseVault": "3ghAwNNShxiZA2Lh9kbSkRB4EzekCeXbV3wY4D1vcYLv",
-        "quoteAmount": 1109379,
-        "quoteDecimals": 6,
-        "quoteMint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
-        "quoteSymbol": "USDC",
-        "quoteVault": "BpFpH5UrR5nJebYQFav8xj8eBMuZRaePARApNcLExZWY",
-        "feeAccount": "DLWewB12jzGn4wXJmFCddWDeof1Ma4cZYNRv9CP5hTvX",
-        "feeAccountOwner": "2YM8LrJGRtsDcWeqsjX2EQwJfhArxyDdtDzgt7vrwwbV",
-        "tradeFeeNumerator": 25,
-        "tradeFeeDenominator": 10000,
-        "ownerTradeFeeNumerator": 5,
-        "ownerTradeFeeDenominator": 10000,
-        "ownerWithdrawFeeNumerator": 0,
-        "ownerWithdrawFeeDenominator": 0,
-        "hostFeeNumerator": 0,
-        "hostFeeDenominator": 0
-      },
-      "SOL_USDC": {
-        "symbol": "SOL/USDC",
-        "swap": "EGZ7tiLeH62TPV1gL8WwbXGzEPa9zmcpVnnkPKKnrE2U",
-        "authority": "9EDR8Xx6sdspHZxnwfa8sSMwC7SDkWW5Er3fJCH9mcaR",
-        "poolTokenMint": "APDFRM3HMr8CAGXwKHiu2f5ePSpaiEJhaURwhsRrUUt9",
-        "poolTokenDecimals": 6,
-        "baseAmount": 825683,
-        "baseDecimals": 9,
-        "baseMint": "So11111111111111111111111111111111111111112",
-        "baseSymbol": "SOL",
-        "baseVault": "2QoYZf3QgdkWTaXpsNkrieRnKCZxHDW5HWdEpJeXc8EX",
-        "quoteAmount": 35503163,
-        "quoteDecimals": 6,
-        "quoteMint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
-        "quoteSymbol": "USDC",
-        "quoteVault": "3mk5UUsTjKfLLoksixWxZKoYasDCsvrYtRnTqBzmTYBK",
-        "feeAccount": "8JnSiuvQq3BVuCU3n4DrSTw9chBSPvEMswrhtifVkr1o",
-        "feeAccountOwner": "2YM8LrJGRtsDcWeqsjX2EQwJfhArxyDdtDzgt7vrwwbV",
-        "tradeFeeNumerator": 25,
-        "tradeFeeDenominator": 10000,
-        "ownerTradeFeeNumerator": 5,
-        "ownerTradeFeeDenominator": 10000,
-        "ownerWithdrawFeeNumerator": 0,
-        "ownerWithdrawFeeDenominator": 0,
-        "hostFeeNumerator": 0,
-        "hostFeeDenominator": 0
-      }
-    }
+    "swaps": {}
   }
 }
