@@ -1365,6 +1365,7 @@ dependencies = [
  "jet-metadata",
  "jet-simulation",
  "jet-solana-rpc-api",
+ "mock-adapter",
  "parking_lot 0.12.0",
  "pyth-sdk-solana",
  "rand 0.7.3",
@@ -1559,6 +1560,8 @@ dependencies = [
  "jet-metadata",
  "jet-proto-math",
  "pyth-sdk-solana",
+ "serde",
+ "serde_test",
  "static_assertions",
 ]
 
@@ -1880,6 +1883,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b9f1c5b025cda876f66ef43a113f91ebc9f4ccef34843000e0adf6ebbab84e21"
 dependencies = [
  "winapi",
+]
+
+[[package]]
+name = "mock-adapter"
+version = "0.1.0"
+dependencies = [
+ "anchor-lang",
+ "anchor-spl",
+ "jet-margin",
 ]
 
 [[package]]

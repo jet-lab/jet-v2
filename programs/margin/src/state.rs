@@ -20,7 +20,7 @@ use bytemuck::{Contiguous, Pod, Zeroable};
 #[cfg(any(test, feature = "cli"))]
 use serde::ser::{Serialize, SerializeStruct, Serializer};
 
-use crate::{util::RequirePosition, ErrorCode, MAX_PRICE_QUOTE_AGE, MIN_COLLATERAL_RATIO};
+use crate::{util::Require, ErrorCode, MAX_PRICE_QUOTE_AGE, MIN_COLLATERAL_RATIO};
 use jet_proto_math::Number128;
 use jet_proto_proc_macros::assert_size;
 
@@ -274,6 +274,8 @@ impl MarginAccount {
                 }
             };
 
+            //TODO JV2M-360
+            //TODO user replays a loan but Claim still has a position.value()
             match (kind, stale_reason) {
                 (PositionKind::NoValue, _) => (),
                 (PositionKind::Claim, None) => claims += position.value(),

@@ -71,9 +71,11 @@ mod jet_margin_pool {
         instructions::margin_borrow_handler(ctx, amount)
     }
 
-    /// Repay a loan
-    pub fn margin_repay(ctx: Context<MarginRepay>, amount: Amount) -> Result<()> {
-        instructions::margin_repay_handler(ctx, amount)
+    /// Repay a loan with a maximum amount.
+    /// If the loan balance is lower than the amount, the excess is left in the
+    /// deposit account.
+    pub fn margin_repay(ctx: Context<MarginRepay>, max_amount: Amount) -> Result<()> {
+        instructions::margin_repay_handler(ctx, max_amount)
     }
 
     /// Withdraw tokens from the pool, exchanging in notes stored by a
@@ -102,14 +104,14 @@ pub struct Amount {
 }
 
 impl Amount {
-    pub fn tokens(value: u64) -> Self {
+    pub const fn tokens(value: u64) -> Self {
         Self {
             kind: AmountKind::Tokens,
             value,
         }
     }
 
-    pub fn notes(value: u64) -> Self {
+    pub const fn notes(value: u64) -> Self {
         Self {
             kind: AmountKind::Notes,
             value,

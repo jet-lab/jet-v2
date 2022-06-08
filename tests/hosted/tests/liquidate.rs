@@ -1,114 +1,21 @@
-use anyhow::{Error, Result};
+use anyhow::Result;
 
-use jet_control::TokenMetadataParams;
+use hosted_tests::setup_helper::{setup_token, setup_user};
 use jet_margin::ErrorCode;
-use jet_margin_sdk::instructions::control::TokenConfiguration;
 use jet_simulation::tokens::TokenPrice;
 use serial_test::serial;
 use solana_sdk::native_token::LAMPORTS_PER_SOL;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::Signer;
 
-use hosted_tests::context::{test_context, MarginTestContext};
+use hosted_tests::context::test_context;
 
-use jet_margin_pool::{Amount, MarginPoolConfig, PoolFlags};
-use jet_metadata::TokenKind;
-use jet_simulation::margin::{MarginPoolSetupInfo, MarginUser};
-use jet_simulation::{assert_program_error, assert_program_error_code, create_wallet};
+use jet_margin_pool::Amount;
+use jet_simulation::margin::MarginUser;
+use jet_simulation::{assert_program_error, assert_program_error_code};
 
 const ONE_USDC: u64 = 1_000_000;
 const ONE_TSOL: u64 = LAMPORTS_PER_SOL;
-
-const DEFAULT_POOL_CONFIG: MarginPoolConfig = MarginPoolConfig {
-    borrow_rate_0: 10,
-    borrow_rate_1: 20,
-    borrow_rate_2: 30,
-    borrow_rate_3: 40,
-    utilization_rate_1: 10,
-    utilization_rate_2: 20,
-    management_fee_rate: 10,
-    management_fee_collect_threshold: 100,
-    flags: PoolFlags::ALLOW_LENDING.bits(),
-};
-
-struct TestEnv {
-    usdc: Pubkey,
-    tsol: Pubkey,
-}
-
-async fn setup_environment(ctx: &MarginTestContext) -> Result<TestEnv, Error> {
-    let usdc = ctx.tokens.create_token(6, None, None).await?;
-    let usdc_fees = ctx
-        .tokens
-        .create_account(&usdc, &ctx.authority.pubkey())
-        .await?;
-    let usdc_oracle = ctx.tokens.create_oracle(&usdc).await?;
-    let tsol = ctx.tokens.create_token(9, None, None).await?;
-    let tsol_fees = ctx
-        .tokens
-        .create_account(&tsol, &ctx.authority.pubkey())
-        .await?;
-    let tsol_oracle = ctx.tokens.create_oracle(&tsol).await?;
-
-    let pools = [
-        MarginPoolSetupInfo {
-            token: usdc,
-            fee_destination: usdc_fees,
-            token_kind: TokenKind::Collateral,
-            collateral_weight: 10_000,
-            config: DEFAULT_POOL_CONFIG,
-            oracle: usdc_oracle,
-        },
-        MarginPoolSetupInfo {
-            token: tsol,
-            fee_destination: tsol_fees,
-            token_kind: TokenKind::Collateral,
-            collateral_weight: 9_500,
-            config: DEFAULT_POOL_CONFIG,
-            oracle: tsol_oracle,
-        },
-    ];
-
-    for pool_info in pools {
-        ctx.margin.create_pool(&pool_info).await?;
-    }
-
-    ctx.margin
-        .configure_token(
-            &usdc,
-            &TokenConfiguration {
-                pyth_price: Some(usdc_oracle.price),
-                pyth_product: Some(usdc_oracle.product),
-                pool_config: Some(DEFAULT_POOL_CONFIG),
-                metadata: Some(TokenMetadataParams {
-                    token_kind: TokenKind::Collateral,
-                    collateral_weight: 10_000,
-                    collateral_max_staleness: 0,
-                }),
-                ..Default::default()
-            },
-        )
-        .await?;
-
-    ctx.margin
-        .configure_token(
-            &tsol,
-            &TokenConfiguration {
-                pyth_price: Some(tsol_oracle.price),
-                pyth_product: Some(tsol_oracle.product),
-                pool_config: Some(DEFAULT_POOL_CONFIG),
-                metadata: Some(TokenMetadataParams {
-                    token_kind: TokenKind::Collateral,
-                    collateral_weight: 9_500,
-                    collateral_max_staleness: 0,
-                }),
-                ..Default::default()
-            },
-        )
-        .await?;
-
-    Ok(TestEnv { usdc, tsol })
-}
 
 struct Scenario1 {
     usdc: Pubkey,
@@ -127,96 +34,24 @@ struct Scenario1 {
 #[allow(clippy::erasing_op)]
 async fn scenario1() -> Result<Scenario1> {
     let ctx = test_context().await;
-    let env = setup_environment(ctx).await?;
-
-    // Create our two user wallets, with some SOL funding to get started
-    let wallet_a = create_wallet(&ctx.rpc, 10 * LAMPORTS_PER_SOL).await?;
-    let wallet_b = create_wallet(&ctx.rpc, 10 * LAMPORTS_PER_SOL).await?;
+    let usdc = setup_token(ctx, 6, 10_000, 1).await?;
+    let tsol = setup_token(ctx, 9, 9_500, 100).await?;
 
     // Create wallet for the liquidator
-    let wallet_liquidator = ctx.create_liquidator(100).await?;
-
-    // Create the user context helpers, which give a simple interface for executing
-    // common actions on a margin account
-    let user_a = ctx.margin.user(&wallet_a).await?;
-    let user_a_liq = ctx
-        .margin
-        .liquidator(&wallet_liquidator, &wallet_a.pubkey())
-        .await?;
-
-    let user_b = ctx.margin.user(&wallet_b).await?;
-    let user_b_liq = ctx
-        .margin
-        .liquidator(&wallet_liquidator, &wallet_b.pubkey())
-        .await?;
-
-    // Initialize the margin accounts for each user
-    user_a.create_account().await?;
-    user_b.create_account().await?;
-
-    // Create some tokens for each user to deposit
-    let user_a_usdc_account = ctx
-        .tokens
-        .create_account_funded(&env.usdc, &wallet_a.pubkey(), 10_000_000 * ONE_USDC)
-        .await?;
-    let user_b_tsol_account = ctx
-        .tokens
-        .create_account_funded(&env.tsol, &wallet_b.pubkey(), 10_000 * ONE_TSOL)
-        .await?;
-
-    // Set the prices for each token
-    ctx.tokens
-        .set_price(
-            // Set price to 1 USD +- 0.01
-            &env.usdc,
-            &TokenPrice {
-                exponent: -8,
-                price: 100_000_000,
-                confidence: 1_000_000,
-                twap: 100_000_000,
-            },
-        )
-        .await?;
-    ctx.tokens
-        .set_price(
-            // Set price to 100 USD +- 1
-            &env.tsol,
-            &TokenPrice {
-                exponent: -8,
-                price: 10_000_000_000,
-                confidence: 100_000_000,
-                twap: 10_000_000_000,
-            },
-        )
-        .await?;
-
-    // Deposit user funds into their margin accounts
-    user_a
-        .deposit(&env.usdc, &user_a_usdc_account, 5_000_000 * ONE_USDC)
-        .await?;
-    user_b
-        .deposit(&env.tsol, &user_b_tsol_account, 10_000 * ONE_TSOL)
-        .await?;
-
-    // Verify user tokens have been deposited
-    assert_eq!(
-        5_000_000 * ONE_USDC,
-        ctx.tokens.get_balance(&user_a_usdc_account).await?
-    );
-    assert_eq!(
-        0 * ONE_TSOL,
-        ctx.tokens.get_balance(&user_b_tsol_account).await?
-    );
-
-    user_a.refresh_all_pool_positions().await?;
-    user_b.refresh_all_pool_positions().await?;
+    let liquidator_wallet = ctx.create_liquidator(100).await?;
+    let user_a = setup_user(
+        ctx,
+        &liquidator_wallet,
+        vec![(usdc, 5_000_000 * ONE_USDC, 5_000_000 * ONE_USDC)],
+    )
+    .await?;
+    let user_b = setup_user(ctx, &liquidator_wallet, vec![(tsol, 0, 10_000 * ONE_TSOL)]).await?;
 
     // Have each user borrow the other's funds
-    user_a.borrow(&env.tsol, 8000 * ONE_TSOL).await?;
-    user_b.borrow(&env.usdc, 3_500_000 * ONE_USDC).await?;
+    user_a.user.borrow(&tsol, 8000 * ONE_TSOL).await?;
+    user_b.user.borrow(&usdc, 3_500_000 * ONE_USDC).await?;
 
     // User A deposited 5'000'000 USD worth, borrowed 800'000 USD worth
-
     // User B deposited 1'000'000 USD worth, borrowed 3'500'000 USD worth
     // TSOL collateral counts 95%
     // Total collateral = 3'500'000 + 1'000'000 * 95% = 4'450'000
@@ -226,7 +61,7 @@ async fn scenario1() -> Result<Scenario1> {
     ctx.tokens
         .set_price(
             // Set price to 80 USD +- 1
-            &env.tsol,
+            &tsol,
             &TokenPrice {
                 exponent: -8,
                 price: 8_000_000_000,
@@ -236,17 +71,15 @@ async fn scenario1() -> Result<Scenario1> {
         )
         .await?;
 
-    user_a.refresh_all_pool_positions().await?;
-    user_b.refresh_all_pool_positions().await?;
+    user_a.user.refresh_all_pool_positions().await?;
+    user_b.user.refresh_all_pool_positions().await?;
 
     Ok(Scenario1 {
-        user_b,
-        user_a_liq,
-        user_b_liq,
-
-        usdc: env.usdc,
-
-        liquidator: wallet_liquidator.pubkey(),
+        user_b: user_b.user,
+        user_a_liq: user_a.liquidator,
+        user_b_liq: user_b.liquidator,
+        usdc,
+        liquidator: liquidator_wallet.pubkey(),
     })
 }
 

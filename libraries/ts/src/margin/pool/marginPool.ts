@@ -7,9 +7,10 @@ import { MarginAccount } from "../marginAccount"
 import { MarginPrograms } from "../marginClient"
 import { findDerivedAccount } from "../../utils/pda"
 import { AssociatedToken } from "../../token"
-import { MarginPoolData } from "./state"
-import { MarginTokenConfig, MarginTokens } from "../config"
+import { MarginPoolConfigData, MarginPoolData } from "./state"
+import { MarginPoolConfig, MarginTokenConfig, MarginTokens } from "../config"
 import { PoolAmount } from "./poolAmount"
+import { parsePriceData, PriceData } from "@pythnetwork/client"
 
 type TokenKindNonCollateral = { nonCollateral: Record<string, never> }
 type TokenKindCollateral = { collateral: Record<string, never> }
@@ -31,44 +32,47 @@ export interface MarginPoolAddresses {
   controlAuthority: PublicKey
 }
 
-export interface TokenMetadataParams {
+interface TokenMetadataParams {
   tokenKind: TokenKind
   collateralWeight: number
   collateralMaxStaleness: BN
 }
 
-export interface MarginPoolParams {
+interface MarginPoolParams {
   feeDestination: PublicKey
 }
 
-export interface MarginPoolConfig {
-  flags: BN
-  utilizationRate1: number
-  utilizationRate2: number
-  borrowRate0: number
-  borrowRate1: number
-  borrowRate2: number
-  borrowRate3: number
-  managementFeeRate: number
-  managementFeeCollectThreshold: BN
-}
-
 export class MarginPool {
+  public addresses: MarginPoolAddresses
   public address: PublicKey
-  public tokenConfig: MarginTokenConfig
+
+  get tokenPrice(): number | undefined {
+    return this.info?.tokenPriceOracle.price
+  }
+
+  get availableLiquidity(): number | undefined {
+    return 0
+  }
+
   public info?: {
     marginPool: MarginPoolData
     tokenMint: Mint
     vault: AssociatedToken
     depositNoteMint: Mint
     loanNoteMint: Mint
+    tokenPriceOracle: PriceData
   }
-  constructor(public programs: MarginPrograms, public addresses: MarginPoolAddresses) {
+
+  constructor(
+    public programs: MarginPrograms,
+    public tokenMint: Address,
+    public poolConfig?: MarginPoolConfig,
+    public tokenConfig?: MarginTokenConfig
+  ) {
     assert(programs)
-    assert(addresses)
-    this.address = addresses.marginPool
-    const mintAddress = addresses.tokenMint.toBase58()
-    this.tokenConfig = Object.values(this.programs.config.tokens).find(token => token.mint === mintAddress)!
+    assert(tokenMint)
+    this.addresses = MarginPool.derive(programs, tokenMint)
+    this.address = this.addresses.marginPool
   }
 
   /**
@@ -104,12 +108,16 @@ export class MarginPool {
     }
   }
 
-  static async load(programs: MarginPrograms, tokenMint: Address) {
+  static async load(
+    programs: MarginPrograms,
+    tokenMint: Address,
+    poolConfig?: MarginPoolConfig,
+    tokenConfig?: MarginTokenConfig
+  ): Promise<MarginPool> {
     assert(programs)
     assert(tokenMint)
 
-    const addresses = this.derive(programs, tokenMint)
-    const marginPool = new MarginPool(programs, addresses)
+    const marginPool = new MarginPool(programs, tokenMint, poolConfig, tokenConfig)
     await marginPool.refresh()
     return marginPool
   }
@@ -122,9 +130,13 @@ export class MarginPool {
   static async loadAll(programs: MarginPrograms): Promise<Record<MarginTokens, MarginPool>> {
     // FIXME: This could be faster with fewer round trips to rpc
     const pools: Record<string, MarginPool> = {}
-    for (const token of Object.values(programs.config.tokens)) {
-      const pool = await this.load(programs, token.mint)
-      pools[token.symbol.toString()] = pool
+    for (const poolConfig of Object.values(programs.config.pools)) {
+      const poolTokenMint = translateAddress(poolConfig.tokenMint)
+      const tokenConfig = Object.values(programs.config.tokens).find(token =>
+        translateAddress(token.mint).equals(poolTokenMint)
+      )
+      const pool = await this.load(programs, poolConfig.tokenMint, poolConfig, tokenConfig)
+      pools[poolConfig.symbol] = pool
     }
     return pools
   }
@@ -142,12 +154,23 @@ export class MarginPool {
     if (!marginPoolInfo || !poolTokenMintInfo || !vaultMintInfo || !depositNoteMintInfo || !loanNoteMintInfo) {
       this.info = undefined
     } else {
+      const marginPool = this.programs.marginPool.coder.accounts.decode<MarginPoolData>(
+        "marginPool",
+        marginPoolInfo.data
+      )
+      const tokenMint = AssociatedToken.decodeMint(poolTokenMintInfo, this.addresses.tokenMint)
+      const oracleInfo = await this.programs.marginPool.provider.connection.getAccountInfo(marginPool.tokenPriceOracle)
+      assert(
+        oracleInfo,
+        "Pyth oracle does not exist but a margin pool does. The margin pool is incorrectly configured."
+      )
       this.info = {
-        marginPool: this.programs.marginPool.coder.accounts.decode<MarginPoolData>("marginPool", marginPoolInfo.data),
-        tokenMint: AssociatedToken.decodeMint(poolTokenMintInfo, this.addresses.tokenMint),
-        vault: AssociatedToken.decodeAccount(vaultMintInfo, this.addresses.vault, this.tokenConfig.decimals),
+        marginPool,
+        tokenMint,
+        vault: AssociatedToken.decodeAccount(vaultMintInfo, this.addresses.vault, tokenMint.decimals),
         depositNoteMint: AssociatedToken.decodeMint(depositNoteMintInfo, this.addresses.depositNoteMint),
-        loanNoteMint: AssociatedToken.decodeMint(loanNoteMintInfo, this.addresses.loanNoteMint)
+        loanNoteMint: AssociatedToken.decodeMint(loanNoteMintInfo, this.addresses.loanNoteMint),
+        tokenPriceOracle: parsePriceData(oracleInfo.data)
       }
     }
   }
@@ -160,7 +183,7 @@ export class MarginPool {
     feeDestination: Address,
     pythProduct: Address,
     pythPrice: Address,
-    marginPoolConfig: MarginPoolConfig
+    marginPoolConfig: MarginPoolConfigData
   ) {
     const ix1: TransactionInstruction[] = []
     await this.withRegisterToken(ix1, requester)
@@ -177,7 +200,12 @@ export class MarginPool {
       pythPrice,
       marginPoolConfig
     )
-    return await provider.sendAndConfirm(new Transaction().add(...ix2))
+    try {
+      return await provider.sendAndConfirm(new Transaction().add(...ix2))
+    } catch (err) {
+      console.log(err)
+      throw err
+    }
   }
 
   async withRegisterToken(instructions: TransactionInstruction[], requester: Address): Promise<void> {
@@ -206,6 +234,13 @@ export class MarginPool {
     instructions.push(ix)
   }
 
+  /**
+   * Create a margin pool by configuring the token with the control program.
+   *
+   * # Instructions
+   *
+   * - jet_control::configure_token - configures an SPL token and creates its pool
+   */
   async withConfigureToken(
     instructions: TransactionInstruction[],
     requester: Address,
@@ -214,8 +249,9 @@ export class MarginPool {
     feeDestination: Address,
     pythProduct: Address,
     pythPrice: Address,
-    marginPoolConfig: MarginPoolConfig
+    marginPoolConfig: MarginPoolConfigData
   ): Promise<void> {
+    // Set the token configuration, e.g. collateral weight
     const metadata: TokenMetadataParams = {
       tokenKind: { collateral: {} },
       collateralWeight: collateralWeight,
@@ -314,7 +350,12 @@ export class MarginPool {
       this.addresses.marginPoolAdapterMetadata,
       await this.makeMarginRefreshPositionInstruction(marginAccount.address, tokenMetadata.pythPrice)
     )
-    return await marginAccount.provider.sendAndConfirm(new Transaction().add(...ix))
+    try {
+      return await marginAccount.provider.sendAndConfirm(new Transaction().add(...ix))
+    } catch (err) {
+      console.log(err)
+      throw err
+    }
   }
 
   async marginBorrow(marginAccount: MarginAccount, amount: BN) {
@@ -355,7 +396,12 @@ export class MarginPool {
         amount
       )
     )
-    return await marginAccount.provider.sendAndConfirm(new Transaction().add(...ix))
+    try {
+      return await marginAccount.provider.sendAndConfirm(new Transaction().add(...ix))
+    } catch (err) {
+      console.log(err)
+      throw err
+    }
   }
 
   async makeMarginRefreshPositionInstruction(
@@ -487,7 +533,12 @@ export class MarginPool {
     )
     tx.add(...ix)
 
-    return await marginAccount.provider.sendAndConfirm(tx)
+    try {
+      return await marginAccount.provider.sendAndConfirm(tx)
+    } catch (err) {
+      console.log(err)
+      throw err
+    }
   }
 
   async makeMarginWithdrawInstruction(

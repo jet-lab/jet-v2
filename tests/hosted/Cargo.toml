@@ -35,3 +35,5 @@ jet-metadata = { path = "../../programs/metadata", features = ["no-entrypoint", 
 jet-solana-rpc-api = { path = "../../libraries/solana-rpc-api" }
 jet-margin-sdk = { path = "../../libraries/rust", features = ["devnet"] }
 jet-simulation = { path = "../../libraries/simulation", features = ["margin"] }
+
+mock-adapter = { path = "../mock-adapter", features = ["no-entrypoint"] }

@@ -1,8 +1,8 @@
 name: build
 
 env:
-  SOLANA_VERSION: 1.9.16
-  ANCHOR_CLI_VERSION: 0.23.0
+  SOLANA_VERSION: 1.9.2
+  ANCHOR_CLI_VERSION: 0.24.2
 
 on:
   push:
@@ -56,4 +56,4 @@ jobs:
       - run: solana-keygen new --no-bip39-passphrase
 
       - name: TS Test
-        run: anchor test --skip-lint
+        run: npm run test
