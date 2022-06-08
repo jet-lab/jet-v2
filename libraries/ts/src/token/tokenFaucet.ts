@@ -7,7 +7,7 @@ import {
 import { Connection, PublicKey, Transaction, TransactionInstruction } from "@solana/web3.js"
 import { AssociatedToken } from "./associatedToken"
 import { Address, BN, AnchorProvider, translateAddress } from "@project-serum/anchor"
-import { MarginPrograms } from "src/margin"
+import { MarginPrograms } from "../margin"
 
 export class TokenFaucet {
   /**
