@@ -723,6 +723,7 @@ impl Valuation {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use jet_metadata::TokenKind;
     use serde_test::{assert_ser_tokens, Token};
 
     fn create_position_input(margin_address: &Pubkey) -> (Pubkey, Pubkey) {
@@ -967,13 +968,9 @@ mod tests {
             liquidator: Pubkey::default(),
             positions: [0; 7432],
         };
-        // use a non-default pubkey
-        let collateral = Pubkey::find_program_address(&[&[0]], &crate::id()).0;
-        let claim = Pubkey::find_program_address(&[&[1]], &crate::id()).0;
-        let past_due_claim = Pubkey::find_program_address(&[&[2]], &crate::id()).0;
-        register_position(&mut acc, collateral, PositionKind::Deposit);
-        register_position(&mut acc, claim, PositionKind::Claim);
-        register_position(&mut acc, past_due_claim, PositionKind::PastDueClaim);
+        let collateral = register_position(&mut acc, 0, TokenKind::Collateral);
+        let claim = register_position(&mut acc, 1, TokenKind::Claim);
+        let past_due_claim = register_position(&mut acc, 2, TokenKind::PastDueClaim);
         set_price(&mut acc, collateral, 100);
         set_price(&mut acc, claim, 100);
         set_price(&mut acc, past_due_claim, 100);
@@ -990,9 +987,12 @@ mod tests {
         assert_unhealthy(&acc);
     }
 
-    fn register_position(acc: &mut MarginAccount, key: Pubkey, kind: PositionKind) {
-        acc.register_position(key, 2, key, key, kind, 10000, 0)
+    fn register_position(acc: &mut MarginAccount, index: u8, kind: TokenKind) -> Pubkey {
+        let key = Pubkey::find_program_address(&[&[index]], &crate::id()).0;
+        acc.register_position(key, 2, key, key, kind.into(), 10000, 0)
             .unwrap();
+        
+        key
     }
 
     fn assert_unhealthy(acc: &MarginAccount) {

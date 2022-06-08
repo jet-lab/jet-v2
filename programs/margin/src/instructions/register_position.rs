@@ -66,22 +66,27 @@ pub fn register_position_handler(ctx: Context<RegisterPosition>) -> Result<()> {
     let mut account = ctx.accounts.margin_account.load_mut()?;
     let position_token = &ctx.accounts.position_token_mint;
     let address = ctx.accounts.token_account.key();
-    let kind = match metadata.token_kind {
-        TokenKind::NonCollateral => PositionKind::NoValue,
-        TokenKind::Collateral => PositionKind::Deposit,
-        TokenKind::Claim => PositionKind::Claim,
-        TokenKind::PastDueClaim => PositionKind::PastDueClaim,
-    };
 
     account.register_position(
         position_token.key(),
         position_token.decimals,
         address,
         metadata.adapter_program,
-        kind,
+        metadata.token_kind.into(),
         metadata.collateral_weight,
         metadata.collateral_max_staleness,
     )?;
 
     Ok(())
+}
+
+impl Into<PositionKind> for TokenKind {
+    fn into(self) -> PositionKind {
+        match self {
+            TokenKind::NonCollateral => PositionKind::NoValue,
+            TokenKind::Collateral => PositionKind::Deposit,
+            TokenKind::Claim => PositionKind::Claim,
+            TokenKind::PastDueClaim => PositionKind::PastDueClaim,
+        }
+    }
 }
