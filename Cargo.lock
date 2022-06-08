@@ -1559,6 +1559,8 @@ dependencies = [
  "jet-metadata",
  "jet-proto-math",
  "pyth-sdk-solana",
+ "serde",
+ "serde_test",
  "static_assertions",
 ]
 

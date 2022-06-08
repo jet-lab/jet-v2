@@ -6,7 +6,6 @@ import { AccountLayout, approve, createAccount, createMint, mintTo, TOKEN_PROGRA
 import {
   Account,
   ConfirmOptions,
-  Connection,
   Keypair,
   LAMPORTS_PER_SOL,
   PublicKey,

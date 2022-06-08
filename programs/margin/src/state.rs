@@ -268,6 +268,8 @@ impl MarginAccount {
                 }
             };
 
+            //TODO JV2M-360
+            //TODO user replays a loan but Claim still has a position.value()
             match (kind, stale_reason) {
                 (PositionKind::NoValue, _) => (),
                 (PositionKind::Claim, None) => claims += position.value(),

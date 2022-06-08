@@ -80,7 +80,7 @@ impl<'info> MarginRepay<'info> {
     }
 }
 
-pub fn margin_repay_handler(ctx: Context<MarginRepay>, amount: Amount) -> Result<()> {
+pub fn margin_repay_handler(ctx: Context<MarginRepay>, max_amount: Amount) -> Result<()> {
     let pool = &mut ctx.accounts.margin_pool;
     let clock = Clock::get()?;
 
@@ -90,14 +90,46 @@ pub fn margin_repay_handler(ctx: Context<MarginRepay>, amount: Amount) -> Result
         return Err(ErrorCode::InterestAccrualBehind.into());
     }
 
-    // First record a withdraw of the deposit to use for repaying
-    let withdraw_rounding = RoundingDirection::direction(PoolAction::Withdraw, amount.kind);
-    let withdraw_amount = pool.convert_deposit_amount(amount, withdraw_rounding)?;
+    // The rounding to repay the maximum amount specified
+    let repay_rounding = RoundingDirection::direction(PoolAction::Repay, max_amount.kind);
+
+    // const rounding directions
+    let repay_note_rounding =
+        RoundingDirection::direction(PoolAction::Repay, crate::AmountKind::Notes);
+    let repay_token_rounding =
+        RoundingDirection::direction(PoolAction::Repay, crate::AmountKind::Tokens);
+    let withdraw_note_rounding =
+        RoundingDirection::direction(PoolAction::Withdraw, crate::AmountKind::Notes);
+    let withdraw_token_rounding =
+        RoundingDirection::direction(PoolAction::Withdraw, crate::AmountKind::Tokens);
+
+    // Determine the maximum notes repayable and withdrawable from each account
+    let loan_notes = ctx.accounts.loan_account.amount;
+    let deposit_notes = ctx.accounts.deposit_account.amount;
+
+    // Amount the user desires to repay
+    let desired_repay_amount = pool.convert_loan_amount(max_amount, repay_rounding)?;
+    // Maximum amount deposited
+    let max_withdraw_amount =
+        pool.convert_deposit_amount(Amount::notes(deposit_notes), withdraw_note_rounding)?;
+    // Maximum amount owed
+    let max_repay_amount =
+        pool.convert_loan_amount(Amount::notes(loan_notes), repay_note_rounding)?;
+
+    // Determine the maximum tokens to withdraw and repay, as the lower of the 3 above
+    let max_repay_tokens = desired_repay_amount
+        .tokens
+        .min(max_withdraw_amount.tokens)
+        .min(max_repay_amount.tokens);
+
+    // First record a withdraw of the deposit to use for repaying in tokens
+    let withdraw_amount =
+        pool.convert_deposit_amount(Amount::tokens(max_repay_tokens), withdraw_token_rounding)?;
     pool.withdraw(&withdraw_amount)?;
 
     // Then record a repay using the withdrawn tokens
-    let repay_rounding = RoundingDirection::direction(PoolAction::Repay, amount.kind);
-    let repay_amount = pool.convert_loan_amount(amount, repay_rounding)?;
+    let repay_amount =
+        pool.convert_loan_amount(Amount::tokens(max_repay_tokens), repay_token_rounding)?;
     pool.repay(&repay_amount)?;
 
     // Finish by burning the loan and deposit notes
