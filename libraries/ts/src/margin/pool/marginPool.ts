@@ -6,7 +6,7 @@ import { PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY, Transaction, TransactionI
 import { MarginAccount } from "../marginAccount"
 import { MarginPrograms } from "../marginClient"
 import { findDerivedAccount } from "../../utils/pda"
-import { AssociatedToken } from "../../token"
+import { AssociatedToken, TokenAmount } from "../../token"
 import { MarginPoolConfigData, MarginPoolData } from "./state"
 import { MarginPoolConfig, MarginTokenConfig, MarginTokens } from "../config"
 import { PoolAmount } from "./poolAmount"
@@ -46,12 +46,44 @@ export class MarginPool {
   public addresses: MarginPoolAddresses
   public address: PublicKey
 
-  get tokenPrice(): number | undefined {
-    return this.info?.tokenPriceOracle.price
+  get name(): string {
+    return this.tokenConfig?.name ?? "N/A"
   }
-
-  get availableLiquidity(): number | undefined {
-    return 0
+  get symbol(): string {
+    return this.tokenConfig?.symbol ?? "N/A"
+  }
+  get availableLiquidity(): TokenAmount {
+    return this.info?.vault.amount ?? TokenAmount.zero(this.tokenConfig?.decimals ?? 0)
+  }
+  get outstandingDebt(): TokenAmount {
+    return TokenAmount.zero(this.tokenConfig?.decimals ?? 0) // FIXME
+  }
+  get marketSize(): TokenAmount {
+    return this.availableLiquidity.add(this.outstandingDebt)
+  }
+  get utilizationRate(): number {
+    return this.marketSize.tokens === 0 ? 0 : this.outstandingDebt.tokens / this.marketSize.tokens
+  }
+  get depositCcRate(): number {
+    return this.info ? MarginPool.getCcRate(this.info.marginPool.config, this.utilizationRate) : 0
+  }
+  get depositApy(): number {
+    return MarginPool.getDepositApy(this.depositCcRate, this.utilizationRate)
+  }
+  get borrowApr(): number {
+    return MarginPool.getBorrowApr(this.depositCcRate, this.info?.marginPool.config.managementFeeRate ?? 0)
+  }
+  get liquidationPremium(): number {
+    return 0 // FIXME
+  }
+  get tokenPrice(): number {
+    return this.info?.tokenPriceOracle.price ?? 0
+  }
+  get decimals(): number {
+    return this.tokenConfig?.decimals ?? 0
+  }
+  get precision(): number {
+    return this.tokenConfig?.precision ?? 0
   }
 
   public info?: {
@@ -173,6 +205,55 @@ export class MarginPool {
         tokenPriceOracle: parsePriceData(oracleInfo.data)
       }
     }
+  }
+
+  /** Linear interpolation between (x0, y0) and (x1, y1)
+   */
+  static interpolate = (x: number, x0: number, x1: number, y0: number, y1: number): number => {
+    console.assert(x >= x0)
+    console.assert(x <= x1)
+
+    return y0 + ((x - x0) * (y1 - y0)) / (x1 - x0)
+  }
+
+  /** Continuous Compounding Rate
+   */
+  static getCcRate = (reserveConfig: MarginPoolConfigData, utilRate: number): number => {
+    const basisPointFactor = 10000
+    const util1 = reserveConfig.utilizationRate1 / basisPointFactor
+    const util2 = reserveConfig.utilizationRate2 / basisPointFactor
+    const borrow0 = reserveConfig.borrowRate0 / basisPointFactor
+    const borrow1 = reserveConfig.borrowRate1 / basisPointFactor
+    const borrow2 = reserveConfig.borrowRate2 / basisPointFactor
+    const borrow3 = reserveConfig.borrowRate3 / basisPointFactor
+
+    if (utilRate <= util1) {
+      return this.interpolate(utilRate, 0, util1, borrow0, borrow1)
+    } else if (utilRate <= util2) {
+      return this.interpolate(utilRate, util1, util2, borrow1, borrow2)
+    } else {
+      return this.interpolate(utilRate, util2, 1, borrow2, borrow3)
+    }
+  }
+
+  /** Borrow rate
+   */
+  static getBorrowApr = (ccRate: number, fee: number): number => {
+    const basisPointFactor = 10000
+    fee = fee / basisPointFactor
+    const secondsPerYear: number = 365 * 24 * 60 * 60
+    const rt = ccRate / secondsPerYear
+
+    return Math.log1p((1 + fee) * Math.expm1(rt)) * secondsPerYear
+  }
+
+  /** Deposit rate
+   */
+  static getDepositApy = (ccRate: number, utilRatio: number): number => {
+    const secondsPerYear: number = 365 * 24 * 60 * 60
+    const rt = ccRate / secondsPerYear
+
+    return Math.log1p(Math.expm1(rt)) * secondsPerYear * utilRatio
   }
 
   async create(
@@ -368,13 +449,7 @@ export class MarginPool {
 
     const tokenMetadata = await marginAccount.getTokenMetadata(this.addresses.tokenMint)
 
-    const data = Buffer.from(Uint8Array.of(0, ...new BN(500000).toArray("le", 4)))
-    const additionalComputeBudgetInstruction = new TransactionInstruction({
-      keys: [],
-      programId: new PublicKey("ComputeBudget111111111111111111111111111111"),
-      data
-    })
-    const ix: TransactionInstruction[] = [additionalComputeBudgetInstruction]
+    const ix: TransactionInstruction[] = []
     await this.withAdapterInvoke(
       ix,
       marginAccount.owner,
