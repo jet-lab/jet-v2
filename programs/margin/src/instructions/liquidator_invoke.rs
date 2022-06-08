@@ -22,8 +22,8 @@ use jet_proto_math::Number128;
 
 use crate::adapter::{self, CompactAccountMeta, InvokeAdapter};
 use crate::{
-    ErrorCode, Liquidation, MarginAccount, Valuation,
-    MAX_LIQUIDATION_COLLATERAL_RATIO, MAX_LIQUIDATION_C_RATIO_SLIPPAGE,
+    ErrorCode, Liquidation, MarginAccount, Valuation, MAX_LIQUIDATION_COLLATERAL_RATIO,
+    MAX_LIQUIDATION_C_RATIO_SLIPPAGE,
 };
 
 #[derive(Accounts)]
@@ -90,7 +90,7 @@ fn update_and_verify_liquidation(
 
     liquidation.value_change += end_value.net() - start_value.net(); // side effects
     liquidation.c_ratio_change += end_c_ratio - start_c_ratio; // side effects
-    
+
     verify_liquidation_step_is_allowed(liquidation, end_c_ratio)
 }
 

@@ -98,8 +98,6 @@ jobs:
       - name: Build Programs with Devnet
         run: |
           yarn install
-          cargo fmt -- --check
-          cargo clippy -- -D warnings
           anchor build --skip-lint -- --features devnet
 
       - name: Deploy Metadata

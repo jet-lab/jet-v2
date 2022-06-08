@@ -19,7 +19,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use anchor_lang::prelude::{Clock, SolanaSysvar};
 
-use crate::{ErrorCode, AccountPosition};
+use crate::{AccountPosition, ErrorCode};
 
 /// Get the current timestamp in seconds since Unix epoch
 ///

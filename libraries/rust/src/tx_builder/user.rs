@@ -67,7 +67,10 @@ impl MarginTxBuilder {
         self.rpc.create_transaction(&signers, instructions).await
     }
 
-    async fn create_unsigned_transaction(&self, instructions: &[Instruction]) -> Result<Transaction> {
+    async fn create_unsigned_transaction(
+        &self,
+        instructions: &[Instruction],
+    ) -> Result<Transaction> {
         self.rpc.create_transaction(&[], instructions).await
     }
 
@@ -373,10 +376,14 @@ impl MarginTxBuilder {
             instructions.push(ix);
         }
 
-        futures::future::join_all(instructions.chunks(12).map(|c| self.create_unsigned_transaction(c)))
-            .await
-            .into_iter()
-            .collect()
+        futures::future::join_all(
+            instructions
+                .chunks(12)
+                .map(|c| self.create_unsigned_transaction(c)),
+        )
+        .await
+        .into_iter()
+        .collect()
     }
 
     async fn get_token_metadata(&self, token_mint: &Pubkey) -> Result<TokenMetadata> {
