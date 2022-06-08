@@ -7,8 +7,8 @@ import { MarginAccount } from "../marginAccount"
 import { MarginPrograms } from "../marginClient"
 import { findDerivedAccount } from "../../utils/pda"
 import { AssociatedToken } from "../../token"
-import { MarginPoolData } from "./state"
-import { MarginTokenConfig, MarginTokens } from "../config"
+import { MarginPoolConfigData, MarginPoolData } from "./state"
+import { MarginPoolConfig, MarginTokenConfig, MarginTokens } from "../config"
 import { PoolAmount } from "./poolAmount"
 import { parsePriceData, PriceData } from "@pythnetwork/client"
 
@@ -32,30 +32,19 @@ export interface MarginPoolAddresses {
   controlAuthority: PublicKey
 }
 
-export interface TokenMetadataParams {
+interface TokenMetadataParams {
   tokenKind: TokenKind
   collateralWeight: number
   collateralMaxStaleness: BN
 }
 
-export interface MarginPoolParams {
+interface MarginPoolParams {
   feeDestination: PublicKey
-}
-
-export interface MarginPoolConfig {
-  flags: BN
-  utilizationRate1: number
-  utilizationRate2: number
-  borrowRate0: number
-  borrowRate1: number
-  borrowRate2: number
-  borrowRate3: number
-  managementFeeRate: number
-  managementFeeCollectThreshold: BN
 }
 
 export class MarginPool {
   public address: PublicKey
+  public poolConfig: MarginPoolConfig
   public tokenConfig: MarginTokenConfig
   public info?: {
     marginPool: MarginPoolData
@@ -74,8 +63,20 @@ export class MarginPool {
     assert(programs)
     assert(addresses)
     this.address = addresses.marginPool
-    const mintAddress = addresses.tokenMint.toBase58()
-    this.tokenConfig = Object.values(this.programs.config.tokens).find(token => token.mint === mintAddress)!
+    const poolConfig = Object.values(this.programs.config.pools).find(pool =>
+      translateAddress(pool.tokenMint).equals(addresses.tokenMint)
+    )
+    const tokenConfig = Object.values(this.programs.config.tokens).find(token =>
+      translateAddress(token.mint).equals(addresses.tokenMint)
+    )
+    if (!poolConfig) {
+      throw new Error(`Missing pool config for token ${addresses.tokenMint.toBase58()}`)
+    }
+    if (!tokenConfig) {
+      throw new Error(`Missing token config for token ${addresses.tokenMint.toBase58()}`)
+    }
+    this.poolConfig = poolConfig
+    this.tokenConfig = tokenConfig
   }
 
   /**
@@ -129,9 +130,9 @@ export class MarginPool {
   static async loadAll(programs: MarginPrograms): Promise<Record<MarginTokens, MarginPool>> {
     // FIXME: This could be faster with fewer round trips to rpc
     const pools: Record<string, MarginPool> = {}
-    for (const token of Object.values(programs.config.tokens)) {
-      const pool = await this.load(programs, token.mint)
-      pools[token.symbol.toString()] = pool
+    for (const token of Object.values(programs.config.pools)) {
+      const pool = await this.load(programs, token.tokenMint)
+      pools[token.symbol] = pool
     }
     return pools
   }
@@ -177,7 +178,7 @@ export class MarginPool {
     feeDestination: Address,
     pythProduct: Address,
     pythPrice: Address,
-    marginPoolConfig: MarginPoolConfig
+    marginPoolConfig: MarginPoolConfigData
   ) {
     const ix1: TransactionInstruction[] = []
     await this.withRegisterToken(ix1, requester)
@@ -243,7 +244,7 @@ export class MarginPool {
     feeDestination: Address,
     pythProduct: Address,
     pythPrice: Address,
-    marginPoolConfig: MarginPoolConfig
+    marginPoolConfig: MarginPoolConfigData
   ): Promise<void> {
     // Set the token configuration, e.g. collateral weight
     const metadata: TokenMetadataParams = {
