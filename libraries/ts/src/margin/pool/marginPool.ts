@@ -44,8 +44,8 @@ interface MarginPoolParams {
 
 export class MarginPool {
   public address: PublicKey
-  public poolConfig: MarginPoolConfig
-  public tokenConfig: MarginTokenConfig
+  public poolConfig: MarginPoolConfig | undefined
+  public tokenConfig: MarginTokenConfig | undefined
   public info?: {
     marginPool: MarginPoolData
     tokenMint: Mint
@@ -63,20 +63,12 @@ export class MarginPool {
     assert(programs)
     assert(addresses)
     this.address = addresses.marginPool
-    const poolConfig = Object.values(this.programs.config.pools).find(pool =>
+    this.poolConfig = Object.values(this.programs.config.pools).find(pool =>
       translateAddress(pool.tokenMint).equals(addresses.tokenMint)
     )
-    const tokenConfig = Object.values(this.programs.config.tokens).find(token =>
+    this.tokenConfig = Object.values(this.programs.config.tokens).find(token =>
       translateAddress(token.mint).equals(addresses.tokenMint)
     )
-    if (!poolConfig) {
-      throw new Error(`Missing pool config for token ${addresses.tokenMint.toBase58()}`)
-    }
-    if (!tokenConfig) {
-      throw new Error(`Missing token config for token ${addresses.tokenMint.toBase58()}`)
-    }
-    this.poolConfig = poolConfig
-    this.tokenConfig = tokenConfig
   }
 
   /**
@@ -159,10 +151,11 @@ export class MarginPool {
         oracleInfo,
         "Pyth oracle does not exist but a margin pool does. The margin pool is incorrectly configured."
       )
+      const tokenMint = AssociatedToken.decodeMint(poolTokenMintInfo, this.addresses.tokenMint)
       this.info = {
         marginPool,
-        tokenMint: AssociatedToken.decodeMint(poolTokenMintInfo, this.addresses.tokenMint),
-        vault: AssociatedToken.decodeAccount(vaultMintInfo, this.addresses.vault, this.tokenConfig.decimals),
+        tokenMint,
+        vault: AssociatedToken.decodeAccount(vaultMintInfo, this.addresses.vault, tokenMint.decimals),
         depositNoteMint: AssociatedToken.decodeMint(depositNoteMintInfo, this.addresses.depositNoteMint),
         loanNoteMint: AssociatedToken.decodeMint(loanNoteMintInfo, this.addresses.loanNoteMint),
         tokenPriceOracle: parsePriceData(oracleInfo.data)
