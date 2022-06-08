@@ -18,7 +18,7 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, MintTo, Token, TokenAccount};
 
-use jet_margin::{AdapterResult, MarginAccount};
+use jet_margin::{AdapterResult, MarginAccount, PositionChange};
 
 use crate::{state::*, AmountKind};
 use crate::{Amount, ErrorCode};
@@ -125,11 +125,12 @@ pub fn margin_borrow_handler(ctx: Context<MarginBorrow>, token_amount: u64) -> R
         deposit_amount.notes,
     )?;
 
-    // Tell the margin program what accounts changed
-    jet_margin::write_adapter_result(&AdapterResult::NewBalanceChange(vec![
-        ctx.accounts.loan_account.key(),
-        ctx.accounts.deposit_account.key(),
-    ]))?;
+    jet_margin::write_adapter_result(&AdapterResult {
+        position_changes: vec![(
+            pool.loan_note_mint,
+            vec![PositionChange::Expect(ctx.accounts.loan_account.key())],
+        )],
+    })?;
 
     Ok(())
 }

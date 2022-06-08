@@ -19,7 +19,7 @@ use anchor_lang::prelude::*;
 use anchor_lang::solana_program::program::invoke;
 use anchor_spl::token;
 
-use jet_margin::{AdapterResult, MarginAccount};
+use jet_margin::MarginAccount;
 use jet_margin_pool::{
     cpi::accounts::{Deposit, Withdraw},
     program::JetMarginPool,

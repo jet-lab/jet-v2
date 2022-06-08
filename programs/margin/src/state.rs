@@ -20,9 +20,12 @@ use bytemuck::{Contiguous, Pod, Zeroable};
 #[cfg(any(test, feature = "cli"))]
 use serde::ser::{Serialize, SerializeStruct, Serializer};
 
-use crate::{ErrorCode, MAX_PRICE_QUOTE_AGE, MIN_COLLATERAL_RATIO};
+use crate::{util::Require, ErrorCode, MAX_PRICE_QUOTE_AGE, MIN_COLLATERAL_RATIO};
 use jet_proto_math::Number128;
 use jet_proto_proc_macros::assert_size;
+
+use anchor_lang::Result as AnchorResult;
+use std::result::Result;
 
 const POS_PRICE_VALID: u8 = 1;
 
@@ -52,7 +55,7 @@ pub struct MarginAccount {
 
 #[cfg(any(test, feature = "cli"))]
 impl Serialize for MarginAccount {
-    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
@@ -67,7 +70,7 @@ impl Serialize for MarginAccount {
 }
 
 impl std::fmt::Debug for MarginAccount {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         let mut acc = f.debug_struct("MarginAccount");
         acc.field("version", &self.version)
             .field("bump_seed", &self.bump_seed)
@@ -98,21 +101,13 @@ impl MarginAccount {
         self.liquidator = Pubkey::default();
     }
 
-    pub fn verify_not_liquidating(&self) -> Result<()> {
+    pub fn verify_not_liquidating(&self) -> AnchorResult<()> {
         if self.liquidation != Pubkey::default() {
             msg!("account is being liquidated");
             Err(ErrorCode::Liquidating.into())
         } else {
             Ok(())
         }
-    }
-
-    pub fn signer_seeds(&self) -> [&[u8]; 3] {
-        [
-            self.owner.as_ref(),
-            self.user_seed.as_ref(),
-            self.bump_seed.as_ref(),
-        ]
     }
 
     pub fn initialize(&mut self, owner: Pubkey, seed: u16, bump_seed: u8) {
@@ -141,7 +136,7 @@ impl MarginAccount {
         kind: PositionKind,
         collateral_weight: u16,
         collateral_max_staleness: u64,
-    ) -> Result<()> {
+    ) -> AnchorResult<()> {
         let free_position = self.position_list_mut().add(token)?;
 
         free_position.exponent = -(decimals as i16);
@@ -156,14 +151,22 @@ impl MarginAccount {
     }
 
     /// Free the space from a previously registered position no longer needed
-    pub fn unregister_position(&mut self, mint: &Pubkey, account: &Pubkey) -> Result<()> {
+    pub fn unregister_position(&mut self, mint: &Pubkey, account: &Pubkey) -> AnchorResult<()> {
         let removed = self.position_list_mut().remove(mint, account)?;
 
         if removed.balance != 0 {
             return err!(ErrorCode::CloseNonZeroPosition);
         }
 
+        if removed.flags.contains(AdapterPositionFlags::REQUIRED) {
+            return err!(ErrorCode::CloseRequiredPosition);
+        }
+
         Ok(())
+    }
+
+    pub fn get_position_mut(&mut self, mint: &Pubkey) -> Option<&mut AccountPosition> {
+        self.position_list_mut().get_mut(mint)
     }
 
     /// Change the balance for a position
@@ -172,11 +175,11 @@ impl MarginAccount {
         mint: &Pubkey,
         account: &Pubkey,
         balance: u64,
-    ) -> Result<()> {
-        let position = self.position_list_mut().get_mut(mint)?;
+    ) -> Result<(), ErrorCode> {
+        let position = self.position_list_mut().get_mut(mint).require()?;
 
         if position.address != *account {
-            return err!(ErrorCode::PositionNotOwned);
+            return Err(ErrorCode::PositionNotRegistered);
         }
 
         position.set_balance(balance);
@@ -189,8 +192,8 @@ impl MarginAccount {
         mint: &Pubkey,
         adapter: &Pubkey,
         price: &PriceInfo,
-    ) -> Result<()> {
-        let position = self.position_list_mut().get_mut(mint)?;
+    ) -> Result<(), ErrorCode> {
+        let position = self.position_list_mut().get_mut(mint).require()?;
 
         position.set_price(adapter, price)
     }
@@ -198,7 +201,7 @@ impl MarginAccount {
     /// Check that the overall health of the account is acceptable, by comparing the
     /// total value of the claims versus the available collateral. If the collateralization
     /// ratio is above the minimum, then the account is considered healthy.
-    pub fn verify_healthy_positions(&self) -> Result<()> {
+    pub fn verify_healthy_positions(&self) -> AnchorResult<()> {
         let info = self.valuation()?;
         let min_ratio = Number128::from_bps(MIN_COLLATERAL_RATIO);
 
@@ -212,7 +215,7 @@ impl MarginAccount {
     }
 
     /// Check that the overall health of the account is *not* acceptable.
-    pub fn verify_unhealthy_positions(&self) -> Result<()> {
+    pub fn verify_unhealthy_positions(&self) -> AnchorResult<()> {
         let info = self.valuation()?;
         let min_ratio = Number128::from_bps(MIN_COLLATERAL_RATIO);
 
@@ -234,7 +237,7 @@ impl MarginAccount {
         authority == self.owner || authority == self.liquidator
     }
 
-    pub fn valuation(&self) -> Result<Valuation> {
+    pub fn valuation(&self) -> AnchorResult<Valuation> {
         let timestamp = crate::util::get_timestamp();
 
         let mut fresh_collateral = Number128::ZERO;
@@ -294,6 +297,38 @@ impl MarginAccount {
 
     fn position_list_mut(&mut self) -> &mut AccountPositionList {
         bytemuck::from_bytes_mut(&mut self.positions)
+    }
+}
+
+pub trait SignerSeeds<const SIZE: usize> {
+    fn signer_seeds(&self) -> [&[u8]; SIZE];
+    fn signer_seeds_owned(&self) -> Box<dyn SignerSeeds<SIZE>>;
+}
+
+impl<const A: usize, const B: usize, const C: usize> SignerSeeds<3>
+    for ([u8; A], [u8; B], [u8; C])
+{
+    fn signer_seeds(&self) -> [&[u8]; 3] {
+        let (s0, s1, s2) = self;
+        [s0, s1, s2]
+    }
+
+    fn signer_seeds_owned(&self) -> Box<dyn SignerSeeds<3>> {
+        Box::new(self.clone())
+    }
+}
+
+impl SignerSeeds<3> for MarginAccount {
+    fn signer_seeds(&self) -> [&[u8]; 3] {
+        [
+            self.owner.as_ref(),
+            self.user_seed.as_ref(),
+            self.bump_seed.as_ref(),
+        ]
+    }
+
+    fn signer_seeds_owned(&self) -> Box<dyn SignerSeeds<3>> {
+        Box::new((self.owner.to_bytes(), self.user_seed, self.bump_seed))
     }
 }
 
@@ -396,7 +431,19 @@ pub struct AccountPosition {
     /// The max staleness for the account balance (seconds)
     pub collateral_max_staleness: u64,
 
-    _reserved: [u8; 24],
+    /// Flags that are set by the adapter
+    pub flags: AdapterPositionFlags,
+
+    _reserved: [u8; 23],
+}
+
+bitflags::bitflags! {
+    #[derive(AnchorSerialize, AnchorDeserialize, Default)]
+    pub struct AdapterPositionFlags: u8 {
+        /// The position may never be removed by the user, even if the balance remains at zero,
+        /// until the adapter explicitly unsets this flag.
+        const REQUIRED = 1 << 0;
+    }
 }
 
 impl AccountPosition {
@@ -422,9 +469,9 @@ impl AccountPosition {
     }
 
     /// Update the price for this position
-    fn set_price(&mut self, adapter: &Pubkey, price: &PriceInfo) -> Result<()> {
+    pub fn set_price(&mut self, adapter: &Pubkey, price: &PriceInfo) -> Result<(), ErrorCode> {
         if self.adapter != *adapter {
-            return err!(ErrorCode::InvalidPriceAdapter);
+            return Err(ErrorCode::InvalidPriceAdapter);
         }
 
         self.price = *price;
@@ -435,7 +482,7 @@ impl AccountPosition {
 }
 
 impl std::fmt::Debug for AccountPosition {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         let mut acc = f.debug_struct("AccountPosition");
         acc.field("token", &self.token)
             .field("address", &self.address)
@@ -455,7 +502,7 @@ impl std::fmt::Debug for AccountPosition {
 
 #[cfg(any(test, feature = "cli"))]
 impl Serialize for AccountPosition {
-    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
@@ -501,7 +548,7 @@ impl AccountPositionList {
     ///
     /// Finds an empty slot in `map` and `positions`, and adds an empty position
     /// to the slot.
-    pub fn add(&mut self, mint: Pubkey) -> Result<&mut AccountPosition> {
+    pub fn add(&mut self, mint: Pubkey) -> AnchorResult<&mut AccountPosition> {
         // verify there's no existing position
         if self.map.iter().any(|p| p.mint == mint) {
             return err!(ErrorCode::PositionAlreadyRegistered);
@@ -534,15 +581,15 @@ impl AccountPositionList {
     ///
     /// - If an account with the `mint` does not exist.
     /// - If the position's address is not the same as the `account`
-    pub fn remove(&mut self, mint: &Pubkey, account: &Pubkey) -> Result<AccountPosition> {
-        let map_index = self.get_map_index(mint)?;
+    pub fn remove(&mut self, mint: &Pubkey, account: &Pubkey) -> AnchorResult<AccountPosition> {
+        let map_index = self.get_map_index(mint).require()?;
         // Get the map whose position to remove
         let map = self.map[map_index];
         // Take a copy of the position to be removed
         let position = self.positions[map.index];
         // Check that the position is correct
         if &position.address != account {
-            return err!(ErrorCode::PositionNotOwned);
+            return err!(ErrorCode::PositionNotRegistered);
         }
         // Remove the position
         let freed_position = bytemuck::bytes_of_mut(&mut self.positions[map.index]);
@@ -559,28 +606,28 @@ impl AccountPositionList {
         Ok(position)
     }
 
-    pub fn get(&self, mint: &Pubkey) -> Result<&AccountPosition> {
+    pub fn get(&self, mint: &Pubkey) -> Option<&AccountPosition> {
         let key = self.get_key(mint)?;
         let position = &self.positions[key.index];
 
-        Ok(position)
+        Some(position)
     }
 
-    pub fn get_mut(&mut self, mint: &Pubkey) -> Result<&mut AccountPosition> {
+    pub fn get_mut(&mut self, mint: &Pubkey) -> Option<&mut AccountPosition> {
         let key = self.get_key(mint)?;
         let position = &mut self.positions[key.index];
 
-        Ok(position)
+        Some(position)
     }
 
-    fn get_key(&self, mint: &Pubkey) -> Result<&AccountPositionKey> {
-        Ok(&self.map[self.get_map_index(mint)?])
+    fn get_key(&self, mint: &Pubkey) -> Option<&AccountPositionKey> {
+        Some(&self.map[self.get_map_index(mint)?])
     }
 
-    fn get_map_index(&self, mint: &Pubkey) -> Result<usize> {
+    fn get_map_index(&self, mint: &Pubkey) -> Option<usize> {
         (&self.map[..self.length])
             .binary_search_by_key(mint, |p| p.mint)
-            .map_err(|_| error!(ErrorCode::UnknownPosition))
+            .ok()
     }
 }
 
@@ -737,7 +784,8 @@ mod tests {
             exponent: i16::default(),
             collateral_weight: u16::default(),
             collateral_max_staleness: u64::default(),
-            _reserved: [0; 24],
+            flags: AdapterPositionFlags::default(),
+            _reserved: [0; 23],
         };
 
         assert_ser_tokens(

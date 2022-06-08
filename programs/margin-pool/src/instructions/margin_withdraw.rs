@@ -20,7 +20,7 @@ use std::collections::BTreeMap;
 use anchor_lang::prelude::*;
 use anchor_spl::token::Token;
 
-use jet_margin::{AdapterResult, MarginAccount};
+use jet_margin::MarginAccount;
 
 use crate::state::*;
 use crate::Amount;
@@ -80,12 +80,6 @@ pub fn margin_withdraw_handler(ctx: Context<MarginWithdraw>, amount: Amount) -> 
         ),
         amount,
     )?;
-
-    // Tell the margin program what accounts changed
-    jet_margin::write_adapter_result(&AdapterResult::NewBalanceChange(vec![ctx
-        .accounts
-        .source
-        .key()]))?;
 
     Ok(())
 }

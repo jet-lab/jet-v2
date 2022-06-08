@@ -20,7 +20,7 @@ use anchor_lang::prelude::*;
 use jet_metadata::MarginAdapterMetadata;
 
 use crate::adapter::{self, CompactAccountMeta, InvokeAdapter};
-use crate::{AdapterResult, ErrorCode, MarginAccount};
+use crate::MarginAccount;
 
 #[derive(Accounts)]
 pub struct AccountingInvoke<'info> {
@@ -42,7 +42,7 @@ pub fn accounting_invoke_handler<'info>(
     account_metas: Vec<CompactAccountMeta>,
     data: Vec<u8>,
 ) -> Result<()> {
-    let result = adapter::invoke(
+    adapter::invoke(
         &InvokeAdapter {
             margin_account: &ctx.accounts.margin_account,
             adapter_program: &ctx.accounts.adapter_program,
@@ -50,14 +50,5 @@ pub fn accounting_invoke_handler<'info>(
         },
         account_metas,
         data,
-    )?;
-
-    match result {
-        AdapterResult::NewBalanceChange(_) => {
-            msg!("New balance changes may only be realized through either adapter_invoke or liquidate_invoke, depending on context.");
-            err!(ErrorCode::UnauthorizedInvocation)
-        }
-        AdapterResult::PriceChange(_) => Ok(()),
-        AdapterResult::PriorBalanceChange(_) => Ok(()),
-    }
+    )
 }
