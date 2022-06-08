@@ -984,7 +984,9 @@ mod tests {
         )
         .unwrap();
         acc.verify_healthy_positions().unwrap();
+        acc.verify_unhealthy_positions().unwrap_err();
         acc.set_position_balance(&key, &key, 1).unwrap();
+        acc.verify_healthy_positions().unwrap_err();
         acc.verify_unhealthy_positions().unwrap();
     }
 }
