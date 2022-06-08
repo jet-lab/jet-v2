@@ -1,5 +1,0 @@
-#!/usr/bin/env sh
-. "$(dirname -- "$0")/_/husky.sh"
-
-# Personalize precommit hooks in this file. For example:
-# npm run precommit

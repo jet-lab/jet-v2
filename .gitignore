@@ -10,4 +10,4 @@ target
 **/*.rs.bk
 node_modules
 lcov.info
-.husky/pre-commit
+.husky
