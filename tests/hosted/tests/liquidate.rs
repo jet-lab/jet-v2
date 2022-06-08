@@ -1,5 +1,6 @@
 use anyhow::Result;
 
+use hosted_tests::mock_adapter_ix::noop;
 use hosted_tests::setup_helper::{setup_token, setup_user};
 use jet_margin::ErrorCode;
 use jet_simulation::tokens::TokenPrice;
@@ -83,6 +84,57 @@ async fn scenario1() -> Result<Scenario1> {
     })
 }
 
+async fn scenario1() -> Result<Scenario1> {
+    let ctx = test_context().await;
+    let usdc = setup_token(ctx, 6, 10_000, 1).await?;
+    let tsol = setup_token(ctx, 9, 9_500, 100).await?;
+
+    // Create wallet for the liquidator
+    let liquidator_wallet = ctx.create_liquidator(100).await?;
+    let user_a = setup_user(
+        ctx,
+        &liquidator_wallet,
+        vec![(usdc, 5_000_000 * ONE_USDC, 5_000_000 * ONE_USDC)],
+    )
+    .await?;
+    let user_b = setup_user(ctx, &liquidator_wallet, vec![(tsol, 0, 10_000 * ONE_TSOL)]).await?;
+
+    // Have each user borrow the other's funds
+    user_a.user.borrow(&tsol, 8000 * ONE_TSOL).await?;
+    user_b.user.borrow(&usdc, 3_500_000 * ONE_USDC).await?;
+
+    // User A deposited 5'000'000 USD worth, borrowed 800'000 USD worth
+    // User B deposited 1'000'000 USD worth, borrowed 3'500'000 USD worth
+    // TSOL collateral counts 95%
+    // Total collateral = 3'500'000 + 1'000'000 * 95% = 4'450'000
+    // Total claims = 3'500'000
+    // C ratio = 127%
+
+    ctx.tokens
+        .set_price(
+            // Set price to 80 USD +- 1
+            &tsol,
+            &TokenPrice {
+                exponent: -8,
+                price: 8_000_000_000,
+                confidence: 100_000_000,
+                twap: 8_000_000_000,
+            },
+        )
+        .await?;
+
+    user_a.user.refresh_all_pool_positions().await?;
+    user_b.user.refresh_all_pool_positions().await?;
+
+    Ok(Scenario1 {
+        user_b: user_b.user,
+        user_a_liq: user_a.liquidator,
+        user_b_liq: user_b.liquidator,
+        usdc,
+        liquidator: liquidator_wallet.pubkey(),
+    })
+}
+
 /// Account liquidations
 ///
 /// This test creates 2 users who deposit collateral and take loans in the
@@ -99,6 +151,22 @@ async fn cannot_liquidate_healthy_user() -> Result<()> {
     assert_program_error!(ErrorCode::Healthy, result);
 
     Ok(())
+}
+
+#[tokio::test]
+#[serial]
+async fn can_liquidate_past_due_position_despite_sufficient_collateral() -> Result<()> {
+    let scen = scenario1().await?;
+
+    // A liquidator tries to liquidate User A, it should not be able to
+    let result = scen.user_a_liq.liquidate_begin().await;
+    assert_program_error!(ErrorCode::Healthy, result);
+
+    scen.user_a_liq.tx.create_send_confirm_tx(noop(AdapterResult {
+
+    }));
+
+    scen.user_a_liq.liquidate_begin().await
 }
 
 #[tokio::test]

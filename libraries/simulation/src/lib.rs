@@ -31,7 +31,7 @@ pub mod swap;
 
 pub use runtime::{EntryFn, TestRuntime};
 
-async fn send_and_confirm(
+pub async fn send_and_confirm(
     rpc: &std::sync::Arc<dyn jet_solana_rpc_api::SolanaRpcClient>,
     instructions: &[solana_sdk::instruction::Instruction],
     signers: &[&solana_sdk::signature::Keypair],

@@ -14,7 +14,7 @@ pub fn signer() -> (Pubkey, u8) {
 pub mod mock_adapter {
     use super::*;
 
-    pub fn init_mint(_ctx: Context<InitMint>, _index: u8) -> Result<()> {
+    pub fn init_mint(_ctx: Context<InitMint>, index: u8) -> Result<()> {
         Ok(())
     }
 
@@ -87,10 +87,10 @@ pub struct InitMint<'info> {
     mint: Account<'info, Mint>,
 
     authority: AccountInfo<'info>,
-    token_program: Program<'info, Token>,
-    system_program: Program<'info, Token>,
     #[account(mut)]
     payer: Signer<'info>,
+    token_program: Program<'info, Token>,
+    system_program: Program<'info, Token>,
     rent: Sysvar<'info, Rent>,
 }
 

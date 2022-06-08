@@ -9,10 +9,11 @@ use solana_sdk::signature::{Keypair, Signer};
 
 use jet_margin_pool::{MarginPoolConfig, PoolFlags};
 use jet_metadata::TokenKind;
-use jet_simulation::create_wallet;
+use jet_simulation::{create_wallet, send_and_confirm};
 use jet_simulation::margin::{MarginPoolSetupInfo, MarginUser};
 
 use crate::context::{test_context, MarginTestContext};
+use crate::mock_adapter_ix;
 
 const DEFAULT_POOL_CONFIG: MarginPoolConfig = MarginPoolConfig {
     borrow_rate_0: 10,
@@ -93,6 +94,52 @@ pub async fn setup_token(
 
     Ok(token)
 }
+
+
+
+pub async fn setup_mock_claim(
+    ctx: &MarginTestContext,
+    decimals: u8,
+    collateral_weight: u16,
+    price: i64,
+) -> Result<Pubkey, Error> {
+    let (ix, token) = mock_adapter_ix::init_mint(0, ctx.rpc.payer().pubkey());
+    send_and_confirm(&ctx.rpc, &[ix], &[&ctx.rpc.payer()]).await?;
+
+    ctx.margin
+        .configure_token(
+            &token,
+            &TokenConfiguration {
+                pyth_price: Some(token_oracle.price),
+                pyth_product: Some(token_oracle.product),
+                pool_config: Some(DEFAULT_POOL_CONFIG),
+                metadata: Some(TokenMetadataParams {
+                    token_kind: TokenKind::Collateral,
+                    collateral_weight,
+                    collateral_max_staleness: 0,
+                }),
+                ..Default::default()
+            },
+        )
+        .await?;
+
+    // set price to $1
+    ctx.tokens
+        .set_price(
+            &token,
+            &TokenPrice {
+                exponent: -8,
+                price: price * (100_000_000 as i64),
+                confidence: 1_000_000,
+                twap: 100_000_000,
+            },
+        )
+        .await?;
+
+    Ok(token)
+}
+
+
 /// (token_mint, balance in wallet, balance in pools)
 pub async fn setup_user(
     ctx: &MarginTestContext,

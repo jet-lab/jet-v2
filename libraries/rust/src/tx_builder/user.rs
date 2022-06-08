@@ -61,7 +61,7 @@ impl MarginTxBuilder {
         }
     }
 
-    async fn create_transaction(&self, instructions: &[Instruction]) -> Result<Transaction> {
+    pub async fn create_transaction(&self, instructions: &[Instruction]) -> Result<Transaction> {
         let signers = self.signer.as_ref().map(|s| vec![s]).unwrap_or_default();
 
         self.rpc.create_transaction(&signers, instructions).await

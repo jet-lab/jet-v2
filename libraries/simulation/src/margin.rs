@@ -138,6 +138,24 @@ impl MarginClient {
         Ok(())
     }
 
+    /// configure a token that's not used for 
+    pub async fn configure_raw_token(
+        &self,
+        token: &Pubkey,
+        config: &TokenConfiguration,
+    ) -> Result<(), Error> {
+        let pool = MarginPoolAccounts::derive_from_token(*token);
+        let ix = jet_margin_sdk::instructions::control::configure_token(
+            &pool,
+            &self.rpc.payer().pubkey(),
+            config,
+        );
+
+        send_and_confirm(&self.rpc, &[ix], &[]).await?;
+
+        Ok(())
+    }
+
     /// Create a new margin pool for a token
     pub async fn create_pool(&self, setup_info: &MarginPoolSetupInfo) -> Result<(), Error> {
         let pool = MarginPoolAccounts::derive_from_token(setup_info.token);
@@ -188,7 +206,7 @@ impl MarginClient {
 }
 
 pub struct MarginUser {
-    tx: MarginTxBuilder,
+    pub tx: MarginTxBuilder,
     rpc: Arc<dyn SolanaRpcClient>,
 }
 
@@ -197,9 +215,14 @@ impl MarginUser {
         let _ = self.rpc.send_and_confirm_transaction(&tx).await?;
         Ok(())
     }
-}
 
-impl MarginUser {
+    pub async fn create_send_confirm_tx(&self, instructions: &[Instruction]) -> Result<(), Error> {
+        let tx = self.tx.create_transaction(instructions).await?;
+        self.rpc.send_and_confirm_transaction(&tx).await?;
+        
+        Ok(())
+    }
+
     pub fn owner(&self) -> &Pubkey {
         self.tx.owner()
     }
