@@ -110,7 +110,7 @@ pub fn deposit_handler(ctx: Context<Deposit>, token_amount: u64) -> Result<()> {
 
     emit!(events::Deposit {
         margin_pool: ctx.accounts.margin_pool.key(),
-        depositor: ctx.accounts.depositor.key(),
+        user: ctx.accounts.depositor.key(),
         source: ctx.accounts.source.key(),
         destination: ctx.accounts.destination.key(),
         deposit_tokens: deposit_amount.tokens,

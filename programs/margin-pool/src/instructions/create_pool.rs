@@ -15,6 +15,8 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+use std::ops::Deref;
+
 use anchor_lang::prelude::*;
 use anchor_spl::token::{Mint, Token, TokenAccount};
 
@@ -99,6 +101,8 @@ pub fn create_pool_handler(ctx: Context<CreatePool>) -> Result<()> {
     let clock = Clock::get()?;
     pool.accrued_until = clock.unix_timestamp;
 
+    let pool = &*ctx.accounts.margin_pool;
+
     emit!(events::PoolCreated {
         margin_pool: ctx.accounts.margin_pool.key(),
         vault: ctx.accounts.vault.key(),
@@ -107,7 +111,7 @@ pub fn create_pool_handler(ctx: Context<CreatePool>) -> Result<()> {
         token_mint: ctx.accounts.token_mint.key(),
         authority: ctx.accounts.authority.key(),
         payer: ctx.accounts.payer.key(),
-        accured_until: clock.unix_timestamp,
+        summary: pool.deref().into(),
     });
 
     Ok(())

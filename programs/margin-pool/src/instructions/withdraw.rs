@@ -109,7 +109,7 @@ pub fn withdraw_handler(ctx: Context<Withdraw>, amount: Amount) -> Result<()> {
 
     emit!(events::Withdraw {
         margin_pool: ctx.accounts.margin_pool.key(),
-        depositor: ctx.accounts.depositor.key(),
+        user: ctx.accounts.depositor.key(),
         source: ctx.accounts.source.key(),
         destination: ctx.accounts.destination.key(),
         withdraw_tokens: withdraw_amount.tokens,

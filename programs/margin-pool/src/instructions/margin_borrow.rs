@@ -124,8 +124,8 @@ pub fn margin_borrow_handler(ctx: Context<MarginBorrow>, token_amount: u64) -> R
     })?;
 
     emit!(events::MarginBorrow {
-        margin_account: ctx.accounts.margin_account.key(),
         margin_pool: ctx.accounts.margin_pool.key(),
+        user: ctx.accounts.margin_account.key(),
         loan_account: ctx.accounts.loan_account.key(),
         deposit_account: ctx.accounts.deposit_account.key(),
         tokens: token_amount,
