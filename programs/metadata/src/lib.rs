@@ -130,9 +130,6 @@ pub enum TokenKind {
 
     /// The token represents a debt that needs to be repaid
     Claim,
-
-    /// The token represents a debt that needs to be repaid immediately
-    PastDueClaim,
 }
 
 impl Default for TokenKind {

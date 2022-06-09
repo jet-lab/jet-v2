@@ -17,15 +17,16 @@
 
 use anchor_lang::prelude::*;
 use bytemuck::{Contiguous, Pod, Zeroable};
+use jet_metadata::TokenKind;
 #[cfg(any(test, feature = "cli"))]
 use serde::ser::{Serialize, SerializeStruct, Serializer};
 
-use crate::{util::Require, ErrorCode, MAX_PRICE_QUOTE_AGE, MIN_COLLATERAL_RATIO};
+use crate::{util::Require, ErrorCode, MAX_PRICE_QUOTE_AGE, MIN_COLLATERAL_RATIO, PriceChangeInfo, MAX_ORACLE_CONFIDENCE, MAX_ORACLE_STALENESS};
 use jet_proto_math::Number128;
 use jet_proto_proc_macros::assert_size;
 
 use anchor_lang::Result as AnchorResult;
-use std::result::Result;
+use std::{result::Result, convert::TryFrom};
 
 const POS_PRICE_VALID: u8 = 1;
 
@@ -190,12 +191,12 @@ impl MarginAccount {
     pub fn set_position_price(
         &mut self,
         mint: &Pubkey,
-        adapter: &Pubkey,
         price: &PriceInfo,
     ) -> Result<(), ErrorCode> {
-        let position = self.position_list_mut().get_mut(mint).require()?;
-
-        position.set_price(adapter, price)
+        self.position_list_mut()
+            .get_mut(mint)
+            .require()?
+            .set_price(price)
     }
 
     /// Check that the overall health of the account is acceptable, by comparing the
@@ -278,16 +279,15 @@ impl MarginAccount {
             //TODO user replays a loan but Claim still has a position.value()
             match (kind, stale_reason) {
                 (PositionKind::NoValue, _) => (),
-                (PositionKind::Claim, None) => claims += position.value(),
-                (PositionKind::PastDueClaim, None) => {
-                    claims += position.value();
-                    if position.balance > 0 {
+                (PositionKind::Claim, None) => {
+                    if position.balance > 0
+                        && position.flags.contains(AdapterPositionFlags::PAST_DUE)
+                    {
                         past_due = true;
                     }
+                    claims += position.value()
                 }
-                (PositionKind::Claim | PositionKind::PastDueClaim, Some(error)) => {
-                    return Err(error!(error))
-                }
+                (PositionKind::Claim, Some(error)) => return Err(error!(error)),
 
                 (PositionKind::Deposit, None) => fresh_collateral += position.collateral_value(),
                 (PositionKind::Deposit, Some(e)) => {
@@ -396,6 +396,28 @@ impl PriceInfo {
     }
 }
 
+impl TryFrom<PriceChangeInfo> for PriceInfo {
+    type Error = anchor_lang::error::Error;
+
+    fn try_from(value: PriceChangeInfo) -> AnchorResult<Self> {
+        let clock = Clock::get()?;
+        let max_confidence = Number128::from_bps(MAX_ORACLE_CONFIDENCE);
+
+        let twap = Number128::from_decimal(value.twap, value.exponent);
+        let confidence = Number128::from_decimal(value.confidence, value.exponent);
+
+        let price = match (confidence, value.publish_time) {
+            (c, _) if (c / twap) > max_confidence => PriceInfo::new_invalid(),
+            (_, publish_time) if (clock.unix_timestamp - publish_time) > MAX_ORACLE_STALENESS => {
+                PriceInfo::new_invalid()
+            }
+            _ => PriceInfo::new_valid(value.exponent, value.value, clock.unix_timestamp as u64),
+        };
+
+        Ok(price)
+    }
+}
+
 #[derive(Debug, Clone, Copy, Contiguous, Eq, PartialEq)]
 #[repr(u32)]
 pub enum PositionKind {
@@ -407,9 +429,16 @@ pub enum PositionKind {
 
     /// The position contains a balance of tokens that are owed as a part of some debt.
     Claim,
+}
 
-    /// Debt that must be repaid immediately
-    PastDueClaim,
+impl From<TokenKind> for PositionKind {
+    fn from(token: TokenKind) -> Self {
+        match token {
+            TokenKind::NonCollateral => PositionKind::NoValue,
+            TokenKind::Collateral => PositionKind::Deposit,
+            TokenKind::Claim => PositionKind::Claim,
+        }
+    }
 }
 
 #[assert_size(192)]
@@ -461,6 +490,12 @@ bitflags::bitflags! {
         /// The position may never be removed by the user, even if the balance remains at zero,
         /// until the adapter explicitly unsets this flag.
         const REQUIRED = 1 << 0;
+
+        /// Only applies to claims
+        /// For any other position, this can be set, but it will be ignored.
+        /// The claim must be repaid immediately.
+        /// The account will be considered unhealty if there is any balance on this position.
+        const PAST_DUE = 1 << 1;
     }
 }
 
@@ -487,11 +522,7 @@ impl AccountPosition {
     }
 
     /// Update the price for this position
-    pub fn set_price(&mut self, adapter: &Pubkey, price: &PriceInfo) -> Result<(), ErrorCode> {
-        if self.adapter != *adapter {
-            return Err(ErrorCode::InvalidPriceAdapter);
-        }
-
+    pub fn set_price(&mut self, price: &PriceInfo) -> Result<(), ErrorCode> {
         self.price = *price;
         self.calculate_value();
 
@@ -970,20 +1001,16 @@ mod tests {
         };
         let collateral = register_position(&mut acc, 0, TokenKind::Collateral);
         let claim = register_position(&mut acc, 1, TokenKind::Claim);
-        let past_due_claim = register_position(&mut acc, 2, TokenKind::PastDueClaim);
         set_price(&mut acc, collateral, 100);
         set_price(&mut acc, claim, 100);
-        set_price(&mut acc, past_due_claim, 100);
         acc.set_position_balance(&claim, &claim, 1).unwrap();
         assert_unhealthy(&acc);
         // show that this collateral is sufficient to cover the debt
         acc.set_position_balance(&collateral, &collateral, 100)
             .unwrap();
         assert_healthy(&acc);
-        // but an equivalent debt that is past due results in bad health
-        acc.set_position_balance(&past_due_claim, &past_due_claim, 1)
-            .unwrap();
-        acc.set_position_balance(&claim, &claim, 0).unwrap();
+        // but when past due, the account is unhealthy
+        acc.get_position_mut(&claim).require().unwrap().flags |= AdapterPositionFlags::PAST_DUE;
         assert_unhealthy(&acc);
     }
 
@@ -1008,7 +1035,7 @@ mod tests {
     fn set_price(acc: &mut MarginAccount, key: Pubkey, price: i64) {
         acc.set_position_price(
             &key,
-            &key,
+            // &key,
             &PriceInfo {
                 value: price,
                 timestamp: crate::util::get_timestamp(),

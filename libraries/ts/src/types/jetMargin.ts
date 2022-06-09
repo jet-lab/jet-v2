@@ -578,7 +578,7 @@ export type JetMargin = {
             name: "PositionNotOwned"
           },
           {
-            name: "InvalidPriceAdapter"
+            name: "InvalidPositionAdapter"
           },
           {
             name: "OutdatedPrice"
@@ -1219,7 +1219,7 @@ export const IDL: JetMargin = {
             name: "PositionNotOwned"
           },
           {
-            name: "InvalidPriceAdapter"
+            name: "InvalidPositionAdapter"
           },
           {
             name: "OutdatedPrice"

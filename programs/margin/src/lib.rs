@@ -195,9 +195,9 @@ pub enum ErrorCode {
     #[msg("attempting to close a position that is required by the adapter")]
     CloseRequiredPosition,
 
-    /// 141020 - The adapter providing a price value is incorrect for an asset
-    #[msg("wrong adapter to provide the price")]
-    InvalidPriceAdapter = 135_020,
+    /// 141020 - The adapter providing a position change is not authorized for this asset
+    #[msg("wrong adapter to modify the position")]
+    InvalidPositionAdapter = 135_020,
 
     /// 141021 - A position price is not up-to-date
     #[msg("a position price is outdated")]

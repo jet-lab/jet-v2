@@ -15,17 +15,16 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+use std::convert::TryInto;
+
 use anchor_lang::{
     prelude::*,
     solana_program::{instruction::Instruction, program},
 };
 use anchor_spl::token::TokenAccount;
 
-use jet_proto_math::Number128;
-
 use crate::{
-    util::Require, AccountPosition, AdapterPositionFlags, ErrorCode, MarginAccount, PriceInfo,
-    SignerSeeds, MAX_ORACLE_CONFIDENCE, MAX_ORACLE_STALENESS,
+    util::Require, AccountPosition, AdapterPositionFlags, ErrorCode, MarginAccount, SignerSeeds,
 };
 
 pub struct InvokeAdapter<'a, 'info> {
@@ -153,34 +152,23 @@ fn construct_invocation<'info>(
 fn handle_adapter_result(ctx: &InvokeAdapter) -> Result<()> {
     update_balances(ctx)?;
 
-    let result = match program::get_return_data() {
-        None => AdapterResult::default(),
-        Some((program_id, _)) if program_id != ctx.adapter_program.key() => {
-            AdapterResult::default()
-        }
-        Some((_, data)) => AdapterResult::deserialize(&mut &data[..])?,
-    };
-
-    let mut margin_account = ctx.margin_account.load_mut()?;
-    for (mint, changes) in result.position_changes {
-        let mut position = margin_account.get_position_mut(&mint);
-        for change in changes {
-            match change {
-                PositionChange::Price(px) => {
-                    if let Some(pos) = &mut position {
-                        update_price(ctx, *pos, px)?;
+    match program::get_return_data() {
+        None => (),
+        Some((program_id, _)) if program_id != ctx.adapter_program.key() => (),
+        Some((program_id, data)) => {
+            let result = AdapterResult::deserialize(&mut &data[..])?;
+            let mut margin_account = ctx.margin_account.load_mut()?;
+            for (mint, changes) in result.position_changes {
+                let position = margin_account.get_position_mut(&mint);
+                match position {
+                    Some(p) if p.adapter != program_id => {
+                        return err!(ErrorCode::InvalidPositionAdapter)
                     }
-                }
-                PositionChange::Flags(flags, true) => position.require_mut()?.flags |= flags,
-                PositionChange::Flags(flags, false) => position.require_mut()?.flags &= !flags,
-                PositionChange::Expect(pubkey) => {
-                    if position.require_mut()?.address != pubkey {
-                        return Err(error!(ErrorCode::PositionNotRegistered));
-                    }
+                    _ => apply_changes(position, changes)?,
                 }
             }
         }
-    }
+    };
 
     Ok(())
 }
@@ -206,26 +194,26 @@ fn update_balances(ctx: &InvokeAdapter) -> Result<()> {
     Ok(())
 }
 
-fn update_price(
-    ctx: &InvokeAdapter,
-    position: &mut AccountPosition,
-    entry: PriceChangeInfo,
+fn apply_changes(
+    mut position: Option<&mut AccountPosition>,
+    changes: Vec<PositionChange>,
 ) -> Result<()> {
-    let clock = Clock::get()?;
-    let max_confidence = Number128::from_bps(MAX_ORACLE_CONFIDENCE);
-
-    let twap = Number128::from_decimal(entry.twap, entry.exponent);
-    let confidence = Number128::from_decimal(entry.confidence, entry.exponent);
-
-    let price = match (confidence, entry.publish_time) {
-        (c, _) if (c / twap) > max_confidence => PriceInfo::new_invalid(),
-        (_, publish_time) if (clock.unix_timestamp - publish_time) > MAX_ORACLE_STALENESS => {
-            PriceInfo::new_invalid()
+    for change in changes {
+        match change {
+            PositionChange::Price(px) => {
+                if let Some(pos) = &mut position {
+                    pos.set_price(&px.try_into()?)?;
+                }
+            }
+            PositionChange::Flags(flags, true) => position.require_mut()?.flags |= flags,
+            PositionChange::Flags(flags, false) => position.require_mut()?.flags &= !flags,
+            PositionChange::Expect(pubkey) => {
+                if position.require_mut()?.address != pubkey {
+                    return Err(error!(ErrorCode::PositionNotRegistered));
+                }
+            }
         }
-        _ => PriceInfo::new_valid(entry.exponent, entry.value, clock.unix_timestamp as u64),
-    };
+    }
 
-    position
-        .set_price(ctx.adapter_program.key, &price)
-        .map_err(|e| error!(e))
+    Ok(())
 }

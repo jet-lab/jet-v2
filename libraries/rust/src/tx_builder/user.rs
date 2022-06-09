@@ -131,7 +131,6 @@ impl MarginTxBuilder {
                 self.ix.get_token_account_address(&pool.loan_note_mint),
                 pool.loan_note_mint,
             ),
-            PositionKind::PastDueClaim => panic!("invalid position kind for margin pools"),
         };
         self.create_transaction(&[self.ix.close_position(mint, account)])
             .await

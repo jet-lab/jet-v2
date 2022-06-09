@@ -18,9 +18,9 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{Mint, Token, TokenAccount};
 
-use jet_metadata::{PositionTokenMetadata, TokenKind};
+use jet_metadata::PositionTokenMetadata;
 
-use crate::{MarginAccount, PositionKind};
+use crate::MarginAccount;
 
 #[derive(Accounts)]
 pub struct RegisterPosition<'info> {
@@ -78,15 +78,4 @@ pub fn register_position_handler(ctx: Context<RegisterPosition>) -> Result<()> {
     )?;
 
     Ok(())
-}
-
-impl From<TokenKind> for PositionKind {
-    fn from(token: TokenKind) -> Self {
-        match token {
-            TokenKind::NonCollateral => PositionKind::NoValue,
-            TokenKind::Collateral => PositionKind::Deposit,
-            TokenKind::Claim => PositionKind::Claim,
-            TokenKind::PastDueClaim => PositionKind::PastDueClaim,
-        }
-    }
 }
