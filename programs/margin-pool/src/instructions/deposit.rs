@@ -15,10 +15,12 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+use std::ops::Deref;
+
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, MintTo, Token, Transfer};
 
-use crate::{state::*, AmountKind};
+use crate::{events, state::*, AmountKind};
 use crate::{Amount, ErrorCode};
 
 #[derive(Accounts)]
@@ -105,6 +107,16 @@ pub fn deposit_handler(ctx: Context<Deposit>, token_amount: u64) -> Result<()> {
         ctx.accounts.mint_note_context().with_signer(&signer),
         deposit_amount.notes,
     )?;
+
+    emit!(events::Deposit {
+        margin_pool: ctx.accounts.margin_pool.key(),
+        depositor: ctx.accounts.depositor.key(),
+        source: ctx.accounts.source.key(),
+        destination: ctx.accounts.destination.key(),
+        deposit_tokens: deposit_amount.tokens,
+        deposit_notes: deposit_amount.notes,
+        summary: pool.deref().into(),
+    });
 
     Ok(())
 }

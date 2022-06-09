@@ -22,6 +22,7 @@ use anchor_spl::token::Token;
 
 use jet_margin::MarginAccount;
 
+use crate::events;
 use crate::state::*;
 use crate::Amount;
 
@@ -61,6 +62,10 @@ pub struct MarginWithdraw<'info> {
 }
 
 pub fn margin_withdraw_handler(ctx: Context<MarginWithdraw>, amount: Amount) -> Result<()> {
+    emit!(events::MarginWithdraw {
+        margin_account: ctx.accounts.margin_account.key(),
+    });
+
     // PERF: ?
     // just forward to normal withdraw handling
     super::withdraw_handler(

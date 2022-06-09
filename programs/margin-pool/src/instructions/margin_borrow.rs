@@ -15,12 +15,14 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+use std::ops::Deref;
+
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, MintTo, Token, TokenAccount};
 
 use jet_margin::{AdapterResult, MarginAccount, PositionChange};
 
-use crate::{state::*, AmountKind};
+use crate::{events, state::*, AmountKind};
 use crate::{Amount, ErrorCode};
 
 #[derive(Accounts)]
@@ -120,6 +122,17 @@ pub fn margin_borrow_handler(ctx: Context<MarginBorrow>, token_amount: u64) -> R
             vec![PositionChange::Expect(ctx.accounts.loan_account.key())],
         )],
     })?;
+
+    emit!(events::MarginBorrow {
+        margin_account: ctx.accounts.margin_account.key(),
+        margin_pool: ctx.accounts.margin_pool.key(),
+        loan_account: ctx.accounts.loan_account.key(),
+        deposit_account: ctx.accounts.deposit_account.key(),
+        tokens: token_amount,
+        loan_notes: borrow_amount.notes,
+        deposit_notes: deposit_amount.notes,
+        summary: pool.deref().into(),
+    });
 
     Ok(())
 }
