@@ -48,6 +48,7 @@ export interface MarginOracleConfig {
 
 export interface MarginPoolConfig {
   symbol: MarginPools
+  name: string
   tokenMint: Address
   oracle: Address
   product: Address
