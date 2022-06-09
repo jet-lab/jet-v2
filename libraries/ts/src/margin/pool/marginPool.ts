@@ -8,7 +8,7 @@ import { MarginPrograms } from "../marginClient"
 import { findDerivedAccount } from "../../utils/pda"
 import { AssociatedToken, TokenAmount } from "../../token"
 import { MarginPoolConfigData, MarginPoolData } from "./state"
-import { MarginPoolConfig, MarginTokenConfig, MarginTokens } from "../config"
+import { MarginPoolConfig, MarginPools, MarginTokenConfig, MarginTokens } from "../config"
 import { PoolAmount } from "./poolAmount"
 import { parsePriceData, PriceData } from "@pythnetwork/client"
 
@@ -49,8 +49,8 @@ export class MarginPool {
   get name(): string | undefined {
     return this.tokenConfig?.name
   }
-  get symbol(): MarginTokens | undefined {
-    return this.tokenConfig?.symbol
+  get symbol(): MarginPools | undefined {
+    return this.tokenConfig?.symbol as MarginPools
   }
   get availableLiquidity(): TokenAmount {
     return this.info?.vault.amount ?? TokenAmount.zero(this.tokenConfig?.decimals ?? 0)
