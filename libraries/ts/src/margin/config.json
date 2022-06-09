@@ -111,6 +111,7 @@
     "pools": {
       "BTC": {
         "symbol": "BTC",
+        "name": "Bitcoin",
         "tokenMint": "EDg8oL2FoK7pmCvR8iRGmbW2HioUaDNWRihkQA5rEqDj",
         "oracle": "GJp622VronyrMkbS423pVgdx19FwCEVzNfMvDbrRriV1",
         "product": "5MhM4ooa18waRNZhkg99YF5W5TuXRmTokkL9qtcztXUe",
@@ -118,6 +119,7 @@
       },
       "ETH": {
         "symbol": "ETH",
+        "name": "Ethereum",
         "tokenMint": "B3eLmrgua1VBJypACnNSTC9tUvQaXFUW36CFnGHAPGd7",
         "oracle": "F5fNwugAVRtJeJogyw3TxqesbFXu278tHnyFtH9ZoDFG",
         "product": "87x7TCN8iXBi37MPhUmMvVWAjho7RquR2KtfmcSXCFJh",
@@ -125,6 +127,7 @@
       },
       "SOL": {
         "symbol": "SOL",
+        "name": "Solana",
         "tokenMint": "So11111111111111111111111111111111111111112",
         "oracle": "3x8ApfZMMmT33FP4EWBNPCxvyBwzj7JJGuesxiFrGmUG",
         "product": "3QHdRrzVGrzKmAzdFh5EpSwoaUq5xEbFxJzq4YtQoAoa",
@@ -132,6 +135,7 @@
       },
       "SRM": {
         "symbol": "SRM",
+        "name": "Serum",
         "tokenMint": "5zq1tdJfRZ8boTGjKE9dCA77nyFEm4c1uji8Q3nfWfaY",
         "oracle": "JDhzaj9F3Fh5kbDCy94qPReC6v8STLWTaUy94S9CtRUC",
         "product": "4rmzFz9BazqhXEXo9BS2Nvcq1TRemE58Us5uz6ZANmwR",
@@ -139,6 +143,7 @@
       },
       "USDC": {
         "symbol": "USDC",
+        "name": "USD Coin",
         "tokenMint": "J9n7rmgGgaiysVGnspchnCk4riWC9qDeh9wp8rc2PzGG",
         "oracle": "AQGSisqrjZMKaxiiE3xGJ5aRtf8zzKs5MQUmXX6F6JAm",
         "product": "2wsVafE5PnSaaawN38JhEUPeRFMfLEKa7EZyo476Hoc3",
@@ -341,6 +346,7 @@
     "pools": {
       "BTC": {
         "symbol": "BTC",
+        "name": "Bitcoin",
         "tokenMint": "EDg8oL2FoK7pmCvR8iRGmbW2HioUaDNWRihkQA5rEqDj",
         "oracle": "GJp622VronyrMkbS423pVgdx19FwCEVzNfMvDbrRriV1",
         "product": "5MhM4ooa18waRNZhkg99YF5W5TuXRmTokkL9qtcztXUe",
@@ -348,6 +354,7 @@
       },
       "ETH": {
         "symbol": "ETH",
+        "name": "Ethereum",
         "tokenMint": "B3eLmrgua1VBJypACnNSTC9tUvQaXFUW36CFnGHAPGd7",
         "oracle": "F5fNwugAVRtJeJogyw3TxqesbFXu278tHnyFtH9ZoDFG",
         "product": "87x7TCN8iXBi37MPhUmMvVWAjho7RquR2KtfmcSXCFJh",
@@ -355,6 +362,7 @@
       },
       "SOL": {
         "symbol": "SOL",
+        "name": "Solana",
         "tokenMint": "So11111111111111111111111111111111111111112",
         "oracle": "3x8ApfZMMmT33FP4EWBNPCxvyBwzj7JJGuesxiFrGmUG",
         "product": "3QHdRrzVGrzKmAzdFh5EpSwoaUq5xEbFxJzq4YtQoAoa",
@@ -362,6 +370,7 @@
       },
       "SRM": {
         "symbol": "SRM",
+        "name": "Serum",
         "tokenMint": "5zq1tdJfRZ8boTGjKE9dCA77nyFEm4c1uji8Q3nfWfaY",
         "oracle": "JDhzaj9F3Fh5kbDCy94qPReC6v8STLWTaUy94S9CtRUC",
         "product": "4rmzFz9BazqhXEXo9BS2Nvcq1TRemE58Us5uz6ZANmwR",
@@ -369,6 +378,7 @@
       },
       "USDC": {
         "symbol": "USDC",
+        "name": "USD Coin",
         "tokenMint": "J9n7rmgGgaiysVGnspchnCk4riWC9qDeh9wp8rc2PzGG",
         "oracle": "AQGSisqrjZMKaxiiE3xGJ5aRtf8zzKs5MQUmXX6F6JAm",
         "product": "2wsVafE5PnSaaawN38JhEUPeRFMfLEKa7EZyo476Hoc3",
