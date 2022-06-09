@@ -29,13 +29,13 @@ To install Anchor please see the [Anchor Documentation](https://project-serum.gi
 Make sure you update Solana to the latest version
 
 ```
-sh -c "$(curl -sSfL https://release.solana.com/v1.9.2/install)"
+sh -c "$(curl -sSfL https://release.solana.com/v1.10.23/install)"
 ```
 
 Install anchor
 
 ```
-npm i @project-serum/anchor-cli@0.21.0 -g
+npm i @project-serum/anchor-cli@0.24.2 -g
 ```
 
 Install the project's node_modules
@@ -47,5 +47,6 @@ yarn
 Then run
 
 ```
-anchor test
+npm test
 ```
+to run the test suite
