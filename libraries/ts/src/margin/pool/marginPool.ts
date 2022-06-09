@@ -46,11 +46,11 @@ export class MarginPool {
   public addresses: MarginPoolAddresses
   public address: PublicKey
 
-  get name(): string {
-    return this.tokenConfig?.name ?? "N/A"
+  get name(): string | undefined {
+    return this.tokenConfig?.name
   }
-  get symbol(): string {
-    return this.tokenConfig?.symbol ?? "N/A"
+  get symbol(): MarginTokens | undefined {
+    return this.tokenConfig?.symbol
   }
   get availableLiquidity(): TokenAmount {
     return this.info?.vault.amount ?? TokenAmount.zero(this.tokenConfig?.decimals ?? 0)
@@ -72,9 +72,6 @@ export class MarginPool {
   }
   get borrowApr(): number {
     return MarginPool.getBorrowApr(this.depositCcRate, this.info?.marginPool.config.managementFeeRate ?? 0)
-  }
-  get liquidationPremium(): number {
-    return 0 // FIXME
   }
   get tokenPrice(): number {
     return this.info?.tokenPriceOracle.price ?? 0
