@@ -47,5 +47,6 @@ yarn
 Then run
 
 ```
-anchor test
+npm test
 ```
+to run the test suite
