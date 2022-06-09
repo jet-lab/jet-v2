@@ -21,12 +21,15 @@ use jet_metadata::TokenKind;
 #[cfg(any(test, feature = "cli"))]
 use serde::ser::{Serialize, SerializeStruct, Serializer};
 
-use crate::{util::Require, ErrorCode, MAX_PRICE_QUOTE_AGE, MIN_COLLATERAL_RATIO, PriceChangeInfo, MAX_ORACLE_CONFIDENCE, MAX_ORACLE_STALENESS};
+use crate::{
+    util::Require, ErrorCode, PriceChangeInfo, MAX_ORACLE_CONFIDENCE, MAX_ORACLE_STALENESS,
+    MAX_PRICE_QUOTE_AGE, MIN_COLLATERAL_RATIO,
+};
 use jet_proto_math::Number128;
 use jet_proto_proc_macros::assert_size;
 
 use anchor_lang::Result as AnchorResult;
-use std::{result::Result, convert::TryFrom};
+use std::{convert::TryFrom, result::Result};
 
 const POS_PRICE_VALID: u8 = 1;
 
