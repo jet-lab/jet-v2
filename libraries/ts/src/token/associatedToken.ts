@@ -91,61 +91,100 @@ export class AssociatedToken {
     connection: Connection,
     mints: Address[],
     decimals: number | number[],
-    owners: Address | Address[]
+    owner: Address
   ): Promise<AssociatedToken[]> {
-    if (Array.isArray(owners) && owners.length !== mints.length) {
-      throw new Error("Owners array length does not equal mints array length")
-    }
-    if (Array.isArray(decimals) && decimals.length !== mints.length) {
-      throw new Error("Decimals array length does not equal mints array length")
-    }
-
     const addresses: PublicKey[] = []
     for (let i = 0; i < mints.length; i++) {
       const mint = mints[i]
-      const owner = Array.isArray(owners) ? owners[i] : owners
       addresses.push(AssociatedToken.derive(mint, owner))
     }
 
     return await this.loadMultipleAux(connection, addresses, decimals)
   }
 
-  /** Loads multiple token accounts. If the native mint is provided, loads the native SOL balance of the owner instead. */
+  /**
+   * Loads multiple associated token accounts by owner.
+   * If the native mint is provided, loads the native SOL balance of the owner instead.
+   * If a mints array is not provided, loads all associated token accounts and the SOL balance of the owner. */
   static async loadMultipleOrNative(
     connection: Connection,
-    mints: Address[],
-    decimals: number | number[],
-    owners: Address | Address[]
+    mints: Address[] | undefined,
+    decimals: number | number[] | undefined,
+    owner: Address
   ): Promise<AssociatedToken[]> {
-    if (Array.isArray(owners) && owners.length !== mints.length) {
-      throw new Error("Owners array length does not equal mints array length")
-    }
-    if (Array.isArray(decimals) && decimals.length !== mints.length) {
+    if (Array.isArray(decimals) && mints !== undefined && decimals.length !== mints.length) {
       throw new Error("Decimals array length does not equal mints array length")
     }
+    const ownerAddress = translateAddress(owner)
 
-    const mintAddresses = mints.map(translateAddress)
-    const addresses: PublicKey[] = []
-    for (let i = 0; i < mintAddresses.length; i++) {
-      const mint = mintAddresses[i]
-      const owner = translateAddress(Array.isArray(owners) ? owners[i] : owners)
+    let addresses: PublicKey[]
+    let accountInfos: (AccountInfo<Buffer> | null)[] | undefined
+    if (mints) {
+      addresses = []
+      const mintAddresses = mints.map(translateAddress)
+      for (let i = 0; i < mintAddresses.length; i++) {
+        const mint = mintAddresses[i]
+        if (mint.equals(NATIVE_MINT)) {
+          // Load the owner and read their SOL balance
+          addresses.push(ownerAddress)
+        } else {
+          // Load the token account
+          addresses.push(AssociatedToken.derive(mint, ownerAddress))
+        }
+      }
+      accountInfos = await connection.getMultipleAccountsInfo(addresses)
+    } else {
+      const { value } = await connection.getTokenAccountsByOwner(ownerAddress, { programId: TOKEN_PROGRAM_ID })
+      accountInfos = value.map(acc => acc.account)
+      addresses = value.map(acc => acc.pubkey)
+      mints = accountInfos.map(acc => (acc && AccountLayout.decode(acc.data).mint) ?? PublicKey.default)
 
-      if (mint.equals(NATIVE_MINT)) {
-        // Load the owner and read their SOL balance
-        addresses.push(owner)
-      } else {
-        // Load the token account
-        addresses.push(AssociatedToken.derive(mint, owner))
+      // Add the users native SOL account
+      const emptyOwnerAccount = {
+        data: Buffer.alloc(0),
+        executable: false,
+        owner: SystemProgram.programId,
+        lamports: 0
+      }
+      const ownerAccount = (await connection.getAccountInfo(ownerAddress)) ?? emptyOwnerAccount
+      accountInfos.push(ownerAccount)
+      addresses.push(ownerAddress)
+      mints.push(NATIVE_MINT)
+    }
+
+    if (decimals === undefined) {
+      decimals = []
+      const mintInfos = await connection.getMultipleAccountsInfo(mints.map(translateAddress))
+      for (let i = 0; i < mintInfos.length; i++) {
+        const mintInfo = mintInfos[i]
+        if (translateAddress(mints[i]).equals(NATIVE_MINT)) {
+          decimals.push(this.NATIVE_DECIMALS)
+        } else if (translateAddress(mints[i]).equals(PublicKey.default)) {
+          decimals.push(0)
+        } else if (mintInfo === null) {
+          decimals.push(0)
+        } else {
+          const mint = MintLayout.decode(mintInfo.data)
+          decimals.push(mint.decimals)
+        }
       }
     }
 
-    const infos = await connection.getMultipleAccountsInfo(addresses)
     const accounts: AssociatedToken[] = []
-    for (let i = 0; i < mintAddresses.length; i++) {
-      const mint = mintAddresses[i]
+    for (let i = 0; i < mints.length; i++) {
+      const mint = translateAddress(mints[i])
       const address = addresses[i]
       const decimal = Array.isArray(decimals) ? decimals[i] : decimals
-      const info = infos[i]
+      const info = accountInfos[i]
+      const associatedTokenAddress = AssociatedToken.derive(mint, ownerAddress)
+
+      // Exlude non-associated and non wallet balances tokens accounts and
+      const isAssociatedtoken =
+        associatedTokenAddress.equals(address) || (mint.equals(NATIVE_MINT) && address.equals(ownerAddress))
+      if (!isAssociatedtoken) {
+        continue
+      }
+
       if (mint.equals(NATIVE_MINT)) {
         // Load the owner and read their SOL balance
         accounts.push(AssociatedToken.decodeNative(info, address))
@@ -160,7 +199,7 @@ export class AssociatedToken {
   static async loadMultipleAux(
     connection: Connection,
     addresses: Address[],
-    decimals: number | number[]
+    decimals?: number | number[]
   ): Promise<AssociatedToken[]> {
     if (Array.isArray(decimals) && decimals.length !== addresses.length) {
       throw new Error("Decimals array length does not equal addresses array length")
@@ -168,11 +207,33 @@ export class AssociatedToken {
 
     const pubkeys = addresses.map(address => translateAddress(address))
 
-    const accounts = await connection.getMultipleAccountsInfo(pubkeys)
-    return accounts.map((account, i) => {
+    const accountInfos = await connection.getMultipleAccountsInfo(pubkeys)
+    if (decimals === undefined) {
+      decimals = []
+      const mintPubkeys = accountInfos.map(acc => {
+        return (acc && AccountLayout.decode(acc.data).mint) ?? PublicKey.default
+      })
+      const mintInfos = await connection.getMultipleAccountsInfo(mintPubkeys)
+      for (let i = 0; i < mintInfos.length; i++) {
+        const mintInfo = mintInfos[i]
+        if (mintPubkeys[i].equals(PublicKey.default)) {
+          decimals.push(0)
+        } else if (mintInfo === null) {
+          decimals.push(0)
+        } else {
+          const mint = MintLayout.decode(mintInfo.data)
+          decimals.push(mint.decimals)
+        }
+      }
+    }
+
+    const accounts: AssociatedToken[] = []
+    for (let i = 0; i < pubkeys.length; i++) {
       const decimal = Array.isArray(decimals) ? decimals[i] : decimals
-      return AssociatedToken.decodeAccount(account, pubkeys[i], decimal)
-    })
+      const account = AssociatedToken.decodeAccount(accountInfos[i], pubkeys[i], decimal)
+      accounts.push(account)
+    }
+    return accounts
   }
 
   /** TODO:
