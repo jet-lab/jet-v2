@@ -25,6 +25,8 @@ interface IPoolCreationParams {
   pythProduct: Address
   pythPrice: Address
   marginPoolConfig: MarginPoolConfigData
+  provider?: AnchorProvider
+  programs?: MarginPrograms
 }
 
 /**
@@ -47,14 +49,16 @@ export class PoolManager {
   async load({
     tokenMint,
     poolConfig,
-    tokenConfig
+    tokenConfig,
+    programs = this.programs
   }: {
     tokenMint: Address
     poolConfig?: MarginPoolConfig
-    tokenConfig?: MarginTokenConfig
+    tokenConfig?: MarginTokenConfig,
+    programs?: MarginPrograms
   }): Promise<Pool> {
-    const addresses = this._derive({ programs: this.programs, tokenMint })
-    const marginPool = new Pool(this.programs, tokenMint, addresses, poolConfig, tokenConfig)
+    const addresses = this._derive({ programs: programs, tokenMint })
+    const marginPool = new Pool(programs, tokenMint, addresses, poolConfig, tokenConfig)
     await marginPool.refresh()
     return marginPool
   }
@@ -63,12 +67,12 @@ export class PoolManager {
    * Loads all margin pools bases on the config provided to the manager
    * @returns
    */
-  async loadAll(): Promise<Record<MarginTokens, Pool>> {
+  async loadAll(programs: MarginPrograms = this.programs): Promise<Record<MarginTokens, Pool>> {
     // FIXME: This could be faster with fewer round trips to rpc
     const pools: Record<string, Pool> = {}
-    for (const poolConfig of Object.values(this.programs.config.pools)) {
+    for (const poolConfig of Object.values(programs.config.pools)) {
       const poolTokenMint = translateAddress(poolConfig.tokenMint)
-      const tokenConfig = Object.values(this.programs.config.tokens).find(token =>
+      const tokenConfig = Object.values(programs.config.tokens).find(token =>
         translateAddress(token.mint).equals(poolTokenMint)
       )
       if (tokenConfig) {
@@ -95,9 +99,12 @@ export class PoolManager {
     feeDestination,
     pythProduct,
     pythPrice,
-    marginPoolConfig
+    marginPoolConfig,
+    provider = this.provider,
+    programs = this.programs
   }: IPoolCreationParams) {
-    const addresses = this._derive({ programs: this.programs, tokenMint })
+
+    const addresses = this._derive({ programs: programs, tokenMint })
     const address = addresses.marginPool
     const ix1: TransactionInstruction[] = []
     if (this.owner) {
@@ -108,7 +115,7 @@ export class PoolManager {
           addresses,
           address
         })
-        await this.provider.sendAndConfirm(new Transaction().add(...ix1))
+        await provider.sendAndConfirm(new Transaction().add(...ix1))
         const ix2: TransactionInstruction[] = []
         await this._withConfigureToken({
           instructions: ix2,
@@ -123,7 +130,7 @@ export class PoolManager {
           address: addresses.marginPool
         })
 
-        return await this.provider.sendAndConfirm(new Transaction().add(...ix2))
+        return await provider.sendAndConfirm(new Transaction().add(...ix2))
       } catch (err) {
         console.log(err)
         throw err
@@ -143,16 +150,18 @@ export class PoolManager {
     instructions,
     requester,
     addresses,
-    address
+    address,
+    programs = this.programs
   }: {
     instructions: TransactionInstruction[]
     requester: Address
     addresses: MarginPoolAddresses
-    address: PublicKey
+    address: PublicKey,
+    programs?: MarginPrograms
   }): Promise<void> {
-    const authority = findDerivedAccount(this.programs.config.controlProgramId)
+    const authority = findDerivedAccount(programs.config.controlProgramId)
 
-    const ix = await this.programs.control.methods
+    const ix = await programs.control.methods
       .registerToken()
       .accounts({
         requester,
@@ -165,8 +174,8 @@ export class PoolManager {
         tokenMetadata: addresses.tokenMetadata,
         depositNoteMetadata: addresses.depositNoteMetadata,
         loanNoteMetadata: addresses.loanNoteMetadata,
-        marginPoolProgram: this.programs.config.marginPoolProgramId,
-        metadataProgram: this.programs.config.metadataProgramId,
+        marginPoolProgram: programs.config.marginPoolProgramId,
+        metadataProgram: programs.config.metadataProgramId,
         tokenProgram: TOKEN_PROGRAM_ID,
         systemProgram: SystemProgram.programId,
         rent: SYSVAR_RENT_PUBKEY
@@ -202,7 +211,8 @@ export class PoolManager {
     pythPrice,
     marginPoolConfig,
     addresses,
-    address
+    address,
+    programs = this.programs
   }: {
     instructions: TransactionInstruction[]
     requester: Address
@@ -213,7 +223,8 @@ export class PoolManager {
     pythPrice: Address
     marginPoolConfig: MarginPoolConfigData
     addresses: MarginPoolAddresses
-    address: PublicKey
+    address: PublicKey,
+    programs?: MarginPrograms
   }): Promise<void> {
     // Set the token configuration, e.g. collateral weight
     const metadata: TokenMetadataParams = {
@@ -225,7 +236,7 @@ export class PoolManager {
       feeDestination: translateAddress(feeDestination)
     }
 
-    const ix = await this.programs.control.methods
+    const ix = await programs.control.methods
       .configureToken(
         {
           tokenKind: metadata.tokenKind as never,
@@ -244,8 +255,8 @@ export class PoolManager {
         depositMetadata: addresses.depositNoteMetadata,
         pythProduct: pythProduct,
         pythPrice: pythPrice,
-        marginPoolProgram: this.programs.config.marginPoolProgramId,
-        metadataProgram: this.programs.config.metadataProgramId
+        marginPoolProgram: programs.config.marginPoolProgramId,
+        metadataProgram: programs.config.metadataProgramId
       })
       .instruction()
     instructions.push(ix)
