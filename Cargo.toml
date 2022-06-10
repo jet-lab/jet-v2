@@ -4,8 +4,6 @@ members = [
     "tests/hosted",
     "tests/mock-adapter",
     "libraries/rust",
-    "libraries/simulation",
-    "libraries/solana-rpc-api",
 ]
 
 [patch.crates-io]

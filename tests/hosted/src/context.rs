@@ -5,7 +5,6 @@ use anyhow::Error;
 use rand::rngs::mock::StepRng;
 use tokio::sync::OnceCell;
 
-use jet_simulation::margin::MarginClient;
 use solana_sdk::native_token::LAMPORTS_PER_SOL;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::{Keypair, Signer};
@@ -13,9 +12,10 @@ use solana_sdk::signature::{Keypair, Signer};
 use jet_margin_pool::MarginPoolConfig;
 use jet_metadata::TokenKind;
 
-use jet_simulation::tokens::TokenManager;
-use jet_simulation::TestRuntime;
-use jet_solana_rpc_api::SolanaRpcClient;
+use jet_simulation::runtime::TestRuntime;
+use jet_simulation::solana_rpc_api::SolanaRpcClient;
+
+use crate::{margin::MarginClient, tokens::TokenManager};
 
 static TEST_CONTEXT: OnceCell<MarginTestContext> = OnceCell::const_new();
 

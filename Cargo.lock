@@ -1357,14 +1357,15 @@ dependencies = [
  "bincode",
  "bytemuck",
  "bytes",
+ "futures",
  "jet-control",
  "jet-margin",
  "jet-margin-pool",
  "jet-margin-sdk",
  "jet-margin-swap",
  "jet-metadata",
+ "jet-proto-math",
  "jet-simulation",
- "jet-solana-rpc-api",
  "mock-adapter",
  "parking_lot 0.12.0",
  "pyth-sdk-solana",
@@ -1372,6 +1373,7 @@ dependencies = [
  "serial_test",
  "solana-sdk",
  "spl-token",
+ "spl-token-swap",
  "tokio",
 ]
 
@@ -1581,7 +1583,7 @@ dependencies = [
  "jet-margin-pool",
  "jet-margin-swap",
  "jet-metadata",
- "jet-solana-rpc-api",
+ "jet-simulation",
  "solana-sdk",
  "spl-token",
  "spl-token-swap",
@@ -1634,6 +1636,7 @@ dependencies = [
 [[package]]
 name = "jet-simulation"
 version = "0.1.0"
+source = "git+https://github.com/jet-lab/jet-simulation?branch=master#8268f8740ed3f0d19a4bee2da226a7ed72cb793e"
 dependencies = [
  "anchor-lang",
  "anyhow",
@@ -1641,35 +1644,16 @@ dependencies = [
  "bincode",
  "bytemuck",
  "futures",
- "jet-control",
- "jet-margin",
- "jet-margin-pool",
- "jet-margin-sdk",
- "jet-metadata",
- "jet-proto-math",
- "jet-solana-rpc-api",
  "parking_lot 0.12.0",
  "pyth-sdk-solana",
  "rand 0.7.3",
+ "solana-account-decoder",
  "solana-client",
  "solana-sdk",
  "solana-transaction-status",
  "spl-associated-token-account",
  "spl-token",
  "spl-token-swap",
- "tokio",
-]
-
-[[package]]
-name = "jet-solana-rpc-api"
-version = "1.0.0"
-dependencies = [
- "anyhow",
- "async-trait",
- "solana-account-decoder",
- "solana-client",
- "solana-sdk",
- "solana-transaction-status",
  "tokio",
 ]
 

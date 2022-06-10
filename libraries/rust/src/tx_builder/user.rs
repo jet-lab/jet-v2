@@ -32,7 +32,7 @@ use anchor_lang::AccountDeserialize;
 
 use jet_margin::{MarginAccount, PositionKind};
 use jet_margin_pool::Amount;
-use jet_solana_rpc_api::SolanaRpcClient;
+use jet_simulation::solana_rpc_api::SolanaRpcClient;
 
 use crate::ix_builder::*;
 
