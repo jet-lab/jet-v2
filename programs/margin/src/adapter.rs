@@ -27,6 +27,10 @@ use crate::{
     util::Require, AccountPosition, AdapterPositionFlags, ErrorCode, MarginAccount, SignerSeeds,
 };
 
+/// This PDA signs all invocations so an adapter can verify
+/// that the invocation has come from the margin program.
+const PROGRAM_SIGNER_SEED: [&[u8]; 1] = [b"program-signer"];
+
 pub struct InvokeAdapter<'a, 'info> {
     /// The margin account to proxy an action for
     pub margin_account: &'a AccountLoader<'info, MarginAccount>,
@@ -96,7 +100,7 @@ pub fn invoke(
 ) -> Result<()> {
     let (instruction, account_infos) = construct_invocation(ctx, account_metas, data);
 
-    program::invoke(&instruction, &account_infos)?;
+    program::invoke_signed(&instruction, &account_infos, &[&PROGRAM_SIGNER_SEED])?;
 
     handle_adapter_result(ctx)
 }
@@ -110,7 +114,7 @@ pub fn invoke_signed(
     let signer = ctx.margin_account.load()?.signer_seeds_owned();
     let (instruction, account_infos) = construct_invocation(ctx, account_metas, data);
 
-    program::invoke_signed(&instruction, &account_infos, &[&signer.signer_seeds()])?;
+    program::invoke_signed(&instruction, &account_infos, &[&PROGRAM_SIGNER_SEED, &signer.signer_seeds()])?;
 
     handle_adapter_result(ctx)
 }
