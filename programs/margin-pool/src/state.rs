@@ -166,7 +166,16 @@ impl MarginPool {
             .checked_sub(amount.notes)
             .ok_or(ErrorCode::InsufficientLiquidity)?;
 
-        *self.total_borrowed_mut() -= Number::from(amount.tokens);
+        // Due to defensive rounding, and probably only when the final outstanding loan in a pool
+        // is being repaid, it is possible that the integer number of tokens being repaid exceeds
+        // the precise number of total borrowed tokens. To cover this case, we guard against any
+        // difference beyond the rounding effect, and use a saturating sub to update the total borrowed.
+
+        if self.total_borrowed().as_u64_ceil(0) < amount.tokens {
+            return Err(ErrorCode::RepaymentExceedsTotalOutstanding.into());
+        }
+
+        *self.total_borrowed_mut() = self.total_borrowed().saturating_sub(Number::from(amount.tokens));
 
         Ok(())
     }
