@@ -1,16 +1,15 @@
-import assert from "assert"
-import { Address, AnchorProvider, BN, translateAddress } from "@project-serum/anchor"
+import { Address, BN } from "@project-serum/anchor"
+import { parsePriceData, PriceData } from "@pythnetwork/client"
 import { Mint, TOKEN_PROGRAM_ID } from "@solana/spl-token"
-import { PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY, Transaction, TransactionInstruction } from "@solana/web3.js"
-
+import { PublicKey, Transaction, TransactionInstruction } from "@solana/web3.js"
+import { assert } from "chai"
+import { AssociatedToken } from "../../token"
+import { TokenAmount } from "../../token/tokenAmount"
+import { MarginPoolConfig, MarginTokenConfig, MarginTokens } from "../config"
 import { MarginAccount } from "../marginAccount"
 import { MarginPrograms } from "../marginClient"
-import { findDerivedAccount } from "../../utils/pda"
-import { AssociatedToken, TokenAmount } from "../../token"
 import { MarginPoolConfigData, MarginPoolData } from "./state"
-import { MarginPoolConfig, MarginTokenConfig, MarginTokens } from "../config"
 import { PoolAmount } from "./poolAmount"
-import { parsePriceData, PriceData } from "@pythnetwork/client"
 
 type TokenKindNonCollateral = { nonCollateral: Record<string, never> }
 type TokenKindCollateral = { collateral: Record<string, never> }
@@ -32,25 +31,14 @@ export interface MarginPoolAddresses {
   controlAuthority: PublicKey
 }
 
-interface TokenMetadataParams {
-  tokenKind: TokenKind
-  collateralWeight: number
-  collateralMaxStaleness: BN
-}
-
-interface MarginPoolParams {
-  feeDestination: PublicKey
-}
-
-export class MarginPool {
-  public addresses: MarginPoolAddresses
+export class Pool {
   public address: PublicKey
 
-  get name(): string {
-    return this.tokenConfig?.name ?? "N/A"
+  get name(): string | undefined {
+    return this.tokenConfig?.name
   }
-  get symbol(): string {
-    return this.tokenConfig?.symbol ?? "N/A"
+  get symbol(): MarginTokens | undefined {
+    return this.tokenConfig?.symbol
   }
   get availableLiquidity(): TokenAmount {
     return this.info?.vault.amount ?? TokenAmount.zero(this.tokenConfig?.decimals ?? 0)
@@ -65,13 +53,13 @@ export class MarginPool {
     return this.marketSize.tokens === 0 ? 0 : this.outstandingDebt.tokens / this.marketSize.tokens
   }
   get depositCcRate(): number {
-    return this.info ? MarginPool.getCcRate(this.info.marginPool.config, this.utilizationRate) : 0
+    return this.info ? Pool.getCcRate(this.info.marginPool.config, this.utilizationRate) : 0
   }
   get depositApy(): number {
-    return MarginPool.getDepositApy(this.depositCcRate, this.utilizationRate)
+    return Pool.getDepositApy(this.depositCcRate, this.utilizationRate)
   }
   get borrowApr(): number {
-    return MarginPool.getBorrowApr(this.depositCcRate, this.info?.marginPool.config.managementFeeRate ?? 0)
+    return Pool.getBorrowApr(this.depositCcRate, this.info?.marginPool.config.managementFeeRate ?? 0)
   }
   get liquidationPremium(): number {
     return 0 // FIXME
@@ -98,79 +86,11 @@ export class MarginPool {
   constructor(
     public programs: MarginPrograms,
     public tokenMint: Address,
+    public addresses: MarginPoolAddresses,
     public poolConfig?: MarginPoolConfig,
     public tokenConfig?: MarginTokenConfig
   ) {
-    assert(programs)
-    assert(tokenMint)
-    this.addresses = MarginPool.derive(programs, tokenMint)
     this.address = this.addresses.marginPool
-  }
-
-  /**
-   * Derive accounts from tokenMint
-   * @param {MarginPrograms} programs
-   * @param {Address} tokenMint
-   * @returns {PublicKey} Margin Pool Address
-   */
-  static derive(programs: MarginPrograms, tokenMint: Address): MarginPoolAddresses {
-    const tokenMintAddress = translateAddress(tokenMint)
-    const programId = translateAddress(programs.config.marginPoolProgramId)
-    const marginPool = findDerivedAccount(programId, tokenMintAddress)
-    const vault = findDerivedAccount(programId, marginPool, "vault")
-    const depositNoteMint = findDerivedAccount(programId, marginPool, "deposit-notes")
-    const loanNoteMint = findDerivedAccount(programId, marginPool, "loan-notes")
-    const marginPoolAdapterMetadata = findDerivedAccount(programs.config.metadataProgramId, programId)
-    const tokenMetadata = findDerivedAccount(programs.config.metadataProgramId, tokenMint)
-    const depositNoteMetadata = findDerivedAccount(programs.config.metadataProgramId, depositNoteMint)
-    const loanNoteMetadata = findDerivedAccount(programs.config.metadataProgramId, loanNoteMint)
-    const controlAuthority = findDerivedAccount(programs.config.controlProgramId)
-
-    return {
-      tokenMint: tokenMintAddress,
-      marginPool,
-      vault,
-      depositNoteMint,
-      loanNoteMint,
-      marginPoolAdapterMetadata,
-      tokenMetadata,
-      depositNoteMetadata,
-      loanNoteMetadata,
-      controlAuthority
-    }
-  }
-
-  static async load(
-    programs: MarginPrograms,
-    tokenMint: Address,
-    poolConfig?: MarginPoolConfig,
-    tokenConfig?: MarginTokenConfig
-  ): Promise<MarginPool> {
-    assert(programs)
-    assert(tokenMint)
-
-    const marginPool = new MarginPool(programs, tokenMint, poolConfig, tokenConfig)
-    await marginPool.refresh()
-    return marginPool
-  }
-
-  /**
-   * Load every Margin Pool in the config.
-   * @param programs
-   * @returns
-   */
-  static async loadAll(programs: MarginPrograms): Promise<Record<MarginTokens, MarginPool>> {
-    // FIXME: This could be faster with fewer round trips to rpc
-    const pools: Record<string, MarginPool> = {}
-    for (const poolConfig of Object.values(programs.config.pools)) {
-      const poolTokenMint = translateAddress(poolConfig.tokenMint)
-      const tokenConfig = Object.values(programs.config.tokens).find(token =>
-        translateAddress(token.mint).equals(poolTokenMint)
-      )
-      const pool = await this.load(programs, poolConfig.tokenMint, poolConfig, tokenConfig)
-      pools[poolConfig.symbol] = pool
-    }
-    return pools
   }
 
   async refresh() {
@@ -254,118 +174,6 @@ export class MarginPool {
     const rt = ccRate / secondsPerYear
 
     return Math.log1p(Math.expm1(rt)) * secondsPerYear * utilRatio
-  }
-
-  async create(
-    provider: AnchorProvider,
-    requester: Address,
-    collateralWeight: number,
-    collateralMaxStaleness: BN,
-    feeDestination: Address,
-    pythProduct: Address,
-    pythPrice: Address,
-    marginPoolConfig: MarginPoolConfigData
-  ) {
-    const ix1: TransactionInstruction[] = []
-    await this.withRegisterToken(ix1, requester)
-    await provider.sendAndConfirm(new Transaction().add(...ix1))
-
-    const ix2: TransactionInstruction[] = []
-    await this.withConfigureToken(
-      ix2,
-      requester,
-      collateralWeight,
-      collateralMaxStaleness,
-      feeDestination,
-      pythProduct,
-      pythPrice,
-      marginPoolConfig
-    )
-    try {
-      return await provider.sendAndConfirm(new Transaction().add(...ix2))
-    } catch (err) {
-      console.log(err)
-      throw err
-    }
-  }
-
-  async withRegisterToken(instructions: TransactionInstruction[], requester: Address): Promise<void> {
-    const authority = findDerivedAccount(this.programs.config.controlProgramId)
-
-    const ix = await this.programs.control.methods
-      .registerToken()
-      .accounts({
-        requester,
-        authority,
-        marginPool: this.address,
-        vault: this.addresses.vault,
-        depositNoteMint: this.addresses.depositNoteMint,
-        loanNoteMint: this.addresses.loanNoteMint,
-        tokenMint: this.addresses.tokenMint,
-        tokenMetadata: this.addresses.tokenMetadata,
-        depositNoteMetadata: this.addresses.depositNoteMetadata,
-        loanNoteMetadata: this.addresses.loanNoteMetadata,
-        marginPoolProgram: this.programs.config.marginPoolProgramId,
-        metadataProgram: this.programs.config.metadataProgramId,
-        tokenProgram: TOKEN_PROGRAM_ID,
-        systemProgram: SystemProgram.programId,
-        rent: SYSVAR_RENT_PUBKEY
-      })
-      .instruction()
-    instructions.push(ix)
-  }
-
-  /**
-   * Create a margin pool by configuring the token with the control program.
-   *
-   * # Instructions
-   *
-   * - jet_control::configure_token - configures an SPL token and creates its pool
-   */
-  async withConfigureToken(
-    instructions: TransactionInstruction[],
-    requester: Address,
-    collateralWeight: number,
-    collateralMaxStaleness: BN,
-    feeDestination: Address,
-    pythProduct: Address,
-    pythPrice: Address,
-    marginPoolConfig: MarginPoolConfigData
-  ): Promise<void> {
-    // Set the token configuration, e.g. collateral weight
-    const metadata: TokenMetadataParams = {
-      tokenKind: { collateral: {} },
-      collateralWeight: collateralWeight,
-      collateralMaxStaleness: collateralMaxStaleness
-    }
-    const poolParam: MarginPoolParams = {
-      feeDestination: translateAddress(feeDestination)
-    }
-
-    const ix = await this.programs.control.methods
-      .configureToken(
-        {
-          tokenKind: metadata.tokenKind as never,
-          collateralWeight: metadata.collateralWeight,
-          collateralMaxStaleness: metadata.collateralMaxStaleness
-        },
-        poolParam,
-        marginPoolConfig
-      )
-      .accounts({
-        requester,
-        authority: this.addresses.controlAuthority,
-        tokenMint: this.addresses.tokenMint,
-        marginPool: this.address,
-        tokenMetadata: this.addresses.tokenMetadata,
-        depositMetadata: this.addresses.depositNoteMetadata,
-        pythProduct: pythProduct,
-        pythPrice: pythPrice,
-        marginPoolProgram: this.programs.config.marginPoolProgramId,
-        metadataProgram: this.programs.config.metadataProgramId
-      })
-      .instruction()
-    instructions.push(ix)
   }
 
   /// Instruction to deposit tokens into the pool in exchange for deposit notes

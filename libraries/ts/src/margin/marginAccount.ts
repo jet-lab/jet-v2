@@ -10,7 +10,7 @@ import {
   TransactionInstruction,
   TransactionSignature
 } from "@solana/web3.js"
-import { MarginPool } from "./pool"
+import { Pool } from './pool/Pool'
 import { AccountPositionList, AccountPositionListLayout, MarginAccountData } from "./state"
 import { MarginPrograms } from "./marginClient"
 import { findDerivedAccount } from "../utils/pda"
@@ -55,7 +55,7 @@ export class MarginAccount {
     public addresses: MarginAccountAddresses,
     public seed: number,
     public info: MarginAccountData | null,
-    private positions: AccountPositionList | null
+    public positions: AccountPositionList | null
   ) {}
 
   static async loadTokens(programs: MarginPrograms, owner: Address): Promise<Record<MarginTokens, AssociatedToken>> {
@@ -197,7 +197,7 @@ export class MarginAccount {
   /// `token_mint` - The address of the mint for the tokens being deposited
   /// `source` - The token account that the deposit will be transfered from
   /// `amount` - The amount of tokens to deposit
-  async deposit(marginPool: MarginPool, source: Address, amount: BN) {
+  async deposit(marginPool: Pool, source: Address, amount: BN) {
     await this.refresh()
     const position = await this.getOrCreatePosition(marginPool.addresses.depositNoteMint)
     assert(position)
