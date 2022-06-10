@@ -148,4 +148,7 @@ pub enum ErrorCode {
 
     /// 141106 - The oracle account is not valid
     InvalidOracle,
+
+    /// 141107 - Attempt repayment of more tokens than total outstanding
+    RepaymentExceedsTotalOutstanding,
 }
