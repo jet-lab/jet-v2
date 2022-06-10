@@ -16,7 +16,6 @@ import {
   createUserWallet,
   getMintSupply,
   getTokenBalance,
-  pow10,
   registerAdapter,
   sendToken
 } from "../util"
@@ -55,10 +54,10 @@ describe("margin pool", () => {
     const sol_balance = await getTokenBalance(provider, confirmOptions.commitment, SOL[1])
 
     // TEST
-    // expect(usdc_supply).to.eq(10000000)
-    // expect(usdc_balance).to.eq(0)
-    // expect(sol_supply).to.eq(0)
-    // expect(sol_balance).to.eq(0)
+    expect(usdc_supply).to.eq(10_000_000)
+    expect(usdc_balance).to.eq(10_000_000)
+    expect(sol_supply).to.eq(10_000)
+    expect(sol_balance).to.eq(10_000)
   })
 
   const FEE_VAULT_USDC: PublicKey = new PublicKey("FEEVAULTUSDC1111111111111111111111111111111")
