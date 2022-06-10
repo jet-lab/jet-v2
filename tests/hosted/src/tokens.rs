@@ -29,9 +29,7 @@ use solana_sdk::{system_instruction, system_program};
 
 use anchor_lang::{InstructionData, ToAccountMetas};
 
-use jet_solana_rpc_api::SolanaRpcClient;
-
-use crate::send_and_confirm;
+use jet_simulation::{generate_keypair, send_and_confirm, solana_rpc_api::SolanaRpcClient};
 
 /// Utility for managing the creation of tokens and their prices
 /// in some kind of testing environment
@@ -57,7 +55,7 @@ impl TokenManager {
         mint_authority: Option<&Pubkey>,
         freeze_authority: Option<&Pubkey>,
     ) -> Result<Pubkey, Error> {
-        let keypair = crate::generate_keypair();
+        let keypair = generate_keypair();
         let payer = self.rpc.payer();
         let space = spl_token::state::Mint::LEN;
         let rent_lamports = self
@@ -88,7 +86,7 @@ impl TokenManager {
 
     /// Create a new token account belonging to the owner, with the supplied mint
     pub async fn create_account(&self, mint: &Pubkey, owner: &Pubkey) -> Result<Pubkey, Error> {
-        let keypair = crate::generate_keypair();
+        let keypair = generate_keypair();
         let payer = self.rpc.payer();
         let space = spl_token::state::Account::LEN;
         let rent_lamports = self
