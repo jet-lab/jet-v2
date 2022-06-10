@@ -87,6 +87,14 @@ export class PoolManager {
     return pools
   }
 
+  setProvider(provider: AnchorProvider) {
+    this.provider = provider
+  }
+
+  setPrograms(programs: MarginPrograms) {
+    this.programs = programs
+  }
+
   /**
    * Creates a margin pool
    * @param args  // TODO document interface
