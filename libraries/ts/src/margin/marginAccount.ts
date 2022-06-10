@@ -10,7 +10,7 @@ import {
   TransactionInstruction,
   TransactionSignature
 } from "@solana/web3.js"
-import { Pool } from './pool/Pool'
+import { Pool } from "./pool/Pool"
 import { AccountPositionList, AccountPositionListLayout, MarginAccountData } from "./state"
 import { MarginPrograms } from "./marginClient"
 import { findDerivedAccount } from "../utils/pda"
@@ -203,7 +203,13 @@ export class MarginAccount {
     assert(position)
 
     const ix: TransactionInstruction[] = []
-    await marginPool.withDeposit(ix, this.owner, source, position.address, amount)
+    await marginPool.withDeposit({
+      instructions: ix,
+      depositor: this.owner,
+      source,
+      destination: position.address,
+      amount
+    })
     await this.withUpdatePositionBalance(ix, position.address)
     return await this.provider.sendAndConfirm(new Transaction().add(...ix))
   }

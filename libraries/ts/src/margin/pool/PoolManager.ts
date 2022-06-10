@@ -1,7 +1,7 @@
 import { Address, AnchorProvider, BN, translateAddress } from "@project-serum/anchor"
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token"
-import {  PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY, Transaction, TransactionInstruction } from "@solana/web3.js"
-import { findDerivedAccount } from '../../utils/pda'
+import { PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY, Transaction, TransactionInstruction } from "@solana/web3.js"
+import { findDerivedAccount } from "../../utils/pda"
 import { MarginPoolConfig, MarginTokenConfig, MarginTokens } from "../config"
 import { MarginPrograms } from "../marginClient"
 import { MarginPoolAddresses, Pool, TokenKind } from "./Pool"
@@ -33,26 +33,27 @@ interface IPoolCreationParams {
 export class PoolManager {
   owner: PublicKey
 
-  constructor(
-    public programs: MarginPrograms,
-    public provider: AnchorProvider,
-  ) {
+  constructor(public programs: MarginPrograms, public provider: AnchorProvider) {
     this.owner = provider.wallet.publicKey
   }
 
   /**
    * Load a margin pool
-   * @param tokenMint 
-   * @param poolConfig 
-   * @param tokenConfig 
-   * @returns 
+   * @param tokenMint
+   * @param poolConfig
+   * @param tokenConfig
+   * @returns
    */
-  async load(
-    tokenMint: Address,
-    poolConfig?: MarginPoolConfig,
+  async load({
+    tokenMint,
+    poolConfig,
+    tokenConfig
+  }: {
+    tokenMint: Address
+    poolConfig?: MarginPoolConfig
     tokenConfig?: MarginTokenConfig
-  ): Promise<Pool> {
-    const addresses = this._derive(this.programs, tokenMint)
+  }): Promise<Pool> {
+    const addresses = this._derive({ programs: this.programs, tokenMint })
     const marginPool = new Pool(this.programs, tokenMint, addresses, poolConfig, tokenConfig)
     await marginPool.refresh()
     return marginPool
@@ -71,7 +72,11 @@ export class PoolManager {
         translateAddress(token.mint).equals(poolTokenMint)
       )
       if (tokenConfig) {
-        const pool = await this.load(poolConfig.tokenMint, poolConfig, tokenConfig)
+        const pool = await this.load({
+          tokenMint: poolConfig.tokenMint,
+          poolConfig,
+          tokenConfig
+        })
         pools[poolConfig.symbol] = pool
       }
     }
@@ -81,7 +86,7 @@ export class PoolManager {
   /**
    * Creates a margin pool
    * @param args  // TODO document interface
-   * @returns 
+   * @returns
    */
   async create({
     tokenMint,
@@ -92,17 +97,22 @@ export class PoolManager {
     pythPrice,
     marginPoolConfig
   }: IPoolCreationParams) {
-    const addresses = this._derive(this.programs, tokenMint)
+    const addresses = this._derive({ programs: this.programs, tokenMint })
     const address = addresses.marginPool
     const ix1: TransactionInstruction[] = []
     if (this.owner) {
       try {
-        await this._withRegisterToken(ix1, this.owner, addresses, address)
+        await this._withRegisterToken({
+          instructions: ix1,
+          requester: this.owner,
+          addresses,
+          address
+        })
         await this.provider.sendAndConfirm(new Transaction().add(...ix1))
         const ix2: TransactionInstruction[] = []
-        await this._withConfigureToken(
-          ix2,
-          this.owner,
+        await this._withConfigureToken({
+          instructions: ix2,
+          requester: this.owner,
           collateralWeight,
           collateralMaxStaleness,
           feeDestination,
@@ -110,8 +120,8 @@ export class PoolManager {
           pythPrice,
           marginPoolConfig,
           addresses,
-          addresses.marginPool
-        )
+          address: addresses.marginPool
+        })
 
         return await this.provider.sendAndConfirm(new Transaction().add(...ix2))
       } catch (err) {
@@ -124,17 +134,22 @@ export class PoolManager {
   }
   /**
    * // TODO add description
-   * @param instructions 
-   * @param requester 
-   * @param addresses 
-   * @param address 
+   * @param instructions
+   * @param requester
+   * @param addresses
+   * @param address
    */
-  private async _withRegisterToken(
-    instructions: TransactionInstruction[],
-    requester: Address,
-    addresses: MarginPoolAddresses,
+  private async _withRegisterToken({
+    instructions,
+    requester,
+    addresses,
+    address
+  }: {
+    instructions: TransactionInstruction[]
+    requester: Address
+    addresses: MarginPoolAddresses
     address: PublicKey
-  ): Promise<void> {
+  }): Promise<void> {
     const authority = findDerivedAccount(this.programs.config.controlProgramId)
 
     const ix = await this.programs.control.methods
@@ -166,29 +181,40 @@ export class PoolManager {
    * # Instructions
    *
    * - jet_control::configure_token - configures an SPL token and creates its pool
-   * @param instructions 
-   * @param requester 
-   * @param collateralWeight 
-   * @param collateralMaxStaleness 
-   * @param feeDestination 
-   * @param pythProduct 
-   * @param pythPrice 
-   * @param marginPoolConfig 
-   * @param addresses 
-   * @param address 
+   * @param instructions
+   * @param requester
+   * @param collateralWeight
+   * @param collateralMaxStaleness
+   * @param feeDestination
+   * @param pythProduct
+   * @param pythPrice
+   * @param marginPoolConfig
+   * @param addresses
+   * @param address
    */
-  private async _withConfigureToken(
-    instructions: TransactionInstruction[],
-    requester: Address,
-    collateralWeight: number,
-    collateralMaxStaleness: BN,
-    feeDestination: Address,
-    pythProduct: Address,
-    pythPrice: Address,
-    marginPoolConfig: MarginPoolConfigData,
-    addresses: MarginPoolAddresses,
+  private async _withConfigureToken({
+    instructions,
+    requester,
+    collateralWeight,
+    collateralMaxStaleness,
+    feeDestination,
+    pythProduct,
+    pythPrice,
+    marginPoolConfig,
+    addresses,
+    address
+  }: {
+    instructions: TransactionInstruction[]
+    requester: Address
+    collateralWeight: number
+    collateralMaxStaleness: BN
+    feeDestination: Address
+    pythProduct: Address
+    pythPrice: Address
+    marginPoolConfig: MarginPoolConfigData
+    addresses: MarginPoolAddresses
     address: PublicKey
-  ): Promise<void> {
+  }): Promise<void> {
     // Set the token configuration, e.g. collateral weight
     const metadata: TokenMetadataParams = {
       tokenKind: { collateral: {} },
@@ -226,12 +252,12 @@ export class PoolManager {
   }
 
   /**
- * Derive accounts from tokenMint
- * @param {MarginPrograms} programs
- * @param {Address} tokenMint
- * @returns {PublicKey} Margin Pool Address
- */
-  private _derive(programs: MarginPrograms, tokenMint: Address): MarginPoolAddresses {
+   * Derive accounts from tokenMint
+   * @param {MarginPrograms} programs
+   * @param {Address} tokenMint
+   * @returns {PublicKey} Margin Pool Address
+   */
+  private _derive({ programs, tokenMint }: { programs: MarginPrograms; tokenMint: Address }): MarginPoolAddresses {
     const tokenMintAddress = translateAddress(tokenMint)
     const programId = translateAddress(programs.config.marginPoolProgramId)
     const marginPool = findDerivedAccount(programId, tokenMintAddress)

@@ -4,6 +4,7 @@ import { AnchorProvider } from "@project-serum/anchor"
 import { AccountInfo, ConfirmOptions, PublicKey } from "@solana/web3.js"
 
 import { MarginClient, MarginTokens, Pool, PoolManager } from "../../../libraries/ts/src"
+import { getMintSupply } from "../util"
 
 describe("margin pool devnet config", () => {
   const config = MarginClient.getConfig("devnet")
@@ -23,7 +24,7 @@ describe("margin pool devnet config", () => {
     for (const pool of Object.values(pools)) {
       pool.refresh()
       expect(pool).to.exist
-      expect(pool.info).to.exist;
+      expect(pool.info).to.exist
     }
   })
 
@@ -35,18 +36,34 @@ describe("margin pool devnet config", () => {
       )
       for (let i = 0; i < addresses.length; i++) {
         const account = accounts[i]
-        expect(account).to.exist;
+        expect(account).to.exist
       }
     }
   })
 
-  // describe('It should have Pool details', () => {
-  // it('should should have a name', () => {
-  //   expect(USDC.name).to.eq('USD Coin')
-  // })
+  it("should should have a name", async () => {
+    expect(pools.USDC.name).to.eq("USD Coin")
+  })
 
-  // it('should have a symbol', () => {
-  //   expect(USDC.symbol).to.eq('USDC')
-  // })
-  // })
+  it("should have a symbol", async () => {
+    expect(pools.USDC.symbol).to.eq("USDC")
+  })
+
+  it("should have a market size", async () => {
+    const USDC = pools.USDC
+    const supply = await getMintSupply(provider, USDC.addresses.tokenMint, USDC.decimals)
+    expect(USDC.marketSize.tokens).to.eq(supply)
+  })
+
+  it("should have a deposit APY", async () => {
+    expect(pools.USDC.depositApy).to.eq(0)
+  })
+
+  it("should have a borrow APR", async () => {
+    expect(pools.USDC.borrowApr).to.not.eq(0)
+  })
+
+  it("should have a token price", async () => {
+    expect(pools.USDC.tokenPrice).to.not.eq(0)
+  })
 })
