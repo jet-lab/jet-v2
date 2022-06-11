@@ -5,10 +5,10 @@ import { PublicKey, Transaction, TransactionInstruction } from "@solana/web3.js"
 import { assert } from "chai"
 import { AssociatedToken } from "../../token"
 import { TokenAmount } from "../../token/tokenAmount"
-import { MarginPoolConfig, MarginTokenConfig, MarginTokens } from "../config"
 import { MarginAccount } from "../marginAccount"
 import { MarginPrograms } from "../marginClient"
 import { MarginPoolConfigData, MarginPoolData } from "./state"
+import { MarginPoolConfig, MarginPools, MarginTokenConfig } from "../config"
 import { PoolAmount } from "./poolAmount"
 
 type TokenKindNonCollateral = { nonCollateral: Record<string, never> }
@@ -37,8 +37,8 @@ export class Pool {
   get name(): string | undefined {
     return this.tokenConfig?.name
   }
-  get symbol(): MarginTokens | undefined {
-    return this.tokenConfig?.symbol
+  get symbol(): MarginPools | undefined {
+    return this.tokenConfig?.symbol as MarginPools
   }
   get availableLiquidity(): TokenAmount {
     return this.info?.vault.amount ?? TokenAmount.zero(this.tokenConfig?.decimals ?? 0)

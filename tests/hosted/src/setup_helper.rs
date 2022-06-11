@@ -2,7 +2,6 @@ use anyhow::{Error, Result};
 
 use jet_control::TokenMetadataParams;
 use jet_margin_sdk::instructions::control::TokenConfiguration;
-use jet_simulation::tokens::TokenPrice;
 use solana_sdk::native_token::LAMPORTS_PER_SOL;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::{Keypair, Signer};
@@ -10,9 +9,12 @@ use solana_sdk::signature::{Keypair, Signer};
 use jet_margin_pool::{MarginPoolConfig, PoolFlags};
 use jet_metadata::TokenKind;
 use jet_simulation::create_wallet;
-use jet_simulation::margin::{MarginPoolSetupInfo, MarginUser};
 
-use crate::context::{test_context, MarginTestContext};
+use crate::{
+    context::{test_context, MarginTestContext},
+    margin::{MarginPoolSetupInfo, MarginUser},
+    tokens::TokenPrice,
+};
 
 const DEFAULT_POOL_CONFIG: MarginPoolConfig = MarginPoolConfig {
     borrow_rate_0: 10,

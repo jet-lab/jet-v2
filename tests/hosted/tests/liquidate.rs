@@ -1,17 +1,18 @@
 use anyhow::Result;
 
-use hosted_tests::setup_helper::{setup_token, setup_user};
+use hosted_tests::{
+    context::test_context,
+    margin::MarginUser,
+    setup_helper::{setup_token, setup_user},
+    tokens::TokenPrice,
+};
 use jet_margin::ErrorCode;
-use jet_simulation::tokens::TokenPrice;
 use serial_test::serial;
 use solana_sdk::native_token::LAMPORTS_PER_SOL;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::Signer;
 
-use hosted_tests::context::test_context;
-
 use jet_margin_pool::Amount;
-use jet_simulation::margin::MarginUser;
 use jet_simulation::{assert_program_error, assert_program_error_code};
 
 const ONE_USDC: u64 = 1_000_000;

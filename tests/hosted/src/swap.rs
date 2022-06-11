@@ -22,7 +22,7 @@ use std::sync::Arc;
 
 use anchor_lang::prelude::Pubkey;
 use anyhow::Error;
-use jet_solana_rpc_api::SolanaRpcClient;
+use jet_simulation::{generate_keypair, solana_rpc_api::SolanaRpcClient};
 use solana_sdk::{program_pack::Pack, signer::Signer, system_instruction};
 use spl_token_swap::curve::{
     base::{CurveType, SwapCurve},
@@ -59,7 +59,7 @@ impl SwapPool {
 
         // Create a TokenManager instance
         let token_manager = TokenManager::new(rpc.clone());
-        let keypair = crate::generate_keypair();
+        let keypair = generate_keypair();
 
         // Create an empty pool state account
         // The SPL Token Swap program requires extra padding of 1 byte
