@@ -2,18 +2,20 @@ use anyhow::Error;
 
 use jet_control::TokenMetadataParams;
 use jet_margin::PositionKind;
+use jet_margin_pool::{Amount, MarginPoolConfig, PoolFlags};
 use jet_margin_sdk::instructions::control::TokenConfiguration;
-use jet_simulation::tokens::TokenPrice;
+use jet_metadata::TokenKind;
+use jet_simulation::{assert_program_error_code, create_wallet};
+
 use solana_sdk::native_token::LAMPORTS_PER_SOL;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::Signer;
 
-use hosted_tests::context::{test_context, MarginTestContext};
-
-use jet_margin_pool::{Amount, MarginPoolConfig, PoolFlags};
-use jet_metadata::TokenKind;
-use jet_simulation::margin::MarginPoolSetupInfo;
-use jet_simulation::{assert_program_error_code, create_wallet};
+use hosted_tests::{
+    context::{test_context, MarginTestContext},
+    margin::MarginPoolSetupInfo,
+    tokens::TokenPrice,
+};
 
 const ONE_USDC: u64 = 1_000_000;
 const ONE_TSOL: u64 = LAMPORTS_PER_SOL;
