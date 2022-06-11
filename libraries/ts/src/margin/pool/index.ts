@@ -1,4 +1,4 @@
 export * from "./poolAmount"
 export * from "./state"
-export * from "./PoolManager"
-export * from "./Pool"
+export * from "./poolManager"
+export * from "./pool"

@@ -4,7 +4,7 @@ import { PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY, Transaction, TransactionI
 import { findDerivedAccount } from "../../utils/pda"
 import { MarginPoolConfig, MarginTokenConfig, MarginTokens } from "../config"
 import { MarginPrograms } from "../marginClient"
-import { MarginPoolAddresses, Pool, TokenKind } from "./Pool"
+import { MarginPoolAddresses, Pool, TokenKind } from "./pool"
 import { MarginPoolConfigData } from "./state"
 
 interface TokenMetadataParams {
@@ -54,7 +54,7 @@ export class PoolManager {
   }: {
     tokenMint: Address
     poolConfig?: MarginPoolConfig
-    tokenConfig?: MarginTokenConfig,
+    tokenConfig?: MarginTokenConfig
     programs?: MarginPrograms
   }): Promise<Pool> {
     const addresses = this._derive({ programs: programs, tokenMint })
@@ -111,7 +111,6 @@ export class PoolManager {
     provider = this.provider,
     programs = this.programs
   }: IPoolCreationParams) {
-
     const addresses = this._derive({ programs: programs, tokenMint })
     const address = addresses.marginPool
     const ix1: TransactionInstruction[] = []
@@ -164,7 +163,7 @@ export class PoolManager {
     instructions: TransactionInstruction[]
     requester: Address
     addresses: MarginPoolAddresses
-    address: PublicKey,
+    address: PublicKey
     programs?: MarginPrograms
   }): Promise<void> {
     const authority = findDerivedAccount(programs.config.controlProgramId)
@@ -231,7 +230,7 @@ export class PoolManager {
     pythPrice: Address
     marginPoolConfig: MarginPoolConfigData
     addresses: MarginPoolAddresses
-    address: PublicKey,
+    address: PublicKey
     programs?: MarginPrograms
   }): Promise<void> {
     // Set the token configuration, e.g. collateral weight
