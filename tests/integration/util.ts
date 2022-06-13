@@ -142,7 +142,11 @@ export async function getMintSupply(provider: AnchorProvider, mintPublicKey: Pub
   return Number(mintInfo.supply) / pow10(decimals)
 }
 
-export async function getTokenBalance(provider: AnchorProvider, commitment: Commitment, tokenAddress: PublicKey) {
+export async function getTokenBalance(
+  provider: AnchorProvider,
+  commitment: Commitment = "processed",
+  tokenAddress: PublicKey
+) {
   const balance = await provider.connection.getTokenAccountBalance(tokenAddress, commitment)
   return balance.value.uiAmount
 }

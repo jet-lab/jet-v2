@@ -1,42 +1,69 @@
-import { assert } from "chai"
+import { expect } from "chai"
 import * as anchor from "@project-serum/anchor"
 import { AnchorProvider } from "@project-serum/anchor"
-import { ConfirmOptions, PublicKey } from "@solana/web3.js"
+import { AccountInfo, ConfirmOptions, PublicKey } from "@solana/web3.js"
 
-import { MarginClient, MarginPool, MarginTokens } from "../../../libraries/ts/src"
+import { MarginClient, MarginTokens, Pool, PoolManager } from "../../../libraries/ts/src"
+import { getMintSupply } from "../util"
 
 describe("margin pool devnet config", () => {
   const config = MarginClient.getConfig("devnet")
   const confirmOptions: ConfirmOptions = { preflightCommitment: "processed", commitment: "processed" }
   const provider = AnchorProvider.local("https://mango.devnet.rpcpool.com/", confirmOptions)
-  // const { connection } = provider
   anchor.setProvider(provider)
 
   const programs = MarginClient.getPrograms(provider, config)
-  let pools: Record<MarginTokens, MarginPool>
+  const manager = new PoolManager(programs, provider)
+  let pools: Record<MarginTokens, Pool>
 
   it("Load pools", async () => {
-    pools = await MarginPool.loadAll(programs)
+    pools = await manager.loadAll()
   })
 
   it("Pools exists", async () => {
     for (const pool of Object.values(pools)) {
-      assert.isDefined(pool)
-      // assert(pool.info != null, `${token} info is not defined`)
+      pool.refresh()
+      expect(pool).to.exist
+      expect(pool.info).to.exist
     }
   })
 
   it("Pool accounts exist", async () => {
     for (const pool of Object.values(pools)) {
       const addresses: [string, PublicKey][] = Object.entries(pool.addresses)
-      // const accounts: (AccountInfo<Buffer> | null)[] = await connection.getMultipleAccountsInfo(
-      //   addresses.map(([_, pubkey]) => pubkey)
-      // )
+      const accounts: (AccountInfo<Buffer> | null)[] = await provider.connection.getMultipleAccountsInfo(
+        addresses.map(([_, pubkey]) => pubkey)
+      )
       for (let i = 0; i < addresses.length; i++) {
-        // const account = accounts[i]
-        // const [name] = addresses[i]
-        // assert(account, `Account ${name} in pool ${pool.tokenConfig.symbol} does not exist`)
+        const account = accounts[i]
+        expect(account).to.exist
       }
     }
+  })
+
+  it("should should have a name", async () => {
+    expect(pools.USDC.name).to.eq("USD Coin")
+  })
+
+  it("should have a symbol", async () => {
+    expect(pools.USDC.symbol).to.eq("USDC")
+  })
+
+  it("should have a market size", async () => {
+    const USDC = pools.USDC
+    const supply = await getMintSupply(provider, USDC.addresses.tokenMint, USDC.decimals)
+    expect(USDC.marketSize.tokens).to.eq(supply)
+  })
+
+  it("should have a deposit APY", async () => {
+    expect(pools.USDC.depositApy).to.eq(0)
+  })
+
+  it("should have a borrow APR", async () => {
+    expect(pools.USDC.borrowApr).to.not.eq(0)
+  })
+
+  it("should have a token price", async () => {
+    expect(pools.USDC.tokenPrice).to.not.eq(0)
   })
 })
