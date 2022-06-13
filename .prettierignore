@@ -3,3 +3,7 @@ tsconfig.tsbuildinfo
 build
 target
 dist
+.anchor
+.github
+package-lock.json
+README.md
