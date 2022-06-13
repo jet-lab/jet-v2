@@ -103,8 +103,10 @@ pub trait AnchorVerify: Discriminator + Owner {
             return err!(anchor_lang::error::ErrorCode::AccountNotInitialized);
         }
         if info.owner != &Self::owner() {
-            return Err(Error::from(anchor_lang::error::ErrorCode::AccountOwnedByWrongProgram)
-                .with_pubkeys((*info.owner, MarginAccount::owner())));
+            return Err(
+                Error::from(anchor_lang::error::ErrorCode::AccountOwnedByWrongProgram)
+                    .with_pubkeys((*info.owner, MarginAccount::owner())),
+            );
         }
         let data: &[u8] = &info.try_borrow_data()?;
         if data.len() < Self::discriminator().len() {
