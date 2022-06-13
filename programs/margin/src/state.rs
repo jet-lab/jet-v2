@@ -1077,4 +1077,59 @@ mod tests {
         )
         .unwrap()
     }
+    #[test]
+    fn proper_account_passes_anchor_verify() {
+        MarginAccount::anchor_verify(&AccountInfo::new(
+            &Pubkey::default(),
+            true,
+            true,
+            &mut 0,
+            &mut MarginAccount::discriminator(),
+            &crate::id(),
+            true,
+            0,
+        )).unwrap();
+    }
+
+    #[test]
+    fn wrong_owner_fails_anchor_verify() {
+        MarginAccount::anchor_verify(&AccountInfo::new(
+            &Pubkey::default(),
+            true,
+            true,
+            &mut 0,
+            &mut MarginAccount::discriminator(),
+            &Pubkey::default(),
+            true,
+            0,
+        )).unwrap_err();
+    }
+
+    #[test]
+    fn wrong_discriminator_fails_anchor_verify() {
+        MarginAccount::anchor_verify(&AccountInfo::new(
+            &Pubkey::default(),
+            true,
+            true,
+            &mut 0,
+            &mut [0,1,2,3,4,5,6,7],
+            &crate::id(),
+            true,
+            0,
+        )).unwrap_err();
+    }
+
+    #[test]
+    fn no_data_fails_anchor_verify() {
+        MarginAccount::anchor_verify(&AccountInfo::new(
+            &Pubkey::default(),
+            true,
+            true,
+            &mut 0,
+            &mut [],
+            &crate::id(),
+            true,
+            0,
+        )).unwrap_err();
+    }
 }
