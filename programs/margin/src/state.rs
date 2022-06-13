@@ -111,7 +111,7 @@ pub trait AnchorVerify: Discriminator + Owner {
             return Err(anchor_lang::error::ErrorCode::AccountDiscriminatorNotFound.into());
         }
         let given_disc = &data[..8];
-        if &Self::discriminator() != given_disc {
+        if Self::discriminator() != given_disc {
             return Err(anchor_lang::error::ErrorCode::AccountDiscriminatorMismatch.into());
         }
         Ok(())
