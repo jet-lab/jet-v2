@@ -47,22 +47,22 @@ pub struct MarginPoolParams {
 pub struct ConfigureToken<'info> {
     #[cfg_attr(not(feature = "testing"), account(address = crate::ROOT_AUTHORITY))]
     pub requester: Signer<'info>,
-    pub authority: Account<'info, Authority>,
+    pub authority: Box<Account<'info, Authority>>,
 
     /// CHECK:
     pub token_mint: UncheckedAccount<'info>,
 
     #[account(mut, has_one = token_mint)]
-    pub margin_pool: Account<'info, MarginPool>,
+    pub margin_pool: Box<Account<'info, MarginPool>>,
 
     #[account(mut, has_one = token_mint)]
-    pub token_metadata: Account<'info, TokenMetadata>,
+    pub token_metadata: Box<Account<'info, TokenMetadata>>,
 
     #[account(mut, constraint = deposit_metadata.underlying_token_mint == token_mint.key())]
-    pub deposit_metadata: Account<'info, PositionTokenMetadata>,
+    pub deposit_metadata: Box<Account<'info, PositionTokenMetadata>>,
 
     #[account(mut, constraint = loan_metadata.underlying_token_mint == token_mint.key())]
-    pub loan_metadata: Account<'info, PositionTokenMetadata>,
+    pub loan_metadata: Box<Account<'info, PositionTokenMetadata>>,
 
     /// CHECK:
     pub pyth_product: UncheckedAccount<'info>,
