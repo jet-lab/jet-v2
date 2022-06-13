@@ -97,7 +97,7 @@ impl std::fmt::Debug for MarginAccount {
 /// Execute all the mandatory anchor account verifications that are used during deserialization
 /// - performance: don't have to deserialize (even zero_copy copies)
 /// - compatibility: straightforward validation for programs using different anchor versions and non-anchor programs
-trait AnchorVerify: Discriminator + Owner {
+pub trait AnchorVerify: Discriminator + Owner {
     fn anchor_verify(info: &AccountInfo) -> AnchorResult<()> {
         if info.owner == &system_program::ID && info.lamports() == 0 {
             return err!(anchor_lang::error::ErrorCode::AccountNotInitialized);
