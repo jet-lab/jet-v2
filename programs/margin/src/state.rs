@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use anchor_lang::prelude::*;
+use anchor_lang::{prelude::*, system_program, Discriminator};
 use bytemuck::{Contiguous, Pod, Zeroable};
 use jet_metadata::TokenKind;
 #[cfg(any(test, feature = "cli"))]
@@ -93,6 +93,32 @@ impl std::fmt::Debug for MarginAccount {
         acc.finish()
     }
 }
+
+/// Execute all the mandatory anchor account verifications that are used during deserialization
+/// - performance: don't have to deserialize (even zero_copy copies)
+/// - compatibility: straightforward validation for programs using different anchor versions and non-anchor programs
+trait AnchorVerify: Discriminator + Owner {
+    fn anchor_verify(info: &AccountInfo) -> AnchorResult<()> {
+        if info.owner == &system_program::ID && info.lamports() == 0 {
+            return err!(anchor_lang::error::ErrorCode::AccountNotInitialized);
+        }
+        if info.owner != &Self::owner() {
+            return Err(Error::from(anchor_lang::error::ErrorCode::AccountOwnedByWrongProgram)
+                .with_pubkeys((*info.owner, MarginAccount::owner())));
+        }
+        let data: &[u8] = &info.try_borrow_data()?;
+        if data.len() < Self::discriminator().len() {
+            return Err(anchor_lang::error::ErrorCode::AccountDiscriminatorNotFound.into());
+        }
+        let given_disc = &data[..8];
+        if &Self::discriminator() != given_disc {
+            return Err(anchor_lang::error::ErrorCode::AccountDiscriminatorMismatch.into());
+        }
+        Ok(())
+    }
+}
+
+impl AnchorVerify for MarginAccount {}
 
 impl MarginAccount {
     pub fn start_liquidation(&mut self, liquidation: Pubkey, liquidator: Pubkey) {
