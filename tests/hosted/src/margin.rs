@@ -33,10 +33,9 @@ use solana_sdk::{pubkey::Pubkey, transaction::Transaction};
 use jet_margin_pool::{Amount, MarginPool, MarginPoolConfig};
 use jet_margin_sdk::tx_builder::MarginTxBuilder;
 use jet_metadata::{LiquidatorMetadata, MarginAdapterMetadata, TokenKind, TokenMetadata};
-use jet_solana_rpc_api::SolanaRpcClient;
+use jet_simulation::{send_and_confirm, solana_rpc_api::SolanaRpcClient};
 
-use crate::swap::SwapPool;
-use crate::{send_and_confirm, tokens::TokenOracle};
+use crate::{swap::SwapPool, tokens::TokenOracle};
 
 /// Information needed to create a new margin pool
 pub struct MarginPoolSetupInfo {
