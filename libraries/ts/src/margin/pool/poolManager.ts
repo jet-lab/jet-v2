@@ -2,7 +2,7 @@ import { Address, AnchorProvider, BN, translateAddress } from "@project-serum/an
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token"
 import { PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY, Transaction, TransactionInstruction } from "@solana/web3.js"
 import { findDerivedAccount } from "../../utils/pda"
-import { MarginPoolConfig, MarginTokenConfig, MarginTokens } from "../config"
+import { MarginPoolConfig, MarginPools, MarginTokenConfig } from "../config"
 import { MarginPrograms } from "../marginClient"
 import { MarginPoolAddresses, Pool, TokenKind } from "./pool"
 import { MarginPoolConfigData } from "./state"
@@ -41,10 +41,15 @@ export class PoolManager {
 
   /**
    * Load a margin pool
-   * @param tokenMint
-   * @param poolConfig
-   * @param tokenConfig
-   * @returns
+   *
+   * @param {{
+   *     tokenMint: Address
+   *     poolConfig?: MarginPoolConfig
+   *     tokenConfig?: MarginTokenConfig
+   *     programs?: MarginPrograms
+   *   }}
+   * @return {Promise<Pool>}
+   * @memberof PoolManager
    */
   async load({
     tokenMint,
@@ -65,16 +70,16 @@ export class PoolManager {
 
   /**
    * Loads all margin pools bases on the config provided to the manager
-   * @returns
+   *
+   * @param {MarginPrograms} [programs=this.programs]
+   * @return {Promise<Record<MarginPools, Pool>>}
+   * @memberof PoolManager
    */
-  async loadAll(programs: MarginPrograms = this.programs): Promise<Record<MarginTokens, Pool>> {
+  async loadAll(programs: MarginPrograms = this.programs): Promise<Record<MarginPools, Pool>> {
     // FIXME: This could be faster with fewer round trips to rpc
     const pools: Record<string, Pool> = {}
     for (const poolConfig of Object.values(programs.config.pools)) {
-      const poolTokenMint = translateAddress(poolConfig.tokenMint)
-      const tokenConfig = Object.values(programs.config.tokens).find(token =>
-        translateAddress(token.mint).equals(poolTokenMint)
-      )
+      const tokenConfig: MarginTokenConfig | undefined = programs.config.tokens[poolConfig.symbol]
       if (tokenConfig) {
         const pool = await this.load({
           tokenMint: poolConfig.tokenMint,
