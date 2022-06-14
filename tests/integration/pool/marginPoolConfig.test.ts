@@ -52,7 +52,7 @@ describe("margin pool devnet config", () => {
   it("should have a market size", async () => {
     const USDC = pools.USDC
     const supply = await getTokenBalance(provider, undefined, USDC.addresses.vault)
-    expect(bnToNumber(USDC.marketSize.lamports)).to.eq(supply)
+    expect(bnToNumber(USDC.marketSize.tokens)).to.eq(supply)
   })
 
   it("should have a deposit APY", async () => {
