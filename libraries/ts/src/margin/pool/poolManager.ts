@@ -116,7 +116,7 @@ export class PoolManager {
     const ix1: TransactionInstruction[] = []
     if (this.owner) {
       try {
-        await this._withRegisterToken({
+        await this.withRegisterToken({
           instructions: ix1,
           requester: this.owner,
           addresses,
@@ -124,7 +124,7 @@ export class PoolManager {
         })
         await provider.sendAndConfirm(new Transaction().add(...ix1))
         const ix2: TransactionInstruction[] = []
-        await this._withConfigureToken({
+        await this.withConfigureToken({
           instructions: ix2,
           requester: this.owner,
           collateralWeight,
@@ -153,7 +153,7 @@ export class PoolManager {
    * @param addresses
    * @param address
    */
-  private async _withRegisterToken({
+  async withRegisterToken({
     instructions,
     requester,
     addresses,
@@ -208,7 +208,7 @@ export class PoolManager {
    * @param addresses
    * @param address
    */
-  private async _withConfigureToken({
+  async withConfigureToken({
     instructions,
     requester,
     collateralWeight,
