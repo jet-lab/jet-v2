@@ -1,7 +1,9 @@
 import assert from "assert"
-import { Address, AnchorProvider, BN, translateAddress } from "@project-serum/anchor"
+import { Address, AnchorProvider, BN, ProgramAccount, translateAddress } from "@project-serum/anchor"
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token"
 import {
+  GetProgramAccountsFilter,
+  MemcmpFilter,
   PublicKey,
   SystemProgram,
   SYSVAR_RENT_PUBKEY,
@@ -13,7 +15,7 @@ import { Pool } from "./pool/pool"
 import { AccountPosition, AccountPositionList, AccountPositionListLayout, MarginAccountData } from "./state"
 import { MarginPrograms } from "./marginClient"
 import { findDerivedAccount } from "../utils/pda"
-import { AssociatedToken, MarginPools, ZERO_BN } from ".."
+import { AssociatedToken, bnToNumber, MarginPools, ZERO_BN } from ".."
 import { MarginPoolConfig, MarginTokenConfig } from "./config"
 
 export interface MarginAccountAddresses {
@@ -178,6 +180,61 @@ export class MarginAccount {
     const marginAccount = new MarginAccount(programs, provider, owner, seed, pools, walletTokens)
     await marginAccount.refresh()
     return marginAccount
+  }
+
+  /**
+   * Load all margin accounts for a wallet with an optional filter.
+   *
+   * @static
+   * @param {({
+   *     programs: MarginPrograms
+   *     provider: AnchorProvider
+   *     pools?: Record<MarginPools, Pool>
+   *     walletTokens?: MarginWalletTokens
+   *     filters?: GetProgramAccountsFilter[] | Buffer
+   *   })} {
+   *     programs,
+   *     provider,
+   *     pools,
+   *     walletTokens,
+   *     filters
+   *   }
+   * @return {Promise<MarginAccount[]>}
+   * @memberof MarginAccount
+   */
+  static async loadAllByOwner({
+    programs,
+    provider,
+    pools,
+    walletTokens,
+    owner,
+    filters
+  }: {
+    programs: MarginPrograms
+    provider: AnchorProvider
+    pools?: Record<MarginPools, Pool>
+    walletTokens?: MarginWalletTokens
+    owner: PublicKey
+    filters?: GetProgramAccountsFilter[]
+  }): Promise<MarginAccount[]> {
+    const ownerFilter: MemcmpFilter = {
+      memcmp: {
+        offset: 16,
+        bytes: owner.toBase58()
+      }
+    }
+    filters ??= []
+    filters.push(ownerFilter)
+    const infos: ProgramAccount<MarginAccountData>[] = await programs.margin.account.marginAccount.all(filters)
+    const marginAccounts: MarginAccount[] = []
+    for (let i = 0; i < infos.length; i++) {
+      const { account } = infos[i]
+      const seed = bnToNumber(new BN(account.userSeed, undefined, "le"))
+      const marginAccount = new MarginAccount(programs, provider, account.owner, seed, pools, walletTokens)
+      await marginAccount.refresh()
+      marginAccounts.push(marginAccount)
+    }
+    return marginAccounts
   }
 
   async refresh() {
