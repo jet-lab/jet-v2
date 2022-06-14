@@ -15,7 +15,7 @@ no-idl = []
 no-log-ix-name = []
 cpi = ["no-entrypoint"]
 default = []
-devnet = []
+testing = ["jet-metadata/testing", "jet-margin-pool/testing"]
 
 [dependencies]
 solana-program = "1.9"

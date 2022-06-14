@@ -13,8 +13,8 @@ no-entrypoint = []
 no-idl = []
 cpi = ["no-entrypoint"]
 default = []
-devnet = []
-mainnet-beta=[]
+testing = []
+mainnet-beta = []
 
 [dependencies]
 anchor-lang = { git = "https://github.com/jet-lab/anchor", branch = "master" }
