@@ -55,8 +55,12 @@ pub const LIQUIDATION_MAX_UNDERCOLLATERAL_GAIN: u16 = 10_00;
 /// The maximum c-ratio that an account can end a liquidation with.
 ///
 /// Note: This is not a traditional c-ratio, because it's based on the ratio of
-///       the collateral / required_collateral.
-pub const LIQUIDATION_MAX_COLLATERAL_RATIO: u16 = 120_00;
+///       the effective_collateral / required_collateral.
+pub const LIQUIDATION_MAX_COLLATERAL_RATIO: u16 = 125_00;
+
+/// The threshold at which accounts can have all their debts closed. Accounts with
+/// total exposure below this value can have their exposure reduced to zero.
+pub const LIQUIDATION_CLOSE_THRESHOLD_USD: u64 = 100;
 
 /// The maximum duration in seconds of a liquidation before another user may cancel it
 #[constant]

@@ -27,7 +27,10 @@ use jet_proto_proc_macros::assert_size;
 use anchor_lang::Result as AnchorResult;
 use std::{convert::TryFrom, result::Result};
 
-use crate::{util::Require, ErrorCode, MAX_PRICE_QUOTE_AGE, PriceChangeInfo, MAX_ORACLE_CONFIDENCE, MAX_ORACLE_STALENESS};
+use crate::{
+    util::Require, ErrorCode, PriceChangeInfo, MAX_ORACLE_CONFIDENCE, MAX_ORACLE_STALENESS,
+    MAX_PRICE_QUOTE_AGE,
+};
 
 const POS_PRICE_VALID: u8 = 1;
 
@@ -234,11 +237,17 @@ impl MarginAccount {
     pub fn verify_healthy_positions(&self) -> AnchorResult<()> {
         let info = self.valuation()?;
 
-        if info.required_collateral > info.fresh_collateral {
+        if info.required_collateral > info.effective_collateral || info.past_due {
+            let due_status = match info.past_due {
+                true => "overdue",
+                false => "not overdue",
+            };
+
             msg!(
-                "account is unhealthy: {} < {}",
-                info.fresh_collateral,
+                "account is unhealthy: K_e = {}, K_r = {} ({})",
+                info.effective_collateral,
                 info.required_collateral,
+                due_status
             );
             return err!(ErrorCode::Unhealthy);
         }
@@ -250,15 +259,16 @@ impl MarginAccount {
     pub fn verify_unhealthy_positions(&self) -> AnchorResult<()> {
         let info = self.valuation()?;
 
-        if info.stale_collateral > Number128::ZERO {
+        if !info.stale_collateral_list.is_empty() {
             for (position_token, error) in info.stale_collateral_list {
                 msg!("stale position {}: {}", position_token, error)
             }
             return Err(error!(ErrorCode::StalePositions));
         }
 
-        match info.required_collateral > info.fresh_collateral {
+        match info.required_collateral > info.effective_collateral {
             true => Ok(()),
+            false if info.past_due => Ok(()),
             false => err!(ErrorCode::Healthy),
         }
     }
@@ -272,10 +282,9 @@ impl MarginAccount {
         let timestamp = crate::util::get_timestamp();
 
         let mut past_due = false;
-        let mut fresh_collateral = Number128::ZERO;
-        let mut stale_collateral = Number128::ZERO;
+        let mut exposure = Number128::ZERO;
         let mut required_collateral = Number128::ZERO;
-
+        let mut weighted_collateral = Number128::ZERO;
         let mut stale_collateral_list = vec![];
 
         for position in self.positions() {
@@ -307,24 +316,27 @@ impl MarginAccount {
                         past_due = true;
                     }
 
+                    exposure += position.value();
                     required_collateral += position.required_collateral_value()
                 }
                 (PositionKind::Claim, Some(error)) => return Err(error!(error)),
 
-                (PositionKind::Deposit, None) => fresh_collateral += position.collateral_value(),
+                (PositionKind::Deposit, None) => weighted_collateral += position.collateral_value(),
                 (PositionKind::Deposit, Some(e)) => {
-                    stale_collateral += position.collateral_value();
                     stale_collateral_list.push((position.token, e));
                 }
             }
         }
 
+        let effective_collateral = weighted_collateral - exposure;
+
         Ok(Valuation {
-            fresh_collateral,
-            stale_collateral,
-            stale_collateral_list,
+            exposure,
+            past_due,
             required_collateral,
-            past_due
+            weighted_collateral,
+            effective_collateral,
+            stale_collateral_list,
         })
     }
 
@@ -548,9 +560,8 @@ impl AccountPosition {
         assert_eq!(self.kind, PositionKind::Claim);
 
         let modifier = Number128::from_decimal(self.value_modifier, -2);
-        let mod_cratio = Number128::ONE + (Number128::ONE / modifier);
 
-        mod_cratio * self.value()
+        self.value() / modifier
     }
 
     /// Update the balance for this position
@@ -739,38 +750,55 @@ unsafe impl Pod for AccountPosition {}
 /// State of an in-progress liquidation
 #[account(zero_copy)]
 #[repr(C, align(8))]
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct Liquidation {
     /// time that liquidate_begin initialized this liquidation
-    pub start_time: i64,
+    start_time: i64,
 
     /// cumulative change in value caused by invocations during the liquidation so far
     /// negative if value is lost
-    pub value_change: Number128,
+    value_change: i128,
 
     /// lowest amount of value change that is allowed during invoke steps
     /// typically negative or zero
     /// if value_change goes lower than this number, liquidate_invoke should fail
-    pub min_value_change: Number128,
+    min_value_change: i128,
 }
 
-impl Default for Liquidation {
-    fn default() -> Self {
+impl Liquidation {
+    pub fn new(start_time: i64, min_value_change: Number128) -> Self {
         Self {
-            start_time: Default::default(),
-            value_change: Number128::ZERO,
-            min_value_change: Number128::ZERO,
+            start_time,
+            value_change: 0,
+            min_value_change: min_value_change.to_i128(),
         }
+    }
+
+    pub fn start_time(&self) -> i64 {
+        self.start_time
+    }
+
+    pub fn value_change_mut(&mut self) -> &mut Number128 {
+        unsafe { std::mem::transmute(&mut self.value_change) }
+    }
+
+    pub fn value_change(&self) -> &Number128 {
+        unsafe { std::mem::transmute(&self.value_change) }
+    }
+
+    pub fn min_value_change(&self) -> Number128 {
+        Number128::from_i128(self.min_value_change)
     }
 }
 
 #[derive(Debug, Clone)]
 pub struct Valuation {
-    fresh_collateral: Number128,
-    stale_collateral: Number128,
+    pub exposure: Number128,
+    pub required_collateral: Number128,
+    pub weighted_collateral: Number128,
+    pub effective_collateral: Number128,
     stale_collateral_list: Vec<(Pubkey, ErrorCode)>,
     past_due: bool,
-    required_collateral: Number128,
 }
 
 impl Valuation {
@@ -779,19 +807,11 @@ impl Valuation {
             return None;
         }
 
-        Some(self.fresh_collateral / self.required_collateral)
+        Some(self.effective_collateral / self.required_collateral)
     }
 
-    pub fn net(&self) -> Number128 {
-        self.fresh_collateral - self.required_collateral
-    }
-
-    pub fn claims(&self) -> Number128 {
-        self.required_collateral
-    }
-
-    pub fn collateral(&self) -> Number128 {
-        self.fresh_collateral
+    pub fn net_collateral(&self) -> Number128 {
+        self.effective_collateral - self.required_collateral
     }
 
     pub fn past_due(&self) -> bool {

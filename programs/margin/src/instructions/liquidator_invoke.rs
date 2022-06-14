@@ -21,7 +21,10 @@ use jet_metadata::MarginAdapterMetadata;
 use jet_proto_math::Number128;
 
 use crate::adapter::{self, CompactAccountMeta, InvokeAdapter};
-use crate::{ErrorCode, Liquidation, MarginAccount, Valuation, LIQUIDATION_MAX_COLLATERAL_RATIO};
+use crate::{
+    ErrorCode, Liquidation, MarginAccount, Valuation, LIQUIDATION_CLOSE_THRESHOLD_USD,
+    LIQUIDATION_MAX_COLLATERAL_RATIO,
+};
 
 #[derive(Accounts)]
 pub struct LiquidatorInvoke<'info> {
@@ -79,23 +82,30 @@ fn update_and_verify_liquidation(
 ) -> Result<()> {
     let end_value = margin_account.valuation()?;
 
-    liquidation.value_change += end_value.net() - start_value.net(); // side effects
-    let end_c_ratio = end_value.c_ratio().unwrap_or(Number128::ZERO);
+    *liquidation.value_change_mut() += end_value.net_collateral() - start_value.net_collateral(); // side effects
+    let end_c_ratio = end_value
+        .c_ratio()
+        .unwrap_or_else(|| Number128::from_i128(i128::MAX));
 
-    verify_liquidation_step_is_allowed(liquidation, end_c_ratio)
+    verify_liquidation_step_is_allowed(liquidation, start_value.exposure, end_c_ratio)
 }
 
 fn verify_liquidation_step_is_allowed(
     liquidation: &Liquidation,
+    start_exposure: Number128,
     end_c_ratio: Number128,
 ) -> Result<()> {
-    let max_c_ratio = Number128::from_bps(LIQUIDATION_MAX_COLLATERAL_RATIO);
+    let close_threshold = Number128::from_decimal(LIQUIDATION_CLOSE_THRESHOLD_USD, 0);
+    let max_c_ratio = match start_exposure {
+        exposure if exposure < close_threshold => Number128::from_i128(i128::MAX),
+        _ => Number128::from_bps(LIQUIDATION_MAX_COLLATERAL_RATIO),
+    };
 
-    if liquidation.value_change < liquidation.min_value_change {
+    if *liquidation.value_change() < liquidation.min_value_change() {
         msg!(
             "Illegal liquidation: net loss of {} value which exceeds the min value change of {}",
-            liquidation.value_change,
-            liquidation.min_value_change
+            liquidation.value_change(),
+            liquidation.min_value_change()
         );
         err!(ErrorCode::LiquidationLostValue)
     } else if end_c_ratio > max_c_ratio {
