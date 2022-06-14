@@ -50,8 +50,6 @@ describe("margin swap", () => {
 
   // authority of the token and accounts
   let authority: PublicKey
-  // bump seed used to generate the authority public key
-  let bumpSeed: number
 
   let tokenPool: PublicKey
 
@@ -61,10 +59,7 @@ describe("margin swap", () => {
 
   it("Create token swap pool", async () => {
     tokenSwapAccount = new Account()
-    ;[authority, bumpSeed] = await PublicKey.findProgramAddress(
-      [tokenSwapAccount.publicKey.toBuffer()],
-      splTokenSwapProgramId
-    )
+    ;[authority] = await PublicKey.findProgramAddress([tokenSwapAccount.publicKey.toBuffer()], splTokenSwapProgramId)
 
     tokenPool = await createMint(provider.connection, payer, authority, null, 2)
 
@@ -104,6 +99,7 @@ describe("margin swap", () => {
   let marginSwap: MarginSwap
 
   it("createTokenSwap (constant product)", async () => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const tokenSwap: TokenSwap = await MarginSwap.create(
       provider.connection,
       new Account(payer.secretKey),
