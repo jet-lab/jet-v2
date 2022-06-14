@@ -1,8 +1,7 @@
 import assert from "assert"
 import { Address, AnchorProvider, BN, translateAddress } from "@project-serum/anchor"
-import { AccountLayout, TOKEN_PROGRAM_ID } from "@solana/spl-token"
+import { TOKEN_PROGRAM_ID } from "@solana/spl-token"
 import {
-  Connection,
   PublicKey,
   SystemProgram,
   SYSVAR_RENT_PUBKEY,
@@ -383,7 +382,7 @@ export class MarginAccount {
   async registerPosition(tokenMint: Address): Promise<TransactionSignature> {
     const tokenMintAddress = translateAddress(tokenMint)
     const ix: TransactionInstruction[] = []
-    const tokenAccount = await this.withRegisterPosition(ix, tokenMintAddress)
+    await this.withRegisterPosition(ix, tokenMintAddress)
     return await this.provider.sendAndConfirm(new Transaction().add(...ix))
   }
 
@@ -445,10 +444,5 @@ export class MarginAccount {
       })
       .instruction()
     instructions.push(ix)
-  }
-
-  static async getTokenAccountInfo(connection: Connection, address: PublicKey) {
-    const info = await connection.getAccountInfo(address)
-    return AccountLayout.decode(Buffer.from(info!.data))
   }
 }
