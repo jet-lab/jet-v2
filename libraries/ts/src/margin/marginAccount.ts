@@ -265,24 +265,26 @@ export class MarginAccount {
       const loanNotePositionInfo =
         pool && this.info?.positions.positions.find(position => position.token.equals(pool.addresses.loanNoteMint))
 
-      // FIXME: Calculate these fields. Stop using infinity
+      const aBigNumber = 92831134235933
+
+      // FIXME: Calculate these fields. Stop using 0 or aBigNumber
       positions[poolConfig.symbol] = {
         poolConfig,
         tokenConfig,
         pool,
         depositNotePositionInfo,
         loanNotePositionInfo,
-        depositBalance: Infinity,
+        depositBalance: 0,
         depositBalanceNotes: depositNotePositionInfo?.balance ?? ZERO_BN,
-        loanBalance: Infinity,
+        loanBalance: 0,
         loanBalanceNotes: loanNotePositionInfo?.balance ?? ZERO_BN,
-        maxDepositAmount: Infinity,
-        maxWithdrawAmount: Infinity,
-        maxBorrowAmount: Infinity,
-        maxRepayAmount: Infinity,
-        maxSwapAmount: Infinity,
-        maxTransferAmount: Infinity,
-        buyingPower: Infinity
+        maxDepositAmount: aBigNumber,
+        maxWithdrawAmount: aBigNumber,
+        maxBorrowAmount: aBigNumber,
+        maxRepayAmount: aBigNumber,
+        maxSwapAmount: aBigNumber,
+        maxTransferAmount: aBigNumber,
+        buyingPower: 0
       }
     }
 
