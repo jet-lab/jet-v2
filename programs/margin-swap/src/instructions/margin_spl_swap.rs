@@ -148,7 +148,6 @@ pub fn margin_spl_swap_handler(
         &[
             ctx.accounts.swap_info.swap_pool.to_account_info(),
             ctx.accounts.swap_info.authority.to_account_info(),
-            ctx.accounts.margin_account.to_account_info(),
             ctx.accounts.transit_source_account.to_account_info(),
             ctx.accounts.swap_info.vault_into.to_account_info(),
             ctx.accounts.swap_info.vault_from.to_account_info(),
@@ -179,7 +178,7 @@ fn spl_swap_ix(
         ctx.accounts.token_program.key,
         ctx.accounts.swap_info.swap_pool.key,
         ctx.accounts.swap_info.authority.key,
-        &ctx.accounts.margin_account.key(),
+        ctx.accounts.swap_info.authority.key,
         ctx.accounts.transit_source_account.key,
         ctx.accounts.swap_info.vault_into.key,
         ctx.accounts.swap_info.vault_from.key,

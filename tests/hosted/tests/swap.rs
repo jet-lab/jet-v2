@@ -152,28 +152,21 @@ async fn swap_test_impl(swap_program_id: Pubkey) -> Result<(), anyhow::Error> {
     )
     .await?;
     
-    // let transit_source_authority = user_a.address();
-    let transit_source_authority = if swap_program_id == jet_margin_swap::orca_swap_v1_metadata::id() {
-        &swap_pool.pool_authority
-    } else  {
-        user_a.address()
-    };
-
-    let usdc_transit_as_source = ctx
+    let usdc_transit_source = ctx
         .tokens
-        .create_account(&env.usdc, transit_source_authority)
+        .create_account(&env.usdc, &swap_pool.pool_authority)
         .await?;
-    let tsol_transit_as_target = ctx
+    let tsol_transit_target = ctx
         .tokens
         .create_account(&env.tsol, user_a.address())
         .await?;
-    let usdc_transit_as_target = ctx
+    let usdc_transit_target = ctx
         .tokens
         .create_account(&env.usdc, user_a.address())
         .await?;
-    let tsol_transit_as_source = ctx
+    let tsol_transit_source = ctx
         .tokens
-        .create_account(&env.tsol, transit_source_authority)
+        .create_account(&env.tsol, &swap_pool.pool_authority)
         .await?;
 
     
@@ -245,8 +238,8 @@ async fn swap_test_impl(swap_program_id: Pubkey) -> Result<(), anyhow::Error> {
             &swap_program_id,
             &env.usdc,
             &env.tsol,
-            &usdc_transit_as_source,
-            &tsol_transit_as_target,
+            &usdc_transit_source,
+            &tsol_transit_target,
             &swap_pool,
             Amount::tokens(100 * ONE_USDC),
             // we want a minimum of 0.9 SOL for 100 USDC
@@ -272,8 +265,8 @@ async fn swap_test_impl(swap_program_id: Pubkey) -> Result<(), anyhow::Error> {
             &swap_program_id,
             &env.tsol,
             &env.usdc,
-            &tsol_transit_as_source,
-            &usdc_transit_as_target,
+            &tsol_transit_source,
+            &usdc_transit_target,
             &swap_pool,
             Amount::tokens(2 * ONE_TSOL),
             Amount::tokens(180 * ONE_USDC),
