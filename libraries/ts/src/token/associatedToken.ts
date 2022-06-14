@@ -49,7 +49,17 @@ export class AssociatedToken {
    * @returns {(Promise<AssociatedToken>)}
    * @memberof AssociatedToken
    */
-  static async load(connection: Connection, mint: Address, owner: Address, decimals: number): Promise<AssociatedToken> {
+  static async load({
+    connection,
+    mint,
+    owner,
+    decimals
+  }: {
+    connection: Connection
+    mint: Address
+    owner: Address
+    decimals: number
+  }): Promise<AssociatedToken> {
     const mintAddress = translateAddress(mint)
     const ownerAddress = translateAddress(owner)
     const address = this.derive(mintAddress, ownerAddress)
@@ -87,31 +97,41 @@ export class AssociatedToken {
   }
 
   /** Loads multiple token accounts, loads wrapped SOL. */
-  static async loadMultiple(
-    connection: Connection,
-    mints: Address[],
-    decimals: number | number[],
+  static async loadMultiple({
+    connection,
+    mints,
+    decimals,
+    owner
+  }: {
+    connection: Connection
+    mints: Address[]
+    decimals: number | number[]
     owner: Address
-  ): Promise<AssociatedToken[]> {
+  }): Promise<AssociatedToken[]> {
     const addresses: PublicKey[] = []
     for (let i = 0; i < mints.length; i++) {
       const mint = mints[i]
       addresses.push(AssociatedToken.derive(mint, owner))
     }
 
-    return await this.loadMultipleAux(connection, addresses, decimals)
+    return await this.loadMultipleAux({ connection, addresses, decimals })
   }
 
   /**
    * Loads multiple associated token accounts by owner.
    * If the native mint is provided, loads the native SOL balance of the owner instead.
    * If a mints array is not provided, loads all associated token accounts and the SOL balance of the owner. */
-  static async loadMultipleOrNative(
-    connection: Connection,
-    mints: Address[] | undefined,
-    decimals: number | number[] | undefined,
+  static async loadMultipleOrNative({
+    connection,
+    owner,
+    mints,
+    decimals
+  }: {
+    connection: Connection
     owner: Address
-  ): Promise<AssociatedToken[]> {
+    mints?: Address[]
+    decimals?: number | number[]
+  }): Promise<AssociatedToken[]> {
     if (Array.isArray(decimals) && mints !== undefined && decimals.length !== mints.length) {
       throw new Error("Decimals array length does not equal mints array length")
     }
@@ -196,11 +216,15 @@ export class AssociatedToken {
     return accounts
   }
 
-  static async loadMultipleAux(
-    connection: Connection,
-    addresses: Address[],
+  static async loadMultipleAux({
+    connection,
+    addresses,
+    decimals
+  }: {
+    connection: Connection
+    addresses: Address[]
     decimals?: number | number[]
-  ): Promise<AssociatedToken[]> {
+  }): Promise<AssociatedToken[]> {
     if (Array.isArray(decimals) && decimals.length !== addresses.length) {
       throw new Error("Decimals array length does not equal addresses array length")
     }

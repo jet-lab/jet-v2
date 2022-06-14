@@ -45,8 +45,6 @@ export class MarginClient {
 
   static getConfig(cluster: MarginCluster): MarginConfig {
     if (typeof cluster === "string") {
-      // FIXME: Suble differences between configs as faucet and faucetLimit are sometimes undefined.
-      // Remove `as MarginConfig` when there is an interface for the configs
       return JET_CONFIG[cluster] as MarginConfig
     } else {
       return cluster

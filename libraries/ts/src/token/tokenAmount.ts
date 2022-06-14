@@ -2,6 +2,8 @@ import { BN } from "@project-serum/anchor"
 import { Account, Mint } from "@solana/spl-token"
 import { bigIntToBn } from "./associatedToken"
 
+export const ZERO_BN = new BN(0)
+
 export class TokenAmount {
   /** Raw amount of token lamports */
   public lamports: BN
