@@ -4,7 +4,7 @@ import { AnchorProvider } from "@project-serum/anchor"
 import { AccountInfo, ConfirmOptions, PublicKey } from "@solana/web3.js"
 
 import { bnToNumber, MarginClient, MarginPools, Pool, PoolManager } from "../../../libraries/ts/src"
-import { getMintSupply, getTokenBalance } from "../util"
+import { getTokenBalance } from "../util"
 
 describe("margin pool devnet config", () => {
   const config = MarginClient.getConfig("devnet")
@@ -32,7 +32,7 @@ describe("margin pool devnet config", () => {
     for (const pool of Object.values(pools)) {
       const addresses: [string, PublicKey][] = Object.entries(pool.addresses)
       const accounts: (AccountInfo<Buffer> | null)[] = await provider.connection.getMultipleAccountsInfo(
-        addresses.map(([_, pubkey]) => pubkey)
+        addresses.map(([, pubkey]) => pubkey)
       )
       for (let i = 0; i < addresses.length; i++) {
         const account = accounts[i]
@@ -49,10 +49,10 @@ describe("margin pool devnet config", () => {
     expect(pools.USDC.symbol).to.eq("USDC")
   })
 
-  it("should have a market size", async () => {
+  it("should have an available liquidity", async () => {
     const USDC = pools.USDC
-    const supply = await getTokenBalance(provider, undefined, USDC.addresses.vault)
-    expect(bnToNumber(USDC.marketSize.tokens)).to.eq(supply)
+    const availableLiquidity = await getTokenBalance(provider, undefined, USDC.addresses.vault)
+    expect(bnToNumber(USDC.availableLiquidity.tokens)).to.eq(availableLiquidity)
   })
 
   it("should have a deposit APY", async () => {
