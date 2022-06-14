@@ -160,13 +160,13 @@ export class AssociatedToken {
       mints = accountInfos.map(acc => (acc && AccountLayout.decode(acc.data).mint) ?? PublicKey.default)
 
       // Add the users native SOL account
-      const emptyOwnerAccount = {
+      const emptyOwnerNativeAccount = {
         data: Buffer.alloc(0),
         executable: false,
         owner: SystemProgram.programId,
         lamports: 0
       }
-      const ownerAccount = (await connection.getAccountInfo(ownerAddress)) ?? emptyOwnerAccount
+      const ownerAccount = (await connection.getAccountInfo(ownerAddress)) ?? emptyOwnerNativeAccount
       accountInfos.push(ownerAccount)
       addresses.push(ownerAddress)
       mints.push(NATIVE_MINT)
@@ -356,7 +356,7 @@ export class AssociatedToken {
     if (info && info.data.length != 0) throw new TokenInvalidAccountSizeError()
 
     return new AssociatedToken(
-      translateAddress(address),
+      publicKey,
       null,
       TokenAmount.lamports(new BN(info?.lamports.toString() ?? "0"), this.NATIVE_DECIMALS)
     )

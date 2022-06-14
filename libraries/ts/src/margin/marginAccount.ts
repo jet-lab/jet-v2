@@ -1,6 +1,6 @@
 import assert from "assert"
 import { Address, AnchorProvider, BN, ProgramAccount, translateAddress } from "@project-serum/anchor"
-import { TOKEN_PROGRAM_ID } from "@solana/spl-token"
+import { NATIVE_MINT, TOKEN_PROGRAM_ID } from "@solana/spl-token"
 import {
   GetProgramAccountsFilter,
   MemcmpFilter,
@@ -214,13 +214,13 @@ export class MarginAccount {
     provider: AnchorProvider
     pools?: Record<MarginPools, Pool>
     walletTokens?: MarginWalletTokens
-    owner: PublicKey
+    owner: Address
     filters?: GetProgramAccountsFilter[]
   }): Promise<MarginAccount[]> {
     const ownerFilter: MemcmpFilter = {
       memcmp: {
         offset: 16,
-        bytes: owner.toBase58()
+        bytes: owner.toString()
       }
     }
     filters ??= []
@@ -315,14 +315,46 @@ export class MarginAccount {
     }
   }
 
+  /**
+   * Loads all tokens in the users wallet.
+   * Provides an array and a map of tokens mapped by pool.
+   *
+   * @static
+   * @param {MarginPrograms} programs
+   * @param {Address} owner
+   * @return {Promise<MarginWalletTokens>}
+   * @memberof MarginAccount
+   */
   static async loadTokens(programs: MarginPrograms, owner: Address): Promise<MarginWalletTokens> {
     const poolConfigs = Object.values(programs.config.pools)
 
-    const all = await AssociatedToken.loadMultipleOrNative({ connection: programs.margin.provider.connection, owner })
+    const ownerAddress = translateAddress(owner)
 
+    const all = await AssociatedToken.loadMultipleOrNative({
+      connection: programs.margin.provider.connection,
+      owner: ownerAddress
+    })
+
+    // Build out the map
     const map: Record<string, AssociatedToken> = {}
-    for (let i = 0; i < all.length; i++) {
-      map[poolConfigs[i].symbol] = all[i]
+    for (let i = 0; i < poolConfigs.length; i++) {
+      const poolConfig = poolConfigs[i]
+      const tokenConfig = programs.config.tokens[poolConfig.symbol]
+
+      // Find the associated token pubkey
+      const mint = translateAddress(poolConfig.tokenMint)
+      const associatedTokenOrNative = mint.equals(NATIVE_MINT)
+        ? ownerAddress
+        : AssociatedToken.derive(mint, ownerAddress)
+
+      // Find the associated token from the loadMultiple query
+      let token = all.find(token => token.address.equals(associatedTokenOrNative))
+      if (token === undefined) {
+        token = AssociatedToken.zeroAux(associatedTokenOrNative, tokenConfig.decimals)
+      }
+
+      // Add it to the map
+      map[poolConfig.symbol] = token
     }
     return { all, map }
   }
@@ -338,6 +370,58 @@ export class MarginAccount {
     return await MarginAccount.exists(this.programs, this.owner, this.seed)
   }
 
+  /** Create the margin account. If no seed is provided, one will be located. */
+  static async createAccount({
+    programs,
+    provider,
+    owner,
+    seed
+  }: {
+    programs: MarginPrograms
+    provider: AnchorProvider
+    owner: Address
+    seed?: number
+  }) {
+    if (seed === undefined) {
+      seed = await this.getUnusedAccountSeed({ programs, provider, owner })
+    }
+  }
+
+  /**
+   * Searches for a margin account that does not exist yet and returns its seed.
+   *
+   * @static
+   * @param {{
+   *     programs: MarginPrograms
+   *     provider: AnchorProvider
+   *     owner: Address
+   *   }}
+   * @memberof MarginAccount
+   */
+  static async getUnusedAccountSeed({
+    programs,
+    provider,
+    owner
+  }: {
+    programs: MarginPrograms
+    provider: AnchorProvider
+    owner: Address
+  }) {
+    const accounts = await MarginAccount.loadAllByOwner({ programs, provider, owner })
+    accounts.sort((a, b) => b.seed - a.seed)
+    // Return any gap found in account seeds
+    for (let i = 0; i < accounts.length; i++) {
+      const seed = accounts[i].seed
+      if (seed !== i) {
+        return seed
+      }
+    }
+
+    // Return +1
+    return accounts.length
+  }
+
+  /** Create the margin account using it's owner and seed. */
   async createAccount() {
     const ix: TransactionInstruction[] = []
     await this.withCreateAccount(ix)
