@@ -1077,6 +1077,7 @@ mod tests {
         )
         .unwrap()
     }
+
     #[test]
     fn proper_account_passes_anchor_verify() {
         MarginAccount::anchor_verify(&AccountInfo::new(
@@ -1088,7 +1089,8 @@ mod tests {
             &crate::id(),
             true,
             0,
-        )).unwrap();
+        ))
+        .unwrap();
     }
 
     #[test]
@@ -1102,7 +1104,8 @@ mod tests {
             &Pubkey::default(),
             true,
             0,
-        )).unwrap_err();
+        ))
+        .unwrap_err();
     }
 
     #[test]
@@ -1112,11 +1115,12 @@ mod tests {
             true,
             true,
             &mut 0,
-            &mut [0,1,2,3,4,5,6,7],
+            &mut [0, 1, 2, 3, 4, 5, 6, 7],
             &crate::id(),
             true,
             0,
-        )).unwrap_err();
+        ))
+        .unwrap_err();
     }
 
     #[test]
@@ -1130,6 +1134,7 @@ mod tests {
             &crate::id(),
             true,
             0,
-        )).unwrap_err();
+        ))
+        .unwrap_err();
     }
 }
