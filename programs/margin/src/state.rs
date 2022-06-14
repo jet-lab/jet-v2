@@ -15,17 +15,21 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use anchor_lang::prelude::*;
+use anchor_lang::{prelude::*, system_program, Discriminator};
 use bytemuck::{Contiguous, Pod, Zeroable};
+use jet_metadata::TokenKind;
 #[cfg(any(test, feature = "cli"))]
 use serde::ser::{Serialize, SerializeStruct, Serializer};
 
-use crate::{util::Require, ErrorCode, MAX_PRICE_QUOTE_AGE, MIN_COLLATERAL_RATIO};
+use crate::{
+    util::Require, ErrorCode, PriceChangeInfo, MAX_ORACLE_CONFIDENCE, MAX_ORACLE_STALENESS,
+    MAX_PRICE_QUOTE_AGE, MIN_COLLATERAL_RATIO,
+};
 use jet_proto_math::Number128;
 use jet_proto_proc_macros::assert_size;
 
 use anchor_lang::Result as AnchorResult;
-use std::result::Result;
+use std::{convert::TryFrom, result::Result};
 
 const POS_PRICE_VALID: u8 = 1;
 
@@ -89,6 +93,34 @@ impl std::fmt::Debug for MarginAccount {
         acc.finish()
     }
 }
+
+/// Execute all the mandatory anchor account verifications that are used during deserialization
+/// - performance: don't have to deserialize (even zero_copy copies)
+/// - compatibility: straightforward validation for programs using different anchor versions and non-anchor programs
+pub trait AnchorVerify: Discriminator + Owner {
+    fn anchor_verify(info: &AccountInfo) -> AnchorResult<()> {
+        if info.owner == &system_program::ID && info.lamports() == 0 {
+            return err!(anchor_lang::error::ErrorCode::AccountNotInitialized);
+        }
+        if info.owner != &Self::owner() {
+            return Err(
+                Error::from(anchor_lang::error::ErrorCode::AccountOwnedByWrongProgram)
+                    .with_pubkeys((*info.owner, MarginAccount::owner())),
+            );
+        }
+        let data: &[u8] = &info.try_borrow_data()?;
+        if data.len() < Self::discriminator().len() {
+            return Err(anchor_lang::error::ErrorCode::AccountDiscriminatorNotFound.into());
+        }
+        let given_disc = &data[..8];
+        if Self::discriminator() != given_disc {
+            return Err(anchor_lang::error::ErrorCode::AccountDiscriminatorMismatch.into());
+        }
+        Ok(())
+    }
+}
+
+impl AnchorVerify for MarginAccount {}
 
 impl MarginAccount {
     pub fn start_liquidation(&mut self, liquidation: Pubkey, liquidator: Pubkey) {
@@ -190,12 +222,12 @@ impl MarginAccount {
     pub fn set_position_price(
         &mut self,
         mint: &Pubkey,
-        adapter: &Pubkey,
         price: &PriceInfo,
     ) -> Result<(), ErrorCode> {
-        let position = self.position_list_mut().get_mut(mint).require()?;
-
-        position.set_price(adapter, price)
+        self.position_list_mut()
+            .get_mut(mint)
+            .require()?
+            .set_price(price)
     }
 
     /// Check that the overall health of the account is acceptable, by comparing the
@@ -208,6 +240,10 @@ impl MarginAccount {
         match info.c_ratio() {
             Some(c_ratio) if c_ratio < min_ratio => {
                 msg!("Account unhealty. C-ratio: {}", c_ratio.to_string());
+                err!(ErrorCode::Unhealthy)
+            }
+            _ if info.past_due() => {
+                msg!("Account unhealty. Debt is past due");
                 err!(ErrorCode::Unhealthy)
             }
             _ => Ok(()),
@@ -228,6 +264,7 @@ impl MarginAccount {
 
         match info.c_ratio() {
             Some(c_ratio) if c_ratio < min_ratio => Ok(()),
+            _ if info.past_due() => Ok(()),
             _ => Err(error!(ErrorCode::Healthy)),
         }
     }
@@ -243,6 +280,7 @@ impl MarginAccount {
         let mut fresh_collateral = Number128::ZERO;
         let mut stale_collateral = Number128::ZERO;
         let mut claims = Number128::ZERO;
+        let mut past_due = false;
 
         let mut stale_collateral_list = vec![];
 
@@ -272,7 +310,14 @@ impl MarginAccount {
             //TODO user replays a loan but Claim still has a position.value()
             match (kind, stale_reason) {
                 (PositionKind::NoValue, _) => (),
-                (PositionKind::Claim, None) => claims += position.value(),
+                (PositionKind::Claim, None) => {
+                    if position.balance > 0
+                        && position.flags.contains(AdapterPositionFlags::PAST_DUE)
+                    {
+                        past_due = true;
+                    }
+                    claims += position.value()
+                }
                 (PositionKind::Claim, Some(error)) => return Err(error!(error)),
 
                 (PositionKind::Deposit, None) => fresh_collateral += position.collateral_value(),
@@ -288,6 +333,7 @@ impl MarginAccount {
             stale_collateral,
             stale_collateral_list,
             claims,
+            past_due,
         })
     }
 
@@ -381,6 +427,28 @@ impl PriceInfo {
     }
 }
 
+impl TryFrom<PriceChangeInfo> for PriceInfo {
+    type Error = anchor_lang::error::Error;
+
+    fn try_from(value: PriceChangeInfo) -> AnchorResult<Self> {
+        let clock = Clock::get()?;
+        let max_confidence = Number128::from_bps(MAX_ORACLE_CONFIDENCE);
+
+        let twap = Number128::from_decimal(value.twap, value.exponent);
+        let confidence = Number128::from_decimal(value.confidence, value.exponent);
+
+        let price = match (confidence, value.publish_time) {
+            (c, _) if (c / twap) > max_confidence => PriceInfo::new_invalid(),
+            (_, publish_time) if (clock.unix_timestamp - publish_time) > MAX_ORACLE_STALENESS => {
+                PriceInfo::new_invalid()
+            }
+            _ => PriceInfo::new_valid(value.exponent, value.value, clock.unix_timestamp as u64),
+        };
+
+        Ok(price)
+    }
+}
+
 #[derive(Debug, Clone, Copy, Contiguous, Eq, PartialEq)]
 #[repr(u32)]
 pub enum PositionKind {
@@ -392,6 +460,16 @@ pub enum PositionKind {
 
     /// The position contains a balance of tokens that are owed as a part of some debt.
     Claim,
+}
+
+impl From<TokenKind> for PositionKind {
+    fn from(token: TokenKind) -> Self {
+        match token {
+            TokenKind::NonCollateral => PositionKind::NoValue,
+            TokenKind::Collateral => PositionKind::Deposit,
+            TokenKind::Claim => PositionKind::Claim,
+        }
+    }
 }
 
 #[assert_size(192)]
@@ -443,6 +521,12 @@ bitflags::bitflags! {
         /// The position may never be removed by the user, even if the balance remains at zero,
         /// until the adapter explicitly unsets this flag.
         const REQUIRED = 1 << 0;
+
+        /// Only applies to claims
+        /// For any other position, this can be set, but it will be ignored.
+        /// The claim must be repaid immediately.
+        /// The account will be considered unhealty if there is any balance on this position.
+        const PAST_DUE = 1 << 1;
     }
 }
 
@@ -469,11 +553,7 @@ impl AccountPosition {
     }
 
     /// Update the price for this position
-    pub fn set_price(&mut self, adapter: &Pubkey, price: &PriceInfo) -> Result<(), ErrorCode> {
-        if self.adapter != *adapter {
-            return Err(ErrorCode::InvalidPriceAdapter);
-        }
-
+    pub fn set_price(&mut self, price: &PriceInfo) -> Result<(), ErrorCode> {
         self.price = *price;
         self.calculate_value();
 
@@ -673,6 +753,7 @@ pub struct Valuation {
     stale_collateral: Number128,
     stale_collateral_list: Vec<(Pubkey, ErrorCode)>,
     claims: Number128,
+    past_due: bool,
 }
 
 impl Valuation {
@@ -695,11 +776,16 @@ impl Valuation {
     pub fn collateral(&self) -> Number128 {
         self.fresh_collateral
     }
+
+    pub fn past_due(&self) -> bool {
+        self.past_due
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use jet_metadata::TokenKind;
     use serde_test::{assert_ser_tokens, Token};
 
     fn create_position_input(margin_address: &Pubkey) -> (Pubkey, Pubkey) {
@@ -930,5 +1016,125 @@ mod tests {
         // There should be no positions left
         assert_eq!(margin_account.positions().count(), 0);
         assert_eq!(margin_account.positions, [0; 7432]);
+    }
+
+    #[test]
+    fn margin_account_past_due() {
+        let mut acc = MarginAccount {
+            version: 1,
+            bump_seed: [0],
+            user_seed: [0; 2],
+            reserved0: [0; 4],
+            owner: Pubkey::default(),
+            liquidation: Pubkey::default(),
+            liquidator: Pubkey::default(),
+            positions: [0; 7432],
+        };
+        let collateral = register_position(&mut acc, 0, TokenKind::Collateral);
+        let claim = register_position(&mut acc, 1, TokenKind::Claim);
+        set_price(&mut acc, collateral, 100);
+        set_price(&mut acc, claim, 100);
+        acc.set_position_balance(&claim, &claim, 1).unwrap();
+        assert_unhealthy(&acc);
+        // show that this collateral is sufficient to cover the debt
+        acc.set_position_balance(&collateral, &collateral, 100)
+            .unwrap();
+        assert_healthy(&acc);
+        // but when past due, the account is unhealthy
+        acc.get_position_mut(&claim).require().unwrap().flags |= AdapterPositionFlags::PAST_DUE;
+        assert_unhealthy(&acc);
+    }
+
+    fn register_position(acc: &mut MarginAccount, index: u8, kind: TokenKind) -> Pubkey {
+        let key = Pubkey::find_program_address(&[&[index]], &crate::id()).0;
+        acc.register_position(key, 2, key, key, kind.into(), 10000, 0)
+            .unwrap();
+
+        key
+    }
+
+    fn assert_unhealthy(acc: &MarginAccount) {
+        acc.verify_healthy_positions().unwrap_err();
+        acc.verify_unhealthy_positions().unwrap();
+    }
+
+    fn assert_healthy(acc: &MarginAccount) {
+        acc.verify_healthy_positions().unwrap();
+        acc.verify_unhealthy_positions().unwrap_err();
+    }
+
+    fn set_price(acc: &mut MarginAccount, key: Pubkey, price: i64) {
+        acc.set_position_price(
+            &key,
+            // &key,
+            &PriceInfo {
+                value: price,
+                timestamp: crate::util::get_timestamp(),
+                exponent: 1,
+                is_valid: 1,
+                _reserved: [0; 3],
+            },
+        )
+        .unwrap()
+    }
+
+    #[test]
+    fn proper_account_passes_anchor_verify() {
+        MarginAccount::anchor_verify(&AccountInfo::new(
+            &Pubkey::default(),
+            true,
+            true,
+            &mut 0,
+            &mut MarginAccount::discriminator(),
+            &crate::id(),
+            true,
+            0,
+        ))
+        .unwrap();
+    }
+
+    #[test]
+    fn wrong_owner_fails_anchor_verify() {
+        MarginAccount::anchor_verify(&AccountInfo::new(
+            &Pubkey::default(),
+            true,
+            true,
+            &mut 0,
+            &mut MarginAccount::discriminator(),
+            &Pubkey::default(),
+            true,
+            0,
+        ))
+        .unwrap_err();
+    }
+
+    #[test]
+    fn wrong_discriminator_fails_anchor_verify() {
+        MarginAccount::anchor_verify(&AccountInfo::new(
+            &Pubkey::default(),
+            true,
+            true,
+            &mut 0,
+            &mut [0, 1, 2, 3, 4, 5, 6, 7],
+            &crate::id(),
+            true,
+            0,
+        ))
+        .unwrap_err();
+    }
+
+    #[test]
+    fn no_data_fails_anchor_verify() {
+        MarginAccount::anchor_verify(&AccountInfo::new(
+            &Pubkey::default(),
+            true,
+            true,
+            &mut 0,
+            &mut [],
+            &crate::id(),
+            true,
+            0,
+        ))
+        .unwrap_err();
     }
 }
