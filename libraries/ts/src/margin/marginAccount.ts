@@ -375,16 +375,23 @@ export class MarginAccount {
     programs,
     provider,
     owner,
-    seed
+    seed,
+    pools,
+    walletTokens
   }: {
     programs: MarginPrograms
     provider: AnchorProvider
     owner: Address
     seed?: number
+    pools?: Record<MarginPools, Pool> | undefined
+    walletTokens?: MarginWalletTokens | undefined
   }) {
     if (seed === undefined) {
       seed = await this.getUnusedAccountSeed({ programs, provider, owner })
     }
+    const marginAccount = new MarginAccount(programs, provider, owner, seed, pools, walletTokens)
+    await marginAccount.createAccount()
+    return marginAccount
   }
 
   /**
