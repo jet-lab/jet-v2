@@ -16,7 +16,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 use anchor_lang::prelude::*;
-#[cfg(not(feature = "devnet"))]
+#[cfg(not(feature = "testing"))]
 use anchor_lang::solana_program::pubkey;
 
 use jet_margin_pool::MarginPoolConfig;
@@ -28,7 +28,7 @@ pub use instructions::{MarginPoolParams, TokenMetadataParams};
 
 declare_id!("JPCtrLreUqsEbdhtxZ8zpd8wBydKz4nuEjX5u9Eg5H8");
 
-#[cfg(not(feature = "devnet"))]
+#[cfg(not(feature = "testing"))]
 static ROOT_AUTHORITY: Pubkey = pubkey!("FqXoGb9Zxy4uzG12N1jvHyktNG3Zsez367vAzJeiyMF1");
 
 #[program]

@@ -47,7 +47,7 @@ pub struct CreateEntry<'info> {
     pub metadata_account: AccountInfo<'info>,
 
     /// The authority that must sign to make this change
-    #[cfg_attr(not(feature = "devnet"), account(signer))]
+    #[cfg_attr(not(feature = "testing"), account(signer))]
     pub authority: Account<'info, ControlAuthority>,
 
     /// The address paying the rent for the account
@@ -65,7 +65,7 @@ pub struct SetEntry<'info> {
     pub metadata_account: AccountInfo<'info>,
 
     /// The authority that must sign to make this change
-    #[cfg_attr(not(feature = "devnet"), account(signer))]
+    #[cfg_attr(not(feature = "testing"), account(signer))]
     pub authority: Account<'info, ControlAuthority>,
 }
 
@@ -77,7 +77,7 @@ pub struct RemoveEntry<'info> {
     pub metadata_account: AccountInfo<'info>,
 
     /// The authority that must sign to make this change
-    #[cfg_attr(not(feature = "devnet"), account(signer))]
+    #[cfg_attr(not(feature = "testing"), account(signer))]
     pub authority: Account<'info, ControlAuthority>,
 
     /// The address receiving the rent

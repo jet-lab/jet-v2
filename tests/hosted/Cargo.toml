@@ -28,13 +28,13 @@ spl-token = "3"
 spl-token-swap = "2"
 pyth-sdk-solana = "0.4"
 
-jet-control = { path = "../../programs/control", features = ["no-entrypoint", "devnet"] }
+jet-control = { path = "../../programs/control", features = ["no-entrypoint", "testing"] }
 jet-margin = { path = "../../programs/margin", features = ["no-entrypoint"] }
-jet-margin-pool = { path = "../../programs/margin-pool", features = ["no-entrypoint", "devnet"] }
+jet-margin-pool = { path = "../../programs/margin-pool", features = ["no-entrypoint", "testing"] }
 jet-margin-swap = { path = "../../programs/margin-swap", features = ["no-entrypoint"] }
-jet-metadata = { path = "../../programs/metadata", features = ["no-entrypoint", "devnet"] }
+jet-metadata = { path = "../../programs/metadata", features = ["no-entrypoint", "testing"] }
 
-jet-margin-sdk = { path = "../../libraries/rust", features = ["devnet"] }
+jet-margin-sdk = { path = "../../libraries/rust", features = ["testing"] }
 
 mock-adapter = { path = "../mock-adapter", features = ["no-entrypoint"] }
 
