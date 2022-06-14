@@ -66,15 +66,15 @@ export interface MarginWalletTokens {
 
 export class MarginAccount {
   static readonly SEED_MAX_VALUE = 65535
-  public info?: {
+  info?: {
     marginAccount: MarginAccountData
     positions: AccountPositionList
   }
 
   positions: Record<MarginPools, PoolPosition>
   summary: AccountSummary
+  addresses: MarginAccountAddresses
 
-  public addresses: MarginAccountAddresses
   get address() {
     return this.addresses.marginAccount
   }
