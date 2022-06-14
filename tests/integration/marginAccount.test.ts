@@ -82,7 +82,7 @@ describe("margin account", () => {
     })
 
     // TEST
-    expect(marginAccounts).length.to.eq(1)
+    expect(marginAccounts.length).to.eq(1)
     expect(marginAccounts.find(acc => acc.seed === 0)).to.eq(marginAccount_A)
   })
 })
