@@ -165,11 +165,21 @@ describe("margin pool", () => {
 
   it("Initialize the margin accounts for each user", async () => {
     anchor.setProvider(provider_a)
-    marginAccount_A = await MarginAccount.load(programs, provider_a, provider_a.wallet.publicKey, 0)
+    marginAccount_A = await MarginAccount.load({
+      programs,
+      provider: provider_a,
+      owner: provider_a.wallet.publicKey,
+      seed: 0
+    })
     await marginAccount_A.createAccount()
 
     anchor.setProvider(provider_b)
-    marginAccount_B = await MarginAccount.load(programs, provider_b, provider_b.wallet.publicKey, 0)
+    marginAccount_B = await MarginAccount.load({
+      programs,
+      provider: provider_b,
+      owner: provider_b.wallet.publicKey,
+      seed: 0
+    })
     await marginAccount_B.createAccount()
   })
 
