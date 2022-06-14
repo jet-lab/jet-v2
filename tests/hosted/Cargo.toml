@@ -40,3 +40,9 @@ mock-adapter = { path = "../mock-adapter", features = ["no-entrypoint"] }
 
 jet-simulation = { git = "https://github.com/jet-lab/jet-simulation", branch = "master" }
 jet-proto-math = "1"
+
+[dependencies.orca-swap]
+package = "spl-token-swap"
+git = "https://github.com/orca-so/solana-program-library"
+branch = "master"
+features = ["no-entrypoint"]

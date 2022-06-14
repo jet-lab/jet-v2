@@ -24,3 +24,9 @@ spl-token-swap = { version = "2.1", features = ["no-entrypoint"] }
 
 jet-margin-pool = { path = "../margin-pool", features = ["cpi", "no-entrypoint"] }
 jet-margin = { path = "../margin", features = ["cpi", "no-entrypoint"] }
+
+[dependencies.orca-swap]
+package = "spl-token-swap"
+git = "https://github.com/orca-so/solana-program-library"
+branch = "master"
+features = ["no-entrypoint"]

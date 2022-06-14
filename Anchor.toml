@@ -32,5 +32,9 @@ program = "./deps/spl_token_faucet.so"
 address = "SwaPpA9LAaLfeLi3a68M4DjnLqgtticKg6CnyNwgAC8"
 program = "./deps/spl_token_swap.so"
 
+[[test.genesis]]
+address = "DjVE6JNiYqPL2QXyCUUh8rNjHrbz9hXHNYt99MQ59qw1"
+program = "./deps/orca_token_swap_v1.so"
+
 [scripts]
 test = "npx ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.test.ts"

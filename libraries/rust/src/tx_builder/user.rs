@@ -289,7 +289,7 @@ impl MarginTxBuilder {
             .await?;
 
         let (swap_authority, _) =
-            Pubkey::find_program_address(&[swap_pool.as_ref()], &spl_token_swap::id());
+            Pubkey::find_program_address(&[swap_pool.as_ref()], swap_program);
         let swap_pool = MarginSwapIxBuilder::new(
             *source_token_mint,
             *destination_token_mint,

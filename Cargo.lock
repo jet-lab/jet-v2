@@ -209,7 +209,7 @@ dependencies = [
  "anchor-lang",
  "solana-program",
  "spl-associated-token-account",
- "spl-token",
+ "spl-token 3.2.0",
 ]
 
 [[package]]
@@ -1372,8 +1372,9 @@ dependencies = [
  "rand 0.7.3",
  "serial_test",
  "solana-sdk",
- "spl-token",
- "spl-token-swap",
+ "spl-token 3.2.0",
+ "spl-token-swap 0.1.0",
+ "spl-token-swap 2.1.0",
  "tokio",
 ]
 
@@ -1585,8 +1586,8 @@ dependencies = [
  "jet-metadata",
  "jet-simulation",
  "solana-sdk",
- "spl-token",
- "spl-token-swap",
+ "spl-token 3.2.0",
+ "spl-token-swap 2.1.0",
  "thiserror",
  "tokio",
 ]
@@ -1599,7 +1600,8 @@ dependencies = [
  "anchor-spl",
  "jet-margin",
  "jet-margin-pool",
- "spl-token-swap",
+ "spl-token-swap 0.1.0",
+ "spl-token-swap 2.1.0",
 ]
 
 [[package]]
@@ -1636,7 +1638,7 @@ dependencies = [
 [[package]]
 name = "jet-simulation"
 version = "0.1.0"
-source = "git+https://github.com/jet-lab/jet-simulation?branch=master#8268f8740ed3f0d19a4bee2da226a7ed72cb793e"
+source = "git+https://github.com/jet-lab/jet-simulation?branch=master#e8cfb843413c7fece44d51892df880e85242d26f"
 dependencies = [
  "anchor-lang",
  "anyhow",
@@ -1652,8 +1654,8 @@ dependencies = [
  "solana-sdk",
  "solana-transaction-status",
  "spl-associated-token-account",
- "spl-token",
- "spl-token-swap",
+ "spl-token 3.2.0",
+ "spl-token-swap 2.1.0",
  "tokio",
 ]
 
@@ -2768,7 +2770,7 @@ dependencies = [
  "solana-config-program",
  "solana-sdk",
  "solana-vote-program",
- "spl-token",
+ "spl-token 3.2.0",
  "thiserror",
  "zstd",
 ]
@@ -3322,7 +3324,7 @@ dependencies = [
  "solana-vote-program",
  "spl-associated-token-account",
  "spl-memo",
- "spl-token",
+ "spl-token 3.2.0",
  "thiserror",
 ]
 
@@ -3376,7 +3378,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "393e2240d521c3dd770806bff25c2c00d761ac962be106e14e22dd912007f428"
 dependencies = [
  "solana-program",
- "spl-token",
+ "spl-token 3.2.0",
 ]
 
 [[package]]
@@ -3405,6 +3407,19 @@ dependencies = [
 
 [[package]]
 name = "spl-token"
+version = "3.0.0"
+source = "git+https://github.com/orca-so/solana-program-library?branch=master#e55a48bc7bff7efbb1d6be9f529ccb6cb734da2a"
+dependencies = [
+ "arrayref",
+ "num-derive",
+ "num-traits",
+ "num_enum",
+ "solana-program",
+ "thiserror",
+]
+
+[[package]]
+name = "spl-token"
 version = "3.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "93bfdd5bd7c869cb565c7d7635c4fafe189b988a0bdef81063cd9585c6b8dc01"
@@ -3414,6 +3429,19 @@ dependencies = [
  "num-traits",
  "num_enum",
  "solana-program",
+ "thiserror",
+]
+
+[[package]]
+name = "spl-token-swap"
+version = "0.1.0"
+source = "git+https://github.com/orca-so/solana-program-library?branch=master#e55a48bc7bff7efbb1d6be9f529ccb6cb734da2a"
+dependencies = [
+ "arrayref",
+ "num-derive",
+ "num-traits",
+ "solana-program",
+ "spl-token 3.0.0",
  "thiserror",
 ]
 
@@ -3429,7 +3457,7 @@ dependencies = [
  "num-traits",
  "solana-program",
  "spl-math",
- "spl-token",
+ "spl-token 3.2.0",
  "thiserror",
 ]
 

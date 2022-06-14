@@ -15,6 +15,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+use anchor_lang::solana_program::instruction::Instruction;
 use anchor_spl::token::Token;
 
 use crate::*;
@@ -118,8 +119,8 @@ pub struct SwapInfo<'info> {
     #[account(mut)]
     pub fee_account: UncheckedAccount<'info>,
 
-    /// The address of the swap program, currently limited to spl_token_swap
-    pub swap_program: Program<'info, SplTokenSwap>,
+    /// The address of the swap program
+    pub swap_program: UncheckedAccount<'info>,
 }
 
 pub fn margin_spl_swap_handler(
@@ -132,24 +133,15 @@ pub fn margin_spl_swap_handler(
         Amount::tokens(amount_in),
     )?;
 
-    let swap_ix = spl_token_swap::instruction::swap(
-        ctx.accounts.swap_info.swap_program.key,
-        ctx.accounts.token_program.key,
-        ctx.accounts.swap_info.swap_pool.key,
-        ctx.accounts.swap_info.authority.key,
-        &ctx.accounts.margin_account.key(),
-        ctx.accounts.transit_source_account.key,
-        ctx.accounts.swap_info.vault_into.key,
-        ctx.accounts.swap_info.vault_from.key,
-        ctx.accounts.transit_destination_account.key,
-        ctx.accounts.swap_info.token_mint.key,
-        ctx.accounts.swap_info.fee_account.key,
-        None,
-        spl_token_swap::instruction::Swap {
-            amount_in,
-            minimum_amount_out,
-        },
-    )?;
+    let swap_program_id = ctx.accounts.swap_info.swap_program.key();
+
+    let swap_ix = if swap_program_id == spl_token_swap::id() {
+        spl_swap_ix(&ctx, amount_in, minimum_amount_out)
+    } else if swap_program_id == orca_swap_v1_metadata::id() {
+        orca_swap_ix(&ctx, amount_in, minimum_amount_out)
+    } else {
+        err!(MarginSwapError::InvalidSwapProgram)
+    }?;
 
     invoke(
         &swap_ix,
@@ -175,4 +167,51 @@ pub fn margin_spl_swap_handler(
     )?;
 
     Ok(())
+}
+
+fn spl_swap_ix(
+    ctx: &Context<MarginSplSwap>,
+    amount_in: u64,
+    minimum_amount_out: u64,
+) -> Result<Instruction> {
+    Ok(spl_token_swap::instruction::swap(
+        ctx.accounts.swap_info.swap_program.key,
+        ctx.accounts.token_program.key,
+        ctx.accounts.swap_info.swap_pool.key,
+        ctx.accounts.swap_info.authority.key,
+        &ctx.accounts.margin_account.key(),
+        ctx.accounts.transit_source_account.key,
+        ctx.accounts.swap_info.vault_into.key,
+        ctx.accounts.swap_info.vault_from.key,
+        ctx.accounts.transit_destination_account.key,
+        ctx.accounts.swap_info.token_mint.key,
+        ctx.accounts.swap_info.fee_account.key,
+        None,
+        spl_token_swap::instruction::Swap {
+            amount_in,
+            minimum_amount_out,
+        },
+    )?)
+}
+
+fn orca_swap_ix(
+    ctx: &Context<MarginSplSwap>,
+    amount_in: u64,
+    minimum_amount_out: u64,
+) -> Result<Instruction> {
+    Ok(orca_swap::instruction::swap(
+        ctx.accounts.swap_info.swap_program.key,
+        ctx.accounts.token_program.key,
+        ctx.accounts.swap_info.swap_pool.key,
+        ctx.accounts.swap_info.authority.key,
+        ctx.accounts.transit_source_account.key,
+        ctx.accounts.swap_info.vault_into.key,
+        ctx.accounts.swap_info.vault_from.key,
+        ctx.accounts.transit_destination_account.key,
+        ctx.accounts.swap_info.token_mint.key,
+        ctx.accounts.swap_info.fee_account.key,
+        None,
+        amount_in,
+        minimum_amount_out,
+    )?)
 }

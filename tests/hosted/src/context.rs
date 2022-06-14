@@ -2,6 +2,7 @@ use std::cell::RefCell;
 use std::sync::{Arc, Mutex};
 
 use anyhow::Error;
+use jet_margin_swap::orca_swap_v1_metadata;
 use rand::rngs::mock::StepRng;
 use tokio::sync::OnceCell;
 
@@ -56,7 +57,8 @@ impl MarginTestContext {
             jet_margin,
             jet_metadata,
             jet_margin_pool,
-            jet_margin_swap
+            jet_margin_swap,
+            (orca_swap_v1_metadata::id(), orca_swap::processor::Processor::process),
         ]);
         let payer = Keypair::from_bytes(&runtime.payer().to_bytes()).unwrap();
         let rng = MockRng(StepRng::new(0, 1));

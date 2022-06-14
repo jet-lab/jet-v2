@@ -59,12 +59,12 @@ pub struct MarginPoolInfo<'info> {
     pub deposit_note_mint: UncheckedAccount<'info>,
 }
 
-/// Create an SPL Token Swap `Program` wrapper for validation
-#[derive(Copy, Clone)]
-pub struct SplTokenSwap;
+pub mod orca_swap_v1_metadata {
+    anchor_lang::prelude::declare_id!("DjVE6JNiYqPL2QXyCUUh8rNjHrbz9hXHNYt99MQ59qw1");
+}
 
-impl Id for SplTokenSwap {
-    fn id() -> Pubkey {
-        spl_token_swap::id()
-    }
+#[error_code]
+enum MarginSwapError {
+    #[msg("There is no swap instruction constructor for the provided swap program id")]
+    InvalidSwapProgram,
 }
