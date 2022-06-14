@@ -383,8 +383,8 @@ export class MarginAccount {
     provider: AnchorProvider
     owner: Address
     seed?: number
-    pools?: Record<MarginPools, Pool> | undefined
-    walletTokens?: MarginWalletTokens | undefined
+    pools?: Record<MarginPools, Pool>
+    walletTokens?: MarginWalletTokens
   }) {
     if (seed === undefined) {
       seed = await this.getUnusedAccountSeed({ programs, provider, owner })
