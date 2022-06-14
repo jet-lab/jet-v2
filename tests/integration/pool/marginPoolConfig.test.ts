@@ -3,8 +3,8 @@ import * as anchor from "@project-serum/anchor"
 import { AnchorProvider } from "@project-serum/anchor"
 import { AccountInfo, ConfirmOptions, PublicKey } from "@solana/web3.js"
 
-import { MarginClient, MarginTokens, Pool, PoolManager } from "../../../libraries/ts/src"
-import { getMintSupply } from "../util"
+import { bnToNumber, MarginClient, MarginPools, Pool, PoolManager } from "../../../libraries/ts/src"
+import { getMintSupply, getTokenBalance } from "../util"
 
 describe("margin pool devnet config", () => {
   const config = MarginClient.getConfig("devnet")
@@ -14,7 +14,7 @@ describe("margin pool devnet config", () => {
 
   const programs = MarginClient.getPrograms(provider, config)
   const manager = new PoolManager(programs, provider)
-  let pools: Record<MarginTokens, Pool>
+  let pools: Record<MarginPools, Pool>
 
   it("Load pools", async () => {
     pools = await manager.loadAll()
@@ -51,8 +51,8 @@ describe("margin pool devnet config", () => {
 
   it("should have a market size", async () => {
     const USDC = pools.USDC
-    const supply = await getMintSupply(provider, USDC.addresses.tokenMint, USDC.decimals)
-    expect(USDC.marketSize.tokens).to.eq(supply)
+    const supply = await getTokenBalance(provider, undefined, USDC.addresses.vault)
+    expect(bnToNumber(USDC.marketSize.lamports)).to.eq(supply)
   })
 
   it("should have a deposit APY", async () => {
