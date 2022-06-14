@@ -14,7 +14,7 @@ no-entrypoint = []
 no-idl = []
 cpi = ["no-entrypoint"]
 default = []
-devnet = []
+testing = ["jet-metadata/testing"]
 cli = ["no-entrypoint", "serde"]
 
 [dependencies]

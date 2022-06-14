@@ -18,9 +18,9 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{Mint, Token, TokenAccount};
 
-use jet_metadata::{PositionTokenMetadata, TokenKind};
+use jet_metadata::PositionTokenMetadata;
 
-use crate::{MarginAccount, PositionKind};
+use crate::MarginAccount;
 
 #[derive(Accounts)]
 pub struct RegisterPosition<'info> {
@@ -66,18 +66,13 @@ pub fn register_position_handler(ctx: Context<RegisterPosition>) -> Result<()> {
     let mut account = ctx.accounts.margin_account.load_mut()?;
     let position_token = &ctx.accounts.position_token_mint;
     let address = ctx.accounts.token_account.key();
-    let kind = match metadata.token_kind {
-        TokenKind::NonCollateral => PositionKind::NoValue,
-        TokenKind::Collateral => PositionKind::Deposit,
-        TokenKind::Claim => PositionKind::Claim,
-    };
 
     account.register_position(
         position_token.key(),
         position_token.decimals,
         address,
         metadata.adapter_program,
-        kind,
+        metadata.token_kind.into(),
         metadata.collateral_weight,
         metadata.collateral_max_staleness,
     )?;

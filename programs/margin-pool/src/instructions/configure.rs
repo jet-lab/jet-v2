@@ -29,7 +29,7 @@ pub struct Configure<'info> {
     pub margin_pool: Account<'info, MarginPool>,
 
     /// The authority allowed to modify the pool, which must sign
-    #[cfg_attr(not(feature = "devnet"), account(signer))]
+    #[cfg_attr(not(feature = "testing"), account(signer))]
     pub authority: Account<'info, ControlAuthority>,
 
     /// CHECK:

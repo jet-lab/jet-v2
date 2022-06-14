@@ -45,7 +45,7 @@ pub struct MarginPoolParams {
 
 #[derive(Accounts)]
 pub struct ConfigureToken<'info> {
-    #[cfg_attr(not(feature = "devnet"), account(address = crate::ROOT_AUTHORITY))]
+    #[cfg_attr(not(feature = "testing"), account(address = crate::ROOT_AUTHORITY))]
     pub requester: Signer<'info>,
     pub authority: Account<'info, Authority>,
 

@@ -8,7 +8,7 @@ name = "jet_margin_sdk"
 path = "src/lib.rs"
 
 [features]
-devnet = []
+testing = ["jet-control/testing", "jet-margin/testing", "jet-metadata/testing", "jet-margin-pool/testing", "jet-margin-swap/testing"]
 
 [dependencies]
 anyhow = "1"
