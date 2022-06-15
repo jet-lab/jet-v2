@@ -438,8 +438,16 @@ impl TryFrom<PriceChangeInfo> for PriceInfo {
         let confidence = Number128::from_decimal(value.confidence, value.exponent);
 
         let price = match (confidence, value.publish_time) {
-            (c, _) if (c / twap) > max_confidence => PriceInfo::new_invalid(),
+            (c, _) if (c / twap) > max_confidence => {
+                msg!("c = {}", c);
+                msg!("twap = {}", twap);
+                msg!("max_confidence = {}", max_confidence);
+                PriceInfo::new_invalid()
+            },
             (_, publish_time) if (clock.unix_timestamp - publish_time) > MAX_ORACLE_STALENESS => {
+                msg!("clock.unix_timestamp = {}", clock.unix_timestamp);
+                msg!("publish_time = {}", publish_time);
+                msg!("MAX_ORACLE_STALENESS = {}", MAX_ORACLE_STALENESS);
                 PriceInfo::new_invalid()
             }
             _ => PriceInfo::new_valid(value.exponent, value.value, clock.unix_timestamp as u64),
