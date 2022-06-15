@@ -227,14 +227,6 @@ pub enum ErrorCode {
     /// 141041
     #[msg("attempted to extract too much value during liquidation")]
     LiquidationLostValue,
-
-    /// 141042
-    #[msg("reduced the c-ratio too far during liquidation")]
-    LiquidationUnhealthy,
-
-    /// 141043
-    #[msg("increased the c-ratio too high during liquidation")]
-    LiquidationTooHealthy,
 }
 
 pub fn write_adapter_result(result: &AdapterResult) -> Result<()> {

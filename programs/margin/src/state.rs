@@ -802,15 +802,7 @@ pub struct Valuation {
 }
 
 impl Valuation {
-    pub fn c_ratio(&self) -> Option<Number128> {
-        if self.required_collateral == Number128::ZERO {
-            return None;
-        }
-
-        Some(self.effective_collateral / self.required_collateral)
-    }
-
-    pub fn net_collateral(&self) -> Number128 {
+    pub fn available_collateral(&self) -> Number128 {
         self.effective_collateral - self.required_collateral
     }
 

@@ -135,27 +135,6 @@ async fn cannot_transact_when_being_liquidated() -> Result<()> {
 
 #[tokio::test]
 #[serial]
-async fn liquidator_cannot_over_repay() -> Result<()> {
-    let scen = scenario1().await?;
-
-    scen.user_b_liq.liquidate_begin().await?;
-
-    // Fail a repayment on behalf of the user because it repays too much
-    // User B would have
-    // Collateral (800'000 * 0.95) + 500'000 = 1'260'000
-    // Claim 500'000
-    // C ratio = 2.52
-    let result = scen
-        .user_b_liq
-        .repay(&scen.usdc, Amount::tokens(3_000_000 * ONE_USDC))
-        .await;
-    assert_program_error!(ErrorCode::LiquidationTooHealthy, result);
-
-    Ok(())
-}
-
-#[tokio::test]
-#[serial]
 async fn liquidator_can_repay_from_unhealthy_to_healthy_state() -> Result<()> {
     let scen = scenario1().await?;
 
