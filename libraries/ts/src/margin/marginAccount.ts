@@ -15,8 +15,9 @@ import { Pool } from "./pool/pool"
 import { AccountPosition, AccountPositionList, AccountPositionListLayout, MarginAccountData } from "./state"
 import { MarginPrograms } from "./marginClient"
 import { findDerivedAccount } from "../utils/pda"
-import { AssociatedToken, bnToNumber, MarginPools, ZERO_BN } from ".."
+import { AssociatedToken, bnToNumber, MarginPools, TokenAmount, ZERO_BN } from ".."
 import { MarginPoolConfig, MarginTokenConfig } from "./config"
+import { sleep } from "../utils/util"
 
 export interface MarginAccountAddresses {
   marginAccount: PublicKey
@@ -31,23 +32,19 @@ export interface MarginPositionAddresses {
   tokenMetadata: PublicKey
 }
 
+export type TradeAction = 'deposit' | 'withdraw' | 'borrow' | 'repay' | 'swap' | 'transfer';
 export interface PoolPosition {
   poolConfig: MarginPoolConfig
   tokenConfig: MarginTokenConfig
   pool?: Pool
   depositNotePositionInfo: AccountPosition | undefined
   loanNotePositionInfo: AccountPosition | undefined
-  depositBalance: number
+  depositBalance: TokenAmount
   depositBalanceNotes: BN
-  loanBalance: number
+  loanBalance: TokenAmount
   loanBalanceNotes: BN
-  maxDepositAmount: number
-  maxWithdrawAmount: number
-  maxBorrowAmount: number
-  maxRepayAmount: number
-  maxSwapAmount: number
-  maxTransferAmount: number
-  buyingPower: number
+  maxTradeAmounts: Record<TradeAction, TokenAmount>
+  buyingPower: TokenAmount
 }
 
 export interface AccountSummary {
@@ -265,7 +262,7 @@ export class MarginAccount {
       const loanNotePositionInfo =
         pool && this.info?.positions.positions.find(position => position.token.equals(pool.addresses.loanNoteMint))
 
-      const aBigNumber = 92831134235933
+      const aBigNumber = TokenAmount.tokens('92831134235933', tokenConfig.decimals)
 
       // FIXME: Calculate these fields. Stop using 0 or aBigNumber
       positions[poolConfig.symbol] = {
@@ -274,17 +271,19 @@ export class MarginAccount {
         pool,
         depositNotePositionInfo,
         loanNotePositionInfo,
-        depositBalance: 0,
+        depositBalance: TokenAmount.zero(tokenConfig.decimals),
         depositBalanceNotes: depositNotePositionInfo?.balance ?? ZERO_BN,
-        loanBalance: 0,
+        loanBalance: TokenAmount.zero(tokenConfig.decimals),
         loanBalanceNotes: loanNotePositionInfo?.balance ?? ZERO_BN,
-        maxDepositAmount: aBigNumber,
-        maxWithdrawAmount: aBigNumber,
-        maxBorrowAmount: aBigNumber,
-        maxRepayAmount: aBigNumber,
-        maxSwapAmount: aBigNumber,
-        maxTransferAmount: aBigNumber,
-        buyingPower: 0
+        maxTradeAmounts: {
+          deposit: aBigNumber,
+          withdraw: aBigNumber,
+          borrow: aBigNumber,
+          repay: aBigNumber,
+          swap: aBigNumber,
+          transfer: aBigNumber
+        },
+        buyingPower: TokenAmount.zero(tokenConfig.decimals)
       }
     }
 
@@ -295,11 +294,12 @@ export class MarginAccount {
     let depositedValue = 0
     let borrowedValue = 0
 
+    // FIXME: adding unrelated tokens together
     const positions = Object.values(this.positions)
     for (let i = 0; i < positions.length; i++) {
       const position = positions[i]
-      depositedValue += position.depositBalance
-      borrowedValue += position.loanBalance
+      depositedValue += position.depositBalance.tokens
+      borrowedValue += position.loanBalance.tokens
     }
 
     return {
@@ -414,8 +414,8 @@ export class MarginAccount {
     provider: AnchorProvider
     owner: Address
   }) {
-    const accounts = await MarginAccount.loadAllByOwner({ programs, provider, owner })
-    accounts.sort((a, b) => b.seed - a.seed)
+    let accounts = await MarginAccount.loadAllByOwner({ programs, provider, owner })
+    accounts = accounts.sort((a, b) => a.seed - b.seed)
     // Return any gap found in account seeds
     for (let i = 0; i < accounts.length; i++) {
       const seed = accounts[i].seed
@@ -460,13 +460,14 @@ export class MarginAccount {
   /// `source` - The token account that the deposit will be transfered from
   /// `amount` - The amount of tokens to deposit
   async deposit(marginPool: Pool, source: Address, amount: BN) {
-    await this.refresh()
 
-    const ix: TransactionInstruction[] = []
-    await this.withCreateAccount(ix)
+    await this.createAccount()
+    await sleep(2000);
+    await this.refresh();
     const position = await this.getOrCreatePosition(marginPool.addresses.depositNoteMint)
     assert(position)
 
+    const ix: TransactionInstruction[] = []
     await marginPool.withDeposit({
       instructions: ix,
       depositor: this.owner,
