@@ -66,7 +66,7 @@ pub fn liquidator_invoke_handler<'info>(
         },
         account_metas,
         data,
-        false,
+        true,
     )?;
 
     update_and_verify_liquidation(
