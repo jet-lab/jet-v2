@@ -39,7 +39,7 @@ jet-margin-sdk = { path = "../../libraries/rust", features = ["testing"] }
 
 mock-adapter = { path = "../mock-adapter", features = ["no-entrypoint"] }
 
-jet-simulation = { git = "https://github.com/jet-lab/jet-simulation", branch = "rpc-config" }
+jet-simulation = { git = "https://github.com/jet-lab/jet-simulation", branch = "master" }
 jet-proto-math = "1"
 
 [dependencies.orca-swap]
