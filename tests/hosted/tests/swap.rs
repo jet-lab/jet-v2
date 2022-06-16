@@ -113,13 +113,13 @@ async fn setup_environment(ctx: &MarginTestContext) -> Result<TestEnv, Error> {
 }
 
 /// Test token swaps for the official SPL token swap
-#[tokio::test(flavor = "multi_thread", worker_threads = 1)]
+#[tokio::test(flavor = "multi_thread")]
 async fn spl_swap_test() -> Result<(), anyhow::Error> {
     swap_test_impl(spl_token_swap::id()).await
 }
 
 /// Test token swaps for orca
-#[tokio::test(flavor = "multi_thread", worker_threads = 1)]
+#[tokio::test(flavor = "multi_thread")]
 async fn orca_swap_test() -> Result<(), anyhow::Error> {
     swap_test_impl(jet_margin_swap::orca_swap_v1_metadata::id()).await
 }

@@ -150,7 +150,7 @@ async fn setup_environment(ctx: &MarginTestContext) -> Result<TestEnv, Error> {
 /// 1. Deposits Token A, borrows Token B
 /// 2. Deposits Token B, borrows Token A
 /// 3. Deposits Token C, borrows Tokens A and B, tries to overpay either
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn pool_overpayment() -> Result<(), anyhow::Error> {
     // Get the mocked runtime
     let ctx = test_context().await;
