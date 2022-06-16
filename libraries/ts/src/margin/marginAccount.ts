@@ -32,7 +32,7 @@ export interface MarginPositionAddresses {
   tokenMetadata: PublicKey
 }
 
-export type TradeAction = 'deposit' | 'withdraw' | 'borrow' | 'repay' | 'swap' | 'transfer';
+export type TradeAction = "deposit" | "withdraw" | "borrow" | "repay" | "swap" | "transfer"
 export interface PoolPosition {
   poolConfig: MarginPoolConfig
   tokenConfig: MarginTokenConfig
@@ -262,7 +262,7 @@ export class MarginAccount {
       const loanNotePositionInfo =
         pool && this.info?.positions.positions.find(position => position.token.equals(pool.addresses.loanNoteMint))
 
-      const aBigNumber = TokenAmount.tokens('92831134235933', tokenConfig.decimals)
+      const aBigNumber = TokenAmount.tokens("92831134235933", tokenConfig.decimals)
 
       // FIXME: Calculate these fields. Stop using 0 or aBigNumber
       positions[poolConfig.symbol] = {
@@ -432,7 +432,9 @@ export class MarginAccount {
   async createAccount() {
     const ix: TransactionInstruction[] = []
     await this.withCreateAccount(ix)
-    return await this.provider.sendAndConfirm(new Transaction().add(...ix))
+    if (ix.length > 0) {
+      await this.provider.sendAndConfirm(new Transaction().add(...ix))
+    }
   }
 
   /** Get instruction to create the account */
@@ -460,10 +462,9 @@ export class MarginAccount {
   /// `source` - The token account that the deposit will be transfered from
   /// `amount` - The amount of tokens to deposit
   async deposit(marginPool: Pool, source: Address, amount: BN) {
-
     await this.createAccount()
-    await sleep(2000);
-    await this.refresh();
+    await sleep(2000)
+    await this.refresh()
     const position = await this.getOrCreatePosition(marginPool.addresses.depositNoteMint)
     assert(position)
 
