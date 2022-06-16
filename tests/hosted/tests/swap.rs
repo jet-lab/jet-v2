@@ -112,13 +112,13 @@ async fn setup_environment(ctx: &MarginTestContext) -> Result<TestEnv, Error> {
 }
 
 /// Test token swaps
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread", worker_threads = 1)]
 async fn spl_swap_test() -> Result<(), anyhow::Error> {
     swap_test_impl(spl_token_swap::id()).await
 }
 
 /// Test token swaps
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread", worker_threads = 1)]
 async fn orca_swap_test() -> Result<(), anyhow::Error> {
     swap_test_impl(jet_margin_swap::orca_swap_v1_metadata::id()).await
 }
@@ -168,7 +168,6 @@ async fn swap_test_impl(swap_program_id: Pubkey) -> Result<(), anyhow::Error> {
         .tokens
         .create_account(&env.tsol, &swap_pool.pool_authority)
         .await?;
-
     
     // Create some tokens for each user to deposit
     let user_a_usdc_account = ctx
@@ -184,7 +183,7 @@ async fn swap_test_impl(swap_program_id: Pubkey) -> Result<(), anyhow::Error> {
         .create_account_funded(&env.tsol, &wallet_b.pubkey(), 10 * ONE_TSOL)
         .await?;
 
-    // Set the prices for each token
+        // Set the prices for each token
     ctx.tokens
         .set_price(
             // Set price to 1 USD +- 0.01
@@ -221,7 +220,7 @@ async fn swap_test_impl(swap_program_id: Pubkey) -> Result<(), anyhow::Error> {
         .deposit(&env.tsol, &user_b_tsol_account, 10 * ONE_TSOL)
         .await?;
 
-    // // Verify user tokens have been deposited
+        // // Verify user tokens have been deposited
     assert_eq!(0, ctx.tokens.get_balance(&user_a_usdc_account).await?);
     assert_eq!(
         90 * ONE_TSOL,

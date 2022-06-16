@@ -88,45 +88,21 @@ pub struct PriceChangeInfo {
     pub exponent: i32,
 }
 
-/// Executes an unpermissioned invocation with the requested data
-pub fn invoke(
-    ctx: &InvokeAdapter,
-    account_metas: Vec<CompactAccountMeta>,
-    data: Vec<u8>,
-) -> Result<()> {
-    let (instruction, account_infos) = construct_invocation(ctx, account_metas, data);
-
-    program::invoke(&instruction, &account_infos)?;
-
-    handle_adapter_result(ctx)
-}
-
-/// Invoke with the requested data, and sign with the margin account
-pub fn invoke_signed(
-    ctx: &InvokeAdapter,
-    account_metas: Vec<CompactAccountMeta>,
-    data: Vec<u8>,
-) -> Result<()> {
-    let signer = ctx.margin_account.load()?.signer_seeds_owned();
-    let (instruction, account_infos) = construct_invocation(ctx, account_metas, data);
-
-    program::invoke_signed(&instruction, &account_infos, &[&signer.signer_seeds()])?;
-
-    handle_adapter_result(ctx)
-}
-
-fn construct_invocation<'info>(
+/// Invoke a margin adapter with the requested data
+/// * `signed` - sign with the margin account
+pub fn invoke<'info>(
     ctx: &InvokeAdapter<'_, 'info>,
     account_metas: Vec<CompactAccountMeta>,
     data: Vec<u8>,
-) -> (Instruction, Vec<AccountInfo<'info>>) {
+    signed: bool,
+) -> Result<()> {
+    let signer = ctx.margin_account.load()?.signer_seeds_owned();
+
     let mut accounts = vec![AccountMeta {
         pubkey: ctx.margin_account.key(),
-        is_signer: true,
+        is_signer: signed,
         is_writable: true,
     }];
-    let mut account_infos = vec![ctx.margin_account.to_account_info()];
-
     accounts.extend(
         account_metas
             .into_iter()
@@ -138,6 +114,7 @@ fn construct_invocation<'info>(
             }),
     );
 
+    let mut account_infos = vec![ctx.margin_account.to_account_info()];
     account_infos.extend(ctx.remaining_accounts.iter().cloned());
 
     let instruction = Instruction {
@@ -146,7 +123,13 @@ fn construct_invocation<'info>(
         data,
     };
 
-    (instruction, account_infos)
+    if signed {
+        program::invoke_signed(&instruction, &account_infos, &[&signer.signer_seeds()])?;
+    } else {
+        program::invoke(&instruction, &account_infos)?;
+    }
+
+    handle_adapter_result(ctx)
 }
 
 fn handle_adapter_result(ctx: &InvokeAdapter) -> Result<()> {

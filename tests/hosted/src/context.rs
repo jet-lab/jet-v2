@@ -14,7 +14,7 @@ use jet_margin_pool::MarginPoolConfig;
 use jet_metadata::TokenKind;
 
 use jet_simulation::runtime::TestRuntime;
-use jet_simulation::solana_rpc_api::SolanaRpcClient;
+use jet_simulation::solana_rpc_api::{RpcConnection, SolanaRpcClient};
 
 use crate::{margin::MarginClient, tokens::TokenManager};
 
@@ -51,6 +51,7 @@ pub struct MarginTestContext {
 }
 
 impl MarginTestContext {
+    #[cfg(not(feature = "localnet"))]
     pub async fn new() -> Result<Self, Error> {
         let runtime = Arc::new(jet_simulation::create_test_runtime![
             jet_control,
@@ -58,8 +59,21 @@ impl MarginTestContext {
             jet_metadata,
             jet_margin_pool,
             jet_margin_swap,
-            (orca_swap_v1_metadata::id(), orca_swap::processor::Processor::process),
+            (
+                orca_swap_v1_metadata::id(),
+                orca_swap::processor::Processor::process
+            ),
         ]);
+
+        Ok(Self::new_with_runtime(runtime).await?)
+    }
+
+    #[cfg(feature = "localnet")]
+    pub async fn new() -> Result<Self, Error> {
+        Ok(Self::new_with_runtime(Arc::new(RpcConnection::new_local_funded()?)).await?)
+    }
+
+    pub async fn new_with_runtime(runtime: Arc<dyn SolanaRpcClient>) -> Result<Self, Error> {
         let payer = Keypair::from_bytes(&runtime.payer().to_bytes()).unwrap();
         let rng = MockRng(StepRng::new(0, 1));
         let ctx = MarginTestContext {
@@ -67,7 +81,6 @@ impl MarginTestContext {
             margin: MarginClient::new(runtime.clone()),
             authority: Keypair::new(),
             rng: Mutex::new(RefCell::new(rng)),
-
             rpc: runtime,
             payer,
         };

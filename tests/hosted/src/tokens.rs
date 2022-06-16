@@ -236,6 +236,7 @@ impl TokenManager {
         price_data.agg.price = price_value;
         price_data.agg.conf = price.confidence;
         price_data.agg.status = pyth_sdk_solana::state::PriceStatus::Trading;
+        price_data.agg.pub_slot = u64::MAX;
         price_data.ema_price.val = twap_value;
 
         let (price_address, _) = Pubkey::find_program_address(

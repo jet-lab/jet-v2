@@ -58,7 +58,7 @@ pub fn liquidator_invoke_handler<'info>(
     let margin_account = &ctx.accounts.margin_account;
     let start_value = margin_account.load()?.valuation()?;
 
-    adapter::invoke_signed(
+    adapter::invoke(
         &InvokeAdapter {
             margin_account: &ctx.accounts.margin_account,
             adapter_program: &ctx.accounts.adapter_program,
@@ -66,6 +66,7 @@ pub fn liquidator_invoke_handler<'info>(
         },
         account_metas,
         data,
+        false,
     )?;
 
     update_and_verify_liquidation(
