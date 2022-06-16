@@ -73,8 +73,8 @@ pub fn register_position_handler(ctx: Context<RegisterPosition>) -> Result<()> {
         address,
         metadata.adapter_program,
         metadata.token_kind.into(),
-        metadata.value_modifier,
-        metadata.max_staleness,
+        metadata.collateral_weight,
+        metadata.collateral_max_staleness,
     )?;
 
     Ok(())

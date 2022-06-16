@@ -15,7 +15,7 @@ import { Pool } from "./pool/pool"
 import { AccountPosition, AccountPositionList, AccountPositionListLayout, MarginAccountData } from "./state"
 import { MarginPrograms } from "./marginClient"
 import { findDerivedAccount } from "../utils/pda"
-import { AssociatedToken, bnToNumber, MarginPools, ZERO_BN } from ".."
+import { AssociatedToken, bnToNumber, MarginPools, TokenAmount, ZERO_BN } from ".."
 import { MarginPoolConfig, MarginTokenConfig } from "./config"
 
 export interface MarginAccountAddresses {
@@ -31,23 +31,19 @@ export interface MarginPositionAddresses {
   tokenMetadata: PublicKey
 }
 
+export type TradeAction = "deposit" | "withdraw" | "borrow" | "repay" | "swap" | "transfer"
 export interface PoolPosition {
   poolConfig: MarginPoolConfig
   tokenConfig: MarginTokenConfig
   pool?: Pool
   depositNotePositionInfo: AccountPosition | undefined
   loanNotePositionInfo: AccountPosition | undefined
-  depositBalance: number
+  depositBalance: TokenAmount
   depositBalanceNotes: BN
-  loanBalance: number
+  loanBalance: TokenAmount
   loanBalanceNotes: BN
-  maxDepositAmount: number
-  maxWithdrawAmount: number
-  maxBorrowAmount: number
-  maxRepayAmount: number
-  maxSwapAmount: number
-  maxTransferAmount: number
-  buyingPower: number
+  maxTradeAmounts: Record<TradeAction, TokenAmount>
+  buyingPower: TokenAmount
 }
 
 export interface AccountSummary {
@@ -56,14 +52,16 @@ export interface AccountSummary {
   accountBalance: number
   availableCollateral: number
   cRatio: number
-  utilizationRate: number
-  leverage: number
+  leverage: number,
+  totalBuyingPower: number
 }
 
 export interface MarginWalletTokens {
   all: AssociatedToken[]
   map: Record<MarginPools, AssociatedToken>
 }
+
+const MAX_LEVERAGE = 100
 
 export class MarginAccount {
   static readonly SEED_MAX_VALUE = 65535
@@ -72,9 +70,9 @@ export class MarginAccount {
     positions: AccountPositionList
   }
 
+  addresses: MarginAccountAddresses
   positions: Record<MarginPools, PoolPosition>
   summary: AccountSummary
-  addresses: MarginAccountAddresses
 
   get address() {
     return this.addresses.marginAccount
@@ -99,6 +97,8 @@ export class MarginAccount {
     public pools?: Record<MarginPools, Pool>,
     public walletTokens?: MarginWalletTokens
   ) {
+    this.pools = pools
+    this.walletTokens = walletTokens
     this.addresses = MarginAccount.derive(programs, owner, seed)
     this.positions = this.getAllPoolPositions()
     this.summary = this.getSummary()
@@ -260,58 +260,135 @@ export class MarginAccount {
       const poolConfig = poolConfigs[i]
       const tokenConfig = this.programs.config.tokens[poolConfig.symbol]
       const pool = this.pools?.[poolConfig.symbol]
-      const depositNotePositionInfo =
-        pool && this.info?.positions.positions.find(position => position.token.equals(pool.addresses.depositNoteMint))
-      const loanNotePositionInfo =
-        pool && this.info?.positions.positions.find(position => position.token.equals(pool.addresses.loanNoteMint))
+      if (!pool) {
+        continue
+      }
 
-      const aBigNumber = 92831134235933
+      const uncollectedFees = ZERO_BN // TODO: add pool.uncollectedFees when merged to master
+      const totalValueLessFees = pool.depositedTokens.lamports.add(pool.borrowedTokens.lamports).sub(uncollectedFees)
 
-      // FIXME: Calculate these fields. Stop using 0 or aBigNumber
+      // Deposits
+      const poolDepositNotes = pool.info?.marginPool.depositNotes ?? ZERO_BN
+      const depositNotePositionInfo = this.info?.positions.positions.find(position =>
+        position.token.equals(pool.addresses.depositNoteMint)
+      )
+      const depositBalanceNotes = depositNotePositionInfo?.balance ?? ZERO_BN
+      const depositTokenBalance = poolDepositNotes.isZero()
+        ? ZERO_BN
+        : totalValueLessFees.mul(depositBalanceNotes).div(poolDepositNotes)
+      const depositBalance = new TokenAmount(depositTokenBalance, pool.decimals)
+
+      // Loans
+      const poolLoanNotes = pool.info?.marginPool.loanNotes ?? ZERO_BN
+      const poolBorrowedTokens = pool.borrowedTokens.lamports
+      const loanNotePositionInfo = this.info?.positions.positions.find(position =>
+        position.token.equals(pool.addresses.loanNoteMint)
+      )
+      const loanBalanceNotes = loanNotePositionInfo?.balance ?? ZERO_BN
+      const loanTokenBalance = poolLoanNotes.isZero()
+        ? ZERO_BN
+        : poolBorrowedTokens.mul(loanBalanceNotes).div(poolLoanNotes)
+      const loanBalance = new TokenAmount(loanTokenBalance, pool.decimals)
+
+      // Max trade amounts
+      const maxTradeAmounts = this.getMaxTradeAmounts(pool, depositBalance, loanBalance)
+
+      // Buying power
+      const buyingPower = depositBalance
+        .muln(pool.tokenPrice)
+        .muln(Math.min(MAX_LEVERAGE, pool.maxLeverage))
+        .sub(loanBalance.muln(pool.tokenPrice))
+
       positions[poolConfig.symbol] = {
         poolConfig,
         tokenConfig,
         pool,
         depositNotePositionInfo,
         loanNotePositionInfo,
-        depositBalance: 0,
-        depositBalanceNotes: depositNotePositionInfo?.balance ?? ZERO_BN,
-        loanBalance: 0,
-        loanBalanceNotes: loanNotePositionInfo?.balance ?? ZERO_BN,
-        maxDepositAmount: aBigNumber,
-        maxWithdrawAmount: aBigNumber,
-        maxBorrowAmount: aBigNumber,
-        maxRepayAmount: aBigNumber,
-        maxSwapAmount: aBigNumber,
-        maxTransferAmount: aBigNumber,
-        buyingPower: 0
+        depositBalance,
+        depositBalanceNotes,
+        loanBalance,
+        loanBalanceNotes,
+        maxTradeAmounts,
+        buyingPower
       }
     }
 
     return positions
   }
 
+  getMaxTradeAmounts(
+    pool: Pool,
+    depositBalance: TokenAmount,
+    loanBalance: TokenAmount
+  ): Record<TradeAction, TokenAmount> {
+    const depositedValue = depositBalance.muln(pool.tokenPrice)
+    const loanValue = loanBalance.muln(pool.tokenPrice)
+
+    // Max deposit
+    const deposit =
+      pool.symbol && this.walletTokens ? this.walletTokens.map[pool.symbol].amount : TokenAmount.zero(pool.decimals)
+
+    // Max withdraw
+    let withdraw = !loanValue.isZero()
+      ? depositedValue.subn(pool.minCRatio * loanValue.tokens).divn(pool.tokenPrice)
+      : depositBalance
+    if (withdraw.gt(depositBalance)) {
+      withdraw = depositBalance
+    }
+    if (withdraw.gt(pool.borrowedTokens)) {
+      withdraw = pool.borrowedTokens
+    }
+
+    // Max borrow
+    let borrow = depositedValue.divn(pool.minCRatio - loanValue.tokens).divn(pool.tokenPrice)
+    if (borrow.gt(pool.borrowedTokens)) {
+      borrow = pool.borrowedTokens
+    }
+
+    // Max repay
+    let repay = loanBalance
+    if (pool.symbol && this.walletTokens && this.walletTokens.map[pool.symbol].amount.lt(loanBalance)) {
+      repay = this.walletTokens[pool.symbol].amount
+    }
+
+    // Max swap
+    const swap = withdraw
+
+    // Max transfer
+    const transfer = withdraw
+
+    return {
+      deposit,
+      withdraw,
+      borrow,
+      repay,
+      swap,
+      transfer
+    }
+  }
+
   getSummary(): AccountSummary {
     let depositedValue = 0
     let borrowedValue = 0
+    let totalBuyingPower = 0;
 
     const positions = Object.values(this.positions)
     for (let i = 0; i < positions.length; i++) {
       const position = positions[i]
-      depositedValue += position.depositBalance
-      borrowedValue += position.loanBalance
+      depositedValue += position.depositBalance.tokens * (position.pool?.tokenPrice ?? 0)
+      borrowedValue += position.loanBalance.tokens * (position.pool?.tokenPrice ?? 0)
+      totalBuyingPower += position.buyingPower.tokens
     }
 
     return {
       depositedValue,
       borrowedValue,
       accountBalance: depositedValue - borrowedValue,
-
-      // FIXME
-      availableCollateral: 0,
-      cRatio: 0,
-      utilizationRate: 0,
-      leverage: 0
+      availableCollateral: 0, // FIXME: total collateral * collateral weight - total claims
+      cRatio: borrowedValue ? depositedValue / borrowedValue : 0,
+      leverage: depositedValue ? borrowedValue / depositedValue : 0,
+      totalBuyingPower
     }
   }
 
@@ -459,15 +536,22 @@ export class MarginAccount {
   /// # Params
   ///
   /// `token_mint` - The address of the mint for the tokens being deposited
-  /// `source` - The token account that the deposit will be transfered from
+  /// `source` - The token account that the deposit will be transfered from. Can also point to the wallet to automatically wrap SOL
   /// `amount` - The amount of tokens to deposit
   async deposit(marginPool: Pool, source: Address, amount: BN) {
     await this.refresh()
-
-    const ix: TransactionInstruction[] = []
-    await this.withCreateAccount(ix)
     const position = await this.getOrCreatePosition(marginPool.addresses.depositNoteMint)
     assert(position)
+
+    const ix: TransactionInstruction[] = []
+    AssociatedToken.withWrapIfNativeMint(
+      ix,
+      this.provider,
+      this.provider.wallet.publicKey,
+      marginPool.tokenMint,
+      source,
+      amount
+    )
 
     await marginPool.withDeposit({
       instructions: ix,

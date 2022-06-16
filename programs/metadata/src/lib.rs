@@ -154,11 +154,11 @@ pub struct PositionTokenMetadata {
     /// Description of this token
     pub token_kind: TokenKind,
 
-    /// A modifier to adjust the token value, based on the kind of token
-    pub value_modifier: u16,
+    /// The weight of the asset's value relative to other tokens when used as collateral.
+    pub collateral_weight: u16,
 
-    /// The maximum staleness (seconds) that's acceptable for balances of this token
-    pub max_staleness: u64,
+    /// The maximum staleness (seconds) that's acceptable for this token when used as collateral.
+    pub collateral_max_staleness: u64,
 }
 
 /// An account that references information about a token's price oracle

@@ -1,5 +1,7 @@
 use anyhow::{Error, Result};
 
+use jet_control::TokenMetadataParams;
+use jet_margin_sdk::instructions::control::TokenConfiguration;
 use solana_sdk::native_token::LAMPORTS_PER_SOL;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::{Keypair, Signer};
@@ -41,7 +43,6 @@ pub async fn setup_token(
     ctx: &MarginTestContext,
     decimals: u8,
     collateral_weight: u16,
-    leverage_max: u16,
     price: i64,
 ) -> Result<Pubkey, Error> {
     let token = ctx.tokens.create_token(decimals, None, None).await?;
@@ -54,13 +55,29 @@ pub async fn setup_token(
     ctx.margin
         .create_pool(&MarginPoolSetupInfo {
             token,
-            collateral_weight,
-            max_leverage: leverage_max,
             fee_destination: token_fees,
             token_kind: TokenKind::Collateral,
+            collateral_weight,
             config: DEFAULT_POOL_CONFIG,
             oracle: token_oracle,
         })
+        .await?;
+
+    ctx.margin
+        .configure_token(
+            &token,
+            &TokenConfiguration {
+                pyth_price: Some(token_oracle.price),
+                pyth_product: Some(token_oracle.product),
+                pool_config: Some(DEFAULT_POOL_CONFIG),
+                metadata: Some(TokenMetadataParams {
+                    token_kind: TokenKind::Collateral,
+                    collateral_weight,
+                    collateral_max_staleness: 0,
+                }),
+                ..Default::default()
+            },
+        )
         .await?;
 
     // set price to $1
@@ -131,7 +148,7 @@ pub async fn build_environment_with_no_balances(
     let liquidator = ctx.create_liquidator(100).await?;
     let mut mints: Vec<Pubkey> = Vec::new();
     for _ in 0..number_of_mints {
-        let mint = setup_token(ctx, 6, 1_00, 10_00, 1).await?;
+        let mint = setup_token(ctx, 6, 10_000, 1).await?;
         mints.push(mint);
     }
     let mut users: Vec<TestUser> = Vec::new();
@@ -159,7 +176,7 @@ pub async fn build_environment_with_raw_token_balances(
     let mut mints: Vec<Pubkey> = Vec::new();
     let mut wallets: Vec<(Pubkey, u64, u64)> = Vec::new();
     for _ in 0..number_of_mints {
-        let mint = setup_token(ctx, 6, 1_00, 10_00, 1).await?;
+        let mint = setup_token(ctx, 6, 10_000, 1).await?;
         mints.push(mint);
         wallets.push((mint, 100, 0));
     }

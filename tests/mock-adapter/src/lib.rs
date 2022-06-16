@@ -1,4 +1,3 @@
-#![allow(clippy::single_component_path_imports)]
 use anchor_lang::prelude::*;
 use anchor_spl::token::{burn, mint_to, Burn, Mint, MintTo, Token, TokenAccount};
 use jet_margin::{write_adapter_result, AdapterResult};

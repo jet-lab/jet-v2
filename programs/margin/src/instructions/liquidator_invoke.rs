@@ -18,9 +18,13 @@
 use anchor_lang::prelude::*;
 
 use jet_metadata::MarginAdapterMetadata;
+use jet_proto_math::Number128;
 
 use crate::adapter::{self, CompactAccountMeta, InvokeAdapter};
-use crate::{ErrorCode, Liquidation, MarginAccount, Valuation};
+use crate::{
+    ErrorCode, Liquidation, MarginAccount, Valuation, MAX_LIQUIDATION_COLLATERAL_RATIO,
+    MAX_LIQUIDATION_C_RATIO_SLIPPAGE,
+};
 
 #[derive(Accounts)]
 pub struct LiquidatorInvoke<'info> {
@@ -77,21 +81,47 @@ fn update_and_verify_liquidation(
     start_value: Valuation,
 ) -> Result<()> {
     let end_value = margin_account.valuation()?;
+    let end_c_ratio = end_value
+        .c_ratio()
+        .unwrap_or_else(|| Number128::from_bps(u16::MAX));
+    let start_c_ratio = start_value
+        .c_ratio()
+        .unwrap_or_else(|| Number128::from_bps(u16::MAX));
 
-    *liquidation.value_change_mut() +=
-        end_value.available_collateral() - start_value.available_collateral(); // side effects
+    liquidation.value_change += end_value.net() - start_value.net(); // side effects
+    liquidation.c_ratio_change += end_c_ratio - start_c_ratio; // side effects
 
-    verify_liquidation_step_is_allowed(liquidation)
+    verify_liquidation_step_is_allowed(liquidation, end_c_ratio)
 }
 
-fn verify_liquidation_step_is_allowed(liquidation: &Liquidation) -> Result<()> {
-    if *liquidation.value_change() < liquidation.min_value_change() {
+fn verify_liquidation_step_is_allowed(
+    liquidation: &Liquidation,
+    end_c_ratio: Number128,
+) -> Result<()> {
+    let max_c_ratio = Number128::from_bps(MAX_LIQUIDATION_COLLATERAL_RATIO);
+    let max_c_ratio_slippage = Number128::from_bps(MAX_LIQUIDATION_C_RATIO_SLIPPAGE);
+
+    if liquidation.value_change < liquidation.min_value_change {
         msg!(
-            "Illegal liquidation: net loss of {} value which exceeds the min value change of {}",
-            liquidation.value_change(),
-            liquidation.min_value_change()
+            "Illegal liquidation: net loss of {} value caused by liquidation instructions which exceeds the min value change of {}",
+            liquidation.value_change,
+            liquidation.min_value_change
         );
         err!(ErrorCode::LiquidationLostValue)
+    } else if liquidation.c_ratio_change < Number128::ZERO - max_c_ratio_slippage {
+        msg!(
+            "Illegal liquidation: net loss of {}% in c-ratio caused by liquidation instructions which exceeds the {} bps of allowed slippage",
+            liquidation.c_ratio_change,
+            max_c_ratio_slippage,
+        );
+        err!(ErrorCode::LiquidationUnhealthy)
+    } else if end_c_ratio > max_c_ratio {
+        msg!(
+            "Illegal liquidation: increases collateral ratio to {} which is above the maximum {}",
+            end_c_ratio,
+            max_c_ratio
+        );
+        err!(ErrorCode::LiquidationTooHealthy)
     } else {
         Ok(())
     }

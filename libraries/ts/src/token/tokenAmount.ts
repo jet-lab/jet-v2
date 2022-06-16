@@ -3,6 +3,7 @@ import { Account, Mint } from "@solana/spl-token"
 import { bigIntToBn } from "./associatedToken"
 
 export const ZERO_BN = new BN(0)
+export const ONE_BN = new BN(1000000000000000)
 
 export class TokenAmount {
   /** Raw amount of token lamports */
@@ -40,7 +41,7 @@ export class TokenAmount {
    * @memberof TokenAmount
    */
   public static zero(decimals: number): TokenAmount {
-    return new TokenAmount(new BN(0), decimals)
+    return new TokenAmount(ZERO_BN, decimals)
   }
 
   /**
