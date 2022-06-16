@@ -1,253 +1,341 @@
 export type JetControl = {
-  version: "0.1.0"
-  name: "jet_control"
-  instructions: [
+  "version": "0.1.0",
+  "name": "jet_control",
+  "instructions": [
     {
-      name: "createAuthority"
-      accounts: [
+      "name": "createAuthority",
+      "accounts": [
         {
-          name: "authority"
-          isMut: true
-          isSigner: false
+          "name": "authority",
+          "isMut": true,
+          "isSigner": false
         },
         {
-          name: "payer"
-          isMut: true
-          isSigner: true
+          "name": "payer",
+          "isMut": true,
+          "isSigner": true
         },
         {
-          name: "systemProgram"
-          isMut: false
-          isSigner: false
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
         }
-      ]
-      args: []
+      ],
+      "args": []
     },
     {
-      name: "registerToken"
-      accounts: [
+      "name": "registerToken",
+      "accounts": [
         {
-          name: "requester"
-          isMut: true
-          isSigner: true
+          "name": "requester",
+          "isMut": true,
+          "isSigner": true
         },
         {
-          name: "authority"
-          isMut: false
-          isSigner: false
+          "name": "authority",
+          "isMut": false,
+          "isSigner": false
         },
         {
-          name: "marginPool"
-          isMut: true
-          isSigner: false
+          "name": "marginPool",
+          "isMut": true,
+          "isSigner": false
         },
         {
-          name: "vault"
-          isMut: true
-          isSigner: false
+          "name": "vault",
+          "isMut": true,
+          "isSigner": false
         },
         {
-          name: "depositNoteMint"
-          isMut: true
-          isSigner: false
+          "name": "depositNoteMint",
+          "isMut": true,
+          "isSigner": false
         },
         {
-          name: "loanNoteMint"
-          isMut: true
-          isSigner: false
+          "name": "loanNoteMint",
+          "isMut": true,
+          "isSigner": false
         },
         {
-          name: "tokenMint"
-          isMut: false
-          isSigner: false
+          "name": "tokenMint",
+          "isMut": false,
+          "isSigner": false
         },
         {
-          name: "tokenMetadata"
-          isMut: true
-          isSigner: false
+          "name": "tokenMetadata",
+          "isMut": true,
+          "isSigner": false
         },
         {
-          name: "depositNoteMetadata"
-          isMut: true
-          isSigner: false
+          "name": "depositNoteMetadata",
+          "isMut": true,
+          "isSigner": false
         },
         {
-          name: "loanNoteMetadata"
-          isMut: true
-          isSigner: false
+          "name": "loanNoteMetadata",
+          "isMut": true,
+          "isSigner": false
         },
         {
-          name: "marginPoolProgram"
-          isMut: false
-          isSigner: false
+          "name": "marginPoolProgram",
+          "isMut": false,
+          "isSigner": false
         },
         {
-          name: "metadataProgram"
-          isMut: false
-          isSigner: false
+          "name": "metadataProgram",
+          "isMut": false,
+          "isSigner": false
         },
         {
-          name: "tokenProgram"
-          isMut: false
-          isSigner: false
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
         },
         {
-          name: "systemProgram"
-          isMut: false
-          isSigner: false
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
         },
         {
-          name: "rent"
-          isMut: false
-          isSigner: false
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false
         }
-      ]
-      args: []
+      ],
+      "args": []
     },
     {
-      name: "registerAdapter"
-      accounts: [
+      "name": "registerAdapter",
+      "accounts": [
         {
-          name: "requester"
-          isMut: false
-          isSigner: true
+          "name": "requester",
+          "isMut": false,
+          "isSigner": true
         },
         {
-          name: "authority"
-          isMut: false
-          isSigner: false
+          "name": "authority",
+          "isMut": false,
+          "isSigner": false
         },
         {
-          name: "adapter"
-          isMut: false
-          isSigner: false
+          "name": "adapter",
+          "isMut": false,
+          "isSigner": false
         },
         {
-          name: "metadataAccount"
-          isMut: true
-          isSigner: false
+          "name": "metadataAccount",
+          "isMut": true,
+          "isSigner": false
         },
         {
-          name: "payer"
-          isMut: true
-          isSigner: true
+          "name": "payer",
+          "isMut": true,
+          "isSigner": true
         },
         {
-          name: "metadataProgram"
-          isMut: false
-          isSigner: false
+          "name": "metadataProgram",
+          "isMut": false,
+          "isSigner": false
         },
         {
-          name: "systemProgram"
-          isMut: false
-          isSigner: false
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
         }
-      ]
-      args: []
+      ],
+      "args": []
     },
     {
-      name: "configureToken"
-      accounts: [
+      "name": "configureToken",
+      "accounts": [
         {
-          name: "requester"
-          isMut: false
-          isSigner: true
+          "name": "requester",
+          "isMut": false,
+          "isSigner": true
         },
         {
-          name: "authority"
-          isMut: false
-          isSigner: false
+          "name": "authority",
+          "isMut": false,
+          "isSigner": false
         },
         {
-          name: "tokenMint"
-          isMut: false
-          isSigner: false
+          "name": "tokenMint",
+          "isMut": false,
+          "isSigner": false
         },
         {
-          name: "marginPool"
-          isMut: true
-          isSigner: false
+          "name": "marginPool",
+          "isMut": true,
+          "isSigner": false
         },
         {
-          name: "tokenMetadata"
-          isMut: true
-          isSigner: false
+          "name": "tokenMetadata",
+          "isMut": true,
+          "isSigner": false
         },
         {
-          name: "depositMetadata"
-          isMut: true
-          isSigner: false
+          "name": "depositMetadata",
+          "isMut": true,
+          "isSigner": false
         },
         {
-          name: "pythProduct"
-          isMut: false
-          isSigner: false
+          "name": "loanMetadata",
+          "isMut": true,
+          "isSigner": false
         },
         {
-          name: "pythPrice"
-          isMut: false
-          isSigner: false
+          "name": "pythProduct",
+          "isMut": false,
+          "isSigner": false
         },
         {
-          name: "marginPoolProgram"
-          isMut: false
-          isSigner: false
+          "name": "pythPrice",
+          "isMut": false,
+          "isSigner": false
         },
         {
-          name: "metadataProgram"
-          isMut: false
-          isSigner: false
+          "name": "marginPoolProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "metadataProgram",
+          "isMut": false,
+          "isSigner": false
         }
-      ]
-      args: [
+      ],
+      "args": [
         {
-          name: "metadata"
-          type: {
-            option: {
-              defined: "TokenMetadataParams"
+          "name": "metadata",
+          "type": {
+            "option": {
+              "defined": "TokenMetadataParams"
             }
           }
         },
         {
-          name: "poolParam"
-          type: {
-            option: {
-              defined: "MarginPoolParams"
+          "name": "poolParam",
+          "type": {
+            "option": {
+              "defined": "MarginPoolParams"
             }
           }
         },
         {
-          name: "poolConfig"
-          type: {
-            option: {
-              defined: "MarginPoolConfig"
+          "name": "poolConfig",
+          "type": {
+            "option": {
+              "defined": "MarginPoolConfig"
             }
           }
+        }
+      ]
+    },
+    {
+      "name": "setLiquidator",
+      "accounts": [
+        {
+          "name": "requester",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "liquidator",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "metadataAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "payer",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "metadataProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "isLiquidator",
+          "type": "bool"
         }
       ]
     }
-  ]
-  accounts: [
+  ],
+  "accounts": [
     {
-      name: "authority"
-      type: {
-        kind: "struct"
-        fields: [
+      "name": "authority",
+      "type": {
+        "kind": "struct",
+        "fields": [
           {
-            name: "seed"
-            type: {
-              array: ["u8", 1]
+            "name": "seed",
+            "type": {
+              "array": [
+                "u8",
+                1
+              ]
             }
           }
         ]
       }
     }
-  ]
-  types: [
+  ],
+  "types": [
     {
-      name: "TokenKind"
+      "name": "TokenMetadataParams",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "tokenKind",
+            "type": {
+              "defined": "TokenKind"
+            }
+          },
+          {
+            "name": "collateralWeight",
+            "type": "u16"
+          },
+          {
+            "name": "maxLeverage",
+            "type": "u16"
+          }
+        ]
+      }
+    },
+    {
+      "name": "MarginPoolParams",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "feeDestination",
+            "type": "publicKey"
+          }
+        ]
+      }
+    },
+    {
+      name: "TokenKind",
       type: {
-        kind: "enum"
+        kind: "enum",
         variants: [
           {
             name: "NonCollateral"
@@ -257,28 +345,6 @@ export type JetControl = {
           },
           {
             name: "Claim"
-          }
-        ]
-      }
-    },
-    {
-      name: "TokenMetadataParams"
-      type: {
-        kind: "struct"
-        fields: [
-          {
-            name: "tokenKind"
-            type: {
-              defined: "TokenKind"
-            }
-          },
-          {
-            name: "collateralWeight"
-            type: "u16"
-          },
-          {
-            name: "collateralMaxStaleness"
-            type: "u64"
           }
         ]
       }
@@ -327,267 +393,343 @@ export type JetControl = {
         ]
       }
     },
-    {
-      name: "MarginPoolParams"
-      type: {
-        kind: "struct"
-        fields: [
-          {
-            name: "feeDestination"
-            type: "publicKey"
-          }
-        ]
-      }
-    }
   ]
-}
+};
 
 export const IDL: JetControl = {
-  version: "0.1.0",
-  name: "jet_control",
-  instructions: [
+  "version": "0.1.0",
+  "name": "jet_control",
+  "instructions": [
     {
-      name: "createAuthority",
-      accounts: [
+      "name": "createAuthority",
+      "accounts": [
         {
-          name: "authority",
-          isMut: true,
-          isSigner: false
+          "name": "authority",
+          "isMut": true,
+          "isSigner": false
         },
         {
-          name: "payer",
-          isMut: true,
-          isSigner: true
+          "name": "payer",
+          "isMut": true,
+          "isSigner": true
         },
         {
-          name: "systemProgram",
-          isMut: false,
-          isSigner: false
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
         }
       ],
-      args: []
+      "args": []
     },
     {
-      name: "registerToken",
-      accounts: [
+      "name": "registerToken",
+      "accounts": [
         {
-          name: "requester",
-          isMut: true,
-          isSigner: true
+          "name": "requester",
+          "isMut": true,
+          "isSigner": true
         },
         {
-          name: "authority",
-          isMut: false,
-          isSigner: false
+          "name": "authority",
+          "isMut": false,
+          "isSigner": false
         },
         {
-          name: "marginPool",
-          isMut: true,
-          isSigner: false
+          "name": "marginPool",
+          "isMut": true,
+          "isSigner": false
         },
         {
-          name: "vault",
-          isMut: true,
-          isSigner: false
+          "name": "vault",
+          "isMut": true,
+          "isSigner": false
         },
         {
-          name: "depositNoteMint",
-          isMut: true,
-          isSigner: false
+          "name": "depositNoteMint",
+          "isMut": true,
+          "isSigner": false
         },
         {
-          name: "loanNoteMint",
-          isMut: true,
-          isSigner: false
+          "name": "loanNoteMint",
+          "isMut": true,
+          "isSigner": false
         },
         {
-          name: "tokenMint",
-          isMut: false,
-          isSigner: false
+          "name": "tokenMint",
+          "isMut": false,
+          "isSigner": false
         },
         {
-          name: "tokenMetadata",
-          isMut: true,
-          isSigner: false
+          "name": "tokenMetadata",
+          "isMut": true,
+          "isSigner": false
         },
         {
-          name: "depositNoteMetadata",
-          isMut: true,
-          isSigner: false
+          "name": "depositNoteMetadata",
+          "isMut": true,
+          "isSigner": false
         },
         {
-          name: "loanNoteMetadata",
-          isMut: true,
-          isSigner: false
+          "name": "loanNoteMetadata",
+          "isMut": true,
+          "isSigner": false
         },
         {
-          name: "marginPoolProgram",
-          isMut: false,
-          isSigner: false
+          "name": "marginPoolProgram",
+          "isMut": false,
+          "isSigner": false
         },
         {
-          name: "metadataProgram",
-          isMut: false,
-          isSigner: false
+          "name": "metadataProgram",
+          "isMut": false,
+          "isSigner": false
         },
         {
-          name: "tokenProgram",
-          isMut: false,
-          isSigner: false
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
         },
         {
-          name: "systemProgram",
-          isMut: false,
-          isSigner: false
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
         },
         {
-          name: "rent",
-          isMut: false,
-          isSigner: false
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false
         }
       ],
-      args: []
+      "args": []
     },
     {
-      name: "registerAdapter",
-      accounts: [
+      "name": "registerAdapter",
+      "accounts": [
         {
-          name: "requester",
-          isMut: false,
-          isSigner: true
+          "name": "requester",
+          "isMut": false,
+          "isSigner": true
         },
         {
-          name: "authority",
-          isMut: false,
-          isSigner: false
+          "name": "authority",
+          "isMut": false,
+          "isSigner": false
         },
         {
-          name: "adapter",
-          isMut: false,
-          isSigner: false
+          "name": "adapter",
+          "isMut": false,
+          "isSigner": false
         },
         {
-          name: "metadataAccount",
-          isMut: true,
-          isSigner: false
+          "name": "metadataAccount",
+          "isMut": true,
+          "isSigner": false
         },
         {
-          name: "payer",
-          isMut: true,
-          isSigner: true
+          "name": "payer",
+          "isMut": true,
+          "isSigner": true
         },
         {
-          name: "metadataProgram",
-          isMut: false,
-          isSigner: false
+          "name": "metadataProgram",
+          "isMut": false,
+          "isSigner": false
         },
         {
-          name: "systemProgram",
-          isMut: false,
-          isSigner: false
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
         }
       ],
-      args: []
+      "args": []
     },
     {
-      name: "configureToken",
-      accounts: [
+      "name": "configureToken",
+      "accounts": [
         {
-          name: "requester",
-          isMut: false,
-          isSigner: true
+          "name": "requester",
+          "isMut": false,
+          "isSigner": true
         },
         {
-          name: "authority",
-          isMut: false,
-          isSigner: false
+          "name": "authority",
+          "isMut": false,
+          "isSigner": false
         },
         {
-          name: "tokenMint",
-          isMut: false,
-          isSigner: false
+          "name": "tokenMint",
+          "isMut": false,
+          "isSigner": false
         },
         {
-          name: "marginPool",
-          isMut: true,
-          isSigner: false
+          "name": "marginPool",
+          "isMut": true,
+          "isSigner": false
         },
         {
-          name: "tokenMetadata",
-          isMut: true,
-          isSigner: false
+          "name": "tokenMetadata",
+          "isMut": true,
+          "isSigner": false
         },
         {
-          name: "depositMetadata",
-          isMut: true,
-          isSigner: false
+          "name": "depositMetadata",
+          "isMut": true,
+          "isSigner": false
         },
         {
-          name: "pythProduct",
-          isMut: false,
-          isSigner: false
+          "name": "loanMetadata",
+          "isMut": true,
+          "isSigner": false
         },
         {
-          name: "pythPrice",
-          isMut: false,
-          isSigner: false
+          "name": "pythProduct",
+          "isMut": false,
+          "isSigner": false
         },
         {
-          name: "marginPoolProgram",
-          isMut: false,
-          isSigner: false
+          "name": "pythPrice",
+          "isMut": false,
+          "isSigner": false
         },
         {
-          name: "metadataProgram",
-          isMut: false,
-          isSigner: false
+          "name": "marginPoolProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "metadataProgram",
+          "isMut": false,
+          "isSigner": false
         }
       ],
-      args: [
+      "args": [
         {
-          name: "metadata",
-          type: {
-            option: {
-              defined: "TokenMetadataParams"
+          "name": "metadata",
+          "type": {
+            "option": {
+              "defined": "TokenMetadataParams"
             }
           }
         },
         {
-          name: "poolParam",
-          type: {
-            option: {
-              defined: "MarginPoolParams"
+          "name": "poolParam",
+          "type": {
+            "option": {
+              "defined": "MarginPoolParams"
             }
           }
         },
         {
-          name: "poolConfig",
-          type: {
-            option: {
-              defined: "MarginPoolConfig"
+          "name": "poolConfig",
+          "type": {
+            "option": {
+              "defined": "MarginPoolConfig"
             }
           }
         }
       ]
+    },
+    {
+      "name": "setLiquidator",
+      "accounts": [
+        {
+          "name": "requester",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "liquidator",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "metadataAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "payer",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "metadataProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "isLiquidator",
+          "type": "bool"
+        }
+      ]
     }
   ],
-  accounts: [
+  "accounts": [
     {
-      name: "authority",
-      type: {
-        kind: "struct",
-        fields: [
+      "name": "authority",
+      "type": {
+        "kind": "struct",
+        "fields": [
           {
-            name: "seed",
-            type: {
-              array: ["u8", 1]
+            "name": "seed",
+            "type": {
+              "array": [
+                "u8",
+                1
+              ]
             }
           }
         ]
       }
     }
   ],
-  types: [
+  "types": [
+    {
+      "name": "TokenMetadataParams",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "tokenKind",
+            "type": {
+              "defined": "TokenKind"
+            }
+          },
+          {
+            "name": "collateralWeight",
+            "type": "u16"
+          },
+          {
+            "name": "maxLeverage",
+            "type": "u16"
+          }
+        ]
+      }
+    },
+    {
+      "name": "MarginPoolParams",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "feeDestination",
+            "type": "publicKey"
+          }
+        ]
+      }
+    },
     {
       name: "TokenKind",
       type: {
@@ -601,28 +743,6 @@ export const IDL: JetControl = {
           },
           {
             name: "Claim"
-          }
-        ]
-      }
-    },
-    {
-      name: "TokenMetadataParams",
-      type: {
-        kind: "struct",
-        fields: [
-          {
-            name: "tokenKind",
-            type: {
-              defined: "TokenKind"
-            }
-          },
-          {
-            name: "collateralWeight",
-            type: "u16"
-          },
-          {
-            name: "collateralMaxStaleness",
-            type: "u64"
           }
         ]
       }
@@ -671,17 +791,5 @@ export const IDL: JetControl = {
         ]
       }
     },
-    {
-      name: "MarginPoolParams",
-      type: {
-        kind: "struct",
-        fields: [
-          {
-            name: "feeDestination",
-            type: "publicKey"
-          }
-        ]
-      }
-    }
   ]
-}
+};

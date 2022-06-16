@@ -30,6 +30,7 @@ use solana_sdk::signature::{Keypair, Signer};
 use solana_sdk::system_program;
 use solana_sdk::{pubkey::Pubkey, transaction::Transaction};
 
+use jet_control::TokenMetadataParams;
 use jet_margin_pool::{Amount, MarginPool, MarginPoolConfig};
 use jet_margin_sdk::tx_builder::MarginTxBuilder;
 use jet_metadata::{LiquidatorMetadata, MarginAdapterMetadata, TokenKind, TokenMetadata};
@@ -43,6 +44,7 @@ pub struct MarginPoolSetupInfo {
     pub fee_destination: Pubkey,
     pub token_kind: TokenKind,
     pub collateral_weight: u16,
+    pub max_leverage: u16,
     pub oracle: TokenOracle,
     pub config: MarginPoolConfig,
 }
@@ -147,23 +149,21 @@ impl MarginClient {
 
         send_and_confirm(&self.rpc, &[ix], &[]).await?;
 
-        //self.set_position_token_metadata(
-        //    jet_margin_pool::ID,
-        //    ix_builder.deposit_note_mint,
-        //    setup_info.token,
-        //    setup_info.token_kind,
-        //    setup_info.collateral_weight,
-        //)
-        //.await?;
-
-        //self.set_position_token_metadata(
-        //    jet_margin_pool::ID,
-        //    ix_builder.loan_note_mint,
-        //    setup_info.token,
-        //    TokenKind::Claim,
-        //    10_000,
-        //)
-        //.await?;
+        self.configure_token(
+            &setup_info.token,
+            &TokenConfiguration {
+                pyth_price: Some(setup_info.oracle.price),
+                pyth_product: Some(setup_info.oracle.product),
+                pool_config: Some(setup_info.config.clone()),
+                metadata: Some(TokenMetadataParams {
+                    token_kind: TokenKind::Collateral,
+                    collateral_weight: setup_info.collateral_weight,
+                    max_leverage: setup_info.max_leverage,
+                }),
+                ..Default::default()
+            },
+        )
+        .await?;
 
         Ok(())
     }
