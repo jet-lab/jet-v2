@@ -155,6 +155,32 @@ pub mod jet_margin {
     ) -> Result<()> {
         liquidator_invoke_handler(ctx, data)
     }
+
+    /// Mark the start of a sequence of instructions on a margin account, where
+    /// the health check happens after the full sequence of instructions has executed.
+    pub fn user_begin_transaction(
+        ctx: Context<UserBeginTransaction>,
+        end_ix_idx: u8,
+    ) -> Result<()> {
+        user_begin_transaction_handler(ctx, end_ix_idx)
+    }
+
+    /// Mark the end of the transaction for user actions, and validate the final state
+    /// of the account is left healthy.
+    #[cfg(feature = "testing")]
+    pub fn user_end_transaction(ctx: Context<UserEndTransaction>) -> Result<()> {
+        user_end_transaction_handler(ctx)
+    }
+
+    /// Perform an action by invoking other programs, allowing them to alter
+    /// the positions belonging to this margin account.
+    #[cfg(feature = "testing")]
+    pub fn user_invoke<'info>(
+        ctx: Context<'_, '_, '_, 'info, UserInvoke<'info>>,
+        data: Vec<u8>,
+    ) -> Result<()> {
+        user_invoke_handler(ctx, data)
+    }
 }
 
 #[error_code]
@@ -173,6 +199,10 @@ pub enum ErrorCode {
     /// 141003
     #[msg("the current instruction was not directly invoked by the margin program")]
     IndirectInvocation,
+
+    /// 141004
+    #[msg("this transaction is not valid")]
+    InvalidTransaction,
 
     /// 141010 - Account cannot record any additional positions
     #[msg("account cannot record any additional positions")]
