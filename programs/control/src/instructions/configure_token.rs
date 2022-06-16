@@ -34,8 +34,8 @@ pub struct TokenMetadataParams {
     /// The weight of the asset's value relative to other tokens when used as collateral.
     pub collateral_weight: u16,
 
-    /// The maximum staleness (seconds) that's acceptable for this token when used as collateral.
-    pub collateral_max_staleness: u64,
+    /// The maximum leverage allowed on loans for the token
+    pub max_leverage: u16,
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Debug)]
@@ -47,19 +47,22 @@ pub struct MarginPoolParams {
 pub struct ConfigureToken<'info> {
     #[cfg_attr(not(feature = "testing"), account(address = crate::ROOT_AUTHORITY))]
     pub requester: Signer<'info>,
-    pub authority: Account<'info, Authority>,
+    pub authority: Box<Account<'info, Authority>>,
 
     /// CHECK:
     pub token_mint: UncheckedAccount<'info>,
 
     #[account(mut, has_one = token_mint)]
-    pub margin_pool: Account<'info, MarginPool>,
+    pub margin_pool: Box<Account<'info, MarginPool>>,
 
     #[account(mut, has_one = token_mint)]
-    pub token_metadata: Account<'info, TokenMetadata>,
+    pub token_metadata: Box<Account<'info, TokenMetadata>>,
 
     #[account(mut, constraint = deposit_metadata.underlying_token_mint == token_mint.key())]
-    pub deposit_metadata: Account<'info, PositionTokenMetadata>,
+    pub deposit_metadata: Box<Account<'info, PositionTokenMetadata>>,
+
+    #[account(mut, constraint = loan_metadata.underlying_token_mint == token_mint.key())]
+    pub loan_metadata: Box<Account<'info, PositionTokenMetadata>>,
 
     /// CHECK:
     pub pyth_product: UncheckedAccount<'info>,
@@ -99,6 +102,16 @@ impl<'info> ConfigureToken<'info> {
             self.metadata_program.to_account_info(),
             SetEntry {
                 metadata_account: self.deposit_metadata.to_account_info(),
+                authority: self.authority.to_account_info(),
+            },
+        )
+    }
+
+    fn set_loan_metadata_context(&self) -> CpiContext<'_, '_, '_, 'info, SetEntry<'info>> {
+        CpiContext::new(
+            self.metadata_program.to_account_info(),
+            SetEntry {
+                metadata_account: self.loan_metadata.to_account_info(),
                 authority: self.authority.to_account_info(),
             },
         )
@@ -152,14 +165,31 @@ pub fn configure_token_handler(
         let mut data = vec![];
 
         metadata.token_kind = params.token_kind;
-        metadata.collateral_weight = params.collateral_weight;
-        metadata.collateral_max_staleness = params.collateral_max_staleness;
+        metadata.value_modifier = params.collateral_weight;
+        metadata.max_staleness = 0;
 
         metadata.try_serialize(&mut data)?;
 
         jet_metadata::cpi::set_entry(
             ctx.accounts
                 .set_deposit_metadata_context()
+                .with_signer(&[&authority]),
+            0,
+            data,
+        )?;
+
+        metadata = ctx.accounts.loan_metadata.clone();
+        let mut data = vec![];
+
+        metadata.token_kind = TokenKind::Claim;
+        metadata.value_modifier = params.max_leverage;
+        metadata.max_staleness = 0;
+
+        metadata.try_serialize(&mut data)?;
+
+        jet_metadata::cpi::set_entry(
+            ctx.accounts
+                .set_loan_metadata_context()
                 .with_signer(&[&authority]),
             0,
             data,

@@ -1,7 +1,5 @@
 use anyhow::Error;
 
-use jet_control::TokenMetadataParams;
-use jet_margin_sdk::instructions::control::TokenConfiguration;
 use solana_sdk::native_token::LAMPORTS_PER_SOL;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::Signer;
@@ -56,7 +54,8 @@ async fn setup_environment(ctx: &MarginTestContext) -> Result<TestEnv, Error> {
             token: usdc,
             fee_destination: usdc_fees,
             token_kind: TokenKind::Collateral,
-            collateral_weight: 10_000,
+            collateral_weight: 1_00,
+            max_leverage: 10_00,
             config: DEFAULT_POOL_CONFIG,
             oracle: usdc_oracle,
         },
@@ -64,7 +63,8 @@ async fn setup_environment(ctx: &MarginTestContext) -> Result<TestEnv, Error> {
             token: tsol,
             fee_destination: tsol_fees,
             token_kind: TokenKind::Collateral,
-            collateral_weight: 9_500,
+            collateral_weight: 95,
+            max_leverage: 4_00,
             config: DEFAULT_POOL_CONFIG,
             oracle: tsol_oracle,
         },
@@ -73,40 +73,6 @@ async fn setup_environment(ctx: &MarginTestContext) -> Result<TestEnv, Error> {
     for pool_info in pools {
         ctx.margin.create_pool(&pool_info).await?;
     }
-
-    ctx.margin
-        .configure_token(
-            &usdc,
-            &TokenConfiguration {
-                pyth_price: Some(usdc_oracle.price),
-                pyth_product: Some(usdc_oracle.product),
-                pool_config: Some(DEFAULT_POOL_CONFIG),
-                metadata: Some(TokenMetadataParams {
-                    token_kind: TokenKind::Collateral,
-                    collateral_weight: 10_000,
-                    collateral_max_staleness: 0,
-                }),
-                ..Default::default()
-            },
-        )
-        .await?;
-
-    ctx.margin
-        .configure_token(
-            &tsol,
-            &TokenConfiguration {
-                pyth_price: Some(tsol_oracle.price),
-                pyth_product: Some(tsol_oracle.product),
-                pool_config: Some(DEFAULT_POOL_CONFIG),
-                metadata: Some(TokenMetadataParams {
-                    token_kind: TokenKind::Collateral,
-                    collateral_weight: 9_500,
-                    collateral_max_staleness: 0,
-                }),
-                ..Default::default()
-            },
-        )
-        .await?;
 
     Ok(TestEnv { usdc, tsol })
 }
