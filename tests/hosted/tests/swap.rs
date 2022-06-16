@@ -2,6 +2,7 @@ use anyhow::Error;
 
 use jet_control::TokenMetadataParams;
 use jet_margin_sdk::instructions::control::TokenConfiguration;
+use jet_margin_swap::orca_swap_v1_metadata;
 use solana_sdk::native_token::LAMPORTS_PER_SOL;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::Signer;
@@ -111,13 +112,13 @@ async fn setup_environment(ctx: &MarginTestContext) -> Result<TestEnv, Error> {
     Ok(TestEnv { usdc, tsol })
 }
 
-/// Test token swaps
+/// Test token swaps for the official SPL token swap
 #[tokio::test(flavor = "multi_thread", worker_threads = 1)]
 async fn spl_swap_test() -> Result<(), anyhow::Error> {
     swap_test_impl(spl_token_swap::id()).await
 }
 
-/// Test token swaps
+/// Test token swaps for orca
 #[tokio::test(flavor = "multi_thread", worker_threads = 1)]
 async fn orca_swap_test() -> Result<(), anyhow::Error> {
     swap_test_impl(jet_margin_swap::orca_swap_v1_metadata::id()).await
@@ -151,10 +152,16 @@ async fn swap_test_impl(swap_program_id: Pubkey) -> Result<(), anyhow::Error> {
         10_000 * ONE_TSOL,
     )
     .await?;
+
+    let transit_source_authority = if swap_program_id == orca_swap_v1_metadata::id() {
+        &swap_pool.pool_authority
+    } else {
+        user_a.address()
+    };
     
     let usdc_transit_source = ctx
         .tokens
-        .create_account(&env.usdc, &swap_pool.pool_authority)
+        .create_account(&env.usdc, transit_source_authority)
         .await?;
     let tsol_transit_target = ctx
         .tokens
@@ -166,7 +173,7 @@ async fn swap_test_impl(swap_program_id: Pubkey) -> Result<(), anyhow::Error> {
         .await?;
     let tsol_transit_source = ctx
         .tokens
-        .create_account(&env.tsol, &swap_pool.pool_authority)
+        .create_account(&env.tsol, transit_source_authority)
         .await?;
     
     // Create some tokens for each user to deposit

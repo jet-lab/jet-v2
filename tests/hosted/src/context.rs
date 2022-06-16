@@ -14,7 +14,7 @@ use jet_margin_pool::MarginPoolConfig;
 use jet_metadata::TokenKind;
 
 use jet_simulation::runtime::TestRuntime;
-use jet_simulation::solana_rpc_api::{RpcConnection, SolanaRpcClient};
+use jet_simulation::solana_rpc_api::SolanaRpcClient;
 
 use crate::{margin::MarginClient, tokens::TokenManager};
 
@@ -53,7 +53,7 @@ pub struct MarginTestContext {
 impl MarginTestContext {
     #[cfg(not(feature = "localnet"))]
     pub async fn new() -> Result<Self, Error> {
-        let runtime = Arc::new(jet_simulation::create_test_runtime![
+        let runtime = jet_simulation::create_test_runtime![
             jet_control,
             jet_margin,
             jet_metadata,
@@ -63,14 +63,15 @@ impl MarginTestContext {
                 orca_swap_v1_metadata::id(),
                 orca_swap::processor::Processor::process
             ),
-        ]);
+        ];
 
-        Ok(Self::new_with_runtime(runtime).await?)
+        Ok(Self::new_with_runtime(Arc::new(runtime)).await?)
     }
 
     #[cfg(feature = "localnet")]
     pub async fn new() -> Result<Self, Error> {
-        Ok(Self::new_with_runtime(Arc::new(RpcConnection::new_local_funded()?)).await?)
+        let runtime = jet_simulation::solana_rpc_api::RpcConnection::new_local_funded()?;
+        Ok(Self::new_with_runtime(Arc::new(runtime)).await?)
     }
 
     pub async fn new_with_runtime(runtime: Arc<dyn SolanaRpcClient>) -> Result<Self, Error> {

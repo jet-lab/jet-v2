@@ -61,37 +61,119 @@ pub struct MarginSplSwap<'info> {
 }
 
 impl<'info> MarginSplSwap<'info> {
-    fn withdraw_source_context(&self) -> CpiContext<'_, '_, '_, 'info, Withdraw<'info>> {
-        CpiContext::new(
-            self.margin_pool_program.to_account_info(),
-            Withdraw {
-                margin_pool: self.source_margin_pool.margin_pool.to_account_info(),
-                vault: self.source_margin_pool.vault.to_account_info(),
-                deposit_note_mint: self.source_margin_pool.deposit_note_mint.to_account_info(),
-                depositor: self.margin_account.to_account_info(),
-                source: self.source_account.to_account_info(),
-                destination: self.transit_source_account.to_account_info(),
-                token_program: self.token_program.to_account_info(),
-            },
-        )
+    #[inline(never)]
+    fn withdraw(&self, amount_in: u64) -> Result<()> {
+        jet_margin_pool::cpi::withdraw(
+            CpiContext::new(
+                self.margin_pool_program.to_account_info(),
+                Withdraw {
+                    margin_pool: self.source_margin_pool.margin_pool.to_account_info(),
+                    vault: self.source_margin_pool.vault.to_account_info(),
+                    deposit_note_mint: self.source_margin_pool.deposit_note_mint.to_account_info(),
+                    depositor: self.margin_account.to_account_info(),
+                    source: self.source_account.to_account_info(),
+                    destination: self.transit_source_account.to_account_info(),
+                    token_program: self.token_program.to_account_info(),
+                },
+            ),
+            Amount::tokens(amount_in),
+        )?;
+
+        Ok(())
     }
 
-    fn deposit_destination_context(&self) -> CpiContext<'_, '_, '_, 'info, Deposit<'info>> {
-        CpiContext::new(
-            self.margin_pool_program.to_account_info(),
-            Deposit {
-                margin_pool: self.destination_margin_pool.margin_pool.to_account_info(),
-                vault: self.destination_margin_pool.vault.to_account_info(),
-                deposit_note_mint: self
-                    .destination_margin_pool
-                    .deposit_note_mint
-                    .to_account_info(),
-                depositor: self.margin_account.to_account_info(),
-                source: self.transit_destination_account.to_account_info(),
-                destination: self.destination_account.to_account_info(),
-                token_program: self.token_program.to_account_info(),
+    #[inline(never)]
+    fn deposit(&self, destination_amount: u64) -> Result<()> {
+        jet_margin_pool::cpi::deposit(
+            CpiContext::new(
+                self.margin_pool_program.to_account_info(),
+                Deposit {
+                    margin_pool: self.destination_margin_pool.margin_pool.to_account_info(),
+                    vault: self.destination_margin_pool.vault.to_account_info(),
+                    deposit_note_mint: self
+                        .destination_margin_pool
+                        .deposit_note_mint
+                        .to_account_info(),
+                    depositor: self.margin_account.to_account_info(),
+                    source: self.transit_destination_account.to_account_info(),
+                    destination: self.destination_account.to_account_info(),
+                    token_program: self.token_program.to_account_info(),
+                },
+            ),
+            destination_amount,
+        )?;
+
+        Ok(())
+    }
+
+    #[inline(never)]
+    fn swap(&self, amount_in: u64, minimum_amount_out: u64) -> Result<()> {
+        let swap_program_id = self.swap_info.swap_program.key();
+
+        let swap_ix = if swap_program_id == spl_token_swap::id() {
+            self.spl_swap_ix(amount_in, minimum_amount_out)
+        } else if swap_program_id == orca_swap_v1_metadata::id() {
+            self.orca_swap_ix(amount_in, minimum_amount_out)
+        } else {
+            err!(MarginSwapError::InvalidSwapProgram)
+        }?;
+
+        invoke(
+            &swap_ix,
+            &[
+                self.swap_info.swap_pool.to_account_info(),
+                self.margin_account.to_account_info(),
+                self.swap_info.authority.to_account_info(),
+                self.transit_source_account.to_account_info(),
+                self.swap_info.vault_into.to_account_info(),
+                self.swap_info.vault_from.to_account_info(),
+                self.transit_destination_account.to_account_info(),
+                self.swap_info.token_mint.to_account_info(),
+                self.swap_info.fee_account.to_account_info(),
+                self.token_program.to_account_info(),
+            ],
+        )?;
+
+        Ok(())
+    }
+
+    fn spl_swap_ix(&self, amount_in: u64, minimum_amount_out: u64) -> Result<Instruction> {
+        Ok(spl_token_swap::instruction::swap(
+            self.swap_info.swap_program.key,
+            self.token_program.key,
+            self.swap_info.swap_pool.key,
+            self.swap_info.authority.key,
+            &self.margin_account.key(),
+            self.transit_source_account.key,
+            self.swap_info.vault_into.key,
+            self.swap_info.vault_from.key,
+            self.transit_destination_account.key,
+            self.swap_info.token_mint.key,
+            self.swap_info.fee_account.key,
+            None,
+            spl_token_swap::instruction::Swap {
+                amount_in,
+                minimum_amount_out,
             },
-        )
+        )?)
+    }
+
+    fn orca_swap_ix(&self, amount_in: u64, minimum_amount_out: u64) -> Result<Instruction> {
+        Ok(orca_swap::instruction::swap(
+            self.swap_info.swap_program.key,
+            self.token_program.key,
+            self.swap_info.swap_pool.key,
+            self.swap_info.authority.key,
+            self.transit_source_account.key,
+            self.swap_info.vault_into.key,
+            self.swap_info.vault_from.key,
+            self.transit_destination_account.key,
+            self.swap_info.token_mint.key,
+            self.swap_info.fee_account.key,
+            None,
+            amount_in,
+            minimum_amount_out,
+        )?)
     }
 }
 
@@ -128,89 +210,10 @@ pub fn margin_spl_swap_handler(
     amount_in: u64,
     minimum_amount_out: u64,
 ) -> Result<()> {
-    jet_margin_pool::cpi::withdraw(
-        ctx.accounts.withdraw_source_context(),
-        Amount::tokens(amount_in),
-    )?;
-
-    let swap_program_id = ctx.accounts.swap_info.swap_program.key();
-
-    let swap_ix = if swap_program_id == spl_token_swap::id() {
-        spl_swap_ix(&ctx, amount_in, minimum_amount_out)
-    } else if swap_program_id == orca_swap_v1_metadata::id() {
-        orca_swap_ix(&ctx, amount_in, minimum_amount_out)
-    } else {
-        err!(MarginSwapError::InvalidSwapProgram)
-    }?;
-
-    invoke(
-        &swap_ix,
-        &[
-            ctx.accounts.swap_info.swap_pool.to_account_info(),
-            ctx.accounts.swap_info.authority.to_account_info(),
-            ctx.accounts.transit_source_account.to_account_info(),
-            ctx.accounts.swap_info.vault_into.to_account_info(),
-            ctx.accounts.swap_info.vault_from.to_account_info(),
-            ctx.accounts.transit_destination_account.to_account_info(),
-            ctx.accounts.swap_info.token_mint.to_account_info(),
-            ctx.accounts.swap_info.fee_account.to_account_info(),
-            ctx.accounts.token_program.to_account_info(),
-        ],
-    )?;
-
+    ctx.accounts.withdraw(amount_in)?;
+    ctx.accounts.swap(amount_in, minimum_amount_out)?;
     let destination_amount = token::accessor::amount(&ctx.accounts.transit_destination_account)?;
-
-    jet_margin_pool::cpi::deposit(
-        ctx.accounts.deposit_destination_context(),
-        destination_amount,
-    )?;
+    ctx.accounts.deposit(destination_amount)?;
 
     Ok(())
-}
-
-fn spl_swap_ix(
-    ctx: &Context<MarginSplSwap>,
-    amount_in: u64,
-    minimum_amount_out: u64,
-) -> Result<Instruction> {
-    Ok(spl_token_swap::instruction::swap(
-        ctx.accounts.swap_info.swap_program.key,
-        ctx.accounts.token_program.key,
-        ctx.accounts.swap_info.swap_pool.key,
-        ctx.accounts.swap_info.authority.key,
-        ctx.accounts.swap_info.authority.key,
-        ctx.accounts.transit_source_account.key,
-        ctx.accounts.swap_info.vault_into.key,
-        ctx.accounts.swap_info.vault_from.key,
-        ctx.accounts.transit_destination_account.key,
-        ctx.accounts.swap_info.token_mint.key,
-        ctx.accounts.swap_info.fee_account.key,
-        None,
-        spl_token_swap::instruction::Swap {
-            amount_in,
-            minimum_amount_out,
-        },
-    )?)
-}
-
-fn orca_swap_ix(
-    ctx: &Context<MarginSplSwap>,
-    amount_in: u64,
-    minimum_amount_out: u64,
-) -> Result<Instruction> {
-    Ok(orca_swap::instruction::swap(
-        ctx.accounts.swap_info.swap_program.key,
-        ctx.accounts.token_program.key,
-        ctx.accounts.swap_info.swap_pool.key,
-        ctx.accounts.swap_info.authority.key,
-        ctx.accounts.transit_source_account.key,
-        ctx.accounts.swap_info.vault_into.key,
-        ctx.accounts.swap_info.vault_from.key,
-        ctx.accounts.transit_destination_account.key,
-        ctx.accounts.swap_info.token_mint.key,
-        ctx.accounts.swap_info.fee_account.key,
-        None,
-        amount_in,
-        minimum_amount_out,
-    )?)
 }
