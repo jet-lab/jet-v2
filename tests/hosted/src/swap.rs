@@ -76,7 +76,7 @@ impl SwapPool {
             &keypair.pubkey(),
             rent_lamports,
             space as u64,
-            &program_id,
+            program_id,
         );
 
         // Pool authority

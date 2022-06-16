@@ -65,13 +65,14 @@ impl MarginTestContext {
             ),
         ];
 
-        Ok(Self::new_with_runtime(Arc::new(runtime)).await?)
+        Self::new_with_runtime(Arc::new(runtime)).await
     }
 
     #[cfg(feature = "localnet")]
     pub async fn new() -> Result<Self, Error> {
         let runtime = jet_simulation::solana_rpc_api::RpcConnection::new_local_funded()?;
-        Ok(Self::new_with_runtime(Arc::new(runtime)).await?)
+        
+        Self::new_with_runtime(Arc::new(runtime)).await
     }
 
     pub async fn new_with_runtime(runtime: Arc<dyn SolanaRpcClient>) -> Result<Self, Error> {

@@ -334,6 +334,26 @@ async fn owner_cannot_end_liquidation_before_timeout() -> Result<()> {
 
 #[tokio::test(flavor = "multi_thread")]
 #[cfg_attr(not(feature = "localnet"), serial)]
+#[cfg(not(feature = "localnet"))]
+async fn owner_can_end_liquidation_after_timeout() -> Result<()> {
+    let ctx = test_context().await;
+    let scen = scenario1().await?;
+
+    scen.user_b_liq.liquidate_begin().await?;
+
+    let mut clock = ctx.rpc.get_clock().unwrap();
+    clock.unix_timestamp += 61;
+    ctx.rpc.set_clock(clock);
+    
+    scen.user_b
+        .liquidate_end(Some(scen.user_b_liq.signer()))
+        .await?;
+
+    Ok(())
+}
+
+#[tokio::test(flavor = "multi_thread")]
+#[cfg_attr(not(feature = "localnet"), serial)]
 async fn liquidator_permission_is_removable() -> Result<()> {
     let ctx = test_context().await;
     let scen = scenario1().await?;
@@ -346,30 +366,8 @@ async fn liquidator_permission_is_removable() -> Result<()> {
     let result = scen.user_b_liq.liquidate_begin().await;
     assert_custom_program_error(
         anchor_lang::error::ErrorCode::AccountDiscriminatorMismatch,
-        result
+        result,
     );
 
     Ok(())
 }
-
-// todo enable this test when test runtime clock works
-// #[tokio::test(flavor = "multi_thread")]
-// fn owner_can_end_liquidation_after_timeout(ctx: SyncContext) {
-//     let (_, user_b, liquidator) = scenario1(&ctx);
-//     user_b.liquidate_begin().await.unwrap();
-//     let mut clock = ctx.runtime.get_clock();
-//     clock.unix_timestamp += 61;
-//     ctx.runtime.set_clock(clock);
-//     user_b.liquidate_end(None).unwrap();
-// }
-
-// todo enable this test when test runtime clock works
-// #[tokio::test(flavor = "multi_thread")]
-// fn arbitrary_user_can_end_liquidation_after_timeout(ctx: SyncContext) {
-//     let (_, user_b, liquidator) = scenario1(&ctx);
-//     user_b.liquidate_begin().await.unwrap();
-//     let mut clock = ctx.runtime.get_clock();
-//     clock.unix_timestamp += 61;
-//     ctx.runtime.set_clock(clock);
-//     user_b.liquidate_end_arbitrary(&Pubkey::default(), &Pubkey::default()).unwrap();
-// }
