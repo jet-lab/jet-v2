@@ -553,6 +553,7 @@ export class MarginAccount {
     await this.createAccount()
     await sleep(2000)
     await this.refresh()
+
     const position = await this.getOrCreatePosition(marginPool.addresses.depositNoteMint)
     assert(position)
 
