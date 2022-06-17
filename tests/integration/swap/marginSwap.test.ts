@@ -446,7 +446,7 @@ describe("margin swap", () => {
     assert(Number(info.amount) >= poolTokenA + poolTokenB)
   })
 
-  it("withrdaw one exact amount out", async () => {
+  it("withdraw one exact amount out", async () => {
     // Pool token amount to withdraw on one side
     const withdrawAmount = 50000
     const roundingAmount = 1.0001 // make math a little easier

@@ -17,6 +17,7 @@ import { MarginPrograms } from "./marginClient"
 import { findDerivedAccount } from "../utils/pda"
 import { AssociatedToken, bnToNumber, MarginPools, ZERO_BN } from ".."
 import { MarginPoolConfig, MarginTokenConfig } from "./config"
+import { sleep } from "src/utils/util"
 
 export interface MarginAccountAddresses {
   marginAccount: PublicKey
@@ -414,8 +415,8 @@ export class MarginAccount {
     provider: AnchorProvider
     owner: Address
   }) {
-    const accounts = await MarginAccount.loadAllByOwner({ programs, provider, owner })
-    accounts.sort((a, b) => b.seed - a.seed)
+    let accounts = await MarginAccount.loadAllByOwner({ programs, provider, owner })
+    accounts = accounts.sort((a, b) => a.seed - b.seed)
     // Return any gap found in account seeds
     for (let i = 0; i < accounts.length; i++) {
       const seed = accounts[i].seed
@@ -460,13 +461,14 @@ export class MarginAccount {
   /// `source` - The token account that the deposit will be transfered from
   /// `amount` - The amount of tokens to deposit
   async deposit(marginPool: Pool, source: Address, amount: BN) {
+    await this.createAccount()
+    await sleep(2000)
     await this.refresh()
 
-    const ix: TransactionInstruction[] = []
-    await this.withCreateAccount(ix)
     const position = await this.getOrCreatePosition(marginPool.addresses.depositNoteMint)
     assert(position)
 
+    const ix: TransactionInstruction[] = []
     await marginPool.withDeposit({
       instructions: ix,
       depositor: this.owner,
