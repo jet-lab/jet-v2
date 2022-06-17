@@ -23,14 +23,10 @@ import {
 } from "@solana/web3.js"
 
 import MARGIN_CONFIG from "../../../libraries/ts/src/margin/config.json"
-
 import { TokenSwap, CurveType, MarginSwap } from "../../../libraries/ts/src"
+import { sleep } from "../../../libraries/ts/src/utils/util"
 
 import { getTokenAccountInfo } from "../util"
-
-function sleep(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms))
-}
 
 describe("margin swap", () => {
   const controlProgramId: PublicKey = new PublicKey(MARGIN_CONFIG.localnet.controlProgramId)
