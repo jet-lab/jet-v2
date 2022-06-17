@@ -257,37 +257,91 @@ export class MarginAccount {
       const poolConfig = poolConfigs[i]
       const tokenConfig = this.programs.config.tokens[poolConfig.symbol]
       const pool = this.pools?.[poolConfig.symbol]
-      const depositNotePositionInfo =
-        pool && this.info?.positions.positions.find(position => position.token.equals(pool.addresses.depositNoteMint))
-      const loanNotePositionInfo =
-        pool && this.info?.positions.positions.find(position => position.token.equals(pool.addresses.loanNoteMint))
+      if (!pool) {
+        continue;
+      }
 
-      const aBigNumber = TokenAmount.tokens('92831134235933', tokenConfig.decimals)
+      // Deposits
+      const depositNotePositionInfo = this.info?.positions.positions.find(position => position.token.equals(pool.addresses.depositNoteMint))
+      const depositBalance = new TokenAmount(depositNotePositionInfo?.value ?? ZERO_BN, pool?.decimals ?? 0)
 
-      // FIXME: Calculate these fields. Stop using 0 or aBigNumber
+      // Loans
+      const loanNotePositionInfo = this.info?.positions.positions.find(position => position.token.equals(pool.addresses.loanNoteMint))
+      const loanBalance = new TokenAmount(loanNotePositionInfo?.value ?? ZERO_BN, pool?.decimals ?? 0)
+
+      // Max trade amounts
+      const maxTradeAmounts = this.getMaxTradeAmounts(pool, depositBalance, loanBalance);
+
+      // Buying power
+      const buyingPower = depositBalance.muln(pool.tokenPrice).muln(pool.maxLeverage)
+
       positions[poolConfig.symbol] = {
         poolConfig,
         tokenConfig,
         pool,
         depositNotePositionInfo,
         loanNotePositionInfo,
-        depositBalance: TokenAmount.zero(tokenConfig.decimals),
+        depositBalance,
         depositBalanceNotes: depositNotePositionInfo?.balance ?? ZERO_BN,
-        loanBalance: TokenAmount.zero(tokenConfig.decimals),
+        loanBalance,
         loanBalanceNotes: loanNotePositionInfo?.balance ?? ZERO_BN,
-        maxTradeAmounts: {
-          deposit: aBigNumber,
-          withdraw: aBigNumber,
-          borrow: aBigNumber,
-          repay: aBigNumber,
-          swap: aBigNumber,
-          transfer: aBigNumber
-        },
-        buyingPower: TokenAmount.zero(tokenConfig.decimals)
+        maxTradeAmounts,
+        buyingPower
       }
     }
 
     return positions
+  }
+
+  getMaxTradeAmounts(
+    pool: Pool, 
+    depositBalance: TokenAmount, 
+    loanBalance: TokenAmount
+  ): Record<TradeAction, TokenAmount> {
+    const depositedValue = depositBalance.muln(pool.tokenPrice)
+    const loanValue = loanBalance.muln(pool.tokenPrice);
+
+    // Max deposit
+    const deposit = pool.symbol && this.walletTokens ? this.walletTokens.map[pool.symbol].amount : TokenAmount.zero(pool.decimals)
+
+    // Max withdraw
+    let withdraw = !loanValue.isZero()
+      ? (depositedValue.subn(pool.minCRatio * loanValue.tokens)).divn(pool.tokenPrice)
+      : depositBalance;
+    if (withdraw.gt(depositBalance)) {
+      withdraw = depositBalance
+    }
+    if (withdraw.gt(pool.availableLiquidity)) {
+      withdraw = pool.availableLiquidity;
+    }
+
+    // Max borrow
+    let borrow =
+      (depositedValue.divn(pool.minCRatio - loanValue.tokens)).divn(pool.tokenPrice);
+    if (borrow.gt(pool.availableLiquidity)) {
+      borrow = pool.availableLiquidity;
+    }
+
+    // Max repay
+    let repay = loanBalance
+    if (pool.symbol &&  this.walletTokens && this.walletTokens.map[pool.symbol].amount.lt(loanBalance)) {
+      repay = this.walletTokens[pool.symbol].amount;
+    }
+
+    // Max swap
+    const swap = withdraw;
+
+    // Max transfer
+    const transfer = withdraw;
+
+    return {
+      deposit,
+      withdraw,
+      borrow,
+      repay,
+      swap,
+      transfer
+    }
   }
 
   getSummary(): AccountSummary {
