@@ -17,7 +17,7 @@ import { MarginPrograms } from "./marginClient"
 import { findDerivedAccount } from "../utils/pda"
 import { AssociatedToken, bnToNumber, MarginPools, ZERO_BN } from ".."
 import { MarginPoolConfig, MarginTokenConfig } from "./config"
-import { sleep } from "src/utils/util"
+import { sleep } from "../utils/util"
 
 export interface MarginAccountAddresses {
   marginAccount: PublicKey
