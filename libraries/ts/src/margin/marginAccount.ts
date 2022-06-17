@@ -551,7 +551,7 @@ export class MarginAccount {
   /// `amount` - The amount of tokens to deposit
   async deposit(marginPool: Pool, source: Address, amount: BN) {
     await this.createAccount()
-    await sleep(2000)
+    await sleep(5000)
     await this.refresh()
 
     const position = await this.getOrCreatePosition(marginPool.addresses.depositNoteMint)
