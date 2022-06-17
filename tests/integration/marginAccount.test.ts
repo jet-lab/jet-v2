@@ -2,6 +2,7 @@ import * as anchor from "@project-serum/anchor"
 import { AnchorProvider } from "@project-serum/anchor"
 import NodeWallet from "@project-serum/anchor/dist/cjs/nodewallet"
 import { ConfirmOptions, Keypair, LAMPORTS_PER_SOL } from "@solana/web3.js"
+import { expect } from "chai"
 
 import { MarginAccount, MarginClient, MarginPools, Pool, PoolManager } from "../../libraries/ts/src"
 import { createAuthority, createUserWallet } from "./util"
@@ -29,6 +30,9 @@ describe("margin account", () => {
   let provider_a: AnchorProvider
   let provider_b: AnchorProvider
 
+  let marginAccount_A: MarginAccount
+  let marginAccount_B: MarginAccount
+
   it("Create two user wallets", async () => {
     // Create our two user wallets, with some SOL funding to get started
     wallet_a = await createUserWallet(provider, 10 * LAMPORTS_PER_SOL)
@@ -49,23 +53,36 @@ describe("margin account", () => {
   it("Create margin accounts", async () => {
     // Initialize the margin accounts for each user
     anchor.setProvider(provider_a)
-    const maginAccount_A = await MarginAccount.load({
+    marginAccount_A = await MarginAccount.load({
       programs,
       provider: provider_a,
       pools,
       owner: provider_a.wallet.publicKey,
       seed: 0
     })
-    await maginAccount_A.createAccount()
+    await marginAccount_A.createAccount()
 
     anchor.setProvider(provider_b)
-    const maginAccount_B = await MarginAccount.load({
+    marginAccount_B = await MarginAccount.load({
       programs,
       provider: provider_b,
       pools,
       owner: provider_b.wallet.publicKey,
       seed: 0
     })
-    await maginAccount_B.createAccount()
+    await marginAccount_B.createAccount()
+  })
+
+  it("Load margin account for user A", async () => {
+    // SETUP
+    const marginAccounts = await MarginAccount.loadAllByOwner({
+      programs,
+      provider: provider_a,
+      owner: provider_a.wallet.publicKey
+    })
+
+    // TEST
+    expect(marginAccounts.length).to.eq(1)
+    expect(marginAccounts.find(acc => acc.seed === 0)?.seed).to.eq(marginAccount_A.seed)
   })
 })

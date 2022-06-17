@@ -1,6 +1,7 @@
 import { AnchorProvider, InstructionNamespace } from "@project-serum/anchor"
 import NodeWallet from "@project-serum/anchor/dist/cjs/nodewallet"
 import {
+  AccountLayout,
   ACCOUNT_SIZE,
   createAssociatedTokenAccountInstruction,
   createInitializeAccountInstruction,
@@ -138,8 +139,19 @@ export async function createUserWallet(provider: AnchorProvider, lamports: numbe
 
 export async function getMintSupply(provider: AnchorProvider, mintPublicKey: PublicKey, decimals: number) {
   const mintAccount = await provider.connection.getAccountInfo(mintPublicKey)
-  const mintInfo = MintLayout.decode(Buffer.from(mintAccount!.data))
+  if (!mintAccount) {
+    throw new Error("Mint does not exist")
+  }
+  const mintInfo = MintLayout.decode(Buffer.from(mintAccount.data))
   return Number(mintInfo.supply) / pow10(decimals)
+}
+
+export async function getTokenAccountInfo(provider: AnchorProvider, address: PublicKey) {
+  const info = await provider.connection.getAccountInfo(address)
+  if (!info) {
+    throw new Error("Account does not exist")
+  }
+  return AccountLayout.decode(Buffer.from(info.data))
 }
 
 export async function getTokenBalance(
