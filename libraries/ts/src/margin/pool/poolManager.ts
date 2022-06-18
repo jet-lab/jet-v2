@@ -7,12 +7,6 @@ import { MarginPrograms } from "../marginClient"
 import { MarginPoolAddresses, Pool, TokenKind } from "./pool"
 import { MarginPoolConfigData } from "./state"
 
-interface TokenMetadataParams {
-  tokenKind: TokenKind
-  collateralWeight: number
-  collateralMaxStaleness: BN
-}
-
 interface MarginPoolParams {
   feeDestination: PublicKey
 }
@@ -20,7 +14,7 @@ interface MarginPoolParams {
 interface IPoolCreationParams {
   tokenMint: Address
   collateralWeight: number
-  collateralMaxStaleness: BN
+  maxLeverage: number
   feeDestination: Address
   pythProduct: Address
   pythPrice: Address
@@ -108,7 +102,7 @@ export class PoolManager {
   async create({
     tokenMint,
     collateralWeight,
-    collateralMaxStaleness,
+    maxLeverage,
     feeDestination,
     pythProduct,
     pythPrice,
@@ -133,7 +127,7 @@ export class PoolManager {
           instructions: ix2,
           requester: this.owner,
           collateralWeight,
-          collateralMaxStaleness,
+          maxLeverage,
           feeDestination,
           pythProduct,
           pythPrice,
@@ -205,7 +199,7 @@ export class PoolManager {
    * @param instructions
    * @param requester
    * @param collateralWeight
-   * @param collateralMaxStaleness
+   * @param maxLeverage
    * @param feeDestination
    * @param pythProduct
    * @param pythPrice
@@ -217,7 +211,7 @@ export class PoolManager {
     instructions,
     requester,
     collateralWeight,
-    collateralMaxStaleness,
+    maxLeverage,
     feeDestination,
     pythProduct,
     pythPrice,
@@ -229,7 +223,7 @@ export class PoolManager {
     instructions: TransactionInstruction[]
     requester: Address
     collateralWeight: number
-    collateralMaxStaleness: BN
+    maxLeverage: number
     feeDestination: Address
     pythProduct: Address
     pythPrice: Address
@@ -238,12 +232,6 @@ export class PoolManager {
     address: PublicKey
     programs?: MarginPrograms
   }): Promise<void> {
-    // Set the token configuration, e.g. collateral weight
-    const metadata: TokenMetadataParams = {
-      tokenKind: { collateral: {} },
-      collateralWeight: collateralWeight,
-      collateralMaxStaleness: collateralMaxStaleness
-    }
     const poolParam: MarginPoolParams = {
       feeDestination: translateAddress(feeDestination)
     }
@@ -251,9 +239,9 @@ export class PoolManager {
     const ix = await programs.control.methods
       .configureToken(
         {
-          tokenKind: metadata.tokenKind as never,
-          collateralWeight: metadata.collateralWeight,
-          collateralMaxStaleness: metadata.collateralMaxStaleness
+          tokenKind: { collateral: {} } as never,
+          collateralWeight,
+          maxLeverage
         },
         poolParam,
         marginPoolConfig
@@ -265,6 +253,7 @@ export class PoolManager {
         marginPool: address,
         tokenMetadata: addresses.tokenMetadata,
         depositMetadata: addresses.depositNoteMetadata,
+        loanMetadata: addresses.loanNoteMetadata,
         pythProduct: pythProduct,
         pythPrice: pythPrice,
         marginPoolProgram: programs.config.marginPoolProgramId,
