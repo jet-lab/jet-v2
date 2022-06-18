@@ -52,7 +52,7 @@ export interface AccountSummary {
   accountBalance: number
   availableCollateral: number
   cRatio: number
-  leverage: number,
+  leverage: number
   totalBuyingPower: number
 }
 
@@ -60,6 +60,8 @@ export interface MarginWalletTokens {
   all: AssociatedToken[]
   map: Record<MarginPools, AssociatedToken>
 }
+
+const MAX_LEVERAGE = 100
 
 export class MarginAccount {
   static readonly SEED_MAX_VALUE = 65535
@@ -304,7 +306,10 @@ export class MarginAccount {
       const maxTradeAmounts = this.getMaxTradeAmounts(pool, depositBalance, loanBalance)
 
       // Buying power
-      const buyingPower = (depositBalance.muln(pool.tokenPrice).muln(pool.maxLeverage)).sub(loanBalance.muln(pool.tokenPrice))
+      const buyingPower = depositBalance
+        .muln(pool.tokenPrice)
+        .muln(Math.min(MAX_LEVERAGE, pool.maxLeverage))
+        .sub(loanBalance.muln(pool.tokenPrice))
 
       positions[poolConfig.symbol] = {
         poolConfig,
@@ -378,7 +383,7 @@ export class MarginAccount {
   getSummary(): AccountSummary {
     let depositedValue = 0
     let borrowedValue = 0
-    let totalBuyingPower = 0;
+    let totalBuyingPower = 0
 
     const positions = Object.values(this.positions)
     for (let i = 0; i < positions.length; i++) {
