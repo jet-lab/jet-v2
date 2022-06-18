@@ -17,7 +17,6 @@ import { MarginPrograms } from "./marginClient"
 import { findDerivedAccount } from "../utils/pda"
 import { AssociatedToken, bnToNumber, MarginPools, TokenAmount, ZERO_BN, ONE_BN } from ".."
 import { MarginPoolConfig, MarginTokenConfig } from "./config"
-import { sleep } from "../utils/util"
 
 export interface MarginAccountAddresses {
   marginAccount: PublicKey
@@ -550,14 +549,13 @@ export class MarginAccount {
   /// `source` - The token account that the deposit will be transfered from
   /// `amount` - The amount of tokens to deposit
   async deposit(marginPool: Pool, source: Address, amount: BN) {
-    await this.createAccount()
-    await sleep(5000)
     await this.refresh()
 
+    const ix: TransactionInstruction[] = []
+    await this.withCreateAccount(ix)
     const position = await this.getOrCreatePosition(marginPool.addresses.depositNoteMint)
     assert(position)
 
-    const ix: TransactionInstruction[] = []
     await marginPool.withDeposit({
       instructions: ix,
       depositor: this.owner,
