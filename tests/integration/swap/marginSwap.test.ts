@@ -2,7 +2,15 @@ import assert from "assert"
 import * as anchor from "@project-serum/anchor"
 import { AnchorProvider, BN } from "@project-serum/anchor"
 import NodeWallet from "@project-serum/anchor/dist/cjs/nodewallet"
-import { AccountLayout, approve, createAccount, createMint, mintTo, TOKEN_PROGRAM_ID } from "@solana/spl-token"
+import {
+  AccountLayout,
+  approve,
+  createAccount,
+  createMint,
+  mintTo,
+  RawAccount,
+  TOKEN_PROGRAM_ID
+} from "@solana/spl-token"
 import {
   Account,
   ConfirmOptions,
@@ -15,12 +23,10 @@ import {
 } from "@solana/web3.js"
 
 import MARGIN_CONFIG from "../../../libraries/ts/src/margin/config.json"
+import { TokenSwap, CurveType, MarginSwap } from "../../../libraries/ts/src"
+import { sleep } from "../../../libraries/ts/src/utils/util"
 
-import { MarginAccount, TokenSwap, CurveType, MarginSwap } from "../../../libraries/ts/src"
-
-function sleep(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms))
-}
+import { getTokenAccountInfo } from "../util"
 
 describe("margin swap", () => {
   const controlProgramId: PublicKey = new PublicKey(MARGIN_CONFIG.localnet.controlProgramId)
@@ -158,9 +164,9 @@ describe("margin swap", () => {
   it("deposit all token types", async () => {
     const poolMintInfo = await MarginSwap.getMintInfo(provider.connection, marginSwap.tokenSwap.poolToken)
     const supply = Number(poolMintInfo.supply)
-    const swapTokenA = await MarginAccount.getTokenAccountInfo(provider.connection, tokenAccountA)
+    const swapTokenA = await getTokenAccountInfo(provider, tokenAccountA)
     const tokenA = Math.floor((Number(swapTokenA.amount) * 10000000) / supply)
-    const swapTokenB = await MarginAccount.getTokenAccountInfo(provider.connection, tokenAccountB)
+    const swapTokenB = await getTokenAccountInfo(provider, tokenAccountB)
     const tokenB = Math.floor((Number(swapTokenB.amount) * 10000000) / supply)
 
     const userTransferAuthority = new Account()
@@ -202,25 +208,25 @@ describe("margin swap", () => {
     )
 
     let info
-    info = await MarginAccount.getTokenAccountInfo(provider.connection, userAccountA)
+    info = await getTokenAccountInfo(provider, userAccountA)
     assert(info.amount == 0)
-    info = await MarginAccount.getTokenAccountInfo(provider.connection, userAccountB)
+    info = await getTokenAccountInfo(provider, userAccountB)
     assert(info.amount == 0)
-    info = await MarginAccount.getTokenAccountInfo(provider.connection, tokenAccountA)
+    info = await getTokenAccountInfo(provider, tokenAccountA)
     assert(info.amount == currentSwapTokenA + tokenA)
     currentSwapTokenA += tokenA
-    info = await MarginAccount.getTokenAccountInfo(provider.connection, tokenAccountB)
+    info = await getTokenAccountInfo(provider, tokenAccountB)
     assert(info.amount == currentSwapTokenB + tokenB)
     currentSwapTokenB += tokenB
-    info = await MarginAccount.getTokenAccountInfo(provider.connection, newAccountPool)
+    info = await getTokenAccountInfo(provider, newAccountPool)
     assert(info.amount == 10000000)
   })
 
   it("withdraw all token types", async () => {
     const poolMintInfo = await MarginSwap.getMintInfo(provider.connection, marginSwap.tokenSwap.poolToken)
     const supply = Number(poolMintInfo.supply)
-    let swapTokenA = await MarginAccount.getTokenAccountInfo(provider.connection, tokenAccountA)
-    let swapTokenB = await MarginAccount.getTokenAccountInfo(provider.connection, tokenAccountB)
+    let swapTokenA = await getTokenAccountInfo(provider, tokenAccountA)
+    let swapTokenB = await getTokenAccountInfo(provider, tokenAccountB)
     const feeAmount = Math.floor(10000000 / 6)
     const poolTokenAmount = 10000000 - feeAmount
     const tokenA = Math.floor((Number(swapTokenA.amount) * poolTokenAmount) / supply)
@@ -249,20 +255,20 @@ describe("margin swap", () => {
       new BN(tokenB)
     )
 
-    swapTokenA = await MarginAccount.getTokenAccountInfo(provider.connection, tokenAccountA)
-    swapTokenB = await MarginAccount.getTokenAccountInfo(provider.connection, tokenAccountB)
+    swapTokenA = await getTokenAccountInfo(provider, tokenAccountA)
+    swapTokenB = await getTokenAccountInfo(provider, tokenAccountB)
 
-    let info = await MarginAccount.getTokenAccountInfo(provider.connection, tokenAccountPool)
+    let info = await getTokenAccountInfo(provider, tokenAccountPool)
     assert(Number(info.amount) == 1000000000 - 10000000)
     assert(Number(swapTokenA.amount) == currentSwapTokenA - tokenA)
     currentSwapTokenA -= tokenA
     assert(Number(swapTokenB.amount) == currentSwapTokenB - tokenB)
     currentSwapTokenB -= tokenB
-    info = await MarginAccount.getTokenAccountInfo(provider.connection, userAccountA)
+    info = await getTokenAccountInfo(provider, userAccountA)
     assert(Number(info.amount) == tokenA)
-    info = await MarginAccount.getTokenAccountInfo(provider.connection, userAccountB)
+    info = await getTokenAccountInfo(provider, userAccountB)
     assert(Number(info.amount) == tokenB)
-    info = await MarginAccount.getTokenAccountInfo(provider.connection, marginSwap.tokenSwap.feeAccount)
+    info = await getTokenAccountInfo(provider, marginSwap.tokenSwap.feeAccount)
     assert(Number(info.amount) == feeAmount)
     currentFeeAmount = feeAmount
   })
@@ -290,28 +296,28 @@ describe("margin swap", () => {
     await sleep(500)
 
     let info
-    info = await MarginAccount.getTokenAccountInfo(provider.connection, userAccountA)
+    info = await getTokenAccountInfo(provider, userAccountA)
     assert(Number(info.amount) == 0)
 
-    info = await MarginAccount.getTokenAccountInfo(provider.connection, userAccountB)
+    info = await getTokenAccountInfo(provider, userAccountB)
     assert(Number(info.amount) == 90674)
 
-    info = await MarginAccount.getTokenAccountInfo(provider.connection, tokenAccountA)
+    info = await getTokenAccountInfo(provider, tokenAccountA)
     assert(Number(info.amount) == currentSwapTokenA + 100000)
     currentSwapTokenA += 100000
 
-    info = await MarginAccount.getTokenAccountInfo(provider.connection, tokenAccountB)
+    info = await getTokenAccountInfo(provider, tokenAccountB)
     assert(Number(info.amount) == currentSwapTokenB - 90674)
     currentSwapTokenB -= 90674
 
-    info = await MarginAccount.getTokenAccountInfo(provider.connection, tokenAccountPool)
+    info = await getTokenAccountInfo(provider, tokenAccountPool)
     assert(Number(info.amount) == 1000000000 - 10000000)
 
-    info = await MarginAccount.getTokenAccountInfo(provider.connection, marginSwap.tokenSwap.feeAccount)
+    info = await getTokenAccountInfo(provider, marginSwap.tokenSwap.feeAccount)
     assert(Number(info.amount) == currentFeeAmount + 22277)
 
     if (poolAccount != null) {
-      info = await MarginAccount.getTokenAccountInfo(provider.connection, poolAccount)
+      info = await getTokenAccountInfo(provider, poolAccount)
       assert(Number(info.amount) == 0)
     }
   })
@@ -368,10 +374,10 @@ describe("margin swap", () => {
 
     await sendAndConfirmTransaction(provider.connection, transaction, [user, newAccount, userTransferAuthority])
 
-    let info
-    info = await MarginAccount.getTokenAccountInfo(provider.connection, tokenAccountA)
+    let info: RawAccount
+    info = await getTokenAccountInfo(provider, tokenAccountA)
     currentSwapTokenA = Number(info.amount)
-    info = await MarginAccount.getTokenAccountInfo(provider.connection, tokenAccountB)
+    info = await getTokenAccountInfo(provider, tokenAccountB)
     currentSwapTokenB = Number(info.amount)
   })
 
@@ -388,9 +394,9 @@ describe("margin swap", () => {
 
     const poolMintInfo = await MarginSwap.getMintInfo(provider.connection, marginSwap.tokenSwap.poolToken)
     const supply = Number(poolMintInfo.supply)
-    const swapTokenA = await MarginAccount.getTokenAccountInfo(provider.connection, tokenAccountA)
+    const swapTokenA = await getTokenAccountInfo(provider, tokenAccountA)
     const poolTokenA = tradingTokensToPoolTokens(depositAmount, Number(swapTokenA.amount), supply)
-    const swapTokenB = await MarginAccount.getTokenAccountInfo(provider.connection, tokenAccountB)
+    const swapTokenB = await getTokenAccountInfo(provider, tokenAccountB)
     const poolTokenB = tradingTokensToPoolTokens(depositAmount, Number(swapTokenB.amount), supply)
 
     const userTransferAuthority = new Account()
@@ -416,10 +422,10 @@ describe("margin swap", () => {
       new BN(poolTokenA)
     )
 
-    let info
-    info = await MarginAccount.getTokenAccountInfo(provider.connection, userAccountA)
+    let info: RawAccount
+    info = await getTokenAccountInfo(provider, userAccountA)
     assert(Number(info.amount) == 0)
-    info = await MarginAccount.getTokenAccountInfo(provider.connection, tokenAccountA)
+    info = await getTokenAccountInfo(provider, tokenAccountA)
     assert(Number(info.amount) == currentSwapTokenA + depositAmount)
     currentSwapTokenA += depositAmount
 
@@ -431,12 +437,12 @@ describe("margin swap", () => {
       new BN(poolTokenB)
     )
 
-    info = await MarginAccount.getTokenAccountInfo(provider.connection, userAccountB)
+    info = await getTokenAccountInfo(provider, userAccountB)
     assert(Number(info.amount) == 0)
-    info = await MarginAccount.getTokenAccountInfo(provider.connection, tokenAccountB)
+    info = await getTokenAccountInfo(provider, tokenAccountB)
     assert(Number(info.amount) == currentSwapTokenB + depositAmount)
     currentSwapTokenB += depositAmount
-    info = await MarginAccount.getTokenAccountInfo(provider.connection, newAccountPool)
+    info = await getTokenAccountInfo(provider, newAccountPool)
     assert(Number(info.amount) >= poolTokenA + poolTokenB)
   })
 
@@ -447,13 +453,13 @@ describe("margin swap", () => {
 
     const poolMintInfo = await MarginSwap.getMintInfo(provider.connection, marginSwap.tokenSwap.poolToken)
     const supply = Number(poolMintInfo.supply)
-    const swapTokenA = await MarginAccount.getTokenAccountInfo(provider.connection, tokenAccountA)
+    const swapTokenA = await getTokenAccountInfo(provider, tokenAccountA)
     const swapTokenAPost = Number(swapTokenA.amount) - withdrawAmount
     const poolTokenA = tradingTokensToPoolTokens(withdrawAmount, swapTokenAPost, supply)
     let adjustedPoolTokenA = poolTokenA * roundingAmount
     adjustedPoolTokenA *= 1 + 1 / 6
 
-    const swapTokenB = await MarginAccount.getTokenAccountInfo(provider.connection, tokenAccountB)
+    const swapTokenB = await getTokenAccountInfo(provider, tokenAccountB)
     const swapTokenBPost = Number(swapTokenB.amount) - withdrawAmount
     const poolTokenB = tradingTokensToPoolTokens(withdrawAmount, swapTokenBPost, supply)
     let adjustedPoolTokenB = poolTokenB * roundingAmount
@@ -463,7 +469,7 @@ describe("margin swap", () => {
     const userAccountA = await createAccount(provider.connection, payer, mintA, user.publicKey, Keypair.generate())
     const userAccountB = await createAccount(provider.connection, payer, mintB, user.publicKey, Keypair.generate())
 
-    const poolAccount = await MarginAccount.getTokenAccountInfo(provider.connection, tokenAccountPool)
+    const poolAccount = await getTokenAccountInfo(provider, tokenAccountPool)
     const poolTokenAmount = Number(poolAccount.amount)
     await approve(
       provider.connection,
@@ -482,13 +488,13 @@ describe("margin swap", () => {
       new BN(adjustedPoolTokenA)
     )
 
-    let info
-    info = await MarginAccount.getTokenAccountInfo(provider.connection, userAccountA)
+    let info: RawAccount
+    info = await getTokenAccountInfo(provider, userAccountA)
     assert(Number(info.amount) == withdrawAmount)
-    info = await MarginAccount.getTokenAccountInfo(provider.connection, tokenAccountA)
+    info = await getTokenAccountInfo(provider, tokenAccountA)
     assert(Number(info.amount) == currentSwapTokenA - withdrawAmount)
     currentSwapTokenA += withdrawAmount
-    info = await MarginAccount.getTokenAccountInfo(provider.connection, tokenAccountPool)
+    info = await getTokenAccountInfo(provider, tokenAccountPool)
     assert(Number(info.amount) >= poolTokenAmount - adjustedPoolTokenA)
 
     await marginSwap.tokenSwap.withdrawSingleTokenTypeExactAmountOut(
@@ -499,12 +505,12 @@ describe("margin swap", () => {
       new BN(adjustedPoolTokenB)
     )
 
-    info = await MarginAccount.getTokenAccountInfo(provider.connection, userAccountB)
+    info = await getTokenAccountInfo(provider, userAccountB)
     assert(Number(info.amount) == withdrawAmount)
-    info = await MarginAccount.getTokenAccountInfo(provider.connection, tokenAccountB)
+    info = await getTokenAccountInfo(provider, tokenAccountB)
     assert(Number(info.amount) == currentSwapTokenB - withdrawAmount)
     currentSwapTokenB += withdrawAmount
-    info = await MarginAccount.getTokenAccountInfo(provider.connection, tokenAccountPool)
+    info = await getTokenAccountInfo(provider, tokenAccountPool)
     assert(Number(info.amount) >= poolTokenAmount - adjustedPoolTokenA - adjustedPoolTokenB)
   })
 })

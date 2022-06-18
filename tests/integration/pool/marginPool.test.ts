@@ -183,10 +183,10 @@ describe("margin pool", () => {
     await marginAccount_B.createAccount()
   })
 
-  let user_a_usdc_account
-  let user_a_sol_account
-  let user_b_sol_account
-  let user_b_usdc_account
+  let user_a_usdc_account: PublicKey
+  let user_a_sol_account: PublicKey
+  let user_b_sol_account: PublicKey
+  let user_b_usdc_account: PublicKey
 
   it("Create some tokens for each user to deposit", async () => {
     // SETUP
