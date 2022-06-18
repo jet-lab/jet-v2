@@ -21,16 +21,15 @@ use jet_metadata::TokenKind;
 #[cfg(any(test, feature = "cli"))]
 use serde::ser::{Serialize, SerializeStruct, Serializer};
 
+use crate::{
+    util::Require, ErrorCode, PriceChangeInfo, MAX_ORACLE_CONFIDENCE, MAX_ORACLE_STALENESS,
+    MAX_PRICE_QUOTE_AGE, MIN_COLLATERAL_RATIO,
+};
 use jet_proto_math::Number128;
 use jet_proto_proc_macros::assert_size;
 
 use anchor_lang::Result as AnchorResult;
 use std::{convert::TryFrom, result::Result};
-
-use crate::{
-    util::Require, ErrorCode, PriceChangeInfo, MAX_ORACLE_CONFIDENCE, MAX_ORACLE_STALENESS,
-    MAX_PRICE_QUOTE_AGE,
-};
 
 const POS_PRICE_VALID: u8 = 1;
 
@@ -167,18 +166,18 @@ impl MarginAccount {
         address: Pubkey,
         adapter: Pubkey,
         kind: PositionKind,
-        value_modifier: u16,
-        max_staleness: u64,
+        collateral_weight: u16,
+        collateral_max_staleness: u64,
     ) -> AnchorResult<()> {
         let free_position = self.position_list_mut().add(token)?;
 
         free_position.exponent = -(decimals as i16);
         free_position.address = address;
         free_position.adapter = adapter;
-        free_position.kind = kind;
+        free_position.kind = kind.into_integer();
         free_position.balance = 0;
-        free_position.value_modifier = value_modifier;
-        free_position.max_staleness = max_staleness;
+        free_position.collateral_weight = collateral_weight;
+        free_position.collateral_max_staleness = collateral_max_staleness;
 
         Ok(())
     }
@@ -236,40 +235,37 @@ impl MarginAccount {
     /// ratio is above the minimum, then the account is considered healthy.
     pub fn verify_healthy_positions(&self) -> AnchorResult<()> {
         let info = self.valuation()?;
+        let min_ratio = Number128::from_bps(MIN_COLLATERAL_RATIO);
 
-        if info.required_collateral > info.effective_collateral || info.past_due {
-            let due_status = match info.past_due {
-                true => "overdue",
-                false => "not overdue",
-            };
-
-            msg!(
-                "account is unhealthy: K_e = {}, K_r = {} ({})",
-                info.effective_collateral,
-                info.required_collateral,
-                due_status
-            );
-            return err!(ErrorCode::Unhealthy);
+        match info.c_ratio() {
+            Some(c_ratio) if c_ratio < min_ratio => {
+                msg!("Account unhealty. C-ratio: {}", c_ratio.to_string());
+                err!(ErrorCode::Unhealthy)
+            }
+            _ if info.past_due() => {
+                msg!("Account unhealty. Debt is past due");
+                err!(ErrorCode::Unhealthy)
+            }
+            _ => Ok(()),
         }
-
-        Ok(())
     }
 
     /// Check that the overall health of the account is *not* acceptable.
     pub fn verify_unhealthy_positions(&self) -> AnchorResult<()> {
         let info = self.valuation()?;
+        let min_ratio = Number128::from_bps(MIN_COLLATERAL_RATIO);
 
-        if !info.stale_collateral_list.is_empty() {
+        if info.stale_collateral > Number128::ZERO {
             for (position_token, error) in info.stale_collateral_list {
                 msg!("stale position {}: {}", position_token, error)
             }
             return Err(error!(ErrorCode::StalePositions));
         }
 
-        match info.required_collateral > info.effective_collateral {
-            true => Ok(()),
-            false if info.past_due => Ok(()),
-            false => err!(ErrorCode::Healthy),
+        match info.c_ratio() {
+            Some(c_ratio) if c_ratio < min_ratio => Ok(()),
+            _ if info.past_due() => Ok(()),
+            _ => Err(error!(ErrorCode::Healthy)),
         }
     }
 
@@ -281,14 +277,15 @@ impl MarginAccount {
     pub fn valuation(&self) -> AnchorResult<Valuation> {
         let timestamp = crate::util::get_timestamp();
 
+        let mut fresh_collateral = Number128::ZERO;
+        let mut stale_collateral = Number128::ZERO;
+        let mut claims = Number128::ZERO;
         let mut past_due = false;
-        let mut exposure = Number128::ZERO;
-        let mut required_collateral = Number128::ZERO;
-        let mut weighted_collateral = Number128::ZERO;
+
         let mut stale_collateral_list = vec![];
 
         for position in self.positions() {
-            let kind = position.kind;
+            let kind = PositionKind::from_integer(position.kind).unwrap();
             let stale_reason = {
                 let balance_age = timestamp - position.balance_timestamp;
                 let price_quote_age = timestamp - position.price.timestamp;
@@ -296,7 +293,9 @@ impl MarginAccount {
                 if position.price.is_valid != POS_PRICE_VALID {
                     // collateral with bad prices
                     Some(ErrorCode::InvalidPrice)
-                } else if position.max_staleness > 0 && balance_age > position.max_staleness {
+                } else if position.collateral_max_staleness > 0
+                    && balance_age > position.collateral_max_staleness
+                {
                     // outdated balance
                     Some(ErrorCode::OutdatedBalance)
                 } else if price_quote_age > MAX_PRICE_QUOTE_AGE {
@@ -307,6 +306,8 @@ impl MarginAccount {
                 }
             };
 
+            //TODO JV2M-360
+            //TODO user replays a loan but Claim still has a position.value()
             match (kind, stale_reason) {
                 (PositionKind::NoValue, _) => (),
                 (PositionKind::Claim, None) => {
@@ -315,28 +316,24 @@ impl MarginAccount {
                     {
                         past_due = true;
                     }
-
-                    exposure += position.value();
-                    required_collateral += position.required_collateral_value()
+                    claims += position.value()
                 }
                 (PositionKind::Claim, Some(error)) => return Err(error!(error)),
 
-                (PositionKind::Deposit, None) => weighted_collateral += position.collateral_value(),
+                (PositionKind::Deposit, None) => fresh_collateral += position.collateral_value(),
                 (PositionKind::Deposit, Some(e)) => {
+                    stale_collateral += position.collateral_value();
                     stale_collateral_list.push((position.token, e));
                 }
             }
         }
 
-        let effective_collateral = weighted_collateral - exposure;
-
         Ok(Valuation {
-            exposure,
-            past_due,
-            required_collateral,
-            weighted_collateral,
-            effective_collateral,
+            fresh_collateral,
+            stale_collateral,
             stale_collateral_list,
+            claims,
+            past_due,
         })
     }
 
@@ -441,12 +438,8 @@ impl TryFrom<PriceChangeInfo> for PriceInfo {
         let confidence = Number128::from_decimal(value.confidence, value.exponent);
 
         let price = match (confidence, value.publish_time) {
-            (c, _) if (c / twap) > max_confidence => {
-                msg!("price confidence exceeding max");
-                PriceInfo::new_invalid()
-            }
+            (c, _) if (c / twap) > max_confidence => PriceInfo::new_invalid(),
             (_, publish_time) if (clock.unix_timestamp - publish_time) > MAX_ORACLE_STALENESS => {
-                msg!("price timestamp is too old/stale");
                 PriceInfo::new_invalid()
             }
             _ => PriceInfo::new_valid(value.exponent, value.value, clock.unix_timestamp as u64),
@@ -456,7 +449,7 @@ impl TryFrom<PriceChangeInfo> for PriceInfo {
     }
 }
 
-#[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone, Copy, Contiguous, Eq, PartialEq)]
+#[derive(Debug, Clone, Copy, Contiguous, Eq, PartialEq)]
 #[repr(u32)]
 pub enum PositionKind {
     /// The position is not worth anything
@@ -476,12 +469,6 @@ impl From<TokenKind> for PositionKind {
             TokenKind::Collateral => PositionKind::Deposit,
             TokenKind::Claim => PositionKind::Claim,
         }
-    }
-}
-
-impl Default for PositionKind {
-    fn default() -> Self {
-        PositionKind::NoValue
     }
 }
 
@@ -511,16 +498,16 @@ pub struct AccountPosition {
     pub price: PriceInfo,
 
     /// The kind of balance this position contains
-    pub kind: PositionKind,
+    pub kind: u32,
 
     /// The exponent for the token value
     pub exponent: i16,
 
     /// A weight on the value of this asset when counting collateral
-    pub value_modifier: u16,
+    pub collateral_weight: u16,
 
     /// The max staleness for the account balance (seconds)
-    pub max_staleness: u64,
+    pub collateral_max_staleness: u64,
 
     /// Flags that are set by the adapter
     pub flags: AdapterPositionFlags,
@@ -555,17 +542,7 @@ impl AccountPosition {
     }
 
     pub fn collateral_value(&self) -> Number128 {
-        assert_eq!(self.kind, PositionKind::Deposit);
-
-        Number128::from_decimal(self.value_modifier, -2) * self.value()
-    }
-
-    pub fn required_collateral_value(&self) -> Number128 {
-        assert_eq!(self.kind, PositionKind::Claim);
-
-        let modifier = Number128::from_decimal(self.value_modifier, -2);
-
-        self.value() / modifier
+        Number128::from_bps(self.collateral_weight) * self.value()
     }
 
     /// Update the balance for this position
@@ -596,24 +573,10 @@ impl std::fmt::Debug for AccountPosition {
             .field("price", &self.price)
             .field("kind", &self.kind)
             .field("exponent", &self.exponent)
-            .field("value_modifier", &self.value_modifier)
-            .field("max_staleness", &self.max_staleness);
+            .field("collateral_weight", &self.collateral_weight)
+            .field("collateral_max_staleness", &self.collateral_max_staleness);
 
         acc.finish()
-    }
-}
-
-#[cfg(any(test, feature = "cli"))]
-impl Serialize for PositionKind {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        serializer.serialize_str(match *self {
-            PositionKind::NoValue => "NoValue",
-            PositionKind::Claim => "Claim",
-            PositionKind::Deposit => "Deposit",
-        })
     }
 }
 
@@ -633,8 +596,8 @@ impl Serialize for AccountPosition {
         s.serialize_field("price", &self.price)?;
         s.serialize_field("kind", &self.kind)?;
         s.serialize_field("exponent", &self.exponent)?;
-        s.serialize_field("valueModifier", &self.value_modifier)?;
-        s.serialize_field("maxStaleness", &self.max_staleness)?;
+        s.serialize_field("collateralWeight", &self.collateral_weight)?;
+        s.serialize_field("collateralMaxStaleness", &self.collateral_max_staleness)?;
         s.end()
     }
 }
@@ -754,60 +717,64 @@ unsafe impl Pod for AccountPosition {}
 /// State of an in-progress liquidation
 #[account(zero_copy)]
 #[repr(C, align(8))]
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct Liquidation {
     /// time that liquidate_begin initialized this liquidation
-    start_time: i64,
+    pub start_time: i64,
 
     /// cumulative change in value caused by invocations during the liquidation so far
     /// negative if value is lost
-    value_change: i128,
+    pub value_change: Number128,
+
+    /// cumulative change to c-ratio caused by invocations during the liquidation so far
+    /// negative if c-ratio goes down
+    pub c_ratio_change: Number128,
 
     /// lowest amount of value change that is allowed during invoke steps
     /// typically negative or zero
     /// if value_change goes lower than this number, liquidate_invoke should fail
-    min_value_change: i128,
+    pub min_value_change: Number128,
 }
 
-impl Liquidation {
-    pub fn new(start_time: i64, min_value_change: Number128) -> Self {
+impl Default for Liquidation {
+    fn default() -> Self {
         Self {
-            start_time,
-            value_change: 0,
-            min_value_change: min_value_change.to_i128(),
+            start_time: Default::default(),
+            value_change: Number128::ZERO,
+            c_ratio_change: Number128::ZERO,
+            min_value_change: Number128::ZERO,
         }
-    }
-
-    pub fn start_time(&self) -> i64 {
-        self.start_time
-    }
-
-    pub fn value_change_mut(&mut self) -> &mut Number128 {
-        unsafe { std::mem::transmute(&mut self.value_change) }
-    }
-
-    pub fn value_change(&self) -> &Number128 {
-        unsafe { std::mem::transmute(&self.value_change) }
-    }
-
-    pub fn min_value_change(&self) -> Number128 {
-        Number128::from_i128(self.min_value_change)
     }
 }
 
 #[derive(Debug, Clone)]
 pub struct Valuation {
-    pub exposure: Number128,
-    pub required_collateral: Number128,
-    pub weighted_collateral: Number128,
-    pub effective_collateral: Number128,
+    fresh_collateral: Number128,
+    stale_collateral: Number128,
     stale_collateral_list: Vec<(Pubkey, ErrorCode)>,
+    claims: Number128,
     past_due: bool,
 }
 
 impl Valuation {
-    pub fn available_collateral(&self) -> Number128 {
-        self.effective_collateral - self.required_collateral
+    pub fn c_ratio(&self) -> Option<Number128> {
+        if self.claims == Number128::ZERO {
+            return None;
+        }
+
+        Some(self.fresh_collateral / self.claims)
+    }
+
+    pub fn net(&self) -> Number128 {
+        self.fresh_collateral - self.claims
+    }
+
+    pub fn claims(&self) -> Number128 {
+        self.claims
+    }
+
+    pub fn collateral(&self) -> Number128 {
+        self.fresh_collateral
     }
 
     pub fn past_due(&self) -> bool {
@@ -848,7 +815,7 @@ mod tests {
 
         acc.register_position(key, 2, key, key, PositionKind::NoValue, 5000, 1000)
             .unwrap();
-        let position = "AccountPosition { token: JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ, address: JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ, adapter: JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ, value: \"0.0\", balance: 0, balance_timestamp: 0, price: PriceInfo { value: 0, timestamp: 0, exponent: 0, is_valid: 0, _reserved: [0, 0, 0] }, kind: NoValue, exponent: -2, value_modifier: 5000, max_staleness: 1000 }";
+        let position = "AccountPosition { token: JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ, address: JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ, adapter: JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ, value: \"0.0\", balance: 0, balance_timestamp: 0, price: PriceInfo { value: 0, timestamp: 0, exponent: 0, is_valid: 0, _reserved: [0, 0, 0] }, kind: 0, exponent: -2, collateral_weight: 5000, collateral_max_staleness: 1000 }";
         let output = output.replace("positions: []", &format!("positions: [{}]", position));
         assert_eq!(&output, &format!("{:?}", acc));
     }
@@ -899,10 +866,10 @@ mod tests {
             balance: u64::default(),
             balance_timestamp: u64::default(),
             price: PriceInfo::default(),
-            kind: PositionKind::default(),
+            kind: u32::default(),
             exponent: i16::default(),
-            value_modifier: u16::default(),
-            max_staleness: u64::default(),
+            collateral_weight: u16::default(),
+            collateral_max_staleness: u64::default(),
             flags: AdapterPositionFlags::default(),
             _reserved: [0; 23],
         };
@@ -941,12 +908,12 @@ mod tests {
                 Token::U8(0),
                 Token::StructEnd,
                 Token::Str("kind"),
-                Token::Str("NoValue"),
+                Token::U32(0),
                 Token::Str("exponent"),
                 Token::I16(0),
-                Token::Str("valueModifier"),
+                Token::Str("collateralWeight"),
                 Token::U16(0),
-                Token::Str("maxStaleness"),
+                Token::Str("collateralMaxStaleness"),
                 Token::U64(0),
                 Token::StructEnd,
             ],

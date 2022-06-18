@@ -491,9 +491,7 @@ export class MarginAccount {
   async createAccount() {
     const ix: TransactionInstruction[] = []
     await this.withCreateAccount(ix)
-    if (ix.length > 0) {
-      return await this.provider.sendAndConfirm(new Transaction().add(...ix))
-    }
+    return await this.provider.sendAndConfirm(new Transaction().add(...ix))
   }
 
   /** Get instruction to create the account */

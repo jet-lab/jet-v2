@@ -177,8 +177,8 @@ pub fn register_token_handler(ctx: Context<RegisterToken>) -> Result<()> {
         position_token_mint: ctx.accounts.deposit_note_mint.key(),
         adapter_program: ctx.accounts.margin_pool_program.key(),
         token_kind: TokenKind::NonCollateral,
-        value_modifier: 0,
-        max_staleness: 0,
+        collateral_weight: 0,
+        collateral_max_staleness: 0,
     };
 
     let loan_note_metadata = PositionTokenMetadata {
@@ -186,8 +186,8 @@ pub fn register_token_handler(ctx: Context<RegisterToken>) -> Result<()> {
         position_token_mint: ctx.accounts.loan_note_mint.key(),
         adapter_program: ctx.accounts.margin_pool_program.key(),
         token_kind: TokenKind::Claim,
-        value_modifier: 0,
-        max_staleness: 0,
+        collateral_weight: 0,
+        collateral_max_staleness: 0,
     };
 
     let token_metadata = TokenMetadata {

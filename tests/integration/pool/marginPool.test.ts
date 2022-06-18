@@ -128,8 +128,8 @@ describe("margin pool", () => {
   it("Create margin pools", async () => {
     await manager.create({
       tokenMint: USDC[0],
-      collateralWeight: 1_00,
-      maxLeverage: 4_00,
+      collateralWeight: 10_000,
+      collateralMaxStaleness: new BN(0),
       feeDestination: FEE_VAULT_USDC,
       pythProduct: USDC_oracle[0].publicKey,
       pythPrice: USDC_oracle[1].publicKey,
@@ -137,8 +137,8 @@ describe("margin pool", () => {
     })
     await manager.create({
       tokenMint: SOL[0],
-      collateralWeight: 95,
-      maxLeverage: 4_00,
+      collateralWeight: 9_500,
+      collateralMaxStaleness: new BN(0),
       feeDestination: FEE_VAULT_SOL,
       pythProduct: SOL_oracle[0].publicKey,
       pythPrice: SOL_oracle[1].publicKey,
