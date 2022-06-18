@@ -255,7 +255,7 @@ export class MarginAccount {
     uncollectedFees: BN
   ): BN {
     const totalValue = BN.max(ONE_BN, depositedTokens).add(borrowedTokens.mul(ONE_BN))
-    return totalValue.sub(uncollectedFees).div(depositNotes.mul(ONE_BN))
+    return totalValue.sub(uncollectedFees).div(BN.max(ONE_BN, depositNotes.mul(ONE_BN)))
   }
 
   static getLoanNoteExchangeRate(borrowNotes: BN, borrowedTokens: BN): BN {
