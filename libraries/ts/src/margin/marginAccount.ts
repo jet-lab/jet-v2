@@ -62,6 +62,8 @@ export interface MarginWalletTokens {
   map: Record<MarginPools, AssociatedToken>
 }
 
+const MAX_LEVERAGE = 100
+
 export class MarginAccount {
   static readonly SEED_MAX_VALUE = 65535
   info?: {
@@ -307,7 +309,7 @@ export class MarginAccount {
       // Buying power
       const buyingPower = depositBalance
         .muln(pool.tokenPrice)
-        .muln(pool.maxLeverage)
+        .muln(Math.min(MAX_LEVERAGE, pool.maxLeverage))
         .sub(loanBalance.muln(pool.tokenPrice))
 
       positions[poolConfig.symbol] = {
