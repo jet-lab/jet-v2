@@ -53,7 +53,7 @@ export interface AccountSummary {
   accountBalance: number
   availableCollateral: number
   cRatio: number
-  leverage: number
+  leverage: number,
   totalBuyingPower: number
 }
 
@@ -279,10 +279,7 @@ export class MarginAccount {
       const maxTradeAmounts = this.getMaxTradeAmounts(pool, depositBalance, loanBalance)
 
       // Buying power
-      const buyingPower = depositBalance
-        .muln(pool.tokenPrice)
-        .muln(pool.maxLeverage)
-        .sub(loanBalance.muln(pool.tokenPrice))
+      const buyingPower = (depositBalance.muln(pool.tokenPrice).muln(pool.maxLeverage)).sub(loanBalance.muln(pool.tokenPrice))
 
       positions[poolConfig.symbol] = {
         poolConfig,
@@ -356,7 +353,7 @@ export class MarginAccount {
   getSummary(): AccountSummary {
     let depositedValue = 0
     let borrowedValue = 0
-    let totalBuyingPower = 0
+    let totalBuyingPower = 0;
 
     const positions = Object.values(this.positions)
     for (let i = 0; i < positions.length; i++) {
@@ -494,9 +491,7 @@ export class MarginAccount {
   async createAccount() {
     const ix: TransactionInstruction[] = []
     await this.withCreateAccount(ix)
-    if (ix.length > 0) {
-      return await this.provider.sendAndConfirm(new Transaction().add(...ix))
-    }
+    return await this.provider.sendAndConfirm(new Transaction().add(...ix))
   }
 
   /** Get instruction to create the account */
@@ -527,12 +522,10 @@ export class MarginAccount {
     await this.createAccount()
     await sleep(2000)
     await this.refresh()
-
-    const ix: TransactionInstruction[] = []
-    await this.withCreateAccount(ix)
     const position = await this.getOrCreatePosition(marginPool.addresses.depositNoteMint)
     assert(position)
 
+    const ix: TransactionInstruction[] = []
     await marginPool.withDeposit({
       instructions: ix,
       depositor: this.owner,
