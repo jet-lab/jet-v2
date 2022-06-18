@@ -19,7 +19,10 @@ use anchor_lang::prelude::*;
 
 use jet_proto_math::Number128;
 
-use crate::{ErrorCode, Liquidation, MarginAccount, LIQUIDATION_MAX_UNDERCOLLATERAL_GAIN};
+use crate::{
+    ErrorCode, Liquidation, MarginAccount, IDEAL_LIQUIDATION_COLLATERAL_RATIO,
+    MAX_LIQUIDATION_VALUE_SLIPPAGE,
+};
 use jet_metadata::LiquidatorMetadata;
 
 #[derive(Accounts)]
@@ -84,12 +87,19 @@ pub fn liquidate_begin_handler(ctx: Context<LiquidateBegin>) -> Result<()> {
     }
 
     let valuation = account.valuation()?;
+    let ideal_c_ratio = Number128::from_bps(IDEAL_LIQUIDATION_COLLATERAL_RATIO);
+    let ideal_value_liquidated =
+        valuation.claims() - valuation.net() / (ideal_c_ratio - Number128::ONE);
 
-    let min_value_change = valuation.available_collateral()
-        * Number128::from_bps(LIQUIDATION_MAX_UNDERCOLLATERAL_GAIN);
+    let min_value_change = Number128::ZERO
+        - Number128::from_bps(MAX_LIQUIDATION_VALUE_SLIPPAGE) * ideal_value_liquidated;
 
-    *ctx.accounts.liquidation.load_init()? =
-        Liquidation::new(Clock::get()?.unix_timestamp, min_value_change);
+    *ctx.accounts.liquidation.load_init()? = Liquidation {
+        start_time: Clock::get()?.unix_timestamp,
+        value_change: Number128::ZERO,
+        c_ratio_change: Number128::ZERO,
+        min_value_change,
+    };
 
     Ok(())
 }

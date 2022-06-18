@@ -37,7 +37,7 @@ pub struct LiquidateEnd<'info> {
 
 pub fn liquidate_end_handler(ctx: Context<LiquidateEnd>) -> Result<()> {
     let mut account = ctx.accounts.margin_account.load_mut()?;
-    let start_time = ctx.accounts.liquidation.load()?.start_time();
+    let start_time = ctx.accounts.liquidation.load()?.start_time;
 
     if (account.liquidator != ctx.accounts.authority.key())
         && Clock::get()?.unix_timestamp - start_time < LIQUIDATION_TIMEOUT

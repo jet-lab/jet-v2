@@ -14,7 +14,6 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-#![allow(clippy::inconsistent_digit_grouping)]
 
 use anchor_lang::prelude::*;
 use anchor_lang::solana_program::clock::UnixTimestamp;
@@ -32,13 +31,26 @@ pub use state::*;
 
 pub use adapter::{AdapterResult, CompactAccountMeta, PositionChange, PriceChangeInfo};
 
+/// The minimum collateral ratio that a margin account must maintain before
+/// being subject to liquidation
+#[constant]
+pub const MIN_COLLATERAL_RATIO: u16 = 12_500;
+
+/// The target c-ratio for a liquidation
+#[constant]
+pub const IDEAL_LIQUIDATION_COLLATERAL_RATIO: u16 = 13_000;
+
+/// The maximum c-ratio that a liquidator is allowed to increase a margin account to
+#[constant]
+pub const MAX_LIQUIDATION_COLLATERAL_RATIO: u16 = 15_000;
+
 /// The maximum confidence deviation allowed for an oracle price.
 ///
 /// The confidence is measured as the percent of the confidence interval
 /// value provided by the oracle as compared to the weighted average value
 /// of the price.
 #[constant]
-pub const MAX_ORACLE_CONFIDENCE: u16 = 5_00;
+pub const MAX_ORACLE_CONFIDENCE: u16 = 500;
 
 /// The maximum number of seconds since the last price was by an oracle, before
 /// rejecting the price as too stale.
@@ -48,19 +60,17 @@ pub const MAX_ORACLE_STALENESS: i64 = 10;
 #[constant]
 pub const MAX_PRICE_QUOTE_AGE: u64 = 10;
 
-/// The maximum amount that the amount of missing collateral can be increased,
-/// expressed as a percentage of the current missing collateral.
-pub const LIQUIDATION_MAX_UNDERCOLLATERAL_GAIN: u16 = 10_00;
+/// The maximum loss of value to a margin account allowed during a liquidation.
+/// This is the ratio of value lost to the value that should be liquidated,
+/// represented in basis points
+/// This applies to the arbitrary liquidate_invoke steps executed by a liquidator.
+/// This does not include the liquidation fees, which would result in additional value extracted
+#[constant]
+pub const MAX_LIQUIDATION_VALUE_SLIPPAGE: u16 = 500;
 
-/// The maximum c-ratio that an account can end a liquidation with.
-///
-/// Note: This is not a traditional c-ratio, because it's based on the ratio of
-///       the effective_collateral / required_collateral.
-pub const LIQUIDATION_MAX_COLLATERAL_RATIO: u16 = 125_00;
-
-/// The threshold at which accounts can have all their debts closed. Accounts with
-/// total exposure below this value can have their exposure reduced to zero.
-pub const LIQUIDATION_CLOSE_THRESHOLD_USD: u64 = 100;
+/// The maximum reduction in c-ratio allowed during a liquidation, in bps
+#[constant]
+pub const MAX_LIQUIDATION_C_RATIO_SLIPPAGE: u16 = 500;
 
 /// The maximum duration in seconds of a liquidation before another user may cancel it
 #[constant]
@@ -222,11 +232,19 @@ pub enum ErrorCode {
 
     /// 141040 - No permission to perform a liquidation action
     #[msg("the liquidator does not have permission to do this")]
-    UnauthorizedLiquidator = 135_040,
+    UnauthorizedLiquidator,
 
     /// 141041
     #[msg("attempted to extract too much value during liquidation")]
     LiquidationLostValue,
+
+    /// 141042
+    #[msg("reduced the c-ratio too far during liquidation")]
+    LiquidationUnhealthy,
+
+    /// 141043
+    #[msg("increased the c-ratio too high during liquidation")]
+    LiquidationTooHealthy,
 }
 
 pub fn write_adapter_result(result: &AdapterResult) -> Result<()> {
