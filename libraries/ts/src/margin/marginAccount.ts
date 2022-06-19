@@ -71,9 +71,9 @@ export class MarginAccount {
     positions: AccountPositionList
   }
 
+  addresses: MarginAccountAddresses
   positions: Record<MarginPools, PoolPosition>
   summary: AccountSummary
-  addresses: MarginAccountAddresses
 
   get address() {
     return this.addresses.marginAccount
@@ -98,6 +98,8 @@ export class MarginAccount {
     public pools?: Record<MarginPools, Pool>,
     public walletTokens?: MarginWalletTokens
   ) {
+    this.pools = pools
+    this.walletTokens = walletTokens
     this.addresses = MarginAccount.derive(programs, owner, seed)
     this.positions = this.getAllPoolPositions()
     this.summary = this.getSummary()
@@ -257,12 +259,12 @@ export class MarginAccount {
     borrowedTokens: BN,
     uncollectedFees: BN
   ): BN {
-    const totalValue = BN.max(ONE_BN, depositedTokens).add(borrowedTokens.mul(ONE_BN))
-    return totalValue.sub(uncollectedFees).div(BN.max(ONE_BN, depositNotes.mul(ONE_BN)))
+    const totalValue = BN.max(ONE_BN, borrowedTokens.add(depositedTokens.mul(ONE_BN)))
+    return (totalValue.sub(uncollectedFees)).div(BN.max(ONE_BN, depositNotes.mul(ONE_BN)))
   }
 
-  static getLoanNoteExchangeRate(borrowNotes: BN, borrowedTokens: BN): BN {
-    return BN.max(ONE_BN, borrowedTokens).div(BN.max(ONE_BN, borrowNotes.mul(ONE_BN)))
+  static getLoanNoteExchangeRate(loanNotes: BN, borrowedTokens: BN): BN {
+    return BN.max(ONE_BN, borrowedTokens).div(BN.max(ONE_BN, loanNotes.mul(ONE_BN)))
   }
 
   getAllPoolPositions(): Record<MarginPools, PoolPosition> {
@@ -399,8 +401,8 @@ export class MarginAccount {
       borrowedValue,
       accountBalance: depositedValue - borrowedValue,
       availableCollateral: 0, // FIXME: total collateral * collateral weight - total claims
-      cRatio: depositedValue / borrowedValue,
-      leverage: borrowedValue / depositedValue,
+      cRatio: borrowedValue ? depositedValue / borrowedValue : 0,
+      leverage: depositedValue ? borrowedValue / depositedValue  : 0,
       totalBuyingPower
     }
   }
