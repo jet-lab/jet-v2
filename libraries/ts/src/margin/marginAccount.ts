@@ -15,7 +15,7 @@ import { Pool } from "./pool/pool"
 import { AccountPosition, AccountPositionList, AccountPositionListLayout, MarginAccountData } from "./state"
 import { MarginPrograms } from "./marginClient"
 import { findDerivedAccount } from "../utils/pda"
-import { AssociatedToken, bnToNumber, MarginPools, TokenAmount, ZERO_BN, ONE_BN } from ".."
+import { AssociatedToken, bnToNumber, MarginPools, TokenAmount, ZERO_BN } from ".."
 import { MarginPoolConfig, MarginTokenConfig } from "./config"
 import { sleep } from "../utils/util"
 
@@ -253,20 +253,6 @@ export class MarginAccount {
     this.summary = this.getSummary()
   }
 
-  static getDepositNoteExchangeRate(
-    depositNotes: BN,
-    depositedTokens: BN,
-    borrowedTokens: BN,
-    uncollectedFees: BN
-  ): BN {
-    const totalValue = BN.max(ONE_BN, borrowedTokens.add(depositedTokens.mul(ONE_BN)))
-    return (totalValue.sub(uncollectedFees)).div(BN.max(ONE_BN, depositNotes.mul(ONE_BN)))
-  }
-
-  static getLoanNoteExchangeRate(loanNotes: BN, borrowedTokens: BN): BN {
-    return BN.max(ONE_BN, borrowedTokens).div(BN.max(ONE_BN, loanNotes.mul(ONE_BN)))
-  }
-
   getAllPoolPositions(): Record<MarginPools, PoolPosition> {
     const positions: Record<string, PoolPosition> = {}
     const poolConfigs = Object.values(this.programs.config.pools)
@@ -279,31 +265,31 @@ export class MarginAccount {
         continue
       }
 
-      // Exchange rates
-      const depositNoteExchangeRate = MarginAccount.getDepositNoteExchangeRate(
-        pool.info?.marginPool.depositNotes ?? ZERO_BN,
-        pool.availableLiquidity.lamports,
-        pool.outstandingDebt.lamports,
-        ZERO_BN // TODO: add pool.uncollectedFees when merged to master
-      )
-      const loanNoteExchangeRate = MarginAccount.getLoanNoteExchangeRate(
-        pool.info?.marginPool.loanNotes ?? ZERO_BN,
-        pool.outstandingDebt.lamports
-      )
+      const uncollectedFees = ZERO_BN // TODO: add pool.uncollectedFees when merged to master
+      const totalValueLessFees = pool.depositedTokens.lamports.add(pool.borrowedTokens.lamports).sub(uncollectedFees)
 
       // Deposits
+      const poolDepositNotes = pool.info?.marginPool.depositNotes ?? ZERO_BN
       const depositNotePositionInfo = this.info?.positions.positions.find(position =>
         position.token.equals(pool.addresses.depositNoteMint)
       )
-      const depositBalanceNotes = depositNoteExchangeRate.mul(depositNotePositionInfo?.balance ?? ZERO_BN)
-      const depositBalance = new TokenAmount(depositBalanceNotes.div(ONE_BN), pool?.decimals ?? 0)
+      const depositBalanceNotes = depositNotePositionInfo?.balance ?? ZERO_BN
+      const depositTokenBalance = poolDepositNotes.isZero()
+        ? ZERO_BN
+        : totalValueLessFees.mul(depositBalanceNotes).div(poolDepositNotes)
+      const depositBalance = new TokenAmount(depositTokenBalance, pool?.decimals ?? 0)
 
       // Loans
+      const poolLoanNotes = pool.info?.marginPool.loanNotes ?? ZERO_BN
+      const poolBorrowedTokens = pool.borrowedTokens.lamports
       const loanNotePositionInfo = this.info?.positions.positions.find(position =>
         position.token.equals(pool.addresses.loanNoteMint)
       )
-      const loanBalanceNotes = loanNoteExchangeRate.mul(loanNotePositionInfo?.balance ?? ZERO_BN)
-      const loanBalance = new TokenAmount(loanBalanceNotes.div(ONE_BN), pool?.decimals ?? 0)
+      const loanBalanceNotes = loanNotePositionInfo?.balance ?? ZERO_BN
+      const loanTokenBalance = poolLoanNotes.isZero()
+        ? ZERO_BN
+        : poolBorrowedTokens.mul(loanBalanceNotes).div(poolLoanNotes)
+      const loanBalance = new TokenAmount(loanTokenBalance, pool?.decimals ?? 0)
 
       // Max trade amounts
       const maxTradeAmounts = this.getMaxTradeAmounts(pool, depositBalance, loanBalance)
@@ -351,14 +337,14 @@ export class MarginAccount {
     if (withdraw.gt(depositBalance)) {
       withdraw = depositBalance
     }
-    if (withdraw.gt(pool.availableLiquidity)) {
-      withdraw = pool.availableLiquidity
+    if (withdraw.gt(pool.borrowedTokens)) {
+      withdraw = pool.borrowedTokens
     }
 
     // Max borrow
     let borrow = depositedValue.divn(pool.minCRatio - loanValue.tokens).divn(pool.tokenPrice)
-    if (borrow.gt(pool.availableLiquidity)) {
-      borrow = pool.availableLiquidity
+    if (borrow.gt(pool.borrowedTokens)) {
+      borrow = pool.borrowedTokens
     }
 
     // Max repay
@@ -402,7 +388,7 @@ export class MarginAccount {
       accountBalance: depositedValue - borrowedValue,
       availableCollateral: 0, // FIXME: total collateral * collateral weight - total claims
       cRatio: borrowedValue ? depositedValue / borrowedValue : 0,
-      leverage: depositedValue ? borrowedValue / depositedValue  : 0,
+      leverage: depositedValue ? borrowedValue / depositedValue : 0,
       totalBuyingPower
     }
   }

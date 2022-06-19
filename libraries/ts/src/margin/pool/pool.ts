@@ -40,17 +40,17 @@ export class Pool {
   get symbol(): MarginPools | undefined {
     return this.poolConfig?.symbol
   }
-  get availableLiquidity(): TokenAmount {
+  get depositedTokens(): TokenAmount {
     return this.info?.vault.amount ?? TokenAmount.zero(this.tokenConfig?.decimals ?? 0)
   }
-  get outstandingDebt(): TokenAmount {
+  get borrowedTokens(): TokenAmount {
     return TokenAmount.zero(this.tokenConfig?.decimals ?? 0) // FIXME
   }
   get marketSize(): TokenAmount {
-    return this.availableLiquidity.add(this.outstandingDebt)
+    return this.depositedTokens.add(this.borrowedTokens)
   }
   get utilizationRate(): number {
-    return this.marketSize.tokens === 0 ? 0 : this.outstandingDebt.tokens / this.marketSize.tokens
+    return this.marketSize.tokens === 0 ? 0 : this.borrowedTokens.tokens / this.marketSize.tokens
   }
   get cRatio(): number {
     const utilizationRate = this.utilizationRate
