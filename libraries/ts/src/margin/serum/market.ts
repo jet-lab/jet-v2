@@ -42,7 +42,7 @@ import { IDL as JetMarginIDL, JetMargin } from "../../types/jetMargin"
 import { IDL as JetMarginSerumIDL, JetMarginSerum } from "../../types/jetMarginSerum"
 import { MarginAccount } from "../marginAccount"
 import { MarginPrograms } from "../marginClient"
-import { ZERO_BN } from "src/token"
+import { ZERO_BN } from "../../token"
 
 export class Market {
   private _programs: MarginPrograms
