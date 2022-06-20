@@ -27,7 +27,7 @@ use jet_margin_pool::{
 
 declare_id!("JPMAa5dnWLFRvUsumawFcGhnwikqZziLLfqn9SLNXPN");
 
-mod instructions;
+pub mod instructions;
 use instructions::*;
 
 #[program]
@@ -40,6 +40,23 @@ mod jet_margin_swap {
         minimum_amount_out: u64,
     ) -> Result<()> {
         margin_spl_swap_handler(ctx, amount_in, minimum_amount_out)
+    }
+
+    pub fn serum_swap(
+        ctx: Context<SerumSwap>,
+        amount_in: u64,
+        minimum_amount_out: u64,
+        swap_direction: SwapDirection,
+    ) -> Result<()> {
+        serum_swap_handler(ctx, amount_in, minimum_amount_out, swap_direction)
+    }
+
+    pub fn init_serum_open_orders(ctx: Context<InitOpenOrders>) -> Result<()> {
+        init_open_orders_handler(ctx)
+    }
+
+    pub fn close_serum_open_orders(ctx: Context<CloseOpenOrders>) -> Result<()> {
+        close_open_orders_handler(ctx)
     }
 }
 
@@ -56,4 +73,12 @@ pub struct MarginPoolInfo<'info> {
     /// CHECK:
     #[account(mut)]
     pub deposit_note_mint: UncheckedAccount<'info>,
+}
+
+#[error_code]
+pub enum SwapError {
+    #[msg("Unable to complete the swap")]
+    SwapDidNotComplete = 200000,
+    #[msg("The swap exceeded the maximum slippage amount")]
+    ExceededSlippage,
 }

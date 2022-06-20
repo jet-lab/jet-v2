@@ -20,7 +20,10 @@ devnet = ["jet-static-program-registry/devnet"]
 
 [dependencies]
 anchor-lang = { git = "https://github.com/jet-lab/anchor", branch = "master" }
-anchor-spl = { git = "https://github.com/jet-lab/anchor", branch = "master" }
+anchor-spl = { git = "https://github.com/jet-lab/anchor", features = ["dex"], branch = "master" }
+spl-token-swap = { version = "2.1", features = ["no-entrypoint"] }
+
+jet-proto-math = { git = "https://github.com/jet-lab/program-libraries", branch = "main" }
 
 jet-margin-pool = { path = "../margin-pool", features = ["cpi", "no-entrypoint"] }
 jet-margin = { path = "../margin", features = ["cpi", "no-entrypoint"] }

@@ -188,6 +188,7 @@ pub struct SwapInfo<'info> {
     pub fee_account: UncheckedAccount<'info>,
 
     /// The address of the swap program
+    ///
     /// CHECK:
     pub swap_program: UncheckedAccount<'info>,
 }
