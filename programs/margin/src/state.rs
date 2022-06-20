@@ -440,6 +440,11 @@ impl TryFrom<PriceChangeInfo> for PriceInfo {
         let twap = Number128::from_decimal(value.twap, value.exponent);
         let confidence = Number128::from_decimal(value.confidence, value.exponent);
 
+        if twap == Number128::ZERO {
+            msg!("avg price cannot be zero");
+            return err!(ErrorCode::InvalidPrice);
+        }
+
         let price = match (confidence, value.publish_time) {
             (c, _) if (c / twap) > max_confidence => {
                 msg!("price confidence exceeding max");
@@ -565,7 +570,12 @@ impl AccountPosition {
 
         let modifier = Number128::from_decimal(self.value_modifier, -2);
 
-        self.value() / modifier
+        if modifier == Number128::ZERO {
+            msg!("no leverage configured for claim {}", &self.token);
+            Number128::MAX
+        } else {
+            self.value() / modifier
+        }
     }
 
     /// Update the balance for this position

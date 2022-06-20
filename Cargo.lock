@@ -1611,7 +1611,7 @@ dependencies = [
 [[package]]
 name = "jet-proto-math"
 version = "1.0.6"
-source = "git+https://github.com/jet-lab/program-libraries?branch=main#7162d6562715d8ae1cc9a2fd40ec53bfb850451b"
+source = "git+https://github.com/jet-lab/program-libraries?branch=main#f5a69a07fd178b3b8e8b93a90d3fc50730c20bdb"
 dependencies = [
  "bytemuck",
  "static_assertions",
