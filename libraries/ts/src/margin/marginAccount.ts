@@ -101,8 +101,7 @@ export class MarginAccount {
     this.pools = pools
     this.walletTokens = walletTokens
     this.addresses = MarginAccount.derive(programs, owner, seed)
-    this.positions = this.getAllPoolPositions()
-    this.summary = this.getSummary()
+    this.positions = this.getSummaryAndPoolPositions()
   }
 
   /**
@@ -249,15 +248,15 @@ export class MarginAccount {
         positions
       }
     }
-    this.positions = this.getAllPoolPositions()
-    this.summary = this.getSummary()
+    this.positions = this.getSummaryAndPoolPositions()
   }
 
-  getAllPoolPositions(): Record<MarginPools, PoolPosition> {
+  getSummaryAndPoolPositions(): Record<MarginPools, PoolPosition> {
     const positions: Record<string, PoolPosition> = {}
     const poolConfigs = Object.values(this.programs.config.pools)
-    let overallDepositedValue = 0
-    let overallBorrowedValue = 0
+    let depositedValue = 0
+    let borrowedValue = 0
+    let totalBuyingPower = 0
 
     for (let i = 0; i < poolConfigs.length; i++) {
       const poolConfig = poolConfigs[i]
@@ -267,7 +266,7 @@ export class MarginAccount {
         continue
       }
 
-      const uncollectedFees = ZERO_BN // TODO: add pool.uncollectedFees when merged to master
+      const uncollectedFees = ZERO_BN // FIXME: add pool.uncollectedFees when merged to master
       const totalValueLessFees = pool.depositedTokens.lamports.add(pool.borrowedTokens.lamports).sub(uncollectedFees)
 
       // Deposits
@@ -280,7 +279,7 @@ export class MarginAccount {
         ? ZERO_BN
         : totalValueLessFees.mul(depositBalanceNotes).div(poolDepositNotes)
       const depositBalance = new TokenAmount(depositTokenBalance, pool?.decimals ?? 0)
-      overallDepositedValue += depositBalance.tokens * pool.tokenPrice
+      depositedValue += depositBalance.tokens * pool.tokenPrice
 
       // Loans
       const poolLoanNotes = pool.info?.marginPool.loanNotes ?? ZERO_BN
@@ -293,13 +292,14 @@ export class MarginAccount {
         ? ZERO_BN
         : poolBorrowedTokens.mul(loanBalanceNotes).div(poolLoanNotes)
       const loanBalance = new TokenAmount(loanTokenBalance, pool?.decimals ?? 0)
-      overallBorrowedValue += loanBalance.tokens * pool.tokenPrice
+      borrowedValue += loanBalance.tokens * pool.tokenPrice
 
       // Buying power
       const buyingPower = depositBalance
         .muln(pool.tokenPrice)
         .muln(Math.min(MAX_LEVERAGE, pool.maxLeverage))
         .sub(loanBalance.muln(pool.tokenPrice))
+      totalBuyingPower += buyingPower.tokens
 
       positions[poolConfig.symbol] = {
         poolConfig,
@@ -316,15 +316,26 @@ export class MarginAccount {
       }
     }
 
+    // Update account summary
+    this.summary = {
+      depositedValue,
+      borrowedValue,
+      accountBalance: depositedValue - borrowedValue,
+      availableCollateral: 0, // FIXME: total collateral * collateral weight - total claims
+      cRatio: borrowedValue ? depositedValue / borrowedValue : 0,
+      leverage: depositedValue ? borrowedValue / depositedValue : 0,
+      totalBuyingPower
+    }
+
     // Get maxTradeAmounts for each position
     for (const poolSymbol of Object.keys(positions)) {
       const position = positions[poolSymbol]
       const pool = this.pools?.[poolSymbol]
       position.maxTradeAmounts = this.getMaxTradeAmounts(
         pool,
-        overallDepositedValue,
+        depositedValue,
         position.depositBalance.tokens,
-        overallBorrowedValue,
+        borrowedValue,
         position.loanBalance.tokens
       )
     }
@@ -376,30 +387,6 @@ export class MarginAccount {
       repay,
       swap,
       transfer
-    }
-  }
-
-  getSummary(): AccountSummary {
-    let depositedValue = 0
-    let borrowedValue = 0
-    let totalBuyingPower = 0
-
-    const positions = Object.values(this.positions)
-    for (let i = 0; i < positions.length; i++) {
-      const position = positions[i]
-      depositedValue += position.depositBalance.tokens * (position.pool?.tokenPrice ?? 0)
-      borrowedValue += position.loanBalance.tokens * (position.pool?.tokenPrice ?? 0)
-      totalBuyingPower += position.buyingPower.tokens
-    }
-
-    return {
-      depositedValue,
-      borrowedValue,
-      accountBalance: depositedValue - borrowedValue,
-      availableCollateral: 0, // FIXME: total collateral * collateral weight - total claims
-      cRatio: borrowedValue ? depositedValue / borrowedValue : 0,
-      leverage: depositedValue ? borrowedValue / depositedValue : 0,
-      totalBuyingPower
     }
   }
 
