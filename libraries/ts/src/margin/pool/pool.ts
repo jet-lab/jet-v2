@@ -4,7 +4,7 @@ import { Mint, TOKEN_PROGRAM_ID } from "@solana/spl-token"
 import { PublicKey, Transaction, TransactionInstruction } from "@solana/web3.js"
 import { assert } from "chai"
 import { AssociatedToken } from "../../token"
-import { TokenAmount } from "../../token/tokenAmount"
+import { ONE_BN, TokenAmount } from "../../token/tokenAmount"
 import { MarginAccount } from "../marginAccount"
 import { MarginPrograms } from "../marginClient"
 import { MarginPoolConfigData, MarginPoolData } from "./state"
@@ -41,10 +41,14 @@ export class Pool {
     return this.poolConfig?.symbol
   }
   get depositedTokens(): TokenAmount {
-    return this.info?.vault.amount ?? TokenAmount.zero(this.tokenConfig?.decimals ?? 0)
+    return this.info?.vault.amount ?? TokenAmount.zero(this.decimals)
   }
   get borrowedTokens(): TokenAmount {
-    return TokenAmount.zero(this.tokenConfig?.decimals ?? 0) // FIXME
+    if (!this.info) {
+      return TokenAmount.zero(this.decimals)
+    }
+    const lamports = new BN(this.info.marginPool.borrowedTokens, "le").div(ONE_BN)
+    return TokenAmount.lamports(lamports, this.decimals)
   }
   get marketSize(): TokenAmount {
     return this.depositedTokens.add(this.borrowedTokens)
@@ -76,7 +80,7 @@ export class Pool {
     return this.info?.tokenPriceOracle.price ?? 0
   }
   get decimals(): number {
-    return this.tokenConfig?.decimals ?? 0
+    return this.tokenConfig?.decimals ?? this.info?.tokenMint.decimals ?? 0
   }
   get precision(): number {
     return this.tokenConfig?.precision ?? 0

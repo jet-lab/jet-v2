@@ -20,7 +20,7 @@ import {
 } from "@solana/spl-token"
 import { Connection, PublicKey, TransactionInstruction, SystemProgram, AccountInfo } from "@solana/web3.js"
 import { findDerivedAccount } from "../utils/pda"
-import { TokenAmount } from "./tokenAmount"
+import { TokenAmount, ZERO_BN } from "./tokenAmount"
 
 export class AssociatedToken {
   static readonly NATIVE_DECIMALS = 9
@@ -482,7 +482,7 @@ export const bnToNumber = (bn: BN | null | undefined): number => {
  * @returns {BN}
  */
 export const bigIntToBn = (bigInt: bigint | null | undefined): BN => {
-  return bigInt ? new BN(bigInt.toString()) : new BN(0)
+  return bigInt ? new BN(bigInt.toString()) : ZERO_BN
 }
 
 export const bigIntToNumber = (bigint: bigint | null | undefined): number => {

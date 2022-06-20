@@ -277,7 +277,7 @@ export class MarginAccount {
       const depositTokenBalance = poolDepositNotes.isZero()
         ? ZERO_BN
         : totalValueLessFees.mul(depositBalanceNotes).div(poolDepositNotes)
-      const depositBalance = new TokenAmount(depositTokenBalance, pool?.decimals ?? 0)
+      const depositBalance = new TokenAmount(depositTokenBalance, pool.decimals)
 
       // Loans
       const poolLoanNotes = pool.info?.marginPool.loanNotes ?? ZERO_BN
@@ -289,7 +289,7 @@ export class MarginAccount {
       const loanTokenBalance = poolLoanNotes.isZero()
         ? ZERO_BN
         : poolBorrowedTokens.mul(loanBalanceNotes).div(poolLoanNotes)
-      const loanBalance = new TokenAmount(loanTokenBalance, pool?.decimals ?? 0)
+      const loanBalance = new TokenAmount(loanTokenBalance, pool.decimals)
 
       // Max trade amounts
       const maxTradeAmounts = this.getMaxTradeAmounts(pool, depositBalance, loanBalance)

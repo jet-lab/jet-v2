@@ -14,6 +14,7 @@ import {
 
 import * as Layout from "../../utils/layout"
 import { u64 } from "../../utils/layout"
+import { ZERO_BN } from "../../token"
 
 export * from "./marginSwap"
 
@@ -148,7 +149,7 @@ export class TokenSwap {
     hostFeeNumerator: number,
     hostFeeDenominator: number,
     curveType: number,
-    curveParameters: BN = new BN(0)
+    curveParameters: BN = ZERO_BN
   ): TransactionInstruction {
     const keys = [
       { pubkey: tokenSwapAccount.publicKey, isSigner: false, isWritable: true },
