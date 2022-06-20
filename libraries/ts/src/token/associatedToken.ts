@@ -5,7 +5,6 @@ import {
   NATIVE_MINT,
   createAssociatedTokenAccountInstruction,
   createCloseAccountInstruction,
-  createTransferInstruction,
   createSyncNativeInstruction,
   Mint,
   Account,
@@ -367,21 +366,28 @@ export class AssociatedToken {
    * @static
    * @param {TransactionInstruction[]} instructions
    * @param {Provider} provider
-   * @param {PublicKey} owner
-   * @param {PublicKey} mint
+   * @param {Address} owner
+   * @param {Address} mint
    * @returns {Promise<PublicKey>} returns the public key of the token account
    * @memberof AssociatedToken
    */
   static async withCreate(
     instructions: TransactionInstruction[],
     provider: AnchorProvider,
-    owner: PublicKey,
-    mint: PublicKey
+    owner: Address,
+    mint: Address
   ): Promise<PublicKey> {
-    const tokenAddress = this.derive(mint, owner)
+    const ownerAddress = translateAddress(owner)
+    const mintAddress = translateAddress(mint)
+    const tokenAddress = this.derive(mintAddress, ownerAddress)
 
-    if (!(await AssociatedToken.exists(provider.connection, mint, owner))) {
-      const ix = createAssociatedTokenAccountInstruction(provider.wallet.publicKey, tokenAddress, owner, mint)
+    if (!(await AssociatedToken.exists(provider.connection, mintAddress, ownerAddress))) {
+      const ix = createAssociatedTokenAccountInstruction(
+        provider.wallet.publicKey,
+        tokenAddress,
+        ownerAddress,
+        mintAddress
+      )
       instructions.push(ix)
     }
     return tokenAddress
@@ -391,20 +397,18 @@ export class AssociatedToken {
    * Add close associated token account IX
    * @static
    * @param {TransactionInstruction[]} instructions
-   * @param {PublicKey} owner
-   * @param {PublicKey} mint
-   * @param {PublicKey} rentDestination
-   * @param {Signer[]} [multiSigner=[]]
+   * @param {Address} owner
+   * @param {Address} mint
+   * @param {Address} rentDestination
    * @memberof AssociatedToken
    */
-  static async withClose(
-    instructions: TransactionInstruction[],
-    owner: PublicKey,
-    mint: PublicKey,
-    rentDestination: PublicKey
-  ) {
-    const tokenAddress = this.derive(mint, owner)
-    const ix = createCloseAccountInstruction(tokenAddress, rentDestination, owner)
+  static withClose(instructions: TransactionInstruction[], owner: Address, mint: Address, rentDestination: Address) {
+    const ownerPubkey = translateAddress(owner)
+    const mintPubkey = translateAddress(mint)
+    const rentDestinationPubkey = translateAddress(rentDestination)
+
+    const tokenAddress = this.derive(mintPubkey, ownerPubkey)
+    const ix = createCloseAccountInstruction(tokenAddress, rentDestinationPubkey, ownerPubkey)
     instructions.push(ix)
   }
 
@@ -413,22 +417,28 @@ export class AssociatedToken {
    * @param provider
    * @param owner
    * @param mint
+   * @param tokenAccountOrNative
    * @param amount
    */
   static async withWrapIfNativeMint(
     instructions: TransactionInstruction[],
     provider: AnchorProvider,
-    owner: PublicKey,
-    mint: PublicKey,
+    owner: Address,
+    mint: Address,
+    tokenAccountOrNative: Address,
     amount: BN
   ): Promise<void> {
-    //only run if mint is wrapped sol mint
-    if (mint.equals(NATIVE_MINT)) {
+    const ownerPubkey = translateAddress(owner)
+    const mintPubkey = translateAddress(mint)
+    const tokenAccountOrNativePubkey = translateAddress(tokenAccountOrNative)
+
+    //only run if mint is wrapped sol mint, and the token account is actually the native wallet
+    if (this.isNative(ownerPubkey, mintPubkey, tokenAccountOrNativePubkey)) {
       //this will add instructions to create ata if ata does not exist, if exist, we will get the ata address
-      const ata = await this.withCreate(instructions, provider, owner, mint)
+      const ata = await this.withCreate(instructions, provider, ownerPubkey, mintPubkey)
       //IX to transfer sol to ATA
       const transferIx = SystemProgram.transfer({
-        fromPubkey: owner,
+        fromPubkey: ownerPubkey,
         lamports: bnToNumber(amount),
         toPubkey: ata
       })
@@ -438,32 +448,46 @@ export class AssociatedToken {
   }
 
   /**
-   * add unWrap SOL IX
+   * Unwraps all SOL if the mint is native and the tokenAccount is the owner
+   *
    * @param {TransactionInstruction[]} instructions
-   * @param {Provider} provider
    * @param {owner} owner
-   * @param {tokenAccount} tokenAccount
    * @param {mint} mint
-   * @param {amount} amount
+   * @param {tokenAccount} tokenAccountOrNative
    */
-  static async withUnwrapIfNative(
+  static withUnwrapIfNative(
     instructions: TransactionInstruction[],
-    provider: AnchorProvider,
-    owner: PublicKey, //user pubkey
-    tokenAccount: PublicKey,
-    mint: PublicKey,
-    amount: BN
-  ): Promise<void> {
-    if (mint.equals(NATIVE_MINT)) {
-      //create a new ata if ata doesn't not exist
-      const ata = await this.withCreate(instructions, provider, owner, mint)
-      //IX to transfer wSOL to ATA
-      const transferIx = createTransferInstruction(tokenAccount, ata, owner, BigInt(amount.toString()))
-      //add transfer IX
-      instructions.push(transferIx)
+    owner: Address,
+    mint: Address,
+    tokenAccountOrNative: Address,
+    rentDestination: Address
+  ): void {
+    const ownerPubkey = translateAddress(owner)
+    const mintPubkey = translateAddress(mint)
+    const tokenAccountOrNativePubkey = translateAddress(tokenAccountOrNative)
+
+    if (this.isNative(ownerPubkey, mintPubkey, tokenAccountOrNativePubkey)) {
       //add close account IX
-      await this.withClose(instructions, owner, mint, owner)
+      this.withClose(instructions, ownerPubkey, mintPubkey, rentDestination)
     }
+  }
+
+  /**
+   * Returns true when the mint is native and the token account is actually the native wallet
+   *
+   * @static
+   * @param {Address} owner
+   * @param {Address} mint
+   * @param {Address} tokenAccountOrNative
+   * @return {boolean}
+   * @memberof AssociatedToken
+   */
+  static isNative(owner: Address, mint: Address, tokenAccountOrNative: Address): boolean {
+    const ownerPubkey = translateAddress(owner)
+    const mintPubkey = translateAddress(mint)
+    const tokenAccountOrNativePubkey = translateAddress(tokenAccountOrNative)
+
+    return mintPubkey.equals(NATIVE_MINT) && tokenAccountOrNativePubkey.equals(ownerPubkey)
   }
 }
 

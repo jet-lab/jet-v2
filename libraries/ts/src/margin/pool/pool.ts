@@ -1,4 +1,4 @@
-import { Address, BN } from "@project-serum/anchor"
+import { Address, BN, translateAddress } from "@project-serum/anchor"
 import { parsePriceData, PriceData } from "@pythnetwork/client"
 import { Mint, TOKEN_PROGRAM_ID } from "@solana/spl-token"
 import { PublicKey, Transaction, TransactionInstruction } from "@solana/web3.js"
@@ -456,11 +456,10 @@ export class Pool {
   ///
   /// # Params
   ///
-  /// `margin_scratch` - The scratch account for the margin system
   /// `margin_account` - The margin account with the deposit to be withdrawn
   /// `source` - The token account that has the deposit notes to be exchanged
   /// `destination` - The token account to send the withdrawn deposit
-  /// `PoolAmount` - The amount of the deposit
+  /// `amount` - The amount of the deposit
   async marginWithdraw({
     marginAccount,
     destination,
@@ -470,11 +469,23 @@ export class Pool {
     destination: Address
     amount: PoolAmount
   }) {
-    const depositPosition = await marginAccount.getOrCreatePosition(this.addresses.depositNoteMint)
-    assert(depositPosition)
+    const destinationAddress = translateAddress(destination)
 
-    const tx = new Transaction()
+    // FIXME: can be getPosition
+    const { address: source } = await marginAccount.getOrCreatePosition(this.addresses.depositNoteMint)
+
+    const isDestinationNative = AssociatedToken.isNative(marginAccount.owner, this.tokenMint, destinationAddress)
+
+    let marginWithdrawDestination: PublicKey
+    if (!isDestinationNative) {
+      marginWithdrawDestination = destinationAddress
+    } else {
+      marginWithdrawDestination = AssociatedToken.derive(this.tokenMint, marginAccount.owner)
+    }
+
     const ix: TransactionInstruction[] = []
+
+    await AssociatedToken.withCreate(ix, marginAccount.provider, marginAccount.owner, this.tokenMint)
     await this.withAdapterInvoke({
       instructions: ix,
       owner: marginAccount.owner,
@@ -483,15 +494,18 @@ export class Pool {
       adapterMetadata: this.addresses.marginPoolAdapterMetadata,
       adapterInstruction: await this.makeMarginWithdrawInstruction({
         marginAccount: marginAccount.address,
-        source: depositPosition.address,
-        destination,
+        source,
+        destination: marginWithdrawDestination,
         amount
       })
     })
-    tx.add(...ix)
+
+    if (isDestinationNative) {
+      AssociatedToken.withClose(ix, marginAccount.owner, this.tokenMint, destinationAddress)
+    }
 
     try {
-      return await marginAccount.provider.sendAndConfirm(tx)
+      return await marginAccount.provider.sendAndConfirm(new Transaction().add(...ix))
     } catch (err) {
       console.log(err)
       throw err
