@@ -265,8 +265,7 @@ export class MarginAccount {
         continue
       }
 
-      const uncollectedFees = ZERO_BN // TODO: add pool.uncollectedFees when merged to master
-      const totalValueLessFees = pool.depositedTokens.lamports.add(pool.borrowedTokens.lamports).sub(uncollectedFees)
+      const totalValueLessFees = pool.depositedTokens.add(pool.borrowedTokens).sub(pool.uncollectedFees).lamports
 
       // Deposits
       const poolDepositNotes = pool.info?.marginPool.depositNotes ?? ZERO_BN

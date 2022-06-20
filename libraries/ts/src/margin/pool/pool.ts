@@ -53,6 +53,13 @@ export class Pool {
   get marketSize(): TokenAmount {
     return this.depositedTokens.add(this.borrowedTokens)
   }
+  get uncollectedFees(): TokenAmount {
+    if (!this.info) {
+      return TokenAmount.zero(this.decimals)
+    }
+    const lamports = new BN(this.info.marginPool.uncollectedFees, "le").div(ONE_BN)
+    return TokenAmount.lamports(lamports, this.decimals)
+  }
   get utilizationRate(): number {
     return this.marketSize.tokens === 0 ? 0 : this.borrowedTokens.tokens / this.marketSize.tokens
   }
