@@ -537,9 +537,13 @@ export class MarginAccount {
   /// # Params
   ///
   /// `token_mint` - The address of the mint for the tokens being deposited
-  /// `source` - The token account that the deposit will be transfered from
+  /// `source` - The token account that the deposit will be transfered from. Can also point to the wallet to automatically wrap SOL
   /// `amount` - The amount of tokens to deposit
   async deposit(marginPool: Pool, source: Address, amount: BN) {
+    assert(marginPool)
+    assert(source)
+    assert(amount)
+
     await this.createAccount()
     await sleep(2000)
     await this.refresh()
@@ -547,6 +551,15 @@ export class MarginAccount {
     assert(position)
 
     const ix: TransactionInstruction[] = []
+    AssociatedToken.withWrapIfNativeMint(
+      ix,
+      this.provider,
+      this.provider.wallet.publicKey,
+      marginPool.tokenMint,
+      source,
+      amount
+    )
+
     await marginPool.withDeposit({
       instructions: ix,
       depositor: this.owner,
