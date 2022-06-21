@@ -15,14 +15,16 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use anchor_lang::{prelude::*, solana_program::clock::UnixTimestamp};
-use jet_proto_math::Number;
-use pyth_sdk_solana::PriceFeed;
-#[cfg(any(test, feature = "cli"))]
-use serde::ser::{Serialize, SerializeStruct, Serializer};
 use std::cmp::Ordering;
 
+use anchor_lang::{prelude::*, solana_program::clock::UnixTimestamp};
+use pyth_sdk_solana::PriceFeed;
+
+use serde::ser::{SerializeStruct, Serializer};
+use serde::{Deserialize, Serialize};
+
 use crate::{util, Amount, AmountKind, ErrorCode};
+use jet_proto_math::Number;
 
 /// Account containing information about a margin pool, which
 /// services lending/borrowing operations.
@@ -82,7 +84,6 @@ pub struct MarginPool {
     pub accrued_until: i64,
 }
 
-#[cfg(any(test, feature = "cli"))]
 impl Serialize for MarginPool {
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
     where

@@ -1529,6 +1529,7 @@ dependencies = [
  "anchor-spl",
  "jet-margin-pool",
  "jet-metadata",
+ "serde",
  "solana-program",
 ]
 
@@ -1605,6 +1606,7 @@ name = "jet-metadata"
 version = "0.1.0"
 dependencies = [
  "anchor-lang",
+ "serde",
  "solana-program",
 ]
 

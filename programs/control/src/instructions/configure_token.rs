@@ -17,6 +17,8 @@
 
 use anchor_lang::prelude::*;
 
+use serde::{Serialize, Deserialize};
+
 use jet_margin_pool::program::JetMarginPool;
 use jet_margin_pool::MarginPoolConfig;
 use jet_margin_pool::{cpi::accounts::Configure, MarginPool};
@@ -26,7 +28,7 @@ use jet_metadata::{PositionTokenMetadata, TokenKind, TokenMetadata};
 
 use super::Authority;
 
-#[derive(AnchorSerialize, AnchorDeserialize, Clone, Debug)]
+#[derive(AnchorSerialize, AnchorDeserialize, Serialize, Deserialize, Clone, Debug)]
 pub struct TokenMetadataParams {
     /// Description of this token
     pub token_kind: TokenKind,
@@ -38,7 +40,7 @@ pub struct TokenMetadataParams {
     pub max_leverage: u16,
 }
 
-#[derive(AnchorSerialize, AnchorDeserialize, Clone, Debug)]
+#[derive(AnchorSerialize, AnchorDeserialize, Serialize, Deserialize, Clone, Debug)]
 pub struct MarginPoolParams {
     pub fee_destination: Pubkey,
 }

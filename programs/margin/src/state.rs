@@ -18,8 +18,9 @@
 use anchor_lang::{prelude::*, system_program, Discriminator};
 use bytemuck::{Contiguous, Pod, Zeroable};
 use jet_metadata::TokenKind;
-#[cfg(any(test, feature = "cli"))]
-use serde::ser::{Serialize, SerializeStruct, Serializer};
+
+use serde::{Serialize, Serializer};
+use serde::ser::SerializeStruct;
 
 use jet_proto_math::Number128;
 use jet_proto_proc_macros::assert_size;
@@ -58,7 +59,6 @@ pub struct MarginAccount {
     pub positions: [u8; 7432],
 }
 
-#[cfg(any(test, feature = "cli"))]
 impl Serialize for MarginAccount {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -383,13 +383,9 @@ impl SignerSeeds<3> for MarginAccount {
 
 #[assert_size(24)]
 #[derive(
-    Pod, Zeroable, AnchorSerialize, AnchorDeserialize, Debug, Default, Clone, Copy, Eq, PartialEq,
+    Pod, Zeroable, AnchorSerialize, AnchorDeserialize, Serialize, Debug, Default, Clone, Copy, Eq, PartialEq,
 )]
-#[cfg_attr(
-    any(test, feature = "cli"),
-    derive(serde::Serialize),
-    serde(rename_all = "camelCase")
-)]
+#[serde(rename_all = "camelCase")]
 #[repr(C)]
 pub struct PriceInfo {
     /// The current price
@@ -404,7 +400,7 @@ pub struct PriceInfo {
     /// Flag indicating if the price is valid for the position
     pub is_valid: u8,
 
-    #[cfg_attr(any(test, feature = "cli"), serde(skip_serializing))]
+    #[serde(skip_serializing)]
     pub _reserved: [u8; 3],
 }
 
@@ -613,7 +609,6 @@ impl std::fmt::Debug for AccountPosition {
     }
 }
 
-#[cfg(any(test, feature = "cli"))]
 impl Serialize for PositionKind {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -627,7 +622,6 @@ impl Serialize for PositionKind {
     }
 }
 
-#[cfg(any(test, feature = "cli"))]
 impl Serialize for AccountPosition {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where

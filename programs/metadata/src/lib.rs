@@ -15,9 +15,11 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+use serde::{Serialize, Deserialize};
 use anchor_lang::prelude::*;
 use anchor_lang::Discriminator;
 use solana_program::pubkey;
+
 
 declare_id!("JPMetawzxw7WyH3qHUVScYHWFBGhjwqDnM2R9qVbRLp");
 
@@ -120,7 +122,7 @@ mod jet_metadata {
 }
 
 /// Description of the token's usage
-#[derive(AnchorSerialize, AnchorDeserialize, Eq, PartialEq, Clone, Copy, Debug)]
+#[derive(AnchorSerialize, AnchorDeserialize, Serialize, Deserialize, Eq, PartialEq, Clone, Copy, Debug)]
 pub enum TokenKind {
     /// The token has no value within the margin system
     NonCollateral,
@@ -140,7 +142,7 @@ impl Default for TokenKind {
 
 /// A metadata account referencing information about a position token
 #[account]
-#[derive(Default)]
+#[derive(Serialize, Deserialize, Default)]
 pub struct PositionTokenMetadata {
     /// The mint for the position token
     pub position_token_mint: Pubkey,
@@ -163,7 +165,7 @@ pub struct PositionTokenMetadata {
 
 /// An account that references information about a token's price oracle
 #[account]
-#[derive(Default)]
+#[derive(Serialize, Deserialize, Default)]
 pub struct TokenMetadata {
     /// The address of the mint for the token being referenced
     pub token_mint: Pubkey,
@@ -179,7 +181,7 @@ pub struct TokenMetadata {
 /// An account that references a program that's allowed to be invoked by
 /// proxy via a margin account.
 #[account]
-#[derive(Default)]
+#[derive(Serialize, Deserialize, Default)]
 pub struct MarginAdapterMetadata {
     /// The address of the allowed program
     pub adapter_program: Pubkey,
@@ -188,7 +190,7 @@ pub struct MarginAdapterMetadata {
 /// An account referencing a liquidator, allowed to use the liquidation
 /// instructions on margin accounts.
 #[account]
-#[derive(Default)]
+#[derive(Serialize, Deserialize, Default)]
 pub struct LiquidatorMetadata {
     pub liquidator: Pubkey,
 }

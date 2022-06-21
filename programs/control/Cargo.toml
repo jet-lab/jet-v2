@@ -24,3 +24,5 @@ anchor-spl = { git = "https://github.com/jet-lab/anchor", branch = "master" }
 
 jet-metadata = { path = "../metadata", features = ["cpi"] }
 jet-margin-pool = { path = "../margin-pool", features = ["cpi"] }
+
+serde = { version = "1.0", features = ["derive"] }
