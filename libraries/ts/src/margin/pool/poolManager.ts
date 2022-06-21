@@ -1,10 +1,10 @@
-import { Address, AnchorProvider, BN, translateAddress } from "@project-serum/anchor"
+import { Address, AnchorProvider, translateAddress } from "@project-serum/anchor"
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token"
 import { PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY, Transaction, TransactionInstruction } from "@solana/web3.js"
 import { findDerivedAccount } from "../../utils/pda"
 import { MarginPoolConfig, MarginPools, MarginTokenConfig } from "../config"
 import { MarginPrograms } from "../marginClient"
-import { MarginPoolAddresses, Pool, TokenKind } from "./pool"
+import { MarginPoolAddresses, Pool } from "./pool"
 import { MarginPoolConfigData } from "./state"
 
 interface MarginPoolParams {

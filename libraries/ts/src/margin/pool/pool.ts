@@ -127,10 +127,9 @@ export class Pool {
       )
       const tokenMint = AssociatedToken.decodeMint(poolTokenMintInfo, this.addresses.tokenMint)
       const oracleInfo = await this.programs.marginPool.provider.connection.getAccountInfo(marginPool.tokenPriceOracle)
-      assert(
-        oracleInfo,
-        "Pyth oracle does not exist but a margin pool does. The margin pool is incorrectly configured."
-      )
+      if (!oracleInfo) {
+        throw "Pyth oracle does not exist but a margin pool does. The margin pool is incorrectly configured."
+      }
       this.info = {
         marginPool,
         tokenMint,
