@@ -662,7 +662,8 @@ pub struct AccountPositionKey {
 
 ///
 #[assert_size(7432)]
-#[derive(AnchorSerialize, AnchorDeserialize, Default, Pod, Zeroable, Debug, Clone, Copy)]
+#[cfg_attr(not(target_arch = "bpf"), derive(AnchorSerialize, AnchorDeserialize))]
+#[derive(Default, Pod, Zeroable, Debug, Clone, Copy)]
 #[repr(C)]
 pub struct AccountPositionList {
     pub length: usize,
