@@ -2,9 +2,7 @@ use anyhow::Error;
 
 use jet_control::TokenMetadataParams;
 use jet_margin_sdk::instructions::control::TokenConfiguration;
-use jet_static_program_registry::{
-    orca_swap_v1, orca_swap_v2, spl_token_swap_v2,
-};
+use jet_static_program_registry::{orca_swap_v1, orca_swap_v2, spl_token_swap_v2};
 use solana_sdk::native_token::LAMPORTS_PER_SOL;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::Signer;

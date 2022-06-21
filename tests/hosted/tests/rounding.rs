@@ -200,7 +200,7 @@ async fn rounding_poc() -> Result<()> {
     // Should not succeed, there should be insufficient funds to burn notes
     assert_custom_program_error(
         anchor_spl::token::spl_token::error::TokenError::InsufficientFunds as u32,
-        withdraw_result
+        withdraw_result,
     );
 
     Ok(())

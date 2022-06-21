@@ -344,7 +344,7 @@ async fn owner_can_end_liquidation_after_timeout() -> Result<()> {
     let mut clock = ctx.rpc.get_clock().unwrap();
     clock.unix_timestamp += 61;
     ctx.rpc.set_clock(clock);
-    
+
     scen.user_b
         .liquidate_end(Some(scen.user_b_liq.signer()))
         .await?;

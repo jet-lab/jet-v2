@@ -5,7 +5,7 @@ pub use programs::*;
 
 pub mod macro_imports {
     pub use crate::{match_pubkey, RegistryError};
-    pub use anchor_lang::prelude::{Id, ProgramError, Pubkey, declare_id};
+    pub use anchor_lang::prelude::{declare_id, Id, ProgramError, Pubkey};
     pub use std::convert::TryFrom;
 }
 
