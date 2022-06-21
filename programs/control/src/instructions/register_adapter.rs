@@ -100,9 +100,8 @@ pub fn register_adapter_handler(ctx: Context<RegisterAdapter>) -> Result<()> {
     emit!(events::AdapterRegistered {
         requester: ctx.accounts.requester.key(),
         authority: ctx.accounts.authority.key(),
-        adapter: ctx.accounts.adapter.key(),
+        adapter: metadata,
         metadata_account: ctx.accounts.metadata_account.key(),
-        metadata_program: ctx.accounts.metadata_program.key()
     });
 
     Ok(())

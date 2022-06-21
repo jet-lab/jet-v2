@@ -133,7 +133,7 @@ pub fn configure_token_handler(
         || pool_param.is_some()
         || pool_config.is_some()
     {
-        let fee_destination = pool_param.clone().map(|p| p.fee_destination);
+        let fee_destination = pool_param.map(|p| p.fee_destination);
 
         jet_margin_pool::cpi::configure(
             ctx.accounts
@@ -160,9 +160,16 @@ pub fn configure_token_handler(
             0,
             data,
         )?;
+
+        emit!(events::TokenMetadataConfigured {
+            requester: ctx.accounts.requester.key(),
+            authority: ctx.accounts.authority.key(),
+            metadata_account: ctx.accounts.token_metadata.key(),
+            metadata: metadata.into_inner(),
+        })
     }
 
-    if let Some(params) = metadata.clone() {
+    if let Some(params) = metadata {
         let mut metadata = ctx.accounts.deposit_metadata.clone();
         let mut data = vec![];
 
@@ -180,6 +187,13 @@ pub fn configure_token_handler(
             data,
         )?;
 
+        emit!(events::PositionTokenMetadataConfigured {
+            requester: ctx.accounts.requester.key(),
+            authority: ctx.accounts.authority.key(),
+            metadata_account: ctx.accounts.deposit_metadata.key(),
+            metadata: metadata.into_inner(),
+        });
+
         metadata = ctx.accounts.loan_metadata.clone();
         let mut data = vec![];
 
@@ -196,22 +210,14 @@ pub fn configure_token_handler(
             0,
             data,
         )?;
-    }
 
-    emit!(events::TokenConfigured {
-        requester: ctx.accounts.deposit_metadata.key(),
-        authority: ctx.accounts.authority.key(),
-        token_mint: ctx.accounts.token_mint.key(),
-        margin_pool: ctx.accounts.margin_pool.key(),
-        token_metadata: ctx.accounts.token_metadata.key(),
-        deposit_metadata: ctx.accounts.deposit_metadata.key(),
-        pyth_product: ctx.accounts.pyth_product.key(),
-        pyth_price: ctx.accounts.pyth_price.key(),
-        margin_pool_program: ctx.accounts.margin_pool_program.key(),
-        metadata_program: ctx.accounts.metadata_program.key(),
-        token_metadata_params: metadata,
-        margin_pool_params: pool_param
-    });
+        emit!(events::PositionTokenMetadataConfigured {
+            requester: ctx.accounts.requester.key(),
+            authority: ctx.accounts.authority.key(),
+            metadata_account: ctx.accounts.loan_metadata.key(),
+            metadata: metadata.into_inner(),
+        });
+    }
 
     Ok(())
 }
