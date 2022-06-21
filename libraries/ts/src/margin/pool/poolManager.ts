@@ -4,8 +4,14 @@ import { PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY, Transaction, TransactionI
 import { findDerivedAccount } from "../../utils/pda"
 import { MarginPoolConfig, MarginPools, MarginTokenConfig } from "../config"
 import { MarginPrograms } from "../marginClient"
-import { MarginPoolAddresses, Pool } from "./pool"
+import { MarginPoolAddresses, Pool, TokenKind } from "./pool"
 import { MarginPoolConfigData } from "./state"
+
+interface TokenMetadataParams {
+  tokenKind: TokenKind
+  collateralWeight: number
+  maxLeverage: number
+}
 
 interface MarginPoolParams {
   feeDestination: PublicKey
@@ -232,6 +238,12 @@ export class PoolManager {
     address: PublicKey
     programs?: MarginPrograms
   }): Promise<void> {
+    // Set the token configuration, e.g. collateral weight
+    const metadata: TokenMetadataParams = {
+      tokenKind: { collateral: {} },
+      collateralWeight: collateralWeight,
+      maxLeverage: maxLeverage
+    }
     const poolParam: MarginPoolParams = {
       feeDestination: translateAddress(feeDestination)
     }
@@ -239,8 +251,8 @@ export class PoolManager {
     const ix = await programs.control.methods
       .configureToken(
         {
-          tokenKind: { collateral: {} } as never,
-          collateralWeight,
+          tokenKind: metadata.tokenKind as never,
+          collateralWeight: metadata.collateralWeight,
           maxLeverage
         },
         poolParam,

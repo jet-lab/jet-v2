@@ -211,22 +211,19 @@ describe("margin pool", () => {
     expect(await getTokenBalance(provider, "processed", user_b_usdc_account)).to.eq(50)
   })
 
-  it("Set the prices for each token", async () => {
-    await pythClient.setPythPrice(ownerKeypair, USDC_oracle[1].publicKey, 1, 0.01, -8)
-    await pythClient.setPythPrice(ownerKeypair, SOL_oracle[1].publicKey, 100, 1, -8)
-  })
-
   it("Deposit user funds into their margin accounts", async () => {
     // ACT
     await marginAccount_A.deposit(marginPool_USDC, user_a_usdc_account, new BN(500_000 * ONE_USDC))
-    await marginAccount_A.deposit(marginPool_SOL, user_a_sol_account, new BN(50 * ONE_SOL))
-    await marginPool_USDC.refreshPosition(marginAccount_A)
-    await marginPool_SOL.refreshPosition(marginAccount_A)
-
-    await marginAccount_B.deposit(marginPool_SOL, user_b_sol_account, new BN(500 * ONE_SOL))
     await marginAccount_B.deposit(marginPool_USDC, user_b_usdc_account, new BN(50 * ONE_USDC))
-    await marginPool_SOL.refreshPosition(marginAccount_B)
+    await pythClient.setPythPrice(ownerKeypair, USDC_oracle[1].publicKey, 1, 0.01, -8)
+    await marginPool_USDC.refreshPosition(marginAccount_A)
     await marginPool_USDC.refreshPosition(marginAccount_B)
+
+    await marginAccount_A.deposit(marginPool_SOL, user_a_sol_account, new BN(50 * ONE_SOL))
+    await marginAccount_B.deposit(marginPool_SOL, user_b_sol_account, new BN(500 * ONE_SOL))
+    await pythClient.setPythPrice(ownerKeypair, SOL_oracle[1].publicKey, 100, 1, -8)
+    await marginPool_SOL.refreshPosition(marginAccount_A)
+    await marginPool_SOL.refreshPosition(marginAccount_B)
 
     // TEST
     expect(await getTokenBalance(provider, "processed", user_b_sol_account)).to.eq(0)
