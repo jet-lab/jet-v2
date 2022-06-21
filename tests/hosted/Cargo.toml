@@ -25,8 +25,8 @@ solana-sdk = "1.9"
 anchor-lang = { git = "https://github.com/jet-lab/anchor", branch = "master" }
 anchor-spl = { git = "https://github.com/jet-lab/anchor", branch = "master" }
 
+jet-static-program-registry = { path = "../../libraries/static-program-registry" }
 spl-token = "3"
-spl-token-swap = "2"
 pyth-sdk-solana = "0.4"
 
 jet-control = { path = "../../programs/control", features = ["no-entrypoint", "testing"] }
@@ -41,9 +41,3 @@ mock-adapter = { path = "../mock-adapter", features = ["no-entrypoint"] }
 
 jet-simulation = { git = "https://github.com/jet-lab/jet-simulation", branch = "assert_custom_error" }
 jet-proto-math = "1"
-
-[dependencies.orca-swap]
-package = "spl-token-swap"
-git = "https://github.com/orca-so/solana-program-library"
-branch = "master"
-features = ["no-entrypoint"]

@@ -22,16 +22,22 @@ use std::sync::Arc;
 
 use anchor_lang::prelude::Pubkey;
 use anyhow::Error;
-use jet_margin_swap::orca_swap_v1_metadata;
 use jet_simulation::{generate_keypair, solana_rpc_api::SolanaRpcClient};
-use solana_sdk::{program_pack::Pack, signer::Signer, system_instruction};
-use spl_token_swap::curve::{
-    base::{CurveType, SwapCurve},
-    constant_product::ConstantProductCurve,
-    fees::Fees,
+use jet_static_program_registry::{
+    orca_swap_v1, orca_swap_v2, related_programs, spl_token_swap_v2,
 };
+use solana_sdk::{program_pack::Pack, signer::Signer, system_instruction};
 
 use crate::tokens::TokenManager;
+
+// register swap programs
+related_programs! {
+    SwapProgram {[
+        spl_token_swap_v2::Spl2,
+        orca_swap_v1::OrcaV1,
+        orca_swap_v2::OrcaV2,
+    ]}
+}
 
 pub struct SwapPool {
     pub pool: Pubkey,
@@ -65,11 +71,8 @@ impl SwapPool {
 
         // Create an empty pool state account
         // The SPL Token Swap program requires extra padding of 1 byte
-        let space = if program_id == &orca_swap_v1_metadata::id() {
-            orca_swap::state::SwapInfo::LEN
-        } else {
-            spl_token_swap::state::SwapV1::LEN + 1
-        };
+
+        let space = use_client!(*program_id, { client::state::SwapV1::LEN + 1 }).unwrap();
         let rent_lamports = rpc.get_minimum_balance_for_rent_exemption(space).await?;
         let ix_pool_state_account = system_instruction::create_account(
             &rpc.payer().pubkey(),
@@ -104,8 +107,8 @@ impl SwapPool {
             .create_account(&pool_mint, &rpc.payer().pubkey())
             .await?;
 
-        let ix_init = if program_id == &orca_swap_v1_metadata::id() {
-            orca_swap::instruction::initialize(
+        let ix_init = use_client!(*program_id, {
+            client::instruction::initialize(
                 program_id,
                 &spl_token::id(),
                 &keypair.pubkey(),
@@ -116,35 +119,7 @@ impl SwapPool {
                 &token_fee,
                 &token_recipient,
                 pool_nonce,
-                orca_swap::curve::base::SwapCurve {
-                    curve_type: orca_swap::curve::base::CurveType::ConstantProduct,
-                    calculator: Box::new(
-                        orca_swap::curve::constant_product::ConstantProductCurve {
-                            trade_fee_numerator: 1,
-                            trade_fee_denominator: 400,
-                            owner_trade_fee_numerator: 2,
-                            owner_trade_fee_denominator: 500,
-                            owner_withdraw_fee_numerator: 4,
-                            owner_withdraw_fee_denominator: 100,
-                            host_fee_numerator: 1,
-                            host_fee_denominator: 100,
-                        },
-                    ),
-                },
-            )
-        } else {
-            spl_token_swap::instruction::initialize(
-                program_id,
-                &spl_token::id(),
-                &keypair.pubkey(),
-                &pool_authority,
-                &token_a,
-                &token_b,
-                &pool_mint,
-                &token_fee,
-                &token_recipient,
-                pool_nonce,
-                Fees {
+                client::curve::fees::Fees {
                     // The fee parameters are taken from one of spl-token-swap tests
                     trade_fee_numerator: 1,
                     trade_fee_denominator: 400,
@@ -155,12 +130,13 @@ impl SwapPool {
                     host_fee_numerator: 1,
                     host_fee_denominator: 100,
                 },
-                SwapCurve {
-                    curve_type: CurveType::ConstantProduct,
-                    calculator: Box::new(ConstantProductCurve),
+                client::curve::base::SwapCurve {
+                    curve_type: client::curve::base::CurveType::ConstantProduct,
+                    calculator: Box::new(client::curve::constant_product::ConstantProductCurve),
                 },
-            )
-        }?;
+            )?
+        })
+        .unwrap();
 
         // Create and send transaction
         let transaction = rpc

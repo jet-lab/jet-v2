@@ -58,13 +58,3 @@ pub struct MarginPoolInfo<'info> {
     #[account(mut)]
     pub deposit_note_mint: UncheckedAccount<'info>,
 }
-
-pub mod orca_swap_v1_metadata {
-    anchor_lang::prelude::declare_id!("DjVE6JNiYqPL2QXyCUUh8rNjHrbz9hXHNYt99MQ59qw1");
-}
-
-#[error_code]
-enum MarginSwapError {
-    #[msg("There is no swap instruction constructor for the provided swap program id")]
-    InvalidSwapProgram,
-}

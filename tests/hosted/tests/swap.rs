@@ -2,7 +2,9 @@ use anyhow::Error;
 
 use jet_control::TokenMetadataParams;
 use jet_margin_sdk::instructions::control::TokenConfiguration;
-use jet_margin_swap::orca_swap_v1_metadata;
+use jet_static_program_registry::{
+    orca_swap_v1, orca_swap_v2, spl_token_swap_v2,
+};
 use solana_sdk::native_token::LAMPORTS_PER_SOL;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::Signer;
@@ -32,6 +34,24 @@ const DEFAULT_POOL_CONFIG: MarginPoolConfig = MarginPoolConfig {
     management_fee_collect_threshold: 100,
     flags: PoolFlags::ALLOW_LENDING.bits(),
 };
+
+/// Test token swaps for the official SPL token swap
+#[tokio::test(flavor = "multi_thread")]
+async fn spl_swap_v2() -> Result<(), anyhow::Error> {
+    swap_test_impl(spl_token_swap_v2::id()).await
+}
+
+/// Test token swaps for orca v1
+#[tokio::test(flavor = "multi_thread")]
+async fn orca_swap_v1() -> Result<(), anyhow::Error> {
+    swap_test_impl(orca_swap_v1::id()).await
+}
+
+/// Test token swaps for orca v2
+#[tokio::test(flavor = "multi_thread")]
+async fn orca_swap_v2() -> Result<(), anyhow::Error> {
+    swap_test_impl(orca_swap_v2::id()).await
+}
 
 struct TestEnv {
     usdc: Pubkey,
@@ -112,18 +132,6 @@ async fn setup_environment(ctx: &MarginTestContext) -> Result<TestEnv, Error> {
     Ok(TestEnv { usdc, tsol })
 }
 
-/// Test token swaps for the official SPL token swap
-#[tokio::test(flavor = "multi_thread")]
-async fn spl_swap_test() -> Result<(), anyhow::Error> {
-    swap_test_impl(spl_token_swap::id()).await
-}
-
-/// Test token swaps for orca
-#[tokio::test(flavor = "multi_thread")]
-async fn orca_swap_test() -> Result<(), anyhow::Error> {
-    swap_test_impl(jet_margin_swap::orca_swap_v1_metadata::id()).await
-}
-
 async fn swap_test_impl(swap_program_id: Pubkey) -> Result<(), anyhow::Error> {
     // Get the mocked runtime
     let ctx = test_context().await;
@@ -153,15 +161,9 @@ async fn swap_test_impl(swap_program_id: Pubkey) -> Result<(), anyhow::Error> {
     )
     .await?;
 
-    let transit_source_authority = if swap_program_id == orca_swap_v1_metadata::id() {
-        &swap_pool.pool_authority
-    } else {
-        user_a.address()
-    };
-    
     let usdc_transit_source = ctx
         .tokens
-        .create_account(&env.usdc, transit_source_authority)
+        .create_account(&env.usdc, user_a.address())
         .await?;
     let tsol_transit_target = ctx
         .tokens
@@ -173,9 +175,9 @@ async fn swap_test_impl(swap_program_id: Pubkey) -> Result<(), anyhow::Error> {
         .await?;
     let tsol_transit_source = ctx
         .tokens
-        .create_account(&env.tsol, transit_source_authority)
+        .create_account(&env.tsol, user_a.address())
         .await?;
-    
+
     // Create some tokens for each user to deposit
     let user_a_usdc_account = ctx
         .tokens
@@ -190,7 +192,7 @@ async fn swap_test_impl(swap_program_id: Pubkey) -> Result<(), anyhow::Error> {
         .create_account_funded(&env.tsol, &wallet_b.pubkey(), 10 * ONE_TSOL)
         .await?;
 
-        // Set the prices for each token
+    // Set the prices for each token
     ctx.tokens
         .set_price(
             // Set price to 1 USD +- 0.01
@@ -227,7 +229,7 @@ async fn swap_test_impl(swap_program_id: Pubkey) -> Result<(), anyhow::Error> {
         .deposit(&env.tsol, &user_b_tsol_account, 10 * ONE_TSOL)
         .await?;
 
-        // // Verify user tokens have been deposited
+    // // Verify user tokens have been deposited
     assert_eq!(0, ctx.tokens.get_balance(&user_a_usdc_account).await?);
     assert_eq!(
         90 * ONE_TSOL,

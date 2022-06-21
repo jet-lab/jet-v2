@@ -15,10 +15,21 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use anchor_lang::solana_program::instruction::Instruction;
 use anchor_spl::token::Token;
+use jet_static_program_registry::{
+    orca_swap_v1, orca_swap_v2, related_programs, spl_token_swap_v2,
+};
 
 use crate::*;
+
+// register permitted swap programs
+related_programs! {
+    SwapProgram {[
+        spl_token_swap_v2::Spl2,
+        orca_swap_v1::OrcaV1,
+        orca_swap_v2::OrcaV2,
+    ]}
+}
 
 #[derive(Accounts)]
 pub struct MarginSplSwap<'info> {
@@ -108,15 +119,26 @@ impl<'info> MarginSplSwap<'info> {
 
     #[inline(never)]
     fn swap(&self, amount_in: u64, minimum_amount_out: u64) -> Result<()> {
-        let swap_program_id = self.swap_info.swap_program.key();
-
-        let swap_ix = if swap_program_id == spl_token_swap::id() {
-            self.spl_swap_ix(amount_in, minimum_amount_out)
-        } else if swap_program_id == orca_swap_v1_metadata::id() {
-            self.orca_swap_ix(amount_in, minimum_amount_out)
-        } else {
-            err!(MarginSwapError::InvalidSwapProgram)
-        }?;
+        let swap_ix = use_client!(self.swap_info.swap_program.key(), {
+            client::instruction::swap(
+                self.swap_info.swap_program.key,
+                self.token_program.key,
+                self.swap_info.swap_pool.key,
+                self.swap_info.authority.key,
+                &self.margin_account.key(),
+                self.transit_source_account.key,
+                self.swap_info.vault_into.key,
+                self.swap_info.vault_from.key,
+                self.transit_destination_account.key,
+                self.swap_info.token_mint.key,
+                self.swap_info.fee_account.key,
+                None,
+                client::instruction::Swap {
+                    amount_in,
+                    minimum_amount_out,
+                },
+            )?
+        })?;
 
         invoke(
             &swap_ix,
@@ -135,45 +157,6 @@ impl<'info> MarginSplSwap<'info> {
         )?;
 
         Ok(())
-    }
-
-    fn spl_swap_ix(&self, amount_in: u64, minimum_amount_out: u64) -> Result<Instruction> {
-        Ok(spl_token_swap::instruction::swap(
-            self.swap_info.swap_program.key,
-            self.token_program.key,
-            self.swap_info.swap_pool.key,
-            self.swap_info.authority.key,
-            &self.margin_account.key(),
-            self.transit_source_account.key,
-            self.swap_info.vault_into.key,
-            self.swap_info.vault_from.key,
-            self.transit_destination_account.key,
-            self.swap_info.token_mint.key,
-            self.swap_info.fee_account.key,
-            None,
-            spl_token_swap::instruction::Swap {
-                amount_in,
-                minimum_amount_out,
-            },
-        )?)
-    }
-
-    fn orca_swap_ix(&self, amount_in: u64, minimum_amount_out: u64) -> Result<Instruction> {
-        Ok(orca_swap::instruction::swap(
-            self.swap_info.swap_program.key,
-            self.token_program.key,
-            self.swap_info.swap_pool.key,
-            self.swap_info.authority.key,
-            self.transit_source_account.key,
-            self.swap_info.vault_into.key,
-            self.swap_info.vault_from.key,
-            self.transit_destination_account.key,
-            self.swap_info.token_mint.key,
-            self.swap_info.fee_account.key,
-            None,
-            amount_in,
-            minimum_amount_out,
-        )?)
     }
 }
 

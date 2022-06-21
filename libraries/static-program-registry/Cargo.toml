@@ -1,0 +1,35 @@
+[package]
+name = "jet-static-program-registry"
+version = "0.1.0"
+edition = "2021"
+description = "Identifies mainnet programs by hardcoding official program IDs and associating client libraries if available."
+
+[lib]
+name = "jet_static_program_registry"
+path = "src/lib.rs"
+
+[features]
+devnet = []
+
+[dependencies]
+paste = "1.0"
+anchor-lang = { git = "https://github.com/jet-lab/anchor", branch = "master" }
+
+[dependencies.spl-token-swap-v2]
+package = "spl-token-swap"
+version = "2.0.0"
+features = ["no-entrypoint"]
+
+# https://docs.orca.so/#has-orca-been-audited
+[dependencies.spl-token-swap-3613cea3c]
+package = "spl-token-swap"
+git = "https://github.com/solana-labs/solana-program-library"
+rev = "3613cea3cabbb5f7e4445d6203b7292d413732da"
+features = ["no-entrypoint"]
+
+# https://docs.orca.so/#has-orca-been-audited
+[dependencies.spl-token-swap-813aa3]
+package = "spl-token-swap"
+git = "https://github.com/solana-labs/solana-program-library"
+rev = "813aa3304022528cbf3cf7a3d32bca339194a492"
+features = ["no-entrypoint"]
