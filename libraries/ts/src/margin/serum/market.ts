@@ -1,6 +1,6 @@
 import assert from "assert"
 import { blob, struct, u8 } from "buffer-layout"
-import { AnchorProvider, BN, InstructionNamespace } from "@project-serum/anchor"
+import { BN, InstructionNamespace } from "@project-serum/anchor"
 import {
   decodeEventQueue,
   decodeRequestQueue,

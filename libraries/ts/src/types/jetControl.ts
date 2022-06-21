@@ -179,6 +179,11 @@ export type JetControl = {
           isSigner: false
         },
         {
+          name: "loanMetadata"
+          isMut: true
+          isSigner: false
+        },
+        {
           name: "pythProduct"
           isMut: false
           isSigner: false
@@ -225,6 +230,52 @@ export type JetControl = {
           }
         }
       ]
+    },
+    {
+      name: "setLiquidator"
+      accounts: [
+        {
+          name: "requester"
+          isMut: false
+          isSigner: true
+        },
+        {
+          name: "authority"
+          isMut: false
+          isSigner: false
+        },
+        {
+          name: "liquidator"
+          isMut: false
+          isSigner: false
+        },
+        {
+          name: "metadataAccount"
+          isMut: true
+          isSigner: false
+        },
+        {
+          name: "payer"
+          isMut: true
+          isSigner: true
+        },
+        {
+          name: "metadataProgram"
+          isMut: false
+          isSigner: false
+        },
+        {
+          name: "systemProgram"
+          isMut: false
+          isSigner: false
+        }
+      ]
+      args: [
+        {
+          name: "isLiquidator"
+          type: "bool"
+        }
+      ]
     }
   ]
   accounts: [
@@ -245,23 +296,6 @@ export type JetControl = {
   ]
   types: [
     {
-      name: "TokenKind"
-      type: {
-        kind: "enum"
-        variants: [
-          {
-            name: "NonCollateral"
-          },
-          {
-            name: "Collateral"
-          },
-          {
-            name: "Claim"
-          }
-        ]
-      }
-    },
-    {
       name: "TokenMetadataParams"
       type: {
         kind: "struct"
@@ -277,8 +311,37 @@ export type JetControl = {
             type: "u16"
           },
           {
-            name: "collateralMaxStaleness"
-            type: "u64"
+            name: "maxLeverage"
+            type: "u16"
+          }
+        ]
+      }
+    },
+    {
+      name: "MarginPoolParams"
+      type: {
+        kind: "struct"
+        fields: [
+          {
+            name: "feeDestination"
+            type: "publicKey"
+          }
+        ]
+      }
+    },
+    {
+      name: "TokenKind"
+      type: {
+        kind: "enum"
+        variants: [
+          {
+            name: "NonCollateral"
+          },
+          {
+            name: "Collateral"
+          },
+          {
+            name: "Claim"
           }
         ]
       }
@@ -323,18 +386,6 @@ export type JetControl = {
           {
             name: "managementFeeCollectThreshold"
             type: "u64"
-          }
-        ]
-      }
-    },
-    {
-      name: "MarginPoolParams"
-      type: {
-        kind: "struct"
-        fields: [
-          {
-            name: "feeDestination"
-            type: "publicKey"
           }
         ]
       }
@@ -523,6 +574,11 @@ export const IDL: JetControl = {
           isSigner: false
         },
         {
+          name: "loanMetadata",
+          isMut: true,
+          isSigner: false
+        },
+        {
           name: "pythProduct",
           isMut: false,
           isSigner: false
@@ -569,6 +625,52 @@ export const IDL: JetControl = {
           }
         }
       ]
+    },
+    {
+      name: "setLiquidator",
+      accounts: [
+        {
+          name: "requester",
+          isMut: false,
+          isSigner: true
+        },
+        {
+          name: "authority",
+          isMut: false,
+          isSigner: false
+        },
+        {
+          name: "liquidator",
+          isMut: false,
+          isSigner: false
+        },
+        {
+          name: "metadataAccount",
+          isMut: true,
+          isSigner: false
+        },
+        {
+          name: "payer",
+          isMut: true,
+          isSigner: true
+        },
+        {
+          name: "metadataProgram",
+          isMut: false,
+          isSigner: false
+        },
+        {
+          name: "systemProgram",
+          isMut: false,
+          isSigner: false
+        }
+      ],
+      args: [
+        {
+          name: "isLiquidator",
+          type: "bool"
+        }
+      ]
     }
   ],
   accounts: [
@@ -589,23 +691,6 @@ export const IDL: JetControl = {
   ],
   types: [
     {
-      name: "TokenKind",
-      type: {
-        kind: "enum",
-        variants: [
-          {
-            name: "NonCollateral"
-          },
-          {
-            name: "Collateral"
-          },
-          {
-            name: "Claim"
-          }
-        ]
-      }
-    },
-    {
       name: "TokenMetadataParams",
       type: {
         kind: "struct",
@@ -621,8 +706,37 @@ export const IDL: JetControl = {
             type: "u16"
           },
           {
-            name: "collateralMaxStaleness",
-            type: "u64"
+            name: "maxLeverage",
+            type: "u16"
+          }
+        ]
+      }
+    },
+    {
+      name: "MarginPoolParams",
+      type: {
+        kind: "struct",
+        fields: [
+          {
+            name: "feeDestination",
+            type: "publicKey"
+          }
+        ]
+      }
+    },
+    {
+      name: "TokenKind",
+      type: {
+        kind: "enum",
+        variants: [
+          {
+            name: "NonCollateral"
+          },
+          {
+            name: "Collateral"
+          },
+          {
+            name: "Claim"
           }
         ]
       }
@@ -667,18 +781,6 @@ export const IDL: JetControl = {
           {
             name: "managementFeeCollectThreshold",
             type: "u64"
-          }
-        ]
-      }
-    },
-    {
-      name: "MarginPoolParams",
-      type: {
-        kind: "struct",
-        fields: [
-          {
-            name: "feeDestination",
-            type: "publicKey"
           }
         ]
       }
