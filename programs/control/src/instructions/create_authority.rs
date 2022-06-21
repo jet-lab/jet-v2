@@ -47,7 +47,7 @@ pub fn create_authority_handler(ctx: Context<CreateAuthority>) -> Result<()> {
 
     emit!(events::AuthorityCreated {
         authority: ctx.accounts.authority.key(),
-        payer: ctx.accounts.payer.key()
+        seed: ctx.accounts.authority.seed[0],
     });
 
     Ok(())

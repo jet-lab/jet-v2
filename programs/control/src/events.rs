@@ -21,8 +21,9 @@ pub struct TokenConfigured {
 #[event]
 pub struct AuthorityCreated {
     pub authority: Pubkey,
-    pub payer: Pubkey,
+    pub seed: u8,
 }
+
 #[event]
 pub struct AdapterRegistered {
     pub requester: Pubkey,
@@ -31,6 +32,7 @@ pub struct AdapterRegistered {
     pub metadata_account: Pubkey,
     pub metadata_program: Pubkey,
 }
+
 #[event]
 pub struct TokenRegistered {
     pub requester: Pubkey,
