@@ -41,7 +41,7 @@ export class TokenAmount {
    * @memberof TokenAmount
    */
   public static zero(decimals: number): TokenAmount {
-    return new TokenAmount(new BN(0), decimals)
+    return new TokenAmount(ZERO_BN, decimals)
   }
 
   /**
