@@ -500,7 +500,7 @@ pub struct PriceResult {
 }
 
 /// Configuration for a margin pool
-#[derive(Debug, Default, Clone, AnchorDeserialize, AnchorSerialize, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, AnchorDeserialize, AnchorSerialize, Deserialize)]
 pub struct MarginPoolConfig {
     /// Space for binary settings
     pub flags: u64,
@@ -528,6 +528,45 @@ pub struct MarginPoolConfig {
 
     /// The threshold for fee collection
     pub management_fee_collect_threshold: u64,
+}
+
+impl Serialize for MarginPoolConfig {
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut s = serializer.serialize_struct("MarginPoolConfig", 13)?;
+        s.serialize_field("flags", &self.flags)?;
+        s.serialize_field(
+            "utilizationRate1",
+            &Number::from_bps(self.utilization_rate_1).to_string(),
+        )?;
+        s.serialize_field(
+            "utilizationRate2",
+            &Number::from_bps(self.utilization_rate_2).to_string(),
+        )?;
+        s.serialize_field(
+            "borrowRate0",
+            &Number::from_bps(self.borrow_rate_0).to_string(),
+        )?;
+        s.serialize_field(
+            "borrowRate1",
+            &Number::from_bps(self.borrow_rate_1).to_string(),
+        )?;
+        s.serialize_field(
+            "borrowRate2",
+            &Number::from_bps(self.borrow_rate_2).to_string(),
+        )?;
+        s.serialize_field(
+            "managementFeeRate",
+            &Number::from_bps(self.management_fee_rate).to_string(),
+        )?;
+        s.serialize_field(
+            "managementFeeCollectThreshold",
+            &self.management_fee_collect_threshold,
+        )?;
+        s.end()
+    }
 }
 
 bitflags::bitflags! {

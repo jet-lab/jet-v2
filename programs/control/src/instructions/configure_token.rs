@@ -17,7 +17,7 @@
 
 use anchor_lang::prelude::*;
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 use jet_margin_pool::program::JetMarginPool;
 use jet_margin_pool::MarginPoolConfig;

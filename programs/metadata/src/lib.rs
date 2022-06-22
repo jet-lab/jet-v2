@@ -15,11 +15,10 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use serde::{Serialize, Deserialize};
 use anchor_lang::prelude::*;
 use anchor_lang::Discriminator;
+use serde::{Deserialize, Serialize};
 use solana_program::pubkey;
-
 
 declare_id!("JPMetawzxw7WyH3qHUVScYHWFBGhjwqDnM2R9qVbRLp");
 
@@ -122,7 +121,9 @@ mod jet_metadata {
 }
 
 /// Description of the token's usage
-#[derive(AnchorSerialize, AnchorDeserialize, Serialize, Deserialize, Eq, PartialEq, Clone, Copy, Debug)]
+#[derive(
+    AnchorSerialize, AnchorDeserialize, Serialize, Deserialize, Eq, PartialEq, Clone, Copy, Debug,
+)]
 pub enum TokenKind {
     /// The token has no value within the margin system
     NonCollateral,

@@ -19,8 +19,8 @@ use anchor_lang::{prelude::*, system_program, Discriminator};
 use bytemuck::{Contiguous, Pod, Zeroable};
 use jet_metadata::TokenKind;
 
-use serde::{Serialize, Serializer};
 use serde::ser::SerializeStruct;
+use serde::{Serialize, Serializer};
 
 use jet_proto_math::Number128;
 use jet_proto_proc_macros::assert_size;
@@ -383,7 +383,17 @@ impl SignerSeeds<3> for MarginAccount {
 
 #[assert_size(24)]
 #[derive(
-    Pod, Zeroable, AnchorSerialize, AnchorDeserialize, Serialize, Debug, Default, Clone, Copy, Eq, PartialEq,
+    Pod,
+    Zeroable,
+    AnchorSerialize,
+    AnchorDeserialize,
+    Serialize,
+    Debug,
+    Default,
+    Clone,
+    Copy,
+    Eq,
+    PartialEq,
 )]
 #[serde(rename_all = "camelCase")]
 #[repr(C)]
