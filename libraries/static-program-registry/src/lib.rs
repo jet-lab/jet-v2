@@ -22,7 +22,7 @@ macro_rules! program {
     ($Name:ident, $id:literal) => {
         $crate::macro_imports::declare_id!($id);
 
-        #[derive(Copy, Clone)]
+        #[derive(Debug, Copy, Clone)]
         pub struct $Name;
 
         impl $crate::macro_imports::Id for $Name {
@@ -207,7 +207,9 @@ mod test {
 
     #[test]
     fn pointless_test_for_code_coverage_requirement() {
-        let _ = crate::RegistryError::UnknownProgramId.name();
-        let _ = spl_token_swap_v2::Spl2.clone();
+        crate::RegistryError::UnknownProgramId.name();
+        let x = spl_token_swap_v2::Spl2;
+        let _ = x;
+        println!("{:?}", x);
     }
 }
