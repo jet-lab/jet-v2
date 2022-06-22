@@ -56,7 +56,7 @@ describe("margin pool devnet config", () => {
   })
 
   it("should have a deposit APY", async () => {
-    expect(pools.USDC.depositApy).to.eq(0)
+    expect(pools.USDC.depositApy).to.not.eq(0)
   })
 
   it("should have a borrow APR", async () => {
