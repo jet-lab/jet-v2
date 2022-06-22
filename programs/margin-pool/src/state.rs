@@ -500,7 +500,7 @@ pub struct PriceResult {
 }
 
 /// Configuration for a margin pool
-#[derive(Debug, Default, Clone, AnchorDeserialize, AnchorSerialize, Deserialize)]
+#[derive(Default, Clone, AnchorDeserialize, AnchorSerialize, Deserialize)]
 pub struct MarginPoolConfig {
     /// Space for binary settings
     pub flags: u64,
@@ -528,6 +528,31 @@ pub struct MarginPoolConfig {
 
     /// The threshold for fee collection
     pub management_fee_collect_threshold: u64,
+}
+
+impl std::fmt::Debug for MarginPoolConfig {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let util_rate_1 = Number::from_bps(self.utilization_rate_1);
+        let util_rate_2 = Number::from_bps(self.utilization_rate_2);
+        let borrow_rate_0 = Number::from_bps(self.borrow_rate_0);
+        let borrow_rate_1 = Number::from_bps(self.borrow_rate_1);
+        let borrow_rate_2 = Number::from_bps(self.borrow_rate_2);
+        let manage_fee_rate = Number::from_bps(self.management_fee_rate);
+
+        f.debug_struct("MarginPoolConfig")
+            .field("flags", &self.flags)
+            .field("utilization_rate_1", &util_rate_1)
+            .field("utilization_rate_2", &util_rate_2)
+            .field("borrow_rate_0", &borrow_rate_0)
+            .field("borrow_rate_1", &borrow_rate_1)
+            .field("borrow_rate_2", &borrow_rate_2)
+            .field("management_fee_rate", &manage_fee_rate)
+            .field(
+                "management_fee_collect_threshold",
+                &self.management_fee_collect_threshold,
+            )
+            .finish()
+    }
 }
 
 impl Serialize for MarginPoolConfig {
