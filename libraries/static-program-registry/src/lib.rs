@@ -183,11 +183,11 @@ mod test {
     #[test]
     fn use_client_works() {
         for id in &[spl_token_swap_v2::ID, orca_swap_v1::ID, orca_swap_v2::ID] {
-            use_client!(*id, { client::id() }).unwrap();
+            assert_eq!(*id, use_client!(*id, { client::id() }).unwrap());
         }
-        use_spl_client!(spl_token_swap_v2::ID, { client::id() }).unwrap();
+        assert_eq!(spl_token_swap_v2::ID, use_spl_client!(spl_token_swap_v2::ID, { client::id() }).unwrap());
         for id in &[orca_swap_v1::ID, orca_swap_v2::ID] {
-            use_orca_client!(*id, { client::id() }).unwrap();
+            assert_eq!(*id, use_orca_client!(*id, { client::id() }).unwrap());
         }
     }
 
