@@ -15,12 +15,14 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+use std::ops::Deref;
+
 use anchor_lang::prelude::*;
 use anchor_spl::token::{Mint, Token, TokenAccount};
 
 use jet_metadata::ControlAuthority;
 
-use crate::state::*;
+use crate::{events, state::*};
 
 #[derive(Accounts)]
 pub struct CreatePool<'info> {
@@ -98,6 +100,19 @@ pub fn create_pool_handler(ctx: Context<CreatePool>) -> Result<()> {
 
     let clock = Clock::get()?;
     pool.accrued_until = clock.unix_timestamp;
+
+    let pool = &*ctx.accounts.margin_pool;
+
+    emit!(events::PoolCreated {
+        margin_pool: ctx.accounts.margin_pool.key(),
+        vault: ctx.accounts.vault.key(),
+        deposit_note_mint: ctx.accounts.deposit_note_mint.key(),
+        loan_note_mint: ctx.accounts.loan_note_mint.key(),
+        token_mint: ctx.accounts.token_mint.key(),
+        authority: ctx.accounts.authority.key(),
+        payer: ctx.accounts.payer.key(),
+        summary: pool.deref().into(),
+    });
 
     Ok(())
 }

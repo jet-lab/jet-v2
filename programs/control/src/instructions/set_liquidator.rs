@@ -22,6 +22,8 @@ use jet_metadata::cpi::accounts::{CreateEntry, RemoveEntry, SetEntry};
 use jet_metadata::program::JetMetadata;
 use jet_metadata::LiquidatorMetadata;
 
+use crate::events;
+
 use super::Authority;
 
 #[derive(Accounts)]
@@ -113,6 +115,13 @@ pub fn set_liquidator_handler(ctx: Context<SetLiquidator>, is_liquidator: bool) 
                 .with_signer(&[&authority]),
         )?;
     }
+
+    emit!(events::LiquidatorSet {
+        requester: ctx.accounts.requester.key(),
+        authority: ctx.accounts.authority.key(),
+        liquidator_metadata: metadata,
+        metadata_account: ctx.accounts.metadata_account.key(),
+    });
 
     Ok(())
 }

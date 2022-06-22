@@ -24,6 +24,8 @@ use jet_metadata::cpi::accounts::SetEntry;
 use jet_metadata::program::JetMetadata;
 use jet_metadata::{PositionTokenMetadata, TokenKind, TokenMetadata};
 
+use crate::events;
+
 use super::Authority;
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Debug)]
@@ -158,6 +160,13 @@ pub fn configure_token_handler(
             0,
             data,
         )?;
+
+        emit!(events::TokenMetadataConfigured {
+            requester: ctx.accounts.requester.key(),
+            authority: ctx.accounts.authority.key(),
+            metadata_account: ctx.accounts.token_metadata.key(),
+            metadata: metadata.into_inner(),
+        })
     }
 
     if let Some(params) = metadata {
@@ -178,6 +187,13 @@ pub fn configure_token_handler(
             data,
         )?;
 
+        emit!(events::PositionTokenMetadataConfigured {
+            requester: ctx.accounts.requester.key(),
+            authority: ctx.accounts.authority.key(),
+            metadata_account: ctx.accounts.deposit_metadata.key(),
+            metadata: metadata.into_inner(),
+        });
+
         metadata = ctx.accounts.loan_metadata.clone();
         let mut data = vec![];
 
@@ -194,6 +210,13 @@ pub fn configure_token_handler(
             0,
             data,
         )?;
+
+        emit!(events::PositionTokenMetadataConfigured {
+            requester: ctx.accounts.requester.key(),
+            authority: ctx.accounts.authority.key(),
+            metadata_account: ctx.accounts.loan_metadata.key(),
+            metadata: metadata.into_inner(),
+        });
     }
 
     Ok(())

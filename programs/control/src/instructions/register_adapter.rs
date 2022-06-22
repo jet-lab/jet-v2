@@ -22,6 +22,8 @@ use jet_metadata::cpi::accounts::{CreateEntry, SetEntry};
 use jet_metadata::program::JetMetadata;
 use jet_metadata::MarginAdapterMetadata;
 
+use crate::events;
+
 use super::Authority;
 
 #[derive(Accounts)]
@@ -94,6 +96,13 @@ pub fn register_adapter_handler(ctx: Context<RegisterAdapter>) -> Result<()> {
         0,
         data,
     )?;
+
+    emit!(events::AdapterRegistered {
+        requester: ctx.accounts.requester.key(),
+        authority: ctx.accounts.authority.key(),
+        adapter: metadata,
+        metadata_account: ctx.accounts.metadata_account.key(),
+    });
 
     Ok(())
 }
