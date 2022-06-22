@@ -1,6 +1,6 @@
 import assert from "assert"
 import { blob, struct, u8 } from "buffer-layout"
-import { AnchorProvider, BN, InstructionNamespace } from "@project-serum/anchor"
+import { BN, InstructionNamespace } from "@project-serum/anchor"
 import {
   decodeEventQueue,
   decodeRequestQueue,
@@ -42,6 +42,7 @@ import { IDL as JetMarginIDL, JetMargin } from "../../types/jetMargin"
 import { IDL as JetMarginSerumIDL, JetMarginSerum } from "../../types/jetMarginSerum"
 import { MarginAccount } from "../marginAccount"
 import { MarginPrograms } from "../marginClient"
+import { ZERO_BN } from "../../token"
 
 export class Market {
   private _programs: MarginPrograms
@@ -624,10 +625,10 @@ export class Market {
       openOrdersAccount,
       feeDiscountPubkey = null
     } = params
-    if (this.baseSizeNumberToLots(size).lte(new BN(0))) {
+    if (this.baseSizeNumberToLots(size).lte(ZERO_BN)) {
       throw new Error("size too small")
     }
-    if (this.priceNumberToLots(price).lte(new BN(0))) {
+    if (this.priceNumberToLots(price).lte(ZERO_BN)) {
       throw new Error("invalid price")
     }
     if (this.usesRequestQueue) {

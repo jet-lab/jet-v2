@@ -116,6 +116,7 @@ pub fn configure_token(
         margin_pool: pool.address,
         token_metadata: get_metadata_address(&pool.token_mint),
         deposit_metadata: get_metadata_address(&pool.deposit_note_mint),
+        loan_metadata: get_metadata_address(&pool.loan_note_mint),
 
         pyth_product: config.pyth_product.unwrap_or_default(),
         pyth_price: config.pyth_price.unwrap_or_default(),

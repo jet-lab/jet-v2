@@ -35,8 +35,8 @@ struct Scenario1 {
 #[allow(clippy::erasing_op)]
 async fn scenario1() -> Result<Scenario1> {
     let ctx = test_context().await;
-    let usdc = setup_token(ctx, 6, 10_000, 1).await?;
-    let tsol = setup_token(ctx, 9, 9_500, 100).await?;
+    let usdc = setup_token(ctx, 6, 1_00, 4_00, 1).await?;
+    let tsol = setup_token(ctx, 9, 95, 4_00, 100).await?;
 
     // Create wallet for the liquidator
     let liquidator_wallet = ctx.create_liquidator(100).await?;
@@ -129,27 +129,6 @@ async fn cannot_transact_when_being_liquidated() -> Result<()> {
         .repay(&scen.usdc, Amount::tokens(1_000_000 * ONE_USDC))
         .await;
     assert_custom_program_error(ErrorCode::Liquidating, result);
-
-    Ok(())
-}
-
-#[tokio::test(flavor = "multi_thread")]
-#[cfg_attr(not(feature = "localnet"), serial)]
-async fn liquidator_cannot_over_repay() -> Result<()> {
-    let scen = scenario1().await?;
-
-    scen.user_b_liq.liquidate_begin().await?;
-
-    // Fail a repayment on behalf of the user because it repays too much
-    // User B would have
-    // Collateral (800'000 * 0.95) + 500'000 = 1'260'000
-    // Claim 500'000
-    // C ratio = 2.52
-    let result = scen
-        .user_b_liq
-        .repay(&scen.usdc, Amount::tokens(3_000_000 * ONE_USDC))
-        .await;
-    assert_custom_program_error(ErrorCode::LiquidationTooHealthy, result);
 
     Ok(())
 }
@@ -279,7 +258,7 @@ async fn can_withdraw_some_during_liquidation() -> Result<()> {
         .withdraw(
             &scen.usdc,
             &liquidator_usdc_account,
-            Amount::tokens(40000 * ONE_USDC),
+            Amount::tokens(40 * ONE_USDC),
         )
         .await?;
 
@@ -293,11 +272,8 @@ async fn cannot_borrow_too_much_during_liquidation() -> Result<()> {
 
     scen.user_b_liq.liquidate_begin().await?;
 
-    let result = scen
-        .user_b_liq
-        .borrow(&scen.usdc, 5_000_000 * ONE_USDC)
-        .await;
-    assert_custom_program_error(ErrorCode::LiquidationUnhealthy, result);
+    let result = scen.user_b_liq.borrow(&scen.usdc, 500_000 * ONE_USDC).await;
+    assert_custom_program_error(ErrorCode::LiquidationLostValue, result);
 
     Ok(())
 }
@@ -308,9 +284,7 @@ async fn can_borrow_some_during_liquidation() -> Result<()> {
     let scen = scenario1().await?;
 
     scen.user_b_liq.liquidate_begin().await?;
-    scen.user_b_liq
-        .borrow(&scen.usdc, 500_000 * ONE_USDC)
-        .await?;
+    scen.user_b_liq.borrow(&scen.usdc, 5_000 * ONE_USDC).await?;
 
     Ok(())
 }

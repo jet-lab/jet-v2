@@ -1,10 +1,10 @@
-import { Address, BN } from "@project-serum/anchor"
+import { Address, BN, translateAddress } from "@project-serum/anchor"
 import { parsePriceData, PriceData } from "@pythnetwork/client"
 import { Mint, TOKEN_PROGRAM_ID } from "@solana/spl-token"
 import { PublicKey, Transaction, TransactionInstruction } from "@solana/web3.js"
 import { assert } from "chai"
 import { AssociatedToken } from "../../token"
-import { TokenAmount } from "../../token/tokenAmount"
+import { ONE_BN, TokenAmount } from "../../token/tokenAmount"
 import { MarginAccount } from "../marginAccount"
 import { MarginPrograms } from "../marginClient"
 import { MarginPoolConfigData, MarginPoolData } from "./state"
@@ -40,17 +40,28 @@ export class Pool {
   get symbol(): MarginPools | undefined {
     return this.poolConfig?.symbol
   }
-  get availableLiquidity(): TokenAmount {
-    return this.info?.vault.amount ?? TokenAmount.zero(this.tokenConfig?.decimals ?? 0)
+  get depositedTokens(): TokenAmount {
+    return this.info?.vault.amount ?? TokenAmount.zero(this.decimals)
   }
-  get outstandingDebt(): TokenAmount {
-    return TokenAmount.zero(this.tokenConfig?.decimals ?? 0) // FIXME
+  get borrowedTokens(): TokenAmount {
+    if (!this.info) {
+      return TokenAmount.zero(this.decimals)
+    }
+    const lamports = new BN(this.info.marginPool.borrowedTokens, "le").div(ONE_BN)
+    return TokenAmount.lamports(lamports, this.decimals)
   }
   get marketSize(): TokenAmount {
-    return this.availableLiquidity.add(this.outstandingDebt)
+    return this.depositedTokens.add(this.borrowedTokens)
+  }
+  get uncollectedFees(): TokenAmount {
+    if (!this.info) {
+      return TokenAmount.zero(this.decimals)
+    }
+    const lamports = new BN(this.info.marginPool.uncollectedFees, "le").div(ONE_BN)
+    return TokenAmount.lamports(lamports, this.decimals)
   }
   get utilizationRate(): number {
-    return this.marketSize.tokens === 0 ? 0 : this.outstandingDebt.tokens / this.marketSize.tokens
+    return this.marketSize.tokens === 0 ? 0 : this.borrowedTokens.tokens / this.marketSize.tokens
   }
   get cRatio(): number {
     const utilizationRate = this.utilizationRate
@@ -76,7 +87,7 @@ export class Pool {
     return this.info?.tokenPriceOracle.price ?? 0
   }
   get decimals(): number {
-    return this.tokenConfig?.decimals ?? 0
+    return this.tokenConfig?.decimals ?? this.info?.tokenMint.decimals ?? 0
   }
   get precision(): number {
     return this.tokenConfig?.precision ?? 0
@@ -127,10 +138,9 @@ export class Pool {
       )
       const tokenMint = AssociatedToken.decodeMint(poolTokenMintInfo, this.addresses.tokenMint)
       const oracleInfo = await this.programs.marginPool.provider.connection.getAccountInfo(marginPool.tokenPriceOracle)
-      assert(
-        oracleInfo,
-        "Pyth oracle does not exist but a margin pool does. The margin pool is incorrectly configured."
-      )
+      if (!oracleInfo) {
+        throw "Pyth oracle does not exist but a margin pool does. The margin pool is incorrectly configured."
+      }
       this.info = {
         marginPool,
         tokenMint,
@@ -452,11 +462,10 @@ export class Pool {
   ///
   /// # Params
   ///
-  /// `margin_scratch` - The scratch account for the margin system
   /// `margin_account` - The margin account with the deposit to be withdrawn
   /// `source` - The token account that has the deposit notes to be exchanged
   /// `destination` - The token account to send the withdrawn deposit
-  /// `PoolAmount` - The amount of the deposit
+  /// `amount` - The amount of the deposit
   async marginWithdraw({
     marginAccount,
     destination,
@@ -466,11 +475,23 @@ export class Pool {
     destination: Address
     amount: PoolAmount
   }) {
-    const depositPosition = await marginAccount.getOrCreatePosition(this.addresses.depositNoteMint)
-    assert(depositPosition)
+    const destinationAddress = translateAddress(destination)
 
-    const tx = new Transaction()
+    // FIXME: can be getPosition
+    const { address: source } = await marginAccount.getOrCreatePosition(this.addresses.depositNoteMint)
+
+    const isDestinationNative = AssociatedToken.isNative(marginAccount.owner, this.tokenMint, destinationAddress)
+
+    let marginWithdrawDestination: PublicKey
+    if (!isDestinationNative) {
+      marginWithdrawDestination = destinationAddress
+    } else {
+      marginWithdrawDestination = AssociatedToken.derive(this.tokenMint, marginAccount.owner)
+    }
+
     const ix: TransactionInstruction[] = []
+
+    await AssociatedToken.withCreate(ix, marginAccount.provider, marginAccount.owner, this.tokenMint)
     await this.withAdapterInvoke({
       instructions: ix,
       owner: marginAccount.owner,
@@ -479,15 +500,18 @@ export class Pool {
       adapterMetadata: this.addresses.marginPoolAdapterMetadata,
       adapterInstruction: await this.makeMarginWithdrawInstruction({
         marginAccount: marginAccount.address,
-        source: depositPosition.address,
-        destination,
+        source,
+        destination: marginWithdrawDestination,
         amount
       })
     })
-    tx.add(...ix)
+
+    if (isDestinationNative) {
+      AssociatedToken.withClose(ix, marginAccount.owner, this.tokenMint, destinationAddress)
+    }
 
     try {
-      return await marginAccount.provider.sendAndConfirm(tx)
+      return await marginAccount.provider.sendAndConfirm(new Transaction().add(...ix))
     } catch (err) {
       console.log(err)
       throw err

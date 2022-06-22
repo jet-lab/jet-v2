@@ -1,8 +1,8 @@
-import { Address, AnchorProvider, BN, translateAddress } from "@project-serum/anchor"
+import { Address, AnchorProvider, translateAddress } from "@project-serum/anchor"
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token"
 import { PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY, Transaction, TransactionInstruction } from "@solana/web3.js"
 import { findDerivedAccount } from "../../utils/pda"
-import { MarginPoolConfig, MarginTokenConfig, MarginTokens } from "../config"
+import { MarginPoolConfig, MarginPools, MarginTokenConfig } from "../config"
 import { MarginPrograms } from "../marginClient"
 import { MarginPoolAddresses, Pool, TokenKind } from "./pool"
 import { MarginPoolConfigData } from "./state"
@@ -10,7 +10,7 @@ import { MarginPoolConfigData } from "./state"
 interface TokenMetadataParams {
   tokenKind: TokenKind
   collateralWeight: number
-  collateralMaxStaleness: BN
+  maxLeverage: number
 }
 
 interface MarginPoolParams {
@@ -20,7 +20,7 @@ interface MarginPoolParams {
 interface IPoolCreationParams {
   tokenMint: Address
   collateralWeight: number
-  collateralMaxStaleness: BN
+  maxLeverage: number
   feeDestination: Address
   pythProduct: Address
   pythPrice: Address
@@ -41,10 +41,15 @@ export class PoolManager {
 
   /**
    * Load a margin pool
-   * @param tokenMint
-   * @param poolConfig
-   * @param tokenConfig
-   * @returns
+   *
+   * @param {{
+   *     tokenMint: Address
+   *     poolConfig?: MarginPoolConfig
+   *     tokenConfig?: MarginTokenConfig
+   *     programs?: MarginPrograms
+   *   }}
+   * @return {Promise<Pool>}
+   * @memberof PoolManager
    */
   async load({
     tokenMint,
@@ -65,16 +70,16 @@ export class PoolManager {
 
   /**
    * Loads all margin pools bases on the config provided to the manager
-   * @returns
+   *
+   * @param {MarginPrograms} [programs=this.programs]
+   * @return {Promise<Record<MarginPools, Pool>>}
+   * @memberof PoolManager
    */
-  async loadAll(programs: MarginPrograms = this.programs): Promise<Record<MarginTokens, Pool>> {
+  async loadAll(programs: MarginPrograms = this.programs): Promise<Record<MarginPools, Pool>> {
     // FIXME: This could be faster with fewer round trips to rpc
     const pools: Record<string, Pool> = {}
     for (const poolConfig of Object.values(programs.config.pools)) {
-      const poolTokenMint = translateAddress(poolConfig.tokenMint)
-      const tokenConfig = Object.values(programs.config.tokens).find(token =>
-        translateAddress(token.mint).equals(poolTokenMint)
-      )
+      const tokenConfig: MarginTokenConfig | undefined = programs.config.tokens[poolConfig.symbol]
       if (tokenConfig) {
         const pool = await this.load({
           tokenMint: poolConfig.tokenMint,
@@ -103,7 +108,7 @@ export class PoolManager {
   async create({
     tokenMint,
     collateralWeight,
-    collateralMaxStaleness,
+    maxLeverage,
     feeDestination,
     pythProduct,
     pythPrice,
@@ -116,7 +121,7 @@ export class PoolManager {
     const ix1: TransactionInstruction[] = []
     if (this.owner) {
       try {
-        await this._withRegisterToken({
+        await this.withRegisterToken({
           instructions: ix1,
           requester: this.owner,
           addresses,
@@ -124,11 +129,11 @@ export class PoolManager {
         })
         await provider.sendAndConfirm(new Transaction().add(...ix1))
         const ix2: TransactionInstruction[] = []
-        await this._withConfigureToken({
+        await this.withConfigureToken({
           instructions: ix2,
           requester: this.owner,
           collateralWeight,
-          collateralMaxStaleness,
+          maxLeverage,
           feeDestination,
           pythProduct,
           pythPrice,
@@ -153,7 +158,7 @@ export class PoolManager {
    * @param addresses
    * @param address
    */
-  private async _withRegisterToken({
+  async withRegisterToken({
     instructions,
     requester,
     addresses,
@@ -200,7 +205,7 @@ export class PoolManager {
    * @param instructions
    * @param requester
    * @param collateralWeight
-   * @param collateralMaxStaleness
+   * @param maxLeverage
    * @param feeDestination
    * @param pythProduct
    * @param pythPrice
@@ -208,11 +213,11 @@ export class PoolManager {
    * @param addresses
    * @param address
    */
-  private async _withConfigureToken({
+  async withConfigureToken({
     instructions,
     requester,
     collateralWeight,
-    collateralMaxStaleness,
+    maxLeverage,
     feeDestination,
     pythProduct,
     pythPrice,
@@ -224,7 +229,7 @@ export class PoolManager {
     instructions: TransactionInstruction[]
     requester: Address
     collateralWeight: number
-    collateralMaxStaleness: BN
+    maxLeverage: number
     feeDestination: Address
     pythProduct: Address
     pythPrice: Address
@@ -237,7 +242,7 @@ export class PoolManager {
     const metadata: TokenMetadataParams = {
       tokenKind: { collateral: {} },
       collateralWeight: collateralWeight,
-      collateralMaxStaleness: collateralMaxStaleness
+      maxLeverage: maxLeverage
     }
     const poolParam: MarginPoolParams = {
       feeDestination: translateAddress(feeDestination)
@@ -248,7 +253,7 @@ export class PoolManager {
         {
           tokenKind: metadata.tokenKind as never,
           collateralWeight: metadata.collateralWeight,
-          collateralMaxStaleness: metadata.collateralMaxStaleness
+          maxLeverage
         },
         poolParam,
         marginPoolConfig
@@ -260,6 +265,7 @@ export class PoolManager {
         marginPool: address,
         tokenMetadata: addresses.tokenMetadata,
         depositMetadata: addresses.depositNoteMetadata,
+        loanMetadata: addresses.loanNoteMetadata,
         pythProduct: pythProduct,
         pythPrice: pythPrice,
         marginPoolProgram: programs.config.marginPoolProgramId,
