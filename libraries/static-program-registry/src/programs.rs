@@ -1,5 +1,5 @@
 pub mod spl_token_swap_v2 {
-    pub use spl_token_swap_v2::*;
+    pub use spl_token_swap_v200::*;
 
     crate::program!(Spl2, "SwaPpA9LAaLfeLi3a68M4DjnLqgtticKg6CnyNwgAC8");
 }

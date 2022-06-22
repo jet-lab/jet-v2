@@ -56,7 +56,7 @@ macro_rules! match_pubkey {
 ///
 /// This creates one SwapProgram enum and one `use_client` macro:
 /// ```
-/// group_related_programs! {
+/// related_programs! {
 ///     SwapProgram {[
 ///         spl_token_swap_v2::Spl2,
 ///         orca_swap_v1::OrcaV1,
@@ -67,7 +67,7 @@ macro_rules! match_pubkey {
 ///
 /// This creates one SwapProgram enum, plus `use_orca_client` and `use_spl_client` macros:
 /// ```
-/// group_related_programs! {
+/// related_programs! {
 ///     SwapProgram {
 ///         spl [spl_token_swap_v2::Spl2]
 ///         orca [
@@ -84,6 +84,7 @@ macro_rules! related_programs {
             $($module:ident::$Variant:ident),+$(,)?
         ])+
     }) => {
+        #[derive(PartialEq, Eq, Debug)]
         pub enum $Name {
             $($($Variant),+),+
         }
@@ -134,4 +135,68 @@ macro_rules! related_programs {
             pub(crate) use [<use_ $($client_group_name _)? client>];
         })+
     };
+}
+
+
+#[cfg(test)]
+mod test {
+    use anchor_lang::prelude::Pubkey;
+
+    use crate::programs::*;
+
+    related_programs! {
+        SwapProgram {[
+            spl_token_swap_v2::Spl2,
+            orca_swap_v1::OrcaV1,
+            orca_swap_v2::OrcaV2,
+        ]}
+    }
+
+    related_programs! {
+        SwapProgram2 {
+            spl[
+                spl_token_swap_v2::Spl2,
+            ]
+            orca[
+                orca_swap_v1::OrcaV1,
+                orca_swap_v2::OrcaV2,
+            ]
+        }
+    }
+
+    #[test]
+    fn conversions_work() {
+        assert_eq!(SwapProgram::Spl2, spl_token_swap_v2::ID.try_into().unwrap());
+        assert_eq!(SwapProgram::OrcaV1, orca_swap_v1::ID.try_into().unwrap());
+        assert_eq!(SwapProgram::OrcaV2, orca_swap_v2::ID.try_into().unwrap());
+        assert_eq!(SwapProgram2::Spl2, spl_token_swap_v2::ID.try_into().unwrap());
+        assert_eq!(SwapProgram2::OrcaV1, orca_swap_v1::ID.try_into().unwrap());
+        assert_eq!(SwapProgram2::OrcaV2, orca_swap_v2::ID.try_into().unwrap());
+    }
+
+    #[test]
+    fn bad_conversions_dont_work() {
+        SwapProgram::try_from(Pubkey::default()).unwrap_err();
+        SwapProgram2::try_from(Pubkey::default()).unwrap_err();
+    }
+
+    #[test]
+    fn use_client_works() {
+        for id in &[spl_token_swap_v2::ID, orca_swap_v1::ID, orca_swap_v2::ID] {
+            use_client!(*id, { client::id() }).unwrap();
+        }
+        use_spl_client!(spl_token_swap_v2::ID, { client::id() }).unwrap();
+        for id in &[orca_swap_v1::ID, orca_swap_v2::ID] {
+            use_orca_client!(*id, { client::id() }).unwrap();
+        }
+    }
+
+    #[test]
+    fn use_client_errors_when_expected() {
+        use_client!(Pubkey::default(), { client::id() }).unwrap_err();
+        use_orca_client!(spl_token_swap_v2::ID, { client::id() }).unwrap_err();
+        for id in &[orca_swap_v1::ID, orca_swap_v2::ID] {
+            use_spl_client!(*id, { client::id() }).unwrap_err();
+        }
+    }
 }

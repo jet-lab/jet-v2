@@ -15,7 +15,7 @@ devnet = []
 paste = "1.0"
 anchor-lang = { git = "https://github.com/jet-lab/anchor", branch = "master" }
 
-[dependencies.spl-token-swap-v2]
+[dependencies.spl-token-swap-v200]
 package = "spl-token-swap"
 version = "2.0.0"
 features = ["no-entrypoint"]
