@@ -21,8 +21,12 @@ jet_metadata = "JPMetawzxw7WyH3qHUVScYHWFBGhjwqDnM2R9qVbRLp"
 pyth = "FT9EZnpdo3tPfUCGn8SBkvN9DMpSStAg3YvAqvYrtSvL"
 
 [[test.genesis]]
+address = "DjVE6JNiYqPL2QXyCUUh8rNjHrbz9hXHNYt99MQ59qw1"
+program = "./deps/spl-token-swap/mainnet_DjVE6JNiYqPL2QXyCUUh8rNjHrbz9hXHNYt99MQ59qw1_2022-06-20.so"
+
+[[test.genesis]]
 address = "9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP"
-program = "./deps/orca_token_swap_v2.so"
+program = "./deps/spl-token-swap/mainnet_9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP_2022-06-20.so"
 
 [[test.genesis]]
 address = "4bXpkKSV8swHSnwqtzuboGPaPDeEgAn4Vt8GfarV5rZt"
@@ -30,7 +34,7 @@ program = "./deps/spl_token_faucet.so"
 
 [[test.genesis]]
 address = "SwaPpA9LAaLfeLi3a68M4DjnLqgtticKg6CnyNwgAC8"
-program = "./deps/spl_token_swap.so"
+program = "./deps/spl_token_swap/spl_token_swap-tag_token-swap-v2.1.0.so.so"
 
 [scripts]
 test = "npx ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.test.ts"
