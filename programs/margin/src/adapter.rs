@@ -200,3 +200,67 @@ fn apply_changes(
 
     Ok(())
 }
+
+#[cfg(test)]
+mod test {
+    use std::collections::HashMap;
+
+    use super::*;
+
+    fn all_change_types() -> Vec<PositionChange> {
+        vec![
+            PositionChange::Price(PriceChangeInfo {
+                value: 0,
+                confidence: 0,
+                twap: 0,
+                publish_time: 0,
+                exponent: 0,
+            }),
+            PositionChange::Flags(AdapterPositionFlags::empty(), true),
+            PositionChange::Expect(Pubkey::default()),
+        ]
+    }
+
+    #[test]
+    fn position_change_types_are_required_when_appropriate() {
+        for change in all_change_types() {
+            let required = match change {
+                PositionChange::Price(_) => false,
+                PositionChange::Flags(_, _) => true,
+                PositionChange::Expect(_) => true,
+            };
+            if required {
+                apply_changes(None, vec![change]).unwrap_err();
+            } else {
+                apply_changes(None, vec![change]).unwrap();
+            }
+        }
+    }
+
+    #[test]
+    fn ensure_that_tests_check_all_change_types() {
+        assert_contains_all_variants! {
+            all_change_types() =>
+                PositionChange::Price(_x)
+                PositionChange::Flags(_x, _y)
+                PositionChange::Expect(_x)
+        }
+    }
+
+    macro_rules! assert_contains_all_variants {
+        ($iterable:expr => $($type:ident::$var:ident $(($($_:ident),*))? )+ ) => {
+            let mut index: HashMap<&str, usize> = HashMap::new();
+            $(index.insert(stringify!($var), 1);)+
+            for item in $iterable {
+                match item {
+                    $($type::$var $(($($_),*))? => index.insert(stringify!($var), 0)),+
+                };
+            }
+            let sum: usize = index.values().sum();
+            if sum > 0 {
+                assert!(false);
+            }
+        };
+    }
+    use assert_contains_all_variants;
+}
