@@ -406,7 +406,7 @@ impl MarginPool {
         bytemuck::from_bytes_mut(&mut self.uncollected_fees)
     }
 
-    fn total_uncollected_fees(&self) -> &Number {
+    pub fn total_uncollected_fees(&self) -> &Number {
         bytemuck::from_bytes(&self.uncollected_fees)
     }
 
@@ -414,7 +414,7 @@ impl MarginPool {
         bytemuck::from_bytes_mut(&mut self.borrowed_tokens)
     }
 
-    fn total_borrowed(&self) -> &Number {
+    pub fn total_borrowed(&self) -> &Number {
         bytemuck::from_bytes(&self.borrowed_tokens)
     }
 
