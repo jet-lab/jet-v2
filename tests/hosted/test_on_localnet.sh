@@ -18,7 +18,7 @@ MRGN_SO=target/deploy/jet_margin.so
 POOL_SO=target/deploy/jet_margin_pool.so
 META_SO=target/deploy/jet_metadata.so
 MGNSWAP_SO=target/deploy/jet_margin_swap.so
-SPLSWAP_SO=$SPL_V21_FROM_SOURCE # this isn't the right version but it's the best i could do
+SPLSWAP_SO=$SPL_V20_FROM_CRATES
 ORCAv1_SO=$ORCA_V1_MAINNET
 ORCAv2_SO=$ORCA_V2_MAINNET
 

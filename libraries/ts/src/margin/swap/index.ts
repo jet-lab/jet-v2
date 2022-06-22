@@ -83,6 +83,7 @@ export class TokenSwap {
     public poolToken: PublicKey,
     public feeAccount: PublicKey,
     public authority: PublicKey,
+    public nonce: number,
     public tokenAccountA: PublicKey,
     public tokenAccountB: PublicKey,
     public mintA: PublicKey,
@@ -105,6 +106,7 @@ export class TokenSwap {
     this.poolToken = poolToken
     this.feeAccount = feeAccount
     this.authority = authority
+    this.nonce = nonce
     this.tokenAccountA = tokenAccountA
     this.tokenAccountB = tokenAccountB
     this.mintA = mintA
@@ -133,6 +135,7 @@ export class TokenSwap {
   static createInitSwapInstruction(
     tokenSwapAccount: Account,
     authority: PublicKey,
+    nonce: number,
     tokenAccountA: PublicKey,
     tokenAccountB: PublicKey,
     tokenPool: PublicKey,
@@ -163,6 +166,7 @@ export class TokenSwap {
     ]
     const commandDataLayout = BufferLayout.struct<any>([
       BufferLayout.u8("instruction"),
+      BufferLayout.u8("nonce"),
       BufferLayout.nu64("tradeFeeNumerator"),
       BufferLayout.nu64("tradeFeeDenominator"),
       BufferLayout.nu64("ownerTradeFeeNumerator"),
@@ -186,6 +190,7 @@ export class TokenSwap {
       const encodeLength = commandDataLayout.encode(
         {
           instruction: 0, // InitializeSwap instruction
+          nonce,
           tradeFeeNumerator,
           tradeFeeDenominator,
           ownerTradeFeeNumerator,
@@ -233,7 +238,7 @@ export class TokenSwap {
       throw new Error(`Invalid token swap state`)
     }
 
-    const [authority] = await PublicKey.findProgramAddress([address.toBuffer()], programId)
+    const [authority, nonce] = await PublicKey.findProgramAddress([address.toBuffer()], programId)
 
     const poolToken = new PublicKey(tokenSwapData.tokenPool)
     const feeAccount = new PublicKey(tokenSwapData.feeAccount)
@@ -261,6 +266,7 @@ export class TokenSwap {
       poolToken,
       feeAccount,
       authority,
+      nonce,
       tokenAccountA,
       tokenAccountB,
       mintA,
@@ -300,6 +306,7 @@ export class TokenSwap {
     payer: Account,
     tokenSwapAccount: Account,
     authority: PublicKey,
+    nonce: number,
     tokenAccountA: PublicKey,
     tokenAccountB: PublicKey,
     poolToken: PublicKey,
@@ -329,6 +336,7 @@ export class TokenSwap {
       poolToken,
       feeAccount,
       authority,
+      nonce,
       tokenAccountA,
       tokenAccountB,
       mintA,
@@ -361,6 +369,7 @@ export class TokenSwap {
     const instruction = TokenSwap.createInitSwapInstruction(
       tokenSwapAccount,
       authority,
+      nonce,
       tokenAccountA,
       tokenAccountB,
       poolToken,
