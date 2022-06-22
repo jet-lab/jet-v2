@@ -137,7 +137,6 @@ macro_rules! related_programs {
     };
 }
 
-
 #[cfg(test)]
 mod test {
     use anchor_lang::prelude::Pubkey;
@@ -169,7 +168,10 @@ mod test {
         assert_eq!(SwapProgram::Spl2, spl_token_swap_v2::ID.try_into().unwrap());
         assert_eq!(SwapProgram::OrcaV1, orca_swap_v1::ID.try_into().unwrap());
         assert_eq!(SwapProgram::OrcaV2, orca_swap_v2::ID.try_into().unwrap());
-        assert_eq!(SwapProgram2::Spl2, spl_token_swap_v2::ID.try_into().unwrap());
+        assert_eq!(
+            SwapProgram2::Spl2,
+            spl_token_swap_v2::ID.try_into().unwrap()
+        );
         assert_eq!(SwapProgram2::OrcaV1, orca_swap_v1::ID.try_into().unwrap());
         assert_eq!(SwapProgram2::OrcaV2, orca_swap_v2::ID.try_into().unwrap());
     }
@@ -185,7 +187,10 @@ mod test {
         for id in &[spl_token_swap_v2::ID, orca_swap_v1::ID, orca_swap_v2::ID] {
             assert_eq!(*id, use_client!(*id, { client::id() }).unwrap());
         }
-        assert_eq!(spl_token_swap_v2::ID, use_spl_client!(spl_token_swap_v2::ID, { client::id() }).unwrap());
+        assert_eq!(
+            spl_token_swap_v2::ID,
+            use_spl_client!(spl_token_swap_v2::ID, { client::id() }).unwrap()
+        );
         for id in &[orca_swap_v1::ID, orca_swap_v2::ID] {
             assert_eq!(*id, use_orca_client!(*id, { client::id() }).unwrap());
         }
