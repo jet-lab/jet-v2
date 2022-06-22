@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use std::convert::TryInto;
+use std::{collections::BTreeMap, convert::TryInto};
 
 use anchor_lang::{
     prelude::*,
@@ -95,7 +95,7 @@ pub fn invoke<'info>(
     account_metas: Vec<CompactAccountMeta>,
     data: Vec<u8>,
     signed: bool,
-) -> Result<()> {
+) -> Result<BTreeMap<Pubkey, AccountPosition>> {
     let signer = ctx.margin_account.load()?.signer_seeds_owned();
 
     let mut accounts = vec![AccountMeta {
@@ -132,8 +132,8 @@ pub fn invoke<'info>(
     handle_adapter_result(ctx)
 }
 
-fn handle_adapter_result(ctx: &InvokeAdapter) -> Result<()> {
-    update_balances(ctx)?;
+fn handle_adapter_result(ctx: &InvokeAdapter) -> Result<BTreeMap<Pubkey, AccountPosition>> {
+    let mut touched_positions = update_balances(ctx)?;
 
     match program::get_return_data() {
         None => (),
@@ -142,21 +142,28 @@ fn handle_adapter_result(ctx: &InvokeAdapter) -> Result<()> {
             let result = AdapterResult::deserialize(&mut &data[..])?;
             let mut margin_account = ctx.margin_account.load_mut()?;
             for (mint, changes) in result.position_changes {
-                let position = margin_account.get_position_mut(&mint);
+                let mut position = margin_account.get_position_mut(&mint);
                 match position {
                     Some(p) if p.adapter != program_id => {
                         return err!(ErrorCode::InvalidPositionAdapter)
                     }
-                    _ => apply_changes(position, changes)?,
+                    _ => {
+                        apply_changes(&mut position, changes)?;
+                        if let Some(changed_position) = position {
+                            touched_positions.insert(mint, *changed_position);
+                        }
+                    }
                 }
             }
         }
     };
 
-    Ok(())
+    Ok(touched_positions)
 }
 
-fn update_balances(ctx: &InvokeAdapter) -> Result<()> {
+fn update_balances(ctx: &InvokeAdapter) -> Result<BTreeMap<Pubkey, AccountPosition>> {
+    let mut touched_positions = BTreeMap::new();
+
     let mut margin_account = ctx.margin_account.load_mut()?;
     for account_info in ctx.remaining_accounts {
         if account_info.owner == &TokenAccount::owner() {
@@ -167,24 +174,27 @@ fn update_balances(ctx: &InvokeAdapter) -> Result<()> {
                     account_info.key,
                     account.amount,
                 ) {
-                    Ok(()) | Err(ErrorCode::PositionNotRegistered) => (),
+                    Ok(position) => {
+                        touched_positions.insert(account.mint, position);
+                    }
+                    Err(ErrorCode::PositionNotRegistered) => (),
                     Err(err) => return Err(err.into()),
                 }
             }
         }
     }
 
-    Ok(())
+    Ok(touched_positions)
 }
 
 fn apply_changes(
-    mut position: Option<&mut AccountPosition>,
+    position: &mut Option<&mut AccountPosition>,
     changes: Vec<PositionChange>,
 ) -> Result<()> {
     for change in changes {
         match change {
             PositionChange::Price(px) => {
-                if let Some(pos) = &mut position {
+                if let Some(pos) = position {
                     pos.set_price(&px.try_into()?)?;
                 }
             }
@@ -230,9 +240,9 @@ mod test {
                 PositionChange::Expect(_) => true,
             };
             if required {
-                apply_changes(None, vec![change]).unwrap_err();
+                apply_changes(&mut None, vec![change]).unwrap_err();
             } else {
-                apply_changes(None, vec![change]).unwrap();
+                apply_changes(&mut None, vec![change]).unwrap();
             }
         }
     }

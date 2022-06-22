@@ -17,7 +17,7 @@
 
 use anchor_lang::prelude::*;
 
-use crate::{ErrorCode, MarginAccount};
+use crate::{events, ErrorCode, MarginAccount};
 
 #[derive(Accounts)]
 pub struct CloseAccount<'info> {
@@ -42,6 +42,10 @@ pub fn close_account_handler(ctx: Context<CloseAccount>) -> Result<()> {
     if account.positions().count() > 0 {
         return Err(ErrorCode::AccountNotEmpty.into());
     }
+
+    emit!(events::AccountClosed {
+        margin_account: ctx.accounts.margin_account.key(),
+    });
 
     Ok(())
 }
