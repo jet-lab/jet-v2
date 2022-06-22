@@ -540,7 +540,7 @@ impl std::fmt::Debug for MarginPoolConfig {
         let manage_fee_rate = Number::from_bps(self.management_fee_rate);
 
         f.debug_struct("MarginPoolConfig")
-            .field("flags", &self.flags)
+            .field("flags", &PoolFlags::from_bits_truncate(self.flags))
             .field("utilization_rate_1", &util_rate_1)
             .field("utilization_rate_2", &util_rate_2)
             .field("borrow_rate_0", &borrow_rate_0)
