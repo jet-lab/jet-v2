@@ -401,6 +401,72 @@ export type JetControl = {
           }
         ]
       }
+    },
+    {
+      name: "MarginAdapterMetadata"
+      type: {
+        kind: "struct"
+        fields: [
+          {
+            name: "adapterProgram"
+            type: "publicKey"
+          }
+        ]
+      }
+    },
+    {
+      name: "TokenMetadata"
+      type: {
+        kind: "struct"
+        fields: [
+          {
+            name: "tokenMint"
+            type: "publicKey"
+          },
+          {
+            name: "pythPrice"
+            type: "publicKey"
+          },
+          {
+            name: "pythProduct"
+            type: "publicKey"
+          }
+        ]
+      }
+    },
+    {
+      name: "PositionTokenMetadata"
+      type: {
+        kind: "struct"
+        fields: [
+          {
+            name: "positionTokenMint"
+            type: "publicKey"
+          },
+          {
+            name: "underlyingTokenMint"
+            type: "publicKey"
+          },
+          {
+            name: "adapterProgram"
+            type: "publicKey"
+          },
+          {
+            name: "tokenKind"
+            type: {
+              defined: "TokenKind"
+            }
+          },
+          {
+            name: "valueModifer"
+            type: "u16"
+          },
+          {
+            name: "maxStaleness"
+            type: "u64"
+          }
+        ]
+      }
     }
   ]
   events: [
@@ -930,6 +996,72 @@ export const IDL: JetControl = {
           {
             name: "liquidator",
             type: "publicKey"
+          }
+        ]
+      }
+    },
+    {
+      name: "MarginAdapterMetadata",
+      type: {
+        kind: "struct",
+        fields: [
+          {
+            name: "adapterProgram",
+            type: "publicKey"
+          }
+        ]
+      }
+    },
+    {
+      name: "TokenMetadata",
+      type: {
+        kind: "struct",
+        fields: [
+          {
+            name: "tokenMint",
+            type: "publicKey"
+          },
+          {
+            name: "pythPrice",
+            type: "publicKey"
+          },
+          {
+            name: "pythProduct",
+            type: "publicKey"
+          }
+        ]
+      }
+    },
+    {
+      name: "PositionTokenMetadata",
+      type: {
+        kind: "struct",
+        fields: [
+          {
+            name: "positionTokenMint",
+            type: "publicKey"
+          },
+          {
+            name: "underlyingTokenMint",
+            type: "publicKey"
+          },
+          {
+            name: "adapterProgram",
+            type: "publicKey"
+          },
+          {
+            name: "tokenKind",
+            type: {
+              defined: "TokenKind"
+            }
+          },
+          {
+            name: "valueModifer",
+            type: "u16"
+          },
+          {
+            name: "maxStaleness",
+            type: "u64"
           }
         ]
       }
