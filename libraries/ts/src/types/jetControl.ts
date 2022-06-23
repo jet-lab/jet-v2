@@ -389,6 +389,18 @@ export type JetControl = {
           }
         ]
       }
+    },
+    {
+      name: "LiquidatorMetadata"
+      type: {
+        kind: "struct"
+        fields: [
+          {
+            name: "liquidator"
+            type: "publicKey"
+          }
+        ]
+      }
     }
   ]
   events: [
@@ -906,6 +918,18 @@ export const IDL: JetControl = {
           {
             name: "managementFeeCollectThreshold",
             type: "u64"
+          }
+        ]
+      }
+    },
+    {
+      name: "LiquidatorMetadata",
+      type: {
+        kind: "struct",
+        fields: [
+          {
+            name: "liquidator",
+            type: "publicKey"
           }
         ]
       }
