@@ -3,21 +3,6 @@ export type JetMargin = {
   name: "jet_margin"
   constants: [
     {
-      name: "MIN_COLLATERAL_RATIO"
-      type: "u16"
-      value: "125_00"
-    },
-    {
-      name: "IDEAL_LIQUIDATION_COLLATERAL_RATIO"
-      type: "u16"
-      value: "130_00"
-    },
-    {
-      name: "MAX_LIQUIDATION_COLLATERAL_RATIO"
-      type: "u16"
-      value: "150_00"
-    },
-    {
       name: "MAX_ORACLE_CONFIDENCE"
       type: "u16"
       value: "5_00"
@@ -26,16 +11,6 @@ export type JetMargin = {
       name: "MAX_PRICE_QUOTE_AGE"
       type: "u64"
       value: "10"
-    },
-    {
-      name: "MAX_LIQUIDATION_VALUE_SLIPPAGE"
-      type: "u16"
-      value: "5_00"
-    },
-    {
-      name: "MAX_LIQUIDATION_C_RATIO_SLIPPAGE"
-      type: "u16"
-      value: "5_00"
     },
     {
       name: "LIQUIDATION_TIMEOUT"
@@ -181,6 +156,11 @@ export type JetMargin = {
         {
           name: "marginAccount"
           isMut: true
+          isSigner: false
+        },
+        {
+          name: "positionTokenMint"
+          isMut: false
           isSigner: false
         },
         {
@@ -430,6 +410,26 @@ export type JetMargin = {
           }
         ]
       }
+    },
+    {
+      name: "liquidation"
+      type: {
+        kind: "struct"
+        fields: [
+          {
+            name: "startTime"
+            type: "i64"
+          },
+          {
+            name: "valueChange"
+            type: "i128"
+          },
+          {
+            name: "minValueChange"
+            type: "i128"
+          }
+        ]
+      }
     }
   ]
   types: [
@@ -450,14 +450,26 @@ export type JetMargin = {
       }
     },
     {
-      name: "PriceChangeInfo"
+      name: "AdapterResult"
       type: {
         kind: "struct"
         fields: [
           {
-            name: "mint"
-            type: "publicKey"
-          },
+            name: "positionChanges"
+            type: {
+              vec: {
+                defined: "(Pubkey,Vec<PositionChange>)"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      name: "PriceChangeInfo"
+      type: {
+        kind: "struct"
+        fields: [
           {
             name: "value"
             type: "i64"
@@ -471,8 +483,8 @@ export type JetMargin = {
             type: "i64"
           },
           {
-            name: "slot"
-            type: "u64"
+            name: "publishTime"
+            type: "i64"
           },
           {
             name: "exponent"
@@ -512,35 +524,154 @@ export type JetMargin = {
       }
     },
     {
-      name: "AdapterResult"
+      name: "AccountPosition"
+      type: {
+        kind: "struct"
+        fields: [
+          {
+            name: "token"
+            type: "publicKey"
+          },
+          {
+            name: "address"
+            type: "publicKey"
+          },
+          {
+            name: "adapter"
+            type: "publicKey"
+          },
+          {
+            name: "value"
+            type: {
+              array: ["u8", 16]
+            }
+          },
+          {
+            name: "balance"
+            type: "u64"
+          },
+          {
+            name: "balanceTimestamp"
+            type: "u64"
+          },
+          {
+            name: "price"
+            type: {
+              defined: "PriceInfo"
+            }
+          },
+          {
+            name: "kind"
+            type: {
+              defined: "PositionKind"
+            }
+          },
+          {
+            name: "exponent"
+            type: "i16"
+          },
+          {
+            name: "valueModifier"
+            type: "u16"
+          },
+          {
+            name: "maxStaleness"
+            type: "u64"
+          },
+          {
+            name: "flags"
+            type: {
+              defined: "AdapterPositionFlags"
+            }
+          },
+          {
+            name: "reserved"
+            type: {
+              array: ["u8", 23]
+            }
+          }
+        ]
+      }
+    },
+    {
+      name: "AccountPositionKey"
+      type: {
+        kind: "struct"
+        fields: [
+          {
+            name: "mint"
+            type: "publicKey"
+          },
+          {
+            name: "index"
+            type: {
+              defined: "usize"
+            }
+          }
+        ]
+      }
+    },
+    {
+      name: "AccountPositionList"
+      type: {
+        kind: "struct"
+        fields: [
+          {
+            name: "length"
+            type: {
+              defined: "usize"
+            }
+          },
+          {
+            name: "map"
+            type: {
+              array: [
+                {
+                  defined: "AccountPositionKey"
+                },
+                32
+              ]
+            }
+          },
+          {
+            name: "positions"
+            type: {
+              array: [
+                {
+                  defined: "AccountPosition"
+                },
+                32
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      name: "PositionChange"
       type: {
         kind: "enum"
         variants: [
           {
-            name: "NewBalanceChange"
+            name: "Price"
             fields: [
               {
-                vec: "publicKey"
+                defined: "PriceChangeInfo"
               }
             ]
           },
           {
-            name: "PriorBalanceChange"
+            name: "Flags"
             fields: [
               {
-                vec: "publicKey"
-              }
+                defined: "AdapterPositionFlags"
+              },
+              "bool"
             ]
           },
           {
-            name: "PriceChange"
-            fields: [
-              {
-                vec: {
-                  defined: "PriceChangeInfo"
-                }
-              }
-            ]
+            name: "Expect"
+            fields: ["publicKey"]
           }
         ]
       }
@@ -575,7 +706,10 @@ export type JetMargin = {
             name: "AccountNotEmpty"
           },
           {
-            name: "PositionNotOwned"
+            name: "PositionNotRegistered"
+          },
+          {
+            name: "CloseRequiredPosition"
           },
           {
             name: "InvalidPositionAdapter"
@@ -609,12 +743,6 @@ export type JetMargin = {
           },
           {
             name: "LiquidationLostValue"
-          },
-          {
-            name: "LiquidationUnhealthy"
-          },
-          {
-            name: "LiquidationTooHealthy"
           }
         ]
       }
@@ -644,21 +772,6 @@ export const IDL: JetMargin = {
   name: "jet_margin",
   constants: [
     {
-      name: "MIN_COLLATERAL_RATIO",
-      type: "u16",
-      value: "125_00"
-    },
-    {
-      name: "IDEAL_LIQUIDATION_COLLATERAL_RATIO",
-      type: "u16",
-      value: "130_00"
-    },
-    {
-      name: "MAX_LIQUIDATION_COLLATERAL_RATIO",
-      type: "u16",
-      value: "150_00"
-    },
-    {
       name: "MAX_ORACLE_CONFIDENCE",
       type: "u16",
       value: "5_00"
@@ -667,16 +780,6 @@ export const IDL: JetMargin = {
       name: "MAX_PRICE_QUOTE_AGE",
       type: "u64",
       value: "10"
-    },
-    {
-      name: "MAX_LIQUIDATION_VALUE_SLIPPAGE",
-      type: "u16",
-      value: "5_00"
-    },
-    {
-      name: "MAX_LIQUIDATION_C_RATIO_SLIPPAGE",
-      type: "u16",
-      value: "5_00"
     },
     {
       name: "LIQUIDATION_TIMEOUT",
@@ -822,6 +925,11 @@ export const IDL: JetMargin = {
         {
           name: "marginAccount",
           isMut: true,
+          isSigner: false
+        },
+        {
+          name: "positionTokenMint",
+          isMut: false,
           isSigner: false
         },
         {
@@ -1071,6 +1179,26 @@ export const IDL: JetMargin = {
           }
         ]
       }
+    },
+    {
+      name: "liquidation",
+      type: {
+        kind: "struct",
+        fields: [
+          {
+            name: "startTime",
+            type: "i64"
+          },
+          {
+            name: "valueChange",
+            type: "i128"
+          },
+          {
+            name: "minValueChange",
+            type: "i128"
+          }
+        ]
+      }
     }
   ],
   types: [
@@ -1091,14 +1219,26 @@ export const IDL: JetMargin = {
       }
     },
     {
-      name: "PriceChangeInfo",
+      name: "AdapterResult",
       type: {
         kind: "struct",
         fields: [
           {
-            name: "mint",
-            type: "publicKey"
-          },
+            name: "positionChanges",
+            type: {
+              vec: {
+                defined: "(Pubkey,Vec<PositionChange>)"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      name: "PriceChangeInfo",
+      type: {
+        kind: "struct",
+        fields: [
           {
             name: "value",
             type: "i64"
@@ -1112,8 +1252,8 @@ export const IDL: JetMargin = {
             type: "i64"
           },
           {
-            name: "slot",
-            type: "u64"
+            name: "publishTime",
+            type: "i64"
           },
           {
             name: "exponent",
@@ -1153,35 +1293,154 @@ export const IDL: JetMargin = {
       }
     },
     {
-      name: "AdapterResult",
+      name: "AccountPosition",
+      type: {
+        kind: "struct",
+        fields: [
+          {
+            name: "token",
+            type: "publicKey"
+          },
+          {
+            name: "address",
+            type: "publicKey"
+          },
+          {
+            name: "adapter",
+            type: "publicKey"
+          },
+          {
+            name: "value",
+            type: {
+              array: ["u8", 16]
+            }
+          },
+          {
+            name: "balance",
+            type: "u64"
+          },
+          {
+            name: "balanceTimestamp",
+            type: "u64"
+          },
+          {
+            name: "price",
+            type: {
+              defined: "PriceInfo"
+            }
+          },
+          {
+            name: "kind",
+            type: {
+              defined: "PositionKind"
+            }
+          },
+          {
+            name: "exponent",
+            type: "i16"
+          },
+          {
+            name: "valueModifier",
+            type: "u16"
+          },
+          {
+            name: "maxStaleness",
+            type: "u64"
+          },
+          {
+            name: "flags",
+            type: {
+              defined: "AdapterPositionFlags"
+            }
+          },
+          {
+            name: "reserved",
+            type: {
+              array: ["u8", 23]
+            }
+          }
+        ]
+      }
+    },
+    {
+      name: "AccountPositionKey",
+      type: {
+        kind: "struct",
+        fields: [
+          {
+            name: "mint",
+            type: "publicKey"
+          },
+          {
+            name: "index",
+            type: {
+              defined: "usize"
+            }
+          }
+        ]
+      }
+    },
+    {
+      name: "AccountPositionList",
+      type: {
+        kind: "struct",
+        fields: [
+          {
+            name: "length",
+            type: {
+              defined: "usize"
+            }
+          },
+          {
+            name: "map",
+            type: {
+              array: [
+                {
+                  defined: "AccountPositionKey"
+                },
+                32
+              ]
+            }
+          },
+          {
+            name: "positions",
+            type: {
+              array: [
+                {
+                  defined: "AccountPosition"
+                },
+                32
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      name: "PositionChange",
       type: {
         kind: "enum",
         variants: [
           {
-            name: "NewBalanceChange",
+            name: "Price",
             fields: [
               {
-                vec: "publicKey"
+                defined: "PriceChangeInfo"
               }
             ]
           },
           {
-            name: "PriorBalanceChange",
+            name: "Flags",
             fields: [
               {
-                vec: "publicKey"
-              }
+                defined: "AdapterPositionFlags"
+              },
+              "bool"
             ]
           },
           {
-            name: "PriceChange",
-            fields: [
-              {
-                vec: {
-                  defined: "PriceChangeInfo"
-                }
-              }
-            ]
+            name: "Expect",
+            fields: ["publicKey"]
           }
         ]
       }
@@ -1216,7 +1475,10 @@ export const IDL: JetMargin = {
             name: "AccountNotEmpty"
           },
           {
-            name: "PositionNotOwned"
+            name: "PositionNotRegistered"
+          },
+          {
+            name: "CloseRequiredPosition"
           },
           {
             name: "InvalidPositionAdapter"
@@ -1250,12 +1512,6 @@ export const IDL: JetMargin = {
           },
           {
             name: "LiquidationLostValue"
-          },
-          {
-            name: "LiquidationUnhealthy"
-          },
-          {
-            name: "LiquidationTooHealthy"
           }
         ]
       }

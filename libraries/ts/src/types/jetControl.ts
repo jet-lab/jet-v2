@@ -328,67 +328,131 @@ export type JetControl = {
           }
         ]
       }
+    }
+  ]
+  events: [
+    {
+      name: "AuthorityCreated"
+      fields: [
+        {
+          name: "authority"
+          type: "publicKey"
+          index: false
+        },
+        {
+          name: "seed"
+          type: "u8"
+          index: false
+        }
+      ]
     },
     {
-      name: "TokenKind"
-      type: {
-        kind: "enum"
-        variants: [
-          {
-            name: "NonCollateral"
-          },
-          {
-            name: "Collateral"
-          },
-          {
-            name: "Claim"
+      name: "LiquidatorSet"
+      fields: [
+        {
+          name: "requester"
+          type: "publicKey"
+          index: false
+        },
+        {
+          name: "authority"
+          type: "publicKey"
+          index: false
+        },
+        {
+          name: "liquidatorMetadata"
+          type: {
+            defined: "LiquidatorMetadata"
           }
-        ]
-      }
+          index: false
+        },
+        {
+          name: "metadataAccount"
+          type: "publicKey"
+          index: false
+        }
+      ]
     },
     {
-      name: "MarginPoolConfig"
-      type: {
-        kind: "struct"
-        fields: [
-          {
-            name: "flags"
-            type: "u64"
-          },
-          {
-            name: "utilizationRate1"
-            type: "u16"
-          },
-          {
-            name: "utilizationRate2"
-            type: "u16"
-          },
-          {
-            name: "borrowRate0"
-            type: "u16"
-          },
-          {
-            name: "borrowRate1"
-            type: "u16"
-          },
-          {
-            name: "borrowRate2"
-            type: "u16"
-          },
-          {
-            name: "borrowRate3"
-            type: "u16"
-          },
-          {
-            name: "managementFeeRate"
-            type: "u16"
-          },
-          {
-            name: "managementFeeCollectThreshold"
-            type: "u64"
+      name: "AdapterRegistered"
+      fields: [
+        {
+          name: "requester"
+          type: "publicKey"
+          index: false
+        },
+        {
+          name: "authority"
+          type: "publicKey"
+          index: false
+        },
+        {
+          name: "adapter"
+          type: {
+            defined: "MarginAdapterMetadata"
           }
-        ]
-      }
+          index: false
+        },
+        {
+          name: "metadataAccount"
+          type: "publicKey"
+          index: false
+        }
+      ]
+    },
+    {
+      name: "TokenMetadataConfigured"
+      fields: [
+        {
+          name: "requester"
+          type: "publicKey"
+          index: false
+        },
+        {
+          name: "authority"
+          type: "publicKey"
+          index: false
+        },
+        {
+          name: "metadataAccount"
+          type: "publicKey"
+          index: false
+        },
+        {
+          name: "metadata"
+          type: {
+            defined: "TokenMetadata"
+          }
+          index: false
+        }
+      ]
+    },
+    {
+      name: "PositionTokenMetadataConfigured"
+      fields: [
+        {
+          name: "requester"
+          type: "publicKey"
+          index: false
+        },
+        {
+          name: "authority"
+          type: "publicKey"
+          index: false
+        },
+        {
+          name: "metadataAccount"
+          type: "publicKey"
+          index: false
+        },
+        {
+          name: "metadata"
+          type: {
+            defined: "PositionTokenMetadata"
+          }
+          index: false
+        }
+      ]
     }
   ]
 }
@@ -723,67 +787,131 @@ export const IDL: JetControl = {
           }
         ]
       }
+    }
+  ],
+  events: [
+    {
+      name: "AuthorityCreated",
+      fields: [
+        {
+          name: "authority",
+          type: "publicKey",
+          index: false
+        },
+        {
+          name: "seed",
+          type: "u8",
+          index: false
+        }
+      ]
     },
     {
-      name: "TokenKind",
-      type: {
-        kind: "enum",
-        variants: [
-          {
-            name: "NonCollateral"
+      name: "LiquidatorSet",
+      fields: [
+        {
+          name: "requester",
+          type: "publicKey",
+          index: false
+        },
+        {
+          name: "authority",
+          type: "publicKey",
+          index: false
+        },
+        {
+          name: "liquidatorMetadata",
+          type: {
+            defined: "LiquidatorMetadata"
           },
-          {
-            name: "Collateral"
-          },
-          {
-            name: "Claim"
-          }
-        ]
-      }
+          index: false
+        },
+        {
+          name: "metadataAccount",
+          type: "publicKey",
+          index: false
+        }
+      ]
     },
     {
-      name: "MarginPoolConfig",
-      type: {
-        kind: "struct",
-        fields: [
-          {
-            name: "flags",
-            type: "u64"
+      name: "AdapterRegistered",
+      fields: [
+        {
+          name: "requester",
+          type: "publicKey",
+          index: false
+        },
+        {
+          name: "authority",
+          type: "publicKey",
+          index: false
+        },
+        {
+          name: "adapter",
+          type: {
+            defined: "MarginAdapterMetadata"
           },
-          {
-            name: "utilizationRate1",
-            type: "u16"
+          index: false
+        },
+        {
+          name: "metadataAccount",
+          type: "publicKey",
+          index: false
+        }
+      ]
+    },
+    {
+      name: "TokenMetadataConfigured",
+      fields: [
+        {
+          name: "requester",
+          type: "publicKey",
+          index: false
+        },
+        {
+          name: "authority",
+          type: "publicKey",
+          index: false
+        },
+        {
+          name: "metadataAccount",
+          type: "publicKey",
+          index: false
+        },
+        {
+          name: "metadata",
+          type: {
+            defined: "TokenMetadata"
           },
-          {
-            name: "utilizationRate2",
-            type: "u16"
+          index: false
+        }
+      ]
+    },
+    {
+      name: "PositionTokenMetadataConfigured",
+      fields: [
+        {
+          name: "requester",
+          type: "publicKey",
+          index: false
+        },
+        {
+          name: "authority",
+          type: "publicKey",
+          index: false
+        },
+        {
+          name: "metadataAccount",
+          type: "publicKey",
+          index: false
+        },
+        {
+          name: "metadata",
+          type: {
+            defined: "PositionTokenMetadata"
           },
-          {
-            name: "borrowRate0",
-            type: "u16"
-          },
-          {
-            name: "borrowRate1",
-            type: "u16"
-          },
-          {
-            name: "borrowRate2",
-            type: "u16"
-          },
-          {
-            name: "borrowRate3",
-            type: "u16"
-          },
-          {
-            name: "managementFeeRate",
-            type: "u16"
-          },
-          {
-            name: "managementFeeCollectThreshold",
-            type: "u64"
-          }
-        ]
-      }
+          index: false
+        }
+      ]
     }
   ]
 }
