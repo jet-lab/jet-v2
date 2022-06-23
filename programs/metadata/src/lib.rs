@@ -81,6 +81,7 @@ pub struct RemoveEntry<'info> {
     pub authority: Account<'info, ControlAuthority>,
 
     /// The address receiving the rent
+    /// CHECK:
     #[account(mut)]
     pub receiver: AccountInfo<'info>,
 }
