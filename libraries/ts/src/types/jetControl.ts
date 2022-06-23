@@ -328,6 +328,67 @@ export type JetControl = {
           }
         ]
       }
+    },
+    {
+      name: "TokenKind"
+      type: {
+        kind: "enum"
+        variants: [
+          {
+            name: "NonCollateral"
+          },
+          {
+            name: "Collateral"
+          },
+          {
+            name: "Claim"
+          }
+        ]
+      }
+    },
+    {
+      name: "MarginPoolConfig"
+      type: {
+        kind: "struct"
+        fields: [
+          {
+            name: "flags"
+            type: "u64"
+          },
+          {
+            name: "utilizationRate1"
+            type: "u16"
+          },
+          {
+            name: "utilizationRate2"
+            type: "u16"
+          },
+          {
+            name: "borrowRate0"
+            type: "u16"
+          },
+          {
+            name: "borrowRate1"
+            type: "u16"
+          },
+          {
+            name: "borrowRate2"
+            type: "u16"
+          },
+          {
+            name: "borrowRate3"
+            type: "u16"
+          },
+          {
+            name: "managementFeeRate"
+            type: "u16"
+          },
+          {
+            name: "managementFeeCollectThreshold"
+            type: "u64"
+          }
+        ]
+      }
     }
   ]
   events: [
@@ -784,6 +845,67 @@ export const IDL: JetControl = {
           {
             name: "feeDestination",
             type: "publicKey"
+          }
+        ]
+      }
+    },
+    {
+      name: "TokenKind",
+      type: {
+        kind: "enum",
+        variants: [
+          {
+            name: "NonCollateral"
+          },
+          {
+            name: "Collateral"
+          },
+          {
+            name: "Claim"
+          }
+        ]
+      }
+    },
+    {
+      name: "MarginPoolConfig",
+      type: {
+        kind: "struct",
+        fields: [
+          {
+            name: "flags",
+            type: "u64"
+          },
+          {
+            name: "utilizationRate1",
+            type: "u16"
+          },
+          {
+            name: "utilizationRate2",
+            type: "u16"
+          },
+          {
+            name: "borrowRate0",
+            type: "u16"
+          },
+          {
+            name: "borrowRate1",
+            type: "u16"
+          },
+          {
+            name: "borrowRate2",
+            type: "u16"
+          },
+          {
+            name: "borrowRate3",
+            type: "u16"
+          },
+          {
+            name: "managementFeeRate",
+            type: "u16"
+          },
+          {
+            name: "managementFeeCollectThreshold",
+            type: "u64"
           }
         ]
       }
