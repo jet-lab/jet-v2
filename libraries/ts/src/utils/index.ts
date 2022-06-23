@@ -15,7 +15,6 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-export * from "./idlBuilder"
 export * from "./layout"
 export * from "./pda"
 export * from "./util"

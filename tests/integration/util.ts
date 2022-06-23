@@ -1,4 +1,4 @@
-import { AnchorProvider, InstructionNamespace } from "@project-serum/anchor"
+import { AnchorProvider } from "@project-serum/anchor"
 import NodeWallet from "@project-serum/anchor/dist/cjs/nodewallet"
 import {
   AccountLayout,
@@ -16,18 +16,14 @@ import {
   TOKEN_PROGRAM_ID
 } from "@solana/spl-token"
 import { Commitment, Keypair, LAMPORTS_PER_SOL, PublicKey, SystemProgram, Transaction } from "@solana/web3.js"
+import { MarginPrograms } from "../../libraries/ts/src"
 
 import MARGIN_CONFIG from "../../libraries/ts/src/margin/config.json"
-
-import { IDL as JetControlIDL, JetControl } from "../../libraries/ts/src/types/jetControl"
-import { buildInstructions } from "../../libraries/ts/src/utils/idlBuilder"
 
 const controlProgramId: PublicKey = new PublicKey(MARGIN_CONFIG.localnet.controlProgramId)
 const marginMetadataProgramId: PublicKey = new PublicKey(MARGIN_CONFIG.localnet.metadataProgramId)
 
-const controlInstructions = buildInstructions(JetControlIDL, controlProgramId) as InstructionNamespace<JetControl>
-
-export async function createAuthority(provider: AnchorProvider, payer: Keypair): Promise<void> {
+export async function createAuthority(programs: MarginPrograms, provider: AnchorProvider): Promise<void> {
   const [authority] = await PublicKey.findProgramAddress([], controlProgramId)
 
   const accountInfo = await provider.connection.getAccountInfo(authority, "processed" as Commitment)
@@ -36,21 +32,21 @@ export async function createAuthority(provider: AnchorProvider, payer: Keypair):
     const airdropSignature = await provider.connection.requestAirdrop(authority, lamports)
     await provider.connection.confirmTransaction(airdropSignature)
 
-    const ix = controlInstructions.createAuthority({
-      accounts: {
+    const tx = await programs.control.methods
+      .createAuthority()
+      .accounts({
         authority: authority,
-        payer: payer.publicKey,
+        payer: provider.wallet.publicKey,
         systemProgram: SystemProgram.programId
-      }
-    })
+      })
+      .transaction()
 
-    const tx = new Transaction().add(ix)
-
-    await provider.sendAndConfirm(tx, [payer])
+    await provider.sendAndConfirm(tx)
   }
 }
 
 export async function registerAdapter(
+  programs: MarginPrograms,
   provider: AnchorProvider,
   requester: Keypair,
   adapterProgramId: PublicKey,
@@ -62,8 +58,9 @@ export async function registerAdapter(
   if (!accountInfo) {
     const [authority] = await PublicKey.findProgramAddress([], controlProgramId)
 
-    const ix = controlInstructions.registerAdapter({
-      accounts: {
+    const tx = await programs.control.methods
+      .registerAdapter()
+      .accounts({
         requester: requester.publicKey,
         authority,
         adapter: adapterProgramId,
@@ -71,11 +68,10 @@ export async function registerAdapter(
         payer: payer.publicKey,
         metadataProgram: marginMetadataProgramId,
         systemProgram: SystemProgram.programId
-      }
-    })
-    const tx = new Transaction().add(ix)
+      })
+      .transaction()
     try {
-      await provider.sendAndConfirm(tx, [])
+      await provider.sendAndConfirm(tx)
     } catch (err) {
       console.log(err)
       throw err
