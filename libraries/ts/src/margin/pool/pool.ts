@@ -530,9 +530,9 @@ export class Pool {
     amount: PoolAmount
   }): Promise<TransactionInstruction> {
     return await this.programs.marginPool.methods
-      .marginWithdraw(amount.toRpcArg())
+      .withdraw(amount.toRpcArg())
       .accounts({
-        marginAccount: marginAccount,
+        depositor: marginAccount,
         marginPool: this.address,
         vault: this.addresses.vault,
         depositNoteMint: this.addresses.depositNoteMint,

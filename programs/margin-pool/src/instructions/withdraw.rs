@@ -25,6 +25,9 @@ use crate::{Amount, ErrorCode};
 
 #[derive(Accounts)]
 pub struct Withdraw<'info> {
+    /// The address with authority to withdraw the deposit
+    pub depositor: Signer<'info>,
+
     /// The pool to withdraw from
     #[account(mut,
               has_one = vault,
@@ -40,9 +43,6 @@ pub struct Withdraw<'info> {
     /// CHECK:
     #[account(mut)]
     pub deposit_note_mint: UncheckedAccount<'info>,
-
-    /// The address with authority to withdraw the deposit
-    pub depositor: Signer<'info>,
 
     /// The source of the deposit notes to be redeemed
     /// CHECK:
