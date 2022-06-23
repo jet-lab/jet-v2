@@ -389,6 +389,209 @@ export type JetControl = {
           }
         ]
       }
+    },
+    {
+      name: "LiquidatorMetadata"
+      type: {
+        kind: "struct"
+        fields: [
+          {
+            name: "liquidator"
+            type: "publicKey"
+          }
+        ]
+      }
+    },
+    {
+      name: "MarginAdapterMetadata"
+      type: {
+        kind: "struct"
+        fields: [
+          {
+            name: "adapterProgram"
+            type: "publicKey"
+          }
+        ]
+      }
+    },
+    {
+      name: "TokenMetadata"
+      type: {
+        kind: "struct"
+        fields: [
+          {
+            name: "tokenMint"
+            type: "publicKey"
+          },
+          {
+            name: "pythPrice"
+            type: "publicKey"
+          },
+          {
+            name: "pythProduct"
+            type: "publicKey"
+          }
+        ]
+      }
+    },
+    {
+      name: "PositionTokenMetadata"
+      type: {
+        kind: "struct"
+        fields: [
+          {
+            name: "positionTokenMint"
+            type: "publicKey"
+          },
+          {
+            name: "underlyingTokenMint"
+            type: "publicKey"
+          },
+          {
+            name: "adapterProgram"
+            type: "publicKey"
+          },
+          {
+            name: "tokenKind"
+            type: {
+              defined: "TokenKind"
+            }
+          },
+          {
+            name: "valueModifer"
+            type: "u16"
+          },
+          {
+            name: "maxStaleness"
+            type: "u64"
+          }
+        ]
+      }
+    }
+  ]
+  events: [
+    {
+      name: "AuthorityCreated"
+      fields: [
+        {
+          name: "authority"
+          type: "publicKey"
+          index: false
+        },
+        {
+          name: "seed"
+          type: "u8"
+          index: false
+        }
+      ]
+    },
+    {
+      name: "LiquidatorSet"
+      fields: [
+        {
+          name: "requester"
+          type: "publicKey"
+          index: false
+        },
+        {
+          name: "authority"
+          type: "publicKey"
+          index: false
+        },
+        {
+          name: "liquidatorMetadata"
+          type: {
+            defined: "LiquidatorMetadata"
+          }
+          index: false
+        },
+        {
+          name: "metadataAccount"
+          type: "publicKey"
+          index: false
+        }
+      ]
+    },
+    {
+      name: "AdapterRegistered"
+      fields: [
+        {
+          name: "requester"
+          type: "publicKey"
+          index: false
+        },
+        {
+          name: "authority"
+          type: "publicKey"
+          index: false
+        },
+        {
+          name: "adapter"
+          type: {
+            defined: "MarginAdapterMetadata"
+          }
+          index: false
+        },
+        {
+          name: "metadataAccount"
+          type: "publicKey"
+          index: false
+        }
+      ]
+    },
+    {
+      name: "TokenMetadataConfigured"
+      fields: [
+        {
+          name: "requester"
+          type: "publicKey"
+          index: false
+        },
+        {
+          name: "authority"
+          type: "publicKey"
+          index: false
+        },
+        {
+          name: "metadataAccount"
+          type: "publicKey"
+          index: false
+        },
+        {
+          name: "metadata"
+          type: {
+            defined: "TokenMetadata"
+          }
+          index: false
+        }
+      ]
+    },
+    {
+      name: "PositionTokenMetadataConfigured"
+      fields: [
+        {
+          name: "requester"
+          type: "publicKey"
+          index: false
+        },
+        {
+          name: "authority"
+          type: "publicKey"
+          index: false
+        },
+        {
+          name: "metadataAccount"
+          type: "publicKey"
+          index: false
+        },
+        {
+          name: "metadata"
+          type: {
+            defined: "PositionTokenMetadata"
+          }
+          index: false
+        }
+      ]
     }
   ]
 }
@@ -784,6 +987,209 @@ export const IDL: JetControl = {
           }
         ]
       }
+    },
+    {
+      name: "LiquidatorMetadata",
+      type: {
+        kind: "struct",
+        fields: [
+          {
+            name: "liquidator",
+            type: "publicKey"
+          }
+        ]
+      }
+    },
+    {
+      name: "MarginAdapterMetadata",
+      type: {
+        kind: "struct",
+        fields: [
+          {
+            name: "adapterProgram",
+            type: "publicKey"
+          }
+        ]
+      }
+    },
+    {
+      name: "TokenMetadata",
+      type: {
+        kind: "struct",
+        fields: [
+          {
+            name: "tokenMint",
+            type: "publicKey"
+          },
+          {
+            name: "pythPrice",
+            type: "publicKey"
+          },
+          {
+            name: "pythProduct",
+            type: "publicKey"
+          }
+        ]
+      }
+    },
+    {
+      name: "PositionTokenMetadata",
+      type: {
+        kind: "struct",
+        fields: [
+          {
+            name: "positionTokenMint",
+            type: "publicKey"
+          },
+          {
+            name: "underlyingTokenMint",
+            type: "publicKey"
+          },
+          {
+            name: "adapterProgram",
+            type: "publicKey"
+          },
+          {
+            name: "tokenKind",
+            type: {
+              defined: "TokenKind"
+            }
+          },
+          {
+            name: "valueModifer",
+            type: "u16"
+          },
+          {
+            name: "maxStaleness",
+            type: "u64"
+          }
+        ]
+      }
+    }
+  ],
+  events: [
+    {
+      name: "AuthorityCreated",
+      fields: [
+        {
+          name: "authority",
+          type: "publicKey",
+          index: false
+        },
+        {
+          name: "seed",
+          type: "u8",
+          index: false
+        }
+      ]
+    },
+    {
+      name: "LiquidatorSet",
+      fields: [
+        {
+          name: "requester",
+          type: "publicKey",
+          index: false
+        },
+        {
+          name: "authority",
+          type: "publicKey",
+          index: false
+        },
+        {
+          name: "liquidatorMetadata",
+          type: {
+            defined: "LiquidatorMetadata"
+          },
+          index: false
+        },
+        {
+          name: "metadataAccount",
+          type: "publicKey",
+          index: false
+        }
+      ]
+    },
+    {
+      name: "AdapterRegistered",
+      fields: [
+        {
+          name: "requester",
+          type: "publicKey",
+          index: false
+        },
+        {
+          name: "authority",
+          type: "publicKey",
+          index: false
+        },
+        {
+          name: "adapter",
+          type: {
+            defined: "MarginAdapterMetadata"
+          },
+          index: false
+        },
+        {
+          name: "metadataAccount",
+          type: "publicKey",
+          index: false
+        }
+      ]
+    },
+    {
+      name: "TokenMetadataConfigured",
+      fields: [
+        {
+          name: "requester",
+          type: "publicKey",
+          index: false
+        },
+        {
+          name: "authority",
+          type: "publicKey",
+          index: false
+        },
+        {
+          name: "metadataAccount",
+          type: "publicKey",
+          index: false
+        },
+        {
+          name: "metadata",
+          type: {
+            defined: "TokenMetadata"
+          },
+          index: false
+        }
+      ]
+    },
+    {
+      name: "PositionTokenMetadataConfigured",
+      fields: [
+        {
+          name: "requester",
+          type: "publicKey",
+          index: false
+        },
+        {
+          name: "authority",
+          type: "publicKey",
+          index: false
+        },
+        {
+          name: "metadataAccount",
+          type: "publicKey",
+          index: false
+        },
+        {
+          name: "metadata",
+          type: {
+            defined: "PositionTokenMetadata"
+          },
+          index: false
+        }
+      ]
     }
   ]
 }

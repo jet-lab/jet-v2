@@ -573,6 +573,346 @@ export type JetMarginPool = {
           }
         ]
       }
+    },
+    {
+      name: "PoolAction"
+      type: {
+        kind: "enum"
+        variants: [
+          {
+            name: "Borrow"
+          },
+          {
+            name: "Deposit"
+          },
+          {
+            name: "Repay"
+          },
+          {
+            name: "Withdraw"
+          }
+        ]
+      }
+    },
+    {
+      name: "RoundingDirection"
+      type: {
+        kind: "enum"
+        variants: [
+          {
+            name: "Down"
+          },
+          {
+            name: "Up"
+          }
+        ]
+      }
+    }
+  ]
+  events: [
+    {
+      name: "PoolCreated"
+      fields: [
+        {
+          name: "marginPool"
+          type: "publicKey"
+          index: false
+        },
+        {
+          name: "vault"
+          type: "publicKey"
+          index: false
+        },
+        {
+          name: "depositNoteMint"
+          type: "publicKey"
+          index: false
+        },
+        {
+          name: "loanNoteMint"
+          type: "publicKey"
+          index: false
+        },
+        {
+          name: "tokenMint"
+          type: "publicKey"
+          index: false
+        },
+        {
+          name: "authority"
+          type: "publicKey"
+          index: false
+        },
+        {
+          name: "payer"
+          type: "publicKey"
+          index: false
+        },
+        {
+          name: "summary"
+          type: {
+            defined: "MarginPoolSummary"
+          }
+          index: false
+        }
+      ]
+    },
+    {
+      name: "PoolConfigured"
+      fields: [
+        {
+          name: "marginPool"
+          type: "publicKey"
+          index: false
+        },
+        {
+          name: "feeDestination"
+          type: "publicKey"
+          index: false
+        },
+        {
+          name: "pythProduct"
+          type: "publicKey"
+          index: false
+        },
+        {
+          name: "pythPrice"
+          type: "publicKey"
+          index: false
+        },
+        {
+          name: "config"
+          type: {
+            defined: "MarginPoolConfig"
+          }
+          index: false
+        }
+      ]
+    },
+    {
+      name: "Deposit"
+      fields: [
+        {
+          name: "marginPool"
+          type: "publicKey"
+          index: false
+        },
+        {
+          name: "user"
+          type: "publicKey"
+          index: false
+        },
+        {
+          name: "source"
+          type: "publicKey"
+          index: false
+        },
+        {
+          name: "destination"
+          type: "publicKey"
+          index: false
+        },
+        {
+          name: "depositTokens"
+          type: "u64"
+          index: false
+        },
+        {
+          name: "depositNotes"
+          type: "u64"
+          index: false
+        },
+        {
+          name: "summary"
+          type: {
+            defined: "MarginPoolSummary"
+          }
+          index: false
+        }
+      ]
+    },
+    {
+      name: "Withdraw"
+      fields: [
+        {
+          name: "marginPool"
+          type: "publicKey"
+          index: false
+        },
+        {
+          name: "user"
+          type: "publicKey"
+          index: false
+        },
+        {
+          name: "source"
+          type: "publicKey"
+          index: false
+        },
+        {
+          name: "destination"
+          type: "publicKey"
+          index: false
+        },
+        {
+          name: "withdrawTokens"
+          type: "u64"
+          index: false
+        },
+        {
+          name: "withdrawNotes"
+          type: "u64"
+          index: false
+        },
+        {
+          name: "summary"
+          type: {
+            defined: "MarginPoolSummary"
+          }
+          index: false
+        }
+      ]
+    },
+    {
+      name: "MarginBorrow"
+      fields: [
+        {
+          name: "marginPool"
+          type: "publicKey"
+          index: false
+        },
+        {
+          name: "user"
+          type: "publicKey"
+          index: false
+        },
+        {
+          name: "loanAccount"
+          type: "publicKey"
+          index: false
+        },
+        {
+          name: "depositAccount"
+          type: "publicKey"
+          index: false
+        },
+        {
+          name: "tokens"
+          type: "u64"
+          index: false
+        },
+        {
+          name: "loanNotes"
+          type: "u64"
+          index: false
+        },
+        {
+          name: "depositNotes"
+          type: "u64"
+          index: false
+        },
+        {
+          name: "summary"
+          type: {
+            defined: "MarginPoolSummary"
+          }
+          index: false
+        }
+      ]
+    },
+    {
+      name: "MarginRepay"
+      fields: [
+        {
+          name: "marginPool"
+          type: "publicKey"
+          index: false
+        },
+        {
+          name: "user"
+          type: "publicKey"
+          index: false
+        },
+        {
+          name: "loanAccount"
+          type: "publicKey"
+          index: false
+        },
+        {
+          name: "depositAccount"
+          type: "publicKey"
+          index: false
+        },
+        {
+          name: "maxRepayTokens"
+          type: "u64"
+          index: false
+        },
+        {
+          name: "maxRepayNotes"
+          type: "u64"
+          index: false
+        },
+        {
+          name: "repaidTokens"
+          type: "u64"
+          index: false
+        },
+        {
+          name: "repaidLoanNotes"
+          type: "u64"
+          index: false
+        },
+        {
+          name: "repaidDepositNotes"
+          type: "u64"
+          index: false
+        },
+        {
+          name: "summary"
+          type: {
+            defined: "MarginPoolSummary"
+          }
+          index: false
+        }
+      ]
+    },
+    {
+      name: "Collect"
+      fields: [
+        {
+          name: "marginPool"
+          type: "publicKey"
+          index: false
+        },
+        {
+          name: "feeNotesMinted"
+          type: "u64"
+          index: false
+        },
+        {
+          name: "feeTokensClaimed"
+          type: "u64"
+          index: false
+        },
+        {
+          name: "feeNotesBalance"
+          type: "u64"
+          index: false
+        },
+        {
+          name: "feeTokensBalance"
+          type: "u64"
+          index: false
+        },
+        {
+          name: "summary"
+          type: {
+            defined: "MarginPoolSummary"
+          }
+          index: false
+        }
+      ]
     }
   ],
   "events": [

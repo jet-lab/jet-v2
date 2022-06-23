@@ -42,7 +42,7 @@ describe("margin account", () => {
   })
 
   it("Create authority", async () => {
-    await createAuthority(provider, payer)
+    await createAuthority(programs, provider)
   })
 
   it("Fetch pools", async () => {

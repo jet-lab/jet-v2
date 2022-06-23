@@ -1,38 +1,24 @@
 import assert from "assert"
 import { Buffer } from "buffer"
-import { BN, BorshInstructionCoder, InstructionCoder, InstructionNamespace, web3 } from "@project-serum/anchor"
+import { AnchorProvider, BN, Program, web3 } from "@project-serum/anchor"
 import { Commitment, Connection, Keypair, PublicKey, SystemProgram, Transaction } from "@solana/web3.js"
-
-import { buildInstruction } from "../../../libraries/ts/src/utils/idlBuilder"
 
 import { IDL, Pyth } from "./types"
 
 export class PythClient {
-  buildInstruction
   commitment: Commitment = "confirmed"
   configuration
-  connection: Connection
 
-  private pythProgramId: PublicKey
-  private pythInstruction: InstructionNamespace<Pyth>
+  private program: Program<Pyth>
 
   constructor(configuration) {
     this.configuration = configuration
     assert(configuration.url)
-    this.connection = new Connection(configuration.url, this.commitment)
 
-    this.pythProgramId = new PublicKey(configuration.pythProgramId)
-
-    const instructionCoder: InstructionCoder = new BorshInstructionCoder(IDL)
-    const instruction = {}
-    IDL.instructions.forEach(idlIx => {
-      instruction[idlIx.name] = buildInstruction(
-        idlIx,
-        (ixName: string, ix: any) => instructionCoder.encode(ixName, ix),
-        this.pythProgramId
-      )
-    })
-    this.pythInstruction = instruction as InstructionNamespace<Pyth>
+    const pythProgramId = new PublicKey(configuration.pythProgramId)
+    const connection = new Connection(configuration.url, this.commitment)
+    const provider = new AnchorProvider(connection, undefined as any, { commitment: this.commitment })
+    this.program = new Program(IDL, pythProgramId, provider)
   }
 
   async createPriceAccount(
@@ -54,31 +40,31 @@ export class PythClient {
         fromPubkey: payer.publicKey,
         newAccountPubkey: productAccount.publicKey,
         space: 512,
-        lamports: await this.connection.getMinimumBalanceForRentExemption(512),
-        programId: this.pythProgramId
+        lamports: await this.program.provider.connection.getMinimumBalanceForRentExemption(512),
+        programId: this.program.programId
       }),
       SystemProgram.createAccount({
         fromPubkey: payer.publicKey,
         newAccountPubkey: priceAccount.publicKey,
         space: 3312,
-        lamports: await this.connection.getMinimumBalanceForRentExemption(3312),
-        programId: this.pythProgramId
+        lamports: await this.program.provider.connection.getMinimumBalanceForRentExemption(3312),
+        programId: this.program.programId
       }),
-      await this.pythInstruction.initialize(
-        new BN(price * 10 ** -exponent),
-        exponent,
-        new BN(confidence * 10 ** -exponent),
-        {
-          accounts: {
-            product: productAccount.publicKey,
-            price: priceAccount.publicKey
-          }
-        }
-      )
+      await this.program.methods
+        .initialize(new BN(price * 10 ** -exponent), exponent, new BN(confidence * 10 ** -exponent))
+        .accounts({
+          product: productAccount.publicKey,
+          price: priceAccount.publicKey
+        })
+        .instruction()
     )
     try {
-      const signature = await this.connection.sendTransaction(tx, [payer, productAccount, priceAccount])
-      const { value } = await this.connection.confirmTransaction(signature, "confirmed")
+      const signature = await this.program.provider.connection.sendTransaction(tx, [
+        payer,
+        productAccount,
+        priceAccount
+      ])
+      const { value } = await this.program.provider.connection.confirmTransaction(signature, "confirmed")
     } catch (err) {
       console.log(err)
       throw err
@@ -86,21 +72,24 @@ export class PythClient {
   }
 
   async getPythPrice(priceFeed: PublicKey) {
-    const info = await this.connection.getAccountInfo(priceFeed)
+    const info = await this.program.provider.connection.getAccountInfo(priceFeed)
     return parsePriceData(info!.data)
   }
 
   async setPythPrice(payer: Keypair, priceFeed: PublicKey, price: number, confidence: number, exponent: number) {
-    const info = await this.connection.getAccountInfo(priceFeed)
+    const info = await this.program.provider.connection.getAccountInfo(priceFeed)
     const data = parsePriceData(info!.data)
     const tx = new Transaction()
     tx.add(
-      await this.pythInstruction.updatePrice(new BN(price * 10 ** -exponent), new BN(confidence * 10 ** -exponent), {
-        accounts: { price: priceFeed }
-      })
+      await this.program.methods
+        .updatePrice(new BN(price * 10 ** -exponent), new BN(confidence * 10 ** -exponent))
+        .accounts({
+          price: priceFeed
+        })
+        .instruction()
     )
-    const signature = await this.connection.sendTransaction(tx, [payer])
-    const { value } = await this.connection.confirmTransaction(signature, "confirmed")
+    const signature = await this.program.provider.connection.sendTransaction(tx, [payer])
+    const { value } = await this.program.provider.connection.confirmTransaction(signature, "confirmed")
   }
 }
 

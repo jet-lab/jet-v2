@@ -18,7 +18,7 @@ export type JetMetadata = {
         {
           name: "authority"
           isMut: false
-          isSigner: true
+          isSigner: false
         },
         {
           name: "payer"
@@ -53,7 +53,7 @@ export type JetMetadata = {
         {
           name: "authority"
           isMut: false
-          isSigner: true
+          isSigner: false
         }
       ]
       args: [
@@ -66,6 +66,27 @@ export type JetMetadata = {
           type: "bytes"
         }
       ]
+    },
+    {
+      name: "removeEntry"
+      accounts: [
+        {
+          name: "metadataAccount"
+          isMut: true
+          isSigner: false
+        },
+        {
+          name: "authority"
+          isMut: false
+          isSigner: false
+        },
+        {
+          name: "receiver"
+          isMut: true
+          isSigner: false
+        }
+      ]
+      args: []
     }
   ]
   accounts: [
@@ -93,11 +114,11 @@ export type JetMetadata = {
             }
           },
           {
-            name: "collateralWeight"
+            name: "valueModifier"
             type: "u16"
           },
           {
-            name: "collateralMaxStaleness"
+            name: "maxStaleness"
             type: "u64"
           }
         ]
@@ -125,18 +146,6 @@ export type JetMetadata = {
     },
     {
       name: "marginAdapterMetadata"
-      type: {
-        kind: "struct"
-        fields: [
-          {
-            name: "adapterProgram"
-            type: "publicKey"
-          }
-        ]
-      }
-    },
-    {
-      name: "liquidatorAdapterMetadata"
       type: {
         kind: "struct"
         fields: [
@@ -201,7 +210,7 @@ export const IDL: JetMetadata = {
         {
           name: "authority",
           isMut: false,
-          isSigner: true
+          isSigner: false
         },
         {
           name: "payer",
@@ -236,7 +245,7 @@ export const IDL: JetMetadata = {
         {
           name: "authority",
           isMut: false,
-          isSigner: true
+          isSigner: false
         }
       ],
       args: [
@@ -249,6 +258,27 @@ export const IDL: JetMetadata = {
           type: "bytes"
         }
       ]
+    },
+    {
+      name: "removeEntry",
+      accounts: [
+        {
+          name: "metadataAccount",
+          isMut: true,
+          isSigner: false
+        },
+        {
+          name: "authority",
+          isMut: false,
+          isSigner: false
+        },
+        {
+          name: "receiver",
+          isMut: true,
+          isSigner: false
+        }
+      ],
+      args: []
     }
   ],
   accounts: [
@@ -276,11 +306,11 @@ export const IDL: JetMetadata = {
             }
           },
           {
-            name: "collateralWeight",
+            name: "valueModifier",
             type: "u16"
           },
           {
-            name: "collateralMaxStaleness",
+            name: "maxStaleness",
             type: "u64"
           }
         ]
@@ -308,18 +338,6 @@ export const IDL: JetMetadata = {
     },
     {
       name: "marginAdapterMetadata",
-      type: {
-        kind: "struct",
-        fields: [
-          {
-            name: "adapterProgram",
-            type: "publicKey"
-          }
-        ]
-      }
-    },
-    {
-      name: "liquidatorAdapterMetadata",
       type: {
         kind: "struct",
         fields: [
