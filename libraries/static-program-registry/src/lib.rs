@@ -56,6 +56,8 @@ macro_rules! match_pubkey {
 ///
 /// This creates one SwapProgram enum and one `use_client` macro:
 /// ```
+/// # use jet_static_program_registry::*;
+///
 /// related_programs! {
 ///     SwapProgram {[
 ///         spl_token_swap_v2::Spl2,
@@ -67,6 +69,8 @@ macro_rules! match_pubkey {
 ///
 /// This creates one SwapProgram enum, plus `use_orca_client` and `use_spl_client` macros:
 /// ```
+/// # use jet_static_program_registry::*;
+///
 /// related_programs! {
 ///     SwapProgram {
 ///         spl [spl_token_swap_v2::Spl2]
@@ -90,7 +94,6 @@ macro_rules! related_programs {
         }
 
         const _: () = {
-            use super::*;
             use $crate::macro_imports::*;
             $($(use $module::{$Variant};)+)+
 

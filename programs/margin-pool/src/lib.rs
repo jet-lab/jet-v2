@@ -79,12 +79,6 @@ mod jet_margin_pool {
         instructions::margin_repay_handler(ctx, max_amount)
     }
 
-    /// Withdraw tokens from the pool, exchanging in notes stored by a
-    /// margin account.
-    pub fn margin_withdraw(ctx: Context<MarginWithdraw>, amount: Amount) -> Result<()> {
-        instructions::margin_withdraw_handler(ctx, amount)
-    }
-
     /// Update the pool position on a margin account
     pub fn margin_refresh_position(ctx: Context<MarginRefreshPosition>) -> Result<()> {
         instructions::margin_refresh_position_handler(ctx)
