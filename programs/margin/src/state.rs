@@ -451,7 +451,11 @@ impl TryFrom<PriceChangeInfo> for PriceInfo {
                 PriceInfo::new_invalid()
             }
             (_, publish_time) if (clock.unix_timestamp - publish_time) > MAX_ORACLE_STALENESS => {
-                msg!("price timestamp is too old/stale");
+                msg!(
+                    "price timestamp is too old/stale. published: {}, now: {}",
+                    publish_time,
+                    clock.unix_timestamp
+                );
                 PriceInfo::new_invalid()
             }
             _ => PriceInfo::new_valid(value.exponent, value.value, clock.unix_timestamp as u64),

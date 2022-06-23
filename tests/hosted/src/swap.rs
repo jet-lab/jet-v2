@@ -23,14 +23,21 @@ use std::sync::Arc;
 use anchor_lang::prelude::Pubkey;
 use anyhow::Error;
 use jet_simulation::{generate_keypair, solana_rpc_api::SolanaRpcClient};
-use solana_sdk::{program_pack::Pack, signer::Signer, system_instruction};
-use spl_token_swap::curve::{
-    base::{CurveType, SwapCurve},
-    constant_product::ConstantProductCurve,
-    fees::Fees,
+use jet_static_program_registry::{
+    orca_swap_v1, orca_swap_v2, related_programs, spl_token_swap_v2,
 };
+use solana_sdk::{program_pack::Pack, signer::Signer, system_instruction};
 
 use crate::tokens::TokenManager;
+
+// register swap programs
+related_programs! {
+    SwapProgram {[
+        spl_token_swap_v2::Spl2,
+        orca_swap_v1::OrcaV1,
+        orca_swap_v2::OrcaV2,
+    ]}
+}
 
 pub struct SwapPool {
     pub pool: Pubkey,
@@ -49,6 +56,7 @@ impl SwapPool {
     /// to deposit tokens separately.
     pub async fn configure(
         rpc: &Arc<dyn SolanaRpcClient>,
+        program_id: &Pubkey,
         mint_a: &Pubkey,
         mint_b: &Pubkey,
         a_amount: u64,
@@ -63,19 +71,20 @@ impl SwapPool {
 
         // Create an empty pool state account
         // The SPL Token Swap program requires extra padding of 1 byte
-        let space = spl_token_swap::state::SwapV1::LEN + 1;
+
+        let space = use_client!(*program_id, { client::state::SwapV1::LEN + 1 }).unwrap();
         let rent_lamports = rpc.get_minimum_balance_for_rent_exemption(space).await?;
         let ix_pool_state_account = system_instruction::create_account(
             &rpc.payer().pubkey(),
             &keypair.pubkey(),
             rent_lamports,
             space as u64,
-            &spl_token_swap::ID,
+            program_id,
         );
 
         // Pool authority
         let (pool_authority, pool_nonce) =
-            Pubkey::find_program_address(&[keypair.pubkey().as_ref()], &spl_token_swap::ID);
+            Pubkey::find_program_address(&[keypair.pubkey().as_ref()], program_id);
         // Token A account
         // The accounts are funded to avoid having to fund them further
         let token_a = token_manager
@@ -98,33 +107,36 @@ impl SwapPool {
             .create_account(&pool_mint, &rpc.payer().pubkey())
             .await?;
 
-        let ix_init = spl_token_swap::instruction::initialize(
-            &spl_token_swap::id(),
-            &spl_token::id(),
-            &keypair.pubkey(),
-            &pool_authority,
-            &token_a,
-            &token_b,
-            &pool_mint,
-            &token_fee,
-            &token_recipient,
-            pool_nonce,
-            Fees {
-                // The fee parameters are taken from one of spl-token-swap tests
-                trade_fee_numerator: 1,
-                trade_fee_denominator: 400,
-                owner_trade_fee_numerator: 2,
-                owner_trade_fee_denominator: 500,
-                owner_withdraw_fee_numerator: 4,
-                owner_withdraw_fee_denominator: 100,
-                host_fee_numerator: 1,
-                host_fee_denominator: 100,
-            },
-            SwapCurve {
-                curve_type: CurveType::ConstantProduct,
-                calculator: Box::new(ConstantProductCurve),
-            },
-        )?;
+        let ix_init = use_client!(*program_id, {
+            client::instruction::initialize(
+                program_id,
+                &spl_token::id(),
+                &keypair.pubkey(),
+                &pool_authority,
+                &token_a,
+                &token_b,
+                &pool_mint,
+                &token_fee,
+                &token_recipient,
+                pool_nonce,
+                client::curve::fees::Fees {
+                    // The fee parameters are taken from one of spl-token-swap tests
+                    trade_fee_numerator: 1,
+                    trade_fee_denominator: 400,
+                    owner_trade_fee_numerator: 2,
+                    owner_trade_fee_denominator: 500,
+                    owner_withdraw_fee_numerator: 4,
+                    owner_withdraw_fee_denominator: 100,
+                    host_fee_numerator: 1,
+                    host_fee_denominator: 100,
+                },
+                client::curve::base::SwapCurve {
+                    curve_type: client::curve::base::CurveType::ConstantProduct,
+                    calculator: Box::new(client::curve::constant_product::ConstantProductCurve),
+                },
+            )?
+        })
+        .unwrap();
 
         // Create and send transaction
         let transaction = rpc
@@ -141,7 +153,7 @@ impl SwapPool {
             token_b,
             pool_mint,
             fee_account: token_fee,
-            program: spl_token_swap::ID,
+            program: *program_id,
         })
     }
 }

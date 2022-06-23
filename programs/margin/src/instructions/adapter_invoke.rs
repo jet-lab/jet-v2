@@ -50,7 +50,7 @@ pub fn adapter_invoke_handler<'info>(
         return Err(ErrorCode::Liquidating.into());
     }
 
-    adapter::invoke_signed(
+    adapter::invoke(
         &InvokeAdapter {
             margin_account: &ctx.accounts.margin_account,
             adapter_program: &ctx.accounts.adapter_program,
@@ -58,6 +58,7 @@ pub fn adapter_invoke_handler<'info>(
         },
         account_metas,
         data,
+        true,
     )?;
 
     ctx.accounts

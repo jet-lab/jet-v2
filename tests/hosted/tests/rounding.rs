@@ -13,7 +13,7 @@ use hosted_tests::{
 
 use jet_margin_pool::{Amount, MarginPoolConfig, PoolFlags};
 use jet_metadata::TokenKind;
-use jet_simulation::{assert_program_error_code, create_wallet};
+use jet_simulation::{assert_custom_program_error, create_wallet};
 
 const ONE_USDC: u64 = 1_000_000;
 const ONE_TSOL: u64 = LAMPORTS_PER_SOL;
@@ -77,7 +77,7 @@ async fn setup_environment(ctx: &MarginTestContext) -> Result<TestEnv, Error> {
     Ok(TestEnv { usdc, tsol })
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn rounding_poc() -> Result<()> {
     let ctx = test_context().await;
     let env = setup_environment(ctx).await?;
@@ -164,9 +164,9 @@ async fn rounding_poc() -> Result<()> {
         .await;
 
     // Should not succeed, there should be insufficient funds to burn notes
-    assert_program_error_code!(
+    assert_custom_program_error(
         anchor_spl::token::spl_token::error::TokenError::InsufficientFunds as u32,
-        withdraw_result
+        withdraw_result,
     );
 
     Ok(())

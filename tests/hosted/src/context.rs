@@ -11,8 +11,6 @@ use solana_sdk::signature::{Keypair, Signer};
 
 use jet_margin_pool::MarginPoolConfig;
 use jet_metadata::TokenKind;
-
-use jet_simulation::runtime::TestRuntime;
 use jet_simulation::solana_rpc_api::SolanaRpcClient;
 
 use crate::{margin::MarginClient, tokens::TokenManager};
@@ -50,14 +48,41 @@ pub struct MarginTestContext {
 }
 
 impl MarginTestContext {
+    #[cfg(not(feature = "localnet"))]
     pub async fn new() -> Result<Self, Error> {
-        let runtime = Arc::new(jet_simulation::create_test_runtime![
+        use jet_simulation::runtime::TestRuntime;
+        use jet_static_program_registry::{orca_swap_v1, orca_swap_v2, spl_token_swap_v2};
+        let runtime = jet_simulation::create_test_runtime![
             jet_control,
             jet_margin,
             jet_metadata,
             jet_margin_pool,
-            jet_margin_swap
-        ]);
+            jet_margin_swap,
+            (
+                orca_swap_v1::id(),
+                orca_swap_v1::processor::Processor::process
+            ),
+            (
+                orca_swap_v2::id(),
+                orca_swap_v2::processor::Processor::process
+            ),
+            (
+                spl_token_swap_v2::id(),
+                spl_token_swap_v2::processor::Processor::process
+            ),
+        ];
+
+        Self::new_with_runtime(Arc::new(runtime)).await
+    }
+
+    #[cfg(feature = "localnet")]
+    pub async fn new() -> Result<Self, Error> {
+        let runtime = jet_simulation::solana_rpc_api::RpcConnection::new_local_funded()?;
+
+        Self::new_with_runtime(Arc::new(runtime)).await
+    }
+
+    pub async fn new_with_runtime(runtime: Arc<dyn SolanaRpcClient>) -> Result<Self, Error> {
         let payer = Keypair::from_bytes(&runtime.payer().to_bytes()).unwrap();
         let rng = MockRng(StepRng::new(0, 1));
         let ctx = MarginTestContext {
@@ -65,7 +90,6 @@ impl MarginTestContext {
             margin: MarginClient::new(runtime.clone()),
             authority: Keypair::new(),
             rng: Mutex::new(RefCell::new(rng)),
-
             rpc: runtime,
             payer,
         };

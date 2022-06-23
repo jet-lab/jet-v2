@@ -50,5 +50,6 @@ pub fn accounting_invoke_handler<'info>(
         },
         account_metas,
         data,
+        false,
     )
 }

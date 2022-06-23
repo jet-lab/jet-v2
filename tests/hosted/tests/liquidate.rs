@@ -13,7 +13,7 @@ use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::Signer;
 
 use jet_margin_pool::Amount;
-use jet_simulation::{assert_program_error, assert_program_error_code};
+use jet_simulation::assert_custom_program_error;
 
 const ONE_USDC: u64 = 1_000_000;
 const ONE_TSOL: u64 = LAMPORTS_PER_SOL;
@@ -90,20 +90,20 @@ async fn scenario1() -> Result<Scenario1> {
 /// margin account. The price of the loan token moves adversely, leading to
 /// liquidations. One user borrowed conservatively, and is not subject to
 /// liquidation, while the other user gets liquidated.
-#[tokio::test]
-#[serial]
+#[tokio::test(flavor = "multi_thread")]
+#[cfg_attr(not(feature = "localnet"), serial)]
 async fn cannot_liquidate_healthy_user() -> Result<()> {
     let scen = scenario1().await?;
 
     // A liquidator tries to liquidate User A, it should not be able to
     let result = scen.user_a_liq.liquidate_begin().await;
-    assert_program_error!(ErrorCode::Healthy, result);
+    assert_custom_program_error(ErrorCode::Healthy, result);
 
     Ok(())
 }
 
-#[tokio::test]
-#[serial]
+#[tokio::test(flavor = "multi_thread")]
+#[cfg_attr(not(feature = "localnet"), serial)]
 async fn cannot_end_nonexistent_liquidation() -> Result<()> {
     let scen = scenario1().await?;
 
@@ -115,8 +115,8 @@ async fn cannot_end_nonexistent_liquidation() -> Result<()> {
     Ok(())
 }
 
-#[tokio::test]
-#[serial]
+#[tokio::test(flavor = "multi_thread")]
+#[cfg_attr(not(feature = "localnet"), serial)]
 async fn cannot_transact_when_being_liquidated() -> Result<()> {
     let scen = scenario1().await?;
 
@@ -128,13 +128,13 @@ async fn cannot_transact_when_being_liquidated() -> Result<()> {
         .user_b
         .repay(&scen.usdc, Amount::tokens(1_000_000 * ONE_USDC))
         .await;
-    assert_program_error!(ErrorCode::Liquidating, result);
+    assert_custom_program_error(ErrorCode::Liquidating, result);
 
     Ok(())
 }
 
-#[tokio::test]
-#[serial]
+#[tokio::test(flavor = "multi_thread")]
+#[cfg_attr(not(feature = "localnet"), serial)]
 async fn liquidator_can_repay_from_unhealthy_to_healthy_state() -> Result<()> {
     let scen = scenario1().await?;
 
@@ -155,8 +155,8 @@ async fn liquidator_can_repay_from_unhealthy_to_healthy_state() -> Result<()> {
     Ok(())
 }
 
-#[tokio::test]
-#[serial]
+#[tokio::test(flavor = "multi_thread")]
+#[cfg_attr(not(feature = "localnet"), serial)]
 async fn liquidator_can_end_liquidation_when_unhealthy() -> Result<()> {
     let scen = scenario1().await?;
 
@@ -168,8 +168,8 @@ async fn liquidator_can_end_liquidation_when_unhealthy() -> Result<()> {
     Ok(())
 }
 
-#[tokio::test]
-#[serial]
+#[tokio::test(flavor = "multi_thread")]
+#[cfg_attr(not(feature = "localnet"), serial)]
 async fn no_one_else_can_liquidate_after_liquidate_begin() -> Result<()> {
     let ctx = test_context().await;
     let scen = scenario1().await?;
@@ -186,13 +186,13 @@ async fn no_one_else_can_liquidate_after_liquidate_begin() -> Result<()> {
         .await?;
 
     // Should fail to begin liquidation
-    assert_program_error!(ErrorCode::Liquidating, user_b_rliq.liquidate_begin().await);
+    assert_custom_program_error(ErrorCode::Liquidating, user_b_rliq.liquidate_begin().await);
 
     Ok(())
 }
 
-#[tokio::test]
-#[serial]
+#[tokio::test(flavor = "multi_thread")]
+#[cfg_attr(not(feature = "localnet"), serial)]
 async fn liquidation_completes() -> Result<()> {
     let scen = scenario1().await?;
 
@@ -215,8 +215,8 @@ async fn liquidation_completes() -> Result<()> {
     Ok(())
 }
 
-#[tokio::test]
-#[serial]
+#[tokio::test(flavor = "multi_thread")]
+#[cfg_attr(not(feature = "localnet"), serial)]
 async fn cannot_withdraw_too_much_during_liquidation() -> Result<()> {
     let ctx = test_context().await;
     let scen = scenario1().await?;
@@ -237,13 +237,13 @@ async fn cannot_withdraw_too_much_during_liquidation() -> Result<()> {
         )
         .await;
 
-    assert_program_error!(ErrorCode::LiquidationLostValue, result);
+    assert_custom_program_error(ErrorCode::LiquidationLostValue, result);
 
     Ok(())
 }
 
-#[tokio::test]
-#[serial]
+#[tokio::test(flavor = "multi_thread")]
+#[cfg_attr(not(feature = "localnet"), serial)]
 async fn can_withdraw_some_during_liquidation() -> Result<()> {
     let ctx = test_context().await;
     let scen = scenario1().await?;
@@ -265,21 +265,21 @@ async fn can_withdraw_some_during_liquidation() -> Result<()> {
     Ok(())
 }
 
-#[tokio::test]
-#[serial]
+#[tokio::test(flavor = "multi_thread")]
+#[cfg_attr(not(feature = "localnet"), serial)]
 async fn cannot_borrow_too_much_during_liquidation() -> Result<()> {
     let scen = scenario1().await?;
 
     scen.user_b_liq.liquidate_begin().await?;
 
     let result = scen.user_b_liq.borrow(&scen.usdc, 500_000 * ONE_USDC).await;
-    assert_program_error!(ErrorCode::LiquidationLostValue, result);
+    assert_custom_program_error(ErrorCode::LiquidationLostValue, result);
 
     Ok(())
 }
 
-#[tokio::test]
-#[serial]
+#[tokio::test(flavor = "multi_thread")]
+#[cfg_attr(not(feature = "localnet"), serial)]
 async fn can_borrow_some_during_liquidation() -> Result<()> {
     let scen = scenario1().await?;
 
@@ -290,8 +290,8 @@ async fn can_borrow_some_during_liquidation() -> Result<()> {
 }
 
 /// The owner is provided as the authority and signs
-#[tokio::test]
-#[serial]
+#[tokio::test(flavor = "multi_thread")]
+#[cfg_attr(not(feature = "localnet"), serial)]
 async fn owner_cannot_end_liquidation_before_timeout() -> Result<()> {
     let scen = scenario1().await?;
 
@@ -301,13 +301,33 @@ async fn owner_cannot_end_liquidation_before_timeout() -> Result<()> {
         .user_b
         .liquidate_end(Some(scen.user_b_liq.signer()))
         .await;
-    assert_program_error!(ErrorCode::UnauthorizedLiquidator, result);
+    assert_custom_program_error(ErrorCode::UnauthorizedLiquidator, result);
 
     Ok(())
 }
 
-#[tokio::test]
-#[serial]
+#[tokio::test(flavor = "multi_thread")]
+#[cfg_attr(not(feature = "localnet"), serial)]
+#[cfg(not(feature = "localnet"))]
+async fn owner_can_end_liquidation_after_timeout() -> Result<()> {
+    let ctx = test_context().await;
+    let scen = scenario1().await?;
+
+    scen.user_b_liq.liquidate_begin().await?;
+
+    let mut clock = ctx.rpc.get_clock().unwrap();
+    clock.unix_timestamp += 61;
+    ctx.rpc.set_clock(clock);
+
+    scen.user_b
+        .liquidate_end(Some(scen.user_b_liq.signer()))
+        .await?;
+
+    Ok(())
+}
+
+#[tokio::test(flavor = "multi_thread")]
+#[cfg_attr(not(feature = "localnet"), serial)]
 async fn liquidator_permission_is_removable() -> Result<()> {
     let ctx = test_context().await;
     let scen = scenario1().await?;
@@ -318,32 +338,10 @@ async fn liquidator_permission_is_removable() -> Result<()> {
 
     // A liquidator tries to liquidate User B, it should no longer have authority to do that
     let result = scen.user_b_liq.liquidate_begin().await;
-    assert_program_error_code!(
-        anchor_lang::error::ErrorCode::AccountDiscriminatorMismatch as u32,
-        result
+    assert_custom_program_error(
+        anchor_lang::error::ErrorCode::AccountDiscriminatorMismatch,
+        result,
     );
 
     Ok(())
 }
-
-// todo enable this test when test runtime clock works
-// #[tokio::test]
-// fn owner_can_end_liquidation_after_timeout(ctx: SyncContext) {
-//     let (_, user_b, liquidator) = scenario1(&ctx);
-//     user_b.liquidate_begin().await.unwrap();
-//     let mut clock = ctx.runtime.get_clock();
-//     clock.unix_timestamp += 61;
-//     ctx.runtime.set_clock(clock);
-//     user_b.liquidate_end(None).unwrap();
-// }
-
-// todo enable this test when test runtime clock works
-// #[tokio::test]
-// fn arbitrary_user_can_end_liquidation_after_timeout(ctx: SyncContext) {
-//     let (_, user_b, liquidator) = scenario1(&ctx);
-//     user_b.liquidate_begin().await.unwrap();
-//     let mut clock = ctx.runtime.get_clock();
-//     clock.unix_timestamp += 61;
-//     ctx.runtime.set_clock(clock);
-//     user_b.liquidate_end_arbitrary(&Pubkey::default(), &Pubkey::default()).unwrap();
-// }

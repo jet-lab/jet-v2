@@ -275,6 +275,7 @@ impl MarginUser {
     #[allow(clippy::too_many_arguments)]
     pub async fn swap(
         &self,
+        program_id: &Pubkey,
         source_mint: &Pubkey,
         destination_mint: &Pubkey,
         transit_source_account: &Pubkey,
@@ -301,7 +302,7 @@ impl MarginUser {
                     &swap_pool.fee_account,
                     source_token,
                     destination_token,
-                    &spl_token_swap::ID,
+                    program_id,
                     amount_in,
                     minimum_amount_out,
                 )

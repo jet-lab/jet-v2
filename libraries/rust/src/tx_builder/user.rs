@@ -22,11 +22,11 @@ use std::sync::Arc;
 use jet_metadata::{PositionTokenMetadata, TokenMetadata};
 
 use anyhow::{bail, Result};
-use solana_sdk::instruction::Instruction;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::Keypair;
 use solana_sdk::signer::Signer;
 use solana_sdk::transaction::Transaction;
+use solana_sdk::{compute_budget::ComputeBudgetInstruction, instruction::Instruction};
 
 use anchor_lang::AccountDeserialize;
 
@@ -277,7 +277,7 @@ impl MarginTxBuilder {
         amount_in: Amount,
         minimum_amount_out: Amount,
     ) -> Result<Transaction> {
-        let mut instructions = vec![];
+        let mut instructions = vec![ComputeBudgetInstruction::request_units(300_000, 0)];
         let source_pool = MarginPoolIxBuilder::new(*source_token_mint);
         let destination_pool = MarginPoolIxBuilder::new(*destination_token_mint);
 
@@ -288,8 +288,7 @@ impl MarginTxBuilder {
             .get_or_create_position(&mut instructions, &destination_pool.deposit_note_mint)
             .await?;
 
-        let (swap_authority, _) =
-            Pubkey::find_program_address(&[swap_pool.as_ref()], &spl_token_swap::id());
+        let (swap_authority, _) = Pubkey::find_program_address(&[swap_pool.as_ref()], swap_program);
         let swap_pool = MarginSwapIxBuilder::new(
             *source_token_mint,
             *destination_token_mint,
