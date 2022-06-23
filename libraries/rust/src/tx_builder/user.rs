@@ -249,7 +249,7 @@ impl MarginTxBuilder {
             .await?;
 
         let inner_withdraw_ix =
-            pool.margin_withdraw(self.ix.address, deposit_position, *destination, amount);
+            pool.withdraw(self.ix.address, deposit_position, *destination, amount);
 
         instructions.push(self.adapter_invoke_ix(inner_withdraw_ix));
         self.create_transaction(&instructions).await

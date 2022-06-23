@@ -190,6 +190,15 @@ async fn sanity_test() -> Result<(), anyhow::Error> {
         )
         .await?;
 
+    // Verify accounting updated
+    let usdc_pool = ctx.margin.get_pool(&env.usdc).await?;
+    let tsol_pool = ctx.margin.get_pool(&env.usdc).await?;
+
+    assert_eq!(0, usdc_pool.deposit_tokens);
+    assert_eq!(0, usdc_pool.deposit_notes);
+    assert_eq!(0, tsol_pool.deposit_tokens);
+    assert_eq!(0, tsol_pool.deposit_notes);
+
     // Now verify that the users got all their tokens back
     assert_eq!(
         1_000_000 * ONE_USDC,
