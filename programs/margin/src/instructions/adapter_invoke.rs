@@ -65,7 +65,7 @@ pub fn adapter_invoke_handler<'info>(
         emit!(events::PositionTouched { position });
     }
 
-    emit!(events::AccountingInvokeEnd {});
+    emit!(events::AdapterInvokeEnd {});
 
     ctx.accounts
         .margin_account

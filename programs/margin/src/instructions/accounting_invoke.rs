@@ -65,5 +65,4 @@ pub fn accounting_invoke_handler<'info>(
     emit!(events::AccountingInvokeEnd {});
 
     Ok(())
-
 }
