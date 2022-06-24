@@ -85,4 +85,9 @@ describe("margin account", () => {
     expect(marginAccounts.length).to.eq(1)
     expect(marginAccounts.find(acc => acc.seed === 0)?.seed).to.eq(marginAccount_A.seed)
   })
+
+  it("Close margin accounts", async () => {
+    await marginAccount_A.closeAccount();
+    await marginAccount_B.closeAccount();
+  })
 })
