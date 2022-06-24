@@ -322,8 +322,9 @@ impl MarginUser {
         .await
     }
 
-    pub async fn liquidate_begin(&self) -> Result<(), Error> {
-        self.send_confirm_tx(self.tx.liquidate_begin().await?).await
+    pub async fn liquidate_begin(&self, refresh_positions: bool) -> Result<(), Error> {
+        self.send_confirm_tx(self.tx.liquidate_begin(refresh_positions).await?)
+            .await
     }
 
     pub async fn liquidate_end(&self, original_liquidator: Option<Pubkey>) -> Result<(), Error> {

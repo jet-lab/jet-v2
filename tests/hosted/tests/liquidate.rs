@@ -96,7 +96,7 @@ async fn cannot_liquidate_healthy_user() -> Result<()> {
     let scen = scenario1().await?;
 
     // A liquidator tries to liquidate User A, it should not be able to
-    let result = scen.user_a_liq.liquidate_begin().await;
+    let result = scen.user_a_liq.liquidate_begin(true).await;
     assert_custom_program_error(ErrorCode::Healthy, result);
 
     Ok(())
@@ -121,7 +121,7 @@ async fn cannot_transact_when_being_liquidated() -> Result<()> {
     let scen = scenario1().await?;
 
     // A liquidator tries to liquidate User B, it should be able to
-    scen.user_b_liq.liquidate_begin().await?;
+    scen.user_b_liq.liquidate_begin(false).await?;
 
     // When User B is being liquidated, they should be unable to transact
     let result = scen
@@ -138,7 +138,7 @@ async fn cannot_transact_when_being_liquidated() -> Result<()> {
 async fn liquidator_can_repay_from_unhealthy_to_healthy_state() -> Result<()> {
     let scen = scenario1().await?;
 
-    scen.user_b_liq.liquidate_begin().await?;
+    scen.user_b_liq.liquidate_begin(true).await?;
     scen.user_b_liq.verify_healthy().await.err().unwrap();
 
     // Execute a repayment on behalf of the user
@@ -160,7 +160,7 @@ async fn liquidator_can_repay_from_unhealthy_to_healthy_state() -> Result<()> {
 async fn liquidator_can_end_liquidation_when_unhealthy() -> Result<()> {
     let scen = scenario1().await?;
 
-    scen.user_b_liq.liquidate_begin().await?;
+    scen.user_b_liq.liquidate_begin(true).await?;
 
     scen.user_b_liq.verify_healthy().await.err().unwrap();
     scen.user_b_liq.liquidate_end(None).await?;
@@ -175,7 +175,7 @@ async fn no_one_else_can_liquidate_after_liquidate_begin() -> Result<()> {
     let scen = scenario1().await?;
 
     // A liquidator tries to liquidate User B, it should be able to
-    scen.user_b_liq.liquidate_begin().await?;
+    scen.user_b_liq.liquidate_begin(false).await?;
 
     // If an account is still being liquidated, another liquidator should not
     // be able to begin or stop liquidating it
@@ -186,7 +186,10 @@ async fn no_one_else_can_liquidate_after_liquidate_begin() -> Result<()> {
         .await?;
 
     // Should fail to begin liquidation
-    assert_custom_program_error(ErrorCode::Liquidating, user_b_rliq.liquidate_begin().await);
+    assert_custom_program_error(
+        ErrorCode::Liquidating,
+        user_b_rliq.liquidate_begin(true).await,
+    );
 
     Ok(())
 }
@@ -197,7 +200,7 @@ async fn liquidation_completes() -> Result<()> {
     let scen = scenario1().await?;
 
     // A liquidator tries to liquidate User B, it should be able to
-    scen.user_b_liq.liquidate_begin().await?;
+    scen.user_b_liq.liquidate_begin(false).await?;
 
     // Execute a repayment on behalf of the user
     scen.user_b_liq
@@ -221,7 +224,7 @@ async fn cannot_withdraw_too_much_during_liquidation() -> Result<()> {
     let ctx = test_context().await;
     let scen = scenario1().await?;
 
-    scen.user_b_liq.liquidate_begin().await?;
+    scen.user_b_liq.liquidate_begin(true).await?;
 
     let liquidator_usdc_account = ctx
         .tokens
@@ -253,7 +256,7 @@ async fn can_withdraw_some_during_liquidation() -> Result<()> {
         .create_account_funded(&scen.usdc, &scen.liquidator, 0)
         .await?;
 
-    scen.user_b_liq.liquidate_begin().await?;
+    scen.user_b_liq.liquidate_begin(true).await?;
     scen.user_b_liq
         .withdraw(
             &scen.usdc,
@@ -270,7 +273,7 @@ async fn can_withdraw_some_during_liquidation() -> Result<()> {
 async fn cannot_borrow_too_much_during_liquidation() -> Result<()> {
     let scen = scenario1().await?;
 
-    scen.user_b_liq.liquidate_begin().await?;
+    scen.user_b_liq.liquidate_begin(false).await?;
 
     let result = scen.user_b_liq.borrow(&scen.usdc, 500_000 * ONE_USDC).await;
     assert_custom_program_error(ErrorCode::LiquidationLostValue, result);
@@ -283,7 +286,7 @@ async fn cannot_borrow_too_much_during_liquidation() -> Result<()> {
 async fn can_borrow_some_during_liquidation() -> Result<()> {
     let scen = scenario1().await?;
 
-    scen.user_b_liq.liquidate_begin().await?;
+    scen.user_b_liq.liquidate_begin(false).await?;
     scen.user_b_liq.borrow(&scen.usdc, 5_000 * ONE_USDC).await?;
 
     Ok(())
@@ -295,7 +298,7 @@ async fn can_borrow_some_during_liquidation() -> Result<()> {
 async fn owner_cannot_end_liquidation_before_timeout() -> Result<()> {
     let scen = scenario1().await?;
 
-    scen.user_b_liq.liquidate_begin().await?;
+    scen.user_b_liq.liquidate_begin(false).await?;
 
     let result = scen
         .user_b
@@ -313,7 +316,7 @@ async fn owner_can_end_liquidation_after_timeout() -> Result<()> {
     let ctx = test_context().await;
     let scen = scenario1().await?;
 
-    scen.user_b_liq.liquidate_begin().await?;
+    scen.user_b_liq.liquidate_begin(false).await?;
 
     let mut clock = ctx.rpc.get_clock().unwrap();
     clock.unix_timestamp += 61;
@@ -337,7 +340,7 @@ async fn liquidator_permission_is_removable() -> Result<()> {
         .await?;
 
     // A liquidator tries to liquidate User B, it should no longer have authority to do that
-    let result = scen.user_b_liq.liquidate_begin().await;
+    let result = scen.user_b_liq.liquidate_begin(false).await;
     assert_custom_program_error(
         anchor_lang::error::ErrorCode::AccountDiscriminatorMismatch,
         result,
