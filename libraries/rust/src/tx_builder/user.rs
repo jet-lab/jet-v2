@@ -318,14 +318,23 @@ impl MarginTxBuilder {
         self.create_transaction(&instructions).await
     }
 
-    /// Transaction to begin liquidating user account
-    pub async fn liquidate_begin(&self) -> Result<Transaction> {
+    /// Transaction to begin liquidating user account.
+    /// If `refresh_position` is provided, all the margin pools will be refreshed first.
+    pub async fn liquidate_begin(&self, refresh_positions: bool) -> Result<Transaction> {
         assert!(self.is_liquidator);
 
-        self.create_transaction(&[self
-            .ix
-            .liquidate_begin(self.signer.as_ref().unwrap().pubkey())])
-            .await
+        // Get the margin account and refresh positions
+        let mut instructions = vec![];
+        if refresh_positions {
+            self.create_pool_instructions(&mut instructions).await?;
+        }
+
+        // Add liquidation instruction
+        instructions.push(
+            self.ix
+                .liquidate_begin(self.signer.as_ref().unwrap().pubkey()),
+        );
+        self.create_transaction(&instructions).await
     }
 
     /// Transaction to end liquidating user account
@@ -359,8 +368,23 @@ impl MarginTxBuilder {
 
     /// Refresh all of a user's positions based in the margin pool
     pub async fn refresh_all_pool_positions(&self) -> Result<Vec<Transaction>> {
-        let state = self.get_account_state().await?;
         let mut instructions = vec![];
+        self.create_pool_instructions(&mut instructions).await?;
+
+        futures::future::join_all(
+            instructions
+                .chunks(12)
+                .map(|c| self.create_unsigned_transaction(c)),
+        )
+        .await
+        .into_iter()
+        .collect()
+    }
+
+    /// Append instructions to refresh pool positions to instructions
+    async fn create_pool_instructions(&self, instructions: &mut Vec<Instruction>) -> Result<()> {
+        let state = self.get_account_state().await?;
+        let count = state.positions().count();
 
         for position in state.positions() {
             let p_metadata = self.get_position_metadata(&position.token).await?;
@@ -375,14 +399,7 @@ impl MarginTxBuilder {
             instructions.push(ix);
         }
 
-        futures::future::join_all(
-            instructions
-                .chunks(12)
-                .map(|c| self.create_unsigned_transaction(c)),
-        )
-        .await
-        .into_iter()
-        .collect()
+        Ok(())
     }
 
     async fn get_token_metadata(&self, token_mint: &Pubkey) -> Result<TokenMetadata> {
