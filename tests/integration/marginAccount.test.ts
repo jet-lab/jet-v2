@@ -87,7 +87,7 @@ describe("margin account", () => {
   })
 
   it("Close margin accounts", async () => {
-    await marginAccount_A.closeAccount();
-    await marginAccount_B.closeAccount();
+    await marginAccount_A.closeAccount()
+    await marginAccount_B.closeAccount()
   })
 })
