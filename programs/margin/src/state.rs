@@ -15,7 +15,10 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use anchor_lang::{prelude::*, system_program, Discriminator};
+use anchor_lang::{
+    prelude::*, solana_program::instruction::TRANSACTION_LEVEL_STACK_HEIGHT, system_program,
+    Discriminator,
+};
 use bytemuck::{Contiguous, Pod, Zeroable};
 use jet_metadata::TokenKind;
 #[cfg(any(test, feature = "cli"))]
@@ -44,11 +47,11 @@ pub struct MarginAccount {
     pub bump_seed: [u8; 1],
     pub user_seed: [u8; 2],
 
-    pub reserved0: [u8; 3],
-
     /// Data an adapter can use to check what the margin program thinks about the current invocation
     /// Must normally be zeroed, except during an invocation.
     pub invocation: Invocation,
+
+    pub reserved0: [u8; 3],
 
     /// The owner of this account, which generally has to sign for any changes to it
     pub owner: Pubkey,
@@ -836,12 +839,12 @@ impl Valuation {
 }
 
 /// Data made available to invoked programs by the margin program. Put data here if:
-/// - you need a guarantee that the margin program is the actual source of the data, or
-/// - this data will be used in the adapter via library calls to margin functions.
-/// The security of the margin program cannot rely on library calls receiving a well formed
-/// version of this struct since adapters can fake it. Rather, this is for adapters to protect
-/// themselves, in which case it is in their best interest to use the real state from the
-/// margin account.
+/// - adapters need a guarantee that the margin program is the actual source of the data, or
+/// - the data is needed by functions defined in margin that are called by adapters
+/// Note: The security of the margin program cannot rely on function calls that happen within
+/// adapters, because adapters can falsify the arguments to those functions.
+/// Rather, this data should only be used to enable adapters to protect themselves, in which case
+/// it would be in their best interest to pass along the actual state from the margin account.
 #[derive(Copy, Clone, Debug, Default)]
 pub struct Invocation {
     /// The stack heights from where the margin program invoked an adapter.
@@ -860,13 +863,22 @@ impl Invocation {
         self.caller_heights.unset(sys().get_stack_height() as u8);
     }
 
+    pub fn verify_directly_invoked(&self) -> Result<(), ErrorCode> {
+        if !self.directly_invoked() {
+            msg!(
+                "Current stack height: {}. Invocations: {self:?} (indexed from {})",
+                sys().get_stack_height(),
+                TRANSACTION_LEVEL_STACK_HEIGHT
+            );
+            return Err(ErrorCode::IndirectInvocation);
+        }
+
+        Ok(())
+    }
+
     /// Returns true if the current instruction was directly invoked by a cpi
     /// from margin that marked the start.
     pub fn directly_invoked(&self) -> bool {
-        // match self.caller_heights.max() {
-        //     Some(max) => 1 + max as usize == sys().get_stack_height(),
-        //     None => false,
-        // }
         let height = sys().get_stack_height();
         height != 0 && self.caller_heights.get(height as u8 - 1)
     }
