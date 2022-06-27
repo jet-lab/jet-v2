@@ -550,7 +550,7 @@ export class MarginAccount {
     assert(position)
 
     const ix: TransactionInstruction[] = []
-    AssociatedToken.withWrapIfNativeMint(
+    source = await AssociatedToken.withWrapIfNativeMint(
       ix,
       this.provider,
       this.provider.wallet.publicKey,
@@ -674,14 +674,12 @@ export class MarginAccount {
   /// # Params
   ///
   async withCloseAccount(instructions: TransactionInstruction[]): Promise<void> {
-    const authority = findDerivedAccount(this.programs.config.controlProgramId)
-
     const ix = await this.programs.margin.methods
       .closeAccount()
       .accounts({
         owner: this.owner,
         receiver: this.provider.wallet.publicKey,
-        marginAccount: this.address,
+        marginAccount: this.address
       })
       .instruction()
     instructions.push(ix)
