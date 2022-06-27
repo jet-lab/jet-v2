@@ -33,8 +33,6 @@ pub use state::*;
 
 pub use adapter::{AdapterResult, CompactAccountMeta, PositionChange, PriceChangeInfo};
 
-use crate::syscall::{sys, Sys};
-
 /// The maximum confidence deviation allowed for an oracle price.
 ///
 /// The confidence is measured as the percent of the confidence interval
