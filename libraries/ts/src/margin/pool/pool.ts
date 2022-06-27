@@ -304,7 +304,7 @@ export class Pool {
     marginAccount: MarginAccount
   }): Promise<void> {
     assert(marginAccount)
-    assert(this.info)
+    assert(this.info, "Must refresh the pool once.")
     await marginAccount.withAccountingInvoke({
       instructions: instructions,
       adapterProgram: this.programs.config.marginPoolProgramId,
