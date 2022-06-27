@@ -570,6 +570,18 @@ export class MarginAccount {
     return await this.provider.sendAndConfirm(new Transaction().add(...ix))
   }
 
+  async getPosition(tokenMint: Address) {
+    assert(this.info)
+    const tokenMintAddress = translateAddress(tokenMint)
+
+    for (let i = 0; i < this.info.positions.length.toNumber(); i++) {
+      const position = this.info.positions.positions[i]
+      if (position.token.equals(tokenMintAddress)) {
+        return position
+      }
+    }
+  }
+
   //TODO Withdraw
   async getOrCreatePosition(tokenMint: Address) {
     assert(this.info)
@@ -666,7 +678,12 @@ export class MarginAccount {
   async closeAccount() {
     const ix: TransactionInstruction[] = []
     await this.withCloseAccount(ix)
-    return await this.provider.sendAndConfirm(new Transaction().add(...ix))
+    try {
+      return await this.provider.sendAndConfirm(new Transaction().add(...ix))
+    } catch (err) {
+      console.log(err)
+      throw err
+    }
   }
 
   /// Get instruction to close an account
@@ -681,16 +698,21 @@ export class MarginAccount {
       .accounts({
         owner: this.owner,
         receiver: this.provider.wallet.publicKey,
-        marginAccount: this.address,
+        marginAccount: this.address
       })
       .instruction()
     instructions.push(ix)
   }
 
-  async closePosition(tokenAccount: PublicKey) {
+  async closePosition(position: AccountPosition) {
     const ix: TransactionInstruction[] = []
-    await this.withClosePosition(ix, tokenAccount)
-    return await this.provider.sendAndConfirm(new Transaction().add(...ix))
+    await this.withClosePosition(ix, position)
+    try {
+      return await this.provider.sendAndConfirm(new Transaction().add(...ix))
+    } catch (err) {
+      console.log(err)
+      throw err
+    }
   }
 
   /// Get instruction to close a position
@@ -698,16 +720,17 @@ export class MarginAccount {
   /// # Params
   ///
   /// `token_account` - The address of the token account for the position being closed
-  async withClosePosition(instructions: TransactionInstruction[], tokenAccount: PublicKey): Promise<void> {
-    const authority = findDerivedAccount(this.programs.config.controlProgramId)
+  async withClosePosition(instructions: TransactionInstruction[], position: AccountPosition): Promise<void> {
+    //const authority = findDerivedAccount(this.programs.config.controlProgramId)
 
     const ix = await this.programs.margin.methods
       .closePosition()
       .accounts({
-        authority: authority,
+        authority: this.owner,
         receiver: this.provider.wallet.publicKey,
         marginAccount: this.address,
-        tokenAccount,
+        positionTokenMint: position.token,
+        tokenAccount: position.address,
         tokenProgram: TOKEN_PROGRAM_ID
       })
       .instruction()
