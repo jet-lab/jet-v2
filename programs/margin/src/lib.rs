@@ -16,14 +16,15 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #![allow(clippy::inconsistent_digit_grouping)]
 
-use anchor_lang::prelude::*;
 use anchor_lang::solana_program::clock::UnixTimestamp;
+use anchor_lang::{prelude::*, solana_program::instruction::TRANSACTION_LEVEL_STACK_HEIGHT};
 
 declare_id!("JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ");
 
 mod adapter;
 mod instructions;
 mod state;
+pub(crate) mod syscall;
 /// Utilities used only in this crate
 pub(crate) mod util;
 
@@ -31,6 +32,8 @@ use instructions::*;
 pub use state::*;
 
 pub use adapter::{AdapterResult, CompactAccountMeta, PositionChange, PriceChangeInfo};
+
+use crate::syscall::{sys, Sys};
 
 /// The maximum confidence deviation allowed for an oracle price.
 ///
@@ -157,6 +160,10 @@ pub enum ErrorCode {
     #[msg("this invocation is not authorized by the necessary accounts")]
     UnauthorizedInvocation,
 
+    /// 141003
+    #[msg("the current instruction was not directly invoked by the margin program")]
+    IndirectInvocation,
+
     /// 141010 - Account cannot record any additional positions
     #[msg("account cannot record any additional positions")]
     MaxPositions = 135_010,
@@ -229,9 +236,19 @@ pub enum ErrorCode {
     LiquidationLostValue,
 }
 
-pub fn write_adapter_result(result: &AdapterResult) -> Result<()> {
+pub fn write_adapter_result(result: &AdapterResult, margin_account: &MarginAccount) -> Result<()> {
     let mut adapter_result_data = vec![0u8; 512];
     result.serialize(&mut &mut adapter_result_data[..])?;
+
+    if !margin_account.invocation.directly_invoked() {
+        msg!(
+            "Current stack height: {}. Invocations: {:?} (indexed from {})",
+            sys().get_stack_height(),
+            margin_account.invocation,
+            TRANSACTION_LEVEL_STACK_HEIGHT
+        );
+        return err!(ErrorCode::IndirectInvocation);
+    }
 
     anchor_lang::solana_program::program::set_return_data(&adapter_result_data);
     Ok(())

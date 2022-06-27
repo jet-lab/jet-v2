@@ -1,7 +1,7 @@
 #![allow(clippy::single_component_path_imports)]
 use anchor_lang::prelude::*;
 use anchor_spl::token::{burn, mint_to, Burn, Mint, MintTo, Token, TokenAccount};
-use jet_margin::{write_adapter_result, AdapterResult};
+use jet_margin::{write_adapter_result, AdapterResult, MarginAccount};
 
 declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
 
@@ -51,19 +51,22 @@ pub mod mock_adapter {
         burn_ix!(ctx.accounts.action, amount, result)
     }
 
-    pub fn noop(_ctx: Context<NoAccounts>, result: Option<AdapterResult>) -> Result<()> {
+    pub fn noop(ctx: Context<NoAccounts>, result: Option<AdapterResult>) -> Result<()> {
         match result {
-            Some(result) => write_adapter_result(&result),
+            Some(result) => write_adapter_result(&result, &*ctx.accounts.margin_account.load()?),
             None => Ok(()),
         }
     }
 }
 
 #[derive(Accounts)]
-pub struct NoAccounts {}
+pub struct NoAccounts<'info> {
+    margin_account: AccountLoader<'info, MarginAccount>,
+}
 
 #[derive(Accounts)]
 pub struct MintAction<'info> {
+    margin_account: AccountLoader<'info, MarginAccount>,
     mint: Account<'info, Mint>,
     token_account: Account<'info, TokenAccount>,
     authority: AccountInfo<'info>,
@@ -72,7 +75,7 @@ pub struct MintAction<'info> {
 
 #[derive(Accounts)]
 pub struct MintActionSigned<'info> {
-    owner: Signer<'info>,
+    #[account(constraint = action.margin_account.to_account_info().is_signer)]
     action: MintAction<'info>,
 }
 
@@ -111,7 +114,7 @@ macro_rules! mint_ix {
         )?;
 
         match $result {
-            Some($result) => write_adapter_result(&$result),
+            Some($result) => write_adapter_result(&$result, &*$accounts.margin_account.load()?),
             None => Ok(()),
         }
     }};
@@ -134,7 +137,7 @@ macro_rules! burn_ix {
         )?;
 
         match $result {
-            Some($result) => write_adapter_result(&$result),
+            Some($result) => write_adapter_result(&$result, &*$accounts.margin_account.load()?),
             None => Ok(()),
         }
     }};
