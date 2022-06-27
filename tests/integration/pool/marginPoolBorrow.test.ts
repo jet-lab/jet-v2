@@ -28,7 +28,7 @@ import {
   sendToken
 } from "../util"
 
-describe("margin pool", () => {
+describe("margin pool borrow", () => {
   // SUITE SETUP
   const marginPoolProgramId: PublicKey = new PublicKey(MARGIN_CONFIG.localnet.marginPoolProgramId)
   const confirmOptions: ConfirmOptions = { preflightCommitment: "processed", commitment: "processed" }
@@ -120,10 +120,12 @@ describe("margin pool", () => {
 
   let marginPool_USDC: Pool
   let marginPool_SOL: Pool
+  let marginPools: Pool[]
 
   it("Load Pools", async () => {
     marginPool_SOL = await manager.load({ tokenMint: SOL[0] })
     marginPool_USDC = await manager.load({ tokenMint: USDC[0] })
+    marginPools = [marginPool_SOL, marginPool_USDC]
   })
 
   it("Create margin pools", async () => {
@@ -234,6 +236,11 @@ describe("margin pool", () => {
     expect(await getTokenBalance(provider, "processed", user_b_usdc_account)).to.eq(50)
   })
 
+  it("Refresh pools", async () => {
+    await marginPool_USDC.refresh()
+    await marginPool_SOL.refresh()
+  })
+
   it("Deposit user funds into their margin accounts", async () => {
     // ACT
     await marginAccount_A.deposit(marginPool_USDC, user_a_usdc_account, new BN(500_000 * ONE_USDC))
@@ -269,13 +276,14 @@ describe("margin pool", () => {
     // ACT
     //TODO remove this.
     await pythClient.setPythPrice(ownerKeypair, SOL_oracle[1].publicKey, 100, 1, -8)
+    await pythClient.setPythPrice(ownerKeypair, USDC_oracle[1].publicKey, 1, 0.01, -8)
+
     await marginPool_SOL.marginBorrow({
       marginAccount: marginAccount_A,
+      pools: marginPools,
       amount: borrowedSOL
     })
-    //TODO remove this.
-    await pythClient.setPythPrice(ownerKeypair, USDC_oracle[1].publicKey, 1, 0.01, -8)
-    await marginPool_USDC.marginBorrow({ marginAccount: marginAccount_B, amount: borrowedUSDC })
+    await marginPool_USDC.marginBorrow({ marginAccount: marginAccount_B, pools: marginPools, amount: borrowedUSDC })
     await marginPool_SOL.refresh()
     await marginPool_USDC.refresh()
 
@@ -293,7 +301,11 @@ describe("margin pool", () => {
     const owedSOL = new BN(Number(marginPool_SOL.info?.loanNoteMint.supply))
 
     // ACT
-    await marginPool_SOL.marginRepay({ marginAccount: marginAccount_A, amount: PoolAmount.tokens(owedSOL) })
+    await marginPool_SOL.marginRepay({
+      marginAccount: marginAccount_A,
+      pools: marginPools,
+      amount: PoolAmount.tokens(owedSOL)
+    })
     await marginPool_SOL.refresh()
 
     // TEST
@@ -307,7 +319,11 @@ describe("margin pool", () => {
     const owedUSDC = new BN(Number(marginPool_USDC.info?.loanNoteMint.supply))
 
     // ACT
-    await marginPool_USDC.marginRepay({ marginAccount: marginAccount_B, amount: PoolAmount.tokens(owedUSDC) })
+    await marginPool_USDC.marginRepay({
+      marginAccount: marginAccount_B,
+      pools: marginPools,
+      amount: PoolAmount.tokens(owedUSDC)
+    })
     await marginPool_USDC.refresh()
 
     // TEST
@@ -339,8 +355,21 @@ describe("margin pool", () => {
   })
 
   //TODO
-  /*
   it("Close margin accounts", async () => {
+    await marginAccount_A.refresh()
+    if (marginAccount_A.info) {
+      const length = Number(marginAccount_A.info.positions.length)
+      for (let i = 0; i < length; i++) {
+        console.log(
+          `${i} = ${JSON.stringify(marginAccount_A.info.positions.positions[i])}, ${Number(
+            marginAccount_A.info.positions.positions[i].balance
+          )}`
+        )
+      }
+    }
+    console.log("")
+
+    /*
     await marginPool_SOL.closePosition({
       marginAccount: marginAccount_A,
       destination: user_a_sol_account
@@ -349,6 +378,7 @@ describe("margin pool", () => {
       marginAccount: marginAccount_A,
       destination: user_a_usdc_account
     })
+
     await marginAccount_A.closeAccount();
 
 
@@ -361,6 +391,6 @@ describe("margin pool", () => {
       destination: user_b_usdc_account
     })
     await marginAccount_B.closeAccount();
+    */
   })
-  */
 })

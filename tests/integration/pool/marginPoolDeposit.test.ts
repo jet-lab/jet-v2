@@ -28,7 +28,7 @@ import {
   sendToken
 } from "../util"
 
-describe("margin pool", () => {
+describe("margin pool deposit", () => {
   // SUITE SETUP
   const marginPoolProgramId: PublicKey = new PublicKey(MARGIN_CONFIG.localnet.marginPoolProgramId)
   const confirmOptions: ConfirmOptions = { preflightCommitment: "processed", commitment: "processed" }
@@ -120,10 +120,12 @@ describe("margin pool", () => {
 
   let marginPool_USDC: Pool
   let marginPool_SOL: Pool
+  let marginPools: Pool[]
 
   it("Load Pools", async () => {
     marginPool_SOL = await manager.load({ tokenMint: SOL[0] })
     marginPool_USDC = await manager.load({ tokenMint: USDC[0] })
+    marginPools = [marginPool_SOL, marginPool_USDC]
   })
 
   it("Create margin pools", async () => {
@@ -232,6 +234,11 @@ describe("margin pool", () => {
     expect(await getTokenBalance(provider, "processed", user_a_sol_account)).to.eq(50)
     expect(await getTokenBalance(provider, "processed", user_b_sol_account)).to.eq(500)
     expect(await getTokenBalance(provider, "processed", user_b_usdc_account)).to.eq(50)
+  })
+
+  it("Refresh pools", async () => {
+    await marginPool_USDC.refresh()
+    await marginPool_SOL.refresh()
   })
 
   it("Deposit user funds into their margin accounts", async () => {
