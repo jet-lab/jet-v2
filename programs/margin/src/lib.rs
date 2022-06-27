@@ -45,11 +45,12 @@ pub const MAX_ORACLE_CONFIDENCE: u16 = 5_00;
 
 /// The maximum number of seconds since the last price was by an oracle, before
 /// rejecting the price as too stale.
-pub const MAX_ORACLE_STALENESS: i64 = 10;
+#[constant]
+pub const MAX_ORACLE_STALENESS: i64 = 30;
 
 /// The maximum age to allow for a quoted price for a position (seconds)
 #[constant]
-pub const MAX_PRICE_QUOTE_AGE: u64 = 10;
+pub const MAX_PRICE_QUOTE_AGE: u64 = 30;
 
 /// The maximum amount that the amount of missing collateral can be increased,
 /// expressed as a percentage of the current missing collateral.

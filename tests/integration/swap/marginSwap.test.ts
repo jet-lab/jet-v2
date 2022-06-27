@@ -29,7 +29,7 @@ import { sleep } from "../../../libraries/ts/src/utils/util"
 
 import { getTokenAccountInfo } from "../util"
 
-[
+;[
   new PublicKey(MARGIN_CONFIG.localnet.splTokenSwapProgramId),
   new PublicKey(MARGIN_CONFIG.localnet.orcaSwapProgramId)
 ].forEach(function (swapProgramId) {
@@ -69,8 +69,11 @@ import { getTokenAccountInfo } from "../util"
     let feeTokenAccount: PublicKey
 
     it("Create token swap pool", async () => {
-      tokenSwapAccount = new Account();
-      [authority, authorityNonce] = await PublicKey.findProgramAddress([tokenSwapAccount.publicKey.toBuffer()], swapProgramId)
+      tokenSwapAccount = new Account()
+      ;[authority, authorityNonce] = await PublicKey.findProgramAddress(
+        [tokenSwapAccount.publicKey.toBuffer()],
+        swapProgramId
+      )
 
       tokenPool = await createMint(provider.connection, payer, authority, null, 2)
 
@@ -140,10 +143,6 @@ import { getTokenAccountInfo } from "../util"
         provider.connection,
         tokenSwapAccount.publicKey,
         new Account(payer.secretKey),
-        controlProgramId,
-        marginProgramId,
-        marginSwapProgramId,
-        metadataProgramId,
         swapProgramId
       )
 
@@ -326,7 +325,7 @@ import { getTokenAccountInfo } from "../util"
       } else {
         assert(Number(info.amount) == currentFeeAmount + 22277)
       }
-      
+
       if (poolAccount != null) {
         info = await getTokenAccountInfo(provider, poolAccount)
         assert(Number(info.amount) == 0)
@@ -525,4 +524,4 @@ import { getTokenAccountInfo } from "../util"
       assert(Number(info.amount) >= poolTokenAmount - adjustedPoolTokenA - adjustedPoolTokenB)
     })
   })
-});
+})

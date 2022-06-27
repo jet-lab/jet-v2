@@ -13,5 +13,6 @@
     "sourceMap": true,
     "esModuleInterop": true
   },
-  "include": ["./libraries/ts/*", "./tests/integration/*"]
+  "include": ["./libraries/ts/**/*", "./tests/integration/**/*"],
+  "exclude": ["./**/dist/**/*"]
 }

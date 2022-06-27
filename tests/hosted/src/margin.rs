@@ -20,7 +20,7 @@
 use std::sync::Arc;
 
 use anchor_lang::{AccountDeserialize, AccountSerialize, InstructionData, ToAccountMetas};
-use anyhow::Error;
+use anyhow::{bail, Error};
 
 use jet_margin::PositionKind;
 use jet_margin_sdk::accounts::MarginPoolAccounts;
@@ -102,6 +102,17 @@ impl MarginClient {
                 MarginPool::try_deserialize(&mut &account.data[..]).map_err(Error::from)
             })
             .collect()
+    }
+
+    pub async fn get_pool(&self, token: &Pubkey) -> Result<MarginPool, Error> {
+        let pool_accounts = MarginPoolAccounts::derive_from_token(*token);
+        let account = self.rpc.get_account(&pool_accounts.address).await?;
+
+        if account.is_none() {
+            bail!("could not find pool");
+        }
+
+        MarginPool::try_deserialize(&mut &account.unwrap().data[..]).map_err(Error::from)
     }
 
     pub async fn create_authority(&self) -> Result<(), Error> {
@@ -311,8 +322,9 @@ impl MarginUser {
         .await
     }
 
-    pub async fn liquidate_begin(&self) -> Result<(), Error> {
-        self.send_confirm_tx(self.tx.liquidate_begin().await?).await
+    pub async fn liquidate_begin(&self, refresh_positions: bool) -> Result<(), Error> {
+        self.send_confirm_tx(self.tx.liquidate_begin(refresh_positions).await?)
+            .await
     }
 
     pub async fn liquidate_end(&self, original_liquidator: Option<Pubkey>) -> Result<(), Error> {

@@ -1,6 +1,6 @@
 import assert from "assert"
 import { blob, struct, u8 } from "buffer-layout"
-import { BN, InstructionNamespace } from "@project-serum/anchor"
+import { BN } from "@project-serum/anchor"
 import {
   decodeEventQueue,
   decodeRequestQueue,
@@ -36,10 +36,6 @@ import {
   TransactionSignature
 } from "@solana/web3.js"
 
-import { buildInstructions } from "../../utils/idlBuilder"
-import { IDL as JetControlIDL, JetControl } from "../../types/jetControl"
-import { IDL as JetMarginIDL, JetMargin } from "../../types/jetMargin"
-import { IDL as JetMarginSerumIDL, JetMarginSerum } from "../../types/jetMarginSerum"
 import { MarginAccount } from "../marginAccount"
 import { MarginPrograms } from "../marginClient"
 import { ZERO_BN } from "../../token"
@@ -69,16 +65,8 @@ export class Market {
     }
   }
 
-  private controlProgramId: PublicKey
-  private controlInstructions: InstructionNamespace<JetControl>
-
-  private marginInstructions: InstructionNamespace<JetMargin>
-
   private marginSerumProgramId: PublicKey
-  private marginSerumInstructions: InstructionNamespace<JetMarginSerum>
   private marginSerumAdapterMetadata: PublicKey
-
-  private metadataProgramId: PublicKey
 
   constructor(
     programs: MarginPrograms,
@@ -87,10 +75,8 @@ export class Market {
     quoteMintDecimals: number,
     options: MarketOptions = {},
     serumProgramId: PublicKey,
-    controlProgramId: PublicKey,
     marginProgramId: PublicKey,
     marginSerumProgramId: PublicKey,
-    metadataProgramId: PublicKey,
     marginSerumAdapterMetadata: PublicKey,
     layoutOverride?: any
   ) {
@@ -109,24 +95,11 @@ export class Market {
     this._feeDiscountKeysCache = {}
     this._layoutOverride = layoutOverride
 
-    assert(controlProgramId)
-    this.controlProgramId = controlProgramId
-    this.controlInstructions = buildInstructions(JetControlIDL, controlProgramId) as InstructionNamespace<JetControl>
-
     assert(marginProgramId)
-    //this.marginProgramId = marginProgramId;
-    this.marginInstructions = buildInstructions(JetMarginIDL, marginProgramId) as InstructionNamespace<JetMargin>
 
     assert(marginSerumProgramId)
     this.marginSerumProgramId = marginSerumProgramId
-    this.marginSerumInstructions = buildInstructions(
-      JetMarginSerumIDL,
-      marginSerumProgramId
-    ) as InstructionNamespace<JetMarginSerum>
     this.marginSerumAdapterMetadata = marginSerumAdapterMetadata
-
-    assert(metadataProgramId)
-    this.metadataProgramId = metadataProgramId
   }
 
   static getLayout(programId: PublicKey) {
@@ -147,7 +120,6 @@ export class Market {
     address: PublicKey,
     options: MarketOptions = {},
     serumProgramId: PublicKey,
-    controlProgramId: PublicKey,
     marginProgramId: PublicKey,
     marginSerumProgramId: PublicKey,
     metadataProgramId: PublicKey,
@@ -172,10 +144,8 @@ export class Market {
       quoteMintDecimals,
       options,
       serumProgramId,
-      controlProgramId,
       marginProgramId,
       marginSerumProgramId,
-      metadataProgramId,
       (await PublicKey.findProgramAddress([marginSerumProgramId.toBuffer()], metadataProgramId))[0],
       layoutOverride
     )
@@ -581,7 +551,7 @@ export class Market {
       }
     }
 
-    const placeOrderInstruction = this.makePlaceOrderInstruction(connection, marginAccount, {
+    const placeOrderInstruction = await this.makePlaceOrderInstruction(connection, marginAccount, {
       owner: marginAccount.address,
       payer: wrappedSolAccount?.publicKey ?? payer,
       side,
@@ -608,11 +578,11 @@ export class Market {
     return { transaction, signers, payer: marginAccount.owner }
   }
 
-  makePlaceOrderInstruction<T extends PublicKey | Account>(
+  async makePlaceOrderInstruction<T extends PublicKey | Account>(
     connection: Connection,
     marginAccount: MarginAccount,
     params: OrderParams<T>
-  ): TransactionInstruction {
+  ): Promise<TransactionInstruction> {
     const {
       owner,
       payer,
@@ -639,15 +609,15 @@ export class Market {
         marginAccount.address,
         this.marginSerumProgramId,
         this.marginSerumAdapterMetadata,
-        this.makeNewOrderV3Instruction(marginAccount, params)
+        await this.makeNewOrderV3Instruction(marginAccount, params)
       )
     }
   }
 
-  makeNewOrderV3Instruction<T extends PublicKey | Account>(
+  async makeNewOrderV3Instruction<T extends PublicKey | Account>(
     marginAccount: MarginAccount,
     params: OrderParams<T>
-  ): TransactionInstruction {
+  ): Promise<TransactionInstruction> {
     const {
       owner,
       payer,
@@ -664,36 +634,36 @@ export class Market {
     } = params
     assert(this.supportsSrmFeeDiscounts)
     const limit = 65535
-    return this.marginSerumInstructions.newOrderV3(
-      this.encodeSide(side),
-      this.priceNumberToLots(price), // limitPrice
-      this.baseSizeNumberToLots(size), // maxBaseQuantity
-      new BN(this._decoded.quoteLotSize.toNumber()).mul(
-        this.baseSizeNumberToLots(size).mul(this.priceNumberToLots(price))
-      ), // maxQuoteQuantity
-      this.encodeSelfTradeBehavior(selfTradeBehavior),
-      this.encodeOrderType(orderType),
-      clientId!,
-      limit,
-      {
-        accounts: {
-          marginAccount: marginAccount.address,
-          market: this.address,
-          openOrdersAccount: openOrdersAccount ? openOrdersAccount.publicKey : openOrdersAddressKey!,
-          requestQueue: this._decoded.requestQueue,
-          eventQueue: this._decoded.eventQueue,
-          bids: this._decoded.bids,
-          asks: this._decoded.asks,
-          payer,
-          baseVault: this._decoded.baseVault,
-          quoteVault: this._decoded.quoteVault,
-          splTokenProgramId: TOKEN_PROGRAM_ID,
-          rentSysvarId: SYSVAR_RENT_PUBKEY,
-          serumProgramId: this._serumProgramId
-        },
-        remainingAccounts: feeDiscountPubkey ? [{ pubkey: feeDiscountPubkey, isSigner: false, isWritable: true }] : []
-      }
-    )
+    return await this._programs.marginSerum.methods
+      .newOrderV3(
+        this.encodeSide(side),
+        this.priceNumberToLots(price), // limitPrice
+        this.baseSizeNumberToLots(size), // maxBaseQuantity
+        new BN(this._decoded.quoteLotSize.toNumber()).mul(
+          this.baseSizeNumberToLots(size).mul(this.priceNumberToLots(price))
+        ), // maxQuoteQuantity
+        this.encodeSelfTradeBehavior(selfTradeBehavior),
+        this.encodeOrderType(orderType),
+        clientId!,
+        limit
+      )
+      .accounts({
+        marginAccount: marginAccount.address,
+        market: this.address,
+        openOrdersAccount: openOrdersAccount ? openOrdersAccount.publicKey : openOrdersAddressKey!,
+        requestQueue: this._decoded.requestQueue,
+        eventQueue: this._decoded.eventQueue,
+        bids: this._decoded.bids,
+        asks: this._decoded.asks,
+        payer,
+        baseVault: this._decoded.baseVault,
+        quoteVault: this._decoded.quoteVault,
+        splTokenProgramId: TOKEN_PROGRAM_ID,
+        rentSysvarId: SYSVAR_RENT_PUBKEY,
+        serumProgramId: this._serumProgramId
+      })
+      .remainingAccounts(feeDiscountPubkey ? [{ pubkey: feeDiscountPubkey, isSigner: false, isWritable: true }] : [])
+      .instruction()
   }
 
   private encodeOrderType(orderType: string) {
@@ -741,30 +711,31 @@ export class Market {
   }
 
   async makeCancelOrderByClientIdTransaction(marginAccount: MarginAccount, openOrders: PublicKey, clientId: BN) {
-    const transaction = new Transaction()
     if (this.usesRequestQueue) {
       throw new Error("Not supported.")
-    } else {
-      transaction.add(
-        this.makeAdapterInvokeInstruction(
-          marginAccount.owner,
-          marginAccount.address,
-          this.marginSerumProgramId,
-          this.marginSerumAdapterMetadata,
-          this.marginSerumInstructions.cancelOrderByClientIdV2(clientId, {
-            accounts: {
-              marginAccount: marginAccount.address,
-              market: this.address,
-              openOrdersAccount: openOrders,
-              marketBids: this._decoded.bids,
-              marketAsks: this._decoded.asks,
-              eventQueue: this._decoded.eventQueue,
-              serumProgramId: this._serumProgramId
-            }
-          })
-        )
-      )
     }
+
+    const transaction = new Transaction()
+    transaction.add(
+      await this.makeAdapterInvokeInstruction(
+        marginAccount.owner,
+        marginAccount.address,
+        this.marginSerumProgramId,
+        this.marginSerumAdapterMetadata,
+        await this._programs.marginSerum.methods
+          .cancelOrderByClientIdV2(clientId)
+          .accounts({
+            marginAccount: marginAccount.address,
+            market: this.address,
+            openOrdersAccount: openOrders,
+            marketBids: this._decoded.bids,
+            marketAsks: this._decoded.asks,
+            eventQueue: this._decoded.eventQueue,
+            serumProgramId: this._serumProgramId
+          })
+          .instruction()
+      )
+    )
     return transaction
   }
 
@@ -776,39 +747,39 @@ export class Market {
   async makeCancelOrderTransaction(marginAccount: MarginAccount, order: Order) {
     const transaction = new Transaction()
     transaction.add(
-      this.makeAdapterInvokeInstruction(
+      await this.makeAdapterInvokeInstruction(
         marginAccount.owner,
         marginAccount.address,
         this.marginSerumProgramId,
         this.marginSerumAdapterMetadata,
-        this.makeCancelOrderInstruction(marginAccount, order)
+        await this.makeCancelOrderInstruction(marginAccount, order)
       )
     )
     return transaction
   }
 
-  makeCancelOrderInstruction(marginAccount: MarginAccount, order: Order) {
+  async makeCancelOrderInstruction(marginAccount: MarginAccount, order: Order) {
     if (this.usesRequestQueue) {
       throw new Error("Not supported.")
-    } else {
-      return this.makeAdapterInvokeInstruction(
-        marginAccount.owner,
-        marginAccount.address,
-        this.marginSerumProgramId,
-        this.marginSerumAdapterMetadata,
-        this.marginSerumInstructions.cancelOrderV2(this.encodeSide(order.side), order.orderId, {
-          accounts: {
-            marginAccount: marginAccount.address,
-            market: this.address,
-            openOrdersAccount: order.openOrdersAddress,
-            marketBids: this._decoded.bids,
-            marketAsks: this._decoded.asks,
-            eventQueue: this._decoded.eventQueue,
-            serumProgramId: this._serumProgramId
-          }
-        })
-      )
     }
+    return this.makeAdapterInvokeInstruction(
+      marginAccount.owner,
+      marginAccount.address,
+      this.marginSerumProgramId,
+      this.marginSerumAdapterMetadata,
+      await this._programs.marginSerum.methods
+        .cancelOrderV2(this.encodeSide(order.side), order.orderId)
+        .accounts({
+          marginAccount: marginAccount.address,
+          market: this.address,
+          openOrdersAccount: order.openOrdersAddress,
+          marketBids: this._decoded.bids,
+          marketAsks: this._decoded.asks,
+          eventQueue: this._decoded.eventQueue,
+          serumProgramId: this._serumProgramId
+        })
+        .instruction()
+    )
   }
 
   async settleFunds(
@@ -875,13 +846,14 @@ export class Market {
     }
 
     transaction.add(
-      this.makeAdapterInvokeInstruction(
+      await this.makeAdapterInvokeInstruction(
         marginAccount.owner,
         marginAccount.address,
         this.marginSerumProgramId,
         this.marginSerumAdapterMetadata,
-        this.marginSerumInstructions.settleFunds({
-          accounts: {
+        await this._programs.marginSerum.methods
+          .settleFunds()
+          .accounts({
             marginAccount: marginAccount.address,
             market: this.address,
             splTokenProgramId: TOKEN_PROGRAM_ID,
@@ -894,11 +866,11 @@ export class Market {
               quoteWallet.equals(openOrders.owner) && wrappedSolAccount ? wrappedSolAccount.publicKey : quoteWallet,
             vaultSigner,
             serumProgramId: this._serumProgramId
-          },
-          remainingAccounts: referrerQuoteWallet
-            ? [{ pubkey: referrerQuoteWallet, isSigner: false, isWritable: true }]
-            : []
-        })
+          })
+          .remainingAccounts(
+            referrerQuoteWallet ? [{ pubkey: referrerQuoteWallet, isSigner: false, isWritable: true }] : []
+          )
+          .instruction()
       )
     )
 
@@ -915,72 +887,76 @@ export class Market {
     return { transaction, signers, payer: openOrders.owner }
   }
 
-  public makeConsumeEventsInstruction(openOrdersAccounts: Array<PublicKey>, limit: number): TransactionInstruction {
-    return this.marginSerumInstructions.consumeEvents(limit, {
-      accounts: {
+  public async makeConsumeEventsInstruction(
+    openOrdersAccounts: Array<PublicKey>,
+    limit: number
+  ): Promise<TransactionInstruction> {
+    return await this._programs.marginSerum.methods
+      .consumeEvents(limit)
+      .accounts({
         serumProgramId: this._serumProgramId,
         market: this.address,
         eventQueue: this._decoded.eventQueue,
         coinFeeReceivableAccount: this._decoded.eventQueue,
         pcFeeReceivableAccount: this._decoded.eventQueue
-      },
-      remainingAccounts: openOrdersAccounts.map(account => ({
-        pubkey: account,
-        isSigner: false,
-        isWritable: true
-      }))
-    })
+      })
+      .remainingAccounts(
+        openOrdersAccounts.map(account => ({
+          pubkey: account,
+          isSigner: false,
+          isWritable: true
+        }))
+      )
+      .instruction()
   }
 
   async matchOrders(connection: Connection, feePayer: Account, limit: number) {
-    const tx = this.makeMatchOrdersTransaction(limit)
+    const tx = await this.makeMatchOrdersTransaction(limit)
     return await this.sendTransaction(connection, tx, [feePayer])
   }
 
-  makeMatchOrdersTransaction(limit: number): Transaction {
-    const tx = new Transaction()
-    tx.add(
-      this.marginSerumInstructions.matchOrders(limit, {
-        accounts: {
-          market: this.address,
-          requestQueue: this._decoded.requestQueue,
-          eventQueue: this._decoded.eventQueue,
-          bids: this._decoded.bids,
-          asks: this._decoded.asks,
-          coinFeeReceivableAccount: this._decoded.baseVault,
-          pcFeeReceivableAccount: this._decoded.quoteVault,
-          serumProgramId: this._serumProgramId
-        }
+  async makeMatchOrdersTransaction(limit: number): Promise<Transaction> {
+    return await this._programs.marginSerum.methods
+      .matchOrders(limit)
+      .accounts({
+        market: this.address,
+        requestQueue: this._decoded.requestQueue,
+        eventQueue: this._decoded.eventQueue,
+        bids: this._decoded.bids,
+        asks: this._decoded.asks,
+        coinFeeReceivableAccount: this._decoded.baseVault,
+        pcFeeReceivableAccount: this._decoded.quoteVault,
+        serumProgramId: this._serumProgramId
       })
-    )
-    return tx
+      .transaction()
   }
 
-  makeAdapterInvokeInstruction(
+  async makeAdapterInvokeInstruction(
     owner: PublicKey,
     marginAccount: PublicKey,
     adapterProgram: PublicKey,
     adapterMetadata: PublicKey,
     adapterInstruction: TransactionInstruction
-  ): TransactionInstruction {
-    return this.marginInstructions.adapterInvoke(
-      adapterInstruction.keys.slice(1).map(accountMeta => {
-        return { isSigner: false, isWritable: accountMeta.isWritable }
-      }),
-      adapterInstruction.data,
-      {
-        accounts: {
-          owner,
-          marginAccount,
-          adapterProgram,
-          adapterMetadata
-        },
-        remainingAccounts: adapterInstruction.keys.slice(1).map(accountMeta => {
+  ): Promise<TransactionInstruction> {
+    return await this._programs.margin.methods
+      .adapterInvoke(
+        adapterInstruction.keys.slice(1).map(accountMeta => {
+          return { isSigner: false, isWritable: accountMeta.isWritable }
+        }),
+        adapterInstruction.data
+      )
+      .accounts({
+        owner,
+        marginAccount,
+        adapterProgram,
+        adapterMetadata
+      })
+      .remainingAccounts(
+        adapterInstruction.keys.slice(1).map(accountMeta => {
           return { pubkey: accountMeta.pubkey, isSigner: false, isWritable: accountMeta.isWritable }
         })
-        //TODO append the existing remaining accounts
-      }
-    )
+      )
+      .instruction()
   }
 
   private async sendTransaction(

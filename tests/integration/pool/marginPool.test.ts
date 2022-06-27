@@ -82,11 +82,11 @@ describe("margin pool", () => {
   })
 
   it("Create authority", async () => {
-    await createAuthority(provider, payer)
+    await createAuthority(programs, provider)
   })
 
   it("Register adapter", async () => {
-    await registerAdapter(provider, payer, marginPoolProgramId, payer)
+    await registerAdapter(programs, provider, payer, marginPoolProgramId, payer)
   })
 
   const ONE_USDC = 1_000_000
@@ -248,40 +248,40 @@ describe("margin pool", () => {
     await marginPool_SOL.refresh()
     await marginPool_USDC.refresh()
 
-    const SOLLoanNotes = new BN(marginPool_SOL.info?.loanNoteMint.supply)
-    const USDCLoanNotes = new BN(marginPool_USDC.info?.loanNoteMint.supply)
+    const SOLLoanNotes = marginPool_SOL.info?.loanNoteMint.supply
+    const USDCLoanNotes = marginPool_USDC.info?.loanNoteMint.supply
 
     // TEST
-    expect(SOLLoanNotes.toNumber()).to.eq(borrowedSOL.toNumber())
-    expect(USDCLoanNotes.toNumber()).to.eq(borrowedUSDC.toNumber())
+    expect(Number(SOLLoanNotes)).to.eq(borrowedSOL.toNumber())
+    expect(Number(USDCLoanNotes)).to.eq(borrowedUSDC.toNumber())
   })
 
   it("User A repays his SOL loan", async () => {
     //SETUP
     await marginPool_SOL.refresh()
-    const owedSOL = new BN(marginPool_SOL.info?.loanNoteMint.supply)
+    const owedSOL = new BN(Number(marginPool_SOL.info?.loanNoteMint.supply))
 
     // ACT
     await marginPool_SOL.marginRepay({ marginAccount: marginAccount_A, amount: PoolAmount.tokens(owedSOL) })
     await marginPool_SOL.refresh()
 
     // TEST
-    const SOLLoanNotes = new BN(marginPool_SOL.info?.loanNoteMint.supply)
+    const SOLLoanNotes = new BN(Number(marginPool_SOL.info?.loanNoteMint.supply))
     expect(SOLLoanNotes.toNumber()).to.be.below(10)
   })
 
   it("User B repays his USDC loan", async () => {
     // SETUP
     await marginPool_USDC.refresh()
-    const owedUSDC = new BN(marginPool_USDC.info?.loanNoteMint.supply)
+    const owedUSDC = new BN(Number(marginPool_USDC.info?.loanNoteMint.supply))
 
     // ACT
     await marginPool_USDC.marginRepay({ marginAccount: marginAccount_B, amount: PoolAmount.tokens(owedUSDC) })
     await marginPool_USDC.refresh()
 
     // TEST
-    const USDCLoanNotes = new BN(marginPool_USDC.info?.loanNoteMint.supply)
-    expect(USDCLoanNotes.toNumber()).to.be.below(10)
+    const USDCLoanNotes = marginPool_USDC.info?.loanNoteMint.supply
+    expect(Number(USDCLoanNotes)).to.be.below(10)
   })
 
   it("Users withdraw their funds", async () => {

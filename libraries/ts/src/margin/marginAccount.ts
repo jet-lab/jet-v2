@@ -663,6 +663,30 @@ export class MarginAccount {
     return tokenAccount
   }
 
+  async closeAccount() {
+    const ix: TransactionInstruction[] = []
+    await this.withCloseAccount(ix)
+    return await this.provider.sendAndConfirm(new Transaction().add(...ix))
+  }
+
+  /// Get instruction to close an account
+  ///
+  /// # Params
+  ///
+  async withCloseAccount(instructions: TransactionInstruction[]): Promise<void> {
+    const authority = findDerivedAccount(this.programs.config.controlProgramId)
+
+    const ix = await this.programs.margin.methods
+      .closeAccount()
+      .accounts({
+        owner: this.owner,
+        receiver: this.provider.wallet.publicKey,
+        marginAccount: this.address,
+      })
+      .instruction()
+    instructions.push(ix)
+  }
+
   async closePosition(tokenAccount: PublicKey) {
     const ix: TransactionInstruction[] = []
     await this.withClosePosition(ix, tokenAccount)
