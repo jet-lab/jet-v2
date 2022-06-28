@@ -18,6 +18,7 @@
 use anchor_lang::prelude::*;
 use anchor_lang::AccountsClose;
 
+use crate::events;
 use crate::{ErrorCode, Liquidation, MarginAccount, LIQUIDATION_TIMEOUT};
 
 #[derive(Accounts)]
@@ -39,9 +40,9 @@ pub fn liquidate_end_handler(ctx: Context<LiquidateEnd>) -> Result<()> {
     let mut account = ctx.accounts.margin_account.load_mut()?;
     let start_time = ctx.accounts.liquidation.load()?.start_time();
 
-    if (account.liquidator != ctx.accounts.authority.key())
-        && Clock::get()?.unix_timestamp - start_time < LIQUIDATION_TIMEOUT
-    {
+    let timed_out = Clock::get()?.unix_timestamp - start_time >= LIQUIDATION_TIMEOUT;
+
+    if (account.liquidator != ctx.accounts.authority.key()) && !timed_out {
         msg!(
             "Only the liquidator may end the liquidation before the timeout of {} seconds",
             LIQUIDATION_TIMEOUT
@@ -54,6 +55,12 @@ pub fn liquidate_end_handler(ctx: Context<LiquidateEnd>) -> Result<()> {
     ctx.accounts
         .liquidation
         .close(ctx.accounts.authority.to_account_info())?;
+
+    emit!(events::LiquidationEnded {
+        margin_account: ctx.accounts.margin_account.key(),
+        authority: ctx.accounts.authority.key(),
+        timed_out,
+    });
 
     Ok(())
 }
