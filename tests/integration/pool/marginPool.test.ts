@@ -27,7 +27,7 @@ import {
   sendToken
 } from "../util"
 
-describe("margin pool", () => {
+describe("margin pool", async () => {
   // SUITE SETUP
   const marginPoolProgramId: PublicKey = new PublicKey(MARGIN_CONFIG.localnet.marginPoolProgramId)
   const confirmOptions: ConfirmOptions = { preflightCommitment: "processed", commitment: "processed" }
@@ -37,8 +37,9 @@ describe("margin pool", () => {
   const ownerKeypair = payer
   const programs = MarginClient.getPrograms(provider, "localnet")
   const manager = new PoolManager(programs, provider)
-  let USDC
-  let SOL
+
+  const USDC = await createToken(provider, payer, 6, 10_000_000)
+  const SOL = await createToken(provider, payer, 9, 10_000)
 
   it("Fund payer", async () => {
     const airdropSignature = await provider.connection.requestAirdrop(provider.wallet.publicKey, 300 * LAMPORTS_PER_SOL)
@@ -47,8 +48,6 @@ describe("margin pool", () => {
 
   it("Create tokens", async () => {
     // SETUP
-    USDC = await createToken(provider, payer, 6, 10_000_000)
-    SOL = await createToken(provider, payer, 9, 10_000)
 
     // ACT
     const usdc_supply = await getMintSupply(provider, USDC[0], 6)
@@ -302,5 +301,31 @@ describe("margin pool", () => {
     const tokenBalanceB = await getTokenBalance(provider, "processed", user_b_sol_account)
     expect(tokenBalanceA).to.eq(400_000)
     expect(tokenBalanceB).to.eq(400)
+  })
+
+  describe("Flight Logs", () => {
+    it("should allow to get a list of the latest transactions", async () => {
+      const mints = {
+        USDC: {
+          tokenMint: USDC[0],
+          depositNoteMint: marginPool_USDC.addresses.depositNoteMint,
+          loanNoteMint: marginPool_USDC.addresses.loanNoteMint
+        },
+        SOL: {
+          tokenMint: SOL[0],
+          depositNoteMint: marginPool_SOL.addresses.depositNoteMint,
+          loanNoteMint: marginPool_SOL.addresses.loanNoteMint
+        }
+      }
+      const transactions = await MarginClient.getFlightLogs(provider, wallet_a.publicKey, mints, "localnet")
+
+      expect(transactions).to.have.length(5)
+
+      // expect(transactions[0].tradeAction).to.equals("withdraw")
+      // expect(transactions[1].tradeAction).to.equals("repay")
+      // expect(transactions[2].tradeAction).to.equals("borrow")
+      // expect(transactions[3].tradeAction).to.equals("deposit")
+      // expect(transactions[4].tradeAction).to.equals("deposit")
+    })
   })
 })
