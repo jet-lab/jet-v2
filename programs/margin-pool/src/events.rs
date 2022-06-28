@@ -68,6 +68,18 @@ pub struct MarginRepay {
     pub repaid_deposit_notes: u64,
     pub summary: MarginPoolSummary,
 }
+#[event]
+pub struct Repay {
+    pub margin_pool: Pubkey,
+    pub user: Pubkey,
+    pub loan_account: Pubkey,
+    pub repayment_token_account: Pubkey,
+    pub max_repay_tokens: u64,
+    pub max_repay_notes: u64,
+    pub repaid_tokens: u64,
+    pub repaid_loan_notes: u64,
+    pub summary: MarginPoolSummary,
+}
 
 #[event]
 pub struct Collect {

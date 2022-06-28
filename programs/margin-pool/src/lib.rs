@@ -83,6 +83,11 @@ mod jet_margin_pool {
     pub fn margin_refresh_position(ctx: Context<MarginRefreshPosition>) -> Result<()> {
         instructions::margin_refresh_position_handler(ctx)
     }
+
+    /// Repay a margin account debt from an outside token account
+    pub fn repay(ctx: Context<Repay>, max_amount: Amount) -> Result<()> {
+        instructions::repay_handler(ctx, max_amount)
+    }
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone, Copy)]

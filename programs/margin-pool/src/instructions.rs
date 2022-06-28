@@ -22,6 +22,7 @@ mod deposit;
 mod margin_borrow;
 mod margin_refresh_position;
 mod margin_repay;
+mod repay;
 mod withdraw;
 
 pub use collect::*;
@@ -31,4 +32,5 @@ pub use deposit::*;
 pub use margin_borrow::*;
 pub use margin_refresh_position::*;
 pub use margin_repay::*;
+pub use repay::*;
 pub use withdraw::*;
