@@ -50,6 +50,11 @@ pub fn adapter_invoke_handler<'info>(
         return Err(ErrorCode::Liquidating.into());
     }
 
+    emit!(events::AdapterInvokeBegin {
+        margin_account: ctx.accounts.margin_account.key(),
+        adapter_program: ctx.accounts.adapter_program.key(),
+    });
+
     let touched_positions = adapter::invoke(
         &InvokeAdapter {
             margin_account: &ctx.accounts.margin_account,
