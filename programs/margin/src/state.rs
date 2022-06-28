@@ -28,8 +28,8 @@ use anchor_lang::Result as AnchorResult;
 use std::{convert::TryFrom, result::Result};
 
 use crate::{
-    util::Require, ErrorCode, PriceChangeInfo, MAX_ORACLE_CONFIDENCE, MAX_ORACLE_STALENESS,
-    MAX_PRICE_QUOTE_AGE,
+    util::{Invocation, Require},
+    ErrorCode, PriceChangeInfo, MAX_ORACLE_CONFIDENCE, MAX_ORACLE_STALENESS, MAX_PRICE_QUOTE_AGE,
 };
 
 const POS_PRICE_VALID: u8 = 1;
@@ -43,7 +43,11 @@ pub struct MarginAccount {
     pub bump_seed: [u8; 1],
     pub user_seed: [u8; 2],
 
-    pub reserved0: [u8; 4],
+    /// Data an adapter can use to check what the margin program thinks about the current invocation
+    /// Must normally be zeroed, except during an invocation.
+    pub invocation: Invocation,
+
+    pub reserved0: [u8; 3],
 
     /// The owner of this account, which generally has to sign for any changes to it
     pub owner: Pubkey,
@@ -81,6 +85,7 @@ impl std::fmt::Debug for MarginAccount {
             .field("bump_seed", &self.bump_seed)
             .field("user_seed", &self.user_seed)
             .field("reserved0", &self.reserved0)
+            .field("invocation", &self.invocation)
             .field("owner", &self.owner)
             .field("liquidation", &self.liquidation)
             .field("liquidator", &self.liquidator);
@@ -851,7 +856,10 @@ impl Valuation {
 
 #[cfg(test)]
 mod tests {
+    use crate::{syscall::thread_local_mock::mock_stack_height, util::Invocation};
+
     use super::*;
+    use itertools::Itertools;
     use jet_metadata::TokenKind;
     use serde_test::{assert_ser_tokens, Token};
 
@@ -864,25 +872,65 @@ mod tests {
 
     #[test]
     fn margin_account_debug() {
+        let mut invocation = Invocation::default();
+        for i in [0, 1, 2, 4, 7] {
+            mock_stack_height(Some(i));
+            invocation.start();
+        }
         let mut acc = MarginAccount {
             version: 1,
             bump_seed: [0],
             user_seed: [0; 2],
-            reserved0: [0; 4],
+            reserved0: [0; 3],
             owner: Pubkey::default(),
             liquidation: Pubkey::default(),
             liquidator: Pubkey::default(),
+            invocation,
             positions: [0; 7432],
         };
-        let output = "MarginAccount { version: 1, bump_seed: [0], user_seed: [0, 0], reserved0: [0, 0, 0, 0], owner: 11111111111111111111111111111111, liquidation: 11111111111111111111111111111111, liquidator: 11111111111111111111111111111111, positions: [] }";
-        assert_eq!(output, &format!("{:?}", acc));
+        let output = "MarginAccount {
+            version: 1,
+            bump_seed: [0],
+            user_seed: [0, 0],
+            reserved0: [0, 0, 0],
+            invocation: Invocation {
+                caller_heights: BitSet(0b10010111)
+            },
+            owner: 11111111111111111111111111111111,
+            liquidation: 11111111111111111111111111111111,
+            liquidator: 11111111111111111111111111111111,
+            positions: []
+        }"
+        .split_whitespace()
+        .join(" ");
+        assert_eq!(&output, &format!("{acc:?}"));
 
         // use a non-default pubkey
         let key = crate::id();
 
         acc.register_position(key, 2, key, key, PositionKind::NoValue, 5000, 1000)
             .unwrap();
-        let position = "AccountPosition { token: JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ, address: JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ, adapter: JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ, value: \"0.0\", balance: 0, balance_timestamp: 0, price: PriceInfo { value: 0, timestamp: 0, exponent: 0, is_valid: 0, _reserved: [0, 0, 0] }, kind: NoValue, exponent: -2, value_modifier: 5000, max_staleness: 1000 }";
+        let position = "AccountPosition {
+            token: JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ,
+            address: JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ,
+            adapter: JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ,
+            value: \"0.0\",
+            balance: 0,
+            balance_timestamp: 0,
+            price: PriceInfo {
+                value: 0,
+                timestamp: 0,
+                exponent: 0,
+                is_valid: 0,
+                _reserved: [0, 0, 0]
+            },
+            kind: NoValue,
+            exponent: -2,
+            value_modifier: 5000,
+            max_staleness: 1000
+        }"
+        .split_whitespace()
+        .join(" ");
         let output = output.replace("positions: []", &format!("positions: [{}]", position));
         assert_eq!(&output, &format!("{:?}", acc));
     }
@@ -893,10 +941,11 @@ mod tests {
             version: 1,
             bump_seed: [0],
             user_seed: [0; 2],
-            reserved0: [0; 4],
+            reserved0: [0; 3],
             owner: Pubkey::default(),
             liquidation: Pubkey::default(),
             liquidator: Pubkey::default(),
+            invocation: Invocation::default(),
             positions: [0; 7432],
         };
 
@@ -995,10 +1044,11 @@ mod tests {
             version: 1,
             bump_seed: [0],
             user_seed: [0; 2],
-            reserved0: [0; 4],
+            reserved0: [0; 3],
             owner: Pubkey::new_unique(),
             liquidation: Pubkey::default(),
             liquidator: Pubkey::default(),
+            invocation: Invocation::default(),
             positions: [0; 7432],
         };
 
@@ -1091,10 +1141,11 @@ mod tests {
             version: 1,
             bump_seed: [0],
             user_seed: [0; 2],
-            reserved0: [0; 4],
+            reserved0: [0; 3],
             owner: Pubkey::default(),
             liquidation: Pubkey::default(),
             liquidator: Pubkey::default(),
+            invocation: Invocation::default(),
             positions: [0; 7432],
         };
         let collateral = register_position(&mut acc, 0, TokenKind::Collateral);
