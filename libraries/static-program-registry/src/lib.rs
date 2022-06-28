@@ -110,10 +110,10 @@ macro_rules! related_programs {
         $($crate::paste! {
             /// If all programs within a [] share identical syntax in their client libraries,
             /// use this macro to conditionally access the crate for the given program_id
-            /// ```
+            /// ```ignore
             /// let swap_ix = use_client!(program_id {
             ///    client::instruction::swap(...)
-            /// }?;
+            /// })?;
             /// ```
             #[allow(unused)]
             macro_rules! [<use_ $($client_group_name _)? client>] {

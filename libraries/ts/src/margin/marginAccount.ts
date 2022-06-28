@@ -12,7 +12,7 @@ import {
   TransactionSignature
 } from "@solana/web3.js"
 import { Pool } from "./pool/pool"
-import { AccountPosition, AccountPositionList, AccountPositionListLayout, MarginAccountData } from "./state"
+import { AccountPosition, AccountPositionList, AccountPositionListLayout, MarginAccountData, MAX_POSITIONS } from "./state"
 import { MarginPrograms } from "./marginClient"
 import { findDerivedAccount } from "../utils/pda"
 import { AssociatedToken, bnToNumber, MarginPools, TokenAmount, ZERO_BN } from ".."
@@ -580,12 +580,24 @@ export class MarginAccount {
     return await this.provider.sendAndConfirm(new Transaction().add(...instructions))
   }
 
+  async getPosition(tokenMint: Address) {
+    assert(this.info)
+    const tokenMintAddress = translateAddress(tokenMint)
+
+    for (let i = 0; i < MAX_POSITIONS; i++) {
+      const position = this.info.positions.positions[i]
+      if (position.token.equals(tokenMintAddress)) {
+        return position
+      }
+    }
+  }
+
   //TODO Withdraw
   async getOrCreatePosition(tokenMint: Address) {
     assert(this.info)
     const tokenMintAddress = translateAddress(tokenMint)
 
-    for (let i = 0; i < this.info.positions.length.toNumber(); i++) {
+    for (let i = 0; i < MAX_POSITIONS; i++) {
       const position = this.info.positions.positions[i]
       if (position.token.equals(tokenMintAddress)) {
         return position
@@ -595,7 +607,7 @@ export class MarginAccount {
     await this.registerPosition(tokenMintAddress)
     await this.refresh()
 
-    for (let i = 0; i < this.info.positions.length.toNumber(); i++) {
+    for (let i = 0; i < MAX_POSITIONS; i++) {
       const position = this.info.positions.positions[i]
       if (position.token.equals(tokenMintAddress)) {
         return position
@@ -689,7 +701,12 @@ export class MarginAccount {
   async closeAccount() {
     const ix: TransactionInstruction[] = []
     await this.withCloseAccount(ix)
-    return await this.provider.sendAndConfirm(new Transaction().add(...ix))
+    try {
+      return await this.provider.sendAndConfirm(new Transaction().add(...ix))
+    } catch (err) {
+      console.log(err)
+      throw err
+    }
   }
 
   /// Get instruction to close an account
@@ -708,10 +725,15 @@ export class MarginAccount {
     instructions.push(ix)
   }
 
-  async closePosition(tokenAccount: PublicKey) {
+  async closePosition(position: AccountPosition) {
     const ix: TransactionInstruction[] = []
-    await this.withClosePosition(ix, tokenAccount)
-    return await this.provider.sendAndConfirm(new Transaction().add(...ix))
+    await this.withClosePosition(ix, position)
+    try {
+      return await this.provider.sendAndConfirm(new Transaction().add(...ix))
+    } catch (err) {
+      console.log(err)
+      throw err
+    }
   }
 
   /// Get instruction to close a position
@@ -719,16 +741,17 @@ export class MarginAccount {
   /// # Params
   ///
   /// `token_account` - The address of the token account for the position being closed
-  async withClosePosition(instructions: TransactionInstruction[], tokenAccount: PublicKey): Promise<void> {
-    const authority = findDerivedAccount(this.programs.config.controlProgramId)
+  async withClosePosition(instructions: TransactionInstruction[], position: AccountPosition): Promise<void> {
+    //const authority = findDerivedAccount(this.programs.config.controlProgramId)
 
     const ix = await this.programs.margin.methods
       .closePosition()
       .accounts({
-        authority: authority,
+        authority: this.owner,
         receiver: this.provider.wallet.publicKey,
         marginAccount: this.address,
-        tokenAccount,
+        positionTokenMint: position.token,
+        tokenAccount: position.address,
         tokenProgram: TOKEN_PROGRAM_ID
       })
       .instruction()
