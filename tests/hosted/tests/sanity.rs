@@ -229,8 +229,8 @@ async fn sanity_test() -> Result<(), anyhow::Error> {
     user_a.refresh_all_position_metadata().await?;
     user_b.refresh_all_position_metadata().await?;
 
-    let mut user_a_state = ctx.margin.get_account(&user_a.address()).await?;
-    let mut user_b_state = ctx.margin.get_account(&user_b.address()).await?;
+    let mut user_a_state = ctx.margin.get_account(user_a.address()).await?;
+    let mut user_b_state = ctx.margin.get_account(user_b.address()).await?;
 
     assert_eq!(
         0xBEEF,
