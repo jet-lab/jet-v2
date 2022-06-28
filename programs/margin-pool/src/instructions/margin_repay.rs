@@ -22,7 +22,7 @@ use anchor_spl::token::{self, Burn, Token, TokenAccount};
 
 use jet_margin::MarginAccount;
 
-use crate::{events, state::*};
+use crate::{events, state::*, ChangeKind};
 use crate::{Amount, ErrorCode};
 
 #[derive(Accounts)]
@@ -82,7 +82,7 @@ impl<'info> MarginRepay<'info> {
     }
 }
 
-pub fn margin_repay_handler(ctx: Context<MarginRepay>, max_amount: Amount) -> Result<()> {
+pub fn margin_repay_handler(ctx: Context<MarginRepay>, amount: Amount) -> Result<()> {
     let pool = &mut ctx.accounts.margin_pool;
     let clock = Clock::get()?;
 
@@ -93,40 +93,28 @@ pub fn margin_repay_handler(ctx: Context<MarginRepay>, max_amount: Amount) -> Re
     }
 
     // The rounding to repay the maximum amount specified
-    let repay_rounding = RoundingDirection::direction(PoolAction::Repay, max_amount.kind);
+    let repay_rounding = RoundingDirection::direction(PoolAction::Repay, amount.kind);
 
     // const rounding directions
-    let repay_note_rounding =
-        RoundingDirection::direction(PoolAction::Repay, crate::AmountKind::Notes);
-    let repay_token_rounding =
-        RoundingDirection::direction(PoolAction::Repay, crate::AmountKind::Tokens);
-    let withdraw_note_rounding =
-        RoundingDirection::direction(PoolAction::Withdraw, crate::AmountKind::Notes);
     let withdraw_token_rounding =
         RoundingDirection::direction(PoolAction::Withdraw, crate::AmountKind::Tokens);
 
-    // Determine the maximum notes repayable and withdrawable from each account
-    let loan_notes = ctx.accounts.loan_account.amount;
-    let deposit_notes = ctx.accounts.deposit_account.amount;
-
     // Amount the user desires to repay
-    let desired_repay_amount = pool.convert_loan_amount(max_amount, repay_rounding)?;
-    // Maximum amount deposited
-    let max_withdraw_amount =
-        pool.convert_deposit_amount(Amount::notes(deposit_notes), withdraw_note_rounding)?;
-    // Maximum amount owed
-    let max_repay_amount =
-        pool.convert_loan_amount(Amount::notes(loan_notes), repay_note_rounding)?;
-
-    // Determine the maximum tokens to withdraw and repay, as the lower of the 3 above
-    let max_repay_tokens = desired_repay_amount
-        .tokens
-        .min(max_withdraw_amount.tokens)
-        .min(max_repay_amount.tokens);
+    let repay_amount = match amount.change_kind {
+        ChangeKind::ShiftValue => pool.convert_loan_amount(amount, repay_rounding)?,
+        ChangeKind::SetValue => {
+            let current_notes_value = ctx.accounts.loan_account.amount;
+            let target_amount = pool.convert_loan_amount(amount, repay_rounding)?;
+            let total_notes_to_repay = current_notes_value
+                .checked_sub(target_amount.notes)
+                .ok_or(ErrorCode::InvalidAmount)?;
+            pool.convert_loan_amount(Amount::notes(total_notes_to_repay), repay_rounding)?
+        }
+    };
 
     // First record a withdraw of the deposit to use for repaying in tokens
     let withdraw_amount =
-        pool.convert_deposit_amount(Amount::tokens(max_repay_tokens), withdraw_token_rounding)?;
+        pool.convert_deposit_amount(Amount::tokens(repay_amount.tokens), withdraw_token_rounding)?;
     msg!(
         "Withdrawing [{} tokens, {} notes] from deposit pool",
         withdraw_amount.tokens,
@@ -135,8 +123,6 @@ pub fn margin_repay_handler(ctx: Context<MarginRepay>, max_amount: Amount) -> Re
     pool.withdraw(&withdraw_amount)?;
 
     // Then record a repay using the withdrawn tokens
-    let repay_amount =
-        pool.convert_loan_amount(Amount::tokens(max_repay_tokens), repay_token_rounding)?;
     msg!(
         "Repaying [{} tokens, {} notes] into loan pool",
         repay_amount.tokens,
@@ -162,9 +148,7 @@ pub fn margin_repay_handler(ctx: Context<MarginRepay>, max_amount: Amount) -> Re
         user: ctx.accounts.margin_account.key(),
         loan_account: ctx.accounts.loan_account.key(),
         deposit_account: ctx.accounts.deposit_account.key(),
-        max_repay_tokens: desired_repay_amount.tokens,
-        max_repay_notes: desired_repay_amount.notes,
-        repaid_tokens: max_repay_tokens,
+        repaid_tokens: repay_amount.tokens,
         repaid_loan_notes: repay_amount.notes,
         repaid_deposit_notes: withdraw_amount.notes,
         summary: pool.deref().into(),
