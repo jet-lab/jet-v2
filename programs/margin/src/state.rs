@@ -198,6 +198,25 @@ impl MarginAccount {
         Ok(())
     }
 
+    pub fn refresh_position_metadata(
+        &mut self,
+        mint: &Pubkey,
+        kind: PositionKind,
+        value_modifier: u16,
+        max_staleness: u64,
+    ) -> AnchorResult<()> {
+        let position = match self.position_list_mut().get_mut(mint) {
+            None => return err!(ErrorCode::PositionNotRegistered),
+            Some(p) => p,
+        };
+
+        position.kind = kind;
+        position.value_modifier = value_modifier;
+        position.max_staleness = max_staleness;
+
+        Ok(())
+    }
+
     pub fn get_position_mut(&mut self, mint: &Pubkey) -> Option<&mut AccountPosition> {
         self.position_list_mut().get_mut(mint)
     }

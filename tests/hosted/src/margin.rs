@@ -22,7 +22,7 @@ use std::sync::Arc;
 use anchor_lang::{AccountDeserialize, AccountSerialize, InstructionData, ToAccountMetas};
 use anyhow::{bail, Error};
 
-use jet_margin::PositionKind;
+use jet_margin::{MarginAccount, PositionKind};
 use jet_margin_sdk::accounts::MarginPoolAccounts;
 use jet_margin_sdk::instructions::control::{get_authority_address, TokenConfiguration};
 use solana_sdk::instruction::Instruction;
@@ -195,6 +195,17 @@ impl MarginClient {
 
         Ok(())
     }
+
+    pub async fn get_account(&self, address: &Pubkey) -> Result<Box<MarginAccount>, Error> {
+        let account_data = self.rpc.get_account(address).await?;
+
+        match account_data {
+            None => bail!("no margin account found {}", address),
+            Some(account) => Ok(Box::new(MarginAccount::try_deserialize(
+                &mut &account.data[..],
+            )?)),
+        }
+    }
 }
 
 pub struct MarginUser {
@@ -206,6 +217,16 @@ impl MarginUser {
     async fn send_confirm_tx(&self, tx: Transaction) -> Result<(), Error> {
         let _ = self.rpc.send_and_confirm_transaction(&tx).await?;
         Ok(())
+    }
+
+    async fn send_confirm_all_tx(
+        &self,
+        transactions: impl IntoIterator<Item = Transaction>,
+    ) -> Result<(), Error> {
+        futures::future::join_all(transactions.into_iter().map(|tx| self.send_confirm_tx(tx)))
+            .await
+            .into_iter()
+            .collect()
     }
 }
 
@@ -242,16 +263,13 @@ impl MarginUser {
     }
 
     pub async fn refresh_all_pool_positions(&self) -> Result<(), Error> {
-        futures::future::join_all(
-            self.tx
-                .refresh_all_pool_positions()
-                .await?
-                .into_iter()
-                .map(|tx| self.send_confirm_tx(tx)),
-        )
-        .await
-        .into_iter()
-        .collect()
+        self.send_confirm_all_tx(self.tx.refresh_all_pool_positions().await?)
+            .await
+    }
+
+    pub async fn refresh_all_position_metadata(&self) -> Result<(), Error> {
+        self.send_confirm_all_tx(self.tx.refresh_all_position_metadata().await?)
+            .await
     }
 
     pub async fn deposit(&self, mint: &Pubkey, source: &Pubkey, amount: u64) -> Result<(), Error> {
