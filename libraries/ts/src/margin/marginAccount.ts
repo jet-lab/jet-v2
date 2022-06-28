@@ -12,7 +12,7 @@ import {
   TransactionSignature
 } from "@solana/web3.js"
 import { Pool } from "./pool/pool"
-import { AccountPosition, AccountPositionList, AccountPositionListLayout, MarginAccountData } from "./state"
+import { AccountPosition, AccountPositionList, AccountPositionListLayout, MarginAccountData, MAX_POSITIONS } from "./state"
 import { MarginPrograms } from "./marginClient"
 import { findDerivedAccount } from "../utils/pda"
 import { AssociatedToken, bnToNumber, MarginPools, TokenAmount, ZERO_BN } from ".."
@@ -584,7 +584,7 @@ export class MarginAccount {
     assert(this.info)
     const tokenMintAddress = translateAddress(tokenMint)
 
-    for (let i = 0; i < this.info.positions.length.toNumber(); i++) {
+    for (let i = 0; i < MAX_POSITIONS; i++) {
       const position = this.info.positions.positions[i]
       if (position.token.equals(tokenMintAddress)) {
         return position
@@ -597,7 +597,7 @@ export class MarginAccount {
     assert(this.info)
     const tokenMintAddress = translateAddress(tokenMint)
 
-    for (let i = 0; i < this.info.positions.length.toNumber(); i++) {
+    for (let i = 0; i < MAX_POSITIONS; i++) {
       const position = this.info.positions.positions[i]
       if (position.token.equals(tokenMintAddress)) {
         return position
@@ -607,7 +607,7 @@ export class MarginAccount {
     await this.registerPosition(tokenMintAddress)
     await this.refresh()
 
-    for (let i = 0; i < this.info.positions.length.toNumber(); i++) {
+    for (let i = 0; i < MAX_POSITIONS; i++) {
       const position = this.info.positions.positions[i]
       if (position.token.equals(tokenMintAddress)) {
         return position

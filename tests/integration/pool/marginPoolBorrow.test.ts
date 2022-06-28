@@ -354,22 +354,16 @@ describe("margin pool borrow", () => {
     expect(await getTokenBalance(provider, "processed", marginPool_SOL.addresses.vault)).to.eq(150 + 1)
   })
 
-  //TODO
   it("Close margin accounts", async () => {
+    /*
     await marginAccount_A.refresh()
     if (marginAccount_A.info) {
-      const length = Number(marginAccount_A.info.positions.length)
-      for (let i = 0; i < length; i++) {
-        console.log(
-          `${i} = ${JSON.stringify(marginAccount_A.info.positions.positions[i])}, ${Number(
-            marginAccount_A.info.positions.positions[i].balance
-          )}`
-        )
+      for (let i = 0; i < 3; i++) {
+        console.log(`${i} = ${JSON.stringify(marginAccount_A.info.positions.positions[i])}`)
       }
     }
     console.log("")
 
-    /*
     await marginPool_SOL.closePosition({
       marginAccount: marginAccount_A,
       destination: user_a_sol_account
@@ -378,17 +372,16 @@ describe("margin pool borrow", () => {
       marginAccount: marginAccount_A,
       destination: user_a_usdc_account
     })
-
     await marginAccount_A.closeAccount();
 
 
-    await marginPool_SOL.closePosition({
-      marginAccount: marginAccount_B,
-      destination: user_b_sol_account
-    })
     await marginPool_USDC.closePosition({
       marginAccount: marginAccount_B,
       destination: user_b_usdc_account
+    })
+    await marginPool_SOL.closePosition({
+      marginAccount: marginAccount_B,
+      destination: user_b_sol_account
     })
     await marginAccount_B.closeAccount();
     */
