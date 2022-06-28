@@ -1,73 +1,55 @@
-import { BN } from "@project-serum/anchor"
-import { AllAccountsMap, IdlTypes, TypeDef } from "@project-serum/anchor/dist/cjs/program/namespace/types"
-import { blob, s16, s32, seq, struct, u16, u32, u8 } from "@solana/buffer-layout"
-import { PublicKey } from "@solana/web3.js"
+import { BN, Idl } from "@project-serum/anchor"
+import { IdlTypeDef } from "@project-serum/anchor/dist/cjs/idl"
+import { AccountMap, AllAccountsMap, IdlTypes, TypeDef } from "@project-serum/anchor/dist/cjs/program/namespace/types"
+import { blob, Layout, s16, s32, seq, struct, u16, u32, u8 } from "@solana/buffer-layout"
 import { JetMargin } from ".."
 import { i64Field, number128, pubkey, u64 } from "../utils/layout"
 
+/****************************
+ * Anchor program type definitions.
+ * Anchor 0.24.2 exports `AllAccountsMap` and `AllInstructionsMap`.
+ * Here we export `AllTypesMap` to generate interfaces for types in `JetMargin` IDL.
+ ****************************/
+
+type AllTypes<IDL extends Idl> = IDL["types"] extends undefined ? IdlTypeDef : NonNullable<IDL["types"]>[number]
+type AllTypesMap<IDL extends Idl> = AccountMap<AllTypes<IDL>>
+
+/****************************
+ * Program Accounts
+ ****************************/
+
+export type LiquidationData = TypeDef<AllAccountsMap<JetMargin>["liquidation"], IdlTypes<JetMargin>>
 export type MarginAccountData = TypeDef<AllAccountsMap<JetMargin>["marginAccount"], IdlTypes<JetMargin>>
 
-export interface PriceInfo {
-  /** The current price. i64 */
-  value: BN
+/****************************
+ * Program Types
+ ****************************/
 
-  /** The timestamp the price was valid at. u64 */
-  timestamp: BN
-
-  /** The exponent for the price value */
-  exponent: number
-
-  /** Flag indicating if the price is valid for the position  */
-  isValid: number
-
-  _reserved: Uint8Array
+export type AccountPosition = TypeDef<AllTypesMap<JetMargin>["AccountPosition"], IdlTypes<JetMargin>>
+export type AccountPositionKey = TypeDef<AllTypesMap<JetMargin>["AccountPositionKey"], IdlTypes<JetMargin>> & {
+  index: BN
 }
+export type AccountPositionList = TypeDef<AllTypesMap<JetMargin>["AccountPositionList"], IdlTypes<JetMargin>> & {
+  length: BN
+  map: AccountPositionKey[]
+  positions: AccountPosition[]
+}
+export type AdapterResult = TypeDef<AllTypesMap<JetMargin>["AdapterResult"], IdlTypes<JetMargin>>
+export type CompactAccountMeta = TypeDef<AllTypesMap<JetMargin>["CompactAccountMeta"], IdlTypes<JetMargin>>
+export type ErrorCode = TypeDef<AllTypesMap<JetMargin>["ErrorCode"], IdlTypes<JetMargin>>
+export type PositionChange = TypeDef<AllTypesMap<JetMargin>["PositionChange"], IdlTypes<JetMargin>>
+export type PositionKind = TypeDef<AllTypesMap<JetMargin>["PositionKind"], IdlTypes<JetMargin>>
+export type PriceChangeInfo = TypeDef<AllTypesMap<JetMargin>["PriceChangeInfo"], IdlTypes<JetMargin>>
+export type PriceInfo = TypeDef<AllTypesMap<JetMargin>["PriceInfo"], IdlTypes<JetMargin>>
 
 const PriceInfoLayout = struct<PriceInfo>([
   i64Field("value"),
   u64("timestamp"),
   s32("exponent"),
   u8("isValid"),
-  blob(3, "_reserved")
+  blob(3, "_reserved") as any as Layout<number[]>
 ])
 console.assert(PriceInfoLayout.span === 24, "Unexpected PriceInfoLayout span", PriceInfoLayout.span, "expected", 24)
-
-export interface AccountPosition {
-  /// The address of the token/mint of the asset */
-  token: PublicKey
-
-  /// The address of the account holding the tokens. */
-  address: PublicKey
-
-  /// The address of the adapter managing the asset */
-  adapter: PublicKey
-
-  /// The current value of this position */
-  value: BN
-
-  /// The amount of tokens in the account */
-  balance: BN
-
-  /// The timestamp of the last balance update */
-  balanceTimestamp: BN
-
-  /// The current price/value of each token */
-  price: PriceInfo
-
-  /// The kind of balance this position contains */
-  kind: number
-
-  /// The exponent for the token value */
-  exponent: number
-
-  /// A weight on the value of this asset when counting collateral */
-  collateralWeight: number
-
-  /// The max staleness for the account balance (seconds) */
-  collateralMaxStaleness: BN
-
-  _reserved: Uint8Array
-}
 
 const AccountPositionLayout = struct<AccountPosition>([
   pubkey("token"),
@@ -91,14 +73,6 @@ console.assert(
   192
 )
 
-export interface AccountPositionKey {
-  /* The address of the mint for the position token */
-  mint: PublicKey
-
-  /* The array index where the data for this position is located */
-  index: BN
-}
-
 const AccountPositionKeyLayout = struct<AccountPositionKey>([pubkey("mint"), u64("index")])
 console.assert(
   AccountPositionKeyLayout.span === 40,
@@ -107,12 +81,6 @@ console.assert(
   "expected",
   40
 )
-
-export interface AccountPositionList {
-  length: BN
-  map: AccountPositionKey[]
-  positions: AccountPosition[]
-}
 
 export const MAX_POSITIONS = 32
 

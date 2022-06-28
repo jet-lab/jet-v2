@@ -5,11 +5,14 @@
   },
   "extends": ["eslint:recommended", "plugin:@typescript-eslint/recommended"],
   "parser": "@typescript-eslint/parser",
-  "ignorePatterns": ["dist"],
+  "ignorePatterns": ["./**/dist/**/*", "target"],
   "parserOptions": {
+    "project": "./tsconfig.json",
     "ecmaVersion": "latest",
     "sourceType": "module"
   },
   "plugins": ["@typescript-eslint"],
-  "rules": {}
+  "rules": {
+    "@typescript-eslint/no-floating-promises": ["error"]
+  }
 }

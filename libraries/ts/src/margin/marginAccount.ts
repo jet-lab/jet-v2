@@ -392,6 +392,16 @@ export class MarginAccount {
     }
   }
 
+  /** Get the list of positions on this account, including uninitialized positions */
+  getPositionList() {
+    return this.info?.positions.positions ?? []
+  }
+
+  /** Get the list of positions on this account */
+  getPositions() {
+    return this.getPositionList().filter(position => !position.address.equals(PublicKey.default))
+  }
+
   /**
    * Loads all tokens in the users wallet.
    * Provides an array and a map of tokens mapped by pool.
@@ -549,9 +559,9 @@ export class MarginAccount {
     const position = await this.getOrCreatePosition(marginPool.addresses.depositNoteMint)
     assert(position)
 
-    const ix: TransactionInstruction[] = []
-    AssociatedToken.withWrapIfNativeMint(
-      ix,
+    const instructions: TransactionInstruction[] = []
+    source = await AssociatedToken.withWrapIfNativeMint(
+      instructions,
       this.provider,
       this.provider.wallet.publicKey,
       marginPool.tokenMint,
@@ -560,14 +570,14 @@ export class MarginAccount {
     )
 
     await marginPool.withDeposit({
-      instructions: ix,
+      instructions: instructions,
       depositor: this.owner,
       source,
       destination: position.address,
       amount
     })
-    await this.withUpdatePositionBalance(ix, position.address)
-    return await this.provider.sendAndConfirm(new Transaction().add(...ix))
+    await this.withUpdatePositionBalance({ instructions, position })
+    return await this.provider.sendAndConfirm(new Transaction().add(...instructions))
   }
 
   //TODO Withdraw
@@ -595,15 +605,22 @@ export class MarginAccount {
     throw new Error("Unable to register position.")
   }
 
-  async getTokenMetadata(tokenMint: Address) {
-    const metadataAddress = MarginAccount.deriveTokenMetadata(this.programs, tokenMint)
-    return await this.programs.metadata.account.tokenMetadata.fetch(metadataAddress)
+  async updateAllPositionBalances() {
+    const instructions: TransactionInstruction[] = []
+    await this.withUpdateAllPositionBalances({ instructions })
+    await this.provider.sendAndConfirm(new Transaction().add(...instructions))
   }
 
-  async updatePositionBalance(account: PublicKey) {
-    const ix: TransactionInstruction[] = []
-    await this.withUpdatePositionBalance(ix, account)
-    return await this.provider.sendAndConfirm(new Transaction().add(...ix))
+  async withUpdateAllPositionBalances({ instructions }: { instructions: TransactionInstruction[] }) {
+    for (const position of this.getPositions()) {
+      await this.withUpdatePositionBalance({ instructions, position })
+    }
+  }
+
+  async updatePositionBalance({ position }: { position: AccountPosition }) {
+    const instructions: TransactionInstruction[] = []
+    await this.withUpdatePositionBalance({ instructions, position })
+    return await this.provider.sendAndConfirm(new Transaction().add(...instructions))
   }
 
   /// Get instruction to update the accounting for assets in
@@ -612,15 +629,21 @@ export class MarginAccount {
   /// # Params
   ///
   /// `account` - The account address that has had a balance change
-  async withUpdatePositionBalance(instructions: TransactionInstruction[], account: PublicKey): Promise<void> {
-    const ix = await this.programs.margin.methods
+  async withUpdatePositionBalance({
+    instructions,
+    position
+  }: {
+    instructions: TransactionInstruction[]
+    position: AccountPosition
+  }): Promise<void> {
+    const instruction = await this.programs.margin.methods
       .updatePositionBalance()
       .accounts({
         marginAccount: this.address,
-        tokenAccount: account
+        tokenAccount: position.address
       })
       .instruction()
-    instructions.push(ix)
+    instructions.push(instruction)
   }
 
   async registerPosition(tokenMint: Address): Promise<TransactionSignature> {
@@ -674,14 +697,12 @@ export class MarginAccount {
   /// # Params
   ///
   async withCloseAccount(instructions: TransactionInstruction[]): Promise<void> {
-    const authority = findDerivedAccount(this.programs.config.controlProgramId)
-
     const ix = await this.programs.margin.methods
       .closeAccount()
       .accounts({
         owner: this.owner,
         receiver: this.provider.wallet.publicKey,
-        marginAccount: this.address,
+        marginAccount: this.address
       })
       .instruction()
     instructions.push(ix)
@@ -710,6 +731,79 @@ export class MarginAccount {
         tokenAccount,
         tokenProgram: TOKEN_PROGRAM_ID
       })
+      .instruction()
+    instructions.push(ix)
+  }
+
+  async withAdapterInvoke({
+    instructions,
+    adapterProgram,
+    adapterMetadata,
+    adapterInstruction
+  }: {
+    instructions: TransactionInstruction[]
+    adapterProgram: Address
+    adapterMetadata: Address
+    adapterInstruction: TransactionInstruction
+  }): Promise<void> {
+    const ix = await this.programs.margin.methods
+      .adapterInvoke(
+        adapterInstruction.keys.slice(1).map(accountMeta => {
+          return { isSigner: false, isWritable: accountMeta.isWritable }
+        }),
+        adapterInstruction.data
+      )
+      .accounts({
+        owner: this.owner,
+        marginAccount: this.address,
+        adapterProgram,
+        adapterMetadata
+      })
+      .remainingAccounts(
+        adapterInstruction.keys.slice(1).map(accountMeta => {
+          return {
+            pubkey: accountMeta.pubkey,
+            isSigner: false,
+            isWritable: accountMeta.isWritable
+          }
+        })
+      )
+      .instruction()
+    instructions.push(ix)
+  }
+
+  async withAccountingInvoke({
+    instructions,
+    adapterProgram,
+    adapterMetadata,
+    adapterInstruction
+  }: {
+    instructions: TransactionInstruction[]
+    adapterProgram: Address
+    adapterMetadata: Address
+    adapterInstruction: TransactionInstruction
+  }): Promise<void> {
+    const ix = await this.programs.margin.methods
+      .accountingInvoke(
+        adapterInstruction.keys.slice(1).map(accountMeta => {
+          return { isSigner: false, isWritable: accountMeta.isWritable }
+        }),
+        adapterInstruction.data
+      )
+      .accounts({
+        marginAccount: this.address,
+        adapterProgram,
+        adapterMetadata
+      })
+      .remainingAccounts(
+        adapterInstruction.keys.slice(1).map(accountMeta => {
+          return {
+            pubkey: accountMeta.pubkey,
+            isSigner: false,
+            isWritable: accountMeta.isWritable
+          }
+        })
+      )
       .instruction()
     instructions.push(ix)
   }
