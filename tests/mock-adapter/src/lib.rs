@@ -53,7 +53,7 @@ pub mod mock_adapter {
 
     pub fn noop(ctx: Context<NoAccounts>, result: Option<AdapterResult>) -> Result<()> {
         match result {
-            Some(result) => write_adapter_result(&result, &*ctx.accounts.margin_account.load()?),
+            Some(result) => write_adapter_result(&*ctx.accounts.margin_account.load()?, &result),
             None => Ok(()),
         }
     }
@@ -114,7 +114,7 @@ macro_rules! mint_ix {
         )?;
 
         match $result {
-            Some($result) => write_adapter_result(&$result, &*$accounts.margin_account.load()?),
+            Some($result) => write_adapter_result(&*$accounts.margin_account.load()?, &$result),
             None => Ok(()),
         }
     }};
@@ -137,7 +137,7 @@ macro_rules! burn_ix {
         )?;
 
         match $result {
-            Some($result) => write_adapter_result(&$result, &*$accounts.margin_account.load()?),
+            Some($result) => write_adapter_result(&*$accounts.margin_account.load()?, &$result),
             None => Ok(()),
         }
     }};

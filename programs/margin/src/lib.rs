@@ -30,6 +30,7 @@ pub(crate) mod util;
 
 use instructions::*;
 pub use state::*;
+pub use util::Invocation;
 
 pub use adapter::{AdapterResult, CompactAccountMeta, PositionChange, PriceChangeInfo};
 
@@ -235,7 +236,7 @@ pub enum ErrorCode {
     LiquidationLostValue,
 }
 
-pub fn write_adapter_result(result: &AdapterResult, margin_account: &MarginAccount) -> Result<()> {
+pub fn write_adapter_result(margin_account: &MarginAccount, result: &AdapterResult) -> Result<()> {
     let mut adapter_result_data = vec![0u8; 512];
     result.serialize(&mut &mut adapter_result_data[..])?;
     margin_account.invocation.verify_directly_invoked()?;

@@ -54,6 +54,7 @@ pub fn margin_refresh_position_handler(ctx: Context<MarginRefreshPosition>) -> R
 
     // Tell the margin program what the current prices are
     jet_margin::write_adapter_result(
+        &*ctx.accounts.margin_account.load()?,
         &AdapterResult {
             position_changes: vec![
                 (
@@ -78,7 +79,6 @@ pub fn margin_refresh_position_handler(ctx: Context<MarginRefreshPosition>) -> R
                 ),
             ],
         },
-        &*ctx.accounts.margin_account.load()?,
     )?;
 
     Ok(())

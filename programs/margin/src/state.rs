@@ -15,10 +15,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use anchor_lang::{
-    prelude::*, solana_program::instruction::TRANSACTION_LEVEL_STACK_HEIGHT, system_program,
-    Discriminator,
-};
+use anchor_lang::{prelude::*, system_program, Discriminator};
 use bytemuck::{Contiguous, Pod, Zeroable};
 use jet_metadata::TokenKind;
 #[cfg(any(test, feature = "cli"))]
@@ -31,8 +28,7 @@ use anchor_lang::Result as AnchorResult;
 use std::{convert::TryFrom, result::Result};
 
 use crate::{
-    syscall::{sys, Sys},
-    util::Require,
+    util::{Invocation, Require},
     ErrorCode, PriceChangeInfo, MAX_ORACLE_CONFIDENCE, MAX_ORACLE_STALENESS, MAX_PRICE_QUOTE_AGE,
 };
 
@@ -838,213 +834,12 @@ impl Valuation {
     }
 }
 
-/// Data made available to invoked programs by the margin program. Put data here if:
-/// - adapters need a guarantee that the margin program is the actual source of the data, or
-/// - the data is needed by functions defined in margin that are called by adapters
-/// Note: The security of the margin program cannot rely on function calls that happen within
-/// adapters, because adapters can falsify the arguments to those functions.
-/// Rather, this data should only be used to enable adapters to protect themselves, in which case
-/// it would be in their best interest to pass along the actual state from the margin account.
-#[derive(Copy, Clone, Debug, Default)]
-pub struct Invocation {
-    /// The stack heights from where the margin program invoked an adapter.
-    caller_heights: BitArray,
-}
-impl Invocation {
-    /// Call this immediately before invoking another program to indicate that
-    /// an invocation originated from the current stack height.
-    pub(crate) fn start(&mut self) {
-        self.caller_heights.set(sys().get_stack_height() as u8);
-    }
-
-    /// Call this immediately after invoking another program to clear the
-    /// indicator that an invocation originated from the current stack height.
-    pub(crate) fn end(&mut self) {
-        self.caller_heights.unset(sys().get_stack_height() as u8);
-    }
-
-    pub fn verify_directly_invoked(&self) -> Result<(), ErrorCode> {
-        if !self.directly_invoked() {
-            msg!(
-                "Current stack height: {}. Invocations: {self:?} (indexed from {})",
-                sys().get_stack_height(),
-                TRANSACTION_LEVEL_STACK_HEIGHT
-            );
-            return Err(ErrorCode::IndirectInvocation);
-        }
-
-        Ok(())
-    }
-
-    /// Returns true if the current instruction was directly invoked by a cpi
-    /// from margin that marked the start.
-    pub fn directly_invoked(&self) -> bool {
-        let height = sys().get_stack_height();
-        height != 0 && self.caller_heights.get(height as u8 - 1)
-    }
-}
-
-#[derive(Copy, Clone, Default)]
-pub struct BitArray(u8);
-impl BitArray {
-    pub fn set(&mut self, n: u8) {
-        if n > 7 {
-            panic!("attempted to set value outside bounds: {}", n);
-        }
-        self.0 |= 1 << n;
-    }
-
-    pub fn unset(&mut self, n: u8) {
-        self.0 &= !(1 << n);
-    }
-
-    pub fn get(&self, n: u8) -> bool {
-        (self.0 >> n) % 2 == 1
-    }
-
-    pub fn max(&self) -> Option<u32> {
-        if self.0 == 0 {
-            None
-        } else {
-            Some(7 - self.0.leading_zeros())
-        }
-    }
-}
-
-impl std::fmt::Debug for BitArray {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        let mut acc = f.debug_tuple("BitArray");
-        acc.field(&format_args!("{:#010b}", &self.0)).finish()
-    }
-}
-
-#[cfg(test)]
-mod test_invocation {
-    use anchor_lang::solana_program::instruction::TRANSACTION_LEVEL_STACK_HEIGHT;
-    use itertools::Itertools;
-
-    use crate::syscall::thread_local_mock::mock_stack_height;
-
-    use super::*;
-
-    const MAX_DEPTH: u8 = 5 + (TRANSACTION_LEVEL_STACK_HEIGHT as u8);
-
-    #[test]
-    fn never_report_if_none_marked() {
-        let subject = Invocation::default();
-        for i in 0..MAX_DEPTH {
-            mock_stack_height(Some(i as usize));
-            assert!(!subject.directly_invoked())
-        }
-    }
-
-    /// Tests the typical case of margin at the top level
-    #[test]
-    fn happy_path() {
-        let mut subject = Invocation::default();
-        // mark start
-        mock_stack_height(Some(1));
-        subject.start();
-
-        // actual invocation
-        assert!(!subject.directly_invoked());
-        mock_stack_height(Some(2));
-        assert!(subject.directly_invoked());
-
-        // too nested levels
-        mock_stack_height(Some(3));
-        assert!(!subject.directly_invoked());
-        mock_stack_height(Some(4));
-        assert!(!subject.directly_invoked());
-        mock_stack_height(Some(5));
-        assert!(!subject.directly_invoked());
-
-        // same level as actual after done
-        mock_stack_height(Some(1));
-        subject.end();
-        mock_stack_height(Some(2));
-        assert!(!subject.directly_invoked());
-    }
-
-    /// Tests every scenario where margin invokes only once within the call stack
-    #[test]
-    fn check_all_heights_with_one_mark() {
-        for mark_at in 0..MAX_DEPTH + 1 {
-            let mut subject = Invocation::default();
-            mock_stack_height(Some(mark_at as usize));
-            subject.start();
-            for check_at in 0..MAX_DEPTH + 1 {
-                mock_stack_height(Some(check_at as usize));
-                assert_eq!(
-                    mark_at.checked_add(1).unwrap() == check_at,
-                    subject.directly_invoked()
-                )
-            }
-        }
-    }
-
-    /// Tests that directly_invoked returns the right value for every combination
-    /// of invocations at every height before, during, and after the invocation
-    #[test]
-    fn check_all_heights_with_any_marks() {
-        for size in 0..MAX_DEPTH + 2 {
-            for combo in (0..MAX_DEPTH + 1).into_iter().combinations(size.into()) {
-                let mut subject = Invocation::default();
-                for depth in combo.clone() {
-                    mock_stack_height(Some(depth as usize));
-                    assert!(!subject.directly_invoked())
-                }
-                for depth in combo.clone() {
-                    mock_stack_height(Some(depth as usize));
-                    subject.start();
-                }
-                for depth in 0..MAX_DEPTH + 1 {
-                    mock_stack_height(Some(depth as usize));
-                    assert_eq!(
-                        depth != 0 && combo.contains(&(depth - 1)),
-                        subject.directly_invoked()
-                    )
-                }
-                for depth in combo {
-                    mock_stack_height(Some(depth as usize));
-                    subject.end();
-                    mock_stack_height(Some((depth + 1) as usize));
-                    assert!(!subject.directly_invoked())
-                }
-                for depth in 0..MAX_DEPTH + 1 {
-                    mock_stack_height(Some(depth as usize));
-                    assert!(!subject.directly_invoked())
-                }
-            }
-        }
-    }
-
-    #[test]
-    fn bitarray_manipulation() {
-        for byte in 0..u8::MAX {
-            for n in 0..8 {
-                let mut ba = BitArray(byte);
-                ba.set(n);
-                assert!(ba.get(n));
-                ba.unset(n);
-                assert!(!ba.get(n));
-            }
-        }
-    }
-
-    #[test]
-    fn bitarray_max() {
-        for max in 0..MAX_DEPTH + 1 {
-            for byte in 2u8.pow(max as u32)..2u8.pow((max + 1) as u32) {
-                assert_eq!(max as u32, BitArray(byte).max().unwrap());
-            }
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
+    use crate::{syscall::thread_local_mock::mock_stack_height, util::Invocation};
+
     use super::*;
+    use itertools::Itertools;
     use jet_metadata::TokenKind;
     use serde_test::{assert_ser_tokens, Token};
 
@@ -1057,6 +852,11 @@ mod tests {
 
     #[test]
     fn margin_account_debug() {
+        let mut invocation = Invocation::default();
+        for i in [0, 1, 2, 4, 7] {
+            mock_stack_height(Some(i));
+            invocation.start();
+        }
         let mut acc = MarginAccount {
             version: 1,
             bump_seed: [0],
@@ -1065,20 +865,52 @@ mod tests {
             owner: Pubkey::default(),
             liquidation: Pubkey::default(),
             liquidator: Pubkey::default(),
-            invocation: Invocation {
-                caller_heights: BitArray(143),
-            },
+            invocation,
             positions: [0; 7432],
         };
-        let output = "MarginAccount { version: 1, bump_seed: [0], user_seed: [0, 0], reserved0: [0, 0, 0], invocation: Invocation { caller_heights: BitArray(0b10001111) }, owner: 11111111111111111111111111111111, liquidation: 11111111111111111111111111111111, liquidator: 11111111111111111111111111111111, positions: [] }";
-        assert_eq!(output, &format!("{:?}", acc));
+        let output = "MarginAccount {
+            version: 1,
+            bump_seed: [0],
+            user_seed: [0, 0],
+            reserved0: [0, 0, 0],
+            invocation: Invocation {
+                caller_heights: BitSet(0b10010111)
+            },
+            owner: 11111111111111111111111111111111,
+            liquidation: 11111111111111111111111111111111,
+            liquidator: 11111111111111111111111111111111,
+            positions: []
+        }"
+        .split_whitespace()
+        .join(" ");
+        assert_eq!(&output, &format!("{acc:?}"));
 
         // use a non-default pubkey
         let key = crate::id();
 
         acc.register_position(key, 2, key, key, PositionKind::NoValue, 5000, 1000)
             .unwrap();
-        let position = "AccountPosition { token: JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ, address: JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ, adapter: JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ, value: \"0.0\", balance: 0, balance_timestamp: 0, price: PriceInfo { value: 0, timestamp: 0, exponent: 0, is_valid: 0, _reserved: [0, 0, 0] }, kind: NoValue, exponent: -2, value_modifier: 5000, max_staleness: 1000 }";
+        let position = "AccountPosition {
+            token: JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ,
+            address: JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ,
+            adapter: JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ,
+            value: \"0.0\",
+            balance: 0,
+            balance_timestamp: 0,
+            price: PriceInfo {
+                value: 0,
+                timestamp: 0,
+                exponent: 0,
+                is_valid: 0,
+                _reserved: [0, 0, 0]
+            },
+            kind: NoValue,
+            exponent: -2,
+            value_modifier: 5000,
+            max_staleness: 1000
+        }"
+        .split_whitespace()
+        .join(" ");
         let output = output.replace("positions: []", &format!("positions: [{}]", position));
         assert_eq!(&output, &format!("{:?}", acc));
     }
