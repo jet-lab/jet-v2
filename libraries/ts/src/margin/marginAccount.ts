@@ -13,17 +13,19 @@ import {
 } from "@solana/web3.js"
 import { Pool } from "./pool/pool"
 import {
-  AccountPosition,
   AccountPositionList,
   AccountPositionListLayout,
+  AdapterPositionFlags,
+  ErrorCode,
   MarginAccountData,
-  MAX_POSITIONS
+  PositionKind
 } from "./state"
 import { MarginPrograms } from "./marginClient"
 import { findDerivedAccount } from "../utils/pda"
-import { AssociatedToken, bnToNumber, MarginPools, TokenAmount, ZERO_BN } from ".."
+import { AssociatedToken, bnToNumber, getTimestamp, MarginPools, TokenAmount, ZERO_BN } from ".."
 import { MarginPoolConfig, MarginTokenConfig } from "./config"
 import { sleep } from "../utils/util"
+import { AccountPosition } from "./accountPosition"
 
 export interface MarginAccountAddresses {
   marginAccount: PublicKey
@@ -43,8 +45,8 @@ export interface PoolPosition {
   poolConfig: MarginPoolConfig
   tokenConfig: MarginTokenConfig
   pool?: Pool
-  depositNotePositionInfo: AccountPosition | undefined
-  loanNotePositionInfo: AccountPosition | undefined
+  depositNotePosition: AccountPosition | undefined
+  loanNotePosition: AccountPosition | undefined
   depositBalance: TokenAmount
   depositBalanceNotes: BN
   loanBalance: TokenAmount
@@ -63,6 +65,16 @@ export interface AccountSummary {
   totalBuyingPower: number
 }
 
+export interface Valuation {
+  exposure: BN
+  requiredCollateral: BN
+  weightedCollateral: BN
+  effectiveCollateral: BN
+  staleCollateralList: [PublicKey, ErrorCode][]
+  pastDue: boolean
+  claimErrorList: [PublicKey, ErrorCode][]
+}
+
 export interface MarginWalletTokens {
   all: AssociatedToken[]
   map: Record<MarginPools, AssociatedToken>
@@ -78,7 +90,9 @@ export class MarginAccount {
   }
 
   addresses: MarginAccountAddresses
-  positions: Record<MarginPools, PoolPosition>
+  positions: AccountPosition[]
+  valuation: Valuation
+  poolPositions: Record<MarginPools, PoolPosition>
   summary: AccountSummary
 
   get address() {
@@ -107,7 +121,9 @@ export class MarginAccount {
     this.pools = pools
     this.walletTokens = walletTokens
     this.addresses = MarginAccount.derive(programs, owner, seed)
-    this.positions = this.getAllPoolPositions()
+    this.positions = this.getPositions()
+    this.valuation = this.getValuation(true)
+    this.poolPositions = this.getAllPoolPositions()
     this.summary = this.getSummary()
   }
 
@@ -255,7 +271,9 @@ export class MarginAccount {
         positions
       }
     }
-    this.positions = this.getAllPoolPositions()
+    this.positions = this.getPositions()
+    this.valuation = this.getValuation(true)
+    this.poolPositions = this.getAllPoolPositions()
     this.summary = this.getSummary()
   }
 
@@ -275,10 +293,8 @@ export class MarginAccount {
 
       // Deposits
       const poolDepositNotes = pool.info?.marginPool.depositNotes ?? ZERO_BN
-      const depositNotePositionInfo = this.info?.positions.positions.find(position =>
-        position.token.equals(pool.addresses.depositNoteMint)
-      )
-      const depositBalanceNotes = depositNotePositionInfo?.balance ?? ZERO_BN
+      const depositNotePosition = this.getPosition(pool.addresses.tokenMint)
+      const depositBalanceNotes = depositNotePosition?.balance ?? ZERO_BN
       const depositTokenBalance = poolDepositNotes.isZero()
         ? ZERO_BN
         : totalValueLessFees.mul(depositBalanceNotes).div(poolDepositNotes)
@@ -287,10 +303,8 @@ export class MarginAccount {
       // Loans
       const poolLoanNotes = pool.info?.marginPool.loanNotes ?? ZERO_BN
       const poolBorrowedTokens = pool.borrowedTokens.lamports
-      const loanNotePositionInfo = this.info?.positions.positions.find(position =>
-        position.token.equals(pool.addresses.loanNoteMint)
-      )
-      const loanBalanceNotes = loanNotePositionInfo?.balance ?? ZERO_BN
+      const loanNotePosition = this.getPosition(pool.addresses.loanNoteMint)
+      const loanBalanceNotes = loanNotePosition?.balance ?? ZERO_BN
       const loanTokenBalance = poolLoanNotes.isZero()
         ? ZERO_BN
         : poolBorrowedTokens.mul(loanBalanceNotes).div(poolLoanNotes)
@@ -309,8 +323,8 @@ export class MarginAccount {
         poolConfig,
         tokenConfig,
         pool,
-        depositNotePositionInfo,
-        loanNotePositionInfo,
+        depositNotePosition,
+        loanNotePosition,
         depositBalance,
         depositBalanceNotes,
         loanBalance,
@@ -379,7 +393,7 @@ export class MarginAccount {
     let borrowedValue = 0
     let totalBuyingPower = 0
 
-    const positions = Object.values(this.positions)
+    const positions = Object.values(this.poolPositions)
     for (let i = 0; i < positions.length; i++) {
       const position = positions[i]
       depositedValue += position.depositBalance.tokens * (position.pool?.tokenPrice ?? 0)
@@ -398,14 +412,99 @@ export class MarginAccount {
     }
   }
 
-  /** Get the list of positions on this account, including uninitialized positions */
-  getPositionList() {
-    return this.info?.positions.positions ?? []
-  }
-
   /** Get the list of positions on this account */
   getPositions() {
-    return this.getPositionList().filter(position => !position.address.equals(PublicKey.default))
+    const positions = this.info?.positions.positions ?? []
+    return positions
+      .filter(position => !position.address.equals(PublicKey.default))
+      .map(position => new AccountPosition(position))
+  }
+
+  getPosition(tokenMint: Address) {
+    assert(this.info)
+    const tokenMintAddress = translateAddress(tokenMint)
+
+    for (let i = 0; i < this.positions.length; i++) {
+      const position = this.positions[i]
+      if (position.token.equals(tokenMintAddress)) {
+        return position
+      }
+    }
+  }
+
+  getValuation(includeStalePositions: boolean): Valuation {
+    const timestamp = getTimestamp()
+
+    let pastDue = false
+    let exposure = ZERO_BN
+    let requiredCollateral = ZERO_BN
+    let weightedCollateral = ZERO_BN
+    let staleCollateralList: [PublicKey, ErrorCode][] = []
+    let claimErrorList: [PublicKey, ErrorCode][] = []
+
+    const constants = this.programs.margin.idl.constants
+    const MAX_PRICE_QUOTE_AGE = new BN(
+      constants.find(constant => constant.name === "MAX_PRICE_QUOTE_AGE")?.value.replaceAll("_", "") ?? 0
+    )
+    // FIXME: When POS_PRICE_VALID is added to the IDL, remove 'as any' and '?? 1'
+    const POS_PRICE_VALID = constants.find(constant => (constant.name as any) === "POS_PRICE_VALID")?.value ?? 1
+
+    for (const position of this.positions) {
+      let kind = position.kind
+      let staleReason: ErrorCode | undefined
+      {
+        let balanceAge = timestamp.sub(position.balanceTimestamp)
+        let priceQuoteAge = timestamp.sub(position.price.timestamp)
+        if (position.price.isValid != POS_PRICE_VALID) {
+          // collateral with bad prices
+          staleReason = ErrorCode.InvalidPrice
+        } else if (position.maxStaleness.gt(ZERO_BN) && balanceAge.gt(position.maxStaleness)) {
+          // outdated balance
+          staleReason = ErrorCode.OutdatedBalance
+        } else if (priceQuoteAge.gt(MAX_PRICE_QUOTE_AGE)) {
+          staleReason = ErrorCode.OutdatedPrice
+        } else {
+          staleReason = undefined
+        }
+      }
+
+      if (kind === PositionKind.NoValue) {
+      } else if (kind === PositionKind.Claim) {
+        if (staleReason === undefined || includeStalePositions) {
+          if (
+            position.balance.gt(ZERO_BN) &&
+            (position.flags & AdapterPositionFlags.PastDue) === AdapterPositionFlags.PastDue
+          ) {
+            pastDue = true
+          }
+
+          exposure = exposure.add(new BN(position.value))
+          requiredCollateral = requiredCollateral.add(position.requiredCollateralValue())
+        }
+        if (staleReason !== undefined) {
+          claimErrorList.push([position.token, staleReason])
+        }
+      } else if (kind === PositionKind.Deposit) {
+        if (staleReason === undefined || includeStalePositions) {
+          weightedCollateral = weightedCollateral.add(position.collateralValue())
+        }
+        if (staleReason !== undefined) {
+          staleCollateralList.push([position.token, staleReason])
+        }
+      }
+    }
+
+    const effectiveCollateral = weightedCollateral.sub(exposure)
+
+    return {
+      exposure,
+      pastDue,
+      requiredCollateral,
+      weightedCollateral,
+      effectiveCollateral,
+      staleCollateralList,
+      claimErrorList
+    }
   }
 
   /**
@@ -586,25 +685,13 @@ export class MarginAccount {
     return await this.provider.sendAndConfirm(new Transaction().add(...instructions))
   }
 
-  getPosition(tokenMint: Address) : AccountPosition | undefined {
-    assert(this.info)
-    const tokenMintAddress = translateAddress(tokenMint)
-
-    for (let i = 0; i < MAX_POSITIONS; i++) {
-      const position = this.info.positions.positions[i]
-      if (position.token.equals(tokenMintAddress)) {
-        return position
-      }
-    }
-  }
-
   //TODO Withdraw
   async getOrCreatePosition(tokenMint: Address) {
     assert(this.info)
     const tokenMintAddress = translateAddress(tokenMint)
 
-    for (let i = 0; i < MAX_POSITIONS; i++) {
-      const position = this.info.positions.positions[i]
+    for (let i = 0; i < this.positions.length; i++) {
+      const position = this.positions[i]
       if (position.token.equals(tokenMintAddress)) {
         return position
       }
@@ -613,8 +700,8 @@ export class MarginAccount {
     await this.registerPosition(tokenMintAddress)
     await this.refresh()
 
-    for (let i = 0; i < MAX_POSITIONS; i++) {
-      const position = this.info.positions.positions[i]
+    for (let i = 0; i < this.positions.length; i++) {
+      const position = this.positions[i]
       if (position.token.equals(tokenMintAddress)) {
         return position
       }
@@ -630,7 +717,7 @@ export class MarginAccount {
   }
 
   async withUpdateAllPositionBalances({ instructions }: { instructions: TransactionInstruction[] }) {
-    for (const position of this.getPositions()) {
+    for (const position of this.positions) {
       await this.withUpdatePositionBalance({ instructions, position })
     }
   }

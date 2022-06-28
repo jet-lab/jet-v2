@@ -3,7 +3,7 @@ import { IdlTypeDef } from "@project-serum/anchor/dist/cjs/idl"
 import { AccountMap, AllAccountsMap, IdlTypes, TypeDef } from "@project-serum/anchor/dist/cjs/program/namespace/types"
 import { blob, Layout, s16, s32, seq, struct, u16, u32, u8 } from "@solana/buffer-layout"
 import { JetMargin } from ".."
-import { i64Field, number128, pubkey, u64 } from "../utils/layout"
+import { i64Field, number128Field, pubkey, u64 } from "../utils/layout"
 
 /****************************
  * Anchor program type definitions.
@@ -25,22 +25,51 @@ export type MarginAccountData = TypeDef<AllAccountsMap<JetMargin>["marginAccount
  * Program Types
  ****************************/
 
-export type AccountPosition = TypeDef<AllTypesMap<JetMargin>["AccountPosition"], IdlTypes<JetMargin>>
+export type AccountPositionInfo = TypeDef<AllTypesMap<JetMargin>["AccountPosition"], IdlTypes<JetMargin>>
 export type AccountPositionKey = TypeDef<AllTypesMap<JetMargin>["AccountPositionKey"], IdlTypes<JetMargin>> & {
   index: BN
 }
 export type AccountPositionList = TypeDef<AllTypesMap<JetMargin>["AccountPositionList"], IdlTypes<JetMargin>> & {
   length: BN
   map: AccountPositionKey[]
-  positions: AccountPosition[]
+  positions: AccountPositionInfo[]
 }
+export type PositionKindInfo = AccountPositionInfo["kind"]
 export type AdapterResult = TypeDef<AllTypesMap<JetMargin>["AdapterResult"], IdlTypes<JetMargin>>
 export type CompactAccountMeta = TypeDef<AllTypesMap<JetMargin>["CompactAccountMeta"], IdlTypes<JetMargin>>
-export type ErrorCode = TypeDef<AllTypesMap<JetMargin>["ErrorCode"], IdlTypes<JetMargin>>
 export type PositionChange = TypeDef<AllTypesMap<JetMargin>["PositionChange"], IdlTypes<JetMargin>>
-export type PositionKind = TypeDef<AllTypesMap<JetMargin>["PositionKind"], IdlTypes<JetMargin>>
 export type PriceChangeInfo = TypeDef<AllTypesMap<JetMargin>["PriceChangeInfo"], IdlTypes<JetMargin>>
 export type PriceInfo = TypeDef<AllTypesMap<JetMargin>["PriceInfo"], IdlTypes<JetMargin>>
+
+export enum ErrorCode {
+  InvalidPrice,
+  OutdatedBalance,
+  OutdatedPrice
+}
+
+export enum PositionKind {
+  /** The position is not worth anything */
+  NoValue,
+  /** The position contains a balance of available collateral */
+  Deposit,
+  /** The position contains a balance of tokens that are owed as a part of some debt. */
+  Claim
+}
+
+export enum AdapterPositionFlags {
+  /**
+   * The position may never be removed by the user, even if the balance remains at zero,
+   * until the adapter explicitly unsets this flag.
+   */
+  Required = 1 << 0,
+  /**
+   * Only applies to claims.
+   * For any other position, this can be set, but it will be ignored.
+   * The claim must be repaid immediately.
+   * The account will be considered unhealty if there is any balance on this position.
+   */
+  PastDue = 1 << 1
+}
 
 const PriceInfoLayout = struct<PriceInfo>([
   i64Field("value"),
@@ -51,11 +80,11 @@ const PriceInfoLayout = struct<PriceInfo>([
 ])
 console.assert(PriceInfoLayout.span === 24, "Unexpected PriceInfoLayout span", PriceInfoLayout.span, "expected", 24)
 
-const AccountPositionLayout = struct<AccountPosition>([
+const AccountPositionLayout = struct<AccountPositionInfo>([
   pubkey("token"),
   pubkey("address"),
   pubkey("adapter"),
-  number128("value"),
+  number128Field("value"),
   u64("balance"),
   u64("balanceTimestamp"),
   PriceInfoLayout.replicate("price"),

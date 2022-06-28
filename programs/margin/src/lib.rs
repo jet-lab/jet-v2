@@ -52,6 +52,9 @@ pub const MAX_ORACLE_STALENESS: i64 = 30;
 #[constant]
 pub const MAX_PRICE_QUOTE_AGE: u64 = 30;
 
+#[constant]
+const POS_PRICE_VALID: u8 = 1;
+
 /// The maximum amount that the amount of missing collateral can be increased,
 /// expressed as a percentage of the current missing collateral.
 pub const LIQUIDATION_MAX_UNDERCOLLATERAL_GAIN: u16 = 10_00;

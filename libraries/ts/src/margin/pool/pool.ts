@@ -10,8 +10,8 @@ import { MarginPrograms } from "../marginClient"
 import { MarginPoolConfigData, MarginPoolData } from "./state"
 import { MarginPoolConfig, MarginPools, MarginTokenConfig } from "../config"
 import { PoolAmount } from "./poolAmount"
-import { AccountPosition } from "../state"
 import { TokenMetadata } from "../metadata/state"
+import { AccountPosition } from "../accountPosition"
 
 type TokenKindNonCollateral = { nonCollateral: Record<string, never> }
 type TokenKindCollateral = { collateral: Record<string, never> }
