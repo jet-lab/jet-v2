@@ -92,6 +92,13 @@ pub mod jet_margin {
         update_position_balance_handler(ctx)
     }
 
+    /// Update the metadata for a position stored in the margin account,
+    /// in the case where the metadata has changed after the position was
+    /// created.
+    pub fn refresh_position_metadata(ctx: Context<RefreshPositionMetadata>) -> Result<()> {
+        refresh_position_metadata_handler(ctx)
+    }
+
     /// Close out a position, freeing up space in the account.
     pub fn close_position(ctx: Context<ClosePosition>) -> Result<()> {
         close_position_handler(ctx)

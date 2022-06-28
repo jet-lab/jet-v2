@@ -371,9 +371,38 @@ impl MarginTxBuilder {
         let mut instructions = vec![];
         self.create_pool_instructions(&mut instructions).await?;
 
+        self.get_chunk_transactions(12, instructions).await
+    }
+
+    /// Refresh the metadata for a position
+    pub async fn refresh_position_metadata(
+        &self,
+        position_token_mint: &Pubkey,
+    ) -> Result<Transaction> {
+        self.create_transaction(&[self.ix.refresh_position_metadata(position_token_mint)])
+            .await
+    }
+
+    /// Refresh metadata for all positions in the user account
+    pub async fn refresh_all_position_metadata(&self) -> Result<Vec<Transaction>> {
+        let mut instructions = self
+            .get_account_state()
+            .await?
+            .positions()
+            .map(|position| self.ix.refresh_position_metadata(&position.token))
+            .collect::<Vec<_>>();
+
+        self.get_chunk_transactions(12, instructions).await
+    }
+
+    async fn get_chunk_transactions(
+        &self,
+        chunk_size: usize,
+        instructions: Vec<Instruction>,
+    ) -> Result<Vec<Transaction>> {
         futures::future::join_all(
             instructions
-                .chunks(12)
+                .chunks(chunk_size)
                 .map(|c| self.create_unsigned_transaction(c)),
         )
         .await

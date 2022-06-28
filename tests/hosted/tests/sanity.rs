@@ -1,7 +1,9 @@
 use anyhow::Error;
 
+use jet_control::TokenMetadataParams;
 use jet_margin::PositionKind;
 use jet_margin_pool::{Amount, MarginPoolConfig, PoolFlags};
+use jet_margin_sdk::instructions::control::TokenConfiguration;
 use jet_metadata::TokenKind;
 use jet_simulation::{assert_custom_program_error, create_wallet};
 
@@ -207,6 +209,42 @@ async fn sanity_test() -> Result<(), anyhow::Error> {
     assert_eq!(
         1_000 * ONE_TSOL,
         ctx.tokens.get_balance(&user_b_tsol_account).await?
+    );
+
+    // Check if we can update the metadata
+    ctx.margin
+        .configure_token(
+            &env.usdc,
+            &TokenConfiguration {
+                metadata: Some(TokenMetadataParams {
+                    token_kind: TokenKind::Collateral,
+                    collateral_weight: 0xBEEF,
+                    max_leverage: 0xFEED,
+                }),
+                ..Default::default()
+            },
+        )
+        .await?;
+
+    user_a.refresh_all_position_metadata().await?;
+    user_b.refresh_all_position_metadata().await?;
+
+    let mut user_a_state = ctx.margin.get_account(&user_a.address()).await?;
+    let mut user_b_state = ctx.margin.get_account(&user_b.address()).await?;
+
+    assert_eq!(
+        0xBEEF,
+        user_a_state
+            .get_position_mut(&usdc_pool.deposit_note_mint)
+            .unwrap()
+            .value_modifier
+    );
+    assert_eq!(
+        0xFEED,
+        user_b_state
+            .get_position_mut(&usdc_pool.loan_note_mint)
+            .unwrap()
+            .value_modifier
     );
 
     // Close a specific position
