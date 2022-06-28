@@ -121,7 +121,7 @@ impl MarginPoolIxBuilder {
         depositor: Pubkey,
         source: Pubkey,
         destination: Pubkey,
-        amount: u64,
+        amount: Amount,
     ) -> Instruction {
         let accounts = ix_accounts::Deposit {
             margin_pool: self.address,

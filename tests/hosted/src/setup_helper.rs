@@ -4,7 +4,7 @@ use solana_sdk::native_token::LAMPORTS_PER_SOL;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::{Keypair, Signer};
 
-use jet_margin_pool::{MarginPoolConfig, PoolFlags};
+use jet_margin_pool::{Amount, MarginPoolConfig, PoolFlags};
 use jet_metadata::TokenKind;
 use jet_simulation::create_wallet;
 
@@ -107,7 +107,8 @@ pub async fn setup_user(
 
         if in_pool > 0 {
             // Deposit user funds into their margin accounts
-            user.deposit(&mint, &token_account, in_pool).await?;
+            user.deposit(&mint, &token_account, Amount::tokens(in_pool))
+                .await?;
         }
 
         // Verify user tokens have been deposited

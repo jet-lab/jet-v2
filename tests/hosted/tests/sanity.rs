@@ -143,10 +143,18 @@ async fn sanity_test() -> Result<(), anyhow::Error> {
 
     // Deposit user funds into their margin accounts
     user_a
-        .deposit(&env.usdc, &user_a_usdc_account, 1_000_000 * ONE_USDC)
+        .deposit(
+            &env.usdc,
+            &user_a_usdc_account,
+            Amount::set_tokens(1_000_000 * ONE_USDC),
+        )
         .await?;
     user_b
-        .deposit(&env.tsol, &user_b_tsol_account, 1_000 * ONE_TSOL)
+        .deposit(
+            &env.tsol,
+            &user_b_tsol_account,
+            Amount::set_tokens(1_000 * ONE_TSOL),
+        )
         .await?;
 
     // Verify user tokens have been deposited

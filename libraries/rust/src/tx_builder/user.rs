@@ -160,7 +160,7 @@ impl MarginTxBuilder {
         &self,
         token_mint: &Pubkey,
         source: &Pubkey,
-        amount: u64,
+        amount: Amount,
     ) -> Result<Transaction> {
         let mut instructions = vec![];
 

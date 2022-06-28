@@ -111,7 +111,7 @@ impl<'info> MarginSplSwap<'info> {
                     token_program: self.token_program.to_account_info(),
                 },
             ),
-            destination_amount,
+            Amount::tokens(destination_amount),
         )?;
 
         Ok(())

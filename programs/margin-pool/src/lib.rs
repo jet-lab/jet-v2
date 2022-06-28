@@ -57,7 +57,7 @@ mod jet_margin_pool {
     }
 
     /// Deposit tokens into the pool in exchange for notes
-    pub fn deposit(ctx: Context<Deposit>, amount: u64) -> Result<()> {
+    pub fn deposit(ctx: Context<Deposit>, amount: Amount) -> Result<()> {
         instructions::deposit_handler(ctx, amount)
     }
 
@@ -96,10 +96,17 @@ pub enum AmountKind {
     Notes,
 }
 
+#[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone, Copy)]
+pub enum ChangeKind {
+    SetValue,
+    ShiftValue,
+}
+
 /// Represent an amount of some value (like tokens, or notes)
 #[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone, Copy)]
 pub struct Amount {
     pub kind: AmountKind,
+    pub change_kind: ChangeKind,
     pub value: u64,
 }
 
@@ -107,6 +114,7 @@ impl Amount {
     pub const fn tokens(value: u64) -> Self {
         Self {
             kind: AmountKind::Tokens,
+            change_kind: ChangeKind::ShiftValue,
             value,
         }
     }
@@ -114,6 +122,23 @@ impl Amount {
     pub const fn notes(value: u64) -> Self {
         Self {
             kind: AmountKind::Notes,
+            change_kind: ChangeKind::ShiftValue,
+            value,
+        }
+    }
+
+    pub const fn set_tokens(value: u64) -> Self {
+        Self {
+            kind: AmountKind::Tokens,
+            change_kind: ChangeKind::SetValue,
+            value,
+        }
+    }
+
+    pub const fn set_notes(value: u64) -> Self {
+        Self {
+            kind: AmountKind::Notes,
+            change_kind: ChangeKind::SetValue,
             value,
         }
     }

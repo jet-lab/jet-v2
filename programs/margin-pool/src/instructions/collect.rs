@@ -20,7 +20,7 @@ use std::ops::Deref;
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, MintTo, Token, TokenAccount};
 
-use crate::{events, state::*, Amount, AmountKind};
+use crate::{events, state::*, Amount, AmountKind, ChangeKind};
 
 #[derive(Accounts)]
 pub struct Collect<'info> {
@@ -85,6 +85,7 @@ pub fn collect_handler(ctx: Context<Collect>) -> Result<()> {
     let claimed_amount = pool.convert_deposit_amount(
         Amount {
             kind: AmountKind::Notes,
+            change_kind: ChangeKind::ShiftValue,
             value: fee_notes,
         },
         rounding,
@@ -92,6 +93,7 @@ pub fn collect_handler(ctx: Context<Collect>) -> Result<()> {
     let balance_amount = pool.convert_deposit_amount(
         Amount {
             kind: AmountKind::Notes,
+            change_kind: ChangeKind::ShiftValue,
             value: ctx.accounts.vault.amount,
         },
         rounding,

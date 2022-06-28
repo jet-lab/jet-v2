@@ -20,7 +20,7 @@ use std::ops::Deref;
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, MintTo, Token, Transfer};
 
-use crate::{events, state::*, AmountKind};
+use crate::{events, state::*, AmountKind, ChangeKind};
 use crate::{Amount, ErrorCode};
 
 #[derive(Accounts)]
@@ -81,7 +81,7 @@ impl<'info> Deposit<'info> {
     }
 }
 
-pub fn deposit_handler(ctx: Context<Deposit>, token_amount: u64) -> Result<()> {
+pub fn deposit_handler(ctx: Context<Deposit>, amount: Amount) -> Result<()> {
     let pool = &mut ctx.accounts.margin_pool;
     let clock = Clock::get()?;
 
@@ -92,8 +92,19 @@ pub fn deposit_handler(ctx: Context<Deposit>, token_amount: u64) -> Result<()> {
     }
 
     let deposit_rounding = RoundingDirection::direction(PoolAction::Deposit, AmountKind::Tokens);
-    let deposit_amount =
-        pool.convert_deposit_amount(Amount::tokens(token_amount), deposit_rounding)?;
+    let deposit_amount = match amount.change_kind {
+        ChangeKind::ShiftValue => pool.convert_deposit_amount(amount, deposit_rounding)?,
+        ChangeKind::SetValue => {
+            let current_notes_value =
+                token::accessor::amount(&ctx.accounts.destination.to_account_info())?;
+            let target_amount = pool.convert_deposit_amount(amount, deposit_rounding)?;
+            let total_notes_to_deposit = target_amount
+                .notes
+                .checked_sub(current_notes_value)
+                .ok_or(ErrorCode::InvalidAmount)?;
+            pool.convert_deposit_amount(Amount::notes(total_notes_to_deposit), deposit_rounding)?
+        }
+    };
     pool.deposit(&deposit_amount);
 
     let pool = &ctx.accounts.margin_pool;

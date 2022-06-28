@@ -272,7 +272,12 @@ impl MarginUser {
             .await
     }
 
-    pub async fn deposit(&self, mint: &Pubkey, source: &Pubkey, amount: u64) -> Result<(), Error> {
+    pub async fn deposit(
+        &self,
+        mint: &Pubkey,
+        source: &Pubkey,
+        amount: Amount,
+    ) -> Result<(), Error> {
         self.send_confirm_tx(self.tx.deposit(mint, source, amount).await?)
             .await
     }
