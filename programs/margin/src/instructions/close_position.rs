@@ -18,7 +18,7 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, CloseAccount, Mint, Token, TokenAccount};
 
-use crate::{MarginAccount, SignerSeeds};
+use crate::{events, MarginAccount, SignerSeeds};
 
 #[derive(Accounts)]
 pub struct ClosePosition<'info> {
@@ -72,6 +72,12 @@ pub fn close_position_handler(ctx: Context<ClosePosition>) -> Result<()> {
             .close_token_account_ctx()
             .with_signer(&[&account.signer_seeds()]),
     )?;
+
+    emit!(events::PositionClosed {
+        margin_account: ctx.accounts.margin_account.key(),
+        authority: ctx.accounts.authority.key(),
+        token: ctx.accounts.position_token_mint.key(),
+    });
 
     Ok(())
 }

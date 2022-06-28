@@ -169,7 +169,7 @@ impl MarginAccount {
         kind: PositionKind,
         value_modifier: u16,
         max_staleness: u64,
-    ) -> AnchorResult<()> {
+    ) -> AnchorResult<AccountPosition> {
         let free_position = self.position_list_mut().add(token)?;
 
         free_position.exponent = -(decimals as i16);
@@ -180,7 +180,7 @@ impl MarginAccount {
         free_position.value_modifier = value_modifier;
         free_position.max_staleness = max_staleness;
 
-        Ok(())
+        Ok(*free_position)
     }
 
     /// Free the space from a previously registered position no longer needed
@@ -198,6 +198,25 @@ impl MarginAccount {
         Ok(())
     }
 
+    pub fn refresh_position_metadata(
+        &mut self,
+        mint: &Pubkey,
+        kind: PositionKind,
+        value_modifier: u16,
+        max_staleness: u64,
+    ) -> AnchorResult<()> {
+        let position = match self.position_list_mut().get_mut(mint) {
+            None => return err!(ErrorCode::PositionNotRegistered),
+            Some(p) => p,
+        };
+
+        position.kind = kind;
+        position.value_modifier = value_modifier;
+        position.max_staleness = max_staleness;
+
+        Ok(())
+    }
+
     pub fn get_position_mut(&mut self, mint: &Pubkey) -> Option<&mut AccountPosition> {
         self.position_list_mut().get_mut(mint)
     }
@@ -208,7 +227,7 @@ impl MarginAccount {
         mint: &Pubkey,
         account: &Pubkey,
         balance: u64,
-    ) -> Result<(), ErrorCode> {
+    ) -> Result<AccountPosition, ErrorCode> {
         let position = self.position_list_mut().get_mut(mint).require()?;
 
         if position.address != *account {
@@ -216,7 +235,8 @@ impl MarginAccount {
         }
 
         position.set_balance(balance);
-        Ok(())
+
+        Ok(*position)
     }
 
     /// Change the current price value of a position
@@ -768,7 +788,7 @@ unsafe impl Pod for AccountPosition {}
 /// State of an in-progress liquidation
 #[account(zero_copy)]
 #[repr(C, align(8))]
-#[derive(Debug, Default)]
+#[derive(AnchorDeserialize, AnchorSerialize, Debug, Default)]
 pub struct Liquidation {
     /// time that liquidate_begin initialized this liquidation
     start_time: i64,

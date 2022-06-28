@@ -22,6 +22,7 @@ use anchor_lang::solana_program::clock::UnixTimestamp;
 declare_id!("JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ");
 
 mod adapter;
+mod events;
 mod instructions;
 mod state;
 /// Utilities used only in this crate
@@ -90,6 +91,13 @@ pub mod jet_margin {
     /// match the actual balance stored by the SPL token acount.
     pub fn update_position_balance(ctx: Context<UpdatePositionBalance>) -> Result<()> {
         update_position_balance_handler(ctx)
+    }
+
+    /// Update the metadata for a position stored in the margin account,
+    /// in the case where the metadata has changed after the position was
+    /// created.
+    pub fn refresh_position_metadata(ctx: Context<RefreshPositionMetadata>) -> Result<()> {
+        refresh_position_metadata_handler(ctx)
     }
 
     /// Close out a position, freeing up space in the account.

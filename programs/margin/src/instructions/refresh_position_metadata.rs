@@ -17,22 +17,31 @@
 
 use anchor_lang::prelude::*;
 
-use crate::{events, MarginAccount};
+use jet_metadata::PositionTokenMetadata;
+
+use crate::MarginAccount;
 
 #[derive(Accounts)]
-pub struct VerifyHealthy<'info> {
-    /// The account verify the health of
+pub struct RefreshPositionMetadata<'info> {
+    /// The margin account with the position to be refreshed
+    #[account(mut)]
     pub margin_account: AccountLoader<'info, MarginAccount>,
+
+    /// The metadata account for the token, which has been updated
+    pub metadata: Account<'info, PositionTokenMetadata>,
 }
 
-pub fn verify_healthy_handler(ctx: Context<VerifyHealthy>) -> Result<()> {
-    let account = ctx.accounts.margin_account.load()?;
+/// Refresh the metadata for a position
+pub fn refresh_position_metadata_handler(ctx: Context<RefreshPositionMetadata>) -> Result<()> {
+    let metadata = &ctx.accounts.metadata;
+    let mut account = ctx.accounts.margin_account.load_mut()?;
 
-    account.verify_healthy_positions()?;
-
-    emit!(events::VerifiedHealthy {
-        margin_account: ctx.accounts.margin_account.key(),
-    });
+    account.refresh_position_metadata(
+        &metadata.position_token_mint,
+        metadata.token_kind.into(),
+        metadata.value_modifier,
+        metadata.max_staleness,
+    )?;
 
     Ok(())
 }
