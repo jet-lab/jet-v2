@@ -93,7 +93,7 @@ pub fn margin_borrow_handler(ctx: Context<MarginBorrow>, amount: Amount) -> Resu
     }
 
     // First record a borrow of the tokens requested
-    let borrow_rounding = RoundingDirection::direction(PoolAction::Borrow, AmountKind::Tokens);
+    let borrow_rounding = RoundingDirection::direction(PoolAction::Borrow, amount.kind);
     let borrow_amount = match amount.change_kind {
         ChangeKind::ShiftValue => pool.convert_loan_amount(amount, borrow_rounding)?,
         ChangeKind::SetValue => {
@@ -103,7 +103,10 @@ pub fn margin_borrow_handler(ctx: Context<MarginBorrow>, amount: Amount) -> Resu
                 .notes
                 .checked_sub(current_notes_value)
                 .ok_or(ErrorCode::InvalidAmount)?;
-            pool.convert_loan_amount(Amount::notes(total_value_to_borrow), borrow_rounding)?
+
+            let notes_rounding =
+                RoundingDirection::direction(PoolAction::Borrow, AmountKind::Notes);
+            pool.convert_loan_amount(Amount::notes(total_value_to_borrow), notes_rounding)?
         }
     };
     pool.borrow(&borrow_amount)?;

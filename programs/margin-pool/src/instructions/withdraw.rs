@@ -20,7 +20,7 @@ use std::ops::Deref;
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Burn, Token, Transfer};
 
-use crate::{events, state::*, ChangeKind};
+use crate::{events, state::*, AmountKind, ChangeKind};
 use crate::{Amount, ErrorCode};
 
 #[derive(Accounts)]
@@ -92,6 +92,7 @@ pub fn withdraw_handler(ctx: Context<Withdraw>, amount: Amount) -> Result<()> {
     }
 
     let withdraw_rounding = RoundingDirection::direction(PoolAction::Withdraw, amount.kind);
+
     let withdraw_amount = match amount.change_kind {
         ChangeKind::ShiftValue => pool.convert_deposit_amount(amount, withdraw_rounding)?,
         ChangeKind::SetValue => {
@@ -101,7 +102,10 @@ pub fn withdraw_handler(ctx: Context<Withdraw>, amount: Amount) -> Result<()> {
             let total_notes_to_withdraw = current_notes_value
                 .checked_sub(target_amount.notes)
                 .ok_or(ErrorCode::InvalidAmount)?;
-            pool.convert_deposit_amount(Amount::notes(total_notes_to_withdraw), withdraw_rounding)?
+
+            let notes_rounding =
+                RoundingDirection::direction(PoolAction::Withdraw, AmountKind::Notes);
+            pool.convert_deposit_amount(Amount::notes(total_notes_to_withdraw), notes_rounding)?
         }
     };
     pool.withdraw(&withdraw_amount)?;

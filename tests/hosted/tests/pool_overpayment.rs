@@ -236,7 +236,9 @@ async fn pool_overpayment() -> Result<(), anyhow::Error> {
         .await?;
 
     // User repays their loan by setting the value to 0
-    user_c.repay(&env.tsol, Amount::set_tokens(0)).await?;
+    user_c
+        .margin_repay(&env.tsol, Amount::set_tokens(0))
+        .await?;
 
     // TODO: We do not yet have functions for getting a pool balance,
     // we use a withdrawal to test that the overpaid tokens are still in the deposit.

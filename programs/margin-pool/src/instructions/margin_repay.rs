@@ -22,7 +22,7 @@ use anchor_spl::token::{self, Burn, Token, TokenAccount};
 
 use jet_margin::MarginAccount;
 
-use crate::{events, state::*, ChangeKind};
+use crate::{events, state::*, AmountKind, ChangeKind};
 use crate::{Amount, ErrorCode};
 
 #[derive(Accounts)]
@@ -97,7 +97,7 @@ pub fn margin_repay_handler(ctx: Context<MarginRepay>, amount: Amount) -> Result
 
     // const rounding directions
     let withdraw_token_rounding =
-        RoundingDirection::direction(PoolAction::Withdraw, crate::AmountKind::Tokens);
+        RoundingDirection::direction(PoolAction::Withdraw, AmountKind::Tokens);
 
     // Amount the user desires to repay
     let repay_amount = match amount.change_kind {
@@ -108,7 +108,9 @@ pub fn margin_repay_handler(ctx: Context<MarginRepay>, amount: Amount) -> Result
             let total_notes_to_repay = current_notes_value
                 .checked_sub(target_amount.notes)
                 .ok_or(ErrorCode::InvalidAmount)?;
-            pool.convert_loan_amount(Amount::notes(total_notes_to_repay), repay_rounding)?
+
+            let notes_rounding = RoundingDirection::direction(PoolAction::Repay, AmountKind::Notes);
+            pool.convert_loan_amount(Amount::notes(total_notes_to_repay), notes_rounding)?
         }
     };
 

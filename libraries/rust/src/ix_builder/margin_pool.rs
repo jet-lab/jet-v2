@@ -214,13 +214,13 @@ impl MarginPoolIxBuilder {
     /// `margin_account` - The account with the loan to be repaid
     /// `deposit_account` - The account with notes to repay the loan
     /// `loan_account` - The account with the loan debt to be reduced
-    /// `max_amount` - The maximum amount to be repaid
+    /// `amount` - The amount to be repaid
     pub fn margin_repay(
         &self,
         margin_account: Pubkey,
         deposit_account: Pubkey,
         loan_account: Pubkey,
-        max_amount: Amount,
+        amount: Amount,
     ) -> Instruction {
         let accounts = ix_accounts::MarginRepay {
             margin_account,
@@ -235,7 +235,43 @@ impl MarginPoolIxBuilder {
 
         Instruction {
             program_id: jet_margin_pool::ID,
-            data: ix_data::MarginRepay { max_amount }.data(),
+            data: ix_data::MarginRepay { amount }.data(),
+            accounts,
+        }
+    }
+
+    /// Instruction to repay tokens owed by a margin account using a token account
+    ///
+    /// # Params
+    ///
+    /// `margin_account` - The account with the loan to be repaid
+    /// `repayment_source_authority` - The authority for the repayment source tokens
+    /// `repayment_source_account` - The token account to use for repayment
+    /// `loan_account` - The account with the loan debt to be reduced
+    /// `amount` - The amount to be repaid
+    pub fn repay(
+        &self,
+        margin_account: Pubkey,
+        repayment_source_authority: Pubkey,
+        repayment_source_account: Pubkey,
+        loan_account: Pubkey,
+        amount: Amount,
+    ) -> Instruction {
+        let accounts = ix_accounts::Repay {
+            margin_account,
+            margin_pool: self.address,
+            loan_note_mint: self.loan_note_mint,
+            pool_vault: self.vault,
+            loan_account,
+            repayment_token_account: repayment_source_account,
+            repayment_account_authority: repayment_source_authority,
+            token_program: Token::id(),
+        }
+        .to_account_metas(None);
+
+        Instruction {
+            program_id: jet_margin_pool::ID,
+            data: ix_data::Repay { amount }.data(),
             accounts,
         }
     }

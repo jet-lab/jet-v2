@@ -91,7 +91,7 @@ pub fn deposit_handler(ctx: Context<Deposit>, amount: Amount) -> Result<()> {
         return Err(ErrorCode::InterestAccrualBehind.into());
     }
 
-    let deposit_rounding = RoundingDirection::direction(PoolAction::Deposit, AmountKind::Tokens);
+    let deposit_rounding = RoundingDirection::direction(PoolAction::Deposit, amount.kind);
     let deposit_amount = match amount.change_kind {
         ChangeKind::ShiftValue => pool.convert_deposit_amount(amount, deposit_rounding)?,
         ChangeKind::SetValue => {
@@ -102,7 +102,10 @@ pub fn deposit_handler(ctx: Context<Deposit>, amount: Amount) -> Result<()> {
                 .notes
                 .checked_sub(current_notes_value)
                 .ok_or(ErrorCode::InvalidAmount)?;
-            pool.convert_deposit_amount(Amount::notes(total_notes_to_deposit), deposit_rounding)?
+
+            let notes_rounding =
+                RoundingDirection::direction(PoolAction::Deposit, AmountKind::Notes);
+            pool.convert_deposit_amount(Amount::notes(total_notes_to_deposit), notes_rounding)?
         }
     };
     pool.deposit(&deposit_amount);

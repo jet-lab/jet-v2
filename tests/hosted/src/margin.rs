@@ -297,8 +297,13 @@ impl MarginUser {
             .await
     }
 
-    pub async fn repay(&self, mint: &Pubkey, amount: Amount) -> Result<(), Error> {
-        self.send_confirm_tx(self.tx.repay(mint, amount).await?)
+    pub async fn margin_repay(&self, mint: &Pubkey, amount: Amount) -> Result<(), Error> {
+        self.send_confirm_tx(self.tx.margin_repay(mint, amount).await?)
+            .await
+    }
+
+    pub async fn repay(&self, mint: &Pubkey, source: &Pubkey, amount: Amount) -> Result<(), Error> {
+        self.send_confirm_tx(self.tx.repay(mint, source, amount).await?)
             .await
     }
 

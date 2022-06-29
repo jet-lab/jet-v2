@@ -75,8 +75,8 @@ mod jet_margin_pool {
     /// Repay a loan with a maximum amount.
     /// If the loan balance is lower than the amount, the excess is left in the
     /// deposit account.
-    pub fn margin_repay(ctx: Context<MarginRepay>, max_amount: Amount) -> Result<()> {
-        instructions::margin_repay_handler(ctx, max_amount)
+    pub fn margin_repay(ctx: Context<MarginRepay>, amount: Amount) -> Result<()> {
+        instructions::margin_repay_handler(ctx, amount)
     }
 
     /// Update the pool position on a margin account
@@ -85,8 +85,8 @@ mod jet_margin_pool {
     }
 
     /// Repay a margin account debt from an outside token account
-    pub fn repay(ctx: Context<Repay>, max_amount: Amount) -> Result<()> {
-        instructions::repay_handler(ctx, max_amount)
+    pub fn repay(ctx: Context<Repay>, amount: Amount) -> Result<()> {
+        instructions::repay_handler(ctx, amount)
     }
 }
 

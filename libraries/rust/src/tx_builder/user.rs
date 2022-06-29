@@ -205,13 +205,13 @@ impl MarginTxBuilder {
         self.create_transaction(&instructions).await
     }
 
-    /// Transaction to repay a loan of tokens in a margin account
+    /// Transaction to repay a loan of tokens in a margin account from the account's deposits
     ///
     /// # Params
     ///
     /// `token_mint` - The address of the mint for the tokens that were borrowed
     /// `amount` - The amount of tokens to repay
-    pub async fn repay(&self, token_mint: &Pubkey, amount: Amount) -> Result<Transaction> {
+    pub async fn margin_repay(&self, token_mint: &Pubkey, amount: Amount) -> Result<Transaction> {
         let mut instructions = vec![];
         let pool = MarginPoolIxBuilder::new(*token_mint);
 
@@ -224,6 +224,41 @@ impl MarginTxBuilder {
 
         let inner_repay_ix =
             pool.margin_repay(self.ix.address, deposit_position, loan_position, amount);
+
+        instructions.push(self.adapter_invoke_ix(inner_repay_ix));
+        self.create_transaction(&instructions).await
+    }
+
+    /// Transaction to repay a loan of tokens in a margin account from a token account
+    ///
+    /// # Params
+    ///
+    /// `token_mint` - The address of the mint for the tokens that were borrowed
+    /// `source` - The token account the repayment will be made from
+    /// `amount` - The amount of tokens to repay
+    pub async fn repay(
+        &self,
+        token_mint: &Pubkey,
+        source: &Pubkey,
+        amount: Amount,
+    ) -> Result<Transaction> {
+        let mut instructions = vec![];
+        let pool = MarginPoolIxBuilder::new(*token_mint);
+
+        let deposit_position = self
+            .get_or_create_position(&mut instructions, &pool.deposit_note_mint)
+            .await?;
+        let loan_position = self
+            .get_or_create_position(&mut instructions, &pool.loan_note_mint)
+            .await?;
+
+        let inner_repay_ix = pool.repay(
+            self.ix.address,
+            self.ix.owner,
+            *source,
+            loan_position,
+            amount,
+        );
 
         instructions.push(self.adapter_invoke_ix(inner_repay_ix));
         self.create_transaction(&instructions).await

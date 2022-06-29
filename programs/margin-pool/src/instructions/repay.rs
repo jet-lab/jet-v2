@@ -24,7 +24,7 @@ use jet_margin::MarginAccount;
 use crate::{
     events,
     state::{PoolAction, RoundingDirection},
-    Amount, ChangeKind, ErrorCode, MarginPool,
+    Amount, AmountKind, ChangeKind, ErrorCode, MarginPool,
 };
 
 #[derive(Accounts)]
@@ -110,7 +110,9 @@ pub fn repay_handler(ctx: Context<Repay>, amount: Amount) -> Result<()> {
             let total_notes_to_repay = current_notes_value
                 .checked_sub(target_amount.notes)
                 .ok_or(ErrorCode::InvalidAmount)?;
-            pool.convert_loan_amount(Amount::notes(total_notes_to_repay), repay_rounding)?
+
+            let notes_rounding = RoundingDirection::direction(PoolAction::Repay, AmountKind::Notes);
+            pool.convert_loan_amount(Amount::notes(total_notes_to_repay), notes_rounding)?
         }
     };
 

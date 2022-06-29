@@ -115,6 +115,16 @@ async fn sanity_test() -> Result<(), anyhow::Error> {
         .create_account_funded(&env.tsol, &wallet_b.pubkey(), 1_000 * ONE_TSOL)
         .await?;
 
+    // extra tokens for clearing dust from interest
+    let user_a_tsol_account = ctx
+        .tokens
+        .create_account_funded(&env.tsol, &wallet_a.pubkey(), 1 * ONE_TSOL)
+        .await?;
+    let user_b_usdc_account = ctx
+        .tokens
+        .create_account_funded(&env.usdc, &wallet_b.pubkey(), 10 * ONE_USDC)
+        .await?;
+
     // Set the prices for each token
     ctx.tokens
         .set_price(
@@ -153,7 +163,7 @@ async fn sanity_test() -> Result<(), anyhow::Error> {
         .deposit(
             &env.tsol,
             &user_b_tsol_account,
-            Amount::set_tokens(1_000 * ONE_TSOL),
+            Amount::tokens(1_000 * ONE_TSOL),
         )
         .await?;
 
@@ -166,7 +176,7 @@ async fn sanity_test() -> Result<(), anyhow::Error> {
 
     // Have each user borrow the other's funds
     user_a
-        .borrow(&env.tsol, Amount::tokens(10 * ONE_TSOL))
+        .borrow(&env.tsol, Amount::set_tokens(10 * ONE_TSOL))
         .await?;
     user_b
         .borrow(&env.usdc, Amount::tokens(1_000 * ONE_USDC))
@@ -183,27 +193,29 @@ async fn sanity_test() -> Result<(), anyhow::Error> {
     );
 
     // Users repay their loans
+
+    // give up all the previously borrowed tokens
     user_a
-        .repay(&env.tsol, Amount::tokens(10 * ONE_TSOL))
+        .margin_repay(&env.tsol, Amount::tokens(10 * ONE_TSOL))
         .await?;
     user_b
-        .repay(&env.usdc, Amount::tokens(1_000 * ONE_USDC))
+        .margin_repay(&env.usdc, Amount::tokens(1_000 * ONE_USDC))
         .await?;
 
-    // Users withdraw their funds
+    // now clear the dust
     user_a
-        .withdraw(
-            &env.usdc,
-            &user_a_usdc_account,
-            Amount::tokens(1_000_000 * ONE_USDC),
-        )
+        .repay(&env.tsol, &user_a_tsol_account, Amount::set_tokens(0))
         .await?;
     user_b
-        .withdraw(
-            &env.tsol,
-            &user_b_tsol_account,
-            Amount::tokens(1_000 * ONE_TSOL),
-        )
+        .repay(&env.usdc, &user_b_usdc_account, Amount::set_tokens(0))
+        .await?;
+
+    // Users withdraw all of their funds
+    user_a
+        .withdraw(&env.usdc, &user_a_usdc_account, Amount::set_tokens(0))
+        .await?;
+    user_b
+        .withdraw(&env.tsol, &user_b_tsol_account, Amount::set_tokens(0))
         .await?;
 
     // Verify accounting updated

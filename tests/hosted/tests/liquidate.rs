@@ -132,7 +132,7 @@ async fn cannot_transact_when_being_liquidated() -> Result<()> {
     // When User B is being liquidated, they should be unable to transact
     let result = scen
         .user_b
-        .repay(&scen.usdc, Amount::tokens(1_000_000 * ONE_USDC))
+        .margin_repay(&scen.usdc, Amount::tokens(1_000_000 * ONE_USDC))
         .await;
     assert_custom_program_error(ErrorCode::Liquidating, result);
 
@@ -149,7 +149,7 @@ async fn liquidator_can_repay_from_unhealthy_to_healthy_state() -> Result<()> {
 
     // Execute a repayment on behalf of the user
     scen.user_b_liq
-        .repay(&scen.usdc, Amount::tokens(1_000_000 * ONE_USDC))
+        .margin_repay(&scen.usdc, Amount::tokens(1_000_000 * ONE_USDC))
         .await?;
 
     // User B now has
@@ -210,7 +210,7 @@ async fn liquidation_completes() -> Result<()> {
 
     // Execute a repayment on behalf of the user
     scen.user_b_liq
-        .repay(&scen.usdc, Amount::tokens(1_000_000 * ONE_USDC))
+        .margin_repay(&scen.usdc, Amount::tokens(1_000_000 * ONE_USDC))
         .await?;
 
     // The liquidator should be able to end liquidation after liquidating
@@ -218,7 +218,7 @@ async fn liquidation_completes() -> Result<()> {
 
     // User B should now be able to transact again
     scen.user_b
-        .repay(&scen.usdc, Amount::tokens(200_000 * ONE_USDC))
+        .margin_repay(&scen.usdc, Amount::tokens(200_000 * ONE_USDC))
         .await?;
 
     Ok(())
