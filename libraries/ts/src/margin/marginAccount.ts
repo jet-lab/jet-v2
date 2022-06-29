@@ -586,7 +586,7 @@ export class MarginAccount {
     return await this.provider.sendAndConfirm(new Transaction().add(...instructions))
   }
 
-  async getPosition(tokenMint: Address) {
+  getPosition(tokenMint: Address) : AccountPosition | undefined {
     assert(this.info)
     const tokenMintAddress = translateAddress(tokenMint)
 
