@@ -54,7 +54,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build-cli-deps]
     steps:
-      - run: tests/test_on_localnet.sh
+      - run: tests/hosted/test_on_localnet.sh
 
   coverage:
     runs-on: ubuntu-latest
