@@ -7,7 +7,7 @@
     "lint": "eslint . --ext ts",
     "prepare": "husky install",
     "precommit": "npm run compile && npm run fmt:fix && npm run lint && git add .",
-    "test": "anchor test --skip-lint -- --features testing"
+    "test": "anchor test --skip-lint --skip-build -- --features testing"
   },
   "dependencies": {
     "@project-serum/anchor": "^0.24.2",

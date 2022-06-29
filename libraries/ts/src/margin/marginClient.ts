@@ -20,6 +20,11 @@ interface TokenMintsList {
 }
 type Mints = Record<string, TokenMintsList>
 
+type TxAndSig = {
+  details: TransactionResponse
+  sig: ConfirmedSignatureInfo
+}
+
 interface TransactionLog {
   blockDate: string
   time: string
@@ -29,7 +34,6 @@ interface TransactionLog {
   tradeAmount: TokenAmount
   tokenAbbrev: string
   tokenDecimals: number
-  tokenPrice: number
 }
 
 export interface MarginPrograms {
@@ -70,19 +74,29 @@ export class MarginClient {
     }
   }
 
+  static async getSingleTransaction(provider: AnchorProvider, sig: ConfirmedSignatureInfo): Promise<TxAndSig | null> {
+    const details = await provider.connection.getTransaction(sig.signature, { commitment: "confirmed" })
+    if (details) {
+      return {
+        details,
+        sig
+      }
+    } else {
+      return null
+    }
+  }
+
   static async getTransactionsFromSignatures(
     provider: AnchorProvider,
     signatures: ConfirmedSignatureInfo[]
-  ): Promise<TransactionResponse[]> {
-    const responses = await Promise.all(
-      signatures.map(sig => provider.connection.getTransaction(sig.signature, { commitment: "confirmed" }))
-    )
-    return responses.filter(res => res !== null) as TransactionResponse[]
+  ): Promise<TxAndSig[]> {
+    const responses = await Promise.all(signatures.map(sig => MarginClient.getSingleTransaction(provider, sig)))
+    return responses.filter(res => res !== null) as TxAndSig[]
   }
 
-  static filterTransactions(transactions: TransactionResponse[], config: MarginConfig) {
+  static filterTransactions(transactions: TxAndSig[], config: MarginConfig) {
     return transactions.filter(t => {
-      if (t.meta?.logMessages?.some(log => log.includes(config.marginPoolProgramId.toString()))) {
+      if (t.details?.meta?.logMessages?.some(log => log.includes(config.marginPoolProgramId.toString()))) {
         return true
       } else {
         return false
@@ -91,11 +105,12 @@ export class MarginClient {
   }
 
   static getTransactionData(
-    transaction: TransactionResponse,
+    txAndSig: TxAndSig,
     mints: Mints,
     config: MarginConfig,
     sigIndex: number
   ): TransactionLog | null {
+    const transaction = txAndSig.details
     if (!transaction.meta?.logMessages || !transaction.blockTime) {
       return null
     }
@@ -149,6 +164,7 @@ export class MarginClient {
             log.blockDate = dateTime.toLocaleDateString()
             log.time = dateTime.toLocaleTimeString("en-US", { hour12: false })
             log.sigIndex = sigIndex ? sigIndex : 0
+            log.signature = txAndSig.sig.signature
             return log as TransactionLog
           }
         }
