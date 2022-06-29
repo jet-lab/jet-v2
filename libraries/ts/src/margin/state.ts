@@ -38,8 +38,7 @@ export type PositionKindInfo = AccountPositionInfo["kind"]
 export type AdapterResult = TypeDef<AllTypesMap<JetMargin>["AdapterResult"], IdlTypes<JetMargin>>
 export type CompactAccountMeta = TypeDef<AllTypesMap<JetMargin>["CompactAccountMeta"], IdlTypes<JetMargin>>
 export type PositionChange = TypeDef<AllTypesMap<JetMargin>["PositionChange"], IdlTypes<JetMargin>>
-export type PriceChangeInfo = TypeDef<AllTypesMap<JetMargin>["PriceChangeInfo"], IdlTypes<JetMargin>>
-export type PriceInfo = TypeDef<AllTypesMap<JetMargin>["PriceInfo"], IdlTypes<JetMargin>>
+export type PriceInfoData = TypeDef<AllTypesMap<JetMargin>["PriceInfo"], IdlTypes<JetMargin>>
 
 export enum ErrorCode {
   InvalidPrice,
@@ -71,7 +70,7 @@ export enum AdapterPositionFlags {
   PastDue = 1 << 1
 }
 
-const PriceInfoLayout = struct<PriceInfo>([
+const PriceInfoLayout = struct<PriceInfoData>([
   i64Field("value"),
   u64("timestamp"),
   s32("exponent"),

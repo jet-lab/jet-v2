@@ -1,17 +1,18 @@
 import { Address, BN, translateAddress } from "@project-serum/anchor"
-import { parsePriceData, PriceData } from "@pythnetwork/client"
+import { parsePriceData, PriceData, PriceStatus } from "@pythnetwork/client"
 import { Mint, TOKEN_PROGRAM_ID } from "@solana/spl-token"
 import { PublicKey, Transaction, TransactionInstruction } from "@solana/web3.js"
 import { assert } from "chai"
-import { AssociatedToken } from "../../token"
-import { ONE_BN, TokenAmount, ZERO_BN } from "../../token/tokenAmount"
+import { AssociatedToken, bigIntToBn, numberToBn } from "../../token"
+import { TokenAmount } from "../../token/tokenAmount"
 import { MarginAccount } from "../marginAccount"
 import { MarginPrograms } from "../marginClient"
 import { MarginPoolConfigData, MarginPoolData } from "./state"
 import { MarginPoolConfig, MarginPools, MarginTokenConfig } from "../config"
 import { PoolAmount } from "./poolAmount"
 import { TokenMetadata } from "../metadata/state"
-import { AccountPosition } from "../accountPosition"
+import { AccountPosition, PriceInfo } from "../accountPosition"
+import { Number192 } from "../../utils"
 
 type TokenKindNonCollateral = { nonCollateral: Record<string, never> }
 type TokenKindCollateral = { collateral: Record<string, never> }
@@ -33,6 +34,16 @@ export interface MarginPoolAddresses {
   controlAuthority: PublicKey
 }
 
+export interface PriceResult {
+  tokenPrice: number
+  depositNotePrice: TokenAmount
+  depositNoteConf: TokenAmount
+  depositNoteTwap: TokenAmount
+  loanNotePrice: TokenAmount
+  loanNoteConf: TokenAmount
+  loanNoteTwap: TokenAmount
+}
+
 export class Pool {
   public address: PublicKey
 
@@ -49,21 +60,21 @@ export class Pool {
     if (!this.info) {
       return TokenAmount.zero(this.decimals)
     }
-    const lamports = new BN(this.info.marginPool.borrowedTokens, "le").div(ONE_BN)
-    return TokenAmount.lamports(lamports, this.decimals)
+    const units = new BN(this.info.marginPool.borrowedTokens, "le")
+    return TokenAmount.units(units, this.decimals, Number192.PRECISION)
   }
-  get marketSize(): TokenAmount {
-    return this.depositedTokens.add(this.borrowedTokens)
+  get totalValue(): TokenAmount {
+    return this.borrowedTokens.add(this.depositedTokens)
   }
   get uncollectedFees(): TokenAmount {
     if (!this.info) {
       return TokenAmount.zero(this.decimals)
     }
-    const lamports = new BN(this.info.marginPool.uncollectedFees, "le").div(ONE_BN)
-    return TokenAmount.lamports(lamports, this.decimals)
+    const units = new BN(this.info.marginPool.uncollectedFees, "le")
+    return TokenAmount.units(units, this.decimals, Number192.PRECISION)
   }
   get utilizationRate(): number {
-    return this.marketSize.tokens === 0 ? 0 : this.borrowedTokens.tokens / this.marketSize.tokens
+    return this.totalValue.tokens === 0 ? 0 : this.borrowedTokens.tokens / this.totalValue.tokens
   }
   get cRatio(): number {
     const utilizationRate = this.utilizationRate
@@ -88,6 +99,28 @@ export class Pool {
   get tokenPrice(): number {
     return this.info?.tokenPriceOracle.price ?? 0
   }
+  private _prices: PriceResult
+  get prices(): PriceResult {
+    return this.prices
+  }
+  get depositNotePrice(): PriceInfo {
+    return {
+      exponent: this.info?.tokenPriceOracle.exponent ?? 0,
+      value: this.prices.depositNotePrice,
+      timestamp: bigIntToBn(this.info?.tokenPriceOracle.timestamp),
+      isValid: this.info?.tokenPriceOracle.status ?? 0
+    }
+  }
+
+  get loanNotePrice(): PriceInfo {
+    return {
+      exponent: this.info?.tokenPriceOracle.exponent ?? 0,
+      value: this.prices.loanNotePrice,
+      timestamp: bigIntToBn(this.info?.tokenPriceOracle.timestamp),
+      isValid: this.info?.tokenPriceOracle.status ?? 0
+    }
+  }
+
   get decimals(): number {
     return this.tokenConfig?.decimals ?? this.info?.tokenMint.decimals ?? 0
   }
@@ -120,6 +153,7 @@ export class Pool {
     public tokenConfig?: MarginTokenConfig
   ) {
     this.address = this.addresses.marginPool
+    this._prices = this.calculatePrices(this.info?.tokenPriceOracle)
   }
 
   async refresh() {
@@ -165,6 +199,87 @@ export class Pool {
         )
       }
     }
+
+    this._prices = this.calculatePrices(this.info?.tokenPriceOracle)
+  }
+
+  /****************************
+   * Program Implementation
+   ****************************/
+
+  calculatePrices(pythPrice: PriceData | undefined): PriceResult {
+    if (
+      !pythPrice ||
+      pythPrice.status !== PriceStatus.Trading ||
+      pythPrice.price === undefined ||
+      pythPrice.confidence === undefined
+    ) {
+      return {
+        tokenPrice: 0,
+        depositNotePrice: TokenAmount.zero(this.decimals),
+        depositNoteConf: TokenAmount.zero(this.decimals),
+        depositNoteTwap: TokenAmount.zero(this.decimals),
+        loanNotePrice: TokenAmount.zero(this.decimals),
+        loanNoteConf: TokenAmount.zero(this.decimals),
+        loanNoteTwap: TokenAmount.zero(this.decimals)
+      }
+    }
+    const priceValue = TokenAmount.units(
+      numberToBn(pythPrice.price * 10 ** Number192.PRECISION),
+      this.decimals,
+      Number192.PRECISION
+    )
+    const confValue = TokenAmount.units(
+      numberToBn(pythPrice.confidence * 10 ** Number192.PRECISION),
+      this.decimals,
+      Number192.PRECISION
+    )
+    const twapValue = TokenAmount.units(
+      numberToBn(pythPrice.emaPrice.value * 10 ** Number192.PRECISION),
+      this.decimals,
+      Number192.PRECISION
+    )
+
+    const depositNoteExchangeRate = this.depositNoteExchangeRate()
+    const loanNoteExchangeRate = this.loanNoteExchangeRate()
+
+    const depositNotePrice = priceValue.mul(depositNoteExchangeRate)
+    const depositNoteConf = confValue.mul(depositNoteExchangeRate)
+    const depositNoteTwap = twapValue.mul(depositNoteExchangeRate)
+    const loanNotePrice = priceValue.mul(loanNoteExchangeRate)
+    const loanNoteConf = confValue.mul(loanNoteExchangeRate)
+    const loanNoteTwap = twapValue.mul(loanNoteExchangeRate)
+    return {
+      tokenPrice: pythPrice.price,
+      depositNotePrice,
+      depositNoteConf,
+      depositNoteTwap,
+      loanNotePrice,
+      loanNoteConf,
+      loanNoteTwap
+    }
+  }
+
+  depositNoteExchangeRate() {
+    if (!this.info) {
+      return TokenAmount.lamports(new BN(0), this.decimals)
+    }
+
+    const one = TokenAmount.lamports(new BN(1), this.decimals)
+    const depositNotes = TokenAmount.max(one, TokenAmount.lamports(this.info.marginPool.depositNotes, this.decimals))
+    const totalValue = TokenAmount.max(one, this.totalValue)
+    return totalValue.sub(this.uncollectedFees).div(depositNotes)
+  }
+
+  loanNoteExchangeRate() {
+    if (!this.info) {
+      return TokenAmount.lamports(new BN(0), this.decimals)
+    }
+
+    const one = TokenAmount.lamports(new BN(1), this.decimals)
+    const loanNotes = TokenAmount.max(one, TokenAmount.lamports(this.info.marginPool.loanNotes, this.decimals))
+    const totalBorrowed = TokenAmount.max(one, this.borrowedTokens)
+    return totalBorrowed.div(loanNotes)
   }
 
   /**
@@ -182,14 +297,13 @@ export class Pool {
 
     return y0 + ((x - x0) * (y1 - y0)) / (x1 - x0)
   }
-
   /**
    * Continous Compounding Rate
    * @param reserveConfig
    * @param utilRate
    * @returns
    */
-  static getCcRate = (reserveConfig: MarginPoolConfigData, utilRate: number): number => {
+  static getCcRate(reserveConfig: MarginPoolConfigData, utilRate: number): number {
     const basisPointFactor = 10000
     const util1 = reserveConfig.utilizationRate1 / basisPointFactor
     const util2 = reserveConfig.utilizationRate2 / basisPointFactor
@@ -209,7 +323,7 @@ export class Pool {
 
   /** Borrow rate
    */
-  static getBorrowApr = (ccRate: number, fee: number): number => {
+  static getBorrowApr(ccRate: number, fee: number): number {
     const basisPointFactor = 10000
     fee = fee / basisPointFactor
     const secondsPerYear: number = 365 * 24 * 60 * 60
@@ -220,12 +334,35 @@ export class Pool {
 
   /** Deposit rate
    */
-  static getDepositApy = (ccRate: number, utilRatio: number): number => {
+  static getDepositApy(ccRate: number, utilRatio: number): number {
     const secondsPerYear: number = 365 * 24 * 60 * 60
     const rt = ccRate / secondsPerYear
 
     return Math.log1p(Math.expm1(rt)) * secondsPerYear * utilRatio
   }
+
+  getPrice(mint: PublicKey) {
+    if (mint.equals(this.addresses.depositNoteMint)) {
+      return this.depositNotePrice
+    } else if (mint.equals(this.addresses.loanNoteMint)) {
+      return this.loanNotePrice
+    }
+  }
+
+  static getPrice(mint: PublicKey, pools: Pool[]): PriceInfo | undefined {
+    for (const pool of pools) {
+      if (pool.info) {
+        const price = pool.getPrice(mint)
+        if (price) {
+          return price
+        }
+      }
+    }
+  }
+
+  /****************************
+   * Transactionss
+   ****************************/
 
   /// Instruction to deposit tokens into the pool in exchange for deposit notes
   ///
@@ -570,7 +707,7 @@ export class Pool {
     const position = await marginAccount.getPosition(this.addresses.depositNoteMint)
 
     if (position) {
-      if (position.balance.gt(ZERO_BN)) {
+      if (position.balance.gt(Number192.ZERO)) {
         const destinationAddress = translateAddress(destination)
 
         const isDestinationNative = AssociatedToken.isNative(marginAccount.owner, this.tokenMint, destinationAddress)

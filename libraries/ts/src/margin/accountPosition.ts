@@ -1,9 +1,16 @@
 import { PublicKey } from "@solana/web3.js"
 import BN from "bn.js"
 import { assert } from "console"
-import { getTimestamp } from ".."
+import { getTimestamp, Pool, TokenAmount } from ".."
 import { Number128 } from "../"
-import { AccountPositionInfo, AdapterPositionFlags, PositionKind, PositionKindInfo, PriceInfo } from "./state"
+import { AccountPositionInfo, AdapterPositionFlags, PositionKind, PositionKindInfo } from "./state"
+
+export interface PriceInfo {
+  value: TokenAmount
+  exponent: number
+  timestamp: BN
+  isValid: number
+}
 
 export class AccountPosition {
   /** The raw account position deserialized by anchor */
@@ -61,7 +68,7 @@ export class AccountPosition {
 
   reserved: number[]
 
-  constructor(info: AccountPositionInfo) {
+  constructor({ info, price }: { info: AccountPositionInfo; price?: PriceInfo }) {
     this.info = info
     this.token = info.token
     this.address = info.address
@@ -69,18 +76,24 @@ export class AccountPosition {
     this.value = new BN(info.value, "le")
     this.balance = info.balance
     this.balanceTimestamp = info.balanceTimestamp
-    this.price = info.price
+    this.price = {
+      value: price?.value ?? TokenAmount.units(info.price.value, 0, info.price.exponent),
+      exponent: price?.exponent ?? info.price.exponent,
+      timestamp: price?.timestamp ?? info.price.timestamp,
+      isValid: info.price.isValid
+    }
     this.kind = info.kind
     this.exponent = info.exponent
     this.valueModifier = info.valueModifier
     this.maxStaleness = info.maxStaleness
     this.flags = new BN(info.flags as number[]).toNumber()
     this.reserved = info.reserved
+    this.calculateValue()
   }
 
   calculateValue() {
     this.value = Number128.fromDecimal(this.balance, this.exponent).mul(
-      Number128.fromDecimal(this.price.value, this.price.exponent)
+      Number128.fromDecimal(this.price.value.lamports, this.price.exponent)
     )
   }
 

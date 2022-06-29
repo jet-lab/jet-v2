@@ -1,4 +1,5 @@
 import { BN } from "@project-serum/anchor"
+import { Number128 } from "./number128"
 
 const POWERS_OF_TEN = [
   new BN(1),
@@ -16,17 +17,16 @@ const POWERS_OF_TEN = [
   new BN(1_000_000_000_000)
 ]
 
-export class Number128 {
-  static readonly PRECISION = 10
-  static readonly ONE = new BN(10_000_000_000)
-  static readonly ZERO = new BN(0)
-  static readonly MAX = new BN("340_282_366_920_938_463_463_374_607_431_768_211_455")
-  static readonly U64_MAX = new BN("18_446_744_073_709_551_615")
+export class Number192 {
+  static readonly PRECISION = 15
+  static readonly ONE = new BN(1_000_000_000_000_000)
+  static readonly ZERO = Number128.ZERO
+  static readonly U64_MAX = Number128.U64_MAX
 
   private constructor() {}
 
   static asU64(value: BN, exponent: number) {
-    let extraPrecision = Number128.PRECISION + exponent
+    let extraPrecision = Number192.PRECISION + exponent
     let precValue = POWERS_OF_TEN[Math.abs(extraPrecision)]
 
     let targetValue: BN
@@ -47,10 +47,11 @@ export class Number128 {
     return targetValue
   }
 
-  static fromDecimal(value: BN, exponent: number) {
-    let extraPrecision = Number128.PRECISION + exponent
+  static fromDecimal(value: BN, decimals: number, exponent: number) {
+    let extraPrecision = Number192.PRECISION + exponent
     let precValue = POWERS_OF_TEN[Math.abs(extraPrecision)]
 
+    let units: BN
     if (extraPrecision < 0) {
       return value.div(precValue)
     } else {
