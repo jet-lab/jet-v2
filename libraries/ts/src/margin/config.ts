@@ -15,11 +15,11 @@ export interface MarginConfig {
   marginSerumProgramId: Address
   marginSwapProgramId: Address
   metadataProgramId: Address
+  orcaSwapProgramId: Address
   pythProgramId: Address
   serumProgramId: Address
   serumReferralAuthority: Address
   splTokenFaucet: Address
-  splTokenSwapProgramId: Address
   url: string
   tokens: Record<MarginTokens, MarginTokenConfig>
   oracles: Record<MarginOracles, MarginOracleConfig>
