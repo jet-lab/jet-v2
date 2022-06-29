@@ -53,30 +53,33 @@ pub fn margin_refresh_position_handler(ctx: Context<MarginRefreshPosition>) -> R
     let prices = pool.calculate_prices(&token_oracle)?;
 
     // Tell the margin program what the current prices are
-    jet_margin::write_adapter_result(&AdapterResult {
-        position_changes: vec![
-            (
-                pool.deposit_note_mint,
-                vec![PositionChange::Price(PriceChangeInfo {
-                    publish_time: token_oracle.publish_time,
-                    exponent: token_oracle.expo,
-                    value: prices.deposit_note_price,
-                    confidence: prices.deposit_note_conf,
-                    twap: prices.deposit_note_twap,
-                })],
-            ),
-            (
-                pool.loan_note_mint,
-                vec![PositionChange::Price(PriceChangeInfo {
-                    publish_time: token_oracle.publish_time,
-                    exponent: token_oracle.expo,
-                    value: prices.loan_note_price,
-                    confidence: prices.loan_note_conf,
-                    twap: prices.loan_note_twap,
-                })],
-            ),
-        ],
-    })?;
+    jet_margin::write_adapter_result(
+        &*ctx.accounts.margin_account.load()?,
+        &AdapterResult {
+            position_changes: vec![
+                (
+                    pool.deposit_note_mint,
+                    vec![PositionChange::Price(PriceChangeInfo {
+                        publish_time: token_oracle.publish_time,
+                        exponent: token_oracle.expo,
+                        value: prices.deposit_note_price,
+                        confidence: prices.deposit_note_conf,
+                        twap: prices.deposit_note_twap,
+                    })],
+                ),
+                (
+                    pool.loan_note_mint,
+                    vec![PositionChange::Price(PriceChangeInfo {
+                        publish_time: token_oracle.publish_time,
+                        exponent: token_oracle.expo,
+                        value: prices.loan_note_price,
+                        confidence: prices.loan_note_conf,
+                        twap: prices.loan_note_twap,
+                    })],
+                ),
+            ],
+        },
+    )?;
 
     Ok(())
 }

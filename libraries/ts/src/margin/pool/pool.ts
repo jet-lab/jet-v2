@@ -595,7 +595,7 @@ export class Pool {
             marginAccount: marginAccount.address,
             source: position.address,
             destination: marginWithdrawDestination,
-            amount: PoolAmount.tokens(position.balance)
+            amount: PoolAmount.notes(position.balance)
           })
         })
 

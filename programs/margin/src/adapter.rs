@@ -123,11 +123,13 @@ pub fn invoke<'info>(
         data,
     };
 
+    ctx.margin_account.load_mut()?.invocation.start();
     if signed {
         program::invoke_signed(&instruction, &account_infos, &[&signer.signer_seeds()])?;
     } else {
         program::invoke(&instruction, &account_infos)?;
     }
+    ctx.margin_account.load_mut()?.invocation.end();
 
     handle_adapter_result(ctx)
 }
@@ -157,6 +159,9 @@ fn handle_adapter_result(ctx: &InvokeAdapter) -> Result<BTreeMap<Pubkey, Account
             }
         }
     };
+
+    // clear return data after reading it
+    program::set_return_data(&[]);
 
     Ok(touched_positions)
 }

@@ -118,7 +118,7 @@ async fn sanity_test() -> Result<(), anyhow::Error> {
     // extra tokens for clearing dust from interest
     let user_a_tsol_account = ctx
         .tokens
-        .create_account_funded(&env.tsol, &wallet_a.pubkey(), 1 * ONE_TSOL)
+        .create_account_funded(&env.tsol, &wallet_a.pubkey(), ONE_TSOL)
         .await?;
     let user_b_usdc_account = ctx
         .tokens
@@ -212,30 +212,27 @@ async fn sanity_test() -> Result<(), anyhow::Error> {
 
     // Users withdraw all of their funds
     user_a
-        .withdraw(&env.usdc, &user_a_usdc_account, Amount::set_tokens(0))
+        .withdraw(&env.usdc, &user_a_usdc_account, Amount::set_notes(0))
         .await?;
     user_b
-        .withdraw(&env.tsol, &user_b_tsol_account, Amount::set_tokens(0))
+        .withdraw(&env.tsol, &user_b_tsol_account, Amount::set_notes(0))
         .await?;
 
     // Verify accounting updated
     let usdc_pool = ctx.margin.get_pool(&env.usdc).await?;
     let tsol_pool = ctx.margin.get_pool(&env.usdc).await?;
 
-    assert_eq!(0, usdc_pool.deposit_tokens);
-    assert_eq!(0, usdc_pool.deposit_notes);
-    assert_eq!(0, tsol_pool.deposit_tokens);
-    assert_eq!(0, tsol_pool.deposit_notes);
+    // slight buffer to allow for rounding
+    assert!(1 >= usdc_pool.deposit_tokens);
+    assert!(1 >= usdc_pool.deposit_notes);
+    assert!(1 >= tsol_pool.deposit_tokens);
+    assert!(1 >= tsol_pool.deposit_notes);
 
     // Now verify that the users got all their tokens back
-    assert_eq!(
-        1_000_000 * ONE_USDC,
-        ctx.tokens.get_balance(&user_a_usdc_account).await?
+    assert!(
+        (1_000_000 * ONE_USDC).abs_diff(ctx.tokens.get_balance(&user_a_usdc_account).await?) <= 1
     );
-    assert_eq!(
-        1_000 * ONE_TSOL,
-        ctx.tokens.get_balance(&user_b_tsol_account).await?
-    );
+    assert!((1_000 * ONE_TSOL).abs_diff(ctx.tokens.get_balance(&user_b_tsol_account).await?) <= 1);
 
     // Check if we can update the metadata
     ctx.margin
@@ -306,6 +303,7 @@ async fn sanity_test() -> Result<(), anyhow::Error> {
     user_b.close_token_positions(&env.usdc).await?;
 
     // Close User B's account
+    user_b.close_empty_positions().await?;
     user_b.close_account().await?;
 
     Ok(())

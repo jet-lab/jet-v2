@@ -12,7 +12,13 @@ import {
   TransactionSignature
 } from "@solana/web3.js"
 import { Pool } from "./pool/pool"
-import { AccountPosition, AccountPositionList, AccountPositionListLayout, MarginAccountData, MAX_POSITIONS } from "./state"
+import {
+  AccountPosition,
+  AccountPositionList,
+  AccountPositionListLayout,
+  MarginAccountData,
+  MAX_POSITIONS
+} from "./state"
 import { MarginPrograms } from "./marginClient"
 import { findDerivedAccount } from "../utils/pda"
 import { AssociatedToken, bnToNumber, MarginPools, TokenAmount, ZERO_BN } from ".."
@@ -580,7 +586,7 @@ export class MarginAccount {
     return await this.provider.sendAndConfirm(new Transaction().add(...instructions))
   }
 
-  async getPosition(tokenMint: Address) {
+  getPosition(tokenMint: Address) : AccountPosition | undefined {
     assert(this.info)
     const tokenMintAddress = translateAddress(tokenMint)
 

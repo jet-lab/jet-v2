@@ -130,12 +130,15 @@ pub fn margin_borrow_handler(ctx: Context<MarginBorrow>, amount: Amount) -> Resu
         deposit_amount.notes,
     )?;
 
-    jet_margin::write_adapter_result(&AdapterResult {
-        position_changes: vec![(
-            pool.loan_note_mint,
-            vec![PositionChange::Expect(ctx.accounts.loan_account.key())],
-        )],
-    })?;
+    jet_margin::write_adapter_result(
+        &*ctx.accounts.margin_account.load()?,
+        &AdapterResult {
+            position_changes: vec![(
+                pool.loan_note_mint,
+                vec![PositionChange::Expect(ctx.accounts.loan_account.key())],
+            )],
+        },
+    )?;
 
     emit!(events::MarginBorrow {
         margin_pool: ctx.accounts.margin_pool.key(),

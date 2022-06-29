@@ -385,9 +385,8 @@ impl MarginTxBuilder {
 
     /// Verify that the margin account is healthy
     pub async fn verify_healthy(&self) -> Result<Transaction> {
-        let ix = self.ix.verify_healthy();
-
-        Ok(Transaction::new_with_payer(&[ix], None))
+        self.create_unsigned_transaction(&[self.ix.verify_healthy()])
+            .await
     }
 
     /// Refresh a user's position in a margin pool

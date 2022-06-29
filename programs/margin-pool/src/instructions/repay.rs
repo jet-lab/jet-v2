@@ -15,8 +15,6 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use std::ops::Deref;
-
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Burn, Token, TokenAccount, Transfer};
 use jet_margin::MarginAccount;
@@ -39,7 +37,7 @@ pub struct Repay<'info> {
         has_one = loan_note_mint,
         constraint = margin_pool.vault == pool_vault.key()
     )]
-    pub margin_pool: Account<'info, MarginPool>,
+    pub margin_pool: Box<Account<'info, MarginPool>>,
 
     /// The mint for the notes representing loans from the pool
     /// CHECK:
@@ -143,7 +141,7 @@ pub fn repay_handler(ctx: Context<Repay>, amount: Amount) -> Result<()> {
         repayment_token_account: ctx.accounts.repayment_token_account.key(),
         repaid_tokens: repay_amount.tokens,
         repaid_loan_notes: repay_amount.notes,
-        summary: pool.deref().into(),
+        summary: (&pool.clone().into_inner()).into(),
     });
 
     Ok(())

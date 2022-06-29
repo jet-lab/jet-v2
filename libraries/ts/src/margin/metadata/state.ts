@@ -1,5 +1,5 @@
 import { AllAccountsMap, IdlTypes, TypeDef } from "@project-serum/anchor/dist/cjs/program/namespace/types"
-import { JetMetadata } from "src/types"
+import { JetMetadata } from "../../types"
 
 /****************************
  * Program Accounts
