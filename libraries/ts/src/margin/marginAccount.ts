@@ -421,7 +421,6 @@ export class MarginAccount {
   }
 
   getPosition(tokenMint: Address) {
-    assert(this.info)
     const tokenMintAddress = translateAddress(tokenMint)
 
     for (let i = 0; i < this.positions.length; i++) {
