@@ -311,7 +311,7 @@ impl TokenManager {
     ) -> Result<T, Error> {
         let account = self.rpc.get_account(address).await?.unwrap();
         
-        Ok(bytemuck::from_bytes::<T>(&account.data).clone())
+        Ok(*bytemuck::from_bytes::<T>(&account.data))
     }
 
     /// Get the authority address of the Jet Control program.
