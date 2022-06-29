@@ -218,7 +218,7 @@ async fn pool_overpayment() -> Result<(), anyhow::Error> {
         .await?;
 
     let user_c_tsol_deposit_notes_account = get_position_token_account(
-        &user_c.address(),
+        user_c.address(),
         &MarginPoolIxBuilder::new(env.tsol).deposit_note_mint,
     )
     .0;
