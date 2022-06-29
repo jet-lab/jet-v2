@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use std::convert::TryInto;
+use std::{collections::BTreeMap, convert::TryInto};
 
 use anchor_lang::{
     prelude::*,
@@ -88,45 +88,21 @@ pub struct PriceChangeInfo {
     pub exponent: i32,
 }
 
-/// Executes an unpermissioned invocation with the requested data
-pub fn invoke(
-    ctx: &InvokeAdapter,
-    account_metas: Vec<CompactAccountMeta>,
-    data: Vec<u8>,
-) -> Result<()> {
-    let (instruction, account_infos) = construct_invocation(ctx, account_metas, data);
-
-    program::invoke(&instruction, &account_infos)?;
-
-    handle_adapter_result(ctx)
-}
-
-/// Invoke with the requested data, and sign with the margin account
-pub fn invoke_signed(
-    ctx: &InvokeAdapter,
-    account_metas: Vec<CompactAccountMeta>,
-    data: Vec<u8>,
-) -> Result<()> {
-    let signer = ctx.margin_account.load()?.signer_seeds_owned();
-    let (instruction, account_infos) = construct_invocation(ctx, account_metas, data);
-
-    program::invoke_signed(&instruction, &account_infos, &[&signer.signer_seeds()])?;
-
-    handle_adapter_result(ctx)
-}
-
-fn construct_invocation<'info>(
+/// Invoke a margin adapter with the requested data
+/// * `signed` - sign with the margin account
+pub fn invoke<'info>(
     ctx: &InvokeAdapter<'_, 'info>,
     account_metas: Vec<CompactAccountMeta>,
     data: Vec<u8>,
-) -> (Instruction, Vec<AccountInfo<'info>>) {
+    signed: bool,
+) -> Result<BTreeMap<Pubkey, AccountPosition>> {
+    let signer = ctx.margin_account.load()?.signer_seeds_owned();
+
     let mut accounts = vec![AccountMeta {
         pubkey: ctx.margin_account.key(),
-        is_signer: true,
+        is_signer: signed,
         is_writable: true,
     }];
-    let mut account_infos = vec![ctx.margin_account.to_account_info()];
-
     accounts.extend(
         account_metas
             .into_iter()
@@ -138,6 +114,7 @@ fn construct_invocation<'info>(
             }),
     );
 
+    let mut account_infos = vec![ctx.margin_account.to_account_info()];
     account_infos.extend(ctx.remaining_accounts.iter().cloned());
 
     let instruction = Instruction {
@@ -146,11 +123,17 @@ fn construct_invocation<'info>(
         data,
     };
 
-    (instruction, account_infos)
+    if signed {
+        program::invoke_signed(&instruction, &account_infos, &[&signer.signer_seeds()])?;
+    } else {
+        program::invoke(&instruction, &account_infos)?;
+    }
+
+    handle_adapter_result(ctx)
 }
 
-fn handle_adapter_result(ctx: &InvokeAdapter) -> Result<()> {
-    update_balances(ctx)?;
+fn handle_adapter_result(ctx: &InvokeAdapter) -> Result<BTreeMap<Pubkey, AccountPosition>> {
+    let mut touched_positions = update_balances(ctx)?;
 
     match program::get_return_data() {
         None => (),
@@ -159,21 +142,28 @@ fn handle_adapter_result(ctx: &InvokeAdapter) -> Result<()> {
             let result = AdapterResult::deserialize(&mut &data[..])?;
             let mut margin_account = ctx.margin_account.load_mut()?;
             for (mint, changes) in result.position_changes {
-                let position = margin_account.get_position_mut(&mint);
+                let mut position = margin_account.get_position_mut(&mint);
                 match position {
                     Some(p) if p.adapter != program_id => {
                         return err!(ErrorCode::InvalidPositionAdapter)
                     }
-                    _ => apply_changes(position, changes)?,
+                    _ => {
+                        apply_changes(&mut position, changes)?;
+                        if let Some(changed_position) = position {
+                            touched_positions.insert(mint, *changed_position);
+                        }
+                    }
                 }
             }
         }
     };
 
-    Ok(())
+    Ok(touched_positions)
 }
 
-fn update_balances(ctx: &InvokeAdapter) -> Result<()> {
+fn update_balances(ctx: &InvokeAdapter) -> Result<BTreeMap<Pubkey, AccountPosition>> {
+    let mut touched_positions = BTreeMap::new();
+
     let mut margin_account = ctx.margin_account.load_mut()?;
     for account_info in ctx.remaining_accounts {
         if account_info.owner == &TokenAccount::owner() {
@@ -184,24 +174,27 @@ fn update_balances(ctx: &InvokeAdapter) -> Result<()> {
                     account_info.key,
                     account.amount,
                 ) {
-                    Ok(()) | Err(ErrorCode::PositionNotRegistered) => (),
+                    Ok(position) => {
+                        touched_positions.insert(account.mint, position);
+                    }
+                    Err(ErrorCode::PositionNotRegistered) => (),
                     Err(err) => return Err(err.into()),
                 }
             }
         }
     }
 
-    Ok(())
+    Ok(touched_positions)
 }
 
 fn apply_changes(
-    mut position: Option<&mut AccountPosition>,
+    position: &mut Option<&mut AccountPosition>,
     changes: Vec<PositionChange>,
 ) -> Result<()> {
     for change in changes {
         match change {
             PositionChange::Price(px) => {
-                if let Some(pos) = &mut position {
+                if let Some(pos) = position {
                     pos.set_price(&px.try_into()?)?;
                 }
             }
@@ -216,4 +209,68 @@ fn apply_changes(
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod test {
+    use std::collections::HashMap;
+
+    use super::*;
+
+    fn all_change_types() -> Vec<PositionChange> {
+        vec![
+            PositionChange::Price(PriceChangeInfo {
+                value: 0,
+                confidence: 0,
+                twap: 0,
+                publish_time: 0,
+                exponent: 0,
+            }),
+            PositionChange::Flags(AdapterPositionFlags::empty(), true),
+            PositionChange::Expect(Pubkey::default()),
+        ]
+    }
+
+    #[test]
+    fn position_change_types_are_required_when_appropriate() {
+        for change in all_change_types() {
+            let required = match change {
+                PositionChange::Price(_) => false,
+                PositionChange::Flags(_, _) => true,
+                PositionChange::Expect(_) => true,
+            };
+            if required {
+                apply_changes(&mut None, vec![change]).unwrap_err();
+            } else {
+                apply_changes(&mut None, vec![change]).unwrap();
+            }
+        }
+    }
+
+    #[test]
+    fn ensure_that_tests_check_all_change_types() {
+        assert_contains_all_variants! {
+            all_change_types() =>
+                PositionChange::Price(_x)
+                PositionChange::Flags(_x, _y)
+                PositionChange::Expect(_x)
+        }
+    }
+
+    macro_rules! assert_contains_all_variants {
+        ($iterable:expr => $($type:ident::$var:ident $(($($_:ident),*))? )+ ) => {
+            let mut index: HashMap<&str, usize> = HashMap::new();
+            $(index.insert(stringify!($var), 1);)+
+            for item in $iterable {
+                match item {
+                    $($type::$var $(($($_),*))? => index.insert(stringify!($var), 0)),+
+                };
+            }
+            let sum: usize = index.values().sum();
+            if sum > 0 {
+                assert!(false);
+            }
+        };
+    }
+    use assert_contains_all_variants;
 }

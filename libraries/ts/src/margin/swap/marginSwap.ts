@@ -1,6 +1,6 @@
 import assert from "assert"
 import * as BufferLayout from "@solana/buffer-layout"
-import { BN, InstructionNamespace } from "@project-serum/anchor"
+import { BN } from "@project-serum/anchor"
 import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
   createAssociatedTokenAccountInstruction,
@@ -19,86 +19,21 @@ import {
   TransactionInstruction
 } from "@solana/web3.js"
 
-import { buildInstructions } from "../../utils/idlBuilder"
-import { IDL as JetMarginIDL, JetMargin } from "../../types/jetMargin"
-import { IDL as JetMarginSwapIDL, JetMarginSwap } from "../../types/jetMarginSwap"
-
 import { TokenSwap } from "./index"
-import { JetControl, JetControlIdl } from "../.."
 
 export class MarginSwap {
-  // Token swap
-  tokenSwap: TokenSwap
-
-  private controlProgramId: PublicKey
-  private controlInstructions: InstructionNamespace<JetControl>
-
-  private marginInstructions: InstructionNamespace<JetMargin>
-
-  private marginSwapProgramId: PublicKey
-  private marginSwapInstructions: InstructionNamespace<JetMarginSwap>
-  private marginSwapAdapterMetadata: PublicKey
-
-  private metadataProgramId: PublicKey
-
-  private splTokenSwapProgramId: PublicKey
-
-  constructor(
-    tokenSwap: TokenSwap,
-    controlProgramId: PublicKey,
-    marginProgramId: PublicKey,
-    marginSwapProgramId: PublicKey,
-    marginSwapAdapterMetadata: PublicKey,
-    metadataProgramId: PublicKey,
-    splTokenSwapProgramId: PublicKey
-  ) {
-    this.tokenSwap = tokenSwap
-
-    assert(controlProgramId)
-    this.controlProgramId = controlProgramId
-    this.controlInstructions = buildInstructions(JetControlIdl, controlProgramId) as InstructionNamespace<JetControl>
-
-    assert(marginProgramId)
-    this.marginInstructions = buildInstructions(JetMarginIDL, marginProgramId) as InstructionNamespace<JetMargin>
-
-    assert(marginSwapProgramId)
-    this.marginSwapProgramId = marginSwapProgramId
-    this.marginSwapInstructions = buildInstructions(
-      JetMarginSwapIDL,
-      marginSwapProgramId
-    ) as InstructionNamespace<JetMarginSwap>
-    this.marginSwapAdapterMetadata = marginSwapAdapterMetadata
-
-    assert(metadataProgramId)
-    this.metadataProgramId = metadataProgramId
-
-    assert(splTokenSwapProgramId)
-    this.splTokenSwapProgramId = splTokenSwapProgramId
+  constructor(public tokenSwap: TokenSwap) {
+    assert(tokenSwap)
   }
 
   static async load(
     connection: Connection,
     tokenSwapAddress: PublicKey,
     payer: Account,
-    controlProgramId: PublicKey,
-    marginProgramId: PublicKey,
-    marginSwapProgramId: PublicKey,
-    metadataProgramId: PublicKey,
     splTokenSwapProgramId: PublicKey
   ) {
-    assert(controlProgramId)
-    assert(marginSwapProgramId)
-    assert(metadataProgramId)
     const tokenSwap = await TokenSwap.loadTokenSwap(connection, tokenSwapAddress, splTokenSwapProgramId, payer)
-    return new MarginSwap(
-      tokenSwap,
-      controlProgramId,
-      marginProgramId,
-      marginSwapProgramId,
-      metadataProgramId,
-      (await PublicKey.findProgramAddress([marginSwapProgramId.toBuffer()], metadataProgramId))[0],
-      splTokenSwapProgramId
-    )
+    return new MarginSwap(tokenSwap)
   }
 
   static async create(
@@ -106,6 +41,7 @@ export class MarginSwap {
     payer: Account,
     tokenSwapAccount: Account,
     authority: PublicKey,
+    authorityNonce: number,
     tokenAccountA: PublicKey,
     tokenAccountB: PublicKey,
     tokenPool: PublicKey,
@@ -129,6 +65,7 @@ export class MarginSwap {
       payer,
       tokenSwapAccount,
       authority,
+      authorityNonce,
       tokenAccountA,
       tokenAccountB,
       tokenPool,

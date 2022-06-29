@@ -22,11 +22,11 @@ use std::sync::Arc;
 use jet_metadata::{PositionTokenMetadata, TokenMetadata};
 
 use anyhow::{bail, Result};
-use solana_sdk::instruction::Instruction;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::Keypair;
 use solana_sdk::signer::Signer;
 use solana_sdk::transaction::Transaction;
+use solana_sdk::{compute_budget::ComputeBudgetInstruction, instruction::Instruction};
 
 use anchor_lang::AccountDeserialize;
 
@@ -249,7 +249,7 @@ impl MarginTxBuilder {
             .await?;
 
         let inner_withdraw_ix =
-            pool.margin_withdraw(self.ix.address, deposit_position, *destination, amount);
+            pool.withdraw(self.ix.address, deposit_position, *destination, amount);
 
         instructions.push(self.adapter_invoke_ix(inner_withdraw_ix));
         self.create_transaction(&instructions).await
@@ -277,7 +277,7 @@ impl MarginTxBuilder {
         amount_in: Amount,
         minimum_amount_out: Amount,
     ) -> Result<Transaction> {
-        let mut instructions = vec![];
+        let mut instructions = vec![ComputeBudgetInstruction::request_units(300_000, 0)];
         let source_pool = MarginPoolIxBuilder::new(*source_token_mint);
         let destination_pool = MarginPoolIxBuilder::new(*destination_token_mint);
 
@@ -288,8 +288,7 @@ impl MarginTxBuilder {
             .get_or_create_position(&mut instructions, &destination_pool.deposit_note_mint)
             .await?;
 
-        let (swap_authority, _) =
-            Pubkey::find_program_address(&[swap_pool.as_ref()], &spl_token_swap::id());
+        let (swap_authority, _) = Pubkey::find_program_address(&[swap_pool.as_ref()], swap_program);
         let swap_pool = MarginSwapIxBuilder::new(
             *source_token_mint,
             *destination_token_mint,
@@ -319,14 +318,23 @@ impl MarginTxBuilder {
         self.create_transaction(&instructions).await
     }
 
-    /// Transaction to begin liquidating user account
-    pub async fn liquidate_begin(&self) -> Result<Transaction> {
+    /// Transaction to begin liquidating user account.
+    /// If `refresh_position` is provided, all the margin pools will be refreshed first.
+    pub async fn liquidate_begin(&self, refresh_positions: bool) -> Result<Transaction> {
         assert!(self.is_liquidator);
 
-        self.create_transaction(&[self
-            .ix
-            .liquidate_begin(self.signer.as_ref().unwrap().pubkey())])
-            .await
+        // Get the margin account and refresh positions
+        let mut instructions = vec![];
+        if refresh_positions {
+            self.create_pool_instructions(&mut instructions).await?;
+        }
+
+        // Add liquidation instruction
+        instructions.push(
+            self.ix
+                .liquidate_begin(self.signer.as_ref().unwrap().pubkey()),
+        );
+        self.create_transaction(&instructions).await
     }
 
     /// Transaction to end liquidating user account
@@ -360,8 +368,52 @@ impl MarginTxBuilder {
 
     /// Refresh all of a user's positions based in the margin pool
     pub async fn refresh_all_pool_positions(&self) -> Result<Vec<Transaction>> {
-        let state = self.get_account_state().await?;
         let mut instructions = vec![];
+        self.create_pool_instructions(&mut instructions).await?;
+
+        self.get_chunk_transactions(12, instructions).await
+    }
+
+    /// Refresh the metadata for a position
+    pub async fn refresh_position_metadata(
+        &self,
+        position_token_mint: &Pubkey,
+    ) -> Result<Transaction> {
+        self.create_transaction(&[self.ix.refresh_position_metadata(position_token_mint)])
+            .await
+    }
+
+    /// Refresh metadata for all positions in the user account
+    pub async fn refresh_all_position_metadata(&self) -> Result<Vec<Transaction>> {
+        let mut instructions = self
+            .get_account_state()
+            .await?
+            .positions()
+            .map(|position| self.ix.refresh_position_metadata(&position.token))
+            .collect::<Vec<_>>();
+
+        self.get_chunk_transactions(12, instructions).await
+    }
+
+    async fn get_chunk_transactions(
+        &self,
+        chunk_size: usize,
+        instructions: Vec<Instruction>,
+    ) -> Result<Vec<Transaction>> {
+        futures::future::join_all(
+            instructions
+                .chunks(chunk_size)
+                .map(|c| self.create_unsigned_transaction(c)),
+        )
+        .await
+        .into_iter()
+        .collect()
+    }
+
+    /// Append instructions to refresh pool positions to instructions
+    async fn create_pool_instructions(&self, instructions: &mut Vec<Instruction>) -> Result<()> {
+        let state = self.get_account_state().await?;
+        let count = state.positions().count();
 
         for position in state.positions() {
             let p_metadata = self.get_position_metadata(&position.token).await?;
@@ -376,14 +428,7 @@ impl MarginTxBuilder {
             instructions.push(ix);
         }
 
-        futures::future::join_all(
-            instructions
-                .chunks(12)
-                .map(|c| self.create_unsigned_transaction(c)),
-        )
-        .await
-        .into_iter()
-        .collect()
+        Ok(())
     }
 
     async fn get_token_metadata(&self, token_mint: &Pubkey) -> Result<TokenMetadata> {

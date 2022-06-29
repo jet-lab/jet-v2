@@ -20,9 +20,9 @@
 use std::sync::Arc;
 
 use anchor_lang::{AccountDeserialize, AccountSerialize, InstructionData, ToAccountMetas};
-use anyhow::Error;
+use anyhow::{bail, Error};
 
-use jet_margin::PositionKind;
+use jet_margin::{MarginAccount, PositionKind};
 use jet_margin_sdk::accounts::MarginPoolAccounts;
 use jet_margin_sdk::instructions::control::{get_authority_address, TokenConfiguration};
 use solana_sdk::instruction::Instruction;
@@ -102,6 +102,17 @@ impl MarginClient {
                 MarginPool::try_deserialize(&mut &account.data[..]).map_err(Error::from)
             })
             .collect()
+    }
+
+    pub async fn get_pool(&self, token: &Pubkey) -> Result<MarginPool, Error> {
+        let pool_accounts = MarginPoolAccounts::derive_from_token(*token);
+        let account = self.rpc.get_account(&pool_accounts.address).await?;
+
+        if account.is_none() {
+            bail!("could not find pool");
+        }
+
+        MarginPool::try_deserialize(&mut &account.unwrap().data[..]).map_err(Error::from)
     }
 
     pub async fn create_authority(&self) -> Result<(), Error> {
@@ -184,6 +195,17 @@ impl MarginClient {
 
         Ok(())
     }
+
+    pub async fn get_account(&self, address: &Pubkey) -> Result<Box<MarginAccount>, Error> {
+        let account_data = self.rpc.get_account(address).await?;
+
+        match account_data {
+            None => bail!("no margin account found {}", address),
+            Some(account) => Ok(Box::new(MarginAccount::try_deserialize(
+                &mut &account.data[..],
+            )?)),
+        }
+    }
 }
 
 pub struct MarginUser {
@@ -195,6 +217,16 @@ impl MarginUser {
     async fn send_confirm_tx(&self, tx: Transaction) -> Result<(), Error> {
         let _ = self.rpc.send_and_confirm_transaction(&tx).await?;
         Ok(())
+    }
+
+    async fn send_confirm_all_tx(
+        &self,
+        transactions: impl IntoIterator<Item = Transaction>,
+    ) -> Result<(), Error> {
+        futures::future::join_all(transactions.into_iter().map(|tx| self.send_confirm_tx(tx)))
+            .await
+            .into_iter()
+            .collect()
     }
 }
 
@@ -231,16 +263,13 @@ impl MarginUser {
     }
 
     pub async fn refresh_all_pool_positions(&self) -> Result<(), Error> {
-        futures::future::join_all(
-            self.tx
-                .refresh_all_pool_positions()
-                .await?
-                .into_iter()
-                .map(|tx| self.send_confirm_tx(tx)),
-        )
-        .await
-        .into_iter()
-        .collect()
+        self.send_confirm_all_tx(self.tx.refresh_all_pool_positions().await?)
+            .await
+    }
+
+    pub async fn refresh_all_position_metadata(&self) -> Result<(), Error> {
+        self.send_confirm_all_tx(self.tx.refresh_all_position_metadata().await?)
+            .await
     }
 
     pub async fn deposit(&self, mint: &Pubkey, source: &Pubkey, amount: u64) -> Result<(), Error> {
@@ -275,6 +304,7 @@ impl MarginUser {
     #[allow(clippy::too_many_arguments)]
     pub async fn swap(
         &self,
+        program_id: &Pubkey,
         source_mint: &Pubkey,
         destination_mint: &Pubkey,
         transit_source_account: &Pubkey,
@@ -301,7 +331,7 @@ impl MarginUser {
                     &swap_pool.fee_account,
                     source_token,
                     destination_token,
-                    &spl_token_swap::ID,
+                    program_id,
                     amount_in,
                     minimum_amount_out,
                 )
@@ -310,8 +340,9 @@ impl MarginUser {
         .await
     }
 
-    pub async fn liquidate_begin(&self) -> Result<(), Error> {
-        self.send_confirm_tx(self.tx.liquidate_begin().await?).await
+    pub async fn liquidate_begin(&self, refresh_positions: bool) -> Result<(), Error> {
+        self.send_confirm_tx(self.tx.liquidate_begin(refresh_positions).await?)
+            .await
     }
 
     pub async fn liquidate_end(&self, original_liquidator: Option<Pubkey>) -> Result<(), Error> {

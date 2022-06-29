@@ -27,7 +27,7 @@ import {
   sendToken
 } from "../util"
 
-describe("margin pool", async () => {
+describe("margin pool deposit", async () => {
   // SUITE SETUP
   const marginPoolProgramId: PublicKey = new PublicKey(MARGIN_CONFIG.localnet.marginPoolProgramId)
   const confirmOptions: ConfirmOptions = { preflightCommitment: "processed", commitment: "processed" }
@@ -81,11 +81,11 @@ describe("margin pool", async () => {
   })
 
   it("Create authority", async () => {
-    await createAuthority(provider, payer)
+    await createAuthority(programs, provider)
   })
 
   it("Register adapter", async () => {
-    await registerAdapter(provider, payer, marginPoolProgramId, payer)
+    await registerAdapter(programs, provider, payer, marginPoolProgramId, payer)
   })
 
   const ONE_USDC = 1_000_000
@@ -147,20 +147,25 @@ describe("margin pool", async () => {
 
   let wallet_a: NodeWallet
   let wallet_b: NodeWallet
+  let wallet_c: NodeWallet
 
   let provider_a: AnchorProvider
   let provider_b: AnchorProvider
+  let provider_c: AnchorProvider
 
   it("Create our two user wallets, with some SOL funding to get started", async () => {
     wallet_a = await createUserWallet(provider, 10 * LAMPORTS_PER_SOL)
     wallet_b = await createUserWallet(provider, 10 * LAMPORTS_PER_SOL)
+    wallet_c = await createUserWallet(provider, 10 * LAMPORTS_PER_SOL)
 
     provider_a = new AnchorProvider(provider.connection, wallet_a, confirmOptions)
     provider_b = new AnchorProvider(provider.connection, wallet_b, confirmOptions)
+    provider_c = new AnchorProvider(provider.connection, wallet_c, confirmOptions)
   })
 
   let marginAccount_A: MarginAccount
   let marginAccount_B: MarginAccount
+  let marginAccount_C: MarginAccount
 
   it("Initialize the margin accounts for each user", async () => {
     anchor.setProvider(provider_a)
@@ -180,12 +185,23 @@ describe("margin pool", async () => {
       seed: 0
     })
     await marginAccount_B.createAccount()
+
+    anchor.setProvider(provider_c)
+    marginAccount_C = await MarginAccount.load({
+      programs,
+      provider: provider_c,
+      owner: provider_c.wallet.publicKey,
+      seed: 0
+    })
+    await marginAccount_C.createAccount()
   })
 
   let user_a_usdc_account: PublicKey
   let user_a_sol_account: PublicKey
   let user_b_sol_account: PublicKey
   let user_b_usdc_account: PublicKey
+  let user_c_sol_account: PublicKey
+  let user_c_usdc_account: PublicKey
 
   it("Create some tokens for each user to deposit", async () => {
     // SETUP
@@ -197,11 +213,17 @@ describe("margin pool", async () => {
     user_b_sol_account = await createTokenAccount(provider, SOL[0], wallet_b.publicKey, payer_B)
     user_b_usdc_account = await createTokenAccount(provider, USDC[0], wallet_b.publicKey, payer_B)
 
+    const payer_C: Keypair = Keypair.fromSecretKey((wallet_c as NodeWallet).payer.secretKey)
+    user_c_sol_account = await createTokenAccount(provider, SOL[0], wallet_c.publicKey, payer_C)
+    user_c_usdc_account = await createTokenAccount(provider, USDC[0], wallet_c.publicKey, payer_C)
+
     // ACT
     await sendToken(provider, USDC[0], 500_000, 6, ownerKeypair, new PublicKey(USDC[1]), user_a_usdc_account)
     await sendToken(provider, SOL[0], 50, 9, ownerKeypair, new PublicKey(SOL[1]), user_a_sol_account)
     await sendToken(provider, SOL[0], 500, 9, ownerKeypair, new PublicKey(SOL[1]), user_b_sol_account)
     await sendToken(provider, USDC[0], 50, 6, ownerKeypair, new PublicKey(USDC[1]), user_b_usdc_account)
+    await sendToken(provider, SOL[0], 1, 9, ownerKeypair, new PublicKey(SOL[1]), user_c_sol_account)
+    await sendToken(provider, USDC[0], 1, 6, ownerKeypair, new PublicKey(USDC[1]), user_c_usdc_account)
 
     // TEST
     expect(await getTokenBalance(provider, "processed", user_a_usdc_account)).to.eq(500_000)
@@ -210,77 +232,36 @@ describe("margin pool", async () => {
     expect(await getTokenBalance(provider, "processed", user_b_usdc_account)).to.eq(50)
   })
 
+  it("Refresh pools", async () => {
+    await marginPool_USDC.refresh()
+    await marginPool_SOL.refresh()
+  })
+
   it("Deposit user funds into their margin accounts", async () => {
     // ACT
     await marginAccount_A.deposit(marginPool_USDC, user_a_usdc_account, new BN(500_000 * ONE_USDC))
     await marginAccount_B.deposit(marginPool_USDC, user_b_usdc_account, new BN(50 * ONE_USDC))
+    await marginAccount_C.deposit(marginPool_USDC, user_c_usdc_account, new BN(ONE_USDC))
     await pythClient.setPythPrice(ownerKeypair, USDC_oracle[1].publicKey, 1, 0.01, -8)
     await marginPool_USDC.refreshPosition(marginAccount_A)
     await marginPool_USDC.refreshPosition(marginAccount_B)
+    await marginPool_USDC.refreshPosition(marginAccount_C)
 
     await marginAccount_A.deposit(marginPool_SOL, user_a_sol_account, new BN(50 * ONE_SOL))
     await marginAccount_B.deposit(marginPool_SOL, user_b_sol_account, new BN(500 * ONE_SOL))
+    await marginAccount_C.deposit(marginPool_SOL, user_c_sol_account, new BN(ONE_SOL))
     await pythClient.setPythPrice(ownerKeypair, SOL_oracle[1].publicKey, 100, 1, -8)
     await marginPool_SOL.refreshPosition(marginAccount_A)
     await marginPool_SOL.refreshPosition(marginAccount_B)
+    await marginPool_SOL.refreshPosition(marginAccount_C)
 
     // TEST
     expect(await getTokenBalance(provider, "processed", user_b_sol_account)).to.eq(0)
     expect(await getTokenBalance(provider, "processed", user_b_usdc_account)).to.eq(0)
     expect(await getTokenBalance(provider, "processed", user_a_usdc_account)).to.eq(0)
     expect(await getTokenBalance(provider, "processed", user_a_sol_account)).to.eq(0)
-    expect(await getTokenBalance(provider, "processed", marginPool_USDC.addresses.vault)).to.eq(500_050)
-    expect(await getTokenBalance(provider, "processed", marginPool_SOL.addresses.vault)).to.eq(550)
-  })
-
-  it("Have each user borrow the other's funds", async () => {
-    // SETUP
-    const borrowedSOL = new BN(10 * ONE_SOL)
-    const borrowedUSDC = new BN(1_000 * ONE_USDC)
-
-    // ACT
-    await marginPool_SOL.marginBorrow({
-      marginAccount: marginAccount_A,
-      amount: borrowedSOL
-    })
-    await marginPool_USDC.marginBorrow({ marginAccount: marginAccount_B, amount: borrowedUSDC })
-    await marginPool_SOL.refresh()
-    await marginPool_USDC.refresh()
-
-    const SOLLoanNotes = new BN(marginPool_SOL.info?.loanNoteMint.supply)
-    const USDCLoanNotes = new BN(marginPool_USDC.info?.loanNoteMint.supply)
-
-    // TEST
-    expect(SOLLoanNotes.toNumber()).to.eq(borrowedSOL.toNumber())
-    expect(USDCLoanNotes.toNumber()).to.eq(borrowedUSDC.toNumber())
-  })
-
-  it("User A repays his SOL loan", async () => {
-    //SETUP
-    await marginPool_SOL.refresh()
-    const owedSOL = new BN(marginPool_SOL.info?.loanNoteMint.supply)
-
-    // ACT
-    await marginPool_SOL.marginRepay({ marginAccount: marginAccount_A, amount: PoolAmount.tokens(owedSOL) })
-    await marginPool_SOL.refresh()
-
-    // TEST
-    const SOLLoanNotes = new BN(marginPool_SOL.info?.loanNoteMint.supply)
-    expect(SOLLoanNotes.toNumber()).to.be.below(10)
-  })
-
-  it("User B repays his USDC loan", async () => {
-    // SETUP
-    await marginPool_USDC.refresh()
-    const owedUSDC = new BN(marginPool_USDC.info?.loanNoteMint.supply)
-
-    // ACT
-    await marginPool_USDC.marginRepay({ marginAccount: marginAccount_B, amount: PoolAmount.tokens(owedUSDC) })
-    await marginPool_USDC.refresh()
-
-    // TEST
-    const USDCLoanNotes = new BN(marginPool_USDC.info?.loanNoteMint.supply)
-    expect(USDCLoanNotes.toNumber()).to.be.below(10)
+    expect(await getTokenBalance(provider, "processed", marginPool_USDC.addresses.vault)).to.eq(500_050 + 1)
+    expect(await getTokenBalance(provider, "processed", marginPool_SOL.addresses.vault)).to.eq(550 + 1)
   })
 
   it("Users withdraw their funds", async () => {
@@ -301,31 +282,30 @@ describe("margin pool", async () => {
     const tokenBalanceB = await getTokenBalance(provider, "processed", user_b_sol_account)
     expect(tokenBalanceA).to.eq(400_000)
     expect(tokenBalanceB).to.eq(400)
+
+    expect(await getTokenBalance(provider, "processed", marginPool_USDC.addresses.vault)).to.eq(100_050 + 1)
+    expect(await getTokenBalance(provider, "processed", marginPool_SOL.addresses.vault)).to.eq(150 + 1)
   })
 
-  describe("Flight Logs", () => {
-    it("should allow to get a list of the latest transactions", async () => {
-      const mints = {
-        USDC: {
-          tokenMint: USDC[0],
-          depositNoteMint: marginPool_USDC.addresses.depositNoteMint,
-          loanNoteMint: marginPool_USDC.addresses.loanNoteMint
-        },
-        SOL: {
-          tokenMint: SOL[0],
-          depositNoteMint: marginPool_SOL.addresses.depositNoteMint,
-          loanNoteMint: marginPool_SOL.addresses.loanNoteMint
-        }
-      }
-      const transactions = await MarginClient.getFlightLogs(provider, wallet_a.publicKey, mints, "localnet")
-
-      expect(transactions).to.have.length(5)
-
-      // expect(transactions[0].tradeAction).to.equals("withdraw")
-      // expect(transactions[1].tradeAction).to.equals("repay")
-      // expect(transactions[2].tradeAction).to.equals("borrow")
-      // expect(transactions[3].tradeAction).to.equals("deposit")
-      // expect(transactions[4].tradeAction).to.equals("deposit")
+  it("Close margin accounts", async () => {
+    await marginPool_USDC.closePosition({
+      marginAccount: marginAccount_A,
+      destination: user_a_usdc_account
     })
+    await marginPool_SOL.closePosition({
+      marginAccount: marginAccount_A,
+      destination: user_a_sol_account
+    })
+    await marginAccount_A.closeAccount()
+
+    await marginPool_USDC.closePosition({
+      marginAccount: marginAccount_B,
+      destination: user_b_usdc_account
+    })
+    await marginPool_SOL.closePosition({
+      marginAccount: marginAccount_B,
+      destination: user_b_sol_account
+    })
+    await marginAccount_B.closeAccount()
   })
 })

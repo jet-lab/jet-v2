@@ -15,10 +15,12 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use anchor_lang::prelude::*;
-use anchor_spl::token::{self, MintTo, Token};
+use std::ops::Deref;
 
-use crate::state::*;
+use anchor_lang::prelude::*;
+use anchor_spl::token::{self, MintTo, Token, TokenAccount};
+
+use crate::{events, state::*, Amount, AmountKind};
 
 #[derive(Accounts)]
 pub struct Collect<'info> {
@@ -32,7 +34,7 @@ pub struct Collect<'info> {
     /// The vault for the pool, where tokens are held
     /// CHECK:
     #[account(mut)]
-    pub vault: AccountInfo<'info>,
+    pub vault: Account<'info, TokenAccount>,
 
     /// The account to deposit the collected fees
     /// CHECK:
@@ -78,6 +80,31 @@ pub fn collect_handler(ctx: Context<Collect>) -> Result<()> {
             .with_signer(&[&pool.signer_seeds()?]),
         fee_notes,
     )?;
+
+    let rounding = RoundingDirection::direction(PoolAction::Withdraw, crate::AmountKind::Notes);
+    let claimed_amount = pool.convert_deposit_amount(
+        Amount {
+            kind: AmountKind::Notes,
+            value: fee_notes,
+        },
+        rounding,
+    )?;
+    let balance_amount = pool.convert_deposit_amount(
+        Amount {
+            kind: AmountKind::Notes,
+            value: ctx.accounts.vault.amount,
+        },
+        rounding,
+    )?;
+
+    emit!(events::Collect {
+        margin_pool: pool.key(),
+        fee_notes_minted: fee_notes,
+        fee_tokens_claimed: claimed_amount.tokens,
+        fee_notes_balance: balance_amount.notes,
+        fee_tokens_balance: balance_amount.tokens,
+        summary: pool.deref().into(),
+    });
 
     Ok(())
 }

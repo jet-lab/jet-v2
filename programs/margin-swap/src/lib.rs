@@ -58,13 +58,3 @@ pub struct MarginPoolInfo<'info> {
     #[account(mut)]
     pub deposit_note_mint: UncheckedAccount<'info>,
 }
-
-/// Create an SPL Token Swap `Program` wrapper for validation
-#[derive(Copy, Clone)]
-pub struct SplTokenSwap;
-
-impl Id for SplTokenSwap {
-    fn id() -> Pubkey {
-        spl_token_swap::id()
-    }
-}

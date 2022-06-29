@@ -20,7 +20,7 @@ use anchor_spl::token::{Mint, Token, TokenAccount};
 
 use jet_metadata::PositionTokenMetadata;
 
-use crate::MarginAccount;
+use crate::{events, MarginAccount};
 
 #[derive(Accounts)]
 pub struct RegisterPosition<'info> {
@@ -67,7 +67,7 @@ pub fn register_position_handler(ctx: Context<RegisterPosition>) -> Result<()> {
     let position_token = &ctx.accounts.position_token_mint;
     let address = ctx.accounts.token_account.key();
 
-    account.register_position(
+    let position = account.register_position(
         position_token.key(),
         position_token.decimals,
         address,
@@ -76,6 +76,12 @@ pub fn register_position_handler(ctx: Context<RegisterPosition>) -> Result<()> {
         metadata.value_modifier,
         metadata.max_staleness,
     )?;
+
+    emit!(events::PositionRegistered {
+        margin_account: ctx.accounts.margin_account.key(),
+        authority: ctx.accounts.authority.key(),
+        position,
+    });
 
     Ok(())
 }

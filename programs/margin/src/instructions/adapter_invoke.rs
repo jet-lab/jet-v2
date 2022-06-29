@@ -20,7 +20,7 @@ use anchor_lang::prelude::*;
 use jet_metadata::MarginAdapterMetadata;
 
 use crate::adapter::{self, CompactAccountMeta, InvokeAdapter};
-use crate::{ErrorCode, MarginAccount};
+use crate::{events, ErrorCode, MarginAccount};
 
 #[derive(Accounts)]
 pub struct AdapterInvoke<'info> {
@@ -50,7 +50,12 @@ pub fn adapter_invoke_handler<'info>(
         return Err(ErrorCode::Liquidating.into());
     }
 
-    adapter::invoke_signed(
+    emit!(events::AdapterInvokeBegin {
+        margin_account: ctx.accounts.margin_account.key(),
+        adapter_program: ctx.accounts.adapter_program.key(),
+    });
+
+    let touched_positions = adapter::invoke(
         &InvokeAdapter {
             margin_account: &ctx.accounts.margin_account,
             adapter_program: &ctx.accounts.adapter_program,
@@ -58,7 +63,14 @@ pub fn adapter_invoke_handler<'info>(
         },
         account_metas,
         data,
+        true,
     )?;
+
+    for &position in touched_positions.values() {
+        emit!(events::PositionTouched { position });
+    }
+
+    emit!(events::AdapterInvokeEnd {});
 
     ctx.accounts
         .margin_account

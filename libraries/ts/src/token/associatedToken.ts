@@ -197,19 +197,20 @@ export class AssociatedToken {
       const info = accountInfos[i]
       const associatedTokenAddress = AssociatedToken.derive(mint, ownerAddress)
 
-      // Exlude non-associated and non wallet balances tokens accounts and
-      const isAssociatedtoken =
-        associatedTokenAddress.equals(address) || (mint.equals(NATIVE_MINT) && address.equals(ownerAddress))
-      if (!isAssociatedtoken) {
+      const isAssociatedtoken = associatedTokenAddress.equals(address)
+      const isNative = mint.equals(NATIVE_MINT) && address.equals(ownerAddress)
+
+      // Exlude non-associated token accounts and unwrapped wallet balances
+      if (!isAssociatedtoken && !isNative) {
         continue
       }
 
-      if (mint.equals(NATIVE_MINT)) {
+      if (isNative) {
         // Load the owner and read their SOL balance
         accounts.push(AssociatedToken.decodeNative(info, address))
       } else {
         // Load the token account
-        accounts.push(AssociatedToken.decodeAccount(info, addresses[i], decimal))
+        accounts.push(AssociatedToken.decodeAccount(info, address, decimal))
       }
     }
     return accounts
@@ -427,7 +428,7 @@ export class AssociatedToken {
     mint: Address,
     tokenAccountOrNative: Address,
     amount: BN
-  ): Promise<void> {
+  ): Promise<PublicKey> {
     const ownerPubkey = translateAddress(owner)
     const mintPubkey = translateAddress(mint)
     const tokenAccountOrNativePubkey = translateAddress(tokenAccountOrNative)
@@ -444,7 +445,9 @@ export class AssociatedToken {
       })
       const syncNativeIX = createSyncNativeInstruction(ata)
       instructions.push(transferIx, syncNativeIX)
+      return ata
     }
+    return tokenAccountOrNativePubkey
   }
 
   /**

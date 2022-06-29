@@ -23,6 +23,7 @@ mod util;
 use instructions::*;
 
 pub use state::{MarginPool, MarginPoolConfig, PoolFlags};
+pub mod events;
 
 declare_id!("JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ");
 
@@ -76,12 +77,6 @@ mod jet_margin_pool {
     /// deposit account.
     pub fn margin_repay(ctx: Context<MarginRepay>, max_amount: Amount) -> Result<()> {
         instructions::margin_repay_handler(ctx, max_amount)
-    }
-
-    /// Withdraw tokens from the pool, exchanging in notes stored by a
-    /// margin account.
-    pub fn margin_withdraw(ctx: Context<MarginWithdraw>, amount: Amount) -> Result<()> {
-        instructions::margin_withdraw_handler(ctx, amount)
     }
 
     /// Update the pool position on a margin account

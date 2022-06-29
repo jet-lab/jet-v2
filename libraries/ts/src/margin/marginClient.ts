@@ -1,5 +1,5 @@
-import { Program, AnchorProvider } from "@project-serum/anchor"
-import { JetMargin, JetMarginPool, JetMarginSerum, JetMarginSwap, JetMetadata } from ".."
+import { Program, AnchorProvider, BN } from "@project-serum/anchor"
+import { JetMargin, JetMarginPool, JetMarginSerum, JetMarginSwap, JetMetadata, TokenAmount } from ".."
 import JET_CONFIG from "../margin/config.json"
 import {
   JetControl,
@@ -10,8 +10,8 @@ import {
   JetMarginSwapIdl,
   JetMetadataIdl
 } from "../types"
-import { MarginCluster, MarginConfig } from "./config"
-import { ConfirmedSignatureInfo, Connection, PublicKey, TokenAmount, TransactionResponse } from "@solana/web3.js"
+import { MarginCluster, MarginConfig, MarginTokenConfig } from "./config"
+import { ConfirmedSignatureInfo, Connection, PublicKey, TransactionResponse } from "@solana/web3.js"
 
 interface TokenMintsList {
   tokenMint: PublicKey
@@ -74,7 +74,9 @@ export class MarginClient {
     provider: AnchorProvider,
     signatures: ConfirmedSignatureInfo[]
   ): Promise<TransactionResponse[]> {
-    const responses = await Promise.all(signatures.map(sig => provider.connection.getTransaction(sig.signature)))
+    const responses = await Promise.all(
+      signatures.map(sig => provider.connection.getTransaction(sig.signature, { commitment: "confirmed" }))
+    )
     return responses.filter(res => res !== null) as TransactionResponse[]
   }
 
@@ -88,27 +90,86 @@ export class MarginClient {
     })
   }
 
-  static getTransactionData(transaction: TransactionResponse, mints: Mints): TransactionLog | null {
+  static getTransactionData(
+    transaction: TransactionResponse,
+    mints: Mints,
+    config: MarginConfig,
+    sigIndex: number
+  ): TransactionLog | null {
+    if (!transaction.meta?.logMessages || !transaction.blockTime) {
+      return null
+    }
+
     const instructions = ["repay", "borrow", "deposit", "withdraw"]
     let tradeAction = ""
-    instructions.map(element => {
-      if (transaction.meta?.logMessages?.some(log => log.includes(element))) {
-        tradeAction = element
+    for (let i = 0; i < instructions.length; i++) {
+      if (transaction.meta?.logMessages?.some(log => log.toLowerCase().includes(instructions[i]))) {
+        tradeAction = instructions[i]
+        break
       }
-    })
-    if (!tradeAction) return null
-    console.log(tradeAction)
-    return {
+    }
+
+    if (!tradeAction || !transaction.meta?.postTokenBalances || !transaction.meta?.preTokenBalances) {
+      return null
+    }
+
+    const log: Partial<TransactionLog> = {
       tradeAction
-    } as TransactionLog
+    }
+    for (let i = 0; i < transaction.meta.preTokenBalances?.length; i++) {
+      const pre = transaction.meta.preTokenBalances[i]
+      const matchingPost = transaction.meta.postTokenBalances?.find(post => post.mint === pre.mint)
+      if (matchingPost && matchingPost.uiTokenAmount.amount !== pre.uiTokenAmount.amount) {
+        let token: MarginTokenConfig | null = null
+
+        for (let j = 0; j < Object.entries(mints).length; j++) {
+          const tokenAbbrev = Object.entries(mints)[j][0]
+          const tokenMints = Object.entries(mints)[j][1]
+          if (
+            Object.values(tokenMints)
+              .map((t: PublicKey) => t.toBase58())
+              .includes(matchingPost.mint)
+          ) {
+            token = config.tokens[tokenAbbrev] as MarginTokenConfig
+            if (
+              token.symbol === "SOL" &&
+              (tradeAction === "withdraw" || tradeAction === "borrow") &&
+              matchingPost.uiTokenAmount.amount === "0"
+            ) {
+              break
+            }
+            const postAmount = new BN(matchingPost.uiTokenAmount.amount)
+            const preAmount = new BN(pre.uiTokenAmount.amount)
+
+            log.tokenAbbrev = token.symbol
+            log.tokenDecimals = token.decimals
+            log.tradeAmount = new TokenAmount(postAmount.sub(preAmount).abs(), token.decimals)
+
+            const dateTime = new Date(transaction.blockTime * 1000)
+            log.blockDate = dateTime.toLocaleDateString()
+            log.time = dateTime.toLocaleTimeString("en-US", { hour12: false })
+            log.sigIndex = sigIndex ? sigIndex : 0
+            return log as TransactionLog
+          }
+        }
+      }
+    }
+    return null
   }
 
-  static async getFlightLogs(provider: AnchorProvider, pubKey: PublicKey, mints: Mints, cluster: MarginCluster) {
+  static async getFlightLogs(
+    provider: AnchorProvider,
+    pubKey: PublicKey,
+    mints: Mints,
+    cluster: MarginCluster
+  ): Promise<TransactionLog[]> {
     const config = MarginClient.getConfig(cluster)
-    const signatures = await provider.connection.getSignaturesForAddress(pubKey)
+    const signatures = await provider.connection.getSignaturesForAddress(pubKey, undefined, "confirmed")
     const transactions = await MarginClient.getTransactionsFromSignatures(provider, signatures)
     const jetTransactions = MarginClient.filterTransactions(transactions, config)
-    console.log(jetTransactions)
-    return jetTransactions
+    const parsedTransactions = jetTransactions
+      .map((t, idx) => MarginClient.getTransactionData(t, mints, config, idx))
+      .filter(tx => !!tx) as TransactionLog[]
+    return parsedTransactions.sort((a, b) => a.sigIndex - b.sigIndex)
   }
 }

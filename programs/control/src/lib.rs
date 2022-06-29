@@ -25,6 +25,7 @@ mod instructions;
 use instructions::*;
 
 pub use instructions::{MarginPoolParams, TokenMetadataParams};
+pub mod events;
 
 declare_id!("JPCtrLreUqsEbdhtxZ8zpd8wBydKz4nuEjX5u9Eg5H8");
 

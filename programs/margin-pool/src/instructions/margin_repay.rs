@@ -15,12 +15,14 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+use std::ops::Deref;
+
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Burn, Token, TokenAccount};
 
 use jet_margin::MarginAccount;
 
-use crate::state::*;
+use crate::{events, state::*};
 use crate::{Amount, ErrorCode};
 
 #[derive(Accounts)]
@@ -125,11 +127,21 @@ pub fn margin_repay_handler(ctx: Context<MarginRepay>, max_amount: Amount) -> Re
     // First record a withdraw of the deposit to use for repaying in tokens
     let withdraw_amount =
         pool.convert_deposit_amount(Amount::tokens(max_repay_tokens), withdraw_token_rounding)?;
+    msg!(
+        "Withdrawing [{} tokens, {} notes] from deposit pool",
+        withdraw_amount.tokens,
+        withdraw_amount.notes
+    );
     pool.withdraw(&withdraw_amount)?;
 
     // Then record a repay using the withdrawn tokens
     let repay_amount =
         pool.convert_loan_amount(Amount::tokens(max_repay_tokens), repay_token_rounding)?;
+    msg!(
+        "Repaying [{} tokens, {} notes] into loan pool",
+        repay_amount.tokens,
+        repay_amount.notes
+    );
     pool.repay(&repay_amount)?;
 
     // Finish by burning the loan and deposit notes
@@ -144,6 +156,19 @@ pub fn margin_repay_handler(ctx: Context<MarginRepay>, max_amount: Amount) -> Re
         ctx.accounts.burn_deposit_context().with_signer(&signer),
         withdraw_amount.notes,
     )?;
+
+    emit!(events::MarginRepay {
+        margin_pool: pool.key(),
+        user: ctx.accounts.margin_account.key(),
+        loan_account: ctx.accounts.loan_account.key(),
+        deposit_account: ctx.accounts.deposit_account.key(),
+        max_repay_tokens: desired_repay_amount.tokens,
+        max_repay_notes: desired_repay_amount.notes,
+        repaid_tokens: max_repay_tokens,
+        repaid_loan_notes: repay_amount.notes,
+        repaid_deposit_notes: withdraw_amount.notes,
+        summary: pool.deref().into(),
+    });
 
     Ok(())
 }

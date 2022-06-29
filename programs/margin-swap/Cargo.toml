@@ -1,7 +1,7 @@
 [package]
 name = "jet-margin-swap"
 version = "0.1.0"
-description = "Created with Anchor"
+description = "Anchor program to swap margin pool deposits via spl token swap"
 edition = "2018"
 
 [lib]
@@ -20,7 +20,8 @@ testing = ["jet-margin-pool/testing", "jet-margin/testing"]
 [dependencies]
 anchor-lang = { git = "https://github.com/jet-lab/anchor", branch = "master" }
 anchor-spl = { git = "https://github.com/jet-lab/anchor", branch = "master" }
-spl-token-swap = { version = "2.1", features = ["no-entrypoint"] }
 
 jet-margin-pool = { path = "../margin-pool", features = ["cpi", "no-entrypoint"] }
 jet-margin = { path = "../margin", features = ["cpi", "no-entrypoint"] }
+
+jet-static-program-registry = { path = "../../libraries/static-program-registry" }

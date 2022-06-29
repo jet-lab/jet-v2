@@ -20,7 +20,7 @@ use anchor_lang::prelude::*;
 use jet_metadata::MarginAdapterMetadata;
 
 use crate::adapter::{self, CompactAccountMeta, InvokeAdapter};
-use crate::{ErrorCode, Liquidation, MarginAccount, Valuation};
+use crate::{events, ErrorCode, Liquidation, MarginAccount, Valuation};
 
 #[derive(Accounts)]
 pub struct LiquidatorInvoke<'info> {
@@ -54,7 +54,13 @@ pub fn liquidator_invoke_handler<'info>(
     let margin_account = &ctx.accounts.margin_account;
     let start_value = margin_account.load()?.valuation()?;
 
-    adapter::invoke_signed(
+    emit!(events::LiquidatorInvokeBegin {
+        margin_account: ctx.accounts.margin_account.key(),
+        adapter_program: ctx.accounts.adapter_program.key(),
+        liquidator: ctx.accounts.liquidator.key(),
+    });
+
+    let touched_positions = adapter::invoke(
         &InvokeAdapter {
             margin_account: &ctx.accounts.margin_account,
             adapter_program: &ctx.accounts.adapter_program,
@@ -62,26 +68,41 @@ pub fn liquidator_invoke_handler<'info>(
         },
         account_metas,
         data,
+        true,
     )?;
 
-    update_and_verify_liquidation(
+    for &position in touched_positions.values() {
+        emit!(events::PositionTouched { position });
+    }
+
+    let liquidation = &mut *ctx.accounts.liquidation.load_mut()?;
+    let end_value = update_and_verify_liquidation(
         &*ctx.accounts.margin_account.load()?,
-        &mut *ctx.accounts.liquidation.load_mut()?,
+        liquidation,
         start_value,
-    )
+    )?;
+
+    emit!(events::LiquidatorInvokeEnd {
+        liquidation_data: *liquidation,
+        valuation_summary: end_value.into(),
+    });
+
+    Ok(())
 }
 
 fn update_and_verify_liquidation(
     margin_account: &MarginAccount,
     liquidation: &mut Liquidation,
     start_value: Valuation,
-) -> Result<()> {
+) -> Result<Valuation> {
     let end_value = margin_account.valuation()?;
 
     *liquidation.value_change_mut() +=
         end_value.available_collateral() - start_value.available_collateral(); // side effects
 
-    verify_liquidation_step_is_allowed(liquidation)
+    verify_liquidation_step_is_allowed(liquidation)?;
+
+    Ok(end_value)
 }
 
 fn verify_liquidation_step_is_allowed(liquidation: &Liquidation) -> Result<()> {

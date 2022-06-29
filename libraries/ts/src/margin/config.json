@@ -11,6 +11,7 @@
     "serumReferralAuthority": "11111111111111111111111111111111",
     "splTokenFaucet": "4bXpkKSV8swHSnwqtzuboGPaPDeEgAn4Vt8GfarV5rZt",
     "splTokenSwapProgramId": "SwaPpA9LAaLfeLi3a68M4DjnLqgtticKg6CnyNwgAC8",
+    "orcaSwapProgramId": "3xQ8SWv2GaFXXpHZNqkXsdxq5DZciHBz6ZFoPPfbFd7U",
     "url": "https://api.devnet.solana.com/",
     "tokens": {
       "BTC": {
@@ -246,6 +247,7 @@
     "serumReferralAuthority": "11111111111111111111111111111111",
     "splTokenFaucet": "4bXpkKSV8swHSnwqtzuboGPaPDeEgAn4Vt8GfarV5rZt",
     "splTokenSwapProgramId": "SwaPpA9LAaLfeLi3a68M4DjnLqgtticKg6CnyNwgAC8",
+    "orcaSwapProgramId": "9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP",
     "url": "http://127.0.0.1:8899/",
     "tokens": {
       "BTC": {
@@ -480,6 +482,7 @@
     "serumProgramId": "9xQeWvG816bUx9EPjHmaT23yvVM2ZWbrrpZb9PusVFin",
     "serumReferralAuthority": "11111111111111111111111111111111",
     "splTokenSwapProgramId": "SwaPpA9LAaLfeLi3a68M4DjnLqgtticKg6CnyNwgAC8",
+    "orcaSwapProgramId": "9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP",
     "url": "https://solana-api.projectserum.com/",
     "tokens": {
       "BTC": {

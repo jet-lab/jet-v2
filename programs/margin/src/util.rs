@@ -15,6 +15,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+#[cfg(not(target_arch = "bpf"))]
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use anchor_lang::prelude::{Clock, SolanaSysvar};

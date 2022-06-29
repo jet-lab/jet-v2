@@ -240,40 +240,6 @@ impl MarginPoolIxBuilder {
         }
     }
 
-    /// Instruction to withdraw tokens from the pool in exchange for deposit notes
-    /// (owned by a margin account)
-    ///
-    /// # Params
-    ///
-    /// `margin_account` - The margin account with the deposit to be withdrawn
-    /// `source` - The token account that has the deposit notes to be exchanged
-    /// `destination` - The token account to send the withdrawn deposit
-    /// `amount` - The amount of the deposit
-    pub fn margin_withdraw(
-        &self,
-        margin_account: Pubkey,
-        source: Pubkey,
-        destination: Pubkey,
-        amount: Amount,
-    ) -> Instruction {
-        let accounts = ix_accounts::MarginWithdraw {
-            margin_account,
-            margin_pool: self.address,
-            vault: self.vault,
-            deposit_note_mint: self.deposit_note_mint,
-            source,
-            destination,
-            token_program: Token::id(),
-        }
-        .to_account_metas(None);
-
-        Instruction {
-            program_id: jet_margin_pool::ID,
-            data: ix_data::MarginWithdraw { amount }.data(),
-            accounts,
-        }
-    }
-
     /// Instruction to refresh the position on a margin account
     ///
     /// # Params

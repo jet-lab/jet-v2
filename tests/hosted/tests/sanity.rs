@@ -1,9 +1,11 @@
 use anyhow::Error;
 
+use jet_control::TokenMetadataParams;
 use jet_margin::PositionKind;
 use jet_margin_pool::{Amount, MarginPoolConfig, PoolFlags};
+use jet_margin_sdk::instructions::control::TokenConfiguration;
 use jet_metadata::TokenKind;
-use jet_simulation::{assert_program_error_code, create_wallet};
+use jet_simulation::{assert_custom_program_error, create_wallet};
 
 use solana_sdk::native_token::LAMPORTS_PER_SOL;
 use solana_sdk::pubkey::Pubkey;
@@ -83,7 +85,7 @@ async fn setup_environment(ctx: &MarginTestContext) -> Result<TestEnv, Error> {
 /// margin system. This particular test will create two users which execute
 /// a series of deposit/borrow/repay/withdraw actions onto the margin pools
 /// via their margin accounts.
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn sanity_test() -> Result<(), anyhow::Error> {
     // Get the mocked runtime
     let ctx = test_context().await;
@@ -161,9 +163,9 @@ async fn sanity_test() -> Result<(), anyhow::Error> {
     // User should not be able to borrow more than what's in the pool
     let excess_borrow_result = user_a.borrow(&env.tsol, 5_000 * ONE_TSOL).await;
 
-    assert_program_error_code!(
-        jet_margin_pool::ErrorCode::InsufficientLiquidity.into(),
-        excess_borrow_result
+    assert_custom_program_error(
+        jet_margin_pool::ErrorCode::InsufficientLiquidity,
+        excess_borrow_result,
     );
 
     // Users repay their loans
@@ -190,6 +192,15 @@ async fn sanity_test() -> Result<(), anyhow::Error> {
         )
         .await?;
 
+    // Verify accounting updated
+    let usdc_pool = ctx.margin.get_pool(&env.usdc).await?;
+    let tsol_pool = ctx.margin.get_pool(&env.usdc).await?;
+
+    assert_eq!(0, usdc_pool.deposit_tokens);
+    assert_eq!(0, usdc_pool.deposit_notes);
+    assert_eq!(0, tsol_pool.deposit_tokens);
+    assert_eq!(0, tsol_pool.deposit_notes);
+
     // Now verify that the users got all their tokens back
     assert_eq!(
         1_000_000 * ONE_USDC,
@@ -198,6 +209,42 @@ async fn sanity_test() -> Result<(), anyhow::Error> {
     assert_eq!(
         1_000 * ONE_TSOL,
         ctx.tokens.get_balance(&user_b_tsol_account).await?
+    );
+
+    // Check if we can update the metadata
+    ctx.margin
+        .configure_token(
+            &env.usdc,
+            &TokenConfiguration {
+                metadata: Some(TokenMetadataParams {
+                    token_kind: TokenKind::Collateral,
+                    collateral_weight: 0xBEEF,
+                    max_leverage: 0xFEED,
+                }),
+                ..Default::default()
+            },
+        )
+        .await?;
+
+    user_a.refresh_all_position_metadata().await?;
+    user_b.refresh_all_position_metadata().await?;
+
+    let mut user_a_state = ctx.margin.get_account(user_a.address()).await?;
+    let mut user_b_state = ctx.margin.get_account(user_b.address()).await?;
+
+    assert_eq!(
+        0xBEEF,
+        user_a_state
+            .get_position_mut(&usdc_pool.deposit_note_mint)
+            .unwrap()
+            .value_modifier
+    );
+    assert_eq!(
+        0xFEED,
+        user_b_state
+            .get_position_mut(&usdc_pool.loan_note_mint)
+            .unwrap()
+            .value_modifier
     );
 
     // Close a specific position
@@ -215,7 +262,10 @@ async fn sanity_test() -> Result<(), anyhow::Error> {
     // a non-existent loan position by closing both deposit and loan.
     let b_close_tsol_result = user_b.close_token_positions(&env.tsol).await;
     // Error ref: https://github.com/project-serum/anchor/blob/v0.23.0/lang/src/error.rs#L171
-    assert_program_error_code!(3012, b_close_tsol_result);
+    assert_custom_program_error(
+        anchor_lang::error::ErrorCode::AccountNotInitialized,
+        b_close_tsol_result,
+    );
 
     // NOTE: due to how the simulator works, the deposit will be closed
     // as the state gets mutated regardless of an error.
@@ -223,10 +273,7 @@ async fn sanity_test() -> Result<(), anyhow::Error> {
 
     // It should not be possible to close User B account as it is not empty
     let b_close_acc_result = user_b.close_account().await;
-    assert_program_error_code!(
-        jet_margin::ErrorCode::AccountNotEmpty.into(),
-        b_close_acc_result
-    );
+    assert_custom_program_error(jet_margin::ErrorCode::AccountNotEmpty, b_close_acc_result);
 
     // User B had a USDC loan which created a corresponding deposit.
     // They should be able to close all USDC positions

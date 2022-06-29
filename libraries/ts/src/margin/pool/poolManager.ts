@@ -289,7 +289,7 @@ export class PoolManager {
     const depositNoteMint = findDerivedAccount(programId, marginPool, "deposit-notes")
     const loanNoteMint = findDerivedAccount(programId, marginPool, "loan-notes")
     const marginPoolAdapterMetadata = findDerivedAccount(programs.config.metadataProgramId, programId)
-    const tokenMetadata = findDerivedAccount(programs.config.metadataProgramId, tokenMint)
+    const tokenMetadata = findDerivedAccount(programs.config.metadataProgramId, tokenMintAddress)
     const depositNoteMetadata = findDerivedAccount(programs.config.metadataProgramId, depositNoteMint)
     const loanNoteMetadata = findDerivedAccount(programs.config.metadataProgramId, loanNoteMint)
     const controlAuthority = findDerivedAccount(programs.config.controlProgramId)
