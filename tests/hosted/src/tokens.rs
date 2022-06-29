@@ -224,6 +224,21 @@ impl TokenManager {
         Ok(())
     }
 
+
+    pub async fn refresh_to_same_price(&self, mint: &Pubkey) -> Result<(), Error> {
+        let price_address = Pubkey::find_program_address(
+            &[mint.as_ref(), b"oracle:price".as_ref()],
+            &jet_metadata::ID,
+        ).0;
+        let mut account: pyth_sdk_solana::state::PriceAccount = self.get_pod_metadata(&price_address).await?;
+        let clock = self.rpc.get_clock().expect("could not get the clock");
+        account.agg.pub_slot = clock.slot;
+        account.timestamp = clock.unix_timestamp;
+
+        self.set_pod_metadata(&price_address, &account).await
+    }
+
+
     /// Set the oracle price of a token
     pub async fn set_price(&self, mint: &Pubkey, price: &TokenPrice) -> Result<(), Error> {
         let clock = self.rpc.get_clock().expect("could not get the clock");
@@ -288,6 +303,15 @@ impl TokenManager {
         send_and_confirm(&self.rpc, &[ix_write], &[]).await?;
 
         Ok(())
+    }
+
+    async fn get_pod_metadata<T: bytemuck::Pod>(
+        &self,
+        address: &Pubkey,
+    ) -> Result<T, Error> {
+        let account = self.rpc.get_account(address).await?.unwrap();
+        
+        Ok(bytemuck::from_bytes::<T>(&account.data).clone())
     }
 
     /// Get the authority address of the Jet Control program.

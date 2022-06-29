@@ -1659,7 +1659,7 @@ dependencies = [
 [[package]]
 name = "jet-simulation"
 version = "0.1.0"
-source = "git+https://github.com/jet-lab/jet-simulation?branch=master#a3ddc9b0cec7f944ded5e6b4ce538d88f3bcd9ef"
+source = "git+https://github.com/jet-lab/jet-simulation?branch=airdrop-more#803b6de2e043038a58569c090ad842fd1b4454b7"
 dependencies = [
  "anchor-lang",
  "anyhow",

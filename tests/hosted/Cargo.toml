@@ -39,5 +39,5 @@ jet-margin-sdk = { path = "../../libraries/rust", features = ["testing"] }
 
 mock-adapter = { path = "../mock-adapter", features = ["no-entrypoint"] }
 
-jet-simulation = { git = "https://github.com/jet-lab/jet-simulation", branch = "master" }
+jet-simulation = { git = "https://github.com/jet-lab/jet-simulation", branch = "airdrop-more" }
 jet-proto-math = "1"

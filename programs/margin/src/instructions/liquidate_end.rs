@@ -25,6 +25,7 @@ use crate::{ErrorCode, Liquidation, MarginAccount, LIQUIDATION_TIMEOUT};
 pub struct LiquidateEnd<'info> {
     /// If the liquidation is timed out, this can be any account
     /// If the liquidation is not timed out, this must be the liquidator, and it must be a signer
+    #[account(mut)]
     pub authority: Signer<'info>,
 
     /// The account in need of liquidation

@@ -49,7 +49,9 @@ async fn scenario1() -> Result<Scenario1> {
     let user_b = setup_user(ctx, &liquidator_wallet, vec![(tsol, 0, 10_000 * ONE_TSOL)]).await?;
 
     // Have each user borrow the other's funds
+    ctx.tokens.refresh_to_same_price(&tsol).await?;
     user_a.user.borrow(&tsol, 8000 * ONE_TSOL).await?;
+    ctx.tokens.refresh_to_same_price(&usdc).await?;
     user_b.user.borrow(&usdc, 3_500_000 * ONE_USDC).await?;
 
     // User A deposited 5'000'000 USD worth, borrowed 800'000 USD worth
@@ -341,6 +343,14 @@ async fn liquidator_permission_is_removable() -> Result<()> {
 
     // A liquidator tries to liquidate User B, it should no longer have authority to do that
     let result = scen.user_b_liq.liquidate_begin(false).await;
+    
+    #[cfg(feature="localnet")]
+    assert_custom_program_error(
+        anchor_lang::error::ErrorCode::AccountNotInitialized,
+        result,
+    );
+
+    #[cfg(not(feature="localnet"))]
     assert_custom_program_error(
         anchor_lang::error::ErrorCode::AccountDiscriminatorMismatch,
         result,
