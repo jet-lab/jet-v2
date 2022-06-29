@@ -50,6 +50,12 @@ jobs:
       - name: Check Build Errors
         run: cargo check --target aarch64-apple-darwin
 
+  localnet-tests:
+    runs-on: ubuntu-latest
+    needs: [build-cli-deps]
+    steps:
+      - run: tests/test_on_localnet.sh
+
   coverage:
     runs-on: ubuntu-latest
     needs: [build-cli-deps]

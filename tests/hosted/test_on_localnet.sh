@@ -24,13 +24,15 @@ ORCAv2_SO=$ORCA_V2_MAINNET
 
 COMPILE_FEATURES='testing'
 
-main() {
+build() {
     anchor build --skip-lint -p jet_control     -- --features $COMPILE_FEATURES
     anchor build --skip-lint -p jet_margin      -- --features $COMPILE_FEATURES
     anchor build --skip-lint -p jet_metadata    -- --features $COMPILE_FEATURES
     anchor build --skip-lint -p jet_margin_pool -- --features $COMPILE_FEATURES
     anchor build --skip-lint -p jet_margin_swap -- --features $COMPILE_FEATURES
+}
 
+test_file() {
     solana-test-validator -r \
         --bpf-program $CTRL_PID $CTRL_SO \
         --bpf-program $MRGN_PID $MRGN_SO \
@@ -46,7 +48,11 @@ main() {
     RUST_BACKTRACE=1 cargo test \
         --features localnet \
         --package hosted-tests \
-        --exact --nocapture
+        --test $@ \
+        -- --nocapture
+    
+    kill $!
+    sleep 1
 }
 
 cleanup() {
@@ -68,4 +74,8 @@ trap_add() {
 
 declare -f -t trap_add
 trap_add 'cleanup' EXIT
-main
+build
+test_file swap
+test_file liquidate
+test_file pool_overpayment
+test_file rounding
