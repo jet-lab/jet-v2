@@ -29,7 +29,6 @@ import { sleep } from "../../../libraries/ts/src/utils/util"
 
 import { getTokenAccountInfo } from "../util"
 ;[
-  new PublicKey(MARGIN_CONFIG.localnet.splTokenSwapProgramId),
   new PublicKey(MARGIN_CONFIG.localnet.orcaSwapProgramId)
 ].forEach(function (swapProgramId) {
   describe("margin swap - program id: " + swapProgramId.toString(), () => {
@@ -319,11 +318,11 @@ import { getTokenAccountInfo } from "../util"
 
       info = await getTokenAccountInfo(provider, marginSwap.tokenSwap.feeAccount)
 
-      if (swapProgramId.toString() == MARGIN_CONFIG.localnet.splTokenSwapProgramId) {
-        assert(Number(info.amount) == currentFeeAmount + 22276)
-      } else {
+      //if (swapProgramId.toString() == MARGIN_CONFIG.localnet.splTokenSwapProgramId) {
+        //assert(Number(info.amount) == currentFeeAmount + 22276)
+      //} else {
         assert(Number(info.amount) == currentFeeAmount + 22277)
-      }
+      //}
 
       if (poolAccount != null) {
         info = await getTokenAccountInfo(provider, poolAccount)
