@@ -343,14 +343,11 @@ async fn liquidator_permission_is_removable() -> Result<()> {
 
     // A liquidator tries to liquidate User B, it should no longer have authority to do that
     let result = scen.user_b_liq.liquidate_begin(false).await;
-    
-    #[cfg(feature="localnet")]
-    assert_custom_program_error(
-        anchor_lang::error::ErrorCode::AccountNotInitialized,
-        result,
-    );
 
-    #[cfg(not(feature="localnet"))]
+    #[cfg(feature = "localnet")]
+    assert_custom_program_error(anchor_lang::error::ErrorCode::AccountNotInitialized, result);
+
+    #[cfg(not(feature = "localnet"))]
     assert_custom_program_error(
         anchor_lang::error::ErrorCode::AccountDiscriminatorMismatch,
         result,

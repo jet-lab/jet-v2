@@ -331,7 +331,10 @@ impl MarginIxBuilder {
     }
 }
 
-pub fn get_position_token_account(margin_account: &Pubkey, position_token_mint: &Pubkey) -> (Pubkey, u8) {
+pub fn get_position_token_account(
+    margin_account: &Pubkey,
+    position_token_mint: &Pubkey,
+) -> (Pubkey, u8) {
     Pubkey::find_program_address(
         &[margin_account.as_ref(), position_token_mint.as_ref()],
         &JetMargin::id(),
