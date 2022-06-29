@@ -245,8 +245,8 @@ pub enum ErrorCode {
 }
 
 pub fn write_adapter_result(margin_account: &MarginAccount, result: &AdapterResult) -> Result<()> {
-    let mut adapter_result_data = vec![0u8; 512];
-    result.serialize(&mut &mut adapter_result_data[..])?;
+    let mut adapter_result_data = vec![];
+    result.serialize(&mut adapter_result_data)?;
     margin_account.invocation.verify_directly_invoked()?;
     anchor_lang::solana_program::program::set_return_data(&adapter_result_data);
     Ok(())
