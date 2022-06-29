@@ -12,7 +12,13 @@ import {
   TransactionSignature
 } from "@solana/web3.js"
 import { Pool } from "./pool/pool"
-import { AccountPosition, AccountPositionList, AccountPositionListLayout, MarginAccountData, MAX_POSITIONS } from "./state"
+import {
+  AccountPosition,
+  AccountPositionList,
+  AccountPositionListLayout,
+  MarginAccountData,
+  MAX_POSITIONS
+} from "./state"
 import { MarginPrograms } from "./marginClient"
 import { findDerivedAccount } from "../utils/pda"
 import { AssociatedToken, bnToNumber, MarginPools, TokenAmount, ZERO_BN } from ".."
