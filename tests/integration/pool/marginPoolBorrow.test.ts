@@ -12,8 +12,7 @@ import {
   MarginClient,
   Pool,
   MarginPoolConfigData,
-  PoolManager,
-  sleep
+  PoolManager
 } from "../../../libraries/ts/src"
 
 import { PythClient } from "../pyth/pythClient"
@@ -385,5 +384,50 @@ describe("margin pool borrow", () => {
     })
     await marginAccount_B.closeAccount();
     */
+  })
+
+  describe("Flight Logs", () => {
+    it("should allow to get a list of the latest transactions", async () => {
+      const mints = {
+        USDC: {
+          tokenMint: USDC[0] as PublicKey,
+          depositNoteMint: marginPool_USDC.addresses.depositNoteMint,
+          loanNoteMint: marginPool_USDC.addresses.loanNoteMint
+        },
+        SOL: {
+          tokenMint: SOL[0] as PublicKey,
+          depositNoteMint: marginPool_SOL.addresses.depositNoteMint,
+          loanNoteMint: marginPool_SOL.addresses.loanNoteMint
+        }
+      }
+      const transactions = await MarginClient.getFlightLogs(provider, wallet_a.publicKey, mints, "localnet")
+
+      expect(transactions).to.have.length(5)
+
+      expect(transactions[0].tradeAction).to.equals("withdraw")
+      expect(transactions[0].tokenAbbrev).to.equals("USDC")
+      expect(transactions[0].tradeAmount.uiTokens).to.equals("400,000")
+      expect(transactions[0].signature).to.be.a("string")
+
+      expect(transactions[1].tradeAction).to.equals("repay")
+      expect(transactions[1].tokenAbbrev).to.equals("SOL")
+      expect(transactions[1].tradeAmount.uiTokens).to.equals("10")
+      expect(transactions[1].signature).to.be.a("string")
+
+      expect(transactions[2].tradeAction).to.equals("borrow")
+      expect(transactions[2].tokenAbbrev).to.equals("SOL")
+      expect(transactions[2].tradeAmount.uiTokens).to.equals("10")
+      expect(transactions[2].signature).to.be.a("string")
+
+      expect(transactions[3].tradeAction).to.equals("deposit")
+      expect(transactions[3].tokenAbbrev).to.equals("SOL")
+      expect(transactions[3].tradeAmount.uiTokens).to.equals("50")
+      expect(transactions[3].signature).to.be.a("string")
+
+      expect(transactions[4].tradeAction).to.equals("deposit")
+      expect(transactions[4].tokenAbbrev).to.equals("USDC")
+      expect(transactions[4].tradeAmount.uiTokens).to.equals("500,000")
+      expect(transactions[4].signature).to.be.a("string")
+    })
   })
 })

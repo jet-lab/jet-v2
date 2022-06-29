@@ -12,8 +12,7 @@ import {
   MarginClient,
   Pool,
   MarginPoolConfigData,
-  PoolManager,
-  sleep
+  PoolManager
 } from "../../../libraries/ts/src"
 
 import { PythClient } from "../pyth/pythClient"
@@ -28,7 +27,7 @@ import {
   sendToken
 } from "../util"
 
-describe("margin pool deposit", () => {
+describe("margin pool deposit", async () => {
   // SUITE SETUP
   const marginPoolProgramId: PublicKey = new PublicKey(MARGIN_CONFIG.localnet.marginPoolProgramId)
   const confirmOptions: ConfirmOptions = { preflightCommitment: "processed", commitment: "processed" }
@@ -38,8 +37,9 @@ describe("margin pool deposit", () => {
   const ownerKeypair = payer
   const programs = MarginClient.getPrograms(provider, "localnet")
   const manager = new PoolManager(programs, provider)
-  let USDC
-  let SOL
+
+  const USDC = await createToken(provider, payer, 6, 10_000_000)
+  const SOL = await createToken(provider, payer, 9, 10_000)
 
   it("Fund payer", async () => {
     const airdropSignature = await provider.connection.requestAirdrop(provider.wallet.publicKey, 300 * LAMPORTS_PER_SOL)
@@ -48,8 +48,6 @@ describe("margin pool deposit", () => {
 
   it("Create tokens", async () => {
     // SETUP
-    USDC = await createToken(provider, payer, 6, 10_000_000)
-    SOL = await createToken(provider, payer, 9, 10_000)
 
     // ACT
     const usdc_supply = await getMintSupply(provider, USDC[0], 6)
@@ -120,12 +118,10 @@ describe("margin pool deposit", () => {
 
   let marginPool_USDC: Pool
   let marginPool_SOL: Pool
-  let marginPools: Pool[]
 
   it("Load Pools", async () => {
     marginPool_SOL = await manager.load({ tokenMint: SOL[0] })
     marginPool_USDC = await manager.load({ tokenMint: USDC[0] })
-    marginPools = [marginPool_SOL, marginPool_USDC]
   })
 
   it("Create margin pools", async () => {
@@ -301,7 +297,6 @@ describe("margin pool deposit", () => {
       destination: user_a_sol_account
     })
     await marginAccount_A.closeAccount()
-
 
     await marginPool_USDC.closePosition({
       marginAccount: marginAccount_B,
