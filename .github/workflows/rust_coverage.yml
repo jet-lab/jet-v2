@@ -1,7 +1,7 @@
 name: build
 
 env:
-  cli-id: anchor-v0.24.dev-solana-1.9.2
+  cli-id: anchor-v0.24.dev-solana-1.10.25
   rust-version: stable
 
 on:
@@ -27,7 +27,7 @@ jobs:
 
       - id: install-solana-tools
         if: steps.cache-cli-deps.outputs.cache-hit != 'true'
-        run: sh -c "$(curl -sSfL https://release.solana.com/v1.9.2/install)"
+        run: sh -c "$(curl -sSfL https://release.solana.com/v1.10.25/install)"
 
       - run: echo "PATH=$HOME/.local/share/solana/install/active_release/bin:$PATH" >> $GITHUB_ENV
 
@@ -49,6 +49,31 @@ jobs:
 
       - name: Check Build Errors
         run: cargo check --target aarch64-apple-darwin
+
+  localnet-tests:
+    runs-on: ubuntu-latest
+    needs: [build-cli-deps]
+    steps:
+      - id: cache-cli-deps
+        uses: actions/cache@v3
+        with:
+          key: $${{ env.cli-id }}
+          path: |
+            ~/.local/share/solana
+            ~/.cargo/bin/anchor
+
+      - uses: actions/checkout@v3
+
+      - name: Install Rust nightly
+        run: rustup default ${{ env.rust-version }} && rustup toolchain install ${{ env.rust-version }} --component llvm-tools-preview
+
+      - id: install-os-deps
+        run: sudo apt-get update && sudo apt-get install -y pkg-config build-essential libudev-dev
+
+      - run: echo "PATH=$HOME/.local/share/solana/install/active_release/bin:$PATH" >> $GITHUB_ENV
+      - run: solana-keygen new --no-bip39-passphrase
+
+      - run: tests/hosted/test_on_localnet.sh
 
   coverage:
     runs-on: ubuntu-latest
