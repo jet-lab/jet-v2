@@ -160,6 +160,9 @@ fn handle_adapter_result(ctx: &InvokeAdapter) -> Result<BTreeMap<Pubkey, Account
         }
     };
 
+    // clear return data after reading it
+    program::set_return_data(&[]);
+
     Ok(touched_positions)
 }
 
