@@ -43,7 +43,9 @@ test_file() {
         --bpf-program $ORCAv1_PID $ORCAv1_SO \
         --bpf-program $ORCAv2_PID $ORCAv2_SO \
         > /dev/null &
-    sleep 4
+    spid=$!
+    sleep 8
+    solana -ul logs &
 
     RUST_BACKTRACE=1 cargo test \
         --features localnet \
@@ -51,8 +53,8 @@ test_file() {
         --test $@ \
         -- --nocapture
     
-    kill $!
-    sleep 1
+    kill $spid
+    sleep 2
 }
 
 cleanup() {
