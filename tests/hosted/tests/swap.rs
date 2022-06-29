@@ -184,13 +184,25 @@ async fn swap_test_impl(swap_program_id: Pubkey) -> Result<(), anyhow::Error> {
 
     // Deposit user funds into their margin accounts
     user_a
-        .deposit(&env.usdc, &user_a_usdc_account, 1_000 * ONE_USDC)
+        .deposit(
+            &env.usdc,
+            &user_a_usdc_account,
+            Amount::tokens(1_000 * ONE_USDC),
+        )
         .await?;
     user_a
-        .deposit(&env.tsol, &user_a_tsol_account, 10 * ONE_TSOL)
+        .deposit(
+            &env.tsol,
+            &user_a_tsol_account,
+            Amount::tokens(10 * ONE_TSOL),
+        )
         .await?;
     user_b
-        .deposit(&env.tsol, &user_b_tsol_account, 10 * ONE_TSOL)
+        .deposit(
+            &env.tsol,
+            &user_b_tsol_account,
+            Amount::tokens(10 * ONE_TSOL),
+        )
         .await?;
 
     // // Verify user tokens have been deposited

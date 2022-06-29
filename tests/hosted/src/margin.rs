@@ -292,7 +292,7 @@ impl MarginUser {
             .await
     }
 
-    pub async fn borrow(&self, mint: &Pubkey, amount: u64) -> Result<(), Error> {
+    pub async fn borrow(&self, mint: &Pubkey, amount: Amount) -> Result<(), Error> {
         self.send_confirm_tx(self.tx.borrow(mint, amount).await?)
             .await
     }

@@ -165,11 +165,17 @@ async fn sanity_test() -> Result<(), anyhow::Error> {
     user_b.refresh_all_pool_positions().await?;
 
     // Have each user borrow the other's funds
-    user_a.borrow(&env.tsol, 10 * ONE_TSOL).await?;
-    user_b.borrow(&env.usdc, 1_000 * ONE_USDC).await?;
+    user_a
+        .borrow(&env.tsol, Amount::tokens(10 * ONE_TSOL))
+        .await?;
+    user_b
+        .borrow(&env.usdc, Amount::tokens(1_000 * ONE_USDC))
+        .await?;
 
     // User should not be able to borrow more than what's in the pool
-    let excess_borrow_result = user_a.borrow(&env.tsol, 5_000 * ONE_TSOL).await;
+    let excess_borrow_result = user_a
+        .borrow(&env.tsol, Amount::tokens(5_000 * ONE_TSOL))
+        .await;
 
     assert_custom_program_error(
         jet_margin_pool::ErrorCode::InsufficientLiquidity,

@@ -49,8 +49,14 @@ async fn scenario1() -> Result<Scenario1> {
     let user_b = setup_user(ctx, &liquidator_wallet, vec![(tsol, 0, 10_000 * ONE_TSOL)]).await?;
 
     // Have each user borrow the other's funds
-    user_a.user.borrow(&tsol, 8000 * ONE_TSOL).await?;
-    user_b.user.borrow(&usdc, 3_500_000 * ONE_USDC).await?;
+    user_a
+        .user
+        .borrow(&tsol, Amount::tokens(8000 * ONE_TSOL))
+        .await?;
+    user_b
+        .user
+        .borrow(&usdc, Amount::tokens(3_500_000 * ONE_USDC))
+        .await?;
 
     // User A deposited 5'000'000 USD worth, borrowed 800'000 USD worth
     // User B deposited 1'000'000 USD worth, borrowed 3'500'000 USD worth
@@ -275,7 +281,10 @@ async fn cannot_borrow_too_much_during_liquidation() -> Result<()> {
 
     scen.user_b_liq.liquidate_begin(false).await?;
 
-    let result = scen.user_b_liq.borrow(&scen.usdc, 500_000 * ONE_USDC).await;
+    let result = scen
+        .user_b_liq
+        .borrow(&scen.usdc, Amount::tokens(500_000 * ONE_USDC))
+        .await;
     assert_custom_program_error(ErrorCode::LiquidationLostValue, result);
 
     Ok(())
@@ -287,7 +296,9 @@ async fn can_borrow_some_during_liquidation() -> Result<()> {
     let scen = scenario1().await?;
 
     scen.user_b_liq.liquidate_begin(false).await?;
-    scen.user_b_liq.borrow(&scen.usdc, 5_000 * ONE_USDC).await?;
+    scen.user_b_liq
+        .borrow(&scen.usdc, Amount::tokens(5_000 * ONE_USDC))
+        .await?;
 
     Ok(())
 }

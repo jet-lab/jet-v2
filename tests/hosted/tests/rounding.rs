@@ -134,16 +134,26 @@ async fn rounding_poc() -> Result<()> {
         .await?;
 
     user_a
-        .deposit(&env.usdc, &user_a_usdc_account, 5_000_000 * ONE_USDC)
+        .deposit(
+            &env.usdc,
+            &user_a_usdc_account,
+            Amount::tokens(5_000_000 * ONE_USDC),
+        )
         .await?;
     user_b
-        .deposit(&env.tsol, &user_b_tsol_account, 10_000 * ONE_TSOL)
+        .deposit(
+            &env.tsol,
+            &user_b_tsol_account,
+            Amount::tokens(10_000 * ONE_TSOL),
+        )
         .await?;
 
     user_a.refresh_all_pool_positions().await?;
     user_b.refresh_all_pool_positions().await?;
 
-    user_b.borrow(&env.usdc, 50000000000).await?;
+    user_b
+        .borrow(&env.usdc, Amount::tokens(50000000000))
+        .await?;
 
     let mut clk: Clock = match ctx.rpc.get_clock() {
         Some(c) => c,

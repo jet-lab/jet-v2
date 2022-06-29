@@ -182,7 +182,7 @@ impl MarginTxBuilder {
     ///
     /// `token_mint` - The address of the mint for the tokens to borrow
     /// `amount` - The amount of tokens to borrow
-    pub async fn borrow(&self, token_mint: &Pubkey, amount: u64) -> Result<Transaction> {
+    pub async fn borrow(&self, token_mint: &Pubkey, amount: Amount) -> Result<Transaction> {
         let mut instructions = vec![];
         let pool = MarginPoolIxBuilder::new(*token_mint);
         let token_metadata = self.get_token_metadata(token_mint).await?;

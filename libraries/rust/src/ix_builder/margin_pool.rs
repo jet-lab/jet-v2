@@ -187,7 +187,7 @@ impl MarginPoolIxBuilder {
         margin_account: Pubkey,
         deposit_account: Pubkey,
         loan_account: Pubkey,
-        amount: u64,
+        amount: Amount,
     ) -> Instruction {
         let accounts = ix_accounts::MarginBorrow {
             margin_account,

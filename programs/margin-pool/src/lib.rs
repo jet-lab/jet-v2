@@ -68,7 +68,7 @@ mod jet_margin_pool {
     }
 
     /// Borrow tokens using a margin account
-    pub fn margin_borrow(ctx: Context<MarginBorrow>, amount: u64) -> Result<()> {
+    pub fn margin_borrow(ctx: Context<MarginBorrow>, amount: Amount) -> Result<()> {
         instructions::margin_borrow_handler(ctx, amount)
     }
 

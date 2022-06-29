@@ -45,7 +45,7 @@ main() {
 
     RUST_BACKTRACE=1 cargo test \
         --features localnet \
-        --package hosted-tests \
+        --package hosted-tests -- \
         --exact --nocapture
 }
 
