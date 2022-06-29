@@ -1,5 +1,6 @@
 use anyhow::Error;
 
+use jet_margin_sdk::ix_builder::{get_position_token_account, MarginPoolIxBuilder};
 use solana_sdk::native_token::LAMPORTS_PER_SOL;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::Signer;
@@ -216,6 +217,16 @@ async fn pool_overpayment() -> Result<(), anyhow::Error> {
         .repay(&env.tsol, Amount::tokens(400 * ONE_TSOL))
         .await?;
 
+    let user_c_tsol_deposit_notes_account = get_position_token_account(
+        &user_c.address(),
+        &MarginPoolIxBuilder::new(env.tsol).deposit_note_mint,
+    )
+    .0;
+    let user_c_tsol_deposit_notes_balance = ctx
+        .tokens
+        .get_balance(&user_c_tsol_deposit_notes_account)
+        .await?;
+
     // TODO: We do not yet have functions for getting a pool balance,
     // we use a withdrawal to test that the overpaid tokens are still in the deposit.
     // User C has 500 (deposit) + 100 (borrow) - 100 (max repay) tokens
@@ -223,14 +234,11 @@ async fn pool_overpayment() -> Result<(), anyhow::Error> {
         .withdraw(
             &env.tsol,
             &user_c_tsol_account,
-            Amount::tokens(500 * ONE_TSOL),
+            Amount::notes(user_c_tsol_deposit_notes_balance),
         )
         .await?;
 
-    assert_eq!(
-        500 * ONE_TSOL,
-        ctx.tokens.get_balance(&user_c_tsol_account).await?
-    );
+    assert!(ctx.tokens.get_balance(&user_c_tsol_account).await? - 500 * ONE_TSOL < ONE_TSOL);
 
     // User C should be able to close all TSOL positions as loan is paid and deposit withdrawn
     user_c.close_token_positions(&env.tsol).await?;
