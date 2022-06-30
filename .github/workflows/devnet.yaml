@@ -100,7 +100,7 @@ jobs:
           yarn install
           cargo fmt -- --check
           cargo clippy -- -D warnings
-          anchor build --skip-lint -- --features testing
+          anchor build --skip-lint -- --features testing devnet
 
       - name: Deploy Metadata
         run: |
