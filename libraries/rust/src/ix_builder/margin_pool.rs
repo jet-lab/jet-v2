@@ -261,6 +261,29 @@ impl MarginPoolIxBuilder {
         }
     }
 
+    pub fn register_loan(&self, margin_account: Pubkey, payer: Pubkey) -> (Pubkey, Instruction) {
+        let loan_note_account = loan_token_account(&margin_account, &self.loan_note_mint).0;
+
+        let accounts = ix_accounts::RegisterLoan {
+            margin_account: self.address,
+            margin_pool: self.address,
+            loan_note_account,
+            loan_note_mint: self.loan_note_mint,
+            payer,
+            token_program: Token::id(),
+            system_program: System::id(),
+            rent: Rent::id(),
+        };
+
+        let ix = Instruction {
+            program_id: jet_margin_pool::ID,
+            data: ix_data::RegisterLoan {}.data(),
+            accounts: accounts.to_account_metas(None),
+        };
+
+        (loan_note_account, ix)
+    }
+
     /// Instruction to collect interest and fees
     pub fn collect(&self, fee_destination: Pubkey) -> Instruction {
         let accounts = ix_accounts::Collect {
@@ -278,4 +301,11 @@ impl MarginPoolIxBuilder {
             accounts,
         }
     }
+}
+
+pub fn loan_token_account(margin_account: &Pubkey, loan_note_mint: &Pubkey) -> (Pubkey, u8) {
+    Pubkey::find_program_address(
+        &[margin_account.as_ref(), loan_note_mint.as_ref()],
+        &jet_margin_pool::id(),
+    )
 }

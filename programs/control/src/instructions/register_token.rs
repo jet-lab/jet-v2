@@ -181,6 +181,7 @@ pub fn register_token_handler(ctx: Context<RegisterToken>) -> Result<()> {
         token_kind: TokenKind::NonCollateral,
         value_modifier: 0,
         max_staleness: 0,
+        owner: Pubkey::default(),
     };
 
     let loan_note_metadata = PositionTokenMetadata {
@@ -190,6 +191,7 @@ pub fn register_token_handler(ctx: Context<RegisterToken>) -> Result<()> {
         token_kind: TokenKind::Claim,
         value_modifier: 0,
         max_staleness: 0,
+        owner: ctx.accounts.margin_pool.key(),
     };
 
     let token_metadata = TokenMetadata {

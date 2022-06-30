@@ -104,7 +104,7 @@ impl MarginTxBuilder {
     pub async fn close_token_positions(&self, token_mint: &Pubkey) -> Result<Transaction> {
         let pool = MarginPoolIxBuilder::new(*token_mint);
         let (deposit_account, _) = self.ix.get_token_account_address(&pool.deposit_note_mint);
-        let (loan_account, _) = self.ix.get_token_account_address(&pool.loan_note_mint);
+        let (loan_account, _) = loan_token_account(&self.ix.address, &pool.loan_note_mint);
         let instructions = vec![
             self.ix
                 .close_position(pool.deposit_note_mint, deposit_account),
@@ -128,7 +128,7 @@ impl MarginTxBuilder {
                 pool.deposit_note_mint,
             ),
             PositionKind::Claim => (
-                self.ix.get_token_account_address(&pool.loan_note_mint),
+                loan_token_account(&self.ix.address, &pool.loan_note_mint),
                 pool.loan_note_mint,
             ),
         };
@@ -191,7 +191,7 @@ impl MarginTxBuilder {
             .get_or_create_position(&mut instructions, &pool.deposit_note_mint)
             .await?;
         let loan_position = self
-            .get_or_create_position(&mut instructions, &pool.loan_note_mint)
+            .get_or_create_pool_loan_position(&mut instructions, &pool.address)
             .await?;
 
         let inner_refresh_loan_ix =
@@ -219,7 +219,7 @@ impl MarginTxBuilder {
             .get_or_create_position(&mut instructions, &pool.deposit_note_mint)
             .await?;
         let loan_position = self
-            .get_or_create_position(&mut instructions, &pool.loan_note_mint)
+            .get_or_create_pool_loan_position(&mut instructions, &pool.address)
             .await?;
 
         let inner_repay_ix =
@@ -473,6 +473,31 @@ impl MarginTxBuilder {
         if !state.positions().any(|p| p.token == *token_mint) {
             instructions.push(ix_register);
         }
+
+        Ok(address)
+    }
+
+    async fn get_or_create_pool_loan_position(
+        &self,
+        instructions: &mut Vec<Instruction>,
+        pool: &Pubkey,
+    ) -> Result<Pubkey> {
+        let pool = MarginPoolIxBuilder::new(*pool);
+        let state = self.get_account_state().await?;
+        let search_result = state.positions().find(|p| p.token == pool.loan_note_mint);
+
+        let address = if let Some(position) = search_result {
+            position.address
+        } else {
+            let (loan_note_token_account, pools_ix) =
+                pool.register_loan(self.ix.address, self.ix.payer);
+            let margin_ix = self
+                .ix
+                .register_adapter_position(pool.loan_note_mint, loan_note_token_account);
+            instructions.extend([pools_ix, margin_ix]);
+
+            loan_note_token_account
+        };
 
         Ok(address)
     }

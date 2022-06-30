@@ -84,7 +84,15 @@ pub mod jet_margin {
         close_account_handler(ctx)
     }
 
-    /// Register a position for some token type to be stored by a margin account
+    /// Register a position for some token that is not owned by margin
+    /// This applies to claims since adapters need to protect their claims
+    /// against a margin account. Currently, no other position types are permitted.
+    pub fn register_unowned_position(ctx: Context<RegisterUnownedPosition>) -> Result<()> {
+        register_unowned_position_handler(ctx)
+    }
+
+    /// Register a position for some token that will be custodied by margin.
+    /// Currently this applies to anything other than a claim.
     pub fn register_position(ctx: Context<RegisterPosition>) -> Result<()> {
         register_position_handler(ctx)
     }
@@ -199,6 +207,10 @@ pub enum ErrorCode {
     /// 141016 - Attempting to close a position that is required by the adapter
     #[msg("attempting to close a position that is required by the adapter")]
     CloseRequiredPosition,
+
+    /// 141017
+    #[msg("registered position owner inconsistent with PositionTokenMetadata owner or token_kind")]
+    InvalidPositionOwner,
 
     /// 141020 - The adapter providing a position change is not authorized for this asset
     #[msg("wrong adapter to modify the position")]

@@ -23,7 +23,7 @@ use jet_metadata::{PositionTokenMetadata, TokenKind};
 use crate::{events, ErrorCode, MarginAccount};
 
 #[derive(Accounts)]
-pub struct RegisterPosition<'info> {
+pub struct RegisterUnownedPosition<'info> {
     /// The authority that can change the margin account
     pub authority: Signer<'info>,
 
@@ -41,22 +41,14 @@ pub struct RegisterPosition<'info> {
     /// The metadata account that references the correct oracle for the token
     #[account(
         has_one = position_token_mint,
-        constraint = metadata.owner == Pubkey::default()     @ ErrorCode::InvalidPositionOwner,
-        constraint = metadata.token_kind != TokenKind::Claim @ ErrorCode::InvalidPositionOwner,
+        constraint = metadata.token_kind == TokenKind::Claim @ ErrorCode::InvalidPositionOwner,
     )]
     pub metadata: Account<'info, PositionTokenMetadata>,
 
-    /// The token account to store hold the position assets in the custody of the
-    /// margin account.
-    #[account(init,
-              seeds = [
-                  margin_account.key().as_ref(),
-                  position_token_mint.key().as_ref()
-              ],
-              bump,
-              payer = payer,
-              token::mint = position_token_mint,
-              token::authority = margin_account
+    /// The token account that custodies the position assets for the margin account.
+    #[account(
+        constraint = token_account.owner == metadata.owner    @ ErrorCode::InvalidPositionOwner,
+        constraint = token_account.owner != Pubkey::default() @ ErrorCode::InvalidPositionOwner,
     )]
     pub token_account: Account<'info, TokenAccount>,
 
@@ -65,7 +57,7 @@ pub struct RegisterPosition<'info> {
     pub system_program: Program<'info, System>,
 }
 
-pub fn register_position_handler(ctx: Context<RegisterPosition>) -> Result<()> {
+pub fn register_unowned_position_handler(ctx: Context<RegisterUnownedPosition>) -> Result<()> {
     let metadata = &ctx.accounts.metadata;
     let mut account = ctx.accounts.margin_account.load_mut()?;
     let position_token = &ctx.accounts.position_token_mint;

@@ -25,6 +25,7 @@ mod liquidate_end;
 mod liquidator_invoke;
 mod refresh_position_metadata;
 mod register_position;
+mod register_unowned_position;
 mod update_position_balance;
 mod verify_healthy;
 
@@ -37,6 +38,7 @@ pub use liquidate_begin::*;
 pub use liquidate_end::*;
 pub use liquidator_invoke::*;
 pub use refresh_position_metadata::*;
+pub use register_unowned_position::*;
 pub use register_position::*;
 pub use update_position_balance::*;
 pub use verify_healthy::*;

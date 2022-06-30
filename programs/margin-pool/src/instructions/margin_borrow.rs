@@ -48,7 +48,12 @@ pub struct MarginBorrow<'info> {
     pub deposit_note_mint: AccountInfo<'info>,
 
     /// The account to receive the loan notes
-    #[account(mut, constraint = loan_account.owner == margin_account.key())]
+    #[account(mut,
+        constraint = loan_account.owner == crate::ID,
+        seeds = [margin_account.key().as_ref(),
+                 loan_note_mint.key().as_ref()],
+        bump,
+    )]
     pub loan_account: Account<'info, TokenAccount>,
 
     /// The account to receive the borrowed tokens (as deposit notes)
