@@ -338,6 +338,52 @@ export type JetMarginPool = {
         }
       ]
       args: []
+    },
+    {
+      name: "registerLoan"
+      accounts: [
+        {
+          name: "marginAccount"
+          isMut: false
+          isSigner: false
+        },
+        {
+          name: "marginPool"
+          isMut: false
+          isSigner: false
+        },
+        {
+          name: "loanNoteAccount"
+          isMut: true
+          isSigner: false
+        },
+        {
+          name: "loanNoteMint"
+          isMut: false
+          isSigner: false
+        },
+        {
+          name: "payer"
+          isMut: true
+          isSigner: true
+        },
+        {
+          name: "tokenProgram"
+          isMut: false
+          isSigner: false
+        },
+        {
+          name: "systemProgram"
+          isMut: false
+          isSigner: false
+        },
+        {
+          name: "rent"
+          isMut: false
+          isSigner: false
+        }
+      ]
+      args: []
     }
   ]
   accounts: [
@@ -1248,6 +1294,52 @@ export const IDL: JetMarginPool = {
         },
         {
           name: "tokenPriceOracle",
+          isMut: false,
+          isSigner: false
+        }
+      ],
+      args: []
+    },
+    {
+      name: "registerLoan",
+      accounts: [
+        {
+          name: "marginAccount",
+          isMut: false,
+          isSigner: false
+        },
+        {
+          name: "marginPool",
+          isMut: false,
+          isSigner: false
+        },
+        {
+          name: "loanNoteAccount",
+          isMut: true,
+          isSigner: false
+        },
+        {
+          name: "loanNoteMint",
+          isMut: false,
+          isSigner: false
+        },
+        {
+          name: "payer",
+          isMut: true,
+          isSigner: true
+        },
+        {
+          name: "tokenProgram",
+          isMut: false,
+          isSigner: false
+        },
+        {
+          name: "systemProgram",
+          isMut: false,
+          isSigner: false
+        },
+        {
+          name: "rent",
           isMut: false,
           isSigner: false
         }

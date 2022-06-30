@@ -586,7 +586,7 @@ export class MarginAccount {
     return await this.provider.sendAndConfirm(new Transaction().add(...instructions))
   }
 
-  getPosition(tokenMint: Address) : AccountPosition | undefined {
+  getPosition(tokenMint: Address): AccountPosition | undefined {
     assert(this.info)
     const tokenMintAddress = translateAddress(tokenMint)
 
@@ -611,6 +611,31 @@ export class MarginAccount {
     }
 
     await this.registerPosition(tokenMintAddress)
+    await this.refresh()
+
+    for (let i = 0; i < MAX_POSITIONS; i++) {
+      const position = this.info.positions.positions[i]
+      if (position.token.equals(tokenMintAddress)) {
+        return position
+      }
+    }
+
+    throw new Error("Unable to register position.")
+  }
+
+  async getOrCreateUnownedPosition(instructions: TransactionInstruction[], tokenMint: Address, tokenAccount: Address) {
+    assert(this.info)
+    const tokenMintAddress = translateAddress(tokenMint)
+
+    for (let i = 0; i < MAX_POSITIONS; i++) {
+      const position = this.info.positions.positions[i]
+      if (position.token.equals(tokenMintAddress)) {
+        return position
+      }
+    }
+
+    await this.withRegisterUnownedPosition(instructions, tokenMintAddress, tokenAccount)
+    await this.provider.sendAndConfirm(new Transaction().add(...instructions))
     await this.refresh()
 
     for (let i = 0; i < MAX_POSITIONS; i++) {
@@ -702,6 +727,43 @@ export class MarginAccount {
       .instruction()
     instructions.push(ix)
     return tokenAccount
+  }
+
+  /// Get instruction to register new unowned position
+  ///
+  /// # Params
+  ///
+  /// `instructions` - Any other ix's to go in the same tx. e.g. init the token account
+  /// `token_mint` - The mint for the relevant token for the position
+  /// `token_account` - The initialized token account that will be registered as the position
+  ///
+  /// # Returns
+  ///
+  /// Returns the instruction, and the address of the token account to be
+  /// created for the position.
+  async withRegisterUnownedPosition(
+    instructions: TransactionInstruction[],
+    tokenMint: Address,
+    tokenAccount: Address
+  ): Promise<void> {
+    // const tokenAccount = findDerivedAccount(this.programs.config.marginPoolProgramId, this.address, tokenMint)
+    const metadata = findDerivedAccount(this.programs.config.metadataProgramId, tokenMint)
+
+    const ix = await this.programs.margin.methods
+      .registerUnownedPosition()
+      .accounts({
+        authority: this.owner,
+        payer: this.provider.wallet.publicKey,
+        marginAccount: this.address,
+        positionTokenMint: tokenMint,
+        metadata,
+        tokenAccount,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        rent: SYSVAR_RENT_PUBKEY,
+        systemProgram: SystemProgram.programId
+      })
+      .instruction()
+    instructions.push(ix)
   }
 
   async closeAccount() {

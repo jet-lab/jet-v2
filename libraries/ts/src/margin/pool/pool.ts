@@ -1,7 +1,7 @@
 import { Address, BN, translateAddress } from "@project-serum/anchor"
 import { parsePriceData, PriceData } from "@pythnetwork/client"
 import { Mint, TOKEN_PROGRAM_ID } from "@solana/spl-token"
-import { PublicKey, Transaction, TransactionInstruction } from "@solana/web3.js"
+import { PublicKey, SystemProgram, Transaction, TransactionInstruction, SYSVAR_RENT_PUBKEY } from "@solana/web3.js"
 import { assert } from "chai"
 import { AssociatedToken } from "../../token"
 import { ONE_BN, TokenAmount, ZERO_BN } from "../../token/tokenAmount"
@@ -12,6 +12,7 @@ import { MarginPoolConfig, MarginPools, MarginTokenConfig } from "../config"
 import { PoolAmount } from "./poolAmount"
 import { AccountPosition } from "../state"
 import { TokenMetadata } from "../metadata/state"
+import { findDerivedAccount } from "../../utils/pda"
 
 type TokenKindNonCollateral = { nonCollateral: Record<string, never> }
 type TokenKindCollateral = { collateral: Record<string, never> }
@@ -339,7 +340,7 @@ export class Pool {
     const depositPosition = await marginAccount.getOrCreatePosition(this.addresses.depositNoteMint)
     assert(depositPosition)
 
-    const loanPosition = await marginAccount.getOrCreatePosition(this.addresses.loanNoteMint)
+    const loanPosition = await this.getOrCreateLoanPosition(marginAccount)
     assert(loanPosition)
 
     const instructions: TransactionInstruction[] = []
@@ -358,6 +359,15 @@ export class Pool {
       console.log(err)
       throw err
     }
+  }
+
+  async getOrCreateLoanPosition(marginAccount: MarginAccount) {
+    let [loanNoteAccount, registerLoanIx] = await this.makeRegisterLoanInstruction(marginAccount)
+    return await marginAccount.getOrCreateUnownedPosition(
+      [registerLoanIx],
+      this.addresses.loanNoteMint,
+      loanNoteAccount
+    )
   }
 
   /// Instruction to borrow tokens using a margin account
@@ -426,7 +436,7 @@ export class Pool {
     const deposit_position = await marginAccount.getOrCreatePosition(this.addresses.depositNoteMint)
     assert(deposit_position)
 
-    const loan_position = await marginAccount.getOrCreatePosition(this.addresses.loanNoteMint)
+    const loan_position = await this.getOrCreateLoanPosition(marginAccount)
     assert(loan_position)
 
     const instructions: TransactionInstruction[] = []
@@ -562,6 +572,30 @@ export class Pool {
         tokenProgram: TOKEN_PROGRAM_ID
       })
       .instruction()
+  }
+
+  async makeRegisterLoanInstruction(marginAccount: MarginAccount): Promise<[Address, TransactionInstruction]> {
+    const loanNoteAccount = findDerivedAccount(
+      this.programs.config.marginPoolProgramId,
+      marginAccount.address,
+      this.addresses.loanNoteMint
+    )
+    return [
+      loanNoteAccount,
+      await this.programs.marginPool.methods
+        .registerLoan()
+        .accounts({
+          marginAccount: marginAccount.address,
+          marginPool: this.address,
+          loanNoteMint: this.addresses.loanNoteMint,
+          loanNoteAccount: loanNoteAccount,
+          payer: marginAccount.provider.wallet.publicKey,
+          tokenProgram: TOKEN_PROGRAM_ID,
+          systemProgram: SystemProgram.programId,
+          rent: SYSVAR_RENT_PUBKEY
+        })
+        .instruction()
+    ]
   }
 
   async closePosition({ marginAccount, destination }: { marginAccount: MarginAccount; destination: Address }) {
