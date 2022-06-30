@@ -100,7 +100,7 @@ jobs:
           yarn install
           cargo fmt -- --check
           cargo clippy -- -D warnings
-          anchor build --skip-lint -- --features testing
+          anchor build --skip-lint -- --features testing devnet
 
       - name: Deploy Metadata
         run: |
@@ -126,6 +126,10 @@ jobs:
         run: |
           solana program deploy -u d --program-id JPMAa5dnWLFRvUsumawFcGhnwikqZziLLfqn9SLNXPN target/deploy/jet_margin_swap.so
           anchor idl upgrade -f ./target/idl/jet_margin_swap.json JPMAa5dnWLFRvUsumawFcGhnwikqZziLLfqn9SLNXPN --provider.cluster devnet
+
+      - name: Build Programs for Testing
+        run: |
+          anchor build --skip-lint -- --features testing
 
       - name: Build Docker
         uses: docker/build-push-action@v2

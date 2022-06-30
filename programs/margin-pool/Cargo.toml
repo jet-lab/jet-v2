@@ -17,6 +17,7 @@ cpi = ["no-entrypoint"]
 default = []
 testing = ["jet-margin/testing", "jet-metadata/testing"]
 cli = ["no-entrypoint", "serde"]
+devnet = []
 
 [dependencies]
 bytemuck = "1.7"
