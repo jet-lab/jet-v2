@@ -174,13 +174,11 @@ impl MarginIxBuilder {
             rent: Rent::id(),
         };
 
-        let ix = Instruction {
+        Instruction {
             program_id: JetMargin::id(),
             data: ix_data::RegisterUnownedPosition {}.data(),
             accounts: accounts.to_account_metas(None),
-        };
-
-        ix
+        }
     }
 
     /// Get instruction to close a position
