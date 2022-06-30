@@ -1,7 +1,7 @@
 import { Address, BN, translateAddress } from "@project-serum/anchor"
 import { parsePriceData, PriceData } from "@pythnetwork/client"
 import { Mint, TOKEN_PROGRAM_ID } from "@solana/spl-token"
-import { PublicKey, Transaction, TransactionInstruction } from "@solana/web3.js"
+import { ConfirmOptions, PublicKey, Transaction, TransactionInstruction } from "@solana/web3.js"
 import { assert } from "chai"
 import { AssociatedToken } from "../../token"
 import { ONE_BN, TokenAmount, ZERO_BN } from "../../token/tokenAmount"
@@ -562,58 +562,5 @@ export class Pool {
         tokenProgram: TOKEN_PROGRAM_ID
       })
       .instruction()
-  }
-
-  async closePosition({ marginAccount, destination }: { marginAccount: MarginAccount; destination: Address }) {
-    await marginAccount.refresh()
-
-    const position = await marginAccount.getPosition(this.addresses.depositNoteMint)
-
-    if (position) {
-      if (position.balance.gt(ZERO_BN)) {
-        const destinationAddress = translateAddress(destination)
-
-        const isDestinationNative = AssociatedToken.isNative(marginAccount.owner, this.tokenMint, destinationAddress)
-
-        let marginWithdrawDestination: PublicKey
-        if (!isDestinationNative) {
-          marginWithdrawDestination = destinationAddress
-        } else {
-          marginWithdrawDestination = AssociatedToken.derive(this.tokenMint, marginAccount.owner)
-        }
-
-        const instructions: TransactionInstruction[] = []
-
-        await marginAccount.withUpdatePositionBalance({ instructions, position })
-
-        await AssociatedToken.withCreate(instructions, marginAccount.provider, marginAccount.owner, this.tokenMint)
-        await marginAccount.withAdapterInvoke({
-          instructions: instructions,
-          adapterProgram: this.programs.config.marginPoolProgramId,
-          adapterMetadata: this.addresses.marginPoolAdapterMetadata,
-          adapterInstruction: await this.makeMarginWithdrawInstruction({
-            marginAccount: marginAccount.address,
-            source: position.address,
-            destination: marginWithdrawDestination,
-            amount: PoolAmount.notes(position.balance)
-          })
-        })
-
-        if (isDestinationNative) {
-          AssociatedToken.withClose(instructions, marginAccount.owner, this.tokenMint, destinationAddress)
-        }
-
-        try {
-          await marginAccount.provider.sendAndConfirm(new Transaction().add(...instructions))
-        } catch (err) {
-          console.log(err)
-          throw err
-        }
-
-        await marginAccount.refresh()
-      }
-
-      await marginAccount.closePosition(position)
-    }
   }
 }
