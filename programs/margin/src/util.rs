@@ -107,8 +107,9 @@ impl Invocation {
     pub fn verify_directly_invoked(&self) -> Result<(), ErrorCode> {
         if !self.directly_invoked() {
             msg!(
-                "Current stack height: {}. Invocations: {self:?} (indexed from {})",
+                "Current stack height: {}. Invocations: {:?} (indexed from {})",
                 sys().get_stack_height(),
+                self,
                 TRANSACTION_LEVEL_STACK_HEIGHT
             );
             return Err(ErrorCode::IndirectInvocation);
