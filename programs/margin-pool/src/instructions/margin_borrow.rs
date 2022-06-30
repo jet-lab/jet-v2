@@ -22,7 +22,7 @@ use anchor_spl::token::{self, MintTo, Token, TokenAccount};
 
 use jet_margin::{AdapterResult, MarginAccount, PositionChange};
 
-use crate::{events, state::*, AmountKind, ChangeKind};
+use crate::{events, state::*, ChangeKind};
 use crate::{Amount, ErrorCode};
 
 #[derive(Accounts)]
@@ -93,28 +93,17 @@ pub fn margin_borrow_handler(ctx: Context<MarginBorrow>, amount: Amount) -> Resu
     }
 
     // First record a borrow of the tokens requested
-    let borrow_rounding = RoundingDirection::direction(PoolAction::Borrow, amount.kind);
     let borrow_amount = match amount.change_kind {
-        ChangeKind::ShiftValue => pool.convert_loan_amount(amount, borrow_rounding)?,
+        ChangeKind::ShiftValue => pool.convert_loan_amount(amount, PoolAction::Borrow)?,
         ChangeKind::SetValue => {
-            let current_notes_value = ctx.accounts.loan_account.amount;
-            let target_value = pool.convert_loan_amount(amount, borrow_rounding)?;
-            let total_value_to_borrow = target_value
-                .notes
-                .checked_sub(current_notes_value)
-                .ok_or(ErrorCode::InvalidAmount)?;
-
-            let notes_rounding =
-                RoundingDirection::direction(PoolAction::Borrow, AmountKind::Notes);
-            pool.convert_loan_amount(Amount::notes(total_value_to_borrow), notes_rounding)?
+            pool.calculate_set_amount(ctx.accounts.loan_account.amount, amount, PoolAction::Borrow)?
         }
     };
     pool.borrow(&borrow_amount)?;
 
     // Then record a deposit of the same borrowed tokens
-    let deposit_rounding = RoundingDirection::direction(PoolAction::Deposit, AmountKind::Tokens);
     let deposit_amount =
-        pool.convert_deposit_amount(Amount::tokens(borrow_amount.tokens), deposit_rounding)?;
+        pool.convert_deposit_amount(Amount::notes(borrow_amount.notes), PoolAction::Deposit)?;
     pool.deposit(&deposit_amount);
 
     // Finish by minting the loan and deposit notes

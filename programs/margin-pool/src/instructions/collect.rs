@@ -81,14 +81,13 @@ pub fn collect_handler(ctx: Context<Collect>) -> Result<()> {
         fee_notes,
     )?;
 
-    let rounding = RoundingDirection::direction(PoolAction::Withdraw, crate::AmountKind::Notes);
     let claimed_amount = pool.convert_deposit_amount(
         Amount {
             kind: AmountKind::Notes,
             change_kind: ChangeKind::ShiftValue,
             value: fee_notes,
         },
-        rounding,
+        PoolAction::Withdraw,
     )?;
     let balance_amount = pool.convert_deposit_amount(
         Amount {
@@ -96,7 +95,7 @@ pub fn collect_handler(ctx: Context<Collect>) -> Result<()> {
             change_kind: ChangeKind::ShiftValue,
             value: ctx.accounts.vault.amount,
         },
-        rounding,
+        PoolAction::Withdraw,
     )?;
 
     emit!(events::Collect {

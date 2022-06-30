@@ -20,7 +20,7 @@ use std::ops::Deref;
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, MintTo, Token, Transfer};
 
-use crate::{events, state::*, AmountKind, ChangeKind};
+use crate::{events, state::*, ChangeKind};
 use crate::{Amount, ErrorCode};
 
 #[derive(Accounts)]
@@ -91,22 +91,13 @@ pub fn deposit_handler(ctx: Context<Deposit>, amount: Amount) -> Result<()> {
         return Err(ErrorCode::InterestAccrualBehind.into());
     }
 
-    let deposit_rounding = RoundingDirection::direction(PoolAction::Deposit, amount.kind);
     let deposit_amount = match amount.change_kind {
-        ChangeKind::ShiftValue => pool.convert_deposit_amount(amount, deposit_rounding)?,
-        ChangeKind::SetValue => {
-            let current_notes_value =
-                token::accessor::amount(&ctx.accounts.destination.to_account_info())?;
-            let target_amount = pool.convert_deposit_amount(amount, deposit_rounding)?;
-            let total_notes_to_deposit = target_amount
-                .notes
-                .checked_sub(current_notes_value)
-                .ok_or(ErrorCode::InvalidAmount)?;
-
-            let notes_rounding =
-                RoundingDirection::direction(PoolAction::Deposit, AmountKind::Notes);
-            pool.convert_deposit_amount(Amount::notes(total_notes_to_deposit), notes_rounding)?
-        }
+        ChangeKind::ShiftValue => pool.convert_deposit_amount(amount, PoolAction::Deposit)?,
+        ChangeKind::SetValue => pool.calculate_set_amount(
+            token::accessor::amount(&ctx.accounts.destination.to_account_info())?,
+            amount,
+            PoolAction::Deposit,
+        )?,
     };
     pool.deposit(&deposit_amount);
 

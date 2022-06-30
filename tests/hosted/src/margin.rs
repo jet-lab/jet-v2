@@ -302,9 +302,18 @@ impl MarginUser {
             .await
     }
 
-    pub async fn repay(&self, mint: &Pubkey, source: &Pubkey, amount: Amount) -> Result<(), Error> {
-        self.send_confirm_tx(self.tx.repay(mint, source, amount).await?)
-            .await
+    pub async fn margin_repay_from_wallet(
+        &self,
+        mint: &Pubkey,
+        source: &Pubkey,
+        amount: Amount,
+    ) -> Result<(), Error> {
+        self.send_confirm_tx(
+            self.tx
+                .margin_repay_from_wallet(mint, source, amount)
+                .await?,
+        )
+        .await
     }
 
     /// Swap between two tokens using a swap pool.

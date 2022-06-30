@@ -19,14 +19,10 @@ use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Burn, Token, TokenAccount, Transfer};
 use jet_margin::MarginAccount;
 
-use crate::{
-    events,
-    state::{PoolAction, RoundingDirection},
-    Amount, AmountKind, ChangeKind, ErrorCode, MarginPool,
-};
+use crate::{events, state::PoolAction, Amount, ChangeKind, ErrorCode, MarginPool};
 
 #[derive(Accounts)]
-pub struct Repay<'info> {
+pub struct MarginRepayFromWallet<'info> {
     /// The margin account being executed on
     #[account(signer)]
     pub margin_account: AccountLoader<'info, MarginAccount>,
@@ -62,7 +58,7 @@ pub struct Repay<'info> {
     pub token_program: Program<'info, Token>,
 }
 
-impl<'info> Repay<'info> {
+impl<'info> MarginRepayFromWallet<'info> {
     fn burn_loan_context(&self) -> CpiContext<'_, '_, '_, 'info, Burn<'info>> {
         CpiContext::new(
             self.token_program.to_account_info(),
@@ -86,7 +82,10 @@ impl<'info> Repay<'info> {
     }
 }
 
-pub fn repay_handler(ctx: Context<Repay>, amount: Amount) -> Result<()> {
+pub fn margin_repay_from_wallet_handler(
+    ctx: Context<MarginRepayFromWallet>,
+    amount: Amount,
+) -> Result<()> {
     let pool = &mut ctx.accounts.margin_pool;
     let clock = Clock::get()?;
 
@@ -96,21 +95,11 @@ pub fn repay_handler(ctx: Context<Repay>, amount: Amount) -> Result<()> {
         return Err(ErrorCode::InterestAccrualBehind.into());
     }
 
-    // The rounding to repay the maximum amount specified
-    let repay_rounding = RoundingDirection::direction(PoolAction::Repay, amount.kind);
-
     // Amount the user desires to repay
     let repay_amount = match amount.change_kind {
-        ChangeKind::ShiftValue => pool.convert_loan_amount(amount, repay_rounding)?,
+        ChangeKind::ShiftValue => pool.convert_loan_amount(amount, PoolAction::Repay)?,
         ChangeKind::SetValue => {
-            let current_notes_value = ctx.accounts.loan_account.amount;
-            let target_amount = pool.convert_loan_amount(amount, repay_rounding)?;
-            let total_notes_to_repay = current_notes_value
-                .checked_sub(target_amount.notes)
-                .ok_or(ErrorCode::InvalidAmount)?;
-
-            let notes_rounding = RoundingDirection::direction(PoolAction::Repay, AmountKind::Notes);
-            pool.convert_loan_amount(Amount::notes(total_notes_to_repay), notes_rounding)?
+            pool.calculate_set_amount(ctx.accounts.loan_account.amount, amount, PoolAction::Repay)?
         }
     };
 

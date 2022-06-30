@@ -204,10 +204,10 @@ async fn sanity_test() -> Result<(), anyhow::Error> {
 
     // now clear the dust
     user_a
-        .repay(&env.tsol, &user_a_tsol_account, Amount::set_tokens(0))
+        .margin_repay_from_wallet(&env.tsol, &user_a_tsol_account, Amount::set_tokens(0))
         .await?;
     user_b
-        .repay(&env.usdc, &user_b_usdc_account, Amount::set_tokens(0))
+        .margin_repay_from_wallet(&env.usdc, &user_b_usdc_account, Amount::set_tokens(0))
         .await?;
 
     // Users withdraw all of their funds

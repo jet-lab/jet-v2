@@ -22,7 +22,7 @@ use anchor_spl::token::{self, Burn, Token, TokenAccount};
 
 use jet_margin::MarginAccount;
 
-use crate::{events, state::*, AmountKind, ChangeKind};
+use crate::{events, state::*, ChangeKind};
 use crate::{Amount, ErrorCode};
 
 #[derive(Accounts)]
@@ -92,31 +92,17 @@ pub fn margin_repay_handler(ctx: Context<MarginRepay>, amount: Amount) -> Result
         return Err(ErrorCode::InterestAccrualBehind.into());
     }
 
-    // The rounding to repay the maximum amount specified
-    let repay_rounding = RoundingDirection::direction(PoolAction::Repay, amount.kind);
-
-    // const rounding directions
-    let withdraw_token_rounding =
-        RoundingDirection::direction(PoolAction::Withdraw, AmountKind::Tokens);
-
     // Amount the user desires to repay
     let repay_amount = match amount.change_kind {
-        ChangeKind::ShiftValue => pool.convert_loan_amount(amount, repay_rounding)?,
+        ChangeKind::ShiftValue => pool.convert_loan_amount(amount, PoolAction::Repay)?,
         ChangeKind::SetValue => {
-            let current_notes_value = ctx.accounts.loan_account.amount;
-            let target_amount = pool.convert_loan_amount(amount, repay_rounding)?;
-            let total_notes_to_repay = current_notes_value
-                .checked_sub(target_amount.notes)
-                .ok_or(ErrorCode::InvalidAmount)?;
-
-            let notes_rounding = RoundingDirection::direction(PoolAction::Repay, AmountKind::Notes);
-            pool.convert_loan_amount(Amount::notes(total_notes_to_repay), notes_rounding)?
+            pool.calculate_set_amount(ctx.accounts.loan_account.amount, amount, PoolAction::Repay)?
         }
     };
 
     // First record a withdraw of the deposit to use for repaying in tokens
     let withdraw_amount =
-        pool.convert_deposit_amount(Amount::tokens(repay_amount.tokens), withdraw_token_rounding)?;
+        pool.convert_deposit_amount(Amount::tokens(repay_amount.tokens), PoolAction::Withdraw)?;
     msg!(
         "Withdrawing [{} tokens, {} notes] from deposit pool",
         withdraw_amount.tokens,
