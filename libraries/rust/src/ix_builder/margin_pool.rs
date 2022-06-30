@@ -265,7 +265,7 @@ impl MarginPoolIxBuilder {
         let loan_note_account = loan_token_account(&margin_account, &self.loan_note_mint).0;
 
         let accounts = ix_accounts::RegisterLoan {
-            margin_account: self.address,
+            margin_account,
             margin_pool: self.address,
             loan_note_account,
             loan_note_mint: self.loan_note_mint,

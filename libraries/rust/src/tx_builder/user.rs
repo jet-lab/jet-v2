@@ -191,7 +191,7 @@ impl MarginTxBuilder {
             .get_or_create_position(&mut instructions, &pool.deposit_note_mint)
             .await?;
         let loan_position = self
-            .get_or_create_pool_loan_position(&mut instructions, &pool.address)
+            .get_or_create_pool_loan_position(&mut instructions, &pool)
             .await?;
 
         let inner_refresh_loan_ix =
@@ -219,7 +219,7 @@ impl MarginTxBuilder {
             .get_or_create_position(&mut instructions, &pool.deposit_note_mint)
             .await?;
         let loan_position = self
-            .get_or_create_pool_loan_position(&mut instructions, &pool.address)
+            .get_or_create_pool_loan_position(&mut instructions, &pool)
             .await?;
 
         let inner_repay_ix =
@@ -480,9 +480,8 @@ impl MarginTxBuilder {
     async fn get_or_create_pool_loan_position(
         &self,
         instructions: &mut Vec<Instruction>,
-        pool: &Pubkey,
+        pool: &MarginPoolIxBuilder,
     ) -> Result<Pubkey> {
-        let pool = MarginPoolIxBuilder::new(*pool);
         let state = self.get_account_state().await?;
         let search_result = state.positions().find(|p| p.token == pool.loan_note_mint);
 
