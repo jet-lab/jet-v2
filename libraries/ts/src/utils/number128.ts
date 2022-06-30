@@ -20,8 +20,8 @@ export class Number128 {
   static readonly PRECISION = 10
   static readonly ONE = new BN(10_000_000_000)
   static readonly ZERO = new BN(0)
-  static readonly MAX = new BN("340_282_366_920_938_463_463_374_607_431_768_211_455")
-  static readonly U64_MAX = new BN("18_446_744_073_709_551_615")
+  static readonly MAX = new BN("340_282_366_920_938_463_463_374_607_431_768_211_455".replaceAll("_", ""))
+  static readonly U64_MAX = new BN("18_446_744_073_709_551_615".replaceAll("_", ""))
 
   private constructor() {}
 
