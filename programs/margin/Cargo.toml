@@ -16,6 +16,7 @@ cpi = ["no-entrypoint"]
 default = []
 testing = ["jet-metadata/testing"]
 cli = ["no-entrypoint", "serde"]
+devnet = []
 
 [dependencies]
 static_assertions = "1.1.0"
