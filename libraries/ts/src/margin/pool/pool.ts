@@ -101,12 +101,12 @@ export class Pool {
   }
   private _prices: PriceResult
   get prices(): PriceResult {
-    return this.prices
+    return this._prices
   }
   get depositNotePrice(): PriceInfo {
     return {
       exponent: this.info?.tokenPriceOracle.exponent ?? 0,
-      value: this.prices.depositNotePrice,
+      value: this.prices.depositNotePrice.lamports,
       timestamp: bigIntToBn(this.info?.tokenPriceOracle.timestamp),
       isValid: this.info?.tokenPriceOracle.status ?? 0
     }
@@ -115,7 +115,7 @@ export class Pool {
   get loanNotePrice(): PriceInfo {
     return {
       exponent: this.info?.tokenPriceOracle.exponent ?? 0,
-      value: this.prices.loanNotePrice,
+      value: this.prices.loanNotePrice.lamports,
       timestamp: bigIntToBn(this.info?.tokenPriceOracle.timestamp),
       isValid: this.info?.tokenPriceOracle.status ?? 0
     }

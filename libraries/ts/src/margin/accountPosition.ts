@@ -1,12 +1,12 @@
 import { PublicKey } from "@solana/web3.js"
 import BN from "bn.js"
 import { assert } from "console"
-import { getTimestamp, Pool, TokenAmount } from ".."
+import { getTimestamp } from ".."
 import { Number128 } from "../"
 import { AccountPositionInfo, AdapterPositionFlags, PositionKind, PositionKindInfo } from "./state"
 
 export interface PriceInfo {
-  value: TokenAmount
+  value: BN
   exponent: number
   timestamp: BN
   isValid: number
@@ -75,7 +75,7 @@ export class AccountPosition {
     this.balance = info.balance
     this.balanceTimestamp = info.balanceTimestamp
     this.price = {
-      value: price?.value ?? TokenAmount.units(info.price.value, 0, info.price.exponent),
+      value: price?.value ?? info.price.value,
       exponent: price?.exponent ?? info.price.exponent,
       timestamp: price?.timestamp ?? info.price.timestamp,
       isValid: info.price.isValid
@@ -90,14 +90,14 @@ export class AccountPosition {
 
   calculateValue() {
     this.value = Number128.fromDecimal(this.balance, this.exponent).mul(
-      Number128.fromDecimal(this.price.value.lamports, this.price.exponent)
-    )
+      Number128.fromDecimal(this.price.value, this.price.exponent)
+    ).div(Number128.ONE)
   }
 
   collateralValue() {
     assert(this.kind === PositionKind.Deposit)
 
-    return Number128.fromDecimal(new BN(this.valueModifier), -2).mul(this.value)
+    return Number128.fromDecimal(new BN(this.valueModifier), -2).mul(this.value).div(Number128.ONE)
   }
 
   requiredCollateralValue() {
@@ -105,11 +105,11 @@ export class AccountPosition {
 
     let modifier = Number128.fromDecimal(new BN(this.valueModifier), -2)
 
-    if (modifier === Number128.ZERO) {
+    if (modifier.eq(Number128.ZERO)) {
       console.log(`no leverage configured for claim ${this.token.toBase58()}`)
       return Number128.MAX
     } else {
-      return this.value.div(modifier)
+      return this.value.mul(Number128.ONE).div(modifier)
     }
   }
 
