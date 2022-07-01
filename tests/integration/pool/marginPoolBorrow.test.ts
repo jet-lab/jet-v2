@@ -311,9 +311,6 @@ describe("margin pool borrow", () => {
     expect(Number(SOLLoanNotes)).to.eq(borrowedSOL.toNumber())
     expect(Number(USDCLoanNotes)).to.eq(borrowedUSDC.toNumber())
 
-    console.log(marginAccount_A.valuation.weightedCollateral.toString(),marginAccount_A.valuation.effectiveCollateral.toString(),marginAccount_A.valuation.requiredCollateral.toString(),
-    marginAccount_B.valuation.weightedCollateral.toString(),marginAccount_B.valuation.effectiveCollateral.toString(),marginAccount_B.valuation.requiredCollateral.toString())
-
     expect(marginAccount_A.valuation.weightedCollateral.toString()).to.eq(new BN(505700).mul(Number128.ONE).toString())
     expect(marginAccount_A.valuation.effectiveCollateral.toString()).to.eq(new BN(504700).mul(Number128.ONE).toString())
     expect(marginAccount_A.valuation.requiredCollateral.toString()).to.eq(new BN(250).mul(Number128.ONE).toString())
