@@ -126,7 +126,7 @@ pub fn margin_borrow_handler(ctx: Context<MarginBorrow>, token_amount: u64) -> R
         &AdapterResult {
             position_changes: vec![(
                 pool.loan_note_mint,
-                vec![PositionChange::Expect(ctx.accounts.loan_account.key())],
+                vec![PositionChange::Register(ctx.accounts.loan_account.key())],
             )],
         },
     )?;

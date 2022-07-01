@@ -738,7 +738,9 @@ impl AccountPositionList {
     /// - If an account with the `mint` does not exist.
     /// - If the position's address is not the same as the `account`
     pub fn remove(&mut self, mint: &Pubkey, account: &Pubkey) -> AnchorResult<AccountPosition> {
-        let map_index = self.get_map_index(mint).require()?;
+        let map_index = self
+            .get_map_index(mint)
+            .ok_or(ErrorCode::PositionNotRegistered)?;
         // Get the map whose position to remove
         let map = self.map[map_index];
         // Take a copy of the position to be removed

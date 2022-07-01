@@ -71,8 +71,8 @@ pub fn liquidator_invoke_handler<'info>(
         true,
     )?;
 
-    for &position in touched_positions.values() {
-        emit!(events::PositionTouched { position });
+    for position in touched_positions.into_values() {
+        emit!(position);
     }
 
     let liquidation = &mut *ctx.accounts.liquidation.load_mut()?;

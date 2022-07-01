@@ -66,8 +66,8 @@ pub fn adapter_invoke_handler<'info>(
         true,
     )?;
 
-    for &position in touched_positions.values() {
-        emit!(events::PositionTouched { position });
+    for position in touched_positions.into_values() {
+        emit!(position);
     }
 
     emit!(events::AdapterInvokeEnd {});

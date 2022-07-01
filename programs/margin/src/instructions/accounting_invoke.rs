@@ -58,8 +58,8 @@ pub fn accounting_invoke_handler<'info>(
         false,
     )?;
 
-    for &position in touched_positions.values() {
-        emit!(events::PositionTouched { position });
+    for position in touched_positions.into_values() {
+        emit!(position);
     }
 
     emit!(events::AccountingInvokeEnd {});
