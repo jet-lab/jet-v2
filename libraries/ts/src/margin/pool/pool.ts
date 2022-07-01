@@ -1,7 +1,7 @@
 import { Address, BN, translateAddress } from "@project-serum/anchor"
 import { parsePriceData, PriceData } from "@pythnetwork/client"
 import { Mint, TOKEN_PROGRAM_ID } from "@solana/spl-token"
-import { PublicKey, SystemProgram, Transaction, TransactionInstruction, SYSVAR_RENT_PUBKEY } from "@solana/web3.js"
+import { ConfirmOptions, PublicKey, SystemProgram, Transaction, TransactionInstruction, SYSVAR_RENT_PUBKEY } from "@solana/web3.js"
 import { assert } from "chai"
 import { AssociatedToken } from "../../token"
 import { ONE_BN, TokenAmount, ZERO_BN } from "../../token/tokenAmount"
