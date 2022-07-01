@@ -17,14 +17,14 @@
 
 #![allow(unused)]
 
+use std::ops::ControlFlow;
 use std::sync::Arc;
 
 use anchor_lang::{AccountDeserialize, AccountSerialize, InstructionData, ToAccountMetas};
 use anyhow::{bail, Error};
 
 use jet_margin::{MarginAccount, PositionKind};
-use jet_margin_sdk::accounts::MarginPoolAccounts;
-use jet_margin_sdk::instructions::control::{get_authority_address, TokenConfiguration};
+use jet_margin_sdk::ix_builder::{ControlIxBuilder, MarginPoolConfiguration, MarginPoolIxBuilder};
 use solana_sdk::instruction::Instruction;
 use solana_sdk::signature::{Keypair, Signer};
 use solana_sdk::system_program;
@@ -41,7 +41,6 @@ use crate::{swap::SwapPool, tokens::TokenOracle};
 /// Information needed to create a new margin pool
 pub struct MarginPoolSetupInfo {
     pub token: Pubkey,
-    pub fee_destination: Pubkey,
     pub token_kind: TokenKind,
     pub collateral_weight: u16,
     pub max_leverage: u16,
@@ -105,8 +104,8 @@ impl MarginClient {
     }
 
     pub async fn get_pool(&self, token: &Pubkey) -> Result<MarginPool, Error> {
-        let pool_accounts = MarginPoolAccounts::derive_from_token(*token);
-        let account = self.rpc.get_account(&pool_accounts.address).await?;
+        let pool_builder = MarginPoolIxBuilder::new(*token);
+        let account = self.rpc.get_account(&pool_builder.address).await?;
 
         if account.is_none() {
             bail!("could not find pool");
@@ -116,34 +115,26 @@ impl MarginClient {
     }
 
     pub async fn create_authority(&self) -> Result<(), Error> {
-        let ix = jet_margin_sdk::instructions::control::create_authority(self.rpc.payer().pubkey());
+        let ix = ControlIxBuilder::new(self.rpc.payer().pubkey()).create_authority();
 
         send_and_confirm(&self.rpc, &[ix], &[]).await?;
         Ok(())
     }
 
     pub async fn register_adapter(&self, adapter: &Pubkey) -> Result<(), Error> {
-        let ix = jet_margin_sdk::instructions::control::register_adapter(
-            adapter,
-            &self.rpc.payer().pubkey(),
-            &self.rpc.payer().pubkey(),
-        );
+        let ix = ControlIxBuilder::new(self.rpc.payer().pubkey()).register_adapter(adapter);
 
         send_and_confirm(&self.rpc, &[ix], &[]).await?;
         Ok(())
     }
 
-    pub async fn configure_token(
+    pub async fn configure_margin_pool(
         &self,
         token: &Pubkey,
-        config: &TokenConfiguration,
+        config: &MarginPoolConfiguration,
     ) -> Result<(), Error> {
-        let pool = MarginPoolAccounts::derive_from_token(*token);
-        let ix = jet_margin_sdk::instructions::control::configure_token(
-            &pool,
-            &self.rpc.payer().pubkey(),
-            config,
-        );
+        let ix =
+            ControlIxBuilder::new(self.rpc.payer().pubkey()).configure_margin_pool(token, config);
 
         send_and_confirm(&self.rpc, &[ix], &[]).await?;
 
@@ -152,26 +143,22 @@ impl MarginClient {
 
     /// Create a new margin pool for a token
     pub async fn create_pool(&self, setup_info: &MarginPoolSetupInfo) -> Result<(), Error> {
-        let pool = MarginPoolAccounts::derive_from_token(setup_info.token);
-        let ix = jet_margin_sdk::instructions::control::register_token(
-            &pool,
-            &self.rpc.payer().pubkey(),
-        );
+        let ix =
+            ControlIxBuilder::new(self.rpc.payer().pubkey()).create_margin_pool(&setup_info.token);
 
         send_and_confirm(&self.rpc, &[ix], &[]).await?;
 
-        self.configure_token(
+        self.configure_margin_pool(
             &setup_info.token,
-            &TokenConfiguration {
+            &MarginPoolConfiguration {
                 pyth_price: Some(setup_info.oracle.price),
                 pyth_product: Some(setup_info.oracle.product),
-                pool_config: Some(setup_info.config.clone()),
                 metadata: Some(TokenMetadataParams {
                     token_kind: TokenKind::Collateral,
                     collateral_weight: setup_info.collateral_weight,
                     max_leverage: setup_info.max_leverage,
                 }),
-                ..Default::default()
+                parameters: Some(setup_info.config.clone()),
             },
         )
         .await?;
@@ -184,12 +171,8 @@ impl MarginClient {
         liquidator: Pubkey,
         is_liquidator: bool,
     ) -> Result<(), Error> {
-        let ix = jet_margin_sdk::instructions::control::set_liquidator(
-            &self.rpc.payer().pubkey(),
-            &self.rpc.payer().pubkey(),
-            &liquidator,
-            is_liquidator,
-        );
+        let ix = ControlIxBuilder::new(self.rpc.payer().pubkey())
+            .set_liquidator(&liquidator, is_liquidator);
 
         send_and_confirm(&self.rpc, &[ix], &[]).await?;
 
