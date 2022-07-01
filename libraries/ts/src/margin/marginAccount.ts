@@ -623,6 +623,11 @@ export class MarginAccount {
     throw new Error("Unable to register position.")
   }
 
+  async withGetOrCreatePosition(tokenMint: Address, ixArray: TransactionInstruction[]) {
+    assert(this.info)
+    await this.withRegisterPosition(ixArray, tokenMint)
+  }
+
   async updateAllPositionBalances() {
     const instructions: TransactionInstruction[] = []
     await this.withUpdateAllPositionBalances({ instructions })
@@ -682,7 +687,7 @@ export class MarginAccount {
   ///
   /// Returns the instruction, and the address of the token account to be
   /// created for the position.
-  async withRegisterPosition(instructions: TransactionInstruction[], tokenMint: Address): Promise<PublicKey> {
+  async withRegisterPosition(instructions: TransactionInstruction[], tokenMint: Address): Promise<TransactionInstruction[]> {
     const tokenAccount = findDerivedAccount(this.programs.config.marginProgramId, this.address, tokenMint)
     const metadata = findDerivedAccount(this.programs.config.metadataProgramId, tokenMint)
 
@@ -701,7 +706,7 @@ export class MarginAccount {
       })
       .instruction()
     instructions.push(ix)
-    return tokenAccount
+    return instructions
   }
 
   async closeAccount() {

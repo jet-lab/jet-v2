@@ -237,16 +237,16 @@ export class Pool {
   /// `amount` - The amount of tokens to be deposited
   async deposit({ marginAccount, source, amount }: { marginAccount: MarginAccount; source: Address; amount: number }) {
     await marginAccount.refresh()
+    const instructions: TransactionInstruction[] = []
+    // Type of `position` should be depositNoteMint: PublicKey | position: AccountPosition
     const position = await marginAccount.getOrCreatePosition(this.addresses.depositNoteMint)
     assert(position)
-
-    const instructions: TransactionInstruction[] = []
 
     await this.withDeposit({
       instructions,
       depositor: marginAccount.address,
       source,
-      destination: position.address,
+      destination: this.addresses.depositNoteMint,
       amount: new BN(amount)
     })
     await marginAccount.withUpdatePositionBalance({ instructions, position })
