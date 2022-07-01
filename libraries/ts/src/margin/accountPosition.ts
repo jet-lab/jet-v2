@@ -66,8 +66,6 @@ export class AccountPosition {
   /** Flags that are set by the adapter */
   flags: AdapterPositionFlags
 
-  reserved: number[]
-
   constructor({ info, price }: { info: AccountPositionInfo; price?: PriceInfo }) {
     this.info = info
     this.token = info.token
@@ -87,7 +85,6 @@ export class AccountPosition {
     this.valueModifier = info.valueModifier
     this.maxStaleness = info.maxStaleness
     this.flags = new BN(info.flags as number[]).toNumber()
-    this.reserved = info.reserved
     this.calculateValue()
   }
 

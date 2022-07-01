@@ -89,9 +89,10 @@ const AccountPositionLayout = struct<AccountPositionInfo>([
   PriceInfoLayout.replicate("price"),
   u32("kind"),
   s16("exponent"),
-  u16("collateralWeight"),
-  u64("collateralMaxStaleness"),
-  blob(24, "_reserved")
+  u16("valueModifier"),
+  u64("maxStaleness"),
+  u8("flags"),
+  blob(23, "_reserved")
 ])
 console.assert(
   AccountPositionLayout.span === 192,
