@@ -586,7 +586,7 @@ export class MarginAccount {
     return await this.provider.sendAndConfirm(new Transaction().add(...instructions))
   }
 
-  getPosition(tokenMint: Address) : AccountPosition | undefined {
+  getPosition(tokenMint: Address): AccountPosition | undefined {
     assert(this.info)
     const tokenMintAddress = translateAddress(tokenMint)
 
@@ -613,19 +613,22 @@ export class MarginAccount {
     await this.registerPosition(tokenMintAddress)
     await this.refresh()
 
-    for (let i = 0; i < MAX_POSITIONS; i++) {
-      const position = this.info.positions.positions[i]
-      if (position.token.equals(tokenMintAddress)) {
-        return position
-      }
-    }
-
     throw new Error("Unable to register position.")
   }
 
-  async withGetOrCreatePosition(tokenMint: Address, ixArray: TransactionInstruction[]) {
+  async withRegisterPositionIfNotExists(tokenMint: Address, ixArray: TransactionInstruction[]) {
     assert(this.info)
+    const tokenMintAddress = translateAddress(tokenMint)
+
+    for (let i = 0; i < MAX_POSITIONS; i++) {
+      const position = this.info.positions.positions[i]
+      if (position.token.equals(tokenMintAddress)) {
+        return
+      }
+    }
+
     await this.withRegisterPosition(ixArray, tokenMint)
+    await this.refresh()
   }
 
   async updateAllPositionBalances() {
@@ -657,13 +660,13 @@ export class MarginAccount {
     position
   }: {
     instructions: TransactionInstruction[]
-    position: AccountPosition
+    position: AccountPosition | PublicKey
   }): Promise<void> {
     const instruction = await this.programs.margin.methods
       .updatePositionBalance()
       .accounts({
         marginAccount: this.address,
-        tokenAccount: position.address
+        tokenAccount: "address" in position ? position.address : position
       })
       .instruction()
     instructions.push(instruction)
@@ -687,7 +690,7 @@ export class MarginAccount {
   ///
   /// Returns the instruction, and the address of the token account to be
   /// created for the position.
-  async withRegisterPosition(instructions: TransactionInstruction[], tokenMint: Address): Promise<TransactionInstruction[]> {
+  async withRegisterPosition(instructions: TransactionInstruction[], tokenMint: Address): Promise<void> {
     const tokenAccount = findDerivedAccount(this.programs.config.marginProgramId, this.address, tokenMint)
     const metadata = findDerivedAccount(this.programs.config.metadataProgramId, tokenMint)
 
@@ -706,7 +709,6 @@ export class MarginAccount {
       })
       .instruction()
     instructions.push(ix)
-    return instructions
   }
 
   async closeAccount() {
