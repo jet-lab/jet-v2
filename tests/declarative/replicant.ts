@@ -262,7 +262,10 @@ export class Replicant {
 
   async closeAccount(marginAccount: MarginAccount) {
     await marginAccount.refresh()
-    for (const position of marginAccount.getPositions().reverse()) {
+
+    let dirty = false;
+
+    for (const position of marginAccount.getPositions()) {
       switch (position.kind) {
         case 2: {
           for (const pool of this.pools!) {
@@ -279,6 +282,7 @@ export class Replicant {
                   this.account.publicKey,
                   true
                 )
+                dirty = true;
                 console.log(`DEPOSIT ${pool.symbol} = ${position.balance} | ${existingDeposit}`)
                 const amount = position.balance.sub(existingDeposit).add(new BN(1))
                 await airdropTokens(
@@ -303,9 +307,12 @@ export class Replicant {
         }
       }
     }
-    await marginAccount.refresh()
 
-    for (const position of marginAccount.getPositions().reverse()) {
+    if (dirty) {
+      await marginAccount.refresh()
+    }
+
+    for (const position of marginAccount.getPositions()) {
       switch (position.kind) {
         case 1: {
           for (const pool of this.pools!) {
@@ -329,8 +336,7 @@ export class Replicant {
       }
     }
 
-    //TODO FIX this.
-    //await marginAccount.closeAccount();
+    await marginAccount.closeAccount();
   }
 }
 
