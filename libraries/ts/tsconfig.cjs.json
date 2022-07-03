@@ -2,7 +2,7 @@
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
     "module": "commonjs",
-    "target": "es2022",
+    "target": "es2019",
     "outDir": "dist/cjs/",
     "rootDir": "./src"
   }

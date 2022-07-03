@@ -296,7 +296,7 @@ export class MarginAccount {
 
       // Deposits
       const poolDepositNotes = pool.info?.marginPool.depositNotes ?? Number192.ZERO
-      const depositNotePosition = this.getPosition(pool.addresses.tokenMint)
+      const depositNotePosition = this.getPosition(pool.addresses.depositNoteMint)
       const depositBalanceNotes = depositNotePosition?.balance ?? Number192.ZERO
       const depositTokenBalance = poolDepositNotes.isZero()
         ? Number192.ZERO
@@ -477,11 +477,8 @@ export class MarginAccount {
     let claimErrorList: [PublicKey, ErrorCode][] = []
 
     const constants = this.programs.margin.idl.constants
-    const MAX_PRICE_QUOTE_AGE = new BN(
-      constants.find(constant => constant.name === "MAX_PRICE_QUOTE_AGE")?.value.replaceAll("_", "") ?? 0
-    )
-    // FIXME: When POS_PRICE_VALID is added to the IDL, remove 'as any' and '?? 1'
-    const POS_PRICE_VALID = constants.find(constant => (constant.name as any) === "POS_PRICE_VALID")?.value ?? 1
+    const MAX_PRICE_QUOTE_AGE = new BN(constants.find(constant => constant.name === "MAX_PRICE_QUOTE_AGE")?.value ?? 0)
+    const POS_PRICE_VALID = 1
 
     for (const position of this.positions) {
       let kind = position.kind

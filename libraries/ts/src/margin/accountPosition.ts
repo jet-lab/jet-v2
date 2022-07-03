@@ -1,6 +1,6 @@
 import { PublicKey } from "@solana/web3.js"
+import assert from "assert"
 import BN from "bn.js"
-import { assert } from "console"
 import { getTimestamp } from ".."
 import { Number128 } from "../"
 import { AccountPositionInfo, AdapterPositionFlags, PositionKind, PositionKindInfo } from "./state"
@@ -89,9 +89,9 @@ export class AccountPosition {
   }
 
   calculateValue() {
-    this.value = Number128.fromDecimal(this.balance, this.exponent).mul(
-      Number128.fromDecimal(this.price.value, this.price.exponent)
-    ).div(Number128.ONE)
+    this.value = Number128.fromDecimal(this.balance, this.exponent)
+      .mul(Number128.fromDecimal(this.price.value, this.price.exponent))
+      .div(Number128.ONE)
   }
 
   collateralValue() {
