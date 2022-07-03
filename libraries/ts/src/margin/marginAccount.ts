@@ -70,6 +70,7 @@ export interface Valuation {
   requiredCollateral: BN
   weightedCollateral: BN
   effectiveCollateral: BN
+  availableCollateral: BN
   staleCollateralList: [PublicKey, ErrorCode][]
   pastDue: boolean
   claimErrorList: [PublicKey, ErrorCode][]
@@ -533,6 +534,9 @@ export class MarginAccount {
       requiredCollateral,
       weightedCollateral,
       effectiveCollateral,
+      get availableCollateral(): BN {
+        return effectiveCollateral.sub(requiredCollateral)
+      },
       staleCollateralList,
       claimErrorList
     }
