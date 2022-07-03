@@ -501,7 +501,7 @@ export class AssociatedToken {
  * @returns {BN}
  */
 export function numberToBn(number: number | null | undefined): BN {
-  return number !== null && number !== undefined ? new BN(number.toString()) : Number192.ZERO
+  return number !== null && number !== undefined ? new BN(BigInt(number).toString()) : Number192.ZERO
 }
 
 /**
@@ -524,5 +524,5 @@ export const bigIntToBn = (bigInt: bigint | null | undefined): BN => {
 
 /** Convert BigInt (SPL Token) to BN. */
 export const bigIntToNumber = (bigint: bigint | null | undefined): number => {
-  return bigint ? Number(bigint.toString()) : 0
+  return bigint ? Number(bigint) : 0
 }
