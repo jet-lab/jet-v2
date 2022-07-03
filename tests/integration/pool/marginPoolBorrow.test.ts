@@ -258,9 +258,9 @@ describe("margin pool borrow", () => {
     await marginPool_SOL.refreshPosition(marginAccount_A)
     await marginPool_SOL.refreshPosition(marginAccount_B)
     await marginPool_SOL.refreshPosition(marginAccount_C)
-    await marginAccount_A.refresh();
-    await marginAccount_B.refresh();
-    await marginAccount_C.refresh();
+    await marginAccount_A.refresh()
+    await marginAccount_B.refresh()
+    await marginAccount_C.refresh()
 
     // TEST
     expect(await getTokenBalance(provider, "processed", user_a_usdc_account)).to.eq(0)

@@ -36,12 +36,12 @@ export interface MarginPoolAddresses {
 
 export interface PriceResult {
   tokenPrice: number
-  depositNotePrice: TokenAmount
-  depositNoteConf: TokenAmount
-  depositNoteTwap: TokenAmount
-  loanNotePrice: TokenAmount
-  loanNoteConf: TokenAmount
-  loanNoteTwap: TokenAmount
+  depositNotePrice: BN
+  depositNoteConf: BN
+  depositNoteTwap: BN
+  loanNotePrice: BN
+  loanNoteConf: BN
+  loanNoteTwap: BN
 }
 
 export class Pool {
@@ -56,22 +56,34 @@ export class Pool {
   get depositedTokens(): TokenAmount {
     return this.info?.vault.amount ?? TokenAmount.zero(this.decimals)
   }
+  get borrowedTokensRaw(): BN {
+    if (!this.info) {
+      return Number192.ZERO
+    }
+    return new BN(this.info.marginPool.borrowedTokens, "le")
+  }
   get borrowedTokens(): TokenAmount {
     if (!this.info) {
       return TokenAmount.zero(this.decimals)
     }
-    const units = new BN(this.info.marginPool.borrowedTokens, "le")
-    return TokenAmount.units(units, this.decimals, Number192.PRECISION)
+    const lamports = this.borrowedTokensRaw.div(Number192.ONE)
+    return TokenAmount.lamports(lamports, this.decimals)
+  }
+  get totalValueRaw(): BN {
+    return this.borrowedTokensRaw.add(this.depositedTokens.lamports.mul(Number192.ONE))
   }
   get totalValue(): TokenAmount {
-    return this.borrowedTokens.add(this.depositedTokens)
+    return TokenAmount.lamports(this.totalValueRaw.div(Number192.ONE), this.decimals)
+  }
+  get uncollectedFeesRaw(): BN {
+    return this.info ? new BN(this.info.marginPool.uncollectedFees, "le") : Number192.ZERO
   }
   get uncollectedFees(): TokenAmount {
     if (!this.info) {
       return TokenAmount.zero(this.decimals)
     }
-    const units = new BN(this.info.marginPool.uncollectedFees, "le")
-    return TokenAmount.units(units, this.decimals, Number192.PRECISION)
+    const lamports = this.uncollectedFeesRaw.div(Number192.ONE)
+    return TokenAmount.lamports(lamports, this.decimals)
   }
   get utilizationRate(): number {
     return this.totalValue.tokens === 0 ? 0 : this.borrowedTokens.tokens / this.totalValue.tokens
@@ -106,7 +118,7 @@ export class Pool {
   get depositNotePrice(): PriceInfo {
     return {
       exponent: this.info?.tokenPriceOracle.exponent ?? 0,
-      value: this.prices.depositNotePrice.lamports,
+      value: this.prices.depositNotePrice,
       timestamp: bigIntToBn(this.info?.tokenPriceOracle.timestamp),
       isValid: this.info?.tokenPriceOracle.status ?? 0
     }
@@ -115,7 +127,7 @@ export class Pool {
   get loanNotePrice(): PriceInfo {
     return {
       exponent: this.info?.tokenPriceOracle.exponent ?? 0,
-      value: this.prices.loanNotePrice.lamports,
+      value: this.prices.loanNotePrice,
       timestamp: bigIntToBn(this.info?.tokenPriceOracle.timestamp),
       isValid: this.info?.tokenPriceOracle.status ?? 0
     }
@@ -216,29 +228,17 @@ export class Pool {
     ) {
       return {
         tokenPrice: 0,
-        depositNotePrice: TokenAmount.zero(this.decimals),
-        depositNoteConf: TokenAmount.zero(this.decimals),
-        depositNoteTwap: TokenAmount.zero(this.decimals),
-        loanNotePrice: TokenAmount.zero(this.decimals),
-        loanNoteConf: TokenAmount.zero(this.decimals),
-        loanNoteTwap: TokenAmount.zero(this.decimals)
+        depositNotePrice: Number192.ZERO,
+        depositNoteConf: Number192.ZERO,
+        depositNoteTwap: Number192.ZERO,
+        loanNotePrice: Number192.ZERO,
+        loanNoteConf: Number192.ZERO,
+        loanNoteTwap: Number192.ZERO
       }
     }
-    const priceValue = TokenAmount.units(
-      numberToBn(pythPrice.price * 10 ** Number192.PRECISION),
-      this.decimals,
-      Number192.PRECISION
-    )
-    const confValue = TokenAmount.units(
-      numberToBn(pythPrice.confidence * 10 ** Number192.PRECISION),
-      this.decimals,
-      Number192.PRECISION
-    )
-    const twapValue = TokenAmount.units(
-      numberToBn(pythPrice.emaPrice.value * 10 ** Number192.PRECISION),
-      this.decimals,
-      Number192.PRECISION
-    )
+    const priceValue = numberToBn(pythPrice.price * 10 ** Number192.PRECISION)
+    const confValue = numberToBn(pythPrice.confidence * 10 ** Number192.PRECISION)
+    const twapValue = numberToBn(pythPrice.emaPrice.value * 10 ** Number192.PRECISION)
 
     const depositNoteExchangeRate = this.depositNoteExchangeRate()
     const loanNoteExchangeRate = this.loanNoteExchangeRate()
@@ -262,24 +262,24 @@ export class Pool {
 
   depositNoteExchangeRate() {
     if (!this.info) {
-      return TokenAmount.lamports(new BN(0), this.decimals)
+      return new BN(0)
     }
 
-    const one = TokenAmount.lamports(new BN(1), this.decimals)
-    const depositNotes = TokenAmount.max(one, TokenAmount.lamports(this.info.marginPool.depositNotes, this.decimals))
-    const totalValue = TokenAmount.max(one, this.totalValue)
-    return totalValue.sub(this.uncollectedFees).div(depositNotes)
+    const one = new BN(1)
+    const depositNotes = BN.max(one, this.info.marginPool.depositNotes)
+    const totalValue = BN.max(Number192.ONE, this.totalValueRaw)
+    return totalValue.sub(this.uncollectedFeesRaw).div(depositNotes.mul(Number192.ONE))
   }
 
   loanNoteExchangeRate() {
     if (!this.info) {
-      return TokenAmount.lamports(new BN(0), this.decimals)
+      return new BN(0)
     }
 
-    const one = TokenAmount.lamports(new BN(1), this.decimals)
-    const loanNotes = TokenAmount.max(one, TokenAmount.lamports(this.info.marginPool.loanNotes, this.decimals))
-    const totalBorrowed = TokenAmount.max(one, this.borrowedTokens)
-    return totalBorrowed.div(loanNotes)
+    const one = new BN(1)
+    const loanNotes = BN.max(one, this.info.marginPool.loanNotes)
+    const totalBorrowed = BN.max(Number192.ONE, this.borrowedTokensRaw)
+    return totalBorrowed.div(loanNotes.mul(Number192.ONE))
   }
 
   /**
@@ -351,11 +351,9 @@ export class Pool {
 
   static getPrice(mint: PublicKey, pools: Pool[]): PriceInfo | undefined {
     for (const pool of pools) {
-      if (pool.info) {
-        const price = pool.getPrice(mint)
-        if (price) {
-          return price
-        }
+      const price = pool.getPrice(mint)
+      if (price) {
+        return price
       }
     }
   }
