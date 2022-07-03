@@ -326,6 +326,9 @@ export class Replicant {
                 const amount = PoolAmount.notes(position.balance)
                 await pool.marginWithdraw({ marginAccount, destination, amount })
               }
+              console.log('');
+              console.log(`position = ${JSON.stringify(position)}`);
+              console.log('');
               await marginAccount.closePosition(position)
               await marginAccount.refresh()
               break
@@ -386,7 +389,7 @@ export async function printAccount(marginAccount: MarginAccount) {
     }
   }
   for (const position of marginAccount.getPositions()) {
-    //console.log(`position = ${JSON.stringify(position)}`);
+    console.log(`position = ${JSON.stringify(position)}`);
   }
   console.log("")
 }
