@@ -38,7 +38,7 @@ import {
 
 import { MarginAccount } from "../marginAccount"
 import { MarginPrograms } from "../marginClient"
-import { ZERO_BN } from "../../token"
+import { Number192 } from "../../utils"
 
 export class Market {
   private _programs: MarginPrograms
@@ -595,10 +595,10 @@ export class Market {
       openOrdersAccount,
       feeDiscountPubkey = null
     } = params
-    if (this.baseSizeNumberToLots(size).lte(ZERO_BN)) {
+    if (this.baseSizeNumberToLots(size).lte(Number192.ZERO)) {
       throw new Error("size too small")
     }
-    if (this.priceNumberToLots(price).lte(ZERO_BN)) {
+    if (this.priceNumberToLots(price).lte(Number192.ZERO)) {
       throw new Error("invalid price")
     }
     if (this.usesRequestQueue) {

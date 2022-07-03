@@ -16,5 +16,8 @@
  */
 
 export * from "./layout"
+export * from "./number128"
+export * from "./number192"
 export * from "./pda"
+export * from "./timestamp"
 export * from "./util"
