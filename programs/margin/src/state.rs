@@ -30,8 +30,9 @@ use std::{convert::TryFrom, result::Result};
 use crate::{
     util::{Invocation, Require},
     ErrorCode, PriceChangeInfo, MAX_ORACLE_CONFIDENCE, MAX_ORACLE_STALENESS, MAX_PRICE_QUOTE_AGE,
-    POS_PRICE_VALID,
 };
+
+const POS_PRICE_VALID: u8 = 1;
 
 #[account(zero_copy)]
 #[repr(C)]
