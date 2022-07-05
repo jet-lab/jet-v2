@@ -16,5 +16,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 mod margin_pool;
+mod serum_market;
 
 pub use margin_pool::*;
+pub use serum_market::*;

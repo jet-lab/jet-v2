@@ -47,9 +47,9 @@ mod jet_margin_swap {
         ctx: Context<SerumSwap>,
         amount_in: u64,
         minimum_amount_out: u64,
-        wants_base: bool,
+        bid: bool,
     ) -> Result<()> {
-        serum_swap_handler(ctx, amount_in, minimum_amount_out, wants_base)
+        serum_swap_handler(ctx, amount_in, minimum_amount_out, bid)
     }
 
     pub fn init_serum_open_orders(ctx: Context<InitOpenOrders>) -> Result<()> {

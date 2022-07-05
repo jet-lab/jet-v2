@@ -19,6 +19,7 @@ use std::num::NonZeroU64;
 
 use anchor_spl::dex;
 use anchor_spl::dex::serum_dex::matching::{OrderType, Side};
+use anchor_spl::dex::serum_dex::state::MarketState;
 use anchor_spl::dex::serum_dex::{instruction::SelfTradeBehavior, state::OpenOrders};
 use anchor_spl::token::Token;
 
@@ -33,12 +34,12 @@ pub struct SerumSwap<'info> {
     /// The account with the source deposit to be exchanged from
     /// CHECK:
     #[account(mut)]
-    pub source_account: AccountInfo<'info>,
+    pub source_pool_account: AccountInfo<'info>,
 
     /// The destination account to send the deposit that is exchanged into
     /// CHECK:
     #[account(mut)]
-    pub destination_account: AccountInfo<'info>,
+    pub destination_pool_account: AccountInfo<'info>,
 
     /// Temporary SPL account to send tokens
     /// CHECK:
@@ -75,7 +76,7 @@ impl<'info> SerumSwap<'info> {
                 vault: self.source_margin_pool.vault.to_account_info(),
                 deposit_note_mint: self.source_margin_pool.deposit_note_mint.to_account_info(),
                 depositor: self.margin_account.to_account_info(),
-                source: self.source_account.to_account_info(),
+                source: self.source_pool_account.to_account_info(),
                 destination: self.transit_source_account.to_account_info(),
                 token_program: self.token_program.to_account_info(),
             },
@@ -132,7 +133,7 @@ impl<'info> SerumSwap<'info> {
                     .to_account_info(),
                 depositor: self.margin_account.to_account_info(),
                 source: self.transit_destination_account.to_account_info(),
-                destination: self.destination_account.to_account_info(),
+                destination: self.destination_pool_account.to_account_info(),
                 token_program: self.token_program.to_account_info(),
             },
         )
@@ -143,7 +144,7 @@ impl<'info> SerumSwap<'info> {
 pub struct SerumSwapInfo<'info> {
     /// The Serum market to place the swap in
     /// CHECK:
-    pub market: UncheckedAccount<'info>,
+    pub market: AccountInfo<'info>,
 
     /// CHECK:
     pub authority: UncheckedAccount<'info>,
@@ -178,10 +179,6 @@ pub struct SerumSwapInfo<'info> {
     pub market_asks: UncheckedAccount<'info>,
 
     /// CHECK:
-    #[account(mut)]
-    pub token_mint: UncheckedAccount<'info>,
-
-    /// CHECK:
     pub vault_signer: AccountInfo<'info>,
 
     pub serum_program: Program<'info, dex::Dex>,
@@ -192,17 +189,28 @@ pub fn serum_swap_handler(
     amount_in: u64,
     minimum_amount_out: u64,
     // TODO: will change this to an enum, quicker to bool it for now
-    wants_base: bool,
+    bid: bool,
 ) -> Result<()> {
     jet_margin_pool::cpi::withdraw(
         ctx.accounts.withdraw_source_context(),
         Amount::tokens(amount_in),
     )?;
+    let market_info = ctx.accounts.swap_info.market.to_account_info();
+    let market = MarketState::load(&market_info, &dex::ID).map_err(|e| ProgramError::from(e))?;
 
-    // Build order parameters
-    let (side, limit_price, max_coin_qty, max_native_pc_qty) = if wants_base {
-        let max_coin_qty = NonZeroU64::new(0).unwrap();
-        let max_native_pc_qty = NonZeroU64::new(0).unwrap();
+    // Build order parameters.
+    // If the order is a buy:
+    // - max_coin_qty is set to max
+    // - limit_price is set to max
+    // - max_native_pc_qty is the `amount_in`
+    //
+    // If the order is a sell:
+    // - max_coin_qty is `amount_in` / coin_lot_size
+    // - limit_price is set to 1
+    // - max_native_pc_qty is set to max
+    let (side, limit_price, max_coin_qty, max_native_pc_qty) = if bid {
+        let max_coin_qty = NonZeroU64::new(u64::MAX).unwrap();
+        let max_native_pc_qty = NonZeroU64::new(amount_in).unwrap();
         (
             Side::Bid,
             NonZeroU64::new(u64::MAX).unwrap(),
@@ -210,8 +218,8 @@ pub fn serum_swap_handler(
             max_native_pc_qty,
         )
     } else {
-        // TODO
-        let max_coin_qty = NonZeroU64::new(0).unwrap();
+        let max_coin_qty = amount_in.checked_div(market.coin_lot_size).unwrap();
+        let max_coin_qty = NonZeroU64::new(max_coin_qty).unwrap();
         let max_native_pc_qty = NonZeroU64::new(u64::MAX).unwrap();
         (
             Side::Ask,
@@ -220,6 +228,10 @@ pub fn serum_swap_handler(
             max_native_pc_qty,
         )
     };
+
+    // Get the balance of tokens before the trade
+    let from_amount_before = token::accessor::amount(&ctx.accounts.transit_source_account)?;
+    let to_amount_before = token::accessor::amount(&ctx.accounts.transit_destination_account)?;
 
     dex::new_order_v3(
         ctx.accounts.new_order_v3_context(),
@@ -237,7 +249,15 @@ pub fn serum_swap_handler(
     // Settle funds
     dex::settle_funds(ctx.accounts.settle_funds_context())?;
 
-    // TODO: check if slippage is tolerable
+    let from_amount_after = token::accessor::amount(&ctx.accounts.transit_source_account)?;
+    let to_amount_after = token::accessor::amount(&ctx.accounts.transit_destination_account)?;
+
+    // Check if slippage is tolerable
+    let from_delta = from_amount_before.checked_sub(from_amount_after).unwrap();
+    let to_delta = to_amount_after.checked_sub(to_amount_before).unwrap();
+
+    msg!("from_delta: {}", from_delta);
+    msg!("to_delta: {}", to_delta);
 
     let destination_amount = token::accessor::amount(&ctx.accounts.transit_destination_account)?;
 

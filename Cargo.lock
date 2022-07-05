@@ -1611,7 +1611,7 @@ dependencies = [
  "anchor-spl",
  "bitflags",
  "bytemuck",
- "itertools",
+ "itertools 0.10.3",
  "jet-metadata",
  "jet-proto-math",
  "jet-proto-proc-macros",

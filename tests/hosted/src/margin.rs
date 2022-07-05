@@ -20,21 +20,21 @@
 use std::sync::Arc;
 
 use anchor_lang::{AccountDeserialize, AccountSerialize, InstructionData, ToAccountMetas};
+use anchor_spl::dex::serum_dex::{self, state::OpenOrders};
 use anyhow::{bail, Error};
-
+use jet_control::TokenMetadataParams;
 use jet_margin::{MarginAccount, PositionKind};
+use jet_margin_pool::{Amount, MarginPool, MarginPoolConfig};
 use jet_margin_sdk::accounts::MarginPoolAccounts;
 use jet_margin_sdk::instructions::control::{get_authority_address, TokenConfiguration};
+use jet_margin_sdk::ix_builder::{MarginSerumIxBuilder, SerumMarketV3};
+use jet_margin_sdk::tx_builder::MarginTxBuilder;
+use jet_metadata::{LiquidatorMetadata, MarginAdapterMetadata, TokenKind, TokenMetadata};
+use jet_simulation::{send_and_confirm, solana_rpc_api::SolanaRpcClient};
 use solana_sdk::instruction::Instruction;
 use solana_sdk::signature::{Keypair, Signer};
 use solana_sdk::system_program;
 use solana_sdk::{pubkey::Pubkey, transaction::Transaction};
-
-use jet_control::TokenMetadataParams;
-use jet_margin_pool::{Amount, MarginPool, MarginPoolConfig};
-use jet_margin_sdk::tx_builder::MarginTxBuilder;
-use jet_metadata::{LiquidatorMetadata, MarginAdapterMetadata, TokenKind, TokenMetadata};
-use jet_simulation::{send_and_confirm, solana_rpc_api::SolanaRpcClient};
 
 use crate::{swap::SwapPool, tokens::TokenOracle};
 
@@ -375,4 +375,152 @@ impl MarginUser {
         self.send_confirm_tx(self.tx.close_token_position(token_mint, kind).await?)
             .await
     }
+}
+
+/// impl for Serum swaps and markets
+impl MarginUser {
+    /// Create an [OpenOrders] account for the margin account,
+    /// first checking if the account exists before creating it.
+    pub async fn init_open_orders(&self, market: &SerumMarketV3) -> Result<Pubkey, Error> {
+        let (address, tx) = self.tx.init_open_orders(market).await?;
+        let account = self.rpc.get_account(&address).await?;
+
+        if account.is_none() {
+            self.send_confirm_tx(tx).await?;
+        }
+
+        Ok(address)
+    }
+
+    /// Create a Serum swap
+    pub async fn serum_swap(
+        &self,
+        market: &SerumMarketV3,
+        open_orders: Pubkey,
+        transit_source_account: Pubkey,
+        transit_dest_account: Pubkey,
+        amount_in: u64,
+        minimum_amount_out: u64,
+        bid: bool,
+    ) -> Result<(), Error> {
+        let tx = self
+            .tx
+            .serum_swap(
+                market,
+                open_orders,
+                transit_source_account,
+                transit_dest_account,
+                amount_in,
+                minimum_amount_out,
+                bid,
+            )
+            .await?;
+
+        self.send_confirm_tx(tx).await?;
+
+        Ok(())
+    }
+
+    // /// Close the margin account's [OpenOrders] account
+    // pub async fn close_open_orders(&self, market: &SerumMarketV3) -> Result<(), Error> {
+    //     let tx = self.tx.close_open_orders_account(market).await?;
+
+    //     self.send_confirm_tx(tx).await?;
+
+    //     Ok(())
+    // }
+
+    // pub async fn new_spot_order(
+    //     &self,
+    //     market: &SerumMarketV3,
+    //     open_orders: Pubkey,
+    //     transit_account: Pubkey,
+    //     order: OrderParams,
+    // ) -> Result<(), Error> {
+    //     let tx = self
+    //         .tx
+    //         .new_spot_order(market, open_orders, transit_account, order)
+    //         .await?;
+
+    //     self.send_confirm_tx(tx).await?;
+
+    //     Ok(())
+    // }
+
+    // pub async fn cancel_client_orders(
+    //     &self,
+    //     market: &SerumMarketV3,
+    //     open_orders: Pubkey,
+    //     order_id: u128,
+    //     side: u8,
+    // ) -> Result<(), Error> {
+    //     let tx = self
+    //         .tx
+    //         .cancel_spot_order(market, open_orders, side, order_id)
+    //         .await?;
+
+    //     self.send_confirm_tx(tx).await?;
+
+    //     Ok(())
+    // }
+
+    // pub async fn settle_funds(
+    //     &self,
+    //     market: &SerumMarketV3,
+    //     open_orders: Pubkey,
+    //     base_wallet: Pubkey,
+    //     quote_wallet: Pubkey,
+    // ) -> Result<(), Error> {
+    //     // Create open accounts if needed
+    //     let (maybe_tx, order_notes, position_notes) =
+    //         self.tx.open_settlement_positions(market).await?;
+    //     if let Some(tx) = maybe_tx {
+    //         self.send_confirm_tx(tx).await?;
+    //     }
+    //     let tx = self
+    //         .tx
+    //         .settle_funds(
+    //             market,
+    //             open_orders,
+    //             base_wallet,
+    //             quote_wallet,
+    //             order_notes,
+    //             position_notes,
+    //         )
+    //         .await?;
+
+    //     self.send_confirm_tx(tx).await?;
+
+    //     Ok(())
+    // }
+
+    pub async fn get_open_orders(&self, open_orders: &Pubkey) -> Result<Vec<(u8, u128)>, Error> {
+        // Get the acccount on-chain, so we can read its data
+        let account = self
+            .rpc
+            .get_account(open_orders)
+            .await?
+            .expect("Account not found");
+
+        let size = std::mem::size_of::<OpenOrders>();
+        let open_order = bytemuck::from_bytes::<OpenOrders>(&account.data[5..(5 + size)]);
+        let orders = { open_order.orders }
+            .iter()
+            .enumerate()
+            .filter_map(|(i, oid)| match open_order.slot_side(i as u8) {
+                Some(side) => match side {
+                    serum_dex::matching::Side::Bid => Some((0, *oid)),
+                    serum_dex::matching::Side::Ask => Some((1, *oid)),
+                },
+                None => None,
+            })
+            .collect();
+
+        Ok(orders)
+    }
+
+    // pub async fn refresh_open_orders(&self, market: &SerumMarketV3) -> Result<(), Error> {
+    //     self.send_confirm_tx(self.tx.refresh_open_orders(market).await?)
+    //         .await
+    // }
 }
