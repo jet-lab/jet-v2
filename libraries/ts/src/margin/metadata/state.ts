@@ -7,5 +7,14 @@ import { JetMetadata } from "../../types"
 
 export type LiquidatorMetadata = TypeDef<AllAccountsMap<JetMetadata>["liquidatorMetadata"], IdlTypes<JetMetadata>>
 export type MarginAdapterMetadata = TypeDef<AllAccountsMap<JetMetadata>["marginAdapterMetadata"], IdlTypes<JetMetadata>>
-export type PositionTokenMetadata = TypeDef<AllAccountsMap<JetMetadata>["positionTokenMetadata"], IdlTypes<JetMetadata>>
+export type PositionTokenMetadataInfo = TypeDef<
+  AllAccountsMap<JetMetadata>["positionTokenMetadata"],
+  IdlTypes<JetMetadata>
+>
 export type TokenMetadata = TypeDef<AllAccountsMap<JetMetadata>["tokenMetadata"], IdlTypes<JetMetadata>>
+
+export type TokenKind = {
+  nonCollateral?: Record<string, never>
+  collateral?: Record<string, never>
+  claim?: Record<string, never>
+}

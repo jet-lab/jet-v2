@@ -226,6 +226,24 @@ export class TokenAmount {
     return this.lamports.isZero()
   }
 
+  static min(a: TokenAmount, b: TokenAmount) {
+    const callback = function (this: BN, b: BN) {
+      const a: BN = this
+      return BN.min(a, b)
+    }
+
+    return a.do(b, callback)
+  }
+
+  static max(a: TokenAmount, b: TokenAmount) {
+    const callback = function (this: BN, b: BN) {
+      const a: BN = this
+      return BN.max(a, b)
+    }
+
+    return a.do(b, callback)
+  }
+
   private do(b: TokenAmount, fn: (b: BN) => BN): TokenAmount {
     if (this.decimals !== b.decimals) {
       console.warn("Decimal mismatch")
