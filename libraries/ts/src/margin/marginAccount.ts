@@ -57,8 +57,10 @@ export interface PoolPosition {
   loanNotePosition: AccountPosition | undefined
   depositBalance: TokenAmount
   depositBalanceNotes: BN
+  depositValue: number
   loanBalance: TokenAmount
   loanBalanceNotes: BN
+  loanValue: number
   maxTradeAmounts: Record<TradeAction, TokenAmount>
   buyingPower: TokenAmount
 }
@@ -301,6 +303,7 @@ export class MarginAccount {
         ? Number192.ZERO
         : totalValueLessFees.mul(depositBalanceNotes).div(poolDepositNotes)
       const depositBalance = TokenAmount.lamports(depositTokenBalance, pool.decimals)
+      const depositValue = depositNotePosition?.value ?? 0
 
       // Loans
       const poolLoanNotes = pool.info?.marginPool.loanNotes ?? Number192.ZERO
@@ -311,6 +314,7 @@ export class MarginAccount {
         ? Number192.ZERO
         : poolBorrowedTokens.mul(loanBalanceNotes).div(poolLoanNotes)
       const loanBalance = TokenAmount.lamports(loanTokenBalance, pool.decimals)
+      const loanValue = loanNotePosition?.value ?? 0
 
       // Max trade amounts
       const maxTradeAmounts = this.getMaxTradeAmounts(pool, depositBalance, loanBalance)
@@ -327,8 +331,10 @@ export class MarginAccount {
         loanNotePosition,
         depositBalance,
         depositBalanceNotes,
+        depositValue,
         loanBalance,
         loanBalanceNotes,
+        loanValue,
         maxTradeAmounts,
         buyingPower
       }
@@ -405,7 +411,7 @@ export class MarginAccount {
     for (const position of this.positions) {
       let kind = position.kind
       if (kind === PositionKind.Deposit) {
-        collateralValue = collateralValue.add(position.value)
+        collateralValue = collateralValue.add(position.valueRaw)
       }
     }
 
@@ -520,7 +526,7 @@ export class MarginAccount {
             pastDue = true
           }
 
-          exposure = exposure.add(new BN(position.value))
+          exposure = exposure.add(new BN(position.valueRaw))
           requiredCollateral = requiredCollateral.add(position.requiredCollateralValue())
         }
         if (staleReason !== undefined) {
