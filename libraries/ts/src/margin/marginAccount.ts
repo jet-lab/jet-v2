@@ -70,7 +70,6 @@ export interface AccountSummary {
   availableCollateral: number
   cRatio: number
   minCRatio: number
-  leverage: number
 }
 
 export interface Valuation {
@@ -406,7 +405,7 @@ export class MarginAccount {
     for (const position of this.positions) {
       let kind = position.kind
       if (kind === PositionKind.Deposit) {
-        collateralValue.add(position.value)
+        collateralValue = collateralValue.add(position.value)
       }
     }
 
@@ -414,8 +413,8 @@ export class MarginAccount {
     const cRatio = exposureNumber === 0 ? Infinity : bnToNumber(collateralValue) / exposureNumber
     const minCRatio =
       exposureNumber === 0 ? Infinity : 1 + bnToNumber(this.valuation.effectiveCollateral) / exposureNumber
-    const depositedValue = bnToNumber(Number128.asBn(collateralValue, 0))
-    const borrowedValue = bnToNumber(Number128.asBn(this.valuation.exposure, 0))
+    const depositedValue = bnToNumber(Number128.asBn(collateralValue, -5)) / 100000
+    const borrowedValue = bnToNumber(Number128.asBn(this.valuation.exposure, -5)) / 100000
 
     return {
       depositedValue,
@@ -423,8 +422,7 @@ export class MarginAccount {
       accountBalance: depositedValue - borrowedValue,
       availableCollateral: 0, // FIXME: total collateral * collateral weight - total claims
       cRatio,
-      minCRatio,
-      leverage: depositedValue ? borrowedValue / depositedValue : 0
+      minCRatio
     }
   }
 

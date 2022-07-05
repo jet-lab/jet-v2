@@ -74,6 +74,10 @@ export class Number192 {
     return targetValue
   }
 
+  static from(value: BN) {
+    return value.mul(Number192.ONE)
+  }
+
   static fromDecimal(value: BN, exponent: number) {
     let extraPrecision = Number192.PRECISION + exponent
     let precValue = Number192.POWERS_OF_TEN[Math.abs(extraPrecision)]

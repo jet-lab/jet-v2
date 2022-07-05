@@ -67,7 +67,7 @@ export class Pool {
     return TokenAmount.lamports(lamports, this.decimals)
   }
   get totalValueRaw(): BN {
-    return this.borrowedTokensRaw.add(this.depositedTokens.lamports.mul(Number192.ONE))
+    return this.borrowedTokensRaw.add(Number192.from(this.depositedTokens.lamports))
   }
   get totalValue(): TokenAmount {
     return TokenAmount.lamports(this.totalValueRaw.div(Number192.ONE), this.decimals)
@@ -243,12 +243,30 @@ export class Pool {
     const depositNoteExchangeRate = this.depositNoteExchangeRate()
     const loanNoteExchangeRate = this.loanNoteExchangeRate()
 
-    const depositNotePrice = Number192.asU64Rounded(priceValue.mul(depositNoteExchangeRate), pythPrice.exponent)
-    const depositNoteConf = Number192.asU64Rounded(confValue.mul(depositNoteExchangeRate), pythPrice.exponent)
-    const depositNoteTwap = Number192.asU64Rounded(twapValue.mul(depositNoteExchangeRate), pythPrice.exponent)
-    const loanNotePrice = Number192.asU64Rounded(priceValue.mul(loanNoteExchangeRate), pythPrice.exponent)
-    const loanNoteConf = Number192.asU64Rounded(confValue.mul(loanNoteExchangeRate), pythPrice.exponent)
-    const loanNoteTwap = Number192.asU64Rounded(twapValue.mul(loanNoteExchangeRate), pythPrice.exponent)
+    const depositNotePrice = Number192.asU64Rounded(
+      priceValue.mul(depositNoteExchangeRate).div(Number192.ONE),
+      pythPrice.exponent
+    )
+    const depositNoteConf = Number192.asU64Rounded(
+      confValue.mul(depositNoteExchangeRate).div(Number192.ONE),
+      pythPrice.exponent
+    )
+    const depositNoteTwap = Number192.asU64Rounded(
+      twapValue.mul(depositNoteExchangeRate).div(Number192.ONE),
+      pythPrice.exponent
+    )
+    const loanNotePrice = Number192.asU64Rounded(
+      priceValue.mul(loanNoteExchangeRate).div(Number192.ONE),
+      pythPrice.exponent
+    )
+    const loanNoteConf = Number192.asU64Rounded(
+      confValue.mul(loanNoteExchangeRate).div(Number192.ONE),
+      pythPrice.exponent
+    )
+    const loanNoteTwap = Number192.asU64Rounded(
+      twapValue.mul(loanNoteExchangeRate).div(Number192.ONE),
+      pythPrice.exponent
+    )
     return {
       tokenPrice: pythPrice.price,
       depositNotePrice,
@@ -268,7 +286,7 @@ export class Pool {
     const one = new BN(1)
     const depositNotes = BN.max(one, this.info.marginPool.depositNotes)
     const totalValue = BN.max(Number192.ONE, this.totalValueRaw)
-    return totalValue.sub(this.uncollectedFeesRaw).div(depositNotes.mul(Number192.ONE))
+    return totalValue.sub(this.uncollectedFeesRaw).mul(Number192.ONE).div(Number192.from(depositNotes))
   }
 
   loanNoteExchangeRate() {
@@ -279,7 +297,7 @@ export class Pool {
     const one = new BN(1)
     const loanNotes = BN.max(one, this.info.marginPool.loanNotes)
     const totalBorrowed = BN.max(Number192.ONE, this.borrowedTokensRaw)
-    return totalBorrowed.div(loanNotes.mul(Number192.ONE))
+    return totalBorrowed.mul(Number192.ONE).div(Number192.from(loanNotes))
   }
 
   /**
