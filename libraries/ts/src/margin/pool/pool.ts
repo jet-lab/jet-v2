@@ -85,17 +85,6 @@ export class Pool {
   get utilizationRate(): number {
     return this.totalValue.tokens === 0 ? 0 : this.borrowedTokens.tokens / this.totalValue.tokens
   }
-  get cRatio(): number {
-    const utilizationRate = this.utilizationRate
-    return utilizationRate === 0 ? Infinity : 1 / this.utilizationRate
-  }
-  get minCRatio(): number {
-    return 1.0 // FIXME
-  }
-  get maxLeverage(): number {
-    const minCRatio = this.minCRatio
-    return minCRatio - 1 === 0 ? Infinity : 1 / this.minCRatio - 1
-  }
   get depositCcRate(): number {
     return this.info ? Pool.getCcRate(this.info.marginPool.config, this.utilizationRate) : 0
   }
