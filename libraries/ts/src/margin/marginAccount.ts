@@ -365,8 +365,9 @@ export class MarginAccount {
     // Max deposit
     let deposit = walletAmount ?? TokenAmount.zero(pool.decimals)
     // If depositing SOL, maximum input should still cover fees
-    if (pool.address === NATIVE_MINT && !deposit.isZero()) {
-      deposit = deposit.subn(0.02)
+    if (pool.address.equals(NATIVE_MINT)) {
+      const feeCover = new TokenAmount(new BN(20000000), pool.decimals)
+      deposit = TokenAmount.max(deposit.sub(feeCover), TokenAmount.zero(pool.decimals))
     }
 
     // Max withdraw
