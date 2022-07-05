@@ -17,6 +17,7 @@
 
 #![allow(unused)]
 
+use std::collections::HashMap;
 use std::sync::Arc;
 
 use anchor_lang::{AccountDeserialize, AccountSerialize, InstructionData, ToAccountMetas};
@@ -355,8 +356,11 @@ impl MarginUser {
     }
 
     /// Close a user's empty positions.
-    pub async fn close_empty_positions(&self) -> Result<(), Error> {
-        self.send_confirm_tx(self.tx.close_empty_positions().await?)
+    pub async fn close_empty_positions(
+        &self,
+        loan_to_token: &HashMap<Pubkey, Pubkey>,
+    ) -> Result<(), Error> {
+        self.send_confirm_tx(self.tx.close_empty_positions(loan_to_token).await?)
             .await
     }
 
@@ -372,7 +376,7 @@ impl MarginUser {
         token_mint: &Pubkey,
         kind: PositionKind,
     ) -> Result<(), Error> {
-        self.send_confirm_tx(self.tx.close_token_position(token_mint, kind).await?)
+        self.send_confirm_tx(self.tx.close_pool_position_tx(token_mint, kind).await?)
             .await
     }
 }

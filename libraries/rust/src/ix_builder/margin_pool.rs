@@ -263,9 +263,12 @@ impl MarginPoolIxBuilder {
 
     pub fn register_loan(&self, margin_account: Pubkey, payer: Pubkey) -> (Pubkey, Instruction) {
         let loan_note_account = loan_token_account(&margin_account, &self.loan_note_mint).0;
+        let position_token_metadata =
+            Pubkey::find_program_address(&[self.loan_note_mint.as_ref()], &jet_metadata::ID).0;
 
         let accounts = ix_accounts::RegisterLoan {
             margin_account,
+            position_token_metadata,
             margin_pool: self.address,
             loan_note_account,
             loan_note_mint: self.loan_note_mint,
@@ -282,6 +285,25 @@ impl MarginPoolIxBuilder {
         };
 
         (loan_note_account, ix)
+    }
+
+    pub fn close_loan(&self, margin_account: Pubkey, payer: Pubkey) -> Instruction {
+        let loan_note_account = loan_token_account(&margin_account, &self.loan_note_mint).0;
+
+        let accounts = ix_accounts::CloseLoan {
+            margin_account,
+            margin_pool: self.address,
+            loan_note_account,
+            loan_note_mint: self.loan_note_mint,
+            beneficiary: payer,
+            token_program: Token::id(),
+        };
+
+        Instruction {
+            program_id: jet_margin_pool::ID,
+            data: ix_data::CloseLoan {}.data(),
+            accounts: accounts.to_account_metas(None),
+        }
     }
 
     /// Instruction to collect interest and fees

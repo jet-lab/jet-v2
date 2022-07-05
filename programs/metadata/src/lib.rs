@@ -166,12 +166,6 @@ pub struct PositionTokenMetadata {
 
     /// The maximum staleness (seconds) that's acceptable for balances of this token
     pub max_staleness: u64,
-
-    /// The account that will own the token accounts for this position token.
-    /// If it should be owned by the margin account, use Pubkey::default()
-    /// For deposits, this is typically the margin account.
-    /// For claims, this is typically an adapter PDA.
-    pub owner: Pubkey,
 }
 
 /// An account that references information about a token's price oracle

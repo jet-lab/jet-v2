@@ -16,31 +16,23 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 use anchor_lang::prelude::*;
-use anchor_spl::token::{Token, TokenAccount};
+use anchor_spl::token::{self, CloseAccount, Token, TokenAccount};
 
 use jet_margin::{AdapterResult, MarginAccount, PositionChange};
 
 use crate::state::*;
 
 #[derive(Accounts)]
-pub struct RegisterLoan<'info> {
+pub struct CloseLoan<'info> {
     #[account(signer)]
     pub margin_account: AccountLoader<'info, MarginAccount>,
 
-    /// This will be required for margin to register the position,
-    /// so requiring it here makes it easier for clients to ensure
-    /// that it will be sent.
-    pub position_token_metadata: AccountInfo<'info>,
-
     /// The token account to store the loan notes representing the claim
     /// against the margin account
-    #[account(init,
+    #[account(mut,
         seeds = [margin_account.key().as_ref(),
                  loan_note_mint.key().as_ref()],
         bump,
-        payer = payer,
-        token::mint = loan_note_mint,
-        token::authority = margin_pool
     )]
     pub loan_note_account: Account<'info, TokenAccount>,
 
@@ -52,22 +44,30 @@ pub struct RegisterLoan<'info> {
     pub margin_pool: Account<'info, MarginPool>,
 
     #[account(mut)]
-    pub payer: Signer<'info>,
+    pub beneficiary: Signer<'info>,
 
     pub token_program: Program<'info, Token>,
-    pub system_program: Program<'info, System>,
-    pub rent: Sysvar<'info, Rent>,
 }
 
-pub fn register_loan_handler(ctx: Context<RegisterLoan>) -> Result<()> {
+pub fn close_loan_handler(ctx: Context<CloseLoan>) -> Result<()> {
+    token::close_account(
+        CpiContext::new(
+            ctx.accounts.token_program.to_account_info(),
+            CloseAccount {
+                account: ctx.accounts.loan_note_account.to_account_info(),
+                authority: ctx.accounts.margin_pool.to_account_info(),
+                destination: ctx.accounts.beneficiary.to_account_info(),
+            },
+        )
+        .with_signer(&[&ctx.accounts.margin_pool.signer_seeds()?]),
+    )?;
+
     jet_margin::write_adapter_result(
         &*ctx.accounts.margin_account.load()?,
         &AdapterResult {
             position_changes: vec![(
                 ctx.accounts.loan_note_mint.key(),
-                vec![PositionChange::Register(
-                    ctx.accounts.loan_note_account.key(),
-                )],
+                vec![PositionChange::Close(ctx.accounts.loan_note_account.key())],
             )],
         },
     )?;

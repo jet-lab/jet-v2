@@ -154,33 +154,6 @@ impl MarginIxBuilder {
         (token_account, ix)
     }
 
-    pub fn register_adapter_position(
-        &self,
-        position_token_mint: Pubkey,
-        position_token_account: Pubkey,
-    ) -> Instruction {
-        let (metadata, _) =
-            Pubkey::find_program_address(&[position_token_mint.as_ref()], &jet_metadata::ID);
-
-        let accounts = ix_account::RegisterUnownedPosition {
-            authority: self.authority(),
-            payer: self.payer,
-            margin_account: self.address,
-            position_token_mint,
-            metadata,
-            token_account: position_token_account,
-            token_program: Token::id(),
-            system_program: System::id(),
-            rent: Rent::id(),
-        };
-
-        Instruction {
-            program_id: JetMargin::id(),
-            data: ix_data::RegisterUnownedPosition {}.data(),
-            accounts: accounts.to_account_metas(None),
-        }
-    }
-
     /// Get instruction to close a position
     ///
     /// # Params

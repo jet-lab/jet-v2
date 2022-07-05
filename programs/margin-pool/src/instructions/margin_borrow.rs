@@ -20,7 +20,7 @@ use std::ops::Deref;
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, MintTo, Token, TokenAccount};
 
-use jet_margin::{AdapterResult, MarginAccount, PositionChange};
+use jet_margin::MarginAccount;
 
 use crate::{events, state::*, AmountKind};
 use crate::{Amount, ErrorCode};
@@ -119,16 +119,6 @@ pub fn margin_borrow_handler(ctx: Context<MarginBorrow>, token_amount: u64) -> R
     token::mint_to(
         ctx.accounts.mint_deposit_context().with_signer(&signer),
         deposit_amount.notes,
-    )?;
-
-    jet_margin::write_adapter_result(
-        &*ctx.accounts.margin_account.load()?,
-        &AdapterResult {
-            position_changes: vec![(
-                pool.loan_note_mint,
-                vec![PositionChange::Register(ctx.accounts.loan_account.key())],
-            )],
-        },
     )?;
 
     emit!(events::MarginBorrow {

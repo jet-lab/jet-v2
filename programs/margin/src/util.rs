@@ -79,13 +79,17 @@ impl ErrorIfMissing for &mut AccountPosition {
     const ERROR: ErrorCode = ErrorCode::PositionNotRegistered;
 }
 
+impl ErrorIfMissing for &AccountPosition {
+    const ERROR: ErrorCode = ErrorCode::PositionNotRegistered;
+}
+
 pub trait ErrorMessage {
     fn log_on_error(self, msg: &str) -> Self;
 }
 
 impl<T, E> ErrorMessage for std::result::Result<T, E> {
     fn log_on_error(self, msg: &str) -> Self {
-        if let Err(_) = self {
+        if self.is_err() {
             msg!(msg);
         }
 

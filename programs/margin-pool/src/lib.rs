@@ -38,6 +38,11 @@ mod jet_margin_pool {
     use super::*;
 
     /// Create a new pool for borrowing and lending
+    pub fn close_loan(ctx: Context<CloseLoan>) -> Result<()> {
+        instructions::close_loan_handler(ctx)
+    }
+
+    /// Create a new pool for borrowing and lending
     pub fn create_pool(ctx: Context<CreatePool>) -> Result<()> {
         instructions::create_pool_handler(ctx)
     }
