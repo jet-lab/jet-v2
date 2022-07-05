@@ -22,7 +22,7 @@ import {
 } from "./state"
 import { MarginPrograms } from "./marginClient"
 import { findDerivedAccount } from "../utils/pda"
-import { AssociatedToken, bnToNumber, getTimestamp, MarginPools, Number192, TokenAmount } from ".."
+import { AssociatedToken, bnToNumber, getTimestamp, MarginPools, Number192, PoolAmount, TokenAmount } from ".."
 import { MarginPoolConfig, MarginTokenConfig } from "./config"
 import { sleep } from "../utils/util"
 import { AccountPosition, PriceInfo } from "./accountPosition"
@@ -688,7 +688,7 @@ export class MarginAccount {
   /// `token_mint` - The address of the mint for the tokens being deposited
   /// `source` - The token account that the deposit will be transfered from. Can also point to the wallet to automatically wrap SOL
   /// `amount` - The amount of tokens to deposit
-  async deposit(marginPool: Pool, source: Address, amount: BN) {
+  async deposit(marginPool: Pool, source: Address, amount: PoolAmount) {
     assert(marginPool)
     assert(source)
     assert(amount)

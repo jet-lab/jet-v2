@@ -1,9 +1,9 @@
 import { BN } from "@project-serum/anchor"
 
-type PoolAmountKindTokens = { tokens: Record<string, never> }
-type PoolAmountKindNotes = { notes: Record<string, never> }
+type PoolAmountChangeSetValue = { setValue: Record<string, never> }
+type PoolAmountChangeShiftValue = { shiftValue: Record<string, never> }
 
-export type PoolAmountKind = PoolAmountKindTokens | PoolAmountKindNotes
+export type PoolAmountChangeKind = PoolAmountChangeSetValue | PoolAmountChangeShiftValue
 
 /**
  * TODO:
@@ -13,43 +13,44 @@ export type PoolAmountKind = PoolAmountKindTokens | PoolAmountKindNotes
 export class PoolAmount {
   /**
    * Creates an instance of Amount.
-   * @param {PoolAmountKind} kind
+   * @param {PoolAmountChangeKind} changeKind
    * @param {BN} value
    * @memberof Amount
    */
-  constructor(public kind: PoolAmountKind, public value: BN) {}
+  constructor(public changeKind: PoolAmountChangeKind, public value: BN) { }
 
-  /**
-   * TODO:
+  /** 
+   * An `Amount` to be used to set the given token value
    * @static
-   * @param {(number | BN)} amount
+   * @param {number | BN} value
    * @returns {PoolAmount}
    * @memberof Amount
-   */
-  static tokens(amount: number | BN): PoolAmount {
-    return new PoolAmount({ tokens: {} }, new BN(amount))
+  */
+  static setTo(value: number | BN): PoolAmount {
+    return new PoolAmount({ setValue: {} }, new BN(value))
   }
 
-  /**
-   * TODO:
+  /** 
+   * An `Amount` to be used to set the given token value
    * @static
-   * @param {(number | BN)} amount
+   * @param {number | BN} value
    * @returns {PoolAmount}
    * @memberof Amount
-   */
-  static notes(amount: number | BN): PoolAmount {
-    return new PoolAmount({ notes: {} }, new BN(amount))
+  */
+  static shiftBy(value: number | BN): PoolAmount {
+    return new PoolAmount({ shiftValue: {} }, new BN(value))
   }
 
   /**
    * Converts the class instance into an object that can
    * be used as an argument for Solana instruction calls.
-   * @returns {{ units: never; value: BN }}
+   * @returns {{ units: never; changeKind: never; value: BN }}
    * @memberof Amount
    */
-  toRpcArg(): { kind: never; value: BN } {
+  toRpcArg(): { kind: never; changeKind: never; value: BN } {
     return {
-      kind: this.kind as never,
+      kind: { tokens: {} } as never,
+      changeKind: this.changeKind as never,
       value: this.value
     }
   }

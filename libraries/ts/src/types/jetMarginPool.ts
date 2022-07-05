@@ -172,7 +172,9 @@ export type JetMarginPool = {
       args: [
         {
           name: "amount"
-          type: "u64"
+          type: {
+            defined: "Amount"
+          }
         }
       ]
     },
@@ -266,7 +268,9 @@ export type JetMarginPool = {
       args: [
         {
           name: "amount"
-          type: "u64"
+          type: {
+            defined: "Amount"
+          }
         }
       ]
     },
@@ -311,7 +315,60 @@ export type JetMarginPool = {
       ]
       args: [
         {
-          name: "maxAmount"
+          name: "amount"
+          type: {
+            defined: "Amount"
+          }
+        }
+      ]
+    },
+    {
+      name: "marginRepayFromWallet"
+      accounts: [
+        {
+          name: "marginAccount"
+          isMut: false
+          isSigner: true
+        },
+        {
+          name: "marginPool"
+          isMut: true
+          isSigner: false
+        },
+        {
+          name: "loanNoteMint"
+          isMut: true
+          isSigner: false
+        },
+        {
+          name: "poolVault"
+          isMut: true
+          isSigner: false
+        },
+        {
+          name: "loanAccount"
+          isMut: true
+          isSigner: false
+        },
+        {
+          name: "repaymentTokenAccount"
+          isMut: true
+          isSigner: false
+        },
+        {
+          name: "repaymentAccountAuthority"
+          isMut: false
+          isSigner: true
+        },
+        {
+          name: "tokenProgram"
+          isMut: false
+          isSigner: false
+        }
+      ]
+      args: [
+        {
+          name: "amount"
           type: {
             defined: "Amount"
           }
@@ -511,6 +568,12 @@ export type JetMarginPool = {
             }
           },
           {
+            name: "changeKind"
+            type: {
+              defined: "ChangeKind"
+            }
+          },
+          {
             name: "value"
             type: "u64"
           }
@@ -561,6 +624,20 @@ export type JetMarginPool = {
           },
           {
             name: "Notes"
+          }
+        ]
+      }
+    },
+    {
+      name: "ChangeKind"
+      type: {
+        kind: "enum"
+        variants: [
+          {
+            name: "SetValue"
+          },
+          {
+            name: "ShiftValue"
           }
         ]
       }
@@ -801,16 +878,6 @@ export type JetMarginPool = {
           index: false
         },
         {
-          name: "maxRepayTokens"
-          type: "u64"
-          index: false
-        },
-        {
-          name: "maxRepayNotes"
-          type: "u64"
-          index: false
-        },
-        {
           name: "repaidTokens"
           type: "u64"
           index: false
@@ -822,6 +889,48 @@ export type JetMarginPool = {
         },
         {
           name: "repaidDepositNotes"
+          type: "u64"
+          index: false
+        },
+        {
+          name: "summary"
+          type: {
+            defined: "MarginPoolSummary"
+          }
+          index: false
+        }
+      ]
+    },
+    {
+      name: "Repay"
+      fields: [
+        {
+          name: "marginPool"
+          type: "publicKey"
+          index: false
+        },
+        {
+          name: "user"
+          type: "publicKey"
+          index: false
+        },
+        {
+          name: "loanAccount"
+          type: "publicKey"
+          index: false
+        },
+        {
+          name: "repaymentTokenAccount"
+          type: "publicKey"
+          index: false
+        },
+        {
+          name: "repaidTokens"
+          type: "u64"
+          index: false
+        },
+        {
+          name: "repaidLoanNotes"
           type: "u64"
           index: false
         },
@@ -1087,7 +1196,9 @@ export const IDL: JetMarginPool = {
       args: [
         {
           name: "amount",
-          type: "u64"
+          type: {
+            defined: "Amount"
+          }
         }
       ]
     },
@@ -1181,7 +1292,9 @@ export const IDL: JetMarginPool = {
       args: [
         {
           name: "amount",
-          type: "u64"
+          type: {
+            defined: "Amount"
+          }
         }
       ]
     },
@@ -1226,7 +1339,60 @@ export const IDL: JetMarginPool = {
       ],
       args: [
         {
-          name: "maxAmount",
+          name: "amount",
+          type: {
+            defined: "Amount"
+          }
+        }
+      ]
+    },
+    {
+      name: "marginRepayFromWallet",
+      accounts: [
+        {
+          name: "marginAccount",
+          isMut: false,
+          isSigner: true
+        },
+        {
+          name: "marginPool",
+          isMut: true,
+          isSigner: false
+        },
+        {
+          name: "loanNoteMint",
+          isMut: true,
+          isSigner: false
+        },
+        {
+          name: "poolVault",
+          isMut: true,
+          isSigner: false
+        },
+        {
+          name: "loanAccount",
+          isMut: true,
+          isSigner: false
+        },
+        {
+          name: "repaymentTokenAccount",
+          isMut: true,
+          isSigner: false
+        },
+        {
+          name: "repaymentAccountAuthority",
+          isMut: false,
+          isSigner: true
+        },
+        {
+          name: "tokenProgram",
+          isMut: false,
+          isSigner: false
+        }
+      ],
+      args: [
+        {
+          name: "amount",
           type: {
             defined: "Amount"
           }
@@ -1426,6 +1592,12 @@ export const IDL: JetMarginPool = {
             }
           },
           {
+            name: "changeKind",
+            type: {
+              defined: "ChangeKind"
+            }
+          },
+          {
             name: "value",
             type: "u64"
           }
@@ -1476,6 +1648,20 @@ export const IDL: JetMarginPool = {
           },
           {
             name: "Notes"
+          }
+        ]
+      }
+    },
+    {
+      name: "ChangeKind",
+      type: {
+        kind: "enum",
+        variants: [
+          {
+            name: "SetValue"
+          },
+          {
+            name: "ShiftValue"
           }
         ]
       }
@@ -1716,16 +1902,6 @@ export const IDL: JetMarginPool = {
           index: false
         },
         {
-          name: "maxRepayTokens",
-          type: "u64",
-          index: false
-        },
-        {
-          name: "maxRepayNotes",
-          type: "u64",
-          index: false
-        },
-        {
           name: "repaidTokens",
           type: "u64",
           index: false
@@ -1746,6 +1922,48 @@ export const IDL: JetMarginPool = {
             defined: "MarginPoolSummary"
           },
           index: false
+        }
+      ]
+    },
+    {
+      name: "Repay",
+      fields: [
+        {
+          name: "marginPool",
+          type: "publicKey",
+          index: false
+        },
+        {
+          name: "user",
+          type: "publicKey",
+          index: false
+        },
+        {
+          name: "loanAccount",
+          type: "publicKey",
+          index: false
+        },
+        {
+          name: "repaymentTokenAccount",
+          type: "publicKey",
+          index: false
+        },
+        {
+          name: "repaidTokens",
+          type: "u64",
+          index: false
+        },
+        {
+          name: "repaidLoanNotes",
+          type: "u64",
+          index: false
+        },
+        {
+          name: "summary",
+          type: {
+            defined: "MarginPoolSummary"
+          },
+          index: false,
         }
       ]
     },
