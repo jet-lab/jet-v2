@@ -1,21 +1,5 @@
 import { BN } from "@project-serum/anchor"
 
-const POWERS_OF_TEN = [
-  new BN(1),
-  new BN(10),
-  new BN(100),
-  new BN(1_000),
-  new BN(10_000),
-  new BN(100_000),
-  new BN(1_000_000),
-  new BN(10_000_000),
-  new BN(100_000_000),
-  new BN(1_000_000_000),
-  new BN(10_000_000_000),
-  new BN(100_000_000_000),
-  new BN(1_000_000_000_000)
-]
-
 export class Number128 {
   static readonly PRECISION = 10
   static readonly ONE = new BN(10_000_000_000)
@@ -23,13 +7,28 @@ export class Number128 {
   static readonly MAX = new BN("340282366920938463463374607431768211455")
   static readonly U64_MAX = new BN("18446744073709551615")
   static readonly BPS_EXPONENT = -4
+  static readonly POWERS_OF_TEN = [
+    new BN(1),
+    new BN(10),
+    new BN(100),
+    new BN(1_000),
+    new BN(10_000),
+    new BN(100_000),
+    new BN(1_000_000),
+    new BN(10_000_000),
+    new BN(100_000_000),
+    new BN(1_000_000_000),
+    new BN(10_000_000_000),
+    new BN(100_000_000_000),
+    new BN(1_000_000_000_000)
+  ]
 
   private constructor() {}
 
   /** Removes the fractional component from the number.*/
   static asBn(value: BN, exponent: number) {
     let extraPrecision = Number128.PRECISION + exponent
-    let precValue = POWERS_OF_TEN[Math.abs(extraPrecision)]
+    let precValue = Number128.POWERS_OF_TEN[Math.abs(extraPrecision)]
 
     let targetValue: BN
     if (extraPrecision < 0) {
@@ -57,7 +56,7 @@ export class Number128 {
 
   static fromDecimal(value: BN, exponent: number) {
     let extraPrecision = Number128.PRECISION + exponent
-    let precValue = POWERS_OF_TEN[Math.abs(extraPrecision)]
+    let precValue = Number128.POWERS_OF_TEN[Math.abs(extraPrecision)]
 
     if (extraPrecision < 0) {
       return value.div(precValue)

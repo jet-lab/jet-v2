@@ -1,34 +1,19 @@
 import { BN } from "@project-serum/anchor"
 import { Number128 } from "./number128"
 
-const POWERS_OF_TEN = [
-  new BN(1),
-  new BN(10),
-  new BN(100),
-  new BN(1_000),
-  new BN(10_000),
-  new BN(100_000),
-  new BN(1_000_000),
-  new BN(10_000_000),
-  new BN(100_000_000),
-  new BN(1_000_000_000),
-  new BN(10_000_000_000),
-  new BN(100_000_000_000),
-  new BN(1_000_000_000_000)
-]
-
 export class Number192 {
   static readonly PRECISION = 15
   static readonly ONE = new BN(1_000_000_000_000_000)
   static readonly ZERO = Number128.ZERO
   static readonly U64_MAX = Number128.U64_MAX
+  static readonly POWERS_OF_TEN = Number128.POWERS_OF_TEN
 
   private constructor() {}
 
   /** Removes the fractional component from the number. */
   static asBn(value: BN, exponent: number) {
     let extraPrecision = Number192.PRECISION + exponent
-    let precValue = POWERS_OF_TEN[Math.abs(extraPrecision)]
+    let precValue = Number192.POWERS_OF_TEN[Math.abs(extraPrecision)]
 
     let targetValue: BN
     if (extraPrecision < 0) {
@@ -42,7 +27,7 @@ export class Number192 {
   /** Removes the fractional component from the number. Throws if the number is not within the range of a u64. */
   static asU64(value: BN, exponent: number) {
     let extraPrecision = Number192.PRECISION + exponent
-    let precValue = POWERS_OF_TEN[Math.abs(extraPrecision)]
+    let precValue = Number192.POWERS_OF_TEN[Math.abs(extraPrecision)]
 
     let targetValue: BN
     if (extraPrecision < 0) {
@@ -64,7 +49,7 @@ export class Number192 {
 
   static asU64Rounded(value: BN, exponent: number) {
     let extraPrecision = Number192.PRECISION + exponent
-    let precValue = POWERS_OF_TEN[Math.abs(extraPrecision)]
+    let precValue = Number192.POWERS_OF_TEN[Math.abs(extraPrecision)]
 
     let rounding: BN
     if (extraPrecision > 0) {
@@ -91,7 +76,7 @@ export class Number192 {
 
   static fromDecimal(value: BN, exponent: number) {
     let extraPrecision = Number192.PRECISION + exponent
-    let precValue = POWERS_OF_TEN[Math.abs(extraPrecision)]
+    let precValue = Number192.POWERS_OF_TEN[Math.abs(extraPrecision)]
 
     if (extraPrecision < 0) {
       return value.div(precValue)
