@@ -1,9 +1,7 @@
 import { BN } from "@project-serum/anchor"
 import { Account, Mint } from "@solana/spl-token"
+import { Number192 } from "../utils"
 import { bigIntToBn } from "./associatedToken"
-
-export const ZERO_BN = new BN(0)
-export const ONE_BN = new BN(1000000000000000)
 
 export class TokenAmount {
   /** Raw amount of token lamports */
@@ -41,17 +39,18 @@ export class TokenAmount {
    * @memberof TokenAmount
    */
   public static zero(decimals: number): TokenAmount {
-    return new TokenAmount(ZERO_BN, decimals)
+    return new TokenAmount(Number192.ZERO, decimals)
   }
 
   /**
+   * Intialize a TokenAmount from the balance of a token account.
    * @static
    * @param {TokenAccount} tokenAccount
    * @param {number} decimals
    * @returns {TokenAmount}
    * @memberof TokenAmount
    */
-  public static tokenAccount(tokenAccount: Account, decimals: number): TokenAmount {
+  public static account(tokenAccount: Account, decimals: number): TokenAmount {
     return new TokenAmount(bigIntToBn(tokenAccount.amount), decimals)
   }
 

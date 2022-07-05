@@ -16,6 +16,7 @@ no-log-ix-name = []
 cpi = ["no-entrypoint"]
 default = []
 testing = ["jet-margin-pool/testing", "jet-margin/testing"]
+devnet = ["jet-static-program-registry/devnet"]
 
 [dependencies]
 anchor-lang = { git = "https://github.com/jet-lab/anchor", branch = "master" }

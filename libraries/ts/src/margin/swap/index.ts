@@ -12,9 +12,9 @@ import {
   TransactionSignature
 } from "@solana/web3.js"
 
-import * as Layout from "../../utils/layout"
-import { u64 } from "../../utils/layout"
-import { ZERO_BN } from "../../token"
+import * as Layout from "../../utils"
+import { u64 } from "../../utils"
+import { Number192 } from "../../utils"
 
 export * from "./marginSwap"
 
@@ -152,7 +152,7 @@ export class TokenSwap {
     hostFeeNumerator: number,
     hostFeeDenominator: number,
     curveType: number,
-    curveParameters: BN = ZERO_BN
+    curveParameters: BN = Number192.ZERO
   ): TransactionInstruction {
     const keys = [
       { pubkey: tokenSwapAccount.publicKey, isSigner: false, isWritable: true },

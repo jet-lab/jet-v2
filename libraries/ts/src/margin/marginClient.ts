@@ -34,6 +34,7 @@ interface TransactionLog {
   tradeAmount: TokenAmount
   tokenAbbrev: string
   tokenDecimals: number
+  status: "error" | "success"
 }
 
 export interface MarginPrograms {
@@ -158,13 +159,14 @@ export class MarginClient {
 
             log.tokenAbbrev = token.symbol
             log.tokenDecimals = token.decimals
-            log.tradeAmount = new TokenAmount(postAmount.sub(preAmount).abs(), token.decimals)
+            log.tradeAmount = TokenAmount.lamports(postAmount.sub(preAmount).abs(), token.decimals)
 
             const dateTime = new Date(transaction.blockTime * 1000)
             log.blockDate = dateTime.toLocaleDateString()
             log.time = dateTime.toLocaleTimeString("en-US", { hour12: false })
             log.sigIndex = sigIndex ? sigIndex : 0
             log.signature = txAndSig.sig.signature
+            log.status = txAndSig.details.meta?.err ? "error" : "success"
             return log as TransactionLog
           }
         }

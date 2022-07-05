@@ -12,7 +12,8 @@ import {
   MarginClient,
   Pool,
   MarginPoolConfigData,
-  PoolManager
+  PoolManager,
+  Number128
 } from "../../../libraries/ts/src"
 
 import { PythClient } from "../pyth/pythClient"
@@ -257,12 +258,27 @@ describe("margin pool borrow", () => {
     await marginPool_SOL.refreshPosition(marginAccount_A)
     await marginPool_SOL.refreshPosition(marginAccount_B)
     await marginPool_SOL.refreshPosition(marginAccount_C)
+    await marginAccount_A.refresh()
+    await marginAccount_B.refresh()
+    await marginAccount_C.refresh()
 
     // TEST
-    expect(await getTokenBalance(provider, "processed", user_b_sol_account)).to.eq(0)
-    expect(await getTokenBalance(provider, "processed", user_b_usdc_account)).to.eq(0)
     expect(await getTokenBalance(provider, "processed", user_a_usdc_account)).to.eq(0)
     expect(await getTokenBalance(provider, "processed", user_a_sol_account)).to.eq(0)
+    expect(marginAccount_A.valuation.weightedCollateral.toString()).to.eq(new BN(504750).mul(Number128.ONE).toString())
+    expect(marginAccount_A.valuation.effectiveCollateral.toString()).to.eq(new BN(504750).mul(Number128.ONE).toString())
+    expect(marginAccount_A.valuation.requiredCollateral.toString()).to.eq(new BN(0).toString())
+
+    expect(await getTokenBalance(provider, "processed", user_b_sol_account)).to.eq(0)
+    expect(await getTokenBalance(provider, "processed", user_b_usdc_account)).to.eq(0)
+    expect(marginAccount_B.valuation.weightedCollateral.toString()).to.eq(new BN(47550).mul(Number128.ONE).toString())
+    expect(marginAccount_B.valuation.effectiveCollateral.toString()).to.eq(new BN(47550).mul(Number128.ONE).toString())
+    expect(marginAccount_B.valuation.requiredCollateral.toString()).to.eq(new BN(0).toString())
+
+    expect(marginAccount_C.valuation.weightedCollateral.toString()).to.eq(new BN(96).mul(Number128.ONE).toString())
+    expect(marginAccount_C.valuation.effectiveCollateral.toString()).to.eq(new BN(96).mul(Number128.ONE).toString())
+    expect(marginAccount_C.valuation.requiredCollateral.toString()).to.eq(new BN(0).toString())
+
     expect(await getTokenBalance(provider, "processed", marginPool_USDC.addresses.vault)).to.eq(500_050 + 1)
     expect(await getTokenBalance(provider, "processed", marginPool_SOL.addresses.vault)).to.eq(550 + 1)
   })
@@ -285,6 +301,8 @@ describe("margin pool borrow", () => {
     await marginPool_USDC.marginBorrow({ marginAccount: marginAccount_B, pools: marginPools, amount: borrowedUSDC })
     await marginPool_SOL.refresh()
     await marginPool_USDC.refresh()
+    await marginAccount_A.refresh()
+    await marginAccount_B.refresh()
 
     const SOLLoanNotes = marginPool_SOL.info?.loanNoteMint.supply
     const USDCLoanNotes = marginPool_USDC.info?.loanNoteMint.supply
@@ -292,6 +310,14 @@ describe("margin pool borrow", () => {
     // TEST
     expect(Number(SOLLoanNotes)).to.eq(borrowedSOL.toNumber())
     expect(Number(USDCLoanNotes)).to.eq(borrowedUSDC.toNumber())
+
+    expect(marginAccount_A.valuation.weightedCollateral.toString()).to.eq(new BN(505700).mul(Number128.ONE).toString())
+    expect(marginAccount_A.valuation.effectiveCollateral.toString()).to.eq(new BN(504700).mul(Number128.ONE).toString())
+    expect(marginAccount_A.valuation.requiredCollateral.toString()).to.eq(new BN(250).mul(Number128.ONE).toString())
+
+    expect(marginAccount_B.valuation.weightedCollateral.toString()).to.eq(new BN(48550).mul(Number128.ONE).toString())
+    expect(marginAccount_B.valuation.effectiveCollateral.toString()).to.eq(new BN(47550).mul(Number128.ONE).toString())
+    expect(marginAccount_B.valuation.requiredCollateral.toString()).to.eq(new BN(250).mul(Number128.ONE).toString())
   })
 
   it("User A repays his SOL loan", async () => {
