@@ -501,7 +501,7 @@ export class AssociatedToken {
  * @returns {BN}
  */
 export function numberToBn(number: number | null | undefined): BN {
-  return number !== null && number !== undefined ? new BN(BigInt(number).toString()) : Number192.ZERO
+  return new BN(numberToBigInt(number).toString())
 }
 
 /**
@@ -525,4 +525,11 @@ export const bigIntToBn = (bigInt: bigint | null | undefined): BN => {
 /** Convert BigInt (SPL Token) to BN. */
 export const bigIntToNumber = (bigint: bigint | null | undefined): number => {
   return bigint ? Number(bigint) : 0
+}
+
+export function numberToBigInt(number: number | null | undefined) {
+  // Stomp out any fraction component of the number
+  return number !== null && number !== undefined
+    ? BigInt(number.toLocaleString("fullwide", { useGrouping: false, maximumFractionDigits: 0 }))
+    : BigInt(0)
 }

@@ -58,7 +58,7 @@ export class AccountPosition {
   exponent: number
 
   /** A weight on the value of this asset when counting collateral */
-  valueModifier: number
+  valueModifier: BN
 
   /** The max staleness for the account balance (seconds) */
   maxStaleness: BN
@@ -78,11 +78,11 @@ export class AccountPosition {
       value: price?.value ?? info.price.value,
       exponent: price?.exponent ?? info.price.exponent,
       timestamp: price?.timestamp ?? info.price.timestamp,
-      isValid: info.price.isValid
+      isValid: price ? Number(price.isValid) : info.price.isValid
     }
     this.kind = info.kind
     this.exponent = info.exponent
-    this.valueModifier = info.valueModifier
+    this.valueModifier = Number128.fromDecimal(new BN(info.valueModifier), -2)
     this.maxStaleness = info.maxStaleness
     this.flags = new BN(info.flags as number[]).toNumber()
     this.calculateValue()
@@ -97,19 +97,17 @@ export class AccountPosition {
   collateralValue() {
     assert(this.kind === PositionKind.Deposit)
 
-    return Number128.fromDecimal(new BN(this.valueModifier), -2).mul(this.value).div(Number128.ONE)
+    return this.valueModifier.mul(this.value).div(Number128.ONE)
   }
 
   requiredCollateralValue() {
     assert(this.kind === PositionKind.Claim)
 
-    let modifier = Number128.fromDecimal(new BN(this.valueModifier), -2)
-
-    if (modifier.eq(Number128.ZERO)) {
+    if (this.valueModifier.eq(Number128.ZERO)) {
       console.log(`no leverage configured for claim ${this.token.toBase58()}`)
       return Number128.MAX
     } else {
-      return this.value.mul(Number128.ONE).div(modifier)
+      return this.value.mul(Number128.ONE).div(this.valueModifier)
     }
   }
 

@@ -25,6 +25,21 @@ export class Number192 {
 
   private constructor() {}
 
+  /** Removes the fractional component from the number. */
+  static asBn(value: BN, exponent: number) {
+    let extraPrecision = Number192.PRECISION + exponent
+    let precValue = POWERS_OF_TEN[Math.abs(extraPrecision)]
+
+    let targetValue: BN
+    if (extraPrecision < 0) {
+      targetValue = value.mul(precValue)
+    } else {
+      targetValue = value.div(precValue)
+    }
+    return targetValue
+  }
+
+  /** Removes the fractional component from the number. Throws if the number is not within the range of a u64. */
   static asU64(value: BN, exponent: number) {
     let extraPrecision = Number192.PRECISION + exponent
     let precValue = POWERS_OF_TEN[Math.abs(extraPrecision)]
@@ -47,11 +62,37 @@ export class Number192 {
     return targetValue
   }
 
-  static fromDecimal(value: BN, decimals: number, exponent: number) {
+  static asU64Rounded(value: BN, exponent: number) {
     let extraPrecision = Number192.PRECISION + exponent
     let precValue = POWERS_OF_TEN[Math.abs(extraPrecision)]
 
-    let units: BN
+    let rounding: BN
+    if (extraPrecision > 0) {
+      // FIXME: This rounding appears broken https://github.com/jet-lab/program-libraries/blob/074afd601f4ec4ba7dd88ebd6bf2f6c871b29372/math/src/number.rs#L96
+      rounding = new BN(1).mul(precValue).div(new BN(2))
+    } else {
+      rounding = Number192.ZERO
+    }
+
+    let targetRounded = rounding.add(value)
+    let targetValue: BN
+    if (extraPrecision < 0) {
+      targetValue = targetRounded.mul(precValue)
+    } else {
+      targetValue = targetRounded.div(precValue)
+    }
+
+    if (targetValue.gt(this.U64_MAX)) {
+      throw new Error("cannot convert to u64 due to overflow")
+    }
+
+    return targetValue
+  }
+
+  static fromDecimal(value: BN, exponent: number) {
+    let extraPrecision = Number192.PRECISION + exponent
+    let precValue = POWERS_OF_TEN[Math.abs(extraPrecision)]
+
     if (extraPrecision < 0) {
       return value.div(precValue)
     } else {
