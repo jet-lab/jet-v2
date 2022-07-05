@@ -559,13 +559,14 @@ export class MarginAccount {
     assert(source)
     assert(amount)
 
+    const instructions: TransactionInstruction[] = []
     await this.createAccount()
     await sleep(2000)
     await this.refresh()
-    const position = await this.getOrCreatePosition(marginPool.addresses.depositNoteMint)
+    const positionTokenMint = marginPool.addresses.depositNoteMint
+    const position = await this.withRegisterPositionIfNotExists(positionTokenMint, instructions)
     assert(position)
 
-    const instructions: TransactionInstruction[] = []
     source = await AssociatedToken.withWrapIfNativeMint(
       instructions,
       this.provider,
@@ -575,11 +576,13 @@ export class MarginAccount {
       amount
     )
 
+    const positionAddress = findDerivedAccount(this.programs.config.marginProgramId, this.address, positionTokenMint)
+
     await marginPool.withDeposit({
       instructions: instructions,
       depositor: this.owner,
       source,
-      destination: position.address,
+      destination: positionAddress,
       amount
     })
     await this.withUpdatePositionBalance({ instructions, position })

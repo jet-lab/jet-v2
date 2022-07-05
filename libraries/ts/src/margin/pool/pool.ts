@@ -12,6 +12,7 @@ import { MarginPoolConfig, MarginPools, MarginTokenConfig } from "../config"
 import { PoolAmount } from "./poolAmount"
 import { AccountPosition } from "../state"
 import { TokenMetadata } from "../metadata/state"
+import { findDerivedAccount } from "src/utils"
 
 type TokenKindNonCollateral = { nonCollateral: Record<string, never> }
 type TokenKindCollateral = { collateral: Record<string, never> }
@@ -239,7 +240,7 @@ export class Pool {
     await marginAccount.refresh()
     const instructions: TransactionInstruction[] = []
     const positionMint = this.addresses.depositNoteMint
-    await marginAccount.getOrCreatePosition(positionMint)
+    await marginAccount.withRegisterPositionIfNotExists(positionMint, instructions)
     assert(positionMint)
 
     await this.withDeposit({
@@ -335,14 +336,15 @@ export class Pool {
   }
 
   async marginBorrow({ marginAccount, pools, amount }: { marginAccount: MarginAccount; pools: Pool[]; amount: BN }) {
+    const instructions: TransactionInstruction[] = []
     await marginAccount.refresh()
-    const depositPosition = await marginAccount.getOrCreatePosition(this.addresses.depositNoteMint)
+    const positionMint = this.addresses.depositNoteMint
+    const depositPosition = await marginAccount.withRegisterPositionIfNotExists(positionMint, instructions)
     assert(depositPosition)
 
-    const loanPosition = await marginAccount.getOrCreatePosition(this.addresses.loanNoteMint)
+    const loanPosition = await marginAccount.withRegisterPositionIfNotExists(this.addresses.loanNoteMint, instructions)
     assert(loanPosition)
 
-    const instructions: TransactionInstruction[] = []
     await this.withMarginRefreshAllPositions({ instructions, pools, marginAccount })
     await marginAccount.withUpdateAllPositionBalances({ instructions })
     await this.withMarginBorrow({
@@ -423,13 +425,18 @@ export class Pool {
     amount: PoolAmount
   }) {
     await marginAccount.refresh()
-    const deposit_position = await marginAccount.getOrCreatePosition(this.addresses.depositNoteMint)
+    const instructions: TransactionInstruction[] = []
+    const deposit_position_mint = this.addresses.depositNoteMint
+    const deposit_position = await marginAccount.withRegisterPositionIfNotExists(deposit_position_mint, instructions)
     assert(deposit_position)
 
-    const loan_position = await marginAccount.getOrCreatePosition(this.addresses.loanNoteMint)
+    const loan_position_mint = this.addresses.loanNoteMint
+    const loan_position = await marginAccount.withRegisterPositionIfNotExists(loan_position_mint, instructions)
     assert(loan_position)
 
-    const instructions: TransactionInstruction[] = []
+    const deposit_position_address = findDerivedAccount(this.programs.config.marginProgramId, marginAccount.address, deposit_position_mint)
+    const loan_position_address = findDerivedAccount(this.programs.config.marginProgramId, marginAccount.address, loan_position_mint)
+
     await marginAccount.withUpdateAllPositionBalances({ instructions })
     await this.withMarginRefreshAllPositions({ instructions, pools, marginAccount })
     await marginAccount.withAdapterInvoke({
@@ -438,18 +445,19 @@ export class Pool {
       adapterMetadata: this.addresses.marginPoolAdapterMetadata,
       adapterInstruction: await this.makeMarginRepayInstruction({
         marginAccount: marginAccount.address,
-        deposit_account: deposit_position.address,
-        loan_account: loan_position.address,
+        deposit_account: deposit_position_address,
+        loan_account: loan_position_address,
         amount
       })
     })
 
+    // const loan_position_balance =
     // Automatically close the position once the loan is repaid.
-    if (amount.value.eq(loan_position.balance)) {
-      //TODO
-      //await marginAccount.withUpdatePositionBalance(ix, loan_position.address)
-      //await marginAccount.withClosePosition(ix, loan_position)
-    }
+    // if (amount.value.eq(loan_position_balance)) {
+    //   //TODO
+    //   //await marginAccount.withUpdatePositionBalance(ix, loan_position.address)
+    //   //await marginAccount.withClosePosition(ix, loan_position)
+    // }
 
     try {
       return await marginAccount.provider.sendAndConfirm(new Transaction().add(...instructions))
