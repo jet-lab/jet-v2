@@ -84,6 +84,17 @@ export interface Valuation {
   claimErrorList: [PublicKey, ErrorCode][]
 }
 
+export interface Valuation {
+  exposure: BN
+  requiredCollateral: BN
+  weightedCollateral: BN
+  effectiveCollateral: BN
+  availableCollateral: BN
+  staleCollateralList: [PublicKey, ErrorCode][]
+  pastDue: boolean
+  claimErrorList: [PublicKey, ErrorCode][]
+}
+
 export interface MarginWalletTokens {
   all: AssociatedToken[]
   map: Record<MarginPools, AssociatedToken>
