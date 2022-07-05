@@ -132,7 +132,6 @@ impl MarginIxBuilder {
     /// # Params
     ///
     /// `position_token_mint` - The mint for the relevant token for the position
-    /// `token_oracle` - The oracle account with price information on the token
     ///
     /// # Returns
     ///

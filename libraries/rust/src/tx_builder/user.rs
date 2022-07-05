@@ -23,10 +23,13 @@ use std::sync::Arc;
 use jet_margin_pool::program::JetMarginPool;
 use jet_metadata::{PositionTokenMetadata, TokenMetadata};
 
+use anchor_spl::dex::{self, serum_dex, Dex};
 use anyhow::{bail, Result};
 use solana_sdk::pubkey::Pubkey;
+use solana_sdk::rent::Rent;
 use solana_sdk::signature::Keypair;
 use solana_sdk::signer::Signer;
+use solana_sdk::sysvar::SysvarId;
 use solana_sdk::transaction::Transaction;
 use solana_sdk::{compute_budget::ComputeBudgetInstruction, instruction::Instruction};
 
@@ -608,4 +611,296 @@ impl MarginTxBuilder {
             false => self.ix.adapter_invoke(inner),
         }
     }
+}
+
+/// Methods for Serum trading
+impl MarginTxBuilder {
+    pub async fn serum_swap(
+        &self,
+        market: &SerumMarketV3,
+        open_orders: Pubkey,
+        transit_source_account: Pubkey,
+        transit_destination_account: Pubkey,
+        amount_in: u64,
+        minimum_amount_out: u64,
+        bid: bool,
+    ) -> Result<Transaction> {
+        let ix_builder = MarginSerumIxBuilder::new(market.clone());
+
+        let mut instructions = vec![];
+
+        let (pool_source_mint, pool_dest_mint, order_note_mint) = match bid {
+            true => (
+                market.quote_token,
+                market.base_token,
+                ix_builder.info.quote_note_mint,
+            ),
+            false => (
+                market.base_token,
+                market.quote_token,
+                ix_builder.info.base_note_mint,
+            ),
+        };
+
+        let source_pool = MarginPoolIxBuilder::new(pool_source_mint);
+        let dest_pool = MarginPoolIxBuilder::new(pool_source_mint);
+
+        let source_pool_account = self
+            .get_or_create_position(&mut instructions, &source_pool.deposit_note_mint)
+            .await?;
+        let destination_pool_account = self
+            .get_or_create_position(&mut instructions, &dest_pool.deposit_note_mint)
+            .await?;
+
+        let order_note = self
+            .get_or_create_position(&mut instructions, &order_note_mint)
+            .await?;
+
+        let instruction = ix_builder.swap(
+            *self.address(),
+            open_orders,
+            transit_source_account,
+            transit_destination_account,
+            source_pool_account,
+            destination_pool_account,
+            amount_in,
+            minimum_amount_out,
+            bid,
+        );
+
+        let instruction = self.adapter_invoke_ix(instruction);
+        instructions.push(instruction);
+
+        let tx = self.create_transaction(&instructions).await?;
+
+        Ok(tx)
+    }
+
+    /// Create an open orders account. Fails if the account already exists.
+    pub async fn init_open_orders(&self, market: &SerumMarketV3) -> Result<(Pubkey, Transaction)> {
+        let (open_orders, _) = Pubkey::find_program_address(
+            &[
+                self.address().as_ref(),
+                market.market.as_ref(),
+                b"open_orders",
+            ],
+            &jet_margin_swap::id(),
+        );
+        let accounts = jet_margin_swap::accounts::InitOpenOrders {
+            owner: *self.address(),
+            market: market.market,
+            payer: self.rpc.payer().pubkey(),
+            open_orders,
+            serum_program: dex::ID,
+            system_program: System::id(),
+            rent: Rent::id(),
+        }
+        .to_account_metas(None);
+
+        let instruction = Instruction {
+            program_id: jet_margin_swap::id(),
+            accounts,
+            data: jet_margin_swap::instruction::InitSerumOpenOrders {}.data(),
+        };
+
+        let instruction = self.adapter_invoke_ix(instruction);
+
+        let tx = self.create_transaction(&[instruction]).await?;
+
+        Ok((open_orders, tx))
+    }
+
+    // pub async fn close_open_orders_account(&self, market: &SerumMarketV3) -> Result<Transaction> {
+    //     let (open_orders, _) = Pubkey::find_program_address(
+    //         &[
+    //             self.address().as_ref(),
+    //             market.market.as_ref(),
+    //             b"open_orders",
+    //         ],
+    //         &jet_margin_serum::id(),
+    //     );
+    //     let accounts = jet_margin_serum::accounts::CloseOpenOrders {
+    //         margin_account: *self.address(),
+    //         market: market.market,
+    //         open_orders,
+    //         serum_program: Dex::id(),
+    //         destination: self.rpc.payer().pubkey(),
+    //     }
+    //     .to_account_metas(None);
+
+    //     let instruction = Instruction {
+    //         program_id: jet_margin_serum::id(),
+    //         accounts,
+    //         data: jet_margin_serum::instruction::CloseOpenOrders {}.data(),
+    //     };
+
+    //     let instruction = self.adapter_invoke_ix(instruction);
+
+    //     let tx = self.create_transaction(&[instruction]).await?;
+
+    //     Ok(tx)
+    // }
+
+    // pub async fn new_spot_order(
+    //     &self,
+    //     market: &SerumMarketV3,
+    //     open_orders: Pubkey,
+    //     transit_account: Pubkey,
+    //     order: OrderParams,
+    // ) -> Result<Transaction> {
+    //     let ix_builder = MarginSerumIxBuilder::new(market.clone());
+
+    //     let mut instructions = vec![];
+
+    //     let (pool_source_mint, order_note_mint) = match order.side {
+    //         OrderSide::Bid => (market.quote_token, ix_builder.info.quote_note_mint),
+    //         OrderSide::Ask => (market.base_token, ix_builder.info.base_note_mint),
+    //     };
+
+    //     let pool = MarginPoolIxBuilder::new(pool_source_mint);
+
+    //     let deposit_note = self
+    //         .get_or_create_position(&mut instructions, &pool.deposit_note_mint)
+    //         .await?;
+
+    //     let order_note = self
+    //         .get_or_create_position(&mut instructions, &order_note_mint)
+    //         .await?;
+
+    //     let instruction = ix_builder.new_order_v3(
+    //         *self.address(),
+    //         open_orders,
+    //         transit_account,
+    //         deposit_note,
+    //         order_note,
+    //         order,
+    //     );
+
+    //     let instruction = self.adapter_invoke_ix(instruction);
+    //     instructions.push(instruction);
+
+    //     let tx = self.create_transaction(&instructions).await?;
+
+    //     Ok(tx)
+    // }
+
+    // pub async fn cancel_spot_order(
+    //     &self,
+    //     market: &SerumMarketV3,
+    //     open_orders: Pubkey,
+    //     side: u8,
+    //     order_id: u128,
+    // ) -> Result<Transaction> {
+    //     let ix_builder = MarginSerumIxBuilder::new(market.clone());
+
+    //     let instruction = ix_builder.cancel_order_v2(*self.address(), open_orders, side, order_id);
+
+    //     let instruction = self.adapter_invoke_ix(instruction);
+
+    //     let tx = self.create_transaction(&[instruction]).await?;
+
+    //     Ok(tx)
+    // }
+
+    /// Open positions to settle funds. Only creates them if they do not exist
+    pub async fn open_settlement_positions(
+        &self,
+        market: &SerumMarketV3,
+    ) -> Result<(Option<Transaction>, (Pubkey, Pubkey), (Pubkey, Pubkey))> {
+        let ix_builder = MarginSerumIxBuilder::new(market.clone());
+
+        let base_pool = MarginPoolIxBuilder::new(market.base_token);
+        let quote_pool = MarginPoolIxBuilder::new(market.quote_token);
+
+        let mut instructions = vec![];
+
+        // Open positions for settlement if they do not exist
+        let base_note = self
+            .get_or_create_position(&mut instructions, &ix_builder.info.base_note_mint)
+            .await?;
+        let quote_note = self
+            .get_or_create_position(&mut instructions, &ix_builder.info.quote_note_mint)
+            .await?;
+
+        // Open pool positions for deposits if they do not exist
+        let base_deposit_note = self
+            .get_or_create_position(&mut instructions, &base_pool.deposit_note_mint)
+            .await?;
+        let quote_deposit_note = self
+            .get_or_create_position(&mut instructions, &quote_pool.deposit_note_mint)
+            .await?;
+
+        if instructions.is_empty() {
+            return Ok((
+                None,
+                (base_note, quote_note),
+                (base_deposit_note, quote_deposit_note),
+            ));
+        }
+        let tx = self.create_transaction(&instructions).await?;
+
+        Ok((
+            Some(tx),
+            (base_note, quote_note),
+            (base_deposit_note, quote_deposit_note),
+        ))
+    }
+
+    // #[allow(clippy::too_many_arguments)]
+    // pub async fn settle_funds(
+    //     &self,
+    //     market: &SerumMarketV3,
+    //     open_orders: Pubkey,
+    //     base_wallet: Pubkey,
+    //     quote_wallet: Pubkey,
+    //     order_notes: (Pubkey, Pubkey),
+    //     deposit_notes: (Pubkey, Pubkey),
+    // ) -> Result<Transaction> {
+    //     let ix_builder = MarginSerumIxBuilder::new(market.clone());
+
+    //     let base_pool = MarginPoolIxBuilder::new(market.base_token);
+    //     let quote_pool = MarginPoolIxBuilder::new(market.quote_token);
+
+    //     let instruction = ix_builder.settle_funds(
+    //         self.ix.address,
+    //         open_orders,
+    //         base_wallet,
+    //         quote_wallet,
+    //         order_notes.0,
+    //         order_notes.1,
+    //         deposit_notes.0,
+    //         deposit_notes.1,
+    //         &base_pool,
+    //         &quote_pool,
+    //     );
+
+    //     let instruction = self.adapter_invoke_ix(instruction);
+
+    //     let tx = self.create_transaction(&[instruction]).await?;
+
+    //     Ok(tx)
+    // }
+
+    // /// Refresh a user's Serum open order position(s)
+    // pub async fn refresh_open_orders(&self, market: &SerumMarketV3) -> Result<Transaction> {
+    //     let ix_builder = MarginSerumIxBuilder::new(market.clone());
+    //     let account_data = self
+    //         .rpc
+    //         .get_account(&ix_builder.info.market_info)
+    //         .await?
+    //         .with_context(|| {
+    //             format!(
+    //                 "No account found at {}, is the market registered?",
+    //                 &ix_builder.info.market_info
+    //             )
+    //         })?;
+    //     let market_info = SerumMarketInfo::try_deserialize(&mut &account_data.data[..])?;
+    //     let ix = self.ix.adapter_invoke(ix_builder.refresh_open_orders(
+    //         self.ix.address,
+    //         market_info.base_token_price_oracle,
+    //         market_info.quote_token_price_oracle,
+    //     ));
+
+    //     self.create_transaction(&[ix]).await
+    // }
 }

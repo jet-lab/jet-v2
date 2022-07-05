@@ -1,0 +1,327 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+//
+// Copyright (C) 2022 JET PROTOCOL HOLDINGS, LLC.
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Affero General Public License for more details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+use anchor_lang::prelude::ToAccountMetas;
+use anchor_lang::{Id, InstructionData};
+use anchor_spl::dex::{self, Dex};
+use solana_sdk::instruction::Instruction;
+use solana_sdk::pubkey::Pubkey;
+use solana_sdk::sysvar::{rent::Rent, SysvarId};
+
+// use jet_margin_serum::accounts::{self as ix_accounts, MarginPoolInfo, MarginPoolInfo2};
+// use jet_margin_serum::{instruction as ix_data, OrderParams, OrderSide};
+
+use crate::accounts::SerumMarketInfoAccounts;
+
+use super::MarginPoolIxBuilder;
+
+/// All the pubkeys that are used by a Serum V3 market
+#[derive(Clone)]
+pub struct SerumMarketV3 {
+    pub market: Pubkey,
+    pub bids: Pubkey,
+    pub asks: Pubkey,
+    pub request_queue: Pubkey,
+    pub event_queue: Pubkey,
+    pub base_token: Pubkey,
+    pub quote_token: Pubkey,
+    pub base_vault: Pubkey,
+    pub quote_vault: Pubkey,
+    pub vault_signer: Pubkey,
+}
+
+/// Utility for creating instructions to interact with the margin
+/// pools program for a specific pool.
+#[derive(Clone)]
+pub struct MarginSerumIxBuilder {
+    pub market: SerumMarketV3,
+    pub info: SerumMarketInfoAccounts,
+}
+
+impl MarginSerumIxBuilder {
+    pub fn new(market: SerumMarketV3) -> Self {
+        let info = SerumMarketInfoAccounts::derive(market.market, &Pubkey::default());
+        Self { market, info }
+    }
+
+    /// Execute a Serum swap
+    pub fn swap(
+        &self,
+        margin_account: Pubkey,
+        open_orders: Pubkey,
+        transit_source_account: Pubkey,
+        transit_destination_account: Pubkey,
+        source_pool_account: Pubkey,
+        destination_pool_account: Pubkey,
+        amount_in: u64,
+        minimum_amount_out: u64,
+        bid: bool,
+    ) -> Instruction {
+        let (source_pool, dest_pool, order_note_mint) = match bid {
+            true => {
+                let source_pool = MarginPoolIxBuilder::new(self.market.quote_token);
+                let dest_pool = MarginPoolIxBuilder::new(self.market.base_token);
+                (source_pool, dest_pool, self.info.quote_note_mint)
+            }
+            false => {
+                let source_pool = MarginPoolIxBuilder::new(self.market.base_token);
+                let dest_pool = MarginPoolIxBuilder::new(self.market.quote_token);
+                (source_pool, dest_pool, self.info.base_note_mint)
+            }
+        };
+        let accounts = jet_margin_swap::accounts::SerumSwap {
+            margin_account,
+            source_pool_account,
+            destination_pool_account,
+            transit_source_account,
+            transit_destination_account,
+            swap_info: jet_margin_swap::accounts::SerumSwapInfo {
+                market: self.market.market,
+                authority: margin_account,
+                open_orders,
+                open_orders_authority: margin_account,
+                base_vault: self.market.base_vault,
+                quote_vault: self.market.quote_vault,
+                request_queue: self.market.request_queue,
+                event_queue: self.market.event_queue,
+                market_bids: self.market.bids,
+                market_asks: self.market.asks,
+                vault_signer: self.market.vault_signer,
+                serum_program: dex::ID,
+            },
+            source_margin_pool: jet_margin_swap::accounts::MarginPoolInfo {
+                margin_pool: source_pool.address,
+                vault: source_pool.vault,
+                deposit_note_mint: source_pool.deposit_note_mint,
+            },
+            destination_margin_pool: jet_margin_swap::accounts::MarginPoolInfo {
+                margin_pool: dest_pool.address,
+                vault: dest_pool.vault,
+                deposit_note_mint: dest_pool.deposit_note_mint,
+            },
+            margin_pool_program: jet_margin_pool::id(),
+            token_program: anchor_spl::token::ID,
+            rent: Rent::id(),
+        }
+        .to_account_metas(None);
+
+        Instruction {
+            program_id: jet_margin_swap::ID,
+            data: jet_margin_swap::instruction::SerumSwap {
+                amount_in,
+                minimum_amount_out,
+                bid,
+            }
+            .data(),
+            accounts,
+        }
+    }
+
+    // /// Instruction to place a new Serum order
+    // ///
+    // /// # Params
+    // ///
+    // /// `margin_account` - The margin account with the order to be placed
+    // /// `open_orders` - The margin account's Serum OpenOrders account for this market
+    // /// `transit_account` - The account to transfer from the pool and to the Serum market, can be an ATA
+    // /// `deposit_note` - Margin account position where pool deposit notes will be withdrawn
+    // /// `order_note` - Margin account position where Serum open order notes will be minted to
+    // /// `order` - Serum order parameters
+    // pub fn new_order_v3(
+    //     &self,
+    //     margin_account: Pubkey,
+    //     open_orders: Pubkey,
+    //     transit_account: Pubkey,
+    //     deposit_note: Pubkey,
+    //     order_note: Pubkey,
+    //     order: OrderParams,
+    // ) -> Instruction {
+    //     let (pool, order_note_mint) = match order.side {
+    //         OrderSide::Bid => {
+    //             let pool = MarginPoolIxBuilder::new(self.market.quote_token);
+    //             (pool, self.info.quote_note_mint)
+    //         }
+    //         OrderSide::Ask => {
+    //             let pool = MarginPoolIxBuilder::new(self.market.base_token);
+    //             (pool, self.info.base_note_mint)
+    //         }
+    //     };
+    //     let accounts = ix_accounts::NewOrderV3 {
+    //         margin_account,
+    //         market: self.market.market,
+    //         market_info: self.info.market_info,
+    //         open_orders_account: open_orders,
+    //         request_queue: self.market.request_queue,
+    //         event_queue: self.market.event_queue,
+    //         bids: self.market.bids,
+    //         asks: self.market.asks,
+    //         transit_order_payer: transit_account,
+    //         source_margin_pool: MarginPoolInfo {
+    //             margin_pool: pool.address,
+    //             vault: pool.vault,
+    //             deposit_note_mint: pool.deposit_note_mint,
+    //         },
+    //         deposit_note,
+    //         order_note,
+    //         order_note_mint,
+    //         base_vault: self.market.base_vault,
+    //         quote_vault: self.market.quote_vault,
+    //         margin_pool_program: jet_margin_pool::id(),
+    //         token_program: anchor_spl::token::ID,
+    //         rent: Rent::id(),
+    //         serum_program: Dex::id(),
+    //     }
+    //     .to_account_metas(None);
+
+    //     Instruction {
+    //         program_id: jet_margin_serum::ID,
+    //         data: ix_data::NewOrderV3 { order }.data(),
+    //         accounts,
+    //     }
+    // }
+
+    // /// Instruction to {}
+    // ///
+    // /// # Params
+    // ///
+    // /// `depositor` - The authority for the source tokens
+    // pub fn cancel_order_v2(
+    //     &self,
+    //     margin_account: Pubkey,
+    //     open_orders: Pubkey,
+    //     side: u8,
+    //     order_id: u128,
+    // ) -> Instruction {
+    //     let accounts = ix_accounts::CancelOrderV2 {
+    //         margin_account,
+    //         serum_program: Dex::id(),
+    //         market: self.market.market,
+    //         market_bids: self.market.bids,
+    //         market_asks: self.market.asks,
+    //         open_orders_account: open_orders,
+    //         event_queue: self.market.event_queue,
+    //     }
+    //     .to_account_metas(None);
+
+    //     Instruction {
+    //         program_id: jet_margin_serum::ID,
+    //         data: ix_data::CancelOrderV2 { side, order_id }.data(),
+    //         accounts,
+    //     }
+    // }
+
+    // /// Instruction to {}
+    // ///
+    // /// # Params
+    // ///
+    // /// `depositor` - The authority for the source tokens
+    // pub fn close_open_orders(&self, margin_account: Pubkey, open_orders: Pubkey) -> Instruction {
+    //     let accounts = ix_accounts::CloseOpenOrders {
+    //         margin_account,
+    //         serum_program: Dex::id(),
+    //         open_orders,
+    //         destination: margin_account,
+    //         market: self.market.market,
+    //     }
+    //     .to_account_metas(None);
+
+    //     Instruction {
+    //         program_id: jet_margin_serum::ID,
+    //         data: ix_data::CloseOpenOrders.data(),
+    //         accounts,
+    //     }
+    // }
+
+    // /// Instruction to {}
+    // ///
+    // /// # Params
+    // ///
+    // /// `depositor` - The authority for the source tokens
+    // #[allow(clippy::too_many_arguments)]
+    // pub fn settle_funds(
+    //     &self,
+    //     margin_account: Pubkey,
+    //     open_orders: Pubkey,
+    //     base_wallet: Pubkey,
+    //     quote_wallet: Pubkey,
+    //     base_note: Pubkey,
+    //     quote_note: Pubkey,
+    //     base_deposit_note: Pubkey,
+    //     quote_deposit_note: Pubkey,
+    //     base_margin_pool: &MarginPoolIxBuilder,
+    //     quote_margin_pool: &MarginPoolIxBuilder,
+    // ) -> Instruction {
+    //     let accounts = ix_accounts::SettleFunds {
+    //         margin_account,
+    //         market: self.market.market,
+    //         market_info: self.info.market_info,
+    //         open_orders_account: open_orders,
+    //         base_vault: self.market.base_vault,
+    //         quote_vault: self.market.quote_vault,
+    //         base_wallet,
+    //         quote_wallet,
+    //         base_order_note_mint: self.info.base_note_mint,
+    //         quote_order_note_mint: self.info.quote_note_mint,
+    //         base_note,
+    //         quote_note,
+    //         base_deposit_note,
+    //         quote_deposit_note,
+    //         base_margin_pool: MarginPoolInfo2 {
+    //             margin_pool: base_margin_pool.address,
+    //             vault: base_margin_pool.vault,
+    //             deposit_note_mint: base_margin_pool.deposit_note_mint,
+    //         },
+    //         quote_margin_pool: MarginPoolInfo2 {
+    //             margin_pool: quote_margin_pool.address,
+    //             vault: quote_margin_pool.vault,
+    //             deposit_note_mint: quote_margin_pool.deposit_note_mint,
+    //         },
+    //         vault_signer: self.market.vault_signer,
+    //         margin_pool_program: jet_margin_pool::id(),
+    //         serum_program: Dex::id(),
+    //         token_program: anchor_spl::token::ID,
+    //     }
+    //     .to_account_metas(None);
+
+    //     Instruction {
+    //         program_id: jet_margin_serum::ID,
+    //         data: ix_data::SettleFunds.data(),
+    //         accounts,
+    //     }
+    // }
+
+    // pub fn refresh_open_orders(
+    //     &self,
+    //     margin_account: Pubkey,
+    //     base_oracle: Pubkey,
+    //     quote_oracle: Pubkey,
+    // ) -> Instruction {
+    //     let accounts = ix_accounts::RefreshOpenOrders {
+    //         margin_account,
+    //         market_info: self.info.market_info,
+    //         base_token_price_oracle: base_oracle,
+    //         quote_token_price_oracle: quote_oracle,
+    //     }
+    //     .to_account_metas(None);
+
+    //     Instruction {
+    //         program_id: jet_margin_serum::ID,
+    //         accounts,
+    //         data: ix_data::RefreshOpenOrders.data(),
+    //     }
+    // }
+}
