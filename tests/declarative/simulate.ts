@@ -19,7 +19,6 @@ async function simulate() {
   await replicant.printAccounts()
   await replicant.closeAccounts()
 
-
   replicant = new Replicant(
     BORROW_CONFIG,
     new Account(JSON.parse(fs.readFileSync(os.homedir() + `/.config/solana/id.json`, "utf-8")))
@@ -30,7 +29,6 @@ async function simulate() {
   await replicant.processBorrows()
   await replicant.printAccounts()
   await replicant.closeAccounts()
-
 
   await replicant.printAccounts()
 }

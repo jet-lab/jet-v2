@@ -361,12 +361,12 @@ export class MarginAccount {
     }
 
     const walletAmount = pool.symbol && this.walletTokens?.map[pool.symbol].amount
+    const feeCover = new TokenAmount(new BN(20000000), pool.decimals)
 
     // Max deposit
     let deposit = walletAmount ?? TokenAmount.zero(pool.decimals)
     // If depositing SOL, maximum input should still cover fees
     if (pool.address.equals(NATIVE_MINT)) {
-      const feeCover = new TokenAmount(new BN(20000000), pool.decimals)
       deposit = TokenAmount.max(deposit.sub(feeCover), TokenAmount.zero(pool.decimals))
     }
 
@@ -392,7 +392,11 @@ export class MarginAccount {
     borrow = TokenAmount.max(borrow, TokenAmount.zero(pool.decimals))
 
     // Max repay
-    const repay = walletAmount ? TokenAmount.min(loanBalance, walletAmount) : loanBalance
+    let repay = walletAmount ? TokenAmount.min(loanBalance, walletAmount) : loanBalance
+    // If repaying SOL, maximum input should still cover fees
+    if (pool.address.equals(NATIVE_MINT)) {
+      repay = TokenAmount.max(repay.sub(feeCover), TokenAmount.zero(pool.decimals))
+    }
 
     // Max swap
     const swap = withdraw
