@@ -159,7 +159,7 @@ export class MarginClient {
 
             log.tokenAbbrev = token.symbol
             log.tokenDecimals = token.decimals
-            log.tradeAmount = new TokenAmount(postAmount.sub(preAmount).abs(), token.decimals)
+            log.tradeAmount = TokenAmount.lamports(postAmount.sub(preAmount).abs(), token.decimals)
 
             const dateTime = new Date(transaction.blockTime * 1000)
             log.blockDate = dateTime.toLocaleDateString()
