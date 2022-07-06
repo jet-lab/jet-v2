@@ -31,7 +31,7 @@ use solana_sdk::system_program;
 use solana_sdk::{pubkey::Pubkey, transaction::Transaction};
 
 use jet_control::TokenMetadataParams;
-use jet_margin_pool::{Amount, MarginPool, MarginPoolConfig};
+use jet_margin_pool::{Amount, MarginPool, MarginPoolConfig, TokenChange};
 use jet_margin_sdk::tx_builder::MarginTxBuilder;
 use jet_metadata::{LiquidatorMetadata, MarginAdapterMetadata, TokenKind, TokenMetadata};
 use jet_simulation::{send_and_confirm, solana_rpc_api::SolanaRpcClient};
@@ -214,6 +214,9 @@ pub struct MarginUser {
 }
 
 impl MarginUser {
+    pub async fn print(&self) {
+        println!("{:#?}", self.tx.get_account_state().await.unwrap())
+    }
     async fn send_confirm_tx(&self, tx: Transaction) -> Result<(), Error> {
         let _ = self.rpc.send_and_confirm_transaction(&tx).await?;
         Ok(())
@@ -276,9 +279,9 @@ impl MarginUser {
         &self,
         mint: &Pubkey,
         source: &Pubkey,
-        amount: Amount,
+        change: TokenChange,
     ) -> Result<(), Error> {
-        self.send_confirm_tx(self.tx.deposit(mint, source, amount).await?)
+        self.send_confirm_tx(self.tx.deposit(mint, source, change).await?)
             .await
     }
 
@@ -286,19 +289,19 @@ impl MarginUser {
         &self,
         mint: &Pubkey,
         destination: &Pubkey,
-        amount: Amount,
+        change: TokenChange,
     ) -> Result<(), Error> {
-        self.send_confirm_tx(self.tx.withdraw(mint, destination, amount).await?)
+        self.send_confirm_tx(self.tx.withdraw(mint, destination, change).await?)
             .await
     }
 
-    pub async fn borrow(&self, mint: &Pubkey, amount: Amount) -> Result<(), Error> {
-        self.send_confirm_tx(self.tx.borrow(mint, amount).await?)
+    pub async fn borrow(&self, mint: &Pubkey, change: TokenChange) -> Result<(), Error> {
+        self.send_confirm_tx(self.tx.borrow(mint, change).await?)
             .await
     }
 
-    pub async fn margin_repay(&self, mint: &Pubkey, amount: Amount) -> Result<(), Error> {
-        self.send_confirm_tx(self.tx.margin_repay(mint, amount).await?)
+    pub async fn margin_repay(&self, mint: &Pubkey, change: TokenChange) -> Result<(), Error> {
+        self.send_confirm_tx(self.tx.margin_repay(mint, change).await?)
             .await
     }
 
@@ -306,11 +309,11 @@ impl MarginUser {
         &self,
         mint: &Pubkey,
         source: &Pubkey,
-        amount: Amount,
+        change: TokenChange,
     ) -> Result<(), Error> {
         self.send_confirm_tx(
             self.tx
-                .margin_repay_from_wallet(mint, source, amount)
+                .margin_repay_from_wallet(mint, source, change)
                 .await?,
         )
         .await

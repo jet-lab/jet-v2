@@ -22,10 +22,9 @@ use solana_sdk::instruction::Instruction;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::sysvar::{rent::Rent, SysvarId};
 
-use jet_margin_pool::accounts as ix_accounts;
 use jet_margin_pool::instruction as ix_data;
 use jet_margin_pool::program::JetMarginPool;
-use jet_margin_pool::Amount;
+use jet_margin_pool::{accounts as ix_accounts, TokenChange};
 
 /// Utility for creating instructions to interact with the margin
 /// pools program for a specific pool.
@@ -121,7 +120,7 @@ impl MarginPoolIxBuilder {
         depositor: Pubkey,
         source: Pubkey,
         destination: Pubkey,
-        amount: Amount,
+        change: TokenChange,
     ) -> Instruction {
         let accounts = ix_accounts::Deposit {
             margin_pool: self.address,
@@ -136,7 +135,7 @@ impl MarginPoolIxBuilder {
 
         Instruction {
             program_id: jet_margin_pool::ID,
-            data: ix_data::Deposit { amount }.data(),
+            data: ix_data::Deposit { change }.data(),
             accounts,
         }
     }
@@ -154,7 +153,7 @@ impl MarginPoolIxBuilder {
         depositor: Pubkey,
         source: Pubkey,
         destination: Pubkey,
-        amount: Amount,
+        change: TokenChange,
     ) -> Instruction {
         let accounts = ix_accounts::Withdraw {
             margin_pool: self.address,
@@ -169,7 +168,7 @@ impl MarginPoolIxBuilder {
 
         Instruction {
             program_id: jet_margin_pool::ID,
-            data: ix_data::Withdraw { amount }.data(),
+            data: ix_data::Withdraw { change }.data(),
             accounts,
         }
     }
@@ -187,7 +186,7 @@ impl MarginPoolIxBuilder {
         margin_account: Pubkey,
         deposit_account: Pubkey,
         loan_account: Pubkey,
-        amount: Amount,
+        change: TokenChange,
     ) -> Instruction {
         let accounts = ix_accounts::MarginBorrow {
             margin_account,
@@ -202,7 +201,7 @@ impl MarginPoolIxBuilder {
 
         Instruction {
             program_id: jet_margin_pool::ID,
-            data: ix_data::MarginBorrow { amount }.data(),
+            data: ix_data::MarginBorrow { change }.data(),
             accounts,
         }
     }
@@ -220,7 +219,7 @@ impl MarginPoolIxBuilder {
         margin_account: Pubkey,
         deposit_account: Pubkey,
         loan_account: Pubkey,
-        amount: Amount,
+        change: TokenChange,
     ) -> Instruction {
         let accounts = ix_accounts::MarginRepay {
             margin_account,
@@ -235,7 +234,7 @@ impl MarginPoolIxBuilder {
 
         Instruction {
             program_id: jet_margin_pool::ID,
-            data: ix_data::MarginRepay { amount }.data(),
+            data: ix_data::MarginRepay { change }.data(),
             accounts,
         }
     }
@@ -255,7 +254,7 @@ impl MarginPoolIxBuilder {
         repayment_source_authority: Pubkey,
         repayment_source_account: Pubkey,
         loan_account: Pubkey,
-        amount: Amount,
+        change: TokenChange,
     ) -> Instruction {
         let accounts = ix_accounts::MarginRepayFromWallet {
             margin_account,
@@ -271,7 +270,7 @@ impl MarginPoolIxBuilder {
 
         Instruction {
             program_id: jet_margin_pool::ID,
-            data: ix_data::MarginRepayFromWallet { amount }.data(),
+            data: ix_data::MarginRepayFromWallet { change }.data(),
             accounts,
         }
     }

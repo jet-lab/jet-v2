@@ -19,7 +19,7 @@ use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Burn, Token, TokenAccount, Transfer};
 use jet_margin::MarginAccount;
 
-use crate::{events, state::PoolAction, Amount, ChangeKind, ErrorCode, MarginPool};
+use crate::{events, state::PoolAction, ErrorCode, MarginPool, TokenChange};
 
 #[derive(Accounts)]
 pub struct MarginRepayFromWallet<'info> {
@@ -84,7 +84,7 @@ impl<'info> MarginRepayFromWallet<'info> {
 
 pub fn margin_repay_from_wallet_handler(
     ctx: Context<MarginRepayFromWallet>,
-    amount: Amount,
+    change: TokenChange,
 ) -> Result<()> {
     let pool = &mut ctx.accounts.margin_pool;
     let clock = Clock::get()?;
@@ -96,12 +96,8 @@ pub fn margin_repay_from_wallet_handler(
     }
 
     // Amount the user desires to repay
-    let repay_amount = match amount.change_kind {
-        ChangeKind::ShiftValue => pool.convert_loan_amount(amount, PoolAction::Repay)?,
-        ChangeKind::SetValue => {
-            pool.calculate_set_amount(ctx.accounts.loan_account.amount, amount, PoolAction::Repay)?
-        }
-    };
+    let repay_amount =
+        pool.calculate_full_amount(ctx.accounts.loan_account.amount, change, PoolAction::Repay)?;
 
     msg!(
         "Repaying [{} tokens, {} notes] into loan pool",

@@ -22,7 +22,7 @@ import {
 } from "./state"
 import { MarginPrograms } from "./marginClient"
 import { findDerivedAccount } from "../utils/pda"
-import { AssociatedToken, bnToNumber, getTimestamp, MarginPools, Number192, PoolAmount, TokenAmount } from ".."
+import { AssociatedToken, bnToNumber, getTimestamp, MarginPools, Number192, PoolTokenChange, TokenAmount } from ".."
 import { MarginPoolConfig, MarginTokenConfig } from "./config"
 import { sleep } from "../utils/util"
 import { AccountPosition, PriceInfo } from "./accountPosition"
@@ -687,11 +687,11 @@ export class MarginAccount {
   ///
   /// `token_mint` - The address of the mint for the tokens being deposited
   /// `source` - The token account that the deposit will be transfered from. Can also point to the wallet to automatically wrap SOL
-  /// `amount` - The amount of tokens to deposit
-  async deposit(marginPool: Pool, source: Address, amount: PoolAmount) {
+  /// `change` - The amount of tokens to deposit
+  async deposit(marginPool: Pool, source: Address, change: PoolTokenChange) {
     assert(marginPool)
     assert(source)
-    assert(amount)
+    assert(change)
 
     await this.createAccount()
     await sleep(2000)
@@ -706,7 +706,7 @@ export class MarginAccount {
       this.provider.wallet.publicKey,
       marginPool.tokenMint,
       source,
-      amount
+      change.value
     )
 
     await marginPool.withDeposit({
@@ -714,7 +714,7 @@ export class MarginAccount {
       depositor: this.owner,
       source,
       destination: position.address,
-      amount
+      change
     })
     await this.withUpdatePositionBalance({ instructions, position })
     return await this.provider.sendAndConfirm(new Transaction().add(...instructions))

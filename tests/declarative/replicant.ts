@@ -8,7 +8,7 @@ import {
   MarginConfig,
   MarginPrograms,
   Pool,
-  PoolAmount,
+  PoolTokenChange,
   PoolManager,
   ZERO_BN
 } from "../../libraries/ts/src/index"
@@ -189,7 +189,7 @@ export class Replicant {
           assert(tokenConfig.faucet)
           if (existingBorrow.lt(expectedBorrow)) {
             const amount = expectedBorrow.sub(existingBorrow)
-            await marginPool.marginBorrow({ marginAccount, pools: this.pools!, amount })
+            await marginPool.marginBorrow({ marginAccount, pools: this.pools!, change: PoolTokenChange.shiftBy(amount) })
           } else if (existingBorrow.gt(expectedBorrow)) {
             const amount = existingBorrow.sub(expectedBorrow)
 
@@ -297,8 +297,8 @@ export class Replicant {
                 const txid = await marginAccount.deposit(pool, tokenAccount, amount)
               }
 
-              const amount = PoolAmount.notes(position.balance)
-              await pool.marginRepay({ marginAccount, pools: this.pools!, amount })
+              const change = PoolTokenChange.setTo(0)
+              await pool.marginRepay({ marginAccount, pools: this.pools!, change })
               await marginAccount.closePosition(position)
               break
             }
@@ -323,8 +323,8 @@ export class Replicant {
                 true
               )
               if (position.balance.gt(ZERO_BN)) {
-                const amount = PoolAmount.notes(position.balance)
-                await pool.marginWithdraw({ marginAccount, destination, amount })
+                const change = PoolTokenChange.setTo(0)
+                await pool.marginWithdraw({ marginAccount, destination, change })
               }
               console.log('');
               console.log(`position = ${JSON.stringify(position)}`);

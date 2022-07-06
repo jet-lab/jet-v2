@@ -9,7 +9,7 @@ import { MarginAccount } from "../marginAccount"
 import { MarginPrograms } from "../marginClient"
 import { MarginPoolConfigData, MarginPoolData } from "./state"
 import { MarginPoolConfig, MarginPools, MarginTokenConfig } from "../config"
-import { PoolAmount } from "./poolAmount"
+import { PoolTokenChange } from "./poolTokenChange"
 import { TokenMetadata } from "../metadata/state"
 import { AccountPosition, PriceInfo } from "../accountPosition"
 import { Number192 } from "../../utils"
@@ -369,8 +369,8 @@ export class Pool {
   /// `depositor` - The authority for the source tokens
   /// `source` - The token account that has the tokens to be deposited
   /// `destination` - The token account to send notes representing the deposit
-  /// `amount` - The amount of tokens to be deposited
-  async deposit({ marginAccount, source, amount }: { marginAccount: MarginAccount; source: Address; amount: PoolAmount }) {
+  /// `change` - The amount of tokens to be deposited
+  async deposit({ marginAccount, source, change }: { marginAccount: MarginAccount; source: Address; change: PoolTokenChange }) {
     await marginAccount.refresh()
     const position = await marginAccount.getOrCreatePosition(this.addresses.depositNoteMint)
     assert(position)
@@ -382,7 +382,7 @@ export class Pool {
       depositor: marginAccount.address,
       source,
       destination: position.address,
-      amount,
+      change,
     })
     await marginAccount.withUpdatePositionBalance({ instructions, position })
 
@@ -394,16 +394,16 @@ export class Pool {
     depositor,
     source,
     destination,
-    amount
+    change
   }: {
     instructions: TransactionInstruction[]
     depositor: Address
     source: Address
     destination: Address
-    amount: PoolAmount
+    change: PoolTokenChange
   }): Promise<void> {
     const ix = await this.programs.marginPool.methods
-      .deposit(amount.toRpcArg())
+      .deposit(change.toRpcArg())
       .accounts({
         marginPool: this.address,
         vault: this.addresses.vault,
@@ -469,7 +469,7 @@ export class Pool {
     }
   }
 
-  async marginBorrow({ marginAccount, pools, amount }: { marginAccount: MarginAccount; pools: Pool[]; amount: BN }) {
+  async marginBorrow({ marginAccount, pools, change }: { marginAccount: MarginAccount; pools: Pool[]; change: PoolTokenChange }) {
     await marginAccount.refresh()
     const depositPosition = await marginAccount.getOrCreatePosition(this.addresses.depositNoteMint)
     assert(depositPosition)
@@ -485,7 +485,7 @@ export class Pool {
       marginAccount,
       depositPosition,
       loanPosition,
-      amount
+      change
     })
     try {
       return await marginAccount.provider.sendAndConfirm(new Transaction().add(...instructions))
@@ -503,19 +503,19 @@ export class Pool {
   /// `marginAccount` - The account being borrowed against
   /// `deposit_account` - The account to receive the notes for the borrowed tokens
   /// `loan_account` - The account to receive the notes representing the debt
-  /// `amount` - The amount of tokens to be borrowed
+  /// `change` - The amount of tokens to be borrowed as a `PoolTokenChange`
   async withMarginBorrow({
     instructions,
     marginAccount,
     depositPosition,
     loanPosition,
-    amount
+    change
   }: {
     instructions: TransactionInstruction[]
     marginAccount: MarginAccount
     depositPosition: AccountPosition
     loanPosition: AccountPosition
-    amount: BN
+    change: PoolTokenChange
   }): Promise<void> {
     assert(marginAccount)
     assert(depositPosition)
@@ -525,7 +525,7 @@ export class Pool {
       adapterProgram: this.programs.config.marginPoolProgramId,
       adapterMetadata: this.addresses.marginPoolAdapterMetadata,
       adapterInstruction: await this.programs.marginPool.methods
-        .marginBorrow(PoolAmount.shiftBy(amount).toRpcArg())
+        .marginBorrow(change.toRpcArg())
         .accounts({
           marginAccount: marginAccount.address,
           marginPool: this.address,
@@ -547,15 +547,15 @@ export class Pool {
   /// `margin_account` - The account with the loan to be repaid
   /// `deposit_account` - The account with notes to repay the loan
   /// `loan_account` - The account with the loan debt to be reduced
-  /// `amount` - The amount to be repaid
+  /// `change` - The amount to be repaid
   async marginRepay({
     marginAccount,
     pools,
-    amount
+    change
   }: {
     marginAccount: MarginAccount
     pools: Pool[]
-    amount: PoolAmount
+    change: PoolTokenChange
   }) {
     await marginAccount.refresh()
     const deposit_position = await marginAccount.getOrCreatePosition(this.addresses.depositNoteMint)
@@ -575,12 +575,12 @@ export class Pool {
         marginAccount: marginAccount.address,
         deposit_account: deposit_position.address,
         loan_account: loan_position.address,
-        amount
+        change
       })
     })
 
     // Automatically close the position once the loan is repaid.
-    if (amount.value.eq(loan_position.balance)) {
+    if (change.value.eq(loan_position.balance)) {
       //TODO
       //await marginAccount.withUpdatePositionBalance(ix, loan_position.address)
       //await marginAccount.withClosePosition(ix, loan_position)
@@ -598,15 +598,15 @@ export class Pool {
     marginAccount,
     deposit_account,
     loan_account,
-    amount
+    change
   }: {
     marginAccount: Address
     deposit_account: Address
     loan_account: Address
-    amount: PoolAmount
+    change: PoolTokenChange
   }): Promise<TransactionInstruction> {
     return await this.programs.marginPool.methods
-      .marginRepay(amount.toRpcArg())
+      .marginRepay(change.toRpcArg())
       .accounts({
         marginAccount: marginAccount,
         marginPool: this.address,
@@ -627,15 +627,15 @@ export class Pool {
   /// `margin_account` - The margin account with the deposit to be withdrawn
   /// `source` - The token account that has the deposit notes to be exchanged
   /// `destination` - The token account to send the withdrawn deposit
-  /// `amount` - The amount of the deposit
+  /// `change` - The amount of the deposit
   async marginWithdraw({
     marginAccount,
     destination,
-    amount
+    change
   }: {
     marginAccount: MarginAccount
     destination: Address
-    amount: PoolAmount
+    change: PoolTokenChange
   }) {
     const destinationAddress = translateAddress(destination)
 
@@ -663,7 +663,7 @@ export class Pool {
         marginAccount: marginAccount.address,
         source,
         destination: marginWithdrawDestination,
-        amount
+        change
       })
     })
 
@@ -678,15 +678,15 @@ export class Pool {
     marginAccount,
     source,
     destination,
-    amount
+    change
   }: {
     marginAccount: Address
     source: Address
     destination: Address
-    amount: PoolAmount
+    change: PoolTokenChange
   }): Promise<TransactionInstruction> {
     return await this.programs.marginPool.methods
-      .withdraw(amount.toRpcArg())
+      .withdraw(change.toRpcArg())
       .accounts({
         depositor: marginAccount,
         marginPool: this.address,
@@ -730,7 +730,7 @@ export class Pool {
             marginAccount: marginAccount.address,
             source: position.address,
             destination: marginWithdrawDestination,
-            amount: PoolAmount.setTo(0),
+            change: PoolTokenChange.setTo(0),
           })
         })
 

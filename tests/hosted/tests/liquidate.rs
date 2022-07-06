@@ -12,7 +12,7 @@ use solana_sdk::native_token::LAMPORTS_PER_SOL;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::Signer;
 
-use jet_margin_pool::Amount;
+use jet_margin_pool::TokenChange;
 use jet_simulation::assert_custom_program_error;
 
 const ONE_USDC: u64 = 1_000_000;
@@ -52,12 +52,12 @@ async fn scenario1() -> Result<Scenario1> {
     ctx.tokens.refresh_to_same_price(&tsol).await?;
     user_a
         .user
-        .borrow(&tsol, Amount::tokens(8000 * ONE_TSOL))
+        .borrow(&tsol, TokenChange::shift(8000 * ONE_TSOL))
         .await?;
     ctx.tokens.refresh_to_same_price(&usdc).await?;
     user_b
         .user
-        .borrow(&usdc, Amount::tokens(3_500_000 * ONE_USDC))
+        .borrow(&usdc, TokenChange::shift(3_500_000 * ONE_USDC))
         .await?;
 
     // User A deposited 5'000'000 USD worth, borrowed 800'000 USD worth
@@ -134,7 +134,7 @@ async fn cannot_transact_when_being_liquidated() -> Result<()> {
     // When User B is being liquidated, they should be unable to transact
     let result = scen
         .user_b
-        .margin_repay(&scen.usdc, Amount::tokens(1_000_000 * ONE_USDC))
+        .margin_repay(&scen.usdc, TokenChange::shift(1_000_000 * ONE_USDC))
         .await;
     assert_custom_program_error(ErrorCode::Liquidating, result);
 
@@ -151,7 +151,7 @@ async fn liquidator_can_repay_from_unhealthy_to_healthy_state() -> Result<()> {
 
     // Execute a repayment on behalf of the user
     scen.user_b_liq
-        .margin_repay(&scen.usdc, Amount::tokens(1_000_000 * ONE_USDC))
+        .margin_repay(&scen.usdc, TokenChange::shift(1_000_000 * ONE_USDC))
         .await?;
 
     // User B now has
@@ -212,7 +212,7 @@ async fn liquidation_completes() -> Result<()> {
 
     // Execute a repayment on behalf of the user
     scen.user_b_liq
-        .margin_repay(&scen.usdc, Amount::tokens(1_000_000 * ONE_USDC))
+        .margin_repay(&scen.usdc, TokenChange::shift(1_000_000 * ONE_USDC))
         .await?;
 
     // The liquidator should be able to end liquidation after liquidating
@@ -220,7 +220,7 @@ async fn liquidation_completes() -> Result<()> {
 
     // User B should now be able to transact again
     scen.user_b
-        .margin_repay(&scen.usdc, Amount::tokens(200_000 * ONE_USDC))
+        .margin_repay(&scen.usdc, TokenChange::shift(200_000 * ONE_USDC))
         .await?;
 
     Ok(())
@@ -244,7 +244,7 @@ async fn cannot_withdraw_too_much_during_liquidation() -> Result<()> {
         .withdraw(
             &scen.usdc,
             &liquidator_usdc_account,
-            Amount::tokens(50000 * ONE_USDC),
+            TokenChange::shift(50000 * ONE_USDC),
         )
         .await;
 
@@ -269,7 +269,7 @@ async fn can_withdraw_some_during_liquidation() -> Result<()> {
         .withdraw(
             &scen.usdc,
             &liquidator_usdc_account,
-            Amount::tokens(40 * ONE_USDC),
+            TokenChange::shift(40 * ONE_USDC),
         )
         .await?;
 
@@ -285,7 +285,7 @@ async fn cannot_borrow_too_much_during_liquidation() -> Result<()> {
 
     let result = scen
         .user_b_liq
-        .borrow(&scen.usdc, Amount::tokens(500_000 * ONE_USDC))
+        .borrow(&scen.usdc, TokenChange::shift(500_000 * ONE_USDC))
         .await;
     assert_custom_program_error(ErrorCode::LiquidationLostValue, result);
 
@@ -299,7 +299,7 @@ async fn can_borrow_some_during_liquidation() -> Result<()> {
 
     scen.user_b_liq.liquidate_begin(false).await?;
     scen.user_b_liq
-        .borrow(&scen.usdc, Amount::tokens(5_000 * ONE_USDC))
+        .borrow(&scen.usdc, TokenChange::shift(5_000 * ONE_USDC))
         .await?;
 
     Ok(())

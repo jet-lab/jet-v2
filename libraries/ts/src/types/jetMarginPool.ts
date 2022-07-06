@@ -171,9 +171,9 @@ export type JetMarginPool = {
       ]
       args: [
         {
-          name: "amount"
+          name: "change"
           type: {
-            defined: "Amount"
+            defined: "TokenChange"
           }
         }
       ]
@@ -219,9 +219,9 @@ export type JetMarginPool = {
       ]
       args: [
         {
-          name: "amount"
+          name: "change"
           type: {
-            defined: "Amount"
+            defined: "TokenChange"
           }
         }
       ]
@@ -267,9 +267,9 @@ export type JetMarginPool = {
       ]
       args: [
         {
-          name: "amount"
+          name: "change"
           type: {
-            defined: "Amount"
+            defined: "TokenChange"
           }
         }
       ]
@@ -315,9 +315,9 @@ export type JetMarginPool = {
       ]
       args: [
         {
-          name: "amount"
+          name: "change"
           type: {
-            defined: "Amount"
+            defined: "TokenChange"
           }
         }
       ]
@@ -368,9 +368,9 @@ export type JetMarginPool = {
       ]
       args: [
         {
-          name: "amount"
+          name: "change"
           type: {
-            defined: "Amount"
+            defined: "TokenChange"
           }
         }
       ]
@@ -557,6 +557,24 @@ export type JetMarginPool = {
       }
     },
     {
+      name: "TokenChange"
+      type: {
+        kind: "struct"
+        fields: [
+          {
+            name: "kind"
+            type: {
+              defined: "ChangeKind"
+            }
+          },
+          {
+            name: "tokens"
+            type: "u64"
+          }
+        ]
+      }
+    },
+    {
       name: "Amount"
       type: {
         kind: "struct"
@@ -565,12 +583,6 @@ export type JetMarginPool = {
             name: "kind"
             type: {
               defined: "AmountKind"
-            }
-          },
-          {
-            name: "changeKind"
-            type: {
-              defined: "ChangeKind"
             }
           },
           {
@@ -615,6 +627,20 @@ export type JetMarginPool = {
       }
     },
     {
+      name: "ChangeKind"
+      type: {
+        kind: "enum"
+        variants: [
+          {
+            name: "SetTo"
+          },
+          {
+            name: "ShiftBy"
+          }
+        ]
+      }
+    },
+    {
       name: "AmountKind"
       type: {
         kind: "enum"
@@ -624,20 +650,6 @@ export type JetMarginPool = {
           },
           {
             name: "Notes"
-          }
-        ]
-      }
-    },
-    {
-      name: "ChangeKind"
-      type: {
-        kind: "enum"
-        variants: [
-          {
-            name: "SetValue"
-          },
-          {
-            name: "ShiftValue"
           }
         ]
       }
@@ -1017,6 +1029,11 @@ export type JetMarginPool = {
     },
     {
       code: 141107
+      name: "InvalidSetTo"
+      msg: "An invalid `SetTo` value was given for a `TokenChange`"
+    },
+    {
+      code: 141108
       name: "RepaymentExceedsTotalOutstanding"
     }
   ]
@@ -1195,9 +1212,9 @@ export const IDL: JetMarginPool = {
       ],
       args: [
         {
-          name: "amount",
+          name: "change",
           type: {
-            defined: "Amount"
+            defined: "TokenChange"
           }
         }
       ]
@@ -1243,9 +1260,9 @@ export const IDL: JetMarginPool = {
       ],
       args: [
         {
-          name: "amount",
+          name: "change",
           type: {
-            defined: "Amount"
+            defined: "TokenChange"
           }
         }
       ]
@@ -1291,9 +1308,9 @@ export const IDL: JetMarginPool = {
       ],
       args: [
         {
-          name: "amount",
+          name: "change",
           type: {
-            defined: "Amount"
+            defined: "TokenChange"
           }
         }
       ]
@@ -1339,9 +1356,9 @@ export const IDL: JetMarginPool = {
       ],
       args: [
         {
-          name: "amount",
+          name: "change",
           type: {
-            defined: "Amount"
+            defined: "TokenChange"
           }
         }
       ]
@@ -1392,9 +1409,9 @@ export const IDL: JetMarginPool = {
       ],
       args: [
         {
-          name: "amount",
+          name: "change",
           type: {
-            defined: "Amount"
+            defined: "TokenChange"
           }
         }
       ]
@@ -1581,6 +1598,24 @@ export const IDL: JetMarginPool = {
       }
     },
     {
+      name: "TokenChange",
+      type: {
+        kind: "struct",
+        fields: [
+          {
+            name: "kind",
+            type: {
+              defined: "ChangeKind"
+            }
+          },
+          {
+            name: "tokens",
+            type: "u64"
+          }
+        ]
+      }
+    },
+    {
       name: "Amount",
       type: {
         kind: "struct",
@@ -1589,12 +1624,6 @@ export const IDL: JetMarginPool = {
             name: "kind",
             type: {
               defined: "AmountKind"
-            }
-          },
-          {
-            name: "changeKind",
-            type: {
-              defined: "ChangeKind"
             }
           },
           {
@@ -1639,6 +1668,20 @@ export const IDL: JetMarginPool = {
       }
     },
     {
+      name: "ChangeKind",
+      type: {
+        kind: "enum",
+        variants: [
+          {
+            name: "SetTo"
+          },
+          {
+            name: "ShiftBy"
+          }
+        ]
+      }
+    },
+    {
       name: "AmountKind",
       type: {
         kind: "enum",
@@ -1648,20 +1691,6 @@ export const IDL: JetMarginPool = {
           },
           {
             name: "Notes"
-          }
-        ]
-      }
-    },
-    {
-      name: "ChangeKind",
-      type: {
-        kind: "enum",
-        variants: [
-          {
-            name: "SetValue"
-          },
-          {
-            name: "ShiftValue"
           }
         ]
       }
@@ -1963,7 +1992,7 @@ export const IDL: JetMarginPool = {
           type: {
             defined: "MarginPoolSummary"
           },
-          index: false,
+          index: false
         }
       ]
     },
@@ -2041,6 +2070,11 @@ export const IDL: JetMarginPool = {
     },
     {
       code: 141107,
+      name: "InvalidSetTo",
+      msg: "An invalid `SetTo` value was given for a `TokenChange`"
+    },
+    {
+      code: 141108,
       name: "RepaymentExceedsTotalOutstanding"
     }
   ]

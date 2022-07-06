@@ -8,7 +8,7 @@ import MARGIN_CONFIG from "../../../libraries/ts/src/margin/config.json"
 
 import {
   MarginAccount,
-  PoolAmount,
+  PoolTokenChange,
   MarginClient,
   Pool,
   MarginPoolConfigData,
@@ -269,12 +269,12 @@ describe("margin pool deposit", async () => {
     await marginPool_USDC.marginWithdraw({
       marginAccount: marginAccount_A,
       destination: user_a_usdc_account,
-      amount: PoolAmount.tokens(new BN(400_000 * ONE_USDC))
+      change: PoolTokenChange.shiftBy(new BN(400_000 * ONE_USDC))
     })
     await marginPool_SOL.marginWithdraw({
       marginAccount: marginAccount_B,
       destination: user_b_sol_account,
-      amount: PoolAmount.tokens(new BN(400 * ONE_SOL))
+      change: PoolTokenChange.shiftBy(new BN(400 * ONE_SOL))
     })
 
     // TEST

@@ -20,8 +20,8 @@ use std::ops::Deref;
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Burn, Token, Transfer};
 
-use crate::{events, state::*, ChangeKind};
-use crate::{Amount, ErrorCode};
+use crate::ErrorCode;
+use crate::{events, state::*, TokenChange};
 
 #[derive(Accounts)]
 pub struct Withdraw<'info> {
@@ -81,7 +81,7 @@ impl<'info> Withdraw<'info> {
     }
 }
 
-pub fn withdraw_handler(ctx: Context<Withdraw>, amount: Amount) -> Result<()> {
+pub fn withdraw_handler(ctx: Context<Withdraw>, change: TokenChange) -> Result<()> {
     let pool = &mut ctx.accounts.margin_pool;
     let clock = Clock::get()?;
 
@@ -91,14 +91,11 @@ pub fn withdraw_handler(ctx: Context<Withdraw>, amount: Amount) -> Result<()> {
         return Err(ErrorCode::InterestAccrualBehind.into());
     }
 
-    let withdraw_amount = match amount.change_kind {
-        ChangeKind::ShiftValue => pool.convert_deposit_amount(amount, PoolAction::Withdraw)?,
-        ChangeKind::SetValue => pool.calculate_set_amount(
-            token::accessor::amount(&ctx.accounts.source.to_account_info())?,
-            amount,
-            PoolAction::Withdraw,
-        )?,
-    };
+    let withdraw_amount = pool.calculate_full_amount(
+        token::accessor::amount(&ctx.accounts.source.to_account_info())?,
+        change,
+        PoolAction::Withdraw,
+    )?;
     pool.withdraw(&withdraw_amount)?;
 
     let pool = &ctx.accounts.margin_pool;
@@ -106,7 +103,10 @@ pub fn withdraw_handler(ctx: Context<Withdraw>, amount: Amount) -> Result<()> {
 
     token::transfer(
         ctx.accounts.transfer_context().with_signer(&signer),
-        withdraw_amount.tokens,
+        // edge case where rounding accounts for more tokens than exist in the vault
+        withdraw_amount
+            .tokens
+            .min(token::accessor::amount(&ctx.accounts.vault)?),
     )?;
     token::burn(
         ctx.accounts.burn_note_context().with_signer(&signer),

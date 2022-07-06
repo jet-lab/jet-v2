@@ -31,7 +31,7 @@ use solana_sdk::{compute_budget::ComputeBudgetInstruction, instruction::Instruct
 use anchor_lang::AccountDeserialize;
 
 use jet_margin::{MarginAccount, PositionKind};
-use jet_margin_pool::Amount;
+use jet_margin_pool::{Amount, TokenChange};
 use jet_simulation::solana_rpc_api::SolanaRpcClient;
 
 use crate::ix_builder::*;
@@ -160,7 +160,7 @@ impl MarginTxBuilder {
         &self,
         token_mint: &Pubkey,
         source: &Pubkey,
-        amount: Amount,
+        change: TokenChange,
     ) -> Result<Transaction> {
         let mut instructions = vec![];
 
@@ -169,7 +169,7 @@ impl MarginTxBuilder {
             .get_or_create_position(&mut instructions, &pool.deposit_note_mint)
             .await?;
 
-        instructions.push(pool.deposit(self.ix.owner, *source, position, amount));
+        instructions.push(pool.deposit(self.ix.owner, *source, position, change));
 
         instructions.push(self.ix.update_position_balance(position));
 
@@ -182,7 +182,7 @@ impl MarginTxBuilder {
     ///
     /// `token_mint` - The address of the mint for the tokens to borrow
     /// `amount` - The amount of tokens to borrow
-    pub async fn borrow(&self, token_mint: &Pubkey, amount: Amount) -> Result<Transaction> {
+    pub async fn borrow(&self, token_mint: &Pubkey, change: TokenChange) -> Result<Transaction> {
         let mut instructions = vec![];
         let pool = MarginPoolIxBuilder::new(*token_mint);
         let token_metadata = self.get_token_metadata(token_mint).await?;
@@ -199,7 +199,7 @@ impl MarginTxBuilder {
         instructions.push(self.adapter_invoke_ix(inner_refresh_loan_ix));
 
         let inner_borrow_ix =
-            pool.margin_borrow(self.ix.address, deposit_position, loan_position, amount);
+            pool.margin_borrow(self.ix.address, deposit_position, loan_position, change);
 
         instructions.push(self.adapter_invoke_ix(inner_borrow_ix));
         self.create_transaction(&instructions).await
@@ -211,7 +211,11 @@ impl MarginTxBuilder {
     ///
     /// `token_mint` - The address of the mint for the tokens that were borrowed
     /// `amount` - The amount of tokens to repay
-    pub async fn margin_repay(&self, token_mint: &Pubkey, amount: Amount) -> Result<Transaction> {
+    pub async fn margin_repay(
+        &self,
+        token_mint: &Pubkey,
+        change: TokenChange,
+    ) -> Result<Transaction> {
         let mut instructions = vec![];
         let pool = MarginPoolIxBuilder::new(*token_mint);
 
@@ -223,7 +227,7 @@ impl MarginTxBuilder {
             .await?;
 
         let inner_repay_ix =
-            pool.margin_repay(self.ix.address, deposit_position, loan_position, amount);
+            pool.margin_repay(self.ix.address, deposit_position, loan_position, change);
 
         instructions.push(self.adapter_invoke_ix(inner_repay_ix));
         self.create_transaction(&instructions).await
@@ -240,7 +244,7 @@ impl MarginTxBuilder {
         &self,
         token_mint: &Pubkey,
         source: &Pubkey,
-        amount: Amount,
+        change: TokenChange,
     ) -> Result<Transaction> {
         let mut instructions = vec![];
         let pool = MarginPoolIxBuilder::new(*token_mint);
@@ -257,7 +261,7 @@ impl MarginTxBuilder {
             self.ix.owner,
             *source,
             loan_position,
-            amount,
+            change,
         );
 
         instructions.push(self.adapter_invoke_ix(inner_repay_ix));
@@ -274,7 +278,7 @@ impl MarginTxBuilder {
         &self,
         token_mint: &Pubkey,
         destination: &Pubkey,
-        amount: Amount,
+        change: TokenChange,
     ) -> Result<Transaction> {
         let mut instructions = vec![];
         let pool = MarginPoolIxBuilder::new(*token_mint);
@@ -284,7 +288,7 @@ impl MarginTxBuilder {
             .await?;
 
         let inner_withdraw_ix =
-            pool.withdraw(self.ix.address, deposit_position, *destination, amount);
+            pool.withdraw(self.ix.address, deposit_position, *destination, change);
 
         instructions.push(self.adapter_invoke_ix(inner_withdraw_ix));
         self.create_transaction(&instructions).await
@@ -344,8 +348,8 @@ impl MarginTxBuilder {
             *swap_program,
             &source_pool,
             &destination_pool,
-            amount_in.value,
-            minimum_amount_out.value,
+            amount_in.value(),
+            minimum_amount_out.value(),
         );
 
         instructions.push(self.adapter_invoke_ix(inner_swap_ix));
@@ -512,7 +516,7 @@ impl MarginTxBuilder {
         Ok(address)
     }
 
-    async fn get_account_state(&self) -> Result<Box<MarginAccount>> {
+    pub async fn get_account_state(&self) -> Result<Box<MarginAccount>> {
         let account_data = self.rpc.get_account(&self.ix.address).await?;
 
         match account_data {

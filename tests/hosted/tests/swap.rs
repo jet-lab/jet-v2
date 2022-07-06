@@ -12,7 +12,7 @@ use hosted_tests::{
     tokens::TokenPrice,
 };
 
-use jet_margin_pool::{Amount, MarginPoolConfig, PoolFlags};
+use jet_margin_pool::{Amount, MarginPoolConfig, PoolFlags, TokenChange};
 use jet_metadata::TokenKind;
 use jet_simulation::create_wallet;
 
@@ -187,21 +187,21 @@ async fn swap_test_impl(swap_program_id: Pubkey) -> Result<(), anyhow::Error> {
         .deposit(
             &env.usdc,
             &user_a_usdc_account,
-            Amount::tokens(1_000 * ONE_USDC),
+            TokenChange::shift(1_000 * ONE_USDC),
         )
         .await?;
     user_a
         .deposit(
             &env.tsol,
             &user_a_tsol_account,
-            Amount::tokens(10 * ONE_TSOL),
+            TokenChange::shift(10 * ONE_TSOL),
         )
         .await?;
     user_b
         .deposit(
             &env.tsol,
             &user_b_tsol_account,
-            Amount::tokens(10 * ONE_TSOL),
+            TokenChange::shift(10 * ONE_TSOL),
         )
         .await?;
 

@@ -22,7 +22,7 @@ use pyth_sdk_solana::PriceFeed;
 use serde::ser::{Serialize, SerializeStruct, Serializer};
 use std::cmp::Ordering;
 
-use crate::{util, Amount, AmountKind, ErrorCode};
+use crate::{util, Amount, AmountKind, ChangeKind, ErrorCode, TokenChange};
 
 /// Account containing information about a margin pool, which
 /// services lending/borrowing operations.
@@ -312,66 +312,88 @@ impl MarginPool {
         })
     }
 
-    pub fn calculate_set_amount(
+    pub fn calculate_full_amount(
+        &self,
+        current_notes: u64,
+        change: TokenChange,
+        action: PoolAction,
+    ) -> Result<FullAmount> {
+        match change.kind {
+            ChangeKind::ShiftBy => self.convert_amount(Amount::tokens(change.tokens), action),
+            ChangeKind::SetTo => {
+                self.calculate_set_amount(current_notes, Amount::tokens(change.tokens), action)
+            }
+        }
+    }
+
+    fn calculate_set_amount(
         &self,
         current_notes_amount: u64,
         target_amount: Amount,
         pool_action: PoolAction,
     ) -> Result<FullAmount> {
         match pool_action {
-            PoolAction::Borrow | PoolAction::Repay => {
-                let target = self.convert_loan_amount(target_amount, pool_action)?.notes;
-                let delta = current_notes_amount
-                    .checked_sub(target)
-                    .ok_or(ErrorCode::InvalidAmount)?;
-                self.convert_loan_amount(Amount::notes(delta), pool_action)
-            }
-            PoolAction::Deposit | PoolAction::Withdraw => {
-                let target = self
-                    .convert_deposit_amount(target_amount, pool_action)?
-                    .notes;
+            PoolAction::Borrow | PoolAction::Deposit => {
+                let target = self.convert_amount(target_amount, pool_action)?.notes;
                 let delta = target
                     .checked_sub(current_notes_amount)
-                    .ok_or(ErrorCode::InvalidAmount)?;
+                    .ok_or(ErrorCode::InvalidSetTo)?;
+                self.convert_amount(Amount::notes(delta), pool_action)
+            }
+            PoolAction::Withdraw | PoolAction::Repay => {
+                let target = self.convert_amount(target_amount, pool_action)?.notes;
+                let delta = current_notes_amount
+                    .checked_sub(target)
+                    .ok_or(ErrorCode::InvalidSetTo)?;
 
-                self.convert_deposit_amount(Amount::notes(delta), pool_action)
+                self.convert_amount(Amount::notes(delta), pool_action)
             }
         }
     }
 
-    /// Convert the amount to be representable by tokens and notes for deposits
-    pub fn convert_deposit_amount(
-        &self,
-        amount: Amount,
-        pool_action: PoolAction,
-    ) -> Result<FullAmount> {
-        self.convert_amount(
-            amount,
-            self.deposit_note_exchange_rate(),
-            RoundingDirection::direction(pool_action, amount.kind),
-        )
+    /// Convert the `Amount` to a `FullAmount` conisting of the appropriate proprtion of notes and tokens
+    pub fn convert_amount(&self, amount: Amount, action: PoolAction) -> Result<FullAmount> {
+        let (exchange_rate, rounding) = match action {
+            PoolAction::Deposit | PoolAction::Withdraw => (
+                self.deposit_note_exchange_rate(),
+                RoundingDirection::direction(action, amount.kind),
+            ),
+            PoolAction::Repay | PoolAction::Borrow => (
+                self.loan_note_exchange_rate(),
+                RoundingDirection::direction(action, amount.kind),
+            ),
+        };
+
+        let amount = Self::convert_with_rounding_and_rate(amount, rounding, exchange_rate);
+
+        // As FullAmount represents the conversion of tokens to/from notes for
+        // the purpose of:
+        // - adding/subtracting tokens to/from a pool's vault
+        // - minting/burning notes from a pool's deposit/loan mint.
+        // There should be no scenario where a conversion between notes and tokens
+        // leads to either value being 0 while the other is not.
+        //
+        // Scenarios where this can happen could be security risks, such as:
+        // - A user withdraws 1 token but burns 0 notes, they are draining the pool.
+        // - A user deposits 1 token but mints 0 notes, they are losing funds for no value.
+        // - A user deposits 0 tokens but mints 1 notes, they are getting free deposits.
+        // - A user withdraws 0 tokens but burns 1 token, they are writing off debt.
+        //
+        // Thus we finally check that both values are positive.
+        if (amount.notes == 0 && amount.tokens > 0) || (amount.tokens == 0 && amount.notes > 0) {
+            return err!(crate::ErrorCode::InvalidAmount);
+        }
+
+        Ok(amount)
     }
 
-    /// Convert the amount to be representable by tokens and notes for borrows
-    pub fn convert_loan_amount(
-        &self,
+    /// Isolated to ensure rounding implementation
+    fn convert_with_rounding_and_rate(
         amount: Amount,
-        pool_action: PoolAction,
-    ) -> Result<FullAmount> {
-        self.convert_amount(
-            amount,
-            self.loan_note_exchange_rate(),
-            RoundingDirection::direction(pool_action, amount.kind),
-        )
-    }
-
-    fn convert_amount(
-        &self,
-        amount: Amount,
-        exchange_rate: Number,
         rounding: RoundingDirection,
-    ) -> Result<FullAmount> {
-        let amount = match amount.kind {
+        exchange_rate: Number,
+    ) -> FullAmount {
+        match amount.kind {
             AmountKind::Tokens => FullAmount {
                 tokens: amount.value,
                 notes: match rounding {
@@ -395,27 +417,7 @@ impl MarginPool {
                     }
                 },
             },
-        };
-
-        // As FullAmount represents the conversion of tokens to/from notes for
-        // the purpose of:
-        // - adding/subtracting tokens to/from a pool's vault
-        // - minting/burning notes from a pool's deposit/loan mint.
-        // There should be no scenario where a conversion between notes and tokens
-        // leads to either value being 0 while the other is not.
-        //
-        // Scenarios where this can happen could be security risks, such as:
-        // - A user withdraws 1 token but burns 0 notes, they are draining the pool.
-        // - A user deposits 1 token but mints 0 notes, they are losing funds for no value.
-        // - A user deposits 0 tokens but mints 1 notes, they are getting free deposits.
-        // - A user withdraws 0 tokens but burns 1 token, they are writing off debt.
-        //
-        // Thus we finally check that both values are positive.
-        if (amount.notes == 0 && amount.tokens > 0) || (amount.tokens == 0 && amount.notes > 0) {
-            return err!(crate::ErrorCode::InvalidAmount);
         }
-
-        Ok(amount)
     }
 
     /// Get the exchange rate for deposit note -> token
@@ -599,20 +601,21 @@ mod tests {
         );
 
         let pool_convert = |amount, rounding| {
-            margin_pool.convert_amount(amount, margin_pool.deposit_note_exchange_rate(), rounding)
+            let exchange_rate = margin_pool.deposit_note_exchange_rate();
+            MarginPool::convert_with_rounding_and_rate(amount, rounding, exchange_rate)
         };
 
-        let deposit_amount = pool_convert(Amount::notes(12), RoundingDirection::Down)?;
+        let deposit_amount = pool_convert(Amount::notes(12), RoundingDirection::Down);
 
         assert_eq!(deposit_amount.notes, 12);
         assert_eq!(deposit_amount.tokens, 13); // ref [0]
 
-        let deposit_amount = pool_convert(Amount::notes(18), RoundingDirection::Down)?;
+        let deposit_amount = pool_convert(Amount::notes(18), RoundingDirection::Down);
 
         assert_eq!(deposit_amount.notes, 18);
         assert_eq!(deposit_amount.tokens, 19);
 
-        let deposit_amount = pool_convert(Amount::notes(12), RoundingDirection::Up)?;
+        let deposit_amount = pool_convert(Amount::notes(12), RoundingDirection::Up);
 
         assert_eq!(deposit_amount.notes, 12);
         assert_eq!(deposit_amount.tokens, 14); // ref [1]
@@ -620,13 +623,13 @@ mod tests {
         // A user requesting 1 note should never get 0 tokens back,
         // or 1 token should never get 0 notes back
 
-        let deposit_amount = pool_convert(Amount::notes(1), RoundingDirection::Down)?;
+        let deposit_amount = pool_convert(Amount::notes(1), RoundingDirection::Down);
 
         // When depositing, 1:1 would be advantageous to the user
         assert_eq!(deposit_amount.notes, 1);
         assert_eq!(deposit_amount.tokens, 1);
 
-        let deposit_amount = pool_convert(Amount::notes(1), RoundingDirection::Up)?;
+        let deposit_amount = pool_convert(Amount::notes(1), RoundingDirection::Up);
 
         // Depositing 2 tokens for 1 note is disadvantageous to the user
         // and protects the protocol's average exchange rate
@@ -667,15 +670,17 @@ mod tests {
         );
 
         let pool_convert = |amount, rounding| {
-            margin_pool.convert_amount(amount, margin_pool.deposit_note_exchange_rate(), rounding)
+            let exchange_rate = margin_pool.deposit_note_exchange_rate();
+            MarginPool::convert_with_rounding_and_rate(amount, rounding, exchange_rate)
         };
 
-        let deposit_result = pool_convert(Amount::tokens(1), RoundingDirection::Down);
+        // depositing tokens should round down
+        let deposit_result = margin_pool.convert_amount(Amount::tokens(1), PoolAction::Deposit);
 
-        // Rounding down would return 0 notes, which is invalid. This should error out
+        // Rounding down would return 0 notes
         assert!(deposit_result.is_err());
 
-        let deposit_amount = pool_convert(Amount::tokens(1), RoundingDirection::Up)?;
+        let deposit_amount = pool_convert(Amount::tokens(1), RoundingDirection::Up);
 
         // Depositing 1 token for 1 note is disadvantageous to the user as they
         // get a lower rate than the 1.111_.
@@ -690,20 +695,20 @@ mod tests {
         // entitle the user to fewer tokens on withdrawal from the pool.
 
         // We start by rounding up a bigger number. See [0]
-        let deposit_amount = pool_convert(Amount::tokens(9), RoundingDirection::Up)?;
+        let deposit_amount = pool_convert(Amount::tokens(9), RoundingDirection::Up);
 
         assert_eq!(deposit_amount.notes, 9);
         assert_eq!(deposit_amount.tokens, 9);
 
         // [1] shows the behaviour when rounding 12 notes up, we get 13 tokens.
-        let deposit_amount = pool_convert(Amount::tokens(13), RoundingDirection::Up)?;
+        let deposit_amount = pool_convert(Amount::tokens(13), RoundingDirection::Up);
 
         assert_eq!(deposit_amount.tokens, 13);
         // [1] returned 12 notes, and we get 12 notes back.
         assert_eq!(deposit_amount.notes, 12);
 
         // If we round down instead of up, we preserve value.
-        let deposit_amount = pool_convert(Amount::tokens(14), RoundingDirection::Down)?;
+        let deposit_amount = pool_convert(Amount::tokens(14), RoundingDirection::Down);
 
         assert_eq!(deposit_amount.tokens, 14);
         assert_eq!(deposit_amount.notes, 12);
@@ -743,15 +748,16 @@ mod tests {
         assert_eq!(margin_pool.loan_note_exchange_rate().as_u64(-9), 1111111111);
 
         let pool_convert = |amount, rounding| {
-            margin_pool.convert_amount(amount, margin_pool.loan_note_exchange_rate(), rounding)
+            let exchange_rate = margin_pool.loan_note_exchange_rate();
+            MarginPool::convert_with_rounding_and_rate(amount, rounding, exchange_rate)
         };
 
-        let loan_amount = pool_convert(Amount::notes(1), RoundingDirection::Down)?;
+        let loan_amount = pool_convert(Amount::notes(1), RoundingDirection::Down);
 
         assert_eq!(loan_amount.notes, 1);
         assert_eq!(loan_amount.tokens, 1);
 
-        let loan_amount = pool_convert(Amount::notes(1), RoundingDirection::Up)?;
+        let loan_amount = pool_convert(Amount::notes(1), RoundingDirection::Up);
 
         // When withdrawing, rounding up benefits the user at the cost of the
         // protocol. The user gets to borrow at a lower rate (0.5 vs 1.111_).
@@ -788,15 +794,17 @@ mod tests {
         assert_eq!(margin_pool.loan_note_exchange_rate().as_u64(-9), 1111111111);
 
         let pool_convert = |amount, rounding| {
-            margin_pool.convert_amount(amount, margin_pool.loan_note_exchange_rate(), rounding)
+            let exchange_rate = margin_pool.loan_note_exchange_rate();
+            MarginPool::convert_with_rounding_and_rate(amount, rounding, exchange_rate)
         };
 
-        let loan_result = pool_convert(Amount::tokens(1), RoundingDirection::Down);
+        // repaying tokens rounds down
+        let loan_result = margin_pool.convert_amount(Amount::tokens(1), PoolAction::Repay);
 
         // Rounding down to 0 is not allowed
         assert!(loan_result.is_err());
 
-        let loan_amount = pool_convert(Amount::tokens(1), RoundingDirection::Up)?;
+        let loan_amount = pool_convert(Amount::tokens(1), RoundingDirection::Up);
 
         // When withdrawing tokens, the user should get 111 tokens for 100 notes (or less)
         // at the current exchange rate. A 1:1 is disadvantageous to the user
@@ -805,7 +813,7 @@ mod tests {
         assert_eq!(loan_amount.notes, 1);
         assert_eq!(loan_amount.tokens, 1);
 
-        let loan_amount = pool_convert(Amount::tokens(111), RoundingDirection::Up)?;
+        let loan_amount = pool_convert(Amount::tokens(111), RoundingDirection::Up);
 
         assert_eq!(loan_amount.tokens, 111);
         // Even at a larger quantity, rounding up is still disadvantageous as
