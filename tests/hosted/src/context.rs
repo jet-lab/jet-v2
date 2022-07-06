@@ -46,8 +46,21 @@ pub struct MarginTestContext {
 impl MarginTestContext {
     #[cfg(not(feature = "localnet"))]
     pub async fn new() -> Result<Self, Error> {
+        use anchor_lang::prelude::AccountInfo;
         use jet_simulation::runtime::TestRuntime;
         use jet_static_program_registry::{orca_swap_v1, orca_swap_v2, spl_token_swap_v2};
+        use solana_sdk::entrypoint::ProgramResult;
+
+        // Register Serum, converting a DexError to ProgramError
+        fn serum_processor(
+            program_id: &Pubkey,
+            accounts: &[AccountInfo],
+            input: &[u8],
+        ) -> ProgramResult {
+            anchor_spl::dex::serum_dex::state::State::process(program_id, accounts, input)
+                .map_err(|e| e.into())
+        }
+
         let runtime = jet_simulation::create_test_runtime![
             jet_control,
             jet_margin,
@@ -66,6 +79,7 @@ impl MarginTestContext {
                 spl_token_swap_v2::id(),
                 spl_token_swap_v2::processor::Processor::process
             ),
+            (anchor_spl::dex::ID, serum_processor),
         ];
 
         Self::new_with_runtime(Arc::new(runtime)).await

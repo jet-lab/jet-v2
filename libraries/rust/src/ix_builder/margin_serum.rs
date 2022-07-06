@@ -15,15 +15,16 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+use std::num::NonZeroU64;
+
 use anchor_lang::prelude::ToAccountMetas;
 use anchor_lang::{Id, InstructionData};
 use anchor_spl::dex::{self, Dex};
+use dex::serum_dex::instruction::SelfTradeBehavior as DexSelfTradeBehavior;
+use dex::serum_dex::matching::{OrderType as DexOrderType, Side as DexSide};
 use solana_sdk::instruction::Instruction;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::sysvar::{rent::Rent, SysvarId};
-
-// use jet_margin_serum::accounts::{self as ix_accounts, MarginPoolInfo, MarginPoolInfo2};
-// use jet_margin_serum::{instruction as ix_data, OrderParams, OrderSide};
 
 use crate::accounts::SerumMarketInfoAccounts;
 
@@ -69,7 +70,7 @@ impl MarginSerumIxBuilder {
         destination_pool_account: Pubkey,
         amount_in: u64,
         minimum_amount_out: u64,
-        bid: bool,
+        swap_direction: SwapDirection,
     ) -> Instruction {
         let (source_pool, dest_pool, order_note_mint) = match bid {
             true => {
@@ -124,7 +125,7 @@ impl MarginSerumIxBuilder {
             data: jet_margin_swap::instruction::SerumSwap {
                 amount_in,
                 minimum_amount_out,
-                bid,
+                swap_direction,
             }
             .data(),
             accounts,
@@ -324,4 +325,68 @@ impl MarginSerumIxBuilder {
     //         data: ix_data::RefreshOpenOrders.data(),
     //     }
     // }
+}
+
+#[derive(Clone, Debug)]
+pub struct OrderParams {
+    pub side: OrderSide,
+    pub limit_price: NonZeroU64,
+    pub max_base_qty: NonZeroU64,
+    pub max_native_quote_qty_including_fees: NonZeroU64,
+    pub self_trade_behavior: SelfTradeBehavior,
+    pub order_type: OrderType,
+    pub client_order_id: u64,
+    pub limit: u16,
+}
+
+#[derive(Clone, Copy, Debug)]
+#[repr(u8)]
+pub enum OrderSide {
+    Bid = 0,
+    Ask = 1,
+}
+
+impl From<OrderSide> for DexSide {
+    fn from(value: OrderSide) -> Self {
+        match value {
+            OrderSide::Bid => DexSide::Bid,
+            OrderSide::Ask => DexSide::Ask,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+#[repr(u8)]
+pub enum SelfTradeBehavior {
+    DecrementTake = 0,
+    CancelProvide = 1,
+    AbortTransaction = 2,
+}
+
+impl From<SelfTradeBehavior> for DexSelfTradeBehavior {
+    fn from(value: SelfTradeBehavior) -> Self {
+        match value {
+            SelfTradeBehavior::DecrementTake => DexSelfTradeBehavior::DecrementTake,
+            SelfTradeBehavior::CancelProvide => DexSelfTradeBehavior::CancelProvide,
+            SelfTradeBehavior::AbortTransaction => DexSelfTradeBehavior::AbortTransaction,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+#[repr(u8)]
+pub enum OrderType {
+    Limit = 0,
+    ImmediateOrCancel = 1,
+    PostOnly = 2,
+}
+
+impl From<OrderType> for DexOrderType {
+    fn from(value: OrderType) -> Self {
+        match value {
+            OrderType::Limit => DexOrderType::Limit,
+            OrderType::ImmediateOrCancel => DexOrderType::ImmediateOrCancel,
+            OrderType::PostOnly => DexOrderType::PostOnly,
+        }
+    }
 }

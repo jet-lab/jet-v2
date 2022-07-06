@@ -394,8 +394,12 @@ impl MarginUser {
 impl MarginUser {
     /// Create an [OpenOrders] account for the margin account,
     /// first checking if the account exists before creating it.
-    pub async fn init_open_orders(&self, market: &SerumMarketV3) -> Result<Pubkey, Error> {
-        let (address, tx) = self.tx.init_open_orders(market).await?;
+    pub async fn init_open_orders(
+        &self,
+        market: &SerumMarketV3,
+        owner: Option<Pubkey>,
+    ) -> Result<Pubkey, Error> {
+        let (address, tx) = self.tx.init_open_orders(market, owner).await?;
         let account = self.rpc.get_account(&address).await?;
 
         if account.is_none() {
@@ -443,22 +447,22 @@ impl MarginUser {
     //     Ok(())
     // }
 
-    // pub async fn new_spot_order(
-    //     &self,
-    //     market: &SerumMarketV3,
-    //     open_orders: Pubkey,
-    //     transit_account: Pubkey,
-    //     order: OrderParams,
-    // ) -> Result<(), Error> {
-    //     let tx = self
-    //         .tx
-    //         .new_spot_order(market, open_orders, transit_account, order)
-    //         .await?;
+    pub async fn new_spot_order(
+        &self,
+        market: &SerumMarketV3,
+        open_orders: Pubkey,
+        transit_account: Pubkey,
+        order: OrderParams,
+    ) -> Result<(), Error> {
+        let tx = self
+            .tx
+            .new_spot_order(market, open_orders, transit_account, order)
+            .await?;
 
-    //     self.send_confirm_tx(tx).await?;
+        self.send_confirm_tx(tx).await?;
 
-    //     Ok(())
-    // }
+        Ok(())
+    }
 
     // pub async fn cancel_client_orders(
     //     &self,

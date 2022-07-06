@@ -18,6 +18,7 @@
 #![allow(unused)]
 
 use std::collections::HashMap;
+use std::num::NonZeroU64;
 use std::sync::Arc;
 
 use jet_margin_pool::program::JetMarginPool;
@@ -652,10 +653,6 @@ impl MarginTxBuilder {
             .get_or_create_position(&mut instructions, &dest_pool.deposit_note_mint)
             .await?;
 
-        let order_note = self
-            .get_or_create_position(&mut instructions, &order_note_mint)
-            .await?;
-
         let instruction = ix_builder.swap(
             *self.address(),
             open_orders,
@@ -677,17 +674,18 @@ impl MarginTxBuilder {
     }
 
     /// Create an open orders account. Fails if the account already exists.
-    pub async fn init_open_orders(&self, market: &SerumMarketV3) -> Result<(Pubkey, Transaction)> {
+    pub async fn init_open_orders(
+        &self,
+        market: &SerumMarketV3,
+        open_orders_owner: Option<Pubkey>,
+    ) -> Result<(Pubkey, Transaction)> {
+        let owner = open_orders_owner.unwrap_or_else(|| *self.address());
         let (open_orders, _) = Pubkey::find_program_address(
-            &[
-                self.address().as_ref(),
-                market.market.as_ref(),
-                b"open_orders",
-            ],
+            &[owner.as_ref(), market.market.as_ref(), b"open_orders"],
             &jet_margin_swap::id(),
         );
         let accounts = jet_margin_swap::accounts::InitOpenOrders {
-            owner: *self.address(),
+            owner,
             market: market.market,
             payer: self.rpc.payer().pubkey(),
             open_orders,
@@ -703,7 +701,13 @@ impl MarginTxBuilder {
             data: jet_margin_swap::instruction::InitSerumOpenOrders {}.data(),
         };
 
-        let instruction = self.adapter_invoke_ix(instruction);
+        let instruction = if open_orders_owner.is_none() {
+            self.adapter_invoke_ix(instruction)
+        } else {
+            instruction
+        };
+
+        // let instruction = self.adapter_invoke_ix(instruction);
 
         let tx = self.create_transaction(&[instruction]).await?;
 
@@ -741,48 +745,64 @@ impl MarginTxBuilder {
     //     Ok(tx)
     // }
 
-    // pub async fn new_spot_order(
-    //     &self,
-    //     market: &SerumMarketV3,
-    //     open_orders: Pubkey,
-    //     transit_account: Pubkey,
-    //     order: OrderParams,
-    // ) -> Result<Transaction> {
-    //     let ix_builder = MarginSerumIxBuilder::new(market.clone());
+    pub async fn new_spot_order(
+        &self,
+        market: &SerumMarketV3,
+        open_orders: Pubkey,
+        transit_account: Pubkey,
+        order: OrderParams,
+    ) -> Result<Transaction> {
+        // let ix_builder = MarginSerumIxBuilder::new(market.clone());
 
-    //     let mut instructions = vec![];
+        let mut instructions = vec![];
 
-    //     let (pool_source_mint, order_note_mint) = match order.side {
-    //         OrderSide::Bid => (market.quote_token, ix_builder.info.quote_note_mint),
-    //         OrderSide::Ask => (market.base_token, ix_builder.info.base_note_mint),
-    //     };
+        // let (pool_source_mint, order_note_mint) = match order.side {
+        //     OrderSide::Bid => (market.quote_token, ix_builder.info.quote_note_mint),
+        //     OrderSide::Ask => (market.base_token, ix_builder.info.base_note_mint),
+        // };
 
-    //     let pool = MarginPoolIxBuilder::new(pool_source_mint);
+        // let pool = MarginPoolIxBuilder::new(pool_source_mint);
 
-    //     let deposit_note = self
-    //         .get_or_create_position(&mut instructions, &pool.deposit_note_mint)
-    //         .await?;
+        // let deposit_note = self
+        //     .get_or_create_position(&mut instructions, &pool.deposit_note_mint)
+        //     .await?;
 
-    //     let order_note = self
-    //         .get_or_create_position(&mut instructions, &order_note_mint)
-    //         .await?;
+        // let order_note = self
+        //     .get_or_create_position(&mut instructions, &order_note_mint)
+        //     .await?;
 
-    //     let instruction = ix_builder.new_order_v3(
-    //         *self.address(),
-    //         open_orders,
-    //         transit_account,
-    //         deposit_note,
-    //         order_note,
-    //         order,
-    //     );
+        let instruction = dex::serum_dex::instruction::new_order(
+            &market.market,
+            &open_orders,
+            &market.request_queue,
+            &market.event_queue,
+            &market.bids,
+            &market.asks,
+            &transit_account,
+            self.owner(),
+            &market.base_vault,
+            &market.quote_vault,
+            &spl_token::ID,
+            &Rent::id(),
+            None,
+            &dex::ID,
+            order.side.into(),
+            order.limit_price,
+            order.max_base_qty,
+            order.order_type.into(),
+            order.client_order_id,
+            order.self_trade_behavior.into(),
+            order.limit,
+            order.max_native_quote_qty_including_fees,
+        )?;
 
-    //     let instruction = self.adapter_invoke_ix(instruction);
-    //     instructions.push(instruction);
+        // let instruction = self.adapter_invoke_ix(instruction);
+        instructions.push(instruction);
 
-    //     let tx = self.create_transaction(&instructions).await?;
+        let tx = self.create_transaction(&instructions).await?;
 
-    //     Ok(tx)
-    // }
+        Ok(tx)
+    }
 
     // pub async fn cancel_spot_order(
     //     &self,
