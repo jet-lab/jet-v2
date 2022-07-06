@@ -74,57 +74,6 @@ export type JetMargin = {
       args: []
     },
     {
-      name: "registerUnownedPosition"
-      accounts: [
-        {
-          name: "authority"
-          isMut: false
-          isSigner: true
-        },
-        {
-          name: "payer"
-          isMut: true
-          isSigner: true
-        },
-        {
-          name: "marginAccount"
-          isMut: true
-          isSigner: false
-        },
-        {
-          name: "positionTokenMint"
-          isMut: false
-          isSigner: false
-        },
-        {
-          name: "metadata"
-          isMut: false
-          isSigner: false
-        },
-        {
-          name: "tokenAccount"
-          isMut: false
-          isSigner: false
-        },
-        {
-          name: "tokenProgram"
-          isMut: false
-          isSigner: false
-        },
-        {
-          name: "rent"
-          isMut: false
-          isSigner: false
-        },
-        {
-          name: "systemProgram"
-          isMut: false
-          isSigner: false
-        }
-      ]
-      args: []
-    },
-    {
       name: "registerPosition"
       accounts: [
         {
@@ -888,57 +837,6 @@ export const IDL: JetMargin = {
         {
           name: "marginAccount",
           isMut: true,
-          isSigner: false
-        }
-      ],
-      args: []
-    },
-    {
-      name: "registerUnownedPosition",
-      accounts: [
-        {
-          name: "authority",
-          isMut: false,
-          isSigner: true
-        },
-        {
-          name: "payer",
-          isMut: true,
-          isSigner: true
-        },
-        {
-          name: "marginAccount",
-          isMut: true,
-          isSigner: false
-        },
-        {
-          name: "positionTokenMint",
-          isMut: false,
-          isSigner: false
-        },
-        {
-          name: "metadata",
-          isMut: false,
-          isSigner: false
-        },
-        {
-          name: "tokenAccount",
-          isMut: false,
-          isSigner: false
-        },
-        {
-          name: "tokenProgram",
-          isMut: false,
-          isSigner: false
-        },
-        {
-          name: "rent",
-          isMut: false,
-          isSigner: false
-        },
-        {
-          name: "systemProgram",
-          isMut: false,
           isSigner: false
         }
       ],

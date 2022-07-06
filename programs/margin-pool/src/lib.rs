@@ -89,9 +89,8 @@ mod jet_margin_pool {
         instructions::margin_refresh_position_handler(ctx)
     }
 
-    /// Create the token account to track the loan notes here,
-    /// then register it as a position in margin,
-    /// then you can borrow.
+    /// Creates the token account to track the loan notes,
+    /// then requests margin to register the position
     pub fn register_loan(ctx: Context<RegisterLoan>) -> Result<()> {
         instructions::register_loan_handler(ctx)
     }

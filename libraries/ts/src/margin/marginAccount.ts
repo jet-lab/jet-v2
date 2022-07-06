@@ -732,6 +732,7 @@ export class MarginAccount {
       destination: position.address,
       amount
     })
+
     await this.withUpdatePositionBalance({ instructions, position })
     return await this.provider.sendAndConfirm(new Transaction().add(...instructions))
   }
@@ -753,31 +754,6 @@ export class MarginAccount {
 
     for (let i = 0; i < this.positions.length; i++) {
       const position = this.positions[i]
-      if (position.token.equals(tokenMintAddress)) {
-        return position
-      }
-    }
-
-    throw new Error("Unable to register position.")
-  }
-
-  async getOrCreateUnownedPosition(instructions: TransactionInstruction[], tokenMint: Address, tokenAccount: Address) {
-    assert(this.info)
-    const tokenMintAddress = translateAddress(tokenMint)
-
-    for (let i = 0; i < MAX_POSITIONS; i++) {
-      const position = this.info.positions.positions[i]
-      if (position.token.equals(tokenMintAddress)) {
-        return position
-      }
-    }
-
-    await this.withRegisterUnownedPosition(instructions, tokenMintAddress, tokenAccount)
-    await this.provider.sendAndConfirm(new Transaction().add(...instructions))
-    await this.refresh()
-
-    for (let i = 0; i < MAX_POSITIONS; i++) {
-      const position = this.info.positions.positions[i]
       if (position.token.equals(tokenMintAddress)) {
         return position
       }
@@ -867,52 +843,10 @@ export class MarginAccount {
     return tokenAccount
   }
 
-  /// Get instruction to register new unowned position
-  ///
-  /// # Params
-  ///
-  /// `instructions` - Any other ix's to go in the same tx. e.g. init the token account
-  /// `token_mint` - The mint for the relevant token for the position
-  /// `token_account` - The initialized token account that will be registered as the position
-  ///
-  /// # Returns
-  ///
-  /// Returns the instruction, and the address of the token account to be
-  /// created for the position.
-  async withRegisterUnownedPosition(
-    instructions: TransactionInstruction[],
-    tokenMint: Address,
-    tokenAccount: Address
-  ): Promise<void> {
-    // const tokenAccount = findDerivedAccount(this.programs.config.marginPoolProgramId, this.address, tokenMint)
-    const metadata = findDerivedAccount(this.programs.config.metadataProgramId, tokenMint)
-
-    const ix = await this.programs.margin.methods
-      .registerUnownedPosition()
-      .accounts({
-        authority: this.owner,
-        payer: this.provider.wallet.publicKey,
-        marginAccount: this.address,
-        positionTokenMint: tokenMint,
-        metadata,
-        tokenAccount,
-        tokenProgram: TOKEN_PROGRAM_ID,
-        rent: SYSVAR_RENT_PUBKEY,
-        systemProgram: SystemProgram.programId
-      })
-      .instruction()
-    instructions.push(ix)
-  }
-
   async closeAccount() {
     const ix: TransactionInstruction[] = []
     await this.withCloseAccount(ix)
-    try {
-      return await this.provider.sendAndConfirm(new Transaction().add(...ix))
-    } catch (err) {
-      console.log(err)
-      throw err
-    }
+    this.sendAndConfirm(ix)
   }
 
   /// Get instruction to close an account
@@ -934,12 +868,7 @@ export class MarginAccount {
   async closePosition(position: AccountPosition) {
     const ix: TransactionInstruction[] = []
     await this.withClosePosition(ix, position)
-    try {
-      return await this.provider.sendAndConfirm(new Transaction().add(...ix))
-    } catch (err) {
-      console.log(err)
-      throw err
-    }
+    this.sendAndConfirm(ix)
   }
 
   /// Get instruction to close a position
@@ -978,7 +907,7 @@ export class MarginAccount {
     const ix = await this.programs.margin.methods
       .adapterInvoke(
         adapterInstruction.keys.slice(1).map(accountMeta => {
-          return { isSigner: false, isWritable: accountMeta.isWritable }
+          return { isSigner: accountMeta.isSigner, isWritable: accountMeta.isWritable }
         }),
         adapterInstruction.data
       )
@@ -992,7 +921,7 @@ export class MarginAccount {
         adapterInstruction.keys.slice(1).map(accountMeta => {
           return {
             pubkey: accountMeta.pubkey,
-            isSigner: false,
+            isSigner: accountMeta.isSigner,
             isWritable: accountMeta.isWritable
           }
         })
@@ -1035,5 +964,14 @@ export class MarginAccount {
       )
       .instruction()
     instructions.push(ix)
+  }
+
+  async sendAndConfirm(instructions: TransactionInstruction[]) {
+    try {
+      return await this.provider.sendAndConfirm(new Transaction().add(...instructions))
+    } catch (err) {
+      console.log(err)
+      throw err
+    }
   }
 }
