@@ -380,15 +380,21 @@ export class Pool {
    * Transactionss
    ****************************/
 
-  async marginRefreshAllPositions({ pools, marginAccount }: { pools: Pool[]; marginAccount: MarginAccount }) {
+  async marginRefreshAllPositionPrices({ pools, marginAccount }: { pools: Pool[]; marginAccount: MarginAccount }) {
     const instructions: TransactionInstruction[] = []
     for (const pool of pools) {
-      await pool.withMarginRefreshPosition({ instructions, marginAccount })
+      await pool.withMarginRefreshPositionPrice({ instructions, marginAccount })
     }
     await marginAccount.provider.sendAndConfirm(new Transaction().add(...instructions))
   }
 
-  async withMarginRefreshAllPositions({
+  async marginRefreshPositionPrice(marginAccount: MarginAccount) {
+    const instructions: TransactionInstruction[] = []
+    await this.withMarginRefreshPositionPrice({ instructions, marginAccount })
+    return await marginAccount.provider.sendAndConfirm(new Transaction().add(...instructions))
+  }
+
+  async withMarginRefreshAllPositionPrices({
     instructions,
     pools,
     marginAccount
@@ -398,17 +404,11 @@ export class Pool {
     marginAccount: MarginAccount
   }) {
     for (const pool of pools) {
-      await pool.withMarginRefreshPosition({ instructions, marginAccount })
+      await pool.withMarginRefreshPositionPrice({ instructions, marginAccount })
     }
   }
 
-  async refreshPosition(marginAccount: MarginAccount) {
-    const instructions: TransactionInstruction[] = []
-    await this.withMarginRefreshPosition({ instructions, marginAccount })
-    return await marginAccount.provider.sendAndConfirm(new Transaction().add(...instructions))
-  }
-
-  async withMarginRefreshPosition({
+  async withMarginRefreshPositionPrice({
     instructions,
     marginAccount
   }: {
@@ -505,7 +505,7 @@ export class Pool {
     assert(loanPosition)
 
     const instructions: TransactionInstruction[] = []
-    await this.withMarginRefreshAllPositions({ instructions, pools, marginAccount })
+    await this.withMarginRefreshAllPositionPrices({ instructions, pools, marginAccount })
     await marginAccount.withUpdateAllPositionBalances({ instructions })
     await this.withMarginBorrow({
       instructions,
@@ -593,7 +593,7 @@ export class Pool {
 
     const instructions: TransactionInstruction[] = []
     await marginAccount.withUpdateAllPositionBalances({ instructions })
-    await this.withMarginRefreshAllPositions({ instructions, pools, marginAccount })
+    await this.withMarginRefreshAllPositionPrices({ instructions, pools, marginAccount })
     await marginAccount.withAdapterInvoke({
       instructions,
       adapterProgram: this.programs.config.marginPoolProgramId,
@@ -655,10 +655,12 @@ export class Pool {
   /// `destination` - (Optional) The token account to send the withdrawn deposit
   async marginWithdraw({
     marginAccount,
+    pools,
     amount,
     destination
   }: {
     marginAccount: MarginAccount
+    pools: Pool[]
     amount: PoolAmount
     destination?: Address
   }) {
@@ -678,8 +680,8 @@ export class Pool {
         this.tokenMint
       ))
 
+    await this.withMarginRefreshAllPositionPrices({ instructions, pools, marginAccount })
     await marginAccount.withUpdateAllPositionBalances({ instructions })
-
     await marginAccount.withAdapterInvoke({
       instructions,
       adapterProgram: this.programs.config.marginPoolProgramId,

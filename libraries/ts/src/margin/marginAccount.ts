@@ -348,8 +348,8 @@ export class MarginAccount {
     depositBalance: TokenAmount,
     loanBalance: TokenAmount
   ): Record<TradeAction, TokenAmount> {
+    const zero = TokenAmount.zero(pool.decimals)
     if (!pool.info) {
-      const zero = TokenAmount.zero(pool.decimals)
       return {
         deposit: zero,
         withdraw: zero,
@@ -364,38 +364,46 @@ export class MarginAccount {
     const feeCover = new TokenAmount(new BN(20000000), pool.decimals)
 
     // Max deposit
-    let deposit = walletAmount ?? TokenAmount.zero(pool.decimals)
+    let deposit = walletAmount ?? zero
     // If depositing SOL, maximum input should still cover fees
     if (pool.address.equals(NATIVE_MINT)) {
-      deposit = TokenAmount.max(deposit.sub(feeCover), TokenAmount.zero(pool.decimals))
+      deposit = TokenAmount.max(deposit.sub(feeCover), zero)
     }
 
     // Max withdraw
-    const withdrawableLamports = pool.depositNoteMetadata
-      .getRequiredCollateralValue(this.valuation.availableCollateral)
-      .mul(Number128.ONE)
-      .div(numberToBn(pool.tokenPrice * 10 ** Number128.PRECISION))
+    const withdrawableLamports = TokenAmount.lamports(
+      Number128.asBn(
+        pool.depositNoteMetadata
+          .getRequiredCollateralValue(this.valuation.availableCollateral)
+          .mul(Number128.ONE)
+          // FIXME: This could be more accurate if a BN note price was used
+          .div(numberToBn(pool.tokenPrice * 10 ** (Number128.PRECISION - pool.decimals))),
+        0
+      ),
+      pool.decimals
+    )
 
-    let withdraw = TokenAmount.min(depositBalance, pool.borrowedTokens)
-    withdraw = TokenAmount.min(withdraw, TokenAmount.lamports(Number128.asBn(withdrawableLamports, 0), pool.decimals))
-    withdraw = TokenAmount.max(withdraw, TokenAmount.zero(pool.decimals))
+    let withdraw = TokenAmount.min(depositBalance, pool.depositedTokens)
+    withdraw = TokenAmount.min(withdraw, withdrawableLamports)
+    withdraw = TokenAmount.max(withdraw, zero)
 
     // Max borrow
     const borrowLamports = pool.loanNoteMetadata
       .getCollateralValue(this.valuation.availableCollateral)
       .mul(Number128.ONE)
-      .div(numberToBn(pool.tokenPrice * 10 ** Number128.PRECISION))
+      // FIXME: This could be more accurate if a BN note price was used
+      .div(numberToBn(pool.tokenPrice * 10 ** (Number128.PRECISION - pool.decimals)))
     let borrow: TokenAmount = TokenAmount.min(
       TokenAmount.lamports(Number128.asBn(borrowLamports, 0), pool.decimals),
       pool.depositedTokens
     )
-    borrow = TokenAmount.max(borrow, TokenAmount.zero(pool.decimals))
+    borrow = TokenAmount.max(borrow, zero)
 
     // Max repay
     let repay = walletAmount ? TokenAmount.min(loanBalance, walletAmount) : loanBalance
     // If repaying SOL, maximum input should still cover fees
     if (pool.address.equals(NATIVE_MINT)) {
-      repay = TokenAmount.max(repay.sub(feeCover), TokenAmount.zero(pool.decimals))
+      repay = TokenAmount.max(repay.sub(feeCover), zero)
     }
 
     // Max swap
@@ -426,8 +434,7 @@ export class MarginAccount {
 
     const exposureNumber = bnToNumber(this.valuation.exposure)
     const cRatio = exposureNumber === 0 ? Infinity : bnToNumber(collateralValue) / exposureNumber
-    const minCRatio =
-      exposureNumber === 0 ? Infinity : 1 + bnToNumber(this.valuation.effectiveCollateral) / exposureNumber
+    const minCRatio = exposureNumber === 0 ? 1 : 1 + bnToNumber(this.valuation.effectiveCollateral) / exposureNumber
     const depositedValue = bnToNumber(Number128.asBn(collateralValue, -5)) / 100000
     const borrowedValue = bnToNumber(Number128.asBn(this.valuation.exposure, -5)) / 100000
 
