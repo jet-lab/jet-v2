@@ -120,11 +120,16 @@ export class MarginClient {
       return null
     }
 
-    const instructions = ["repay", "borrow", "deposit", "withdraw"]
+    const instructionLogHeaders = [
+      "> Program log: Instruction: MarginRepay",
+      "> Program log: Instruction: MarginBorrow",
+      "> Program log: Instruction: Deposit",
+      "> Program log: Instruction: Withdraw"
+    ]
     let tradeAction = ""
-    for (let i = 0; i < instructions.length; i++) {
-      if (transaction.meta?.logMessages?.some(tx => tx.toLowerCase().includes(instructions[i]))) {
-        tradeAction = instructions[i]
+    for (let i = 0; i < instructionLogHeaders.length; i++) {
+      if (transaction.meta?.logMessages?.some(logLine => logLine.includes(instructionLogHeaders[i]))) {
+        tradeAction = instructionLogHeaders[i]
         break
       }
     }
@@ -151,7 +156,7 @@ export class MarginClient {
           ) {
             token = config.tokens[tokenAbbrev] as MarginTokenConfig
             if (
-              token.mint === NATIVE_MINT &&
+              token.mint.toString() === NATIVE_MINT.toString() &&
               (tradeAction === "withdraw" || tradeAction === "borrow") &&
               matchingPost.uiTokenAmount.amount === "0"
             ) {
