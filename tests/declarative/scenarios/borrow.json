@@ -15,16 +15,24 @@
       "name": "accountA",
       "seed": 0,
       "tokens": {
-        "BTC": { "deposit": 0.002 },
-        "USDC": { "deposit": 100 }
+        "BTC": { "deposit": 0.5 },
+        "USDC": { "deposit": 10000 }
       }
     },
     {
       "name": "accountB",
       "seed": 1,
       "tokens": {
-        "BTC": { "borrow": 0.001 },
-        "USDC": { "deposit": 100 }
+        "ETH": { "deposit": 10 },
+        "USDC": { "deposit": 10000 }
+      }
+    },
+    {
+      "name": "accountC",
+      "seed": 2,
+      "tokens": {
+        "BTC": { "borrow": 0.25 },
+        "USDC": { "deposit": 10000 }
       }
     }
   ]

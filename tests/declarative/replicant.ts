@@ -75,6 +75,8 @@ export class Replicant {
       await sleep(4 * 1000)
     }
 
+    //TODO if user balance < 1, then airdrop some.
+
     const tokenAccounts = {}
     for (const account of this.config.accounts) {
       for (const token of Object.keys(account.tokens)) {
