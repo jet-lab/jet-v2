@@ -27,7 +27,7 @@ import {
   sendToken
 } from "../util"
 
-describe("margin pool deposit", async () => {
+describe("margin pool deposit", () => {
   // SUITE SETUP
   const marginPoolProgramId: PublicKey = new PublicKey(MARGIN_CONFIG.localnet.marginPoolProgramId)
   const confirmOptions: ConfirmOptions = { preflightCommitment: "processed", commitment: "processed" }
