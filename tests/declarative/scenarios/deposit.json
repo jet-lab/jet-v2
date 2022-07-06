@@ -1,7 +1,18 @@
 {
   "users": [
     {
-      "name": "userA",
+      "keypair": "margin-user-1.json"
+    },
+    {
+      "keypair": "margin-user-2.json"
+    },
+    {
+      "keypair": "margin-user-3.json"
+    }
+  ],
+  "accounts": [
+    {
+      "name": "accountA",
       "seed": 0,
       "tokens": {
         "BTC": { "deposit": 0.001 },
@@ -9,7 +20,7 @@
       }
     },
     {
-      "name": "userB",
+      "name": "accountB",
       "seed": 1,
       "tokens": {
         "BTC": { "deposit": 0.001 },

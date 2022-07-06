@@ -9,14 +9,15 @@ import {
   MarginPrograms,
   Pool,
   PoolAmount,
-  PoolManager,
-  ZERO_BN
+  PoolManager
 } from "../../libraries/ts/src/index"
 import { getAssociatedTokenAddress } from "@solana/spl-token"
 import { Account, Connection, ConfirmOptions, PublicKey } from "@solana/web3.js"
 import assert from "assert"
 
 import { airdropTokens } from "./tokenFaucet"
+
+const ZERO_BN = new BN(0)
 
 export class Replicant {
   account: Account
@@ -30,14 +31,13 @@ export class Replicant {
   provider: AnchorProvider
   splTokenFaucet: PublicKey
 
-  constructor(config: any, account: Account, cluster: MarginCluster = "devnet") {
+  constructor(config: any, account: Account, cluster: MarginCluster, connection: Connection) {
     this.account = account
     this.cluster = cluster
     this.config = config
+    this.connection = connection
 
     this.marginConfig = MarginClient.getConfig(this.cluster)
-
-    this.connection = new Connection(this.marginConfig.url, "processed")
 
     const confirmOptions: ConfirmOptions = { preflightCommitment: "processed", commitment: "processed" }
     // @ts-ignore
@@ -51,27 +51,27 @@ export class Replicant {
     this.splTokenFaucet = new PublicKey(this.marginConfig.splTokenFaucet)
   }
 
-  async load(): Promise<void> {
+  async loadPools(): Promise<void> {
     this.pools = Object.values<Pool>(await this.poolManager.loadAll(this.programs))
   }
 
   async createAccounts(): Promise<void> {
-    for (const user of this.config.users) {
-      assert(user.name)
-      assert(user.seed != undefined)
-      assert(user.tokens)
+    for (const account of this.config.accounts) {
+      assert(account.name)
+      assert(account.seed != undefined)
+      assert(account.tokens)
 
-      console.log(`user.name = ${user.name}`)
+      //console.log(`user.name = ${user.name}`)
 
       const marginAccount: MarginAccount = await MarginAccount.load({
         programs: this.programs,
         provider: this.provider,
         owner: this.account.publicKey,
-        seed: user.seed
+        seed: account.seed
       })
       const accountInfo = await this.connection.getAccountInfo(marginAccount.address)
       if (!accountInfo) {
-        console.log(`createAccount`)
+        //console.log(`createAccount`)
         await marginAccount.createAccount()
         await marginAccount.refresh()
       } else {
@@ -81,19 +81,19 @@ export class Replicant {
   }
 
   async processDeposits(): Promise<void> {
-    for (const user of this.config.users) {
+    for (const account of this.config.accounts) {
       const marginAccount: MarginAccount = await MarginAccount.load({
         programs: this.programs,
         provider: this.provider,
         owner: this.account.publicKey,
-        seed: user.seed
+        seed: account.seed
       })
 
       for (const poolConfig of Object.values<any>(this.marginConfig.pools)) {
         const tokenConfig = this.marginConfig.tokens[poolConfig.symbol]
         assert(tokenConfig)
 
-        const token = user.tokens[poolConfig.symbol]
+        const token = account.tokens[poolConfig.symbol]
         let expectedDeposit = ZERO_BN
         if (token && token.deposit && token.deposit != 0) {
           expectedDeposit = new BN(token.deposit * 10 ** tokenConfig.decimals)
@@ -124,7 +124,7 @@ export class Replicant {
               this.account.publicKey,
               true
             )
-            console.log(`DEPOSIT ${poolConfig.symbol} = ${expectedDeposit} | ${existingDeposit}`)
+            //console.log(`DEPOSIT ${poolConfig.symbol} = ${expectedDeposit} | ${existingDeposit}`)
             const amount = expectedDeposit.sub(existingDeposit)
 
             await airdropTokens(
@@ -144,19 +144,19 @@ export class Replicant {
   }
 
   async processBorrows(): Promise<void> {
-    for (const user of this.config.users) {
+    for (const account of this.config.accounts) {
       const marginAccount: MarginAccount = await MarginAccount.load({
         programs: this.programs,
         provider: this.provider,
         owner: this.account.publicKey,
-        seed: user.seed
+        seed: account.seed
       })
 
       for (const poolConfig of Object.values(this.marginConfig.pools)) {
         const tokenConfig = this.marginConfig.tokens[poolConfig.symbol]
         assert(tokenConfig)
 
-        const token = user.tokens[poolConfig.symbol]
+        const token = account.tokens[poolConfig.symbol]
         let expectedBorrow = ZERO_BN
         if (token && token.borrow) {
           expectedBorrow = new BN(token.borrow * 10 ** tokenConfig.decimals)
@@ -184,7 +184,7 @@ export class Replicant {
         }
 
         if (!expectedBorrow.eq(ZERO_BN) || !existingBorrow.eq(ZERO_BN)) {
-          console.log(`BORROW ${poolConfig.symbol} = ${expectedBorrow} | ${existingBorrow}`)
+          //console.log(`BORROW ${poolConfig.symbol} = ${expectedBorrow} | ${existingBorrow}`)
           assert(tokenConfig.decimals)
           assert(tokenConfig.faucet)
           if (existingBorrow.lt(expectedBorrow)) {
@@ -236,27 +236,27 @@ export class Replicant {
   */
 
   async printAccounts(): Promise<void> {
-    for (const user of this.config.users) {
+    for (const account of this.config.accounts) {
       const marginAccount: MarginAccount = await MarginAccount.load({
         programs: this.programs,
         provider: this.provider,
         owner: this.account.publicKey,
-        seed: user.seed
+        seed: account.seed
       })
       await printAccount(marginAccount)
     }
   }
 
   async closeAccounts(): Promise<void> {
-    for (const user of this.config.users) {
+    for (const account of this.config.accounts) {
       const marginAccount: MarginAccount = await MarginAccount.load({
         programs: this.programs,
         provider: this.provider,
         owner: this.account.publicKey,
-        seed: user.seed
+        seed: account.seed
       })
       await this.closeAccount(marginAccount)
-      await printAccount(marginAccount)
+      //await printAccount(marginAccount)
     }
   }
 
@@ -283,7 +283,7 @@ export class Replicant {
                   true
                 )
                 dirty = true;
-                console.log(`DEPOSIT ${pool.symbol} = ${position.balance} | ${existingDeposit}`)
+                //console.log(`DEPOSIT ${pool.symbol} = ${position.balance} | ${existingDeposit}`)
                 const amount = position.balance.sub(existingDeposit).add(new BN(1))
                 await airdropTokens(
                   this.connection,
@@ -326,9 +326,9 @@ export class Replicant {
                 const amount = PoolAmount.notes(position.balance)
                 await pool.marginWithdraw({ marginAccount, destination, amount })
               }
-              console.log('');
-              console.log(`position = ${JSON.stringify(position)}`);
-              console.log('');
+              //console.log('');
+              //console.log(`position = ${JSON.stringify(position)}`);
+              //console.log('');
               await marginAccount.closePosition(position)
               await marginAccount.refresh()
               break
