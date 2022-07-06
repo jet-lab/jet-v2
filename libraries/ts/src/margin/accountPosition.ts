@@ -1,7 +1,7 @@
 import { PublicKey } from "@solana/web3.js"
 import assert from "assert"
 import BN from "bn.js"
-import { getTimestamp } from ".."
+import { bnToNumber, getTimestamp } from ".."
 import { Number128 } from "../"
 import { AccountPositionInfo, AdapterPositionFlags, PositionKind, PositionKindInfo } from "./state"
 
@@ -26,7 +26,11 @@ export class AccountPosition {
   adapter: PublicKey
 
   /** The current value of this position, stored as a `Number128` with fixed precision. */
-  value: BN
+  valueRaw: BN
+
+  get value(): number {
+    return bnToNumber(Number128.asU64(this.valueRaw, -5)) / 100000
+  }
 
   /** The amount of tokens in the account */
   balance: BN
@@ -58,7 +62,7 @@ export class AccountPosition {
   exponent: number
 
   /** A weight on the value of this asset when counting collateral */
-  valueModifier: number
+  valueModifier: BN
 
   /** The max staleness for the account balance (seconds) */
   maxStaleness: BN
@@ -71,25 +75,25 @@ export class AccountPosition {
     this.token = info.token
     this.address = info.address
     this.adapter = info.adapter
-    this.value = new BN(info.value, "le")
+    this.valueRaw = new BN(info.value, "le")
     this.balance = info.balance
     this.balanceTimestamp = info.balanceTimestamp
     this.price = {
       value: price?.value ?? info.price.value,
       exponent: price?.exponent ?? info.price.exponent,
       timestamp: price?.timestamp ?? info.price.timestamp,
-      isValid: info.price.isValid
+      isValid: price ? Number(price.isValid) : info.price.isValid
     }
     this.kind = info.kind
     this.exponent = info.exponent
-    this.valueModifier = info.valueModifier
+    this.valueModifier = Number128.fromDecimal(new BN(info.valueModifier), -2)
     this.maxStaleness = info.maxStaleness
     this.flags = new BN(info.flags as number[]).toNumber()
     this.calculateValue()
   }
 
   calculateValue() {
-    this.value = Number128.fromDecimal(this.balance, this.exponent)
+    this.valueRaw = Number128.fromDecimal(this.balance, this.exponent)
       .mul(Number128.fromDecimal(this.price.value, this.price.exponent))
       .div(Number128.ONE)
   }
@@ -97,19 +101,17 @@ export class AccountPosition {
   collateralValue() {
     assert(this.kind === PositionKind.Deposit)
 
-    return Number128.fromDecimal(new BN(this.valueModifier), -2).mul(this.value).div(Number128.ONE)
+    return this.valueModifier.mul(this.valueRaw).div(Number128.ONE)
   }
 
   requiredCollateralValue() {
     assert(this.kind === PositionKind.Claim)
 
-    let modifier = Number128.fromDecimal(new BN(this.valueModifier), -2)
-
-    if (modifier.eq(Number128.ZERO)) {
+    if (this.valueModifier.eq(Number128.ZERO)) {
       console.log(`no leverage configured for claim ${this.token.toBase58()}`)
       return Number128.MAX
     } else {
-      return this.value.mul(Number128.ONE).div(modifier)
+      return this.valueRaw.mul(Number128.ONE).div(this.valueModifier)
     }
   }
 
