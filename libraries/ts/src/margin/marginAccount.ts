@@ -361,9 +361,14 @@ export class MarginAccount {
     }
 
     const walletAmount = pool.symbol && this.walletTokens?.map[pool.symbol].amount
+    const feeCover = new TokenAmount(new BN(20000000), pool.decimals)
 
     // Max deposit
-    const deposit = walletAmount ?? TokenAmount.zero(pool.decimals)
+    let deposit = walletAmount ?? TokenAmount.zero(pool.decimals)
+    // If depositing SOL, maximum input should still cover fees
+    if (pool.address.equals(NATIVE_MINT)) {
+      deposit = TokenAmount.max(deposit.sub(feeCover), TokenAmount.zero(pool.decimals))
+    }
 
     // Max withdraw
     const withdrawableLamports = pool.depositNoteMetadata
@@ -376,7 +381,7 @@ export class MarginAccount {
     withdraw = TokenAmount.max(withdraw, TokenAmount.zero(pool.decimals))
 
     // Max borrow
-    let borrowLamports = pool.loanNoteMetadata
+    const borrowLamports = pool.loanNoteMetadata
       .getCollateralValue(this.valuation.availableCollateral)
       .mul(Number128.ONE)
       .div(numberToBn(pool.tokenPrice * 10 ** Number128.PRECISION))
@@ -388,6 +393,10 @@ export class MarginAccount {
 
     // Max repay
     let repay = walletAmount ? TokenAmount.min(loanBalance, walletAmount) : loanBalance
+    // If repaying SOL, maximum input should still cover fees
+    if (pool.address.equals(NATIVE_MINT)) {
+      repay = TokenAmount.max(repay.sub(feeCover), TokenAmount.zero(pool.decimals))
+    }
 
     // Max swap
     const swap = withdraw
@@ -409,7 +418,7 @@ export class MarginAccount {
     let collateralValue = Number128.ZERO
 
     for (const position of this.positions) {
-      let kind = position.kind
+      const kind = position.kind
       if (kind === PositionKind.Deposit) {
         collateralValue = collateralValue.add(position.valueRaw)
       }
@@ -490,19 +499,19 @@ export class MarginAccount {
     let exposure = Number128.ZERO
     let requiredCollateral = Number128.ZERO
     let weightedCollateral = Number128.ZERO
-    let staleCollateralList: [PublicKey, ErrorCode][] = []
-    let claimErrorList: [PublicKey, ErrorCode][] = []
+    const staleCollateralList: [PublicKey, ErrorCode][] = []
+    const claimErrorList: [PublicKey, ErrorCode][] = []
 
     const constants = this.programs.margin.idl.constants
     const MAX_PRICE_QUOTE_AGE = new BN(constants.find(constant => constant.name === "MAX_PRICE_QUOTE_AGE")?.value ?? 0)
     const POS_PRICE_VALID = 1
 
     for (const position of this.positions) {
-      let kind = position.kind
+      const kind = position.kind
       let staleReason: ErrorCode | undefined
       {
-        let balanceAge = timestamp.sub(position.balanceTimestamp)
-        let priceQuoteAge = timestamp.sub(position.price.timestamp)
+        const balanceAge = timestamp.sub(position.balanceTimestamp)
+        const priceQuoteAge = timestamp.sub(position.price.timestamp)
         if (position.price.isValid != POS_PRICE_VALID) {
           // collateral with bad prices
           staleReason = ErrorCode.InvalidPrice
@@ -517,6 +526,7 @@ export class MarginAccount {
       }
 
       if (kind === PositionKind.NoValue) {
+        // FIXME
       } else if (kind === PositionKind.Claim) {
         if (staleReason === undefined || includeStalePositions) {
           if (
