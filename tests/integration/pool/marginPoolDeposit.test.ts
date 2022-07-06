@@ -37,9 +37,8 @@ describe("margin pool deposit", () => {
   const ownerKeypair = payer
   const programs = MarginClient.getPrograms(provider, "localnet")
   const manager = new PoolManager(programs, provider)
-
-  const USDC = await createToken(provider, payer, 6, 10_000_000)
-  const SOL = await createToken(provider, payer, 9, 10_000)
+  let USDC
+  let SOL
 
   it("Fund payer", async () => {
     const airdropSignature = await provider.connection.requestAirdrop(provider.wallet.publicKey, 300 * LAMPORTS_PER_SOL)
@@ -48,6 +47,8 @@ describe("margin pool deposit", () => {
 
   it("Create tokens", async () => {
     // SETUP
+    USDC = await createToken(provider, payer, 6, 10_000_000)
+    SOL = await createToken(provider, payer, 9, 10_000)
 
     // ACT
     const usdc_supply = await getMintSupply(provider, USDC[0], 6)
