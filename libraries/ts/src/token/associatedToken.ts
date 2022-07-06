@@ -18,8 +18,9 @@ import {
   MintLayout
 } from "@solana/spl-token"
 import { Connection, PublicKey, TransactionInstruction, SystemProgram, AccountInfo } from "@solana/web3.js"
+import { Number192 } from "../utils/number192"
 import { findDerivedAccount } from "../utils/pda"
-import { TokenAmount, ZERO_BN } from "./tokenAmount"
+import { TokenAmount } from "./tokenAmount"
 
 export class AssociatedToken {
   static readonly NATIVE_DECIMALS = 9
@@ -319,7 +320,7 @@ export class AssociatedToken {
       rentExemptReserve: rawAccount.isNativeOption ? rawAccount.isNative : null,
       closeAuthority: rawAccount.closeAuthorityOption ? rawAccount.closeAuthority : null
     }
-    return new AssociatedToken(publicKey, info, TokenAmount.tokenAccount(info, decimals))
+    return new AssociatedToken(publicKey, info, TokenAmount.account(info, decimals))
   }
 
   /**
@@ -495,23 +496,40 @@ export class AssociatedToken {
 }
 
 /**
- * Convert BN to precise number
+ * Convert number to BN. This never throws for large numbers, unlike the BN constructor.
+ * @param {Number} [number]
+ * @returns {BN}
+ */
+export function numberToBn(number: number | null | undefined): BN {
+  return new BN(numberToBigInt(number).toString())
+}
+
+/**
+ * Convert BN to number. This never throws for large numbers, unlike BN.toNumber().
  * @param {BN} [bn]
  * @returns {number}
  */
-export const bnToNumber = (bn: BN | null | undefined): number => {
+export function bnToNumber(bn: BN | null | undefined): number {
   return bn ? parseFloat(bn.toString()) : 0
 }
 
 /**
- * Convert BigInt (spl) to BN (Anchor)
+ * Convert BigInt (SPL Token) to BN. (Anchor)
  * @param {bigint} [bigInt]
  * @returns {BN}
  */
 export const bigIntToBn = (bigInt: bigint | null | undefined): BN => {
-  return bigInt ? new BN(bigInt.toString()) : ZERO_BN
+  return bigInt ? new BN(bigInt.toString()) : Number192.ZERO
 }
 
+/** Convert BigInt (SPL Token) to BN. */
 export const bigIntToNumber = (bigint: bigint | null | undefined): number => {
-  return bigint ? Number(bigint.toString()) : 0
+  return bigint ? Number(bigint) : 0
+}
+
+export function numberToBigInt(number: number | null | undefined) {
+  // Stomp out any fraction component of the number
+  return number !== null && number !== undefined
+    ? BigInt(number.toLocaleString("fullwide", { useGrouping: false, maximumFractionDigits: 0 }))
+    : BigInt(0)
 }

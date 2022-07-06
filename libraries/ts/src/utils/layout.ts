@@ -115,7 +115,7 @@ export function u64(property?: string): NumberField {
  * @param {string} [property]
  * @returns {NumberField}
  */
-export function number128(property?: string): NumberField {
+export function number128Field(property?: string): NumberField {
   return new NumberField(16, property)
 }
 
@@ -125,7 +125,7 @@ export function number128(property?: string): NumberField {
  * @param {string} [property]
  * @returns {NumberField}
  */
-export function number192(property?: string): NumberField {
+export function number192Field(property?: string): NumberField {
   return new NumberField(24, property)
 }
 

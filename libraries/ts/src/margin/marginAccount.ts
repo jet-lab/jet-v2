@@ -13,22 +13,32 @@ import {
 } from "@solana/web3.js"
 import { Pool } from "./pool/pool"
 import {
-  AccountPosition,
   AccountPositionList,
   AccountPositionListLayout,
+  AdapterPositionFlags,
+  ErrorCode,
   MarginAccountData,
-  MAX_POSITIONS
+  PositionKind
 } from "./state"
 import { MarginPrograms } from "./marginClient"
 import { findDerivedAccount } from "../utils/pda"
-import { AssociatedToken, bnToNumber, MarginPools, TokenAmount, ZERO_BN } from ".."
+import {
+  AssociatedToken,
+  bnToNumber,
+  getTimestamp,
+  MarginPools,
+  Number128,
+  Number192,
+  numberToBn,
+  TokenAmount
+} from ".."
 import { MarginPoolConfig, MarginTokenConfig } from "./config"
 import { sleep } from "../utils/util"
+import { AccountPosition, PriceInfo } from "./accountPosition"
 
 export interface MarginAccountAddresses {
   marginAccount: PublicKey
   owner: PublicKey
-  positions: Record<MarginPools, MarginPositionAddresses>
 }
 
 export interface MarginPositionAddresses {
@@ -43,12 +53,14 @@ export interface PoolPosition {
   poolConfig: MarginPoolConfig
   tokenConfig: MarginTokenConfig
   pool?: Pool
-  depositNotePositionInfo: AccountPosition | undefined
-  loanNotePositionInfo: AccountPosition | undefined
+  depositNotePosition: AccountPosition | undefined
+  loanNotePosition: AccountPosition | undefined
   depositBalance: TokenAmount
   depositBalanceNotes: BN
+  depositValue: number
   loanBalance: TokenAmount
   loanBalanceNotes: BN
+  loanValue: number
   maxTradeAmounts: Record<TradeAction, TokenAmount>
   buyingPower: TokenAmount
 }
@@ -59,16 +71,35 @@ export interface AccountSummary {
   accountBalance: number
   availableCollateral: number
   cRatio: number
-  leverage: number
-  totalBuyingPower: number
+  minCRatio: number
+}
+
+export interface Valuation {
+  exposure: BN
+  requiredCollateral: BN
+  weightedCollateral: BN
+  effectiveCollateral: BN
+  availableCollateral: BN
+  staleCollateralList: [PublicKey, ErrorCode][]
+  pastDue: boolean
+  claimErrorList: [PublicKey, ErrorCode][]
+}
+
+export interface Valuation {
+  exposure: BN
+  requiredCollateral: BN
+  weightedCollateral: BN
+  effectiveCollateral: BN
+  availableCollateral: BN
+  staleCollateralList: [PublicKey, ErrorCode][]
+  pastDue: boolean
+  claimErrorList: [PublicKey, ErrorCode][]
 }
 
 export interface MarginWalletTokens {
   all: AssociatedToken[]
   map: Record<MarginPools, AssociatedToken>
 }
-
-const MAX_LEVERAGE = 100
 
 export class MarginAccount {
   static readonly SEED_MAX_VALUE = 65535
@@ -78,7 +109,9 @@ export class MarginAccount {
   }
 
   addresses: MarginAccountAddresses
-  positions: Record<MarginPools, PoolPosition>
+  positions: AccountPosition[]
+  valuation: Valuation
+  poolPositions: Record<MarginPools, PoolPosition>
   summary: AccountSummary
 
   get address() {
@@ -86,6 +119,9 @@ export class MarginAccount {
   }
   get owner() {
     return this.addresses.owner
+  }
+  get liquidator() {
+    return this.info?.marginAccount.liquidator
   }
 
   /**
@@ -107,7 +143,9 @@ export class MarginAccount {
     this.pools = pools
     this.walletTokens = walletTokens
     this.addresses = MarginAccount.derive(programs, owner, seed)
-    this.positions = this.getAllPoolPositions()
+    this.positions = this.getPositions()
+    this.valuation = this.getValuation(true)
+    this.poolPositions = this.getAllPoolPositions()
     this.summary = this.getSummary()
   }
 
@@ -131,25 +169,7 @@ export class MarginAccount {
     buffer.writeUInt16LE(seed)
     const marginAccount = findDerivedAccount(programs.config.marginProgramId, owner, buffer)
 
-    const poolConfigs = Object.values(programs.config.pools)
-    const positionAddressesList: MarginPositionAddresses[] = poolConfigs.map(poolConfig => {
-      const tokenMint = translateAddress(poolConfig.tokenMint)
-      const account = findDerivedAccount(programs.config.marginProgramId, marginAccount, tokenMint)
-      const tokenAccount = findDerivedAccount(programs.config.marginProgramId, marginAccount, tokenMint)
-      const tokenMetadata = findDerivedAccount(programs.config.metadataProgramId, tokenMint)
-      return {
-        tokenMint,
-        account,
-        tokenAccount,
-        tokenMetadata
-      }
-    })
-
-    const positions: Record<string, MarginPositionAddresses> = {}
-    for (let i = 0; i < positionAddressesList.length; i++) {
-      positions[poolConfigs[i].symbol] = positionAddressesList[i]
-    }
-    return { marginAccount, owner: ownerAddress, positions }
+    return { marginAccount, owner: ownerAddress }
   }
 
   static deriveLiquidation(programs: MarginPrograms, marginAccount: MarginAccount, liquidator: Address) {
@@ -255,7 +275,9 @@ export class MarginAccount {
         positions
       }
     }
-    this.positions = this.getAllPoolPositions()
+    this.positions = this.getPositions()
+    this.valuation = this.getValuation(true)
+    this.poolPositions = this.getAllPoolPositions()
     this.summary = this.getSummary()
   }
 
@@ -274,47 +296,45 @@ export class MarginAccount {
       const totalValueLessFees = pool.depositedTokens.add(pool.borrowedTokens).sub(pool.uncollectedFees).lamports
 
       // Deposits
-      const poolDepositNotes = pool.info?.marginPool.depositNotes ?? ZERO_BN
-      const depositNotePositionInfo = this.info?.positions.positions.find(position =>
-        position.token.equals(pool.addresses.depositNoteMint)
-      )
-      const depositBalanceNotes = depositNotePositionInfo?.balance ?? ZERO_BN
+      const poolDepositNotes = pool.info?.marginPool.depositNotes ?? Number192.ZERO
+      const depositNotePosition = this.getPosition(pool.addresses.depositNoteMint)
+      const depositBalanceNotes = depositNotePosition?.balance ?? Number192.ZERO
       const depositTokenBalance = poolDepositNotes.isZero()
-        ? ZERO_BN
+        ? Number192.ZERO
         : totalValueLessFees.mul(depositBalanceNotes).div(poolDepositNotes)
-      const depositBalance = new TokenAmount(depositTokenBalance, pool.decimals)
+      const depositBalance = TokenAmount.lamports(depositTokenBalance, pool.decimals)
+      const depositValue = depositNotePosition?.value ?? 0
 
       // Loans
-      const poolLoanNotes = pool.info?.marginPool.loanNotes ?? ZERO_BN
+      const poolLoanNotes = pool.info?.marginPool.loanNotes ?? Number192.ZERO
       const poolBorrowedTokens = pool.borrowedTokens.lamports
-      const loanNotePositionInfo = this.info?.positions.positions.find(position =>
-        position.token.equals(pool.addresses.loanNoteMint)
-      )
-      const loanBalanceNotes = loanNotePositionInfo?.balance ?? ZERO_BN
+      const loanNotePosition = this.getPosition(pool.addresses.loanNoteMint)
+      const loanBalanceNotes = loanNotePosition?.balance ?? Number192.ZERO
       const loanTokenBalance = poolLoanNotes.isZero()
-        ? ZERO_BN
+        ? Number192.ZERO
         : poolBorrowedTokens.mul(loanBalanceNotes).div(poolLoanNotes)
-      const loanBalance = new TokenAmount(loanTokenBalance, pool.decimals)
+      const loanBalance = TokenAmount.lamports(loanTokenBalance, pool.decimals)
+      const loanValue = loanNotePosition?.value ?? 0
 
       // Max trade amounts
       const maxTradeAmounts = this.getMaxTradeAmounts(pool, depositBalance, loanBalance)
 
       // Buying power
-      const buyingPower = depositBalance
-        .muln(pool.tokenPrice)
-        .muln(Math.min(MAX_LEVERAGE, pool.maxLeverage))
-        .sub(loanBalance.muln(pool.tokenPrice))
+      // FIXME
+      const buyingPower = TokenAmount.zero(pool.decimals)
 
       positions[poolConfig.symbol] = {
         poolConfig,
         tokenConfig,
         pool,
-        depositNotePositionInfo,
-        loanNotePositionInfo,
+        depositNotePosition,
+        loanNotePosition,
         depositBalance,
         depositBalanceNotes,
+        depositValue,
         loanBalance,
         loanBalanceNotes,
+        loanValue,
         maxTradeAmounts,
         buyingPower
       }
@@ -328,34 +348,54 @@ export class MarginAccount {
     depositBalance: TokenAmount,
     loanBalance: TokenAmount
   ): Record<TradeAction, TokenAmount> {
-    const depositedValue = depositBalance.muln(pool.tokenPrice)
-    const loanValue = loanBalance.muln(pool.tokenPrice)
+    if (!pool.info) {
+      const zero = TokenAmount.zero(pool.decimals)
+      return {
+        deposit: zero,
+        withdraw: zero,
+        borrow: zero,
+        repay: zero,
+        swap: zero,
+        transfer: zero
+      }
+    }
+
+    const walletAmount = pool.symbol && this.walletTokens?.map[pool.symbol].amount
+    const feeCover = new TokenAmount(new BN(20000000), pool.decimals)
 
     // Max deposit
-    const deposit =
-      pool.symbol && this.walletTokens ? this.walletTokens.map[pool.symbol].amount : TokenAmount.zero(pool.decimals)
+    let deposit = walletAmount ?? TokenAmount.zero(pool.decimals)
+    // If depositing SOL, maximum input should still cover fees
+    if (pool.address.equals(NATIVE_MINT)) {
+      deposit = TokenAmount.max(deposit.sub(feeCover), TokenAmount.zero(pool.decimals))
+    }
 
     // Max withdraw
-    let withdraw = !loanValue.isZero()
-      ? depositedValue.subn(pool.minCRatio * loanValue.tokens).divn(pool.tokenPrice)
-      : depositBalance
-    if (withdraw.gt(depositBalance)) {
-      withdraw = depositBalance
-    }
-    if (withdraw.gt(pool.borrowedTokens)) {
-      withdraw = pool.borrowedTokens
-    }
+    const withdrawableLamports = pool.depositNoteMetadata
+      .getRequiredCollateralValue(this.valuation.availableCollateral)
+      .mul(Number128.ONE)
+      .div(numberToBn(pool.tokenPrice * 10 ** Number128.PRECISION))
+
+    let withdraw = TokenAmount.min(depositBalance, pool.borrowedTokens)
+    withdraw = TokenAmount.min(withdraw, TokenAmount.lamports(Number128.asBn(withdrawableLamports, 0), pool.decimals))
+    withdraw = TokenAmount.max(withdraw, TokenAmount.zero(pool.decimals))
 
     // Max borrow
-    let borrow = depositedValue.divn(pool.minCRatio - loanValue.tokens).divn(pool.tokenPrice)
-    if (borrow.gt(pool.borrowedTokens)) {
-      borrow = pool.borrowedTokens
-    }
+    const borrowLamports = pool.loanNoteMetadata
+      .getCollateralValue(this.valuation.availableCollateral)
+      .mul(Number128.ONE)
+      .div(numberToBn(pool.tokenPrice * 10 ** Number128.PRECISION))
+    let borrow: TokenAmount = TokenAmount.min(
+      TokenAmount.lamports(Number128.asBn(borrowLamports, 0), pool.decimals),
+      pool.depositedTokens
+    )
+    borrow = TokenAmount.max(borrow, TokenAmount.zero(pool.decimals))
 
     // Max repay
-    let repay = loanBalance
-    if (pool.symbol && this.walletTokens && this.walletTokens.map[pool.symbol].amount.lt(loanBalance)) {
-      repay = this.walletTokens[pool.symbol].amount
+    let repay = walletAmount ? TokenAmount.min(loanBalance, walletAmount) : loanBalance
+    // If repaying SOL, maximum input should still cover fees
+    if (pool.address.equals(NATIVE_MINT)) {
+      repay = TokenAmount.max(repay.sub(feeCover), TokenAmount.zero(pool.decimals))
     }
 
     // Max swap
@@ -375,37 +415,157 @@ export class MarginAccount {
   }
 
   getSummary(): AccountSummary {
-    let depositedValue = 0
-    let borrowedValue = 0
-    let totalBuyingPower = 0
+    let collateralValue = Number128.ZERO
 
-    const positions = Object.values(this.positions)
-    for (let i = 0; i < positions.length; i++) {
-      const position = positions[i]
-      depositedValue += position.depositBalance.tokens * (position.pool?.tokenPrice ?? 0)
-      borrowedValue += position.loanBalance.tokens * (position.pool?.tokenPrice ?? 0)
-      totalBuyingPower += position.buyingPower.tokens
+    for (const position of this.positions) {
+      const kind = position.kind
+      if (kind === PositionKind.Deposit) {
+        collateralValue = collateralValue.add(position.valueRaw)
+      }
     }
+
+    const exposureNumber = bnToNumber(this.valuation.exposure)
+    const cRatio = exposureNumber === 0 ? Infinity : bnToNumber(collateralValue) / exposureNumber
+    const minCRatio =
+      exposureNumber === 0 ? Infinity : 1 + bnToNumber(this.valuation.effectiveCollateral) / exposureNumber
+    const depositedValue = bnToNumber(Number128.asBn(collateralValue, -5)) / 100000
+    const borrowedValue = bnToNumber(Number128.asBn(this.valuation.exposure, -5)) / 100000
 
     return {
       depositedValue,
       borrowedValue,
       accountBalance: depositedValue - borrowedValue,
       availableCollateral: 0, // FIXME: total collateral * collateral weight - total claims
-      cRatio: borrowedValue ? depositedValue / borrowedValue : 0,
-      leverage: depositedValue ? borrowedValue / depositedValue : 0,
-      totalBuyingPower
+      cRatio,
+      minCRatio
     }
-  }
-
-  /** Get the list of positions on this account, including uninitialized positions */
-  getPositionList() {
-    return this.info?.positions.positions ?? []
   }
 
   /** Get the list of positions on this account */
   getPositions() {
-    return this.getPositionList().filter(position => !position.address.equals(PublicKey.default))
+    return (this.info?.positions.positions ?? [])
+      .filter(position => !position.address.equals(PublicKey.default))
+      .map(info => {
+        const price = this.getPositionPrice(info.token)
+        return new AccountPosition({ info, price })
+      })
+  }
+
+  getPosition(mint: Address) {
+    const mintAddress = translateAddress(mint)
+
+    for (let i = 0; i < this.positions.length; i++) {
+      const position = this.positions[i]
+      if (position.token.equals(mintAddress)) {
+        return position
+      }
+    }
+  }
+
+  setPositionBalance(mint: PublicKey, account: PublicKey, balance: BN) {
+    const position = this.getPosition(mint)
+
+    if (!position || !position.address.equals(account)) {
+      return
+    }
+
+    position.setBalance(balance)
+
+    return position
+  }
+
+  getPositionPrice(mint: PublicKey) {
+    // FIXME: make thiis more extensible
+    let price: PriceInfo | undefined
+    if (this.pools) {
+      price = Pool.getPrice(mint, Object.values(this.pools))
+    }
+    return price
+  }
+
+  setPositionPrice(mint: PublicKey, price: PriceInfo) {
+    this.getPosition(mint)?.setPrice(price)
+  }
+
+  /** Check if the given address is an authority for this margin account */
+  hasAuthority(authority: PublicKey) {
+    return authority.equals(this.owner) || this.liquidator?.equals(authority)
+  }
+
+  getValuation(includeStalePositions: boolean): Valuation {
+    const timestamp = getTimestamp()
+
+    let pastDue = false
+    let exposure = Number128.ZERO
+    let requiredCollateral = Number128.ZERO
+    let weightedCollateral = Number128.ZERO
+    const staleCollateralList: [PublicKey, ErrorCode][] = []
+    const claimErrorList: [PublicKey, ErrorCode][] = []
+
+    const constants = this.programs.margin.idl.constants
+    const MAX_PRICE_QUOTE_AGE = new BN(constants.find(constant => constant.name === "MAX_PRICE_QUOTE_AGE")?.value ?? 0)
+    const POS_PRICE_VALID = 1
+
+    for (const position of this.positions) {
+      const kind = position.kind
+      let staleReason: ErrorCode | undefined
+      {
+        const balanceAge = timestamp.sub(position.balanceTimestamp)
+        const priceQuoteAge = timestamp.sub(position.price.timestamp)
+        if (position.price.isValid != POS_PRICE_VALID) {
+          // collateral with bad prices
+          staleReason = ErrorCode.InvalidPrice
+        } else if (position.maxStaleness.gt(Number128.ZERO) && balanceAge.gt(position.maxStaleness)) {
+          // outdated balance
+          staleReason = ErrorCode.OutdatedBalance
+        } else if (priceQuoteAge.gt(MAX_PRICE_QUOTE_AGE)) {
+          staleReason = ErrorCode.OutdatedPrice
+        } else {
+          staleReason = undefined
+        }
+      }
+
+      if (kind === PositionKind.NoValue) {
+        // FIXME
+      } else if (kind === PositionKind.Claim) {
+        if (staleReason === undefined || includeStalePositions) {
+          if (
+            position.balance.gt(Number128.ZERO) &&
+            (position.flags & AdapterPositionFlags.PastDue) === AdapterPositionFlags.PastDue
+          ) {
+            pastDue = true
+          }
+
+          exposure = exposure.add(new BN(position.valueRaw))
+          requiredCollateral = requiredCollateral.add(position.requiredCollateralValue())
+        }
+        if (staleReason !== undefined) {
+          claimErrorList.push([position.token, staleReason])
+        }
+      } else if (kind === PositionKind.Deposit) {
+        if (staleReason === undefined || includeStalePositions) {
+          weightedCollateral = weightedCollateral.add(position.collateralValue())
+        }
+        if (staleReason !== undefined) {
+          staleCollateralList.push([position.token, staleReason])
+        }
+      }
+    }
+
+    const effectiveCollateral = weightedCollateral.sub(exposure)
+
+    return {
+      exposure,
+      pastDue,
+      requiredCollateral,
+      weightedCollateral,
+      effectiveCollateral,
+      get availableCollateral(): BN {
+        return effectiveCollateral.sub(requiredCollateral)
+      },
+      staleCollateralList,
+      claimErrorList
+    }
   }
 
   /**
@@ -586,25 +746,13 @@ export class MarginAccount {
     return await this.provider.sendAndConfirm(new Transaction().add(...instructions))
   }
 
-  getPosition(tokenMint: Address): AccountPosition | undefined {
-    assert(this.info)
-    const tokenMintAddress = translateAddress(tokenMint)
-
-    for (let i = 0; i < MAX_POSITIONS; i++) {
-      const position = this.info.positions.positions[i]
-      if (position.token.equals(tokenMintAddress)) {
-        return position
-      }
-    }
-  }
-
   //TODO Withdraw
   async getOrCreatePosition(tokenMint: Address) {
     assert(this.info)
     const tokenMintAddress = translateAddress(tokenMint)
 
-    for (let i = 0; i < MAX_POSITIONS; i++) {
-      const position = this.info.positions.positions[i]
+    for (let i = 0; i < this.positions.length; i++) {
+      const position = this.positions[i]
       if (position.token.equals(tokenMintAddress)) {
         return position
       }
@@ -613,8 +761,8 @@ export class MarginAccount {
     await this.registerPosition(tokenMintAddress)
     await this.refresh()
 
-    for (let i = 0; i < MAX_POSITIONS; i++) {
-      const position = this.info.positions.positions[i]
+    for (let i = 0; i < this.positions.length; i++) {
+      const position = this.positions[i]
       if (position.token.equals(tokenMintAddress)) {
         return position
       }
@@ -630,7 +778,7 @@ export class MarginAccount {
   }
 
   async withUpdateAllPositionBalances({ instructions }: { instructions: TransactionInstruction[] }) {
-    for (const position of this.getPositions()) {
+    for (const position of this.positions) {
       await this.withUpdatePositionBalance({ instructions, position })
     }
   }

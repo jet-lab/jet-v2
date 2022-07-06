@@ -4,7 +4,8 @@ import { PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY, Transaction, TransactionI
 import { findDerivedAccount } from "../../utils/pda"
 import { MarginPoolConfig, MarginPools, MarginTokenConfig } from "../config"
 import { MarginPrograms } from "../marginClient"
-import { MarginPoolAddresses, Pool, TokenKind } from "./pool"
+import { TokenKind } from "../metadata"
+import { MarginPoolAddresses, Pool } from "./pool"
 import { MarginPoolConfigData } from "./state"
 
 interface TokenMetadataParams {

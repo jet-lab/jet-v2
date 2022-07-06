@@ -569,7 +569,7 @@ bitflags::bitflags! {
         /// until the adapter explicitly unsets this flag.
         const REQUIRED = 1 << 0;
 
-        /// Only applies to claims
+        /// Only applies to claims.
         /// For any other position, this can be set, but it will be ignored.
         /// The claim must be repaid immediately.
         /// The account will be considered unhealty if there is any balance on this position.
