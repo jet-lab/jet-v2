@@ -118,7 +118,7 @@ impl MarginTxBuilder {
     /// Transaction to close ther user's margin position account for a token mint and position king.
     ///
     /// The position should be empty.
-    pub async fn close_pool_position_tx(
+    pub async fn close_pool_position(
         &self,
         token_mint: &Pubkey,
         kind: PositionKind,

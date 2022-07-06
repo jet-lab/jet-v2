@@ -376,7 +376,7 @@ impl MarginUser {
         token_mint: &Pubkey,
         kind: PositionKind,
     ) -> Result<(), Error> {
-        self.send_confirm_tx(self.tx.close_pool_position_tx(token_mint, kind).await?)
+        self.send_confirm_tx(self.tx.close_pool_position(token_mint, kind).await?)
             .await
     }
 }
