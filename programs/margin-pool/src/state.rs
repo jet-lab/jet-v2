@@ -289,18 +289,21 @@ impl MarginPool {
         let conf_value = Number::from_decimal(price_obj.conf, price_obj.expo);
         let twap_value = Number::from_decimal(ema_obj.price, ema_obj.expo);
 
-        let deposit_note_price = (price_value * self.deposit_note_exchange_rate())
-            .as_u64_rounded(pyth_price.expo) as i64;
+        let deposit_note_exchange_rate = self.deposit_note_exchange_rate();
+        let loan_note_exchange_rate = self.loan_note_exchange_rate();
+
+        let deposit_note_price =
+            (price_value * deposit_note_exchange_rate).as_u64_rounded(pyth_price.expo) as i64;
         let deposit_note_conf =
-            (conf_value * self.deposit_note_exchange_rate()).as_u64_rounded(pyth_price.expo) as u64;
+            (conf_value * deposit_note_exchange_rate).as_u64_rounded(pyth_price.expo) as u64;
         let deposit_note_twap =
-            (twap_value * self.deposit_note_exchange_rate()).as_u64_rounded(pyth_price.expo) as i64;
+            (twap_value * deposit_note_exchange_rate).as_u64_rounded(pyth_price.expo) as i64;
         let loan_note_price =
-            (price_value * self.loan_note_exchange_rate()).as_u64_rounded(pyth_price.expo) as i64;
+            (price_value * loan_note_exchange_rate).as_u64_rounded(pyth_price.expo) as i64;
         let loan_note_conf =
-            (conf_value * self.loan_note_exchange_rate()).as_u64_rounded(pyth_price.expo) as u64;
+            (conf_value * loan_note_exchange_rate).as_u64_rounded(pyth_price.expo) as u64;
         let loan_note_twap =
-            (twap_value * self.loan_note_exchange_rate()).as_u64_rounded(pyth_price.expo) as i64;
+            (twap_value * loan_note_exchange_rate).as_u64_rounded(pyth_price.expo) as i64;
 
         Ok(PriceResult {
             deposit_note_price,

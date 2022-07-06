@@ -11,7 +11,7 @@ export class PositionTokenMetadata {
   address: PublicKey
   info: PositionTokenMetadataInfo | undefined
 
-  valueModifier: BN = Number192.ZERO
+  valueModifier: BN = Number128.ZERO
   tokenKind: PositionKind = PositionKind.NoValue
 
   static derive(programs: MarginPrograms, tokenMint: PublicKey) {
