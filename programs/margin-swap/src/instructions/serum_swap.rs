@@ -43,12 +43,14 @@ pub struct SerumSwap<'info> {
 
     /// Temporary SPL account to send tokens
     /// CHECK:
-    #[account(mut, constraint = transit_source_account.owner == &margin_account.key())]
+    // #[account(mut, constraint = transit_source_account.owner == &margin_account.key())]
+    #[account(mut)]
     pub transit_source_account: AccountInfo<'info>,
 
     /// Temporary SPL account to receive tokens
     /// CHECK:
-    #[account(mut, constraint = transit_destination_account.owner == &margin_account.key())]
+    // #[account(mut, constraint = transit_destination_account.owner == &margin_account.key())]
+    #[account(mut)]
     pub transit_destination_account: AccountInfo<'info>,
 
     /// The accounts relevant to the swap pool used for the exchange
@@ -189,14 +191,18 @@ pub fn serum_swap_handler(
     amount_in: u64,
     minimum_amount_out: u64,
     // TODO: will change this to an enum, quicker to bool it for now
-    bid: bool,
+    swap_direction: SwapDirection,
 ) -> Result<()> {
     jet_margin_pool::cpi::withdraw(
         ctx.accounts.withdraw_source_context(),
         Amount::tokens(amount_in),
     )?;
     let market_info = ctx.accounts.swap_info.market.to_account_info();
-    let market = MarketState::load(&market_info, &dex::ID).map_err(|e| ProgramError::from(e))?;
+    let coin_lot_size = {
+        let market =
+            MarketState::load(&market_info, &dex::ID).map_err(|e| ProgramError::from(e))?;
+        market.coin_lot_size
+    };
 
     // Build order parameters.
     // If the order is a buy:
@@ -208,25 +214,28 @@ pub fn serum_swap_handler(
     // - max_coin_qty is `amount_in` / coin_lot_size
     // - limit_price is set to 1
     // - max_native_pc_qty is set to max
-    let (side, limit_price, max_coin_qty, max_native_pc_qty) = if bid {
-        let max_coin_qty = NonZeroU64::new(u64::MAX).unwrap();
-        let max_native_pc_qty = NonZeroU64::new(amount_in).unwrap();
-        (
-            Side::Bid,
-            NonZeroU64::new(u64::MAX).unwrap(),
-            max_coin_qty,
-            max_native_pc_qty,
-        )
-    } else {
-        let max_coin_qty = amount_in.checked_div(market.coin_lot_size).unwrap();
-        let max_coin_qty = NonZeroU64::new(max_coin_qty).unwrap();
-        let max_native_pc_qty = NonZeroU64::new(u64::MAX).unwrap();
-        (
-            Side::Ask,
-            NonZeroU64::new(1).unwrap(),
-            max_coin_qty,
-            max_native_pc_qty,
-        )
+    let (side, limit_price, max_coin_qty, max_native_pc_qty) = match swap_direction {
+        SwapDirection::Ask => {
+            let max_coin_qty = amount_in.checked_div(coin_lot_size).unwrap();
+            let max_coin_qty = NonZeroU64::new(max_coin_qty).unwrap();
+            let max_native_pc_qty = NonZeroU64::new(u64::MAX).unwrap();
+            (
+                Side::Ask,
+                NonZeroU64::new(1).unwrap(),
+                max_coin_qty,
+                max_native_pc_qty,
+            )
+        }
+        SwapDirection::Bid => {
+            let max_coin_qty = NonZeroU64::new(u64::MAX).unwrap();
+            let max_native_pc_qty = NonZeroU64::new(amount_in).unwrap();
+            (
+                Side::Bid,
+                NonZeroU64::new(u64::MAX).unwrap(),
+                max_coin_qty,
+                max_native_pc_qty,
+            )
+        }
     };
 
     // Get the balance of tokens before the trade
@@ -269,12 +278,19 @@ pub fn serum_swap_handler(
     Ok(())
 }
 
+#[derive(Clone, Copy, Debug, AnchorSerialize, AnchorDeserialize)]
+#[repr(u8)]
+pub enum SwapDirection {
+    Bid = 0,
+    Ask = 1,
+}
+
 #[derive(Accounts)]
 pub struct InitOpenOrders<'info> {
     /// The owner of the open orders account, expected to be the margin account
     /// or a liquidator.
     #[account(signer)]
-    pub owner: AccountLoader<'info, MarginAccount>,
+    pub owner: AccountInfo<'info>,
 
     /// CHECK: The account is validated by `serum_dex::init_open_orders`
     #[account(mut)]
