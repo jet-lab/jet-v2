@@ -292,8 +292,8 @@ impl MarginPool {
         let deposit_note_exchange_rate = self.deposit_note_exchange_rate();
         let loan_note_exchange_rate = self.loan_note_exchange_rate();
 
-        let deposit_note_price = (price_value * self.deposit_note_exchange_rate())
-            .as_u64_rounded(pyth_price.expo) as i64;
+        let deposit_note_price =
+            (price_value * deposit_note_exchange_rate).as_u64_rounded(pyth_price.expo) as i64;
         let deposit_note_conf =
             (conf_value * deposit_note_exchange_rate).as_u64_rounded(pyth_price.expo) as u64;
         let deposit_note_twap =
