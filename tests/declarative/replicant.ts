@@ -11,9 +11,20 @@ import {
   PoolAmount,
   PoolManager
 } from "../../libraries/ts/src/index"
-import { getAssociatedTokenAddress } from "@solana/spl-token"
-import { Account, Connection, ConfirmOptions, PublicKey } from "@solana/web3.js"
+import { createAssociatedTokenAccountInstruction, getAssociatedTokenAddress } from "@solana/spl-token"
+import {
+  Account,
+  Connection,
+  ConfirmOptions,
+  Keypair,
+  LAMPORTS_PER_SOL,
+  PublicKey,
+  sendAndConfirmTransaction,
+  Transaction
+} from "@solana/web3.js"
 import assert from "assert"
+import * as fs from "fs"
+import * as os from "os"
 
 import { airdropTokens } from "./tokenFaucet"
 
@@ -24,6 +35,7 @@ export class Replicant {
   cluster: MarginCluster
   config: any
   connection: Connection
+  keyfile: string
   marginConfig: MarginConfig
   poolManager: PoolManager
   pools?: Pool[]
@@ -31,11 +43,14 @@ export class Replicant {
   provider: AnchorProvider
   splTokenFaucet: PublicKey
 
-  constructor(config: any, account: Account, cluster: MarginCluster, connection: Connection) {
-    this.account = account
+  constructor(config: any, keyfile: string, cluster: MarginCluster, connection: Connection) {
+    this.account = new Account(
+      Keypair.fromSecretKey(Uint8Array.from(JSON.parse(fs.readFileSync(keyfile).toString()))).secretKey
+    )
     this.cluster = cluster
     this.config = config
     this.connection = connection
+    this.keyfile = keyfile
 
     this.marginConfig = MarginClient.getConfig(this.cluster)
 
@@ -49,6 +64,44 @@ export class Replicant {
 
     assert(this.marginConfig.splTokenFaucet)
     this.splTokenFaucet = new PublicKey(this.marginConfig.splTokenFaucet)
+  }
+
+  async fundUser(): Promise<void> {
+    if (!fs.existsSync(this.keyfile)) {
+      const keypair = Keypair.generate()
+      fs.writeFileSync(this.keyfile, JSON.stringify(Array.from(keypair.secretKey)))
+      const airdropSignature = await this.connection.requestAirdrop(keypair.publicKey, 2 * LAMPORTS_PER_SOL)
+      await this.connection.confirmTransaction(airdropSignature)
+      await sleep(4 * 1000)
+    }
+
+    const tokenAccounts = {}
+    for (const account of this.config.accounts) {
+      for (const token of Object.keys(account.tokens)) {
+        if (!tokenAccounts[token]) {
+          const tokenConfig = this.marginConfig.tokens[token]
+          const tokenAccount: PublicKey = await getAssociatedTokenAddress(
+            new PublicKey(tokenConfig.mint),
+            this.account.publicKey
+          )
+          if (!(await this.connection.getAccountInfo(tokenAccount))) {
+            await sendAndConfirmTransaction(
+              this.connection,
+              new Transaction().add(
+                createAssociatedTokenAccountInstruction(
+                  this.account.publicKey,
+                  tokenAccount,
+                  this.account.publicKey,
+                  new PublicKey(tokenConfig.mint)
+                )
+              ),
+              [this.account]
+            )
+          }
+          tokenAccounts[token] = tokenAccount
+        }
+      }
+    }
   }
 
   async loadPools(): Promise<void> {
@@ -263,7 +316,7 @@ export class Replicant {
   async closeAccount(marginAccount: MarginAccount) {
     await marginAccount.refresh()
 
-    let dirty = false;
+    let dirty = false
 
     for (const position of marginAccount.getPositions()) {
       switch (position.kind) {
@@ -282,7 +335,7 @@ export class Replicant {
                   this.account.publicKey,
                   true
                 )
-                dirty = true;
+                dirty = true
                 //console.log(`DEPOSIT ${pool.symbol} = ${position.balance} | ${existingDeposit}`)
                 const amount = position.balance.sub(existingDeposit).add(new BN(1))
                 await airdropTokens(
@@ -339,7 +392,7 @@ export class Replicant {
       }
     }
 
-    await marginAccount.closeAccount();
+    await marginAccount.closeAccount()
   }
 }
 
@@ -389,7 +442,7 @@ export async function printAccount(marginAccount: MarginAccount) {
     }
   }
   for (const position of marginAccount.getPositions()) {
-    console.log(`position = ${JSON.stringify(position)}`);
+    console.log(`position = ${JSON.stringify(position)}`)
   }
   console.log("")
 }

@@ -9,24 +9,22 @@ import CONFIG from "../../libraries/ts/src/margin/config.json"
 import TEST_CONFIG from "./scenarios/borrow.json"
 
 describe("Deposit and Borrow", () => {
+  const config = CONFIG.devnet
+  const connection = new Connection(config.url, "processed")
 
-  const config = CONFIG.devnet;
-
-  const connection = new Connection(config.url, "processed");
-
-  const replicants: Replicant[] = [];
+  const replicants: Replicant[] = []
 
   it("Create users", async () => {
     for (const userConfig of TEST_CONFIG.users) {
-      const file = os.homedir() + '/.config/solana/' + userConfig.keypair;
-      if (!fs.existsSync(file)) {
-        const keypair = Keypair.generate();
-        fs.writeFileSync(file, JSON.stringify(Array.from(keypair.secretKey)))
-        const airdropSignature = await connection.requestAirdrop(keypair.publicKey, 2 * LAMPORTS_PER_SOL)
-        await connection.confirmTransaction(airdropSignature)
-        await sleep(8 * 1000)
-      }
-      replicants.push(new Replicant(TEST_CONFIG, new Account(Keypair.fromSecretKey(Uint8Array.from(JSON.parse(fs.readFileSync(file).toString()))).secretKey), 'devnet', connection));
+      replicants.push(
+        new Replicant(TEST_CONFIG, os.homedir() + "/.config/solana/" + userConfig.keypair, "devnet", connection)
+      )
+    }
+  })
+
+  it("Fund users", async () => {
+    for (const replicant of replicants) {
+      await replicant.fundUser()
     }
   })
 
@@ -59,5 +57,4 @@ describe("Deposit and Borrow", () => {
       await replicant.closeAccounts()
     }
   })
-
 })
