@@ -31,6 +31,7 @@ use super::Authority;
 
 #[derive(Accounts)]
 pub struct CreateMarginPool<'info> {
+    #[cfg_attr(not(feature = "testing"), account(address = crate::ROOT_AUTHORITY))]
     #[account(mut)]
     requester: Signer<'info>,
     authority: Account<'info, Authority>,
