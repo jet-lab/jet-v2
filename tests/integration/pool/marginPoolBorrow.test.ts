@@ -243,17 +243,41 @@ describe("margin pool borrow", () => {
 
   it("Deposit user funds into their margin accounts", async () => {
     // ACT
-    await marginAccount_A.deposit(marginPool_USDC, user_a_usdc_account, new BN(500_000 * ONE_USDC))
-    await marginAccount_B.deposit(marginPool_USDC, user_b_usdc_account, new BN(50 * ONE_USDC))
-    await marginAccount_C.deposit(marginPool_USDC, user_c_usdc_account, new BN(ONE_USDC))
+    await marginPool_USDC.deposit({
+      marginAccount: marginAccount_A,
+      source: user_a_usdc_account,
+      amount: new BN(500_000 * ONE_USDC)
+    })
+    await marginPool_USDC.deposit({
+      marginAccount: marginAccount_B,
+      source: user_b_usdc_account,
+      amount: new BN(50 * ONE_USDC)
+    })
+    await marginPool_USDC.deposit({
+      marginAccount: marginAccount_C,
+      source: user_c_usdc_account,
+      amount: new BN(ONE_USDC)
+    })
     await pythClient.setPythPrice(ownerKeypair, USDC_oracle[1].publicKey, 1, 0.01, -8)
     await marginPool_USDC.refreshPosition(marginAccount_A)
     await marginPool_USDC.refreshPosition(marginAccount_B)
     await marginPool_USDC.refreshPosition(marginAccount_C)
 
-    await marginAccount_A.deposit(marginPool_SOL, user_a_sol_account, new BN(50 * ONE_SOL))
-    await marginAccount_B.deposit(marginPool_SOL, user_b_sol_account, new BN(500 * ONE_SOL))
-    await marginAccount_C.deposit(marginPool_SOL, user_c_sol_account, new BN(ONE_SOL))
+    await marginPool_SOL.deposit({
+      marginAccount: marginAccount_A,
+      source: user_a_sol_account,
+      amount: new BN(50 * ONE_SOL)
+    })
+    await marginPool_SOL.deposit({
+      marginAccount: marginAccount_B,
+      source: user_b_sol_account,
+      amount: new BN(500 * ONE_SOL)
+    })
+    await marginPool_SOL.deposit({
+      marginAccount: marginAccount_C,
+      source: user_c_sol_account,
+      amount: new BN(ONE_SOL)
+    })
     await pythClient.setPythPrice(ownerKeypair, SOL_oracle[1].publicKey, 100, 1, -8)
     await marginPool_SOL.refreshPosition(marginAccount_A)
     await marginPool_SOL.refreshPosition(marginAccount_B)

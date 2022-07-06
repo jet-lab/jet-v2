@@ -706,46 +706,6 @@ export class MarginAccount {
     }
   }
 
-  //Deposit
-  /// Transaction to deposit tokens into a margin account
-  ///
-  /// # Params
-  ///
-  /// `token_mint` - The address of the mint for the tokens being deposited
-  /// `source` - The token account that the deposit will be transfered from. Can also point to the wallet to automatically wrap SOL
-  /// `amount` - The amount of tokens to deposit
-  async deposit(marginPool: Pool, source: Address, amount: BN) {
-    assert(marginPool)
-    assert(source)
-    assert(amount)
-
-    await this.createAccount()
-    await sleep(2000)
-    await this.refresh()
-    const position = await this.getOrCreatePosition(marginPool.addresses.depositNoteMint)
-    assert(position)
-
-    const instructions: TransactionInstruction[] = []
-    source = await AssociatedToken.withWrapIfNativeMint(
-      instructions,
-      this.provider,
-      this.provider.wallet.publicKey,
-      marginPool.tokenMint,
-      source,
-      amount
-    )
-
-    await marginPool.withDeposit({
-      instructions: instructions,
-      depositor: this.owner,
-      source,
-      destination: position.address,
-      amount
-    })
-    await this.withUpdatePositionBalance({ instructions, position })
-    return await this.provider.sendAndConfirm(new Transaction().add(...instructions))
-  }
-
   //TODO Withdraw
   async getOrCreatePosition(tokenMint: Address) {
     assert(this.info)
