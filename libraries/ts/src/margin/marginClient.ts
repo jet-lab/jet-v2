@@ -1,5 +1,6 @@
+import { NATIVE_MINT } from "@solana/spl-token"
 import { Program, AnchorProvider, BN } from "@project-serum/anchor"
-import { JetMargin, JetMarginPool, JetMarginSerum, JetMarginSwap, JetMetadata, TokenAmount } from ".."
+import { JetMargin, JetMarginPool, JetMarginSerum, JetMarginSwap, JetMetadata, TokenAmount, TradeAction } from ".."
 import JET_CONFIG from "../margin/config.json"
 import {
   JetControl,
@@ -25,15 +26,18 @@ type TxAndSig = {
   sig: ConfirmedSignatureInfo
 }
 
-interface TransactionLog {
+export interface AccountTransaction {
+  timestamp: number
   blockDate: string
-  time: string
+  blockTime: string
   signature: string
-  sigIndex: number //signature index that we used to find this transaction
-  tradeAction: string
+  sigIndex: number // Signature index that we used to find this transaction
+  tradeAction: TradeAction
   tradeAmount: TokenAmount
-  tokenAbbrev: string
+  tokenSymbol: string
+  tokenName: string
   tokenDecimals: number
+  fromAccount?: PublicKey // In the case of a transfer between accounts
   status: "error" | "success"
 }
 
@@ -97,7 +101,7 @@ export class MarginClient {
 
   static filterTransactions(transactions: TxAndSig[], config: MarginConfig) {
     return transactions.filter(t => {
-      if (t.details?.meta?.logMessages?.some(log => log.includes(config.marginPoolProgramId.toString()))) {
+      if (t.details?.meta?.logMessages?.some(tx => tx.includes(config.marginPoolProgramId.toString()))) {
         return true
       } else {
         return false
@@ -110,7 +114,7 @@ export class MarginClient {
     mints: Mints,
     config: MarginConfig,
     sigIndex: number
-  ): TransactionLog | null {
+  ): AccountTransaction | null {
     const transaction = txAndSig.details
     if (!transaction.meta?.logMessages || !transaction.blockTime) {
       return null
@@ -119,7 +123,7 @@ export class MarginClient {
     const instructions = ["repay", "borrow", "deposit", "withdraw"]
     let tradeAction = ""
     for (let i = 0; i < instructions.length; i++) {
-      if (transaction.meta?.logMessages?.some(log => log.toLowerCase().includes(instructions[i]))) {
+      if (transaction.meta?.logMessages?.some(tx => tx.toLowerCase().includes(instructions[i]))) {
         tradeAction = instructions[i]
         break
       }
@@ -129,15 +133,14 @@ export class MarginClient {
       return null
     }
 
-    const log: Partial<TransactionLog> = {
+    const tx: Partial<AccountTransaction> = {
       tradeAction
-    }
+    } as { tradeAction: TradeAction }
     for (let i = 0; i < transaction.meta.preTokenBalances?.length; i++) {
       const pre = transaction.meta.preTokenBalances[i]
       const matchingPost = transaction.meta.postTokenBalances?.find(post => post.mint === pre.mint)
       if (matchingPost && matchingPost.uiTokenAmount.amount !== pre.uiTokenAmount.amount) {
         let token: MarginTokenConfig | null = null
-
         for (let j = 0; j < Object.entries(mints).length; j++) {
           const tokenAbbrev = Object.entries(mints)[j][0]
           const tokenMints = Object.entries(mints)[j][1]
@@ -148,7 +151,7 @@ export class MarginClient {
           ) {
             token = config.tokens[tokenAbbrev] as MarginTokenConfig
             if (
-              token.symbol === "SOL" &&
+              token.mint === NATIVE_MINT &&
               (tradeAction === "withdraw" || tradeAction === "borrow") &&
               matchingPost.uiTokenAmount.amount === "0"
             ) {
@@ -157,17 +160,19 @@ export class MarginClient {
             const postAmount = new BN(matchingPost.uiTokenAmount.amount)
             const preAmount = new BN(pre.uiTokenAmount.amount)
 
-            log.tokenAbbrev = token.symbol
-            log.tokenDecimals = token.decimals
-            log.tradeAmount = TokenAmount.lamports(postAmount.sub(preAmount).abs(), token.decimals)
+            tx.tokenSymbol = token.symbol
+            tx.tokenName = token.name
+            tx.tokenDecimals = token.decimals
+            tx.tradeAmount = TokenAmount.lamports(postAmount.sub(preAmount), token.decimals)
 
             const dateTime = new Date(transaction.blockTime * 1000)
-            log.blockDate = dateTime.toLocaleDateString()
-            log.time = dateTime.toLocaleTimeString("en-US", { hour12: false })
-            log.sigIndex = sigIndex ? sigIndex : 0
-            log.signature = txAndSig.sig.signature
-            log.status = txAndSig.details.meta?.err ? "error" : "success"
-            return log as TransactionLog
+            tx.timestamp = transaction.blockTime
+            tx.blockDate = dateTime.toLocaleDateString()
+            tx.blockTime = dateTime.toLocaleTimeString("en-US", { hour12: false })
+            tx.sigIndex = sigIndex ? sigIndex : 0
+            tx.signature = txAndSig.sig.signature
+            tx.status = txAndSig.details.meta?.err ? "error" : "success"
+            return tx as AccountTransaction
           }
         }
       }
@@ -175,19 +180,19 @@ export class MarginClient {
     return null
   }
 
-  static async getFlightLogs(
+  static async getTransactionHistory(
     provider: AnchorProvider,
     pubKey: PublicKey,
     mints: Mints,
     cluster: MarginCluster
-  ): Promise<TransactionLog[]> {
+  ): Promise<AccountTransaction[]> {
     const config = MarginClient.getConfig(cluster)
     const signatures = await provider.connection.getSignaturesForAddress(pubKey, undefined, "confirmed")
     const transactions = await MarginClient.getTransactionsFromSignatures(provider, signatures)
     const jetTransactions = MarginClient.filterTransactions(transactions, config)
     const parsedTransactions = jetTransactions
       .map((t, idx) => MarginClient.getTransactionData(t, mints, config, idx))
-      .filter(tx => !!tx) as TransactionLog[]
+      .filter(tx => !!tx) as AccountTransaction[]
     return parsedTransactions.sort((a, b) => a.sigIndex - b.sigIndex)
   }
 }
