@@ -19,7 +19,7 @@ use anchor_lang::prelude::*;
 
 use jet_metadata::PositionTokenMetadata;
 
-use crate::MarginAccount;
+use crate::{events, MarginAccount};
 
 #[derive(Accounts)]
 pub struct RefreshPositionMetadata<'info> {
@@ -36,12 +36,17 @@ pub fn refresh_position_metadata_handler(ctx: Context<RefreshPositionMetadata>) 
     let metadata = &ctx.accounts.metadata;
     let mut account = ctx.accounts.margin_account.load_mut()?;
 
-    account.refresh_position_metadata(
+    let position = account.refresh_position_metadata(
         &metadata.position_token_mint,
         metadata.token_kind.into(),
         metadata.value_modifier,
         metadata.max_staleness,
     )?;
+
+    emit!(events::PositionMetadataRefreshed {
+        margin_account: ctx.accounts.margin_account.key(),
+        position,
+    });
 
     Ok(())
 }
