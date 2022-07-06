@@ -293,6 +293,8 @@ describe("margin pool deposit", () => {
 
   it("Users withdraw their funds", async () => {
     // ACT
+    await pythClient.setPythPrice(ownerKeypair, USDC_oracle[1].publicKey, 1, 0.01, -8)
+    await pythClient.setPythPrice(ownerKeypair, SOL_oracle[1].publicKey, 100, 1, -8)
     await marginPool_USDC.marginWithdraw({
       marginAccount: marginAccount_A,
       pools,
