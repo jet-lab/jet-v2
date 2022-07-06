@@ -436,12 +436,12 @@ export class Pool {
    * Transaction to deposit tokens into the pool
    *
    * @param `marginAccount` - The margin account that will receive the deposit.
-   * @param `amount` - The amount of tokens to be deposited in lamports.
+   * @param `change` - The amount of tokens to be deposited in lamports.
    * @param `source` - (Optional) The token account that the deposit will be transfered from. The wallet balance or associated token account will be used if unspecified.
    */
-  async deposit({ marginAccount, amount, source }: { marginAccount: MarginAccount; amount: BN; source?: Address }) {
+  async deposit({ marginAccount, change, source }: { marginAccount: MarginAccount; change: PoolTokenChange; source?: Address }) {
     assert(marginAccount)
-    assert(amount)
+    assert(change)
 
     await marginAccount.createAccount()
     await sleep(2000)
@@ -454,7 +454,7 @@ export class Pool {
       instructions,
       marginAccount.provider,
       this.tokenMint,
-      amount
+      change.value
     )
 
     await this.withDeposit({
