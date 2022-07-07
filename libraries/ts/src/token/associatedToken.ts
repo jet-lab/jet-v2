@@ -1,4 +1,4 @@
-import { BN, Address, translateAddress, AnchorProvider } from "@project-serum/anchor"
+import { BN, Address, translateAddress, AnchorProvider, Provider } from "@project-serum/anchor"
 import { TOKEN_PROGRAM_ID } from "@project-serum/serum/lib/token-instructions"
 import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
@@ -364,6 +364,24 @@ export class AssociatedToken {
   }
 
   /**
+   * Returns true when the mint is native and the token account is actually the native wallet
+   *
+   * @static
+   * @param {Address} owner
+   * @param {Address} mint
+   * @param {Address} tokenAccountOrNative
+   * @return {boolean}
+   * @memberof AssociatedToken
+   */
+  static isNative(owner: Address, mint: Address, tokenAccountOrNative: Address): boolean {
+    const ownerPubkey = translateAddress(owner)
+    const mintPubkey = translateAddress(mint)
+    const tokenAccountOrNativePubkey = translateAddress(tokenAccountOrNative)
+
+    return mintPubkey.equals(NATIVE_MINT) && tokenAccountOrNativePubkey.equals(ownerPubkey)
+  }
+
+  /**
    * If the associated token account does not exist for this mint, add instruction to create the token account.If ATA exists, do nothing.
    * @static
    * @param {TransactionInstruction[]} instructions
@@ -396,6 +414,35 @@ export class AssociatedToken {
   }
 
   /**
+   * If the native wrapped token account does not exist, add instruction to create the token account. If ATA exists, do nothing.
+   * @static
+   * @param {TransactionInstruction[]} instructions
+   * @param {Provider} provider
+   * @param {Address} owner
+   * @returns {Promise<PublicKey>} returns the public key of the token account
+   * @memberof AssociatedToken
+   */
+  static async withCreateNative(
+    instructions: TransactionInstruction[],
+    provider: AnchorProvider,
+    owner: Address
+  ): Promise<PublicKey> {
+    const ownerAddress = translateAddress(owner)
+    const tokenAddress = this.derive(NATIVE_MINT, ownerAddress)
+
+    if (!(await AssociatedToken.exists(provider.connection, NATIVE_MINT, ownerAddress))) {
+      const ix = createAssociatedTokenAccountInstruction(
+        provider.wallet.publicKey,
+        tokenAddress,
+        ownerAddress,
+        NATIVE_MINT
+      )
+      instructions.push(ix)
+    }
+    return tokenAddress
+  }
+
+  /**
    * Add close associated token account IX
    * @static
    * @param {TransactionInstruction[]} instructions
@@ -414,10 +461,46 @@ export class AssociatedToken {
     instructions.push(ix)
   }
 
-  /** Add wrap SOL IX
+  /** Wraps SOL in an associated token account. The account will only be created if it doesn't exist.
    * @param instructions
    * @param provider
    * @param owner
+   * @param amount
+   */
+  static async withWrapNative(
+    instructions: TransactionInstruction[],
+    provider: AnchorProvider,
+    amount: BN
+  ): Promise<PublicKey> {
+    const owner = translateAddress(provider.wallet.publicKey)
+
+    //this will add instructions to create ata if ata does not exist, if exist, we will get the ata address
+    const associatedToken = await this.withCreate(instructions, provider, owner, NATIVE_MINT)
+    //IX to transfer sol to ATA
+    const transferIx = SystemProgram.transfer({
+      fromPubkey: owner,
+      lamports: bnToNumber(amount),
+      toPubkey: associatedToken
+    })
+    const syncNativeIX = createSyncNativeInstruction(associatedToken)
+    instructions.push(transferIx, syncNativeIX)
+    return associatedToken
+  }
+
+  /**
+   * Unwraps all SOL in the associated token account.
+   *
+   * @param {TransactionInstruction[]} instructions
+   * @param {owner} owner
+   */
+  static withUnwrapNative(instructions: TransactionInstruction[], owner: Address): void {
+    //add close account IX
+    this.withClose(instructions, owner, NATIVE_MINT, owner)
+  }
+
+  /** Add wrap SOL IX
+   * @param instructions
+   * @param provider
    * @param mint
    * @param tokenAccountOrNative
    * @param amount
@@ -425,28 +508,17 @@ export class AssociatedToken {
   static async withWrapIfNativeMint(
     instructions: TransactionInstruction[],
     provider: AnchorProvider,
-    owner: Address,
     mint: Address,
     tokenAccountOrNative: Address,
     amount: BN
   ): Promise<PublicKey> {
-    const ownerPubkey = translateAddress(owner)
+    const owner = provider.wallet.publicKey
     const mintPubkey = translateAddress(mint)
     const tokenAccountOrNativePubkey = translateAddress(tokenAccountOrNative)
 
     //only run if mint is wrapped sol mint, and the token account is actually the native wallet
-    if (this.isNative(ownerPubkey, mintPubkey, tokenAccountOrNativePubkey)) {
-      //this will add instructions to create ata if ata does not exist, if exist, we will get the ata address
-      const ata = await this.withCreate(instructions, provider, ownerPubkey, mintPubkey)
-      //IX to transfer sol to ATA
-      const transferIx = SystemProgram.transfer({
-        fromPubkey: ownerPubkey,
-        lamports: bnToNumber(amount),
-        toPubkey: ata
-      })
-      const syncNativeIX = createSyncNativeInstruction(ata)
-      instructions.push(transferIx, syncNativeIX)
-      return ata
+    if (this.isNative(owner, mintPubkey, tokenAccountOrNativePubkey)) {
+      return this.withWrapNative(instructions, provider, amount)
     }
     return tokenAccountOrNativePubkey
   }
@@ -463,8 +535,7 @@ export class AssociatedToken {
     instructions: TransactionInstruction[],
     owner: Address,
     mint: Address,
-    tokenAccountOrNative: Address,
-    rentDestination: Address
+    tokenAccountOrNative: Address
   ): void {
     const ownerPubkey = translateAddress(owner)
     const mintPubkey = translateAddress(mint)
@@ -472,26 +543,66 @@ export class AssociatedToken {
 
     if (this.isNative(ownerPubkey, mintPubkey, tokenAccountOrNativePubkey)) {
       //add close account IX
-      this.withClose(instructions, ownerPubkey, mintPubkey, rentDestination)
+      this.withUnwrapNative(instructions, owner)
     }
   }
 
   /**
-   * Returns true when the mint is native and the token account is actually the native wallet
+   * Create the associated token account. Funds it if natve.
    *
    * @static
-   * @param {Address} owner
+   * @param {TransactionInstruction[]} instructions
+   * @param {AnchorProvider} provider
    * @param {Address} mint
-   * @param {Address} tokenAccountOrNative
-   * @return {boolean}
+   * @param {BN} initialAmount
    * @memberof AssociatedToken
    */
-  static isNative(owner: Address, mint: Address, tokenAccountOrNative: Address): boolean {
-    const ownerPubkey = translateAddress(owner)
+  static async withCreateOrWrapIfNativeMint(
+    instructions: TransactionInstruction[],
+    provider: AnchorProvider,
+    mint: Address,
+    initialAmount: BN
+  ): Promise<PublicKey> {
+    const owner = provider.wallet.publicKey
     const mintPubkey = translateAddress(mint)
-    const tokenAccountOrNativePubkey = translateAddress(tokenAccountOrNative)
 
-    return mintPubkey.equals(NATIVE_MINT) && tokenAccountOrNativePubkey.equals(ownerPubkey)
+    if (mintPubkey.equals(NATIVE_MINT)) {
+      // Only run if mint is wrapped sol mint. Create the wrapped sol account and return its pubkey
+      return await this.withWrapNative(instructions, provider, initialAmount)
+    } else {
+      // Return the associated token
+      return this.withCreate(instructions, provider, owner, mint)
+    }
+  }
+
+  /**
+   * Create the associated token account as a pre-instruction.
+   * Unwraps sol as a post-instruction.
+   *
+   * @static
+   * @param {TransactionInstruction[]} preInstructions
+   * @param {TransactionInstruction[]} postInstructions
+   * @param {AnchorProvider} provider
+   * @param {Address} mint
+   * @memberof AssociatedToken
+   */
+  static async withCreateOrUnwrapIfNativeMint(
+    preInstructions: TransactionInstruction[],
+    postInstructions: TransactionInstruction[],
+    provider: AnchorProvider,
+    mint: Address
+  ): Promise<PublicKey> {
+    const owner = provider.wallet.publicKey
+    const mintPubkey = translateAddress(mint)
+
+    const associatedToken = await this.withCreate(preInstructions, provider, owner, NATIVE_MINT)
+
+    if (mintPubkey.equals(NATIVE_MINT)) {
+      // Only run if mint is wrapped sol mint. Create the wrapped sol account and return its pubkey
+      this.withUnwrapNative(postInstructions, owner)
+    }
+
+    return associatedToken
   }
 }
 
