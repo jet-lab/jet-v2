@@ -571,7 +571,7 @@ export class AssociatedToken {
       return await this.withWrapNative(instructions, provider, initialAmount)
     } else {
       // Return the associated token
-      return this.withCreate(instructions, provider, owner, mint)
+      return await this.withCreate(instructions, provider, owner, mint)
     }
   }
 
@@ -595,7 +595,7 @@ export class AssociatedToken {
     const owner = provider.wallet.publicKey
     const mintPubkey = translateAddress(mint)
 
-    const associatedToken = await this.withCreate(preInstructions, provider, owner, NATIVE_MINT)
+    const associatedToken = await this.withCreate(preInstructions, provider, owner, mintPubkey)
 
     if (mintPubkey.equals(NATIVE_MINT)) {
       // Only run if mint is wrapped sol mint. Create the wrapped sol account and return its pubkey
