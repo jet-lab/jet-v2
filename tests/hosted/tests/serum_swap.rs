@@ -89,11 +89,13 @@ async fn serum_swap() -> Result<(), anyhow::Error> {
     // Create our two user wallets, with some SOL funding to get started
     let wallet_a = create_wallet(&ctx.rpc, 10 * LAMPORTS_PER_SOL).await?;
     let wallet_b = create_wallet(&ctx.rpc, 10 * LAMPORTS_PER_SOL).await?;
+    let wallet_c = create_wallet(&ctx.rpc, 10 * LAMPORTS_PER_SOL).await?;
 
     // Create the user context helpers, which give a simple interface for executing
     // common actions on a margin account
     let user_a = ctx.margin.user(&wallet_a).await?;
     let user_b = ctx.margin.user(&wallet_b).await?;
+    let user_c = ctx.margin.user(&wallet_c).await?;
 
     // Initialize the margin accounts for each user
     user_a.create_account().await?;
@@ -101,35 +103,32 @@ async fn serum_swap() -> Result<(), anyhow::Error> {
 
     // Create a serum market
     let serum_client =
-        SerumClient::create_market(ctx.rpc.clone(), env.tsol, env.usdc, 100, 1000).await?;
+        SerumClient::create_market(ctx.rpc.clone(), env.tsol, env.usdc, 100, 1).await?;
 
-    let usdc_transit_source_a = ctx
+    let usdc_transit_a = ctx
         .tokens
         .create_account(&env.usdc, user_a.address())
         .await?;
-    let tsol_transit_target_a = ctx
-        .tokens
-        .create_account(&env.tsol, user_a.address())
-        .await?;
-    let usdc_transit_target_a = ctx
-        .tokens
-        .create_account(&env.usdc, user_a.address())
-        .await?;
-    let tsol_transit_source_a = ctx
+    let tsol_transit_a = ctx
         .tokens
         .create_account(&env.tsol, user_a.address())
         .await?;
 
-    let tsol_transit_source_b = ctx
+    // User B funds their TSOL transit account with 10 SOL
+    let tsol_transit_b = ctx
         .tokens
-        // multiplied by the coin lot size
-        .create_account_funded(&env.tsol, &wallet_b.pubkey(), ONE_TSOL / 10 * 9 * 100)
+        .create_account_funded(&env.tsol, &wallet_b.pubkey(), 10 * ONE_TSOL)
+        .await?;
+    // User C funds their USDC transit account with 100 USDC
+    let usdc_transit_c = ctx
+        .tokens
+        .create_account_funded(&env.usdc, &wallet_c.pubkey(), 1000 * ONE_USDC)
         .await?;
 
     // Create some tokens for each user to deposit
     let user_a_usdc_account = ctx
         .tokens
-        .create_account_funded(&env.usdc, &wallet_a.pubkey(), 1_000 * ONE_USDC)
+        .create_account_funded(&env.usdc, &wallet_a.pubkey(), 10_000 * ONE_USDC)
         .await?;
     let user_a_tsol_account = ctx
         .tokens
@@ -168,7 +167,7 @@ async fn serum_swap() -> Result<(), anyhow::Error> {
 
     // Deposit user funds into their margin accounts
     user_a
-        .deposit(&env.usdc, &user_a_usdc_account, 1_000 * ONE_USDC)
+        .deposit(&env.usdc, &user_a_usdc_account, 10_000 * ONE_USDC)
         .await?;
     user_a
         .deposit(&env.tsol, &user_a_tsol_account, 10 * ONE_TSOL)
@@ -192,17 +191,21 @@ async fn serum_swap() -> Result<(), anyhow::Error> {
     let user_b_open_orders = user_b
         .init_open_orders(serum_client.market(), Some(wallet_b.pubkey()))
         .await?;
+    let user_c_open_orders = user_c
+        .init_open_orders(serum_client.market(), Some(wallet_c.pubkey()))
+        .await?;
 
-    // User B places a limit order, so that user B can buy at market
+    // User B places a limit order, so that user A can swap at market
     user_b
         .new_spot_order(
             serum_client.market(),
             user_b_open_orders,
-            tsol_transit_source_b,
+            tsol_transit_b,
             OrderParams {
                 side: OrderSide::Ask,
                 limit_price: NonZeroU64::new(1).unwrap(),
-                max_base_qty: NonZeroU64::new(ONE_TSOL / 10 * 9).unwrap(),
+                // 10 SOL divided by coin lot size
+                max_base_qty: NonZeroU64::new(10 * ONE_TSOL / 100).unwrap(),
                 max_native_quote_qty_including_fees: NonZeroU64::new(u64::MAX).unwrap(),
                 self_trade_behavior: SelfTradeBehavior::DecrementTake,
                 order_type: OrderType::Limit,
@@ -215,54 +218,51 @@ async fn serum_swap() -> Result<(), anyhow::Error> {
     // Now user A swaps their USDC for TSOL
     user_a
         .serum_swap(
-            // &env.usdc,
-            // &env.tsol,
             serum_client.market(),
             user_a_open_orders,
-            usdc_transit_source_a,
-            tsol_transit_target_a,
+            tsol_transit_a,
+            usdc_transit_a,
+            // we want a minimum of 0.95 SOL for 100 USDC
             100 * ONE_USDC,
-            // we want a minimum of 0.9 SOL for 100 USDC
-            ONE_TSOL / 10 * 9,
-            true,
+            95 * ONE_TSOL / 10,
+            jet_margin_swap::instructions::SwapDirection::Bid,
         )
         .await?;
 
-    // // Verify that swap has taken place in the pool
-    // assert_eq!(
-    //     // There was 1 million USDC as a start
-    //     1_000_100 * ONE_USDC,
-    //     ctx.tokens.get_balance(&swap_pool.token_a).await?
-    // );
-    // assert!(
-    //     // Pool balance less almost 1 SOL
-    //     10_000 * ONE_TSOL - 900_000_000 >= ctx.tokens.get_balance(&swap_pool.token_b).await?
-    // );
+    // User B places a limit order, so that user A can swap at market
+    user_c
+        .new_spot_order(
+            serum_client.market(),
+            user_c_open_orders,
+            usdc_transit_c,
+            OrderParams {
+                side: OrderSide::Bid,
+                limit_price: NonZeroU64::new(u64::MAX).unwrap(),
+                max_base_qty: NonZeroU64::new(u64::MAX).unwrap(),
+                max_native_quote_qty_including_fees: NonZeroU64::new(1000 * ONE_USDC).unwrap(),
+                self_trade_behavior: SelfTradeBehavior::DecrementTake,
+                order_type: OrderType::Limit,
+                client_order_id: 2,
+                limit: u16::MAX,
+            },
+        )
+        .await?;
 
     // Swap in a different order
     // Now user A swaps their USDC for TSOL
     user_a
         .serum_swap(
-            // &env.usdc,
-            // &env.tsol,
             serum_client.market(),
             user_a_open_orders,
-            tsol_transit_target_a,
-            usdc_transit_source_a,
-            2 * ONE_TSOL,
-            180 * ONE_USDC,
-            true,
+            tsol_transit_a,
+            usdc_transit_a,
+            10 * ONE_TSOL / 100,
+            10 * ONE_USDC,
+            jet_margin_swap::instructions::SwapDirection::Ask,
         )
         .await?;
 
-    // // Verify that swap has taken place in the pool
-    // assert!(
-    //     1_000_100 * ONE_USDC - 180 * ONE_USDC >= ctx.tokens.get_balance(&swap_pool.token_a).await?
-    // );
-    // assert!(
-    //     (10_000 * ONE_TSOL - 900_000_000) + 2 * ONE_TSOL
-    //         >= ctx.tokens.get_balance(&swap_pool.token_b).await?
-    // );
+    // TODO: check token balances after swaps
 
     Ok(())
 }

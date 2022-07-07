@@ -24,8 +24,9 @@ use std::sync::Arc;
 use jet_margin_pool::program::JetMarginPool;
 use jet_metadata::{PositionTokenMetadata, TokenMetadata};
 
-use anchor_spl::dex::{self, serum_dex, Dex};
+use anchor_spl::dex;
 use anyhow::{bail, Result};
+use jet_margin_swap::instructions::SwapDirection;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::rent::Rent;
 use solana_sdk::signature::Keypair;
@@ -475,7 +476,7 @@ impl MarginTxBuilder {
 
     /// Refresh metadata for all positions in the user account
     pub async fn refresh_all_position_metadata(&self) -> Result<Vec<Transaction>> {
-        let mut instructions = self
+        let instructions = self
             .get_account_state()
             .await?
             .positions()
@@ -519,7 +520,6 @@ impl MarginTxBuilder {
     /// Append instructions to refresh pool positions to instructions
     async fn create_pool_instructions(&self, instructions: &mut Vec<Instruction>) -> Result<()> {
         let state = self.get_account_state().await?;
-        let count = state.positions().count();
 
         for position in state.positions() {
             let p_metadata = self.get_position_metadata(&position.token).await?;
@@ -620,49 +620,36 @@ impl MarginTxBuilder {
         &self,
         market: &SerumMarketV3,
         open_orders: Pubkey,
-        transit_source_account: Pubkey,
-        transit_destination_account: Pubkey,
+        transit_base_account: Pubkey,
+        transit_quote_account: Pubkey,
         amount_in: u64,
         minimum_amount_out: u64,
-        bid: bool,
+        swap_direction: SwapDirection,
     ) -> Result<Transaction> {
         let ix_builder = MarginSerumIxBuilder::new(market.clone());
 
         let mut instructions = vec![];
 
-        let (pool_source_mint, pool_dest_mint, order_note_mint) = match bid {
-            true => (
-                market.quote_token,
-                market.base_token,
-                ix_builder.info.quote_note_mint,
-            ),
-            false => (
-                market.base_token,
-                market.quote_token,
-                ix_builder.info.base_note_mint,
-            ),
-        };
+        let pool_base = MarginPoolIxBuilder::new(market.base_token);
+        let pool_quote = MarginPoolIxBuilder::new(market.quote_token);
 
-        let source_pool = MarginPoolIxBuilder::new(pool_source_mint);
-        let dest_pool = MarginPoolIxBuilder::new(pool_source_mint);
-
-        let source_pool_account = self
-            .get_or_create_position(&mut instructions, &source_pool.deposit_note_mint)
+        let pool_base_deposit_note = self
+            .get_or_create_position(&mut instructions, &pool_base.deposit_note_mint)
             .await?;
-        let destination_pool_account = self
-            .get_or_create_position(&mut instructions, &dest_pool.deposit_note_mint)
+        let pool_quote_deposit_note = self
+            .get_or_create_position(&mut instructions, &pool_quote.deposit_note_mint)
             .await?;
 
-        let instruction = ix_builder.swap(
+        let instruction = ix_builder.serum_swap(
             *self.address(),
             open_orders,
-            transit_source_account,
-            transit_destination_account,
-            source_pool_account,
-            destination_pool_account,
+            transit_base_account,
+            transit_quote_account,
+            pool_base_deposit_note,
+            pool_quote_deposit_note,
             amount_in,
             minimum_amount_out,
-            bid,
+            swap_direction,
         );
 
         let instruction = self.adapter_invoke_ix(instruction);
@@ -752,24 +739,7 @@ impl MarginTxBuilder {
         transit_account: Pubkey,
         order: OrderParams,
     ) -> Result<Transaction> {
-        // let ix_builder = MarginSerumIxBuilder::new(market.clone());
-
         let mut instructions = vec![];
-
-        // let (pool_source_mint, order_note_mint) = match order.side {
-        //     OrderSide::Bid => (market.quote_token, ix_builder.info.quote_note_mint),
-        //     OrderSide::Ask => (market.base_token, ix_builder.info.base_note_mint),
-        // };
-
-        // let pool = MarginPoolIxBuilder::new(pool_source_mint);
-
-        // let deposit_note = self
-        //     .get_or_create_position(&mut instructions, &pool.deposit_note_mint)
-        //     .await?;
-
-        // let order_note = self
-        //     .get_or_create_position(&mut instructions, &order_note_mint)
-        //     .await?;
 
         let instruction = dex::serum_dex::instruction::new_order(
             &market.market,

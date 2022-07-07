@@ -1835,6 +1835,7 @@ dependencies = [
  "anchor-spl",
  "jet-margin",
  "jet-margin-pool",
+ "jet-proto-math",
  "jet-static-program-registry",
  "spl-token-swap 2.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]

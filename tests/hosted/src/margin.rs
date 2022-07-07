@@ -414,22 +414,22 @@ impl MarginUser {
         &self,
         market: &SerumMarketV3,
         open_orders: Pubkey,
-        transit_source_account: Pubkey,
-        transit_dest_account: Pubkey,
+        transit_base_account: Pubkey,
+        transit_quote_account: Pubkey,
         amount_in: u64,
         minimum_amount_out: u64,
-        bid: bool,
+        swap_direction: SwapDirection,
     ) -> Result<(), Error> {
         let tx = self
             .tx
             .serum_swap(
                 market,
                 open_orders,
-                transit_source_account,
-                transit_dest_account,
+                transit_base_account,
+                transit_quote_account,
                 amount_in,
                 minimum_amount_out,
-                bid,
+                swap_direction,
             )
             .await?;
 
