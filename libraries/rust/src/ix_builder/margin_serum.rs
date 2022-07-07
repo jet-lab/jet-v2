@@ -22,6 +22,7 @@ use anchor_lang::{Id, InstructionData};
 use anchor_spl::dex::{self, Dex};
 use dex::serum_dex::instruction::SelfTradeBehavior as DexSelfTradeBehavior;
 use dex::serum_dex::matching::{OrderType as DexOrderType, Side as DexSide};
+use jet_margin_swap::instructions::SwapDirection;
 use solana_sdk::instruction::Instruction;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::sysvar::{rent::Rent, SysvarId};
@@ -72,16 +73,16 @@ impl MarginSerumIxBuilder {
         minimum_amount_out: u64,
         swap_direction: SwapDirection,
     ) -> Instruction {
-        let (source_pool, dest_pool, order_note_mint) = match bid {
-            true => {
-                let source_pool = MarginPoolIxBuilder::new(self.market.quote_token);
-                let dest_pool = MarginPoolIxBuilder::new(self.market.base_token);
-                (source_pool, dest_pool, self.info.quote_note_mint)
-            }
-            false => {
+        let (source_pool, dest_pool, order_note_mint) = match swap_direction {
+            SwapDirection::Ask => {
                 let source_pool = MarginPoolIxBuilder::new(self.market.base_token);
                 let dest_pool = MarginPoolIxBuilder::new(self.market.quote_token);
                 (source_pool, dest_pool, self.info.base_note_mint)
+            }
+            SwapDirection::Bid => {
+                let source_pool = MarginPoolIxBuilder::new(self.market.quote_token);
+                let dest_pool = MarginPoolIxBuilder::new(self.market.base_token);
+                (source_pool, dest_pool, self.info.quote_note_mint)
             }
         };
         let accounts = jet_margin_swap::accounts::SerumSwap {

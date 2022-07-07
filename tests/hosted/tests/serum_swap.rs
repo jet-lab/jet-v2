@@ -224,7 +224,7 @@ async fn serum_swap() -> Result<(), anyhow::Error> {
             100 * ONE_USDC,
             // we want a minimum of 0.9 SOL for 100 USDC
             ONE_TSOL / 10 * 9,
-            true,
+            jet_margin_swap::instructions::SwapDirection::Bid,
         )
         .await?;
 
@@ -251,7 +251,7 @@ async fn serum_swap() -> Result<(), anyhow::Error> {
             usdc_transit_source_a,
             2 * ONE_TSOL,
             180 * ONE_USDC,
-            true,
+            jet_margin_swap::instructions::SwapDirection::Bid,
         )
         .await?;
 

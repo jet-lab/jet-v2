@@ -29,6 +29,7 @@ use jet_margin_sdk::accounts::MarginPoolAccounts;
 use jet_margin_sdk::instructions::control::{get_authority_address, TokenConfiguration};
 use jet_margin_sdk::ix_builder::{MarginSerumIxBuilder, OrderParams, SerumMarketV3};
 use jet_margin_sdk::tx_builder::MarginTxBuilder;
+use jet_margin_swap::instructions::SwapDirection;
 use jet_metadata::{LiquidatorMetadata, MarginAdapterMetadata, TokenKind, TokenMetadata};
 use jet_simulation::{send_and_confirm, solana_rpc_api::SolanaRpcClient};
 use solana_sdk::instruction::Instruction;
@@ -405,7 +406,7 @@ impl MarginUser {
         transit_dest_account: Pubkey,
         amount_in: u64,
         minimum_amount_out: u64,
-        bid: bool,
+        swap_direction: SwapDirection,
     ) -> Result<(), Error> {
         let tx = self
             .tx
@@ -416,7 +417,7 @@ impl MarginUser {
                 transit_dest_account,
                 amount_in,
                 minimum_amount_out,
-                bid,
+                swap_direction,
             )
             .await?;
 

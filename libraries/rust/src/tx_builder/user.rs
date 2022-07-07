@@ -32,6 +32,7 @@ use solana_sdk::{compute_budget::ComputeBudgetInstruction, instruction::Instruct
 
 use jet_margin::{MarginAccount, PositionKind};
 use jet_margin_pool::Amount;
+use jet_margin_swap::instructions::SwapDirection;
 use jet_metadata::{PositionTokenMetadata, TokenMetadata};
 use jet_simulation::solana_rpc_api::SolanaRpcClient;
 
@@ -513,27 +514,27 @@ impl MarginTxBuilder {
         transit_destination_account: Pubkey,
         amount_in: u64,
         minimum_amount_out: u64,
-        bid: bool,
+        swap_direction: SwapDirection,
     ) -> Result<Transaction> {
         let ix_builder = MarginSerumIxBuilder::new(market.clone());
 
         let mut instructions = vec![];
 
-        let (pool_source_mint, pool_dest_mint, order_note_mint) = match bid {
-            true => (
-                market.quote_token,
-                market.base_token,
-                ix_builder.info.quote_note_mint,
-            ),
-            false => (
+        let (pool_source_mint, pool_dest_mint, order_note_mint) = match swap_direction {
+            SwapDirection::Ask => (
                 market.base_token,
                 market.quote_token,
                 ix_builder.info.base_note_mint,
             ),
+            SwapDirection::Bid => (
+                market.quote_token,
+                market.base_token,
+                ix_builder.info.quote_note_mint,
+            ),
         };
 
         let source_pool = MarginPoolIxBuilder::new(pool_source_mint);
-        let dest_pool = MarginPoolIxBuilder::new(pool_source_mint);
+        let dest_pool = MarginPoolIxBuilder::new(pool_dest_mint);
 
         let source_pool_account = self
             .get_or_create_position(&mut instructions, &source_pool.deposit_note_mint)
@@ -551,7 +552,7 @@ impl MarginTxBuilder {
             destination_pool_account,
             amount_in,
             minimum_amount_out,
-            bid,
+            swap_direction,
         );
 
         let instruction = self.adapter_invoke_ix(instruction);
