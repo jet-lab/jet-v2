@@ -438,7 +438,7 @@ describe("margin pool borrow", () => {
     */
   })
 
-  describe("Flight Logs", () => {
+  describe("Transaction History", () => {
     it("should allow to get a list of the latest transactions", async () => {
       const mints = {
         USDC: {
