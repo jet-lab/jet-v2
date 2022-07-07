@@ -33,7 +33,6 @@ import {
   TokenAmount
 } from ".."
 import { MarginPoolConfig, MarginTokenConfig } from "./config"
-import { sleep } from "../utils/util"
 import { AccountPosition, PriceInfo } from "./accountPosition"
 
 export interface MarginAccountAddresses {
@@ -70,7 +69,9 @@ export interface AccountSummary {
   borrowedValue: number
   accountBalance: number
   availableCollateral: number
+  /** @deprecated use riskIndicator */
   cRatio: number
+  /** @deprecated use riskIndicator */
   minCRatio: number
 }
 
@@ -103,6 +104,8 @@ export interface MarginWalletTokens {
 
 export class MarginAccount {
   static readonly SEED_MAX_VALUE = 65535
+  static readonly RISK_WARNING_LEVEL = 0.6
+  static readonly RISK_LIQUIDATION_LEVEL = 0.8
   info?: {
     marginAccount: MarginAccountData
     positions: AccountPositionList
@@ -122,6 +125,12 @@ export class MarginAccount {
   }
   get liquidator() {
     return this.info?.marginAccount.liquidator
+  }
+  /** A number where 1 and above is subject to liquidation and 0 is no leverage. */
+  get riskIndicator() {
+    const requiredCollateral = bnToNumber(this.valuation.requiredCollateral)
+    const effectiveCollateral = bnToNumber(this.valuation.effectiveCollateral)
+    return effectiveCollateral === 0 ? 0 : requiredCollateral / effectiveCollateral
   }
 
   /**
@@ -348,8 +357,8 @@ export class MarginAccount {
     depositBalance: TokenAmount,
     loanBalance: TokenAmount
   ): Record<TradeAction, TokenAmount> {
+    const zero = TokenAmount.zero(pool.decimals)
     if (!pool.info) {
-      const zero = TokenAmount.zero(pool.decimals)
       return {
         deposit: zero,
         withdraw: zero,
@@ -364,38 +373,46 @@ export class MarginAccount {
     const feeCover = new TokenAmount(new BN(20000000), pool.decimals)
 
     // Max deposit
-    let deposit = walletAmount ?? TokenAmount.zero(pool.decimals)
+    let deposit = walletAmount ?? zero
     // If depositing SOL, maximum input should still cover fees
     if (pool.address.equals(NATIVE_MINT)) {
-      deposit = TokenAmount.max(deposit.sub(feeCover), TokenAmount.zero(pool.decimals))
+      deposit = TokenAmount.max(deposit.sub(feeCover), zero)
     }
 
     // Max withdraw
-    const withdrawableLamports = pool.depositNoteMetadata
-      .getRequiredCollateralValue(this.valuation.availableCollateral)
-      .mul(Number128.ONE)
-      .div(numberToBn(pool.tokenPrice * 10 ** Number128.PRECISION))
+    const withdrawableLamports = TokenAmount.lamports(
+      Number128.asBn(
+        pool.depositNoteMetadata
+          .getRequiredCollateralValue(this.valuation.availableCollateral)
+          .mul(Number128.ONE)
+          // FIXME: This could be more accurate if a BN note price was used
+          .div(numberToBn(pool.tokenPrice * 10 ** (Number128.PRECISION - pool.decimals))),
+        0
+      ),
+      pool.decimals
+    )
 
-    let withdraw = TokenAmount.min(depositBalance, pool.borrowedTokens)
-    withdraw = TokenAmount.min(withdraw, TokenAmount.lamports(Number128.asBn(withdrawableLamports, 0), pool.decimals))
-    withdraw = TokenAmount.max(withdraw, TokenAmount.zero(pool.decimals))
+    let withdraw = TokenAmount.min(depositBalance, pool.depositedTokens)
+    withdraw = TokenAmount.min(withdraw, withdrawableLamports)
+    withdraw = TokenAmount.max(withdraw, zero)
 
     // Max borrow
     const borrowLamports = pool.loanNoteMetadata
       .getCollateralValue(this.valuation.availableCollateral)
       .mul(Number128.ONE)
-      .div(numberToBn(pool.tokenPrice * 10 ** Number128.PRECISION))
+      // FIXME: This could be more accurate if a BN note price was used
+      .div(numberToBn(pool.tokenPrice * 10 ** (Number128.PRECISION - pool.decimals)))
     let borrow: TokenAmount = TokenAmount.min(
       TokenAmount.lamports(Number128.asBn(borrowLamports, 0), pool.decimals),
       pool.depositedTokens
     )
-    borrow = TokenAmount.max(borrow, TokenAmount.zero(pool.decimals))
+    borrow = TokenAmount.max(borrow, zero)
 
     // Max repay
     let repay = walletAmount ? TokenAmount.min(loanBalance, walletAmount) : loanBalance
     // If repaying SOL, maximum input should still cover fees
     if (pool.address.equals(NATIVE_MINT)) {
-      repay = TokenAmount.max(repay.sub(feeCover), TokenAmount.zero(pool.decimals))
+      repay = TokenAmount.max(repay.sub(feeCover), zero)
     }
 
     // Max swap
@@ -426,8 +443,7 @@ export class MarginAccount {
 
     const exposureNumber = bnToNumber(this.valuation.exposure)
     const cRatio = exposureNumber === 0 ? Infinity : bnToNumber(collateralValue) / exposureNumber
-    const minCRatio =
-      exposureNumber === 0 ? Infinity : 1 + bnToNumber(this.valuation.effectiveCollateral) / exposureNumber
+    const minCRatio = exposureNumber === 0 ? 1 : 1 + bnToNumber(this.valuation.effectiveCollateral) / exposureNumber
     const depositedValue = bnToNumber(Number128.asBn(collateralValue, -5)) / 100000
     const borrowedValue = bnToNumber(Number128.asBn(this.valuation.exposure, -5)) / 100000
 
@@ -706,46 +722,6 @@ export class MarginAccount {
     }
   }
 
-  //Deposit
-  /// Transaction to deposit tokens into a margin account
-  ///
-  /// # Params
-  ///
-  /// `token_mint` - The address of the mint for the tokens being deposited
-  /// `source` - The token account that the deposit will be transfered from. Can also point to the wallet to automatically wrap SOL
-  /// `amount` - The amount of tokens to deposit
-  async deposit(marginPool: Pool, source: Address, amount: BN) {
-    assert(marginPool)
-    assert(source)
-    assert(amount)
-
-    await this.createAccount()
-    await sleep(2000)
-    await this.refresh()
-    const position = await this.getOrCreatePosition(marginPool.addresses.depositNoteMint)
-    assert(position)
-
-    const instructions: TransactionInstruction[] = []
-    source = await AssociatedToken.withWrapIfNativeMint(
-      instructions,
-      this.provider,
-      this.provider.wallet.publicKey,
-      marginPool.tokenMint,
-      source,
-      amount
-    )
-
-    await marginPool.withDeposit({
-      instructions: instructions,
-      depositor: this.owner,
-      source,
-      destination: position.address,
-      amount
-    })
-    await this.withUpdatePositionBalance({ instructions, position })
-    return await this.provider.sendAndConfirm(new Transaction().add(...instructions))
-  }
-
   //TODO Withdraw
   async getOrCreatePosition(tokenMint: Address) {
     assert(this.info)
@@ -855,12 +831,7 @@ export class MarginAccount {
   async closeAccount() {
     const ix: TransactionInstruction[] = []
     await this.withCloseAccount(ix)
-    try {
-      return await this.provider.sendAndConfirm(new Transaction().add(...ix))
-    } catch (err) {
-      console.log(err)
-      throw err
-    }
+    this.sendAndConfirm(ix)
   }
 
   /// Get instruction to close an account
@@ -882,12 +853,7 @@ export class MarginAccount {
   async closePosition(position: AccountPosition) {
     const ix: TransactionInstruction[] = []
     await this.withClosePosition(ix, position)
-    try {
-      return await this.provider.sendAndConfirm(new Transaction().add(...ix))
-    } catch (err) {
-      console.log(err)
-      throw err
-    }
+    this.sendAndConfirm(ix)
   }
 
   /// Get instruction to close a position
@@ -926,7 +892,7 @@ export class MarginAccount {
     const ix = await this.programs.margin.methods
       .adapterInvoke(
         adapterInstruction.keys.slice(1).map(accountMeta => {
-          return { isSigner: false, isWritable: accountMeta.isWritable }
+          return { isSigner: accountMeta.isSigner, isWritable: accountMeta.isWritable }
         }),
         adapterInstruction.data
       )
@@ -940,7 +906,7 @@ export class MarginAccount {
         adapterInstruction.keys.slice(1).map(accountMeta => {
           return {
             pubkey: accountMeta.pubkey,
-            isSigner: false,
+            isSigner: accountMeta.isSigner,
             isWritable: accountMeta.isWritable
           }
         })
@@ -983,5 +949,14 @@ export class MarginAccount {
       )
       .instruction()
     instructions.push(ix)
+  }
+
+  async sendAndConfirm(instructions: TransactionInstruction[]) {
+    try {
+      return await this.provider.sendAndConfirm(new Transaction().add(...instructions))
+    } catch (err) {
+      console.log(err)
+      throw err
+    }
   }
 }

@@ -79,6 +79,17 @@ mod jet_margin_pool {
     pub fn margin_refresh_position(ctx: Context<MarginRefreshPosition>) -> Result<()> {
         instructions::margin_refresh_position_handler(ctx)
     }
+
+    /// Creates the token account to track the loan notes,
+    /// then requests margin to register the position
+    pub fn register_loan(ctx: Context<RegisterLoan>) -> Result<()> {
+        instructions::register_loan_handler(ctx)
+    }
+
+    /// Closes a previously opened loan token account
+    pub fn close_loan(ctx: Context<CloseLoan>) -> Result<()> {
+        instructions::close_loan_handler(ctx)
+    }
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone, Copy)]
