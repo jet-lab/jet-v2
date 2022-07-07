@@ -119,10 +119,12 @@ describe("margin pool deposit", () => {
 
   let marginPool_USDC: Pool
   let marginPool_SOL: Pool
+  let pools: Pool[]
 
   it("Load Pools", async () => {
     marginPool_SOL = await manager.load({ tokenMint: SOL[0] })
     marginPool_USDC = await manager.load({ tokenMint: USDC[0] })
+    pools = [marginPool_SOL, marginPool_USDC]
   })
 
   it("Create margin pools", async () => {
@@ -240,21 +242,45 @@ describe("margin pool deposit", () => {
 
   it("Deposit user funds into their margin accounts", async () => {
     // ACT
-    await marginAccount_A.deposit(marginPool_USDC, user_a_usdc_account, new BN(500_000 * ONE_USDC))
-    await marginAccount_B.deposit(marginPool_USDC, user_b_usdc_account, new BN(50 * ONE_USDC))
-    await marginAccount_C.deposit(marginPool_USDC, user_c_usdc_account, new BN(ONE_USDC))
+    await marginPool_USDC.deposit({
+      marginAccount: marginAccount_A,
+      source: user_a_usdc_account,
+      amount: new BN(500_000 * ONE_USDC)
+    })
+    await marginPool_USDC.deposit({
+      marginAccount: marginAccount_B,
+      source: user_b_usdc_account,
+      amount: new BN(50 * ONE_USDC)
+    })
+    await marginPool_USDC.deposit({
+      marginAccount: marginAccount_C,
+      source: user_c_usdc_account,
+      amount: new BN(ONE_USDC)
+    })
     await pythClient.setPythPrice(ownerKeypair, USDC_oracle[1].publicKey, 1, 0.01, -8)
-    await marginPool_USDC.refreshPosition(marginAccount_A)
-    await marginPool_USDC.refreshPosition(marginAccount_B)
-    await marginPool_USDC.refreshPosition(marginAccount_C)
+    await marginPool_USDC.marginRefreshPositionPrice(marginAccount_A)
+    await marginPool_USDC.marginRefreshPositionPrice(marginAccount_B)
+    await marginPool_USDC.marginRefreshPositionPrice(marginAccount_C)
 
-    await marginAccount_A.deposit(marginPool_SOL, user_a_sol_account, new BN(50 * ONE_SOL))
-    await marginAccount_B.deposit(marginPool_SOL, user_b_sol_account, new BN(500 * ONE_SOL))
-    await marginAccount_C.deposit(marginPool_SOL, user_c_sol_account, new BN(ONE_SOL))
+    await marginPool_SOL.deposit({
+      marginAccount: marginAccount_A,
+      source: user_a_sol_account,
+      amount: new BN(50 * ONE_SOL)
+    })
+    await marginPool_SOL.deposit({
+      marginAccount: marginAccount_B,
+      source: user_b_sol_account,
+      amount: new BN(500 * ONE_SOL)
+    })
+    await marginPool_SOL.deposit({
+      marginAccount: marginAccount_C,
+      source: user_c_sol_account,
+      amount: new BN(ONE_SOL)
+    })
     await pythClient.setPythPrice(ownerKeypair, SOL_oracle[1].publicKey, 100, 1, -8)
-    await marginPool_SOL.refreshPosition(marginAccount_A)
-    await marginPool_SOL.refreshPosition(marginAccount_B)
-    await marginPool_SOL.refreshPosition(marginAccount_C)
+    await marginPool_SOL.marginRefreshPositionPrice(marginAccount_A)
+    await marginPool_SOL.marginRefreshPositionPrice(marginAccount_B)
+    await marginPool_SOL.marginRefreshPositionPrice(marginAccount_C)
 
     // TEST
     expect(await getTokenBalance(provider, "processed", user_b_sol_account)).to.eq(0)
@@ -267,13 +293,17 @@ describe("margin pool deposit", () => {
 
   it("Users withdraw their funds", async () => {
     // ACT
+    await pythClient.setPythPrice(ownerKeypair, USDC_oracle[1].publicKey, 1, 0.01, -8)
+    await pythClient.setPythPrice(ownerKeypair, SOL_oracle[1].publicKey, 100, 1, -8)
     await marginPool_USDC.marginWithdraw({
       marginAccount: marginAccount_A,
+      pools,
       destination: user_a_usdc_account,
       amount: PoolAmount.tokens(new BN(400_000 * ONE_USDC))
     })
     await marginPool_SOL.marginWithdraw({
       marginAccount: marginAccount_B,
+      pools,
       destination: user_b_sol_account,
       amount: PoolAmount.tokens(new BN(400 * ONE_SOL))
     })
