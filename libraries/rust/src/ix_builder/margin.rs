@@ -54,7 +54,7 @@ impl MarginIxBuilder {
 
     pub fn new_with_payer(owner: Pubkey, seed: u16, payer: Pubkey) -> Self {
         let (address, _) = Pubkey::find_program_address(
-            &[owner.as_ref(), 0u16.to_le_bytes().as_ref()],
+            &[owner.as_ref(), seed.to_le_bytes().as_ref()],
             &jet_margin::ID,
         );
         Self {
