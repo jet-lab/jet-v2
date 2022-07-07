@@ -1,6 +1,6 @@
 use anyhow::Error;
 
-use jet_margin_sdk::ix_builder::{get_position_token_account, MarginPoolIxBuilder};
+use jet_margin_sdk::ix_builder::{owned_position_token_account, MarginPoolIxBuilder};
 use solana_sdk::native_token::LAMPORTS_PER_SOL;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::Signer;
@@ -39,28 +39,15 @@ struct TestEnv {
 
 async fn setup_environment(ctx: &MarginTestContext) -> Result<TestEnv, Error> {
     let usdc = ctx.tokens.create_token(6, None, None).await?;
-    let usdc_fees = ctx
-        .tokens
-        .create_account(&usdc, &ctx.authority.pubkey())
-        .await?;
     let usdc_oracle = ctx.tokens.create_oracle(&usdc).await?;
     let usdt = ctx.tokens.create_token(6, None, None).await?;
-    let usdt_fees = ctx
-        .tokens
-        .create_account(&usdt, &ctx.authority.pubkey())
-        .await?;
     let usdt_oracle = ctx.tokens.create_oracle(&usdt).await?;
     let tsol = ctx.tokens.create_token(9, None, None).await?;
-    let tsol_fees = ctx
-        .tokens
-        .create_account(&tsol, &ctx.authority.pubkey())
-        .await?;
     let tsol_oracle = ctx.tokens.create_oracle(&tsol).await?;
 
     let pools = [
         MarginPoolSetupInfo {
             token: usdc,
-            fee_destination: usdc_fees,
             token_kind: TokenKind::Collateral,
             collateral_weight: 1_00,
             max_leverage: 4_00,
@@ -69,7 +56,6 @@ async fn setup_environment(ctx: &MarginTestContext) -> Result<TestEnv, Error> {
         },
         MarginPoolSetupInfo {
             token: usdt,
-            fee_destination: usdt_fees,
             token_kind: TokenKind::Collateral,
             collateral_weight: 1_00,
             max_leverage: 4_00,
@@ -78,7 +64,6 @@ async fn setup_environment(ctx: &MarginTestContext) -> Result<TestEnv, Error> {
         },
         MarginPoolSetupInfo {
             token: tsol,
-            fee_destination: tsol_fees,
             token_kind: TokenKind::Collateral,
             collateral_weight: 95,
             max_leverage: 4_00,
@@ -217,7 +202,7 @@ async fn pool_overpayment() -> Result<(), anyhow::Error> {
         .repay(&env.tsol, Amount::tokens(400 * ONE_TSOL))
         .await?;
 
-    let user_c_tsol_deposit_notes_account = get_position_token_account(
+    let user_c_tsol_deposit_notes_account = owned_position_token_account(
         user_c.address(),
         &MarginPoolIxBuilder::new(env.tsol).deposit_note_mint,
     )

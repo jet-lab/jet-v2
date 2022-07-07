@@ -2,6 +2,15 @@ use anchor_lang::prelude::*;
 
 use crate::{AccountPosition, Liquidation, Valuation};
 
+event_groups! {
+    PositionEvent {
+        PositionRegistered,
+        PositionClosed,
+        PositionBalanceUpdated,
+        PositionTouched
+    }
+}
+
 #[event]
 pub struct AccountCreated {
     pub margin_account: Pubkey,
@@ -113,3 +122,31 @@ impl From<Valuation> for ValuationSummary {
         }
     }
 }
+
+/// Allows you to return a single type that could actually be any of variety of events.
+/// This cannot be done with traits because Box<Dyn $Name> is not possible because
+/// AnchorSerialize prevents trait objects.
+macro_rules! event_groups {
+    ($($Name:ident{$($Variant:ident),+$(,)?})*) => {
+        $(
+        #[allow(clippy::enum_variant_names)]
+        pub enum $Name {
+            $($Variant($Variant),)+
+        }
+
+        impl $Name {
+            pub fn emit(self) {
+                match self {
+                    $(Self::$Variant(item) => emit!(item),)+
+                }
+            }
+        }
+
+        $(impl From<$Variant> for $Name {
+            fn from(item: $Variant) -> Self {
+                Self::$Variant(item)
+            }
+        })+)+
+    };
+}
+pub(crate) use event_groups;

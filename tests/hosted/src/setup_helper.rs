@@ -45,10 +45,6 @@ pub async fn setup_token(
     price: i64,
 ) -> Result<Pubkey, Error> {
     let token = ctx.tokens.create_token(decimals, None, None).await?;
-    let token_fees = ctx
-        .tokens
-        .create_account(&token, &ctx.authority.pubkey())
-        .await?;
     let token_oracle = ctx.tokens.create_oracle(&token).await?;
 
     ctx.margin
@@ -56,7 +52,6 @@ pub async fn setup_token(
             token,
             collateral_weight,
             max_leverage: leverage_max,
-            fee_destination: token_fees,
             token_kind: TokenKind::Collateral,
             config: DEFAULT_POOL_CONFIG,
             oracle: token_oracle,
