@@ -28,7 +28,7 @@ use jet_margin_pool::{
 
 declare_id!("JPMAa5dnWLFRvUsumawFcGhnwikqZziLLfqn9SLNXPN");
 
-mod instructions;
+pub mod instructions;
 use instructions::*;
 
 #[program]
@@ -74,4 +74,9 @@ pub struct MarginPoolInfo<'info> {
     /// CHECK:
     #[account(mut)]
     pub deposit_note_mint: UncheckedAccount<'info>,
+}
+
+#[error_code]
+pub enum SwapError {
+    SerumSwapError,
 }

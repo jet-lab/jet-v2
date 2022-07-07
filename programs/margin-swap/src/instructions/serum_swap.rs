@@ -22,6 +22,7 @@ use anchor_spl::dex::serum_dex::matching::{OrderType, Side};
 use anchor_spl::dex::serum_dex::state::MarketState;
 use anchor_spl::dex::serum_dex::{instruction::SelfTradeBehavior, state::OpenOrders};
 use anchor_spl::token::Token;
+use jet_proto_math::Number128;
 
 use crate::*;
 
@@ -34,33 +35,33 @@ pub struct SerumSwap<'info> {
     /// The account with the source deposit to be exchanged from
     /// CHECK:
     #[account(mut)]
-    pub source_pool_account: AccountInfo<'info>,
+    pub pool_deposit_note_base: AccountInfo<'info>,
 
     /// The destination account to send the deposit that is exchanged into
     /// CHECK:
     #[account(mut)]
-    pub destination_pool_account: AccountInfo<'info>,
+    pub pool_deposit_note_quote: AccountInfo<'info>,
 
     /// Temporary SPL account to send tokens
     /// CHECK:
     // #[account(mut, constraint = transit_source_account.owner == &margin_account.key())]
     #[account(mut)]
-    pub transit_source_account: AccountInfo<'info>,
+    pub transit_base_token_account: AccountInfo<'info>,
 
     /// Temporary SPL account to receive tokens
     /// CHECK:
     // #[account(mut, constraint = transit_destination_account.owner == &margin_account.key())]
     #[account(mut)]
-    pub transit_destination_account: AccountInfo<'info>,
+    pub transit_quote_token_account: AccountInfo<'info>,
 
     /// The accounts relevant to the swap pool used for the exchange
     pub swap_info: SerumSwapInfo<'info>,
 
-    /// The accounts relevant to the source margin pool
-    pub source_margin_pool: MarginPoolInfo<'info>,
+    /// The accounts relevant to the base margin pool (e.g. SOL)
+    pub margin_pool_base: MarginPoolInfo<'info>,
 
-    /// The accounts relevant to the destination margin pool
-    pub destination_margin_pool: MarginPoolInfo<'info>,
+    /// The accounts relevant to the quote margin pool (e.g. USDC)
+    pub margin_pool_quote: MarginPoolInfo<'info>,
 
     pub margin_pool_program: Program<'info, JetMarginPool>,
 
@@ -70,22 +71,46 @@ pub struct SerumSwap<'info> {
 }
 
 impl<'info> SerumSwap<'info> {
-    fn withdraw_source_context(&self) -> CpiContext<'_, '_, '_, 'info, Withdraw<'info>> {
+    /// Withdraw from the base pool, when selling (SwapDirection::Ask)
+    fn withdraw_base_source_context(&self) -> CpiContext<'_, '_, '_, 'info, Withdraw<'info>> {
         CpiContext::new(
             self.margin_pool_program.to_account_info(),
             Withdraw {
-                margin_pool: self.source_margin_pool.margin_pool.to_account_info(),
-                vault: self.source_margin_pool.vault.to_account_info(),
-                deposit_note_mint: self.source_margin_pool.deposit_note_mint.to_account_info(),
+                margin_pool: self.margin_pool_base.margin_pool.to_account_info(),
+                vault: self.margin_pool_base.vault.to_account_info(),
+                deposit_note_mint: self.margin_pool_base.deposit_note_mint.to_account_info(),
                 depositor: self.margin_account.to_account_info(),
-                source: self.source_pool_account.to_account_info(),
-                destination: self.transit_source_account.to_account_info(),
+                source: self.pool_deposit_note_base.to_account_info(),
+                destination: self.transit_base_token_account.to_account_info(),
                 token_program: self.token_program.to_account_info(),
             },
         )
     }
 
-    fn new_order_v3_context(&self) -> CpiContext<'_, '_, '_, 'info, dex::NewOrderV3<'info>> {
+    fn withdraw_quote_source_context(&self) -> CpiContext<'_, '_, '_, 'info, Withdraw<'info>> {
+        CpiContext::new(
+            self.margin_pool_program.to_account_info(),
+            Withdraw {
+                margin_pool: self.margin_pool_quote.margin_pool.to_account_info(),
+                vault: self.margin_pool_quote.vault.to_account_info(),
+                deposit_note_mint: self.margin_pool_quote.deposit_note_mint.to_account_info(),
+                depositor: self.margin_account.to_account_info(),
+                source: self.pool_deposit_note_quote.to_account_info(),
+                destination: self.transit_quote_token_account.to_account_info(),
+                token_program: self.token_program.to_account_info(),
+            },
+        )
+    }
+
+    fn new_order_v3_context(
+        &self,
+        swap_direction: SwapDirection,
+    ) -> CpiContext<'_, '_, '_, 'info, dex::NewOrderV3<'info>> {
+        // Use the correct account depending on the swap direction
+        let order_payer_token_account = match swap_direction {
+            SwapDirection::Bid => self.transit_quote_token_account.to_account_info(),
+            SwapDirection::Ask => self.transit_base_token_account.to_account_info(),
+        };
         CpiContext::new(
             self.swap_info.serum_program.to_account_info(),
             dex::NewOrderV3 {
@@ -95,7 +120,7 @@ impl<'info> SerumSwap<'info> {
                 event_queue: self.swap_info.event_queue.to_account_info(),
                 market_bids: self.swap_info.market_bids.to_account_info(),
                 market_asks: self.swap_info.market_asks.to_account_info(),
-                order_payer_token_account: self.transit_source_account.to_account_info(),
+                order_payer_token_account,
                 open_orders_authority: self.swap_info.open_orders_authority.to_account_info(),
                 coin_vault: self.swap_info.base_vault.to_account_info(),
                 pc_vault: self.swap_info.quote_vault.to_account_info(),
@@ -115,27 +140,39 @@ impl<'info> SerumSwap<'info> {
                 coin_vault: self.swap_info.base_vault.to_account_info(),
                 pc_vault: self.swap_info.quote_vault.to_account_info(),
                 // TODO: does the order of coin and pc depend on swap direction?
-                coin_wallet: self.transit_source_account.to_account_info(),
-                pc_wallet: self.transit_destination_account.to_account_info(),
+                coin_wallet: self.transit_base_token_account.to_account_info(),
+                pc_wallet: self.transit_quote_token_account.to_account_info(),
                 vault_signer: self.swap_info.vault_signer.to_account_info(),
                 token_program: self.token_program.to_account_info(),
             },
         )
     }
 
-    fn deposit_destination_context(&self) -> CpiContext<'_, '_, '_, 'info, Deposit<'info>> {
+    fn deposit_base_destination_context(&self) -> CpiContext<'_, '_, '_, 'info, Deposit<'info>> {
         CpiContext::new(
             self.margin_pool_program.to_account_info(),
             Deposit {
-                margin_pool: self.destination_margin_pool.margin_pool.to_account_info(),
-                vault: self.destination_margin_pool.vault.to_account_info(),
-                deposit_note_mint: self
-                    .destination_margin_pool
-                    .deposit_note_mint
-                    .to_account_info(),
+                margin_pool: self.margin_pool_base.margin_pool.to_account_info(),
+                vault: self.margin_pool_base.vault.to_account_info(),
+                deposit_note_mint: self.margin_pool_base.deposit_note_mint.to_account_info(),
                 depositor: self.margin_account.to_account_info(),
-                source: self.transit_destination_account.to_account_info(),
-                destination: self.destination_pool_account.to_account_info(),
+                source: self.transit_base_token_account.to_account_info(),
+                destination: self.pool_deposit_note_base.to_account_info(),
+                token_program: self.token_program.to_account_info(),
+            },
+        )
+    }
+
+    fn deposit_quote_destination_context(&self) -> CpiContext<'_, '_, '_, 'info, Deposit<'info>> {
+        CpiContext::new(
+            self.margin_pool_program.to_account_info(),
+            Deposit {
+                margin_pool: self.margin_pool_quote.margin_pool.to_account_info(),
+                vault: self.margin_pool_quote.vault.to_account_info(),
+                deposit_note_mint: self.margin_pool_quote.deposit_note_mint.to_account_info(),
+                depositor: self.margin_account.to_account_info(),
+                source: self.transit_quote_token_account.to_account_info(),
+                destination: self.pool_deposit_note_quote.to_account_info(),
                 token_program: self.token_program.to_account_info(),
             },
         )
@@ -194,13 +231,15 @@ pub fn serum_swap_handler(
     swap_direction: SwapDirection,
 ) -> Result<()> {
     jet_margin_pool::cpi::withdraw(
-        ctx.accounts.withdraw_source_context(),
+        match swap_direction {
+            SwapDirection::Bid => ctx.accounts.withdraw_quote_source_context(),
+            SwapDirection::Ask => ctx.accounts.withdraw_base_source_context(),
+        },
         Amount::tokens(amount_in),
     )?;
     let market_info = ctx.accounts.swap_info.market.to_account_info();
     let coin_lot_size = {
-        let market =
-            MarketState::load(&market_info, &dex::ID).map_err(|e| ProgramError::from(e))?;
+        let market = MarketState::load(&market_info, &dex::ID).map_err(ProgramError::from)?;
         market.coin_lot_size
     };
 
@@ -216,9 +255,10 @@ pub fn serum_swap_handler(
     // - max_native_pc_qty is set to max
     let (side, limit_price, max_coin_qty, max_native_pc_qty) = match swap_direction {
         SwapDirection::Ask => {
+            // Purchase as much of the quote as possible for the given base
             let max_coin_qty = amount_in.checked_div(coin_lot_size).unwrap();
             let max_coin_qty = NonZeroU64::new(max_coin_qty).unwrap();
-            let max_native_pc_qty = NonZeroU64::new(u64::MAX).unwrap();
+            let max_native_pc_qty = NonZeroU64::new(u64::MAX).unwrap(); // u64::MAX
             (
                 Side::Ask,
                 NonZeroU64::new(1).unwrap(),
@@ -227,6 +267,7 @@ pub fn serum_swap_handler(
             )
         }
         SwapDirection::Bid => {
+            // Purchase as much of the base as possible for the given quote
             let max_coin_qty = NonZeroU64::new(u64::MAX).unwrap();
             let max_native_pc_qty = NonZeroU64::new(amount_in).unwrap();
             (
@@ -239,11 +280,11 @@ pub fn serum_swap_handler(
     };
 
     // Get the balance of tokens before the trade
-    let from_amount_before = token::accessor::amount(&ctx.accounts.transit_source_account)?;
-    let to_amount_before = token::accessor::amount(&ctx.accounts.transit_destination_account)?;
+    let base_before = token::accessor::amount(&ctx.accounts.transit_base_token_account)?;
+    let quote_before = token::accessor::amount(&ctx.accounts.transit_quote_token_account)?;
 
     dex::new_order_v3(
-        ctx.accounts.new_order_v3_context(),
+        ctx.accounts.new_order_v3_context(swap_direction),
         side,
         limit_price,
         max_coin_qty,
@@ -258,21 +299,50 @@ pub fn serum_swap_handler(
     // Settle funds
     dex::settle_funds(ctx.accounts.settle_funds_context())?;
 
-    let from_amount_after = token::accessor::amount(&ctx.accounts.transit_source_account)?;
-    let to_amount_after = token::accessor::amount(&ctx.accounts.transit_destination_account)?;
+    let base_after = token::accessor::amount(&ctx.accounts.transit_base_token_account)?;
+    let quote_after = token::accessor::amount(&ctx.accounts.transit_quote_token_account)?;
 
-    // Check if slippage is tolerable
-    let from_delta = from_amount_before.checked_sub(from_amount_after).unwrap();
-    let to_delta = to_amount_after.checked_sub(to_amount_before).unwrap();
+    // If bidding, quote will decrease and base increase.
+    let (tokens_sold, tokens_bought) = match swap_direction {
+        SwapDirection::Bid => {
+            // Increasing, after >= before
+            let base = base_after.checked_sub(base_before).unwrap();
+            let quote = quote_before.checked_sub(quote_after).unwrap();
+            (quote, base)
+        }
+        SwapDirection::Ask => {
+            // Decreasing, before >= after
+            let base = base_before.checked_sub(base_after).unwrap();
+            let quote = quote_after.checked_sub(quote_before).unwrap();
+            (base, quote)
+        }
+    };
 
-    msg!("from_delta: {}", from_delta);
-    msg!("to_delta: {}", to_delta);
+    // If the base or quote deltas are 0, fail transaction
+    if tokens_bought == 0 || tokens_sold == 0 {
+        return err!(SwapError::SerumSwapError);
+    }
 
-    let destination_amount = token::accessor::amount(&ctx.accounts.transit_destination_account)?;
+    // Check slippage using a ratio of swapped tokens
+    let expected_rate =
+        Number128::from_decimal(minimum_amount_out, 0) / Number128::from_decimal(amount_in, 0);
+    let actual_rate =
+        Number128::from_decimal(tokens_bought, 0) / Number128::from_decimal(tokens_sold, 0);
+
+    msg!("Expected rate: {}", expected_rate);
+    msg!("Actual rate: {}", actual_rate);
+
+    // TODO: this is probably only for ask, not bid (or the other way around?)
+    assert!(actual_rate >= expected_rate);
+
+    // let destination_amount = token::accessor::amount(&ctx.accounts.transit_quote_token_account)?;
 
     jet_margin_pool::cpi::deposit(
-        ctx.accounts.deposit_destination_context(),
-        destination_amount,
+        match swap_direction {
+            SwapDirection::Bid => ctx.accounts.deposit_base_destination_context(),
+            SwapDirection::Ask => ctx.accounts.deposit_quote_destination_context(),
+        },
+        tokens_bought,
     )?;
 
     Ok(())

@@ -18,10 +18,11 @@
 use std::num::NonZeroU64;
 
 use anchor_lang::prelude::ToAccountMetas;
-use anchor_lang::{Id, InstructionData};
-use anchor_spl::dex::{self, Dex};
+use anchor_lang::InstructionData;
+use anchor_spl::dex;
 use dex::serum_dex::instruction::SelfTradeBehavior as DexSelfTradeBehavior;
 use dex::serum_dex::matching::{OrderType as DexOrderType, Side as DexSide};
+use jet_margin_swap::instructions::SwapDirection;
 use solana_sdk::instruction::Instruction;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::sysvar::{rent::Rent, SysvarId};
@@ -60,36 +61,27 @@ impl MarginSerumIxBuilder {
     }
 
     /// Execute a Serum swap
-    pub fn swap(
+    pub fn serum_swap(
         &self,
         margin_account: Pubkey,
         open_orders: Pubkey,
-        transit_source_account: Pubkey,
-        transit_destination_account: Pubkey,
-        source_pool_account: Pubkey,
-        destination_pool_account: Pubkey,
+        transit_base_account: Pubkey,
+        transit_quote_account: Pubkey,
+        pool_deposit_note_base: Pubkey,
+        pool_deposit_note_quote: Pubkey,
         amount_in: u64,
         minimum_amount_out: u64,
         swap_direction: SwapDirection,
     ) -> Instruction {
-        let (source_pool, dest_pool, order_note_mint) = match bid {
-            true => {
-                let source_pool = MarginPoolIxBuilder::new(self.market.quote_token);
-                let dest_pool = MarginPoolIxBuilder::new(self.market.base_token);
-                (source_pool, dest_pool, self.info.quote_note_mint)
-            }
-            false => {
-                let source_pool = MarginPoolIxBuilder::new(self.market.base_token);
-                let dest_pool = MarginPoolIxBuilder::new(self.market.quote_token);
-                (source_pool, dest_pool, self.info.base_note_mint)
-            }
-        };
+        let pool_base = MarginPoolIxBuilder::new(self.market.base_token);
+        let pool_quote = MarginPoolIxBuilder::new(self.market.quote_token);
+
         let accounts = jet_margin_swap::accounts::SerumSwap {
             margin_account,
-            source_pool_account,
-            destination_pool_account,
-            transit_source_account,
-            transit_destination_account,
+            pool_deposit_note_base,
+            pool_deposit_note_quote,
+            transit_base_token_account: transit_base_account,
+            transit_quote_token_account: transit_quote_account,
             swap_info: jet_margin_swap::accounts::SerumSwapInfo {
                 market: self.market.market,
                 authority: margin_account,
@@ -104,15 +96,15 @@ impl MarginSerumIxBuilder {
                 vault_signer: self.market.vault_signer,
                 serum_program: dex::ID,
             },
-            source_margin_pool: jet_margin_swap::accounts::MarginPoolInfo {
-                margin_pool: source_pool.address,
-                vault: source_pool.vault,
-                deposit_note_mint: source_pool.deposit_note_mint,
+            margin_pool_base: jet_margin_swap::accounts::MarginPoolInfo {
+                margin_pool: pool_base.address,
+                vault: pool_base.vault,
+                deposit_note_mint: pool_base.deposit_note_mint,
             },
-            destination_margin_pool: jet_margin_swap::accounts::MarginPoolInfo {
-                margin_pool: dest_pool.address,
-                vault: dest_pool.vault,
-                deposit_note_mint: dest_pool.deposit_note_mint,
+            margin_pool_quote: jet_margin_swap::accounts::MarginPoolInfo {
+                margin_pool: pool_quote.address,
+                vault: pool_quote.vault,
+                deposit_note_mint: pool_quote.deposit_note_mint,
             },
             margin_pool_program: jet_margin_pool::id(),
             token_program: anchor_spl::token::ID,
