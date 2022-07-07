@@ -27,7 +27,6 @@ use anchor_lang::{
     solana_program::{instruction::Instruction, program},
 };
 use anchor_spl::token::{Mint, TokenAccount};
-// use itertools::Itertools;
 use jet_metadata::PositionTokenMetadata;
 
 pub struct InvokeAdapter<'a, 'info> {
