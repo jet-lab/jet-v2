@@ -120,16 +120,11 @@ export class MarginClient {
       return null
     }
 
-    const instructionLogHeaders = [
-      "> Program log: Instruction: MarginRepay",
-      "> Program log: Instruction: MarginBorrow",
-      "> Program log: Instruction: Deposit",
-      "> Program log: Instruction: Withdraw"
-    ]
+    const instructions = ["repay", "borrow", "deposit", "withdraw"]
     let tradeAction = ""
-    for (let i = 0; i < instructionLogHeaders.length; i++) {
-      if (transaction.meta?.logMessages?.some(logLine => logLine.includes(instructionLogHeaders[i]))) {
-        tradeAction = instructionLogHeaders[i]
+    for (let i = 0; i < instructions.length; i++) {
+      if (transaction.meta?.logMessages?.some(logLine => logLine.includes(instructions[i]))) {
+        tradeAction = instructions[i]
         break
       }
     }
