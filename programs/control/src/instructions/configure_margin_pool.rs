@@ -28,7 +28,7 @@ use crate::events;
 
 use super::Authority;
 
-#[derive(AnchorSerialize, AnchorDeserialize, Clone, Debug)]
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Debug, Default)]
 pub struct TokenMetadataParams {
     /// Description of this token
     pub token_kind: TokenKind,
@@ -40,13 +40,8 @@ pub struct TokenMetadataParams {
     pub max_leverage: u16,
 }
 
-#[derive(AnchorSerialize, AnchorDeserialize, Clone, Debug)]
-pub struct MarginPoolParams {
-    pub fee_destination: Pubkey,
-}
-
 #[derive(Accounts)]
-pub struct ConfigureToken<'info> {
+pub struct ConfigureMarginPool<'info> {
     #[cfg_attr(not(feature = "testing"), account(address = crate::ROOT_AUTHORITY))]
     pub requester: Signer<'info>,
     pub authority: Box<Account<'info, Authority>>,
@@ -76,7 +71,7 @@ pub struct ConfigureToken<'info> {
     pub metadata_program: Program<'info, JetMetadata>,
 }
 
-impl<'info> ConfigureToken<'info> {
+impl<'info> ConfigureMarginPool<'info> {
     fn configure_pool_context(&self) -> CpiContext<'_, '_, '_, 'info, Configure<'info>> {
         CpiContext::new(
             self.margin_pool_program.to_account_info(),
@@ -121,25 +116,18 @@ impl<'info> ConfigureToken<'info> {
 }
 
 #[inline(never)]
-pub fn configure_token_handler(
-    ctx: Context<ConfigureToken>,
+pub fn configure_margin_pool_handler(
+    ctx: Context<ConfigureMarginPool>,
     metadata: Option<TokenMetadataParams>,
-    pool_param: Option<MarginPoolParams>,
     pool_config: Option<MarginPoolConfig>,
 ) -> Result<()> {
     let authority = [&ctx.accounts.authority.seed[..]];
 
-    if *ctx.accounts.pyth_price.key != Pubkey::default()
-        || pool_param.is_some()
-        || pool_config.is_some()
-    {
-        let fee_destination = pool_param.map(|p| p.fee_destination);
-
+    if *ctx.accounts.pyth_price.key != Pubkey::default() || pool_config.is_some() {
         jet_margin_pool::cpi::configure(
             ctx.accounts
                 .configure_pool_context()
                 .with_signer(&[&authority]),
-            fee_destination,
             pool_config,
         )?;
     }

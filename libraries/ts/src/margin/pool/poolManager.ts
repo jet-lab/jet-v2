@@ -22,7 +22,6 @@ interface IPoolCreationParams {
   tokenMint: Address
   collateralWeight: number
   maxLeverage: number
-  feeDestination: Address
   pythProduct: Address
   pythPrice: Address
   marginPoolConfig: MarginPoolConfigData
@@ -110,7 +109,6 @@ export class PoolManager {
     tokenMint,
     collateralWeight,
     maxLeverage,
-    feeDestination,
     pythProduct,
     pythPrice,
     marginPoolConfig,
@@ -122,7 +120,7 @@ export class PoolManager {
     const ix1: TransactionInstruction[] = []
     if (this.owner) {
       try {
-        await this.withRegisterToken({
+        await this.withCreateMarginPool({
           instructions: ix1,
           requester: this.owner,
           addresses,
@@ -130,12 +128,11 @@ export class PoolManager {
         })
         await provider.sendAndConfirm(new Transaction().add(...ix1))
         const ix2: TransactionInstruction[] = []
-        await this.withConfigureToken({
+        await this.withConfigureMarginPool({
           instructions: ix2,
           requester: this.owner,
           collateralWeight,
           maxLeverage,
-          feeDestination,
           pythProduct,
           pythPrice,
           marginPoolConfig,
@@ -159,7 +156,7 @@ export class PoolManager {
    * @param addresses
    * @param address
    */
-  async withRegisterToken({
+  async withCreateMarginPool({
     instructions,
     requester,
     addresses,
@@ -173,12 +170,14 @@ export class PoolManager {
     programs?: MarginPrograms
   }): Promise<void> {
     const authority = findDerivedAccount(programs.config.controlProgramId)
+    const feeDestination = findDerivedAccount(programs.config.controlProgramId, "margin-pool-fee-destination", address)
 
     const ix = await programs.control.methods
-      .registerToken()
+      .createMarginPool()
       .accounts({
         requester,
         authority,
+        feeDestination,
         marginPool: address,
         vault: addresses.vault,
         depositNoteMint: addresses.depositNoteMint,
@@ -214,12 +213,11 @@ export class PoolManager {
    * @param addresses
    * @param address
    */
-  async withConfigureToken({
+  async withConfigureMarginPool({
     instructions,
     requester,
     collateralWeight,
     maxLeverage,
-    feeDestination,
     pythProduct,
     pythPrice,
     marginPoolConfig,
@@ -231,7 +229,6 @@ export class PoolManager {
     requester: Address
     collateralWeight: number
     maxLeverage: number
-    feeDestination: Address
     pythProduct: Address
     pythPrice: Address
     marginPoolConfig: MarginPoolConfigData
@@ -245,18 +242,14 @@ export class PoolManager {
       collateralWeight: collateralWeight,
       maxLeverage: maxLeverage
     }
-    const poolParam: MarginPoolParams = {
-      feeDestination: translateAddress(feeDestination)
-    }
 
     const ix = await programs.control.methods
-      .configureToken(
+      .configureMarginPool(
         {
           tokenKind: metadata.tokenKind as never,
           collateralWeight: metadata.collateralWeight,
           maxLeverage
         },
-        poolParam,
         marginPoolConfig
       )
       .accounts({

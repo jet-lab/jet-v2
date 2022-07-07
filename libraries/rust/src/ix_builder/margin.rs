@@ -128,7 +128,7 @@ impl MarginIxBuilder {
     /// Returns the instruction, and the address of the token account to be
     /// created for the position.
     pub fn register_position(&self, position_token_mint: Pubkey) -> (Pubkey, Instruction) {
-        let (token_account, _) = get_position_token_account(&self.address, &position_token_mint);
+        let (token_account, _) = owned_position_token_account(&self.address, &position_token_mint);
 
         let (metadata, _) =
             Pubkey::find_program_address(&[position_token_mint.as_ref()], &jet_metadata::ID);
@@ -320,7 +320,7 @@ impl MarginIxBuilder {
     /// Helper function to get token account address for a position mint
     #[inline]
     pub fn get_token_account_address(&self, position_token_mint: &Pubkey) -> (Pubkey, u8) {
-        get_position_token_account(&self.address, position_token_mint)
+        owned_position_token_account(&self.address, position_token_mint)
     }
 
     fn authority(&self) -> Pubkey {
@@ -331,7 +331,9 @@ impl MarginIxBuilder {
     }
 }
 
-pub fn get_position_token_account(
+/// The token account that holds position tokens when the position is custodied
+/// by the margin account
+pub fn owned_position_token_account(
     margin_account: &Pubkey,
     position_token_mint: &Pubkey,
 ) -> (Pubkey, u8) {

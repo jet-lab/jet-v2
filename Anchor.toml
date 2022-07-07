@@ -5,6 +5,9 @@ url = "https://anchor.projectserum.com"
 cluster = "localnet"
 wallet = "~/.config/solana/id.json"
 
+[features]
+skip-lint = true
+
 [programs.devnet]
 jet_control = "JPCtrLreUqsEbdhtxZ8zpd8wBydKz4nuEjX5u9Eg5H8"
 jet_margin = "JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ"
