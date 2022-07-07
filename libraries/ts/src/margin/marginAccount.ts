@@ -33,7 +33,6 @@ import {
   TokenAmount
 } from ".."
 import { MarginPoolConfig, MarginTokenConfig } from "./config"
-import { sleep } from "../utils/util"
 import { AccountPosition, PriceInfo } from "./accountPosition"
 
 export interface MarginAccountAddresses {
@@ -70,7 +69,9 @@ export interface AccountSummary {
   borrowedValue: number
   accountBalance: number
   availableCollateral: number
+  /** @deprecated use riskIndicator */
   cRatio: number
+  /** @deprecated use riskIndicator */
   minCRatio: number
 }
 
@@ -122,6 +123,12 @@ export class MarginAccount {
   }
   get liquidator() {
     return this.info?.marginAccount.liquidator
+  }
+  /** A number where 1 and above is subject to liquidation and 0 is no leverage. */
+  get riskIndicator() {
+    const requiredCollateral = bnToNumber(this.valuation.requiredCollateral)
+    const effectiveCollateral = bnToNumber(this.valuation.effectiveCollateral)
+    return effectiveCollateral === 0 ? 0 : requiredCollateral / effectiveCollateral
   }
 
   /**
