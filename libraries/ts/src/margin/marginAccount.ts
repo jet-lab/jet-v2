@@ -831,12 +831,7 @@ export class MarginAccount {
   async closeAccount() {
     const ix: TransactionInstruction[] = []
     await this.withCloseAccount(ix)
-    try {
-      return await this.provider.sendAndConfirm(new Transaction().add(...ix))
-    } catch (err) {
-      console.log(err)
-      throw err
-    }
+    this.sendAndConfirm(ix)
   }
 
   /// Get instruction to close an account
@@ -858,12 +853,7 @@ export class MarginAccount {
   async closePosition(position: AccountPosition) {
     const ix: TransactionInstruction[] = []
     await this.withClosePosition(ix, position)
-    try {
-      return await this.provider.sendAndConfirm(new Transaction().add(...ix))
-    } catch (err) {
-      console.log(err)
-      throw err
-    }
+    this.sendAndConfirm(ix)
   }
 
   /// Get instruction to close a position
@@ -902,7 +892,7 @@ export class MarginAccount {
     const ix = await this.programs.margin.methods
       .adapterInvoke(
         adapterInstruction.keys.slice(1).map(accountMeta => {
-          return { isSigner: false, isWritable: accountMeta.isWritable }
+          return { isSigner: accountMeta.isSigner, isWritable: accountMeta.isWritable }
         }),
         adapterInstruction.data
       )
@@ -916,7 +906,7 @@ export class MarginAccount {
         adapterInstruction.keys.slice(1).map(accountMeta => {
           return {
             pubkey: accountMeta.pubkey,
-            isSigner: false,
+            isSigner: accountMeta.isSigner,
             isWritable: accountMeta.isWritable
           }
         })
@@ -959,5 +949,14 @@ export class MarginAccount {
       )
       .instruction()
     instructions.push(ix)
+  }
+
+  async sendAndConfirm(instructions: TransactionInstruction[]) {
+    try {
+      return await this.provider.sendAndConfirm(new Transaction().add(...instructions))
+    } catch (err) {
+      console.log(err)
+      throw err
+    }
   }
 }

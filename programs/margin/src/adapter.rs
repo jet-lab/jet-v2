@@ -17,15 +17,17 @@
 
 use std::{collections::BTreeMap, convert::TryInto};
 
+use crate::{
+    events::{PositionClosed, PositionEvent, PositionRegistered, PositionTouched},
+    util::{ErrorMessage, Require},
+    AccountPositionKey, AdapterPositionFlags, Approver, ErrorCode, MarginAccount, SignerSeeds,
+};
 use anchor_lang::{
     prelude::*,
     solana_program::{instruction::Instruction, program},
 };
-use anchor_spl::token::TokenAccount;
-
-use crate::{
-    util::Require, AccountPosition, AdapterPositionFlags, ErrorCode, MarginAccount, SignerSeeds,
-};
+use anchor_spl::token::{Mint, TokenAccount};
+use jet_metadata::PositionTokenMetadata;
 
 pub struct InvokeAdapter<'a, 'info> {
     /// The margin account to proxy an action for
@@ -36,6 +38,23 @@ pub struct InvokeAdapter<'a, 'info> {
 
     /// The accounts to be passed through to the adapter
     pub remaining_accounts: &'a [AccountInfo<'info>],
+
+    /// The transaction was signed by the authority of the margin account.
+    /// Thus, the invocation should be signed by the margin account.
+    pub signed: bool,
+}
+
+impl InvokeAdapter<'_, '_> {
+    /// those who approve of the requests within the adapter result
+    fn adapter_result_approvals(&self) -> Vec<Approver> {
+        let mut ret = Vec::new();
+        if self.signed {
+            ret.push(Approver::MarginAccountAuthority);
+        }
+        ret.push(Approver::Adapter(self.adapter_program.key()));
+
+        ret
+    }
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize)]
@@ -60,14 +79,15 @@ pub enum PositionChange {
     /// Flags that are false here will be unchanged in the position
     Flags(AdapterPositionFlags, bool),
 
-    /// The margin program will fail the current instruction if this position is
-    /// not registered at the provided address.
-    ///
-    /// Example: This instruction involves an action by the owner of the margin
-    /// account that increases a claim balance in their account, so the margin
-    /// program must verify that the claim is registered as a position before
-    /// allowing the instruction to complete successfully.
-    Expect(Pubkey),
+    /// Register a new position, or assert that a position is registered
+    /// if the position cannot be registered, instruction fails
+    /// if the position is already registered, instruction succeeds without taking action
+    Register(Pubkey),
+
+    /// Close a position, or assert that a position is closed
+    /// if the position cannot be closed, instruction fails
+    /// if the position does not exist, instruction succeeds without taking action
+    Close(Pubkey),
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy)]
@@ -94,13 +114,12 @@ pub fn invoke<'info>(
     ctx: &InvokeAdapter<'_, 'info>,
     account_metas: Vec<CompactAccountMeta>,
     data: Vec<u8>,
-    signed: bool,
-) -> Result<BTreeMap<Pubkey, AccountPosition>> {
+) -> Result<Vec<PositionEvent>> {
     let signer = ctx.margin_account.load()?.signer_seeds_owned();
 
     let mut accounts = vec![AccountMeta {
         pubkey: ctx.margin_account.key(),
-        is_signer: signed,
+        is_signer: ctx.signed,
         is_writable: true,
     }];
     accounts.extend(
@@ -124,7 +143,7 @@ pub fn invoke<'info>(
     };
 
     ctx.margin_account.load_mut()?.invocation.start();
-    if signed {
+    if ctx.signed {
         program::invoke_signed(&instruction, &account_infos, &[&signer.signer_seeds()])?;
     } else {
         program::invoke(&instruction, &account_infos)?;
@@ -134,27 +153,17 @@ pub fn invoke<'info>(
     handle_adapter_result(ctx)
 }
 
-fn handle_adapter_result(ctx: &InvokeAdapter) -> Result<BTreeMap<Pubkey, AccountPosition>> {
-    let mut touched_positions = update_balances(ctx)?;
+fn handle_adapter_result(ctx: &InvokeAdapter) -> Result<Vec<PositionEvent>> {
+    let mut events = update_balances(ctx)?;
 
     match program::get_return_data() {
         None => (),
         Some((program_id, _)) if program_id != ctx.adapter_program.key() => (),
-        Some((program_id, data)) => {
+        Some((_, data)) => {
             let result = AdapterResult::deserialize(&mut &data[..])?;
-            let mut margin_account = ctx.margin_account.load_mut()?;
             for (mint, changes) in result.position_changes {
-                let mut position = margin_account.get_position_mut(&mint);
-                match position {
-                    Some(p) if p.adapter != program_id => {
-                        return err!(ErrorCode::InvalidPositionAdapter)
-                    }
-                    _ => {
-                        apply_changes(&mut position, changes)?;
-                        if let Some(changed_position) = position {
-                            touched_positions.insert(mint, *changed_position);
-                        }
-                    }
+                if let Some(event) = apply_changes(ctx, mint, changes)? {
+                    events.insert(mint, event);
                 }
             }
         }
@@ -163,11 +172,11 @@ fn handle_adapter_result(ctx: &InvokeAdapter) -> Result<BTreeMap<Pubkey, Account
     // clear return data after reading it
     program::set_return_data(&[]);
 
-    Ok(touched_positions)
+    Ok(events.into_values().collect())
 }
 
-fn update_balances(ctx: &InvokeAdapter) -> Result<BTreeMap<Pubkey, AccountPosition>> {
-    let mut touched_positions = BTreeMap::new();
+fn update_balances(ctx: &InvokeAdapter) -> Result<BTreeMap<Pubkey, PositionEvent>> {
+    let mut touched_positions: BTreeMap<Pubkey, PositionEvent> = BTreeMap::new();
 
     let mut margin_account = ctx.margin_account.load_mut()?;
     for account_info in ctx.remaining_accounts {
@@ -180,7 +189,7 @@ fn update_balances(ctx: &InvokeAdapter) -> Result<BTreeMap<Pubkey, AccountPositi
                     account.amount,
                 ) {
                     Ok(position) => {
-                        touched_positions.insert(account.mint, position);
+                        touched_positions.insert(account.mint, PositionTouched { position }.into());
                     }
                     Err(ErrorCode::PositionNotRegistered) => (),
                     Err(err) => return Err(err.into()),
@@ -193,10 +202,21 @@ fn update_balances(ctx: &InvokeAdapter) -> Result<BTreeMap<Pubkey, AccountPositi
 }
 
 fn apply_changes(
-    position: &mut Option<&mut AccountPosition>,
+    ctx: &InvokeAdapter,
+    mint: Pubkey,
     changes: Vec<PositionChange>,
-) -> Result<()> {
+) -> Result<Option<PositionEvent>> {
+    let mut margin_account = ctx.margin_account.load_mut()?;
+    let mut key = margin_account.get_position_key(&mint);
+    let mut position = key.and_then(|k| margin_account.get_position_by_key_mut(&k));
+    let mut net_registration = 0isize;
+    if let Some(ref p) = position {
+        if p.adapter != ctx.adapter_program.key() {
+            return err!(ErrorCode::InvalidPositionAdapter);
+        }
+    }
     for change in changes {
+        position = key.and_then(|k| margin_account.get_position_by_key_mut(&k));
         match change {
             PositionChange::Price(px) => {
                 if let Some(pos) = position {
@@ -205,22 +225,132 @@ fn apply_changes(
             }
             PositionChange::Flags(flags, true) => position.require_mut()?.flags |= flags,
             PositionChange::Flags(flags, false) => position.require_mut()?.flags &= !flags,
-            PositionChange::Expect(pubkey) => {
-                if position.require_mut()?.address != pubkey {
-                    return Err(error!(ErrorCode::PositionNotRegistered));
+            PositionChange::Register(token_account) => match position {
+                Some(pos) => {
+                    if pos.address != token_account {
+                        msg!("position already registered for this mint with a different token account");
+                        return err!(PositionNotRegisterable);
+                    }
+                }
+                None => {
+                    key = Some(register_position(
+                        &mut margin_account,
+                        ctx.remaining_accounts,
+                        ctx.adapter_result_approvals().as_slice(),
+                        mint,
+                        token_account,
+                    )?);
+                    net_registration += 1;
+                }
+            },
+            PositionChange::Close(token_account) => match position {
+                Some(pos) => {
+                    if pos.address != token_account {
+                        msg!("position registered for this mint with a different token account");
+                        return err!(PositionNotRegisterable);
+                    }
+                    margin_account.unregister_position(
+                        &mint,
+                        &token_account,
+                        ctx.adapter_result_approvals().as_slice(),
+                    )?;
+                    key = None;
+                    net_registration -= 1;
+                }
+                None => (),
+            },
+        }
+    }
+    Ok(match net_registration {
+        0 => key
+            .and_then(|k| margin_account.get_position_by_key(&k))
+            .map(|p| PositionTouched { position: *p }.into()),
+        n if n > 0 => Some(
+            PositionRegistered {
+                position: *key
+                    .and_then(|k| margin_account.get_position_by_key(&k))
+                    .require()?,
+                margin_account: ctx.margin_account.key(),
+                authority: ctx.adapter_program.key(),
+            }
+            .into(),
+        ),
+        _ => Some(
+            PositionClosed {
+                margin_account: ctx.margin_account.key(),
+                authority: ctx.adapter_program.key(),
+                token: mint,
+            }
+            .into(),
+        ),
+    })
+}
+
+fn register_position(
+    margin_account: &mut MarginAccount,
+    remaining_accounts: &[AccountInfo],
+    approvals: &[Approver],
+    mint_address: Pubkey,
+    token_account_address: Pubkey,
+) -> Result<AccountPositionKey> {
+    let mut metadata: Result<Account<PositionTokenMetadata>> = err!(PositionNotRegisterable);
+    let mut token_account: Result<Account<TokenAccount>> = err!(PositionNotRegisterable);
+    let mut mint: Result<Account<Mint>> = err!(PositionNotRegisterable);
+    for info in remaining_accounts {
+        if info.key == &token_account_address {
+            token_account = Ok(Account::<TokenAccount>::try_from(info)?);
+        } else if info.key == &mint_address {
+            mint = Ok(Account::<Mint>::try_from(info)?);
+        } else if info.owner == &PositionTokenMetadata::owner() {
+            if let Ok(ptm) = Account::<PositionTokenMetadata>::try_from(info) {
+                if ptm.position_token_mint == mint_address {
+                    metadata = Ok(ptm);
                 }
             }
         }
     }
+    let metadata = metadata.log_on_error("position token metadata not found for mint")?;
+    let token_account = token_account.log_on_error("position token mint not found")?;
+    let mint = mint.log_on_error("position token account not found")?;
 
-    Ok(())
+    if mint.key() != token_account.mint {
+        msg!("token account has the wrong mint");
+        return err!(PositionNotRegisterable);
+    }
+
+    let key = margin_account.register_position(
+        mint.key(),
+        mint.decimals,
+        token_account.key(),
+        metadata.adapter_program,
+        metadata.token_kind.into(),
+        metadata.value_modifier,
+        metadata.max_staleness,
+        approvals,
+    )?;
+
+    margin_account.set_position_balance(
+        &mint_address,
+        &token_account_address,
+        token_account.amount,
+    )?;
+
+    Ok(key)
 }
 
 #[cfg(test)]
 mod test {
-    use std::collections::HashMap;
+    use std::{collections::HashMap, mem::size_of};
+
+    use anchor_lang::Discriminator;
 
     use super::*;
+
+    impl std::fmt::Debug for PositionEvent {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            f.debug_struct("PositionEvent").finish()
+        }
+    }
 
     fn all_change_types() -> Vec<PositionChange> {
         vec![
@@ -232,22 +362,58 @@ mod test {
                 exponent: 0,
             }),
             PositionChange::Flags(AdapterPositionFlags::empty(), true),
-            PositionChange::Expect(Pubkey::default()),
+            PositionChange::Register(Pubkey::default()),
+            PositionChange::Close(Pubkey::default()),
         ]
     }
 
     #[test]
     fn position_change_types_are_required_when_appropriate() {
+        let mut data = [0u8; 100];
+        let mut lamports = 0u64;
+        let default = Pubkey::default();
+        let margin = MarginAccount::owner();
+        let adapter = AccountInfo::new(
+            &default,
+            false,
+            false,
+            &mut lamports,
+            &mut data,
+            &default,
+            false,
+            0,
+        );
+        let mut data = [0u8; 8 + size_of::<MarginAccount>()];
+        data[..8].copy_from_slice(&MarginAccount::discriminator());
+        let mut lamports = 0u64;
+        let margin_account = AccountInfo::new(
+            &default,
+            false,
+            true,
+            &mut lamports,
+            &mut data,
+            &margin,
+            false,
+            0,
+        );
+        let ctx = InvokeAdapter {
+            margin_account: &AccountLoader::try_from(&margin_account).unwrap(),
+            adapter_program: &adapter,
+            remaining_accounts: &[],
+            signed: true,
+        };
+
         for change in all_change_types() {
             let required = match change {
                 PositionChange::Price(_) => false,
                 PositionChange::Flags(_, _) => true,
-                PositionChange::Expect(_) => true,
+                PositionChange::Register(_) => true,
+                PositionChange::Close(_) => false,
             };
             if required {
-                apply_changes(&mut None, vec![change]).unwrap_err();
+                apply_changes(&ctx, Pubkey::default(), vec![change]).unwrap_err();
             } else {
-                apply_changes(&mut None, vec![change]).unwrap();
+                apply_changes(&ctx, Pubkey::default(), vec![change]).unwrap();
             }
         }
     }
@@ -258,7 +424,8 @@ mod test {
             all_change_types() =>
                 PositionChange::Price(_x)
                 PositionChange::Flags(_x, _y)
-                PositionChange::Expect(_x)
+                PositionChange::Register(_x)
+                PositionChange::Close(_x)
         }
     }
 

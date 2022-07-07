@@ -3,6 +3,42 @@ export type JetMarginPool = {
   name: "jet_margin_pool"
   instructions: [
     {
+      name: "closeLoan"
+      accounts: [
+        {
+          name: "marginAccount"
+          isMut: false
+          isSigner: true
+        },
+        {
+          name: "loanNoteAccount"
+          isMut: true
+          isSigner: false
+        },
+        {
+          name: "loanNoteMint"
+          isMut: false
+          isSigner: false
+        },
+        {
+          name: "marginPool"
+          isMut: false
+          isSigner: false
+        },
+        {
+          name: "beneficiary"
+          isMut: true
+          isSigner: true
+        },
+        {
+          name: "tokenProgram"
+          isMut: false
+          isSigner: false
+        }
+      ]
+      args: []
+    },
+    {
       name: "createPool"
       accounts: [
         {
@@ -333,6 +369,65 @@ export type JetMarginPool = {
         },
         {
           name: "tokenPriceOracle"
+          isMut: false
+          isSigner: false
+        }
+      ]
+      args: []
+    },
+    {
+      name: "registerLoan"
+      docs: ["Creates the token account to track the loan notes,", "then requests margin to register the position"]
+      accounts: [
+        {
+          name: "marginAccount"
+          isMut: false
+          isSigner: true
+        },
+        {
+          name: "positionTokenMetadata"
+          isMut: false
+          isSigner: false
+          docs: [
+            "This will be required for margin to register the position,",
+            "so requiring it here makes it easier for clients to ensure",
+            "that it will be sent."
+          ]
+        },
+        {
+          name: "loanNoteAccount"
+          isMut: true
+          isSigner: false
+          docs: ["The token account to store the loan notes representing the claim", "against the margin account"]
+        },
+        {
+          name: "loanNoteMint"
+          isMut: false
+          isSigner: false
+          docs: ["The mint for the notes representing loans from the pool"]
+        },
+        {
+          name: "marginPool"
+          isMut: false
+          isSigner: false
+        },
+        {
+          name: "payer"
+          isMut: true
+          isSigner: true
+        },
+        {
+          name: "tokenProgram"
+          isMut: false
+          isSigner: false
+        },
+        {
+          name: "systemProgram"
+          isMut: false
+          isSigner: false
+        },
+        {
+          name: "rent"
           isMut: false
           isSigner: false
         }
@@ -918,6 +1013,42 @@ export const IDL: JetMarginPool = {
   name: "jet_margin_pool",
   instructions: [
     {
+      name: "closeLoan",
+      accounts: [
+        {
+          name: "marginAccount",
+          isMut: false,
+          isSigner: true
+        },
+        {
+          name: "loanNoteAccount",
+          isMut: true,
+          isSigner: false
+        },
+        {
+          name: "loanNoteMint",
+          isMut: false,
+          isSigner: false
+        },
+        {
+          name: "marginPool",
+          isMut: false,
+          isSigner: false
+        },
+        {
+          name: "beneficiary",
+          isMut: true,
+          isSigner: true
+        },
+        {
+          name: "tokenProgram",
+          isMut: false,
+          isSigner: false
+        }
+      ],
+      args: []
+    },
+    {
       name: "createPool",
       accounts: [
         {
@@ -1248,6 +1379,65 @@ export const IDL: JetMarginPool = {
         },
         {
           name: "tokenPriceOracle",
+          isMut: false,
+          isSigner: false
+        }
+      ],
+      args: []
+    },
+    {
+      name: "registerLoan",
+      docs: ["Creates the token account to track the loan notes,", "then requests margin to register the position"],
+      accounts: [
+        {
+          name: "marginAccount",
+          isMut: false,
+          isSigner: true
+        },
+        {
+          name: "positionTokenMetadata",
+          isMut: false,
+          isSigner: false,
+          docs: [
+            "This will be required for margin to register the position,",
+            "so requiring it here makes it easier for clients to ensure",
+            "that it will be sent."
+          ]
+        },
+        {
+          name: "loanNoteAccount",
+          isMut: true,
+          isSigner: false,
+          docs: ["The token account to store the loan notes representing the claim", "against the margin account"]
+        },
+        {
+          name: "loanNoteMint",
+          isMut: false,
+          isSigner: false,
+          docs: ["The mint for the notes representing loans from the pool"]
+        },
+        {
+          name: "marginPool",
+          isMut: false,
+          isSigner: false
+        },
+        {
+          name: "payer",
+          isMut: true,
+          isSigner: true
+        },
+        {
+          name: "tokenProgram",
+          isMut: false,
+          isSigner: false
+        },
+        {
+          name: "systemProgram",
+          isMut: false,
+          isSigner: false
+        },
+        {
+          name: "rent",
           isMut: false,
           isSigner: false
         }

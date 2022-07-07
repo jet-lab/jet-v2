@@ -133,6 +133,12 @@ pub enum TokenKind {
     Claim,
 }
 
+#[derive(AnchorSerialize, AnchorDeserialize, Eq, PartialEq, Clone, Copy, Debug)]
+pub enum PositionOwner {
+    MarginAccount,
+    Adapter,
+}
+
 impl Default for TokenKind {
     fn default() -> TokenKind {
         Self::NonCollateral

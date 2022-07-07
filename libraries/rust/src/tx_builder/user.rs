@@ -17,8 +17,10 @@
 
 #![allow(unused)]
 
+use std::collections::HashMap;
 use std::sync::Arc;
 
+use jet_margin_pool::program::JetMarginPool;
 use jet_metadata::{PositionTokenMetadata, TokenMetadata};
 
 use anyhow::{bail, Result};
@@ -28,7 +30,7 @@ use solana_sdk::signer::Signer;
 use solana_sdk::transaction::Transaction;
 use solana_sdk::{compute_budget::ComputeBudgetInstruction, instruction::Instruction};
 
-use anchor_lang::AccountDeserialize;
+use anchor_lang::{AccountDeserialize, Id};
 
 use jet_margin::{MarginAccount, PositionKind};
 use jet_margin_pool::Amount;
@@ -104,11 +106,11 @@ impl MarginTxBuilder {
     pub async fn close_token_positions(&self, token_mint: &Pubkey) -> Result<Transaction> {
         let pool = MarginPoolIxBuilder::new(*token_mint);
         let (deposit_account, _) = self.ix.get_token_account_address(&pool.deposit_note_mint);
-        let (loan_account, _) = self.ix.get_token_account_address(&pool.loan_note_mint);
+        let (loan_account, _) = loan_token_account(&self.ix.address, &pool.loan_note_mint);
         let instructions = vec![
             self.ix
                 .close_position(pool.deposit_note_mint, deposit_account),
-            self.ix.close_position(pool.loan_note_mint, loan_account),
+            self.adapter_invoke_ix(pool.close_loan(*self.address(), self.ix.payer)),
         ];
         self.create_transaction(&instructions).await
     }
@@ -116,34 +118,43 @@ impl MarginTxBuilder {
     /// Transaction to close ther user's margin position account for a token mint and position king.
     ///
     /// The position should be empty.
-    pub async fn close_token_position(
+    pub async fn close_pool_position(
         &self,
         token_mint: &Pubkey,
         kind: PositionKind,
     ) -> Result<Transaction> {
         let pool = MarginPoolIxBuilder::new(*token_mint);
-        let ((account, _), mint) = match kind {
-            PositionKind::NoValue | PositionKind::Deposit => (
-                self.ix.get_token_account_address(&pool.deposit_note_mint),
+        let ix = match kind {
+            PositionKind::NoValue | PositionKind::Deposit => self.ix.close_position(
                 pool.deposit_note_mint,
+                self.ix.get_token_account_address(&pool.deposit_note_mint).0,
             ),
-            PositionKind::Claim => (
-                self.ix.get_token_account_address(&pool.loan_note_mint),
-                pool.loan_note_mint,
-            ),
+            PositionKind::Claim => {
+                self.adapter_invoke_ix(pool.close_loan(*self.address(), self.ix.payer))
+            }
         };
-        self.create_transaction(&[self.ix.close_position(mint, account)])
-            .await
+
+        self.create_transaction(&[ix]).await
     }
 
     /// Transaction to close the user's empty position accounts.
-    pub async fn close_empty_positions(&self) -> Result<Transaction> {
+    pub async fn close_empty_positions(
+        &self,
+        loan_to_token: &HashMap<Pubkey, Pubkey>,
+    ) -> Result<Transaction> {
         let to_close = self
             .get_account_state()
             .await?
             .positions()
             .filter(|p| p.balance == 0)
-            .map(|p| self.ix.close_position(p.token, p.address))
+            .map(|p| {
+                if p.adapter == JetMarginPool::id() && p.kind == PositionKind::Claim {
+                    let pool = MarginPoolIxBuilder::new(*loan_to_token.get(&p.token).unwrap());
+                    self.adapter_invoke_ix(pool.close_loan(*self.address(), self.ix.payer))
+                } else {
+                    self.ix.close_position(p.token, p.address)
+                }
+            })
             .collect::<Vec<_>>();
 
         self.create_transaction(&to_close).await
@@ -191,7 +202,7 @@ impl MarginTxBuilder {
             .get_or_create_position(&mut instructions, &pool.deposit_note_mint)
             .await?;
         let loan_position = self
-            .get_or_create_position(&mut instructions, &pool.loan_note_mint)
+            .get_or_create_pool_loan_position(&mut instructions, &pool)
             .await?;
 
         let inner_refresh_loan_ix =
@@ -219,7 +230,7 @@ impl MarginTxBuilder {
             .get_or_create_position(&mut instructions, &pool.deposit_note_mint)
             .await?;
         let loan_position = self
-            .get_or_create_position(&mut instructions, &pool.loan_note_mint)
+            .get_or_create_pool_loan_position(&mut instructions, &pool)
             .await?;
 
         let inner_repay_ix =
@@ -475,6 +486,26 @@ impl MarginTxBuilder {
         }
 
         Ok(address)
+    }
+
+    async fn get_or_create_pool_loan_position(
+        &self,
+        instructions: &mut Vec<Instruction>,
+        pool: &MarginPoolIxBuilder,
+    ) -> Result<Pubkey> {
+        let state = self.get_account_state().await?;
+        let search_result = state.positions().find(|p| p.token == pool.loan_note_mint);
+
+        Ok(if let Some(position) = search_result {
+            position.address
+        } else {
+            let (loan_note_token_account, pools_ix) =
+                pool.register_loan(self.ix.address, self.ix.payer);
+            let wrapped_ix = self.adapter_invoke_ix(pools_ix);
+            instructions.push(wrapped_ix);
+
+            loan_note_token_account
+        })
     }
 
     async fn get_account_state(&self) -> Result<Box<MarginAccount>> {
