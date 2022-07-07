@@ -38,6 +38,7 @@ export interface AccountTransaction {
   tokenName: string
   tokenDecimals: number
   fromAccount?: PublicKey // In the case of a transfer between accounts
+  toAccount?: PublicKey // In the case of a transfer between accounts
   status: "error" | "success"
 }
 
@@ -120,11 +121,16 @@ export class MarginClient {
       return null
     }
 
-    const instructions = ["repay", "borrow", "deposit", "withdraw"]
+    const instructions = {
+      deposit: "Instruction: Deposit",
+      withdraw: "Instruction: Withdraw",
+      borrow: "Instruction: MarginBorrow",
+      repay: "Instruction: MarginRepay"
+    }
     let tradeAction = ""
-    for (let i = 0; i < instructions.length; i++) {
-      if (transaction.meta?.logMessages?.some(logLine => logLine.includes(instructions[i]))) {
-        tradeAction = instructions[i]
+    for (const action of Object.keys(instructions)) {
+      if (transaction.meta?.logMessages?.some(logLine => logLine.includes(instructions[action]))) {
+        tradeAction = action
         break
       }
     }
@@ -163,7 +169,7 @@ export class MarginClient {
             tx.tokenSymbol = token.symbol
             tx.tokenName = token.name
             tx.tokenDecimals = token.decimals
-            tx.tradeAmount = TokenAmount.lamports(postAmount.sub(preAmount), token.decimals)
+            tx.tradeAmount = TokenAmount.lamports(postAmount.sub(preAmount).abs(), token.decimals)
 
             const dateTime = new Date(transaction.blockTime * 1000)
             tx.timestamp = transaction.blockTime
