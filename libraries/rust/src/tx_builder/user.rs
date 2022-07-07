@@ -405,6 +405,22 @@ impl MarginTxBuilder {
         self.get_chunk_transactions(12, instructions).await
     }
 
+    /// Get the latest [MarginAccount] state
+    pub async fn get_account_state(&self) -> Result<Box<MarginAccount>> {
+        let account_data = self.rpc.get_account(&self.ix.address).await?;
+
+        match account_data {
+            None => bail!(
+                "no account state found for account {} belonging to {}",
+                self.ix.owner,
+                self.ix.address
+            ),
+            Some(account) => Ok(Box::new(MarginAccount::try_deserialize(
+                &mut &account.data[..],
+            )?)),
+        }
+    }
+
     async fn get_chunk_transactions(
         &self,
         chunk_size: usize,
@@ -506,21 +522,6 @@ impl MarginTxBuilder {
 
             loan_note_token_account
         })
-    }
-
-    async fn get_account_state(&self) -> Result<Box<MarginAccount>> {
-        let account_data = self.rpc.get_account(&self.ix.address).await?;
-
-        match account_data {
-            None => bail!(
-                "no account state found for account {} belonging to {}",
-                self.ix.owner,
-                self.ix.address
-            ),
-            Some(account) => Ok(Box::new(MarginAccount::try_deserialize(
-                &mut &account.data[..],
-            )?)),
-        }
     }
 
     fn adapter_invoke_ix(&self, inner: Instruction) -> Instruction {
