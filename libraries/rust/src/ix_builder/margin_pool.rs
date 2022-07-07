@@ -82,7 +82,7 @@ impl MarginPoolIxBuilder {
     /// # Params
     ///
     /// `payer` - The address paying for the rent
-    pub fn create(&self, payer: Pubkey) -> Instruction {
+    pub fn create(&self, payer: Pubkey, fee_destination: Pubkey) -> Instruction {
         let authority = match cfg!(feature = "devnet") {
             true => payer,
             false => jet_margin_pool::authority::ID,
@@ -103,7 +103,7 @@ impl MarginPoolIxBuilder {
 
         Instruction {
             program_id: jet_margin_pool::ID,
-            data: ix_data::CreatePool {}.data(),
+            data: ix_data::CreatePool { fee_destination }.data(),
             accounts,
         }
     }

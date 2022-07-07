@@ -38,22 +38,13 @@ mod jet_margin_pool {
     use super::*;
 
     /// Create a new pool for borrowing and lending
-    pub fn close_loan(ctx: Context<CloseLoan>) -> Result<()> {
-        instructions::close_loan_handler(ctx)
-    }
-
-    /// Create a new pool for borrowing and lending
-    pub fn create_pool(ctx: Context<CreatePool>) -> Result<()> {
-        instructions::create_pool_handler(ctx)
+    pub fn create_pool(ctx: Context<CreatePool>, fee_destination: Pubkey) -> Result<()> {
+        instructions::create_pool_handler(ctx, fee_destination)
     }
 
     /// Configure an existing pool
-    pub fn configure(
-        ctx: Context<Configure>,
-        fee_destination: Option<Pubkey>,
-        config: Option<MarginPoolConfig>,
-    ) -> Result<()> {
-        instructions::configure_handler(ctx, fee_destination, config)
+    pub fn configure(ctx: Context<Configure>, config: Option<MarginPoolConfig>) -> Result<()> {
+        instructions::configure_handler(ctx, config)
     }
 
     /// Accrue interest on the pool, and collect any fees.
@@ -93,6 +84,11 @@ mod jet_margin_pool {
     /// then requests margin to register the position
     pub fn register_loan(ctx: Context<RegisterLoan>) -> Result<()> {
         instructions::register_loan_handler(ctx)
+    }
+
+    /// Closes a previously opened loan token account
+    pub fn close_loan(ctx: Context<CloseLoan>) -> Result<()> {
+        instructions::close_loan_handler(ctx)
     }
 }
 

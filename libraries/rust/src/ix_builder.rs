@@ -15,10 +15,18 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+use solana_sdk::pubkey::Pubkey;
+
+mod control;
 mod margin;
 mod margin_pool;
 mod margin_swap;
 
+pub use control::*;
 pub use margin::*;
 pub use margin_pool::*;
 pub use margin_swap::*;
+
+pub fn get_metadata_address(address: &Pubkey) -> Pubkey {
+    Pubkey::find_program_address(&[address.as_ref()], &jet_metadata::ID).0
+}

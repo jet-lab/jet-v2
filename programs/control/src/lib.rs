@@ -24,13 +24,20 @@ use jet_margin_pool::MarginPoolConfig;
 mod instructions;
 use instructions::*;
 
-pub use instructions::{MarginPoolParams, TokenMetadataParams};
+pub use instructions::TokenMetadataParams;
 pub mod events;
 
 declare_id!("JPCtrLreUqsEbdhtxZ8zpd8wBydKz4nuEjX5u9Eg5H8");
 
 #[cfg(not(feature = "testing"))]
 static ROOT_AUTHORITY: Pubkey = pubkey!("FqXoGb9Zxy4uzG12N1jvHyktNG3Zsez367vAzJeiyMF1");
+
+pub mod seeds {
+    use super::constant;
+
+    #[constant]
+    pub const FEE_DESTINATION: &[u8] = b"margin-pool-fee-destination";
+}
 
 #[program]
 mod jet_control {
@@ -46,8 +53,8 @@ mod jet_control {
     /// a margin pool which can accept deposits for the token.
     ///
     /// Does not require special permission
-    pub fn register_token(ctx: Context<RegisterToken>) -> Result<()> {
-        instructions::register_token_handler(ctx)
+    pub fn create_margin_pool(ctx: Context<CreateMarginPool>) -> Result<()> {
+        instructions::create_margin_pool_handler(ctx)
     }
 
     /// Register a program to be allowed for use as margin adapter in the
@@ -56,14 +63,13 @@ mod jet_control {
         instructions::register_adapter_handler(ctx)
     }
 
-    /// Configure details about a token
-    pub fn configure_token(
-        ctx: Context<ConfigureToken>,
+    /// Configure details about a margin pool
+    pub fn configure_margin_pool(
+        ctx: Context<ConfigureMarginPool>,
         metadata: Option<TokenMetadataParams>,
-        pool_param: Option<MarginPoolParams>,
         pool_config: Option<MarginPoolConfig>,
     ) -> Result<()> {
-        instructions::configure_token_handler(ctx, metadata, pool_param, pool_config)
+        instructions::configure_margin_pool_handler(ctx, metadata, pool_config)
     }
 
     /// Configure an address as being allowed to perform the functions
