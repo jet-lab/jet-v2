@@ -32,23 +32,23 @@ pub struct SerumSwap<'info> {
     #[account(signer)]
     pub margin_account: AccountLoader<'info, MarginAccount>,
 
-    /// The account with the source deposit to be exchanged from
+    /// The base token account for source deposit to be exchanged from/into
     /// CHECK:
     #[account(mut)]
     pub pool_deposit_note_base: AccountInfo<'info>,
 
-    /// The destination account to send the deposit that is exchanged into
+    /// The quote token account for source deposit to be exchanged from/into
     /// CHECK:
     #[account(mut)]
     pub pool_deposit_note_quote: AccountInfo<'info>,
 
-    /// Temporary SPL account to send tokens
+    /// Temporary SPL account to store base tokens
     /// CHECK:
     // #[account(mut, constraint = transit_source_account.owner == &margin_account.key())]
     #[account(mut)]
     pub transit_base_token_account: AccountInfo<'info>,
 
-    /// Temporary SPL account to receive tokens
+    /// Temporary SPL account to store quote tokens
     /// CHECK:
     // #[account(mut, constraint = transit_destination_account.owner == &margin_account.key())]
     #[account(mut)]
@@ -139,7 +139,6 @@ impl<'info> SerumSwap<'info> {
                 open_orders_authority: self.swap_info.open_orders_authority.to_account_info(),
                 coin_vault: self.swap_info.base_vault.to_account_info(),
                 pc_vault: self.swap_info.quote_vault.to_account_info(),
-                // TODO: does the order of coin and pc depend on swap direction?
                 coin_wallet: self.transit_base_token_account.to_account_info(),
                 pc_wallet: self.transit_quote_token_account.to_account_info(),
                 vault_signer: self.swap_info.vault_signer.to_account_info(),
@@ -227,7 +226,6 @@ pub fn serum_swap_handler(
     ctx: Context<SerumSwap>,
     amount_in: u64,
     minimum_amount_out: u64,
-    // TODO: will change this to an enum, quicker to bool it for now
     swap_direction: SwapDirection,
 ) -> Result<()> {
     jet_margin_pool::cpi::withdraw(
@@ -238,10 +236,12 @@ pub fn serum_swap_handler(
         Amount::tokens(amount_in),
     )?;
     let market_info = ctx.accounts.swap_info.market.to_account_info();
-    let coin_lot_size = {
+    let (coin_lot_size, pc_lot_size) = {
         let market = MarketState::load(&market_info, &dex::ID).map_err(ProgramError::from)?;
-        market.coin_lot_size
+        (market.coin_lot_size, market.pc_lot_size)
     };
+
+
 
     // Build order parameters.
     // If the order is a buy:
@@ -268,8 +268,10 @@ pub fn serum_swap_handler(
         }
         SwapDirection::Bid => {
             // Purchase as much of the base as possible for the given quote
+            let max_native_pc_qty = amount_in.checked_div(pc_lot_size).unwrap();
             let max_coin_qty = NonZeroU64::new(u64::MAX).unwrap();
-            let max_native_pc_qty = NonZeroU64::new(amount_in).unwrap();
+            let max_native_pc_qty = NonZeroU64::new(max_native_pc_qty).unwrap();
+            // let max_native_pc_qty = NonZeroU64::new(amount_in).unwrap();
             (
                 Side::Bid,
                 NonZeroU64::new(u64::MAX).unwrap(),

@@ -426,14 +426,14 @@ impl MarginUser {
         Ok(())
     }
 
-    // /// Close the margin account's [OpenOrders] account
-    // pub async fn close_open_orders(&self, market: &SerumMarketV3) -> Result<(), Error> {
-    //     let tx = self.tx.close_open_orders_account(market).await?;
+    /// Close the margin account's [OpenOrders] account
+    pub async fn close_open_orders(&self, market: &SerumMarketV3) -> Result<(), Error> {
+        let tx = self.tx.close_open_orders_account(market).await?;
 
-    //     self.send_confirm_tx(tx).await?;
+        self.send_confirm_tx(tx).await?;
 
-    //     Ok(())
-    // }
+        Ok(())
+    }
 
     pub async fn new_spot_order(
         &self,

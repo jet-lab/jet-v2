@@ -100,6 +100,7 @@ async fn serum_swap() -> Result<(), anyhow::Error> {
     // Initialize the margin accounts for each user
     user_a.create_account().await?;
     user_b.create_account().await?;
+    user_c.create_account().await?;
 
     // Create a serum market
     let serum_client =
@@ -176,7 +177,7 @@ async fn serum_swap() -> Result<(), anyhow::Error> {
         .deposit(&env.tsol, &user_b_tsol_account, 10 * ONE_TSOL)
         .await?;
 
-    // // Verify user tokens have been deposited
+    // Verify user tokens have been deposited
     assert_eq!(0, ctx.tokens.get_balance(&user_a_usdc_account).await?);
     assert_eq!(
         90 * ONE_TSOL,
@@ -186,6 +187,7 @@ async fn serum_swap() -> Result<(), anyhow::Error> {
 
     user_a.refresh_all_pool_positions().await?;
     user_b.refresh_all_pool_positions().await?;
+    user_c.refresh_all_pool_positions().await?;
 
     let user_a_open_orders = user_a.init_open_orders(serum_client.market(), None).await?;
     let user_b_open_orders = user_b
@@ -204,8 +206,10 @@ async fn serum_swap() -> Result<(), anyhow::Error> {
             OrderParams {
                 side: OrderSide::Ask,
                 limit_price: NonZeroU64::new(1).unwrap(),
+                // limit_price: NonZeroU64::new(100_000).unwrap(),
                 // 10 SOL divided by coin lot size
                 max_base_qty: NonZeroU64::new(10 * ONE_TSOL / 100).unwrap(),
+                // max_base_qty: NonZeroU64::new(10).unwrap(),
                 max_native_quote_qty_including_fees: NonZeroU64::new(u64::MAX).unwrap(),
                 self_trade_behavior: SelfTradeBehavior::DecrementTake,
                 order_type: OrderType::Limit,
@@ -229,7 +233,11 @@ async fn serum_swap() -> Result<(), anyhow::Error> {
         )
         .await?;
 
-    // User B places a limit order, so that user A can swap at market
+    user_a.refresh_all_pool_positions().await?;
+    user_b.refresh_all_pool_positions().await?;
+    user_c.refresh_all_pool_positions().await?;
+
+    // User C places a limit order, so that user A can swap at market
     user_c
         .new_spot_order(
             serum_client.market(),
@@ -237,9 +245,12 @@ async fn serum_swap() -> Result<(), anyhow::Error> {
             usdc_transit_c,
             OrderParams {
                 side: OrderSide::Bid,
-                limit_price: NonZeroU64::new(u64::MAX).unwrap(),
-                max_base_qty: NonZeroU64::new(u64::MAX).unwrap(),
+                limit_price: NonZeroU64::new(10_000).unwrap(),
+                max_base_qty: NonZeroU64::new(10).unwrap(),
                 max_native_quote_qty_including_fees: NonZeroU64::new(1000 * ONE_USDC).unwrap(),
+                // limit_price: NonZeroU64::new(u64::MAX).unwrap(),
+                // max_base_qty: NonZeroU64::new(u64::MAX).unwrap(),
+                // max_native_quote_qty_including_fees: NonZeroU64::new(1000 * ONE_USDC).unwrap(),
                 self_trade_behavior: SelfTradeBehavior::DecrementTake,
                 order_type: OrderType::Limit,
                 client_order_id: 2,
@@ -248,14 +259,21 @@ async fn serum_swap() -> Result<(), anyhow::Error> {
         )
         .await?;
 
+    // TODO - maybe: close user a open order
+    // user_a.close_open_orders(serum_client.market()).await?;
+
+    // TODO - maybe: init user a new open order
+    // let user_a_open_orders = user_a.init_open_orders(serum_client.market(), None).await?;
+
     // Swap in a different order
-    // Now user A swaps their USDC for TSOL
+    // Now user A swaps their TSOL for USDC
     user_a
         .serum_swap(
             serum_client.market(),
             user_a_open_orders,
             tsol_transit_a,
             usdc_transit_a,
+            // 10 SOL divided by coin lot size
             10 * ONE_TSOL / 100,
             10 * ONE_USDC,
             jet_margin_swap::instructions::SwapDirection::Ask,

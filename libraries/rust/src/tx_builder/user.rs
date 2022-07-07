@@ -589,36 +589,36 @@ impl MarginTxBuilder {
         Ok((open_orders, tx))
     }
 
-    // pub async fn close_open_orders_account(&self, market: &SerumMarketV3) -> Result<Transaction> {
-    //     let (open_orders, _) = Pubkey::find_program_address(
-    //         &[
-    //             self.address().as_ref(),
-    //             market.market.as_ref(),
-    //             b"open_orders",
-    //         ],
-    //         &jet_margin_serum::id(),
-    //     );
-    //     let accounts = jet_margin_serum::accounts::CloseOpenOrders {
-    //         margin_account: *self.address(),
-    //         market: market.market,
-    //         open_orders,
-    //         serum_program: Dex::id(),
-    //         destination: self.rpc.payer().pubkey(),
-    //     }
-    //     .to_account_metas(None);
+    pub async fn close_open_orders_account(&self, market: &SerumMarketV3) -> Result<Transaction> {
+        let (open_orders, _) = Pubkey::find_program_address(
+            &[
+                self.address().as_ref(),
+                market.market.as_ref(),
+                b"open_orders",
+            ],
+            &jet_margin_swap::id(),
+        );
+        let accounts = jet_margin_swap::accounts::CloseOpenOrders {
+            owner: *self.address(),
+            open_orders,
+            market: market.market,
+            destination: self.rpc.payer().pubkey(),
+            serum_program: dex::id(),
+        }
+        .to_account_metas(None);
 
-    //     let instruction = Instruction {
-    //         program_id: jet_margin_serum::id(),
-    //         accounts,
-    //         data: jet_margin_serum::instruction::CloseOpenOrders {}.data(),
-    //     };
+        let instruction = Instruction {
+            program_id: jet_margin_swap::id(),
+            accounts,
+            data: jet_margin_swap::instruction::CloseSerumOpenOrders {}.data(),
+        };
 
-    //     let instruction = self.adapter_invoke_ix(instruction);
+        let instruction = self.adapter_invoke_ix(instruction);
 
-    //     let tx = self.create_transaction(&[instruction]).await?;
+        let tx = self.create_transaction(&[instruction]).await?;
 
-    //     Ok(tx)
-    // }
+        Ok(tx)
+    }
 
     pub async fn new_spot_order(
         &self,
