@@ -1,5 +1,5 @@
 import { NATIVE_MINT } from "@solana/spl-token"
-import { Program, AnchorProvider, BN } from "@project-serum/anchor"
+import { Program, AnchorProvider, BN, translateAddress } from "@project-serum/anchor"
 import { JetMargin, JetMarginPool, JetMarginSerum, JetMarginSwap, JetMetadata, TokenAmount, TradeAction } from ".."
 import JET_CONFIG from "../margin/config.json"
 import {
@@ -156,7 +156,7 @@ export class MarginClient {
           ) {
             token = config.tokens[tokenAbbrev] as MarginTokenConfig
             if (
-              token.mint.toString() === NATIVE_MINT.toString() &&
+              translateAddress(token.mint).equals(NATIVE_MINT) &&
               (tradeAction === "withdraw" || tradeAction === "borrow") &&
               matchingPost.uiTokenAmount.amount === "0"
             ) {
