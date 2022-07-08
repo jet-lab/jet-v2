@@ -24,7 +24,7 @@ export type JetControl = {
       args: []
     },
     {
-      name: "registerToken"
+      name: "createMarginPool"
       accounts: [
         {
           name: "requester"
@@ -73,6 +73,11 @@ export type JetControl = {
         },
         {
           name: "loanNoteMetadata"
+          isMut: true
+          isSigner: false
+        },
+        {
+          name: "feeDestination"
           isMut: true
           isSigner: false
         },
@@ -146,7 +151,7 @@ export type JetControl = {
       args: []
     },
     {
-      name: "configureToken"
+      name: "configureMarginPool"
       accounts: [
         {
           name: "requester"
@@ -210,14 +215,6 @@ export type JetControl = {
           type: {
             option: {
               defined: "TokenMetadataParams"
-            }
-          }
-        },
-        {
-          name: "poolParam"
-          type: {
-            option: {
-              defined: "MarginPoolParams"
             }
           }
         },
@@ -622,7 +619,7 @@ export const IDL: JetControl = {
       args: []
     },
     {
-      name: "registerToken",
+      name: "createMarginPool",
       accounts: [
         {
           name: "requester",
@@ -671,6 +668,11 @@ export const IDL: JetControl = {
         },
         {
           name: "loanNoteMetadata",
+          isMut: true,
+          isSigner: false
+        },
+        {
+          name: "feeDestination",
           isMut: true,
           isSigner: false
         },
@@ -744,7 +746,7 @@ export const IDL: JetControl = {
       args: []
     },
     {
-      name: "configureToken",
+      name: "configureMarginPool",
       accounts: [
         {
           name: "requester",
@@ -808,14 +810,6 @@ export const IDL: JetControl = {
           type: {
             option: {
               defined: "TokenMetadataParams"
-            }
-          }
-        },
-        {
-          name: "poolParam",
-          type: {
-            option: {
-              defined: "MarginPoolParams"
             }
           }
         },

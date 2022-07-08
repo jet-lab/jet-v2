@@ -39,16 +39,8 @@ pub struct Configure<'info> {
     pub pyth_price: AccountInfo<'info>,
 }
 
-pub fn configure_handler(
-    ctx: Context<Configure>,
-    fee_destination: Option<Pubkey>,
-    config: Option<MarginPoolConfig>,
-) -> Result<()> {
+pub fn configure_handler(ctx: Context<Configure>, config: Option<MarginPoolConfig>) -> Result<()> {
     let pool = &mut ctx.accounts.margin_pool;
-
-    if let Some(new_fee_destination) = fee_destination {
-        pool.fee_destination = new_fee_destination;
-    }
 
     if let Some(new_config) = config.clone() {
         pool.config = new_config;
@@ -84,7 +76,6 @@ pub fn configure_handler(
 
     emit!(events::PoolConfigured {
         margin_pool: ctx.accounts.margin_pool.key(),
-        fee_destination: fee_destination.unwrap_or_default(),
         pyth_product: ctx.accounts.pyth_product.key(),
         pyth_price: ctx.accounts.pyth_price.key(),
         config: config.unwrap_or_default()

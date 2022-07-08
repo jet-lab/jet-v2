@@ -15,6 +15,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+mod close_loan;
 mod collect;
 mod configure;
 mod create_pool;
@@ -22,8 +23,10 @@ mod deposit;
 mod margin_borrow;
 mod margin_refresh_position;
 mod margin_repay;
+mod register_loan;
 mod withdraw;
 
+pub use close_loan::*;
 pub use collect::*;
 pub use configure::*;
 pub use create_pool::*;
@@ -31,4 +34,5 @@ pub use deposit::*;
 pub use margin_borrow::*;
 pub use margin_refresh_position::*;
 pub use margin_repay::*;
+pub use register_loan::*;
 pub use withdraw::*;

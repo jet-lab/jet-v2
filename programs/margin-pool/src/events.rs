@@ -5,6 +5,7 @@ use anchor_lang::prelude::*;
 pub struct PoolCreated {
     pub margin_pool: Pubkey,
     pub vault: Pubkey,
+    pub fee_destination: Pubkey,
     pub deposit_note_mint: Pubkey,
     pub loan_note_mint: Pubkey,
     pub token_mint: Pubkey,
@@ -16,7 +17,6 @@ pub struct PoolCreated {
 #[event]
 pub struct PoolConfigured {
     pub margin_pool: Pubkey,
-    pub fee_destination: Pubkey,
     pub pyth_product: Pubkey,
     pub pyth_price: Pubkey,
     pub config: MarginPoolConfig,
