@@ -536,7 +536,7 @@ export class Pool {
     if (account) {
       return account.address
     }
-    return await this.withGetOrCreateDepositNotePosition(instructions, marginAccount)
+    return await marginAccount.withRegisterPosition(instructions, this.addresses.depositNoteMint)
   }
 
   /// Instruction to borrow tokens using a margin account
