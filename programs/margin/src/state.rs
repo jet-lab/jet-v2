@@ -402,7 +402,10 @@ impl MarginAccount {
                     exposure += position.value();
                     required_collateral += position.required_collateral_value()
                 }
-                (PositionKind::Claim, Some(error)) => return Err(error!(error)),
+                (PositionKind::Claim, Some(error)) => {
+                    msg!("claim position is stale: {:?}", position);
+                    return Err(error!(error))
+                },
 
                 (PositionKind::Deposit, None) => weighted_collateral += position.collateral_value(),
                 (PositionKind::Deposit, Some(e)) => {
