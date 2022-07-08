@@ -1,14 +1,7 @@
 import { Address, BN, translateAddress } from "@project-serum/anchor"
 import { parsePriceData, PriceData, PriceStatus } from "@pythnetwork/client"
 import { Mint, TOKEN_PROGRAM_ID } from "@solana/spl-token"
-import {
-  ConfirmOptions,
-  PublicKey,
-  SystemProgram,
-  Transaction,
-  TransactionInstruction,
-  SYSVAR_RENT_PUBKEY
-} from "@solana/web3.js"
+import { PublicKey, SystemProgram, Transaction, TransactionInstruction, SYSVAR_RENT_PUBKEY } from "@solana/web3.js"
 import { assert } from "chai"
 import { AssociatedToken, bigIntToBn } from "../../token"
 import { TokenAmount } from "../../token/tokenAmount"
@@ -22,12 +15,6 @@ import { findDerivedAccount } from "../../utils/pda"
 import { AccountPosition, PriceInfo } from "../accountPosition"
 import { Number192, sleep } from "../../utils"
 import { PositionTokenMetadata } from "../positionTokenMetadata"
-
-type TokenKindNonCollateral = { nonCollateral: Record<string, never> }
-type TokenKindCollateral = { collateral: Record<string, never> }
-type TokenKindClaim = { claim: Record<string, never> }
-
-export type TokenKind = TokenKindNonCollateral | TokenKindCollateral | TokenKindClaim
 
 export interface MarginPoolAddresses {
   /** The pool's token mint i.e. BTC or SOL mint address*/
