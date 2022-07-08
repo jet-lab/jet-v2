@@ -132,7 +132,6 @@ describe("margin pool deposit", () => {
       tokenMint: USDC[0],
       collateralWeight: 1_00,
       maxLeverage: 4_00,
-      feeDestination: FEE_VAULT_USDC,
       pythProduct: USDC_oracle[0].publicKey,
       pythPrice: USDC_oracle[1].publicKey,
       marginPoolConfig: POOLS[0].config
@@ -141,7 +140,6 @@ describe("margin pool deposit", () => {
       tokenMint: SOL[0],
       collateralWeight: 95,
       maxLeverage: 4_00,
-      feeDestination: FEE_VAULT_SOL,
       pythProduct: SOL_oracle[0].publicKey,
       pythPrice: SOL_oracle[1].publicKey,
       marginPoolConfig: POOLS[1].config
