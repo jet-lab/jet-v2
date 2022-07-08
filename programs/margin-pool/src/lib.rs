@@ -120,10 +120,14 @@ impl TokenChange {
             tokens: value,
         }
     }
+
+    pub fn amount(&self) -> Amount {
+        Amount::tokens(self.tokens)
+    }
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone, Copy)]
-pub(crate) enum ChangeKind {
+pub enum ChangeKind {
     SetTo,
     ShiftBy,
 }

@@ -104,7 +104,7 @@ pub fn margin_borrow_handler(ctx: Context<MarginBorrow>, change: TokenChange) ->
 
     // Then record a deposit of the same borrowed tokens
     let deposit_amount =
-        pool.convert_amount(Amount::notes(borrow_amount.notes), PoolAction::Deposit)?;
+        pool.convert_amount(Amount::tokens(borrow_amount.tokens), PoolAction::Deposit)?;
     pool.deposit(&deposit_amount);
 
     // Finish by minting the loan and deposit notes

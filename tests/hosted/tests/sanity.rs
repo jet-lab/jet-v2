@@ -107,16 +107,6 @@ async fn sanity_test() -> Result<(), anyhow::Error> {
         .create_account_funded(&env.tsol, &wallet_b.pubkey(), 1_000 * ONE_TSOL)
         .await?;
 
-    // extra tokens for clearing dust from interest
-    let user_a_tsol_account = ctx
-        .tokens
-        .create_account_funded(&env.tsol, &wallet_a.pubkey(), ONE_TSOL)
-        .await?;
-    let user_b_usdc_account = ctx
-        .tokens
-        .create_account_funded(&env.usdc, &wallet_b.pubkey(), 10 * ONE_USDC)
-        .await?;
-
     // Set the prices for each token
     ctx.tokens
         .set_price(
