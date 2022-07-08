@@ -123,7 +123,7 @@ impl TokenChange {
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone, Copy)]
-pub(crate) enum ChangeKind {
+pub enum ChangeKind {
     SetTo,
     ShiftBy,
 }
