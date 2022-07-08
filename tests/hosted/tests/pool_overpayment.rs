@@ -1,6 +1,5 @@
 use anyhow::Error;
 
-use jet_margin_sdk::ix_builder::{owned_position_token_account, MarginPoolIxBuilder};
 use solana_sdk::native_token::LAMPORTS_PER_SOL;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::Signer;
@@ -221,15 +220,8 @@ async fn pool_overpayment() -> Result<(), anyhow::Error> {
         .borrow(&env.tsol, TokenChange::shift(100 * ONE_TSOL))
         .await?;
 
-    let user_c_tsol_deposit_notes_account = owned_position_token_account(
-        user_c.address(),
-        &MarginPoolIxBuilder::new(env.tsol).deposit_note_mint,
-    )
-    .0;
-    let user_c_tsol_deposit_notes_balance = ctx
-        .tokens
-        .get_balance(&user_c_tsol_deposit_notes_account)
-        .await?;
+    // User repays their loan by setting the value to 0
+    user_c.margin_repay(&env.tsol, TokenChange::set(0)).await?;
 
     user_c
         .withdraw(&env.tsol, &user_c_tsol_account, TokenChange::set(0))

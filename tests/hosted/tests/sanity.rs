@@ -4,7 +4,7 @@ use anyhow::Error;
 
 use jet_control::TokenMetadataParams;
 use jet_margin::PositionKind;
-use jet_margin_pool::{Amount, MarginPoolConfig, PoolFlags};
+use jet_margin_pool::{MarginPoolConfig, PoolFlags, TokenChange};
 use jet_margin_sdk::ix_builder::{MarginPoolConfiguration, MarginPoolIxBuilder};
 use jet_metadata::TokenKind;
 use jet_simulation::{assert_custom_program_error, create_wallet};
@@ -191,20 +191,10 @@ async fn sanity_test() -> Result<(), anyhow::Error> {
     );
 
     // Users repay their loans
-
-    // give up all the previously borrowed tokens
     user_a.margin_repay(&env.tsol, TokenChange::set(0)).await?;
     user_b.margin_repay(&env.usdc, TokenChange::set(0)).await?;
 
-    // now clear the dust
-    user_a
-        .margin_repay_from_wallet(&env.tsol, &user_a_tsol_account, TokenChange::set(0))
-        .await?;
-    user_b
-        .margin_repay_from_wallet(&env.usdc, &user_b_usdc_account, TokenChange::set(0))
-        .await?;
-
-    // Users withdraw all of their funds
+    // Users withdraw their funds
     user_a
         .withdraw(&env.usdc, &user_a_usdc_account, TokenChange::set(0))
         .await?;
