@@ -521,11 +521,22 @@ export class Pool {
     instructions: TransactionInstruction[],
     marginAccount: MarginAccount
   ): Promise<Address> {
-    let account = marginAccount.getPosition(this.addresses.loanNoteMint)
+    const account = marginAccount.getPosition(this.addresses.loanNoteMint)
     if (account) {
       return account.address
     }
     return await this.withRegisterLoan(instructions, marginAccount)
+  }
+
+  async withGetOrCreateDepositNotePosition(
+    instructions: TransactionInstruction[],
+    marginAccount: MarginAccount
+  ): Promise<Address> {
+    const account = marginAccount.getPosition(this.addresses.depositNoteMint)
+    if (account) {
+      return account.address
+    }
+    return await this.withGetOrCreateDepositNotePosition(instructions, marginAccount)
   }
 
   /// Instruction to borrow tokens using a margin account
@@ -676,7 +687,7 @@ export class Pool {
     const instructions: TransactionInstruction[] = []
     const postInstructions: TransactionInstruction[] = []
 
-    let marginWithdrawDestination =
+    const marginWithdrawDestination =
       destination ??
       (await AssociatedToken.withCreateOrUnwrapIfNativeMint(
         preInstructions,
