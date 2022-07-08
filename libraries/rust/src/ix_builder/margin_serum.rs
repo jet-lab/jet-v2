@@ -323,7 +323,7 @@ impl MarginSerumIxBuilder {
 pub struct OrderParams {
     pub side: OrderSide,
     pub limit_price: NonZeroU64,
-    pub max_base_qty: NonZeroU64,
+    pub max_coin_qty: NonZeroU64,
     pub max_native_quote_qty_including_fees: NonZeroU64,
     pub self_trade_behavior: SelfTradeBehavior,
     pub order_type: OrderType,

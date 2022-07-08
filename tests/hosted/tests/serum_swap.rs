@@ -205,11 +205,10 @@ async fn serum_swap() -> Result<(), anyhow::Error> {
             tsol_transit_b,
             OrderParams {
                 side: OrderSide::Ask,
-                limit_price: NonZeroU64::new(1).unwrap(),
-                // limit_price: NonZeroU64::new(100_000).unwrap(),
+                // limit_price: NonZeroU64::new(1).unwrap(),
+                limit_price: NonZeroU64::new(100_000).unwrap(),
                 // 10 SOL divided by coin lot size
-                max_base_qty: NonZeroU64::new(10 * ONE_TSOL / 100).unwrap(),
-                // max_base_qty: NonZeroU64::new(10).unwrap(),
+                max_coin_qty: NonZeroU64::new(10 * ONE_TSOL / 100).unwrap(),
                 max_native_quote_qty_including_fees: NonZeroU64::new(u64::MAX).unwrap(),
                 self_trade_behavior: SelfTradeBehavior::DecrementTake,
                 order_type: OrderType::Limit,
@@ -227,15 +226,13 @@ async fn serum_swap() -> Result<(), anyhow::Error> {
             tsol_transit_a,
             usdc_transit_a,
             // we want a minimum of 0.95 SOL for 100 USDC
+            // 100 * ONE_USDC,
+            // 95 * ONE_TSOL / 100,
             100 * ONE_USDC,
-            95 * ONE_TSOL / 10,
+            10 * ONE_TSOL / 100000,
             jet_margin_swap::instructions::SwapDirection::Bid,
         )
         .await?;
-
-    user_a.refresh_all_pool_positions().await?;
-    user_b.refresh_all_pool_positions().await?;
-    user_c.refresh_all_pool_positions().await?;
 
     // User C places a limit order, so that user A can swap at market
     user_c
@@ -245,11 +242,11 @@ async fn serum_swap() -> Result<(), anyhow::Error> {
             usdc_transit_c,
             OrderParams {
                 side: OrderSide::Bid,
-                limit_price: NonZeroU64::new(10_000).unwrap(),
-                max_base_qty: NonZeroU64::new(10).unwrap(),
+                limit_price: NonZeroU64::new(100_000).unwrap(),
+                max_coin_qty: NonZeroU64::new(10).unwrap(),
                 max_native_quote_qty_including_fees: NonZeroU64::new(1000 * ONE_USDC).unwrap(),
                 // limit_price: NonZeroU64::new(u64::MAX).unwrap(),
-                // max_base_qty: NonZeroU64::new(u64::MAX).unwrap(),
+                // max_coin_qty: NonZeroU64::new(u64::MAX).unwrap(),
                 // max_native_quote_qty_including_fees: NonZeroU64::new(1000 * ONE_USDC).unwrap(),
                 self_trade_behavior: SelfTradeBehavior::DecrementTake,
                 order_type: OrderType::Limit,

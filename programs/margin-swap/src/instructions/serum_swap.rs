@@ -225,7 +225,7 @@ pub struct SerumSwapInfo<'info> {
 pub fn serum_swap_handler(
     ctx: Context<SerumSwap>,
     amount_in: u64,
-    minimum_amount_out: u64,
+    minimum_amount_out: u64, // amount with limit price or worst expected price. quantity * limit price
     swap_direction: SwapDirection,
 ) -> Result<()> {
     jet_margin_pool::cpi::withdraw(
@@ -236,12 +236,23 @@ pub fn serum_swap_handler(
         Amount::tokens(amount_in),
     )?;
     let market_info = ctx.accounts.swap_info.market.to_account_info();
-    let (coin_lot_size, pc_lot_size) = {
+
+    // TODO - double check: normal limit price
+    // let normal_limit_price = (Number::ONE - slippage) * (base token price / quote token price);
+    // when mint is quote
+    // limit_price = normal_limit_price
+    // when mint is base
+    // limit_price = Number::ONE / normal_limit_price
+
+    let (coin_lot_size, _pc_lot_size) = {
         let market = MarketState::load(&market_info, &dex::ID).map_err(ProgramError::from)?;
         (market.coin_lot_size, market.pc_lot_size)
     };
 
-
+    // TODO - price lot
+    // (price * Number::ten_pow(quote_decimals) * dex_market.coin_lot_size
+    //             / (Number::ten_pow(coin_decimals) * dex_market.pc_lot_size))
+    //             .as_u64_rounded(0)
 
     // Build order parameters.
     // If the order is a buy:
@@ -258,25 +269,27 @@ pub fn serum_swap_handler(
             // Purchase as much of the quote as possible for the given base
             let max_coin_qty = amount_in.checked_div(coin_lot_size).unwrap();
             let max_coin_qty = NonZeroU64::new(max_coin_qty).unwrap();
-            let max_native_pc_qty = NonZeroU64::new(u64::MAX).unwrap(); // u64::MAX
+            let max_pc_qty = NonZeroU64::new(u64::MAX).unwrap();
             (
                 Side::Ask,
-                NonZeroU64::new(1).unwrap(),
+                NonZeroU64::new(1).unwrap(), // TODO - what is the value of the limit price for max ask
                 max_coin_qty,
-                max_native_pc_qty,
+                max_pc_qty,
             )
         }
         SwapDirection::Bid => {
             // Purchase as much of the base as possible for the given quote
-            let max_native_pc_qty = amount_in.checked_div(pc_lot_size).unwrap();
             let max_coin_qty = NonZeroU64::new(u64::MAX).unwrap();
-            let max_native_pc_qty = NonZeroU64::new(max_native_pc_qty).unwrap();
-            // let max_native_pc_qty = NonZeroU64::new(amount_in).unwrap();
+            let max_pc_qty = NonZeroU64::new(amount_in).unwrap();
+
+            // let max_pc_qty = amount_in.checked_div(pc_lot_size).unwrap();
+            // let max_coin_qty = NonZeroU64::new(u64::MAX).unwrap();
+            // let max_pc_qty = NonZeroU64::new(max_pc_qty).unwrap();
             (
                 Side::Bid,
-                NonZeroU64::new(u64::MAX).unwrap(),
+                NonZeroU64::new(u64::MAX).unwrap(), // TODO - what is the value of the limit price for max bid
                 max_coin_qty,
-                max_native_pc_qty,
+                max_pc_qty,
             )
         }
     };
@@ -295,6 +308,9 @@ pub fn serum_swap_handler(
         OrderType::ImmediateOrCancel,
         // We do not need to cancel orders, so a static ID is fine
         0,
+        // Limit is the dex's custom compute budge parameter, setting an upper
+        // bound on the number of matching cycles the program can perform
+        // before giving up and posting the remaining unmatched order.
         u16::MAX,
     )?;
 
@@ -326,6 +342,10 @@ pub fn serum_swap_handler(
     }
 
     // Check slippage using a ratio of swapped tokens
+    // $ of slippage / (LP - EP) x 100 = % slippage
+    // EP = expected price
+    // LP = limit price/ worst expected price
+    // TODO - fix me:
     let expected_rate =
         Number128::from_decimal(minimum_amount_out, 0) / Number128::from_decimal(amount_in, 0);
     let actual_rate =

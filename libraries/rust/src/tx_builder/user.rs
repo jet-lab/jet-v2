@@ -32,7 +32,6 @@ use solana_sdk::{compute_budget::ComputeBudgetInstruction, instruction::Instruct
 
 use jet_margin::{MarginAccount, PositionKind};
 use jet_margin_pool::Amount;
-use jet_margin_swap::instructions::SwapDirection;
 use jet_metadata::{PositionTokenMetadata, TokenMetadata};
 use jet_simulation::solana_rpc_api::SolanaRpcClient;
 
@@ -647,7 +646,7 @@ impl MarginTxBuilder {
             &dex::ID,
             order.side.into(),
             order.limit_price,
-            order.max_base_qty,
+            order.max_coin_qty,
             order.order_type.into(),
             order.client_order_id,
             order.self_trade_behavior.into(),
