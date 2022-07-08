@@ -659,7 +659,11 @@ export class MarginAccount {
       seed = await this.getUnusedAccountSeed({ programs, provider, owner })
     }
     const marginAccount = new MarginAccount(programs, provider, owner, seed, pools, walletTokens)
-    await marginAccount.createAccount()
+    const instructions: TransactionInstruction[] = []
+    await marginAccount.withCreateAccount(instructions)
+    if (instructions.length > 0) {
+      return await provider.sendAndConfirm(new Transaction().add(...instructions))
+    }
     return marginAccount
   }
 
@@ -831,7 +835,7 @@ export class MarginAccount {
   async closeAccount() {
     const ix: TransactionInstruction[] = []
     await this.withCloseAccount(ix)
-    this.sendAndConfirm(ix)
+    await this.sendAndConfirm(ix)
   }
 
   /// Get instruction to close an account
@@ -853,7 +857,7 @@ export class MarginAccount {
   async closePosition(position: AccountPosition) {
     const ix: TransactionInstruction[] = []
     await this.withClosePosition(ix, position)
-    this.sendAndConfirm(ix)
+    await this.sendAndConfirm(ix)
   }
 
   /// Get instruction to close a position
