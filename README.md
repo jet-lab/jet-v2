@@ -41,7 +41,7 @@ npm i @project-serum/anchor-cli@0.24.2 -g
 Install the project's node_modules
 
 ```
-yarn
+npm i
 ```
 
 Then run

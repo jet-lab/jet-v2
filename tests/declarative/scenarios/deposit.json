@@ -2,12 +2,6 @@
   "users": [
     {
       "keypair": "margin-user-1.json"
-    },
-    {
-      "keypair": "margin-user-2.json"
-    },
-    {
-      "keypair": "margin-user-3.json"
     }
   ],
   "accounts": [
@@ -16,14 +10,6 @@
       "seed": 0,
       "tokens": {
         "BTC": { "deposit": 0.5 },
-        "USDC": { "deposit": 10000 }
-      }
-    },
-    {
-      "name": "accountB",
-      "seed": 1,
-      "tokens": {
-        "ETH": { "deposit": 10 },
         "USDC": { "deposit": 10000 }
       }
     }
