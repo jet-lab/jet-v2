@@ -56,22 +56,13 @@ struct TestEnv {
 
 async fn setup_environment(ctx: &MarginTestContext) -> Result<TestEnv, Error> {
     let usdc = ctx.tokens.create_token(6, None, None).await?;
-    let usdc_fees = ctx
-        .tokens
-        .create_account(&usdc, &ctx.authority.pubkey())
-        .await?;
     let usdc_oracle = ctx.tokens.create_oracle(&usdc).await?;
     let tsol = ctx.tokens.create_token(9, None, None).await?;
-    let tsol_fees = ctx
-        .tokens
-        .create_account(&tsol, &ctx.authority.pubkey())
-        .await?;
     let tsol_oracle = ctx.tokens.create_oracle(&tsol).await?;
 
     let pools = [
         MarginPoolSetupInfo {
             token: usdc,
-            fee_destination: usdc_fees,
             token_kind: TokenKind::Collateral,
             collateral_weight: 1_00,
             max_leverage: 10_00,
@@ -80,7 +71,6 @@ async fn setup_environment(ctx: &MarginTestContext) -> Result<TestEnv, Error> {
         },
         MarginPoolSetupInfo {
             token: tsol,
-            fee_destination: tsol_fees,
             token_kind: TokenKind::Collateral,
             collateral_weight: 95,
             max_leverage: 4_00,

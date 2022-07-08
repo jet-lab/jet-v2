@@ -57,24 +57,45 @@ pub trait Require<T> {
     fn require_mut(&mut self) -> std::result::Result<&mut T, ErrorCode>;
 }
 
-impl<T: RequirablePosition> Require<T> for Option<T> {
+impl<T: ErrorIfMissing> Require<T> for Option<T> {
     fn require(self) -> std::result::Result<T, ErrorCode> {
-        self.ok_or(ErrorCode::PositionNotRegistered)
+        self.ok_or(T::ERROR)
     }
 
     fn require_ref(&self) -> std::result::Result<&T, ErrorCode> {
-        self.as_ref().ok_or(ErrorCode::PositionNotRegistered)
+        self.as_ref().ok_or(T::ERROR)
     }
 
     fn require_mut(&mut self) -> std::result::Result<&mut T, ErrorCode> {
-        self.as_mut().ok_or(ErrorCode::PositionNotRegistered)
+        self.as_mut().ok_or(T::ERROR)
     }
 }
 
-pub trait RequirablePosition {}
+pub trait ErrorIfMissing {
+    const ERROR: ErrorCode;
+}
 
-impl RequirablePosition for &mut AccountPosition {}
-impl RequirablePosition for usize {}
+impl ErrorIfMissing for &mut AccountPosition {
+    const ERROR: ErrorCode = ErrorCode::PositionNotRegistered;
+}
+
+impl ErrorIfMissing for &AccountPosition {
+    const ERROR: ErrorCode = ErrorCode::PositionNotRegistered;
+}
+
+pub trait ErrorMessage {
+    fn log_on_error(self, msg: &str) -> Self;
+}
+
+impl<T, E> ErrorMessage for std::result::Result<T, E> {
+    fn log_on_error(self, msg: &str) -> Self {
+        if self.is_err() {
+            msg!(msg);
+        }
+
+        self
+    }
+}
 
 /// Data made available to invoked programs by the margin program. Put data here if:
 /// - adapters need a guarantee that the margin program is the actual source of the data, or

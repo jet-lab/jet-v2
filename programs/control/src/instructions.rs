@@ -15,14 +15,14 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-mod configure_token;
+mod configure_margin_pool;
 mod create_authority;
+mod create_margin_pool;
 mod register_adapter;
-mod register_token;
 mod set_liquidator;
 
-pub use configure_token::*;
+pub use configure_margin_pool::*;
 pub use create_authority::*;
+pub use create_margin_pool::*;
 pub use register_adapter::*;
-pub use register_token::*;
 pub use set_liquidator::*;

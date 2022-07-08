@@ -16,7 +16,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 use anchor_lang::prelude::*;
-use anchor_spl::token::Token;
+use anchor_spl::token::{InitializeAccount, Token, TokenAccount};
 use std::convert::TryInto;
 
 use jet_margin_pool::cpi::accounts::CreatePool;
@@ -30,7 +30,8 @@ use crate::events;
 use super::Authority;
 
 #[derive(Accounts)]
-pub struct RegisterToken<'info> {
+pub struct CreateMarginPool<'info> {
+    #[cfg_attr(not(feature = "testing"), account(address = crate::ROOT_AUTHORITY))]
     #[account(mut)]
     requester: Signer<'info>,
     authority: Account<'info, Authority>,
@@ -66,6 +67,18 @@ pub struct RegisterToken<'info> {
     #[account(mut)]
     loan_note_metadata: UncheckedAccount<'info>,
 
+    #[account(init,
+              seeds = [
+                    crate::seeds::FEE_DESTINATION,
+                    margin_pool.key().as_ref()
+              ],
+              bump,
+              space = TokenAccount::LEN,
+              payer = requester,
+              owner = Token::id()
+    )]
+    fee_destination: AccountInfo<'info>,
+
     margin_pool_program: Program<'info, JetMarginPool>,
     metadata_program: Program<'info, JetMetadata>,
     token_program: Program<'info, Token>,
@@ -73,7 +86,7 @@ pub struct RegisterToken<'info> {
     rent: Sysvar<'info, Rent>,
 }
 
-impl<'info> RegisterToken<'info> {
+impl<'info> CreateMarginPool<'info> {
     fn create_pool_context(&self) -> CpiContext<'_, '_, '_, 'info, CreatePool<'info>> {
         CpiContext::new(
             self.margin_pool_program.to_account_info(),
@@ -87,6 +100,20 @@ impl<'info> RegisterToken<'info> {
                 payer: self.requester.to_account_info(),
                 token_program: self.token_program.to_account_info(),
                 system_program: self.system_program.to_account_info(),
+                rent: self.rent.to_account_info(),
+            },
+        )
+    }
+
+    fn create_fee_destination_context(
+        &self,
+    ) -> CpiContext<'_, '_, '_, 'info, InitializeAccount<'info>> {
+        CpiContext::new(
+            self.token_program.to_account_info(),
+            InitializeAccount {
+                account: self.fee_destination.to_account_info(),
+                mint: self.deposit_note_mint.to_account_info(),
+                authority: self.authority.to_account_info(),
                 rent: self.rent.to_account_info(),
             },
         )
@@ -163,7 +190,7 @@ impl<'info> RegisterToken<'info> {
 }
 
 #[inline(never)]
-pub fn register_token_handler(ctx: Context<RegisterToken>) -> Result<()> {
+pub fn create_margin_pool_handler(ctx: Context<CreateMarginPool>) -> Result<()> {
     let authority = [&ctx.accounts.authority.seed[..]];
 
     // create the pool
@@ -171,7 +198,11 @@ pub fn register_token_handler(ctx: Context<RegisterToken>) -> Result<()> {
         ctx.accounts
             .create_pool_context()
             .with_signer(&[&authority]),
+        ctx.accounts.fee_destination.key(),
     )?;
+
+    // create fee collection account
+    anchor_spl::token::initialize_account(ctx.accounts.create_fee_destination_context())?;
 
     // set metadata for the deposit/loan tokens to be used as positions
     let deposit_note_metadata = PositionTokenMetadata {

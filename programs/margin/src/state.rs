@@ -34,6 +34,9 @@ use crate::{
 
 const POS_PRICE_VALID: u8 = 1;
 
+/// The current version for the margin account state
+pub const MARGIN_ACCOUNT_VERSION: u8 = 1;
+
 #[account(zero_copy)]
 #[repr(C)]
 // bytemuck requires a higher alignment than 1 for unit tests to run.
@@ -149,6 +152,7 @@ impl MarginAccount {
     }
 
     pub fn initialize(&mut self, owner: Pubkey, seed: u16, bump_seed: u8) {
+        self.version = MARGIN_ACCOUNT_VERSION;
         self.owner = owner;
         self.bump_seed = [bump_seed];
         self.user_seed = seed.to_le_bytes();
@@ -174,8 +178,9 @@ impl MarginAccount {
         kind: PositionKind,
         value_modifier: u16,
         max_staleness: u64,
-    ) -> AnchorResult<AccountPosition> {
-        let free_position = self.position_list_mut().add(token)?;
+        approvals: &[Approver],
+    ) -> AnchorResult<AccountPositionKey> {
+        let (key, free_position) = self.position_list_mut().add(token)?;
 
         free_position.exponent = -(decimals as i16);
         free_position.address = address;
@@ -185,17 +190,34 @@ impl MarginAccount {
         free_position.value_modifier = value_modifier;
         free_position.max_staleness = max_staleness;
 
-        Ok(*free_position)
+        if !free_position.may_be_registered_or_closed(approvals) {
+            msg!(
+                "{:?} is not authorized to register {:?}",
+                approvals,
+                free_position
+            );
+            return err!(ErrorCode::InvalidPositionOwner);
+        }
+
+        Ok(key)
     }
 
     /// Free the space from a previously registered position no longer needed
-    pub fn unregister_position(&mut self, mint: &Pubkey, account: &Pubkey) -> AnchorResult<()> {
+    pub fn unregister_position(
+        &mut self,
+        mint: &Pubkey,
+        account: &Pubkey,
+        approvals: &[Approver],
+    ) -> AnchorResult<()> {
         let removed = self.position_list_mut().remove(mint, account)?;
 
+        if !removed.may_be_registered_or_closed(approvals) {
+            msg!("{:?} is not authorized to close {:?}", approvals, removed);
+            return err!(ErrorCode::InvalidPositionOwner);
+        }
         if removed.balance != 0 {
             return err!(ErrorCode::CloseNonZeroPosition);
         }
-
         if removed.flags.contains(AdapterPositionFlags::REQUIRED) {
             return err!(ErrorCode::CloseRequiredPosition);
         }
@@ -222,8 +244,41 @@ impl MarginAccount {
         Ok(())
     }
 
+    pub fn get_position_key(&self, mint: &Pubkey) -> Option<AccountPositionKey> {
+        self.position_list().get_key(mint).copied()
+    }
+
     pub fn get_position_mut(&mut self, mint: &Pubkey) -> Option<&mut AccountPosition> {
         self.position_list_mut().get_mut(mint)
+    }
+
+    /// faster than searching by mint only if you have the correct key
+    /// slightly slower if you have the wrong key
+    pub fn get_position_by_key(&self, key: &AccountPositionKey) -> Option<&AccountPosition> {
+        let list = self.position_list();
+        let position = &list.positions[key.index];
+
+        if position.token == key.mint {
+            Some(position)
+        } else {
+            list.get(&key.mint)
+        }
+    }
+
+    /// faster than searching by mint only if you have the correct key
+    /// slightly slower if you have the wrong key
+    pub fn get_position_by_key_mut(
+        &mut self,
+        key: &AccountPositionKey,
+    ) -> Option<&mut AccountPosition> {
+        let list = self.position_list_mut();
+        let position = &list.positions[key.index];
+
+        if position.token == key.mint {
+            Some(&mut list.positions[key.index])
+        } else {
+            list.get_mut(&key.mint)
+        }
     }
 
     /// Change the balance for a position
@@ -313,6 +368,9 @@ impl MarginAccount {
         let mut stale_collateral_list = vec![];
 
         for position in self.positions() {
+            if position.balance == 0 {
+                continue;
+            }
             let kind = position.kind;
             let stale_reason = {
                 let balance_age = timestamp - position.balance_timestamp;
@@ -621,6 +679,23 @@ impl AccountPosition {
 
         Ok(())
     }
+
+    fn may_be_registered_or_closed(&self, approvals: &[Approver]) -> bool {
+        approvals.contains(&Approver::MarginAccountAuthority)
+            && match self.kind {
+                PositionKind::NoValue | PositionKind::Deposit => true,
+                PositionKind::Claim => approvals.contains(&Approver::Adapter(self.adapter)),
+            }
+    }
+}
+
+#[derive(PartialEq, Eq, Debug)]
+pub enum Approver {
+    /// Do not include this unless the transaction was signed by the margin account authority
+    MarginAccountAuthority,
+
+    /// Do not include this unless the request came from an adapter's return data
+    Adapter(Pubkey),
 }
 
 impl std::fmt::Debug for AccountPosition {
@@ -704,7 +779,10 @@ impl AccountPositionList {
     ///
     /// Finds an empty slot in `map` and `positions`, and adds an empty position
     /// to the slot.
-    pub fn add(&mut self, mint: Pubkey) -> AnchorResult<&mut AccountPosition> {
+    pub fn add(
+        &mut self,
+        mint: Pubkey,
+    ) -> AnchorResult<(AccountPositionKey, &mut AccountPosition)> {
         // verify there's no existing position
         if self.map.iter().any(|p| p.mint == mint) {
             return err!(ErrorCode::PositionAlreadyRegistered);
@@ -719,7 +797,8 @@ impl AccountPositionList {
             .ok_or_else(|| error!(ErrorCode::MaxPositions))?;
 
         // add the new entry to the sorted map
-        self.map[self.length] = AccountPositionKey { mint, index };
+        let key = AccountPositionKey { mint, index };
+        self.map[self.length] = key;
 
         self.length += 1;
         (&mut self.map[..self.length]).sort_by_key(|p| p.mint);
@@ -728,7 +807,7 @@ impl AccountPositionList {
         free_position.token = mint;
 
         // return the allocated position to be initialized further
-        Ok(free_position)
+        Ok((key, free_position))
     }
 
     /// Remove a position from the margin account.
@@ -738,7 +817,9 @@ impl AccountPositionList {
     /// - If an account with the `mint` does not exist.
     /// - If the position's address is not the same as the `account`
     pub fn remove(&mut self, mint: &Pubkey, account: &Pubkey) -> AnchorResult<AccountPosition> {
-        let map_index = self.get_map_index(mint).require()?;
+        let map_index = self
+            .get_map_index(mint)
+            .ok_or(ErrorCode::PositionNotRegistered)?;
         // Get the map whose position to remove
         let map = self.map[map_index];
         // Take a copy of the position to be removed
@@ -907,9 +988,18 @@ mod tests {
 
         // use a non-default pubkey
         let key = crate::id();
-
-        acc.register_position(key, 2, key, key, PositionKind::NoValue, 5000, 1000)
-            .unwrap();
+        let approvals = &[Approver::MarginAccountAuthority, Approver::Adapter(key)];
+        acc.register_position(
+            key,
+            2,
+            key,
+            key,
+            PositionKind::NoValue,
+            5000,
+            1000,
+            approvals,
+        )
+        .unwrap();
         let position = "AccountPosition {
             token: JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ,
             address: JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ,
@@ -1051,6 +1141,7 @@ mod tests {
             invocation: Invocation::default(),
             positions: [0; 7432],
         };
+        let approvals = &[Approver::MarginAccountAuthority, Approver::Adapter(adapter)];
 
         // // Register a few positions, randomise the order
         let (token_e, address_e) = create_position_input(&margin_address);
@@ -1060,15 +1151,42 @@ mod tests {
         let (token_b, address_b) = create_position_input(&margin_address);
 
         margin_account
-            .register_position(token_a, 6, address_a, adapter, PositionKind::Deposit, 0, 0)
+            .register_position(
+                token_a,
+                6,
+                address_a,
+                adapter,
+                PositionKind::Deposit,
+                0,
+                0,
+                approvals,
+            )
             .unwrap();
 
         margin_account
-            .register_position(token_b, 6, address_b, adapter, PositionKind::Claim, 0, 0)
+            .register_position(
+                token_b,
+                6,
+                address_b,
+                adapter,
+                PositionKind::Claim,
+                0,
+                0,
+                approvals,
+            )
             .unwrap();
 
         margin_account
-            .register_position(token_c, 6, address_c, adapter, PositionKind::Deposit, 0, 0)
+            .register_position(
+                token_c,
+                6,
+                address_c,
+                adapter,
+                PositionKind::Deposit,
+                0,
+                0,
+                approvals,
+            )
             .unwrap();
 
         // Set and unset a position's balance
@@ -1081,11 +1199,11 @@ mod tests {
 
         // Unregister positions
         margin_account
-            .unregister_position(&token_a, &address_a)
+            .unregister_position(&token_a, &address_a, approvals)
             .unwrap();
         assert_eq!(margin_account.positions().count(), 2);
         margin_account
-            .unregister_position(&token_b, &address_b)
+            .unregister_position(&token_b, &address_b, approvals)
             .unwrap();
         assert_eq!(margin_account.positions().count(), 1);
 
@@ -1098,6 +1216,7 @@ mod tests {
                 PositionKind::NoValue,
                 0,
                 100,
+                approvals,
             )
             .unwrap();
         assert_eq!(margin_account.positions().count(), 2);
@@ -1111,23 +1230,24 @@ mod tests {
                 PositionKind::NoValue,
                 0,
                 100,
+                approvals,
             )
             .unwrap();
         assert_eq!(margin_account.positions().count(), 3);
 
         // It should not be possible to unregister mismatched token & position
         assert!(margin_account
-            .unregister_position(&token_c, &address_b)
+            .unregister_position(&token_c, &address_b, approvals)
             .is_err());
 
         margin_account
-            .unregister_position(&token_c, &address_c)
+            .unregister_position(&token_c, &address_c, approvals)
             .unwrap();
         margin_account
-            .unregister_position(&token_e, &address_e)
+            .unregister_position(&token_e, &address_e, approvals)
             .unwrap();
         margin_account
-            .unregister_position(&token_d, &address_d)
+            .unregister_position(&token_d, &address_d, approvals)
             .unwrap();
 
         // There should be no positions left
@@ -1165,8 +1285,17 @@ mod tests {
 
     fn register_position(acc: &mut MarginAccount, index: u8, kind: TokenKind) -> Pubkey {
         let key = Pubkey::find_program_address(&[&[index]], &crate::id()).0;
-        acc.register_position(key, 2, key, key, kind.into(), 10000, 0)
-            .unwrap();
+        acc.register_position(
+            key,
+            2,
+            key,
+            key,
+            kind.into(),
+            10000,
+            0,
+            &[Approver::MarginAccountAuthority, Approver::Adapter(key)],
+        )
+        .unwrap();
 
         key
     }

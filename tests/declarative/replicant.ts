@@ -54,7 +54,7 @@ export class Replicant {
 
     this.marginConfig = MarginClient.getConfig(this.cluster)
 
-    const confirmOptions: ConfirmOptions = { preflightCommitment: "processed", commitment: "processed" }
+    const confirmOptions: ConfirmOptions = { skipPreflight: true, commitment: "processed" }
     // @ts-ignore
     this.provider = new AnchorProvider(this.connection, new NodeWallet(this.account), confirmOptions)
     anchor.setProvider(this.provider)
@@ -66,14 +66,19 @@ export class Replicant {
     this.splTokenFaucet = new PublicKey(this.marginConfig.splTokenFaucet)
   }
 
-  async fundUser(): Promise<void> {
-    if (!fs.existsSync(this.keyfile)) {
+  static async create(config: any, keyfile: string, cluster: MarginCluster, connection: Connection): Promise<Replicant> {
+    if (!fs.existsSync(keyfile)) {
       const keypair = Keypair.generate()
-      fs.writeFileSync(this.keyfile, JSON.stringify(Array.from(keypair.secretKey)))
-      const airdropSignature = await this.connection.requestAirdrop(keypair.publicKey, 2 * LAMPORTS_PER_SOL)
-      await this.connection.confirmTransaction(airdropSignature)
+      fs.writeFileSync(keyfile, JSON.stringify(Array.from(keypair.secretKey)))
+      const airdropSignature = await connection.requestAirdrop(keypair.publicKey, 2 * LAMPORTS_PER_SOL)
+      await connection.confirmTransaction(airdropSignature)
       await sleep(4 * 1000)
     }
+
+    return new Replicant(config, keyfile, cluster, connection);
+  }
+
+  async fundUser(): Promise<void> {
 
     //TODO if user balance < 1, then airdrop some.
 
@@ -191,7 +196,7 @@ export class Replicant {
               tokenAccount,
               amount
             )
-            const txid = await marginAccount.deposit(marginPool, tokenAccount, amount)
+            const txid = await marginPool.deposit({ marginAccount, source: tokenAccount, amount })
           }
         }
       }
@@ -349,7 +354,7 @@ export class Replicant {
                   tokenAccount,
                   amount
                 )
-                const txid = await marginAccount.deposit(pool, tokenAccount, amount)
+                const txid = await pool.deposit({ marginAccount, source: tokenAccount, amount })
               }
 
               const change = PoolTokenChange.setTo(0)
@@ -378,8 +383,8 @@ export class Replicant {
                 true
               )
               if (position.balance.gt(ZERO_BN)) {
-                const change = PoolTokenChange.setTo(0)
-                await pool.marginWithdraw({ marginAccount, destination, change })
+                const amount = PoolAmount.notes(position.balance)
+                await pool.marginWithdraw({ marginAccount, pools: this.pools!, amount, destination })
               }
               //console.log('');
               //console.log(`position = ${JSON.stringify(position)}`);

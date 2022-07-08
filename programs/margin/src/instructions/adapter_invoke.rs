@@ -55,19 +55,19 @@ pub fn adapter_invoke_handler<'info>(
         adapter_program: ctx.accounts.adapter_program.key(),
     });
 
-    let touched_positions = adapter::invoke(
+    let events = adapter::invoke(
         &InvokeAdapter {
             margin_account: &ctx.accounts.margin_account,
             adapter_program: &ctx.accounts.adapter_program,
             remaining_accounts: ctx.remaining_accounts,
+            signed: true,
         },
         account_metas,
         data,
-        true,
     )?;
 
-    for &position in touched_positions.values() {
-        emit!(events::PositionTouched { position });
+    for event in events {
+        event.emit();
     }
 
     emit!(events::AdapterInvokeEnd {});
