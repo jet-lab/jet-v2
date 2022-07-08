@@ -403,6 +403,8 @@ describe("margin pool borrow", () => {
     expect(await getTokenBalance(provider, "processed", marginPool_SOL.addresses.vault)).to.eq(150 + 1)
   })
 
+  provider.opts.skipPreflight = true;
+
   it("Close margin accounts", async () => {
     await marginPool_SOL.closePosition({
       marginAccount: marginAccount_A,
