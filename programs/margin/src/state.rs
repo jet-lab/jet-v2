@@ -34,11 +34,7 @@ use crate::{
 
 const POS_PRICE_VALID: u8 = 1;
 
-/// The current margin version.
-///
-/// Version history:
-/// - 0: The margin account owns all positions
-/// - 1: Adapters own claims, from 08 July 2022
+/// The current version for the margin account state
 pub const MARGIN_ACCOUNT_VERSION: u8 = 1;
 
 #[account(zero_copy)]
