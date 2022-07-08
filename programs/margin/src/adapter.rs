@@ -37,7 +37,7 @@ pub struct InvokeAdapter<'a, 'info> {
     pub adapter_program: &'a AccountInfo<'info>,
 
     /// The accounts to be passed through to the adapter
-    pub remaining_accounts: &'a [AccountInfo<'info>],
+    pub accounts: &'a [AccountInfo<'info>],
 
     /// The transaction was signed by the authority of the margin account.
     /// Thus, the invocation should be signed by the margin account.
@@ -58,9 +58,29 @@ impl InvokeAdapter<'_, '_> {
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize)]
-pub struct CompactAccountMeta {
-    pub is_signer: u8,
-    pub is_writable: u8,
+pub struct CompactAccountMeta(u8);
+
+impl CompactAccountMeta {
+    pub const MAX_INDEX: usize = 63;
+
+    pub fn new(index: usize, is_signer: bool, is_writable: bool) -> CompactAccountMeta {
+        if index > Self::MAX_INDEX {
+            panic!("can only index up to 63");
+        }
+        CompactAccountMeta((index as u8) << 2 | (is_signer as u8) << 1 | is_writable as u8)
+    }
+
+    pub fn index(&self) -> usize {
+        (self.0 >> 2) as usize
+    }
+
+    pub fn is_signer(&self) -> bool {
+        self.0 >> 1 & 1 == 1
+    }
+
+    pub fn is_writable(&self) -> bool {
+        self.0 & 1 == 1
+    }
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Default)]
@@ -117,24 +137,17 @@ pub fn invoke<'info>(
 ) -> Result<Vec<PositionEvent>> {
     let signer = ctx.margin_account.load()?.signer_seeds_owned();
 
-    let mut accounts = vec![AccountMeta {
-        pubkey: ctx.margin_account.key(),
-        is_signer: ctx.signed,
-        is_writable: true,
-    }];
-    accounts.extend(
-        account_metas
-            .into_iter()
-            .zip(ctx.remaining_accounts.iter())
-            .map(|(meta, account_info)| AccountMeta {
-                pubkey: account_info.key(),
-                is_signer: meta.is_signer != 0,
-                is_writable: meta.is_writable != 0,
-            }),
-    );
+    let accounts = account_metas
+        .into_iter()
+        .map(|meta| AccountMeta {
+            pubkey: ctx.accounts[meta.index()].key(),
+            is_signer: meta.is_signer(),
+            is_writable: meta.is_writable(),
+        })
+        .collect::<Vec<AccountMeta>>();
 
     let mut account_infos = vec![ctx.margin_account.to_account_info()];
-    account_infos.extend(ctx.remaining_accounts.iter().cloned());
+    account_infos.extend(ctx.accounts.iter().cloned());
 
     let instruction = Instruction {
         program_id: ctx.adapter_program.key(),
@@ -179,7 +192,7 @@ fn update_balances(ctx: &InvokeAdapter) -> Result<BTreeMap<Pubkey, PositionEvent
     let mut touched_positions: BTreeMap<Pubkey, PositionEvent> = BTreeMap::new();
 
     let mut margin_account = ctx.margin_account.load_mut()?;
-    for account_info in ctx.remaining_accounts {
+    for account_info in ctx.accounts {
         if account_info.owner == &TokenAccount::owner() {
             let data = &mut &**account_info.try_borrow_data()?;
             if let Ok(account) = TokenAccount::try_deserialize(data) {
@@ -235,7 +248,7 @@ fn apply_changes(
                 None => {
                     key = Some(register_position(
                         &mut margin_account,
-                        ctx.remaining_accounts,
+                        ctx.accounts,
                         ctx.adapter_result_approvals().as_slice(),
                         mint,
                         token_account,
@@ -399,7 +412,7 @@ mod test {
         let ctx = InvokeAdapter {
             margin_account: &AccountLoader::try_from(&margin_account).unwrap(),
             adapter_program: &adapter,
-            remaining_accounts: &[],
+            accounts: &[],
             signed: true,
         };
 
@@ -426,6 +439,20 @@ mod test {
                 PositionChange::Flags(_x, _y)
                 PositionChange::Register(_x)
                 PositionChange::Close(_x)
+        }
+    }
+
+    #[test]
+    fn compact_account_meta_bits_work() {
+        for index in 0..(CompactAccountMeta::MAX_INDEX + 1) {
+            for is_signer in [true, false] {
+                for is_writable in [true, false] {
+                    let x = CompactAccountMeta::new(index, is_signer, is_writable);
+                    assert_eq!(index, x.index());
+                    assert_eq!(is_signer, x.is_signer());
+                    assert_eq!(is_writable, x.is_writable());
+                }
+            }
         }
     }
 
