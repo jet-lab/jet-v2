@@ -31,11 +31,9 @@ const marginAccounts = await MarginAccount.loadAllByOwner({
     owner: walletPublicKey,
 });
 
-//Print risk levels of a margin account
+//Print risk level of a margin account
 if (marginAccounts) {
   console.log(`Public key 6XEn2q37nqsYQB5R79nueGi6n3uhgjiDwxoJeAVzWvaS risk indicator is ${marginAccounts[0].riskIndicator}`)
 } else {
   console.log('We have trouble getting margin accounts')
 }
-
-``
