@@ -6,7 +6,7 @@ import { AnchorProvider, Wallet } from '@project-serum/anchor';
 
 //An example of loading margin accounts and getting a margin account's risk indicator
 
-const walletPublicKey = '7cBzzWR78p41zX6VfZC7xJQmtJQKs5hcJDoeiCEpzycd'
+const walletPublicKey = '6XEn2q37nqsYQB5R79nueGi6n3uhgjiDwxoJeAVzWvaS'
 const config = MarginClient.getConfig('devnet')
 const connection = new Connection('https://api.devnet.solana.com', 'recent')
 const options = AnchorProvider.defaultOptions()
@@ -33,8 +33,9 @@ const marginAccounts = await MarginAccount.loadAllByOwner({
 
 //Print risk levels of a margin account
 if (marginAccounts) {
-  console.log(`Public key 7cBzzWR78p41zX6VfZC7xJQmtJQKs5hcJDoeiCEpzycd risk indicator is ${marginAccounts[0].riskIndicator}`)
+  console.log(`Public key 6XEn2q37nqsYQB5R79nueGi6n3uhgjiDwxoJeAVzWvaS risk indicator is ${marginAccounts[0].riskIndicator}`)
 } else {
   console.log('We have trouble getting margin accounts')
 }
 
+``
