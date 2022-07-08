@@ -414,7 +414,9 @@ describe("margin pool borrow", () => {
       marginAccount: marginAccount_A,
       destination: user_a_usdc_account
     })
+    /*
     await marginAccount_A.closeAccount();
+    */
 
     await marginPool_USDC.closePosition({
       marginAccount: marginAccount_B,
@@ -424,7 +426,9 @@ describe("margin pool borrow", () => {
       marginAccount: marginAccount_B,
       destination: user_b_sol_account
     })
+    /*
     await marginAccount_B.closeAccount();
+    */
   })
 
   describe("Transaction History", () => {
