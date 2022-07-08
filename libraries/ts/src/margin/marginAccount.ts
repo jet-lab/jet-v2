@@ -852,7 +852,7 @@ export class MarginAccount {
   async closePosition(position: AccountPosition) {
     const ix: TransactionInstruction[] = []
     await this.withClosePosition(ix, position)
-    this.sendAndConfirm(ix)
+    await this.sendAndConfirm(ix)
   }
 
   /// Get instruction to close a position
