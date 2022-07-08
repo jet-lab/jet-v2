@@ -1,12 +1,5 @@
 import { AnchorProvider } from "@project-serum/anchor"
-import {
-  BlockheightBasedTransactionConfirmationStrategy,
-  ConfirmOptions,
-  sendAndConfirmRawTransaction,
-  sendAndConfirmTransaction,
-  Transaction,
-  TransactionInstruction
-} from "@solana/web3.js"
+import { ConfirmOptions, sendAndConfirmRawTransaction, Transaction, TransactionInstruction } from "@solana/web3.js"
 
 /**
  * Sends all transactions. If an entry in the transactions array is
@@ -64,7 +57,7 @@ export async function sendAll(
         transactions.map(async tx => {
           if (tx.instructions.length > 0) {
             const rawTx = tx.serialize()
-            await sendAndConfirmRawTransaction(provider.connection, rawTx, opts)
+            return await sendAndConfirmRawTransaction(provider.connection, rawTx, opts)
           }
         })
       )
