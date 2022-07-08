@@ -1,7 +1,7 @@
 {
   "users": [
     {
-      "keypair": "margin-user-1.json"
+      "keypair": "margin-borrow-user-1.json"
     }
   ],
   "accounts": [
