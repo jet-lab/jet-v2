@@ -4,7 +4,7 @@ import MARGIN_CONFIG from "./config.json"
 export type MarginTokens = "BTC" | "ETH" | "MSRM" | "SOL" | "SRM" | "USDC"
 export type MarginOracles = "BTC_USD" | "ETH_USD" | "SOL_USD" | "SRM_USD"
 export type MarginPools = "BTC" | "ETH" | "SOL" | "SRM" | "USDC"
-export type MarginMarkets = "BTC_USDC" | "ETH_USDC" | "SOL_USDC" | "SRM_USDC"
+export type MarginMarkets = "BTC_USDC" | "ETH_USDC"
 
 export type MarginCluster = keyof typeof MARGIN_CONFIG | MarginConfig
 
@@ -19,7 +19,7 @@ export interface MarginConfig {
   pythProgramId: Address
   serumProgramId: Address
   serumReferralAuthority: Address
-  splTokenFaucet: Address
+  splTokenFaucet?: Address
   url: string
   tokens: Record<MarginTokens, MarginTokenConfig>
   oracles: Record<MarginOracles, MarginOracleConfig>
@@ -41,9 +41,6 @@ export interface MarginOracleConfig {
   symbol: string
   address: Address
   product: Address
-  price: number
-  confidence: number
-  exponent: number
 }
 
 export interface MarginPoolConfig {
