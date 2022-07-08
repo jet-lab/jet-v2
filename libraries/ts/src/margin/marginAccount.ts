@@ -605,15 +605,21 @@ export class MarginAccount {
   async getOrCreatePosition(tokenMint: Address) {
     assert(this.info)
     const tokenMintAddress = translateAddress(tokenMint)
+    const ixArray: TransactionInstruction[] = [];
 
+    // If position does not exist, create new position
+    // New position will not be created if already existing
+    await this.withRegisterPositionIfNotExists(tokenMintAddress, ixArray)
+    await this.provider.sendAndConfirm(new Transaction().add(...ixArray))
+
+    // Return address of position, whether existing or newly created
     for (let i = 0; i < MAX_POSITIONS; i++) {
       const position = this.info.positions.positions[i]
       if (position.token.equals(tokenMintAddress)) {
-        return position
+        return position.address
       }
     }
 
-    await this.registerPosition(tokenMintAddress)
     await this.refresh()
 
     throw new Error("Unable to register position.")
@@ -631,7 +637,10 @@ export class MarginAccount {
     }
 
     await this.withRegisterPosition(ixArray, tokenMint)
-    await this.refresh()
+
+    const positionAddress = findDerivedAccount(this.programs.config.marginProgramId, this.address, tokenMintAddress)
+
+    return positionAddress;
   }
 
   async updateAllPositionBalances() {

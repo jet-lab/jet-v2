@@ -380,8 +380,8 @@ export class Pool {
   }: {
     instructions: TransactionInstruction[]
     marginAccount: MarginAccount
-    depositPosition: AccountPosition
-    loanPosition: AccountPosition
+    depositPosition: PublicKey
+    loanPosition: PublicKey
     amount: BN
   }): Promise<void> {
     assert(marginAccount)
@@ -398,8 +398,8 @@ export class Pool {
           marginPool: this.address,
           loanNoteMint: this.addresses.loanNoteMint,
           depositNoteMint: this.addresses.depositNoteMint,
-          loanAccount: loanPosition.address,
-          depositAccount: depositPosition.address,
+          loanAccount: loanPosition,
+          depositAccount: depositPosition,
           tokenProgram: TOKEN_PROGRAM_ID
         })
         .instruction()
@@ -513,7 +513,7 @@ export class Pool {
     const destinationAddress = translateAddress(destination)
 
     // FIXME: can be getPosition
-    const { address: source } = await marginAccount.getOrCreatePosition(this.addresses.depositNoteMint)
+    const source = await marginAccount.getOrCreatePosition(this.addresses.depositNoteMint)
 
     const isDestinationNative = AssociatedToken.isNative(marginAccount.owner, this.tokenMint, destinationAddress)
 
