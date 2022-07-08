@@ -28,6 +28,10 @@ export class TokenFaucet {
     tokenAccount: PublicKey,
     lamports: BN
   ) {
+    if (!programs.config.splTokenFaucet) {
+      throw new Error("No spl token faucet program id")
+    }
+
     const pubkeyNonce = await PublicKey.findProgramAddress(
       [Buffer.from("faucet", "utf8")],
       translateAddress(programs.config.splTokenFaucet)
