@@ -57,17 +57,17 @@ impl InvokeAdapter<'_, '_> {
     }
 }
 
-#[derive(AnchorSerialize, AnchorDeserialize)]
+#[derive(Debug, AnchorSerialize, AnchorDeserialize)]
 pub struct CompactAccountMeta(u8);
 
 impl CompactAccountMeta {
     pub const MAX_INDEX: usize = 63;
 
-    pub fn new(index: usize, is_signer: bool, is_writable: bool) -> CompactAccountMeta {
+    pub fn new(index: usize, is_signer: bool, is_writable: bool) -> std::result::Result<CompactAccountMeta, String> {
         if index > Self::MAX_INDEX {
-            panic!("can only index up to 63");
+            return Err("can only index up to 63".to_owned());
         }
-        CompactAccountMeta((index as u8) << 2 | (is_signer as u8) << 1 | is_writable as u8)
+        Ok(CompactAccountMeta((index as u8) << 2 | (is_signer as u8) << 1 | is_writable as u8))
     }
 
     pub fn index(&self) -> usize {
@@ -447,10 +447,21 @@ mod test {
         for index in 0..(CompactAccountMeta::MAX_INDEX + 1) {
             for is_signer in [true, false] {
                 for is_writable in [true, false] {
-                    let x = CompactAccountMeta::new(index, is_signer, is_writable);
+                    let x = CompactAccountMeta::new(index, is_signer, is_writable).unwrap();
                     assert_eq!(index, x.index());
                     assert_eq!(is_signer, x.is_signer());
                     assert_eq!(is_writable, x.is_writable());
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn compact_account_meta_limited_to_63() {
+        for index in 64..300usize {
+            for is_signer in [true, false] {
+                for is_writable in [true, false] {
+                    CompactAccountMeta::new(index, is_signer, is_writable).unwrap_err();
                 }
             }
         }

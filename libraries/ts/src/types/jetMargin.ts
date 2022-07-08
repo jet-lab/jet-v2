@@ -439,11 +439,7 @@ export type JetMargin = {
         kind: "struct"
         fields: [
           {
-            name: "isSigner"
-            type: "u8"
-          },
-          {
-            name: "isWritable"
+            name: "data"
             type: "u8"
           }
         ]
@@ -1208,11 +1204,7 @@ export const IDL: JetMargin = {
         kind: "struct",
         fields: [
           {
-            name: "isSigner",
-            type: "u8"
-          },
-          {
-            name: "isWritable",
+            name: "data",
             type: "u8"
           }
         ]

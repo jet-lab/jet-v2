@@ -2,6 +2,7 @@ import assert from "assert"
 import { Address, AnchorProvider, BN, ProgramAccount, translateAddress } from "@project-serum/anchor"
 import { NATIVE_MINT, TOKEN_PROGRAM_ID } from "@solana/spl-token"
 import {
+  AccountMeta,
   GetProgramAccountsFilter,
   MemcmpFilter,
   PublicKey,
@@ -16,6 +17,7 @@ import {
   AccountPositionList,
   AccountPositionListLayout,
   AdapterPositionFlags,
+  CompactAccountMeta,
   ErrorCode,
   MarginAccountData,
   PositionKind
@@ -850,7 +852,7 @@ export class MarginAccount {
   }
 
   async closePosition(position: AccountPosition) {
-    console.log(`position = ${JSON.stringify(position)}`);
+    console.log(`position = ${JSON.stringify(position)}`)
     const ix: TransactionInstruction[] = []
     await this.withClosePosition(ix, position)
     await this.sendAndConfirm(ix)
@@ -889,28 +891,21 @@ export class MarginAccount {
     adapterMetadata: Address
     adapterInstruction: TransactionInstruction
   }): Promise<void> {
+    let [compactAccountMetas, remainingAccounts] = this.invoke({
+      adapterInstruction,
+      marginIndex: 1,
+      offset: 4
+    })
+
     const ix = await this.programs.margin.methods
-      .adapterInvoke(
-        adapterInstruction.keys.slice(1).map(accountMeta => {
-          return { isSigner: accountMeta.isSigner, isWritable: accountMeta.isWritable }
-        }),
-        adapterInstruction.data
-      )
+      .adapterInvoke(compactAccountMetas, adapterInstruction.data)
       .accounts({
         owner: this.owner,
         marginAccount: this.address,
         adapterProgram,
         adapterMetadata
       })
-      .remainingAccounts(
-        adapterInstruction.keys.slice(1).map(accountMeta => {
-          return {
-            pubkey: accountMeta.pubkey,
-            isSigner: accountMeta.isSigner,
-            isWritable: accountMeta.isWritable
-          }
-        })
-      )
+      .remainingAccounts(remainingAccounts)
       .instruction()
     instructions.push(ix)
   }
@@ -926,29 +921,61 @@ export class MarginAccount {
     adapterMetadata: Address
     adapterInstruction: TransactionInstruction
   }): Promise<void> {
+    let [compactAccountMetas, remainingAccounts] = this.invoke({
+      adapterInstruction,
+      marginIndex: 0,
+      offset: 3
+    })
+
     const ix = await this.programs.margin.methods
-      .accountingInvoke(
-        adapterInstruction.keys.slice(1).map(accountMeta => {
-          return { isSigner: false, isWritable: accountMeta.isWritable }
-        }),
-        adapterInstruction.data
-      )
+      .accountingInvoke(compactAccountMetas, adapterInstruction.data)
       .accounts({
         marginAccount: this.address,
         adapterProgram,
         adapterMetadata
       })
-      .remainingAccounts(
-        adapterInstruction.keys.slice(1).map(accountMeta => {
-          return {
-            pubkey: accountMeta.pubkey,
-            isSigner: false,
-            isWritable: accountMeta.isWritable
-          }
-        })
-      )
+      .remainingAccounts(remainingAccounts)
       .instruction()
     instructions.push(ix)
+  }
+
+  // prepares arguments for adapterInvoke, accountInvoke, or liquidatorInvoke
+  invoke({
+    adapterInstruction,
+    marginIndex, // location that marginAccount already exists in the instruction
+    offset // number of accounts required for margin program
+  }: {
+    adapterInstruction: TransactionInstruction
+    marginIndex: number
+    offset: number
+  }): [CompactAccountMeta[], AccountMeta[]] {
+    // doesn't optimize as well as rust/src/ix_builder/margin.rs::invoke
+    // because it only looks for the margin account, not other accounts.
+    // that's the only one we are using, so it's ok (for now)
+    let idx = offset
+    let compactAccountMetas: CompactAccountMeta[] = []
+    let remainingAccounts: AccountMeta[] = []
+    for (let acc of adapterInstruction.keys) {
+      let actualIndex = idx
+      if (acc.pubkey == this.address) {
+        actualIndex = marginIndex
+      } else {
+        idx += 1
+        remainingAccounts.push({
+          pubkey: acc.pubkey,
+          isSigner: acc.isSigner,
+          isWritable: acc.isWritable
+        })
+      }
+      let data = this.compactAccountMeta(actualIndex, acc.isSigner, acc.isWritable)
+      compactAccountMetas.push(data)
+    }
+
+    return [compactAccountMetas, remainingAccounts]
+  }
+
+  compactAccountMeta(index: number, is_signer: boolean, is_writable: boolean): CompactAccountMeta {
+    return { data: (index << 2) | (Number(is_signer) << 1) | Number(is_writable) }
   }
 
   async sendAndConfirm(instructions: TransactionInstruction[]) {

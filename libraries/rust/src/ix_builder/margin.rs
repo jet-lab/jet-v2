@@ -371,9 +371,7 @@ macro_rules! invoke {
             .map(|(idx, acc)| (acc.pubkey, idx))
             .collect::<std::collections::HashMap<Pubkey, usize>>();
 
-        let prefix_length = accounts.len();
-
-        let mut idx = prefix_length;
+        let mut idx = accounts.len();
         let mut compact_account_metas = Vec::new();
         for acc in $adapter_ix.accounts {
             let base_index = base_account_indices.get(&acc.pubkey);
@@ -381,7 +379,7 @@ macro_rules! invoke {
                 *base_index.unwrap_or(&idx),
                 acc.is_signer,
                 acc.is_writable,
-            ));
+            ).unwrap());
             if let None = base_index {
                 idx += 1;
                 accounts.push(acc);
