@@ -63,11 +63,17 @@ pub struct CompactAccountMeta(u8);
 impl CompactAccountMeta {
     pub const MAX_INDEX: usize = 63;
 
-    pub fn new(index: usize, is_signer: bool, is_writable: bool) -> std::result::Result<CompactAccountMeta, String> {
+    pub fn new(
+        index: usize,
+        is_signer: bool,
+        is_writable: bool,
+    ) -> std::result::Result<CompactAccountMeta, String> {
         if index > Self::MAX_INDEX {
             return Err("can only index up to 63".to_owned());
         }
-        Ok(CompactAccountMeta((index as u8) << 2 | (is_signer as u8) << 1 | is_writable as u8))
+        Ok(CompactAccountMeta(
+            (index as u8) << 2 | (is_signer as u8) << 1 | is_writable as u8,
+        ))
     }
 
     pub fn index(&self) -> usize {
