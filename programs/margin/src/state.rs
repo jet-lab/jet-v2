@@ -34,6 +34,9 @@ use crate::{
 
 const POS_PRICE_VALID: u8 = 1;
 
+/// The current version for the margin account state
+pub const MARGIN_ACCOUNT_VERSION: u8 = 1;
+
 #[account(zero_copy)]
 #[repr(C)]
 // bytemuck requires a higher alignment than 1 for unit tests to run.
@@ -149,6 +152,7 @@ impl MarginAccount {
     }
 
     pub fn initialize(&mut self, owner: Pubkey, seed: u16, bump_seed: u8) {
+        self.version = MARGIN_ACCOUNT_VERSION;
         self.owner = owner;
         self.bump_seed = [bump_seed];
         self.user_seed = seed.to_le_bytes();
