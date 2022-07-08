@@ -1,8 +1,7 @@
-import { Account, Connection, Keypair, LAMPORTS_PER_SOL } from "@solana/web3.js"
-import * as fs from "fs"
+import { Connection } from "@solana/web3.js"
 import * as os from "os"
 
-import { Replicant, sleep } from "./replicant"
+import { Replicant } from "./replicant"
 
 import CONFIG from "../../libraries/ts/src/margin/config.json"
 
@@ -17,7 +16,7 @@ describe("Deposits", () => {
   it("Create users", async () => {
     for (const userConfig of TEST_CONFIG.users) {
       replicants.push(
-        new Replicant(TEST_CONFIG, os.homedir() + "/.config/solana/" + userConfig.keypair, "devnet", connection)
+        await Replicant.create(TEST_CONFIG, os.homedir() + "/.config/solana/" + userConfig.keypair, "devnet", connection)
       )
     }
   })
