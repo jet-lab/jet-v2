@@ -47,6 +47,7 @@ describe("Deposits", () => {
 
   it("Close margin accounts", async () => {
     for (const replicant of replicants) {
+      await replicant.printAccounts()
       await replicant.closeAccounts()
     }
   })

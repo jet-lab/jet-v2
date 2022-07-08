@@ -8,7 +8,8 @@
     "prepare": "husky install",
     "precommit": "npm run compile && npm run fmt:fix && npm run lint && git add .",
     "test": "anchor test --skip-lint -- --features testing",
-    "test:devnet": "npx ts-mocha -p ./tsconfig.json -t 1000000 tests/declarative/*.sim.ts"
+    "test:devnet": "npx ts-mocha -p ./tsconfig.json -t 1000000 tests/declarative/*.sim.ts",
+    "test:nobuild": "anchor test --skip-lint --skip-build -- --features testing"
   },
   "dependencies": {
     "@project-serum/anchor": "^0.24.2",
