@@ -512,7 +512,7 @@ export class Pool {
       marginAccount,
       depositPosition,
       loanNoteAccount,
-      amount
+      change
     })
     await marginAccount.sendAndConfirm(instructions)
   }
@@ -542,13 +542,13 @@ export class Pool {
     marginAccount,
     depositPosition,
     loanNoteAccount,
-    amount
+    change
   }: {
     instructions: TransactionInstruction[]
     marginAccount: MarginAccount
     depositPosition: AccountPosition
     loanNoteAccount: Address
-    amount: BN
+    change: PoolTokenChange
   }): Promise<void> {
     assert(marginAccount)
     assert(depositPosition)
@@ -607,7 +607,7 @@ export class Pool {
         marginAccount: marginAccount.address,
         deposit_account: deposit_position.address,
         loan_account: loanNoteAccount,
-        amount
+        change
       })
     })
 
