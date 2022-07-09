@@ -404,8 +404,8 @@ impl MarginAccount {
                 }
                 (PositionKind::Claim, Some(error)) => {
                     msg!("claim position is stale: {:?}", position);
-                    return Err(error!(error))
-                },
+                    return Err(error!(error));
+                }
 
                 (PositionKind::Deposit, None) => weighted_collateral += position.collateral_value(),
                 (PositionKind::Deposit, Some(e)) => {
