@@ -13,7 +13,8 @@ import {
   Pool,
   MarginPoolConfigData,
   PoolManager,
-  Number128
+  Number128,
+  sleep
 } from "../../../libraries/ts/src"
 
 import { PythClient } from "../pyth/pythClient"
@@ -380,13 +381,13 @@ describe("margin pool borrow", () => {
 
   it("Users withdraw their funds", async () => {
     // ACT
-    await marginPool_USDC.marginWithdraw({
+    await marginPool_USDC.withdraw({
       marginAccount: marginAccount_A,
       pools,
       destination: user_a_usdc_account,
       amount: PoolAmount.tokens(new BN(400_000 * ONE_USDC))
     })
-    await marginPool_SOL.marginWithdraw({
+    await marginPool_SOL.withdraw({
       marginAccount: marginAccount_B,
       pools,
       destination: user_b_sol_account,

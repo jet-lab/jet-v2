@@ -13,7 +13,7 @@ import { PoolAmount } from "./poolAmount"
 import { TokenMetadata } from "../metadata/state"
 import { findDerivedAccount } from "../../utils/pda"
 import { AccountPosition, PriceInfo } from "../accountPosition"
-import { Number192, sleep } from "../../utils"
+import { chunks, Number192, sendAll, sleep } from "../../utils"
 import { PositionTokenMetadata } from "../positionTokenMetadata"
 
 export interface MarginPoolAddresses {
@@ -499,22 +499,30 @@ export class Pool {
 
   async marginBorrow({ marginAccount, pools, amount }: { marginAccount: MarginAccount; pools: Pool[]; amount: BN }) {
     await marginAccount.refresh()
-    const instructions: TransactionInstruction[] = []
+    const preInstructons: TransactionInstruction[] = []
+    const refreshInstructions: TransactionInstruction[] = []
+    const postInstructions: TransactionInstruction[] = []
 
     const depositPosition = await marginAccount.getOrCreatePosition(this.addresses.depositNoteMint)
     assert(depositPosition)
 
-    const loanNoteAccount = await this.withGetOrCreateLoanPosition(instructions, marginAccount)
-    await this.withMarginRefreshAllPositionPrices({ instructions, pools, marginAccount })
-    await marginAccount.withUpdateAllPositionBalances({ instructions })
+    const loanNoteAccount = await this.withGetOrCreateLoanPosition(preInstructons, marginAccount)
+
+    await this.withMarginRefreshAllPositionPrices({ instructions: refreshInstructions, pools, marginAccount })
+
     await this.withMarginBorrow({
-      instructions,
+      instructions: postInstructions,
       marginAccount,
       depositPosition,
       loanNoteAccount,
       amount
     })
-    await marginAccount.sendAndConfirm(instructions)
+    try {
+      return await sendAll(marginAccount.provider, [preInstructons, chunks(11, refreshInstructions), postInstructions])
+    } catch (err) {
+      console.log(err)
+      throw err
+    }
   }
 
   async withGetOrCreateLoanPosition(
@@ -594,21 +602,18 @@ export class Pool {
     const deposit_position = await marginAccount.getOrCreatePosition(this.addresses.depositNoteMint)
     assert(deposit_position)
 
+    const refreshInstructions: TransactionInstruction[] = []
     const instructions: TransactionInstruction[] = []
-    const loanNoteAccount = await this.withGetOrCreateLoanPosition(instructions, marginAccount)
 
-    await marginAccount.withUpdateAllPositionBalances({ instructions })
-    await this.withMarginRefreshAllPositionPrices({ instructions, pools, marginAccount })
-    await marginAccount.withAdapterInvoke({
+    await this.withMarginRefreshAllPositionPrices({ instructions: refreshInstructions, pools, marginAccount })
+
+    const loanNoteAccount = await this.withGetOrCreateLoanPosition(instructions, marginAccount)
+    await this.makeMarginRepayInstruction({
       instructions,
-      adapterProgram: this.programs.config.marginPoolProgramId,
-      adapterMetadata: this.addresses.marginPoolAdapterMetadata,
-      adapterInstruction: await this.makeMarginRepayInstruction({
-        marginAccount: marginAccount.address,
-        deposit_account: deposit_position.address,
-        loan_account: loanNoteAccount,
-        amount
-      })
+      marginAccount: marginAccount,
+      deposit_account: deposit_position.address,
+      loan_account: loanNoteAccount,
+      amount
     })
 
     // Automatically close the position once the loan is repaid.
@@ -619,7 +624,7 @@ export class Pool {
     // }
 
     try {
-      return await marginAccount.provider.sendAndConfirm(new Transaction().add(...instructions))
+      await sendAll(marginAccount.provider, [chunks(11, refreshInstructions), instructions])
     } catch (err) {
       console.log(err)
       throw err
@@ -627,28 +632,35 @@ export class Pool {
   }
 
   async makeMarginRepayInstruction({
+    instructions,
     marginAccount,
     deposit_account,
     loan_account,
     amount
   }: {
-    marginAccount: Address
+    instructions: TransactionInstruction[]
+    marginAccount: MarginAccount
     deposit_account: Address
     loan_account: Address
     amount: PoolAmount
-  }): Promise<TransactionInstruction> {
-    return await this.programs.marginPool.methods
-      .marginRepay(amount.toRpcArg())
-      .accounts({
-        marginAccount: marginAccount,
-        marginPool: this.address,
-        loanNoteMint: this.addresses.loanNoteMint,
-        depositNoteMint: this.addresses.depositNoteMint,
-        loanAccount: loan_account,
-        depositAccount: deposit_account,
-        tokenProgram: TOKEN_PROGRAM_ID
-      })
-      .instruction()
+  }): Promise<void> {
+    await marginAccount.withAdapterInvoke({
+      instructions,
+      adapterProgram: this.programs.config.marginPoolProgramId,
+      adapterMetadata: this.addresses.marginPoolAdapterMetadata,
+      adapterInstruction: await this.programs.marginPool.methods
+        .marginRepay(amount.toRpcArg())
+        .accounts({
+          marginAccount: marginAccount.address,
+          marginPool: this.address,
+          loanNoteMint: this.addresses.loanNoteMint,
+          depositNoteMint: this.addresses.depositNoteMint,
+          loanAccount: loan_account,
+          depositAccount: deposit_account,
+          tokenProgram: TOKEN_PROGRAM_ID
+        })
+        .instruction()
+    })
   }
 
   /// Instruction to withdraw tokens from the pool.
@@ -658,7 +670,7 @@ export class Pool {
   /// `margin_account` - The margin account with the deposit to be withdrawn
   /// `amount` - The amount to withdraw in lamports.
   /// `destination` - (Optional) The token account to send the withdrawn deposit
-  async marginWithdraw({
+  async withdraw({
     marginAccount,
     pools,
     amount,
@@ -673,6 +685,7 @@ export class Pool {
     const { address: source } = await marginAccount.getOrCreatePosition(this.addresses.depositNoteMint)
 
     const preInstructions: TransactionInstruction[] = []
+    const refreshInstructions: TransactionInstruction[] = []
     const instructions: TransactionInstruction[] = []
     const postInstructions: TransactionInstruction[] = []
 
@@ -685,48 +698,53 @@ export class Pool {
         this.tokenMint
       ))
 
-    await this.withMarginRefreshAllPositionPrices({ instructions, pools, marginAccount })
-    await marginAccount.withUpdateAllPositionBalances({ instructions })
-    await marginAccount.withAdapterInvoke({
+    await this.withMarginRefreshAllPositionPrices({ instructions: refreshInstructions, pools, marginAccount })
+    await marginAccount.withUpdateAllPositionBalances({ instructions: refreshInstructions })
+    await this.withWithdraw({
       instructions,
-      adapterProgram: this.programs.config.marginPoolProgramId,
-      adapterMetadata: this.addresses.marginPoolAdapterMetadata,
-      adapterInstruction: await this.makeMarginWithdrawInstruction({
-        marginAccount: marginAccount.address,
-        source,
-        destination: marginWithdrawDestination,
-        amount
-      })
+      marginAccount: marginAccount,
+      source,
+      destination: marginWithdrawDestination,
+      amount
     })
 
-    return await marginAccount.provider.sendAndConfirm(
-      new Transaction().add(...[...preInstructions, ...instructions, ...postInstructions])
-    )
+    return await sendAll(marginAccount.provider, [
+      preInstructions,
+      chunks(11, refreshInstructions),
+      [...instructions, ...postInstructions]
+    ])
   }
 
-  async makeMarginWithdrawInstruction({
+  async withWithdraw({
+    instructions,
     marginAccount,
     source,
     destination,
     amount
   }: {
-    marginAccount: Address
+    instructions: TransactionInstruction[]
+    marginAccount: MarginAccount
     source: Address
     destination: Address
     amount: PoolAmount
-  }): Promise<TransactionInstruction> {
-    return await this.programs.marginPool.methods
-      .withdraw(amount.toRpcArg())
-      .accounts({
-        depositor: marginAccount,
-        marginPool: this.address,
-        vault: this.addresses.vault,
-        depositNoteMint: this.addresses.depositNoteMint,
-        source,
-        destination,
-        tokenProgram: TOKEN_PROGRAM_ID
-      })
-      .instruction()
+  }): Promise<void> {
+    await marginAccount.withAdapterInvoke({
+      instructions,
+      adapterProgram: this.programs.config.marginPoolProgramId,
+      adapterMetadata: this.addresses.marginPoolAdapterMetadata,
+      adapterInstruction: await this.programs.marginPool.methods
+        .withdraw(amount.toRpcArg())
+        .accounts({
+          depositor: marginAccount.address,
+          marginPool: this.address,
+          vault: this.addresses.vault,
+          depositNoteMint: this.addresses.depositNoteMint,
+          source,
+          destination,
+          tokenProgram: TOKEN_PROGRAM_ID
+        })
+        .instruction()
+    })
   }
 
   async withRegisterLoan(instructions: TransactionInstruction[], marginAccount: MarginAccount): Promise<Address> {
@@ -805,16 +823,12 @@ export class Pool {
         await marginAccount.withUpdatePositionBalance({ instructions, position })
 
         await AssociatedToken.withCreate(instructions, marginAccount.provider, marginAccount.owner, this.tokenMint)
-        await marginAccount.withAdapterInvoke({
-          instructions: instructions,
-          adapterProgram: this.programs.config.marginPoolProgramId,
-          adapterMetadata: this.addresses.marginPoolAdapterMetadata,
-          adapterInstruction: await this.makeMarginWithdrawInstruction({
-            marginAccount: marginAccount.address,
-            source: position.address,
-            destination: marginWithdrawDestination,
-            amount: PoolAmount.notes(position.balance)
-          })
+        await this.withWithdraw({
+          instructions,
+          marginAccount: marginAccount,
+          source: position.address,
+          destination: marginWithdrawDestination,
+          amount: PoolAmount.notes(position.balance)
         })
 
         if (isDestinationNative) {
