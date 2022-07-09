@@ -25,7 +25,7 @@ import {
 import MARGIN_CONFIG from "../../../libraries/ts/src/margin/config.json"
 
 import { TokenSwap, CurveType, MarginSwap } from "../../../libraries/ts/src"
-import { sleep } from "../../../libraries/ts/src/utils/util"
+import { sleep } from "../../../libraries/ts/src/utils/sleep"
 
 import { getTokenAccountInfo } from "../util"
 ;[new PublicKey(MARGIN_CONFIG.localnet.orcaSwapProgramId)].forEach(function (swapProgramId) {
