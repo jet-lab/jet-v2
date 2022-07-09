@@ -17,7 +17,6 @@ import {
   AccountPositionList,
   AccountPositionListLayout,
   AdapterPositionFlags,
-  CompactAccountMeta,
   ErrorCode,
   MarginAccountData,
   PositionKind
@@ -891,21 +890,15 @@ export class MarginAccount {
     adapterMetadata: Address
     adapterInstruction: TransactionInstruction
   }): Promise<void> {
-    let [compactAccountMetas, remainingAccounts] = this.invoke({
-      adapterInstruction,
-      marginIndex: 1,
-      offset: 4
-    })
-
     const ix = await this.programs.margin.methods
-      .adapterInvoke(compactAccountMetas, adapterInstruction.data)
+      .adapterInvoke(adapterInstruction.data)
       .accounts({
         owner: this.owner,
         marginAccount: this.address,
         adapterProgram,
         adapterMetadata
       })
-      .remainingAccounts(remainingAccounts)
+      .remainingAccounts(this.invokeAccounts(adapterInstruction))
       .instruction()
     instructions.push(ix)
   }
@@ -921,61 +914,34 @@ export class MarginAccount {
     adapterMetadata: Address
     adapterInstruction: TransactionInstruction
   }): Promise<void> {
-    let [compactAccountMetas, remainingAccounts] = this.invoke({
-      adapterInstruction,
-      marginIndex: 0,
-      offset: 3
-    })
-
     const ix = await this.programs.margin.methods
-      .accountingInvoke(compactAccountMetas, adapterInstruction.data)
+      .accountingInvoke(adapterInstruction.data)
       .accounts({
         marginAccount: this.address,
         adapterProgram,
         adapterMetadata
       })
-      .remainingAccounts(remainingAccounts)
+      .remainingAccounts(this.invokeAccounts(adapterInstruction))
       .instruction()
     instructions.push(ix)
   }
 
   // prepares arguments for adapterInvoke, accountInvoke, or liquidatorInvoke
-  invoke({
-    adapterInstruction,
-    marginIndex, // location that marginAccount already exists in the instruction
-    offset // number of accounts required for margin program
-  }: {
-    adapterInstruction: TransactionInstruction
-    marginIndex: number
-    offset: number
-  }): [CompactAccountMeta[], AccountMeta[]] {
-    // doesn't optimize as well as rust/src/ix_builder/margin.rs::invoke
-    // because it only looks for the margin account, not other accounts.
-    // that's the only one we are using, so it's ok (for now)
-    let idx = offset
-    let compactAccountMetas: CompactAccountMeta[] = []
-    let remainingAccounts: AccountMeta[] = []
+  invokeAccounts(adapterInstruction: TransactionInstruction): AccountMeta[] {
+    let accounts: AccountMeta[] = []
     for (let acc of adapterInstruction.keys) {
-      let actualIndex = idx
-      if (acc.pubkey == this.address) {
-        actualIndex = marginIndex
-      } else {
-        idx += 1
-        remainingAccounts.push({
-          pubkey: acc.pubkey,
-          isSigner: acc.isSigner,
-          isWritable: acc.isWritable
-        })
+      let isSigner = false
+      if (acc.pubkey != this.address) {
+        isSigner = acc.isSigner
       }
-      let data = this.compactAccountMeta(actualIndex, acc.isSigner, acc.isWritable)
-      compactAccountMetas.push(data)
+      accounts.push({
+        pubkey: acc.pubkey,
+        isSigner: isSigner,
+        isWritable: acc.isWritable
+      })
     }
 
-    return [compactAccountMetas, remainingAccounts]
-  }
-
-  compactAccountMeta(index: number, is_signer: boolean, is_writable: boolean): CompactAccountMeta {
-    return { data: (index << 2) | (Number(is_signer) << 1) | Number(is_writable) }
+    return accounts
   }
 
   async sendAndConfirm(instructions: TransactionInstruction[]) {

@@ -36,7 +36,6 @@ export type AccountPositionList = TypeDef<AllTypesMap<JetMargin>["AccountPositio
 }
 export type PositionKindInfo = AccountPositionInfo["kind"]
 export type AdapterResult = TypeDef<AllTypesMap<JetMargin>["AdapterResult"], IdlTypes<JetMargin>>
-export type CompactAccountMeta = TypeDef<AllTypesMap<JetMargin>["CompactAccountMeta"], IdlTypes<JetMargin>>
 export type PositionChange = TypeDef<AllTypesMap<JetMargin>["PositionChange"], IdlTypes<JetMargin>>
 export type PriceInfoData = TypeDef<AllTypesMap<JetMargin>["PriceInfo"], IdlTypes<JetMargin>>
 

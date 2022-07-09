@@ -24,9 +24,9 @@ use anchor_lang::prelude::{Id, System, ToAccountMetas};
 use anchor_lang::InstructionData;
 use anchor_spl::token::Token;
 
+use jet_margin::accounts as ix_account;
 use jet_margin::instruction as ix_data;
 use jet_margin::program::JetMargin;
-use jet_margin::{accounts as ix_account, CompactAccountMeta};
 
 /// Utility for creating instructions to interact with the margin
 /// program for a specific account.
@@ -366,23 +366,14 @@ macro_rules! invoke {
         }
         .to_account_metas(None);
 
-        let base_account_indices = accounts.iter()
-            .enumerate()
-            .map(|(idx, acc)| (acc.pubkey, idx))
-            .collect::<std::collections::HashMap<Pubkey, usize>>();
-
-        let mut idx = accounts.len();
-        let mut compact_account_metas = Vec::new();
         for acc in $adapter_ix.accounts {
-            let base_index = base_account_indices.get(&acc.pubkey);
-            compact_account_metas.push(CompactAccountMeta::new(
-                *base_index.unwrap_or(&idx),
-                acc.is_signer,
-                acc.is_writable,
-            ).unwrap());
-            if let None = base_index {
-                idx += 1;
-                accounts.push(acc);
+            if acc.pubkey == $margin_account {
+                accounts.push(anchor_lang::prelude::AccountMeta {
+                    is_signer: false,
+                    ..acc
+                })
+            } else {
+                accounts.push(acc)
             }
         }
 
@@ -390,7 +381,6 @@ macro_rules! invoke {
             program_id: JetMargin::id(),
             data: ix_data::$Instruction {
                 data: $adapter_ix.data,
-                account_metas: compact_account_metas,
             }
             .data(),
             accounts,

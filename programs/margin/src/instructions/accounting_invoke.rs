@@ -19,8 +19,7 @@ use anchor_lang::prelude::*;
 
 use jet_metadata::MarginAdapterMetadata;
 
-use crate::adapter::{self, CompactAccountMeta, InvokeAdapter};
-use crate::util::Wrap;
+use crate::adapter::{self, InvokeAdapter};
 use crate::{events, MarginAccount};
 
 #[derive(Accounts)]
@@ -40,7 +39,6 @@ pub struct AccountingInvoke<'info> {
 
 pub fn accounting_invoke_handler<'info>(
     ctx: Context<'_, '_, '_, 'info, AccountingInvoke<'info>>,
-    account_metas: Vec<CompactAccountMeta>,
     data: Vec<u8>,
 ) -> Result<()> {
     emit!(events::AccountingInvokeBegin {
@@ -52,10 +50,9 @@ pub fn accounting_invoke_handler<'info>(
         &InvokeAdapter {
             margin_account: &ctx.accounts.margin_account,
             adapter_program: &ctx.accounts.adapter_program,
-            accounts: &ctx.wrap_ref().to_account_infos(),
+            accounts: ctx.remaining_accounts,
             signed: false,
         },
-        account_metas,
         data,
     )?;
 

@@ -19,9 +19,8 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use anchor_lang::{
-    prelude::{msg, AccountInfo, Clock, Context, SolanaSysvar},
+    prelude::{msg, Clock, SolanaSysvar},
     solana_program::instruction::TRANSACTION_LEVEL_STACK_HEIGHT,
-    ToAccountInfos,
 };
 
 use crate::{
@@ -172,35 +171,6 @@ impl std::fmt::Debug for BitSet {
         f.debug_tuple("BitSet")
             .field(&format_args!("{:#010b}", &self.0))
             .finish()
-    }
-}
-
-pub struct MarginTypeWrapper<T>(T);
-
-pub trait Wrap: Sized {
-    fn wrap(self) -> MarginTypeWrapper<Self> {
-        MarginTypeWrapper(self)
-    }
-
-    fn wrap_ref(&self) -> MarginTypeWrapper<&Self> {
-        MarginTypeWrapper(self)
-    }
-
-    fn wrap_mut(&mut self) -> MarginTypeWrapper<&mut Self> {
-        MarginTypeWrapper(self)
-    }
-}
-
-impl<T> Wrap for T {}
-
-impl<'info, T: ToAccountInfos<'info>> ToAccountInfos<'info>
-    for MarginTypeWrapper<&Context<'_, '_, '_, 'info, T>>
-{
-    fn to_account_infos(&self) -> Vec<AccountInfo<'info>> {
-        let mut accounts = self.0.accounts.to_account_infos();
-        accounts.extend_from_slice(self.0.remaining_accounts);
-
-        accounts
     }
 }
 
@@ -384,12 +354,5 @@ mod test {
                 assert_eq!(extremum as u32, BitSet(byte.reverse_bits()).min().unwrap());
             }
         }
-    }
-
-    /// this was the only way to get codecov to pass in github
-    #[test]
-    fn pointless_test() {
-        "".wrap_ref();
-        "".wrap_mut();
     }
 }

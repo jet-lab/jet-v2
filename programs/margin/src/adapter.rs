@@ -57,38 +57,6 @@ impl InvokeAdapter<'_, '_> {
     }
 }
 
-#[derive(Debug, AnchorSerialize, AnchorDeserialize)]
-pub struct CompactAccountMeta(u8);
-
-impl CompactAccountMeta {
-    pub const MAX_INDEX: usize = 63;
-
-    pub fn new(
-        index: usize,
-        is_signer: bool,
-        is_writable: bool,
-    ) -> std::result::Result<CompactAccountMeta, String> {
-        if index > Self::MAX_INDEX {
-            return Err("can only index up to 63".to_owned());
-        }
-        Ok(CompactAccountMeta(
-            (index as u8) << 2 | (is_signer as u8) << 1 | is_writable as u8,
-        ))
-    }
-
-    pub fn index(&self) -> usize {
-        (self.0 >> 2) as usize
-    }
-
-    pub fn is_signer(&self) -> bool {
-        self.0 >> 1 & 1 == 1
-    }
-
-    pub fn is_writable(&self) -> bool {
-        self.0 & 1 == 1
-    }
-}
-
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Default)]
 pub struct AdapterResult {
     /// keyed by token mint, same as position
@@ -136,24 +104,22 @@ pub struct PriceChangeInfo {
 
 /// Invoke a margin adapter with the requested data
 /// * `signed` - sign with the margin account
-pub fn invoke<'info>(
-    ctx: &InvokeAdapter<'_, 'info>,
-    account_metas: Vec<CompactAccountMeta>,
-    data: Vec<u8>,
-) -> Result<Vec<PositionEvent>> {
+pub fn invoke<'info>(ctx: &InvokeAdapter<'_, 'info>, data: Vec<u8>) -> Result<Vec<PositionEvent>> {
     let signer = ctx.margin_account.load()?.signer_seeds_owned();
 
-    let accounts = account_metas
-        .into_iter()
-        .map(|meta| AccountMeta {
-            pubkey: ctx.accounts[meta.index()].key(),
-            is_signer: meta.is_signer(),
-            is_writable: meta.is_writable(),
+    let accounts = ctx
+        .accounts
+        .iter()
+        .map(|info| AccountMeta {
+            pubkey: info.key(),
+            is_signer: if info.key() == ctx.margin_account.key() {
+                ctx.signed
+            } else {
+                info.is_signer
+            },
+            is_writable: info.is_writable,
         })
         .collect::<Vec<AccountMeta>>();
-
-    let mut account_infos = vec![ctx.margin_account.to_account_info()];
-    account_infos.extend(ctx.accounts.iter().cloned());
 
     let instruction = Instruction {
         program_id: ctx.adapter_program.key(),
@@ -163,9 +129,9 @@ pub fn invoke<'info>(
 
     ctx.margin_account.load_mut()?.invocation.start();
     if ctx.signed {
-        program::invoke_signed(&instruction, &account_infos, &[&signer.signer_seeds()])?;
+        program::invoke_signed(&instruction, ctx.accounts, &[&signer.signer_seeds()])?;
     } else {
-        program::invoke(&instruction, &account_infos)?;
+        program::invoke(&instruction, ctx.accounts)?;
     }
     ctx.margin_account.load_mut()?.invocation.end();
 
@@ -445,31 +411,6 @@ mod test {
                 PositionChange::Flags(_x, _y)
                 PositionChange::Register(_x)
                 PositionChange::Close(_x)
-        }
-    }
-
-    #[test]
-    fn compact_account_meta_bits_work() {
-        for index in 0..(CompactAccountMeta::MAX_INDEX + 1) {
-            for is_signer in [true, false] {
-                for is_writable in [true, false] {
-                    let x = CompactAccountMeta::new(index, is_signer, is_writable).unwrap();
-                    assert_eq!(index, x.index());
-                    assert_eq!(is_signer, x.is_signer());
-                    assert_eq!(is_writable, x.is_writable());
-                }
-            }
-        }
-    }
-
-    #[test]
-    fn compact_account_meta_limited_to_63() {
-        for index in 64..300usize {
-            for is_signer in [true, false] {
-                for is_writable in [true, false] {
-                    CompactAccountMeta::new(index, is_signer, is_writable).unwrap_err();
-                }
-            }
         }
     }
 
