@@ -30,7 +30,7 @@ anchor-spl = { git = "https://github.com/jet-lab/anchor", branch = "master" }
 
 pyth-sdk-solana = "0.4"
 
-jet-proto-math = { git = "https://github.com/jet-lab/program-libraries", branch = "main" }
+jet-proto-math = { git = "https://github.com/jet-lab/program-libraries", branch = "power-of-2" }
 jet-margin = { path = "../margin", features = ["cpi"] }
 jet-metadata = { path = "../metadata", features = ["cpi"] }
 

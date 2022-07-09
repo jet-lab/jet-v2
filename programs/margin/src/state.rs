@@ -520,8 +520,8 @@ impl TryFrom<PriceChangeInfo> for PriceInfo {
         let clock = Clock::get()?;
         let max_confidence = Number128::from_bps(MAX_ORACLE_CONFIDENCE);
 
-        let twap = Number128::from_decimal(value.twap, value.exponent);
-        let confidence = Number128::from_decimal(value.confidence, value.exponent);
+        let twap = Number128::from_base_2(value.twap, value.exponent);
+        let confidence = Number128::from_base_2(value.confidence, value.exponent);
 
         if twap == Number128::ZERO {
             msg!("avg price cannot be zero");
@@ -637,8 +637,8 @@ bitflags::bitflags! {
 
 impl AccountPosition {
     pub fn calculate_value(&mut self) {
-        self.value = (Number128::from_decimal(self.balance, self.exponent)
-            * Number128::from_decimal(self.price.value, self.price.exponent))
+        self.value = (Number128::from_base_2(self.balance, self.exponent)
+            * Number128::from_base_2(self.price.value, self.price.exponent))
         .into_bits();
     }
 
@@ -649,13 +649,13 @@ impl AccountPosition {
     pub fn collateral_value(&self) -> Number128 {
         assert_eq!(self.kind, PositionKind::Deposit);
 
-        Number128::from_decimal(self.value_modifier, -2) * self.value()
+        Number128::from_base_2(self.value_modifier, -2) * self.value()
     }
 
     pub fn required_collateral_value(&self) -> Number128 {
         assert_eq!(self.kind, PositionKind::Claim);
 
-        let modifier = Number128::from_decimal(self.value_modifier, -2);
+        let modifier = Number128::from_base_2(self.value_modifier, -2);
 
         if modifier == Number128::ZERO {
             msg!("no leverage configured for claim {}", &self.token);

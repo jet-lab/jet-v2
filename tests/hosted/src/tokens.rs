@@ -244,9 +244,9 @@ impl TokenManager {
         let clock = self.rpc.get_clock().expect("could not get the clock");
         let mut price_data = default_price();
 
-        let price_value = jet_proto_math::Number128::from_decimal(price.price, price.exponent)
+        let price_value = jet_proto_math::Number128::from_base_2(price.price, price.exponent)
             .as_u64(price_data.expo) as i64;
-        let twap_value = jet_proto_math::Number128::from_decimal(price.twap, price.exponent)
+        let twap_value = jet_proto_math::Number128::from_base_2(price.twap, price.exponent)
             .as_u64(price_data.expo) as i64;
 
         price_data.agg.price = price_value;
