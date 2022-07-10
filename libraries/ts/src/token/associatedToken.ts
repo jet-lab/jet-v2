@@ -666,7 +666,9 @@ export class AssociatedToken {
       await AssociatedToken.withCreateAux(instructions, provider, owner, mint, sourceAddress)
       return sourceAddress
     }
-    throw new Error("Unexpected argument 'destination'")
+    throw new Error(
+      "Unexpected argument 'source' or there are multiple versions of @solana/web3.js PublicKey installed"
+    )
   }
 
   static async withBeginTransferToDestination({
@@ -700,7 +702,9 @@ export class AssociatedToken {
       await AssociatedToken.withCreateAux(instructions, provider, owner, mint, destinationAddress)
       return destinationAddress
     }
-    throw new Error("Unexpected argument 'destination'")
+    throw new Error(
+      "Unexpected argument 'destination' or there are multiple versions of @solana/web3.js PublicKey installed"
+    )
   }
 
   /** Ends the transfer by unwraps the token if it is the native mint. */

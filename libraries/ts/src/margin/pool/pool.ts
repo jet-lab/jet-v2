@@ -474,7 +474,7 @@ export class Pool {
   async withDeposit({
     instructions,
     marginAccount,
-    source = TokenFormat.wrappedSol,
+    source = TokenFormat.unwrappedSol,
     destination,
     amount
   }: {
