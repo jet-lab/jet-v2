@@ -558,12 +558,7 @@ export class Pool {
       })
     }
 
-    try {
-      return await sendAll(marginAccount.provider, [chunks(11, refreshInstructions), instructionsInstructions])
-    } catch (err) {
-      console.log(err)
-      throw err
-    }
+    await sendAll(marginAccount.provider, [chunks(11, refreshInstructions), instructionsInstructions])
   }
 
   async withGetOrCreateLoanPosition(
@@ -677,12 +672,7 @@ export class Pool {
     //   await this.withCloseLoan(instructions, marginAccount)
     // }
 
-    try {
-      await sendAll(marginAccount.provider, [chunks(11, refreshInstructions), instructions])
-    } catch (err) {
-      console.log(err)
-      throw err
-    }
+    await sendAll(marginAccount.provider, [chunks(11, refreshInstructions), instructions])
   }
 
   async withMarginRepay({
@@ -831,6 +821,7 @@ export class Pool {
         })
         .instruction()
     })
+    await this.withMarginRefreshPositionPrice({ instructions, marginAccount })
     return loanNoteAccount
   }
 
@@ -894,13 +885,7 @@ export class Pool {
           AssociatedToken.withClose(instructions, marginAccount.owner, this.tokenMint, destinationAddress)
         }
 
-        try {
-          await marginAccount.provider.sendAndConfirm(new Transaction().add(...instructions))
-        } catch (err) {
-          console.log(err)
-          throw err
-        }
-
+        await sendAll(marginAccount.provider, [instructions])
         await marginAccount.refresh()
       }
 

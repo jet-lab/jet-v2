@@ -63,7 +63,7 @@ export async function sendAll(
       )
     } catch (err: any) {
       // preserve stacktrace
-      console.log(err)
+      console.log(err, JSON.stringify(err.logs))
       throw err
     }
   }
