@@ -1,0 +1,1321 @@
+
+> test
+> anchor test --skip-lint -- --features testing
+
+BPF SDK: /home/tristyn/.local/share/solana/install/releases/1.10.28/solana-release/bin/sdk/bpf
+Features: testing
+cargo-build-bpf child: rustup toolchain list -v
+cargo-build-bpf child: cargo +bpf build --target bpfel-unknown-unknown --release --features testing
+cargo-build-bpf child: /home/tristyn/.local/share/solana/install/releases/1.10.28/solana-release/bin/sdk/bpf/scripts/strip.sh /mnt/c/Users/trist/repos/jet-v2/target/bpfel-unknown-unknown/release/jet_control.so /mnt/c/Users/trist/repos/jet-v2/target/deploy/jet_control.so
+cargo-build-bpf child: /home/tristyn/.local/share/solana/install/releases/1.10.28/solana-release/bin/sdk/bpf/dependencies/bpf-tools/llvm/bin/llvm-readelf --dyn-symbols /mnt/c/Users/trist/repos/jet-v2/target/deploy/jet_control.so
+
+To deploy this program:
+  $ solana program deploy /mnt/c/Users/trist/repos/jet-v2/target/deploy/jet_control.so
+The program address will default to this keypair (override with --program-id):
+  /mnt/c/Users/trist/repos/jet-v2/target/deploy/jet_control-keypair.json
+BPF SDK: /home/tristyn/.local/share/solana/install/releases/1.10.28/solana-release/bin/sdk/bpf
+Features: testing
+cargo-build-bpf child: rustup toolchain list -v
+cargo-build-bpf child: cargo +bpf build --target bpfel-unknown-unknown --release --features testing
+cargo-build-bpf child: /home/tristyn/.local/share/solana/install/releases/1.10.28/solana-release/bin/sdk/bpf/scripts/strip.sh /mnt/c/Users/trist/repos/jet-v2/target/bpfel-unknown-unknown/release/jet_margin.so /mnt/c/Users/trist/repos/jet-v2/target/deploy/jet_margin.so
+cargo-build-bpf child: /home/tristyn/.local/share/solana/install/releases/1.10.28/solana-release/bin/sdk/bpf/dependencies/bpf-tools/llvm/bin/llvm-readelf --dyn-symbols /mnt/c/Users/trist/repos/jet-v2/target/deploy/jet_margin.so
+
+To deploy this program:
+  $ solana program deploy /mnt/c/Users/trist/repos/jet-v2/target/deploy/jet_margin.so
+The program address will default to this keypair (override with --program-id):
+  /mnt/c/Users/trist/repos/jet-v2/target/deploy/jet_margin-keypair.json
+BPF SDK: /home/tristyn/.local/share/solana/install/releases/1.10.28/solana-release/bin/sdk/bpf
+Features: testing
+cargo-build-bpf child: rustup toolchain list -v
+cargo-build-bpf child: cargo +bpf build --target bpfel-unknown-unknown --release --features testing
+cargo-build-bpf child: /home/tristyn/.local/share/solana/install/releases/1.10.28/solana-release/bin/sdk/bpf/scripts/strip.sh /mnt/c/Users/trist/repos/jet-v2/target/bpfel-unknown-unknown/release/jet_margin_pool.so /mnt/c/Users/trist/repos/jet-v2/target/deploy/jet_margin_pool.so
+cargo-build-bpf child: /home/tristyn/.local/share/solana/install/releases/1.10.28/solana-release/bin/sdk/bpf/dependencies/bpf-tools/llvm/bin/llvm-readelf --dyn-symbols /mnt/c/Users/trist/repos/jet-v2/target/deploy/jet_margin_pool.so
+
+To deploy this program:
+  $ solana program deploy /mnt/c/Users/trist/repos/jet-v2/target/deploy/jet_margin_pool.so
+The program address will default to this keypair (override with --program-id):
+  /mnt/c/Users/trist/repos/jet-v2/target/deploy/jet_margin_pool-keypair.json
+BPF SDK: /home/tristyn/.local/share/solana/install/releases/1.10.28/solana-release/bin/sdk/bpf
+Features: testing
+cargo-build-bpf child: rustup toolchain list -v
+cargo-build-bpf child: cargo +bpf build --target bpfel-unknown-unknown --release --features testing
+cargo-build-bpf child: /home/tristyn/.local/share/solana/install/releases/1.10.28/solana-release/bin/sdk/bpf/scripts/strip.sh /mnt/c/Users/trist/repos/jet-v2/target/bpfel-unknown-unknown/release/jet_margin_swap.so /mnt/c/Users/trist/repos/jet-v2/target/deploy/jet_margin_swap.so
+cargo-build-bpf child: /home/tristyn/.local/share/solana/install/releases/1.10.28/solana-release/bin/sdk/bpf/dependencies/bpf-tools/llvm/bin/llvm-readelf --dyn-symbols /mnt/c/Users/trist/repos/jet-v2/target/deploy/jet_margin_swap.so
+
+To deploy this program:
+  $ solana program deploy /mnt/c/Users/trist/repos/jet-v2/target/deploy/jet_margin_swap.so
+The program address will default to this keypair (override with --program-id):
+  /mnt/c/Users/trist/repos/jet-v2/target/deploy/jet_margin_swap-keypair.json
+BPF SDK: /home/tristyn/.local/share/solana/install/releases/1.10.28/solana-release/bin/sdk/bpf
+Features: testing
+cargo-build-bpf child: rustup toolchain list -v
+cargo-build-bpf child: cargo +bpf build --target bpfel-unknown-unknown --release --features testing
+cargo-build-bpf child: /home/tristyn/.local/share/solana/install/releases/1.10.28/solana-release/bin/sdk/bpf/scripts/strip.sh /mnt/c/Users/trist/repos/jet-v2/target/bpfel-unknown-unknown/release/jet_metadata.so /mnt/c/Users/trist/repos/jet-v2/target/deploy/jet_metadata.so
+cargo-build-bpf child: /home/tristyn/.local/share/solana/install/releases/1.10.28/solana-release/bin/sdk/bpf/dependencies/bpf-tools/llvm/bin/llvm-readelf --dyn-symbols /mnt/c/Users/trist/repos/jet-v2/target/deploy/jet_metadata.so
+
+To deploy this program:
+  $ solana program deploy /mnt/c/Users/trist/repos/jet-v2/target/deploy/jet_metadata.so
+The program address will default to this keypair (override with --program-id):
+  /mnt/c/Users/trist/repos/jet-v2/target/deploy/jet_metadata-keypair.json
+BPF SDK: /home/tristyn/.local/share/solana/install/releases/1.10.28/solana-release/bin/sdk/bpf
+Features: testing
+cargo-build-bpf child: rustup toolchain list -v
+cargo-build-bpf child: cargo +bpf build --target bpfel-unknown-unknown --release --features testing
+cargo-build-bpf child: /home/tristyn/.local/share/solana/install/releases/1.10.28/solana-release/bin/sdk/bpf/dependencies/bpf-tools/llvm/bin/llvm-readelf --dyn-symbols /mnt/c/Users/trist/repos/jet-v2/target/deploy/pyth.so
+
+To deploy this program:
+  $ solana program deploy /mnt/c/Users/trist/repos/jet-v2/target/deploy/pyth.so
+The program address will default to this keypair (override with --program-id):
+  /mnt/c/Users/trist/repos/jet-v2/target/deploy/pyth-keypair.json
+
+Found a 'test' script in the Anchor.toml. Running it as a test suite!
+
+Running test suite: "/mnt/c/Users/trist/repos/jet-v2/Anchor.toml"
+
+
+
+  margin account
+    ✔ Fund payer (251ms)
+    ✔ Create two user wallets (809ms)
+    ✔ Create authority (810ms)
+    ✔ Fetch pools (46ms)
+[
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ invoke [1]',
+  'Program log: Instruction: CreateAccount',
+  'Program 11111111111111111111111111111111 invoke [2]',
+  'Program 11111111111111111111111111111111 success',
+  'Program data: RicGrXbGvlvb12Eqo+wrb2xfEFecdSRgUW0E3iWe+GXtw8muW7SoIyvyAzE2r+oOQWG6nltF/hx4W56ArAc4P/y3zpbzk9/eAAA=',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ consumed 9645 of 200000 compute units',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ success'
+]
+[
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ invoke [1]',
+  'Program log: Instruction: CreateAccount',
+  'Program 11111111111111111111111111111111 invoke [2]',
+  'Program 11111111111111111111111111111111 success',
+  'Program data: RicGrXbGvlvz3eBs6SBV+rHZSrO+UcrsCUbPix/oBNc0PMN/+7cyazNE49F2Q2eR1216k+NUcN3msS0WA9uKVncbfk0QIwtEAAA=',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ consumed 12645 of 200000 compute units',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ success'
+]
+    ✔ Create margin accounts (768ms)
+    ✔ Load margin account for user A
+[
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ invoke [1]',
+  'Program log: Instruction: CloseAccount',
+  'Program data: E/pP7FtQlDDb12Eqo+wrb2xfEFecdSRgUW0E3iWe+GXtw8muW7SoIw==',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ consumed 5558 of 200000 compute units',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ success'
+]
+[
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ invoke [1]',
+  'Program log: Instruction: CloseAccount',
+  'Program data: E/pP7FtQlDDz3eBs6SBV+rHZSrO+UcrsCUbPix/oBNc0PMN/+7cyaw==',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ consumed 5558 of 200000 compute units',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ success'
+]
+    ✔ Close margin accounts (791ms)
+
+  margin pool borrow
+    ✔ Fund payer (404ms)
+    ✔ Create tokens (813ms)
+    ✔ Create oracles (1060ms)
+    ✔ Create authority
+    ✔ Register adapter (160ms)
+    ✔ Load Pools
+    ✔ Create margin pools (1605ms)
+    ✔ Create our two user wallets, with some SOL funding to get started (1211ms)
+[
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ invoke [1]',
+  'Program log: Instruction: CreateAccount',
+  'Program 11111111111111111111111111111111 invoke [2]',
+  'Program 11111111111111111111111111111111 success',
+  'Program data: RicGrXbGvltzzuahZXFBGXEpLBHVuVv1b1EcxiKLPg/J7GX55+OyY0EOM8IrhB5TrNm3Jt6fQ6HsYjVAB+7hwFdTfvQEMX8hAAA=',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ consumed 9645 of 200000 compute units',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ success'
+]
+[
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ invoke [1]',
+  'Program log: Instruction: CreateAccount',
+  'Program 11111111111111111111111111111111 invoke [2]',
+  'Program 11111111111111111111111111111111 success',
+  'Program data: RicGrXbGvlsZEYWgVOKDkEN5ISxW/wqyu1cBPxOAQT4H8b9uPvSsIVOn++vpy2YpU1HsuG1ofPvPAbn2py+iKHywmDB0fTIoAAA=',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ consumed 11145 of 200000 compute units',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ success'
+]
+[
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ invoke [1]',
+  'Program log: Instruction: CreateAccount',
+  'Program 11111111111111111111111111111111 invoke [2]',
+  'Program 11111111111111111111111111111111 success',
+  'Program data: RicGrXbGvlutsOHZwtbukh21CAYcXzvO++hYCeF720op1zJgCCgzM/L5UWWwkVvJME4TTWLFldufXBbYiZIvu/XYNxe2Dyq7AAA=',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ consumed 9645 of 200000 compute units',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ success'
+]
+    ✔ Initialize the margin accounts for each user (1213ms)
+    ✔ Create some tokens for each user to deposit (4863ms)
+    ✔ Refresh pools
+[
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ invoke [1]',
+  'Program log: Instruction: Deposit',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]',
+  'Program log: Instruction: Transfer',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 3052 of 383459 compute units',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]',
+  'Program log: Instruction: MintTo',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 2928 of 377586 compute units',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success',
+  'Program data: Ps3yr/SpiDSvwlgpt2qARYSCPo2K+A6j1h1vZp7Aj0RQSWtC4G+AXkEOM8IrhB5TrNm3Jt6fQ6HsYjVAB+7hwFdTfvQEMX8h1FiGKtLgk8WIbp2OnVygL5xztRFQKE18rrHLkAiy0Zd/8b06+eQ+mPXJ1rDZ5hhZZ/r0NDt1DuS8clCXTuF6GQCIUmp0AAAAAIhSanQAAAAAAAAAAAAAAAAAAAAAAAAAAIhSanQAAAAAiFJqdAAAAAAAAAAAAAAARbbJYgAAAAA=',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ consumed 28786 of 400000 compute units',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ success',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ invoke [1]',
+  'Program log: Instruction: UpdatePositionBalance',
+  'Program data: +pebBm/QykxzzuahZXFBGXEpLBHVuVv1b1EcxiKLPg/J7GX55+OyYzWW3Z7xVH97qUtzjyOTPTvkBYuPw5/gcYPi9XvVwpv2f/G9OvnkPpj1ydaw2eYYWWf69DQ7dQ7kvHJQl07hehkEdDGgOhLrPOML18eGvIb5Fq7GtQsbU1KjHXaqNa0ghgAAAAAAAAAAAAAAAAAAAAAAiFJqdAAAAEW2yWIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAfr/ZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ consumed 4459 of 371214 compute units',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ success'
+]
+[
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ invoke [1]',
+  'Program log: Instruction: Deposit',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]',
+  'Program log: Instruction: Transfer',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 3052 of 380387 compute units',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]',
+  'Program log: Instruction: MintTo',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 2928 of 374514 compute units',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success',
+  'Program data: Ps3yr/SpiDSvwlgpt2qARYSCPo2K+A6j1h1vZp7Aj0RQSWtC4G+AXlOn++vpy2YpU1HsuG1ofPvPAbn2py+iKHywmDB0fTIoKZRCRfoJMcdmCPj4L/OR9o06N8XKvYDWQZry/R97+4QlW90NT4jmvM4dWKvf38PZa1GjjgANn3HYfHVT2pRtu4Dw+gIAAAAAgPD6AgAAAAAAAAAAAAAAAAAAAAAAAAAAgHhNbXQAAACAeE1tdAAAAAAAAAAAAAAAR7bJYgAAAAA=',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ consumed 31858 of 400000 compute units',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ success',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ invoke [1]',
+  'Program log: Instruction: UpdatePositionBalance',
+  'Program data: +pebBm/QykwZEYWgVOKDkEN5ISxW/wqyu1cBPxOAQT4H8b9uPvSsITWW3Z7xVH97qUtzjyOTPTvkBYuPw5/gcYPi9XvVwpv2JVvdDU+I5rzOHVir39/D2WtRo44ADZ9x2Hx1U9qUbbsEdDGgOhLrPOML18eGvIb5Fq7GtQsbU1KjHXaqNa0ghgAAAAAAAAAAAAAAAAAAAACA8PoCAAAAAEe2yWIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAfr/ZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ consumed 4458 of 368142 compute units',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ success'
+]
+[
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ invoke [1]',
+  'Program log: Instruction: Deposit',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]',
+  'Program log: Instruction: Transfer',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 3052 of 380387 compute units',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]',
+  'Program log: Instruction: MintTo',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 2928 of 374514 compute units',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success',
+  'Program data: Ps3yr/SpiDSvwlgpt2qARYSCPo2K+A6j1h1vZp7Aj0RQSWtC4G+AXvL5UWWwkVvJME4TTWLFldufXBbYiZIvu/XYNxe2Dyq74V6Cyn7h0+b3EjdDToaz8Lr+5VH9MgO4FuOjxjZz2HyBBqsU3X1U1tSMEfcWK3YImnu6iJWvX1GEpZB+HHJvsEBCDwAAAAAAQEIPAAAAAAAAAAAAAAAAAAAAAAAAAAAAwLpcbXQAAADAulxtdAAAAAAAAAAAAAAASrbJYgAAAAA=',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ consumed 31858 of 400000 compute units',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ success',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ invoke [1]',
+  'Program log: Instruction: UpdatePositionBalance',
+  'Program data: +pebBm/QykytsOHZwtbukh21CAYcXzvO++hYCeF720op1zJgCCgzMzWW3Z7xVH97qUtzjyOTPTvkBYuPw5/gcYPi9XvVwpv2gQarFN19VNbUjBH3Fit2CJp7uoiVr19RhKWQfhxyb7AEdDGgOhLrPOML18eGvIb5Fq7GtQsbU1KjHXaqNa0ghgAAAAAAAAAAAAAAAAAAAABAQg8AAAAAAEq2yWIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAfr/ZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ consumed 4458 of 368142 compute units',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ success'
+]
+[
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ invoke [1]',
+  'Program log: Instruction: AccountingInvoke',
+  'Program data: 8Z7qeYrLC/xzzuahZXFBGXEpLBHVuVv1b1EcxiKLPg/J7GX55+OyYwR0MaA6Eus84wvXx4a8hvkWrsa1CxtTUqMddqo1rSCG',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ invoke [2]',
+  'Program log: Instruction: MarginRefreshPosition',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ consumed 14187 of 193571 compute units',
+  'Program return: JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ AgAAADWW3Z7xVH97qUtzjyOTPTvkBYuPw5/gcYPi9XvVwpv2AQAAAAAAAQAAAAAAAAMAAAAAAAAAAAEAAAAAAABLtsliAAAAAPj///8k0lU2vpC3XweziD/CKT4XOzH+9gA4D550YF7zVOEeHwEAAAAAAAEAAAAAAAADAAAAAAAAAAABAAAAAAAAS7bJYgAAAAD4////',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ success',
+  'Program data: mblBOgsd8Ag1lt2e8VR/e6lLc48jkz075AWLj8Of4HGD4vV71cKb9n/xvTr55D6Y9cnWsNnmGFln+vQ0O3UO5LxyUJdO4XoZBHQxoDoS6zzjC9fHhryG+RauxrULG1NSox12qjWtIIYAAAAAgCilRgcAAAAAAAAAAIhSanQAAABFtsliAAAAAAABAAAAAAAAS7bJYgAAAAD4////AQAAAAH6/2QAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
+  'Program data: 1g5z9jARO/4=',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ consumed 27400 of 200000 compute units',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ success'
+]
+[
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ invoke [1]',
+  'Program log: Instruction: AccountingInvoke',
+  'Program data: 8Z7qeYrLC/wZEYWgVOKDkEN5ISxW/wqyu1cBPxOAQT4H8b9uPvSsIQR0MaA6Eus84wvXx4a8hvkWrsa1CxtTUqMddqo1rSCG',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ invoke [2]',
+  'Program log: Instruction: MarginRefreshPosition',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ consumed 14187 of 193571 compute units',
+  'Program return: JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ AgAAADWW3Z7xVH97qUtzjyOTPTvkBYuPw5/gcYPi9XvVwpv2AQAAAAAAAQAAAAAAAAMAAAAAAAAAAAEAAAAAAABLtsliAAAAAPj///8k0lU2vpC3XweziD/CKT4XOzH+9gA4D550YF7zVOEeHwEAAAAAAAEAAAAAAAADAAAAAAAAAAABAAAAAAAAS7bJYgAAAAD4////',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ success',
+  'Program data: mblBOgsd8Ag1lt2e8VR/e6lLc48jkz075AWLj8Of4HGD4vV71cKb9iVb3Q1PiOa8zh1Yq9/fw9lrUaOOAA2fcdh8dVPalG27BHQxoDoS6zzjC9fHhryG+RauxrULG1NSox12qjWtIIYAAAAACK8vAAAAAAAAAAAAgPD6AgAAAABItsliAAAAAAABAAAAAAAAS7bJYgAAAAD4////AQAAAAH6/2QAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
+  'Program data: 1g5z9jARO/4=',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ consumed 27399 of 200000 compute units',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ success'
+]
+[
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ invoke [1]',
+  'Program log: Instruction: AccountingInvoke',
+  'Program data: 8Z7qeYrLC/ytsOHZwtbukh21CAYcXzvO++hYCeF720op1zJgCCgzMwR0MaA6Eus84wvXx4a8hvkWrsa1CxtTUqMddqo1rSCG',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ invoke [2]',
+  'Program log: Instruction: MarginRefreshPosition',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ consumed 14187 of 193571 compute units',
+  'Program return: JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ AgAAADWW3Z7xVH97qUtzjyOTPTvkBYuPw5/gcYPi9XvVwpv2AQAAAAAAAQAAAAAAAAMAAAAAAAAAAAEAAAAAAABLtsliAAAAAPj///8k0lU2vpC3XweziD/CKT4XOzH+9gA4D550YF7zVOEeHwEAAAAAAAEAAAAAAAADAAAAAAAAAAABAAAAAAAAS7bJYgAAAAD4////',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ success',
+  'Program data: mblBOgsd8Ag1lt2e8VR/e6lLc48jkz075AWLj8Of4HGD4vV71cKb9oEGqxTdfVTW1IwR9xYrdgiae7qIla9fUYSlkH4ccm+wBHQxoDoS6zzjC9fHhryG+RauxrULG1NSox12qjWtIIYAAAAAJPQAAAAAAAAAAAAAQEIPAAAAAABKtsliAAAAAAABAAAAAAAATLbJYgAAAAD4////AQAAAAH6/2QAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
+  'Program data: 1g5z9jARO/4=',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ consumed 27399 of 200000 compute units',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ success'
+]
+[
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ invoke [1]',
+  'Program log: Instruction: Deposit',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]',
+  'Program log: Instruction: Transfer',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 3052 of 383459 compute units',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]',
+  'Program log: Instruction: MintTo',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 2928 of 377586 compute units',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success',
+  'Program data: Ps3yr/SpiDSWKWRZw7jxBSf8Cby1hs98aAFiplaMVyAHB40cGV8OX0EOM8IrhB5TrNm3Jt6fQ6HsYjVAB+7hwFdTfvQEMX8hO/6YUeP8n4DUE52UDjXPaIIBTrZrg3q/aI+gGNMcBzY9LX1TV051NIRc6+UZdlF6GYBOah+Toxto8n1e/w9UnAB0O6QLAAAAAHQ7pAsAAAAAAAAAAAAAAAAAAAAAAAAAAHQ7pAsAAAAAdDukCwAAAAAAAAAAAAAATrbJYgAAAAA=',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ consumed 28786 of 400000 compute units',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ success',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ invoke [1]',
+  'Program log: Instruction: UpdatePositionBalance',
+  'Program data: +pebBm/QykxzzuahZXFBGXEpLBHVuVv1b1EcxiKLPg/J7GX55+OyY4r4OD/c9WCAR8W+jUtvZUGL3zYdxXcaYXgDh2XLLZOyPS19U1dOdTSEXOvlGXZRehmATmofk6MbaPJ9Xv8PVJwEdDGgOhLrPOML18eGvIb5Fq7GtQsbU1KjHXaqNa0ghgAAAAAAAAAAAAAAAAAAAAAAdDukCwAAAE62yWIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAff/XwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ consumed 4458 of 371214 compute units',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ success'
+]
+[
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ invoke [1]',
+  'Program log: Instruction: Deposit',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]',
+  'Program log: Instruction: Transfer',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 3052 of 380390 compute units',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]',
+  'Program log: Instruction: MintTo',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 2928 of 374517 compute units',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success',
+  'Program data: Ps3yr/SpiDSWKWRZw7jxBSf8Cby1hs98aAFiplaMVyAHB40cGV8OX1On++vpy2YpU1HsuG1ofPvPAbn2py+iKHywmDB0fTIoKEBkVfl34M+FRfRQqXlde0A6guqMFxyXyZnvPXUBZaHVvTHiFX7gyimlC5fA+zXTtCbvAXjyQ7qYitamWja3/wCIUmp0AAAAAIhSanQAAAAAAAAAAAAAAAAAAAAAAAAAAPyNDoAAAAAA/I0OgAAAAAAAAAAAAAAAULbJYgAAAAA=',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ consumed 31855 of 400000 compute units',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ success',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ invoke [1]',
+  'Program log: Instruction: UpdatePositionBalance',
+  'Program data: +pebBm/QykwZEYWgVOKDkEN5ISxW/wqyu1cBPxOAQT4H8b9uPvSsIYr4OD/c9WCAR8W+jUtvZUGL3zYdxXcaYXgDh2XLLZOy1b0x4hV+4MoppQuXwPs107Qm7wF48kO6mIrWplo2t/8EdDGgOhLrPOML18eGvIb5Fq7GtQsbU1KjHXaqNa0ghgAAAAAAAAAAAAAAAAAAAAAAiFJqdAAAAFC2yWIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAff/XwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ consumed 4458 of 368145 compute units',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ success'
+]
+[
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ invoke [1]',
+  'Program log: Instruction: Deposit',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]',
+  'Program log: Instruction: Transfer',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 3052 of 380390 compute units',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]',
+  'Program log: Instruction: MintTo',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 2928 of 374517 compute units',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success',
+  'Program data: Ps3yr/SpiDSWKWRZw7jxBSf8Cby1hs98aAFiplaMVyAHB40cGV8OX/L5UWWwkVvJME4TTWLFldufXBbYiZIvu/XYNxe2Dyq7OVA+KtcTuAt9kA87knF00puN0v55tNaalZ7qu+Crbj9zRgHxUXV/Kbd1csAD9mM39bdkEgUBcq30PT/ytI2ZTQDKmjsAAAAAAMqaOwAAAAAAAAAAAAAAAAAAAAAAAAAAAMYoSoAAAAAAxihKgAAAAAAAAAAAAAAAU7bJYgAAAAA=',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ consumed 31855 of 400000 compute units',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ success',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ invoke [1]',
+  'Program log: Instruction: UpdatePositionBalance',
+  'Program data: +pebBm/QykytsOHZwtbukh21CAYcXzvO++hYCeF720op1zJgCCgzM4r4OD/c9WCAR8W+jUtvZUGL3zYdxXcaYXgDh2XLLZOyc0YB8VF1fym3dXLAA/ZjN/W3ZBIFAXKt9D0/8rSNmU0EdDGgOhLrPOML18eGvIb5Fq7GtQsbU1KjHXaqNa0ghgAAAAAAAAAAAAAAAAAAAAAAypo7AAAAAFO2yWIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAff/XwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ consumed 4458 of 368145 compute units',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ success'
+]
+[
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ invoke [1]',
+  'Program log: Instruction: AccountingInvoke',
+  'Program data: 8Z7qeYrLC/xzzuahZXFBGXEpLBHVuVv1b1EcxiKLPg/J7GX55+OyYwR0MaA6Eus84wvXx4a8hvkWrsa1CxtTUqMddqo1rSCG',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ invoke [2]',
+  'Program log: Instruction: MarginRefreshPosition',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ consumed 14187 of 193571 compute units',
+  'Program return: JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ AgAAAIr4OD/c9WCAR8W+jUtvZUGL3zYdxXcaYXgDh2XLLZOyAQAAAAAAZAAAAAAAAAABAAAAAAAAAGQAAAAAAABUtsliAAAAAPj///9q28UHGsw+uPMRNRr93eMK4znoLSCaG0827NeX6paENwEAAAAAAGQAAAAAAAAAAQAAAAAAAABkAAAAAAAAVLbJYgAAAAD4////',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ success',
+  'Program data: mblBOgsd8AiK+Dg/3PVggEfFvo1Lb2VBi982HcV3GmF4A4dlyy2Tsj0tfVNXTnU0hFzr5Rl2UXoZgE5qH5OjG2jyfV7/D1ScBHQxoDoS6zzjC9fHhryG+RauxrULG1NSox12qjWtIIYAAAAAoHJOGAkAAAAAAAAAAHQ7pAsAAABOtsliAAAAAABkAAAAAAAAVLbJYgAAAAD4////AQAAAAH3/18AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
+  'Program data: 1g5z9jARO/4=',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ consumed 33627 of 200000 compute units',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ success'
+]
+[
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ invoke [1]',
+  'Program log: Instruction: AccountingInvoke',
+  'Program data: 8Z7qeYrLC/wZEYWgVOKDkEN5ISxW/wqyu1cBPxOAQT4H8b9uPvSsIQR0MaA6Eus84wvXx4a8hvkWrsa1CxtTUqMddqo1rSCG',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ invoke [2]',
+  'Program log: Instruction: MarginRefreshPosition',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ consumed 14187 of 193571 compute units',
+  'Program return: JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ AgAAAIr4OD/c9WCAR8W+jUtvZUGL3zYdxXcaYXgDh2XLLZOyAQAAAAAAZAAAAAAAAAABAAAAAAAAAGQAAAAAAABUtsliAAAAAPj///9q28UHGsw+uPMRNRr93eMK4znoLSCaG0827NeX6paENwEAAAAAAGQAAAAAAAAAAQAAAAAAAABkAAAAAAAAVLbJYgAAAAD4////',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ success',
+  'Program data: mblBOgsd8AiK+Dg/3PVggEfFvo1Lb2VBi982HcV3GmF4A4dlyy2TstW9MeIVfuDKKaULl8D7NdO0Ju8BePJDupiK1qZaNrf/BHQxoDoS6zzjC9fHhryG+RauxrULG1NSox12qjWtIIYAAAAAQHoQ81oAAAAAAAAAAIhSanQAAABRtsliAAAAAABkAAAAAAAAVLbJYgAAAAD4////AQAAAAH3/18AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
+  'Program data: 1g5z9jARO/4=',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ consumed 33626 of 200000 compute units',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ success'
+]
+[
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ invoke [1]',
+  'Program log: Instruction: AccountingInvoke',
+  'Program data: 8Z7qeYrLC/ytsOHZwtbukh21CAYcXzvO++hYCeF720op1zJgCCgzMwR0MaA6Eus84wvXx4a8hvkWrsa1CxtTUqMddqo1rSCG',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ invoke [2]',
+  'Program log: Instruction: MarginRefreshPosition',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ consumed 14187 of 193571 compute units',
+  'Program return: JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ AgAAAIr4OD/c9WCAR8W+jUtvZUGL3zYdxXcaYXgDh2XLLZOyAQAAAAAAZAAAAAAAAAABAAAAAAAAAGQAAAAAAABUtsliAAAAAPj///9q28UHGsw+uPMRNRr93eMK4znoLSCaG0827NeX6paENwEAAAAAAGQAAAAAAAAAAQAAAAAAAABkAAAAAAAAVLbJYgAAAAD4////',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ success',
+  'Program data: mblBOgsd8AiK+Dg/3PVggEfFvo1Lb2VBi982HcV3GmF4A4dlyy2TsnNGAfFRdX8pt3VywAP2Yzf1t2QSBQFyrfQ9P/K0jZlNBHQxoDoS6zzjC9fHhryG+RauxrULG1NSox12qjWtIIYAAAAA0O2QLgAAAAAAAAAAAMqaOwAAAABTtsliAAAAAABkAAAAAAAAVLbJYgAAAAD4////AQAAAAH3/18AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
+  'Program data: 1g5z9jARO/4=',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ consumed 33627 of 200000 compute units',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ success'
+]
+    1) Deposit user funds into their margin accounts
+[
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ invoke [1]',
+  'Program log: Instruction: AdapterInvoke',
+  'Program data: zDPY5r/AZEtzzuahZXFBGXEpLBHVuVv1b1EcxiKLPg/J7GX55+OyYwR0MaA6Eus84wvXx4a8hvkWrsa1CxtTUqMddqo1rSCG',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ invoke [2]',
+  'Program log: Instruction: RegisterLoan',
+  'Program 11111111111111111111111111111111 invoke [3]',
+  'Program 11111111111111111111111111111111 success',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [3]',
+  'Program log: Instruction: InitializeAccount',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 3602 of 174390 compute units',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ consumed 21799 of 188112 compute units',
+  'Program return: JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ AQAAAGrbxQcazD648xE1Gv3d4wrjOegtIJobTzbs15fqloQ3AQAAAALubGp4b5ePFLzjF8PADC6wqmkvpZgc2zPKA//3xxR68w==',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ success',
+  'Program data: gFIPYxaW7mdzzuahZXFBGXEpLBHVuVv1b1EcxiKLPg/J7GX55+OyYwR0MaA6Eus84wvXx4a8hvkWrsa1CxtTUqMddqo1rSCGatvFBxrMPrjzETUa/d3jCuM56C0gmhtPNuzXl+qWhDfubGp4b5ePFLzjF8PADC6wqmkvpZgc2zPKA//3xxR68wR0MaA6Eus84wvXx4a8hvkWrsa1CxtTUqMddqo1rSCGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAVrbJYgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAC9/+QAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+  'Program data: uw+I5L3rfm0=',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ consumed 60461 of 200000 compute units',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ success'
+]
+[
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ invoke [1]',
+  'Program log: Instruction: AccountingInvoke',
+  'Program data: 8Z7qeYrLC/xzzuahZXFBGXEpLBHVuVv1b1EcxiKLPg/J7GX55+OyYwR0MaA6Eus84wvXx4a8hvkWrsa1CxtTUqMddqo1rSCG',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ invoke [2]',
+  'Program log: Instruction: MarginRefreshPosition',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ consumed 14187 of 393571 compute units',
+  'Program return: JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ AgAAAIr4OD/c9WCAR8W+jUtvZUGL3zYdxXcaYXgDh2XLLZOyAQAAAAAAZAAAAAAAAAABAAAAAAAAAGQAAAAAAABVtsliAAAAAPj///9q28UHGsw+uPMRNRr93eMK4znoLSCaG0827NeX6paENwEAAAAAAGQAAAAAAAAAAQAAAAAAAABkAAAAAAAAVbbJYgAAAAD4////',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ success',
+  'Program data: mblBOgsd8Ahq28UHGsw+uPMRNRr93eMK4znoLSCaG0827NeX6paEN+5sanhvl48UvOMXw8AMLrCqaS+lmBzbM8oD//fHFHrzBHQxoDoS6zzjC9fHhryG+RauxrULG1NSox12qjWtIIYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABWtsliAAAAAABkAAAAAAAAVrbJYgAAAAD4////AQAAAAL3/5ABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
+  'Program data: mblBOgsd8AiK+Dg/3PVggEfFvo1Lb2VBi982HcV3GmF4A4dlyy2Tsj0tfVNXTnU0hFzr5Rl2UXoZgE5qH5OjG2jyfV7/D1ScBHQxoDoS6zzjC9fHhryG+RauxrULG1NSox12qjWtIIYAAAAAoHJOGAkAAAAAAAAAAHQ7pAsAAABOtsliAAAAAABkAAAAAAAAVrbJYgAAAAD4////AQAAAAH3/18AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
+  'Program data: 1g5z9jARO/4=',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ consumed 38332 of 400000 compute units',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ success',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ invoke [1]',
+  'Program log: Instruction: AccountingInvoke',
+  'Program data: 8Z7qeYrLC/xzzuahZXFBGXEpLBHVuVv1b1EcxiKLPg/J7GX55+OyYwR0MaA6Eus84wvXx4a8hvkWrsa1CxtTUqMddqo1rSCG',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ invoke [2]',
+  'Program log: Instruction: MarginRefreshPosition',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ consumed 14187 of 355239 compute units',
+  'Program return: JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ AgAAADWW3Z7xVH97qUtzjyOTPTvkBYuPw5/gcYPi9XvVwpv2AQAAAAAAAQAAAAAAAAMAAAAAAAAAAAEAAAAAAABWtsliAAAAAPj///8k0lU2vpC3XweziD/CKT4XOzH+9gA4D550YF7zVOEeHwEAAAAAAAEAAAAAAAADAAAAAAAAAAABAAAAAAAAVrbJYgAAAAD4////',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ success',
+  'Program data: mblBOgsd8Ag1lt2e8VR/e6lLc48jkz075AWLj8Of4HGD4vV71cKb9n/xvTr55D6Y9cnWsNnmGFln+vQ0O3UO5LxyUJdO4XoZBHQxoDoS6zzjC9fHhryG+RauxrULG1NSox12qjWtIIYAAAAAgCilRgcAAAAAAAAAAIhSanQAAABFtsliAAAAAAABAAAAAAAAVrbJYgAAAAD4////AQAAAAH6/2QAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
+  'Program data: 1g5z9jARO/4=',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ consumed 27530 of 361668 compute units',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ success'
+]
+[
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ invoke [1]',
+  'Program log: Instruction: AdapterInvoke',
+  'Program data: zDPY5r/AZEtzzuahZXFBGXEpLBHVuVv1b1EcxiKLPg/J7GX55+OyYwR0MaA6Eus84wvXx4a8hvkWrsa1CxtTUqMddqo1rSCG',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ invoke [2]',
+  'Program log: Instruction: MarginBorrow',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [3]',
+  'Program log: Instruction: MintTo',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 2928 of 164342 compute units',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [3]',
+  'Program log: Instruction: MintTo',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 2928 of 158602 compute units',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success',
+  'Program data: PLDbnED7R+uWKWRZw7jxBSf8Cby1hs98aAFiplaMVyAHB40cGV8OX3PO5qFlcUEZcSksEdW5W/VvURzGIos+D8nsZfnn47Jj7mxqeG+XjxS84xfDwAwusKppL6WYHNszygP/98cUevM9LX1TV051NIRc6+UZdlF6GYBOah+Toxto8n1e/w9UnADkC1QCAAAAAOQLVAIAAAAA5AtUAgAAAADkC1QCAAAAAAAAAAAAAAAAxihKgAAAAACqNJ6CAAAAAOQLVAIAAABWtsliAAAAAA==',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ consumed 37518 of 189555 compute units',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ success',
+  'Program data: mblBOgsd8Ahq28UHGsw+uPMRNRr93eMK4znoLSCaG0827NeX6paEN+5sanhvl48UvOMXw8AMLrCqaS+lmBzbM8oD//fHFHrzBHQxoDoS6zzjC9fHhryG+RauxrULG1NSox12qjWtIIYAAAAAIEqp0QEAAAAAAAAAAOQLVAIAAABWtsliAAAAAABkAAAAAAAAVrbJYgAAAAD4////AQAAAAL3/5ABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
+  'Program data: mblBOgsd8AiK+Dg/3PVggEfFvo1Lb2VBi982HcV3GmF4A4dlyy2Tsj0tfVNXTnU0hFzr5Rl2UXoZgE5qH5OjG2jyfV7/D1ScBHQxoDoS6zzjC9fHhryG+RauxrULG1NSox12qjWtIIYAAAAAwLz36QoAAAAAAAAAAFhH+A0AAABWtsliAAAAAABkAAAAAAAAVrbJYgAAAAD4////AQAAAAH3/18AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
+  'Program data: uw+I5L3rfm0=',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ consumed 78553 of 200000 compute units',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ success'
+]
+[
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ invoke [1]',
+  'Program log: Instruction: AdapterInvoke',
+  'Program data: zDPY5r/AZEsZEYWgVOKDkEN5ISxW/wqyu1cBPxOAQT4H8b9uPvSsIQR0MaA6Eus84wvXx4a8hvkWrsa1CxtTUqMddqo1rSCG',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ invoke [2]',
+  'Program log: Instruction: RegisterLoan',
+  'Program 11111111111111111111111111111111 invoke [3]',
+  'Program 11111111111111111111111111111111 success',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [3]',
+  'Program log: Instruction: InitializeAccount',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 3602 of 174390 compute units',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ consumed 21799 of 188112 compute units',
+  'Program return: JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ AQAAACTSVTa+kLdfB7OIP8IpPhc7Mf72ADgPnnRgXvNU4R4fAQAAAAJCQfmlibS9MAn4Inji7gwa8j0kf8t5obUHD81xQeLILQ==',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ success',
+  'Program data: gFIPYxaW7mcZEYWgVOKDkEN5ISxW/wqyu1cBPxOAQT4H8b9uPvSsIQR0MaA6Eus84wvXx4a8hvkWrsa1CxtTUqMddqo1rSCGJNJVNr6Qt18Hs4g/wik+Fzsx/vYAOA+edGBe81ThHh9CQfmlibS9MAn4Inji7gwa8j0kf8t5obUHD81xQeLILQR0MaA6Eus84wvXx4a8hvkWrsa1CxtTUqMddqo1rSCGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAV7bJYgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAC+v+QAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+  'Program data: uw+I5L3rfm0=',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ consumed 61228 of 200000 compute units',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ success'
+]
+[
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ invoke [1]',
+  'Program log: Instruction: AccountingInvoke',
+  'Program data: 8Z7qeYrLC/wZEYWgVOKDkEN5ISxW/wqyu1cBPxOAQT4H8b9uPvSsIQR0MaA6Eus84wvXx4a8hvkWrsa1CxtTUqMddqo1rSCG',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ invoke [2]',
+  'Program log: Instruction: MarginRefreshPosition',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ consumed 15071 of 393571 compute units',
+  'Program return: JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ AgAAAIr4OD/c9WCAR8W+jUtvZUGL3zYdxXcaYXgDh2XLLZOyAQAAAAAAZAAAAAAAAAABAAAAAAAAAGQAAAAAAABVtsliAAAAAPj///9q28UHGsw+uPMRNRr93eMK4znoLSCaG0827NeX6paENwEAAAAAAGQAAAAAAAAAAQAAAAAAAABkAAAAAAAAVbbJYgAAAAD4////',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ success',
+  'Program data: mblBOgsd8AiK+Dg/3PVggEfFvo1Lb2VBi982HcV3GmF4A4dlyy2TstW9MeIVfuDKKaULl8D7NdO0Ju8BePJDupiK1qZaNrf/BHQxoDoS6zzjC9fHhryG+RauxrULG1NSox12qjWtIIYAAAAAQHoQ81oAAAAAAAAAAIhSanQAAABRtsliAAAAAABkAAAAAAAAV7bJYgAAAAD4////AQAAAAH3/18AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
+  'Program data: 1g5z9jARO/4=',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ consumed 34572 of 400000 compute units',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ success',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ invoke [1]',
+  'Program log: Instruction: AccountingInvoke',
+  'Program data: 8Z7qeYrLC/wZEYWgVOKDkEN5ISxW/wqyu1cBPxOAQT4H8b9uPvSsIQR0MaA6Eus84wvXx4a8hvkWrsa1CxtTUqMddqo1rSCG',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ invoke [2]',
+  'Program log: Instruction: MarginRefreshPosition',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ consumed 14187 of 358999 compute units',
+  'Program return: JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ AgAAADWW3Z7xVH97qUtzjyOTPTvkBYuPw5/gcYPi9XvVwpv2AQAAAAAAAQAAAAAAAAMAAAAAAAAAAAEAAAAAAABWtsliAAAAAPj///8k0lU2vpC3XweziD/CKT4XOzH+9gA4D550YF7zVOEeHwEAAAAAAAEAAAAAAAADAAAAAAAAAAABAAAAAAAAVrbJYgAAAAD4////',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ success',
+  'Program data: mblBOgsd8Agk0lU2vpC3XweziD/CKT4XOzH+9gA4D550YF7zVOEeH0JB+aWJtL0wCfgieOLuDBryPSR/y3mhtQcPzXFB4sgtBHQxoDoS6zzjC9fHhryG+RauxrULG1NSox12qjWtIIYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABXtsliAAAAAAABAAAAAAAAV7bJYgAAAAD4////AQAAAAL6/5ABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
+  'Program data: mblBOgsd8Ag1lt2e8VR/e6lLc48jkz075AWLj8Of4HGD4vV71cKb9iVb3Q1PiOa8zh1Yq9/fw9lrUaOOAA2fcdh8dVPalG27BHQxoDoS6zzjC9fHhryG+RauxrULG1NSox12qjWtIIYAAAAACK8vAAAAAAAAAAAAgPD6AgAAAABItsliAAAAAAABAAAAAAAAV7bJYgAAAAD4////AQAAAAH6/2QAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
+  'Program data: 1g5z9jARO/4=',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ consumed 30559 of 365428 compute units',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ success'
+]
+[
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ invoke [1]',
+  'Program log: Instruction: AdapterInvoke',
+  'Program data: zDPY5r/AZEsZEYWgVOKDkEN5ISxW/wqyu1cBPxOAQT4H8b9uPvSsIQR0MaA6Eus84wvXx4a8hvkWrsa1CxtTUqMddqo1rSCG',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ invoke [2]',
+  'Program log: Instruction: MarginBorrow',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [3]',
+  'Program log: Instruction: MintTo',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 2928 of 164340 compute units',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [3]',
+  'Program log: Instruction: MintTo',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 2928 of 158600 compute units',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success',
+  'Program data: PLDbnED7R+uvwlgpt2qARYSCPo2K+A6j1h1vZp7Aj0RQSWtC4G+AXhkRhaBU4oOQQ3khLFb/CrK7VwE/E4BBPgfxv24+9KwhQkH5pYm0vTAJ+CJ44u4MGvI9JH/LeaG1Bw/NcUHiyC0lW90NT4jmvM4dWKvf38PZa1GjjgANn3HYfHVT2pRtuwDKmjsAAAAAAMqaOwAAAAAAypo7AAAAAADKmjsAAAAAAAAAAAAAAADAulxtdAAAAMCE96h0AAAAAMqaOwAAAABYtsliAAAAAA==',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ consumed 37520 of 189555 compute units',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ success',
+  'Program data: mblBOgsd8Agk0lU2vpC3XweziD/CKT4XOzH+9gA4D550YF7zVOEeH0JB+aWJtL0wCfgieOLuDBryPSR/y3mhtQcPzXFB4sgtBHQxoDoS6zzjC9fHhryG+RauxrULG1NSox12qjWtIIYAAAAAoKy5AwAAAAAAAAAAAMqaOwAAAABYtsliAAAAAAABAAAAAAAAWLbJYgAAAAD4////AQAAAAL6/5ABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
+  'Program data: mblBOgsd8Ag1lt2e8VR/e6lLc48jkz075AWLj8Of4HGD4vV71cKb9iVb3Q1PiOa8zh1Yq9/fw9lrUaOOAA2fcdh8dVPalG27BHQxoDoS6zzjC9fHhryG+RauxrULG1NSox12qjWtIIYAAAAAqFvpAwAAAAAAAAAAgLqVPgAAAABYtsliAAAAAAABAAAAAAAAWLbJYgAAAAD4////AQAAAAH6/2QAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
+  'Program data: uw+I5L3rfm0=',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ consumed 69404 of 200000 compute units',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ success'
+]
+    2) Have each user borrow the other's funds
+[
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ invoke [1]',
+  'Program log: Instruction: AccountingInvoke',
+  'Program data: 8Z7qeYrLC/xzzuahZXFBGXEpLBHVuVv1b1EcxiKLPg/J7GX55+OyYwR0MaA6Eus84wvXx4a8hvkWrsa1CxtTUqMddqo1rSCG',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ invoke [2]',
+  'Program log: Instruction: MarginRefreshPosition',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ consumed 15071 of 393571 compute units',
+  'Program return: JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ AgAAAIr4OD/c9WCAR8W+jUtvZUGL3zYdxXcaYXgDh2XLLZOyAQAAAAAAZAAAAAAAAAABAAAAAAAAAGQAAAAAAABVtsliAAAAAPj///9q28UHGsw+uPMRNRr93eMK4znoLSCaG0827NeX6paENwEAAAAAAGQAAAAAAAAAAQAAAAAAAABkAAAAAAAAVbbJYgAAAAD4////',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ success',
+  'Program data: mblBOgsd8Ahq28UHGsw+uPMRNRr93eMK4znoLSCaG0827NeX6paEN+5sanhvl48UvOMXw8AMLrCqaS+lmBzbM8oD//fHFHrzBHQxoDoS6zzjC9fHhryG+RauxrULG1NSox12qjWtIIYAAAAAIEqp0QEAAAAAAAAAAOQLVAIAAABXtsliAAAAAABkAAAAAAAAWLbJYgAAAAD4////AQAAAAL3/5ABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
+  'Program data: mblBOgsd8AiK+Dg/3PVggEfFvo1Lb2VBi982HcV3GmF4A4dlyy2Tsj0tfVNXTnU0hFzr5Rl2UXoZgE5qH5OjG2jyfV7/D1ScBHQxoDoS6zzjC9fHhryG+RauxrULG1NSox12qjWtIIYAAAAAwLz36QoAAAAAAAAAAFhH+A0AAABXtsliAAAAAABkAAAAAAAAWLbJYgAAAAD4////AQAAAAH3/18AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
+  'Program data: 1g5z9jARO/4=',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ consumed 43889 of 400000 compute units',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ success',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ invoke [1]',
+  'Program log: Instruction: AccountingInvoke',
+  'Program data: 8Z7qeYrLC/xzzuahZXFBGXEpLBHVuVv1b1EcxiKLPg/J7GX55+OyYwR0MaA6Eus84wvXx4a8hvkWrsa1CxtTUqMddqo1rSCG',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ invoke [2]',
+  'Program log: Instruction: MarginRefreshPosition',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ consumed 15069 of 349682 compute units',
+  'Program return: JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ AgAAADWW3Z7xVH97qUtzjyOTPTvkBYuPw5/gcYPi9XvVwpv2AQAAAAAAAQAAAAAAAAMAAAAAAAAAAAEAAAAAAABWtsliAAAAAPj///8k0lU2vpC3XweziD/CKT4XOzH+9gA4D550YF7zVOEeHwEAAAAAAAEAAAAAAAADAAAAAAAAAAABAAAAAAAAVrbJYgAAAAD4////',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ success',
+  'Program data: mblBOgsd8Ag1lt2e8VR/e6lLc48jkz075AWLj8Of4HGD4vV71cKb9n/xvTr55D6Y9cnWsNnmGFln+vQ0O3UO5LxyUJdO4XoZBHQxoDoS6zzjC9fHhryG+RauxrULG1NSox12qjWtIIYAAAAAgCilRgcAAAAAAAAAAIhSanQAAABFtsliAAAAAAABAAAAAAAAWLbJYgAAAAD4////AQAAAAH6/2QAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
+  'Program data: 1g5z9jARO/4=',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ consumed 28412 of 356111 compute units',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ success'
+]
+[
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ invoke [1]',
+  'Program log: Instruction: AdapterInvoke',
+  'Program data: zDPY5r/AZEtzzuahZXFBGXEpLBHVuVv1b1EcxiKLPg/J7GX55+OyYwR0MaA6Eus84wvXx4a8hvkWrsa1CxtTUqMddqo1rSCG',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ invoke [2]',
+  'Program log: Instruction: MarginRepay',
+  'Program log: Withdrawing [10000000000 tokens, 10000000000 notes] from deposit pool',
+  'Program log: Repaying [10000000000 tokens, 9999999999 notes] into loan pool',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [3]',
+  'Program log: Instruction: Burn',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 2979 of 153523 compute units',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [3]',
+  'Program log: Instruction: Burn',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 2979 of 147718 compute units',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success',
+  'Program data: UCZsAxOnX0KWKWRZw7jxBSf8Cby1hs98aAFiplaMVyAHB40cGV8OX3PO5qFlcUEZcSksEdW5W/VvURzGIos+D8nsZfnn47Jj7mxqeG+XjxS84xfDwAwusKppL6WYHNszygP/98cUevM9LX1TV051NIRc6+UZdlF6GYBOah+Toxto8n1e/w9UnADkC1QCAAAA/+MLVAIAAAAA5AtUAgAAAP/jC1QCAAAAAOQLVAIAAAABAAAAAAAAAAAAAAAAAAAAAMYoSoAAAAAAxihKgAAAAAEAAAAAAAAAWLbJYgAAAAA=',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ consumed 48417 of 189546 compute units',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ success',
+  'Program data: mblBOgsd8Ahq28UHGsw+uPMRNRr93eMK4znoLSCaG0827NeX6paEN+5sanhvl48UvOMXw8AMLrCqaS+lmBzbM8oD//fHFHrzBHQxoDoS6zzjC9fHhryG+RauxrULG1NSox12qjWtIIYAAADIAAAAAAAAAAAAAAAAAQAAAAAAAABYtsliAAAAAABkAAAAAAAAWLbJYgAAAAD4////AQAAAAL3/5ABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
+  'Program data: mblBOgsd8AiK+Dg/3PVggEfFvo1Lb2VBi982HcV3GmF4A4dlyy2Tsj0tfVNXTnU0hFzr5Rl2UXoZgE5qH5OjG2jyfV7/D1ScBHQxoDoS6zzjC9fHhryG+RauxrULG1NSox12qjWtIIYAAAAAoHJOGAkAAAAAAAAAAHQ7pAsAAABYtsliAAAAAABkAAAAAAAAWLbJYgAAAAD4////AQAAAAH3/18AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
+  'Program data: uw+I5L3rfm0=',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ consumed 87869 of 200000 compute units',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ success'
+]
+    ✔ User A repays his SOL loan (807ms)
+[
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ invoke [1]',
+  'Program log: Instruction: AccountingInvoke',
+  'Program data: 8Z7qeYrLC/wZEYWgVOKDkEN5ISxW/wqyu1cBPxOAQT4H8b9uPvSsIQR0MaA6Eus84wvXx4a8hvkWrsa1CxtTUqMddqo1rSCG',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ invoke [2]',
+  'Program log: Instruction: MarginRefreshPosition',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ consumed 14189 of 393571 compute units',
+  'Program return: JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ AgAAAIr4OD/c9WCAR8W+jUtvZUGL3zYdxXcaYXgDh2XLLZOyAQAAAAAAZAAAAAAAAAABAAAAAAAAAGQAAAAAAABVtsliAAAAAPj///9q28UHGsw+uPMRNRr93eMK4znoLSCaG0827NeX6paENwEAAAAAol8AAAAAAAD1AAAAAAAAAKJfAAAAAAAAVbbJYgAAAAD4////',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ success',
+  'Program data: mblBOgsd8AiK+Dg/3PVggEfFvo1Lb2VBi982HcV3GmF4A4dlyy2TstW9MeIVfuDKKaULl8D7NdO0Ju8BePJDupiK1qZaNrf/BHQxoDoS6zzjC9fHhryG+RauxrULG1NSox12qjWtIIYAAAAAQHoQ81oAAAAAAAAAAIhSanQAAABRtsliAAAAAABkAAAAAAAAWbbJYgAAAAD4////AQAAAAH3/18AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
+  'Program data: 1g5z9jARO/4=',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ consumed 33690 of 400000 compute units',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ success',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ invoke [1]',
+  'Program log: Instruction: AccountingInvoke',
+  'Program data: 8Z7qeYrLC/wZEYWgVOKDkEN5ISxW/wqyu1cBPxOAQT4H8b9uPvSsIQR0MaA6Eus84wvXx4a8hvkWrsa1CxtTUqMddqo1rSCG',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ invoke [2]',
+  'Program log: Instruction: MarginRefreshPosition',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ consumed 15069 of 359881 compute units',
+  'Program return: JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ AgAAADWW3Z7xVH97qUtzjyOTPTvkBYuPw5/gcYPi9XvVwpv2AQAAAAAAAQAAAAAAAAMAAAAAAAAAAAEAAAAAAABWtsliAAAAAPj///8k0lU2vpC3XweziD/CKT4XOzH+9gA4D550YF7zVOEeHwEAAAAAAAEAAAAAAAADAAAAAAAAAAABAAAAAAAAVrbJYgAAAAD4////',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ success',
+  'Program data: mblBOgsd8Agk0lU2vpC3XweziD/CKT4XOzH+9gA4D550YF7zVOEeH0JB+aWJtL0wCfgieOLuDBryPSR/y3mhtQcPzXFB4sgtBHQxoDoS6zzjC9fHhryG+RauxrULG1NSox12qjWtIIYAAAAAoKy5AwAAAAAAAAAAAMqaOwAAAABYtsliAAAAAAABAAAAAAAAWbbJYgAAAAD4////AQAAAAL6/5ABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
+  'Program data: mblBOgsd8Ag1lt2e8VR/e6lLc48jkz075AWLj8Of4HGD4vV71cKb9iVb3Q1PiOa8zh1Yq9/fw9lrUaOOAA2fcdh8dVPalG27BHQxoDoS6zzjC9fHhryG+RauxrULG1NSox12qjWtIIYAAAAAqFvpAwAAAAAAAAAAgLqVPgAAAABYtsliAAAAAAABAAAAAAAAWbbJYgAAAAD4////AQAAAAH6/2QAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
+  'Program data: 1g5z9jARO/4=',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ consumed 31558 of 366310 compute units',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ success'
+]
+[
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ invoke [1]',
+  'Program log: Instruction: AdapterInvoke',
+  'Program data: zDPY5r/AZEsZEYWgVOKDkEN5ISxW/wqyu1cBPxOAQT4H8b9uPvSsIQR0MaA6Eus84wvXx4a8hvkWrsa1CxtTUqMddqo1rSCG',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ invoke [2]',
+  'Program log: Instruction: MarginRepay',
+  'Program log: Withdrawing [1000000000 tokens, 1000000000 notes] from deposit pool',
+  'Program log: Repaying [1000000000 tokens, 999999999 notes] into loan pool',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [3]',
+  'Program log: Instruction: Burn',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 2979 of 153671 compute units',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [3]',
+  'Program log: Instruction: Burn',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 2979 of 147866 compute units',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success',
+  'Program data: UCZsAxOnX0Kvwlgpt2qARYSCPo2K+A6j1h1vZp7Aj0RQSWtC4G+AXhkRhaBU4oOQQ3khLFb/CrK7VwE/E4BBPgfxv24+9KwhQkH5pYm0vTAJ+CJ44u4MGvI9JH/LeaG1Bw/NcUHiyC0lW90NT4jmvM4dWKvf38PZa1GjjgANn3HYfHVT2pRtuwDKmjsAAAAA/8maOwAAAAAAypo7AAAAAP/JmjsAAAAAAMqaOwAAAAABAAAAAAAAAAAAAAAAAAAAwLpcbXQAAADAulxtdAAAAAEAAAAAAAAAWbbJYgAAAAA=',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ consumed 48269 of 189546 compute units',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ success',
+  'Program data: mblBOgsd8Agk0lU2vpC3XweziD/CKT4XOzH+9gA4D550YF7zVOEeH0JB+aWJtL0wCfgieOLuDBryPSR/y3mhtQcPzXFB4sgtBHQxoDoS6zzjC9fHhryG+RauxrULG1NSox12qjWtIIYAAAAQAAAAAAAAAAAAAAAAAQAAAAAAAABZtsliAAAAAAABAAAAAAAAWbbJYgAAAAD4////AQAAAAL6/5ABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
+  'Program data: mblBOgsd8Ag1lt2e8VR/e6lLc48jkz075AWLj8Of4HGD4vV71cKb9iVb3Q1PiOa8zh1Yq9/fw9lrUaOOAA2fcdh8dVPalG27BHQxoDoS6zzjC9fHhryG+RauxrULG1NSox12qjWtIIYAAAAACK8vAAAAAAAAAAAAgPD6AgAAAABZtsliAAAAAAABAAAAAAAAWbbJYgAAAAD4////AQAAAAH6/2QAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
+  'Program data: uw+I5L3rfm0=',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ consumed 77595 of 200000 compute units',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ success'
+]
+    ✔ User B repays his USDC loan (808ms)
+[
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ invoke [1]',
+  'Program log: Instruction: AccountingInvoke',
+  'Program data: 8Z7qeYrLC/xzzuahZXFBGXEpLBHVuVv1b1EcxiKLPg/J7GX55+OyYwR0MaA6Eus84wvXx4a8hvkWrsa1CxtTUqMddqo1rSCG',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ invoke [2]',
+  'Program log: Instruction: MarginRefreshPosition',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ consumed 14189 of 993571 compute units',
+  'Program return: JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ AgAAAIr4OD/c9WCAR8W+jUtvZUGL3zYdxXcaYXgDh2XLLZOyAQAAAAAAZAAAAAAAAAABAAAAAAAAAGQAAAAAAABVtsliAAAAAPj///9q28UHGsw+uPMRNRr93eMK4znoLSCaG0827NeX6paENwEAAAAAol8AAAAAAAD1AAAAAAAAAKJfAAAAAAAAVbbJYgAAAAD4////',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ success',
+  'Program data: mblBOgsd8Ahq28UHGsw+uPMRNRr93eMK4znoLSCaG0827NeX6paEN+5sanhvl48UvOMXw8AMLrCqaS+lmBzbM8oD//fHFHrzBHQxoDoS6zzjC9fHhryG+RauxrULG1NSox12qjWtIIYAAIh+AQAAAAAAAAAAAAAAAgAAAAAAAABZtsliAAAAAKJfAAAAAAAAWrbJYgAAAAD4////AQAAAAL3/5ABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
+  'Program data: mblBOgsd8AiK+Dg/3PVggEfFvo1Lb2VBi982HcV3GmF4A4dlyy2Tsj0tfVNXTnU0hFzr5Rl2UXoZgE5qH5OjG2jyfV7/D1ScBHQxoDoS6zzjC9fHhryG+RauxrULG1NSox12qjWtIIYAAAAAoHJOGAkAAAAAAAAAAHQ7pAsAAABZtsliAAAAAABkAAAAAAAAWrbJYgAAAAD4////AQAAAAH3/18AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
+  'Program data: 1g5z9jARO/4=',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ consumed 42957 of 1000000 compute units',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ success',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ invoke [1]',
+  'Program log: Instruction: AccountingInvoke',
+  'Program data: 8Z7qeYrLC/xzzuahZXFBGXEpLBHVuVv1b1EcxiKLPg/J7GX55+OyYwR0MaA6Eus84wvXx4a8hvkWrsa1CxtTUqMddqo1rSCG',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ invoke [2]',
+  'Program log: Instruction: MarginRefreshPosition',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ consumed 14189 of 950614 compute units',
+  'Program return: JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ AgAAADWW3Z7xVH97qUtzjyOTPTvkBYuPw5/gcYPi9XvVwpv2AQAAAAAAAQAAAAAAAAMAAAAAAAAAAAEAAAAAAABWtsliAAAAAPj///8k0lU2vpC3XweziD/CKT4XOzH+9gA4D550YF7zVOEeHwEAAAAAAAEAAAAAAAADAAAAAAAAAAABAAAAAAAAVrbJYgAAAAD4////',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ success',
+  'Program data: mblBOgsd8Ag1lt2e8VR/e6lLc48jkz075AWLj8Of4HGD4vV71cKb9n/xvTr55D6Y9cnWsNnmGFln+vQ0O3UO5LxyUJdO4XoZBHQxoDoS6zzjC9fHhryG+RauxrULG1NSox12qjWtIIYAAAAAgCilRgcAAAAAAAAAAIhSanQAAABFtsliAAAAAAABAAAAAAAAWrbJYgAAAAD4////AQAAAAH6/2QAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
+  'Program data: 1g5z9jARO/4=',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ consumed 27532 of 957043 compute units',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ success',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ invoke [1]',
+  'Program log: Instruction: UpdatePositionBalance',
+  'Program data: +pebBm/QykxzzuahZXFBGXEpLBHVuVv1b1EcxiKLPg/J7GX55+OyYzWW3Z7xVH97qUtzjyOTPTvkBYuPw5/gcYPi9XvVwpv2f/G9OvnkPpj1ydaw2eYYWWf69DQ7dQ7kvHJQl07hehkEdDGgOhLrPOML18eGvIb5Fq7GtQsbU1KjHXaqNa0ghgAAAACAKKVGBwAAAAAAAAAAiFJqdAAAAFq2yWIAAAAAAAEAAAAAAABatsliAAAAAPj///8BAAAAAfr/ZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ consumed 4625 of 929511 compute units',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ success',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ invoke [1]',
+  'Program log: Instruction: UpdatePositionBalance',
+  'Program data: +pebBm/QykxzzuahZXFBGXEpLBHVuVv1b1EcxiKLPg/J7GX55+OyY4r4OD/c9WCAR8W+jUtvZUGL3zYdxXcaYXgDh2XLLZOyPS19U1dOdTSEXOvlGXZRehmATmofk6MbaPJ9Xv8PVJwEdDGgOhLrPOML18eGvIb5Fq7GtQsbU1KjHXaqNa0ghgAAAACgck4YCQAAAAAAAAAAdDukCwAAAFq2yWIAAAAAAGQAAAAAAABatsliAAAAAPj///8BAAAAAff/XwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ consumed 9177 of 924886 compute units',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ success',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ invoke [1]',
+  'Program log: Instruction: UpdatePositionBalance',
+  'Program data: +pebBm/QykxzzuahZXFBGXEpLBHVuVv1b1EcxiKLPg/J7GX55+OyY2rbxQcazD648xE1Gv3d4wrjOegtIJobTzbs15fqloQ37mxqeG+XjxS84xfDwAwusKppL6WYHNszygP/98cUevMEdDGgOhLrPOML18eGvIb5Fq7GtQsbU1KjHXaqNa0ghgAAiH4BAAAAAAAAAAAAAAACAAAAAAAAAFq2yWIAAAAAol8AAAAAAABatsliAAAAAPj///8BAAAAAvf/kAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ consumed 9115 of 915709 compute units',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ success'
+]
+[
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ invoke [1]',
+  'Program log: Instruction: AdapterInvoke',
+  'Program data: zDPY5r/AZEtzzuahZXFBGXEpLBHVuVv1b1EcxiKLPg/J7GX55+OyYwR0MaA6Eus84wvXx4a8hvkWrsa1CxtTUqMddqo1rSCG',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ invoke [2]',
+  'Program log: Instruction: Withdraw',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [3]',
+  'Program log: Instruction: Transfer',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 3052 of 178354 compute units',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [3]',
+  'Program log: Instruction: Burn',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 2979 of 172450 compute units',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success',
+  'Program data: wPHJ2UaWWvevwlgpt2qARYSCPo2K+A6j1h1vZp7Aj0RQSWtC4G+AXnPO5qFlcUEZcSksEdW5W/VvURzGIos+D8nsZfnn47Jjf/G9OvnkPpj1ydaw2eYYWWf69DQ7dQ7kvHJQl07hehnUWIYq0uCTxYhunY6dXKAvnHO1EVAoTXyuscuQCLLRlwCg2yFdAAAAAKDbIV0AAAABAAAAAAAAAAAAAAAAAAAAwBqBSxcAAADAGoFLFwAAAAEAAAAAAAAAWrbJYgAAAAA=',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ consumed 23513 of 189537 compute units',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ success',
+  'Program data: mblBOgsd8Ag1lt2e8VR/e6lLc48jkz075AWLj8Of4HGD4vV71cKb9n/xvTr55D6Y9cnWsNnmGFln+vQ0O3UO5LxyUJdO4XoZBHQxoDoS6zzjC9fHhryG+RauxrULG1NSox12qjWtIIYAAAAAgG6HdAEAAAAAAAAAAOh2SBcAAABatsliAAAAAAABAAAAAAAAWrbJYgAAAAD4////AQAAAAH6/2QAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
+  'Program data: uw+I5L3rfm0=',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ consumed 52801 of 200000 compute units',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ success'
+]
+[
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ invoke [1]',
+  'Program log: Instruction: AccountingInvoke',
+  'Program data: 8Z7qeYrLC/wZEYWgVOKDkEN5ISxW/wqyu1cBPxOAQT4H8b9uPvSsIQR0MaA6Eus84wvXx4a8hvkWrsa1CxtTUqMddqo1rSCG',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ invoke [2]',
+  'Program log: Instruction: MarginRefreshPosition',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ consumed 14189 of 993571 compute units',
+  'Program return: JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ AgAAAIr4OD/c9WCAR8W+jUtvZUGL3zYdxXcaYXgDh2XLLZOyAQAAAAAAZAAAAAAAAAABAAAAAAAAAGQAAAAAAABVtsliAAAAAPj///9q28UHGsw+uPMRNRr93eMK4znoLSCaG0827NeX6paENwEAAAAAol8AAAAAAAD1AAAAAAAAAKJfAAAAAAAAVbbJYgAAAAD4////',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ success',
+  'Program data: mblBOgsd8AiK+Dg/3PVggEfFvo1Lb2VBi982HcV3GmF4A4dlyy2TstW9MeIVfuDKKaULl8D7NdO0Ju8BePJDupiK1qZaNrf/BHQxoDoS6zzjC9fHhryG+RauxrULG1NSox12qjWtIIYAAAAAQHoQ81oAAAAAAAAAAIhSanQAAABRtsliAAAAAABkAAAAAAAAWrbJYgAAAAD4////AQAAAAH3/18AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
+  'Program data: 1g5z9jARO/4=',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ consumed 33690 of 1000000 compute units',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ success',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ invoke [1]',
+  'Program log: Instruction: AccountingInvoke',
+  'Program data: 8Z7qeYrLC/wZEYWgVOKDkEN5ISxW/wqyu1cBPxOAQT4H8b9uPvSsIQR0MaA6Eus84wvXx4a8hvkWrsa1CxtTUqMddqo1rSCG',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ invoke [2]',
+  'Program log: Instruction: MarginRefreshPosition',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ consumed 14189 of 959881 compute units',
+  'Program return: JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ AgAAADWW3Z7xVH97qUtzjyOTPTvkBYuPw5/gcYPi9XvVwpv2AQAAAAAAAQAAAAAAAAMAAAAAAAAAAAEAAAAAAABWtsliAAAAAPj///8k0lU2vpC3XweziD/CKT4XOzH+9gA4D550YF7zVOEeHwEAAAAAAAEAAAAAAAADAAAAAAAAAAABAAAAAAAAVrbJYgAAAAD4////',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ success',
+  'Program data: mblBOgsd8Agk0lU2vpC3XweziD/CKT4XOzH+9gA4D550YF7zVOEeH0JB+aWJtL0wCfgieOLuDBryPSR/y3mhtQcPzXFB4sgtBHQxoDoS6zzjC9fHhryG+RauxrULG1NSox12qjWtIIYAAAAQAAAAAAAAAAAAAAAAAQAAAAAAAABatsliAAAAAAABAAAAAAAAWrbJYgAAAAD4////AQAAAAL6/5ABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
+  'Program data: mblBOgsd8Ag1lt2e8VR/e6lLc48jkz075AWLj8Of4HGD4vV71cKb9iVb3Q1PiOa8zh1Yq9/fw9lrUaOOAA2fcdh8dVPalG27BHQxoDoS6zzjC9fHhryG+RauxrULG1NSox12qjWtIIYAAAAACK8vAAAAAAAAAAAAgPD6AgAAAABatsliAAAAAAABAAAAAAAAWrbJYgAAAAD4////AQAAAAH6/2QAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
+  'Program data: 1g5z9jARO/4=',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ consumed 30678 of 966310 compute units',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ success',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ invoke [1]',
+  'Program log: Instruction: UpdatePositionBalance',
+  'Program data: +pebBm/QykwZEYWgVOKDkEN5ISxW/wqyu1cBPxOAQT4H8b9uPvSsITWW3Z7xVH97qUtzjyOTPTvkBYuPw5/gcYPi9XvVwpv2JVvdDU+I5rzOHVir39/D2WtRo44ADZ9x2Hx1U9qUbbsEdDGgOhLrPOML18eGvIb5Fq7GtQsbU1KjHXaqNa0ghgAAAAAIry8AAAAAAAAAAACA8PoCAAAAAFq2yWIAAAAAAAEAAAAAAABatsliAAAAAPj///8BAAAAAfr/ZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ consumed 4558 of 935632 compute units',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ success',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ invoke [1]',
+  'Program log: Instruction: UpdatePositionBalance',
+  'Program data: +pebBm/QykwZEYWgVOKDkEN5ISxW/wqyu1cBPxOAQT4H8b9uPvSsIYr4OD/c9WCAR8W+jUtvZUGL3zYdxXcaYXgDh2XLLZOy1b0x4hV+4MoppQuXwPs107Qm7wF48kO6mIrWplo2t/8EdDGgOhLrPOML18eGvIb5Fq7GtQsbU1KjHXaqNa0ghgAAAABAehDzWgAAAAAAAAAAiFJqdAAAAFq2yWIAAAAAAGQAAAAAAABatsliAAAAAPj///8BAAAAAff/XwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ consumed 9176 of 931074 compute units',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ success',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ invoke [1]',
+  'Program log: Instruction: UpdatePositionBalance',
+  'Program data: +pebBm/QykwZEYWgVOKDkEN5ISxW/wqyu1cBPxOAQT4H8b9uPvSsISTSVTa+kLdfB7OIP8IpPhc7Mf72ADgPnnRgXvNU4R4fQkH5pYm0vTAJ+CJ44u4MGvI9JH/LeaG1Bw/NcUHiyC0EdDGgOhLrPOML18eGvIb5Fq7GtQsbU1KjHXaqNa0ghgAAABAAAAAAAAAAAAAAAAABAAAAAAAAAFq2yWIAAAAAAAEAAAAAAABatsliAAAAAPj///8BAAAAAvr/kAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ consumed 4625 of 921898 compute units',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ success'
+]
+[
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ invoke [1]',
+  'Program log: Instruction: AdapterInvoke',
+  'Program data: zDPY5r/AZEsZEYWgVOKDkEN5ISxW/wqyu1cBPxOAQT4H8b9uPvSsIQR0MaA6Eus84wvXx4a8hvkWrsa1CxtTUqMddqo1rSCG',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ invoke [2]',
+  'Program log: Instruction: Withdraw',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [3]',
+  'Program log: Instruction: Transfer',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 3052 of 168622 compute units',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [3]',
+  'Program log: Instruction: Burn',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 2979 of 162718 compute units',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success',
+  'Program data: wPHJ2UaWWveWKWRZw7jxBSf8Cby1hs98aAFiplaMVyAHB40cGV8OXxkRhaBU4oOQQ3khLFb/CrK7VwE/E4BBPgfxv24+9Kwh1b0x4hV+4MoppQuXwPs107Qm7wF48kO6mIrWplo2t/8oQGRV+Xfgz4VF9FCpeV17QDqC6owXHJfJme89dQFloQCg2yFdAAAA/5/bIV0AAAACAAAAAAAAAAAAAAAAAAAAACZNKCMAAAABJk0oIwAAAAIAAAAAAAAAW7bJYgAAAAA=',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ consumed 33254 of 189546 compute units',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ success',
+  'Program data: mblBOgsd8AiK+Dg/3PVggEfFvo1Lb2VBi982HcV3GmF4A4dlyy2TstW9MeIVfuDKKaULl8D7NdO0Ju8BePJDupiK1qZaNrf/BHQxoDoS6zzjC9fHhryG+RauxrULG1NSox12qjWtIIYAAADIQOWcMBIAAAAAAAAAAeh2SBcAAABbtsliAAAAAABkAAAAAAAAW7bJYgAAAAD4////AQAAAAH3/18AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
+  'Program data: uw+I5L3rfm0=',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ consumed 66103 of 200000 compute units',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ success'
+]
+    ✔ Users withdraw their funds (1622ms)
+    ✔ Close margin accounts
+    Transaction History
+      ✔ should allow to get a list of the latest transactions
+
+  margin pool deposit
+    ✔ Fund payer (372ms)
+    ✔ Create tokens (816ms)
+    ✔ Create oracles (1072ms)
+    ✔ Create authority
+    ✔ Register adapter
+    ✔ Load Pools
+    ✔ Create margin pools (1352ms)
+    ✔ Create our two user wallets, with some SOL funding to get started (1216ms)
+[
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ invoke [1]',
+  'Program log: Instruction: CreateAccount',
+  'Program 11111111111111111111111111111111 invoke [2]',
+  'Program 11111111111111111111111111111111 success',
+  'Program data: RicGrXbGvlvk67hNwTFjAeDDYp2P6jkRUa9j6ltspbQtI+8NClZo6ud46/zVYvGp8FS5N4SgdMT/N/4j+0Cn3UaCDkGl63EPAAA=',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ consumed 11145 of 200000 compute units',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ success'
+]
+[
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ invoke [1]',
+  'Program log: Instruction: CreateAccount',
+  'Program 11111111111111111111111111111111 invoke [2]',
+  'Program 11111111111111111111111111111111 success',
+  'Program data: RicGrXbGvls7EEC+DlrP8bzrbB2WJf69XgKg7iI68XF9VD/U4Abby5W+FRsJ4ADgzDN8PDENMY2iZpjKD1my39t/jVyxigAgAAA=',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ consumed 9645 of 200000 compute units',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ success'
+]
+[
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ invoke [1]',
+  'Program log: Instruction: CreateAccount',
+  'Program 11111111111111111111111111111111 invoke [2]',
+  'Program 11111111111111111111111111111111 success',
+  'Program data: RicGrXbGvluH7ZjajLGB7Kea1I7oI3+7zuPsTCtpXQ413c+b53v+ETXejaYRYMMYAYVbn0teVjNIWn5kncFJVceIZnKHJpvfAAA=',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ consumed 9645 of 200000 compute units',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ success'
+]
+    ✔ Initialize the margin accounts for each user (1219ms)
+    ✔ Create some tokens for each user to deposit (4890ms)
+    ✔ Refresh pools
+[
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ invoke [1]',
+  'Program log: Instruction: Deposit',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]',
+  'Program log: Instruction: Transfer',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 3052 of 383459 compute units',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]',
+  'Program log: Instruction: MintTo',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 2928 of 377586 compute units',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success',
+  'Program data: Ps3yr/SpiDRskzzBq1RcJ7ipCLXf1qK0tue2X5JUpIBbH2pukY7cyOd46/zVYvGp8FS5N4SgdMT/N/4j+0Cn3UaCDkGl63EPgZydtxhPmBqucfqUCqJtp/MkXCyOmwww/kD5OuFrINyM3X19i9ZGPpx2ga9l8s5n3KjnfnJ1JKGxA+YBSP5vfQCIUmp0AAAAAIhSanQAAAAAAAAAAAAAAAAAAAAAAAAAAIhSanQAAAAAiFJqdAAAAAAAAAAAAAAAabbJYgAAAAA=',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ consumed 28786 of 400000 compute units',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ success',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ invoke [1]',
+  'Program log: Instruction: UpdatePositionBalance',
+  'Program data: +pebBm/Qykzk67hNwTFjAeDDYp2P6jkRUa9j6ltspbQtI+8NClZo6jehlnaiul8pK4CerKKASxkiijsiAhEoG0Pa5W2aXOAYjN19fYvWRj6cdoGvZfLOZ9yo535ydSShsQPmAUj+b30EdDGgOhLrPOML18eGvIb5Fq7GtQsbU1KjHXaqNa0ghgAAAAAAAAAAAAAAAAAAAAAAiFJqdAAAAGm2yWIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAfr/ZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ consumed 4459 of 371214 compute units',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ success'
+]
+[
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ invoke [1]',
+  'Program log: Instruction: Deposit',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]',
+  'Program log: Instruction: Transfer',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 3052 of 380387 compute units',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]',
+  'Program log: Instruction: MintTo',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 2928 of 374514 compute units',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success',
+  'Program data: Ps3yr/SpiDRskzzBq1RcJ7ipCLXf1qK0tue2X5JUpIBbH2pukY7cyJW+FRsJ4ADgzDN8PDENMY2iZpjKD1my39t/jVyxigAgT/fG8d+gO2sdeu9GIa+H+cIAOnvl9ajmQWwwGsJOct6Aq3kOZcb/cv9Gf0SUmL39N8GKWolQWiV/1aLD+AAOyoDw+gIAAAAAgPD6AgAAAAAAAAAAAAAAAAAAAAAAAAAAgHhNbXQAAACAeE1tdAAAAAAAAAAAAAAAa7bJYgAAAAA=',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ consumed 31858 of 400000 compute units',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ success',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ invoke [1]',
+  'Program log: Instruction: UpdatePositionBalance',
+  'Program data: +pebBm/Qykw7EEC+DlrP8bzrbB2WJf69XgKg7iI68XF9VD/U4Abbyzehlnaiul8pK4CerKKASxkiijsiAhEoG0Pa5W2aXOAYgKt5DmXG/3L/Rn9ElJi9/TfBilqJUFolf9Wiw/gADsoEdDGgOhLrPOML18eGvIb5Fq7GtQsbU1KjHXaqNa0ghgAAAAAAAAAAAAAAAAAAAACA8PoCAAAAAGu2yWIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAfr/ZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ consumed 4458 of 368142 compute units',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ success'
+]
+[
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ invoke [1]',
+  'Program log: Instruction: Deposit',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]',
+  'Program log: Instruction: Transfer',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 3052 of 380387 compute units',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]',
+  'Program log: Instruction: MintTo',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 2928 of 374514 compute units',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success',
+  'Program data: Ps3yr/SpiDRskzzBq1RcJ7ipCLXf1qK0tue2X5JUpIBbH2pukY7cyDXejaYRYMMYAYVbn0teVjNIWn5kncFJVceIZnKHJpvfVHLHP4pLAcP9SrZNB7WC3z5lPHztmsVh2Uax0hQjlcpDkxkQlyX5p4VPP4SY8H2jOR0puyeNy4e67mr19AeSW0BCDwAAAAAAQEIPAAAAAAAAAAAAAAAAAAAAAAAAAAAAwLpcbXQAAADAulxtdAAAAAAAAAAAAAAAbrbJYgAAAAA=',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ consumed 31858 of 400000 compute units',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ success',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ invoke [1]',
+  'Program log: Instruction: UpdatePositionBalance',
+  'Program data: +pebBm/QykyH7ZjajLGB7Kea1I7oI3+7zuPsTCtpXQ413c+b53v+ETehlnaiul8pK4CerKKASxkiijsiAhEoG0Pa5W2aXOAYQ5MZEJcl+aeFTz+EmPB9ozkdKbsnjcuHuu5q9fQHklsEdDGgOhLrPOML18eGvIb5Fq7GtQsbU1KjHXaqNa0ghgAAAAAAAAAAAAAAAAAAAABAQg8AAAAAAG62yWIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAfr/ZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ consumed 4458 of 368142 compute units',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ success'
+]
+[
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ invoke [1]',
+  'Program log: Instruction: AccountingInvoke',
+  'Program data: 8Z7qeYrLC/zk67hNwTFjAeDDYp2P6jkRUa9j6ltspbQtI+8NClZo6gR0MaA6Eus84wvXx4a8hvkWrsa1CxtTUqMddqo1rSCG',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ invoke [2]',
+  'Program log: Instruction: MarginRefreshPosition',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ consumed 14187 of 193571 compute units',
+  'Program return: JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ AgAAADehlnaiul8pK4CerKKASxkiijsiAhEoG0Pa5W2aXOAYAQAAAAAAAQAAAAAAAAMAAAAAAAAAAAEAAAAAAAButsliAAAAAPj///+bhUaX8vLRAiMrObaEe2d6lGaWS4Lv32cAuJloXa8BuwEAAAAAAAEAAAAAAAADAAAAAAAAAAABAAAAAAAAbrbJYgAAAAD4////',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ success',
+  'Program data: mblBOgsd8Ag3oZZ2orpfKSuAnqyigEsZIoo7IgIRKBtD2uVtmlzgGIzdfX2L1kY+nHaBr2XyzmfcqOd+cnUkobED5gFI/m99BHQxoDoS6zzjC9fHhryG+RauxrULG1NSox12qjWtIIYAAAAAgCilRgcAAAAAAAAAAIhSanQAAABptsliAAAAAAABAAAAAAAAbrbJYgAAAAD4////AQAAAAH6/2QAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
+  'Program data: 1g5z9jARO/4=',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ consumed 27397 of 200000 compute units',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ success'
+]
+[
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ invoke [1]',
+  'Program log: Instruction: AccountingInvoke',
+  'Program data: 8Z7qeYrLC/w7EEC+DlrP8bzrbB2WJf69XgKg7iI68XF9VD/U4AbbywR0MaA6Eus84wvXx4a8hvkWrsa1CxtTUqMddqo1rSCG',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ invoke [2]',
+  'Program log: Instruction: MarginRefreshPosition',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ consumed 14187 of 193571 compute units',
+  'Program return: JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ AgAAADehlnaiul8pK4CerKKASxkiijsiAhEoG0Pa5W2aXOAYAQAAAAAAAQAAAAAAAAMAAAAAAAAAAAEAAAAAAAButsliAAAAAPj///+bhUaX8vLRAiMrObaEe2d6lGaWS4Lv32cAuJloXa8BuwEAAAAAAAEAAAAAAAADAAAAAAAAAAABAAAAAAAAbrbJYgAAAAD4////',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ success',
+  'Program data: mblBOgsd8Ag3oZZ2orpfKSuAnqyigEsZIoo7IgIRKBtD2uVtmlzgGICreQ5lxv9y/0Z/RJSYvf03wYpaiVBaJX/VosP4AA7KBHQxoDoS6zzjC9fHhryG+RauxrULG1NSox12qjWtIIYAAAAACK8vAAAAAAAAAAAAgPD6AgAAAABstsliAAAAAAABAAAAAAAAb7bJYgAAAAD4////AQAAAAH6/2QAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
+  'Program data: 1g5z9jARO/4=',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ consumed 27396 of 200000 compute units',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ success'
+]
+[
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ invoke [1]',
+  'Program log: Instruction: AccountingInvoke',
+  'Program data: 8Z7qeYrLC/yH7ZjajLGB7Kea1I7oI3+7zuPsTCtpXQ413c+b53v+EQR0MaA6Eus84wvXx4a8hvkWrsa1CxtTUqMddqo1rSCG',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ invoke [2]',
+  'Program log: Instruction: MarginRefreshPosition',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ consumed 14187 of 193571 compute units',
+  'Program return: JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ AgAAADehlnaiul8pK4CerKKASxkiijsiAhEoG0Pa5W2aXOAYAQAAAAAAAQAAAAAAAAMAAAAAAAAAAAEAAAAAAAButsliAAAAAPj///+bhUaX8vLRAiMrObaEe2d6lGaWS4Lv32cAuJloXa8BuwEAAAAAAAEAAAAAAAADAAAAAAAAAAABAAAAAAAAbrbJYgAAAAD4////',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ success',
+  'Program data: mblBOgsd8Ag3oZZ2orpfKSuAnqyigEsZIoo7IgIRKBtD2uVtmlzgGEOTGRCXJfmnhU8/hJjwfaM5HSm7J43Lh7ruavX0B5JbBHQxoDoS6zzjC9fHhryG+RauxrULG1NSox12qjWtIIYAAAAAJPQAAAAAAAAAAAAAQEIPAAAAAAButsliAAAAAAABAAAAAAAAb7bJYgAAAAD4////AQAAAAH6/2QAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
+  'Program data: 1g5z9jARO/4=',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ consumed 27396 of 200000 compute units',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ success'
+]
+[
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ invoke [1]',
+  'Program log: Instruction: Deposit',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]',
+  'Program log: Instruction: Transfer',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 3052 of 383459 compute units',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]',
+  'Program log: Instruction: MintTo',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 2928 of 377586 compute units',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success',
+  'Program data: Ps3yr/SpiDSPqGFfUszcDHKQHKH3N1jd5ifb8Cy6nSWWFMK4u3v2led46/zVYvGp8FS5N4SgdMT/N/4j+0Cn3UaCDkGl63EP8U5SXopBDVTwC4BPc88zw6sg3yjUMu9lQJJTZ6XL045Y9wtBg/oNGm3J1mgGoUpKb3JYuPGYVUV3BX9uiTQePgB0O6QLAAAAAHQ7pAsAAAAAAAAAAAAAAAAAAAAAAAAAAHQ7pAsAAAAAdDukCwAAAAAAAAAAAAAAcrbJYgAAAAA=',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ consumed 28786 of 400000 compute units',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ success',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ invoke [1]',
+  'Program log: Instruction: UpdatePositionBalance',
+  'Program data: +pebBm/Qykzk67hNwTFjAeDDYp2P6jkRUa9j6ltspbQtI+8NClZo6kMh1X2xnTujtXW6K3qc1SlVZ4WWy3c/qiGynXllOTz+WPcLQYP6DRptydZoBqFKSm9yWLjxmFVFdwV/bok0Hj4EdDGgOhLrPOML18eGvIb5Fq7GtQsbU1KjHXaqNa0ghgAAAAAAAAAAAAAAAAAAAAAAdDukCwAAAHK2yWIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAff/XwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ consumed 4458 of 371214 compute units',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ success'
+]
+[
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ invoke [1]',
+  'Program log: Instruction: Deposit',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]',
+  'Program log: Instruction: Transfer',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 3052 of 380390 compute units',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]',
+  'Program log: Instruction: MintTo',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 2928 of 374517 compute units',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success',
+  'Program data: Ps3yr/SpiDSPqGFfUszcDHKQHKH3N1jd5ifb8Cy6nSWWFMK4u3v2lZW+FRsJ4ADgzDN8PDENMY2iZpjKD1my39t/jVyxigAgPXZwinY4XRBU57iK8naMy4gEePvH6WNfCEHupcug/wzTbtmf8BRAiSSWcC6UIOhmlmiNusNOZv//keFzfk+f0ACIUmp0AAAAAIhSanQAAAAAAAAAAAAAAAAAAAAAAAAAAPyNDoAAAAAA/I0OgAAAAAAAAAAAAAAAdLbJYgAAAAA=',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ consumed 31855 of 400000 compute units',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ success',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ invoke [1]',
+  'Program log: Instruction: UpdatePositionBalance',
+  'Program data: +pebBm/Qykw7EEC+DlrP8bzrbB2WJf69XgKg7iI68XF9VD/U4Abby0Mh1X2xnTujtXW6K3qc1SlVZ4WWy3c/qiGynXllOTz+027Zn/AUQIkklnAulCDoZpZojbrDTmb//5Hhc35Pn9AEdDGgOhLrPOML18eGvIb5Fq7GtQsbU1KjHXaqNa0ghgAAAAAAAAAAAAAAAAAAAAAAiFJqdAAAAHS2yWIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAff/XwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ consumed 4458 of 368145 compute units',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ success'
+]
+[
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ invoke [1]',
+  'Program log: Instruction: Deposit',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]',
+  'Program log: Instruction: Transfer',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 3052 of 380390 compute units',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]',
+  'Program log: Instruction: MintTo',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 2928 of 374517 compute units',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success',
+  'Program data: Ps3yr/SpiDSPqGFfUszcDHKQHKH3N1jd5ifb8Cy6nSWWFMK4u3v2lTXejaYRYMMYAYVbn0teVjNIWn5kncFJVceIZnKHJpvfBfxbUDCvi7RGaX/uzgXXh6wxTRIQWlqBlmT1Bs1LiAx+JUIXh61EJo1reDnz5Rh5tJDIJZpqCsskJcGkY4K+cQDKmjsAAAAAAMqaOwAAAAAAAAAAAAAAAAAAAAAAAAAAAMYoSoAAAAAAxihKgAAAAAAAAAAAAAAAd7bJYgAAAAA=',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ consumed 31855 of 400000 compute units',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ success',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ invoke [1]',
+  'Program log: Instruction: UpdatePositionBalance',
+  'Program data: +pebBm/QykyH7ZjajLGB7Kea1I7oI3+7zuPsTCtpXQ413c+b53v+EUMh1X2xnTujtXW6K3qc1SlVZ4WWy3c/qiGynXllOTz+fiVCF4etRCaNa3g58+UYebSQyCWaagrLJCXBpGOCvnEEdDGgOhLrPOML18eGvIb5Fq7GtQsbU1KjHXaqNa0ghgAAAAAAAAAAAAAAAAAAAAAAypo7AAAAAHe2yWIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAff/XwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ consumed 4458 of 368145 compute units',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ success'
+]
+[
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ invoke [1]',
+  'Program log: Instruction: AccountingInvoke',
+  'Program data: 8Z7qeYrLC/zk67hNwTFjAeDDYp2P6jkRUa9j6ltspbQtI+8NClZo6gR0MaA6Eus84wvXx4a8hvkWrsa1CxtTUqMddqo1rSCG',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ invoke [2]',
+  'Program log: Instruction: MarginRefreshPosition',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ consumed 14187 of 193571 compute units',
+  'Program return: JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ AgAAAEMh1X2xnTujtXW6K3qc1SlVZ4WWy3c/qiGynXllOTz+AQAAAAAAZAAAAAAAAAABAAAAAAAAAGQAAAAAAAB3tsliAAAAAPj///9GEaxNkRtXn0UDH3r17/OnVKQyGpsZXCxtuG88SdYGlgEAAAAAAGQAAAAAAAAAAQAAAAAAAABkAAAAAAAAd7bJYgAAAAD4////',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ success',
+  'Program data: mblBOgsd8AhDIdV9sZ07o7V1uit6nNUpVWeFlst3P6ohsp15ZTk8/lj3C0GD+g0abcnWaAahSkpvcli48ZhVRXcFf26JNB4+BHQxoDoS6zzjC9fHhryG+RauxrULG1NSox12qjWtIIYAAAAAoHJOGAkAAAAAAAAAAHQ7pAsAAABytsliAAAAAABkAAAAAAAAd7bJYgAAAAD4////AQAAAAH3/18AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
+  'Program data: 1g5z9jARO/4=',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ consumed 33562 of 200000 compute units',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ success'
+]
+[
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ invoke [1]',
+  'Program log: Instruction: AccountingInvoke',
+  'Program data: 8Z7qeYrLC/w7EEC+DlrP8bzrbB2WJf69XgKg7iI68XF9VD/U4AbbywR0MaA6Eus84wvXx4a8hvkWrsa1CxtTUqMddqo1rSCG',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ invoke [2]',
+  'Program log: Instruction: MarginRefreshPosition',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ consumed 14187 of 193571 compute units',
+  'Program return: JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ AgAAAEMh1X2xnTujtXW6K3qc1SlVZ4WWy3c/qiGynXllOTz+AQAAAAAAZAAAAAAAAAABAAAAAAAAAGQAAAAAAAB3tsliAAAAAPj///9GEaxNkRtXn0UDH3r17/OnVKQyGpsZXCxtuG88SdYGlgEAAAAAAGQAAAAAAAAAAQAAAAAAAABkAAAAAAAAd7bJYgAAAAD4////',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ success',
+  'Program data: mblBOgsd8AhDIdV9sZ07o7V1uit6nNUpVWeFlst3P6ohsp15ZTk8/tNu2Z/wFECJJJZwLpQg6GaWaI26w05m//+R4XN+T5/QBHQxoDoS6zzjC9fHhryG+RauxrULG1NSox12qjWtIIYAAAAAQHoQ81oAAAAAAAAAAIhSanQAAAB0tsliAAAAAABkAAAAAAAAeLbJYgAAAAD4////AQAAAAH3/18AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
+  'Program data: 1g5z9jARO/4=',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ consumed 33561 of 200000 compute units',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ success'
+]
+[
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ invoke [1]',
+  'Program log: Instruction: AccountingInvoke',
+  'Program data: 8Z7qeYrLC/yH7ZjajLGB7Kea1I7oI3+7zuPsTCtpXQ413c+b53v+EQR0MaA6Eus84wvXx4a8hvkWrsa1CxtTUqMddqo1rSCG',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ invoke [2]',
+  'Program log: Instruction: MarginRefreshPosition',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ consumed 14187 of 193571 compute units',
+  'Program return: JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ AgAAAEMh1X2xnTujtXW6K3qc1SlVZ4WWy3c/qiGynXllOTz+AQAAAAAAZAAAAAAAAAABAAAAAAAAAGQAAAAAAAB3tsliAAAAAPj///9GEaxNkRtXn0UDH3r17/OnVKQyGpsZXCxtuG88SdYGlgEAAAAAAGQAAAAAAAAAAQAAAAAAAABkAAAAAAAAd7bJYgAAAAD4////',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ success',
+  'Program data: mblBOgsd8AhDIdV9sZ07o7V1uit6nNUpVWeFlst3P6ohsp15ZTk8/n4lQheHrUQmjWt4OfPlGHm0kMglmmoKyyQlwaRjgr5xBHQxoDoS6zzjC9fHhryG+RauxrULG1NSox12qjWtIIYAAAAA0O2QLgAAAAAAAAAAAMqaOwAAAAB3tsliAAAAAABkAAAAAAAAeLbJYgAAAAD4////AQAAAAH3/18AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
+  'Program data: 1g5z9jARO/4=',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ consumed 33562 of 200000 compute units',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ success'
+]
+    ✔ Deposit user funds into their margin accounts (18257ms)
+[
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ invoke [1]',
+  'Program log: Instruction: AccountingInvoke',
+  'Program data: 8Z7qeYrLC/zk67hNwTFjAeDDYp2P6jkRUa9j6ltspbQtI+8NClZo6gR0MaA6Eus84wvXx4a8hvkWrsa1CxtTUqMddqo1rSCG',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ invoke [2]',
+  'Program log: Instruction: MarginRefreshPosition',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ consumed 14187 of 793571 compute units',
+  'Program return: JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ AgAAAEMh1X2xnTujtXW6K3qc1SlVZ4WWy3c/qiGynXllOTz+AQAAAAAAZAAAAAAAAAABAAAAAAAAAGQAAAAAAAB5tsliAAAAAPj///9GEaxNkRtXn0UDH3r17/OnVKQyGpsZXCxtuG88SdYGlgEAAAAAAGQAAAAAAAAAAQAAAAAAAABkAAAAAAAAebbJYgAAAAD4////',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ success',
+  'Program data: mblBOgsd8AhDIdV9sZ07o7V1uit6nNUpVWeFlst3P6ohsp15ZTk8/lj3C0GD+g0abcnWaAahSkpvcli48ZhVRXcFf26JNB4+BHQxoDoS6zzjC9fHhryG+RauxrULG1NSox12qjWtIIYAAAAAoHJOGAkAAAAAAAAAAHQ7pAsAAABytsliAAAAAABkAAAAAAAAebbJYgAAAAD4////AQAAAAH3/18AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
+  'Program data: 1g5z9jARO/4=',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ consumed 33562 of 800000 compute units',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ success',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ invoke [1]',
+  'Program log: Instruction: AccountingInvoke',
+  'Program data: 8Z7qeYrLC/zk67hNwTFjAeDDYp2P6jkRUa9j6ltspbQtI+8NClZo6gR0MaA6Eus84wvXx4a8hvkWrsa1CxtTUqMddqo1rSCG',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ invoke [2]',
+  'Program log: Instruction: MarginRefreshPosition',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ consumed 14187 of 760009 compute units',
+  'Program return: JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ AgAAADehlnaiul8pK4CerKKASxkiijsiAhEoG0Pa5W2aXOAYAQAAAAAAAQAAAAAAAAMAAAAAAAAAAAEAAAAAAAB5tsliAAAAAPj///+bhUaX8vLRAiMrObaEe2d6lGaWS4Lv32cAuJloXa8BuwEAAAAAAAEAAAAAAAADAAAAAAAAAAABAAAAAAAAebbJYgAAAAD4////',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ success',
+  'Program data: mblBOgsd8Ag3oZZ2orpfKSuAnqyigEsZIoo7IgIRKBtD2uVtmlzgGIzdfX2L1kY+nHaBr2XyzmfcqOd+cnUkobED5gFI/m99BHQxoDoS6zzjC9fHhryG+RauxrULG1NSox12qjWtIIYAAAAAgCilRgcAAAAAAAAAAIhSanQAAABptsliAAAAAAABAAAAAAAAebbJYgAAAAD4////AQAAAAH6/2QAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
+  'Program data: 1g5z9jARO/4=',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ consumed 27462 of 766438 compute units',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ success',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ invoke [1]',
+  'Program log: Instruction: UpdatePositionBalance',
+  'Program data: +pebBm/Qykzk67hNwTFjAeDDYp2P6jkRUa9j6ltspbQtI+8NClZo6jehlnaiul8pK4CerKKASxkiijsiAhEoG0Pa5W2aXOAYjN19fYvWRj6cdoGvZfLOZ9yo535ydSShsQPmAUj+b30EdDGgOhLrPOML18eGvIb5Fq7GtQsbU1KjHXaqNa0ghgAAAACAKKVGBwAAAAAAAAAAiFJqdAAAAHm2yWIAAAAAAAEAAAAAAAB5tsliAAAAAPj///8BAAAAAfr/ZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ consumed 4625 of 738976 compute units',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ success',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ invoke [1]',
+  'Program log: Instruction: UpdatePositionBalance',
+  'Program data: +pebBm/Qykzk67hNwTFjAeDDYp2P6jkRUa9j6ltspbQtI+8NClZo6kMh1X2xnTujtXW6K3qc1SlVZ4WWy3c/qiGynXllOTz+WPcLQYP6DRptydZoBqFKSm9yWLjxmFVFdwV/bok0Hj4EdDGgOhLrPOML18eGvIb5Fq7GtQsbU1KjHXaqNa0ghgAAAACgck4YCQAAAAAAAAAAdDukCwAAAHm2yWIAAAAAAGQAAAAAAAB5tsliAAAAAPj///8BAAAAAff/XwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ consumed 9114 of 734351 compute units',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ success'
+]
+[
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ invoke [1]',
+  'Program log: Instruction: AdapterInvoke',
+  'Program data: zDPY5r/AZEvk67hNwTFjAeDDYp2P6jkRUa9j6ltspbQtI+8NClZo6gR0MaA6Eus84wvXx4a8hvkWrsa1CxtTUqMddqo1rSCG',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ invoke [2]',
+  'Program log: Instruction: Withdraw',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [3]',
+  'Program log: Instruction: Transfer',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 3052 of 169717 compute units',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [3]',
+  'Program log: Instruction: Burn',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 2979 of 163813 compute units',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success',
+  'Program data: wPHJ2UaWWvdskzzBq1RcJ7ipCLXf1qK0tue2X5JUpIBbH2pukY7cyOTruE3BMWMB4MNinY/qORFRr2PqW2yltC0j7w0KVmjqjN19fYvWRj6cdoGvZfLOZ9yo535ydSShsQPmAUj+b32BnJ23GE+YGq5x+pQKom2n8yRcLI6bDDD+QPk64Wsg3ACg2yFdAAAAAKDbIV0AAAAAAAAAAAAAAAAAAAAAAAAAwBqBSxcAAADAGoFLFwAAAAAAAAAAAAAAerbJYgAAAAA=',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ consumed 32159 of 189546 compute units',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ success',
+  'Program data: mblBOgsd8Ag3oZZ2orpfKSuAnqyigEsZIoo7IgIRKBtD2uVtmlzgGIzdfX2L1kY+nHaBr2XyzmfcqOd+cnUkobED5gFI/m99BHQxoDoS6zzjC9fHhryG+RauxrULG1NSox12qjWtIIYAAAAAgG6HdAEAAAAAAAAAAOh2SBcAAAB6tsliAAAAAAABAAAAAAAAerbJYgAAAAD4////AQAAAAH6/2QAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
+  'Program data: uw+I5L3rfm0=',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ consumed 59590 of 200000 compute units',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ success'
+]
+[
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ invoke [1]',
+  'Program log: Instruction: AccountingInvoke',
+  'Program data: 8Z7qeYrLC/w7EEC+DlrP8bzrbB2WJf69XgKg7iI68XF9VD/U4AbbywR0MaA6Eus84wvXx4a8hvkWrsa1CxtTUqMddqo1rSCG',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ invoke [2]',
+  'Program log: Instruction: MarginRefreshPosition',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ consumed 14187 of 793571 compute units',
+  'Program return: JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ AgAAAEMh1X2xnTujtXW6K3qc1SlVZ4WWy3c/qiGynXllOTz+AQAAAAAAZAAAAAAAAAABAAAAAAAAAGQAAAAAAAB5tsliAAAAAPj///9GEaxNkRtXn0UDH3r17/OnVKQyGpsZXCxtuG88SdYGlgEAAAAAAGQAAAAAAAAAAQAAAAAAAABkAAAAAAAAebbJYgAAAAD4////',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ success',
+  'Program data: mblBOgsd8AhDIdV9sZ07o7V1uit6nNUpVWeFlst3P6ohsp15ZTk8/tNu2Z/wFECJJJZwLpQg6GaWaI26w05m//+R4XN+T5/QBHQxoDoS6zzjC9fHhryG+RauxrULG1NSox12qjWtIIYAAAAAQHoQ81oAAAAAAAAAAIhSanQAAAB0tsliAAAAAABkAAAAAAAAerbJYgAAAAD4////AQAAAAH3/18AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
+  'Program data: 1g5z9jARO/4=',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ consumed 33561 of 800000 compute units',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ success',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ invoke [1]',
+  'Program log: Instruction: AccountingInvoke',
+  'Program data: 8Z7qeYrLC/w7EEC+DlrP8bzrbB2WJf69XgKg7iI68XF9VD/U4AbbywR0MaA6Eus84wvXx4a8hvkWrsa1CxtTUqMddqo1rSCG',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ invoke [2]',
+  'Program log: Instruction: MarginRefreshPosition',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ consumed 14187 of 760010 compute units',
+  'Program return: JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ AgAAADehlnaiul8pK4CerKKASxkiijsiAhEoG0Pa5W2aXOAYAQAAAAAAAQAAAAAAAAMAAAAAAAAAAAEAAAAAAAB5tsliAAAAAPj///+bhUaX8vLRAiMrObaEe2d6lGaWS4Lv32cAuJloXa8BuwEAAAAAAAEAAAAAAAADAAAAAAAAAAABAAAAAAAAebbJYgAAAAD4////',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ success',
+  'Program data: mblBOgsd8Ag3oZZ2orpfKSuAnqyigEsZIoo7IgIRKBtD2uVtmlzgGICreQ5lxv9y/0Z/RJSYvf03wYpaiVBaJX/VosP4AA7KBHQxoDoS6zzjC9fHhryG+RauxrULG1NSox12qjWtIIYAAAAACK8vAAAAAAAAAAAAgPD6AgAAAABstsliAAAAAAABAAAAAAAAerbJYgAAAAD4////AQAAAAH6/2QAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
+  'Program data: 1g5z9jARO/4=',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ consumed 27461 of 766439 compute units',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ success',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ invoke [1]',
+  'Program log: Instruction: UpdatePositionBalance',
+  'Program data: +pebBm/Qykw7EEC+DlrP8bzrbB2WJf69XgKg7iI68XF9VD/U4Abbyzehlnaiul8pK4CerKKASxkiijsiAhEoG0Pa5W2aXOAYgKt5DmXG/3L/Rn9ElJi9/TfBilqJUFolf9Wiw/gADsoEdDGgOhLrPOML18eGvIb5Fq7GtQsbU1KjHXaqNa0ghgAAAAAIry8AAAAAAAAAAACA8PoCAAAAAHq2yWIAAAAAAAEAAAAAAAB6tsliAAAAAPj///8BAAAAAfr/ZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ consumed 4624 of 738978 compute units',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ success',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ invoke [1]',
+  'Program log: Instruction: UpdatePositionBalance',
+  'Program data: +pebBm/Qykw7EEC+DlrP8bzrbB2WJf69XgKg7iI68XF9VD/U4Abby0Mh1X2xnTujtXW6K3qc1SlVZ4WWy3c/qiGynXllOTz+027Zn/AUQIkklnAulCDoZpZojbrDTmb//5Hhc35Pn9AEdDGgOhLrPOML18eGvIb5Fq7GtQsbU1KjHXaqNa0ghgAAAABAehDzWgAAAAAAAAAAiFJqdAAAAHq2yWIAAAAAAGQAAAAAAAB6tsliAAAAAPj///8BAAAAAff/XwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ consumed 9113 of 734354 compute units',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ success'
+]
+[
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ invoke [1]',
+  'Program log: Instruction: AdapterInvoke',
+  'Program data: zDPY5r/AZEs7EEC+DlrP8bzrbB2WJf69XgKg7iI68XF9VD/U4AbbywR0MaA6Eus84wvXx4a8hvkWrsa1CxtTUqMddqo1rSCG',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ invoke [2]',
+  'Program log: Instruction: Withdraw',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [3]',
+  'Program log: Instruction: Transfer',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 3052 of 169717 compute units',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [3]',
+  'Program log: Instruction: Burn',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 2979 of 163813 compute units',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success',
+  'Program data: wPHJ2UaWWvePqGFfUszcDHKQHKH3N1jd5ifb8Cy6nSWWFMK4u3v2lTsQQL4OWs/xvOtsHZYl/r1eAqDuIjrxcX1UP9TgBtvL027Zn/AUQIkklnAulCDoZpZojbrDTmb//5Hhc35Pn9A9dnCKdjhdEFTnuIrydozLiAR4+8fpY18IQe6ly6D/DACg2yFdAAAAAKDbIV0AAAAAAAAAAAAAAAAAAAAAAAAAACZNKCMAAAAAJk0oIwAAAAAAAAAAAAAAe7bJYgAAAAA=',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ consumed 32159 of 189546 compute units',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ success',
+  'Program data: mblBOgsd8AhDIdV9sZ07o7V1uit6nNUpVWeFlst3P6ohsp15ZTk8/tNu2Z/wFECJJJZwLpQg6GaWaI26w05m//+R4XN+T5/QBHQxoDoS6zzjC9fHhryG+RauxrULG1NSox12qjWtIIYAAAAAQOWcMBIAAAAAAAAAAOh2SBcAAAB7tsliAAAAAABkAAAAAAAAe7bJYgAAAAD4////AQAAAAH3/18AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
+  'Program data: uw+I5L3rfm0=',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ consumed 64617 of 200000 compute units',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ success'
+]
+    ✔ Users withdraw their funds (2430ms)
+[
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ invoke [1]',
+  'Program log: Instruction: UpdatePositionBalance',
+  'Program data: +pebBm/Qykzk67hNwTFjAeDDYp2P6jkRUa9j6ltspbQtI+8NClZo6jehlnaiul8pK4CerKKASxkiijsiAhEoG0Pa5W2aXOAYjN19fYvWRj6cdoGvZfLOZ9yo535ydSShsQPmAUj+b30EdDGgOhLrPOML18eGvIb5Fq7GtQsbU1KjHXaqNa0ghgAAAACAbod0AQAAAAAAAAAA6HZIFwAAAHu2yWIAAAAAAAEAAAAAAAB6tsliAAAAAPj///8BAAAAAfr/ZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ consumed 4623 of 400000 compute units',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ success',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ invoke [1]',
+  'Program log: Instruction: AdapterInvoke',
+  'Program data: zDPY5r/AZEvk67hNwTFjAeDDYp2P6jkRUa9j6ltspbQtI+8NClZo6gR0MaA6Eus84wvXx4a8hvkWrsa1CxtTUqMddqo1rSCG',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ invoke [2]',
+  'Program log: Instruction: Withdraw',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [3]',
+  'Program log: Instruction: Transfer',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 3052 of 365147 compute units',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [3]',
+  'Program log: Instruction: Burn',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 2979 of 359243 compute units',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success',
+  'Program data: wPHJ2UaWWvdskzzBq1RcJ7ipCLXf1qK0tue2X5JUpIBbH2pukY7cyOTruE3BMWMB4MNinY/qORFRr2PqW2yltC0j7w0KVmjqjN19fYvWRj6cdoGvZfLOZ9yo535ydSShsQPmAUj+b32BnJ23GE+YGq5x+pQKom2n8yRcLI6bDDD+QPk64Wsg3ADodkgXAAAAAOh2SBcAAAAAAAAAAAAAAAAAAAAAAAAAwDIKAwAAAADAMgoDAAAAAAAAAAAAAAAAe7bJYgAAAAA=',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ consumed 32106 of 384923 compute units',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ success',
+  'Program data: mblBOgsd8Ag3oZZ2orpfKSuAnqyigEsZIoo7IgIRKBtD2uVtmlzgGIzdfX2L1kY+nHaBr2XyzmfcqOd+cnUkobED5gFI/m99BHQxoDoS6zzjC9fHhryG+RauxrULG1NSox12qjWtIIYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB7tsliAAAAAAABAAAAAAAAerbJYgAAAAD4////AQAAAAH6/2QAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
+  'Program data: uw+I5L3rfm0=',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ consumed 55811 of 395377 compute units',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ success'
+]
+position = {"info":{"token":"4kALHCFb7jHM3Euv87H9Db3UAcUfh811fRksUHgvJdrP","address":"AUsxxPGP48EvJfeSXUsaCUxhcofRvpcbA7eMLjFcLtLU","adapter":"JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ","value":"0174876e8000000000","balance":"174876e800","balanceTimestamp":"62c9b67a","price":{"value":"0100","timestamp":"62c9b67a","exponent":-8,"isValid":1,"_reserved":{"type":"Buffer","data":[0,0,0]}},"kind":1,"exponent":-6,"valueModifier":100,"maxStaleness":"00","flags":0,"_reserved":{"type":"Buffer","data":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]}},"token":"4kALHCFb7jHM3Euv87H9Db3UAcUfh811fRksUHgvJdrP","address":"AUsxxPGP48EvJfeSXUsaCUxhcofRvpcbA7eMLjFcLtLU","adapter":"JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ","valueRaw":"98968000","balance":"174876e800","balanceTimestamp":"62c9b67a","price":{"value":"0100","exponent":-8,"timestamp":"62c9b67a","isValid":1},"kind":1,"exponent":-6,"valueModifier":"02540be400","maxStaleness":"00","flags":0}
+[
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ invoke [1]',
+  'Program log: Instruction: ClosePosition',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]',
+  'Program log: Instruction: CloseAccount',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 2104 of 189644 compute units',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success',
+  'Program data: naPj5A1hinnk67hNwTFjAeDDYp2P6jkRUa9j6ltspbQtI+8NClZo6ud46/zVYvGp8FS5N4SgdMT/N/4j+0Cn3UaCDkGl63EPN6GWdqK6XykrgJ6sooBLGSKKOyICESgbQ9rlbZpc4Bg=',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ consumed 13772 of 200000 compute units',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ success'
+]
+[
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ invoke [1]',
+  'Program log: Instruction: UpdatePositionBalance',
+  'Program data: +pebBm/Qykzk67hNwTFjAeDDYp2P6jkRUa9j6ltspbQtI+8NClZo6kMh1X2xnTujtXW6K3qc1SlVZ4WWy3c/qiGynXllOTz+WPcLQYP6DRptydZoBqFKSm9yWLjxmFVFdwV/bok0Hj4EdDGgOhLrPOML18eGvIb5Fq7GtQsbU1KjHXaqNa0ghgAAAACgck4YCQAAAAAAAAAAdDukCwAAAHy2yWIAAAAAAGQAAAAAAAB6tsliAAAAAPj///8BAAAAAff/XwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ consumed 9112 of 400000 compute units',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ success',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ invoke [1]',
+  'Program log: Instruction: AdapterInvoke',
+  'Program data: zDPY5r/AZEvk67hNwTFjAeDDYp2P6jkRUa9j6ltspbQtI+8NClZo6gR0MaA6Eus84wvXx4a8hvkWrsa1CxtTUqMddqo1rSCG',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ invoke [2]',
+  'Program log: Instruction: Withdraw',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [3]',
+  'Program log: Instruction: Transfer',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 3052 of 360658 compute units',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [3]',
+  'Program log: Instruction: Burn',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 2979 of 354754 compute units',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success',
+  'Program data: wPHJ2UaWWvePqGFfUszcDHKQHKH3N1jd5ifb8Cy6nSWWFMK4u3v2leTruE3BMWMB4MNinY/qORFRr2PqW2yltC0j7w0KVmjqWPcLQYP6DRptydZoBqFKSm9yWLjxmFVFdwV/bok0Hj7xTlJeikENVPALgE9zzzPDqyDfKNQy72VAklNnpcvTjgB0O6QLAAAAAHQ7pAsAAAAAAAAAAAAAAAAAAAAAAAAAALIRhBcAAAAAshGEFwAAAAAAAAAAAAAAfLbJYgAAAAA=',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ consumed 32106 of 380434 compute units',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ success',
+  'Program data: mblBOgsd8AhDIdV9sZ07o7V1uit6nNUpVWeFlst3P6ohsp15ZTk8/lj3C0GD+g0abcnWaAahSkpvcli48ZhVRXcFf26JNB4+BHQxoDoS6zzjC9fHhryG+RauxrULG1NSox12qjWtIIYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB8tsliAAAAAABkAAAAAAAAerbJYgAAAAD4////AQAAAAH3/18AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
+  'Program data: uw+I5L3rfm0=',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ consumed 52262 of 390888 compute units',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ success'
+]
+position = {"info":{"token":"5X4EqsdsgSdkKJUz4hhaZbjqsqc5umtT6piy64L9thfj","address":"6zHN8eJsmDYcMn55Tg3LkPgomb96h98qx8PwkhTDw6Rj","adapter":"JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ","value":"09184e72a000000000","balance":"0ba43b7400","balanceTimestamp":"62c9b67a","price":{"value":"6400","timestamp":"62c9b67a","exponent":-8,"isValid":1,"_reserved":{"type":"Buffer","data":[0,0,0]}},"kind":1,"exponent":-9,"valueModifier":95,"maxStaleness":"00","flags":0,"_reserved":{"type":"Buffer","data":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]}},"token":"5X4EqsdsgSdkKJUz4hhaZbjqsqc5umtT6piy64L9thfj","address":"6zHN8eJsmDYcMn55Tg3LkPgomb96h98qx8PwkhTDw6Rj","adapter":"JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ","valueRaw":"07a12000","balance":"0ba43b7400","balanceTimestamp":"62c9b67a","price":{"value":"6400","exponent":-8,"timestamp":"62c9b67a","isValid":1},"kind":1,"exponent":-9,"valueModifier":"02363e7f00","maxStaleness":"00","flags":0}
+[
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ invoke [1]',
+  'Program log: Instruction: ClosePosition',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]',
+  'Program log: Instruction: CloseAccount',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 2104 of 189755 compute units',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success',
+  'Program data: naPj5A1hinnk67hNwTFjAeDDYp2P6jkRUa9j6ltspbQtI+8NClZo6ud46/zVYvGp8FS5N4SgdMT/N/4j+0Cn3UaCDkGl63EPQyHVfbGdO6O1dborepzVKVVnhZbLdz+qIbKdeWU5PP4=',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ consumed 13661 of 200000 compute units',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ success'
+]
+[
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ invoke [1]',
+  'Program log: Instruction: CloseAccount',
+  'Program data: E/pP7FtQlDDk67hNwTFjAeDDYp2P6jkRUa9j6ltspbQtI+8NClZo6g==',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ consumed 5558 of 200000 compute units',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ success'
+]
+[
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ invoke [1]',
+  'Program log: Instruction: UpdatePositionBalance',
+  'Program data: +pebBm/Qykw7EEC+DlrP8bzrbB2WJf69XgKg7iI68XF9VD/U4Abbyzehlnaiul8pK4CerKKASxkiijsiAhEoG0Pa5W2aXOAYgKt5DmXG/3L/Rn9ElJi9/TfBilqJUFolf9Wiw/gADsoEdDGgOhLrPOML18eGvIb5Fq7GtQsbU1KjHXaqNa0ghgAAAAAIry8AAAAAAAAAAACA8PoCAAAAAH22yWIAAAAAAAEAAAAAAAB7tsliAAAAAPj///8BAAAAAfr/ZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ consumed 4622 of 400000 compute units',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ success',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ invoke [1]',
+  'Program log: Instruction: AdapterInvoke',
+  'Program data: zDPY5r/AZEs7EEC+DlrP8bzrbB2WJf69XgKg7iI68XF9VD/U4AbbywR0MaA6Eus84wvXx4a8hvkWrsa1CxtTUqMddqo1rSCG',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ invoke [2]',
+  'Program log: Instruction: Withdraw',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [3]',
+  'Program log: Instruction: Transfer',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 3052 of 365542 compute units',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [3]',
+  'Program log: Instruction: Burn',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 2979 of 359638 compute units',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success',
+  'Program data: wPHJ2UaWWvdskzzBq1RcJ7ipCLXf1qK0tue2X5JUpIBbH2pukY7cyDsQQL4OWs/xvOtsHZYl/r1eAqDuIjrxcX1UP9TgBtvLgKt5DmXG/3L/Rn9ElJi9/TfBilqJUFolf9Wiw/gADspP98bx36A7ax1670Yhr4f5wgA6e+X1qOZBbDAawk5y3oDw+gIAAAAAgPD6AgAAAAAAAAAAAAAAAAAAAAAAAAAAQEIPAAAAAABAQg8AAAAAAAAAAAAAAAAAfbbJYgAAAAA=',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ consumed 31712 of 384924 compute units',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ success',
+  'Program data: mblBOgsd8Ag3oZZ2orpfKSuAnqyigEsZIoo7IgIRKBtD2uVtmlzgGICreQ5lxv9y/0Z/RJSYvf03wYpaiVBaJX/VosP4AA7KBHQxoDoS6zzjC9fHhryG+RauxrULG1NSox12qjWtIIYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB9tsliAAAAAAABAAAAAAAAe7bJYgAAAAD4////AQAAAAH6/2QAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
+  'Program data: uw+I5L3rfm0=',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ consumed 55363 of 395378 compute units',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ success'
+]
+position = {"info":{"token":"4kALHCFb7jHM3Euv87H9Db3UAcUfh811fRksUHgvJdrP","address":"9fGqXyb1dNWEPb8NRttvB8LptKEqS95sV7Uv3oNPo2im","adapter":"JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ","value":"2faf0800000000","balance":"02faf080","balanceTimestamp":"62c9b67b","price":{"value":"0100","timestamp":"62c9b67b","exponent":-8,"isValid":1,"_reserved":{"type":"Buffer","data":[0,0,0]}},"kind":1,"exponent":-6,"valueModifier":100,"maxStaleness":"00","flags":0,"_reserved":{"type":"Buffer","data":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]}},"token":"4kALHCFb7jHM3Euv87H9Db3UAcUfh811fRksUHgvJdrP","address":"9fGqXyb1dNWEPb8NRttvB8LptKEqS95sV7Uv3oNPo2im","adapter":"JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ","valueRaw":"138800","balance":"02faf080","balanceTimestamp":"62c9b67b","price":{"value":"0100","exponent":-8,"timestamp":"62c9b67b","isValid":1},"kind":1,"exponent":-6,"valueModifier":"02540be400","maxStaleness":"00","flags":0}
+[
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ invoke [1]',
+  'Program log: Instruction: ClosePosition',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]',
+  'Program log: Instruction: CloseAccount',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 2104 of 189644 compute units',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success',
+  'Program data: naPj5A1hink7EEC+DlrP8bzrbB2WJf69XgKg7iI68XF9VD/U4Abby5W+FRsJ4ADgzDN8PDENMY2iZpjKD1my39t/jVyxigAgN6GWdqK6XykrgJ6sooBLGSKKOyICESgbQ9rlbZpc4Bg=',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ consumed 13772 of 200000 compute units',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ success'
+]
+[
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ invoke [1]',
+  'Program log: Instruction: UpdatePositionBalance',
+  'Program data: +pebBm/Qykw7EEC+DlrP8bzrbB2WJf69XgKg7iI68XF9VD/U4Abby0Mh1X2xnTujtXW6K3qc1SlVZ4WWy3c/qiGynXllOTz+027Zn/AUQIkklnAulCDoZpZojbrDTmb//5Hhc35Pn9AEdDGgOhLrPOML18eGvIb5Fq7GtQsbU1KjHXaqNa0ghgAAAABA5ZwwEgAAAAAAAAAA6HZIFwAAAH62yWIAAAAAAGQAAAAAAAB7tsliAAAAAPj///8BAAAAAff/XwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ consumed 9111 of 400000 compute units',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ success',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ invoke [1]',
+  'Program log: Instruction: AdapterInvoke',
+  'Program data: zDPY5r/AZEs7EEC+DlrP8bzrbB2WJf69XgKg7iI68XF9VD/U4AbbywR0MaA6Eus84wvXx4a8hvkWrsa1CxtTUqMddqo1rSCG',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ invoke [2]',
+  'Program log: Instruction: Withdraw',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [3]',
+  'Program log: Instruction: Transfer',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 3052 of 360659 compute units',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [3]',
+  'Program log: Instruction: Burn',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 2979 of 354755 compute units',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success',
+  'Program data: wPHJ2UaWWvePqGFfUszcDHKQHKH3N1jd5ifb8Cy6nSWWFMK4u3v2lTsQQL4OWs/xvOtsHZYl/r1eAqDuIjrxcX1UP9TgBtvL027Zn/AUQIkklnAulCDoZpZojbrDTmb//5Hhc35Pn9A9dnCKdjhdEFTnuIrydozLiAR4+8fpY18IQe6ly6D/DADodkgXAAAAAOh2SBcAAAAAAAAAAAAAAAAAAAAAAAAAAMqaOwAAAAAAypo7AAAAAAAAAAAAAAAAfrbJYgAAAAA=',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ consumed 32106 of 380435 compute units',
+  'Program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ success',
+  'Program data: mblBOgsd8AhDIdV9sZ07o7V1uit6nNUpVWeFlst3P6ohsp15ZTk8/tNu2Z/wFECJJJZwLpQg6GaWaI26w05m//+R4XN+T5/QBHQxoDoS6zzjC9fHhryG+RauxrULG1NSox12qjWtIIYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB+tsliAAAAAABkAAAAAAAAe7bJYgAAAAD4////AQAAAAH3/18AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
+  'Program data: uw+I5L3rfm0=',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ consumed 52262 of 390889 compute units',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ success'
+]
+position = {"info":{"token":"5X4EqsdsgSdkKJUz4hhaZbjqsqc5umtT6piy64L9thfj","address":"FEM4WujTEzz1SVDQr89haCsh1nqhQhex7J765qthB8kf","adapter":"JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ","value":"12309ce54000000000","balance":"174876e800","balanceTimestamp":"62c9b67b","price":{"value":"6400","timestamp":"62c9b67b","exponent":-8,"isValid":1,"_reserved":{"type":"Buffer","data":[0,0,0]}},"kind":1,"exponent":-9,"valueModifier":95,"maxStaleness":"00","flags":0,"_reserved":{"type":"Buffer","data":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]}},"token":"5X4EqsdsgSdkKJUz4hhaZbjqsqc5umtT6piy64L9thfj","address":"FEM4WujTEzz1SVDQr89haCsh1nqhQhex7J765qthB8kf","adapter":"JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ","valueRaw":"0f424000","balance":"174876e800","balanceTimestamp":"62c9b67b","price":{"value":"6400","exponent":-8,"timestamp":"62c9b67b","isValid":1},"kind":1,"exponent":-9,"valueModifier":"02363e7f00","maxStaleness":"00","flags":0}
+[
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ invoke [1]',
+  'Program log: Instruction: ClosePosition',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]',
+  'Program log: Instruction: CloseAccount',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 2104 of 189755 compute units',
+  'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success',
+  'Program data: naPj5A1hink7EEC+DlrP8bzrbB2WJf69XgKg7iI68XF9VD/U4Abby5W+FRsJ4ADgzDN8PDENMY2iZpjKD1my39t/jVyxigAgQyHVfbGdO6O1dborepzVKVVnhZbLdz+qIbKdeWU5PP4=',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ consumed 13661 of 200000 compute units',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ success'
+]
+[
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ invoke [1]',
+  'Program log: Instruction: CloseAccount',
+  'Program data: E/pP7FtQlDA7EEC+DlrP8bzrbB2WJf69XgKg7iI68XF9VD/U4Abbyw==',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ consumed 5558 of 200000 compute units',
+  'Program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ success'
+]
+    ✔ Close margin accounts (4048ms)
+
+  pyth-oracle
+    ✔ Fund payer (404ms)
+    ✔ initialize (678ms)
+    ✔ change feed price (802ms)
+
+  margin swap - program id: 9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP
+    ✔ Fund payer (546ms)
+    ✔ Create token swap pool (1216ms)
+    ✔ create and mint tokens (2432ms)
+    ✔ createTokenSwap (constant product) (415ms)
+    ✔ deposit all token types (3248ms)
+    ✔ withdraw all token types (1623ms)
+    ✔ swap (2527ms)
+    ✔ create account, approve, swap all at once (1119ms)
+    ✔ deposit one exact amount in (3647ms)
+    ✔ withdraw one exact amount out (2025ms)
+
+
+  50 passing (2m)
+  2 failing
+
+  1) margin pool borrow
+       Deposit user funds into their margin accounts:
+
+      AssertionError: expected '12921600000' to equal '5047500000000000'
+      + expected - actual
+
+      -12921600000
+      +5047500000000000
+      
+      at Context.<anonymous> (tests/integration/pool/marginPoolBorrow.test.ts:291:72)
+      at processTicksAndRejections (node:internal/process/task_queues:95:5)
+
+  2) margin pool borrow
+       Have each user borrow the other's funds:
+
+      AssertionError: expected '12945920000' to equal '5057000000000000'
+      + expected - actual
+
+      -12945920000
+      +5057000000000000
+      
+      at Context.<anonymous> (tests/integration/pool/marginPoolBorrow.test.ts:337:72)
+      at processTicksAndRejections (node:internal/process/task_queues:95:5)
+
+
+

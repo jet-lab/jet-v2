@@ -1,0 +1,24 @@
+12 CreateAccount 12645 -> 11145 -> 9645 -> 11145
+57 CreateAccount 14145 -> 15645 -> 9645 -> 9645
+66 CreateAccount 9645 -> 12645 -> 11145 -> 11145
+93 deposit 32627 -> 28786 -> 28786 -> 28278
+98 UpdatePositionBalance 4529 -> 7369 -> 4459 -> 4458 -> 4459
+113 Deposit 37517 -> 31858 -> 31858 -> 31858 -> 30280
+118 UpdatePositionBalance 4529 -> 4491 -> 4458 -> 4458
+152 AccountingInvoke (MarginRefreshPosition) 47288 (26169) -> 36233 (14187) -> 27400 (14187) -> 27400 (14187)
+166 AccountingInvoke (MarginRefreshPosition) 46618 (26169) -> 33355 (14187) -> 27399 (14187) -> 27399 (14187)
+200 UpdatePositionBalance 4595 -> 6702 -> 4458 -> 4524
+303 AdapterInvoke (RegisterLoan) 73621 (27799) -> 64169 (21799) -> 60461 (21799) -> 60461 (21799)
+353 AdapterInvoke (MarginBorrow) 104739 (51744) -> 85471 (37518) -> 78553 (37518) -> 77328 (36202)
+476 AdapterInvoke (MarginRepay) 113229 (64883) -> 94239 (48389) -> 87869 (48417) -> 85891 (45884)
+658 AdapterInvoke (Withdraw) 82144 (39715) -> 72970 (33254) -> 66103 (33254) -> 66009 (31695)
+
+
+MarginBorrow with 16 claims and 16 deposits: **51,596** less compute (**23%**) 231498 -> 179902
+57 CreateAccount **4500** less compute (**32%**) 14145 -> 9645
+152 AccountingInvoke (MarginRefreshPosition) **19,888** less compute (**42%**) 47288 (26169) -> 27400 (14187)
+476 AdapterInvoke (MarginRepay) **27,338** less compute (**25%**) 113229 (64883) -> 85891 (45884)
+353 AdapterInvoke (MarginBorrow) **27411** less compute (**24%**) 104739 (51744) -> 77328 (36202)
+658 AdapterInvoke (Withdraw) **16135** less compute (**20%**) 82144 (39715) -> 66009 (31695)
+303 AdapterInvoke (RegisterLoan) **13160** less compute (**18%**) 73621 (27799) -> 60461 (21799)
+113 Deposit **7234** less compute (**15%**) 37517 -> 30280

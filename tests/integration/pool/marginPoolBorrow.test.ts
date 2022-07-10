@@ -166,6 +166,22 @@ describe("margin pool borrow", () => {
     provider_c = new AnchorProvider(provider.connection, wallet_c, confirmOptions)
   })
 
+  let extraTokens: [PublicKey, PublicKey][] = []
+  let extraPools: Pool[] = []
+  it("Creates extra pools", async () => {
+    for (let i = 0; i < 29; i++) {
+      extraTokens[i] = await createToken(provider, wallet_b.payer, 6, 10_000_000)
+      await manager.create({
+        tokenMint: extraTokens[i][0],
+        collateralWeight: 95,
+        maxLeverage: 4_00,
+        pythProduct: SOL_oracle[0].publicKey,
+        pythPrice: SOL_oracle[1].publicKey,
+        marginPoolConfig: POOLS[1].config
+      })
+    }
+  })
+
   let marginAccount_A: MarginAccount
   let marginAccount_B: MarginAccount
   let marginAccount_C: MarginAccount
@@ -223,7 +239,7 @@ describe("margin pool borrow", () => {
     // ACT
     await sendToken(provider, USDC[0], 500_000, 6, ownerKeypair, new PublicKey(USDC[1]), user_a_usdc_account)
     await sendToken(provider, SOL[0], 50, 9, ownerKeypair, new PublicKey(SOL[1]), user_a_sol_account)
-    await sendToken(provider, SOL[0], 500, 9, ownerKeypair, new PublicKey(SOL[1]), user_b_sol_account)
+    await sendToken(provider, SOL[0], 5000, 9, ownerKeypair, new PublicKey(SOL[1]), user_b_sol_account)
     await sendToken(provider, USDC[0], 50, 6, ownerKeypair, new PublicKey(USDC[1]), user_b_usdc_account)
     await sendToken(provider, SOL[0], 1, 9, ownerKeypair, new PublicKey(SOL[1]), user_c_sol_account)
     await sendToken(provider, USDC[0], 1, 6, ownerKeypair, new PublicKey(USDC[1]), user_c_usdc_account)
@@ -306,174 +322,207 @@ describe("margin pool borrow", () => {
     expect(await getTokenBalance(provider, "processed", marginPool_SOL.addresses.vault)).to.eq(550 + 1)
   })
 
-  it("Have each user borrow the other's funds", async () => {
-    // SETUP
-    const borrowedSOL = new BN(10 * ONE_SOL)
-    const borrowedUSDC = new BN(1_000 * ONE_USDC)
+  it("Load extra pools", async () => {
+    for (let i = 0; i < extraTokens.length; i++) {
+      extraPools.push(await manager.load({ tokenMint: extraTokens[i][0] }))
+    }
+  })
 
-    // ACT
-    //TODO remove this.
+  it("Borrow from extra pools", async () => {
+    for (let i = 0; i < extraTokens.length; i++) {
+      const pool = extraPools[i]
+      await pool.deposit({
+        marginAccount: marginAccount_B,
+        amount: new BN(LAMPORTS_PER_SOL),
+        source: extraTokens[i][1]
+      })
+      await pythClient.setPythPrice(ownerKeypair, SOL_oracle[1].publicKey, 100, 1, -8)
+      await pythClient.setPythPrice(ownerKeypair, USDC_oracle[1].publicKey, 1, 0.01, -8)
+      await pool.marginBorrow({
+        marginAccount: marginAccount_A,
+        pools: [...pools, ...extraPools],
+        amount: new BN(LAMPORTS_PER_SOL)
+      })
+    }
+  })
+
+  it("Refresh account", async () => {
+    const pool = extraPools[0]
     await pythClient.setPythPrice(ownerKeypair, SOL_oracle[1].publicKey, 100, 1, -8)
     await pythClient.setPythPrice(ownerKeypair, USDC_oracle[1].publicKey, 1, 0.01, -8)
-
-    await marginPool_SOL.marginBorrow({
+    await pool.marginRefreshAllPositionPrices({
       marginAccount: marginAccount_A,
-      pools,
-      amount: borrowedSOL
-    })
-    await marginPool_USDC.marginBorrow({ marginAccount: marginAccount_B, pools, amount: borrowedUSDC })
-    await marginPool_SOL.refresh()
-    await marginPool_USDC.refresh()
-    await marginAccount_A.refresh()
-    await marginAccount_B.refresh()
-
-    const SOLLoanNotes = marginPool_SOL.info?.loanNoteMint.supply
-    const USDCLoanNotes = marginPool_USDC.info?.loanNoteMint.supply
-
-    // TEST
-    expect(Number(SOLLoanNotes)).to.eq(borrowedSOL.toNumber())
-    expect(Number(USDCLoanNotes)).to.eq(borrowedUSDC.toNumber())
-
-    expect(marginAccount_A.valuation.weightedCollateral.toString()).to.eq(new BN(505700).mul(Number128.ONE).toString())
-    expect(marginAccount_A.valuation.effectiveCollateral.toString()).to.eq(new BN(504700).mul(Number128.ONE).toString())
-    expect(marginAccount_A.valuation.requiredCollateral.toString()).to.eq(new BN(250).mul(Number128.ONE).toString())
-
-    expect(marginAccount_B.valuation.weightedCollateral.toString()).to.eq(new BN(48550).mul(Number128.ONE).toString())
-    expect(marginAccount_B.valuation.effectiveCollateral.toString()).to.eq(new BN(47550).mul(Number128.ONE).toString())
-    expect(marginAccount_B.valuation.requiredCollateral.toString()).to.eq(new BN(250).mul(Number128.ONE).toString())
-  })
-
-  it("User A repays his SOL loan", async () => {
-    //SETUP
-    await marginPool_SOL.refresh()
-    const owedSOL = new BN(Number(marginPool_SOL.info?.loanNoteMint.supply))
-
-    // ACT
-    await marginPool_SOL.marginRepay({
-      marginAccount: marginAccount_A,
-      pools,
-      amount: PoolAmount.tokens(owedSOL)
-    })
-    await marginPool_SOL.refresh()
-
-    // TEST
-    const SOLLoanNotes = new BN(Number(marginPool_SOL.info?.loanNoteMint.supply))
-    expect(SOLLoanNotes.toNumber()).to.be.below(10)
-  })
-
-  it("User B repays his USDC loan", async () => {
-    // SETUP
-    await marginPool_USDC.refresh()
-    const owedUSDC = new BN(Number(marginPool_USDC.info?.loanNoteMint.supply))
-
-    // ACT
-    await marginPool_USDC.marginRepay({
-      marginAccount: marginAccount_B,
-      pools,
-      amount: PoolAmount.tokens(owedUSDC)
-    })
-    await marginPool_USDC.refresh()
-
-    // TEST
-    const USDCLoanNotes = marginPool_USDC.info?.loanNoteMint.supply
-    expect(Number(USDCLoanNotes)).to.be.below(10)
-  })
-
-  it("Users withdraw their funds", async () => {
-    // ACT
-    await marginPool_USDC.withdraw({
-      marginAccount: marginAccount_A,
-      pools,
-      destination: user_a_usdc_account,
-      amount: PoolAmount.tokens(new BN(400_000 * ONE_USDC))
-    })
-    await marginPool_SOL.withdraw({
-      marginAccount: marginAccount_B,
-      pools,
-      destination: user_b_sol_account,
-      amount: PoolAmount.tokens(new BN(400 * ONE_SOL))
-    })
-
-    // TEST
-    const tokenBalanceA = await getTokenBalance(provider, "processed", user_a_usdc_account)
-    const tokenBalanceB = await getTokenBalance(provider, "processed", user_b_sol_account)
-    expect(tokenBalanceA).to.eq(400_000)
-    expect(tokenBalanceB).to.eq(400)
-
-    expect(await getTokenBalance(provider, "processed", marginPool_USDC.addresses.vault)).to.eq(100_050 + 1)
-    expect(await getTokenBalance(provider, "processed", marginPool_SOL.addresses.vault)).to.eq(150 + 1)
-  })
-
-  provider.opts.skipPreflight = true;
-
-  it("Close margin accounts", async () => {
-    /*
-    await marginPool_SOL.closePosition({
-      marginAccount: marginAccount_A,
-      destination: user_a_sol_account
-    })
-    await marginPool_USDC.closePosition({
-      marginAccount: marginAccount_A,
-      destination: user_a_usdc_account
-    })
-    await marginAccount_A.closeAccount();
-    */
-
-    /*
-    await marginPool_USDC.closePosition({
-      marginAccount: marginAccount_B,
-      destination: user_b_usdc_account
-    })
-    await marginPool_SOL.closePosition({
-      marginAccount: marginAccount_B,
-      destination: user_b_sol_account
-    })
-    await marginAccount_B.closeAccount();
-    */
-  })
-
-  describe("Transaction History", () => {
-    it("should allow to get a list of the latest transactions", async () => {
-      const mints = {
-        USDC: {
-          tokenMint: USDC[0] as PublicKey,
-          depositNoteMint: marginPool_USDC.addresses.depositNoteMint,
-          loanNoteMint: marginPool_USDC.addresses.loanNoteMint
-        },
-        SOL: {
-          tokenMint: SOL[0] as PublicKey,
-          depositNoteMint: marginPool_SOL.addresses.depositNoteMint,
-          loanNoteMint: marginPool_SOL.addresses.loanNoteMint
-        }
-      }
-      const transactions = await MarginClient.getTransactionHistory(provider, wallet_a.publicKey, mints, "localnet")
-
-      expect(transactions).to.have.length(5)
-
-      expect(transactions[0].tradeAction).to.equals("withdraw")
-      expect(transactions[0].tokenSymbol).to.equals("USDC")
-      expect(transactions[0].tradeAmount.uiTokens).to.equals("400,000")
-      expect(transactions[0].signature).to.be.a("string")
-
-      expect(transactions[1].tradeAction).to.equals("repay")
-      expect(transactions[1].tokenSymbol).to.equals("SOL")
-      expect(transactions[1].tradeAmount.uiTokens).to.equals("10")
-      expect(transactions[1].signature).to.be.a("string")
-
-      expect(transactions[2].tradeAction).to.equals("borrow")
-      expect(transactions[2].tokenSymbol).to.equals("SOL")
-      expect(transactions[2].tradeAmount.uiTokens).to.equals("10")
-      expect(transactions[2].signature).to.be.a("string")
-
-      expect(transactions[3].tradeAction).to.equals("deposit")
-      expect(transactions[3].tokenSymbol).to.equals("SOL")
-      expect(transactions[3].tradeAmount.uiTokens).to.equals("50")
-      expect(transactions[3].signature).to.be.a("string")
-
-      expect(transactions[4].tradeAction).to.equals("deposit")
-      expect(transactions[4].tokenSymbol).to.equals("USDC")
-      expect(transactions[4].tradeAmount.uiTokens).to.equals("500,000")
-      expect(transactions[4].signature).to.be.a("string")
+      pools: [...pools, ...extraPools]
     })
   })
+
+  // it("Have each user borrow the other's funds", async () => {
+  //   // SETUP
+  //   const borrowedSOL = new BN(10 * ONE_SOL)
+  //   const borrowedUSDC = new BN(1_000 * ONE_USDC)
+
+  //   // ACT
+  //   //TODO remove this.
+  //   await pythClient.setPythPrice(ownerKeypair, SOL_oracle[1].publicKey, 100, 1, -8)
+  //   await pythClient.setPythPrice(ownerKeypair, USDC_oracle[1].publicKey, 1, 0.01, -8)
+
+  //   await marginPool_SOL.marginBorrow({
+  //     marginAccount: marginAccount_A,
+  //     pools,
+  //     amount: borrowedSOL
+  //   })
+  //   await marginPool_USDC.marginBorrow({ marginAccount: marginAccount_B, pools, amount: borrowedUSDC })
+  //   await marginPool_SOL.refresh()
+  //   await marginPool_USDC.refresh()
+  //   await marginAccount_A.refresh()
+  //   await marginAccount_B.refresh()
+
+  //   const SOLLoanNotes = marginPool_SOL.info?.loanNoteMint.supply
+  //   const USDCLoanNotes = marginPool_USDC.info?.loanNoteMint.supply
+
+  //   // TEST
+  //   expect(Number(SOLLoanNotes)).to.eq(borrowedSOL.toNumber())
+  //   expect(Number(USDCLoanNotes)).to.eq(borrowedUSDC.toNumber())
+
+  //   expect(marginAccount_A.valuation.weightedCollateral.toString()).to.eq(new BN(505700).mul(Number128.ONE).toString())
+  //   expect(marginAccount_A.valuation.effectiveCollateral.toString()).to.eq(new BN(504700).mul(Number128.ONE).toString())
+  //   expect(marginAccount_A.valuation.requiredCollateral.toString()).to.eq(new BN(250).mul(Number128.ONE).toString())
+
+  //   expect(marginAccount_B.valuation.weightedCollateral.toString()).to.eq(new BN(48550).mul(Number128.ONE).toString())
+  //   expect(marginAccount_B.valuation.effectiveCollateral.toString()).to.eq(new BN(47550).mul(Number128.ONE).toString())
+  //   expect(marginAccount_B.valuation.requiredCollateral.toString()).to.eq(new BN(250).mul(Number128.ONE).toString())
+  // })
+
+  // it("User A repays his SOL loan", async () => {
+  //   //SETUP
+  //   await marginPool_SOL.refresh()
+  //   const owedSOL = new BN(Number(marginPool_SOL.info?.loanNoteMint.supply))
+
+  //   // ACT
+  //   await marginPool_SOL.marginRepay({
+  //     marginAccount: marginAccount_A,
+  //     pools,
+  //     amount: PoolAmount.tokens(owedSOL)
+  //   })
+  //   await marginPool_SOL.refresh()
+
+  //   // TEST
+  //   const SOLLoanNotes = new BN(Number(marginPool_SOL.info?.loanNoteMint.supply))
+  //   expect(SOLLoanNotes.toNumber()).to.be.below(10)
+  // })
+
+  // it("User B repays his USDC loan", async () => {
+  //   // SETUP
+  //   await marginPool_USDC.refresh()
+  //   const owedUSDC = new BN(Number(marginPool_USDC.info?.loanNoteMint.supply))
+
+  //   // ACT
+  //   await marginPool_USDC.marginRepay({
+  //     marginAccount: marginAccount_B,
+  //     pools,
+  //     amount: PoolAmount.tokens(owedUSDC)
+  //   })
+  //   await marginPool_USDC.refresh()
+
+  //   // TEST
+  //   const USDCLoanNotes = marginPool_USDC.info?.loanNoteMint.supply
+  //   expect(Number(USDCLoanNotes)).to.be.below(10)
+  // })
+
+  // it("Users withdraw their funds", async () => {
+  //   // ACT
+  //   await marginPool_USDC.withdraw({
+  //     marginAccount: marginAccount_A,
+  //     pools,
+  //     destination: user_a_usdc_account,
+  //     amount: PoolAmount.tokens(new BN(400_000 * ONE_USDC))
+  //   })
+  //   await marginPool_SOL.withdraw({
+  //     marginAccount: marginAccount_B,
+  //     pools,
+  //     destination: user_b_sol_account,
+  //     amount: PoolAmount.tokens(new BN(400 * ONE_SOL))
+  //   })
+
+  //   // TEST
+  //   const tokenBalanceA = await getTokenBalance(provider, "processed", user_a_usdc_account)
+  //   const tokenBalanceB = await getTokenBalance(provider, "processed", user_b_sol_account)
+  //   expect(tokenBalanceA).to.eq(400_000)
+  //   expect(tokenBalanceB).to.eq(400)
+
+  //   expect(await getTokenBalance(provider, "processed", marginPool_USDC.addresses.vault)).to.eq(100_050 + 1)
+  //   expect(await getTokenBalance(provider, "processed", marginPool_SOL.addresses.vault)).to.eq(150 + 1)
+  // })
+
+  // provider.opts.skipPreflight = true
+
+  // it("Close margin accounts", async () => {
+  //   /*
+  //   await marginPool_SOL.closePosition({
+  //     marginAccount: marginAccount_A,
+  //     destination: user_a_sol_account
+  //   })
+  //   await marginPool_USDC.closePosition({
+  //     marginAccount: marginAccount_A,
+  //     destination: user_a_usdc_account
+  //   })
+  //   await marginAccount_A.closeAccount();
+  //   */
+  //   /*
+  //   await marginPool_USDC.closePosition({
+  //     marginAccount: marginAccount_B,
+  //     destination: user_b_usdc_account
+  //   })
+  //   await marginPool_SOL.closePosition({
+  //     marginAccount: marginAccount_B,
+  //     destination: user_b_sol_account
+  //   })
+  //   await marginAccount_B.closeAccount();
+  //   */
+  // })
+
+  // describe("Transaction History", () => {
+  //   it("should allow to get a list of the latest transactions", async () => {
+  //     const mints = {
+  //       USDC: {
+  //         tokenMint: USDC[0] as PublicKey,
+  //         depositNoteMint: marginPool_USDC.addresses.depositNoteMint,
+  //         loanNoteMint: marginPool_USDC.addresses.loanNoteMint
+  //       },
+  //       SOL: {
+  //         tokenMint: SOL[0] as PublicKey,
+  //         depositNoteMint: marginPool_SOL.addresses.depositNoteMint,
+  //         loanNoteMint: marginPool_SOL.addresses.loanNoteMint
+  //       }
+  //     }
+  //     const transactions = await MarginClient.getTransactionHistory(provider, wallet_a.publicKey, mints, "localnet")
+
+  //     expect(transactions).to.have.length(5)
+
+  //     expect(transactions[0].tradeAction).to.equals("withdraw")
+  //     expect(transactions[0].tokenSymbol).to.equals("USDC")
+  //     expect(transactions[0].tradeAmount.uiTokens).to.equals("400,000")
+  //     expect(transactions[0].signature).to.be.a("string")
+
+  //     expect(transactions[1].tradeAction).to.equals("repay")
+  //     expect(transactions[1].tokenSymbol).to.equals("SOL")
+  //     expect(transactions[1].tradeAmount.uiTokens).to.equals("10")
+  //     expect(transactions[1].signature).to.be.a("string")
+
+  //     expect(transactions[2].tradeAction).to.equals("borrow")
+  //     expect(transactions[2].tokenSymbol).to.equals("SOL")
+  //     expect(transactions[2].tradeAmount.uiTokens).to.equals("10")
+  //     expect(transactions[2].signature).to.be.a("string")
+
+  //     expect(transactions[3].tradeAction).to.equals("deposit")
+  //     expect(transactions[3].tokenSymbol).to.equals("SOL")
+  //     expect(transactions[3].tradeAmount.uiTokens).to.equals("50")
+  //     expect(transactions[3].signature).to.be.a("string")
+
+  //     expect(transactions[4].tradeAction).to.equals("deposit")
+  //     expect(transactions[4].tokenSymbol).to.equals("USDC")
+  //     expect(transactions[4].tradeAmount.uiTokens).to.equals("500,000")
+  //     expect(transactions[4].signature).to.be.a("string")
+  //   })
+  // })
 })
