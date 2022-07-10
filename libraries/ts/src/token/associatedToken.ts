@@ -652,7 +652,7 @@ export class AssociatedToken {
   }): Promise<PublicKey> {
     let sourceAddress: PublicKey | undefined
     // Is destination a PublicKey or string
-    if ("_bn" in source || typeof source === "string") {
+    if (typeof source === "string" || (typeof source === "object" && "_bn" in source)) {
       sourceAddress = translateAddress(source)
     }
     let owner = provider.wallet.publicKey
@@ -685,7 +685,7 @@ export class AssociatedToken {
   }): Promise<PublicKey> {
     let destinationAddress: PublicKey | undefined
     // Is destination a PublicKey or string
-    if ("_bn" in destination || typeof destination === "string") {
+    if (typeof destination === "string" || (typeof destination === "object" && "_bn" in destination)) {
       destinationAddress = translateAddress(destination)
     }
     let owner = provider.wallet.publicKey
@@ -723,7 +723,7 @@ export class AssociatedToken {
   }) {
     let destinationAddress: PublicKey | undefined
     // Is destination a PublicKey or string
-    if ("_bn" in destination || typeof destination === "string") {
+    if (typeof destination === "string" || (typeof destination === "object" && "_bn" in destination)) {
       destinationAddress = translateAddress(destination)
     }
     let owner = provider.wallet.publicKey
