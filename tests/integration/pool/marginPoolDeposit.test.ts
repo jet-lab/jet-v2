@@ -333,10 +333,19 @@ describe("margin pool deposit", () => {
       marginAccount: marginAccount_B,
       destination: user_b_usdc_account
     })
-    await marginPool_SOL.closePosition({
+  })
+
+  it("Reopen closed account by depositing", async () => {
+    // The user should be able to reopen a position account
+    await marginPool_USDC.deposit({
       marginAccount: marginAccount_B,
-      destination: user_b_sol_account
+      source: user_b_usdc_account,
+      amount: new BN(500_000 * ONE_USDC)
     })
-    await marginAccount_B.closeAccount()
+    // await marginPool_SOL.closePosition({
+    //   marginAccount: marginAccount_B,
+    //   destination: user_b_sol_account
+    // })
+    // await marginAccount_B.closeAccount()
   })
 })
