@@ -736,14 +736,12 @@ export class Pool {
     amount: PoolAmount
     destination?: TokenAddress
   }) {
-    // FIXME: can be getPosition
-    const source = await marginAccount.getOrCreatePosition(this.addresses.depositNoteMint)
-
     const preInstructions: TransactionInstruction[] = []
     const refreshInstructions: TransactionInstruction[] = []
     const instructions: TransactionInstruction[] = []
     const postInstructions: TransactionInstruction[] = []
 
+    const source = await this.withGetOrCreateDepositNotePosition(instructions, marginAccount)
 
     await this.withMarginRefreshAllPositionPrices({ instructions: refreshInstructions, pools, marginAccount })
     await marginAccount.withUpdateAllPositionBalances({ instructions: refreshInstructions })
@@ -767,7 +765,7 @@ export class Pool {
   }: {
     instructions: TransactionInstruction[]
     marginAccount: MarginAccount
-    source: PublicKey
+    source: Address
     destination?: TokenAddress
     amount: PoolAmount
   }): Promise<void> {

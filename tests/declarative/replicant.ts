@@ -384,7 +384,7 @@ export class Replicant {
               )
               if (position.balance.gt(ZERO_BN)) {
                 const amount = PoolAmount.notes(position.balance)
-                await pool.marginWithdraw({ marginAccount, pools: this.pools!, amount, destination })
+                await pool.withdraw({ marginAccount, pools: this.pools!, amount, destination })
               }
               //console.log('');
               //console.log(`position = ${JSON.stringify(position)}`);
