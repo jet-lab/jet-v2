@@ -729,7 +729,7 @@ export class MarginAccount {
     for (let i = 0; i < this.positions.length; i++) {
       const position = this.positions[i]
       if (position.token.equals(tokenMintAddress)) {
-        return position
+        return position.address
       }
     }
 
@@ -739,7 +739,7 @@ export class MarginAccount {
     for (let i = 0; i < this.positions.length; i++) {
       const position = this.positions[i]
       if (position.token.equals(tokenMintAddress)) {
-        return position
+        return position.address
       }
     }
 
@@ -758,7 +758,7 @@ export class MarginAccount {
     }
   }
 
-  async updatePositionBalance({ position }: { position: AccountPosition }) {
+  async updatePositionBalance({ position }: { position: Address }) {
     const instructions: TransactionInstruction[] = []
     await this.withUpdatePositionBalance({ instructions, position })
     return await this.provider.sendAndConfirm(new Transaction().add(...instructions))
@@ -775,13 +775,13 @@ export class MarginAccount {
     position
   }: {
     instructions: TransactionInstruction[]
-    position: AccountPosition
+    position: Address
   }): Promise<void> {
     const instruction = await this.programs.margin.methods
       .updatePositionBalance()
       .accounts({
         marginAccount: this.address,
-        tokenAccount: position.address
+        tokenAccount: position
       })
       .instruction()
     instructions.push(instruction)
