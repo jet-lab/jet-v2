@@ -483,7 +483,7 @@ export class Pool {
     change: PoolTokenChange
   }): Promise<void> {
     const ix = await this.programs.marginPool.methods
-      .deposit(change.toRpcArg())
+      .deposit(change.changeKind.asByte(), change.value)
       .accounts({
         marginPool: this.address,
         vault: this.addresses.vault,
@@ -558,7 +558,7 @@ export class Pool {
       adapterProgram: this.programs.config.marginPoolProgramId,
       adapterMetadata: this.addresses.marginPoolAdapterMetadata,
       adapterInstruction: await this.programs.marginPool.methods
-        .marginBorrow(change.toRpcArg())
+        .marginBorrow(change.changeKind.asByte(), change.value)
         .accounts({
           marginAccount: marginAccount.address,
           marginPool: this.address,
@@ -638,7 +638,7 @@ export class Pool {
     change: PoolTokenChange
   }): Promise<TransactionInstruction> {
     return await this.programs.marginPool.methods
-      .marginRepay(change.toRpcArg())
+      .marginRepay(change.changeKind.asByte(), change.value)
       .accounts({
         marginAccount: marginAccount,
         marginPool: this.address,
@@ -716,7 +716,7 @@ export class Pool {
     change: PoolTokenChange
   }): Promise<TransactionInstruction> {
     return await this.programs.marginPool.methods
-      .withdraw(change.toRpcArg())
+      .withdraw(change.changeKind.asByte(), change.value)
       .accounts({
         depositor: marginAccount,
         marginPool: this.address,

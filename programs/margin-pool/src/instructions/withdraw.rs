@@ -19,9 +19,10 @@ use std::ops::Deref;
 
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Burn, Token, Transfer};
+use num_traits::FromPrimitive;
 
-use crate::ErrorCode;
 use crate::{events, state::*, TokenChange};
+use crate::{ChangeKind, ErrorCode};
 
 #[derive(Accounts)]
 pub struct Withdraw<'info> {
@@ -81,7 +82,11 @@ impl<'info> Withdraw<'info> {
     }
 }
 
-pub fn withdraw_handler(ctx: Context<Withdraw>, change: TokenChange) -> Result<()> {
+pub fn withdraw_handler(ctx: Context<Withdraw>, change_kind: u8, amount: u64) -> Result<()> {
+    let change = TokenChange {
+        kind: ChangeKind::from_u8(change_kind).unwrap(),
+        tokens: amount,
+    };
     let pool = &mut ctx.accounts.margin_pool;
     let clock = Clock::get()?;
 
@@ -103,10 +108,7 @@ pub fn withdraw_handler(ctx: Context<Withdraw>, change: TokenChange) -> Result<(
 
     token::transfer(
         ctx.accounts.transfer_context().with_signer(&signer),
-        // edge case where rounding accounts for more tokens than exist in the vault
-        withdraw_amount
-            .tokens
-            .min(token::accessor::amount(&ctx.accounts.vault)?),
+        withdraw_amount.tokens,
     )?;
     token::burn(
         ctx.accounts.burn_note_context().with_signer(&signer),

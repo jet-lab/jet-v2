@@ -193,10 +193,12 @@ export type JetMarginPool = {
       ]
       args: [
         {
-          name: "change"
-          type: {
-            defined: "TokenChange"
-          }
+          name: "changeKind"
+          type: "u8"
+        },
+        {
+          name: "amount"
+          type: "u64"
         }
       ]
     },
@@ -248,10 +250,12 @@ export type JetMarginPool = {
       ]
       args: [
         {
-          name: "change"
-          type: {
-            defined: "TokenChange"
-          }
+          name: "changeKind"
+          type: "u8"
+        },
+        {
+          name: "amount"
+          type: "u64"
         }
       ]
     },
@@ -303,10 +307,12 @@ export type JetMarginPool = {
       ]
       args: [
         {
-          name: "change"
-          type: {
-            defined: "TokenChange"
-          }
+          name: "changeKind"
+          type: "u8"
+        },
+        {
+          name: "amount"
+          type: "u64"
         }
       ]
     },
@@ -362,10 +368,12 @@ export type JetMarginPool = {
       ]
       args: [
         {
-          name: "change"
-          type: {
-            defined: "TokenChange"
-          }
+          name: "changeKind"
+          type: "u8"
+        },
+        {
+          name: "amount"
+          type: "u64"
         }
       ]
     },
@@ -423,10 +431,12 @@ export type JetMarginPool = {
       ]
       args: [
         {
-          name: "change"
-          type: {
-            defined: "TokenChange"
-          }
+          name: "changeKind"
+          type: "u8"
+        },
+        {
+          name: "amount"
+          type: "u64"
         }
       ]
     },
@@ -1425,10 +1435,12 @@ export const IDL: JetMarginPool = {
       ],
       args: [
         {
-          name: "change",
-          type: {
-            defined: "TokenChange"
-          }
+          name: "changeKind",
+          type: "u8"
+        },
+        {
+          name: "amount",
+          type: "u64"
         }
       ]
     },
@@ -1480,10 +1492,12 @@ export const IDL: JetMarginPool = {
       ],
       args: [
         {
-          name: "change",
-          type: {
-            defined: "TokenChange"
-          }
+          name: "changeKind",
+          type: "u8"
+        },
+        {
+          name: "amount",
+          type: "u64"
         }
       ]
     },
@@ -1535,10 +1549,12 @@ export const IDL: JetMarginPool = {
       ],
       args: [
         {
-          name: "change",
-          type: {
-            defined: "TokenChange"
-          }
+          name: "changeKind",
+          type: "u8"
+        },
+        {
+          name: "amount",
+          type: "u64"
         }
       ]
     },
@@ -1594,10 +1610,12 @@ export const IDL: JetMarginPool = {
       ],
       args: [
         {
-          name: "change",
-          type: {
-            defined: "TokenChange"
-          }
+          name: "changeKind",
+          type: "u8"
+        },
+        {
+          name: "amount",
+          type: "u64"
         }
       ]
     },
@@ -1655,10 +1673,12 @@ export const IDL: JetMarginPool = {
       ],
       args: [
         {
-          name: "change",
-          type: {
-            defined: "TokenChange"
-          }
+          name: "changeKind",
+          type: "u8"
+        },
+        {
+          name: "amount",
+          type: "u64"
         }
       ]
     },

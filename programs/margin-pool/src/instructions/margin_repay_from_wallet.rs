@@ -18,8 +18,9 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Burn, Token, TokenAccount, Transfer};
 use jet_margin::MarginAccount;
+use num_traits::FromPrimitive;
 
-use crate::{events, state::PoolAction, ErrorCode, MarginPool, TokenChange};
+use crate::{events, state::PoolAction, ChangeKind, ErrorCode, MarginPool, TokenChange};
 
 #[derive(Accounts)]
 pub struct MarginRepayFromWallet<'info> {
@@ -84,8 +85,13 @@ impl<'info> MarginRepayFromWallet<'info> {
 
 pub fn margin_repay_from_wallet_handler(
     ctx: Context<MarginRepayFromWallet>,
-    change: TokenChange,
+    change_kind: u8,
+    amount: u64,
 ) -> Result<()> {
+    let change = TokenChange {
+        kind: ChangeKind::from_u8(change_kind).unwrap(),
+        tokens: amount,
+    };
     let pool = &mut ctx.accounts.margin_pool;
     let clock = Clock::get()?;
 

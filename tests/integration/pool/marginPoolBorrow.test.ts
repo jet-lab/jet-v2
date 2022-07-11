@@ -351,7 +351,7 @@ describe("margin pool borrow", () => {
     await marginPool_SOL.marginRepay({
       marginAccount: marginAccount_A,
       pools,
-      change: PoolTokenChange.shiftBy(owedSOL)
+      change: PoolTokenChange.setTo(0)
     })
     await marginPool_SOL.refresh()
 
@@ -369,7 +369,7 @@ describe("margin pool borrow", () => {
     await marginPool_USDC.marginRepay({
       marginAccount: marginAccount_B,
       pools,
-      change: PoolTokenChange.shiftBy(owedUSDC)
+      change: PoolTokenChange.setTo(0)
     })
     await marginPool_USDC.refresh()
 
@@ -412,7 +412,7 @@ describe("margin pool borrow", () => {
       }
     }
     console.log("")
-
+  
     await marginPool_SOL.closePosition({
       marginAccount: marginAccount_A,
       destination: user_a_sol_account
@@ -422,8 +422,8 @@ describe("margin pool borrow", () => {
       destination: user_a_usdc_account
     })
     await marginAccount_A.closeAccount();
-
-
+  
+  
     await marginPool_USDC.closePosition({
       marginAccount: marginAccount_B,
       destination: user_b_usdc_account

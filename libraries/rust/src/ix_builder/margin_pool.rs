@@ -18,6 +18,7 @@
 use anchor_lang::prelude::{Id, System, ToAccountMetas};
 use anchor_lang::InstructionData;
 use anchor_spl::token::Token;
+use num_traits::ToPrimitive;
 use solana_sdk::instruction::Instruction;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::sysvar::{rent::Rent, SysvarId};
@@ -133,9 +134,14 @@ impl MarginPoolIxBuilder {
         }
         .to_account_metas(None);
 
+        let TokenChange { kind, tokens } = change;
         Instruction {
             program_id: jet_margin_pool::ID,
-            data: ix_data::Deposit { change }.data(),
+            data: ix_data::Deposit {
+                change_kind: kind.to_u8().unwrap(),
+                amount: tokens,
+            }
+            .data(),
             accounts,
         }
     }
@@ -166,9 +172,14 @@ impl MarginPoolIxBuilder {
         }
         .to_account_metas(None);
 
+        let TokenChange { kind, tokens } = change;
         Instruction {
             program_id: jet_margin_pool::ID,
-            data: ix_data::Withdraw { change }.data(),
+            data: ix_data::Withdraw {
+                change_kind: kind.to_u8().unwrap(),
+                amount: tokens,
+            }
+            .data(),
             accounts,
         }
     }
@@ -199,9 +210,14 @@ impl MarginPoolIxBuilder {
         }
         .to_account_metas(None);
 
+        let TokenChange { kind, tokens } = change;
         Instruction {
             program_id: jet_margin_pool::ID,
-            data: ix_data::MarginBorrow { change }.data(),
+            data: ix_data::MarginBorrow {
+                change_kind: kind.to_u8().unwrap(),
+                amount: tokens,
+            }
+            .data(),
             accounts,
         }
     }
@@ -232,9 +248,14 @@ impl MarginPoolIxBuilder {
         }
         .to_account_metas(None);
 
+        let TokenChange { kind, tokens } = change;
         Instruction {
             program_id: jet_margin_pool::ID,
-            data: ix_data::MarginRepay { change }.data(),
+            data: ix_data::MarginRepay {
+                change_kind: kind.to_u8().unwrap(),
+                amount: tokens,
+            }
+            .data(),
             accounts,
         }
     }
@@ -268,9 +289,14 @@ impl MarginPoolIxBuilder {
         }
         .to_account_metas(None);
 
+        let TokenChange { kind, tokens } = change;
         Instruction {
             program_id: jet_margin_pool::ID,
-            data: ix_data::MarginRepayFromWallet { change }.data(),
+            data: ix_data::MarginRepayFromWallet {
+                change_kind: kind.to_u8().unwrap(),
+                amount: tokens,
+            }
+            .data(),
             accounts,
         }
     }

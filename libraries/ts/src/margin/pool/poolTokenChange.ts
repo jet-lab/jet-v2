@@ -1,9 +1,20 @@
 import { BN } from "@project-serum/anchor"
 
-type PoolTokenChangeSetValue = { setValue: Record<string, never> }
-type PoolTokenChangeShiftValue = { shiftValue: Record<string, never> }
+export class PoolTokenChangeKind {
+  constructor(private byte: number) { }
 
-export type PoolTokenChangeKind = PoolTokenChangeSetValue | PoolTokenChangeShiftValue
+  public static setTo() {
+    return new PoolTokenChangeKind(0);
+  }
+
+  public static shiftBy() {
+    return new PoolTokenChangeKind(1);
+  }
+
+  asByte() {
+    return this.byte;
+  }
+}
 
 /**
  * TODO:
@@ -27,7 +38,7 @@ export class PoolTokenChange {
    * @memberof TokenChange
   */
   static setTo(value: number | BN): PoolTokenChange {
-    return new PoolTokenChange({ setValue: {} }, new BN(value))
+    return new PoolTokenChange(PoolTokenChangeKind.setTo(), new BN(value))
   }
 
   /** 
@@ -38,19 +49,6 @@ export class PoolTokenChange {
    * @memberof TokenChange
   */
   static shiftBy(value: number | BN): PoolTokenChange {
-    return new PoolTokenChange({ shiftValue: {} }, new BN(value))
-  }
-
-  /**
-   * Converts the class instance into an object that can
-   * be used as an argument for Solana instruction calls.
-   * @returns {{ kind: never; value: BN }}
-   * @memberof TokenChange
-   */
-  toRpcArg(): { kind: never; tokens: BN } {
-    return {
-      kind: this.changeKind as never,
-      tokens: this.value
-    }
+    return new PoolTokenChange(PoolTokenChangeKind.shiftBy(), new BN(value))
   }
 }

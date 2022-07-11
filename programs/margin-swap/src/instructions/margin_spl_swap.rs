@@ -16,10 +16,11 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 use anchor_spl::token::Token;
-use jet_margin_pool::TokenChange;
+use jet_margin_pool::ChangeKind;
 use jet_static_program_registry::{
     orca_swap_v1, orca_swap_v2, related_programs, spl_token_swap_v2,
 };
+use num_traits::ToPrimitive;
 
 use crate::*;
 
@@ -88,7 +89,8 @@ impl<'info> MarginSplSwap<'info> {
                     token_program: self.token_program.to_account_info(),
                 },
             ),
-            TokenChange::shift(amount_in),
+            ChangeKind::ShiftBy.to_u8().unwrap(),
+            amount_in,
         )?;
 
         Ok(())
@@ -112,7 +114,8 @@ impl<'info> MarginSplSwap<'info> {
                     token_program: self.token_program.to_account_info(),
                 },
             ),
-            TokenChange::shift(destination_amount),
+            ChangeKind::ShiftBy.to_u8().unwrap(),
+            destination_amount,
         )?;
 
         Ok(())
