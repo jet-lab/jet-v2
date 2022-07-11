@@ -754,7 +754,7 @@ export class MarginAccount {
 
   async withUpdateAllPositionBalances({ instructions }: { instructions: TransactionInstruction[] }) {
     for (const position of this.positions) {
-      await this.withUpdatePositionBalance({ instructions, position })
+      await this.withUpdatePositionBalance({ instructions, position: position.address })
     }
   }
 

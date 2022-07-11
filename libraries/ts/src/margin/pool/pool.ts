@@ -831,7 +831,7 @@ export class Pool {
 
         const instructions: TransactionInstruction[] = []
 
-        await marginAccount.withUpdatePositionBalance({ instructions, position.address })
+        await marginAccount.withUpdatePositionBalance({ instructions, position: position.address })
 
         await AssociatedToken.withCreate(instructions, marginAccount.provider, marginAccount.owner, this.tokenMint)
         await this.withWithdraw({
