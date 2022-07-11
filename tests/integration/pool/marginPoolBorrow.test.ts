@@ -352,7 +352,7 @@ describe("margin pool borrow", () => {
     await marginPool_SOL.marginRepay({
       marginAccount: marginAccount_A,
       pools,
-      amount: PoolAmount.tokens(owedSOL)
+      amount: owedSOL
     })
     await marginPool_SOL.refresh()
 
@@ -370,7 +370,7 @@ describe("margin pool borrow", () => {
     await marginPool_USDC.marginRepay({
       marginAccount: marginAccount_B,
       pools,
-      amount: PoolAmount.tokens(owedUSDC)
+      amount: owedUSDC
     })
     await marginPool_USDC.refresh()
 
@@ -404,7 +404,7 @@ describe("margin pool borrow", () => {
     expect(await getTokenBalance(provider, "processed", marginPool_SOL.addresses.vault)).to.eq(150 + 1)
   })
 
-  provider.opts.skipPreflight = true;
+  provider.opts.skipPreflight = true
 
   it("Close margin accounts", async () => {
     /*
@@ -418,7 +418,6 @@ describe("margin pool borrow", () => {
     })
     await marginAccount_A.closeAccount();
     */
-
     /*
     await marginPool_USDC.closePosition({
       marginAccount: marginAccount_B,
