@@ -459,7 +459,6 @@ export class Pool {
     const position = await this.withGetOrCreateDepositNotePosition(instructions, marginAccount)
     assert(position)
 
-
     await this.withDeposit({
       instructions: instructions,
       marginAccount,
@@ -736,12 +735,12 @@ export class Pool {
     amount: PoolAmount
     destination?: TokenAddress
   }) {
+    // FIXME: can source be calculated in withdraw?
+    const source = await this.withGetOrCreateDepositNotePosition(instructions, marginAccount)
+
     const preInstructions: TransactionInstruction[] = []
     const refreshInstructions: TransactionInstruction[] = []
     const instructions: TransactionInstruction[] = []
-    const postInstructions: TransactionInstruction[] = []
-
-    const source = await this.withGetOrCreateDepositNotePosition(instructions, marginAccount)
 
     await this.withMarginRefreshAllPositionPrices({ instructions: refreshInstructions, pools, marginAccount })
     await marginAccount.withUpdateAllPositionBalances({ instructions: refreshInstructions })
