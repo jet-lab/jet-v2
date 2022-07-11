@@ -750,14 +750,6 @@ export class Pool {
     const instructions: TransactionInstruction[] = []
     const postInstructions: TransactionInstruction[] = []
 
-    const marginWithdrawDestination =
-      destination ??
-      (await AssociatedToken.withCreateOrUnwrapIfNativeMint(
-        preInstructions,
-        postInstructions,
-        marginAccount.provider,
-        this.tokenMint
-      ))
 
     await this.withMarginRefreshAllPositionPrices({ instructions: refreshInstructions, pools, marginAccount })
     await marginAccount.withUpdateAllPositionBalances({ instructions: refreshInstructions })
