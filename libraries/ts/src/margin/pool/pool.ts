@@ -736,11 +736,11 @@ export class Pool {
     destination?: TokenAddress
   }) {
     // FIXME: can source be calculated in withdraw?
+    const instructions: TransactionInstruction[] = []
     const source = await this.withGetOrCreateDepositNotePosition(instructions, marginAccount)
 
     const preInstructions: TransactionInstruction[] = []
     const refreshInstructions: TransactionInstruction[] = []
-    const instructions: TransactionInstruction[] = []
 
     await this.withMarginRefreshAllPositionPrices({ instructions: refreshInstructions, pools, marginAccount })
     await marginAccount.withUpdateAllPositionBalances({ instructions: refreshInstructions })
