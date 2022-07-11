@@ -40,6 +40,11 @@ export interface PriceResult {
   loanNoteTwap: BN
 }
 
+export interface RatesProjection {
+  depositRate: number
+  borrowRate: number
+}
+
 export class Pool {
   address: PublicKey
   depositNoteMetadata: PositionTokenMetadata
@@ -847,5 +852,86 @@ export class Pool {
 
       await marginAccount.closePosition(position)
     }
+  }
+
+
+  /// Projects the deposit and borrow rates after a deposit into the pool.
+  projectRatesAfterDeposit(amount: TokenAmount): RatesProjection {
+    if (this.info == undefined) {
+      throw "must have pool info initialised"
+    }
+
+    const borrowedTokens = this.borrowedTokens.tokens
+    const totalValue = this.totalValue.add(amount).tokens
+
+    const utilRatio = borrowedTokens / totalValue
+    const depositCcRate = Pool.getCcRate(this.info.marginPool.config, utilRatio)
+
+    const depositRate = Pool.getDepositApy(depositCcRate, utilRatio)
+    const borrowRate = Pool.getBorrowApr(depositCcRate, utilRatio)
+
+    return {depositRate, borrowRate}
+  }
+
+  /// Projects the deposit and borrow rates after a withdrawal from the pool.
+  projectRatesAfterWithdraw(amount: TokenAmount): RatesProjection {
+    if (this.info == undefined) {
+      throw "must have pool info initialised"
+    }
+
+    if (amount.tokens > this.depositedTokens.tokens) {
+      throw "not enough tokens in the vault"
+    }
+
+    const borrowedTokens = this.borrowedTokens.tokens;
+    const totalValue = this.totalValue.sub(amount).tokens
+
+    const utilRatio = totalValue === 0 ? 0 : borrowedTokens / totalValue
+    const depositCcRate = Pool.getCcRate(this.info.marginPool.config, utilRatio)
+
+    const depositRate = Pool.getDepositApy(depositCcRate, utilRatio)
+    const borrowRate = Pool.getBorrowApr(depositCcRate, utilRatio)
+
+    return {depositRate, borrowRate}
+  }
+  
+  /// Projects the deposit and borrow rates after a borrow from the pool.
+  projectRatesAfterBorrow(amount: TokenAmount): RatesProjection {
+    if (this.info == undefined) {
+      throw "must have pool info initialised"
+    }
+
+    const borrowedTokens = this.borrowedTokens.add(amount).tokens;
+    const totalValue = this.totalValue.add(amount).tokens
+
+    const utilRatio = borrowedTokens / totalValue
+    const depositCcRate = Pool.getCcRate(this.info.marginPool.config, utilRatio)
+
+    const depositRate = Pool.getDepositApy(depositCcRate, utilRatio)
+    const borrowRate = Pool.getBorrowApr(depositCcRate, utilRatio)
+
+    return {depositRate, borrowRate}
+  }
+
+  /// Projects the deposit and borrow rates after repaying a loan from the pool.
+  projectRatesAfterRepay(amount: TokenAmount): RatesProjection {
+    if (this.info == undefined) {
+      throw "must have pool info initialised"
+    }
+
+    if (amount.tokens > this.borrowedTokens.tokens) {
+      throw "not enough borrowed tokens"
+    }
+
+    const borrowedTokens = this.borrowedTokens.sub(amount).tokens;
+    const totalValue = this.totalValue.sub(amount).tokens
+
+    const utilRatio = totalValue === 0 ? 0 : borrowedTokens / totalValue
+    const depositCcRate = Pool.getCcRate(this.info.marginPool.config, utilRatio)
+
+    const depositRate = Pool.getDepositApy(depositCcRate, utilRatio)
+    const borrowRate = Pool.getBorrowApr(depositCcRate, utilRatio)
+
+    return {depositRate, borrowRate}
   }
 }
