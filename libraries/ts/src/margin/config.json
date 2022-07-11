@@ -600,7 +600,48 @@
         "address": "Gnt27xtC473ZT2Mw5u8wZ68Z3gULkSTb5DuxJy7eJotD"
       }
     },
-    "pools": {},
+    "pools": {
+      "BTC": {
+        "symbol": "BTC",
+        "name": "Bitcoin",
+        "tokenMint": "EDg8oL2FoK7pmCvR8iRGmbW2HioUaDNWRihkQA5rEqDj",
+        "oracle": "GJp622VronyrMkbS423pVgdx19FwCEVzNfMvDbrRriV1",
+        "product": "5MhM4ooa18waRNZhkg99YF5W5TuXRmTokkL9qtcztXUe",
+        "feesVault": "E2PMURkH6RWJRqMYLThCKWdZAsQAmxRuFYErb8JbzX6d"
+      },
+      "ETH": {
+        "symbol": "ETH",
+        "name": "Ethereum",
+        "tokenMint": "6TFfDwR9gQ6MCtTRQBar9HJpi14r5aVCSCXagxZttasW",
+        "oracle": "BzZG6NQBsEVbuNgWhfBuwGC6z1XozVxxMuBkBTh6Jxns",
+        "product": "AbMm5f3356Dh32ZzDYoX7s8FVMHBBrRnRozhopbWpmi6",
+        "feesVault": "BhaqEoRhxpMKbCUPvQ5i5JA6HpMjuapCvRjtKEir4U24"
+      },
+      "SOL": {
+        "symbol": "SOL",
+        "name": "Solana",
+        "tokenMint": "So11111111111111111111111111111111111111112",
+        "oracle": "3x8ApfZMMmT33FP4EWBNPCxvyBwzj7JJGuesxiFrGmUG",
+        "product": "3QHdRrzVGrzKmAzdFh5EpSwoaUq5xEbFxJzq4YtQoAoa",
+        "feesVault": "BbeRjzczNfQVC3vqztY7i3vYtPoAitwTvE8bBPaFUdtH"
+      },
+      "SRM": {
+        "symbol": "SRM",
+        "name": "Serum",
+        "tokenMint": "5zq1tdJfRZ8boTGjKE9dCA77nyFEm4c1uji8Q3nfWfaY",
+        "oracle": "JDhzaj9F3Fh5kbDCy94qPReC6v8STLWTaUy94S9CtRUC",
+        "product": "4rmzFz9BazqhXEXo9BS2Nvcq1TRemE58Us5uz6ZANmwR",
+        "feesVault": "EeytQheGzr9PiVVr7BmvUFJXudMhvMGZj99V499o6qna"
+      },
+      "USDC": {
+        "symbol": "USDC",
+        "name": "USD Coin",
+        "tokenMint": "J9n7rmgGgaiysVGnspchnCk4riWC9qDeh9wp8rc2PzGG",
+        "oracle": "AQGSisqrjZMKaxiiE3xGJ5aRtf8zzKs5MQUmXX6F6JAm",
+        "product": "2wsVafE5PnSaaawN38JhEUPeRFMfLEKa7EZyo476Hoc3",
+        "feesVault": "D4eK2txT7YRN36mA71HFjdxGmfHQv8W4pmX5PwP14aiG"
+      }
+    },
     "markets": {
       "BTC_USDC": {
         "symbol": "BTC/USDC",

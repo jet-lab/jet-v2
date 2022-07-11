@@ -402,7 +402,10 @@ impl MarginAccount {
                     exposure += position.value();
                     required_collateral += position.required_collateral_value()
                 }
-                (PositionKind::Claim, Some(error)) => return Err(error!(error)),
+                (PositionKind::Claim, Some(error)) => {
+                    msg!("claim position is stale: {:?}", position);
+                    return Err(error!(error));
+                }
 
                 (PositionKind::Deposit, None) => weighted_collateral += position.collateral_value(),
                 (PositionKind::Deposit, Some(e)) => {
@@ -1124,6 +1127,25 @@ mod tests {
                 Token::StructEnd,
             ],
         )
+    }
+
+    #[test]
+    fn valuation_fails_on_stale_claim_with_balance() {
+        let mut margin_account = MarginAccount {
+            version: 1,
+            bump_seed: [0],
+            user_seed: [0; 2],
+            reserved0: [0; 3],
+            owner: Pubkey::new_unique(),
+            liquidation: Pubkey::default(),
+            liquidator: Pubkey::default(),
+            invocation: Invocation::default(),
+            positions: [0; 7432],
+        };
+        let pos = register_position(&mut margin_account, 0, TokenKind::Claim);
+        margin_account.set_position_balance(&pos, &pos, 1).unwrap();
+
+        assert!(margin_account.valuation().is_err());
     }
 
     #[test]

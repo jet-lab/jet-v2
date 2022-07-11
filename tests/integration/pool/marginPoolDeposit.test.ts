@@ -293,13 +293,13 @@ describe("margin pool deposit", () => {
     // ACT
     await pythClient.setPythPrice(ownerKeypair, USDC_oracle[1].publicKey, 1, 0.01, -8)
     await pythClient.setPythPrice(ownerKeypair, SOL_oracle[1].publicKey, 100, 1, -8)
-    await marginPool_USDC.marginWithdraw({
+    await marginPool_USDC.withdraw({
       marginAccount: marginAccount_A,
       pools,
       destination: user_a_usdc_account,
       change: PoolTokenChange.shiftBy(new BN(400_000 * ONE_USDC))
     })
-    await marginPool_SOL.marginWithdraw({
+    await marginPool_SOL.withdraw({
       marginAccount: marginAccount_B,
       pools,
       destination: user_b_sol_account,
@@ -315,6 +315,8 @@ describe("margin pool deposit", () => {
     expect(await getTokenBalance(provider, "processed", marginPool_USDC.addresses.vault)).to.eq(100_050 + 1)
     expect(await getTokenBalance(provider, "processed", marginPool_SOL.addresses.vault)).to.eq(150 + 1)
   })
+
+  provider.opts.skipPreflight = true;
 
   it("Close margin accounts", async () => {
     await marginPool_USDC.closePosition({

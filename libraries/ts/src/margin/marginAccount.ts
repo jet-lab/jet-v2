@@ -723,7 +723,6 @@ export class MarginAccount {
     }
   }
 
-  //TODO Withdraw
   async getOrCreatePosition(tokenMint: Address) {
     assert(this.info)
     const tokenMintAddress = translateAddress(tokenMint)
@@ -832,7 +831,7 @@ export class MarginAccount {
   async closeAccount() {
     const ix: TransactionInstruction[] = []
     await this.withCloseAccount(ix)
-    this.sendAndConfirm(ix)
+    await this.sendAndConfirm(ix)
   }
 
   /// Get instruction to close an account
@@ -852,9 +851,10 @@ export class MarginAccount {
   }
 
   async closePosition(position: AccountPosition) {
+    console.log(`position = ${JSON.stringify(position)}`);
     const ix: TransactionInstruction[] = []
     await this.withClosePosition(ix, position)
-    this.sendAndConfirm(ix)
+    await this.sendAndConfirm(ix)
   }
 
   /// Get instruction to close a position
