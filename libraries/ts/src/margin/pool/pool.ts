@@ -459,12 +459,6 @@ export class Pool {
     const position = await this.withGetOrCreateDepositNotePosition(instructions, marginAccount)
     assert(position)
 
-    source ??= await AssociatedToken.withCreateOrWrapIfNativeMint(
-      instructions,
-      marginAccount.provider,
-      this.tokenMint,
-      amount
-    )
 
     await this.withDeposit({
       instructions: instructions,
