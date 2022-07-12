@@ -231,9 +231,9 @@ impl MarginAccount {
         kind: PositionKind,
         value_modifier: u16,
         max_staleness: u64,
-    ) -> AnchorResult<()> {
+    ) -> Result<AccountPosition, ErrorCode> {
         let position = match self.position_list_mut().get_mut(mint) {
-            None => return err!(ErrorCode::PositionNotRegistered),
+            None => return Err(ErrorCode::PositionNotRegistered),
             Some(p) => p,
         };
 
@@ -241,7 +241,7 @@ impl MarginAccount {
         position.value_modifier = value_modifier;
         position.max_staleness = max_staleness;
 
-        Ok(())
+        Ok(*position)
     }
 
     pub fn get_position_key(&self, mint: &Pubkey) -> Option<AccountPositionKey> {
