@@ -1,7 +1,7 @@
 name: build
 
 env:
-  cli-id: anchor-v0.24.dev-solana-1.10.25
+  cli-id: anchor-v0.24.dev-solana-1.10.24
   rust-version: stable
 
 on:
@@ -27,7 +27,7 @@ jobs:
 
       - id: install-solana-tools
         if: steps.cache-cli-deps.outputs.cache-hit != 'true'
-        run: sh -c "$(curl -sSfL https://release.solana.com/v1.10.25/install)"
+        run: sh -c "$(curl -sSfL https://release.solana.com/v1.10.24/install)"
 
       - run: echo "PATH=$HOME/.local/share/solana/install/active_release/bin:$PATH" >> $GITHUB_ENV
 
