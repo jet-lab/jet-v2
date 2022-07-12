@@ -95,7 +95,7 @@ fn update_and_verify_liquidation(
 ) -> Result<Valuation> {
     let end_value = margin_account.valuation()?;
 
-    *liquidation.equity_change_mut() += end_value.equity() - start_value.equity(); // side effects
+    *liquidation.equity_change_mut() += end_value.equity - start_value.equity; // side effects
 
     if liquidation.equity_change() < &liquidation.min_equity_change() {
         msg!(
