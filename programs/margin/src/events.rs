@@ -108,7 +108,7 @@ pub struct LiquidationEnded {
 
 #[derive(AnchorDeserialize, AnchorSerialize)]
 pub struct ValuationSummary {
-    pub exposure: i128,
+    pub debt: i128,
     pub required_collateral: i128,
     pub weighted_collateral: i128,
     pub effective_collateral: i128,
@@ -119,7 +119,7 @@ pub struct ValuationSummary {
 impl From<Valuation> for ValuationSummary {
     fn from(valuation: Valuation) -> Self {
         ValuationSummary {
-            exposure: valuation.exposure.to_i128(),
+            debt: valuation.debt.to_i128(),
             required_collateral: valuation.required_collateral.to_i128(),
             weighted_collateral: valuation.weighted_collateral.to_i128(),
             effective_collateral: valuation.effective_collateral.to_i128(),
