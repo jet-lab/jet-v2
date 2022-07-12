@@ -356,7 +356,7 @@ describe("margin pool borrow", () => {
     await marginPool_SOL.marginRepay({
       marginAccount: marginAccount_A,
       pools,
-      change: PoolTokenChange.setTo(new BN(0))
+      change: PoolTokenChange.setTo(0)
     })
     await marginPool_SOL.refresh()
 
@@ -374,7 +374,7 @@ describe("margin pool borrow", () => {
     await marginPool_USDC.marginRepay({
       marginAccount: marginAccount_B,
       pools,
-      change: PoolTokenChange.setTo(new BN(0))
+      change: PoolTokenChange.setTo(0)
     })
     await marginPool_USDC.refresh()
 
