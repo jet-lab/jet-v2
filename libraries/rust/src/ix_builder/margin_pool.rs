@@ -18,7 +18,6 @@
 use anchor_lang::prelude::{Id, System, ToAccountMetas};
 use anchor_lang::InstructionData;
 use anchor_spl::token::Token;
-use num_traits::ToPrimitive;
 use solana_sdk::instruction::Instruction;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::sysvar::{rent::Rent, SysvarId};

@@ -1608,7 +1608,6 @@ dependencies = [
  "jet-margin-swap",
  "jet-metadata",
  "jet-simulation",
- "num-traits",
  "solana-sdk",
  "spl-token 3.2.0",
  "spl-token-swap 2.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
