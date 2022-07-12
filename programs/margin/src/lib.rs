@@ -52,8 +52,8 @@ pub const MAX_ORACLE_STALENESS: i64 = 30;
 #[constant]
 pub const MAX_PRICE_QUOTE_AGE: u64 = 30;
 
-/// The maximum amount of equity that can be deducted from an account during liquidation as a
-/// proportion of the total dollar value that needed to be collateralized at the start of liquidation.
+/// The maximum amount of equity that can be deducted from an account during liquidation
+/// as a fraction of the total dollar value that is expected to need to be liquidated
 pub const LIQUIDATION_MAX_EQUITY_LOSS_BPS: u16 = 10_00;
 
 /// The maximum c-ratio that an account can end a liquidation with.

@@ -238,7 +238,7 @@ async fn cannot_withdraw_too_much_during_liquidation() -> Result<()> {
         .withdraw(
             &scen.usdc,
             &liquidator_usdc_account,
-            Amount::tokens(1000000 * ONE_USDC),
+            Amount::tokens(500_000 * ONE_USDC),
         )
         .await;
 
