@@ -184,7 +184,7 @@ async fn no_one_else_can_liquidate_after_liquidate_begin() -> Result<()> {
     let rogue_liquidator = ctx.create_liquidator(100).await?;
     let user_b_rliq = ctx
         .margin
-        .liquidator(&rogue_liquidator, scen.user_b.owner())
+        .liquidator(&rogue_liquidator, scen.user_b.owner(), scen.user_b.seed())
         .await?;
 
     // Should fail to begin liquidation
