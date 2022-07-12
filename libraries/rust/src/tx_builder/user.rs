@@ -329,6 +329,20 @@ impl MarginTxBuilder {
             .get_or_create_position(&mut instructions, &destination_pool.deposit_note_mint)
             .await?;
 
+        let destination_metadata = self.get_token_metadata(destination_token_mint).await?;
+
+        // Only refreshing the destination due to transaction size.
+        // The most common scenario would be that a new margin position is created
+        // for the destination of the swap. If its position price is not set before
+        // the swap, a liquidator would be accused of extracting too much value
+        // as the destination becomes immediately stale after creation.
+        instructions.push(
+            self.ix.accounting_invoke(
+                destination_pool
+                    .margin_refresh_position(*self.address(), destination_metadata.pyth_price),
+            ),
+        );
+
         let (swap_authority, _) = Pubkey::find_program_address(&[swap_pool.as_ref()], swap_program);
         let swap_pool = MarginSwapIxBuilder::new(
             *source_token_mint,
