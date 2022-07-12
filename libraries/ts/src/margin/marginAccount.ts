@@ -723,14 +723,14 @@ export class MarginAccount {
     }
   }
 
-  async getOrCreatePosition(tokenMint: Address) {
+  async withGetOrCreatePosition(tokenMint: Address) {
     assert(this.info)
     const tokenMintAddress = translateAddress(tokenMint)
 
     for (let i = 0; i < this.positions.length; i++) {
       const position = this.positions[i]
       if (position.token.equals(tokenMintAddress)) {
-        return position
+        return position.address
       }
     }
 
@@ -740,7 +740,7 @@ export class MarginAccount {
     for (let i = 0; i < this.positions.length; i++) {
       const position = this.positions[i]
       if (position.token.equals(tokenMintAddress)) {
-        return position
+        return position.address
       }
     }
 
@@ -755,13 +755,13 @@ export class MarginAccount {
 
   async withUpdateAllPositionBalances({ instructions }: { instructions: TransactionInstruction[] }) {
     for (const position of this.positions) {
-      await this.withUpdatePositionBalance({ instructions, position })
+      await this.withUpdatePositionBalance({ instructions, position: position.address })
     }
   }
 
   async updatePositionBalance({ position }: { position: AccountPosition }) {
     const instructions: TransactionInstruction[] = []
-    await this.withUpdatePositionBalance({ instructions, position })
+    await this.withUpdatePositionBalance({ instructions, position: position.address })
     return await this.provider.sendAndConfirm(new Transaction().add(...instructions))
   }
 
@@ -776,13 +776,13 @@ export class MarginAccount {
     position
   }: {
     instructions: TransactionInstruction[]
-    position: AccountPosition
+    position: Address
   }): Promise<void> {
     const instruction = await this.programs.margin.methods
       .updatePositionBalance()
       .accounts({
         marginAccount: this.address,
-        tokenAccount: position.address
+        tokenAccount: position
       })
       .instruction()
     instructions.push(instruction)

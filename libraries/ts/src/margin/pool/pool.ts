@@ -460,16 +460,15 @@ export class Pool {
     await marginAccount.createAccount()
     await sleep(2000)
     await marginAccount.refresh()
-    const position = await marginAccount.getOrCreatePosition(this.addresses.depositNoteMint)
-    assert(position)
-
     const instructions: TransactionInstruction[] = []
+    const position = await marginAccount.withGetOrCreatePosition(this.addresses.depositNoteMint)
+    assert(position)
 
     await this.withDeposit({
       instructions: instructions,
       marginAccount,
       source,
-      destination: position.address,
+      destination: position,
       amount
     })
     await marginAccount.withUpdatePositionBalance({ instructions, position })
@@ -538,7 +537,7 @@ export class Pool {
     const refreshInstructions: TransactionInstruction[] = []
     const instructionsInstructions: TransactionInstruction[] = []
 
-    const depositPosition = await marginAccount.getOrCreatePosition(this.addresses.depositNoteMint)
+    const depositPosition = await marginAccount.withGetOrCreatePosition(this.addresses.depositNoteMint)
     assert(depositPosition)
 
     await this.withMarginRefreshAllPositionPrices({ instructions: refreshInstructions, pools, marginAccount })
@@ -557,7 +556,7 @@ export class Pool {
       await this.withWithdraw({
         instructions: instructionsInstructions,
         marginAccount,
-        source: depositPosition.address,
+        source: depositPosition,
         destination,
         amount: lamports
       })
@@ -570,11 +569,22 @@ export class Pool {
     instructions: TransactionInstruction[],
     marginAccount: MarginAccount
   ): Promise<Address> {
-    let account = marginAccount.getPosition(this.addresses.loanNoteMint)
+    const account = marginAccount.getPosition(this.addresses.loanNoteMint)
     if (account) {
       return account.address
     }
     return await this.withRegisterLoan(instructions, marginAccount)
+  }
+
+  async withGetOrCreateDepositNotePosition(
+    instructions: TransactionInstruction[],
+    marginAccount: MarginAccount
+  ): Promise<Address> {
+    const account = marginAccount.getPosition(this.addresses.depositNoteMint)
+    if (account) {
+      return account.address
+    }
+    return await marginAccount.withRegisterPosition(instructions, this.addresses.depositNoteMint)
   }
 
   /// Instruction to borrow tokens using a margin account
@@ -595,7 +605,7 @@ export class Pool {
   }: {
     instructions: TransactionInstruction[]
     marginAccount: MarginAccount
-    depositPosition: AccountPosition
+    depositPosition: Address
     loanNoteAccount: Address
     amount: BN
   }): Promise<void> {
@@ -614,7 +624,7 @@ export class Pool {
           loanNoteMint: this.addresses.loanNoteMint,
           depositNoteMint: this.addresses.depositNoteMint,
           loanAccount: loanNoteAccount,
-          depositAccount: depositPosition.address,
+          depositAccount: depositPosition,
           tokenProgram: TOKEN_PROGRAM_ID
         })
         .instruction()
@@ -642,7 +652,7 @@ export class Pool {
     amount: BN
   }) {
     await marginAccount.refresh()
-    const depositPosition = await marginAccount.getOrCreatePosition(this.addresses.depositNoteMint)
+    const depositPosition = await marginAccount.withGetOrCreatePosition(this.addresses.depositNoteMint)
     assert(depositPosition)
 
     const refreshInstructions: TransactionInstruction[] = []
@@ -657,7 +667,7 @@ export class Pool {
         instructions,
         marginAccount,
         source,
-        destination: depositPosition.address,
+        destination: depositPosition,
         amount
       })
     }
@@ -665,7 +675,7 @@ export class Pool {
     await this.withMarginRepay({
       instructions,
       marginAccount: marginAccount,
-      depositPosition: depositPosition.address,
+      depositPosition: depositPosition,
       loanPosition: loanNoteAccount,
       amount
     })
@@ -731,7 +741,7 @@ export class Pool {
     destination?: TokenAddress
   }) {
     // FIXME: can source be calculated in withdraw?
-    const { address: source } = await marginAccount.getOrCreatePosition(this.addresses.depositNoteMint)
+    const source = await marginAccount.withGetOrCreatePosition(this.addresses.depositNoteMint)
 
     const preInstructions: TransactionInstruction[] = []
     const refreshInstructions: TransactionInstruction[] = []
@@ -875,7 +885,7 @@ export class Pool {
 
         const instructions: TransactionInstruction[] = []
 
-        await marginAccount.withUpdatePositionBalance({ instructions, position })
+        await marginAccount.withUpdatePositionBalance({ instructions, position: position.address })
 
         await AssociatedToken.withCreate(instructions, marginAccount.provider, marginAccount.owner, this.tokenMint)
         await this.withWithdraw({
