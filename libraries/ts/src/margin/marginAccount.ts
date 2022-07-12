@@ -105,8 +105,8 @@ export interface MarginWalletTokens {
 
 export class MarginAccount {
   static readonly SEED_MAX_VALUE = 65535
-  static readonly RISK_WARNING_LEVEL = 0.6
-  static readonly RISK_LIQUIDATION_LEVEL = 0.8
+  static readonly RISK_WARNING_LEVEL = 0.7
+  static readonly RISK_LIQUIDATION_LEVEL = 1
   info?: {
     marginAccount: MarginAccountData
     positions: AccountPositionList
