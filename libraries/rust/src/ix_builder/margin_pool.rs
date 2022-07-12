@@ -279,7 +279,7 @@ impl MarginPoolIxBuilder {
         let accounts = ix_accounts::Repay {
             margin_pool: self.address,
             loan_note_mint: self.loan_note_mint,
-            pool_vault: self.vault,
+            vault: self.vault,
             loan_account,
             repayment_token_account: repayment_source_account,
             repayment_account_authority: repayment_source_authority,

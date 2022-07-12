@@ -27,7 +27,7 @@ pub struct Repay<'info> {
     #[account(
         mut,
         has_one = loan_note_mint,
-        constraint = margin_pool.vault == pool_vault.key()
+        has_one = vault
     )]
     pub margin_pool: Box<Account<'info, MarginPool>>,
 
@@ -38,7 +38,7 @@ pub struct Repay<'info> {
 
     /// The vault responsible for storing the pool's tokens
     #[account(mut)]
-    pub pool_vault: Account<'info, TokenAccount>,
+    pub vault: Account<'info, TokenAccount>,
 
     /// The account with the loan notes
     #[account(mut)]
@@ -71,7 +71,7 @@ impl<'info> Repay<'info> {
             self.token_program.to_account_info(),
             Transfer {
                 from: self.repayment_token_account.to_account_info(),
-                to: self.pool_vault.to_account_info(),
+                to: self.vault.to_account_info(),
                 authority: self.repayment_account_authority.to_account_info(),
             },
         )
