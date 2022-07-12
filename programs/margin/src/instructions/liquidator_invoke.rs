@@ -99,7 +99,7 @@ fn update_and_verify_liquidation(
 
     if liquidation.equity_change() < &liquidation.min_equity_change() {
         msg!(
-            "Illegal liquidation: net loss of {} equity which exceeds the min value change of {}",
+            "Illegal liquidation: net loss of {} equity which exceeds the min equity change of {}",
             liquidation.equity_change(),
             liquidation.min_equity_change()
         );
