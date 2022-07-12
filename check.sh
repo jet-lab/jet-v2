@@ -5,7 +5,7 @@ set -euxo pipefail
 
 cargo fmt -- --check
 cargo clippy --all-targets -- -Dwarnings
-prettier --check libraries/ts
+# prettier --check libraries/ts
 cargo test
 tests/hosted/test_on_localnet.sh
 anchor test --skip-lint -- --features testing

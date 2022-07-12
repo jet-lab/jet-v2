@@ -37,7 +37,7 @@ pub struct InvokeAdapter<'a, 'info> {
     pub adapter_program: &'a AccountInfo<'info>,
 
     /// The accounts to be passed through to the adapter
-    pub remaining_accounts: &'a [AccountInfo<'info>],
+    pub accounts: &'a [AccountInfo<'info>],
 
     /// The transaction was signed by the authority of the margin account.
     /// Thus, the invocation should be signed by the margin account.
@@ -55,12 +55,6 @@ impl InvokeAdapter<'_, '_> {
 
         ret
     }
-}
-
-#[derive(AnchorSerialize, AnchorDeserialize)]
-pub struct CompactAccountMeta {
-    pub is_signer: u8,
-    pub is_writable: u8,
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Default)]
@@ -110,31 +104,22 @@ pub struct PriceChangeInfo {
 
 /// Invoke a margin adapter with the requested data
 /// * `signed` - sign with the margin account
-pub fn invoke<'info>(
-    ctx: &InvokeAdapter<'_, 'info>,
-    account_metas: Vec<CompactAccountMeta>,
-    data: Vec<u8>,
-) -> Result<Vec<PositionEvent>> {
+pub fn invoke<'info>(ctx: &InvokeAdapter<'_, 'info>, data: Vec<u8>) -> Result<Vec<PositionEvent>> {
     let signer = ctx.margin_account.load()?.signer_seeds_owned();
 
-    let mut accounts = vec![AccountMeta {
-        pubkey: ctx.margin_account.key(),
-        is_signer: ctx.signed,
-        is_writable: true,
-    }];
-    accounts.extend(
-        account_metas
-            .into_iter()
-            .zip(ctx.remaining_accounts.iter())
-            .map(|(meta, account_info)| AccountMeta {
-                pubkey: account_info.key(),
-                is_signer: meta.is_signer != 0,
-                is_writable: meta.is_writable != 0,
-            }),
-    );
-
-    let mut account_infos = vec![ctx.margin_account.to_account_info()];
-    account_infos.extend(ctx.remaining_accounts.iter().cloned());
+    let accounts = ctx
+        .accounts
+        .iter()
+        .map(|info| AccountMeta {
+            pubkey: info.key(),
+            is_signer: if info.key() == ctx.margin_account.key() {
+                ctx.signed
+            } else {
+                info.is_signer
+            },
+            is_writable: info.is_writable,
+        })
+        .collect::<Vec<AccountMeta>>();
 
     let instruction = Instruction {
         program_id: ctx.adapter_program.key(),
@@ -144,9 +129,9 @@ pub fn invoke<'info>(
 
     ctx.margin_account.load_mut()?.invocation.start();
     if ctx.signed {
-        program::invoke_signed(&instruction, &account_infos, &[&signer.signer_seeds()])?;
+        program::invoke_signed(&instruction, ctx.accounts, &[&signer.signer_seeds()])?;
     } else {
-        program::invoke(&instruction, &account_infos)?;
+        program::invoke(&instruction, ctx.accounts)?;
     }
     ctx.margin_account.load_mut()?.invocation.end();
 
@@ -179,7 +164,7 @@ fn update_balances(ctx: &InvokeAdapter) -> Result<BTreeMap<Pubkey, PositionEvent
     let mut touched_positions: BTreeMap<Pubkey, PositionEvent> = BTreeMap::new();
 
     let mut margin_account = ctx.margin_account.load_mut()?;
-    for account_info in ctx.remaining_accounts {
+    for account_info in ctx.accounts {
         if account_info.owner == &TokenAccount::owner() {
             let data = &mut &**account_info.try_borrow_data()?;
             if let Ok(account) = TokenAccount::try_deserialize(data) {
@@ -235,7 +220,7 @@ fn apply_changes(
                 None => {
                     key = Some(register_position(
                         &mut margin_account,
-                        ctx.remaining_accounts,
+                        ctx.accounts,
                         ctx.adapter_result_approvals().as_slice(),
                         mint,
                         token_account,
@@ -399,7 +384,7 @@ mod test {
         let ctx = InvokeAdapter {
             margin_account: &AccountLoader::try_from(&margin_account).unwrap(),
             adapter_program: &adapter,
-            remaining_accounts: &[],
+            accounts: &[],
             signed: true,
         };
 
