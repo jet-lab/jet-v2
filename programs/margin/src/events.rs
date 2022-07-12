@@ -43,6 +43,12 @@ pub struct PositionClosed {
 }
 
 #[event]
+pub struct PositionMetadataRefreshed {
+    pub margin_account: Pubkey,
+    pub position: AccountPosition,
+}
+
+#[event]
 pub struct PositionBalanceUpdated {
     pub margin_account: Pubkey,
     pub position: AccountPosition,
