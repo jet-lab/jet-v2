@@ -19,7 +19,7 @@ use anchor_lang::prelude::*;
 
 use jet_metadata::MarginAdapterMetadata;
 
-use crate::adapter::{self, CompactAccountMeta, InvokeAdapter};
+use crate::adapter::{self, InvokeAdapter};
 use crate::{events, ErrorCode, Liquidation, MarginAccount, Valuation};
 
 #[derive(Accounts)]
@@ -48,7 +48,6 @@ pub struct LiquidatorInvoke<'info> {
 
 pub fn liquidator_invoke_handler<'info>(
     ctx: Context<'_, '_, '_, 'info, LiquidatorInvoke<'info>>,
-    account_metas: Vec<CompactAccountMeta>,
     data: Vec<u8>,
 ) -> Result<()> {
     let margin_account = &ctx.accounts.margin_account;
@@ -64,10 +63,9 @@ pub fn liquidator_invoke_handler<'info>(
         &InvokeAdapter {
             margin_account: &ctx.accounts.margin_account,
             adapter_program: &ctx.accounts.adapter_program,
-            remaining_accounts: ctx.remaining_accounts,
+            accounts: ctx.remaining_accounts,
             signed: true,
         },
-        account_metas,
         data,
     )?;
 

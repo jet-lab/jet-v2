@@ -33,7 +33,7 @@ use instructions::*;
 pub use state::*;
 pub use util::Invocation;
 
-pub use adapter::{AdapterResult, CompactAccountMeta, PositionChange, PriceChangeInfo};
+pub use adapter::{AdapterResult, PositionChange, PriceChangeInfo};
 
 /// The maximum confidence deviation allowed for an oracle price.
 ///
@@ -118,10 +118,9 @@ pub mod jet_margin {
     /// the balances of the token accounts belonging to this margin account.
     pub fn adapter_invoke<'info>(
         ctx: Context<'_, '_, '_, 'info, AdapterInvoke<'info>>,
-        account_metas: Vec<CompactAccountMeta>,
         data: Vec<u8>,
     ) -> Result<()> {
-        adapter_invoke_handler(ctx, account_metas, data)
+        adapter_invoke_handler(ctx, data)
     }
 
     /// Perform an action by invoking other programs, allowing them only to
@@ -129,10 +128,9 @@ pub mod jet_margin {
     /// underlying prices or positions, but not permitting new position changes.
     pub fn accounting_invoke<'info>(
         ctx: Context<'_, '_, '_, 'info, AccountingInvoke<'info>>,
-        account_metas: Vec<CompactAccountMeta>,
         data: Vec<u8>,
     ) -> Result<()> {
-        accounting_invoke_handler(ctx, account_metas, data)
+        accounting_invoke_handler(ctx, data)
     }
 
     /// Begin liquidating an account
@@ -149,10 +147,9 @@ pub mod jet_margin {
     /// liquidating a margin account.
     pub fn liquidator_invoke<'info>(
         ctx: Context<'_, '_, '_, 'info, LiquidatorInvoke<'info>>,
-        account_metas: Vec<CompactAccountMeta>,
         data: Vec<u8>,
     ) -> Result<()> {
-        liquidator_invoke_handler(ctx, account_metas, data)
+        liquidator_invoke_handler(ctx, data)
     }
 }
 
