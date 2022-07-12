@@ -15,12 +15,25 @@ import {
   AccountLayout,
   AccountState,
   MINT_SIZE,
-  MintLayout
+  MintLayout,
+  TokenInvalidOwnerError,
+  createInitializeAccountInstruction,
+  getMinimumBalanceForRentExemptAccount,
+  TokenInvalidMintError
 } from "@solana/spl-token"
 import { Connection, PublicKey, TransactionInstruction, SystemProgram, AccountInfo } from "@solana/web3.js"
 import { Number192 } from "../utils/number192"
 import { findDerivedAccount } from "../utils/pda"
 import { TokenAmount } from "./tokenAmount"
+
+export type TokenAddress = Address | TokenFormat
+
+export enum TokenFormat {
+  /** The users associated token account will be used, and sol will be unwrapped. */
+  unwrappedSol,
+  /** The users associated token account will be used, and sol will be wrapped. */
+  wrappedSol
+}
 
 export class AssociatedToken {
   static readonly NATIVE_DECIMALS = 9
@@ -65,7 +78,7 @@ export class AssociatedToken {
     const address = this.derive(mintAddress, ownerAddress)
     const token = await this.loadAux(connection, address, decimals)
     if (token.info && !token.info.owner.equals(ownerAddress)) {
-      throw new Error("Unexpected owner of the associated token")
+      throw new TokenInvalidOwnerError("The owner of a token account doesn't match the expected owner")
     }
     return token
   }
@@ -74,8 +87,30 @@ export class AssociatedToken {
     const mintAddress = translateAddress(mint)
     const ownerAddress = translateAddress(owner)
     const address = this.derive(mintAddress, ownerAddress)
-    const account = await connection.getAccountInfo(address)
-    return !!account
+    return await AssociatedToken.existsAux(connection, mint, owner, address)
+  }
+
+  static async existsAux(connection: Connection, mint: Address, owner: Address, address: Address) {
+    const mintAddress = translateAddress(mint)
+    const ownerAddress = translateAddress(owner)
+    const tokenAddress = translateAddress(address)
+    const info = await connection.getAccountInfo(tokenAddress)
+
+    if (info) {
+      const fakeDecimals = 0
+      const account = this.decodeAccount(info, address, fakeDecimals)
+      if (!account.info) {
+        throw new TokenInvalidAccountSizeError()
+      }
+      if (!account.info.owner.equals(ownerAddress)) {
+        throw new TokenInvalidOwnerError("The owner of a token account doesn't match the expected owner")
+      }
+      if (!account.info.mint.equals(mintAddress)) {
+        throw new TokenInvalidMintError("The mint of a token account doesn't match the expected mint")
+      }
+      return true
+    }
+    return false
   }
 
   static async loadAux(connection: Connection, address: Address, decimals: number) {
@@ -414,32 +449,38 @@ export class AssociatedToken {
   }
 
   /**
-   * If the native wrapped token account does not exist, add instruction to create the token account. If ATA exists, do nothing.
+   * If the token account does not exist, add instructions to create and initialize the token account. If the account exists do nothing.
    * @static
    * @param {TransactionInstruction[]} instructions
    * @param {Provider} provider
    * @param {Address} owner
+   * @param {Address} mint
    * @returns {Promise<PublicKey>} returns the public key of the token account
    * @memberof AssociatedToken
    */
-  static async withCreateNative(
+  static async withCreateAux(
     instructions: TransactionInstruction[],
     provider: AnchorProvider,
-    owner: Address
-  ): Promise<PublicKey> {
+    owner: Address,
+    mint: Address,
+    address: Address
+  ): Promise<void> {
     const ownerAddress = translateAddress(owner)
-    const tokenAddress = this.derive(NATIVE_MINT, ownerAddress)
+    const mintAddress = translateAddress(mint)
+    const tokenAddress = translateAddress(address)
 
-    if (!(await AssociatedToken.exists(provider.connection, NATIVE_MINT, ownerAddress))) {
-      const ix = createAssociatedTokenAccountInstruction(
-        provider.wallet.publicKey,
-        tokenAddress,
-        ownerAddress,
-        NATIVE_MINT
-      )
-      instructions.push(ix)
+    if (!(await AssociatedToken.existsAux(provider.connection, mintAddress, ownerAddress, address))) {
+      let rent = await getMinimumBalanceForRentExemptAccount(provider.connection)
+      let createIx = SystemProgram.createAccount({
+        fromPubkey: provider.wallet.publicKey,
+        newAccountPubkey: tokenAddress,
+        lamports: rent,
+        space: ACCOUNT_SIZE,
+        programId: TOKEN_PROGRAM_ID
+      })
+      let initIx = createInitializeAccountInstruction(tokenAddress, mintAddress, ownerAddress)
+      instructions.push(createIx, initIx)
     }
-    return tokenAddress
   }
 
   /**
@@ -464,22 +505,23 @@ export class AssociatedToken {
   /** Wraps SOL in an associated token account. The account will only be created if it doesn't exist.
    * @param instructions
    * @param provider
-   * @param owner
-   * @param amount
+   * @param {number} feesBuffer How much tokens should remain unwrapped to pay for fees
    */
   static async withWrapNative(
     instructions: TransactionInstruction[],
     provider: AnchorProvider,
-    amount: BN
+    feesBuffer: number
   ): Promise<PublicKey> {
     const owner = translateAddress(provider.wallet.publicKey)
+    const ownerInfo = await provider.connection.getAccountInfo(owner)
+    const ownerLamports = Math.max((ownerInfo?.lamports ?? 0) - feesBuffer, 0)
 
     //this will add instructions to create ata if ata does not exist, if exist, we will get the ata address
     const associatedToken = await this.withCreate(instructions, provider, owner, NATIVE_MINT)
     //IX to transfer sol to ATA
     const transferIx = SystemProgram.transfer({
       fromPubkey: owner,
-      lamports: bnToNumber(amount),
+      lamports: ownerLamports,
       toPubkey: associatedToken
     })
     const syncNativeIX = createSyncNativeInstruction(associatedToken)
@@ -502,25 +544,21 @@ export class AssociatedToken {
    * @param instructions
    * @param provider
    * @param mint
-   * @param tokenAccountOrNative
-   * @param amount
+   * @param feesBuffer How much tokens should remain unwrapped to pay for fees
    */
   static async withWrapIfNativeMint(
     instructions: TransactionInstruction[],
     provider: AnchorProvider,
     mint: Address,
-    tokenAccountOrNative: Address,
-    amount: BN
+    feesBuffer: number
   ): Promise<PublicKey> {
-    const owner = provider.wallet.publicKey
     const mintPubkey = translateAddress(mint)
-    const tokenAccountOrNativePubkey = translateAddress(tokenAccountOrNative)
 
-    //only run if mint is wrapped sol mint, and the token account is actually the native wallet
-    if (this.isNative(owner, mintPubkey, tokenAccountOrNativePubkey)) {
-      return this.withWrapNative(instructions, provider, amount)
+    if (mintPubkey.equals(NATIVE_MINT)) {
+      //only run if mint is wrapped sol mint
+      return this.withWrapNative(instructions, provider, feesBuffer)
     }
-    return tokenAccountOrNativePubkey
+    return AssociatedToken.derive(mint, provider.wallet.publicKey)
   }
 
   /**
@@ -531,44 +569,38 @@ export class AssociatedToken {
    * @param {mint} mint
    * @param {tokenAccount} tokenAccountOrNative
    */
-  static withUnwrapIfNative(
-    instructions: TransactionInstruction[],
-    owner: Address,
-    mint: Address,
-    tokenAccountOrNative: Address
-  ): void {
+  static withUnwrapIfNativeMint(instructions: TransactionInstruction[], owner: Address, mint: Address): void {
     const ownerPubkey = translateAddress(owner)
     const mintPubkey = translateAddress(mint)
-    const tokenAccountOrNativePubkey = translateAddress(tokenAccountOrNative)
 
-    if (this.isNative(ownerPubkey, mintPubkey, tokenAccountOrNativePubkey)) {
+    if (mintPubkey.equals(NATIVE_MINT)) {
       //add close account IX
       this.withUnwrapNative(instructions, owner)
     }
   }
 
   /**
-   * Create the associated token account. Funds it if natve.
+   * Create the associated token account. Funds it if native.
    *
    * @static
    * @param {TransactionInstruction[]} instructions
    * @param {AnchorProvider} provider
    * @param {Address} mint
-   * @param {BN} initialAmount
+   * @param {number} feesBuffer How much tokens should remain unwrapped to pay for fees
    * @memberof AssociatedToken
    */
   static async withCreateOrWrapIfNativeMint(
     instructions: TransactionInstruction[],
     provider: AnchorProvider,
     mint: Address,
-    initialAmount: BN
+    feesBuffer: number
   ): Promise<PublicKey> {
     const owner = provider.wallet.publicKey
     const mintPubkey = translateAddress(mint)
 
     if (mintPubkey.equals(NATIVE_MINT)) {
       // Only run if mint is wrapped sol mint. Create the wrapped sol account and return its pubkey
-      return await this.withWrapNative(instructions, provider, initialAmount)
+      return await this.withWrapNative(instructions, provider, feesBuffer)
     } else {
       // Return the associated token
       return await this.withCreate(instructions, provider, owner, mint)
@@ -603,6 +635,106 @@ export class AssociatedToken {
     }
 
     return associatedToken
+  }
+
+  static async withBeginTransferFromSource({
+    instructions,
+    provider,
+    mint,
+    feesBuffer,
+    source = TokenFormat.unwrappedSol
+  }: {
+    instructions: TransactionInstruction[]
+    provider: AnchorProvider
+    mint: Address
+    feesBuffer: number
+    source: Address | TokenFormat
+  }): Promise<PublicKey> {
+    let sourceAddress: PublicKey | undefined
+    // Is destination a PublicKey or string
+    if (typeof source === "string" || (typeof source === "object" && "_bn" in source)) {
+      sourceAddress = translateAddress(source)
+    }
+    let owner = provider.wallet.publicKey
+    let isSourceOwner = sourceAddress && sourceAddress.equals(owner)
+    let isSourceAssociatedAddress = sourceAddress && AssociatedToken.derive(mint, owner).equals(sourceAddress)
+
+    if (source === TokenFormat.unwrappedSol || isSourceOwner || isSourceAssociatedAddress) {
+      return await AssociatedToken.withCreateOrWrapIfNativeMint(instructions, provider, mint, feesBuffer)
+    } else if (source === TokenFormat.wrappedSol) {
+      return await AssociatedToken.withCreate(instructions, provider, owner, mint)
+    } else if (sourceAddress) {
+      await AssociatedToken.withCreateAux(instructions, provider, owner, mint, sourceAddress)
+      return sourceAddress
+    }
+    throw new Error(
+      "Unexpected argument 'source' or there are multiple versions of @solana/web3.js PublicKey installed"
+    )
+  }
+
+  static async withBeginTransferToDestination({
+    instructions,
+    provider,
+    mint,
+    destination = TokenFormat.unwrappedSol
+  }: {
+    instructions: TransactionInstruction[]
+    provider: AnchorProvider
+    mint: Address
+    destination: Address | TokenFormat
+  }): Promise<PublicKey> {
+    let destinationAddress: PublicKey | undefined
+    // Is destination a PublicKey or string
+    if (typeof destination === "string" || (typeof destination === "object" && "_bn" in destination)) {
+      destinationAddress = translateAddress(destination)
+    }
+    let owner = provider.wallet.publicKey
+    let isDestinationOwner = destinationAddress && destinationAddress.equals(owner)
+    let isDestinationAssociatedAddress =
+      destinationAddress && AssociatedToken.derive(mint, owner).equals(destinationAddress)
+
+    if (
+      destination === TokenFormat.wrappedSol ||
+      destination === TokenFormat.unwrappedSol ||
+      isDestinationOwner ||
+      isDestinationAssociatedAddress
+    ) {
+      return await AssociatedToken.withCreate(instructions, provider, owner, mint)
+    } else if (destinationAddress) {
+      await AssociatedToken.withCreateAux(instructions, provider, owner, mint, destinationAddress)
+      return destinationAddress
+    }
+    throw new Error(
+      "Unexpected argument 'destination' or there are multiple versions of @solana/web3.js PublicKey installed"
+    )
+  }
+
+  /** Ends the transfer by unwraps the token if it is the native mint. */
+  static withEndTransfer({
+    instructions,
+    provider,
+    mint,
+    destination = TokenFormat.unwrappedSol
+  }: {
+    instructions: TransactionInstruction[]
+    provider: AnchorProvider
+    mint: Address
+    destination: Address | TokenFormat
+  }) {
+    let destinationAddress: PublicKey | undefined
+    // Is destination a PublicKey or string
+    if (typeof destination === "string" || (typeof destination === "object" && "_bn" in destination)) {
+      destinationAddress = translateAddress(destination)
+    }
+    let owner = provider.wallet.publicKey
+    let isDestinationOwner = destinationAddress && destinationAddress.equals(owner)
+
+    if (
+      translateAddress(mint).equals(NATIVE_MINT) &&
+      (destination === TokenFormat.unwrappedSol || isDestinationOwner)
+    ) {
+      AssociatedToken.withUnwrapNative(instructions, owner)
+    }
   }
 }
 

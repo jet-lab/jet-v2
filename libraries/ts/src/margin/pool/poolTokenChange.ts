@@ -1,18 +1,19 @@
 import { BN } from "@project-serum/anchor"
+import { TokenAmount } from "../../"
 
 export class PoolTokenChangeKind {
-  constructor(private byte: number) { }
+  constructor(private byte: number) {}
 
   public static setTo() {
-    return new PoolTokenChangeKind(0);
+    return new PoolTokenChangeKind(0)
   }
 
   public static shiftBy() {
-    return new PoolTokenChangeKind(1);
+    return new PoolTokenChangeKind(1)
   }
 
   asByte() {
-    return this.byte;
+    return this.byte
   }
 }
 
@@ -28,27 +29,33 @@ export class PoolTokenChange {
    * @param {BN} value
    * @memberof TokenChange
    */
-  constructor(public changeKind: PoolTokenChangeKind, public value: BN) { }
+  constructor(public changeKind: PoolTokenChangeKind, public value: BN) {}
 
-  /** 
+  /**
    * A `TokenChange` to be used to set the given token value
    * @static
-   * @param {number | BN} value
+   * @param {TokenAmount | BN | number} value
    * @returns {PoolToken}
    * @memberof TokenChange
-  */
-  static setTo(value: number | BN): PoolTokenChange {
-    return new PoolTokenChange(PoolTokenChangeKind.setTo(), new BN(value))
+   */
+  static setTo(value: TokenAmount | BN | number): PoolTokenChange {
+    return new PoolTokenChange(
+      PoolTokenChangeKind.setTo(),
+      typeof value === "object" && "lamports" in value ? value.lamports : new BN(value)
+    )
   }
 
-  /** 
+  /**
    * A `TokenChange` to be used to shift the given token value
    * @static
-   * @param {number | BN} value
+   * @param {TokenAmount | BN| number} value
    * @returns {PoolTokenChange}
    * @memberof TokenChange
-  */
-  static shiftBy(value: number | BN): PoolTokenChange {
-    return new PoolTokenChange(PoolTokenChangeKind.shiftBy(), new BN(value))
+   */
+  static shiftBy(value: TokenAmount | BN | number): PoolTokenChange {
+    return new PoolTokenChange(
+      PoolTokenChangeKind.shiftBy(),
+      typeof value === "object" && "lamports" in value ? value.lamports : new BN(value)
+    )
   }
 }
