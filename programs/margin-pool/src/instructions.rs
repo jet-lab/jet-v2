@@ -23,8 +23,8 @@ mod deposit;
 mod margin_borrow;
 mod margin_refresh_position;
 mod margin_repay;
-mod margin_repay_from_wallet;
 mod register_loan;
+mod repay;
 mod withdraw;
 
 pub use close_loan::*;
@@ -35,6 +35,6 @@ pub use deposit::*;
 pub use margin_borrow::*;
 pub use margin_refresh_position::*;
 pub use margin_repay::*;
-pub use margin_repay_from_wallet::*;
 pub use register_loan::*;
+pub use repay::*;
 pub use withdraw::*;

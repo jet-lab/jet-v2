@@ -269,16 +269,14 @@ impl MarginPoolIxBuilder {
     /// `repayment_source_account` - The token account to use for repayment
     /// `loan_account` - The account with the loan debt to be reduced
     /// `amount` - The amount to be repaid
-    pub fn margin_repay_from_wallet(
+    pub fn repay(
         &self,
-        margin_account: Pubkey,
         repayment_source_authority: Pubkey,
         repayment_source_account: Pubkey,
         loan_account: Pubkey,
         change: TokenChange,
     ) -> Instruction {
-        let accounts = ix_accounts::MarginRepayFromWallet {
-            margin_account,
+        let accounts = ix_accounts::Repay {
             margin_pool: self.address,
             loan_note_mint: self.loan_note_mint,
             pool_vault: self.vault,
@@ -292,7 +290,7 @@ impl MarginPoolIxBuilder {
         let TokenChange { kind, tokens } = change;
         Instruction {
             program_id: jet_margin_pool::ID,
-            data: ix_data::MarginRepayFromWallet {
+            data: ix_data::Repay {
                 change_kind: kind.to_u8().unwrap(),
                 amount: tokens,
             }

@@ -77,12 +77,8 @@ mod jet_margin_pool {
     }
 
     /// Repay a margin account debt from an outside token account
-    pub fn margin_repay_from_wallet(
-        ctx: Context<MarginRepayFromWallet>,
-        change_kind: u8,
-        amount: u64,
-    ) -> Result<()> {
-        instructions::margin_repay_from_wallet_handler(ctx, change_kind, amount)
+    pub fn repay(ctx: Context<Repay>, change_kind: u8, amount: u64) -> Result<()> {
+        instructions::repay_handler(ctx, change_kind, amount)
     }
 
     /// Update the pool position on a margin account

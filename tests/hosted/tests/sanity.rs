@@ -180,16 +180,29 @@ async fn sanity_test() -> Result<(), anyhow::Error> {
         excess_borrow_result,
     );
 
-    // Users repay their loans
-    user_a.margin_repay(&env.tsol, TokenChange::set(0)).await?;
-    user_b.margin_repay(&env.usdc, TokenChange::set(0)).await?;
-
-    // Users withdraw their funds
+    // Users repay their loans from margin account
     user_a
-        .withdraw(&env.usdc, &user_a_usdc_account, TokenChange::set(0))
+        .margin_repay(&env.tsol, TokenChange::shift(tsol_borrow_amount))
         .await?;
     user_b
-        .withdraw(&env.tsol, &user_b_tsol_account, TokenChange::set(0))
+        .margin_repay(&env.usdc, TokenChange::shift(usdc_borrow_amount))
+        .await?;
+
+    // Clear any remainig dust
+    let user_a_tsol_account = ctx
+        .tokens
+        .create_account_funded(&env.tsol, &wallet_a.pubkey(), ONE_TSOL / 1_000)
+        .await?;
+    let user_b_usdc_account = ctx
+        .tokens
+        .create_account_funded(&env.usdc, &wallet_b.pubkey(), ONE_USDC / 1000)
+        .await?;
+
+    user_a
+        .repay(&env.tsol, &user_a_tsol_account, TokenChange::set(0))
+        .await?;
+    user_b
+        .repay(&env.usdc, &user_b_usdc_account, TokenChange::set(0))
         .await?;
 
     // Verify accounting updated
@@ -198,6 +211,14 @@ async fn sanity_test() -> Result<(), anyhow::Error> {
 
     assert!(usdc_pool.loan_notes == 0);
     assert!(tsol_pool.loan_notes == 0);
+
+    // Users withdraw their funds
+    user_a
+        .withdraw(&env.usdc, &user_a_usdc_account, TokenChange::set(0))
+        .await?;
+    user_b
+        .withdraw(&env.tsol, &user_b_tsol_account, TokenChange::set(0))
+        .await?;
 
     // Now verify that the users got all their tokens back
     assert!(usdc_deposit_amount <= ctx.tokens.get_balance(&user_a_usdc_account).await?);

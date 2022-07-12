@@ -103,7 +103,7 @@ pub fn margin_repay_handler(ctx: Context<MarginRepay>, change_kind: u8, amount: 
 
     // First record a withdraw of the deposit to use for repaying in tokens
     let withdraw_amount =
-        pool.convert_amount(Amount::notes(repay_amount.notes), PoolAction::Withdraw)?;
+        pool.convert_amount(Amount::tokens(repay_amount.tokens), PoolAction::Withdraw)?;
     msg!(
         "Withdrawing [{} tokens, {} notes] from deposit pool",
         withdraw_amount.tokens,

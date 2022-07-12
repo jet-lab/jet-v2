@@ -17,17 +17,12 @@
 
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Burn, Token, TokenAccount, Transfer};
-use jet_margin::MarginAccount;
 use num_traits::FromPrimitive;
 
 use crate::{events, state::PoolAction, ChangeKind, ErrorCode, MarginPool, TokenChange};
 
 #[derive(Accounts)]
-pub struct MarginRepayFromWallet<'info> {
-    /// The margin account being executed on
-    #[account(signer)]
-    pub margin_account: AccountLoader<'info, MarginAccount>,
-
+pub struct Repay<'info> {
     /// The pool with the outstanding loan
     #[account(
         mut,
@@ -59,14 +54,14 @@ pub struct MarginRepayFromWallet<'info> {
     pub token_program: Program<'info, Token>,
 }
 
-impl<'info> MarginRepayFromWallet<'info> {
+impl<'info> Repay<'info> {
     fn burn_loan_context(&self) -> CpiContext<'_, '_, '_, 'info, Burn<'info>> {
         CpiContext::new(
             self.token_program.to_account_info(),
             Burn {
                 mint: self.loan_note_mint.to_account_info(),
                 to: self.loan_account.to_account_info(),
-                authority: self.margin_account.to_account_info(),
+                authority: self.margin_pool.to_account_info(),
             },
         )
     }
@@ -83,11 +78,7 @@ impl<'info> MarginRepayFromWallet<'info> {
     }
 }
 
-pub fn margin_repay_from_wallet_handler(
-    ctx: Context<MarginRepayFromWallet>,
-    change_kind: u8,
-    amount: u64,
-) -> Result<()> {
+pub fn repay_handler(ctx: Context<Repay>, change_kind: u8, amount: u64) -> Result<()> {
     let change = TokenChange {
         kind: ChangeKind::from_u8(change_kind).unwrap(),
         tokens: amount,
@@ -127,13 +118,11 @@ pub fn margin_repay_from_wallet_handler(
 
     emit!(events::Repay {
         margin_pool: pool.key(),
-        user: ctx.accounts.margin_account.key(),
         loan_account: ctx.accounts.loan_account.key(),
         repayment_token_account: ctx.accounts.repayment_token_account.key(),
         repaid_tokens: repay_amount.tokens,
         repaid_loan_notes: repay_amount.notes,
         summary: (&pool.clone().into_inner()).into(),
     });
-
     Ok(())
 }

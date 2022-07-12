@@ -251,31 +251,24 @@ impl MarginTxBuilder {
     /// `token_mint` - The address of the mint for the tokens that were borrowed
     /// `source` - The token account the repayment will be made from
     /// `amount` - The amount of tokens to repay
-    pub async fn margin_repay_from_wallet(
+    pub async fn repay(
         &self,
         token_mint: &Pubkey,
         source: &Pubkey,
         change: TokenChange,
     ) -> Result<Transaction> {
         let mut instructions = vec![];
+
         let pool = MarginPoolIxBuilder::new(*token_mint);
-
-        let deposit_position = self
-            .get_or_create_position(&mut instructions, &pool.deposit_note_mint)
-            .await?;
         let loan_position = self
-            .get_or_create_position(&mut instructions, &pool.loan_note_mint)
+            .get_or_create_pool_loan_position(&mut instructions, &pool)
             .await?;
 
-        let inner_repay_ix = pool.margin_repay_from_wallet(
-            self.ix.address,
-            self.ix.owner,
-            *source,
-            loan_position,
-            change,
-        );
+        let inner_repay_ix = pool.repay(self.ix.owner, *source, loan_position, change);
 
-        instructions.push(self.adapter_invoke_ix(inner_repay_ix));
+        instructions.push(inner_repay_ix);
+        instructions.push(self.ix.update_position_balance(loan_position));
+
         self.create_transaction(&instructions).await
     }
 
