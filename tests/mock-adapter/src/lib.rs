@@ -128,7 +128,7 @@ macro_rules! burn_ix {
                 $accounts.token_program.to_account_info(),
                 Burn {
                     mint: $accounts.mint.to_account_info(),
-                    to: $accounts.token_account.to_account_info(),
+                    from: $accounts.token_account.to_account_info(),
                     authority: $accounts.authority.to_account_info(),
                 },
             )
