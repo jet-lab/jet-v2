@@ -85,11 +85,11 @@ pub fn liquidate_begin_handler(ctx: Context<LiquidateBegin>) -> Result<()> {
 
     let valuation = account.valuation()?;
 
-    let min_value_change = Number128::ZERO
+    let min_equity_change = Number128::ZERO
         - (valuation.required_collateral + valuation.debt)
             * Number128::from_bps(LIQUIDATION_MAX_EQUITY_LOSS_BPS);
 
-    let liquidation_data = Liquidation::new(Clock::get()?.unix_timestamp, min_value_change);
+    let liquidation_data = Liquidation::new(Clock::get()?.unix_timestamp, min_equity_change);
     *ctx.accounts.liquidation.load_init()? = liquidation_data;
 
     emit!(events::LiquidationBegun {

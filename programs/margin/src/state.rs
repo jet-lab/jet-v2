@@ -410,7 +410,7 @@ impl MarginAccount {
                 }
 
                 (PositionKind::Deposit, None) => {
-                    equity -= position.value();
+                    equity += position.value();
                     weighted_collateral += position.collateral_value();
                 }
                 (PositionKind::Deposit, Some(e)) => {
