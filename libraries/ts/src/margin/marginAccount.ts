@@ -806,9 +806,9 @@ export class MarginAccount {
   ///
   /// Returns the instruction, and the address of the token account to be
   /// created for the position.
-  async withRegisterPosition(instructions: TransactionInstruction[], tokenMint: Address): Promise<PublicKey> {
-    const tokenAccount = findDerivedAccount(this.programs.config.marginProgramId, this.address, tokenMint)
-    const metadata = findDerivedAccount(this.programs.config.metadataProgramId, tokenMint)
+  async withRegisterPosition(instructions: TransactionInstruction[], positionTokenMint: Address): Promise<PublicKey> {
+    const tokenAccount = findDerivedAccount(this.programs.config.marginProgramId, this.address, positionTokenMint)
+    const metadata = findDerivedAccount(this.programs.config.metadataProgramId, positionTokenMint)
 
     const ix = await this.programs.margin.methods
       .registerPosition()
@@ -816,7 +816,7 @@ export class MarginAccount {
         authority: this.owner,
         payer: this.provider.wallet.publicKey,
         marginAccount: this.address,
-        positionTokenMint: tokenMint,
+        positionTokenMint: positionTokenMint,
         metadata,
         tokenAccount,
         tokenProgram: TOKEN_PROGRAM_ID,
