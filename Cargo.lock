@@ -1585,8 +1585,6 @@ dependencies = [
  "jet-margin",
  "jet-metadata",
  "jet-proto-math",
- "num-derive",
- "num-traits",
  "pyth-sdk-solana",
  "serde",
  "serde_test",
@@ -1627,7 +1625,6 @@ dependencies = [
  "jet-margin",
  "jet-margin-pool",
  "jet-static-program-registry",
- "num-traits",
 ]
 
 [[package]]

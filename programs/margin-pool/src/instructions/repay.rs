@@ -17,7 +17,6 @@
 
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Burn, Token, TokenAccount, Transfer};
-use num_traits::FromPrimitive;
 
 use crate::{events, state::PoolAction, ChangeKind, ErrorCode, MarginPool, TokenChange};
 
@@ -78,9 +77,9 @@ impl<'info> Repay<'info> {
     }
 }
 
-pub fn repay_handler(ctx: Context<Repay>, change_kind: u8, amount: u64) -> Result<()> {
+pub fn repay_handler(ctx: Context<Repay>, change_kind: ChangeKind, amount: u64) -> Result<()> {
     let change = TokenChange {
-        kind: ChangeKind::from_u8(change_kind).unwrap(),
+        kind: change_kind,
         tokens: amount,
     };
     let pool = &mut ctx.accounts.margin_pool;

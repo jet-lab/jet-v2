@@ -22,7 +22,6 @@ mod state;
 mod util;
 use instructions::*;
 
-use num_derive::{FromPrimitive, ToPrimitive};
 pub use state::{MarginPool, MarginPoolConfig, PoolFlags};
 pub mod events;
 
@@ -54,30 +53,30 @@ mod jet_margin_pool {
     }
 
     /// Deposit tokens into the pool in exchange for notes
-    pub fn deposit(ctx: Context<Deposit>, change_kind: u8, amount: u64) -> Result<()> {
+    pub fn deposit(ctx: Context<Deposit>, change_kind: ChangeKind, amount: u64) -> Result<()> {
         instructions::deposit_handler(ctx, change_kind, amount)
     }
 
     /// Withdraw tokens from the pool, exchanging in previously received
     /// deposit notes.
-    pub fn withdraw(ctx: Context<Withdraw>, change_kind: u8, amount: u64) -> Result<()> {
+    pub fn withdraw(ctx: Context<Withdraw>, change_kind: ChangeKind, amount: u64) -> Result<()> {
         instructions::withdraw_handler(ctx, change_kind, amount)
     }
 
     /// Borrow tokens using a margin account
-    pub fn margin_borrow(ctx: Context<MarginBorrow>, change_kind: u8, amount: u64) -> Result<()> {
+    pub fn margin_borrow(ctx: Context<MarginBorrow>, change_kind: ChangeKind, amount: u64) -> Result<()> {
         instructions::margin_borrow_handler(ctx, change_kind, amount)
     }
 
     /// Repay a loan with a maximum amount.
     /// If the loan balance is lower than the amount, the excess is left in the
     /// deposit account.
-    pub fn margin_repay(ctx: Context<MarginRepay>, change_kind: u8, amount: u64) -> Result<()> {
+    pub fn margin_repay(ctx: Context<MarginRepay>, change_kind: ChangeKind, amount: u64) -> Result<()> {
         instructions::margin_repay_handler(ctx, change_kind, amount)
     }
 
     /// Repay a margin account debt from an outside token account
-    pub fn repay(ctx: Context<Repay>, change_kind: u8, amount: u64) -> Result<()> {
+    pub fn repay(ctx: Context<Repay>, change_kind: ChangeKind, amount: u64) -> Result<()> {
         instructions::repay_handler(ctx, change_kind, amount)
     }
 
@@ -124,7 +123,7 @@ impl TokenChange {
     }
 }
 
-#[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone, Copy, FromPrimitive, ToPrimitive)]
+#[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone, Copy)]
 #[repr(u8)]
 pub enum ChangeKind {
     SetTo,

@@ -20,7 +20,6 @@ use jet_margin_pool::ChangeKind;
 use jet_static_program_registry::{
     orca_swap_v1, orca_swap_v2, related_programs, spl_token_swap_v2,
 };
-use num_traits::ToPrimitive;
 
 use crate::*;
 
@@ -89,7 +88,7 @@ impl<'info> MarginSplSwap<'info> {
                     token_program: self.token_program.to_account_info(),
                 },
             ),
-            ChangeKind::ShiftBy.to_u8().unwrap(),
+            ChangeKind::ShiftBy,
             amount_in,
         )?;
 
@@ -114,7 +113,7 @@ impl<'info> MarginSplSwap<'info> {
                     token_program: self.token_program.to_account_info(),
                 },
             ),
-            ChangeKind::ShiftBy.to_u8().unwrap(),
+            ChangeKind::ShiftBy,
             destination_amount,
         )?;
 

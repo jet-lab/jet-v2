@@ -138,7 +138,7 @@ impl MarginPoolIxBuilder {
         Instruction {
             program_id: jet_margin_pool::ID,
             data: ix_data::Deposit {
-                change_kind: kind.to_u8().unwrap(),
+                change_kind: kind,
                 amount: tokens,
             }
             .data(),
@@ -176,7 +176,7 @@ impl MarginPoolIxBuilder {
         Instruction {
             program_id: jet_margin_pool::ID,
             data: ix_data::Withdraw {
-                change_kind: kind.to_u8().unwrap(),
+                change_kind: kind,
                 amount: tokens,
             }
             .data(),
@@ -214,7 +214,7 @@ impl MarginPoolIxBuilder {
         Instruction {
             program_id: jet_margin_pool::ID,
             data: ix_data::MarginBorrow {
-                change_kind: kind.to_u8().unwrap(),
+                change_kind: kind,
                 amount: tokens,
             }
             .data(),
@@ -252,7 +252,7 @@ impl MarginPoolIxBuilder {
         Instruction {
             program_id: jet_margin_pool::ID,
             data: ix_data::MarginRepay {
-                change_kind: kind.to_u8().unwrap(),
+                change_kind: kind,
                 amount: tokens,
             }
             .data(),
@@ -291,7 +291,7 @@ impl MarginPoolIxBuilder {
         Instruction {
             program_id: jet_margin_pool::ID,
             data: ix_data::Repay {
-                change_kind: kind.to_u8().unwrap(),
+                change_kind: kind,
                 amount: tokens,
             }
             .data(),

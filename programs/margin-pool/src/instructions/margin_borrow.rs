@@ -19,7 +19,6 @@ use std::ops::Deref;
 
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, MintTo, Token, TokenAccount};
-use num_traits::FromPrimitive;
 
 use jet_margin::MarginAccount;
 
@@ -90,11 +89,11 @@ impl<'info> MarginBorrow<'info> {
 
 pub fn margin_borrow_handler(
     ctx: Context<MarginBorrow>,
-    change_kind: u8,
+    change_kind: ChangeKind,
     amount: u64,
 ) -> Result<()> {
     let change = TokenChange {
-        kind: ChangeKind::from_u8(change_kind).unwrap(),
+        kind: change_kind,
         tokens: amount,
     };
     let pool = &mut ctx.accounts.margin_pool;

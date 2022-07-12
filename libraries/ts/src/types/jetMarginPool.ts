@@ -194,7 +194,7 @@ export type JetMarginPool = {
       args: [
         {
           name: "changeKind"
-          type: "u8"
+          type: { defined: "ChangeKind" }
         },
         {
           name: "amount"
@@ -251,7 +251,7 @@ export type JetMarginPool = {
       args: [
         {
           name: "changeKind"
-          type: "u8"
+          type: { defined: "ChangeKind" }
         },
         {
           name: "amount"
@@ -308,7 +308,7 @@ export type JetMarginPool = {
       args: [
         {
           name: "changeKind"
-          type: "u8"
+          type: { defined: "ChangeKind" }
         },
         {
           name: "amount"
@@ -369,7 +369,7 @@ export type JetMarginPool = {
       args: [
         {
           name: "changeKind"
-          type: "u8"
+          type: { defined: "ChangeKind" }
         },
         {
           name: "amount"
@@ -432,7 +432,7 @@ export type JetMarginPool = {
       args: [
         {
           name: "changeKind"
-          type: "u8"
+          type: { defined: "ChangeKind" }
         },
         {
           name: "amount"
@@ -1436,7 +1436,7 @@ export const IDL: JetMarginPool = {
       args: [
         {
           name: "changeKind",
-          type: "u8"
+          type: { defined: "ChangeKind" }
         },
         {
           name: "amount",
@@ -1493,7 +1493,7 @@ export const IDL: JetMarginPool = {
       args: [
         {
           name: "changeKind",
-          type: "u8"
+          type: { defined: "ChangeKind" }
         },
         {
           name: "amount",
@@ -1550,7 +1550,7 @@ export const IDL: JetMarginPool = {
       args: [
         {
           name: "changeKind",
-          type: "u8"
+          type: { defined: "ChangeKind" }
         },
         {
           name: "amount",
@@ -1611,7 +1611,7 @@ export const IDL: JetMarginPool = {
       args: [
         {
           name: "changeKind",
-          type: "u8"
+          type: { defined: "ChangeKind" }
         },
         {
           name: "amount",
@@ -1674,7 +1674,7 @@ export const IDL: JetMarginPool = {
       args: [
         {
           name: "changeKind",
-          type: "u8"
+          type: { defined: "ChangeKind" }
         },
         {
           name: "amount",

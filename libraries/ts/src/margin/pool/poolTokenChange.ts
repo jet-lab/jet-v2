@@ -2,20 +2,22 @@ import { BN } from "@project-serum/anchor"
 import { TokenAmount } from "../../"
 
 export class PoolTokenChangeKind {
-  constructor(private byte: number) {}
+  constructor(private kind: PoolTokenChangeKindType) {}
 
   public static setTo() {
-    return new PoolTokenChangeKind(0)
+    return new PoolTokenChangeKind({setTo: {}})
   }
 
   public static shiftBy() {
-    return new PoolTokenChangeKind(1)
+    return new PoolTokenChangeKind({shiftBy: {}})
   }
 
-  asByte() {
-    return this.byte
+  asParam() {
+    return this.kind
   }
 }
+
+export type PoolTokenChangeKindType = { setTo: {} } | { shiftBy: {} } 
 
 /**
  * TODO:

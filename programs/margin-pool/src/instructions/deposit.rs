@@ -19,7 +19,6 @@ use std::ops::Deref;
 
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, MintTo, Token, Transfer};
-use num_traits::FromPrimitive;
 
 use crate::{events, state::*, TokenChange};
 use crate::{ChangeKind, ErrorCode};
@@ -82,9 +81,9 @@ impl<'info> Deposit<'info> {
     }
 }
 
-pub fn deposit_handler(ctx: Context<Deposit>, change_kind: u8, amount: u64) -> Result<()> {
+pub fn deposit_handler(ctx: Context<Deposit>, change_kind: ChangeKind, amount: u64) -> Result<()> {
     let change = TokenChange {
-        kind: ChangeKind::from_u8(change_kind).unwrap(),
+        kind: change_kind,
         tokens: amount,
     };
 
