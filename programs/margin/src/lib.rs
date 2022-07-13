@@ -70,6 +70,10 @@ pub const LIQUIDATION_CLOSE_THRESHOLD_USD: u64 = 100;
 #[constant]
 pub const LIQUIDATION_TIMEOUT: UnixTimestamp = 60;
 
+/// The maximum number of positions that a user can register.
+/// This may be exceeded by a liquidator.
+pub const MAX_USER_POSITIONS: usize = 24;
+
 #[program]
 pub mod jet_margin {
     use super::*;

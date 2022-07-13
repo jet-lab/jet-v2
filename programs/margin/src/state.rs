@@ -30,6 +30,7 @@ use std::{convert::TryFrom, result::Result};
 use crate::{
     util::{Invocation, Require},
     ErrorCode, PriceChangeInfo, MAX_ORACLE_CONFIDENCE, MAX_ORACLE_STALENESS, MAX_PRICE_QUOTE_AGE,
+    MAX_USER_POSITIONS,
 };
 
 const POS_PRICE_VALID: u8 = 1;
@@ -143,12 +144,16 @@ impl MarginAccount {
     }
 
     pub fn verify_not_liquidating(&self) -> AnchorResult<()> {
-        if self.liquidation != Pubkey::default() {
+        if self.is_liquidating() {
             msg!("account is being liquidated");
             Err(ErrorCode::Liquidating.into())
         } else {
             Ok(())
         }
+    }
+
+    pub fn is_liquidating(&self) -> bool {
+        self.liquidation != Pubkey::default()
     }
 
     pub fn initialize(&mut self, owner: Pubkey, seed: u16, bump_seed: u8) {
@@ -180,6 +185,9 @@ impl MarginAccount {
         max_staleness: u64,
         approvals: &[Approver],
     ) -> AnchorResult<AccountPositionKey> {
+        if self.is_liquidating() && self.position_list().length >= MAX_USER_POSITIONS {
+            return err!(ErrorCode::MaxPositions);
+        }
         let (key, free_position) = self.position_list_mut().add(token)?;
 
         free_position.exponent = -(decimals as i16);
