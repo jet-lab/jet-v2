@@ -375,8 +375,10 @@ impl MarginPool {
         };
 
         amount.notes = Some(match rounding {
-            RoundingDirection::Down => (Number::from(amount.notes()?) * exchange_rate).as_u64(0),
-            RoundingDirection::Up => (Number::from(amount.notes()?) * exchange_rate).as_u64_ceil(0),
+            RoundingDirection::Down => (Number::from(amount.tokens()?) / exchange_rate).as_u64(0),
+            RoundingDirection::Up => {
+                (Number::from(amount.tokens()?) / exchange_rate).as_u64_ceil(0)
+            }
         });
 
         amount.unwrap()
@@ -394,10 +396,8 @@ impl MarginPool {
         };
 
         amount.tokens = Some(match rounding {
-            RoundingDirection::Down => (Number::from(amount.tokens()?) / exchange_rate).as_u64(0),
-            RoundingDirection::Up => {
-                (Number::from(amount.tokens()?) / exchange_rate).as_u64_ceil(0)
-            }
+            RoundingDirection::Down => (Number::from(amount.notes()?) * exchange_rate).as_u64(0),
+            RoundingDirection::Up => (Number::from(amount.notes()?) * exchange_rate).as_u64_ceil(0),
         });
 
         amount.unwrap()
@@ -508,7 +508,7 @@ impl RoundingDirection {
         }
     }
 
-    /// Rounding direction for note emissions for a given action
+    /// Rounding direction for token emissions for a given action
     ///
     /// Always `Notes -> Tokens`
     pub const fn tokens_emission(pool_action: PoolAction) -> Self {
