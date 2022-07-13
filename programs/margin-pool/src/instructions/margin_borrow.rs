@@ -22,7 +22,7 @@ use anchor_spl::token::{self, MintTo, Token, TokenAccount};
 
 use jet_margin::MarginAccount;
 
-use crate::{events, state::*, AmountKind};
+use crate::{events, state::*, ChangeKind, TokenChange};
 use crate::{Amount, ErrorCode};
 
 #[derive(Accounts)]
@@ -87,7 +87,15 @@ impl<'info> MarginBorrow<'info> {
     }
 }
 
-pub fn margin_borrow_handler(ctx: Context<MarginBorrow>, token_amount: u64) -> Result<()> {
+pub fn margin_borrow_handler(
+    ctx: Context<MarginBorrow>,
+    change_kind: ChangeKind,
+    amount: u64,
+) -> Result<()> {
+    let change = TokenChange {
+        kind: change_kind,
+        tokens: amount,
+    };
     let pool = &mut ctx.accounts.margin_pool;
     let clock = Clock::get()?;
 
@@ -98,14 +106,13 @@ pub fn margin_borrow_handler(ctx: Context<MarginBorrow>, token_amount: u64) -> R
     }
 
     // First record a borrow of the tokens requested
-    let borrow_rounding = RoundingDirection::direction(PoolAction::Borrow, AmountKind::Tokens);
-    let borrow_amount = pool.convert_loan_amount(Amount::tokens(token_amount), borrow_rounding)?;
+    let borrow_amount =
+        pool.calculate_full_amount(ctx.accounts.loan_account.amount, change, PoolAction::Borrow)?;
     pool.borrow(&borrow_amount)?;
 
     // Then record a deposit of the same borrowed tokens
-    let deposit_rounding = RoundingDirection::direction(PoolAction::Deposit, AmountKind::Tokens);
     let deposit_amount =
-        pool.convert_deposit_amount(Amount::tokens(token_amount), deposit_rounding)?;
+        pool.convert_amount(Amount::tokens(borrow_amount.tokens), PoolAction::Deposit)?;
     pool.deposit(&deposit_amount);
 
     // Finish by minting the loan and deposit notes
@@ -126,7 +133,7 @@ pub fn margin_borrow_handler(ctx: Context<MarginBorrow>, token_amount: u64) -> R
         user: ctx.accounts.margin_account.key(),
         loan_account: ctx.accounts.loan_account.key(),
         deposit_account: ctx.accounts.deposit_account.key(),
-        tokens: token_amount,
+        tokens: borrow_amount.tokens,
         loan_notes: borrow_amount.notes,
         deposit_notes: deposit_amount.notes,
         summary: pool.deref().into(),

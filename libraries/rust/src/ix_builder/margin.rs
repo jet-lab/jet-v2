@@ -48,11 +48,22 @@ pub struct MarginIxBuilder {
 }
 
 impl MarginIxBuilder {
+    /// Create a new [MarginIxBuilder] which uses the margin account as the authority.
+    /// Ordinary margin users should use this function to create a builder.
     pub fn new(owner: Pubkey, seed: u16) -> Self {
-        Self::new_with_payer(owner, seed, owner)
+        Self::new_with_payer(owner, seed, owner, None)
     }
 
-    pub fn new_with_payer(owner: Pubkey, seed: u16, payer: Pubkey) -> Self {
+    /// Create a new [MarginIxBuilder] with a custom payer and authority.
+    /// The authority is expected to sign the instructions generated, and
+    /// is normally the margin account or its registered liquidator.
+    /// If the authority is not set, it defaults to the margin account.
+    pub fn new_with_payer(
+        owner: Pubkey,
+        seed: u16,
+        payer: Pubkey,
+        authority: Option<Pubkey>,
+    ) -> Self {
         let (address, _) = Pubkey::find_program_address(
             &[owner.as_ref(), seed.to_le_bytes().as_ref()],
             &jet_margin::ID,
@@ -62,7 +73,7 @@ impl MarginIxBuilder {
             seed,
             payer,
             address,
-            authority: None,
+            authority,
         }
     }
 

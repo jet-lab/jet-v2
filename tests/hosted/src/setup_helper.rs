@@ -4,7 +4,7 @@ use solana_sdk::native_token::LAMPORTS_PER_SOL;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::{Keypair, Signer};
 
-use jet_margin_pool::{MarginPoolConfig, PoolFlags};
+use jet_margin_pool::{MarginPoolConfig, PoolFlags, TokenChange};
 use jet_metadata::TokenKind;
 use jet_simulation::create_wallet;
 
@@ -84,10 +84,10 @@ pub async fn setup_user(
 
     // Create the user context helpers, which give a simple interface for executing
     // common actions on a margin account
-    let user = ctx.margin.user(&wallet).await?;
+    let user = ctx.margin.user(&wallet, 0).await?;
     let user_liq = ctx
         .margin
-        .liquidator(liquidator_wallet, &wallet.pubkey())
+        .liquidator(liquidator_wallet, &wallet.pubkey(), 0)
         .await?;
 
     // Initialize the margin accounts for each user
@@ -102,7 +102,8 @@ pub async fn setup_user(
 
         if in_pool > 0 {
             // Deposit user funds into their margin accounts
-            user.deposit(&mint, &token_account, in_pool).await?;
+            user.deposit(&mint, &token_account, TokenChange::shift(in_pool))
+                .await?;
         }
 
         // Verify user tokens have been deposited
