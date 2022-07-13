@@ -606,7 +606,7 @@ export class Market {
     } else {
       return this.makeAdapterInvokeInstruction(
         marginAccount.owner,
-        marginAccount.address,
+        marginAccount,
         this.marginSerumProgramId,
         this.marginSerumAdapterMetadata,
         await this.makeNewOrderV3Instruction(marginAccount, params)
@@ -719,7 +719,7 @@ export class Market {
     transaction.add(
       await this.makeAdapterInvokeInstruction(
         marginAccount.owner,
-        marginAccount.address,
+        marginAccount,
         this.marginSerumProgramId,
         this.marginSerumAdapterMetadata,
         await this._programs.marginSerum.methods
@@ -749,7 +749,7 @@ export class Market {
     transaction.add(
       await this.makeAdapterInvokeInstruction(
         marginAccount.owner,
-        marginAccount.address,
+        marginAccount,
         this.marginSerumProgramId,
         this.marginSerumAdapterMetadata,
         await this.makeCancelOrderInstruction(marginAccount, order)
@@ -764,7 +764,7 @@ export class Market {
     }
     return this.makeAdapterInvokeInstruction(
       marginAccount.owner,
-      marginAccount.address,
+      marginAccount,
       this.marginSerumProgramId,
       this.marginSerumAdapterMetadata,
       await this._programs.marginSerum.methods
@@ -848,7 +848,7 @@ export class Market {
     transaction.add(
       await this.makeAdapterInvokeInstruction(
         marginAccount.owner,
-        marginAccount.address,
+        marginAccount,
         this.marginSerumProgramId,
         this.marginSerumAdapterMetadata,
         await this._programs.marginSerum.methods
@@ -933,29 +933,20 @@ export class Market {
 
   async makeAdapterInvokeInstruction(
     owner: PublicKey,
-    marginAccount: PublicKey,
+    marginAccount: MarginAccount,
     adapterProgram: PublicKey,
     adapterMetadata: PublicKey,
     adapterInstruction: TransactionInstruction
   ): Promise<TransactionInstruction> {
     return await this._programs.margin.methods
-      .adapterInvoke(
-        adapterInstruction.keys.slice(1).map(accountMeta => {
-          return { isSigner: false, isWritable: accountMeta.isWritable }
-        }),
-        adapterInstruction.data
-      )
+      .adapterInvoke(adapterInstruction.data)
       .accounts({
         owner,
-        marginAccount,
+        marginAccount: marginAccount.address,
         adapterProgram,
         adapterMetadata
       })
-      .remainingAccounts(
-        adapterInstruction.keys.slice(1).map(accountMeta => {
-          return { pubkey: accountMeta.pubkey, isSigner: false, isWritable: accountMeta.isWritable }
-        })
-      )
+      .remainingAccounts(marginAccount.invokeAccounts(adapterInstruction))
       .instruction()
   }
 
