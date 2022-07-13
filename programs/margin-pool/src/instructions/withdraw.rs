@@ -73,7 +73,7 @@ impl<'info> Withdraw<'info> {
         CpiContext::new(
             self.token_program.to_account_info(),
             Burn {
-                to: self.source.to_account_info(),
+                from: self.source.to_account_info(),
                 mint: self.deposit_note_mint.to_account_info(),
                 authority: self.depositor.to_account_info(),
             },

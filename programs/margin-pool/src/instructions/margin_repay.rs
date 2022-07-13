@@ -64,7 +64,7 @@ impl<'info> MarginRepay<'info> {
             self.token_program.to_account_info(),
             Burn {
                 mint: self.loan_note_mint.to_account_info(),
-                to: self.loan_account.to_account_info(),
+                from: self.loan_account.to_account_info(),
                 authority: self.margin_pool.to_account_info(),
             },
         )
@@ -74,7 +74,7 @@ impl<'info> MarginRepay<'info> {
         CpiContext::new(
             self.token_program.to_account_info(),
             Burn {
-                to: self.deposit_account.to_account_info(),
+                from: self.deposit_account.to_account_info(),
                 mint: self.deposit_note_mint.to_account_info(),
                 authority: self.margin_account.to_account_info(),
             },

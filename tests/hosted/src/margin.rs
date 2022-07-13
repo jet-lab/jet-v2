@@ -58,13 +58,12 @@ impl MarginClient {
         Self { rpc }
     }
 
-    pub async fn user(&self, keypair: &Keypair) -> Result<MarginUser, Error> {
+    pub async fn user(&self, keypair: &Keypair, seed: u16) -> Result<MarginUser, Error> {
         let tx = MarginTxBuilder::new(
             self.rpc.clone(),
             Some(Keypair::from_bytes(&keypair.to_bytes())?),
             keypair.pubkey(),
-            0,
-            false,
+            seed,
         );
 
         Ok(MarginUser {
@@ -73,13 +72,18 @@ impl MarginClient {
         })
     }
 
-    pub async fn liquidator(&self, keypair: &Keypair, owner: &Pubkey) -> Result<MarginUser, Error> {
-        let tx = MarginTxBuilder::new(
+    pub async fn liquidator(
+        &self,
+        keypair: &Keypair,
+        owner: &Pubkey,
+        seed: u16,
+    ) -> Result<MarginUser, Error> {
+        let tx = MarginTxBuilder::new_liquidator(
             self.rpc.clone(),
             Some(Keypair::from_bytes(&keypair.to_bytes())?),
             *owner,
-            0,
-            true,
+            seed,
+            keypair.pubkey(),
         );
 
         Ok(MarginUser {
@@ -227,6 +231,10 @@ impl MarginUser {
 
     pub fn address(&self) -> &Pubkey {
         self.tx.address()
+    }
+
+    pub fn seed(&self) -> u16 {
+        self.tx.seed()
     }
 
     pub async fn create_account(&self) -> Result<(), Error> {
