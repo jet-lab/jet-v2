@@ -352,7 +352,7 @@ impl MarginPool {
                 self.calculate_tokens(Amount::deposit_notes(None, Some(delta)), emission_rounding)
             }
             PoolAction::Withdraw | PoolAction::Repay => {
-                let target_rounding = RoundingDirection::Up;
+                let target_rounding = RoundingDirection::intermediate_target(pool_action);
                 let emission_rounding = RoundingDirection::tokens_emission(pool_action);
                 let target_notes = self.calculate_notes(target_amount, target_rounding)?.notes;
                 let delta = current_notes_amount
