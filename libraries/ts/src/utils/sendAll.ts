@@ -29,7 +29,7 @@ export async function sendAll(
           })
           .filter(tx => !!tx) as Transaction[]
       } else {
-        let ixs = tx as any as TransactionInstruction[]
+        const ixs = tx as any as TransactionInstruction[]
         if (ixs.length > 0) {
           return [new Transaction({ feePayer: provider.wallet.publicKey, blockhash, lastValidBlockHeight }).add(...ixs)]
         }
@@ -39,7 +39,7 @@ export async function sendAll(
 
   let start = 0
   const slices = txs.map(tx => {
-    let length = Array.isArray(tx) ? tx.length : 1
+    const length = Array.isArray(tx) ? tx.length : 1
     const end = start + length
     const slice = [start, end]
     start = end
