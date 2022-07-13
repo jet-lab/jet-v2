@@ -23,7 +23,6 @@ use jet_margin::MarginAccount;
 use jet_margin_pool::{
     cpi::accounts::{Deposit, Withdraw},
     program::JetMarginPool,
-    Amount,
 };
 
 declare_id!("JPMAa5dnWLFRvUsumawFcGhnwikqZziLLfqn9SLNXPN");

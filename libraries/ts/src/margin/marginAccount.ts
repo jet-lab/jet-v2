@@ -31,6 +31,7 @@ import {
   Number128,
   Number192,
   numberToBn,
+  PoolTokenChange,
   TokenAmount
 } from ".."
 import { MarginPoolConfig, MarginTokenConfig } from "./config"
@@ -106,6 +107,7 @@ export interface MarginWalletTokens {
 export class MarginAccount {
   static readonly SEED_MAX_VALUE = 65535
   static readonly RISK_WARNING_LEVEL = 0.7
+  static readonly RISK_CRITICAL_LEVEL = 0.9
   static readonly RISK_LIQUIDATION_LEVEL = 1
   info?: {
     marginAccount: MarginAccountData

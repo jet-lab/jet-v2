@@ -1,7 +1,14 @@
 import { Address, BN, translateAddress } from "@project-serum/anchor"
 import { parsePriceData, PriceData, PriceStatus } from "@pythnetwork/client"
 import { Mint, TOKEN_PROGRAM_ID } from "@solana/spl-token"
-import { PublicKey, SystemProgram, Transaction, TransactionInstruction, SYSVAR_RENT_PUBKEY } from "@solana/web3.js"
+import {
+  PublicKey,
+  SystemProgram,
+  Transaction,
+  TransactionInstruction,
+  SYSVAR_RENT_PUBKEY,
+  LAMPORTS_PER_SOL
+} from "@solana/web3.js"
 import { assert } from "chai"
 import { AssociatedToken, bigIntToBn, TokenAddress, TokenFormat } from "../../token"
 import { TokenAmount } from "../../token/tokenAmount"
@@ -9,7 +16,7 @@ import { MarginAccount } from "../marginAccount"
 import { MarginPrograms } from "../marginClient"
 import { MarginPoolConfigData, MarginPoolData } from "./state"
 import { MarginPoolConfig, MarginPools, MarginTokenConfig } from "../config"
-import { PoolAmount } from "./poolAmount"
+import { PoolTokenChange } from "./poolTokenChange"
 import { TokenMetadata } from "../metadata/state"
 import { findDerivedAccount } from "../../utils/pda"
 import { AccountPosition, PriceInfo } from "../accountPosition"
@@ -40,10 +47,7 @@ export interface PriceResult {
   loanNoteTwap: BN
 }
 
-export interface RatesProjection {
-  depositRate: number
-  borrowRate: number
-}
+const feesBuffer: number = LAMPORTS_PER_SOL * 0.02
 
 export class Pool {
   address: PublicKey
@@ -442,20 +446,20 @@ export class Pool {
    * Transaction to deposit tokens into the pool
    *
    * @param `marginAccount` - The margin account that will receive the deposit.
-   * @param `amount` - The amount of tokens to be deposited in lamports.
+   * @param `change` - The amount of tokens to be deposited in lamports.
    * @param `source` - (Optional) The token account that the deposit will be transfered from. The wallet balance or associated token account will be used if unspecified.
    */
   async deposit({
     marginAccount,
-    amount,
+    change,
     source = TokenFormat.unwrappedSol
   }: {
     marginAccount: MarginAccount
-    amount: BN
+    change: PoolTokenChange
     source?: TokenAddress
   }) {
     assert(marginAccount)
-    assert(amount)
+    assert(change)
 
     await marginAccount.createAccount()
     await sleep(2000)
@@ -464,12 +468,12 @@ export class Pool {
     const position = await marginAccount.withGetOrCreatePosition(this.addresses.depositNoteMint)
     assert(position)
 
-    await this.withDeposit({
+await this.withDeposit({
       instructions: instructions,
       marginAccount,
       source,
       destination: position,
-      amount
+      change
     })
     await marginAccount.withUpdatePositionBalance({ instructions, position })
     return await marginAccount.provider.sendAndConfirm(new Transaction().add(...instructions))
@@ -480,33 +484,33 @@ export class Pool {
     marginAccount,
     source = TokenFormat.unwrappedSol,
     destination,
-    amount
+    change
   }: {
     instructions: TransactionInstruction[]
     marginAccount: MarginAccount
     source?: TokenAddress
     destination: Address
-    amount: BN
+    change: PoolTokenChange
   }): Promise<void> {
     const provider = marginAccount.provider
     const mint = this.tokenMint
 
-    source = await AssociatedToken.withBeginTransferFromSource({
+    const wrappedSource = await AssociatedToken.withBeginTransferFromSource({
       instructions,
       provider,
       mint,
-      amount,
+      feesBuffer,
       source
     })
 
     const ix = await this.programs.marginPool.methods
-      .deposit(amount)
+      .deposit(change.changeKind.asParam(), change.value)
       .accounts({
         marginPool: this.address,
         vault: this.addresses.vault,
         depositNoteMint: this.addresses.depositNoteMint,
         depositor: marginAccount.owner,
-        source,
+        source: wrappedSource,
         destination,
         tokenProgram: TOKEN_PROGRAM_ID
       })
@@ -517,22 +521,21 @@ export class Pool {
       instructions,
       provider,
       mint,
-      destination
+      destination: wrappedSource
     })
   }
 
   async marginBorrow({
     marginAccount,
     pools,
-    amount,
+    change,
     destination
   }: {
     marginAccount: MarginAccount
     pools: Pool[]
-    amount: BN
+    change: PoolTokenChange
     destination?: TokenAddress
   }) {
-    const lamports = PoolAmount.tokens(amount)
     await marginAccount.refresh()
     const refreshInstructions: TransactionInstruction[] = []
     const instructionsInstructions: TransactionInstruction[] = []
@@ -549,16 +552,22 @@ export class Pool {
       marginAccount,
       depositPosition,
       loanNoteAccount,
-      amount
+      change
     })
 
     if (destination !== undefined) {
+      // The borrow will increase the deposits by some unknown amount.
+      // To withdraw the full borrow, set the deposit amount to the previous known amount before borrowing
+      const poolPosition = Object.values(marginAccount.poolPositions).find(pool => pool.pool === this)
+      const previousDepositAmount = poolPosition?.depositBalance ?? TokenAmount.zero(poolPosition?.pool?.decimals ?? 0)
+      const withdrawChange = PoolTokenChange.setTo(previousDepositAmount)
+
       await this.withWithdraw({
         instructions: instructionsInstructions,
         marginAccount,
         source: depositPosition,
         destination,
-        amount: lamports
+        change: withdrawChange
       })
     }
 
@@ -595,19 +604,19 @@ export class Pool {
   /// `marginAccount` - The account being borrowed against
   /// `deposit_account` - The account to receive the notes for the borrowed tokens
   /// `loan_account` - The account to receive the notes representing the debt
-  /// `amount` - The amount of tokens to be borrowed
+  /// `change` - The amount of tokens to be borrowed as a `PoolTokenChange`
   async withMarginBorrow({
     instructions,
     marginAccount,
     depositPosition,
     loanNoteAccount,
-    amount
+    change
   }: {
     instructions: TransactionInstruction[]
     marginAccount: MarginAccount
     depositPosition: Address
     loanNoteAccount: Address
-    amount: BN
+    change: PoolTokenChange
   }): Promise<void> {
     assert(marginAccount)
     assert(depositPosition)
@@ -617,7 +626,7 @@ export class Pool {
       adapterProgram: this.programs.config.marginPoolProgramId,
       adapterMetadata: this.addresses.marginPoolAdapterMetadata,
       adapterInstruction: await this.programs.marginPool.methods
-        .marginBorrow(amount)
+        .marginBorrow(change.changeKind.asParam(), change.value)
         .accounts({
           marginAccount: marginAccount.address,
           marginPool: this.address,
@@ -639,17 +648,17 @@ export class Pool {
   /// `margin_account` - The account with the loan to be repaid
   /// `deposit_account` - The account with notes to repay the loan
   /// `loan_account` - The account with the loan debt to be reduced
-  /// `amount` - The amount to be repaid
+  /// `change` - The amount to be repaid
   async marginRepay({
     marginAccount,
     pools,
     source,
-    amount
+    change
   }: {
     marginAccount: MarginAccount
     pools: Pool[]
     source?: TokenAddress
-    amount: BN
+    change: PoolTokenChange
   }) {
     await marginAccount.refresh()
     const depositPosition = await marginAccount.withGetOrCreatePosition(this.addresses.depositNoteMint)
@@ -662,23 +671,25 @@ export class Pool {
 
     const loanNoteAccount = await this.withGetOrCreateLoanPosition(instructions, marginAccount)
 
-    if (source !== undefined) {
-      await this.withDeposit({
+    if (source === undefined) {
+      await this.withMarginRepay({
+        instructions,
+        marginAccount: marginAccount,
+        depositPosition: depositPosition.address,
+        loanPosition: loanNoteAccount,
+        change
+      })
+    } else {
+      await this.withMarginRepayFromWallet({
         instructions,
         marginAccount,
+        depositPosition: depositPosition,
+        loanPosition: loanNoteAccount,
         source,
-        destination: depositPosition,
-        amount
+        change,
+        feesBuffer
       })
     }
-
-    await this.withMarginRepay({
-      instructions,
-      marginAccount: marginAccount,
-      depositPosition: depositPosition,
-      loanPosition: loanNoteAccount,
-      amount
-    })
 
     // Automatically close the position once the loan is repaid.
     // this doesn't work because it compares notes to tokens
@@ -695,20 +706,20 @@ export class Pool {
     marginAccount,
     depositPosition,
     loanPosition,
-    amount
+    change
   }: {
     instructions: TransactionInstruction[]
     marginAccount: MarginAccount
     depositPosition: Address
     loanPosition: Address
-    amount: BN
+    change: PoolTokenChange
   }): Promise<void> {
     await marginAccount.withAdapterInvoke({
       instructions,
       adapterProgram: this.programs.config.marginPoolProgramId,
       adapterMetadata: this.addresses.marginPoolAdapterMetadata,
       adapterInstruction: await this.programs.marginPool.methods
-        .marginRepay(PoolAmount.tokens(amount).toRpcArg())
+        .marginRepay(change.changeKind.asParam(), change.value)
         .accounts({
           marginAccount: marginAccount.address,
           marginPool: this.address,
@@ -722,22 +733,73 @@ export class Pool {
     })
   }
 
+  async withMarginRepayFromWallet({
+    instructions,
+    marginAccount,
+    loanPosition,
+    source,
+    change,
+    feesBuffer,
+    sourceAuthority
+  }: {
+    instructions: TransactionInstruction[]
+    marginAccount: MarginAccount
+    depositPosition: Address
+    loanPosition: Address
+    source: TokenAddress
+    change: PoolTokenChange
+    feesBuffer: number
+    sourceAuthority?: Address
+  }): Promise<void> {
+    source = await AssociatedToken.withBeginTransferFromSource({
+      instructions,
+      provider: marginAccount.provider,
+      mint: this.tokenMint,
+      source,
+      feesBuffer
+    })
+    await marginAccount.withAdapterInvoke({
+      instructions,
+      adapterProgram: this.programs.config.marginPoolProgramId,
+      adapterMetadata: this.addresses.marginPoolAdapterMetadata,
+      adapterInstruction: await this.programs.marginPool.methods
+        .marginRepayFromWallet(change.changeKind.asParam(), change.value)
+        .accounts({
+          marginAccount: marginAccount.address,
+          marginPool: this.address,
+          loanNoteMint: this.addresses.loanNoteMint,
+          poolVault: this.addresses.vault,
+          loanAccount: loanPosition,
+          repaymentTokenAccount: source,
+          repaymentAccountAuthority: sourceAuthority,
+          tokenProgram: TOKEN_PROGRAM_ID
+        })
+        .instruction()
+    })
+    AssociatedToken.withEndTransfer({
+      instructions,
+      provider: marginAccount.provider,
+      mint: this.tokenMint,
+      destination: source
+    })
+  }
+
   /// Instruction to withdraw tokens from the pool.
   ///
   /// # Params
   ///
   /// `margin_account` - The margin account with the deposit to be withdrawn
-  /// `amount` - The amount to withdraw in lamports.
+  /// `change` - The amount to withdraw.
   /// `destination` - (Optional) The token account to send the withdrawn deposit
   async withdraw({
     marginAccount,
     pools,
-    amount,
+    change,
     destination = TokenFormat.unwrappedSol
   }: {
     marginAccount: MarginAccount
     pools: Pool[]
-    amount: PoolAmount
+    change: PoolTokenChange
     destination?: TokenAddress
   }) {
     // FIXME: can source be calculated in withdraw?
@@ -754,7 +816,7 @@ export class Pool {
       marginAccount: marginAccount,
       source,
       destination,
-      amount
+      change
     })
 
     return await sendAll(marginAccount.provider, [preInstructions, chunks(11, refreshInstructions), instructions])
@@ -765,13 +827,13 @@ export class Pool {
     marginAccount,
     source,
     destination = TokenFormat.unwrappedSol,
-    amount
+    change
   }: {
     instructions: TransactionInstruction[]
     marginAccount: MarginAccount
-    source: PublicKey
+    source: Address
     destination?: TokenAddress
-    amount: PoolAmount
+    change: PoolTokenChange
   }): Promise<void> {
     const provider = marginAccount.provider
     const mint = this.tokenMint
@@ -789,7 +851,7 @@ export class Pool {
         adapterProgram: this.programs.config.marginPoolProgramId,
         adapterMetadata: this.addresses.marginPoolAdapterMetadata,
         adapterInstruction: await this.programs.marginPool.methods
-          .withdraw(amount.toRpcArg())
+          .withdraw(change.changeKind.asParam(), change.value)
           .accounts({
             depositor: marginAccount.address,
             marginPool: this.address,
@@ -893,7 +955,7 @@ export class Pool {
           marginAccount: marginAccount,
           source: position.address,
           destination: marginWithdrawDestination,
-          amount: PoolAmount.notes(position.balance)
+          change: PoolTokenChange.setTo(TokenAmount.zero(this.decimals))
         })
 
         if (isDestinationNative) {
@@ -907,7 +969,6 @@ export class Pool {
       await marginAccount.closePosition(position)
     }
   }
-
 
   /// Projects the deposit and borrow rates after a deposit into the pool.
   projectRatesAfterDeposit(amount: TokenAmount): RatesProjection {
@@ -924,7 +985,7 @@ export class Pool {
     const depositRate = Pool.getDepositApy(depositCcRate, utilRatio)
     const borrowRate = Pool.getBorrowApr(depositCcRate, utilRatio)
 
-    return {depositRate, borrowRate}
+    return { depositRate, borrowRate }
   }
 
   /// Projects the deposit and borrow rates after a withdrawal from the pool.
@@ -937,7 +998,7 @@ export class Pool {
       throw "not enough tokens in the vault"
     }
 
-    const borrowedTokens = this.borrowedTokens.tokens;
+    const borrowedTokens = this.borrowedTokens.tokens
     const totalValue = this.totalValue.sub(amount).tokens
 
     const utilRatio = totalValue === 0 ? 0 : borrowedTokens / totalValue
@@ -946,16 +1007,16 @@ export class Pool {
     const depositRate = Pool.getDepositApy(depositCcRate, utilRatio)
     const borrowRate = Pool.getBorrowApr(depositCcRate, utilRatio)
 
-    return {depositRate, borrowRate}
+    return { depositRate, borrowRate }
   }
-  
+
   /// Projects the deposit and borrow rates after a borrow from the pool.
   projectRatesAfterBorrow(amount: TokenAmount): RatesProjection {
     if (this.info == undefined) {
       throw "must have pool info initialised"
     }
 
-    const borrowedTokens = this.borrowedTokens.add(amount).tokens;
+    const borrowedTokens = this.borrowedTokens.add(amount).tokens
     const totalValue = this.totalValue.add(amount).tokens
 
     const utilRatio = borrowedTokens / totalValue
@@ -964,7 +1025,7 @@ export class Pool {
     const depositRate = Pool.getDepositApy(depositCcRate, utilRatio)
     const borrowRate = Pool.getBorrowApr(depositCcRate, utilRatio)
 
-    return {depositRate, borrowRate}
+    return { depositRate, borrowRate }
   }
 
   /// Projects the deposit and borrow rates after repaying a loan from the pool.
@@ -977,7 +1038,7 @@ export class Pool {
       throw "not enough borrowed tokens"
     }
 
-    const borrowedTokens = this.borrowedTokens.sub(amount).tokens;
+    const borrowedTokens = this.borrowedTokens.sub(amount).tokens
     const totalValue = this.totalValue.sub(amount).tokens
 
     const utilRatio = totalValue === 0 ? 0 : borrowedTokens / totalValue
@@ -986,6 +1047,6 @@ export class Pool {
     const depositRate = Pool.getDepositApy(depositCcRate, utilRatio)
     const borrowRate = Pool.getBorrowApr(depositCcRate, utilRatio)
 
-    return {depositRate, borrowRate}
+    return { depositRate, borrowRate }
   }
 }

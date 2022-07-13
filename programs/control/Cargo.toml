@@ -19,7 +19,7 @@ testing = ["jet-metadata/testing", "jet-margin-pool/testing"]
 devnet = []
 
 [dependencies]
-solana-program = "1.9"
+solana-program = "1.10"
 anchor-lang = { git = "https://github.com/jet-lab/anchor", branch = "master" }
 anchor-spl = { git = "https://github.com/jet-lab/anchor", branch = "master" }
 

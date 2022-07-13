@@ -22,10 +22,9 @@ use solana_sdk::instruction::Instruction;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::sysvar::{rent::Rent, SysvarId};
 
-use jet_margin_pool::accounts as ix_accounts;
 use jet_margin_pool::instruction as ix_data;
 use jet_margin_pool::program::JetMarginPool;
-use jet_margin_pool::Amount;
+use jet_margin_pool::{accounts as ix_accounts, TokenChange};
 
 /// Utility for creating instructions to interact with the margin
 /// pools program for a specific pool.
@@ -121,7 +120,7 @@ impl MarginPoolIxBuilder {
         depositor: Pubkey,
         source: Pubkey,
         destination: Pubkey,
-        amount: u64,
+        change: TokenChange,
     ) -> Instruction {
         let accounts = ix_accounts::Deposit {
             margin_pool: self.address,
@@ -134,9 +133,14 @@ impl MarginPoolIxBuilder {
         }
         .to_account_metas(None);
 
+        let TokenChange { kind, tokens } = change;
         Instruction {
             program_id: jet_margin_pool::ID,
-            data: ix_data::Deposit { amount }.data(),
+            data: ix_data::Deposit {
+                change_kind: kind,
+                amount: tokens,
+            }
+            .data(),
             accounts,
         }
     }
@@ -154,7 +158,7 @@ impl MarginPoolIxBuilder {
         depositor: Pubkey,
         source: Pubkey,
         destination: Pubkey,
-        amount: Amount,
+        change: TokenChange,
     ) -> Instruction {
         let accounts = ix_accounts::Withdraw {
             margin_pool: self.address,
@@ -167,9 +171,14 @@ impl MarginPoolIxBuilder {
         }
         .to_account_metas(None);
 
+        let TokenChange { kind, tokens } = change;
         Instruction {
             program_id: jet_margin_pool::ID,
-            data: ix_data::Withdraw { amount }.data(),
+            data: ix_data::Withdraw {
+                change_kind: kind,
+                amount: tokens,
+            }
+            .data(),
             accounts,
         }
     }
@@ -187,7 +196,7 @@ impl MarginPoolIxBuilder {
         margin_account: Pubkey,
         deposit_account: Pubkey,
         loan_account: Pubkey,
-        amount: u64,
+        change: TokenChange,
     ) -> Instruction {
         let accounts = ix_accounts::MarginBorrow {
             margin_account,
@@ -200,9 +209,14 @@ impl MarginPoolIxBuilder {
         }
         .to_account_metas(None);
 
+        let TokenChange { kind, tokens } = change;
         Instruction {
             program_id: jet_margin_pool::ID,
-            data: ix_data::MarginBorrow { amount }.data(),
+            data: ix_data::MarginBorrow {
+                change_kind: kind,
+                amount: tokens,
+            }
+            .data(),
             accounts,
         }
     }
@@ -214,13 +228,13 @@ impl MarginPoolIxBuilder {
     /// `margin_account` - The account with the loan to be repaid
     /// `deposit_account` - The account with notes to repay the loan
     /// `loan_account` - The account with the loan debt to be reduced
-    /// `max_amount` - The maximum amount to be repaid
+    /// `amount` - The amount to be repaid
     pub fn margin_repay(
         &self,
         margin_account: Pubkey,
         deposit_account: Pubkey,
         loan_account: Pubkey,
-        max_amount: Amount,
+        change: TokenChange,
     ) -> Instruction {
         let accounts = ix_accounts::MarginRepay {
             margin_account,
@@ -233,9 +247,53 @@ impl MarginPoolIxBuilder {
         }
         .to_account_metas(None);
 
+        let TokenChange { kind, tokens } = change;
         Instruction {
             program_id: jet_margin_pool::ID,
-            data: ix_data::MarginRepay { max_amount }.data(),
+            data: ix_data::MarginRepay {
+                change_kind: kind,
+                amount: tokens,
+            }
+            .data(),
+            accounts,
+        }
+    }
+
+    /// Instruction to repay tokens owed by a margin account using a token account
+    ///
+    /// # Params
+    ///
+    /// `margin_account` - The account with the loan to be repaid
+    /// `repayment_source_authority` - The authority for the repayment source tokens
+    /// `repayment_source_account` - The token account to use for repayment
+    /// `loan_account` - The account with the loan debt to be reduced
+    /// `amount` - The amount to be repaid
+    pub fn repay(
+        &self,
+        repayment_source_authority: Pubkey,
+        repayment_source_account: Pubkey,
+        loan_account: Pubkey,
+        change: TokenChange,
+    ) -> Instruction {
+        let accounts = ix_accounts::Repay {
+            margin_pool: self.address,
+            loan_note_mint: self.loan_note_mint,
+            vault: self.vault,
+            loan_account,
+            repayment_token_account: repayment_source_account,
+            repayment_account_authority: repayment_source_authority,
+            token_program: Token::id(),
+        }
+        .to_account_metas(None);
+
+        let TokenChange { kind, tokens } = change;
+        Instruction {
+            program_id: jet_margin_pool::ID,
+            data: ix_data::Repay {
+                change_kind: kind,
+                amount: tokens,
+            }
+            .data(),
             accounts,
         }
     }
