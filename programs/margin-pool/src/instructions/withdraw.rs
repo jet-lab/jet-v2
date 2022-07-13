@@ -20,7 +20,7 @@ use std::ops::Deref;
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Burn, Token, Transfer};
 
-use crate::{events, state::*, TokenChange};
+use crate::{events, state::*, Amount};
 use crate::{ChangeKind, ErrorCode};
 
 #[derive(Accounts)]
@@ -86,10 +86,6 @@ pub fn withdraw_handler(
     change_kind: ChangeKind,
     amount: u64,
 ) -> Result<()> {
-    let change = TokenChange {
-        kind: change_kind,
-        tokens: amount,
-    };
     let pool = &mut ctx.accounts.margin_pool;
     let clock = Clock::get()?;
 
@@ -100,8 +96,9 @@ pub fn withdraw_handler(
     }
 
     let withdraw_amount = pool.calculate_full_amount(
+        Amount::deposit_notes(Some(amount), None),
         token::accessor::amount(&ctx.accounts.source.to_account_info())?,
-        change,
+        change_kind,
         PoolAction::Withdraw,
     )?;
     pool.withdraw(&withdraw_amount)?;

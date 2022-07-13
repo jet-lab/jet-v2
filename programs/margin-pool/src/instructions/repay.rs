@@ -18,7 +18,7 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Burn, Token, TokenAccount, Transfer};
 
-use crate::{events, state::PoolAction, ChangeKind, ErrorCode, MarginPool, TokenChange};
+use crate::{events, state::PoolAction, Amount, ChangeKind, ErrorCode, MarginPool};
 
 #[derive(Accounts)]
 pub struct Repay<'info> {
@@ -78,10 +78,6 @@ impl<'info> Repay<'info> {
 }
 
 pub fn repay_handler(ctx: Context<Repay>, change_kind: ChangeKind, amount: u64) -> Result<()> {
-    let change = TokenChange {
-        kind: change_kind,
-        tokens: amount,
-    };
     let pool = &mut ctx.accounts.margin_pool;
     let clock = Clock::get()?;
 
@@ -92,9 +88,14 @@ pub fn repay_handler(ctx: Context<Repay>, change_kind: ChangeKind, amount: u64) 
     }
 
     // Amount the user desires to repay
-    let repay_amount =
-        pool.calculate_full_amount(ctx.accounts.loan_account.amount, change, PoolAction::Repay)?;
+    let repay_amount = pool.calculate_full_amount(
+        Amount::loan_notes(Some(amount), None),
+        ctx.accounts.loan_account.amount,
+        change_kind,
+        PoolAction::Repay,
+    )?;
 
+    // Then record a repay using the withdrawn tokens
     msg!(
         "Repaying [{} tokens, {} notes] into loan pool",
         repay_amount.tokens,

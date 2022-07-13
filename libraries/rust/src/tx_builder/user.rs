@@ -347,8 +347,8 @@ impl MarginTxBuilder {
         source_token_account: &Pubkey,
         destination_token_account: &Pubkey,
         swap_program: &Pubkey,
-        amount_in: Amount,
-        minimum_amount_out: Amount,
+        amount_in: u64,
+        minimum_amount_out: u64,
     ) -> Result<Transaction> {
         let mut instructions = vec![ComputeBudgetInstruction::set_compute_unit_limit(300_000)];
         let source_pool = MarginPoolIxBuilder::new(*source_token_mint);
@@ -396,8 +396,8 @@ impl MarginTxBuilder {
             *swap_program,
             &source_pool,
             &destination_pool,
-            amount_in.value(),
-            minimum_amount_out.value(),
+            amount_in,
+            minimum_amount_out,
         );
 
         instructions.push(self.adapter_invoke_ix(inner_swap_ix));

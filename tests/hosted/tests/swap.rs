@@ -12,7 +12,7 @@ use hosted_tests::{
     tokens::TokenPrice,
 };
 
-use jet_margin_pool::{Amount, MarginPoolConfig, PoolFlags, TokenChange};
+use jet_margin_pool::{MarginPoolConfig, PoolFlags, TokenChange};
 use jet_metadata::TokenKind;
 use jet_simulation::create_wallet;
 
@@ -215,9 +215,9 @@ async fn swap_test_impl(swap_program_id: Pubkey) -> Result<(), anyhow::Error> {
             &usdc_transit_source,
             &tsol_transit_target,
             &swap_pool,
-            Amount::tokens(100 * ONE_USDC),
+            100 * ONE_USDC,
             // we want a minimum of 0.9 SOL for 100 USDC
-            Amount::tokens(ONE_TSOL / 10 * 9),
+            ONE_TSOL / 10 * 9,
         )
         .await?;
 
@@ -242,8 +242,8 @@ async fn swap_test_impl(swap_program_id: Pubkey) -> Result<(), anyhow::Error> {
             &tsol_transit_source,
             &usdc_transit_target,
             &swap_pool,
-            Amount::tokens(2 * ONE_TSOL),
-            Amount::tokens(180 * ONE_USDC),
+            2 * ONE_TSOL,
+            180 * ONE_USDC,
         )
         .await?;
 

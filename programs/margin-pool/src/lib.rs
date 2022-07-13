@@ -22,7 +22,7 @@ mod state;
 mod util;
 use instructions::*;
 
-pub use state::{MarginPool, MarginPoolConfig, PoolFlags};
+pub use state::{FullAmount, MarginPool, MarginPoolConfig, PoolFlags};
 pub mod events;
 
 declare_id!("JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ");
@@ -125,10 +125,6 @@ impl TokenChange {
             tokens: value,
         }
     }
-
-    pub fn amount(&self) -> Amount {
-        Amount::tokens(self.tokens)
-    }
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone, Copy)]
@@ -140,34 +136,80 @@ pub enum ChangeKind {
 
 #[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone, Copy)]
 pub enum AmountKind {
-    Tokens,
-    Notes,
+    DepositNotes,
+    LoanNotes,
 }
 
-/// Represent an amount of some value (like tokens, or notes)
+/// Represent an amount of some value (like tokens, or notes) that is to be used for calculating
+/// a representative `FullAmount`
 #[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone, Copy)]
 pub struct Amount {
     kind: AmountKind,
-    value: u64,
+    tokens: Option<u64>,
+    notes: Option<u64>,
 }
 
 impl Amount {
-    pub const fn tokens(value: u64) -> Self {
+    pub const fn deposit_notes(tokens: Option<u64>, notes: Option<u64>) -> Self {
         Self {
-            kind: AmountKind::Tokens,
-            value,
+            kind: AmountKind::DepositNotes,
+            tokens,
+            notes,
         }
     }
 
-    pub const fn notes(value: u64) -> Self {
+    pub const fn loan_notes(tokens: Option<u64>, notes: Option<u64>) -> Self {
         Self {
-            kind: AmountKind::Notes,
-            value,
+            kind: AmountKind::LoanNotes,
+            tokens,
+            notes,
         }
     }
 
-    pub fn value(&self) -> u64 {
-        self.value
+    /// As Amount represents the conversion of tokens to/from notes for
+    /// the purpose of:
+    /// - adding/subtracting tokens to/from a pool's vault
+    /// - minting/burning notes from a pool's deposit/loan mint.
+    /// There should be no scenario where a conversion between notes and tokens
+    /// leads to either value being 0 while the other is not.
+    ///
+    /// Scenarios where this can happen could be security risks, such as:
+    /// - A user withdraws 1 token but burns 0 notes, they are draining the pool.
+    /// - A user deposits 1 token but mints 0 notes, they are losing funds for no value.
+    /// - A user deposits 0 tokens but mints 1 notes, they are getting free deposits.
+    /// - A user withdraws 0 tokens but burns 1 token, they are writing off debt.
+    ///
+    /// Thus we finally check that both values are positive.
+    pub fn assert_valid(&self) -> Result<()> {
+        let notes = self.notes()?;
+        let tokens = self.tokens()?;
+
+        if (notes == 0 && tokens > 0) || (tokens == 0 && notes > 0) {
+            return err!(ErrorCode::InvalidAmount);
+        }
+
+        Ok(())
+    }
+
+    /// Unwraps the `Amount` into a `FullAmount` type once both tokens and notes fields are satisfied
+    pub fn unwrap(&self) -> Result<FullAmount> {
+        self.assert_valid()?;
+        Ok(FullAmount {
+            tokens: self.tokens()?,
+            notes: self.notes()?,
+        })
+    }
+
+    /// Convenience function for unwrapping the notes value
+    fn notes(&self) -> Result<u64> {
+        self.notes
+            .ok_or_else(|| error!(ErrorCode::NotesNotCalculated))
+    }
+
+    /// Convenience function for unwrapping the tokens value
+    fn tokens(&self) -> Result<u64> {
+        self.tokens
+            .ok_or_else(|| error!(ErrorCode::TokensNotCalculated))
     }
 }
 
@@ -207,4 +249,10 @@ pub enum ErrorCode {
 
     /// 141108 - Attempt repayment of more tokens than total outstanding
     RepaymentExceedsTotalOutstanding,
+
+    /// 141109 - Attempted to unwrap an empty `notes` value for the `Amount`
+    NotesNotCalculated,
+
+    /// 141110 - Attempted to unwrap an empty `tokens` value for the `Amount`
+    TokensNotCalculated,
 }
