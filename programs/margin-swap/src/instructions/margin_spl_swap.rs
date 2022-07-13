@@ -16,6 +16,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 use anchor_spl::token::Token;
+use jet_margin_pool::ChangeKind;
 use jet_static_program_registry::{
     orca_swap_v1, orca_swap_v2, related_programs, spl_token_swap_v2,
 };
@@ -87,7 +88,8 @@ impl<'info> MarginSplSwap<'info> {
                     token_program: self.token_program.to_account_info(),
                 },
             ),
-            Amount::tokens(amount_in),
+            ChangeKind::ShiftBy,
+            amount_in,
         )?;
 
         Ok(())
@@ -111,6 +113,7 @@ impl<'info> MarginSplSwap<'info> {
                     token_program: self.token_program.to_account_info(),
                 },
             ),
+            ChangeKind::ShiftBy,
             destination_amount,
         )?;
 
@@ -185,6 +188,7 @@ pub struct SwapInfo<'info> {
     pub fee_account: UncheckedAccount<'info>,
 
     /// The address of the swap program
+    /// CHECK:
     pub swap_program: UncheckedAccount<'info>,
 }
 

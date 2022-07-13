@@ -505,22 +505,23 @@ export class AssociatedToken {
   /** Wraps SOL in an associated token account. The account will only be created if it doesn't exist.
    * @param instructions
    * @param provider
-   * @param owner
-   * @param amount
+   * @param {number} feesBuffer How much tokens should remain unwrapped to pay for fees
    */
   static async withWrapNative(
     instructions: TransactionInstruction[],
     provider: AnchorProvider,
-    amount: BN
+    feesBuffer: number
   ): Promise<PublicKey> {
     const owner = translateAddress(provider.wallet.publicKey)
+    const ownerInfo = await provider.connection.getAccountInfo(owner)
+    const ownerLamports = Math.max((ownerInfo?.lamports ?? 0) - feesBuffer, 0)
 
     //this will add instructions to create ata if ata does not exist, if exist, we will get the ata address
     const associatedToken = await this.withCreate(instructions, provider, owner, NATIVE_MINT)
     //IX to transfer sol to ATA
     const transferIx = SystemProgram.transfer({
       fromPubkey: owner,
-      lamports: bnToNumber(amount),
+      lamports: ownerLamports,
       toPubkey: associatedToken
     })
     const syncNativeIX = createSyncNativeInstruction(associatedToken)
@@ -543,20 +544,19 @@ export class AssociatedToken {
    * @param instructions
    * @param provider
    * @param mint
-   * @param tokenAccountOrNative
-   * @param amount
+   * @param feesBuffer How much tokens should remain unwrapped to pay for fees
    */
   static async withWrapIfNativeMint(
     instructions: TransactionInstruction[],
     provider: AnchorProvider,
     mint: Address,
-    amount: BN
+    feesBuffer: number
   ): Promise<PublicKey> {
     const mintPubkey = translateAddress(mint)
 
-    //only run if mint is wrapped sol mint
     if (mintPubkey.equals(NATIVE_MINT)) {
-      return this.withWrapNative(instructions, provider, amount)
+      //only run if mint is wrapped sol mint
+      return this.withWrapNative(instructions, provider, feesBuffer)
     }
     return AssociatedToken.derive(mint, provider.wallet.publicKey)
   }
@@ -569,7 +569,7 @@ export class AssociatedToken {
    * @param {mint} mint
    * @param {tokenAccount} tokenAccountOrNative
    */
-  static withUnwrapIfNative(instructions: TransactionInstruction[], owner: Address, mint: Address): void {
+  static withUnwrapIfNativeMint(instructions: TransactionInstruction[], owner: Address, mint: Address): void {
     const ownerPubkey = translateAddress(owner)
     const mintPubkey = translateAddress(mint)
 
@@ -586,21 +586,21 @@ export class AssociatedToken {
    * @param {TransactionInstruction[]} instructions
    * @param {AnchorProvider} provider
    * @param {Address} mint
-   * @param {BN} wrapAmount
+   * @param {number} feesBuffer How much tokens should remain unwrapped to pay for fees
    * @memberof AssociatedToken
    */
   static async withCreateOrWrapIfNativeMint(
     instructions: TransactionInstruction[],
     provider: AnchorProvider,
     mint: Address,
-    wrapAmount: BN
+    feesBuffer: number
   ): Promise<PublicKey> {
     const owner = provider.wallet.publicKey
     const mintPubkey = translateAddress(mint)
 
     if (mintPubkey.equals(NATIVE_MINT)) {
       // Only run if mint is wrapped sol mint. Create the wrapped sol account and return its pubkey
-      return await this.withWrapNative(instructions, provider, wrapAmount)
+      return await this.withWrapNative(instructions, provider, feesBuffer)
     } else {
       // Return the associated token
       return await this.withCreate(instructions, provider, owner, mint)
@@ -641,13 +641,13 @@ export class AssociatedToken {
     instructions,
     provider,
     mint,
-    amount,
+    feesBuffer,
     source = TokenFormat.unwrappedSol
   }: {
     instructions: TransactionInstruction[]
     provider: AnchorProvider
     mint: Address
-    amount: BN
+    feesBuffer: number
     source: Address | TokenFormat
   }): Promise<PublicKey> {
     let sourceAddress: PublicKey | undefined
@@ -660,7 +660,7 @@ export class AssociatedToken {
     let isSourceAssociatedAddress = sourceAddress && AssociatedToken.derive(mint, owner).equals(sourceAddress)
 
     if (source === TokenFormat.unwrappedSol || isSourceOwner || isSourceAssociatedAddress) {
-      return await AssociatedToken.withCreateOrWrapIfNativeMint(instructions, provider, mint, amount)
+      return await AssociatedToken.withCreateOrWrapIfNativeMint(instructions, provider, mint, feesBuffer)
     } else if (source === TokenFormat.wrappedSol) {
       return await AssociatedToken.withCreate(instructions, provider, owner, mint)
     } else if (sourceAddress) {

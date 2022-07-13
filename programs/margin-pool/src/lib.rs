@@ -53,26 +53,39 @@ mod jet_margin_pool {
     }
 
     /// Deposit tokens into the pool in exchange for notes
-    pub fn deposit(ctx: Context<Deposit>, amount: u64) -> Result<()> {
-        instructions::deposit_handler(ctx, amount)
+    pub fn deposit(ctx: Context<Deposit>, change_kind: ChangeKind, amount: u64) -> Result<()> {
+        instructions::deposit_handler(ctx, change_kind, amount)
     }
 
     /// Withdraw tokens from the pool, exchanging in previously received
     /// deposit notes.
-    pub fn withdraw(ctx: Context<Withdraw>, amount: Amount) -> Result<()> {
-        instructions::withdraw_handler(ctx, amount)
+    pub fn withdraw(ctx: Context<Withdraw>, change_kind: ChangeKind, amount: u64) -> Result<()> {
+        instructions::withdraw_handler(ctx, change_kind, amount)
     }
 
     /// Borrow tokens using a margin account
-    pub fn margin_borrow(ctx: Context<MarginBorrow>, amount: u64) -> Result<()> {
-        instructions::margin_borrow_handler(ctx, amount)
+    pub fn margin_borrow(
+        ctx: Context<MarginBorrow>,
+        change_kind: ChangeKind,
+        amount: u64,
+    ) -> Result<()> {
+        instructions::margin_borrow_handler(ctx, change_kind, amount)
     }
 
     /// Repay a loan with a maximum amount.
     /// If the loan balance is lower than the amount, the excess is left in the
     /// deposit account.
-    pub fn margin_repay(ctx: Context<MarginRepay>, max_amount: Amount) -> Result<()> {
-        instructions::margin_repay_handler(ctx, max_amount)
+    pub fn margin_repay(
+        ctx: Context<MarginRepay>,
+        change_kind: ChangeKind,
+        amount: u64,
+    ) -> Result<()> {
+        instructions::margin_repay_handler(ctx, change_kind, amount)
+    }
+
+    /// Repay a margin account debt from an outside token account
+    pub fn repay(ctx: Context<Repay>, change_kind: ChangeKind, amount: u64) -> Result<()> {
+        instructions::repay_handler(ctx, change_kind, amount)
     }
 
     /// Update the pool position on a margin account
@@ -92,6 +105,39 @@ mod jet_margin_pool {
     }
 }
 
+/// Interface for changing the token value of an account through pool instructions
+#[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone, Copy)]
+pub struct TokenChange {
+    pub kind: ChangeKind,
+    pub tokens: u64,
+}
+
+impl TokenChange {
+    pub const fn set(value: u64) -> Self {
+        Self {
+            kind: ChangeKind::SetTo,
+            tokens: value,
+        }
+    }
+    pub const fn shift(value: u64) -> Self {
+        Self {
+            kind: ChangeKind::ShiftBy,
+            tokens: value,
+        }
+    }
+
+    pub fn amount(&self) -> Amount {
+        Amount::tokens(self.tokens)
+    }
+}
+
+#[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone, Copy)]
+#[repr(u8)]
+pub enum ChangeKind {
+    SetTo,
+    ShiftBy,
+}
+
 #[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone, Copy)]
 pub enum AmountKind {
     Tokens,
@@ -101,8 +147,8 @@ pub enum AmountKind {
 /// Represent an amount of some value (like tokens, or notes)
 #[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone, Copy)]
 pub struct Amount {
-    pub kind: AmountKind,
-    pub value: u64,
+    kind: AmountKind,
+    value: u64,
 }
 
 impl Amount {
@@ -118,6 +164,10 @@ impl Amount {
             kind: AmountKind::Notes,
             value,
         }
+    }
+
+    pub fn value(&self) -> u64 {
+        self.value
     }
 }
 
@@ -141,7 +191,7 @@ pub enum ErrorCode {
 
     /// 141104 - An invalid amount has been supplied
     ///
-    /// This is used when a `TokenAmount` has an invalid value
+    /// This is used when an `Amount` has an invalid value
     #[msg("An invalid amount has been supplied")]
     InvalidAmount,
 
@@ -151,6 +201,10 @@ pub enum ErrorCode {
     /// 141106 - The oracle account is not valid
     InvalidOracle,
 
-    /// 141107 - Attempt repayment of more tokens than total outstanding
+    /// 141107 - Tried to set an invalid token value
+    #[msg("An invalid `SetTo` value was given for a `TokenChange`")]
+    InvalidSetTo,
+
+    /// 141108 - Attempt repayment of more tokens than total outstanding
     RepaymentExceedsTotalOutstanding,
 }
