@@ -83,11 +83,11 @@ pub fn collect_handler(ctx: Context<Collect>) -> Result<()> {
 
     let claimed_amount = pool.calculate_tokens(
         Amount::deposit_notes(None, Some(fee_notes)),
-        RoundingDirection::claims_rounding(),
+        RoundingDirection::notes_emission(PoolAction::Withdraw),
     )?;
     let balance_amount = pool.calculate_notes(
         Amount::deposit_notes(Some(ctx.accounts.vault.amount), None),
-        RoundingDirection::balance_rounding(),
+        RoundingDirection::tokens_emission(PoolAction::Deposit),
     )?;
 
     emit!(events::Collect {
