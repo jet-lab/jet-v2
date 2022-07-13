@@ -107,6 +107,7 @@ export interface MarginWalletTokens {
 export class MarginAccount {
   static readonly SEED_MAX_VALUE = 65535
   static readonly RISK_WARNING_LEVEL = 0.7
+  static readonly RISK_CRITICAL_LEVEL = 0.9
   static readonly RISK_LIQUIDATION_LEVEL = 1
   info?: {
     marginAccount: MarginAccountData
@@ -724,14 +725,14 @@ export class MarginAccount {
     }
   }
 
-  async getOrCreatePosition(tokenMint: Address) {
+  async withGetOrCreatePosition(tokenMint: Address) {
     assert(this.info)
     const tokenMintAddress = translateAddress(tokenMint)
 
     for (let i = 0; i < this.positions.length; i++) {
       const position = this.positions[i]
       if (position.token.equals(tokenMintAddress)) {
-        return position
+        return position.address
       }
     }
 
@@ -741,7 +742,7 @@ export class MarginAccount {
     for (let i = 0; i < this.positions.length; i++) {
       const position = this.positions[i]
       if (position.token.equals(tokenMintAddress)) {
-        return position
+        return position.address
       }
     }
 
@@ -756,13 +757,13 @@ export class MarginAccount {
 
   async withUpdateAllPositionBalances({ instructions }: { instructions: TransactionInstruction[] }) {
     for (const position of this.positions) {
-      await this.withUpdatePositionBalance({ instructions, position })
+      await this.withUpdatePositionBalance({ instructions, position: position.address })
     }
   }
 
   async updatePositionBalance({ position }: { position: AccountPosition }) {
     const instructions: TransactionInstruction[] = []
-    await this.withUpdatePositionBalance({ instructions, position })
+    await this.withUpdatePositionBalance({ instructions, position: position.address })
     return await this.provider.sendAndConfirm(new Transaction().add(...instructions))
   }
 
@@ -777,13 +778,13 @@ export class MarginAccount {
     position
   }: {
     instructions: TransactionInstruction[]
-    position: AccountPosition
+    position: Address
   }): Promise<void> {
     const instruction = await this.programs.margin.methods
       .updatePositionBalance()
       .accounts({
         marginAccount: this.address,
-        tokenAccount: position.address
+        tokenAccount: position
       })
       .instruction()
     instructions.push(instruction)
@@ -807,9 +808,9 @@ export class MarginAccount {
   ///
   /// Returns the instruction, and the address of the token account to be
   /// created for the position.
-  async withRegisterPosition(instructions: TransactionInstruction[], tokenMint: Address): Promise<PublicKey> {
-    const tokenAccount = findDerivedAccount(this.programs.config.marginProgramId, this.address, tokenMint)
-    const metadata = findDerivedAccount(this.programs.config.metadataProgramId, tokenMint)
+  async withRegisterPosition(instructions: TransactionInstruction[], positionTokenMint: Address): Promise<PublicKey> {
+    const tokenAccount = findDerivedAccount(this.programs.config.marginProgramId, this.address, positionTokenMint)
+    const metadata = findDerivedAccount(this.programs.config.metadataProgramId, positionTokenMint)
 
     const ix = await this.programs.margin.methods
       .registerPosition()
@@ -817,7 +818,7 @@ export class MarginAccount {
         authority: this.owner,
         payer: this.provider.wallet.publicKey,
         marginAccount: this.address,
-        positionTokenMint: tokenMint,
+        positionTokenMint: positionTokenMint,
         metadata,
         tokenAccount,
         tokenProgram: TOKEN_PROGRAM_ID,
