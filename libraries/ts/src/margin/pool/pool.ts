@@ -47,6 +47,11 @@ export interface PriceResult {
   loanNoteTwap: BN
 }
 
+export interface RatesProjection {
+  depositRate: number
+  borrowRate: number
+}
+
 const feesBuffer: number = LAMPORTS_PER_SOL * 0.02
 
 export class Pool {
