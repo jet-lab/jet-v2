@@ -32,7 +32,7 @@ pub struct RegisterPosition<'info> {
     pub payer: Signer<'info>,
 
     /// The margin account to register position type with
-    #[account(mut, constraint = margin_account.load().unwrap().has_authority(authority.key()))]
+    #[account(mut)]
     pub margin_account: AccountLoader<'info, MarginAccount>,
 
     /// The mint for the position token being registered
@@ -66,6 +66,7 @@ pub fn register_position_handler(ctx: Context<RegisterPosition>) -> Result<()> {
     let mut account = ctx.accounts.margin_account.load_mut()?;
     let position_token = &ctx.accounts.position_token_mint;
     let address = ctx.accounts.token_account.key();
+    account.verify_authority(ctx.accounts.authority.key())?;
 
     let key = account.register_position(
         position_token.key(),

@@ -30,6 +30,7 @@ use std::{convert::TryFrom, result::Result};
 use crate::{
     util::{Invocation, Require},
     ErrorCode, PriceChangeInfo, MAX_ORACLE_CONFIDENCE, MAX_ORACLE_STALENESS, MAX_PRICE_QUOTE_AGE,
+    MAX_USER_POSITIONS,
 };
 
 const POS_PRICE_VALID: u8 = 1;
@@ -143,12 +144,16 @@ impl MarginAccount {
     }
 
     pub fn verify_not_liquidating(&self) -> AnchorResult<()> {
-        if self.liquidation != Pubkey::default() {
+        if self.is_liquidating() {
             msg!("account is being liquidated");
             Err(ErrorCode::Liquidating.into())
         } else {
             Ok(())
         }
+    }
+
+    pub fn is_liquidating(&self) -> bool {
+        self.liquidation != Pubkey::default()
     }
 
     pub fn initialize(&mut self, owner: Pubkey, seed: u16, bump_seed: u8) {
@@ -180,6 +185,9 @@ impl MarginAccount {
         max_staleness: u64,
         approvals: &[Approver],
     ) -> AnchorResult<AccountPositionKey> {
+        if !self.is_liquidating() && self.position_list().length >= MAX_USER_POSITIONS {
+            return err!(ErrorCode::MaxPositions);
+        }
         let (key, free_position) = self.position_list_mut().add(token)?;
 
         free_position.exponent = -(decimals as i16);
@@ -353,9 +361,19 @@ impl MarginAccount {
         }
     }
 
-    /// Check if the given address is an authority for this margin account
-    pub fn has_authority(&self, authority: Pubkey) -> bool {
-        authority == self.owner || authority == self.liquidator
+    /// Check if the given address is the current authority for this margin account
+    pub fn verify_authority(&self, authority: Pubkey) -> Result<(), ErrorCode> {
+        if self.is_liquidating() {
+            if authority == self.owner {
+                return Err(ErrorCode::Liquidating);
+            } else if authority != self.liquidator {
+                return Err(ErrorCode::UnauthorizedLiquidator);
+            }
+        } else if authority != self.owner {
+            return Err(ErrorCode::UnauthorizedInvocation);
+        }
+
+        Ok(())
     }
 
     pub fn valuation(&self) -> AnchorResult<Valuation> {
@@ -1306,6 +1324,14 @@ mod tests {
     }
 
     fn register_position(acc: &mut MarginAccount, index: u8, kind: TokenKind) -> Pubkey {
+        try_register_position(acc, index, kind).unwrap()
+    }
+
+    fn try_register_position(
+        acc: &mut MarginAccount,
+        index: u8,
+        kind: TokenKind,
+    ) -> AnchorResult<Pubkey> {
         let key = Pubkey::find_program_address(&[&[index]], &crate::id()).0;
         acc.register_position(
             key,
@@ -1316,10 +1342,9 @@ mod tests {
             10000,
             0,
             &[Approver::MarginAccountAuthority, Approver::Adapter(key)],
-        )
-        .unwrap();
+        )?;
 
-        key
+        Ok(key)
     }
 
     fn assert_unhealthy(acc: &MarginAccount) {
@@ -1405,5 +1430,64 @@ mod tests {
             0,
         ))
         .unwrap_err();
+    }
+
+    #[test]
+    fn margin_account_no_more_than_24_positions() {
+        let mut account = blank_account();
+        for i in 0..24 {
+            try_register_position(&mut account, i, TokenKind::Collateral).unwrap();
+        }
+        try_register_position(&mut account, 24, TokenKind::Collateral).unwrap_err();
+    }
+
+    #[test]
+    fn margin_account_32_positions_with_liquidator() {
+        let mut account = blank_account();
+        account.liquidation = pda(234);
+        for i in 0..30 {
+            try_register_position(&mut account, i, TokenKind::Collateral).unwrap();
+        }
+    }
+
+    #[test]
+    fn margin_account_authority() {
+        let mut account = blank_account();
+        account.owner = pda(0);
+        account.liquidator = pda(1);
+        account.verify_authority(pda(0)).unwrap();
+        account.verify_authority(pda(1)).unwrap_err();
+        account.verify_authority(pda(2)).unwrap_err();
+        account.verify_authority(Pubkey::default()).unwrap_err();
+    }
+
+    #[test]
+    fn margin_account_authority_during_liquidation() {
+        let mut account = blank_account();
+        account.owner = pda(0);
+        account.liquidator = pda(1);
+        account.liquidation = pda(2);
+        account.verify_authority(pda(0)).unwrap_err();
+        account.verify_authority(pda(1)).unwrap();
+        account.verify_authority(pda(2)).unwrap_err();
+        account.verify_authority(Pubkey::default()).unwrap_err();
+    }
+
+    fn pda(index: u8) -> Pubkey {
+        Pubkey::find_program_address(&[&[index]], &crate::id()).0
+    }
+
+    fn blank_account() -> MarginAccount {
+        MarginAccount {
+            version: 1,
+            bump_seed: [0],
+            user_seed: [0; 2],
+            reserved0: [0; 3],
+            owner: Pubkey::default(),
+            liquidation: Pubkey::default(),
+            liquidator: Pubkey::default(),
+            invocation: Invocation::default(),
+            positions: [0; 7432],
+        }
     }
 }
