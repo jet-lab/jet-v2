@@ -363,7 +363,7 @@ impl MarginAccount {
 
     /// Check if the given address is an authority for this margin account
     pub fn has_authority(&self, authority: Pubkey) -> bool {
-        authority == self.owner || authority == self.liquidator
+        authority == self.owner && !self.is_liquidating() || authority == self.liquidator
     }
 
     pub fn valuation(&self) -> AnchorResult<Valuation> {
@@ -1439,5 +1439,23 @@ mod tests {
             try_register_position(&mut account, i, TokenKind::Collateral).unwrap();
         }
         try_register_position(&mut account, 24, TokenKind::Collateral).unwrap_err();
+    }
+
+    #[test]
+    fn margin_account_32_positions_with_liquidator() {
+        let mut account = MarginAccount {
+            version: 1,
+            bump_seed: [0],
+            user_seed: [0; 2],
+            reserved0: [0; 3],
+            owner: Pubkey::default(),
+            liquidation: Pubkey::find_program_address(&[&[234]], &crate::id()).0,
+            liquidator: Pubkey::default(),
+            invocation: Invocation::default(),
+            positions: [0; 7432],
+        };
+        for i in 0..30 {
+            try_register_position(&mut account, i, TokenKind::Collateral).unwrap();
+        }
     }
 }
