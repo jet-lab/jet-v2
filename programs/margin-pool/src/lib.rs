@@ -64,14 +64,22 @@ mod jet_margin_pool {
     }
 
     /// Borrow tokens using a margin account
-    pub fn margin_borrow(ctx: Context<MarginBorrow>, change_kind: ChangeKind, amount: u64) -> Result<()> {
+    pub fn margin_borrow(
+        ctx: Context<MarginBorrow>,
+        change_kind: ChangeKind,
+        amount: u64,
+    ) -> Result<()> {
         instructions::margin_borrow_handler(ctx, change_kind, amount)
     }
 
     /// Repay a loan with a maximum amount.
     /// If the loan balance is lower than the amount, the excess is left in the
     /// deposit account.
-    pub fn margin_repay(ctx: Context<MarginRepay>, change_kind: ChangeKind, amount: u64) -> Result<()> {
+    pub fn margin_repay(
+        ctx: Context<MarginRepay>,
+        change_kind: ChangeKind,
+        amount: u64,
+    ) -> Result<()> {
         instructions::margin_repay_handler(ctx, change_kind, amount)
     }
 

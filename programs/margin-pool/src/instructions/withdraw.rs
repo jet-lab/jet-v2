@@ -81,7 +81,11 @@ impl<'info> Withdraw<'info> {
     }
 }
 
-pub fn withdraw_handler(ctx: Context<Withdraw>, change_kind: ChangeKind, amount: u64) -> Result<()> {
+pub fn withdraw_handler(
+    ctx: Context<Withdraw>,
+    change_kind: ChangeKind,
+    amount: u64,
+) -> Result<()> {
     let change = TokenChange {
         kind: change_kind,
         tokens: amount,

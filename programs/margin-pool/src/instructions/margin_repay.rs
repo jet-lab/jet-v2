@@ -82,7 +82,11 @@ impl<'info> MarginRepay<'info> {
     }
 }
 
-pub fn margin_repay_handler(ctx: Context<MarginRepay>, change_kind: ChangeKind, amount: u64) -> Result<()> {
+pub fn margin_repay_handler(
+    ctx: Context<MarginRepay>,
+    change_kind: ChangeKind,
+    amount: u64,
+) -> Result<()> {
     let change = TokenChange {
         kind: change_kind,
         tokens: amount,
