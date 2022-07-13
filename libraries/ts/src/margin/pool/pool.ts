@@ -473,7 +473,7 @@ export class Pool {
     const position = await marginAccount.withGetOrCreatePosition(this.addresses.depositNoteMint)
     assert(position)
 
-await this.withDeposit({
+    await this.withDeposit({
       instructions: instructions,
       marginAccount,
       source,
