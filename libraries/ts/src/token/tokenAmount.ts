@@ -73,7 +73,7 @@ export class TokenAmount {
    * @returns {TokenAmount}
    * @memberof TokenAmount
    */
-  public static tokens(tokenAmount: string, decimals: number): TokenAmount {
+  public static tokens(tokenAmount: string | number, decimals: number): TokenAmount {
     return new TokenAmount(TokenAmount.tokensToLamports(tokenAmount, decimals), decimals)
   }
 
@@ -119,18 +119,21 @@ export class TokenAmount {
    * Convert a tokens string into lamports BN
    * @private
    * @static
-   * @param {string} tokensStr
+   * @param {string} tokens
    * @param {number} decimals
    * @returns {BN}
    * @memberof TokenAmount
    */
-  private static tokensToLamports(tokensStr: string, decimals: number): BN {
+  private static tokensToLamports(tokens: string | number, decimals: number): BN {
+    if (typeof tokens === "number") {
+      tokens = tokens.toLocaleString("fullwide", { useGrouping: false })
+    }
     // Convert from exponential notation (7.46e-7) to regular
-    if (tokensStr.indexOf("e+") !== -1 || tokensStr.indexOf("e-") !== -1) {
-      tokensStr = Number(tokensStr).toLocaleString("fullwide", { useGrouping: false })
+    if (tokens.indexOf("e+") !== -1 || tokens.indexOf("e-") !== -1) {
+      tokens = Number(tokens).toLocaleString("fullwide", { useGrouping: false })
     }
 
-    let lamports: string = tokensStr
+    let lamports: string = tokens
 
     // Remove commas
     while (lamports.indexOf(",") !== -1) {

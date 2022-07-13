@@ -213,14 +213,6 @@ export type JetMargin = {
       ]
       args: [
         {
-          name: "accountMetas"
-          type: {
-            vec: {
-              defined: "CompactAccountMeta"
-            }
-          }
-        },
-        {
           name: "data"
           type: "bytes"
         }
@@ -246,14 +238,6 @@ export type JetMargin = {
         }
       ]
       args: [
-        {
-          name: "accountMetas"
-          type: {
-            vec: {
-              defined: "CompactAccountMeta"
-            }
-          }
-        },
         {
           name: "data"
           type: "bytes"
@@ -348,14 +332,6 @@ export type JetMargin = {
       ]
       args: [
         {
-          name: "accountMetas"
-          type: {
-            vec: {
-              defined: "CompactAccountMeta"
-            }
-          }
-        },
-        {
           name: "data"
           type: "bytes"
         }
@@ -433,22 +409,6 @@ export type JetMargin = {
     }
   ]
   types: [
-    {
-      name: "CompactAccountMeta"
-      type: {
-        kind: "struct"
-        fields: [
-          {
-            name: "isSigner"
-            type: "u8"
-          },
-          {
-            name: "isWritable"
-            type: "u8"
-          }
-        ]
-      }
-    },
     {
       name: "AdapterResult"
       type: {
@@ -982,14 +942,6 @@ export const IDL: JetMargin = {
       ],
       args: [
         {
-          name: "accountMetas",
-          type: {
-            vec: {
-              defined: "CompactAccountMeta"
-            }
-          }
-        },
-        {
           name: "data",
           type: "bytes"
         }
@@ -1015,14 +967,6 @@ export const IDL: JetMargin = {
         }
       ],
       args: [
-        {
-          name: "accountMetas",
-          type: {
-            vec: {
-              defined: "CompactAccountMeta"
-            }
-          }
-        },
         {
           name: "data",
           type: "bytes"
@@ -1117,14 +1061,6 @@ export const IDL: JetMargin = {
       ],
       args: [
         {
-          name: "accountMetas",
-          type: {
-            vec: {
-              defined: "CompactAccountMeta"
-            }
-          }
-        },
-        {
           name: "data",
           type: "bytes"
         }
@@ -1202,22 +1138,6 @@ export const IDL: JetMargin = {
     }
   ],
   types: [
-    {
-      name: "CompactAccountMeta",
-      type: {
-        kind: "struct",
-        fields: [
-          {
-            name: "isSigner",
-            type: "u8"
-          },
-          {
-            name: "isWritable",
-            type: "u8"
-          }
-        ]
-      }
-    },
     {
       name: "AdapterResult",
       type: {

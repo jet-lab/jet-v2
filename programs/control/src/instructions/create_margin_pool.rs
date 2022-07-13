@@ -67,6 +67,7 @@ pub struct CreateMarginPool<'info> {
     #[account(mut)]
     loan_note_metadata: UncheckedAccount<'info>,
 
+    /// CHECK:
     #[account(init,
               seeds = [
                     crate::seeds::FEE_DESTINATION,

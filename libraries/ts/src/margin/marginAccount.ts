@@ -2,6 +2,7 @@ import assert from "assert"
 import { Address, AnchorProvider, BN, ProgramAccount, translateAddress } from "@project-serum/anchor"
 import { NATIVE_MINT, TOKEN_PROGRAM_ID } from "@solana/spl-token"
 import {
+  AccountMeta,
   GetProgramAccountsFilter,
   MemcmpFilter,
   PublicKey,
@@ -30,6 +31,7 @@ import {
   Number128,
   Number192,
   numberToBn,
+  PoolTokenChange,
   TokenAmount
 } from ".."
 import { MarginPoolConfig, MarginTokenConfig } from "./config"
@@ -890,27 +892,14 @@ export class MarginAccount {
     adapterInstruction: TransactionInstruction
   }): Promise<void> {
     const ix = await this.programs.margin.methods
-      .adapterInvoke(
-        adapterInstruction.keys.slice(1).map(accountMeta => {
-          return { isSigner: accountMeta.isSigner, isWritable: accountMeta.isWritable }
-        }),
-        adapterInstruction.data
-      )
+      .adapterInvoke(adapterInstruction.data)
       .accounts({
         owner: this.owner,
         marginAccount: this.address,
         adapterProgram,
         adapterMetadata
       })
-      .remainingAccounts(
-        adapterInstruction.keys.slice(1).map(accountMeta => {
-          return {
-            pubkey: accountMeta.pubkey,
-            isSigner: accountMeta.isSigner,
-            isWritable: accountMeta.isWritable
-          }
-        })
-      )
+      .remainingAccounts(this.invokeAccounts(adapterInstruction))
       .instruction()
     instructions.push(ix)
   }
@@ -927,28 +916,33 @@ export class MarginAccount {
     adapterInstruction: TransactionInstruction
   }): Promise<void> {
     const ix = await this.programs.margin.methods
-      .accountingInvoke(
-        adapterInstruction.keys.slice(1).map(accountMeta => {
-          return { isSigner: false, isWritable: accountMeta.isWritable }
-        }),
-        adapterInstruction.data
-      )
+      .accountingInvoke(adapterInstruction.data)
       .accounts({
         marginAccount: this.address,
         adapterProgram,
         adapterMetadata
       })
-      .remainingAccounts(
-        adapterInstruction.keys.slice(1).map(accountMeta => {
-          return {
-            pubkey: accountMeta.pubkey,
-            isSigner: false,
-            isWritable: accountMeta.isWritable
-          }
-        })
-      )
+      .remainingAccounts(this.invokeAccounts(adapterInstruction))
       .instruction()
     instructions.push(ix)
+  }
+
+  // prepares arguments for adapterInvoke, accountInvoke, or liquidatorInvoke
+  invokeAccounts(adapterInstruction: TransactionInstruction): AccountMeta[] {
+    let accounts: AccountMeta[] = []
+    for (let acc of adapterInstruction.keys) {
+      let isSigner = false
+      if (acc.pubkey != this.address) {
+        isSigner = acc.isSigner
+      }
+      accounts.push({
+        pubkey: acc.pubkey,
+        isSigner: isSigner,
+        isWritable: acc.isWritable
+      })
+    }
+
+    return accounts
   }
 
   async sendAndConfirm(instructions: TransactionInstruction[]) {

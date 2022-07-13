@@ -30,6 +30,8 @@ pub struct RegisterLoan<'info> {
     /// This will be required for margin to register the position,
     /// so requiring it here makes it easier for clients to ensure
     /// that it will be sent.
+    ///
+    /// CHECK:
     pub position_token_metadata: AccountInfo<'info>,
 
     /// The token account to store the loan notes representing the claim

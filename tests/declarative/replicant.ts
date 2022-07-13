@@ -8,7 +8,7 @@ import {
   MarginConfig,
   MarginPrograms,
   Pool,
-  PoolAmount,
+  PoolTokenChange,
   PoolManager
 } from "../../libraries/ts/src/index"
 import { createAssociatedTokenAccountInstruction, getAssociatedTokenAddress } from "@solana/spl-token"
@@ -249,7 +249,7 @@ export class Replicant {
           assert(tokenConfig.faucet)
           if (existingBorrow.lt(expectedBorrow)) {
             const amount = expectedBorrow.sub(existingBorrow)
-            await marginPool.marginBorrow({ marginAccount, pools: this.pools!, amount })
+            await marginPool.marginBorrow({ marginAccount, pools: this.pools!, change: PoolTokenChange.shiftBy(amount) })
           } else if (existingBorrow.gt(expectedBorrow)) {
             const amount = existingBorrow.sub(expectedBorrow)
 
@@ -357,8 +357,8 @@ export class Replicant {
                 const txid = await pool.deposit({ marginAccount, source: tokenAccount, amount })
               }
 
-              const amount = PoolAmount.notes(position.balance)
-              await pool.marginRepay({ marginAccount, pools: this.pools!, amount })
+              const change = PoolTokenChange.setTo(0)
+              await pool.marginRepay({ marginAccount, pools: this.pools!, change })
               await marginAccount.closePosition(position)
               break
             }

@@ -24,9 +24,9 @@ use anchor_lang::prelude::{Id, System, ToAccountMetas};
 use anchor_lang::InstructionData;
 use anchor_spl::token::Token;
 
+use jet_margin::accounts as ix_account;
 use jet_margin::instruction as ix_data;
 use jet_margin::program::JetMargin;
-use jet_margin::{accounts as ix_account, CompactAccountMeta};
 
 /// Utility for creating instructions to interact with the margin
 /// program for a specific account.
@@ -48,11 +48,22 @@ pub struct MarginIxBuilder {
 }
 
 impl MarginIxBuilder {
+    /// Create a new [MarginIxBuilder] which uses the margin account as the authority.
+    /// Ordinary margin users should use this function to create a builder.
     pub fn new(owner: Pubkey, seed: u16) -> Self {
-        Self::new_with_payer(owner, seed, owner)
+        Self::new_with_payer(owner, seed, owner, None)
     }
 
-    pub fn new_with_payer(owner: Pubkey, seed: u16, payer: Pubkey) -> Self {
+    /// Create a new [MarginIxBuilder] with a custom payer and authority.
+    /// The authority is expected to sign the instructions generated, and
+    /// is normally the margin account or its registered liquidator.
+    /// If the authority is not set, it defaults to the margin account.
+    pub fn new_with_payer(
+        owner: Pubkey,
+        seed: u16,
+        payer: Pubkey,
+        authority: Option<Pubkey>,
+    ) -> Self {
         let (address, _) = Pubkey::find_program_address(
             &[owner.as_ref(), seed.to_le_bytes().as_ref()],
             &jet_margin::ID,
@@ -62,7 +73,7 @@ impl MarginIxBuilder {
             seed,
             payer,
             address,
-            authority: None,
+            authority,
         }
     }
 
@@ -366,22 +377,21 @@ macro_rules! invoke {
         }
         .to_account_metas(None);
 
-        let adapter_metas = $adapter_ix.accounts.iter().skip(1);
-        let compact_account_metas = adapter_metas
-            .clone() // accounts already provided above
-            .map(|a| CompactAccountMeta {
-                is_signer: if a.is_signer { 1 } else { 0 },
-                is_writable: if a.is_writable { 1 } else { 0 },
-            })
-            .collect();
-
-        accounts.extend(adapter_metas.cloned());
+        for acc in $adapter_ix.accounts {
+            if acc.pubkey == $margin_account {
+                accounts.push(anchor_lang::prelude::AccountMeta {
+                    is_signer: false,
+                    ..acc
+                })
+            } else {
+                accounts.push(acc)
+            }
+        }
 
         Instruction {
             program_id: JetMargin::id(),
             data: ix_data::$Instruction {
                 data: $adapter_ix.data,
-                account_metas: compact_account_metas,
             }
             .data(),
             accounts,

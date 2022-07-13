@@ -31,7 +31,7 @@ use solana_sdk::system_program;
 use solana_sdk::{pubkey::Pubkey, transaction::Transaction};
 
 use jet_control::TokenMetadataParams;
-use jet_margin_pool::{Amount, MarginPool, MarginPoolConfig};
+use jet_margin_pool::{Amount, MarginPool, MarginPoolConfig, TokenChange};
 use jet_margin_sdk::tx_builder::MarginTxBuilder;
 use jet_metadata::{LiquidatorMetadata, MarginAdapterMetadata, TokenKind, TokenMetadata};
 use jet_simulation::{send_and_confirm, solana_rpc_api::SolanaRpcClient};
@@ -58,13 +58,12 @@ impl MarginClient {
         Self { rpc }
     }
 
-    pub async fn user(&self, keypair: &Keypair) -> Result<MarginUser, Error> {
+    pub async fn user(&self, keypair: &Keypair, seed: u16) -> Result<MarginUser, Error> {
         let tx = MarginTxBuilder::new(
             self.rpc.clone(),
             Some(Keypair::from_bytes(&keypair.to_bytes())?),
             keypair.pubkey(),
-            0,
-            false,
+            seed,
         );
 
         Ok(MarginUser {
@@ -73,13 +72,18 @@ impl MarginClient {
         })
     }
 
-    pub async fn liquidator(&self, keypair: &Keypair, owner: &Pubkey) -> Result<MarginUser, Error> {
-        let tx = MarginTxBuilder::new(
+    pub async fn liquidator(
+        &self,
+        keypair: &Keypair,
+        owner: &Pubkey,
+        seed: u16,
+    ) -> Result<MarginUser, Error> {
+        let tx = MarginTxBuilder::new_liquidator(
             self.rpc.clone(),
             Some(Keypair::from_bytes(&keypair.to_bytes())?),
             *owner,
-            0,
-            true,
+            seed,
+            keypair.pubkey(),
         );
 
         Ok(MarginUser {
@@ -197,6 +201,9 @@ pub struct MarginUser {
 }
 
 impl MarginUser {
+    pub async fn print(&self) {
+        println!("{:#?}", self.tx.get_account_state().await.unwrap())
+    }
     async fn send_confirm_tx(&self, tx: Transaction) -> Result<(), Error> {
         let _ = self.rpc.send_and_confirm_transaction(&tx).await?;
         Ok(())
@@ -224,6 +231,10 @@ impl MarginUser {
 
     pub fn address(&self) -> &Pubkey {
         self.tx.address()
+    }
+
+    pub fn seed(&self) -> u16 {
+        self.tx.seed()
     }
 
     pub async fn create_account(&self) -> Result<(), Error> {
@@ -255,8 +266,13 @@ impl MarginUser {
             .await
     }
 
-    pub async fn deposit(&self, mint: &Pubkey, source: &Pubkey, amount: u64) -> Result<(), Error> {
-        self.send_confirm_tx(self.tx.deposit(mint, source, amount).await?)
+    pub async fn deposit(
+        &self,
+        mint: &Pubkey,
+        source: &Pubkey,
+        change: TokenChange,
+    ) -> Result<(), Error> {
+        self.send_confirm_tx(self.tx.deposit(mint, source, change).await?)
             .await
     }
 
@@ -264,19 +280,29 @@ impl MarginUser {
         &self,
         mint: &Pubkey,
         destination: &Pubkey,
-        amount: Amount,
+        change: TokenChange,
     ) -> Result<(), Error> {
-        self.send_confirm_tx(self.tx.withdraw(mint, destination, amount).await?)
+        self.send_confirm_tx(self.tx.withdraw(mint, destination, change).await?)
             .await
     }
 
-    pub async fn borrow(&self, mint: &Pubkey, amount: u64) -> Result<(), Error> {
-        self.send_confirm_tx(self.tx.borrow(mint, amount).await?)
+    pub async fn borrow(&self, mint: &Pubkey, change: TokenChange) -> Result<(), Error> {
+        self.send_confirm_tx(self.tx.borrow(mint, change).await?)
             .await
     }
 
-    pub async fn repay(&self, mint: &Pubkey, amount: Amount) -> Result<(), Error> {
-        self.send_confirm_tx(self.tx.repay(mint, amount).await?)
+    pub async fn margin_repay(&self, mint: &Pubkey, change: TokenChange) -> Result<(), Error> {
+        self.send_confirm_tx(self.tx.margin_repay(mint, change).await?)
+            .await
+    }
+
+    pub async fn repay(
+        &self,
+        mint: &Pubkey,
+        source: &Pubkey,
+        change: TokenChange,
+    ) -> Result<(), Error> {
+        self.send_confirm_tx(self.tx.repay(mint, source, change).await?)
             .await
     }
 

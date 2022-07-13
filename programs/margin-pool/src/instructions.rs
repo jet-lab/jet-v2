@@ -24,6 +24,7 @@ mod margin_borrow;
 mod margin_refresh_position;
 mod margin_repay;
 mod register_loan;
+mod repay;
 mod withdraw;
 
 pub use close_loan::*;
@@ -35,4 +36,5 @@ pub use margin_borrow::*;
 pub use margin_refresh_position::*;
 pub use margin_repay::*;
 pub use register_loan::*;
+pub use repay::*;
 pub use withdraw::*;
