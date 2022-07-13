@@ -185,7 +185,7 @@ impl MarginAccount {
         max_staleness: u64,
         approvals: &[Approver],
     ) -> AnchorResult<AccountPositionKey> {
-        if self.is_liquidating() && self.position_list().length >= MAX_USER_POSITIONS {
+        if !self.is_liquidating() && self.position_list().length >= MAX_USER_POSITIONS {
             return err!(ErrorCode::MaxPositions);
         }
         let (key, free_position) = self.position_list_mut().add(token)?;
@@ -1314,6 +1314,14 @@ mod tests {
     }
 
     fn register_position(acc: &mut MarginAccount, index: u8, kind: TokenKind) -> Pubkey {
+        try_register_position(acc, index, kind).unwrap()
+    }
+
+    fn try_register_position(
+        acc: &mut MarginAccount,
+        index: u8,
+        kind: TokenKind,
+    ) -> AnchorResult<Pubkey> {
         let key = Pubkey::find_program_address(&[&[index]], &crate::id()).0;
         acc.register_position(
             key,
@@ -1324,10 +1332,9 @@ mod tests {
             10000,
             0,
             &[Approver::MarginAccountAuthority, Approver::Adapter(key)],
-        )
-        .unwrap();
+        )?;
 
-        key
+        Ok(key)
     }
 
     fn assert_unhealthy(acc: &MarginAccount) {
@@ -1413,5 +1420,24 @@ mod tests {
             0,
         ))
         .unwrap_err();
+    }
+
+    #[test]
+    fn margin_account_no_more_than_24_positions() {
+        let mut account = MarginAccount {
+            version: 1,
+            bump_seed: [0],
+            user_seed: [0; 2],
+            reserved0: [0; 3],
+            owner: Pubkey::default(),
+            liquidation: Pubkey::default(),
+            liquidator: Pubkey::default(),
+            invocation: Invocation::default(),
+            positions: [0; 7432],
+        };
+        for i in 0..24 {
+            try_register_position(&mut account, i, TokenKind::Collateral).unwrap();
+        }
+        try_register_position(&mut account, 24, TokenKind::Collateral).unwrap_err();
     }
 }
