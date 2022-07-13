@@ -31,6 +31,7 @@ import {
   Number128,
   Number192,
   numberToBn,
+  PoolTokenChange,
   TokenAmount
 } from ".."
 import { MarginPoolConfig, MarginTokenConfig } from "./config"

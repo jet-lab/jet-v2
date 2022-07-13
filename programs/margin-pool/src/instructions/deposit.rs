@@ -20,8 +20,8 @@ use std::ops::Deref;
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, MintTo, Token, Transfer};
 
-use crate::{events, state::*, AmountKind};
-use crate::{Amount, ErrorCode};
+use crate::{events, state::*, TokenChange};
+use crate::{ChangeKind, ErrorCode};
 
 #[derive(Accounts)]
 pub struct Deposit<'info> {
@@ -81,7 +81,12 @@ impl<'info> Deposit<'info> {
     }
 }
 
-pub fn deposit_handler(ctx: Context<Deposit>, token_amount: u64) -> Result<()> {
+pub fn deposit_handler(ctx: Context<Deposit>, change_kind: ChangeKind, amount: u64) -> Result<()> {
+    let change = TokenChange {
+        kind: change_kind,
+        tokens: amount,
+    };
+
     let pool = &mut ctx.accounts.margin_pool;
     let clock = Clock::get()?;
 
@@ -91,9 +96,11 @@ pub fn deposit_handler(ctx: Context<Deposit>, token_amount: u64) -> Result<()> {
         return Err(ErrorCode::InterestAccrualBehind.into());
     }
 
-    let deposit_rounding = RoundingDirection::direction(PoolAction::Deposit, AmountKind::Tokens);
-    let deposit_amount =
-        pool.convert_deposit_amount(Amount::tokens(token_amount), deposit_rounding)?;
+    let deposit_amount = pool.calculate_full_amount(
+        token::accessor::amount(&ctx.accounts.destination.to_account_info())?,
+        change,
+        PoolAction::Deposit,
+    )?;
     pool.deposit(&deposit_amount);
 
     let pool = &ctx.accounts.margin_pool;

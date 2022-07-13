@@ -20,8 +20,8 @@ use std::ops::Deref;
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Burn, Token, Transfer};
 
-use crate::{events, state::*};
-use crate::{Amount, ErrorCode};
+use crate::{events, state::*, TokenChange};
+use crate::{ChangeKind, ErrorCode};
 
 #[derive(Accounts)]
 pub struct Withdraw<'info> {
@@ -81,7 +81,15 @@ impl<'info> Withdraw<'info> {
     }
 }
 
-pub fn withdraw_handler(ctx: Context<Withdraw>, amount: Amount) -> Result<()> {
+pub fn withdraw_handler(
+    ctx: Context<Withdraw>,
+    change_kind: ChangeKind,
+    amount: u64,
+) -> Result<()> {
+    let change = TokenChange {
+        kind: change_kind,
+        tokens: amount,
+    };
     let pool = &mut ctx.accounts.margin_pool;
     let clock = Clock::get()?;
 
@@ -91,8 +99,11 @@ pub fn withdraw_handler(ctx: Context<Withdraw>, amount: Amount) -> Result<()> {
         return Err(ErrorCode::InterestAccrualBehind.into());
     }
 
-    let withdraw_rounding = RoundingDirection::direction(PoolAction::Withdraw, amount.kind);
-    let withdraw_amount = pool.convert_deposit_amount(amount, withdraw_rounding)?;
+    let withdraw_amount = pool.calculate_full_amount(
+        token::accessor::amount(&ctx.accounts.source.to_account_info())?,
+        change,
+        PoolAction::Withdraw,
+    )?;
     pool.withdraw(&withdraw_amount)?;
 
     let pool = &ctx.accounts.margin_pool;

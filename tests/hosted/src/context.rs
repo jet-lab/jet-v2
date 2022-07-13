@@ -19,11 +19,7 @@ static TEST_CONTEXT: OnceCell<MarginTestContext> = OnceCell::const_new();
 
 pub async fn test_context() -> &'static MarginTestContext {
     TEST_CONTEXT
-        .get_or_init(|| async {
-            let ctx = MarginTestContext::new().await.unwrap();
-
-            ctx
-        })
+        .get_or_init(|| async { MarginTestContext::new().await.unwrap() })
         .await
 }
 

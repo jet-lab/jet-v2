@@ -81,3 +81,4 @@ test_file swap
 test_file liquidate
 test_file pool_overpayment
 test_file rounding
+test_file sanity

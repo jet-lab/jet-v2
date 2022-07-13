@@ -8,13 +8,13 @@ import MARGIN_CONFIG from "../../../libraries/ts/src/margin/config.json"
 
 import {
   MarginAccount,
-  PoolAmount,
+  PoolTokenChange,
   MarginClient,
   Pool,
   MarginPoolConfigData,
   PoolManager,
   Number128,
-  sleep
+  TokenAmount
 } from "../../../libraries/ts/src"
 
 import { PythClient } from "../pyth/pythClient"
@@ -245,17 +245,17 @@ describe("margin pool borrow", () => {
     await marginPool_USDC.deposit({
       marginAccount: marginAccount_A,
       source: user_a_usdc_account,
-      amount: new BN(500_000 * ONE_USDC)
+      change: PoolTokenChange.shiftBy(TokenAmount.tokens(500000, marginPool_USDC.decimals))
     })
     await marginPool_USDC.deposit({
       marginAccount: marginAccount_B,
       source: user_b_usdc_account,
-      amount: new BN(50 * ONE_USDC)
+      change: PoolTokenChange.shiftBy(TokenAmount.tokens(50, marginPool_USDC.decimals))
     })
     await marginPool_USDC.deposit({
       marginAccount: marginAccount_C,
       source: user_c_usdc_account,
-      amount: new BN(ONE_USDC)
+      change: PoolTokenChange.shiftBy(TokenAmount.tokens(1, marginPool_USDC.decimals))
     })
     await pythClient.setPythPrice(ownerKeypair, USDC_oracle[1].publicKey, 1, 0.01, -8)
     await marginPool_USDC.marginRefreshPositionPrice(marginAccount_A)
@@ -265,17 +265,17 @@ describe("margin pool borrow", () => {
     await marginPool_SOL.deposit({
       marginAccount: marginAccount_A,
       source: user_a_sol_account,
-      amount: new BN(50 * ONE_SOL)
+      change: PoolTokenChange.shiftBy(TokenAmount.tokens(50, marginPool_SOL.decimals))
     })
     await marginPool_SOL.deposit({
       marginAccount: marginAccount_B,
       source: user_b_sol_account,
-      amount: new BN(500 * ONE_SOL)
+      change: PoolTokenChange.shiftBy(TokenAmount.tokens(500, marginPool_SOL.decimals))
     })
     await marginPool_SOL.deposit({
       marginAccount: marginAccount_C,
       source: user_c_sol_account,
-      amount: new BN(ONE_SOL)
+      change: PoolTokenChange.shiftBy(TokenAmount.tokens(1, marginPool_SOL.decimals))
     })
     await pythClient.setPythPrice(ownerKeypair, SOL_oracle[1].publicKey, 100, 1, -8)
     await marginPool_SOL.marginRefreshPositionPrice(marginAccount_A)
@@ -308,8 +308,8 @@ describe("margin pool borrow", () => {
 
   it("Have each user borrow the other's funds", async () => {
     // SETUP
-    const borrowedSOL = new BN(10 * ONE_SOL)
-    const borrowedUSDC = new BN(1_000 * ONE_USDC)
+    const borrowedSOL = TokenAmount.tokens(10, marginPool_SOL.decimals)
+    const borrowedUSDC = TokenAmount.tokens(1_000, marginPool_USDC.decimals)
 
     // ACT
     //TODO remove this.
@@ -319,9 +319,13 @@ describe("margin pool borrow", () => {
     await marginPool_SOL.marginBorrow({
       marginAccount: marginAccount_A,
       pools,
-      amount: borrowedSOL
+      change: PoolTokenChange.shiftBy(borrowedSOL)
     })
-    await marginPool_USDC.marginBorrow({ marginAccount: marginAccount_B, pools, amount: borrowedUSDC })
+    await marginPool_USDC.marginBorrow({
+      marginAccount: marginAccount_B,
+      pools,
+      change: PoolTokenChange.shiftBy(borrowedUSDC)
+    })
     await marginPool_SOL.refresh()
     await marginPool_USDC.refresh()
     await marginAccount_A.refresh()
@@ -331,8 +335,8 @@ describe("margin pool borrow", () => {
     const USDCLoanNotes = marginPool_USDC.info?.loanNoteMint.supply
 
     // TEST
-    expect(Number(SOLLoanNotes)).to.eq(borrowedSOL.toNumber())
-    expect(Number(USDCLoanNotes)).to.eq(borrowedUSDC.toNumber())
+    expect(Number(SOLLoanNotes)).to.eq(borrowedSOL.lamports.toNumber())
+    expect(Number(USDCLoanNotes)).to.eq(borrowedUSDC.lamports.toNumber())
 
     expect(marginAccount_A.valuation.weightedCollateral.toString()).to.eq(new BN(505700).mul(Number128.ONE).toString())
     expect(marginAccount_A.valuation.effectiveCollateral.toString()).to.eq(new BN(504700).mul(Number128.ONE).toString())
@@ -352,7 +356,7 @@ describe("margin pool borrow", () => {
     await marginPool_SOL.marginRepay({
       marginAccount: marginAccount_A,
       pools,
-      amount: owedSOL
+      change: PoolTokenChange.setTo(0)
     })
     await marginPool_SOL.refresh()
 
@@ -370,7 +374,7 @@ describe("margin pool borrow", () => {
     await marginPool_USDC.marginRepay({
       marginAccount: marginAccount_B,
       pools,
-      amount: owedUSDC
+      change: PoolTokenChange.setTo(0)
     })
     await marginPool_USDC.refresh()
 
@@ -385,13 +389,13 @@ describe("margin pool borrow", () => {
       marginAccount: marginAccount_A,
       pools,
       destination: user_a_usdc_account,
-      amount: PoolAmount.tokens(new BN(400_000 * ONE_USDC))
+      change: PoolTokenChange.shiftBy(new BN(400_000 * ONE_USDC))
     })
     await marginPool_SOL.withdraw({
       marginAccount: marginAccount_B,
       pools,
       destination: user_b_sol_account,
-      amount: PoolAmount.tokens(new BN(400 * ONE_SOL))
+      change: PoolTokenChange.shiftBy(new BN(400 * ONE_SOL))
     })
 
     // TEST

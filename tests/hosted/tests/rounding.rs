@@ -11,7 +11,7 @@ use hosted_tests::{
     tokens::TokenPrice,
 };
 
-use jet_margin_pool::{Amount, MarginPoolConfig, PoolFlags};
+use jet_margin_pool::{MarginPoolConfig, PoolFlags, TokenChange};
 use jet_metadata::TokenKind;
 use jet_simulation::{assert_custom_program_error, create_wallet};
 
@@ -124,16 +124,26 @@ async fn rounding_poc() -> Result<()> {
         .await?;
 
     user_a
-        .deposit(&env.usdc, &user_a_usdc_account, 5_000_000 * ONE_USDC)
+        .deposit(
+            &env.usdc,
+            &user_a_usdc_account,
+            TokenChange::shift(5_000_000 * ONE_USDC),
+        )
         .await?;
     user_b
-        .deposit(&env.tsol, &user_b_tsol_account, 10_000 * ONE_TSOL)
+        .deposit(
+            &env.tsol,
+            &user_b_tsol_account,
+            TokenChange::shift(10_000 * ONE_TSOL),
+        )
         .await?;
 
     user_a.refresh_all_pool_positions().await?;
     user_b.refresh_all_pool_positions().await?;
 
-    user_b.borrow(&env.usdc, 50000000000).await?;
+    user_b
+        .borrow(&env.usdc, TokenChange::shift(50000000000))
+        .await?;
 
     let mut clk: Clock = match ctx.rpc.get_clock() {
         Some(c) => c,
@@ -150,7 +160,7 @@ async fn rounding_poc() -> Result<()> {
     // If the rounding is performed correctly, the user should try to burn 1 note,
     // and this should fail as they have no notes to burn.
     let withdraw_result = user_c
-        .withdraw(&env.usdc, &user_c_usdc_account, Amount::tokens(1))
+        .withdraw(&env.usdc, &user_c_usdc_account, TokenChange::shift(1))
         .await;
 
     // Should not succeed, there should be insufficient funds to burn notes

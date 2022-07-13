@@ -1,6 +1,5 @@
 use anyhow::Error;
 
-use jet_margin_sdk::ix_builder::{owned_position_token_account, MarginPoolIxBuilder};
 use solana_sdk::native_token::LAMPORTS_PER_SOL;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::Signer;
@@ -11,7 +10,7 @@ use hosted_tests::{
     tokens::TokenPrice,
 };
 
-use jet_margin_pool::{Amount, MarginPoolConfig, PoolFlags};
+use jet_margin_pool::{MarginPoolConfig, PoolFlags, TokenChange};
 use jet_metadata::TokenKind;
 use jet_simulation::create_wallet;
 
@@ -167,17 +166,33 @@ async fn pool_overpayment() -> Result<(), anyhow::Error> {
 
     // Deposit user funds into their margin accounts
     user_a
-        .deposit(&env.usdc, &user_a_usdc_account, 1_000_000 * ONE_USDC)
+        .deposit(
+            &env.usdc,
+            &user_a_usdc_account,
+            TokenChange::shift(1_000_000 * ONE_USDC),
+        )
         .await?;
     user_b
-        .deposit(&env.tsol, &user_b_tsol_account, 1_000 * ONE_TSOL)
+        .deposit(
+            &env.tsol,
+            &user_b_tsol_account,
+            TokenChange::shift(1_000 * ONE_TSOL),
+        )
         .await?;
     user_c
-        .deposit(&env.usdt, &user_c_usdt_account, 1_000_000 * ONE_USDT)
+        .deposit(
+            &env.usdt,
+            &user_c_usdt_account,
+            TokenChange::shift(1_000_000 * ONE_USDT),
+        )
         .await?;
     // User deposits TSOL which they will use to over-pay
     user_c
-        .deposit(&env.tsol, &user_c_tsol_account, 500 * ONE_TSOL)
+        .deposit(
+            &env.tsol,
+            &user_c_tsol_account,
+            TokenChange::shift(500 * ONE_TSOL),
+        )
         .await?;
 
     // Verify user tokens have been deposited
@@ -190,39 +205,27 @@ async fn pool_overpayment() -> Result<(), anyhow::Error> {
     user_c.refresh_all_pool_positions().await?;
 
     // User A borrows enough TSOL so that there is sufficient liquidity when C repays
-    user_a.borrow(&env.tsol, 1_000 * ONE_TSOL).await?;
+    user_a
+        .borrow(&env.tsol, TokenChange::shift(1_000 * ONE_TSOL))
+        .await?;
     // User B borrows an irrelevant amount
-    user_b.borrow(&env.usdc, 1_000 * ONE_USDC).await?;
-    user_c.borrow(&env.usdc, 1_000 * ONE_USDC).await?;
+    user_b
+        .borrow(&env.usdc, TokenChange::shift(1_000 * ONE_USDC))
+        .await?;
+    user_c
+        .borrow(&env.usdc, TokenChange::shift(1_000 * ONE_USDC))
+        .await?;
     // Borrow TSOL which user will try to overpay
-    user_c.borrow(&env.tsol, 100 * ONE_TSOL).await?;
-
-    // User overpays their loan by 300 TSOL, they should only repay the maximum amount
     user_c
-        .repay(&env.tsol, Amount::tokens(400 * ONE_TSOL))
+        .borrow(&env.tsol, TokenChange::shift(100 * ONE_TSOL))
         .await?;
 
-    let user_c_tsol_deposit_notes_account = owned_position_token_account(
-        user_c.address(),
-        &MarginPoolIxBuilder::new(env.tsol).deposit_note_mint,
-    )
-    .0;
-    let user_c_tsol_deposit_notes_balance = ctx
-        .tokens
-        .get_balance(&user_c_tsol_deposit_notes_account)
-        .await?;
+    // User repays their loan by setting the value to 0
+    user_c.margin_repay(&env.tsol, TokenChange::set(0)).await?;
 
-    // TODO: We do not yet have functions for getting a pool balance,
-    // we use a withdrawal to test that the overpaid tokens are still in the deposit.
-    // User C has 500 (deposit) + 100 (borrow) - 100 (max repay) tokens
     user_c
-        .withdraw(
-            &env.tsol,
-            &user_c_tsol_account,
-            Amount::notes(user_c_tsol_deposit_notes_balance),
-        )
+        .withdraw(&env.tsol, &user_c_tsol_account, TokenChange::set(0))
         .await?;
-
     assert!(ctx.tokens.get_balance(&user_c_tsol_account).await? - 500 * ONE_TSOL < ONE_TSOL);
 
     // User C should be able to close all TSOL positions as loan is paid and deposit withdrawn
