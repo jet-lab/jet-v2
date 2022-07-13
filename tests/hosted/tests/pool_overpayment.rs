@@ -100,9 +100,9 @@ async fn pool_overpayment() -> Result<(), anyhow::Error> {
 
     // Create the user context helpers, which give a simple interface for executing
     // common actions on a margin account
-    let user_a = ctx.margin.user(&wallet_a).await?;
-    let user_b = ctx.margin.user(&wallet_b).await?;
-    let user_c = ctx.margin.user(&wallet_c).await?;
+    let user_a = ctx.margin.user(&wallet_a, 0).await?;
+    let user_b = ctx.margin.user(&wallet_b, 0).await?;
+    let user_c = ctx.margin.user(&wallet_c, 0).await?;
 
     // Initialize the margin accounts for each user
     user_a.create_account().await?;

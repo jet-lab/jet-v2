@@ -84,10 +84,10 @@ pub async fn setup_user(
 
     // Create the user context helpers, which give a simple interface for executing
     // common actions on a margin account
-    let user = ctx.margin.user(&wallet).await?;
+    let user = ctx.margin.user(&wallet, 0).await?;
     let user_liq = ctx
         .margin
-        .liquidator(liquidator_wallet, &wallet.pubkey())
+        .liquidator(liquidator_wallet, &wallet.pubkey(), 0)
         .await?;
 
     // Initialize the margin accounts for each user

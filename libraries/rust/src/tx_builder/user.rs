@@ -46,20 +46,45 @@ pub struct MarginTxBuilder {
 }
 
 impl MarginTxBuilder {
+    /// Create a [MarginTxBuilder] for an ordinary user. Liquidators should use
+    /// `Self::new_liquidator`.
     pub fn new(
         rpc: Arc<dyn SolanaRpcClient>,
         signer: Option<Keypair>,
         owner: Pubkey,
         seed: u16,
-        is_liquidator: bool,
     ) -> MarginTxBuilder {
-        let ix = MarginIxBuilder::new_with_payer(owner, seed, rpc.payer().pubkey());
+        let ix = MarginIxBuilder::new_with_payer(owner, seed, rpc.payer().pubkey(), None);
 
         Self {
             rpc,
             ix,
             signer,
-            is_liquidator,
+            is_liquidator: false,
+        }
+    }
+
+    /// Createa  new [MarginTxBuilder] for a liquidator. Sets the liquidator
+    /// as the authority when interacting with the margin program.
+    ///
+    /// A liquidator is almost always the payer of the transaction,
+    /// their pubkey would be the same as `rpc.payer()`, however we explicitly
+    /// supply it to support cases where the liquidator is not the fee payer.
+    pub fn new_liquidator(
+        rpc: Arc<dyn SolanaRpcClient>,
+        signer: Option<Keypair>,
+        owner: Pubkey,
+        seed: u16,
+        liquidator: Pubkey,
+    ) -> MarginTxBuilder {
+        let ix =
+            MarginIxBuilder::new_with_payer(owner, seed, rpc.payer().pubkey(), Some(liquidator));
+
+        Self {
+            rpc,
+            ix,
+            signer,
+            is_liquidator: true,
         }
     }
 
@@ -87,6 +112,11 @@ impl MarginTxBuilder {
     /// The address of the margin account
     pub fn address(&self) -> &Pubkey {
         &self.ix.address
+    }
+
+    /// The seed of the margin account
+    pub fn seed(&self) -> u16 {
+        self.ix.seed
     }
 
     /// Transaction to create a new margin account for the user
@@ -298,6 +328,20 @@ impl MarginTxBuilder {
         let destination_position = self
             .get_or_create_position(&mut instructions, &destination_pool.deposit_note_mint)
             .await?;
+
+        let destination_metadata = self.get_token_metadata(destination_token_mint).await?;
+
+        // Only refreshing the destination due to transaction size.
+        // The most common scenario would be that a new margin position is created
+        // for the destination of the swap. If its position price is not set before
+        // the swap, a liquidator would be accused of extracting too much value
+        // as the destination becomes immediately stale after creation.
+        instructions.push(
+            self.ix.accounting_invoke(
+                destination_pool
+                    .margin_refresh_position(*self.address(), destination_metadata.pyth_price),
+            ),
+        );
 
         let (swap_authority, _) = Pubkey::find_program_address(&[swap_pool.as_ref()], swap_program);
         let swap_pool = MarginSwapIxBuilder::new(
