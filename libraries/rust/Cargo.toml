@@ -16,9 +16,9 @@ thiserror = "1"
 async-trait = "0.1"
 bytemuck = "1"
 futures = "0.3"
-tokio = { version = "1.15", features = ["rt"] }
+tokio = { version = "1", features = ["rt"] }
 
-solana-sdk = "1.9"
+solana-sdk = "1.10"
 
 anchor-lang = { git = "https://github.com/jet-lab/anchor", branch = "master" }
 anchor-spl = { git = "https://github.com/jet-lab/anchor", branch = "master" }

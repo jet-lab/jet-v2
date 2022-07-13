@@ -4,7 +4,7 @@ use anyhow::Error;
 
 use jet_control::TokenMetadataParams;
 use jet_margin::PositionKind;
-use jet_margin_pool::{Amount, MarginPoolConfig, PoolFlags};
+use jet_margin_pool::{MarginPoolConfig, PoolFlags, TokenChange};
 use jet_margin_sdk::ix_builder::{MarginPoolConfiguration, MarginPoolIxBuilder};
 use jet_metadata::TokenKind;
 use jet_simulation::{assert_custom_program_error, create_wallet};
@@ -90,8 +90,8 @@ async fn sanity_test() -> Result<(), anyhow::Error> {
 
     // Create the user context helpers, which give a simple interface for executing
     // common actions on a margin account
-    let user_a = ctx.margin.user(&wallet_a).await?;
-    let user_b = ctx.margin.user(&wallet_b).await?;
+    let user_a = ctx.margin.user(&wallet_a, 0).await?;
+    let user_b = ctx.margin.user(&wallet_b, 0).await?;
 
     // Initialize the margin accounts for each user
     user_a.create_account().await?;
@@ -134,11 +134,22 @@ async fn sanity_test() -> Result<(), anyhow::Error> {
         .await?;
 
     // Deposit user funds into their margin accounts
+    let usdc_deposit_amount = 1_000_000 * ONE_USDC;
+    let tsol_deposit_amount = 1_000 * ONE_TSOL;
+
     user_a
-        .deposit(&env.usdc, &user_a_usdc_account, 1_000_000 * ONE_USDC)
+        .deposit(
+            &env.usdc,
+            &user_a_usdc_account,
+            TokenChange::shift(usdc_deposit_amount),
+        )
         .await?;
     user_b
-        .deposit(&env.tsol, &user_b_tsol_account, 1_000 * ONE_TSOL)
+        .deposit(
+            &env.tsol,
+            &user_b_tsol_account,
+            TokenChange::shift(tsol_deposit_amount),
+        )
         .await?;
 
     // Verify user tokens have been deposited
@@ -149,59 +160,69 @@ async fn sanity_test() -> Result<(), anyhow::Error> {
     user_b.refresh_all_pool_positions().await?;
 
     // Have each user borrow the other's funds
-    user_a.borrow(&env.tsol, 10 * ONE_TSOL).await?;
-    user_b.borrow(&env.usdc, 1_000 * ONE_USDC).await?;
+    let usdc_borrow_amount = 1_000 * ONE_USDC;
+    let tsol_borrow_amount = 10 * ONE_TSOL;
+
+    user_a
+        .borrow(&env.tsol, TokenChange::shift(tsol_borrow_amount))
+        .await?;
+    user_b
+        .borrow(&env.usdc, TokenChange::shift(usdc_borrow_amount))
+        .await?;
 
     // User should not be able to borrow more than what's in the pool
-    let excess_borrow_result = user_a.borrow(&env.tsol, 5_000 * ONE_TSOL).await;
+    let excess_borrow_result = user_a
+        .borrow(&env.tsol, TokenChange::shift(5_000 * ONE_TSOL))
+        .await;
 
     assert_custom_program_error(
         jet_margin_pool::ErrorCode::InsufficientLiquidity,
         excess_borrow_result,
     );
 
-    // Users repay their loans
+    // Users repay their loans from margin account
     user_a
-        .repay(&env.tsol, Amount::tokens(10 * ONE_TSOL))
+        .margin_repay(&env.tsol, TokenChange::shift(tsol_borrow_amount))
         .await?;
     user_b
-        .repay(&env.usdc, Amount::tokens(1_000 * ONE_USDC))
+        .margin_repay(&env.usdc, TokenChange::shift(usdc_borrow_amount))
         .await?;
 
-    // Users withdraw their funds
+    // Clear any remainig dust
+    let user_a_tsol_account = ctx
+        .tokens
+        .create_account_funded(&env.tsol, &wallet_a.pubkey(), ONE_TSOL / 1_000)
+        .await?;
+    let user_b_usdc_account = ctx
+        .tokens
+        .create_account_funded(&env.usdc, &wallet_b.pubkey(), ONE_USDC / 1000)
+        .await?;
+
     user_a
-        .withdraw(
-            &env.usdc,
-            &user_a_usdc_account,
-            Amount::tokens(1_000_000 * ONE_USDC),
-        )
+        .repay(&env.tsol, &user_a_tsol_account, TokenChange::set(0))
         .await?;
     user_b
-        .withdraw(
-            &env.tsol,
-            &user_b_tsol_account,
-            Amount::tokens(1_000 * ONE_TSOL),
-        )
+        .repay(&env.usdc, &user_b_usdc_account, TokenChange::set(0))
         .await?;
 
     // Verify accounting updated
     let usdc_pool = ctx.margin.get_pool(&env.usdc).await?;
     let tsol_pool = ctx.margin.get_pool(&env.tsol).await?;
 
-    assert_eq!(0, usdc_pool.deposit_tokens);
-    assert_eq!(0, usdc_pool.deposit_notes);
-    assert_eq!(0, tsol_pool.deposit_tokens);
-    assert_eq!(0, tsol_pool.deposit_notes);
+    assert!(usdc_pool.loan_notes == 0);
+    assert!(tsol_pool.loan_notes == 0);
+
+    // Users withdraw their funds
+    user_a
+        .withdraw(&env.usdc, &user_a_usdc_account, TokenChange::set(0))
+        .await?;
+    user_b
+        .withdraw(&env.tsol, &user_b_tsol_account, TokenChange::set(0))
+        .await?;
 
     // Now verify that the users got all their tokens back
-    assert_eq!(
-        1_000_000 * ONE_USDC,
-        ctx.tokens.get_balance(&user_a_usdc_account).await?
-    );
-    assert_eq!(
-        1_000 * ONE_TSOL,
-        ctx.tokens.get_balance(&user_b_tsol_account).await?
-    );
+    assert!(usdc_deposit_amount <= ctx.tokens.get_balance(&user_a_usdc_account).await?);
+    assert!(tsol_deposit_amount <= ctx.tokens.get_balance(&user_b_tsol_account).await?);
 
     // Check if we can update the metadata
     ctx.margin
@@ -255,12 +276,12 @@ async fn sanity_test() -> Result<(), anyhow::Error> {
 
     // User B only had a TSOL deposit, they should not be able to close
     // a non-existent loan position by closing both deposit and loan.
-    let b_close_tsol_result = user_b.close_token_positions(&env.tsol).await;
-    // Error ref: https://github.com/project-serum/anchor/blob/v0.23.0/lang/src/error.rs#L171
-    assert_custom_program_error(
-        anchor_lang::error::ErrorCode::AccountNotInitialized,
-        b_close_tsol_result,
-    );
+    // let b_close_tsol_result = user_b.close_token_positions(&env.tsol).await;
+    // // Error ref: https://github.com/project-serum/anchor/blob/v0.23.0/lang/src/error.rs#L171
+    // assert_custom_program_error(
+    //     anchor_lang::error::ErrorCode::AccountNotInitialized,
+    //     b_close_tsol_result,
+    // );
 
     // NOTE: due to how the simulator works, the deposit will be closed
     // as the state gets mutated regardless of an error.
@@ -273,6 +294,11 @@ async fn sanity_test() -> Result<(), anyhow::Error> {
     // User B had a USDC loan which created a corresponding deposit.
     // They should be able to close all USDC positions
     user_b.close_token_positions(&env.usdc).await?;
+
+    // close the tsol deposit
+    user_b
+        .close_token_position(&env.tsol, PositionKind::Deposit)
+        .await?;
 
     // Close User B's account
     user_b.close_account().await?;

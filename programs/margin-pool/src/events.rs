@@ -61,11 +61,19 @@ pub struct MarginRepay {
     pub user: Pubkey,
     pub loan_account: Pubkey,
     pub deposit_account: Pubkey,
-    pub max_repay_tokens: u64,
-    pub max_repay_notes: u64,
     pub repaid_tokens: u64,
     pub repaid_loan_notes: u64,
     pub repaid_deposit_notes: u64,
+    pub summary: MarginPoolSummary,
+}
+#[derive(Debug)]
+#[event]
+pub struct Repay {
+    pub margin_pool: Pubkey,
+    pub loan_account: Pubkey,
+    pub repayment_token_account: Pubkey,
+    pub repaid_tokens: u64,
+    pub repaid_loan_notes: u64,
     pub summary: MarginPoolSummary,
 }
 
@@ -80,7 +88,7 @@ pub struct Collect {
 }
 
 /// Common fields from MarginPool for event logging.
-#[derive(AnchorDeserialize, AnchorSerialize)]
+#[derive(AnchorDeserialize, AnchorSerialize, Debug)]
 pub struct MarginPoolSummary {
     pub borrowed_tokens: u64,
     pub uncollected_fees: u64,

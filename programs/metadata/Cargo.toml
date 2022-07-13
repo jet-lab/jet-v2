@@ -19,4 +19,4 @@ devnet = []
 
 [dependencies]
 anchor-lang = { git = "https://github.com/jet-lab/anchor", branch = "master" }
-solana-program = "1.9"
+solana-program = "1.10"

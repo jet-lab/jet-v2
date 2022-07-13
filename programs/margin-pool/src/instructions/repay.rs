@@ -15,50 +15,45 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use std::ops::Deref;
-
 use anchor_lang::prelude::*;
-use anchor_spl::token::{self, Burn, Token, TokenAccount};
+use anchor_spl::token::{self, Burn, Token, TokenAccount, Transfer};
 
-use jet_margin::MarginAccount;
-
-use crate::{events, state::*, ChangeKind, TokenChange};
-use crate::{Amount, ErrorCode};
+use crate::{events, state::PoolAction, ChangeKind, ErrorCode, MarginPool, TokenChange};
 
 #[derive(Accounts)]
-pub struct MarginRepay<'info> {
-    /// The margin account being executed on
-    #[account(signer)]
-    pub margin_account: AccountLoader<'info, MarginAccount>,
-
+pub struct Repay<'info> {
     /// The pool with the outstanding loan
-    #[account(mut,
-              has_one = deposit_note_mint,
-              has_one = loan_note_mint)]
-    pub margin_pool: Account<'info, MarginPool>,
+    #[account(
+        mut,
+        has_one = loan_note_mint,
+        has_one = vault
+    )]
+    pub margin_pool: Box<Account<'info, MarginPool>>,
 
     /// The mint for the notes representing loans from the pool
     /// CHECK:
     #[account(mut)]
     pub loan_note_mint: AccountInfo<'info>,
 
-    /// The mint for the notes representing deposit into the pool
-    /// CHECK:
+    /// The vault responsible for storing the pool's tokens
     #[account(mut)]
-    pub deposit_note_mint: AccountInfo<'info>,
+    pub vault: Account<'info, TokenAccount>,
 
     /// The account with the loan notes
     #[account(mut)]
     pub loan_account: Account<'info, TokenAccount>,
 
-    /// The account with the deposit to pay off the loan with
+    /// The token account repaying the debt
     #[account(mut)]
-    pub deposit_account: Account<'info, TokenAccount>,
+    pub repayment_token_account: Account<'info, TokenAccount>,
+
+    /// Signing authority for the repaying token account
+    pub repayment_account_authority: Signer<'info>,
 
     pub token_program: Program<'info, Token>,
 }
 
-impl<'info> MarginRepay<'info> {
+impl<'info> Repay<'info> {
     fn burn_loan_context(&self) -> CpiContext<'_, '_, '_, 'info, Burn<'info>> {
         CpiContext::new(
             self.token_program.to_account_info(),
@@ -70,23 +65,19 @@ impl<'info> MarginRepay<'info> {
         )
     }
 
-    fn burn_deposit_context(&self) -> CpiContext<'_, '_, '_, 'info, Burn<'info>> {
+    fn transfer_repayment_context(&self) -> CpiContext<'_, '_, '_, 'info, Transfer<'info>> {
         CpiContext::new(
             self.token_program.to_account_info(),
-            Burn {
-                from: self.deposit_account.to_account_info(),
-                mint: self.deposit_note_mint.to_account_info(),
-                authority: self.margin_account.to_account_info(),
+            Transfer {
+                from: self.repayment_token_account.to_account_info(),
+                to: self.vault.to_account_info(),
+                authority: self.repayment_account_authority.to_account_info(),
             },
         )
     }
 }
 
-pub fn margin_repay_handler(
-    ctx: Context<MarginRepay>,
-    change_kind: ChangeKind,
-    amount: u64,
-) -> Result<()> {
+pub fn repay_handler(ctx: Context<Repay>, change_kind: ChangeKind, amount: u64) -> Result<()> {
     let change = TokenChange {
         kind: change_kind,
         tokens: amount,
@@ -104,17 +95,6 @@ pub fn margin_repay_handler(
     let repay_amount =
         pool.calculate_full_amount(ctx.accounts.loan_account.amount, change, PoolAction::Repay)?;
 
-    // First record a withdraw of the deposit to use for repaying in tokens
-    let withdraw_amount =
-        pool.convert_amount(Amount::tokens(repay_amount.tokens), PoolAction::Withdraw)?;
-    msg!(
-        "Withdrawing [{} tokens, {} notes] from deposit pool",
-        withdraw_amount.tokens,
-        withdraw_amount.notes
-    );
-    pool.withdraw(&withdraw_amount)?;
-
-    // Then record a repay using the withdrawn tokens
     msg!(
         "Repaying [{} tokens, {} notes] into loan pool",
         repay_amount.tokens,
@@ -122,29 +102,26 @@ pub fn margin_repay_handler(
     );
     pool.repay(&repay_amount)?;
 
-    // Finish by burning the loan and deposit notes
+    // Finish by transfering the requisite tokens and burning the loan notes
     let pool = &ctx.accounts.margin_pool;
     let signer = [&pool.signer_seeds()?[..]];
 
+    token::transfer(
+        ctx.accounts.transfer_repayment_context(),
+        repay_amount.tokens,
+    )?;
     token::burn(
         ctx.accounts.burn_loan_context().with_signer(&signer),
         repay_amount.notes,
     )?;
-    token::burn(
-        ctx.accounts.burn_deposit_context().with_signer(&signer),
-        withdraw_amount.notes,
-    )?;
 
-    emit!(events::MarginRepay {
+    emit!(events::Repay {
         margin_pool: pool.key(),
-        user: ctx.accounts.margin_account.key(),
         loan_account: ctx.accounts.loan_account.key(),
-        deposit_account: ctx.accounts.deposit_account.key(),
+        repayment_token_account: ctx.accounts.repayment_token_account.key(),
         repaid_tokens: repay_amount.tokens,
         repaid_loan_notes: repay_amount.notes,
-        repaid_deposit_notes: withdraw_amount.notes,
-        summary: pool.deref().into(),
+        summary: (&pool.clone().into_inner()).into(),
     });
-
     Ok(())
 }
