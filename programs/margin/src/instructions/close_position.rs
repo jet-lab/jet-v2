@@ -31,7 +31,7 @@ pub struct ClosePosition<'info> {
     pub receiver: AccountInfo<'info>,
 
     /// The margin account with the position to close
-    #[account(mut, constraint = margin_account.load().unwrap().has_authority(authority.key()))]
+    #[account(mut)]
     pub margin_account: AccountLoader<'info, MarginAccount>,
 
     /// The mint for the position token being deregistered
@@ -58,14 +58,16 @@ impl<'info> ClosePosition<'info> {
 }
 
 pub fn close_position_handler(ctx: Context<ClosePosition>) -> Result<()> {
-    ctx.accounts
-        .margin_account
-        .load_mut()?
-        .unregister_position(
+    {
+        let mut account = ctx.accounts.margin_account.load_mut()?;
+        account.verify_authority(ctx.accounts.authority.key())?;
+
+        account.unregister_position(
             &ctx.accounts.position_token_mint.key(),
             &ctx.accounts.token_account.key(),
             &[Approver::MarginAccountAuthority],
         )?;
+    }
 
     if ctx.accounts.token_account.owner == ctx.accounts.margin_account.key() {
         let account = ctx.accounts.margin_account.load()?;
