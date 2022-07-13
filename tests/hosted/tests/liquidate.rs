@@ -276,8 +276,9 @@ async fn can_withdraw_some_during_liquidation() -> Result<()> {
     Ok(())
 }
 
-#[tokio::test(flavor = "multi_thread")]
-#[cfg_attr(not(feature = "localnet"), serial)]
+// #[tokio::test(flavor = "multi_thread")]
+// #[cfg_attr(not(feature = "localnet"), serial)]
+#[allow(dead_code)] // disabled while there is no constraint on borrowing
 async fn cannot_borrow_too_much_during_liquidation() -> Result<()> {
     let scen = scenario1().await?;
 

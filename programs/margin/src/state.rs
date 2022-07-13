@@ -421,7 +421,6 @@ impl MarginAccount {
 
         Ok(Valuation {
             equity,
-            debt,
             past_due,
             required_collateral,
             weighted_collateral,
@@ -926,9 +925,6 @@ impl Liquidation {
 pub struct Valuation {
     /// The net asset value for all positions registered in this account, ignoring collateral weights and max leverage
     pub equity: Number128,
-
-    /// The total dollar value of all outstanding debts
-    pub debt: Number128,
 
     /// The amount of collateral that is required to cover price risk exposure from claim positions
     pub required_collateral: Number128,
