@@ -59,7 +59,7 @@ impl<'info> Repay<'info> {
             self.token_program.to_account_info(),
             Burn {
                 mint: self.loan_note_mint.to_account_info(),
-                to: self.loan_account.to_account_info(),
+                from: self.loan_account.to_account_info(),
                 authority: self.margin_pool.to_account_info(),
             },
         )
