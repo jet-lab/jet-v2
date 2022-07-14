@@ -123,10 +123,11 @@ export class MarginClient {
     }
 
     const instructions = {
-      deposit: "Instruction: Deposit",
-      withdraw: "Instruction: Withdraw",
-      borrow: "Instruction: MarginBorrow",
-      repay: "Instruction: MarginRepay"
+      "deposit": "Instruction: Deposit",
+      "withdraw": "Instruction: Withdraw",
+      "borrow": "Instruction: MarginBorrow",
+      "margin repay": "Instruction: MarginRepay",
+      "repay": "Instruction: Repay"
     }
     let tradeAction = ""
 
