@@ -133,9 +133,6 @@ export class MarginAccount {
   get liquidaton() {
     return this.info?.marginAccount.liquidation
   }
-  get liquidationTimeRemaining() {
-    return this.info?.liquidationData?.startTime && Date.now() / 1000 - this.info?.liquidationData?.startTime.toNumber()
-  }
   /** A number where 1 and above is subject to liquidation and 0 is no leverage. */
   get riskIndicator() {
     const requiredCollateral = bnToNumber(this.valuation.requiredCollateral)
@@ -915,6 +912,11 @@ export class MarginAccount {
       })
       .instruction()
     instructions.push(ix)
+  }
+
+  // Get the remaining time on a liquidation
+  getRemainingLiquidationTime() {
+    return this.info?.liquidationData?.startTime && Date.now() / 1000 - this.info?.liquidationData?.startTime.toNumber()
   }
 
   async withAdapterInvoke({
