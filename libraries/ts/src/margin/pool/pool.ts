@@ -470,7 +470,7 @@ export class Pool {
     await sleep(2000)
     await marginAccount.refresh()
     const instructions: TransactionInstruction[] = []
-    const position = await marginAccount.withGetOrCreatePosition(this.addresses.depositNoteMint)
+    const position = await marginAccount.withGetOrCreatePosition(this.addresses.depositNoteMint, instructions)
     assert(position)
 
     await this.withDeposit({
@@ -545,7 +545,7 @@ export class Pool {
     const refreshInstructions: TransactionInstruction[] = []
     const instructionsInstructions: TransactionInstruction[] = []
 
-    const depositPosition = await marginAccount.withGetOrCreatePosition(this.addresses.depositNoteMint)
+    const depositPosition = await marginAccount.withGetOrCreatePosition(this.addresses.depositNoteMint, refreshInstructions)
     assert(depositPosition)
 
     await this.withMarginRefreshAllPositionPrices({ instructions: refreshInstructions, pools, marginAccount })
@@ -666,11 +666,10 @@ export class Pool {
     change: PoolTokenChange
   }) {
     await marginAccount.refresh()
-    const depositPosition = await marginAccount.withGetOrCreatePosition(this.addresses.depositNoteMint)
-    assert(depositPosition)
-
     const refreshInstructions: TransactionInstruction[] = []
     const instructions: TransactionInstruction[] = []
+    const depositPosition = await marginAccount.withGetOrCreatePosition(this.addresses.depositNoteMint, refreshInstructions)
+    assert(depositPosition)
 
     await this.withMarginRefreshAllPositionPrices({ instructions: refreshInstructions, pools, marginAccount })
 
@@ -808,11 +807,11 @@ export class Pool {
     destination?: TokenAddress
   }) {
     // FIXME: can source be calculated in withdraw?
-    const source = await marginAccount.withGetOrCreatePosition(this.addresses.depositNoteMint)
-
     const preInstructions: TransactionInstruction[] = []
     const refreshInstructions: TransactionInstruction[] = []
     const instructions: TransactionInstruction[] = []
+
+    const source = await marginAccount.withGetOrCreatePosition(this.addresses.depositNoteMint, refreshInstructions)
 
     await this.withMarginRefreshAllPositionPrices({ instructions: refreshInstructions, pools, marginAccount })
     await marginAccount.withUpdateAllPositionBalances({ instructions: refreshInstructions })

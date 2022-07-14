@@ -725,7 +725,7 @@ export class MarginAccount {
     }
   }
 
-  async withGetOrCreatePosition(tokenMint: Address) {
+  async withGetOrCreatePosition(tokenMint: Address, instructions: TransactionInstruction[]) {
     assert(this.info)
     const tokenMintAddress = translateAddress(tokenMint)
 
@@ -736,17 +736,7 @@ export class MarginAccount {
       }
     }
 
-    await this.registerPosition(tokenMintAddress)
-    await this.refresh()
-
-    for (let i = 0; i < this.positions.length; i++) {
-      const position = this.positions[i]
-      if (position.token.equals(tokenMintAddress)) {
-        return position.address
-      }
-    }
-
-    throw new Error("Unable to register position.")
+    return await this.withRegisterPosition(instructions, tokenMintAddress)
   }
 
   async updateAllPositionBalances() {
@@ -930,8 +920,8 @@ export class MarginAccount {
 
   // prepares arguments for adapterInvoke, accountInvoke, or liquidatorInvoke
   invokeAccounts(adapterInstruction: TransactionInstruction): AccountMeta[] {
-    let accounts: AccountMeta[] = []
-    for (let acc of adapterInstruction.keys) {
+    const accounts: AccountMeta[] = []
+    for (const acc of adapterInstruction.keys) {
       let isSigner = false
       if (acc.pubkey != this.address) {
         isSigner = acc.isSigner
