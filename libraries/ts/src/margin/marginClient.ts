@@ -13,6 +13,7 @@ import {
 } from "../types"
 import { MarginCluster, MarginConfig, MarginTokenConfig } from "./config"
 import { ConfirmedSignatureInfo, Connection, PublicKey, TransactionResponse } from "@solana/web3.js"
+import { isNull } from "lodash"
 
 interface TokenMintsList {
   tokenMint: PublicKey
@@ -128,9 +129,22 @@ export class MarginClient {
       repay: "Instruction: MarginRepay"
     }
     let tradeAction = ""
-    for (const action of Object.keys(instructions)) {
-      if (transaction.meta?.logMessages?.some(logLine => logLine.includes(instructions[action]))) {
-        tradeAction = action
+
+    // Check to see if logMessage string contains relevant instruction
+    // If it does, set tradeAction to that element
+    const isTradeInstruction = (logLine: string) => {
+      for (const action of Object.keys(instructions)) {
+        if (logLine.includes(instructions[action])) {
+          tradeAction = action
+          return true;
+        }
+      }
+    }
+
+    // Check each logMessage string for instruction
+    // Break after finding the first logMessage for which above is true
+    for (let i = 0; i < transaction.meta.logMessages.length; i++) {
+      if (isTradeInstruction(transaction.meta?.logMessages[i])) {
         break
       }
     }
