@@ -16,7 +16,12 @@ describe("Deposits", () => {
   it("Create users", async () => {
     for (const userConfig of TEST_CONFIG.users) {
       replicants.push(
-        await Replicant.create(TEST_CONFIG, os.homedir() + "/.config/solana/" + userConfig.keypair, "devnet", connection)
+        await Replicant.create(
+          TEST_CONFIG,
+          os.homedir() + "/.config/solana/" + userConfig.keypair,
+          "devnet",
+          connection
+        )
       )
     }
   })
@@ -47,7 +52,6 @@ describe("Deposits", () => {
 
   it("Close margin accounts", async () => {
     for (const replicant of replicants) {
-      await replicant.printAccounts()
       await replicant.closeAccounts()
     }
   })
