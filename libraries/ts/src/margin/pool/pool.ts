@@ -667,7 +667,7 @@ export class Pool {
         change
       })
     } else {
-      await this.withMarginRepayFromWallet({
+      await this.withRepay({
         instructions,
         marginAccount,
         depositPosition: depositPosition,
@@ -720,7 +720,7 @@ export class Pool {
     })
   }
 
-  async withMarginRepayFromWallet({
+  async withRepay({
     instructions,
     marginAccount,
     loanPosition,
@@ -745,24 +745,26 @@ export class Pool {
       source,
       feesBuffer
     })
-    await marginAccount.withAdapterInvoke({
+
+    const ix = await this.programs.marginPool.methods
+      .repay(change.changeKind.asParam(), change.value)
+      .accounts({
+        marginPool: this.address,
+        loanNoteMint: this.addresses.loanNoteMint,
+        vault: this.addresses.vault,
+        loanAccount: loanPosition,
+        repaymentTokenAccount: source,
+        repaymentAccountAuthority: sourceAuthority,
+        tokenProgram: TOKEN_PROGRAM_ID
+      })
+      .instruction()
+    instructions.push(ix)
+
+    await marginAccount.withUpdatePositionBalance({
       instructions,
-      adapterProgram: this.programs.config.marginPoolProgramId,
-      adapterMetadata: this.addresses.marginPoolAdapterMetadata,
-      adapterInstruction: await this.programs.marginPool.methods
-        .marginRepayFromWallet(change.changeKind.asParam(), change.value)
-        .accounts({
-          marginAccount: marginAccount.address,
-          marginPool: this.address,
-          loanNoteMint: this.addresses.loanNoteMint,
-          poolVault: this.addresses.vault,
-          loanAccount: loanPosition,
-          repaymentTokenAccount: source,
-          repaymentAccountAuthority: sourceAuthority,
-          tokenProgram: TOKEN_PROGRAM_ID
-        })
-        .instruction()
+      position: loanPosition
     })
+
     AssociatedToken.withEndTransfer({
       instructions,
       provider: marginAccount.provider,

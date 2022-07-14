@@ -88,7 +88,7 @@ export class AccountPosition {
     this.exponent = info.exponent
     this.valueModifier = Number128.fromDecimal(new BN(info.valueModifier), -2)
     this.maxStaleness = info.maxStaleness
-    this.flags = new BN(info.flags as number[]).toNumber()
+    this.flags = info.flags.flags
     this.calculateValue()
   }
 

@@ -8,9 +8,14 @@ export type JetMargin = {
       value: "5_00"
     },
     {
+      name: "MAX_ORACLE_STALENESS"
+      type: "i64"
+      value: "30"
+    },
+    {
       name: "MAX_PRICE_QUOTE_AGE"
       type: "u64"
-      value: "10"
+      value: "30"
     },
     {
       name: "LIQUIDATION_TIMEOUT"
@@ -134,6 +139,22 @@ export type JetMargin = {
         },
         {
           name: "tokenAccount"
+          isMut: false
+          isSigner: false
+        }
+      ]
+      args: []
+    },
+    {
+      name: "refreshPositionMetadata"
+      accounts: [
+        {
+          name: "marginAccount"
+          isMut: true
+          isSigner: false
+        },
+        {
+          name: "metadata"
           isMut: false
           isSigner: false
         }
@@ -285,7 +306,7 @@ export type JetMargin = {
       accounts: [
         {
           name: "authority"
-          isMut: false
+          isMut: true
           isSigner: true
         },
         {
@@ -361,9 +382,15 @@ export type JetMargin = {
             }
           },
           {
+            name: "invocation"
+            type: {
+              defined: "Invocation"
+            }
+          },
+          {
             name: "reserved0"
             type: {
-              array: ["u8", 4]
+              array: ["u8", 3]
             }
           },
           {
@@ -449,6 +476,38 @@ export type JetMargin = {
           {
             name: "exponent"
             type: "i32"
+          }
+        ]
+      }
+    },
+    {
+      name: "ValuationSummary"
+      type: {
+        kind: "struct"
+        fields: [
+          {
+            name: "exposure"
+            type: "i128"
+          },
+          {
+            name: "requiredCollateral"
+            type: "i128"
+          },
+          {
+            name: "weightedCollateral"
+            type: "i128"
+          },
+          {
+            name: "effectiveCollateral"
+            type: "i128"
+          },
+          {
+            name: "availableCollateral"
+            type: "i128"
+          },
+          {
+            name: "pastDue"
+            type: "bool"
           }
         ]
       }
@@ -630,79 +689,12 @@ export type JetMargin = {
             ]
           },
           {
-            name: "Expect"
+            name: "Register"
             fields: ["publicKey"]
-          }
-        ]
-      }
-    },
-    {
-      name: "ErrorCode"
-      type: {
-        kind: "enum"
-        variants: [
-          {
-            name: "NoAdapterResult"
           },
           {
-            name: "WrongProgramAdapterResult"
-          },
-          {
-            name: "UnauthorizedInvocation"
-          },
-          {
-            name: "MaxPositions"
-          },
-          {
-            name: "UnknownPosition"
-          },
-          {
-            name: "CloseNonZeroPosition"
-          },
-          {
-            name: "PositionAlreadyRegistered"
-          },
-          {
-            name: "AccountNotEmpty"
-          },
-          {
-            name: "PositionNotRegistered"
-          },
-          {
-            name: "CloseRequiredPosition"
-          },
-          {
-            name: "InvalidPositionAdapter"
-          },
-          {
-            name: "OutdatedPrice"
-          },
-          {
-            name: "InvalidPrice"
-          },
-          {
-            name: "OutdatedBalance"
-          },
-          {
-            name: "Unhealthy"
-          },
-          {
-            name: "Healthy"
-          },
-          {
-            name: "Liquidating"
-          },
-          {
-            name: "NotLiquidating"
-          },
-          {
-            name: "StalePositions"
-          },
-          {
-            name: "UnauthorizedLiquidator"
-          },
-          {
-            name: "LiquidationLostValue"
+            name: "Close"
+            fields: ["publicKey"]
           }
         ]
       }
@@ -723,6 +715,446 @@ export type JetMargin = {
           }
         ]
       }
+    },
+    {
+      name: "Approver"
+      type: {
+        kind: "enum"
+        variants: [
+          {
+            name: "MarginAccountAuthority"
+          },
+          {
+            name: "Adapter"
+            fields: ["publicKey"]
+          }
+        ]
+      }
+    },
+    {
+      name: "Invocation"
+      type: {
+        kind: "struct"
+        fields: [
+          {
+            name: "callerHeights"
+            type: "u8"
+          }
+        ]
+      }
+    },
+    {
+      name: "AdapterPositionFlags"
+      type: {
+        kind: "struct"
+        fields: [
+          {
+            name: "flags"
+            type: "u8"
+          }
+        ]
+      }
+    },
+    {
+      name: "Liquidation"
+      type: {
+        kind: "struct"
+        fields: [
+          {
+            name: "startTime"
+            type: "i64"
+          },
+          {
+            name: "valueChange"
+            type: "i128"
+          },
+          {
+            name: "minValueChange"
+            type: "i128"
+          }
+        ]
+      }
+    }
+  ]
+  events: [
+    {
+      name: "AccountCreated"
+      fields: [
+        {
+          name: "marginAccount"
+          type: "publicKey"
+          index: false
+        },
+        {
+          name: "owner"
+          type: "publicKey"
+          index: false
+        },
+        {
+          name: "seed"
+          type: "u16"
+          index: false
+        }
+      ]
+    },
+    {
+      name: "AccountClosed"
+      fields: [
+        {
+          name: "marginAccount"
+          type: "publicKey"
+          index: false
+        }
+      ]
+    },
+    {
+      name: "VerifiedHealthy"
+      fields: [
+        {
+          name: "marginAccount"
+          type: "publicKey"
+          index: false
+        }
+      ]
+    },
+    {
+      name: "PositionRegistered"
+      fields: [
+        {
+          name: "marginAccount"
+          type: "publicKey"
+          index: false
+        },
+        {
+          name: "authority"
+          type: "publicKey"
+          index: false
+        },
+        {
+          name: "position"
+          type: {
+            defined: "AccountPosition"
+          }
+          index: false
+        }
+      ]
+    },
+    {
+      name: "PositionClosed"
+      fields: [
+        {
+          name: "marginAccount"
+          type: "publicKey"
+          index: false
+        },
+        {
+          name: "authority"
+          type: "publicKey"
+          index: false
+        },
+        {
+          name: "token"
+          type: "publicKey"
+          index: false
+        }
+      ]
+    },
+    {
+      name: "PositionMetadataRefreshed"
+      fields: [
+        {
+          name: "marginAccount"
+          type: "publicKey"
+          index: false
+        },
+        {
+          name: "position"
+          type: {
+            defined: "AccountPosition"
+          }
+          index: false
+        }
+      ]
+    },
+    {
+      name: "PositionBalanceUpdated"
+      fields: [
+        {
+          name: "marginAccount"
+          type: "publicKey"
+          index: false
+        },
+        {
+          name: "position"
+          type: {
+            defined: "AccountPosition"
+          }
+          index: false
+        }
+      ]
+    },
+    {
+      name: "PositionTouched"
+      fields: [
+        {
+          name: "position"
+          type: {
+            defined: "AccountPosition"
+          }
+          index: false
+        }
+      ]
+    },
+    {
+      name: "AccountingInvokeBegin"
+      fields: [
+        {
+          name: "marginAccount"
+          type: "publicKey"
+          index: false
+        },
+        {
+          name: "adapterProgram"
+          type: "publicKey"
+          index: false
+        }
+      ]
+    },
+    {
+      name: "AccountingInvokeEnd"
+      fields: []
+    },
+    {
+      name: "AdapterInvokeBegin"
+      fields: [
+        {
+          name: "marginAccount"
+          type: "publicKey"
+          index: false
+        },
+        {
+          name: "adapterProgram"
+          type: "publicKey"
+          index: false
+        }
+      ]
+    },
+    {
+      name: "AdapterInvokeEnd"
+      fields: []
+    },
+    {
+      name: "LiquidationBegun"
+      fields: [
+        {
+          name: "marginAccount"
+          type: "publicKey"
+          index: false
+        },
+        {
+          name: "liquidator"
+          type: "publicKey"
+          index: false
+        },
+        {
+          name: "liquidation"
+          type: "publicKey"
+          index: false
+        },
+        {
+          name: "liquidationData"
+          type: {
+            defined: "Liquidation"
+          }
+          index: false
+        },
+        {
+          name: "valuationSummary"
+          type: {
+            defined: "ValuationSummary"
+          }
+          index: false
+        }
+      ]
+    },
+    {
+      name: "LiquidatorInvokeBegin"
+      fields: [
+        {
+          name: "marginAccount"
+          type: "publicKey"
+          index: false
+        },
+        {
+          name: "adapterProgram"
+          type: "publicKey"
+          index: false
+        },
+        {
+          name: "liquidator"
+          type: "publicKey"
+          index: false
+        }
+      ]
+    },
+    {
+      name: "LiquidatorInvokeEnd"
+      fields: [
+        {
+          name: "liquidationData"
+          type: {
+            defined: "Liquidation"
+          }
+          index: false
+        },
+        {
+          name: "valuationSummary"
+          type: {
+            defined: "ValuationSummary"
+          }
+          index: false
+        }
+      ]
+    },
+    {
+      name: "LiquidationEnded"
+      fields: [
+        {
+          name: "marginAccount"
+          type: "publicKey"
+          index: false
+        },
+        {
+          name: "authority"
+          type: "publicKey"
+          index: false
+        },
+        {
+          name: "timedOut"
+          type: "bool"
+          index: false
+        }
+      ]
+    }
+  ]
+  errors: [
+    {
+      code: 141000
+      name: "NoAdapterResult"
+    },
+    {
+      code: 141001
+      name: "WrongProgramAdapterResult"
+      msg: "The program that set the result was not the adapter"
+    },
+    {
+      code: 141002
+      name: "UnauthorizedInvocation"
+      msg: "this invocation is not authorized by the necessary accounts"
+    },
+    {
+      code: 141003
+      name: "IndirectInvocation"
+      msg: "the current instruction was not directly invoked by the margin program"
+    },
+    {
+      code: 141010
+      name: "MaxPositions"
+      msg: "account cannot record any additional positions"
+    },
+    {
+      code: 141011
+      name: "UnknownPosition"
+      msg: "account has no record of the position"
+    },
+    {
+      code: 141012
+      name: "CloseNonZeroPosition"
+      msg: "attempting to close a position that has a balance"
+    },
+    {
+      code: 141013
+      name: "PositionAlreadyRegistered"
+      msg: "attempting to register an existing position"
+    },
+    {
+      code: 141014
+      name: "AccountNotEmpty"
+      msg: "attempting to close non-empty margin account"
+    },
+    {
+      code: 141015
+      name: "PositionNotRegistered"
+      msg: "attempting to use unregistered position"
+    },
+    {
+      code: 141016
+      name: "CloseRequiredPosition"
+      msg: "attempting to close a position that is required by the adapter"
+    },
+    {
+      code: 141017
+      name: "InvalidPositionOwner"
+      msg: "registered position owner inconsistent with PositionTokenMetadata owner or token_kind"
+    },
+    {
+      code: 141018
+      name: "PositionNotRegisterable"
+      msg: "dependencies are not satisfied to auto-register a required but unregistered position"
+    },
+    {
+      code: 141020
+      name: "InvalidPositionAdapter"
+      msg: "wrong adapter to modify the position"
+    },
+    {
+      code: 141021
+      name: "OutdatedPrice"
+      msg: "a position price is outdated"
+    },
+    {
+      code: 141022
+      name: "InvalidPrice"
+      msg: "an asset price is currently invalid"
+    },
+    {
+      code: 141023
+      name: "OutdatedBalance"
+      msg: "a position balance is outdated"
+    },
+    {
+      code: 141030
+      name: "Unhealthy"
+      msg: "the account is not healthy"
+    },
+    {
+      code: 141031
+      name: "Healthy"
+      msg: "the account is already healthy"
+    },
+    {
+      code: 141032
+      name: "Liquidating"
+      msg: "the account is being liquidated"
+    },
+    {
+      code: 141033
+      name: "NotLiquidating"
+      msg: "the account is not being liquidated"
+    },
+    {
+      code: 141034
+      name: "StalePositions"
+    },
+    {
+      code: 141040
+      name: "UnauthorizedLiquidator"
+      msg: "the liquidator does not have permission to do this"
+    },
+    {
+      code: 141041
+      name: "LiquidationLostValue"
+      msg: "attempted to extract too much value during liquidation"
     }
   ]
 }
@@ -737,9 +1169,14 @@ export const IDL: JetMargin = {
       value: "5_00"
     },
     {
+      name: "MAX_ORACLE_STALENESS",
+      type: "i64",
+      value: "30"
+    },
+    {
       name: "MAX_PRICE_QUOTE_AGE",
       type: "u64",
-      value: "10"
+      value: "30"
     },
     {
       name: "LIQUIDATION_TIMEOUT",
@@ -863,6 +1300,22 @@ export const IDL: JetMargin = {
         },
         {
           name: "tokenAccount",
+          isMut: false,
+          isSigner: false
+        }
+      ],
+      args: []
+    },
+    {
+      name: "refreshPositionMetadata",
+      accounts: [
+        {
+          name: "marginAccount",
+          isMut: true,
+          isSigner: false
+        },
+        {
+          name: "metadata",
           isMut: false,
           isSigner: false
         }
@@ -1014,7 +1467,7 @@ export const IDL: JetMargin = {
       accounts: [
         {
           name: "authority",
-          isMut: false,
+          isMut: true,
           isSigner: true
         },
         {
@@ -1090,9 +1543,15 @@ export const IDL: JetMargin = {
             }
           },
           {
+            name: "invocation",
+            type: {
+              defined: "Invocation"
+            }
+          },
+          {
             name: "reserved0",
             type: {
-              array: ["u8", 4]
+              array: ["u8", 3]
             }
           },
           {
@@ -1178,6 +1637,38 @@ export const IDL: JetMargin = {
           {
             name: "exponent",
             type: "i32"
+          }
+        ]
+      }
+    },
+    {
+      name: "ValuationSummary",
+      type: {
+        kind: "struct",
+        fields: [
+          {
+            name: "exposure",
+            type: "i128"
+          },
+          {
+            name: "requiredCollateral",
+            type: "i128"
+          },
+          {
+            name: "weightedCollateral",
+            type: "i128"
+          },
+          {
+            name: "effectiveCollateral",
+            type: "i128"
+          },
+          {
+            name: "availableCollateral",
+            type: "i128"
+          },
+          {
+            name: "pastDue",
+            type: "bool"
           }
         ]
       }
@@ -1359,79 +1850,12 @@ export const IDL: JetMargin = {
             ]
           },
           {
-            name: "Expect",
+            name: "Register",
             fields: ["publicKey"]
-          }
-        ]
-      }
-    },
-    {
-      name: "ErrorCode",
-      type: {
-        kind: "enum",
-        variants: [
-          {
-            name: "NoAdapterResult"
           },
           {
-            name: "WrongProgramAdapterResult"
-          },
-          {
-            name: "UnauthorizedInvocation"
-          },
-          {
-            name: "MaxPositions"
-          },
-          {
-            name: "UnknownPosition"
-          },
-          {
-            name: "CloseNonZeroPosition"
-          },
-          {
-            name: "PositionAlreadyRegistered"
-          },
-          {
-            name: "AccountNotEmpty"
-          },
-          {
-            name: "PositionNotRegistered"
-          },
-          {
-            name: "CloseRequiredPosition"
-          },
-          {
-            name: "InvalidPositionAdapter"
-          },
-          {
-            name: "OutdatedPrice"
-          },
-          {
-            name: "InvalidPrice"
-          },
-          {
-            name: "OutdatedBalance"
-          },
-          {
-            name: "Unhealthy"
-          },
-          {
-            name: "Healthy"
-          },
-          {
-            name: "Liquidating"
-          },
-          {
-            name: "NotLiquidating"
-          },
-          {
-            name: "StalePositions"
-          },
-          {
-            name: "UnauthorizedLiquidator"
-          },
-          {
-            name: "LiquidationLostValue"
+            name: "Close",
+            fields: ["publicKey"]
           }
         ]
       }
@@ -1452,6 +1876,446 @@ export const IDL: JetMargin = {
           }
         ]
       }
+    },
+    {
+      name: "Approver",
+      type: {
+        kind: "enum",
+        variants: [
+          {
+            name: "MarginAccountAuthority"
+          },
+          {
+            name: "Adapter",
+            fields: ["publicKey"]
+          }
+        ]
+      }
+    },
+    {
+      name: "Invocation",
+      type: {
+        kind: "struct",
+        fields: [
+          {
+            name: "callerHeights",
+            type: "u8"
+          }
+        ]
+      }
+    },
+    {
+      name: "AdapterPositionFlags",
+      type: {
+        kind: "struct",
+        fields: [
+          {
+            name: "flags",
+            type: "u8"
+          }
+        ]
+      }
+    },
+    {
+      name: "Liquidation",
+      type: {
+        kind: "struct",
+        fields: [
+          {
+            name: "startTime",
+            type: "i64"
+          },
+          {
+            name: "valueChange",
+            type: "i128"
+          },
+          {
+            name: "minValueChange",
+            type: "i128"
+          }
+        ]
+      }
+    }
+  ],
+  events: [
+    {
+      name: "AccountCreated",
+      fields: [
+        {
+          name: "marginAccount",
+          type: "publicKey",
+          index: false
+        },
+        {
+          name: "owner",
+          type: "publicKey",
+          index: false
+        },
+        {
+          name: "seed",
+          type: "u16",
+          index: false
+        }
+      ]
+    },
+    {
+      name: "AccountClosed",
+      fields: [
+        {
+          name: "marginAccount",
+          type: "publicKey",
+          index: false
+        }
+      ]
+    },
+    {
+      name: "VerifiedHealthy",
+      fields: [
+        {
+          name: "marginAccount",
+          type: "publicKey",
+          index: false
+        }
+      ]
+    },
+    {
+      name: "PositionRegistered",
+      fields: [
+        {
+          name: "marginAccount",
+          type: "publicKey",
+          index: false
+        },
+        {
+          name: "authority",
+          type: "publicKey",
+          index: false
+        },
+        {
+          name: "position",
+          type: {
+            defined: "AccountPosition"
+          },
+          index: false
+        }
+      ]
+    },
+    {
+      name: "PositionClosed",
+      fields: [
+        {
+          name: "marginAccount",
+          type: "publicKey",
+          index: false
+        },
+        {
+          name: "authority",
+          type: "publicKey",
+          index: false
+        },
+        {
+          name: "token",
+          type: "publicKey",
+          index: false
+        }
+      ]
+    },
+    {
+      name: "PositionMetadataRefreshed",
+      fields: [
+        {
+          name: "marginAccount",
+          type: "publicKey",
+          index: false
+        },
+        {
+          name: "position",
+          type: {
+            defined: "AccountPosition"
+          },
+          index: false
+        }
+      ]
+    },
+    {
+      name: "PositionBalanceUpdated",
+      fields: [
+        {
+          name: "marginAccount",
+          type: "publicKey",
+          index: false
+        },
+        {
+          name: "position",
+          type: {
+            defined: "AccountPosition"
+          },
+          index: false
+        }
+      ]
+    },
+    {
+      name: "PositionTouched",
+      fields: [
+        {
+          name: "position",
+          type: {
+            defined: "AccountPosition"
+          },
+          index: false
+        }
+      ]
+    },
+    {
+      name: "AccountingInvokeBegin",
+      fields: [
+        {
+          name: "marginAccount",
+          type: "publicKey",
+          index: false
+        },
+        {
+          name: "adapterProgram",
+          type: "publicKey",
+          index: false
+        }
+      ]
+    },
+    {
+      name: "AccountingInvokeEnd",
+      fields: []
+    },
+    {
+      name: "AdapterInvokeBegin",
+      fields: [
+        {
+          name: "marginAccount",
+          type: "publicKey",
+          index: false
+        },
+        {
+          name: "adapterProgram",
+          type: "publicKey",
+          index: false
+        }
+      ]
+    },
+    {
+      name: "AdapterInvokeEnd",
+      fields: []
+    },
+    {
+      name: "LiquidationBegun",
+      fields: [
+        {
+          name: "marginAccount",
+          type: "publicKey",
+          index: false
+        },
+        {
+          name: "liquidator",
+          type: "publicKey",
+          index: false
+        },
+        {
+          name: "liquidation",
+          type: "publicKey",
+          index: false
+        },
+        {
+          name: "liquidationData",
+          type: {
+            defined: "Liquidation"
+          },
+          index: false
+        },
+        {
+          name: "valuationSummary",
+          type: {
+            defined: "ValuationSummary"
+          },
+          index: false
+        }
+      ]
+    },
+    {
+      name: "LiquidatorInvokeBegin",
+      fields: [
+        {
+          name: "marginAccount",
+          type: "publicKey",
+          index: false
+        },
+        {
+          name: "adapterProgram",
+          type: "publicKey",
+          index: false
+        },
+        {
+          name: "liquidator",
+          type: "publicKey",
+          index: false
+        }
+      ]
+    },
+    {
+      name: "LiquidatorInvokeEnd",
+      fields: [
+        {
+          name: "liquidationData",
+          type: {
+            defined: "Liquidation"
+          },
+          index: false
+        },
+        {
+          name: "valuationSummary",
+          type: {
+            defined: "ValuationSummary"
+          },
+          index: false
+        }
+      ]
+    },
+    {
+      name: "LiquidationEnded",
+      fields: [
+        {
+          name: "marginAccount",
+          type: "publicKey",
+          index: false
+        },
+        {
+          name: "authority",
+          type: "publicKey",
+          index: false
+        },
+        {
+          name: "timedOut",
+          type: "bool",
+          index: false
+        }
+      ]
+    }
+  ],
+  errors: [
+    {
+      code: 141000,
+      name: "NoAdapterResult"
+    },
+    {
+      code: 141001,
+      name: "WrongProgramAdapterResult",
+      msg: "The program that set the result was not the adapter"
+    },
+    {
+      code: 141002,
+      name: "UnauthorizedInvocation",
+      msg: "this invocation is not authorized by the necessary accounts"
+    },
+    {
+      code: 141003,
+      name: "IndirectInvocation",
+      msg: "the current instruction was not directly invoked by the margin program"
+    },
+    {
+      code: 141010,
+      name: "MaxPositions",
+      msg: "account cannot record any additional positions"
+    },
+    {
+      code: 141011,
+      name: "UnknownPosition",
+      msg: "account has no record of the position"
+    },
+    {
+      code: 141012,
+      name: "CloseNonZeroPosition",
+      msg: "attempting to close a position that has a balance"
+    },
+    {
+      code: 141013,
+      name: "PositionAlreadyRegistered",
+      msg: "attempting to register an existing position"
+    },
+    {
+      code: 141014,
+      name: "AccountNotEmpty",
+      msg: "attempting to close non-empty margin account"
+    },
+    {
+      code: 141015,
+      name: "PositionNotRegistered",
+      msg: "attempting to use unregistered position"
+    },
+    {
+      code: 141016,
+      name: "CloseRequiredPosition",
+      msg: "attempting to close a position that is required by the adapter"
+    },
+    {
+      code: 141017,
+      name: "InvalidPositionOwner",
+      msg: "registered position owner inconsistent with PositionTokenMetadata owner or token_kind"
+    },
+    {
+      code: 141018,
+      name: "PositionNotRegisterable",
+      msg: "dependencies are not satisfied to auto-register a required but unregistered position"
+    },
+    {
+      code: 141020,
+      name: "InvalidPositionAdapter",
+      msg: "wrong adapter to modify the position"
+    },
+    {
+      code: 141021,
+      name: "OutdatedPrice",
+      msg: "a position price is outdated"
+    },
+    {
+      code: 141022,
+      name: "InvalidPrice",
+      msg: "an asset price is currently invalid"
+    },
+    {
+      code: 141023,
+      name: "OutdatedBalance",
+      msg: "a position balance is outdated"
+    },
+    {
+      code: 141030,
+      name: "Unhealthy",
+      msg: "the account is not healthy"
+    },
+    {
+      code: 141031,
+      name: "Healthy",
+      msg: "the account is already healthy"
+    },
+    {
+      code: 141032,
+      name: "Liquidating",
+      msg: "the account is being liquidated"
+    },
+    {
+      code: 141033,
+      name: "NotLiquidating",
+      msg: "the account is not being liquidated"
+    },
+    {
+      code: 141034,
+      name: "StalePositions"
+    },
+    {
+      code: 141040,
+      name: "UnauthorizedLiquidator",
+      msg: "the liquidator does not have permission to do this"
+    },
+    {
+      code: 141041,
+      name: "LiquidationLostValue",
+      msg: "attempted to extract too much value during liquidation"
     }
   ]
 }

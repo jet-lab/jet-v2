@@ -821,7 +821,6 @@ export class MarginAccount {
   }
 
   async closePosition(position: AccountPosition) {
-    console.log(`position = ${JSON.stringify(position)}`)
     const ix: TransactionInstruction[] = []
     await this.withClosePosition(ix, position)
     await this.sendAndConfirm(ix)
