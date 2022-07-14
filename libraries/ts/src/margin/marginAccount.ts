@@ -120,8 +120,8 @@ export class MarginAccount {
   get liquidaton() {
     return this.info?.marginAccount.liquidation
   }
-  get isBeingLiquidated() {
-    return this.info?.liquidationData !== undefined
+  get liquidationTimeRemaining() {
+    return this.info?.liquidationData?.startTime && Date.now() / 1000 - this.info?.liquidationData?.startTime.toNumber()
   }
   /** A number where 1 and above is subject to liquidation and 0 is no leverage. */
   get riskIndicator() {
