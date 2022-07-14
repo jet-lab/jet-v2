@@ -1,6 +1,15 @@
 export type JetControl = {
   version: "0.1.0"
   name: "jet_control"
+  constants: [
+    {
+      name: "FEE_DESTINATION"
+      type: {
+        defined: "&[u8]"
+      }
+      value: 'b"margin-pool-fee-destination"'
+    }
+  ]
   instructions: [
     {
       name: "createAuthority"
@@ -596,6 +605,15 @@ export type JetControl = {
 export const IDL: JetControl = {
   version: "0.1.0",
   name: "jet_control",
+  constants: [
+    {
+      name: "FEE_DESTINATION",
+      type: {
+        defined: "&[u8]"
+      },
+      value: 'b"margin-pool-fee-destination"'
+    }
+  ],
   instructions: [
     {
       name: "createAuthority",

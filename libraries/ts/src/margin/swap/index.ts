@@ -152,7 +152,7 @@ export class TokenSwap {
     hostFeeNumerator: number,
     hostFeeDenominator: number,
     curveType: number,
-    curveParameters: BN = Number192.ZERO
+    curveParameters: BN = new BN(0)
   ): TransactionInstruction {
     const keys = [
       { pubkey: tokenSwapAccount.publicKey, isSigner: false, isWritable: true },

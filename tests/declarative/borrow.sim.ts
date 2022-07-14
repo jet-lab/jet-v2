@@ -16,7 +16,12 @@ describe("Deposit and Borrow", () => {
   it("Create users", async () => {
     for (const userConfig of TEST_CONFIG.users) {
       replicants.push(
-        await Replicant.create(TEST_CONFIG, os.homedir() + "/.config/solana/" + userConfig.keypair, "devnet", connection)
+        await Replicant.create(
+          TEST_CONFIG,
+          os.homedir() + "/.config/solana/" + userConfig.keypair,
+          "devnet",
+          connection
+        )
       )
     }
   })
