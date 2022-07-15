@@ -1,4 +1,5 @@
 import { Address } from "@project-serum/anchor"
+import { Market as SerumMarket } from "@project-serum/serum"
 import MARGIN_CONFIG from "./config.json"
 
 export type MarginTokens = "BTC" | "ETH" | "MSRM" | "SOL" | "SRM" | "USDC"
@@ -54,7 +55,7 @@ export interface MarginPoolConfig {
 
 export interface MarginMarketConfig {
   symbol: string
-  market: Address
+  address: Address
   baseMint: Address
   baseDecimals: number
   baseVault: Address
@@ -71,4 +72,5 @@ export interface MarginMarketConfig {
   baseLotSize: number
   quoteLotSize: number
   feeRateBps: number
+  serum: SerumMarket
 }

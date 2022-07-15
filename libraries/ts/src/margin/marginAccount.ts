@@ -34,7 +34,7 @@ import {
   numberToBn,
   TokenAmount
 } from ".."
-import { MarginPoolConfig, MarginTokenConfig } from "./config"
+import { MarginMarketConfig, MarginPoolConfig, MarginTokenConfig } from "./config"
 import { AccountPosition, PriceInfo } from "./accountPosition"
 
 export interface MarginAccountAddresses {
@@ -917,6 +917,106 @@ export class MarginAccount {
   // Get the remaining time on a liquidation
   getRemainingLiquidationTime() {
     return this.info?.liquidationData?.startTime && Date.now() / 1000 - this.info?.liquidationData?.startTime.toNumber()
+  }
+
+  async placeSerumOrder({
+    market,
+    orderSide,
+    orderType,
+    orderPrice,
+    orderSize,
+    selfTradeBehavior = "decrementTake",
+    clientOrderId = new BN(Date.now())
+  }: {
+    market: MarginMarketConfig
+    orderSide: "sell" | "buy" | "ask" | "bid"
+    orderType: "limit" | "ioc" | "postOnly"
+    orderPrice: number
+    orderSize: TokenAmount
+    selfTradeBehavior: "decrementTake" | "cancelProvide" | "abortTransaction"
+    clientOrderId: BN
+  }) {
+    const ix: TransactionInstruction[] = []
+    await this.withPlaceSerumOrder({
+      instructions: ix,
+      market,
+      orderSide,
+      orderType,
+      orderPrice,
+      orderSize,
+      selfTradeBehavior,
+      clientOrderId
+    })
+    return await this.sendAndConfirm(ix)
+  }
+
+  /// Get instruction to submit an order to Serum
+  ///
+  /// # Params
+  ///
+  async withPlaceSerumOrder({
+    instructions,
+    market,
+    orderSide,
+    orderType,
+    orderPrice,
+    orderSize,
+    selfTradeBehavior,
+    clientOrderId
+  }: {
+    instructions: TransactionInstruction[]
+    market: MarginMarketConfig
+    orderSide: "sell" | "buy" | "ask" | "bid"
+    orderType: "limit" | "ioc" | "postOnly"
+    orderPrice: number
+    orderSize: TokenAmount
+    selfTradeBehavior: "decrementTake" | "cancelProvide" | "abortTransaction"
+    clientOrderId: BN
+  }): Promise<void> {
+    const side = orderSide === "buy" || orderSide === "bid" ? 0 : 1
+    const type = orderType === "limit" ? 0 : orderType === "ioc" ? 1 : 2
+    const limitPrice = new BN(
+      Math.round(
+        (orderPrice * Math.pow(10, market.quoteDecimals) * market.baseLotSize) /
+          (Math.pow(10, market.baseDecimals) * market.quoteLotSize)
+      )
+    )
+    const maxCoinQty = orderSize.lamports
+    const baseSizeLots = orderSize.lamports.toNumber() / market.baseLotSize
+    const maxNativePcQtyIncludingFees = new BN(market.quoteLotSize * baseSizeLots).mul(limitPrice)
+    const selfTradeBehaviorCode =
+      selfTradeBehavior === "decrementTake" ? 0 : selfTradeBehavior === "cancelProvide" ? 1 : 2
+    const openOrdersAccount = await market.serum.findOpenOrdersAccountsForOwner(this.provider.connection, this.address)
+
+    const ix = await this.programs.marginSerum.methods
+      .newOrderV3(
+        side,
+        limitPrice,
+        maxCoinQty,
+        maxNativePcQtyIncludingFees,
+        selfTradeBehaviorCode,
+        type,
+        clientOrderId,
+        65535
+      )
+      .accounts({
+        marginAccount: this.address,
+        market: market.address,
+        openOrdersAccount: openOrdersAccount ? openOrdersAccount.publicKey : openOrdersAddressKey!,
+        requestQueue: market.requestQueue,
+        eventQueue: market.eventQueue,
+        bids: market.bids,
+        asks: market.asks,
+        payer,
+        baseVault: market.baseVault,
+        quoteVault: market.quoteVault,
+        splTokenProgramId: TOKEN_PROGRAM_ID,
+        rentSysvarId: SYSVAR_RENT_PUBKEY,
+        serumProgramId: this.programs.config.serumProgramId
+      })
+      .remainingAccounts()
+      .instruction()
+    instructions.push(ix)
   }
 
   async withAdapterInvoke({
