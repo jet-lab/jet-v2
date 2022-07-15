@@ -762,7 +762,7 @@ export function bnToNumber(bn: BN | null | undefined): number {
  * @returns {BN}
  */
 export const bigIntToBn = (bigInt: bigint | null | undefined): BN => {
-  return bigInt ? new BN(bigInt.toString()) : Number192.ZERO
+  return bigInt ? new BN(bigInt.toString()) : new BN(0)
 }
 
 /** Convert BigInt (SPL Token) to BN. */
