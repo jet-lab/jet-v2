@@ -443,10 +443,8 @@ export class Pool {
     assert(marginAccount)
     assert(change)
 
-    await marginAccount.createAccount()
-    await sleep(2000)
-    await marginAccount.refresh()
     const instructions: TransactionInstruction[] = []
+    await marginAccount.withCreateAccount(instructions)
     const position = await marginAccount.withGetOrCreatePosition({
       positionTokenMint: this.addresses.depositNoteMint,
       instructions
