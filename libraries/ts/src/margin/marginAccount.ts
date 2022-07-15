@@ -301,13 +301,13 @@ export class MarginAccount {
       // Deposits
       const depositNotePosition = this.getPosition(pool.addresses.depositNoteMint)
       const depositBalanceNotes = Number192.from(depositNotePosition?.balance ?? new BN(0))
-      const depositBalance = pool.depositNoteExchangeRate().div(depositBalanceNotes).asTokenAmount(pool.decimals)
+      const depositBalance = depositBalanceNotes.mul(pool.depositNoteExchangeRate()).asTokenAmount(pool.decimals)
       const depositValue = depositNotePosition?.value ?? 0
 
       // Loans
       const loanNotePosition = this.getPosition(pool.addresses.loanNoteMint)
       const loanBalanceNotes = Number192.from(loanNotePosition?.balance ?? new BN(0))
-      const loanBalance = pool.loanNoteExchangeRate().div(loanBalanceNotes).asTokenAmount(pool.decimals)
+      const loanBalance = loanBalanceNotes.mul(pool.loanNoteExchangeRate()).asTokenAmount(pool.decimals)
       const loanValue = loanNotePosition?.value ?? 0
 
       // Max trade amounts
