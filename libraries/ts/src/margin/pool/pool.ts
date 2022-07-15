@@ -429,27 +429,6 @@ export class Pool {
     })
   }
 
-  async sendTransaction(params: {
-    marginAccount: MarginAccount
-    pools: Pool[]
-    action: PoolAction
-    source?: TokenAddress
-    change: PoolTokenChange
-  }) {
-    switch (params.action) {
-      case "deposit":
-        return this.deposit(params)
-      case "withdraw":
-        return this.withdraw(params)
-      case "borrow":
-        return this.marginBorrow(params)
-      case "repay":
-        return this.marginRepay(params)
-      default:
-        throw new Error("Unknown pool action")
-    }
-  }
-
   /**
    * Transaction to deposit tokens into the pool
    *
