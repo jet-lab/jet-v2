@@ -1,5 +1,6 @@
 import assert from "assert"
 import { Address, AnchorProvider, BN, ProgramAccount, translateAddress } from "@project-serum/anchor"
+import { Order } from "@project-serum/serum/lib/market"
 import { NATIVE_MINT, TOKEN_PROGRAM_ID } from "@solana/spl-token"
 import {
   AccountMeta,
@@ -32,6 +33,7 @@ import {
   Number128,
   Number192,
   numberToBn,
+  PoolTokenChange,
   TokenAmount
 } from ".."
 import { MarginMarketConfig, MarginPoolConfig, MarginTokenConfig } from "./config"
@@ -384,7 +386,7 @@ export class MarginAccount {
     }
 
     const walletAmount = pool.symbol && this.walletTokens?.map[pool.symbol].amount
-    const feeCover = new TokenAmount(new BN(20000000), pool.decimals)
+    const feeCover = new TokenAmount(new BN(70000000), pool.decimals)
 
     // Max deposit
     let deposit = walletAmount ?? zero
@@ -926,7 +928,8 @@ export class MarginAccount {
     orderPrice,
     orderSize,
     selfTradeBehavior = "decrementTake",
-    clientOrderId = new BN(Date.now())
+    clientOrderId = new BN(Date.now()),
+    payer = this.address
   }: {
     market: MarginMarketConfig
     orderSide: "sell" | "buy" | "ask" | "bid"
@@ -935,19 +938,35 @@ export class MarginAccount {
     orderSize: TokenAmount
     selfTradeBehavior: "decrementTake" | "cancelProvide" | "abortTransaction"
     clientOrderId: BN
+    payer: PublicKey
   }) {
-    const ix: TransactionInstruction[] = []
+    const instructions: TransactionInstruction[] = []
+    const orderAmount = orderSize.divn(orderPrice)
+    const accountPoolPosition = this.poolPositions[market.baseSymbol as MarginPools]
+
+    // If trading on margin
+    if (orderAmount.gt(accountPoolPosition.depositBalance) && this.pools) {
+      const difference = orderAmount.sub(accountPoolPosition.depositBalance)
+      const pool = this.pools[market.baseSymbol as MarginPools]
+      await pool.marginBorrow({
+        marginAccount: this,
+        pools: Object.values(this.pools),
+        change: PoolTokenChange.setTo(accountPoolPosition.loanBalance.add(difference))
+      })
+    }
+
     await this.withPlaceSerumOrder({
-      instructions: ix,
+      instructions,
       market,
       orderSide,
       orderType,
       orderPrice,
       orderSize,
       selfTradeBehavior,
-      clientOrderId
+      clientOrderId,
+      payer
     })
-    return await this.sendAndConfirm(ix)
+    return await this.sendAndConfirm(instructions)
   }
 
   /// Get instruction to submit an order to Serum
@@ -962,7 +981,8 @@ export class MarginAccount {
     orderPrice,
     orderSize,
     selfTradeBehavior,
-    clientOrderId
+    clientOrderId,
+    payer
   }: {
     instructions: TransactionInstruction[]
     market: MarginMarketConfig
@@ -972,6 +992,7 @@ export class MarginAccount {
     orderSize: TokenAmount
     selfTradeBehavior: "decrementTake" | "cancelProvide" | "abortTransaction"
     clientOrderId: BN
+    payer: PublicKey
   }): Promise<void> {
     const side = orderSide === "buy" || orderSide === "bid" ? 0 : 1
     const type = orderType === "limit" ? 0 : orderType === "ioc" ? 1 : 2
@@ -986,7 +1007,8 @@ export class MarginAccount {
     const maxNativePcQtyIncludingFees = new BN(market.quoteLotSize * baseSizeLots).mul(limitPrice)
     const selfTradeBehaviorCode =
       selfTradeBehavior === "decrementTake" ? 0 : selfTradeBehavior === "cancelProvide" ? 1 : 2
-    const openOrdersAccount = await market.serum.findOpenOrdersAccountsForOwner(this.provider.connection, this.address)
+    const openOrdersAccounts = await market.serum.findOpenOrdersAccountsForOwner(this.provider.connection, this.address)
+    const feeDiscountPubkey = (await market.serum.findBestFeeDiscountKey(this.provider.connection, this.address)).pubkey
 
     const ix = await this.programs.marginSerum.methods
       .newOrderV3(
@@ -1002,7 +1024,7 @@ export class MarginAccount {
       .accounts({
         marginAccount: this.address,
         market: market.address,
-        openOrdersAccount: openOrdersAccount ? openOrdersAccount.publicKey : openOrdersAddressKey!,
+        openOrdersAccount: openOrdersAccounts && openOrdersAccounts[0].publicKey,
         requestQueue: market.requestQueue,
         eventQueue: market.eventQueue,
         bids: market.bids,
@@ -1014,7 +1036,57 @@ export class MarginAccount {
         rentSysvarId: SYSVAR_RENT_PUBKEY,
         serumProgramId: this.programs.config.serumProgramId
       })
-      .remainingAccounts()
+      .remainingAccounts(feeDiscountPubkey ? [{ pubkey: feeDiscountPubkey, isSigner: false, isWritable: true }] : [])
+      .instruction()
+    instructions.push(ix)
+  }
+
+  async cancelSerumOrder({
+    market,
+    orderSide,
+    order
+  }: {
+    market: MarginMarketConfig
+    orderSide: "sell" | "buy" | "ask" | "bid"
+    order: Order
+  }) {
+    const instructions: TransactionInstruction[] = []
+    await this.withCancelSerumOrder({
+      instructions,
+      market,
+      orderSide,
+      order
+    })
+    return await this.sendAndConfirm(instructions)
+  }
+
+  /// Get instruction to cancel an order on Serum
+  ///
+  /// # Params
+  ///
+  async withCancelSerumOrder({
+    instructions,
+    market,
+    orderSide,
+    order
+  }: {
+    instructions: TransactionInstruction[]
+    market: MarginMarketConfig
+    orderSide: "sell" | "buy" | "ask" | "bid"
+    order: Order
+  }) {
+    const side = orderSide === "buy" || orderSide === "bid" ? 0 : 1
+    const ix = await this.programs.marginSerum.methods
+      .cancelOrderV2(side, order.orderId)
+      .accounts({
+        marginAccount: this.address,
+        market: market.address,
+        openOrdersAccount: order.openOrdersAddress,
+        marketBids: market.bids,
+        marketAsks: market.asks,
+        eventQueue: market.eventQueue,
+        serumProgramId: this.programs.config.serumProgramId
+      })
       .instruction()
     instructions.push(ix)
   }
