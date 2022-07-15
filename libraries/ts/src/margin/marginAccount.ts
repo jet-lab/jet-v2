@@ -12,7 +12,7 @@ import {
   TransactionInstruction,
   TransactionSignature
 } from "@solana/web3.js"
-import { Pool } from "./pool/pool"
+import { Pool, PoolAction } from "./pool/pool"
 import {
   AccountPositionList,
   AccountPositionListLayout,
@@ -41,7 +41,6 @@ export interface MarginPositionAddresses {
   tokenMetadata: PublicKey
 }
 
-export type TradeAction = "deposit" | "withdraw" | "borrow" | "repay" | "swap" | "transfer"
 export interface PoolPosition {
   poolConfig: MarginPoolConfig
   tokenConfig: MarginTokenConfig
@@ -52,7 +51,7 @@ export interface PoolPosition {
   loanPosition: AccountPosition | undefined
   loanBalance: TokenAmount
   loanValue: number
-  maxTradeAmounts: Record<TradeAction, TokenAmount>
+  maxTradeAmounts: Record<PoolAction, TokenAmount>
   buyingPower: TokenAmount
 }
 
@@ -87,7 +86,7 @@ export interface MarginWalletTokens {
 
 export class MarginAccount {
   static readonly SEED_MAX_VALUE = 65535
-  static readonly RISK_WARNING_LEVEL = 0.7
+  static readonly RISK_WARNING_LEVEL = 0.8
   static readonly RISK_CRITICAL_LEVEL = 0.9
   static readonly RISK_LIQUIDATION_LEVEL = 1
   static readonly SETUP_LEVERAGE_FRACTION = Number128.fromDecimal(new BN(75), -2)
@@ -175,7 +174,7 @@ export class MarginAccount {
     return findDerivedAccount(programs.config.marginProgramId, marginAccount.address, liquidator)
   }
 
-  static deriveTokenMetadata(programs: MarginPrograms, tokenMint: Address) {
+  static deriveMetadata(programs: MarginPrograms, tokenMint: Address) {
     const tokenMintAddress = translateAddress(tokenMint)
     return findDerivedAccount(programs.config.metadataProgramId, tokenMintAddress)
   }
@@ -302,13 +301,13 @@ export class MarginAccount {
       // Deposits
       const depositNotePosition = this.getPosition(pool.addresses.depositNoteMint)
       const depositBalanceNotes = Number192.from(depositNotePosition?.balance ?? new BN(0))
-      const depositBalance = depositBalanceNotes.mul(pool.depositNoteExchangeRate()).asTokenAmount(pool.decimals)
+      const depositBalance = pool.depositNoteExchangeRate().div(depositBalanceNotes).asTokenAmount(pool.decimals)
       const depositValue = depositNotePosition?.value ?? 0
 
       // Loans
       const loanNotePosition = this.getPosition(pool.addresses.loanNoteMint)
       const loanBalanceNotes = Number192.from(loanNotePosition?.balance ?? new BN(0))
-      const loanBalance = loanBalanceNotes.mul(pool.loanNoteExchangeRate()).asTokenAmount(pool.decimals)
+      const loanBalance = pool.loanNoteExchangeRate().div(loanBalanceNotes).asTokenAmount(pool.decimals)
       const loanValue = loanNotePosition?.value ?? 0
 
       // Max trade amounts
@@ -340,16 +339,14 @@ export class MarginAccount {
     pool: Pool,
     depositBalance: TokenAmount,
     loanBalance: TokenAmount
-  ): Record<TradeAction, TokenAmount> {
+  ): Record<PoolAction, TokenAmount> {
     const zero = TokenAmount.zero(pool.decimals)
     if (!pool.info) {
       return {
         deposit: zero,
         withdraw: zero,
         borrow: zero,
-        repay: zero,
-        swap: zero,
-        transfer: zero
+        repay: zero
       }
     }
 
@@ -407,9 +404,7 @@ export class MarginAccount {
       deposit,
       withdraw,
       borrow,
-      repay,
-      swap,
-      transfer
+      repay
     }
   }
 
