@@ -20,11 +20,13 @@ use solana_sdk::pubkey::Pubkey;
 mod control;
 mod margin;
 mod margin_pool;
+mod margin_serum;
 mod margin_swap;
 
 pub use control::*;
 pub use margin::*;
 pub use margin_pool::*;
+pub use margin_serum::*;
 pub use margin_swap::*;
 
 pub fn get_metadata_address(address: &Pubkey) -> Pubkey {
