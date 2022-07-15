@@ -142,13 +142,6 @@ export class MarginClient {
       }
     }
 
-    if (
-      txAndSig.sig.signature ===
-      "3qRRjLtXNPtUGXS7tkEtm3pFe13jp11WzbF9FPuA7oV9GEnYJGBFiNwwfCfAtm9YEuszUPBdT7Bg65GFFXG3Hj3t"
-    ) {
-      console.log(txAndSig)
-    }
-
     // Check each logMessage string for instruction
     // Break after finding the first logMessage for which above is true
     for (let i = 0; i < transaction.meta.logMessages.length; i++) {
