@@ -713,19 +713,35 @@ export class MarginAccount {
     }
   }
 
-  async withGetOrCreatePosition(tokenMint: Address) {
+  async getOrCreatePosition(tokenMint: Address) {
     assert(this.info)
     const tokenMintAddress = translateAddress(tokenMint)
-
     for (let i = 0; i < this.positions.length; i++) {
       const position = this.positions[i]
       if (position.token.equals(tokenMintAddress)) {
         return position.address
       }
     }
-
     await this.registerPosition(tokenMintAddress)
     await this.refresh()
+    for (let i = 0; i < this.positions.length; i++) {
+      const position = this.positions[i]
+      if (position.token.equals(tokenMintAddress)) {
+        return position.address
+      }
+    }
+    throw new Error("Unable to register position.")
+  }
+
+  async withGetOrCreatePosition({
+    positionTokenMint,
+    instructions
+  }: {
+    positionTokenMint: Address
+    instructions: TransactionInstruction[]
+  }) {
+    assert(this.info)
+    const tokenMintAddress = translateAddress(positionTokenMint)
 
     for (let i = 0; i < this.positions.length; i++) {
       const position = this.positions[i]
@@ -734,7 +750,7 @@ export class MarginAccount {
       }
     }
 
-    throw new Error("Unable to register position.")
+    return await this.withRegisterPosition(instructions, tokenMintAddress)
   }
 
   async updateAllPositionBalances() {
