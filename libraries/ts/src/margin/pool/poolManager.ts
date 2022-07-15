@@ -62,8 +62,8 @@ export class PoolManager {
     tokenConfig?: MarginTokenConfig
     programs?: MarginPrograms
   }): Promise<Pool> {
-    const addresses = this._derive({ programs: programs, tokenMint })
-    const marginPool = new Pool(programs, tokenMint, addresses, poolConfig, tokenConfig)
+    const addresses = this._derive({ programs, tokenMint })
+    const marginPool = new Pool(programs, addresses, poolConfig, tokenConfig)
     await marginPool.refresh()
     return marginPool
   }

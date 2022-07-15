@@ -595,10 +595,10 @@ export class Market {
       openOrdersAccount,
       feeDiscountPubkey = null
     } = params
-    if (this.baseSizeNumberToLots(size).lte(Number192.ZERO)) {
+    if (this.baseSizeNumberToLots(size).lte(new BN(0))) {
       throw new Error("size too small")
     }
-    if (this.priceNumberToLots(price).lte(Number192.ZERO)) {
+    if (this.priceNumberToLots(price).lte(new BN(0))) {
       throw new Error("invalid price")
     }
     if (this.usesRequestQueue) {
