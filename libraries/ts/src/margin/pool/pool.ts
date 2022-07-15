@@ -1003,9 +1003,12 @@ export class Pool {
     const depositNoteValueModifer = this.depositNoteMetadata.valueModifier
     const amountValue = Number128.from(numberToBn(amount.tokens * this._prices.priceValue.asNumber()))
 
-    const riskIndicator: number = marginAccount.valuation.requiredCollateral
-      .div(marginAccount.valuation.effectiveCollateral.add(amountValue.mul(depositNoteValueModifer)))
-      .asNumber()
+    const effectiveCollateral = marginAccount.valuation.effectiveCollateral.add(
+      amountValue.mul(depositNoteValueModifer)
+    )
+    const riskIndicator: number = !effectiveCollateral.isZero()
+      ? marginAccount.valuation.requiredCollateral.div(effectiveCollateral).asNumber()
+      : 0
 
     return { riskIndicator, depositRate, borrowRate }
   }
@@ -1032,9 +1035,12 @@ export class Pool {
     const depositNoteValueModifer = this.depositNoteMetadata.valueModifier
     const amountValue = Number128.from(numberToBn(amount.tokens * this._prices.priceValue.asNumber()))
 
-    const riskIndicator: number = marginAccount.valuation.requiredCollateral
-      .div(marginAccount.valuation.effectiveCollateral.sub(amountValue.mul(depositNoteValueModifer)))
-      .asNumber()
+    const effectiveCollateral = marginAccount.valuation.effectiveCollateral.sub(
+      amountValue.mul(depositNoteValueModifer)
+    )
+    const riskIndicator: number = !effectiveCollateral.isZero()
+      ? marginAccount.valuation.requiredCollateral.div(effectiveCollateral).asNumber()
+      : 0
 
     return { riskIndicator, depositRate, borrowRate }
   }
@@ -1057,10 +1063,13 @@ export class Pool {
     const loanNoteValueModifer = this.loanNoteMetadata.valueModifier
     const amountValue = Number128.from(numberToBn(amount.tokens * this._prices.priceValue.asNumber()))
 
-    const riskIndicator: number = marginAccount.valuation.requiredCollateral
-      .add(amountValue.div(loanNoteValueModifer))
-      .div(marginAccount.valuation.effectiveCollateral.sub(amountValue))
-      .asNumber()
+    const effectiveCollateral = marginAccount.valuation.effectiveCollateral.sub(amountValue)
+    const riskIndicator: number = !effectiveCollateral.isZero()
+      ? marginAccount.valuation.requiredCollateral
+          .add(amountValue.div(loanNoteValueModifer))
+          .div(effectiveCollateral)
+          .asNumber()
+      : 0
 
     return { riskIndicator, depositRate, borrowRate }
   }
@@ -1087,10 +1096,13 @@ export class Pool {
     const loanNoteValueModifer = this.loanNoteMetadata.valueModifier
     const amountValue = Number128.from(numberToBn(amount.tokens * this._prices.priceValue.asNumber()))
 
-    const riskIndicator: number = marginAccount.valuation.requiredCollateral
-      .sub(amountValue.div(loanNoteValueModifer))
-      .div(marginAccount.valuation.effectiveCollateral.add(amountValue))
-      .asNumber()
+    const effectiveCollateral = marginAccount.valuation.effectiveCollateral.add(amountValue)
+    const riskIndicator: number = !effectiveCollateral.isZero()
+      ? marginAccount.valuation.requiredCollateral
+          .sub(amountValue.div(loanNoteValueModifer))
+          .div(marginAccount.valuation.effectiveCollateral.add(amountValue))
+          .asNumber()
+      : 0
 
     return { riskIndicator, depositRate, borrowRate }
   }
@@ -1118,10 +1130,15 @@ export class Pool {
     const loanNoteValueModifer = this.loanNoteMetadata.valueModifier
     const amountValue = Number128.from(numberToBn(amount.tokens * this._prices.priceValue.asNumber()))
 
-    const riskIndicator: number = marginAccount.valuation.requiredCollateral
-      .sub(amountValue.div(loanNoteValueModifer))
-      .div(marginAccount.valuation.effectiveCollateral.add(amountValue.mul(Number128.ONE.sub(depositNoteValueModifer))))
-      .asNumber()
+    const effectiveCollateral = marginAccount.valuation.effectiveCollateral.add(
+      amountValue.mul(Number128.ONE.sub(depositNoteValueModifer))
+    )
+    const riskIndicator: number = !effectiveCollateral.isZero()
+      ? marginAccount.valuation.requiredCollateral
+          .sub(amountValue.div(loanNoteValueModifer))
+          .div(effectiveCollateral)
+          .asNumber()
+      : 0
 
     return { riskIndicator, depositRate, borrowRate }
   }
@@ -1145,10 +1162,15 @@ export class Pool {
     const loanNoteValueModifer = this.loanNoteMetadata.valueModifier
     const amountValue = Number128.from(numberToBn(amount.tokens * this._prices.priceValue.asNumber()))
 
-    const riskIndicator: number = marginAccount.valuation.requiredCollateral
-      .add(amountValue.div(loanNoteValueModifer))
-      .div(marginAccount.valuation.effectiveCollateral.sub(amountValue.mul(Number128.ONE.sub(depositNoteValueModifer))))
-      .asNumber()
+    const effectiveCollateral = marginAccount.valuation.effectiveCollateral.sub(
+      amountValue.mul(Number128.ONE.sub(depositNoteValueModifer))
+    )
+    const riskIndicator: number = !effectiveCollateral.isZero()
+      ? marginAccount.valuation.requiredCollateral
+          .add(amountValue.div(loanNoteValueModifer))
+          .div(effectiveCollateral)
+          .asNumber()
+      : 0
 
     return { riskIndicator, depositRate, borrowRate }
   }
