@@ -18,6 +18,7 @@ import {
   AccountPositionListLayout,
   AdapterPositionFlags,
   ErrorCode,
+  LiquidationData,
   MarginAccountData,
   PositionKind
 } from "./state"
@@ -31,6 +32,7 @@ import {
   MarginPools,
   Number128,
   Number192,
+  numberToBn,
   TokenAmount
 } from ".."
 import { MarginPoolConfig, MarginTokenConfig } from "./config"
@@ -97,6 +99,7 @@ export class MarginAccount {
   static readonly RISK_LIQUIDATION_LEVEL = 1
   info?: {
     marginAccount: MarginAccountData
+    liquidationData?: LiquidationData
     positions: AccountPositionList
   }
 
@@ -114,6 +117,9 @@ export class MarginAccount {
   }
   get liquidator() {
     return this.info?.marginAccount.liquidator
+  }
+  get liquidaton() {
+    return this.info?.marginAccount.liquidation
   }
   /** A number where 1 and above is subject to liquidation and 0 is no leverage. */
   get riskIndicator() {
@@ -268,8 +274,15 @@ export class MarginAccount {
     if (!marginAccount || !positions) {
       this.info = undefined
     } else {
+      // Account is being liquidated
+      let liquidationData: LiquidationData | undefined = undefined
+      if (!marginAccount.liquidation.equals(PublicKey.default)) {
+        liquidationData =
+          (await this.programs.margin.account.liquidation.fetchNullable(marginAccount.liquidation)) ?? undefined
+      }
       this.info = {
         marginAccount,
+        liquidationData,
         positions
       }
     }
@@ -862,6 +875,33 @@ export class MarginAccount {
       })
       .instruction()
     instructions.push(ix)
+  }
+
+  async stopLiquidation() {
+    const ix: TransactionInstruction[] = []
+    await this.withStopLiquidation(ix)
+    return await this.sendAndConfirm(ix)
+  }
+
+  /// Get instruction to close stop a liquidation
+  ///
+  /// # Params
+  ///
+  async withStopLiquidation(instructions: TransactionInstruction[]): Promise<void> {
+    const ix = await this.programs.margin.methods
+      .liquidateEnd()
+      .accounts({
+        authority: this.owner,
+        marginAccount: this.address,
+        liquidation: this.liquidaton
+      })
+      .instruction()
+    instructions.push(ix)
+  }
+
+  // Get the remaining time on a liquidation
+  getRemainingLiquidationTime() {
+    return this.info?.liquidationData?.startTime && Date.now() / 1000 - this.info?.liquidationData?.startTime.toNumber()
   }
 
   async withAdapterInvoke({
