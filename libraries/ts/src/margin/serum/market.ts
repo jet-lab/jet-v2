@@ -23,6 +23,9 @@ import { PoolTokenChange } from "../pool"
 import { MarginAccount } from "../marginAccount"
 import { MarginPrograms } from "../marginClient"
 
+export type selfTradeBehavior = "decrementTake" | "cancelProvide" | "abortTransaction"
+export type orderSide = "sell" | "buy" | "ask" | "bid"
+export type orderType = "limit" | "ioc" | "postOnly"
 export class Market {
   provider: AnchorProvider
   programs: MarginPrograms
@@ -179,7 +182,7 @@ export class Market {
     return markets
   }
 
-  static encodeOrderSide(side: "sell" | "buy" | "ask" | "bid"): number {
+  static encodeOrderSide(side: orderSide): number {
     switch (side) {
       case "bid":
       case "buy":
@@ -190,7 +193,7 @@ export class Market {
     }
   }
 
-  static encodeOrderType(type: "limit" | "ioc" | "postOnly"): number {
+  static encodeOrderType(type: orderType): number {
     switch (type) {
       case "limit":
         return 0
@@ -201,7 +204,7 @@ export class Market {
     }
   }
 
-  static encodeSelfTradeBehavior(behavior: "decrementTake" | "cancelProvide" | "abortTransaction"): number {
+  static encodeSelfTradeBehavior(behavior: selfTradeBehavior): number {
     switch (behavior) {
       case "decrementTake":
         return 0
@@ -223,11 +226,11 @@ export class Market {
     payer = marginAccount.address
   }: {
     marginAccount: MarginAccount
-    orderSide: "sell" | "buy" | "ask" | "bid"
-    orderType: "limit" | "ioc" | "postOnly"
+    orderSide: orderSide
+    orderType: orderType
     orderPrice: number
     orderSize: TokenAmount
-    selfTradeBehavior: "decrementTake" | "cancelProvide" | "abortTransaction"
+    selfTradeBehavior: selfTradeBehavior
     clientOrderId: BN
     payer: PublicKey
   }) {
@@ -239,11 +242,13 @@ export class Market {
     if (orderAmount.gt(accountPoolPosition.depositBalance) && marginAccount.pools) {
       const difference = orderAmount.sub(accountPoolPosition.depositBalance)
       const pool = marginAccount.pools[this.baseSymbol]
-      await pool.marginBorrow({
-        marginAccount: this,
-        pools: Object.values(marginAccount.pools),
-        change: PoolTokenChange.setTo(accountPoolPosition.loanBalance.add(difference))
-      })
+      if (pool) {
+        await pool.marginBorrow({
+          marginAccount: this,
+          pools: Object.values(marginAccount.pools),
+          change: PoolTokenChange.setTo(accountPoolPosition.loanBalance.add(difference))
+        })
+      }
     }
 
     await this.withPlaceOrder({
@@ -265,11 +270,11 @@ export class Market {
    * @param {{
    *    instructions: TransactionInstruction[]
    *    marginAccount: MarginAccount
-   *    orderSide: "sell" | "buy" | "ask" | "bid"
-   *    orderType: "limit" | "ioc" | "postOnly"
+   *    orderSide: orderSide
+   *    orderType: orderType
    *    orderPrice: number
    *    orderSize: TokenAmount
-   *    selfTradeBehavior: "decrementTake" | "cancelProvide" | "abortTransaction"
+   *    selfTradeBehavior: selfTradeBehavior
    *    clientOrderId: BN
    *    payer: PublicKey
    *  }}
@@ -287,11 +292,11 @@ export class Market {
   }: {
     instructions: TransactionInstruction[]
     marginAccount: MarginAccount
-    orderSide: "sell" | "buy" | "ask" | "bid"
-    orderType: "limit" | "ioc" | "postOnly"
+    orderSide: orderSide
+    orderType: orderType
     orderPrice: number
     orderSize: TokenAmount
-    selfTradeBehavior: "decrementTake" | "cancelProvide" | "abortTransaction"
+    selfTradeBehavior: selfTradeBehavior
     clientOrderId: BN
     payer: PublicKey
   }): Promise<void> {
