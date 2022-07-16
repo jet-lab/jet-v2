@@ -74,7 +74,7 @@ export class MarginClient {
 
   static getConfig(cluster: MarginCluster): MarginConfig {
     if (typeof cluster === "string") {
-      return JET_CONFIG[cluster] as MarginConfig
+      return JET_CONFIG[cluster] as unknown as MarginConfig
     } else {
       return cluster
     }

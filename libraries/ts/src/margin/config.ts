@@ -1,11 +1,10 @@
 import { Address } from "@project-serum/anchor"
-import { Market as SerumMarket } from "@project-serum/serum"
 import MARGIN_CONFIG from "./config.json"
 
 export type MarginTokens = "BTC" | "ETH" | "MSRM" | "SOL" | "SRM" | "USDC"
 export type MarginOracles = "BTC_USD" | "ETH_USD" | "SOL_USD" | "SRM_USD"
 export type MarginPools = "BTC" | "ETH" | "SOL" | "SRM" | "USDC"
-export type MarginMarkets = "BTC_USDC" | "ETH_USDC"
+export type MarginMarkets = "BTC/USDC" | "ETH/USDC"
 
 export type MarginCluster = keyof typeof MARGIN_CONFIG | MarginConfig
 
@@ -54,8 +53,8 @@ export interface MarginPoolConfig {
 }
 
 export interface MarginMarketConfig {
-  symbol: string
-  address: Address
+  symbol: MarginMarkets
+  market: Address
   baseMint: Address
   baseDecimals: number
   baseVault: Address
@@ -66,11 +65,10 @@ export interface MarginMarketConfig {
   quoteSymbol: MarginTokens
   requestQueue: Address
   eventQueue: Address
-  bids: Address
-  asks: Address
+  bidsAddress: Address
+  asksAddress: Address
   quoteDustThreshold: number
   baseLotSize: number
   quoteLotSize: number
   feeRateBps: number
-  serum: SerumMarket
 }

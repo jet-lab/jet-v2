@@ -1,6 +1,5 @@
 import assert from "assert"
 import { Address, AnchorProvider, BN, ProgramAccount, translateAddress } from "@project-serum/anchor"
-import { Order } from "@project-serum/serum/lib/market"
 import { NATIVE_MINT, TOKEN_PROGRAM_ID } from "@solana/spl-token"
 import {
   AccountMeta,
@@ -33,10 +32,9 @@ import {
   Number128,
   Number192,
   numberToBn,
-  PoolTokenChange,
   TokenAmount
 } from ".."
-import { MarginMarketConfig, MarginPoolConfig, MarginTokenConfig } from "./config"
+import { MarginPoolConfig, MarginTokenConfig } from "./config"
 import { AccountPosition, PriceInfo } from "./accountPosition"
 
 export interface MarginAccountAddresses {
@@ -919,176 +917,6 @@ export class MarginAccount {
   // Get the remaining time on a liquidation
   getRemainingLiquidationTime() {
     return this.info?.liquidationData?.startTime && Date.now() / 1000 - this.info?.liquidationData?.startTime.toNumber()
-  }
-
-  async placeSerumOrder({
-    market,
-    orderSide,
-    orderType,
-    orderPrice,
-    orderSize,
-    selfTradeBehavior = "decrementTake",
-    clientOrderId = new BN(Date.now()),
-    payer = this.address
-  }: {
-    market: MarginMarketConfig
-    orderSide: "sell" | "buy" | "ask" | "bid"
-    orderType: "limit" | "ioc" | "postOnly"
-    orderPrice: number
-    orderSize: TokenAmount
-    selfTradeBehavior: "decrementTake" | "cancelProvide" | "abortTransaction"
-    clientOrderId: BN
-    payer: PublicKey
-  }) {
-    const instructions: TransactionInstruction[] = []
-    const orderAmount = orderSize.divn(orderPrice)
-    const accountPoolPosition = this.poolPositions[market.baseSymbol as MarginPools]
-
-    // If trading on margin
-    if (orderAmount.gt(accountPoolPosition.depositBalance) && this.pools) {
-      const difference = orderAmount.sub(accountPoolPosition.depositBalance)
-      const pool = this.pools[market.baseSymbol as MarginPools]
-      await pool.marginBorrow({
-        marginAccount: this,
-        pools: Object.values(this.pools),
-        change: PoolTokenChange.setTo(accountPoolPosition.loanBalance.add(difference))
-      })
-    }
-
-    await this.withPlaceSerumOrder({
-      instructions,
-      market,
-      orderSide,
-      orderType,
-      orderPrice,
-      orderSize,
-      selfTradeBehavior,
-      clientOrderId,
-      payer
-    })
-    return await this.sendAndConfirm(instructions)
-  }
-
-  /// Get instruction to submit an order to Serum
-  ///
-  /// # Params
-  ///
-  async withPlaceSerumOrder({
-    instructions,
-    market,
-    orderSide,
-    orderType,
-    orderPrice,
-    orderSize,
-    selfTradeBehavior,
-    clientOrderId,
-    payer
-  }: {
-    instructions: TransactionInstruction[]
-    market: MarginMarketConfig
-    orderSide: "sell" | "buy" | "ask" | "bid"
-    orderType: "limit" | "ioc" | "postOnly"
-    orderPrice: number
-    orderSize: TokenAmount
-    selfTradeBehavior: "decrementTake" | "cancelProvide" | "abortTransaction"
-    clientOrderId: BN
-    payer: PublicKey
-  }): Promise<void> {
-    const side = orderSide === "buy" || orderSide === "bid" ? 0 : 1
-    const type = orderType === "limit" ? 0 : orderType === "ioc" ? 1 : 2
-    const limitPrice = new BN(
-      Math.round(
-        (orderPrice * Math.pow(10, market.quoteDecimals) * market.baseLotSize) /
-          (Math.pow(10, market.baseDecimals) * market.quoteLotSize)
-      )
-    )
-    const maxCoinQty = orderSize.lamports
-    const baseSizeLots = orderSize.lamports.toNumber() / market.baseLotSize
-    const maxNativePcQtyIncludingFees = new BN(market.quoteLotSize * baseSizeLots).mul(limitPrice)
-    const selfTradeBehaviorCode =
-      selfTradeBehavior === "decrementTake" ? 0 : selfTradeBehavior === "cancelProvide" ? 1 : 2
-    const openOrdersAccounts = await market.serum.findOpenOrdersAccountsForOwner(this.provider.connection, this.address)
-    const feeDiscountPubkey = (await market.serum.findBestFeeDiscountKey(this.provider.connection, this.address)).pubkey
-
-    const ix = await this.programs.marginSerum.methods
-      .newOrderV3(
-        side,
-        limitPrice,
-        maxCoinQty,
-        maxNativePcQtyIncludingFees,
-        selfTradeBehaviorCode,
-        type,
-        clientOrderId,
-        65535
-      )
-      .accounts({
-        marginAccount: this.address,
-        market: market.address,
-        openOrdersAccount: openOrdersAccounts && openOrdersAccounts[0].publicKey,
-        requestQueue: market.requestQueue,
-        eventQueue: market.eventQueue,
-        bids: market.bids,
-        asks: market.asks,
-        payer,
-        baseVault: market.baseVault,
-        quoteVault: market.quoteVault,
-        splTokenProgramId: TOKEN_PROGRAM_ID,
-        rentSysvarId: SYSVAR_RENT_PUBKEY,
-        serumProgramId: this.programs.config.serumProgramId
-      })
-      .remainingAccounts(feeDiscountPubkey ? [{ pubkey: feeDiscountPubkey, isSigner: false, isWritable: true }] : [])
-      .instruction()
-    instructions.push(ix)
-  }
-
-  async cancelSerumOrder({
-    market,
-    orderSide,
-    order
-  }: {
-    market: MarginMarketConfig
-    orderSide: "sell" | "buy" | "ask" | "bid"
-    order: Order
-  }) {
-    const instructions: TransactionInstruction[] = []
-    await this.withCancelSerumOrder({
-      instructions,
-      market,
-      orderSide,
-      order
-    })
-    return await this.sendAndConfirm(instructions)
-  }
-
-  /// Get instruction to cancel an order on Serum
-  ///
-  /// # Params
-  ///
-  async withCancelSerumOrder({
-    instructions,
-    market,
-    orderSide,
-    order
-  }: {
-    instructions: TransactionInstruction[]
-    market: MarginMarketConfig
-    orderSide: "sell" | "buy" | "ask" | "bid"
-    order: Order
-  }) {
-    const side = orderSide === "buy" || orderSide === "bid" ? 0 : 1
-    const ix = await this.programs.marginSerum.methods
-      .cancelOrderV2(side, order.orderId)
-      .accounts({
-        marginAccount: this.address,
-        market: market.address,
-        openOrdersAccount: order.openOrdersAddress,
-        marketBids: market.bids,
-        marketAsks: market.asks,
-        eventQueue: market.eventQueue,
-        serumProgramId: this.programs.config.serumProgramId
-      })
-      .instruction()
-    instructions.push(ix)
   }
 
   async withAdapterInvoke({

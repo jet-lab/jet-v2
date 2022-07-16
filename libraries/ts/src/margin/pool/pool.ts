@@ -19,7 +19,7 @@ import { MarginPoolConfig, MarginPools, MarginTokenConfig } from "../config"
 import { PoolTokenChange } from "./poolTokenChange"
 import { TokenMetadata } from "../metadata/state"
 import { findDerivedAccount } from "../../utils/pda"
-import { AccountPosition, PriceInfo } from "../accountPosition"
+import { PriceInfo } from "../accountPosition"
 import { chunks, Number192, sendAll, sleep } from "../../utils"
 import { PositionTokenMetadata } from "../positionTokenMetadata"
 
