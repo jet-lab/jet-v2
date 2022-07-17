@@ -1,6 +1,6 @@
 import assert from "assert"
 import { Keypair, PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY, TransactionInstruction } from "@solana/web3.js"
-import { AnchorProvider, BN, translateAddress } from "@project-serum/anchor"
+import { Address, AnchorProvider, BN, translateAddress } from "@project-serum/anchor"
 import { getLayoutVersion, Market as SerumMarket, Orderbook as SerumOrderbook, OpenOrders } from "@project-serum/serum"
 import { MarketOptions, Order } from "@project-serum/serum/lib/market"
 import {
@@ -15,16 +15,18 @@ import { PoolTokenChange } from "../pool"
 import { MarginAccount } from "../marginAccount"
 import { MarginPrograms } from "../marginClient"
 
-export type selfTradeBehavior = "decrementTake" | "cancelProvide" | "abortTransaction"
-export type orderSide = "sell" | "buy" | "ask" | "bid"
-export type orderType = "limit" | "ioc" | "postOnly"
+export type SelfTradeBehavior = "decrementTake" | "cancelProvide" | "abortTransaction"
+export type OrderSide = "sell" | "buy" | "ask" | "bid"
+export type OrderType = "limit" | "ioc" | "postOnly"
+export type OrderStatus = "open" | "partialFilled" | "filled" | "cancelled"
+
 export class Market {
   programs: MarginPrograms
   marketConfig: MarginMarketConfig
   serum: SerumMarket
 
   get name(): string {
-    return this.marketConfig.symbol
+    return `${this.marketConfig.baseSymbol}/${this.marketConfig.quoteSymbol}`
   }
   get address(): PublicKey {
     return translateAddress(this.marketConfig.market)
@@ -46,9 +48,6 @@ export class Market {
   }
   get quoteSymbol(): MarginTokens {
     return this.marketConfig.quoteSymbol
-  }
-  get serumProgramId(): PublicKey {
-    return this.programs.marginSerum.programId
   }
   get minOrderSize() {
     return this.baseSizeLotsToNumber(new BN(1))
@@ -75,7 +74,7 @@ export class Market {
     this.marketConfig = marketConfig
     this.serum = serum
     assert(this.programs.margin.programId)
-    assert(this.serumProgramId)
+    assert(this.programs.config.serumProgramId)
     if (!serum.decoded.accountFlags.initialized || !serum.decoded.accountFlags.market) {
       throw new Error("Invalid market state")
     }
@@ -88,8 +87,7 @@ export class Market {
    *     provider: AnchorProvider
    *     programs: MarginPrograms
    *     address: PublicKey
-   *     options: MarketOptions
-   *     serumProgramId: PublicKey
+   *     options?: MarketOptions
    *   }}
    * @return {Promise<Market>}
    */
@@ -104,14 +102,22 @@ export class Market {
     address: PublicKey
     options?: MarketOptions
   }): Promise<Market> {
-    const owner = (await programs.connection.getAccountInfo(address))?.owner
-    if (!owner) {
+    const marketAccount = await programs.connection.getAccountInfo(address)
+    if (!marketAccount) {
       throw new Error("Market not found")
     }
-    if (!owner.equals(programs.marginSerum.programId)) {
-      throw new Error("Address not owned by program: " + owner.toBase58())
+    if (marketAccount.owner.equals(SystemProgram.programId) && marketAccount.lamports === 0) {
+      throw new Error("Market account not does not exist")
     }
-    const serum = await SerumMarket.load(provider.connection, address, options, programs.marginSerum.programId)
+    if (!marketAccount.owner.equals(translateAddress(programs.config.serumProgramId))) {
+      throw new Error("Market address not owned by Serum program: " + marketAccount.owner.toBase58())
+    }
+    const serum = await SerumMarket.load(
+      provider.connection,
+      address,
+      options,
+      translateAddress(programs.config.serumProgramId)
+    )
     if (
       !serum.decoded.accountFlags.initialized ||
       !serum.decoded.accountFlags.market ||
@@ -138,9 +144,7 @@ export class Market {
    * @param {{
    *     provider: AnchorProvider
    *     programs: MarginPrograms
-   *     address: PublicKey
-   *     options: MarketOptions
-   *     serumProgramId: PublicKey
+   *     options?: MarketOptions
    *   }}
    * @return {Promise<Record<MarginMarkets, Market>>}
    */
@@ -167,7 +171,7 @@ export class Market {
     return markets
   }
 
-  static encodeOrderSide(side: orderSide): number {
+  static encodeOrderSide(side: OrderSide): number {
     switch (side) {
       case "bid":
       case "buy":
@@ -178,7 +182,7 @@ export class Market {
     }
   }
 
-  static encodeOrderType(type: orderType): number {
+  static encodeOrderType(type: OrderType): number {
     switch (type) {
       case "limit":
         return 0
@@ -189,7 +193,7 @@ export class Market {
     }
   }
 
-  static encodeSelfTradeBehavior(behavior: selfTradeBehavior): number {
+  static encodeSelfTradeBehavior(behavior: SelfTradeBehavior): number {
     switch (behavior) {
       case "decrementTake":
         return 0
@@ -206,18 +210,18 @@ export class Market {
     orderType,
     orderPrice,
     orderSize,
-    selfTradeBehavior = "decrementTake",
-    clientOrderId = new BN(Date.now()),
-    payer = marginAccount.address
+    selfTradeBehavior,
+    clientOrderId,
+    payer
   }: {
     marginAccount: MarginAccount
-    orderSide: orderSide
-    orderType: orderType
+    orderSide: OrderSide
+    orderType: OrderType
     orderPrice: number
     orderSize: TokenAmount
-    selfTradeBehavior: selfTradeBehavior
-    clientOrderId: BN
-    payer: PublicKey
+    selfTradeBehavior?: SelfTradeBehavior
+    clientOrderId?: BN
+    payer?: PublicKey
   }) {
     const instructions: TransactionInstruction[] = []
     const orderAmount = orderSize.divn(orderPrice)
@@ -243,9 +247,9 @@ export class Market {
       orderType,
       orderPrice,
       orderSize,
-      selfTradeBehavior,
-      clientOrderId,
-      payer
+      selfTradeBehavior: selfTradeBehavior ?? "decrementTake",
+      clientOrderId: clientOrderId ?? new BN(Date.now()),
+      payer: payer ?? marginAccount.address
     })
     return await marginAccount.sendAndConfirm(instructions)
   }
@@ -277,11 +281,11 @@ export class Market {
   }: {
     instructions: TransactionInstruction[]
     marginAccount: MarginAccount
-    orderSide: orderSide
-    orderType: orderType
+    orderSide: OrderSide
+    orderType: OrderType
     orderPrice: number
     orderSize: TokenAmount
-    selfTradeBehavior: selfTradeBehavior
+    selfTradeBehavior: SelfTradeBehavior
     clientOrderId: BN
     payer: PublicKey
   }): Promise<void> {
@@ -332,7 +336,7 @@ export class Market {
     instructions.push(ix)
   }
 
-  async cancelOrder(marginAccount: MarginAccount, order: Order) {
+  async cancelOrder({ marginAccount, order }: { marginAccount: MarginAccount; order: Order }) {
     const instructions: TransactionInstruction[] = []
     await this.withCancelOrder({ instructions, marginAccount, order })
     return await marginAccount.sendAndConfirm(instructions)
@@ -417,7 +421,7 @@ export class Market {
     if (!openOrders.owner.equals(marginAccount.address)) {
       throw new Error("Invalid open orders account")
     }
-    const supportsReferralFees = getLayoutVersion(this.serumProgramId) > 1
+    const supportsReferralFees = getLayoutVersion(translateAddress(this.programs.config.serumProgramId)) > 1
     if (referrerQuoteWallet && !supportsReferralFees) {
       throw new Error("This program ID does not support referrerQuoteWallet")
     }
@@ -462,7 +466,7 @@ export class Market {
   }) {
     const vaultSigner = await PublicKey.createProgramAddress(
       [this.address.toBuffer(), this.serum.decoded.vaultSignerNonce.toArrayLike(Buffer, "le", 8)],
-      this.serumProgramId
+      translateAddress(this.programs.config.serumProgramId)
     )
     const signers: Keypair[] = []
     let wrappedSolAccount: Keypair | null = null
@@ -502,7 +506,7 @@ export class Market {
         coinWallet: baseWallet.equals(openOrders.owner) && wrappedSolAccount ? wrappedSolAccount.publicKey : baseWallet,
         pcWallet: quoteWallet.equals(openOrders.owner) && wrappedSolAccount ? wrappedSolAccount.publicKey : quoteWallet,
         vaultSigner,
-        serumProgramId: this.serumProgramId
+        serumProgramId: this.programs.config.serumProgramId
       })
       .remainingAccounts(
         referrerQuoteWallet ? [{ pubkey: referrerQuoteWallet, isSigner: false, isWritable: true }] : []
