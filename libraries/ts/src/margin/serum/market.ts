@@ -1,6 +1,6 @@
 import assert from "assert"
 import { Keypair, PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY, TransactionInstruction } from "@solana/web3.js"
-import { AnchorProvider, BN, translateAddress } from "@project-serum/anchor"
+import { Address, AnchorProvider, BN, translateAddress } from "@project-serum/anchor"
 import { getLayoutVersion, Market as SerumMarket, Orderbook as SerumOrderbook, OpenOrders } from "@project-serum/serum"
 import { MarketOptions, Order } from "@project-serum/serum/lib/market"
 import {
@@ -23,6 +23,7 @@ export type OrderStatus = "open" | "partialFilled" | "filled" | "cancelled"
 export class Market {
   programs: MarginPrograms
   marketConfig: MarginMarketConfig
+  serumProgramId: Address
   serum: SerumMarket
 
   get name(): string {
@@ -49,9 +50,6 @@ export class Market {
   get quoteSymbol(): MarginTokens {
     return this.marketConfig.quoteSymbol
   }
-  get serumProgramId(): PublicKey {
-    return this.programs.marginSerum.programId
-  }
   get minOrderSize() {
     return this.baseSizeLotsToNumber(new BN(1))
   }
@@ -72,9 +70,10 @@ export class Market {
    * @param marketConfig
    * @param serum
    */
-  constructor(programs: MarginPrograms, marketConfig: MarginMarketConfig, serum: SerumMarket) {
+  constructor(programs: MarginPrograms, marketConfig: MarginMarketConfig, serumProgramId: Address, serum: SerumMarket) {
     this.programs = programs
     this.marketConfig = marketConfig
+    this.serumProgramId = serumProgramId
     this.serum = serum
     assert(this.programs.margin.programId)
     assert(this.serumProgramId)
@@ -98,11 +97,13 @@ export class Market {
   static async load({
     provider,
     programs,
+    serumProgramId,
     address,
     options
   }: {
     provider: AnchorProvider
     programs: MarginPrograms
+    serumProgramId: Address
     address: PublicKey
     options?: MarketOptions
   }): Promise<Market> {
@@ -113,10 +114,10 @@ export class Market {
     if (marketAccount.owner.equals(SystemProgram.programId) && marketAccount.lamports === 0) {
       throw new Error("Market account not does not exist")
     }
-    if (!marketAccount.owner.equals(programs.marginSerum.programId)) {
+    if (!marketAccount.owner.equals(translateAddress(serumProgramId))) {
       throw new Error("Market address not owned by Serum program: " + marketAccount.owner.toBase58())
     }
-    const serum = await SerumMarket.load(provider.connection, address, options, programs.marginSerum.programId)
+    const serum = await SerumMarket.load(provider.connection, address, options, translateAddress(serumProgramId))
     if (
       !serum.decoded.accountFlags.initialized ||
       !serum.decoded.accountFlags.market ||
@@ -134,7 +135,7 @@ export class Market {
       throw new Error("Unable to match market config")
     }
 
-    return new Market(programs, marketConfig, serum)
+    return new Market(programs, marketConfig, serumProgramId, serum)
   }
 
   /**
@@ -152,10 +153,12 @@ export class Market {
   static async loadAll({
     provider,
     programs,
+    serumProgramId,
     options
   }: {
     provider: AnchorProvider
     programs: MarginPrograms
+    serumProgramId: Address
     options?: MarketOptions
   }): Promise<Record<MarginMarkets, Market>> {
     const markets: Record<MarginMarkets, Market> = {} as Record<MarginMarkets, Market>
@@ -163,10 +166,11 @@ export class Market {
       const market = await this.load({
         provider,
         programs,
+        serumProgramId,
         address: translateAddress(marketConfig.market),
         options
       })
-      markets[market.name] = new Market(programs, marketConfig, market.serum)
+      markets[market.name] = new Market(programs, marketConfig, serumProgramId, market.serum)
     }
 
     return markets
@@ -211,18 +215,18 @@ export class Market {
     orderType,
     orderPrice,
     orderSize,
-    selfTradeBehavior = "decrementTake",
-    clientOrderId = new BN(Date.now()),
-    payer = marginAccount.address
+    selfTradeBehavior,
+    clientOrderId,
+    payer
   }: {
     marginAccount: MarginAccount
     orderSide: OrderSide
     orderType: OrderType
     orderPrice: number
     orderSize: TokenAmount
-    selfTradeBehavior: SelfTradeBehavior
-    clientOrderId: BN
-    payer: PublicKey
+    selfTradeBehavior?: SelfTradeBehavior
+    clientOrderId?: BN
+    payer?: PublicKey
   }) {
     const instructions: TransactionInstruction[] = []
     const orderAmount = orderSize.divn(orderPrice)
@@ -248,9 +252,9 @@ export class Market {
       orderType,
       orderPrice,
       orderSize,
-      selfTradeBehavior,
-      clientOrderId,
-      payer
+      selfTradeBehavior: selfTradeBehavior ?? "decrementTake",
+      clientOrderId: clientOrderId ?? new BN(Date.now()),
+      payer: payer ?? marginAccount.address
     })
     return await marginAccount.sendAndConfirm(instructions)
   }
@@ -337,7 +341,7 @@ export class Market {
     instructions.push(ix)
   }
 
-  async cancelOrder(marginAccount: MarginAccount, order: Order) {
+  async cancelOrder({ marginAccount, order }: { marginAccount: MarginAccount; order: Order }) {
     const instructions: TransactionInstruction[] = []
     await this.withCancelOrder({ instructions, marginAccount, order })
     return await marginAccount.sendAndConfirm(instructions)
@@ -422,7 +426,7 @@ export class Market {
     if (!openOrders.owner.equals(marginAccount.address)) {
       throw new Error("Invalid open orders account")
     }
-    const supportsReferralFees = getLayoutVersion(this.serumProgramId) > 1
+    const supportsReferralFees = getLayoutVersion(translateAddress(this.serumProgramId)) > 1
     if (referrerQuoteWallet && !supportsReferralFees) {
       throw new Error("This program ID does not support referrerQuoteWallet")
     }
@@ -467,7 +471,7 @@ export class Market {
   }) {
     const vaultSigner = await PublicKey.createProgramAddress(
       [this.address.toBuffer(), this.serum.decoded.vaultSignerNonce.toArrayLike(Buffer, "le", 8)],
-      this.serumProgramId
+      translateAddress(this.serumProgramId)
     )
     const signers: Keypair[] = []
     let wrappedSolAccount: Keypair | null = null
