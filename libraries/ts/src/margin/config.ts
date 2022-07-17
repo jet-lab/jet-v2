@@ -4,7 +4,7 @@ import MARGIN_CONFIG from "./config.json"
 export type MarginTokens = "BTC" | "ETH" | "MSRM" | "SOL" | "SRM" | "USDC"
 export type MarginOracles = "BTC_USD" | "ETH_USD" | "SOL_USD" | "SRM_USD"
 export type MarginPools = "BTC" | "ETH" | "SOL" | "SRM" | "USDC"
-export type MarginMarkets = "BTC/USDC" | "ETH/USDC"
+export type MarginMarkets = "BTC_USDC" | "ETH_USDC"
 
 export type MarginCluster = keyof typeof MARGIN_CONFIG | MarginConfig
 
@@ -65,8 +65,8 @@ export interface MarginMarketConfig {
   quoteSymbol: MarginTokens
   requestQueue: Address
   eventQueue: Address
-  bidsAddress: Address
-  asksAddress: Address
+  bids: Address
+  asks: Address
   quoteDustThreshold: number
   baseLotSize: number
   quoteLotSize: number

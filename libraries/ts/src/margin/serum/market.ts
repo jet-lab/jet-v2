@@ -1,14 +1,6 @@
 import assert from "assert"
-import {
-  Keypair,
-  PublicKey,
-  SystemProgram,
-  SYSVAR_RENT_PUBKEY,
-  Transaction,
-  TransactionInstruction,
-  Signer
-} from "@solana/web3.js"
-import { AnchorProvider, BN } from "@project-serum/anchor"
+import { Keypair, PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY, TransactionInstruction } from "@solana/web3.js"
+import { AnchorProvider, BN, translateAddress } from "@project-serum/anchor"
 import { getLayoutVersion, Market as SerumMarket, Orderbook as SerumOrderbook, OpenOrders } from "@project-serum/serum"
 import { MarketOptions, Order } from "@project-serum/serum/lib/market"
 import {
@@ -27,7 +19,6 @@ export type selfTradeBehavior = "decrementTake" | "cancelProvide" | "abortTransa
 export type orderSide = "sell" | "buy" | "ask" | "bid"
 export type orderType = "limit" | "ioc" | "postOnly"
 export class Market {
-  provider: AnchorProvider
   programs: MarginPrograms
   marketConfig: MarginMarketConfig
   serum: SerumMarket
@@ -36,10 +27,10 @@ export class Market {
     return this.marketConfig.symbol
   }
   get address(): PublicKey {
-    return new PublicKey(this.marketConfig.market)
+    return translateAddress(this.marketConfig.market)
   }
   get baseMint(): PublicKey {
-    return new PublicKey(this.marketConfig.baseMint)
+    return translateAddress(this.marketConfig.baseMint)
   }
   get baseDecimals(): number {
     return this.marketConfig.baseDecimals
@@ -48,7 +39,7 @@ export class Market {
     return this.marketConfig.baseSymbol
   }
   get quoteMint(): PublicKey {
-    return new PublicKey(this.marketConfig.quoteMint)
+    return translateAddress(this.marketConfig.quoteMint)
   }
   get quoteDecimals(): number {
     return this.marketConfig.quoteDecimals
@@ -79,13 +70,7 @@ export class Market {
    * @param marketConfig
    * @param serum
    */
-  constructor(
-    provider: AnchorProvider,
-    programs: MarginPrograms,
-    marketConfig: MarginMarketConfig,
-    serum: SerumMarket
-  ) {
-    this.provider = provider
+  constructor(programs: MarginPrograms, marketConfig: MarginMarketConfig, serum: SerumMarket) {
     this.programs = programs
     this.marketConfig = marketConfig
     this.serum = serum
@@ -136,7 +121,7 @@ export class Market {
     }
     let marketConfig: MarginMarketConfig | undefined
     for (const market of Object.values(programs.config.markets)) {
-      if (new PublicKey(market.market).equals(address)) {
+      if (translateAddress(market.market).equals(address)) {
         marketConfig = market
       }
     }
@@ -144,7 +129,7 @@ export class Market {
       throw new Error("Unable to match market config")
     }
 
-    return new Market(provider, programs, marketConfig, serum)
+    return new Market(programs, marketConfig, serum)
   }
 
   /**
@@ -173,10 +158,10 @@ export class Market {
       const market = await this.load({
         provider,
         programs,
-        address: new PublicKey(marketConfig.market),
+        address: translateAddress(marketConfig.market),
         options
       })
-      markets[market.name] = new Market(provider, programs, marketConfig, market.serum)
+      markets[market.name] = new Market(programs, marketConfig, market.serum)
     }
 
     return markets
@@ -262,7 +247,7 @@ export class Market {
       clientOrderId,
       payer
     })
-    return await this.sendAndConfirm(instructions)
+    return await marginAccount.sendAndConfirm(instructions)
   }
 
   /** Get instruction to submit an order to Serum
@@ -309,8 +294,12 @@ export class Market {
     const maxCoinQty = orderSize.lamports
     const baseSizeLots = maxCoinQty.toNumber() / this.marketConfig.baseLotSize
     const maxNativePcQtyIncludingFees = new BN(this.marketConfig.quoteLotSize * baseSizeLots).mul(limitPrice)
-    const openOrdersAccounts = await this.serum.findOpenOrdersAccountsForOwner(this.provider.connection, this.address)
-    const feeDiscountPubkey = (await this.serum.findBestFeeDiscountKey(this.provider.connection, this.address)).pubkey
+    const openOrdersAccounts = await this.serum.findOpenOrdersAccountsForOwner(
+      marginAccount.provider.connection,
+      this.address
+    )
+    const feeDiscountPubkey = (await this.serum.findBestFeeDiscountKey(marginAccount.provider.connection, this.address))
+      .pubkey
 
     const ix = await this.programs.marginSerum.methods
       .newOrderV3(
@@ -329,8 +318,8 @@ export class Market {
         openOrdersAccount: openOrdersAccounts && openOrdersAccounts[0].publicKey,
         requestQueue: this.marketConfig.requestQueue,
         eventQueue: this.marketConfig.eventQueue,
-        bids: this.marketConfig.bidsAddress,
-        asks: this.marketConfig.asksAddress,
+        bids: this.marketConfig.bids,
+        asks: this.marketConfig.asks,
         payer,
         baseVault: this.marketConfig.baseVault,
         quoteVault: this.marketConfig.quoteVault,
@@ -346,7 +335,7 @@ export class Market {
   async cancelOrder(marginAccount: MarginAccount, order: Order) {
     const instructions: TransactionInstruction[] = []
     await this.withCancelOrder({ instructions, marginAccount, order })
-    return await this.sendAndConfirm(instructions)
+    return await marginAccount.sendAndConfirm(instructions)
   }
 
   /**
@@ -372,8 +361,8 @@ export class Market {
         marginAccount: marginAccount.address,
         market: this.address,
         openOrdersAccount: order.openOrdersAddress,
-        marketBids: this.marketConfig.bidsAddress,
-        marketAsks: this.marketConfig.asksAddress,
+        marketBids: this.marketConfig.bids,
+        marketAsks: this.marketConfig.asks,
         eventQueue: this.marketConfig.eventQueue,
         serumProgramId: this.programs.config.serumProgramId
       })
@@ -384,7 +373,7 @@ export class Market {
   async cancelOrderByClientId(marginAccount: MarginAccount, orderId: BN) {
     const instructions: TransactionInstruction[] = []
     await this.withCancelOrderByClientId({ instructions, marginAccount, orderId })
-    return await this.sendAndConfirm(instructions)
+    return await marginAccount.sendAndConfirm(instructions)
   }
 
   /**
@@ -409,8 +398,8 @@ export class Market {
       .accounts({
         marginAccount: marginAccount.address,
         market: this.address,
-        marketBids: this.marketConfig.bidsAddress,
-        marketAsks: this.marketConfig.asksAddress,
+        marketBids: this.marketConfig.bids,
+        marketAsks: this.marketConfig.asks,
         eventQueue: this.marketConfig.eventQueue,
         serumProgramId: this.programs.config.serumProgramId
       })
@@ -442,7 +431,7 @@ export class Market {
       referrerQuoteWallet
     })
 
-    return await this.sendAndConfirm(instructions, signers)
+    return await marginAccount.sendAndConfirm(instructions, signers)
   }
 
   /**
@@ -537,11 +526,9 @@ export class Market {
   /**
    * Loads the Orderbook
    */
-  async loadOrderbook(): Promise<Orderbook> {
-    const bidsBuffer = (await this.provider.connection.getAccountInfo(new PublicKey(this.marketConfig.bidsAddress)))
-      ?.data
-    const asksBuffer = (await this.provider.connection.getAccountInfo(new PublicKey(this.marketConfig.bidsAddress)))
-      ?.data
+  async loadOrderbook(provider: AnchorProvider): Promise<Orderbook> {
+    const bidsBuffer = (await provider.connection.getAccountInfo(translateAddress(this.marketConfig.bids)))?.data
+    const asksBuffer = (await provider.connection.getAccountInfo(translateAddress(this.marketConfig.asks)))?.data
     if (!bidsBuffer || !asksBuffer) {
       throw new Error("Orderbook sides not found")
     }
@@ -614,20 +601,6 @@ export class Market {
     const native = new BN(Math.round(size * Math.pow(10, this.quoteDecimals)))
     // rounds down to the nearest lot size
     return native.div(this.serum.decoded.quoteLotSize)
-  }
-
-  /**
-   * Send and confirm a transaction from set of instructions
-   * @param instructions
-   * @param signers
-   */
-  async sendAndConfirm(instructions: TransactionInstruction[], signers?: Signer[]) {
-    try {
-      return await this.provider.sendAndConfirm(new Transaction().add(...instructions), signers)
-    } catch (err) {
-      console.log(err)
-      throw err
-    }
   }
 }
 
