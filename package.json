@@ -15,7 +15,7 @@
     "mod:install": "cd libraries/ts && yarn && cd ../.. && git submodule foreach npm i",
     "mod:link": "cd libraries/ts && npm link && cd ../.. && git submodule foreach npm link @jet-lab/margin",
     "mod:compile": "cd libraries/ts && yarn && yarn compile && cd ../../deps/jet-app && npm run compile && cd ../jet-monitoring-service && npm run build",
-    "mod:test": "git submodule foreach npm run test"
+    "mod:test": "cd deps/jet-app && npm run test"
   },
   "dependencies": {
     "@project-serum/anchor": "^0.24.2",
