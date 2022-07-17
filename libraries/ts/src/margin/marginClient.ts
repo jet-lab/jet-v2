@@ -1,6 +1,6 @@
 import { NATIVE_MINT } from "@solana/spl-token"
 import { Program, AnchorProvider, BN, translateAddress } from "@project-serum/anchor"
-import { JetMargin, JetMarginPool, JetMarginSerum, JetMarginSwap, JetMetadata, TokenAmount, TradeAction } from ".."
+import { JetMargin, JetMarginPool, JetMarginSerum, JetMarginSwap, JetMetadata, TokenAmount, PoolAction } from ".."
 import JET_CONFIG from "../margin/config.json"
 import {
   JetControl,
@@ -32,7 +32,7 @@ export interface AccountTransaction {
   blockTime: string
   signature: string
   sigIndex: number // Signature index that we used to find this transaction
-  tradeAction: TradeAction
+  tradeAction: PoolAction
   tradeAmount: TokenAmount
   tokenSymbol: string
   tokenName: string
@@ -125,12 +125,26 @@ export class MarginClient {
       deposit: "Instruction: Deposit",
       withdraw: "Instruction: Withdraw",
       borrow: "Instruction: MarginBorrow",
-      repay: "Instruction: MarginRepay"
+      "margin repay": "Instruction: MarginRepay",
+      repay: "Instruction: Repay"
     }
     let tradeAction = ""
-    for (const action of Object.keys(instructions)) {
-      if (transaction.meta?.logMessages?.some(logLine => logLine.includes(instructions[action]))) {
-        tradeAction = action
+
+    // Check to see if logMessage string contains relevant instruction
+    // If it does, set tradeAction to that element
+    const isTradeInstruction = (logLine: string) => {
+      for (const action of Object.keys(instructions)) {
+        if (logLine.includes(instructions[action])) {
+          tradeAction = action
+          return true
+        }
+      }
+    }
+
+    // Check each logMessage string for instruction
+    // Break after finding the first logMessage for which above is true
+    for (let i = 0; i < transaction.meta.logMessages.length; i++) {
+      if (isTradeInstruction(transaction.meta?.logMessages[i])) {
         break
       }
     }
@@ -141,10 +155,12 @@ export class MarginClient {
 
     const tx: Partial<AccountTransaction> = {
       tradeAction
-    } as { tradeAction: TradeAction }
+    } as { tradeAction: PoolAction }
     for (let i = 0; i < transaction.meta.preTokenBalances?.length; i++) {
       const pre = transaction.meta.preTokenBalances[i]
-      const matchingPost = transaction.meta.postTokenBalances?.find(post => post.mint === pre.mint)
+      const matchingPost = transaction.meta.postTokenBalances?.find(
+        post => post.mint === pre.mint && post.owner === pre.owner
+      )
       if (matchingPost && matchingPost.uiTokenAmount.amount !== pre.uiTokenAmount.amount) {
         let token: MarginTokenConfig | null = null
         for (let j = 0; j < Object.entries(mints).length; j++) {

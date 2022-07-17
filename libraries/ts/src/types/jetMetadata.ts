@@ -186,6 +186,20 @@ export type JetMetadata = {
           }
         ]
       }
+    },
+    {
+      name: "PositionOwner"
+      type: {
+        kind: "enum"
+        variants: [
+          {
+            name: "MarginAccount"
+          },
+          {
+            name: "Adapter"
+          }
+        ]
+      }
     }
   ]
 }
@@ -375,6 +389,20 @@ export const IDL: JetMetadata = {
           },
           {
             name: "Claim"
+          }
+        ]
+      }
+    },
+    {
+      name: "PositionOwner",
+      type: {
+        kind: "enum",
+        variants: [
+          {
+            name: "MarginAccount"
+          },
+          {
+            name: "Adapter"
           }
         ]
       }

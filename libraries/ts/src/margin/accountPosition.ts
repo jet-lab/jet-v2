@@ -25,11 +25,11 @@ export class AccountPosition {
   /** The address of the adapter managing the asset */
   adapter: PublicKey
 
-  /** The current value of this position, stored as a `Number128` with fixed precision. */
-  valueRaw: BN
+  /** The current value of this position. */
+  valueRaw: Number128
 
   get value(): number {
-    return bnToNumber(Number128.asU64(this.valueRaw, -5)) / 100000
+    return this.valueRaw.asNumber()
   }
 
   /** The amount of tokens in the account */
@@ -62,7 +62,7 @@ export class AccountPosition {
   exponent: number
 
   /** A weight on the value of this asset when counting collateral */
-  valueModifier: BN
+  valueModifier: Number128
 
   /** The max staleness for the account balance (seconds) */
   maxStaleness: BN
@@ -75,7 +75,7 @@ export class AccountPosition {
     this.token = info.token
     this.address = info.address
     this.adapter = info.adapter
-    this.valueRaw = new BN(info.value, "le")
+    this.valueRaw = Number128.fromBits(info.value)
     this.balance = info.balance
     this.balanceTimestamp = info.balanceTimestamp
     this.price = {
@@ -88,30 +88,30 @@ export class AccountPosition {
     this.exponent = info.exponent
     this.valueModifier = Number128.fromDecimal(new BN(info.valueModifier), -2)
     this.maxStaleness = info.maxStaleness
-    this.flags = new BN(info.flags as number[]).toNumber()
+    this.flags = info.flags.flags
     this.calculateValue()
   }
 
-  calculateValue() {
-    this.valueRaw = Number128.fromDecimal(this.balance, this.exponent)
-      .mul(Number128.fromDecimal(this.price.value, this.price.exponent))
-      .div(Number128.ONE)
+  calculateValue(): void {
+    this.valueRaw = Number128.fromDecimal(this.balance, this.exponent).mul(
+      Number128.fromDecimal(this.price.value, this.price.exponent)
+    )
   }
 
-  collateralValue() {
+  collateralValue(): Number128 {
     assert(this.kind === PositionKind.Deposit)
 
-    return this.valueModifier.mul(this.valueRaw).div(Number128.ONE)
+    return this.valueModifier.mul(this.valueRaw)
   }
 
-  requiredCollateralValue() {
+  requiredCollateralValue(setupLeverageFraction: Number128 = Number128.ONE): Number128 {
     assert(this.kind === PositionKind.Claim)
 
     if (this.valueModifier.eq(Number128.ZERO)) {
       console.log(`no leverage configured for claim ${this.token.toBase58()}`)
       return Number128.MAX
     } else {
-      return this.valueRaw.mul(Number128.ONE).div(this.valueModifier)
+      return this.valueRaw.div(this.valueModifier).div(setupLeverageFraction)
     }
   }
 
