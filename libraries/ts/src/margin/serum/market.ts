@@ -23,9 +23,11 @@ export type OrderStatus = "open" | "partialFilled" | "filled" | "cancelled"
 export class Market {
   programs: MarginPrograms
   marketConfig: MarginMarketConfig
-  serumProgramId: Address
   serum: SerumMarket
 
+  get serumProgramId(): Address {
+    return this.programs.config.serumProgramId
+  }
   get name(): string {
     return `${this.marketConfig.baseSymbol}/${this.marketConfig.quoteSymbol}`
   }
@@ -70,10 +72,9 @@ export class Market {
    * @param marketConfig
    * @param serum
    */
-  constructor(programs: MarginPrograms, marketConfig: MarginMarketConfig, serumProgramId: Address, serum: SerumMarket) {
+  constructor(programs: MarginPrograms, marketConfig: MarginMarketConfig, serum: SerumMarket) {
     this.programs = programs
     this.marketConfig = marketConfig
-    this.serumProgramId = serumProgramId
     this.serum = serum
     assert(this.programs.margin.programId)
     assert(this.serumProgramId)
@@ -97,13 +98,11 @@ export class Market {
   static async load({
     provider,
     programs,
-    serumProgramId,
     address,
     options
   }: {
     provider: AnchorProvider
     programs: MarginPrograms
-    serumProgramId: Address
     address: PublicKey
     options?: MarketOptions
   }): Promise<Market> {
@@ -114,10 +113,15 @@ export class Market {
     if (marketAccount.owner.equals(SystemProgram.programId) && marketAccount.lamports === 0) {
       throw new Error("Market account not does not exist")
     }
-    if (!marketAccount.owner.equals(translateAddress(serumProgramId))) {
+    if (!marketAccount.owner.equals(translateAddress(programs.config.serumProgramId))) {
       throw new Error("Market address not owned by Serum program: " + marketAccount.owner.toBase58())
     }
-    const serum = await SerumMarket.load(provider.connection, address, options, translateAddress(serumProgramId))
+    const serum = await SerumMarket.load(
+      provider.connection,
+      address,
+      options,
+      translateAddress(programs.config.serumProgramId)
+    )
     if (
       !serum.decoded.accountFlags.initialized ||
       !serum.decoded.accountFlags.market ||
@@ -135,7 +139,7 @@ export class Market {
       throw new Error("Unable to match market config")
     }
 
-    return new Market(programs, marketConfig, serumProgramId, serum)
+    return new Market(programs, marketConfig, serum)
   }
 
   /**
@@ -166,11 +170,10 @@ export class Market {
       const market = await this.load({
         provider,
         programs,
-        serumProgramId,
         address: translateAddress(marketConfig.market),
         options
       })
-      markets[market.name] = new Market(programs, marketConfig, serumProgramId, market.serum)
+      markets[market.name] = new Market(programs, marketConfig, market.serum)
     }
 
     return markets
