@@ -14,6 +14,8 @@ import {
 import { MarginCluster, MarginConfig, MarginTokenConfig } from "./config"
 import { ConfirmedSignatureInfo, Connection, PublicKey, TransactionResponse } from "@solana/web3.js"
 
+export type TradeAction = PoolAction | "swap" | "transfer"
+
 interface TokenMintsList {
   tokenMint: PublicKey
   depositNoteMint: PublicKey
@@ -32,7 +34,7 @@ export interface AccountTransaction {
   blockTime: string
   signature: string
   sigIndex: number // Signature index that we used to find this transaction
-  tradeAction: PoolAction
+  tradeAction: TradeAction
   tradeAmount: TokenAmount
   tokenSymbol: string
   tokenName: string

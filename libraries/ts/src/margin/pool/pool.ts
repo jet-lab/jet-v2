@@ -24,6 +24,7 @@ import { chunks, Number128, Number192, sendAll, sleep } from "../../utils"
 import { PositionTokenMetadata } from "../positionTokenMetadata"
 
 export type PoolAction = "deposit" | "withdraw" | "borrow" | "repay"
+
 export interface MarginPoolAddresses {
   /** The pool's token mint i.e. BTC or SOL mint address*/
   tokenMint: PublicKey
@@ -68,11 +69,11 @@ export class Pool {
   get symbol(): MarginPools | undefined {
     return this.poolConfig?.symbol
   }
-  get vaultTokensRaw(): Number192 {
+  get vaultRaw(): Number192 {
     return Number192.fromDecimal(this.info?.vault.amount.lamports ?? new BN(0), 0)
   }
-  get vaultTokens(): TokenAmount {
-    return this.vaultTokensRaw.asTokenAmount(this.decimals)
+  get vault(): TokenAmount {
+    return this.vaultRaw.asTokenAmount(this.decimals)
   }
   get borrowedTokensRaw() {
     if (!this.info) {
@@ -84,7 +85,7 @@ export class Pool {
     return this.borrowedTokensRaw.asTokenAmount(this.decimals)
   }
   get totalValueRaw(): Number192 {
-    return this.borrowedTokensRaw.add(this.vaultTokensRaw)
+    return this.borrowedTokensRaw.add(this.vaultRaw)
   }
   get totalValue(): TokenAmount {
     return this.totalValueRaw.asTokenAmount(this.decimals)
@@ -1019,7 +1020,7 @@ export class Pool {
       throw "must have pool info initialised"
     }
 
-    if (amount.tokens > this.vaultTokens.tokens) {
+    if (amount.tokens > this.vault.tokens) {
       throw "not enough tokens in the vault"
     }
 

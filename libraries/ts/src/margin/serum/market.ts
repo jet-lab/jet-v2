@@ -9,7 +9,7 @@ import {
   TOKEN_PROGRAM_ID,
   WRAPPED_SOL_MINT
 } from "@project-serum/serum/lib/token-instructions"
-import { TokenAmount } from "src/token"
+import { TokenAmount } from "../../token"
 import { MarginMarketConfig, MarginMarkets, MarginTokens } from "../config"
 import { PoolTokenChange } from "../pool"
 import { MarginAccount } from "../marginAccount"
