@@ -6,6 +6,7 @@ import {
   GetProgramAccountsFilter,
   MemcmpFilter,
   PublicKey,
+  Signer,
   SystemProgram,
   SYSVAR_RENT_PUBKEY,
   Transaction,
@@ -114,6 +115,9 @@ export class MarginAccount {
   }
   get liquidaton() {
     return this.info?.marginAccount.liquidation
+  }
+  get isBeingLiquidated() {
+    return this.info?.marginAccount.liquidation !== undefined
   }
   /** A number where 1 and above is subject to liquidation and 0 is no leverage. */
   get riskIndicator() {
@@ -351,7 +355,7 @@ export class MarginAccount {
     }
 
     const walletAmount = pool.symbol && this.walletTokens?.map[pool.symbol].amount
-    const feeCover = new TokenAmount(new BN(20000000), pool.decimals)
+    const feeCover = new TokenAmount(new BN(70000000), pool.decimals)
 
     // Max deposit
     let deposit = walletAmount ?? zero
@@ -971,9 +975,9 @@ export class MarginAccount {
     return accounts
   }
 
-  async sendAndConfirm(instructions: TransactionInstruction[]) {
+  async sendAndConfirm(instructions: TransactionInstruction[], signers?: Signer[]) {
     try {
-      return await this.provider.sendAndConfirm(new Transaction().add(...instructions))
+      return await this.provider.sendAndConfirm(new Transaction().add(...instructions), signers)
     } catch (err) {
       console.log(err)
       throw err

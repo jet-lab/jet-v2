@@ -1,698 +1,173 @@
 import assert from "assert"
-import { blob, struct, u8 } from "buffer-layout"
-import { BN } from "@project-serum/anchor"
-import {
-  decodeEventQueue,
-  decodeRequestQueue,
-  getFeeTier,
-  getLayoutVersion,
-  Market as SerumMarket,
-  OpenOrders,
-  supportsSrmFeeDiscounts
-} from "@project-serum/serum"
-import { getMintDecimals, MarketOptions, Order, ORDERBOOK_LAYOUT, OrderParams } from "@project-serum/serum/lib/market"
-import { Slab } from "@project-serum/serum/lib/slab"
+import { Keypair, PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY, TransactionInstruction } from "@solana/web3.js"
+import { AnchorProvider, BN, translateAddress } from "@project-serum/anchor"
+import { getLayoutVersion, Market as SerumMarket, Orderbook as SerumOrderbook, OpenOrders } from "@project-serum/serum"
+import { MarketOptions, Order } from "@project-serum/serum/lib/market"
 import {
   closeAccount,
   initializeAccount,
-  MSRM_DECIMALS,
-  MSRM_MINT,
-  SRM_DECIMALS,
-  SRM_MINT,
   TOKEN_PROGRAM_ID,
   WRAPPED_SOL_MINT
 } from "@project-serum/serum/lib/token-instructions"
-import {
-  Account,
-  AccountInfo,
-  Commitment,
-  Connection,
-  LAMPORTS_PER_SOL,
-  PublicKey,
-  SystemProgram,
-  SYSVAR_RENT_PUBKEY,
-  Transaction,
-  TransactionInstruction,
-  TransactionSignature
-} from "@solana/web3.js"
-
+import { TokenAmount } from "src/token"
+import { MarginMarketConfig, MarginMarkets, MarginTokens } from "../config"
+import { PoolTokenChange } from "../pool"
 import { MarginAccount } from "../marginAccount"
 import { MarginPrograms } from "../marginClient"
-import { Number192 } from "../../utils"
 
+export type selfTradeBehavior = "decrementTake" | "cancelProvide" | "abortTransaction"
+export type orderSide = "sell" | "buy" | "ask" | "bid"
+export type orderType = "limit" | "ioc" | "postOnly"
 export class Market {
-  private _programs: MarginPrograms
-  _decoded: any
-  private _baseSplTokenDecimals: number
-  private _quoteSplTokenDecimals: number
-  private _skipPreflight: boolean
-  private _commitment: Commitment
-  private _serumProgramId: PublicKey
-  private _openOrdersAccountsCache: {
-    [publickKey: string]: { accounts: OpenOrders[]; ts: number }
+  programs: MarginPrograms
+  marketConfig: MarginMarketConfig
+  serum: SerumMarket
+
+  get name(): string {
+    return this.marketConfig.symbol
   }
-  private _layoutOverride?: any
-
-  private _feeDiscountKeysCache: {
-    [publicKey: string]: {
-      accounts: Array<{
-        balance: number
-        mint: PublicKey
-        pubkey: PublicKey
-        feeTier: number
-      }>
-      ts: number
-    }
+  get address(): PublicKey {
+    return translateAddress(this.marketConfig.market)
+  }
+  get baseMint(): PublicKey {
+    return translateAddress(this.marketConfig.baseMint)
+  }
+  get baseDecimals(): number {
+    return this.marketConfig.baseDecimals
+  }
+  get baseSymbol(): MarginTokens {
+    return this.marketConfig.baseSymbol
+  }
+  get quoteMint(): PublicKey {
+    return translateAddress(this.marketConfig.quoteMint)
+  }
+  get quoteDecimals(): number {
+    return this.marketConfig.quoteDecimals
+  }
+  get quoteSymbol(): MarginTokens {
+    return this.marketConfig.quoteSymbol
+  }
+  get serumProgramId(): PublicKey {
+    return this.programs.marginSerum.programId
+  }
+  get minOrderSize() {
+    return this.baseSizeLotsToNumber(new BN(1))
+  }
+  get tickSize() {
+    return this.priceLotsToNumber(new BN(1))
+  }
+  private get baseDecimalMultiplier() {
+    return new BN(10).pow(new BN(this.baseDecimals))
+  }
+  private get quoteDecimalMultiplier() {
+    return new BN(10).pow(new BN(this.baseDecimals))
   }
 
-  private marginSerumProgramId: PublicKey
-  private marginSerumAdapterMetadata: PublicKey
-
-  constructor(
-    programs: MarginPrograms,
-    decoded,
-    baseMintDecimals: number,
-    quoteMintDecimals: number,
-    options: MarketOptions = {},
-    serumProgramId: PublicKey,
-    marginProgramId: PublicKey,
-    marginSerumProgramId: PublicKey,
-    marginSerumAdapterMetadata: PublicKey,
-    layoutOverride?: any
-  ) {
-    const { skipPreflight = false, commitment = "recent" } = options
-    if (!decoded.accountFlags.initialized || !decoded.accountFlags.market) {
+  /**
+   * Creates a Margin Market
+   * @param provider
+   * @param programs
+   * @param marketConfig
+   * @param serum
+   */
+  constructor(programs: MarginPrograms, marketConfig: MarginMarketConfig, serum: SerumMarket) {
+    this.programs = programs
+    this.marketConfig = marketConfig
+    this.serum = serum
+    assert(this.programs.margin.programId)
+    assert(this.serumProgramId)
+    if (!serum.decoded.accountFlags.initialized || !serum.decoded.accountFlags.market) {
       throw new Error("Invalid market state")
     }
-    this._programs = programs
-    this._decoded = decoded
-    this._baseSplTokenDecimals = baseMintDecimals
-    this._quoteSplTokenDecimals = quoteMintDecimals
-    this._skipPreflight = skipPreflight
-    this._commitment = commitment
-    this._serumProgramId = serumProgramId
-    this._openOrdersAccountsCache = {}
-    this._feeDiscountKeysCache = {}
-    this._layoutOverride = layoutOverride
-
-    assert(marginProgramId)
-
-    assert(marginSerumProgramId)
-    this.marginSerumProgramId = marginSerumProgramId
-    this.marginSerumAdapterMetadata = marginSerumAdapterMetadata
   }
 
-  static getLayout(programId: PublicKey) {
-    return SerumMarket.getLayout(programId)
-  }
-
-  static async findAccountsByMints(
-    connection: Connection,
-    baseMintAddress: PublicKey,
-    quoteMintAddress: PublicKey,
-    programId: PublicKey
-  ) {
-    return SerumMarket.findAccountsByMints(connection, baseMintAddress, quoteMintAddress, programId)
-  }
-
-  static async load(
-    programs: MarginPrograms,
-    address: PublicKey,
-    options: MarketOptions = {},
-    serumProgramId: PublicKey,
-    marginProgramId: PublicKey,
-    marginSerumProgramId: PublicKey,
-    metadataProgramId: PublicKey,
-    layoutOverride?: any
-  ) {
-    const { owner, data } = throwIfNull(await programs.connection.getAccountInfo(address), "Market not found")
-    if (!owner.equals(serumProgramId)) {
+  /**
+   * Load a Margin Market
+   *
+   * @param {{
+   *     provider: AnchorProvider
+   *     programs: MarginPrograms
+   *     address: PublicKey
+   *     options: MarketOptions
+   *     serumProgramId: PublicKey
+   *   }}
+   * @return {Promise<Market>}
+   */
+  static async load({
+    provider,
+    programs,
+    address,
+    options
+  }: {
+    provider: AnchorProvider
+    programs: MarginPrograms
+    address: PublicKey
+    options?: MarketOptions
+  }): Promise<Market> {
+    const owner = (await programs.connection.getAccountInfo(address))?.owner
+    if (!owner) {
+      throw new Error("Market not found")
+    }
+    if (!owner.equals(programs.marginSerum.programId)) {
       throw new Error("Address not owned by program: " + owner.toBase58())
     }
-    const decoded = (layoutOverride ?? this.getLayout(serumProgramId)).decode(data)
-    if (!decoded.accountFlags.initialized || !decoded.accountFlags.market || !decoded.ownAddress.equals(address)) {
+    const serum = await SerumMarket.load(provider.connection, address, options, programs.marginSerum.programId)
+    if (
+      !serum.decoded.accountFlags.initialized ||
+      !serum.decoded.accountFlags.market ||
+      !serum.decoded.ownAddress.equals(address)
+    ) {
       throw new Error("Invalid market")
     }
-    const [baseMintDecimals, quoteMintDecimals] = await Promise.all([
-      getMintDecimals(programs.connection, decoded.baseMint),
-      getMintDecimals(programs.connection, decoded.quoteMint)
-    ])
-    return new Market(
-      programs,
-      decoded,
-      baseMintDecimals,
-      quoteMintDecimals,
-      options,
-      serumProgramId,
-      marginProgramId,
-      marginSerumProgramId,
-      (await PublicKey.findProgramAddress([marginSerumProgramId.toBuffer()], metadataProgramId))[0],
-      layoutOverride
-    )
-  }
-
-  get address(): PublicKey {
-    return this._decoded.ownAddress
-  }
-
-  get publicKey(): PublicKey {
-    return this.address
-  }
-
-  get baseMintAddress(): PublicKey {
-    return this._decoded.baseMint
-  }
-
-  get quoteMintAddress(): PublicKey {
-    return this._decoded.quoteMint
-  }
-
-  get bidsAddress(): PublicKey {
-    return this._decoded.bids
-  }
-
-  get asksAddress(): PublicKey {
-    return this._decoded.asks
-  }
-
-  get decoded(): any {
-    return this._decoded
-  }
-
-  async loadBids(connection: Connection): Promise<Orderbook> {
-    const { data } = throwIfNull(await connection.getAccountInfo(this._decoded.bids))
-    const { accountFlags, slab } = Orderbook.LAYOUT.decode(data)
-    return new Orderbook(
-      new SerumMarket(
-        this._decoded,
-        this._baseSplTokenDecimals,
-        this._quoteSplTokenDecimals,
-        { skipPreflight: this._skipPreflight, commitment: this._commitment },
-        this._serumProgramId,
-        this._layoutOverride
-      ),
-      accountFlags,
-      slab
-    )
-  }
-
-  async loadAsks(connection: Connection): Promise<Orderbook> {
-    const { data } = throwIfNull(await connection.getAccountInfo(this._decoded.asks))
-    const { accountFlags, slab } = Orderbook.LAYOUT.decode(data)
-    return new Orderbook(
-      new SerumMarket(
-        this._decoded,
-        this._baseSplTokenDecimals,
-        this._quoteSplTokenDecimals,
-        { skipPreflight: this._skipPreflight, commitment: this._commitment },
-        this._serumProgramId,
-        this._layoutOverride
-      ),
-      accountFlags,
-      slab
-    )
-  }
-
-  async loadOrdersForOwner(
-    connection: Connection,
-    marginAccount: MarginAccount,
-    cacheDurationMs = 0
-  ): Promise<Order[]> {
-    const [bids, asks, openOrdersAccounts] = await Promise.all([
-      this.loadBids(connection),
-      this.loadAsks(connection),
-      this.findOpenOrdersAccountsForOwner(connection, marginAccount, cacheDurationMs)
-    ])
-    return this.filterForOpenOrders(bids, asks, openOrdersAccounts)
-  }
-
-  filterForOpenOrders(bids: Orderbook, asks: Orderbook, openOrdersAccounts: OpenOrders[]): Order[] {
-    return [...bids, ...asks].filter(order =>
-      openOrdersAccounts.some(openOrders => order.openOrdersAddress.equals(openOrders.address))
-    )
-  }
-
-  async findBaseTokenAccountsForOwner(
-    connection: Connection,
-    marginAccount: MarginAccount,
-    includeUnwrappedSol = false
-  ): Promise<Array<{ pubkey: PublicKey; account: AccountInfo<Buffer> }>> {
-    if (this.baseMintAddress.equals(WRAPPED_SOL_MINT) && includeUnwrappedSol) {
-      const [wrapped, unwrapped] = await Promise.all([
-        this.findBaseTokenAccountsForOwner(connection, marginAccount, false),
-        connection.getAccountInfo(marginAccount.address)
-      ])
-      if (unwrapped !== null) {
-        return [{ pubkey: marginAccount.address, account: unwrapped }, ...wrapped]
+    let marketConfig: MarginMarketConfig | undefined
+    for (const market of Object.values(programs.config.markets)) {
+      if (translateAddress(market.market).equals(address)) {
+        marketConfig = market
       }
-      return wrapped
     }
-    return await this.getTokenAccountsByOwnerForMint(connection, marginAccount, this.baseMintAddress)
+    if (!marketConfig) {
+      throw new Error("Unable to match market config")
+    }
+
+    return new Market(programs, marketConfig, serum)
   }
 
-  async getTokenAccountsByOwnerForMint(
-    connection: Connection,
-    marginAccount: MarginAccount,
-    mintAddress: PublicKey
-  ): Promise<Array<{ pubkey: PublicKey; account: AccountInfo<Buffer> }>> {
-    return (
-      await connection.getTokenAccountsByOwner(marginAccount.address, {
-        mint: mintAddress
+  /**
+   * Load all Margin Markets
+   *
+   * @param {{
+   *     provider: AnchorProvider
+   *     programs: MarginPrograms
+   *     address: PublicKey
+   *     options: MarketOptions
+   *     serumProgramId: PublicKey
+   *   }}
+   * @return {Promise<Record<MarginMarkets, Market>>}
+   */
+  static async loadAll({
+    provider,
+    programs,
+    options
+  }: {
+    provider: AnchorProvider
+    programs: MarginPrograms
+    options?: MarketOptions
+  }): Promise<Record<MarginMarkets, Market>> {
+    const markets: Record<MarginMarkets, Market> = {} as Record<MarginMarkets, Market>
+    for (const marketConfig of Object.values(programs.config.markets)) {
+      const market = await this.load({
+        provider,
+        programs,
+        address: translateAddress(marketConfig.market),
+        options
       })
-    ).value
+      markets[market.name] = new Market(programs, marketConfig, market.serum)
+    }
+
+    return markets
   }
 
-  async findQuoteTokenAccountsForOwner(
-    connection: Connection,
-    marginAccount: MarginAccount,
-    includeUnwrappedSol = false
-  ): Promise<{ pubkey: PublicKey; account: AccountInfo<Buffer> }[]> {
-    if (this.quoteMintAddress.equals(WRAPPED_SOL_MINT) && includeUnwrappedSol) {
-      const [wrapped, unwrapped] = await Promise.all([
-        this.findQuoteTokenAccountsForOwner(connection, marginAccount, false),
-        connection.getAccountInfo(marginAccount.address)
-      ])
-      if (unwrapped !== null) {
-        return [{ pubkey: marginAccount.address, account: unwrapped }, ...wrapped]
-      }
-      return wrapped
-    }
-    return await this.getTokenAccountsByOwnerForMint(connection, marginAccount, this.quoteMintAddress)
-  }
-
-  async findOpenOrdersAccountsForOwner(
-    connection: Connection,
-    marginAccount: MarginAccount,
-    cacheDurationMs = 0
-  ): Promise<OpenOrders[]> {
-    const strOwner = marginAccount.address.toBase58()
-    const now = new Date().getTime()
-    if (
-      strOwner in this._openOrdersAccountsCache &&
-      now - this._openOrdersAccountsCache[strOwner].ts < cacheDurationMs
-    ) {
-      return this._openOrdersAccountsCache[strOwner].accounts
-    }
-    const openOrdersAccountsForOwner = await OpenOrders.findForMarketAndOwner(
-      connection,
-      this.address,
-      marginAccount.address,
-      this._serumProgramId
-    )
-    this._openOrdersAccountsCache[strOwner] = {
-      accounts: openOrdersAccountsForOwner,
-      ts: now
-    }
-    return openOrdersAccountsForOwner
-  }
-
-  async placeOrder(
-    marginAccount: MarginAccount,
-    {
-      owner,
-      payer,
-      side,
-      price,
-      size,
-      orderType = "limit",
-      clientId,
-      openOrdersAddressKey,
-      openOrdersAccount,
-      feeDiscountPubkey
-    }: OrderParams
-  ) {
-    const { transaction, signers } = await this.makePlaceOrderTransaction<Account>(
-      marginAccount.provider.connection,
-      marginAccount,
-      {
-        owner,
-        payer,
-        side,
-        price,
-        size,
-        orderType,
-        clientId,
-        openOrdersAddressKey,
-        openOrdersAccount,
-        feeDiscountPubkey
-      }
-    )
-    return await marginAccount.provider.sendAndConfirm(transaction, signers)
-  }
-
-  getSplTokenBalanceFromAccountInfo(accountInfo: AccountInfo<Buffer>, decimals: number): number {
-    return divideBnToNumber(new BN(accountInfo.data.slice(64, 72), 10, "le"), new BN(10).pow(new BN(decimals)))
-  }
-
-  get supportsSrmFeeDiscounts() {
-    return supportsSrmFeeDiscounts(this._serumProgramId)
-  }
-
-  get supportsReferralFees() {
-    return getLayoutVersion(this._serumProgramId) > 1
-  }
-
-  get usesRequestQueue() {
-    return getLayoutVersion(this._serumProgramId) <= 2
-  }
-
-  async findFeeDiscountKeys(
-    connection: Connection,
-    marginAccount: MarginAccount,
-    cacheDurationMs = 0
-  ): Promise<
-    Array<{
-      pubkey: PublicKey
-      feeTier: number
-      balance: number
-      mint: PublicKey
-    }>
-  > {
-    let sortedAccounts: Array<{
-      balance: number
-      mint: PublicKey
-      pubkey: PublicKey
-      feeTier: number
-    }> = []
-    const now = new Date().getTime()
-    const strOwner = marginAccount.address.toBase58()
-    if (strOwner in this._feeDiscountKeysCache && now - this._feeDiscountKeysCache[strOwner].ts < cacheDurationMs) {
-      return this._feeDiscountKeysCache[strOwner].accounts
-    }
-
-    if (this.supportsSrmFeeDiscounts) {
-      // Fee discounts based on (M)SRM holdings supported in newer versions
-      const msrmAccounts = (await this.getTokenAccountsByOwnerForMint(connection, marginAccount, MSRM_MINT)).map(
-        ({ pubkey, account }) => {
-          const balance = this.getSplTokenBalanceFromAccountInfo(account, MSRM_DECIMALS)
-          return {
-            pubkey,
-            mint: MSRM_MINT,
-            balance,
-            feeTier: getFeeTier(balance, 0)
-          }
-        }
-      )
-      const srmAccounts = (await this.getTokenAccountsByOwnerForMint(connection, marginAccount, SRM_MINT)).map(
-        ({ pubkey, account }) => {
-          const balance = this.getSplTokenBalanceFromAccountInfo(account, SRM_DECIMALS)
-          return {
-            pubkey,
-            mint: SRM_MINT,
-            balance,
-            feeTier: getFeeTier(0, balance)
-          }
-        }
-      )
-      sortedAccounts = msrmAccounts.concat(srmAccounts).sort((a, b) => {
-        if (a.feeTier > b.feeTier) {
-          return -1
-        } else if (a.feeTier < b.feeTier) {
-          return 1
-        } else {
-          if (a.balance > b.balance) {
-            return -1
-          } else if (a.balance < b.balance) {
-            return 1
-          } else {
-            return 0
-          }
-        }
-      })
-    }
-    this._feeDiscountKeysCache[strOwner] = {
-      accounts: sortedAccounts,
-      ts: now
-    }
-    return sortedAccounts
-  }
-
-  async findBestFeeDiscountKey(
-    connection: Connection,
-    marginAccount: MarginAccount,
-    cacheDurationMs = 30000
-  ): Promise<{ pubkey: PublicKey | null; feeTier: number }> {
-    const accounts = await this.findFeeDiscountKeys(connection, marginAccount, cacheDurationMs)
-    if (accounts.length > 0) {
-      return {
-        pubkey: accounts[0].pubkey,
-        feeTier: accounts[0].feeTier
-      }
-    }
-    return {
-      pubkey: null,
-      feeTier: 0
-    }
-  }
-
-  async makePlaceOrderTransaction<T extends PublicKey | Account>(
-    connection: Connection,
-    marginAccount: MarginAccount,
-    {
-      owner,
-      payer,
-      side,
-      price,
-      size,
-      orderType = "limit",
-      clientId,
-      openOrdersAddressKey,
-      openOrdersAccount,
-      feeDiscountPubkey = undefined,
-      selfTradeBehavior = "decrementTake"
-    }: OrderParams<T>,
-    cacheDurationMs = 0,
-    feeDiscountPubkeyCacheDurationMs = 0
-  ) {
-    const openOrdersAccounts = await this.findOpenOrdersAccountsForOwner(connection, marginAccount, cacheDurationMs)
-    const transaction = new Transaction()
-    const signers: Account[] = []
-
-    // Fetch an SRM fee discount key if the market supports discounts and it is not supplied
-    let useFeeDiscountPubkey: PublicKey | null
-    if (feeDiscountPubkey) {
-      useFeeDiscountPubkey = feeDiscountPubkey
-    } else if (feeDiscountPubkey === undefined && this.supportsSrmFeeDiscounts) {
-      useFeeDiscountPubkey = (
-        await this.findBestFeeDiscountKey(connection, marginAccount, feeDiscountPubkeyCacheDurationMs)
-      ).pubkey
-    } else {
-      useFeeDiscountPubkey = null
-    }
-
-    let openOrdersAddress: PublicKey
-    if (openOrdersAccounts.length === 0) {
-      let account
-      if (openOrdersAccount) {
-        account = openOrdersAccount
-      } else {
-        account = new Account()
-      }
-      transaction.add(
-        await OpenOrders.makeCreateAccountTransaction(
-          connection,
-          this.address,
-          marginAccount.address,
-          account.publicKey,
-          this._serumProgramId
-        )
-      )
-      openOrdersAddress = account.publicKey
-      signers.push(account)
-      // refresh the cache of open order accounts on next fetch
-      this._openOrdersAccountsCache[marginAccount.address.toBase58()].ts = 0
-    } else if (openOrdersAccount) {
-      openOrdersAddress = openOrdersAccount.publicKey
-    } else if (openOrdersAddressKey) {
-      openOrdersAddress = openOrdersAddressKey
-    } else {
-      openOrdersAddress = openOrdersAccounts[0].address
-    }
-
-    let wrappedSolAccount: Account | null = null
-    if (payer.equals(marginAccount.address)) {
-      if (
-        (side === "buy" && this.quoteMintAddress.equals(WRAPPED_SOL_MINT)) ||
-        (side === "sell" && this.baseMintAddress.equals(WRAPPED_SOL_MINT))
-      ) {
-        wrappedSolAccount = new Account()
-        let lamports
-        if (side === "buy") {
-          lamports = Math.round(price * size * 1.01 * LAMPORTS_PER_SOL)
-          if (openOrdersAccounts.length > 0) {
-            lamports -= openOrdersAccounts[0].quoteTokenFree.toNumber()
-          }
-        } else {
-          lamports = Math.round(size * LAMPORTS_PER_SOL)
-          if (openOrdersAccounts.length > 0) {
-            lamports -= openOrdersAccounts[0].baseTokenFree.toNumber()
-          }
-        }
-        lamports = Math.max(lamports, 0) + 1e7
-        transaction.add(
-          SystemProgram.createAccount({
-            fromPubkey: marginAccount.owner,
-            newAccountPubkey: wrappedSolAccount.publicKey,
-            lamports,
-            space: 165,
-            programId: TOKEN_PROGRAM_ID
-          })
-        )
-        transaction.add(
-          initializeAccount({
-            account: wrappedSolAccount.publicKey,
-            mint: WRAPPED_SOL_MINT,
-            owner: marginAccount.address
-          })
-        )
-        signers.push(wrappedSolAccount)
-      } else {
-        throw new Error("Invalid payer account")
-      }
-    }
-
-    const placeOrderInstruction = await this.makePlaceOrderInstruction(connection, marginAccount, {
-      owner: marginAccount.address,
-      payer: wrappedSolAccount?.publicKey ?? payer,
-      side,
-      price,
-      size,
-      orderType,
-      clientId,
-      openOrdersAddressKey: openOrdersAddress,
-      feeDiscountPubkey: useFeeDiscountPubkey,
-      selfTradeBehavior
-    })
-    transaction.add(placeOrderInstruction)
-
-    if (wrappedSolAccount) {
-      transaction.add(
-        closeAccount({
-          source: wrappedSolAccount.publicKey,
-          destination: marginAccount.address,
-          owner: marginAccount.address
-        })
-      )
-    }
-
-    return { transaction, signers, payer: marginAccount.owner }
-  }
-
-  async makePlaceOrderInstruction<T extends PublicKey | Account>(
-    connection: Connection,
-    marginAccount: MarginAccount,
-    params: OrderParams<T>
-  ): Promise<TransactionInstruction> {
-    const {
-      owner,
-      payer,
-      side,
-      price,
-      size,
-      orderType = "limit",
-      clientId,
-      openOrdersAddressKey,
-      openOrdersAccount,
-      feeDiscountPubkey = null
-    } = params
-    if (this.baseSizeNumberToLots(size).lte(new BN(0))) {
-      throw new Error("size too small")
-    }
-    if (this.priceNumberToLots(price).lte(new BN(0))) {
-      throw new Error("invalid price")
-    }
-    if (this.usesRequestQueue) {
-      throw new Error("Not supported.")
-    } else {
-      return this.makeAdapterInvokeInstruction(
-        marginAccount.owner,
-        marginAccount,
-        this.marginSerumProgramId,
-        this.marginSerumAdapterMetadata,
-        await this.makeNewOrderV3Instruction(marginAccount, params)
-      )
-    }
-  }
-
-  async makeNewOrderV3Instruction<T extends PublicKey | Account>(
-    marginAccount: MarginAccount,
-    params: OrderParams<T>
-  ): Promise<TransactionInstruction> {
-    const {
-      owner,
-      payer,
-      side,
-      price,
-      size,
-      orderType = "limit",
-      clientId,
-      openOrdersAddressKey,
-      openOrdersAccount,
-      feeDiscountPubkey,
-      selfTradeBehavior = "decrementTake",
-      programId
-    } = params
-    assert(this.supportsSrmFeeDiscounts)
-    const limit = 65535
-    return await this._programs.marginSerum.methods
-      .newOrderV3(
-        this.encodeSide(side),
-        this.priceNumberToLots(price), // limitPrice
-        this.baseSizeNumberToLots(size), // maxBaseQuantity
-        new BN(this._decoded.quoteLotSize.toNumber()).mul(
-          this.baseSizeNumberToLots(size).mul(this.priceNumberToLots(price))
-        ), // maxQuoteQuantity
-        this.encodeSelfTradeBehavior(selfTradeBehavior),
-        this.encodeOrderType(orderType),
-        clientId!,
-        limit
-      )
-      .accounts({
-        marginAccount: marginAccount.address,
-        market: this.address,
-        openOrdersAccount: openOrdersAccount ? openOrdersAccount.publicKey : openOrdersAddressKey!,
-        requestQueue: this._decoded.requestQueue,
-        eventQueue: this._decoded.eventQueue,
-        bids: this._decoded.bids,
-        asks: this._decoded.asks,
-        payer,
-        baseVault: this._decoded.baseVault,
-        quoteVault: this._decoded.quoteVault,
-        splTokenProgramId: TOKEN_PROGRAM_ID,
-        rentSysvarId: SYSVAR_RENT_PUBKEY,
-        serumProgramId: this._serumProgramId
-      })
-      .remainingAccounts(feeDiscountPubkey ? [{ pubkey: feeDiscountPubkey, isSigner: false, isWritable: true }] : [])
-      .instruction()
-  }
-
-  private encodeOrderType(orderType: string) {
-    switch (orderType) {
-      case "limit":
-        return 0
-      case "ioc":
-        return 1
-      case "postOnly":
-        return 2
-      default:
-        throw new Error(`Invalid order type: ${orderType}`)
-    }
-  }
-
-  private encodeSelfTradeBehavior(selfTradeBehavior: string) {
-    switch (selfTradeBehavior) {
-      case "decrementTake":
-        return 0
-      case "cancelProvide":
-        return 1
-      case "abortTransaction":
-        return 2
-      default:
-        throw new Error(`Invalid self trade behavior: ${selfTradeBehavior}`)
-    }
-  }
-
-  private encodeSide(side: string) {
+  static encodeOrderSide(side: orderSide): number {
     switch (side) {
       case "bid":
       case "buy":
@@ -700,86 +175,236 @@ export class Market {
       case "ask":
       case "sell":
         return 1
-      default:
-        throw new Error(`Invalid side: ${side}`)
     }
   }
 
-  async cancelOrderByClientId(marginAccount: MarginAccount, openOrders: PublicKey, clientId: BN) {
-    const transaction = await this.makeCancelOrderByClientIdTransaction(marginAccount, openOrders, clientId)
-    return await marginAccount.provider.sendAndConfirm(transaction)
+  static encodeOrderType(type: orderType): number {
+    switch (type) {
+      case "limit":
+        return 0
+      case "ioc":
+        return 1 // market order
+      case "postOnly":
+        return 2
+    }
   }
 
-  async makeCancelOrderByClientIdTransaction(marginAccount: MarginAccount, openOrders: PublicKey, clientId: BN) {
-    if (this.usesRequestQueue) {
-      throw new Error("Not supported.")
+  static encodeSelfTradeBehavior(behavior: selfTradeBehavior): number {
+    switch (behavior) {
+      case "decrementTake":
+        return 0
+      case "cancelProvide":
+        return 1
+      case "abortTransaction":
+        return 2
+    }
+  }
+
+  async placeOrder({
+    marginAccount,
+    orderSide,
+    orderType,
+    orderPrice,
+    orderSize,
+    selfTradeBehavior = "decrementTake",
+    clientOrderId = new BN(Date.now()),
+    payer = marginAccount.address
+  }: {
+    marginAccount: MarginAccount
+    orderSide: orderSide
+    orderType: orderType
+    orderPrice: number
+    orderSize: TokenAmount
+    selfTradeBehavior: selfTradeBehavior
+    clientOrderId: BN
+    payer: PublicKey
+  }) {
+    const instructions: TransactionInstruction[] = []
+    const orderAmount = orderSize.divn(orderPrice)
+    const accountPoolPosition = marginAccount.poolPositions[this.baseSymbol]
+
+    // If trading on margin
+    if (orderAmount.gt(accountPoolPosition.depositBalance) && marginAccount.pools) {
+      const difference = orderAmount.sub(accountPoolPosition.depositBalance)
+      const pool = marginAccount.pools[this.baseSymbol]
+      if (pool) {
+        await pool.marginBorrow({
+          marginAccount: this,
+          pools: Object.values(marginAccount.pools),
+          change: PoolTokenChange.setTo(accountPoolPosition.loanBalance.add(difference))
+        })
+      }
     }
 
-    const transaction = new Transaction()
-    transaction.add(
-      await this.makeAdapterInvokeInstruction(
-        marginAccount.owner,
-        marginAccount,
-        this.marginSerumProgramId,
-        this.marginSerumAdapterMetadata,
-        await this._programs.marginSerum.methods
-          .cancelOrderByClientIdV2(clientId)
-          .accounts({
-            marginAccount: marginAccount.address,
-            market: this.address,
-            openOrdersAccount: openOrders,
-            marketBids: this._decoded.bids,
-            marketAsks: this._decoded.asks,
-            eventQueue: this._decoded.eventQueue,
-            serumProgramId: this._serumProgramId
-          })
-          .instruction()
+    await this.withPlaceOrder({
+      instructions,
+      marginAccount,
+      orderSide,
+      orderType,
+      orderPrice,
+      orderSize,
+      selfTradeBehavior,
+      clientOrderId,
+      payer
+    })
+    return await marginAccount.sendAndConfirm(instructions)
+  }
+
+  /** Get instruction to submit an order to Serum
+   *
+   * @param {{
+   *    instructions: TransactionInstruction[]
+   *    marginAccount: MarginAccount
+   *    orderSide: orderSide
+   *    orderType: orderType
+   *    orderPrice: number
+   *    orderSize: TokenAmount
+   *    selfTradeBehavior: selfTradeBehavior
+   *    clientOrderId: BN
+   *    payer: PublicKey
+   *  }}
+   */
+  async withPlaceOrder({
+    instructions,
+    marginAccount,
+    orderSide,
+    orderType,
+    orderPrice,
+    orderSize,
+    selfTradeBehavior,
+    clientOrderId,
+    payer
+  }: {
+    instructions: TransactionInstruction[]
+    marginAccount: MarginAccount
+    orderSide: orderSide
+    orderType: orderType
+    orderPrice: number
+    orderSize: TokenAmount
+    selfTradeBehavior: selfTradeBehavior
+    clientOrderId: BN
+    payer: PublicKey
+  }): Promise<void> {
+    const limitPrice = new BN(
+      Math.round(
+        (orderPrice * Math.pow(10, this.quoteDecimals) * this.marketConfig.baseLotSize) /
+          (Math.pow(10, this.baseDecimals) * this.marketConfig.quoteLotSize)
       )
     )
-    return transaction
+    const maxCoinQty = orderSize.lamports
+    const baseSizeLots = maxCoinQty.toNumber() / this.marketConfig.baseLotSize
+    const maxNativePcQtyIncludingFees = new BN(this.marketConfig.quoteLotSize * baseSizeLots).mul(limitPrice)
+    const openOrdersAccounts = await this.serum.findOpenOrdersAccountsForOwner(
+      marginAccount.provider.connection,
+      this.address
+    )
+    const feeDiscountPubkey = (await this.serum.findBestFeeDiscountKey(marginAccount.provider.connection, this.address))
+      .pubkey
+
+    const ix = await this.programs.marginSerum.methods
+      .newOrderV3(
+        Market.encodeOrderSide(orderSide),
+        limitPrice,
+        maxCoinQty,
+        maxNativePcQtyIncludingFees,
+        Market.encodeSelfTradeBehavior(selfTradeBehavior),
+        Market.encodeOrderType(orderType),
+        clientOrderId,
+        65535
+      )
+      .accounts({
+        marginAccount: marginAccount.address,
+        market: this.address,
+        openOrdersAccount: openOrdersAccounts && openOrdersAccounts[0].publicKey,
+        requestQueue: this.marketConfig.requestQueue,
+        eventQueue: this.marketConfig.eventQueue,
+        bids: this.marketConfig.bids,
+        asks: this.marketConfig.asks,
+        payer,
+        baseVault: this.marketConfig.baseVault,
+        quoteVault: this.marketConfig.quoteVault,
+        splTokenProgramId: TOKEN_PROGRAM_ID,
+        rentSysvarId: SYSVAR_RENT_PUBKEY,
+        serumProgramId: this.programs.config.serumProgramId
+      })
+      .remainingAccounts(feeDiscountPubkey ? [{ pubkey: feeDiscountPubkey, isSigner: false, isWritable: true }] : [])
+      .instruction()
+    instructions.push(ix)
   }
 
   async cancelOrder(marginAccount: MarginAccount, order: Order) {
-    const transaction = await this.makeCancelOrderTransaction(marginAccount, order)
-    return await marginAccount.provider.sendAndConfirm(transaction)
+    const instructions: TransactionInstruction[] = []
+    await this.withCancelOrder({ instructions, marginAccount, order })
+    return await marginAccount.sendAndConfirm(instructions)
   }
 
-  async makeCancelOrderTransaction(marginAccount: MarginAccount, order: Order) {
-    const transaction = new Transaction()
-    transaction.add(
-      await this.makeAdapterInvokeInstruction(
-        marginAccount.owner,
-        marginAccount,
-        this.marginSerumProgramId,
-        this.marginSerumAdapterMetadata,
-        await this.makeCancelOrderInstruction(marginAccount, order)
-      )
-    )
-    return transaction
+  /**
+   * Get instruction to cancel an order on Serum
+   * @param {{
+   *    instructions: TransactionInstruction[]
+   *    marginAccount: MarginAccount
+   *    order: Order
+   *  }}
+   */
+  async withCancelOrder({
+    instructions,
+    marginAccount,
+    order
+  }: {
+    instructions: TransactionInstruction[]
+    marginAccount: MarginAccount
+    order: Order
+  }) {
+    const ix = await this.programs.marginSerum.methods
+      .cancelOrderV2(Market.encodeOrderSide(order.side), order.orderId)
+      .accounts({
+        marginAccount: marginAccount.address,
+        market: this.address,
+        openOrdersAccount: order.openOrdersAddress,
+        marketBids: this.marketConfig.bids,
+        marketAsks: this.marketConfig.asks,
+        eventQueue: this.marketConfig.eventQueue,
+        serumProgramId: this.programs.config.serumProgramId
+      })
+      .instruction()
+    instructions.push(ix)
   }
 
-  async makeCancelOrderInstruction(marginAccount: MarginAccount, order: Order) {
-    if (this.usesRequestQueue) {
-      throw new Error("Not supported.")
-    }
-    return this.makeAdapterInvokeInstruction(
-      marginAccount.owner,
-      marginAccount,
-      this.marginSerumProgramId,
-      this.marginSerumAdapterMetadata,
-      await this._programs.marginSerum.methods
-        .cancelOrderV2(this.encodeSide(order.side), order.orderId)
-        .accounts({
-          marginAccount: marginAccount.address,
-          market: this.address,
-          openOrdersAccount: order.openOrdersAddress,
-          marketBids: this._decoded.bids,
-          marketAsks: this._decoded.asks,
-          eventQueue: this._decoded.eventQueue,
-          serumProgramId: this._serumProgramId
-        })
-        .instruction()
-    )
+  async cancelOrderByClientId(marginAccount: MarginAccount, orderId: BN) {
+    const instructions: TransactionInstruction[] = []
+    await this.withCancelOrderByClientId({ instructions, marginAccount, orderId })
+    return await marginAccount.sendAndConfirm(instructions)
+  }
+
+  /**
+   * Get instruction to cancel an order on Serum by its clientId
+   * @param {{
+   *    instructions: TransactionInstruction[]
+   *    marginAccount: MarginAccount
+   *    orderId: BN
+   *  }}
+   */
+  async withCancelOrderByClientId({
+    instructions,
+    marginAccount,
+    orderId
+  }: {
+    instructions: TransactionInstruction[]
+    marginAccount: MarginAccount
+    orderId: BN
+  }) {
+    const ix = await this.programs.marginSerum.methods
+      .cancelOrderByClientIdV2(orderId)
+      .accounts({
+        marginAccount: marginAccount.address,
+        market: this.address,
+        marketBids: this.marketConfig.bids,
+        marketAsks: this.marketConfig.asks,
+        eventQueue: this.marketConfig.eventQueue,
+        serumProgramId: this.programs.config.serumProgramId
+      })
+      .instruction()
+    instructions.push(ix)
   }
 
   async settleFunds(
@@ -792,41 +417,61 @@ export class Market {
     if (!openOrders.owner.equals(marginAccount.address)) {
       throw new Error("Invalid open orders account")
     }
-    if (referrerQuoteWallet && !this.supportsReferralFees) {
+    const supportsReferralFees = getLayoutVersion(this.serumProgramId) > 1
+    if (referrerQuoteWallet && !supportsReferralFees) {
       throw new Error("This program ID does not support referrerQuoteWallet")
     }
-    const { transaction, signers } = await this.makeSettleFundsTransaction(
+    const instructions: TransactionInstruction[] = []
+    const signers = await this.withSettleFunds({
+      instructions,
       marginAccount,
       openOrders,
       baseWallet,
       quoteWallet,
       referrerQuoteWallet
-    )
-    return await marginAccount.provider.sendAndConfirm(transaction, signers)
+    })
+
+    return await marginAccount.sendAndConfirm(instructions, signers)
   }
 
-  async makeSettleFundsTransaction(
-    marginAccount: MarginAccount,
-    openOrders: OpenOrders,
-    baseWallet: PublicKey,
-    quoteWallet: PublicKey,
-    referrerQuoteWallet: PublicKey | null = null
-  ) {
+  /**
+   * Get instruction to settle funds
+   * @param {{
+   *    instructions: TransactionInstruction[]
+   *    marginAccount: MarginAccount
+   *    openOrders: OpenOrders
+   *    baseWallet: PublicKey
+   *    quoteWallet: PublicKey
+   *    referrerQuoteWallet: PublicKey | null
+   *  }}
+   */
+  async withSettleFunds({
+    instructions,
+    marginAccount,
+    openOrders,
+    baseWallet,
+    quoteWallet,
+    referrerQuoteWallet = null
+  }: {
+    instructions: TransactionInstruction[]
+    marginAccount: MarginAccount
+    openOrders: OpenOrders
+    baseWallet: PublicKey
+    quoteWallet: PublicKey
+    referrerQuoteWallet: PublicKey | null
+  }) {
     const vaultSigner = await PublicKey.createProgramAddress(
-      [this.address.toBuffer(), this._decoded.vaultSignerNonce.toArrayLike(Buffer, "le", 8)],
-      this._serumProgramId
+      [this.address.toBuffer(), this.serum.decoded.vaultSignerNonce.toArrayLike(Buffer, "le", 8)],
+      this.serumProgramId
     )
-
-    const transaction = new Transaction()
-    const signers: Account[] = []
-
-    let wrappedSolAccount: Account | null = null
+    const signers: Keypair[] = []
+    let wrappedSolAccount: Keypair | null = null
     if (
-      (this.baseMintAddress.equals(WRAPPED_SOL_MINT) && baseWallet.equals(openOrders.owner)) ||
-      (this.quoteMintAddress.equals(WRAPPED_SOL_MINT) && quoteWallet.equals(openOrders.owner))
+      (this.baseMint.equals(WRAPPED_SOL_MINT) && baseWallet.equals(openOrders.owner)) ||
+      (this.quoteMint.equals(WRAPPED_SOL_MINT) && quoteWallet.equals(openOrders.owner))
     ) {
-      wrappedSolAccount = new Account()
-      transaction.add(
+      wrappedSolAccount = new Keypair()
+      instructions.push(
         SystemProgram.createAccount({
           fromPubkey: openOrders.owner,
           newAccountPubkey: wrappedSolAccount.publicKey,
@@ -835,7 +480,7 @@ export class Market {
           programId: TOKEN_PROGRAM_ID
         })
       )
-      transaction.add(
+      instructions.push(
         initializeAccount({
           account: wrappedSolAccount.publicKey,
           mint: WRAPPED_SOL_MINT,
@@ -845,37 +490,28 @@ export class Market {
       signers.push(wrappedSolAccount)
     }
 
-    transaction.add(
-      await this.makeAdapterInvokeInstruction(
-        marginAccount.owner,
-        marginAccount,
-        this.marginSerumProgramId,
-        this.marginSerumAdapterMetadata,
-        await this._programs.marginSerum.methods
-          .settleFunds()
-          .accounts({
-            marginAccount: marginAccount.address,
-            market: this.address,
-            splTokenProgramId: TOKEN_PROGRAM_ID,
-            openOrdersAccount: openOrders.address,
-            coinVault: this._decoded.baseVault,
-            pcVault: this._decoded.quoteVault,
-            coinWallet:
-              baseWallet.equals(openOrders.owner) && wrappedSolAccount ? wrappedSolAccount.publicKey : baseWallet,
-            pcWallet:
-              quoteWallet.equals(openOrders.owner) && wrappedSolAccount ? wrappedSolAccount.publicKey : quoteWallet,
-            vaultSigner,
-            serumProgramId: this._serumProgramId
-          })
-          .remainingAccounts(
-            referrerQuoteWallet ? [{ pubkey: referrerQuoteWallet, isSigner: false, isWritable: true }] : []
-          )
-          .instruction()
+    const ix = await this.programs.marginSerum.methods
+      .settleFunds()
+      .accounts({
+        marginAccount: marginAccount.address,
+        market: this.address,
+        splTokenProgramId: TOKEN_PROGRAM_ID,
+        openOrdersAccount: openOrders.address,
+        coinVault: this.marketConfig.baseVault,
+        pcVault: this.marketConfig.quoteVault,
+        coinWallet: baseWallet.equals(openOrders.owner) && wrappedSolAccount ? wrappedSolAccount.publicKey : baseWallet,
+        pcWallet: quoteWallet.equals(openOrders.owner) && wrappedSolAccount ? wrappedSolAccount.publicKey : quoteWallet,
+        vaultSigner,
+        serumProgramId: this.serumProgramId
+      })
+      .remainingAccounts(
+        referrerQuoteWallet ? [{ pubkey: referrerQuoteWallet, isSigner: false, isWritable: true }] : []
       )
-    )
+      .instruction()
 
+    instructions.push(ix)
     if (wrappedSolAccount) {
-      transaction.add(
+      instructions.push(
         closeAccount({
           source: wrappedSolAccount.publicKey,
           destination: openOrders.owner,
@@ -884,282 +520,131 @@ export class Market {
       )
     }
 
-    return { transaction, signers, payer: openOrders.owner }
+    return signers
   }
 
-  public async makeConsumeEventsInstruction(
-    openOrdersAccounts: Array<PublicKey>,
-    limit: number
-  ): Promise<TransactionInstruction> {
-    return await this._programs.marginSerum.methods
-      .consumeEvents(limit)
-      .accounts({
-        serumProgramId: this._serumProgramId,
-        market: this.address,
-        eventQueue: this._decoded.eventQueue,
-        coinFeeReceivableAccount: this._decoded.eventQueue,
-        pcFeeReceivableAccount: this._decoded.eventQueue
-      })
-      .remainingAccounts(
-        openOrdersAccounts.map(account => ({
-          pubkey: account,
-          isSigner: false,
-          isWritable: true
-        }))
-      )
-      .instruction()
-  }
-
-  async matchOrders(connection: Connection, feePayer: Account, limit: number) {
-    const tx = await this.makeMatchOrdersTransaction(limit)
-    return await this.sendTransaction(connection, tx, [feePayer])
-  }
-
-  async makeMatchOrdersTransaction(limit: number): Promise<Transaction> {
-    return await this._programs.marginSerum.methods
-      .matchOrders(limit)
-      .accounts({
-        market: this.address,
-        requestQueue: this._decoded.requestQueue,
-        eventQueue: this._decoded.eventQueue,
-        bids: this._decoded.bids,
-        asks: this._decoded.asks,
-        coinFeeReceivableAccount: this._decoded.baseVault,
-        pcFeeReceivableAccount: this._decoded.quoteVault,
-        serumProgramId: this._serumProgramId
-      })
-      .transaction()
-  }
-
-  async makeAdapterInvokeInstruction(
-    owner: PublicKey,
-    marginAccount: MarginAccount,
-    adapterProgram: PublicKey,
-    adapterMetadata: PublicKey,
-    adapterInstruction: TransactionInstruction
-  ): Promise<TransactionInstruction> {
-    return await this._programs.margin.methods
-      .adapterInvoke(adapterInstruction.data)
-      .accounts({
-        owner,
-        marginAccount: marginAccount.address,
-        adapterProgram,
-        adapterMetadata
-      })
-      .remainingAccounts(marginAccount.invokeAccounts(adapterInstruction))
-      .instruction()
-  }
-
-  private async sendTransaction(
-    connection: Connection,
-    transaction: Transaction,
-    signers: Array<Account>
-  ): Promise<TransactionSignature> {
-    const signature = await connection.sendTransaction(transaction, signers, {
-      skipPreflight: this._skipPreflight
-    })
-    const { value } = await connection.confirmTransaction(signature, this._commitment)
-    if (value?.err) {
-      throw new Error(JSON.stringify(value.err))
+  /**
+   * Loads the Orderbook
+   */
+  async loadOrderbook(provider: AnchorProvider): Promise<Orderbook> {
+    const bidsBuffer = (await provider.connection.getAccountInfo(translateAddress(this.marketConfig.bids)))?.data
+    const asksBuffer = (await provider.connection.getAccountInfo(translateAddress(this.marketConfig.asks)))?.data
+    if (!bidsBuffer || !asksBuffer) {
+      throw new Error("Orderbook sides not found")
     }
-    return signature
+
+    const bids = SerumOrderbook.decode(this.serum, bidsBuffer)
+    const asks = SerumOrderbook.decode(this.serum, asksBuffer)
+    return new Orderbook(this.serum, bids, asks)
   }
 
-  async loadRequestQueue(connection: Connection) {
-    const { data } = throwIfNull(await connection.getAccountInfo(this._decoded.requestQueue))
-    return decodeRequestQueue(data)
+  /**
+   * Divide two BN's and return a number
+   * @param numerator
+   * @param denominator
+   */
+  divideBnToNumber(numerator: BN, denominator: BN): number {
+    const quotient = numerator.div(denominator).toNumber()
+    const rem = numerator.umod(denominator)
+    const gcd = rem.gcd(denominator)
+    return quotient + rem.div(gcd).toNumber() / denominator.div(gcd).toNumber()
   }
 
-  async loadEventQueue(connection: Connection) {
-    const { data } = throwIfNull(await connection.getAccountInfo(this._decoded.eventQueue))
-    return decodeEventQueue(data)
-  }
-
-  async loadFills(connection: Connection, limit = 100) {
-    // TODO: once there's a separate source of fills use that instead
-    const { data } = throwIfNull(await connection.getAccountInfo(this._decoded.eventQueue))
-    const events = decodeEventQueue(data, limit)
-    return events
-      .filter(event => event.eventFlags.fill && event.nativeQuantityPaid.gtn(0))
-      .map(this.parseFillEvent.bind(this))
-  }
-
-  parseFillEvent(event) {
-    let size, price, side, priceBeforeFees
-    if (event.eventFlags.bid) {
-      side = "buy"
-      priceBeforeFees = event.eventFlags.maker
-        ? event.nativeQuantityPaid.add(event.nativeFeeOrRebate)
-        : event.nativeQuantityPaid.sub(event.nativeFeeOrRebate)
-      price = divideBnToNumber(
-        priceBeforeFees.mul(this._baseSplTokenMultiplier),
-        this._quoteSplTokenMultiplier.mul(event.nativeQuantityReleased)
-      )
-      size = divideBnToNumber(event.nativeQuantityReleased, this._baseSplTokenMultiplier)
-    } else {
-      side = "sell"
-      priceBeforeFees = event.eventFlags.maker
-        ? event.nativeQuantityReleased.sub(event.nativeFeeOrRebate)
-        : event.nativeQuantityReleased.add(event.nativeFeeOrRebate)
-      price = divideBnToNumber(
-        priceBeforeFees.mul(this._baseSplTokenMultiplier),
-        this._quoteSplTokenMultiplier.mul(event.nativeQuantityPaid)
-      )
-      size = divideBnToNumber(event.nativeQuantityPaid, this._baseSplTokenMultiplier)
-    }
-    return {
-      ...event,
-      side,
-      price,
-      feeCost: this.quoteSplSizeToNumber(event.nativeFeeOrRebate) * (event.eventFlags.maker ? -1 : 1),
-      size
-    }
-  }
-
-  private get _baseSplTokenMultiplier() {
-    return new BN(10).pow(new BN(this._baseSplTokenDecimals))
-  }
-
-  private get _quoteSplTokenMultiplier() {
-    return new BN(10).pow(new BN(this._quoteSplTokenDecimals))
-  }
-
+  /**
+   * Price helper functions
+   * @param price
+   */
   priceLotsToNumber(price: BN) {
-    return divideBnToNumber(
-      price.mul(this._decoded.quoteLotSize).mul(this._baseSplTokenMultiplier),
-      this._decoded.baseLotSize.mul(this._quoteSplTokenMultiplier)
+    return this.divideBnToNumber(
+      price.mul(this.serum.decoded.quoteLotSize).mul(this.baseDecimalMultiplier),
+      this.serum.decoded.baseLotSize.mul(this.quoteDecimalMultiplier)
     )
   }
-
   priceNumberToLots(price: number): BN {
     return new BN(
       Math.round(
-        (price * Math.pow(10, this._quoteSplTokenDecimals) * this._decoded.baseLotSize.toNumber()) /
-          (Math.pow(10, this._baseSplTokenDecimals) * this._decoded.quoteLotSize.toNumber())
+        (price * Math.pow(10, this.quoteDecimals) * this.serum.decoded.baseLotSize.toNumber()) /
+          (Math.pow(10, this.baseDecimals) * this.serum.decoded.quoteLotSize.toNumber())
       )
     )
   }
 
-  baseSplSizeToNumber(size: BN) {
-    return divideBnToNumber(size, this._baseSplTokenMultiplier)
-  }
-
-  quoteSplSizeToNumber(size: BN) {
-    return divideBnToNumber(size, this._quoteSplTokenMultiplier)
+  /**
+   * Base size helper functions
+   * @param size
+   */
+  baseSizeToNumber(size: BN) {
+    return this.divideBnToNumber(size, this.baseDecimalMultiplier)
   }
 
   baseSizeLotsToNumber(size: BN) {
-    return divideBnToNumber(size.mul(this._decoded.baseLotSize), this._baseSplTokenMultiplier)
+    return this.divideBnToNumber(size.mul(this.serum.decoded.baseLotSize), this.baseDecimalMultiplier)
   }
 
   baseSizeNumberToLots(size: number): BN {
-    const native = new BN(Math.round(size * Math.pow(10, this._baseSplTokenDecimals)))
+    const native = new BN(Math.round(size * Math.pow(10, this.baseDecimals)))
     // rounds down to the nearest lot size
-    return native.div(this._decoded.baseLotSize)
+    return native.div(this.serum.decoded.baseLotSize)
   }
 
+  /**
+   * Quote size helper functions
+   * @param size
+   */
+  quoteSizeToNumber(size: BN) {
+    return this.divideBnToNumber(size, this.quoteDecimalMultiplier)
+  }
   quoteSizeLotsToNumber(size: BN) {
-    return divideBnToNumber(size.mul(this._decoded.quoteLotSize), this._quoteSplTokenMultiplier)
+    return this.divideBnToNumber(size.mul(this.serum.decoded.quoteLotSize), this.quoteDecimalMultiplier)
   }
-
   quoteSizeNumberToLots(size: number): BN {
-    const native = new BN(Math.round(size * Math.pow(10, this._quoteSplTokenDecimals)))
+    const native = new BN(Math.round(size * Math.pow(10, this.quoteDecimals)))
     // rounds down to the nearest lot size
-    return native.div(this._decoded.quoteLotSize)
-  }
-
-  get minOrderSize() {
-    return this.baseSizeLotsToNumber(new BN(1))
-  }
-
-  get tickSize() {
-    return this.priceLotsToNumber(new BN(1))
+    return native.div(this.serum.decoded.quoteLotSize)
   }
 }
 
 export class Orderbook {
   market: SerumMarket
-  isBids: boolean
-  slab: Slab
+  bids: SerumOrderbook
+  asks: SerumOrderbook
 
-  constructor(market: SerumMarket, accountFlags, slab: Slab) {
-    if (!accountFlags.initialized || !(accountFlags.bids ^ accountFlags.asks)) {
-      throw new Error("Invalid orderbook")
-    }
+  /**
+   * Creates a Margin Orderbook
+   * @param market
+   * @param bids
+   * @param asks
+   */
+  constructor(market: SerumMarket, bids: SerumOrderbook, asks: SerumOrderbook) {
     this.market = market
-    this.isBids = accountFlags.bids
-    this.slab = slab
+    this.bids = bids
+    this.asks = asks
   }
 
-  static get LAYOUT() {
-    return ORDERBOOK_LAYOUT
+  /**
+   * Load an Orderbook for a given market
+   * @param market
+   * @param bidsBuffer
+   * @param asksBuffer
+   */
+  static load(market: SerumMarket, bidsBuffer: Buffer, asksBuffer: Buffer) {
+    const bids = SerumOrderbook.decode(market, bidsBuffer)
+    const asks = SerumOrderbook.decode(market, asksBuffer)
+    return new Orderbook(market, bids, asks)
   }
 
-  static decode(market: SerumMarket, buffer: Buffer) {
-    const { accountFlags, slab } = ORDERBOOK_LAYOUT.decode(buffer)
-    return new Orderbook(market, accountFlags, slab)
+  /**
+   * Return bids for a given depth
+   * @param depth
+   */
+  getBids(depth = 8) {
+    return this.bids.getL2(depth).map(([price, size]) => [price, size])
   }
-
-  getL2(depth: number): [number, number, BN, BN][] {
-    const descending = this.isBids
-    const levels: [BN, BN][] = [] // (price, size)
-    for (const { key, quantity } of this.slab.items(descending)) {
-      const price = getPriceFromKey(key)
-      if (levels.length > 0 && levels[levels.length - 1][0].eq(price)) {
-        levels[levels.length - 1][1].iadd(quantity)
-      } else if (levels.length === depth) {
-        break
-      } else {
-        levels.push([price, quantity])
-      }
-    }
-    return levels.map(([priceLots, sizeLots]) => [
-      this.market.priceLotsToNumber(priceLots),
-      this.market.baseSizeLotsToNumber(sizeLots),
-      priceLots,
-      sizeLots
-    ])
+  /**
+   * Return asks for a given depth
+   * @param depth
+   */
+  getAsks(depth = 8) {
+    return this.asks.getL2(depth).map(([price, size]) => [price, size])
   }
-
-  [Symbol.iterator]() {
-    return this.items(false)
-  }
-
-  *items(descending = false): Generator<Order> {
-    for (const { key, ownerSlot, owner, quantity, feeTier, clientOrderId } of this.slab.items(descending)) {
-      const price = getPriceFromKey(key)
-      yield {
-        orderId: key,
-        clientId: clientOrderId,
-        openOrdersAddress: owner,
-        openOrdersSlot: ownerSlot,
-        feeTier,
-        price: this.market.priceLotsToNumber(price),
-        priceLots: price,
-        size: this.market.baseSizeLotsToNumber(quantity),
-        sizeLots: quantity,
-        side: (this.isBids ? "buy" : "sell") as "buy" | "sell"
-      }
-    }
-  }
-}
-
-function getPriceFromKey(key) {
-  return key.ushrn(64)
-}
-
-function divideBnToNumber(numerator: BN, denominator: BN): number {
-  const quotient = numerator.div(denominator).toNumber()
-  const rem = numerator.umod(denominator)
-  const gcd = rem.gcd(denominator)
-  return quotient + rem.div(gcd).toNumber() / denominator.div(gcd).toNumber()
-}
-
-const MINT_LAYOUT = struct([blob(44), u8("decimals"), blob(37)])
-
-function throwIfNull<T>(value: T | null, message = "account not found"): T {
-  if (value === null) {
-    throw new Error(message)
-  }
-  return value
 }
