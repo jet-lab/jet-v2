@@ -350,7 +350,9 @@ export class MarginAccount {
         deposit: zero,
         withdraw: zero,
         borrow: zero,
-        repay: zero
+        repay: zero,
+        swap: zero,
+        transfer: zero
       }
     }
 
@@ -408,7 +410,9 @@ export class MarginAccount {
       deposit,
       withdraw,
       borrow,
-      repay
+      repay,
+      swap,
+      transfer
     }
   }
 
