@@ -1,4 +1,4 @@
 [submodule "deps/jet-app"]
 	path = deps/jet-app
-	url = git://github.com/jet-lab/jet-app
+	url = https://github.com/jet-lab/jet-app
 	branch = v2
