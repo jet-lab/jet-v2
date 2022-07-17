@@ -15,16 +15,18 @@ import { PoolTokenChange } from "../pool"
 import { MarginAccount } from "../marginAccount"
 import { MarginPrograms } from "../marginClient"
 
-export type selfTradeBehavior = "decrementTake" | "cancelProvide" | "abortTransaction"
-export type orderSide = "sell" | "buy" | "ask" | "bid"
-export type orderType = "limit" | "ioc" | "postOnly"
+export type SelfTradeBehavior = "decrementTake" | "cancelProvide" | "abortTransaction"
+export type OrderSide = "sell" | "buy" | "ask" | "bid"
+export type OrderType = "limit" | "ioc" | "postOnly"
+export type OrderStatus = "open" | "partialFilled" | "filled" | "cancelled"
+
 export class Market {
   programs: MarginPrograms
   marketConfig: MarginMarketConfig
   serum: SerumMarket
 
   get name(): string {
-    return this.marketConfig.symbol
+    return `${this.marketConfig.baseSymbol}/${this.marketConfig.quoteSymbol}`
   }
   get address(): PublicKey {
     return translateAddress(this.marketConfig.market)
@@ -104,12 +106,15 @@ export class Market {
     address: PublicKey
     options?: MarketOptions
   }): Promise<Market> {
-    const owner = (await programs.connection.getAccountInfo(address))?.owner
-    if (!owner) {
+    const marketAccount = await programs.connection.getAccountInfo(address)
+    if (!marketAccount) {
       throw new Error("Market not found")
     }
-    if (!owner.equals(programs.marginSerum.programId)) {
-      throw new Error("Address not owned by program: " + owner.toBase58())
+    if (marketAccount.owner.equals(SystemProgram.programId) && marketAccount.lamports === 0) {
+      throw new Error("Market account not does not exist")
+    }
+    if (!marketAccount.owner.equals(programs.marginSerum.programId)) {
+      throw new Error("Market address not owned by Serum program: " + marketAccount.owner.toBase58())
     }
     const serum = await SerumMarket.load(provider.connection, address, options, programs.marginSerum.programId)
     if (
@@ -167,7 +172,7 @@ export class Market {
     return markets
   }
 
-  static encodeOrderSide(side: orderSide): number {
+  static encodeOrderSide(side: OrderSide): number {
     switch (side) {
       case "bid":
       case "buy":
@@ -178,7 +183,7 @@ export class Market {
     }
   }
 
-  static encodeOrderType(type: orderType): number {
+  static encodeOrderType(type: OrderType): number {
     switch (type) {
       case "limit":
         return 0
@@ -189,7 +194,7 @@ export class Market {
     }
   }
 
-  static encodeSelfTradeBehavior(behavior: selfTradeBehavior): number {
+  static encodeSelfTradeBehavior(behavior: SelfTradeBehavior): number {
     switch (behavior) {
       case "decrementTake":
         return 0
@@ -211,11 +216,11 @@ export class Market {
     payer = marginAccount.address
   }: {
     marginAccount: MarginAccount
-    orderSide: orderSide
-    orderType: orderType
+    orderSide: OrderSide
+    orderType: OrderType
     orderPrice: number
     orderSize: TokenAmount
-    selfTradeBehavior: selfTradeBehavior
+    selfTradeBehavior: SelfTradeBehavior
     clientOrderId: BN
     payer: PublicKey
   }) {
@@ -277,11 +282,11 @@ export class Market {
   }: {
     instructions: TransactionInstruction[]
     marginAccount: MarginAccount
-    orderSide: orderSide
-    orderType: orderType
+    orderSide: OrderSide
+    orderType: OrderType
     orderPrice: number
     orderSize: TokenAmount
-    selfTradeBehavior: selfTradeBehavior
+    selfTradeBehavior: SelfTradeBehavior
     clientOrderId: BN
     payer: PublicKey
   }): Promise<void> {
