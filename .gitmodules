@@ -2,3 +2,7 @@
 	path = deps/jet-app
 	url = https://github.com/jet-lab/jet-app
 	branch = v2
+[submodule "deps/jet-monitoring-service"]
+	path = deps/jet-monitoring-service
+	url = https://github.com/dialectlabs/jet-monitoring-service/
+	branch = jetv1_5-monitor-upgrade
