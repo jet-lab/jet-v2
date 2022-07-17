@@ -56,3 +56,6 @@ jobs:
 
       - name: TS Test
         run: npm run test
+
+      - name: Submodule Test
+        run: npm run mod

@@ -1,7 +1,8 @@
 [submodule "deps/jet-v2-app"]
 	path = deps/jet-v2-app
 	url = https://github.com/jet-lab/jet-v2-app
-[submodule "jet-v2-beta-app"]
-	path = deps/jet-v2-beta-app
+	branch = ignore-ts-errors
+[submodule "deps/jet-app"]
+	path = deps/jet-app
 	url = https://github.com/jet-lab/jet-app
 	branch = v2
