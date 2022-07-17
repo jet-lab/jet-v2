@@ -25,9 +25,6 @@ export class Market {
   marketConfig: MarginMarketConfig
   serum: SerumMarket
 
-  get serumProgramId(): Address {
-    return this.programs.config.serumProgramId
-  }
   get name(): string {
     return `${this.marketConfig.baseSymbol}/${this.marketConfig.quoteSymbol}`
   }
@@ -77,7 +74,7 @@ export class Market {
     this.marketConfig = marketConfig
     this.serum = serum
     assert(this.programs.margin.programId)
-    assert(this.serumProgramId)
+    assert(this.programs.config.serumProgramId)
     if (!serum.decoded.accountFlags.initialized || !serum.decoded.accountFlags.market) {
       throw new Error("Invalid market state")
     }
@@ -90,8 +87,7 @@ export class Market {
    *     provider: AnchorProvider
    *     programs: MarginPrograms
    *     address: PublicKey
-   *     options: MarketOptions
-   *     serumProgramId: PublicKey
+   *     options?: MarketOptions
    *   }}
    * @return {Promise<Market>}
    */
@@ -148,21 +144,17 @@ export class Market {
    * @param {{
    *     provider: AnchorProvider
    *     programs: MarginPrograms
-   *     address: PublicKey
-   *     options: MarketOptions
-   *     serumProgramId: PublicKey
+   *     options?: MarketOptions
    *   }}
    * @return {Promise<Record<MarginMarkets, Market>>}
    */
   static async loadAll({
     provider,
     programs,
-    serumProgramId,
     options
   }: {
     provider: AnchorProvider
     programs: MarginPrograms
-    serumProgramId: Address
     options?: MarketOptions
   }): Promise<Record<MarginMarkets, Market>> {
     const markets: Record<MarginMarkets, Market> = {} as Record<MarginMarkets, Market>
@@ -429,7 +421,7 @@ export class Market {
     if (!openOrders.owner.equals(marginAccount.address)) {
       throw new Error("Invalid open orders account")
     }
-    const supportsReferralFees = getLayoutVersion(translateAddress(this.serumProgramId)) > 1
+    const supportsReferralFees = getLayoutVersion(translateAddress(this.programs.config.serumProgramId)) > 1
     if (referrerQuoteWallet && !supportsReferralFees) {
       throw new Error("This program ID does not support referrerQuoteWallet")
     }
@@ -474,7 +466,7 @@ export class Market {
   }) {
     const vaultSigner = await PublicKey.createProgramAddress(
       [this.address.toBuffer(), this.serum.decoded.vaultSignerNonce.toArrayLike(Buffer, "le", 8)],
-      translateAddress(this.serumProgramId)
+      translateAddress(this.programs.config.serumProgramId)
     )
     const signers: Keypair[] = []
     let wrappedSolAccount: Keypair | null = null
@@ -514,7 +506,7 @@ export class Market {
         coinWallet: baseWallet.equals(openOrders.owner) && wrappedSolAccount ? wrappedSolAccount.publicKey : baseWallet,
         pcWallet: quoteWallet.equals(openOrders.owner) && wrappedSolAccount ? wrappedSolAccount.publicKey : quoteWallet,
         vaultSigner,
-        serumProgramId: this.serumProgramId
+        serumProgramId: this.programs.config.serumProgramId
       })
       .remainingAccounts(
         referrerQuoteWallet ? [{ pubkey: referrerQuoteWallet, isSigner: false, isWritable: true }] : []
