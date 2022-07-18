@@ -147,7 +147,7 @@ impl Default for TokenKind {
 
 /// A metadata account referencing information about a position token
 #[account]
-#[derive(Default)]
+#[derive(Default, Debug, Eq, PartialEq)]
 pub struct PositionTokenMetadata {
     /// The mint for the position token
     pub position_token_mint: Pubkey,
@@ -170,7 +170,7 @@ pub struct PositionTokenMetadata {
 
 /// An account that references information about a token's price oracle
 #[account]
-#[derive(Default)]
+#[derive(Default, Debug, Eq, PartialEq)]
 pub struct TokenMetadata {
     /// The address of the mint for the token being referenced
     pub token_mint: Pubkey,
@@ -186,7 +186,7 @@ pub struct TokenMetadata {
 /// An account that references a program that's allowed to be invoked by
 /// proxy via a margin account.
 #[account]
-#[derive(Default)]
+#[derive(Default, Debug, Eq, PartialEq)]
 pub struct MarginAdapterMetadata {
     /// The address of the allowed program
     pub adapter_program: Pubkey,
@@ -195,7 +195,7 @@ pub struct MarginAdapterMetadata {
 /// An account referencing a liquidator, allowed to use the liquidation
 /// instructions on margin accounts.
 #[account]
-#[derive(Default)]
+#[derive(Default, Debug, Eq, PartialEq)]
 pub struct LiquidatorMetadata {
     pub liquidator: Pubkey,
 }

@@ -1,6 +1,5 @@
 import { BN } from "@project-serum/anchor"
 import { Account, Mint } from "@solana/spl-token"
-import { Number192 } from "../utils"
 import { bigIntToBn } from "./associatedToken"
 
 export class TokenAmount {

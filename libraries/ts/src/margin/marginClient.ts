@@ -1,6 +1,6 @@
 import { NATIVE_MINT } from "@solana/spl-token"
 import { Program, AnchorProvider, BN, translateAddress } from "@project-serum/anchor"
-import { JetMargin, JetMarginPool, JetMarginSerum, JetMarginSwap, JetMetadata, TokenAmount, TradeAction } from ".."
+import { JetMargin, JetMarginPool, JetMarginSerum, JetMarginSwap, JetMetadata, TokenAmount, PoolAction } from ".."
 import JET_CONFIG from "../margin/config.json"
 import {
   JetControl,
@@ -13,7 +13,6 @@ import {
 } from "../types"
 import { MarginCluster, MarginConfig, MarginTokenConfig } from "./config"
 import { ConfirmedSignatureInfo, Connection, PublicKey, TransactionResponse } from "@solana/web3.js"
-import { isNull } from "lodash"
 
 interface TokenMintsList {
   tokenMint: PublicKey
@@ -33,7 +32,7 @@ export interface AccountTransaction {
   blockTime: string
   signature: string
   sigIndex: number // Signature index that we used to find this transaction
-  tradeAction: TradeAction
+  tradeAction: PoolAction
   tradeAmount: TokenAmount
   tokenSymbol: string
   tokenName: string
@@ -163,7 +162,7 @@ export class MarginClient {
 
     const tx: Partial<AccountTransaction> = {
       tradeAction
-    } as { tradeAction: TradeAction }
+    } as { tradeAction: PoolAction }
     for (let i = 0; i < transaction.meta.preTokenBalances?.length; i++) {
       const pre = transaction.meta.preTokenBalances[i]
       const matchingPost = transaction.meta.postTokenBalances?.find(

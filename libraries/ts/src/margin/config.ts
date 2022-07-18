@@ -53,7 +53,7 @@ export interface MarginPoolConfig {
 }
 
 export interface MarginMarketConfig {
-  symbol: string
+  symbol: MarginMarkets
   market: Address
   baseMint: Address
   baseDecimals: number
