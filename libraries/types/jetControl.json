@@ -1,0 +1,155 @@
+{
+    "types": [
+        {
+            "name": "MarginPoolParams",
+            "type": {
+              "kind": "struct",
+              "fields": [
+                {
+                  "name": "feeDestination",
+                  "type": "publicKey"
+                }
+              ]
+            }
+          },
+          {
+            "name": "TokenKind",
+            "type": {
+              "kind": "enum",
+              "variants": [
+                {
+                  "name": "NonCollateral"
+                },
+                {
+                  "name": "Collateral"
+                },
+                {
+                  "name": "Claim"
+                }
+              ]
+            }
+          },
+          {
+            "name": "MarginPoolConfig",
+            "type": {
+              "kind": "struct",
+              "fields": [
+                {
+                  "name": "flags",
+                  "type": "u64"
+                },
+                {
+                  "name": "utilizationRate1",
+                  "type": "u16"
+                },
+                {
+                  "name": "utilizationRate2",
+                  "type": "u16"
+                },
+                {
+                  "name": "borrowRate0",
+                  "type": "u16"
+                },
+                {
+                  "name": "borrowRate1",
+                  "type": "u16"
+                },
+                {
+                  "name": "borrowRate2",
+                  "type": "u16"
+                },
+                {
+                  "name": "borrowRate3",
+                  "type": "u16"
+                },
+                {
+                  "name": "managementFeeRate",
+                  "type": "u16"
+                },
+                {
+                  "name": "managementFeeCollectThreshold",
+                  "type": "u64"
+                }
+              ]
+            }
+          },
+          {
+            "name": "LiquidatorMetadata",
+            "type": {
+              "kind": "struct",
+              "fields": [
+                {
+                  "name": "liquidator",
+                  "type": "publicKey"
+                }
+              ]
+            }
+          },
+          {
+            "name": "MarginAdapterMetadata",
+            "type": {
+              "kind": "struct",
+              "fields": [
+                {
+                  "name": "adapterProgram",
+                  "type": "publicKey"
+                }
+              ]
+            }
+          },
+          {
+            "name": "TokenMetadata",
+            "type": {
+              "kind": "struct",
+              "fields": [
+                {
+                  "name": "tokenMint",
+                  "type": "publicKey"
+                },
+                {
+                  "name": "pythPrice",
+                  "type": "publicKey"
+                },
+                {
+                  "name": "pythProduct",
+                  "type": "publicKey"
+                }
+              ]
+            }
+          },
+          {
+            "name": "PositionTokenMetadata",
+            "type": {
+              "kind": "struct",
+              "fields": [
+                {
+                  "name": "positionTokenMint",
+                  "type": "publicKey"
+                },
+                {
+                  "name": "underlyingTokenMint",
+                  "type": "publicKey"
+                },
+                {
+                  "name": "adapterProgram",
+                  "type": "publicKey"
+                },
+                {
+                  "name": "tokenKind",
+                  "type": {
+                    "defined": "TokenKind"
+                  }
+                },
+                {
+                  "name": "valueModifer",
+                  "type": "u16"
+                },
+                {
+                  "name": "maxStaleness",
+                  "type": "u64"
+                }
+              ]
+            }
+        }
+    ]
+}

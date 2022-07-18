@@ -1,0 +1,48 @@
+{
+  "types": [
+    {
+      "name": "Invocation",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "callerHeights",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "AdapterPositionFlags",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "flags",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Liquidation",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "startTime",
+            "type": "i64"
+          },
+          {
+            "name": "valueChange",
+            "type": "i128"
+          },
+          {
+            "name": "minValueChange",
+            "type": "i128"
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 import assert from "assert"
 import { Address, AnchorProvider, BN, ProgramAccount, translateAddress } from "@project-serum/anchor"
-import { NATIVE_MINT, TOKEN_PROGRAM_ID } from "@solana/spl-token"
+import { decodeInstruction, NATIVE_MINT, TOKEN_PROGRAM_ID } from "@solana/spl-token"
 import {
   AccountMeta,
   GetProgramAccountsFilter,
@@ -304,6 +304,8 @@ export class MarginAccount {
 
       // Deposits
       const depositNotePosition = this.getPosition(pool.addresses.depositNoteMint)
+      const collateralWeight = depositNotePosition?.valueModifier ?? pool.depositNoteMetadata.valueModifier
+      pool.depositNoteMetadata.valueModifier
       const depositBalanceNotes = Number192.from(depositNotePosition?.balance ?? new BN(0))
       const depositBalance = depositBalanceNotes.mul(pool.depositNoteExchangeRate()).asTokenAmount(pool.decimals)
       const depositValue = depositNotePosition?.value ?? 0

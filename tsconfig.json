@@ -13,6 +13,6 @@
     "sourceMap": true,
     "esModuleInterop": true
   },
-  "include": ["./libraries/ts/**/*", "./tests/integration/**/*"],
+  "include": ["./libraries/ts/**/*", "./tests/integration/**/*", "libraries/types/jetControl.ts"],
   "exclude": ["./**/dist/**/*"]
 }

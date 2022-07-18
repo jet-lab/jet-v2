@@ -40,4 +40,4 @@ address = "SwaPpA9LAaLfeLi3a68M4DjnLqgtticKg6CnyNwgAC8"
 program = "./deps/spl-token-swap/crates.io-spl_token_swap==2.0.0.so"
 
 [scripts]
-test = "npx ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.test.ts"
+test = "npx ts-mocha -p ./tsconfig.json -t 1000000 tests/integration/marginAccountBalance.test.ts"
