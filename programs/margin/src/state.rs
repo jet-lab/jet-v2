@@ -380,10 +380,11 @@ impl MarginAccount {
         let timestamp = crate::util::get_timestamp();
 
         let mut past_due = false;
-        let mut exposure = Number128::ZERO;
+        let mut debt = Number128::ZERO;
         let mut required_collateral = Number128::ZERO;
         let mut weighted_collateral = Number128::ZERO;
         let mut stale_collateral_list = vec![];
+        let mut equity = Number128::ZERO;
 
         for position in self.positions() {
             if position.balance == 0 {
@@ -417,29 +418,31 @@ impl MarginAccount {
                         past_due = true;
                     }
 
-                    exposure += position.value();
-                    required_collateral += position.required_collateral_value()
+                    equity -= position.value();
+                    debt += position.value();
+                    required_collateral += position.required_collateral_value();
                 }
                 (PositionKind::Claim, Some(error)) => {
                     msg!("claim position is stale: {:?}", position);
                     return Err(error!(error));
                 }
 
-                (PositionKind::Deposit, None) => weighted_collateral += position.collateral_value(),
+                (PositionKind::Deposit, None) => {
+                    equity += position.value();
+                    weighted_collateral += position.collateral_value();
+                }
                 (PositionKind::Deposit, Some(e)) => {
                     stale_collateral_list.push((position.token, e));
                 }
             }
         }
 
-        let effective_collateral = weighted_collateral - exposure;
-
         Ok(Valuation {
-            exposure,
+            equity,
             past_due,
             required_collateral,
             weighted_collateral,
-            effective_collateral,
+            effective_collateral: weighted_collateral - debt,
             stale_collateral_list,
         })
     }
@@ -900,22 +903,22 @@ pub struct Liquidation {
     /// time that liquidate_begin initialized this liquidation
     start_time: i64,
 
-    /// cumulative change in value caused by invocations during the liquidation so far
-    /// negative if value is lost
-    value_change: i128,
+    /// cumulative change in equity caused by invocations during the liquidation so far
+    /// negative if equity is lost
+    equity_change: i128,
 
-    /// lowest amount of value change that is allowed during invoke steps
+    /// lowest amount of equity change that is allowed during invoke steps
     /// typically negative or zero
-    /// if value_change goes lower than this number, liquidate_invoke should fail
-    min_value_change: i128,
+    /// if equity_change goes lower than this number, liquidate_invoke should fail
+    min_equity_change: i128,
 }
 
 impl Liquidation {
-    pub fn new(start_time: i64, min_value_change: Number128) -> Self {
+    pub fn new(start_time: i64, min_equity_change: Number128) -> Self {
         Self {
             start_time,
-            value_change: 0,
-            min_value_change: min_value_change.to_i128(),
+            equity_change: 0,
+            min_equity_change: min_equity_change.to_i128(),
         }
     }
 
@@ -923,26 +926,37 @@ impl Liquidation {
         self.start_time
     }
 
-    pub fn value_change_mut(&mut self) -> &mut Number128 {
-        unsafe { std::mem::transmute(&mut self.value_change) }
+    pub fn equity_change_mut(&mut self) -> &mut Number128 {
+        unsafe { std::mem::transmute(&mut self.equity_change) }
     }
 
-    pub fn value_change(&self) -> &Number128 {
-        unsafe { std::mem::transmute(&self.value_change) }
+    pub fn equity_change(&self) -> &Number128 {
+        unsafe { std::mem::transmute(&self.equity_change) }
     }
 
-    pub fn min_value_change(&self) -> Number128 {
-        Number128::from_i128(self.min_value_change)
+    pub fn min_equity_change(&self) -> Number128 {
+        Number128::from_i128(self.min_equity_change)
     }
 }
 
 #[derive(Debug, Clone)]
 pub struct Valuation {
-    pub exposure: Number128,
+    /// The net asset value for all positions registered in this account, ignoring collateral weights and max leverage
+    pub equity: Number128,
+
+    /// The amount of collateral that is required to cover price risk exposure from claim positions
     pub required_collateral: Number128,
+
+    /// The total dollar value counted towards collateral from all deposits
     pub weighted_collateral: Number128,
+
+    /// weighted_collateral minus debt. the remaining portion of collateral allocated for required_collateral after deposits and borrows offset
     pub effective_collateral: Number128,
+
+    /// Errors that resulted in collateral positions from being excluded from collateral and equity totals
     stale_collateral_list: Vec<(Pubkey, ErrorCode)>,
+
+    /// at least one position is past due and must be repaid immediately
     past_due: bool,
 }
 
