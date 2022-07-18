@@ -65,16 +65,16 @@ export class PositionTokenMetadata {
     return value
   }
 
-  getCollateralValue(value: Number128) {
-    return this.valueModifier.mul(value).div(Number128.ONE)
+  collateralValue(value: Number128) {
+    return this.valueModifier.mul(value)
   }
 
-  getRequiredCollateralValue(value: Number128) {
+  requiredCollateralValue(value: Number128) {
     if (this.valueModifier.eq(Number128.ZERO)) {
       // No leverage configured for claim
       return Number128.MAX
     } else {
-      return value.mul(Number128.ONE).div(this.valueModifier)
+      return value.div(this.valueModifier)
     }
   }
 }

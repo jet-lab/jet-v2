@@ -104,14 +104,14 @@ export class AccountPosition {
     return this.valueModifier.mul(this.valueRaw)
   }
 
-  requiredCollateralValue(): Number128 {
+  requiredCollateralValue(setupLeverageFraction: Number128 = Number128.ONE): Number128 {
     assert(this.kind === PositionKind.Claim)
 
     if (this.valueModifier.eq(Number128.ZERO)) {
       console.log(`no leverage configured for claim ${this.token.toBase58()}`)
       return Number128.MAX
     } else {
-      return this.valueRaw.div(this.valueModifier)
+      return this.valueRaw.div(this.valueModifier).div(setupLeverageFraction)
     }
   }
 
