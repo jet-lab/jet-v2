@@ -18,7 +18,7 @@
 use std::ops::Deref;
 
 use anchor_lang::prelude::*;
-use anchor_spl::token::{self, MintTo, Token, Transfer, TokenAccount};
+use anchor_spl::token::{self, MintTo, Token, TokenAccount, Transfer};
 
 use crate::{events, state::*, TokenChange};
 use crate::{ChangeKind, ErrorCode};
@@ -82,6 +82,13 @@ impl<'info> Deposit<'info> {
 }
 
 pub fn deposit_handler(ctx: Context<Deposit>, change_kind: ChangeKind, amount: u64) -> Result<()> {
+    crate::check_balances(
+        &ctx.accounts.margin_pool,
+        Some(&ctx.accounts.vault.to_account_info()),
+        Some(&ctx.accounts.deposit_note_mint),
+        None,
+        err!(PriorAccountingViolation),
+    )?;
     let change = TokenChange {
         kind: change_kind,
         tokens: amount,
@@ -125,9 +132,13 @@ pub fn deposit_handler(ctx: Context<Deposit>, change_kind: ChangeKind, amount: u
         summary: pool.deref().into(),
     });
 
-    if pool.deposit_tokens < ctx.accounts.vault.amount {
-        return Err(ErrorCode::AccountingViolation.into());
-    }
+    crate::check_balances(
+        &ctx.accounts.margin_pool,
+        Some(&ctx.accounts.vault.to_account_info()),
+        Some(&ctx.accounts.deposit_note_mint),
+        None,
+        err!(NewAccountingViolation),
+    )?;
 
     Ok(())
 }

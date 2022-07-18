@@ -92,6 +92,13 @@ pub fn margin_borrow_handler(
     change_kind: ChangeKind,
     amount: u64,
 ) -> Result<()> {
+    crate::check_balances(
+        &ctx.accounts.margin_pool,
+        None,
+        Some(&ctx.accounts.deposit_note_mint),
+        Some(&ctx.accounts.loan_note_mint),
+        err!(PriorAccountingViolation),
+    )?;
     let change = TokenChange {
         kind: change_kind,
         tokens: amount,
@@ -138,6 +145,14 @@ pub fn margin_borrow_handler(
         deposit_notes: deposit_amount.notes,
         summary: pool.deref().into(),
     });
+
+    crate::check_balances(
+        &ctx.accounts.margin_pool,
+        None,
+        Some(&ctx.accounts.deposit_note_mint),
+        Some(&ctx.accounts.loan_note_mint),
+        err!(NewAccountingViolation),
+    )?;
 
     Ok(())
 }

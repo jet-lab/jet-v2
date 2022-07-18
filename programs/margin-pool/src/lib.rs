@@ -20,6 +20,7 @@ use anchor_lang::prelude::*;
 mod instructions;
 mod state;
 mod util;
+use anchor_spl::token;
 use instructions::*;
 
 pub use state::{MarginPool, MarginPoolConfig, PoolFlags};
@@ -208,6 +209,48 @@ pub enum ErrorCode {
     /// 141108 - Attempt repayment of more tokens than total outstanding
     RepaymentExceedsTotalOutstanding,
 
-    /// 141109 - Accounting violation
-    AccountingViolation,
+    /// 141109 - Accounting violation already existed before this instruction
+    PriorAccountingViolation,
+
+    /// 141110 - Accounting violation introduced in this instruction
+    NewAccountingViolation,
+}
+
+pub fn check_balances(
+    pool: &MarginPool,
+    vault: Option<&AccountInfo>,
+    deposit_notes: Option<&AccountInfo>,
+    loan_notes: Option<&AccountInfo>,
+    error: Result<()>,
+) -> Result<()> {
+    if let Some(vault) = vault {
+        let amount = token::accessor::amount(vault)?;
+        if amount != pool.deposit_tokens {
+            msg!("token vault {} pool {}", amount, pool.deposit_tokens);
+            return error;
+        }
+    }
+    if let Some(deposit_notes) = deposit_notes {
+        let amount = supply(deposit_notes)?;
+        if amount != pool.deposit_notes {
+            msg!("deposit_notes mint {} pool {}", amount, pool.deposit_notes);
+            return error;
+        }
+    }
+    if let Some(loan_notes) = loan_notes {
+        let amount = supply(loan_notes)?;
+        if amount != pool.loan_notes {
+            msg!("loan_notes mint {} pool {}", amount, pool.loan_notes);
+            return error;
+        }
+    }
+
+    Ok(())
+}
+
+pub fn supply(account: &AccountInfo) -> Result<u64> {
+    let bytes = account.try_borrow_data()?;
+    let mut amount_bytes = [0u8; 8];
+    amount_bytes.copy_from_slice(&bytes[36..44]);
+    Ok(u64::from_le_bytes(amount_bytes))
 }

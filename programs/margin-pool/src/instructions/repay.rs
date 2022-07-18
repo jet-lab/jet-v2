@@ -78,6 +78,13 @@ impl<'info> Repay<'info> {
 }
 
 pub fn repay_handler(ctx: Context<Repay>, change_kind: ChangeKind, amount: u64) -> Result<()> {
+    crate::check_balances(
+        &ctx.accounts.margin_pool,
+        Some(&ctx.accounts.vault.to_account_info()),
+        None,
+        Some(&ctx.accounts.loan_note_mint),
+        err!(NewAccountingViolation),
+    )?;
     let change = TokenChange {
         kind: change_kind,
         tokens: amount,
@@ -124,9 +131,13 @@ pub fn repay_handler(ctx: Context<Repay>, change_kind: ChangeKind, amount: u64) 
         summary: (&pool.clone().into_inner()).into(),
     });
 
-    if pool.deposit_tokens < ctx.accounts.vault.amount {
-        return Err(ErrorCode::AccountingViolation.into());
-    }
+    crate::check_balances(
+        &ctx.accounts.margin_pool,
+        Some(&ctx.accounts.vault.to_account_info()),
+        None,
+        Some(&ctx.accounts.loan_note_mint),
+        err!(NewAccountingViolation),
+    )?;
 
     Ok(())
 }

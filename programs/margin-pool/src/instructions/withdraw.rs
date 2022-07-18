@@ -18,7 +18,7 @@
 use std::ops::Deref;
 
 use anchor_lang::prelude::*;
-use anchor_spl::token::{self, Burn, Token, Transfer, TokenAccount};
+use anchor_spl::token::{self, Burn, Token, TokenAccount, Transfer};
 
 use crate::{events, state::*, TokenChange};
 use crate::{ChangeKind, ErrorCode};
@@ -42,7 +42,7 @@ pub struct Withdraw<'info> {
     /// The mint for the deposit notes
     /// CHECK:
     #[account(mut)]
-    pub deposit_note_mint: UncheckedAccount<'info>,
+    pub deposit_note_mint: AccountInfo<'info>,
 
     /// The source of the deposit notes to be redeemed
     /// CHECK:
@@ -86,6 +86,13 @@ pub fn withdraw_handler(
     change_kind: ChangeKind,
     amount: u64,
 ) -> Result<()> {
+    crate::check_balances(
+        &ctx.accounts.margin_pool,
+        Some(&ctx.accounts.vault.to_account_info()),
+        Some(&ctx.accounts.deposit_note_mint),
+        None,
+        err!(PriorAccountingViolation),
+    )?;
     let change = TokenChange {
         kind: change_kind,
         tokens: amount,
@@ -128,9 +135,13 @@ pub fn withdraw_handler(
         summary: pool.deref().into(),
     });
 
-    if pool.deposit_tokens < ctx.accounts.vault.amount {
-        return Err(ErrorCode::AccountingViolation.into());
-    }
+    crate::check_balances(
+        &ctx.accounts.margin_pool,
+        Some(&ctx.accounts.vault.to_account_info()),
+        Some(&ctx.accounts.deposit_note_mint),
+        None,
+        err!(NewAccountingViolation),
+    )?;
 
     Ok(())
 }
