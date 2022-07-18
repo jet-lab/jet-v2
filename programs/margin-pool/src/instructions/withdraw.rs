@@ -18,7 +18,7 @@
 use std::ops::Deref;
 
 use anchor_lang::prelude::*;
-use anchor_spl::token::{self, Burn, Token, Transfer};
+use anchor_spl::token::{self, Burn, Token, Transfer, TokenAccount};
 
 use crate::{events, state::*, TokenChange};
 use crate::{ChangeKind, ErrorCode};
@@ -37,7 +37,7 @@ pub struct Withdraw<'info> {
     /// The vault for the pool, where tokens are held
     /// CHECK:
     #[account(mut)]
-    pub vault: AccountInfo<'info>,
+    pub vault: Account<'info, TokenAccount>,
 
     /// The mint for the deposit notes
     /// CHECK:
@@ -127,6 +127,10 @@ pub fn withdraw_handler(
         withdraw_notes: withdraw_amount.notes,
         summary: pool.deref().into(),
     });
+
+    if pool.deposit_tokens < ctx.accounts.vault.amount {
+        return Err(ErrorCode::AccountingViolation.into());
+    }
 
     Ok(())
 }

@@ -18,7 +18,7 @@
 use std::ops::Deref;
 
 use anchor_lang::prelude::*;
-use anchor_spl::token::{self, MintTo, Token, Transfer};
+use anchor_spl::token::{self, MintTo, Token, Transfer, TokenAccount};
 
 use crate::{events, state::*, TokenChange};
 use crate::{ChangeKind, ErrorCode};
@@ -34,7 +34,7 @@ pub struct Deposit<'info> {
     /// The vault for the pool, where tokens are held
     /// CHECK:
     #[account(mut)]
-    pub vault: UncheckedAccount<'info>,
+    pub vault: Account<'info, TokenAccount>,
 
     /// The mint for the deposit notes
     /// CHECK:
@@ -124,6 +124,10 @@ pub fn deposit_handler(ctx: Context<Deposit>, change_kind: ChangeKind, amount: u
         deposit_notes: deposit_amount.notes,
         summary: pool.deref().into(),
     });
+
+    if pool.deposit_tokens < ctx.accounts.vault.amount {
+        return Err(ErrorCode::AccountingViolation.into());
+    }
 
     Ok(())
 }

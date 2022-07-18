@@ -207,4 +207,7 @@ pub enum ErrorCode {
 
     /// 141108 - Attempt repayment of more tokens than total outstanding
     RepaymentExceedsTotalOutstanding,
+
+    /// 141109 - Accounting violation
+    AccountingViolation,
 }
