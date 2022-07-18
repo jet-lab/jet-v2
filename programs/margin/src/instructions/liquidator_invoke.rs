@@ -95,23 +95,16 @@ fn update_and_verify_liquidation(
 ) -> Result<Valuation> {
     let end_value = margin_account.valuation()?;
 
-    *liquidation.value_change_mut() +=
-        end_value.available_collateral() - start_value.available_collateral(); // side effects
+    *liquidation.equity_change_mut() += end_value.equity - start_value.equity; // side effects
 
-    verify_liquidation_step_is_allowed(liquidation)?;
-
-    Ok(end_value)
-}
-
-fn verify_liquidation_step_is_allowed(liquidation: &Liquidation) -> Result<()> {
-    if *liquidation.value_change() < liquidation.min_value_change() {
+    if liquidation.equity_change() < &liquidation.min_equity_change() {
         msg!(
-            "Illegal liquidation: net loss of {} value which exceeds the min value change of {}",
-            liquidation.value_change(),
-            liquidation.min_value_change()
+            "Illegal liquidation: net loss of {} equity which exceeds the min equity change of {}",
+            liquidation.equity_change(),
+            liquidation.min_equity_change()
         );
         err!(ErrorCode::LiquidationLostValue)
     } else {
-        Ok(())
+        Ok(end_value)
     }
 }
