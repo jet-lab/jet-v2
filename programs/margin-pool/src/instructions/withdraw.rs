@@ -20,8 +20,7 @@ use std::ops::Deref;
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Burn, Token, Transfer};
 
-use crate::{events, state::*, Amount};
-use crate::{ChangeKind, ErrorCode};
+use crate::{events, state::*, ChangeKind, ErrorCode};
 
 #[derive(Accounts)]
 pub struct Withdraw<'info> {
@@ -96,7 +95,7 @@ pub fn withdraw_handler(
     }
 
     let withdraw_amount = pool.calculate_full_amount(
-        Amount::deposit_notes(Some(amount), None),
+        PartialAmount::tokens_to_deposit_notes(amount),
         token::accessor::amount(&ctx.accounts.source.to_account_info())?,
         change_kind,
         PoolAction::Withdraw,

@@ -22,8 +22,7 @@ use anchor_spl::token::{self, Burn, Token, TokenAccount};
 
 use jet_margin::MarginAccount;
 
-use crate::{events, state::*, ChangeKind};
-use crate::{Amount, ErrorCode};
+use crate::{events, state::*, ChangeKind, ErrorCode};
 
 #[derive(Accounts)]
 pub struct MarginRepay<'info> {
@@ -98,7 +97,7 @@ pub fn margin_repay_handler(
 
     // Amount the user desires to repay
     let repay_amount = pool.calculate_full_amount(
-        Amount::loan_notes(Some(amount), None),
+        PartialAmount::tokens_to_loan_notes(amount),
         ctx.accounts.loan_account.amount,
         change_kind,
         PoolAction::Repay,
@@ -106,7 +105,7 @@ pub fn margin_repay_handler(
 
     // First record a withdraw of the deposit to use for repaying in tokens
     let withdraw_amount = pool.calculate_notes(
-        Amount::deposit_notes(Some(repay_amount.tokens), None),
+        PartialAmount::tokens_to_deposit_notes(repay_amount.tokens),
         RoundingDirection::notes_emission(PoolAction::Withdraw),
     )?;
     pool.withdraw(&withdraw_amount)?;

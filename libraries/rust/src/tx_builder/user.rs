@@ -33,7 +33,7 @@ use solana_sdk::{compute_budget::ComputeBudgetInstruction, instruction::Instruct
 use anchor_lang::{AccountDeserialize, Id};
 
 use jet_margin::{MarginAccount, PositionKind};
-use jet_margin_pool::{Amount, TokenChange};
+use jet_margin_pool::TokenChange;
 use jet_simulation::solana_rpc_api::SolanaRpcClient;
 
 use crate::ix_builder::*;

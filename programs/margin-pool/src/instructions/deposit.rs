@@ -20,8 +20,7 @@ use std::ops::Deref;
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, MintTo, Token, Transfer};
 
-use crate::{events, state::*, Amount};
-use crate::{ChangeKind, ErrorCode};
+use crate::{events, state::*, ChangeKind, ErrorCode};
 
 #[derive(Accounts)]
 pub struct Deposit<'info> {
@@ -92,7 +91,7 @@ pub fn deposit_handler(ctx: Context<Deposit>, change_kind: ChangeKind, amount: u
     }
 
     let deposit_amount = pool.calculate_full_amount(
-        Amount::deposit_notes(Some(amount), None),
+        PartialAmount::tokens_to_deposit_notes(amount),
         token::accessor::amount(&ctx.accounts.destination.to_account_info())?,
         change_kind,
         PoolAction::Deposit,

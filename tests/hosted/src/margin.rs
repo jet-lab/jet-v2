@@ -31,7 +31,7 @@ use solana_sdk::system_program;
 use solana_sdk::{pubkey::Pubkey, transaction::Transaction};
 
 use jet_control::TokenMetadataParams;
-use jet_margin_pool::{Amount, MarginPool, MarginPoolConfig, TokenChange};
+use jet_margin_pool::{MarginPool, MarginPoolConfig, TokenChange};
 use jet_margin_sdk::tx_builder::MarginTxBuilder;
 use jet_metadata::{LiquidatorMetadata, MarginAdapterMetadata, TokenKind, TokenMetadata};
 use jet_simulation::{send_and_confirm, solana_rpc_api::SolanaRpcClient};

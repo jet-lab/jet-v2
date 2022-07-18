@@ -18,7 +18,11 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Burn, Token, TokenAccount, Transfer};
 
-use crate::{events, state::PoolAction, Amount, ChangeKind, ErrorCode, MarginPool};
+use crate::{
+    events,
+    state::{PartialAmount, PoolAction},
+    ChangeKind, ErrorCode, MarginPool,
+};
 
 #[derive(Accounts)]
 pub struct Repay<'info> {
@@ -89,7 +93,7 @@ pub fn repay_handler(ctx: Context<Repay>, change_kind: ChangeKind, amount: u64) 
 
     // Amount the user desires to repay
     let repay_amount = pool.calculate_full_amount(
-        Amount::loan_notes(Some(amount), None),
+        PartialAmount::tokens_to_loan_notes(amount),
         ctx.accounts.loan_account.amount,
         change_kind,
         PoolAction::Repay,

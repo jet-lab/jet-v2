@@ -22,8 +22,7 @@ use anchor_spl::token::{self, MintTo, Token, TokenAccount};
 
 use jet_margin::MarginAccount;
 
-use crate::{events, state::*, ChangeKind};
-use crate::{Amount, ErrorCode};
+use crate::{events, state::*, ChangeKind, ErrorCode};
 
 #[derive(Accounts)]
 pub struct MarginBorrow<'info> {
@@ -103,7 +102,7 @@ pub fn margin_borrow_handler(
 
     // First record a borrow of the tokens requested
     let borrow_amount = pool.calculate_full_amount(
-        Amount::loan_notes(Some(amount), None),
+        PartialAmount::tokens_to_loan_notes(amount),
         ctx.accounts.loan_account.amount,
         change_kind,
         PoolAction::Borrow,
@@ -112,7 +111,7 @@ pub fn margin_borrow_handler(
 
     // Then record a deposit of the same borrowed tokens
     let deposit_amount = pool.calculate_notes(
-        Amount::deposit_notes(Some(borrow_amount.tokens), None),
+        PartialAmount::tokens_to_deposit_notes(borrow_amount.tokens),
         RoundingDirection::notes_emission(PoolAction::Deposit),
     )?;
     pool.deposit(&deposit_amount);

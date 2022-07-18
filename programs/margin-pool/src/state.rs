@@ -22,7 +22,7 @@ use pyth_sdk_solana::PriceFeed;
 use serde::ser::{Serialize, SerializeStruct, Serializer};
 use std::cmp::Ordering;
 
-use crate::{util, Amount, AmountKind, ChangeKind, ErrorCode};
+use crate::{util, ChangeKind, ErrorCode};
 
 /// Account containing information about a margin pool, which
 /// services lending/borrowing operations.
@@ -318,7 +318,7 @@ impl MarginPool {
     /// Calculates the `FullAmount` of notes and tokens to disperse for a given `PoolAction`
     pub fn calculate_full_amount(
         &self,
-        amount: Amount,
+        amount: PartialAmount,
         current_notes: u64,
         change_kind: ChangeKind,
         action: PoolAction,
@@ -329,7 +329,11 @@ impl MarginPool {
         }
     }
 
-    fn calculate_shift_amount(&self, amount: Amount, action: PoolAction) -> Result<FullAmount> {
+    fn calculate_shift_amount(
+        &self,
+        amount: PartialAmount,
+        action: PoolAction,
+    ) -> Result<FullAmount> {
         let rounding = RoundingDirection::notes_emission(action);
 
         self.calculate_notes(amount, rounding)
@@ -338,12 +342,12 @@ impl MarginPool {
     fn calculate_set_amount(
         &self,
         current_notes_amount: u64,
-        target_amount: Amount,
+        target_amount: PartialAmount,
         pool_action: PoolAction,
     ) -> Result<FullAmount> {
         let exchange_rate = match target_amount.kind {
-            AmountKind::DepositNotes => self.deposit_note_exchange_rate(),
-            AmountKind::LoanNotes => self.loan_note_exchange_rate(),
+            NotesKind::Deposit => self.deposit_note_exchange_rate(),
+            NotesKind::Loan => self.loan_note_exchange_rate(),
         };
         let target_notes = Number::from(target_amount.tokens()?) / exchange_rate;
 
@@ -361,19 +365,19 @@ impl MarginPool {
             RoundingDirection::Up => ((delta * exchange_rate).as_u64_ceil(0), delta.as_u64(0)),
         };
 
-        // AmountKind is arbitrary here, we are just using the `unwrap` for checks and convenience
-        Amount::deposit_notes(Some(tokens), Some(notes)).unwrap()
+        // NotesKind is arbitrary here, we are just using the `unwrap` for checks and convenience
+        FullAmount::new_checked(tokens, notes)
     }
 
     /// Calculate the notes field for a given `Amount` with known rounding
     pub fn calculate_notes(
         &self,
-        mut amount: Amount,
+        mut amount: PartialAmount,
         rounding: RoundingDirection,
     ) -> Result<FullAmount> {
         let exchange_rate = match amount.kind {
-            AmountKind::DepositNotes => self.deposit_note_exchange_rate(),
-            AmountKind::LoanNotes => self.loan_note_exchange_rate(),
+            NotesKind::Deposit => self.deposit_note_exchange_rate(),
+            NotesKind::Loan => self.loan_note_exchange_rate(),
         };
 
         amount.notes = Some(match rounding {
@@ -389,12 +393,12 @@ impl MarginPool {
     /// Calculate the tokens field for a given `Amount` with known rounding
     pub fn calculate_tokens(
         &self,
-        mut amount: Amount,
+        mut amount: PartialAmount,
         rounding: RoundingDirection,
     ) -> Result<FullAmount> {
         let exchange_rate = match amount.kind {
-            AmountKind::DepositNotes => self.deposit_note_exchange_rate(),
-            AmountKind::LoanNotes => self.loan_note_exchange_rate(),
+            NotesKind::Deposit => self.deposit_note_exchange_rate(),
+            NotesKind::Loan => self.loan_note_exchange_rate(),
         };
 
         amount.tokens = Some(match rounding {
@@ -445,10 +449,110 @@ impl MarginPool {
     }
 }
 
+#[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone, Copy)]
+pub enum NotesKind {
+    Deposit,
+    Loan,
+}
+
+/// Represent an amount of some value (like tokens, or notes) that is to be used for calculating
+/// a representative `FullAmount`
+#[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone, Copy)]
+pub struct PartialAmount {
+    kind: NotesKind,
+    tokens: Option<u64>,
+    notes: Option<u64>,
+}
+
+impl PartialAmount {
+    /// A `PartialAmount` for calculating tokens from a deposit notes value
+    pub const fn deposit_notes_to_tokens(notes: u64) -> Self {
+        Self {
+            kind: NotesKind::Deposit,
+            tokens: None,
+            notes: Some(notes),
+        }
+    }
+
+    /// A `PartialAmount` for calculating tokens from a loan notes value
+    pub const fn loan_notes_to_tokens(notes: u64) -> Self {
+        Self {
+            kind: NotesKind::Loan,
+            tokens: None,
+            notes: Some(notes),
+        }
+    }
+
+    /// A `PartialAmount` for calculating deposit notes from a token value
+    pub const fn tokens_to_deposit_notes(tokens: u64) -> Self {
+        Self {
+            kind: NotesKind::Deposit,
+            tokens: Some(tokens),
+            notes: None,
+        }
+    }
+
+    /// A `PartialAmount` for calculating loan notes from a token value
+    pub const fn tokens_to_loan_notes(tokens: u64) -> Self {
+        Self {
+            kind: NotesKind::Loan,
+            tokens: Some(tokens),
+            notes: None,
+        }
+    }
+
+    /// Unwraps the `Amount` into a `FullAmount` type once both tokens and notes fields are satisfied
+    pub fn unwrap(&self) -> Result<FullAmount> {
+        FullAmount::new_checked(self.tokens()?, self.notes()?)
+    }
+
+    /// Convenience function for unwrapping the notes value
+    fn notes(&self) -> Result<u64> {
+        self.notes
+            .ok_or_else(|| error!(ErrorCode::NotesNotCalculated))
+    }
+
+    /// Convenience function for unwrapping the tokens value
+    fn tokens(&self) -> Result<u64> {
+        self.tokens
+            .ok_or_else(|| error!(ErrorCode::TokensNotCalculated))
+    }
+}
+
 #[derive(Debug)]
 pub struct FullAmount {
     pub tokens: u64,
     pub notes: u64,
+}
+
+impl FullAmount {
+    pub fn new_checked(tokens: u64, notes: u64) -> Result<Self> {
+        let amount = Self { tokens, notes };
+        amount.assert_valid()?;
+        Ok(amount)
+    }
+
+    /// As Amount represents the conversion of tokens to/from notes for
+    /// the purpose of:
+    /// - adding/subtracting tokens to/from a pool's vault
+    /// - minting/burning notes from a pool's deposit/loan mint.
+    /// There should be no scenario where a conversion between notes and tokens
+    /// leads to either value being 0 while the other is not.
+    ///
+    /// Scenarios where this can happen could be security risks, such as:
+    /// - A user withdraws 1 token but burns 0 notes, they are draining the pool.
+    /// - A user deposits 1 token but mints 0 notes, they are losing funds for no value.
+    /// - A user deposits 0 tokens but mints 1 notes, they are getting free deposits.
+    /// - A user withdraws 0 tokens but burns 1 token, they are writing off debt.
+    ///
+    /// Thus we finally check that both values are positive.
+    pub fn assert_valid(&self) -> Result<()> {
+        if (self.notes == 0 && self.tokens > 0) || (self.tokens == 0 && self.notes > 0) {
+            return err!(ErrorCode::InvalidAmount);
+        }
+
+        Ok(())
+    }
 }
 
 /// Represents the primary pool actions, used in determining the
@@ -595,7 +699,7 @@ mod tests {
         assert_eq!(pool.deposit_note_exchange_rate().as_u64(-9), 1111111111);
 
         let deposit_amount = pool.calculate_tokens(
-            Amount::deposit_notes(None, Some(12)),
+            PartialAmount::deposit_notes_to_tokens(12),
             RoundingDirection::Down,
         )?;
 
@@ -603,15 +707,17 @@ mod tests {
         assert_eq!(deposit_amount.tokens, 13); // ref [0]
 
         let deposit_amount = pool.calculate_tokens(
-            Amount::deposit_notes(None, Some(18)),
+            PartialAmount::deposit_notes_to_tokens(18),
             RoundingDirection::Down,
         )?;
 
         assert_eq!(deposit_amount.notes, 18);
         assert_eq!(deposit_amount.tokens, 19);
 
-        let deposit_amount =
-            pool.calculate_tokens(Amount::deposit_notes(None, Some(12)), RoundingDirection::Up)?;
+        let deposit_amount = pool.calculate_tokens(
+            PartialAmount::deposit_notes_to_tokens(12),
+            RoundingDirection::Up,
+        )?;
 
         assert_eq!(deposit_amount.notes, 12);
         assert_eq!(deposit_amount.tokens, 14); // ref [1]
@@ -620,7 +726,7 @@ mod tests {
         // or 1 token should never get 0 notes back
 
         let deposit_amount = pool.calculate_tokens(
-            Amount::deposit_notes(None, Some(1)),
+            PartialAmount::deposit_notes_to_tokens(1),
             RoundingDirection::Down,
         )?;
 
@@ -628,8 +734,10 @@ mod tests {
         assert_eq!(deposit_amount.notes, 1);
         assert_eq!(deposit_amount.tokens, 1);
 
-        let deposit_amount =
-            pool.calculate_tokens(Amount::deposit_notes(None, Some(1)), RoundingDirection::Up)?;
+        let deposit_amount = pool.calculate_tokens(
+            PartialAmount::deposit_notes_to_tokens(1),
+            RoundingDirection::Up,
+        )?;
 
         // Depositing 2 tokens for 1 note is disadvantageous to the user
         // and protects the protocol's average exchange rate
@@ -668,15 +776,17 @@ mod tests {
 
         // depositing tokens should round down
         let deposit_result = pool.calculate_notes(
-            Amount::deposit_notes(Some(1), None),
+            PartialAmount::tokens_to_deposit_notes(1),
             RoundingDirection::Down,
         );
 
         // Rounding down would return 0 notes
         assert!(deposit_result.is_err());
 
-        let deposit_amount =
-            pool.calculate_notes(Amount::deposit_notes(Some(1), None), RoundingDirection::Up)?;
+        let deposit_amount = pool.calculate_notes(
+            PartialAmount::tokens_to_deposit_notes(1),
+            RoundingDirection::Up,
+        )?;
 
         // Depositing 1 token for 1 note is disadvantageous to the user as they
         // get a lower rate than the 1.111_.
@@ -691,15 +801,19 @@ mod tests {
         // entitle the user to fewer tokens on withdrawal from the pool.
 
         // We start by rounding up a bigger number. See [0]
-        let deposit_amount =
-            pool.calculate_notes(Amount::deposit_notes(Some(9), None), RoundingDirection::Up)?;
+        let deposit_amount = pool.calculate_notes(
+            PartialAmount::tokens_to_deposit_notes(9),
+            RoundingDirection::Up,
+        )?;
 
         assert_eq!(deposit_amount.notes, 9);
         assert_eq!(deposit_amount.tokens, 9);
 
         // [1] shows the behaviour when rounding 12 notes up, we get 13 tokens.
-        let deposit_amount =
-            pool.calculate_notes(Amount::deposit_notes(Some(13), None), RoundingDirection::Up)?;
+        let deposit_amount = pool.calculate_notes(
+            PartialAmount::tokens_to_deposit_notes(13),
+            RoundingDirection::Up,
+        )?;
 
         assert_eq!(deposit_amount.tokens, 13);
         // [1] returned 12 notes, and we get 12 notes back.
@@ -707,7 +821,7 @@ mod tests {
 
         // If we round down instead of up, we preserve value.
         let deposit_amount = pool.calculate_notes(
-            Amount::deposit_notes(Some(14), None),
+            PartialAmount::tokens_to_deposit_notes(14),
             RoundingDirection::Down,
         )?;
 
@@ -748,14 +862,18 @@ mod tests {
 
         assert_eq!(pool.loan_note_exchange_rate().as_u64(-9), 1111111111);
 
-        let loan_amount =
-            pool.calculate_tokens(Amount::loan_notes(None, Some(1)), RoundingDirection::Down)?;
+        let loan_amount = pool.calculate_tokens(
+            PartialAmount::loan_notes_to_tokens(1),
+            RoundingDirection::Down,
+        )?;
 
         assert_eq!(loan_amount.notes, 1);
         assert_eq!(loan_amount.tokens, 1);
 
-        let loan_amount =
-            pool.calculate_tokens(Amount::loan_notes(None, Some(1)), RoundingDirection::Up)?;
+        let loan_amount = pool.calculate_tokens(
+            PartialAmount::loan_notes_to_tokens(1),
+            RoundingDirection::Up,
+        )?;
 
         // When withdrawing, rounding up benefits the user at the cost of the
         // protocol. The user gets to borrow at a lower rate (0.5 vs 1.111_).
@@ -792,14 +910,18 @@ mod tests {
         assert_eq!(pool.loan_note_exchange_rate().as_u64(-9), 1111111111);
 
         // repaying tokens rounds down
-        let loan_result =
-            pool.calculate_notes(Amount::loan_notes(Some(1), None), RoundingDirection::Down);
+        let loan_result = pool.calculate_notes(
+            PartialAmount::tokens_to_loan_notes(1),
+            RoundingDirection::Down,
+        );
 
         // Rounding down to 0 is not allowed
         assert!(loan_result.is_err());
 
-        let loan_amount =
-            pool.calculate_notes(Amount::loan_notes(Some(1), None), RoundingDirection::Up)?;
+        let loan_amount = pool.calculate_notes(
+            PartialAmount::tokens_to_loan_notes(1),
+            RoundingDirection::Up,
+        )?;
 
         // When withdrawing tokens, the user should get 111 tokens for 100 notes (or less)
         // at the current exchange rate. A 1:1 is disadvantageous to the user
