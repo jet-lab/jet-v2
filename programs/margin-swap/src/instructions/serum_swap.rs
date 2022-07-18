@@ -227,7 +227,6 @@ pub fn serum_swap_handler(
     ctx: Context<SerumSwap>,
     amount_in: u64,
     minimum_amount_out: u64,
-    // TODO: will change this to an enum, quicker to bool it for now
     swap_direction: SwapDirection,
 ) -> Result<()> {
     jet_margin_pool::cpi::withdraw(
@@ -238,9 +237,9 @@ pub fn serum_swap_handler(
         Amount::tokens(amount_in),
     )?;
     let market_info = ctx.accounts.swap_info.market.to_account_info();
-    let coin_lot_size = {
+    let (base_lot_size, quote_lot_size) = {
         let market = MarketState::load(&market_info, &dex::ID).map_err(ProgramError::from)?;
-        market.coin_lot_size
+        (market.coin_lot_size, market.pc_lot_size)
     };
 
     // Build order parameters.
@@ -256,9 +255,9 @@ pub fn serum_swap_handler(
     let (side, limit_price, max_coin_qty, max_native_pc_qty) = match swap_direction {
         SwapDirection::Ask => {
             // Purchase as much of the quote as possible for the given base
-            let max_coin_qty = amount_in.checked_div(coin_lot_size).unwrap();
+            let max_coin_qty = amount_in.checked_div(base_lot_size).unwrap();
             let max_coin_qty = NonZeroU64::new(max_coin_qty).unwrap();
-            let max_native_pc_qty = NonZeroU64::new(u64::MAX).unwrap(); // u64::MAX
+            let max_native_pc_qty = NonZeroU64::new(u64::MAX).unwrap();
             (
                 Side::Ask,
                 NonZeroU64::new(1).unwrap(),
@@ -269,7 +268,8 @@ pub fn serum_swap_handler(
         SwapDirection::Bid => {
             // Purchase as much of the base as possible for the given quote
             let max_coin_qty = NonZeroU64::new(u64::MAX).unwrap();
-            let max_native_pc_qty = NonZeroU64::new(amount_in).unwrap();
+            let max_native_pc_qty = amount_in.checked_div(quote_lot_size).unwrap();
+            let max_native_pc_qty = NonZeroU64::new(max_native_pc_qty).unwrap();
             (
                 Side::Bid,
                 NonZeroU64::new(u64::MAX).unwrap(),
@@ -320,22 +320,27 @@ pub fn serum_swap_handler(
 
     // If the base or quote deltas are 0, fail transaction
     if tokens_bought == 0 || tokens_sold == 0 {
-        return err!(SwapError::SerumSwapError);
+        return err!(SwapError::SwapDidNotComplete);
     }
 
     // Check slippage using a ratio of swapped tokens
-    let expected_rate =
-        Number128::from_decimal(minimum_amount_out, 0) / Number128::from_decimal(amount_in, 0);
-    let actual_rate =
-        Number128::from_decimal(tokens_bought, 0) / Number128::from_decimal(tokens_sold, 0);
+    let (expected_rate, actual_rate) = match swap_direction {
+        SwapDirection::Bid => (
+            Number128::from_decimal(minimum_amount_out, 0) / Number128::from_decimal(amount_in, 0),
+            Number128::from_decimal(tokens_bought, 0) / Number128::from_decimal(tokens_sold, 0),
+        ),
+        SwapDirection::Ask => (
+            Number128::from_decimal(amount_in, 0) / Number128::from_decimal(minimum_amount_out, 0),
+            Number128::from_decimal(tokens_sold, 0) / Number128::from_decimal(tokens_bought, 0),
+        ),
+    };
 
-    msg!("Expected rate: {}", expected_rate);
-    msg!("Actual rate: {}", actual_rate);
+    if actual_rate < expected_rate {
+        msg!("Exceeded the maximum slippage, minimum rate {}, actual rate {}", expected_rate, actual_rate);
+        return err!(SwapError::ExceededSlippage);
+    }
 
-    // TODO: this is probably only for ask, not bid (or the other way around?)
-    assert!(actual_rate >= expected_rate);
-
-    // let destination_amount = token::accessor::amount(&ctx.accounts.transit_quote_token_account)?;
+    // TODO: it can happen that not all tokens are exchanged, they should be refunded back to the deposit account.
 
     jet_margin_pool::cpi::deposit(
         match swap_direction {
@@ -359,8 +364,7 @@ pub enum SwapDirection {
 pub struct InitOpenOrders<'info> {
     /// The owner of the open orders account, expected to be the margin account
     /// or a liquidator.
-    #[account(signer)]
-    pub owner: AccountInfo<'info>,
+    pub owner: Signer<'info>,
 
     /// CHECK: The account is validated by `serum_dex::init_open_orders`
     #[account(mut)]

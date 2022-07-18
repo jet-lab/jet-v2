@@ -101,9 +101,18 @@ async fn serum_swap() -> Result<(), anyhow::Error> {
     user_a.create_account().await?;
     user_b.create_account().await?;
 
+    let base_lot_size = 1_000;
+    let quote_lot_size = 10;
+
     // Create a serum market
-    let serum_client =
-        SerumClient::create_market(ctx.rpc.clone(), env.tsol, env.usdc, 100, 1).await?;
+    let serum_client = SerumClient::create_market(
+        ctx.rpc.clone(),
+        env.tsol,
+        env.usdc,
+        base_lot_size,
+        quote_lot_size,
+    )
+    .await?;
 
     let usdc_transit_a = ctx
         .tokens
@@ -203,9 +212,16 @@ async fn serum_swap() -> Result<(), anyhow::Error> {
             tsol_transit_b,
             OrderParams {
                 side: OrderSide::Ask,
-                limit_price: NonZeroU64::new(1).unwrap(),
+                limit_price: NonZeroU64::new(price_number_to_lot(
+                    10,
+                    ONE_TSOL,
+                    ONE_USDC,
+                    base_lot_size,
+                    quote_lot_size,
+                ))
+                .unwrap(), // what if the price is in quote with decimals?
                 // 10 SOL divided by coin lot size
-                max_base_qty: NonZeroU64::new(10 * ONE_TSOL / 100).unwrap(),
+                max_base_qty: NonZeroU64::new(10 * ONE_TSOL / base_lot_size).unwrap(),
                 max_native_quote_qty_including_fees: NonZeroU64::new(u64::MAX).unwrap(),
                 self_trade_behavior: SelfTradeBehavior::DecrementTake,
                 order_type: OrderType::Limit,
@@ -237,9 +253,19 @@ async fn serum_swap() -> Result<(), anyhow::Error> {
             usdc_transit_c,
             OrderParams {
                 side: OrderSide::Bid,
-                limit_price: NonZeroU64::new(u64::MAX).unwrap(),
+                limit_price: NonZeroU64::new(price_number_to_lot(
+                    10,
+                    ONE_TSOL,
+                    ONE_USDC,
+                    base_lot_size,
+                    quote_lot_size,
+                ))
+                .unwrap(),
                 max_base_qty: NonZeroU64::new(u64::MAX).unwrap(),
-                max_native_quote_qty_including_fees: NonZeroU64::new(1000 * ONE_USDC).unwrap(),
+                max_native_quote_qty_including_fees: NonZeroU64::new(
+                    1000 * ONE_USDC / quote_lot_size,
+                )
+                .unwrap(),
                 self_trade_behavior: SelfTradeBehavior::DecrementTake,
                 order_type: OrderType::Limit,
                 client_order_id: 2,
@@ -256,8 +282,8 @@ async fn serum_swap() -> Result<(), anyhow::Error> {
             user_a_open_orders,
             tsol_transit_a,
             usdc_transit_a,
-            10 * ONE_TSOL / 100,
-            10 * ONE_USDC,
+            95 * ONE_TSOL / 10,
+            100 * ONE_USDC,
             jet_margin_swap::instructions::SwapDirection::Ask,
         )
         .await?;
@@ -266,3 +292,25 @@ async fn serum_swap() -> Result<(), anyhow::Error> {
 
     Ok(())
 }
+
+fn price_number_to_lot(
+    price: u64,
+    base_lamports: u64,
+    quote_lamports: u64,
+    base_lot_size: u64,
+    quote_lot_size: u64,
+) -> u64 {
+    price * (quote_lamports * base_lot_size) / (base_lamports * quote_lot_size)
+}
+
+// #[test]
+// fn test_price_number_to_lot() {
+//     let base_lot_size = 1_000;
+//     let quote_lot_size = 100;
+//     let base_decimal = 9;
+//     let quote_decimal = 6;
+//     let price = 40_000_000;
+
+//     let lot_price = price_number_to_lot(price, base_decimal, quote_decimal, base_lot_size, quote_lot_size);
+//     assert_eq!(lot_price, 400_000);
+// }

@@ -78,5 +78,8 @@ pub struct MarginPoolInfo<'info> {
 
 #[error_code]
 pub enum SwapError {
-    SerumSwapError,
+    #[msg("Unable to complete the swap")]
+    SwapDidNotComplete = 200000,
+    #[msg("The swap exceeded the maximum slippage amount")]
+    ExceededSlippage,
 }
