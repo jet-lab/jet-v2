@@ -53,6 +53,7 @@ export interface PoolPosition {
   loanBalance: TokenAmount
   loanValue: number
   maxTradeAmounts: Record<PoolAction, TokenAmount>
+  liquidationEndingCollateral: TokenAmount
   buyingPower: TokenAmount
 }
 
@@ -317,6 +318,12 @@ export class MarginAccount {
       // Max trade amounts
       const maxTradeAmounts = this.getMaxTradeAmounts(pool, depositBalance, loanBalance)
 
+      // Minimum amount to deposit for the pool to end a liquidation
+      const liquidationEndingCollateral = this.valuation.requiredCollateral
+        .asTokenAmount(pool.decimals)
+        .sub(this.valuation.effectiveCollateral.asTokenAmount(pool.decimals).muln(MarginAccount.RISK_WARNING_LEVEL))
+        .div(pool.depositNoteMetadata.valueModifier.asTokenAmount(pool.decimals).muln(MarginAccount.RISK_WARNING_LEVEL))
+
       // Buying power
       // FIXME
       const buyingPower = TokenAmount.zero(pool.decimals)
@@ -332,6 +339,7 @@ export class MarginAccount {
         loanBalance,
         loanValue,
         maxTradeAmounts,
+        liquidationEndingCollateral,
         buyingPower
       }
     }
