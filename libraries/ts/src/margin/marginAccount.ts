@@ -394,7 +394,7 @@ export class MarginAccount {
       .div(lamportPrice)
       .asTokenAmount(pool.decimals)
     withdraw = TokenAmount.min(withdraw, depositBalance)
-    withdraw = TokenAmount.min(withdraw, pool.vaultTokens)
+    withdraw = TokenAmount.min(withdraw, pool.vault)
     withdraw = TokenAmount.max(withdraw, zero)
 
     // Max borrow
@@ -402,7 +402,7 @@ export class MarginAccount {
       .div(Number128.ONE.add(Number128.ONE.div(MarginAccount.SETUP_LEVERAGE_FRACTION.mul(loanNoteValueModifier))))
       .div(lamportPrice)
       .asTokenAmount(pool.decimals)
-    borrow = TokenAmount.min(borrow, pool.vaultTokens)
+    borrow = TokenAmount.min(borrow, pool.vault)
     borrow = TokenAmount.max(borrow, zero)
 
     // Max repay
