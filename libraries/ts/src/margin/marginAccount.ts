@@ -320,12 +320,13 @@ export class MarginAccount {
 
       // Minimum amount to deposit for the pool to end a liquidation
       const collateralWeight = depositNotePosition?.valueModifier ?? pool.depositNoteMetadata.valueModifier
+      const warningRiskLevel = Number128.fromDecimal(new BN(MarginAccount.RISK_WARNING_LEVEL * 100000), -5)
       const liquidationEndingCollateral = collateralWeight.isZero()
         ? TokenAmount.zero(pool.decimals)
         : this.valuation.requiredCollateral
+            .sub(this.valuation.effectiveCollateral.mul(warningRiskLevel))
+            .div(collateralWeight.mul(warningRiskLevel))
             .asTokenAmount(pool.decimals)
-            .sub(this.valuation.effectiveCollateral.asTokenAmount(pool.decimals).muln(MarginAccount.RISK_WARNING_LEVEL))
-            .div(collateralWeight.asTokenAmount(pool.decimals).muln(MarginAccount.RISK_WARNING_LEVEL))
 
       // Buying power
       // FIXME
