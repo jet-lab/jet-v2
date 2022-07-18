@@ -123,5 +123,10 @@ pub fn repay_handler(ctx: Context<Repay>, change_kind: ChangeKind, amount: u64) 
         repaid_loan_notes: repay_amount.notes,
         summary: (&pool.clone().into_inner()).into(),
     });
+
+    if pool.deposit_tokens < ctx.accounts.vault.amount {
+        return Err(ErrorCode::AccountingViolation.into());
+    }
+
     Ok(())
 }
