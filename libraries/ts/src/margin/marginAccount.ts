@@ -408,7 +408,7 @@ export class MarginAccount {
     // Max repay
     let repay = walletAmount ? TokenAmount.min(loanBalance, walletAmount) : loanBalance
     // If repaying SOL, maximum input should still cover fees
-    if (pool.address.equals(NATIVE_MINT)) {
+    if (pool.address.equals(NATIVE_MINT) || pool.symbol === "SOL") {
       repay = TokenAmount.max(repay.sub(feeCover), zero)
     }
 
