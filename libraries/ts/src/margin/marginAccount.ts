@@ -118,7 +118,7 @@ export class MarginAccount {
     return this.info?.marginAccount.liquidation
   }
   get isBeingLiquidated() {
-    return this.info?.marginAccount.liquidation !== undefined
+    return !this.info?.marginAccount.liquidation.equals(PublicKey.default)
   }
   /** A number where 1 and above is subject to liquidation and 0 is no leverage. */
   get riskIndicator() {
