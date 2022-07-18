@@ -81,11 +81,11 @@ pub fn collect_handler(ctx: Context<Collect>) -> Result<()> {
         fee_notes,
     )?;
 
-    let claimed_amount = pool.calculate_tokens(
+    let claimed_amount = pool.convert_amount(
         PartialAmount::deposit_notes_to_tokens(fee_notes),
         RoundingDirection::notes_emission(PoolAction::Withdraw),
     )?;
-    let balance_amount = pool.calculate_notes(
+    let balance_amount = pool.convert_amount(
         PartialAmount::tokens_to_deposit_notes(ctx.accounts.vault.amount),
         RoundingDirection::tokens_emission(PoolAction::Deposit),
     )?;

@@ -154,7 +154,7 @@ pub enum ErrorCode {
 
     /// 141104 - An invalid amount has been supplied
     ///
-    /// This is used when an `Amount` has an invalid value
+    /// This is used when a `PartialAmount` has an invalid value
     #[msg("An invalid amount has been supplied")]
     InvalidAmount,
 
@@ -165,7 +165,7 @@ pub enum ErrorCode {
     InvalidOracle,
 
     /// 141107 - Tried to set an invalid token value
-    #[msg("An invalid `SetTo` value was given for a `TokenChange`")]
+    #[msg("An unreachable `SetTo` value was given")]
     InvalidSetTo,
 
     /// 141108 - Attempt repayment of more tokens than total outstanding

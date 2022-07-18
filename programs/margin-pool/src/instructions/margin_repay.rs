@@ -96,15 +96,15 @@ pub fn margin_repay_handler(
     }
 
     // Amount the user desires to repay
-    let repay_amount = pool.calculate_full_amount(
-        PartialAmount::tokens_to_loan_notes(amount),
+    let repay_amount = pool.calculate_dispersement(
+        amount,
         ctx.accounts.loan_account.amount,
         change_kind,
         PoolAction::Repay,
     )?;
 
     // First record a withdraw of the deposit to use for repaying in tokens
-    let withdraw_amount = pool.calculate_notes(
+    let withdraw_amount = pool.convert_amount(
         PartialAmount::tokens_to_deposit_notes(repay_amount.tokens),
         RoundingDirection::notes_emission(PoolAction::Withdraw),
     )?;

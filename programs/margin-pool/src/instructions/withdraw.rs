@@ -94,8 +94,8 @@ pub fn withdraw_handler(
         return Err(ErrorCode::InterestAccrualBehind.into());
     }
 
-    let withdraw_amount = pool.calculate_full_amount(
-        PartialAmount::tokens_to_deposit_notes(amount),
+    let withdraw_amount = pool.calculate_dispersement(
+        amount,
         token::accessor::amount(&ctx.accounts.source.to_account_info())?,
         change_kind,
         PoolAction::Withdraw,

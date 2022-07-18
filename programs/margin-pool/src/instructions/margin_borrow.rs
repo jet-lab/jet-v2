@@ -101,8 +101,8 @@ pub fn margin_borrow_handler(
     }
 
     // First record a borrow of the tokens requested
-    let borrow_amount = pool.calculate_full_amount(
-        PartialAmount::tokens_to_loan_notes(amount),
+    let borrow_amount = pool.calculate_dispersement(
+        amount,
         ctx.accounts.loan_account.amount,
         change_kind,
         PoolAction::Borrow,
@@ -110,7 +110,7 @@ pub fn margin_borrow_handler(
     pool.borrow(&borrow_amount)?;
 
     // Then record a deposit of the same borrowed tokens
-    let deposit_amount = pool.calculate_notes(
+    let deposit_amount = pool.convert_amount(
         PartialAmount::tokens_to_deposit_notes(borrow_amount.tokens),
         RoundingDirection::notes_emission(PoolAction::Deposit),
     )?;
