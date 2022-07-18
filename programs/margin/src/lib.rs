@@ -52,9 +52,9 @@ pub const MAX_ORACLE_STALENESS: i64 = 30;
 #[constant]
 pub const MAX_PRICE_QUOTE_AGE: u64 = 30;
 
-/// The maximum amount that the amount of missing collateral can be increased,
-/// expressed as a percentage of the current missing collateral.
-pub const LIQUIDATION_MAX_UNDERCOLLATERAL_GAIN: u16 = 10_00;
+/// The maximum amount of equity that can be deducted from an account during liquidation
+/// as a fraction of the total dollar value that is expected to need to be liquidated
+pub const LIQUIDATION_MAX_EQUITY_LOSS_BPS: u16 = 10_00;
 
 /// The maximum c-ratio that an account can end a liquidation with.
 ///
