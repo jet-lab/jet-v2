@@ -150,6 +150,7 @@ pub struct Amount {
 }
 
 impl Amount {
+    /// An `Amount` for conversion between `DepositNotes` and tokens
     pub const fn deposit_notes(tokens: Option<u64>, notes: Option<u64>) -> Self {
         Self {
             kind: AmountKind::DepositNotes,
@@ -158,6 +159,7 @@ impl Amount {
         }
     }
 
+    /// An `Amount` for conversion between `LoanNotes` and tokens
     pub const fn loan_notes(tokens: Option<u64>, notes: Option<u64>) -> Self {
         Self {
             kind: AmountKind::LoanNotes,

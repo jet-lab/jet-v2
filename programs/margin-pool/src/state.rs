@@ -16,7 +16,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 use anchor_lang::{prelude::*, solana_program::clock::UnixTimestamp};
-use jet_proto_math::Number;
+use jet_proto_math::{traits::SafeSub, Number};
 use pyth_sdk_solana::PriceFeed;
 #[cfg(any(test, feature = "cli"))]
 use serde::ser::{Serialize, SerializeStruct, Serializer};
@@ -341,26 +341,28 @@ impl MarginPool {
         target_amount: Amount,
         pool_action: PoolAction,
     ) -> Result<FullAmount> {
-        match pool_action {
+        let exchange_rate = match target_amount.kind {
+            AmountKind::DepositNotes => self.deposit_note_exchange_rate(),
+            AmountKind::LoanNotes => self.loan_note_exchange_rate(),
+        };
+        let target_notes = Number::from(target_amount.tokens()?) / exchange_rate;
+
+        let delta = match pool_action {
             PoolAction::Borrow | PoolAction::Deposit => {
-                let target_rounding = RoundingDirection::intermediate_target(pool_action);
-                let emission_rounding = RoundingDirection::tokens_emission(pool_action);
-                let target_notes = self.calculate_notes(target_amount, target_rounding)?.notes;
-                let delta = target_notes
-                    .checked_sub(current_notes_amount)
-                    .ok_or(ErrorCode::InvalidSetTo)?;
-                self.calculate_tokens(Amount::deposit_notes(None, Some(delta)), emission_rounding)
+                target_notes.safe_sub(Number::from(current_notes_amount))?
             }
             PoolAction::Withdraw | PoolAction::Repay => {
-                let target_rounding = RoundingDirection::intermediate_target(pool_action);
-                let emission_rounding = RoundingDirection::tokens_emission(pool_action);
-                let target_notes = self.calculate_notes(target_amount, target_rounding)?.notes;
-                let delta = current_notes_amount
-                    .checked_sub(target_notes)
-                    .ok_or(ErrorCode::InvalidSetTo)?;
-                self.calculate_tokens(Amount::loan_notes(None, Some(delta)), emission_rounding)
+                Number::from(current_notes_amount).safe_sub(target_notes)?
             }
-        }
+        };
+
+        let (tokens, notes) = match RoundingDirection::tokens_emission(pool_action) {
+            RoundingDirection::Down => ((delta * exchange_rate).as_u64(0), delta.as_u64_ceil(0)),
+            RoundingDirection::Up => ((delta * exchange_rate).as_u64_ceil(0), delta.as_u64(0)),
+        };
+
+        // AmountKind is arbitrary here, we are just using the `unwrap` for checks and convenience
+        Amount::deposit_notes(Some(tokens), Some(notes)).unwrap()
     }
 
     /// Calculate the notes field for a given `Amount` with known rounding
@@ -517,18 +519,6 @@ impl RoundingDirection {
         match pool_action {
             Borrow | Withdraw => Down,
             Deposit | Repay => Up,
-        }
-    }
-
-    /// Rounding direction for intermediate target notes values when calculating a `SetTo` value change
-    ///
-    /// Always `Tokens -> Notes`
-    pub const fn intermediate_target(pool_action: PoolAction) -> Self {
-        use PoolAction::*;
-        use RoundingDirection::*;
-        match pool_action {
-            Borrow | Deposit => Up,
-            Repay | Withdraw => Down,
         }
     }
 }
