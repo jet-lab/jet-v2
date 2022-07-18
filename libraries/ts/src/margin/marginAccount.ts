@@ -374,7 +374,7 @@ export class MarginAccount {
     // Max deposit
     let deposit = walletAmount ?? zero
     // If depositing SOL, maximum input should still cover fees
-    if (pool.address.equals(NATIVE_MINT)) {
+    if (pool.address.equals(NATIVE_MINT) || pool.symbol === "SOL") {
       deposit = TokenAmount.max(deposit.sub(feeCover), zero)
     }
 
