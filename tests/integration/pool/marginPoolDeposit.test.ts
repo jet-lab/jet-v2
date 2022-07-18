@@ -316,7 +316,7 @@ describe("margin pool deposit", () => {
     expect(await getTokenBalance(provider, "processed", marginPool_SOL.addresses.vault)).to.eq(150 + 1)
   })
 
-  provider.opts.skipPreflight = true;
+  provider.opts.skipPreflight = true
 
   it("Close margin accounts", async () => {
     await marginPool_USDC.closePosition({

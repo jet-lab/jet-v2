@@ -1,6 +1,6 @@
 import { AccountInfo, PublicKey } from "@solana/web3.js"
 import BN from "bn.js"
-import { findDerivedAccount, Number128, Number192 } from "../utils"
+import { findDerivedAccount, Number128 } from "../utils"
 import { MarginPrograms } from "./marginClient"
 import { PositionTokenMetadataInfo, TokenKind } from "./metadata"
 import { PositionKind } from "./state"
@@ -11,7 +11,7 @@ export class PositionTokenMetadata {
   address: PublicKey
   info: PositionTokenMetadataInfo | undefined
 
-  valueModifier: BN = Number128.ZERO
+  valueModifier: Number128 = Number128.ZERO
   tokenKind: PositionKind = PositionKind.NoValue
 
   static derive(programs: MarginPrograms, tokenMint: PublicKey) {
@@ -61,20 +61,20 @@ export class PositionTokenMetadata {
     }
   }
 
-  getExposure(value: BN) {
+  getExposure(value: Number128) {
     return value
   }
 
-  getCollateralValue(value: BN) {
-    return this.valueModifier.mul(value).div(Number128.ONE)
+  collateralValue(value: Number128) {
+    return this.valueModifier.mul(value)
   }
 
-  getRequiredCollateralValue(value: BN) {
+  requiredCollateralValue(value: Number128) {
     if (this.valueModifier.eq(Number128.ZERO)) {
       // No leverage configured for claim
       return Number128.MAX
     } else {
-      return value.mul(Number128.ONE).div(this.valueModifier)
+      return value.div(this.valueModifier)
     }
   }
 }

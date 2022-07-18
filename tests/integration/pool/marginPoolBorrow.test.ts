@@ -288,19 +288,19 @@ describe("margin pool borrow", () => {
     // TEST
     expect(await getTokenBalance(provider, "processed", user_a_usdc_account)).to.eq(0)
     expect(await getTokenBalance(provider, "processed", user_a_sol_account)).to.eq(0)
-    expect(marginAccount_A.valuation.weightedCollateral.toString()).to.eq(new BN(504750).mul(Number128.ONE).toString())
-    expect(marginAccount_A.valuation.effectiveCollateral.toString()).to.eq(new BN(504750).mul(Number128.ONE).toString())
-    expect(marginAccount_A.valuation.requiredCollateral.toString()).to.eq(new BN(0).toString())
+    expect(marginAccount_A.valuation.weightedCollateral.asNumber()).to.eq(504750)
+    expect(marginAccount_A.valuation.effectiveCollateral.asNumber()).to.eq(504750)
+    expect(marginAccount_A.valuation.requiredCollateral.asNumber()).to.eq(0)
 
     expect(await getTokenBalance(provider, "processed", user_b_sol_account)).to.eq(0)
     expect(await getTokenBalance(provider, "processed", user_b_usdc_account)).to.eq(0)
-    expect(marginAccount_B.valuation.weightedCollateral.toString()).to.eq(new BN(47550).mul(Number128.ONE).toString())
-    expect(marginAccount_B.valuation.effectiveCollateral.toString()).to.eq(new BN(47550).mul(Number128.ONE).toString())
-    expect(marginAccount_B.valuation.requiredCollateral.toString()).to.eq(new BN(0).toString())
+    expect(marginAccount_B.valuation.weightedCollateral.asNumber()).to.eq(47550)
+    expect(marginAccount_B.valuation.effectiveCollateral.asNumber()).to.eq(47550)
+    expect(marginAccount_B.valuation.requiredCollateral.asNumber()).to.eq(0)
 
-    expect(marginAccount_C.valuation.weightedCollateral.toString()).to.eq(new BN(96).mul(Number128.ONE).toString())
-    expect(marginAccount_C.valuation.effectiveCollateral.toString()).to.eq(new BN(96).mul(Number128.ONE).toString())
-    expect(marginAccount_C.valuation.requiredCollateral.toString()).to.eq(new BN(0).toString())
+    expect(marginAccount_C.valuation.weightedCollateral.asNumber()).to.eq(96)
+    expect(marginAccount_C.valuation.effectiveCollateral.asNumber()).to.eq(96)
+    expect(marginAccount_C.valuation.requiredCollateral.asNumber()).to.eq(0)
 
     expect(await getTokenBalance(provider, "processed", marginPool_USDC.addresses.vault)).to.eq(500_050 + 1)
     expect(await getTokenBalance(provider, "processed", marginPool_SOL.addresses.vault)).to.eq(550 + 1)
@@ -338,13 +338,13 @@ describe("margin pool borrow", () => {
     expect(Number(SOLLoanNotes)).to.eq(borrowedSOL.lamports.toNumber())
     expect(Number(USDCLoanNotes)).to.eq(borrowedUSDC.lamports.toNumber())
 
-    expect(marginAccount_A.valuation.weightedCollateral.toString()).to.eq(new BN(505700).mul(Number128.ONE).toString())
-    expect(marginAccount_A.valuation.effectiveCollateral.toString()).to.eq(new BN(504700).mul(Number128.ONE).toString())
-    expect(marginAccount_A.valuation.requiredCollateral.toString()).to.eq(new BN(250).mul(Number128.ONE).toString())
+    expect(marginAccount_A.valuation.weightedCollateral.asNumber()).to.eq(505700)
+    expect(marginAccount_A.valuation.effectiveCollateral.asNumber()).to.eq(504700)
+    expect(marginAccount_A.valuation.requiredCollateral.asNumber()).to.eq(250)
 
-    expect(marginAccount_B.valuation.weightedCollateral.toString()).to.eq(new BN(48550).mul(Number128.ONE).toString())
-    expect(marginAccount_B.valuation.effectiveCollateral.toString()).to.eq(new BN(47550).mul(Number128.ONE).toString())
-    expect(marginAccount_B.valuation.requiredCollateral.toString()).to.eq(new BN(250).mul(Number128.ONE).toString())
+    expect(marginAccount_B.valuation.weightedCollateral.asNumber()).to.eq(48550)
+    expect(marginAccount_B.valuation.effectiveCollateral.asNumber()).to.eq(47550)
+    expect(marginAccount_B.valuation.requiredCollateral.asNumber()).to.eq(250)
   })
 
   it("User A repays his SOL loan", async () => {
@@ -458,7 +458,7 @@ describe("margin pool borrow", () => {
       expect(transactions[0].tradeAmount.uiTokens).to.equals("400,000")
       expect(transactions[0].signature).to.be.a("string")
 
-      expect(transactions[1].tradeAction).to.equals("repay")
+      expect(transactions[1].tradeAction).to.equals("margin repay")
       expect(transactions[1].tokenSymbol).to.equals("SOL")
       expect(transactions[1].tradeAmount.uiTokens).to.equals("10")
       expect(transactions[1].signature).to.be.a("string")

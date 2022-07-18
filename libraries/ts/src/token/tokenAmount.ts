@@ -1,6 +1,5 @@
 import { BN } from "@project-serum/anchor"
 import { Account, Mint } from "@solana/spl-token"
-import { Number192 } from "../utils"
 import { bigIntToBn } from "./associatedToken"
 
 export class TokenAmount {
@@ -39,7 +38,7 @@ export class TokenAmount {
    * @memberof TokenAmount
    */
   public static zero(decimals: number): TokenAmount {
-    return new TokenAmount(Number192.ZERO, decimals)
+    return new TokenAmount(new BN(0), decimals)
   }
 
   /**

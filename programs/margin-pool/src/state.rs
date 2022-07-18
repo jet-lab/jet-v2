@@ -533,7 +533,7 @@ pub struct PriceResult {
 }
 
 /// Configuration for a margin pool
-#[derive(Debug, Default, AnchorDeserialize, AnchorSerialize, Clone)]
+#[derive(Debug, Default, AnchorDeserialize, AnchorSerialize, Clone, Eq, PartialEq)]
 pub struct MarginPoolConfig {
     /// Space for binary settings
     pub flags: u64,

@@ -5,11 +5,11 @@ export class PoolTokenChangeKind {
   constructor(private kind: PoolTokenChangeKindType) {}
 
   public static setTo() {
-    return new PoolTokenChangeKind({setTo: {}})
+    return new PoolTokenChangeKind({ setTo: {} })
   }
 
   public static shiftBy() {
-    return new PoolTokenChangeKind({shiftBy: {}})
+    return new PoolTokenChangeKind({ shiftBy: {} })
   }
 
   asParam() {
@@ -17,7 +17,7 @@ export class PoolTokenChangeKind {
   }
 }
 
-export type PoolTokenChangeKindType = { setTo: {} } | { shiftBy: {} } 
+export type PoolTokenChangeKindType = { setTo: {} } | { shiftBy: {} }
 
 /**
  * TODO:
