@@ -319,10 +319,14 @@ export class MarginAccount {
       const maxTradeAmounts = this.getMaxTradeAmounts(pool, depositBalance, loanBalance)
 
       // Minimum amount to deposit for the pool to end a liquidation
-      const liquidationEndingCollateral = this.valuation.requiredCollateral
-        .asTokenAmount(pool.decimals)
-        .sub(this.valuation.effectiveCollateral.asTokenAmount(pool.decimals).muln(MarginAccount.RISK_WARNING_LEVEL))
-        .div(pool.depositNoteMetadata.valueModifier.asTokenAmount(pool.decimals).muln(MarginAccount.RISK_WARNING_LEVEL))
+      const liquidationEndingCollateral = pool.depositNoteMetadata.valueModifier.isZero()
+        ? TokenAmount.zero(pool.decimals)
+        : this.valuation.requiredCollateral
+            .asTokenAmount(pool.decimals)
+            .sub(this.valuation.effectiveCollateral.asTokenAmount(pool.decimals).muln(MarginAccount.RISK_WARNING_LEVEL))
+            .div(
+              pool.depositNoteMetadata.valueModifier.asTokenAmount(pool.decimals).muln(MarginAccount.RISK_WARNING_LEVEL)
+            )
 
       // Buying power
       // FIXME
