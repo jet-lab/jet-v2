@@ -1,6 +1,6 @@
 import assert from "assert"
 import { Keypair, PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY, TransactionInstruction } from "@solana/web3.js"
-import { Address, AnchorProvider, BN, translateAddress } from "@project-serum/anchor"
+import { AnchorProvider, BN, translateAddress } from "@project-serum/anchor"
 import { getLayoutVersion, Market as SerumMarket, Orderbook as SerumOrderbook, OpenOrders } from "@project-serum/serum"
 import { MarketOptions, Order } from "@project-serum/serum/lib/market"
 import {
