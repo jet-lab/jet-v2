@@ -21,6 +21,7 @@ use std::sync::Arc;
 use anyhow::{bail, Error};
 use bytemuck::Zeroable;
 
+use jet_margin_sdk::tokens::{TokenOracle, TokenPrice};
 use solana_sdk::instruction::Instruction;
 use solana_sdk::program_pack::Pack;
 use solana_sdk::pubkey::Pubkey;
@@ -315,20 +316,6 @@ impl TokenManager {
     fn get_authority_address() -> Pubkey {
         Pubkey::find_program_address(&[], &jet_control::ID).0
     }
-}
-
-#[derive(Clone, Copy)]
-pub struct TokenOracle {
-    pub price: Pubkey,
-    pub product: Pubkey,
-}
-
-#[derive(Clone, Copy)]
-pub struct TokenPrice {
-    pub exponent: i32,
-    pub price: i64,
-    pub confidence: u64,
-    pub twap: u64,
 }
 
 fn write_pyth_product_attributes(mut storage: &mut [u8], attributes: &[(&str, &str)]) {

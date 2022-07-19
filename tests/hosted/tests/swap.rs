@@ -1,6 +1,6 @@
 use anyhow::Error;
 
-use jet_margin_sdk::swap::SwapPool;
+use jet_margin_sdk::{swap::SwapPool, tokens::TokenPrice};
 use jet_static_program_registry::{orca_swap_v1, orca_swap_v2, spl_token_swap_v2};
 use solana_sdk::native_token::LAMPORTS_PER_SOL;
 use solana_sdk::pubkey::Pubkey;
@@ -10,7 +10,6 @@ use hosted_tests::{
     context::{test_context, MarginTestContext},
     margin::MarginPoolSetupInfo,
     swap::SwapPoolConfig,
-    tokens::TokenPrice,
 };
 
 use jet_margin_pool::{Amount, MarginPoolConfig, PoolFlags, TokenChange};

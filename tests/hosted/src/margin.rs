@@ -26,6 +26,7 @@ use anyhow::{bail, Error};
 use jet_margin::{MarginAccount, PositionKind};
 use jet_margin_sdk::ix_builder::{ControlIxBuilder, MarginPoolConfiguration, MarginPoolIxBuilder};
 use jet_margin_sdk::swap::SwapPool;
+use jet_margin_sdk::tokens::TokenOracle;
 use solana_sdk::instruction::Instruction;
 use solana_sdk::signature::{Keypair, Signer};
 use solana_sdk::system_program;
@@ -36,8 +37,6 @@ use jet_margin_pool::{Amount, MarginPool, MarginPoolConfig, TokenChange};
 use jet_margin_sdk::tx_builder::MarginTxBuilder;
 use jet_metadata::{LiquidatorMetadata, MarginAdapterMetadata, TokenKind, TokenMetadata};
 use jet_simulation::{send_and_confirm, solana_rpc_api::SolanaRpcClient};
-
-use crate::tokens::TokenOracle;
 
 /// Information needed to create a new margin pool
 pub struct MarginPoolSetupInfo {
