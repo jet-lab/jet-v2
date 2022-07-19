@@ -118,7 +118,7 @@ export class MarginAccount {
     return this.info?.marginAccount.liquidation
   }
   get isBeingLiquidated() {
-    return this.info?.marginAccount.liquidation !== undefined
+    return !this.info?.marginAccount.liquidation.equals(PublicKey.default)
   }
   /** A number where 1 and above is subject to liquidation and 0 is no leverage. */
   get riskIndicator() {
@@ -374,7 +374,7 @@ export class MarginAccount {
     // Max deposit
     let deposit = walletAmount ?? zero
     // If depositing SOL, maximum input should still cover fees
-    if (pool.address.equals(NATIVE_MINT)) {
+    if (pool.tokenMint.equals(NATIVE_MINT)) {
       deposit = TokenAmount.max(deposit.sub(feeCover), zero)
     }
 
@@ -408,7 +408,7 @@ export class MarginAccount {
     // Max repay
     let repay = walletAmount ? TokenAmount.min(loanBalance, walletAmount) : loanBalance
     // If repaying SOL, maximum input should still cover fees
-    if (pool.address.equals(NATIVE_MINT)) {
+    if (pool.tokenMint.equals(NATIVE_MINT)) {
       repay = TokenAmount.max(repay.sub(feeCover), zero)
     }
 
