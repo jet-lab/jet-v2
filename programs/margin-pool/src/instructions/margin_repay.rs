@@ -106,7 +106,7 @@ pub fn margin_repay_handler(
     // First record a withdraw of the deposit to use for repaying in tokens
     let withdraw_amount = pool.convert_amount(
         PartialAmount::tokens_to_deposit_notes(repay_amount.tokens),
-        RoundingDirection::notes_emission(PoolAction::Withdraw),
+        PoolAction::Withdraw,
     )?;
     pool.withdraw(&withdraw_amount)?;
 

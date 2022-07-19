@@ -330,7 +330,6 @@ impl MarginPool {
     }
 
     fn calculate_shift_amount(&self, tokens: u64, action: PoolAction) -> Result<FullAmount> {
-        let rounding = RoundingDirection::notes_emission(action);
         let amount = match action {
             PoolAction::Deposit | PoolAction::Withdraw => {
                 PartialAmount::tokens_to_deposit_notes(tokens)
@@ -338,7 +337,7 @@ impl MarginPool {
             PoolAction::Borrow | PoolAction::Repay => PartialAmount::tokens_to_loan_notes(tokens),
         };
 
-        self.convert_amount(amount, rounding)
+        self.convert_amount(amount, action)
     }
 
     fn calculate_set_amount(
@@ -370,11 +369,7 @@ impl MarginPool {
         FullAmount::new_checked(tokens, notes)
     }
 
-    pub fn convert_amount(
-        &self,
-        amount: PartialAmount,
-        rounding: RoundingDirection,
-    ) -> Result<FullAmount> {
+    pub fn convert_amount(&self, amount: PartialAmount, action: PoolAction) -> Result<FullAmount> {
         let exchange_rate = match amount.kind {
             NotesKind::Deposit => self.deposit_note_exchange_rate(),
             NotesKind::Loan => self.loan_note_exchange_rate(),
@@ -383,11 +378,19 @@ impl MarginPool {
         match amount.tokens {
             Some(tokens) => FullAmount::new_checked(
                 tokens,
-                self.calculate_notes(tokens, exchange_rate, rounding)?,
+                self.calculate_notes(
+                    tokens,
+                    exchange_rate,
+                    RoundingDirection::notes_emission(action),
+                )?,
             ),
             None => match amount.notes {
                 Some(notes) => FullAmount::new_checked(
-                    self.calculate_tokens(notes, exchange_rate, rounding)?,
+                    self.calculate_tokens(
+                        notes,
+                        exchange_rate,
+                        RoundingDirection::tokens_emission(action),
+                    )?,
                     notes,
                 ),
                 None => err!(ErrorCode::InvalidAmount),
@@ -696,26 +699,24 @@ mod tests {
 
         assert_eq!(pool.deposit_note_exchange_rate().as_u64(-9), 1111111111);
 
-        let deposit_amount = pool.convert_amount(
-            PartialAmount::deposit_notes_to_tokens(12),
-            RoundingDirection::Down,
-        )?;
+        let calculate_full_amount = |notes, rounding| {
+            FullAmount::new_checked(
+                pool.calculate_tokens(notes, pool.deposit_note_exchange_rate(), rounding)?,
+                notes,
+            )
+        };
+
+        let deposit_amount = calculate_full_amount(12, RoundingDirection::Down)?;
 
         assert_eq!(deposit_amount.notes, 12);
         assert_eq!(deposit_amount.tokens, 13); // ref [0]
 
-        let deposit_amount = pool.convert_amount(
-            PartialAmount::deposit_notes_to_tokens(18),
-            RoundingDirection::Down,
-        )?;
+        let deposit_amount = calculate_full_amount(18, RoundingDirection::Down)?;
 
         assert_eq!(deposit_amount.notes, 18);
         assert_eq!(deposit_amount.tokens, 19);
 
-        let deposit_amount = pool.convert_amount(
-            PartialAmount::deposit_notes_to_tokens(12),
-            RoundingDirection::Up,
-        )?;
+        let deposit_amount = calculate_full_amount(12, RoundingDirection::Up)?;
 
         assert_eq!(deposit_amount.notes, 12);
         assert_eq!(deposit_amount.tokens, 14); // ref [1]
@@ -723,19 +724,13 @@ mod tests {
         // A user requesting 1 note should never get 0 tokens back,
         // or 1 token should never get 0 notes back
 
-        let deposit_amount = pool.convert_amount(
-            PartialAmount::deposit_notes_to_tokens(1),
-            RoundingDirection::Down,
-        )?;
+        let deposit_amount = calculate_full_amount(1, RoundingDirection::Down)?;
 
         // When depositing, 1:1 would be advantageous to the user
         assert_eq!(deposit_amount.notes, 1);
         assert_eq!(deposit_amount.tokens, 1);
 
-        let deposit_amount = pool.convert_amount(
-            PartialAmount::deposit_notes_to_tokens(1),
-            RoundingDirection::Up,
-        )?;
+        let deposit_amount = calculate_full_amount(1, RoundingDirection::Up)?;
 
         // Depositing 2 tokens for 1 note is disadvantageous to the user
         // and protects the protocol's average exchange rate
@@ -772,19 +767,20 @@ mod tests {
 
         assert_eq!(pool.deposit_note_exchange_rate().as_u64(-9), 1111111111);
 
+        let calculate_full_amount = |tokens, rounding| {
+            FullAmount::new_checked(
+                tokens,
+                pool.calculate_notes(tokens, pool.deposit_note_exchange_rate(), rounding)?,
+            )
+        };
+
         // depositing tokens should round down
-        let deposit_result = pool.convert_amount(
-            PartialAmount::tokens_to_deposit_notes(1),
-            RoundingDirection::Down,
-        );
+        let deposit_result = calculate_full_amount(1, RoundingDirection::Down);
 
         // Rounding down would return 0 notes
         assert!(deposit_result.is_err());
 
-        let deposit_amount = pool.convert_amount(
-            PartialAmount::tokens_to_deposit_notes(1),
-            RoundingDirection::Up,
-        )?;
+        let deposit_amount = calculate_full_amount(1, RoundingDirection::Up)?;
 
         // Depositing 1 token for 1 note is disadvantageous to the user as they
         // get a lower rate than the 1.111_.
@@ -799,29 +795,20 @@ mod tests {
         // entitle the user to fewer tokens on withdrawal from the pool.
 
         // We start by rounding up a bigger number. See [0]
-        let deposit_amount = pool.convert_amount(
-            PartialAmount::tokens_to_deposit_notes(9),
-            RoundingDirection::Up,
-        )?;
+        let deposit_amount = calculate_full_amount(9, RoundingDirection::Up)?;
 
         assert_eq!(deposit_amount.notes, 9);
         assert_eq!(deposit_amount.tokens, 9);
 
         // [1] shows the behaviour when rounding 12 notes up, we get 13 tokens.
-        let deposit_amount = pool.convert_amount(
-            PartialAmount::tokens_to_deposit_notes(13),
-            RoundingDirection::Up,
-        )?;
+        let deposit_amount = calculate_full_amount(13, RoundingDirection::Up)?;
 
         assert_eq!(deposit_amount.tokens, 13);
         // [1] returned 12 notes, and we get 12 notes back.
         assert_eq!(deposit_amount.notes, 12);
 
         // If we round down instead of up, we preserve value.
-        let deposit_amount = pool.convert_amount(
-            PartialAmount::tokens_to_deposit_notes(14),
-            RoundingDirection::Down,
-        )?;
+        let deposit_amount = calculate_full_amount(14, RoundingDirection::Down)?;
 
         assert_eq!(deposit_amount.tokens, 14);
         assert_eq!(deposit_amount.notes, 12);
@@ -860,18 +847,19 @@ mod tests {
 
         assert_eq!(pool.loan_note_exchange_rate().as_u64(-9), 1111111111);
 
-        let loan_amount = pool.convert_amount(
-            PartialAmount::loan_notes_to_tokens(1),
-            RoundingDirection::Down,
-        )?;
+        let calculate_full_amount = |notes, rounding| {
+            FullAmount::new_checked(
+                pool.calculate_tokens(notes, pool.loan_note_exchange_rate(), rounding)?,
+                notes,
+            )
+        };
+
+        let loan_amount = calculate_full_amount(1, RoundingDirection::Down)?;
 
         assert_eq!(loan_amount.notes, 1);
         assert_eq!(loan_amount.tokens, 1);
 
-        let loan_amount = pool.convert_amount(
-            PartialAmount::loan_notes_to_tokens(1),
-            RoundingDirection::Up,
-        )?;
+        let loan_amount = calculate_full_amount(1, RoundingDirection::Up)?;
 
         // When withdrawing, rounding up benefits the user at the cost of the
         // protocol. The user gets to borrow at a lower rate (0.5 vs 1.111_).
@@ -907,17 +895,20 @@ mod tests {
 
         assert_eq!(pool.loan_note_exchange_rate().as_u64(-9), 1111111111);
 
+        let calculate_full_amount = |tokens, rounding| {
+            FullAmount::new_checked(
+                tokens,
+                pool.calculate_notes(tokens, pool.loan_note_exchange_rate(), rounding)?,
+            )
+        };
+
         // repaying tokens rounds down
-        let loan_result = pool.convert_amount(
-            PartialAmount::tokens_to_loan_notes(1),
-            RoundingDirection::Down,
-        );
+        let loan_result = calculate_full_amount(1, RoundingDirection::Down);
 
         // Rounding down to 0 is not allowed
         assert!(loan_result.is_err());
 
-        let loan_amount = pool.convert_amount(
-            PartialAmount::tokens_to_loan_notes(1),
+        let loan_amount = calculate_full_amount(1,
             RoundingDirection::Up,
         )?;
 

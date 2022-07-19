@@ -112,7 +112,7 @@ pub fn margin_borrow_handler(
     // Then record a deposit of the same borrowed tokens
     let deposit_amount = pool.convert_amount(
         PartialAmount::tokens_to_deposit_notes(borrow_amount.tokens),
-        RoundingDirection::notes_emission(PoolAction::Deposit),
+        PoolAction::Deposit,
     )?;
     pool.deposit(&deposit_amount);
 
