@@ -299,7 +299,7 @@ export class MarginAccount {
       const poolConfig = poolConfigs[i]
       const tokenConfig = this.programs.config.tokens[poolConfig.symbol]
       const pool = this.pools?.[poolConfig.symbol]
-      if (!pool) {
+      if (!pool?.info) {
         continue
       }
 
@@ -320,13 +320,20 @@ export class MarginAccount {
 
       // Minimum amount to deposit for the pool to end a liquidation
       const collateralWeight = depositNotePosition?.valueModifier ?? pool.depositNoteMetadata.valueModifier
+      const priceComponent = bigIntToBn(pool.info.tokenPriceOracle.aggregate.priceComponent)
+      const priceExponent = pool.info.tokenPriceOracle.exponent
+      const tokenPrice = Number128.fromDecimal(priceComponent, priceExponent)
+      const lamportPrice = tokenPrice.div(Number128.fromDecimal(new BN(1), pool.decimals))
       const warningRiskLevel = Number128.fromDecimal(new BN(MarginAccount.RISK_WARNING_LEVEL * 100000), -5)
-      const liquidationEndingCollateral = collateralWeight.isZero()
-        ? TokenAmount.zero(pool.decimals)
-        : this.valuation.requiredCollateral
-            .sub(this.valuation.effectiveCollateral.mul(warningRiskLevel))
-            .div(collateralWeight.mul(warningRiskLevel))
-            .asTokenAmount(pool.decimals)
+      const liquidationEndingCollateral = (
+        collateralWeight.isZero() || lamportPrice.isZero()
+          ? Number128.ZERO
+          : this.valuation.requiredCollateral
+              .sub(this.valuation.effectiveCollateral.mul(warningRiskLevel))
+              .div(collateralWeight.mul(warningRiskLevel))
+              .div(lamportPrice)
+      )
+        .asTokenAmount(pool.decimals)
 
       // Buying power
       // FIXME
