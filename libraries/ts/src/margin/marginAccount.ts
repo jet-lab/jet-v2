@@ -332,8 +332,7 @@ export class MarginAccount {
               .sub(this.valuation.effectiveCollateral.mul(warningRiskLevel))
               .div(collateralWeight.mul(warningRiskLevel))
               .div(lamportPrice)
-      )
-        .asTokenAmount(pool.decimals)
+      ).asTokenAmount(pool.decimals)
 
       // Buying power
       // FIXME
