@@ -64,12 +64,17 @@ impl<'info> Collect<'info> {
 
 pub fn collect_handler(ctx: Context<Collect>) -> Result<()> {
     let pool = &mut ctx.accounts.margin_pool;
+    let deposit_note_exchange_rate_before_accrual = pool.deposit_note_exchange_rate();
+    let loan_note_exchange_rate_before_accrual = pool.loan_note_exchange_rate();
+
     let clock = Clock::get()?;
 
     if !pool.accrue_interest(clock.unix_timestamp) {
         msg!("could not fully accrue interest");
         return Ok(());
     }
+    let deposit_note_exchange_rate_after_accrual = pool.deposit_note_exchange_rate();
+    let loan_note_exchange_rate_after_accrual = pool.loan_note_exchange_rate();
 
     let fee_notes = pool.collect_accrued_fees();
     let pool = &ctx.accounts.margin_pool;
@@ -95,6 +100,15 @@ pub fn collect_handler(ctx: Context<Collect>) -> Result<()> {
         fee_tokens_balance: balance_amount.tokens,
         summary: pool.deref().into(),
     });
+
+    crate::check_exchange_rates(
+        &ctx.accounts.margin_pool,
+        deposit_note_exchange_rate_before_accrual,
+        loan_note_exchange_rate_before_accrual,
+        deposit_note_exchange_rate_after_accrual,
+        loan_note_exchange_rate_after_accrual,
+        err!(NewAccountingViolation),
+    )?;
 
     Ok(())
 }

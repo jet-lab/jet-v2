@@ -104,6 +104,8 @@ pub fn margin_borrow_handler(
         tokens: amount,
     };
     let pool = &mut ctx.accounts.margin_pool;
+    let deposit_note_exchange_rate_before_accrual = pool.deposit_note_exchange_rate();
+    let loan_note_exchange_rate_before_accrual = pool.loan_note_exchange_rate();
     let clock = Clock::get()?;
 
     // Make sure interest accrual is up-to-date
@@ -111,6 +113,8 @@ pub fn margin_borrow_handler(
         msg!("interest accrual is too far behind");
         return Err(ErrorCode::InterestAccrualBehind.into());
     }
+    let deposit_note_exchange_rate_after_accrual = pool.deposit_note_exchange_rate();
+    let loan_note_exchange_rate_after_accrual = pool.loan_note_exchange_rate();
 
     // First record a borrow of the tokens requested
     let borrow_amount =
@@ -153,6 +157,13 @@ pub fn margin_borrow_handler(
         Some(&ctx.accounts.loan_note_mint),
         err!(NewAccountingViolation),
     )?;
-
+    crate::check_exchange_rates(
+        &ctx.accounts.margin_pool,
+        deposit_note_exchange_rate_before_accrual,
+        loan_note_exchange_rate_before_accrual,
+        deposit_note_exchange_rate_after_accrual,
+        loan_note_exchange_rate_after_accrual,
+        err!(NewAccountingViolation),
+    )?;
     Ok(())
 }

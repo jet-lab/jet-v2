@@ -23,6 +23,7 @@ mod util;
 use anchor_spl::token;
 use instructions::*;
 
+use jet_proto_math::Number;
 pub use state::{MarginPool, MarginPoolConfig, PoolFlags};
 pub mod events;
 
@@ -243,6 +244,49 @@ pub fn check_balances(
             msg!("loan_notes mint {} pool {}", amount, pool.loan_notes);
             return error;
         }
+    }
+
+    Ok(())
+}
+pub fn check_exchange_rates(
+    pool: &MarginPool,
+    deposit_note_exchange_rate_before_accrual: Number,
+    loan_note_exchange_rate_before_accrual: Number,
+    deposit_note_exchange_rate_after_accrual: Number,
+    loan_note_exchange_rate_after_accrual: Number,
+    error: Result<()>,
+) -> Result<()> {
+    if deposit_note_exchange_rate_after_accrual < deposit_note_exchange_rate_before_accrual {
+        msg!(
+            "deposit_note_exchange_rate before accrual {} after {}",
+            deposit_note_exchange_rate_before_accrual,
+            deposit_note_exchange_rate_after_accrual
+        );
+        return error;
+    }
+    if loan_note_exchange_rate_after_accrual < loan_note_exchange_rate_before_accrual {
+        msg!(
+            "deposit_note_exchange_rate before accrual {} after {}",
+            loan_note_exchange_rate_before_accrual,
+            loan_note_exchange_rate_after_accrual
+        );
+        return error;
+    }
+    if pool.deposit_note_exchange_rate() < deposit_note_exchange_rate_after_accrual {
+        msg!(
+            "deposit_note_exchange_rate after accrual {} end {}",
+            deposit_note_exchange_rate_after_accrual,
+            pool.deposit_note_exchange_rate()
+        );
+        return error;
+    }
+    if pool.loan_note_exchange_rate() > loan_note_exchange_rate_after_accrual {
+        msg!(
+            "loan_note_exchange_rate after accrual {} end {}",
+            loan_note_exchange_rate_after_accrual,
+            pool.loan_note_exchange_rate()
+        );
+        return error;
     }
 
     Ok(())

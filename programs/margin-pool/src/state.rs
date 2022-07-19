@@ -424,14 +424,14 @@ impl MarginPool {
     }
 
     /// Get the exchange rate for deposit note -> token
-    fn deposit_note_exchange_rate(&self) -> Number {
+    pub fn deposit_note_exchange_rate(&self) -> Number {
         let deposit_notes = std::cmp::max(1, self.deposit_notes);
         let total_value = std::cmp::max(Number::ONE, self.total_value());
         (total_value - *self.total_uncollected_fees()) / Number::from(deposit_notes)
     }
 
     /// Get the exchange rate for loan note -> token
-    fn loan_note_exchange_rate(&self) -> Number {
+    pub fn loan_note_exchange_rate(&self) -> Number {
         let loan_notes = std::cmp::max(1, self.loan_notes);
         let total_borrowed = std::cmp::max(Number::ONE, *self.total_borrowed());
         total_borrowed / Number::from(loan_notes)
