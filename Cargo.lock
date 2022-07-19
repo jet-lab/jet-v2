@@ -1519,6 +1519,7 @@ dependencies = [
  "anchor-lang",
  "anchor-spl",
  "anyhow",
+ "async-trait",
  "bincode",
  "bytemuck",
  "futures",
