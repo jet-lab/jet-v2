@@ -68,11 +68,11 @@ export class Pool {
   get symbol(): MarginPools | undefined {
     return this.poolConfig?.symbol
   }
-  get vaultTokensRaw(): Number192 {
+  get vaultRaw(): Number192 {
     return Number192.fromDecimal(this.info?.vault.amount.lamports ?? new BN(0), 0)
   }
-  get vaultTokens(): TokenAmount {
-    return this.vaultTokensRaw.asTokenAmount(this.decimals)
+  get vault(): TokenAmount {
+    return this.vaultRaw.asTokenAmount(this.decimals)
   }
   get borrowedTokensRaw() {
     if (!this.info) {
@@ -84,7 +84,7 @@ export class Pool {
     return this.borrowedTokensRaw.asTokenAmount(this.decimals)
   }
   get totalValueRaw(): Number192 {
-    return this.borrowedTokensRaw.add(this.vaultTokensRaw)
+    return this.borrowedTokensRaw.add(this.vaultRaw)
   }
   get totalValue(): TokenAmount {
     return this.totalValueRaw.asTokenAmount(this.decimals)
@@ -509,7 +509,7 @@ export class Pool {
       instructions,
       provider,
       mint,
-      destination: wrappedSource
+      destination: source
     })
   }
 
@@ -749,7 +749,7 @@ export class Pool {
     feesBuffer: number
     sourceAuthority?: Address
   }): Promise<void> {
-    source = await AssociatedToken.withBeginTransferFromSource({
+    const wrappedSource = await AssociatedToken.withBeginTransferFromSource({
       instructions,
       provider: marginAccount.provider,
       mint: this.tokenMint,
@@ -764,7 +764,7 @@ export class Pool {
         loanNoteMint: this.addresses.loanNoteMint,
         vault: this.addresses.vault,
         loanAccount: loanPosition,
-        repaymentTokenAccount: source,
+        repaymentTokenAccount: wrappedSource,
         repaymentAccountAuthority: sourceAuthority,
         tokenProgram: TOKEN_PROGRAM_ID
       })
@@ -818,7 +818,6 @@ export class Pool {
       destination,
       change
     })
-
     return await sendAll(marginAccount.provider, [preInstructions, chunks(11, refreshInstructions), instructions])
   }
 
@@ -838,32 +837,30 @@ export class Pool {
     const provider = marginAccount.provider
     const mint = this.tokenMint
 
-    destination = await AssociatedToken.withBeginTransferToDestination({
+    const withdrawDestination = await AssociatedToken.withBeginTransferToDestination({
       instructions,
       provider,
       mint,
       destination
     })
 
-    if (destination) {
-      await marginAccount.withAdapterInvoke({
-        instructions,
-        adapterProgram: this.programs.config.marginPoolProgramId,
-        adapterMetadata: this.addresses.marginPoolAdapterMetadata,
-        adapterInstruction: await this.programs.marginPool.methods
-          .withdraw(change.changeKind.asParam(), change.value)
-          .accounts({
-            depositor: marginAccount.address,
-            marginPool: this.address,
-            vault: this.addresses.vault,
-            depositNoteMint: this.addresses.depositNoteMint,
-            source,
-            destination,
-            tokenProgram: TOKEN_PROGRAM_ID
-          })
-          .instruction()
-      })
-    }
+    await marginAccount.withAdapterInvoke({
+      instructions,
+      adapterProgram: this.programs.config.marginPoolProgramId,
+      adapterMetadata: this.addresses.marginPoolAdapterMetadata,
+      adapterInstruction: await this.programs.marginPool.methods
+        .withdraw(change.changeKind.asParam(), change.value)
+        .accounts({
+          depositor: marginAccount.address,
+          marginPool: this.address,
+          vault: this.addresses.vault,
+          depositNoteMint: this.addresses.depositNoteMint,
+          source,
+          destination: withdrawDestination,
+          tokenProgram: TOKEN_PROGRAM_ID
+        })
+        .instruction()
+    })
 
     AssociatedToken.withEndTransfer({
       instructions,
@@ -1019,7 +1016,7 @@ export class Pool {
       throw "must have pool info initialised"
     }
 
-    if (amount.tokens > this.vaultTokens.tokens) {
+    if (amount.tokens > this.vault.tokens) {
       throw "not enough tokens in the vault"
     }
 
