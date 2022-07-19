@@ -12,7 +12,15 @@ import {
   JetMetadataIdl
 } from "../types"
 import { MarginCluster, MarginConfig, MarginTokenConfig } from "./config"
-import { ConfirmedSignatureInfo, Connection, PublicKey, TransactionResponse } from "@solana/web3.js"
+import {
+  ConfirmedSignatureInfo,
+  Connection,
+  ParsedTransactionWithMeta,
+  PublicKey,
+  TransactionResponse,
+  ParsedInstruction,
+  ParsedInnerInstruction
+} from "@solana/web3.js"
 
 interface TokenMintsList {
   tokenMint: PublicKey
@@ -100,24 +108,26 @@ export class MarginClient {
     return responses.filter(res => res !== null) as TxAndSig[]
   }
 
-  static filterTransactions(transactions: TxAndSig[], config: MarginConfig) {
+  static filterTransactions(
+    transactions: (ParsedTransactionWithMeta | null)[],
+    config: MarginConfig
+  ): ParsedTransactionWithMeta[] {
     return transactions.filter(t => {
-      if (t.details?.meta?.logMessages?.some(tx => tx.includes(config.marginPoolProgramId.toString()))) {
+      if (t?.meta?.logMessages?.some(tx => tx.includes(config.marginPoolProgramId.toString()))) {
         return true
       } else {
         return false
       }
-    })
+    }) as ParsedTransactionWithMeta[]
   }
 
   static getTransactionData(
-    txAndSig: TxAndSig,
+    parsedTx: ParsedTransactionWithMeta,
     mints: Mints,
     config: MarginConfig,
     sigIndex: number
   ): AccountTransaction | null {
-    const transaction = txAndSig.details
-    if (!transaction.meta?.logMessages || !transaction.blockTime) {
+    if (!parsedTx.meta?.logMessages || !parsedTx.blockTime) {
       return null
     }
 
@@ -141,35 +151,46 @@ export class MarginClient {
       }
     }
 
-    if (
-      txAndSig.sig.signature ===
-      "3qRRjLtXNPtUGXS7tkEtm3pFe13jp11WzbF9FPuA7oV9GEnYJGBFiNwwfCfAtm9YEuszUPBdT7Bg65GFFXG3Hj3t"
-    ) {
-      console.log(txAndSig)
-    }
-
     // Check each logMessage string for instruction
     // Break after finding the first logMessage for which above is true
-    for (let i = 0; i < transaction.meta.logMessages.length; i++) {
-      if (isTradeInstruction(transaction.meta?.logMessages[i])) {
+    for (let i = 0; i < parsedTx.meta.logMessages.length; i++) {
+      if (isTradeInstruction(parsedTx.meta?.logMessages[i])) {
         break
       }
     }
 
-    if (!tradeAction || !transaction.meta?.postTokenBalances || !transaction.meta?.preTokenBalances) {
+    if (!tradeAction || !parsedTx.meta?.postTokenBalances || !parsedTx.meta?.preTokenBalances) {
       return null
     }
 
     const tx: Partial<AccountTransaction> = {
       tradeAction
     } as { tradeAction: PoolAction }
-    for (let i = 0; i < transaction.meta.preTokenBalances?.length; i++) {
-      const pre = transaction.meta.preTokenBalances[i]
-      const matchingPost = transaction.meta.postTokenBalances?.find(
+    for (let i = 0; i < parsedTx.meta.preTokenBalances?.length; i++) {
+      const pre = parsedTx.meta.preTokenBalances[i]
+      const matchingPost = parsedTx.meta.postTokenBalances?.find(
         post => post.mint === pre.mint && post.owner === pre.owner
       )
       if (matchingPost && matchingPost.uiTokenAmount.amount !== pre.uiTokenAmount.amount) {
         let token: MarginTokenConfig | null = null
+
+        const ixs = parsedTx.meta.innerInstructions
+        let amount = new BN(0)
+
+        ixs?.forEach((ix: ParsedInnerInstruction) => {
+          ix.instructions.forEach((inst: ParsedInstruction) => {
+            if (inst.parsed && inst.parsed.type === "transfer" && inst?.parsed.info.amount !== "0") {
+              amount = new BN(inst.parsed.info.amount)
+            }
+          })
+        })
+
+        if (tradeAction === "margin repay" || tradeAction === "borrow") {
+          const postAmount = new BN(matchingPost.uiTokenAmount.amount)
+          const preAmount = new BN(pre.uiTokenAmount.amount)
+          amount = postAmount.sub(preAmount).abs()
+        }
+
         for (let j = 0; j < Object.entries(mints).length; j++) {
           const tokenAbbrev = Object.entries(mints)[j][0]
           const tokenMints = Object.entries(mints)[j][1]
@@ -186,21 +207,19 @@ export class MarginClient {
             ) {
               break
             }
-            const postAmount = new BN(matchingPost.uiTokenAmount.amount)
-            const preAmount = new BN(pre.uiTokenAmount.amount)
 
             tx.tokenSymbol = token.symbol
             tx.tokenName = token.name
             tx.tokenDecimals = token.decimals
-            tx.tradeAmount = TokenAmount.lamports(postAmount.sub(preAmount).abs(), token.decimals)
+            tx.tradeAmount = TokenAmount.lamports(amount, token.decimals)
 
-            const dateTime = new Date(transaction.blockTime * 1000)
-            tx.timestamp = transaction.blockTime
+            const dateTime = new Date(parsedTx.blockTime * 1000)
+            tx.timestamp = parsedTx.blockTime
             tx.blockDate = dateTime.toLocaleDateString()
             tx.blockTime = dateTime.toLocaleTimeString("en-US", { hour12: false })
             tx.sigIndex = sigIndex ? sigIndex : 0
-            tx.signature = txAndSig.sig.signature
-            tx.status = txAndSig.details.meta?.err ? "error" : "success"
+            tx.signature = parsedTx.transaction.signatures[0]
+            tx.status = parsedTx.meta?.err ? "error" : "success"
             return tx as AccountTransaction
           }
         }
@@ -217,8 +236,12 @@ export class MarginClient {
   ): Promise<AccountTransaction[]> {
     const config = MarginClient.getConfig(cluster)
     const signatures = await provider.connection.getSignaturesForAddress(pubKey, undefined, "confirmed")
-    const transactions = await MarginClient.getTransactionsFromSignatures(provider, signatures)
+    const transactions = await provider.connection.getParsedTransactions(
+      signatures.map(s => s.signature),
+      "confirmed"
+    )
     const jetTransactions = MarginClient.filterTransactions(transactions, config)
+
     const parsedTransactions = jetTransactions
       .map((t, idx) => MarginClient.getTransactionData(t, mints, config, idx))
       .filter(tx => !!tx) as AccountTransaction[]
