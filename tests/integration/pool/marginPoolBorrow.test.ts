@@ -13,7 +13,6 @@ import {
   Pool,
   MarginPoolConfigData,
   PoolManager,
-  Number128,
   TokenAmount
 } from "../../../libraries/ts/src"
 
@@ -319,12 +318,12 @@ describe("margin pool borrow", () => {
     await marginPool_SOL.marginBorrow({
       marginAccount: marginAccount_A,
       pools,
-      change: PoolTokenChange.shiftBy(borrowedSOL)
+      change: PoolTokenChange.setTo(borrowedSOL)
     })
     await marginPool_USDC.marginBorrow({
       marginAccount: marginAccount_B,
       pools,
-      change: PoolTokenChange.shiftBy(borrowedUSDC)
+      change: PoolTokenChange.setTo(borrowedUSDC)
     })
     await marginPool_SOL.refresh()
     await marginPool_USDC.refresh()

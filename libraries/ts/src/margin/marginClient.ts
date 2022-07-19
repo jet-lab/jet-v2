@@ -185,10 +185,10 @@ export class MarginClient {
           })
         })
 
-        if (tradeAction === "margin repay" || tradeAction === "borrow") {
+        if (amount.eq(new BN(0))) {
           const postAmount = new BN(matchingPost.uiTokenAmount.amount)
           const preAmount = new BN(pre.uiTokenAmount.amount)
-          amount = postAmount.sub(preAmount).abs()
+          amount = new BN(postAmount.sub(preAmount).abs())
         }
 
         for (let j = 0; j < Object.entries(mints).length; j++) {
