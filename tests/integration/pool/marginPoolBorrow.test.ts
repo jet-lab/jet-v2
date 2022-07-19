@@ -13,9 +13,7 @@ import {
   Pool,
   MarginPoolConfigData,
   PoolManager,
-  Number128,
-  TokenAmount,
-  TokenFormat
+  TokenAmount
 } from "../../../libraries/ts/src"
 
 import { PythClient } from "../pyth/pythClient"
