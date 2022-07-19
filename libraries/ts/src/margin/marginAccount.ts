@@ -326,13 +326,13 @@ export class MarginAccount {
       const lamportPrice = tokenPrice.div(Number128.fromDecimal(new BN(1), pool.decimals))
       const warningRiskLevel = Number128.fromDecimal(new BN(MarginAccount.RISK_WARNING_LEVEL * 100000), -5)
       const liquidationEndingCollateral = (
-        collateralWeight.isZero()
+        collateralWeight.isZero() || lamportPrice.isZero()
           ? Number128.ZERO
           : this.valuation.requiredCollateral
               .sub(this.valuation.effectiveCollateral.mul(warningRiskLevel))
               .div(collateralWeight.mul(warningRiskLevel))
+              .div(lamportPrice)
       )
-        .div(lamportPrice)
         .asTokenAmount(pool.decimals)
 
       // Buying power
