@@ -28,12 +28,21 @@ pub struct MarginRefreshPosition<'info> {
     pub margin_account: AccountLoader<'info, MarginAccount>,
 
     /// The pool to be refreshed
-    #[account(has_one = token_price_oracle)]
+    #[account(
+        has_one = token_price_oracle,
+        has_one = loan_note_mint,
+        has_one = deposit_note_mint,
+        has_one = vault,
+    )]
     pub margin_pool: Account<'info, MarginPool>,
 
     /// The pyth price account for the pool's token
     /// CHECK:
     pub token_price_oracle: AccountInfo<'info>,
+
+    pub loan_note_mint: AccountInfo<'info>,
+    pub deposit_note_mint: AccountInfo<'info>,
+    pub vault: AccountInfo<'info>,
 }
 
 pub fn margin_refresh_position_handler(ctx: Context<MarginRefreshPosition>) -> Result<()> {
@@ -49,8 +58,12 @@ pub fn margin_refresh_position_handler(ctx: Context<MarginRefreshPosition>) -> R
             return err!(ErrorCode::InvalidOracle);
         }
     };
-
-    let prices = pool.calculate_prices(&token_oracle)?;
+    let prices = pool
+        .join()
+        .with_vault(&ctx.accounts.vault)
+        .with_deposit_note_mint(&ctx.accounts.deposit_note_mint)
+        .with_loan_note_mint(&ctx.accounts.loan_note_mint)
+        .calculate_prices(&token_oracle)?;
 
     // Tell the margin program what the current prices are
     jet_margin::write_adapter_result(

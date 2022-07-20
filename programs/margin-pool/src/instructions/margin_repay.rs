@@ -21,9 +21,10 @@ use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Burn, Token, TokenAccount};
 
 use jet_margin::MarginAccount;
+use jet_proto_math::Number;
 
+use crate::ErrorCode;
 use crate::{events, state::*, ChangeKind, TokenChange};
-use crate::{Amount, ErrorCode};
 
 #[derive(Accounts)]
 pub struct MarginRepay<'info> {
@@ -34,8 +35,11 @@ pub struct MarginRepay<'info> {
     /// The pool with the outstanding loan
     #[account(mut,
               has_one = deposit_note_mint,
-              has_one = loan_note_mint)]
+              has_one = loan_note_mint,
+              has_one = vault)]
     pub margin_pool: Account<'info, MarginPool>,
+
+    pub vault: AccountInfo<'info>,
 
     /// The mint for the notes representing loans from the pool
     /// CHECK:
@@ -91,36 +95,45 @@ pub fn margin_repay_handler(
         kind: change_kind,
         tokens: amount,
     };
-    let pool = &mut ctx.accounts.margin_pool;
+    let mut pool = ctx
+        .accounts
+        .margin_pool
+        .join_mut()
+        .with_vault(&ctx.accounts.vault)
+        .with_loan_note_mint(&ctx.accounts.loan_note_mint)
+        .with_deposit_note_mint(&ctx.accounts.deposit_note_mint);
     let clock = Clock::get()?;
 
     // Make sure interest accrual is up-to-date
-    if !pool.accrue_interest(clock.unix_timestamp) {
+    if !pool.accrue_interest(clock.unix_timestamp)? {
         msg!("interest accrual is too far behind");
         return Err(ErrorCode::InterestAccrualBehind.into());
     }
 
     // Amount the user desires to repay
-    let repay_amount =
-        pool.calculate_full_amount(ctx.accounts.loan_account.amount, change, PoolAction::Repay)?;
+    let repay_amount = pool.loan_amount()?.from_request(
+        token::accessor::amount(&ctx.accounts.loan_account.to_account_info())?,
+        change,
+        PoolAction::Repay,
+    )?;
+    let repay_tokens = repay_amount.as_token_transfer(FromUser);
+    let repay_notes = repay_amount.as_note_transfer(FromUser);
 
     // First record a withdraw of the deposit to use for repaying in tokens
-    let withdraw_amount =
-        pool.convert_amount(Amount::tokens(repay_amount.tokens), PoolAction::Withdraw)?;
-    msg!(
-        "Withdrawing [{} tokens, {} notes] from deposit pool",
-        withdraw_amount.tokens,
-        withdraw_amount.notes
-    );
-    pool.withdraw(&withdraw_amount)?;
+    let withdraw_notes = pool
+        .deposit_amount()?
+        .from_tokens(Number::from(repay_tokens))
+        .as_note_transfer(FromUser);
+
+    msg!("Withdrawing [{} notes] from deposit pool", withdraw_notes);
 
     // Then record a repay using the withdrawn tokens
     msg!(
         "Repaying [{} tokens, {} notes] into loan pool",
-        repay_amount.tokens,
-        repay_amount.notes
+        repay_tokens,
+        repay_notes
     );
-    pool.repay(&repay_amount)?;
+    pool.pool.repay(repay_tokens)?;
 
     // Finish by burning the loan and deposit notes
     let pool = &ctx.accounts.margin_pool;
@@ -128,11 +141,11 @@ pub fn margin_repay_handler(
 
     token::burn(
         ctx.accounts.burn_loan_context().with_signer(&signer),
-        repay_amount.notes,
+        repay_notes,
     )?;
     token::burn(
         ctx.accounts.burn_deposit_context().with_signer(&signer),
-        withdraw_amount.notes,
+        withdraw_notes,
     )?;
 
     emit!(events::MarginRepay {
@@ -140,9 +153,9 @@ pub fn margin_repay_handler(
         user: ctx.accounts.margin_account.key(),
         loan_account: ctx.accounts.loan_account.key(),
         deposit_account: ctx.accounts.deposit_account.key(),
-        repaid_tokens: repay_amount.tokens,
-        repaid_loan_notes: repay_amount.notes,
-        repaid_deposit_notes: withdraw_amount.notes,
+        repaid_tokens: repay_tokens,
+        repaid_loan_notes: repay_notes,
+        repaid_deposit_notes: withdraw_notes,
         summary: pool.deref().into(),
     });
 

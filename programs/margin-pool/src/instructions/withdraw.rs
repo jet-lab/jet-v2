@@ -90,32 +90,37 @@ pub fn withdraw_handler(
         kind: change_kind,
         tokens: amount,
     };
-    let pool = &mut ctx.accounts.margin_pool;
+    let mut pool = ctx
+        .accounts
+        .margin_pool
+        .join_mut()
+        .with_vault(&ctx.accounts.vault)
+        .with_deposit_note_mint(&ctx.accounts.deposit_note_mint);
     let clock = Clock::get()?;
 
     // Make sure interest accrual is up-to-date
-    if !pool.accrue_interest(clock.unix_timestamp) {
+    if !pool.accrue_interest(clock.unix_timestamp)? {
         msg!("interest accrual is too far behind");
         return Err(ErrorCode::InterestAccrualBehind.into());
     }
 
-    let withdraw_amount = pool.calculate_full_amount(
+    let withdraw_amount = pool.deposit_amount()?.from_request(
         token::accessor::amount(&ctx.accounts.source.to_account_info())?,
         change,
         PoolAction::Withdraw,
     )?;
-    pool.withdraw(&withdraw_amount)?;
+    let withdraw_tokens = withdraw_amount.as_token_transfer(ToUser);
+    let withdraw_notes = withdraw_amount.as_note_transfer(FromUser);
 
     let pool = &ctx.accounts.margin_pool;
     let signer = [&pool.signer_seeds()?[..]];
-
     token::transfer(
         ctx.accounts.transfer_context().with_signer(&signer),
-        withdraw_amount.tokens,
+        withdraw_tokens,
     )?;
     token::burn(
         ctx.accounts.burn_note_context().with_signer(&signer),
-        withdraw_amount.notes,
+        withdraw_notes,
     )?;
 
     emit!(events::Withdraw {
@@ -123,8 +128,8 @@ pub fn withdraw_handler(
         user: ctx.accounts.depositor.key(),
         source: ctx.accounts.source.key(),
         destination: ctx.accounts.destination.key(),
-        withdraw_tokens: withdraw_amount.tokens,
-        withdraw_notes: withdraw_amount.notes,
+        withdraw_tokens,
+        withdraw_notes,
         summary: pool.deref().into(),
     });
 
