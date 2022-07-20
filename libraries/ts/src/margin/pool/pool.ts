@@ -1162,7 +1162,7 @@ export class Pool {
     const effectiveCollateral = marginAccount.valuation.effectiveCollateral.sub(
       amountValue.mul(Number128.ONE.sub(depositNoteValueModifer))
     )
-    const riskIndicator: number = !effectiveCollateral.isZero()
+    const riskIndicator: number = !effectiveCollateral.isZero() && effectiveCollateral.gt(Number128.ZERO)
       ? marginAccount.valuation.requiredCollateral
           .add(amountValue.div(loanNoteValueModifer))
           .div(effectiveCollateral)
