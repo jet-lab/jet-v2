@@ -1,5 +1,7 @@
-* @suscd @partiallysorted @nevi-me @dnut @callensm @jetjake @tristyn
-.dockerignore @callensm @suscd @jetjake @davodesign84
-.github/ @callensm @suscd @jetjake @davodesign84
-Dockerfile @callensm @suscd @jetjake @davodesign84
+* @suscd @partiallysorted @nevi-me @dnut @jetjake @tristyn
+.dockerignore @dnut @suscd @jetjake @davodesign84
+.github/ @dnut @suscd @jetjake @davodesign84
+Dockerfile @dnut @suscd @jetjake @davodesign84
+programs/ @dnut @suscd
+
 
