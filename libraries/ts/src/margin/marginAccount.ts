@@ -415,7 +415,14 @@ export class MarginAccount {
     let repay = walletAmount ? TokenAmount.min(loanBalance, walletAmount) : loanBalance
     // If repaying SOL, maximum input should still cover fees
     if (pool.tokenMint.equals(NATIVE_MINT)) {
-      repay = TokenAmount.max(repay.sub(feeCover), zero)
+      const tokenDifference = walletAmount && walletAmount.tokens - TokenAmount.max(repay, zero).tokens
+      if (tokenDifference && tokenDifference > 0.07) {
+        repay = TokenAmount.max(loanBalance, zero)
+      } else if (tokenDifference && tokenDifference > 0 && tokenDifference < 0.07) {
+        repay = TokenAmount.max(walletAmount.sub(feeCover), zero)
+      } else {
+        repay = TokenAmount.max(repay.sub(feeCover), zero)
+      }
     }
 
     // Max swap
