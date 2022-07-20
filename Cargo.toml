@@ -9,3 +9,6 @@ members = [
 
 [patch.crates-io]
 jet-proto-math = { git = "https://github.com/jet-lab/program-libraries", branch = "main" }
+
+[profile.release]
+overflow-checks = true
