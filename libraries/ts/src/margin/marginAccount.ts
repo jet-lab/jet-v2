@@ -114,11 +114,12 @@ export class MarginAccount {
   get liquidator() {
     return this.info?.marginAccount.liquidator
   }
-  get liquidaton() {
+  //This tracks the state of an in-progress liquidation
+  get liquidation() {
     return this.info?.marginAccount.liquidation
   }
   get isBeingLiquidated() {
-    return !this.info?.marginAccount.liquidation.equals(PublicKey.default)
+    return this.info?.marginAccount && !this.info?.marginAccount.liquidation.equals(PublicKey.default)
   }
   /** A number where 1 and above is subject to liquidation and 0 is no leverage. */
   get riskIndicator() {
@@ -921,7 +922,7 @@ export class MarginAccount {
       .accounts({
         authority: this.owner,
         marginAccount: this.address,
-        liquidation: this.liquidaton
+        liquidation: this.liquidation
       })
       .instruction()
     instructions.push(ix)
