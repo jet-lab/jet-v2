@@ -1061,7 +1061,7 @@ export class Pool {
     const amountValue = Number128.from(numberToBn(amount.tokens * this._prices.priceValue.asNumber()))
 
     const effectiveCollateral = marginAccount.valuation.effectiveCollateral.sub(amountValue)
-    const riskIndicator: number = !effectiveCollateral.isZero()
+    const riskIndicator: number = !effectiveCollateral.isZero() && effectiveCollateral.gt(Number128.ZERO)
       ? marginAccount.valuation.requiredCollateral
           .add(amountValue.div(loanNoteValueModifer))
           .div(effectiveCollateral)
