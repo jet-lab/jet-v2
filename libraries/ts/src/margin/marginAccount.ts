@@ -418,8 +418,6 @@ export class MarginAccount {
       const tokenDifference = walletAmount && walletAmount.tokens - TokenAmount.max(repay, zero).tokens
       if (tokenDifference && tokenDifference > 0.07) {
         repay = TokenAmount.max(loanBalance, zero)
-      } else if (tokenDifference && tokenDifference > 0 && tokenDifference < 0.07) {
-        repay = TokenAmount.max(walletAmount.sub(feeCover), zero)
       } else {
         repay = TokenAmount.max(repay.sub(feeCover), zero)
       }
