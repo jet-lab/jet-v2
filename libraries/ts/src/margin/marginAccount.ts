@@ -383,7 +383,7 @@ export class MarginAccount {
     }
 
     // Max deposit
-    const deposit = walletAmount
+    let deposit = walletAmount
 
     const priceExponent = pool.info.tokenPriceOracle.exponent
     const priceComponent = bigIntToBn(pool.info.tokenPriceOracle.aggregate.priceComponent)
@@ -414,9 +414,6 @@ export class MarginAccount {
 
     // Max repay
     let repay = TokenAmount.min(loanBalance, walletAmount)
-    if (pool.tokenMint.equals(NATIVE_MINT) && loanBalance.sub(walletAmount).tokens > 0.07) {
-      repay = TokenAmount.min(loanBalance, walletAmount.add(TokenAmount.tokens(0.07, pool.decimals)))
-    }
 
     // Max swap
     const swap = withdraw
