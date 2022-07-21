@@ -107,7 +107,7 @@ pub fn deposit_handler(ctx: Context<Deposit>, change_kind: ChangeKind, amount: u
     let signer = [&pool.signer_seeds()?[..]];
 
     token::transfer(
-        ctx.accounts.transfer_source_context().with_signer(&signer),
+        ctx.accounts.transfer_source_context(),
         deposit_amount.tokens,
     )?;
     token::mint_to(
