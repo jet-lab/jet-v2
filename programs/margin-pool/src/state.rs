@@ -297,10 +297,8 @@ impl MarginPool {
             (price_value * deposit_note_exchange_rate).as_u64_rounded(pyth_price.expo),
         )
         .unwrap();
-        let deposit_note_conf = u64::try_from(
-            (conf_value * deposit_note_exchange_rate).as_u64_rounded(pyth_price.expo),
-        )
-        .unwrap();
+        let deposit_note_conf =
+            (conf_value * deposit_note_exchange_rate).as_u64_rounded(pyth_price.expo);
         let deposit_note_twap = i64::try_from(
             (twap_value * deposit_note_exchange_rate).as_u64_rounded(pyth_price.expo),
         )
@@ -308,9 +306,7 @@ impl MarginPool {
         let loan_note_price =
             i64::try_from((price_value * loan_note_exchange_rate).as_u64_rounded(pyth_price.expo))
                 .unwrap();
-        let loan_note_conf =
-            u64::try_from((conf_value * loan_note_exchange_rate).as_u64_rounded(pyth_price.expo))
-                .unwrap();
+        let loan_note_conf = (conf_value * loan_note_exchange_rate).as_u64_rounded(pyth_price.expo);
         let loan_note_twap =
             i64::try_from((twap_value * loan_note_exchange_rate).as_u64_rounded(pyth_price.expo))
                 .unwrap();
