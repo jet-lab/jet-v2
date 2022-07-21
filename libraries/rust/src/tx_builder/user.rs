@@ -350,7 +350,7 @@ impl MarginTxBuilder {
         amount_in: Amount,
         minimum_amount_out: Amount,
     ) -> Result<Transaction> {
-        let mut instructions = vec![ComputeBudgetInstruction::set_compute_unit_limit(300_000)];
+        let mut instructions = vec![];
         let source_pool = MarginPoolIxBuilder::new(*source_token_mint);
         let destination_pool = MarginPoolIxBuilder::new(*destination_token_mint);
 
