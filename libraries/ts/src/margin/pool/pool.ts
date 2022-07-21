@@ -24,6 +24,7 @@ import { chunks, Number128, Number192, sendAll, sleep } from "../../utils"
 import { PositionTokenMetadata } from "../positionTokenMetadata"
 
 export type PoolAction = "deposit" | "withdraw" | "borrow" | "repay" | "swap" | "transfer"
+
 export interface MarginPoolAddresses {
   /** The pool's token mint i.e. BTC or SOL mint address*/
   tokenMint: PublicKey

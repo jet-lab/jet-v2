@@ -2,7 +2,8 @@ name: Devnet Deployment
 
 on:
   push:
-    branches: [master]
+    branches: 
+      - "master"
     paths:
       - "programs/**/*.rs"
       - "programs/**/*.toml"
