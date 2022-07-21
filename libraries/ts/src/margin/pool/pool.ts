@@ -1061,13 +1061,14 @@ export class Pool {
     const amountValue = Number128.from(numberToBn(amount.tokens * this._prices.priceValue.asNumber()))
 
     const effectiveCollateral = marginAccount.valuation.effectiveCollateral.sub(amountValue)
-    const riskIndicator: number =
-      !effectiveCollateral.isZero() && effectiveCollateral.gt(Number128.ZERO)
-        ? marginAccount.valuation.requiredCollateral
-            .add(amountValue.div(loanNoteValueModifer))
-            .div(effectiveCollateral)
-            .asNumber()
-        : 0
+    const riskIndicator: number = effectiveCollateral.gt(Number128.ZERO)
+      ? marginAccount.valuation.requiredCollateral
+          .add(amountValue.div(loanNoteValueModifer))
+          .div(effectiveCollateral)
+          .asNumber()
+      : effectiveCollateral.lt(Number128.ZERO)
+      ? 1
+      : 0
 
     return { riskIndicator, depositRate, borrowRate }
   }
@@ -1136,6 +1137,8 @@ export class Pool {
           .sub(amountValue.div(loanNoteValueModifer))
           .div(effectiveCollateral)
           .asNumber()
+      : effectiveCollateral.lt(Number128.ZERO)
+      ? 1
       : 0
 
     return { riskIndicator, depositRate, borrowRate }
@@ -1163,13 +1166,12 @@ export class Pool {
     const effectiveCollateral = marginAccount.valuation.effectiveCollateral.sub(
       amountValue.mul(Number128.ONE.sub(depositNoteValueModifer))
     )
-    const riskIndicator: number =
-      !effectiveCollateral.isZero() && effectiveCollateral.gt(Number128.ZERO)
-        ? marginAccount.valuation.requiredCollateral
-            .add(amountValue.div(loanNoteValueModifer))
-            .div(effectiveCollateral)
-            .asNumber()
-        : 0
+    const riskIndicator: number = effectiveCollateral.gt(Number128.ZERO)
+      ? marginAccount.valuation.requiredCollateral
+          .add(amountValue.div(loanNoteValueModifer))
+          .div(effectiveCollateral)
+          .asNumber()
+      : 0
 
     return { riskIndicator, depositRate, borrowRate }
   }
