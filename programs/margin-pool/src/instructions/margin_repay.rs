@@ -22,8 +22,7 @@ use anchor_spl::token::{self, Burn, Token, TokenAccount};
 
 use jet_margin::MarginAccount;
 
-use crate::{events, state::*, ChangeKind, TokenChange};
-use crate::{Amount, ErrorCode};
+use crate::{events, state::*, ChangeKind, ErrorCode};
 
 #[derive(Accounts)]
 pub struct MarginRepay<'info> {
@@ -87,10 +86,6 @@ pub fn margin_repay_handler(
     change_kind: ChangeKind,
     amount: u64,
 ) -> Result<()> {
-    let change = TokenChange {
-        kind: change_kind,
-        tokens: amount,
-    };
     let pool = &mut ctx.accounts.margin_pool;
     let clock = Clock::get()?;
 
@@ -101,18 +96,25 @@ pub fn margin_repay_handler(
     }
 
     // Amount the user desires to repay
-    let repay_amount =
-        pool.calculate_full_amount(ctx.accounts.loan_account.amount, change, PoolAction::Repay)?;
+    let repay_amount = pool.calculate_dispersement(
+        amount,
+        ctx.accounts.loan_account.amount,
+        change_kind,
+        PoolAction::Repay,
+    )?;
 
     // First record a withdraw of the deposit to use for repaying in tokens
-    let withdraw_amount =
-        pool.convert_amount(Amount::tokens(repay_amount.tokens), PoolAction::Withdraw)?;
+    let withdraw_amount = pool.convert_amount(
+        PartialAmount::tokens_to_deposit_notes(repay_amount.tokens),
+        PoolAction::Withdraw,
+    )?;
+    pool.withdraw(&withdraw_amount)?;
+
     msg!(
         "Withdrawing [{} tokens, {} notes] from deposit pool",
         withdraw_amount.tokens,
         withdraw_amount.notes
     );
-    pool.withdraw(&withdraw_amount)?;
 
     // Then record a repay using the withdrawn tokens
     msg!(

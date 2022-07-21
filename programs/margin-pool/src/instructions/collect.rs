@@ -20,7 +20,7 @@ use std::ops::Deref;
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, MintTo, Token, TokenAccount};
 
-use crate::{events, state::*, Amount};
+use crate::{events, state::*};
 
 #[derive(Accounts)]
 pub struct Collect<'info> {
@@ -81,10 +81,13 @@ pub fn collect_handler(ctx: Context<Collect>) -> Result<()> {
         fee_notes,
     )?;
 
-    let claimed_amount = pool.convert_amount(Amount::notes(fee_notes), PoolAction::Withdraw)?;
-    let balance_amount = pool.convert_amount(
-        Amount::notes(ctx.accounts.vault.amount),
+    let claimed_amount = pool.convert_amount(
+        PartialAmount::deposit_notes_to_tokens(fee_notes),
         PoolAction::Withdraw,
+    )?;
+    let balance_amount = pool.convert_amount(
+        PartialAmount::tokens_to_deposit_notes(ctx.accounts.vault.amount),
+        PoolAction::Deposit,
     )?;
 
     emit!(events::Collect {

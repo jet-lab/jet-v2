@@ -22,7 +22,7 @@ mod state;
 mod util;
 use instructions::*;
 
-pub use state::{MarginPool, MarginPoolConfig, PoolFlags};
+pub use state::{FullAmount, MarginPool, MarginPoolConfig, PoolFlags};
 pub mod events;
 
 declare_id!("JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ");
@@ -125,10 +125,6 @@ impl TokenChange {
             tokens: value,
         }
     }
-
-    pub fn amount(&self) -> Amount {
-        Amount::tokens(self.tokens)
-    }
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone, Copy)]
@@ -136,39 +132,6 @@ impl TokenChange {
 pub enum ChangeKind {
     SetTo,
     ShiftBy,
-}
-
-#[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone, Copy)]
-pub enum AmountKind {
-    Tokens,
-    Notes,
-}
-
-/// Represent an amount of some value (like tokens, or notes)
-#[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone, Copy)]
-pub struct Amount {
-    kind: AmountKind,
-    value: u64,
-}
-
-impl Amount {
-    pub const fn tokens(value: u64) -> Self {
-        Self {
-            kind: AmountKind::Tokens,
-            value,
-        }
-    }
-
-    pub const fn notes(value: u64) -> Self {
-        Self {
-            kind: AmountKind::Notes,
-            value,
-        }
-    }
-
-    pub fn value(&self) -> u64 {
-        self.value
-    }
 }
 
 #[error_code]
@@ -191,7 +154,7 @@ pub enum ErrorCode {
 
     /// 141104 - An invalid amount has been supplied
     ///
-    /// This is used when an `Amount` has an invalid value
+    /// This is used when a `PartialAmount` has an invalid value
     #[msg("An invalid amount has been supplied")]
     InvalidAmount,
 
@@ -202,9 +165,15 @@ pub enum ErrorCode {
     InvalidOracle,
 
     /// 141107 - Tried to set an invalid token value
-    #[msg("An invalid `SetTo` value was given for a `TokenChange`")]
+    #[msg("An unreachable `SetTo` value was given")]
     InvalidSetTo,
 
     /// 141108 - Attempt repayment of more tokens than total outstanding
     RepaymentExceedsTotalOutstanding,
+
+    /// 141109 - Attempted to unwrap an empty `notes` value for the `Amount`
+    NotesNotCalculated,
+
+    /// 141110 - Attempted to unwrap an empty `tokens` value for the `Amount`
+    TokensNotCalculated,
 }

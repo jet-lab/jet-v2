@@ -19,8 +19,7 @@ use anchor_lang::prelude::*;
 
 use jet_metadata::ControlAuthority;
 
-use crate::ErrorCode;
-use crate::{events, state::*};
+use crate::{events, state::*, ErrorCode};
 
 #[derive(Accounts)]
 pub struct Configure<'info> {

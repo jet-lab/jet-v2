@@ -19,8 +19,7 @@ use anchor_lang::prelude::*;
 
 use jet_margin::{AdapterResult, MarginAccount, PositionChange, PriceChangeInfo};
 
-use crate::state::*;
-use crate::ErrorCode;
+use crate::{state::*, ErrorCode};
 
 #[derive(Accounts)]
 pub struct MarginRefreshPosition<'info> {

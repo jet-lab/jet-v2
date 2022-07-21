@@ -31,7 +31,7 @@ use solana_sdk::system_program;
 use solana_sdk::{pubkey::Pubkey, transaction::Transaction};
 
 use jet_control::TokenMetadataParams;
-use jet_margin_pool::{Amount, MarginPool, MarginPoolConfig, TokenChange};
+use jet_margin_pool::{MarginPool, MarginPoolConfig, TokenChange};
 use jet_margin_sdk::tx_builder::MarginTxBuilder;
 use jet_metadata::{LiquidatorMetadata, MarginAdapterMetadata, TokenKind, TokenMetadata};
 use jet_simulation::{send_and_confirm, solana_rpc_api::SolanaRpcClient};
@@ -319,8 +319,8 @@ impl MarginUser {
         transit_source_account: &Pubkey,
         transit_destination_account: &Pubkey,
         swap_pool: &SwapPool,
-        amount_in: Amount,
-        minimum_amount_out: Amount,
+        amount_in: u64,
+        minimum_amount_out: u64,
     ) -> Result<(), Error> {
         // Determine the order of token_a and token_b based on direction of swap
         let (source_token, destination_token) = if source_mint == &swap_pool.mint_a {
