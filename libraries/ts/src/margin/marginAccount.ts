@@ -374,15 +374,16 @@ export class MarginAccount {
       }
     }
 
-    const walletAmount = pool.symbol && this.walletTokens?.map[pool.symbol].amount
-    const feeCover = new TokenAmount(new BN(70000000), pool.decimals)
+    let walletAmount = (pool.symbol && this.walletTokens?.map[pool.symbol].amount) ?? TokenAmount.zero(pool.decimals)
+
+    // If depsiting or repaying SOL, maximum input should still cover fees
+    if (pool.tokenMint.equals(NATIVE_MINT)) {
+      const feeCover = TokenAmount.tokens(0.07, pool.decimals)
+      walletAmount = TokenAmount.max(walletAmount.sub(feeCover), TokenAmount.zero(pool.decimals))
+    }
 
     // Max deposit
-    let deposit = walletAmount ?? zero
-    // If depositing SOL, maximum input should still cover fees
-    if (pool.tokenMint.equals(NATIVE_MINT)) {
-      deposit = TokenAmount.max(deposit.sub(feeCover), zero)
-    }
+    let deposit = walletAmount
 
     const priceExponent = pool.info.tokenPriceOracle.exponent
     const priceComponent = bigIntToBn(pool.info.tokenPriceOracle.aggregate.priceComponent)
@@ -412,16 +413,7 @@ export class MarginAccount {
     borrow = TokenAmount.max(borrow, zero)
 
     // Max repay
-    let repay = walletAmount ? TokenAmount.min(loanBalance, walletAmount) : loanBalance
-    // If repaying SOL, maximum input should still cover fees
-    if (pool.tokenMint.equals(NATIVE_MINT)) {
-      const tokenDifference = walletAmount && walletAmount.tokens - TokenAmount.max(repay, zero).tokens
-      if (tokenDifference && tokenDifference > 0.07) {
-        repay = TokenAmount.max(loanBalance, zero)
-      } else {
-        repay = TokenAmount.max(repay.sub(feeCover), zero)
-      }
-    }
+    let repay = TokenAmount.min(loanBalance, walletAmount)
 
     // Max swap
     const swap = withdraw
