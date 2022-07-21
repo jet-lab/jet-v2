@@ -193,7 +193,7 @@ impl MarginAccount {
         free_position.exponent = -(decimals as i16);
         free_position.address = address;
         free_position.adapter = adapter;
-        free_position.kind = kind;
+        free_position.kind = kind.into_integer();
         free_position.balance = 0;
         free_position.value_modifier = value_modifier;
         free_position.max_staleness = max_staleness;
@@ -245,7 +245,7 @@ impl MarginAccount {
             Some(p) => p,
         };
 
-        position.kind = kind;
+        position.kind = kind.into_integer();
         position.value_modifier = value_modifier;
         position.max_staleness = max_staleness;
 
@@ -390,7 +390,7 @@ impl MarginAccount {
             if position.balance == 0 {
                 continue;
             }
-            let kind = position.kind;
+            let kind = position.kind();
             let stale_reason = {
                 let balance_age = timestamp - position.balance_timestamp;
                 let price_quote_age = timestamp - position.price.timestamp;
@@ -576,7 +576,7 @@ impl TryFrom<PriceChangeInfo> for PriceInfo {
 #[repr(u32)]
 pub enum PositionKind {
     /// The position is not worth anything
-    NoValue,
+    NoValue = 0,
 
     /// The position contains a balance of available collateral
     Deposit,
@@ -602,7 +602,7 @@ impl Default for PositionKind {
 }
 
 #[assert_size(192)]
-#[derive(AnchorSerialize, AnchorDeserialize, Default, Clone, Copy)]
+#[derive(Pod, Zeroable, AnchorSerialize, AnchorDeserialize, Default, Clone, Copy)]
 #[repr(C)]
 pub struct AccountPosition {
     /// The address of the token/mint of the asset
@@ -627,7 +627,7 @@ pub struct AccountPosition {
     pub price: PriceInfo,
 
     /// The kind of balance this position contains
-    pub kind: PositionKind,
+    pub kind: u32,
 
     /// The exponent for the token value
     pub exponent: i16,
@@ -645,7 +645,7 @@ pub struct AccountPosition {
 }
 
 bitflags::bitflags! {
-    #[derive(AnchorSerialize, AnchorDeserialize, Default)]
+    #[derive(Zeroable, AnchorSerialize, AnchorDeserialize, Default)]
     pub struct AdapterPositionFlags: u8 {
         /// The position may never be removed by the user, even if the balance remains at zero,
         /// until the adapter explicitly unsets this flag.
@@ -659,7 +659,14 @@ bitflags::bitflags! {
     }
 }
 
+// `AdapterPositionFlags` fits requriements for `Pod`, but bitflags macro makes auto-deriving it problematic
+unsafe impl Pod for AdapterPositionFlags {}
+
 impl AccountPosition {
+    pub fn kind(&self) -> PositionKind {
+        PositionKind::from_integer(self.kind).unwrap()
+    }
+
     pub fn calculate_value(&mut self) {
         self.value = (Number128::from_decimal(self.balance, self.exponent)
             * Number128::from_decimal(self.price.value, self.price.exponent))
@@ -671,13 +678,13 @@ impl AccountPosition {
     }
 
     pub fn collateral_value(&self) -> Number128 {
-        assert_eq!(self.kind, PositionKind::Deposit);
+        assert_eq!(self.kind(), PositionKind::Deposit);
 
         Number128::from_decimal(self.value_modifier, -2) * self.value()
     }
 
     pub fn required_collateral_value(&self) -> Number128 {
-        assert_eq!(self.kind, PositionKind::Claim);
+        assert_eq!(self.kind(), PositionKind::Claim);
 
         let modifier = Number128::from_decimal(self.value_modifier, -2);
 
@@ -706,7 +713,7 @@ impl AccountPosition {
 
     fn may_be_registered_or_closed(&self, approvals: &[Approver]) -> bool {
         approvals.contains(&Approver::MarginAccountAuthority)
-            && match self.kind {
+            && match self.kind() {
                 PositionKind::NoValue | PositionKind::Deposit => true,
                 PositionKind::Claim => approvals.contains(&Approver::Adapter(self.adapter)),
             }
@@ -732,7 +739,7 @@ impl std::fmt::Debug for AccountPosition {
             .field("balance", &self.balance)
             .field("balance_timestamp", &self.balance_timestamp)
             .field("price", &self.price)
-            .field("kind", &self.kind)
+            .field("kind", &self.kind())
             .field("exponent", &self.exponent)
             .field("value_modifier", &self.value_modifier)
             .field("max_staleness", &self.max_staleness);
@@ -769,7 +776,7 @@ impl Serialize for AccountPosition {
         s.serialize_field("balance", &self.balance)?;
         s.serialize_field("balanceTimestamp", &self.balance_timestamp)?;
         s.serialize_field("price", &self.price)?;
-        s.serialize_field("kind", &self.kind)?;
+        s.serialize_field("kind", &self.kind())?;
         s.serialize_field("exponent", &self.exponent)?;
         s.serialize_field("valueModifier", &self.value_modifier)?;
         s.serialize_field("maxStaleness", &self.max_staleness)?;
@@ -788,7 +795,6 @@ pub struct AccountPositionKey {
     index: usize,
 }
 
-///
 #[assert_size(7432)]
 #[derive(AnchorSerialize, AnchorDeserialize, Default, Pod, Zeroable, Debug, Clone, Copy)]
 #[repr(C)]
@@ -852,9 +858,9 @@ impl AccountPositionList {
         if &position.address != account {
             return err!(ErrorCode::PositionNotRegistered);
         }
+
         // Remove the position
-        let freed_position = bytemuck::bytes_of_mut(&mut self.positions[map.index]);
-        freed_position.fill(0);
+        self.positions[map.index] = Zeroable::zeroed();
 
         // Move the map elements up by 1 to replace map position being removed
         (&mut self.map).copy_within(map_index + 1..self.length, map_index);
@@ -892,9 +898,6 @@ impl AccountPositionList {
     }
 }
 
-unsafe impl Zeroable for AccountPosition {}
-unsafe impl Pod for AccountPosition {}
-
 /// State of an in-progress liquidation
 #[account(zero_copy)]
 #[repr(C, align(8))]
@@ -927,11 +930,11 @@ impl Liquidation {
     }
 
     pub fn equity_change_mut(&mut self) -> &mut Number128 {
-        unsafe { std::mem::transmute(&mut self.equity_change) }
+        bytemuck::cast_mut(&mut self.equity_change)
     }
 
     pub fn equity_change(&self) -> &Number128 {
-        unsafe { std::mem::transmute(&self.equity_change) }
+        bytemuck::cast_ref(&self.equity_change)
     }
 
     pub fn min_equity_change(&self) -> Number128 {
@@ -1107,7 +1110,7 @@ mod tests {
             balance: u64::default(),
             balance_timestamp: u64::default(),
             price: PriceInfo::default(),
-            kind: PositionKind::default(),
+            kind: 0,
             exponent: i16::default(),
             value_modifier: u16::default(),
             max_staleness: u64::default(),

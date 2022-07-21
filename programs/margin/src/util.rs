@@ -22,6 +22,7 @@ use anchor_lang::{
     prelude::{msg, Clock, SolanaSysvar},
     solana_program::instruction::TRANSACTION_LEVEL_STACK_HEIGHT,
 };
+use bytemuck::{Pod, Zeroable};
 
 use crate::{
     syscall::{sys, Sys},
@@ -104,7 +105,8 @@ impl<T, E> ErrorMessage for std::result::Result<T, E> {
 /// adapters, because adapters can falsify the arguments to those functions.
 /// Rather, this data should only be used to enable adapters to protect themselves, in which case
 /// it would be in their best interest to pass along the actual state from the margin account.
-#[derive(Copy, Clone, Debug, Default)]
+#[derive(Pod, Zeroable, Copy, Clone, Debug, Default)]
+#[repr(transparent)]
 pub struct Invocation {
     /// The stack heights from where the margin program invoked an adapter.
     caller_heights: BitSet,
@@ -147,7 +149,8 @@ impl Invocation {
     }
 }
 
-#[derive(Copy, Clone, Default, PartialEq, Eq)]
+#[derive(Pod, Zeroable, Copy, Clone, Default, PartialEq, Eq)]
+#[repr(transparent)]
 struct BitSet(u8);
 impl BitSet {
     fn insert(&mut self, n: u8) {
