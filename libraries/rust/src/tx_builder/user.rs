@@ -178,7 +178,7 @@ impl MarginTxBuilder {
             .positions()
             .filter(|p| p.balance == 0)
             .map(|p| {
-                if p.adapter == JetMarginPool::id() && p.kind == PositionKind::Claim {
+                if p.adapter == JetMarginPool::id() && p.kind() == PositionKind::Claim {
                     let pool = MarginPoolIxBuilder::new(*loan_to_token.get(&p.token).unwrap());
                     self.adapter_invoke_ix(pool.close_loan(*self.address(), self.ix.payer))
                 } else {
