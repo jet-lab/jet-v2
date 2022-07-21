@@ -237,6 +237,7 @@ export class Market {
     let newOpenOrdersAccount: Keypair | undefined
     if (!openOrdersAccountPubkey) {
       newOpenOrdersAccount = new Keypair()
+      openOrdersAccountPubkey = newOpenOrdersAccount.publicKey
       const createAccountix = await OpenOrders.makeCreateAccountTransaction(
         marginAccount.provider.connection,
         this.address,
@@ -245,7 +246,6 @@ export class Market {
         this.serum.programId
       )
       await marginAccount.sendAndConfirm([createAccountix], newOpenOrdersAccount ? [newOpenOrdersAccount] : undefined)
-      openOrdersAccountPubkey = newOpenOrdersAccount.publicKey
     }
 
     // Attempt to find MSRM fee account
