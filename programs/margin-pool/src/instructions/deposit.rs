@@ -87,32 +87,38 @@ pub fn deposit_handler(ctx: Context<Deposit>, change_kind: ChangeKind, amount: u
         tokens: amount,
     };
 
-    let pool = &mut ctx.accounts.margin_pool;
+    let mut pool = ctx
+        .accounts
+        .margin_pool
+        .join_mut()
+        .with_vault(&ctx.accounts.vault)
+        .with_deposit_note_mint(&ctx.accounts.deposit_note_mint);
     let clock = Clock::get()?;
 
     // Make sure interest accrual is up-to-date
-    if !pool.accrue_interest(clock.unix_timestamp) {
+    if !pool.accrue_interest(clock.unix_timestamp)? {
         msg!("interest accrual is too far behind");
         return Err(ErrorCode::InterestAccrualBehind.into());
     }
 
-    let deposit_amount = pool.calculate_full_amount(
-        token::accessor::amount(&ctx.accounts.destination.to_account_info())?,
+    let deposit_amount = pool.deposit_amount()?.from_request(
+        token::accessor::amount(&ctx.accounts.source.to_account_info())?,
         change,
-        PoolAction::Deposit,
+        PoolAction::Withdraw,
     )?;
-    pool.deposit(&deposit_amount);
+    let deposit_tokens = deposit_amount.as_token_transfer(FromUser);
+    let deposit_notes = deposit_amount.as_note_transfer(ToUser);
 
     let pool = &ctx.accounts.margin_pool;
     let signer = [&pool.signer_seeds()?[..]];
 
     token::transfer(
         ctx.accounts.transfer_source_context().with_signer(&signer),
-        deposit_amount.tokens,
+        deposit_tokens,
     )?;
     token::mint_to(
         ctx.accounts.mint_note_context().with_signer(&signer),
-        deposit_amount.notes,
+        deposit_notes,
     )?;
 
     emit!(events::Deposit {
@@ -120,8 +126,8 @@ pub fn deposit_handler(ctx: Context<Deposit>, change_kind: ChangeKind, amount: u
         user: ctx.accounts.depositor.key(),
         source: ctx.accounts.source.key(),
         destination: ctx.accounts.destination.key(),
-        deposit_tokens: deposit_amount.tokens,
-        deposit_notes: deposit_amount.notes,
+        deposit_tokens,
+        deposit_notes,
         summary: pool.deref().into(),
     });
 

@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use anchor_lang::solana_program::clock::UnixTimestamp;
+use anchor_lang::{prelude::AccountInfo, solana_program::clock::UnixTimestamp};
 use jet_proto_math::Number;
 
 pub const SECONDS_PER_HOUR: UnixTimestamp = 3600;
@@ -67,4 +67,12 @@ pub fn interpolate(x: Number, x0: Number, x1: Number, y0: Number, y1: Number) ->
     assert!(x <= x1);
 
     y0 + ((x - x0) * (y1 - y0)) / (x1 - x0)
+}
+
+/// Get a token mint's supply
+pub fn supply(account: &AccountInfo) -> anchor_lang::Result<u64> {
+    let bytes = account.try_borrow_data()?;
+    let mut amount_bytes = [0u8; 8];
+    amount_bytes.copy_from_slice(&bytes[36..44]);
+    Ok(u64::from_le_bytes(amount_bytes))
 }

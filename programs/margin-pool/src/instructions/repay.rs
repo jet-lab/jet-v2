@@ -18,7 +18,7 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Burn, Token, TokenAccount, Transfer};
 
-use crate::{events, state::PoolAction, ChangeKind, ErrorCode, MarginPool, TokenChange};
+use crate::{events, state::*, ChangeKind, ErrorCode, MarginPool, TokenChange};
 
 #[derive(Accounts)]
 pub struct Repay<'info> {
@@ -82,45 +82,52 @@ pub fn repay_handler(ctx: Context<Repay>, change_kind: ChangeKind, amount: u64) 
         kind: change_kind,
         tokens: amount,
     };
-    let pool = &mut ctx.accounts.margin_pool;
+    let mut pool = ctx
+        .accounts
+        .margin_pool
+        .join_mut()
+        .with_vault(&ctx.accounts.vault)
+        .with_loan_note_mint(&ctx.accounts.loan_note_mint);
     let clock = Clock::get()?;
 
     // Make sure interest accrual is up-to-date
-    if !pool.accrue_interest(clock.unix_timestamp) {
+    if !pool.accrue_interest(clock.unix_timestamp)? {
         msg!("interest accrual is too far behind");
         return Err(ErrorCode::InterestAccrualBehind.into());
     }
 
     // Amount the user desires to repay
-    let repay_amount =
-        pool.calculate_full_amount(ctx.accounts.loan_account.amount, change, PoolAction::Repay)?;
+    let repay_amount = pool.loan_amount()?.from_request(
+        token::accessor::amount(&ctx.accounts.loan_account.to_account_info())?,
+        change,
+        PoolAction::Repay,
+    )?;
+    let repay_tokens = repay_amount.as_token_transfer(FromUser);
+    let repay_notes = repay_amount.as_note_transfer(FromUser);
 
     msg!(
         "Repaying [{} tokens, {} notes] into loan pool",
-        repay_amount.tokens,
-        repay_amount.notes
+        repay_tokens,
+        repay_notes
     );
-    pool.repay(&repay_amount)?;
+    pool.pool.repay(repay_tokens)?;
 
     // Finish by transfering the requisite tokens and burning the loan notes
     let pool = &ctx.accounts.margin_pool;
     let signer = [&pool.signer_seeds()?[..]];
 
-    token::transfer(
-        ctx.accounts.transfer_repayment_context(),
-        repay_amount.tokens,
-    )?;
+    token::transfer(ctx.accounts.transfer_repayment_context(), repay_tokens)?;
     token::burn(
         ctx.accounts.burn_loan_context().with_signer(&signer),
-        repay_amount.notes,
+        repay_notes,
     )?;
 
     emit!(events::Repay {
         margin_pool: pool.key(),
         loan_account: ctx.accounts.loan_account.key(),
         repayment_token_account: ctx.accounts.repayment_token_account.key(),
-        repaid_tokens: repay_amount.tokens,
-        repaid_loan_notes: repay_amount.notes,
+        repaid_tokens: repay_tokens,
+        repaid_loan_notes: repay_notes,
         summary: (&pool.clone().into_inner()).into(),
     });
     Ok(())

@@ -92,9 +92,6 @@ pub struct Collect {
 pub struct MarginPoolSummary {
     pub borrowed_tokens: u64,
     pub uncollected_fees: u64,
-    pub deposit_tokens: u64,
-    pub deposit_notes: u64,
-    pub loan_notes: u64,
     pub accrued_until: i64,
 }
 
@@ -103,9 +100,6 @@ impl From<&MarginPool> for MarginPoolSummary {
         MarginPoolSummary {
             borrowed_tokens: pool.total_borrowed().as_u64_ceil(0),
             uncollected_fees: pool.total_uncollected_fees().as_u64(0),
-            deposit_tokens: pool.deposit_tokens,
-            deposit_notes: pool.deposit_notes,
-            loan_notes: pool.loan_notes,
             accrued_until: pool.accrued_until,
         }
     }

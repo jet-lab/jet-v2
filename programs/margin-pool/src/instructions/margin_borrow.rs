@@ -22,8 +22,8 @@ use anchor_spl::token::{self, MintTo, Token, TokenAccount};
 
 use jet_margin::MarginAccount;
 
+use crate::ErrorCode;
 use crate::{events, state::*, ChangeKind, TokenChange};
-use crate::{Amount, ErrorCode};
 
 #[derive(Accounts)]
 pub struct MarginBorrow<'info> {
@@ -34,8 +34,11 @@ pub struct MarginBorrow<'info> {
     /// The pool to borrow from
     #[account(mut,
               has_one = loan_note_mint,
-              has_one = deposit_note_mint)]
+              has_one = deposit_note_mint,
+              has_one = vault)]
     pub margin_pool: Account<'info, MarginPool>,
+
+    pub vault: AccountInfo<'info>,
 
     /// The mint for the notes representing loans from the pool
     /// CHECK:
@@ -96,24 +99,37 @@ pub fn margin_borrow_handler(
         kind: change_kind,
         tokens: amount,
     };
-    let pool = &mut ctx.accounts.margin_pool;
+    let mut pool = ctx
+        .accounts
+        .margin_pool
+        .join_mut()
+        .with_vault(&ctx.accounts.vault)
+        .with_loan_note_mint(&ctx.accounts.loan_note_mint)
+        .with_deposit_note_mint(&ctx.accounts.deposit_note_mint);
+
     let clock = Clock::get()?;
 
     // Make sure interest accrual is up-to-date
-    if !pool.accrue_interest(clock.unix_timestamp) {
+    if !pool.accrue_interest(clock.unix_timestamp)? {
         msg!("interest accrual is too far behind");
         return Err(ErrorCode::InterestAccrualBehind.into());
     }
 
     // First record a borrow of the tokens requested
-    let borrow_amount =
-        pool.calculate_full_amount(ctx.accounts.loan_account.amount, change, PoolAction::Borrow)?;
-    pool.borrow(&borrow_amount)?;
+    let borrow_amount = pool.loan_amount()?.from_request(
+        token::accessor::amount(&ctx.accounts.loan_account.to_account_info())?,
+        change,
+        PoolAction::Borrow,
+    )?;
+    let borrow_tokens = borrow_amount.as_token_transfer(ToUser);
+    let borrow_notes = borrow_amount.as_note_transfer(ToUser);
+    pool.pool.borrow(borrow_tokens)?;
 
     // Then record a deposit of the same borrowed tokens
-    let deposit_amount =
-        pool.convert_amount(Amount::tokens(borrow_amount.tokens), PoolAction::Deposit)?;
-    pool.deposit(&deposit_amount);
+    let deposit_notes = pool
+        .deposit_amount()?
+        .from_tokens(borrow_amount.tokens)
+        .as_note_transfer(ToUser);
 
     // Finish by minting the loan and deposit notes
     let pool = &ctx.accounts.margin_pool;
@@ -121,11 +137,11 @@ pub fn margin_borrow_handler(
 
     token::mint_to(
         ctx.accounts.mint_loan_context().with_signer(&signer),
-        borrow_amount.notes,
+        borrow_notes,
     )?;
     token::mint_to(
         ctx.accounts.mint_deposit_context().with_signer(&signer),
-        deposit_amount.notes,
+        deposit_notes,
     )?;
 
     emit!(events::MarginBorrow {
@@ -133,9 +149,9 @@ pub fn margin_borrow_handler(
         user: ctx.accounts.margin_account.key(),
         loan_account: ctx.accounts.loan_account.key(),
         deposit_account: ctx.accounts.deposit_account.key(),
-        tokens: borrow_amount.tokens,
-        loan_notes: borrow_amount.notes,
-        deposit_notes: deposit_amount.notes,
+        tokens: borrow_tokens,
+        loan_notes: borrow_notes,
+        deposit_notes: deposit_notes,
         summary: pool.deref().into(),
     });
 

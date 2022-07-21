@@ -19,8 +19,9 @@ use std::ops::Deref;
 
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, MintTo, Token, TokenAccount};
+use jet_proto_math::Number;
 
-use crate::{events, state::*, Amount};
+use crate::{events, state::*, util::supply};
 
 #[derive(Accounts)]
 pub struct Collect<'info> {
@@ -63,15 +64,27 @@ impl<'info> Collect<'info> {
 }
 
 pub fn collect_handler(ctx: Context<Collect>) -> Result<()> {
-    let pool = &mut ctx.accounts.margin_pool;
+    let mut pool = ctx
+        .accounts
+        .margin_pool
+        .join_mut()
+        .with_vault(&ctx.accounts.vault)
+        .with_deposit_note_mint(&ctx.accounts.deposit_note_mint);
     let clock = Clock::get()?;
 
-    if !pool.accrue_interest(clock.unix_timestamp) {
+    if !pool.accrue_interest(clock.unix_timestamp)? {
         msg!("could not fully accrue interest");
         return Ok(());
     }
 
-    let fee_notes = pool.collect_accrued_fees();
+    let fee_notes = pool.collect_accrued_fees()?;
+
+    let fee_tokens_claimed = pool
+        .deposit_amount()?
+        .from_notes(Number::from(fee_notes))
+        .tokens
+        .as_u64(0);
+
     let pool = &ctx.accounts.margin_pool;
 
     token::mint_to(
@@ -81,18 +94,12 @@ pub fn collect_handler(ctx: Context<Collect>) -> Result<()> {
         fee_notes,
     )?;
 
-    let claimed_amount = pool.convert_amount(Amount::notes(fee_notes), PoolAction::Withdraw)?;
-    let balance_amount = pool.convert_amount(
-        Amount::notes(ctx.accounts.vault.amount),
-        PoolAction::Withdraw,
-    )?;
-
     emit!(events::Collect {
         margin_pool: pool.key(),
         fee_notes_minted: fee_notes,
-        fee_tokens_claimed: claimed_amount.tokens,
-        fee_notes_balance: balance_amount.notes,
-        fee_tokens_balance: balance_amount.tokens,
+        fee_tokens_claimed,
+        fee_notes_balance: supply(&ctx.accounts.deposit_note_mint.to_account_info())?,
+        fee_tokens_balance: token::accessor::amount(&ctx.accounts.vault.to_account_info())?,
         summary: pool.deref().into(),
     });
 
