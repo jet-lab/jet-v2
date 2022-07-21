@@ -21,6 +21,7 @@ use pyth_sdk_solana::PriceFeed;
 #[cfg(any(test, feature = "cli"))]
 use serde::ser::{Serialize, SerializeStruct, Serializer};
 use std::cmp::Ordering;
+use std::convert::TryFrom;
 
 use crate::{util, Amount, AmountKind, ChangeKind, ErrorCode, TokenChange};
 
@@ -292,18 +293,23 @@ impl MarginPool {
         let deposit_note_exchange_rate = self.deposit_note_exchange_rate();
         let loan_note_exchange_rate = self.loan_note_exchange_rate();
 
-        let deposit_note_price =
-            (price_value * deposit_note_exchange_rate).as_u64_rounded(pyth_price.expo) as i64;
+        let deposit_note_price = i64::try_from(
+            (price_value * deposit_note_exchange_rate).as_u64_rounded(pyth_price.expo),
+        )
+        .unwrap();
         let deposit_note_conf =
-            (conf_value * deposit_note_exchange_rate).as_u64_rounded(pyth_price.expo) as u64;
-        let deposit_note_twap =
-            (twap_value * deposit_note_exchange_rate).as_u64_rounded(pyth_price.expo) as i64;
+            (conf_value * deposit_note_exchange_rate).as_u64_rounded(pyth_price.expo);
+        let deposit_note_twap = i64::try_from(
+            (twap_value * deposit_note_exchange_rate).as_u64_rounded(pyth_price.expo),
+        )
+        .unwrap();
         let loan_note_price =
-            (price_value * loan_note_exchange_rate).as_u64_rounded(pyth_price.expo) as i64;
-        let loan_note_conf =
-            (conf_value * loan_note_exchange_rate).as_u64_rounded(pyth_price.expo) as u64;
+            i64::try_from((price_value * loan_note_exchange_rate).as_u64_rounded(pyth_price.expo))
+                .unwrap();
+        let loan_note_conf = (conf_value * loan_note_exchange_rate).as_u64_rounded(pyth_price.expo);
         let loan_note_twap =
-            (twap_value * loan_note_exchange_rate).as_u64_rounded(pyth_price.expo) as i64;
+            i64::try_from((twap_value * loan_note_exchange_rate).as_u64_rounded(pyth_price.expo))
+                .unwrap();
 
         Ok(PriceResult {
             deposit_note_price,

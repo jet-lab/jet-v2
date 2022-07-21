@@ -130,10 +130,7 @@ pub fn margin_repay_handler(
         ctx.accounts.burn_loan_context().with_signer(&signer),
         repay_amount.notes,
     )?;
-    token::burn(
-        ctx.accounts.burn_deposit_context().with_signer(&signer),
-        withdraw_amount.notes,
-    )?;
+    token::burn(ctx.accounts.burn_deposit_context(), withdraw_amount.notes)?;
 
     emit!(events::MarginRepay {
         margin_pool: pool.key(),
