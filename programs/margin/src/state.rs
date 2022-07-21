@@ -36,7 +36,7 @@ use crate::{
 const POS_PRICE_VALID: u8 = 1;
 
 /// The current version for the margin account state
-pub const MARGIN_ACCOUNT_VERSION: u8 = 1;
+pub const MARGIN_ACCOUNT_VERSION: u8 = 2;
 
 #[account(zero_copy)]
 #[repr(C)]
