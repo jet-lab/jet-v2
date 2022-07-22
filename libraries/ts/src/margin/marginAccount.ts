@@ -91,7 +91,8 @@ export class MarginAccount {
   static readonly RISK_WARNING_LEVEL = 0.8
   static readonly RISK_CRITICAL_LEVEL = 0.9
   static readonly RISK_LIQUIDATION_LEVEL = 1
-  static readonly SETUP_LEVERAGE_FRACTION = Number128.fromDecimal(new BN(75), -2)
+  // TODO: Change to 0.5, or new BN(50) for mainnet deployment
+  static readonly SETUP_LEVERAGE_FRACTION = Number128.fromDecimal(new BN(100), -2)
 
   info?: {
     marginAccount: MarginAccountData
@@ -406,9 +407,7 @@ export class MarginAccount {
 
     // Max borrow
     let borrow = this.valuation.availableSetupCollateral
-    // Allow risk level to go up to 1 for devnet only
-    // TODO: Change back to MarginAccount.SETUP_LEVERAGE_FRACTION on mainnet
-      .div(Number128.ONE.add(Number128.ONE.div(loanNoteValueModifier)))
+      .div(Number128.ONE.add(Number128.ONE.div(MarginAccount.SETUP_LEVERAGE_FRACTION.mul(loanNoteValueModifier))))
       .div(lamportPrice)
       .asTokenAmount(pool.decimals)
     borrow = TokenAmount.min(borrow, pool.vault)
