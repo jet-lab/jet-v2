@@ -1,6 +1,6 @@
 {
   "name": "@jet-lab/margin",
-  "version": "0.1.57",
+  "version": "0.1.58",
   "description": "Library for interacting with the Jet margin on-chain programs",
   "keywords": [
     "solana",
