@@ -262,18 +262,20 @@ impl MarginPool {
     ///
     /// Returns the number of notes to mint to represent the collected fees
     pub fn collect_accrued_fees(&mut self) -> u64 {
-        let threshold = Number::from(self.config.management_fee_collect_threshold);
         let uncollected = *self.total_uncollected_fees();
-
-        if uncollected < threshold {
-            // not enough accumulated to be worth minting new notes
-            return 0;
-        }
 
         let fee_notes = (uncollected / self.deposit_note_exchange_rate()).as_u64(0);
 
-        *self.total_uncollected_fees_mut() = Number::ZERO;
-        self.deposit_notes = self.deposit_notes.checked_add(fee_notes).unwrap();
+        // Collect fees, preserving the remainder token amount.
+
+        if fee_notes > 0 {
+            let collected_tokens =
+                Number::from_decimal(fee_notes, 0) * self.deposit_note_exchange_rate();
+            let remainder = uncollected - collected_tokens;
+
+            *self.total_uncollected_fees_mut() = remainder;
+            self.deposit_notes = self.deposit_notes.checked_add(fee_notes).unwrap();
+        }
 
         fee_notes
     }
@@ -571,8 +573,8 @@ pub struct MarginPoolConfig {
     /// The fee rate applied to interest payments collected
     pub management_fee_rate: u16,
 
-    /// The threshold for fee collection
-    pub management_fee_collect_threshold: u64,
+    /// Unused
+    pub reserved: u64,
 }
 
 bitflags::bitflags! {

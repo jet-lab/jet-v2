@@ -22,8 +22,8 @@ const DEFAULT_POOL_CONFIG: MarginPoolConfig = MarginPoolConfig {
     utilization_rate_1: 10,
     utilization_rate_2: 20,
     management_fee_rate: 10,
-    management_fee_collect_threshold: 100,
     flags: PoolFlags::ALLOW_LENDING.bits(),
+    reserved: 0,
 };
 
 pub struct TestEnvironment {
