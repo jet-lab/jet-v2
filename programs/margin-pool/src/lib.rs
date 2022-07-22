@@ -256,7 +256,7 @@ pub fn check_exchange_rates(
     loan_note_exchange_rate_after_accrual: Number,
     error: Result<()>,
 ) -> Result<()> {
-    if deposit_note_exchange_rate_after_accrual > deposit_note_exchange_rate_before_accrual {
+    if deposit_note_exchange_rate_after_accrual < deposit_note_exchange_rate_before_accrual {
         msg!(
             "Scenario 1: deposit_note_exchange_rate before accrual {} after {}",
             deposit_note_exchange_rate_before_accrual,
@@ -264,7 +264,7 @@ pub fn check_exchange_rates(
         );
         return error;
     }
-    if loan_note_exchange_rate_after_accrual > loan_note_exchange_rate_before_accrual {
+    if loan_note_exchange_rate_after_accrual < loan_note_exchange_rate_before_accrual {
         msg!(
             "Scenario 1: loan_note_exchange_rate before accrual {} after {}",
             loan_note_exchange_rate_before_accrual,
