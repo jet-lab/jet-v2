@@ -15,9 +15,6 @@ no-log-ix-name = []
 cpi = ["no-entrypoint"]
 default = []
 
-[profile.release]
-overflow-checks = true
-
 [dependencies]
 anchor-lang = { git = "https://github.com/jet-lab/anchor", branch = "master" }
 anchor-spl = { git = "https://github.com/jet-lab/anchor", branch = "master" }

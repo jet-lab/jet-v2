@@ -178,7 +178,7 @@ impl MarginTxBuilder {
             .positions()
             .filter(|p| p.balance == 0)
             .map(|p| {
-                if p.adapter == JetMarginPool::id() && p.kind == PositionKind::Claim {
+                if p.adapter == JetMarginPool::id() && p.kind() == PositionKind::Claim {
                     let pool = MarginPoolIxBuilder::new(*loan_to_token.get(&p.token).unwrap());
                     self.adapter_invoke_ix(pool.close_loan(*self.address(), self.ix.payer))
                 } else {
@@ -350,7 +350,7 @@ impl MarginTxBuilder {
         amount_in: Amount,
         minimum_amount_out: Amount,
     ) -> Result<Transaction> {
-        let mut instructions = vec![ComputeBudgetInstruction::set_compute_unit_limit(300_000)];
+        let mut instructions = vec![];
         let source_pool = MarginPoolIxBuilder::new(*source_token_mint);
         let destination_pool = MarginPoolIxBuilder::new(*destination_token_mint);
 
