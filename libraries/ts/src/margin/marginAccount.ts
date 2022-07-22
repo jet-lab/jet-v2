@@ -406,7 +406,9 @@ export class MarginAccount {
 
     // Max borrow
     let borrow = this.valuation.availableSetupCollateral
-      .div(Number128.ONE.add(Number128.ONE.div(MarginAccount.SETUP_LEVERAGE_FRACTION.mul(loanNoteValueModifier))))
+    // Allow risk level to go up to 1 for devnet only
+    // TODO: Change back to MarginAccount.SETUP_LEVERAGE_FRACTION on mainnet
+      .div(Number128.ONE.add(Number128.ONE.div(loanNoteValueModifier)))
       .div(lamportPrice)
       .asTokenAmount(pool.decimals)
     borrow = TokenAmount.min(borrow, pool.vault)
