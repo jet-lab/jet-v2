@@ -574,7 +574,7 @@ pub struct MarginPoolConfig {
     pub management_fee_rate: u16,
 
     /// Unused
-    pub reserved: u64
+    pub reserved: u64,
 }
 
 bitflags::bitflags! {

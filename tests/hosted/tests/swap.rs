@@ -28,7 +28,7 @@ const DEFAULT_POOL_CONFIG: MarginPoolConfig = MarginPoolConfig {
     utilization_rate_2: 20,
     management_fee_rate: 10,
     flags: PoolFlags::ALLOW_LENDING.bits(),
-    reserved: 0
+    reserved: 0,
 };
 
 /// Test token swaps for the official SPL token swap
