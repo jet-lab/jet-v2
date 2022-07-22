@@ -9,6 +9,7 @@ default = ["test"]
 localnet = []
 
 [dependencies]
+async-trait = "0.1.56"
 bincode = "1.3"
 bytemuck = "1"
 futures = "0.3"
