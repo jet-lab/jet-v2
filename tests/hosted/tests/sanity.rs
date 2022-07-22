@@ -5,7 +5,10 @@ use anyhow::Error;
 use jet_control::TokenMetadataParams;
 use jet_margin::PositionKind;
 use jet_margin_pool::{MarginPoolConfig, PoolFlags, TokenChange};
-use jet_margin_sdk::ix_builder::{MarginPoolConfiguration, MarginPoolIxBuilder};
+use jet_margin_sdk::{
+    ix_builder::{MarginPoolConfiguration, MarginPoolIxBuilder},
+    tokens::TokenPrice,
+};
 use jet_metadata::TokenKind;
 use jet_simulation::{assert_custom_program_error, create_wallet};
 
@@ -16,7 +19,6 @@ use solana_sdk::signature::Signer;
 use hosted_tests::{
     context::{test_context, MarginTestContext},
     margin::MarginPoolSetupInfo,
-    tokens::TokenPrice,
 };
 
 const ONE_USDC: u64 = 1_000_000;
@@ -30,8 +32,8 @@ const DEFAULT_POOL_CONFIG: MarginPoolConfig = MarginPoolConfig {
     utilization_rate_1: 10,
     utilization_rate_2: 20,
     management_fee_rate: 10,
-    management_fee_collect_threshold: 100,
     flags: PoolFlags::ALLOW_LENDING.bits(),
+    reserved: 0,
 };
 
 struct TestEnv {

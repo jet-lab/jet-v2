@@ -15,12 +15,19 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-pub mod ix_builder;
-pub mod swap;
-pub mod tokens;
-pub mod tx_builder;
+//! The margin swap module allows creating simulated swap pools
+//! to aid in testing margin swaps.
 
-pub use jet_control;
-pub use jet_margin;
-pub use jet_margin_pool;
-pub use jet_metadata;
+use solana_sdk::pubkey::Pubkey;
+
+pub struct SwapPool {
+    pub pool: Pubkey,
+    pub pool_authority: Pubkey,
+    pub pool_mint: Pubkey,
+    pub mint_a: Pubkey,
+    pub mint_b: Pubkey,
+    pub token_a: Pubkey,
+    pub token_b: Pubkey,
+    pub fee_account: Pubkey,
+    pub program: Pubkey,
+}
