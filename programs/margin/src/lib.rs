@@ -158,6 +158,7 @@ pub mod jet_margin {
 
     /// Mark the start of a sequence of instructions on a margin account, where
     /// the health check happens after the full sequence of instructions has executed.
+    #[cfg(feature = "testing")]
     pub fn user_begin_transaction(
         ctx: Context<UserBeginTransaction>,
         end_ix_idx: u8,
