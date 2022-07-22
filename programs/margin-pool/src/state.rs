@@ -572,6 +572,8 @@ pub struct MarginPoolConfig {
 
     /// The fee rate applied to interest payments collected
     pub management_fee_rate: u16,
+
+    _reserved: u64
 }
 
 bitflags::bitflags! {
