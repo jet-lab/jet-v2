@@ -1,5 +1,6 @@
 use anyhow::{Error, Result};
 
+use jet_margin_sdk::tokens::TokenPrice;
 use solana_sdk::native_token::LAMPORTS_PER_SOL;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::{Keypair, Signer};
@@ -11,7 +12,6 @@ use jet_simulation::create_wallet;
 use crate::{
     context::{test_context, MarginTestContext},
     margin::{MarginPoolSetupInfo, MarginUser},
-    tokens::TokenPrice,
 };
 
 const DEFAULT_POOL_CONFIG: MarginPoolConfig = MarginPoolConfig {

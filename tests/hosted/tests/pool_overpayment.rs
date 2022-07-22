@@ -1,5 +1,6 @@
 use anyhow::Error;
 
+use jet_margin_sdk::tokens::TokenPrice;
 use solana_sdk::native_token::LAMPORTS_PER_SOL;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::Signer;
@@ -7,7 +8,6 @@ use solana_sdk::signature::Signer;
 use hosted_tests::{
     context::{test_context, MarginTestContext},
     margin::MarginPoolSetupInfo,
-    tokens::TokenPrice,
 };
 
 use jet_margin_pool::{MarginPoolConfig, PoolFlags, TokenChange};

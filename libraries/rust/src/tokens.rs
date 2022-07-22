@@ -15,12 +15,18 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-pub mod ix_builder;
-pub mod swap;
-pub mod tokens;
-pub mod tx_builder;
+use solana_sdk::pubkey::Pubkey;
 
-pub use jet_control;
-pub use jet_margin;
-pub use jet_margin_pool;
-pub use jet_metadata;
+#[derive(Clone, Copy)]
+pub struct TokenOracle {
+    pub price: Pubkey,
+    pub product: Pubkey,
+}
+
+#[derive(Clone, Copy)]
+pub struct TokenPrice {
+    pub exponent: i32,
+    pub price: i64,
+    pub confidence: u64,
+    pub twap: u64,
+}
