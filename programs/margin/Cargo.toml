@@ -1,6 +1,6 @@
 [package]
 name = "jet-margin"
-version = "0.1.0"
+version = "1.0.0"
 description = "Manager for margin accounts"
 edition = "2018"
 
