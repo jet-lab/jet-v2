@@ -256,38 +256,41 @@ pub fn check_exchange_rates(
     loan_note_exchange_rate_after_accrual: Number,
     error: Result<()>,
 ) -> Result<()> {
-    if deposit_note_exchange_rate_after_accrual < deposit_note_exchange_rate_before_accrual {
+    if deposit_note_exchange_rate_after_accrual > deposit_note_exchange_rate_before_accrual {
         msg!(
-            "deposit_note_exchange_rate before accrual {} after {}",
+            "Scenario 1: deposit_note_exchange_rate before accrual {} after {}",
             deposit_note_exchange_rate_before_accrual,
             deposit_note_exchange_rate_after_accrual
         );
         return error;
     }
-    if loan_note_exchange_rate_after_accrual < loan_note_exchange_rate_before_accrual {
+    if loan_note_exchange_rate_after_accrual > loan_note_exchange_rate_before_accrual {
         msg!(
-            "deposit_note_exchange_rate before accrual {} after {}",
+            "Scenario 1: loan_note_exchange_rate before accrual {} after {}",
             loan_note_exchange_rate_before_accrual,
             loan_note_exchange_rate_after_accrual
         );
         return error;
     }
-    if pool.deposit_note_exchange_rate() < deposit_note_exchange_rate_after_accrual {
-        msg!(
-            "deposit_note_exchange_rate after accrual {} end {}",
-            deposit_note_exchange_rate_after_accrual,
-            pool.deposit_note_exchange_rate()
-        );
-        return error;
-    }
-    if pool.loan_note_exchange_rate() > loan_note_exchange_rate_after_accrual {
-        msg!(
-            "loan_note_exchange_rate after accrual {} end {}",
-            loan_note_exchange_rate_after_accrual,
-            pool.loan_note_exchange_rate()
-        );
-        return error;
-    }
+    // if pool.deposit_note_exchange_rate() > deposit_note_exchange_rate_after_accrual {
+    //     msg!(
+    //         "Scenario 2: deposit_note_exchange_rate after accrual {} end {}",
+    //         deposit_note_exchange_rate_after_accrual,
+    //         pool.deposit_note_exchange_rate()
+    //     );
+    //     return error;
+    // }
+    // if pool.loan_note_exchange_rate() > loan_note_exchange_rate_after_accrual
+    //     // When no notes
+    //     && pool.loan_note_exchange_rate() != Number::ONE
+    // {
+    //     msg!(
+    //         "Scenario 2: loan_note_exchange_rate after accrual {} end {}",
+    //         loan_note_exchange_rate_after_accrual,
+    //         pool.loan_note_exchange_rate()
+    //     );
+    //     return error;
+    // }
 
     Ok(())
 }

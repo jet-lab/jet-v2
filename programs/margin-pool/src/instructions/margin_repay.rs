@@ -35,7 +35,7 @@ pub struct MarginRepay<'info> {
     #[account(mut,
               has_one = deposit_note_mint,
               has_one = loan_note_mint)]
-    pub margin_pool: Account<'info, MarginPool>,
+    pub margin_pool: Box<Account<'info, MarginPool>>,
 
     /// The mint for the notes representing loans from the pool
     /// CHECK:
@@ -134,7 +134,7 @@ pub fn margin_repay_handler(
     pool.repay(&repay_amount)?;
 
     // Finish by burning the loan and deposit notes
-    let pool = &ctx.accounts.margin_pool;
+    let pool = ctx.accounts.margin_pool.clone();
     let signer = [&pool.signer_seeds()?[..]];
 
     token::burn(
@@ -154,7 +154,7 @@ pub fn margin_repay_handler(
         repaid_tokens: repay_amount.tokens,
         repaid_loan_notes: repay_amount.notes,
         repaid_deposit_notes: withdraw_amount.notes,
-        summary: pool.deref().into(),
+        summary: (&pool.clone().into_inner()).into(),
     });
 
     crate::check_balances(

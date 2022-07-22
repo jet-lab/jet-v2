@@ -35,7 +35,7 @@ pub struct MarginBorrow<'info> {
     #[account(mut,
               has_one = loan_note_mint,
               has_one = deposit_note_mint)]
-    pub margin_pool: Account<'info, MarginPool>,
+    pub margin_pool: Box<Account<'info, MarginPool>>,
 
     /// The mint for the notes representing loans from the pool
     /// CHECK:
@@ -147,7 +147,7 @@ pub fn margin_borrow_handler(
         tokens: borrow_amount.tokens,
         loan_notes: borrow_amount.notes,
         deposit_notes: deposit_amount.notes,
-        summary: pool.deref().into(),
+        summary: (&pool.clone().into_inner()).into(),
     });
 
     crate::check_balances(
