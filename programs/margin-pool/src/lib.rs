@@ -272,25 +272,25 @@ pub fn check_exchange_rates(
         );
         return error;
     }
-    // if pool.deposit_note_exchange_rate() > deposit_note_exchange_rate_after_accrual {
-    //     msg!(
-    //         "Scenario 2: deposit_note_exchange_rate after accrual {} end {}",
-    //         deposit_note_exchange_rate_after_accrual,
-    //         pool.deposit_note_exchange_rate()
-    //     );
-    //     return error;
-    // }
-    // if pool.loan_note_exchange_rate() > loan_note_exchange_rate_after_accrual
-    //     // When no notes
-    //     && pool.loan_note_exchange_rate() != Number::ONE
-    // {
-    //     msg!(
-    //         "Scenario 2: loan_note_exchange_rate after accrual {} end {}",
-    //         loan_note_exchange_rate_after_accrual,
-    //         pool.loan_note_exchange_rate()
-    //     );
-    //     return error;
-    // }
+    if pool.deposit_note_exchange_rate() < deposit_note_exchange_rate_after_accrual {
+        msg!(
+            "Scenario 2: deposit_note_exchange_rate after accrual {} end {}",
+            deposit_note_exchange_rate_after_accrual,
+            pool.deposit_note_exchange_rate()
+        );
+        return error;
+    }
+    if pool.loan_note_exchange_rate() > loan_note_exchange_rate_after_accrual
+        // When no notes
+        && pool.loan_note_exchange_rate() != Number::ONE
+    {
+        msg!(
+            "Scenario 2: loan_note_exchange_rate after accrual {} end {}",
+            loan_note_exchange_rate_after_accrual,
+            pool.loan_note_exchange_rate()
+        );
+        return error;
+    }
 
     Ok(())
 }
