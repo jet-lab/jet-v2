@@ -92,12 +92,10 @@ export class Market {
    * @return {Promise<Market>}
    */
   static async load({
-    provider,
     programs,
     address,
     options
   }: {
-    provider: AnchorProvider
     programs: MarginPrograms
     address: PublicKey
     options?: MarketOptions
@@ -113,7 +111,7 @@ export class Market {
       throw new Error("Market address not owned by Serum program: " + marketAccount.owner.toBase58())
     }
     const serum = await SerumMarket.load(
-      provider.connection,
+      programs.connection,
       address,
       options,
       translateAddress(programs.config.serumProgramId)
@@ -148,19 +146,10 @@ export class Market {
    *   }}
    * @return {Promise<Record<MarginMarkets, Market>>}
    */
-  static async loadAll({
-    provider,
-    programs,
-    options
-  }: {
-    provider: AnchorProvider
-    programs: MarginPrograms
-    options?: MarketOptions
-  }): Promise<Record<MarginMarkets, Market>> {
+  static async loadAll(programs: MarginPrograms, options?: MarketOptions): Promise<Record<MarginMarkets, Market>> {
     const markets: Record<MarginMarkets, Market> = {} as Record<MarginMarkets, Market>
     for (const marketConfig of Object.values(programs.config.markets)) {
       const market = await this.load({
-        provider,
         programs,
         address: translateAddress(marketConfig.market),
         options
@@ -233,10 +222,41 @@ export class Market {
       const pool = marginAccount.pools[this.baseSymbol]
       if (pool) {
         await pool.marginBorrow({
-          marginAccount: this,
+          marginAccount,
           pools: Object.values(marginAccount.pools),
           change: PoolTokenChange.setTo(accountPoolPosition.loanBalance.add(difference))
         })
+      }
+    }
+
+    // Fetch or create openOrdersAccount
+    const openOrdersAccount = (
+      await this.serum.findOpenOrdersAccountsForOwner(marginAccount.provider.connection, this.address)
+    )[0]
+    let openOrdersAccountPubkey: PublicKey | undefined = openOrdersAccount?.publicKey
+    let newOpenOrdersAccount: Keypair | undefined
+    if (!openOrdersAccountPubkey) {
+      newOpenOrdersAccount = new Keypair()
+      openOrdersAccountPubkey = newOpenOrdersAccount.publicKey
+      const createAccountix = await OpenOrders.makeCreateAccountTransaction(
+        marginAccount.provider.connection,
+        this.address,
+        marginAccount.address,
+        newOpenOrdersAccount.publicKey,
+        this.serum.programId
+      )
+      await marginAccount.sendAndConfirm([createAccountix], newOpenOrdersAccount ? [newOpenOrdersAccount] : undefined)
+    }
+
+    // Attempt to find MSRM fee account
+    let feeDiscountPubkey: PublicKey | undefined
+    try {
+      feeDiscountPubkey =
+        (await this.serum.findBestFeeDiscountKey(marginAccount.provider.connection, marginAccount.address)).pubkey ??
+        undefined
+    } catch (err) {
+      if (!err.message || !err.message.includes("could not find mint")) {
+        console.error(err)
       }
     }
 
@@ -249,6 +269,8 @@ export class Market {
       orderSize,
       selfTradeBehavior: selfTradeBehavior ?? "decrementTake",
       clientOrderId: clientOrderId ?? new BN(Date.now()),
+      openOrdersAccount: openOrdersAccountPubkey,
+      feeDiscountPubkey: feeDiscountPubkey,
       payer: payer ?? marginAccount.address
     })
     return await marginAccount.sendAndConfirm(instructions)
@@ -277,6 +299,8 @@ export class Market {
     orderSize,
     selfTradeBehavior,
     clientOrderId,
+    openOrdersAccount,
+    feeDiscountPubkey,
     payer
   }: {
     instructions: TransactionInstruction[]
@@ -287,6 +311,8 @@ export class Market {
     orderSize: TokenAmount
     selfTradeBehavior: SelfTradeBehavior
     clientOrderId: BN
+    openOrdersAccount: PublicKey
+    feeDiscountPubkey: PublicKey | undefined
     payer: PublicKey
   }): Promise<void> {
     const limitPrice = new BN(
@@ -298,12 +324,6 @@ export class Market {
     const maxCoinQty = orderSize.lamports
     const baseSizeLots = maxCoinQty.toNumber() / this.marketConfig.baseLotSize
     const maxNativePcQtyIncludingFees = new BN(this.marketConfig.quoteLotSize * baseSizeLots).mul(limitPrice)
-    const openOrdersAccounts = await this.serum.findOpenOrdersAccountsForOwner(
-      marginAccount.provider.connection,
-      this.address
-    )
-    const feeDiscountPubkey = (await this.serum.findBestFeeDiscountKey(marginAccount.provider.connection, this.address))
-      .pubkey
 
     const ix = await this.programs.marginSerum.methods
       .newOrderV3(
@@ -319,7 +339,7 @@ export class Market {
       .accounts({
         marginAccount: marginAccount.address,
         market: this.address,
-        openOrdersAccount: openOrdersAccounts && openOrdersAccounts[0].publicKey,
+        openOrdersAccount,
         requestQueue: this.marketConfig.requestQueue,
         eventQueue: this.marketConfig.eventQueue,
         bids: this.marketConfig.bids,
@@ -529,6 +549,7 @@ export class Market {
 
   /**
    * Loads the Orderbook
+   * @param provider
    */
   async loadOrderbook(provider: AnchorProvider): Promise<Orderbook> {
     const bidsBuffer = (await provider.connection.getAccountInfo(translateAddress(this.marketConfig.bids)))?.data
@@ -631,7 +652,7 @@ export class Orderbook {
    * @param bidsBuffer
    * @param asksBuffer
    */
-  static load(market: SerumMarket, bidsBuffer: Buffer, asksBuffer: Buffer) {
+  static load({ market, bidsBuffer, asksBuffer }: { market: SerumMarket; bidsBuffer: Buffer; asksBuffer: Buffer }) {
     const bids = SerumOrderbook.decode(market, bidsBuffer)
     const asks = SerumOrderbook.decode(market, asksBuffer)
     return new Orderbook(market, bids, asks)
