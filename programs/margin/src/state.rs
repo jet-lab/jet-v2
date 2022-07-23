@@ -28,7 +28,7 @@ use anchor_lang::Result as AnchorResult;
 use std::{convert::TryFrom, result::Result};
 
 use crate::{
-    util::{Invocation, Require},
+    util::{Invocation, Require, TransactionIxBoundary},
     ErrorCode, PriceChangeInfo, MAX_ORACLE_CONFIDENCE, MAX_ORACLE_STALENESS, MAX_PRICE_QUOTE_AGE,
     MAX_USER_POSITIONS,
 };
@@ -51,7 +51,11 @@ pub struct MarginAccount {
     /// Must normally be zeroed, except during an invocation.
     pub invocation: Invocation,
 
-    pub reserved0: [u8; 3],
+    /// Tracks the end of the transaction for this account
+    pub tx_bound: TransactionIxBoundary,
+
+    /// Unused
+    pub reserved0: [u8; 2],
 
     /// The owner of this account, which generally has to sign for any changes to it
     pub owner: Pubkey,
@@ -1000,7 +1004,8 @@ mod tests {
             version: 1,
             bump_seed: [0],
             user_seed: [0; 2],
-            reserved0: [0; 3],
+            tx_bound: Default::default(),
+            reserved0: [0; 2],
             owner: Pubkey::default(),
             liquidation: Pubkey::default(),
             liquidator: Pubkey::default(),
@@ -1011,7 +1016,7 @@ mod tests {
             version: 1,
             bump_seed: [0],
             user_seed: [0, 0],
-            reserved0: [0, 0, 0],
+            reserved0: [0, 0],
             invocation: Invocation {
                 caller_heights: BitSet(0b10010111)
             },
@@ -1069,7 +1074,8 @@ mod tests {
             version: 1,
             bump_seed: [0],
             user_seed: [0; 2],
-            reserved0: [0; 3],
+            tx_bound: Default::default(),
+            reserved0: [0; 2],
             owner: Pubkey::default(),
             liquidation: Pubkey::default(),
             liquidator: Pubkey::default(),
@@ -1170,7 +1176,8 @@ mod tests {
             version: 1,
             bump_seed: [0],
             user_seed: [0; 2],
-            reserved0: [0; 3],
+            tx_bound: Default::default(),
+            reserved0: [0; 2],
             owner: Pubkey::new_unique(),
             liquidation: Pubkey::default(),
             liquidator: Pubkey::default(),
@@ -1191,7 +1198,8 @@ mod tests {
             version: 1,
             bump_seed: [0],
             user_seed: [0; 2],
-            reserved0: [0; 3],
+            tx_bound: Default::default(),
+            reserved0: [0; 2],
             owner: Pubkey::new_unique(),
             liquidation: Pubkey::default(),
             liquidator: Pubkey::default(),
@@ -1318,7 +1326,8 @@ mod tests {
             version: 1,
             bump_seed: [0],
             user_seed: [0; 2],
-            reserved0: [0; 3],
+            tx_bound: Default::default(),
+            reserved0: [0; 2],
             owner: Pubkey::default(),
             liquidation: Pubkey::default(),
             liquidator: Pubkey::default(),
@@ -1499,7 +1508,8 @@ mod tests {
             version: 1,
             bump_seed: [0],
             user_seed: [0; 2],
-            reserved0: [0; 3],
+            tx_bound: Default::default(),
+            reserved0: [0; 2],
             owner: Pubkey::default(),
             liquidation: Pubkey::default(),
             liquidator: Pubkey::default(),
