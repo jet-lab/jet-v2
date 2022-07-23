@@ -18,7 +18,7 @@
 use std::ops::Deref;
 
 use anchor_lang::prelude::*;
-use anchor_spl::token::{self, MintTo, Token, Transfer};
+use anchor_spl::token::{self, MintTo, Token, TokenAccount, Transfer};
 
 use crate::{events, state::*, TokenChange};
 use crate::{ChangeKind, ErrorCode};
@@ -34,7 +34,7 @@ pub struct Deposit<'info> {
     /// The vault for the pool, where tokens are held
     /// CHECK:
     #[account(mut)]
-    pub vault: UncheckedAccount<'info>,
+    pub vault: Account<'info, TokenAccount>,
 
     /// The mint for the deposit notes
     /// CHECK:
@@ -82,12 +82,21 @@ impl<'info> Deposit<'info> {
 }
 
 pub fn deposit_handler(ctx: Context<Deposit>, change_kind: ChangeKind, amount: u64) -> Result<()> {
+    crate::check_balances(
+        &ctx.accounts.margin_pool,
+        Some(&ctx.accounts.vault.to_account_info()),
+        Some(&ctx.accounts.deposit_note_mint),
+        None,
+        err!(PriorAccountingViolation),
+    )?;
     let change = TokenChange {
         kind: change_kind,
         tokens: amount,
     };
 
     let pool = &mut ctx.accounts.margin_pool;
+    let deposit_note_exchange_rate_before_accrual = pool.deposit_note_exchange_rate();
+    let loan_note_exchange_rate_before_accrual = pool.loan_note_exchange_rate();
     let clock = Clock::get()?;
 
     // Make sure interest accrual is up-to-date
@@ -95,6 +104,8 @@ pub fn deposit_handler(ctx: Context<Deposit>, change_kind: ChangeKind, amount: u
         msg!("interest accrual is too far behind");
         return Err(ErrorCode::InterestAccrualBehind.into());
     }
+    let deposit_note_exchange_rate_after_accrual = pool.deposit_note_exchange_rate();
+    let loan_note_exchange_rate_after_accrual = pool.loan_note_exchange_rate();
 
     let deposit_amount = pool.calculate_full_amount(
         token::accessor::amount(&ctx.accounts.destination.to_account_info())?,
@@ -124,6 +135,23 @@ pub fn deposit_handler(ctx: Context<Deposit>, change_kind: ChangeKind, amount: u
         deposit_notes: deposit_amount.notes,
         summary: pool.deref().into(),
     });
+
+    crate::check_balances(
+        &ctx.accounts.margin_pool,
+        Some(&ctx.accounts.vault.to_account_info()),
+        Some(&ctx.accounts.deposit_note_mint),
+        None,
+        err!(NewAccountingViolation),
+    )?;
+
+    crate::check_exchange_rates(
+        &ctx.accounts.margin_pool,
+        deposit_note_exchange_rate_before_accrual,
+        loan_note_exchange_rate_before_accrual,
+        deposit_note_exchange_rate_after_accrual,
+        loan_note_exchange_rate_after_accrual,
+        err!(NewAccountingViolation),
+    )?;
 
     Ok(())
 }

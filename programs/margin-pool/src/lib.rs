@@ -20,8 +20,10 @@ use anchor_lang::prelude::*;
 mod instructions;
 mod state;
 mod util;
+use anchor_spl::token;
 use instructions::*;
 
+use jet_proto_math::Number;
 pub use state::{MarginPool, MarginPoolConfig, PoolFlags};
 pub mod events;
 
@@ -207,4 +209,95 @@ pub enum ErrorCode {
 
     /// 141108 - Attempt repayment of more tokens than total outstanding
     RepaymentExceedsTotalOutstanding,
+
+    /// 141109 - Accounting violation already existed before this instruction
+    PriorAccountingViolation,
+
+    /// 141110 - Accounting violation introduced in this instruction
+    NewAccountingViolation,
+}
+
+pub fn check_balances(
+    pool: &MarginPool,
+    vault: Option<&AccountInfo>,
+    deposit_notes: Option<&AccountInfo>,
+    loan_notes: Option<&AccountInfo>,
+    error: Result<()>,
+) -> Result<()> {
+    if let Some(vault) = vault {
+        let amount = token::accessor::amount(vault)?;
+        if amount != pool.deposit_tokens {
+            msg!("token vault {} pool {}", amount, pool.deposit_tokens);
+            return error;
+        }
+    }
+    if let Some(deposit_notes) = deposit_notes {
+        let amount = supply(deposit_notes)?;
+        if amount != pool.deposit_notes {
+            msg!("deposit_notes mint {} pool {}", amount, pool.deposit_notes);
+            return error;
+        }
+    }
+    if let Some(loan_notes) = loan_notes {
+        let amount = supply(loan_notes)?;
+        if amount != pool.loan_notes {
+            msg!("loan_notes mint {} pool {}", amount, pool.loan_notes);
+            return error;
+        }
+    }
+
+    Ok(())
+}
+pub fn check_exchange_rates(
+    pool: &MarginPool,
+    deposit_note_exchange_rate_before_accrual: Number,
+    loan_note_exchange_rate_before_accrual: Number,
+    deposit_note_exchange_rate_after_accrual: Number,
+    loan_note_exchange_rate_after_accrual: Number,
+    error: Result<()>,
+) -> Result<()> {
+    if deposit_note_exchange_rate_after_accrual < deposit_note_exchange_rate_before_accrual {
+        msg!(
+            "Scenario 1: deposit_note_exchange_rate before accrual {} after {}",
+            deposit_note_exchange_rate_before_accrual,
+            deposit_note_exchange_rate_after_accrual
+        );
+        return error;
+    }
+    if loan_note_exchange_rate_after_accrual < loan_note_exchange_rate_before_accrual {
+        msg!(
+            "Scenario 1: loan_note_exchange_rate before accrual {} after {}",
+            loan_note_exchange_rate_before_accrual,
+            loan_note_exchange_rate_after_accrual
+        );
+        return error;
+    }
+    if pool.deposit_note_exchange_rate() < deposit_note_exchange_rate_after_accrual {
+        msg!(
+            "Scenario 2: deposit_note_exchange_rate after accrual {} end {}",
+            deposit_note_exchange_rate_after_accrual,
+            pool.deposit_note_exchange_rate()
+        );
+        return error;
+    }
+    if pool.loan_note_exchange_rate() > loan_note_exchange_rate_after_accrual
+        // When no notes
+        && pool.loan_note_exchange_rate() != Number::ONE
+    {
+        msg!(
+            "Scenario 2: loan_note_exchange_rate after accrual {} end {}",
+            loan_note_exchange_rate_after_accrual,
+            pool.loan_note_exchange_rate()
+        );
+        return error;
+    }
+
+    Ok(())
+}
+
+pub fn supply(account: &AccountInfo) -> Result<u64> {
+    let bytes = account.try_borrow_data()?;
+    let mut amount_bytes = [0u8; 8];
+    amount_bytes.copy_from_slice(&bytes[36..44]);
+    Ok(u64::from_le_bytes(amount_bytes))
 }
