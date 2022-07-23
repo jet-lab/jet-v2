@@ -54,7 +54,7 @@ export interface PoolProjection {
   borrowRate: number
 }
 
-const feesBuffer: number = LAMPORTS_PER_SOL * 0.075
+export const feesBuffer: number = LAMPORTS_PER_SOL * 0.075
 
 export class Pool {
   address: PublicKey
@@ -802,16 +802,12 @@ export class Pool {
     change: PoolTokenChange
     destination?: TokenAddress
   }) {
-    const preInstructions: TransactionInstruction[] = []
     const refreshInstructions: TransactionInstruction[] = []
     const instructions: TransactionInstruction[] = []
 
-    let source = marginAccount.getPosition(this.addresses.depositNoteMint)?.address
+    const source = marginAccount.getPosition(this.addresses.depositNoteMint)?.address
     if (!source) {
-      source = await marginAccount.withGetOrCreatePosition({
-        positionTokenMint: this.addresses.depositNoteMint,
-        instructions: preInstructions
-      })
+      throw new Error("No deposit position")
     }
 
     await this.withMarginRefreshAllPositionPrices({ instructions: refreshInstructions, pools, marginAccount })
@@ -823,7 +819,7 @@ export class Pool {
       destination,
       change
     })
-    return await sendAll(marginAccount.provider, [preInstructions, chunks(11, refreshInstructions), instructions])
+    return await sendAll(marginAccount.provider, [chunks(11, refreshInstructions), instructions])
   }
 
   async withWithdraw({

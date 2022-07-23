@@ -13,7 +13,7 @@ import {
   TransactionInstruction,
   TransactionSignature
 } from "@solana/web3.js"
-import { Pool, PoolAction } from "./pool/pool"
+import { feesBuffer, Pool, PoolAction } from "./pool/pool"
 import {
   AccountPositionList,
   AccountPositionListLayout,
@@ -375,12 +375,11 @@ export class MarginAccount {
       }
     }
 
+    // Wallet's balance for pool
+    // If depsiting or repaying SOL, maximum input should consider fees
     let walletAmount = (pool.symbol && this.walletTokens?.map[pool.symbol].amount) ?? TokenAmount.zero(pool.decimals)
-
-    // If depsiting or repaying SOL, maximum input should still cover fees
     if (pool.tokenMint.equals(NATIVE_MINT)) {
-      const feeCover = TokenAmount.tokens(0.07, pool.decimals)
-      walletAmount = TokenAmount.max(walletAmount.sub(feeCover), TokenAmount.zero(pool.decimals))
+      walletAmount = TokenAmount.max(walletAmount.subn(feesBuffer), TokenAmount.zero(pool.decimals))
     }
 
     // Max deposit
