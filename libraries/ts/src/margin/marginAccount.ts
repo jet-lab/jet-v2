@@ -384,7 +384,7 @@ export class MarginAccount {
     }
 
     // Max deposit
-    let deposit = walletAmount
+    const deposit = walletAmount
 
     const priceExponent = pool.info.tokenPriceOracle.exponent
     const priceComponent = bigIntToBn(pool.info.tokenPriceOracle.aggregate.priceComponent)
@@ -414,7 +414,7 @@ export class MarginAccount {
     borrow = TokenAmount.max(borrow, zero)
 
     // Max repay
-    let repay = TokenAmount.min(loanBalance, walletAmount)
+    const repay = TokenAmount.min(loanBalance, walletAmount)
 
     // Max swap
     const swap = withdraw
@@ -759,9 +759,7 @@ export class MarginAccount {
     positionTokenMint: Address
     instructions: TransactionInstruction[]
   }) {
-    assert(this.info)
     const tokenMintAddress = translateAddress(positionTokenMint)
-
     for (let i = 0; i < this.positions.length; i++) {
       const position = this.positions[i]
       if (position.token.equals(tokenMintAddress)) {

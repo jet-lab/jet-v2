@@ -24,7 +24,6 @@ import { chunks, Number128, Number192, sendAll, sleep } from "../../utils"
 import { PositionTokenMetadata } from "../positionTokenMetadata"
 
 export type PoolAction = "deposit" | "withdraw" | "borrow" | "repay" | "swap" | "transfer"
-
 export interface MarginPoolAddresses {
   /** The pool's token mint i.e. BTC or SOL mint address*/
   tokenMint: PublicKey
@@ -55,7 +54,7 @@ export interface PoolProjection {
   borrowRate: number
 }
 
-const feesBuffer: number = LAMPORTS_PER_SOL * 0.02
+const feesBuffer: number = LAMPORTS_PER_SOL * 0.075
 
 export class Pool {
   address: PublicKey
@@ -449,12 +448,12 @@ export class Pool {
     assert(marginAccount)
     assert(change)
 
-    await marginAccount.createAccount()
-    await sleep(2000)
-    await marginAccount.refresh()
-
     const instructions: TransactionInstruction[] = []
-    const position = await marginAccount.getOrCreatePosition(this.addresses.depositNoteMint)
+    await marginAccount.withCreateAccount(instructions)
+    const position = await marginAccount.withGetOrCreatePosition({
+      positionTokenMint: this.addresses.depositNoteMint,
+      instructions
+    })
     assert(position)
 
     await this.withDeposit({
