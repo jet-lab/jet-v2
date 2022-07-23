@@ -1,6 +1,6 @@
 [package]
 name = "jet-margin-swap"
-version = "0.1.0"
+version = "1.0.0"
 description = "Anchor program to swap margin pool deposits via spl token swap"
 edition = "2018"
 

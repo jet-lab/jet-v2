@@ -1715,7 +1715,7 @@ checksum = "112c678d4050afce233f4f2852bb2eb519230b3cf12f33585275537d7e41578d"
 
 [[package]]
 name = "jet-control"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
@@ -1726,7 +1726,7 @@ dependencies = [
 
 [[package]]
 name = "jet-margin"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
@@ -1743,7 +1743,7 @@ dependencies = [
 
 [[package]]
 name = "jet-margin-pool"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
@@ -1784,7 +1784,7 @@ dependencies = [
 
 [[package]]
 name = "jet-margin-swap"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
@@ -1795,7 +1795,7 @@ dependencies = [
 
 [[package]]
 name = "jet-metadata"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "anchor-lang",
  "solana-program",
