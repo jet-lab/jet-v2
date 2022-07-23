@@ -102,6 +102,7 @@ describe("margin pool borrow", () => {
     utilizationRate1: 10,
     utilizationRate2: 20,
     managementFeeRate: 10,
+    managementFeeCollectThreshold: new BN(2),
     flags: new BN(2) // ALLOW_LENDING
   }
 
