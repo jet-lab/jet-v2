@@ -379,7 +379,7 @@ export class MarginAccount {
     // If depsiting or repaying SOL, maximum input should consider fees
     let walletAmount = (pool.symbol && this.walletTokens?.map[pool.symbol].amount) ?? TokenAmount.zero(pool.decimals)
     if (pool.tokenMint.equals(NATIVE_MINT)) {
-      walletAmount = TokenAmount.max(walletAmount.subn(feesBuffer), TokenAmount.zero(pool.decimals))
+      walletAmount = TokenAmount.max(walletAmount.sub(numberToBn(feesBuffer)), TokenAmount.zero(pool.decimals))
     }
 
     // Max deposit
