@@ -27,8 +27,6 @@ use solana_sdk::instruction::Instruction;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::sysvar::{rent::Rent, SysvarId};
 
-use crate::accounts::SerumMarketInfoAccounts;
-
 use super::MarginPoolIxBuilder;
 
 /// All the pubkeys that are used by a Serum V3 market
@@ -51,13 +49,11 @@ pub struct SerumMarketV3 {
 #[derive(Clone)]
 pub struct MarginSerumIxBuilder {
     pub market: SerumMarketV3,
-    pub info: SerumMarketInfoAccounts,
 }
 
 impl MarginSerumIxBuilder {
     pub fn new(market: SerumMarketV3) -> Self {
-        let info = SerumMarketInfoAccounts::derive(market.market, &Pubkey::default());
-        Self { market, info }
+        Self { market }
     }
 
     /// Execute a Serum swap

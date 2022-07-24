@@ -22,6 +22,7 @@ use anchor_spl::dex::serum_dex::matching::{OrderType, Side};
 use anchor_spl::dex::serum_dex::state::MarketState;
 use anchor_spl::dex::serum_dex::{instruction::SelfTradeBehavior, state::OpenOrders};
 use anchor_spl::token::Token;
+use jet_margin_pool::ChangeKind;
 use jet_proto_math::Number128;
 
 use crate::*;
@@ -234,7 +235,8 @@ pub fn serum_swap_handler(
             SwapDirection::Bid => ctx.accounts.withdraw_quote_source_context(),
             SwapDirection::Ask => ctx.accounts.withdraw_base_source_context(),
         },
-        Amount::tokens(amount_in),
+        ChangeKind::ShiftBy,
+        amount_in,
     )?;
     let market_info = ctx.accounts.swap_info.market.to_account_info();
     let (base_lot_size, quote_lot_size) = {
@@ -336,7 +338,11 @@ pub fn serum_swap_handler(
     };
 
     if actual_rate < expected_rate {
-        msg!("Exceeded the maximum slippage, minimum rate {}, actual rate {}", expected_rate, actual_rate);
+        msg!(
+            "Exceeded the maximum slippage, minimum rate {}, actual rate {}",
+            expected_rate,
+            actual_rate
+        );
         return err!(SwapError::ExceededSlippage);
     }
 
@@ -347,6 +353,7 @@ pub fn serum_swap_handler(
             SwapDirection::Bid => ctx.accounts.deposit_base_destination_context(),
             SwapDirection::Ask => ctx.accounts.deposit_quote_destination_context(),
         },
+        ChangeKind::ShiftBy,
         tokens_bought,
     )?;
 

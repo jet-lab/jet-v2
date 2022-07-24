@@ -2,7 +2,10 @@ use std::num::NonZeroU64;
 
 use anyhow::Error;
 
-use jet_margin_sdk::ix_builder::{OrderParams, OrderSide, OrderType, SelfTradeBehavior};
+use jet_margin_sdk::{
+    ix_builder::{OrderParams, OrderSide, OrderType, SelfTradeBehavior},
+    tokens::TokenPrice,
+};
 use solana_sdk::native_token::LAMPORTS_PER_SOL;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::Signer;
@@ -11,10 +14,9 @@ use hosted_tests::{
     context::{test_context, MarginTestContext},
     margin::MarginPoolSetupInfo,
     serum::SerumClient,
-    tokens::TokenPrice,
 };
 
-use jet_margin_pool::{MarginPoolConfig, PoolFlags};
+use jet_margin_pool::{MarginPoolConfig, PoolFlags, TokenChange};
 use jet_metadata::TokenKind;
 use jet_simulation::create_wallet;
 
@@ -29,7 +31,7 @@ const DEFAULT_POOL_CONFIG: MarginPoolConfig = MarginPoolConfig {
     utilization_rate_1: 10,
     utilization_rate_2: 20,
     management_fee_rate: 10,
-    management_fee_collect_threshold: 100,
+    reserved: 0,
     flags: PoolFlags::ALLOW_LENDING.bits(),
 };
 
@@ -40,22 +42,13 @@ struct TestEnv {
 
 async fn setup_environment(ctx: &MarginTestContext) -> Result<TestEnv, Error> {
     let usdc = ctx.tokens.create_token(6, None, None).await?;
-    let usdc_fees = ctx
-        .tokens
-        .create_account(&usdc, &ctx.authority.pubkey())
-        .await?;
     let usdc_oracle = ctx.tokens.create_oracle(&usdc).await?;
     let tsol = ctx.tokens.create_token(9, None, None).await?;
-    let tsol_fees = ctx
-        .tokens
-        .create_account(&tsol, &ctx.authority.pubkey())
-        .await?;
     let tsol_oracle = ctx.tokens.create_oracle(&tsol).await?;
 
     let pools = [
         MarginPoolSetupInfo {
             token: usdc,
-            fee_destination: usdc_fees,
             token_kind: TokenKind::Collateral,
             collateral_weight: 1_00,
             max_leverage: 10_00,
@@ -64,7 +57,6 @@ async fn setup_environment(ctx: &MarginTestContext) -> Result<TestEnv, Error> {
         },
         MarginPoolSetupInfo {
             token: tsol,
-            fee_destination: tsol_fees,
             token_kind: TokenKind::Collateral,
             collateral_weight: 95,
             max_leverage: 4_00,
@@ -93,9 +85,9 @@ async fn serum_swap() -> Result<(), anyhow::Error> {
 
     // Create the user context helpers, which give a simple interface for executing
     // common actions on a margin account
-    let user_a = ctx.margin.user(&wallet_a).await?;
-    let user_b = ctx.margin.user(&wallet_b).await?;
-    let user_c = ctx.margin.user(&wallet_c).await?;
+    let user_a = ctx.margin.user(&wallet_a, 0).await?;
+    let user_b = ctx.margin.user(&wallet_b, 0).await?;
+    let user_c = ctx.margin.user(&wallet_c, 0).await?;
 
     // Initialize the margin accounts for each user
     user_a.create_account().await?;
@@ -176,13 +168,25 @@ async fn serum_swap() -> Result<(), anyhow::Error> {
 
     // Deposit user funds into their margin accounts
     user_a
-        .deposit(&env.usdc, &user_a_usdc_account, 10_000 * ONE_USDC)
+        .deposit(
+            &env.usdc,
+            &user_a_usdc_account,
+            TokenChange::shift(10_000 * ONE_USDC),
+        )
         .await?;
     user_a
-        .deposit(&env.tsol, &user_a_tsol_account, 10 * ONE_TSOL)
+        .deposit(
+            &env.tsol,
+            &user_a_tsol_account,
+            TokenChange::shift(10 * ONE_TSOL),
+        )
         .await?;
     user_b
-        .deposit(&env.tsol, &user_b_tsol_account, 10 * ONE_TSOL)
+        .deposit(
+            &env.tsol,
+            &user_b_tsol_account,
+            TokenChange::shift(10 * ONE_TSOL),
+        )
         .await?;
 
     // // Verify user tokens have been deposited

@@ -35,13 +35,10 @@ use solana_sdk::{compute_budget::ComputeBudgetInstruction, instruction::Instruct
 
 use anchor_lang::{AccountDeserialize, Id};
 
-use jet_margin_swap::instructions::SwapDirection;
+use jet_margin::{MarginAccount, PositionKind};
 use jet_margin_pool::program::JetMarginPool;
-use jet_metadata::{PositionTokenMetadata, TokenMetadata};
-use jet_margin::{MarginAccount, PositionKind};
 use jet_margin_pool::{Amount, TokenChange};
-use jet_margin::{MarginAccount, PositionKind};
-use jet_margin_pool::Amount;
+use jet_margin_swap::instructions::SwapDirection;
 use jet_metadata::{PositionTokenMetadata, TokenMetadata};
 use jet_simulation::solana_rpc_api::SolanaRpcClient;
 
@@ -810,10 +807,10 @@ impl MarginTxBuilder {
 
         // Open positions for settlement if they do not exist
         let base_note = self
-            .get_or_create_position(&mut instructions, &ix_builder.info.base_note_mint)
+            .get_or_create_position(&mut instructions, &base_pool.deposit_note_mint)
             .await?;
         let quote_note = self
-            .get_or_create_position(&mut instructions, &ix_builder.info.quote_note_mint)
+            .get_or_create_position(&mut instructions, &quote_pool.deposit_note_mint)
             .await?;
 
         // Open pool positions for deposits if they do not exist
