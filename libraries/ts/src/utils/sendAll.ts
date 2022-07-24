@@ -17,10 +17,10 @@ export async function sendAll(
 
   const txs = transactions
     .map(tx => {
-      if (Array.isArray(tx.at(0))) {
+      if (Array.isArray(tx[0])) {
         return tx
           .map((tx: any) => {
-            let ixs = tx as any as TransactionInstruction[]
+            const ixs = tx as any as TransactionInstruction[]
             if (ixs.length > 0) {
               return new Transaction({ feePayer: provider.wallet.publicKey, blockhash, lastValidBlockHeight }).add(
                 ...ixs

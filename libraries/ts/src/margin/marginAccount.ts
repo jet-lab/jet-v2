@@ -13,7 +13,7 @@ import {
   TransactionInstruction,
   TransactionSignature
 } from "@solana/web3.js"
-import { Pool, PoolAction } from "./pool/pool"
+import { feesBuffer, Pool, PoolAction } from "./pool/pool"
 import {
   AccountPositionList,
   AccountPositionListLayout,
@@ -25,7 +25,16 @@ import {
 } from "./state"
 import { MarginPrograms } from "./marginClient"
 import { findDerivedAccount } from "../utils/pda"
-import { AssociatedToken, bigIntToBn, bnToNumber, getTimestamp, MarginPools, Number192, TokenAmount } from ".."
+import {
+  AssociatedToken,
+  bigIntToBn,
+  bnToNumber,
+  getTimestamp,
+  MarginPools,
+  Number192,
+  numberToBn,
+  TokenAmount
+} from ".."
 import { Number128 } from "../utils/number128"
 import { MarginPoolConfig, MarginTokenConfig } from "./config"
 import { AccountPosition, PriceInfo } from "./accountPosition"
@@ -375,16 +384,15 @@ export class MarginAccount {
       }
     }
 
+    // Wallet's balance for pool
+    // If depsiting or repaying SOL, maximum input should consider fees
     let walletAmount = (pool.symbol && this.walletTokens?.map[pool.symbol].amount) ?? TokenAmount.zero(pool.decimals)
-
-    // If depsiting or repaying SOL, maximum input should still cover fees
     if (pool.tokenMint.equals(NATIVE_MINT)) {
-      const feeCover = TokenAmount.tokens(0.07, pool.decimals)
-      walletAmount = TokenAmount.max(walletAmount.sub(feeCover), TokenAmount.zero(pool.decimals))
+      walletAmount = TokenAmount.max(walletAmount.subb(numberToBn(feesBuffer)), TokenAmount.zero(pool.decimals))
     }
 
     // Max deposit
-    let deposit = walletAmount
+    const deposit = walletAmount
 
     const priceExponent = pool.info.tokenPriceOracle.exponent
     const priceComponent = bigIntToBn(pool.info.tokenPriceOracle.aggregate.priceComponent)
@@ -414,7 +422,7 @@ export class MarginAccount {
     borrow = TokenAmount.max(borrow, zero)
 
     // Max repay
-    let repay = TokenAmount.min(loanBalance, walletAmount)
+    const repay = TokenAmount.min(loanBalance, walletAmount)
 
     // Max swap
     const swap = withdraw
@@ -759,9 +767,7 @@ export class MarginAccount {
     positionTokenMint: Address
     instructions: TransactionInstruction[]
   }) {
-    assert(this.info)
     const tokenMintAddress = translateAddress(positionTokenMint)
-
     for (let i = 0; i < this.positions.length; i++) {
       const position = this.positions[i]
       if (position.token.equals(tokenMintAddress)) {

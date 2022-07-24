@@ -20,11 +20,10 @@ import { PoolTokenChange } from "./poolTokenChange"
 import { TokenMetadata } from "../metadata/state"
 import { findDerivedAccount } from "../../utils/pda"
 import { PriceInfo } from "../accountPosition"
-import { chunks, Number128, Number192, sendAll, sleep } from "../../utils"
+import { chunks, Number128, Number192, sendAll } from "../../utils"
 import { PositionTokenMetadata } from "../positionTokenMetadata"
 
 export type PoolAction = "deposit" | "withdraw" | "borrow" | "repay" | "swap" | "transfer"
-
 export interface MarginPoolAddresses {
   /** The pool's token mint i.e. BTC or SOL mint address*/
   tokenMint: PublicKey
@@ -55,7 +54,7 @@ export interface PoolProjection {
   borrowRate: number
 }
 
-const feesBuffer: number = LAMPORTS_PER_SOL * 0.02
+export const feesBuffer: number = LAMPORTS_PER_SOL * 0.075
 
 export class Pool {
   address: PublicKey
@@ -449,12 +448,12 @@ export class Pool {
     assert(marginAccount)
     assert(change)
 
-    await marginAccount.createAccount()
-    await sleep(2000)
-    await marginAccount.refresh()
-
     const instructions: TransactionInstruction[] = []
-    const position = await marginAccount.getOrCreatePosition(this.addresses.depositNoteMint)
+    await marginAccount.withCreateAccount(instructions)
+    const position = await marginAccount.withGetOrCreatePosition({
+      positionTokenMint: this.addresses.depositNoteMint,
+      instructions
+    })
     assert(position)
 
     await this.withDeposit({
@@ -803,12 +802,13 @@ export class Pool {
     change: PoolTokenChange
     destination?: TokenAddress
   }) {
-    // FIXME: can source be calculated in withdraw?
-    const source = await marginAccount.getOrCreatePosition(this.addresses.depositNoteMint)
-
-    const preInstructions: TransactionInstruction[] = []
     const refreshInstructions: TransactionInstruction[] = []
     const instructions: TransactionInstruction[] = []
+
+    const source = marginAccount.getPosition(this.addresses.depositNoteMint)?.address
+    if (!source) {
+      throw new Error("No deposit position")
+    }
 
     await this.withMarginRefreshAllPositionPrices({ instructions: refreshInstructions, pools, marginAccount })
     await marginAccount.withUpdateAllPositionBalances({ instructions: refreshInstructions })
@@ -819,7 +819,7 @@ export class Pool {
       destination,
       change
     })
-    return await sendAll(marginAccount.provider, [preInstructions, chunks(11, refreshInstructions), instructions])
+    return await sendAll(marginAccount.provider, [chunks(11, refreshInstructions), instructions])
   }
 
   async withWithdraw({

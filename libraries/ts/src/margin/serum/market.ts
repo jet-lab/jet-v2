@@ -238,14 +238,15 @@ export class Market {
     if (!openOrdersAccountPubkey) {
       newOpenOrdersAccount = new Keypair()
       openOrdersAccountPubkey = newOpenOrdersAccount.publicKey
-      const createAccountix = await OpenOrders.makeCreateAccountTransaction(
-        marginAccount.provider.connection,
-        this.address,
-        marginAccount.address,
-        newOpenOrdersAccount.publicKey,
-        this.serum.programId
+      instructions.push(
+        await OpenOrders.makeCreateAccountTransaction(
+          marginAccount.provider.connection,
+          this.address,
+          marginAccount.address,
+          newOpenOrdersAccount.publicKey,
+          this.serum.programId
+        )
       )
-      await marginAccount.sendAndConfirm([createAccountix], newOpenOrdersAccount ? [newOpenOrdersAccount] : undefined)
     }
 
     // Attempt to find MSRM fee account
@@ -273,7 +274,7 @@ export class Market {
       feeDiscountPubkey: feeDiscountPubkey,
       payer: payer ?? marginAccount.address
     })
-    return await marginAccount.sendAndConfirm(instructions)
+    return await marginAccount.sendAndConfirm(instructions, newOpenOrdersAccount ? [newOpenOrdersAccount] : undefined)
   }
 
   /** Get instruction to submit an order to Serum
