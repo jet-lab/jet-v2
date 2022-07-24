@@ -28,12 +28,12 @@ import { TokenSwap, CurveType, MarginSwap } from "../../../libraries/ts/src"
 import { sleep } from "../../../libraries/ts/src/utils/sleep"
 
 import { getTokenAccountInfo } from "../util"
-;[new PublicKey(MARGIN_CONFIG.mainnet.orcaSwapProgramId)].forEach(function (swapProgramId) {
+;[new PublicKey(MARGIN_CONFIG["mainnet-beta"].orcaSwapProgramId)].forEach(function (swapProgramId) {
   describe("margin swap - program id: " + swapProgramId.toString(), () => {
-    const controlProgramId: PublicKey = new PublicKey(MARGIN_CONFIG.mainnet.controlProgramId)
-    const marginProgramId: PublicKey = new PublicKey(MARGIN_CONFIG.mainnet.marginProgramId)
-    const marginSwapProgramId: PublicKey = new PublicKey(MARGIN_CONFIG.mainnet.marginSwapProgramId)
-    const metadataProgramId: PublicKey = new PublicKey(MARGIN_CONFIG.mainnet.metadataProgramId)
+    const controlProgramId: PublicKey = new PublicKey(MARGIN_CONFIG["mainnet-beta"].controlProgramId)
+    const marginProgramId: PublicKey = new PublicKey(MARGIN_CONFIG["mainnet-beta"].marginProgramId)
+    const marginSwapProgramId: PublicKey = new PublicKey(MARGIN_CONFIG["mainnet-beta"].marginSwapProgramId)
+    const metadataProgramId: PublicKey = new PublicKey(MARGIN_CONFIG["mainnet-beta"].metadataProgramId)
 
     const confirmOptions: ConfirmOptions = { preflightCommitment: "processed", commitment: "processed" }
 

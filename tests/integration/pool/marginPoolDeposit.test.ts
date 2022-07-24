@@ -29,13 +29,13 @@ import {
 
 describe("margin pool deposit", () => {
   // SUITE SETUP
-  const marginPoolProgramId: PublicKey = new PublicKey(MARGIN_CONFIG.mainnet.marginPoolProgramId)
+  const marginPoolProgramId: PublicKey = new PublicKey(MARGIN_CONFIG["mainnet-beta"].marginPoolProgramId)
   const confirmOptions: ConfirmOptions = { preflightCommitment: "processed", commitment: "processed" }
   const provider = AnchorProvider.local(undefined, confirmOptions)
   anchor.setProvider(provider)
   const payer = (provider.wallet as NodeWallet).payer
   const ownerKeypair = payer
-  const config = MarginClient.getConfig("mainnet")
+  const config = MarginClient.getConfig("mainnet-beta")
   const programs = MarginClient.getPrograms(provider, config)
   const manager = new PoolManager(programs, provider)
   let USDC

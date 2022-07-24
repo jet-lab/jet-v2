@@ -4,7 +4,7 @@ import NodeWallet from "@project-serum/anchor/dist/cjs/nodewallet"
 import { ConfirmOptions, Keypair, LAMPORTS_PER_SOL } from "@solana/web3.js"
 import { expect } from "chai"
 
-import { MarginAccount, MarginClient, MarginPools, Pool, PoolManager } from "../../libraries/ts/src"
+import { MarginAccount, MarginClient, Pool, PoolManager } from "../../libraries/ts/src"
 import { createAuthority, createUserWallet } from "./util"
 
 describe("margin account", () => {
@@ -15,10 +15,10 @@ describe("margin account", () => {
 
   const payer: Keypair = (provider.wallet as NodeWallet).payer
 
-  const config = MarginClient.getConfig("mainnet")
+  const config = MarginClient.getConfig("mainnet-beta")
   const programs = MarginClient.getPrograms(provider, config)
   let poolManager: PoolManager
-  let pools: Record<MarginPools, Pool>
+  let pools: Record<string, Pool>
 
   it("Fund payer", async () => {
     const airdropSignature = await provider.connection.requestAirdrop(provider.wallet.publicKey, 300 * LAMPORTS_PER_SOL)
