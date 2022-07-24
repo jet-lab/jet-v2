@@ -9,16 +9,8 @@
     "orcaSwapProgramId": "3xQ8SWv2GaFXXpHZNqkXsdxq5DZciHBz6ZFoPPfbFd7U",
     "serumProgramId": "DESVgJVGajEgKGXhb6XmqDHGz3VjdgP7rEVESBgxmroY",
     "faucetProgramId": "4bXpkKSV8swHSnwqtzuboGPaPDeEgAn4Vt8GfarV5rZt",
+    "url": "https://jetprot-develope-26c4.devnet.rpcpool.com",
     "tokens": {
-      "BTC": {
-        "symbol": "BTC",
-        "name": "Bitcoin",
-        "decimals": 6,
-        "precision": 4,
-        "faucet": "CEbVVUzzmJKUEhiAoAiCbRvXEmMw92ZhzUv1yiMd2Ybn",
-        "faucetLimit": 1000000,
-        "mint": "3PjEttgLvBxa1pYZhUJbwXRdB7KkXJWKuPxj8Ly65tVj"
-      },
       "USDC": {
         "symbol": "USDC",
         "name": "USDC",
@@ -43,6 +35,15 @@
         "faucet": "2pUWPKjuACUqLGqUJATHc7eTYhYQqtSWbKE77Hu5G74Q",
         "faucetLimit": 100000000,
         "mint": "5zq1tdJfRZ8boTGjKE9dCA77nyFEm4c1uji8Q3nfWfaY"
+      },
+      "BTC": {
+        "symbol": "BTC",
+        "name": "Bitcoin",
+        "decimals": 6,
+        "precision": 4,
+        "faucet": "CEbVVUzzmJKUEhiAoAiCbRvXEmMw92ZhzUv1yiMd2Ybn",
+        "faucetLimit": 1000000,
+        "mint": "3PjEttgLvBxa1pYZhUJbwXRdB7KkXJWKuPxj8Ly65tVj"
       }
     },
     "markets": {
@@ -68,7 +69,7 @@
       }
     }
   },
-  "mainnet": {
+  "mainnet-beta": {
     "controlProgramId": "JPCtrLreUqsEbdhtxZ8zpd8wBydKz4nuEjX5u9Eg5H8",
     "marginProgramId": "JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ",
     "marginPoolProgramId": "JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ",
@@ -77,6 +78,7 @@
     "metadataProgramId": "JPMetawzxw7WyH3qHUVScYHWFBGhjwqDnM2R9qVbRLp",
     "orcaSwapProgramId": "9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP",
     "serumProgramId": "9xQeWvG816bUx9EPjHmaT23yvVM2ZWbrrpZb9PusVFin",
+    "url": "https://jetprot-main-0d7b.mainnet.rpcpool.com",
     "tokens": {
       "mSOL": {
         "symbol": "mSOL",
@@ -85,13 +87,6 @@
         "precision": 2,
         "mint": "mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqcJm7So"
       },
-      "BTC": {
-        "symbol": "BTC",
-        "name": "Bitcoin (Sollet)",
-        "decimals": 6,
-        "precision": 4,
-        "mint": "9n4nbM75f5Ui33ZbPYXn59EwSgE8CGsHtAeTH5YFeJ9E"
-      },
       "SOL": {
         "symbol": "SOL",
         "name": "SOL",
@@ -99,19 +94,26 @@
         "precision": 2,
         "mint": "So11111111111111111111111111111111111111112"
       },
-      "USDT": {
-        "symbol": "USDT",
-        "name": "USDT",
-        "decimals": 6,
-        "precision": 2,
-        "mint": "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB"
-      },
       "USDC": {
         "symbol": "USDC",
         "name": "USDC",
         "decimals": 6,
         "precision": 2,
         "mint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+      },
+      "BTC": {
+        "symbol": "BTC",
+        "name": "Bitcoin (Sollet)",
+        "decimals": 6,
+        "precision": 4,
+        "mint": "9n4nbM75f5Ui33ZbPYXn59EwSgE8CGsHtAeTH5YFeJ9E"
+      },
+      "USDT": {
+        "symbol": "USDT",
+        "name": "USDT",
+        "decimals": 6,
+        "precision": 2,
+        "mint": "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB"
       }
     },
     "markets": {

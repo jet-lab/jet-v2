@@ -13,6 +13,7 @@ export interface MarginConfig {
   orcaSwapProgramId: Address
   serumProgramId: Address
   faucetProgramId?: Address
+  url: string
   tokens: Record<string, MarginTokenConfig>
   markets: Record<string, MarginMarketConfig>
 }
