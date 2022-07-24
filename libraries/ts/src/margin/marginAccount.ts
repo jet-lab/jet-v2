@@ -13,7 +13,7 @@ import {
   TransactionInstruction,
   TransactionSignature
 } from "@solana/web3.js"
-import { Pool, PoolAction } from "./pool/pool"
+import { feesBuffer, Pool, PoolAction } from "./pool/pool"
 import {
   AccountPositionList,
   AccountPositionListLayout,
@@ -25,7 +25,16 @@ import {
 } from "./state"
 import { MarginPrograms } from "./marginClient"
 import { findDerivedAccount } from "../utils/pda"
-import { AssociatedToken, bigIntToBn, bnToNumber, getTimestamp, MarginPools, Number192, TokenAmount } from ".."
+import {
+  AssociatedToken,
+  bigIntToBn,
+  bnToNumber,
+  getTimestamp,
+  MarginPools,
+  Number192,
+  numberToBn,
+  TokenAmount
+} from ".."
 import { Number128 } from "../utils/number128"
 import { MarginPoolConfig, MarginTokenConfig } from "./config"
 import { AccountPosition, PriceInfo } from "./accountPosition"
@@ -91,7 +100,8 @@ export class MarginAccount {
   static readonly RISK_WARNING_LEVEL = 0.8
   static readonly RISK_CRITICAL_LEVEL = 0.9
   static readonly RISK_LIQUIDATION_LEVEL = 1
-  static readonly SETUP_LEVERAGE_FRACTION = Number128.fromDecimal(new BN(75), -2)
+  // TODO: Change to 0.5, or new BN(50) for mainnet deployment
+  static readonly SETUP_LEVERAGE_FRACTION = Number128.fromDecimal(new BN(100), -2)
 
   info?: {
     marginAccount: MarginAccountData
@@ -332,8 +342,7 @@ export class MarginAccount {
               .sub(this.valuation.effectiveCollateral.mul(warningRiskLevel))
               .div(collateralWeight.mul(warningRiskLevel))
               .div(lamportPrice)
-      )
-        .asTokenAmount(pool.decimals)
+      ).asTokenAmount(pool.decimals)
 
       // Buying power
       // FIXME
@@ -375,15 +384,15 @@ export class MarginAccount {
       }
     }
 
-    const walletAmount = pool.symbol && this.walletTokens?.map[pool.symbol].amount
-    const feeCover = new TokenAmount(new BN(70000000), pool.decimals)
+    // Wallet's balance for pool
+    // If depsiting or repaying SOL, maximum input should consider fees
+    let walletAmount = (pool.symbol && this.walletTokens?.map[pool.symbol].amount) ?? TokenAmount.zero(pool.decimals)
+    if (pool.tokenMint.equals(NATIVE_MINT)) {
+      walletAmount = TokenAmount.max(walletAmount.subb(numberToBn(feesBuffer)), TokenAmount.zero(pool.decimals))
+    }
 
     // Max deposit
-    let deposit = walletAmount ?? zero
-    // If depositing SOL, maximum input should still cover fees
-    if (pool.tokenMint.equals(NATIVE_MINT)) {
-      deposit = TokenAmount.max(deposit.sub(feeCover), zero)
-    }
+    const deposit = walletAmount
 
     const priceExponent = pool.info.tokenPriceOracle.exponent
     const priceComponent = bigIntToBn(pool.info.tokenPriceOracle.aggregate.priceComponent)
@@ -401,7 +410,7 @@ export class MarginAccount {
       .div(lamportPrice)
       .asTokenAmount(pool.decimals)
     withdraw = TokenAmount.min(withdraw, depositBalance)
-    withdraw = TokenAmount.min(withdraw, pool.vaultTokens)
+    withdraw = TokenAmount.min(withdraw, pool.vault)
     withdraw = TokenAmount.max(withdraw, zero)
 
     // Max borrow
@@ -409,15 +418,11 @@ export class MarginAccount {
       .div(Number128.ONE.add(Number128.ONE.div(MarginAccount.SETUP_LEVERAGE_FRACTION.mul(loanNoteValueModifier))))
       .div(lamportPrice)
       .asTokenAmount(pool.decimals)
-    borrow = TokenAmount.min(borrow, pool.vaultTokens)
+    borrow = TokenAmount.min(borrow, pool.vault)
     borrow = TokenAmount.max(borrow, zero)
 
     // Max repay
-    let repay = walletAmount ? TokenAmount.min(loanBalance, walletAmount) : loanBalance
-    // If repaying SOL, maximum input should still cover fees
-    if (pool.tokenMint.equals(NATIVE_MINT)) {
-      repay = TokenAmount.max(repay.sub(feeCover), zero)
-    }
+    const repay = TokenAmount.min(loanBalance, walletAmount)
 
     // Max swap
     const swap = withdraw
@@ -762,9 +767,7 @@ export class MarginAccount {
     positionTokenMint: Address
     instructions: TransactionInstruction[]
   }) {
-    assert(this.info)
     const tokenMintAddress = translateAddress(positionTokenMint)
-
     for (let i = 0; i < this.positions.length; i++) {
       const position = this.positions[i]
       if (position.token.equals(tokenMintAddress)) {

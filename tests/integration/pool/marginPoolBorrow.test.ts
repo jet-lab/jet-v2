@@ -101,7 +101,7 @@ describe("margin pool borrow", () => {
     utilizationRate1: 10,
     utilizationRate2: 20,
     managementFeeRate: 10,
-    managementFeeCollectThreshold: new BN(100),
+    managementFeeCollectThreshold: new BN(2),
     flags: new BN(2) // ALLOW_LENDING
   }
 
@@ -311,10 +311,6 @@ describe("margin pool borrow", () => {
     const borrowedUSDC = TokenAmount.tokens(1_000, marginPool_USDC.decimals)
 
     // ACT
-    //TODO remove this.
-    await pythClient.setPythPrice(ownerKeypair, SOL_oracle[1].publicKey, 100, 1, -8)
-    await pythClient.setPythPrice(ownerKeypair, USDC_oracle[1].publicKey, 1, 0.01, -8)
-
     await marginPool_SOL.marginBorrow({
       marginAccount: marginAccount_A,
       pools,

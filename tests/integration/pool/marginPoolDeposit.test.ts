@@ -100,7 +100,7 @@ describe("margin pool deposit", () => {
     utilizationRate1: 10,
     utilizationRate2: 20,
     managementFeeRate: 10,
-    managementFeeCollectThreshold: new BN(100),
+    managementFeeCollectThreshold: new BN(2),
     flags: new BN(2) // ALLOW_LENDING
   }
 
@@ -279,6 +279,9 @@ describe("margin pool deposit", () => {
     await marginPool_SOL.marginRefreshPositionPrice(marginAccount_A)
     await marginPool_SOL.marginRefreshPositionPrice(marginAccount_B)
     await marginPool_SOL.marginRefreshPositionPrice(marginAccount_C)
+    await marginAccount_A.refresh()
+    await marginAccount_B.refresh()
+    await marginAccount_C.refresh()
 
     // TEST
     expect(await getTokenBalance(provider, "processed", user_b_sol_account)).to.eq(0)

@@ -107,19 +107,9 @@ pub fn margin_repay_handler(
     // First record a withdraw of the deposit to use for repaying in tokens
     let withdraw_amount =
         pool.convert_amount(Amount::tokens(repay_amount.tokens), PoolAction::Withdraw)?;
-    msg!(
-        "Withdrawing [{} tokens, {} notes] from deposit pool",
-        withdraw_amount.tokens,
-        withdraw_amount.notes
-    );
     pool.withdraw(&withdraw_amount)?;
 
     // Then record a repay using the withdrawn tokens
-    msg!(
-        "Repaying [{} tokens, {} notes] into loan pool",
-        repay_amount.tokens,
-        repay_amount.notes
-    );
     pool.repay(&repay_amount)?;
 
     // Finish by burning the loan and deposit notes
@@ -130,10 +120,7 @@ pub fn margin_repay_handler(
         ctx.accounts.burn_loan_context().with_signer(&signer),
         repay_amount.notes,
     )?;
-    token::burn(
-        ctx.accounts.burn_deposit_context().with_signer(&signer),
-        withdraw_amount.notes,
-    )?;
+    token::burn(ctx.accounts.burn_deposit_context(), withdraw_amount.notes)?;
 
     emit!(events::MarginRepay {
         margin_pool: pool.key(),

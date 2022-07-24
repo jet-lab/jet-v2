@@ -22,6 +22,8 @@ use std::sync::Arc;
 
 use anchor_lang::prelude::Pubkey;
 use anyhow::Error;
+use async_trait::async_trait;
+use jet_margin_sdk::swap::SwapPool;
 use jet_simulation::{generate_keypair, solana_rpc_api::SolanaRpcClient};
 use jet_static_program_registry::{
     orca_swap_v1, orca_swap_v2, related_programs, spl_token_swap_v2,
@@ -39,22 +41,23 @@ related_programs! {
     ]}
 }
 
-pub struct SwapPool {
-    pub pool: Pubkey,
-    pub pool_authority: Pubkey,
-    pub pool_mint: Pubkey,
-    pub mint_a: Pubkey,
-    pub mint_b: Pubkey,
-    pub token_a: Pubkey,
-    pub token_b: Pubkey,
-    pub fee_account: Pubkey,
-    pub program: Pubkey,
+#[async_trait]
+pub trait SwapPoolConfig: Sized {
+    async fn configure(
+        rpc: &Arc<dyn SolanaRpcClient>,
+        program_id: &Pubkey,
+        mint_a: &Pubkey,
+        mint_b: &Pubkey,
+        a_amount: u64,
+        b_amount: u64,
+    ) -> Result<Self, Error>;
 }
 
-impl SwapPool {
+#[async_trait]
+impl SwapPoolConfig for SwapPool {
     /// Configure a new swap pool. Supply the amount of tokens to avoid needing
     /// to deposit tokens separately.
-    pub async fn configure(
+    async fn configure(
         rpc: &Arc<dyn SolanaRpcClient>,
         program_id: &Pubkey,
         mint_a: &Pubkey,

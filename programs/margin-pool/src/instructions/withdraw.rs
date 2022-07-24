@@ -113,10 +113,7 @@ pub fn withdraw_handler(
         ctx.accounts.transfer_context().with_signer(&signer),
         withdraw_amount.tokens,
     )?;
-    token::burn(
-        ctx.accounts.burn_note_context().with_signer(&signer),
-        withdraw_amount.notes,
-    )?;
+    token::burn(ctx.accounts.burn_note_context(), withdraw_amount.notes)?;
 
     emit!(events::Withdraw {
         margin_pool: ctx.accounts.margin_pool.key(),

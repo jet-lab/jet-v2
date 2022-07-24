@@ -4,9 +4,9 @@ use hosted_tests::{
     context::test_context,
     margin::MarginUser,
     setup_helper::{setup_token, setup_user},
-    tokens::TokenPrice,
 };
 use jet_margin::ErrorCode;
+use jet_margin_sdk::tokens::TokenPrice;
 use serial_test::serial;
 use solana_sdk::native_token::LAMPORTS_PER_SOL;
 use solana_sdk::pubkey::Pubkey;
