@@ -20,8 +20,8 @@ import { MarginPrograms } from "../../libraries/ts/src"
 
 import MARGIN_CONFIG from "../../libraries/ts/src/margin/config.json"
 
-const controlProgramId: PublicKey = new PublicKey(MARGIN_CONFIG.localnet.controlProgramId)
-const marginMetadataProgramId: PublicKey = new PublicKey(MARGIN_CONFIG.localnet.metadataProgramId)
+const controlProgramId: PublicKey = new PublicKey(MARGIN_CONFIG.mainnet.controlProgramId)
+const marginMetadataProgramId: PublicKey = new PublicKey(MARGIN_CONFIG.mainnet.metadataProgramId)
 
 export async function createAuthority(programs: MarginPrograms, provider: AnchorProvider): Promise<void> {
   const [authority] = await PublicKey.findProgramAddress([], controlProgramId)

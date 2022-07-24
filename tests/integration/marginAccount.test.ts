@@ -15,7 +15,8 @@ describe("margin account", () => {
 
   const payer: Keypair = (provider.wallet as NodeWallet).payer
 
-  const programs = MarginClient.getPrograms(provider, "localnet")
+  const config = MarginClient.getConfig("mainnet")
+  const programs = MarginClient.getPrograms(provider, config)
   let poolManager: PoolManager
   let pools: Record<MarginPools, Pool>
 

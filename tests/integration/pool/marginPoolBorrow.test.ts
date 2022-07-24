@@ -31,13 +31,14 @@ import {
 
 describe("margin pool borrow", () => {
   // SUITE SETUP
-  const marginPoolProgramId: PublicKey = new PublicKey(MARGIN_CONFIG.localnet.marginPoolProgramId)
+  const marginPoolProgramId: PublicKey = new PublicKey(MARGIN_CONFIG.mainnet.marginPoolProgramId)
   const confirmOptions: ConfirmOptions = { preflightCommitment: "processed", commitment: "processed" }
   const provider = AnchorProvider.local(undefined, confirmOptions)
   anchor.setProvider(provider)
   const payer = (provider.wallet as NodeWallet).payer
   const ownerKeypair = payer
-  const programs = MarginClient.getPrograms(provider, "localnet")
+  const config = MarginClient.getConfig("mainnet")
+  const programs = MarginClient.getPrograms(provider, config)
   const manager = new PoolManager(programs, provider)
   let USDC
   let SOL
@@ -445,7 +446,7 @@ describe("margin pool borrow", () => {
           loanNoteMint: marginPool_SOL.addresses.loanNoteMint
         }
       }
-      const transactions = await MarginClient.getTransactionHistory(provider, wallet_a.publicKey, mints, "localnet")
+      const transactions = await MarginClient.getTransactionHistory(provider, wallet_a.publicKey, mints, "mainnet")
 
       expect(transactions).to.have.length(5)
 
