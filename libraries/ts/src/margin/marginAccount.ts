@@ -25,7 +25,16 @@ import {
 } from "./state"
 import { MarginPrograms } from "./marginClient"
 import { findDerivedAccount } from "../utils/pda"
-import { AssociatedToken, bigIntToBn, bnToNumber, getTimestamp, MarginPools, Number192, TokenAmount } from ".."
+import {
+  AssociatedToken,
+  bigIntToBn,
+  bnToNumber,
+  getTimestamp,
+  MarginPools,
+  Number192,
+  numberToBn,
+  TokenAmount
+} from ".."
 import { Number128 } from "../utils/number128"
 import { MarginPoolConfig, MarginTokenConfig } from "./config"
 import { AccountPosition, PriceInfo } from "./accountPosition"
@@ -379,7 +388,7 @@ export class MarginAccount {
     // If depsiting or repaying SOL, maximum input should consider fees
     let walletAmount = (pool.symbol && this.walletTokens?.map[pool.symbol].amount) ?? TokenAmount.zero(pool.decimals)
     if (pool.tokenMint.equals(NATIVE_MINT)) {
-      walletAmount = TokenAmount.max(walletAmount.sub(numberToBn(feesBuffer)), TokenAmount.zero(pool.decimals))
+      walletAmount = TokenAmount.max(walletAmount.subb(numberToBn(feesBuffer)), TokenAmount.zero(pool.decimals))
     }
 
     // Max deposit
