@@ -3,7 +3,7 @@ use std::num::NonZeroU64;
 use anyhow::Error;
 
 use jet_margin_sdk::{
-    ix_builder::{OrderParams, OrderSide, OrderType, SelfTradeBehavior},
+    ix_builder::{OrderParams, OrderSide, OrderType, SelfTradeBehavior, SwapParams},
     tokens::TokenPrice,
 };
 use solana_sdk::native_token::LAMPORTS_PER_SOL;
@@ -242,10 +242,12 @@ async fn serum_swap() -> Result<(), anyhow::Error> {
             user_a_open_orders,
             tsol_transit_a,
             usdc_transit_a,
-            // we want a minimum of 0.95 SOL for 100 USDC
-            100 * ONE_USDC,
-            95 * ONE_TSOL / 10,
-            jet_margin_swap::instructions::SwapDirection::Bid,
+            SwapParams {
+                // we want a minimum of 0.95 SOL for 100 USDC
+                amount_in: 100 * ONE_USDC,
+                minimum_amount_out: 95 * ONE_TSOL / 10,
+                swap_direction: jet_margin_swap::instructions::SwapDirection::Bid,
+            },
         )
         .await?;
 
@@ -286,9 +288,11 @@ async fn serum_swap() -> Result<(), anyhow::Error> {
             user_a_open_orders,
             tsol_transit_a,
             usdc_transit_a,
-            95 * ONE_TSOL / 10,
-            100 * ONE_USDC,
-            jet_margin_swap::instructions::SwapDirection::Ask,
+            SwapParams {
+                amount_in: 95 * ONE_TSOL / 10,
+                minimum_amount_out: 100 * ONE_USDC,
+                swap_direction: jet_margin_swap::instructions::SwapDirection::Ask,
+            },
         )
         .await?;
 

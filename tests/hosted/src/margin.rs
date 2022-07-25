@@ -33,6 +33,7 @@ use jet_margin::{MarginAccount, PositionKind};
 use jet_margin_pool::{Amount, MarginPool, MarginPoolConfig, TokenChange};
 use jet_margin_sdk::ix_builder::{
     ControlIxBuilder, MarginPoolConfiguration, MarginPoolIxBuilder, OrderParams, SerumMarketV3,
+    SwapParams,
 };
 use jet_margin_sdk::swap::SwapPool;
 use jet_margin_sdk::tokens::TokenOracle;
@@ -418,9 +419,7 @@ impl MarginUser {
         open_orders: Pubkey,
         transit_base_account: Pubkey,
         transit_quote_account: Pubkey,
-        amount_in: u64,
-        minimum_amount_out: u64,
-        swap_direction: SwapDirection,
+        params: SwapParams,
     ) -> Result<(), Error> {
         let tx = self
             .tx
@@ -429,9 +428,7 @@ impl MarginUser {
                 open_orders,
                 transit_base_account,
                 transit_quote_account,
-                amount_in,
-                minimum_amount_out,
-                swap_direction,
+                params,
             )
             .await?;
 

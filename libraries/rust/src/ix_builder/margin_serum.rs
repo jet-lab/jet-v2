@@ -51,12 +51,21 @@ pub struct MarginSerumIxBuilder {
     pub market: SerumMarketV3,
 }
 
+/// Parameters used in the serum-swap instruction
+#[derive(Debug)]
+pub struct SwapParams {
+    pub amount_in: u64,
+    pub minimum_amount_out: u64,
+    pub swap_direction: SwapDirection,
+}
+
 impl MarginSerumIxBuilder {
     pub fn new(market: SerumMarketV3) -> Self {
         Self { market }
     }
 
     /// Execute a Serum swap
+    #[allow(clippy::too_many_arguments)]
     pub fn serum_swap(
         &self,
         margin_account: Pubkey,
@@ -65,9 +74,7 @@ impl MarginSerumIxBuilder {
         transit_quote_account: Pubkey,
         pool_deposit_note_base: Pubkey,
         pool_deposit_note_quote: Pubkey,
-        amount_in: u64,
-        minimum_amount_out: u64,
-        swap_direction: SwapDirection,
+        params: SwapParams,
     ) -> Instruction {
         let pool_base = MarginPoolIxBuilder::new(self.market.base_token);
         let pool_quote = MarginPoolIxBuilder::new(self.market.quote_token);
@@ -111,9 +118,9 @@ impl MarginSerumIxBuilder {
         Instruction {
             program_id: jet_margin_swap::ID,
             data: jet_margin_swap::instruction::SerumSwap {
-                amount_in,
-                minimum_amount_out,
-                swap_direction,
+                amount_in: params.amount_in,
+                minimum_amount_out: params.minimum_amount_out,
+                swap_direction: params.swap_direction,
             }
             .data(),
             accounts,
