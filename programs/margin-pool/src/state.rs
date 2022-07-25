@@ -23,10 +23,11 @@ use serde::ser::{Serialize, SerializeStruct, Serializer};
 use std::{
     borrow::{Borrow, BorrowMut},
     cmp::Ordering,
+    marker::PhantomData,
 };
 
 use crate::{
-    util::{self, supply},
+    util::{self, account_info_wrapper, DynamicMint, DynamicTokenAccount, Just, Maybe, Nothing},
     Amount, AmountKind, ChangeKind, ErrorCode, TokenChange,
 };
 
@@ -162,21 +163,25 @@ impl MarginPool {
         PoolFlags::from_bits_truncate(self.config.flags)
     }
 
-    pub fn join(&self) -> PoolManager<&MarginPool, (), (), ()> {
+    pub fn join<'info>(&self) -> PoolManager<'info, &MarginPool, Nothing, Nothing, Nothing> {
         PoolManager {
             pool: self,
-            vault: (),
-            deposit_note_mint: (),
-            loan_note_mint: (),
+            vault: Nothing,
+            deposit_note_mint: Nothing,
+            loan_note_mint: Nothing,
+            _phantom: PhantomData,
         }
     }
 
-    pub fn join_mut(&mut self) -> PoolManager<&mut MarginPool, (), (), ()> {
+    pub fn join_mut<'info>(
+        &mut self,
+    ) -> PoolManager<'info, &mut MarginPool, Nothing, Nothing, Nothing> {
         PoolManager {
             pool: self,
-            vault: (),
-            deposit_note_mint: (),
-            loan_note_mint: (),
+            vault: Nothing,
+            deposit_note_mint: Nothing,
+            loan_note_mint: Nothing,
+            _phantom: PhantomData,
         }
     }
 }
@@ -184,72 +189,100 @@ impl MarginPool {
 /// Combines a margin pool with optional accounts that contain relevant balances.
 /// The type system is used to ensure at compile time that the accounts are
 /// populated before any operations that would require the account are used.
-/// Likewise it is critical that you do not allow this struct to be
-/// instantiated without using the proper join_* or with_* builder methods.
-/// So keep the AccountInfo fields private.
-pub struct PoolManager<P, V, D, L> {
+pub struct PoolManager<
+    'info,
+    P,
+    V: Maybe<Vault<'info>>,
+    D: Maybe<DepositNoteMint<'info>>,
+    L: Maybe<LoanNoteMint<'info>>,
+> {
     pub pool: P,
     vault: V,
     deposit_note_mint: D,
     loan_note_mint: L,
+    _phantom: PhantomData<&'info ()>,
 }
+
+account_info_wrapper!(
+    pub DepositNoteMint as DynamicMint<'info>;
+    pub LoanNoteMint as DynamicMint<'info>;
+    pub Vault as DynamicTokenAccount<'info>;
+);
 
 /// These are builder/plug-in methods to reconstruct the PoolManager
 /// with additional optional dependencies mixed in
 /// They only require a pool for validations
-impl<P: Borrow<MarginPool>, V, D, L> PoolManager<P, V, D, L> {
-    pub fn with_vault<'info, A: ToAccountInfo<'info>>(
+impl<
+        'info,
+        P: Borrow<MarginPool>,
+        V: Maybe<Vault<'info>>,
+        D: Maybe<DepositNoteMint<'info>>,
+        L: Maybe<LoanNoteMint<'info>>,
+    > PoolManager<'info, P, V, D, L>
+{
+    pub fn with_vault<A: ToAccountInfo<'info>>(
         self,
         vault: &A,
-    ) -> PoolManager<P, AccountInfo<'info>, D, L> {
+    ) -> PoolManager<'info, P, Just<Vault<'info>>, D, L> {
         let vault = vault.to_account_info();
         assert_eq!(&self.pool.borrow().vault, vault.key);
         PoolManager {
             pool: self.pool,
-            vault,
+            vault: Just(Vault(vault)),
             deposit_note_mint: self.deposit_note_mint,
             loan_note_mint: self.loan_note_mint,
+            _phantom: PhantomData,
         }
     }
 
-    pub fn with_loan_note_mint<'info, A: ToAccountInfo<'info>>(
+    pub fn with_deposit_note_mint<A: ToAccountInfo<'info>>(
         self,
         mint: &A,
-    ) -> PoolManager<P, V, D, AccountInfo<'info>> {
+    ) -> PoolManager<'info, P, V, Just<DepositNoteMint<'info>>, L> {
+        let mint = mint.to_account_info();
+        assert_eq!(&self.pool.borrow().deposit_note_mint, mint.key);
+        PoolManager {
+            pool: self.pool,
+            vault: self.vault,
+            deposit_note_mint: Just(DepositNoteMint(mint)),
+            loan_note_mint: self.loan_note_mint,
+            _phantom: PhantomData,
+        }
+    }
+
+    pub fn with_loan_note_mint<A: ToAccountInfo<'info>>(
+        self,
+        mint: &A,
+    ) -> PoolManager<'info, P, V, D, Just<LoanNoteMint<'info>>> {
         let mint = mint.to_account_info();
         assert_eq!(&self.pool.borrow().loan_note_mint, mint.key);
         PoolManager {
             pool: self.pool,
             vault: self.vault,
             deposit_note_mint: self.deposit_note_mint,
-            loan_note_mint: mint,
-        }
-    }
-
-    pub fn with_deposit_note_mint<'info, A: ToAccountInfo<'info>>(
-        self,
-        mint: &A,
-    ) -> PoolManager<P, V, AccountInfo<'info>, L> {
-        let mint = mint.to_account_info();
-        assert_eq!(&self.pool.borrow().deposit_note_mint, mint.key);
-        PoolManager {
-            pool: self.pool,
-            vault: self.vault,
-            deposit_note_mint: mint,
-            loan_note_mint: self.loan_note_mint,
+            loan_note_mint: Just(LoanNoteMint(mint)),
+            _phantom: PhantomData,
         }
     }
 }
 
 /// Requires vault
-impl<'info, P, D, L> PoolManager<P, AccountInfo<'info>, D, L> {
+impl<'info, P, D: Maybe<DepositNoteMint<'info>>, L: Maybe<LoanNoteMint<'info>>>
+    PoolManager<'info, P, Just<Vault<'info>>, D, L>
+{
     pub fn vault_balance(&self) -> Result<u64> {
-        anchor_spl::token::accessor::amount(&self.vault)
+        self.vault.amount()
     }
 }
 
 /// Requires mutable pool and vault
-impl<'info, P: BorrowMut<MarginPool>, D, L> PoolManager<P, AccountInfo<'info>, D, L> {
+impl<
+        'info,
+        P: BorrowMut<MarginPool>,
+        D: Maybe<DepositNoteMint<'info>>,
+        L: Maybe<LoanNoteMint<'info>>,
+    > PoolManager<'info, P, Just<Vault<'info>>, D, L>
+{
     /// Accrue interest charges on outstanding borrows
     ///
     /// Returns true if the interest was fully accumulated, false if it was
@@ -283,7 +316,13 @@ impl<'info, P: BorrowMut<MarginPool>, D, L> PoolManager<P, AccountInfo<'info>, D
 }
 
 /// Requires pool and vault
-impl<'info, P: Borrow<MarginPool>, D, L> PoolManager<P, AccountInfo<'info>, D, L> {
+impl<
+        'info,
+        P: Borrow<MarginPool>,
+        D: Maybe<DepositNoteMint<'info>>,
+        L: Maybe<LoanNoteMint<'info>>,
+    > PoolManager<'info, P, Just<Vault<'info>>, D, L>
+{
     pub fn total_value(&self) -> Result<Number> {
         Ok(*self.pool.borrow().total_borrowed() + Number::from(self.vault_balance()?))
     }
@@ -351,30 +390,40 @@ impl<'info, P: Borrow<MarginPool>, D, L> PoolManager<P, AccountInfo<'info>, D, L
 }
 
 /// Requires pool, vault, and deposit note mint
-impl<'info, P: Borrow<MarginPool>, L> PoolManager<P, AccountInfo<'info>, AccountInfo<'info>, L> {
+impl<'info, P: Borrow<MarginPool>, L: Maybe<LoanNoteMint<'info>>>
+    PoolManager<'info, P, Just<Vault<'info>>, Just<DepositNoteMint<'info>>, L>
+{
     pub fn deposit_amount(&self) -> Result<FullAmountCalculator> {
         Ok(FullAmountCalculator {
             note_type: TokenType::DepositNote,
             total_tokens: self.total_value()? - *self.pool.borrow().total_uncollected_fees(),
-            note_supply: supply(&self.deposit_note_mint)?.into(),
+            note_supply: self.deposit_note_mint.supply()?.into(),
         })
     }
 }
 
 /// Requires pool and loan note mint
-impl<'info, P: Borrow<MarginPool>, V, D> PoolManager<P, V, D, AccountInfo<'info>> {
+impl<'info, P: Borrow<MarginPool>, V: Maybe<Vault<'info>>, D: Maybe<DepositNoteMint<'info>>>
+    PoolManager<'info, P, V, D, Just<LoanNoteMint<'info>>>
+{
     pub fn loan_amount(&self) -> Result<FullAmountCalculator> {
         Ok(FullAmountCalculator {
             note_type: TokenType::LoanNote,
             total_tokens: *self.pool.borrow().total_borrowed(),
-            note_supply: supply(&self.loan_note_mint)?.into(),
+            note_supply: self.loan_note_mint.supply()?.into(),
         })
     }
 }
 
 /// Requires vault, deposit note mint, and loan note mint
 impl<'info, P: Borrow<MarginPool>>
-    PoolManager<P, AccountInfo<'info>, AccountInfo<'info>, AccountInfo<'info>>
+    PoolManager<
+        'info,
+        P,
+        Just<Vault<'info>>,
+        Just<DepositNoteMint<'info>>,
+        Just<LoanNoteMint<'info>>,
+    >
 {
     /// Calculate the prices for the deposit and loan notes, based on
     /// the price of the underlying token.
@@ -415,8 +464,10 @@ impl<'info, P: Borrow<MarginPool>>
     }
 }
 
-/// Requires mutable pool and deposit notes
-impl<'info, P: BorrowMut<MarginPool>, L> PoolManager<P, AccountInfo<'info>, AccountInfo<'info>, L> {
+/// Requires mutable pool, vault and deposit notes
+impl<'info, P: BorrowMut<MarginPool>, L: Maybe<LoanNoteMint<'info>>>
+    PoolManager<'info, P, Just<Vault<'info>>, Just<DepositNoteMint<'info>>, L>
+{
     /// Collect any fees accumulated from interest
     ///
     /// Returns the number of notes to mint to represent the collected fees

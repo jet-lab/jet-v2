@@ -15,6 +15,8 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+use std::ops::{Deref, DerefMut};
+
 use anchor_lang::{prelude::AccountInfo, solana_program::clock::UnixTimestamp};
 use jet_proto_math::Number;
 
@@ -75,4 +77,72 @@ pub fn supply(account: &AccountInfo) -> anchor_lang::Result<u64> {
     let mut amount_bytes = [0u8; 8];
     amount_bytes.copy_from_slice(&bytes[36..44]);
     Ok(u64::from_le_bytes(amount_bytes))
+}
+
+/// A Token Account whose balance may change, so every read
+/// requires a new access from the account data
+pub trait DynamicTokenAccount<'info>: AsRef<AccountInfo<'info>> {
+    fn amount(&self) -> anchor_lang::Result<u64> {
+        anchor_spl::token::accessor::amount(self.as_ref())
+    }
+}
+
+/// A Token Mint whose balance may change, so every read
+/// requires a new access from the account data
+pub trait DynamicMint<'info>: AsRef<AccountInfo<'info>> {
+    fn supply(&self) -> anchor_lang::Result<u64> {
+        supply(self.as_ref())
+    }
+}
+
+macro_rules! account_info_wrapper {
+    ($($pub:vis $Name:ident $(as $($DefaultedTrait:ty),+)?);+$(;)?) => {
+        $(
+            $pub struct $Name<'info>(AccountInfo<'info>);
+
+            impl<'info> AsRef<AccountInfo<'info>> for $Name<'info> {
+                fn as_ref(&self) -> &AccountInfo<'info> {
+                    &self.0
+                }
+            }
+
+            $($(impl<'info> $DefaultedTrait for $Name<'info> {})+)?
+        )+
+    };
+}
+pub(crate) use account_info_wrapper;
+
+/// Same idea as Option, but it enables you to get compile-time
+/// guarantees that a certain value will be present. It does this by
+/// leveraging compiler checks on types rather than runtime pattern
+/// matching of enum values.
+/// A type constraint requiring Maybe<T> can accept Nothing or Just<T>.
+/// The compiler will verify that any time you try to access a Just<T>,
+/// a Just<T> will definitely be available.
+/// If you want to execute runtime checks on an unknown Maybe, convert it to an Option.
+pub trait Maybe<T>: private::Sealed {}
+
+pub struct Nothing;
+pub struct Just<T>(pub T);
+impl<T> Maybe<T> for Nothing {}
+impl<T> Maybe<T> for Just<T> {}
+
+impl<T> Deref for Just<T> {
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl<T> DerefMut for Just<T> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+mod private {
+    pub trait Sealed {}
+    impl Sealed for super::Nothing {}
+    impl<T> Sealed for super::Just<T> {}
 }
