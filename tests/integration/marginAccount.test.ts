@@ -5,9 +5,9 @@ import { ConfirmOptions, Keypair, LAMPORTS_PER_SOL } from "@solana/web3.js"
 import { expect } from "chai"
 
 import { MarginAccount, MarginClient, Pool, PoolManager } from "../../libraries/ts/src"
-import { createAuthority, createUserWallet } from "./util"
+import { createAuthority, createUserWallet, DEFAULT_MARGIN_CONFIG } from "./util"
 
-describe("margin account", () => {
+describe("margin account", async () => {
   const confirmOptions: ConfirmOptions = { preflightCommitment: "processed", commitment: "processed" }
 
   const provider = AnchorProvider.local(undefined, confirmOptions)
@@ -15,8 +15,7 @@ describe("margin account", () => {
 
   const payer: Keypair = (provider.wallet as NodeWallet).payer
 
-  const config = MarginClient.getConfig("mainnet-beta")
-  const programs = MarginClient.getPrograms(provider, config)
+  const programs = MarginClient.getPrograms(provider, DEFAULT_MARGIN_CONFIG)
   let poolManager: PoolManager
   let pools: Record<string, Pool>
 

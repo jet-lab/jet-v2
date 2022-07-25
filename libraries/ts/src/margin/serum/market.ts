@@ -255,7 +255,7 @@ export class Market {
       feeDiscountPubkey =
         (await this.serum.findBestFeeDiscountKey(marginAccount.provider.connection, marginAccount.address)).pubkey ??
         undefined
-    } catch (err) {
+    } catch (err: any) {
       if (!err.message || !err.message.includes("could not find mint")) {
         console.error(err)
       }

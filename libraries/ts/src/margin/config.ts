@@ -1,7 +1,7 @@
 import { Address } from "@project-serum/anchor"
-import MARGIN_CONFIG from "./config.json"
 
-export type MarginCluster = keyof typeof MARGIN_CONFIG | MarginConfig
+export const MARGIN_CONFIG_URL = "https://storage.googleapis.com/jet-app-config/config.json"
+export type MarginCluster = "localnet" | "devnet" | "mainnet-beta" | MarginConfig
 
 export interface MarginConfig {
   controlProgramId: Address
@@ -47,4 +47,11 @@ export interface MarginMarketConfig {
   baseLotSize: number
   quoteLotSize: number
   feeRateBps: number
+}
+
+export async function getLatestConfig(cluster: string): Promise<MarginConfig> {
+  // only works in browser or node version >=18
+  // @ts-ignore
+  let response = await fetch(MARGIN_CONFIG_URL)
+  return (await response.json())[cluster]
 }
