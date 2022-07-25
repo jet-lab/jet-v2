@@ -71,40 +71,30 @@
         "symbol": "BTC/USD",
         "address": "GJp622VronyrMkbS423pVgdx19FwCEVzNfMvDbrRriV1",
         "product": "5MhM4ooa18waRNZhkg99YF5W5TuXRmTokkL9qtcztXUe",
-        "price": 31364.65,
-        "confidence": 94.62929149,
         "exponent": -8
       },
       "ETH_USD": {
         "symbol": "ETH/USD",
         "address": "BzZG6NQBsEVbuNgWhfBuwGC6z1XozVxxMuBkBTh6Jxns",
         "product": "AbMm5f3356Dh32ZzDYoX7s8FVMHBBrRnRozhopbWpmi6",
-        "price": 1208.63,
-        "confidence": 0.65,
         "exponent": -8
       },
       "SOL_USD": {
         "symbol": "SOL/USD",
         "address": "3x8ApfZMMmT33FP4EWBNPCxvyBwzj7JJGuesxiFrGmUG",
         "product": "3QHdRrzVGrzKmAzdFh5EpSwoaUq5xEbFxJzq4YtQoAoa",
-        "price": 39.68499999,
-        "confidence": 0.044999990000000004,
         "exponent": -8
       },
       "SRM_USD": {
         "symbol": "SRM/USD",
         "address": "JDhzaj9F3Fh5kbDCy94qPReC6v8STLWTaUy94S9CtRUC",
         "product": "4rmzFz9BazqhXEXo9BS2Nvcq1TRemE58Us5uz6ZANmwR",
-        "price": 1.0471709,
-        "confidence": 0.0041709,
         "exponent": -8
       },
       "USDC_USD": {
         "symbol": "USDC/USD",
         "address": "AQGSisqrjZMKaxiiE3xGJ5aRtf8zzKs5MQUmXX6F6JAm",
         "product": "2wsVafE5PnSaaawN38JhEUPeRFMfLEKa7EZyo476Hoc3",
-        "price": 1,
-        "confidence": 0.00025100000000000003,
         "exponent": -8
       }
     },
@@ -188,6 +178,46 @@
         "asks": "6pDw7ZbH4uNqyJGSPuaiwNCiYqBK1K7hMdgsUe6LpqhA",
         "quoteDustThreshold": 100,
         "baseLotSize": 10000,
+        "quoteLotSize": 100,
+        "feeRateBps": 0
+      },
+      "SOL_USDC": {
+        "symbol": "SOL/USDC",
+        "market": "6AiqFkW15VDN44mK1nAsJ4LtJuaUfDmLgBHqpmxTX55W",
+        "baseMint": "So11111111111111111111111111111111111111112",
+        "baseDecimals": 9,
+        "baseVault": "4gZPT6W5oYWfViEuBJdZRNTYNBzzhEPsBtWKsapY7kW6",
+        "baseSymbol": "SOL",
+        "quoteMint": "4ruM7B4Hz4MUxy7DSFBRK9zCFLvkbLccB6S3zJ7t2525",
+        "quoteDecimals": 6,
+        "quoteVault": "HjAUgmDvtEbUDPCfHRVcnSUftGHTYradvE5xVKCz6kTs",
+        "quoteSymbol": "USDC",
+        "requestQueue": "E4Yibo3ZbBNMnH67BfQdFbM43mjqNBg5DuvoQV2c2Bi5",
+        "eventQueue": "6ZyyDbc7QHMoDgqj4kW1VJ7aicJTvS8eq84ZnFZKyvXn",
+        "bids": "8F4qXQ34ocLUsCuQYhJYuBTK4CnrbtGMUS59HLmqb6jx",
+        "asks": "2UiLpfSMh9t6ADdxLDyr34zfTgdkzBtUzztXuBaoogCY",
+        "quoteDustThreshold": 100,
+        "baseLotSize": 100000000,
+        "quoteLotSize": 100,
+        "feeRateBps": 0
+      },
+      "SRM_USDC": {
+        "symbol": "SRM/USDC",
+        "market": "AoyCZEtL25LAT5REupChe5X15zhKLuxdiBopPmkG9Ze4",
+        "baseMint": "5zq1tdJfRZ8boTGjKE9dCA77nyFEm4c1uji8Q3nfWfaY",
+        "baseDecimals": 6,
+        "baseVault": "y5UMFx4a6NySqvfk6Sh8C1QuLxAjC7Ka9YnAWkzK1JA",
+        "baseSymbol": "SRM",
+        "quoteMint": "4ruM7B4Hz4MUxy7DSFBRK9zCFLvkbLccB6S3zJ7t2525",
+        "quoteDecimals": 6,
+        "quoteVault": "GoWw9Jcg3upmDMS2sg2uPmhweDpw3kZnLzQith6ACRbo",
+        "quoteSymbol": "USDC",
+        "requestQueue": "G4GPRhUhwtnfp4W5gHH1tGntwfnWqqjeQQBwYc2Euea7",
+        "eventQueue": "vfyNPNoMMfkjKWfnAd96hVQUYjRAKQ3F8JTxAoax1AC",
+        "bids": "t1SiTaEMKVhAbGm3zDmZWN9g56pPHJxDkaJJiKTPCxu",
+        "asks": "7pgpTdyHqmxS2LndwtrYkK9dY73atj371GZbYyN3UYUL",
+        "quoteDustThreshold": 100,
+        "baseLotSize": 100000,
         "quoteLotSize": 100,
         "feeRateBps": 0
       }
@@ -325,40 +355,30 @@
         "symbol": "BTC/USD",
         "address": "GJp622VronyrMkbS423pVgdx19FwCEVzNfMvDbrRriV1",
         "product": "5MhM4ooa18waRNZhkg99YF5W5TuXRmTokkL9qtcztXUe",
-        "price": 31364.65,
-        "confidence": 94.62929149,
         "exponent": -8
       },
       "ETH_USD": {
         "symbol": "ETH/USD",
         "address": "BzZG6NQBsEVbuNgWhfBuwGC6z1XozVxxMuBkBTh6Jxns",
         "product": "AbMm5f3356Dh32ZzDYoX7s8FVMHBBrRnRozhopbWpmi6",
-        "price": 1208.63,
-        "confidence": 0.65,
         "exponent": -8
       },
       "SOL_USD": {
         "symbol": "SOL/USD",
         "address": "3x8ApfZMMmT33FP4EWBNPCxvyBwzj7JJGuesxiFrGmUG",
         "product": "3QHdRrzVGrzKmAzdFh5EpSwoaUq5xEbFxJzq4YtQoAoa",
-        "price": 39.68499999,
-        "confidence": 0.044999990000000004,
         "exponent": -8
       },
       "SRM_USD": {
         "symbol": "SRM/USD",
         "address": "JDhzaj9F3Fh5kbDCy94qPReC6v8STLWTaUy94S9CtRUC",
         "product": "4rmzFz9BazqhXEXo9BS2Nvcq1TRemE58Us5uz6ZANmwR",
-        "price": 1.0471709,
-        "confidence": 0.0041709,
         "exponent": -8
       },
       "USDC_USD": {
         "symbol": "USDC/USD",
         "address": "AQGSisqrjZMKaxiiE3xGJ5aRtf8zzKs5MQUmXX6F6JAm",
         "product": "2wsVafE5PnSaaawN38JhEUPeRFMfLEKa7EZyo476Hoc3",
-        "price": 1,
-        "confidence": 0.00025100000000000003,
         "exponent": -8
       }
     },
@@ -442,6 +462,46 @@
         "asks": "6pDw7ZbH4uNqyJGSPuaiwNCiYqBK1K7hMdgsUe6LpqhA",
         "quoteDustThreshold": 100,
         "baseLotSize": 10000,
+        "quoteLotSize": 100,
+        "feeRateBps": 0
+      },
+      "SOL_USDC": {
+        "symbol": "SOL/USDC",
+        "market": "6AiqFkW15VDN44mK1nAsJ4LtJuaUfDmLgBHqpmxTX55W",
+        "baseMint": "So11111111111111111111111111111111111111112",
+        "baseDecimals": 9,
+        "baseVault": "4gZPT6W5oYWfViEuBJdZRNTYNBzzhEPsBtWKsapY7kW6",
+        "baseSymbol": "SOL",
+        "quoteMint": "4ruM7B4Hz4MUxy7DSFBRK9zCFLvkbLccB6S3zJ7t2525",
+        "quoteDecimals": 6,
+        "quoteVault": "HjAUgmDvtEbUDPCfHRVcnSUftGHTYradvE5xVKCz6kTs",
+        "quoteSymbol": "USDC",
+        "requestQueue": "E4Yibo3ZbBNMnH67BfQdFbM43mjqNBg5DuvoQV2c2Bi5",
+        "eventQueue": "6ZyyDbc7QHMoDgqj4kW1VJ7aicJTvS8eq84ZnFZKyvXn",
+        "bids": "8F4qXQ34ocLUsCuQYhJYuBTK4CnrbtGMUS59HLmqb6jx",
+        "asks": "2UiLpfSMh9t6ADdxLDyr34zfTgdkzBtUzztXuBaoogCY",
+        "quoteDustThreshold": 100,
+        "baseLotSize": 100000000,
+        "quoteLotSize": 100,
+        "feeRateBps": 0
+      },
+      "SRM_USDC": {
+        "symbol": "SRM/USDC",
+        "market": "AoyCZEtL25LAT5REupChe5X15zhKLuxdiBopPmkG9Ze4",
+        "baseMint": "5zq1tdJfRZ8boTGjKE9dCA77nyFEm4c1uji8Q3nfWfaY",
+        "baseDecimals": 6,
+        "baseVault": "y5UMFx4a6NySqvfk6Sh8C1QuLxAjC7Ka9YnAWkzK1JA",
+        "baseSymbol": "SRM",
+        "quoteMint": "4ruM7B4Hz4MUxy7DSFBRK9zCFLvkbLccB6S3zJ7t2525",
+        "quoteDecimals": 6,
+        "quoteVault": "GoWw9Jcg3upmDMS2sg2uPmhweDpw3kZnLzQith6ACRbo",
+        "quoteSymbol": "USDC",
+        "requestQueue": "G4GPRhUhwtnfp4W5gHH1tGntwfnWqqjeQQBwYc2Euea7",
+        "eventQueue": "vfyNPNoMMfkjKWfnAd96hVQUYjRAKQ3F8JTxAoax1AC",
+        "bids": "t1SiTaEMKVhAbGm3zDmZWN9g56pPHJxDkaJJiKTPCxu",
+        "asks": "7pgpTdyHqmxS2LndwtrYkK9dY73atj371GZbYyN3UYUL",
+        "quoteDustThreshold": 100,
+        "baseLotSize": 100000,
         "quoteLotSize": 100,
         "feeRateBps": 0
       }
