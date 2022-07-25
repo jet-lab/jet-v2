@@ -456,11 +456,12 @@ describe("margin pool borrow", () => {
 
       expect(transactions[1].tradeAction).to.equals("margin repay")
       expect(transactions[1].tokenSymbol).to.equals("SOL")
-      expect(transactions[1].tradeAmount.uiTokens).to.equals("10")
+      expect(transactions[1].tradeAmount.uiTokens).to.equals("10.000000002")
       expect(transactions[1].signature).to.be.a("string")
 
       expect(transactions[2].tradeAction).to.equals("borrow")
       expect(transactions[2].tokenSymbol).to.equals("SOL")
+      console.log(transactions[2].tradeAmount.uiTokens)
       expect(transactions[2].tradeAmount.uiTokens).to.equals("10")
       expect(transactions[2].signature).to.be.a("string")
 
