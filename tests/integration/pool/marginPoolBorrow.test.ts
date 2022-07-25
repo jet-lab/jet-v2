@@ -459,7 +459,6 @@ describe("margin pool borrow", () => {
 
       expect(transactions[1].tradeAction).to.equals("withdraw")
       expect(transactions[1].tokenSymbol).to.equals("USDC")
-      console.log(transactions[1].tradeAmount.uiTokens);
       expect(transactions[1].tradeAmount.uiTokens).to.equals("100,000")
       expect(transactions[1].signature).to.be.a("string")
 
