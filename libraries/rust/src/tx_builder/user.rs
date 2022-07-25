@@ -617,6 +617,7 @@ impl MarginTxBuilder {
 
 /// Methods for Serum trading
 impl MarginTxBuilder {
+    #[allow(clippy::too_many_arguments)]
     pub async fn serum_swap(
         &self,
         market: &SerumMarketV3,
@@ -648,9 +649,11 @@ impl MarginTxBuilder {
             transit_quote_account,
             pool_base_deposit_note,
             pool_quote_deposit_note,
-            amount_in,
-            minimum_amount_out,
-            swap_direction,
+            SwapParams {
+                amount_in,
+                minimum_amount_out,
+                swap_direction,
+            },
         );
 
         let instruction = self.adapter_invoke_ix(instruction);

@@ -428,7 +428,9 @@ impl MarginUser {
                 open_orders,
                 transit_base_account,
                 transit_quote_account,
-                params,
+                params.amount_in,
+                params.minimum_amount_out,
+                params.swap_direction,
             )
             .await?;
 
