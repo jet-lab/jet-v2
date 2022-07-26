@@ -108,11 +108,11 @@ async fn serum_swap() -> Result<(), anyhow::Error> {
 
     let usdc_transit_a = ctx
         .tokens
-        .create_account(&env.usdc, user_a.address())
+        .create_account_funded(&env.usdc, user_a.address(), 123_456_789)
         .await?;
     let tsol_transit_a = ctx
         .tokens
-        .create_account(&env.tsol, user_a.address())
+        .create_account_funded(&env.tsol, user_a.address(), 123_456)
         .await?;
 
     // User B funds their TSOL transit account with 10 SOL
@@ -251,6 +251,9 @@ async fn serum_swap() -> Result<(), anyhow::Error> {
         )
         .await?;
 
+    assert_eq!(123_456, ctx.tokens.get_balance(&tsol_transit_a).await?);
+    assert_eq!(123_456_789, ctx.tokens.get_balance(&usdc_transit_a).await?);
+
     // User B places a limit order, so that user A can swap at market
     user_c
         .new_spot_order(
@@ -296,7 +299,13 @@ async fn serum_swap() -> Result<(), anyhow::Error> {
         )
         .await?;
 
-    // TODO: check token balances after swaps
+    // Check that the transit token balances were preserved
+    assert_eq!(123_456, ctx.tokens.get_balance(&tsol_transit_a).await?);
+    assert_eq!(123_456_789, ctx.tokens.get_balance(&usdc_transit_a).await?);
+
+    // TODO: Close users' open orders accounts
+    // Currently failing with TooManyOpenOrders
+    // user_a.close_open_orders(serum_client.market(), None).await?;
 
     Ok(())
 }
@@ -310,15 +319,3 @@ fn price_number_to_lot(
 ) -> u64 {
     price * (quote_lamports * base_lot_size) / (base_lamports * quote_lot_size)
 }
-
-// #[test]
-// fn test_price_number_to_lot() {
-//     let base_lot_size = 1_000;
-//     let quote_lot_size = 100;
-//     let base_decimal = 9;
-//     let quote_decimal = 6;
-//     let price = 40_000_000;
-
-//     let lot_price = price_number_to_lot(price, base_decimal, quote_decimal, base_lot_size, quote_lot_size);
-//     assert_eq!(lot_price, 400_000);
-// }

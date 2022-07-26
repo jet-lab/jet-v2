@@ -33,25 +33,23 @@ pub struct SerumSwap<'info> {
     #[account(signer)]
     pub margin_account: AccountLoader<'info, MarginAccount>,
 
-    /// The account with the source deposit to be exchanged from
-    /// CHECK:
+    /// The base token account for source deposit to be exchanged from/into
+    /// CHECK: The account is validated by the spl_token program on mint/burn
     #[account(mut)]
     pub pool_deposit_note_base: AccountInfo<'info>,
 
-    /// The destination account to send the deposit that is exchanged into
-    /// CHECK:
+    /// The quote token account for source deposit to be exchanged from/into
+    /// CHECK: The account is validated by the spl_token program on mint/burn
     #[account(mut)]
     pub pool_deposit_note_quote: AccountInfo<'info>,
 
-    /// Temporary SPL account to send tokens
-    /// CHECK:
-    // #[account(mut, constraint = transit_source_account.owner == &margin_account.key())]
+    /// Temporary SPL account to send/receive base tokens
+    /// CHECK: The account is validated by the spl_token program on mint/burn
     #[account(mut)]
     pub transit_base_token_account: AccountInfo<'info>,
 
-    /// Temporary SPL account to receive tokens
-    /// CHECK:
-    // #[account(mut, constraint = transit_destination_account.owner == &margin_account.key())]
+    /// Temporary SPL account to send/receive quote tokens
+    /// CHECK: The account is validated by the spl_token program on mint/burn
     #[account(mut)]
     pub transit_quote_token_account: AccountInfo<'info>,
 
@@ -140,7 +138,6 @@ impl<'info> SerumSwap<'info> {
                 open_orders_authority: self.swap_info.open_orders_authority.to_account_info(),
                 coin_vault: self.swap_info.base_vault.to_account_info(),
                 pc_vault: self.swap_info.quote_vault.to_account_info(),
-                // TODO: does the order of coin and pc depend on swap direction?
                 coin_wallet: self.transit_base_token_account.to_account_info(),
                 pc_wallet: self.transit_quote_token_account.to_account_info(),
                 vault_signer: self.swap_info.vault_signer.to_account_info(),
@@ -224,12 +221,37 @@ pub struct SerumSwapInfo<'info> {
     pub serum_program: Program<'info, dex::Dex>,
 }
 
+/// Swap tokens by executing a market trade on Serum.
+///
+/// The instruction preserves the amount of tokens in the transit accounts before
+/// the swap occurs.
+/// Consider the below scenario:
+///
+/// * User has 1000b and 10q tokens in their transit account, and wants to swap 2000q
+/// * User withdraws 2000q from a pool
+/// * User swaps and settles funds, receives 900b for 1960q
+/// * User deposits the above tokens, remaining with 1000b and 10q
+///
+/// | Action Taken | Base   | Quote  |
+/// |--------------|--------|--------|
+/// |              |   1000 |     10 |
+/// | Withdrawal   |   1000 |   2010 |
+/// | Settle Funds |   1900 |     50 |
+/// | Deposit      |   1000 |     10 |
+///
 pub fn serum_swap_handler(
     ctx: Context<SerumSwap>,
     amount_in: u64,
     minimum_amount_out: u64,
     swap_direction: SwapDirection,
 ) -> Result<()> {
+    // Get the balance of tokens before the trade.
+    // If the transit token accounts have balances, these balances will be preserved.
+    // This protects a swapping user (e.g. liquidator) by preserving their tokens during the swap.
+    let base_before = token::accessor::amount(&ctx.accounts.transit_base_token_account)?;
+    let quote_before = token::accessor::amount(&ctx.accounts.transit_quote_token_account)?;
+
+    // Withdraw tokens from the pool into the transit accounts
     jet_margin_pool::cpi::withdraw(
         match swap_direction {
             SwapDirection::Bid => ctx.accounts.withdraw_quote_source_context(),
@@ -238,22 +260,20 @@ pub fn serum_swap_handler(
         ChangeKind::ShiftBy,
         amount_in,
     )?;
-    let market_info = ctx.accounts.swap_info.market.to_account_info();
+
+    // Check the number of tokens withdrawn
+    let base_after_withdrawal = token::accessor::amount(&ctx.accounts.transit_base_token_account)?;
+    let quote_after_withdrawal =
+        token::accessor::amount(&ctx.accounts.transit_quote_token_account)?;
+
+    // Get market parameters
     let (base_lot_size, quote_lot_size) = {
+        let market_info = ctx.accounts.swap_info.market.to_account_info();
         let market = MarketState::load(&market_info, &dex::ID).map_err(ProgramError::from)?;
         (market.coin_lot_size, market.pc_lot_size)
     };
 
-    // Build order parameters.
-    // If the order is a buy:
-    // - max_coin_qty is set to max
-    // - limit_price is set to max
-    // - max_native_pc_qty is the `amount_in`
-    //
-    // If the order is a sell:
-    // - max_coin_qty is `amount_in` / coin_lot_size
-    // - limit_price is set to 1
-    // - max_native_pc_qty is set to max
+    // Build order parameters
     let (side, limit_price, max_coin_qty, max_native_pc_qty) = match swap_direction {
         SwapDirection::Ask => {
             // Purchase as much of the quote as possible for the given base
@@ -281,10 +301,6 @@ pub fn serum_swap_handler(
         }
     };
 
-    // Get the balance of tokens before the trade
-    let base_before = token::accessor::amount(&ctx.accounts.transit_base_token_account)?;
-    let quote_before = token::accessor::amount(&ctx.accounts.transit_quote_token_account)?;
-
     dex::new_order_v3(
         ctx.accounts.new_order_v3_context(swap_direction),
         side,
@@ -308,14 +324,14 @@ pub fn serum_swap_handler(
     let (tokens_sold, tokens_bought) = match swap_direction {
         SwapDirection::Bid => {
             // Increasing, after >= before
-            let base = base_after.checked_sub(base_before).unwrap();
-            let quote = quote_before.checked_sub(quote_after).unwrap();
+            let base = base_after.checked_sub(base_after_withdrawal).unwrap();
+            let quote = quote_after_withdrawal.checked_sub(quote_after).unwrap();
             (quote, base)
         }
         SwapDirection::Ask => {
             // Decreasing, before >= after
-            let base = base_before.checked_sub(base_after).unwrap();
-            let quote = quote_after.checked_sub(quote_before).unwrap();
+            let base = base_after_withdrawal.checked_sub(base_after).unwrap();
+            let quote = quote_after.checked_sub(quote_after_withdrawal).unwrap();
             (base, quote)
         }
     };
@@ -346,16 +362,26 @@ pub fn serum_swap_handler(
         return err!(SwapError::ExceededSlippage);
     }
 
-    // TODO: it can happen that not all tokens are exchanged, they should be refunded back to the deposit account.
+    // Deposit excess tokens to destination pools. If the trade was partially filled,
+    // there will be tokens on both accounts.
+    let base_deposit = base_after.saturating_sub(base_before);
+    let quote_deposit = quote_after.saturating_sub(quote_before);
 
-    jet_margin_pool::cpi::deposit(
-        match swap_direction {
-            SwapDirection::Bid => ctx.accounts.deposit_base_destination_context(),
-            SwapDirection::Ask => ctx.accounts.deposit_quote_destination_context(),
-        },
-        ChangeKind::ShiftBy,
-        tokens_bought,
-    )?;
+    if base_deposit > 0 {
+        jet_margin_pool::cpi::deposit(
+            ctx.accounts.deposit_base_destination_context(),
+            ChangeKind::ShiftBy,
+            base_deposit,
+        )?;
+    }
+
+    if quote_deposit > 0 {
+        jet_margin_pool::cpi::deposit(
+            ctx.accounts.deposit_quote_destination_context(),
+            ChangeKind::ShiftBy,
+            quote_deposit,
+        )?;
+    }
 
     Ok(())
 }

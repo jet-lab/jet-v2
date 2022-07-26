@@ -428,9 +428,7 @@ impl MarginUser {
                 open_orders,
                 transit_base_account,
                 transit_quote_account,
-                params.amount_in,
-                params.minimum_amount_out,
-                params.swap_direction,
+                params,
             )
             .await?;
 
@@ -439,14 +437,18 @@ impl MarginUser {
         Ok(())
     }
 
-    // /// Close the margin account's [OpenOrders] account
-    // pub async fn close_open_orders(&self, market: &SerumMarketV3) -> Result<(), Error> {
-    //     let tx = self.tx.close_open_orders_account(market).await?;
+    /// Close the margin account's [OpenOrders] account
+    pub async fn close_open_orders(
+        &self,
+        market: &SerumMarketV3,
+        owner: Option<Pubkey>,
+    ) -> Result<(), Error> {
+        let tx = self.tx.close_open_orders_account(market, owner).await?;
 
-    //     self.send_confirm_tx(tx).await?;
+        self.send_confirm_tx(tx).await?;
 
-    //     Ok(())
-    // }
+        Ok(())
+    }
 
     pub async fn new_spot_order(
         &self,
@@ -464,53 +466,6 @@ impl MarginUser {
 
         Ok(())
     }
-
-    // pub async fn cancel_client_orders(
-    //     &self,
-    //     market: &SerumMarketV3,
-    //     open_orders: Pubkey,
-    //     order_id: u128,
-    //     side: u8,
-    // ) -> Result<(), Error> {
-    //     let tx = self
-    //         .tx
-    //         .cancel_spot_order(market, open_orders, side, order_id)
-    //         .await?;
-
-    //     self.send_confirm_tx(tx).await?;
-
-    //     Ok(())
-    // }
-
-    // pub async fn settle_funds(
-    //     &self,
-    //     market: &SerumMarketV3,
-    //     open_orders: Pubkey,
-    //     base_wallet: Pubkey,
-    //     quote_wallet: Pubkey,
-    // ) -> Result<(), Error> {
-    //     // Create open accounts if needed
-    //     let (maybe_tx, order_notes, position_notes) =
-    //         self.tx.open_settlement_positions(market).await?;
-    //     if let Some(tx) = maybe_tx {
-    //         self.send_confirm_tx(tx).await?;
-    //     }
-    //     let tx = self
-    //         .tx
-    //         .settle_funds(
-    //             market,
-    //             open_orders,
-    //             base_wallet,
-    //             quote_wallet,
-    //             order_notes,
-    //             position_notes,
-    //         )
-    //         .await?;
-
-    //     self.send_confirm_tx(tx).await?;
-
-    //     Ok(())
-    // }
 
     pub async fn get_open_orders(&self, open_orders: &Pubkey) -> Result<Vec<(u8, u128)>, Error> {
         // Get the acccount on-chain, so we can read its data
@@ -536,9 +491,4 @@ impl MarginUser {
 
         Ok(orders)
     }
-
-    // pub async fn refresh_open_orders(&self, market: &SerumMarketV3) -> Result<(), Error> {
-    //     self.send_confirm_tx(self.tx.refresh_open_orders(market).await?)
-    //         .await
-    // }
 }
