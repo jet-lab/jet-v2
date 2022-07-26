@@ -15,7 +15,7 @@ import { TokenAmount } from "../../token/tokenAmount"
 import { MarginAccount } from "../marginAccount"
 import { MarginPrograms } from "../marginClient"
 import { MarginPoolConfigData, MarginPoolData } from "./state"
-import { MarginPoolConfig, MarginPools, MarginTokenConfig } from "../config"
+import { MarginTokenConfig } from "../config"
 import { PoolTokenChange } from "./poolTokenChange"
 import { TokenMetadata } from "../metadata/state"
 import { findDerivedAccount } from "../../utils/pda"
@@ -65,8 +65,8 @@ export class Pool {
   get name(): string | undefined {
     return this.tokenConfig?.name
   }
-  get symbol(): MarginPools | undefined {
-    return this.poolConfig?.symbol
+  get symbol(): string | undefined {
+    return this.tokenConfig?.symbol
   }
   get vaultRaw(): Number192 {
     return Number192.fromDecimal(this.info?.vault.amount.lamports ?? new BN(0), 0)
@@ -153,13 +153,11 @@ export class Pool {
    * @param programs
    * @param tokenMint
    * @param addresses
-   * @param poolConfig
    * @param tokenConfig
    */
   constructor(
     public programs: MarginPrograms,
     public addresses: MarginPoolAddresses,
-    public poolConfig?: MarginPoolConfig,
     public tokenConfig?: MarginTokenConfig
   ) {
     this.address = addresses.marginPool

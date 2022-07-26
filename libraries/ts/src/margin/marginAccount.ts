@@ -25,18 +25,9 @@ import {
 } from "./state"
 import { MarginPrograms } from "./marginClient"
 import { findDerivedAccount } from "../utils/pda"
-import {
-  AssociatedToken,
-  bigIntToBn,
-  bnToNumber,
-  getTimestamp,
-  MarginPools,
-  Number192,
-  numberToBn,
-  TokenAmount
-} from ".."
+import { AssociatedToken, bigIntToBn, bnToNumber, getTimestamp, Number192, numberToBn, TokenAmount } from ".."
 import { Number128 } from "../utils/number128"
-import { MarginPoolConfig, MarginTokenConfig } from "./config"
+import { MarginTokenConfig } from "./config"
 import { AccountPosition, PriceInfo } from "./accountPosition"
 
 export interface MarginAccountAddresses {
@@ -52,7 +43,6 @@ export interface MarginPositionAddresses {
 }
 
 export interface PoolPosition {
-  poolConfig: MarginPoolConfig
   tokenConfig: MarginTokenConfig
   pool?: Pool
   depositPosition: AccountPosition | undefined
@@ -92,7 +82,7 @@ export interface Valuation {
 
 export interface MarginWalletTokens {
   all: AssociatedToken[]
-  map: Record<MarginPools, AssociatedToken>
+  map: Record<string, AssociatedToken>
 }
 
 export class MarginAccount {
@@ -112,7 +102,7 @@ export class MarginAccount {
   addresses: MarginAccountAddresses
   positions: AccountPosition[]
   valuation: Valuation
-  poolPositions: Record<MarginPools, PoolPosition>
+  poolPositions: Record<string, PoolPosition>
   summary: AccountSummary
 
   get address() {
@@ -150,7 +140,7 @@ export class MarginAccount {
     public provider: AnchorProvider,
     owner: Address,
     public seed: number,
-    public pools?: Record<MarginPools, Pool>,
+    public pools?: Record<string, Pool>,
     public walletTokens?: MarginWalletTokens
   ) {
     this.pools = pools
@@ -212,7 +202,7 @@ export class MarginAccount {
   }: {
     programs: MarginPrograms
     provider: AnchorProvider
-    pools?: Record<MarginPools, Pool>
+    pools?: Record<string, Pool>
     walletTokens?: MarginWalletTokens
     owner: Address
     seed: number
@@ -229,7 +219,7 @@ export class MarginAccount {
    * @param {({
    *     programs: MarginPrograms
    *     provider: AnchorProvider
-   *     pools?: Record<MarginPools, Pool>
+   *     pools?: Record<string, Pool>
    *     walletTokens?: MarginWalletTokens
    *     filters?: GetProgramAccountsFilter[] | Buffer
    *   })} {
@@ -252,7 +242,7 @@ export class MarginAccount {
   }: {
     programs: MarginPrograms
     provider: AnchorProvider
-    pools?: Record<MarginPools, Pool>
+    pools?: Record<string, Pool>
     walletTokens?: MarginWalletTokens
     owner: Address
     filters?: GetProgramAccountsFilter[]
@@ -301,9 +291,9 @@ export class MarginAccount {
     this.summary = this.getSummary()
   }
 
-  getAllPoolPositions(): Record<MarginPools, PoolPosition> {
+  getAllPoolPositions(): Record<string, PoolPosition> {
     const positions: Record<string, PoolPosition> = {}
-    const poolConfigs = Object.values(this.programs.config.pools)
+    const poolConfigs = Object.values(this.programs.config.tokens)
 
     for (let i = 0; i < poolConfigs.length; i++) {
       const poolConfig = poolConfigs[i]
@@ -349,7 +339,6 @@ export class MarginAccount {
       const buyingPower = TokenAmount.zero(pool.decimals)
 
       positions[poolConfig.symbol] = {
-        poolConfig,
         tokenConfig,
         pool,
         depositPosition: depositNotePosition,
@@ -386,7 +375,8 @@ export class MarginAccount {
 
     // Wallet's balance for pool
     // If depsiting or repaying SOL, maximum input should consider fees
-    let walletAmount = (pool.symbol && this.walletTokens?.map[pool.symbol].amount) ?? TokenAmount.zero(pool.decimals)
+    let walletAmount =
+      (pool.symbol ? this.walletTokens?.map[pool.symbol].amount : undefined) ?? TokenAmount.zero(pool.decimals)
     if (pool.tokenMint.equals(NATIVE_MINT)) {
       walletAmount = TokenAmount.max(walletAmount.subb(numberToBn(feesBuffer)), TokenAmount.zero(pool.decimals))
     }
@@ -613,7 +603,7 @@ export class MarginAccount {
    * @memberof MarginAccount
    */
   static async loadTokens(programs: MarginPrograms, owner: Address): Promise<MarginWalletTokens> {
-    const poolConfigs = Object.values(programs.config.pools)
+    const poolConfigs = Object.values(programs.config.tokens)
 
     const ownerAddress = translateAddress(owner)
 
@@ -629,7 +619,7 @@ export class MarginAccount {
       const tokenConfig = programs.config.tokens[poolConfig.symbol]
 
       // Find the associated token pubkey
-      const mint = translateAddress(poolConfig.tokenMint)
+      const mint = translateAddress(poolConfig.mint)
       const associatedTokenOrNative = mint.equals(NATIVE_MINT)
         ? ownerAddress
         : AssociatedToken.derive(mint, ownerAddress)
@@ -670,7 +660,7 @@ export class MarginAccount {
     provider: AnchorProvider
     owner: Address
     seed?: number
-    pools?: Record<MarginPools, Pool>
+    pools?: Record<string, Pool>
     walletTokens?: MarginWalletTokens
   }) {
     if (seed === undefined) {

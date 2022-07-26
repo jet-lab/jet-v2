@@ -28,13 +28,13 @@ export class TokenFaucet {
     tokenAccount: PublicKey,
     lamports: BN
   ) {
-    if (!programs.config.splTokenFaucet) {
+    if (!programs.config.faucetProgramId) {
       throw new Error("No spl token faucet program id")
     }
 
     const pubkeyNonce = await PublicKey.findProgramAddress(
       [Buffer.from("faucet", "utf8")],
-      translateAddress(programs.config.splTokenFaucet)
+      translateAddress(programs.config.faucetProgramId)
     )
 
     const keys = [
@@ -50,7 +50,7 @@ export class TokenFaucet {
     ]
 
     const faucetIx = new TransactionInstruction({
-      programId: translateAddress(programs.config.splTokenFaucet),
+      programId: translateAddress(programs.config.faucetProgramId),
       data: Buffer.from([1, ...lamports.toArray("le", 8)]),
       keys
     })
