@@ -20,6 +20,7 @@
 
 use solana_sdk::pubkey::Pubkey;
 
+#[derive(Clone, Copy)]
 pub struct SwapPool {
     pub pool: Pubkey,
     pub pool_authority: Pubkey,

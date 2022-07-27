@@ -1,0 +1,12 @@
+[package]
+name = "load-test"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anchor-lang = { git = "https://github.com/jet-lab/anchor", branch = "master" }
+anchor-spl = { git = "https://github.com/jet-lab/anchor", branch = "master" }
+jet-margin = { path = "../../programs/margin", features = ["cpi"] }
+jet-margin-sdk = { path = "../../libraries/rust", features = ["testing"] }
