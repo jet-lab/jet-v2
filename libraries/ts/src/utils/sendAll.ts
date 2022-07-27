@@ -9,7 +9,7 @@ export async function sendAll(
   provider: AnchorProvider,
   transactions: (TransactionInstruction[] | TransactionInstruction[][])[],
   opts?: ConfirmOptions
-): Promise<void> {
+): Promise<string> {
   if (opts === undefined) {
     opts = provider.opts
   }
@@ -50,10 +50,12 @@ export async function sendAll(
   const signedTxs = await provider.wallet.signAllTransactions(txs.flat(1))
   const signedUnflattened = slices.map(slice => signedTxs.slice(...slice))
 
+  let lastTxn = "";
+
   for (let i = 0; i < signedUnflattened.length; i++) {
     const transactions = signedUnflattened[i]
     try {
-      await Promise.all(
+      const txnArray = await Promise.all(
         transactions.map(async tx => {
           if (tx.instructions.length > 0) {
             const rawTx = tx.serialize()
@@ -61,10 +63,13 @@ export async function sendAll(
           }
         })
       )
+      // Return the txid of the final transaction in the array
+      lastTxn = txnArray[txnArray.length - 1] ?? ""
     } catch (err: any) {
       // preserve stacktrace
       console.log(err, JSON.stringify(err.logs))
       throw err
     }
   }
+  return lastTxn;
 }
