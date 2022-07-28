@@ -68,7 +68,7 @@ export interface AccountSummary {
 }
 
 export interface Valuation {
-  exposure: Number128
+  liabilities: Number128
   requiredCollateral: Number128
   requiredSetupCollateral: Number128
   weightedCollateral: Number128
@@ -120,11 +120,34 @@ export class MarginAccount {
   get isBeingLiquidated() {
     return !this.info?.marginAccount.liquidation.equals(PublicKey.default)
   }
-  /** A number where 1 and above is subject to liquidation and 0 is no leverage. */
+  /** A qualitative measure of the the health of a margin account.
+   * A higher value means more risk in a qualitative sense.
+   * Properties:
+   *  non-negative, range is [0, infinity)
+   *  zero only when an account has no exposure at all
+   *  account is subject to liquidation at a value of one
+  */
   get riskIndicator() {
-    const requiredCollateral = this.valuation.requiredCollateral.asNumber()
-    const effectiveCollateral = this.valuation.effectiveCollateral.asNumber()
-    return effectiveCollateral === 0 ? 0 : requiredCollateral / effectiveCollateral
+    return this.computeRiskIndicator(
+      this.valuation.requiredCollateral.asNumber(),
+      this.valuation.weightedCollateral.asNumber(),
+      this.valuation.liabilities.asNumber(),
+    )
+  }
+
+  /** A just-okay risk indicator (TODO improve me) */
+  computeRiskIndicator(
+    requiredCollateral: number,
+    weightedCollateral: number,
+    liabilities: number,
+  ): number {
+    if (requiredCollateral === 0) return 0
+
+    const effectiveCollateral = weightedCollateral - liabilities
+
+    if (effectiveCollateral <= 0) return Infinity
+
+    return requiredCollateral / effectiveCollateral
   }
 
   /**
@@ -440,12 +463,12 @@ export class MarginAccount {
       }
     }
 
-    const exposureNumber = this.valuation.exposure.asNumber()
+    const exposureNumber = this.valuation.liabilities.asNumber()
     const cRatio = exposureNumber === 0 ? Infinity : collateralValue.asNumber() / exposureNumber
     const minCRatio = exposureNumber === 0 ? 1 : 1 + this.valuation.effectiveCollateral.asNumber() / exposureNumber
     const depositedValue = collateralValue.asNumber()
-    const borrowedValue = this.valuation.exposure.asNumber()
-    const accountBalance = collateralValue.sub(this.valuation.exposure).asNumber()
+    const borrowedValue = this.valuation.liabilities.asNumber()
+    const accountBalance = collateralValue.sub(this.valuation.liabilities).asNumber()
 
     return {
       depositedValue,
@@ -512,7 +535,7 @@ export class MarginAccount {
     const timestamp = getTimestamp()
 
     let pastDue = false
-    let exposure = Number128.ZERO
+    let liabilities = Number128.ZERO
     let requiredCollateral = Number128.ZERO
     let requiredSetupCollateral = Number128.ZERO
     let weightedCollateral = Number128.ZERO
@@ -553,7 +576,7 @@ export class MarginAccount {
             pastDue = true
           }
 
-          exposure = exposure.add(position.valueRaw)
+          liabilities = liabilities.add(position.valueRaw)
           requiredCollateral = requiredCollateral.add(position.requiredCollateralValue())
           requiredSetupCollateral = requiredSetupCollateral.add(
             position.requiredCollateralValue(MarginAccount.SETUP_LEVERAGE_FRACTION)
@@ -572,10 +595,10 @@ export class MarginAccount {
       }
     }
 
-    const effectiveCollateral = weightedCollateral.sub(exposure)
+    const effectiveCollateral = weightedCollateral.sub(liabilities)
 
     return {
-      exposure,
+      liabilities: liabilities,
       pastDue,
       requiredCollateral,
       requiredSetupCollateral,
