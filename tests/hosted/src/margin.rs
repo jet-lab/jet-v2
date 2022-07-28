@@ -195,6 +195,7 @@ impl MarginClient {
     }
 }
 
+#[derive(Clone)]
 pub struct MarginUser {
     tx: MarginTxBuilder,
     rpc: Arc<dyn SolanaRpcClient>,

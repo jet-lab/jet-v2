@@ -1,16 +1,18 @@
+use std::collections::hash_map::Entry;
+
 use anyhow::Result;
 
 use hosted_tests::{
-    context::test_context,
+    context::{test_context, MarginTestContext},
     margin::MarginUser,
-    setup_helper::{setup_token, setup_user},
+    setup_helper::{setup_token, setup_user, TestUser, create_users}, orchestrator::{create_swap_pools, TokenPricer},
 };
 use jet_margin::ErrorCode;
 use jet_margin_sdk::tokens::TokenPrice;
 use serial_test::serial;
-use solana_sdk::native_token::LAMPORTS_PER_SOL;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::Signer;
+use solana_sdk::{native_token::LAMPORTS_PER_SOL, signature::Keypair};
 
 use jet_margin_pool::TokenChange;
 use jet_simulation::assert_custom_program_error;
@@ -35,8 +37,8 @@ struct Scenario1 {
 #[allow(clippy::erasing_op)]
 async fn scenario1() -> Result<Scenario1> {
     let ctx = test_context().await;
-    let usdc = setup_token(ctx, 6, 1_00, 4_00, 1).await?;
-    let tsol = setup_token(ctx, 9, 95, 4_00, 100).await?;
+    let usdc = setup_token(ctx, 6, 1_00, 4_00, 1.0).await?;
+    let tsol = setup_token(ctx, 9, 95, 4_00, 100.0).await?;
 
     // Create wallet for the liquidator
     let liquidator_wallet = ctx.create_liquidator(100).await?;
@@ -364,6 +366,24 @@ async fn liquidator_permission_is_removable() -> Result<()> {
         anchor_lang::error::ErrorCode::AccountDiscriminatorMismatch,
         result,
     );
+
+    Ok(())
+}
+
+#[tokio::test(flavor = "multi_thread")]
+#[cfg_attr(not(feature = "localnet"), serial)]
+async fn liquidate_with_swap() -> Result<()> {
+    let ctx = test_context().await;
+    let usdc = setup_token(ctx, 6, 1_00, 4_00, 1.0).await?;
+    let tsol = setup_token(ctx, 9, 95, 4_00, 100.0).await?;
+    let swap_registry = create_swap_pools(&ctx.rpc, vec![usdc, tsol]).await?;
+    let pricer = TokenPricer::new(&ctx.rpc, swap_registry);
+    let liquidator_wallet = ctx.create_liquidator(100).await?;
+    let [mut user1, mut user2] = create_users(&ctx, &liquidator_wallet).await?;
+    user2.deposit(&tsol, 100).await?;
+    user1.deposit(&usdc, 100).await?;
+    user1.borrow(&tsol, 1).await?;
+    pricer.set_price(&tsol, 1.0).await?;
 
     Ok(())
 }

@@ -123,8 +123,10 @@ impl TokenManager {
         amount: u64,
     ) -> Result<Pubkey, Error> {
         let account = self.create_account(mint, owner).await?;
+        if amount > 0 {
+            self.mint(mint, &account, amount).await?;
+        }
 
-        self.mint(mint, &account, amount).await?;
         Ok(account)
     }
 
@@ -238,6 +240,16 @@ impl TokenManager {
         account.timestamp = clock.unix_timestamp;
 
         self.set_pod_metadata(&price_address, &account).await
+    }
+
+    pub async fn get_price(&self, mint: &Pubkey) -> Result<pyth_sdk_solana::state::PriceAccount, Error> {
+        let price_address = Pubkey::find_program_address(
+            &[mint.as_ref(), b"oracle:price".as_ref()],
+            &jet_metadata::ID,
+        )
+        .0;
+        
+        Ok(self.get_pod_metadata(&price_address).await?)
     }
 
     /// Set the oracle price of a token

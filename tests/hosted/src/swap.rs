@@ -18,7 +18,7 @@
 //! The margin swap module allows creating simulated swap pools
 //! to aid in testing margin swaps.
 
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 
 use anchor_lang::prelude::Pubkey;
 use anyhow::Error;
@@ -51,6 +51,18 @@ pub trait SwapPoolConfig: Sized {
         a_amount: u64,
         b_amount: u64,
     ) -> Result<Self, Error>;
+
+    async fn balances(&self, rpc: &Arc<dyn SolanaRpcClient>)
+        -> Result<HashMap<Pubkey, u64>, Error>;
+
+    async fn swap<S: Signer + Sync + Send>(
+        &self,
+        rpc: &Arc<dyn SolanaRpcClient>,
+        source: &Pubkey,
+        dest: &Pubkey,
+        amount_in: u64,
+        signer: &S,
+    ) -> Result<(), Error>;
 }
 
 #[async_trait]
@@ -159,4 +171,81 @@ impl SwapPoolConfig for SwapPool {
             program: *program_id,
         })
     }
+
+    async fn balances(
+        &self,
+        rpc: &Arc<dyn SolanaRpcClient>,
+    ) -> Result<HashMap<Pubkey, u64>, Error> {
+        let mut mint_to_balance: HashMap<Pubkey, u64> = HashMap::new();
+        mint_to_balance.insert(
+            self.mint_a,
+            amount(&rpc.get_account(&self.token_a).await?.unwrap().data),
+        );
+        mint_to_balance.insert(
+            self.mint_b,
+            amount(&rpc.get_account(&self.token_b).await?.unwrap().data),
+        );
+
+        Ok(mint_to_balance)
+    }
+
+    async fn swap<S: Signer + Sync + Send>(
+        &self,
+        rpc: &Arc<dyn SolanaRpcClient>,
+        source: &Pubkey,
+        dest: &Pubkey,
+        amount_in: u64,
+        signer: &S,
+    ) -> Result<(), Error> {
+        if amount_in == 0 {
+            return Ok(())
+        }
+        let source_data = rpc.get_account(source).await?.unwrap().data;
+        let dest_data = rpc.get_account(dest).await?.unwrap().data;
+        let (swap_source, swap_dest) =
+            if mint(&source_data) == self.mint_a && mint(&dest_data) == self.mint_b {
+                (self.token_a, self.token_b)
+            } else if mint(&source_data) == self.mint_b && mint(&dest_data) == self.mint_a {
+                (self.token_b, self.token_a)
+            } else {
+                panic!("wrong pool");
+            };
+        let swap_ix = use_client!(self.program, {
+            client::instruction::swap(
+                &self.program,
+                &spl_token::id(),
+                &self.pool,
+                &self.pool_authority,
+                &signer.pubkey(),
+                source,
+                &swap_source,
+                &swap_dest,
+                dest,
+                &self.pool_mint,
+                &self.fee_account,
+                None,
+                client::instruction::Swap {
+                    amount_in,
+                    minimum_amount_out: 0,
+                },
+            )?
+        })
+        .unwrap();
+        let transaction = rpc.create_transaction(&[], &[swap_ix]).await?;
+        rpc.send_and_confirm_transaction(&transaction).await?;
+
+        Ok(())
+    }
+}
+
+pub fn amount(data: &[u8]) -> u64 {
+    let mut amount_bytes = [0u8; 8];
+    amount_bytes.copy_from_slice(&data[64..72]);
+    u64::from_le_bytes(amount_bytes)
+}
+
+pub fn mint(data: &[u8]) -> Pubkey {
+    let mut mint_bytes = [0u8; 32];
+    mint_bytes.copy_from_slice(&data[..32]);
+    Pubkey::new_from_array(mint_bytes)
 }

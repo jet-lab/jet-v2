@@ -30,6 +30,7 @@ use jet_margin::program::JetMargin;
 
 /// Utility for creating instructions to interact with the margin
 /// program for a specific account.
+#[derive(Clone)]
 pub struct MarginIxBuilder {
     /// The account owner,
     pub owner: Pubkey,
