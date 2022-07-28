@@ -983,9 +983,7 @@ export class Pool {
 
   /// Projects the deposit and borrow rates after a deposit into the pool.
   projectAfterDeposit(marginAccount: MarginAccount, amount: TokenAmount): PoolProjection {
-    if (this.info == undefined) {
-      throw "must have pool info initialised"
-    }
+    if (this.info === undefined) throw "must have info"
 
     const borrowedTokens = this.borrowedTokens.tokens
     const totalValue = this.totalValue.add(amount).tokens
@@ -999,12 +997,14 @@ export class Pool {
     const depositNoteValueModifer = this.depositNoteMetadata.valueModifier
     const amountValue = Number128.from(numberToBn(amount.tokens * this._prices.priceValue.asNumber()))
 
+    const requiredCollateral = marginAccount.valuation.requiredCollateral.asNumber()
+    const weightedCollateral = marginAccount.valuation.weightedCollateral.add(
+      amountValue.mul(depositNoteValueModifer)
+    ).asNumber()
+    const liabilities = marginAccount.valuation.liabilities.asNumber()
+
     const riskIndicator = marginAccount.computeRiskIndicator(
-      marginAccount.valuation.requiredCollateral.asNumber(),
-      marginAccount.valuation.weightedCollateral.add(
-        amountValue.mul(depositNoteValueModifer)
-      ).asNumber(),
-      marginAccount.valuation.liabilities.asNumber(),
+      requiredCollateral, weightedCollateral, liabilities
     )
 
     return { riskIndicator, depositRate, borrowRate }
@@ -1012,13 +1012,16 @@ export class Pool {
 
   /// Projects the deposit and borrow rates after a withdrawal from the pool.
   projectAfterWithdraw(marginAccount: MarginAccount, amount: TokenAmount): PoolProjection {
-    if (this.info == undefined) {
-      throw "must have pool info initialised"
-    }
+    if (this.info === undefined) throw "must have info"
 
-    if (amount.tokens > this.vault.tokens) {
-      throw "not enough tokens in the vault"
-    }
+    const symbol = this.symbol
+    if (symbol === undefined) throw "must have symbol"
+
+    const position = marginAccount.poolPositions[symbol]
+    if (position === undefined) throw "must have position"
+    
+    // G1, referenced below
+    if (amount.tokens > position.depositBalance.tokens) throw "amount can't exceed deposit"
 
     const borrowedTokens = this.borrowedTokens.tokens
     const totalValue = this.totalValue.sub(amount).tokens
@@ -1032,12 +1035,16 @@ export class Pool {
     const depositNoteValueModifer = this.depositNoteMetadata.valueModifier
     const amountValue = Number128.from(numberToBn(amount.tokens * this._prices.priceValue.asNumber()))
 
+    const requiredCollateral = marginAccount.valuation.requiredCollateral.asNumber()
+    const weightedCollateral = marginAccount.valuation.weightedCollateral.sub(
+      amountValue.mul(depositNoteValueModifer)
+    ).asNumber()
+    const liabilities = marginAccount.valuation.liabilities.asNumber()
+
     const riskIndicator = marginAccount.computeRiskIndicator(
-      marginAccount.valuation.requiredCollateral.asNumber(),
-      marginAccount.valuation.weightedCollateral.sub(
-        amountValue.mul(depositNoteValueModifer)
-      ).asNumber(),
-      marginAccount.valuation.liabilities.asNumber(),
+      requiredCollateral,
+      weightedCollateral > 0 ? weightedCollateral : 0, // ok (but weird!) - guarded by G1
+      liabilities,
     )
 
     return { riskIndicator, depositRate, borrowRate }
@@ -1045,9 +1052,7 @@ export class Pool {
 
   /// Projects the deposit and borrow rates after a borrow from the pool.
   projectAfterBorrow(marginAccount: MarginAccount, amount: TokenAmount): PoolProjection {
-    if (this.info == undefined) {
-      throw "must have pool info initialised"
-    }
+    if (this.info === undefined) throw "must have info"
 
     const borrowedTokens = this.borrowedTokens.add(amount).tokens
     const totalValue = this.totalValue.add(amount).tokens
@@ -1061,14 +1066,16 @@ export class Pool {
     const loanNoteValueModifer = this.loanNoteMetadata.valueModifier
     const amountValue = Number128.from(numberToBn(amount.tokens * this._prices.priceValue.asNumber()))
 
+    const requireCollateral = marginAccount.valuation.requiredCollateral.add(
+      amountValue.div(loanNoteValueModifer)
+    ).asNumber()
+    const weightedCollateral = marginAccount.valuation.weightedCollateral.asNumber()
+    const liabilities = marginAccount.valuation.liabilities.add(
+      amountValue
+    ).asNumber()
+    
     const riskIndicator = marginAccount.computeRiskIndicator(
-      marginAccount.valuation.requiredCollateral.add(
-        amountValue.div(loanNoteValueModifer)
-      ).asNumber(),
-      marginAccount.valuation.weightedCollateral.asNumber(),
-      marginAccount.valuation.liabilities.add(
-        amountValue
-      ).asNumber(),
+      requireCollateral, weightedCollateral, liabilities
     )
 
     return { riskIndicator, depositRate, borrowRate }
@@ -1076,13 +1083,21 @@ export class Pool {
 
   /// Projects the deposit and borrow rates after repaying a loan from the pool.
   projectAfterRepay(marginAccount: MarginAccount, amount: TokenAmount): PoolProjection {
-    if (this.info == undefined) {
-      throw "must have pool info initialised"
-    }
+    console.log('in projectAfterRepay')
+    if (this.info === undefined) throw "must have info"
 
-    if (amount.tokens > this.borrowedTokens.tokens) {
-      throw "not enough borrowed tokens"
-    }
+    const symbol = this.symbol
+    if (symbol === undefined) throw "must have symbol"
+
+    const position = marginAccount.poolPositions[symbol]
+    if (position === undefined) throw "must have position"
+    
+    // G1, referenced below
+    if (amount.tokens > position.loanBalance.tokens) throw "amount can't exceed loan"
+    console.log({
+      amount: amount.tokens,
+      loan: position.loanBalance.tokens,
+    })
 
     const borrowedTokens = this.borrowedTokens.sub(amount).tokens
     const totalValue = this.totalValue.sub(amount).tokens
@@ -1096,14 +1111,18 @@ export class Pool {
     const loanNoteValueModifer = this.loanNoteMetadata.valueModifier
     const amountValue = Number128.from(numberToBn(amount.tokens * this._prices.priceValue.asNumber()))
 
+    const requiredCollateral = marginAccount.valuation.requiredCollateral.sub(
+      amountValue.div(loanNoteValueModifer)
+    ).asNumber()
+    const weightedCollateral = marginAccount.valuation.weightedCollateral.asNumber()
+    const liabilities = marginAccount.valuation.liabilities.sub(
+      amountValue
+    ).asNumber()
+
     const riskIndicator = marginAccount.computeRiskIndicator(
-      marginAccount.valuation.requiredCollateral.sub(
-        amountValue.div(loanNoteValueModifer)
-      ).asNumber(),
-      marginAccount.valuation.weightedCollateral.asNumber(),
-      marginAccount.valuation.liabilities.sub(
-        amountValue
-      ).asNumber(),
+      requiredCollateral >= 0 ? requiredCollateral : 0, // ok - guarded by G1
+      weightedCollateral,
+      liabilities >= 0 ? liabilities : 0, // ok - guarded by G1
     )
 
     return { riskIndicator, depositRate, borrowRate }
@@ -1111,13 +1130,19 @@ export class Pool {
 
   /// Projects the deposit and borrow rates after repaying a loan from the pool.
   projectAfterRepayFromDeposit(marginAccount: MarginAccount, amount: TokenAmount): PoolProjection {
-    if (this.info == undefined) {
-      throw "must have pool info initialised"
-    }
+    if (this.info === undefined) throw "must have info"
 
-    if (amount.tokens > this.borrowedTokens.tokens) {
-      throw "not enough borrowed tokens"
-    }
+    const symbol = this.symbol
+    if (symbol === undefined) throw "must have symbol"
+
+    const position = marginAccount.poolPositions[symbol]
+    if (position === undefined) throw "must have position"
+
+    // G1, referenced below
+    if (amount.tokens > position.loanBalance.tokens) throw "amount can't exceed loan"
+
+    // G2, referenced below
+    if (amount.tokens > position.depositBalance.tokens) throw "amount can't exceed deposit"
 
     const borrowedTokens = this.borrowedTokens.sub(amount).tokens
     const totalValue = this.totalValue.sub(amount).sub(amount).tokens
@@ -1132,16 +1157,20 @@ export class Pool {
     const loanNoteValueModifer = this.loanNoteMetadata.valueModifier
     const amountValue = Number128.from(numberToBn(amount.tokens * this._prices.priceValue.asNumber()))
 
+    const requiredCollateral = marginAccount.valuation.requiredCollateral.sub(
+      amountValue.div(loanNoteValueModifer)
+    ).asNumber()
+    const weightedCollateral = marginAccount.valuation.weightedCollateral.sub(
+      amountValue.mul(depositNoteValueModifer)
+    ).asNumber()
+    const liabilities = marginAccount.valuation.liabilities.sub(
+      amountValue
+    ).asNumber()
+
     const riskIndicator = marginAccount.computeRiskIndicator(
-      marginAccount.valuation.requiredCollateral.sub(
-        amountValue.div(loanNoteValueModifer)
-      ).asNumber(),
-      marginAccount.valuation.weightedCollateral.sub(
-        amountValue.mul(depositNoteValueModifer)
-      ).asNumber(),
-      marginAccount.valuation.liabilities.sub(
-        amountValue
-      ).asNumber(),
+      requiredCollateral > 0 ? requiredCollateral : 0, // ok - guarded by G1
+      weightedCollateral > 0 ? weightedCollateral : 0, // ok - guarded by G2
+      liabilities > 0 ? liabilities : 0, // ok - guarded by G1
     )
 
     return { riskIndicator, depositRate, borrowRate }
@@ -1149,9 +1178,7 @@ export class Pool {
 
   /// Projects the deposit and borrow rates after a borrow from the pool.
   projectAfterBorrowAndNotWithdraw(marginAccount: MarginAccount, amount: TokenAmount): PoolProjection {
-    if (this.info == undefined) {
-      throw "must have pool info initialised"
-    }
+    if (this.info === undefined) throw "must have info"
 
     const borrowedTokens = this.borrowedTokens.add(amount).tokens
     const totalValue = this.totalValue.add(amount).add(amount).tokens
@@ -1166,16 +1193,18 @@ export class Pool {
     const loanNoteValueModifer = this.loanNoteMetadata.valueModifier
     const amountValue = Number128.from(numberToBn(amount.tokens * this._prices.priceValue.asNumber()))
 
+    const requiredCollateral = marginAccount.valuation.requiredCollateral.add(
+      amountValue.div(loanNoteValueModifer)
+    ).asNumber()
+    const weightedCollateral = marginAccount.valuation.weightedCollateral.add(
+      amountValue.mul(depositNoteValueModifer)
+    ).asNumber()
+    const liabilities = marginAccount.valuation.liabilities.add(
+      amountValue
+    ).asNumber()
+
     const riskIndicator = marginAccount.computeRiskIndicator(
-      marginAccount.valuation.requiredCollateral.add(
-        amountValue.div(loanNoteValueModifer)
-      ).asNumber(),
-      marginAccount.valuation.weightedCollateral.add(
-        amountValue.mul(depositNoteValueModifer)
-      ).asNumber(),
-      marginAccount.valuation.liabilities.add(
-        amountValue
-      ).asNumber(),
+      requiredCollateral, weightedCollateral, liabilities
     )
 
     return { riskIndicator, depositRate, borrowRate }
