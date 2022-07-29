@@ -966,7 +966,7 @@ export class Pool {
     }
   }
 
-  projectAfterAction(marginAccount: MarginAccount, amount: TokenAmount, action: PoolAction): PoolProjection {
+  projectAfterAction(marginAccount: MarginAccount, amount: number, action: PoolAction): PoolProjection {
     switch (action) {
       case "deposit":
         return this.projectAfterDeposit(marginAccount, amount)
@@ -982,11 +982,11 @@ export class Pool {
   }
 
   /// Projects the deposit and borrow rates after a deposit into the pool.
-  projectAfterDeposit(marginAccount: MarginAccount, amount: TokenAmount): PoolProjection {
+  projectAfterDeposit(marginAccount: MarginAccount, amount: number): PoolProjection {
     if (this.info === undefined) throw "must have info"
 
     const borrowedTokens = this.borrowedTokens.tokens
-    const totalValue = this.totalValue.add(amount).tokens
+    const totalValue = this.totalValue.tokens + amount
 
     const utilRatio = borrowedTokens / totalValue
     const depositCcRate = Pool.getCcRate(this.info.marginPool.config, utilRatio)
@@ -995,7 +995,7 @@ export class Pool {
     const borrowRate = Pool.getBorrowApr(depositCcRate, utilRatio)
 
     const depositNoteValueModifer = this.depositNoteMetadata.valueModifier
-    const amountValue = Number128.from(numberToBn(amount.tokens * this._prices.priceValue.asNumber()))
+    const amountValue = Number128.from(numberToBn(amount * this._prices.priceValue.asNumber()))
 
     const requiredCollateral = marginAccount.valuation.requiredCollateral.asNumber()
     const weightedCollateral = marginAccount.valuation.weightedCollateral.add(
@@ -1011,7 +1011,7 @@ export class Pool {
   }
 
   /// Projects the deposit and borrow rates after a withdrawal from the pool.
-  projectAfterWithdraw(marginAccount: MarginAccount, amount: TokenAmount): PoolProjection {
+  projectAfterWithdraw(marginAccount: MarginAccount, amount: number): PoolProjection {
     if (this.info === undefined) throw "must have info"
 
     const symbol = this.symbol
@@ -1021,10 +1021,10 @@ export class Pool {
     if (position === undefined) throw "must have position"
     
     // G1, referenced below
-    if (amount.tokens > position.depositBalance.tokens) throw "amount can't exceed deposit"
+    if (amount > position.depositBalance.tokens) throw "amount can't exceed deposit"
 
     const borrowedTokens = this.borrowedTokens.tokens
-    const totalValue = this.totalValue.sub(amount).tokens
+    const totalValue = this.totalValue.tokens - amount
 
     const utilRatio = totalValue === 0 ? 0 : borrowedTokens / totalValue
     const depositCcRate = Pool.getCcRate(this.info.marginPool.config, utilRatio)
@@ -1033,7 +1033,7 @@ export class Pool {
     const borrowRate = Pool.getBorrowApr(depositCcRate, utilRatio)
 
     const depositNoteValueModifer = this.depositNoteMetadata.valueModifier
-    const amountValue = Number128.from(numberToBn(amount.tokens * this._prices.priceValue.asNumber()))
+    const amountValue = Number128.from(numberToBn(amount * this._prices.priceValue.asNumber()))
 
     const requiredCollateral = marginAccount.valuation.requiredCollateral.asNumber()
     const weightedCollateral = marginAccount.valuation.weightedCollateral.sub(
@@ -1051,11 +1051,11 @@ export class Pool {
   }
 
   /// Projects the deposit and borrow rates after a borrow from the pool.
-  projectAfterBorrow(marginAccount: MarginAccount, amount: TokenAmount): PoolProjection {
+  projectAfterBorrow(marginAccount: MarginAccount, amount: number): PoolProjection {
     if (this.info === undefined) throw "must have info"
 
-    const borrowedTokens = this.borrowedTokens.add(amount).tokens
-    const totalValue = this.totalValue.add(amount).tokens
+    const borrowedTokens = this.borrowedTokens.tokens + amount
+    const totalValue = this.totalValue.tokens + amount
 
     const utilRatio = borrowedTokens / totalValue
     const depositCcRate = Pool.getCcRate(this.info.marginPool.config, utilRatio)
@@ -1064,7 +1064,7 @@ export class Pool {
     const borrowRate = Pool.getBorrowApr(depositCcRate, utilRatio)
 
     const loanNoteValueModifer = this.loanNoteMetadata.valueModifier
-    const amountValue = Number128.from(numberToBn(amount.tokens * this._prices.priceValue.asNumber()))
+    const amountValue = Number128.from(numberToBn(amount * this._prices.priceValue.asNumber()))
 
     const requireCollateral = marginAccount.valuation.requiredCollateral.add(
       amountValue.div(loanNoteValueModifer)
@@ -1082,8 +1082,7 @@ export class Pool {
   }
 
   /// Projects the deposit and borrow rates after repaying a loan from the pool.
-  projectAfterRepay(marginAccount: MarginAccount, amount: TokenAmount): PoolProjection {
-    console.log('in projectAfterRepay')
+  projectAfterRepay(marginAccount: MarginAccount, amount: number): PoolProjection {
     if (this.info === undefined) throw "must have info"
 
     const symbol = this.symbol
@@ -1093,14 +1092,10 @@ export class Pool {
     if (position === undefined) throw "must have position"
     
     // G1, referenced below
-    if (amount.tokens > position.loanBalance.tokens) throw "amount can't exceed loan"
-    console.log({
-      amount: amount.tokens,
-      loan: position.loanBalance.tokens,
-    })
+    if (amount > position.loanBalance.tokens) throw "amount can't exceed loan"
 
-    const borrowedTokens = this.borrowedTokens.sub(amount).tokens
-    const totalValue = this.totalValue.sub(amount).tokens
+    const borrowedTokens = this.borrowedTokens.tokens - amount
+    const totalValue = this.totalValue.tokens - amount
 
     const utilRatio = totalValue === 0 ? 0 : borrowedTokens / totalValue
     const depositCcRate = Pool.getCcRate(this.info.marginPool.config, utilRatio)
@@ -1109,7 +1104,7 @@ export class Pool {
     const borrowRate = Pool.getBorrowApr(depositCcRate, utilRatio)
 
     const loanNoteValueModifer = this.loanNoteMetadata.valueModifier
-    const amountValue = Number128.from(numberToBn(amount.tokens * this._prices.priceValue.asNumber()))
+    const amountValue = Number128.from(numberToBn(amount * this._prices.priceValue.asNumber()))
 
     const requiredCollateral = marginAccount.valuation.requiredCollateral.sub(
       amountValue.div(loanNoteValueModifer)
@@ -1129,7 +1124,7 @@ export class Pool {
   }
 
   /// Projects the deposit and borrow rates after repaying a loan from the pool.
-  projectAfterRepayFromDeposit(marginAccount: MarginAccount, amount: TokenAmount): PoolProjection {
+  projectAfterRepayFromDeposit(marginAccount: MarginAccount, amount: number): PoolProjection {
     if (this.info === undefined) throw "must have info"
 
     const symbol = this.symbol
@@ -1139,13 +1134,13 @@ export class Pool {
     if (position === undefined) throw "must have position"
 
     // G1, referenced below
-    if (amount.tokens > position.loanBalance.tokens) throw "amount can't exceed loan"
+    if (amount > position.loanBalance.tokens) throw "amount can't exceed loan"
 
     // G2, referenced below
-    if (amount.tokens > position.depositBalance.tokens) throw "amount can't exceed deposit"
+    if (amount > position.depositBalance.tokens) throw "amount can't exceed deposit"
 
-    const borrowedTokens = this.borrowedTokens.sub(amount).tokens
-    const totalValue = this.totalValue.sub(amount).sub(amount).tokens
+    const borrowedTokens = this.borrowedTokens.tokens - amount
+    const totalValue = this.totalValue.tokens - 2 * amount
 
     const utilRatio = totalValue === 0 ? 0 : borrowedTokens / totalValue
     const depositCcRate = Pool.getCcRate(this.info.marginPool.config, utilRatio)
@@ -1155,7 +1150,7 @@ export class Pool {
 
     const depositNoteValueModifer = this.depositNoteMetadata.valueModifier
     const loanNoteValueModifer = this.loanNoteMetadata.valueModifier
-    const amountValue = Number128.from(numberToBn(amount.tokens * this._prices.priceValue.asNumber()))
+    const amountValue = Number128.from(numberToBn(amount * this._prices.priceValue.asNumber()))
 
     const requiredCollateral = marginAccount.valuation.requiredCollateral.sub(
       amountValue.div(loanNoteValueModifer)
@@ -1177,11 +1172,11 @@ export class Pool {
   }
 
   /// Projects the deposit and borrow rates after a borrow from the pool.
-  projectAfterBorrowAndNotWithdraw(marginAccount: MarginAccount, amount: TokenAmount): PoolProjection {
+  projectAfterBorrowAndNotWithdraw(marginAccount: MarginAccount, amount: number): PoolProjection {
     if (this.info === undefined) throw "must have info"
 
-    const borrowedTokens = this.borrowedTokens.add(amount).tokens
-    const totalValue = this.totalValue.add(amount).add(amount).tokens
+    const borrowedTokens = this.borrowedTokens.tokens + amount
+    const totalValue = this.totalValue.tokens + 2 * amount
 
     const utilRatio = borrowedTokens / totalValue
     const depositCcRate = Pool.getCcRate(this.info.marginPool.config, utilRatio)
@@ -1191,7 +1186,7 @@ export class Pool {
 
     const depositNoteValueModifer = this.depositNoteMetadata.valueModifier
     const loanNoteValueModifer = this.loanNoteMetadata.valueModifier
-    const amountValue = Number128.from(numberToBn(amount.tokens * this._prices.priceValue.asNumber()))
+    const amountValue = Number128.from(numberToBn(amount * this._prices.priceValue.asNumber()))
 
     const requiredCollateral = marginAccount.valuation.requiredCollateral.add(
       amountValue.div(loanNoteValueModifer)
