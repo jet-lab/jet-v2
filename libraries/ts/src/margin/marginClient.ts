@@ -185,7 +185,8 @@ export class MarginClient {
           })
         })
 
-        if (tradeAction === "margin repay" || tradeAction === "borrow") {
+        // if we could not find a token transfer, default to token values changes
+        if (amount.eq(new BN(0))) {
           const postAmount = new BN(matchingPost.uiTokenAmount.amount)
           const preAmount = new BN(pre.uiTokenAmount.amount)
           amount = postAmount.sub(preAmount).abs()
