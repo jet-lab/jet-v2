@@ -334,7 +334,7 @@ export class Replicant {
             if (pool.addresses.loanNoteMint.toString() == position.token.toBase58()) {
               const depositPosition = getDepositPosition(marginAccount, pool.addresses.depositNoteMint)
               const existingDeposit = depositPosition ? depositPosition.balance : ZERO_BN
-              if (!existingDeposit.eq(position.balance)) {
+              if (existingDeposit.lt(new BN(position.balance.toNumber() * 1.1))) {
                 const tokenConfig = this.marginConfig.tokens[pool.symbol!]
                 assert(tokenConfig)
                 assert(tokenConfig.decimals)
@@ -345,7 +345,7 @@ export class Replicant {
                   true
                 )
                 //console.log(`DEPOSIT ${pool.symbol} = ${position.balance} | ${existingDeposit}`)
-                const amount = position.balance.sub(existingDeposit).add(new BN(1))
+                const amount = new BN(position.balance.toNumber() * 1.1).sub(existingDeposit)
                 await airdropTokens(
                   this.connection,
                   this.faucetProgramId,
@@ -365,7 +365,6 @@ export class Replicant {
               dirty = true
               const change = PoolTokenChange.setTo(0)
               await pool.marginRepay({ marginAccount, pools: this.pools!, change, closeLoan: true })
-              await marginAccount.closePosition(position)
               break
             }
           }
@@ -379,11 +378,6 @@ export class Replicant {
     }
 
     for (const position of marginAccount.getPositions()) {
-
-      console.log('');
-      console.log(`position = ${JSON.stringify(position)}`);
-      console.log('');
-
       switch (position.kind) {
         case 1: {
           for (const pool of this.pools!) {
