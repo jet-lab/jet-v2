@@ -23,6 +23,7 @@ use solana_sdk::{instruction::Instruction, pubkey::Pubkey, system_program};
 use super::get_metadata_address;
 use super::margin_pool::MarginPoolIxBuilder;
 
+/// A builder for [`jet_control::instruction`] instructions.
 pub struct ControlIxBuilder {
     /// The user address that will pay for the transactions
     payer: Pubkey,
@@ -32,6 +33,7 @@ pub struct ControlIxBuilder {
 }
 
 impl ControlIxBuilder {
+    /// Create a new instruction builder
     pub fn new(payer: Pubkey) -> Self {
         Self {
             payer,
@@ -39,6 +41,7 @@ impl ControlIxBuilder {
         }
     }
 
+    /// Create a new builder with a different authority to request changes
     pub fn new_for_authority(authority: Pubkey, payer: Pubkey) -> Self {
         Self {
             payer,
@@ -46,6 +49,7 @@ impl ControlIxBuilder {
         }
     }
 
+    /// [Instruction] to create a new authority
     pub fn create_authority(&self) -> Instruction {
         let accounts = jet_control::accounts::CreateAuthority {
             payer: self.payer,
@@ -61,6 +65,10 @@ impl ControlIxBuilder {
         }
     }
 
+    /// Instruction to register a margin adapter with the control program.
+    ///
+    /// An adapter must be registered with the control program before users can
+    /// interact with it.
     pub fn register_adapter(&self, adapter: &Pubkey) -> Instruction {
         let accounts = jet_control::accounts::RegisterAdapter {
             requester: self.requester,
@@ -83,6 +91,10 @@ impl ControlIxBuilder {
         }
     }
 
+    /// Instruction to register a margin pool.
+    ///
+    /// The margin pool is created with default settings, and must be configured
+    /// with `configure_margin_pool`
     pub fn create_margin_pool(&self, token: &Pubkey) -> Instruction {
         let pool_builder = MarginPoolIxBuilder::new(*token);
         let accounts = jet_control::accounts::CreateMarginPool {
@@ -114,6 +126,10 @@ impl ControlIxBuilder {
         }
     }
 
+    /// Instruction to configure a margin pool.
+    ///
+    /// Configuration can update various parameters, enable or disable borrowing,
+    /// etc. See [MarginPoolConfiguration] for all parameters.
     pub fn configure_margin_pool(
         &self,
         token: &Pubkey,
@@ -149,6 +165,9 @@ impl ControlIxBuilder {
         }
     }
 
+    /// Instruction to enable or disable a liquidator.
+    ///
+    /// Only authorised accounts are allowed to liquidate margin accounts.
     pub fn set_liquidator(&self, liquidator: &Pubkey, is_liquidator: bool) -> Instruction {
         let accounts = jet_control::accounts::SetLiquidator {
             requester: self.requester,
@@ -172,15 +191,21 @@ impl ControlIxBuilder {
     }
 }
 
+/// Parameters used to configer a margin pool
 #[derive(Clone, Default)]
 pub struct MarginPoolConfiguration {
+    /// The optional address of the Pyth product
     pub pyth_product: Option<Pubkey>,
+    /// The optional address of the Pyth price
     pub pyth_price: Option<Pubkey>,
 
+    /// Optional configuration of the pool
     pub parameters: Option<MarginPoolConfig>,
+    /// Optional metadata of the pool, includes collateral weight and risk multiplier
     pub metadata: Option<TokenMetadataParams>,
 }
 
+/// Get the address of the control authority
 pub fn get_control_authority_address() -> Pubkey {
     Pubkey::find_program_address(&[], &jet_control::ID).0
 }

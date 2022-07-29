@@ -36,6 +36,12 @@ use jet_simulation::solana_rpc_api::SolanaRpcClient;
 
 use crate::ix_builder::*;
 
+/// [Transaction] builder for a margin account, which supports invoking adapter
+/// actions signed as the margin account.
+/// Actions are invoked through `adapter_invoke_ix` depending on their context.
+///
+/// Both margin accounts and liquidators can use this builder, and it will invoke
+/// the correct `adapter_invoke_ix`.
 pub struct MarginTxBuilder {
     rpc: Arc<dyn SolanaRpcClient>,
     ix: MarginIxBuilder,
@@ -99,10 +105,12 @@ impl MarginTxBuilder {
         self.rpc.create_transaction(&[], instructions).await
     }
 
+    /// The address of the transaction signer
     pub fn signer(&self) -> Pubkey {
         self.signer.as_ref().unwrap().pubkey()
     }
 
+    /// The owner of the margin account
     pub fn owner(&self) -> &Pubkey {
         &self.ix.owner
     }

@@ -15,9 +15,49 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+//! Jet Margin SDK
+//!
+//! This crate is the official Rust SDK for the Jet Margin family of programs.
+//! It includes instruction and transaction builders that allow users of our
+//! programs to conveniently interact with them.
+//!
+//! The SDK currently supports the following programs and adapters:
+//! * Control program - mostly used internally for configuration
+//! * Margin - create, manage and interact with [jet_margin::MarginAccount]s
+//! * Margin Pool - an adapter for borrowing and lending in our pools
+//! * Margin Swap - execute swaps via `spl_token_sawp` compatible programs, e.g. Orca.
+//!
+//! A good starting point for using the SDK is to create a margin account.
+//!
+//! ```ignore
+//! use std::sync::Arc;
+//!
+//! use jet_simulation::solana_rpc_api::{RpcConnection, SolanaRpcClient};
+//! use solana_client::rpc_client::nonblocking::RpcClient;
+//!
+//! #[tokio::main]
+//! async fn main() -> anyhow::Result<()> {
+//!   // Create an RPC connection
+//!   let client = RpcClient::new("https://my-endpoint.com");
+//!   let rpc = RpcConnection::new(payer, client);
+//!   // Create a transaction builder
+//!   let tx_builder = jet_margin_sdk::tx_builder::MarginTxBuilder::new(&rpc, ...);
+//!   // Create a transaction to register a margin account
+//!   let tx = tx_builder.create_account().await?;
+//!   // Submit transaction
+//!   rpc.send_and_confirm_transaction(&tx).await?;
+//! }
+//! ```
+
+#![deny(missing_docs)]
+
+/// Instruction builders for programs and adapters supported by the SDK
 pub mod ix_builder;
+/// Utilities for swap adapters
 pub mod swap;
+/// Utilities for tokens and token prices
 pub mod tokens;
+/// Transaction builder
 pub mod tx_builder;
 
 pub use jet_control;

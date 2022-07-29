@@ -26,13 +26,19 @@ use jet_margin_swap::instruction as ix_data;
 
 use crate::ix_builder::MarginPoolIxBuilder;
 
-/// Utility for creating instructions to interact with the margin swap program.
+/// Builder for creating instructions to interact with the margin swap program.
 pub struct MarginSwapIxBuilder {
+    /// SPL mint of the left side of the pool
     pub token_a: Pubkey,
+    /// SPL mint of the right side of the pool
     pub token_b: Pubkey,
+    /// The address of the swap pool
     pub swap_pool: Pubkey,
-    pub authority: Pubkey,
+    /// The PDA of the swap pool authority
+    pub swap_pool_authority: Pubkey,
+    /// The mint of the swap pool notes, minted in exchange for deposits
     pub pool_mint: Pubkey,
+    /// The account that accumulates transaction fees
     pub fee_account: Pubkey,
 }
 
@@ -54,7 +60,7 @@ impl MarginSwapIxBuilder {
             token_a,
             token_b,
             swap_pool,
-            authority,
+            swap_pool_authority: authority,
             pool_mint,
             fee_account,
         }
@@ -90,13 +96,11 @@ impl MarginSwapIxBuilder {
             transit_destination_account: transit_dst_account,
             swap_info: ix_accounts::SwapInfo {
                 swap_pool: self.swap_pool,
-                authority: self.authority,
+                authority: self.swap_pool_authority,
                 vault_into: source_token_account,
                 vault_from: destination_token_account,
                 token_mint: self.pool_mint,
                 fee_account: self.fee_account,
-                // FIXME: this would be orca, raydium, etc.
-                // but it's not clear if we need the program
                 swap_program,
             },
             source_margin_pool: ix_accounts::MarginPoolInfo {
