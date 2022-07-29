@@ -410,8 +410,7 @@ export class Pool {
     instructions: TransactionInstruction[]
     marginAccount: MarginAccount
   }): Promise<void> {
-    assert(marginAccount)
-    assert(this.info, "Must refresh the pool once.")
+    if (!marginAccount || !this.info) throw new Error('Margin or pool not fully setup')
     await marginAccount.withAccountingInvoke({
       instructions: instructions,
       adapterProgram: this.programs.config.marginPoolProgramId,
@@ -421,7 +420,7 @@ export class Pool {
         .accounts({
           marginAccount: marginAccount.address,
           marginPool: this.address,
-          tokenPriceOracle: this.info.tokenMetadata.pythPrice
+          tokenPriceOracle: this.info?.tokenMetadata.pythPrice
         })
         .instruction()
     })
@@ -521,7 +520,7 @@ export class Pool {
     pools: Pool[]
     change: PoolTokenChange
     destination?: TokenAddress
-  }) {
+  }): Promise<string> {
     await marginAccount.refresh()
     const refreshInstructions: TransactionInstruction[] = []
     const instructionsInstructions: TransactionInstruction[] = []
@@ -550,10 +549,8 @@ export class Pool {
       const poolPosition = Object.values(marginAccount.poolPositions).find(
         position => position.pool && position.pool.address.equals(this.address)
       )
-      assert(
-        poolPosition,
-        "Attempting to withdraw after borrowing, but can not find the pool position in the margin account to calculate the withdraw amount."
-      )
+
+      if (!poolPosition) return new Error("Attempting to withdraw after borrowing, but can not find the pool position in the margin account to calculate the withdraw amount.")
       const previousDepositAmount = poolPosition.depositBalance
       const withdrawChange = PoolTokenChange.setTo(previousDepositAmount)
       await this.withWithdraw({
@@ -565,7 +562,7 @@ export class Pool {
       })
     }
 
-    await sendAll(marginAccount.provider, [chunks(11, refreshInstructions), instructionsInstructions])
+    return await sendAll(marginAccount.provider, [chunks(11, refreshInstructions), instructionsInstructions])
   }
 
   async withGetOrCreateLoanPosition(
@@ -647,13 +644,15 @@ export class Pool {
     marginAccount,
     pools,
     source,
-    change
+    change,
+    closeLoan
   }: {
     marginAccount: MarginAccount
     pools: Pool[]
     source?: TokenAddress
     change: PoolTokenChange
-  }) {
+    closeLoan?: boolean
+  }): Promise<string> {
     await marginAccount.refresh()
     const refreshInstructions: TransactionInstruction[] = []
     const instructions: TransactionInstruction[] = []
@@ -688,13 +687,11 @@ export class Pool {
     }
 
     // Automatically close the position once the loan is repaid.
-    // this doesn't work because it compares notes to tokens
-    // let loanPosition = marginAccount.getPosition(this.addresses.loanNoteMint)
-    // if (loanPosition && amount.value.eq(loanPosition.balance)) {
-    //   await this.withCloseLoan(instructions, marginAccount)
-    // }
+    if (closeLoan) {
+      await this.withCloseLoan(instructions, marginAccount)
+    }
 
-    await sendAll(marginAccount.provider, [chunks(11, refreshInstructions), instructions])
+    return await sendAll(marginAccount.provider, [chunks(11, refreshInstructions), instructions])
   }
 
   async withMarginRepay({
