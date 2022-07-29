@@ -986,9 +986,9 @@ export class Pool {
     if (this.info === undefined) throw Error("must have info")
 
     const borrowedTokens = this.borrowedTokens.tokens
-    const totalValue = this.totalValue.tokens + amount
+    const totalTokens = this.totalValue.tokens + amount
 
-    const utilRatio = borrowedTokens / totalValue
+    const utilRatio = borrowedTokens / totalTokens
     const depositCcRate = Pool.getCcRate(this.info.marginPool.config, utilRatio)
 
     const depositRate = Pool.getDepositApy(depositCcRate, utilRatio)
@@ -1024,9 +1024,9 @@ export class Pool {
     if (amount > position.depositBalance.tokens) throw Error("amount can't exceed deposit")
 
     const borrowedTokens = this.borrowedTokens.tokens
-    const totalValue = this.totalValue.tokens - amount
+    const totalTokens = this.totalValue.tokens - amount
 
-    const utilRatio = totalValue === 0 ? 0 : borrowedTokens / totalValue
+    const utilRatio = totalTokens === 0 ? 0 : borrowedTokens / totalTokens
     const depositCcRate = Pool.getCcRate(this.info.marginPool.config, utilRatio)
 
     const depositRate = Pool.getDepositApy(depositCcRate, utilRatio)
@@ -1055,9 +1055,9 @@ export class Pool {
     if (this.info === undefined) throw Error("must have info")
 
     const borrowedTokens = this.borrowedTokens.tokens + amount
-    const totalValue = this.totalValue.tokens + amount
+    const totalTokens = this.totalValue.tokens + amount
 
-    const utilRatio = borrowedTokens / totalValue
+    const utilRatio = borrowedTokens / totalTokens
     const depositCcRate = Pool.getCcRate(this.info.marginPool.config, utilRatio)
 
     const depositRate = Pool.getDepositApy(depositCcRate, utilRatio)
@@ -1095,9 +1095,9 @@ export class Pool {
     if (amount > position.loanBalance.tokens) throw Error("amount can't exceed loan")
 
     const borrowedTokens = this.borrowedTokens.tokens - amount
-    const totalValue = this.totalValue.tokens - amount
+    const totalTokens = this.totalValue.tokens - amount
 
-    const utilRatio = totalValue === 0 ? 0 : borrowedTokens / totalValue
+    const utilRatio = totalTokens === 0 ? 0 : borrowedTokens / totalTokens
     const depositCcRate = Pool.getCcRate(this.info.marginPool.config, utilRatio)
 
     const depositRate = Pool.getDepositApy(depositCcRate, utilRatio)
@@ -1140,9 +1140,9 @@ export class Pool {
     if (amount > position.depositBalance.tokens) throw Error("amount can't exceed deposit")
 
     const borrowedTokens = this.borrowedTokens.tokens - amount
-    const totalValue = this.totalValue.tokens - 2 * amount
+    const totalTokens = this.totalValue.tokens - 2 * amount
 
-    const utilRatio = totalValue === 0 ? 0 : borrowedTokens / totalValue
+    const utilRatio = totalTokens === 0 ? 0 : borrowedTokens / totalTokens
     const depositCcRate = Pool.getCcRate(this.info.marginPool.config, utilRatio)
 
     const depositRate = Pool.getDepositApy(depositCcRate, utilRatio)
@@ -1176,9 +1176,9 @@ export class Pool {
     if (this.info === undefined) throw Error("must have info")
 
     const borrowedTokens = this.borrowedTokens.tokens + amount
-    const totalValue = this.totalValue.tokens + 2 * amount
+    const totalTokens = this.totalValue.tokens + 2 * amount
 
-    const utilRatio = borrowedTokens / totalValue
+    const utilRatio = borrowedTokens / totalTokens
     const depositCcRate = Pool.getCcRate(this.info.marginPool.config, utilRatio)
 
     const depositRate = Pool.getDepositApy(depositCcRate, utilRatio)
