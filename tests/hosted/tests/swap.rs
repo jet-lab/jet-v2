@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use anyhow::Error;
 
 use jet_margin_sdk::{swap::SwapPool, tokens::TokenPrice};
@@ -114,6 +116,15 @@ async fn swap_test_impl(swap_program_id: Pubkey) -> Result<(), anyhow::Error> {
         10_000 * ONE_TSOL,
     )
     .await?;
+
+    // Check if the swap pool can be found
+    let mut supported_mints = HashSet::new();
+    supported_mints.insert(env.usdc);
+    supported_mints.insert(env.tsol);
+
+    let swap_pools = SwapPool::get_pools(&ctx.rpc, supported_mints, swap_program_id).await?;
+    assert_eq!(swap_pools.len(), 1);
+    assert_eq!(swap_pool.pool, swap_pools.first().unwrap().pool);
 
     let usdc_transit_source = ctx
         .tokens
