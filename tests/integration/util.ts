@@ -18,13 +18,29 @@ import {
 import { Commitment, Keypair, LAMPORTS_PER_SOL, PublicKey, SystemProgram, Transaction } from "@solana/web3.js"
 import { MarginPrograms } from "../../libraries/ts/src"
 
-import MARGIN_CONFIG from "../../libraries/ts/src/margin/config.json"
+export const CONTROL_PROGRAM_ID = new PublicKey("JPCtrLreUqsEbdhtxZ8zpd8wBydKz4nuEjX5u9Eg5H8")
+export const MARGIN_PROGRAM_ID = new PublicKey("JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ")
+export const MARGIN_POOL_PROGRAM_ID = new PublicKey("JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ")
+export const MARGIN_SWAP_PROGRAM_ID = new PublicKey("JPMAa5dnWLFRvUsumawFcGhnwikqZziLLfqn9SLNXPN")
+export const METADATA_PROGRAM_ID = new PublicKey("JPMetawzxw7WyH3qHUVScYHWFBGhjwqDnM2R9qVbRLp")
+export const ORCA_SWAP_PROGRAM_ID = new PublicKey("9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP")
 
-const controlProgramId: PublicKey = new PublicKey(MARGIN_CONFIG.localnet.controlProgramId)
-const marginMetadataProgramId: PublicKey = new PublicKey(MARGIN_CONFIG.localnet.metadataProgramId)
+export const DEFAULT_MARGIN_CONFIG = {
+  controlProgramId: CONTROL_PROGRAM_ID,
+  marginProgramId: MARGIN_PROGRAM_ID,
+  marginPoolProgramId: MARGIN_POOL_PROGRAM_ID,
+  marginSerumProgramId: SystemProgram.programId,
+  marginSwapProgramId: MARGIN_SWAP_PROGRAM_ID,
+  metadataProgramId: METADATA_PROGRAM_ID,
+  orcaSwapProgramId: ORCA_SWAP_PROGRAM_ID,
+  serumProgramId: SystemProgram.programId,
+  url: "http://localhost",
+  tokens: {},
+  markets: {}
+}
 
 export async function createAuthority(programs: MarginPrograms, provider: AnchorProvider): Promise<void> {
-  const [authority] = await PublicKey.findProgramAddress([], controlProgramId)
+  const [authority] = await PublicKey.findProgramAddress([], CONTROL_PROGRAM_ID)
 
   const accountInfo = await provider.connection.getAccountInfo(authority, "processed" as Commitment)
   if (!accountInfo) {
@@ -52,11 +68,11 @@ export async function registerAdapter(
   adapterProgramId: PublicKey,
   payer: Keypair
 ): Promise<void> {
-  const [metadataAccount] = await PublicKey.findProgramAddress([adapterProgramId.toBuffer()], marginMetadataProgramId)
+  const [metadataAccount] = await PublicKey.findProgramAddress([adapterProgramId.toBuffer()], METADATA_PROGRAM_ID)
 
   const accountInfo = await provider.connection.getAccountInfo(metadataAccount, "processed" as Commitment)
   if (!accountInfo) {
-    const [authority] = await PublicKey.findProgramAddress([], controlProgramId)
+    const [authority] = await PublicKey.findProgramAddress([], CONTROL_PROGRAM_ID)
 
     const tx = await programs.control.methods
       .registerAdapter()
@@ -66,7 +82,7 @@ export async function registerAdapter(
         adapter: adapterProgramId,
         metadataAccount: metadataAccount,
         payer: payer.publicKey,
-        metadataProgram: marginMetadataProgramId,
+        metadataProgram: METADATA_PROGRAM_ID,
         systemProgram: SystemProgram.programId
       })
       .transaction()

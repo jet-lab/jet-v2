@@ -8,7 +8,7 @@ import { AnchorProvider, Wallet } from "@project-serum/anchor"
 
 async function main() {
   const walletPublicKey = "6XEn2q37nqsYQB5R79nueGi6n3uhgjiDwxoJeAVzWvaS"
-  const config = MarginClient.getConfig("devnet")
+  const config = await MarginClient.getConfig("devnet")
   const connection = new Connection("https://api.devnet.solana.com", "recent")
   const options = AnchorProvider.defaultOptions()
   const wallet = undefined as any as Wallet

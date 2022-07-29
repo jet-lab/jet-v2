@@ -10,7 +10,7 @@ import {
   WRAPPED_SOL_MINT
 } from "@project-serum/serum/lib/token-instructions"
 import { TokenAmount } from "../../token"
-import { MarginMarketConfig, MarginMarkets, MarginTokens } from "../config"
+import { MarginMarketConfig } from "../config"
 import { PoolTokenChange } from "../pool"
 import { MarginAccount } from "../marginAccount"
 import { MarginPrograms } from "../marginClient"
@@ -37,7 +37,7 @@ export class Market {
   get baseDecimals(): number {
     return this.marketConfig.baseDecimals
   }
-  get baseSymbol(): MarginTokens {
+  get baseSymbol(): string {
     return this.marketConfig.baseSymbol
   }
   get quoteMint(): PublicKey {
@@ -46,7 +46,7 @@ export class Market {
   get quoteDecimals(): number {
     return this.marketConfig.quoteDecimals
   }
-  get quoteSymbol(): MarginTokens {
+  get quoteSymbol(): string {
     return this.marketConfig.quoteSymbol
   }
   get minOrderSize() {
@@ -146,8 +146,8 @@ export class Market {
    *   }}
    * @return {Promise<Record<MarginMarkets, Market>>}
    */
-  static async loadAll(programs: MarginPrograms, options?: MarketOptions): Promise<Record<MarginMarkets, Market>> {
-    const markets: Record<MarginMarkets, Market> = {} as Record<MarginMarkets, Market>
+  static async loadAll(programs: MarginPrograms, options?: MarketOptions): Promise<Record<string, Market>> {
+    const markets: Record<string, Market> = {} as Record<string, Market>
     for (const marketConfig of Object.values(programs.config.markets)) {
       const market = await this.load({
         programs,
@@ -255,7 +255,7 @@ export class Market {
       feeDiscountPubkey =
         (await this.serum.findBestFeeDiscountKey(marginAccount.provider.connection, marginAccount.address)).pubkey ??
         undefined
-    } catch (err) {
+    } catch (err: any) {
       if (!err.message || !err.message.includes("could not find mint")) {
         console.error(err)
       }
