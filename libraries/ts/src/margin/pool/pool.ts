@@ -520,7 +520,7 @@ export class Pool {
     pools: Pool[]
     change: PoolTokenChange
     destination?: TokenAddress
-  }) {
+  }): Promise<string> {
     await marginAccount.refresh()
     const refreshInstructions: TransactionInstruction[] = []
     const instructionsInstructions: TransactionInstruction[] = []
@@ -562,7 +562,7 @@ export class Pool {
       })
     }
 
-    await sendAll(marginAccount.provider, [chunks(11, refreshInstructions), instructionsInstructions])
+    return await sendAll(marginAccount.provider, [chunks(11, refreshInstructions), instructionsInstructions])
   }
 
   async withGetOrCreateLoanPosition(
@@ -652,7 +652,7 @@ export class Pool {
     source?: TokenAddress
     change: PoolTokenChange
     closeLoan?: boolean
-  }) {
+  }): Promise<string> {
     await marginAccount.refresh()
     const refreshInstructions: TransactionInstruction[] = []
     const instructions: TransactionInstruction[] = []
@@ -691,7 +691,7 @@ export class Pool {
       await this.withCloseLoan(instructions, marginAccount)
     }
 
-    await sendAll(marginAccount.provider, [chunks(11, refreshInstructions), instructions])
+    return await sendAll(marginAccount.provider, [chunks(11, refreshInstructions), instructions])
   }
 
   async withMarginRepay({
