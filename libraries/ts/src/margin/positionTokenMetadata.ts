@@ -61,7 +61,7 @@ export class PositionTokenMetadata {
     }
   }
 
-  getExposure(value: Number128) {
+  getLiability(value: Number128) {
     return value
   }
 

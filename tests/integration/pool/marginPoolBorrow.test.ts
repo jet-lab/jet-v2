@@ -4,8 +4,6 @@ import { AnchorProvider, BN } from "@project-serum/anchor"
 import NodeWallet from "@project-serum/anchor/dist/cjs/nodewallet"
 import { ConfirmOptions, Keypair, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js"
 
-import MARGIN_CONFIG from "../../../libraries/ts/src/margin/config.json"
-
 import {
   MarginAccount,
   PoolTokenChange,
@@ -23,21 +21,22 @@ import {
   createToken,
   createTokenAccount,
   createUserWallet,
+  DEFAULT_MARGIN_CONFIG,
   getMintSupply,
   getTokenBalance,
+  MARGIN_POOL_PROGRAM_ID,
   registerAdapter,
   sendToken
 } from "../util"
 
-describe("margin pool borrow", () => {
+describe("margin pool borrow", async () => {
   // SUITE SETUP
-  const marginPoolProgramId: PublicKey = new PublicKey(MARGIN_CONFIG.localnet.marginPoolProgramId)
   const confirmOptions: ConfirmOptions = { preflightCommitment: "processed", commitment: "processed" }
   const provider = AnchorProvider.local(undefined, confirmOptions)
   anchor.setProvider(provider)
   const payer = (provider.wallet as NodeWallet).payer
   const ownerKeypair = payer
-  const programs = MarginClient.getPrograms(provider, "localnet")
+  const programs = MarginClient.getPrograms(provider, DEFAULT_MARGIN_CONFIG)
   const manager = new PoolManager(programs, provider)
   let USDC
   let SOL
@@ -88,7 +87,7 @@ describe("margin pool borrow", () => {
   })
 
   it("Register adapter", async () => {
-    await registerAdapter(programs, provider, payer, marginPoolProgramId, payer)
+    await registerAdapter(programs, provider, payer, MARGIN_POOL_PROGRAM_ID, payer)
   })
 
   const ONE_USDC = 1_000_000
@@ -448,7 +447,28 @@ describe("margin pool borrow", () => {
           loanNoteMint: marginPool_SOL.addresses.loanNoteMint
         }
       }
-      const transactions = await MarginClient.getTransactionHistory(provider, wallet_a.publicKey, mints, "localnet")
+
+      const marginConfig = {
+        ...DEFAULT_MARGIN_CONFIG,
+        tokens: {
+          USDC: {
+            symbol: "USDC",
+            name: "USDC",
+            decimals: 6,
+            precision: 2,
+            mint: USDC[0] as PublicKey
+          },
+          SOL: {
+            symbol: "SOL",
+            name: "SOL",
+            decimals: 9,
+            precision: 4,
+            mint: SOL[0] as PublicKey
+          }
+        }
+      }
+
+      const transactions = await MarginClient.getTransactionHistory(provider, wallet_a.publicKey, mints, marginConfig)
 
       expect(transactions).to.have.length(7)
 
