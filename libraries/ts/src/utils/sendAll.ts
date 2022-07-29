@@ -64,6 +64,7 @@ export async function sendAll(
         })
       )
       // Return the txid of the final transaction in the array
+      // TODO: We should return an array instead of only the final txn
       lastTxn = txnArray[txnArray.length - 1] ?? ""
     } catch (err: any) {
       // preserve stacktrace
