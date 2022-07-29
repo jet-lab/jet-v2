@@ -141,9 +141,9 @@ export class MarginAccount {
     weightedCollateral: number,
     liabilities: number,
   ): number {
-    if (requiredCollateral < 0) throw "requiredCollateral must be non-negative"
-    if (weightedCollateral < 0) throw "weightedCollateral must be non-negative"
-    if (liabilities < 0) throw "liabilities must be non-negative"
+    if (requiredCollateral < 0) throw Error("requiredCollateral must be non-negative")
+    if (weightedCollateral < 0) throw Error("weightedCollateral must be non-negative")
+    if (liabilities < 0) throw Error("liabilities must be non-negative")
 
     if (requiredCollateral === 0) return 0
 
@@ -602,7 +602,7 @@ export class MarginAccount {
     const effectiveCollateral = weightedCollateral.sub(liabilities)
 
     return {
-      liabilities: liabilities,
+      liabilities,
       pastDue,
       requiredCollateral,
       requiredSetupCollateral,

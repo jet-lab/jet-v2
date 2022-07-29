@@ -207,7 +207,7 @@ export class Pool {
       const tokenMint = AssociatedToken.decodeMint(poolTokenMintInfo, this.addresses.tokenMint)
       const oracleInfo = await this.programs.marginPool.provider.connection.getAccountInfo(marginPool.tokenPriceOracle)
       if (!oracleInfo) {
-        throw "Pyth oracle does not exist but a margin pool does. The margin pool is incorrectly configured."
+        throw Error("Pyth oracle does not exist but a margin pool does. The margin pool is incorrectly configured.")
       }
       this.info = {
         marginPool,
@@ -983,7 +983,7 @@ export class Pool {
 
   /// Projects the deposit and borrow rates after a deposit into the pool.
   projectAfterDeposit(marginAccount: MarginAccount, amount: number): PoolProjection {
-    if (this.info === undefined) throw "must have info"
+    if (this.info === undefined) throw Error("must have info")
 
     const borrowedTokens = this.borrowedTokens.tokens
     const totalValue = this.totalValue.tokens + amount
@@ -1012,16 +1012,16 @@ export class Pool {
 
   /// Projects the deposit and borrow rates after a withdrawal from the pool.
   projectAfterWithdraw(marginAccount: MarginAccount, amount: number): PoolProjection {
-    if (this.info === undefined) throw "must have info"
+    if (this.info === undefined) throw Error("must have info")
 
     const symbol = this.symbol
-    if (symbol === undefined) throw "must have symbol"
+    if (symbol === undefined) throw Error("must have symbol")
 
     const position = marginAccount.poolPositions[symbol]
-    if (position === undefined) throw "must have position"
+    if (position === undefined) throw Error("must have position")
     
     // G1, referenced below
-    if (amount > position.depositBalance.tokens) throw "amount can't exceed deposit"
+    if (amount > position.depositBalance.tokens) throw Error("amount can't exceed deposit")
 
     const borrowedTokens = this.borrowedTokens.tokens
     const totalValue = this.totalValue.tokens - amount
@@ -1052,7 +1052,7 @@ export class Pool {
 
   /// Projects the deposit and borrow rates after a borrow from the pool.
   projectAfterBorrow(marginAccount: MarginAccount, amount: number): PoolProjection {
-    if (this.info === undefined) throw "must have info"
+    if (this.info === undefined) throw Error("must have info")
 
     const borrowedTokens = this.borrowedTokens.tokens + amount
     const totalValue = this.totalValue.tokens + amount
@@ -1083,16 +1083,16 @@ export class Pool {
 
   /// Projects the deposit and borrow rates after repaying a loan from the pool.
   projectAfterRepay(marginAccount: MarginAccount, amount: number): PoolProjection {
-    if (this.info === undefined) throw "must have info"
+    if (this.info === undefined) throw Error("must have info")
 
     const symbol = this.symbol
-    if (symbol === undefined) throw "must have symbol"
+    if (symbol === undefined) throw Error("must have symbol")
 
     const position = marginAccount.poolPositions[symbol]
-    if (position === undefined) throw "must have position"
+    if (position === undefined) throw Error("must have position")
     
     // G1, referenced below
-    if (amount > position.loanBalance.tokens) throw "amount can't exceed loan"
+    if (amount > position.loanBalance.tokens) throw Error("amount can't exceed loan")
 
     const borrowedTokens = this.borrowedTokens.tokens - amount
     const totalValue = this.totalValue.tokens - amount
@@ -1125,19 +1125,19 @@ export class Pool {
 
   /// Projects the deposit and borrow rates after repaying a loan from the pool.
   projectAfterRepayFromDeposit(marginAccount: MarginAccount, amount: number): PoolProjection {
-    if (this.info === undefined) throw "must have info"
+    if (this.info === undefined) throw Error("must have info")
 
     const symbol = this.symbol
-    if (symbol === undefined) throw "must have symbol"
+    if (symbol === undefined) throw Error("must have symbol")
 
     const position = marginAccount.poolPositions[symbol]
-    if (position === undefined) throw "must have position"
+    if (position === undefined) throw Error("must have position")
 
     // G1, referenced below
-    if (amount > position.loanBalance.tokens) throw "amount can't exceed loan"
+    if (amount > position.loanBalance.tokens) throw Error("amount can't exceed loan")
 
     // G2, referenced below
-    if (amount > position.depositBalance.tokens) throw "amount can't exceed deposit"
+    if (amount > position.depositBalance.tokens) throw Error("amount can't exceed deposit")
 
     const borrowedTokens = this.borrowedTokens.tokens - amount
     const totalValue = this.totalValue.tokens - 2 * amount
@@ -1173,7 +1173,7 @@ export class Pool {
 
   /// Projects the deposit and borrow rates after a borrow from the pool.
   projectAfterBorrowAndNotWithdraw(marginAccount: MarginAccount, amount: number): PoolProjection {
-    if (this.info === undefined) throw "must have info"
+    if (this.info === undefined) throw Error("must have info")
 
     const borrowedTokens = this.borrowedTokens.tokens + amount
     const totalValue = this.totalValue.tokens + 2 * amount
