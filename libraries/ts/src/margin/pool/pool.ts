@@ -644,12 +644,14 @@ export class Pool {
     marginAccount,
     pools,
     source,
-    change
+    change,
+    closeLoan
   }: {
     marginAccount: MarginAccount
     pools: Pool[]
     source?: TokenAddress
     change: PoolTokenChange
+    closeLoan?: boolean
   }) {
     await marginAccount.refresh()
     const refreshInstructions: TransactionInstruction[] = []
@@ -685,11 +687,9 @@ export class Pool {
     }
 
     // Automatically close the position once the loan is repaid.
-    // this doesn't work because it compares notes to tokens
-    // let loanPosition = marginAccount.getPosition(this.addresses.loanNoteMint)
-    // if (loanPosition && amount.value.eq(loanPosition.balance)) {
-    //   await this.withCloseLoan(instructions, marginAccount)
-    // }
+    if (closeLoan) {
+      await this.withCloseLoan(instructions, marginAccount)
+    }
 
     await sendAll(marginAccount.provider, [chunks(11, refreshInstructions), instructions])
   }
