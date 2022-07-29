@@ -410,8 +410,7 @@ export class Pool {
     instructions: TransactionInstruction[]
     marginAccount: MarginAccount
   }): Promise<void> {
-    assert(marginAccount)
-    assert(this.info, "Must refresh the pool once.")
+    if (!marginAccount || !this.info) throw new Error('Margin or pool not fully setup')
     await marginAccount.withAccountingInvoke({
       instructions: instructions,
       adapterProgram: this.programs.config.marginPoolProgramId,
@@ -421,7 +420,7 @@ export class Pool {
         .accounts({
           marginAccount: marginAccount.address,
           marginPool: this.address,
-          tokenPriceOracle: this.info.tokenMetadata.pythPrice
+          tokenPriceOracle: this.info?.tokenMetadata.pythPrice
         })
         .instruction()
     })
@@ -550,10 +549,8 @@ export class Pool {
       const poolPosition = Object.values(marginAccount.poolPositions).find(
         position => position.pool && position.pool.address.equals(this.address)
       )
-      assert(
-        poolPosition,
-        "Attempting to withdraw after borrowing, but can not find the pool position in the margin account to calculate the withdraw amount."
-      )
+
+      if (!poolPosition) return new Error("Attempting to withdraw after borrowing, but can not find the pool position in the margin account to calculate the withdraw amount.")
       const previousDepositAmount = poolPosition.depositBalance
       const withdrawChange = PoolTokenChange.setTo(previousDepositAmount)
       await this.withWithdraw({
