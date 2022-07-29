@@ -68,6 +68,7 @@ export interface AccountSummary {
 }
 
 export interface Valuation {
+  equity: Number128
   liabilities: Number128
   requiredCollateral: Number128
   requiredSetupCollateral: Number128
@@ -126,21 +127,17 @@ export class MarginAccount {
    *  non-negative, range is [0, infinity)
    *  zero only when an account has no exposure at all
    *  account is subject to liquidation at a value of one
-  */
+   */
   get riskIndicator() {
     return this.computeRiskIndicator(
       this.valuation.requiredCollateral.asNumber(),
       this.valuation.weightedCollateral.asNumber(),
-      this.valuation.liabilities.asNumber(),
+      this.valuation.liabilities.asNumber()
     )
   }
 
   /** A just-okay risk indicator (TODO improve me) */
-  computeRiskIndicator(
-    requiredCollateral: number,
-    weightedCollateral: number,
-    liabilities: number,
-  ): number {
+  computeRiskIndicator(requiredCollateral: number, weightedCollateral: number, liabilities: number): number {
     if (requiredCollateral < 0) throw Error("requiredCollateral must be non-negative")
     if (weightedCollateral < 0) throw Error("weightedCollateral must be non-negative")
     if (liabilities < 0) throw Error("liabilities must be non-negative")
@@ -539,6 +536,7 @@ export class MarginAccount {
     const timestamp = getTimestamp()
 
     let pastDue = false
+    let equity = Number128.ZERO
     let liabilities = Number128.ZERO
     let requiredCollateral = Number128.ZERO
     let requiredSetupCollateral = Number128.ZERO
@@ -580,6 +578,7 @@ export class MarginAccount {
             pastDue = true
           }
 
+          equity = equity.sub(position.valueRaw)
           liabilities = liabilities.add(position.valueRaw)
           requiredCollateral = requiredCollateral.add(position.requiredCollateralValue())
           requiredSetupCollateral = requiredSetupCollateral.add(
@@ -591,6 +590,7 @@ export class MarginAccount {
         }
       } else if (kind === PositionKind.Deposit) {
         if (staleReason === undefined || includeStalePositions) {
+          equity = equity.add(position.valueRaw)
           weightedCollateral = weightedCollateral.add(position.collateralValue())
         }
         if (staleReason !== undefined) {
@@ -602,6 +602,7 @@ export class MarginAccount {
     const effectiveCollateral = weightedCollateral.sub(liabilities)
 
     return {
+      equity,
       liabilities,
       pastDue,
       requiredCollateral,

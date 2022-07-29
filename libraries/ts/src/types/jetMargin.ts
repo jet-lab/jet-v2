@@ -1,5 +1,5 @@
 export type JetMargin = {
-  version: "0.1.0"
+  version: "1.0.0"
   name: "jet_margin"
   constants: [
     {
@@ -361,7 +361,7 @@ export type JetMargin = {
   ]
   accounts: [
     {
-      name: "marginAccount"
+      name: "MarginAccount"
       type: {
         kind: "struct"
         fields: [
@@ -415,7 +415,7 @@ export type JetMargin = {
       }
     },
     {
-      name: "liquidation"
+      name: "Liquidation"
       type: {
         kind: "struct"
         fields: [
@@ -424,11 +424,11 @@ export type JetMargin = {
             type: "i64"
           },
           {
-            name: "valueChange"
+            name: "equityChange"
             type: "i128"
           },
           {
-            name: "minValueChange"
+            name: "minEquityChange"
             type: "i128"
           }
         ]
@@ -485,6 +485,10 @@ export type JetMargin = {
       type: {
         kind: "struct"
         fields: [
+          {
+            name: "equity"
+            type: "i128"
+          },
           {
             name: "liabilities"
             type: "i128"
@@ -581,9 +585,7 @@ export type JetMargin = {
           },
           {
             name: "kind"
-            type: {
-              defined: "PositionKind"
-            }
+            type: "u32"
           },
           {
             name: "exponent"
@@ -727,50 +729,6 @@ export type JetMargin = {
           {
             name: "Adapter"
             fields: ["publicKey"]
-          }
-        ]
-      }
-    },
-    {
-      name: "Invocation"
-      type: {
-        kind: "struct"
-        fields: [
-          {
-            name: "callerHeights"
-            type: "u8"
-          }
-        ]
-      }
-    },
-    {
-      name: "AdapterPositionFlags"
-      type: {
-        kind: "struct"
-        fields: [
-          {
-            name: "flags"
-            type: "u8"
-          }
-        ]
-      }
-    },
-    {
-      name: "Liquidation"
-      type: {
-        kind: "struct"
-        fields: [
-          {
-            name: "startTime"
-            type: "i64"
-          },
-          {
-            name: "valueChange"
-            type: "i128"
-          },
-          {
-            name: "minValueChange"
-            type: "i128"
           }
         ]
       }
@@ -1160,7 +1118,7 @@ export type JetMargin = {
 }
 
 export const IDL: JetMargin = {
-  version: "0.1.0",
+  version: "1.0.0",
   name: "jet_margin",
   constants: [
     {
@@ -1522,7 +1480,7 @@ export const IDL: JetMargin = {
   ],
   accounts: [
     {
-      name: "marginAccount",
+      name: "MarginAccount",
       type: {
         kind: "struct",
         fields: [
@@ -1576,7 +1534,7 @@ export const IDL: JetMargin = {
       }
     },
     {
-      name: "liquidation",
+      name: "Liquidation",
       type: {
         kind: "struct",
         fields: [
@@ -1585,11 +1543,11 @@ export const IDL: JetMargin = {
             type: "i64"
           },
           {
-            name: "valueChange",
+            name: "equityChange",
             type: "i128"
           },
           {
-            name: "minValueChange",
+            name: "minEquityChange",
             type: "i128"
           }
         ]
@@ -1646,6 +1604,10 @@ export const IDL: JetMargin = {
       type: {
         kind: "struct",
         fields: [
+          {
+            name: "equity",
+            type: "i128"
+          },
           {
             name: "liabilities",
             type: "i128"
@@ -1742,9 +1704,7 @@ export const IDL: JetMargin = {
           },
           {
             name: "kind",
-            type: {
-              defined: "PositionKind"
-            }
+            type: "u32"
           },
           {
             name: "exponent",
@@ -1888,50 +1848,6 @@ export const IDL: JetMargin = {
           {
             name: "Adapter",
             fields: ["publicKey"]
-          }
-        ]
-      }
-    },
-    {
-      name: "Invocation",
-      type: {
-        kind: "struct",
-        fields: [
-          {
-            name: "callerHeights",
-            type: "u8"
-          }
-        ]
-      }
-    },
-    {
-      name: "AdapterPositionFlags",
-      type: {
-        kind: "struct",
-        fields: [
-          {
-            name: "flags",
-            type: "u8"
-          }
-        ]
-      }
-    },
-    {
-      name: "Liquidation",
-      type: {
-        kind: "struct",
-        fields: [
-          {
-            name: "startTime",
-            type: "i64"
-          },
-          {
-            name: "valueChange",
-            type: "i128"
-          },
-          {
-            name: "minValueChange",
-            type: "i128"
           }
         ]
       }

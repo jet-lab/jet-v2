@@ -998,14 +998,12 @@ export class Pool {
     const amountValue = Number128.from(numberToBn(amount * this._prices.priceValue.asNumber()))
 
     const requiredCollateral = marginAccount.valuation.requiredCollateral.asNumber()
-    const weightedCollateral = marginAccount.valuation.weightedCollateral.add(
-      amountValue.mul(depositNoteValueModifer)
-    ).asNumber()
+    const weightedCollateral = marginAccount.valuation.weightedCollateral
+      .add(amountValue.mul(depositNoteValueModifer))
+      .asNumber()
     const liabilities = marginAccount.valuation.liabilities.asNumber()
 
-    const riskIndicator = marginAccount.computeRiskIndicator(
-      requiredCollateral, weightedCollateral, liabilities
-    )
+    const riskIndicator = marginAccount.computeRiskIndicator(requiredCollateral, weightedCollateral, liabilities)
 
     return { riskIndicator, depositRate, borrowRate }
   }
@@ -1019,7 +1017,7 @@ export class Pool {
 
     const position = marginAccount.poolPositions[symbol]
     if (position === undefined) throw Error("must have position")
-    
+
     // G1, referenced below
     if (amount > position.depositBalance.tokens) throw Error("amount can't exceed deposit")
 
@@ -1036,15 +1034,15 @@ export class Pool {
     const amountValue = Number128.from(numberToBn(amount * this._prices.priceValue.asNumber()))
 
     const requiredCollateral = marginAccount.valuation.requiredCollateral.asNumber()
-    const weightedCollateral = marginAccount.valuation.weightedCollateral.sub(
-      amountValue.mul(depositNoteValueModifer)
-    ).asNumber()
+    const weightedCollateral = marginAccount.valuation.weightedCollateral
+      .sub(amountValue.mul(depositNoteValueModifer))
+      .asNumber()
     const liabilities = marginAccount.valuation.liabilities.asNumber()
 
     const riskIndicator = marginAccount.computeRiskIndicator(
       requiredCollateral,
       weightedCollateral > 0 ? weightedCollateral : 0, // ok (but weird!) - guarded by G1
-      liabilities,
+      liabilities
     )
 
     return { riskIndicator, depositRate, borrowRate }
@@ -1066,17 +1064,13 @@ export class Pool {
     const loanNoteValueModifer = this.loanNoteMetadata.valueModifier
     const amountValue = Number128.from(numberToBn(amount * this._prices.priceValue.asNumber()))
 
-    const requireCollateral = marginAccount.valuation.requiredCollateral.add(
-      amountValue.div(loanNoteValueModifer)
-    ).asNumber()
+    const requireCollateral = marginAccount.valuation.requiredCollateral
+      .add(amountValue.div(loanNoteValueModifer))
+      .asNumber()
     const weightedCollateral = marginAccount.valuation.weightedCollateral.asNumber()
-    const liabilities = marginAccount.valuation.liabilities.add(
-      amountValue
-    ).asNumber()
-    
-    const riskIndicator = marginAccount.computeRiskIndicator(
-      requireCollateral, weightedCollateral, liabilities
-    )
+    const liabilities = marginAccount.valuation.liabilities.add(amountValue).asNumber()
+
+    const riskIndicator = marginAccount.computeRiskIndicator(requireCollateral, weightedCollateral, liabilities)
 
     return { riskIndicator, depositRate, borrowRate }
   }
@@ -1090,7 +1084,7 @@ export class Pool {
 
     const position = marginAccount.poolPositions[symbol]
     if (position === undefined) throw Error("must have position")
-    
+
     // G1, referenced below
     if (amount > position.loanBalance.tokens) throw Error("amount can't exceed loan")
 
@@ -1106,18 +1100,16 @@ export class Pool {
     const loanNoteValueModifer = this.loanNoteMetadata.valueModifier
     const amountValue = Number128.from(numberToBn(amount * this._prices.priceValue.asNumber()))
 
-    const requiredCollateral = marginAccount.valuation.requiredCollateral.sub(
-      amountValue.div(loanNoteValueModifer)
-    ).asNumber()
+    const requiredCollateral = marginAccount.valuation.requiredCollateral
+      .sub(amountValue.div(loanNoteValueModifer))
+      .asNumber()
     const weightedCollateral = marginAccount.valuation.weightedCollateral.asNumber()
-    const liabilities = marginAccount.valuation.liabilities.sub(
-      amountValue
-    ).asNumber()
+    const liabilities = marginAccount.valuation.liabilities.sub(amountValue).asNumber()
 
     const riskIndicator = marginAccount.computeRiskIndicator(
       requiredCollateral >= 0 ? requiredCollateral : 0, // ok - guarded by G1
       weightedCollateral,
-      liabilities >= 0 ? liabilities : 0, // ok - guarded by G1
+      liabilities >= 0 ? liabilities : 0 // ok - guarded by G1
     )
 
     return { riskIndicator, depositRate, borrowRate }
@@ -1152,20 +1144,18 @@ export class Pool {
     const loanNoteValueModifer = this.loanNoteMetadata.valueModifier
     const amountValue = Number128.from(numberToBn(amount * this._prices.priceValue.asNumber()))
 
-    const requiredCollateral = marginAccount.valuation.requiredCollateral.sub(
-      amountValue.div(loanNoteValueModifer)
-    ).asNumber()
-    const weightedCollateral = marginAccount.valuation.weightedCollateral.sub(
-      amountValue.mul(depositNoteValueModifer)
-    ).asNumber()
-    const liabilities = marginAccount.valuation.liabilities.sub(
-      amountValue
-    ).asNumber()
+    const requiredCollateral = marginAccount.valuation.requiredCollateral
+      .sub(amountValue.div(loanNoteValueModifer))
+      .asNumber()
+    const weightedCollateral = marginAccount.valuation.weightedCollateral
+      .sub(amountValue.mul(depositNoteValueModifer))
+      .asNumber()
+    const liabilities = marginAccount.valuation.liabilities.sub(amountValue).asNumber()
 
     const riskIndicator = marginAccount.computeRiskIndicator(
       requiredCollateral > 0 ? requiredCollateral : 0, // ok - guarded by G1
       weightedCollateral > 0 ? weightedCollateral : 0, // ok - guarded by G2
-      liabilities > 0 ? liabilities : 0, // ok - guarded by G1
+      liabilities > 0 ? liabilities : 0 // ok - guarded by G1
     )
 
     return { riskIndicator, depositRate, borrowRate }
@@ -1188,19 +1178,15 @@ export class Pool {
     const loanNoteValueModifer = this.loanNoteMetadata.valueModifier
     const amountValue = Number128.from(numberToBn(amount * this._prices.priceValue.asNumber()))
 
-    const requiredCollateral = marginAccount.valuation.requiredCollateral.add(
-      amountValue.div(loanNoteValueModifer)
-    ).asNumber()
-    const weightedCollateral = marginAccount.valuation.weightedCollateral.add(
-      amountValue.mul(depositNoteValueModifer)
-    ).asNumber()
-    const liabilities = marginAccount.valuation.liabilities.add(
-      amountValue
-    ).asNumber()
+    const requiredCollateral = marginAccount.valuation.requiredCollateral
+      .add(amountValue.div(loanNoteValueModifer))
+      .asNumber()
+    const weightedCollateral = marginAccount.valuation.weightedCollateral
+      .add(amountValue.mul(depositNoteValueModifer))
+      .asNumber()
+    const liabilities = marginAccount.valuation.liabilities.add(amountValue).asNumber()
 
-    const riskIndicator = marginAccount.computeRiskIndicator(
-      requiredCollateral, weightedCollateral, liabilities
-    )
+    const riskIndicator = marginAccount.computeRiskIndicator(requiredCollateral, weightedCollateral, liabilities)
 
     return { riskIndicator, depositRate, borrowRate }
   }

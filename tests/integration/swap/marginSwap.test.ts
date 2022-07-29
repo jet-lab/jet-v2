@@ -26,7 +26,6 @@ import { TokenSwap, CurveType, MarginSwap } from "../../../libraries/ts/src"
 import { sleep } from "../../../libraries/ts/src/utils/sleep"
 
 import { getTokenAccountInfo, ORCA_SWAP_PROGRAM_ID } from "../util"
-
 ;[ORCA_SWAP_PROGRAM_ID].forEach(function (swapProgramId) {
   describe("margin swap - program id: " + swapProgramId.toString(), () => {
     const confirmOptions: ConfirmOptions = { preflightCommitment: "processed", commitment: "processed" }
