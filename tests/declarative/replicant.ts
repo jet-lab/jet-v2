@@ -40,9 +40,9 @@ export class Replicant {
   pools?: Pool[]
   programs: MarginPrograms
   provider: AnchorProvider
-  splTokenFaucet: PublicKey
+  faucetProgramId: PublicKey
 
-  constructor(config: any, keyfile: string, cluster: MarginCluster, connection: Connection) {
+  constructor(config: any, marginConfig: MarginConfig, keyfile: string, cluster: MarginCluster, connection: Connection) {
     this.account = new Account(
       Keypair.fromSecretKey(Uint8Array.from(JSON.parse(fs.readFileSync(keyfile).toString()))).secretKey
     )
@@ -51,22 +51,23 @@ export class Replicant {
     this.connection = connection
     this.keyfile = keyfile
 
-    this.marginConfig = MarginClient.getConfig(this.cluster)
+    this.marginConfig = marginConfig
 
     const confirmOptions: ConfirmOptions = { skipPreflight: true, commitment: "processed" }
     // @ts-ignore
     this.provider = new AnchorProvider(this.connection, new NodeWallet(this.account), confirmOptions)
     anchor.setProvider(this.provider)
 
-    this.programs = MarginClient.getPrograms(this.provider, this.cluster)
+    this.programs = MarginClient.getPrograms(this.provider, this.marginConfig)
     this.poolManager = new PoolManager(this.programs, this.provider)
 
-    assert(this.marginConfig.splTokenFaucet)
-    this.splTokenFaucet = new PublicKey(this.marginConfig.splTokenFaucet)
+    assert(this.marginConfig.faucetProgramId)
+    this.faucetProgramId = new PublicKey(this.marginConfig.faucetProgramId)
   }
 
   static async create(
     config: any,
+    marginConfig: MarginConfig,
     keyfile: string,
     cluster: MarginCluster,
     connection: Connection
@@ -79,12 +80,10 @@ export class Replicant {
       await sleep(4 * 1000)
     }
 
-    return new Replicant(config, keyfile, cluster, connection)
+    return new Replicant(config, marginConfig, keyfile, cluster, connection)
   }
 
   async fundUser(): Promise<void> {
-    //TODO if user balance < 1, then airdrop some.
-
     const tokenAccounts = {}
     for (const account of this.config.accounts) {
       for (const token of Object.keys(account.tokens)) {
@@ -152,11 +151,8 @@ export class Replicant {
         seed: account.seed
       })
 
-      for (const poolConfig of Object.values<any>(this.marginConfig.pools)) {
-        const tokenConfig = this.marginConfig.tokens[poolConfig.symbol]
-        assert(tokenConfig)
-
-        const token = account.tokens[poolConfig.symbol]
+      for (const tokenConfig of Object.values<any>(this.marginConfig.tokens)) {
+        const token = account.tokens[tokenConfig.symbol]
         let expectedDeposit = ZERO_BN
         if (token && token.deposit && token.deposit != 0) {
           expectedDeposit = new BN(token.deposit * 10 ** tokenConfig.decimals)
@@ -166,8 +162,7 @@ export class Replicant {
           let existingDeposit = ZERO_BN
 
           let marginPool: Pool = await this.poolManager.load({
-            tokenMint: new PublicKey(poolConfig.tokenMint),
-            poolConfig,
+            tokenMint: tokenConfig.mint,
             tokenConfig,
             programs: this.programs
           })
@@ -183,7 +178,7 @@ export class Replicant {
             assert(tokenConfig.decimals)
             assert(tokenConfig.faucet)
             const tokenAccount: PublicKey = await getAssociatedTokenAddress(
-              new PublicKey(poolConfig.tokenMint),
+              new PublicKey(tokenConfig.mint),
               this.account.publicKey,
               true
             )
@@ -192,7 +187,7 @@ export class Replicant {
 
             await airdropTokens(
               this.connection,
-              this.splTokenFaucet,
+              this.faucetProgramId,
               // @ts-ignore
               this.account,
               new PublicKey(tokenConfig.faucet),
@@ -219,11 +214,8 @@ export class Replicant {
         seed: account.seed
       })
 
-      for (const poolConfig of Object.values(this.marginConfig.pools)) {
-        const tokenConfig = this.marginConfig.tokens[poolConfig.symbol]
-        assert(tokenConfig)
-
-        const token = account.tokens[poolConfig.symbol]
+      for (const tokenConfig of Object.values(this.marginConfig.tokens)) {
+        const token = account.tokens[tokenConfig.symbol]
         let expectedBorrow = ZERO_BN
         if (token && token.borrow) {
           expectedBorrow = new BN(token.borrow * 10 ** tokenConfig.decimals)
@@ -232,8 +224,7 @@ export class Replicant {
         const tokenMultiplier = new BN(10 ** tokenConfig.decimals)
 
         let marginPool: Pool = await this.poolManager.load({
-          tokenMint: new PublicKey(poolConfig.tokenMint),
-          poolConfig,
+          tokenMint: new PublicKey(tokenConfig.mint),
           tokenConfig,
           programs: this.programs
         })
@@ -343,7 +334,7 @@ export class Replicant {
             if (pool.addresses.loanNoteMint.toString() == position.token.toBase58()) {
               const depositPosition = getDepositPosition(marginAccount, pool.addresses.depositNoteMint)
               const existingDeposit = depositPosition ? depositPosition.balance : ZERO_BN
-              if (!existingDeposit.eq(position.balance)) {
+              if (existingDeposit.lt(new BN(position.balance.toNumber() * 1.1))) {
                 const tokenConfig = this.marginConfig.tokens[pool.symbol!]
                 assert(tokenConfig)
                 assert(tokenConfig.decimals)
@@ -353,12 +344,11 @@ export class Replicant {
                   this.account.publicKey,
                   true
                 )
-                dirty = true
                 //console.log(`DEPOSIT ${pool.symbol} = ${position.balance} | ${existingDeposit}`)
-                const amount = position.balance.sub(existingDeposit).add(new BN(1))
+                const amount = new BN(position.balance.toNumber() * 1.1).sub(existingDeposit)
                 await airdropTokens(
                   this.connection,
-                  this.splTokenFaucet,
+                  this.faucetProgramId,
                   // @ts-ignore
                   this.account,
                   new PublicKey(tokenConfig.faucet),
@@ -372,9 +362,9 @@ export class Replicant {
                 })
               }
 
+              dirty = true
               const change = PoolTokenChange.setTo(0)
-              await pool.marginRepay({ marginAccount, pools: this.pools!, change })
-              await marginAccount.closePosition(position)
+              await pool.marginRepay({ marginAccount, pools: this.pools!, change, closeLoan: true })
               break
             }
           }
