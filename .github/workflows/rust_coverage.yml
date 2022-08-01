@@ -70,6 +70,8 @@ jobs:
       - run: echo "PATH=$HOME/.local/share/solana/install/active_release/bin:$PATH" >> $GITHUB_ENV
       - run: solana-keygen new --no-bip39-passphrase
       - run: rustc --print target-list
+      - run: chmod +x tests/hosted/build_on_localnet.sh
+      - run: chmod +x tests/hosted/test_on_localnet.sh
       - run: tests/hosted/build_on_localnet.sh
       - run: tests/hosted/test_on_localnet.sh
 
