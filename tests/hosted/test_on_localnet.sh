@@ -25,11 +25,11 @@ ORCAv2_SO=$ORCA_V2_MAINNET
 COMPILE_FEATURES='testing'
 
 build() {
-    anchor build --skip-lint -p jet_control     -- --features $COMPILE_FEATURES > /dev/null 2>&1
-    anchor build --skip-lint -p jet_margin      -- --features $COMPILE_FEATURES > /dev/null 2>&1
-    anchor build --skip-lint -p jet_metadata    -- --features $COMPILE_FEATURES > /dev/null 2>&1
-    anchor build --skip-lint -p jet_margin_pool -- --features $COMPILE_FEATURES > /dev/null 2>&1
-    anchor build --skip-lint -p jet_margin_swap -- --features $COMPILE_FEATURES > /dev/null 2>&1
+    anchor build --skip-lint -p jet_control     -- --features $COMPILE_FEATURES
+    anchor build --skip-lint -p jet_margin      -- --features $COMPILE_FEATURES
+    anchor build --skip-lint -p jet_metadata    -- --features $COMPILE_FEATURES
+    anchor build --skip-lint -p jet_margin_pool -- --features $COMPILE_FEATURES
+    anchor build --skip-lint -p jet_margin_swap -- --features $COMPILE_FEATURES
 }
 
 test_file() {
@@ -79,8 +79,8 @@ trap_add() {
 declare -f -t trap_add
 trap_add 'cleanup' EXIT
 #build
-test_file swap > /dev/null 2>&1
-test_file liquidate > /dev/null 2>&1
-test_file pool_overpayment > /dev/null 2>&1
-test_file rounding > /dev/null 2>&1
-test_file sanity > /dev/null 2>&1
+test_file swap
+test_file liquidate
+test_file pool_overpayment
+test_file rounding
+test_file sanity
