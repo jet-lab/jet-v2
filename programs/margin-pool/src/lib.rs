@@ -109,7 +109,7 @@ pub use detail::TokenChange;
 mod detail {
     use anchor_lang::prelude::*;
 
-    use crate::{ChangeKind, Amount};
+    use crate::{ChangeKind, Amount, ErrorCode};
 
     /// Interface for changing the token value of an account through pool instructions
     #[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone, Copy)]
@@ -119,8 +119,11 @@ mod detail {
     }
 
     impl TokenChange {
-        pub fn new(kind: ChangeKind, tokens: u64) -> Self {
-            Self { kind, tokens }
+        pub fn new(kind: ChangeKind, tokens: u64) -> Result<Self> {
+            match kind {
+                ChangeKind::SetTo if tokens > 0 => Err(ErrorCode::InvalidSetTo.into()),
+                _ => Ok(Self { kind, tokens }),
+            }
         }
 
         pub const fn set(value: u64) -> Self {
@@ -221,7 +224,7 @@ pub enum ErrorCode {
     InvalidOracle,
 
     /// 141107 - Tried to set an invalid token value
-    #[msg("An invalid `SetTo` value was given for a `TokenChange`")]
+    #[msg("`value` must be zero for a `TokenChange` with kind `SetTo`")]
     InvalidSetTo,
 
     /// 141108 - Attempt repayment of more tokens than total outstanding

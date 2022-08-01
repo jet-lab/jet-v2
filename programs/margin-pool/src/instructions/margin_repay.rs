@@ -87,7 +87,7 @@ pub fn margin_repay_handler(
     change_kind: ChangeKind,
     amount: u64,
 ) -> Result<()> {
-    let change = TokenChange::new(change_kind, amount);
+    let change = TokenChange::new(change_kind, amount)?;
     let pool = &mut ctx.accounts.margin_pool;
     let clock = Clock::get()?;
 
