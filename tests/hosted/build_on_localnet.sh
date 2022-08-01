@@ -1,5 +1,3 @@
-#!/bin/bash
-
 set -euxo pipefail
 
 . deps/spl-token-swap/assignment.conf
@@ -74,8 +72,6 @@ trap_add() {
     done
 }
 
-test_file swap
-test_file liquidate
-test_file pool_overpayment
-test_file rounding
-test_file sanity
+declare -f -t trap_add
+trap_add 'cleanup' EXIT
+build
