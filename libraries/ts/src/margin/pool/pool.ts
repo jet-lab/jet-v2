@@ -105,10 +105,12 @@ export class Pool {
     return this.info ? Pool.getCcRate(this.info.marginPool.config, this.utilizationRate) : 0
   }
   get depositApy(): number {
-    return Pool.getDepositApy(this.depositCcRate, this.utilizationRate)
+    const fee = (this.info?.marginPool.config.managementFeeRate ?? 0) * 1e-4 // bps
+ 
+    return Pool.getDepositRate(this.depositCcRate, this.utilizationRate, fee)
   }
   get borrowApr(): number {
-    return Pool.getBorrowApr(this.depositCcRate, this.info?.marginPool.config.managementFeeRate ?? 0)
+    return Pool.getBorrowRate(this.depositCcRate)
   }
   get tokenPrice(): number {
     return this.info?.tokenPriceOracle.price ?? 0
@@ -336,22 +338,14 @@ export class Pool {
 
   /** Borrow rate
    */
-  static getBorrowApr(ccRate: number, fee: number): number {
-    const basisPointFactor = 10000
-    fee = fee / basisPointFactor
-    const secondsPerYear: number = 365 * 24 * 60 * 60
-    const rt = ccRate / secondsPerYear
-
-    return Math.log1p((1 + fee) * Math.expm1(rt)) * secondsPerYear
+  static getBorrowRate(ccRate: number): number {
+    return ccRate
   }
 
   /** Deposit rate
    */
-  static getDepositApy(ccRate: number, utilRatio: number): number {
-    const secondsPerYear: number = 365 * 24 * 60 * 60
-    const rt = ccRate / secondsPerYear
-
-    return Math.log1p(Math.expm1(rt)) * secondsPerYear * utilRatio
+  static getDepositRate(ccRate: number, utilRatio: number, feeFraction: number): number {
+    return (1 - feeFraction) * ccRate * utilRatio
   }
 
   getPrice(mint: PublicKey) {
@@ -521,6 +515,10 @@ export class Pool {
     change: PoolTokenChange
     destination?: TokenAddress
   }): Promise<string> {
+    if (!change.changeKind.isShiftBy()) {
+      throw new Error('Use ShiftBy for all borrow instructions')
+    }
+
     await marginAccount.refresh()
     const refreshInstructions: TransactionInstruction[] = []
     const instructionsInstructions: TransactionInstruction[] = []
@@ -550,9 +548,13 @@ export class Pool {
         position => position.pool && position.pool.address.equals(this.address)
       )
 
-      if (!poolPosition) return new Error("Attempting to withdraw after borrowing, but can not find the pool position in the margin account to calculate the withdraw amount.")
+      if (!poolPosition) throw new Error("Attempting to withdraw after borrowing, but can not find the pool position in the margin account to calculate the withdraw amount.")
       const previousDepositAmount = poolPosition.depositBalance
-      const withdrawChange = PoolTokenChange.setTo(previousDepositAmount)
+
+      const withdrawChange = previousDepositAmount.tokens > 0
+        ? PoolTokenChange.shiftBy(change.value)
+        : PoolTokenChange.setTo(0)
+
       await this.withWithdraw({
         instructions: instructionsInstructions,
         marginAccount,
@@ -948,7 +950,7 @@ export class Pool {
           marginAccount: marginAccount,
           source: position.address,
           destination: marginWithdrawDestination,
-          change: PoolTokenChange.setTo(TokenAmount.zero(this.decimals))
+          change: PoolTokenChange.setTo(0)
         })
 
         if (isDestinationNative) {
@@ -987,9 +989,10 @@ export class Pool {
 
     const utilRatio = borrowedTokens / totalTokens
     const depositCcRate = Pool.getCcRate(this.info.marginPool.config, utilRatio)
+    const fee = this.info.marginPool.config.managementFeeRate ?? 0
 
-    const depositRate = Pool.getDepositApy(depositCcRate, utilRatio)
-    const borrowRate = Pool.getBorrowApr(depositCcRate, utilRatio)
+    const depositRate = Pool.getDepositRate(depositCcRate, utilRatio, fee)
+    const borrowRate = Pool.getBorrowRate(depositCcRate)
 
     const depositNoteValueModifer = this.depositNoteMetadata.valueModifier
     const amountValue = Number128.from(numberToBn(amount * this._prices.priceValue.asNumber()))
@@ -1025,9 +1028,10 @@ export class Pool {
 
     const utilRatio = totalTokens === 0 ? 0 : borrowedTokens / totalTokens
     const depositCcRate = Pool.getCcRate(this.info.marginPool.config, utilRatio)
+    const fee = this.info.marginPool.config.managementFeeRate ?? 0
 
-    const depositRate = Pool.getDepositApy(depositCcRate, utilRatio)
-    const borrowRate = Pool.getBorrowApr(depositCcRate, utilRatio)
+    const depositRate = Pool.getDepositRate(depositCcRate, utilRatio, fee)
+    const borrowRate = Pool.getBorrowRate(depositCcRate)
 
     const depositNoteValueModifer = this.depositNoteMetadata.valueModifier
     const amountValue = Number128.from(numberToBn(amount * this._prices.priceValue.asNumber()))
@@ -1056,9 +1060,10 @@ export class Pool {
 
     const utilRatio = borrowedTokens / totalTokens
     const depositCcRate = Pool.getCcRate(this.info.marginPool.config, utilRatio)
+    const fee = this.info.marginPool.config.managementFeeRate ?? 0
 
-    const depositRate = Pool.getDepositApy(depositCcRate, utilRatio)
-    const borrowRate = Pool.getBorrowApr(depositCcRate, utilRatio)
+    const depositRate = Pool.getDepositRate(depositCcRate, utilRatio, fee)
+    const borrowRate = Pool.getBorrowRate(depositCcRate)
 
     const loanNoteValueModifer = this.loanNoteMetadata.valueModifier
     const amountValue = Number128.from(numberToBn(amount * this._prices.priceValue.asNumber()))
@@ -1096,9 +1101,10 @@ export class Pool {
 
     const utilRatio = totalTokens === 0 ? 0 : borrowedTokens / totalTokens
     const depositCcRate = Pool.getCcRate(this.info.marginPool.config, utilRatio)
+    const fee = this.info.marginPool.config.managementFeeRate ?? 0
 
-    const depositRate = Pool.getDepositApy(depositCcRate, utilRatio)
-    const borrowRate = Pool.getBorrowApr(depositCcRate, utilRatio)
+    const depositRate = Pool.getDepositRate(depositCcRate, utilRatio, fee)
+    const borrowRate = Pool.getBorrowRate(depositCcRate)
 
     const loanNoteValueModifer = this.loanNoteMetadata.valueModifier
     const amountValue = Number128.from(numberToBn(amount * this._prices.priceValue.asNumber()))
@@ -1141,9 +1147,10 @@ export class Pool {
 
     const utilRatio = totalTokens === 0 ? 0 : borrowedTokens / totalTokens
     const depositCcRate = Pool.getCcRate(this.info.marginPool.config, utilRatio)
+    const fee = this.info.marginPool.config.managementFeeRate ?? 0
 
-    const depositRate = Pool.getDepositApy(depositCcRate, utilRatio)
-    const borrowRate = Pool.getBorrowApr(depositCcRate, utilRatio)
+    const depositRate = Pool.getDepositRate(depositCcRate, utilRatio, fee)
+    const borrowRate = Pool.getBorrowRate(depositCcRate)
 
     const depositNoteValueModifer = this.depositNoteMetadata.valueModifier
     const loanNoteValueModifer = this.loanNoteMetadata.valueModifier
@@ -1177,9 +1184,10 @@ export class Pool {
 
     const utilRatio = borrowedTokens / totalTokens
     const depositCcRate = Pool.getCcRate(this.info.marginPool.config, utilRatio)
+    const fee = this.info.marginPool.config.managementFeeRate ?? 0
 
-    const depositRate = Pool.getDepositApy(depositCcRate, utilRatio)
-    const borrowRate = Pool.getBorrowApr(depositCcRate, utilRatio)
+    const depositRate = Pool.getDepositRate(depositCcRate, utilRatio, fee)
+    const borrowRate = Pool.getBorrowRate(depositCcRate)
 
     const depositNoteValueModifer = this.depositNoteMetadata.valueModifier
     const loanNoteValueModifer = this.loanNoteMetadata.valueModifier
