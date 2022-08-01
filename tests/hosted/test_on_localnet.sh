@@ -78,7 +78,7 @@ trap_add() {
 
 declare -f -t trap_add
 trap_add 'cleanup' EXIT
-build
+#build
 test_file swap > /dev/null 2>&1
 test_file liquidate > /dev/null 2>&1
 test_file pool_overpayment > /dev/null 2>&1
