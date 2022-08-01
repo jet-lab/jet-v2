@@ -71,7 +71,7 @@ jobs:
       - run: solana-keygen new --no-bip39-passphrase
       - run: rustc --print target-list
       - run: tests/hosted/build_on_localnet.sh
-      = run: tests/hosted/test_on_localnet.sh
+      - run: tests/hosted/test_on_localnet.sh
 
   coverage:
     runs-on: ubuntu-latest
