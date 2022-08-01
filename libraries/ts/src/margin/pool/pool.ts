@@ -521,7 +521,9 @@ export class Pool {
     change: PoolTokenChange
     destination?: TokenAddress
   }): Promise<string> {
-    assert(change.changeKind.isShiftBy())
+    if (!change.changeKind.isShiftBy()) {
+      throw new Error('Use ShiftBy for all borrow instructions')
+    }
 
     await marginAccount.refresh()
     const refreshInstructions: TransactionInstruction[] = []
