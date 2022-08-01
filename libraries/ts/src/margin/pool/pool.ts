@@ -647,13 +647,15 @@ export class Pool {
     pools,
     source,
     change,
-    closeLoan
+    closeLoan,
+    signer
   }: {
     marginAccount: MarginAccount
     pools: Pool[]
     source?: TokenAddress
     change: PoolTokenChange
     closeLoan?: boolean
+    signer?: Address
   }): Promise<string> {
     await marginAccount.refresh()
     const refreshInstructions: TransactionInstruction[] = []
@@ -684,7 +686,8 @@ export class Pool {
         loanPosition: loanNoteAccount,
         source,
         change,
-        feesBuffer
+        feesBuffer,
+        sourceAuthority: signer
       })
     }
 
@@ -762,7 +765,7 @@ export class Pool {
         vault: this.addresses.vault,
         loanAccount: loanPosition,
         repaymentTokenAccount: wrappedSource,
-        repaymentAccountAuthority: sourceAuthority,
+        repaymentAccountAuthority: sourceAuthority ?? marginAccount.provider.wallet.publicKey,
         tokenProgram: TOKEN_PROGRAM_ID
       })
       .instruction()
