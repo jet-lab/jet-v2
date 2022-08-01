@@ -33,6 +33,8 @@ build() {
 }
 
 test_file() {
+    rm -rf test-ledger
+
     solana-test-validator -r \
         --bpf-program $CTRL_PID $CTRL_SO \
         --bpf-program $MRGN_PID $MRGN_SO \
@@ -52,7 +54,7 @@ test_file() {
         --package hosted-tests \
         --test $@ \
         -- --nocapture
-    
+
     kill $spid
     sleep 2
 }
