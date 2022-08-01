@@ -56,6 +56,7 @@ pub struct PositionBalanceUpdated {
 
 #[event]
 pub struct PositionTouched {
+    pub margin_account: Pubkey,
     pub position: AccountPosition,
 }
 

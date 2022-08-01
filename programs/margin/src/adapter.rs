@@ -174,7 +174,14 @@ fn update_balances(ctx: &InvokeAdapter) -> Result<BTreeMap<Pubkey, PositionEvent
                     account.amount,
                 ) {
                     Ok(position) => {
-                        touched_positions.insert(account.mint, PositionTouched { position }.into());
+                        touched_positions.insert(
+                            account.mint,
+                            PositionTouched {
+                                margin_account: ctx.margin_account.key(),
+                                position,
+                            }
+                            .into(),
+                        );
                     }
                     Err(ErrorCode::PositionNotRegistered) => (),
                     Err(err) => return Err(err.into()),
@@ -249,7 +256,13 @@ fn apply_changes(
     Ok(match net_registration {
         0 => key
             .and_then(|k| margin_account.get_position_by_key(&k))
-            .map(|p| PositionTouched { position: *p }.into()),
+            .map(|p| {
+                PositionTouched {
+                    margin_account: ctx.margin_account.key(),
+                    position: *p,
+                }
+                .into()
+            }),
         n if n > 0 => Some(
             PositionRegistered {
                 position: *key
