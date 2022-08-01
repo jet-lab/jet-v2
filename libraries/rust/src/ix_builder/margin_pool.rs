@@ -133,12 +133,11 @@ impl MarginPoolIxBuilder {
         }
         .to_account_metas(None);
 
-        let TokenChange { kind, tokens } = change;
         Instruction {
             program_id: jet_margin_pool::ID,
             data: ix_data::Deposit {
-                change_kind: kind,
-                amount: tokens,
+                change_kind: change.get_kind(),
+                amount: change.get_tokens(),
             }
             .data(),
             accounts,
@@ -171,12 +170,11 @@ impl MarginPoolIxBuilder {
         }
         .to_account_metas(None);
 
-        let TokenChange { kind, tokens } = change;
         Instruction {
             program_id: jet_margin_pool::ID,
             data: ix_data::Withdraw {
-                change_kind: kind,
-                amount: tokens,
+                change_kind: change.get_kind(),
+                amount: change.get_tokens(),
             }
             .data(),
             accounts,
@@ -209,12 +207,11 @@ impl MarginPoolIxBuilder {
         }
         .to_account_metas(None);
 
-        let TokenChange { kind, tokens } = change;
         Instruction {
             program_id: jet_margin_pool::ID,
             data: ix_data::MarginBorrow {
-                change_kind: kind,
-                amount: tokens,
+                change_kind: change.get_kind(),
+                amount: change.get_tokens(),
             }
             .data(),
             accounts,
@@ -247,12 +244,11 @@ impl MarginPoolIxBuilder {
         }
         .to_account_metas(None);
 
-        let TokenChange { kind, tokens } = change;
         Instruction {
             program_id: jet_margin_pool::ID,
             data: ix_data::MarginRepay {
-                change_kind: kind,
-                amount: tokens,
+                change_kind: change.get_kind(),
+                amount: change.get_tokens(),
             }
             .data(),
             accounts,
@@ -286,12 +282,11 @@ impl MarginPoolIxBuilder {
         }
         .to_account_metas(None);
 
-        let TokenChange { kind, tokens } = change;
         Instruction {
             program_id: jet_margin_pool::ID,
             data: ix_data::Repay {
-                change_kind: kind,
-                amount: tokens,
+                change_kind: change.get_kind(),
+                amount: change.get_tokens(),
             }
             .data(),
             accounts,

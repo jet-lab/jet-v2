@@ -108,11 +108,15 @@ mod jet_margin_pool {
 /// Interface for changing the token value of an account through pool instructions
 #[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone, Copy)]
 pub struct TokenChange {
-    pub kind: ChangeKind,
-    pub tokens: u64,
+    kind: ChangeKind,
+    tokens: u64,
 }
 
 impl TokenChange {
+    pub fn new(kind: ChangeKind, tokens: u64) -> Self {
+        Self { kind, tokens }
+    }
+
     pub const fn set(value: u64) -> Self {
         Self {
             kind: ChangeKind::SetTo,
@@ -128,6 +132,14 @@ impl TokenChange {
 
     pub fn amount(&self) -> Amount {
         Amount::tokens(self.tokens)
+    }
+
+    pub fn get_kind(&self) -> ChangeKind {
+        self.kind
+    }
+
+    pub fn get_tokens(&self) -> u64 {
+        self.tokens
     }
 }
 
