@@ -109,7 +109,7 @@ pub use detail::TokenChange;
 mod detail {
     use anchor_lang::prelude::*;
 
-    use crate::{ChangeKind, Amount, ErrorCode};
+    use crate::{Amount, ChangeKind, ErrorCode};
 
     /// Interface for changing the token value of an account through pool instructions
     #[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone, Copy)]

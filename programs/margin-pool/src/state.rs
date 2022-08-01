@@ -331,9 +331,11 @@ impl MarginPool {
     ) -> Result<FullAmount> {
         match change.get_kind() {
             ChangeKind::ShiftBy => self.convert_amount(Amount::tokens(change.get_tokens()), action),
-            ChangeKind::SetTo => {
-                self.calculate_set_amount(current_notes, Amount::tokens(change.get_tokens()), action)
-            }
+            ChangeKind::SetTo => self.calculate_set_amount(
+                current_notes,
+                Amount::tokens(change.get_tokens()),
+                action,
+            ),
         }
     }
 
