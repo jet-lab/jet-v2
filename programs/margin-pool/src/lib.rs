@@ -105,41 +105,48 @@ mod jet_margin_pool {
     }
 }
 
-/// Interface for changing the token value of an account through pool instructions
-#[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone, Copy)]
-pub struct TokenChange {
-    kind: ChangeKind,
-    tokens: u64,
-}
+pub use detail::TokenChange;
+mod detail {
+    use anchor_lang::prelude::*;
 
-impl TokenChange {
-    pub fn new(kind: ChangeKind, tokens: u64) -> Self {
-        Self { kind, tokens }
+    use crate::{ChangeKind, Amount};
+
+    /// Interface for changing the token value of an account through pool instructions
+    #[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone, Copy)]
+    pub struct TokenChange {
+        kind: ChangeKind,
+        tokens: u64,
     }
 
-    pub const fn set(value: u64) -> Self {
-        Self {
-            kind: ChangeKind::SetTo,
-            tokens: value,
+    impl TokenChange {
+        pub fn new(kind: ChangeKind, tokens: u64) -> Self {
+            Self { kind, tokens }
         }
-    }
-    pub const fn shift(value: u64) -> Self {
-        Self {
-            kind: ChangeKind::ShiftBy,
-            tokens: value,
+
+        pub const fn set(value: u64) -> Self {
+            Self {
+                kind: ChangeKind::SetTo,
+                tokens: value,
+            }
         }
-    }
+        pub const fn shift(value: u64) -> Self {
+            Self {
+                kind: ChangeKind::ShiftBy,
+                tokens: value,
+            }
+        }
 
-    pub fn amount(&self) -> Amount {
-        Amount::tokens(self.tokens)
-    }
+        pub fn amount(&self) -> Amount {
+            Amount::tokens(self.tokens)
+        }
 
-    pub fn get_kind(&self) -> ChangeKind {
-        self.kind
-    }
+        pub fn get_kind(&self) -> ChangeKind {
+            self.kind
+        }
 
-    pub fn get_tokens(&self) -> u64 {
-        self.tokens
+        pub fn get_tokens(&self) -> u64 {
+            self.tokens
+        }
     }
 }
 

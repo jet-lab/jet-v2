@@ -86,10 +86,7 @@ pub fn withdraw_handler(
     change_kind: ChangeKind,
     amount: u64,
 ) -> Result<()> {
-    let change = TokenChange {
-        kind: change_kind,
-        tokens: amount,
-    };
+    let change = TokenChange::new(change_kind, amount);
     let pool = &mut ctx.accounts.margin_pool;
     let clock = Clock::get()?;
 
