@@ -230,3 +230,21 @@ pub enum ErrorCode {
     /// 141108 - Attempt repayment of more tokens than total outstanding
     RepaymentExceedsTotalOutstanding,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    #[should_panic]
+    fn test_set_to_guard() {
+        TokenChange::new(ChangeKind::SetTo, 1).unwrap();
+    }
+
+    #[test]
+    fn test_set_to_guard_pass() {
+        TokenChange::new(ChangeKind::SetTo, 0).unwrap();
+        TokenChange::new(ChangeKind::ShiftBy, 0).unwrap();
+        TokenChange::new(ChangeKind::ShiftBy, 1).unwrap();
+    }
+}
