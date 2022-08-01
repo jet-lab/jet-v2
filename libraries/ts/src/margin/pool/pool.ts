@@ -515,6 +515,10 @@ export class Pool {
     change: PoolTokenChange
     destination?: TokenAddress
   }): Promise<string> {
+    if (!change.changeKind.isShiftBy()) {
+      throw new Error('Use ShiftBy for all borrow instructions')
+    }
+
     await marginAccount.refresh()
     const refreshInstructions: TransactionInstruction[] = []
     const instructionsInstructions: TransactionInstruction[] = []
@@ -546,7 +550,11 @@ export class Pool {
 
       if (!poolPosition) throw new Error("Attempting to withdraw after borrowing, but can not find the pool position in the margin account to calculate the withdraw amount.")
       const previousDepositAmount = poolPosition.depositBalance
-      const withdrawChange = PoolTokenChange.setTo(previousDepositAmount)
+
+      const withdrawChange = previousDepositAmount.tokens > 0
+        ? PoolTokenChange.shiftBy(change.value)
+        : PoolTokenChange.setTo(0)
+
       await this.withWithdraw({
         instructions: instructionsInstructions,
         marginAccount,
@@ -942,7 +950,7 @@ export class Pool {
           marginAccount: marginAccount,
           source: position.address,
           destination: marginWithdrawDestination,
-          change: PoolTokenChange.setTo(TokenAmount.zero(this.decimals))
+          change: PoolTokenChange.setTo(0)
         })
 
         if (isDestinationNative) {
