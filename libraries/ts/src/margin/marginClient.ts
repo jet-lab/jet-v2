@@ -233,15 +233,16 @@ export class MarginClient {
     provider: AnchorProvider,
     pubKey: PublicKey,
     mints: Mints,
-    cluster: MarginCluster
+    cluster: MarginCluster,
+    pageSize = 100
   ): Promise<AccountTransaction[]> {
     const config = await MarginClient.getConfig(cluster)
     const signatures = await provider.connection.getSignaturesForAddress(pubKey, undefined, "confirmed")
     const jetTransactions: ParsedTransactionWithMeta[] = []
     let page = 0
-    // fetch up to 100 JET transactions not the cleanest solution but should be an ok patch until we have a data api
-    while (jetTransactions.length < 100) {
-      const paginatedSignatures = signatures.slice(page * 100, (page + 1) * 100)
+    let processed = 0
+    while (processed < signatures.length) {
+      const paginatedSignatures = signatures.slice(page * pageSize, (page + 1) * pageSize)
       const transactions = await provider.connection.getParsedTransactions(
         paginatedSignatures.map(s => s.signature),
         "confirmed"
@@ -249,6 +250,7 @@ export class MarginClient {
       const filteredTxs = MarginClient.filterTransactions(transactions, config)
       jetTransactions.push(...filteredTxs)
       page++
+      processed += paginatedSignatures.length
     }
 
     const parsedTransactions = jetTransactions
