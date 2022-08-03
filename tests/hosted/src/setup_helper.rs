@@ -1,23 +1,22 @@
-use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 
 use anyhow::{Error, Result};
 
-use futures::future::join_all;
 use jet_margin_sdk::tokens::TokenPrice;
-use solana_sdk::clock::UnixTimestamp;
 use solana_sdk::native_token::LAMPORTS_PER_SOL;
 use solana_sdk::pubkey::Pubkey;
-use solana_sdk::signature::{Keypair, Signer};
+use solana_sdk::signature::Signer;
 
 use jet_margin_pool::{MarginPoolConfig, PoolFlags, TokenChange};
 use jet_metadata::TokenKind;
-use jet_simulation::create_wallet;
+use jet_simulation::{create_wallet, generate_keypair};
+use tokio::try_join;
 
-use crate::orchestrator::{create_swap_pools, SwapRegistry, TokenPricer, TestUser, TestLiquidator};
+use crate::orchestrator::{create_swap_pools, SwapRegistry, TestLiquidator, TestUser, TokenPricer};
+use crate::MapAsync;
 use crate::{
     context::{test_context, MarginTestContext},
-    margin::{MarginPoolSetupInfo, MarginUser},
+    margin::MarginPoolSetupInfo,
 };
 
 const DEFAULT_POOL_CONFIG: MarginPoolConfig = MarginPoolConfig {
@@ -38,7 +37,6 @@ pub struct TestEnvironment<'a> {
     // pub liquidator: Keypair,
 }
 
-
 pub async fn setup_token(
     ctx: &MarginTestContext,
     decimals: u8,
@@ -46,32 +44,30 @@ pub async fn setup_token(
     leverage_max: u16,
     price: f64,
 ) -> Result<Pubkey, Error> {
-    let token = ctx.tokens.create_token(decimals, None, None).await?;
-    let token_oracle = ctx.tokens.create_oracle(&token).await?;
-
-    ctx.margin
-        .create_pool(&MarginPoolSetupInfo {
-            token,
-            collateral_weight,
-            max_leverage: leverage_max,
-            token_kind: TokenKind::Collateral,
-            config: DEFAULT_POOL_CONFIG,
-            oracle: token_oracle,
-        })
-        .await?;
-
-    // set price to $1
-    ctx.tokens
-        .set_price(
-            &token,
-            &TokenPrice {
-                exponent: -8,
-                price: (price * 100_000_000.0) as i64,
-                confidence: 1_000_000,
-                twap: 100_000_000,
-            },
-        )
-        .await?;
+    let token_keypair = generate_keypair();
+    let token = token_keypair.pubkey();
+    let (token, token_oracle) = try_join!(
+        ctx.tokens.create_token_from(token_keypair, decimals, None, None),
+        ctx.tokens.create_oracle(&token)
+    )?;
+    let setup = MarginPoolSetupInfo {
+        token,
+        collateral_weight,
+        max_leverage: leverage_max,
+        token_kind: TokenKind::Collateral,
+        config: DEFAULT_POOL_CONFIG,
+        oracle: token_oracle,
+    };
+    let price = TokenPrice {
+        exponent: -8,
+        price: (price * 100_000_000.0) as i64,
+        confidence: 1_000_000,
+        twap: 100_000_000,
+    };
+    try_join!(
+        ctx.margin.create_pool(&setup),
+        ctx.tokens.set_price(&token, &price)
+    )?;
 
     Ok(token)
 }
@@ -83,7 +79,11 @@ pub async fn users<'a, const N: usize>(ctx: &'a MarginTestContext) -> Result<[Te
 pub async fn liquidators<'a, const N: usize>(
     ctx: &'a MarginTestContext,
 ) -> Result<[TestLiquidator; N]> {
-    Ok(repeat(N, || TestLiquidator::new(ctx)).await?.try_into().unwrap())
+    Ok((0..N)
+        .map_async(|_| TestLiquidator::new(ctx))
+        .await?
+        .try_into()
+        .unwrap())
 }
 
 pub async fn tokens<'a, const N: usize>(
@@ -95,38 +95,21 @@ pub async fn tokens<'a, const N: usize>(
 }
 
 pub async fn create_users<'a>(ctx: &'a MarginTestContext, n: usize) -> Result<Vec<TestUser<'a>>> {
-    repeat(n, || setup_user(ctx, vec![])).await
+    (0..n).map_async(|_| setup_user(ctx, vec![])).await
 }
 
 pub async fn create_tokens<'a>(
     ctx: &'a MarginTestContext,
     n: usize,
 ) -> Result<(Vec<Pubkey>, SwapRegistry, TokenPricer)> {
-    let tokens: Vec<Pubkey> = repeat(n, || setup_token(ctx, 9, 1_00, 4_00, 1.0)).await?;
+    let tokens: Vec<Pubkey> = (0..n)
+        .map_async(|_| setup_token(ctx, 9, 1_00, 4_00, 1.0))
+        .await?;
     let swaps = create_swap_pools(&ctx.rpc, &tokens).await?;
     let pricer = TokenPricer::new(&ctx.rpc, &swaps);
 
     Ok((tokens, swaps, pricer))
 }
-
-/// like (0..n).map(f), binding results and futures, waiting on futures after sending all requests
-pub async fn repeat<T: std::fmt::Debug, R: futures::Future<Output = Result<T>>, F: Fn() -> R>(
-    n: usize,
-    f: F,
-) -> Result<Vec<T>> {
-    let mut futures = vec![];
-    for _ in 0..n {
-        futures.push(f());
-    }
-    let mut items = vec![];
-    for future in join_all(futures).await {
-        items.push(future?)
-    }
-
-    Ok(items)
-}
-
-
 
 /// (token_mint, balance in wallet, balance in pools)
 pub async fn setup_user<'a>(

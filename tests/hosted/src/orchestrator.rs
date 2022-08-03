@@ -2,21 +2,18 @@ use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use anyhow::{Error, Result};
+use anyhow::Result;
 
 use itertools::Itertools;
 use jet_margin_sdk::swap::SwapPool;
 use jet_margin_sdk::tokens::TokenPrice;
 use jet_simulation::solana_rpc_api::SolanaRpcClient;
 use jet_static_program_registry::orca_swap_v2;
-use solana_sdk::clock::UnixTimestamp;
-use solana_sdk::native_token::LAMPORTS_PER_SOL;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::{Keypair, Signer};
 
-use jet_margin_pool::{Amount, MarginPoolConfig, PoolFlags, TokenChange};
-use jet_metadata::TokenKind;
-use jet_simulation::create_wallet;
+use jet_margin_pool::{Amount, TokenChange};
+use tokio::try_join;
 
 use crate::clone;
 use crate::context::MarginTestContext;
@@ -73,8 +70,10 @@ impl TokenPricer {
     }
 
     pub async fn set_price(&self, mint: &Pubkey, price: f64) -> Result<()> {
-        self.set_oracle_price(mint, price).await?;
-        self.set_price_in_swap_pools(mint, price).await?;
+        try_join!(
+            self.set_oracle_price(mint, price),
+            self.set_price_in_swap_pools(mint, price)
+        )?;
 
         Ok(())
     }

@@ -25,7 +25,7 @@ use jet_margin_sdk::tokens::{TokenOracle, TokenPrice};
 use solana_sdk::instruction::Instruction;
 use solana_sdk::program_pack::Pack;
 use solana_sdk::pubkey::Pubkey;
-use solana_sdk::signature::Signer;
+use solana_sdk::signature::{Signer, Keypair};
 use solana_sdk::{system_instruction, system_program};
 
 use anchor_lang::{InstructionData, ToAccountMetas};
@@ -57,6 +57,16 @@ impl TokenManager {
         freeze_authority: Option<&Pubkey>,
     ) -> Result<Pubkey, Error> {
         let keypair = generate_keypair();
+        self.create_token_from(keypair, decimals, mint_authority, freeze_authority).await
+    }
+
+    pub async fn create_token_from(
+        &self,
+        keypair: Keypair,
+        decimals: u8,
+        mint_authority: Option<&Pubkey>,
+        freeze_authority: Option<&Pubkey>,
+    ) -> Result<Pubkey, Error> {
         let payer = self.rpc.payer();
         let space = spl_token::state::Mint::LEN;
         let rent_lamports = self
