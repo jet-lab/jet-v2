@@ -486,7 +486,7 @@ export type JetMargin = {
         kind: "struct"
         fields: [
           {
-            name: "exposure"
+            name: "liabilities"
             type: "i128"
           },
           {
@@ -1647,7 +1647,7 @@ export const IDL: JetMargin = {
         kind: "struct",
         fields: [
           {
-            name: "exposure",
+            name: "liabilities",
             type: "i128"
           },
           {

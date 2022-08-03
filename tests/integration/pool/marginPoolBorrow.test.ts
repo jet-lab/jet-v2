@@ -351,9 +351,11 @@ describe("margin pool borrow", async () => {
     await marginPool_SOL.marginRepay({
       marginAccount: marginAccount_A,
       pools,
-      change: PoolTokenChange.setTo(0)
+      change: PoolTokenChange.setTo(0),
+      closeLoan: true
     })
     await marginPool_SOL.refresh()
+    await marginAccount_A.refresh()
 
     // TEST
     const SOLLoanNotes = new BN(Number(marginPool_SOL.info?.loanNoteMint.supply))
@@ -369,9 +371,11 @@ describe("margin pool borrow", async () => {
     await marginPool_USDC.marginRepay({
       marginAccount: marginAccount_B,
       pools,
-      change: PoolTokenChange.setTo(0)
+      change: PoolTokenChange.setTo(0),
+      closeLoan: true
     })
     await marginPool_USDC.refresh()
+    await marginAccount_B.refresh()
 
     // TEST
     const USDCLoanNotes = marginPool_USDC.info?.loanNoteMint.supply
@@ -380,6 +384,8 @@ describe("margin pool borrow", async () => {
 
   it("Users withdraw their funds", async () => {
     // ACT
+    await pythClient.setPythPrice(ownerKeypair, USDC_oracle[1].publicKey, 1, 0.01, -8)
+    await pythClient.setPythPrice(ownerKeypair, SOL_oracle[1].publicKey, 100, 1, -8)
     await marginPool_USDC.withdraw({
       marginAccount: marginAccount_A,
       pools,
@@ -406,18 +412,16 @@ describe("margin pool borrow", async () => {
   provider.opts.skipPreflight = true
 
   it("Close margin accounts", async () => {
-    /*
-    await marginPool_SOL.closePosition({
-      marginAccount: marginAccount_A,
-      destination: user_a_sol_account
-    })
     await marginPool_USDC.closePosition({
       marginAccount: marginAccount_A,
       destination: user_a_usdc_account
     })
-    await marginAccount_A.closeAccount();
-    */
-    /*
+    await marginPool_SOL.closePosition({
+      marginAccount: marginAccount_A,
+      destination: user_a_sol_account
+    })
+    await marginAccount_A.closeAccount()
+
     await marginPool_USDC.closePosition({
       marginAccount: marginAccount_B,
       destination: user_b_usdc_account
@@ -426,8 +430,7 @@ describe("margin pool borrow", async () => {
       marginAccount: marginAccount_B,
       destination: user_b_sol_account
     })
-    await marginAccount_B.closeAccount();
-    */
+    await marginAccount_B.closeAccount()
   })
 
   describe("Transaction History", () => {
@@ -467,32 +470,42 @@ describe("margin pool borrow", async () => {
 
       const transactions = await MarginClient.getTransactionHistory(provider, wallet_a.publicKey, mints, marginConfig)
 
-      expect(transactions).to.have.length(5)
+      expect(transactions).to.have.length(7)
 
       expect(transactions[0].tradeAction).to.equals("withdraw")
-      expect(transactions[0].tokenSymbol).to.equals("USDC")
-      expect(transactions[0].tradeAmount.uiTokens).to.equals("400,000")
+      expect(transactions[0].tokenSymbol).to.equals("SOL")
+      expect(transactions[0].tradeAmount.uiTokens).to.equals("50")
       expect(transactions[0].signature).to.be.a("string")
 
-      expect(transactions[1].tradeAction).to.equals("margin repay")
-      expect(transactions[1].tokenSymbol).to.equals("SOL")
-      expect(transactions[1].tradeAmount.uiTokens).to.equals("10")
+      expect(transactions[1].tradeAction).to.equals("withdraw")
+      expect(transactions[1].tokenSymbol).to.equals("USDC")
+      expect(transactions[1].tradeAmount.uiTokens).to.equals("100,000")
       expect(transactions[1].signature).to.be.a("string")
 
-      expect(transactions[2].tradeAction).to.equals("borrow")
-      expect(transactions[2].tokenSymbol).to.equals("SOL")
-      expect(transactions[2].tradeAmount.uiTokens).to.equals("10")
+      expect(transactions[2].tradeAction).to.equals("withdraw")
+      expect(transactions[2].tokenSymbol).to.equals("USDC")
+      expect(transactions[2].tradeAmount.uiTokens).to.equals("400,000")
       expect(transactions[2].signature).to.be.a("string")
 
-      expect(transactions[3].tradeAction).to.equals("deposit")
+      expect(transactions[3].tradeAction).to.equals("margin repay")
       expect(transactions[3].tokenSymbol).to.equals("SOL")
-      expect(transactions[3].tradeAmount.uiTokens).to.equals("50")
+      expect(transactions[3].tradeAmount.uiTokens).to.equals("10")
       expect(transactions[3].signature).to.be.a("string")
 
-      expect(transactions[4].tradeAction).to.equals("deposit")
-      expect(transactions[4].tokenSymbol).to.equals("USDC")
-      expect(transactions[4].tradeAmount.uiTokens).to.equals("500,000")
+      expect(transactions[4].tradeAction).to.equals("borrow")
+      expect(transactions[4].tokenSymbol).to.equals("SOL")
+      expect(transactions[4].tradeAmount.uiTokens).to.equals("10")
       expect(transactions[4].signature).to.be.a("string")
+
+      expect(transactions[5].tradeAction).to.equals("deposit")
+      expect(transactions[5].tokenSymbol).to.equals("SOL")
+      expect(transactions[5].tradeAmount.uiTokens).to.equals("50")
+      expect(transactions[5].signature).to.be.a("string")
+
+      expect(transactions[6].tradeAction).to.equals("deposit")
+      expect(transactions[6].tokenSymbol).to.equals("USDC")
+      expect(transactions[6].tradeAmount.uiTokens).to.equals("500,000")
+      expect(transactions[6].signature).to.be.a("string")
     })
   })
 })
