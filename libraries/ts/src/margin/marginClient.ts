@@ -185,7 +185,8 @@ export class MarginClient {
           })
         })
 
-        if (tradeAction === "margin repay" || tradeAction === "borrow") {
+        // if we could not find a token transfer, default to token values changes
+        if (amount.eq(new BN(0))) {
           const postAmount = new BN(matchingPost.uiTokenAmount.amount)
           const preAmount = new BN(pre.uiTokenAmount.amount)
           amount = postAmount.sub(preAmount).abs()
@@ -232,15 +233,25 @@ export class MarginClient {
     provider: AnchorProvider,
     pubKey: PublicKey,
     mints: Mints,
-    cluster: MarginCluster
+    cluster: MarginCluster,
+    pageSize = 100
   ): Promise<AccountTransaction[]> {
     const config = await MarginClient.getConfig(cluster)
     const signatures = await provider.connection.getSignaturesForAddress(pubKey, undefined, "confirmed")
-    const transactions = await provider.connection.getParsedTransactions(
-      signatures.map(s => s.signature),
-      "confirmed"
-    )
-    const jetTransactions = MarginClient.filterTransactions(transactions, config)
+    const jetTransactions: ParsedTransactionWithMeta[] = []
+    let page = 0
+    let processed = 0
+    while (processed < signatures.length) {
+      const paginatedSignatures = signatures.slice(page * pageSize, (page + 1) * pageSize)
+      const transactions = await provider.connection.getParsedTransactions(
+        paginatedSignatures.map(s => s.signature),
+        "confirmed"
+      )
+      const filteredTxs = MarginClient.filterTransactions(transactions, config)
+      jetTransactions.push(...filteredTxs)
+      page++
+      processed += paginatedSignatures.length
+    }
 
     const parsedTransactions = jetTransactions
       .map((t, idx) => MarginClient.getTransactionData(t, mints, config, idx))
