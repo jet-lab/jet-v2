@@ -3,6 +3,7 @@ use std::collections::HashMap;
 
 use anyhow::{Error, Result};
 
+use futures::future::join_all;
 use jet_margin_sdk::tokens::TokenPrice;
 use solana_sdk::clock::UnixTimestamp;
 use solana_sdk::native_token::LAMPORTS_PER_SOL;
@@ -108,18 +109,24 @@ pub async fn create_tokens<'a>(
     Ok((tokens, swaps, pricer))
 }
 
-/// like (0..n).map(f), binding results and futures
+/// like (0..n).map(f), binding results and futures, waiting on futures after sending all requests
 pub async fn repeat<T: std::fmt::Debug, R: futures::Future<Output = Result<T>>, F: Fn() -> R>(
     n: usize,
     f: F,
 ) -> Result<Vec<T>> {
-    let mut items: Vec<T> = vec![];
+    let mut futures = vec![];
     for _ in 0..n {
-        items.push(f().await?);
+        futures.push(f());
+    }
+    let mut items = vec![];
+    for future in join_all(futures).await {
+        items.push(future?)
     }
 
     Ok(items)
 }
+
+
 
 /// (token_mint, balance in wallet, balance in pools)
 pub async fn setup_user<'a>(
