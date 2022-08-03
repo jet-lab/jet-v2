@@ -13,6 +13,7 @@ use jet_margin_pool::{MarginPoolConfig, PoolFlags, TokenChange};
 use jet_metadata::TokenKind;
 use jet_simulation::create_wallet;
 
+use crate::orchestrator::{create_swap_pools, SwapRegistry, TokenPricer, TestUser, TestLiquidator};
 use crate::{
     context::{test_context, MarginTestContext},
     margin::{MarginPoolSetupInfo, MarginUser},
@@ -33,28 +34,9 @@ const DEFAULT_POOL_CONFIG: MarginPoolConfig = MarginPoolConfig {
 pub struct TestEnvironment<'a> {
     pub mints: Vec<Pubkey>,
     pub users: Vec<TestUser<'a>>,
-    pub liquidator: Keypair,
+    // pub liquidator: Keypair,
 }
 
-/// A MarginUser that takes some extra liberties
-#[derive(Clone)]
-pub struct TestUser<'a> {
-    pub ctx: &'a MarginTestContext,
-    pub user: MarginUser,
-    pub liquidator: MarginUser,
-    /// user's external wallet of actual assets
-    pub mint_to_token_account: HashMap<Pubkey, Pubkey>,
-}
-
-impl<'a> std::fmt::Debug for TestUser<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("TestUser")
-            .field("user", &self.user.address())
-            .field("liquidator", &self.liquidator.address())
-            .field("mint_to_token_account", &self.mint_to_token_account)
-            .finish()
-    }
-}
 
 pub async fn setup_token(
     ctx: &MarginTestContext,
@@ -93,22 +75,55 @@ pub async fn setup_token(
     Ok(token)
 }
 
-pub async fn create_users<'a, const COUNT: usize>(
+pub async fn users<'a, const N: usize>(ctx: &'a MarginTestContext) -> Result<[TestUser<'a>; N]> {
+    Ok(create_users(ctx, N).await?.try_into().unwrap())
+}
+
+pub async fn liquidators<'a, const N: usize>(
     ctx: &'a MarginTestContext,
-    liquidator_wallet: &Keypair,
-) -> Result<[TestUser<'a>; COUNT]> {
-    let mut users: Vec<TestUser<'a>> = vec![];
-    for _ in 0..COUNT {
-        users.push(setup_user(ctx, liquidator_wallet, vec![]).await?);
+) -> Result<[TestLiquidator; N]> {
+    Ok(repeat(N, || TestLiquidator::new(ctx)).await?.try_into().unwrap())
+}
+
+pub async fn tokens<'a, const N: usize>(
+    ctx: &'a MarginTestContext,
+) -> Result<([Pubkey; N], SwapRegistry, TokenPricer)> {
+    let (tokens, swaps, pricer) = create_tokens(ctx, N).await?;
+
+    Ok((tokens.try_into().unwrap(), swaps, pricer))
+}
+
+pub async fn create_users<'a>(ctx: &'a MarginTestContext, n: usize) -> Result<Vec<TestUser<'a>>> {
+    repeat(n, || setup_user(ctx, vec![])).await
+}
+
+pub async fn create_tokens<'a>(
+    ctx: &'a MarginTestContext,
+    n: usize,
+) -> Result<(Vec<Pubkey>, SwapRegistry, TokenPricer)> {
+    let tokens: Vec<Pubkey> = repeat(n, || setup_token(ctx, 9, 1_00, 4_00, 1.0)).await?;
+    let swaps = create_swap_pools(&ctx.rpc, &tokens).await?;
+    let pricer = TokenPricer::new(&ctx.rpc, &swaps);
+
+    Ok((tokens, swaps, pricer))
+}
+
+/// like (0..n).map(f), binding results and futures
+pub async fn repeat<T: std::fmt::Debug, R: futures::Future<Output = Result<T>>, F: Fn() -> R>(
+    n: usize,
+    f: F,
+) -> Result<Vec<T>> {
+    let mut items: Vec<T> = vec![];
+    for _ in 0..n {
+        items.push(f().await?);
     }
 
-    Ok(users.try_into().unwrap())
+    Ok(items)
 }
 
 /// (token_mint, balance in wallet, balance in pools)
 pub async fn setup_user<'a>(
     ctx: &'a MarginTestContext,
-    liquidator_wallet: &Keypair,
     tokens: Vec<(Pubkey, u64, u64)>,
 ) -> Result<TestUser<'a>> {
     // Create our two user wallets, with some SOL funding to get started
@@ -117,10 +132,6 @@ pub async fn setup_user<'a>(
     // Create the user context helpers, which give a simple interface for executing
     // common actions on a margin account
     let user = ctx.margin.user(&wallet, 0).await?;
-    let user_liq = ctx
-        .margin
-        .liquidator(liquidator_wallet, &wallet.pubkey(), 0)
-        .await?;
 
     // Initialize the margin accounts for each user
     user.create_account().await?;
@@ -149,7 +160,7 @@ pub async fn setup_user<'a>(
     Ok(TestUser {
         ctx,
         user,
-        liquidator: user_liq,
+        // liquidator: user_liq,
         mint_to_token_account,
     })
 }
@@ -160,7 +171,6 @@ pub async fn build_environment_with_no_balances<'a>(
     number_of_users: u64,
 ) -> Result<(&'static MarginTestContext, TestEnvironment<'a>), Error> {
     let ctx = test_context().await;
-    let liquidator = ctx.create_liquidator(100).await?;
     let mut mints: Vec<Pubkey> = Vec::new();
     for _ in 0..number_of_mints {
         let mint = setup_token(ctx, 6, 1_00, 10_00, 1.0).await?;
@@ -168,7 +178,7 @@ pub async fn build_environment_with_no_balances<'a>(
     }
     let mut users: Vec<TestUser> = Vec::new();
     for _ in 0..number_of_users {
-        users.push(setup_user(ctx, &liquidator, vec![]).await?);
+        users.push(setup_user(ctx, vec![]).await?);
     }
 
     Ok((
@@ -176,7 +186,7 @@ pub async fn build_environment_with_no_balances<'a>(
         TestEnvironment {
             mints,
             users,
-            liquidator,
+            // liquidator,
         },
     ))
 }
@@ -187,7 +197,7 @@ pub async fn build_environment_with_raw_token_balances<'a>(
     number_of_users: u64,
 ) -> Result<(&'static MarginTestContext, TestEnvironment<'a>), Error> {
     let ctx = test_context().await;
-    let liquidator = ctx.create_liquidator(100).await?;
+    // let liquidator = ctx.create_liquidator(100).await?;
     let mut mints: Vec<Pubkey> = Vec::new();
     let mut wallets: Vec<(Pubkey, u64, u64)> = Vec::new();
     for _ in 0..number_of_mints {
@@ -197,7 +207,7 @@ pub async fn build_environment_with_raw_token_balances<'a>(
     }
     let mut users: Vec<TestUser> = Vec::new();
     for _ in 0..number_of_users {
-        users.push(setup_user(ctx, &liquidator, wallets.clone()).await?);
+        users.push(setup_user(ctx, wallets.clone()).await?);
     }
 
     Ok((
@@ -205,149 +215,7 @@ pub async fn build_environment_with_raw_token_balances<'a>(
         TestEnvironment {
             mints,
             users,
-            liquidator,
+            // liquidator,
         },
     ))
-}
-
-
-// pub struct SetupUser< {
-//     existing_user: Option<TestUser>,
-//     actions: Vec<PoolAction>,
-// }
-
-// #[derive(Clone, Copy)]
-// pub struct PoolAction {
-//     mint: Pubkey,
-//     amount: u64,
-//     direction: PoolDirection,
-// }
-
-// #[derive(Clone, Copy)]
-// pub enum PoolDirection {
-//     Mint,
-//     Deposit,
-//     Borrow,
-// }
-
-// pub async fn setup_user_with_actions(
-//     ctx: &MarginTestContext,
-//     liquidator: Keypair,
-//     user_setup: SetupUser,
-// ) -> Result<TestUser> {
-//     let SetupUser {
-//         existing_user,
-//         actions,
-//     } = user_setup;
-//     let mut user = match existing_user {
-//         Some(user) => user.clone(),
-//         None => setup_user(ctx, &liquidator, vec![]).await?,
-//     };
-//     for action in actions {
-//         user.act(action);
-//     }
-
-//     Ok(user)
-// }
-
-// struct TestOrchestrator<'a> {
-//     ctx: &'a MarginTestContext,
-//     users: HashMap<Pubkey, TestUser<'a>>,
-//     tokens: HashMap<Pubkey, TestToken>,
-// }
-
-
-// impl<'a> TestOrchestrator<'a> {
-//     fn set_price() {
-
-//     }
-// }
-
-// struct TestToken {
-//     mint: Pubkey,
-//     last_updated: UnixTimestamp,
-//     latest_price: TokenPrice,
-// }
-
-// struct TokenPool {
-
-// }
-
-// impl<'a> TestUser<'a> {
-//     pub async fn token_account(&mut self, mint: &Pubkey) -> Result<Pubkey> {
-//         let token_account = match self.mint_to_token_account.entry(*mint) {
-//             Entry::Occupied(entry) => entry.get().clone(),
-//             Entry::Vacant(entry) => *entry.insert(
-//                 self.ctx
-//                     .tokens
-//                     .create_account(&mint, &self.user.owner())
-//                     .await?,
-//             ),
-//         };
-
-//         Ok(token_account)
-//     }
-
-//     pub async fn mint(&mut self, mint: &Pubkey, amount: u64) -> Result<()> {
-//         let token_account = self.token_account(mint).await?;
-//         self.ctx.tokens.mint(mint, &token_account, amount).await
-//     }
-
-//     pub async fn deposit(&mut self, mint: &Pubkey, amount: u64) -> Result<()> {
-//         let token_account = self.token_account(mint).await?;
-//         self.user
-//             .deposit(mint, &token_account, TokenChange::shift(amount))
-//             .await
-//     }
-
-//     pub async fn borrow(&mut self, mint: &Pubkey, amount: u64) -> Result<()> {
-//         self.ctx.tokens.refresh_to_same_price(mint).await?;
-//         self.user
-//             .borrow(mint, TokenChange::shift(amount))
-//             .await
-//     }
-
-//     pub async fn withdraw(&mut self, mint: &Pubkey, amount: u64) -> Result<()> {
-//         let token_account = self.token_account(mint).await?;
-//         self.user
-//             .withdraw(mint, &token_account, TokenChange::shift(amount))
-//             .await
-//     }
-// }
-
-pub async fn setup_token2s(
-    ctx: &MarginTestContext,
-    decimals: u8,
-    collateral_weight: u16,
-    leverage_max: u16,
-    price: i64,
-) -> Result<Pubkey, Error> {
-    let token = ctx.tokens.create_token(decimals, None, None).await?;
-    let token_oracle = ctx.tokens.create_oracle(&token).await?;
-
-    ctx.margin
-        .create_pool(&MarginPoolSetupInfo {
-            token,
-            collateral_weight,
-            max_leverage: leverage_max,
-            token_kind: TokenKind::Collateral,
-            config: DEFAULT_POOL_CONFIG,
-            oracle: token_oracle,
-        })
-        .await?;
-
-    // set price to $1
-    ctx.tokens
-        .set_price(
-            &token,
-            &TokenPrice {
-                exponent: -8,
-                price: price * 100_000_000_i64,
-                confidence: 1_000_000,
-                twap: 100_000_000,
-            },
-        )
-        .await?;
-
-    Ok(token)
 }

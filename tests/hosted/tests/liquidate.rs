@@ -3,9 +3,13 @@ use std::collections::hash_map::Entry;
 use anyhow::Result;
 
 use hosted_tests::{
+    clone,
     context::{test_context, MarginTestContext},
     margin::MarginUser,
-    setup_helper::{setup_token, setup_user, TestUser, create_users}, orchestrator::{create_swap_pools, TokenPricer},
+    orchestrator::{create_swap_pools, TokenPricer},
+    setup_helper::{
+        liquidators, tokens, users, setup_token, setup_user,
+    },
 };
 use jet_margin::ErrorCode;
 use jet_margin_sdk::tokens::TokenPrice;
@@ -44,11 +48,10 @@ async fn scenario1() -> Result<Scenario1> {
     let liquidator_wallet = ctx.create_liquidator(100).await?;
     let user_a = setup_user(
         ctx,
-        &liquidator_wallet,
         vec![(usdc, 5_000_000 * ONE_USDC, 5_000_000 * ONE_USDC)],
     )
     .await?;
-    let user_b = setup_user(ctx, &liquidator_wallet, vec![(tsol, 0, 10_000 * ONE_TSOL)]).await?;
+    let user_b = setup_user(ctx, vec![(tsol, 0, 10_000 * ONE_TSOL)]).await?;
 
     // Have each user borrow the other's funds
     ctx.tokens.refresh_to_same_price(&tsol).await?;
@@ -86,9 +89,15 @@ async fn scenario1() -> Result<Scenario1> {
     user_b.user.refresh_all_pool_positions().await?;
 
     Ok(Scenario1 {
-        user_b: user_b.user,
-        user_a_liq: user_a.liquidator,
-        user_b_liq: user_b.liquidator,
+        user_b: user_b.user.clone(),
+        user_a_liq: ctx
+            .margin
+            .liquidator(&liquidator_wallet, &user_a.user.owner(), 0)
+            .await?,
+        user_b_liq: ctx
+            .margin
+            .liquidator(&liquidator_wallet, &user_b.user.owner(), 0)
+            .await?,
         usdc,
         liquidator: liquidator_wallet.pubkey(),
     })
@@ -374,16 +383,17 @@ async fn liquidator_permission_is_removable() -> Result<()> {
 #[cfg_attr(not(feature = "localnet"), serial)]
 async fn liquidate_with_swap() -> Result<()> {
     let ctx = test_context().await;
-    let usdc = setup_token(ctx, 6, 1_00, 4_00, 1.0).await?;
-    let tsol = setup_token(ctx, 9, 95, 4_00, 100.0).await?;
-    let swap_registry = create_swap_pools(&ctx.rpc, vec![usdc, tsol]).await?;
-    let pricer = TokenPricer::new(&ctx.rpc, swap_registry);
-    let liquidator_wallet = ctx.create_liquidator(100).await?;
-    let [mut user1, mut user2] = create_users(&ctx, &liquidator_wallet).await?;
-    user2.deposit(&tsol, 100).await?;
-    user1.deposit(&usdc, 100).await?;
-    user1.borrow(&tsol, 1).await?;
-    pricer.set_price(&tsol, 1.0).await?;
+    let ([usdc, sol], swaps, pricer) = tokens(&ctx).await?;
+    let [liquidator] = liquidators(&ctx).await?;
+    let [user0, user1] = users(&ctx).await?;
+    user0.deposit(&usdc, 1000).await?;
+    user1.deposit(&sol, 1000).await?;
+    user1.borrow_to_wallet(&usdc, 800).await?;
+    pricer.set_price(&sol, 0.9).await?;
+    liquidator
+        .liquidate(&user1.user, &swaps, &sol, 800, &usdc, 700)
+        .await?;
+    user1.borrow_to_wallet(&usdc, 1).await?;
 
     Ok(())
 }

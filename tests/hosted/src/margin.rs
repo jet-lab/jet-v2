@@ -201,6 +201,15 @@ pub struct MarginUser {
     rpc: Arc<dyn SolanaRpcClient>,
 }
 
+impl std::fmt::Debug for MarginUser {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("MarginUser")
+            // .field("tx", &self.tx)
+            // .field("rpc", &self.rpc)
+            .finish()
+    }
+}
+
 impl MarginUser {
     pub async fn print(&self) {
         println!("{:#?}", self.tx.get_account_state().await.unwrap())
