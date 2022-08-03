@@ -90,8 +90,7 @@ export class MarginAccount {
   static readonly RISK_WARNING_LEVEL = 0.9
   static readonly RISK_CRITICAL_LEVEL = 0.95
   static readonly RISK_LIQUIDATION_LEVEL = 1
-  // TODO: Change to 0.5, or new BN(50) for mainnet deployment
-  static readonly SETUP_LEVERAGE_FRACTION = Number128.fromDecimal(new BN(100), -2)
+  static readonly SETUP_LEVERAGE_FRACTION = Number128.fromDecimal(new BN(50), -2)
 
   info?: {
     marginAccount: MarginAccountData
