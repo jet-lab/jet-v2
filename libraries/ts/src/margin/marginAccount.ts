@@ -87,11 +87,10 @@ export interface MarginWalletTokens {
 
 export class MarginAccount {
   static readonly SEED_MAX_VALUE = 65535
-  static readonly RISK_WARNING_LEVEL = 0.8
-  static readonly RISK_CRITICAL_LEVEL = 0.9
+  static readonly RISK_WARNING_LEVEL = 0.9
+  static readonly RISK_CRITICAL_LEVEL = 0.95
   static readonly RISK_LIQUIDATION_LEVEL = 1
-  // TODO: Change to 0.5, or new BN(50) for mainnet deployment
-  static readonly SETUP_LEVERAGE_FRACTION = Number128.fromDecimal(new BN(100), -2)
+  static readonly SETUP_LEVERAGE_FRACTION = Number128.fromDecimal(new BN(50), -2)
 
   info?: {
     marginAccount: MarginAccountData
@@ -145,13 +144,12 @@ export class MarginAccount {
     if (weightedCollateral < 0) throw Error("weightedCollateral must be non-negative")
     if (liabilities < 0) throw Error("liabilities must be non-negative")
 
-    if (requiredCollateral === 0) return 0
-
-    const effectiveCollateral = weightedCollateral - liabilities
-
-    if (effectiveCollateral <= 0) return Infinity
-
-    return requiredCollateral / effectiveCollateral
+    if (weightedCollateral > 0)
+      return (requiredCollateral + liabilities) / weightedCollateral
+    else if (requiredCollateral + liabilities > 0)
+      return Infinity
+    else
+      return 0
   }
 
   /**
