@@ -40,10 +40,7 @@ pub fn update_position_balance_handler(ctx: Context<UpdatePositionBalance>) -> R
         token_account.amount,
     )?;
 
-    emit!(events::PositionBalanceUpdated {
-        margin_account: ctx.accounts.margin_account.key(),
-        position,
-    });
+    emit!(events::PositionBalanceUpdated { position });
 
     Ok(())
 }

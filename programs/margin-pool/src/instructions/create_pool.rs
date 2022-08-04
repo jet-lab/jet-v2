@@ -115,7 +115,6 @@ pub fn create_pool_handler(ctx: Context<CreatePool>, fee_destination: Pubkey) ->
         payer: ctx.accounts.payer.key(),
         summary: pool.deref().into(),
         version: pool.version,
-        pool_bump: pool.pool_bump[0],
     });
 
     Ok(())

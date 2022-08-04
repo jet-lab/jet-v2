@@ -30,14 +30,12 @@ pub struct VerifiedHealthy {
 
 #[event]
 pub struct PositionRegistered {
-    pub margin_account: Pubkey,
     pub authority: Pubkey,
     pub position: AccountPosition,
 }
 
 #[event]
 pub struct PositionClosed {
-    pub margin_account: Pubkey,
     pub authority: Pubkey,
     pub token: Pubkey,
 }
@@ -50,13 +48,11 @@ pub struct PositionMetadataRefreshed {
 
 #[event]
 pub struct PositionBalanceUpdated {
-    pub margin_account: Pubkey,
     pub position: AccountPosition,
 }
 
 #[event]
 pub struct PositionTouched {
-    pub margin_account: Pubkey,
     pub position: AccountPosition,
 }
 
