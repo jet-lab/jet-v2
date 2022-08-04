@@ -22,7 +22,7 @@ use anchor_lang::solana_program::clock::UnixTimestamp;
 declare_id!("JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ");
 
 mod adapter;
-mod events;
+pub mod events;
 mod instructions;
 mod state;
 pub(crate) mod syscall;
