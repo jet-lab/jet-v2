@@ -30,6 +30,7 @@ pub struct VerifiedHealthy {
 
 #[event]
 pub struct PositionRegistered {
+    pub margin_account: Pubkey,
     pub authority: Pubkey,
     pub position: AccountPosition,
 }

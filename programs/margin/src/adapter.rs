@@ -252,6 +252,7 @@ fn apply_changes(
             .map(|p| PositionTouched { position: *p }.into()),
         n if n > 0 => Some(
             PositionRegistered {
+                margin_account: ctx.margin_account.key(),
                 position: *key
                     .and_then(|k| margin_account.get_position_by_key(&k))
                     .require()?,

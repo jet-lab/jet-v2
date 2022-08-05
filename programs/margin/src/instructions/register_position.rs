@@ -82,6 +82,7 @@ pub fn register_position_handler(ctx: Context<RegisterPosition>) -> Result<()> {
     let position = account.get_position_by_key(&key).require()?;
 
     emit!(events::PositionRegistered {
+        margin_account: ctx.accounts.margin_account.key(),
         authority: ctx.accounts.authority.key(),
         position: *position,
     });
