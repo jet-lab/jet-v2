@@ -29,7 +29,6 @@ use parking_lot::RwLock;
 use pyth_sdk_solana::PriceFeed;
 use solana_sdk::{program_pack::Pack, pubkey::Pubkey};
 use spl_token_swap::state::SwapV1;
-use tracing::*;
 
 pub type PriceCache = Arc<RwLock<HashMap<Pubkey, PriceFeed>>>;
 
@@ -91,9 +90,10 @@ impl SwapPool {
                 _ => continue,
             };
 
-            info!(
+            tracing::info!(
                 "Pool address: {swap_address}, token A {}, token B {}",
-                swap.token_a_mint, swap.token_b_mint
+                swap.token_a_mint,
+                swap.token_b_mint
             );
 
             // Determine the pool size, so we can use only the largest pools
@@ -118,14 +118,14 @@ impl SwapPool {
             let token_a = match find_token(rpc, &swap.token_a).await {
                 Ok(val) => val,
                 Err(_) => {
-                    warn!("Unable to get token account {} for swap pool {swap_address}, excluding pool", swap.token_a);
+                    tracing::warn!("Unable to get token account {} for swap pool {swap_address}, excluding pool", swap.token_a);
                     continue;
                 }
             };
             let token_b = match find_token(rpc, &swap.token_b).await {
                 Ok(val) => val,
                 Err(_) => {
-                    warn!("Unable to get token account {} for swap pool {swap_address}, excluding pool", swap.token_b);
+                    tracing::warn!("Unable to get token account {} for swap pool {swap_address}, excluding pool", swap.token_b);
                     continue;
                 }
             };
@@ -141,10 +141,12 @@ impl SwapPool {
 
             // If the value is smaller than a low threshold, ignore
             if total_value < Number128::from_decimal(10_000, 0) {
-                warn!("Pool {swap_address} has {total_value}, which is less than threshold of $10'000, ignoring");
+                tracing::warn!("Pool {swap_address} has {total_value}, which is less than threshold of $10'000, ignoring");
                 continue;
             }
-            info!("Pool {swap_address} has {total_value}, added as a candidate for inclusion");
+            tracing::info!(
+                "Pool {swap_address} has {total_value}, added as a candidate for inclusion"
+            );
 
             // Check if there is a pool, insert if none, replace if smaller
             pool_sizes
@@ -166,7 +168,7 @@ impl SwapPool {
             .into_iter()
             .map(|(k, (p, _))| (k, p))
             .collect::<HashMap<_, _>>();
-        info!("There are {} spl token swap pools found", swap_pools.len());
+        tracing::info!("There are {} spl token swap pools found", swap_pools.len());
 
         Ok(swap_pools)
     }
