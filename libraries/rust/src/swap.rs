@@ -17,11 +17,13 @@
 
 //! The spl swap module gets all spl swap pools that contain pairs of supported mints
 
-use std::{collections::HashMap, sync::Arc};
+use std::{
+    collections::{HashMap, HashSet},
+    sync::Arc,
+};
 
 use crate::tokens::TokenPrice;
 use anchor_lang::AccountDeserialize;
-use anchor_spl::token::spl_token::state::Mint;
 use anyhow::Result;
 use jet_proto_math::Number128;
 use jet_simulation::solana_rpc_api::SolanaRpcClient;
@@ -51,10 +53,10 @@ impl SplSwapPools {
     /// Get all swap pools that contain pairs of supported mints
     pub async fn get_pools(
         rpc: &Arc<dyn SolanaRpcClient>,
-        supported_mints: &HashMap<Pubkey, Mint>,
+        supported_mints: &HashSet<Pubkey>,
         swap_program: Pubkey,
         price_cache: PriceCache,
-    ) -> anyhow::Result<HashMap<(Pubkey, Pubkey), Self>> {
+    ) -> anyhow::Result<HashMap<(Pubkey, Pubkey), SwapPool>> {
         let size = SwapV1::LEN + 1;
         let accounts = rpc
             .get_program_accounts(&swap_program, Some(size))
@@ -82,7 +84,7 @@ impl SplSwapPools {
                 swap.token_b_mint
             );
 
-            // Determine the pool size, so we can use only the largest pools
+            // Determine the pool size, use only the largest pools
             let (price_a, price_b) = {
                 let reader = price_cache.read();
                 let price_a = match reader.get(&swap.token_a_mint) {
@@ -115,10 +117,14 @@ impl SplSwapPools {
                     continue;
                 }
             };
+
+            let mint_a_info = find_mint(rpc, mint_a).await;
+            let mint_b_info = find_mint(rpc, mint_b).await;
+
             let token_a_balance =
-                Number128::from_decimal(token_a.amount, -(mint_a.decimals as i32));
+                Number128::from_decimal(token_a.amount, -(mint_a_info?.decimals as i32));
             let token_b_balance =
-                Number128::from_decimal(token_b.amount, -(mint_b.decimals as i32));
+                Number128::from_decimal(token_b.amount, -(mint_b_info?.decimals as i32));
 
             let token_a_value = token_a_balance * price_a;
             let token_b_value = token_b_balance * price_b;
@@ -188,6 +194,18 @@ async fn find_token(
     let account = rpc.get_account(address).await?.unwrap();
     let data = &mut &account.data[..];
     let account = anchor_spl::token::TokenAccount::try_deserialize_unchecked(data)?;
+
+    Ok(account)
+}
+
+// helper function to find mint account
+async fn find_mint(
+    rpc: &Arc<dyn SolanaRpcClient>,
+    address: &Pubkey,
+) -> Result<anchor_spl::token::Mint> {
+    let account = rpc.get_account(address).await?.unwrap();
+    let data = &mut &account.data[..];
+    let account = anchor_spl::token::Mint::try_deserialize_unchecked(data)?;
 
     Ok(account)
 }
