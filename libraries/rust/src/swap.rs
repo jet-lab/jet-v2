@@ -15,8 +15,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-//! The margin swap module allows creating simulated swap pools
-//! to aid in testing margin swaps.
+//! The spl swap module gets all spl swap pools that contain pairs of supported mints
 
 use std::{collections::HashMap, sync::Arc};
 
