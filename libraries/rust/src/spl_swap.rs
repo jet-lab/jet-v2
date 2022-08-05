@@ -82,7 +82,6 @@ impl SplSwapPool {
                 Ok(swap) => swap,
                 Err(_) => continue,
             };
-
             let (mint_a, mint_b) = match (
                 supported_mints.get(&swap.token_a_mint),
                 supported_mints.get(&swap.token_b_mint),
@@ -164,7 +163,6 @@ impl SplSwapPool {
                     total_value,
                 ));
         }
-
         let swap_pools = pool_sizes
             .into_iter()
             .map(|(k, (p, _))| (k, p))

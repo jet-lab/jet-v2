@@ -129,6 +129,8 @@ async fn swap_test_impl(swap_program_id: Pubkey) -> Result<(), anyhow::Error> {
     let swap_pools = SplSwapPool::get_pools(&ctx.rpc, &supported_mints, swap_program_id).await.unwrap();
     println!("***************************** {}", swap_pools.capacity());
     // assert_eq!(swap_pools.capacity(), 1);
+    // let swap_pools = SwapPool::get_pools(&ctx.rpc, supported_mints, swap_program_id).await?;
+    // assert_eq!(swap_pools.len(), 1);
     // assert_eq!(swap_pool.pool, swap_pools.first().unwrap().pool);
 
     let usdc_transit_source = ctx
