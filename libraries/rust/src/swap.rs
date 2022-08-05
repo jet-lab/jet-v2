@@ -45,7 +45,9 @@ pub struct SwapPool {
     pub program: Pubkey,
 }
 
-impl SwapPool {
+pub struct SplSwapPools;
+
+impl SplSwapPools {
     /// Get all swap pools that contain pairs of supported mints
     pub async fn get_pools(
         rpc: &Arc<dyn SolanaRpcClient>,
