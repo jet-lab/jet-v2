@@ -71,7 +71,7 @@ impl SplSwapPools {
         rpc: &Arc<dyn SolanaRpcClient>,
         supported_mints: &HashSet<Pubkey>,
         swap_program: Pubkey,
-        price_cache: PriceCache,
+        price_cache: PriceCache, // TODO - fixme: use oracle as a way to calc price, instead of caching
     ) -> anyhow::Result<HashMap<(Pubkey, Pubkey), SwapPool>> {
         let size = SwapV1::LEN + 1;
         let accounts = rpc
@@ -102,6 +102,7 @@ impl SplSwapPools {
 
             // Determine the pool size, use only the largest pools
             let (price_a, price_b) = {
+                // TODO - fixme: use oracle as a way to calc price, instead of caching
                 let reader = price_cache.read();
                 let price_a = match reader.get(&swap.token_a_mint) {
                     Some(val) => val,

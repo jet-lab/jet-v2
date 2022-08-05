@@ -31,7 +31,7 @@ use jet_margin_sdk::ix_builder::{
     MarginPoolIxBuilder,
 };
 use jet_margin_sdk::solana::transaction::TransactionBuilder;
-use jet_margin_sdk::swap::SwapPool;
+use jet_margin_sdk::spl_swap::SwapPool;
 use jet_margin_sdk::tokens::TokenOracle;
 use solana_sdk::instruction::Instruction;
 use solana_sdk::signature::{Keypair, Signer};
