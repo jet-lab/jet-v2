@@ -25,7 +25,7 @@ use anyhow::{bail, Error};
 
 use jet_margin::{MarginAccount, PositionKind};
 use jet_margin_sdk::ix_builder::{ControlIxBuilder, MarginPoolConfiguration, MarginPoolIxBuilder};
-use jet_margin_sdk::swap::SwapPool;
+use jet_margin_sdk::spl_swap::SwapPool;
 use jet_margin_sdk::tokens::TokenOracle;
 use solana_sdk::instruction::Instruction;
 use solana_sdk::signature::{Keypair, Signer};

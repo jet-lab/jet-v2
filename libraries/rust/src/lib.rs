@@ -16,7 +16,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 pub mod ix_builder;
-pub mod swap;
+pub mod spl_swap;
 pub mod tokens;
 pub mod tx_builder;
 

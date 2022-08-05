@@ -23,7 +23,7 @@ use std::sync::Arc;
 use anchor_lang::prelude::Pubkey;
 use anyhow::Error;
 use async_trait::async_trait;
-use jet_margin_sdk::swap::SwapPool;
+use jet_margin_sdk::spl_swap::SwapPool;
 use jet_simulation::{generate_keypair, solana_rpc_api::SolanaRpcClient};
 use jet_static_program_registry::{
     orca_swap_v1, orca_swap_v2, related_programs, spl_token_swap_v2,
