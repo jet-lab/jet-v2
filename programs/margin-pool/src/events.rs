@@ -12,6 +12,7 @@ pub struct PoolCreated {
     pub authority: Pubkey,
     pub payer: Pubkey,
     pub summary: MarginPoolSummary,
+    pub version: u8,
 }
 
 #[event]

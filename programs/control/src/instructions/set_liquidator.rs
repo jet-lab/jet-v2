@@ -121,6 +121,7 @@ pub fn set_liquidator_handler(ctx: Context<SetLiquidator>, is_liquidator: bool) 
         authority: ctx.accounts.authority.key(),
         liquidator_metadata: metadata,
         metadata_account: ctx.accounts.metadata_account.key(),
+        is_liquidator
     });
 
     Ok(())
