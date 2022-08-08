@@ -418,7 +418,8 @@ impl MarginTxBuilder {
         // Get the margin account and refresh positions
         let mut instructions = vec![];
         if refresh_positions {
-            self.create_pool_instructions(&mut instructions).await?;
+            self.append_pool_refresh_instructions(&mut instructions)
+                .await?;
         }
 
         // Add liquidation instruction
@@ -460,7 +461,8 @@ impl MarginTxBuilder {
     /// Refresh all of a user's positions based in the margin pool
     pub async fn refresh_all_pool_positions(&self) -> Result<Vec<Transaction>> {
         let mut instructions = vec![];
-        self.create_pool_instructions(&mut instructions).await?;
+        self.append_pool_refresh_instructions(&mut instructions)
+            .await?;
 
         self.get_chunk_transactions(12, instructions).await
     }
@@ -518,7 +520,10 @@ impl MarginTxBuilder {
     }
 
     /// Append instructions to refresh pool positions to instructions
-    async fn create_pool_instructions(&self, instructions: &mut Vec<Instruction>) -> Result<()> {
+    pub async fn append_pool_refresh_instructions(
+        &self,
+        instructions: &mut Vec<Instruction>,
+    ) -> Result<()> {
         let state = self.get_account_state().await?;
 
         for position in state.positions() {
