@@ -34,7 +34,11 @@ jobs:
       #       ~/.local/share/solana/
       #       ~/.npm
 
-      # - run: npm ci
+      - name: debugging
+        run: whoami
+
+      - name: npm clean install
+        run: npm ci
 
       - name: TS Test
         run: npm run test
