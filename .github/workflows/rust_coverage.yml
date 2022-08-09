@@ -4,7 +4,7 @@ env:
   # cli-id: anchor-v0.25.dev-solana-1.10.24
   # rust-version: stable
   HOME: /root
-  docker-image: jetprotocol/builder:root-solana1.10.35-anchor0.25.0-1
+  # docker-image: jetprotocol/builder:root-solana1.10.35-anchor0.25.0-1
 
 on:
   push:
@@ -17,7 +17,7 @@ jobs:
     name: Typescript Integration Tests v2
     runs-on: ubuntu-latest
     container:
-        image: $${{ env.docker-image }}
+        image: jetprotocol/builder:root-solana1.10.35-anchor0.25.0-1
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -44,7 +44,7 @@ jobs:
   localnet-tests:
     runs-on: ubuntu-latest
     container:
-      image: $${{ env.docker-image }}
+      image: jetprotocol/builder:root-solana1.10.35-anchor0.25.0-1
     steps:
       - uses: actions/checkout@v3
       - run: rustc --print target-list
@@ -53,7 +53,7 @@ jobs:
   coverage:
     runs-on: ubuntu-latest
     container:
-      image: $${{ env.docker-image }}
+      image: jetprotocol/builder:root-solana1.10.35-anchor0.25.0-1
     steps:
     #   - id: cache-cli-deps
     #     uses: actions/cache@v3
