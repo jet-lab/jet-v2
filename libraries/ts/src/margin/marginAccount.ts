@@ -393,9 +393,10 @@ export class MarginAccount {
 
     // Wallet's balance for pool
     // If depsiting or repaying SOL, maximum input should consider fees
-    let walletAmount =
-      (pool.symbol && this.walletTokens ? this.walletTokens.map[pool.symbol].amount : undefined) ??
-      TokenAmount.zero(pool.decimals)
+    let walletAmount = TokenAmount.zero(pool.decimals)
+    if (pool.symbol && this.walletTokens) {
+      this.walletTokens.map[pool.symbol].amount
+    }
     if (pool.tokenMint.equals(NATIVE_MINT)) {
       walletAmount = TokenAmount.max(walletAmount.subb(numberToBn(feesBuffer)), TokenAmount.zero(pool.decimals))
     }
