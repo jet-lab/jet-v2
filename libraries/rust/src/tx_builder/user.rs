@@ -15,8 +15,6 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-#![allow(unused)]
-
 use std::collections::HashMap;
 use std::sync::Arc;
 
@@ -24,11 +22,11 @@ use jet_margin_pool::program::JetMarginPool;
 use jet_metadata::{PositionTokenMetadata, TokenMetadata};
 
 use anyhow::{bail, Result};
+use solana_sdk::instruction::Instruction;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::Keypair;
 use solana_sdk::signer::Signer;
 use solana_sdk::transaction::Transaction;
-use solana_sdk::{compute_budget::ComputeBudgetInstruction, instruction::Instruction};
 
 use anchor_lang::{AccountDeserialize, Id};
 
@@ -38,6 +36,12 @@ use jet_simulation::solana_rpc_api::SolanaRpcClient;
 
 use crate::ix_builder::*;
 
+/// [Transaction] builder for a margin account, which supports invoking adapter
+/// actions signed as the margin account.
+/// Actions are invoked through `adapter_invoke_ix` depending on their context.
+///
+/// Both margin accounts and liquidators can use this builder, and it will invoke
+/// the correct `adapter_invoke_ix`.
 pub struct MarginTxBuilder {
     rpc: Arc<dyn SolanaRpcClient>,
     ix: MarginIxBuilder,
@@ -115,10 +119,12 @@ impl MarginTxBuilder {
         self.rpc.create_transaction(&[], instructions).await
     }
 
+    /// The address of the transaction signer
     pub fn signer(&self) -> Pubkey {
         self.signer.as_ref().unwrap().pubkey()
     }
 
+    /// The owner of the margin account
     pub fn owner(&self) -> &Pubkey {
         &self.ix.owner
     }
@@ -150,7 +156,6 @@ impl MarginTxBuilder {
     pub async fn close_token_positions(&self, token_mint: &Pubkey) -> Result<Transaction> {
         let pool = MarginPoolIxBuilder::new(*token_mint);
         let (deposit_account, _) = self.ix.get_token_account_address(&pool.deposit_note_mint);
-        let (loan_account, _) = loan_token_account(&self.ix.address, &pool.loan_note_mint);
         let instructions = vec![
             self.ix
                 .close_position(pool.deposit_note_mint, deposit_account),
@@ -485,7 +490,7 @@ impl MarginTxBuilder {
 
     /// Refresh metadata for all positions in the user account
     pub async fn refresh_all_position_metadata(&self) -> Result<Vec<Transaction>> {
-        let mut instructions = self
+        let instructions = self
             .get_account_state()
             .await?
             .positions()
@@ -529,7 +534,6 @@ impl MarginTxBuilder {
     /// Append instructions to refresh pool positions to instructions
     async fn create_pool_instructions(&self, instructions: &mut Vec<Instruction>) -> Result<()> {
         let state = self.get_account_state().await?;
-        let count = state.positions().count();
 
         for position in state.positions() {
             let p_metadata = self.get_position_metadata(&position.token).await?;

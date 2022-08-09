@@ -24,16 +24,32 @@ use jet_simulation::solana_rpc_api::SolanaRpcClient;
 use solana_sdk::{program_pack::Pack, pubkey::Pubkey};
 use spl_token_swap::state::SwapV1;
 
+/// Addresses of an [`spl_token_swap`] compatible swap pool, required when using
+/// [`jet_margin_swap`].
+///
+/// Supported pools are:
+/// * spl_token_swap
+/// * orca_v1
+/// * orca_v2
 #[derive(Debug, Clone, Copy)]
 pub struct SwapPool {
+    /// The address of the swap pool
     pub pool: Pubkey,
+    /// The PDA of the pool authority, derived using the pool address and a nonce
     pub pool_authority: Pubkey,
+    /// The mint of pool tokens that are minted when users supply pool liquidity
     pub pool_mint: Pubkey,
+    /// The SPL token mint of one side of the pool
     pub mint_a: Pubkey,
+    /// The SPL token mint of one side of the pool
     pub mint_b: Pubkey,
+    /// The SPL token account that tokens are deposited into
     pub token_a: Pubkey,
+    /// The SPL token account that tokens are deposited into
     pub token_b: Pubkey,
+    /// The account that collects fees from the pool
     pub fee_account: Pubkey,
+    /// The program of the pool, to distinguish between various supported pools
     pub program: Pubkey,
 }
 

@@ -48,6 +48,11 @@ pub struct MarginPoolIxBuilder {
 }
 
 impl MarginPoolIxBuilder {
+    /// Create a new builder for an SPL token mint by deriving pool addresses
+    ///
+    /// # Params
+    ///
+    /// `token_mint` - The token mint which whose tokens the pool stores
     pub fn new(token_mint: Pubkey) -> Self {
         let (address, _) =
             Pubkey::find_program_address(&[token_mint.as_ref()], &JetMarginPool::id());
@@ -114,7 +119,7 @@ impl MarginPoolIxBuilder {
     /// `depositor` - The authority for the source tokens
     /// `source` - The token account that has the tokens to be deposited
     /// `destination` - The token account to send notes representing the deposit
-    /// `amount` - The amount of tokens to be deposited
+    /// `change` - The type of token change being made. See [TokenChange].
     pub fn deposit(
         &self,
         depositor: Pubkey,
@@ -152,7 +157,7 @@ impl MarginPoolIxBuilder {
     /// `depositor` - The authority for the deposit notes
     /// `source` - The token account that has the deposit notes to be exchanged
     /// `destination` - The token account to send the withdrawn deposit
-    /// `amount` - The amount of the deposit
+    /// `change` - The amount of the deposit
     pub fn withdraw(
         &self,
         depositor: Pubkey,
@@ -319,6 +324,7 @@ impl MarginPoolIxBuilder {
         }
     }
 
+    /// Instruction to register a loan position with a margin pool.
     pub fn register_loan(&self, margin_account: Pubkey, payer: Pubkey) -> (Pubkey, Instruction) {
         let loan_note_account = loan_token_account(&margin_account, &self.loan_note_mint).0;
         let position_token_metadata =
@@ -345,6 +351,7 @@ impl MarginPoolIxBuilder {
         (loan_note_account, ix)
     }
 
+    /// Instruction to close a loan account in a margin pool
     pub fn close_loan(&self, margin_account: Pubkey, payer: Pubkey) -> Instruction {
         let loan_note_account = loan_token_account(&margin_account, &self.loan_note_mint).0;
 
@@ -383,6 +390,7 @@ impl MarginPoolIxBuilder {
     }
 }
 
+/// Find a loan token account for a margin account and margin pool's loan note mint
 pub fn loan_token_account(margin_account: &Pubkey, loan_note_mint: &Pubkey) -> (Pubkey, u8) {
     Pubkey::find_program_address(
         &[margin_account.as_ref(), loan_note_mint.as_ref()],
