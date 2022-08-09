@@ -125,31 +125,24 @@ export class MarginAccount {
    *  non-negative, range is [0, infinity)
    *  zero only when an account has no exposure at all
    *  account is subject to liquidation at a value of one
-  */
+   */
   get riskIndicator() {
     return this.computeRiskIndicator(
       this.valuation.requiredCollateral.asNumber(),
       this.valuation.weightedCollateral.asNumber(),
-      this.valuation.liabilities.asNumber(),
+      this.valuation.liabilities.asNumber()
     )
   }
 
   /** A just-okay risk indicator (TODO improve me) */
-  computeRiskIndicator(
-    requiredCollateral: number,
-    weightedCollateral: number,
-    liabilities: number,
-  ): number {
+  computeRiskIndicator(requiredCollateral: number, weightedCollateral: number, liabilities: number): number {
     if (requiredCollateral < 0) throw Error("requiredCollateral must be non-negative")
     if (weightedCollateral < 0) throw Error("weightedCollateral must be non-negative")
     if (liabilities < 0) throw Error("liabilities must be non-negative")
 
-    if (weightedCollateral > 0)
-      return (requiredCollateral + liabilities) / weightedCollateral
-    else if (requiredCollateral + liabilities > 0)
-      return Infinity
-    else
-      return 0
+    if (weightedCollateral > 0) return (requiredCollateral + liabilities) / weightedCollateral
+    else if (requiredCollateral + liabilities > 0) return Infinity
+    else return 0
   }
 
   /**
@@ -401,7 +394,8 @@ export class MarginAccount {
     // Wallet's balance for pool
     // If depsiting or repaying SOL, maximum input should consider fees
     let walletAmount =
-      (pool.symbol ? this.walletTokens?.map[pool.symbol].amount : undefined) ?? TokenAmount.zero(pool.decimals)
+      (pool.symbol && this.walletTokens ? this.walletTokens.map[pool.symbol].amount : undefined) ??
+      TokenAmount.zero(pool.decimals)
     if (pool.tokenMint.equals(NATIVE_MINT)) {
       walletAmount = TokenAmount.max(walletAmount.subb(numberToBn(feesBuffer)), TokenAmount.zero(pool.decimals))
     }
