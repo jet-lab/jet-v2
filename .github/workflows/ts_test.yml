@@ -45,7 +45,9 @@ jobs:
       - name: debugging2
         run: avm list
       - name: debugging2
-        run: anchor
+        run: |
+          anchor
+          anchor test --skip-lint -- --features testing
       - name: TS Test
         run: npm run test
   # downstream_test:
