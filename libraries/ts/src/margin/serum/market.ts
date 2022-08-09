@@ -550,10 +550,15 @@ export class Market {
 
   /**
    * Loads the Orderbook
-   * @param bidsBuffer
-   * @param asksBuffer
+   * @param provider
    */
-  async loadOrderbook(bidsBuffer: Buffer, asksBuffer: Buffer): Promise<Orderbook> {
+  async loadOrderbook(provider: AnchorProvider): Promise<Orderbook> {
+    const bidsBuffer = (await provider.connection.getAccountInfo(translateAddress(this.marketConfig.bids)))?.data
+    const asksBuffer = (await provider.connection.getAccountInfo(translateAddress(this.marketConfig.asks)))?.data
+    if (!bidsBuffer || !asksBuffer) {
+      throw new Error("Orderbook sides not found")
+    }
+
     const bids = SerumOrderbook.decode(this.serum, bidsBuffer)
     const asks = SerumOrderbook.decode(this.serum, asksBuffer)
     return new Orderbook(this.serum, bids, asks)
