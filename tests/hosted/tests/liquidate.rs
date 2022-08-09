@@ -86,11 +86,11 @@ async fn scenario1() -> Result<Scenario1> {
         user_b: user_b.user.clone(),
         user_a_liq: ctx
             .margin
-            .liquidator(&liquidator_wallet, &user_a.user.owner(), 0)
+            .liquidator(&liquidator_wallet, user_a.user.owner(), 0)
             .await?,
         user_b_liq: ctx
             .margin
-            .liquidator(&liquidator_wallet, &user_b.user.owner(), 0)
+            .liquidator(&liquidator_wallet, user_b.user.owner(), 0)
             .await?,
         usdc,
         liquidator: liquidator_wallet.pubkey(),
@@ -377,9 +377,9 @@ async fn liquidator_permission_is_removable() -> Result<()> {
 #[cfg_attr(not(feature = "localnet"), serial)]
 async fn liquidate_with_swap() -> Result<()> {
     let ctx = test_context().await;
-    let ([usdc, sol], swaps, pricer) = tokens(&ctx).await?;
-    let [liquidator] = liquidators(&ctx).await?;
-    let [user0, user1] = users(&ctx).await?;
+    let ([usdc, sol], swaps, pricer) = tokens(ctx).await?;
+    let [liquidator] = liquidators(ctx).await?;
+    let [user0, user1] = users(ctx).await?;
     user0.deposit(&usdc, 1000).await?;
     user1.deposit(&sol, 1000).await?;
     user1.borrow_to_wallet(&usdc, 800).await?;

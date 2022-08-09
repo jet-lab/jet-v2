@@ -34,7 +34,6 @@ const DEFAULT_POOL_CONFIG: MarginPoolConfig = MarginPoolConfig {
 pub struct TestEnvironment<'a> {
     pub mints: Vec<Pubkey>,
     pub users: Vec<TestUser<'a>>,
-    // pub liquidator: Keypair,
 }
 
 pub async fn setup_token(
@@ -47,7 +46,8 @@ pub async fn setup_token(
     let token_keypair = generate_keypair();
     let token = token_keypair.pubkey();
     let (token, token_oracle) = try_join!(
-        ctx.tokens.create_token_from(token_keypair, decimals, None, None),
+        ctx.tokens
+            .create_token_from(token_keypair, decimals, None, None),
         ctx.tokens.create_oracle(&token)
     )?;
     let setup = MarginPoolSetupInfo {
@@ -72,13 +72,11 @@ pub async fn setup_token(
     Ok(token)
 }
 
-pub async fn users<'a, const N: usize>(ctx: &'a MarginTestContext) -> Result<[TestUser<'a>; N]> {
+pub async fn users<const N: usize>(ctx: &MarginTestContext) -> Result<[TestUser; N]> {
     Ok(create_users(ctx, N).await?.try_into().unwrap())
 }
 
-pub async fn liquidators<'a, const N: usize>(
-    ctx: &'a MarginTestContext,
-) -> Result<[TestLiquidator; N]> {
+pub async fn liquidators<const N: usize>(ctx: &MarginTestContext) -> Result<[TestLiquidator; N]> {
     Ok((0..N)
         .map_async(|_| TestLiquidator::new(ctx))
         .await?
@@ -86,36 +84,47 @@ pub async fn liquidators<'a, const N: usize>(
         .unwrap())
 }
 
-pub async fn tokens<'a, const N: usize>(
-    ctx: &'a MarginTestContext,
+pub async fn tokens<const N: usize>(
+    ctx: &MarginTestContext,
 ) -> Result<([Pubkey; N], SwapRegistry, TokenPricer)> {
     let (tokens, swaps, pricer) = create_tokens(ctx, N).await?;
 
     Ok((tokens.try_into().unwrap(), swaps, pricer))
 }
 
-pub async fn create_users<'a>(ctx: &'a MarginTestContext, n: usize) -> Result<Vec<TestUser<'a>>> {
+pub async fn create_users(ctx: &MarginTestContext, n: usize) -> Result<Vec<TestUser>> {
     (0..n).map_async(|_| setup_user(ctx, vec![])).await
 }
 
-pub async fn create_tokens<'a>(
-    ctx: &'a MarginTestContext,
+pub async fn create_tokens(
+    ctx: &MarginTestContext,
     n: usize,
 ) -> Result<(Vec<Pubkey>, SwapRegistry, TokenPricer)> {
     let tokens: Vec<Pubkey> = (0..n)
         .map_async(|_| setup_token(ctx, 9, 1_00, 4_00, 1.0))
         .await?;
-    let swaps = create_swap_pools(&ctx.rpc, &tokens).await?;
-    let pricer = TokenPricer::new(&ctx.rpc, &swaps);
+    let owner = ctx.rpc.payer().pubkey();
+    let (swaps, vaults) = try_join!(
+        create_swap_pools(&ctx.rpc, &tokens),
+        tokens
+            .iter()
+            .map_async(|mint| { ctx.tokens.create_account_funded(mint, &owner, u64::MAX / 4) })
+    )?;
+    let vaults = tokens
+        .clone()
+        .into_iter()
+        .zip(vaults)
+        .collect::<HashMap<Pubkey, Pubkey>>();
+    let pricer = TokenPricer::new(&ctx.rpc, vaults, &swaps);
 
     Ok((tokens, swaps, pricer))
 }
 
 /// (token_mint, balance in wallet, balance in pools)
-pub async fn setup_user<'a>(
-    ctx: &'a MarginTestContext,
+pub async fn setup_user(
+    ctx: &MarginTestContext,
     tokens: Vec<(Pubkey, u64, u64)>,
-) -> Result<TestUser<'a>> {
+) -> Result<TestUser> {
     // Create our two user wallets, with some SOL funding to get started
     let wallet = create_wallet(&ctx.rpc, 10 * LAMPORTS_PER_SOL).await?;
 

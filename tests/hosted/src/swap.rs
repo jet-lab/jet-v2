@@ -29,8 +29,9 @@ use jet_static_program_registry::{
     orca_swap_v1, orca_swap_v2, related_programs, spl_token_swap_v2,
 };
 use solana_sdk::{program_pack::Pack, signer::Signer, system_instruction};
+use tokio::try_join;
 
-use crate::tokens::TokenManager;
+use crate::{tokens::TokenManager, SendTransactionBuilder, TransactionBuilder};
 
 // register swap programs
 related_programs! {
@@ -63,6 +64,15 @@ pub trait SwapPoolConfig: Sized {
         amount_in: u64,
         signer: &S,
     ) -> Result<(), Error>;
+
+    async fn swap_tx<S: Signer + Sync + Send>(
+        &self,
+        rpc: &Arc<dyn SolanaRpcClient>,
+        source: &Pubkey,
+        dest: &Pubkey,
+        amount_in: u64,
+        signer: &S,
+    ) -> Result<TransactionBuilder, Error>;
 }
 
 #[async_trait]
@@ -100,27 +110,22 @@ impl SwapPoolConfig for SwapPool {
         // Pool authority
         let (pool_authority, pool_nonce) =
             Pubkey::find_program_address(&[keypair.pubkey().as_ref()], program_id);
-        // Token A account
         // The accounts are funded to avoid having to fund them further
-        let token_a = token_manager
-            .create_account_funded(mint_a, &pool_authority, a_amount)
-            .await?;
-        // Token B account
-        let token_b = token_manager
-            .create_account_funded(mint_b, &pool_authority, b_amount)
-            .await?;
-        // Pool token mint
-        let pool_mint = token_manager
-            .create_token(6, Some(&pool_authority), None)
-            .await?;
-        // Pool token fee account
-        let token_fee = token_manager
-            .create_account(&pool_mint, &rpc.payer().pubkey())
-            .await?;
-        // Pool token recipient account
-        let token_recipient = token_manager
-            .create_account(&pool_mint, &rpc.payer().pubkey())
-            .await?;
+        let (token_a, token_b, pool_mint) = try_join!(
+            // Token A account
+            token_manager.create_account_funded(mint_a, &pool_authority, a_amount),
+            // Token B account
+            token_manager.create_account_funded(mint_b, &pool_authority, b_amount),
+            // Pool token mint
+            token_manager.create_token(6, Some(&pool_authority), None),
+        )?;
+        let payer = rpc.payer().pubkey();
+        let (token_fee, token_recipient) = try_join!(
+            // Pool token fee account
+            token_manager.create_account(&pool_mint, &payer),
+            // Pool token recipient account
+            token_manager.create_account(&pool_mint, &payer),
+        )?;
 
         let ix_init = use_client!(*program_id, {
             client::instruction::initialize(
@@ -189,16 +194,16 @@ impl SwapPoolConfig for SwapPool {
         Ok(mint_to_balance)
     }
 
-    async fn swap<S: Signer + Sync + Send>(
+    async fn swap_tx<S: Signer + Sync + Send>(
         &self,
         rpc: &Arc<dyn SolanaRpcClient>,
         source: &Pubkey,
         dest: &Pubkey,
         amount_in: u64,
         signer: &S,
-    ) -> Result<(), Error> {
+    ) -> Result<TransactionBuilder, Error> {
         if amount_in == 0 {
-            return Ok(())
+            return Ok(TransactionBuilder::default());
         }
         let source_data = rpc.get_account(source).await?.unwrap().data;
         let dest_data = rpc.get_account(dest).await?.unwrap().data;
@@ -231,8 +236,23 @@ impl SwapPoolConfig for SwapPool {
             )?
         })
         .unwrap();
-        let transaction = rpc.create_transaction(&[], &[swap_ix]).await?;
-        rpc.send_and_confirm_transaction(&transaction).await?;
+
+        Ok(TransactionBuilder {
+            instructions: vec![swap_ix],
+            signers: vec![],
+        })
+    }
+
+    async fn swap<S: Signer + Sync + Send>(
+        &self,
+        rpc: &Arc<dyn SolanaRpcClient>,
+        source: &Pubkey,
+        dest: &Pubkey,
+        amount_in: u64,
+        signer: &S,
+    ) -> Result<(), Error> {
+        let tx = self.swap_tx(rpc, source, dest, amount_in, signer).await?;
+        rpc.send_and_confirm(tx).await?;
 
         Ok(())
     }

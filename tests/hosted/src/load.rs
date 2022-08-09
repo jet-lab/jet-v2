@@ -1,38 +1,81 @@
+use anchor_lang::prelude::Pubkey;
+use anyhow::Result;
+use std::{str::FromStr, time::Duration};
+
 use crate::{
     context::test_context,
-    setup_helper::{create_tokens, create_users}, MapAsync,
+    orchestrator::ONE,
+    setup_helper::{create_tokens, create_users},
+    MapAsync,
 };
 
-pub async fn load_test(user_count: usize, mint_count: usize) -> Result<(), anyhow::Error> {
+pub struct UnhealthyAccountsLoadTestScenario {
+    pub user_count: usize,
+    pub mint_count: usize,
+    pub repricing_delay: usize,
+    pub repricing_scale: f64,
+}
+
+impl Default for UnhealthyAccountsLoadTestScenario {
+    fn default() -> Self {
+        Self {
+            user_count: 2,
+            mint_count: 2,
+            repricing_delay: 0,
+            repricing_scale: 0.999,
+        }
+    }
+}
+
+pub async fn unhealthy_accounts_load_test(
+    scenario: UnhealthyAccountsLoadTestScenario,
+) -> Result<(), anyhow::Error> {
     let ctx = test_context().await;
+    ctx.margin
+        .set_liquidator_metadata(
+            Pubkey::from_str("77FsX7wrjSQcEosBrfKByyfRcciERohQBeMe76GhJpKV").unwrap(),
+            true,
+        )
+        .await?;
     println!("creating tokens");
-    let (mut mints, _, pricer) = create_tokens(&ctx, mint_count).await?;
+    let (mut mints, _, pricer) = create_tokens(ctx, scenario.mint_count).await?;
     println!("creating users");
-    let users = create_users(&ctx, user_count).await?;
+    let mut users = create_users(ctx, scenario.user_count + 1).await?;
+    let big_depositor = users.pop().unwrap();
     println!("creating deposits");
+    mints
+        .iter()
+        .map_async(|mint| big_depositor.deposit(mint, 1000 * ONE))
+        .await?;
     users
         .iter()
         .zip(mints.iter().cycle())
-        .map_async(|(user, mint)| user.deposit(&mint, 100))
+        .map_async_chunked(16, |(user, mint)| user.deposit(mint, 100 * ONE))
         .await?;
     println!("creating loans");
-    mints.rotate_right(mint_count / 2);
+    mints.rotate_right(scenario.mint_count / 2);
     users
         .iter()
         .zip(mints.iter().cycle())
-        .map_async(|(user, mint)| user.borrow_to_wallet(&mint, 10))
+        .map_async_chunked(32, |(user, mint)| user.borrow_to_wallet(mint, 80 * ONE))
         .await?;
+
     println!("incrementally lowering prices of half of the assets");
     let assets_to_devalue = mints[0..mints.len() / 2].to_vec();
+    println!("for assets {assets_to_devalue:?}...");
     let mut price = 1.0;
-    for _ in 0..100 {
-        price *= 0.99;
-        println!("setting price to {price}");
-        assets_to_devalue
+    loop {
+        price *= scenario.repricing_scale;
+        let new_prices = assets_to_devalue
             .iter()
-            .map_async(|mint| pricer.set_price(mint, price))
-            .await?;
+            .map(|mint| (*mint, price))
+            .collect();
+        println!("setting price to {price}");
+        pricer.set_prices(new_prices, true).await?;
+        for _ in 0..scenario.repricing_delay {
+            std::thread::sleep(Duration::from_secs(1));
+            // pricer.refresh_all_oracles().await?;
+            pricer.set_prices(Vec::new(), true).await?;
+        }
     }
-
-    Ok(())
 }

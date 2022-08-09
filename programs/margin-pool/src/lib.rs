@@ -196,10 +196,10 @@ pub enum ErrorCode {
     InvalidAmount,
 
     /// 141105 - The oracle is not reporting a valid price
-    InvalidPrice,
+    InvalidPoolPrice,
 
     /// 141106 - The oracle account is not valid
-    InvalidOracle,
+    InvalidPoolOracle,
 
     /// 141107 - Tried to set an invalid token value
     #[msg("An invalid `SetTo` value was given for a `TokenChange`")]

@@ -50,11 +50,11 @@ impl Clone for MarginTxBuilder {
         Self {
             rpc: self.rpc.clone(),
             ix: self.ix.clone(),
-            signer: match &self.signer {
-                Some(kp) => Some(Keypair::from_bytes(&kp.to_bytes()).unwrap()),
-                None => None,
-            },
-            is_liquidator: self.is_liquidator.clone(),
+            signer: self
+                .signer
+                .as_ref()
+                .map(|kp| Keypair::from_bytes(&kp.to_bytes()).unwrap()),
+            is_liquidator: self.is_liquidator,
         }
     }
 }

@@ -1,5 +1,5 @@
 use std::collections::hash_map::Entry;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
 use anyhow::Result;
@@ -15,19 +15,32 @@ use solana_sdk::signature::{Keypair, Signer};
 use jet_margin_pool::{Amount, TokenChange};
 use tokio::try_join;
 
-use crate::clone;
 use crate::context::MarginTestContext;
 use crate::margin::MarginUser;
 use crate::swap::SwapPoolConfig;
 use crate::tokens::TokenManager;
+use crate::{cat, clone, AndAsync, Concat, MapAsync, SendTransactionBuilder, TransactionBuilder};
+
+pub const ONE: u64 = 1_000_000_000;
 
 pub struct TokenPricer {
     rpc: Arc<dyn SolanaRpcClient>,
-    tokens: TokenManager,
+    pub tokens: TokenManager,
     payer: Keypair,
-    // ctx: &'a MarginTestContext,
-    // tokens: HashMap<Pubkey, TestToken>,
+    vaults: HashMap<Pubkey, Pubkey>,
     swap_registry: HashMap<Pubkey, HashMap<Pubkey, SwapPool>>,
+}
+
+impl Clone for TokenPricer {
+    fn clone(&self) -> Self {
+        Self {
+            rpc: self.rpc.clone(),
+            tokens: self.tokens.clone(),
+            payer: clone(&self.payer),
+            vaults: self.vaults.clone(),
+            swap_registry: self.swap_registry.clone(),
+        }
+    }
 }
 
 pub type SwapRegistry = HashMap<Pubkey, HashMap<Pubkey, SwapPool>>;
@@ -37,50 +50,216 @@ pub async fn create_swap_pools(
     mints: &[Pubkey],
 ) -> Result<SwapRegistry> {
     let mut registry = SwapRegistry::new();
-    for (one, two) in mints
-        .into_iter()
+    for (one, two, pool) in mints
+        .iter()
         .combinations(2)
-        .map(|c| (c[0].clone(), c[1].clone()))
-        .collect::<Vec<(Pubkey, Pubkey)>>()
+        .map(|c| (*c[0], *c[1]))
+        .map_async(|(one, two)| create_and_insert(rpc, one, two))
+        .await?
     {
-        let pool = SwapPool::configure(
-            &rpc,
-            &orca_swap_v2::id(),
-            &one,
-            &two,
-            100_000_000,
-            100_000_000,
-        )
-        .await?;
-        registry.entry(one).or_default().insert(two, pool.clone());
+        registry.entry(one).or_default().insert(two, pool);
         registry.entry(two).or_default().insert(one, pool);
     }
 
     Ok(registry)
 }
 
+async fn create_and_insert(
+    rpc: &Arc<dyn SolanaRpcClient>,
+    one: Pubkey,
+    two: Pubkey,
+) -> Result<(Pubkey, Pubkey, SwapPool)> {
+    let pool = SwapPool::configure(
+        rpc,
+        &orca_swap_v2::id(),
+        &one,
+        &two,
+        100_000_000 * ONE,
+        100_000_000 * ONE,
+    )
+    .await?;
+
+    Ok((one, two, pool))
+}
+
 impl TokenPricer {
-    pub fn new(rpc: &Arc<dyn SolanaRpcClient>, swap_registry: &SwapRegistry) -> Self {
+    pub fn new(
+        rpc: &Arc<dyn SolanaRpcClient>,
+        vaults: HashMap<Pubkey, Pubkey>,
+        swap_registry: &SwapRegistry,
+    ) -> Self {
         Self {
             rpc: rpc.clone(),
             tokens: TokenManager::new(rpc.clone()),
             payer: clone(rpc.payer()),
+            vaults,
             swap_registry: swap_registry.clone(),
         }
     }
 
-    pub async fn set_price(&self, mint: &Pubkey, price: f64) -> Result<()> {
-        try_join!(
-            self.set_oracle_price(mint, price),
-            self.set_price_in_swap_pools(mint, price)
-        )?;
+    pub async fn refresh_all_oracles_timestamps(&self) -> Result<()> {
+        self.refresh_oracles_timestamps(&self.vaults.keys().collect::<Vec<&Pubkey>>())
+            .await
+    }
+
+    /// Updates oracles to say the same prices with a more recent timestamp
+    pub async fn refresh_oracles_timestamps(&self, mints: &[&Pubkey]) -> Result<()> {
+        let txs = mints
+            .iter()
+            .map_async(|mint| self.tokens.refresh_to_same_price_tx(mint))
+            .await?;
+        self.rpc.send_and_confirm_condensed(txs).await?;
 
         Ok(())
     }
 
+    pub async fn summarize_price(&self, mint: &Pubkey) -> Result<()> {
+        println!("price summary for {mint}");
+        let oracle_price = self.get_oracle_price(mint).await?;
+        println!("    oracle: {oracle_price}");
+        for (other_mint, pool) in self.swap_registry[mint].iter() {
+            println!("    relative to {other_mint}");
+            let other_price = self.get_oracle_price(other_mint).await?;
+            let balances = pool.balances(&self.rpc).await?;
+            let this_balance = *balances.get(mint).unwrap();
+            let other_balance = *balances.get(other_mint).unwrap();
+            let relative_price = other_balance as f64 / this_balance as f64;
+            let derived_price = relative_price * other_price;
+            println!("        other price    {other_price}");
+            println!("        this  balance  {this_balance}");
+            println!("        other balance  {other_balance}");
+            println!("        relative price {relative_price}");
+            println!("        derived price  {derived_price}");
+        }
+        Ok(())
+    }
+
+    /// Sets price in oracle and swap for only a single asset
+    pub async fn set_price(&self, mint: &Pubkey, price: f64) -> Result<()> {
+        let mut txs = self.set_price_in_swap_pools_tx(mint, price).await?;
+        let oracle_tx = self.set_oracle_price_tx(mint, price)?;
+        txs.push(oracle_tx);
+        self.rpc.send_and_confirm_condensed(txs).await?;
+
+        Ok(())
+    }
+
+    /// Effeciently sets prices in oracle and swap for many assets at once
+    pub async fn set_prices(
+        &self,
+        mint_prices: Vec<(Pubkey, f64)>,
+        refresh_unchanged: bool,
+    ) -> Result<()> {
+        let mut target_prices: HashMap<Pubkey, f64> = mint_prices.clone().into_iter().collect();
+        let mints = target_prices.clone().into_keys().collect();
+        let (swap_snapshot, oracle_snapshot) = try_join!(
+            self.swap_snapshot(if refresh_unchanged {
+                None
+            } else {
+                Some(&mints)
+            }),
+            self.oracle_snapshot(&mints),
+        )?;
+        target_prices.extend(oracle_snapshot);
+
+        let mut txs = vec![];
+        for pair in target_prices.iter().combinations(2) {
+            let (mint_a, target_price_a) = pair[0];
+            let (mint_b, target_price_b) = pair[1];
+            if refresh_unchanged || mints.contains(mint_a) || mints.contains(mint_b) {
+                let pool = self.swap_registry.get(mint_a).unwrap().get(mint_b).unwrap();
+                let &(balance_a, balance_b) =
+                    swap_snapshot.get(mint_a).unwrap().get(mint_b).unwrap();
+                let desired_relative_price = target_price_a / target_price_b;
+                let (a_to_swap, b_to_swap) =
+                    set_constant_product_price(balance_a, balance_b, desired_relative_price);
+                let vault_a = self.vaults.get(mint_a).unwrap();
+                let vault_b = self.vaults.get(mint_b).unwrap();
+                txs.push(cat![
+                    pool.swap_tx(&self.rpc, vault_a, vault_b, a_to_swap, &self.payer)
+                        .await?,
+                    pool.swap_tx(&self.rpc, vault_b, vault_a, b_to_swap, &self.payer)
+                        .await?,
+                ]);
+            }
+        }
+        for (mint, price) in if refresh_unchanged {
+            target_prices.into_iter().collect()
+        } else {
+            mint_prices
+        } {
+            txs.push(self.set_oracle_price_tx(&mint, price)?)
+        }
+
+        self.rpc.send_and_confirm_condensed(txs).await?;
+
+        Ok(())
+    }
+
+    pub async fn oracle_snapshot(
+        &self,
+        blacklist: &HashSet<Pubkey>,
+    ) -> Result<HashMap<Pubkey, f64>> {
+        Ok(self
+            .vaults
+            .keys()
+            .filter(|m| !blacklist.contains(m))
+            .map_async(|m| (*m).and_result(self.get_oracle_price(m)))
+            .await?
+            .into_iter()
+            .collect())
+    }
+
+    pub async fn swap_snapshot(&self, whitelist: Option<&HashSet<Pubkey>>) -> Result<SwapSnapshot> {
+        let mut pools = HashSet::new();
+        let mut balance_checks = Vec::new();
+        for (mint_a, others) in self.swap_registry.iter() {
+            for (mint_b, pool) in others {
+                let pair = (*mint_a, *mint_b);
+                if !pools.contains(&pair)
+                    && (whitelist.is_none()
+                        || whitelist.unwrap().contains(mint_a)
+                        || whitelist.unwrap().contains(mint_b))
+                {
+                    pools.insert(pair);
+                    pools.insert((*mint_b, *mint_a));
+                    balance_checks.push((pair, pool));
+                }
+            }
+        }
+        let mut snapshot = SwapSnapshot::new();
+        for ((mint_a, mint_b), balances) in balance_checks
+            .iter()
+            .map_async(|(mints, pool)| mints.and_result(pool.balances(&self.rpc)))
+            .await?
+        {
+            snapshot.entry(*mint_a).or_default().insert(
+                *mint_b,
+                (
+                    *balances.get(mint_a).unwrap(),
+                    *balances.get(mint_b).unwrap(),
+                ),
+            );
+            snapshot.entry(*mint_b).or_default().insert(
+                *mint_a,
+                (
+                    *balances.get(mint_b).unwrap(),
+                    *balances.get(mint_a).unwrap(),
+                ),
+            );
+        }
+
+        Ok(snapshot)
+    }
+
     /// If you set the price to disagree with the oracle, you may see some odd behavior.
     /// Think carefully about how other tokens are impacted.
-    pub async fn set_price_in_swap_pools(&self, mint: &Pubkey, price: f64) -> Result<()> {
+    pub async fn set_price_in_swap_pools_tx(
+        &self,
+        mint: &Pubkey,
+        price: f64,
+    ) -> Result<Vec<TransactionBuilder>> {
+        let mut txs = vec![];
         for (other_mint, pool) in self.swap_registry[mint].iter() {
             let other_price = self.get_oracle_price(other_mint).await?;
             let desired_relative_price = price / other_price;
@@ -90,38 +269,30 @@ impl TokenPricer {
                 *balances.get(other_mint).unwrap(),
                 desired_relative_price,
             );
-            let this = self
-                .tokens
-                .create_account_funded(&mint, &self.payer.pubkey(), this_to_swap)
-                .await?;
-            let other = self
-                .tokens
-                .create_account_funded(&other_mint, &self.payer.pubkey(), other_to_swap)
-                .await?;
-            pool.swap(&self.rpc, &this, &other, this_to_swap, &self.payer)
-                .await?;
-            pool.swap(&self.rpc, &other, &this, other_to_swap, &self.payer)
-                .await?;
+            let this = self.vaults.get(mint).unwrap();
+            let other = self.vaults.get(other_mint).unwrap();
+            txs.push(cat![
+                pool.swap_tx(&self.rpc, this, other, this_to_swap, &self.payer)
+                    .await?,
+                pool.swap_tx(&self.rpc, other, this, other_to_swap, &self.payer)
+                    .await?,
+            ]);
         }
 
-        Ok(())
+        Ok(txs)
     }
 
-    pub async fn set_oracle_price(&self, mint: &Pubkey, price: f64) -> Result<()> {
+    pub fn set_oracle_price_tx(&self, mint: &Pubkey, price: f64) -> Result<TransactionBuilder> {
         let price = (price * 100_000_000.0) as i64;
-        self.tokens
-            .set_price(
-                mint,
-                &TokenPrice {
-                    exponent: -8,
-                    price,
-                    confidence: 0,
-                    twap: price as u64,
-                },
-            )
-            .await?;
-
-        Ok(())
+        self.tokens.set_price_tx(
+            mint,
+            &TokenPrice {
+                exponent: -8,
+                price,
+                confidence: 0,
+                twap: price as u64,
+            },
+        )
     }
 
     pub async fn get_oracle_price(&self, mint: &Pubkey) -> Result<f64> {
@@ -131,6 +302,8 @@ impl TokenPricer {
         Ok(price)
     }
 }
+
+type SwapSnapshot = HashMap<Pubkey, HashMap<Pubkey, (u64, u64)>>;
 
 /// Returns the amount of assets a and b to swap into the pool to slip
 /// the assets into the desired relative price
@@ -199,11 +372,11 @@ impl<'a> std::fmt::Debug for TestUser<'a> {
 impl<'a> TestUser<'a> {
     pub async fn token_account(&mut self, mint: &Pubkey) -> Result<Pubkey> {
         let token_account = match self.mint_to_token_account.entry(*mint) {
-            Entry::Occupied(entry) => entry.get().clone(),
+            Entry::Occupied(entry) => *entry.get(),
             Entry::Vacant(entry) => *entry.insert(
                 self.ctx
                     .tokens
-                    .create_account(&mint, &self.user.owner())
+                    .create_account(mint, self.user.owner())
                     .await?,
             ),
         };
@@ -214,7 +387,7 @@ impl<'a> TestUser<'a> {
     pub async fn ephemeral_token_account(&self, mint: &Pubkey, amount: u64) -> Result<Pubkey> {
         self.ctx
             .tokens
-            .create_account_funded(&mint, &self.user.owner(), amount)
+            .create_account_funded(mint, self.user.owner(), amount)
             .await
     }
 
@@ -282,12 +455,12 @@ impl<'a> TestUser<'a> {
         let transit_src = self
             .ctx
             .tokens
-            .create_account(&src, &self.user.address())
+            .create_account(src, self.user.address())
             .await?;
         let transit_dst = self
             .ctx
             .tokens
-            .create_account(&dst, &self.user.address())
+            .create_account(dst, self.user.address())
             .await?;
         self.user
             .swap(
@@ -326,12 +499,12 @@ impl<'a> TestLiquidator<'a> {
         let liquidation = self
             .ctx
             .margin
-            .liquidator(&self.wallet, &user.owner(), user.seed())
+            .liquidator(&self.wallet, user.owner(), user.seed())
             .await?;
         liquidation.liquidate_begin(true).await?;
 
         Ok(TestUser {
-            ctx: self.ctx.clone(),
+            ctx: self.ctx,
             user: liquidation,
             mint_to_token_account: HashMap::new(),
         })
@@ -347,7 +520,7 @@ impl<'a> TestLiquidator<'a> {
         repay: u64,
     ) -> Result<()> {
         let liq = self.begin(user).await?;
-        liq.swap(&swaps, collateral, loan, sell).await?;
+        liq.swap(swaps, collateral, loan, sell).await?;
         liq.margin_repay(loan, repay).await?;
         liq.liquidate_end(self.wallet.pubkey()).await
     }
