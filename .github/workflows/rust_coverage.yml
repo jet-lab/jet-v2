@@ -29,7 +29,7 @@ jobs:
   localnet-tests:
     runs-on: ubuntu-latest
     container:
-      image: jetprotocol/builder
+      image: jetprotocol/builder:root-solana1.10.35-anchor0.25.0-1
     steps:
       # - id: cache-cli-deps
       #   uses: actions/cache@v3
@@ -46,7 +46,7 @@ jobs:
   coverage:
     runs-on: ubuntu-latest
     container:
-      image: jetprotocol/builder
+      image: jetprotocol/builder:root-solana1.10.35-anchor0.25.0-1
     # steps:
     #   - id: cache-cli-deps
     #     uses: actions/cache@v3
