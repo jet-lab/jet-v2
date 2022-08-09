@@ -26,6 +26,10 @@ jobs:
       - name: TS Test
         run: |
           npm ci
+          whoami
+          pwd
+          ls -l /root/
+          ls -l /root/.config/solana
           anchor test -- --features testing
 
   build_aarch64:
