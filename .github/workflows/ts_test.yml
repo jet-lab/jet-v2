@@ -3,6 +3,7 @@ name: build
 env:
   SOLANA_VERSION: 1.10.29
   ANCHOR_CLI_VERSION: 0.24.2
+  HOME: /root
 
 on:
   push:
@@ -41,10 +42,6 @@ jobs:
       - name: npm clean install
         run: npm ci
 
-      - name: debugging
-        run: ls -l $(which anchor)
-      - name: best guess
-        run: chmod +x $(which anchor)
       - name: debugging2
         run: avm list
       - name: debugging2
