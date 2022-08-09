@@ -12,17 +12,17 @@ on:
   pull_request: 
 
 jobs:
-  ts_test:
-    name: Typescript Integration Tests
-    runs-on: ubuntu-latest
-    container:
-      image: jetprotocol/builder:root-solana1.10.35-anchor0.25.0-1
-      env:
-        HOME: /root
-    steps:
+  # ts_test:
+    # name: Typescript Integration Tests
+    # runs-on: ubuntu-latest
+    # container:
+    #   image: jetprotocol/builder:root-solana1.10.35-anchor0.25.0-1
+    #   env:
+    #     HOME: /root
+    # steps:
 
-      - name: Checkout
-        uses: actions/checkout@v3
+    #   - name: Checkout
+    #     uses: actions/checkout@v3
 
       # - id: CacheTSDeps
       #   uses: actions/cache@v2
