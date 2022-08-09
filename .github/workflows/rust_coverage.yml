@@ -13,17 +13,17 @@ on:
   pull_request:
 
 jobs:
-  ts_test:
-    name: Typescript Integration Tests
-    runs-on: ubuntu-latest
-    container.image: $${{env.docker-image}}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-      - name: TS Test
-        run: |
-          npm ci
-          anchor test -- --features testing
+  # ts_test:
+  #   name: Typescript Integration Tests
+  #   runs-on: ubuntu-latest
+  #   container.image: $${{env.docker-image}}
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v3
+  #     - name: TS Test
+  #       run: |
+  #         npm ci
+  #         anchor test -- --features testing
 
   build_aarch64:
     runs-on: macos-latest
