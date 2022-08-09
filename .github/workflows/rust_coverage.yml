@@ -1,8 +1,10 @@
 name: build
 
 env:
-  cli-id: anchor-v0.25.dev-solana-1.10.24
-  rust-version: stable
+  # cli-id: anchor-v0.25.dev-solana-1.10.24
+  # rust-version: stable
+  HOME: /root
+  docker-image: jetprotocol/builder:root-solana1.10.35-anchor0.25.0-1
 
 on:
   push:
@@ -11,6 +13,18 @@ on:
   pull_request:
 
 jobs:
+  ts_test:
+    name: Typescript Integration Tests
+    runs-on: ubuntu-latest
+    container.image: $${{env.docker-image}}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: TS Test
+        run: |
+          npm ci
+          anchor test -- --features testing
+
   build_aarch64:
     runs-on: macos-latest
     steps:
@@ -28,26 +42,16 @@ jobs:
 
   localnet-tests:
     runs-on: ubuntu-latest
-    container:
-      image: jetprotocol/builder:root-solana1.10.35-anchor0.25.0-1
+    container.image: $${{env.docker-image}}
     steps:
-      # - id: cache-cli-deps
-      #   uses: actions/cache@v3
-      #   with:
-      #     key: $${{ env.cli-id }}
-      #     path: |
-      #       ~/.local/share/solana
-      #       ~/.cargo/bin/anchor
-
       - uses: actions/checkout@v3
       - run: rustc --print target-list
       - run: tests/hosted/test_on_localnet.sh
 
   coverage:
     runs-on: ubuntu-latest
-    container:
-      image: jetprotocol/builder:root-solana1.10.35-anchor0.25.0-1
-    # steps:
+    container.image: $${{env.docker-image}}
+    steps:
     #   - id: cache-cli-deps
     #     uses: actions/cache@v3
     #     with:
