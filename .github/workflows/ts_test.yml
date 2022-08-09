@@ -16,6 +16,8 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: jetprotocol/builder:root-solana1.10.35-anchor0.25.0-1
+      env:
+        HOME: /root
     steps:
 
       - name: Checkout
