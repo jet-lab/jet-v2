@@ -18,8 +18,6 @@ jobs:
       image: jetprotocol/builder:root-solana1.10.35-anchor0.25.0-1
     steps:
 
-      - name: debugging
-        run: whoami
       - name: Checkout
         uses: actions/checkout@v3
 
@@ -41,6 +39,12 @@ jobs:
       - name: npm clean install
         run: npm ci
 
+      - name: debugging
+        run: ll $(which anchor)
+      - name: best guess
+        run: chmod +x $(which anchor)
+      - name: debugging 2
+        run: ll $(which anchor)
       - name: TS Test
         run: npm run test
   # downstream_test:
