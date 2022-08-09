@@ -44,7 +44,9 @@ jobs:
       - name: best guess
         run: chmod +x $(which anchor)
       - name: debugging2
-        run: anchor --version
+        run: avm list
+      - name: debugging2
+        run: anchor
       - name: TS Test
         run: npm run test
   # downstream_test:
