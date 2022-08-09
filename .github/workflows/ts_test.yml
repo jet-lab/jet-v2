@@ -17,6 +17,9 @@ jobs:
     container:
       image: jetprotocol/builder
     steps:
+
+      - name: debugging
+        run: whoami
       - name: Checkout
         uses: actions/checkout@v3
 
@@ -34,8 +37,6 @@ jobs:
       #       ~/.local/share/solana/
       #       ~/.npm
 
-      - name: debugging
-        run: whoami
 
       - name: npm clean install
         run: npm ci
