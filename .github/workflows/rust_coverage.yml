@@ -13,63 +13,82 @@ on:
   pull_request:
 
 jobs:
-  # anchor_build:
-  #   name: Anchor Build
-  #   runs-on: ubuntu-latest
-  #   container:
-  #     image: jetprotocol/builder:test
-  #   # env:
-  #   #   HOME: /root
-  #   steps:
-  #     # - id: cache-anchor-build
-  #     #   uses: actions/cache@v3
-  #     #   with:
-  #     #     key: cache-anchor-build
-  #     #     path: |
-  #     #       ~/.cache/act
-  #     #       ~/.cache/solana
-  #     #       ~/.cargo/bin/
-  #     #       ~/.cargo/registry/index/
-  #     #       ~/.cargo/registry/cache/
-  #     #       ~/.cargo/git/db/
-  #     #       ~/.local/share/solana/
-  #     #       ~/.npm
+  anchor_build:
+    name: Anchor Build
+    runs-on: ubuntu-latest
+    container:
+      image: jetprotocol/builder:test
+    env:
+      HOME: /root
+    steps:
+      - id: cargo cache
+        uses: actions/cache@v3
+        with:
+          key: cargo-bpf
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+            !target/idl
+            !target/deploy
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Build
+        run: anchor build -- --features testing
+      - name: Archive build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: anchor-build
+          path: |
+            target/idl
+            target/deploy
 
-  #     - name: Checkout
-  #       uses: actions/checkout@v3
-  #     - name: TS Test
-  #       run: anchor build -- --features testing
-
-  # cargo_build:
-  #   name: Cargo Build
-  #   runs-on: ubuntu-latest
-  #   container:
-  #     image: jetprotocol/builder:test
-  #   # env:
-  #   #   HOME: /root
-  #   steps:
-  #     - name: Checkout
-  #       uses: actions/checkout@v3
-  #     - name: TS Test
-  #       run: cargo build -- --features testing
+  cargo_build:
+    name: Cargo Build
+    runs-on: ubuntu-latest
+    container:
+      image: jetprotocol/builder:test
+    env:
+      HOME: /root
+    steps:
+      - id: cargo cache
+        uses: actions/cache@v3
+        with:
+          key: cargo-x86
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Build
+        run: cargo build --tests --features testing
+      - name: Archive build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: anchor-build
+          path: target/debug
 
   build_aarch64:
     runs-on: macos-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-
       - name: Setup Rust
         uses: actions-rs/toolchain@v1
         with:
           target: aarch64-apple-darwin
           toolchain: stable
-
       - name: Check Build Errors
         run: cargo check --target aarch64-apple-darwin
 
   ts_test:
     name: Typescript Integration Tests
+    needs: anchor_build
     runs-on: ubuntu-latest
     container:
       image: jetprotocol/builder:root-solana1.10.35-anchor0.25.0-1
@@ -78,6 +97,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+      - name: Download anchor build artifact
+          uses: actions/download-artifact@v3
+          with:
+            name: anchor-build
       - name: TS Test
         run: |
           chmod -R +r /root
@@ -91,30 +114,46 @@ jobs:
           ls -la /github/home/workflow || echo no workflow
           echo "starting tests soon"
           whoami && cat /root/.config/solana/id.json || echo hmm
-          whoami && anchor test -- --features testing
+          whoami && anchor test --skip-build -- --features testing
           ec=$?
           echo "test exit code $ec"
           exit $ec
 
   localnet-tests:
     runs-on: ubuntu-latest
+    needs: |
+      anchor_build
+      cargo_build
     container:
       image: jetprotocol/builder:root-solana1.10.35-anchor0.25.0-1
     env:
       HOME: /root
     steps:
       - uses: actions/checkout@v3
+      - name: Download anchor build artifact
+          uses: actions/download-artifact@v3
+          with:
+            name: anchor-build
+      - name: Download cargo build artifact
+          uses: actions/download-artifact@v3
+          with:
+            name: cargo-build
       - run: rustc --print target-list
       - run: tests/hosted/test_on_localnet.sh
 
   coverage:
     runs-on: ubuntu-latest
+    needs: cargo_build
     container:
       image: jetprotocol/builder:root-solana1.10.35-anchor0.25.0-1
     env:
       HOME: /root
     steps:
       - uses: actions/checkout@v3
+      - name: Download cargo build artifact
+          uses: actions/download-artifact@v3
+          with:
+            name: cargo-build
 
       - name: Clippy Check
         run: cargo clippy --all-targets -- -Dwarnings
