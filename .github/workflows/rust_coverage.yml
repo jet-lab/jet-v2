@@ -13,24 +13,45 @@ on:
   pull_request:
 
 jobs:
-  ts_test:
-    name: Typescript Integration Tests
+  anchor_build:
+    name: Anchor Build
     runs-on: ubuntu-latest
     container:
-      image: jetprotocol/builder:root-solana1.10.35-anchor0.25.0-1
-    env:
-      HOME: /root
+      image: jetprotocol/builder:test
+    # env:
+    #   HOME: /root
+    steps:
+      # - id: cache-anchor-build
+      #   uses: actions/cache@v3
+      #   with:
+      #     key: cache-anchor-build
+      #     path: |
+      #       ~/.cache/act
+      #       ~/.cache/solana
+      #       ~/.cargo/bin/
+      #       ~/.cargo/registry/index/
+      #       ~/.cargo/registry/cache/
+      #       ~/.cargo/git/db/
+      #       ~/.local/share/solana/
+      #       ~/.npm
+
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: TS Test
+        run: anchor build -- --features testing
+
+  cargo_build:
+    name: Cargo Build
+    runs-on: ubuntu-latest
+    container:
+      image: jetprotocol/builder:test
+    # env:
+    #   HOME: /root
     steps:
       - name: Checkout
         uses: actions/checkout@v3
       - name: TS Test
-        run: |
-          npm ci
-          whoami
-          pwd
-          ls -l /root/
-          ls -l /root/.config/solana
-          anchor test -- --features testing
+        run: cargo build -- --features testing
 
   build_aarch64:
     runs-on: macos-latest
@@ -47,12 +68,33 @@ jobs:
       - name: Check Build Errors
         run: cargo check --target aarch64-apple-darwin
 
+  ts_test:
+    name: Typescript Integration Tests
+    runs-on: ubuntu-latest
+    container:
+      image: jetprotocol/builder:test
+    # env:
+    #   HOME: /root
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: TS Test
+        run: |
+          npm ci
+          whoami
+          pwd
+          ls -l /root/
+          ls -l /root/.config/solana
+          ls -l /github
+          ls -l /github/home
+          anchor test -- --features testing
+
   localnet-tests:
     runs-on: ubuntu-latest
     container:
-      image: jetprotocol/builder:root-solana1.10.35-anchor0.25.0-1
-    env:
-      HOME: /root
+      image: jetprotocol/builder:test
+    # env:
+    #   HOME: /root
     steps:
       - uses: actions/checkout@v3
       - run: rustc --print target-list
@@ -61,9 +103,9 @@ jobs:
   coverage:
     runs-on: ubuntu-latest
     container:
-      image: jetprotocol/builder:root-solana1.10.35-anchor0.25.0-1
-    env:
-      HOME: /root
+      image: jetprotocol/builder:test
+    # env:
+    #   HOME: /root
     steps:
       - uses: actions/checkout@v3
 
