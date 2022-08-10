@@ -52,6 +52,7 @@ jobs:
   #       uses: actions/checkout@v3
   #     - name: TS Test
   #       run: cargo build -- --features testing
+
   build_aarch64:
     runs-on: macos-latest
     steps:
@@ -79,13 +80,15 @@ jobs:
         uses: actions/checkout@v3
       - name: TS Test
         run: |
+          chmod -R +r /root
           npm ci
           whoami
           pwd
-          ls -l /root/
-          ls -l /root/.config/solana
-          ls -l /github
-          ls -l /github/home
+          ls -la /root/
+          ls -la /root/.config/solana
+          ls -la /github
+          ls -la /github/home
+          ls -la /github/home/workflow || echo no workflow
           anchor test -- --features testing
 
   localnet-tests:
