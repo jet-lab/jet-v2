@@ -89,7 +89,11 @@ jobs:
           ls -la /github
           ls -la /github/home
           ls -la /github/home/workflow || echo no workflow
-          anchor test -- --features testing
+          echo "starting tests soon"
+          whoami && cat /root/.config/solana/id.json || echo hmm
+          whoami && anchor test -- --features testing || ec=$?
+          echo "test exit code $ec"
+          exit $ec
 
   localnet-tests:
     runs-on: ubuntu-latest
