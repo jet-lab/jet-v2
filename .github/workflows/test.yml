@@ -105,24 +105,9 @@ jobs:
       - name: TS Test
         run: |
           set -x
-          ls -R target
-          chmod -R +r /root
+          chmod -R 777 /root
           npm ci
-          whoami
-          pwd
-          ls -la /root/
-          ls -la /root/.config/solana
-          ls -la /github
-          ls -la /github/home
-          echo "starting tests soon"
-          whoami && cat /root/.config/solana/id.json || echo nope
-          ls target/
-          ls target/deploy || echo nope
-          ls target/idl || echo nope
-          whoami && anchor test --skip-build -- --features testing
-          ec=$?
-          echo "test exit code $ec"
-          exit $ec
+          anchor test --skip-build -- --features testing
 
   localnet-tests:
     runs-on: ubuntu-latest
