@@ -44,7 +44,7 @@ test_file() {
         --bpf-program $ORCAv2_PID $ORCAv2_SO \
         --quiet &
     spid=$!
-    sleep ${VALIDATOR_STARTUP:-4}
+    sleep ${VALIDATOR_STARTUP:-5}
     solana -ul logs &
 
     RUST_BACKTRACE=1 cargo test \

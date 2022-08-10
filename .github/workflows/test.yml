@@ -101,9 +101,11 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: anchor-build
+          path: target
       - name: TS Test
         run: |
           set -x
+          ls -R target
           chmod -R +r /root
           npm ci
           whoami
@@ -136,6 +138,7 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: anchor-build
+          path: target
       # - name: Download cargo build artifact
       #   uses: actions/download-artifact@v3
       #   with:
@@ -152,8 +155,6 @@ jobs:
             target/debug
       - run: rustc --print target-list
       - run: tests/hosted/test_on_localnet.sh
-        env: 
-          VALIDATOR_STARTUP: 30
 
   coverage:
     runs-on: ubuntu-latest
