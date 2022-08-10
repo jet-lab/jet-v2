@@ -149,6 +149,8 @@ jobs:
             target/debug
       - run: rustc --print target-list
       - run: tests/hosted/test_on_localnet.sh
+        env: 
+          VALIDATOR_STARTUP: 30
 
   coverage:
     runs-on: ubuntu-latest

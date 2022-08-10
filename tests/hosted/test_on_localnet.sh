@@ -42,9 +42,9 @@ test_file() {
         --bpf-program $SPLSWAP_PID $SPLSWAP_SO \
         --bpf-program $ORCAv1_PID $ORCAv1_SO \
         --bpf-program $ORCAv2_PID $ORCAv2_SO \
-        > /dev/null &
+        --quiet &
     spid=$!
-    sleep 8
+    sleep ${VALIDATOR_STARTUP:-4}
     solana -ul logs &
 
     RUST_BACKTRACE=1 cargo test \
