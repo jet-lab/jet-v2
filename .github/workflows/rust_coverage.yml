@@ -91,7 +91,8 @@ jobs:
           ls -la /github/home/workflow || echo no workflow
           echo "starting tests soon"
           whoami && cat /root/.config/solana/id.json || echo hmm
-          whoami && anchor test -- --features testing || ec=$?
+          whoami && anchor test -- --features testing
+          ec=$?
           echo "test exit code $ec"
           exit $ec
 
