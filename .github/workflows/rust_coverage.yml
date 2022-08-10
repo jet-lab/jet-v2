@@ -17,7 +17,7 @@ jobs:
     name: Anchor Build
     runs-on: ubuntu-latest
     container:
-      image: jetprotocol/builder:test
+      image: jetprotocol/builder:root-solana1.10.35-anchor0.25.0-1
     env:
       HOME: /root
     steps:
@@ -49,7 +49,7 @@ jobs:
     name: Cargo Build
     runs-on: ubuntu-latest
     container:
-      image: jetprotocol/builder:test
+      image: jetprotocol/builder:root-solana1.10.35-anchor0.25.0-1
     env:
       HOME: /root
     steps:
