@@ -62,16 +62,16 @@ jobs:
             ~/.cargo/registry/index/
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
-            target/
+            target/debug
       - name: Checkout
         uses: actions/checkout@v3
       - name: Build
         run: cargo build --tests --features testing
-      - name: Archive build artifacts
-        uses: actions/upload-artifact@v3
-        with:
-          name: anchor-build
-          path: target/debug
+      # - name: Archive build artifacts
+      #   uses: actions/upload-artifact@v3
+      #   with:
+      #     name: anchor-build
+      #     path: target/debug
 
   build_aarch64:
     runs-on: macos-latest
@@ -132,10 +132,20 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: anchor-build
-      - name: Download cargo build artifact
-        uses: actions/download-artifact@v3
+      # - name: Download cargo build artifact
+      #   uses: actions/download-artifact@v3
+      #   with:
+      #     name: cargo-build
+      - name: cargo cache
+        uses: actions/cache@v3
         with:
-          name: cargo-build
+          key: cargo-x86
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/debug
       - run: rustc --print target-list
       - run: tests/hosted/test_on_localnet.sh
 
@@ -148,10 +158,20 @@ jobs:
       HOME: /root
     steps:
       - uses: actions/checkout@v3
-      - name: Download cargo build artifact
-        uses: actions/download-artifact@v3
+      # - name: Download cargo build artifact
+      #   uses: actions/download-artifact@v3
+      #   with:
+      #     name: cargo-build
+      - name: cargo cache
+        uses: actions/cache@v3
         with:
-          name: cargo-build
+          key: cargo-x86
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/debug
 
       - name: Clippy Check
         run: cargo clippy --all-targets -- -Dwarnings
