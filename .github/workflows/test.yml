@@ -21,6 +21,8 @@ jobs:
     env:
       HOME: /root
     steps:
+      - name: Checkout
+        uses: actions/checkout@v3
       - name: cargo cache
         uses: actions/cache@v3
         with:
@@ -33,8 +35,6 @@ jobs:
             target/
             !target/idl
             !target/deploy
-      - name: Checkout
-        uses: actions/checkout@v3
       - name: Build
         run: anchor build -- --features testing
       - name: Archive build artifacts
@@ -45,33 +45,33 @@ jobs:
             target/idl
             target/deploy
 
-  cargo_build:
-    name: Cargo Build
-    runs-on: ubuntu-latest
-    container:
-      image: jetprotocol/builder:root-solana1.10.35-anchor0.25.0-1
-    env:
-      HOME: /root
-    steps:
-      - name: cargo cache
-        uses: actions/cache@v3
-        with:
-          key: cargo-x86
-          path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/debug
-      - name: Checkout
-        uses: actions/checkout@v3
-      - name: Build
-        run: cargo build --tests --features testing
-      # - name: Archive build artifacts
-      #   uses: actions/upload-artifact@v3
-      #   with:
-      #     name: anchor-build
-      #     path: target/debug
+  # cargo_build:
+  #   name: Cargo Build
+  #   # runs-on: ubuntu-latest
+  #   container:
+  #     image: jetprotocol/builder:root-solana1.10.35-anchor0.25.0-1
+  #   env:
+  #     HOME: /root
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v3
+  #     - name: cargo cache
+  #       uses: actions/cache@v3
+  #       with:
+  #         key: cargo-x86
+  #         path: |
+  #           ~/.cargo/bin/
+  #           ~/.cargo/registry/index/
+  #           ~/.cargo/registry/cache/
+  #           ~/.cargo/git/db/
+  #           target/debug
+  #     - name: Build
+  #       run: cargo build --tests --features testing
+  #     # - name: Archive build artifacts
+  #     #   uses: actions/upload-artifact@v3
+  #     #   with:
+  #     #     name: anchor-build
+  #     #     path: target/debug
 
   build_aarch64:
     runs-on: macos-latest
@@ -151,7 +151,7 @@ jobs:
 
   coverage:
     runs-on: ubuntu-latest
-    needs: cargo_build
+    # needs: cargo_build 
     container:
       image: jetprotocol/builder:root-solana1.10.35-anchor0.25.0-1
     env:
