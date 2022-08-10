@@ -135,9 +135,9 @@ jobs:
         with:
           name: anchor-build
       - name: Download cargo build artifact
-          uses: actions/download-artifact@v3
-          with:
-            name: cargo-build
+        uses: actions/download-artifact@v3
+        with:
+          name: cargo-build
       - run: rustc --print target-list
       - run: tests/hosted/test_on_localnet.sh
 
