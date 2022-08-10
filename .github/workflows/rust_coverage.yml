@@ -131,9 +131,9 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Download anchor build artifact
-          uses: actions/download-artifact@v3
-          with:
-            name: anchor-build
+        uses: actions/download-artifact@v3
+        with:
+          name: anchor-build
       - name: Download cargo build artifact
           uses: actions/download-artifact@v3
           with:
@@ -151,9 +151,9 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Download cargo build artifact
-          uses: actions/download-artifact@v3
-          with:
-            name: cargo-build
+        uses: actions/download-artifact@v3
+        with:
+          name: cargo-build
 
       - name: Clippy Check
         run: cargo clippy --all-targets -- -Dwarnings
