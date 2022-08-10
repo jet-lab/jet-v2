@@ -98,9 +98,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
       - name: Download anchor build artifact
-          uses: actions/download-artifact@v3
-          with:
-            name: anchor-build
+        uses: actions/download-artifact@v3
+        with:
+          name: anchor-build
       - name: TS Test
         run: |
           chmod -R +r /root
