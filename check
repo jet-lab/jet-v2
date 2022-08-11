@@ -1,8 +1,8 @@
 #!/bin/bash
-# Execute CI validations in this repository
+# CI validation script.
 # Run a single job from the CI workflow:
 #   ./check <job-name>
-# wrap the job name in quotes if it has spaces
+#           (wrap the job name in quotes if it has spaces)
 # Run the entire workflow:
 #   ./check all
 # Run jobs in the container used for CI:
@@ -15,6 +15,7 @@ DOCKER_IMAGE=jetprotocol/builder:root-solana1.10.35-anchor0.25.0-1
 aliases=(
 	localnet-tests/cargo-test-localnet
 	'Typescript Integration Tests'/anchor-test
+	coverage/cargo-test
 )
 
 

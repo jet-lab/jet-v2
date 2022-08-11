@@ -1,78 +1,13 @@
 name: build
 
-# env:
-#   HOME: /root
-  # cli-id: anchor-v0.25.dev-solana-1.10.24
-  # rust-version: stable
-  # docker-image: jetprotocol/builder:root-solana1.10.35-anchor0.25.0-1
-
 on:
   push:
     branches:
       - "master"
   pull_request:
 
+
 jobs:
-  # anchor_build:
-  #   name: Anchor Build
-  #   runs-on: ubuntu-latest
-  #   container:
-  #     image: jetprotocol/builder:root-solana1.10.35-anchor0.25.0-1
-  #   env:
-  #     HOME: /root
-  #   steps:
-  #     - name: Checkout
-  #       uses: actions/checkout@v3
-  #     - name: anchor build cache
-  #       uses: actions/cache@v3
-  #       with:
-  #         key: cargo-bpf
-  #         path: |
-  #           ~/.cargo/bin/
-  #           ~/.cargo/registry/index/
-  #           ~/.cargo/registry/cache/
-  #           ~/.cargo/git/db/
-  #           target/
-  #           !target/idl
-  #           !target/deploy
-  #     - name: Build
-  #       run: anchor build -- --features testing
-  #     - name: Archive build artifacts
-  #       uses: actions/upload-artifact@v3
-  #       with:
-  #         name: anchor-build
-  #         path: |
-  #           target/idl
-  #           target/deploy
-
-  # cargo_build:
-  #   name: Cargo Build
-  #   # runs-on: ubuntu-latest
-  #   container:
-  #     image: jetprotocol/builder:root-solana1.10.35-anchor0.25.0-1
-  #   env:
-  #     HOME: /root
-  #   steps:
-  #     - name: Checkout
-  #       uses: actions/checkout@v3
-  #     - name: cargo cache
-  #       uses: actions/cache@v3
-  #       with:
-  #         key: cargo-x86
-  #         path: |
-  #           ~/.cargo/bin/
-  #           ~/.cargo/registry/index/
-  #           ~/.cargo/registry/cache/
-  #           ~/.cargo/git/db/
-  #           target/debug
-  #     - name: Build
-  #       run: cargo build --tests --features testing
-  #     # - name: Archive build artifacts
-  #     #   uses: actions/upload-artifact@v3
-  #     #   with:
-  #     #     name: anchor-build
-  #     #     path: target/debug
-
   build_aarch64:
     runs-on: macos-latest
     steps:
@@ -102,7 +37,6 @@ jobs:
 
   anchor-test:
     name: Typescript Integration Tests
-    # needs: anchor_build
     runs-on: ubuntu-latest
     container:
       image: jetprotocol/builder:root-solana1.10.35-anchor0.25.0-1
@@ -111,11 +45,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-      # - name: Download anchor build artifact
-      #   uses: actions/download-artifact@v3
-      #   with:
-      #     name: anchor-build
-      #     path: target
+
       - name: Get anchor-test cache
         uses: actions/cache@v3
         with:
@@ -129,7 +59,7 @@ jobs:
             !target/idl
             !target/deploy
 
-      - name: TS Test
+      - name: ./check anchor-test
         run: |
           chmod -R 777 /root
           ./check anchor-test
@@ -137,18 +67,14 @@ jobs:
 
   localnet-tests:
     runs-on: ubuntu-latest
-    # needs: anchor_build
     container:
       image: jetprotocol/builder:root-solana1.10.35-anchor0.25.0-1
     env:
       HOME: /root
     steps:
-      - uses: actions/checkout@v3
-      # - name: Download anchor build artifact
-      #   uses: actions/download-artifact@v3
-      #   with:
-      #     name: anchor-build
-      #     path: target
+      - name: Checkout
+        uses: actions/checkout@v3
+      
       - name: Get cargo-test-localnet cache
         uses: actions/cache@v3
         with:
@@ -162,19 +88,18 @@ jobs:
             !target/idl
             !target/deploy
 
-      - run: ls -R
       - run: ./check cargo-test-localnet
 
 
   cargo-check:
     runs-on: ubuntu-latest
-    # needs: cargo_build 
     container:
       image: jetprotocol/builder:test
     env:
       HOME: /root
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout
+        uses: actions/checkout@v3
 
       - name: Get cargo-check cache
         uses: actions/cache@v3
@@ -187,13 +112,11 @@ jobs:
             ~/.cargo/git/db/
             target/debug
 
-      - name: Cargo check
-        run: ./check cargo-check
+      - run: ./check cargo-check
 
 
   coverage:
     runs-on: ubuntu-latest
-    # needs: cargo_build 
     container:
       image: jetprotocol/builder:test
     env:
@@ -213,8 +136,7 @@ jobs:
             ~/.cargo/git/db/
             target/debug
 
-      - name: Cargo test with coverage
-        run: ./check cargo-test
+      - run: ./check cargo-test
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v2
