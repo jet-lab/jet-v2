@@ -474,7 +474,7 @@ describe("margin pool borrow", async () => {
 
       expect(transactions[0].tradeAction).to.equals("withdraw")
       expect(transactions[0].tokenSymbol).to.equals("SOL")
-      expect(transactions[0].tradeAmount.uiTokens).to.equals("50")
+      expect(transactions[0].tradeAmount.uiTokens).to.equals("49.999999999")
       expect(transactions[0].signature).to.be.a("string")
 
       expect(transactions[1].tradeAction).to.equals("withdraw")
