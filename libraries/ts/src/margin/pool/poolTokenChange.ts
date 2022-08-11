@@ -15,6 +15,10 @@ export class PoolTokenChangeKind {
   asParam() {
     return this.kind
   }
+
+  isShiftBy(): boolean {
+    return 'shiftBy' in this.kind
+  }
 }
 
 export type PoolTokenChangeKindType = { setTo: {} } | { shiftBy: {} }

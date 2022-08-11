@@ -22,19 +22,13 @@ import {
   Transaction
 } from "@solana/web3.js"
 
-import MARGIN_CONFIG from "../../../libraries/ts/src/margin/config.json"
-
 import { TokenSwap, CurveType, MarginSwap } from "../../../libraries/ts/src"
 import { sleep } from "../../../libraries/ts/src/utils/sleep"
 
-import { getTokenAccountInfo } from "../util"
-;[new PublicKey(MARGIN_CONFIG.localnet.orcaSwapProgramId)].forEach(function (swapProgramId) {
-  describe("margin swap - program id: " + swapProgramId.toString(), () => {
-    const controlProgramId: PublicKey = new PublicKey(MARGIN_CONFIG.localnet.controlProgramId)
-    const marginProgramId: PublicKey = new PublicKey(MARGIN_CONFIG.localnet.marginProgramId)
-    const marginSwapProgramId: PublicKey = new PublicKey(MARGIN_CONFIG.localnet.marginSwapProgramId)
-    const metadataProgramId: PublicKey = new PublicKey(MARGIN_CONFIG.localnet.metadataProgramId)
+import { getTokenAccountInfo, ORCA_SWAP_PROGRAM_ID } from "../util"
 
+;[ORCA_SWAP_PROGRAM_ID].forEach(function (swapProgramId) {
+  describe("margin swap - program id: " + swapProgramId.toString(), () => {
     const confirmOptions: ConfirmOptions = { preflightCommitment: "processed", commitment: "processed" }
 
     const provider = AnchorProvider.local(undefined, confirmOptions)

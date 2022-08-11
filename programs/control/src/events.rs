@@ -15,6 +15,7 @@ pub struct LiquidatorSet {
     pub authority: Pubkey,
     pub liquidator_metadata: LiquidatorMetadata,
     pub metadata_account: Pubkey,
+    pub is_liquidator: bool,
 }
 
 #[event]

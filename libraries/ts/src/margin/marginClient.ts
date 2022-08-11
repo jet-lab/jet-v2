@@ -1,7 +1,6 @@
 import { NATIVE_MINT } from "@solana/spl-token"
 import { Program, AnchorProvider, BN, translateAddress } from "@project-serum/anchor"
 import { JetMargin, JetMarginPool, JetMarginSerum, JetMarginSwap, JetMetadata, TokenAmount, PoolAction } from ".."
-import JET_CONFIG from "../margin/config.json"
 import {
   JetControl,
   JetControlIdl,
@@ -11,7 +10,7 @@ import {
   JetMarginSwapIdl,
   JetMetadataIdl
 } from "../types"
-import { MarginCluster, MarginConfig, MarginTokenConfig } from "./config"
+import { MarginCluster, MarginConfig, MarginTokenConfig, getLatestConfig } from "./config"
 import {
   ConfirmedSignatureInfo,
   Connection,
@@ -19,7 +18,8 @@ import {
   PublicKey,
   TransactionResponse,
   ParsedInstruction,
-  ParsedInnerInstruction
+  ParsedInnerInstruction,
+  PartiallyDecodedInstruction
 } from "@solana/web3.js"
 
 interface TokenMintsList {
@@ -62,9 +62,7 @@ export interface MarginPrograms {
 }
 
 export class MarginClient {
-  static getPrograms(provider: AnchorProvider, cluster: MarginCluster): MarginPrograms {
-    const config = MarginClient.getConfig(cluster)
-
+  static getPrograms(provider: AnchorProvider, config: MarginConfig): MarginPrograms {
     const programs: MarginPrograms = {
       config,
       connection: provider.connection,
@@ -80,9 +78,9 @@ export class MarginClient {
     return programs
   }
 
-  static getConfig(cluster: MarginCluster): MarginConfig {
+  static async getConfig(cluster: MarginCluster): Promise<MarginConfig> {
     if (typeof cluster === "string") {
-      return JET_CONFIG[cluster] as MarginConfig
+      return await getLatestConfig(cluster)
     } else {
       return cluster
     }
@@ -178,14 +176,17 @@ export class MarginClient {
         let amount = new BN(0)
 
         ixs?.forEach((ix: ParsedInnerInstruction) => {
-          ix.instructions.forEach((inst: ParsedInstruction) => {
-            if (inst.parsed && inst.parsed.type === "transfer" && inst?.parsed.info.amount !== "0") {
-              amount = new BN(inst.parsed.info.amount)
+          ix.instructions.forEach((inst: ParsedInstruction | PartiallyDecodedInstruction) => {
+            if ("parsed" in inst) {
+              if (inst.parsed && inst.parsed.type === "transfer" && inst?.parsed.info.amount !== "0") {
+                amount = new BN(inst.parsed.info.amount)
+              }
             }
           })
         })
 
-        if (tradeAction === "margin repay" || tradeAction === "borrow") {
+        // if we could not find a token transfer, default to token values changes
+        if (amount.eq(new BN(0))) {
           const postAmount = new BN(matchingPost.uiTokenAmount.amount)
           const preAmount = new BN(pre.uiTokenAmount.amount)
           amount = postAmount.sub(preAmount).abs()
@@ -232,15 +233,25 @@ export class MarginClient {
     provider: AnchorProvider,
     pubKey: PublicKey,
     mints: Mints,
-    cluster: MarginCluster
+    cluster: MarginCluster,
+    pageSize = 100
   ): Promise<AccountTransaction[]> {
-    const config = MarginClient.getConfig(cluster)
+    const config = await MarginClient.getConfig(cluster)
     const signatures = await provider.connection.getSignaturesForAddress(pubKey, undefined, "confirmed")
-    const transactions = await provider.connection.getParsedTransactions(
-      signatures.map(s => s.signature),
-      "confirmed"
-    )
-    const jetTransactions = MarginClient.filterTransactions(transactions, config)
+    const jetTransactions: ParsedTransactionWithMeta[] = []
+    let page = 0
+    let processed = 0
+    while (processed < signatures.length) {
+      const paginatedSignatures = signatures.slice(page * pageSize, (page + 1) * pageSize)
+      const transactions = await provider.connection.getParsedTransactions(
+        paginatedSignatures.map(s => s.signature),
+        "confirmed"
+      )
+      const filteredTxs = MarginClient.filterTransactions(transactions, config)
+      jetTransactions.push(...filteredTxs)
+      page++
+      processed += paginatedSignatures.length
+    }
 
     const parsedTransactions = jetTransactions
       .map((t, idx) => MarginClient.getTransactionData(t, mints, config, idx))

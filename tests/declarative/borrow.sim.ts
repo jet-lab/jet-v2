@@ -1,15 +1,22 @@
 import { Connection } from "@solana/web3.js"
 import * as os from "os"
 
+import { MarginConfig } from "../../libraries/ts/src/margin/config"
+import { MarginClient } from "../../libraries/ts/src/margin/marginClient"
 import { Replicant } from "./replicant"
-
-import CONFIG from "../../libraries/ts/src/margin/config.json"
 
 import TEST_CONFIG from "./scenarios/borrow.json"
 
 describe("Deposit and Borrow", () => {
-  const config = CONFIG.devnet
-  const connection = new Connection(config.url, "processed")
+
+  let marginConfig: MarginConfig;
+  let connection: Connection;
+
+  it("Load config", async () => {
+    marginConfig = await MarginClient.getConfig('devnet')
+
+    connection = new Connection(marginConfig.url, "processed")
+  })
 
   const replicants: Replicant[] = []
 
@@ -18,6 +25,7 @@ describe("Deposit and Borrow", () => {
       replicants.push(
         await Replicant.create(
           TEST_CONFIG,
+          marginConfig,
           os.homedir() + "/.config/solana/" + userConfig.keypair,
           "devnet",
           connection
