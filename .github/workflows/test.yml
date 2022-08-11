@@ -98,7 +98,7 @@ jobs:
 
   ts_test:
     name: Typescript Integration Tests
-    needs: anchor_build
+    # needs: anchor_build
     runs-on: ubuntu-latest
     container:
       image: jetprotocol/builder:root-solana1.10.35-anchor0.25.0-1
@@ -133,7 +133,7 @@ jobs:
 
   localnet-tests:
     runs-on: ubuntu-latest
-    needs: anchor_build
+    # needs: anchor_build
     container:
       image: jetprotocol/builder:root-solana1.10.35-anchor0.25.0-1
     env:
