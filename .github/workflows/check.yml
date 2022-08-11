@@ -64,7 +64,7 @@ jobs:
           ./check anchor-test
 
 
-  cargo-test-localnet:
+  hosted-tests-localnet:
     runs-on: ubuntu-latest
     container:
       image: jetprotocol/builder:root-solana1.10.35-anchor0.25.0-1
@@ -74,10 +74,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
       
-      - name: Get cargo-test-localnet cache
+      - name: Get hosted-tests-localnet cache
         uses: actions/cache@v3
         with:
-          key: cargo-test-localnet
+          key: hosted-tests-localnet
           path: |
             ~/.cargo/bin/
             ~/.cargo/registry/index/
@@ -87,7 +87,7 @@ jobs:
             !target/idl
             !target/deploy
 
-      - run: ./check cargo-test-localnet
+      - run: ./check hosted-tests-localnet
 
 
   cargo-check:
