@@ -134,7 +134,7 @@ jobs:
             ~/.cargo/registry/index/
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
-            target/debug
+            target/
 
       - run: ./check cargo-test
 
