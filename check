@@ -1,0 +1,39 @@
+#!/bin/bash
+# Execute all of github's validations in this repository
+
+set -euxo pipefail
+
+anchor-test() {
+	npm ci
+	anchor test -- --features testing
+}
+
+cargo-test-localnet() {
+	tests/hosted/test_on_localnet.sh
+}
+
+cargo-check() {
+	cargo fmt --all --check
+	cargo clippy --all-targets -- -Dwarnings
+	cargo test --doc
+}
+
+cargo-test() {
+	if [[ ${CODECOV:-false} == true ]]; then
+		cargo llvm-cov --workspace --lcov --output-path lcov.info --ignore-filename-regex programs/mock-pyth/src/lib.rs
+	else 
+		cargo test
+	fi
+}
+
+all() {
+	cargo-check
+	cargo-test
+	anchor-test
+	cargo-test-localnet
+}
+
+$@
+
+set +x
+echo -e '\n\n ✔ all good'

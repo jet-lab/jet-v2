@@ -78,12 +78,14 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+
       - name: Setup Rust
         uses: actions-rs/toolchain@v1
         with:
           target: aarch64-apple-darwin
           toolchain: stable
-      - name: macos cargo cache
+
+      - name: Get cargo-macos cache
         uses: actions/cache@v3
         with:
           key: cargo-macos
@@ -93,10 +95,12 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             target/
+
       - name: Check Build Errors
         run: cargo check --target aarch64-apple-darwin
 
-  ts_test:
+
+  anchor-test:
     name: Typescript Integration Tests
     # needs: anchor_build
     runs-on: ubuntu-latest
@@ -112,10 +116,10 @@ jobs:
       #   with:
       #     name: anchor-build
       #     path: target
-      - name: anchor build cache
+      - name: Get anchor-test cache
         uses: actions/cache@v3
         with:
-          key: cargo-bpf
+          key: anchor-test
           path: |
             ~/.cargo/bin/
             ~/.cargo/registry/index/
@@ -124,12 +128,12 @@ jobs:
             target/
             !target/idl
             !target/deploy
+
       - name: TS Test
         run: |
-          set -x
           chmod -R 777 /root
-          npm ci
-          anchor test -- --features testing
+          ./check anchor-test
+
 
   localnet-tests:
     runs-on: ubuntu-latest
@@ -145,10 +149,10 @@ jobs:
       #   with:
       #     name: anchor-build
       #     path: target
-      - name: anchor build cache
+      - name: Get cargo-test-localnet cache
         uses: actions/cache@v3
         with:
-          key: cargo-bpf
+          key: cargo-test-localnet
           path: |
             ~/.cargo/bin/
             ~/.cargo/registry/index/
@@ -157,21 +161,12 @@ jobs:
             target/
             !target/idl
             !target/deploy
-            !target/debug
-      - name: cargo test cache
-        uses: actions/cache@v3
-        with:
-          key: cargo-x86
-          path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/debug
-      - run: rustc --print target-list
-      - run: tests/hosted/test_on_localnet.sh
 
-  coverage:
+      - run: ls -R target/
+      - run: ./check cargo-test-localnet
+
+
+  cargo-check:
     runs-on: ubuntu-latest
     # needs: cargo_build 
     container:
@@ -180,10 +175,11 @@ jobs:
       HOME: /root
     steps:
       - uses: actions/checkout@v3
-      - name: cargo test cache
+
+      - name: Get cargo-check cache
         uses: actions/cache@v3
         with:
-          key: cargo-x86
+          key: cargo-check
           path: |
             ~/.cargo/bin/
             ~/.cargo/registry/index/
@@ -191,17 +187,34 @@ jobs:
             ~/.cargo/git/db/
             target/debug
 
-      - name: Clippy Check
-        run: cargo clippy --all-targets -- -Dwarnings
+      - name: Cargo check
+        run: ./check cargo-check
 
-      - name: Check formatting
-        run: cargo fmt --all --check
 
-      - name: Check docs
-        run: cargo test --doc
+  coverage:
+    runs-on: ubuntu-latest
+    # needs: cargo_build 
+    container:
+      image: jetprotocol/builder:test
+    env:
+      HOME: /root
+      CODECOV: true
+    steps:
+      - uses: actions/checkout@v3
 
-      - name: Generate code coverage
-        run: cargo llvm-cov --workspace --lcov --output-path lcov.info --ignore-filename-regex programs/mock-pyth/src/lib.rs
+      - name: Get cargo-test cache
+        uses: actions/cache@v3
+        with:
+          key: cargo-test
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/debug
+
+      - name: Cargo test with coverage
+        run: ./check cargo-test
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v2
