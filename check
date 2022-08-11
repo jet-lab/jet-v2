@@ -14,7 +14,6 @@ DOCKER_IMAGE=jetprotocol/builder:root-solana1.10.35-anchor0.25.0-1
 
 
 anchor-test() {
-	# npm ci
 	anchor test -- --features testing
 }
 
