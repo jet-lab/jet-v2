@@ -40,7 +40,7 @@ jobs:
   anchor-test:
     runs-on: ubuntu-latest
     container:
-      image: $DOCKER_IMAGE
+      image: ${{ env.DOCKER_IMAGE }}
     env:
       HOME: /root
     steps:
@@ -69,7 +69,7 @@ jobs:
   hosted-tests-localnet:
     runs-on: ubuntu-latest
     container:
-      image: $DOCKER_IMAGE
+      image: ${{ env.DOCKER_IMAGE }}
     env:
       HOME: /root
     steps:
@@ -95,7 +95,7 @@ jobs:
   cargo-check:
     runs-on: ubuntu-latest
     container:
-      image: $DOCKER_IMAGE
+      image: ${{ env.DOCKER_IMAGE }}
     env:
       HOME: /root
     steps:
@@ -119,7 +119,7 @@ jobs:
   cargo-test:
     runs-on: ubuntu-latest
     container:
-      image: $DOCKER_IMAGE
+      image: ${{ env.DOCKER_IMAGE }}
     env:
       HOME: /root
       CODECOV: true
