@@ -12,12 +12,6 @@ set -euxo pipefail
 
 DOCKER_IMAGE=jetprotocol/builder:root-solana1.10.35-anchor0.25.0-1
 
-aliases=(
-	localnet-tests/cargo-test-localnet
-	'Typescript Integration Tests'/anchor-test
-	coverage/cargo-test
-)
-
 
 anchor-test() {
 	npm ci
@@ -59,12 +53,7 @@ in-docker() {
 }
 
 
-cmd="$@"
-for alias in "${aliases[@]}"; do
-	cmd=$(sed "s/$alias/g" <<<$cmd)
-done
-
-$cmd
+$@
 
 set +x
 echo -e '\n\n ✔ all good'

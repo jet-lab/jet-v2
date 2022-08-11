@@ -36,7 +36,6 @@ jobs:
 
 
   anchor-test:
-    name: Typescript Integration Tests
     runs-on: ubuntu-latest
     container:
       image: jetprotocol/builder:root-solana1.10.35-anchor0.25.0-1
@@ -65,7 +64,7 @@ jobs:
           ./check anchor-test
 
 
-  localnet-tests:
+  cargo-test-localnet:
     runs-on: ubuntu-latest
     container:
       image: jetprotocol/builder:root-solana1.10.35-anchor0.25.0-1
@@ -115,7 +114,7 @@ jobs:
       - run: ./check cargo-check
 
 
-  coverage:
+  cargo-test:
     runs-on: ubuntu-latest
     container:
       image: jetprotocol/builder:test
