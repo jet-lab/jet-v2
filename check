@@ -1,6 +1,8 @@
 #!/bin/bash
 # Execute all of github's validations in this repository
 
+DOCKER_IMAGE=jetprotocol/builder:root-solana1.10.35-anchor0.25.0-1
+
 set -euxo pipefail
 
 anchor-test() {
@@ -31,6 +33,14 @@ all() {
 	cargo-test
 	anchor-test
 	cargo-test-localnet
+}
+
+in-docker() {
+	docker run \
+		-v "$(dirname $(realpath ${BASH_SOURCE[0]})):/jet-v2" \
+		--workdir /jet-v2 \
+		$DOCKER_IMAGE \
+		/jet-v2/check $@
 }
 
 $@

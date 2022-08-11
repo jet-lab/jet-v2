@@ -162,7 +162,7 @@ jobs:
             !target/idl
             !target/deploy
 
-      - run: ls -R target/
+      - run: ls -R
       - run: ./check cargo-test-localnet
 
 
