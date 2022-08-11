@@ -140,11 +140,11 @@ jobs:
       HOME: /root
     steps:
       - uses: actions/checkout@v3
-      - name: Download anchor build artifact
-        uses: actions/download-artifact@v3
-        with:
-          name: anchor-build
-          path: target
+      # - name: Download anchor build artifact
+      #   uses: actions/download-artifact@v3
+      #   with:
+      #     name: anchor-build
+      #     path: target
       - name: anchor build cache
         uses: actions/cache@v3
         with:
