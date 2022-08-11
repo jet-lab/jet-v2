@@ -1,9 +1,22 @@
 #!/bin/bash
-# Execute all of github's validations in this repository
+# Execute CI validations in this repository
+# Run a single job from the CI workflow:
+#   ./check <job-name>
+# wrap the job name in quotes if it has spaces
+# Run the entire workflow:
+#   ./check all
+# Run jobs in the container used for CI:
+#   ./check in-docker '<job-name or all>'
+
+set -euxo pipefail
 
 DOCKER_IMAGE=jetprotocol/builder:root-solana1.10.35-anchor0.25.0-1
 
-set -euxo pipefail
+aliases=(
+	localnet-tests/cargo-test-localnet
+	'Typescript Integration Tests'/anchor-test
+)
+
 
 anchor-test() {
 	npm ci
@@ -28,6 +41,7 @@ cargo-test() {
 	fi
 }
 
+
 all() {
 	cargo-check
 	cargo-test
@@ -43,7 +57,12 @@ in-docker() {
 		/jet-v2/check $@
 }
 
-$@
+cmd="$@"
+for alias in "${aliases[@]}"; do
+	cmd=$(sed "s/$alias/g" <<<$cmd)
+done
+
+$cmd
 
 set +x
 echo -e '\n\n ✔ all good'
