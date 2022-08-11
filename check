@@ -58,6 +58,7 @@ in-docker() {
 		/jet-v2/check $@
 }
 
+
 cmd="$@"
 for alias in "${aliases[@]}"; do
 	cmd=$(sed "s/$alias/g" <<<$cmd)
