@@ -6,6 +6,8 @@ on:
       - "master"
   pull_request:
 
+env:
+  DOCKER_IMAGE: jetprotocol/builder:root-solana1.10.35-anchor0.25.0-1
 
 jobs:
   build_aarch64:
@@ -38,7 +40,7 @@ jobs:
   anchor-test:
     runs-on: ubuntu-latest
     container:
-      image: jetprotocol/builder:root-solana1.10.35-anchor0.25.0-1
+      image: $DOCKER_IMAGE
     env:
       HOME: /root
     steps:
@@ -67,7 +69,7 @@ jobs:
   hosted-tests-localnet:
     runs-on: ubuntu-latest
     container:
-      image: jetprotocol/builder:root-solana1.10.35-anchor0.25.0-1
+      image: $DOCKER_IMAGE
     env:
       HOME: /root
     steps:
@@ -93,7 +95,7 @@ jobs:
   cargo-check:
     runs-on: ubuntu-latest
     container:
-      image: jetprotocol/builder:test
+      image: $DOCKER_IMAGE
     env:
       HOME: /root
     steps:
@@ -117,7 +119,7 @@ jobs:
   cargo-test:
     runs-on: ubuntu-latest
     container:
-      image: jetprotocol/builder:test
+      image: $DOCKER_IMAGE
     env:
       HOME: /root
       CODECOV: true
