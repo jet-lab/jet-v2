@@ -25,11 +25,7 @@ ORCAv2_SO=$ORCA_V2_MAINNET
 COMPILE_FEATURES='testing'
 
 build() {
-    anchor build --skip-lint -p jet_control     -- --features $COMPILE_FEATURES
-    anchor build --skip-lint -p jet_margin      -- --features $COMPILE_FEATURES
-    anchor build --skip-lint -p jet_metadata    -- --features $COMPILE_FEATURES
-    anchor build --skip-lint -p jet_margin_pool -- --features $COMPILE_FEATURES
-    anchor build --skip-lint -p jet_margin_swap -- --features $COMPILE_FEATURES
+    anchor build -- --features $COMPILE_FEATURES
 }
 
 test_file() {
@@ -76,7 +72,7 @@ trap_add() {
 
 declare -f -t trap_add
 trap_add 'cleanup' EXIT
-# build
+build
 test_file swap
 test_file liquidate
 test_file pool_overpayment
