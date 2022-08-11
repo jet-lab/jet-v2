@@ -54,7 +54,7 @@ export interface PoolProjection {
   borrowRate: number
 }
 
-export const feesBuffer: number = LAMPORTS_PER_SOL * 0.075
+export const FEES_BUFFER: number = LAMPORTS_PER_SOL * 0.075
 
 export class Pool {
   address: PublicKey
@@ -356,15 +356,6 @@ export class Pool {
     }
   }
 
-  static getPrice(mint: PublicKey, pools: Pool[]): PriceInfo | undefined {
-    for (const pool of pools) {
-      const price = pool.getPrice(mint)
-      if (price) {
-        return price
-      }
-    }
-  }
-
   /****************************
    * Transactionss
    ****************************/
@@ -375,26 +366,6 @@ export class Pool {
       await pool.withMarginRefreshPositionPrice({ instructions, marginAccount })
     }
     await marginAccount.provider.sendAndConfirm(new Transaction().add(...instructions))
-  }
-
-  async marginRefreshPositionPrice(marginAccount: MarginAccount) {
-    const instructions: TransactionInstruction[] = []
-    await this.withMarginRefreshPositionPrice({ instructions, marginAccount })
-    return await marginAccount.provider.sendAndConfirm(new Transaction().add(...instructions))
-  }
-
-  async withMarginRefreshAllPositionPrices({
-    instructions,
-    pools,
-    marginAccount
-  }: {
-    instructions: TransactionInstruction[]
-    pools: Pool[]
-    marginAccount: MarginAccount
-  }) {
-    for (const pool of pools) {
-      await pool.withMarginRefreshPositionPrice({ instructions, marginAccount })
-    }
   }
 
   async withMarginRefreshPositionPrice({
@@ -478,7 +449,7 @@ export class Pool {
       instructions,
       provider,
       mint,
-      feesBuffer,
+      feesBuffer: FEES_BUFFER,
       source
     })
 
@@ -506,12 +477,10 @@ export class Pool {
 
   async marginBorrow({
     marginAccount,
-    pools,
     change,
     destination
   }: {
     marginAccount: MarginAccount
-    pools: Pool[]
     change: PoolTokenChange
     destination?: TokenAddress
   }): Promise<string> {
@@ -529,7 +498,7 @@ export class Pool {
     })
     assert(depositPosition)
 
-    await this.withMarginRefreshAllPositionPrices({ instructions: refreshInstructions, pools, marginAccount })
+    await marginAccount.withRefreshAllPositions({ instructions: refreshInstructions })
 
     const loanNoteAccount = await this.withGetOrCreateLoanPosition(instructionsInstructions, marginAccount)
 
@@ -646,14 +615,12 @@ export class Pool {
   /// `change` - The amount to be repaid
   async marginRepay({
     marginAccount,
-    pools,
     source,
     change,
     closeLoan,
     signer
   }: {
     marginAccount: MarginAccount
-    pools: Pool[]
     source?: TokenAddress
     change: PoolTokenChange
     closeLoan?: boolean
@@ -668,7 +635,7 @@ export class Pool {
     })
     assert(depositPosition)
 
-    await this.withMarginRefreshAllPositionPrices({ instructions: refreshInstructions, pools, marginAccount })
+    await marginAccount.withRefreshAllPositions({ instructions: refreshInstructions })
 
     const loanNoteAccount = await this.withGetOrCreateLoanPosition(instructions, marginAccount)
 
@@ -688,7 +655,7 @@ export class Pool {
         loanPosition: loanNoteAccount,
         source,
         change,
-        feesBuffer,
+        feesBuffer: FEES_BUFFER,
         sourceAuthority: signer
       })
     }
@@ -795,12 +762,10 @@ export class Pool {
   /// `destination` - (Optional) The token account to send the withdrawn deposit
   async withdraw({
     marginAccount,
-    pools,
     change,
     destination = TokenFormat.unwrappedSol
   }: {
     marginAccount: MarginAccount
-    pools: Pool[]
     change: PoolTokenChange
     destination?: TokenAddress
   }) {
@@ -812,7 +777,7 @@ export class Pool {
       throw new Error("No deposit position")
     }
 
-    await this.withMarginRefreshAllPositionPrices({ instructions: refreshInstructions, pools, marginAccount })
+    await marginAccount.withRefreshAllPositions({ instructions: refreshInstructions })
     await marginAccount.withUpdateAllPositionBalances({ instructions: refreshInstructions })
     await this.withWithdraw({
       instructions,

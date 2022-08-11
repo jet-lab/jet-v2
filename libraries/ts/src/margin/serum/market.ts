@@ -223,7 +223,6 @@ export class Market {
       if (pool) {
         await pool.marginBorrow({
           marginAccount,
-          pools: Object.values(marginAccount.pools),
           change: PoolTokenChange.setTo(accountPoolPosition.loanBalance.add(difference))
         })
       }

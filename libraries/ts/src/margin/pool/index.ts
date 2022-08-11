@@ -1,4 +1,5 @@
 export * from "./poolTokenChange"
 export * from "./state"
 export * from "./poolManager"
+export * from "./poolMarginAccount"
 export * from "./pool"

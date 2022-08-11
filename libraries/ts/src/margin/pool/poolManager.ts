@@ -14,10 +14,6 @@ interface TokenMetadataParams {
   maxLeverage: number
 }
 
-interface MarginPoolParams {
-  feeDestination: PublicKey
-}
-
 interface IPoolCreationParams {
   tokenMint: Address
   collateralWeight: number

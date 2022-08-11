@@ -13,7 +13,7 @@ import {
   TransactionInstruction,
   TransactionSignature
 } from "@solana/web3.js"
-import { feesBuffer, Pool, PoolAction } from "./pool/pool"
+import { Pool } from "./pool/pool"
 import {
   AccountPositionList,
   AccountPositionListLayout,
@@ -25,10 +25,11 @@ import {
 } from "./state"
 import { MarginPrograms } from "./marginClient"
 import { findDerivedAccount } from "../utils/pda"
-import { AssociatedToken, bigIntToBn, bnToNumber, getTimestamp, Number192, numberToBn, TokenAmount } from ".."
+import { AssociatedToken, bnToNumber, getTimestamp } from ".."
 import { Number128 } from "../utils/number128"
-import { MarginTokenConfig } from "./config"
 import { AccountPosition, PriceInfo } from "./accountPosition"
+import { PoolMarginAccount } from "./pool/poolMarginAccount"
+import { IAdapter } from "./IAdapterClient"
 
 export interface MarginAccountAddresses {
   marginAccount: PublicKey
@@ -42,25 +43,10 @@ export interface MarginPositionAddresses {
   tokenMetadata: PublicKey
 }
 
-export interface PoolPosition {
-  tokenConfig: MarginTokenConfig
-  pool?: Pool
-  depositPosition: AccountPosition | undefined
-  depositBalance: TokenAmount
-  depositValue: number
-  loanPosition: AccountPosition | undefined
-  loanBalance: TokenAmount
-  loanValue: number
-  maxTradeAmounts: Record<PoolAction, TokenAmount>
-  liquidationEndingCollateral: TokenAmount
-  buyingPower: TokenAmount
-}
-
 export interface AccountSummary {
   depositedValue: number
   borrowedValue: number
   accountBalance: number
-  availableCollateral: number
   /** @deprecated use riskIndicator */
   cRatio: number
   /** @deprecated use riskIndicator */
@@ -101,8 +87,10 @@ export class MarginAccount {
   addresses: MarginAccountAddresses
   positions: AccountPosition[]
   valuation: Valuation
-  poolPositions: Record<string, PoolPosition>
+  poolPositions: PoolMarginAccount
   summary: AccountSummary
+
+  adapters: IAdapter[] = []
 
   get address() {
     return this.addresses.marginAccount
@@ -158,16 +146,36 @@ export class MarginAccount {
     public provider: AnchorProvider,
     owner: Address,
     public seed: number,
-    public pools?: Record<string, Pool>,
+    public pools: Record<string, Pool>,
     public walletTokens?: MarginWalletTokens
   ) {
-    this.pools = pools
-    this.walletTokens = walletTokens
     this.addresses = MarginAccount.derive(programs, owner, seed)
-    this.positions = this.getPositions()
-    this.valuation = this.getValuation(true)
-    this.poolPositions = this.getAllPoolPositions()
-    this.summary = this.getSummary()
+    this.positions = []
+    this.valuation = {
+      liabilities: Number128.ZERO,
+      pastDue: false,
+      requiredCollateral: Number128.ZERO,
+      requiredSetupCollateral: Number128.ZERO,
+      weightedCollateral: Number128.ZERO,
+      effectiveCollateral: Number128.ZERO,
+      get availableCollateral(): Number128 {
+        return Number128.ZERO
+      },
+      get availableSetupCollateral(): Number128 {
+        return Number128.ZERO
+      },
+      staleCollateralList: [],
+      claimErrorList: []
+    }
+    this.summary = {
+      depositedValue: 0,
+      borrowedValue: 0,
+      accountBalance: 0,
+      cRatio: 1,
+      minCRatio: 1
+    }
+    this.poolPositions = new PoolMarginAccount(this, pools)
+    this.adapters = [this.poolPositions]
   }
 
   /**
@@ -220,7 +228,7 @@ export class MarginAccount {
   }: {
     programs: MarginPrograms
     provider: AnchorProvider
-    pools?: Record<string, Pool>
+    pools: Record<string, Pool>
     walletTokens?: MarginWalletTokens
     owner: Address
     seed: number
@@ -256,11 +264,11 @@ export class MarginAccount {
     pools,
     walletTokens,
     owner,
-    filters
+    filters = []
   }: {
     programs: MarginPrograms
     provider: AnchorProvider
-    pools?: Record<string, Pool>
+    pools: Record<string, Pool>
     walletTokens?: MarginWalletTokens
     owner: Address
     filters?: GetProgramAccountsFilter[]
@@ -271,7 +279,6 @@ export class MarginAccount {
         bytes: owner.toString()
       }
     }
-    filters ??= []
     filters.push(ownerFilter)
     const infos: ProgramAccount<MarginAccountData>[] = await programs.margin.account.marginAccount.all(filters)
     const marginAccounts: MarginAccount[] = []
@@ -305,149 +312,10 @@ export class MarginAccount {
     }
     this.positions = this.getPositions()
     this.valuation = this.getValuation(true)
-    this.poolPositions = this.getAllPoolPositions()
     this.summary = this.getSummary()
-  }
 
-  getAllPoolPositions(): Record<string, PoolPosition> {
-    const positions: Record<string, PoolPosition> = {}
-    const poolConfigs = Object.values(this.programs.config.tokens)
-
-    for (let i = 0; i < poolConfigs.length; i++) {
-      const poolConfig = poolConfigs[i]
-      const tokenConfig = this.programs.config.tokens[poolConfig.symbol]
-      const pool = this.pools?.[poolConfig.symbol]
-      if (!pool?.info) {
-        continue
-      }
-
-      // Deposits
-      const depositNotePosition = this.getPosition(pool.addresses.depositNoteMint)
-      const depositBalanceNotes = Number192.from(depositNotePosition?.balance ?? new BN(0))
-      const depositBalance = depositBalanceNotes.mul(pool.depositNoteExchangeRate()).asTokenAmount(pool.decimals)
-      const depositValue = depositNotePosition?.value ?? 0
-
-      // Loans
-      const loanNotePosition = this.getPosition(pool.addresses.loanNoteMint)
-      const loanBalanceNotes = Number192.from(loanNotePosition?.balance ?? new BN(0))
-      const loanBalance = loanBalanceNotes.mul(pool.loanNoteExchangeRate()).asTokenAmount(pool.decimals)
-      const loanValue = loanNotePosition?.value ?? 0
-
-      // Max trade amounts
-      const maxTradeAmounts = this.getMaxTradeAmounts(pool, depositBalance, loanBalance)
-
-      // Minimum amount to deposit for the pool to end a liquidation
-      const collateralWeight = depositNotePosition?.valueModifier ?? pool.depositNoteMetadata.valueModifier
-      const priceComponent = bigIntToBn(pool.info.tokenPriceOracle.aggregate.priceComponent)
-      const priceExponent = pool.info.tokenPriceOracle.exponent
-      const tokenPrice = Number128.fromDecimal(priceComponent, priceExponent)
-      const lamportPrice = tokenPrice.div(Number128.fromDecimal(new BN(1), pool.decimals))
-      const warningRiskLevel = Number128.fromDecimal(new BN(MarginAccount.RISK_WARNING_LEVEL * 100000), -5)
-      const liquidationEndingCollateral = (
-        collateralWeight.isZero() || lamportPrice.isZero()
-          ? Number128.ZERO
-          : this.valuation.requiredCollateral
-              .sub(this.valuation.effectiveCollateral.mul(warningRiskLevel))
-              .div(collateralWeight.mul(warningRiskLevel))
-              .div(lamportPrice)
-      ).asTokenAmount(pool.decimals)
-
-      // Buying power
-      // FIXME
-      const buyingPower = TokenAmount.zero(pool.decimals)
-
-      positions[poolConfig.symbol] = {
-        tokenConfig,
-        pool,
-        depositPosition: depositNotePosition,
-        loanPosition: loanNotePosition,
-        depositBalance,
-        depositValue,
-        loanBalance,
-        loanValue,
-        maxTradeAmounts,
-        liquidationEndingCollateral,
-        buyingPower
-      }
-    }
-
-    return positions
-  }
-
-  getMaxTradeAmounts(
-    pool: Pool,
-    depositBalance: TokenAmount,
-    loanBalance: TokenAmount
-  ): Record<PoolAction, TokenAmount> {
-    const zero = TokenAmount.zero(pool.decimals)
-    if (!pool.info) {
-      return {
-        deposit: zero,
-        withdraw: zero,
-        borrow: zero,
-        repay: zero,
-        swap: zero,
-        transfer: zero
-      }
-    }
-
-    // Wallet's balance for pool
-    // If depsiting or repaying SOL, maximum input should consider fees
-    let walletAmount = TokenAmount.zero(pool.decimals)
-    if (pool.symbol && this.walletTokens) {
-      walletAmount = this.walletTokens.map[pool.symbol].amount
-    }
-    if (pool.tokenMint.equals(NATIVE_MINT)) {
-      walletAmount = TokenAmount.max(walletAmount.subb(numberToBn(feesBuffer)), TokenAmount.zero(pool.decimals))
-    }
-
-    // Max deposit
-    const deposit = walletAmount
-
-    const priceExponent = pool.info.tokenPriceOracle.exponent
-    const priceComponent = bigIntToBn(pool.info.tokenPriceOracle.aggregate.priceComponent)
-    const tokenPrice = Number128.fromDecimal(priceComponent, priceExponent)
-    const lamportPrice = tokenPrice.div(Number128.fromDecimal(new BN(1), pool.decimals))
-
-    const depositNoteValueModifier =
-      this.getPosition(pool.addresses.depositNoteMint)?.valueModifier ?? pool.depositNoteMetadata.valueModifier
-    const loanNoteValueModifier =
-      this.getPosition(pool.addresses.loanNoteMint)?.valueModifier ?? pool.loanNoteMetadata.valueModifier
-
-    // Max withdraw
-    let withdraw = this.valuation.availableSetupCollateral
-      .div(depositNoteValueModifier)
-      .div(lamportPrice)
-      .asTokenAmount(pool.decimals)
-    withdraw = TokenAmount.min(withdraw, depositBalance)
-    withdraw = TokenAmount.min(withdraw, pool.vault)
-    withdraw = TokenAmount.max(withdraw, zero)
-
-    // Max borrow
-    let borrow = this.valuation.availableSetupCollateral
-      .div(Number128.ONE.add(Number128.ONE.div(MarginAccount.SETUP_LEVERAGE_FRACTION.mul(loanNoteValueModifier))))
-      .div(lamportPrice)
-      .asTokenAmount(pool.decimals)
-    borrow = TokenAmount.min(borrow, pool.vault)
-    borrow = TokenAmount.max(borrow, zero)
-
-    // Max repay
-    const repay = TokenAmount.min(loanBalance, walletAmount)
-
-    // Max swap
-    const swap = withdraw
-
-    // Max transfer
-    const transfer = withdraw
-
-    return {
-      deposit,
-      withdraw,
-      borrow,
-      repay,
-      swap,
-      transfer
-    }
+    this.poolPositions = new PoolMarginAccount(this, this.pools)
+    this.adapters = [this.poolPositions]
   }
 
   getSummary(): AccountSummary {
@@ -471,10 +339,14 @@ export class MarginAccount {
       depositedValue,
       borrowedValue,
       accountBalance,
-      availableCollateral: 0, // FIXME: total collateral * collateral weight - total claims
       cRatio,
       minCRatio
     }
+  }
+
+  getAdapter(adapterProgramId: Address): IAdapter | undefined {
+    const adapterAddress = translateAddress(adapterProgramId)
+    return this.adapters.find(adapter => adapter.adapterProgramId.equals(adapterAddress))
   }
 
   /** Get the list of positions on this account */
@@ -511,12 +383,12 @@ export class MarginAccount {
   }
 
   getPositionPrice(mint: PublicKey) {
-    // FIXME: make thiis more extensible
-    let price: PriceInfo | undefined
-    if (this.pools) {
-      price = Pool.getPrice(mint, Object.values(this.pools))
+    for (const adapter of this.adapters) {
+      const price = adapter.getPrice(mint)
+      if (price) {
+        return price
+      }
     }
-    return price
   }
 
   setPositionPrice(mint: PublicKey, price: PriceInfo) {
@@ -680,11 +552,11 @@ export class MarginAccount {
     provider: AnchorProvider
     owner: Address
     seed?: number
-    pools?: Record<string, Pool>
+    pools: Record<string, Pool>
     walletTokens?: MarginWalletTokens
   }) {
     if (seed === undefined) {
-      seed = await this.getUnusedAccountSeed({ programs, provider, owner })
+      seed = await this.getUnusedAccountSeed({ programs, owner })
     }
     const marginAccount = new MarginAccount(programs, provider, owner, seed, pools, walletTokens)
     await marginAccount.createAccount()
@@ -702,27 +574,31 @@ export class MarginAccount {
    *   }}
    * @memberof MarginAccount
    */
-  static async getUnusedAccountSeed({
-    programs,
-    provider,
-    owner
-  }: {
-    programs: MarginPrograms
-    provider: AnchorProvider
-    owner: Address
-  }) {
-    let accounts = await MarginAccount.loadAllByOwner({ programs, provider, owner })
-    accounts = accounts.sort((a, b) => a.seed - b.seed)
+  static async getUnusedAccountSeed({ programs, owner }: { programs: MarginPrograms; owner: Address }) {
+    const ownerFilter: MemcmpFilter = {
+      memcmp: {
+        offset: 16,
+        bytes: owner.toString()
+      }
+    }
+    const infos: ProgramAccount<MarginAccountData>[] = await programs.margin.account.marginAccount.all([ownerFilter])
+    let seeds: number[] = []
+    for (let i = 0; i < infos.length; i++) {
+      const seed = bnToNumber(new BN(infos[i].account.userSeed, undefined, "le"))
+      seeds.push(seed)
+    }
+
+    seeds = seeds.sort((a, b) => a - b)
     // Return any gap found in account seeds
-    for (let i = 0; i < accounts.length; i++) {
-      const seed = accounts[i].seed
+    for (let i = 0; i < seeds.length; i++) {
+      const seed = seeds[i]
       if (seed !== i) {
         return seed
       }
     }
 
     // Return +1
-    return accounts.length
+    return seeds.length
   }
 
   /** Create the margin account using it's owner and seed. */
@@ -827,6 +703,15 @@ export class MarginAccount {
       })
       .instruction()
     instructions.push(instruction)
+  }
+
+  async withRefreshAllPositions({ instructions }: { instructions: TransactionInstruction[] }) {
+    for (const position of this.positions) {
+      const adapter = this.getAdapter(position.adapter)
+      if (adapter) {
+        await adapter.withRefreshPosition(instructions, position.token)
+      }
+    }
   }
 
   async registerPosition(tokenMint: Address): Promise<TransactionSignature> {
@@ -943,7 +828,9 @@ export class MarginAccount {
 
   // Get the remaining time on a liquidation
   getRemainingLiquidationTime() {
-    return this.info?.liquidationData?.startTime && Date.now() / 1000 - this.info?.liquidationData?.startTime.toNumber()
+    if (this.info?.liquidationData) {
+      return Date.now() / 1000 - bnToNumber(this.info.liquidationData.startTime)
+    }
   }
 
   async withAdapterInvoke({
