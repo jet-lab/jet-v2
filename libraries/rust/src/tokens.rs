@@ -17,16 +17,27 @@
 
 use solana_sdk::pubkey::Pubkey;
 
+/// The addresses of a token's product and price details.
+/// These are based on Pyth oracle accounts.
 #[derive(Clone, Copy)]
 pub struct TokenOracle {
+    /// Address of the Pyth price account
     pub price: Pubkey,
+    /// Address of the Pyth product account
     pub product: Pubkey,
 }
 
+/// A summarised struct of price information, used as a convenience when the
+/// full Pyth price information is not required.
 #[derive(Clone, Copy)]
 pub struct TokenPrice {
-    pub exponent: i32,
+    /// Token price
     pub price: i64,
+    /// Exponent of the price
+    pub exponent: i32,
+    /// Confidence interval of the price, in the same units as the price.
+    /// If a price is 100 and confidence is 2, the price range is 98 - 102.
     pub confidence: u64,
+    /// Token time-weighted average price
     pub twap: u64,
 }

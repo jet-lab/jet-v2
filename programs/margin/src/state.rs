@@ -380,7 +380,7 @@ impl MarginAccount {
         let timestamp = crate::util::get_timestamp();
 
         let mut past_due = false;
-        let mut debt = Number128::ZERO;
+        let mut liabilities = Number128::ZERO;
         let mut required_collateral = Number128::ZERO;
         let mut weighted_collateral = Number128::ZERO;
         let mut stale_collateral_list = vec![];
@@ -419,7 +419,7 @@ impl MarginAccount {
                     }
 
                     equity -= position.value();
-                    debt += position.value();
+                    liabilities += position.value();
                     required_collateral += position.required_collateral_value();
                 }
                 (PositionKind::Claim, Some(error)) => {
@@ -439,10 +439,11 @@ impl MarginAccount {
 
         Ok(Valuation {
             equity,
+            liabilities,
             past_due,
             required_collateral,
             weighted_collateral,
-            effective_collateral: weighted_collateral - debt,
+            effective_collateral: weighted_collateral - liabilities,
             stale_collateral_list,
         })
     }
@@ -946,6 +947,9 @@ impl Liquidation {
 pub struct Valuation {
     /// The net asset value for all positions registered in this account, ignoring collateral weights and max leverage
     pub equity: Number128,
+
+    /// The total liability value for all claims, ignoring max leverage.
+    pub liabilities: Number128,
 
     /// The amount of collateral that is required to cover price risk exposure from claim positions
     pub required_collateral: Number128,
