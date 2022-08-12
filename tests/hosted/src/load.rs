@@ -1,12 +1,12 @@
 use anchor_lang::prelude::Pubkey;
 use anyhow::Result;
+use jet_margin_sdk::util::asynchronous::MapAsync;
 use std::{str::FromStr, time::Duration};
 
 use crate::{
     context::test_context,
-    orchestrator::ONE,
     setup_helper::{create_tokens, create_users},
-    MapAsync,
+    test_user::ONE,
 };
 
 pub struct UnhealthyAccountsLoadTestScenario {

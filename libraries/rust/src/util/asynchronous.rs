@@ -7,8 +7,10 @@ use std::marker::Send;
 use std::time::Duration;
 use tokio::select;
 
+/// Execute iterator of asyncs in parallel and return a vec of the results
 #[async_trait]
 pub trait MapAsync<Item: Send>: Iterator<Item = Item> + Sized {
+    /// base case, execute all at once
     async fn map_async<
         Ret: std::fmt::Debug + Send,
         Fut: futures::Future<Output = Result<Ret>> + Send,
@@ -23,6 +25,7 @@ pub trait MapAsync<Item: Send>: Iterator<Item = Item> + Sized {
             .collect::<Result<Vec<Ret>>>()
     }
 
+    /// Execute only chunk_size at a time before starting the next chunk
     async fn map_async_chunked<
         Ret: std::fmt::Debug + Send + Clone,
         Fut: futures::Future<Output = Result<Ret>> + Send,
@@ -62,10 +65,12 @@ impl<Item: Send, Iter: Iterator<Item = Item> + Sized> MapAsync<Item> for Iter {}
 /// Useful since async lambdas are unstable
 #[async_trait]
 pub trait AndAsync: Sized {
+    /// combine item with a future result to return from a lambda
     async fn and<R, Fut: futures::Future<Output = R> + Send>(self, fut: Fut) -> (Self, R) {
         (self, fut.await)
     }
 
+    /// combine item with a future Result to return from a lambda
     async fn and_result<R, Fut: futures::Future<Output = Result<R>> + Send>(
         self,
         fut: Fut,
@@ -76,6 +81,7 @@ pub trait AndAsync: Sized {
 
 impl<T: Sized> AndAsync for T {}
 
+/// Execute job derived from a future builder, retrying with some frequency, with backoff. cancel all after a timeout
 pub async fn with_retries_and_timeout<T, Fut: Future<Output = T> + Send, F: Fn() -> Fut + Send>(
     f: F,
     first_delay: Duration,
@@ -84,6 +90,7 @@ pub async fn with_retries_and_timeout<T, Fut: Future<Output = T> + Send, F: Fn()
     Ok(tokio::time::timeout(Duration::from_secs(timeout), with_retries(f, first_delay)).await?)
 }
 
+/// Execute job derived from a future builder, retrying with some frequency, with backoff
 #[async_recursion]
 pub async fn with_retries<T, Fut: Future<Output = T> + Send, F: Fn() -> Fut + Send>(
     f: F,

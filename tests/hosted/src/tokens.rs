@@ -22,7 +22,9 @@ use std::time::Duration;
 use anyhow::{bail, Error};
 use bytemuck::Zeroable;
 
+use jet_margin_sdk::solana::transaction::{SendTransactionBuilder, TransactionBuilder};
 use jet_margin_sdk::tokens::{TokenOracle, TokenPrice};
+use jet_margin_sdk::util::asynchronous::with_retries_and_timeout;
 use solana_sdk::instruction::Instruction;
 use solana_sdk::program_pack::Pack;
 use solana_sdk::pubkey::Pubkey;
@@ -32,8 +34,6 @@ use solana_sdk::{system_instruction, system_program};
 use anchor_lang::{InstructionData, ToAccountMetas};
 
 use jet_simulation::{generate_keypair, send_and_confirm, solana_rpc_api::SolanaRpcClient};
-
-use crate::{with_retries_and_timeout, SendTransactionBuilder, TransactionBuilder};
 
 /// Utility for managing the creation of tokens and their prices
 /// in some kind of testing environment

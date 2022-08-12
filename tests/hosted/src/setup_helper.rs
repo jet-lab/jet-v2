@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use anyhow::{Error, Result};
 
 use jet_margin_sdk::tokens::TokenPrice;
+use jet_margin_sdk::util::asynchronous::MapAsync;
 use solana_sdk::native_token::LAMPORTS_PER_SOL;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::Signer;
@@ -12,8 +13,9 @@ use jet_metadata::TokenKind;
 use jet_simulation::{create_wallet, generate_keypair};
 use tokio::try_join;
 
-use crate::orchestrator::{create_swap_pools, SwapRegistry, TestLiquidator, TestUser, TokenPricer};
-use crate::MapAsync;
+use crate::pricing::TokenPricer;
+use crate::swap::{create_swap_pools, SwapRegistry};
+use crate::test_user::{TestLiquidator, TestUser};
 use crate::{
     context::{test_context, MarginTestContext},
     margin::MarginPoolSetupInfo,

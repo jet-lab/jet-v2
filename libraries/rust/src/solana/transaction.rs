@@ -11,11 +11,21 @@ use solana_sdk::{
 use std::cmp::{max, min};
 use std::sync::Arc;
 
-use crate::{clone_vec, Concat, Join, MapAsync};
+use crate::{
+    solana::keypair::clone_vec,
+    util::{
+        asynchronous::MapAsync,
+        data::{Concat, Join},
+    },
+};
 
+/// A group of instructions that are expected to be executed in the same transaction
+/// Can be merged with other TransactionBuilder instances with `cat`, `concat`, or `ijoin`
 #[derive(Debug, Default)]
 pub struct TransactionBuilder {
+    /// see above
     pub instructions: Vec<Instruction>,
+    /// required for the included instructions, does not include a payer
     pub signers: Vec<Keypair>,
 }
 
@@ -29,6 +39,7 @@ impl Clone for TransactionBuilder {
 }
 
 impl TransactionBuilder {
+    /// convert transaction to base64 string that would be submitted to rpc node
     pub fn encode(&self, hash: Hash, payer: &Keypair) -> Result<String> {
         let compiled = create_transaction(
             &self.signers.iter().collect::<Vec<&Keypair>>(),
@@ -60,6 +71,11 @@ impl Concat for TransactionBuilder {
 
 const MAX_TX_SIZE: usize = 1232;
 
+/// Combines all the instructions within each of the TransactionBuilders into the smallest
+///  possible number of TransactionBuilders that don't violate the rules:
+/// - instructions that were grouped must in a TransactionBuilder must end up in the same TransactionBuilder
+/// - transaction may not exceed size limit
+/// - instructions order is not modified
 pub fn condense(
     txs: &[TransactionBuilder],
     hash: Hash,
@@ -77,11 +93,10 @@ pub fn condense(
     }
 }
 
-pub fn find_first_condensed(
-    txs: &[TransactionBuilder],
-    hash: Hash,
-    payer: &Keypair,
-) -> Result<usize> {
+/// Searches efficiently for the largest continuous group of TransactionBuilders
+/// starting from index 0 that can be merged into a single transaction without
+/// exceeding the transaction size limit.
+fn find_first_condensed(txs: &[TransactionBuilder], hash: Hash, payer: &Keypair) -> Result<usize> {
     let mut try_len = txs.len();
     let mut bounds = (min(txs.len(), 1), try_len);
     loop {
@@ -123,10 +138,15 @@ fn create_transaction(
     ))
 }
 
+/// Implementers are expected to send a TransactionBuilder to a real or simulated solana network as a transaction
 #[async_trait]
 pub trait SendTransactionBuilder {
+    /// Converts a TransactionBuilder to a Transaction,
+    /// finalizing its set of instructions as the selection for the actual Transaction
     async fn compile(&self, tx: TransactionBuilder) -> Result<Transaction>;
+    /// Sends the transaction unchanged
     async fn send_and_confirm(&self, transaction: TransactionBuilder) -> Result<Signature>;
+    /// Send, minimizing number of transactions - see `condense` doc
     async fn send_and_confirm_condensed(
         &self,
         transactions: Vec<TransactionBuilder>,

@@ -18,20 +18,26 @@
 //! The margin swap module allows creating simulated swap pools
 //! to aid in testing margin swaps.
 
-use std::{collections::HashMap, sync::Arc};
-
 use anchor_lang::prelude::Pubkey;
 use anyhow::Error;
+use anyhow::Result;
 use async_trait::async_trait;
+use itertools::Itertools;
+use jet_margin_sdk::solana::transaction::{SendTransactionBuilder, TransactionBuilder};
 use jet_margin_sdk::swap::SwapPool;
-use jet_simulation::{generate_keypair, solana_rpc_api::SolanaRpcClient};
+use jet_margin_sdk::util::asynchronous::MapAsync;
+use jet_simulation::generate_keypair;
+use jet_simulation::solana_rpc_api::SolanaRpcClient;
 use jet_static_program_registry::{
     orca_swap_v1, orca_swap_v2, related_programs, spl_token_swap_v2,
 };
-use solana_sdk::{program_pack::Pack, signer::Signer, system_instruction};
+use solana_sdk::signature::Signer;
+use solana_sdk::{program_pack::Pack, system_instruction};
+use std::collections::HashMap;
+use std::sync::Arc;
 use tokio::try_join;
 
-use crate::{tokens::TokenManager, SendTransactionBuilder, TransactionBuilder};
+use crate::tokens::TokenManager;
 
 // register swap programs
 related_programs! {
@@ -40,6 +46,47 @@ related_programs! {
         orca_swap_v1::OrcaV1,
         orca_swap_v2::OrcaV2,
     ]}
+}
+
+pub type SwapRegistry = HashMap<Pubkey, HashMap<Pubkey, SwapPool>>;
+
+pub const ONE: u64 = 1_000_000_000;
+
+pub async fn create_swap_pools(
+    rpc: &Arc<dyn SolanaRpcClient>,
+    mints: &[Pubkey],
+) -> Result<SwapRegistry> {
+    let mut registry = SwapRegistry::new();
+    for (one, two, pool) in mints
+        .iter()
+        .combinations(2)
+        .map(|c| (*c[0], *c[1]))
+        .map_async(|(one, two)| create_and_insert(rpc, one, two))
+        .await?
+    {
+        registry.entry(one).or_default().insert(two, pool);
+        registry.entry(two).or_default().insert(one, pool);
+    }
+
+    Ok(registry)
+}
+
+async fn create_and_insert(
+    rpc: &Arc<dyn SolanaRpcClient>,
+    one: Pubkey,
+    two: Pubkey,
+) -> Result<(Pubkey, Pubkey, SwapPool)> {
+    let pool = SwapPool::configure(
+        rpc,
+        &orca_swap_v2::id(),
+        &one,
+        &two,
+        100_000_000 * ONE,
+        100_000_000 * ONE,
+    )
+    .await?;
+
+    Ok((one, two, pool))
 }
 
 #[async_trait]
