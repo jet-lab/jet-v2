@@ -89,7 +89,7 @@ jobs:
       - run: ./check hosted-tests-localnet
 
 
-  cargo-check:
+  cargo-lint:
     runs-on: ubuntu-latest
     container:
       image: jetprotocol/builder:root-solana1.10.35-anchor0.25.0-2
@@ -99,10 +99,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Get cargo-check cache
+      - name: Get cargo-lint cache
         uses: actions/cache@v3
         with:
-          key: cargo-check
+          key: cargo-lint
           path: |
             ~/.cargo/bin/
             ~/.cargo/registry/index/
@@ -110,7 +110,7 @@ jobs:
             ~/.cargo/git/db/
             target/debug
 
-      - run: ./check cargo-check
+      - run: ./check cargo-lint
 
 
   cargo-test:

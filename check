@@ -22,7 +22,7 @@ hosted-tests-localnet() {
 	tests/hosted/test_on_localnet.sh
 }
 
-cargo-check() {
+cargo-lint() {
 	cargo fmt --all --check
 	cargo clippy --all-targets -- -Dwarnings
 	cargo test --doc
@@ -38,7 +38,7 @@ cargo-test() {
 
 
 all() {
-	cargo-check
+	cargo-lint
 	cargo-test
 	anchor-test
 	hosted-tests-localnet
