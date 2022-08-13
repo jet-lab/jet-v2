@@ -7,6 +7,7 @@ import {
   TOKEN_PROGRAM_ID,
   ASSOCIATED_TOKEN_PROGRAM_ID
 } from "@solana/spl-token"
+import { closeAccount } from "@project-serum/serum/lib/token-instructions"
 import {
   PublicKey,
   SystemProgram,
@@ -28,7 +29,7 @@ import { findDerivedAccount } from "../../utils/pda"
 import { PriceInfo } from "../accountPosition"
 import { chunks, Number128, Number192, sendAll } from "../../utils"
 import { PositionTokenMetadata } from "../positionTokenMetadata"
-import { closeAccount } from "@project-serum/serum/lib/token-instructions"
+import orcaSwapPools from "../swap/orca-swap-pools.json"
 
 export type PoolAction = "deposit" | "withdraw" | "borrow" | "repay" | "swap" | "transfer"
 export interface MarginPoolAddresses {
@@ -884,20 +885,20 @@ export class Pool {
    * Transaction to swap tokens
    *
    * @param `marginAccount` - The margin account that will receive the deposit.
-   * @param `toPool` - The corresponding pool for the token being swapped to.
+   * @param `outputToken` - The corresponding pool for the token being swapped to.
    * @param `swapAmount` - The amount being swapped.
-   * @param `slippage` - The maximum percentage difference between the input amount and the minimum output amount.
+   * @param `minAmountOut` - The minimum output amount based on swapAmount and slippage.
    */
   async swap({
     marginAccount,
-    toPool,
+    outputToken,
     swapAmount,
-    slippage
+    minAmountOut
   }: {
     marginAccount: MarginAccount
-    toPool: Pool
+    outputToken: Pool
     swapAmount: TokenAmount
-    slippage: number
+    minAmountOut: TokenAmount
   }) {
     assert(marginAccount)
     assert(swapAmount)
@@ -917,15 +918,10 @@ export class Pool {
     await this.withSwap({
       instructions: instructions,
       marginAccount,
-      toPool,
+      outputToken,
       swapAmount,
-      slippage
+      minAmountOut
     })
-
-    // const fromPosition = marginAccount.positions.filter(pos => pos.token.equals(this.tokenMint))[0].address
-    // const toPosition = marginAccount.positions.filter(pos => pos.token.equals(toPool.tokenMint))[0].address
-    // await marginAccount.withUpdatePositionBalance({ instructions, position: fromPosition })
-    // await marginAccount.withUpdatePositionBalance({ instructions, position: toPosition })
 
     return await marginAccount.sendAndConfirm(instructions)
   }
@@ -933,99 +929,112 @@ export class Pool {
   async withSwap({
     instructions,
     marginAccount,
-    toPool,
+    outputToken,
     swapAmount,
-    slippage
+    minAmountOut
   }: {
     instructions: TransactionInstruction[]
     marginAccount: MarginAccount
-    toPool: Pool
+    outputToken: Pool
     swapAmount: TokenAmount
-    slippage: number
+    minAmountOut: TokenAmount
   }): Promise<void> {
-    // Minimum amount output based on input slippage
-    const minAmountOut = swapAmount.sub(swapAmount.muln(slippage))
-
-    // Transit source account creation
+    // Transit source account fetch / creation
     const transitSourceAccount = await getAssociatedTokenAddress(this.addresses.tokenMint, marginAccount.address, true)
-    assert(transitSourceAccount)
-    const transitSourceAccountIx = createAssociatedTokenAccountInstruction(
-      marginAccount.addresses.owner,
-      transitSourceAccount,
-      marginAccount.address,
-      this.addresses.tokenMint,
-      TOKEN_PROGRAM_ID,
-      ASSOCIATED_TOKEN_PROGRAM_ID
-    )
-    instructions.push(transitSourceAccountIx)
+    const transitSourceBuffer = await marginAccount.provider.connection.getAccountInfo(transitSourceAccount)
+    if (transitSourceBuffer === null) {
+      const transitSourceAccountIx = createAssociatedTokenAccountInstruction(
+        marginAccount.addresses.owner,
+        transitSourceAccount,
+        marginAccount.address,
+        this.addresses.tokenMint,
+        TOKEN_PROGRAM_ID,
+        ASSOCIATED_TOKEN_PROGRAM_ID
+      )
+      instructions.push(transitSourceAccountIx)
+    }
 
-    // Transit destination account creation
+    // Transit destination account fetch / creation
     const transitDestinationAccount = await getAssociatedTokenAddress(
-      toPool.addresses.tokenMint,
+      outputToken.addresses.tokenMint,
       marginAccount.address,
       true
     )
-    assert(transitDestinationAccount)
-    const transitDestinationAccountIx = createAssociatedTokenAccountInstruction(
-      marginAccount.addresses.owner,
-      transitDestinationAccount,
-      marginAccount.address,
-      toPool.addresses.tokenMint,
-      TOKEN_PROGRAM_ID,
-      ASSOCIATED_TOKEN_PROGRAM_ID
-    )
-    instructions.push(transitDestinationAccountIx)
+    const transitDestinationBuffer = await marginAccount.provider.connection.getAccountInfo(transitDestinationAccount)
+    if (transitDestinationBuffer === null) {
+      const transitDestinationAccountIx = createAssociatedTokenAccountInstruction(
+        marginAccount.addresses.owner,
+        transitDestinationAccount,
+        marginAccount.address,
+        outputToken.addresses.tokenMint,
+        TOKEN_PROGRAM_ID,
+        ASSOCIATED_TOKEN_PROGRAM_ID
+      )
+      instructions.push(transitDestinationAccountIx)
+    }
+
+    // Source deposit position fetch / creation
+    const sourceAccount = await marginAccount.withGetOrCreatePosition({
+      positionTokenMint: this.addresses.depositNoteMint,
+      instructions
+    })
+
+    // Destination deposit position fetch / creation
+    const destinationAccount = await marginAccount.withGetOrCreatePosition({
+      positionTokenMint: outputToken.addresses.depositNoteMint,
+      instructions
+    })
 
     // Swap
-    const swapIx = await this.programs.marginSwap.methods
-      .marginSwap(swapAmount.lamports, minAmountOut.lamports)
-      .accounts({
-        marginAccount: marginAccount.address,
-        sourceAccount: this.depositNoteMetadata.address,
-        destinationAccount: toPool.depositNoteMetadata.address,
-        transitSourceAccount,
-        transitDestinationAccount,
-        marginPoolProgram: this.programs.marginPool.programId,
-        tokenProgram: TOKEN_PROGRAM_ID,
-        sourceMarginPool: {
-          marginPool: this.address,
-          vault: this.addresses.vault,
-          depositNoteMint: this.addresses.depositNoteMint
-        },
-        destinationMarginPool: {
-          marginPool: toPool.address,
-          vault: toPool.addresses.vault,
-          depositNoteMint: toPool.addresses.depositNoteMint
-        },
-        // TODO: hardcoding SOL/USDC Orca pool here for now
-        swapInfo: {
-          swapPool: new PublicKey("AmHUjHKfSFP34D4VgPsviFNjWrvTN761Yazvv2eKAsSz"),
-          authority: new PublicKey("DsEduNnNjuWXMJNhajHZEj93TB4HePsN5GqijrzKNPj6"),
-          vaultInto: new PublicKey("3vnX3jx5EDeraXUBSLDZbDZM3zz9CE8jd9xAeTp9L8bo"),
-          vaultFrom: new PublicKey("34YKkqGeqGfv3EJDV79Ewga67rZUgQTNDRwYQGoxMDmi"),
-          tokenMint: new PublicKey("BNbehZgqKVQpdMZiAULM3589B7juRdiBemfWS9awHCaw"),
-          feeAccount: new PublicKey("Hykjqd4zjw44AGgGspBMdPsopv5F7j96becedqRohdEQ"),
-          swapProgram: new PublicKey("SwaPpA9LAaLfeLi3a68M4DjnLqgtticKg6CnyNwgAC8")
-        }
-      })
-      .instruction()
-    instructions.push(swapIx)
+    await marginAccount.withAdapterInvoke({
+      instructions,
+      adapterProgram: this.programs.config.marginSwapProgramId,
+      // TODO: don't hard code this pubkey
+      adapterMetadata: new PublicKey("DUheebnZrHMGzEMbs9FpPFTkbmVdZnyW92CVwrYd3aGa"),
+      adapterInstruction: await this.programs.marginSwap.methods
+        .marginSwap(swapAmount.lamports, minAmountOut.lamports)
+        .accounts({
+          marginAccount: marginAccount.address,
+          transitSourceAccount,
+          transitDestinationAccount,
+          sourceAccount,
+          destinationAccount,
+          marginPoolProgram: this.programs.marginPool.programId,
+          tokenProgram: TOKEN_PROGRAM_ID,
+          sourceMarginPool: {
+            marginPool: this.address,
+            vault: this.addresses.vault,
+            depositNoteMint: this.addresses.depositNoteMint
+          },
+          destinationMarginPool: {
+            marginPool: outputToken.address,
+            vault: outputToken.addresses.vault,
+            depositNoteMint: outputToken.addresses.depositNoteMint
+          },
+          swapInfo: orcaSwapPools[`${this.symbol}/${outputToken.symbol}`]
+        })
+        .instruction()
+    })
 
     // Transit source account closure
-    const closeTransitSourceAccountIx = closeAccount({
-      source: transitSourceAccount,
-      destination: marginAccount.addresses.owner,
-      owner: marginAccount.address
-    })
-    instructions.push(closeTransitSourceAccountIx)
+    // const closeTransitSourceAccountIx = closeAccount({
+    //   source: transitSourceAccount,
+    //   destination: marginAccount.addresses.owner,
+    //   owner: marginAccount.address
+    // })
+    // instructions.push(closeTransitSourceAccountIx)
 
-    // Transit destination account closure
-    const closeTransitDestinationAccountIx = closeAccount({
-      source: transitDestinationAccount,
-      destination: marginAccount.addresses.owner,
-      owner: marginAccount.address
-    })
-    instructions.push(closeTransitDestinationAccountIx)
+    // // Transit destination account closure
+    // const closeTransitDestinationAccountIx = closeAccount({
+    //   source: transitDestinationAccount,
+    //   destination: marginAccount.addresses.owner,
+    //   owner: marginAccount.address
+    // })
+    // instructions.push(closeTransitDestinationAccountIx)
+
+    // Update account positions
+    await marginAccount.withUpdatePositionBalance({ instructions, position: sourceAccount })
+    await marginAccount.withUpdatePositionBalance({ instructions, position: destinationAccount })
   }
 
   async withRegisterLoan(instructions: TransactionInstruction[], marginAccount: MarginAccount): Promise<Address> {
@@ -1064,7 +1073,7 @@ export class Pool {
       this.addresses.loanNoteMint
     )
     await marginAccount.withAdapterInvoke({
-      instructions: instructions,
+      instructions,
       adapterProgram: this.programs.config.marginPoolProgramId,
       adapterMetadata: this.addresses.marginPoolAdapterMetadata,
       adapterInstruction: await this.programs.marginPool.methods
