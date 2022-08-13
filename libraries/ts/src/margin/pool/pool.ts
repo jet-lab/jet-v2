@@ -996,15 +996,15 @@ export class Pool {
     let swapSourceVault: string
     let swapDestinationVault: string
     if (
-      swapPoolAccounts.tokenA === this.addresses.tokenMint &&
-      swapPoolAccounts.tokenB === outputToken.addresses.tokenMint
+      swapPoolAccounts.tokenMintA === this.addresses.tokenMint.toBase58() &&
+      swapPoolAccounts.tokenMintB === outputToken.addresses.tokenMint.toBase58()
     ) {
       // Swapping from token A to token B on swap pool
       swapSourceVault = swapPoolAccounts.tokenA
       swapDestinationVault = swapPoolAccounts.tokenB
     } else if (
-      swapPoolAccounts.tokenB === this.addresses.tokenMint &&
-      swapPoolAccounts.tokenA === outputToken.addresses.tokenMint
+      swapPoolAccounts.tokenMintB === this.addresses.tokenMint.toBase58() &&
+      swapPoolAccounts.tokenMintA === outputToken.addresses.tokenMint.toBase58()
     ) {
       // Swapping from token B to token A on swap pool
       swapSourceVault = swapPoolAccounts.tokenB
