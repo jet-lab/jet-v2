@@ -435,7 +435,7 @@ export class MarginAccount {
     const repay = TokenAmount.min(loanBalance, walletAmount)
 
     // Max swap
-    const swap = withdraw
+    const swap = depositBalance.add(borrow)
 
     // Max transfer
     const transfer = withdraw
