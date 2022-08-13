@@ -985,12 +985,45 @@ export class Pool {
       instructions
     })
 
+    // TODO: check tokenMintA and tokenMintB for matching pools.
+    // If no pool is found, a user would have to swap twice from A > X > B,
+    // so we should ideally check matching pools on the UI before getting here.
+    const swapPoolAccounts = orcaSwapPools[`${this.symbol}/${outputToken.symbol}`]
+
+    // Determine the direction of the swap based on token mints.
+    // The instruction relies on the swap `vaultFrom` and `vaultInto` to determine
+    // the direction of the swap.
+    let swapSourceVault: string
+    let swapDestinationVault: string
+    if (
+      swapPoolAccounts.tokenA === this.addresses.tokenMint &&
+      swapPoolAccounts.tokenB === outputToken.addresses.tokenMint
+    ) {
+      // Swapping from token A to token B on swap pool
+      swapSourceVault = swapPoolAccounts.tokenA
+      swapDestinationVault = swapPoolAccounts.tokenB
+    } else if (
+      swapPoolAccounts.tokenB === this.addresses.tokenMint &&
+      swapPoolAccounts.tokenA === outputToken.addresses.tokenMint
+    ) {
+      // Swapping from token B to token A on swap pool
+      swapSourceVault = swapPoolAccounts.tokenB
+      swapDestinationVault = swapPoolAccounts.tokenA
+    } else {
+      // Pedantic. We can't reach this condition if correct pool is selected
+      throw new Error("Invalid swap pool selected")
+    }
+
     // Swap
     await marginAccount.withAdapterInvoke({
       instructions,
       adapterProgram: this.programs.config.marginSwapProgramId,
-      // TODO: don't hard code this pubkey
-      adapterMetadata: new PublicKey("DUheebnZrHMGzEMbs9FpPFTkbmVdZnyW92CVwrYd3aGa"),
+      // TODO: check if this evaluates to DUheebnZ below
+      adapterMetadata: findDerivedAccount(
+        this.programs.config.metadataProgramId,
+        this.programs.config.marginSwapProgramId
+      ),
+      // adapterMetadata: new PublicKey("DUheebnZrHMGzEMbs9FpPFTkbmVdZnyW92CVwrYd3aGa"),
       adapterInstruction: await this.programs.marginSwap.methods
         .marginSwap(swapAmount.lamports, minAmountOut.lamports)
         .accounts({
@@ -1011,7 +1044,15 @@ export class Pool {
             vault: outputToken.addresses.vault,
             depositNoteMint: outputToken.addresses.depositNoteMint
           },
-          swapInfo: orcaSwapPools[`${this.symbol}/${outputToken.symbol}`]
+          swapInfo: {
+            swapPool: swapPoolAccounts.swapPool,
+            authority: findDerivedAccount(new PublicKey(swapPoolAccounts.swapProgram), swapPoolAccounts.swapPool),
+            vaultFrom: swapSourceVault,
+            vaultInto: swapDestinationVault,
+            tokenMint: swapPoolAccounts.poolMint,
+            feeAccount: swapPoolAccounts.feeAccount,
+            swapProgram: swapPoolAccounts.swapProgram
+          }
         })
         .instruction()
     })
