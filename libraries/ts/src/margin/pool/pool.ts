@@ -72,7 +72,7 @@ export class Pool {
     return Number192.fromDecimal(this.info?.vault.amount.lamports ?? new BN(0), 0)
   }
   get vault(): TokenAmount {
-    return this.vaultRaw.asTokenAmount(this.decimals)
+    return this.vaultRaw.toTokenAmount(this.decimals)
   }
   get borrowedTokensRaw() {
     if (!this.info) {
@@ -81,13 +81,13 @@ export class Pool {
     return Number192.fromBits(this.info.marginPool.borrowedTokens)
   }
   get borrowedTokens(): TokenAmount {
-    return this.borrowedTokensRaw.asTokenAmount(this.decimals)
+    return this.borrowedTokensRaw.toTokenAmount(this.decimals)
   }
   get totalValueRaw(): Number192 {
     return this.borrowedTokensRaw.add(this.vaultRaw)
   }
   get totalValue(): TokenAmount {
-    return this.totalValueRaw.asTokenAmount(this.decimals)
+    return this.totalValueRaw.toTokenAmount(this.decimals)
   }
   get uncollectedFeesRaw(): Number192 {
     if (!this.info) {
@@ -96,7 +96,7 @@ export class Pool {
     return Number192.fromBits(this.info.marginPool.uncollectedFees)
   }
   get uncollectedFees(): TokenAmount {
-    return this.uncollectedFeesRaw.asTokenAmount(this.decimals)
+    return this.uncollectedFeesRaw.toTokenAmount(this.decimals)
   }
   get utilizationRate(): number {
     return this.totalValue.tokens === 0 ? 0 : this.borrowedTokens.tokens / this.totalValue.tokens
@@ -260,12 +260,12 @@ export class Pool {
     const depositNoteExchangeRate = this.depositNoteExchangeRate()
     const loanNoteExchangeRate = this.loanNoteExchangeRate()
 
-    const depositNotePrice = priceValue.mul(depositNoteExchangeRate).asU64Rounded(pythPrice.exponent)
-    const depositNoteConf = confValue.mul(depositNoteExchangeRate).asU64Rounded(pythPrice.exponent)
-    const depositNoteTwap = twapValue.mul(depositNoteExchangeRate).asU64Rounded(pythPrice.exponent)
-    const loanNotePrice = priceValue.mul(loanNoteExchangeRate).asU64Rounded(pythPrice.exponent)
-    const loanNoteConf = confValue.mul(loanNoteExchangeRate).asU64Rounded(pythPrice.exponent)
-    const loanNoteTwap = twapValue.mul(loanNoteExchangeRate).asU64Rounded(pythPrice.exponent)
+    const depositNotePrice = priceValue.mul(depositNoteExchangeRate).toU64Rounded(pythPrice.exponent)
+    const depositNoteConf = confValue.mul(depositNoteExchangeRate).toU64Rounded(pythPrice.exponent)
+    const depositNoteTwap = twapValue.mul(depositNoteExchangeRate).toU64Rounded(pythPrice.exponent)
+    const loanNotePrice = priceValue.mul(loanNoteExchangeRate).toU64Rounded(pythPrice.exponent)
+    const loanNoteConf = confValue.mul(loanNoteExchangeRate).toU64Rounded(pythPrice.exponent)
+    const loanNoteTwap = twapValue.mul(loanNoteExchangeRate).toU64Rounded(pythPrice.exponent)
     return {
       priceValue,
       depositNotePrice,
@@ -356,8 +356,8 @@ export class Pool {
     }
   }
 
-  static getPrice(mint: PublicKey, pools: Pool[]): PriceInfo | undefined {
-    for (const pool of pools) {
+  static getPrice(mint: PublicKey, pools: Record<any, Pool> | Pool[]): PriceInfo | undefined {
+    for (const pool of Object.values(pools)) {
       const price = pool.getPrice(mint)
       if (price) {
         return price
@@ -369,9 +369,15 @@ export class Pool {
    * Transactionss
    ****************************/
 
-  async marginRefreshAllPositionPrices({ pools, marginAccount }: { pools: Pool[]; marginAccount: MarginAccount }) {
+  async marginRefreshAllPositionPrices({
+    pools,
+    marginAccount
+  }: {
+    pools: Record<any, Pool> | Pool[]
+    marginAccount: MarginAccount
+  }) {
     const instructions: TransactionInstruction[] = []
-    for (const pool of pools) {
+    for (const pool of Object.values(pools)) {
       await pool.withMarginRefreshPositionPrice({ instructions, marginAccount })
     }
     await marginAccount.provider.sendAndConfirm(new Transaction().add(...instructions))
@@ -389,10 +395,10 @@ export class Pool {
     marginAccount
   }: {
     instructions: TransactionInstruction[]
-    pools: Pool[]
+    pools: Record<any, Pool> | Pool[]
     marginAccount: MarginAccount
   }) {
-    for (const pool of pools) {
+    for (const pool of Object.values(pools)) {
       await pool.withMarginRefreshPositionPrice({ instructions, marginAccount })
     }
   }
@@ -511,7 +517,7 @@ export class Pool {
     destination
   }: {
     marginAccount: MarginAccount
-    pools: Pool[]
+    pools: Record<any, Pool> | Pool[]
     change: PoolTokenChange
     destination?: TokenAddress
   }): Promise<string> {
@@ -529,7 +535,11 @@ export class Pool {
     })
     assert(depositPosition)
 
-    await this.withMarginRefreshAllPositionPrices({ instructions: refreshInstructions, pools, marginAccount })
+    await this.withMarginRefreshAllPositionPrices({
+      instructions: refreshInstructions,
+      pools: Object.values(pools),
+      marginAccount
+    })
 
     const loanNoteAccount = await this.withGetOrCreateLoanPosition(instructionsInstructions, marginAccount)
 
@@ -653,7 +663,7 @@ export class Pool {
     signer
   }: {
     marginAccount: MarginAccount
-    pools: Pool[]
+    pools: Record<any, Pool> | Pool[]
     source?: TokenAddress
     change: PoolTokenChange
     closeLoan?: boolean
@@ -668,7 +678,11 @@ export class Pool {
     })
     assert(depositPosition)
 
-    await this.withMarginRefreshAllPositionPrices({ instructions: refreshInstructions, pools, marginAccount })
+    await this.withMarginRefreshAllPositionPrices({
+      instructions: refreshInstructions,
+      pools: Object.values(pools),
+      marginAccount
+    })
 
     const loanNoteAccount = await this.withGetOrCreateLoanPosition(instructions, marginAccount)
 
@@ -800,7 +814,7 @@ export class Pool {
     destination = TokenFormat.unwrappedSol
   }: {
     marginAccount: MarginAccount
-    pools: Pool[]
+    pools: Record<any, Pool> | Pool[]
     change: PoolTokenChange
     destination?: TokenAddress
   }) {
@@ -812,7 +826,11 @@ export class Pool {
       throw new Error("No deposit position")
     }
 
-    await this.withMarginRefreshAllPositionPrices({ instructions: refreshInstructions, pools, marginAccount })
+    await this.withMarginRefreshAllPositionPrices({
+      instructions: refreshInstructions,
+      pools: Object.values(pools),
+      marginAccount
+    })
     await marginAccount.withUpdateAllPositionBalances({ instructions: refreshInstructions })
     await this.withWithdraw({
       instructions,
@@ -1000,13 +1018,13 @@ export class Pool {
     const borrowRate = Pool.getBorrowRate(depositCcRate)
 
     const depositNoteValueModifer = this.depositNoteMetadata.valueModifier
-    const amountValue = Number128.from(numberToBn(amount * this._prices.priceValue.asNumber()))
+    const amountValue = Number128.from(numberToBn(amount * this._prices.priceValue.toNumber()))
 
-    const requiredCollateral = marginAccount.valuation.requiredCollateral.asNumber()
+    const requiredCollateral = marginAccount.valuation.requiredCollateral.toNumber()
     const weightedCollateral = marginAccount.valuation.weightedCollateral
       .add(amountValue.mul(depositNoteValueModifer))
-      .asNumber()
-    const liabilities = marginAccount.valuation.liabilities.asNumber()
+      .toNumber()
+    const liabilities = marginAccount.valuation.liabilities.toNumber()
 
     const riskIndicator = marginAccount.computeRiskIndicator(requiredCollateral, weightedCollateral, liabilities)
 
@@ -1037,13 +1055,13 @@ export class Pool {
     const borrowRate = Pool.getBorrowRate(depositCcRate)
 
     const depositNoteValueModifer = this.depositNoteMetadata.valueModifier
-    const amountValue = Number128.from(numberToBn(amount * this._prices.priceValue.asNumber()))
+    const amountValue = Number128.from(numberToBn(amount * this._prices.priceValue.toNumber()))
 
-    const requiredCollateral = marginAccount.valuation.requiredCollateral.asNumber()
+    const requiredCollateral = marginAccount.valuation.requiredCollateral.toNumber()
     const weightedCollateral = marginAccount.valuation.weightedCollateral
       .sub(amountValue.mul(depositNoteValueModifer))
-      .asNumber()
-    const liabilities = marginAccount.valuation.liabilities.asNumber()
+      .toNumber()
+    const liabilities = marginAccount.valuation.liabilities.toNumber()
 
     const riskIndicator = marginAccount.computeRiskIndicator(
       requiredCollateral,
@@ -1069,13 +1087,13 @@ export class Pool {
     const borrowRate = Pool.getBorrowRate(depositCcRate)
 
     const loanNoteValueModifer = this.loanNoteMetadata.valueModifier
-    const amountValue = Number128.from(numberToBn(amount * this._prices.priceValue.asNumber()))
+    const amountValue = Number128.from(numberToBn(amount * this._prices.priceValue.toNumber()))
 
     const requireCollateral = marginAccount.valuation.requiredCollateral
       .add(amountValue.div(loanNoteValueModifer))
-      .asNumber()
-    const weightedCollateral = marginAccount.valuation.weightedCollateral.asNumber()
-    const liabilities = marginAccount.valuation.liabilities.add(amountValue).asNumber()
+      .toNumber()
+    const weightedCollateral = marginAccount.valuation.weightedCollateral.toNumber()
+    const liabilities = marginAccount.valuation.liabilities.add(amountValue).toNumber()
 
     const riskIndicator = marginAccount.computeRiskIndicator(requireCollateral, weightedCollateral, liabilities)
 
@@ -1106,13 +1124,13 @@ export class Pool {
     const borrowRate = Pool.getBorrowRate(depositCcRate)
 
     const loanNoteValueModifer = this.loanNoteMetadata.valueModifier
-    const amountValue = Number128.from(numberToBn(amount * this._prices.priceValue.asNumber()))
+    const amountValue = Number128.from(numberToBn(amount * this._prices.priceValue.toNumber()))
 
     const requiredCollateral = marginAccount.valuation.requiredCollateral
       .sub(amountValue.div(loanNoteValueModifer))
-      .asNumber()
-    const weightedCollateral = marginAccount.valuation.weightedCollateral.asNumber()
-    const liabilities = marginAccount.valuation.liabilities.sub(amountValue).asNumber()
+      .toNumber()
+    const weightedCollateral = marginAccount.valuation.weightedCollateral.toNumber()
+    const liabilities = marginAccount.valuation.liabilities.sub(amountValue).toNumber()
 
     const riskIndicator = marginAccount.computeRiskIndicator(
       requiredCollateral >= 0 ? requiredCollateral : 0, // ok - guarded by G1
@@ -1151,15 +1169,15 @@ export class Pool {
 
     const depositNoteValueModifer = this.depositNoteMetadata.valueModifier
     const loanNoteValueModifer = this.loanNoteMetadata.valueModifier
-    const amountValue = Number128.from(numberToBn(amount * this._prices.priceValue.asNumber()))
+    const amountValue = Number128.from(numberToBn(amount * this._prices.priceValue.toNumber()))
 
     const requiredCollateral = marginAccount.valuation.requiredCollateral
       .sub(amountValue.div(loanNoteValueModifer))
-      .asNumber()
+      .toNumber()
     const weightedCollateral = marginAccount.valuation.weightedCollateral
       .sub(amountValue.mul(depositNoteValueModifer))
-      .asNumber()
-    const liabilities = marginAccount.valuation.liabilities.sub(amountValue).asNumber()
+      .toNumber()
+    const liabilities = marginAccount.valuation.liabilities.sub(amountValue).toNumber()
 
     const riskIndicator = marginAccount.computeRiskIndicator(
       requiredCollateral > 0 ? requiredCollateral : 0, // ok - guarded by G1
@@ -1186,15 +1204,15 @@ export class Pool {
 
     const depositNoteValueModifer = this.depositNoteMetadata.valueModifier
     const loanNoteValueModifer = this.loanNoteMetadata.valueModifier
-    const amountValue = Number128.from(numberToBn(amount * this._prices.priceValue.asNumber()))
+    const amountValue = Number128.from(numberToBn(amount * this._prices.priceValue.toNumber()))
 
     const requiredCollateral = marginAccount.valuation.requiredCollateral
       .add(amountValue.div(loanNoteValueModifer))
-      .asNumber()
+      .toNumber()
     const weightedCollateral = marginAccount.valuation.weightedCollateral
       .add(amountValue.mul(depositNoteValueModifer))
-      .asNumber()
-    const liabilities = marginAccount.valuation.liabilities.add(amountValue).asNumber()
+      .toNumber()
+    const liabilities = marginAccount.valuation.liabilities.add(amountValue).toNumber()
 
     const riskIndicator = marginAccount.computeRiskIndicator(requiredCollateral, weightedCollateral, liabilities)
 

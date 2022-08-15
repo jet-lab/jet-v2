@@ -11,16 +11,16 @@ export class Number128 {
 
   constructor(private _bn: BN) {}
 
-  asNumber() {
+  toNumber() {
     return bnToNumber(this._bn) / 10 ** Number128.PRECISION
   }
 
-  asTokenAmount(decimals: number) {
-    return TokenAmount.lamports(this.asBn(0), decimals)
+  toTokenAmount(decimals: number) {
+    return TokenAmount.lamports(this.toBn(0), decimals)
   }
 
   /** Removes the fractional component from the number.*/
-  asBn(exponent: number): BN {
+  toBn(exponent: number): BN {
     let extraPrecision = Number128.PRECISION + exponent
     let precValue = Number128.tenPow(new BN(Math.abs(extraPrecision)))
 
@@ -32,8 +32,8 @@ export class Number128 {
   }
 
   /** Removes the fractional component from the number. Throws if the number is not within the range of a u64. */
-  asU64(exponent: number): BN {
-    const targetValue = this.asBn(exponent)
+  toU64(exponent: number): BN {
+    const targetValue = this.toBn(exponent)
 
     if (targetValue.gt(Number128.U64_MAX)) {
       throw new Error("cannot convert to u64 due to overflow")
