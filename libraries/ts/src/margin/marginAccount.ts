@@ -87,8 +87,8 @@ export interface MarginWalletTokens {
 
 export class MarginAccount {
   static readonly SEED_MAX_VALUE = 65535
-  static readonly RISK_WARNING_LEVEL = 0.9
-  static readonly RISK_CRITICAL_LEVEL = 0.95
+  static readonly RISK_WARNING_LEVEL = 0.8
+  static readonly RISK_CRITICAL_LEVEL = 0.9
   static readonly RISK_LIQUIDATION_LEVEL = 1
   static readonly SETUP_LEVERAGE_FRACTION = Number128.fromDecimal(new BN(50), -2)
 

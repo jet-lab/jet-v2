@@ -906,11 +906,12 @@ export class Pool {
     // If swapping on margin
     const accountPoolPosition = marginAccount.poolPositions[this.symbol ?? ""]
     if (swapAmount.gt(accountPoolPosition.depositBalance) && marginAccount.pools) {
+      await marginAccount.refresh()
       const difference = swapAmount.sub(accountPoolPosition.depositBalance)
       await this.marginBorrow({
         marginAccount,
         pools: Object.values(marginAccount.pools),
-        change: PoolTokenChange.setTo(accountPoolPosition.loanBalance.add(difference))
+        change: PoolTokenChange.shiftBy(accountPoolPosition.loanBalance.add(difference))
       })
     }
 
@@ -1000,15 +1001,15 @@ export class Pool {
       swapPoolAccounts.tokenMintB === outputToken.addresses.tokenMint.toBase58()
     ) {
       // Swapping from token A to token B on swap pool
-      swapSourceVault = swapPoolAccounts.tokenA
-      swapDestinationVault = swapPoolAccounts.tokenB
+      swapSourceVault = swapPoolAccounts.tokenB
+      swapDestinationVault = swapPoolAccounts.tokenA
     } else if (
       swapPoolAccounts.tokenMintB === this.addresses.tokenMint.toBase58() &&
       swapPoolAccounts.tokenMintA === outputToken.addresses.tokenMint.toBase58()
     ) {
       // Swapping from token B to token A on swap pool
-      swapSourceVault = swapPoolAccounts.tokenB
-      swapDestinationVault = swapPoolAccounts.tokenA
+      swapSourceVault = swapPoolAccounts.tokenA
+      swapDestinationVault = swapPoolAccounts.tokenB
     } else {
       // Pedantic. We can't reach this condition if correct pool is selected
       throw new Error("Invalid swap pool selected")
