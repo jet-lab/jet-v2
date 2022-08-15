@@ -32,7 +32,6 @@ use pyth_sdk_solana::PriceFeed;
 use solana_sdk::{program_pack::Pack, pubkey::Pubkey};
 use spl_token_swap::state::SwapV1;
 
-
 /// Addresses of an [`spl_token_swap`] compatible swap pool, required when using
 /// [`jet_margin_swap`].
 ///
