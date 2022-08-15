@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use anyhow::Error;
 
-use jet_margin_sdk::{spl_swap::SwapPool, tokens::TokenPrice};
+use jet_margin_sdk::{spl_swap::SplSwapPool, tokens::TokenPrice};
 use jet_static_program_registry::{orca_swap_v1, orca_swap_v2, spl_token_swap_v2};
 use solana_sdk::native_token::LAMPORTS_PER_SOL;
 use solana_sdk::pubkey::Pubkey;
@@ -110,7 +110,7 @@ async fn swap_test_impl(swap_program_id: Pubkey) -> Result<(), anyhow::Error> {
     user_b.create_account().await?;
 
     // Create a swap pool with sufficient liquidity
-    let swap_pool = SwapPool::configure(
+    let swap_pool = SplSwapPool::configure(
         &ctx.rpc,
         &swap_program_id,
         &env.usdc,
@@ -126,8 +126,9 @@ async fn swap_test_impl(swap_program_id: Pubkey) -> Result<(), anyhow::Error> {
     supported_mints.insert(env.tsol);
 
     // TODO - fixme: params for get_pools
-    // let swap_pools = SwapPool::get_pools(&ctx.rpc, supported_mints, swap_program_id).await?;
-    // assert_eq!(swap_pools.len(), 1);
+    let swap_pools = SplSwapPool::get_pools(&ctx.rpc, &supported_mints, swap_program_id).await.unwrap();
+    println!("***************************** {}", swap_pools.capacity());
+    // assert_eq!(swap_pools.capacity(), 1);
     // assert_eq!(swap_pool.pool, swap_pools.first().unwrap().pool);
 
     let usdc_transit_source = ctx
