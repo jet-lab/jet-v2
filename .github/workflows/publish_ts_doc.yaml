@@ -1,0 +1,41 @@
+name: Publish TS Doc
+
+on:
+  push:
+    branches: 
+      - "master"
+    paths:
+      - "libraries/ts/src/**"
+
+jobs:
+  typedoc:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup Nodejs
+        uses: actions/setup-node@v2
+        with:
+          cache: npm
+
+      - name: Install TypeDoc
+        run: npm i --no-save
+
+      - name: Build Documentation
+        run: npm run docs
+
+      - name: Publish
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs
+
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Publish Release
+        uses: softprops/action-gh-release@v1
