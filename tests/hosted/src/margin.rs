@@ -25,7 +25,7 @@ use anyhow::{bail, Error};
 
 use jet_margin::{MarginAccount, PositionKind};
 use jet_margin_sdk::ix_builder::{ControlIxBuilder, MarginPoolConfiguration, MarginPoolIxBuilder};
-use jet_margin_sdk::spl_swap::SwapPool;
+use jet_margin_sdk::spl_swap::SplSwapPool;
 use jet_margin_sdk::tokens::TokenOracle;
 use solana_sdk::instruction::Instruction;
 use solana_sdk::signature::{Keypair, Signer};
@@ -328,7 +328,7 @@ impl MarginUser {
         destination_mint: &Pubkey,
         transit_source_account: &Pubkey,
         transit_destination_account: &Pubkey,
-        swap_pool: &SwapPool,
+        swap_pool: &SplSwapPool,
         amount_in: Amount,
         minimum_amount_out: Amount,
     ) -> Result<(), Error> {

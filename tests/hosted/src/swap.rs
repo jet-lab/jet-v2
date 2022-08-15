@@ -123,7 +123,7 @@ pub trait SwapPoolConfig: Sized {
 }
 
 #[async_trait]
-impl SwapPoolConfig for SwapPool {
+impl SwapPoolConfig for SplSwapPool {
     /// Configure a new swap pool. Supply the amount of tokens to avoid needing
     /// to deposit tokens separately.
     async fn configure(

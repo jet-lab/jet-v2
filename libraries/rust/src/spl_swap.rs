@@ -32,8 +32,6 @@ use pyth_sdk_solana::PriceFeed;
 use solana_sdk::{program_pack::Pack, pubkey::Pubkey};
 use spl_token_swap::state::SwapV1;
 
-pub type PriceCache = Arc<RwLock<HashMap<Pubkey, PriceFeed>>>;
-
 /// Addresses of an [`spl_token_swap`] compatible swap pool, required when using
 /// [`jet_margin_swap`].
 ///
@@ -229,6 +227,7 @@ async fn find_mint(
 }
 
 // helper function to find the token price based on pyth price feed
+// TODO - fixme: None value, test panics trying to unwrap `None` Value
 fn price_feed_to_token_price(price: &PriceFeed) -> TokenPrice {
     let current_price = price.get_current_price().unwrap();
     TokenPrice {
