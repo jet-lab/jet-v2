@@ -13,4 +13,4 @@ lcov.info
 .husky
 
 # documentations
-**/docs
+libraries/ts/docs
