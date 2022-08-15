@@ -24,15 +24,14 @@ use std::{
 
 use crate::tokens::TokenPrice;
 use anchor_lang::AccountDeserialize;
-use anyhow::Result;
+use anyhow::{bail, Result};
+use jet_metadata::TokenMetadata;
 use jet_proto_math::Number128;
 use jet_simulation::solana_rpc_api::SolanaRpcClient;
-use parking_lot::RwLock;
 use pyth_sdk_solana::PriceFeed;
 use solana_sdk::{program_pack::Pack, pubkey::Pubkey};
 use spl_token_swap::state::SwapV1;
 
-pub type PriceCache = Arc<RwLock<HashMap<Pubkey, PriceFeed>>>;
 
 /// Addresses of an [`spl_token_swap`] compatible swap pool, required when using
 /// [`jet_margin_swap`].
@@ -42,7 +41,7 @@ pub type PriceCache = Arc<RwLock<HashMap<Pubkey, PriceFeed>>>;
 /// * orca_v1
 /// * orca_v2
 #[derive(Debug, Clone, Copy)]
-pub struct SwapPool {
+pub struct SplSwapPool {
     /// The address of the swap pool
     pub pool: Pubkey,
     /// The PDA of the pool authority, derived using the pool address and a nonce
@@ -63,16 +62,13 @@ pub struct SwapPool {
     pub program: Pubkey,
 }
 
-pub struct SplSwapPools;
-
-impl SplSwapPools {
+impl SplSwapPool {
     /// Get all swap pools that contain pairs of supported mints
     pub async fn get_pools(
         rpc: &Arc<dyn SolanaRpcClient>,
         supported_mints: &HashSet<Pubkey>,
         swap_program: Pubkey,
-        price_cache: PriceCache, // TODO - fixme: use oracle as a way to calc price, instead of caching
-    ) -> anyhow::Result<HashMap<(Pubkey, Pubkey), SwapPool>> {
+    ) -> anyhow::Result<HashMap<(Pubkey, Pubkey), Self>> {
         let size = SwapV1::LEN + 1;
         let accounts = rpc
             .get_program_accounts(&swap_program, Some(size))
@@ -86,6 +82,7 @@ impl SplSwapPools {
                 Ok(swap) => swap,
                 Err(_) => continue,
             };
+
             let (mint_a, mint_b) = match (
                 supported_mints.get(&swap.token_a_mint),
                 supported_mints.get(&swap.token_b_mint),
@@ -100,21 +97,19 @@ impl SplSwapPools {
                 swap.token_b_mint
             );
 
-            // Determine the pool size, use only the largest pools
+            let token_a_metadata = get_token_metadata(rpc, mint_a).await;
+            let token_b_metadata = get_token_metadata(rpc, mint_b).await;
+
+            let oracle_pubkey_a = token_a_metadata.unwrap().pyth_price;
+            let oracle_pubkey_b = token_b_metadata.unwrap().pyth_price;
+            let oracle_a = find_price_feed(rpc, &oracle_pubkey_a).await.unwrap();
+            let oracle_b = find_price_feed(rpc, &oracle_pubkey_b).await.unwrap();
+
             let (price_a, price_b) = {
-                // TODO - fixme: use oracle as a way to calc price, instead of caching
-                let reader = price_cache.read();
-                let price_a = match reader.get(&swap.token_a_mint) {
-                    Some(val) => val,
-                    None => continue,
-                };
-                let token_price = price_feed_to_token_price(price_a);
+                let token_price = price_feed_to_token_price(&oracle_a);
                 let price_a = Number128::from_decimal(token_price.price, token_price.exponent);
-                let price_b = match reader.get(&swap.token_b_mint) {
-                    Some(val) => val,
-                    None => continue,
-                };
-                let token_price = price_feed_to_token_price(price_b);
+
+                let token_price = price_feed_to_token_price(&oracle_b);
                 let price_b = Number128::from_decimal(token_price.price, token_price.exponent);
                 (price_a, price_b)
             };
@@ -172,7 +167,7 @@ impl SplSwapPools {
                     total_value,
                 ));
         }
-        // Discard amounts
+
         let swap_pools = pool_sizes
             .into_iter()
             .map(|(k, (p, _))| (k, p))
@@ -183,9 +178,9 @@ impl SplSwapPools {
     }
 
     #[inline]
-    /// Little helper to get a [SwapPool] from its on-chain rep
-    fn from_swap_v1(swap_address: Pubkey, swap_program: Pubkey, swap: &SwapV1) -> SwapPool {
-        SwapPool {
+    /// Little helper to get a [SplSwapPool] from its on-chain rep
+    fn from_swap_v1(swap_address: Pubkey, swap_program: Pubkey, swap: &SwapV1) -> Self {
+        SplSwapPool {
             pool: swap_address,
             pool_authority: Pubkey::find_program_address(
                 &[swap_address.as_ref(), &[swap.nonce]],
@@ -201,6 +196,14 @@ impl SplSwapPools {
             program: swap_program,
         }
     }
+}
+
+// helper function to load pyth price feed
+async fn find_price_feed(rpc: &Arc<dyn SolanaRpcClient>, address: &Pubkey) -> Result<PriceFeed> {
+    let mut account = rpc.get_account(address).await?.unwrap();
+    let price_feed = pyth_sdk_solana::load_price_feed_from_account(address, &mut account).unwrap();
+
+    Ok(price_feed)
 }
 
 // helper function to find token account
@@ -235,5 +238,18 @@ fn price_feed_to_token_price(price: &PriceFeed) -> TokenPrice {
         price: current_price.price,
         confidence: current_price.conf,
         twap: price.get_ema_price().unwrap().price as u64,
+    }
+}
+
+async fn get_token_metadata(
+    rpc: &Arc<dyn SolanaRpcClient>,
+    token_mint: &Pubkey,
+) -> Result<TokenMetadata> {
+    let (md_address, _) = Pubkey::find_program_address(&[token_mint.as_ref()], &jet_metadata::ID);
+    let account_data = rpc.get_account(&md_address).await?;
+
+    match account_data {
+        None => bail!("no metadata {} found for token {}", md_address, token_mint),
+        Some(account) => Ok(TokenMetadata::try_deserialize(&mut &account.data[..])?),
     }
 }
