@@ -20,16 +20,18 @@ jobs:
           cache: npm
 
       - name: Install TypeDoc
+        working-directory: ./libraries/ts
         run: npm i --no-save
 
       - name: Build Documentation
+        working-directory: ./libraries/ts
         run: npm run docs
 
       - name: Publish
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./docs
+          publish_dir: ./libraries/ts/docs
 
   release:
     runs-on: ubuntu-latest
