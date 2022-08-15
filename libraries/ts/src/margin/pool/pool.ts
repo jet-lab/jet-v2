@@ -360,15 +360,13 @@ export class Pool {
    * Transactionss
    ****************************/
 
-  async marginRefreshAllPositionPrices({ pools, marginAccount }: { pools: Pool[]; marginAccount: MarginAccount }) {
+  async refreshPosition(marginAccount: MarginAccount) {
     const instructions: TransactionInstruction[] = []
-    for (const pool of pools) {
-      await pool.withMarginRefreshPositionPrice({ instructions, marginAccount })
-    }
+    await this.withRefreshPosition({ instructions, marginAccount })
     await marginAccount.provider.sendAndConfirm(new Transaction().add(...instructions))
   }
 
-  async withMarginRefreshPositionPrice({
+  async withRefreshPosition({
     instructions,
     marginAccount
   }: {
@@ -863,7 +861,7 @@ export class Pool {
         })
         .instruction()
     })
-    await this.withMarginRefreshPositionPrice({ instructions, marginAccount })
+    await this.withRefreshPosition({ instructions, marginAccount })
     return loanNoteAccount
   }
 

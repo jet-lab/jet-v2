@@ -344,9 +344,22 @@ export class MarginAccount {
     }
   }
 
+  replaceAdapter(adapter: IAdapter) {
+    // Remove any existing adapter
+    this.removeAdapter(adapter.programId)
+    this.adapters.push(adapter)
+  }
+
+  removeAdapter(adapterProgramId: Address) {
+    const index = this.adapters.findIndex(adapter => adapter.programId.equals(translateAddress(adapterProgramId)))
+    if (index !== -1) {
+      this.adapters = this.adapters.splice(index, 1)
+    }
+  }
+
   getAdapter(adapterProgramId: Address): IAdapter | undefined {
     const adapterAddress = translateAddress(adapterProgramId)
-    return this.adapters.find(adapter => adapter.adapterProgramId.equals(adapterAddress))
+    return this.adapters.find(adapter => adapter.programId.equals(adapterAddress))
   }
 
   /** Get the list of positions on this account */
@@ -703,6 +716,12 @@ export class MarginAccount {
       })
       .instruction()
     instructions.push(instruction)
+  }
+
+  async refreshAllPositions() {
+    const instructions: TransactionInstruction[] = []
+    await this.withRefreshAllPositions({ instructions })
+    await this.provider.sendAndConfirm(new Transaction().add(...instructions))
   }
 
   async withRefreshAllPositions({ instructions }: { instructions: TransactionInstruction[] }) {

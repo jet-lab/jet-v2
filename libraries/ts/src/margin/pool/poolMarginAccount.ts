@@ -3,7 +3,7 @@ import { NATIVE_MINT } from "@solana/spl-token"
 import { PublicKey, TransactionInstruction } from "@solana/web3.js"
 import BN from "bn.js"
 import assert from "assert"
-import { Number192, Number128 } from "src/utils"
+import { Number192, Number128 } from "../../utils"
 import { bigIntToBn, numberToBn, TokenAmount } from "../../token"
 import { AccountPosition } from "../accountPosition"
 import { MarginTokenConfig } from "../config"
@@ -27,11 +27,11 @@ export interface PoolPosition {
 }
 
 export class PoolMarginAccount implements IAdapter {
-  public adapterProgramId: PublicKey
+  public programId: PublicKey
   private poolPositions: Record<string, PoolPosition>
 
   constructor(public account: MarginAccount, public pools: Record<string, Pool>) {
-    this.adapterProgramId = translateAddress(account.programs.config.marginPoolProgramId)
+    this.programId = translateAddress(account.programs.config.marginPoolProgramId)
     this.poolPositions = this.calculatePoolPositions()
   }
 
@@ -226,6 +226,6 @@ export class PoolMarginAccount implements IAdapter {
 
   async withRefreshPosition(instructions: TransactionInstruction[], positionTokenMint: PublicKey): Promise<void> {
     const pool = this.getPool(positionTokenMint)
-    await pool.withMarginRefreshPositionPrice({ instructions, marginAccount: this.account })
+    await pool.withRefreshPosition({ instructions, marginAccount: this.account })
   }
 }

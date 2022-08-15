@@ -78,7 +78,8 @@ describe("margin account", async () => {
     const marginAccounts = await MarginAccount.loadAllByOwner({
       programs,
       provider: provider_a,
-      owner: provider_a.wallet.publicKey
+      owner: provider_a.wallet.publicKey,
+      pools
     })
 
     // TEST
