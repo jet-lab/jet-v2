@@ -1,6 +1,13 @@
 import { Address, BN, translateAddress } from "@project-serum/anchor"
 import { parsePriceData, PriceData, PriceStatus } from "@pythnetwork/client"
-import { Mint, TOKEN_PROGRAM_ID } from "@solana/spl-token"
+import {
+  createAssociatedTokenAccountInstruction,
+  getAssociatedTokenAddress,
+  Mint,
+  TOKEN_PROGRAM_ID,
+  ASSOCIATED_TOKEN_PROGRAM_ID
+} from "@solana/spl-token"
+import { closeAccount } from "@project-serum/serum/lib/token-instructions"
 import {
   PublicKey,
   SystemProgram,
@@ -22,6 +29,7 @@ import { findDerivedAccount } from "../../utils/pda"
 import { PriceInfo } from "../accountPosition"
 import { chunks, Number128, Number192, sendAll } from "../../utils"
 import { PositionTokenMetadata } from "../positionTokenMetadata"
+import orcaSwapPools from "../swap/orca-swap-pools.json"
 
 export type PoolAction = "deposit" | "withdraw" | "borrow" | "repay" | "swap" | "transfer"
 export interface MarginPoolAddresses {
@@ -873,6 +881,195 @@ export class Pool {
     })
   }
 
+  /**
+   * Transaction to swap tokens
+   *
+   * @param `marginAccount` - The margin account that will receive the deposit.
+   * @param `outputToken` - The corresponding pool for the token being swapped to.
+   * @param `swapAmount` - The amount being swapped.
+   * @param `minAmountOut` - The minimum output amount based on swapAmount and slippage.
+   */
+  async swap({
+    marginAccount,
+    outputToken,
+    swapAmount,
+    minAmountOut
+  }: {
+    marginAccount: MarginAccount
+    outputToken: Pool
+    swapAmount: TokenAmount
+    minAmountOut: TokenAmount
+  }) {
+    assert(marginAccount)
+    assert(swapAmount)
+
+    const instructions: TransactionInstruction[] = []
+    await this.withSwap({
+      instructions: instructions,
+      marginAccount,
+      outputToken,
+      swapAmount,
+      minAmountOut
+    })
+
+    return await marginAccount.sendAndConfirm(instructions)
+  }
+
+  async withSwap({
+    instructions,
+    marginAccount,
+    outputToken,
+    swapAmount,
+    minAmountOut
+  }: {
+    instructions: TransactionInstruction[]
+    marginAccount: MarginAccount
+    outputToken: Pool
+    swapAmount: TokenAmount
+    minAmountOut: TokenAmount
+  }): Promise<void> {
+    assert(this.symbol)
+
+    // Source deposit position fetch / creation
+    const sourceAccount = await marginAccount.withGetOrCreatePosition({
+      positionTokenMint: this.addresses.depositNoteMint,
+      instructions
+    })
+
+    // Destination deposit position fetch / creation
+    const destinationAccount = await marginAccount.withGetOrCreatePosition({
+      positionTokenMint: outputToken.addresses.depositNoteMint,
+      instructions
+    })
+
+    // If swapping on margin
+    const accountPoolPosition = marginAccount.poolPositions[this.symbol]
+    if (swapAmount.gt(accountPoolPosition.depositBalance) && marginAccount.pools) {
+      await marginAccount.refresh()
+      const loanNoteAccount = await marginAccount.withGetOrCreatePosition({
+        positionTokenMint: this.addresses.loanNoteMint,
+        instructions
+      })
+
+      const difference = swapAmount.sub(accountPoolPosition.depositBalance)
+      await this.withMarginBorrow({
+        instructions,
+        marginAccount,
+        depositPosition: sourceAccount,
+        loanNoteAccount,
+        change: PoolTokenChange.shiftBy(accountPoolPosition.loanBalance.add(difference))
+      })
+    }
+
+    // Transit source account fetch / creation
+    const transitSourceAccount = await AssociatedToken.withCreate(
+      instructions,
+      marginAccount.provider,
+      marginAccount.address,
+      this.addresses.tokenMint
+    )
+
+    // Transit destination account fetch / creation
+    const transitDestinationAccount = await AssociatedToken.withCreate(
+      instructions,
+      marginAccount.provider,
+      marginAccount.address,
+      outputToken.tokenMint
+    )
+
+    // TODO: check tokenMintA and tokenMintB for matching pools.
+    // If no pool is found, a user would have to swap twice from A > X > B,
+    // so we should ideally check matching pools on the UI before getting here.
+    const swapPoolAccounts = orcaSwapPools[`${this.symbol}/${outputToken.symbol}`]
+
+    // Determine the direction of the swap based on token mints.
+    // The instruction relies on the swap `vaultFrom` and `vaultInto` to determine
+    // the direction of the swap.
+    let swapSourceVault: string
+    let swapDestinationVault: string
+    if (
+      swapPoolAccounts.tokenMintA === this.addresses.tokenMint.toBase58() &&
+      swapPoolAccounts.tokenMintB === outputToken.addresses.tokenMint.toBase58()
+    ) {
+      // Swapping from token A to token B on swap pool
+      swapSourceVault = swapPoolAccounts.tokenB
+      swapDestinationVault = swapPoolAccounts.tokenA
+    } else if (
+      swapPoolAccounts.tokenMintB === this.addresses.tokenMint.toBase58() &&
+      swapPoolAccounts.tokenMintA === outputToken.addresses.tokenMint.toBase58()
+    ) {
+      // Swapping from token B to token A on swap pool
+      swapSourceVault = swapPoolAccounts.tokenA
+      swapDestinationVault = swapPoolAccounts.tokenB
+    } else {
+      // Pedantic. We can't reach this condition if correct pool is selected
+      throw new Error("Invalid swap pool selected")
+    }
+
+    // Swap
+    await marginAccount.withAdapterInvoke({
+      instructions,
+      adapterProgram: this.programs.config.marginSwapProgramId,
+      // TODO: check if this evaluates to DUheebnZ below
+      adapterMetadata: findDerivedAccount(
+        this.programs.config.metadataProgramId,
+        this.programs.config.marginSwapProgramId
+      ),
+      // adapterMetadata: new PublicKey("DUheebnZrHMGzEMbs9FpPFTkbmVdZnyW92CVwrYd3aGa"),
+      adapterInstruction: await this.programs.marginSwap.methods
+        .marginSwap(swapAmount.lamports, minAmountOut.lamports)
+        .accounts({
+          marginAccount: marginAccount.address,
+          transitSourceAccount,
+          transitDestinationAccount,
+          sourceAccount,
+          destinationAccount,
+          marginPoolProgram: this.programs.marginPool.programId,
+          tokenProgram: TOKEN_PROGRAM_ID,
+          sourceMarginPool: {
+            marginPool: this.address,
+            vault: this.addresses.vault,
+            depositNoteMint: this.addresses.depositNoteMint
+          },
+          destinationMarginPool: {
+            marginPool: outputToken.address,
+            vault: outputToken.addresses.vault,
+            depositNoteMint: outputToken.addresses.depositNoteMint
+          },
+          swapInfo: {
+            swapPool: swapPoolAccounts.swapPool,
+            authority: findDerivedAccount(new PublicKey(swapPoolAccounts.swapProgram), swapPoolAccounts.swapPool),
+            vaultFrom: swapSourceVault,
+            vaultInto: swapDestinationVault,
+            tokenMint: swapPoolAccounts.poolMint,
+            feeAccount: swapPoolAccounts.feeAccount,
+            swapProgram: swapPoolAccounts.swapProgram
+          }
+        })
+        .instruction()
+    })
+
+    // Transit source account closure
+    // const closeTransitSourceAccountIx = closeAccount({
+    //   source: transitSourceAccount,
+    //   destination: marginAccount.addresses.owner,
+    //   owner: marginAccount.address
+    // })
+    // instructions.push(closeTransitSourceAccountIx)
+
+    // // Transit destination account closure
+    // const closeTransitDestinationAccountIx = closeAccount({
+    //   source: transitDestinationAccount,
+    //   destination: marginAccount.addresses.owner,
+    //   owner: marginAccount.address
+    // })
+    // instructions.push(closeTransitDestinationAccountIx)
+
+    // Update account positions
+    await marginAccount.withUpdatePositionBalance({ instructions, position: sourceAccount })
+    await marginAccount.withUpdatePositionBalance({ instructions, position: destinationAccount })
+  }
+
   async withRegisterLoan(instructions: TransactionInstruction[], marginAccount: MarginAccount): Promise<Address> {
     const loanNoteAccount = findDerivedAccount(
       this.programs.config.marginPoolProgramId,
@@ -909,7 +1106,7 @@ export class Pool {
       this.addresses.loanNoteMint
     )
     await marginAccount.withAdapterInvoke({
-      instructions: instructions,
+      instructions,
       adapterProgram: this.programs.config.marginPoolProgramId,
       adapterMetadata: this.addresses.marginPoolAdapterMetadata,
       adapterInstruction: await this.programs.marginPool.methods

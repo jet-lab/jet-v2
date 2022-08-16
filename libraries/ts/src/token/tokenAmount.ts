@@ -27,7 +27,7 @@ export class TokenAmount {
     this.lamports = lamports
     this.decimals = decimals
     this.tokens = TokenAmount.tokenAmount(lamports, decimals)
-    this.uiTokens = this.tokens.toLocaleString("fullwide", { useGrouping: true }) //to prevent scientific numbers. Grouping adds commas
+    this.uiTokens = this.tokens.toLocaleString("fullwide", { useGrouping: true, maximumFractionDigits: decimals }) //to prevent scientific numbers. Grouping adds commas
   }
 
   /**
