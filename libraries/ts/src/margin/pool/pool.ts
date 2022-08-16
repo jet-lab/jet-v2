@@ -928,6 +928,8 @@ export class Pool {
     swapAmount: TokenAmount
     minAmountOut: TokenAmount
   }): Promise<void> {
+    assert(this.symbol)
+
     // Source deposit position fetch / creation
     const sourceAccount = await marginAccount.withGetOrCreatePosition({
       positionTokenMint: this.addresses.depositNoteMint,
@@ -940,16 +942,15 @@ export class Pool {
       instructions
     })
 
-    // Loan note account
-    const loanNoteAccount = await marginAccount.withGetOrCreatePosition({
-      positionTokenMint: this.addresses.loanNoteMint,
-      instructions
-    })
-
     // If swapping on margin
-    const accountPoolPosition = marginAccount.poolPositions[this.symbol ?? ""]
+    const accountPoolPosition = marginAccount.poolPositions[this.symbol]
     if (swapAmount.gt(accountPoolPosition.depositBalance) && marginAccount.pools) {
       await marginAccount.refresh()
+      const loanNoteAccount = await marginAccount.withGetOrCreatePosition({
+        positionTokenMint: this.addresses.loanNoteMint,
+        instructions
+      })
+
       const difference = swapAmount.sub(accountPoolPosition.depositBalance)
       await this.withMarginBorrow({
         instructions,
@@ -964,15 +965,12 @@ export class Pool {
     const transitSourceAccount = await getAssociatedTokenAddress(this.addresses.tokenMint, marginAccount.address, true)
     const transitSourceBuffer = await marginAccount.provider.connection.getAccountInfo(transitSourceAccount)
     if (transitSourceBuffer === null) {
-      const transitSourceAccountIx = createAssociatedTokenAccountInstruction(
-        marginAccount.addresses.owner,
-        transitSourceAccount,
+      await AssociatedToken.withCreate(
+        instructions,
+        marginAccount.provider,
         marginAccount.address,
-        this.addresses.tokenMint,
-        TOKEN_PROGRAM_ID,
-        ASSOCIATED_TOKEN_PROGRAM_ID
+        this.addresses.tokenMint
       )
-      instructions.push(transitSourceAccountIx)
     }
 
     // Transit destination account fetch / creation
@@ -983,15 +981,12 @@ export class Pool {
     )
     const transitDestinationBuffer = await marginAccount.provider.connection.getAccountInfo(transitDestinationAccount)
     if (transitDestinationBuffer === null) {
-      const transitDestinationAccountIx = createAssociatedTokenAccountInstruction(
-        marginAccount.addresses.owner,
-        transitDestinationAccount,
+      await AssociatedToken.withCreate(
+        instructions,
+        marginAccount.provider,
         marginAccount.address,
-        outputToken.addresses.tokenMint,
-        TOKEN_PROGRAM_ID,
-        ASSOCIATED_TOKEN_PROGRAM_ID
+        outputToken.tokenMint
       )
-      instructions.push(transitDestinationAccountIx)
     }
 
     // TODO: check tokenMintA and tokenMintB for matching pools.
