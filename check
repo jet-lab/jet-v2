@@ -1,0 +1,59 @@
+#!/bin/bash
+# CI validation script.
+# Run a single job from the CI workflow:
+#   ./check <job-name>
+#           (wrap the job name in quotes if it has spaces)
+# Run the entire workflow:
+#   ./check all
+# Run jobs in the container used for CI:
+#   ./check in-docker '<job-name or all>'
+
+set -euxo pipefail
+
+DOCKER_IMAGE=jetprotocol/builder:root-solana1.10.35-anchor0.25.0-1
+
+
+anchor-test() {
+	npm ci
+	anchor test -- --features testing
+}
+
+hosted-tests-localnet() {
+	tests/hosted/test_on_localnet.sh
+}
+
+cargo-lint() {
+	cargo fmt --all --check
+	cargo clippy --all-targets -- -Dwarnings
+	cargo test --doc
+}
+
+cargo-test() {
+	if [[ ${CODECOV:-false} == true ]]; then
+		cargo llvm-cov --workspace --lcov --output-path lcov.info --ignore-filename-regex programs/mock-pyth/src/lib.rs
+	else 
+		cargo test
+	fi
+}
+
+
+all() {
+	cargo-lint
+	cargo-test
+	anchor-test
+	hosted-tests-localnet
+}
+
+in-docker() {
+	docker run \
+		-v "$(dirname $(realpath ${BASH_SOURCE[0]})):/jet-v2" \
+		--workdir /jet-v2 \
+		$DOCKER_IMAGE \
+		/jet-v2/check $@
+}
+
+
+$@
+
+set +x
+echo -e '\n\n ✔ all good'

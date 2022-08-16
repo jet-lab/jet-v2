@@ -73,7 +73,7 @@ const MAX_TX_SIZE: usize = 1232;
 
 /// Combines all the instructions within each of the TransactionBuilders into the smallest
 ///  possible number of TransactionBuilders that don't violate the rules:
-/// - instructions that were grouped must in a TransactionBuilder must end up in the same TransactionBuilder
+/// - instructions that were already grouped in a TransactionBuilder must end up in the same TransactionBuilder
 /// - transaction may not exceed size limit
 /// - instructions order is not modified
 pub fn condense(

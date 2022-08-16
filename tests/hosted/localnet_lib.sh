@@ -25,11 +25,7 @@ ORCAv2_SO=$ORCA_V2_MAINNET
 COMPILE_FEATURES='testing'
 
 anchor-build() {
-    anchor build --skip-lint -p jet_control     -- --features $COMPILE_FEATURES
-    anchor build --skip-lint -p jet_margin      -- --features $COMPILE_FEATURES
-    anchor build --skip-lint -p jet_metadata    -- --features $COMPILE_FEATURES
-    anchor build --skip-lint -p jet_margin_pool -- --features $COMPILE_FEATURES
-    anchor build --skip-lint -p jet_margin_swap -- --features $COMPILE_FEATURES
+    anchor build -- --features $COMPILE_FEATURES
 }
 
 cargo-test() {
@@ -71,10 +67,10 @@ with-validator() {
         --bpf-program $SPLSWAP_PID $SPLSWAP_SO \
         --bpf-program $ORCAv1_PID $ORCAv1_SO \
         --bpf-program $ORCAv2_PID $ORCAv2_SO \
-        > /dev/null &
+        --quiet &
 
     spid=$!
-    sleep 5
+    sleep ${VALIDATOR_STARTUP:-5}
     
     if [[ ${SOLANA_LOGS:-false} == true ]]; then
         solana -ul logs &
