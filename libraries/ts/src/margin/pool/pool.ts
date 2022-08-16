@@ -962,32 +962,20 @@ export class Pool {
     }
 
     // Transit source account fetch / creation
-    const transitSourceAccount = await getAssociatedTokenAddress(this.addresses.tokenMint, marginAccount.address, true)
-    const transitSourceBuffer = await marginAccount.provider.connection.getAccountInfo(transitSourceAccount)
-    if (transitSourceBuffer === null) {
-      await AssociatedToken.withCreate(
-        instructions,
-        marginAccount.provider,
-        marginAccount.address,
-        this.addresses.tokenMint
-      )
-    }
+    const transitSourceAccount = await AssociatedToken.withCreate(
+      instructions,
+      marginAccount.provider,
+      marginAccount.address,
+      this.addresses.tokenMint
+    )
 
     // Transit destination account fetch / creation
-    const transitDestinationAccount = await getAssociatedTokenAddress(
-      outputToken.addresses.tokenMint,
+    const transitDestinationAccount = await AssociatedToken.withCreate(
+      instructions,
+      marginAccount.provider,
       marginAccount.address,
-      true
+      outputToken.tokenMint
     )
-    const transitDestinationBuffer = await marginAccount.provider.connection.getAccountInfo(transitDestinationAccount)
-    if (transitDestinationBuffer === null) {
-      await AssociatedToken.withCreate(
-        instructions,
-        marginAccount.provider,
-        marginAccount.address,
-        outputToken.tokenMint
-      )
-    }
 
     // TODO: check tokenMintA and tokenMintB for matching pools.
     // If no pool is found, a user would have to swap twice from A > X > B,
