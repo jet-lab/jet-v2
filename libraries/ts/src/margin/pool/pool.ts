@@ -903,18 +903,6 @@ export class Pool {
     assert(marginAccount)
     assert(swapAmount)
 
-    // If swapping on margin
-    const accountPoolPosition = marginAccount.poolPositions[this.symbol ?? ""]
-    if (swapAmount.gt(accountPoolPosition.depositBalance) && marginAccount.pools) {
-      await marginAccount.refresh()
-      const difference = swapAmount.sub(accountPoolPosition.depositBalance)
-      await this.marginBorrow({
-        marginAccount,
-        pools: Object.values(marginAccount.pools),
-        change: PoolTokenChange.shiftBy(accountPoolPosition.loanBalance.add(difference))
-      })
-    }
-
     const instructions: TransactionInstruction[] = []
     await this.withSwap({
       instructions: instructions,
@@ -940,6 +928,38 @@ export class Pool {
     swapAmount: TokenAmount
     minAmountOut: TokenAmount
   }): Promise<void> {
+    // Source deposit position fetch / creation
+    const sourceAccount = await marginAccount.withGetOrCreatePosition({
+      positionTokenMint: this.addresses.depositNoteMint,
+      instructions
+    })
+
+    // Destination deposit position fetch / creation
+    const destinationAccount = await marginAccount.withGetOrCreatePosition({
+      positionTokenMint: outputToken.addresses.depositNoteMint,
+      instructions
+    })
+
+    // Loan note account
+    const loanNoteAccount = await marginAccount.withGetOrCreatePosition({
+      positionTokenMint: this.addresses.loanNoteMint,
+      instructions
+    })
+
+    // If swapping on margin
+    const accountPoolPosition = marginAccount.poolPositions[this.symbol ?? ""]
+    if (swapAmount.gt(accountPoolPosition.depositBalance) && marginAccount.pools) {
+      await marginAccount.refresh()
+      const difference = swapAmount.sub(accountPoolPosition.depositBalance)
+      await this.withMarginBorrow({
+        instructions,
+        marginAccount,
+        depositPosition: sourceAccount,
+        loanNoteAccount,
+        change: PoolTokenChange.shiftBy(accountPoolPosition.loanBalance.add(difference))
+      })
+    }
+
     // Transit source account fetch / creation
     const transitSourceAccount = await getAssociatedTokenAddress(this.addresses.tokenMint, marginAccount.address, true)
     const transitSourceBuffer = await marginAccount.provider.connection.getAccountInfo(transitSourceAccount)
@@ -973,18 +993,6 @@ export class Pool {
       )
       instructions.push(transitDestinationAccountIx)
     }
-
-    // Source deposit position fetch / creation
-    const sourceAccount = await marginAccount.withGetOrCreatePosition({
-      positionTokenMint: this.addresses.depositNoteMint,
-      instructions
-    })
-
-    // Destination deposit position fetch / creation
-    const destinationAccount = await marginAccount.withGetOrCreatePosition({
-      positionTokenMint: outputToken.addresses.depositNoteMint,
-      instructions
-    })
 
     // TODO: check tokenMintA and tokenMintB for matching pools.
     // If no pool is found, a user would have to swap twice from A > X > B,
