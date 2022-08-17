@@ -14,6 +14,7 @@ pub struct UnhealthyAccountsLoadTestScenario {
     pub mint_count: usize,
     pub repricing_delay: usize,
     pub repricing_scale: f64,
+    pub keep_looping: bool,
 }
 
 impl Default for UnhealthyAccountsLoadTestScenario {
@@ -23,6 +24,7 @@ impl Default for UnhealthyAccountsLoadTestScenario {
             mint_count: 2,
             repricing_delay: 0,
             repricing_scale: 0.999,
+            keep_looping: true
         }
     }
 }
@@ -31,6 +33,13 @@ pub async fn unhealthy_accounts_load_test(
     scenario: UnhealthyAccountsLoadTestScenario,
 ) -> Result<(), anyhow::Error> {
     let ctx = test_context().await;
+    let UnhealthyAccountsLoadTestScenario {
+        user_count,
+        mint_count,
+        repricing_delay,
+        repricing_scale,
+        keep_looping: iterate,
+    } = scenario;
     ctx.margin
         .set_liquidator_metadata(
             Pubkey::from_str("77FsX7wrjSQcEosBrfKByyfRcciERohQBeMe76GhJpKV").unwrap(),
@@ -38,9 +47,9 @@ pub async fn unhealthy_accounts_load_test(
         )
         .await?;
     println!("creating tokens");
-    let (mut mints, _, pricer) = create_tokens(ctx, scenario.mint_count).await?;
+    let (mut mints, _, pricer) = create_tokens(ctx, mint_count).await?;
     println!("creating users");
-    let mut users = create_users(ctx, scenario.user_count + 1).await?;
+    let mut users = create_users(ctx, user_count + 1).await?;
     let big_depositor = users.pop().unwrap();
     println!("creating deposits");
     mints
@@ -53,7 +62,7 @@ pub async fn unhealthy_accounts_load_test(
         .map_async_chunked(16, |(user, mint)| user.deposit(mint, 100 * ONE))
         .await?;
     println!("creating loans");
-    mints.rotate_right(scenario.mint_count / 2);
+    mints.rotate_right(mint_count / 2);
     users
         .iter()
         .zip(mints.iter().cycle())
@@ -65,17 +74,20 @@ pub async fn unhealthy_accounts_load_test(
     println!("for assets {assets_to_devalue:?}...");
     let mut price = 1.0;
     loop {
-        price *= scenario.repricing_scale;
+        price *= repricing_scale;
         let new_prices = assets_to_devalue
             .iter()
             .map(|mint| (*mint, price))
             .collect();
         println!("setting price to {price}");
         pricer.set_prices(new_prices, true).await?;
-        for _ in 0..scenario.repricing_delay {
+        for _ in 0..repricing_delay {
             std::thread::sleep(Duration::from_secs(1));
             // pricer.refresh_all_oracles().await?;
             pricer.set_prices(Vec::new(), true).await?;
+        }
+        if !iterate {
+            return Ok(())
         }
     }
 }
