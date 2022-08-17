@@ -14,46 +14,49 @@ DOCKER_IMAGE=jetprotocol/builder:root-solana1.10.35-anchor0.25.0-1
 
 
 anchor-test() {
-	npm ci
-	anchor test -- --features testing
+    npm ci
+    anchor test -- --features testing
 }
 
 hosted-tests-localnet() {
-	tests/hosted/test_on_localnet.sh
+    tests/hosted/test_on_localnet.sh
 }
 
 cargo-lint() {
-	cargo fmt --all --check
-	cargo clippy --all-targets -- -Dwarnings
-	cargo test --doc
+    cargo fmt --all --check
+    cargo clippy --all-targets -- -Dwarnings
+    cargo test --doc
 }
 
 cargo-test() {
-	if [[ ${CODECOV:-false} == true ]]; then
-		cargo llvm-cov --workspace --lcov --output-path lcov.info --ignore-filename-regex programs/mock-pyth/src/lib.rs
-	else 
-		cargo test
-	fi
+    if [[ ${CODECOV:-false} == true ]]; then
+        cargo llvm-cov --workspace --lcov --output-path lcov.info --ignore-filename-regex programs/mock-pyth/src/lib.rs
+    else 
+        cargo test
+    fi
 }
 
 
 all() {
-	cargo-lint
-	cargo-test
-	anchor-test
-	hosted-tests-localnet
+    cargo-lint
+    cargo-test
+    anchor-test
+    hosted-tests-localnet
 }
 
 in-docker() {
-	docker run \
-		-v "$(dirname $(realpath ${BASH_SOURCE[0]})):/jet-v2" \
-		--workdir /jet-v2 \
-		$DOCKER_IMAGE \
-		/jet-v2/check $@
+    docker run \
+        -v "$(dirname $(realpath ${BASH_SOURCE[0]})):/jet-v2" \
+        --workdir /jet-v2 \
+        $DOCKER_IMAGE \
+        /jet-v2/check $@
 }
 
-
-$@
+if [[ "$@" == '' ]]; then
+    all
+else
+    $@
+fi
 
 set +x
 echo -e '\n\n ✔ all good'
