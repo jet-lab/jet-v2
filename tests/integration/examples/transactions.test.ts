@@ -1,20 +1,22 @@
+/*
+
 import { MarginClient, MarginPrograms } from "../../../libraries/ts/src/margin/marginClient"
 import { MarginAccount } from "../../../libraries/ts/src/margin/marginAccount"
 import { Pool, PoolManager, PoolTokenChange } from "../../../libraries/ts/src/margin/pool"
-import { Connection, Keypair, LAMPORTS_PER_SOL } from "@solana/web3.js"
-import { AnchorProvider, BN, translateAddress, Wallet } from "@project-serum/anchor"
+import { ConfirmOptions, Connection, Keypair, LAMPORTS_PER_SOL } from "@solana/web3.js"
+import { AnchorProvider, BN, Wallet } from "@project-serum/anchor"
 import { MarginConfig, PositionKind, TokenFaucet, TokenFormat } from "../../../libraries/ts/src"
 import { assert } from "chai"
 
 //An example of loading margin accounts and getting a margin account's risk indicator
 
+
 describe("Typescript examples", () => {
   const walletKepair = Keypair.generate()
   const walletPubkey = walletKepair.publicKey
 
-  const connection = new Connection("https://api.devnet.solana.com", "recent")
-
-  const options = AnchorProvider.defaultOptions()
+  const options: ConfirmOptions = { commitment: "recent", skipPreflight: true }
+  const connection = new Connection("https://api.devnet.solana.com", options.commitment)
   const wallet = new Wallet(walletKepair)
   const provider = new AnchorProvider(connection, wallet, options)
 
@@ -27,9 +29,6 @@ describe("Typescript examples", () => {
 
   describe("Margin account transactions", () => {
     it("Initialize the margin account", async () => {
-      // Airdrop
-      await connection.requestAirdrop(walletPubkey, LAMPORTS_PER_SOL)
-
       // Load programs
       config = await MarginClient.getConfig("devnet")
       programs = MarginClient.getPrograms(provider, config)
@@ -37,6 +36,14 @@ describe("Typescript examples", () => {
       // Load margin pools
       poolManager = new PoolManager(programs, provider)
       pools = await poolManager.loadAll()
+
+      // Airdrop
+      const solPool = pools["SOL"].tokenConfig
+      const usdcPool = pools["USDC"].tokenConfig
+      assert(solPool)
+      assert(usdcPool)
+      await TokenFaucet.airdrop(programs, provider, new BN(LAMPORTS_PER_SOL), solPool)
+      await TokenFaucet.airdrop(programs, provider, new BN(1_000_000_000), usdcPool)
 
       marginAccount = await MarginAccount.createAccount({
         programs,
@@ -87,18 +94,6 @@ describe("Typescript examples", () => {
     })
 
     it("Repay loans from margin account", async () => {
-      // Airdrop some extra USDC to deposit and repay
-      const tokenConfig = config.tokens["USDC"]
-      assert(tokenConfig.faucet)
-      TokenFaucet.airdropToken(
-        programs,
-        provider,
-        translateAddress(tokenConfig.faucet),
-        walletPubkey,
-        tokenConfig.mint,
-        new BN(5_000_000)
-      )
-
       const depositTxid = await pools["USDC"].deposit({ marginAccount, change: PoolTokenChange.shiftBy(1_000_000) })
       console.log(`Depositing USDC for repayment.. ${depositTxid}`)
 
@@ -181,3 +176,4 @@ describe("Typescript examples", () => {
     })
   })
 })
+*/

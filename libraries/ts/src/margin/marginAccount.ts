@@ -25,7 +25,7 @@ import {
 } from "./state"
 import { MarginPrograms } from "./marginClient"
 import { findDerivedAccount } from "../utils/pda"
-import { AssociatedToken, bigIntToBn, bnToNumber, getTimestamp, Number192, numberToBn, TokenAmount } from ".."
+import { AssociatedToken, bigIntToBn, bnToNumber, getTimestamp, Number192, numberToBn, sendAll, TokenAmount } from ".."
 import { Number128 } from "../utils/number128"
 import { MarginTokenConfig } from "./config"
 import { AccountPosition, PriceInfo } from "./accountPosition"
@@ -87,8 +87,8 @@ export interface MarginWalletTokens {
 
 export class MarginAccount {
   static readonly SEED_MAX_VALUE = 65535
-  static readonly RISK_WARNING_LEVEL = 0.9
-  static readonly RISK_CRITICAL_LEVEL = 0.95
+  static readonly RISK_WARNING_LEVEL = 0.8
+  static readonly RISK_CRITICAL_LEVEL = 0.9
   static readonly RISK_LIQUIDATION_LEVEL = 1
   static readonly SETUP_LEVERAGE_FRACTION = Number128.fromDecimal(new BN(50), -2)
 
@@ -440,7 +440,8 @@ export class MarginAccount {
     const repay = TokenAmount.min(loanBalance, walletAmount)
 
     // Max swap
-    const swap = withdraw
+    // TODO: this is def not right
+    const swap = depositBalance.add(borrow)
 
     // Max transfer
     const transfer = withdraw
@@ -735,7 +736,7 @@ export class MarginAccount {
     const ix: TransactionInstruction[] = []
     await this.withCreateAccount(ix)
     if (ix.length > 0) {
-      return await this.provider.sendAndConfirm(new Transaction().add(...ix))
+      return await this.sendAndConfirm(ix)
     }
   }
 
@@ -796,7 +797,7 @@ export class MarginAccount {
   async updateAllPositionBalances() {
     const instructions: TransactionInstruction[] = []
     await this.withUpdateAllPositionBalances({ instructions })
-    await this.provider.sendAndConfirm(new Transaction().add(...instructions))
+    return await this.sendAndConfirm(instructions)
   }
 
   async withUpdateAllPositionBalances({ instructions }: { instructions: TransactionInstruction[] }) {
@@ -808,7 +809,7 @@ export class MarginAccount {
   async updatePositionBalance({ position }: { position: AccountPosition }) {
     const instructions: TransactionInstruction[] = []
     await this.withUpdatePositionBalance({ instructions, position: position.address })
-    return await this.provider.sendAndConfirm(new Transaction().add(...instructions))
+    return await this.sendAndConfirm(instructions)
   }
 
   /// Get instruction to update the accounting for assets in
@@ -837,7 +838,7 @@ export class MarginAccount {
   async refreshPositionMetadata({ positionMint }: { positionMint: Address }) {
     const instructions: TransactionInstruction[] = []
     await this.withRefreshPositionMetadata({ instructions, positionMint })
-    await this.provider.sendAndConfirm(new Transaction().add(...instructions))
+    return await this.sendAndConfirm(instructions)
   }
 
   async withRefreshPositionMetadata({
@@ -862,7 +863,7 @@ export class MarginAccount {
     const tokenMintAddress = translateAddress(tokenMint)
     const ix: TransactionInstruction[] = []
     await this.withRegisterPosition(ix, tokenMintAddress)
-    return await this.provider.sendAndConfirm(new Transaction().add(...ix))
+    return await this.sendAndConfirm(ix)
   }
 
   /// Get instruction to register new position
@@ -1041,6 +1042,15 @@ export class MarginAccount {
   async sendAndConfirm(instructions: TransactionInstruction[], signers?: Signer[]) {
     try {
       return await this.provider.sendAndConfirm(new Transaction().add(...instructions), signers)
+    } catch (err) {
+      console.log(err)
+      throw err
+    }
+  }
+
+  async sendAll(transactions: (TransactionInstruction[] | TransactionInstruction[][])[]) {
+    try {
+      return await sendAll(this.provider, transactions)
     } catch (err) {
       console.log(err)
       throw err

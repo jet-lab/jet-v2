@@ -8,7 +8,7 @@ import {
   MarginConfig,
   sleep
 } from "../../../libraries/ts/src/"
-import { Connection, Keypair, LAMPORTS_PER_SOL, TransactionInstruction } from "@solana/web3.js"
+import { ConfirmOptions, Connection, Keypair, LAMPORTS_PER_SOL, TransactionInstruction } from "@solana/web3.js"
 import { AnchorProvider, Wallet } from "@project-serum/anchor"
 import { assert } from "chai"
 
@@ -27,7 +27,7 @@ describe("Typescript examples", () => {
   const walletKepair = Keypair.generate()
   const walletPubkey = walletKepair.publicKey
 
-  const options = AnchorProvider.defaultOptions()
+  const options: ConfirmOptions = { commitment: "recent", skipPreflight: true }
   const connection = new Connection("https://api.devnet.solana.com", options.commitment)
   const wallet = new Wallet(walletKepair)
   const provider = new AnchorProvider(connection, wallet, options)

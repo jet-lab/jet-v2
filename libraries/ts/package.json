@@ -1,6 +1,6 @@
 {
   "name": "@jet-lab/margin",
-  "version": "0.1.66",
+  "version": "0.1.67",
   "description": "Library for interacting with the Jet margin on-chain programs",
   "keywords": [
     "solana",
@@ -29,6 +29,7 @@
   "scripts": {
     "clean": "rimraf dist/",
     "compile": "tsc",
+    "docs": "typedoc --excludePrivate --includeVersion ./src/index.ts",
     "fmt": "prettier src/ tests/ types/ --check",
     "fmt:fix": "prettier src/ tests/ types/ --write",
     "watch": "tsc -p tsconfig.cjs.json --watch",
@@ -46,6 +47,7 @@
     "@tsconfig/recommended": "^1.0.1",
     "@types/bn.js": "^5.1.0",
     "rimraf": "^3.0.2",
+    "typedoc": "^0.22.6",
     "typescript": "^4.5.4"
   },
   "type": "module"
