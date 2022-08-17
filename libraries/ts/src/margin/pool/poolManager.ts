@@ -5,7 +5,7 @@ import { findDerivedAccount } from "../../utils/pda"
 import { MarginTokenConfig } from "../config"
 import { MarginPrograms } from "../marginClient"
 import { TokenKind } from "../metadata"
-import { MarginPoolAddresses, Pool } from "./pool"
+import { PoolAddresses, Pool } from "./pool"
 import { MarginPoolConfigData } from "./state"
 
 interface TokenMetadataParams {
@@ -162,7 +162,7 @@ export class PoolManager {
   }: {
     instructions: TransactionInstruction[]
     requester: Address
-    addresses: MarginPoolAddresses
+    addresses: PoolAddresses
     address: PublicKey
     programs?: MarginPrograms
   }): Promise<void> {
@@ -229,7 +229,7 @@ export class PoolManager {
     pythProduct: Address
     pythPrice: Address
     marginPoolConfig: MarginPoolConfigData
-    addresses: MarginPoolAddresses
+    addresses: PoolAddresses
     address: PublicKey
     programs?: MarginPrograms
   }): Promise<void> {
@@ -272,7 +272,7 @@ export class PoolManager {
    * @param {Address} tokenMint
    * @returns {PublicKey} Margin Pool Address
    */
-  private _derive({ programs, tokenMint }: { programs: MarginPrograms; tokenMint: Address }): MarginPoolAddresses {
+  private _derive({ programs, tokenMint }: { programs: MarginPrograms; tokenMint: Address }): PoolAddresses {
     const tokenMintAddress = translateAddress(tokenMint)
     const programId = translateAddress(programs.config.marginPoolProgramId)
     const marginPool = findDerivedAccount(programId, tokenMintAddress)

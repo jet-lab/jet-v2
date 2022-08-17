@@ -37,6 +37,8 @@ describe("Typescript examples", () => {
       poolManager = new PoolManager(programs, provider)
       pools = await poolManager.loadAll()
 
+      const walletTokens = await MarginAccount.loadTokens(programs, walletPubkey)
+
       // Airdrop
       const solPool = pools["SOL"].tokenConfig
       const usdcPool = pools["USDC"].tokenConfig
@@ -50,7 +52,8 @@ describe("Typescript examples", () => {
         provider,
         owner: walletPubkey,
         seed: 0,
-        pools
+        pools,
+        walletTokens
       })
 
       //Print the margin account pubkey
