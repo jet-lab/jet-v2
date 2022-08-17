@@ -116,11 +116,11 @@ export class Pool {
    * The token symbol, such as "BTC" or "SOL"
    *
    * @readonly
-   * @type {(string | undefined)}
+   * @type {string}
    * @memberof Pool
    */
-  get symbol(): string | undefined {
-    return this.tokenConfig?.symbol
+  get symbol(): string {
+    return this.tokenConfig.symbol
   }
   /**
    * The raw vault balance
@@ -326,7 +326,7 @@ export class Pool {
   constructor(
     public programs: MarginPrograms,
     public addresses: PoolAddresses,
-    public tokenConfig?: MarginTokenConfig
+    public tokenConfig: MarginTokenConfig
   ) {
     this.depositNoteMetadata = new PositionTokenMetadata({ programs, tokenMint: addresses.depositNoteMint })
     this.loanNoteMetadata = new PositionTokenMetadata({ programs, tokenMint: addresses.loanNoteMint })

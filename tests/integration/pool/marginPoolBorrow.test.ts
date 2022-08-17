@@ -11,7 +11,6 @@ import {
   Pool,
   MarginPoolConfigData,
   PoolManager,
-  Number128,
   TokenAmount
 } from "../../../libraries/ts/src"
 
@@ -63,9 +62,6 @@ describe("margin pool borrow", async () => {
     expect(sol_supply).to.eq(10_000)
     expect(sol_balance).to.eq(10_000)
   })
-
-  const FEE_VAULT_USDC: PublicKey = new PublicKey("FEEVAULTUSDC1111111111111111111111111111111")
-  const FEE_VAULT_SOL: PublicKey = new PublicKey("FEEVAULTTSoL1111111111111111111111111111111")
 
   let USDC_oracle: Keypair[]
   let SOL_oracle: Keypair[]
@@ -123,9 +119,29 @@ describe("margin pool borrow", async () => {
   let pools: Pool[]
 
   it("Load Pools", async () => {
-    marginPool_SOL = await manager.load({ tokenMint: SOL[0] })
-    marginPool_USDC = await manager.load({ tokenMint: USDC[0] })
+    marginPool_SOL = await manager.load({
+      tokenMint: SOL[0],
+      tokenConfig: {
+        symbol: "SOL",
+        name: "Solana",
+        decimals: 9,
+        precision: 2,
+        mint: SOL[0]
+      }
+    })
+    marginPool_USDC = await manager.load({
+      tokenMint: USDC[0],
+      tokenConfig: {
+        symbol: "USDC",
+        name: "USD Coin",
+        decimals: 6,
+        precision: 2,
+        mint: USDC[0]
+      }
+    })
     pools = [marginPool_SOL, marginPool_USDC]
+    expect(marginPool_USDC.symbol).to.eq("USDC")
+    expect(marginPool_SOL.symbol).to.eq("SOL")
   })
 
   it("Create margin pools", async () => {
@@ -345,7 +361,6 @@ describe("margin pool borrow", async () => {
   it("User A repays his SOL loan", async () => {
     //SETUP
     await marginPool_SOL.refresh()
-    const owedSOL = new BN(Number(marginPool_SOL.info?.loanNoteMint.supply))
 
     // ACT
     await marginPool_SOL.marginRepay({
@@ -365,7 +380,6 @@ describe("margin pool borrow", async () => {
   it("User B repays his USDC loan", async () => {
     // SETUP
     await marginPool_USDC.refresh()
-    const owedUSDC = new BN(Number(marginPool_USDC.info?.loanNoteMint.supply))
 
     // ACT
     await marginPool_USDC.marginRepay({
