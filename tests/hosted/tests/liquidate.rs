@@ -7,7 +7,6 @@ use hosted_tests::{
 };
 use jet_margin::ErrorCode;
 use jet_margin_sdk::tokens::TokenPrice;
-use serial_test::serial;
 use solana_sdk::native_token::LAMPORTS_PER_SOL;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::Signer;
@@ -104,7 +103,7 @@ async fn scenario1() -> Result<Scenario1> {
 /// liquidations. One user borrowed conservatively, and is not subject to
 /// liquidation, while the other user gets liquidated.
 #[tokio::test(flavor = "multi_thread")]
-#[cfg_attr(not(feature = "localnet"), serial)]
+#[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn cannot_liquidate_healthy_user() -> Result<()> {
     let scen = scenario1().await?;
 
@@ -116,7 +115,7 @@ async fn cannot_liquidate_healthy_user() -> Result<()> {
 }
 
 #[tokio::test(flavor = "multi_thread")]
-#[cfg_attr(not(feature = "localnet"), serial)]
+#[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn cannot_end_nonexistent_liquidation() -> Result<()> {
     let scen = scenario1().await?;
 
@@ -129,7 +128,7 @@ async fn cannot_end_nonexistent_liquidation() -> Result<()> {
 }
 
 #[tokio::test(flavor = "multi_thread")]
-#[cfg_attr(not(feature = "localnet"), serial)]
+#[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn cannot_transact_when_being_liquidated() -> Result<()> {
     let scen = scenario1().await?;
 
@@ -147,7 +146,7 @@ async fn cannot_transact_when_being_liquidated() -> Result<()> {
 }
 
 #[tokio::test(flavor = "multi_thread")]
-#[cfg_attr(not(feature = "localnet"), serial)]
+#[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn liquidator_can_repay_from_unhealthy_to_healthy_state() -> Result<()> {
     let scen = scenario1().await?;
 
@@ -169,7 +168,7 @@ async fn liquidator_can_repay_from_unhealthy_to_healthy_state() -> Result<()> {
 }
 
 #[tokio::test(flavor = "multi_thread")]
-#[cfg_attr(not(feature = "localnet"), serial)]
+#[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn liquidator_can_end_liquidation_when_unhealthy() -> Result<()> {
     let scen = scenario1().await?;
 
@@ -182,7 +181,7 @@ async fn liquidator_can_end_liquidation_when_unhealthy() -> Result<()> {
 }
 
 #[tokio::test(flavor = "multi_thread")]
-#[cfg_attr(not(feature = "localnet"), serial)]
+#[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn no_one_else_can_liquidate_after_liquidate_begin() -> Result<()> {
     let ctx = test_context().await;
     let scen = scenario1().await?;
@@ -208,7 +207,7 @@ async fn no_one_else_can_liquidate_after_liquidate_begin() -> Result<()> {
 }
 
 #[tokio::test(flavor = "multi_thread")]
-#[cfg_attr(not(feature = "localnet"), serial)]
+#[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn liquidation_completes() -> Result<()> {
     let scen = scenario1().await?;
 
@@ -232,7 +231,7 @@ async fn liquidation_completes() -> Result<()> {
 }
 
 #[tokio::test(flavor = "multi_thread")]
-#[cfg_attr(not(feature = "localnet"), serial)]
+#[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn cannot_withdraw_too_much_during_liquidation() -> Result<()> {
     let ctx = test_context().await;
     let scen = scenario1().await?;
@@ -259,7 +258,7 @@ async fn cannot_withdraw_too_much_during_liquidation() -> Result<()> {
 }
 
 #[tokio::test(flavor = "multi_thread")]
-#[cfg_attr(not(feature = "localnet"), serial)]
+#[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn can_withdraw_some_during_liquidation() -> Result<()> {
     let ctx = test_context().await;
     let scen = scenario1().await?;
@@ -282,7 +281,7 @@ async fn can_withdraw_some_during_liquidation() -> Result<()> {
 }
 
 #[tokio::test(flavor = "multi_thread")]
-#[cfg_attr(not(feature = "localnet"), serial)]
+#[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 #[ignore = "ignored while there is no constraint on borrowing"]
 async fn cannot_borrow_too_much_during_liquidation() -> Result<()> {
     let scen = scenario1().await?;
@@ -299,7 +298,7 @@ async fn cannot_borrow_too_much_during_liquidation() -> Result<()> {
 }
 
 #[tokio::test(flavor = "multi_thread")]
-#[cfg_attr(not(feature = "localnet"), serial)]
+#[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn can_borrow_some_during_liquidation() -> Result<()> {
     let scen = scenario1().await?;
 
@@ -313,7 +312,7 @@ async fn can_borrow_some_during_liquidation() -> Result<()> {
 
 /// The owner is provided as the authority and signs
 #[tokio::test(flavor = "multi_thread")]
-#[cfg_attr(not(feature = "localnet"), serial)]
+#[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn owner_cannot_end_liquidation_before_timeout() -> Result<()> {
     let scen = scenario1().await?;
 
@@ -329,7 +328,7 @@ async fn owner_cannot_end_liquidation_before_timeout() -> Result<()> {
 }
 
 #[tokio::test(flavor = "multi_thread")]
-#[cfg_attr(not(feature = "localnet"), serial)]
+#[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 #[cfg(not(feature = "localnet"))]
 async fn owner_can_end_liquidation_after_timeout() -> Result<()> {
     let ctx = test_context().await;
@@ -349,7 +348,7 @@ async fn owner_can_end_liquidation_after_timeout() -> Result<()> {
 }
 
 #[tokio::test(flavor = "multi_thread")]
-#[cfg_attr(not(feature = "localnet"), serial)]
+#[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn liquidator_permission_is_removable() -> Result<()> {
     let ctx = test_context().await;
     let scen = scenario1().await?;
@@ -374,7 +373,7 @@ async fn liquidator_permission_is_removable() -> Result<()> {
 }
 
 #[tokio::test(flavor = "multi_thread")]
-#[cfg_attr(not(feature = "localnet"), serial)]
+#[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn liquidate_with_swap() -> Result<()> {
     let ctx = test_context().await;
     let ([usdc, sol], swaps, pricer) = tokens(ctx).await?;
@@ -387,7 +386,7 @@ async fn liquidate_with_swap() -> Result<()> {
     liquidator
         .liquidate(&user1.user, &swaps, &sol, 800, &usdc, 700)
         .await?;
-    user1.borrow_to_wallet(&usdc, 1).await?;
+    user1.borrow_to_wallet(&usdc, 5).await?;
 
     Ok(())
 }
