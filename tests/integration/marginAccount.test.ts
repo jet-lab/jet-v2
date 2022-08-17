@@ -7,7 +7,7 @@ import { expect } from "chai"
 import { MarginAccount, MarginClient, Pool, PoolManager } from "../../libraries/ts/src"
 import { createAuthority, createUserWallet, DEFAULT_MARGIN_CONFIG } from "./util"
 
-describe("margin account", async () => {
+describe("margin account", () => {
   const confirmOptions: ConfirmOptions = { preflightCommitment: "processed", commitment: "processed" }
 
   const provider = AnchorProvider.local(undefined, confirmOptions)
