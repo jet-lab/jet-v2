@@ -42,22 +42,30 @@ pub trait MapAsync<Item: Send>: Iterator<Item = Item> + Sized {
                 match self.next() {
                     Some(x) => progress.push(f(x)),
                     None => {
-                        let all = join_all(progress)
-                            .await
-                            .into_iter()
-                            .collect::<Result<Vec<Ret>>>()?;
-                        ret.extend_from_slice(&all);
+                        extend_with_joined(&mut ret, progress).await?;
                         return Ok(ret);
                     }
                 }
             }
-            let all = join_all(progress)
-                .await
-                .into_iter()
-                .collect::<Result<Vec<Ret>>>()?;
-            ret.extend_from_slice(&all)
+            extend_with_joined(&mut ret, progress).await?;
         }
     }
+}
+
+async fn extend_with_joined<
+    T: std::fmt::Debug + Send + Clone,
+    Fut: futures::Future<Output = Result<T>> + Send,
+>(
+    extendable: &mut Vec<T>,
+    extend_with: Vec<Fut>,
+) -> Result<()> {
+    let all = join_all(extend_with)
+        .await
+        .into_iter()
+        .collect::<Result<Vec<T>>>()?;
+    extendable.extend_from_slice(&all);
+
+    Ok(())
 }
 
 impl<Item: Send, Iter: Iterator<Item = Item> + Sized> MapAsync<Item> for Iter {}
