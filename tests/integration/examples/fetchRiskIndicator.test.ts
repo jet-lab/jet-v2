@@ -2,13 +2,13 @@ import { MarginAccount, MarginClient, PoolManager } from "../../../libraries/ts/
 import { Connection } from "@solana/web3.js"
 import { AnchorProvider, Wallet } from "@project-serum/anchor"
 
-//An example of loading margin accounts and getting a margin account's risk indicator
+// Examples of loading margin accounts and getting a margin account's risk indicator
 
 describe("Typescript examples", async () => {
   it("Fetch risk indicator for local wallet", async () => {
     const config = await MarginClient.getConfig("devnet")
-    const connection = new Connection("https://api.devnet.solana.com", "recent")
     const options = AnchorProvider.defaultOptions()
+    const connection = new Connection("https://api.devnet.solana.com", options.commitment)
     const wallet = Wallet.local()
     const localWalletPubkey = wallet.publicKey
     const provider = new AnchorProvider(connection, wallet, options)
