@@ -3,7 +3,6 @@ members = [
     "programs/*",
     "tests/hosted",
     "tests/mock-adapter",
-    "tests/load-test",
     "libraries/rust",
     "libraries/static-program-registry",
 ]

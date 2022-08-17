@@ -12,3 +12,4 @@ test-file liquidate
 test-file pool_overpayment
 test-file rounding
 test-file sanity
+test-file load

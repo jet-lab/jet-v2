@@ -1,7 +1,7 @@
 use anchor_lang::prelude::Pubkey;
 use anyhow::Result;
 use jet_margin_sdk::util::asynchronous::MapAsync;
-use std::{str::FromStr, time::Duration};
+use std::time::Duration;
 
 use crate::{
     context::test_context,
@@ -15,6 +15,7 @@ pub struct UnhealthyAccountsLoadTestScenario {
     pub repricing_delay: usize,
     pub repricing_scale: f64,
     pub keep_looping: bool,
+    pub liquidator: Pubkey,
 }
 
 impl Default for UnhealthyAccountsLoadTestScenario {
@@ -25,6 +26,7 @@ impl Default for UnhealthyAccountsLoadTestScenario {
             repricing_delay: 0,
             repricing_scale: 0.999,
             keep_looping: true,
+            liquidator: Pubkey::default(),
         }
     }
 }
@@ -39,13 +41,9 @@ pub async fn unhealthy_accounts_load_test(
         repricing_delay,
         repricing_scale,
         keep_looping: iterate,
+        liquidator,
     } = scenario;
-    ctx.margin
-        .set_liquidator_metadata(
-            Pubkey::from_str("77FsX7wrjSQcEosBrfKByyfRcciERohQBeMe76GhJpKV").unwrap(),
-            true,
-        )
-        .await?;
+    ctx.margin.set_liquidator_metadata(liquidator, true).await?;
     println!("creating tokens");
     let (mut mints, _, pricer) = create_tokens(ctx, mint_count).await?;
     println!("creating users");
