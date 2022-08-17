@@ -8,5 +8,6 @@ async fn trivial_load_test_execution() -> Result<(), anyhow::Error> {
         mint_count: 1,
         repricing_delay: 0,
         repricing_scale: 0.9,
-    }).await
+    })
+    .await
 }

@@ -24,7 +24,7 @@ impl Default for UnhealthyAccountsLoadTestScenario {
             mint_count: 2,
             repricing_delay: 0,
             repricing_scale: 0.999,
-            keep_looping: true
+            keep_looping: true,
         }
     }
 }
@@ -87,7 +87,7 @@ pub async fn unhealthy_accounts_load_test(
             pricer.set_prices(Vec::new(), true).await?;
         }
         if !iterate {
-            return Ok(())
+            return Ok(());
         }
     }
 }
