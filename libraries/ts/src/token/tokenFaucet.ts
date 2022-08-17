@@ -7,7 +7,7 @@ import {
 import { Connection, PublicKey, Transaction, TransactionInstruction } from "@solana/web3.js"
 import { AssociatedToken } from "./associatedToken"
 import { Address, BN, AnchorProvider, translateAddress } from "@project-serum/anchor"
-import { MarginPrograms } from "../margin"
+import { MarginPrograms, MarginTokenConfig } from "../margin"
 
 export class TokenFaucet {
   /**
@@ -94,19 +94,19 @@ export class TokenFaucet {
     programs: MarginPrograms,
     provider: AnchorProvider,
     lamports: BN,
-    mint: Address,
-    owner: Address,
-    faucet?: Address
+    token: MarginTokenConfig,
+    owner: Address = provider.wallet.publicKey
   ): Promise<string> {
-    const mintAddress = translateAddress(mint)
+    const mintAddress = translateAddress(token.mint)
     const ownerAddress = translateAddress(owner)
+    const faucet = token.faucet
 
     const ix: TransactionInstruction[] = []
 
-    const destination = AssociatedToken.derive(mint, owner)
+    const destination = AssociatedToken.derive(token.mint, owner)
 
     // Optionally create a token account for wallet
-    if (!mintAddress.equals(NATIVE_MINT) && !(await AssociatedToken.exists(provider.connection, mint, owner))) {
+    if (!mintAddress.equals(NATIVE_MINT) && !(await AssociatedToken.exists(provider.connection, token.mint, owner))) {
       const createTokenAccountIx = createAssociatedTokenAccountInstruction(
         ownerAddress,
         destination,

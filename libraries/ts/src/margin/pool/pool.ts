@@ -1,14 +1,7 @@
 import { Address, BN, translateAddress } from "@project-serum/anchor"
 import { parsePriceData, PriceData, PriceStatus } from "@pythnetwork/client"
 import { Mint, TOKEN_PROGRAM_ID } from "@solana/spl-token"
-import {
-  PublicKey,
-  SystemProgram,
-  Transaction,
-  TransactionInstruction,
-  SYSVAR_RENT_PUBKEY,
-  LAMPORTS_PER_SOL
-} from "@solana/web3.js"
+import { PublicKey, SystemProgram, TransactionInstruction, SYSVAR_RENT_PUBKEY, LAMPORTS_PER_SOL } from "@solana/web3.js"
 import assert from "assert"
 import { AssociatedToken, bigIntToBn, numberToBn, TokenAddress, TokenFormat } from "../../token"
 import { TokenAmount } from "../../token/tokenAmount"
@@ -20,7 +13,7 @@ import { PoolTokenChange } from "./poolTokenChange"
 import { TokenMetadata } from "../metadata/state"
 import { findDerivedAccount } from "../../utils/pda"
 import { PriceInfo } from "../accountPosition"
-import { chunks, Number128, Number192, sendAll } from "../../utils"
+import { chunks, Number128, Number192 } from "../../utils"
 import { PositionTokenMetadata } from "../positionTokenMetadata"
 
 export type PoolAction = "deposit" | "withdraw" | "borrow" | "repay" | "swap" | "transfer"
@@ -380,13 +373,13 @@ export class Pool {
     for (const pool of Object.values(pools)) {
       await pool.withMarginRefreshPositionPrice({ instructions, marginAccount })
     }
-    await marginAccount.provider.sendAndConfirm(new Transaction().add(...instructions))
+    return await marginAccount.sendAndConfirm(instructions)
   }
 
   async marginRefreshPositionPrice(marginAccount: MarginAccount) {
     const instructions: TransactionInstruction[] = []
     await this.withMarginRefreshPositionPrice({ instructions, marginAccount })
-    return await marginAccount.provider.sendAndConfirm(new Transaction().add(...instructions))
+    return await marginAccount.sendAndConfirm(instructions)
   }
 
   async withMarginRefreshAllPositionPrices({
@@ -461,7 +454,7 @@ export class Pool {
       change
     })
     await marginAccount.withUpdatePositionBalance({ instructions, position })
-    return await marginAccount.provider.sendAndConfirm(new Transaction().add(...instructions))
+    return await marginAccount.sendAndConfirm(instructions)
   }
 
   async withDeposit({
@@ -576,7 +569,7 @@ export class Pool {
       })
     }
 
-    return await sendAll(marginAccount.provider, [chunks(11, refreshInstructions), instructionsInstructions])
+    return await marginAccount.sendAll([...chunks(11, refreshInstructions), instructionsInstructions])
   }
 
   async withGetOrCreateLoanPosition(
@@ -712,7 +705,7 @@ export class Pool {
       await this.withCloseLoan(instructions, marginAccount)
     }
 
-    return await sendAll(marginAccount.provider, [chunks(11, refreshInstructions), instructions])
+    return await marginAccount.sendAll([chunks(11, refreshInstructions), instructions])
   }
 
   async withMarginRepay({
@@ -839,7 +832,7 @@ export class Pool {
       destination,
       change
     })
-    return await sendAll(marginAccount.provider, [chunks(11, refreshInstructions), instructions])
+    return await marginAccount.sendAll([chunks(11, refreshInstructions), instructions])
   }
 
   async withWithdraw({
@@ -980,7 +973,7 @@ export class Pool {
           AssociatedToken.withClose(instructions, marginAccount.owner, this.tokenMint, destinationAddress)
         }
 
-        await sendAll(marginAccount.provider, [instructions])
+        await marginAccount.sendAll([instructions])
         await marginAccount.refresh()
       }
 
