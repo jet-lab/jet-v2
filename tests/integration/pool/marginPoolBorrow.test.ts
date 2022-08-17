@@ -303,19 +303,19 @@ describe("margin pool borrow", async () => {
     // TEST
     expect(await getTokenBalance(provider, "processed", user_a_usdc_account)).to.eq(0)
     expect(await getTokenBalance(provider, "processed", user_a_sol_account)).to.eq(0)
-    expect(marginAccount_A.valuation.weightedCollateral.asNumber()).to.eq(504750)
-    expect(marginAccount_A.valuation.effectiveCollateral.asNumber()).to.eq(504750)
-    expect(marginAccount_A.valuation.requiredCollateral.asNumber()).to.eq(0)
+    expect(marginAccount_A.valuation.weightedCollateral.toNumber()).to.eq(504750)
+    expect(marginAccount_A.valuation.effectiveCollateral.toNumber()).to.eq(504750)
+    expect(marginAccount_A.valuation.requiredCollateral.toNumber()).to.eq(0)
 
     expect(await getTokenBalance(provider, "processed", user_b_sol_account)).to.eq(0)
     expect(await getTokenBalance(provider, "processed", user_b_usdc_account)).to.eq(0)
-    expect(marginAccount_B.valuation.weightedCollateral.asNumber()).to.eq(47550)
-    expect(marginAccount_B.valuation.effectiveCollateral.asNumber()).to.eq(47550)
-    expect(marginAccount_B.valuation.requiredCollateral.asNumber()).to.eq(0)
+    expect(marginAccount_B.valuation.weightedCollateral.toNumber()).to.eq(47550)
+    expect(marginAccount_B.valuation.effectiveCollateral.toNumber()).to.eq(47550)
+    expect(marginAccount_B.valuation.requiredCollateral.toNumber()).to.eq(0)
 
-    expect(marginAccount_C.valuation.weightedCollateral.asNumber()).to.eq(96)
-    expect(marginAccount_C.valuation.effectiveCollateral.asNumber()).to.eq(96)
-    expect(marginAccount_C.valuation.requiredCollateral.asNumber()).to.eq(0)
+    expect(marginAccount_C.valuation.weightedCollateral.toNumber()).to.eq(96)
+    expect(marginAccount_C.valuation.effectiveCollateral.toNumber()).to.eq(96)
+    expect(marginAccount_C.valuation.requiredCollateral.toNumber()).to.eq(0)
 
     expect(await getTokenBalance(provider, "processed", marginPool_USDC.addresses.vault)).to.eq(500_050 + 1)
     expect(await getTokenBalance(provider, "processed", marginPool_SOL.addresses.vault)).to.eq(550 + 1)
@@ -349,13 +349,13 @@ describe("margin pool borrow", async () => {
     expect(Number(SOLLoanNotes)).to.eq(borrowedSOL.lamports.toNumber())
     expect(Number(USDCLoanNotes)).to.eq(borrowedUSDC.lamports.toNumber())
 
-    expect(marginAccount_A.valuation.weightedCollateral.asNumber()).to.eq(505700)
-    expect(marginAccount_A.valuation.effectiveCollateral.asNumber()).to.eq(504700)
-    expect(marginAccount_A.valuation.requiredCollateral.asNumber()).to.eq(250)
+    expect(marginAccount_A.valuation.weightedCollateral.toNumber()).to.eq(505700)
+    expect(marginAccount_A.valuation.effectiveCollateral.toNumber()).to.eq(504700)
+    expect(marginAccount_A.valuation.requiredCollateral.toNumber()).to.eq(250)
 
-    expect(marginAccount_B.valuation.weightedCollateral.asNumber()).to.eq(48550)
-    expect(marginAccount_B.valuation.effectiveCollateral.asNumber()).to.eq(47550)
-    expect(marginAccount_B.valuation.requiredCollateral.asNumber()).to.eq(250)
+    expect(marginAccount_B.valuation.weightedCollateral.toNumber()).to.eq(48550)
+    expect(marginAccount_B.valuation.effectiveCollateral.toNumber()).to.eq(47550)
+    expect(marginAccount_B.valuation.requiredCollateral.toNumber()).to.eq(250)
   })
 
   it("User A repays his SOL loan", async () => {

@@ -25,33 +25,35 @@ import {
 } from "./state"
 import { MarginPrograms } from "./marginClient"
 import { findDerivedAccount } from "../utils/pda"
-import { AssociatedToken, bigIntToBn, bnToNumber, getTimestamp, Number192, numberToBn, TokenAmount } from ".."
+import { AssociatedToken, bigIntToBn, bnToNumber, getTimestamp, Number192, numberToBn, sendAll, TokenAmount } from ".."
 import { Number128 } from "../utils/number128"
 import { MarginTokenConfig } from "./config"
 import { AccountPosition, PriceInfo } from "./accountPosition"
 
-export interface MarginAccountAddresses {
-  marginAccount: PublicKey
-  owner: PublicKey
-}
-
-export interface MarginPositionAddresses {
-  account: PublicKey
-  tokenAccount: PublicKey
-  tokenMint: PublicKey
-  tokenMetadata: PublicKey
-}
-
+/** A description of a position associated with a [[MarginAccount]] and [[Pool]] */
 export interface PoolPosition {
+  /** The [[MarginTokenConfig]] associated with the [[Pool]] token. */
   tokenConfig: MarginTokenConfig
+  /** The [[Pool]] that the position is associated with. */
   pool?: Pool
+  /** The underlying [[AccountPosition]] that stores the deposit balance. */
   depositPosition: AccountPosition | undefined
+  /** The deposit balance in the [[Pool]]. An undefined `depositPosition` leads to a balance of 0. */
   depositBalance: TokenAmount
+  /** The deposit value in the [[Pool]] denominated in USD. An undefined `depositPosition` leads to a value of 0. */
   depositValue: number
+  /** The underlying [[AccountPosition]] that stores the loan balance. */
   loanPosition: AccountPosition | undefined
+  /** The loan balance in the [[Pool]]. An undefined `loanPosition` leads to a balance of 0. */
   loanBalance: TokenAmount
+  /** The loan value in the [[Pool]] denominated in USD. An undefined `loanPosition` leads to a balance of 0. */
   loanValue: number
+  /**
+   * An estimate of the maximum trade amounts possible.
+   * The estimates factor in available wallet balances, [[Pool]] liquidity, margin requirements
+   * and [[SETUP_LEVERAGE_FRACTION]]. */
   maxTradeAmounts: Record<PoolAction, TokenAmount>
+  /** An estimate of the amount of [[MarginTokenConfig]] collateral required to make it possible to end liquidation. */
   liquidationEndingCollateral: TokenAmount
   buyingPower: TokenAmount
 }
@@ -67,6 +69,7 @@ export interface AccountSummary {
   minCRatio: number
 }
 
+/** A summation of the USD values of various positions used in margin accounting. */
 export interface Valuation {
   liabilities: Number128
   requiredCollateral: Number128
@@ -80,42 +83,70 @@ export interface Valuation {
   claimErrorList: [PublicKey, ErrorCode][]
 }
 
+/**
+ * A collection of [[AssociatedToken]] wallet balances. Note that only associated token accounts
+ * will be present and auxiliary accounts are ignored.
+ */
 export interface MarginWalletTokens {
+  /** An array of every associated token account owned by the wallet. */
   all: AssociatedToken[]
+  /** A map of token symbols to associated token accounts.
+   *
+   * ## Usage
+   *
+   * ```ts
+   * map["USDC"].amount.tokens.toFixed(2)
+   * ```
+   *
+   * ## Remarks
+   *
+   * Only tokens within the [[MarginConfig]] will be present. */
   map: Record<string, AssociatedToken>
 }
 
 export class MarginAccount {
+  /**
+   * The maximum [[MarginAccount]] seed value equal to `65535`.
+   * Seeds are a 16 bit number and therefor only 2^16 margin accounts may exist per wallet. */
   static readonly SEED_MAX_VALUE = 65535
   static readonly RISK_WARNING_LEVEL = 0.8
   static readonly RISK_CRITICAL_LEVEL = 0.9
   static readonly RISK_LIQUIDATION_LEVEL = 1
+  /** The maximum risk indicator allowed by the library when setting up a  */
   static readonly SETUP_LEVERAGE_FRACTION = Number128.fromDecimal(new BN(50), -2)
 
+  /** The raw accounts associated with the margin account. */
   info?: {
+    /** The decoded [[MarginAccountData]]. */
     marginAccount: MarginAccountData
+    /** The decoded [[LiquidationData]]. This may only be present during liquidation. */
     liquidationData?: LiquidationData
+    /** The decoded position data in the margin account. */
     positions: AccountPositionList
   }
 
-  addresses: MarginAccountAddresses
+  /** The address of the [[MarginAccount]] */
+  address: PublicKey
+  /** The owner of the [[MarginAccount]] */
+  owner: PublicKey
+  /** The parsed [[AccountPosition]] array of the margin account. */
   positions: AccountPosition[]
-  valuation: Valuation
+  /** The summarized [[PoolPosition]] array of pool deposits and borrows. */
   poolPositions: Record<string, PoolPosition>
+  /** The [[Valuation]] of the margin account. */
+  valuation: Valuation
   summary: AccountSummary
 
-  get address() {
-    return this.addresses.marginAccount
-  }
-  get owner() {
-    return this.addresses.owner
-  }
   get liquidator() {
     return this.info?.marginAccount.liquidator
   }
   get liquidaton() {
     return this.info?.marginAccount.liquidation
   }
+  /**
+   * Returns true if a [[LiquidationData]] account exists and is associated with the [[MarginAccount]].
+   * Certain actions are not allowed while liquidation is in progress.
+   */
   get isBeingLiquidated() {
     return !this.info?.marginAccount.liquidation.equals(PublicKey.default)
   }
@@ -128,21 +159,25 @@ export class MarginAccount {
    */
   get riskIndicator() {
     return this.computeRiskIndicator(
-      this.valuation.requiredCollateral.asNumber(),
-      this.valuation.weightedCollateral.asNumber(),
-      this.valuation.liabilities.asNumber()
+      this.valuation.requiredCollateral.toNumber(),
+      this.valuation.weightedCollateral.toNumber(),
+      this.valuation.liabilities.toNumber()
     )
   }
 
-  /** A just-okay risk indicator (TODO improve me) */
+  /** Compute the risk indicator using components from [[Valuation]] */
   computeRiskIndicator(requiredCollateral: number, weightedCollateral: number, liabilities: number): number {
     if (requiredCollateral < 0) throw Error("requiredCollateral must be non-negative")
     if (weightedCollateral < 0) throw Error("weightedCollateral must be non-negative")
     if (liabilities < 0) throw Error("liabilities must be non-negative")
 
-    if (weightedCollateral > 0) return (requiredCollateral + liabilities) / weightedCollateral
-    else if (requiredCollateral + liabilities > 0) return Infinity
-    else return 0
+    if (weightedCollateral > 0) {
+      return (requiredCollateral + liabilities) / weightedCollateral
+    } else if (requiredCollateral + liabilities > 0) {
+      return Infinity
+    } else {
+      return 0
+    }
   }
 
   /**
@@ -151,6 +186,8 @@ export class MarginAccount {
    * @param {Provider} provider The provider and wallet that can sign for this margin account
    * @param {Address} owner
    * @param {number} seed
+   * @param {Record<string, Pool>} pools
+   * @param {MarginWalletTokens} walletTokens
    * @memberof MarginAccount
    */
   constructor(
@@ -161,9 +198,10 @@ export class MarginAccount {
     public pools?: Record<string, Pool>,
     public walletTokens?: MarginWalletTokens
   ) {
+    this.owner = translateAddress(owner)
+    this.address = MarginAccount.derive(programs, owner, seed)
     this.pools = pools
     this.walletTokens = walletTokens
-    this.addresses = MarginAccount.derive(programs, owner, seed)
     this.positions = this.getPositions()
     this.valuation = this.getValuation(true)
     this.poolPositions = this.getAllPoolPositions()
@@ -175,39 +213,73 @@ export class MarginAccount {
    *
    * @private
    * @static
-   * @param {Address} marginProgramId
+   * @param {MarginPrograms} programs
    * @param {Address} owner
    * @param {number} seed
    * @return {PublicKey}
    * @memberof MarginAccount
    */
-  static derive(programs: MarginPrograms, owner: Address, seed: number): MarginAccountAddresses {
+  static derive(programs: MarginPrograms, owner: Address, seed: number): PublicKey {
     if (seed > this.SEED_MAX_VALUE || seed < 0) {
       console.log(`Seed is not within the range: 0 <= seed <= ${this.SEED_MAX_VALUE}.`)
     }
-    const ownerAddress = translateAddress(owner)
     const buffer = Buffer.alloc(2)
     buffer.writeUInt16LE(seed)
     const marginAccount = findDerivedAccount(programs.config.marginProgramId, owner, buffer)
 
-    return { marginAccount, owner: ownerAddress }
+    return marginAccount
   }
 
-  static deriveLiquidation(programs: MarginPrograms, marginAccount: MarginAccount, liquidator: Address) {
-    return findDerivedAccount(programs.config.marginProgramId, marginAccount.address, liquidator)
+  /**
+   * Derive the address of a [[LiquidationData]] account.
+   *
+   * @param {Address} liquidator
+   * @return {PublicKey}
+   * @memberof MarginAccount
+   */
+  findLiquidationAddress(liquidator: Address): PublicKey {
+    return findDerivedAccount(this.programs.config.marginProgramId, this.address, liquidator)
   }
 
-  static deriveMetadata(programs: MarginPrograms, tokenMint: Address) {
-    const tokenMintAddress = translateAddress(tokenMint)
-    return findDerivedAccount(programs.config.metadataProgramId, tokenMintAddress)
+  /**
+   * Derive the address of a metadata account.
+   *
+   * ## Remarks
+   *
+   * Some account types such as pools, adapters and position mints have
+   * metadata associated with them. The metadata type is determined by the account type.
+   *
+   * @param {Address} account
+   * @return {PublicKey}
+   * @memberof MarginAccount
+   */
+  findMetadataAddress(account: Address): PublicKey {
+    const accountAddress = translateAddress(account)
+    return findDerivedAccount(this.programs.config.metadataProgramId, accountAddress)
+  }
+
+  /**
+   * Derive the address of a position token account associated with a [[MarginAccount]]
+   * and position token mint.
+   *
+   * @param {Address} positionTokenMint
+   * @return {PublicKey}
+   * @memberof MarginAccount
+   */
+  findPositionTokenAddress(positionTokenMint: Address): PublicKey {
+    const positionTokenMintAddress = translateAddress(positionTokenMint)
+    return findDerivedAccount(this.programs.config.marginProgramId, this.address, positionTokenMintAddress)
   }
 
   /**
    *
-   * @param {MarginPrograms} programs
-   * @param {AnchorProvider} provider The provider and wallet that can sign for this margin account
-   * @param {Address} owner
-   * @param {number} seed
+   * @param args
+   * @param {MarginPrograms} args.programs
+   * @param {AnchorProvider} args.provider The provider and wallet that can sign for this margin account
+   * @param {Record<string, Pool>} args.pools Collection of [[Pool]] to calculate pool positions and prices.
+   * @param {MarginWalletTokens} args.walletTokens Tokens owned by the wallet to calculate max deposit amounts.
+   * @param {Address} args.owner
+   * @param {number} args.seed
    * @returns {Promise<MarginAccount>}
    */
   static async load({
@@ -309,7 +381,7 @@ export class MarginAccount {
     this.summary = this.getSummary()
   }
 
-  getAllPoolPositions(): Record<string, PoolPosition> {
+  private getAllPoolPositions(): Record<string, PoolPosition> {
     const positions: Record<string, PoolPosition> = {}
     const poolConfigs = Object.values(this.programs.config.tokens)
 
@@ -322,15 +394,15 @@ export class MarginAccount {
       }
 
       // Deposits
-      const depositNotePosition = this.getPosition(pool.addresses.depositNoteMint)
+      const depositNotePosition = this.getPositionNullable(pool.addresses.depositNoteMint)
       const depositBalanceNotes = Number192.from(depositNotePosition?.balance ?? new BN(0))
-      const depositBalance = depositBalanceNotes.mul(pool.depositNoteExchangeRate()).asTokenAmount(pool.decimals)
+      const depositBalance = depositBalanceNotes.mul(pool.depositNoteExchangeRate()).toTokenAmount(pool.decimals)
       const depositValue = depositNotePosition?.value ?? 0
 
       // Loans
-      const loanNotePosition = this.getPosition(pool.addresses.loanNoteMint)
+      const loanNotePosition = this.getPositionNullable(pool.addresses.loanNoteMint)
       const loanBalanceNotes = Number192.from(loanNotePosition?.balance ?? new BN(0))
-      const loanBalance = loanBalanceNotes.mul(pool.loanNoteExchangeRate()).asTokenAmount(pool.decimals)
+      const loanBalance = loanBalanceNotes.mul(pool.loanNoteExchangeRate()).toTokenAmount(pool.decimals)
       const loanValue = loanNotePosition?.value ?? 0
 
       // Max trade amounts
@@ -350,7 +422,7 @@ export class MarginAccount {
               .sub(this.valuation.effectiveCollateral.mul(warningRiskLevel))
               .div(collateralWeight.mul(warningRiskLevel))
               .div(lamportPrice)
-      ).asTokenAmount(pool.decimals)
+      ).toTokenAmount(pool.decimals)
 
       // Buying power
       // FIXME
@@ -374,7 +446,7 @@ export class MarginAccount {
     return positions
   }
 
-  getMaxTradeAmounts(
+  private getMaxTradeAmounts(
     pool: Pool,
     depositBalance: TokenAmount,
     loanBalance: TokenAmount
@@ -410,15 +482,15 @@ export class MarginAccount {
     const lamportPrice = tokenPrice.div(Number128.fromDecimal(new BN(1), pool.decimals))
 
     const depositNoteValueModifier =
-      this.getPosition(pool.addresses.depositNoteMint)?.valueModifier ?? pool.depositNoteMetadata.valueModifier
+      this.getPositionNullable(pool.addresses.depositNoteMint)?.valueModifier ?? pool.depositNoteMetadata.valueModifier
     const loanNoteValueModifier =
-      this.getPosition(pool.addresses.loanNoteMint)?.valueModifier ?? pool.loanNoteMetadata.valueModifier
+      this.getPositionNullable(pool.addresses.loanNoteMint)?.valueModifier ?? pool.loanNoteMetadata.valueModifier
 
     // Max withdraw
     let withdraw = this.valuation.availableSetupCollateral
       .div(depositNoteValueModifier)
       .div(lamportPrice)
-      .asTokenAmount(pool.decimals)
+      .toTokenAmount(pool.decimals)
     withdraw = TokenAmount.min(withdraw, depositBalance)
     withdraw = TokenAmount.min(withdraw, pool.vault)
     withdraw = TokenAmount.max(withdraw, zero)
@@ -427,7 +499,7 @@ export class MarginAccount {
     let borrow = this.valuation.availableSetupCollateral
       .div(Number128.ONE.add(Number128.ONE.div(MarginAccount.SETUP_LEVERAGE_FRACTION.mul(loanNoteValueModifier))))
       .div(lamportPrice)
-      .asTokenAmount(pool.decimals)
+      .toTokenAmount(pool.decimals)
     borrow = TokenAmount.min(borrow, pool.vault)
     borrow = TokenAmount.max(borrow, zero)
 
@@ -451,7 +523,7 @@ export class MarginAccount {
     }
   }
 
-  getSummary(): AccountSummary {
+  private getSummary(): AccountSummary {
     let collateralValue = Number128.ZERO
 
     for (const position of this.positions) {
@@ -461,12 +533,12 @@ export class MarginAccount {
       }
     }
 
-    const exposureNumber = this.valuation.liabilities.asNumber()
-    const cRatio = exposureNumber === 0 ? Infinity : collateralValue.asNumber() / exposureNumber
-    const minCRatio = exposureNumber === 0 ? 1 : 1 + this.valuation.effectiveCollateral.asNumber() / exposureNumber
-    const depositedValue = collateralValue.asNumber()
-    const borrowedValue = this.valuation.liabilities.asNumber()
-    const accountBalance = collateralValue.sub(this.valuation.liabilities).asNumber()
+    const exposureNumber = this.valuation.liabilities.toNumber()
+    const cRatio = exposureNumber === 0 ? Infinity : collateralValue.toNumber() / exposureNumber
+    const minCRatio = exposureNumber === 0 ? 1 : 1 + this.valuation.effectiveCollateral.toNumber() / exposureNumber
+    const depositedValue = collateralValue.toNumber()
+    const borrowedValue = this.valuation.liabilities.toNumber()
+    const accountBalance = collateralValue.sub(this.valuation.liabilities).toNumber()
 
     return {
       depositedValue,
@@ -478,8 +550,13 @@ export class MarginAccount {
     }
   }
 
-  /** Get the list of positions on this account */
-  getPositions() {
+  /**
+   * Get the array of regstered [[AccountPosition]] on this account
+   *
+   * @return {AccountPosition[]}
+   * @memberof MarginAccount
+   */
+  getPositions(): AccountPosition[] {
     return (this.info?.positions.positions ?? [])
       .filter(position => !position.address.equals(PublicKey.default))
       .map(info => {
@@ -487,8 +564,28 @@ export class MarginAccount {
         return new AccountPosition({ info, price })
       })
   }
+  /**
+   * Get the registerd [[AccountPosition]] associated with the position mint.
+   * Throws an error if the position does not exist.
+   *
+   * @param {Address} mint The position mint. For example a [[Pool]] deposit note mint.
+   * @return {(AccountPosition)}
+   * @memberof MarginAccount
+   */
+  getPosition(mint: Address): AccountPosition {
+    let position = this.getPositionNullable(mint)
+    assert(position)
+    return position
+  }
 
-  getPosition(mint: Address) {
+  /**
+   * Get the registerd [[AccountPosition]] associated with the position mint.
+   *
+   * @param {Address} mint The position mint. For example a [[Pool]] deposit note mint.
+   * @return {(AccountPosition | undefined)}
+   * @memberof MarginAccount
+   */
+  getPositionNullable(mint: Address): AccountPosition | undefined {
     const mintAddress = translateAddress(mint)
 
     for (let i = 0; i < this.positions.length; i++) {
@@ -500,7 +597,7 @@ export class MarginAccount {
   }
 
   setPositionBalance(mint: PublicKey, account: PublicKey, balance: BN) {
-    const position = this.getPosition(mint)
+    const position = this.getPositionNullable(mint)
 
     if (!position || !position.address.equals(account)) {
       return
@@ -521,15 +618,18 @@ export class MarginAccount {
   }
 
   setPositionPrice(mint: PublicKey, price: PriceInfo) {
-    this.getPosition(mint)?.setPrice(price)
+    this.getPositionNullable(mint)?.setPrice(price)
   }
 
-  /** Check if the given address is an authority for this margin account */
+  /**
+   * Check if the given address is an authority for this margin account.
+   * The owner has authority, as well as a liquidator only during liquidation.
+   */
   hasAuthority(authority: PublicKey) {
     return authority.equals(this.owner) || this.liquidator?.equals(authority)
   }
 
-  getValuation(includeStalePositions: boolean): Valuation {
+  private getValuation(includeStalePositions: boolean): Valuation {
     const timestamp = getTimestamp()
 
     let pastDue = false
@@ -549,8 +649,8 @@ export class MarginAccount {
       let staleReason: ErrorCode | undefined
       {
         const balanceAge = timestamp.sub(position.balanceTimestamp)
-        const priceQuoteAge = timestamp.sub(position.price.timestamp)
-        if (position.price.isValid != POS_PRICE_VALID) {
+        const priceQuoteAge = timestamp.sub(position.priceRaw.timestamp)
+        if (position.priceRaw.isValid != POS_PRICE_VALID) {
           // collateral with bad prices
           staleReason = ErrorCode.InvalidPrice
         } else if (position.maxStaleness.gt(new BN(0)) && balanceAge.gt(position.maxStaleness)) {
@@ -564,7 +664,7 @@ export class MarginAccount {
       }
 
       if (kind === PositionKind.NoValue) {
-        // FIXME
+        // Intentional
       } else if (kind === PositionKind.Claim) {
         if (staleReason === undefined || includeStalePositions) {
           if (
@@ -656,19 +756,66 @@ export class MarginAccount {
     }
     return { all, map }
   }
-
+  /**
+   * Fetches the account and returns if it exists.
+   *
+   * @return {Promise<boolean>}
+   * @memberof MarginAccount
+   */
   static async exists(programs: MarginPrograms, owner: Address, seed: number): Promise<boolean> {
     const ownerPubkey = translateAddress(owner)
-    const { marginAccount } = this.derive(programs, ownerPubkey, seed)
+    const marginAccount = this.derive(programs, ownerPubkey, seed)
     const info = await programs.margin.provider.connection.getAccountInfo(marginAccount)
     return !!info
   }
 
+  /**
+   * Fetches the account and returns if it exists
+   *
+   * @return {Promise<boolean>}
+   * @memberof MarginAccount
+   */
   async exists(): Promise<boolean> {
     return await MarginAccount.exists(this.programs, this.owner, this.seed)
   }
 
-  /** Create the margin account. If no seed is provided, one will be located. */
+  /**
+   * Create the margin account if it does not exist.
+   * If no seed is provided, one will be located.
+   *
+   * ## Example
+   *
+   * ```javascript
+   * // Load programs
+   * const config = await MarginClient.getConfig("devnet")
+   * const programs = MarginClient.getPrograms(provider, config)
+   *
+   * // Load tokens and wallet
+   * const pools = await poolManager.loadAll()
+   * const walletTokens = await MarginAccount.loadTokens(programs, walletPubkey)
+   *
+   * // Create margin account
+   * const marginAccount = await MarginAccount.createAccount({
+   *   programs,
+   *   provider,
+   *   owner: wallet.publicKey,
+   *   seed: 0,
+   *   pools,
+   *   walletTokens
+   * })
+   * ```
+   *
+   * @static
+   * @param args
+   * @param {MarginPrograms} args.programs
+   * @param {AnchorProvider} args.provider A provider that may be used to sign transactions modifying the account
+   * @param {Address} args.owner The address of the [[MarginAccount]] owner
+   * @param {number} args.seed The seed or ID of the [[MarginAccount]] in the range of (0, 65535]
+   * @param {Record<string, Pool>} args.pools A [[Pool]] collection to calculate pool positions.
+   * @param {MarginWalletTokens} args.walletTokens The tokens in the owners wallet to determine max trade amounts.
+   * @return {Promise<MarginAccount>}
+   * @memberof MarginAccount
+   */
   static async createAccount({
     programs,
     provider,
@@ -683,7 +830,7 @@ export class MarginAccount {
     seed?: number
     pools?: Record<string, Pool>
     walletTokens?: MarginWalletTokens
-  }) {
+  }): Promise<MarginAccount> {
     if (seed === undefined) {
       seed = await this.getUnusedAccountSeed({ programs, provider, owner })
     }
@@ -726,16 +873,62 @@ export class MarginAccount {
     return accounts.length
   }
 
-  /** Create the margin account using it's owner and seed. */
-  async createAccount() {
-    const ix: TransactionInstruction[] = []
-    await this.withCreateAccount(ix)
-    if (ix.length > 0) {
-      return await this.provider.sendAndConfirm(new Transaction().add(...ix))
+  /**
+   * Create the margin account if it does not exist.
+   * If no seed is provided, one will be located.
+   *
+   * ## Example
+   *
+   * ```javascript
+   * // Load programs
+   * const config = await MarginClient.getConfig("devnet")
+   * const programs = MarginClient.getPrograms(provider, config)
+   *
+   * // Load tokens and wallet
+   * const pools = await poolManager.loadAll()
+   * const walletTokens = await MarginAccount.loadTokens(programs, walletPubkey)
+   *
+   * // Create margin account
+   * const marginAccount = new MarginAccount({
+   *    programs,
+   *    provider,
+   *    walletPubkey,
+   *    0,
+   *    pools,
+   *    walletTokens
+   * })
+   *
+   * await marginAccount.createAccount()
+   * ```
+   *
+   * @return {Promise<void>}
+   * @memberof MarginAccount
+   */
+  async createAccount(): Promise<void> {
+    const instructions: TransactionInstruction[] = []
+    await this.withCreateAccount(instructions)
+    if (instructions.length > 0) {
+      await this.sendAndConfirm(instructions)
     }
   }
 
-  /** Get instruction to create the account */
+  /**
+   * Get instruction to create the account if it does not exist.
+   *
+   * ## Example
+   *
+   * ```ts
+   * const instructions: TransactionInstruction[] = []
+   * await marginAccount.withCreateAccount(instructions)
+   * if (instructions.length > 0) {
+   *   await marginAccount.sendAndConfirm(instructions)
+   * }
+   * ```
+   *
+   * @param {TransactionInstruction[]} instructions
+   * @return {Promise<void>}
+   * @memberof MarginAccount
+   */
   async withCreateAccount(instructions: TransactionInstruction[]): Promise<void> {
     if (!(await this.exists())) {
       const ix = await this.programs.margin.methods
@@ -751,7 +944,31 @@ export class MarginAccount {
     }
   }
 
-  async getOrCreatePosition(tokenMint: Address) {
+  /**
+   * Get the [[AccountPosition]] [[PublicKey]] and sends a transaction to
+   * create it if it doesn't exist.
+   *
+   * ## Remarks
+   *
+   * In web apps it's recommended to call `withGetOrCreatePosition` as part of a larger
+   * transaction to prompt for a wallet signature less often.
+   *
+   * ## Example
+   *
+   * ```ts
+   * // Load margin pools
+   * const poolManager = new PoolManager(programs, provider)
+   * const pools = await poolManager.loadAll()
+   *
+   * const depositNote = pools["SOL"].addresses.depositNoteMint
+   * await marginAccount.getOrCreateposition(depositNote)
+   * ```
+   *
+   * @param {Address} tokenMint
+   * @return {Promise<PublicKey>}
+   * @memberof MarginAccount
+   */
+  async getOrCreatePosition(tokenMint: Address): Promise<PublicKey> {
     assert(this.info)
     const tokenMintAddress = translateAddress(tokenMint)
     for (let i = 0; i < this.positions.length; i++) {
@@ -771,13 +988,41 @@ export class MarginAccount {
     throw new Error("Unable to register position.")
   }
 
+  /**
+   * Get the [[AccountPosition]] [[PublicKey]] and appends an instructon to
+   * create it if it doesn't exist.
+   *
+   * ## Example
+   *
+   * ```ts
+   * // Load margin pools
+   * const poolManager = new PoolManager(programs, provider)
+   * const pools = await poolManager.loadAll()
+   *
+   * // Register position
+   * const depositNote = pools["SOL"].addresses.depositNoteMint
+   * const instructions: TransactionInstruction[] = []
+   * await marginAccount.withRegisterPosition(instructions, depositNote)
+   * await marginAccount.sendAndConfirm(instructions)
+   * ```
+   *
+   * @param {{
+   *     positionTokenMint: Address
+   *     instructions: TransactionInstruction[]
+   *   }} {
+   *     positionTokenMint,
+   *     instructions
+   *   }
+   * @return {PublicKey}
+   * @memberof MarginAccount
+   */
   async withGetOrCreatePosition({
     positionTokenMint,
     instructions
   }: {
     positionTokenMint: Address
     instructions: TransactionInstruction[]
-  }) {
+  }): Promise<PublicKey> {
     const tokenMintAddress = translateAddress(positionTokenMint)
     for (let i = 0; i < this.positions.length; i++) {
       const position = this.positions[i]
@@ -789,30 +1034,85 @@ export class MarginAccount {
     return await this.withRegisterPosition(instructions, tokenMintAddress)
   }
 
-  async updateAllPositionBalances() {
+  /**
+   * Updates all position balances. `withUpdatePositionBalance` is often included
+   * in transactions after modifying balances to synchronize with the margin account.
+   *
+   * @return {Promise<string>}
+   * @memberof MarginAccount
+   */
+  async updateAllPositionBalances(): Promise<string> {
     const instructions: TransactionInstruction[] = []
     await this.withUpdateAllPositionBalances({ instructions })
-    await this.provider.sendAndConfirm(new Transaction().add(...instructions))
+    return await this.sendAndConfirm(instructions)
   }
 
+  /**
+   * Create instructions to update all position balances. `withUpdatePositionBalance` often included in
+   * transactions after modifying balances ot synchronize with the margin account.
+   *
+   * ## Example
+   *
+   * ```ts
+   * const instructions: TransactionInstruction[] = []
+   * await marginAccount.withUpdateAllPositionBalances({ instructions })
+   * await marginAccount.sendAndConfirm(instructions)
+   * ```
+   *
+   * @param {{ instructions: TransactionInstruction[] }} { instructions }
+   * @memberof MarginAccount
+   */
   async withUpdateAllPositionBalances({ instructions }: { instructions: TransactionInstruction[] }) {
     for (const position of this.positions) {
       await this.withUpdatePositionBalance({ instructions, position: position.address })
     }
   }
 
-  async updatePositionBalance({ position }: { position: AccountPosition }) {
+  /**
+   * Updates a single position balance. `withUpdatePositionBalance` is often included
+   * in transactions after modifying balances to synchronize with the margin account.
+   *
+   * @param {{ position: AccountPosition }} { position }
+   * @return {Promise<string>}
+   * @memberof MarginAccount
+   */
+  async updatePositionBalance({ position }: { position: AccountPosition }): Promise<string> {
     const instructions: TransactionInstruction[] = []
     await this.withUpdatePositionBalance({ instructions, position: position.address })
-    return await this.provider.sendAndConfirm(new Transaction().add(...instructions))
+    return await this.sendAndConfirm(instructions)
   }
 
-  /// Get instruction to update the accounting for assets in
-  /// the custody of the margin account.
-  ///
-  /// # Params
-  ///
-  /// `account` - The account address that has had a balance change
+  /**
+   * Get instruction to update the accounting for assets in
+   * the custody of the margin account.
+   *
+   * ## Example
+   *
+   * ```ts
+   * // Load the pools
+   * const poolManager = new PoolManager(programs, provider)
+   * const pools = await poolManager.loadAll()
+   *
+   * // Find the position
+   * const depositNote = pools["SOL"].addresses.depositNoteMint
+   * const position = marginAccount.getPosition(depositNote).address
+   *
+   * // Update the position balance
+   * const instructions: TransactionInstruction[] = []
+   * await marginAccount.withUpdatePositionBalance({ instructions, position })
+   * await marginAccount.sendAndConfirm(instructions)
+   * ```
+   *
+   * @param {{
+   *     instructions: TransactionInstruction[]
+   *     position: Address
+   *   }} {
+   *     instructions,
+   *     position
+   *   }
+   * @return {*}  {Promise<void>}
+   * @memberof MarginAccount
+   */
   async withUpdatePositionBalance({
     instructions,
     position
@@ -830,27 +1130,118 @@ export class MarginAccount {
     instructions.push(instruction)
   }
 
+  /**
+   * Sends a transaction to refresh the metadata for a position.
+   *
+   * ## Remarks
+   *
+   * When a position is registered some position mint metadata is copied to the position.
+   * This data can become out of sync if the mint metadata is changed. Refreshing the position
+   * metadata may at the benefit or detriment to the owner.
+   *
+   * @param {{ positionMint: Address }} { positionMint }
+   * @return {Promise<string>}
+   * @memberof MarginAccount
+   */
+  async refreshPositionMetadata({ positionMint }: { positionMint: Address }): Promise<string> {
+    const instructions: TransactionInstruction[] = []
+    await this.withRefreshPositionMetadata({ instructions, positionMint })
+    return await this.sendAndConfirm(instructions)
+  }
+
+  /**
+   * Creates an instruction to refresh the metadata for a position.
+   *
+   * ## Remarks
+   *
+   * When a position is registered some position mint metadata is copied to the position.
+   * This data can become out of sync if the mint metadata is changed. Refreshing the position
+   * metadata may at the benefit or detriment to the owner.
+   *
+   * @param {{
+   *     instructions: TransactionInstruction[]
+   *     positionMint: Address
+   *   }} {
+   *     instructions,
+   *     positionMint
+   *   }
+   * @return {Promise<void>}
+   * @memberof MarginAccount
+   */
+  async withRefreshPositionMetadata({
+    instructions,
+    positionMint
+  }: {
+    instructions: TransactionInstruction[]
+    positionMint: Address
+  }): Promise<void> {
+    const metadata = this.findMetadataAddress(positionMint)
+    const ix = await this.programs.margin.methods
+      .refreshPositionMetadata()
+      .accounts({
+        marginAccount: this.address,
+        metadata
+      })
+      .instruction()
+    instructions.push(ix)
+  }
+
+  /**
+   * Sends a transaction to register an [[AccountPosition]] for the mint. When registering a [[Pool]] position,
+   * the mint would not be Bitcoin or SOL, but rather the `depositNoteMint` or `loanNoteMint` found in `pool.addresses`.
+   * A margin account has a limited capacity of positions.
+   *
+   * In web apps it's is recommended to use `withRegisterPosition` as part of a larget transaction
+   * to prompt for a wallet signature less often.
+   *
+   * ## Example
+   *
+   * ```ts
+   * // Load the pools
+   * const poolManager = new PoolManager(programs, provider)
+   * const pools = await poolManager.loadAll()
+   *
+   * // Register the SOL deposit position
+   * const depositNoteMint = pools["SOL"].addresses.depositNoteMint
+   * await marginAccount.registerPosition(depositNoteMint)
+   * ```
+   *
+   * @param {Address} tokenMint
+   * @return {Promise<TransactionSignature>}
+   * @memberof MarginAccount
+   */
   async registerPosition(tokenMint: Address): Promise<TransactionSignature> {
     const tokenMintAddress = translateAddress(tokenMint)
     const ix: TransactionInstruction[] = []
     await this.withRegisterPosition(ix, tokenMintAddress)
-    return await this.provider.sendAndConfirm(new Transaction().add(...ix))
+    return await this.sendAndConfirm(ix)
   }
 
-  /// Get instruction to register new position
-  ///
-  /// # Params
-  ///
-  /// `token_mint` - The mint for the relevant token for the position
-  /// `token_oracle` - The oracle account with price information on the token
-  ///
-  /// # Returns
-  ///
-  /// Returns the instruction, and the address of the token account to be
-  /// created for the position.
+  /**
+   * Get instruction to register new position
+   *
+   * ## Example
+   *
+   * ```ts
+   * // Load the pools
+   * const poolManager = new PoolManager(programs, provider)
+   * const pools = await poolManager.loadAll()
+   *
+   * // Register the SOL deposit position
+   * const depositNoteMint = pools["SOL"].addresses.depositNoteMint
+   * const instructions: TransactionInstruction[] = []
+   * const position = await marginAccount.withRegisterPosition(instructions, depositNoteMint)
+   * await marginAccount.sendAndConfirm(instructions)
+   * ```
+   *
+   * @param {TransactionInstruction[]} instructions Instructions array to append to.
+   * @param {Address} positionTokenMint The mint for the relevant token for the position
+   * @return {Promise<PublicKey>} Returns the instruction, and the address of the token account to be created for the position.
+   * @memberof MarginAccount
+   */
   async withRegisterPosition(instructions: TransactionInstruction[], positionTokenMint: Address): Promise<PublicKey> {
-    const tokenAccount = findDerivedAccount(this.programs.config.marginProgramId, this.address, positionTokenMint)
-    const metadata = findDerivedAccount(this.programs.config.metadataProgramId, positionTokenMint)
+    const tokenAccount = this.findPositionTokenAddress(positionTokenMint)
+    const metadata = this.findMetadataAddress(positionTokenMint)
 
     const ix = await this.programs.margin.methods
       .registerPosition()
@@ -870,17 +1261,55 @@ export class MarginAccount {
     return tokenAccount
   }
 
+  /**
+   * Send a transaction to close the [[MarginAccount]] and return rent to the owner.
+   * All positions must have a zero balance and be closed first.
+   *
+   * ## Example
+   *
+   * ```ts
+   * // Close all positions. A non zero balance results in an error
+   * for (const position of marginAccount.getPositions()) {
+   *   await marginAccount.closePosition(position)
+   * }
+   *
+   * // Close the account and send the transaction
+   * await marginAccount.closeAccount()
+   * ```
+   *
+   * @memberof MarginAccount
+   */
   async closeAccount() {
     const ix: TransactionInstruction[] = []
     await this.withCloseAccount(ix)
     await this.sendAndConfirm(ix)
   }
 
-  /// Get instruction to close an account
-  ///
-  /// # Params
-  ///
+  /**
+   * Create an instruction to close the [[MarginAccount]] and return rent to the owner.
+   * All positions must have a zero balance and be closed first.
+   *
+   * ## Example
+   *
+   * ```ts
+   * const instructions: TransactionInstruction[] = []
+   *
+   * // Close all positions. A non zero balance results in an error
+   * for (const position of marginAccount.getPositions()) {
+   *   await marginAccount.withClosePosition(instructions, position)
+   * }
+   *
+   * // Close the account and send the transaction
+   * await marginAccount.withCloseAccount(instructions)
+   * await marginAccount.sendAndConfirm(instructions)
+   * ```
+   *
+   * @param {TransactionInstruction[]} instructions
+   * @returns {Promise<void>}
+   * @memberof MarginAccount
+   */
   async withCloseAccount(instructions: TransactionInstruction[]): Promise<void> {
+    this.getPositions().forEach(position => this.withClosePosition(instructions, position))
     const ix = await this.programs.margin.methods
       .closeAccount()
       .accounts({
@@ -892,20 +1321,62 @@ export class MarginAccount {
     instructions.push(ix)
   }
 
-  async closePosition(position: AccountPosition) {
+  /**
+   * Send a transaction to close a position. A non-zero balance will result in a transaction error.
+   * There is a limited capacity for positions so it is recommended to close positions that
+   * are no longer needed.
+   *
+   * ## Example
+   *
+   * ```ts
+   * // Load the pools
+   * const poolManager = new PoolManager(programs, provider)
+   * const pools = await poolManager.loadAll()
+   *
+   * // Get the SOL position
+   * const depositNoteMint = pools["SOL"].addresses.depositNoteMint
+   * const position = marginAccount.getPosition(depositNoteMint)
+   *
+   * await marginAccount.closePosition(position)
+   * ```
+   *
+   * @param {AccountPosition} position
+   * @return {Promise<void>}
+   * @memberof MarginAccount
+   */
+  async closePosition(position: AccountPosition): Promise<void> {
     const ix: TransactionInstruction[] = []
     await this.withClosePosition(ix, position)
     await this.sendAndConfirm(ix)
   }
 
-  /// Get instruction to close a position
-  ///
-  /// # Params
-  ///
-  /// `token_account` - The address of the token account for the position being closed
+  /**
+   * Create an instruction to close a position. A non-zero balance will result in a transaction error.
+   * There is a limited capacity for positions so it is recommended to close positions that
+   * are no longer needed.
+   *
+   * ## Example
+   *
+   * ```ts
+   * // Load the pools
+   * const poolManager = new PoolManager(programs, provider)
+   * const pools = await poolManager.loadAll()
+   *
+   * // Get the SOL position
+   * const depositNoteMint = pools["SOL"].addresses.depositNoteMint
+   * const position = marginAccount.getPosition(depositNoteMint)
+   *
+   * const instructions: TransactionInstruction[] = []
+   * await marginAccount.closePosition(instructions, position)
+   * await marginAccount.sendAndConfirm(instructions)
+   * ```
+   *
+   * @param {TransactionInstruction[]} instructions
+   * @param {AccountPosition} position
+   * @return {Promise<void>}
+   * @memberof MarginAccount
+   */
   async withClosePosition(instructions: TransactionInstruction[], position: AccountPosition): Promise<void> {
-    //const authority = findDerivedAccount(this.programs.config.controlProgramId)
-
     const ix = await this.programs.margin.methods
       .closePosition()
       .accounts({
@@ -920,7 +1391,19 @@ export class MarginAccount {
     instructions.push(ix)
   }
 
-  async stopLiquidation() {
+  /**
+   * Send a transaction to end liquidation.
+   *
+   * ## Remarks
+   *
+   * The [[MarginAccount]] can enter liquidation while it's `riskIndicator` is at or above 1.0.
+   * Liquidation is in progress when `isBeingLiquidated` returns true.
+   * Liquidation can only end when enough collateral is deposited or enough collateral is liquidated to lower `riskIndicator` sufficiently.
+   *
+   * @return {Promise<string>}
+   * @memberof MarginAccount
+   */
+  async stopLiquidation(): Promise<string> {
     const ix: TransactionInstruction[] = []
     await this.withStopLiquidation(ix)
     return await this.sendAndConfirm(ix)
@@ -930,6 +1413,20 @@ export class MarginAccount {
   ///
   /// # Params
   ///
+
+  /**
+   * Create an instruction to end liquidation.
+   *
+   * ## Remarks
+   *
+   * The [[MarginAccount]] can enter liquidation while it's `riskIndicator` is at or above 1.0.
+   * Liquidation is in progress when `isBeingLiquidated` returns true.
+   * Liquidation can only end when enough collateral is deposited or enough collateral is liquidated to lower `riskIndicator` sufficiently.
+   *
+   * @param {TransactionInstruction[]} instructions
+   * @return {Promise<void>}
+   * @memberof MarginAccount
+   */
   async withStopLiquidation(instructions: TransactionInstruction[]): Promise<void> {
     const ix = await this.programs.margin.methods
       .liquidateEnd()
@@ -941,12 +1438,45 @@ export class MarginAccount {
       .instruction()
     instructions.push(ix)
   }
-
-  // Get the remaining time on a liquidation
-  getRemainingLiquidationTime() {
-    return this.info?.liquidationData?.startTime && Date.now() / 1000 - this.info?.liquidationData?.startTime.toNumber()
+  /**
+   * Get the remaining time in seconds until liquidation times out and `stopLiquidation`
+   * can be called regardless of sufficient collateral.
+   * If the [[MarginAccount]] is not currently being liquidated then `0` is returned.
+   *
+   * @returns {number} The number of seconds until liquidation times out
+   * @memberof MarginAccount
+   */
+  getRemainingLiquidationTime(): number {
+    const startTime = this.info?.liquidationData?.startTime
+    if (!startTime) {
+      return 0
+    }
+    return Date.now() / 1000 - startTime.toNumber()
   }
 
+  /**
+   * Create an instruction that performs an action by invoking other adapter programs, allowing them to alter
+   * the balances of the token accounts belonging to this margin account. The transaction fails if the [[MarginAccount]]
+   * does not have sufficent collateral.
+   *
+   * ## Remarks
+   *
+   * This instruction is not invoked directly, but rather internally for example by [[Pool]] when depositing.
+   *
+   * @param {{
+   *     instructions: TransactionInstruction[]
+   *     adapterProgram: Address
+   *     adapterMetadata: Address
+   *     adapterInstruction: TransactionInstruction
+   *   }} {
+   *     instructions,
+   *     adapterProgram,
+   *     adapterMetadata,
+   *     adapterInstruction
+   *   }
+   * @return {Promise<void>}
+   * @memberof MarginAccount
+   */
   async withAdapterInvoke({
     instructions,
     adapterProgram,
@@ -971,6 +1501,31 @@ export class MarginAccount {
     instructions.push(ix)
   }
 
+  /**
+   * Create an instruction to perform an action by invoking other adapter programs, allowing them only to
+   * refresh the state of the margin account to be consistent with the actual
+   * underlying prices or positions, but not permitting new position changes.
+   *
+   * ## Remarks
+   *
+   * This instruction is not invoked directly, but rather internally for example by [[Pool]] when depositing.
+   * Accounting invoke is necessary when several position values have to be refreshed but in the interim there
+   * aren't enough fresh positions to satisfy margin requirements.
+   *
+   * @param {{
+   *     instructions: TransactionInstruction[]
+   *     adapterProgram: Address
+   *     adapterMetadata: Address
+   *     adapterInstruction: TransactionInstruction
+   *   }} {
+   *     instructions,
+   *     adapterProgram,
+   *     adapterMetadata,
+   *     adapterInstruction
+   *   }
+   * @return {Promise<void>}
+   * @memberof MarginAccount
+   */
   async withAccountingInvoke({
     instructions,
     adapterProgram,
@@ -994,13 +1549,18 @@ export class MarginAccount {
     instructions.push(ix)
   }
 
-  // prepares arguments for adapterInvoke, accountInvoke, or liquidatorInvoke
-  invokeAccounts(adapterInstruction: TransactionInstruction): AccountMeta[] {
+  /**
+   * prepares arguments for `adapter_invoke`, `account_invoke`, or `liquidator_invoke`
+   *
+   * @return {AccountMeta[]} The instruction keys but the margin account is no longer a signer.
+   * @memberof MarginAccount
+   */
+  private invokeAccounts(adapterInstruction: TransactionInstruction): AccountMeta[] {
     const accounts: AccountMeta[] = []
     for (const acc of adapterInstruction.keys) {
-      let isSigner = false
-      if (acc.pubkey != this.address) {
-        isSigner = acc.isSigner
+      let isSigner = acc.isSigner
+      if (acc.pubkey.equals(this.address)) {
+        isSigner = false
       }
       accounts.push({
         pubkey: acc.pubkey,
@@ -1012,9 +1572,39 @@ export class MarginAccount {
     return accounts
   }
 
-  async sendAndConfirm(instructions: TransactionInstruction[], signers?: Signer[]) {
+  /**
+   * Sends a transaction using the [[MarginAccount]] [[AnchorProvider]]
+   *
+   * @param {TransactionInstruction[]} instructions
+   * @param {Signer[]} [signers]
+   * @return {Promise<string>}
+   * @memberof MarginAccount
+   */
+  async sendAndConfirm(instructions: TransactionInstruction[], signers?: Signer[]): Promise<string> {
     try {
       return await this.provider.sendAndConfirm(new Transaction().add(...instructions), signers)
+    } catch (err) {
+      console.log(err)
+      throw err
+    }
+  }
+
+  /**
+   * Sends a collection of transactions using the [[MarginAccount]] [[AnchorProvider]].
+   *
+   * ## Remarks
+   *
+   * This function has 2 additional features compared to `sendAll` from web3.js or anchor.
+   * - Logging a [[Transaction]] error will include [[Transaction]] logs.
+   * - If an [[Transaction]] array element is itself a `TransactionInstruction[][]` this function will send those transactions in parallel.
+   *
+   * @param {((TransactionInstruction[] | TransactionInstruction[][])[])} transactions
+   * @return {Promise<string>}
+   * @memberof MarginAccount
+   */
+  async sendAll(transactions: (TransactionInstruction[] | TransactionInstruction[][])[]): Promise<string> {
+    try {
+      return await sendAll(this.provider, transactions)
     } catch (err) {
       console.log(err)
       throw err
