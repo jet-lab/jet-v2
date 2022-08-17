@@ -1171,8 +1171,8 @@ export class Pool {
     assert(marginAccount)
     assert(swapAmount)
 
-    const swapInstructions: TransactionInstruction[] = []
     const refreshInstructions: TransactionInstruction[] = []
+    const swapInstructions: TransactionInstruction[] = []
 
     // Refresh prices
     await this.withMarginRefreshAllPositionPrices({
@@ -1212,15 +1212,9 @@ export class Pool {
     // If swapping on margin
     const accountPoolPosition = marginAccount.poolPositions[this.symbol]
     if (swapAmount.gt(accountPoolPosition.depositBalance) && marginAccount.pools) {
-      await marginAccount.refresh()
-      const loanNoteAccount = await marginAccount.withGetOrCreatePosition({
-        instructions: refreshInstructions,
-        positionTokenMint: this.addresses.loanNoteMint
-      })
-
       const difference = swapAmount.sub(accountPoolPosition.depositBalance)
       await this.withMarginBorrow({
-        instructions: refreshInstructions,
+        instructions: swapInstructions,
         marginAccount,
         change: PoolTokenChange.shiftBy(accountPoolPosition.loanBalance.add(difference))
       })
