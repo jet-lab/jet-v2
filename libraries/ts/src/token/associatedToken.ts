@@ -22,7 +22,6 @@ import {
   TokenInvalidMintError
 } from "@solana/spl-token"
 import { Connection, PublicKey, TransactionInstruction, SystemProgram, AccountInfo } from "@solana/web3.js"
-import { Number192 } from "../utils/number192"
 import { findDerivedAccount } from "../utils/pda"
 import { TokenAmount } from "./tokenAmount"
 

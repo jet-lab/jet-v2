@@ -29,7 +29,7 @@ export class AccountPosition {
   valueRaw: Number128
 
   get value(): number {
-    return this.valueRaw.asNumber()
+    return this.valueRaw.toNumber()
   }
 
   /** The amount of tokens in the account */
@@ -39,24 +39,14 @@ export class AccountPosition {
   balanceTimestamp: BN
 
   /** The current price/value of each token */
-  price: PriceInfo
+  priceRaw: PriceInfo
+
+  get price(): Number128 {
+    return Number128.fromDecimal(this.priceRaw.value, this.priceRaw.exponent)
+  }
 
   /** The kind of balance this position contains */
   kind: PositionKindInfo
-
-  get positionKind() {
-    let kind = this.kind
-    if ("NoValue" in kind) {
-      return PositionKind.NoValue
-    }
-    if ("Deposit" in kind) {
-      return PositionKind.Deposit
-    }
-    if ("Claim" in kind) {
-      return PositionKind.Claim
-    }
-    throw new Error()
-  }
 
   /** The exponent for the token value */
   exponent: number
@@ -78,7 +68,7 @@ export class AccountPosition {
     this.valueRaw = Number128.fromBits(info.value)
     this.balance = info.balance
     this.balanceTimestamp = info.balanceTimestamp
-    this.price = {
+    this.priceRaw = {
       value: price?.value ?? info.price.value,
       exponent: price?.exponent ?? info.price.exponent,
       timestamp: price?.timestamp ?? info.price.timestamp,
@@ -94,7 +84,7 @@ export class AccountPosition {
 
   calculateValue(): void {
     this.valueRaw = Number128.fromDecimal(this.balance, this.exponent).mul(
-      Number128.fromDecimal(this.price.value, this.price.exponent)
+      Number128.fromDecimal(this.priceRaw.value, this.priceRaw.exponent)
     )
   }
 
@@ -122,7 +112,7 @@ export class AccountPosition {
   }
 
   setPrice(price: PriceInfo) {
-    this.price = price
+    this.priceRaw = price
     this.calculateValue()
   }
 }
