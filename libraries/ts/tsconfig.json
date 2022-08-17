@@ -15,9 +15,11 @@
     "baseUrl": ".",
     "typeRoots": ["node_modules/@types"],
     "moduleResolution": "node",
-    "module": "es2022",
-    "target": "es2019",
-    "outDir": "dist",
-    "rootDir": "./src"
+    "target": "ES2015",
+    "module": "ES2020",
+    "outDir": "dist/esm",
+    "rootDir": "./src",
+    "strict": true,
+    "forceConsistentCasingInFileNames": true
   }
 }

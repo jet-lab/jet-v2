@@ -1,13 +1,6 @@
 import { Address, BN, translateAddress } from "@project-serum/anchor"
 import { parsePriceData, PriceData, PriceStatus } from "@pythnetwork/client"
-import {
-  createAssociatedTokenAccountInstruction,
-  getAssociatedTokenAddress,
-  Mint,
-  TOKEN_PROGRAM_ID,
-  ASSOCIATED_TOKEN_PROGRAM_ID
-} from "@solana/spl-token"
-import { closeAccount } from "@project-serum/serum/lib/token-instructions"
+import { Mint, TOKEN_PROGRAM_ID } from "@solana/spl-token"
 import {
   PublicKey,
   SystemProgram,
@@ -73,8 +66,8 @@ export class Pool {
   get name(): string | undefined {
     return this.tokenConfig?.name
   }
-  get symbol(): string | undefined {
-    return this.tokenConfig?.symbol
+  get symbol(): string {
+    return this.tokenConfig.symbol
   }
   get vaultRaw(): Number192 {
     return Number192.fromDecimal(this.info?.vault.amount.lamports ?? new BN(0), 0)
@@ -168,7 +161,7 @@ export class Pool {
   constructor(
     public programs: MarginPrograms,
     public addresses: MarginPoolAddresses,
-    public tokenConfig?: MarginTokenConfig
+    public tokenConfig: MarginTokenConfig
   ) {
     this.address = addresses.marginPool
     this.tokenMint = addresses.tokenMint
