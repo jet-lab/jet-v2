@@ -14,10 +14,6 @@ interface TokenMetadataParams {
   maxLeverage: number
 }
 
-interface MarginPoolParams {
-  feeDestination: PublicKey
-}
-
 interface IPoolCreationParams {
   tokenMint: Address
   collateralWeight: number
@@ -57,7 +53,7 @@ export class PoolManager {
     programs = this.programs
   }: {
     tokenMint: Address
-    tokenConfig?: MarginTokenConfig
+    tokenConfig: MarginTokenConfig
     programs?: MarginPrograms
   }): Promise<Pool> {
     const addresses = this._derive({ programs, tokenMint })

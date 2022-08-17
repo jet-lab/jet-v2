@@ -11,7 +11,6 @@ import {
   Pool,
   MarginPoolConfigData,
   PoolManager,
-  Number128,
   TokenAmount
 } from "../../../libraries/ts/src"
 
@@ -63,9 +62,6 @@ describe("margin pool borrow", async () => {
     expect(sol_supply).to.eq(10_000)
     expect(sol_balance).to.eq(10_000)
   })
-
-  const FEE_VAULT_USDC: PublicKey = new PublicKey("FEEVAULTUSDC1111111111111111111111111111111")
-  const FEE_VAULT_SOL: PublicKey = new PublicKey("FEEVAULTTSoL1111111111111111111111111111111")
 
   let USDC_oracle: Keypair[]
   let SOL_oracle: Keypair[]
@@ -123,9 +119,29 @@ describe("margin pool borrow", async () => {
   let pools: Pool[]
 
   it("Load Pools", async () => {
-    marginPool_SOL = await manager.load({ tokenMint: SOL[0] })
-    marginPool_USDC = await manager.load({ tokenMint: USDC[0] })
+    marginPool_SOL = await manager.load({
+      tokenMint: SOL[0],
+      tokenConfig: {
+        symbol: "SOL",
+        name: "Solana",
+        decimals: 9,
+        precision: 2,
+        mint: SOL[0]
+      }
+    })
+    marginPool_USDC = await manager.load({
+      tokenMint: USDC[0],
+      tokenConfig: {
+        symbol: "USDC",
+        name: "USD Coin",
+        decimals: 6,
+        precision: 2,
+        mint: USDC[0]
+      }
+    })
     pools = [marginPool_SOL, marginPool_USDC]
+    expect(marginPool_USDC.symbol).to.eq("USDC")
+    expect(marginPool_SOL.symbol).to.eq("SOL")
   })
 
   it("Create margin pools", async () => {
@@ -345,7 +361,6 @@ describe("margin pool borrow", async () => {
   it("User A repays his SOL loan", async () => {
     //SETUP
     await marginPool_SOL.refresh()
-    const owedSOL = new BN(Number(marginPool_SOL.info?.loanNoteMint.supply))
 
     // ACT
     await marginPool_SOL.marginRepay({
@@ -365,7 +380,6 @@ describe("margin pool borrow", async () => {
   it("User B repays his USDC loan", async () => {
     // SETUP
     await marginPool_USDC.refresh()
-    const owedUSDC = new BN(Number(marginPool_USDC.info?.loanNoteMint.supply))
 
     // ACT
     await marginPool_USDC.marginRepay({
@@ -484,27 +498,27 @@ describe("margin pool borrow", async () => {
 
       expect(transactions[2].tradeAction).to.equals("withdraw")
       expect(transactions[2].tokenSymbol).to.equals("USDC")
-      expect(transactions[2].tradeAmount.uiTokens).to.approximately(400000, 0.0001)
+      expect(transactions[2].tradeAmount.tokens).to.approximately(400000, 0.0001)
       expect(transactions[2].signature).to.be.a("string")
 
       expect(transactions[3].tradeAction).to.equals("margin repay")
       expect(transactions[3].tokenSymbol).to.equals("SOL")
-      expect(transactions[3].tradeAmount.uiTokens).to.approximately(10, 0.0001)
+      expect(transactions[3].tradeAmount.tokens).to.approximately(10, 0.0001)
       expect(transactions[3].signature).to.be.a("string")
 
       expect(transactions[4].tradeAction).to.equals("borrow")
       expect(transactions[4].tokenSymbol).to.equals("SOL")
-      expect(transactions[4].tradeAmount.uiTokens).to.approximately(10, 0.0001)
+      expect(transactions[4].tradeAmount.tokens).to.approximately(10, 0.0001)
       expect(transactions[4].signature).to.be.a("string")
 
       expect(transactions[5].tradeAction).to.equals("deposit")
       expect(transactions[5].tokenSymbol).to.equals("SOL")
-      expect(transactions[5].tradeAmount.uiTokens).to.approximately(50, 0.0001)
+      expect(transactions[5].tradeAmount.tokens).to.approximately(50, 0.0001)
       expect(transactions[5].signature).to.be.a("string")
 
       expect(transactions[6].tradeAction).to.equals("deposit")
       expect(transactions[6].tokenSymbol).to.equals("USDC")
-      expect(transactions[6].tradeAmount.uiTokens).to.approximately(500000, 0.0001)
+      expect(transactions[6].tradeAmount.tokens).to.approximately(500000, 0.0001)
       expect(transactions[6].signature).to.be.a("string")
     })
   })
