@@ -23,9 +23,9 @@ export class TokenFaucet {
   private static async withAirdrop(
     instructions: TransactionInstruction[],
     programs: MarginPrograms,
-    tokenMint: PublicKey,
-    tokenFaucet: PublicKey,
-    tokenAccount: PublicKey,
+    tokenMint: Address,
+    tokenFaucet: Address,
+    tokenAccount: Address,
     lamports: BN
   ) {
     if (!programs.config.faucetProgramId) {
@@ -40,13 +40,13 @@ export class TokenFaucet {
     const keys = [
       { pubkey: pubkeyNonce[0], isSigner: false, isWritable: false },
       {
-        pubkey: tokenMint,
+        pubkey: translateAddress(tokenMint),
         isSigner: false,
         isWritable: true
       },
-      { pubkey: tokenAccount, isSigner: false, isWritable: true },
+      { pubkey: translateAddress(tokenAccount), isSigner: false, isWritable: true },
       { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
-      { pubkey: tokenFaucet, isSigner: false, isWritable: false }
+      { pubkey: translateAddress(tokenFaucet), isSigner: false, isWritable: false }
     ]
 
     const faucetIx = new TransactionInstruction({
@@ -62,18 +62,18 @@ export class TokenFaucet {
    * TODO:
    * @static
    * @param {AnchorProvider} provider
-   * @param {PublicKey} faucet
-   * @param {PublicKey} user
-   * @param {PublicKey} mint
+   * @param {Address} faucet
+   * @param {Address} user
+   * @param {Address} mint
    * @returns {Promise<string>}
    * @memberof TokenFaucet
    */
   static async airdropToken(
     programs: MarginPrograms,
     provider: AnchorProvider,
-    faucet: PublicKey,
-    user: PublicKey,
-    mint: PublicKey,
+    faucet: Address,
+    user: Address,
+    mint: Address,
     lamports: BN
   ): Promise<string> {
     const instructions: TransactionInstruction[] = []

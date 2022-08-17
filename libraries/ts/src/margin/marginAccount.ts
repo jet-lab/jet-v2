@@ -128,9 +128,9 @@ export class MarginAccount {
    */
   get riskIndicator() {
     return this.computeRiskIndicator(
-      this.valuation.requiredCollateral.asNumber(),
-      this.valuation.weightedCollateral.asNumber(),
-      this.valuation.liabilities.asNumber()
+      this.valuation.requiredCollateral.toNumber(),
+      this.valuation.weightedCollateral.toNumber(),
+      this.valuation.liabilities.toNumber()
     )
   }
 
@@ -193,13 +193,18 @@ export class MarginAccount {
     return { marginAccount, owner: ownerAddress }
   }
 
-  static deriveLiquidation(programs: MarginPrograms, marginAccount: MarginAccount, liquidator: Address) {
-    return findDerivedAccount(programs.config.marginProgramId, marginAccount.address, liquidator)
+  findLiquidationAddress(liquidator: Address) {
+    return findDerivedAccount(this.programs.config.marginProgramId, this.address, liquidator)
   }
 
-  static deriveMetadata(programs: MarginPrograms, tokenMint: Address) {
-    const tokenMintAddress = translateAddress(tokenMint)
-    return findDerivedAccount(programs.config.metadataProgramId, tokenMintAddress)
+  findMetadataAddress(account: Address) {
+    const accountAddress = translateAddress(account)
+    return findDerivedAccount(this.programs.config.metadataProgramId, accountAddress)
+  }
+
+  findPositionTokenAddress(positionTokenMint: Address) {
+    const positionTokenMintAddress = translateAddress(positionTokenMint)
+    return findDerivedAccount(this.programs.config.marginProgramId, this.address, positionTokenMintAddress)
   }
 
   /**
@@ -324,13 +329,13 @@ export class MarginAccount {
       // Deposits
       const depositNotePosition = this.getPosition(pool.addresses.depositNoteMint)
       const depositBalanceNotes = Number192.from(depositNotePosition?.balance ?? new BN(0))
-      const depositBalance = depositBalanceNotes.mul(pool.depositNoteExchangeRate()).asTokenAmount(pool.decimals)
+      const depositBalance = depositBalanceNotes.mul(pool.depositNoteExchangeRate()).toTokenAmount(pool.decimals)
       const depositValue = depositNotePosition?.value ?? 0
 
       // Loans
       const loanNotePosition = this.getPosition(pool.addresses.loanNoteMint)
       const loanBalanceNotes = Number192.from(loanNotePosition?.balance ?? new BN(0))
-      const loanBalance = loanBalanceNotes.mul(pool.loanNoteExchangeRate()).asTokenAmount(pool.decimals)
+      const loanBalance = loanBalanceNotes.mul(pool.loanNoteExchangeRate()).toTokenAmount(pool.decimals)
       const loanValue = loanNotePosition?.value ?? 0
 
       // Max trade amounts
@@ -350,7 +355,7 @@ export class MarginAccount {
               .sub(this.valuation.effectiveCollateral.mul(warningRiskLevel))
               .div(collateralWeight.mul(warningRiskLevel))
               .div(lamportPrice)
-      ).asTokenAmount(pool.decimals)
+      ).toTokenAmount(pool.decimals)
 
       // Buying power
       // FIXME
@@ -418,7 +423,7 @@ export class MarginAccount {
     let withdraw = this.valuation.availableSetupCollateral
       .div(depositNoteValueModifier)
       .div(lamportPrice)
-      .asTokenAmount(pool.decimals)
+      .toTokenAmount(pool.decimals)
     withdraw = TokenAmount.min(withdraw, depositBalance)
     withdraw = TokenAmount.min(withdraw, pool.vault)
     withdraw = TokenAmount.max(withdraw, zero)
@@ -427,7 +432,7 @@ export class MarginAccount {
     let borrow = this.valuation.availableSetupCollateral
       .div(Number128.ONE.add(Number128.ONE.div(MarginAccount.SETUP_LEVERAGE_FRACTION.mul(loanNoteValueModifier))))
       .div(lamportPrice)
-      .asTokenAmount(pool.decimals)
+      .toTokenAmount(pool.decimals)
     borrow = TokenAmount.min(borrow, pool.vault)
     borrow = TokenAmount.max(borrow, zero)
 
@@ -460,12 +465,12 @@ export class MarginAccount {
       }
     }
 
-    const exposureNumber = this.valuation.liabilities.asNumber()
-    const cRatio = exposureNumber === 0 ? Infinity : collateralValue.asNumber() / exposureNumber
-    const minCRatio = exposureNumber === 0 ? 1 : 1 + this.valuation.effectiveCollateral.asNumber() / exposureNumber
-    const depositedValue = collateralValue.asNumber()
-    const borrowedValue = this.valuation.liabilities.asNumber()
-    const accountBalance = collateralValue.sub(this.valuation.liabilities).asNumber()
+    const exposureNumber = this.valuation.liabilities.toNumber()
+    const cRatio = exposureNumber === 0 ? Infinity : collateralValue.toNumber() / exposureNumber
+    const minCRatio = exposureNumber === 0 ? 1 : 1 + this.valuation.effectiveCollateral.toNumber() / exposureNumber
+    const depositedValue = collateralValue.toNumber()
+    const borrowedValue = this.valuation.liabilities.toNumber()
+    const accountBalance = collateralValue.sub(this.valuation.liabilities).toNumber()
 
     return {
       depositedValue,
@@ -548,8 +553,8 @@ export class MarginAccount {
       let staleReason: ErrorCode | undefined
       {
         const balanceAge = timestamp.sub(position.balanceTimestamp)
-        const priceQuoteAge = timestamp.sub(position.price.timestamp)
-        if (position.price.isValid != POS_PRICE_VALID) {
+        const priceQuoteAge = timestamp.sub(position.priceRaw.timestamp)
+        if (position.priceRaw.isValid != POS_PRICE_VALID) {
           // collateral with bad prices
           staleReason = ErrorCode.InvalidPrice
         } else if (position.maxStaleness.gt(new BN(0)) && balanceAge.gt(position.maxStaleness)) {
@@ -829,6 +834,30 @@ export class MarginAccount {
     instructions.push(instruction)
   }
 
+  async refreshPositionMetadata({ positionMint }: { positionMint: Address }) {
+    const instructions: TransactionInstruction[] = []
+    await this.withRefreshPositionMetadata({ instructions, positionMint })
+    await this.provider.sendAndConfirm(new Transaction().add(...instructions))
+  }
+
+  async withRefreshPositionMetadata({
+    instructions,
+    positionMint
+  }: {
+    instructions: TransactionInstruction[]
+    positionMint: Address
+  }) {
+    const metadata = this.findMetadataAddress(positionMint)
+    const ix = await this.programs.margin.methods
+      .refreshPositionMetadata()
+      .accounts({
+        marginAccount: this.address,
+        metadata
+      })
+      .instruction()
+    instructions.push(ix)
+  }
+
   async registerPosition(tokenMint: Address): Promise<TransactionSignature> {
     const tokenMintAddress = translateAddress(tokenMint)
     const ix: TransactionInstruction[] = []
@@ -848,8 +877,8 @@ export class MarginAccount {
   /// Returns the instruction, and the address of the token account to be
   /// created for the position.
   async withRegisterPosition(instructions: TransactionInstruction[], positionTokenMint: Address): Promise<PublicKey> {
-    const tokenAccount = findDerivedAccount(this.programs.config.marginProgramId, this.address, positionTokenMint)
-    const metadata = findDerivedAccount(this.programs.config.metadataProgramId, positionTokenMint)
+    const tokenAccount = this.findPositionTokenAddress(positionTokenMint)
+    const metadata = this.findMetadataAddress(positionTokenMint)
 
     const ix = await this.programs.margin.methods
       .registerPosition()
