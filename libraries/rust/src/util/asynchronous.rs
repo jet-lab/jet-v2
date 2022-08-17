@@ -119,3 +119,28 @@ async fn sleep_then_retry<T, Fut: Future<Output = T> + Send, F: Fn() -> Fut + Se
     tokio::time::sleep(next_delay).await;
     with_retries(f, next_delay * 2).await
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    static mut COUNT: u8 = 0;
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn retry_test() -> Result<(), anyhow::Error> {
+        let x = with_retries(counter, Duration::from_millis(1)).await;
+        assert_eq!(x, 3);
+        Ok(())
+    }
+
+    async fn counter() -> u8 {
+        unsafe {
+            COUNT += 1;
+            if COUNT < 3 {
+                tokio::time::sleep(Duration::from_millis(10)).await;
+            }
+
+            COUNT
+        }
+    }
+}
