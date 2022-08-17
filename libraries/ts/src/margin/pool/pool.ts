@@ -1,6 +1,7 @@
 import { Address, BN, translateAddress } from "@project-serum/anchor"
 import { parsePriceData, PriceData, PriceStatus } from "@pythnetwork/client"
 import { Mint, TOKEN_PROGRAM_ID } from "@solana/spl-token"
+import { closeAccount } from "@project-serum/serum/lib/token-instructions"
 import {
   PublicKey,
   SystemProgram,
@@ -905,6 +906,7 @@ export class Pool {
       minAmountOut
     })
 
+    await marginAccount.refresh()
     return await marginAccount.sendAndConfirm(instructions)
   }
 
@@ -921,8 +923,6 @@ export class Pool {
     swapAmount: TokenAmount
     minAmountOut: TokenAmount
   }): Promise<void> {
-    assert(this.symbol)
-
     // Source deposit position fetch / creation
     const sourceAccount = await marginAccount.withGetOrCreatePosition({
       positionTokenMint: this.addresses.depositNoteMint,
@@ -1043,20 +1043,20 @@ export class Pool {
     })
 
     // Transit source account closure
-    // const closeTransitSourceAccountIx = closeAccount({
-    //   source: transitSourceAccount,
-    //   destination: marginAccount.addresses.owner,
-    //   owner: marginAccount.address
-    // })
-    // instructions.push(closeTransitSourceAccountIx)
+    const closeTransitSourceAccountIx = closeAccount({
+      source: transitSourceAccount,
+      destination: marginAccount.addresses.owner,
+      owner: marginAccount.address
+    })
+    instructions.push(closeTransitSourceAccountIx)
 
-    // // Transit destination account closure
-    // const closeTransitDestinationAccountIx = closeAccount({
-    //   source: transitDestinationAccount,
-    //   destination: marginAccount.addresses.owner,
-    //   owner: marginAccount.address
-    // })
-    // instructions.push(closeTransitDestinationAccountIx)
+    // Transit destination account closure
+    const closeTransitDestinationAccountIx = closeAccount({
+      source: transitDestinationAccount,
+      destination: marginAccount.addresses.owner,
+      owner: marginAccount.address
+    })
+    instructions.push(closeTransitDestinationAccountIx)
 
     // Update account positions
     await marginAccount.withUpdatePositionBalance({ instructions, position: sourceAccount })
