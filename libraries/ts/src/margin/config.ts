@@ -51,6 +51,7 @@ export interface MarginMarketConfig {
 
 export async function getLatestConfig(cluster: string): Promise<MarginConfig> {
   // only works in browser or node version >=18
+  // @ts-ignore
   let response = await fetch(MARGIN_CONFIG_URL)
   return (await response.json())[cluster]
 }
