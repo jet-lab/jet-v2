@@ -932,8 +932,6 @@ export class MarginAccount {
   ///
   /// `token_account` - The address of the token account for the position being closed
   async withClosePosition(instructions: TransactionInstruction[], position: AccountPosition): Promise<void> {
-    //const authority = findDerivedAccount(this.programs.config.controlProgramId)
-
     const ix = await this.programs.margin.methods
       .closePosition()
       .accounts({

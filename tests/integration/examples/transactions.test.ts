@@ -25,146 +25,159 @@ describe("Typescript examples", () => {
 
   let marginAccount: MarginAccount
 
-  it("Initialize the margin account", async () => {
-    // Airdrop
-    await connection.requestAirdrop(walletPubkey, LAMPORTS_PER_SOL)
+  describe("Margin account transactions", () => {
+    it("Initialize the margin account", async () => {
+      // Airdrop
+      await connection.requestAirdrop(walletPubkey, LAMPORTS_PER_SOL)
 
-    // Load programs
-    config = await MarginClient.getConfig("devnet")
-    programs = MarginClient.getPrograms(provider, config)
+      // Load programs
+      config = await MarginClient.getConfig("devnet")
+      programs = MarginClient.getPrograms(provider, config)
 
-    // Load margin pools
-    poolManager = new PoolManager(programs, provider)
-    pools = await poolManager.loadAll()
+      // Load margin pools
+      poolManager = new PoolManager(programs, provider)
+      pools = await poolManager.loadAll()
 
-    marginAccount = await MarginAccount.createAccount({
-      programs,
-      provider,
-      owner: walletPubkey,
-      seed: 0,
-      pools
+      marginAccount = await MarginAccount.createAccount({
+        programs,
+        provider,
+        owner: walletPubkey,
+        seed: 0,
+        pools
+      })
+
+      //Print the margin account pubkey
+      console.log(`Created margin account ${marginAccount.address}`)
+      // Created margin account 2BnWcRxGQBXcRuFCfgePdWPbtpR5FYc4gu5C3a8gNJDc
     })
 
-    //Print the margin account pubkey
-    console.log(`Created margin account ${marginAccount.address}`)
-    // Created margin account 2BnWcRxGQBXcRuFCfgePdWPbtpR5FYc4gu5C3a8gNJDc
-  })
+    it("Deposit user funds into their margin accounts", async () => {
+      const txid = await pools["SOL"].deposit({
+        marginAccount,
+        change: PoolTokenChange.shiftBy(0.1 * LAMPORTS_PER_SOL)
+      })
 
-  it("Deposit user funds into their margin accounts", async () => {
-    const txid = await pools["SOL"].deposit({ marginAccount, change: PoolTokenChange.shiftBy(0.1 * LAMPORTS_PER_SOL) })
+      await marginAccount.refresh()
+      const position = marginAccount.positions[0]
 
-    await marginAccount.refresh()
-    const position = marginAccount.positions[0]
-
-    console.log(`Deposited SOL.. ${txid}`)
-    console.log(`Balance ${position.balance.toNumber() / LAMPORTS_PER_SOL}`)
-    console.log(`Price $${position.price.toNumber()}`)
-    console.log(`Value $${position.value.toFixed(2)}`)
-    console.log(`Is Deposit? ${position.kind === PositionKind.Deposit}`)
-    console.log(``)
-  })
-
-  it("Borrow tokens in a margin account", async () => {
-    const txid = await pools["USDC"].marginBorrow({ marginAccount, pools, change: PoolTokenChange.shiftBy(1_000_000) })
-
-    await marginAccount.refresh()
-    const position = marginAccount.positions[1]
-
-    console.log(`Borrowed USDC.. ${txid}`)
-    console.log(`Loan Balance ${position.balance.toNumber() / 1_000_000}`)
-    console.log(`Loan Price $${position.price.toNumber()}`)
-    console.log(`Loan Value $${position.value.toFixed(2)}`)
-    console.log(`Is Claim? ${position.kind === PositionKind.Claim}`)
-    console.log(``)
-  })
-
-  it("Repay loans from margin account", async () => {
-    // Airdrop some extra USDC to deposit and repay
-    const tokenConfig = config.tokens["USDC"]
-    assert(tokenConfig.faucet)
-    TokenFaucet.airdropToken(
-      programs,
-      provider,
-      translateAddress(tokenConfig.faucet),
-      walletPubkey,
-      tokenConfig.mint,
-      new BN(5_000_000)
-    )
-
-    const depositTxid = await pools["USDC"].deposit({ marginAccount, change: PoolTokenChange.shiftBy(1_000_000) })
-    console.log(`Depositing USDC for repayment.. ${depositTxid}`)
-
-    const repayTxid = await pools["USDC"].marginRepay({ marginAccount, pools, change: PoolTokenChange.setTo(500_000) })
-
-    await marginAccount.refresh()
-    const position = marginAccount.positions[1]
-
-    console.log(`Repayed USDC.. ${repayTxid}`)
-    console.log(`Loan Balance ${position.balance.toNumber() / 1_000_000}`)
-    console.log(`Loan Price $${position.price.toNumber()}`)
-    console.log(`Loan Value $${position.value.toFixed(2)}`)
-    console.log(`Is Claim? ${position.kind === PositionKind.Claim}`)
-    console.log(``)
-  })
-
-  it("Repay with user wallet", async () => {
-    const txid = await pools["USDC"].marginRepay({
-      marginAccount,
-      pools,
-      change: PoolTokenChange.setTo(0),
-      // Providing a source will repay from the wallet
-      source: TokenFormat.unwrappedSol
+      console.log(`Deposited SOL.. ${txid}`)
+      console.log(`Balance ${position.balance.toNumber() / LAMPORTS_PER_SOL}`)
+      console.log(`Price $${position.price.toNumber()}`)
+      console.log(`Value $${position.value.toFixed(2)}`)
+      console.log(`Is Deposit? ${position.kind === PositionKind.Deposit}`)
+      console.log(``)
     })
 
-    await marginAccount.refresh()
-    const position = marginAccount.positions[1]
+    it("Borrow tokens in a margin account", async () => {
+      const txid = await pools["USDC"].marginBorrow({
+        marginAccount,
+        pools,
+        change: PoolTokenChange.shiftBy(1_000_000)
+      })
 
-    console.log(`Repayed USDC.. ${txid}`)
-    console.log(`Loan Balance ${position.balance.toNumber() / 1_000_000}`)
-    console.log(`Loan Price $${position.price.toNumber()}`)
-    console.log(`Loan Value $${position.value.toFixed(2)}`)
-    console.log(`Is Claim? ${position.kind === PositionKind.Claim}`)
-    console.log(``)
-  })
+      await marginAccount.refresh()
+      const position = marginAccount.positions[1]
 
-  it("Withdraw funds from margin account", async () => {
-    const solTxid = await pools["SOL"].withdraw({ marginAccount, pools, change: PoolTokenChange.setTo(0) })
-    const usdcTxid = await pools["USDC"].withdraw({ marginAccount, pools, change: PoolTokenChange.setTo(0) })
+      console.log(`Borrowed USDC.. ${txid}`)
+      console.log(`Loan Balance ${position.balance.toNumber() / 1_000_000}`)
+      console.log(`Loan Price $${position.price.toNumber()}`)
+      console.log(`Loan Value $${position.value.toFixed(2)}`)
+      console.log(`Is Claim? ${position.kind === PositionKind.Claim}`)
+      console.log(``)
+    })
 
-    await marginAccount.refresh()
+    it("Repay loans from margin account", async () => {
+      // Airdrop some extra USDC to deposit and repay
+      const tokenConfig = config.tokens["USDC"]
+      assert(tokenConfig.faucet)
+      TokenFaucet.airdropToken(
+        programs,
+        provider,
+        translateAddress(tokenConfig.faucet),
+        walletPubkey,
+        tokenConfig.mint,
+        new BN(5_000_000)
+      )
 
-    const solPosition = marginAccount.positions[0]
-    console.log(`Withdrawing SOL.. ${solTxid}`)
-    console.log(`SOL Balance ${solPosition.balance.toNumber() / LAMPORTS_PER_SOL}`)
-    console.log(`SOL Price $${solPosition.price.toNumber()}`)
-    console.log(`SOL Value $${solPosition.value.toFixed(2)}`)
-    console.log(`Is Deposit? ${solPosition.kind === PositionKind.Deposit}`)
-    console.log(``)
+      const depositTxid = await pools["USDC"].deposit({ marginAccount, change: PoolTokenChange.shiftBy(1_000_000) })
+      console.log(`Depositing USDC for repayment.. ${depositTxid}`)
 
-    const usdcPosition = marginAccount.positions[2]
-    console.log(`Withdrawing USDC.. ${usdcTxid}`)
-    console.log(`USDC Balance ${usdcPosition.balance.toNumber() / 1_000_000}`)
-    console.log(`USDC Price $${usdcPosition.price.toNumber()}`)
-    console.log(`USDC Value $${usdcPosition.value.toFixed(2)}`)
-    console.log(`Is Deposit? ${usdcPosition.kind === PositionKind.Deposit}`)
-  })
+      const repayTxid = await pools["USDC"].marginRepay({
+        marginAccount,
+        pools,
+        change: PoolTokenChange.setTo(500_000)
+      })
 
-  it("Close margin account positions", async () => {
-    for (const position of marginAccount.positions) {
-      await marginAccount.closePosition(position)
-    }
+      await marginAccount.refresh()
+      const position = marginAccount.positions[1]
 
-    await marginAccount.refresh()
+      console.log(`Repayed USDC.. ${repayTxid}`)
+      console.log(`Loan Balance ${position.balance.toNumber() / 1_000_000}`)
+      console.log(`Loan Price $${position.price.toNumber()}`)
+      console.log(`Loan Value $${position.value.toFixed(2)}`)
+      console.log(`Is Claim? ${position.kind === PositionKind.Claim}`)
+      console.log(``)
+    })
 
-    console.log(`Margin account positions closed..`)
-    console.log(`Position count == ${marginAccount.positions.length}`)
-  })
+    it("Repay with user wallet", async () => {
+      const txid = await pools["USDC"].marginRepay({
+        marginAccount,
+        pools,
+        change: PoolTokenChange.setTo(0),
+        // Providing a source will repay from the wallet
+        source: TokenFormat.unwrappedSol
+      })
 
-  it("Close margin account", async () => {
-    await marginAccount.closeAccount()
+      await marginAccount.refresh()
+      const position = marginAccount.positions[1]
 
-    const exists = await MarginAccount.exists(programs, walletPubkey, 0)
-    console.log(`Margin account closed..`)
-    console.log(`Exists? ${exists}`)
+      console.log(`Repayed USDC.. ${txid}`)
+      console.log(`Loan Balance ${position.balance.toNumber() / 1_000_000}`)
+      console.log(`Loan Price $${position.price.toNumber()}`)
+      console.log(`Loan Value $${position.value.toFixed(2)}`)
+      console.log(`Is Claim? ${position.kind === PositionKind.Claim}`)
+      console.log(``)
+    })
+
+    it("Withdraw funds from margin account", async () => {
+      const solTxid = await pools["SOL"].withdraw({ marginAccount, pools, change: PoolTokenChange.setTo(0) })
+      const usdcTxid = await pools["USDC"].withdraw({ marginAccount, pools, change: PoolTokenChange.setTo(0) })
+
+      await marginAccount.refresh()
+
+      const solPosition = marginAccount.positions[0]
+      console.log(`Withdrawing SOL.. ${solTxid}`)
+      console.log(`SOL Balance ${solPosition.balance.toNumber() / LAMPORTS_PER_SOL}`)
+      console.log(`SOL Price $${solPosition.price.toNumber()}`)
+      console.log(`SOL Value $${solPosition.value.toFixed(2)}`)
+      console.log(`Is Deposit? ${solPosition.kind === PositionKind.Deposit}`)
+      console.log(``)
+
+      const usdcPosition = marginAccount.positions[2]
+      console.log(`Withdrawing USDC.. ${usdcTxid}`)
+      console.log(`USDC Balance ${usdcPosition.balance.toNumber() / 1_000_000}`)
+      console.log(`USDC Price $${usdcPosition.price.toNumber()}`)
+      console.log(`USDC Value $${usdcPosition.value.toFixed(2)}`)
+      console.log(`Is Deposit? ${usdcPosition.kind === PositionKind.Deposit}`)
+    })
+
+    it("Close margin account positions", async () => {
+      for (const position of marginAccount.positions) {
+        await marginAccount.closePosition(position)
+      }
+
+      await marginAccount.refresh()
+
+      console.log(`Margin account positions closed..`)
+      console.log(`Position count == ${marginAccount.positions.length}`)
+    })
+
+    it("Close margin account", async () => {
+      await marginAccount.closeAccount()
+
+      const exists = await MarginAccount.exists(programs, walletPubkey, 0)
+      console.log(`Margin account closed..`)
+      console.log(`Exists? ${exists}`)
+    })
   })
 })
