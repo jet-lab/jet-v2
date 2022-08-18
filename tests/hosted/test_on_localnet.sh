@@ -7,9 +7,4 @@ set -euxo pipefail
 SOLANA_LOGS=true
 
 anchor-build
-test-file swap
-test-file liquidate
-test-file pool_overpayment
-test-file rounding
-test-file sanity
-test-file load
+test-file mod

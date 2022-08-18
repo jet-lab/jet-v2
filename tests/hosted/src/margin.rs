@@ -25,11 +25,12 @@ use anchor_lang::{
 };
 use anyhow::{bail, Error};
 
-use jet_margin::{MarginAccount, PositionKind};
+use jet_margin::{AccountPosition, MarginAccount, PositionKind};
 use jet_margin_sdk::ix_builder::{
     get_control_authority_address, get_metadata_address, ControlIxBuilder, MarginPoolConfiguration,
     MarginPoolIxBuilder,
 };
+use jet_margin_sdk::solana::transaction::TransactionBuilder;
 use jet_margin_sdk::swap::SwapPool;
 use jet_margin_sdk::tokens::TokenOracle;
 use solana_sdk::instruction::Instruction;
@@ -63,7 +64,7 @@ impl MarginClient {
         Self { rpc }
     }
 
-    pub async fn user(&self, keypair: &Keypair, seed: u16) -> Result<MarginUser, Error> {
+    pub fn user(&self, keypair: &Keypair, seed: u16) -> Result<MarginUser, Error> {
         let tx = MarginTxBuilder::new(
             self.rpc.clone(),
             Some(Keypair::from_bytes(&keypair.to_bytes())?),
@@ -77,7 +78,7 @@ impl MarginClient {
         })
     }
 
-    pub async fn liquidator(
+    pub fn liquidator(
         &self,
         keypair: &Keypair,
         owner: &Pubkey,
@@ -390,9 +391,26 @@ impl MarginUser {
         .await
     }
 
+    pub async fn positions(&self) -> Result<Vec<AccountPosition>, Error> {
+        Ok(self
+            .tx
+            .get_account_state()
+            .await?
+            .positions()
+            .copied()
+            .collect())
+    }
+
     pub async fn liquidate_begin(&self, refresh_positions: bool) -> Result<(), Error> {
         self.send_confirm_tx(self.tx.liquidate_begin(refresh_positions).await?)
             .await
+    }
+
+    pub async fn liquidate_begin_tx(
+        &self,
+        refresh_positions: bool,
+    ) -> Result<TransactionBuilder, Error> {
+        self.tx.liquidate_begin_builder(refresh_positions).await
     }
 
     pub async fn liquidate_end(&self, original_liquidator: Option<Pubkey>) -> Result<(), Error> {
@@ -402,6 +420,10 @@ impl MarginUser {
 
     pub async fn verify_healthy(&self) -> Result<(), Error> {
         self.send_confirm_tx(self.tx.verify_healthy().await?).await
+    }
+
+    pub fn verify_healthy_tx(&self) -> TransactionBuilder {
+        self.tx.verify_healthy_builder()
     }
 
     /// Close a user's empty positions.

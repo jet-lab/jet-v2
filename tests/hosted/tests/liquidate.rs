@@ -4,6 +4,7 @@ use hosted_tests::{
     context::test_context,
     margin::MarginUser,
     setup_helper::{liquidators, setup_token, setup_user, tokens, users},
+    test_user::TestLiquidator,
 };
 use jet_margin::ErrorCode;
 use jet_margin_sdk::tokens::TokenPrice;
@@ -19,10 +20,9 @@ const ONE_TSOL: u64 = LAMPORTS_PER_SOL;
 
 struct Scenario1 {
     usdc: Pubkey,
+    user_a: MarginUser,
     user_b: MarginUser,
-    user_a_liq: MarginUser,
-    user_b_liq: MarginUser,
-    liquidator: Pubkey,
+    liquidator: TestLiquidator<'static>,
 }
 
 /// User A deposited 5'000'000 USD worth, borrowed 800'000 USD worth
@@ -38,7 +38,6 @@ async fn scenario1() -> Result<Scenario1> {
     let tsol = setup_token(ctx, 9, 95, 4_00, 100.0).await?;
 
     // Create wallet for the liquidator
-    let liquidator_wallet = ctx.create_liquidator(100).await?;
     let user_a = setup_user(
         ctx,
         vec![(usdc, 5_000_000 * ONE_USDC, 5_000_000 * ONE_USDC)],
@@ -82,17 +81,10 @@ async fn scenario1() -> Result<Scenario1> {
     user_b.user.refresh_all_pool_positions().await?;
 
     Ok(Scenario1 {
+        user_a: user_a.user.clone(),
         user_b: user_b.user.clone(),
-        user_a_liq: ctx
-            .margin
-            .liquidator(&liquidator_wallet, user_a.user.owner(), 0)
-            .await?,
-        user_b_liq: ctx
-            .margin
-            .liquidator(&liquidator_wallet, user_b.user.owner(), 0)
-            .await?,
         usdc,
-        liquidator: liquidator_wallet.pubkey(),
+        liquidator: TestLiquidator::new(ctx).await?,
     })
 }
 
@@ -108,7 +100,7 @@ async fn cannot_liquidate_healthy_user() -> Result<()> {
     let scen = scenario1().await?;
 
     // A liquidator tries to liquidate User A, it should not be able to
-    let result = scen.user_a_liq.liquidate_begin(true).await;
+    let result = scen.liquidator.begin(&scen.user_a, true).await;
     assert_custom_program_error(ErrorCode::Healthy, result);
 
     Ok(())
@@ -121,7 +113,11 @@ async fn cannot_end_nonexistent_liquidation() -> Result<()> {
 
     // A liquidator should not be able to end liquidation of an account that is
     // not being liquidated
-    let result = scen.user_a_liq.liquidate_end(None).await;
+    let result = scen
+        .liquidator
+        .for_user(&scen.user_a)?
+        .liquidate_end(None)
+        .await;
     assert!(result.is_err());
 
     Ok(())
@@ -133,7 +129,7 @@ async fn cannot_transact_when_being_liquidated() -> Result<()> {
     let scen = scenario1().await?;
 
     // A liquidator tries to liquidate User B, it should be able to
-    scen.user_b_liq.liquidate_begin(false).await?;
+    scen.liquidator.begin(&scen.user_b, false).await?;
 
     // When User B is being liquidated, they should be unable to transact
     let result = scen
@@ -150,13 +146,11 @@ async fn cannot_transact_when_being_liquidated() -> Result<()> {
 async fn liquidator_can_repay_from_unhealthy_to_healthy_state() -> Result<()> {
     let scen = scenario1().await?;
 
-    scen.user_b_liq.liquidate_begin(true).await?;
-    scen.user_b_liq.verify_healthy().await.err().unwrap();
+    let liq = scen.liquidator.begin(&scen.user_b, true).await?;
+    liq.verify_healthy().await.err().unwrap();
 
     // Execute a repayment on behalf of the user
-    scen.user_b_liq
-        .margin_repay(&scen.usdc, TokenChange::shift(1_000_000 * ONE_USDC))
-        .await?;
+    liq.margin_repay(&scen.usdc, 1_000_000 * ONE_USDC).await?;
 
     // User B now has
     // Collateral (800'000 * 0.95) + 2'500'000 = 1'260'000
@@ -172,10 +166,9 @@ async fn liquidator_can_repay_from_unhealthy_to_healthy_state() -> Result<()> {
 async fn liquidator_can_end_liquidation_when_unhealthy() -> Result<()> {
     let scen = scenario1().await?;
 
-    scen.user_b_liq.liquidate_begin(true).await?;
-
-    scen.user_b_liq.verify_healthy().await.err().unwrap();
-    scen.user_b_liq.liquidate_end(None).await?;
+    let liq = scen.liquidator.begin(&scen.user_b, true).await?;
+    liq.verify_healthy().await.err().unwrap();
+    liq.liquidate_end(None).await?;
 
     Ok(())
 }
@@ -187,15 +180,14 @@ async fn no_one_else_can_liquidate_after_liquidate_begin() -> Result<()> {
     let scen = scenario1().await?;
 
     // A liquidator tries to liquidate User B, it should be able to
-    scen.user_b_liq.liquidate_begin(false).await?;
+    scen.liquidator.begin(&scen.user_b, false).await?;
 
     // If an account is still being liquidated, another liquidator should not
     // be able to begin or stop liquidating it
     let rogue_liquidator = ctx.create_liquidator(100).await?;
-    let user_b_rliq = ctx
-        .margin
-        .liquidator(&rogue_liquidator, scen.user_b.owner(), scen.user_b.seed())
-        .await?;
+    let user_b_rliq =
+        ctx.margin
+            .liquidator(&rogue_liquidator, scen.user_b.owner(), scen.user_b.seed())?;
 
     // Should fail to begin liquidation
     assert_custom_program_error(
@@ -212,15 +204,15 @@ async fn liquidation_completes() -> Result<()> {
     let scen = scenario1().await?;
 
     // A liquidator tries to liquidate User B, it should be able to
-    scen.user_b_liq.liquidate_begin(false).await?;
+    let user_b_liq = scen.liquidator.begin(&scen.user_b, false).await?;
 
     // Execute a repayment on behalf of the user
-    scen.user_b_liq
-        .margin_repay(&scen.usdc, TokenChange::shift(1_000_000 * ONE_USDC))
+    user_b_liq
+        .margin_repay(&scen.usdc, 1_000_000 * ONE_USDC)
         .await?;
 
     // The liquidator should be able to end liquidation after liquidating
-    scen.user_b_liq.liquidate_end(None).await?;
+    user_b_liq.liquidate_end(None).await?;
 
     // User B should now be able to transact again
     scen.user_b
@@ -233,24 +225,11 @@ async fn liquidation_completes() -> Result<()> {
 #[tokio::test(flavor = "multi_thread")]
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn cannot_withdraw_too_much_during_liquidation() -> Result<()> {
-    let ctx = test_context().await;
     let scen = scenario1().await?;
 
-    scen.user_b_liq.liquidate_begin(true).await?;
+    let user_b_liq = scen.liquidator.begin(&scen.user_b, true).await?;
 
-    let liquidator_usdc_account = ctx
-        .tokens
-        .create_account_funded(&scen.usdc, &scen.liquidator, 0)
-        .await?;
-
-    let result = scen
-        .user_b_liq
-        .withdraw(
-            &scen.usdc,
-            &liquidator_usdc_account,
-            TokenChange::shift(50000 * ONE_USDC),
-        )
-        .await;
+    let result = user_b_liq.withdraw(&scen.usdc, 50000 * ONE_USDC).await;
 
     assert_custom_program_error(ErrorCode::LiquidationLostValue, result);
 
@@ -260,22 +239,10 @@ async fn cannot_withdraw_too_much_during_liquidation() -> Result<()> {
 #[tokio::test(flavor = "multi_thread")]
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn can_withdraw_some_during_liquidation() -> Result<()> {
-    let ctx = test_context().await;
     let scen = scenario1().await?;
 
-    let liquidator_usdc_account = ctx
-        .tokens
-        .create_account_funded(&scen.usdc, &scen.liquidator, 0)
-        .await?;
-
-    scen.user_b_liq.liquidate_begin(true).await?;
-    scen.user_b_liq
-        .withdraw(
-            &scen.usdc,
-            &liquidator_usdc_account,
-            TokenChange::shift(40 * ONE_USDC),
-        )
-        .await?;
+    let user_b_liq = scen.liquidator.begin(&scen.user_b, true).await?;
+    user_b_liq.withdraw(&scen.usdc, 40 * ONE_USDC).await?;
 
     Ok(())
 }
@@ -286,12 +253,9 @@ async fn can_withdraw_some_during_liquidation() -> Result<()> {
 async fn cannot_borrow_too_much_during_liquidation() -> Result<()> {
     let scen = scenario1().await?;
 
-    scen.user_b_liq.liquidate_begin(false).await?;
+    let user_b_liq = scen.liquidator.begin(&scen.user_b, false).await?;
 
-    let result = scen
-        .user_b_liq
-        .borrow(&scen.usdc, TokenChange::shift(500_000 * ONE_USDC))
-        .await;
+    let result = user_b_liq.borrow(&scen.usdc, 500_000 * ONE_USDC).await;
     assert_custom_program_error(ErrorCode::LiquidationLostValue, result);
 
     Ok(())
@@ -302,10 +266,8 @@ async fn cannot_borrow_too_much_during_liquidation() -> Result<()> {
 async fn can_borrow_some_during_liquidation() -> Result<()> {
     let scen = scenario1().await?;
 
-    scen.user_b_liq.liquidate_begin(false).await?;
-    scen.user_b_liq
-        .borrow(&scen.usdc, TokenChange::shift(5_000 * ONE_USDC))
-        .await?;
+    let user_b_liq = scen.liquidator.begin(&scen.user_b, false).await?;
+    user_b_liq.borrow(&scen.usdc, 5_000 * ONE_USDC).await?;
 
     Ok(())
 }
@@ -316,11 +278,11 @@ async fn can_borrow_some_during_liquidation() -> Result<()> {
 async fn owner_cannot_end_liquidation_before_timeout() -> Result<()> {
     let scen = scenario1().await?;
 
-    scen.user_b_liq.liquidate_begin(false).await?;
+    scen.liquidator.begin(&scen.user_b, false).await?;
 
     let result = scen
         .user_b
-        .liquidate_end(Some(scen.user_b_liq.signer()))
+        .liquidate_end(Some(scen.liquidator.wallet.pubkey()))
         .await;
     assert_custom_program_error(ErrorCode::UnauthorizedLiquidator, result);
 
@@ -334,14 +296,14 @@ async fn owner_can_end_liquidation_after_timeout() -> Result<()> {
     let ctx = test_context().await;
     let scen = scenario1().await?;
 
-    scen.user_b_liq.liquidate_begin(false).await?;
+    scen.liquidator.begin(&scen.user_b, false).await?;
 
     let mut clock = ctx.rpc.get_clock().unwrap();
     clock.unix_timestamp += 61;
     ctx.rpc.set_clock(clock);
 
     scen.user_b
-        .liquidate_end(Some(scen.user_b_liq.signer()))
+        .liquidate_end(Some(scen.liquidator.wallet.pubkey()))
         .await?;
 
     Ok(())
@@ -354,11 +316,11 @@ async fn liquidator_permission_is_removable() -> Result<()> {
     let scen = scenario1().await?;
 
     ctx.margin
-        .set_liquidator_metadata(scen.liquidator, false)
+        .set_liquidator_metadata(scen.liquidator.wallet.pubkey(), false)
         .await?;
 
     // A liquidator tries to liquidate User B, it should no longer have authority to do that
-    let result = scen.user_b_liq.liquidate_begin(false).await;
+    let result = scen.liquidator.begin(&scen.user_b, false).await;
 
     #[cfg(feature = "localnet")]
     assert_custom_program_error(anchor_lang::error::ErrorCode::AccountNotInitialized, result);

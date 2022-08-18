@@ -2,6 +2,8 @@ use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 
 use anyhow::Result;
+use jet_margin_sdk::solana::transaction::{SendTransactionBuilder, TransactionBuilder};
+use jet_margin_sdk::util::asynchronous::MapAsync;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::{Keypair, Signer};
 
@@ -11,6 +13,7 @@ use jet_static_program_registry::orca_swap_v2;
 use crate::context::MarginTestContext;
 use crate::margin::MarginUser;
 use crate::swap::SwapRegistry;
+use crate::tokens::TokenManager;
 
 pub const ONE: u64 = 1_000_000_000;
 
@@ -139,8 +142,34 @@ impl<'a> TestUser<'a> {
             .await
     }
 
-    pub async fn liquidate_end(&self, liquidator: Pubkey) -> Result<()> {
-        self.user.liquidate_end(Some(liquidator)).await
+    pub async fn liquidate_begin(&self, refresh_positions: bool) -> Result<()> {
+        let mut txs = if refresh_positions {
+            self.refresh_position_oracles_txs().await?
+        } else {
+            vec![]
+        };
+        txs.push(self.user.liquidate_begin_tx(refresh_positions).await?);
+        self.ctx.rpc.send_and_confirm_condensed(txs).await?;
+
+        Ok(())
+    }
+
+    pub async fn verify_healthy(&self) -> Result<()> {
+        self.user.verify_healthy().await
+    }
+
+    pub async fn liquidate_end(&self, liquidator: Option<Pubkey>) -> Result<()> {
+        self.user.liquidate_end(liquidator).await
+    }
+
+    pub async fn refresh_position_oracles_txs(&self) -> Result<Vec<TransactionBuilder>> {
+        let tokens = TokenManager::new(self.ctx.rpc.clone());
+        self.user
+            .positions()
+            .await?
+            .iter()
+            .map_async(|position| tokens.refresh_to_same_price_tx(&position.token))
+            .await
     }
 }
 
@@ -158,19 +187,27 @@ impl<'a> TestLiquidator<'a> {
         })
     }
 
-    pub async fn begin(&self, user: &MarginUser) -> Result<TestUser<'a>> {
+    pub fn for_user(&self, user: &MarginUser) -> Result<TestUser<'a>> {
         let liquidation = self
             .ctx
             .margin
-            .liquidator(&self.wallet, user.owner(), user.seed())
-            .await?;
-        liquidation.liquidate_begin(true).await?;
+            .liquidator(&self.wallet, user.owner(), user.seed())?;
 
         Ok(TestUser {
             ctx: self.ctx,
             user: liquidation,
             mint_to_token_account: HashMap::new(),
         })
+    }
+
+    pub async fn begin(&self, user: &MarginUser, refresh_positions: bool) -> Result<TestUser<'a>> {
+        let test_liquidation = self.for_user(user)?;
+        test_liquidation
+            .user
+            .liquidate_begin(refresh_positions)
+            .await?;
+
+        Ok(test_liquidation)
     }
 
     pub async fn liquidate(
@@ -182,9 +219,9 @@ impl<'a> TestLiquidator<'a> {
         loan: &Pubkey,
         repay: u64,
     ) -> Result<()> {
-        let liq = self.begin(user).await?;
+        let liq = self.begin(user, true).await?;
         liq.swap(swaps, collateral, loan, sell).await?;
         liq.margin_repay(loan, repay).await?;
-        liq.liquidate_end(self.wallet.pubkey()).await
+        liq.liquidate_end(Some(self.wallet.pubkey())).await
     }
 }

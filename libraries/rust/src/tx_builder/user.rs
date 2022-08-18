@@ -34,7 +34,13 @@ use jet_margin::{MarginAccount, PositionKind};
 use jet_margin_pool::{Amount, TokenChange};
 use jet_simulation::solana_rpc_api::SolanaRpcClient;
 
-use crate::ix_builder::*;
+use crate::{
+    ix_builder::*,
+    solana::{
+        keypair::clone,
+        transaction::{SendTransactionBuilder, TransactionBuilder},
+    },
+};
 
 /// [Transaction] builder for a margin account, which supports invoking adapter
 /// actions signed as the margin account.
@@ -110,6 +116,22 @@ impl MarginTxBuilder {
         let signers = self.signer.as_ref().map(|s| vec![s]).unwrap_or_default();
 
         self.rpc.create_transaction(&signers, instructions).await
+    }
+
+    fn create_transaction_builder(
+        &self,
+        instructions: &[Instruction],
+    ) -> Result<TransactionBuilder> {
+        let signers = self
+            .signer
+            .as_ref()
+            .map(|s| vec![clone(s)])
+            .unwrap_or_default();
+
+        Ok(TransactionBuilder {
+            signers,
+            instructions: instructions.to_vec(),
+        })
     }
 
     async fn create_unsigned_transaction(
@@ -427,6 +449,16 @@ impl MarginTxBuilder {
     /// Transaction to begin liquidating user account.
     /// If `refresh_position` is provided, all the margin pools will be refreshed first.
     pub async fn liquidate_begin(&self, refresh_positions: bool) -> Result<Transaction> {
+        let builder = self.liquidate_begin_builder(refresh_positions).await?;
+        self.rpc.compile(builder).await
+    }
+
+    /// Transaction to begin liquidating user account.
+    /// If `refresh_position` is provided, all the margin pools will be refreshed first.
+    pub async fn liquidate_begin_builder(
+        &self,
+        refresh_positions: bool,
+    ) -> Result<TransactionBuilder> {
         assert!(self.is_liquidator);
 
         // Get the margin account and refresh positions
@@ -440,7 +472,8 @@ impl MarginTxBuilder {
             self.ix
                 .liquidate_begin(self.signer.as_ref().unwrap().pubkey()),
         );
-        self.create_transaction(&instructions).await
+
+        self.create_transaction_builder(&instructions)
     }
 
     /// Transaction to end liquidating user account
@@ -458,6 +491,14 @@ impl MarginTxBuilder {
     pub async fn verify_healthy(&self) -> Result<Transaction> {
         self.create_unsigned_transaction(&[self.ix.verify_healthy()])
             .await
+    }
+
+    /// Verify that the margin account is healthy
+    pub fn verify_healthy_builder(&self) -> TransactionBuilder {
+        TransactionBuilder {
+            instructions: vec![self.ix.verify_healthy()],
+            signers: vec![],
+        }
     }
 
     /// Refresh a user's position in a margin pool
