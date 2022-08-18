@@ -15,6 +15,95 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+//!## close\_account.rs
+//!
+//!This instruction does the following:
+//!
+//!`pub fn close_account_handler(ctx: Context<CloseAccount>)`
+//!
+//!1.  Let `account`be a reference to the margin account being closed.
+//!    
+//!2.  Check if the loaded margin account has any open positions.
+//!    
+//!    1.  If open positions exist, then return `ErrorCode::AccountNotEmpty`.
+//!        
+//!3.  Emit the `AccountClosed` event for data logging (see table below).
+//!    
+//!4.  Load the margin account.
+//!    
+//!5.  Return `Ok(())`.
+//!    
+//!## close\_account.rs
+//!
+//!This instruction does the following:
+//!
+//!`pub fn close_account_handler(ctx: Context<CloseAccount>)`
+//!
+//!1.  Let `account`be a reference to the margin account being closed.
+//!   
+//!2.  Check if the loaded margin account has any open positions.
+//!   
+//!    1.  If open positions exist, then return `ErrorCode::AccountNotEmpty`.
+//!       
+//!3.  Emit the `AccountClosed` event for data logging (see table below).
+//!   
+//!4.  Load the margin account.
+//!   
+//!5.  Return `Ok(())`.
+//!   
+//!## close\_account.rs
+//!
+//! This instruction does the following:
+//!
+//!`pub fn close_account_handler(ctx: Context<CloseAccount>)`
+//!
+//!1.  Let `account`be a reference to the margin account being closed.
+//!   
+//!2.  Check if the loaded margin account has any open positions.
+//!   
+//!    1.  If open positions exist, then return `ErrorCode::AccountNotEmpty`.
+//!       
+//!3.  Emit the `AccountClosed` event for data logging (see table below).
+//!   
+//!4.  Load the margin account.
+//!   
+//!5.  Return `Ok(())`.
+//!   
+//!## close\_account.rs
+//!
+//!This instruction does the following:
+//!
+//!`pub fn close_account_handler(ctx: Context<CloseAccount>)`
+//!
+//!1.  Let `account`be a reference to the margin account being closed.
+//!   
+//!2.  Check if the loaded margin account has any open positions.
+//!   
+//!    1.  If open positions exist, then return `ErrorCode::AccountNotEmpty`.
+//!       
+//!3.  Emit the `AccountClosed` event for data logging (see table below).
+//!
+//!4.  Load the margin account.
+//!   
+//!5.  Return `Ok(())`.
+//!   
+//!
+//!**Parameters of close\_account.rs:**
+//!
+//!|     |     |
+//!| --- | --- |
+//!| **Name** | **Description** |
+//!| `owner` | The owner of the account being closed. |
+//!| `receiver` | The account to get any returned rent. |
+//!| `margin_account` | The account being closed. |
+//!
+//!**Events emitted by close\_account.rs:**
+//!
+//!|     |     |
+//!| --- | --- |
+//!| **Event Name** | **Description** |
+//!| `AccountClosed` | The closed account (includes the margin account pubkey). |
+
 use anchor_lang::prelude::*;
 
 use crate::{events, ErrorCode, MarginAccount};

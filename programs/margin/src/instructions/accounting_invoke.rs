@@ -15,6 +15,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+
 use anchor_lang::prelude::*;
 
 use jet_metadata::MarginAdapterMetadata;
@@ -27,15 +28,47 @@ pub struct AccountingInvoke<'info> {
     /// The margin account to proxy an action for
     #[account(mut)]
     pub margin_account: AccountLoader<'info, MarginAccount>,
-
+    
     /// The program to be invoked
     /// CHECK:
     pub adapter_program: AccountInfo<'info>,
-
+    
     /// The metadata about the proxy program
     #[account(has_one = adapter_program)]
     pub adapter_metadata: Account<'info, MarginAdapterMetadata>,
 }
+/// ## accounting\_invoke.rs
+/// 
+/// This instruction does the following:
+/// 
+/// 1.  Emit `AccountingInvokeBegin` events for data logging (see table below).
+///     
+/// 2.  Check if any positions that have changed via adapters.
+///     
+///     a.  For each changed position, emit each existing adapter position as an `event` (see table below).
+///         
+/// 3.  Emit `AccountingInvokeEnd` event for data logging (see table below).
+///     
+/// 4.  Return `Ok(())`.
+///     
+/// 
+/// !**Parameters of accounting\_invoke.rs:**
+/// 
+/// |     |     |
+/// | --- | --- |
+/// | **Name** | **Description** |
+/// | `margin_account` | The margin account to proxy an action for. |
+/// | `adapter_program` | The program to be invoked. |
+/// | `adapter_metadata` | The metadata about the proxy program. |
+/// 
+/// **Events emitted by accounting\_invoke.rs:**
+/// 
+/// |     |     |
+/// | --- | --- |
+/// | **Name** | **Description** |
+/// | `AccountingInvokeBegin` | Signify that the accounting invocation process has begun. |
+/// | `event` | Each adapter position is emitted as an event (includes the margin account, the adapter program, the remaining accounts, and a value of `false` for the field `signed`. |
+/// | `AccountingInvokeEnd` | The margin account to proxy an action for. |
 
 pub fn accounting_invoke_handler<'info>(
     ctx: Context<'_, '_, '_, 'info, AccountingInvoke<'info>>,
