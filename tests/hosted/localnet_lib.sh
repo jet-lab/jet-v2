@@ -70,7 +70,7 @@ with-validator() {
         --quiet &
 
     spid=$!
-    sleep ${VALIDATOR_STARTUP:-5}
+    sleep ${VALIDATOR_STARTUP:-10} #had to up this a bit
     
     if [[ ${SOLANA_LOGS:-false} == true ]]; then
         solana -ul logs &
