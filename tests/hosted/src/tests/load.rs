@@ -1,4 +1,4 @@
-use hosted_tests::load::{unhealthy_accounts_load_test, UnhealthyAccountsLoadTestScenario};
+use crate::load::{unhealthy_accounts_load_test, UnhealthyAccountsLoadTestScenario};
 use solana_sdk::{signature::Keypair, signer::Signer};
 
 #[tokio::test(flavor = "multi_thread")]

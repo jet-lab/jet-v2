@@ -29,15 +29,13 @@ anchor-build() {
 }
 
 cargo-test() {
-    RUST_BACKTRACE=1 cargo test \
+    RUST_BACKTRACE=1 with-validator cargo test \
         --features localnet \
-        --package hosted-tests \
-        --test $@ \
-        -- --nocapture
+        --package hosted-tests $@
 }
 
 cargo-run() {
-    RUST_BACKTRACE=1 cargo run \
+    RUST_BACKTRACE=1 with-validator cargo run \
         --features localnet \
         --package hosted-tests \
         --bin $@
@@ -47,14 +45,6 @@ cargo-build() {
     RUST_BACKTRACE=1 cargo build \
         --features localnet \
         --package hosted-tests
-}
-
-test-file() {
-    with-validator cargo-test $@
-}
-
-run() {
-    with-validator cargo-run $@
 }
 
 with-validator() {

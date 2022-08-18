@@ -5,7 +5,7 @@ use solana_sdk::native_token::LAMPORTS_PER_SOL;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::Signer;
 
-use hosted_tests::{
+use crate::{
     context::{test_context, MarginTestContext},
     margin::MarginPoolSetupInfo,
 };

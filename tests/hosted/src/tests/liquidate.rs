@@ -1,6 +1,6 @@
 use anyhow::Result;
 
-use hosted_tests::{
+use crate::{
     context::test_context,
     margin::MarginUser,
     setup_helper::{liquidators, setup_token, setup_user, tokens, users},

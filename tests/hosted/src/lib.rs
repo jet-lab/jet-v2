@@ -6,3 +6,4 @@ pub mod setup_helper;
 pub mod swap;
 pub mod test_user;
 pub mod tokens;
+mod tests;

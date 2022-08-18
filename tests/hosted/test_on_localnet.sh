@@ -7,4 +7,4 @@ set -euxo pipefail
 SOLANA_LOGS=true
 
 anchor-build
-test-file mod
+cargo-test
