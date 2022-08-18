@@ -15,48 +15,6 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-//!## adapter\_invoke.rs
-//!
-//!This instruction does the following:
-//!
-//!1.  If a read account has the `liquidation` parameter set to a pubkey:
-//!    
-//!    1.  This means that that margin account is already under liquidation by the liquidator at that pubkey.
-//!        
-//!    2.  Return `ErrorCode::Liquidating`.
-//!        
-//!2.  Emit the `AdapterInvokeBegin` event for data logging (see table below).
-//!    
-//!3.  Check if any positions that have changed via adapters.
-//!    
-//!    1.  For each changed position, emit each existing adapter position as an `event` (see table below).
-//!        
-//!4.  Emit the `AdapterInvokeEnd` event for data logging (see table below).
-//!    
-//!5.  Verify that margin accounts positions via adapter are healthy.
-//!    
-//!6.  Return `Ok(())`.
-//!    
-//!
-//!**Parameters of adapter\_invoke.rs:**
-//!
-//!|     |     |
-//!| --- | --- |
-//!| **Name** | **Description** |
-//!| `owner` | The authority that owns the margin account. |
-//!| `margin_account` | The margin account to proxy an action for. |
-//!| `adapter_program` | The program to be invoked. |
-//!| `adapter_metadata` | The metadata about the proxy program. |
-//!
-//!**Events emitted by adapter\_invoke.rs:**
-//!
-//!|     |     |
-//!| --- | --- |
-//!| **Event Name** | **Description** |
-//!| `AdapterInvokeBegin` | Marks the start of the adapter invocation (includes the margin account pubkey and the adapter program pubkey). |
-//!| `event` _(Note that each single event represents a different adapter position)_ | Each adapter position is emitted as an event (includes the margin account, the adapter program, the accounts, and a value of `true` for the field `signed`. |
-//!| `AdapterInvokeEnd` | Marks the ending of the adapter invocation (includes no data except for the event itself being emitted). |
-//!
 
 use anchor_lang::prelude::*;
 
@@ -82,6 +40,48 @@ pub struct AdapterInvoke<'info> {
     #[account(has_one = adapter_program)]
     pub adapter_metadata: Account<'info, MarginAdapterMetadata>,
 }
+
+/// ## adapter\_invoke.rs
+/// 
+/// This instruction does the following:
+/// 
+/// 1.  If a read account has the `liquidation` parameter set to a pubkey:
+///     
+///     1.  This means that that margin account is already under liquidation by the liquidator at that pubkey.
+///         
+///     2.  Return `ErrorCode::Liquidating`.
+///         
+/// 2.  Emit the `AdapterInvokeBegin` event for data logging (see table below).
+///     
+/// 3.  Check if any positions that have changed via adapters.
+///     
+///     1.  For each changed position, emit each existing adapter position as an `event` (see table below).
+///         
+/// 4.  Emit the `AdapterInvokeEnd` event for data logging (see table below).
+///     
+/// 5.  Verify that margin accounts positions via adapter are healthy.
+///     
+/// 6.  Return `Ok(())`.
+///     
+/// 
+/// **Parameters of adapter\_invoke.rs:**
+/// 
+/// |     |     |
+/// | --- | --- |
+/// | **Name** | **Description** |
+/// | `owner` | The authority that owns the margin account. |
+/// | `margin_account` | The margin account to proxy an action for. |
+/// | `adapter_program` | The program to be invoked. |
+/// | `adapter_metadata` | The metadata about the proxy program. |
+/// 
+/// **Events emitted by adapter\_invoke.rs:**
+/// 
+/// |     |     |
+/// | --- | --- |
+/// | **Event Name** | **Description** |
+/// | `AdapterInvokeBegin` | Marks the start of the adapter invocation (includes the margin account pubkey and the adapter program pubkey). |
+/// | `event` _(Note that each single event represents a different adapter position)_ | Each adapter position is emitted as an event (includes the margin account, the adapter program, the accounts, and a value of `true` for the field `signed`. |
+/// | `AdapterInvokeEnd` | Marks the ending of the adapter invocation (includes no data except for the event itself being emitted). |
 
 pub fn adapter_invoke_handler<'info>(
     ctx: Context<'_, '_, '_, 'info, AdapterInvoke<'info>>,

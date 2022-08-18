@@ -40,6 +40,36 @@ pub struct CreateAccount<'info> {
     pub system_program: Program<'info, System>,
 }
 
+/// ## create\_account.rs
+/// 
+/// This instruction does the following:
+/// 
+/// 1.  Let `account` be a mutable reference to the margin account.
+///     
+/// 2.  Initialize the margin account by setting the margin account version, owner, bump seed, user seed, and setting liquidator pubkey field to the default (if an account is being liquidated, the liquidator pubkey will be set here).
+///     
+/// 3.  Emit the `AccountCreated` event for data logging (see table below):
+///     
+/// 4.  Return `Ok(())`.
+///     
+/// 
+/// **Parameters of create\_account.rs:**
+/// 
+/// |     |     |
+/// | --- | --- |
+/// | **Name** | **Description** |
+/// | `owner` | The owner of the new margin account. |
+/// | `payer` | The pubkey paying rent for the new margin account opening. |
+/// | `margin_account` | The margin account to initialize for the owner. |
+/// | `system_program` | The system program. |
+/// 
+/// **Events emitted by create\_account.rs:**
+/// 
+/// |     |     |
+/// | --- | --- |
+/// | **Event Name** | **Description** |
+/// | `AccountCreated` | The created account (includes the margin account pubkey, the owner of margin account’s the pubkey, and the seed). |
+/// 
 pub fn create_account_handler(ctx: Context<CreateAccount>, seed: u16) -> Result<()> {
     let mut account = ctx.accounts.margin_account.load_init()?;
 
