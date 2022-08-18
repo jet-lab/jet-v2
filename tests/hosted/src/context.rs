@@ -43,6 +43,15 @@ pub struct MarginTestContext {
     rng: Mutex<RefCell<MockRng>>,
 }
 
+impl std::fmt::Debug for MarginTestContext {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("MarginTestContext")
+            .field("authority", &self.authority)
+            .field("payer", &self.payer)
+            .finish()
+    }
+}
+
 impl MarginTestContext {
     #[cfg(not(feature = "localnet"))]
     pub async fn new() -> Result<Self, Error> {

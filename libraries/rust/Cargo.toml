@@ -12,10 +12,13 @@ testing = ["jet-control/testing", "jet-margin/testing", "jet-metadata/testing", 
 
 [dependencies]
 anyhow = "1"
-thiserror = "1"
+async-recursion = "1"
 async-trait = "0.1"
+base64 = "0.13"
+bincode = "1.3"
 bytemuck = "1"
 futures = "0.3"
+thiserror = "1"
 tokio = { version = "1", features = ["rt"] }
 
 solana-sdk = "1.10"
