@@ -19,7 +19,8 @@ anchor-test() {
 }
 
 hosted-tests-localnet() {
-    tests/hosted/test_on_localnet.sh
+    tests/hosted/test_on_localnet.sh anchor-build
+    SOLANA_LOGS=true tests/hosted/test_on_localnet.sh test combined
 }
 
 cargo-lint() {

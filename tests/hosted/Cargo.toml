@@ -7,6 +7,9 @@ edition = "2021"
 test = []
 default = ["test"]
 localnet = []
+batch_all = []
+batch1 = []
+batch2 = []
 
 [dependencies]
 async-recursion = "1"
