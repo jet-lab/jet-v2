@@ -16,7 +16,7 @@ use solana_sdk::native_token::LAMPORTS_PER_SOL;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::Signer;
 
-use crate::{
+use hosted_tests::{
     context::{test_context, MarginTestContext},
     margin::MarginPoolSetupInfo,
 };
@@ -80,6 +80,7 @@ async fn setup_environment(ctx: &MarginTestContext) -> Result<TestEnv, Error> {
 /// a series of deposit/borrow/repay/withdraw actions onto the margin pools
 /// via their margin accounts.
 #[tokio::test(flavor = "multi_thread")]
+#[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn sanity_test() -> Result<(), anyhow::Error> {
     // Get the mocked runtime
     let ctx = test_context().await;

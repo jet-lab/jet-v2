@@ -5,7 +5,7 @@ use solana_sdk::native_token::LAMPORTS_PER_SOL;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::Signer;
 
-use crate::{
+use hosted_tests::{
     context::{test_context, MarginTestContext},
     margin::MarginPoolSetupInfo,
 };
@@ -86,6 +86,7 @@ async fn setup_environment(ctx: &MarginTestContext) -> Result<TestEnv, Error> {
 /// 2. Deposits Token B, borrows Token A
 /// 3. Deposits Token C, borrows Tokens A and B, tries to overpay either
 #[tokio::test(flavor = "multi_thread")]
+#[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn pool_overpayment() -> Result<(), anyhow::Error> {
     // Get the mocked runtime
     let ctx = test_context().await;

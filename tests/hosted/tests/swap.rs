@@ -8,7 +8,7 @@ use solana_sdk::native_token::LAMPORTS_PER_SOL;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::Signer;
 
-use crate::{
+use hosted_tests::{
     context::{test_context, MarginTestContext},
     margin::MarginPoolSetupInfo,
     swap::SwapPoolConfig,
@@ -35,18 +35,21 @@ const DEFAULT_POOL_CONFIG: MarginPoolConfig = MarginPoolConfig {
 
 /// Test token swaps for the official SPL token swap
 #[tokio::test(flavor = "multi_thread")]
+#[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn spl_swap_v2() -> Result<(), anyhow::Error> {
     swap_test_impl(spl_token_swap_v2::id()).await
 }
 
 /// Test token swaps for orca v1
 #[tokio::test(flavor = "multi_thread")]
+#[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn orca_swap_v1() -> Result<(), anyhow::Error> {
     swap_test_impl(orca_swap_v1::id()).await
 }
 
 /// Test token swaps for orca v2
 #[tokio::test(flavor = "multi_thread")]
+#[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn orca_swap_v2() -> Result<(), anyhow::Error> {
     swap_test_impl(orca_swap_v2::id()).await
 }

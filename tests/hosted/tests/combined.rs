@@ -1,4 +1,4 @@
-#![cfg(test)]
+#![cfg(feature = "localnet")]
 
 mod liquidate;
 mod load;
