@@ -283,32 +283,32 @@ pub mod jet_margin {
     /// 
     /// ## verify\_healthy.rs
     ///
-    ///  This instruction does the following:
-    ///  
-    ///  1.  Let `account` be the loaded margin account.
-    ///      
-    ///  2.  Check if all positions for that margin account are healthy.
-    ///      
-    ///      1.  If there are unhealthy positions exist for this margin account, return `False`.
-    ///          
-    ///  3.  Emit the `VerifiedHealthy` event for data logging (see table below).
-    ///      
-    ///  4.  Return `Ok(())`.
-    ///      
-    ///  
-    ///  **Parameters of verify\_healthy.rs:**
-    ///  
-    ///  |     |     |
-    ///  | --- | --- |
-    ///  | **Name** | **Description** |
-    ///  | `margin_account` | The account to verify the health of. |
-    ///  
-    ///  **Events emitted by verify\_healthy.rs:**
-    ///  
-    ///  |     |     |
-    ///  | --- | --- |
-    ///  | **Event Name** | **Description** |
-    ///  | `VerifiedHealthy` | The margin account pubkeys of verified healthy accounts. |
+    /// This instruction does the following:
+    /// 
+    /// 1.  Let `account` be the loaded margin account.
+    ///
+    /// 2.  Check if all positions for that margin account are healthy.
+    ///     
+    ///    a.  If there are unhealthy positions exist for this margin account, return `False`.
+    ///
+    /// 3.  Emit the `VerifiedHealthy` event for data logging (see table below).
+    /// 
+    /// 4.  Return `Ok(())`.
+    /// 
+    /// 
+    /// **Parameters of verify\_healthy.rs:**
+    /// 
+    /// |     |     |
+    /// | --- | --- |
+    /// | **Name** | **Description** |
+    /// | `margin_account` | The account to verify the health of. |
+    /// 
+    /// **Events emitted by verify\_healthy.rs:**
+    /// 
+    /// |     |     |
+    /// | --- | --- |
+    /// | **Event Name** | **Description** |
+    /// |`VerifiedHealthy` | The margin account pubkeys of verified healthy accounts. |
 
     pub fn verify_healthy(ctx: Context<VerifyHealthy>) -> Result<()> {
         verify_healthy_handler(ctx)
