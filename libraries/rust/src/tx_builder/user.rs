@@ -493,14 +493,6 @@ impl MarginTxBuilder {
             .await
     }
 
-    /// Verify that the margin account is healthy
-    pub fn verify_healthy_builder(&self) -> TransactionBuilder {
-        TransactionBuilder {
-            instructions: vec![self.ix.verify_healthy()],
-            signers: vec![],
-        }
-    }
-
     /// Refresh a user's position in a margin pool
     pub async fn refresh_pool_position(&self, token_mint: &Pubkey) -> Result<Transaction> {
         let metadata = self.get_token_metadata(token_mint).await?;
