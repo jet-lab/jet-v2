@@ -81,11 +81,11 @@ pub mod jet_margin {
     use super::*;
 
     /// Create a new margin account for a user
-    /// 
+    ///
     /// ## create\_account.rs
-    /// 
+    ///
     /// This instruction does the following:
-    /// 
+    ///
     /// 1.  Let `account` be a mutable reference to the margin account.
     ///     
     /// 2.  Initialize the margin account by setting the margin account version, owner, bump seed, user seed, and setting liquidator pubkey field to the default (if an account is being liquidated, the liquidator pubkey will be set here).
@@ -94,9 +94,9 @@ pub mod jet_margin {
     ///     
     /// 4.  Return `Ok(())`.
     ///     
-    /// 
+    ///
     /// **Parameters of create\_account.rs:**
-    /// 
+    ///
     /// |     |     |
     /// | --- | --- |
     /// | **Name** | **Description** |
@@ -104,20 +104,20 @@ pub mod jet_margin {
     /// | `payer` | The pubkey paying rent for the new margin account opening. |
     /// | `margin_account` | The margin account to initialize for the owner. |
     /// | `system_program` | The system program. |
-    /// 
+    ///
     /// **Events emitted by create\_account.rs:**
-    /// 
+    ///
     /// |     |     |
     /// | --- | --- |
     /// | **Event Name** | **Description** |
     /// | `AccountCreated` | The created account (includes the margin account pubkey, the owner of margin account’s the pubkey, and the seed). |
-    
+
     pub fn create_account(ctx: Context<CreateAccount>, seed: u16) -> Result<()> {
-    create_account_handler(ctx, seed)
+        create_account_handler(ctx, seed)
     }
 
     /// Close a user's margin account
-    /// 
+    ///
     /// ## close\_account.rs
     ///
     /// This instruction does the following:
