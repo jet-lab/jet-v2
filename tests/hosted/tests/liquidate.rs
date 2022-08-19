@@ -34,16 +34,16 @@ struct Scenario1 {
 #[allow(clippy::erasing_op)]
 async fn scenario1() -> Result<Scenario1> {
     let ctx = test_context().await;
-    let usdc = setup_token(&ctx, 6, 1_00, 4_00, 1.0).await?;
-    let tsol = setup_token(&ctx, 9, 95, 4_00, 100.0).await?;
+    let usdc = setup_token(ctx, 6, 1_00, 4_00, 1.0).await?;
+    let tsol = setup_token(ctx, 9, 95, 4_00, 100.0).await?;
 
     // Create wallet for the liquidator
     let user_a = setup_user(
-        &ctx,
+        ctx,
         vec![(usdc, 5_000_000 * ONE_USDC, 5_000_000 * ONE_USDC)],
     )
     .await?;
-    let user_b = setup_user(&ctx, vec![(tsol, 0, 10_000 * ONE_TSOL)]).await?;
+    let user_b = setup_user(ctx, vec![(tsol, 0, 10_000 * ONE_TSOL)]).await?;
 
     // Have each user borrow the other's funds
     ctx.tokens.refresh_to_same_price(&tsol).await?;
@@ -84,7 +84,7 @@ async fn scenario1() -> Result<Scenario1> {
         user_a: user_a.user.clone(),
         user_b: user_b.user.clone(),
         usdc,
-        liquidator: TestLiquidator::new(&ctx).await?,
+        liquidator: TestLiquidator::new(ctx).await?,
     })
 }
 
@@ -338,9 +338,9 @@ async fn liquidator_permission_is_removable() -> Result<()> {
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn liquidate_with_swap() -> Result<()> {
     let ctx = test_context().await;
-    let ([usdc, sol], swaps, pricer) = tokens(&ctx).await?;
-    let [liquidator] = liquidators(&ctx).await?;
-    let [user0, user1] = users(&ctx).await?;
+    let ([usdc, sol], swaps, pricer) = tokens(ctx).await?;
+    let [liquidator] = liquidators(ctx).await?;
+    let [user0, user1] = users(ctx).await?;
     user0.deposit(&usdc, 1000).await?;
     user1.deposit(&sol, 1000).await?;
     user1.borrow_to_wallet(&usdc, 800).await?;
