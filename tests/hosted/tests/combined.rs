@@ -1,18 +1,18 @@
 #![cfg(feature = "localnet")]
 
 feature_groups! {
-	"batch_all";
-	"batch1" {
-		mod liquidate;
-	}
-	"batch2" {
-		mod load;
-		mod pool_overpayment;
-		mod positions;
-		mod rounding;
-		mod sanity;
-		mod swap;
-	}
+    "batch_all";
+    "batch1" {
+        mod liquidate;
+    }
+    "batch2" {
+        mod load;
+        mod pool_overpayment;
+        mod positions;
+        mod rounding;
+        mod sanity;
+        mod swap;
+    }
 }
 
 macro_rules! feature_groups {
