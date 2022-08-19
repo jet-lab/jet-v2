@@ -36,7 +36,6 @@ pub struct CloseAccount<'info> {
     pub margin_account: AccountLoader<'info, MarginAccount>,
 }
 
-
 pub fn close_account_handler(ctx: Context<CloseAccount>) -> Result<()> {
     let account = ctx.accounts.margin_account.load()?;
 

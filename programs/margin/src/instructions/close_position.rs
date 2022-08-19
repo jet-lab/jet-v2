@@ -44,7 +44,6 @@ pub struct ClosePosition<'info> {
     pub token_program: Program<'info, Token>,
 }
 
-
 impl<'info> ClosePosition<'info> {
     fn close_token_account_ctx(&self) -> CpiContext<'_, '_, '_, 'info, CloseAccount<'info>> {
         CpiContext::new(
