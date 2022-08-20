@@ -74,7 +74,12 @@ pub const LIQUIDATION_TIMEOUT: UnixTimestamp = 60;
 /// This may be exceeded by a liquidator.
 pub const MAX_USER_POSITIONS: usize = 24;
 
-/// This crate documents the instructions used in the `margin` program of the [jet-v2 repo](https://github.com/jet-lab/jet-v2/). Handler functions are described for each instruction well as struct parameters (and their types and descriptions are listed) and any handler function parameters aside from parameters that exist in every instruction handler function. Parameters of events emitted for the purposes of data logging are also included.
+/// This crate documents the instructions used in the `margin` program of the
+/// [jet-v2 repo](https://github.com/jet-lab/jet-v2/).
+/// Handler functions are described for each instruction well as struct parameters
+/// (and their types and descriptions are listed) and any handler function
+/// parameters aside from parameters that exist in every instruction handler function.
+/// Parameters of events emitted for the purposes of data logging are also included.
 
 #[program]
 pub mod jet_margin {
@@ -88,7 +93,9 @@ pub mod jet_margin {
     ///
     /// 1.  Let `account` be a mutable reference to the margin account.
     ///     
-    /// 2.  Initialize the margin account by setting the margin account version, owner, bump seed, user seed, and setting liquidator pubkey field to the default (if an account is being liquidated, the liquidator pubkey will be set here).
+    /// 2.  Initialize the margin account by setting the margin account version, owner,
+    ///     bump seed, user seed, and setting liquidator pubkey field to the default
+    ///     (if an account is being liquidated, the liquidator pubkey will be set here).
     ///     
     /// 3.  Emit the `AccountCreated` event for data logging (see table below):
     ///     
@@ -110,7 +117,7 @@ pub mod jet_margin {
     /// |     |     |
     /// | --- | --- |
     /// | **Event Name** | **Description** |
-    /// | `AccountCreated` | The created account (includes the margin account pubkey, the owner of margin account’s the pubkey, and the seed). |
+    /// | [`events::AccountCreated`] | The created account (includes the margin account pubkey, the owner of margin account’s the pubkey, and the seed). |
 
     pub fn create_account(ctx: Context<CreateAccount>, seed: u16) -> Result<()> {
         create_account_handler(ctx, seed)
@@ -149,7 +156,7 @@ pub mod jet_margin {
     /// |     |     |
     /// | --- | --- |
     /// | **Event Name** | **Description** |
-    /// | `AccountClosed` | The closed account (includes the margin account pubkey). |
+    /// | [`events::AccountClosed`] | The closed account (includes the margin account pubkey). |
 
     pub fn close_account(ctx: Context<CloseAccount>) -> Result<()> {
         close_account_handler(ctx)
@@ -189,7 +196,7 @@ pub mod jet_margin {
     /// |     |     |
     /// | --- | --- |
     /// | **Event Name** | **Description** |
-    /// | `PositionRegistered` | The position registered (includes the margin account pubkey, the authority pubkey of that margin account, and the position itself). |
+    /// | [`events::PositionRegistered`] | The position registered (includes the margin account pubkey, the authority pubkey of that margin account, and the position itself). |
 
     pub fn register_position(ctx: Context<RegisterPosition>) -> Result<()> {
         register_position_handler(ctx)
@@ -226,7 +233,7 @@ pub mod jet_margin {
     /// |     |     |
     /// | --- | --- |
     /// | **Event Name** | **Description** |
-    /// | `PositionBalanceUpdated` | The updated position (includes the token account, margin account pubkey, and token balance). |
+    /// | [`events::PositionBalanceUpdated`] | The updated position (includes the token account, margin account pubkey, and token balance). |
     ///
     pub fn update_position_balance(ctx: Context<UpdatePositionBalance>) -> Result<()> {
         update_position_balance_handler(ctx)
@@ -264,7 +271,7 @@ pub mod jet_margin {
     /// |     |     |
     /// | --- | --- |
     /// | **Event Name** | **Description** |
-    /// | `PositionMetadataRefreshed` | The position of which metadata was refreshed (including the margin account pubkey and the `position` itself). |
+    /// | [`events::PositionMetadataRefreshed`] | The position of which metadata was refreshed (including the margin account pubkey and the `position` itself). |
 
     pub fn refresh_position_metadata(ctx: Context<RefreshPositionMetadata>) -> Result<()> {
         refresh_position_metadata_handler(ctx)
@@ -308,7 +315,7 @@ pub mod jet_margin {
     /// |     |     |
     /// | --- | --- |
     /// | **Event Name** | **Description** |
-    /// | `PositionClosed` | The closed position (includes the margin account authority’s pubkey and the relevant token pool’s note mint pubkey). |
+    /// | [`events::PositionClosed`] | The closed position (includes the margin account authority’s pubkey and the relevant token pool’s note mint pubkey). |
 
     pub fn close_position(ctx: Context<ClosePosition>) -> Result<()> {
         close_position_handler(ctx)
@@ -344,7 +351,7 @@ pub mod jet_margin {
     /// |     |     |
     /// | --- | --- |
     /// | **Event Name** | **Description** |
-    /// |`VerifiedHealthy` | The margin account pubkeys of verified healthy accounts. |
+    /// |[`events::VerifiedHealthy`] | The margin account pubkeys of verified healthy accounts. |
 
     pub fn verify_healthy(ctx: Context<VerifyHealthy>) -> Result<()> {
         verify_healthy_handler(ctx)
@@ -391,9 +398,9 @@ pub mod jet_margin {
     /// |     |     |
     /// | --- | --- |
     /// | **Event Name** | **Description** |
-    /// | `AdapterInvokeBegin` | Marks the start of the adapter invocation (includes the margin account pubkey and the adapter program pubkey). |
-    /// | `event` _(Note that each single event represents a different adapter position)_ | Each adapter position is emitted as an event (includes the margin account, the adapter program, the accounts, and a value of `true` for the field `signed`. |
-    /// | `AdapterInvokeEnd` | Marks the ending of the adapter invocation (includes no data except for the event itself being emitted). |
+    /// | [`events::AdapterInvokeBegin`] | Marks the start of the adapter invocation (includes the margin account pubkey and the adapter program pubkey). |
+    /// | [`events::PositionEvent`] _(Note that each single event represents a different adapter position)_ | Each adapter position is emitted as an event (includes the margin account, the adapter program, the accounts, and a value of `true` for the field `signed`. |
+    /// | [`events::AdapterInvokeEnd`] | Marks the ending of the adapter invocation (includes no data except for the event itself being emitted). |
 
     pub fn adapter_invoke<'info>(
         ctx: Context<'_, '_, '_, 'info, AdapterInvoke<'info>>,
@@ -435,9 +442,9 @@ pub mod jet_margin {
     /// |     |     |
     /// | --- | --- |
     /// | **Name** | **Description** |
-    /// | `AccountingInvokeBegin` | Signify that the accounting invocation process has begun. |
-    /// | `event` | Each adapter position is emitted as an event (includes the margin account, the adapter program, the remaining accounts, and a value of `false` for the field `signed`. |
-    /// | `AccountingInvokeEnd` | The margin account to proxy an action for. |
+    /// | [`events::AccountingInvokeBegin`] | Signify that the accounting invocation process has begun. |
+    /// | [`events::PositionEvent`] _(Note that each single event represents an different adapter position)_ | Each adapter position is emitted as an event (includes the margin account, the adapter program, the remaining accounts, and a value of `false` for the field `signed`. |
+    /// | [`events::AccountingInvokeEnd`] | The margin account to proxy an action for. |
 
     pub fn accounting_invoke<'info>(
         ctx: Context<'_, '_, '_, 'info, AccountingInvoke<'info>>,
@@ -492,7 +499,7 @@ pub mod jet_margin {
     /// |     |     |
     /// | --- | --- |
     /// | **Event Name** | **Description** |
-    /// | `LiquidationBegun` | The event marking the beginning of liquidation (Includes the margin account pubkey, the liquidator pubkey, the liquidation pubkey, the liquidation data, and the valuation of the margin account to be liquidated). |
+    /// | [`events::LiquidationBegun`] | The event marking the beginning of liquidation (Includes the margin account pubkey, the liquidator pubkey, the liquidation pubkey, the liquidation data, and the valuation of the margin account to be liquidated). |
 
     pub fn liquidate_begin(ctx: Context<LiquidateBegin>) -> Result<()> {
         liquidate_begin_handler(ctx)
@@ -539,7 +546,7 @@ pub mod jet_margin {
     /// |     |     |
     /// | --- | --- |
     /// | **Event Name** | **Description** |
-    /// | `LiquidationEnded` | The event marking the end of liquidation (Includes the margin account pubkey, the authority of the margin account pubkey, and the timed\_out boolean that is true if the liquidation has timed out). |
+    /// | [`events::LiquidationEnded`] | The event marking the end of liquidation (Includes the margin account pubkey, the authority of the margin account pubkey, and the timed\_out boolean that is true if the liquidation has timed out). |
 
     pub fn liquidate_end(ctx: Context<LiquidateEnd>) -> Result<()> {
         liquidate_end_handler(ctx)
@@ -587,9 +594,9 @@ pub mod jet_margin {
     /// |     |     |
     /// | --- | --- |
     /// | **Event Name** | **Description** |
-    /// | `LiquidatorInvokeBegin` | Marks the beginning of this liquidation event (includes the margin account pubkey, the adapter program pubkey, and the liquidator pubkey that is liquidating that margin account or adapter position). |
-    /// | `event` _(Note that each single event represents an different adapter position)_ | Each adapter position is emitted as an event (includes the margin account, the adapter program, the accounts, and a value of `true` for the `signed` field. |
-    /// | `LiquidatorInvokeEnd` | Marks the ending of this liquidator event (includes the liquidation data and the valuation of the account after liquidation has been performed). |
+    /// | [`events::LiquidatorInvokeBegin`] | Marks the beginning of this liquidation event (includes the margin account pubkey, the adapter program pubkey, and the liquidator pubkey that is liquidating that margin account or adapter position). |
+    /// | [`events::PositionEvent`] _(Note that each single event represents an different adapter position)_ | Each adapter position is emitted as an event (includes the margin account, the adapter program, the accounts, and a value of `true` for the `signed` field. |
+    /// | [`events::LiquidatorInvokeEnd`] | Marks the ending of this liquidator event (includes the liquidation data and the valuation of the account after liquidation has been performed). |
 
     pub fn liquidator_invoke<'info>(
         ctx: Context<'_, '_, '_, 'info, LiquidatorInvoke<'info>>,
@@ -691,11 +698,12 @@ pub enum ErrorCode {
     #[msg("the liquidator does not have permission to do this")]
     UnauthorizedLiquidator = 135_040,
 
-    /// 141041
+    /// 141041 - The liquidation attempted to extract too much value
     #[msg("attempted to extract too much value during liquidation")]
     LiquidationLostValue,
 }
 
+/// Writes the result of position changes from an adapter invocation.
 pub fn write_adapter_result(margin_account: &MarginAccount, result: &AdapterResult) -> Result<()> {
     let mut adapter_result_data = vec![];
     result.serialize(&mut adapter_result_data)?;
