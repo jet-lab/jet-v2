@@ -25,7 +25,17 @@ import {
 } from "./state"
 import { MarginPrograms } from "./marginClient"
 import { findDerivedAccount } from "../utils/pda"
-import { AssociatedToken, bigIntToBn, bnToNumber, getTimestamp, Number192, numberToBn, sendAll, TokenAmount } from ".."
+import {
+  AssociatedToken,
+  bigIntToBn,
+  bnToNumber,
+  getTimestamp,
+  Number192,
+  numberToBn,
+  sendAll,
+  sendAndConfirm,
+  TokenAmount
+} from ".."
 import { Number128 } from "../utils/number128"
 import { MarginTokenConfig } from "./config"
 import { AccountPosition, PriceInfo } from "./accountPosition"
@@ -1581,12 +1591,7 @@ export class MarginAccount {
    * @memberof MarginAccount
    */
   async sendAndConfirm(instructions: TransactionInstruction[], signers?: Signer[]): Promise<string> {
-    try {
-      return await this.provider.sendAndConfirm(new Transaction().add(...instructions), signers)
-    } catch (err) {
-      console.log(err)
-      throw err
-    }
+    return await sendAndConfirm(this.provider, instructions, signers)
   }
 
   /**
@@ -1603,11 +1608,6 @@ export class MarginAccount {
    * @memberof MarginAccount
    */
   async sendAll(transactions: (TransactionInstruction[] | TransactionInstruction[][])[]): Promise<string> {
-    try {
-      return await sendAll(this.provider, transactions)
-    } catch (err) {
-      console.log(err)
-      throw err
-    }
+    return await sendAll(this.provider, transactions)
   }
 }

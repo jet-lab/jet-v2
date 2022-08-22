@@ -24,7 +24,8 @@ import {
   getTokenBalance,
   MARGIN_POOL_PROGRAM_ID,
   registerAdapter,
-  sendToken
+  sendToken,
+  TestToken
 } from "../util"
 
 describe("margin pool deposit", async () => {
@@ -36,8 +37,8 @@ describe("margin pool deposit", async () => {
   const ownerKeypair = payer
   const programs = MarginClient.getPrograms(provider, DEFAULT_MARGIN_CONFIG)
   const manager = new PoolManager(programs, provider)
-  let USDC
-  let SOL
+  let USDC: TestToken = null as any
+  let SOL: TestToken = null as any
 
   it("Fund payer", async () => {
     const airdropSignature = await provider.connection.requestAirdrop(provider.wallet.publicKey, 300 * LAMPORTS_PER_SOL)
@@ -46,14 +47,14 @@ describe("margin pool deposit", async () => {
 
   it("Create tokens", async () => {
     // SETUP
-    USDC = await createToken(provider, payer, 6, 10_000_000)
-    SOL = await createToken(provider, payer, 9, 10_000)
+    USDC = await createToken(provider, payer, 6, 10_000_000, "USDC")
+    SOL = await createToken(provider, payer, 9, 10_000, "SOL")
 
     // ACT
-    const usdc_supply = await getMintSupply(provider, USDC[0], 6)
-    const usdc_balance = await getTokenBalance(provider, confirmOptions.commitment, USDC[1])
-    const sol_supply = await getMintSupply(provider, SOL[0], 9)
-    const sol_balance = await getTokenBalance(provider, confirmOptions.commitment, SOL[1])
+    const usdc_supply = await getMintSupply(provider, USDC.mint, 6)
+    const usdc_balance = await getTokenBalance(provider, confirmOptions.commitment, USDC.vault)
+    const sol_supply = await getMintSupply(provider, SOL.mint, 9)
+    const sol_balance = await getTokenBalance(provider, confirmOptions.commitment, SOL.vault)
 
     // TEST
     expect(usdc_supply).to.eq(10_000_000)
@@ -61,9 +62,6 @@ describe("margin pool deposit", async () => {
     expect(sol_supply).to.eq(10_000)
     expect(sol_balance).to.eq(10_000)
   })
-
-  const FEE_VAULT_USDC: PublicKey = new PublicKey("FEEVAULTUSDC1111111111111111111111111111111")
-  const FEE_VAULT_SOL: PublicKey = new PublicKey("FEEVAULTTSoL1111111111111111111111111111111")
 
   let USDC_oracle: Keypair[]
   let SOL_oracle: Keypair[]
@@ -103,45 +101,32 @@ describe("margin pool deposit", async () => {
     flags: new BN(2) // ALLOW_LENDING
   }
 
-  const POOLS = [
-    {
-      mintAndVault: USDC,
-      weight: 10_000,
-      config: DEFAULT_POOL_CONFIG
-    },
-    {
-      mintAndVault: SOL,
-      weight: 9_500,
-      config: DEFAULT_POOL_CONFIG
-    }
-  ]
-
   let marginPool_USDC: Pool
   let marginPool_SOL: Pool
   let pools: Pool[]
 
   it("Load Pools", async () => {
-    marginPool_SOL = await manager.load({ tokenMint: SOL[0] })
-    marginPool_USDC = await manager.load({ tokenMint: USDC[0] })
+    marginPool_SOL = await manager.load({ tokenMint: SOL.mint, tokenConfig: SOL.tokenConfig })
+    marginPool_USDC = await manager.load({ tokenMint: USDC.mint, tokenConfig: USDC.tokenConfig })
     pools = [marginPool_SOL, marginPool_USDC]
   })
 
   it("Create margin pools", async () => {
     await manager.create({
-      tokenMint: USDC[0],
+      tokenMint: USDC.mint,
       collateralWeight: 1_00,
       maxLeverage: 4_00,
       pythProduct: USDC_oracle[0].publicKey,
       pythPrice: USDC_oracle[1].publicKey,
-      marginPoolConfig: POOLS[0].config
+      marginPoolConfig: DEFAULT_POOL_CONFIG
     })
     await manager.create({
-      tokenMint: SOL[0],
+      tokenMint: SOL.mint,
       collateralWeight: 95,
       maxLeverage: 4_00,
       pythProduct: SOL_oracle[0].publicKey,
       pythPrice: SOL_oracle[1].publicKey,
-      marginPoolConfig: POOLS[1].config
+      marginPoolConfig: DEFAULT_POOL_CONFIG
     })
   })
 
@@ -206,24 +191,24 @@ describe("margin pool deposit", async () => {
   it("Create some tokens for each user to deposit", async () => {
     // SETUP
     const payer_A: Keypair = Keypair.fromSecretKey((wallet_a as NodeWallet).payer.secretKey)
-    user_a_usdc_account = await createTokenAccount(provider, USDC[0], wallet_a.publicKey, payer_A)
-    user_a_sol_account = await createTokenAccount(provider, SOL[0], wallet_a.publicKey, payer_A)
+    user_a_usdc_account = await createTokenAccount(provider, USDC.mint, wallet_a.publicKey, payer_A)
+    user_a_sol_account = await createTokenAccount(provider, SOL.mint, wallet_a.publicKey, payer_A)
 
     const payer_B: Keypair = Keypair.fromSecretKey((wallet_b as NodeWallet).payer.secretKey)
-    user_b_sol_account = await createTokenAccount(provider, SOL[0], wallet_b.publicKey, payer_B)
-    user_b_usdc_account = await createTokenAccount(provider, USDC[0], wallet_b.publicKey, payer_B)
+    user_b_sol_account = await createTokenAccount(provider, SOL.mint, wallet_b.publicKey, payer_B)
+    user_b_usdc_account = await createTokenAccount(provider, USDC.mint, wallet_b.publicKey, payer_B)
 
     const payer_C: Keypair = Keypair.fromSecretKey((wallet_c as NodeWallet).payer.secretKey)
-    user_c_sol_account = await createTokenAccount(provider, SOL[0], wallet_c.publicKey, payer_C)
-    user_c_usdc_account = await createTokenAccount(provider, USDC[0], wallet_c.publicKey, payer_C)
+    user_c_sol_account = await createTokenAccount(provider, SOL.mint, wallet_c.publicKey, payer_C)
+    user_c_usdc_account = await createTokenAccount(provider, USDC.mint, wallet_c.publicKey, payer_C)
 
     // ACT
-    await sendToken(provider, USDC[0], 500_000, 6, ownerKeypair, new PublicKey(USDC[1]), user_a_usdc_account)
-    await sendToken(provider, SOL[0], 50, 9, ownerKeypair, new PublicKey(SOL[1]), user_a_sol_account)
-    await sendToken(provider, SOL[0], 500, 9, ownerKeypair, new PublicKey(SOL[1]), user_b_sol_account)
-    await sendToken(provider, USDC[0], 50, 6, ownerKeypair, new PublicKey(USDC[1]), user_b_usdc_account)
-    await sendToken(provider, SOL[0], 1, 9, ownerKeypair, new PublicKey(SOL[1]), user_c_sol_account)
-    await sendToken(provider, USDC[0], 1, 6, ownerKeypair, new PublicKey(USDC[1]), user_c_usdc_account)
+    await sendToken(provider, USDC.mint, 500_000, 6, ownerKeypair, USDC.vault, user_a_usdc_account)
+    await sendToken(provider, SOL.mint, 50, 9, ownerKeypair, SOL.vault, user_a_sol_account)
+    await sendToken(provider, SOL.mint, 500, 9, ownerKeypair, SOL.vault, user_b_sol_account)
+    await sendToken(provider, USDC.mint, 50, 6, ownerKeypair, USDC.vault, user_b_usdc_account)
+    await sendToken(provider, SOL.mint, 1, 9, ownerKeypair, SOL.vault, user_c_sol_account)
+    await sendToken(provider, USDC.mint, 1, 6, ownerKeypair, USDC.vault, user_c_usdc_account)
 
     // TEST
     expect(await getTokenBalance(provider, "processed", user_a_usdc_account)).to.eq(500_000)
