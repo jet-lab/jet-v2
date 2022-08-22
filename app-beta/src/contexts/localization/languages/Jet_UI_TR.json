@@ -1,0 +1,216 @@
+{
+  "language": "Türkçe\n",
+  "loading": {
+    "transactions": "İşleminiz yapılıyor...",
+    "connectingWallet": "Cüzdan bağlanıyor...",
+    "initializing": "Jet Motorları Çalıştırılıyor",
+    "fetchingReserves": "Yedek Veriler Sağlanıyor",
+    "fetchingAccount": "Hesap Bilgisi Sağlanıyor",
+    "loading": "Loading",
+    "loadMore": "Load More"
+  },
+  "nav": {
+    "cockpit": "Kokpit",
+    "settings": "Ayarlar",
+    "collapse": "Daralt",
+    "getCopilotSuggestion": "Yardımcı pilot önerisi alın.",
+    "transactions": "Uçuş Kayıtları"
+  },
+  "cockpit": {
+    "title": "Kokpit",
+    "asset": "Varlık",
+    "detail": "Detay",
+    "native": "Özgün",
+    "totalValueLocked": "Kilitli Piyasa Değeri",
+    "totalBorrowed": "Toplam Ödünç Alınan",
+    "depositedTokens": "Uygun Likidite",
+    "amountDeposited": "Yatırılan",
+    "amountBorrowed": "Ödünç alınmış",
+    "depositRate": "Yatırma Oranı",
+    "borrowRate": "Borç alma Oranı",
+    "airdrop": "Airdrop",
+    "totalDepositedValue": "Yatırılan varlık değeriniz",
+    "totalBorrowedValue": "Ödünç Aldığınız Varlık",
+    "yourRisk": "Your Risk Level",
+    "collateralizationRatio": "Teminat Oranı",
+    "noInputAmount": "Miktar girin",
+    "accountLeverage": "Account Leverage",
+    "predictedRiskLevel": "Predicted Risk Level",
+    "deposit": "Yatırma",
+    "maxDeposit": "Max Deposit",
+    "minSol": "We reserve 0.07 SOL in the wallet for transaction fees.",
+    "walletBalance": "Cüzdan Bakiyesi",
+    "noDepositAmount": "Miktar girin",
+    "notEnoughAsset": "Yeterli {{ASSET}} yok.",
+    "withdraw": "Çekim",
+    "availableFunds": "Kullanılabilir Fonlar",
+    "lessFunds": "Yeterli fon yok",
+    "borrow": "Borç al",
+    "maxBorrowAmount": "Maksimum Borç",
+    "assetIsCurrentDeposit": "{{ASSET}} yatırdığınız için ödünç alamazsınız.",
+    "noLiquidity": "Yeterli likidite yok.",
+    "minCRatio": "Bu işlem, pozisyonunuzu minimum teminat oranına alacaktır. Dolayısıyla hesabınız, likidasyon bölgesine girecektir. Bu işlemi yapmayı istediğinize emin misiniz?",
+    "belowMinRatio": "Yeterli teminata sahip değilsiniz. Likidasyondan kaçınmak için para yatırın veya borcunuzu geri ödeyin.",
+    "subjectToLiquidation": "This trade increases your Risk Level to {{NEW-RISK}}, which puts you dangerously close to liquidation.",
+    "confirm": "Onayla",
+    "repay": "Geri öde",
+    "amountOwed": "Borçlu Tutar",
+    "oweLess": "Daha az borçlusun.",
+    "geobanned": "Jet Protocol bölgenizde kullanılamıyor.",
+    "noMarket": "Jet pazaryerini başlatamadık.",
+    "txSuccess": "Başarılı! {{AMOUNT AND ASSET}} tutarındaki  {{TRADE ACTION}} alındı.",
+    "txFailed": "We were unable to complete your transaction at this time, please contact us or try again.",
+    "max": "Maksimum",
+    "assetIsCurrentBorrow": "{{ASSET}} ödünç aldınız ve bu nedenle yatıramazsınız.",
+    "belowMinCRatio": "Teminatınız yetersiz. Likidasyondan kaçınmak için para yatırın veya borcunuzu geri ödeyin.",
+    "aboveMaxRiskLevel": "You are above the maximum Risk Level. Deposit or repay your debt to avoid liquidation.",
+    "search": "Pazar arama..",
+    "noBalanceForDeposit": "Yatırmak istediğiniz {{ASSET}} varlığı cüzdanınızda bulunmuyor. ",
+    "noDepositsForBorrow": "Ödünç almak için teminat yatırmanız gerekiyor.",
+    "noDepositsForWithdraw": "Çekme istediğiniz herhangi bir {{ASSET}} yatırımınız yok. ",
+    "noDebtForRepay": "Hiç {{ASSET}} borcunuz yok.",
+    "moreThanMaxBorrow": "The maximum amount you can borrow right now is {{AMOUNT}} {{ASSET}}",
+    "rejectTrade": "This trade would increase your Risk Level to {{NEW_RISK}}, which is too high. (Max is {{MAX_RISK}})",
+    "insufficientLamports": "İşlem ücretlerini dahi karşılamayacak kadar çok SOL yatırıyorsunuz. Şu ankinden daha az bir miktar kullanarak yeniden deneyin. ",
+    "stillUndercollateralized": "Yeni C-oranınız {{NEW-C-RATIO}}% hala Jet Protocol'ün minimum piyasa teminat oranı",
+    "txCancelled": "The user cancelled the transaction.",
+    "welcomeAboard": "Welcome Aboard",
+    "rentFeeDescription": "I see this is your first time flying with Jet. Please note that to open your account, this transaction will include a refundable one-time rent fee. This is necessary for the Solana blockchain to store ongoing data related to your account. This fee is not collected by Jet Protocol.",
+    "rentFeeDetail": "The rent fee for your transaction is {{RENT_FEE}} SOL. This amount will be returned to when you {{TRADE ACTION}} your full balance.",
+    "maxRiskNote": "Note: Maximum Risk Level before partial liquidation is {{MAX_RISK}}",
+    "totalSupply": "Total Supply",
+    "txSuccessShort": "{{TRADE ACTION}} received.",
+    "txFailedShort": "Transaction failed."
+  },
+  "settings": {
+    "title": "Ayarlar",
+    "wallet": "Cüzdan",
+    "connect": "Bağlan",
+    "worldOfDefi": "Cüzdanınızı DeFi dünyasına bağlayın.",
+    "theme": "Tema",
+    "light": "Aydınlık",
+    "dark": "Karanlık",
+    "language": "Dil",
+    "rpcNode": "RPC Düğümü",
+    "current": "Şu andaki",
+    "defaultNode": "Jet varsayılan",
+    "reset": "Sıfırla",
+    "noUrl": "URL girin",
+    "disconnect": "Cüzdan Bağlantısını Sonlandır",
+    "connected": "Bağlandı",
+    "explorer": "",
+    "degradedNetworkPerformance": "NOTICE: The Solana blockchain is currently experiencing difficulties due to network congestion:",
+    "network": "Network",
+    "mainnet": "Mainnet-Beta",
+    "devnet": "Devnet"
+  },
+  "reserveDetail": {
+    "reserveSize": "Rezerv Büyüklüğü",
+    "depositedTokens": "Mevcut Likidite",
+    "utilisationRate": "Kullanım Oranı",
+    "viewHistory": "İşlem geçmişini görüntüle",
+    "totalBorrowed": "Toplam Borç",
+    "maximumLTV": "Maksimum Borç-Değer Oranı",
+    "liquidationPremium": "Premium Likidasyon",
+    "tradeAsset": "{{ASSET}} Ticareti",
+    "minimumCollateralizationRatio": "Minimum C-Oranı",
+    "compareRates": "Compare Rates"
+  },
+  "copilot": {
+    "name": "Yardımcı Pilot",
+    "header": "Yardımcı pilot burada.",
+    "okay": "Okay",
+    "suggestions": {
+      "unhealthy": {
+        "overview": "Hesabınız sağlıksız.",
+        "detail": "Teminat Oranınız (toplam yatırdığınız değerin toplam ödünç aldığınız değere oranı) %{{C-RATIO}} olup, Jet pazarının minimum teminatlandırma oranı olan %{{JET MIN C-RATIO}} değerinden %{{RATIO BELOW AMOUNT}} daha düşüktür.",
+        "solution": "Pozisyonunuzu doğrultmak için daha fazla teminat yatırabilirsiniz ancak borcunuzu Kokpit'te ödemenizi öneririm.",
+        "actionText": "Kokpite Git"
+      },
+      "warning": {
+        "tenPercent": {
+          "overview": "Tehlikeli bir şekilde likidasyona yakınsınız.",
+          "detail": "Teminat Oranınız (toplam yatırdığınız değerin toplam ödünç aldığınız değere bölümü) %{{C-RATIO}} olup, Jet pazarının minimum teminatlandırma oranı olan %{{JET MIN C-RATIO}} %10'luk kısım içindedir.",
+          "solution": "Likidasyondan kaçınmak için daha fazla teminat yatırabilirsiniz.",
+          "actionText": "Yatırma"
+        },
+        "twentyPercent": {
+          "overview": "Teminat oranınıza dikkat edin.",
+          "detail": "Teminat Oranınız (toplam yatırdığınız değerin toplam ödünç aldığınız değere bölümü) %{{C-RATIO}} 'dur ve bu, Jet pazarının minimum teminatlandırma oranı olan %{{JET MIN C-RATIO}} 'nın %20 üzerindedir.",
+          "solution": "Daha fazla teminat yatırarak teminatlandırma oranınızı, sağlıklı olarak kabul edilen %20 veya daha yüksek seviyelere çıkartın.",
+          "actionText": "Yatırma"
+        }
+      },
+      "deposit": {
+        "overview": "{{BEST DEPOSIT APY NAME}} şu anda iyi görünüyor.",
+        "detail": "{{BEST DEPOSIT APY ABBREV}} şu anda piyasadaki en iyi mevduata sahip APY (Yıllık Yüzde Getiri) %{{DEPOSIT APY}} ve hesabınız iyi durumda olduğundan, {{USER BALANCE}} hesabınızdaki varlıkların bir kısmını yatırarak bir miktar teminat eklemenizi öneririz {{BEST DEPOSIT APY ABBREV}}.",
+        "actionText": "Haydi uçalım"
+      },
+      "healthy": {
+        "overview": "Gökler açık",
+        "detail": "Hesabınız iyi durumda ve sağlıklı bir şekilde fazla teminatlandırılmış durumda, piyasaya bir göz atıp sizin için iyi hamleler önerebilecek miyim bir bakayım. Daha sonra tekrar kontrol edin!"
+      }
+    },
+    "alert": {
+      "failed": "İmdat!",
+      "success": "Başarılı!",
+      "airdropSuccess": "Size {{UI AMOUNT}} {{RESERVE ABBREV}} değerindeki varlığı Airdrop'la gönderdik. Yeni bakiyenizi görmek için lütfen uygulamayı yenileyin.",
+      "refresh": "Yenile",
+      "originationFee": "Bu borca ilişkin {{ORIGINATION FEE}}% kadar oluşturulma komisyonu bulunmaktadır. ",
+      "headsup": "Dikkat buraya!",
+      "accept": "Kabul Et",
+      "warning": "UYARI",
+      "acceptDisclaimer": "I understand the Terms of Service, Privacy Policy, Cookie Policy and accept the risks.",
+      "disclaimer": {
+        "title": "Disclaimer",
+        "disclaimerDetail": "You are now entering Jet Protocol Mainnet. Do not proceed if you do not understand and accept the {{TERMS_LINK}}, {{PRIVACY_LINK}}, and the potential for financial loss.",
+        "acceptRisks": "I understand and accept the risks.",
+        "enterMainnet": "Enter Mainnet"
+      },
+      "liquidation": {
+        "title": "Liquidation in Progress",
+        "liquidationDetail": "Liquidation has now begun on your account. To cease liquidation, you must deposit funds to bring your Risk Level below 1.0 immediately.",
+        "fundsRequired": "Funds Required"
+      }
+    },
+    "radar": {
+      "title": "Radar",
+      "interestRadar": "Interest Radar",
+      "protocol": "Protocol"
+    }
+  },
+  "transactions": {
+    "title": "Uçuş Kayırları",
+    "date": "Tarih",
+    "time": "Time",
+    "signature": "İmza",
+    "tradeAction": "İşlem",
+    "tradeAmount": "Miktar",
+    "noTrades": "Jet ile herhangi bir kayda geçmiş işleminiz bulunamadı",
+    "entries": "{rows}'ların {start}'ından {end}'una kadar",
+    "deposit": "Yatır",
+    "withdraw": "Çek",
+    "borrow": "Ödünç Al",
+    "repay": "Geri Öde",
+    "searchMoreLogs": "Search for more logs",
+    "noMoreLogs": "No more logs to search"
+  },
+  "termsPrivacy": {
+    "privacyPolicy": "Privacy Policy",
+    "termsOfService": "Terms of Service",
+    "glossary": "Glossary"
+  },
+  "healthbar": {
+    "critical": "Critical",
+    "low": "Low",
+    "moderate": "Moderate",
+    "good": "Good",
+    "criticalDetail": "Deposit or repay now",
+    "lowDetail": "Monitor frequently",
+    "moderateDetail": "Good standing",
+    "goodDetail": "Excellent standing"
+  },
+  "account": {
+    "title": "Account"
+  }
+}

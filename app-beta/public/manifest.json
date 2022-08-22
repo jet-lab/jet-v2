@@ -1,0 +1,16 @@
+{
+  "name": "Jet Protocol",
+  "short_name": "Jet",
+  "display": "standalone",
+  "start_url": "./",
+  "theme_color": "#32a5d3",
+  "background_color": "#53bd9f",
+  "icons": [
+    {
+      "src": "img/jet/jet_logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

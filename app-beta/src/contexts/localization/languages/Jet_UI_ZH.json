@@ -1,0 +1,216 @@
+{
+  "language": "中文",
+  "loading": {
+    "transactions": "交易发送中。。。",
+    "connectingWallet": "钱包连结中。。。",
+    "initializing": "启动JET发动机中",
+    "fetchingReserves": "获取储备数据中",
+    "fetchingAccount": "获取账户数据中",
+    "loading": "Loading",
+    "loadMore": "Load More"
+  },
+  "nav": {
+    "cockpit": "驾驶舱",
+    "settings": "设定",
+    "collapse": "缩起",
+    "getCopilotSuggestion": "获取副驾驶建议",
+    "transactions": "飞行日志"
+  },
+  "cockpit": {
+    "title": "驾驶舱",
+    "asset": "资产",
+    "detail": "详细",
+    "native": "原生",
+    "totalValueLocked": "总锁仓量",
+    "totalBorrowed": "借贷总额",
+    "depositedTokens": "可用流动性",
+    "amountDeposited": "存款金额",
+    "amountBorrowed": "借贷金额",
+    "depositRate": "存款率",
+    "borrowRate": "借贷率",
+    "airdrop": "Airdrop",
+    "totalDepositedValue": "存款总价值",
+    "totalBorrowedValue": "借贷总额",
+    "yourRisk": "Your Risk Level",
+    "collateralizationRatio": "质押率",
+    "noInputAmount": "输入金额",
+    "accountLeverage": "Account Leverage",
+    "predictedRiskLevel": "Predicted Risk Level",
+    "deposit": "存款",
+    "maxDeposit": "Max Deposit",
+    "minSol": "We reserve 0.07 SOL in the wallet for transaction fees.",
+    "walletBalance": "你的钱包余额",
+    "noDepositAmount": "输入金额",
+    "notEnoughAsset": "{{ASSET}} 不够",
+    "withdraw": "取款",
+    "availableFunds": "可用资产",
+    "lessFunds": "资产不够",
+    "borrow": "借贷",
+    "maxBorrowAmount": "最高可借贷金额",
+    "assetIsCurrentDeposit": "您已存入 {{ASSET}}，因此无法借用。",
+    "noLiquidity": "流动性不足",
+    "minCRatio": "这将使您的头寸处于我们的最低抵押率，从而使您的账户处于清算区域。 你确定吗？",
+    "belowMinRatio": "您已低于最小质押率。请多存一些抵押物或偿还一些债务",
+    "subjectToLiquidation": "This trade increases your Risk Level to {{NEW-RISK}}, which puts you dangerously close to liquidation.",
+    "confirm": "确认",
+    "repay": "偿还",
+    "amountOwed": "以借贷金额",
+    "oweLess": "借贷金额减少",
+    "geobanned": "您住的地方不尊许您用 Jet Protocol。",
+    "noMarket": "我们没办法开启Jet的交易市场",
+    "txSuccess": "成功了! 我们收到您的 {{AMOUNT AND ASSET}} {{TRADE ACTION}}。您可以在這查看您的交易。",
+    "txFailed": "We were unable to complete your transaction at this time, please contact us or try again.",
+    "max": "全部",
+    "assetIsCurrentBorrow": "你已经借了{{ASSET}} 所以无法存入此资产。",
+    "belowMinCRatio": "您已低于最小质押率。请多存一些抵押物或偿还一些债务。",
+    "aboveMaxRiskLevel": "You are above the maximum Risk Level. Deposit or repay your debt to avoid liquidation.",
+    "search": "搜索市场",
+    "noBalanceForDeposit": "您钱包里没有任何 {{ASSET}} 来存款.",
+    "noDepositsForBorrow": "您需要存抵押物才能再借款",
+    "noDepositsForWithdraw": "您没有存任何 {{ASSET}} 来提款.",
+    "noDebtForRepay": "您不欠任何 {{ASSET}}.",
+    "moreThanMaxBorrow": "The maximum amount you can borrow right now is {{AMOUNT}} {{ASSET}}",
+    "rejectTrade": "This trade would increase your Risk Level to {{NEW_RISK}}, which is too high. (Max is {{MAX_RISK}})",
+    "insufficientLamports": "您这交易会存进您全部的SOL 您的交易费会不够! 请您输入低一点的金额",
+    "stillUndercollateralized": "您的新 {{NEW-C-RATIO}}% C-Ratio 仍低于 Jet 的最低市场抵押比率 {{JET MIN C-RATIO}}% 。 请考虑偿还更多，以避免清算。",
+    "txCancelled": "The user cancelled the transaction.",
+    "welcomeAboard": "Welcome Aboard",
+    "rentFeeDescription": "I see this is your first time flying with Jet. Please note that to open your account, this transaction will include a refundable one-time rent fee. This is necessary for the Solana blockchain to store ongoing data related to your account. This fee is not collected by Jet Protocol.",
+    "rentFeeDetail": "The rent fee for your transaction is {{RENT_FEE}} SOL. This amount will be returned to when you {{TRADE ACTION}} your full balance.",
+    "maxRiskNote": "Note: Maximum Risk Level before partial liquidation is {{MAX_RISK}}",
+    "totalSupply": "Total Supply",
+    "txSuccessShort": "{{TRADE ACTION}} received.",
+    "txFailedShort": "Transaction failed."
+  },
+  "settings": {
+    "title": "设定",
+    "wallet": "钱包",
+    "connect": "连结钱包",
+    "worldOfDefi": "连结到 DeFi 世界",
+    "theme": "模式",
+    "light": "明亮",
+    "dark": "黑暗",
+    "language": "语言",
+    "rpcNode": "RPC Node",
+    "current": "当前的",
+    "defaultNode": "JET 默认",
+    "reset": "重新设定",
+    "noUrl": "输入网址",
+    "disconnect": "Disconnect Wallet",
+    "connected": "Connected",
+    "explorer": "",
+    "degradedNetworkPerformance": "NOTICE: The Solana blockchain is currently experiencing difficulties due to network congestion:",
+    "network": "Network",
+    "mainnet": "Mainnet-Beta",
+    "devnet": "Devnet"
+  },
+  "reserveDetail": {
+    "reserveSize": "储备规模",
+    "depositedTokens": "可用流动性",
+    "utilisationRate": "使用率",
+    "viewHistory": "查看历史",
+    "totalBorrowed": "总借贷金额",
+    "maximumLTV": "最高LTV",
+    "liquidationPremium": "清算溢价",
+    "tradeAsset": "交易 {{ASSET}}",
+    "minimumCollateralizationRatio": "最低质押率限制",
+    "compareRates": "Compare Rates"
+  },
+  "copilot": {
+    "name": "副驾驶",
+    "header": "嘿 我是你的副驾驶。",
+    "okay": "Okay",
+    "suggestions": {
+      "unhealthy": {
+        "overview": "您的帐号健康度不良",
+        "detail": "您的质押率 {{C-RATIO}}% 比 Jet 要求的质押率还低 {{RATIO BELOW AMOUNT}}%。Jet 要求的最低质押率是 {{JET MIN C-RATIO}}%",
+        "solution": "为了更正您的仓位，您可以存入更多的抵押品，但我建议您在 \"驾驶舱\" 中偿还您的债务。",
+        "actionText": "去驾驶舱"
+      },
+      "warning": {
+        "tenPercent": {
+          "overview": "小心 您快被清算了！",
+          "detail": "您的质押率 {{C-RATIO}}% 比 Jet 要求的质押率还低 10%。Jet 要求的质押率是 {{JET MIN C-RATIO}}%",
+          "solution": "为了避免您被清算 我建议您多存一点抵押物",
+          "actionText": "再存抵押物"
+        },
+        "twentyPercent": {
+          "overview": "注意您的质押率！",
+          "detail": "您的质押率 {{C-RATIO}}% 比 Jet 要求的质押率还低 20%。Jet 要求的质押率是 {{JET MIN C-RATIO}}%",
+          "solution": "多存一点抵押物来增加你的质押率，将您的质押率提高到 20% 或更高的健康水平",
+          "actionText": "再存抵押物"
+        }
+      },
+      "deposit": {
+        "overview": "{{BEST DEPOSIT RATE NAME}} 看起来不错",
+        "detail": "{{BEST DEPOSIT RATE ABBREV}} 现在有市场上最高的 借贷率。您的帐号健康度不错 我建议您多存一点您的 {{USER BALANCE}} {{BEST DEPOSIT RATE ABBREV}}。",
+        "actionText": "再存抵押物"
+      },
+      "healthy": {
+        "overview": "天气晴朗",
+        "detail": "您的帐号现在健康度不错 我去看看现在的市场 看可不可您做几个建议"
+      }
+    },
+    "alert": {
+      "failed": "失败了!",
+      "success": "成功了!",
+      "airdropSuccess": "我们已经寄给您 {{AMOUNT}} {{RESERVE ABBREV}}。请更新您到网页。",
+      "refresh": "更新网页",
+      "originationFee": "这笔贷款会收取 {{ORIGINATION FEE}}% 发起费用.",
+      "headsup": "小心!",
+      "accept": "Accept",
+      "warning": "WARNING",
+      "acceptDisclaimer": "I understand the Terms of Service, Privacy Policy, Cookie Policy and accept the risks.",
+      "disclaimer": {
+        "title": "Disclaimer",
+        "disclaimerDetail": "You are now entering Jet Protocol Mainnet. Do not proceed if you do not understand and accept the {{TERMS_LINK}}, {{PRIVACY_LINK}}, and the potential for financial loss.",
+        "acceptRisks": "I understand and accept the risks.",
+        "enterMainnet": "Enter Mainnet"
+      },
+      "liquidation": {
+        "title": "Liquidation in Progress",
+        "liquidationDetail": "Liquidation has now begun on your account. To cease liquidation, you must deposit funds to bring your Risk Level below 1.0 immediately.",
+        "fundsRequired": "Funds Required"
+      }
+    },
+    "radar": {
+      "title": "Radar",
+      "interestRadar": "Interest Radar",
+      "protocol": "Protocol"
+    }
+  },
+  "transactions": {
+    "title": "飞行日志",
+    "date": "日期",
+    "time": "时间",
+    "signature": "签章",
+    "tradeAction": "交易",
+    "tradeAmount": "金额",
+    "noTrades": "您在 Jet 没有交易的记录。",
+    "entries": "显示 {start} 到 {end} 的 {row} 条目",
+    "deposit": "存款",
+    "withdraw": "借贷",
+    "borrow": "借贷",
+    "repay": "偿还",
+    "searchMoreLogs": "Search for more logs",
+    "noMoreLogs": "No more logs to search"
+  },
+  "termsPrivacy": {
+    "privacyPolicy": "Privacy Policy",
+    "termsOfService": "Terms of Service",
+    "glossary": "Glossary"
+  },
+  "healthbar": {
+    "critical": "Critical",
+    "low": "Low",
+    "moderate": "Moderate",
+    "good": "Good",
+    "criticalDetail": "Deposit or repay now",
+    "lowDetail": "Monitor frequently",
+    "moderateDetail": "Good standing",
+    "goodDetail": "Excellent standing"
+  },
+  "account": {
+    "title": "Account"
+  }
+}

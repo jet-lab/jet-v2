@@ -1,0 +1,91 @@
+{
+  "title": "deposit-flow",
+  "steps": [
+    {
+      "type": "setViewport",
+      "width": 1035,
+      "height": 727,
+      "deviceScaleFactor": 1,
+      "isMobile": false,
+      "hasTouch": false,
+      "isLandscape": false
+    },
+    {
+      "type": "navigate",
+      "url": "http://localhost:3000/",
+      "assertedEvents": [
+        {
+          "type": "navigation",
+          "url": "http://localhost:3000/",
+          "title": "Jet Protocol"
+        }
+      ]
+    },
+    {
+      "type": "click",
+      "target": "main",
+      "selectors": [["aria/CONNECT WALLET", "aria/[role=\"generic\"]"], ["[data-testid=connect-wallet-btn] > span"]],
+      "offsetY": 4.25,
+      "offsetX": 77.375
+    },
+    {
+      "type": "click",
+      "target": "main",
+      "selectors": [["[data-testid=connect-wallet-E2E]"]],
+      "offsetY": 20.2890625,
+      "offsetX": 128
+    },
+    {
+      "type": "waitForExpression",
+      "expression": "document.querySelector(\"[title=Disconnect]\").innerText !== 'CONNECT'"
+    },
+    {
+      "type": "click",
+      "selectors": [["[data-testid=Solana-deposit]"]],
+      "offsetX": 0,
+      "offsetY": 0,
+      "frame": [],
+      "target": "main"
+    },
+    {
+      "type": "click",
+      "target": "main",
+      "frame": [],
+      "selectors": [["[data-testid=airdrop-Solana]"]],
+      "offsetX": 0,
+      "offsetY": 0,
+      "duration": 50
+    },
+    {
+      "type": "waitForExpression",
+      "timeout": 20000,
+      "expression": "document.querySelector(\"[data-testid=Solana-balance]\").innerText === '1'"
+    },
+    {
+      "type": "click",
+      "target": "main",
+      "frame": [],
+      "selectors": [["[data-testid=jet-trade-input]"]],
+      "offsetX": 142,
+      "offsetY": 37.5
+    },
+    {
+      "type": "change",
+      "target": "main",
+      "selectors": [["[data-testid=jet-trade-input]"]],
+      "value": "0.5"
+    },
+    {
+      "type": "click",
+      "target": "main",
+      "selectors": [["[data-testid=jet-trade-button]"]],
+      "offsetX": 18.2247314453125,
+      "offsetY": 13.009857177734375
+    },
+    {
+      "type": "waitForExpression",
+      "timeout": 20000,
+      "expression": "document.querySelector(\"[data-testid=Solana-deposit]\").innerText !== '--'"
+    }
+  ]
+}
