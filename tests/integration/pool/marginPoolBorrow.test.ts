@@ -407,21 +407,21 @@ describe("margin pool borrow", async () => {
   provider.opts.skipPreflight = true
 
   it("Close margin accounts", async () => {
-    await marginPool_USDC.closePosition({
+    await marginPool_USDC.withdrawAndCloseDepositPosition({
       marginAccount: marginAccount_A,
       destination: user_a_usdc_account
     })
-    await marginPool_SOL.closePosition({
+    await marginPool_SOL.withdrawAndCloseDepositPosition({
       marginAccount: marginAccount_A,
       destination: user_a_sol_account
     })
     await marginAccount_A.closeAccount()
 
-    await marginPool_USDC.closePosition({
+    await marginPool_USDC.withdrawAndCloseDepositPosition({
       marginAccount: marginAccount_B,
       destination: user_b_usdc_account
     })
-    await marginPool_SOL.closePosition({
+    await marginPool_SOL.withdrawAndCloseDepositPosition({
       marginAccount: marginAccount_B,
       destination: user_b_sol_account
     })

@@ -272,6 +272,10 @@ export class MarginAccount {
    * Derive the address of a position token account associated with a [[MarginAccount]]
    * and position token mint.
    *
+   * ## Remarks
+   *
+   * It is recommended to use other functions to find specfic position types. e.g. using [[Pool]].findDepositPositionAddress
+   *
    * @param {Address} positionTokenMint
    * @return {PublicKey}
    * @memberof MarginAccount
@@ -583,7 +587,7 @@ export class MarginAccount {
    * @memberof MarginAccount
    */
   getPosition(mint: Address): AccountPosition {
-    let position = this.getPositionNullable(mint)
+    const position = this.getPositionNullable(mint)
     assert(position)
     return position
   }
@@ -955,96 +959,6 @@ export class MarginAccount {
   }
 
   /**
-   * Get the [[AccountPosition]] [[PublicKey]] and sends a transaction to
-   * create it if it doesn't exist.
-   *
-   * ## Remarks
-   *
-   * In web apps it's recommended to call `withGetOrCreatePosition` as part of a larger
-   * transaction to prompt for a wallet signature less often.
-   *
-   * ## Example
-   *
-   * ```ts
-   * // Load margin pools
-   * const poolManager = new PoolManager(programs, provider)
-   * const pools = await poolManager.loadAll()
-   *
-   * const depositNote = pools["SOL"].addresses.depositNoteMint
-   * await marginAccount.getOrCreateposition(depositNote)
-   * ```
-   *
-   * @param {Address} tokenMint
-   * @return {Promise<PublicKey>}
-   * @memberof MarginAccount
-   */
-  async getOrCreatePosition(tokenMint: Address): Promise<PublicKey> {
-    assert(this.info)
-    const tokenMintAddress = translateAddress(tokenMint)
-    for (let i = 0; i < this.positions.length; i++) {
-      const position = this.positions[i]
-      if (position.token.equals(tokenMintAddress)) {
-        return position.address
-      }
-    }
-    await this.registerPosition(tokenMintAddress)
-    await this.refresh()
-    for (let i = 0; i < this.positions.length; i++) {
-      const position = this.positions[i]
-      if (position.token.equals(tokenMintAddress)) {
-        return position.address
-      }
-    }
-    throw new Error("Unable to register position.")
-  }
-
-  /**
-   * Get the [[AccountPosition]] [[PublicKey]] and appends an instructon to
-   * create it if it doesn't exist.
-   *
-   * ## Example
-   *
-   * ```ts
-   * // Load margin pools
-   * const poolManager = new PoolManager(programs, provider)
-   * const pools = await poolManager.loadAll()
-   *
-   * // Register position
-   * const depositNote = pools["SOL"].addresses.depositNoteMint
-   * const instructions: TransactionInstruction[] = []
-   * await marginAccount.withRegisterPosition(instructions, depositNote)
-   * await marginAccount.sendAndConfirm(instructions)
-   * ```
-   *
-   * @param {{
-   *     positionTokenMint: Address
-   *     instructions: TransactionInstruction[]
-   *   }} {
-   *     positionTokenMint,
-   *     instructions
-   *   }
-   * @return {PublicKey}
-   * @memberof MarginAccount
-   */
-  async withGetOrCreatePosition({
-    positionTokenMint,
-    instructions
-  }: {
-    positionTokenMint: Address
-    instructions: TransactionInstruction[]
-  }): Promise<PublicKey> {
-    const tokenMintAddress = translateAddress(positionTokenMint)
-    for (let i = 0; i < this.positions.length; i++) {
-      const position = this.positions[i]
-      if (position.token.equals(tokenMintAddress)) {
-        return position.address
-      }
-    }
-
-    return await this.withRegisterPosition(instructions, tokenMintAddress)
-  }
-
-  /**
    * Updates all position balances. `withUpdatePositionBalance` is often included
    * in transactions after modifying balances to synchronize with the margin account.
    *
@@ -1197,9 +1111,102 @@ export class MarginAccount {
   }
 
   /**
+   * Get the [[AccountPosition]] [[PublicKey]] and sends a transaction to
+   * create it if it doesn't exist.
+   *
+   * ## Remarks
+   *
+   * It is recommended to use other functions to register specfic position types. e.g. using [[Pool]].withRegisterDepositPosition
+   *
+   * In web apps it's recommended to call `withGetOrCreatePosition` as part of a larger
+   * transaction to prompt for a wallet signature less often.
+   *
+   * ## Example
+   *
+   * ```ts
+   * // Load margin pools
+   * const poolManager = new PoolManager(programs, provider)
+   * const pools = await poolManager.loadAll()
+   *
+   * const depositNote = pools["SOL"].addresses.depositNoteMint
+   * await marginAccount.getOrRegisterPosition(depositNote)
+   * ```
+   *
+   * @param {Address} tokenMint
+   * @return {Promise<PublicKey>}
+   * @memberof MarginAccount
+   */
+  async getOrRegisterPosition(tokenMint: Address): Promise<PublicKey> {
+    assert(this.info)
+    const tokenMintAddress = translateAddress(tokenMint)
+    for (let i = 0; i < this.positions.length; i++) {
+      const position = this.positions[i]
+      if (position.token.equals(tokenMintAddress)) {
+        return position.address
+      }
+    }
+    await this.registerPosition(tokenMintAddress)
+    await this.refresh()
+    for (let i = 0; i < this.positions.length; i++) {
+      const position = this.positions[i]
+      if (position.token.equals(tokenMintAddress)) {
+        return position.address
+      }
+    }
+    throw new Error("Unable to register position.")
+  }
+
+  /**
+   * Get the [[AccountPosition]] [[PublicKey]] and appends an instructon to
+   * create it if it doesn't exist.
+   *
+   * ## Remarks
+   *
+   * It is recommended to use other functions to register specfic position types. e.g. using [[Pool]].withRegisterDepositPosition
+   *
+   * ## Example
+   *
+   * ```ts
+   * // Load margin pools
+   * const poolManager = new PoolManager(programs, provider)
+   * const pools = await poolManager.loadAll()
+   *
+   * // Register position
+   * const positionTokenMint = pools["SOL"].addresses.depositNoteMint
+   * const instructions: TransactionInstruction[] = []
+   * await marginAccount.withGetOrRegisterPosition({ instructions, positionTokenMint })
+   * await marginAccount.sendAndConfirm(instructions)
+   * ```
+   *
+   * @param args
+   * @param {TransactionInstruction[]} args.instructions The instructions to append to
+   * @param {Address} args.positionTokenMint The position mint to register a position for
+   * @return {PublicKey}
+   * @memberof MarginAccount
+   */
+  async withGetOrRegisterPosition({
+    instructions,
+    positionTokenMint
+  }: {
+    instructions: TransactionInstruction[]
+    positionTokenMint: Address
+  }): Promise<PublicKey> {
+    const tokenMintAddress = translateAddress(positionTokenMint)
+    const position = this.getPositionNullable(tokenMintAddress)
+    if (position) {
+      return position.address
+    }
+    return await this.withRegisterPosition({ instructions, positionTokenMint: tokenMintAddress })
+  }
+
+  /**
    * Sends a transaction to register an [[AccountPosition]] for the mint. When registering a [[Pool]] position,
    * the mint would not be Bitcoin or SOL, but rather the `depositNoteMint` or `loanNoteMint` found in `pool.addresses`.
    * A margin account has a limited capacity of positions.
+   *
+   * ## Remarks
+   *
+   * It is recommended to use other functions to register specfic position types. e.g. using [[Pool]].withRegisterDepositPosition
    *
    * In web apps it's is recommended to use `withRegisterPosition` as part of a larget transaction
    * to prompt for a wallet signature less often.
@@ -1221,14 +1228,18 @@ export class MarginAccount {
    * @memberof MarginAccount
    */
   async registerPosition(tokenMint: Address): Promise<TransactionSignature> {
-    const tokenMintAddress = translateAddress(tokenMint)
-    const ix: TransactionInstruction[] = []
-    await this.withRegisterPosition(ix, tokenMintAddress)
-    return await this.sendAndConfirm(ix)
+    const positionTokenMint = translateAddress(tokenMint)
+    const instructions: TransactionInstruction[] = []
+    await this.withRegisterPosition({ instructions, positionTokenMint })
+    return await this.sendAndConfirm(instructions)
   }
 
   /**
    * Get instruction to register new position
+   *
+   * ## Remarks
+   *
+   * It is recommended to use other functions to register specfic position types. e.g. using [[Pool]].withRegisterDepositPosition
    *
    * ## Example
    *
@@ -1238,18 +1249,25 @@ export class MarginAccount {
    * const pools = await poolManager.loadAll()
    *
    * // Register the SOL deposit position
-   * const depositNoteMint = pools["SOL"].addresses.depositNoteMint
+   * const positionTokenMint = pools["SOL"].addresses.depositNoteMint
    * const instructions: TransactionInstruction[] = []
-   * const position = await marginAccount.withRegisterPosition(instructions, depositNoteMint)
+   * const position = await marginAccount.withRegisterPosition({ instructions, positionTokenMint })
    * await marginAccount.sendAndConfirm(instructions)
    * ```
    *
-   * @param {TransactionInstruction[]} instructions Instructions array to append to.
-   * @param {Address} positionTokenMint The mint for the relevant token for the position
+   * @param args
+   * @param {TransactionInstruction[]} args.instructions Instructions array to append to.
+   * @param {Address} args.positionTokenMint The mint for the relevant token for the position
    * @return {Promise<PublicKey>} Returns the instruction, and the address of the token account to be created for the position.
    * @memberof MarginAccount
    */
-  async withRegisterPosition(instructions: TransactionInstruction[], positionTokenMint: Address): Promise<PublicKey> {
+  async withRegisterPosition({
+    instructions,
+    positionTokenMint
+  }: {
+    instructions: TransactionInstruction[]
+    positionTokenMint: Address
+  }): Promise<PublicKey> {
     const tokenAccount = this.findPositionTokenAddress(positionTokenMint)
     const metadata = this.findMetadataAddress(positionTokenMint)
 
@@ -1319,7 +1337,9 @@ export class MarginAccount {
    * @memberof MarginAccount
    */
   async withCloseAccount(instructions: TransactionInstruction[]): Promise<void> {
-    this.getPositions().forEach(position => this.withClosePosition(instructions, position))
+    for (const position of this.getPositions()) {
+      await this.withClosePosition(instructions, position)
+    }
     const ix = await this.programs.margin.methods
       .closeAccount()
       .accounts({

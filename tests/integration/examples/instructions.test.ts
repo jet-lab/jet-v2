@@ -80,16 +80,15 @@ describe("Typescript examples", () => {
     })
 
     it("Register a position for some token that will be custodied by margin", async () => {
-      const depositNote = pools["SOL"].addresses.depositNoteMint
-      await marginAccount.withRegisterPosition(instructions, depositNote)
+      const positionTokenMint = pools["SOL"].addresses.depositNoteMint
+      await marginAccount.withRegisterPosition({ instructions, positionTokenMint })
     })
 
     it("Update the balance of a position stored in the margin account to match the actual balance stored by the SPL token account", async () => {
       // Two ways to derive the position
 
       // Method 1, derive it
-      const positionMint = pools["SOL"].addresses.depositNoteMint
-      const position_A = marginAccount.findPositionTokenAddress(positionMint)
+      const position_A = pools["SOL"].findDepositPositionAddress(marginAccount)
 
       await marginAccount.withUpdatePositionBalance({ instructions, position: position_A })
 
