@@ -1,16 +1,13 @@
 {
   "license": "AGPL-3.0-or-later",
   "scripts": {
-    "install:full": "cd libraries/ts && yarn && cd ../../app && yarn && cd ../app-beta && yarn && cd .. && yarn",
-    "build": "npx tsc && cd libraries/ts && npx tsc && cd ../../app && npx tsc && cd ../app-beta && npx tsc",
-    "build:full": "npx tsc && cd libraries/ts && npx tsc && cd ../../app && yarn build && cd ../app-beta && yarn build",
-    "compile": "yarn build",
+    "compile": "npx tsc",
     "fmt": "prettier --check .",
     "fmt:fix": "prettier --write .",
     "lint": "eslint . --ext ts",
     "prepare": "husky install",
     "precommit": "npm run build && npm run fmt:fix && npm run lint && git add .",
-    "test": "anchor test --skip-lint -- --features testing && cd app && yarn test && cd ../app-beta && yarn test && cd ../app && yarn e2e:ci && cd ../app-beta && yarn e2e:ci",
+    "test": "anchor test --skip-lint -- --features testing",
     "test:devnet": "npx ts-mocha -p ./tsconfig.json -t 1000000 tests/declarative/*.sim.ts",
     "test:nobuild": "anchor test --skip-lint --skip-build -- --features testing &&  && cd app && yarn test && cd ../app-beta && yarn test && cd ../app && yarn e2e:ci && cd ../app-beta && yarn e2e:ci",
     "test:gui": "cd app && yarn e2e:gui && cd ../app-beta && yarn e2e:gui"
