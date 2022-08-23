@@ -794,21 +794,22 @@ export class Pool {
 
     await marginAccount.refresh()
     const refreshInstructions: TransactionInstruction[] = []
+    const registerinstructions: TransactionInstruction[] = []
     const instructions: TransactionInstruction[] = []
-
-    await this.withGetOrRegisterDepositPosition({
-      instructions: refreshInstructions,
-      marginAccount
-    })
-
-    await this.withGetOrRegisterLoanPosition({
-      instructions: refreshInstructions,
-      marginAccount
-    })
 
     await this.withMarginRefreshAllPositionPrices({
       instructions: refreshInstructions,
       pools: Object.values(pools),
+      marginAccount
+    })
+
+    await this.withGetOrRegisterDepositPosition({
+      instructions: registerinstructions,
+      marginAccount
+    })
+
+    await this.withGetOrRegisterLoanPosition({
+      instructions: registerinstructions,
       marginAccount
     })
 
@@ -842,7 +843,7 @@ export class Pool {
       })
     }
 
-    return await marginAccount.sendAll([chunks(11, refreshInstructions), instructions])
+    return await marginAccount.sendAll([chunks(11, refreshInstructions), registerinstructions, instructions])
   }
 
   /// Instruction to borrow tokens using a margin account
@@ -1148,7 +1149,9 @@ export class Pool {
     assert(swapAmount)
 
     const refreshInstructions: TransactionInstruction[] = []
-    const swapInstructions: TransactionInstruction[] = []
+    const registerInstructions: TransactionInstruction[] = []
+    const transitInstructions: TransactionInstruction[] = []
+    const instructions: TransactionInstruction[] = []
 
     // Refresh prices
     await this.withMarginRefreshAllPositionPrices({
@@ -1159,19 +1162,19 @@ export class Pool {
 
     // Source deposit position fetch / creation
     const sourceAccount = await this.withGetOrRegisterDepositPosition({
-      instructions: swapInstructions,
+      instructions: registerInstructions,
       marginAccount
     })
 
     // Destination deposit position fetch / creation
     const destinationAccount = await outputToken.withGetOrRegisterDepositPosition({
-      instructions: swapInstructions,
+      instructions: registerInstructions,
       marginAccount
     })
 
     // Transit source account fetch / creation
     const transitSourceAccount = await AssociatedToken.withCreate(
-      swapInstructions,
+      transitInstructions,
       marginAccount.provider,
       marginAccount.address,
       this.addresses.tokenMint
@@ -1179,7 +1182,7 @@ export class Pool {
 
     // Transit destination account fetch / creation
     const transitDestinationAccount = await AssociatedToken.withCreate(
-      swapInstructions,
+      transitInstructions,
       marginAccount.provider,
       marginAccount.address,
       outputToken.tokenMint
@@ -1190,12 +1193,11 @@ export class Pool {
     if (swapAmount.gt(accountPoolPosition.depositBalance) && marginAccount.pools) {
       const difference = swapAmount.sub(accountPoolPosition.depositBalance)
       await this.withGetOrRegisterLoanPosition({
-        instructions: refreshInstructions,
+        instructions: registerInstructions,
         marginAccount
       })
-
       await this.withMarginBorrow({
-        instructions: swapInstructions,
+        instructions: instructions,
         marginAccount,
         change: PoolTokenChange.shiftBy(accountPoolPosition.loanBalance.add(difference))
       })
@@ -1203,7 +1205,7 @@ export class Pool {
 
     // Swap ix
     await this.withSwap({
-      instructions: swapInstructions,
+      instructions,
       marginAccount,
       outputToken,
       swapAmount,
@@ -1214,7 +1216,12 @@ export class Pool {
       transitDestinationAccount
     })
 
-    return await marginAccount.sendAll([chunks(11, refreshInstructions), swapInstructions])
+    return await marginAccount.sendAll([
+      chunks(11, refreshInstructions),
+      registerInstructions,
+      transitInstructions,
+      instructions
+    ])
   }
 
   async withSwap({
@@ -1310,21 +1317,22 @@ export class Pool {
         .instruction()
     })
 
+    // TODO: need to close transit accounts
     // Transit source account closure
-    const closeTransitSourceAccountIx = closeAccount({
-      source: translateAddress(transitSourceAccount),
-      destination: marginAccount.owner,
-      owner: marginAccount.address
-    })
-    instructions.push(closeTransitSourceAccountIx)
+    // const closeTransitSourceAccountIx = closeAccount({
+    //   source: translateAddress(transitSourceAccount),
+    //   destination: marginAccount.owner,
+    //   owner: marginAccount.address
+    // })
+    // instructions.push(closeTransitSourceAccountIx)
 
-    // Transit destination account closure
-    const closeTransitDestinationAccountIx = closeAccount({
-      source: translateAddress(transitDestinationAccount),
-      destination: marginAccount.owner,
-      owner: marginAccount.address
-    })
-    instructions.push(closeTransitDestinationAccountIx)
+    // // Transit destination account closure
+    // const closeTransitDestinationAccountIx = closeAccount({
+    //   source: translateAddress(transitDestinationAccount),
+    //   destination: marginAccount.owner,
+    //   owner: marginAccount.address
+    // })
+    // instructions.push(closeTransitDestinationAccountIx)
 
     // Update account positions
     await marginAccount.withUpdatePositionBalance({ instructions, position: sourceAccount })
