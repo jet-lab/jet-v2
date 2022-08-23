@@ -15,8 +15,8 @@
     "precommit": "npm run compile && npm run lint && npm run fmt:fix && npm run test && git add .",
     "e2e": "npx cypress run",
     "e2e:gui": "npx cypress open",
-    "start:ci": "serve -s build",
-    "e2e:ci": "start-server-and-test start:ci http://localhost:3000 e2e",
+    "start:ci": "npx serve -s build",
+    "e2e:ci": "npx start-server-and-test start:ci http://localhost:3000 e2e",
     "debug": "cd ../jet-v2/libraries/ts && yarn compile && npm link && cd ../../../jet-ui && npm link @jet-lab/margin && npm run start",
     "debug:legacy": "cd ../jet-v2/libraries/ts && yarn compile && npm link && cd ../../../jet-ui && npm link @jet-lab/margin && npm run start:legacy"
   },

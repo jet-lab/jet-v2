@@ -2,7 +2,7 @@ import { expect } from "chai"
 import * as anchor from "@project-serum/anchor"
 import { AnchorProvider, BN } from "@project-serum/anchor"
 import NodeWallet from "@project-serum/anchor/dist/cjs/nodewallet"
-import { ConfirmOptions, Keypair, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js"
+import { Keypair, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js"
 
 import {
   MarginAccount,
@@ -19,6 +19,7 @@ import {
   createToken,
   createTokenAccount,
   createUserWallet,
+  DEFAULT_CONFIRM_OPTS,
   DEFAULT_MARGIN_CONFIG,
   getMintSupply,
   getTokenBalance,
@@ -30,15 +31,14 @@ import {
 
 describe("margin pool deposit", async () => {
   // SUITE SETUP
-  const confirmOptions: ConfirmOptions = { preflightCommitment: "processed", commitment: "processed" }
-  const provider = AnchorProvider.local(undefined, confirmOptions)
+  const provider = AnchorProvider.local(undefined, DEFAULT_CONFIRM_OPTS)
   anchor.setProvider(provider)
   const payer = (provider.wallet as NodeWallet).payer
   const ownerKeypair = payer
   const programs = MarginClient.getPrograms(provider, DEFAULT_MARGIN_CONFIG)
   const manager = new PoolManager(programs, provider)
-  let USDC: TestToken = null as any
-  let SOL: TestToken = null as any
+  let USDC: TestToken = null as never
+  let SOL: TestToken = null as never
 
   it("Fund payer", async () => {
     const airdropSignature = await provider.connection.requestAirdrop(provider.wallet.publicKey, 300 * LAMPORTS_PER_SOL)
@@ -52,9 +52,9 @@ describe("margin pool deposit", async () => {
 
     // ACT
     const usdc_supply = await getMintSupply(provider, USDC.mint, 6)
-    const usdc_balance = await getTokenBalance(provider, confirmOptions.commitment, USDC.vault)
+    const usdc_balance = await getTokenBalance(provider, DEFAULT_CONFIRM_OPTS.commitment, USDC.vault)
     const sol_supply = await getMintSupply(provider, SOL.mint, 9)
-    const sol_balance = await getTokenBalance(provider, confirmOptions.commitment, SOL.vault)
+    const sol_balance = await getTokenBalance(provider, DEFAULT_CONFIRM_OPTS.commitment, SOL.vault)
 
     // TEST
     expect(usdc_supply).to.eq(10_000_000)
@@ -143,9 +143,9 @@ describe("margin pool deposit", async () => {
     wallet_b = await createUserWallet(provider, 10 * LAMPORTS_PER_SOL)
     wallet_c = await createUserWallet(provider, 10 * LAMPORTS_PER_SOL)
 
-    provider_a = new AnchorProvider(provider.connection, wallet_a, confirmOptions)
-    provider_b = new AnchorProvider(provider.connection, wallet_b, confirmOptions)
-    provider_c = new AnchorProvider(provider.connection, wallet_c, confirmOptions)
+    provider_a = new AnchorProvider(provider.connection, wallet_a, DEFAULT_CONFIRM_OPTS)
+    provider_b = new AnchorProvider(provider.connection, wallet_b, DEFAULT_CONFIRM_OPTS)
+    provider_c = new AnchorProvider(provider.connection, wallet_c, DEFAULT_CONFIRM_OPTS)
   })
 
   let marginAccount_A: MarginAccount

@@ -2,14 +2,13 @@ import assert from "assert"
 import * as anchor from "@project-serum/anchor"
 import { AnchorProvider } from "@project-serum/anchor"
 import NodeWallet from "@project-serum/anchor/dist/cjs/nodewallet"
-import { ConfirmOptions, Keypair, LAMPORTS_PER_SOL } from "@solana/web3.js"
+import { Keypair, LAMPORTS_PER_SOL } from "@solana/web3.js"
 
 import { PythClient } from "./pythClient"
+import { DEFAULT_CONFIRM_OPTS } from "../util"
 
 describe("pyth-oracle", () => {
-  const confirmOptions: ConfirmOptions = { preflightCommitment: "processed", commitment: "processed" }
-
-  const provider = AnchorProvider.local(undefined, confirmOptions)
+  const provider = AnchorProvider.local(undefined, DEFAULT_CONFIRM_OPTS)
   anchor.setProvider(provider)
 
   const payer: Keypair = (provider.wallet as NodeWallet).payer

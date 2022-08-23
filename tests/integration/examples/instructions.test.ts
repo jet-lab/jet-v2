@@ -8,9 +8,10 @@ import {
   MarginConfig,
   sleep
 } from "../../../libraries/ts/src/"
-import { ConfirmOptions, Connection, Keypair, LAMPORTS_PER_SOL, TransactionInstruction } from "@solana/web3.js"
+import { Connection, Keypair, LAMPORTS_PER_SOL, TransactionInstruction } from "@solana/web3.js"
 import { AnchorProvider, Wallet } from "@project-serum/anchor"
 import { assert } from "chai"
+import { DEFAULT_CONFIRM_OPTS } from "../util"
 
 // In scenarios where the integration process needs to create instructions
 // without sending transactions.
@@ -27,10 +28,9 @@ describe("Typescript examples", () => {
   const walletKepair = Keypair.generate()
   const walletPubkey = walletKepair.publicKey
 
-  const options: ConfirmOptions = { commitment: "recent", skipPreflight: true }
-  const connection = new Connection("https://api.devnet.solana.com", options.commitment)
+  const connection = new Connection("https://api.devnet.solana.com", DEFAULT_CONFIRM_OPTS.commitment)
   const wallet = new Wallet(walletKepair)
-  const provider = new AnchorProvider(connection, wallet, options)
+  const provider = new AnchorProvider(connection, wallet, DEFAULT_CONFIRM_OPTS)
 
   let config: MarginConfig
   let programs: MarginPrograms

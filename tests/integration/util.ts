@@ -15,7 +15,15 @@ import {
   MINT_SIZE,
   TOKEN_PROGRAM_ID
 } from "@solana/spl-token"
-import { Commitment, Keypair, LAMPORTS_PER_SOL, PublicKey, SystemProgram, Transaction } from "@solana/web3.js"
+import {
+  Commitment,
+  ConfirmOptions,
+  Keypair,
+  LAMPORTS_PER_SOL,
+  PublicKey,
+  SystemProgram,
+  Transaction
+} from "@solana/web3.js"
 import { MarginConfig, MarginPrograms, MarginTokenConfig } from "../../libraries/ts/src"
 
 export const CONTROL_PROGRAM_ID = new PublicKey("JPCtrLreUqsEbdhtxZ8zpd8wBydKz4nuEjX5u9Eg5H8")
@@ -24,6 +32,14 @@ export const MARGIN_POOL_PROGRAM_ID = new PublicKey("JPPooLEqRo3NCSx82EdE2VZY5vU
 export const MARGIN_SWAP_PROGRAM_ID = new PublicKey("JPMAa5dnWLFRvUsumawFcGhnwikqZziLLfqn9SLNXPN")
 export const METADATA_PROGRAM_ID = new PublicKey("JPMetawzxw7WyH3qHUVScYHWFBGhjwqDnM2R9qVbRLp")
 export const ORCA_SWAP_PROGRAM_ID = new PublicKey("9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP")
+
+export const DEFAULT_CONFIRM_OPTS: ConfirmOptions = {
+  commitment: "processed",
+  // Some libs (anchor) ignore commitment and use preflight commitment
+  // Therefore, set both even if preflight is skipped
+  preflightCommitment: "processed",
+  skipPreflight: true
+}
 
 export const DEFAULT_MARGIN_CONFIG: MarginConfig = {
   controlProgramId: CONTROL_PROGRAM_ID,
