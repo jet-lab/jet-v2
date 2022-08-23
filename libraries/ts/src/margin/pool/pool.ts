@@ -1562,7 +1562,6 @@ export class Pool {
   /// Projects the deposit and borrow rates after a deposit into the pool.
   projectAfterDeposit(marginAccount: MarginAccount, amount: number): PoolProjection {
     if (this.info === undefined) {
-      console.error("must have info")
       return this.getDefaultPoolProjection(marginAccount)
     }
 
@@ -1593,14 +1592,7 @@ export class Pool {
   /// Projects the deposit and borrow rates after a withdrawal from the pool.
   projectAfterWithdraw(marginAccount: MarginAccount, amount: number): PoolProjection {
     const position = marginAccount.poolPositions[this.symbol]
-    if (this.info === undefined) {
-      console.error("must have info and position")
-      return this.getDefaultPoolProjection(marginAccount)
-    }
-
-    // G1, referenced below
-    if (amount > position.depositBalance.tokens) {
-      console.error("amount can't exceed deposit")
+    if (this.info === undefined || amount > position.depositBalance.tokens) {
       return this.getDefaultPoolProjection(marginAccount)
     }
 
@@ -1635,7 +1627,6 @@ export class Pool {
   /// Projects the deposit and borrow rates after a borrow from the pool.
   projectAfterBorrow(marginAccount: MarginAccount, amount: number): PoolProjection {
     if (this.info === undefined) {
-      console.error("must have info")
       return this.getDefaultPoolProjection(marginAccount)
     }
 
@@ -1666,14 +1657,7 @@ export class Pool {
   /// Projects the deposit and borrow rates after repaying a loan from the pool.
   projectAfterRepay(marginAccount: MarginAccount, amount: number): PoolProjection {
     const position = marginAccount.poolPositions[this.symbol]
-    if (position === undefined || this.info === undefined) {
-      console.error("must have position and info")
-      return this.getDefaultPoolProjection(marginAccount)
-    }
-
-    // G1, referenced below
-    if (amount > position.loanBalance.tokens) {
-      console.error("amount can't exceed loan")
+    if (position === undefined || this.info === undefined || amount > position.loanBalance.tokens) {
       return this.getDefaultPoolProjection(marginAccount)
     }
 
@@ -1708,16 +1692,14 @@ export class Pool {
   /// Projects the deposit and borrow rates after repaying a loan from the pool.
   projectAfterRepayFromDeposit(marginAccount: MarginAccount, amount: number): PoolProjection {
     const position = marginAccount.poolPositions[this.symbol]
-    if (position === undefined || this.info === undefined) {
-      console.error("must have position and info")
+    if (
+      position === undefined ||
+      this.info === undefined ||
+      amount > position.loanBalance.tokens ||
+      amount > position.depositBalance.tokens
+    ) {
       return this.getDefaultPoolProjection(marginAccount)
     }
-
-    // G1, referenced below
-    if (amount > position.loanBalance.tokens) throw Error("amount can't exceed loan")
-
-    // G2, referenced below
-    if (amount > position.depositBalance.tokens) throw Error("amount can't exceed deposit")
 
     const borrowedTokens = this.borrowedTokens.tokens - amount
     const totalTokens = this.totalValue.tokens - 2 * amount
@@ -1753,7 +1735,6 @@ export class Pool {
   /// Projects the deposit and borrow rates after a borrow from the pool.
   projectAfterBorrowAndNotWithdraw(marginAccount: MarginAccount, amount: number): PoolProjection {
     if (this.info === undefined) {
-      console.error("must have info")
       return this.getDefaultPoolProjection(marginAccount)
     }
 
@@ -1784,7 +1765,7 @@ export class Pool {
     return { riskIndicator, depositRate, borrowRate }
   }
 
-  getDefaultPoolProjection(marginAccount: MarginAccount) {
+  private getDefaultPoolProjection(marginAccount: MarginAccount) {
     return {
       riskIndicator: marginAccount.riskIndicator,
       depositRate: this.depositApy,
