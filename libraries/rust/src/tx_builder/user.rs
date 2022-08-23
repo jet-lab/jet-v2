@@ -49,6 +49,20 @@ pub struct MarginTxBuilder {
     is_liquidator: bool,
 }
 
+impl Clone for MarginTxBuilder {
+    fn clone(&self) -> Self {
+        Self {
+            rpc: self.rpc.clone(),
+            ix: self.ix.clone(),
+            signer: self
+                .signer
+                .as_ref()
+                .map(|kp| Keypair::from_bytes(&kp.to_bytes()).unwrap()),
+            is_liquidator: self.is_liquidator,
+        }
+    }
+}
+
 impl MarginTxBuilder {
     /// Create a [MarginTxBuilder] for an ordinary user. Liquidators should use
     /// `Self::new_liquidator`.

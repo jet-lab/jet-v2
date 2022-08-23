@@ -31,7 +31,7 @@ use spl_token_swap::state::SwapV1;
 /// * spl_token_swap
 /// * orca_v1
 /// * orca_v2
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct SwapPool {
     /// The address of the swap pool
     pub pool: Pubkey,

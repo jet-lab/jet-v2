@@ -703,10 +703,7 @@ export class Pool {
 
     const instructions: TransactionInstruction[] = []
     await marginAccount.withCreateAccount(instructions)
-    const position = await marginAccount.withGetOrCreatePosition({
-      positionTokenMint: this.addresses.depositNoteMint,
-      instructions
-    })
+    const position = await this.withGetOrRegisterDepositPosition({ instructions, marginAccount })
 
     await this.withDeposit({
       instructions: instructions,
@@ -748,7 +745,7 @@ export class Pool {
   }): Promise<void> {
     const provider = marginAccount.provider
     const mint = this.tokenMint
-    const position = marginAccount.findPositionTokenAddress(this.addresses.depositNoteMint)
+    const position = this.findDepositPositionAddress(marginAccount)
 
     const wrappedSource = await AssociatedToken.withBeginTransferFromSource({
       instructions,
@@ -787,7 +784,7 @@ export class Pool {
     destination
   }: {
     marginAccount: MarginAccount
-    pools: Record<any, Pool> | Pool[]
+    pools: Record<string, Pool> | Pool[]
     change: PoolTokenChange
     destination?: TokenAddress
   }): Promise<string> {
@@ -797,11 +794,16 @@ export class Pool {
 
     await marginAccount.refresh()
     const refreshInstructions: TransactionInstruction[] = []
-    const instructionsInstructions: TransactionInstruction[] = []
+    const instructions: TransactionInstruction[] = []
 
-    await marginAccount.withGetOrCreatePosition({
-      positionTokenMint: this.addresses.depositNoteMint,
-      instructions: refreshInstructions
+    await this.withGetOrRegisterDepositPosition({
+      instructions: refreshInstructions,
+      marginAccount
+    })
+
+    await this.withGetOrRegisterLoanPosition({
+      instructions: refreshInstructions,
+      marginAccount
     })
 
     await this.withMarginRefreshAllPositionPrices({
@@ -810,10 +812,8 @@ export class Pool {
       marginAccount
     })
 
-    await this.withGetOrCreateLoanPosition(instructionsInstructions, marginAccount)
-
     await this.withMarginBorrow({
-      instructions: instructionsInstructions,
+      instructions: instructions,
       marginAccount,
       change
     })
@@ -835,36 +835,14 @@ export class Pool {
         previousDepositAmount.tokens > 0 ? PoolTokenChange.shiftBy(change.value) : PoolTokenChange.setTo(0)
 
       await this.withWithdraw({
-        instructions: instructionsInstructions,
+        instructions: instructions,
         marginAccount,
         destination,
         change: withdrawChange
       })
     }
 
-    return await marginAccount.sendAll([...chunks(11, refreshInstructions), instructionsInstructions])
-  }
-
-  async withGetOrCreateLoanPosition(
-    instructions: TransactionInstruction[],
-    marginAccount: MarginAccount
-  ): Promise<Address> {
-    const account = marginAccount.getPositionNullable(this.addresses.loanNoteMint)
-    if (account) {
-      return account.address
-    }
-    return await this.withRegisterLoan(instructions, marginAccount)
-  }
-
-  async withGetOrCreateDepositNotePosition(
-    instructions: TransactionInstruction[],
-    marginAccount: MarginAccount
-  ): Promise<Address> {
-    const account = marginAccount.getPositionNullable(this.addresses.depositNoteMint)
-    if (account) {
-      return account.address
-    }
-    return await marginAccount.withRegisterPosition(instructions, this.addresses.depositNoteMint)
+    return await marginAccount.sendAll([chunks(11, refreshInstructions), instructions])
   }
 
   /// Instruction to borrow tokens using a margin account
@@ -888,8 +866,8 @@ export class Pool {
     assert(marginAccount)
     assert(change)
 
-    const depositAccount = marginAccount.findPositionTokenAddress(this.addresses.depositNoteMint)
-    const loanAccount = marginAccount.findPositionTokenAddress(this.addresses.loanNoteMint)
+    const depositAccount = this.findDepositPositionAddress(marginAccount)
+    const loanAccount = this.findLoanPositionAddress(marginAccount)
 
     await marginAccount.withAdapterInvoke({
       instructions,
@@ -928,7 +906,7 @@ export class Pool {
     signer
   }: {
     marginAccount: MarginAccount
-    pools: Record<any, Pool> | Pool[]
+    pools: Record<string, Pool> | Pool[]
     source?: TokenAddress
     change: PoolTokenChange
     closeLoan?: boolean
@@ -937,9 +915,9 @@ export class Pool {
     await marginAccount.refresh()
     const refreshInstructions: TransactionInstruction[] = []
     const instructions: TransactionInstruction[] = []
-    const depositPosition = await marginAccount.withGetOrCreatePosition({
-      positionTokenMint: this.addresses.depositNoteMint,
-      instructions: refreshInstructions
+    const depositPosition = await this.withGetOrRegisterDepositPosition({
+      instructions: refreshInstructions,
+      marginAccount
     })
     assert(depositPosition)
 
@@ -948,8 +926,6 @@ export class Pool {
       pools: Object.values(pools),
       marginAccount
     })
-
-    await this.withGetOrCreateLoanPosition(instructions, marginAccount)
 
     if (source === undefined) {
       await this.withMarginRepay({
@@ -971,7 +947,7 @@ export class Pool {
 
     // Automatically close the position once the loan is repaid.
     if (closeLoan) {
-      await this.withCloseLoan(instructions, marginAccount)
+      await this.withCloseLoanPosition({ instructions, marginAccount })
     }
 
     return await marginAccount.sendAll([chunks(11, refreshInstructions), instructions])
@@ -986,8 +962,8 @@ export class Pool {
     marginAccount: MarginAccount
     change: PoolTokenChange
   }): Promise<void> {
-    const depositAccount = marginAccount.findPositionTokenAddress(this.addresses.depositNoteMint)
-    const loanAccount = marginAccount.findPositionTokenAddress(this.addresses.loanNoteMint)
+    const depositAccount = this.findDepositPositionAddress(marginAccount)
+    const loanAccount = this.findLoanPositionAddress(marginAccount)
 
     await marginAccount.withAdapterInvoke({
       instructions,
@@ -1032,7 +1008,7 @@ export class Pool {
       feesBuffer
     })
 
-    const loanAccount = marginAccount.findPositionTokenAddress(this.addresses.loanNoteMint)
+    const loanAccount = this.findLoanPositionAddress(marginAccount)
 
     const ix = await this.programs.marginPool.methods
       .repay(change.changeKind.asParam(), change.value)
@@ -1075,7 +1051,7 @@ export class Pool {
     destination = TokenFormat.unwrappedSol
   }: {
     marginAccount: MarginAccount
-    pools: Record<any, Pool> | Pool[]
+    pools: Record<string, Pool> | Pool[]
     change: PoolTokenChange
     destination?: TokenAddress
   }) {
@@ -1182,15 +1158,15 @@ export class Pool {
     })
 
     // Source deposit position fetch / creation
-    const sourceAccount = await marginAccount.withGetOrCreatePosition({
+    const sourceAccount = await this.withGetOrRegisterDepositPosition({
       instructions: swapInstructions,
-      positionTokenMint: this.addresses.depositNoteMint
+      marginAccount
     })
 
     // Destination deposit position fetch / creation
-    const destinationAccount = await marginAccount.withGetOrCreatePosition({
+    const destinationAccount = await outputToken.withGetOrRegisterDepositPosition({
       instructions: swapInstructions,
-      positionTokenMint: outputToken.addresses.depositNoteMint
+      marginAccount
     })
 
     // Transit source account fetch / creation
@@ -1213,9 +1189,9 @@ export class Pool {
     const accountPoolPosition = marginAccount.poolPositions[this.symbol]
     if (swapAmount.gt(accountPoolPosition.depositBalance) && marginAccount.pools) {
       const difference = swapAmount.sub(accountPoolPosition.depositBalance)
-      await marginAccount.withGetOrCreatePosition({
+      await this.withGetOrRegisterLoanPosition({
         instructions: refreshInstructions,
-        positionTokenMint: this.addresses.loanNoteMint
+        marginAccount
       })
 
       await this.withMarginBorrow({
@@ -1238,7 +1214,7 @@ export class Pool {
       transitDestinationAccount
     })
 
-    return await marginAccount.sendAll([...chunks(11, refreshInstructions), swapInstructions])
+    return await marginAccount.sendAll([chunks(11, refreshInstructions), swapInstructions])
   }
 
   async withSwap({
@@ -1257,10 +1233,10 @@ export class Pool {
     outputToken: Pool
     swapAmount: TokenAmount
     minAmountOut: TokenAmount
-    sourceAccount: PublicKey
-    destinationAccount: PublicKey
-    transitSourceAccount: PublicKey
-    transitDestinationAccount: PublicKey
+    sourceAccount: Address
+    destinationAccount: Address
+    transitSourceAccount: Address
+    transitDestinationAccount: Address
   }): Promise<void> {
     // TODO: check tokenMintA and tokenMintB for matching pools.
     // If no pool is found, a user would have to swap twice from A > X > B,
@@ -1336,7 +1312,7 @@ export class Pool {
 
     // Transit source account closure
     const closeTransitSourceAccountIx = closeAccount({
-      source: transitSourceAccount,
+      source: translateAddress(transitSourceAccount),
       destination: marginAccount.owner,
       owner: marginAccount.address
     })
@@ -1344,7 +1320,7 @@ export class Pool {
 
     // Transit destination account closure
     const closeTransitDestinationAccountIx = closeAccount({
-      source: transitDestinationAccount,
+      source: translateAddress(transitDestinationAccount),
       destination: marginAccount.owner,
       owner: marginAccount.address
     })
@@ -1355,12 +1331,158 @@ export class Pool {
     await marginAccount.withUpdatePositionBalance({ instructions, position: destinationAccount })
   }
 
-  async withRegisterLoan(instructions: TransactionInstruction[], marginAccount: MarginAccount): Promise<Address> {
-    const loanNoteAccount = findDerivedAccount(
+  /**
+   * Derive the address of a deposit position token account associated with a [[MarginAccount]].
+   *
+   * @param {MarginAccount} marginAccount
+   * @return {PublicKey}
+   * @memberof MarginAccount
+   */
+  findDepositPositionAddress(marginAccount: MarginAccount): PublicKey {
+    return marginAccount.findPositionTokenAddress(this.addresses.depositNoteMint)
+  }
+
+  async withGetOrRegisterDepositPosition({
+    instructions,
+    marginAccount
+  }: {
+    instructions: TransactionInstruction[]
+    marginAccount: MarginAccount
+  }): Promise<Address> {
+    const positionTokenMint = this.addresses.depositNoteMint
+    const position = marginAccount.getPositionNullable(positionTokenMint)
+    if (position) {
+      return position.address
+    }
+    return await this.withRegisterDepositPosition({
+      instructions,
+      marginAccount
+    })
+  }
+
+  /**
+   * Get instruction to register new pool deposit position that is custodied by margin
+   *
+   * ## Example
+   *
+   * ```ts
+   * // Load the pools
+   * const poolManager = new PoolManager(programs, provider)
+   * const pools = await poolManager.loadAll()
+   *
+   * // Register the SOL deposit position
+   * const pool = pools["SOL"]
+   * await pool.withRegisterDepositPosition({ instructions, marginAccount })
+   * ```
+   *
+   * @param args
+   * @param {TransactionInstruction[]} args.instructions Instructions array to append to.
+   * @param {Address} args.marginAccount The margin account that will custody the position.
+   * @return {Promise<PublicKey>} Returns the instruction, and the address of the deposit note token account to be created for the position.
+   * @memberof MarginAccount
+   */
+  async withRegisterDepositPosition({
+    instructions,
+    marginAccount
+  }: {
+    instructions: TransactionInstruction[]
+    marginAccount: MarginAccount
+  }): Promise<Address> {
+    const positionTokenMint = this.addresses.depositNoteMint
+    const account = marginAccount.getPositionNullable(positionTokenMint)
+    if (account) {
+      return account.address
+    }
+    return await marginAccount.withRegisterPosition({ instructions, positionTokenMint })
+  }
+
+  async withCloseDepositPosition({
+    instructions,
+    marginAccount
+  }: {
+    instructions: TransactionInstruction[]
+    marginAccount: MarginAccount
+  }) {
+    const position = marginAccount.getPosition(this.addresses.depositNoteMint)
+    await marginAccount.withClosePosition(instructions, position)
+  }
+
+  async withdrawAndCloseDepositPosition({
+    marginAccount,
+    destination
+  }: {
+    marginAccount: MarginAccount
+    destination: Address
+  }) {
+    await marginAccount.refresh()
+
+    const position = marginAccount.getPositionNullable(this.addresses.depositNoteMint)
+
+    if (position) {
+      const instructions: TransactionInstruction[] = []
+
+      if (position.balance.gt(new BN(0))) {
+        const destinationAddress = translateAddress(destination)
+
+        const isDestinationNative = AssociatedToken.isNative(marginAccount.owner, this.tokenMint, destinationAddress)
+
+        let marginWithdrawDestination: PublicKey
+        if (!isDestinationNative) {
+          marginWithdrawDestination = destinationAddress
+        } else {
+          marginWithdrawDestination = AssociatedToken.derive(this.tokenMint, marginAccount.owner)
+        }
+
+        await marginAccount.withUpdatePositionBalance({ instructions, position: position.address })
+
+        await AssociatedToken.withCreate(instructions, marginAccount.provider, marginAccount.owner, this.tokenMint)
+        await this.withWithdraw({
+          instructions,
+          marginAccount: marginAccount,
+          destination: marginWithdrawDestination,
+          change: PoolTokenChange.setTo(0)
+        })
+
+        if (isDestinationNative) {
+          AssociatedToken.withClose(instructions, marginAccount.owner, this.tokenMint, destinationAddress)
+        }
+      }
+
+      await this.withCloseDepositPosition({ instructions, marginAccount })
+
+      await marginAccount.sendAll([instructions])
+      await marginAccount.refresh()
+    }
+  }
+
+  findLoanPositionAddress(marginAccount: MarginAccount) {
+    return findDerivedAccount(
       this.programs.config.marginPoolProgramId,
       marginAccount.address,
       this.addresses.loanNoteMint
     )
+  }
+
+  async withGetOrRegisterLoanPosition({
+    instructions,
+    marginAccount
+  }: {
+    instructions: TransactionInstruction[]
+    marginAccount: MarginAccount
+  }): Promise<Address> {
+    const positionTokenMint = this.addresses.loanNoteMint
+    const account = marginAccount.getPositionNullable(positionTokenMint)
+    if (account) {
+      return account.address
+    }
+    return await this.withRegisterLoanPosition(instructions, marginAccount)
+  }
+
+  async withRegisterLoanPosition(
+    instructions: TransactionInstruction[],
+    marginAccount: MarginAccount
+  ): Promise<Address> {
+    const loanNoteAccount = this.findLoanPositionAddress(marginAccount)
     await marginAccount.withAdapterInvoke({
       instructions: instructions,
       adapterProgram: this.programs.config.marginPoolProgramId,
@@ -1372,7 +1494,7 @@ export class Pool {
           positionTokenMetadata: this.addresses.loanNoteMetadata,
           marginPool: this.address,
           loanNoteMint: this.addresses.loanNoteMint,
-          loanNoteAccount: loanNoteAccount,
+          loanNoteAccount,
           payer: marginAccount.provider.wallet.publicKey,
           tokenProgram: TOKEN_PROGRAM_ID,
           systemProgram: SystemProgram.programId,
@@ -1384,7 +1506,13 @@ export class Pool {
     return loanNoteAccount
   }
 
-  async withCloseLoan(instructions: TransactionInstruction[], marginAccount: MarginAccount) {
+  async withCloseLoanPosition({
+    instructions,
+    marginAccount
+  }: {
+    instructions: TransactionInstruction[]
+    marginAccount: MarginAccount
+  }) {
     const loanNoteAccount = findDerivedAccount(
       this.programs.config.marginPoolProgramId,
       marginAccount.address,
@@ -1406,49 +1534,6 @@ export class Pool {
         })
         .instruction()
     })
-  }
-
-  // only closes deposit
-  async closePosition({ marginAccount, destination }: { marginAccount: MarginAccount; destination: Address }) {
-    await marginAccount.refresh()
-
-    const position = marginAccount.getPositionNullable(this.addresses.depositNoteMint)
-
-    if (position) {
-      if (position.balance.gt(new BN(0))) {
-        const destinationAddress = translateAddress(destination)
-
-        const isDestinationNative = AssociatedToken.isNative(marginAccount.owner, this.tokenMint, destinationAddress)
-
-        let marginWithdrawDestination: PublicKey
-        if (!isDestinationNative) {
-          marginWithdrawDestination = destinationAddress
-        } else {
-          marginWithdrawDestination = AssociatedToken.derive(this.tokenMint, marginAccount.owner)
-        }
-
-        const instructions: TransactionInstruction[] = []
-
-        await marginAccount.withUpdatePositionBalance({ instructions, position: position.address })
-
-        await AssociatedToken.withCreate(instructions, marginAccount.provider, marginAccount.owner, this.tokenMint)
-        await this.withWithdraw({
-          instructions,
-          marginAccount: marginAccount,
-          destination: marginWithdrawDestination,
-          change: PoolTokenChange.setTo(0)
-        })
-
-        if (isDestinationNative) {
-          AssociatedToken.withClose(instructions, marginAccount.owner, this.tokenMint, destinationAddress)
-        }
-
-        await marginAccount.sendAll([instructions])
-        await marginAccount.refresh()
-      }
-
-      await marginAccount.closePosition(position)
-    }
   }
 
   projectAfterAction(marginAccount: MarginAccount, amount: number, action: PoolAction): PoolProjection {
