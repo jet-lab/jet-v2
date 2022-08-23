@@ -1,17 +1,17 @@
 import { MarginAccount, MarginClient, PoolManager } from "../../../libraries/ts/src"
 import { Connection } from "@solana/web3.js"
 import { AnchorProvider, Wallet } from "@project-serum/anchor"
+import { DEFAULT_CONFIRM_OPTS } from "../util"
 
 // Examples of loading margin accounts and getting a margin account's risk indicator
 
 describe("Typescript examples", async () => {
   it("Fetch risk indicator for local wallet", async () => {
     const config = await MarginClient.getConfig("devnet")
-    const options = AnchorProvider.defaultOptions()
-    const connection = new Connection("https://api.devnet.solana.com", options.commitment)
+    const connection = new Connection("https://api.devnet.solana.com", DEFAULT_CONFIRM_OPTS.commitment)
     const wallet = Wallet.local()
     const localWalletPubkey = wallet.publicKey
-    const provider = new AnchorProvider(connection, wallet, options)
+    const provider = new AnchorProvider(connection, wallet, DEFAULT_CONFIRM_OPTS)
 
     const programs = MarginClient.getPrograms(provider, config)
 
@@ -33,9 +33,7 @@ describe("Typescript examples", async () => {
 
     //Print risk level of a margin account
     if (marginAccounts) {
-      console.log(
-        `Public key ${localWalletPubkey} risk indicator is ${marginAccounts[0].riskIndicator}`
-      )
+      console.log(`Public key ${localWalletPubkey} risk indicator is ${marginAccounts[0].riskIndicator}`)
     } else {
       console.log("We have trouble getting margin accounts")
     }
@@ -69,9 +67,7 @@ describe("Typescript examples", async () => {
 
     //Print risk level of a margin account
     if (marginAccounts) {
-      console.log(
-        `Public key ${walletPublicKey} risk indicator is ${marginAccounts[0].riskIndicator}`
-      )
+      console.log(`Public key ${walletPublicKey} risk indicator is ${marginAccounts[0].riskIndicator}`)
     } else {
       console.log("We have trouble getting margin accounts")
     }
