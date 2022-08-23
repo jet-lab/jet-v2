@@ -3,7 +3,7 @@
 import { MarginClient, MarginPrograms } from "../../../libraries/ts/src/margin/marginClient"
 import { MarginAccount } from "../../../libraries/ts/src/margin/marginAccount"
 import { Pool, PoolManager, PoolTokenChange } from "../../../libraries/ts/src/margin/pool"
-import { ConfirmOptions, Connection, Keypair, LAMPORTS_PER_SOL } from "@solana/web3.js"
+import { Connection, Keypair, LAMPORTS_PER_SOL } from "@solana/web3.js"
 import { AnchorProvider, BN, Wallet } from "@project-serum/anchor"
 import { MarginConfig, PositionKind, TokenFaucet, TokenFormat } from "../../../libraries/ts/src"
 import { assert } from "chai"
@@ -15,10 +15,9 @@ describe("Typescript examples", () => {
   const walletKepair = Keypair.generate()
   const walletPubkey = walletKepair.publicKey
 
-  const options: ConfirmOptions = { commitment: "recent", skipPreflight: true }
-  const connection = new Connection("https://api.devnet.solana.com", options.commitment)
+  const connection = new Connection("https://api.devnet.solana.com", DEFAULT_CONFIRM_OPTS.commitment)
   const wallet = new Wallet(walletKepair)
-  const provider = new AnchorProvider(connection, wallet, options)
+  const provider = new AnchorProvider(connection, wallet, DEFAULT_CONFIRM_OPTS)
 
   let config: MarginConfig
   let programs: MarginPrograms
