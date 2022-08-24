@@ -22,7 +22,6 @@ use std::{
     sync::Arc,
 };
 
-use crate::tokens::TokenPrice;
 use anchor_lang::AccountDeserialize;
 use anyhow::{bail, Result};
 use jet_metadata::TokenMetadata;
@@ -31,6 +30,8 @@ use jet_simulation::solana_rpc_api::SolanaRpcClient;
 use pyth_sdk_solana::PriceFeed;
 use solana_sdk::{program_pack::Pack, pubkey::Pubkey};
 use spl_token_swap::state::SwapV1;
+
+use crate::tokens::TokenPrice;
 
 /// Addresses of an [`spl_token_swap`] compatible swap pool, required when using
 /// [`jet_margin_swap`].
@@ -142,9 +143,12 @@ impl SplSwapPool {
             let total_value = token_a_value + token_b_value;
 
             // If the value is smaller than a low threshold, ignore
-            if total_value < Number128::from_decimal(10_000, 0) {
-                println!("Pool {swap_address} has {total_value}, which is less than threshold of $10'000, ignoring");
+            if total_value < Number128::from_decimal(20_000, 0) {
+                println!("Pool {swap_address} has {total_value}, which is less than threshold of $20'000, ignoring");
                 continue;
+            }
+            if !swap.is_initialized {
+                println!("Pool {swap_address} is not initialized, ignoring");
             }
             println!("Pool {swap_address} has {total_value}, added as a candidate for inclusion");
 
@@ -248,5 +252,48 @@ async fn get_token_metadata(
     match account_data {
         None => bail!("no metadata {} found for token {}", md_address, token_mint),
         Some(account) => Ok(TokenMetadata::try_deserialize(&mut &account.data[..])?),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::str::FromStr;
+
+    use jet_simulation::solana_rpc_api::{RpcConnection, SolanaRpcClient};
+    use solana_sdk::signature::Keypair;
+
+    use super::*;
+
+    #[tokio::test]
+    async fn test_mainnet_orca_pools() -> anyhow::Result<()> {
+        let payer = Keypair::new();
+        let rpc: Arc<dyn SolanaRpcClient> = Arc::new(RpcConnection::new_optimistic(
+            payer,
+            "https://api.mainnet-beta.solana.com",
+        ));
+
+        let usdc = Pubkey::from_str("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v").unwrap();
+        let btc = Pubkey::from_str("9n4nbM75f5Ui33ZbPYXn59EwSgE8CGsHtAeTH5YFeJ9E").unwrap();
+        let sol = Pubkey::from_str("So11111111111111111111111111111111111111112").unwrap();
+        let usdt = Pubkey::from_str("Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB").unwrap();
+        let msol = Pubkey::from_str("mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqcJm7So").unwrap();
+
+        let mut supported_mints = HashSet::new();
+        supported_mints.insert(usdc);
+        // supported_mints.insert(btc);
+        // supported_mints.insert(sol);
+        // supported_mints.insert(usdt);
+        supported_mints.insert(msol);
+
+        let pools = SplSwapPool::get_pools(
+            &rpc,
+            &supported_mints,
+            jet_static_program_registry::orca_swap_v2::id(),
+        )
+        .await?;
+
+        assert!(pools.len() > 5);
+
+        Ok(())
     }
 }

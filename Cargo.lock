@@ -1879,6 +1879,7 @@ dependencies = [
  "jet-metadata",
  "jet-proto-math",
  "jet-simulation",
+ "jet-static-program-registry",
  "pyth-sdk-solana",
  "solana-sdk",
  "spl-token 3.3.1",

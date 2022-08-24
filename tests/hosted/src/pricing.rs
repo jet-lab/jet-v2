@@ -7,7 +7,7 @@ use itertools::Itertools;
 use jet_margin_sdk::cat;
 use jet_margin_sdk::solana::keypair::clone;
 use jet_margin_sdk::solana::transaction::{SendTransactionBuilder, TransactionBuilder};
-use jet_margin_sdk::swap::SwapPool;
+use jet_margin_sdk::spl_swap::SplSwapPool;
 use jet_margin_sdk::tokens::TokenPrice;
 use jet_margin_sdk::util::asynchronous::{AndAsync, MapAsync};
 use jet_simulation::solana_rpc_api::SolanaRpcClient;
@@ -26,7 +26,7 @@ pub struct TokenPricer {
     pub tokens: TokenManager,
     payer: Keypair,
     vaults: HashMap<Pubkey, Pubkey>,
-    swap_registry: HashMap<Pubkey, HashMap<Pubkey, SwapPool>>,
+    swap_registry: HashMap<Pubkey, HashMap<Pubkey, SplSwapPool>>,
 }
 
 impl Clone for TokenPricer {
