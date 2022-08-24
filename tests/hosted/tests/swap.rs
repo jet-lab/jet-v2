@@ -126,7 +126,9 @@ async fn swap_test_impl(swap_program_id: Pubkey) -> Result<(), anyhow::Error> {
     supported_mints.insert(env.tsol);
 
     // TODO - fixme: params for get_pools
-    let swap_pools = SplSwapPool::get_pools(&ctx.rpc, &supported_mints, swap_program_id).await.unwrap();
+    let swap_pools = SplSwapPool::get_pools(&ctx.rpc, &supported_mints, swap_program_id)
+        .await
+        .unwrap();
     println!("***************************** {}", swap_pools.capacity());
     // assert_eq!(swap_pools.capacity(), 1);
     // let swap_pools = SwapPool::get_pools(&ctx.rpc, supported_mints, swap_program_id).await?;

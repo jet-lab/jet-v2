@@ -40,3 +40,6 @@ jet-margin-swap = { path = "../../programs/margin-swap", features = ["no-entrypo
 # Token swaps
 spl-token = "3"
 spl-token-swap = "2"
+
+[dev-dependencies]
+jet-static-program-registry = { path = "../static-program-registry" }
