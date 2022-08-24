@@ -37,7 +37,7 @@ jobs:
   anchor-test:
     runs-on: ubuntu-latest
     container:
-      image: jetprotocol/builder:root-solana1.10.35-anchor0.25.0-2
+      image: jetprotocol/builder:solana-1.10.35-anchor-0.25.0-3
     env:
       HOME: /root
     steps:
@@ -49,7 +49,6 @@ jobs:
         with:
           key: anchor-test
           path: |
-            ~/.cargo/bin/
             ~/.cargo/registry/index/
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
@@ -78,7 +77,6 @@ jobs:
         with:
           key: hosted-tests-localnet
           path: |
-            ~/.cargo/bin/
             ~/.cargo/registry/index/
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
@@ -104,7 +102,6 @@ jobs:
         with:
           key: cargo-lint
           path: |
-            ~/.cargo/bin/
             ~/.cargo/registry/index/
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
