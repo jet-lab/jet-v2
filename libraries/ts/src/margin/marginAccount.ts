@@ -1467,9 +1467,7 @@ export class MarginAccount {
    * The liquidator may end the liquidation at any time.
    * The margin account owner may end the liquidation only when at least one condition is true:
    * 1) When enough collateral is deposited or enough collateral is liquidated to lower `riskIndicator` sufficiently.
-   * 2) When
-   *
-   *
+   * 2) When the liquidation has timed out when [[MarginAccount]]`.getRemainingLiquidationTime()` is negative
    *
    * @param {TransactionInstruction[]} instructions The instructions to append to
    * @return {Promise<void>}
