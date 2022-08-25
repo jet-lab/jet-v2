@@ -634,7 +634,12 @@ export class Pool {
     marginAccount: MarginAccount
   }): Promise<void> {
     for (const pool of Object.values(pools)) {
-      await pool.withMarginRefreshPositionPrice({ instructions, marginAccount })
+      const positionRegistered =
+        !!marginAccount.getPositionNullable(pool.addresses.depositNoteMint) ||
+        !!marginAccount.getPositionNullable(pool.addresses.loanNoteMint)
+      if (positionRegistered) {
+        await pool.withMarginRefreshPositionPrice({ instructions, marginAccount })
+      }
     }
   }
 
