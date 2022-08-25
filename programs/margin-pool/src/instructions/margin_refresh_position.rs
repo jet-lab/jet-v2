@@ -46,7 +46,7 @@ pub fn margin_refresh_position_handler(ctx: Context<MarginRefreshPosition>) -> R
         Ok(pf) => pf,
         Err(_) => {
             msg!("the oracle account is not valid");
-            return err!(ErrorCode::InvalidOracle);
+            return err!(ErrorCode::InvalidPoolOracle);
         }
     };
 

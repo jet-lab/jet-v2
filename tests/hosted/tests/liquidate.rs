@@ -3,11 +3,10 @@ use anyhow::Result;
 use hosted_tests::{
     context::test_context,
     margin::MarginUser,
-    setup_helper::{setup_token, setup_user},
+    setup_helper::{liquidators, setup_token, setup_user, tokens, users},
 };
 use jet_margin::ErrorCode;
 use jet_margin_sdk::tokens::TokenPrice;
-use serial_test::serial;
 use solana_sdk::native_token::LAMPORTS_PER_SOL;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::Signer;
@@ -35,18 +34,17 @@ struct Scenario1 {
 #[allow(clippy::erasing_op)]
 async fn scenario1() -> Result<Scenario1> {
     let ctx = test_context().await;
-    let usdc = setup_token(ctx, 6, 1_00, 4_00, 1).await?;
-    let tsol = setup_token(ctx, 9, 95, 4_00, 100).await?;
+    let usdc = setup_token(ctx, 6, 1_00, 4_00, 1.0).await?;
+    let tsol = setup_token(ctx, 9, 95, 4_00, 100.0).await?;
 
     // Create wallet for the liquidator
     let liquidator_wallet = ctx.create_liquidator(100).await?;
     let user_a = setup_user(
         ctx,
-        &liquidator_wallet,
         vec![(usdc, 5_000_000 * ONE_USDC, 5_000_000 * ONE_USDC)],
     )
     .await?;
-    let user_b = setup_user(ctx, &liquidator_wallet, vec![(tsol, 0, 10_000 * ONE_TSOL)]).await?;
+    let user_b = setup_user(ctx, vec![(tsol, 0, 10_000 * ONE_TSOL)]).await?;
 
     // Have each user borrow the other's funds
     ctx.tokens.refresh_to_same_price(&tsol).await?;
@@ -84,9 +82,15 @@ async fn scenario1() -> Result<Scenario1> {
     user_b.user.refresh_all_pool_positions().await?;
 
     Ok(Scenario1 {
-        user_b: user_b.user,
-        user_a_liq: user_a.liquidator,
-        user_b_liq: user_b.liquidator,
+        user_b: user_b.user.clone(),
+        user_a_liq: ctx
+            .margin
+            .liquidator(&liquidator_wallet, user_a.user.owner(), 0)
+            .await?,
+        user_b_liq: ctx
+            .margin
+            .liquidator(&liquidator_wallet, user_b.user.owner(), 0)
+            .await?,
         usdc,
         liquidator: liquidator_wallet.pubkey(),
     })
@@ -99,7 +103,7 @@ async fn scenario1() -> Result<Scenario1> {
 /// liquidations. One user borrowed conservatively, and is not subject to
 /// liquidation, while the other user gets liquidated.
 #[tokio::test(flavor = "multi_thread")]
-#[cfg_attr(not(feature = "localnet"), serial)]
+#[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn cannot_liquidate_healthy_user() -> Result<()> {
     let scen = scenario1().await?;
 
@@ -111,7 +115,7 @@ async fn cannot_liquidate_healthy_user() -> Result<()> {
 }
 
 #[tokio::test(flavor = "multi_thread")]
-#[cfg_attr(not(feature = "localnet"), serial)]
+#[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn cannot_end_nonexistent_liquidation() -> Result<()> {
     let scen = scenario1().await?;
 
@@ -124,7 +128,7 @@ async fn cannot_end_nonexistent_liquidation() -> Result<()> {
 }
 
 #[tokio::test(flavor = "multi_thread")]
-#[cfg_attr(not(feature = "localnet"), serial)]
+#[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn cannot_transact_when_being_liquidated() -> Result<()> {
     let scen = scenario1().await?;
 
@@ -142,7 +146,7 @@ async fn cannot_transact_when_being_liquidated() -> Result<()> {
 }
 
 #[tokio::test(flavor = "multi_thread")]
-#[cfg_attr(not(feature = "localnet"), serial)]
+#[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn liquidator_can_repay_from_unhealthy_to_healthy_state() -> Result<()> {
     let scen = scenario1().await?;
 
@@ -164,7 +168,7 @@ async fn liquidator_can_repay_from_unhealthy_to_healthy_state() -> Result<()> {
 }
 
 #[tokio::test(flavor = "multi_thread")]
-#[cfg_attr(not(feature = "localnet"), serial)]
+#[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn liquidator_can_end_liquidation_when_unhealthy() -> Result<()> {
     let scen = scenario1().await?;
 
@@ -177,7 +181,7 @@ async fn liquidator_can_end_liquidation_when_unhealthy() -> Result<()> {
 }
 
 #[tokio::test(flavor = "multi_thread")]
-#[cfg_attr(not(feature = "localnet"), serial)]
+#[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn no_one_else_can_liquidate_after_liquidate_begin() -> Result<()> {
     let ctx = test_context().await;
     let scen = scenario1().await?;
@@ -203,7 +207,7 @@ async fn no_one_else_can_liquidate_after_liquidate_begin() -> Result<()> {
 }
 
 #[tokio::test(flavor = "multi_thread")]
-#[cfg_attr(not(feature = "localnet"), serial)]
+#[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn liquidation_completes() -> Result<()> {
     let scen = scenario1().await?;
 
@@ -227,7 +231,7 @@ async fn liquidation_completes() -> Result<()> {
 }
 
 #[tokio::test(flavor = "multi_thread")]
-#[cfg_attr(not(feature = "localnet"), serial)]
+#[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn cannot_withdraw_too_much_during_liquidation() -> Result<()> {
     let ctx = test_context().await;
     let scen = scenario1().await?;
@@ -254,7 +258,7 @@ async fn cannot_withdraw_too_much_during_liquidation() -> Result<()> {
 }
 
 #[tokio::test(flavor = "multi_thread")]
-#[cfg_attr(not(feature = "localnet"), serial)]
+#[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn can_withdraw_some_during_liquidation() -> Result<()> {
     let ctx = test_context().await;
     let scen = scenario1().await?;
@@ -277,7 +281,7 @@ async fn can_withdraw_some_during_liquidation() -> Result<()> {
 }
 
 #[tokio::test(flavor = "multi_thread")]
-#[cfg_attr(not(feature = "localnet"), serial)]
+#[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 #[ignore = "ignored while there is no constraint on borrowing"]
 async fn cannot_borrow_too_much_during_liquidation() -> Result<()> {
     let scen = scenario1().await?;
@@ -294,7 +298,7 @@ async fn cannot_borrow_too_much_during_liquidation() -> Result<()> {
 }
 
 #[tokio::test(flavor = "multi_thread")]
-#[cfg_attr(not(feature = "localnet"), serial)]
+#[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn can_borrow_some_during_liquidation() -> Result<()> {
     let scen = scenario1().await?;
 
@@ -308,7 +312,7 @@ async fn can_borrow_some_during_liquidation() -> Result<()> {
 
 /// The owner is provided as the authority and signs
 #[tokio::test(flavor = "multi_thread")]
-#[cfg_attr(not(feature = "localnet"), serial)]
+#[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn owner_cannot_end_liquidation_before_timeout() -> Result<()> {
     let scen = scenario1().await?;
 
@@ -324,7 +328,7 @@ async fn owner_cannot_end_liquidation_before_timeout() -> Result<()> {
 }
 
 #[tokio::test(flavor = "multi_thread")]
-#[cfg_attr(not(feature = "localnet"), serial)]
+#[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 #[cfg(not(feature = "localnet"))]
 async fn owner_can_end_liquidation_after_timeout() -> Result<()> {
     let ctx = test_context().await;
@@ -344,7 +348,7 @@ async fn owner_can_end_liquidation_after_timeout() -> Result<()> {
 }
 
 #[tokio::test(flavor = "multi_thread")]
-#[cfg_attr(not(feature = "localnet"), serial)]
+#[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn liquidator_permission_is_removable() -> Result<()> {
     let ctx = test_context().await;
     let scen = scenario1().await?;
@@ -364,6 +368,25 @@ async fn liquidator_permission_is_removable() -> Result<()> {
         anchor_lang::error::ErrorCode::AccountDiscriminatorMismatch,
         result,
     );
+
+    Ok(())
+}
+
+#[tokio::test(flavor = "multi_thread")]
+#[cfg_attr(not(feature = "localnet"), serial_test::serial)]
+async fn liquidate_with_swap() -> Result<()> {
+    let ctx = test_context().await;
+    let ([usdc, sol], swaps, pricer) = tokens(ctx).await?;
+    let [liquidator] = liquidators(ctx).await?;
+    let [user0, user1] = users(ctx).await?;
+    user0.deposit(&usdc, 1000).await?;
+    user1.deposit(&sol, 1000).await?;
+    user1.borrow_to_wallet(&usdc, 800).await?;
+    pricer.set_price(&sol, 0.9).await?;
+    liquidator
+        .liquidate(&user1.user, &swaps, &sol, 800, &usdc, 700)
+        .await?;
+    user1.borrow_to_wallet(&usdc, 5).await?;
 
     Ok(())
 }

@@ -1,19 +1,15 @@
 import * as anchor from "@project-serum/anchor"
 import { AnchorProvider } from "@project-serum/anchor"
 import NodeWallet from "@project-serum/anchor/dist/cjs/nodewallet"
-import { ConfirmOptions, Keypair, LAMPORTS_PER_SOL } from "@solana/web3.js"
+import { LAMPORTS_PER_SOL } from "@solana/web3.js"
 import { expect } from "chai"
 
 import { MarginAccount, MarginClient, Pool, PoolManager } from "../../libraries/ts/src"
-import { createAuthority, createUserWallet, DEFAULT_MARGIN_CONFIG } from "./util"
+import { createAuthority, createUserWallet, DEFAULT_CONFIRM_OPTS, DEFAULT_MARGIN_CONFIG } from "./util"
 
-describe("margin account", async () => {
-  const confirmOptions: ConfirmOptions = { preflightCommitment: "processed", commitment: "processed" }
-
-  const provider = AnchorProvider.local(undefined, confirmOptions)
+describe("margin account", () => {
+  const provider = AnchorProvider.local(undefined, DEFAULT_CONFIRM_OPTS)
   anchor.setProvider(provider)
-
-  const payer: Keypair = (provider.wallet as NodeWallet).payer
 
   const programs = MarginClient.getPrograms(provider, DEFAULT_MARGIN_CONFIG)
   let poolManager: PoolManager
@@ -37,8 +33,8 @@ describe("margin account", async () => {
     // Create our two user wallets, with some SOL funding to get started
     wallet_a = await createUserWallet(provider, 10 * LAMPORTS_PER_SOL)
     wallet_b = await createUserWallet(provider, 10 * LAMPORTS_PER_SOL)
-    provider_a = new AnchorProvider(provider.connection, wallet_a, confirmOptions)
-    provider_b = new AnchorProvider(provider.connection, wallet_b, confirmOptions)
+    provider_a = new AnchorProvider(provider.connection, wallet_a, DEFAULT_CONFIRM_OPTS)
+    provider_b = new AnchorProvider(provider.connection, wallet_b, DEFAULT_CONFIRM_OPTS)
   })
 
   it("Create authority", async () => {

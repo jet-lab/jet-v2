@@ -11,16 +11,16 @@ export class Number192 {
 
   private constructor(private _bn: BN) {}
 
-  asNumber() {
+  toNumber() {
     return bnToNumber(this._bn) / 10 ** Number192.PRECISION
   }
 
-  asTokenAmount(decimals: number) {
-    return TokenAmount.lamports(this.asBn(0), decimals)
+  toTokenAmount(decimals: number) {
+    return TokenAmount.lamports(this.toBn(0), decimals)
   }
 
   /** Removes the fractional component from the number.*/
-  asBn(exponent: number): BN {
+  toBn(exponent: number): BN {
     let extraPrecision = Number192.PRECISION + exponent
     let precValue = Number192.tenPow(new BN(Math.abs(extraPrecision)))
 
@@ -37,8 +37,8 @@ export class Number192 {
    * The precision of the number in the u64 is based on the
    * exponent provided.
    */
-  asU64(exponent: number): BN {
-    let targetValue = this.asBn(exponent)
+  toU64(exponent: number): BN {
+    let targetValue = this.toBn(exponent)
 
     if (targetValue.gt(Number192.U64_MAX)) {
       throw new Error("cannot convert to u64 due to overflow")
@@ -60,7 +60,7 @@ export class Number192 {
    * The result is rounded up to the nearest one, based on the
    * target precision.
    */
-  asU64Ceil(exponent: number): BN {
+  toU64Ceil(exponent: number): BN {
     const extraPrecision = Number192.PRECISION + exponent
     const precValue = Number192.tenPow(new BN(Math.abs(extraPrecision)))
 
@@ -92,7 +92,7 @@ export class Number192 {
    * The result is rounded to the nearest one, based on the
    * target precision.
    */
-  asU64Rounded(exponent: number): BN {
+  toU64Rounded(exponent: number): BN {
     let extraPrecision = Number192.PRECISION + exponent
     let precValue = Number192.tenPow(new BN(Math.abs(extraPrecision)))
 

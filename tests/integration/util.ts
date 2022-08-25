@@ -15,8 +15,16 @@ import {
   MINT_SIZE,
   TOKEN_PROGRAM_ID
 } from "@solana/spl-token"
-import { Commitment, Keypair, LAMPORTS_PER_SOL, PublicKey, SystemProgram, Transaction } from "@solana/web3.js"
-import { MarginPrograms } from "../../libraries/ts/src"
+import {
+  Commitment,
+  ConfirmOptions,
+  Keypair,
+  LAMPORTS_PER_SOL,
+  PublicKey,
+  SystemProgram,
+  Transaction
+} from "@solana/web3.js"
+import { MarginConfig, MarginPrograms, MarginTokenConfig } from "../../libraries/ts/src"
 
 export const CONTROL_PROGRAM_ID = new PublicKey("JPCtrLreUqsEbdhtxZ8zpd8wBydKz4nuEjX5u9Eg5H8")
 export const MARGIN_PROGRAM_ID = new PublicKey("JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ")
@@ -25,7 +33,15 @@ export const MARGIN_SWAP_PROGRAM_ID = new PublicKey("JPMAa5dnWLFRvUsumawFcGhnwik
 export const METADATA_PROGRAM_ID = new PublicKey("JPMetawzxw7WyH3qHUVScYHWFBGhjwqDnM2R9qVbRLp")
 export const ORCA_SWAP_PROGRAM_ID = new PublicKey("9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP")
 
-export const DEFAULT_MARGIN_CONFIG = {
+export const DEFAULT_CONFIRM_OPTS: ConfirmOptions = {
+  commitment: "processed",
+  // Some libs (anchor) ignore commitment and use preflight commitment
+  // Therefore, set both even if preflight is skipped
+  preflightCommitment: "processed",
+  skipPreflight: true
+}
+
+export const DEFAULT_MARGIN_CONFIG: MarginConfig = {
   controlProgramId: CONTROL_PROGRAM_ID,
   marginProgramId: MARGIN_PROGRAM_ID,
   marginPoolProgramId: MARGIN_POOL_PROGRAM_ID,
@@ -37,6 +53,12 @@ export const DEFAULT_MARGIN_CONFIG = {
   url: "http://localhost",
   tokens: {},
   markets: {}
+}
+
+export interface TestToken {
+  mint: PublicKey
+  vault: PublicKey
+  tokenConfig: MarginTokenConfig
 }
 
 export async function createAuthority(programs: MarginPrograms, provider: AnchorProvider): Promise<void> {
@@ -99,8 +121,9 @@ export async function createToken(
   provider: AnchorProvider,
   owner: Keypair,
   decimals: number,
-  supply: number
-): Promise<[PublicKey, PublicKey]> {
+  supply: number,
+  symbol: string
+): Promise<TestToken> {
   const mint = Keypair.generate()
   const vault = Keypair.generate()
   const transaction = new Transaction().add(
@@ -129,7 +152,19 @@ export async function createToken(
     )
   )
   await provider.sendAndConfirm(transaction, [owner, mint, vault])
-  return [mint.publicKey, vault.publicKey]
+  const tokenConfig: MarginTokenConfig = {
+    symbol,
+    name: symbol,
+    decimals,
+    precision: decimals,
+    mint: mint.publicKey
+  }
+
+  return {
+    mint: mint.publicKey,
+    vault: vault.publicKey,
+    tokenConfig
+  }
 }
 
 export async function createTokenAccount(provider: AnchorProvider, mint: PublicKey, owner: PublicKey, payer: Keypair) {

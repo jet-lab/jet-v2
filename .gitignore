@@ -11,3 +11,7 @@ target
 node_modules
 lcov.info
 .husky
+.vscode
+yarn-error.log
+
+# documentations

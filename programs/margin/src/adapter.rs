@@ -214,7 +214,7 @@ fn apply_changes(
                 Some(pos) => {
                     if pos.address != token_account {
                         msg!("position already registered for this mint with a different token account");
-                        return err!(PositionNotRegisterable);
+                        return err!(ErrorCode::PositionNotRegisterable);
                     }
                 }
                 None => {
@@ -232,7 +232,7 @@ fn apply_changes(
                 Some(pos) => {
                     if pos.address != token_account {
                         msg!("position registered for this mint with a different token account");
-                        return err!(PositionNotRegisterable);
+                        return err!(ErrorCode::PositionNotRegisterable);
                     }
                     margin_account.unregister_position(
                         &mint,
@@ -252,17 +252,16 @@ fn apply_changes(
             .map(|p| PositionTouched { position: *p }.into()),
         n if n > 0 => Some(
             PositionRegistered {
+                margin_account: ctx.margin_account.key(),
                 position: *key
                     .and_then(|k| margin_account.get_position_by_key(&k))
                     .require()?,
-                margin_account: ctx.margin_account.key(),
                 authority: ctx.adapter_program.key(),
             }
             .into(),
         ),
         _ => Some(
             PositionClosed {
-                margin_account: ctx.margin_account.key(),
                 authority: ctx.adapter_program.key(),
                 token: mint,
             }
@@ -278,9 +277,10 @@ fn register_position(
     mint_address: Pubkey,
     token_account_address: Pubkey,
 ) -> Result<AccountPositionKey> {
-    let mut metadata: Result<Account<PositionTokenMetadata>> = err!(PositionNotRegisterable);
-    let mut token_account: Result<Account<TokenAccount>> = err!(PositionNotRegisterable);
-    let mut mint: Result<Account<Mint>> = err!(PositionNotRegisterable);
+    let mut metadata: Result<Account<PositionTokenMetadata>> =
+        err!(ErrorCode::PositionNotRegisterable);
+    let mut token_account: Result<Account<TokenAccount>> = err!(ErrorCode::PositionNotRegisterable);
+    let mut mint: Result<Account<Mint>> = err!(ErrorCode::PositionNotRegisterable);
     for info in remaining_accounts {
         if info.key == &token_account_address {
             token_account = Ok(Account::<TokenAccount>::try_from(info)?);
@@ -300,7 +300,7 @@ fn register_position(
 
     if mint.key() != token_account.mint {
         msg!("token account has the wrong mint");
-        return err!(PositionNotRegisterable);
+        return err!(ErrorCode::PositionNotRegisterable);
     }
 
     let key = margin_account.register_position(

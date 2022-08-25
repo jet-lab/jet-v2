@@ -17,15 +17,18 @@
 
 use std::io::Write;
 use std::sync::Arc;
+use std::time::Duration;
 
 use anyhow::{bail, Error};
 use bytemuck::Zeroable;
 
+use jet_margin_sdk::solana::transaction::{SendTransactionBuilder, TransactionBuilder};
 use jet_margin_sdk::tokens::{TokenOracle, TokenPrice};
+use jet_margin_sdk::util::asynchronous::with_retries_and_timeout;
 use solana_sdk::instruction::Instruction;
 use solana_sdk::program_pack::Pack;
 use solana_sdk::pubkey::Pubkey;
-use solana_sdk::signature::Signer;
+use solana_sdk::signature::{Keypair, Signer};
 use solana_sdk::{system_instruction, system_program};
 
 use anchor_lang::{InstructionData, ToAccountMetas};
@@ -34,6 +37,7 @@ use jet_simulation::{generate_keypair, send_and_confirm, solana_rpc_api::SolanaR
 
 /// Utility for managing the creation of tokens and their prices
 /// in some kind of testing environment
+#[derive(Clone)]
 pub struct TokenManager {
     rpc: Arc<dyn SolanaRpcClient>,
 }
@@ -57,6 +61,17 @@ impl TokenManager {
         freeze_authority: Option<&Pubkey>,
     ) -> Result<Pubkey, Error> {
         let keypair = generate_keypair();
+        self.create_token_from(keypair, decimals, mint_authority, freeze_authority)
+            .await
+    }
+
+    pub async fn create_token_from(
+        &self,
+        keypair: Keypair,
+        decimals: u8,
+        mint_authority: Option<&Pubkey>,
+        freeze_authority: Option<&Pubkey>,
+    ) -> Result<Pubkey, Error> {
         let payer = self.rpc.payer();
         let space = spl_token::state::Mint::LEN;
         let rent_lamports = self
@@ -123,8 +138,10 @@ impl TokenManager {
         amount: u64,
     ) -> Result<Pubkey, Error> {
         let account = self.create_account(mint, owner).await?;
+        if amount > 0 {
+            self.mint(mint, &account, amount).await?;
+        }
 
-        self.mint(mint, &account, amount).await?;
         Ok(account)
     }
 
@@ -226,6 +243,17 @@ impl TokenManager {
     }
 
     pub async fn refresh_to_same_price(&self, mint: &Pubkey) -> Result<(), Error> {
+        self.rpc
+            .send_and_confirm(self.refresh_to_same_price_tx(mint).await?)
+            .await?;
+
+        Ok(())
+    }
+
+    pub async fn refresh_to_same_price_tx(
+        &self,
+        mint: &Pubkey,
+    ) -> Result<TransactionBuilder, Error> {
         let price_address = Pubkey::find_program_address(
             &[mint.as_ref(), b"oracle:price".as_ref()],
             &jet_metadata::ID,
@@ -233,15 +261,43 @@ impl TokenManager {
         .0;
         let mut account: pyth_sdk_solana::state::PriceAccount =
             self.get_pod_metadata(&price_address).await?;
+
         let clock = self.rpc.get_clock().expect("could not get the clock");
         account.agg.pub_slot = clock.slot;
         account.timestamp = clock.unix_timestamp;
 
-        self.set_pod_metadata(&price_address, &account).await
+        self.set_pod_metadata_tx(&price_address, &account)
+    }
+
+    pub async fn get_price(
+        &self,
+        mint: &Pubkey,
+    ) -> Result<pyth_sdk_solana::state::PriceAccount, Error> {
+        let price_address = Pubkey::find_program_address(
+            &[mint.as_ref(), b"oracle:price".as_ref()],
+            &jet_metadata::ID,
+        )
+        .0;
+        let ret = self.get_pod_metadata(&price_address).await?;
+
+        Ok(ret)
     }
 
     /// Set the oracle price of a token
     pub async fn set_price(&self, mint: &Pubkey, price: &TokenPrice) -> Result<(), Error> {
+        self.rpc
+            .send_and_confirm(self.set_price_tx(mint, price)?)
+            .await?;
+
+        Ok(())
+    }
+
+    /// Set the oracle price of a token
+    pub fn set_price_tx(
+        &self,
+        mint: &Pubkey,
+        price: &TokenPrice,
+    ) -> Result<TransactionBuilder, Error> {
         let clock = self.rpc.get_clock().expect("could not get the clock");
         let mut price_data = default_price();
 
@@ -262,7 +318,7 @@ impl TokenManager {
             &jet_metadata::ID,
         );
 
-        self.set_pod_metadata(&price_address, &price_data).await
+        self.set_pod_metadata_tx(&price_address, &price_data)
     }
 
     /// Get the current balance of a token account
@@ -283,6 +339,18 @@ impl TokenManager {
         address: &Pubkey,
         value: &T,
     ) -> Result<(), Error> {
+        self.rpc
+            .send_and_confirm(self.set_pod_metadata_tx(address, value)?)
+            .await?;
+
+        Ok(())
+    }
+
+    fn set_pod_metadata_tx<T: bytemuck::Pod>(
+        &self,
+        address: &Pubkey,
+        value: &T,
+    ) -> Result<TransactionBuilder, Error> {
         let mut data = vec![0u8; std::mem::size_of::<T>()];
         (&mut data[..])
             .write_all(bytemuck::bytes_of(value))
@@ -301,13 +369,17 @@ impl TokenManager {
             data: jet_metadata::instruction::SetEntry { data, offset: 0 }.data(),
         };
 
-        send_and_confirm(&self.rpc, &[ix_write], &[]).await?;
-
-        Ok(())
+        Ok(TransactionBuilder {
+            instructions: vec![ix_write],
+            signers: vec![],
+        })
     }
 
     async fn get_pod_metadata<T: bytemuck::Pod>(&self, address: &Pubkey) -> Result<T, Error> {
-        let account = self.rpc.get_account(address).await?.unwrap();
+        let account =
+            with_retries_and_timeout(|| self.rpc.get_account(address), Duration::from_secs(1), 30)
+                .await??
+                .unwrap();
 
         Ok(*bytemuck::from_bytes::<T>(&account.data))
     }

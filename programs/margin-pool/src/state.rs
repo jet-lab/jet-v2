@@ -285,8 +285,10 @@ impl MarginPool {
     pub fn calculate_prices(&self, pyth_price: &PriceFeed) -> Result<PriceResult> {
         let price_obj = pyth_price
             .get_current_price()
-            .ok_or(ErrorCode::InvalidPrice)?;
-        let ema_obj = pyth_price.get_ema_price().ok_or(ErrorCode::InvalidPrice)?;
+            .ok_or(ErrorCode::InvalidPoolPrice)?;
+        let ema_obj = pyth_price
+            .get_ema_price()
+            .ok_or(ErrorCode::InvalidPoolPrice)?;
 
         let price_value = Number::from_decimal(price_obj.price, price_obj.expo);
         let conf_value = Number::from_decimal(price_obj.conf, price_obj.expo);

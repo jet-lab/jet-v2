@@ -27,6 +27,10 @@ pub use margin::*;
 pub use margin_pool::*;
 pub use margin_swap::*;
 
+/// Get the address of a [jet_metadata] account.
+///
+/// Metadata addresses are PDAs of various metadata types. Refer to `jet_metadata` for
+/// the different account types.
 pub fn get_metadata_address(address: &Pubkey) -> Pubkey {
     Pubkey::find_program_address(&[address.as_ref()], &jet_metadata::ID).0
 }

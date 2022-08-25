@@ -1,6 +1,6 @@
 {
   "name": "@jet-lab/margin",
-  "version": "0.1.65",
+  "version": "0.2.2",
   "description": "Library for interacting with the Jet margin on-chain programs",
   "keywords": [
     "solana",
@@ -8,9 +8,8 @@
     "protocol",
     "blockchain"
   ],
-  "module": "./dist/index.js",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "module": "./dist/esm/index.js",
+  "main": "./dist/cjs/index.js",
   "license": "AGPL-3.0-or-later",
   "homepage": "https://github.com/jet-lab/jet-v2/tree/master/libraries/ts/#readme",
   "bugs": {
@@ -28,7 +27,8 @@
   },
   "scripts": {
     "clean": "rimraf dist/",
-    "compile": "tsc",
+    "compile": "tsc -p tsconfig.json && tsc -p tsconfig-cjs.json",
+    "docs": "typedoc --excludePrivate --includeVersion ./src/index.ts",
     "fmt": "prettier src/ tests/ types/ --check",
     "fmt:fix": "prettier src/ tests/ types/ --write",
     "watch": "tsc -p tsconfig.cjs.json --watch",
@@ -46,7 +46,7 @@
     "@tsconfig/recommended": "^1.0.1",
     "@types/bn.js": "^5.1.0",
     "rimraf": "^3.0.2",
+    "typedoc": "^0.22.6",
     "typescript": "^4.5.4"
-  },
-  "type": "module"
+  }
 }

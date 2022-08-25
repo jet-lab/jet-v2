@@ -13,7 +13,6 @@ import {
 } from "@solana/spl-token"
 import {
   Account,
-  ConfirmOptions,
   Keypair,
   LAMPORTS_PER_SOL,
   PublicKey,
@@ -25,13 +24,10 @@ import {
 import { TokenSwap, CurveType, MarginSwap } from "../../../libraries/ts/src"
 import { sleep } from "../../../libraries/ts/src/utils/sleep"
 
-import { getTokenAccountInfo, ORCA_SWAP_PROGRAM_ID } from "../util"
-
+import { DEFAULT_CONFIRM_OPTS, getTokenAccountInfo, ORCA_SWAP_PROGRAM_ID } from "../util"
 ;[ORCA_SWAP_PROGRAM_ID].forEach(function (swapProgramId) {
   describe("margin swap - program id: " + swapProgramId.toString(), () => {
-    const confirmOptions: ConfirmOptions = { preflightCommitment: "processed", commitment: "processed" }
-
-    const provider = AnchorProvider.local(undefined, confirmOptions)
+    const provider = AnchorProvider.local(undefined, DEFAULT_CONFIRM_OPTS)
     anchor.setProvider(provider)
 
     const payer: Keypair = (provider.wallet as NodeWallet).payer

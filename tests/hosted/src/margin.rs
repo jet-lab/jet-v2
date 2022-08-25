@@ -195,9 +195,19 @@ impl MarginClient {
     }
 }
 
+#[derive(Clone)]
 pub struct MarginUser {
     tx: MarginTxBuilder,
     rpc: Arc<dyn SolanaRpcClient>,
+}
+
+impl std::fmt::Debug for MarginUser {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("MarginUser")
+            // .field("tx", &self.tx)
+            // .field("rpc", &self.rpc)
+            .finish()
+    }
 }
 
 impl MarginUser {

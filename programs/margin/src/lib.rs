@@ -22,7 +22,7 @@ use anchor_lang::solana_program::clock::UnixTimestamp;
 declare_id!("JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ");
 
 mod adapter;
-mod events;
+pub mod events;
 mod instructions;
 mod state;
 pub(crate) mod syscall;
@@ -74,28 +74,167 @@ pub const LIQUIDATION_TIMEOUT: UnixTimestamp = 60;
 /// This may be exceeded by a liquidator.
 pub const MAX_USER_POSITIONS: usize = 24;
 
+/// This crate documents the instructions used in the `margin` program of the
+/// [jet-v2 repo](https://github.com/jet-lab/jet-v2/).
+/// Handler functions are described for each instruction well as struct parameters
+/// (and their types and descriptions are listed) and any handler function
+/// parameters aside from parameters that exist in every instruction handler function.
+/// Parameters of events emitted for the purposes of data logging are also included.
+
 #[program]
 pub mod jet_margin {
     use super::*;
 
     /// Create a new margin account for a user
+    ///
+    /// ## create\_account.rs
+    ///
+    /// This instruction does the following:
+    ///
+    /// 1.  Let `account` be a mutable reference to the margin account.
+    ///     
+    /// 2.  Initialize the margin account by setting the margin account version, owner,
+    ///     bump seed, user seed, and setting liquidator pubkey field to the default
+    ///     (if an account is being liquidated, the liquidator pubkey will be set here).
+    ///     
+    /// 3.  Emit the `AccountCreated` event for data logging (see table below):
+    ///     
+    /// 4.  Return `Ok(())`.
+    ///     
+    ///
+    /// **Parameters of create\_account.rs:**
+    ///
+    /// |     |     |
+    /// | --- | --- |
+    /// | **Name** | **Description** |
+    /// | `owner` | The owner of the new margin account. |
+    /// | `payer` | The pubkey paying rent for the new margin account opening. |
+    /// | `margin_account` | The margin account to initialize for the owner. |
+    /// | `system_program` | The system program. |
+    ///
+    /// **Events emitted by create\_account.rs:**
+    ///
+    /// |     |     |
+    /// | --- | --- |
+    /// | **Event Name** | **Description** |
+    /// | [`events::AccountCreated`] | The created account (includes the margin account pubkey, the owner of margin account’s the pubkey, and the seed). |
+
     pub fn create_account(ctx: Context<CreateAccount>, seed: u16) -> Result<()> {
         create_account_handler(ctx, seed)
     }
 
     /// Close a user's margin account
+    ///
+    /// ## close\_account.rs
+    ///
+    /// This instruction does the following:
+    ///
+    /// 1.  Let `account`be a reference to the margin account being closed.
+    ///     
+    /// 2.  Check if the loaded margin account has any open positions.
+    ///     
+    ///     a.  If open positions exist, then return `ErrorCode::AccountNotEmpty`.
+    ///         
+    /// 3.  Emit the `AccountClosed` event for data logging (see table below).
+    ///     
+    /// 4.  Load the margin account.
+    ///     
+    /// 5.  Return `Ok(())`.
+    ///     
+    ///
+    /// **Parameters of close\_account.rs:**
+    ///
+    /// |     |     |
+    /// | --- | --- |
+    /// | **Name** | **Description** |
+    /// | `owner` | The owner of the account being closed. |
+    /// | `receiver` | The account to get any returned rent. |
+    /// | `margin_account` | The account being closed. |
+    ///
+    /// **Events emitted by close\_account.rs:**
+    ///
+    /// |     |     |
+    /// | --- | --- |
+    /// | **Event Name** | **Description** |
+    /// | [`events::AccountClosed`] | The closed account (includes the margin account pubkey). |
+
     pub fn close_account(ctx: Context<CloseAccount>) -> Result<()> {
         close_account_handler(ctx)
     }
 
     /// Register a position for some token that will be custodied by margin.
     /// Currently this applies to anything other than a claim.
+    ///
+    /// ## register\_position.rs
+    ///
+    /// This instruction does the following:
+    ///
+    /// 1.  Register a new position that belongs to the individual margin account, allocate account space for it, and set the parameters for that asset type.
+    ///     
+    /// 2.  Emit the `PositionRegistered` event for data logging (see table below).
+    ///     
+    /// 3.  Return `Ok(())`.
+    ///     
+    ///
+    /// **Parameters of register\_position.rs:**
+    ///
+    /// |     |     |
+    /// | --- | --- |
+    /// | **Name** | **Description** |
+    /// | `authority` | The authority that can change the margin account. |
+    /// | `payer` | The address paying for rent. |
+    /// | `margin_account` | The margin account to register position type with. |
+    /// | `position_token_mint` | The mint for the position token being registered. |
+    /// | `metadata` | The metadata account that references the correct oracle for the token. |
+    /// | `token_account` | The token account to store hold the position assets in the custody of the margin account. |
+    /// | `token_program` | The token program of the token accounts to store for this margin account. |
+    /// | `rent` | The rent to open the account. |
+    /// | `system_program` | The system program. |
+    ///
+    /// **Events emitted by register\_position.rs:**
+    ///
+    /// |     |     |
+    /// | --- | --- |
+    /// | **Event Name** | **Description** |
+    /// | [`events::PositionRegistered`] | The position registered (includes the margin account pubkey, the authority pubkey of that margin account, and the position itself). |
+
     pub fn register_position(ctx: Context<RegisterPosition>) -> Result<()> {
         register_position_handler(ctx)
     }
 
     /// Update the balance of a position stored in the margin account to
     /// match the actual balance stored by the SPL token acount.
+    ///
+    /// ## update\_position\_balance.rs
+    ///
+    /// This instruction does the following:
+    ///
+    /// 1.  Let `margin_account` be a mutable reference to the margin account.
+    ///     
+    /// 2.  Let `token_account` be a reference to the token account.
+    ///     
+    /// 3.  Load a margin account position and update it with `token_account`, `account`, and `balance`.
+    ///     
+    /// 4.  Emit the `PositionBalanceUpdated` event for data logging (see table below).
+    ///     
+    /// 5.  Return `Ok(())`.
+    ///     
+    ///
+    /// **Parameters of update\_position\_balance.rs:**
+    ///
+    /// |     |     |
+    /// | --- | --- |
+    /// | **Name** | **Description** |
+    /// | `margin_account` | The margin account to update. |
+    /// | `token_account` | The token account to update the balance for. |
+    ///
+    /// **Events emitted by update\_position\_balance.rs:**
+    ///
+    /// |     |     |
+    /// | --- | --- |
+    /// | **Event Name** | **Description** |
+    /// | [`events::PositionBalanceUpdated`] | The updated position (includes the token account, margin account pubkey, and token balance). |
+    ///
     pub fn update_position_balance(ctx: Context<UpdatePositionBalance>) -> Result<()> {
         update_position_balance_handler(ctx)
     }
@@ -103,23 +242,166 @@ pub mod jet_margin {
     /// Update the metadata for a position stored in the margin account,
     /// in the case where the metadata has changed after the position was
     /// created.
+    ///
+    /// ## refresh\_position\_metadata.rs
+
+    /// This instruction does the following:
+    ///
+    /// 1.  Read account token metadata.
+    ///     
+    /// 2.  Load the margin account.
+    ///     
+    /// 3.  Update the position with refreshed metadata.
+    ///     
+    /// 4.  Emit the `PositionMetadataRefreshed` event for data logging (see table below).
+    ///     
+    /// 5.  Return `Ok(())`.
+    ///     
+    ///
+    /// **Parameters of refresh\_position\_metadata.rs:**
+    ///
+    /// |     |     |
+    /// | --- | --- |
+    /// | **Name** | **Description** |
+    /// | `margin_account` | The margin account with the position to be refreshed. |
+    /// | `metadata` | The metadata account for the token, which has been updated. |
+    ///
+    /// **Events emitted by refresh\_position\_metadata.rs:**
+    ///
+    /// |     |     |
+    /// | --- | --- |
+    /// | **Event Name** | **Description** |
+    /// | [`events::PositionMetadataRefreshed`] | The position of which metadata was refreshed (including the margin account pubkey and the `position` itself). |
+
     pub fn refresh_position_metadata(ctx: Context<RefreshPositionMetadata>) -> Result<()> {
         refresh_position_metadata_handler(ctx)
     }
 
     /// Close out a position, freeing up space in the account.
+    ///
+    /// ## close\_position.rs
+    ///
+    /// This instruction does the following:
+    ///
+    /// 1.  Let `account` be a mutable reference to the margin account.
+    ///
+    /// 2.  Verify the authority of `account`.
+    ///
+    /// 3.  Record unregistering (closing) the position in question of `account`, which involves passing the token mint account, token account, and margin account authority.
+    ///
+    /// 4.  If the token account authority of the account is the same as the authority.
+    ///
+    ///     a.  Return the token account.
+    ///
+    /// 5.  Emit the `PositionClosed` event for data logging (see table below):
+    ///
+    /// 6.  Return `Ok(())`.
+    ///
+    ///
+    /// **Parameters of close\_position.rs:**
+    ///
+    /// |     |     |
+    /// | --- | --- |
+    /// | **Name** | **Description** |
+    /// | `authority` | The authority that can change the margin account. |
+    /// | `receiver` | The receiver for the rent released. |
+    /// | `margin_account` | The margin account with the position to close. |
+    /// | `position_token_mint` | The mint for the position token being deregistered. |
+    /// | `token_account` | The token account for the position being closed. |
+    /// | `token_program` | The token program for the position being closed. |
+    ///
+    /// **Events emitted by close\_position.rs:**
+    ///
+    /// |     |     |
+    /// | --- | --- |
+    /// | **Event Name** | **Description** |
+    /// | [`events::PositionClosed`] | The closed position (includes the margin account authority’s pubkey and the relevant token pool’s note mint pubkey). |
+
     pub fn close_position(ctx: Context<ClosePosition>) -> Result<()> {
         close_position_handler(ctx)
     }
 
     /// Verify that the account is healthy, by validating the collateralization
     /// ration is above the minimum.
+    ///
+    /// ## verify\_healthy.rs
+    ///
+    /// This instruction does the following:
+    ///
+    /// 1.  Let `account` be the loaded margin account.
+    ///
+    /// 2.  Check if all positions for that margin account are healthy.
+    ///     
+    ///    a.  If there are unhealthy positions exist for this margin account, return `False`.
+    ///
+    /// 3.  Emit the `VerifiedHealthy` event for data logging (see table below).
+    ///
+    /// 4.  Return `Ok(())`.
+    ///
+    ///
+    /// **Parameters of verify\_healthy.rs:**
+    ///
+    /// |     |     |
+    /// | --- | --- |
+    /// | **Name** | **Description** |
+    /// | `margin_account` | The account to verify the health of. |
+    ///
+    /// **Events emitted by verify\_healthy.rs:**
+    ///
+    /// |     |     |
+    /// | --- | --- |
+    /// | **Event Name** | **Description** |
+    /// |[`events::VerifiedHealthy`] | The margin account pubkeys of verified healthy accounts. |
+
     pub fn verify_healthy(ctx: Context<VerifyHealthy>) -> Result<()> {
         verify_healthy_handler(ctx)
     }
 
     /// Perform an action by invoking other programs, allowing them to alter
     /// the balances of the token accounts belonging to this margin account.
+    ///
+    /// /// ## adapter\_invoke.rs
+    ///
+    /// This instruction does the following:
+    ///
+    /// 1.  If a read account has the `liquidation` parameter set to a pubkey:
+    ///     
+    ///     a.  This means that that margin account is already under liquidation by the liquidator at that pubkey.
+    ///         
+    ///     b.  Return `ErrorCode::Liquidating`.
+    ///         
+    /// 2.  Emit the `AdapterInvokeBegin` event for data logging (see table below).
+    ///     
+    /// 3.  Check if any positions that have changed via adapters.
+    ///     
+    ///     a.  For each changed position, emit each existing adapter position as an `event` (see table below).
+    ///         
+    /// 4.  Emit the `AdapterInvokeEnd` event for data logging (see table below).
+    ///     
+    /// 5.  Verify that margin accounts positions via adapter are healthy.
+    ///     
+    /// 6.  Return `Ok(())`.
+    ///     
+    ///
+    /// **Parameters of adapter\_invoke.rs:**
+    ///
+    /// |     |     |
+    /// | --- | --- |
+    /// | **Name** | **Description** |
+    /// | `owner` | The authority that owns the margin account. |
+    /// | `margin_account` | The margin account to proxy an action for. |
+    /// | `adapter_program` | The program to be invoked. |
+    /// | `adapter_metadata` | The metadata about the proxy program. |
+    ///
+    /// **Events emitted by adapter\_invoke.rs:**
+    ///
+    /// |     |     |
+    /// | --- | --- |
+    /// | **Event Name** | **Description** |
+    /// | [`events::AdapterInvokeBegin`] | Marks the start of the adapter invocation (includes the margin account pubkey and the adapter program pubkey). |
+    /// | [`events::PositionEvent`] _(Note that each single event represents a different adapter position)_ | Each adapter position is emitted as an event (includes the margin account, the adapter program, the accounts, and a value of `true` for the field `signed`. |
+    /// | [`events::AdapterInvokeEnd`] | Marks the ending of the adapter invocation (includes no data except for the event itself being emitted). |
+
     pub fn adapter_invoke<'info>(
         ctx: Context<'_, '_, '_, 'info, AdapterInvoke<'info>>,
         data: Vec<u8>,
@@ -130,6 +412,40 @@ pub mod jet_margin {
     /// Perform an action by invoking other programs, allowing them only to
     /// refresh the state of the margin account to be consistent with the actual
     /// underlying prices or positions, but not permitting new position changes.
+    ///
+    /// ## accounting\_invoke.rs
+    ///
+    /// This instruction does the following:
+    ///
+    /// 1.  Emit `AccountingInvokeBegin` events for data logging (see table below).
+    ///     
+    /// 2.  Check if any positions that have changed via adapters.
+    ///     
+    ///     a.  For each changed position, emit each existing adapter position as an `event` (see table below).
+    ///         
+    /// 3.  Emit `AccountingInvokeEnd` event for data logging (see table below).
+    ///     
+    /// 4.  Return `Ok(())`.
+    ///     
+    ///
+    /// **Parameters of accounting\_invoke.rs:**
+    ///
+    /// |     |     |
+    /// | --- | --- |
+    /// | **Name** | **Description** |
+    /// | `margin_account` | The margin account to proxy an action for. |
+    /// | `adapter_program` | The program to be invoked. |
+    /// | `adapter_metadata` | The metadata about the proxy program. |
+    ///
+    /// **Events emitted by accounting\_invoke.rs:**
+    ///
+    /// |     |     |
+    /// | --- | --- |
+    /// | **Name** | **Description** |
+    /// | [`events::AccountingInvokeBegin`] | Signify that the accounting invocation process has begun. |
+    /// | [`events::PositionEvent`] _(Note that each single event represents an different adapter position)_ | Each adapter position is emitted as an event (includes the margin account, the adapter program, the remaining accounts, and a value of `false` for the field `signed`. |
+    /// | [`events::AccountingInvokeEnd`] | The margin account to proxy an action for. |
+
     pub fn accounting_invoke<'info>(
         ctx: Context<'_, '_, '_, 'info, AccountingInvoke<'info>>,
         data: Vec<u8>,
@@ -138,17 +454,150 @@ pub mod jet_margin {
     }
 
     /// Begin liquidating an account
+    ///
+    /// ## liquidate\_begin.rs
+    ///
+    /// This instruction does the following:
+    ///
+    /// 1.  Read `liquidation` and `liquidator` from the account.
+    ///     
+    /// 2.  Let `account` be a mutable reference to the margin account.
+    ///     
+    /// 3.  Verify that the account is subject to liquidation, return `False` if not.
+    ///     
+    /// 4.  Verify that the account is not already being liquidated.
+    ///     
+    ///     a.  If the liquidator is already assigned to this margin account, do nothing.
+    ///         
+    ///     b.  Else if there is no liquidator assigned to the unhealthy account, the liquidator can claim this unhealthy account and begin the process of liquidation.
+    ///         
+    ///     c.  Otherwise return `ErrorCode::Liquidating` because it is already claimed by some other liquidator.
+    ///        
+    /// 5.  Record the valuation of the account.
+    ///     
+    /// 6.  Record the minimum valuation change of the account.
+    ///     
+    /// 7.  Emit the `LiquidationBegun` event for data logging (see table below).
+    ///     
+    /// 8.  Return `Ok(())`.
+    ///     
+    ///
+    /// **Parameters of liquidate\_begin.rs:**
+    ///
+    /// |     |     |
+    /// | --- | --- |
+    /// | **Name** | **Description** |
+    /// | `margin_account` | The account in need of liquidation. |
+    /// | `payer` | The address paying rent. |
+    /// | `liquidator` | The liquidator account performing the liquidation. |
+    /// | `liquidator_metadata` | The metadata describing the liquidator. |
+    /// | `liquidation` | The account to persist the state of liquidation. |
+    /// | `system_program` | The system program. |
+    ///
+    /// **Events emitted by liquidate\_begin.rs:**
+    ///
+    /// |     |     |
+    /// | --- | --- |
+    /// | **Event Name** | **Description** |
+    /// | [`events::LiquidationBegun`] | The event marking the beginning of liquidation (Includes the margin account pubkey, the liquidator pubkey, the liquidation pubkey, the liquidation data, and the valuation of the margin account to be liquidated). |
+
     pub fn liquidate_begin(ctx: Context<LiquidateBegin>) -> Result<()> {
         liquidate_begin_handler(ctx)
     }
 
     /// Stop liquidating an account
+    ///
+    /// ## liquidate\_end.rs
+    ///
+    /// This instruction does the following:
+    ///
+    /// 1.  Let `account` be a mutable reference to the margin account.
+    ///     
+    /// 2.  Let `start_time` be the time that the liquidation on this margin account began, if it exists
+    ///     
+    /// 3.  Let `timed_out` be the boolean representing the type of account:
+    ///     
+    ///     a.  If the liquidation is timed out, then this can be any account.
+    ///         
+    ///     b.  If the liquidation is not timed out, then this must be the liquidator, and it must be a signer.
+    ///         
+    /// 4.  Check if the entity trying to end the liquidation is not the liquidator.
+    ///     
+    ///     a.  If not, return `ErrorCode::UnauthorizedLiquidator`.
+    ///         
+    /// 5.  Record the end of the liquidation.
+    ///     
+    /// 6.  Emit the `LiquidationEnded` event for data logging (see table below).
+    ///     
+    /// 7.  Return `Ok(())`.
+    ///     
+    ///
+    /// **Parameters of liquidate\_end.rs:**
+    ///
+    /// |     |     |
+    /// | --- | --- |
+    /// | **Name** | **Description** |
+    /// | `authority` | The pubkey calling the instruction to end liquidation. |
+    /// | `margin_account` | The account in need of liquidation. |
+    /// | `liquidation` | The account to persist the state of liquidation. |
+    ///
+    /// **Events emitted by liquidate\_end.rs:**
+    ///
+    /// |     |     |
+    /// | --- | --- |
+    /// | **Event Name** | **Description** |
+    /// | [`events::LiquidationEnded`] | The event marking the end of liquidation (Includes the margin account pubkey, the authority of the margin account pubkey, and the timed\_out boolean that is true if the liquidation has timed out). |
+
     pub fn liquidate_end(ctx: Context<LiquidateEnd>) -> Result<()> {
         liquidate_end_handler(ctx)
     }
 
     /// Perform an action by invoking another program, for the purposes of
     /// liquidating a margin account.
+    ///
+    /// ## liquidator\_invoke.rs
+    ///
+    /// This instruction does the following:
+    ///
+    /// 1.  Load the margin account.
+    ///     
+    /// 2.  Let `start_value` be the valuation of the margin account before invoking the liquidator.
+    ///     
+    /// 3.  Emit the `LiquidatorInvokeBegin` event for data logging (see table below).
+    ///     
+    /// 4.  Loop through adapter and store positions, getting and storing as `margin_account`, `adapter_program`, `accounts` and `signed`.
+    ///     
+    /// 5.  Emit each adapter position as an `event` (see table below).
+    ///     
+    /// 6.  Let`liquidation` be a mutable copy of the liquidated account.
+    ///     
+    /// 7.  Let `end_value` be the valuation of the margin account after the liquidation attempt, after verifying that a liquidation did occur.
+    ///     
+    /// 8.  Emit the `LiquidatorInvokeEnd` event for data logging (see table below).
+    ///     
+    /// 9.  Return `Ok(())`.
+    ///         
+    ///
+    /// **Parameters of liquidator\_invoke.rs:**
+    ///
+    /// |     |     |
+    /// | --- | --- |
+    /// | **Name** | **Description** |
+    /// | `liquidator` | The liquidator processing the margin account. |
+    /// | `liquidation` | The account to persist the state of liquidation. |
+    /// | `margin_account` | The margin account to proxy an action for. |
+    /// | `adapter_program` | The program to be invoked. |
+    /// | `adapter_metadata` | The metadata about the proxy program. |
+    ///
+    /// **Events emitted by liquidator\_invoke.rs:**
+    ///
+    /// |     |     |
+    /// | --- | --- |
+    /// | **Event Name** | **Description** |
+    /// | [`events::LiquidatorInvokeBegin`] | Marks the beginning of this liquidation event (includes the margin account pubkey, the adapter program pubkey, and the liquidator pubkey that is liquidating that margin account or adapter position). |
+    /// | [`events::PositionEvent`] _(Note that each single event represents an different adapter position)_ | Each adapter position is emitted as an event (includes the margin account, the adapter program, the accounts, and a value of `true` for the `signed` field. |
+    /// | [`events::LiquidatorInvokeEnd`] | Marks the ending of this liquidator event (includes the liquidation data and the valuation of the account after liquidation has been performed). |
+
     pub fn liquidator_invoke<'info>(
         ctx: Context<'_, '_, '_, 'info, LiquidatorInvoke<'info>>,
         data: Vec<u8>,
@@ -249,11 +698,12 @@ pub enum ErrorCode {
     #[msg("the liquidator does not have permission to do this")]
     UnauthorizedLiquidator = 135_040,
 
-    /// 141041
+    /// 141041 - The liquidation attempted to extract too much value
     #[msg("attempted to extract too much value during liquidation")]
     LiquidationLostValue,
 }
 
+/// Writes the result of position changes from an adapter invocation.
 pub fn write_adapter_result(margin_account: &MarginAccount, result: &AdapterResult) -> Result<()> {
     let mut adapter_result_data = vec![];
     result.serialize(&mut adapter_result_data)?;

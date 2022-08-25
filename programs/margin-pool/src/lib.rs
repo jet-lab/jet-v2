@@ -108,17 +108,34 @@ mod jet_margin_pool {
 /// Interface for changing the token value of an account through pool instructions
 #[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone, Copy)]
 pub struct TokenChange {
+    /// The kind of change to be applied
     pub kind: ChangeKind,
+    /// The number of tokens applied in the change
     pub tokens: u64,
 }
 
 impl TokenChange {
+    /// Sets a position's balance to the supplied value, increasing or decreasing
+    /// the balance depending on the instruction type.
+    ///
+    /// Withdrawing with `set(0)` will withdraw all tokens in an account.
+    /// Borrowing with `set(100_000)` will borrow additional tokens until the
+    /// provided value is reached. If there are already 40_000 tokens borrowed,
+    /// an additional 60_000 will be borrowed.
     pub const fn set(value: u64) -> Self {
         Self {
             kind: ChangeKind::SetTo,
             tokens: value,
         }
     }
+    /// Shifts a position's balance by the supplied value, increasing or decreasing
+    /// the balance depending on the instruction type.
+    ///
+    /// Withdrawing with `shift(100_000)` tokens will decerase a balance by the amount.
+    /// Depositing with `shift(100_000)` tokens will increaes a balance by the amount.
+    ///
+    /// Refer to the various isntructions for the behaviour of when instructions can
+    /// fail.
     pub const fn shift(value: u64) -> Self {
         Self {
             kind: ChangeKind::ShiftBy,
@@ -126,6 +143,10 @@ impl TokenChange {
         }
     }
 
+    /// The amount of the token change, expressed as tokens.
+    ///
+    /// [Amount] can also be notes when interacting with pools, however it is
+    /// always set to tokens for `TokenChange`.
     pub fn amount(&self) -> Amount {
         Amount::tokens(self.tokens)
     }
@@ -196,10 +217,10 @@ pub enum ErrorCode {
     InvalidAmount,
 
     /// 141105 - The oracle is not reporting a valid price
-    InvalidPrice,
+    InvalidPoolPrice,
 
     /// 141106 - The oracle account is not valid
-    InvalidOracle,
+    InvalidPoolOracle,
 
     /// 141107 - Tried to set an invalid token value
     #[msg("An invalid `SetTo` value was given for a `TokenChange`")]

@@ -18,17 +18,24 @@
 //! The margin swap module allows creating simulated swap pools
 //! to aid in testing margin swaps.
 
-use std::sync::Arc;
-
 use anchor_lang::prelude::Pubkey;
 use anyhow::Error;
+use anyhow::Result;
 use async_trait::async_trait;
+use itertools::Itertools;
+use jet_margin_sdk::solana::transaction::{SendTransactionBuilder, TransactionBuilder};
 use jet_margin_sdk::spl_swap::SplSwapPool;
-use jet_simulation::{generate_keypair, solana_rpc_api::SolanaRpcClient};
+use jet_margin_sdk::util::asynchronous::MapAsync;
+use jet_simulation::generate_keypair;
+use jet_simulation::solana_rpc_api::SolanaRpcClient;
 use jet_static_program_registry::{
     orca_swap_v1, orca_swap_v2, related_programs, spl_token_swap_v2,
 };
-use solana_sdk::{program_pack::Pack, signer::Signer, system_instruction};
+use solana_sdk::signature::Signer;
+use solana_sdk::{program_pack::Pack, system_instruction};
+use std::collections::HashMap;
+use std::sync::Arc;
+use tokio::try_join;
 
 use crate::tokens::TokenManager;
 
@@ -41,6 +48,47 @@ related_programs! {
     ]}
 }
 
+pub type SwapRegistry = HashMap<Pubkey, HashMap<Pubkey, SplSwapPool>>;
+
+pub const ONE: u64 = 1_000_000_000;
+
+pub async fn create_swap_pools(
+    rpc: &Arc<dyn SolanaRpcClient>,
+    mints: &[Pubkey],
+) -> Result<SwapRegistry> {
+    let mut registry = SwapRegistry::new();
+    for (one, two, pool) in mints
+        .iter()
+        .combinations(2)
+        .map(|c| (*c[0], *c[1]))
+        .map_async(|(one, two)| create_and_insert(rpc, one, two))
+        .await?
+    {
+        registry.entry(one).or_default().insert(two, pool);
+        registry.entry(two).or_default().insert(one, pool);
+    }
+
+    Ok(registry)
+}
+
+async fn create_and_insert(
+    rpc: &Arc<dyn SolanaRpcClient>,
+    one: Pubkey,
+    two: Pubkey,
+) -> Result<(Pubkey, Pubkey, SplSwapPool)> {
+    let pool = SplSwapPool::configure(
+        rpc,
+        &orca_swap_v2::id(),
+        &one,
+        &two,
+        100_000_000 * ONE,
+        100_000_000 * ONE,
+    )
+    .await?;
+
+    Ok((one, two, pool))
+}
+
 #[async_trait]
 pub trait SwapPoolConfig: Sized {
     async fn configure(
@@ -51,6 +99,27 @@ pub trait SwapPoolConfig: Sized {
         a_amount: u64,
         b_amount: u64,
     ) -> Result<Self, Error>;
+
+    async fn balances(&self, rpc: &Arc<dyn SolanaRpcClient>)
+        -> Result<HashMap<Pubkey, u64>, Error>;
+
+    async fn swap<S: Signer + Sync + Send>(
+        &self,
+        rpc: &Arc<dyn SolanaRpcClient>,
+        source: &Pubkey,
+        dest: &Pubkey,
+        amount_in: u64,
+        signer: &S,
+    ) -> Result<(), Error>;
+
+    async fn swap_tx<S: Signer + Sync + Send>(
+        &self,
+        rpc: &Arc<dyn SolanaRpcClient>,
+        source: &Pubkey,
+        dest: &Pubkey,
+        amount_in: u64,
+        signer: &S,
+    ) -> Result<TransactionBuilder, Error>;
 }
 
 #[async_trait]
@@ -88,27 +157,22 @@ impl SwapPoolConfig for SplSwapPool {
         // Pool authority
         let (pool_authority, pool_nonce) =
             Pubkey::find_program_address(&[keypair.pubkey().as_ref()], program_id);
-        // Token A account
         // The accounts are funded to avoid having to fund them further
-        let token_a = token_manager
-            .create_account_funded(mint_a, &pool_authority, a_amount)
-            .await?;
-        // Token B account
-        let token_b = token_manager
-            .create_account_funded(mint_b, &pool_authority, b_amount)
-            .await?;
-        // Pool token mint
-        let pool_mint = token_manager
-            .create_token(6, Some(&pool_authority), None)
-            .await?;
-        // Pool token fee account
-        let token_fee = token_manager
-            .create_account(&pool_mint, &rpc.payer().pubkey())
-            .await?;
-        // Pool token recipient account
-        let token_recipient = token_manager
-            .create_account(&pool_mint, &rpc.payer().pubkey())
-            .await?;
+        let (token_a, token_b, pool_mint) = try_join!(
+            // Token A account
+            token_manager.create_account_funded(mint_a, &pool_authority, a_amount),
+            // Token B account
+            token_manager.create_account_funded(mint_b, &pool_authority, b_amount),
+            // Pool token mint
+            token_manager.create_token(6, Some(&pool_authority), None),
+        )?;
+        let payer = rpc.payer().pubkey();
+        let (token_fee, token_recipient) = try_join!(
+            // Pool token fee account
+            token_manager.create_account(&pool_mint, &payer),
+            // Pool token recipient account
+            token_manager.create_account(&pool_mint, &payer),
+        )?;
 
         let ix_init = use_client!(*program_id, {
             client::instruction::initialize(
@@ -159,4 +223,96 @@ impl SwapPoolConfig for SplSwapPool {
             program: *program_id,
         })
     }
+
+    async fn balances(
+        &self,
+        rpc: &Arc<dyn SolanaRpcClient>,
+    ) -> Result<HashMap<Pubkey, u64>, Error> {
+        let mut mint_to_balance: HashMap<Pubkey, u64> = HashMap::new();
+        mint_to_balance.insert(
+            self.mint_a,
+            amount(&rpc.get_account(&self.token_a).await?.unwrap().data),
+        );
+        mint_to_balance.insert(
+            self.mint_b,
+            amount(&rpc.get_account(&self.token_b).await?.unwrap().data),
+        );
+
+        Ok(mint_to_balance)
+    }
+
+    async fn swap_tx<S: Signer + Sync + Send>(
+        &self,
+        rpc: &Arc<dyn SolanaRpcClient>,
+        source: &Pubkey,
+        dest: &Pubkey,
+        amount_in: u64,
+        signer: &S,
+    ) -> Result<TransactionBuilder, Error> {
+        if amount_in == 0 {
+            return Ok(TransactionBuilder::default());
+        }
+        let source_data = rpc.get_account(source).await?.unwrap().data;
+        let dest_data = rpc.get_account(dest).await?.unwrap().data;
+        let (swap_source, swap_dest) =
+            if mint(&source_data) == self.mint_a && mint(&dest_data) == self.mint_b {
+                (self.token_a, self.token_b)
+            } else if mint(&source_data) == self.mint_b && mint(&dest_data) == self.mint_a {
+                (self.token_b, self.token_a)
+            } else {
+                panic!("wrong pool");
+            };
+        let swap_ix = use_client!(self.program, {
+            client::instruction::swap(
+                &self.program,
+                &spl_token::id(),
+                &self.pool,
+                &self.pool_authority,
+                &signer.pubkey(),
+                source,
+                &swap_source,
+                &swap_dest,
+                dest,
+                &self.pool_mint,
+                &self.fee_account,
+                None,
+                client::instruction::Swap {
+                    amount_in,
+                    minimum_amount_out: 0,
+                },
+            )?
+        })
+        .unwrap();
+
+        Ok(TransactionBuilder {
+            instructions: vec![swap_ix],
+            signers: vec![],
+        })
+    }
+
+    async fn swap<S: Signer + Sync + Send>(
+        &self,
+        rpc: &Arc<dyn SolanaRpcClient>,
+        source: &Pubkey,
+        dest: &Pubkey,
+        amount_in: u64,
+        signer: &S,
+    ) -> Result<(), Error> {
+        let tx = self.swap_tx(rpc, source, dest, amount_in, signer).await?;
+        rpc.send_and_confirm(tx).await?;
+
+        Ok(())
+    }
+}
+
+pub fn amount(data: &[u8]) -> u64 {
+    let mut amount_bytes = [0u8; 8];
+    amount_bytes.copy_from_slice(&data[64..72]);
+    u64::from_le_bytes(amount_bytes)
+}
+
+pub fn mint(data: &[u8]) -> Pubkey {
+    let mut mint_bytes = [0u8; 32];
+    mint_bytes.copy_from_slice(&data[..32]);
+    Pubkey::new_from_array(mint_bytes)
 }
