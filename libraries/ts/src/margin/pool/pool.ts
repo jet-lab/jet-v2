@@ -799,21 +799,22 @@ export class Pool {
 
     await marginAccount.refresh()
     const refreshInstructions: TransactionInstruction[] = []
+    const registerinstructions: TransactionInstruction[] = []
     const instructions: TransactionInstruction[] = []
-
-    await this.withGetOrRegisterDepositPosition({
-      instructions: refreshInstructions,
-      marginAccount
-    })
-
-    await this.withGetOrRegisterLoanPosition({
-      instructions: refreshInstructions,
-      marginAccount
-    })
 
     await this.withMarginRefreshAllPositionPrices({
       instructions: refreshInstructions,
       pools: Object.values(pools),
+      marginAccount
+    })
+
+    await this.withGetOrRegisterDepositPosition({
+      instructions: registerinstructions,
+      marginAccount
+    })
+
+    await this.withGetOrRegisterLoanPosition({
+      instructions: registerinstructions,
       marginAccount
     })
 
@@ -847,7 +848,7 @@ export class Pool {
       })
     }
 
-    return await marginAccount.sendAll([chunks(11, refreshInstructions), instructions])
+    return await marginAccount.sendAll([chunks(11, refreshInstructions), registerinstructions, instructions])
   }
 
   /// Instruction to borrow tokens using a margin account
@@ -1153,7 +1154,9 @@ export class Pool {
     assert(swapAmount)
 
     const refreshInstructions: TransactionInstruction[] = []
-    const swapInstructions: TransactionInstruction[] = []
+    const registerInstructions: TransactionInstruction[] = []
+    const transitInstructions: TransactionInstruction[] = []
+    const instructions: TransactionInstruction[] = []
 
     // Refresh prices
     await this.withMarginRefreshAllPositionPrices({
@@ -1164,19 +1167,19 @@ export class Pool {
 
     // Source deposit position fetch / creation
     const sourceAccount = await this.withGetOrRegisterDepositPosition({
-      instructions: swapInstructions,
+      instructions: registerInstructions,
       marginAccount
     })
 
     // Destination deposit position fetch / creation
     const destinationAccount = await outputToken.withGetOrRegisterDepositPosition({
-      instructions: swapInstructions,
+      instructions: registerInstructions,
       marginAccount
     })
 
     // Transit source account fetch / creation
     const transitSourceAccount = await AssociatedToken.withCreate(
-      swapInstructions,
+      transitInstructions,
       marginAccount.provider,
       marginAccount.address,
       this.addresses.tokenMint
@@ -1184,7 +1187,7 @@ export class Pool {
 
     // Transit destination account fetch / creation
     const transitDestinationAccount = await AssociatedToken.withCreate(
-      swapInstructions,
+      transitInstructions,
       marginAccount.provider,
       marginAccount.address,
       outputToken.tokenMint
@@ -1195,12 +1198,11 @@ export class Pool {
     if (swapAmount.gt(accountPoolPosition.depositBalance) && marginAccount.pools) {
       const difference = swapAmount.sub(accountPoolPosition.depositBalance)
       await this.withGetOrRegisterLoanPosition({
-        instructions: refreshInstructions,
+        instructions: registerInstructions,
         marginAccount
       })
-
       await this.withMarginBorrow({
-        instructions: swapInstructions,
+        instructions: instructions,
         marginAccount,
         change: PoolTokenChange.shiftBy(accountPoolPosition.loanBalance.add(difference))
       })
@@ -1208,7 +1210,7 @@ export class Pool {
 
     // Swap ix
     await this.withSwap({
-      instructions: swapInstructions,
+      instructions,
       marginAccount,
       outputToken,
       swapAmount,
@@ -1219,7 +1221,12 @@ export class Pool {
       transitDestinationAccount
     })
 
-    return await marginAccount.sendAll([chunks(11, refreshInstructions), swapInstructions])
+    return await marginAccount.sendAll([
+      chunks(11, refreshInstructions),
+      registerInstructions,
+      transitInstructions,
+      instructions
+    ])
   }
 
   async withSwap({
@@ -1315,21 +1322,22 @@ export class Pool {
         .instruction()
     })
 
+    // TODO: need to close transit accounts
     // Transit source account closure
-    const closeTransitSourceAccountIx = closeAccount({
-      source: translateAddress(transitSourceAccount),
-      destination: marginAccount.owner,
-      owner: marginAccount.address
-    })
-    instructions.push(closeTransitSourceAccountIx)
+    // const closeTransitSourceAccountIx = closeAccount({
+    //   source: translateAddress(transitSourceAccount),
+    //   destination: marginAccount.owner,
+    //   owner: marginAccount.address
+    // })
+    // instructions.push(closeTransitSourceAccountIx)
 
-    // Transit destination account closure
-    const closeTransitDestinationAccountIx = closeAccount({
-      source: translateAddress(transitDestinationAccount),
-      destination: marginAccount.owner,
-      owner: marginAccount.address
-    })
-    instructions.push(closeTransitDestinationAccountIx)
+    // // Transit destination account closure
+    // const closeTransitDestinationAccountIx = closeAccount({
+    //   source: translateAddress(transitDestinationAccount),
+    //   destination: marginAccount.owner,
+    //   owner: marginAccount.address
+    // })
+    // instructions.push(closeTransitDestinationAccountIx)
 
     // Update account positions
     await marginAccount.withUpdatePositionBalance({ instructions, position: sourceAccount })
@@ -1558,7 +1566,9 @@ export class Pool {
 
   /// Projects the deposit and borrow rates after a deposit into the pool.
   projectAfterDeposit(marginAccount: MarginAccount, amount: number): PoolProjection {
-    if (this.info === undefined) throw Error("must have info")
+    if (this.info === undefined) {
+      return this.getDefaultPoolProjection(marginAccount)
+    }
 
     const borrowedTokens = this.borrowedTokens.tokens
     const totalTokens = this.totalValue.tokens + amount
@@ -1586,16 +1596,10 @@ export class Pool {
 
   /// Projects the deposit and borrow rates after a withdrawal from the pool.
   projectAfterWithdraw(marginAccount: MarginAccount, amount: number): PoolProjection {
-    if (this.info === undefined) throw Error("must have info")
-
-    const symbol = this.symbol
-    if (symbol === undefined) throw Error("must have symbol")
-
-    const position = marginAccount.poolPositions[symbol]
-    if (position === undefined) throw Error("must have position")
-
-    // G1, referenced below
-    if (amount > position.depositBalance.tokens) throw Error("amount can't exceed deposit")
+    const position = marginAccount.poolPositions[this.symbol]
+    if (this.info === undefined || amount > position.depositBalance.tokens) {
+      return this.getDefaultPoolProjection(marginAccount)
+    }
 
     const borrowedTokens = this.borrowedTokens.tokens
     const totalTokens = this.totalValue.tokens - amount
@@ -1627,7 +1631,9 @@ export class Pool {
 
   /// Projects the deposit and borrow rates after a borrow from the pool.
   projectAfterBorrow(marginAccount: MarginAccount, amount: number): PoolProjection {
-    if (this.info === undefined) throw Error("must have info")
+    if (this.info === undefined) {
+      return this.getDefaultPoolProjection(marginAccount)
+    }
 
     const borrowedTokens = this.borrowedTokens.tokens + amount
     const totalTokens = this.totalValue.tokens + amount
@@ -1655,16 +1661,10 @@ export class Pool {
 
   /// Projects the deposit and borrow rates after repaying a loan from the pool.
   projectAfterRepay(marginAccount: MarginAccount, amount: number): PoolProjection {
-    if (this.info === undefined) throw Error("must have info")
-
-    const symbol = this.symbol
-    if (symbol === undefined) throw Error("must have symbol")
-
-    const position = marginAccount.poolPositions[symbol]
-    if (position === undefined) throw Error("must have position")
-
-    // G1, referenced below
-    if (amount > position.loanBalance.tokens) throw Error("amount can't exceed loan")
+    const position = marginAccount.poolPositions[this.symbol]
+    if (position === undefined || this.info === undefined || amount > position.loanBalance.tokens) {
+      return this.getDefaultPoolProjection(marginAccount)
+    }
 
     const borrowedTokens = this.borrowedTokens.tokens - amount
     const totalTokens = this.totalValue.tokens - amount
@@ -1696,19 +1696,15 @@ export class Pool {
 
   /// Projects the deposit and borrow rates after repaying a loan from the pool.
   projectAfterRepayFromDeposit(marginAccount: MarginAccount, amount: number): PoolProjection {
-    if (this.info === undefined) throw Error("must have info")
-
-    const symbol = this.symbol
-    if (symbol === undefined) throw Error("must have symbol")
-
-    const position = marginAccount.poolPositions[symbol]
-    if (position === undefined) throw Error("must have position")
-
-    // G1, referenced below
-    if (amount > position.loanBalance.tokens) throw Error("amount can't exceed loan")
-
-    // G2, referenced below
-    if (amount > position.depositBalance.tokens) throw Error("amount can't exceed deposit")
+    const position = marginAccount.poolPositions[this.symbol]
+    if (
+      position === undefined ||
+      this.info === undefined ||
+      amount > position.loanBalance.tokens ||
+      amount > position.depositBalance.tokens
+    ) {
+      return this.getDefaultPoolProjection(marginAccount)
+    }
 
     const borrowedTokens = this.borrowedTokens.tokens - amount
     const totalTokens = this.totalValue.tokens - 2 * amount
@@ -1743,7 +1739,9 @@ export class Pool {
 
   /// Projects the deposit and borrow rates after a borrow from the pool.
   projectAfterBorrowAndNotWithdraw(marginAccount: MarginAccount, amount: number): PoolProjection {
-    if (this.info === undefined) throw Error("must have info")
+    if (this.info === undefined) {
+      return this.getDefaultPoolProjection(marginAccount)
+    }
 
     const borrowedTokens = this.borrowedTokens.tokens + amount
     const totalTokens = this.totalValue.tokens + 2 * amount
@@ -1770,5 +1768,13 @@ export class Pool {
     const riskIndicator = marginAccount.computeRiskIndicator(requiredCollateral, weightedCollateral, liabilities)
 
     return { riskIndicator, depositRate, borrowRate }
+  }
+
+  private getDefaultPoolProjection(marginAccount: MarginAccount) {
+    return {
+      riskIndicator: marginAccount.riskIndicator,
+      depositRate: this.depositApy,
+      borrowRate: this.borrowApr
+    }
   }
 }
