@@ -9,13 +9,8 @@
     "precommit": "npm run build && npm run fmt:fix && npm run lint && git add .",
     "test": "anchor test --skip-lint -- --features testing",
     "test:devnet": "npx ts-mocha -p ./tsconfig.json -t 1000000 tests/declarative/*.sim.ts",
-    "test:nobuild": "anchor test --skip-lint --skip-build -- --features testing",
-    "mod": "npm run mod:init && npm run mod:install && npm run mod:link && npm run mod:compile && npm run mod:test",
-    "mod:init": "git submodule update --init --remote --recursive",
-    "mod:install": "cd libraries/ts && yarn && cd ../.. && git submodule foreach npm i",
-    "mod:link": "cd libraries/ts && npm link && cd ../.. && git submodule foreach npm link @jet-lab/margin",
-    "mod:compile": "cd libraries/ts && yarn && yarn compile && cd ../../deps/jet-app && npm run compile && cd ../jet-monitoring-service && npm run build",
-    "mod:test": "cd deps/jet-app && npm run test"
+    "test:nobuild": "anchor test --skip-lint --skip-build -- --features testing &&  && cd app && yarn test && cd ../app-beta && yarn test && cd ../app && yarn e2e:ci && cd ../app-beta && yarn e2e:ci",
+    "test:gui": "cd app && yarn e2e:gui && cd ../app-beta && yarn e2e:gui"
   },
   "dependencies": {
     "@project-serum/anchor": "^0.24.2",

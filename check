@@ -10,12 +10,11 @@
 
 set -euxo pipefail
 
-DOCKER_IMAGE=jetprotocol/builder:root-solana1.10.35-anchor0.25.0-1
-
+DOCKER_IMAGE=jetprotocol/builder:solana-1.10.35-anchor-0.25.0-3
 
 anchor-test() {
-    npm ci
-    anchor test -- --features testing
+	  yarn install --frozen-lockfile
+	  anchor test -- --features testing
 }
 
 hosted-tests-localnet() {
