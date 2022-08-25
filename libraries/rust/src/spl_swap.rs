@@ -91,11 +91,6 @@ impl SplSwapPool {
                 _ => continue,
             };
 
-            println!(
-                "Pool address: {swap_address}, token A {}, token B {}",
-                swap.token_a_mint, swap.token_b_mint
-            );
-
             let token_a_metadata = get_token_metadata(rpc, mint_a).await;
             let token_b_metadata = get_token_metadata(rpc, mint_b).await;
 
@@ -117,14 +112,12 @@ impl SplSwapPool {
             let token_a = match find_token(rpc, &swap.token_a).await {
                 Ok(val) => val,
                 Err(_) => {
-                    println!("Unable to get token account {} for swap pool {swap_address}, excluding pool", swap.token_a);
                     continue;
                 }
             };
             let token_b = match find_token(rpc, &swap.token_b).await {
                 Ok(val) => val,
                 Err(_) => {
-                    println!("Unable to get token account {} for swap pool {swap_address}, excluding pool", swap.token_b);
                     continue;
                 }
             };
@@ -143,13 +136,11 @@ impl SplSwapPool {
 
             // If the value is smaller than a low threshold, ignore
             if total_value < Number128::from_decimal(20_000, 0) {
-                println!("Pool {swap_address} has {total_value}, which is less than threshold of $20'000, ignoring");
                 continue;
             }
             if !swap.is_initialized {
-                println!("Pool {swap_address} is not initialized, ignoring");
+                continue;
             }
-            println!("Pool {swap_address} has {total_value}, added as a candidate for inclusion");
 
             // Check if there is a pool, insert if none, replace if smaller
             pool_sizes
@@ -170,7 +161,6 @@ impl SplSwapPool {
             .into_iter()
             .map(|(k, (p, _))| (k, p))
             .collect::<HashMap<_, _>>();
-        println!("There are {} spl token swap pools found", swap_pools.len());
 
         Ok(swap_pools)
     }
@@ -289,9 +279,8 @@ mod tests {
         )
         .await?;
 
-        println!("pools {:?}", pools.keys());
         assert!(pools.len() != 0);
-        
+
         Ok(())
     }
 }
