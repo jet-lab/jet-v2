@@ -161,6 +161,241 @@ export class MarginAccount {
   get isBeingLiquidated() {
     return this.info && !this.info.marginAccount.liquidation.equals(PublicKey.default)
   }
+
+  /**
+   * Sends a transaction to refresh the metadata for a position.
+   *
+   * ## Remarks
+   *
+   * When a position is registered some position mint metadata is copied to the position.
+   * This data can become out of sync if the mint metadata is changed. Refreshing the position
+   * metadata may at the benefit or detriment to the owner.
+   *
+   * @param {{ positionMint: Address }} { positionMint }
+   * @return {Promise<string>}
+   * @memberof MarginAccount
+   */
+  async refreshPositionMetadata({ positionMint }: { positionMint: Address }): Promise<string> {
+    const instructions: TransactionInstruction[] = []
+    await this.withRefreshPositionMetadata({ instructions, positionMint })
+    return await this.sendAndConfirm(instructions)
+  }
+
+  /**
+   * Creates an instruction to refresh the metadata for a position.
+   *
+   * ## Remarks
+   *
+   * When a position is registered some position mint metadata is copied to the position.
+   * This data can become out of sync if the mint metadata is changed. Refreshing the position
+   * metadata may at the benefit or detriment to the owner.
+   *
+   * @param {{
+   *     instructions: TransactionInstruction[]
+   *     positionMint: Address
+   *   }} {
+   *     instructions,
+   *     positionMint
+   *   }
+   * @return {Promise<void>}
+   * @memberof MarginAccount
+   */
+  async withRefreshPositionMetadata({
+    instructions,
+    positionMint
+  }: {
+    instructions: TransactionInstruction[]
+    positionMint: Address
+  }): Promise<void> {
+    const metadata = this.findMetadataAddress(positionMint)
+    const ix = await this.programs.margin.methods
+      .refreshPositionMetadata()
+      .accounts({
+        marginAccount: this.address,
+        metadata
+      })
+      .instruction()
+    instructions.push(ix)
+  }
+
+  /**
+   * Get the [[AccountPosition]] [[PublicKey]] and sends a transaction to
+   * create it if it doesn't exist.
+   *
+   * ## Remarks
+   *
+   * It is recommended to use other functions to register specfic position types. e.g. using [[Pool]].withRegisterDepositPosition
+   *
+   * In web apps it's recommended to call `withGetOrCreatePosition` as part of a larger
+   * transaction to prompt for a wallet signature less often.
+   *
+   * ## Example
+   *
+   * ```ts
+   * // Load margin pools
+   * const poolManager = new PoolManager(programs, provider)
+   * const pools = await poolManager.loadAll()
+   *
+   * const depositNote = pools["SOL"].addresses.depositNoteMint
+   * await marginAccount.getOrRegisterPosition(depositNote)
+   * ```
+   *
+   * @param {Address} tokenMint
+   * @return {Promise<PublicKey>}
+   * @memberof MarginAccount
+   */
+  async getOrRegisterPosition(tokenMint: Address): Promise<PublicKey> {
+    assert(this.info)
+    const tokenMintAddress = translateAddress(tokenMint)
+    for (let i = 0; i < this.positions.length; i++) {
+      const position = this.positions[i]
+      if (position.token.equals(tokenMintAddress)) {
+        return position.address
+      }
+    }
+    await this.registerPosition(tokenMintAddress)
+    await this.refresh()
+    for (let i = 0; i < this.positions.length; i++) {
+      const position = this.positions[i]
+      if (position.token.equals(tokenMintAddress)) {
+        return position.address
+      }
+    }
+    throw new Error("Unable to register position.")
+  }
+
+  /**
+   * Get the [[AccountPosition]] [[PublicKey]] and appends an instructon to
+   * create it if it doesn't exist.
+   *
+   * ## Remarks
+   *
+   * It is recommended to use other functions to register specfic position types. e.g. using [[Pool]].withRegisterDepositPosition
+   *
+   * ## Example
+   *
+   * ```ts
+   * // Load margin pools
+   * const poolManager = new PoolManager(programs, provider)
+   * const pools = await poolManager.loadAll()
+   *
+   * // Register position
+   * const positionTokenMint = pools["SOL"].addresses.depositNoteMint
+   * const instructions: TransactionInstruction[] = []
+   * await marginAccount.withGetOrRegisterPosition({ instructions, positionTokenMint })
+   * await marginAccount.sendAndConfirm(instructions)
+   * ```
+   *
+   * @param args
+   * @param {TransactionInstruction[]} args.instructions The instructions to append to
+   * @param {Address} args.positionTokenMint The position mint to register a position for
+   * @return {PublicKey}
+   * @memberof MarginAccount
+   */
+  async withGetOrRegisterPosition({
+    instructions,
+    positionTokenMint
+  }: {
+    instructions: TransactionInstruction[]
+    positionTokenMint: Address
+  }): Promise<PublicKey> {
+    const position = this.getPositionNullable(positionTokenMint)
+    if (position) {
+      return position.address
+    }
+    return await this.withRegisterPosition({ instructions, positionTokenMint })
+  }
+
+  /**
+   * Sends a transaction to register an [[AccountPosition]] for the mint. When registering a [[Pool]] position,
+   * the mint would not be Bitcoin or SOL, but rather the `depositNoteMint` or `loanNoteMint` found in `pool.addresses`.
+   * A margin account has a limited capacity of positions.
+   *
+   * ## Remarks
+   *
+   * It is recommended to use other functions to register specfic position types. e.g. using [[Pool]].withRegisterDepositPosition
+   *
+   * In web apps it's is recommended to use `withRegisterPosition` as part of a larget transaction
+   * to prompt for a wallet signature less often.
+   *
+   * ## Example
+   *
+   * ```ts
+   * // Load the pools
+   * const poolManager = new PoolManager(programs, provider)
+   * const pools = await poolManager.loadAll()
+   *
+   * // Register the SOL deposit position
+   * const depositNoteMint = pools["SOL"].addresses.depositNoteMint
+   * await marginAccount.registerPosition(depositNoteMint)
+   * ```
+   *
+   * @param {Address} tokenMint
+   * @return {Promise<TransactionSignature>}
+   * @memberof MarginAccount
+   */
+  async registerPosition(tokenMint: Address): Promise<TransactionSignature> {
+    const positionTokenMint = translateAddress(tokenMint)
+    const instructions: TransactionInstruction[] = []
+    await this.withRegisterPosition({ instructions, positionTokenMint })
+    return await this.provider.sendAndConfirm(new Transaction().add(...instructions))
+  }
+
+  /**
+   * Get instruction to register new position
+   *
+   * ## Remarks
+   *
+   * It is recommended to use other functions to register specfic position types. e.g. using [[Pool]].withRegisterDepositPosition
+   *
+   * ## Example
+   *
+   * ```ts
+   * // Load the pools
+   * const poolManager = new PoolManager(programs, provider)
+   * const pools = await poolManager.loadAll()
+   *
+   * // Register the SOL deposit position
+   * const positionTokenMint = pools["SOL"].addresses.depositNoteMint
+   * const instructions: TransactionInstruction[] = []
+   * const position = await marginAccount.withRegisterPosition({ instructions, positionTokenMint })
+   * await marginAccount.sendAndConfirm(instructions)
+   * ```
+   *
+   * @param args
+   * @param {TransactionInstruction[]} args.instructions Instructions array to append to.
+   * @param {Address} args.positionTokenMint The mint for the relevant token for the position
+   * @return {Promise<PublicKey>} Returns the instruction, and the address of the token account to be created for the position.
+   * @memberof MarginAccount
+   */
+  async withRegisterPosition({
+    instructions,
+    positionTokenMint
+  }: {
+    instructions: TransactionInstruction[]
+    positionTokenMint: Address
+  }): Promise<PublicKey> {
+    const tokenAccount = this.findPositionTokenAddress(positionTokenMint)
+    const metadata = this.findMetadataAddress(positionTokenMint)
+
+    const ix = await this.programs.margin.methods
+      .registerPosition()
+      .accounts({
+        authority: this.owner,
+        payer: this.provider.wallet.publicKey,
+        marginAccount: this.address,
+        positionTokenMint: positionTokenMint,
+        metadata,
+        tokenAccount,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        rent: SYSVAR_RENT_PUBKEY,
+        systemProgram: SystemProgram.programId
+      })
+      .instruction()
+    instructions.push(ix)
+    return tokenAccount
+  }
+
   /** A qualitative measure of the the health of a margin account.
    * A higher value means more risk in a qualitative sense.
    * Properties:
@@ -1053,46 +1288,6 @@ export class MarginAccount {
       })
       .instruction()
     instructions.push(instruction)
-  }
-
-  async registerPosition(tokenMint: Address): Promise<TransactionSignature> {
-    const tokenMintAddress = translateAddress(tokenMint)
-    const ix: TransactionInstruction[] = []
-    await this.withRegisterPosition(ix, tokenMintAddress)
-    return await this.provider.sendAndConfirm(new Transaction().add(...ix))
-  }
-
-  /// Get instruction to register new position
-  ///
-  /// # Params
-  ///
-  /// `token_mint` - The mint for the relevant token for the position
-  /// `token_oracle` - The oracle account with price information on the token
-  ///
-  /// # Returns
-  ///
-  /// Returns the instruction, and the address of the token account to be
-  /// created for the position.
-  async withRegisterPosition(instructions: TransactionInstruction[], positionTokenMint: Address): Promise<PublicKey> {
-    const tokenAccount = findDerivedAccount(this.programs.config.marginProgramId, this.address, positionTokenMint)
-    const metadata = findDerivedAccount(this.programs.config.metadataProgramId, positionTokenMint)
-
-    const ix = await this.programs.margin.methods
-      .registerPosition()
-      .accounts({
-        authority: this.owner,
-        payer: this.provider.wallet.publicKey,
-        marginAccount: this.address,
-        positionTokenMint: positionTokenMint,
-        metadata,
-        tokenAccount,
-        tokenProgram: TOKEN_PROGRAM_ID,
-        rent: SYSVAR_RENT_PUBKEY,
-        systemProgram: SystemProgram.programId
-      })
-      .instruction()
-    instructions.push(ix)
-    return tokenAccount
   }
 
   /**
