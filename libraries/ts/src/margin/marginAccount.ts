@@ -1423,6 +1423,18 @@ export class MarginAccount {
     instructions.push(ix)
   }
 
+  /** @deprecated This has been renamed to `liquidateEnd` and will be removed in a future release. */
+  async stopLiquidation(): Promise<string> {
+    return await this.liquidateEnd()
+  }
+
+  /**
+   * Get instruction to end a liquidation
+   * @deprecated This has been renamed to `withLiquidateEnd` and will be removed in a future release. */
+  async withStopLiquidation(instructions: TransactionInstruction[]): Promise<void> {
+    return await this.withLiquidateEnd(instructions)
+  }
+
   /**
    * Send a transaction to end a liquidation.
    *
@@ -1479,17 +1491,6 @@ export class MarginAccount {
     instructions.push(ix)
   }
 
-  /** @deprecated This has been renamed to `liquidateEnd` and will be removed in a future release. */
-  async stopLiquidation(): Promise<string> {
-    return await this.liquidateEnd()
-  }
-
-  /**
-   * Get instruction to end a liquidation
-   * @deprecated This has been renamed to `withLiquidateEnd` and will be removed in a future release. */
-  async withStopLiquidation(instructions: TransactionInstruction[]): Promise<void> {
-    return await this.withLiquidateEnd(instructions)
-  }
   /**
    * Get the time remaining on a liquidation until timeout in seconds.
    *
