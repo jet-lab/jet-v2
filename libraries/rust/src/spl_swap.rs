@@ -23,15 +23,11 @@ use std::{
 };
 
 use anchor_lang::AccountDeserialize;
-use anyhow::{bail, Result};
-use jet_metadata::TokenMetadata;
+use anyhow::Result;
 use jet_proto_math::Number128;
 use jet_simulation::solana_rpc_api::SolanaRpcClient;
-use pyth_sdk_solana::PriceFeed;
 use solana_sdk::{program_pack::Pack, pubkey::Pubkey};
 use spl_token_swap::state::SwapV1;
-
-use crate::tokens::TokenPrice;
 
 /// Addresses of an [`spl_token_swap`] compatible swap pool, required when using
 /// [`jet_margin_swap`].
@@ -91,23 +87,6 @@ impl SplSwapPool {
                 _ => continue,
             };
 
-            let token_a_metadata = get_token_metadata(rpc, mint_a).await;
-            let token_b_metadata = get_token_metadata(rpc, mint_b).await;
-
-            let oracle_pubkey_a = token_a_metadata.unwrap().pyth_price;
-            let oracle_pubkey_b = token_b_metadata.unwrap().pyth_price;
-            let oracle_a = find_price_feed(rpc, &oracle_pubkey_a).await.unwrap();
-            let oracle_b = find_price_feed(rpc, &oracle_pubkey_b).await.unwrap();
-
-            let (price_a, price_b) = {
-                let token_price = price_feed_to_token_price(&oracle_a);
-                let price_a = Number128::from_decimal(token_price.price, token_price.exponent);
-
-                let token_price = price_feed_to_token_price(&oracle_b);
-                let price_b = Number128::from_decimal(token_price.price, token_price.exponent);
-                (price_a, price_b)
-            };
-
             // Get the token balances of both sides
             let token_a = match find_token(rpc, &swap.token_a).await {
                 Ok(val) => val,
@@ -130,14 +109,8 @@ impl SplSwapPool {
             let token_b_balance =
                 Number128::from_decimal(token_b.amount, -(mint_b_info?.decimals as i32));
 
-            let token_a_value = token_a_balance * price_a;
-            let token_b_value = token_b_balance * price_b;
-            let total_value = token_a_value + token_b_value;
+            let total_token = token_a_balance * token_b_balance;
 
-            // If the value is smaller than a low threshold, ignore
-            if total_value < Number128::from_decimal(20_000, 0) {
-                continue;
-            }
             if !swap.is_initialized {
                 continue;
             }
@@ -146,15 +119,15 @@ impl SplSwapPool {
             pool_sizes
                 .entry((swap.token_a_mint, swap.token_b_mint))
                 .and_modify(|(e_pool, e_value)| {
-                    if &total_value > e_value {
+                    if &total_token > e_value {
                         // Replace with current pool
                         *e_pool = Self::from_swap_v1(swap_address, swap_program, &swap);
-                        *e_value = total_value;
+                        *e_value = total_token;
                     }
                 })
                 .or_insert((
                     Self::from_swap_v1(swap_address, swap_program, &swap),
-                    total_value,
+                    total_token,
                 ));
         }
         let swap_pools = pool_sizes
@@ -186,14 +159,6 @@ impl SplSwapPool {
     }
 }
 
-// helper function to load pyth price feed
-async fn find_price_feed(rpc: &Arc<dyn SolanaRpcClient>, address: &Pubkey) -> Result<PriceFeed> {
-    let mut account = rpc.get_account(address).await?.unwrap();
-    let price_feed = pyth_sdk_solana::load_price_feed_from_account(address, &mut account).unwrap();
-
-    Ok(price_feed)
-}
-
 // helper function to find token account
 async fn find_token(
     rpc: &Arc<dyn SolanaRpcClient>,
@@ -216,30 +181,6 @@ async fn find_mint(
     let account = anchor_spl::token::Mint::try_deserialize_unchecked(data)?;
 
     Ok(account)
-}
-
-// helper function to find the token price based on pyth price feed
-fn price_feed_to_token_price(price: &PriceFeed) -> TokenPrice {
-    let current_price = price.get_current_price().unwrap();
-    TokenPrice {
-        exponent: price.expo,
-        price: current_price.price,
-        confidence: current_price.conf,
-        twap: price.get_ema_price().unwrap().price as u64,
-    }
-}
-
-async fn get_token_metadata(
-    rpc: &Arc<dyn SolanaRpcClient>,
-    token_mint: &Pubkey,
-) -> Result<TokenMetadata> {
-    let (md_address, _) = Pubkey::find_program_address(&[token_mint.as_ref()], &jet_metadata::ID);
-    let account_data = rpc.get_account(&md_address).await?;
-
-    match account_data {
-        None => bail!("no metadata {} found for token {}", md_address, token_mint),
-        Some(account) => Ok(TokenMetadata::try_deserialize(&mut &account.data[..])?),
-    }
 }
 
 #[cfg(test)]
@@ -279,7 +220,7 @@ mod tests {
         )
         .await?;
 
-        assert!(pools.len() != 0);
+        assert!(!pools.is_empty());
 
         Ok(())
     }
