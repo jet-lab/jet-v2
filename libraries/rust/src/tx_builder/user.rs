@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
 use jet_margin_pool::program::JetMarginPool;
@@ -534,9 +534,13 @@ impl MarginTxBuilder {
     /// Append instructions to refresh pool positions to instructions
     async fn create_pool_instructions(&self, instructions: &mut Vec<Instruction>) -> Result<()> {
         let state = self.get_account_state().await?;
+        let mut seen_pools = HashSet::new();
 
         for position in state.positions() {
             let p_metadata = self.get_position_metadata(&position.token).await?;
+            if seen_pools.contains(&p_metadata.underlying_token_mint) {
+                continue;
+            }
             let t_metadata = self
                 .get_token_metadata(&p_metadata.underlying_token_mint)
                 .await?;
@@ -546,6 +550,7 @@ impl MarginTxBuilder {
             );
 
             instructions.push(ix);
+            seen_pools.insert(p_metadata.underlying_token_mint);
         }
 
         Ok(())
