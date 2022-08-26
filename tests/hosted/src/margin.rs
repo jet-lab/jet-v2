@@ -20,11 +20,17 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use anchor_lang::{AccountDeserialize, AccountSerialize, InstructionData, ToAccountMetas};
+use anchor_lang::{
+    AccountDeserialize, AccountSerialize, AnchorDeserialize, InstructionData, ToAccountMetas,
+};
 use anyhow::{bail, Error};
 
-use jet_margin::{MarginAccount, PositionKind};
-use jet_margin_sdk::ix_builder::{ControlIxBuilder, MarginPoolConfiguration, MarginPoolIxBuilder};
+use jet_margin::{AccountPosition, MarginAccount, PositionKind};
+use jet_margin_sdk::ix_builder::{
+    get_control_authority_address, get_metadata_address, ControlIxBuilder, MarginPoolConfiguration,
+    MarginPoolIxBuilder,
+};
+use jet_margin_sdk::solana::transaction::TransactionBuilder;
 use jet_margin_sdk::swap::SwapPool;
 use jet_margin_sdk::tokens::TokenOracle;
 use solana_sdk::instruction::Instruction;
@@ -58,7 +64,7 @@ impl MarginClient {
         Self { rpc }
     }
 
-    pub async fn user(&self, keypair: &Keypair, seed: u16) -> Result<MarginUser, Error> {
+    pub fn user(&self, keypair: &Keypair, seed: u16) -> Result<MarginUser, Error> {
         let tx = MarginTxBuilder::new(
             self.rpc.clone(),
             Some(Keypair::from_bytes(&keypair.to_bytes())?),
@@ -72,7 +78,7 @@ impl MarginClient {
         })
     }
 
-    pub async fn liquidator(
+    pub fn liquidator(
         &self,
         keypair: &Keypair,
         owner: &Pubkey,
@@ -118,10 +124,36 @@ impl MarginClient {
         MarginPool::try_deserialize(&mut &account.unwrap().data[..]).map_err(Error::from)
     }
 
+    pub async fn create_authority_if_missing(&self) -> Result<(), Error> {
+        if self
+            .rpc
+            .get_account(&get_control_authority_address())
+            .await?
+            .is_none()
+        {
+            self.create_authority().await?;
+        }
+
+        Ok(())
+    }
+
     pub async fn create_authority(&self) -> Result<(), Error> {
         let ix = ControlIxBuilder::new(self.rpc.payer().pubkey()).create_authority();
 
         send_and_confirm(&self.rpc, &[ix], &[]).await?;
+        Ok(())
+    }
+
+    pub async fn register_adapter_if_unregistered(&self, adapter: &Pubkey) -> Result<(), Error> {
+        if self
+            .rpc
+            .get_account(&get_metadata_address(adapter))
+            .await?
+            .is_none()
+        {
+            self.register_adapter(adapter).await?;
+        }
+
         Ok(())
     }
 
@@ -359,9 +391,26 @@ impl MarginUser {
         .await
     }
 
+    pub async fn positions(&self) -> Result<Vec<AccountPosition>, Error> {
+        Ok(self
+            .tx
+            .get_account_state()
+            .await?
+            .positions()
+            .copied()
+            .collect())
+    }
+
     pub async fn liquidate_begin(&self, refresh_positions: bool) -> Result<(), Error> {
         self.send_confirm_tx(self.tx.liquidate_begin(refresh_positions).await?)
             .await
+    }
+
+    pub async fn liquidate_begin_tx(
+        &self,
+        refresh_positions: bool,
+    ) -> Result<TransactionBuilder, Error> {
+        self.tx.liquidate_begin_builder(refresh_positions).await
     }
 
     pub async fn liquidate_end(&self, original_liquidator: Option<Pubkey>) -> Result<(), Error> {

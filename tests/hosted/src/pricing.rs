@@ -42,6 +42,16 @@ impl Clone for TokenPricer {
 }
 
 impl TokenPricer {
+    pub fn new_without_swaps(rpc: &Arc<dyn SolanaRpcClient>) -> Self {
+        Self {
+            rpc: rpc.clone(),
+            tokens: TokenManager::new(rpc.clone()),
+            payer: clone(rpc.payer()),
+            vaults: HashMap::new(),
+            swap_registry: SwapRegistry::new(),
+        }
+    }
+
     pub fn new(
         rpc: &Arc<dyn SolanaRpcClient>,
         vaults: HashMap<Pubkey, Pubkey>,

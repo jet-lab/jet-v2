@@ -35,18 +35,21 @@ const DEFAULT_POOL_CONFIG: MarginPoolConfig = MarginPoolConfig {
 
 /// Test token swaps for the official SPL token swap
 #[tokio::test(flavor = "multi_thread")]
+#[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn spl_swap_v2() -> Result<(), anyhow::Error> {
     swap_test_impl(spl_token_swap_v2::id()).await
 }
 
 /// Test token swaps for orca v1
 #[tokio::test(flavor = "multi_thread")]
+#[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn orca_swap_v1() -> Result<(), anyhow::Error> {
     swap_test_impl(orca_swap_v1::id()).await
 }
 
 /// Test token swaps for orca v2
 #[tokio::test(flavor = "multi_thread")]
+#[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn orca_swap_v2() -> Result<(), anyhow::Error> {
     swap_test_impl(orca_swap_v2::id()).await
 }
@@ -99,8 +102,8 @@ async fn swap_test_impl(swap_program_id: Pubkey) -> Result<(), anyhow::Error> {
 
     // Create the user context helpers, which give a simple interface for executing
     // common actions on a margin account
-    let user_a = ctx.margin.user(&wallet_a, 0).await?;
-    let user_b = ctx.margin.user(&wallet_b, 0).await?;
+    let user_a = ctx.margin.user(&wallet_a, 0)?;
+    let user_b = ctx.margin.user(&wallet_b, 0)?;
 
     // Initialize the margin accounts for each user
     user_a.create_account().await?;

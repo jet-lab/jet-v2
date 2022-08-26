@@ -99,9 +99,13 @@ impl MarginTestContext {
             payer,
         };
 
-        ctx.margin.create_authority().await?;
-        ctx.margin.register_adapter(&jet_margin_pool::ID).await?;
-        ctx.margin.register_adapter(&jet_margin_swap::ID).await?;
+        ctx.margin.create_authority_if_missing().await?;
+        ctx.margin
+            .register_adapter_if_unregistered(&jet_margin_pool::ID)
+            .await?;
+        ctx.margin
+            .register_adapter_if_unregistered(&jet_margin_swap::ID)
+            .await?;
 
         Ok(ctx)
     }

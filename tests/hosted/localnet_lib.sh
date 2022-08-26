@@ -22,39 +22,31 @@ SPLSWAP_SO=$SPL_V20_FROM_CRATES
 ORCAv1_SO=$ORCA_V1_MAINNET
 ORCAv2_SO=$ORCA_V2_MAINNET
 
-COMPILE_FEATURES='testing'
+PROGRAM_FEATURES='testing'
+TEST_FEATURES="${BATCH:-batch_all},localnet"
 
 anchor-build() {
-    anchor build -- --features $COMPILE_FEATURES
-}
-
-cargo-test() {
-    RUST_BACKTRACE=1 cargo test \
-        --features localnet \
-        --package hosted-tests \
-        --test $@ \
-        -- --nocapture
-}
-
-cargo-run() {
-    RUST_BACKTRACE=1 cargo run \
-        --features localnet \
-        --package hosted-tests \
-        --bin $@
+    anchor build -- --features $PROGRAM_FEATURES
 }
 
 cargo-build() {
     RUST_BACKTRACE=1 cargo build \
-        --features localnet \
+        --features $TEST_FEATURES \
         --package hosted-tests
 }
 
-test-file() {
-    with-validator cargo-test $@
+test() {
+    RUST_BACKTRACE=1 with-validator cargo test \
+        --features $TEST_FEATURES \
+        --package hosted-tests \
+        --test $@
 }
 
 run() {
-    with-validator cargo-run $@
+    RUST_BACKTRACE=1 with-validator cargo run \
+        --features $TEST_FEATURES \
+        --package hosted-tests \
+        --bin $@
 }
 
 with-validator() {

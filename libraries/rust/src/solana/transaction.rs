@@ -1,7 +1,7 @@
 use anyhow::Result;
 use async_trait::async_trait;
 use jet_simulation::solana_rpc_api::SolanaRpcClient;
-use solana_sdk::hash::Hash;
+use solana_sdk::hash::{Hash, HASH_BYTES};
 use solana_sdk::{
     instruction::Instruction,
     signature::{Keypair, Signature},
@@ -76,11 +76,8 @@ const MAX_TX_SIZE: usize = 1232;
 /// - instructions that were already grouped in a TransactionBuilder must end up in the same TransactionBuilder
 /// - transaction may not exceed size limit
 /// - instructions order is not modified
-pub fn condense(
-    txs: &[TransactionBuilder],
-    hash: Hash,
-    payer: &Keypair,
-) -> Result<Vec<TransactionBuilder>> {
+pub fn condense(txs: &[TransactionBuilder], payer: &Keypair) -> Result<Vec<TransactionBuilder>> {
+    let hash = Hash::new(&[0; HASH_BYTES]);
     let mut shrink_me = txs.to_vec();
     let mut condensed = vec![];
     loop {
@@ -169,9 +166,7 @@ impl SendTransactionBuilder for Arc<dyn SolanaRpcClient> {
         &self,
         transactions: Vec<TransactionBuilder>,
     ) -> Result<Vec<Signature>> {
-        let hash = self.get_latest_blockhash().await?;
-        let payer = self.payer();
-        condense(&transactions, hash, payer)?
+        condense(&transactions, self.payer())?
             .into_iter()
             .map_async(|tx| self.send_and_confirm(tx))
             .await

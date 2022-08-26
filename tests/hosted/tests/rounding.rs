@@ -68,6 +68,7 @@ async fn setup_environment(ctx: &MarginTestContext) -> Result<TestEnv, Error> {
 }
 
 #[tokio::test(flavor = "multi_thread")]
+#[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn rounding_poc() -> Result<()> {
     let ctx = test_context().await;
     let env = setup_environment(ctx).await?;
@@ -76,9 +77,9 @@ async fn rounding_poc() -> Result<()> {
     let wallet_b = create_wallet(&ctx.rpc, 10 * LAMPORTS_PER_SOL).await?;
     let wallet_c = create_wallet(&ctx.rpc, 10 * LAMPORTS_PER_SOL).await?;
 
-    let user_a = ctx.margin.user(&wallet_a, 0).await?;
-    let user_b = ctx.margin.user(&wallet_b, 0).await?;
-    let user_c = ctx.margin.user(&wallet_c, 0).await?;
+    let user_a = ctx.margin.user(&wallet_a, 0)?;
+    let user_b = ctx.margin.user(&wallet_b, 0)?;
+    let user_c = ctx.margin.user(&wallet_c, 0)?;
 
     user_a.create_account().await?;
     user_b.create_account().await?;
