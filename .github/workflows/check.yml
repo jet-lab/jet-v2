@@ -65,7 +65,7 @@ jobs:
   hosted-tests-localnet-batch1:
     runs-on: ubuntu-latest
     container:
-      image: jetprotocol/builder:root-solana1.10.35-anchor0.25.0-2
+      image: jetprotocol/builder:solana-1.10.35-anchor-0.25.0-3
     env:
       HOME: /root
       BATCH: batch1
@@ -92,7 +92,7 @@ jobs:
   hosted-tests-localnet-batch2:
     runs-on: ubuntu-latest
     container:
-      image: jetprotocol/builder:root-solana1.10.35-anchor0.25.0-2
+      image: jetprotocol/builder:solana-1.10.35-anchor-0.25.0-3
     env:
       HOME: /root
       BATCH: batch2
@@ -118,7 +118,7 @@ jobs:
   cargo-lint:
     runs-on: ubuntu-latest
     container:
-      image: jetprotocol/builder:root-solana1.10.35-anchor0.25.0-2
+      image: jetprotocol/builder:solana-1.10.35-anchor-0.25.0-3
     env:
       HOME: /root
     steps:
@@ -141,7 +141,7 @@ jobs:
   cargo-test:
     runs-on: ubuntu-latest
     container:
-      image: jetprotocol/builder:root-solana1.10.35-anchor0.25.0-2
+      image: jetprotocol/builder:solana-1.10.35-anchor-0.25.0-3
     env:
       HOME: /root
       CODECOV: true
