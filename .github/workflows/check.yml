@@ -24,7 +24,6 @@ jobs:
         with:
           key: cargo-macos
           path: |
-            ~/.cargo/bin/
             ~/.cargo/registry/index/
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
@@ -78,7 +77,6 @@ jobs:
         with:
           key: hosted-tests-localnet
           path: |
-            ~/.cargo/bin/
             ~/.cargo/registry/index/
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
@@ -153,7 +151,6 @@ jobs:
         with:
           key: cargo-test
           path: |
-            ~/.cargo/bin/
             ~/.cargo/registry/index/
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
