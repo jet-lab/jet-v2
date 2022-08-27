@@ -25,6 +25,7 @@ use jet_margin_swap::accounts as ix_accounts;
 use jet_margin_swap::instruction as ix_data;
 
 use crate::ix_builder::MarginPoolIxBuilder;
+use crate::jet_margin_pool::TokenChange;
 
 /// Builder for creating instructions to interact with the margin swap program.
 pub struct MarginSwapIxBuilder {
@@ -85,6 +86,8 @@ impl MarginSwapIxBuilder {
         source_pool: &MarginPoolIxBuilder,
         destination_pool: &MarginPoolIxBuilder,
 
+        // added TokenChange here
+        change: TokenChange,
         amount_in: u64,
         minimum_amount_out: u64,
     ) -> Instruction {
@@ -118,10 +121,13 @@ impl MarginSwapIxBuilder {
         }
         .to_account_metas(None);
 
+        let TokenChange { kind, tokens } = change;
         Instruction {
             program_id: jet_margin_swap::id(),
             data: ix_data::MarginSwap {
-                amount_in,
+                change_kind: kind,
+                // 'tokens' (from TokenChange) or 'amount_in' var?
+                amount_in: amount_in,
                 minimum_amount_out,
             }
             .data(),

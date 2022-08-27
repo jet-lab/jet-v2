@@ -115,6 +115,7 @@ impl<'a> TestUser<'a> {
         swaps: &SwapRegistry,
         src: &Pubkey,
         dst: &Pubkey,
+        change: TokenChange,
         amount: u64,
     ) -> Result<()> {
         let pool = swaps.get(src).unwrap().get(dst).unwrap();
@@ -136,6 +137,7 @@ impl<'a> TestUser<'a> {
                 &transit_src,
                 &transit_dst,
                 pool,
+                change,
                 Amount::tokens(amount),
                 Amount::tokens(0),
             )
@@ -217,10 +219,11 @@ impl<'a> TestLiquidator<'a> {
         collateral: &Pubkey,
         sell: u64,
         loan: &Pubkey,
+        change: TokenChange,
         repay: u64,
     ) -> Result<()> {
         let liq = self.begin(user, true).await?;
-        liq.swap(swaps, collateral, loan, sell).await?;
+        liq.swap(swaps, collateral, loan, change, sell).await?;
         liq.margin_repay(loan, repay).await?;
         liq.liquidate_end(Some(self.wallet.pubkey())).await
     }

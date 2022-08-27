@@ -74,7 +74,11 @@ pub struct MarginSplSwap<'info> {
 
 impl<'info> MarginSplSwap<'info> {
     #[inline(never)]
-    fn withdraw(&self, amount_in: u64) -> Result<()> {
+    fn withdraw(
+        &self, 
+        change_kind: ChangeKind,
+        amount_in: u64
+    ) -> Result<()> {
         jet_margin_pool::cpi::withdraw(
             CpiContext::new(
                 self.margin_pool_program.to_account_info(),
@@ -88,7 +92,7 @@ impl<'info> MarginSplSwap<'info> {
                     token_program: self.token_program.to_account_info(),
                 },
             ),
-            ChangeKind::ShiftBy,
+            change_kind,
             amount_in,
         )?;
 
@@ -194,10 +198,11 @@ pub struct SwapInfo<'info> {
 
 pub fn margin_spl_swap_handler(
     ctx: Context<MarginSplSwap>,
+    change_kind: ChangeKind,
     amount_in: u64,
     minimum_amount_out: u64,
 ) -> Result<()> {
-    ctx.accounts.withdraw(amount_in)?;
+    ctx.accounts.withdraw(change_kind, amount_in)?;
     ctx.accounts.swap(amount_in, minimum_amount_out)?;
     let destination_amount = token::accessor::amount(&ctx.accounts.transit_destination_account)?;
     ctx.accounts.deposit(destination_amount)?;

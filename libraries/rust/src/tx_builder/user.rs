@@ -388,6 +388,8 @@ impl MarginTxBuilder {
         source_token_account: &Pubkey,
         destination_token_account: &Pubkey,
         swap_program: &Pubkey,
+        // for levswap 
+        change: TokenChange,
         amount_in: Amount,
         minimum_amount_out: Amount,
     ) -> Result<Transaction> {
@@ -426,6 +428,7 @@ impl MarginTxBuilder {
             *fee_account,
         );
 
+        // added TokenChange here for LevSwap fix
         let inner_swap_ix = swap_pool.swap(
             *self.address(),
             *transit_source_account,
@@ -437,6 +440,7 @@ impl MarginTxBuilder {
             *swap_program,
             &source_pool,
             &destination_pool,
+            change,
             amount_in.value(),
             minimum_amount_out.value(),
         );

@@ -23,6 +23,7 @@ use jet_margin::MarginAccount;
 use jet_margin_pool::{
     cpi::accounts::{Deposit, Withdraw},
     program::JetMarginPool,
+    ChangeKind,
 };
 
 declare_id!("JPMAa5dnWLFRvUsumawFcGhnwikqZziLLfqn9SLNXPN");
@@ -36,10 +37,11 @@ mod jet_margin_swap {
 
     pub fn margin_swap(
         ctx: Context<MarginSplSwap>,
+        change_kind: ChangeKind,
         amount_in: u64,
         minimum_amount_out: u64,
     ) -> Result<()> {
-        margin_spl_swap_handler(ctx, amount_in, minimum_amount_out)
+        margin_spl_swap_handler(ctx, change_kind, amount_in, minimum_amount_out)
     }
 }
 

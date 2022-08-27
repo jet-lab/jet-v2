@@ -361,6 +361,7 @@ impl MarginUser {
         transit_source_account: &Pubkey,
         transit_destination_account: &Pubkey,
         swap_pool: &SwapPool,
+        change: TokenChange,
         amount_in: Amount,
         minimum_amount_out: Amount,
     ) -> Result<(), Error> {
@@ -383,6 +384,7 @@ impl MarginUser {
                     source_token,
                     destination_token,
                     program_id,
+                    change,
                     amount_in,
                     minimum_amount_out,
                 )

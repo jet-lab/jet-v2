@@ -229,6 +229,7 @@ async fn swap_test_impl(swap_program_id: Pubkey) -> Result<(), anyhow::Error> {
             &usdc_transit_source,
             &tsol_transit_target,
             &swap_pool,
+            TokenChange::shift(1_000 * ONE_USDC),
             Amount::tokens(100 * ONE_USDC),
             // we want a minimum of 0.9 SOL for 100 USDC
             Amount::tokens(ONE_TSOL / 10 * 9),
@@ -256,6 +257,7 @@ async fn swap_test_impl(swap_program_id: Pubkey) -> Result<(), anyhow::Error> {
             &tsol_transit_source,
             &usdc_transit_target,
             &swap_pool,
+            TokenChange::shift(1_000 * ONE_USDC),
             Amount::tokens(2 * ONE_TSOL),
             Amount::tokens(180 * ONE_USDC),
         )

@@ -346,7 +346,7 @@ async fn liquidate_with_swap() -> Result<()> {
     user1.borrow_to_wallet(&usdc, 800).await?;
     pricer.set_price(&sol, 0.9).await?;
     liquidator
-        .liquidate(&user1.user, &swaps, &sol, 800, &usdc, 700)
+        .liquidate(&user1.user, &swaps, &sol, 800, &usdc, TokenChange::shift(8000 * ONE_TSOL), 700)
         .await?;
     user1.borrow_to_wallet(&usdc, 5).await?;
 
