@@ -28,7 +28,9 @@ use jet_margin_pool::{
 
 declare_id!("JPMAa5dnWLFRvUsumawFcGhnwikqZziLLfqn9SLNXPN");
 
+pub mod events;
 mod instructions;
+
 use instructions::*;
 
 #[program]

@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use anchor_spl::token::Token;
+use anchor_spl::token::{Token, TokenAccount};
 use jet_margin_pool::ChangeKind;
 use jet_static_program_registry::{
     orca_swap_v1, orca_swap_v2, related_programs, spl_token_swap_v2,
@@ -51,12 +51,12 @@ pub struct MarginSplSwap<'info> {
     /// Temporary account for moving tokens
     /// CHECK:
     #[account(mut)]
-    pub transit_source_account: AccountInfo<'info>,
+    pub transit_source_account: Account<'info, TokenAccount>,
 
     /// Temporary account for moving tokens
     /// CHECK:
     #[account(mut)]
-    pub transit_destination_account: AccountInfo<'info>,
+    pub transit_destination_account: Account<'info, TokenAccount>,
 
     /// The accounts relevant to the swap pool used for the exchange
     pub swap_info: SwapInfo<'info>,
@@ -236,6 +236,16 @@ pub fn margin_spl_swap_handler(
         .checked_sub(destination_opening_balance)
         .unwrap();
     ctx.accounts.deposit(swap_amount_out)?;
+
+    emit!(crate::events::SplSwap {
+        margin_account: ctx.accounts.margin_account.key(),
+        swap_pool: ctx.accounts.swap_info.swap_pool.key(),
+        source_mint: ctx.accounts.transit_source_account.mint,
+        destination_mint: ctx.accounts.transit_destination_account.mint,
+        amount_in: swap_amount_in,
+        min_amount_out: minimum_amount_out,
+        amount_out: swap_amount_out,
+    });
 
     Ok(())
 }
