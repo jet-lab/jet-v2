@@ -7,7 +7,7 @@ use jet_margin_sdk::util::asynchronous::MapAsync;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::{Keypair, Signer};
 
-use jet_margin_pool::{Amount, TokenChange};
+use jet_margin_pool::TokenChange;
 use jet_static_program_registry::orca_swap_v2;
 
 use crate::context::MarginTestContext;
@@ -116,7 +116,6 @@ impl<'a> TestUser<'a> {
         src: &Pubkey,
         dst: &Pubkey,
         change: TokenChange,
-        amount: u64,
     ) -> Result<()> {
         let pool = swaps.get(src).unwrap().get(dst).unwrap();
         let transit_src = self
@@ -138,8 +137,7 @@ impl<'a> TestUser<'a> {
                 &transit_dst,
                 pool,
                 change,
-                Amount::tokens(amount),
-                Amount::tokens(0),
+                1, // at least 1 token back
             )
             .await
     }
@@ -217,7 +215,6 @@ impl<'a> TestLiquidator<'a> {
         user: &MarginUser,
         swaps: &SwapRegistry,
         collateral: &Pubkey,
-        sell: u64,
         loan: &Pubkey,
         change: TokenChange,
         repay: u64,

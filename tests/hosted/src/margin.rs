@@ -362,8 +362,7 @@ impl MarginUser {
         transit_destination_account: &Pubkey,
         swap_pool: &SwapPool,
         change: TokenChange,
-        amount_in: Amount,
-        minimum_amount_out: Amount,
+        minimum_amount_out: u64,
     ) -> Result<(), Error> {
         // Determine the order of token_a and token_b based on direction of swap
         let (source_token, destination_token) = if source_mint == &swap_pool.mint_a {
@@ -385,7 +384,6 @@ impl MarginUser {
                     destination_token,
                     program_id,
                     change,
-                    amount_in,
                     minimum_amount_out,
                 )
                 .await?,

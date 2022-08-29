@@ -85,10 +85,7 @@ impl MarginSwapIxBuilder {
         swap_program: Pubkey,
         source_pool: &MarginPoolIxBuilder,
         destination_pool: &MarginPoolIxBuilder,
-
-        // added TokenChange here
         change: TokenChange,
-        amount_in: u64,
         minimum_amount_out: u64,
     ) -> Instruction {
         let accounts = ix_accounts::MarginSplSwap {
@@ -126,8 +123,7 @@ impl MarginSwapIxBuilder {
             program_id: jet_margin_swap::id(),
             data: ix_data::MarginSwap {
                 change_kind: kind,
-                // 'tokens' (from TokenChange) or 'amount_in' var?
-                amount_in: amount_in,
+                amount_in: tokens,
                 minimum_amount_out,
             }
             .data(),

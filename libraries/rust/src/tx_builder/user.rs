@@ -31,7 +31,7 @@ use solana_sdk::transaction::Transaction;
 use anchor_lang::{AccountDeserialize, Id};
 
 use jet_margin::{MarginAccount, PositionKind};
-use jet_margin_pool::{Amount, TokenChange};
+use jet_margin_pool::TokenChange;
 use jet_simulation::solana_rpc_api::SolanaRpcClient;
 
 use crate::{
@@ -388,10 +388,9 @@ impl MarginTxBuilder {
         source_token_account: &Pubkey,
         destination_token_account: &Pubkey,
         swap_program: &Pubkey,
-        // for levswap 
+        // for levswap
         change: TokenChange,
-        amount_in: Amount,
-        minimum_amount_out: Amount,
+        minimum_amount_out: u64,
     ) -> Result<Transaction> {
         let mut instructions = vec![];
         let source_pool = MarginPoolIxBuilder::new(*source_token_mint);
@@ -441,8 +440,7 @@ impl MarginTxBuilder {
             &source_pool,
             &destination_pool,
             change,
-            amount_in.value(),
-            minimum_amount_out.value(),
+            minimum_amount_out,
         );
 
         instructions.push(self.adapter_invoke_ix(inner_swap_ix));

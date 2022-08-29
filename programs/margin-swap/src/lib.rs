@@ -59,3 +59,9 @@ pub struct MarginPoolInfo<'info> {
     #[account(mut)]
     pub deposit_note_mint: UncheckedAccount<'info>,
 }
+
+#[error_code]
+pub enum ErrorCode {
+    #[msg("Zero tokens have been withdrawn from a pool for the swap")]
+    NoSwapTokensWithdrawn,
+}

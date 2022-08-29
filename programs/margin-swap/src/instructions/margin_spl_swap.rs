@@ -74,11 +74,7 @@ pub struct MarginSplSwap<'info> {
 
 impl<'info> MarginSplSwap<'info> {
     #[inline(never)]
-    fn withdraw(
-        &self, 
-        change_kind: ChangeKind,
-        amount_in: u64
-    ) -> Result<()> {
+    fn withdraw(&self, change_kind: ChangeKind, amount_in: u64) -> Result<()> {
         jet_margin_pool::cpi::withdraw(
             CpiContext::new(
                 self.margin_pool_program.to_account_info(),
@@ -133,10 +129,10 @@ impl<'info> MarginSplSwap<'info> {
                 self.swap_info.swap_pool.key,
                 self.swap_info.authority.key,
                 &self.margin_account.key(),
-                self.transit_source_account.key,
+                &self.transit_source_account.key(),
                 self.swap_info.vault_into.key,
                 self.swap_info.vault_from.key,
-                self.transit_destination_account.key,
+                &self.transit_destination_account.key(),
                 self.swap_info.token_mint.key,
                 self.swap_info.fee_account.key,
                 None,
@@ -196,16 +192,50 @@ pub struct SwapInfo<'info> {
     pub swap_program: UncheckedAccount<'info>,
 }
 
+/// Execute a swap by withdrawing tokens from a deposit pool, swapping them for
+/// other tokens, then depositing those other tokens to another deposit pool.
+///
+/// The instruction uses 'transit' accounts which are normally ATAs owned by the
+/// margin account. To ensure that only the tokens withdrawn are swapped and
+/// deposited, the instruction checks the balances of the transit accounts before
+/// and after an action.
+/// If either transit account has tokens before the instructions, it should still
+/// have the same tokens after the swap.
 pub fn margin_spl_swap_handler(
     ctx: Context<MarginSplSwap>,
-    change_kind: ChangeKind,
-    amount_in: u64,
+    withdrawal_change_kind: ChangeKind,
+    withdrawal_amount: u64,
     minimum_amount_out: u64,
 ) -> Result<()> {
-    ctx.accounts.withdraw(change_kind, amount_in)?;
-    ctx.accounts.swap(amount_in, minimum_amount_out)?;
-    let destination_amount = token::accessor::amount(&ctx.accounts.transit_destination_account)?;
-    ctx.accounts.deposit(destination_amount)?;
+    // Get the balance before the withdrawal. The balance should almost always
+    // be zero, however it could already have a value.
+    let source_opening_balance =
+        token::accessor::amount(&ctx.accounts.transit_source_account.to_account_info())?;
+    ctx.accounts
+        .withdraw(withdrawal_change_kind, withdrawal_amount)?;
+    let source_closing_balance =
+        token::accessor::amount(&ctx.accounts.transit_source_account.to_account_info())?;
+
+    // The closing balance should be > opening balance after the withdrawal
+    let swap_amount_in = source_closing_balance
+        .checked_sub(source_opening_balance)
+        .unwrap();
+    if swap_amount_in == 0 {
+        return err!(crate::ErrorCode::NoSwapTokensWithdrawn);
+    }
+
+    let destination_opening_balance =
+        token::accessor::amount(&ctx.accounts.transit_destination_account.to_account_info())?;
+    ctx.accounts.swap(swap_amount_in, minimum_amount_out)?;
+    let destination_closing_balance =
+        token::accessor::amount(&ctx.accounts.transit_destination_account.to_account_info())?;
+
+    // If the swap would have resulted in 0 tokens, the swap program would error out,
+    // thus balance below will be positive.
+    let swap_amount_out = destination_closing_balance
+        .checked_sub(destination_opening_balance)
+        .unwrap();
+    ctx.accounts.deposit(swap_amount_out)?;
 
     Ok(())
 }
