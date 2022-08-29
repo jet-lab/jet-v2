@@ -9,26 +9,31 @@ export type JetMarginSwap = {
           name: "marginAccount"
           isMut: false
           isSigner: true
+          docs: ["The margin account being executed on"]
         },
         {
           name: "sourceAccount"
           isMut: true
           isSigner: false
+          docs: ["The account with the source deposit to be exchanged from"]
         },
         {
           name: "destinationAccount"
           isMut: true
           isSigner: false
+          docs: ["The destination account to send the deposit that is exchanged into"]
         },
         {
           name: "transitSourceAccount"
           isMut: true
           isSigner: false
+          docs: ["Temporary account for moving tokens"]
         },
         {
           name: "transitDestinationAccount"
           isMut: true
           isSigner: false
+          docs: ["Temporary account for moving tokens"]
         },
         {
           name: "swapInfo"
@@ -67,6 +72,7 @@ export type JetMarginSwap = {
               name: "swapProgram"
               isMut: false
               isSigner: false
+              docs: ["The address of the swap program"]
             }
           ]
         },
@@ -123,6 +129,12 @@ export type JetMarginSwap = {
       ]
       args: [
         {
+          name: "changeKind"
+          type: {
+            defined: "ChangeKind"
+          }
+        },
+        {
           name: "amountIn"
           type: "u64"
         },
@@ -131,6 +143,29 @@ export type JetMarginSwap = {
           type: "u64"
         }
       ]
+    }
+  ]
+  types: [
+    {
+      name: "ChangeKind"
+      type: {
+        kind: "enum"
+        variants: [
+          {
+            name: "SetTo"
+          },
+          {
+            name: "ShiftBy"
+          }
+        ]
+      }
+    }
+  ]
+  errors: [
+    {
+      code: 6000
+      name: "NoSwapTokensWithdrawn"
+      msg: "Zero tokens have been withdrawn from a pool for the swap"
     }
   ]
 }
@@ -145,27 +180,32 @@ export const IDL: JetMarginSwap = {
         {
           name: "marginAccount",
           isMut: false,
-          isSigner: true
+          isSigner: true,
+          docs: ["The margin account being executed on"]
         },
         {
           name: "sourceAccount",
           isMut: true,
-          isSigner: false
+          isSigner: false,
+          docs: ["The account with the source deposit to be exchanged from"]
         },
         {
           name: "destinationAccount",
           isMut: true,
-          isSigner: false
+          isSigner: false,
+          docs: ["The destination account to send the deposit that is exchanged into"]
         },
         {
           name: "transitSourceAccount",
           isMut: true,
-          isSigner: false
+          isSigner: false,
+          docs: ["Temporary account for moving tokens"]
         },
         {
           name: "transitDestinationAccount",
           isMut: true,
-          isSigner: false
+          isSigner: false,
+          docs: ["Temporary account for moving tokens"]
         },
         {
           name: "swapInfo",
@@ -203,7 +243,8 @@ export const IDL: JetMarginSwap = {
             {
               name: "swapProgram",
               isMut: false,
-              isSigner: false
+              isSigner: false,
+              docs: ["The address of the swap program"]
             }
           ]
         },
@@ -260,6 +301,12 @@ export const IDL: JetMarginSwap = {
       ],
       args: [
         {
+          name: "changeKind",
+          type: {
+            defined: "ChangeKind"
+          }
+        },
+        {
           name: "amountIn",
           type: "u64"
         },
@@ -268,6 +315,29 @@ export const IDL: JetMarginSwap = {
           type: "u64"
         }
       ]
+    }
+  ],
+  types: [
+    {
+      name: "ChangeKind",
+      type: {
+        kind: "enum",
+        variants: [
+          {
+            name: "SetTo"
+          },
+          {
+            name: "ShiftBy"
+          }
+        ]
+      }
+    }
+  ],
+  errors: [
+    {
+      code: 6000,
+      name: "NoSwapTokensWithdrawn",
+      msg: "Zero tokens have been withdrawn from a pool for the swap"
     }
   ]
 }
