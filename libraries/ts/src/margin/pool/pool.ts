@@ -1142,13 +1142,15 @@ export class Pool {
     pools,
     outputToken,
     swapAmount,
-    minAmountOut
+    minAmountOut,
+    repayWithOutput
   }: {
     marginAccount: MarginAccount
     pools: Pool[]
     outputToken: Pool
     swapAmount: TokenAmount
     minAmountOut: TokenAmount
+    repayWithOutput: boolean
   }) {
     assert(marginAccount)
     assert(swapAmount)
@@ -1157,6 +1159,7 @@ export class Pool {
     const registerInstructions: TransactionInstruction[] = []
     const transitInstructions: TransactionInstruction[] = []
     const instructions: TransactionInstruction[] = []
+    const repayInstructions: TransactionInstruction[] = []
 
     // Refresh prices
     await this.withMarginRefreshAllPositionPrices({
@@ -1221,11 +1224,25 @@ export class Pool {
       transitDestinationAccount
     })
 
+    // If they have a debt of the output token, automatically repay as much as possible
+    const outputDebtPosition = marginAccount.poolPositions[outputToken.symbol].loanBalance
+    if (!outputDebtPosition.isZero() && repayWithOutput) {
+      const change = minAmountOut.gt(outputDebtPosition)
+        ? PoolTokenChange.setTo(0)
+        : PoolTokenChange.shiftBy(minAmountOut)
+      await outputToken.withMarginRepay({
+        instructions: repayInstructions,
+        marginAccount,
+        change
+      })
+    }
+
     return await marginAccount.sendAll([
       chunks(11, refreshInstructions),
       registerInstructions,
       transitInstructions,
-      instructions
+      instructions,
+      repayInstructions
     ])
   }
 
