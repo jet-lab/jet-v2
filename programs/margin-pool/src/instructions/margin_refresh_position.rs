@@ -44,8 +44,8 @@ pub fn margin_refresh_position_handler(ctx: Context<MarginRefreshPosition>) -> R
         &ctx.accounts.token_price_oracle,
     ) {
         Ok(pf) => pf,
-        Err(_) => {
-            msg!("the oracle account is not valid");
+        Err(e) => {
+            msg!("the oracle account is not valid: {:?}", e);
             return err!(ErrorCode::InvalidPoolOracle);
         }
     };

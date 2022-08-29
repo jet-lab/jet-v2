@@ -80,6 +80,7 @@ async fn setup_environment(ctx: &MarginTestContext) -> Result<TestEnv, Error> {
 /// a series of deposit/borrow/repay/withdraw actions onto the margin pools
 /// via their margin accounts.
 #[tokio::test(flavor = "multi_thread")]
+#[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn sanity_test() -> Result<(), anyhow::Error> {
     // Get the mocked runtime
     let ctx = test_context().await;
@@ -92,8 +93,8 @@ async fn sanity_test() -> Result<(), anyhow::Error> {
 
     // Create the user context helpers, which give a simple interface for executing
     // common actions on a margin account
-    let user_a = ctx.margin.user(&wallet_a, 0).await?;
-    let user_b = ctx.margin.user(&wallet_b, 0).await?;
+    let user_a = ctx.margin.user(&wallet_a, 0)?;
+    let user_b = ctx.margin.user(&wallet_b, 0)?;
 
     // Initialize the margin accounts for each user
     user_a.create_account().await?;
