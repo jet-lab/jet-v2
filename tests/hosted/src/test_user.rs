@@ -220,7 +220,7 @@ impl<'a> TestLiquidator<'a> {
         repay: u64,
     ) -> Result<()> {
         let liq = self.begin(user, true).await?;
-        liq.swap(swaps, collateral, loan, change, sell).await?;
+        liq.swap(swaps, collateral, loan, change).await?;
         liq.margin_repay(loan, repay).await?;
         liq.liquidate_end(Some(self.wallet.pubkey())).await
     }
