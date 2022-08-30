@@ -1278,6 +1278,30 @@ export class Pool {
     // so we should ideally check matching pools on the UI before getting here.
     const swapPoolAccounts = orcaSwapPools[`${this.symbol}/${outputToken.symbol}`]
 
+    // Determine the direction of the swap based on token mints.
+    // The instruction relies on the swap `vaultFrom` and `vaultInto` to determine
+    // the direction of the swap.
+    let swapSourceVault: string
+    let swapDestinationVault: string
+    if (
+      swapPoolAccounts.tokenMintA === this.addresses.tokenMint.toBase58() &&
+      swapPoolAccounts.tokenMintB === outputToken.addresses.tokenMint.toBase58()
+    ) {
+      // Swapping from token A to token B on swap pool
+      swapSourceVault = swapPoolAccounts.tokenB
+      swapDestinationVault = swapPoolAccounts.tokenA
+    } else if (
+      swapPoolAccounts.tokenMintB === this.addresses.tokenMint.toBase58() &&
+      swapPoolAccounts.tokenMintA === outputToken.addresses.tokenMint.toBase58()
+    ) {
+      // Swapping from token B to token A on swap pool
+      swapSourceVault = swapPoolAccounts.tokenA
+      swapDestinationVault = swapPoolAccounts.tokenB
+    } else {
+      // Pedantic. We can't reach this condition if correct pool is selected
+      throw new Error("Invalid swap pool selected")
+    }
+
     // Swap
     await marginAccount.withAdapterInvoke({
       instructions,
@@ -1311,8 +1335,8 @@ export class Pool {
           swapInfo: {
             swapPool: swapPoolAccounts.swapPool,
             authority: findDerivedAccount(new PublicKey(swapPoolAccounts.swapProgram), swapPoolAccounts.swapPool),
-            vaultFrom: swapPoolAccounts.tokenA,
-            vaultInto: swapPoolAccounts.tokenB,
+            vaultFrom: swapSourceVault,
+            vaultInto: swapDestinationVault,
             tokenMint: swapPoolAccounts.poolMint,
             feeAccount: swapPoolAccounts.feeAccount,
             swapProgram: swapPoolAccounts.swapProgram
