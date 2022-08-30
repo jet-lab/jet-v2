@@ -129,13 +129,13 @@ export type JetMarginSwap = {
       ]
       args: [
         {
-          name: "changeKind"
+          name: "withdrawalChangeKind"
           type: {
             defined: "ChangeKind"
           }
         },
         {
-          name: "amountIn"
+          name: "withdrawalAmount"
           type: "u64"
         },
         {
@@ -301,13 +301,13 @@ export const IDL: JetMarginSwap = {
       ],
       args: [
         {
-          name: "changeKind",
+          name: "withdrawalChangeKind",
           type: {
             defined: "ChangeKind"
           }
         },
         {
-          name: "amountIn",
+          name: "withdrawalAmount",
           type: "u64"
         },
         {

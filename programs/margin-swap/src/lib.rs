@@ -37,11 +37,16 @@ mod jet_margin_swap {
 
     pub fn margin_swap(
         ctx: Context<MarginSplSwap>,
-        change_kind: ChangeKind,
-        amount_in: u64,
+        withdrawal_change_kind: ChangeKind,
+        withdrawal_amount: u64,
         minimum_amount_out: u64,
     ) -> Result<()> {
-        margin_spl_swap_handler(ctx, change_kind, amount_in, minimum_amount_out)
+        margin_spl_swap_handler(
+            ctx,
+            withdrawal_change_kind,
+            withdrawal_amount,
+            minimum_amount_out,
+        )
     }
 }
 

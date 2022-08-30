@@ -1202,9 +1202,14 @@ export class Pool {
       outputToken.tokenMint
     )
 
-    // If swapping on margin
+    // if swapping total balance or on margin (gt total balance)
+    let changeKind = PoolTokenChange.shiftBy(swapAmount)
     const accountPoolPosition = marginAccount.poolPositions[this.symbol]
-    if (swapAmount.gt(accountPoolPosition.depositBalance) && marginAccount.pools) {
+    if (
+      (swapAmount.eq(accountPoolPosition.depositBalance) || swapAmount.gt(accountPoolPosition.depositBalance)) &&
+      marginAccount.pools
+    ) {
+      changeKind = PoolTokenChange.setTo(0)
       const difference = swapAmount.sub(accountPoolPosition.depositBalance)
       await this.withGetOrRegisterLoanPosition({
         instructions: registerInstructions,
@@ -1222,7 +1227,7 @@ export class Pool {
       instructions,
       marginAccount,
       outputToken,
-      swapAmount,
+      changeKind,
       minAmountOut,
       sourceAccount,
       destinationAccount,
@@ -1256,7 +1261,7 @@ export class Pool {
     instructions,
     marginAccount,
     outputToken,
-    swapAmount,
+    changeKind,
     minAmountOut,
     sourceAccount,
     destinationAccount,
@@ -1266,7 +1271,7 @@ export class Pool {
     instructions: TransactionInstruction[]
     marginAccount: MarginAccount
     outputToken: Pool
-    swapAmount: TokenAmount
+    changeKind: PoolTokenChange
     minAmountOut: TokenAmount
     sourceAccount: Address
     destinationAccount: Address
@@ -1313,7 +1318,7 @@ export class Pool {
       ),
       // adapterMetadata: new PublicKey("DUheebnZrHMGzEMbs9FpPFTkbmVdZnyW92CVwrYd3aGa"),
       adapterInstruction: await this.programs.marginSwap.methods
-        .marginSwap(swapAmount.lamports, minAmountOut.lamports)
+        .marginSwap(changeKind.changeKind, changeKind.value, minAmountOut.lamports)
         .accounts({
           marginAccount: marginAccount.address,
           transitSourceAccount,

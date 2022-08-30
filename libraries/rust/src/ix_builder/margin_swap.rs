@@ -122,8 +122,8 @@ impl MarginSwapIxBuilder {
         Instruction {
             program_id: jet_margin_swap::id(),
             data: ix_data::MarginSwap {
-                change_kind: kind,
-                amount_in: tokens,
+                withdrawal_change_kind: kind,
+                withdrawal_amount: tokens,
                 minimum_amount_out,
             }
             .data(),
