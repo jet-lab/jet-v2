@@ -1,4 +1,4 @@
-import { NATIVE_MINT } from "@solana/spl-token"
+import { getAccount, NATIVE_MINT } from "@solana/spl-token"
 import { Program, AnchorProvider, BN, translateAddress } from "@project-serum/anchor"
 import { JetMargin, JetMarginPool, JetMarginSerum, JetMarginSwap, JetMetadata, TokenAmount, PoolAction } from ".."
 import {
@@ -119,12 +119,13 @@ export class MarginClient {
     }) as ParsedTransactionWithMeta[]
   }
 
-  static getTransactionData(
+  static async getTransactionData(
     parsedTx: ParsedTransactionWithMeta,
     mints: Mints,
     config: MarginConfig,
-    sigIndex: number
-  ): AccountTransaction | null {
+    sigIndex: number,
+    provider: AnchorProvider
+  ): Promise<AccountTransaction | null> {
     if (!parsedTx.meta?.logMessages || !parsedTx.blockTime) {
       return null
     }
@@ -148,6 +149,22 @@ export class MarginClient {
           return true
         }
       }
+    }
+
+    const setupAccountTx = (token, amount, parsedTx) => {
+      tx.tokenSymbol = token.symbol
+      tx.tokenName = token.name
+      tx.tokenDecimals = token.decimals
+      tx.tradeAmount = TokenAmount.lamports(amount, token.decimals)
+
+      const dateTime = new Date(parsedTx.blockTime * 1000)
+      tx.timestamp = parsedTx.blockTime
+      tx.blockDate = dateTime.toLocaleDateString()
+      tx.blockTime = dateTime.toLocaleTimeString("en-US", { hour12: false })
+      tx.sigIndex = sigIndex ? sigIndex : 0
+      tx.signature = parsedTx.transaction.signatures[0]
+      tx.status = parsedTx.meta?.err ? "error" : "success"
+      return tx as AccountTransaction
     }
 
     // Check each logMessage string for instruction
@@ -193,36 +210,47 @@ export class MarginClient {
           amount = postAmount.sub(preAmount).abs()
         }
 
-        for (let j = 0; j < Object.entries(mints).length; j++) {
-          const tokenAbbrev = Object.entries(mints)[j][0]
-          const tokenMints = Object.entries(mints)[j][1]
-          if (
-            Object.values(tokenMints)
-              .map((t: PublicKey) => t.toBase58())
-              .includes(matchingPost.mint)
-          ) {
-            token = config.tokens[tokenAbbrev] as MarginTokenConfig
+        // If trade action is swap,
+        // Set up correct target mint
+        if (tradeAction === "swap") {
+          const transferIxs: ParsedInstruction[] = []
+          ixs?.forEach((ix: ParsedInnerInstruction) => {
+            ix.instructions.forEach((inst: ParsedInstruction | PartiallyDecodedInstruction) => {
+              if ("parsed" in inst) {
+                if (inst.parsed && inst.parsed.type === "transfer") {
+                  transferIxs.push(inst)
+                }
+              }
+            })
+          })
+          const finalTransferIxSource: string = transferIxs[transferIxs.length - 1].parsed.info.source
+          const accountMint = await getAccount(provider.connection, new PublicKey(finalTransferIxSource))
+          const configArray = Object.values(config.tokens).find(config =>
+            accountMint.mint.equals(new PublicKey(config.mint))
+          )
+          token = configArray as MarginTokenConfig
+          return setupAccountTx(token, amount, parsedTx)
+        } else {
+          // if trade action is any other type,
+          // Get target mint by matching post
+          for (let j = 0; j < Object.entries(mints).length; j++) {
+            const tokenAbbrev = Object.entries(mints)[j][0]
+            const tokenMints = Object.entries(mints)[j][1]
             if (
-              translateAddress(token.mint).equals(NATIVE_MINT) &&
-              (tradeAction === "withdraw" || tradeAction === "borrow") &&
-              matchingPost.uiTokenAmount.amount === "0"
+              Object.values(tokenMints)
+                .map((t: PublicKey) => t.toBase58())
+                .includes(matchingPost.mint)
             ) {
-              break
+              token = config.tokens[tokenAbbrev] as MarginTokenConfig
+              if (
+                translateAddress(token.mint).equals(NATIVE_MINT) &&
+                (tradeAction === "withdraw" || tradeAction === "borrow") &&
+                matchingPost.uiTokenAmount.amount === "0"
+              ) {
+                break
+              }
+              return setupAccountTx(token, amount, parsedTx)
             }
-
-            tx.tokenSymbol = token.symbol
-            tx.tokenName = token.name
-            tx.tokenDecimals = token.decimals
-            tx.tradeAmount = TokenAmount.lamports(amount, token.decimals)
-
-            const dateTime = new Date(parsedTx.blockTime * 1000)
-            tx.timestamp = parsedTx.blockTime
-            tx.blockDate = dateTime.toLocaleDateString()
-            tx.blockTime = dateTime.toLocaleTimeString("en-US", { hour12: false })
-            tx.sigIndex = sigIndex ? sigIndex : 0
-            tx.signature = parsedTx.transaction.signatures[0]
-            tx.status = parsedTx.meta?.err ? "error" : "success"
-            return tx as AccountTransaction
           }
         }
       }
@@ -254,9 +282,10 @@ export class MarginClient {
       processed += paginatedSignatures.length
     }
 
-    const parsedTransactions = jetTransactions
-      .map((t, idx) => MarginClient.getTransactionData(t, mints, config, idx))
-      .filter(tx => !!tx) as AccountTransaction[]
-    return parsedTransactions.sort((a, b) => a.sigIndex - b.sigIndex)
+    const parsedTransactions = await Promise.all(
+      jetTransactions.map(async (t, idx) => await MarginClient.getTransactionData(t, mints, config, idx, provider))
+    )
+    const filteredParsedTransactions = parsedTransactions.filter(tx => !!tx) as AccountTransaction[]
+    return filteredParsedTransactions.sort((a, b) => a.sigIndex - b.sigIndex)
   }
 }
