@@ -224,11 +224,11 @@ export class MarginClient {
             })
           })
           const finalTransferIxSource: string = transferIxs[transferIxs.length - 1].parsed.info.source
-          const accountMint = await getAccount(provider.connection, new PublicKey(finalTransferIxSource))
-          const configArray = Object.values(config.tokens).find(config =>
-            accountMint.mint.equals(new PublicKey(config.mint))
+          const sourceAccountMint = await getAccount(provider.connection, new PublicKey(finalTransferIxSource))
+          const tokenConfig = Object.values(config.tokens).find(config =>
+            sourceAccountMint.mint.equals(new PublicKey(config.mint))
           )
-          token = configArray as MarginTokenConfig
+          token = tokenConfig as MarginTokenConfig
           return setupAccountTx(token, amount, parsedTx)
         } else {
           // if trade action is any other type,
