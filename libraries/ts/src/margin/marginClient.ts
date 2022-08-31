@@ -42,8 +42,11 @@ export interface AccountTransaction {
   sigIndex: number // Signature index that we used to find this transaction
   tradeAction: PoolAction
   tradeAmount: TokenAmount
+  tradeAmountOut?: TokenAmount
   tokenSymbol: string
   tokenName: string
+  tokenSymbolOut?: string
+  tokenNameOut?: string
   tokenDecimals: number
   fromAccount?: PublicKey // In the case of a transfer between accounts
   toAccount?: PublicKey // In the case of a transfer between accounts
@@ -151,11 +154,18 @@ export class MarginClient {
       }
     }
 
-    const setupAccountTx = (token, amount, parsedTx) => {
+    const setupAccountTx = (token, amount, parsedTx, amountOut?, tokenOut?) => {
       tx.tokenSymbol = token.symbol
       tx.tokenName = token.name
       tx.tokenDecimals = token.decimals
       tx.tradeAmount = TokenAmount.lamports(amount, token.decimals)
+
+      // tokenOut applies if the trade type is a swap.
+      if (tokenOut) {
+        tx.tokenSymbolOut = tokenOut.symbol
+        tx.tokenNameOut = tokenOut.name
+        tx.tradeAmountOut = TokenAmount.lamports(amountOut, tokenOut.decimals)
+      }
 
       const dateTime = new Date(parsedTx.blockTime * 1000)
       tx.timestamp = parsedTx.blockTime
@@ -189,15 +199,18 @@ export class MarginClient {
       )
       if (matchingPost && matchingPost.uiTokenAmount.amount !== pre.uiTokenAmount.amount) {
         let token: MarginTokenConfig | null = null
+        let tokenOut: MarginTokenConfig | null = null
 
         const ixs = parsedTx.meta.innerInstructions
         let amount = new BN(0)
+        let amountOut = new BN(0)
 
         ixs?.forEach((ix: ParsedInnerInstruction) => {
           ix.instructions.forEach((inst: ParsedInstruction | PartiallyDecodedInstruction) => {
             if ("parsed" in inst) {
               if (inst.parsed && inst.parsed.type === "transfer" && inst?.parsed.info.amount !== "0") {
                 amount = new BN(inst.parsed.info.amount)
+                amountOut = new BN(inst.parsed.info.amount)
               }
             }
           })
@@ -210,47 +223,45 @@ export class MarginClient {
           amount = postAmount.sub(preAmount).abs()
         }
 
-        // If trade action is swap,
-        // Set up correct target mint
-        if (tradeAction === "swap") {
-          const transferIxs: ParsedInstruction[] = []
-          ixs?.forEach((ix: ParsedInnerInstruction) => {
-            ix.instructions.forEach((inst: ParsedInstruction | PartiallyDecodedInstruction) => {
-              if ("parsed" in inst) {
-                if (inst.parsed && inst.parsed.type === "transfer") {
-                  transferIxs.push(inst)
-                }
-              }
-            })
-          })
-          const finalTransferIxSource: string = transferIxs[transferIxs.length - 1].parsed.info.source
-          const sourceAccountMint = await getAccount(provider.connection, new PublicKey(finalTransferIxSource))
-          const tokenConfig = Object.values(config.tokens).find(config =>
-            sourceAccountMint.mint.equals(new PublicKey(config.mint))
-          )
-          token = tokenConfig as MarginTokenConfig
-          return setupAccountTx(token, amount, parsedTx)
-        } else {
-          // if trade action is any other type,
-          // Get target mint by matching post
-          for (let j = 0; j < Object.entries(mints).length; j++) {
-            const tokenAbbrev = Object.entries(mints)[j][0]
-            const tokenMints = Object.entries(mints)[j][1]
-            if (
-              Object.values(tokenMints)
-                .map((t: PublicKey) => t.toBase58())
-                .includes(matchingPost.mint)
-            ) {
+        for (let j = 0; j < Object.entries(mints).length; j++) {
+          const tokenAbbrev = Object.entries(mints)[j][0]
+          const tokenMints = Object.entries(mints)[j][1]
+          if (
+            Object.values(tokenMints)
+              .map((t: PublicKey) => t.toBase58())
+              .includes(matchingPost.mint)
+          ) {
+            if (tradeAction === "swap") {
+              // If trade action is swap,
+              // Set up correct target mint
+              const transferIxs: ParsedInstruction[] = []
+              ixs?.forEach((ix: ParsedInnerInstruction) => {
+                ix.instructions.forEach((inst: ParsedInstruction | PartiallyDecodedInstruction) => {
+                  if ("parsed" in inst) {
+                    if (inst.parsed && inst.parsed.type === "transfer") {
+                      transferIxs.push(inst)
+                    }
+                  }
+                })
+              })
+              const finalTransferIxSource: string = transferIxs[transferIxs.length - 1].parsed.info.source
+              const sourceAccountMint = await getAccount(provider.connection, new PublicKey(finalTransferIxSource))
+              const tokenConfig = Object.values(config.tokens).find(config =>
+                sourceAccountMint.mint.equals(new PublicKey(config.mint))
+              )
               token = config.tokens[tokenAbbrev] as MarginTokenConfig
-              if (
-                translateAddress(token.mint).equals(NATIVE_MINT) &&
-                (tradeAction === "withdraw" || tradeAction === "borrow") &&
-                matchingPost.uiTokenAmount.amount === "0"
-              ) {
-                break
-              }
-              return setupAccountTx(token, amount, parsedTx)
+              tokenOut = tokenConfig as MarginTokenConfig
+            } else {
+              token = config.tokens[tokenAbbrev] as MarginTokenConfig
             }
+            if (
+              translateAddress(token.mint).equals(NATIVE_MINT) &&
+              (tradeAction === "withdraw" || tradeAction === "borrow") &&
+              matchingPost.uiTokenAmount.amount === "0"
+            ) {
+              break
+            }
+            return setupAccountTx(token, amount, parsedTx, amountOut, tokenOut)
           }
         }
       }
