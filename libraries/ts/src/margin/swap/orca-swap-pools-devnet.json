@@ -1,24 +1,46 @@
 {
+  "BTC/USDC": {
+      "swapPool": "8kG6GR2Cq3W9JCKKNKJTgnLuQfyt56Zwnmt5JHHFKjVF",
+      "authority": "FwDR1hFzDw67xh7XCKt6AJjcf9yqXSjtMdKgazQR2JNA",
+      "poolMint": "9dFW1CmEseSy5gPebZ6nt6gt9Lv5nCHJq6dQu7UPhgQ8",
+      "tokenMintA": "5zq1tdJfRZ8boTGjKE9dCA77nyFEm4c1uji8Q3nfWfaY",
+      "tokenMintB": "4ruM7B4Hz4MUxy7DSFBRK9zCFLvkbLccB6S3zJ7t2525",
+      "tokenA": "DJPbPgs8Jmhhuwk4gGr2nqexK3F1MDpWBEYouKrQhriB",
+      "tokenB": "CNYLddvennPaiX7SRc2mU4QBEXbyjyCxqS73ajF2tXP1",
+      "feeAccount": "C3XBRm1H2sqH2931NNaAReGRDk6v8rDxG79uciWwuq3Z",
+      "swapProgram": "3xQ8SWv2GaFXXpHZNqkXsdxq5DZciHBz6ZFoPPfbFd7U"
+    },
+    "USDC/BTC": {
+      "swapPool": "8kG6GR2Cq3W9JCKKNKJTgnLuQfyt56Zwnmt5JHHFKjVF",
+      "authority": "FwDR1hFzDw67xh7XCKt6AJjcf9yqXSjtMdKgazQR2JNA",
+      "poolMint": "9dFW1CmEseSy5gPebZ6nt6gt9Lv5nCHJq6dQu7UPhgQ8",
+      "tokenMintA": "4ruM7B4Hz4MUxy7DSFBRK9zCFLvkbLccB6S3zJ7t2525",
+      "tokenMintB": "5zq1tdJfRZ8boTGjKE9dCA77nyFEm4c1uji8Q3nfWfaY",
+      "tokenA": "CNYLddvennPaiX7SRc2mU4QBEXbyjyCxqS73ajF2tXP1",
+      "tokenB": "DJPbPgs8Jmhhuwk4gGr2nqexK3F1MDpWBEYouKrQhriB",
+      "feeAccount": "C3XBRm1H2sqH2931NNaAReGRDk6v8rDxG79uciWwuq3Z",
+      "swapProgram": "3xQ8SWv2GaFXXpHZNqkXsdxq5DZciHBz6ZFoPPfbFd7U"
+    },
     "SRM/USDC": {
-        "swapPool": "8kG6GR2Cq3W9JCKKNKJTgnLuQfyt56Zwnmt5JHHFKjVF",
-        "authority": "FwDR1hFzDw67xh7XCKt6AJjcf9yqXSjtMdKgazQR2JNA",
-        "poolMint": "9dFW1CmEseSy5gPebZ6nt6gt9Lv5nCHJq6dQu7UPhgQ8",
-        "tokenMintA": "5zq1tdJfRZ8boTGjKE9dCA77nyFEm4c1uji8Q3nfWfaY",
-        "tokenMintB": "4ruM7B4Hz4MUxy7DSFBRK9zCFLvkbLccB6S3zJ7t2525",
-        "tokenA": "DJPbPgs8Jmhhuwk4gGr2nqexK3F1MDpWBEYouKrQhriB",
-        "tokenB": "CNYLddvennPaiX7SRc2mU4QBEXbyjyCxqS73ajF2tXP1",
-        "feeAccount": "C3XBRm1H2sqH2931NNaAReGRDk6v8rDxG79uciWwuq3Z",
-        "swapProgram": "3xQ8SWv2GaFXXpHZNqkXsdxq5DZciHBz6ZFoPPfbFd7U"
-      },
-      "BTC/USDC": {
-        "swapPool": "6QaXpdZQ5XvMBSZvEf2YigiXVgBVBkyZPVuf3gaPuN9D",
-        "authority": "2GiwwoGvpVoRttHPJpstTS4Z9QotFGLWpnZBgPjMS2uv",
-        "poolMint": "HDbXHFSywv4jD65EoDQ51K4C77dJjAzLbAMRRvMDKZJX",
-        "tokenMintA": "3PjEttgLvBxa1pYZhUJbwXRdB7KkXJWKuPxj8Ly65tVj",
-        "tokenMintB": "4ruM7B4Hz4MUxy7DSFBRK9zCFLvkbLccB6S3zJ7t2525",
-        "tokenA": "PACHrY5uW8x2JMwWde2QxxZFJiMVNkxgEotAzmBbUS3",
-        "tokenB": "5CwzHMSCwnpZ9RaZhWMWmvJkgg7dPNbLcTGmjv6udcx3",
-        "feeAccount": "ChEExAhxww1GSiD4FGGzPR9cAUQb4VDULuywCJumnvMX",
-        "swapProgram": "3xQ8SWv2GaFXXpHZNqkXsdxq5DZciHBz6ZFoPPfbFd7U"
-      }
+      "swapPool": "6QaXpdZQ5XvMBSZvEf2YigiXVgBVBkyZPVuf3gaPuN9D",
+      "authority": "2GiwwoGvpVoRttHPJpstTS4Z9QotFGLWpnZBgPjMS2uv",
+      "poolMint": "HDbXHFSywv4jD65EoDQ51K4C77dJjAzLbAMRRvMDKZJX",
+      "tokenMintA": "3PjEttgLvBxa1pYZhUJbwXRdB7KkXJWKuPxj8Ly65tVj",
+      "tokenMintB": "4ruM7B4Hz4MUxy7DSFBRK9zCFLvkbLccB6S3zJ7t2525",
+      "tokenA": "PACHrY5uW8x2JMwWde2QxxZFJiMVNkxgEotAzmBbUS3",
+      "tokenB": "5CwzHMSCwnpZ9RaZhWMWmvJkgg7dPNbLcTGmjv6udcx3",
+      "feeAccount": "ChEExAhxww1GSiD4FGGzPR9cAUQb4VDULuywCJumnvMX",
+      "swapProgram": "3xQ8SWv2GaFXXpHZNqkXsdxq5DZciHBz6ZFoPPfbFd7U"
+    },
+    "USDC/SRM": {
+      "swapPool": "6QaXpdZQ5XvMBSZvEf2YigiXVgBVBkyZPVuf3gaPuN9D",
+      "authority": "2GiwwoGvpVoRttHPJpstTS4Z9QotFGLWpnZBgPjMS2uv",
+      "poolMint": "HDbXHFSywv4jD65EoDQ51K4C77dJjAzLbAMRRvMDKZJX",
+      "tokenMintA": "4ruM7B4Hz4MUxy7DSFBRK9zCFLvkbLccB6S3zJ7t2525",
+      "tokenMintB": "3PjEttgLvBxa1pYZhUJbwXRdB7KkXJWKuPxj8Ly65tVj",
+      "tokenA": "5CwzHMSCwnpZ9RaZhWMWmvJkgg7dPNbLcTGmjv6udcx3",
+      "tokenB": "PACHrY5uW8x2JMwWde2QxxZFJiMVNkxgEotAzmBbUS3",
+      "feeAccount": "ChEExAhxww1GSiD4FGGzPR9cAUQb4VDULuywCJumnvMX",
+      "swapProgram": "3xQ8SWv2GaFXXpHZNqkXsdxq5DZciHBz6ZFoPPfbFd7U"
+    }
 }
