@@ -23,6 +23,7 @@ use jet_margin::MarginAccount;
 use jet_margin_pool::{
     cpi::accounts::{Deposit, Withdraw},
     program::JetMarginPool,
+    ChangeKind,
 };
 
 declare_id!("JPMAa5dnWLFRvUsumawFcGhnwikqZziLLfqn9SLNXPN");
@@ -36,10 +37,16 @@ mod jet_margin_swap {
 
     pub fn margin_swap(
         ctx: Context<MarginSplSwap>,
-        amount_in: u64,
+        withdrawal_change_kind: ChangeKind,
+        withdrawal_amount: u64,
         minimum_amount_out: u64,
     ) -> Result<()> {
-        margin_spl_swap_handler(ctx, amount_in, minimum_amount_out)
+        margin_spl_swap_handler(
+            ctx,
+            withdrawal_change_kind,
+            withdrawal_amount,
+            minimum_amount_out,
+        )
     }
 }
 
@@ -56,4 +63,10 @@ pub struct MarginPoolInfo<'info> {
     /// CHECK:
     #[account(mut)]
     pub deposit_note_mint: UncheckedAccount<'info>,
+}
+
+#[error_code]
+pub enum ErrorCode {
+    #[msg("Zero tokens have been withdrawn from a pool for the swap")]
+    NoSwapTokensWithdrawn,
 }
