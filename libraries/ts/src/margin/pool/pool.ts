@@ -1316,7 +1316,7 @@ export class Pool {
       ),
       // adapterMetadata: new PublicKey("DUheebnZrHMGzEMbs9FpPFTkbmVdZnyW92CVwrYd3aGa"),
       adapterInstruction: await this.programs.marginSwap.methods
-        .marginSwap(changeKind.changeKind, changeKind.value, minAmountOut.lamports)
+        .marginSwap(changeKind.changeKind.asParam(), changeKind.value, minAmountOut.lamports)
         .accounts({
           marginAccount: marginAccount.address,
           transitSourceAccount,
