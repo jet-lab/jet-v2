@@ -17,6 +17,7 @@ import { PriceInfo } from "../accountPosition"
 import { chunks, Number128, Number192 } from "../../utils"
 import { PositionTokenMetadata } from "../positionTokenMetadata"
 import orcaSwapPools from "../swap/orca-swap-pools.json"
+import orcaSwapPoolsDevnet from "../swap/orca-swap-pools-devnet.json"
 
 /** A set of possible actions to perform on a margin pool. */
 export type PoolAction = "deposit" | "withdraw" | "borrow" | "repay" | "swap" | "transfer"
@@ -1279,7 +1280,9 @@ export class Pool {
     // TODO: check tokenMintA and tokenMintB for matching pools.
     // If no pool is found, a user would have to swap twice from A > X > B,
     // so we should ideally check matching pools on the UI before getting here.
-    const swapPoolAccounts = orcaSwapPools[`${this.symbol}/${outputToken.symbol}`]
+    const devnetCluster = marginAccount.programs.config.url.includes("devnet")
+    const swapPair = `${this.symbol}/${outputToken.symbol}`
+    const swapPoolAccounts = devnetCluster ? orcaSwapPoolsDevnet[swapPair] : orcaSwapPools[swapPair]
 
     // Determine the direction of the swap based on token mints.
     // The instruction relies on the swap `vaultFrom` and `vaultInto` to determine
