@@ -19,7 +19,7 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use anchor_lang::{
-    prelude::{msg, Clock, SolanaSysvar},
+    prelude::{msg, AccountInfo, Clock, SolanaSysvar},
     solana_program::instruction::TRANSACTION_LEVEL_STACK_HEIGHT,
 };
 use bytemuck::{Pod, Zeroable};
@@ -145,6 +145,15 @@ impl Invocation {
     }
 }
 
+mod _idl {
+    use anchor_lang::prelude::*;
+
+    #[derive(AnchorSerialize, AnchorDeserialize, Default)]
+    pub struct Invocation {
+        pub flags: u8,
+    }
+}
+
 #[derive(Pod, Zeroable, Copy, Clone, Default, PartialEq, Eq)]
 #[repr(transparent)]
 struct BitSet(u8);
@@ -171,6 +180,22 @@ impl std::fmt::Debug for BitSet {
             .field(&format_args!("{:#010b}", &self.0))
             .finish()
     }
+}
+
+/// Reclaim rent from an account, thereby closing it
+///
+/// This will not uninitialize the account, and should not be relied upon as a means of
+/// destroying or preventing the reuse of an acccount.
+pub fn close_account(account: &AccountInfo, receiver: &AccountInfo) -> anchor_lang::Result<()> {
+    msg!("closing account {}", account.key);
+
+    let mut lamports_in = account.try_borrow_mut_lamports()?;
+    let mut lamports_out = receiver.try_borrow_mut_lamports()?;
+
+    **lamports_out += **lamports_in;
+    **lamports_in = 0;
+
+    Ok(())
 }
 
 #[cfg(test)]

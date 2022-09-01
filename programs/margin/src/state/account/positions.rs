@@ -17,7 +17,6 @@
 
 use anchor_lang::prelude::*;
 use bytemuck::{Contiguous, Pod, Zeroable};
-use jet_metadata::TokenKind;
 #[cfg(any(test, feature = "cli"))]
 use serde::ser::{Serialize, SerializeStruct, Serializer};
 
@@ -28,7 +27,7 @@ use anchor_lang::Result as AnchorResult;
 use std::{convert::TryFrom, result::Result};
 
 use super::Approver;
-use crate::{ErrorCode, PriceChangeInfo, MAX_ORACLE_CONFIDENCE, MAX_ORACLE_STALENESS};
+use crate::{ErrorCode, PriceChangeInfo, TokenKind, MAX_ORACLE_CONFIDENCE, MAX_ORACLE_STALENESS};
 
 const POS_PRICE_VALID: u8 = 1;
 
@@ -140,10 +139,22 @@ pub enum PositionKind {
 impl From<TokenKind> for PositionKind {
     fn from(token: TokenKind) -> Self {
         match token {
-            TokenKind::NonCollateral => PositionKind::NoValue,
+            TokenKind::NoValue => PositionKind::NoValue,
             TokenKind::Collateral => PositionKind::Deposit,
             TokenKind::Claim => PositionKind::Claim,
             TokenKind::AdapterCollateral => PositionKind::AdapterCollateral,
+        }
+    }
+}
+
+// FIXME: remove after migration from metadata
+impl From<jet_metadata::TokenKind> for PositionKind {
+    fn from(val: jet_metadata::TokenKind) -> Self {
+        match val {
+            jet_metadata::TokenKind::NonCollateral => Self::NoValue,
+            jet_metadata::TokenKind::Claim => Self::Claim,
+            jet_metadata::TokenKind::Collateral => Self::Deposit,
+            jet_metadata::TokenKind::AdapterCollateral => Self::AdapterCollateral,
         }
     }
 }
@@ -194,7 +205,8 @@ pub struct AccountPosition {
     /// Flags that are set by the adapter
     pub flags: AdapterPositionFlags,
 
-    _reserved: [u8; 23],
+    /// Unused
+    pub _reserved: [u8; 23],
 }
 
 bitflags::bitflags! {
@@ -209,6 +221,15 @@ bitflags::bitflags! {
         /// The claim must be repaid immediately.
         /// The account will be considered unhealty if there is any balance on this position.
         const PAST_DUE = 1 << 1;
+    }
+}
+
+mod _idl {
+    use super::*;
+
+    #[derive(Zeroable, AnchorSerialize, AnchorDeserialize, Default)]
+    pub struct AdapterPositionFlags {
+        pub flags: u8,
     }
 }
 
@@ -267,13 +288,24 @@ impl AccountPosition {
     }
 
     pub fn may_be_registered_or_closed(&self, approvals: &[Approver]) -> bool {
-        approvals.contains(&Approver::MarginAccountAuthority)
-            && match self.kind() {
-                PositionKind::NoValue | PositionKind::Deposit => true,
-                PositionKind::Claim | PositionKind::AdapterCollateral => {
-                    approvals.contains(&Approver::Adapter(self.adapter))
-                }
+        let mut authority_approved = false;
+        let mut adapter_approved = false;
+
+        for approval in approvals {
+            match approval {
+                Approver::MarginAccountAuthority => authority_approved = true,
+                Approver::Adapter(_) => adapter_approved = true,
             }
+        }
+
+        match self.kind() {
+            PositionKind::NoValue | PositionKind::Deposit => {
+                authority_approved && !adapter_approved
+            }
+            PositionKind::Claim | PositionKind::AdapterCollateral => {
+                authority_approved && adapter_approved
+            }
+        }
     }
 }
 
