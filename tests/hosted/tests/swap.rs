@@ -14,9 +14,9 @@ use hosted_tests::{
     swap::SwapPoolConfig,
 };
 
-use jet_margin_pool::{Amount, MarginPoolConfig, PoolFlags, TokenChange};
+use jet_margin_pool::{MarginPoolConfig, PoolFlags, TokenChange};
 use jet_metadata::TokenKind;
-use jet_simulation::create_wallet;
+use jet_simulation::{assert_custom_program_error, create_wallet};
 
 const ONE_USDC: u64 = 1_000_000;
 const ONE_TSOL: u64 = LAMPORTS_PER_SOL;
@@ -209,7 +209,7 @@ async fn swap_test_impl(swap_program_id: Pubkey) -> Result<(), anyhow::Error> {
         )
         .await?;
 
-    // // Verify user tokens have been deposited
+    // Verify user tokens have been deposited
     assert_eq!(0, ctx.tokens.get_balance(&user_a_usdc_account).await?);
     assert_eq!(
         90 * ONE_TSOL,
@@ -229,9 +229,9 @@ async fn swap_test_impl(swap_program_id: Pubkey) -> Result<(), anyhow::Error> {
             &usdc_transit_source,
             &tsol_transit_target,
             &swap_pool,
-            Amount::tokens(100 * ONE_USDC),
+            TokenChange::shift(100 * ONE_USDC),
             // we want a minimum of 0.9 SOL for 100 USDC
-            Amount::tokens(ONE_TSOL / 10 * 9),
+            ONE_TSOL / 10 * 9,
         )
         .await?;
 
@@ -241,9 +241,64 @@ async fn swap_test_impl(swap_program_id: Pubkey) -> Result<(), anyhow::Error> {
         1_000_100 * ONE_USDC,
         ctx.tokens.get_balance(&swap_pool.token_a).await?
     );
+
     assert!(
         // Pool balance less almost 1 SOL
         10_000 * ONE_TSOL - 900_000_000 >= ctx.tokens.get_balance(&swap_pool.token_b).await?
+    );
+
+    // Trying to withdraw by setting balance > actual should return an error
+    let result = user_a
+        .swap(
+            &swap_program_id,
+            &env.usdc,
+            &env.tsol,
+            &usdc_transit_source,
+            &tsol_transit_target,
+            &swap_pool,
+            TokenChange::set(2_000 * ONE_USDC),
+            // Value doesn't matter
+            ONE_TSOL,
+        )
+        .await;
+    assert_custom_program_error(jet_margin_pool::ErrorCode::InvalidSetTo, result);
+
+    // Trying to swap 0 tokens should return an error
+    let result = user_a
+        .swap(
+            &swap_program_id,
+            &env.usdc,
+            &env.tsol,
+            &usdc_transit_source,
+            &tsol_transit_target,
+            &swap_pool,
+            TokenChange::set(900 * ONE_USDC),
+            // Value doesn't matter
+            ONE_TSOL,
+        )
+        .await;
+    assert_custom_program_error(jet_margin_swap::ErrorCode::NoSwapTokensWithdrawn, result);
+
+    // Swap more, setting the change to a `set(x)`
+    user_a
+        .swap(
+            &swap_program_id,
+            &env.usdc,
+            &env.tsol,
+            &usdc_transit_source,
+            &tsol_transit_target,
+            &swap_pool,
+            TokenChange::set(799 * ONE_USDC),
+            // we want a minimum of 0.9 SOL for 101 USDC (1000 - 100 - 799)
+            ONE_TSOL / 10 * 9,
+        )
+        .await?;
+
+    // Verify that swap has taken place in the pool
+    assert_eq!(
+        // There was 1 million USDC as a start
+        1_000_201 * ONE_USDC,
+        ctx.tokens.get_balance(&swap_pool.token_a).await?
     );
 
     // Swap in a different order
@@ -256,19 +311,17 @@ async fn swap_test_impl(swap_program_id: Pubkey) -> Result<(), anyhow::Error> {
             &tsol_transit_source,
             &usdc_transit_target,
             &swap_pool,
-            Amount::tokens(2 * ONE_TSOL),
-            Amount::tokens(180 * ONE_USDC),
+            TokenChange::set(0),
+            90 * 10 * ONE_USDC,
         )
         .await?;
 
     // Verify that swap has taken place in the pool
     assert!(
-        1_000_100 * ONE_USDC - 180 * ONE_USDC >= ctx.tokens.get_balance(&swap_pool.token_a).await?
+        1_000_201 * ONE_USDC - (90 * 10 * ONE_USDC)
+            >= ctx.tokens.get_balance(&swap_pool.token_a).await?
     );
-    assert!(
-        (10_000 * ONE_TSOL - 900_000_000) + 2 * ONE_TSOL
-            >= ctx.tokens.get_balance(&swap_pool.token_b).await?
-    );
+    assert!((10_000 + 10) * ONE_TSOL >= ctx.tokens.get_balance(&swap_pool.token_b).await?);
 
     Ok(())
 }
