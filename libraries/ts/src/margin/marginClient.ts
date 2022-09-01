@@ -42,11 +42,11 @@ export interface AccountTransaction {
   sigIndex: number // Signature index that we used to find this transaction
   tradeAction: PoolAction
   tradeAmount: TokenAmount
-  tradeAmountOut?: TokenAmount
+  tradeAmountInput?: TokenAmount
   tokenSymbol: string
   tokenName: string
-  tokenSymbolOut?: string
-  tokenNameOut?: string
+  tokenSymbolInput?: string
+  tokenNameInput?: string
   tokenDecimals: number
   fromAccount?: PublicKey // In the case of a transfer between accounts
   toAccount?: PublicKey // In the case of a transfer between accounts
@@ -154,17 +154,19 @@ export class MarginClient {
       }
     }
 
-    const setupAccountTx = (token, amount, parsedTx, amountOut?, tokenOut?) => {
+    const setupAccountTx = (token, amount, parsedTx, amountIn?, tokenIn?) => {
       tx.tokenSymbol = token.symbol
       tx.tokenName = token.name
       tx.tokenDecimals = token.decimals
       tx.tradeAmount = TokenAmount.lamports(amount, token.decimals)
 
-      // tokenOut applies if the trade type is a swap.
-      if (tokenOut) {
-        tx.tokenSymbolOut = tokenOut.symbol
-        tx.tokenNameOut = tokenOut.name
-        tx.tradeAmountOut = TokenAmount.lamports(amountOut, tokenOut.decimals)
+      // tokenIn applies if the trade type is a swap
+      // For the input token only
+      // Default is the output token
+      if (tokenIn) {
+        tx.tokenSymbolInput = tokenIn.symbol
+        tx.tokenNameInput = tokenIn.name
+        tx.tradeAmountInput = TokenAmount.lamports(amountIn, tokenIn.decimals)
       }
 
       const dateTime = new Date(parsedTx.blockTime * 1000)
@@ -199,18 +201,42 @@ export class MarginClient {
       )
       if (matchingPost && matchingPost.uiTokenAmount.amount !== pre.uiTokenAmount.amount) {
         let token: MarginTokenConfig | null = null
-        let tokenOut: MarginTokenConfig | null = null
+        let tokenIn: MarginTokenConfig | null = null
 
         const ixs = parsedTx.meta.innerInstructions
         let amount = new BN(0)
-        let amountOut = new BN(0)
+        let amountIn = new BN(0)
 
         ixs?.forEach((ix: ParsedInnerInstruction) => {
           ix.instructions.forEach((inst: ParsedInstruction | PartiallyDecodedInstruction) => {
             if ("parsed" in inst) {
               if (inst.parsed && inst.parsed.type === "transfer" && inst?.parsed.info.amount !== "0") {
-                amount = new BN(inst.parsed.info.amount)
-                amountOut = new BN(inst.parsed.info.amount)
+                if (tradeAction === "swap") {
+                  // If trade action is swap,
+                  // Set up both input and output amounts
+                  amount = new BN(inst.parsed.info.amount)
+                  amountIn = new BN(inst.parsed.info.amount)
+
+                  // const transferIxs: ParsedInstruction[] = []
+                  // ixs?.forEach((ix: ParsedInnerInstruction) => {
+                  //   ix.instructions.forEach((inst: ParsedInstruction | PartiallyDecodedInstruction) => {
+                  //     if ("parsed" in inst) {
+                  //       if (inst.parsed && inst.parsed.type === "transfer") {
+                  //         transferIxs.push(inst)
+                  //       }
+                  //     }
+                  //   })
+                  // })
+                  // const finalTransferIxSource: string = transferIxs[transferIxs.length - 1].parsed.info.source
+                  // const sourceAccountMint = await getAccount(provider.connection, new PublicKey(finalTransferIxSource))
+                  // const tokenConfig = Object.values(config.tokens).find(config =>
+                  //   sourceAccountMint.mint.equals(new PublicKey(config.mint))
+                  // )
+                  // token = config.tokens[tokenAbbrev] as MarginTokenConfig
+                  // tokenOut = tokenConfig as MarginTokenConfig
+                } else {
+                  amount = new BN(inst.parsed.info.amount)
+                }
               }
             }
           })
@@ -249,8 +275,8 @@ export class MarginClient {
               const tokenConfig = Object.values(config.tokens).find(config =>
                 sourceAccountMint.mint.equals(new PublicKey(config.mint))
               )
-              token = config.tokens[tokenAbbrev] as MarginTokenConfig
-              tokenOut = tokenConfig as MarginTokenConfig
+              token = tokenConfig as MarginTokenConfig
+              tokenIn = config.tokens[tokenAbbrev] as MarginTokenConfig
             } else {
               token = config.tokens[tokenAbbrev] as MarginTokenConfig
             }
@@ -261,7 +287,7 @@ export class MarginClient {
             ) {
               break
             }
-            return setupAccountTx(token, amount, parsedTx, amountOut, tokenOut)
+            return setupAccountTx(token, amount, parsedTx, amountIn, tokenIn)
           }
         }
       }
