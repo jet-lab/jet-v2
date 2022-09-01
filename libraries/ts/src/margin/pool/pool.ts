@@ -594,9 +594,7 @@ export class Pool {
     marginAccount: MarginAccount
   }): Promise<string> {
     const instructions: TransactionInstruction[] = []
-    for (const pool of Object.values(pools)) {
-      await pool.withMarginRefreshPositionPrice({ instructions, marginAccount })
-    }
+    await this.withMarginRefreshAllPositionPrices({ instructions, pools, marginAccount })
     return await marginAccount.sendAndConfirm(instructions)
   }
 
