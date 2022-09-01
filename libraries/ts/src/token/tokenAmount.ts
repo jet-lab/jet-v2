@@ -216,8 +216,16 @@ export class TokenAmount {
     return this.lamports.lt(b.lamports)
   }
 
+  public lte(b: TokenAmount): boolean {
+    return this.lamports.lt(b.lamports) || this.lamports.eq(b.lamports)
+  }
+
   public gt(b: TokenAmount): boolean {
     return this.lamports.gt(b.lamports)
+  }
+
+  public gte(b: TokenAmount): boolean {
+    return this.lamports.gt(b.lamports) || this.lamports.eq(b.lamports)
   }
 
   public eq(b: TokenAmount): boolean {

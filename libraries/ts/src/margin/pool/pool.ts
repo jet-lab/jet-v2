@@ -1201,14 +1201,16 @@ export class Pool {
       outputToken.tokenMint
     )
 
-    // if swapping total balance or on margin (gt total balance)
-    let changeKind = PoolTokenChange.shiftBy(swapAmount)
+    // Default change kind to a shiftBy
     const accountPoolPosition = marginAccount.poolPositions[this.symbol]
-    if (
-      (swapAmount.eq(accountPoolPosition.depositBalance) || swapAmount.gt(accountPoolPosition.depositBalance)) &&
-      marginAccount.pools
-    ) {
+    let changeKind = PoolTokenChange.shiftBy(swapAmount)
+    // If swapping total balance, use setTo(0)
+    if (swapAmount.gte(accountPoolPosition.depositBalance)) {
       changeKind = PoolTokenChange.setTo(0)
+    }
+
+    // If swapping on margin
+    if (swapAmount.gt(accountPoolPosition.depositBalance) && marginAccount.pools) {
       const difference = swapAmount.sub(accountPoolPosition.depositBalance)
       await this.withGetOrRegisterLoanPosition({
         instructions: registerInstructions,
