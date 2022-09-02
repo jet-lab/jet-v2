@@ -19,8 +19,12 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use anchor_lang::{
-    prelude::{msg, Clock, SolanaSysvar},
-    solana_program::instruction::TRANSACTION_LEVEL_STACK_HEIGHT,
+    prelude::{err, msg, AccountInfo, Clock, Pubkey, SolanaSysvar},
+    solana_program::sysvar::instructions::load_instruction_at_checked,
+    solana_program::{
+        instruction::TRANSACTION_LEVEL_STACK_HEIGHT,
+        sysvar::instructions::load_current_index_checked,
+    },
 };
 use bytemuck::{Pod, Zeroable};
 
@@ -174,6 +178,68 @@ impl std::fmt::Debug for BitSet {
         f.debug_tuple("BitSet")
             .field(&format_args!("{:#010b}", &self.0))
             .finish()
+    }
+}
+
+/// Marker for the last instruction in an active transaction on an account
+#[derive(Pod, Zeroable, Copy, Clone, Default, PartialEq, Eq)]
+#[repr(transparent)]
+pub struct TransactionIxBoundary(u8);
+
+impl TransactionIxBoundary {
+    /// Initialize the marker and verify ending instruction
+    pub fn begin(
+        &mut self,
+        ix_sysvar: &AccountInfo,
+        end_ix_idx: u8,
+        discriminator: &[u8],
+        accounts: &[Pubkey],
+    ) -> anchor_lang::Result<()> {
+        let end_ix = load_instruction_at_checked(end_ix_idx as usize, ix_sysvar)?;
+
+        if end_ix.program_id != crate::ID {
+            msg!("Transaction is missing end instruction marker: wrong program");
+            return err!(ErrorCode::InvalidTransaction);
+        } else if &end_ix.data[..discriminator.len()] == discriminator {
+            msg!("Transaction is missing end instruction marker: wrong instruction");
+            return err!(ErrorCode::InvalidTransaction);
+        }
+
+        for (a, b) in accounts.iter().zip(end_ix.accounts.iter()) {
+            if *a != b.pubkey {
+                msg!("Transaction is missing expected account {a} in end instruction marker");
+                return err!(ErrorCode::InvalidTransaction);
+            }
+        }
+
+        assert!(self.0 == 0);
+        self.0 = end_ix_idx;
+
+        Ok(())
+    }
+
+    /// Reset marker and verify this instruction is ending at the right position
+    pub fn end(&mut self, ix_sysvar: &AccountInfo) -> anchor_lang::Result<()> {
+        let current_ix_idx = load_current_index_checked(ix_sysvar)?;
+
+        if current_ix_idx != (self.0 as u16) {
+            msg!("Transaction marked to end at the wrong position");
+            return err!(ErrorCode::InvalidTransaction);
+        }
+
+        self.0 = 0;
+
+        Ok(())
+    }
+
+    /// Validate this instance has a transaction started
+    pub fn verify_in_bound(&self) -> anchor_lang::Result<()> {
+        if self.0 == 0 {
+            msg!("this account has not started a transaction");
+            return err!(ErrorCode::InvalidTransaction);
+        }
+
+        Ok(())
     }
 }
 

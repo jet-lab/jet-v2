@@ -26,6 +26,9 @@ mod liquidator_invoke;
 mod refresh_position_metadata;
 mod register_position;
 mod update_position_balance;
+mod user_begin_transaction;
+mod user_end_transaction;
+mod user_invoke;
 mod verify_healthy;
 
 pub use accounting_invoke::*;
@@ -39,4 +42,7 @@ pub use liquidator_invoke::*;
 pub use refresh_position_metadata::*;
 pub use register_position::*;
 pub use update_position_balance::*;
+pub use user_begin_transaction::*;
+pub use user_end_transaction::*;
+pub use user_invoke::*;
 pub use verify_healthy::*;

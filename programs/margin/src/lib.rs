@@ -604,6 +604,33 @@ pub mod jet_margin {
     ) -> Result<()> {
         liquidator_invoke_handler(ctx, data)
     }
+
+    /// Mark the start of a sequence of instructions on a margin account, where
+    /// the health check happens after the full sequence of instructions has executed.
+    pub fn user_begin_transaction(
+        ctx: Context<UserBeginTransaction>,
+        end_ix_idx: u8,
+    ) -> Result<()> {
+        verify_feature_enabled!("testing");
+        user_begin_transaction_handler(ctx, end_ix_idx)
+    }
+
+    /// Mark the end of the transaction for user actions, and validate the final state
+    /// of the account is left healthy.
+    pub fn user_end_transaction(ctx: Context<UserEndTransaction>) -> Result<()> {
+        verify_feature_enabled!("testing");
+        user_end_transaction_handler(ctx)
+    }
+
+    /// Perform an action by invoking other programs, allowing them to alter
+    /// the positions belonging to this margin account.
+    pub fn user_invoke<'info>(
+        ctx: Context<'_, '_, '_, 'info, UserInvoke<'info>>,
+        data: Vec<u8>,
+    ) -> Result<()> {
+        verify_feature_enabled!("testing");
+        user_invoke_handler(ctx, data)
+    }
 }
 
 #[error_code]
@@ -622,6 +649,10 @@ pub enum ErrorCode {
     /// 141003
     #[msg("the current instruction was not directly invoked by the margin program")]
     IndirectInvocation,
+
+    /// 141004
+    #[msg("this transaction is not valid")]
+    InvalidTransaction,
 
     /// 141010 - Account cannot record any additional positions
     #[msg("account cannot record any additional positions")]
@@ -711,3 +742,14 @@ pub fn write_adapter_result(margin_account: &MarginAccount, result: &AdapterResu
     anchor_lang::solana_program::program::set_return_data(&adapter_result_data);
     Ok(())
 }
+
+macro_rules! verify_feature_enabled {
+    ($feature:expr) => {
+        if !cfg!(feature = $feature) {
+            msg!("feature not supported in this build");
+            return err!(ErrorCode::InvalidTransaction);
+        }
+    };
+}
+
+pub(crate) use verify_feature_enabled;

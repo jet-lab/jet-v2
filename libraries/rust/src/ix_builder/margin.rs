@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use solana_sdk::instruction::Instruction;
+use solana_sdk::instruction::{AccountMeta, Instruction};
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::system_program::ID as SYSTEM_PROGAM_ID;
 use solana_sdk::sysvar::{rent::Rent, SysvarId};
@@ -378,16 +378,13 @@ macro_rules! invoke {
         }
         .to_account_metas(None);
 
-        for acc in $adapter_ix.accounts {
-            if acc.pubkey == $margin_account {
-                accounts.push(anchor_lang::prelude::AccountMeta {
-                    is_signer: false,
-                    ..acc
-                })
-            } else {
-                accounts.push(acc)
-            }
-        }
+        let adapter_metas = $adapter_ix.accounts.iter();
+
+        accounts.extend(adapter_metas.map(|a| AccountMeta {
+            pubkey: a.pubkey,
+            is_signer: a.is_signer && a.pubkey.is_on_curve(),
+            is_writable: a.is_writable
+        }));
 
         Instruction {
             program_id: JetMargin::id(),
