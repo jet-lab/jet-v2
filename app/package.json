@@ -11,7 +11,7 @@
     "lint": "eslint . --ext ts,tsx",
     "lint:strict": "eslint . --ext ts,tsx -c ./.eslintrc-strict.json",
     "start": "(trap 'kill 0' SIGINT; cd ../libraries/ts && tsc --watch & FORCE_COLOR=true npx craco start | cat)",
-    "start:legacy": "NODE_OPTIONS=--openssl-legacy-provider (trap 'kill 0' SIGINT; cd ../libraries/ts && tsc --watch & FORCE_COLOR=true npx craco start | cat)",
+    "start:legacy": "(trap 'kill 0' SIGINT; cd ../libraries/ts && tsc --watch & FORCE_COLOR=true NODE_OPTIONS=--openssl-legacy-provider npx craco start | cat)",
     "test": "jest",
     "compile": "npx tsc --noEmit",
     "e2e": "npx cypress run",
