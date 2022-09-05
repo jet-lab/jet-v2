@@ -248,7 +248,8 @@ export function useMarginActions() {
         pools: Object.values(pools.tokenPools),
         outputToken,
         swapAmount,
-        minAmountOut
+        minAmountOut,
+        repayWithOutput: true // FIXME!
       });
       await actionRefresh();
       return [txId, ActionResponse.Success];

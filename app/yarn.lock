@@ -1180,7 +1180,21 @@
   resolved "https://registry.yarnpkg.com/@ctrl/tinycolor/-/tinycolor-3.4.1.tgz#75b4c27948c81e88ccd3a8902047bcd797f38d32"
   integrity sha512-ej5oVy6lykXsvieQtqZxCOaLT+xD4+QNarq78cIYISHmZXshCvROLudpQN3lfL8G0NL7plMSSK+zlyvCaIJ4Iw==
 
+"@cykura/sdk-core@npm:@jup-ag/cykura-sdk-core@0.1.7", "@jup-ag/cykura-sdk-core@0.1.7":
+  name "@jup-ag/cykura-sdk-core"
+  version "0.1.7"
+  resolved "https://registry.yarnpkg.com/@jup-ag/cykura-sdk-core/-/cykura-sdk-core-0.1.7.tgz#995a446fb8b9134fed3e7fe0c0a58557f9fc9939"
+  integrity sha512-lA5UXUaauLdBYTmMY0eO9O6HrhBrnaX8vfk6Dbx3OhdfFzIKPrTB8i4d6aRyzU7tgka2ibZZnPaX+B6cj1nsrA==
+  dependencies:
+    "@project-serum/anchor" "^0.22.0"
+    big.js "^5.2.2"
+    decimal.js "^10.3.1"
+    jsbi "^4.1.0"
+    tiny-invariant "^1.1.0"
+    toformat "^2.0.0"
+
 "@cykura/sdk-core@npm:@jup-ag/cykura-sdk-core@0.1.8", "@jup-ag/cykura-sdk-core@0.1.8":
+  name "@jup-ag/cykura-sdk-core"
   version "0.1.8"
   resolved "https://registry.yarnpkg.com/@jup-ag/cykura-sdk-core/-/cykura-sdk-core-0.1.8.tgz#ba8724644e18d1006422dbba5c7701360a729b91"
   integrity sha512-bVtDA4oEuzj/amuTPVlk1OFpdlYKK6H9nKWg6Tv6mn6MydS/ArC2EY2zuMHtWP+1YJ5CAwxHL/7Kl1k+7XBSoQ==
@@ -1617,16 +1631,38 @@
     "@json-rpc-tools/types" "^1.7.6"
     "@pedrouid/environment" "^1.0.1"
 
-"@jup-ag/core@1.0.0-beta.29":
-  version "1.0.0-beta.29"
-  resolved "https://registry.yarnpkg.com/@jup-ag/core/-/core-1.0.0-beta.29.tgz#d3d2acc8e539343912193c03429ef11460ecefb0"
-  integrity sha512-2zKOLGuk2l8ViJogfvowagaTI3C60Hqoi0O34YylDkd9Z95ZWALwNzYShBbMmxNaWLMBmyPzkekivqSPpLvJcw==
+"@jup-ag/core@1.0.0-beta.24":
+  version "1.0.0-beta.24"
+  resolved "https://registry.yarnpkg.com/@jup-ag/core/-/core-1.0.0-beta.24.tgz#78df095af3c8ad3d99f09f12e6cbecca89c638cf"
+  integrity sha512-Qpor5UTZL/q403yvgXTJygZQXJggmxI1Tpg+lXemDU55VKP+fluuFkcnwpo1blDJi7Ropgn4rdv7ISqNiJyeDg==
+  dependencies:
+    "@jup-ag/crema-sdk" "~1.1.10"
+    "@jup-ag/cykura-sdk" "0.1.24"
+    "@jup-ag/cykura-sdk-core" "0.1.7"
+    "@jup-ag/lifinity-sdk" "~0.1.16"
+    "@jup-ag/math" "1.0.0-beta.24"
+    "@jup-ag/whirlpool-sdk" "0.1.1"
+    "@mercurial-finance/optimist" "~0.1.4"
+    "@project-serum/anchor" "~0.23.0"
+    "@project-serum/serum" "~0.13.64"
+    "@saberhq/stableswap-sdk" "~1.12.67"
+    "@solana/spl-token" "~0.1.8"
+    bn.js "~5.2.0"
+    cross-fetch "^3.1.5"
+    decimal.js "~10.3.1"
+    jsbi "~4.3.0"
+    promise-retry "~2.0.1"
+
+"@jup-ag/core@^1.0.0-beta.24":
+  version "1.0.0-beta.27"
+  resolved "https://registry.yarnpkg.com/@jup-ag/core/-/core-1.0.0-beta.27.tgz#e5d8ca75ef827b5cb809384c139c371b579a29c5"
+  integrity sha512-AIGhvDkh16bfagE3IT/DDORAM7Fak+RWPMoHSdCfRE5tqFjyqnJM8c+zbEh3+lhOWIs7iEMi/buiGKamNzx9fA==
   dependencies:
     "@jup-ag/crema-sdk" "2.0.7"
     "@jup-ag/cykura-sdk" "0.1.25"
     "@jup-ag/cykura-sdk-core" "0.1.8"
     "@jup-ag/lifinity-sdk" "0.1.72"
-    "@jup-ag/math" "1.0.0-beta.29"
+    "@jup-ag/math" "1.0.0-beta.27"
     "@jup-ag/whirlpool-sdk" "0.1.1"
     "@mercurial-finance/optimist" "0.1.4"
     "@project-serum/anchor" "0.23.0"
@@ -1656,6 +1692,26 @@
     jsbi "^4.2.0"
     tiny-invariant "^1.2.0"
 
+"@jup-ag/crema-sdk@~1.1.10":
+  version "1.1.10"
+  resolved "https://registry.yarnpkg.com/@jup-ag/crema-sdk/-/crema-sdk-1.1.10.tgz#afb6bd12c5c408a7551d63b081a4882e1efcd9ae"
+  integrity sha512-td60DS9nJoVetnMm7IM3UnTo6y5Q73HquoBedI1Sd1st8AEjg+GK2JK01NXtjWNyqfuxPdKTijMyTzNhB3t1PA==
+  dependencies:
+    "@solana/buffer-layout" "^4.0.0"
+    "@solana/spl-token" "^0.1.8"
+    decimal.js "^10.3.1"
+    tiny-invariant "^1.2.0"
+
+"@jup-ag/cykura-sdk@0.1.24":
+  version "0.1.24"
+  resolved "https://registry.yarnpkg.com/@jup-ag/cykura-sdk/-/cykura-sdk-0.1.24.tgz#6f8cc6092d859f8642881dbae8211dd5ac134101"
+  integrity sha512-9DFN47D6UP8+pZJHlUxve626u73sjXrhIGblHqnTkmCJZ7GicbXBV+lBcfex8xqin/u0xZSoHSfEOir63JFgIg==
+  dependencies:
+    "@cykura/sdk-core" "npm:@jup-ag/cykura-sdk-core@0.1.7"
+    "@project-serum/anchor" "^0.22.1"
+    "@solana/web3.js" "^1.32.0"
+    tiny-invariant "^1.1.0"
+
 "@jup-ag/cykura-sdk@0.1.25":
   version "0.1.25"
   resolved "https://registry.yarnpkg.com/@jup-ag/cykura-sdk/-/cykura-sdk-0.1.25.tgz#03b73f9bb580cccb02e6240e43562330e0f396b6"
@@ -1666,7 +1722,7 @@
     "@solana/web3.js" "^1.32.0"
     tiny-invariant "^1.1.0"
 
-"@jup-ag/lifinity-sdk@0.1.72":
+"@jup-ag/lifinity-sdk@0.1.72", "@jup-ag/lifinity-sdk@~0.1.16":
   version "0.1.72"
   resolved "https://registry.yarnpkg.com/@jup-ag/lifinity-sdk/-/lifinity-sdk-0.1.72.tgz#ef120303d99cd371fbff9b04d63d8cb3b92c6d9b"
   integrity sha512-nHfpaSFsLGjXg9xG/6k4Miik9X4MuGGi5KxYdtSe2a4vR8fQxXNxY/1ATPObAsy2dKV8K7ppkUSwahbXOtLvdQ==
@@ -1679,20 +1735,28 @@
     "@solana/web3.js" "1.31.0"
     decimal.js "^10.3.1"
 
-"@jup-ag/math@1.0.0-beta.29":
-  version "1.0.0-beta.29"
-  resolved "https://registry.yarnpkg.com/@jup-ag/math/-/math-1.0.0-beta.29.tgz#2c4c6533fa48ee33596b867a5fa96507946a84da"
-  integrity sha512-I3X6tIAPPbTTFdGgrwvqpmL8ZDtGI6t+rqOGgvjKZvwIngwAVeLfvLM9ueEVKzUYmaK4YjTOi3fWusMVOv733A==
+"@jup-ag/math@1.0.0-beta.24":
+  version "1.0.0-beta.24"
+  resolved "https://registry.yarnpkg.com/@jup-ag/math/-/math-1.0.0-beta.24.tgz#5458c151907b3a189b3732a5f3f648b6daad6ef3"
+  integrity sha512-qI0MdaTlKVcbpjBtZVmHeuf3PordLC+pP699cDV1RxBxQtg1+0aCrDxtuRc/iohvMbpYqt3UiWWdEIj1LhHrwQ==
+  dependencies:
+    decimal.js "~10.3.1"
+    jsbi "~4.3.0"
+
+"@jup-ag/math@1.0.0-beta.27":
+  version "1.0.0-beta.27"
+  resolved "https://registry.yarnpkg.com/@jup-ag/math/-/math-1.0.0-beta.27.tgz#5d3f0f822586ee86b2c46bce392d3801bb3fda9b"
+  integrity sha512-jJaMRYjVG0oo9js/BkILVNPkBHnzUW9sQDtu9pH/JXis+VPz99Ud+wZV3mXYEo/kHinvJTsb5QuPAhtM32w+TA==
   dependencies:
     decimal.js "10.3.1"
     jsbi "4.3.0"
 
-"@jup-ag/react-hook@^1.0.0-beta.29":
-  version "1.0.0-beta.29"
-  resolved "https://registry.yarnpkg.com/@jup-ag/react-hook/-/react-hook-1.0.0-beta.29.tgz#57dae9b8a0967b9d53fffce02e9398a885ced57f"
-  integrity sha512-sDWz14GGzgpauaZTTWxAoknEwexK+2FyOLQykqx3ghMF/mX3Lem3FneZ08AgtH1Sho6RNdFU9To19p6qXf+YOw==
+"@jup-ag/react-hook@^1.0.0-beta.24":
+  version "1.0.0-beta.24"
+  resolved "https://registry.yarnpkg.com/@jup-ag/react-hook/-/react-hook-1.0.0-beta.24.tgz#cfc5b3e6056ae514dc3e34f2b7c7921327b77616"
+  integrity sha512-HvUEiRQt4iAU54Q503nt2JCiKjU0BXZHpSZoW0ZBfLLyBPjDQkkAE9dnXkW3lzVyljuWenbvfZFJYl2SJrZpaA==
   dependencies:
-    "@jup-ag/core" "1.0.0-beta.29"
+    "@jup-ag/core" "1.0.0-beta.24"
 
 "@jup-ag/whirlpool-sdk@0.1.1":
   version "0.1.1"
@@ -1751,6 +1815,11 @@
   resolved "https://registry.yarnpkg.com/@mercurial-finance/optimist/-/optimist-0.1.4.tgz#3ed5155fe94d5df0f86d2f47a3506460109eed4a"
   integrity sha512-m8QuyPx9j7fGd2grw0mD5WcYtBb8l7+OQI5aHdeIlxPg3QoPrbSdCHyFOuipYbvB0EY5YDbOmyeFwiTcBkBBSw==
 
+"@mercurial-finance/optimist@~0.1.4":
+  version "0.1.5"
+  resolved "https://registry.yarnpkg.com/@mercurial-finance/optimist/-/optimist-0.1.5.tgz#04f43367befe8eca95ac9e286b32841883490db4"
+  integrity sha512-88FL1r/uakc1wCTL2vkSqFzsCOpAqvv6kmw++xiPNx59FFIR6NQrbfwTE0HNOszUXy6/C9nINywzUkFcyjn5hQ==
+
 "@nodelib/fs.scandir@2.1.5":
   version "2.1.5"
   resolved "https://registry.yarnpkg.com/@nodelib/fs.scandir/-/fs.scandir-2.1.5.tgz#7619c2eb21b25483f6d167548b4cfd5a7488c3d5"
@@ -1789,6 +1858,7 @@
     rimraf "^3.0.2"
 
 "@orca-so/whirlpool-client-sdk@npm:@jup-ag/whirlpool-client-sdk@0.0.8":
+  name "@jup-ag/whirlpool-client-sdk"
   version "0.0.8"
   resolved "https://registry.yarnpkg.com/@jup-ag/whirlpool-client-sdk/-/whirlpool-client-sdk-0.0.8.tgz#d3715266e0a76ab699078ce1f5525f80e09dd825"
   integrity sha512-nlAE/huKAWNxJ9g9BhD7nWGqTg/s0kGjWYqccsYM1Nv6CjesvWdtl8N4k81enmYYU2jgjm6f4XYKA8zTLHsBsA==
@@ -1926,7 +1996,7 @@
     bn.js "^5.1.2"
     buffer-layout "^1.2.0"
 
-"@project-serum/serum@0.13.65", "@project-serum/serum@^0.13.61", "@project-serum/serum@^0.13.65":
+"@project-serum/serum@0.13.65", "@project-serum/serum@^0.13.61", "@project-serum/serum@^0.13.65", "@project-serum/serum@~0.13.64":
   version "0.13.65"
   resolved "https://registry.yarnpkg.com/@project-serum/serum/-/serum-0.13.65.tgz#6d3cf07912f13985765237f053cca716fe84b0b0"
   integrity sha512-BHRqsTqPSfFB5p+MgI2pjvMBAQtO8ibTK2fYY96boIFkCI3TTwXDt2gUmspeChKO2pqHr5aKevmexzAcXxrSRA==
@@ -1953,14 +2023,7 @@
     bs58 "^4.0.1"
     eventemitter3 "^4.0.7"
 
-"@pythnetwork/client@^2.5.1":
-  version "2.7.3"
-  resolved "https://registry.yarnpkg.com/@pythnetwork/client/-/client-2.7.3.tgz#6075a16dc394d1734e76b04e907a680490a61536"
-  integrity sha512-+2k5JXxv/yUA6WMESSppJlg4T/AP+nZZfBnHmeG3RPCIJx+bargxFLCK4B2KgpQYdeTWb+2z8yRCNF7tHooCFQ==
-  dependencies:
-    buffer "^6.0.1"
-
-"@pythnetwork/client@^2.7.0":
+"@pythnetwork/client@^2.5.1", "@pythnetwork/client@^2.7.0":
   version "2.7.1"
   resolved "https://registry.yarnpkg.com/@pythnetwork/client/-/client-2.7.1.tgz#33a3ff108937bc7da765ed9d84878002396719f8"
   integrity sha512-q8lRwon69Q6P7TC8u3IFVXvC6Wa0FjxuuvbGclOelE2zbom7ZA2014bwPlu5ta9NDs4EUkUAPv39e+2ikYHyHg==
@@ -1995,19 +2058,19 @@
     estree-walker "^1.0.1"
     picomatch "^2.2.2"
 
-"@saberhq/option-utils@^1.14.4":
-  version "1.14.4"
-  resolved "https://registry.yarnpkg.com/@saberhq/option-utils/-/option-utils-1.14.4.tgz#86c247b65d0f1bd56327d014666948044f771b1f"
-  integrity sha512-CHdKspiPu2iqtR9nBpdvFjHO5N3iGodO9TcoNZ9I3bWnV3iwMMEhiWx5Ik3FtG9o/RaF9HstWAUbR7Xz/v6SJw==
+"@saberhq/option-utils@^1.13.32":
+  version "1.13.32"
+  resolved "https://registry.yarnpkg.com/@saberhq/option-utils/-/option-utils-1.13.32.tgz#143eb446c2c8d743690a900ae1688c9209fbcd05"
+  integrity sha512-xkpXZ82EGPJwT+CGjyhZ6mAQW0KpY+3hBaXAhrkv6M0IPgj2xGRYJ+WdwBvF/WeTgmFxGHCp7o1DmwjR2/XXbA==
   dependencies:
     tslib "^2.4.0"
 
-"@saberhq/solana-contrib@^1.12.66", "@saberhq/solana-contrib@^1.13.6", "@saberhq/solana-contrib@^1.14.4":
-  version "1.14.4"
-  resolved "https://registry.yarnpkg.com/@saberhq/solana-contrib/-/solana-contrib-1.14.4.tgz#d062cd0817e60ae190e81d08e2e026c183c15ecd"
-  integrity sha512-mV7nGecTaVB4opsC5fZT3fRcQHBQ7OyUYGCCHge6Q65rOTfajvVusm+LA2joalWUuYpxZuNH3rQZCY8WRNSpTQ==
+"@saberhq/solana-contrib@^1.12.66", "@saberhq/solana-contrib@^1.12.72", "@saberhq/solana-contrib@^1.13.30", "@saberhq/solana-contrib@^1.13.6":
+  version "1.13.32"
+  resolved "https://registry.yarnpkg.com/@saberhq/solana-contrib/-/solana-contrib-1.13.32.tgz#ace608df953c1e92b8cad388835dce5d1729f7a7"
+  integrity sha512-W0F5W1CJjk2ACuAYjGxr/nB+pDHsmg2A6F+d+XRM6/EES/9ZoIINHCA1dnPsTa0p4PnC1S7BtCrv9aERzwRKhg==
   dependencies:
-    "@saberhq/option-utils" "^1.14.4"
+    "@saberhq/option-utils" "^1.13.32"
     "@solana/buffer-layout" "^4.0.0"
     "@types/promise-retry" "^1.1.3"
     "@types/retry" "^0.12.2"
@@ -2028,15 +2091,27 @@
     tiny-invariant "^1.2.0"
     tslib "^2.4.0"
 
-"@saberhq/token-utils@^1.12.66", "@saberhq/token-utils@^1.13.6":
-  version "1.14.4"
-  resolved "https://registry.yarnpkg.com/@saberhq/token-utils/-/token-utils-1.14.4.tgz#8d812e72755e3fc8d398ace6a9b69a84b885eaac"
-  integrity sha512-+GJjiwVnAkdXucLLZae/aw4ruY1nRZ8lgEKctU0l1ikpYpRPdDRmk7WtbsJBeM5HDRdkx9qVlLwb6aDMshygTA==
+"@saberhq/stableswap-sdk@~1.12.67":
+  version "1.12.72"
+  resolved "https://registry.yarnpkg.com/@saberhq/stableswap-sdk/-/stableswap-sdk-1.12.72.tgz#6b4567e86e53bdb0383b75d13f072f954d209bc4"
+  integrity sha512-W4Z1LFIvzkhlg+Xpy5SFNJ7dhJD0CG9e3IhuN0+uvVZBSZvhmznaPfL4zp31tWbbTzVEzzUU649jsxdMc2PNGQ==
   dependencies:
-    "@saberhq/solana-contrib" "^1.14.4"
+    "@saberhq/solana-contrib" "^1.12.72"
+    "@saberhq/token-utils" "^1.12.72"
+    "@solana/buffer-layout" "^4.0.0"
+    lodash.mapvalues "^4.6.0"
+    tiny-invariant "^1.2.0"
+    tslib "^2.4.0"
+
+"@saberhq/token-utils@^1.12.66", "@saberhq/token-utils@^1.12.72", "@saberhq/token-utils@^1.13.6":
+  version "1.13.30"
+  resolved "https://registry.yarnpkg.com/@saberhq/token-utils/-/token-utils-1.13.30.tgz#9f3ad35f21ddc6ee6f2b77fd6719cf2aec72af96"
+  integrity sha512-ZpzYJ/tkWmgEnIZGTPONtmKuoJjT+mpzi/8jIl2xoQjeg37S3/iuthQO/Pgw2O9UK/4j249tqqG0V/NFvPMM5w==
+  dependencies:
+    "@saberhq/solana-contrib" "^1.13.30"
     "@solana/buffer-layout" "^4.0.0"
     "@solana/spl-token" "^0.1.8"
-    "@ubeswap/token-math" "^5.2.0"
+    "@ubeswap/token-math" "^5.1.6"
     tiny-invariant "^1.2.0"
     tslib "^2.4.0"
 
@@ -2106,6 +2181,7 @@
     buffer "~6.0.3"
 
 "@solana/spl-token-v2@npm:@solana/spl-token@0.2.0", "@solana/spl-token@^0.2.0":
+  name "@solana/spl-token"
   version "0.2.0"
   resolved "https://registry.yarnpkg.com/@solana/spl-token/-/spl-token-0.2.0.tgz#329bb6babb5de0f9c40035ddb1657f01a8347acd"
   integrity sha512-RWcn31OXtdqIxmkzQfB2R+WpsJOVS6rKuvpxJFjvik2LyODd+WN58ZP3Rpjpro03fscGAkzlFuP3r42doRJgyQ==
@@ -2764,10 +2840,10 @@
   dependencies:
     "@babel/types" "^7.3.0"
 
-"@types/big.js@^6.1.5":
-  version "6.1.5"
-  resolved "https://registry.yarnpkg.com/@types/big.js/-/big.js-6.1.5.tgz#ff06b43a4c0c4002522e0fd7fc28bb963722ab01"
-  integrity sha512-UiWyJ6TLWoHeHZ8VUyngzCOwJDVxTsPnqfAMR/85X93rkRk5A4T2U42BCx0wCmZdtMHGHN/utJ8ft5xWu0V1bA==
+"@types/big.js@^6.1.3":
+  version "6.1.4"
+  resolved "https://registry.yarnpkg.com/@types/big.js/-/big.js-6.1.4.tgz#a2299b68c4a9e39099661e5fb3ddf14c7b29f4cb"
+  integrity sha512-yBEfFBLpvnIS9MLcKG4XIpBhMRjDWEf4cSJ/uR5cPq2JrYB+yhYMPK8cF17hGfWmsWL7LuzJF/N4APRtmcg4sw==
 
 "@types/bn.js@^4.11.5":
   version "4.11.6"
@@ -3224,13 +3300,13 @@
     "@typescript-eslint/types" "4.33.0"
     eslint-visitor-keys "^2.0.0"
 
-"@ubeswap/token-math@^5.2.0":
-  version "5.2.0"
-  resolved "https://registry.yarnpkg.com/@ubeswap/token-math/-/token-math-5.2.0.tgz#11d8706761da08b491a18743f11dc41191d46791"
-  integrity sha512-SpNTx30ssrZB3BcjkSKIbJlNJewkfUgQXYx5NOY9YjUHpwFdEkgeM9uC0n6SV6JzmVelUXaRU7h7XnYKGUW7vg==
+"@ubeswap/token-math@^5.1.6":
+  version "5.1.6"
+  resolved "https://registry.yarnpkg.com/@ubeswap/token-math/-/token-math-5.1.6.tgz#193d1877e34ec4056f6ffcda13611383775c652b"
+  integrity sha512-OS0L+WfdZ7jXX6Q/MFC5hIAAIposSDLWvnbx0F2EI0DRRhXxxGEXpmWLAVdJwZbbFPw0TQ+pVz4yJLVZP/9vQw==
   dependencies:
-    "@types/big.js" "^6.1.5"
-    big.js "^6.2.1"
+    "@types/big.js" "^6.1.3"
+    big.js "^6.2.0"
     decimal.js-light "^2.5.1"
     tiny-invariant "^1.2.0"
     tslib "^2.4.0"
@@ -4215,10 +4291,10 @@ big.js@^5.2.2:
   resolved "https://registry.yarnpkg.com/big.js/-/big.js-5.2.2.tgz#65f0af382f578bcdc742bd9c281e9cb2d7768328"
   integrity sha512-vyL2OymJxmarO8gxMr0mhChsO9QGwhynfuu4+MHTAW6czfq9humCB7rKpUjDd9YUiDPU4mzpyupFSvOClAwbmQ==
 
-big.js@^6.2.1:
-  version "6.2.1"
-  resolved "https://registry.yarnpkg.com/big.js/-/big.js-6.2.1.tgz#7205ce763efb17c2e41f26f121c420c6a7c2744f"
-  integrity sha512-bCtHMwL9LeDIozFn+oNhhFoq+yQ3BNdnsLSASUxLciOb1vgvpHsIO1dsENiGMgbb4SkP5TrzWzRiLddn8ahVOQ==
+big.js@^6.2.0:
+  version "6.2.0"
+  resolved "https://registry.yarnpkg.com/big.js/-/big.js-6.2.0.tgz#39c60822aecb0f34a1d79a90fe9908a0ddf45e1d"
+  integrity sha512-paIKvJiAaOYdLt6MfnvxkDo64lTOV257XYJyX3oJnJQocIclUn+48k6ZerH/c5FxWE6DGJu1TKDYis7tqHg9kg==
 
 bigint-buffer@^1.1.5:
   version "1.1.5"
@@ -5712,15 +5788,10 @@ decimal.js-light@^2.5.1:
   resolved "https://registry.yarnpkg.com/decimal.js-light/-/decimal.js-light-2.5.1.tgz#134fd32508f19e208f4fb2f8dac0d2626a867934"
   integrity sha512-qIMFpTMZmny+MMIitAB6D7iVPEorVw6YQRWkvarTkT4tBeSLLiHzcwj6q0MmYSFCiVpiqPJTJEYIrpcPzVEIvg==
 
-decimal.js@10.3.1, decimal.js@^10.2.1, decimal.js@~10.3.1:
+decimal.js@10.3.1, decimal.js@^10.2.1, decimal.js@^10.3.1, decimal.js@~10.3.1:
   version "10.3.1"
   resolved "https://registry.yarnpkg.com/decimal.js/-/decimal.js-10.3.1.tgz#d8c3a444a9c6774ba60ca6ad7261c3a94fd5e783"
   integrity sha512-V0pfhfr8suzyPGOx3nmq4aHqabehUZn6Ch9kyFpV79TGDTWFmHqUqXdabR7QHqxzrYolF4+tVmJhUG4OURg5dQ==
-
-decimal.js@^10.3.1:
-  version "10.4.0"
-  resolved "https://registry.yarnpkg.com/decimal.js/-/decimal.js-10.4.0.tgz#97a7448873b01e92e5ff9117d89a7bca8e63e0fe"
-  integrity sha512-Nv6ENEzyPQ6AItkGwLE2PGKinZZ9g59vSh2BeH6NqPu0OTKZ5ruJsVqh/orbAnqXc9pBbgXAIrc2EyaCj8NpGg==
 
 decode-uri-component@^0.2.0:
   version "0.2.0"
@@ -8980,7 +9051,7 @@ js-yaml@^3.13.1:
     argparse "^1.0.7"
     esprima "^4.0.0"
 
-jsbi@4.3.0, jsbi@^4.1.0, jsbi@^4.2.0:
+jsbi@4.3.0, jsbi@^4.1.0, jsbi@^4.2.0, jsbi@~4.3.0:
   version "4.3.0"
   resolved "https://registry.yarnpkg.com/jsbi/-/jsbi-4.3.0.tgz#b54ee074fb6fcbc00619559305c8f7e912b04741"
   integrity sha512-SnZNcinB4RIcnEyZqFPdGPVgrg2AcnykiBy0sHVJQKHYeaLUvi3Exj+iaPpLnFVkDPZIV4U0yvgC9/R4uEAZ9g==
@@ -9480,9 +9551,9 @@ lru-cache@^6.0.0:
     yallist "^4.0.0"
 
 lru-cache@^7.9.0:
-  version "7.14.0"
-  resolved "https://registry.yarnpkg.com/lru-cache/-/lru-cache-7.14.0.tgz#21be64954a4680e303a09e9468f880b98a0b3c7f"
-  integrity sha512-EIRtP1GrSJny0dqb50QXRUNBxHJhcpxHC++M5tD7RYbvLLn5KVWKsbyswSSqDuU15UFi3bgTQIY8nhDMeF6aDQ==
+  version "7.10.2"
+  resolved "https://registry.yarnpkg.com/lru-cache/-/lru-cache-7.10.2.tgz#aab494e0768ce94f199ef553ffe0a362f2a58bb9"
+  integrity sha512-9zDbhgmXAUvUMPV81A705K3tVzcPiZL3Bf5/5JC/FjYJlLZ5AJCeqIRFHJqyBppiLosqF+uKB7p8/RDXylqBIw==
 
 lz-string@^1.4.4:
   version "1.4.4"
@@ -11344,7 +11415,7 @@ promise-inflight@^1.0.1:
   resolved "https://registry.yarnpkg.com/promise-inflight/-/promise-inflight-1.0.1.tgz#98472870bf228132fcbdd868129bad12c3c029e3"
   integrity sha512-6zWPyEOFaQBJYcGMHBKTKJ3u6TBsnMFOIZSa6ce1e/ZrrsOlnHRHbabMjLiBYKp+n44X9eUI6VUPaukCXHuG4g==
 
-promise-retry@2.0.1, promise-retry@^2.0.1:
+promise-retry@2.0.1, promise-retry@^2.0.1, promise-retry@~2.0.1:
   version "2.0.1"
   resolved "https://registry.yarnpkg.com/promise-retry/-/promise-retry-2.0.1.tgz#ff747a13620ab57ba688f5fc67855410c370da22"
   integrity sha512-y+WKFlBR8BGXnsNlIHFGPZmyDf3DFMoLhaflAnyZgV6rG6xu+JwesTo2Q9R6XwYmtmwAFCkAk3e35jEdoeh/3g==
