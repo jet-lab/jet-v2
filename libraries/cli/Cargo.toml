@@ -1,0 +1,15 @@
+[package]
+name = "jet-bonds-cli"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anchor-client = { git = "https://github.com/jet-lab/anchor", branch = "master" }
+clap = { version = "3.1", features = ["derive"] }
+shellexpand = "2.1.0"
+spl-token = "3.1.0"
+
+
+jet-bonds = { path = "../../programs/bonds" }
+jet-bonds-lib = { path = "../rust-bonds" }
+jet-bonds-metadata = { path = "../../programs/bonds-metadata", features = ["devnet", "no-entrypoint"] }

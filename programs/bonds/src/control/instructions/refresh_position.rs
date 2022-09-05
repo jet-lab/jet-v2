@@ -1,0 +1,100 @@
+use anchor_lang::prelude::*;
+use anchor_spl::token::{Mint, Token, TokenAccount};
+use jet_margin::{AdapterPositionFlags, AdapterResult, PositionChange, PriceChangeInfo};
+
+use crate::{
+    control::{events::PositionRefreshed, state::BondManager},
+    margin::return_to_margin,
+    orderbook::state::user::OrderbookUser,
+    utils::{burn, mint_to},
+    BondsError,
+};
+
+#[derive(Accounts)]
+pub struct RefreshPosition<'info> {
+    /// The account tracking information related to this particular user
+    #[account(
+        has_one = bond_manager @ BondsError::UserNotInMarket,
+        has_one = claims @ BondsError::WrongClaimAccount,
+        has_one = user @ BondsError::WrongClaimAccount,
+    )]
+    pub orderbook_user_account: Account<'info, OrderbookUser>,
+
+    pub user: AccountInfo<'info>,
+
+    #[account(mut)]
+    pub claims: Account<'info, TokenAccount>,
+
+    #[account(mut)]
+    pub claims_mint: Account<'info, Mint>,
+
+    /// The `BondManager` account tracks global information related to this particular bond market
+    #[account(
+        has_one = claims_mint @ BondsError::WrongClaimMint,
+        has_one = oracle @ BondsError::WrongOracle,
+    )]
+    pub bond_manager: AccountLoader<'info, BondManager>,
+
+    /// The pyth price account
+    pub oracle: AccountInfo<'info>,
+
+    /// SPL token program
+    pub token_program: Program<'info, Token>,
+}
+
+pub fn handler(ctx: Context<RefreshPosition>, expect_price: bool) -> Result<()> {
+    let claim_balance = ctx.accounts.claims.amount;
+    let debt = &mut ctx.accounts.orderbook_user_account.debt;
+    let total = debt.total();
+
+    if claim_balance > total {
+        burn!(ctx, claims_mint, claims, claim_balance - total)?;
+    }
+    if claim_balance < total {
+        // in theory this should never happen. if it does, this enables us to take care of it asap
+        mint_to!(ctx, claims_mint, claims, total - claim_balance)?;
+    }
+
+    let mut position_changes = vec![PositionChange::Flags(
+        AdapterPositionFlags::PAST_DUE,
+        debt.is_past_due(),
+    )];
+
+    // always try to update the price, but conditionally permit position updates if price fails
+    // so we can continue to mark positions as past due even if there is an oracle failure
+    match load_price(&ctx.accounts.oracle) {
+        Ok(price) => position_changes.push(price),
+        Err(e) if expect_price => Err(e)?,
+        Err(e) => msg!("skipping price update due to error: {:?}", e),
+    }
+
+    return_to_margin(
+        &ctx.accounts.user.to_account_info(),
+        &AdapterResult {
+            position_changes: vec![(ctx.accounts.claims_mint.key(), position_changes.clone())],
+        },
+    )?;
+
+    emit!(PositionRefreshed {
+        orderbook_user_account: ctx.accounts.orderbook_user_account.key(),
+        position_changes,
+    });
+
+    Ok(())
+}
+
+fn load_price(oracle_info: &AccountInfo) -> Result<PositionChange> {
+    let oracle = pyth_sdk_solana::load_price_feed_from_account_info(oracle_info).map_err(|e| {
+        msg!("oracle error: {:?}", e);
+        error!(BondsError::OracleError)
+    })?;
+    let price = oracle.get_current_price().ok_or(BondsError::PriceMissing)?;
+    let ema_price = oracle.get_ema_price().ok_or(BondsError::PriceMissing)?;
+    Ok(PositionChange::Price(PriceChangeInfo {
+        publish_time: oracle.publish_time,
+        exponent: oracle.expo,
+        value: price.price,
+        confidence: price.conf,
+        twap: ema_price.price,
+    }))
+}
