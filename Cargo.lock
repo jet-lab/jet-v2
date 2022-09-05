@@ -64,6 +64,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "agnostic-orderbook"
+version = "1.0.0"
+source = "git+https://github.com/jet-lab/agnostic-orderbook.git?branch=main#d1cac50cf0875d5745b70c1a9bfd40ae162274e4"
+dependencies = [
+ "bonfida-utils",
+ "borsh 0.9.3",
+ "bytemuck",
+ "enumflags2",
+ "num-derive",
+ "num-traits",
+ "num_enum",
+ "solana-program",
+ "spl-token 3.3.1",
+ "thiserror",
+]
+
+[[package]]
 name = "ahash"
 version = "0.4.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -528,6 +545,31 @@ name = "block-padding"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8d696c370c750c948ada61c69a0ee2cbbb9c50b1019ddb86d9317157a99c2cae"
+
+[[package]]
+name = "bonfida-macros"
+version = "0.2.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0f5ace5ed40eb56cd6d6a0de41bc2e919af6047d98f7e502d06fa201a7814ad4"
+dependencies = [
+ "proc-macro2 1.0.43",
+ "quote 1.0.21",
+ "solana-program",
+ "syn 1.0.99",
+]
+
+[[package]]
+name = "bonfida-utils"
+version = "0.3.0"
+source = "git+https://github.com/Bonfida/bonfida-utils.git?branch=add-rounding-direction#11abafa345b5486062e8e3e1e8ca8077a4a9b507"
+dependencies = [
+ "bonfida-macros",
+ "borsh 0.9.3",
+ "bytemuck",
+ "pyth-sdk-solana",
+ "solana-program",
+ "spl-token 3.3.1",
+]
 
 [[package]]
 name = "borsh"
@@ -1249,6 +1291,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "enumflags2"
+version = "0.7.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e75d4cd21b95383444831539909fbb14b9dc3fdceb2a6f5d36577329a1f55ccb"
+dependencies = [
+ "enumflags2_derive",
+]
+
+[[package]]
+name = "enumflags2_derive"
+version = "0.7.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f58dc3c5e468259f19f2d46304a6b28f1c3d034442e14b322d2b850e36f6d5ae"
+dependencies = [
+ "proc-macro2 1.0.43",
+ "quote 1.0.21",
+ "syn 1.0.99",
+]
+
+[[package]]
 name = "env_logger"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1616,7 +1678,7 @@ dependencies = [
  "jet-margin-sdk",
  "jet-margin-swap",
  "jet-metadata",
- "jet-proto-math",
+ "jet-proto-math 1.1.0 (git+https://github.com/jet-lab/program-libraries?branch=main)",
  "jet-simulation",
  "jet-static-program-registry",
  "mock-adapter",
@@ -1814,6 +1876,21 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6c8af84674fe1f223a982c933a0ee1086ac4d4052aa0fb8060c12c6ad838e754"
 
 [[package]]
+name = "jet-bonds-lib"
+version = "0.1.0"
+dependencies = [
+ "agnostic-orderbook",
+ "anchor-lang",
+ "jet-margin-bonds",
+ "jet-margin-bonds-metadata",
+ "jet-proto-math 1.1.0 (git+https://github.com/jet-lab/program-libraries?branch=fixed-point-math)",
+ "solana-sdk",
+ "spl-associated-token-account",
+ "spl-token 3.3.1",
+ "thiserror",
+]
+
+[[package]]
 name = "jet-control"
 version = "1.0.0"
 dependencies = [
@@ -1834,11 +1911,38 @@ dependencies = [
  "bytemuck",
  "itertools",
  "jet-metadata",
- "jet-proto-math",
+ "jet-proto-math 1.1.0 (git+https://github.com/jet-lab/program-libraries?branch=main)",
  "jet-proto-proc-macros",
  "serde",
  "serde_test",
  "static_assertions",
+]
+
+[[package]]
+name = "jet-margin-bonds"
+version = "0.1.0"
+dependencies = [
+ "agnostic-orderbook",
+ "anchor-lang",
+ "anchor-spl",
+ "arrayref",
+ "bitflags",
+ "borsh 0.9.3",
+ "bytemuck",
+ "jet-margin",
+ "jet-margin-bonds-metadata",
+ "jet-proto-math 1.1.0 (git+https://github.com/jet-lab/program-libraries?branch=main)",
+ "num-derive",
+ "num-traits",
+ "pyth-sdk-solana",
+ "serde",
+]
+
+[[package]]
+name = "jet-margin-bonds-metadata"
+version = "0.1.0"
+dependencies = [
+ "anchor-lang",
 ]
 
 [[package]]
@@ -1851,7 +1955,7 @@ dependencies = [
  "bytemuck",
  "jet-margin",
  "jet-metadata",
- "jet-proto-math",
+ "jet-proto-math 1.1.0 (git+https://github.com/jet-lab/program-libraries?branch=main)",
  "pyth-sdk-solana",
  "serde",
  "serde_test",
@@ -1907,9 +2011,22 @@ dependencies = [
 [[package]]
 name = "jet-proto-math"
 version = "1.1.0"
-source = "git+https://github.com/jet-lab/program-libraries?branch=main#7e00d07729d2a079d7d0af5c49b359965df6256f"
+source = "git+https://github.com/jet-lab/program-libraries?branch=fixed-point-math#4759528cab6e0a186fba57b653744499fc343665"
 dependencies = [
  "bytemuck",
+ "static_assertions",
+ "thiserror",
+ "uint 0.9.3",
+]
+
+[[package]]
+name = "jet-proto-math"
+version = "1.1.0"
+source = "git+https://github.com/jet-lab/program-libraries?branch=main#7e00d07729d2a079d7d0af5c49b359965df6256f"
+dependencies = [
+ "anchor-lang",
+ "bytemuck",
+ "num-traits",
  "static_assertions",
  "thiserror",
  "uint 0.9.3",
@@ -4890,6 +5007,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fc7652e3f6c4706c8d9cd54832c4a4ccb9b5336e2c3bd154d5cccfbf1c1f5f7d"
 dependencies = [
  "cfg-if",
+ "serde",
+ "serde_json",
  "wasm-bindgen-macro",
 ]
 
@@ -4948,6 +5067,18 @@ name = "wasm-bindgen-shared"
 version = "0.2.82"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6598dd0bd3c7d51095ff6531a5b23e02acdc81804e30d8f07afb77b7215a140a"
+
+[[package]]
+name = "wasm-utils"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bytemuck",
+ "jet-bonds-lib",
+ "js-sys",
+ "serde",
+ "wasm-bindgen",
+]
 
 [[package]]
 name = "web-sys"

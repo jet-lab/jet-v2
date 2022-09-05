@@ -1,0 +1,21 @@
+[package]
+name = "jet-margin-bonds-metadata"
+version = "0.1.0"
+description = "Metadata module for the Jet Bonds program"
+edition = "2018"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "jet_margin_bonds_metadata"
+doctest = false
+
+[features]
+no-entrypoint = []
+no-idl = []
+cpi = ["no-entrypoint"]
+default = []
+devnet = []
+testing = []
+
+[dependencies]
+anchor-lang = { git = "https://github.com/jet-lab/anchor", branch = "master" }
