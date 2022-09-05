@@ -62,7 +62,6 @@ pub fn handler<'a, 'b, 'info>(
         consume_events::Accounts {
             market: &ctx.accounts.orderbook_market_state.to_account_info(),
             event_queue: &ctx.accounts.event_queue.to_account_info(),
-            reward_target: &ctx.accounts.bond_manager.to_account_info(),
         },
         consume_events::Params {
             number_of_entries_to_consume: num_iters,

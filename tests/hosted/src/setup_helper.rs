@@ -74,11 +74,13 @@ pub async fn setup_token(
     Ok(token)
 }
 
-pub async fn users<const N: usize>(ctx: &MarginTestContext) -> Result<[TestUser; N]> {
+pub async fn users<'a, const N: usize>(ctx: &'a MarginTestContext) -> Result<[TestUser<'a>; N]> {
     Ok(create_users(ctx, N).await?.try_into().unwrap())
 }
 
-pub async fn liquidators<const N: usize>(ctx: &MarginTestContext) -> Result<[TestLiquidator; N]> {
+pub async fn liquidators<'a, const N: usize>(
+    ctx: &'a MarginTestContext,
+) -> Result<[TestLiquidator<'a>; N]> {
     Ok((0..N)
         .map_async(|_| TestLiquidator::new(ctx))
         .await?
@@ -94,7 +96,7 @@ pub async fn tokens<const N: usize>(
     Ok((tokens.try_into().unwrap(), swaps, pricer))
 }
 
-pub async fn create_users(ctx: &MarginTestContext, n: usize) -> Result<Vec<TestUser>> {
+pub async fn create_users<'a>(ctx: &'a MarginTestContext, n: usize) -> Result<Vec<TestUser<'a>>> {
     (0..n).map_async(|_| setup_user(ctx, vec![])).await
 }
 
@@ -123,10 +125,10 @@ pub async fn create_tokens(
 }
 
 /// (token_mint, balance in wallet, balance in pools)
-pub async fn setup_user(
-    ctx: &MarginTestContext,
+pub async fn setup_user<'a>(
+    ctx: &'a MarginTestContext,
     tokens: Vec<(Pubkey, u64, u64)>,
-) -> Result<TestUser> {
+) -> Result<TestUser<'a>> {
     // Create our two user wallets, with some SOL funding to get started
     let wallet = create_wallet(&ctx.rpc, 10 * LAMPORTS_PER_SOL).await?;
 
