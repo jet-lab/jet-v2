@@ -59,6 +59,26 @@ export interface PoolProjection {
   borrowRate: number
 }
 
+/**
+ * An SPL swap pool
+ *
+ * @export
+ * @interface SPLSwapPool
+ */
+export interface SPLSwapPool {
+  swapPool: string
+  authority: string
+  poolMint: string
+  tokenMintA: string
+  tokenMintB: string
+  tokenA: string
+  tokenB: string
+  feeAccount: string
+  swapProgram: string
+  swapFees: number
+  swapType: "constantProduct" | "stable"
+}
+
 export const feesBuffer: number = LAMPORTS_PER_SOL * 0.075
 
 /**
@@ -1139,13 +1159,15 @@ export class Pool {
    * @param `marginAccount` - The margin account that will receive the deposit.
    * @param `pools` - Array of margin pools
    * @param `outputToken` - The corresponding pool for the token being swapped to.
+   * @param `swapPool` - The SPL swap pool the exchange is taking place in.
    * @param `swapAmount` - The amount being swapped.
    * @param `minAmountOut` - The minimum output amount based on swapAmount and slippage.
    */
-  async swap({
+  async splTokenSwap({
     marginAccount,
     pools,
     outputToken,
+    swapPool,
     swapAmount,
     minAmountOut,
     repayWithOutput
@@ -1153,6 +1175,7 @@ export class Pool {
     marginAccount: MarginAccount
     pools: Pool[]
     outputToken: Pool
+    swapPool: SPLSwapPool
     swapAmount: TokenAmount
     minAmountOut: TokenAmount
     repayWithOutput: boolean
@@ -1224,10 +1247,11 @@ export class Pool {
     }
 
     // Swap ix
-    await this.withSwap({
+    await this.withSPLTokenSwap({
       instructions,
       marginAccount,
       outputToken,
+      swapPool,
       changeKind,
       minAmountOut,
       sourceAccount,
@@ -1258,10 +1282,11 @@ export class Pool {
     ])
   }
 
-  async withSwap({
+  async withSPLTokenSwap({
     instructions,
     marginAccount,
     outputToken,
+    swapPool,
     changeKind,
     minAmountOut,
     sourceAccount,
@@ -1272,6 +1297,7 @@ export class Pool {
     instructions: TransactionInstruction[]
     marginAccount: MarginAccount
     outputToken: Pool
+    swapPool: SPLSwapPool
     changeKind: PoolTokenChange
     minAmountOut: TokenAmount
     sourceAccount: Address
@@ -1279,47 +1305,20 @@ export class Pool {
     transitSourceAccount: Address
     transitDestinationAccount: Address
   }): Promise<void> {
-    // TODO: check tokenMintA and tokenMintB for matching pools.
-    // If no pool is found, a user would have to swap twice from A > X > B,
-    // so we should ideally check matching pools on the UI before getting here.
-    const devnetCluster = marginAccount.programs.config.url.includes("devnet")
-    const swapPair = `${this.symbol}/${outputToken.symbol}`
-    const swapPoolAccounts = devnetCluster ? orcaSwapPoolsDevnet[swapPair] : orcaSwapPools[swapPair]
-
-    // Determine the direction of the swap based on token mints.
-    // The instruction relies on the swap `vaultFrom` and `vaultInto` to determine
-    // the direction of the swap.
-    let swapSourceVault: string
-    let swapDestinationVault: string
-    if (
-      swapPoolAccounts.tokenMintA === this.addresses.tokenMint.toBase58() &&
-      swapPoolAccounts.tokenMintB === outputToken.addresses.tokenMint.toBase58()
-    ) {
-      // Swapping from token A to token B on swap pool
-      swapSourceVault = swapPoolAccounts.tokenB
-      swapDestinationVault = swapPoolAccounts.tokenA
-    } else if (
-      swapPoolAccounts.tokenMintB === this.addresses.tokenMint.toBase58() &&
-      swapPoolAccounts.tokenMintA === outputToken.addresses.tokenMint.toBase58()
-    ) {
-      // Swapping from token B to token A on swap pool
-      swapSourceVault = swapPoolAccounts.tokenA
-      swapDestinationVault = swapPoolAccounts.tokenB
-    } else {
-      // Pedantic. We can't reach this condition if correct pool is selected
-      throw new Error("Invalid swap pool selected")
+    // Determine the direction of the swap
+    let swapAtoB = true
+    if (this.addresses.tokenMint.toBase58() === swapPool.tokenMintB) {
+      swapAtoB = false
     }
 
     // Swap
     await marginAccount.withAdapterInvoke({
       instructions,
       adapterProgram: this.programs.config.marginSwapProgramId,
-      // TODO: check if this evaluates to DUheebnZ below
       adapterMetadata: findDerivedAccount(
         this.programs.config.metadataProgramId,
         this.programs.config.marginSwapProgramId
       ),
-      // adapterMetadata: new PublicKey("DUheebnZrHMGzEMbs9FpPFTkbmVdZnyW92CVwrYd3aGa"),
       adapterInstruction: await this.programs.marginSwap.methods
         .marginSwap(changeKind.changeKind.asParam(), changeKind.value, minAmountOut.lamports)
         .accounts({
@@ -1341,13 +1340,14 @@ export class Pool {
             depositNoteMint: outputToken.addresses.depositNoteMint
           },
           swapInfo: {
-            swapPool: swapPoolAccounts.swapPool,
-            authority: findDerivedAccount(new PublicKey(swapPoolAccounts.swapProgram), swapPoolAccounts.swapPool),
-            vaultFrom: swapSourceVault,
-            vaultInto: swapDestinationVault,
-            tokenMint: swapPoolAccounts.poolMint,
-            feeAccount: swapPoolAccounts.feeAccount,
-            swapProgram: swapPoolAccounts.swapProgram
+            swapPool: swapPool.swapPool,
+            // authority: findDerivedAccount(new PublicKey(swapPoolAccounts.swapProgram), swapPoolAccounts.swapPool),
+            authority: swapPool.authority,
+            vaultFrom: swapAtoB ? swapPool.tokenA : swapPool.tokenB,
+            vaultInto: swapAtoB ? swapPool.tokenB : swapPool.tokenA,
+            tokenMint: swapPool.poolMint,
+            feeAccount: swapPool.feeAccount,
+            swapProgram: swapPool.swapProgram
           }
         })
         .instruction()
