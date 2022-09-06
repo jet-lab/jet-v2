@@ -427,11 +427,11 @@ impl MarginAccount {
                     return Err(error!(error));
                 }
 
-                (PositionKind::Deposit, None) => {
+                (PositionKind::AdapterCollateral | PositionKind::Deposit, None) => {
                     equity += position.value();
                     weighted_collateral += position.collateral_value();
                 }
-                (PositionKind::Deposit, Some(e)) => {
+                (PositionKind::AdapterCollateral | PositionKind::Deposit, Some(e)) => {
                     stale_collateral_list.push((position.token, e));
                 }
             }
@@ -584,6 +584,9 @@ pub enum PositionKind {
 
     /// The position contains a balance of tokens that are owed as a part of some debt.
     Claim,
+
+    /// The position contains a balance of tokens that are owed as a part of some debt.
+    AdapterCollateral,
 }
 
 impl From<TokenKind> for PositionKind {
@@ -592,6 +595,7 @@ impl From<TokenKind> for PositionKind {
             TokenKind::NonCollateral => PositionKind::NoValue,
             TokenKind::Collateral => PositionKind::Deposit,
             TokenKind::Claim => PositionKind::Claim,
+            TokenKind::AdapterCollateral => PositionKind::AdapterCollateral,
         }
     }
 }
@@ -716,7 +720,9 @@ impl AccountPosition {
         approvals.contains(&Approver::MarginAccountAuthority)
             && match self.kind() {
                 PositionKind::NoValue | PositionKind::Deposit => true,
-                PositionKind::Claim => approvals.contains(&Approver::Adapter(self.adapter)),
+                PositionKind::Claim | PositionKind::AdapterCollateral => {
+                    approvals.contains(&Approver::Adapter(self.adapter))
+                }
             }
     }
 }
@@ -759,6 +765,7 @@ impl Serialize for PositionKind {
             PositionKind::NoValue => "NoValue",
             PositionKind::Claim => "Claim",
             PositionKind::Deposit => "Deposit",
+            PositionKind::AdapterCollateral => "AdapterCollateral",
         })
     }
 }

@@ -131,6 +131,9 @@ pub enum TokenKind {
 
     /// The token represents a debt that needs to be repaid
     Claim,
+
+    /// The token balance is managed by an adapter to represent the value of collateral custodied by an adapter
+    AdapterCollateral,
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize, Eq, PartialEq, Clone, Copy, Debug)]
