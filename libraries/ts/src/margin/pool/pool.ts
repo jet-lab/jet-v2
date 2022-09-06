@@ -1205,7 +1205,7 @@ export class Pool {
     const accountPoolPosition = marginAccount.poolPositions[this.symbol]
     let changeKind = PoolTokenChange.shiftBy(swapAmount)
     // If swapping total balance, use setTo(0)
-    if (swapAmount.gte(accountPoolPosition.depositBalance)) {
+    if (swapAmount.gt(accountPoolPosition.depositBalance)) {
       changeKind = PoolTokenChange.setTo(0)
     }
 
@@ -1235,6 +1235,12 @@ export class Pool {
       transitSourceAccount,
       transitDestinationAccount
     })
+
+    // // Transit source account close
+    AssociatedToken.withClose(instructions, marginAccount.address, this.addresses.tokenMint, marginAccount.owner)
+
+    // // Transit destination account close
+    AssociatedToken.withClose(instructions, marginAccount.address, outputToken.tokenMint, marginAccount.owner)
 
     // If they have a debt of the output token, automatically repay as much as possible
     const outputDebtPosition = marginAccount.poolPositions[outputToken.symbol].loanBalance

@@ -469,15 +469,15 @@ export class AssociatedToken {
     const tokenAddress = translateAddress(address)
 
     if (!(await AssociatedToken.existsAux(provider.connection, mintAddress, ownerAddress, address))) {
-      let rent = await getMinimumBalanceForRentExemptAccount(provider.connection)
-      let createIx = SystemProgram.createAccount({
+      const rent = await getMinimumBalanceForRentExemptAccount(provider.connection)
+      const createIx = SystemProgram.createAccount({
         fromPubkey: provider.wallet.publicKey,
         newAccountPubkey: tokenAddress,
         lamports: rent,
         space: ACCOUNT_SIZE,
         programId: TOKEN_PROGRAM_ID
       })
-      let initIx = createInitializeAccountInstruction(tokenAddress, mintAddress, ownerAddress)
+      const initIx = createInitializeAccountInstruction(tokenAddress, mintAddress, ownerAddress)
       instructions.push(createIx, initIx)
     }
   }
@@ -654,9 +654,9 @@ export class AssociatedToken {
     if (typeof source === "string" || (typeof source === "object" && "_bn" in source)) {
       sourceAddress = translateAddress(source)
     }
-    let owner = provider.wallet.publicKey
-    let isSourceOwner = sourceAddress && sourceAddress.equals(owner)
-    let isSourceAssociatedAddress = sourceAddress && AssociatedToken.derive(mint, owner).equals(sourceAddress)
+    const owner = provider.wallet.publicKey
+    const isSourceOwner = sourceAddress && sourceAddress.equals(owner)
+    const isSourceAssociatedAddress = sourceAddress && AssociatedToken.derive(mint, owner).equals(sourceAddress)
 
     if (source === TokenFormat.unwrappedSol || isSourceOwner || isSourceAssociatedAddress) {
       return await AssociatedToken.withCreateOrWrapIfNativeMint(instructions, provider, mint, feesBuffer)
@@ -687,9 +687,9 @@ export class AssociatedToken {
     if (typeof destination === "string" || (typeof destination === "object" && "_bn" in destination)) {
       destinationAddress = translateAddress(destination)
     }
-    let owner = provider.wallet.publicKey
-    let isDestinationOwner = destinationAddress && destinationAddress.equals(owner)
-    let isDestinationAssociatedAddress =
+    const owner = provider.wallet.publicKey
+    const isDestinationOwner = destinationAddress && destinationAddress.equals(owner)
+    const isDestinationAssociatedAddress =
       destinationAddress && AssociatedToken.derive(mint, owner).equals(destinationAddress)
 
     if (
@@ -725,8 +725,8 @@ export class AssociatedToken {
     if (typeof destination === "string" || (typeof destination === "object" && "_bn" in destination)) {
       destinationAddress = translateAddress(destination)
     }
-    let owner = provider.wallet.publicKey
-    let isDestinationOwner = destinationAddress && destinationAddress.equals(owner)
+    const owner = provider.wallet.publicKey
+    const isDestinationOwner = destinationAddress && destinationAddress.equals(owner)
 
     if (
       translateAddress(mint).equals(NATIVE_MINT) &&
