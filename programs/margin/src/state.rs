@@ -585,7 +585,7 @@ pub enum PositionKind {
     /// The position contains a balance of tokens that are owed as a part of some debt.
     Claim,
 
-    /// The position contains a balance of tokens that are owed as a part of some debt.
+    /// The position contains a balance of available collateral, where the token account is managed by an adapter
     AdapterCollateral,
 }
 
