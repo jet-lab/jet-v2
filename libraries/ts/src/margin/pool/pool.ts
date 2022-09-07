@@ -16,8 +16,6 @@ import { findDerivedAccount } from "../../utils/pda"
 import { PriceInfo } from "../accountPosition"
 import { chunks, Number128, Number192 } from "../../utils"
 import { PositionTokenMetadata } from "../positionTokenMetadata"
-import orcaSwapPools from "../swap/orca-swap-pools.json"
-import orcaSwapPoolsDevnet from "../swap/orca-swap-pools-devnet.json"
 
 /** A set of possible actions to perform on a margin pool. */
 export type PoolAction = "deposit" | "withdraw" | "borrow" | "repay" | "swap" | "transfer"
@@ -1242,7 +1240,7 @@ export class Pool {
       await this.withMarginBorrow({
         instructions: instructions,
         marginAccount,
-        change: PoolTokenChange.shiftBy(accountPoolPosition.loanBalance.add(difference))
+        change: PoolTokenChange.setTo(accountPoolPosition.loanBalance.add(difference))
       })
     }
 
