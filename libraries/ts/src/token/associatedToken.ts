@@ -21,7 +21,7 @@ import {
   getMinimumBalanceForRentExemptAccount,
   TokenInvalidMintError
 } from "@solana/spl-token"
-import { Connection, PublicKey, TransactionInstruction, SystemProgram, AccountInfo } from "@solana/web3.js"
+import { Connection, PublicKey, TransactionInstruction, SystemProgram, AccountInfo, Signer } from "@solana/web3.js"
 import { findDerivedAccount } from "../utils/pda"
 import { TokenAmount } from "./tokenAmount"
 
@@ -489,15 +489,16 @@ export class AssociatedToken {
    * @param {Address} owner
    * @param {Address} mint
    * @param {Address} rentDestination
+   * @param {Signer[]} multiSigners
    * @memberof AssociatedToken
    */
-  static withClose(instructions: TransactionInstruction[], owner: Address, mint: Address, rentDestination: Address) {
+  static withClose(instructions: TransactionInstruction[], owner: Address, mint: Address, rentDestination: Address, multiSigners?: Signer[]) {
     const ownerPubkey = translateAddress(owner)
     const mintPubkey = translateAddress(mint)
     const rentDestinationPubkey = translateAddress(rentDestination)
 
     const tokenAddress = this.derive(mintPubkey, ownerPubkey)
-    const ix = createCloseAccountInstruction(tokenAddress, rentDestinationPubkey, ownerPubkey)
+    const ix = createCloseAccountInstruction(tokenAddress, rentDestinationPubkey, ownerPubkey, multiSigners)
     instructions.push(ix)
   }
 
