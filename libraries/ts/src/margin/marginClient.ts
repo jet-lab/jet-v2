@@ -180,10 +180,19 @@ export class MarginClient {
     }
 
     // Check each logMessage string for instruction
-    // Break after finding the first logMessage for which above is true
     for (let i = 0; i < parsedTx.meta.logMessages.length; i++) {
       if (isTradeInstruction(parsedTx.meta?.logMessages[i])) {
-        break
+        // If logMessages include both borrow and swap,
+        // Set trade action to swap
+        if (tradeAction === "borrow") {
+          if (parsedTx.meta?.logMessages[i + 1].includes(instructions.swap)) {
+            tradeAction = "swap"
+            break
+          }
+        } else {
+          // Else break after finding the first logMessage for which above is true
+          break
+        }
       }
     }
 
@@ -253,13 +262,18 @@ export class MarginClient {
                   }
                 })
               })
+              const firstTransferIxSource: string = transferIxs[0].parsed.info.source
               const finalTransferIxSource: string = transferIxs[transferIxs.length - 1].parsed.info.source
+              const firstMint = await getAccount(provider.connection, new PublicKey(firstTransferIxSource))
               const sourceAccountMint = await getAccount(provider.connection, new PublicKey(finalTransferIxSource))
               const tokenConfig = Object.values(config.tokens).find(config =>
                 sourceAccountMint.mint.equals(new PublicKey(config.mint))
               )
+              const firstTokenConfig = Object.values(config.tokens).find(config =>
+                firstMint.mint.equals(new PublicKey(config.mint))
+              )
               token = tokenConfig as MarginTokenConfig
-              tokenIn = config.tokens[tokenAbbrev] as MarginTokenConfig
+              tokenIn = firstTokenConfig as MarginTokenConfig
             } else {
               token = config.tokens[tokenAbbrev] as MarginTokenConfig
             }
