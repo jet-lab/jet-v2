@@ -1815,7 +1815,8 @@ export class Pool {
     marginAccount: MarginAccount, 
     amount: number,
     minAmountOut: number | undefined,
-    outputToken: Pool | undefined
+    outputToken: Pool | undefined,
+    setupCheck?: boolean
   ): PoolProjection {
     const defaults = this.getDefaultPoolProjection(marginAccount);
     if (!minAmountOut || !outputToken) {
@@ -1844,7 +1845,7 @@ export class Pool {
     const outputTokenLiabilityValue = outputTokenPosition.loanBalance.tokens * outputTokenPrice;
 
     // Collateral values
-    const requiredCollateral = marginAccount.valuation.requiredCollateral.toNumber();
+    const requiredCollateral = marginAccount.valuation[setupCheck ? 'requiredSetupCollateral' : 'requiredCollateral'].toNumber();
     const weightedCollateral = marginAccount.valuation.weightedCollateral.toNumber();
     const inputTokenWeight = this.depositNoteMetadata.valueModifier.toNumber();
     const outputTokenWeight = outputToken.depositNoteMetadata.valueModifier.toNumber();
