@@ -1205,7 +1205,7 @@ export class Pool {
     const accountPoolPosition = marginAccount.poolPositions[this.symbol]
     let changeKind = PoolTokenChange.shiftBy(swapAmount)
     // If swapping total balance, use setTo(0)
-    if (swapAmount.gt(accountPoolPosition.depositBalance)) {
+    if (swapAmount.gte(accountPoolPosition.depositBalance)) {
       changeKind = PoolTokenChange.setTo(0)
     }
 
