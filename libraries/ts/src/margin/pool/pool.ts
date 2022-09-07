@@ -1580,7 +1580,14 @@ export class Pool {
     })
   }
 
-  projectAfterAction(marginAccount: MarginAccount, amount: number, action: PoolAction): PoolProjection {
+  projectAfterAction(
+    marginAccount: MarginAccount, 
+    amount: number, 
+    action: PoolAction, 
+    // For swap projections
+    minAmountOut?: number, 
+    outputToken?: Pool
+  ): PoolProjection {
     switch (action) {
       case "deposit":
         return this.projectAfterDeposit(marginAccount, amount)
@@ -1590,12 +1597,14 @@ export class Pool {
         return this.projectAfterBorrow(marginAccount, amount)
       case "repay":
         return this.projectAfterRepay(marginAccount, amount)
+      case "swap":
+        return this.projectAfterMarginSwap(marginAccount, amount, minAmountOut, outputToken)
       default:
         throw new Error("Unknown pool action")
     }
   }
 
-  /// Projects the deposit and borrow rates after a deposit into the pool.
+  /// Projects the deposit / borrow rates and user's risk level after a deposit into the pool.
   projectAfterDeposit(marginAccount: MarginAccount, amount: number): PoolProjection {
     if (this.info === undefined) {
       return this.getDefaultPoolProjection(marginAccount)
@@ -1625,7 +1634,7 @@ export class Pool {
     return { riskIndicator, depositRate, borrowRate }
   }
 
-  /// Projects the deposit and borrow rates after a withdrawal from the pool.
+  /// Projects the deposit / borrow rates and user's risk level after a withdrawal from the pool.
   projectAfterWithdraw(marginAccount: MarginAccount, amount: number): PoolProjection {
     const position = marginAccount.poolPositions[this.symbol]
     if (this.info === undefined || amount > position.depositBalance.tokens) {
@@ -1660,7 +1669,7 @@ export class Pool {
     return { riskIndicator, depositRate, borrowRate }
   }
 
-  /// Projects the deposit and borrow rates after a borrow from the pool.
+  /// Projects the deposit / borrow rates and user's risk level after a borrow from the pool.
   projectAfterBorrow(marginAccount: MarginAccount, amount: number): PoolProjection {
     if (this.info === undefined) {
       return this.getDefaultPoolProjection(marginAccount)
@@ -1679,18 +1688,18 @@ export class Pool {
     const loanNoteValueModifer = this.loanNoteMetadata.valueModifier
     const amountValue = Number128.from(numberToBn(amount * this.prices.priceValue.toNumber()))
 
-    const requireCollateral = marginAccount.valuation.requiredCollateral
+    const requiredCollateral = marginAccount.valuation.requiredCollateral
       .add(amountValue.div(loanNoteValueModifer))
       .toNumber()
     const weightedCollateral = marginAccount.valuation.weightedCollateral.toNumber()
     const liabilities = marginAccount.valuation.liabilities.add(amountValue).toNumber()
 
-    const riskIndicator = marginAccount.computeRiskIndicator(requireCollateral, weightedCollateral, liabilities)
+    const riskIndicator = marginAccount.computeRiskIndicator(requiredCollateral, weightedCollateral, liabilities)
 
     return { riskIndicator, depositRate, borrowRate }
   }
 
-  /// Projects the deposit and borrow rates after repaying a loan from the pool.
+  /// Projects the deposit / borrow rates and user's risk level after repaying a loan from the pool.
   projectAfterRepay(marginAccount: MarginAccount, amount: number): PoolProjection {
     const position = marginAccount.poolPositions[this.symbol]
     if (position === undefined || this.info === undefined || amount > position.loanBalance.tokens) {
@@ -1725,7 +1734,7 @@ export class Pool {
     return { riskIndicator, depositRate, borrowRate }
   }
 
-  /// Projects the deposit and borrow rates after repaying a loan from the pool.
+  /// Projects the deposit / borrow rates and user's risk level after repaying a loan from the pool.
   projectAfterRepayFromDeposit(marginAccount: MarginAccount, amount: number): PoolProjection {
     const position = marginAccount.poolPositions[this.symbol]
     if (
@@ -1768,7 +1777,7 @@ export class Pool {
     return { riskIndicator, depositRate, borrowRate }
   }
 
-  /// Projects the deposit and borrow rates after a borrow from the pool.
+  /// Projects the deposit / borrow rates and user's risk level after a borrow from the pool.
   projectAfterBorrowAndNotWithdraw(marginAccount: MarginAccount, amount: number): PoolProjection {
     if (this.info === undefined) {
       return this.getDefaultPoolProjection(marginAccount)
@@ -1799,6 +1808,56 @@ export class Pool {
     const riskIndicator = marginAccount.computeRiskIndicator(requiredCollateral, weightedCollateral, liabilities)
 
     return { riskIndicator, depositRate, borrowRate }
+  }
+
+  /// Projects the user's risk level after a swap.
+  projectAfterMarginSwap(
+    marginAccount: MarginAccount, 
+    amount: number,
+    minAmountOut: number | undefined,
+    outputToken: Pool | undefined
+  ): PoolProjection {
+    const defaults = this.getDefaultPoolProjection(marginAccount);
+    if (!minAmountOut || !outputToken) {
+      return defaults;
+    }
+
+    // Prices
+    const inputTokenPrice = this.prices.priceValue.toNumber();
+    const outputTokenPrice = outputToken.prices.priceValue.toNumber();
+
+    // Swap values
+    const inputSwapValue = amount  * inputTokenPrice;
+    const marginAmount = amount - marginAccount.poolPositions[this.symbol].depositBalance.tokens;
+    const marginAmountValue = marginAmount * inputTokenPrice;
+    const minAmountOutValue = minAmountOut * outputTokenPrice;
+
+    // Total Liabilities
+    const totalLiabilities = marginAccount.valuation.liabilities.toNumber() + marginAmountValue;
+
+    // Position-specific valuations
+    const inputTokenPosition = marginAccount.poolPositions[this.symbol];
+    const outputTokenPosition = marginAccount.poolPositions[outputToken.symbol];
+    const inputRequiredCollateralFactor = inputTokenPosition.loanPosition?.valueModifier.toNumber() ?? 0;
+    const inputTokenAssetValue = inputTokenPosition.depositBalance.tokens * inputTokenPrice;
+    const outputRequiredCollateralFactor = outputTokenPosition.loanPosition?.valueModifier.toNumber() ?? 0;
+    const outputTokenLiabilityValue = outputTokenPosition.loanBalance.tokens * outputTokenPrice;
+
+    // Collateral values
+    const requiredCollateral = marginAccount.valuation.requiredCollateral.toNumber();
+    const weightedCollateral = marginAccount.valuation.weightedCollateral.toNumber();
+    const inputTokenWeight = this.depositNoteMetadata.valueModifier.toNumber();
+    const outputTokenWeight = outputToken.depositNoteMetadata.valueModifier.toNumber();
+
+    // Projected risk equation
+    const riskIndicator = (totalLiabilities + requiredCollateral - (((1 + outputRequiredCollateralFactor)/outputRequiredCollateralFactor) * Math.abs(outputTokenLiabilityValue - minAmountOutValue)) + (((1 + inputRequiredCollateralFactor)/inputRequiredCollateralFactor) * Math.abs(inputSwapValue - inputTokenAssetValue))) / (weightedCollateral + (outputTokenWeight * Math.abs(minAmountOutValue - outputTokenLiabilityValue)) - (inputTokenWeight * Math.abs(inputTokenAssetValue - inputSwapValue)))
+
+    // TODO: add pool projections for rates
+    return {
+      riskIndicator,
+      depositRate: defaults.depositRate,
+      borrowRate: defaults.borrowRate
+    }
   }
 
   private getDefaultPoolProjection(marginAccount: MarginAccount) {
