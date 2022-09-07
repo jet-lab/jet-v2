@@ -180,10 +180,19 @@ export class MarginClient {
     }
 
     // Check each logMessage string for instruction
-    // Break after finding the first logMessage for which above is true
     for (let i = 0; i < parsedTx.meta.logMessages.length; i++) {
       if (isTradeInstruction(parsedTx.meta?.logMessages[i])) {
-        break
+        // If logMessages include both borrow and swap,
+        // Set trade action to swap
+        if (tradeAction === "borrow") {
+          if (parsedTx.meta?.logMessages[i + 1].includes(instructions.swap)) {
+            tradeAction = "swap"
+            break
+          }
+        } else {
+          // Else break after finding the first logMessage for which above is true
+          break
+        }
       }
     }
 
