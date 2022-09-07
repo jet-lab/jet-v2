@@ -1339,10 +1339,10 @@ export class Pool {
           },
           swapInfo: {
             swapPool: swapPool.swapPool,
-            // authority: findDerivedAccount(new PublicKey(swapPoolAccounts.swapProgram), swapPoolAccounts.swapPool),
-            authority: swapPool.authority,
-            vaultFrom: swapAtoB ? swapPool.tokenA : swapPool.tokenB,
-            vaultInto: swapAtoB ? swapPool.tokenB : swapPool.tokenA,
+            authority: findDerivedAccount(new PublicKey(swapPool.swapProgram), swapPool.swapPool),
+            // authority: swapPool.authority,
+            vaultFrom: swapAtoB ? swapPool.tokenB : swapPool.tokenA,
+            vaultInto: swapAtoB ? swapPool.tokenA : swapPool.tokenB,
             tokenMint: swapPool.poolMint,
             feeAccount: swapPool.feeAccount,
             swapProgram: swapPool.swapProgram
