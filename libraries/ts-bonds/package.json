@@ -15,9 +15,9 @@
     "clean": "rimraf dist/",
     "copy:wasm": "copyfiles -u 1 wasm-utils/pkg/* dist/wasm-utils",
     "build": "tsc -p tsconfig.json && tsc -p tsconfig.cjs.json",
-    "build:wasm": "wasm-pack build ./wasm-utils",
+    "build:wasm": "wasm-pack build ./wasm-utils && wasm-pack build --target nodejs ./wasm-utils",
     "lint": "tslint -c tslint.json src/**/*.ts",
-    "prepublish": "yarn clean && yarn build:wasm && yarn copy:wasm && yarn build && npm pack"
+    "prepublish": "yarn clean && yarn build:wasm && yarn copy:wasm && yarn build"
   },
   "prettier": {},
   "devDependencies": {
