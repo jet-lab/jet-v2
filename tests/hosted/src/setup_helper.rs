@@ -78,7 +78,9 @@ pub async fn users<const N: usize>(ctx: &MarginTestContext) -> Result<[TestUser<
     Ok(create_users(ctx, N).await?.try_into().unwrap())
 }
 
-pub async fn liquidators<const N: usize>(ctx: &MarginTestContext) -> Result<[TestLiquidator<'_>; N]> {
+pub async fn liquidators<const N: usize>(
+    ctx: &MarginTestContext,
+) -> Result<[TestLiquidator<'_>; N]> {
     Ok((0..N)
         .map_async(|_| TestLiquidator::new(ctx))
         .await?
