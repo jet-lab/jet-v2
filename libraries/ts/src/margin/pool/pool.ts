@@ -1238,7 +1238,7 @@ export class Pool {
         marginAccount
       })
       await this.withMarginBorrow({
-        instructions: instructions,
+        instructions: registerInstructions,
         marginAccount,
         change: PoolTokenChange.setTo(accountPoolPosition.loanBalance.add(difference))
       })
