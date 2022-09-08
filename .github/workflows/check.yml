@@ -60,6 +60,15 @@ jobs:
           chmod -R 777 /root
           ./check anchor-test
 
+      - name: Install WasmPack
+        run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+
+      - name: Bonds Rust Test
+        run: ./scripts/rust-tests-full.sh
+        
+      - name: Bonds Typescript Test
+        run: ./scripts/integrated-tests.sh
+
 
   hosted-tests-localnet-batch1:
     runs-on: ubuntu-latest
