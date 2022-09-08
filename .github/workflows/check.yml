@@ -18,10 +18,10 @@ jobs:
         with:
           toolchain: stable
 
-      - name: Get cargo-macos cache
+      - name: Get cargo-ubuntu cache
         uses: actions/cache@v3
         with:
-          key: cargo-macos
+          key: cargo-ubuntu
           path: |
             ~/.cargo/registry/index/
             ~/.cargo/registry/cache/
