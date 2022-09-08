@@ -5,40 +5,38 @@ on:
     branches: 
       - "master"
     paths:
-      - "libraries/ts/src/**"
+      - "libraries/ts"
   workflow_dispatch: {}
 
 jobs:
-  typedoc:
+  changed_files:
+    runs-on: ubuntu-latest
+    outputs:
+      libraries/ts: ${{steps.check-if-files-changed.outputs.any_changed}}
+    steps:
+      - uses: actions/checkout@v2.4.2
+      - name: Check if any file changed in list provided
+        id: check-if-files-changed
+        uses: tj-actions/changed-files@v29.0.3
+        with:
+          files: |
+            libraries/ts
+
+  build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v2.4.2
 
-      - name: Setup Nodejs
-        uses: actions/setup-node@v2
-        with:
-          cache: npm
-
-      - name: Install TypeDoc
-        working-directory: ./libraries/ts
-        run: npm i --no-save
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
 
       - name: Build Documentation
         working-directory: ./libraries/ts
-        run: npm run docs
-
-      - name: Publish
-        uses: peaceiris/actions-gh-pages@v3
+        run: yarn docs 
+      
+      - name: Deploy to GitHub Pages
+        uses: JamesIves/github-pages-deploy-action@v4.4.0
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./libraries/ts/docs
-
-  release:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-
-      - name: Publish Release
-        uses: softprops/action-gh-release@v1
+          branch: master
+          folder: docs
