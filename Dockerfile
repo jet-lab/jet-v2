@@ -28,6 +28,7 @@ EXPOSE 1027
 EXPOSE 8899
 
 CMD solana-test-validator --reset \
+      --bpf-program JBond79m9K6HqYwngCjiJHb311GTXggo46kGcT2GijUc /root/programs/jet_bonds.so \
       --bpf-program JPCtrLreUqsEbdhtxZ8zpd8wBydKz4nuEjX5u9Eg5H8  /root/programs/jet_control.so \
       --bpf-program JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ  /root/programs/jet_margin.so \
       --bpf-program JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ  /root/programs/jet_margin_pool.so \

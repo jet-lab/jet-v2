@@ -1731,11 +1731,11 @@ dependencies = [
  "futures-retry",
  "itertools",
  "jet-control",
- "jet-margin 1.0.0",
+ "jet-margin",
  "jet-margin-pool",
  "jet-margin-sdk",
  "jet-margin-swap",
- "jet-metadata 1.0.0",
+ "jet-metadata",
  "jet-proto-math 1.1.0 (git+https://github.com/jet-lab/program-libraries?branch=main)",
  "jet-simulation",
  "jet-static-program-registry",
@@ -1945,7 +1945,7 @@ dependencies = [
  "borsh 0.9.3",
  "bytemuck",
  "jet-bonds-metadata",
- "jet-margin 1.0.0 (git+https://github.com/jet-lab/jet-v2.git?branch=master)",
+ "jet-margin",
  "jet-proto-math 1.1.0 (git+https://github.com/jet-lab/program-libraries?branch=main)",
  "num-derive",
  "num-traits",
@@ -1996,7 +1996,7 @@ dependencies = [
  "anchor-lang",
  "anchor-spl",
  "jet-margin-pool",
- "jet-metadata 1.0.0",
+ "jet-metadata",
  "solana-program",
 ]
 
@@ -2009,26 +2009,11 @@ dependencies = [
  "bitflags",
  "bytemuck",
  "itertools",
- "jet-metadata 1.0.0",
+ "jet-metadata",
  "jet-proto-math 1.1.0 (git+https://github.com/jet-lab/program-libraries?branch=main)",
  "jet-proto-proc-macros",
  "serde",
  "serde_test",
- "static_assertions",
-]
-
-[[package]]
-name = "jet-margin"
-version = "1.0.0"
-source = "git+https://github.com/jet-lab/jet-v2.git?branch=master#b09ea485dd3fae65a88c6411b9a0e94fd39a7434"
-dependencies = [
- "anchor-lang",
- "anchor-spl",
- "bitflags",
- "bytemuck",
- "jet-metadata 1.0.0 (git+https://github.com/jet-lab/jet-v2.git?branch=master)",
- "jet-proto-math 1.1.0 (git+https://github.com/jet-lab/program-libraries?branch=main)",
- "jet-proto-proc-macros",
  "static_assertions",
 ]
 
@@ -2040,8 +2025,8 @@ dependencies = [
  "anchor-spl",
  "bitflags",
  "bytemuck",
- "jet-margin 1.0.0",
- "jet-metadata 1.0.0",
+ "jet-margin",
+ "jet-metadata",
  "jet-proto-math 1.1.0 (git+https://github.com/jet-lab/program-libraries?branch=main)",
  "pyth-sdk-solana",
  "serde",
@@ -2064,10 +2049,10 @@ dependencies = [
  "bytemuck",
  "futures",
  "jet-control",
- "jet-margin 1.0.0",
+ "jet-margin",
  "jet-margin-pool",
  "jet-margin-swap",
- "jet-metadata 1.0.0",
+ "jet-metadata",
  "jet-simulation",
  "solana-sdk",
  "spl-token 3.3.1",
@@ -2082,7 +2067,7 @@ version = "1.0.0"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
- "jet-margin 1.0.0",
+ "jet-margin",
  "jet-margin-pool",
  "jet-static-program-registry",
 ]
@@ -2090,15 +2075,6 @@ dependencies = [
 [[package]]
 name = "jet-metadata"
 version = "1.0.0"
-dependencies = [
- "anchor-lang",
- "solana-program",
-]
-
-[[package]]
-name = "jet-metadata"
-version = "1.0.0"
-source = "git+https://github.com/jet-lab/jet-v2.git?branch=master#b09ea485dd3fae65a88c6411b9a0e94fd39a7434"
 dependencies = [
  "anchor-lang",
  "solana-program",
@@ -2423,7 +2399,7 @@ version = "0.1.0"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
- "jet-margin 1.0.0",
+ "jet-margin",
 ]
 
 [[package]]
