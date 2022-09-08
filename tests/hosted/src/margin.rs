@@ -31,7 +31,7 @@ use jet_margin_sdk::ix_builder::{
     MarginPoolIxBuilder,
 };
 use jet_margin_sdk::solana::transaction::TransactionBuilder;
-use jet_margin_sdk::swap::SwapPool;
+use jet_margin_sdk::spl_swap::SplSwapPool;
 use jet_margin_sdk::tokens::TokenOracle;
 use solana_sdk::instruction::Instruction;
 use solana_sdk::signature::{Keypair, Signer};
@@ -360,7 +360,7 @@ impl MarginUser {
         destination_mint: &Pubkey,
         transit_source_account: &Pubkey,
         transit_destination_account: &Pubkey,
-        swap_pool: &SwapPool,
+        swap_pool: &SplSwapPool,
         change: TokenChange,
         minimum_amount_out: u64,
     ) -> Result<(), Error> {
