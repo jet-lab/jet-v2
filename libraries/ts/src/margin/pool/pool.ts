@@ -1834,14 +1834,19 @@ export class Pool {
     const minAmountOutValue = minAmountOut * outputTokenPrice;
 
     // Total Liabilities
-    const totalLiabilities = marginAccount.valuation.liabilities.toNumber() + marginAmountValue;
+    const totalLiabilities = marginAccount.valuation.liabilities.toNumber();
 
     // Position-specific valuations
     const inputTokenPosition = marginAccount.poolPositions[this.symbol];
     const outputTokenPosition = marginAccount.poolPositions[outputToken.symbol];
-    const inputRequiredCollateralFactor = inputTokenPosition.loanPosition?.valueModifier.toNumber() ?? 0;
+    if (!inputTokenPosition.loanPosition || !outputTokenPosition.loanPosition) {
+      console.error("No pool positions for margin account");
+      return defaults;
+    }
+
+    const inputRequiredCollateralFactor = inputTokenPosition.loanPosition.valueModifier.toNumber();
     const inputTokenAssetValue = inputTokenPosition.depositBalance.tokens * inputTokenPrice;
-    const outputRequiredCollateralFactor = outputTokenPosition.loanPosition?.valueModifier.toNumber() ?? 0;
+    const outputRequiredCollateralFactor = outputTokenPosition.loanPosition.valueModifier.toNumber();
     const outputTokenLiabilityValue = outputTokenPosition.loanBalance.tokens * outputTokenPrice;
 
     // Collateral values
@@ -1851,7 +1856,7 @@ export class Pool {
     const outputTokenWeight = outputToken.depositNoteMetadata.valueModifier.toNumber();
 
     // Projected risk equation
-    const riskIndicator = (totalLiabilities + requiredCollateral - (((1 + outputRequiredCollateralFactor)/outputRequiredCollateralFactor) * Math.abs(outputTokenLiabilityValue - minAmountOutValue)) + (((1 + inputRequiredCollateralFactor)/inputRequiredCollateralFactor) * Math.abs(inputSwapValue - inputTokenAssetValue))) / (weightedCollateral + (outputTokenWeight * Math.abs(minAmountOutValue - outputTokenLiabilityValue)) - (inputTokenWeight * Math.abs(inputTokenAssetValue - inputSwapValue)))
+    const riskIndicator = (totalLiabilities + requiredCollateral - (((1 + outputRequiredCollateralFactor)/outputRequiredCollateralFactor) * Math.max(outputTokenLiabilityValue - minAmountOutValue, 0)) + (((1 + inputRequiredCollateralFactor)/inputRequiredCollateralFactor) * Math.max(inputSwapValue - inputTokenAssetValue, 0))) / (weightedCollateral + (outputTokenWeight * Math.max(minAmountOutValue - outputTokenLiabilityValue, 0)) - (inputTokenWeight * Math.max(inputTokenAssetValue - inputSwapValue, 0)))
 
     // TODO: add pool projections for rates
     return {
@@ -1861,6 +1866,7 @@ export class Pool {
     }
   }
 
+  // TODO: this should return values that indicate the return value hasn't changed
   private getDefaultPoolProjection(marginAccount: MarginAccount) {
     return {
       riskIndicator: marginAccount.riskIndicator,
