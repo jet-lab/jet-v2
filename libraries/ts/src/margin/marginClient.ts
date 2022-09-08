@@ -182,17 +182,8 @@ export class MarginClient {
     // Check each logMessage string for instruction
     for (let i = 0; i < parsedTx.meta.logMessages.length; i++) {
       if (isTradeInstruction(parsedTx.meta?.logMessages[i])) {
-        // If logMessages include both borrow and swap,
-        // Set trade action to swap
-        if (tradeAction === "borrow") {
-          if (parsedTx.meta?.logMessages[i + 1].includes(instructions.swap)) {
-            tradeAction = "swap"
-            break
-          }
-        } else {
-          // Else break after finding the first logMessage for which above is true
-          break
-        }
+        // Break after finding the first logMessage for which above is true
+        break
       }
     }
 
@@ -273,7 +264,7 @@ export class MarginClient {
                 firstMint.mint.equals(new PublicKey(config.mint))
               )
               token = tokenConfig as MarginTokenConfig
-              tokenIn = firstTokenConfig as MarginTokenConfig
+              tokenIn = config.tokens[tokenAbbrev] as MarginTokenConfig
             } else {
               token = config.tokens[tokenAbbrev] as MarginTokenConfig
             }
