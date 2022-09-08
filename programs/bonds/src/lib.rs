@@ -15,7 +15,7 @@
 //! [`OrderParams`](struct@crate::orderbook::state::OrderParams).
 //!
 //! For example, to lend `1_000_000` tokens at 15% interest in a given market, a lender would specify:
-//! ```
+//! ```rs
 //! OrderParams {
 //!     /// We want as many bond tickets as the book will give us
 //!     max_bond_ticket_qty: u64::MAX,
@@ -43,7 +43,7 @@
 //! by the `jet-margin` program.
 //!
 //! Example borrow order, where a borrower wants no more than 10% interest to borrow 100_000_000 tokens
-//! ```
+//! ```rs
 //! OrderParams {
 //!     /// We want to pay no more than 10%
 //!     max_bond_ticket_qty: 110_000_000,
