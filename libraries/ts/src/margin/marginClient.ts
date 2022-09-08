@@ -264,7 +264,7 @@ export class MarginClient {
                 firstMint.mint.equals(new PublicKey(config.mint))
               )
               token = tokenConfig as MarginTokenConfig
-              tokenIn = config.tokens[tokenAbbrev] as MarginTokenConfig
+              tokenIn = firstTokenConfig as MarginTokenConfig
             } else {
               token = config.tokens[tokenAbbrev] as MarginTokenConfig
             }
