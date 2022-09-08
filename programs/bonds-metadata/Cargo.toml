@@ -6,7 +6,7 @@ edition = "2018"
 
 [lib]
 crate-type = ["cdylib", "lib"]
-name = "bonds_metadata"
+name = "jet_bonds_metadata"
 doctest = false
 
 [features]

@@ -7,7 +7,7 @@ NETWORK="localhost"
 # Program binaries
 JET_BONDS_SO=$PWD/target/deploy/jet_bonds.so
 JET_MARGIN_SO=$PWD/target/deploy/jet_margin.so
-METADATA_SO=$PWD/target/deploy/bonds_metadata.so
+METADATA_SO=$PWD/target/deploy/jet_bonds_metadata.so
 
 TEST_MINT=$PWD/tests/deps/keypairs/test_mint-keypair.json
 
