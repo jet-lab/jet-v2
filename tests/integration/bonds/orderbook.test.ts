@@ -15,13 +15,13 @@ import {
 } from "@solana/web3.js";
 import { BN } from "bn.js";
 import { assert } from "chai";
-import { BondMarket, calculateOrderAmount } from "../../libraries/ts/src";
-import { BondsUser } from "../../libraries/ts/src/bondsUser";
-import { JetBonds, JetBondsIdl } from "../../libraries/ts/src/types";
+import { BondMarket, calculateOrderAmount } from "../../../libraries/ts-bonds/src";
+import { BondsUser } from "../../../libraries/ts-bonds/src/bondsUser";
+import { JetBonds, JetBondsIdl } from "../../../libraries/ts-bonds/src/types";
 import CONFIG from "./config.json";
-import TEST_MINT_KEYPAIR from "../deps/keypairs/test_mint-keypair.json";
-import ALICE_KEYPAIR from "../deps/keypairs/alice-keypair.json";
-import BOB_KEYPAIR from "../deps/keypairs/bob-keypair.json";
+import TEST_MINT_KEYPAIR from "../../deps/keypairs/test_mint-keypair.json";
+import ALICE_KEYPAIR from "../../deps/keypairs/alice-keypair.json";
+import BOB_KEYPAIR from "../../deps/keypairs/bob-keypair.json";
 import { TestMint, Transactor } from "./utils";
 
 describe("jet-bonds", async () => {

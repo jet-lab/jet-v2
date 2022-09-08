@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::Token;
-use bonds_metadata::CrankMetadata;
+use jet_bonds_metadata::CrankMetadata;
 
 use crate::{
     control::state::BondManager,
