@@ -180,7 +180,7 @@ pub struct TestLiquidator<'a> {
 }
 
 impl<'a> TestLiquidator<'a> {
-    pub async fn new(ctx: &'a MarginTestContext) -> Result<TestLiquidator> {
+    pub async fn new(ctx: &'a MarginTestContext) -> Result<TestLiquidator<'_>> {
         Ok(TestLiquidator {
             ctx,
             wallet: ctx.create_liquidator(100).await?,

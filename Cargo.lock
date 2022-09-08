@@ -64,6 +64,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "agnostic-orderbook"
+version = "1.0.0"
+source = "git+https://github.com/jet-lab/agnostic-orderbook.git?branch=main#d1cac50cf0875d5745b70c1a9bfd40ae162274e4"
+dependencies = [
+ "bonfida-utils",
+ "borsh 0.9.3",
+ "bytemuck",
+ "enumflags2",
+ "num-derive",
+ "num-traits",
+ "num_enum",
+ "solana-program",
+ "spl-token 3.3.1",
+ "thiserror",
+]
+
+[[package]]
 name = "ahash"
 version = "0.4.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -530,6 +547,31 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8d696c370c750c948ada61c69a0ee2cbbb9c50b1019ddb86d9317157a99c2cae"
 
 [[package]]
+name = "bonfida-macros"
+version = "0.2.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0f5ace5ed40eb56cd6d6a0de41bc2e919af6047d98f7e502d06fa201a7814ad4"
+dependencies = [
+ "proc-macro2 1.0.43",
+ "quote 1.0.21",
+ "solana-program",
+ "syn 1.0.99",
+]
+
+[[package]]
+name = "bonfida-utils"
+version = "0.3.0"
+source = "git+https://github.com/Bonfida/bonfida-utils.git?branch=add-rounding-direction#11abafa345b5486062e8e3e1e8ca8077a4a9b507"
+dependencies = [
+ "bonfida-macros",
+ "borsh 0.9.3",
+ "bytemuck",
+ "pyth-sdk-solana",
+ "solana-program",
+ "spl-token 3.3.1",
+]
+
+[[package]]
 name = "borsh"
 version = "0.7.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -833,10 +875,49 @@ dependencies = [
  "ansi_term",
  "atty",
  "bitflags",
- "strsim",
- "textwrap",
+ "strsim 0.8.0",
+ "textwrap 0.11.0",
  "unicode-width",
  "vec_map",
+]
+
+[[package]]
+name = "clap"
+version = "3.2.20"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "23b71c3ce99b7611011217b366d923f1d0a7e07a92bb2dbf1e84508c673ca3bd"
+dependencies = [
+ "atty",
+ "bitflags",
+ "clap_derive",
+ "clap_lex",
+ "indexmap",
+ "once_cell",
+ "strsim 0.10.0",
+ "termcolor",
+ "textwrap 0.15.0",
+]
+
+[[package]]
+name = "clap_derive"
+version = "3.2.18"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ea0c8bce528c4be4da13ea6fead8965e95b6073585a2f05204bd8f4119f82a65"
+dependencies = [
+ "heck 0.4.0",
+ "proc-macro-error",
+ "proc-macro2 1.0.43",
+ "quote 1.0.21",
+ "syn 1.0.99",
+]
+
+[[package]]
+name = "clap_lex"
+version = "0.2.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2850f2f5a82cbf437dd5af4d49848fbdfc27c157c3d010345776f952765261c5"
+dependencies = [
+ "os_str_bytes",
 ]
 
 [[package]]
@@ -1100,6 +1181,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "dirs"
+version = "4.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ca3aa72a6f96ea37bbc5aa912f6788242832f75369bdfdadcb0e38423f100059"
+dependencies = [
+ "dirs-sys",
+]
+
+[[package]]
 name = "dirs-next"
 version = "2.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1107,6 +1197,17 @@ checksum = "b98cf8ebf19c3d1b223e151f99a4f9f0690dca41414773390fc824184ac833e1"
 dependencies = [
  "cfg-if",
  "dirs-sys-next",
+]
+
+[[package]]
+name = "dirs-sys"
+version = "0.3.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1b1d1d91c932ef41c0f2663aa8b0ca0342d444d842c06914aa0a7e352d0bada6"
+dependencies = [
+ "libc",
+ "redox_users",
+ "winapi",
 ]
 
 [[package]]
@@ -1243,6 +1344,26 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0eb359f1476bf611266ac1f5355bc14aeca37b299d0ebccc038ee7058891c9cb"
 dependencies = [
  "once_cell",
+ "proc-macro2 1.0.43",
+ "quote 1.0.21",
+ "syn 1.0.99",
+]
+
+[[package]]
+name = "enumflags2"
+version = "0.7.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e75d4cd21b95383444831539909fbb14b9dc3fdceb2a6f5d36577329a1f55ccb"
+dependencies = [
+ "enumflags2_derive",
+]
+
+[[package]]
+name = "enumflags2_derive"
+version = "0.7.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f58dc3c5e468259f19f2d46304a6b28f1c3d034442e14b322d2b850e36f6d5ae"
+dependencies = [
  "proc-macro2 1.0.43",
  "quote 1.0.21",
  "syn 1.0.99",
@@ -1611,12 +1732,12 @@ dependencies = [
  "futures-retry",
  "itertools",
  "jet-control",
- "jet-margin",
+ "jet-margin 1.0.0",
  "jet-margin-pool",
  "jet-margin-sdk",
  "jet-margin-swap",
- "jet-metadata",
- "jet-proto-math",
+ "jet-metadata 1.0.0",
+ "jet-proto-math 1.1.0 (git+https://github.com/jet-lab/program-libraries?branch=main)",
  "jet-simulation",
  "jet-static-program-registry",
  "mock-adapter",
@@ -1814,13 +1935,69 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6c8af84674fe1f223a982c933a0ee1086ac4d4052aa0fb8060c12c6ad838e754"
 
 [[package]]
+name = "jet-bonds"
+version = "0.1.0"
+dependencies = [
+ "agnostic-orderbook",
+ "anchor-lang",
+ "anchor-spl",
+ "arrayref",
+ "bitflags",
+ "borsh 0.9.3",
+ "bytemuck",
+ "jet-bonds-metadata",
+ "jet-margin 1.0.0 (git+https://github.com/jet-lab/jet-v2.git?branch=master)",
+ "jet-proto-math 1.1.0 (git+https://github.com/jet-lab/program-libraries?branch=main)",
+ "num-derive",
+ "num-traits",
+ "pyth-sdk-solana",
+ "serde",
+]
+
+[[package]]
+name = "jet-bonds-cli"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap 3.2.20",
+ "jet-bonds",
+ "jet-bonds-lib",
+ "shellexpand",
+ "solana-clap-utils",
+ "solana-client",
+ "solana-sdk",
+]
+
+[[package]]
+name = "jet-bonds-lib"
+version = "0.1.0"
+dependencies = [
+ "agnostic-orderbook",
+ "anchor-lang",
+ "jet-bonds",
+ "jet-bonds-metadata",
+ "jet-proto-math 1.1.0 (git+https://github.com/jet-lab/program-libraries?branch=fixed-point-math)",
+ "solana-sdk",
+ "spl-associated-token-account",
+ "spl-token 3.3.1",
+ "thiserror",
+]
+
+[[package]]
+name = "jet-bonds-metadata"
+version = "0.1.0"
+dependencies = [
+ "anchor-lang",
+]
+
+[[package]]
 name = "jet-control"
 version = "1.0.0"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
  "jet-margin-pool",
- "jet-metadata",
+ "jet-metadata 1.0.0",
  "solana-program",
 ]
 
@@ -1833,11 +2010,26 @@ dependencies = [
  "bitflags",
  "bytemuck",
  "itertools",
- "jet-metadata",
- "jet-proto-math",
+ "jet-metadata 1.0.0",
+ "jet-proto-math 1.1.0 (git+https://github.com/jet-lab/program-libraries?branch=main)",
  "jet-proto-proc-macros",
  "serde",
  "serde_test",
+ "static_assertions",
+]
+
+[[package]]
+name = "jet-margin"
+version = "1.0.0"
+source = "git+https://github.com/jet-lab/jet-v2.git?branch=master#b09ea485dd3fae65a88c6411b9a0e94fd39a7434"
+dependencies = [
+ "anchor-lang",
+ "anchor-spl",
+ "bitflags",
+ "bytemuck",
+ "jet-metadata 1.0.0 (git+https://github.com/jet-lab/jet-v2.git?branch=master)",
+ "jet-proto-math 1.1.0 (git+https://github.com/jet-lab/program-libraries?branch=main)",
+ "jet-proto-proc-macros",
  "static_assertions",
 ]
 
@@ -1849,9 +2041,9 @@ dependencies = [
  "anchor-spl",
  "bitflags",
  "bytemuck",
- "jet-margin",
- "jet-metadata",
- "jet-proto-math",
+ "jet-margin 1.0.0",
+ "jet-metadata 1.0.0",
+ "jet-proto-math 1.1.0 (git+https://github.com/jet-lab/program-libraries?branch=main)",
  "pyth-sdk-solana",
  "serde",
  "serde_test",
@@ -1873,10 +2065,10 @@ dependencies = [
  "bytemuck",
  "futures",
  "jet-control",
- "jet-margin",
+ "jet-margin 1.0.0",
  "jet-margin-pool",
  "jet-margin-swap",
- "jet-metadata",
+ "jet-metadata 1.0.0",
  "jet-simulation",
  "solana-sdk",
  "spl-token 3.3.1",
@@ -1891,7 +2083,7 @@ version = "1.0.0"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
- "jet-margin",
+ "jet-margin 1.0.0",
  "jet-margin-pool",
  "jet-static-program-registry",
 ]
@@ -1905,11 +2097,33 @@ dependencies = [
 ]
 
 [[package]]
+name = "jet-metadata"
+version = "1.0.0"
+source = "git+https://github.com/jet-lab/jet-v2.git?branch=master#b09ea485dd3fae65a88c6411b9a0e94fd39a7434"
+dependencies = [
+ "anchor-lang",
+ "solana-program",
+]
+
+[[package]]
+name = "jet-proto-math"
+version = "1.1.0"
+source = "git+https://github.com/jet-lab/program-libraries?branch=fixed-point-math#4759528cab6e0a186fba57b653744499fc343665"
+dependencies = [
+ "bytemuck",
+ "static_assertions",
+ "thiserror",
+ "uint 0.9.3",
+]
+
+[[package]]
 name = "jet-proto-math"
 version = "1.1.0"
 source = "git+https://github.com/jet-lab/program-libraries?branch=main#7e00d07729d2a079d7d0af5c49b359965df6256f"
 dependencies = [
+ "anchor-lang",
  "bytemuck",
+ "num-traits",
  "static_assertions",
  "thiserror",
  "uint 0.9.3",
@@ -2216,7 +2430,7 @@ version = "0.1.0"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
- "jet-margin",
+ "jet-margin 1.0.0",
 ]
 
 [[package]]
@@ -2452,6 +2666,12 @@ name = "openssl-probe"
 version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ff011a302c396a5197692431fc1948019154afc178baf7d8e37367442a4601cf"
+
+[[package]]
+name = "os_str_bytes"
+version = "6.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9ff7415e9ae3fff1225851df9e0d9e4e5479f947619774677a63572e55e80eff"
 
 [[package]]
 name = "ouroboros"
@@ -3388,6 +3608,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "shellexpand"
+version = "2.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7ccc8076840c4da029af4f87e4e8daeb0fca6b87bbb02e10cb60b791450e11e4"
+dependencies = [
+ "dirs",
+]
+
+[[package]]
 name = "signal-hook-registry"
 version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3504,7 +3733,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c7b79ccbafa22fb42d04cc59b32093ff9c43205724fe3d7f89ecc27824833fbc"
 dependencies = [
  "chrono",
- "clap",
+ "clap 2.34.0",
  "rpassword",
  "solana-perf",
  "solana-remote-wallet",
@@ -3543,7 +3772,7 @@ dependencies = [
  "bincode",
  "bs58 0.4.0",
  "bytes",
- "clap",
+ "clap 2.34.0",
  "crossbeam-channel",
  "enum_dispatch",
  "futures",
@@ -3618,7 +3847,7 @@ checksum = "31c773aee679b10b7223262265e13830f59ea8844818a2bdd7bf3d08eea06f68"
 dependencies = [
  "bincode",
  "byteorder",
- "clap",
+ "clap 2.34.0",
  "crossbeam-channel",
  "log",
  "serde",
@@ -3710,7 +3939,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c27db447c84cedf6aad1dbc735ea845d6828aba580ac7190d6351f3a92b2e1b6"
 dependencies = [
  "bincode",
- "clap",
+ "clap 2.34.0",
  "crossbeam-channel",
  "log",
  "nix",
@@ -4352,6 +4581,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8ea5119cdb4c55b55d432abb513a0429384878c15dde60cc77b1c99de1a95a6a"
 
 [[package]]
+name = "strsim"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "73473c0e59e6d5812c5dfe2a064a6444949f089e20eec9a2e5506596494e4623"
+
+[[package]]
 name = "strum"
 version = "0.24.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4471,6 +4706,12 @@ checksum = "d326610f408c7a4eb6f51c37c330e496b08506c9457c9d34287ecc38809fb060"
 dependencies = [
  "unicode-width",
 ]
+
+[[package]]
+name = "textwrap"
+version = "0.15.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b1141d4d61095b28419e22cb0bbf02755f5e54e0526f97f1e3d1d160e60885fb"
 
 [[package]]
 name = "thiserror"
@@ -4890,6 +5131,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fc7652e3f6c4706c8d9cd54832c4a4ccb9b5336e2c3bd154d5cccfbf1c1f5f7d"
 dependencies = [
  "cfg-if",
+ "serde",
+ "serde_json",
  "wasm-bindgen-macro",
 ]
 
@@ -4948,6 +5191,18 @@ name = "wasm-bindgen-shared"
 version = "0.2.82"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6598dd0bd3c7d51095ff6531a5b23e02acdc81804e30d8f07afb77b7215a140a"
+
+[[package]]
+name = "wasm-utils"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bytemuck",
+ "jet-bonds-lib",
+ "js-sys",
+ "serde",
+ "wasm-bindgen",
+]
 
 [[package]]
 name = "web-sys"
