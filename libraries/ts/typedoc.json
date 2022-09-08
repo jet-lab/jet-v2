@@ -1,0 +1,7 @@
+{
+  "entryPoints": ["src/index.ts"],
+  "out": "../../docs/ts-client",
+  "excludePrivate": true,
+  "excludeProtected": true,
+  "excludeInternal": true
+}
