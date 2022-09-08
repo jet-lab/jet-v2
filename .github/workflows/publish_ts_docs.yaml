@@ -24,8 +24,8 @@ jobs:
 
   build:
     runs-on: ubuntu-latest
-    needs: changed_files
-    if: needs.changed_files.outputs.ts-docs == 'true'
+    # needs: changed_files
+    # if: needs.changed_files.outputs.ts-docs == 'true'
     defaults:
       run:
         working-directory: ./docs/ts-client
