@@ -56,7 +56,7 @@ pub mod ix_builder;
 /// things that should be provided by the solana sdk, but are not
 pub mod solana;
 /// Utilities for swap adapters
-pub mod swap;
+pub mod spl_swap;
 /// Utilities for tokens and token prices
 pub mod tokens;
 /// Transaction builder
