@@ -35,19 +35,19 @@ sh -c "$(curl -sSfL https://release.solana.com/v1.10.23/install)"
 Install anchor
 
 ```
-npm i @project-serum/anchor-cli@0.24.2 -g
+yarn @project-serum/anchor-cli@0.24.2 -g
 ```
 
 Install the project's node_modules
 
 ```
-npm i
+yarn
 ```
 
 Then run
 
 ```
-npm test
+yarn test
 ```
 
 to run the test suite
