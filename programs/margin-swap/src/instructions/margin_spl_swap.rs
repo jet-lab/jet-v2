@@ -262,7 +262,13 @@ pub fn margin_spl_swap_handler(
     // check if there was less required for the min amount out then expected
     // aka if there was unexpected leftover balance in the source account after
     // the swap occurred.
-    let leftover_balance_from_source_account = swap_amount_in.checked_sub(swap_amount_out).unwrap();
+
+    let source_amount_after_swap =
+        token::accessor::amount(&ctx.accounts.transit_source_account.to_account_info())?;
+
+    let leftover_balance_from_source_account = source_amount_after_swap
+        .checked_sub(source_opening_balance)
+        .unwrap();
 
     // if there was leftover balance in the source transit account, deposit into the pool
     if leftover_balance_from_source_account > 0 {
