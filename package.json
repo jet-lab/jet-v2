@@ -7,6 +7,7 @@
   "license": "AGPL-3.0-or-later",
   "scripts": {
     "compile": "npx tsc",
+    "docs:rust": "cargo doc -p jet-margin -p jet-margin-pool -p jet-margin-swap --no-deps && cp -r ./target/doc/* ./docs/margin-rust",
     "fmt": "prettier --check .",
     "fmt:fix": "prettier --write .",
     "lint": "eslint . --ext ts",
