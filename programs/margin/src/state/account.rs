@@ -395,7 +395,7 @@ impl MarginAccount {
                 let balance_age = timestamp - position.balance_timestamp;
                 let price_quote_age = timestamp - position.price.timestamp;
 
-                if position.price.is_valid() {
+                if !position.price.is_valid() {
                     // collateral with bad prices
                     Some(ErrorCode::InvalidPrice)
                 } else if position.max_staleness > 0 && balance_age > position.max_staleness {
