@@ -274,35 +274,6 @@ pub fn margin_spl_swap_handler(
     if leftover_balance_from_source_account > 0 {
         ctx.accounts.deposit_source(leftover_balance_from_source_account)?;
     }
-    
-    // let transit_destination_account_final_balance = token::accessor::amount(&ctx.accounts.transit_destination_account.to_account_info())?;
-
-    // if transit_destination_account_final_balance == 0 {
-
-    //    let close_token_account_ctx = CpiContext::new(
-    //         &ctx.accounts.token_program.to_account_info(),
-    //         CloseAccount {
-    //             account: &ctx.accounts.transit_destination_account.to_account_info(),
-    //             authority: self.margin_account.to_account_info(),
-    //             destination: self.receiver.to_account_info(),
-    //         },
-    //    );
-
-    //     token::close_account(
-    //         close_token_account_ctx
-    //             .with_signer(&[&account.signer_seeds()]),
-    //     )?;
-
-    // }
-
-
-    // let transit_source_account_final_balance = token::accessor::amount(&&ctx.accounts.transit_source_account.to_account_info())?;
-
-    // if transit_source_account_final_balance == 0 {
-
-    // }
-
-
 
     Ok(())
 }
