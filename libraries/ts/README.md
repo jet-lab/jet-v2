@@ -154,5 +154,3 @@ await marginAccount.refresh()
 await marginAccount.withCreateAccount(instructions)
 
 ```
-
-check if this triggers the workflow
