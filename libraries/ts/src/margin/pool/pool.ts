@@ -1196,8 +1196,7 @@ export class Pool {
       true
     ).riskIndicator
     if (projectedRiskLevel >= 1) {
-      console.error(`Swap would exceed maximum risk (projected: ${projectedRiskLevel})`)
-      return ""
+      throw new Error(`Swap would exceed maximum risk (projected: ${projectedRiskLevel})`)
     }
 
     // Refresh prices
