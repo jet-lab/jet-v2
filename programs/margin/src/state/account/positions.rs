@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use anchor_lang::{prelude::*};
+use anchor_lang::prelude::*;
 use bytemuck::{Contiguous, Pod, Zeroable};
 use jet_metadata::TokenKind;
 #[cfg(any(test, feature = "cli"))]
@@ -28,9 +28,7 @@ use anchor_lang::Result as AnchorResult;
 use std::{convert::TryFrom, result::Result};
 
 use super::Approver;
-use crate::{
-    ErrorCode, PriceChangeInfo, MAX_ORACLE_CONFIDENCE, MAX_ORACLE_STALENESS,
-};
+use crate::{ErrorCode, PriceChangeInfo, MAX_ORACLE_CONFIDENCE, MAX_ORACLE_STALENESS};
 
 const POS_PRICE_VALID: u8 = 1;
 

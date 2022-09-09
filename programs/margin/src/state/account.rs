@@ -16,21 +16,19 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 use anchor_lang::{prelude::*, system_program, Discriminator};
-use bytemuck::{Contiguous};
+use bytemuck::Contiguous;
 
 #[cfg(any(test, feature = "cli"))]
 use serde::ser::{Serialize, SerializeStruct, Serializer};
 
 use jet_proto_math::Number128;
 
-
 use anchor_lang::Result as AnchorResult;
-use std::{result::Result};
+use std::result::Result;
 
 use crate::{
     util::{Invocation, Require},
-    ErrorCode, MAX_PRICE_QUOTE_AGE,
-    MAX_USER_POSITIONS,
+    ErrorCode, MAX_PRICE_QUOTE_AGE, MAX_USER_POSITIONS,
 };
 
 mod positions;
