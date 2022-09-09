@@ -1853,7 +1853,9 @@ export class Pool {
       return defaults
     }
 
-    const inputRequiredCollateralFactor = inputTokenPosition.loanPosition.valueModifier.toNumber()
+    const inputRequiredCollateralFactor =
+      inputTokenPosition.loanPosition.valueModifier.toNumber() *
+      (setupCheck ? MarginAccount.SETUP_LEVERAGE_FRACTION.toNumber() : 1)
     const inputTokenAssetValue = inputTokenPosition.depositBalance.tokens * inputTokenPrice
     const outputRequiredCollateralFactor =
       outputTokenPosition.loanPosition.valueModifier.toNumber() *
