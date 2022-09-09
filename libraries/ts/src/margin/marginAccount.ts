@@ -9,7 +9,6 @@ import {
   Signer,
   SystemProgram,
   SYSVAR_RENT_PUBKEY,
-  Transaction,
   TransactionInstruction,
   TransactionSignature
 } from "@solana/web3.js"
@@ -73,6 +72,7 @@ export interface AccountSummary {
   borrowedValue: number
   accountBalance: number
   availableCollateral: number
+  leverage: number
   /** @deprecated use riskIndicator */
   cRatio: number
   /** @deprecated use riskIndicator */
@@ -548,18 +548,32 @@ export class MarginAccount {
       }
     }
 
+    const equity = collateralValue.sub(this.valuation.liabilities)
+
     const exposureNumber = this.valuation.liabilities.toNumber()
     const cRatio = exposureNumber === 0 ? Infinity : collateralValue.toNumber() / exposureNumber
     const minCRatio = exposureNumber === 0 ? 1 : 1 + this.valuation.effectiveCollateral.toNumber() / exposureNumber
     const depositedValue = collateralValue.toNumber()
     const borrowedValue = this.valuation.liabilities.toNumber()
-    const accountBalance = collateralValue.sub(this.valuation.liabilities).toNumber()
+    const accountBalance = equity.toNumber()
+    
+    let leverage = 1.0
+    if (this.valuation.liabilities.gt(Number128.ZERO)) {
+      if (equity.lt(Number128.ZERO) || equity.eq(Number128.ZERO)) {
+        leverage = Infinity
+      } else {
+        collateralValue.div(equity).toNumber()
+      }
+    }
+
+    const availableCollateral = this.valuation.effectiveCollateral.sub(this.valuation.requiredCollateral).toNumber()
 
     return {
       depositedValue,
       borrowedValue,
       accountBalance,
-      availableCollateral: 0, // FIXME: total collateral * collateral weight - total claims
+      leverage,
+      availableCollateral,
       cRatio,
       minCRatio
     }
