@@ -79,7 +79,7 @@ pub const MAX_USER_POSITIONS: usize = 24;
 /// Handler functions are described for each instruction well as struct parameters
 /// (and their types and descriptions are listed) and any handler function
 /// parameters aside from parameters that exist in every instruction handler function.
-/// Parameters of events emitted for the purposes of data logging are also included.
+/// Accounts associated with events emitted for the purposes of data logging are also included.
 
 #[program]
 pub mod jet_margin {
@@ -87,30 +87,25 @@ pub mod jet_margin {
 
     /// Create a new margin account for a user
     ///
-    /// ## create\_account.rs
-    ///
-    /// This instruction does the following:
-    ///
-    /// 1.  Let `account` be a mutable reference to the margin account.
+    /// 1.  Create and load the margin account.
     ///     
     /// 2.  Initialize the margin account by setting the margin account version, owner,
-    ///     bump seed, user seed, and setting liquidator pubkey field to the default
-    ///     (if an account is being liquidated, the liquidator pubkey will be set here).
+    ///     bump seed, user seed, and the default liquidator pubkey.
     ///     
-    /// 3.  Emit the `AccountCreated` event for data logging (see table below):
+    /// 3.  Emit the [`events::AccountCreated`] event for data logging (see table below):
     ///     
     /// 4.  Return `Ok(())`.
     ///     
     ///
-    /// **Parameters of create\_account.rs:**
+    /// **[Accounts](jet_margin::accounts::CreateAccount) expected with create\_account.rs:**
     ///
-    /// |     |     |
-    /// | --- | --- |
-    /// | **Name** | **Description** |
-    /// | `owner` | The owner of the new margin account. |
-    /// | `payer` | The pubkey paying rent for the new margin account opening. |
-    /// | `margin_account` | The margin account to initialize for the owner. |
-    /// | `system_program` | The system program. |
+    /// |     |     |     |
+    /// | --- | --- | --- |
+    /// | **Name** | **Type** | **Description** |
+    /// | `owner` | `signer` | The owner of the new margin account. |
+    /// | `payer` | `signer` | The pubkey paying rent for the new margin account opening. |
+    /// | `margin_account` | `writable` | The margin account to initialize for the owner. |
+    /// | `system_program` | `read only` | The system program. |
     ///
     /// **Events emitted by create\_account.rs:**
     ///
@@ -125,7 +120,6 @@ pub mod jet_margin {
 
     /// Close a user's margin account
     ///
-    /// ## close\_account.rs
     ///
     /// This instruction does the following:
     ///
@@ -133,7 +127,7 @@ pub mod jet_margin {
     ///     
     /// 2.  Check if the loaded margin account has any open positions.
     ///     
-    ///     a.  If open positions exist, then return `ErrorCode::AccountNotEmpty`.
+    ///     a.  If open positions exist, then return [`ErrorCode::AccountNotEmpty`].
     ///         
     /// 3.  Emit the `AccountClosed` event for data logging (see table below).
     ///     
@@ -142,7 +136,7 @@ pub mod jet_margin {
     /// 5.  Return `Ok(())`.
     ///     
     ///
-    /// **Parameters of close\_account.rs:**
+    /// **Accounts expected with close\_account.rs:**
     ///
     /// |     |     |
     /// | --- | --- |
@@ -165,7 +159,6 @@ pub mod jet_margin {
     /// Register a position for some token that will be custodied by margin.
     /// Currently this applies to anything other than a claim.
     ///
-    /// ## register\_position.rs
     ///
     /// This instruction does the following:
     ///
@@ -176,7 +169,7 @@ pub mod jet_margin {
     /// 3.  Return `Ok(())`.
     ///     
     ///
-    /// **Parameters of register\_position.rs:**
+    /// **Accounts expected with register\_position.rs:**
     ///
     /// |     |     |
     /// | --- | --- |
@@ -205,7 +198,6 @@ pub mod jet_margin {
     /// Update the balance of a position stored in the margin account to
     /// match the actual balance stored by the SPL token acount.
     ///
-    /// ## update\_position\_balance.rs
     ///
     /// This instruction does the following:
     ///
@@ -220,7 +212,7 @@ pub mod jet_margin {
     /// 5.  Return `Ok(())`.
     ///     
     ///
-    /// **Parameters of update\_position\_balance.rs:**
+    /// **Accounts expected with update\_position\_balance.rs:**
     ///
     /// |     |     |
     /// | --- | --- |
@@ -243,7 +235,6 @@ pub mod jet_margin {
     /// in the case where the metadata has changed after the position was
     /// created.
     ///
-    /// ## refresh\_position\_metadata.rs
 
     /// This instruction does the following:
     ///
@@ -258,7 +249,7 @@ pub mod jet_margin {
     /// 5.  Return `Ok(())`.
     ///     
     ///
-    /// **Parameters of refresh\_position\_metadata.rs:**
+    /// **Accounts expected with refresh\_position\_metadata.rs:**
     ///
     /// |     |     |
     /// | --- | --- |
@@ -279,7 +270,6 @@ pub mod jet_margin {
 
     /// Close out a position, freeing up space in the account.
     ///
-    /// ## close\_position.rs
     ///
     /// This instruction does the following:
     ///
@@ -298,7 +288,7 @@ pub mod jet_margin {
     /// 6.  Return `Ok(())`.
     ///
     ///
-    /// **Parameters of close\_position.rs:**
+    /// **Accounts expected with close\_position.rs:**
     ///
     /// |     |     |
     /// | --- | --- |
@@ -324,7 +314,6 @@ pub mod jet_margin {
     /// Verify that the account is healthy, by validating the collateralization
     /// ration is above the minimum.
     ///
-    /// ## verify\_healthy.rs
     ///
     /// This instruction does the following:
     ///
@@ -339,7 +328,7 @@ pub mod jet_margin {
     /// 4.  Return `Ok(())`.
     ///
     ///
-    /// **Parameters of verify\_healthy.rs:**
+    /// **Accounts expected with verify\_healthy.rs:**
     ///
     /// |     |     |
     /// | --- | --- |
@@ -360,7 +349,6 @@ pub mod jet_margin {
     /// Perform an action by invoking other programs, allowing them to alter
     /// the balances of the token accounts belonging to this margin account.
     ///
-    /// /// ## adapter\_invoke.rs
     ///
     /// This instruction does the following:
     ///
@@ -383,7 +371,7 @@ pub mod jet_margin {
     /// 6.  Return `Ok(())`.
     ///     
     ///
-    /// **Parameters of adapter\_invoke.rs:**
+    /// **Accounts expected with adapter\_invoke.rs:**
     ///
     /// |     |     |
     /// | --- | --- |
@@ -413,7 +401,6 @@ pub mod jet_margin {
     /// refresh the state of the margin account to be consistent with the actual
     /// underlying prices or positions, but not permitting new position changes.
     ///
-    /// ## accounting\_invoke.rs
     ///
     /// This instruction does the following:
     ///
@@ -423,19 +410,19 @@ pub mod jet_margin {
     ///     
     ///     a.  For each changed position, emit each existing adapter position as an `event` (see table below).
     ///         
-    /// 3.  Emit `AccountingInvokeEnd` event for data logging (see table below).
+    /// 3.  Emit [`events::AccountingInvokeBegin`] event for data logging (see table below).
     ///     
     /// 4.  Return `Ok(())`.
     ///     
     ///
-    /// **Parameters of accounting\_invoke.rs:**
+    /// **[Accounts](jet_margin::accounts::AccountingInvoke) expected with accounting\_invoke.rs:**
     ///
-    /// |     |     |
-    /// | --- | --- |
-    /// | **Name** | **Description** |
-    /// | `margin_account` | The margin account to proxy an action for. |
-    /// | `adapter_program` | The program to be invoked. |
-    /// | `adapter_metadata` | The metadata about the proxy program. |
+    /// |     |     |     |
+    /// | --- | --- | --- |
+    /// | **Name** | **Type** |  **Description** |
+    /// | `margin_account` | `writeable` | The margin account to proxy an action for. |
+    /// | `adapter_program` | `read only` | The program to be invoked. |
+    /// | `adapter_metadata` | `read only` | The metadata about the proxy program. |
     ///
     /// **Events emitted by accounting\_invoke.rs:**
     ///
@@ -455,7 +442,6 @@ pub mod jet_margin {
 
     /// Begin liquidating an account
     ///
-    /// ## liquidate\_begin.rs
     ///
     /// This instruction does the following:
     ///
@@ -482,7 +468,7 @@ pub mod jet_margin {
     /// 8.  Return `Ok(())`.
     ///     
     ///
-    /// **Parameters of liquidate\_begin.rs:**
+    /// **Accounts expected with liquidate\_begin.rs:**
     ///
     /// |     |     |
     /// | --- | --- |
@@ -507,7 +493,6 @@ pub mod jet_margin {
 
     /// Stop liquidating an account
     ///
-    /// ## liquidate\_end.rs
     ///
     /// This instruction does the following:
     ///
@@ -532,7 +517,7 @@ pub mod jet_margin {
     /// 7.  Return `Ok(())`.
     ///     
     ///
-    /// **Parameters of liquidate\_end.rs:**
+    /// **Accounts expected with liquidate\_end.rs:**
     ///
     /// |     |     |
     /// | --- | --- |
@@ -555,7 +540,6 @@ pub mod jet_margin {
     /// Perform an action by invoking another program, for the purposes of
     /// liquidating a margin account.
     ///
-    /// ## liquidator\_invoke.rs
     ///
     /// This instruction does the following:
     ///
@@ -578,7 +562,7 @@ pub mod jet_margin {
     /// 9.  Return `Ok(())`.
     ///         
     ///
-    /// **Parameters of liquidator\_invoke.rs:**
+    /// **Accounts expected with liquidator\_invoke.rs:**
     ///
     /// |     |     |
     /// | --- | --- |
