@@ -96,7 +96,7 @@ impl<'info> MarginSplSwap<'info> {
     }
 
     #[inline(never)]
-    fn deposit(&self, destination_amount: u64) -> Result<()> {
+    fn deposit_destination(&self, amount: u64) -> Result<()> {
         jet_margin_pool::cpi::deposit(
             CpiContext::new(
                 self.margin_pool_program.to_account_info(),
@@ -114,12 +114,37 @@ impl<'info> MarginSplSwap<'info> {
                 },
             ),
             ChangeKind::ShiftBy,
-            destination_amount,
+            amount,
         )?;
 
         Ok(())
     }
+    
+    #[inline(never)]
+    fn deposit_source(&self, amount: u64) -> Result<()> {
+        jet_margin_pool::cpi::deposit(
+            CpiContext::new(
+                self.margin_pool_program.to_account_info(),
+                Deposit {
+                    margin_pool: self.source_margin_pool.margin_pool.to_account_info(),
+                    vault: self.source_margin_pool.vault.to_account_info(),
+                    deposit_note_mint: self
+                        .source_margin_pool
+                        .deposit_note_mint
+                        .to_account_info(),
+                    depositor: self.margin_account.to_account_info(),
+                    source: self.transit_source_account.to_account_info(),
+                    destination: self.source_account.to_account_info(),
+                    token_program: self.token_program.to_account_info(),
+                },
+            ),
+            ChangeKind::ShiftBy,
+            amount,
+        )?;
 
+        Ok(())
+    }
+    
     #[inline(never)]
     fn swap(&self, amount_in: u64, minimum_amount_out: u64) -> Result<()> {
         let swap_ix = use_client!(self.swap_info.swap_program.key(), {
@@ -223,7 +248,7 @@ pub fn margin_spl_swap_handler(
     if swap_amount_in == 0 {
         return err!(crate::ErrorCode::NoSwapTokensWithdrawn);
     }
-
+    
     let destination_opening_balance =
         token::accessor::amount(&ctx.accounts.transit_destination_account.to_account_info())?;
     ctx.accounts.swap(swap_amount_in, minimum_amount_out)?;
@@ -235,7 +260,49 @@ pub fn margin_spl_swap_handler(
     let swap_amount_out = destination_closing_balance
         .checked_sub(destination_opening_balance)
         .unwrap();
-    ctx.accounts.deposit(swap_amount_out)?;
+    ctx.accounts.deposit_destination(swap_amount_out)?;
+
+    
+    // check if there was less required for the min amount out then expected
+    // aka if there was unexpected leftover balance in the source account after
+    // the swap occurred.
+    let leftover_balance_from_source_account = swap_amount_in
+    .checked_sub(swap_amount_out)
+    .unwrap();
+
+    // if there was leftover balance in the source transit account, deposit into the pool
+    if leftover_balance_from_source_account > 0 {
+        ctx.accounts.deposit_source(leftover_balance_from_source_account)?;
+    }
+    
+    // let transit_destination_account_final_balance = token::accessor::amount(&ctx.accounts.transit_destination_account.to_account_info())?;
+
+    // if transit_destination_account_final_balance == 0 {
+
+    //    let close_token_account_ctx = CpiContext::new(
+    //         &ctx.accounts.token_program.to_account_info(),
+    //         CloseAccount {
+    //             account: &ctx.accounts.transit_destination_account.to_account_info(),
+    //             authority: self.margin_account.to_account_info(),
+    //             destination: self.receiver.to_account_info(),
+    //         },
+    //    );
+
+    //     token::close_account(
+    //         close_token_account_ctx
+    //             .with_signer(&[&account.signer_seeds()]),
+    //     )?;
+
+    // }
+
+
+    // let transit_source_account_final_balance = token::accessor::amount(&&ctx.accounts.transit_source_account.to_account_info())?;
+
+    // if transit_source_account_final_balance == 0 {
+
+    // }
+
+
 
     Ok(())
 }
