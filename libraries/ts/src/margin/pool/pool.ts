@@ -1166,6 +1166,19 @@ export class Pool {
     const instructions: TransactionInstruction[] = []
     const repayInstructions: TransactionInstruction[] = []
 
+    // Setup check for swap
+    const projectedRiskLevel = this.projectAfterMarginSwap(
+      marginAccount,
+      swapAmount.tokens,
+      minAmountOut.tokens,
+      outputToken,
+      true
+    ).riskIndicator
+    if (projectedRiskLevel >= 1) {
+      console.error(`Swap would exceed maximum risk (projected: ${projectedRiskLevel})`)
+      return ""
+    }
+
     // Refresh prices
     await this.withMarginRefreshAllPositionPrices({
       instructions: refreshInstructions,
@@ -1581,11 +1594,11 @@ export class Pool {
   }
 
   projectAfterAction(
-    marginAccount: MarginAccount, 
-    amount: number, 
-    action: PoolAction, 
+    marginAccount: MarginAccount,
+    amount: number,
+    action: PoolAction,
     // For swap projections
-    minAmountOut?: number, 
+    minAmountOut?: number,
     outputToken?: Pool
   ): PoolProjection {
     switch (action) {
@@ -1812,51 +1825,61 @@ export class Pool {
 
   /// Projects the user's risk level after a swap.
   projectAfterMarginSwap(
-    marginAccount: MarginAccount, 
+    marginAccount: MarginAccount,
     amount: number,
     minAmountOut: number | undefined,
     outputToken: Pool | undefined,
     setupCheck?: boolean
   ): PoolProjection {
-    const defaults = this.getDefaultPoolProjection(marginAccount);
+    const defaults = this.getDefaultPoolProjection(marginAccount)
     if (!minAmountOut || !outputToken) {
-      return defaults;
+      return defaults
     }
 
     // Prices
-    const inputTokenPrice = this.prices.priceValue.toNumber();
-    const outputTokenPrice = outputToken.prices.priceValue.toNumber();
+    const inputTokenPrice = this.prices.priceValue.toNumber()
+    const outputTokenPrice = outputToken.prices.priceValue.toNumber()
 
     // Swap values
-    const inputSwapValue = amount  * inputTokenPrice;
-    const marginAmount = amount - marginAccount.poolPositions[this.symbol].depositBalance.tokens;
-    const marginAmountValue = marginAmount * inputTokenPrice;
-    const minAmountOutValue = minAmountOut * outputTokenPrice;
+    const inputSwapValue = amount * inputTokenPrice
+    const marginAmount = amount - marginAccount.poolPositions[this.symbol].depositBalance.tokens
+    const marginAmountValue = marginAmount * inputTokenPrice
+    const minAmountOutValue = minAmountOut * outputTokenPrice
 
     // Total Liabilities
-    const totalLiabilities = marginAccount.valuation.liabilities.toNumber();
+    const totalLiabilities = marginAccount.valuation.liabilities.toNumber()
 
     // Position-specific valuations
-    const inputTokenPosition = marginAccount.poolPositions[this.symbol];
-    const outputTokenPosition = marginAccount.poolPositions[outputToken.symbol];
+    const inputTokenPosition = marginAccount.poolPositions[this.symbol]
+    const outputTokenPosition = marginAccount.poolPositions[outputToken.symbol]
     if (!inputTokenPosition.loanPosition || !outputTokenPosition.loanPosition) {
-      console.error("No pool positions for margin account");
-      return defaults;
+      console.error("No pool positions for margin account")
+      return defaults
     }
 
-    const inputRequiredCollateralFactor = inputTokenPosition.loanPosition.valueModifier.toNumber();
-    const inputTokenAssetValue = inputTokenPosition.depositBalance.tokens * inputTokenPrice;
-    const outputRequiredCollateralFactor = outputTokenPosition.loanPosition.valueModifier.toNumber();
-    const outputTokenLiabilityValue = outputTokenPosition.loanBalance.tokens * outputTokenPrice;
+    const inputRequiredCollateralFactor = inputTokenPosition.loanPosition.valueModifier.toNumber()
+    const inputTokenAssetValue = inputTokenPosition.depositBalance.tokens * inputTokenPrice
+    const outputRequiredCollateralFactor = outputTokenPosition.loanPosition.valueModifier.toNumber()
+    const outputTokenLiabilityValue = outputTokenPosition.loanBalance.tokens * outputTokenPrice
 
     // Collateral values
-    const requiredCollateral = marginAccount.valuation[setupCheck ? 'requiredSetupCollateral' : 'requiredCollateral'].toNumber();
-    const weightedCollateral = marginAccount.valuation.weightedCollateral.toNumber();
-    const inputTokenWeight = this.depositNoteMetadata.valueModifier.toNumber();
-    const outputTokenWeight = outputToken.depositNoteMetadata.valueModifier.toNumber();
+    const requiredCollateral =
+      marginAccount.valuation[setupCheck ? "requiredSetupCollateral" : "requiredCollateral"].toNumber()
+    const weightedCollateral = marginAccount.valuation.weightedCollateral.toNumber()
+    const inputTokenWeight = this.depositNoteMetadata.valueModifier.toNumber()
+    const outputTokenWeight = outputToken.depositNoteMetadata.valueModifier.toNumber()
 
     // Projected risk equation
-    const riskIndicator = (totalLiabilities + requiredCollateral - (((1 + outputRequiredCollateralFactor)/outputRequiredCollateralFactor) * Math.max(outputTokenLiabilityValue - minAmountOutValue, 0)) + (((1 + inputRequiredCollateralFactor)/inputRequiredCollateralFactor) * Math.max(inputSwapValue - inputTokenAssetValue, 0))) / (weightedCollateral + (outputTokenWeight * Math.max(minAmountOutValue - outputTokenLiabilityValue, 0)) - (inputTokenWeight * Math.max(inputTokenAssetValue - inputSwapValue, 0)))
+    const riskIndicator =
+      (totalLiabilities +
+        requiredCollateral -
+        ((1 + outputRequiredCollateralFactor) / outputRequiredCollateralFactor) *
+          Math.max(outputTokenLiabilityValue - minAmountOutValue, 0) +
+        ((1 + inputRequiredCollateralFactor) / inputRequiredCollateralFactor) *
+          Math.max(inputSwapValue - inputTokenAssetValue, 0)) /
+      (weightedCollateral +
+        outputTokenWeight * Math.max(minAmountOutValue - outputTokenLiabilityValue, 0) -
+        inputTokenWeight * Math.max(inputTokenAssetValue - inputSwapValue, 0))
 
     // TODO: add pool projections for rates
     return {
