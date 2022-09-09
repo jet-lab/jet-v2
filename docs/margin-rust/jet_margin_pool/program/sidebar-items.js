@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":[["JetMarginPool","Type representing the program."]]};

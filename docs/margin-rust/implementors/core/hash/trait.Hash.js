@@ -1,0 +1,4 @@
+(function() {var implementors = {};
+implementors["jet_margin"] = [{"text":"impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.63.0/core/hash/trait.Hash.html\" title=\"trait core::hash::Hash\">Hash</a> for <a class=\"struct\" href=\"jet_margin/struct.AdapterPositionFlags.html\" title=\"struct jet_margin::AdapterPositionFlags\">AdapterPositionFlags</a>","synthetic":false,"types":["jet_margin::state::AdapterPositionFlags"]}];
+implementors["jet_margin_pool"] = [{"text":"impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.63.0/core/hash/trait.Hash.html\" title=\"trait core::hash::Hash\">Hash</a> for <a class=\"struct\" href=\"jet_margin_pool/struct.PoolFlags.html\" title=\"struct jet_margin_pool::PoolFlags\">PoolFlags</a>","synthetic":false,"types":["jet_margin_pool::state::PoolFlags"]}];
+if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()
