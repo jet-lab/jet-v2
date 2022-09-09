@@ -1196,7 +1196,8 @@ export class Pool {
       true
     ).riskIndicator
     if (projectedRiskLevel >= 1) {
-      throw new Error(`Swap would exceed maximum risk (projected: ${projectedRiskLevel})`)
+      console.error(`Swap would exceed maximum risk (projected: ${projectedRiskLevel})`)
+      return "Setup check failed"
     }
 
     // Refresh prices
@@ -1839,8 +1840,6 @@ export class Pool {
 
     // Swap values
     const inputSwapValue = amount * inputTokenPrice
-    const marginAmount = amount - marginAccount.poolPositions[this.symbol].depositBalance.tokens
-    const marginAmountValue = marginAmount * inputTokenPrice
     const minAmountOutValue = minAmountOut * outputTokenPrice
 
     // Total Liabilities
@@ -1856,7 +1855,9 @@ export class Pool {
 
     const inputRequiredCollateralFactor = inputTokenPosition.loanPosition.valueModifier.toNumber()
     const inputTokenAssetValue = inputTokenPosition.depositBalance.tokens * inputTokenPrice
-    const outputRequiredCollateralFactor = outputTokenPosition.loanPosition.valueModifier.toNumber()
+    const outputRequiredCollateralFactor =
+      outputTokenPosition.loanPosition.valueModifier.toNumber() *
+      (setupCheck ? MarginAccount.SETUP_LEVERAGE_FRACTION.toNumber() : 1)
     const outputTokenLiabilityValue = outputTokenPosition.loanBalance.tokens * outputTokenPrice
 
     // Collateral values
