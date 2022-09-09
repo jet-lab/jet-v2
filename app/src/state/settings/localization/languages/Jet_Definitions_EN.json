@@ -1,0 +1,70 @@
+{
+  "accountLeverage": {
+    "term": "Account Leverage",
+    "definition": "TODO: Norman definition here"
+  },
+  "accountValue": {
+    "term": "Account Value",
+    "definition": "TODO: Norman definition here"
+  },
+  "projectedRiskLevel": {
+    "term": "Projected Risk Level",
+    "definition": "A real-time representation of what your Risk Level would be if the current trade is submitted."
+  },
+  "ask": {
+    "term": "Ask",
+    "definition": "TODO: Norman definition here"
+  },
+  "liquidity": {
+    "term": "Liquidity",
+    "definition": "The efficiency or ease with which an asset can be converted into stablecoins without affecting the asset’s market price."
+  },
+  "bid": {
+    "term": "Bid",
+    "definition": "TODO: Norman definition here"
+  },
+  "borrowRate": {
+    "term": "Borrow Interest Rate",
+    "definition": "The instantaneous interest rate being paid by borrowers. This rate is expressed in annualized form, does not reflect the effects of compounding, and is inclusive of any protocol fees that may be in place. The rate changes as the utilization ratio of the borrowed asset changes."
+  },
+  "collateral": {
+    "term": "Collateral",
+    "definition": "The asset deposited with the protocol to secure a loan."
+  },
+  "collateralWeight": {
+    "term": "Collateral Weight",
+    "definition": "TODO: Norman definition here"
+  },
+  "requiredCollateral": {
+    "term": "Required Collateral",
+    "definition": "TODO: Norman definition here"
+  },
+  "effectiveCollateral": {
+    "term": "Effective Collateral",
+    "definition": "TODO: Norman definition here"
+  },
+  "riskLevel": {
+    "term": "Risk Level",
+    "definition": "The ratio of liabilities and required collateral to the (weight-adjusted) collateral in your account."
+  },
+  "debt": {
+    "term": "Debt",
+    "definition": "The value of the loan that is owed or due to the Protocol."
+  },
+  "depositRate": {
+    "term": "Deposit Interest Rate",
+    "definition": "The instantaneous interest rate being earned by depositors. This rate is expressed in annualized form, does not reflect the effects of compounding, and is inclusive of any protocol fees that may be in place. The rate changes as the utilization ratio of the deposited asset changes."
+  },
+  "depositBorrowRate": {
+    "term": "Deposit / Borrow Rate",
+    "definition": "The deposit rate is the instantaneous interest rate being earned by depositors, and the borrow rate is paid by borrowers. These rates are expressed in annualized form, do not reflect the effects of compounding, and are inclusive of any protocol fees that may be in place. The rates change as the utilization ratio of the deposited asset changes."
+  },
+  "slippage": {
+    "term": "Slippage",
+    "definition": "TODO: Norman definition here"
+  },
+  "utilizationRate": {
+    "term": "Utilization Ratio",
+    "definition": "The fraction of a pool’s assets that have been borrowed. For example, if the USDC pool is worth $100,000,and the amount owed to the pool by borrowers is $65,000, then the utilization ratio is 65%. There would be $35,000 available for further borrowing."
+  }
+}
