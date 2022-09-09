@@ -572,8 +572,8 @@ export class MarginAccount {
       depositedValue,
       borrowedValue,
       accountBalance,
-      leverage,
       availableCollateral,
+      leverage,
       cRatio,
       minCRatio
     }
