@@ -49,7 +49,8 @@
     "feeAccount": "6j2tt2UVYMQwqG3hRtyydW3odzBFwy3pN33tyB3xCKQ6",
     "swapProgram": "9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP",
     "swapFees": 0.0007,
-    "swapType": "stable"
+    "swapType": "stable",
+    "amp": 100
   },
   "USDC/USDT": {
     "swapPool": "F13xvvx45jVGd84ynK3c8T89UejQVxjCLtmHfPmAXAHP",
@@ -62,7 +63,8 @@
     "feeAccount": "B4RNxMJGRzKFQyTq2Uwkmpyjtew13n7KtdqZy6qgENTu",
     "swapProgram": "9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP",
     "swapFees": 0.0007,
-    "swapType": "stable"
+    "swapType": "stable",
+    "amp": 100
   },
   "BTC/USDC": {
     "swapPool": "2dwHmCoAGxCXvTbLTMjqAhvEFAHWUt9kZaroJJJdmoD4",
