@@ -75,6 +75,7 @@ export interface SPLSwapPool {
   swapProgram: string
   swapFees: number
   swapType: "constantProduct" | "stable"
+  amp?: number
 }
 
 export const feesBuffer: number = LAMPORTS_PER_SOL * 0.075

@@ -96,7 +96,7 @@ impl<'info> MarginSplSwap<'info> {
     }
 
     #[inline(never)]
-    fn deposit(&self, destination_amount: u64) -> Result<()> {
+    fn deposit_destination(&self, amount: u64) -> Result<()> {
         jet_margin_pool::cpi::deposit(
             CpiContext::new(
                 self.margin_pool_program.to_account_info(),
@@ -114,7 +114,29 @@ impl<'info> MarginSplSwap<'info> {
                 },
             ),
             ChangeKind::ShiftBy,
-            destination_amount,
+            amount,
+        )?;
+
+        Ok(())
+    }
+
+    #[inline(never)]
+    fn deposit_source(&self, amount: u64) -> Result<()> {
+        jet_margin_pool::cpi::deposit(
+            CpiContext::new(
+                self.margin_pool_program.to_account_info(),
+                Deposit {
+                    margin_pool: self.source_margin_pool.margin_pool.to_account_info(),
+                    vault: self.source_margin_pool.vault.to_account_info(),
+                    deposit_note_mint: self.source_margin_pool.deposit_note_mint.to_account_info(),
+                    depositor: self.margin_account.to_account_info(),
+                    source: self.transit_source_account.to_account_info(),
+                    destination: self.source_account.to_account_info(),
+                    token_program: self.token_program.to_account_info(),
+                },
+            ),
+            ChangeKind::ShiftBy,
+            amount,
         )?;
 
         Ok(())
@@ -235,7 +257,24 @@ pub fn margin_spl_swap_handler(
     let swap_amount_out = destination_closing_balance
         .checked_sub(destination_opening_balance)
         .unwrap();
-    ctx.accounts.deposit(swap_amount_out)?;
+    ctx.accounts.deposit_destination(swap_amount_out)?;
+
+    // check if there was less required for the min amount out then expected
+    // aka if there was unexpected leftover balance in the source account after
+    // the swap occurred.
+
+    let source_amount_after_swap =
+        token::accessor::amount(&ctx.accounts.transit_source_account.to_account_info())?;
+
+    let leftover_balance_from_source_account = source_amount_after_swap
+        .checked_sub(source_opening_balance)
+        .unwrap();
+
+    // if there was leftover balance in the source transit account, deposit into the pool
+    if leftover_balance_from_source_account > 0 {
+        ctx.accounts
+            .deposit_source(leftover_balance_from_source_account)?;
+    }
 
     Ok(())
 }
