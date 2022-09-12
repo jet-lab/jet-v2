@@ -474,6 +474,7 @@ export class MarginAccount {
         withdraw: zero,
         borrow: zero,
         repay: zero,
+        repayFromDeposit: zero,
         swap: zero,
         transfer: zero
       }
@@ -513,7 +514,7 @@ export class MarginAccount {
 
     // Max borrow
     let borrow = this.valuation.availableSetupCollateral
-      .div(Number128.ONE.add(Number128.ONE.div(MarginAccount.SETUP_LEVERAGE_FRACTION.mul(loanNoteValueModifier))))
+      .div(Number128.ONE.add(Number128.ONE.div(MarginAccount.SETUP_LEVERAGE_FRACTION.mul(loanNoteValueModifier))).sub(depositNoteValueModifier))
       .div(lamportPrice)
       .toTokenAmount(pool.decimals)
     borrow = TokenAmount.min(borrow, pool.vault)
@@ -521,6 +522,7 @@ export class MarginAccount {
 
     // Max repay
     const repay = TokenAmount.min(loanBalance, walletAmount)
+    const repayFromDeposit = TokenAmount.min(TokenAmount.min(loanBalance, walletAmount), depositBalance)
 
     // Max swap
     const swap = TokenAmount.min(depositBalance.add(borrow), pool.vault)
@@ -533,6 +535,7 @@ export class MarginAccount {
       withdraw,
       borrow,
       repay,
+      repayFromDeposit,
       swap,
       transfer
     }
