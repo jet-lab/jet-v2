@@ -8,18 +8,9 @@
     "tokenA": "GBa7G5f1FqAXEgByuHXsqsEdpyMjRgT9SNxZwmmnEJAY",
     "tokenB": "7hFgNawzzmpDM8TTVCKm8jykBrym8C3TQdb8TDAfAVkD",
     "feeAccount": "3W3Skj2vQsNEMhGRQprFXQy3Q8ZbM6ojdgiDCokVPWno",
-    "swapProgram": "9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP"
-  },
-  "USDC/mSOL": {
-    "swapPool": "Hme4Jnqhdz2jAPUMnS7jGE5zv6Y1ynqrUEhmUAWkXmzn",
-    "authority": "2SdMq2FyJx1kEhvqwxwAfvSF3woFHyhks28zAoF6bXwt",
-    "poolMint": "8PSfyiTVwPb6Rr2iZ8F3kNpbg65BCfJM9v8LfB916r44",
-    "tokenMintA": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
-    "tokenMintB": "mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqcJm7So",
-    "tokenA": "7hFgNawzzmpDM8TTVCKm8jykBrym8C3TQdb8TDAfAVkD",
-    "tokenB": "GBa7G5f1FqAXEgByuHXsqsEdpyMjRgT9SNxZwmmnEJAY",
-    "feeAccount": "3W3Skj2vQsNEMhGRQprFXQy3Q8ZbM6ojdgiDCokVPWno",
-    "swapProgram": "9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP"
+    "swapProgram": "9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP",
+    "swapFees": 0.003,
+    "swapType": "constantProduct"
   },
   "mSOL/USDT": {
     "swapPool": "Afofkb7JTc32rdpqiyc3RDmGF5s9N6W1ujcdYVfGZ5Je",
@@ -30,18 +21,9 @@
     "tokenA": "RTXKRxghfWJpE344UG7UhKnCwN2Gyv6KnNSTFDnaASF",
     "tokenB": "J15KntYr6iout4ce2kcD2QEdkVbLN4EHHFLfCtke3f6Y",
     "feeAccount": "7GPvi21QbwMyBoXU5Zqf8VhnuEh7VH4A1SRPgHJ36eE7",
-    "swapProgram": "9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP"
-  },
-  "USDT/mSOL": {
-    "swapPool": "Afofkb7JTc32rdpqiyc3RDmGF5s9N6W1ujcdYVfGZ5Je",
-    "authority": "Avz8Qp1eMJW5Hc1eWPRUaKJHq3WidDbobajWbk9buHRY",
-    "poolMint": "9cMWe4UYRPGAUUsTkjShJWVM7bk8DUBgxtwwH8asFJoV",
-    "tokenMintA": "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB",
-    "tokenMintB": "mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqcJm7So",
-    "tokenA": "J15KntYr6iout4ce2kcD2QEdkVbLN4EHHFLfCtke3f6Y",
-    "tokenB": "RTXKRxghfWJpE344UG7UhKnCwN2Gyv6KnNSTFDnaASF",
-    "feeAccount": "7GPvi21QbwMyBoXU5Zqf8VhnuEh7VH4A1SRPgHJ36eE7",
-    "swapProgram": "9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP"
+    "swapProgram": "9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP",
+    "swapFees": 0.003,
+    "swapType": "constantProduct"
   },
   "BTC/mSOL": {
     "swapPool": "8DRw5wQE1pyg6RB1UwypGNFgb2Pzp2hpyDDNwo76Lcc8",
@@ -52,18 +34,9 @@
     "tokenA": "6D3sxC6yEe84FUnF5Kpbgx6gN57N9poJCKAtrCeCWdJo",
     "tokenB": "EPoVJLhi9QtVPVo8n31M5k5Knvb48j8zbYyRrUbrHwC5",
     "feeAccount": "AqiLHbUAy4UWWKGVVgbHsaUVCMg1zemNkgsYBPSirT92",
-    "swapProgram": "9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP"
-  },
-  "mSOL/BTC": {
-    "swapPool": "8DRw5wQE1pyg6RB1UwypGNFgb2Pzp2hpyDDNwo76Lcc8",
-    "authority": "5rsPGjwygNru1LyXJe9JNuNHPWCLvooExxJtzH4HEukg",
-    "poolMint": "8nKJ4z9FSw6wrVZKASqBiS9DS1CiNsRnqwCCKVQjqdkB",
-    "tokenMintA": "mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqcJm7So",
-    "tokenMintB": "9n4nbM75f5Ui33ZbPYXn59EwSgE8CGsHtAeTH5YFeJ9E",
-    "tokenA": "EPoVJLhi9QtVPVo8n31M5k5Knvb48j8zbYyRrUbrHwC5",
-    "tokenB": "6D3sxC6yEe84FUnF5Kpbgx6gN57N9poJCKAtrCeCWdJo",
-    "feeAccount": "AqiLHbUAy4UWWKGVVgbHsaUVCMg1zemNkgsYBPSirT92",
-    "swapProgram": "9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP"
+    "swapProgram": "9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP",
+    "swapFees": 0.003,
+    "swapType": "constantProduct"
   },
   "mSOL/SOL": {
     "swapPool": "9EQMEzJdE2LDAY1hw1RytpufdwAXzatYfQ3M2UuT9b88",
@@ -74,18 +47,10 @@
     "tokenA": "6xmki5RtGNHrfhTiHFfp9k3RQ9t8qgL1cYP2YCG2h179",
     "tokenB": "Ew2coQtVGLeca31vqB2ssHntjzZgUy1ad9VuuAX8yw7p",
     "feeAccount": "6j2tt2UVYMQwqG3hRtyydW3odzBFwy3pN33tyB3xCKQ6",
-    "swapProgram": "9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP"
-  },
-  "SOL/mSOL": {
-    "swapPool": "9EQMEzJdE2LDAY1hw1RytpufdwAXzatYfQ3M2UuT9b88",
-    "authority": "ChJgJbzr7GU48sHNL5UPVzJWLBuvc2v68xBnDPAWnDX7",
-    "poolMint": "29cdoMgu6MS2VXpcMo1sqRdWEzdUR9tjvoh8fcK8Z87R",
-    "tokenMintA": "So11111111111111111111111111111111111111112",
-    "tokenMintB": "mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqcJm7So",
-    "tokenA": "Ew2coQtVGLeca31vqB2ssHntjzZgUy1ad9VuuAX8yw7p",
-    "tokenB": "6xmki5RtGNHrfhTiHFfp9k3RQ9t8qgL1cYP2YCG2h179",
-    "feeAccount": "6j2tt2UVYMQwqG3hRtyydW3odzBFwy3pN33tyB3xCKQ6",
-    "swapProgram": "9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP"
+    "swapProgram": "9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP",
+    "swapFees": 0.0007,
+    "swapType": "stable",
+    "amp": 100
   },
   "USDC/USDT": {
     "swapPool": "F13xvvx45jVGd84ynK3c8T89UejQVxjCLtmHfPmAXAHP",
@@ -96,18 +61,10 @@
     "tokenA": "6uUn2okWk5v4x9Gc4n2LLGHtWoa9tmizHq1363dW7t9W",
     "tokenB": "AiwmnLy7xPT28dqZpkRm6i1ZGwELUCzCsuN92v4JkSeU",
     "feeAccount": "B4RNxMJGRzKFQyTq2Uwkmpyjtew13n7KtdqZy6qgENTu",
-    "swapProgram": "9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP"
-  },
-  "USDT/USDC": {
-    "swapPool": "F13xvvx45jVGd84ynK3c8T89UejQVxjCLtmHfPmAXAHP",
-    "authority": "5mMgc3yty1UpEZgyYugEJEy1rWKf9Z5kdURQUYxB6hcN",
-    "poolMint": "H2uzgruPvonVpCRhwwdukcpXK8TG17swFNzYFr2rtPxy",
-    "tokenMintA": "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB",
-    "tokenMintB": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
-    "tokenA": "AiwmnLy7xPT28dqZpkRm6i1ZGwELUCzCsuN92v4JkSeU",
-    "tokenB": "6uUn2okWk5v4x9Gc4n2LLGHtWoa9tmizHq1363dW7t9W",
-    "feeAccount": "B4RNxMJGRzKFQyTq2Uwkmpyjtew13n7KtdqZy6qgENTu",
-    "swapProgram": "9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP"
+    "swapProgram": "9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP",
+    "swapFees": 0.0007,
+    "swapType": "stable",
+    "amp": 100
   },
   "BTC/USDC": {
     "swapPool": "2dwHmCoAGxCXvTbLTMjqAhvEFAHWUt9kZaroJJJdmoD4",
@@ -118,18 +75,9 @@
     "tokenA": "D3Wv78j9STkfJx3vhzoCzpMZ4RqCg8oaTNGzi1rZpdJg",
     "tokenB": "HMFLg2GtbWSSEe92Vuf2LQdUpCacGj2m2PwvMqzwQFNi",
     "feeAccount": "HR7c67SkeLvCpHrVSu7MiiAERQh6iD1NrCJsj3kWiZnK",
-    "swapProgram": "9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP"
-  },
-  "USDC/BTC": {
-    "swapPool": "2dwHmCoAGxCXvTbLTMjqAhvEFAHWUt9kZaroJJJdmoD4",
-    "authority": "EWCJQRDzWCqLJzyH1WESRzQLykUiUAHakjLBmWbxtset",
-    "poolMint": "J3kvcay3N16FBdawgnqoJ9v9p6XCvyCLE2Z9F5RLvGkj",
-    "tokenMintA": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
-    "tokenMintB": "9n4nbM75f5Ui33ZbPYXn59EwSgE8CGsHtAeTH5YFeJ9E",
-    "tokenA": "HMFLg2GtbWSSEe92Vuf2LQdUpCacGj2m2PwvMqzwQFNi",
-    "tokenB": "D3Wv78j9STkfJx3vhzoCzpMZ4RqCg8oaTNGzi1rZpdJg",
-    "feeAccount": "HR7c67SkeLvCpHrVSu7MiiAERQh6iD1NrCJsj3kWiZnK",
-    "swapProgram": "9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP"
+    "swapProgram": "9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP",
+    "swapFees": 0.003,
+    "swapType": "constantProduct"
   },
   "BTC/SOL": {
     "swapPool": "7N2AEJ98qBs4PwEwZ6k5pj8uZBKMkZrKZeiC7A64B47u",
@@ -140,18 +88,9 @@
     "tokenA": "9G5TBPbEUg2iaFxJ29uVAT8ZzxY77esRshyHiLYZKRh8",
     "tokenB": "5eqcnUasgU2NRrEAeWxvFVRTTYWJWfAJhsdffvc6nJc2",
     "feeAccount": "4yPG4A9jB3ibDMVXEN2aZW4oA1e1xzzA3z5VWjkZd18B",
-    "swapProgram": "9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP"
-  },
-  "SOL/BTC": {
-    "swapPool": "7N2AEJ98qBs4PwEwZ6k5pj8uZBKMkZrKZeiC7A64B47u",
-    "authority": "DQis4MfMHmQtphcnXySBHXZf321GZqhk1ETJfkzbAvAr",
-    "poolMint": "Acxs19v6eUMTEfdvkvWkRB4bwFCHm3XV9jABCy7c1mXe",
-    "tokenMintA": "So11111111111111111111111111111111111111112",
-    "tokenMintB": "9n4nbM75f5Ui33ZbPYXn59EwSgE8CGsHtAeTH5YFeJ9E",
-    "tokenA": "5eqcnUasgU2NRrEAeWxvFVRTTYWJWfAJhsdffvc6nJc2",
-    "tokenB": "9G5TBPbEUg2iaFxJ29uVAT8ZzxY77esRshyHiLYZKRh8",
-    "feeAccount": "4yPG4A9jB3ibDMVXEN2aZW4oA1e1xzzA3z5VWjkZd18B",
-    "swapProgram": "9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP"
+    "swapProgram": "9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP",
+    "swapFees": 0.003,
+    "swapType": "constantProduct"
   },
   "SOL/USDC": {
     "swapPool": "EGZ7tiLeH62TPV1gL8WwbXGzEPa9zmcpVnnkPKKnrE2U",
@@ -162,18 +101,9 @@
     "tokenA": "ANP74VNsHwSrq9uUSjiSNyNWvf6ZPrKTmE4gHoNd13Lg",
     "tokenB": "75HgnSvXbWKZBpZHveX68ZzAhDqMzNDS29X6BGLtxMo1",
     "feeAccount": "8JnSiuvQq3BVuCU3n4DrSTw9chBSPvEMswrhtifVkr1o",
-    "swapProgram": "9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP"
-  },
-  "USDC/SOL": {
-    "swapPool": "EGZ7tiLeH62TPV1gL8WwbXGzEPa9zmcpVnnkPKKnrE2U",
-    "authority": "JU8kmKzDHF9sXWsnoznaFDFezLsE5uomX2JkRMbmsQP",
-    "poolMint": "APDFRM3HMr8CAGXwKHiu2f5ePSpaiEJhaURwhsRrUUt9",
-    "tokenMintA": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
-    "tokenMintB": "So11111111111111111111111111111111111111112",
-    "tokenA": "75HgnSvXbWKZBpZHveX68ZzAhDqMzNDS29X6BGLtxMo1",
-    "tokenB": "ANP74VNsHwSrq9uUSjiSNyNWvf6ZPrKTmE4gHoNd13Lg",
-    "feeAccount": "8JnSiuvQq3BVuCU3n4DrSTw9chBSPvEMswrhtifVkr1o",
-    "swapProgram": "9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP"
+    "swapProgram": "9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP",
+    "swapFees": 0.003,
+    "swapType": "constantProduct"
   },
   "SOL/USDT": {
     "swapPool": "Dqk7mHQBx2ZWExmyrR2S8X6UG75CrbbpK2FSBZsNYsw6",
@@ -184,17 +114,8 @@
     "tokenA": "DTb8NKsfhEJGY1TrA7RXN6MBiTrjnkdMAfjPEjtmTT3M",
     "tokenB": "E8erPjPEorykpPjFV9yUYMYigEWKQUxuGfL2rJKLJ3KU",
     "feeAccount": "BBKgw75FivTYXj85D2AWyVdaTdTWuSuHVXRm1Xu7fipb",
-    "swapProgram": "9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP"
-  },
-  "USDT/SOL": {
-    "swapPool": "Dqk7mHQBx2ZWExmyrR2S8X6UG75CrbbpK2FSBZsNYsw6",
-    "authority": "6j2KhiAdhFfCDNQmeaPgSAG1pbKfJpnWbPAKGw6XWwHa",
-    "poolMint": "FZthQCuYHhcfiDma7QrX7buDHwrZEd7vL8SjS6LQa3Tx",
-    "tokenMintA": "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB",
-    "tokenMintB": "So11111111111111111111111111111111111111112",
-    "tokenA": "E8erPjPEorykpPjFV9yUYMYigEWKQUxuGfL2rJKLJ3KU",
-    "tokenB": "DTb8NKsfhEJGY1TrA7RXN6MBiTrjnkdMAfjPEjtmTT3M",
-    "feeAccount": "BBKgw75FivTYXj85D2AWyVdaTdTWuSuHVXRm1Xu7fipb",
-    "swapProgram": "9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP"
+    "swapProgram": "9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP",
+    "swapFees": 0.003,
+    "swapType": "constantProduct"
   }
 }

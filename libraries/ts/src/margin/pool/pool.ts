@@ -16,11 +16,9 @@ import { findDerivedAccount } from "../../utils/pda"
 import { PriceInfo } from "../accountPosition"
 import { chunks, Number128, Number192 } from "../../utils"
 import { PositionTokenMetadata } from "../positionTokenMetadata"
-import orcaSwapPools from "../swap/orca-swap-pools.json"
-import orcaSwapPoolsDevnet from "../swap/orca-swap-pools-devnet.json"
 
 /** A set of possible actions to perform on a margin pool. */
-export type PoolAction = "deposit" | "withdraw" | "borrow" | "repay" | "swap" | "transfer"
+export type PoolAction = "deposit" | "withdraw" | "borrow" | "repay" | "repayFromDeposit" | "swap" | "transfer"
 
 /** The PDA addresses associated with a [[Pool]] */
 export interface PoolAddresses {
@@ -57,6 +55,27 @@ export interface PoolProjection {
   riskIndicator: number
   depositRate: number
   borrowRate: number
+}
+
+/**
+ * An SPL swap pool
+ *
+ * @export
+ * @interface SPLSwapPool
+ */
+export interface SPLSwapPool {
+  swapPool: string
+  authority: string
+  poolMint: string
+  tokenMintA: string
+  tokenMintB: string
+  tokenA: string
+  tokenB: string
+  feeAccount: string
+  swapProgram: string
+  swapFees: number
+  swapType: "constantProduct" | "stable"
+  amp?: number
 }
 
 export const feesBuffer: number = LAMPORTS_PER_SOL * 0.075
@@ -1139,13 +1158,15 @@ export class Pool {
    * @param `marginAccount` - The margin account that will receive the deposit.
    * @param `pools` - Array of margin pools
    * @param `outputToken` - The corresponding pool for the token being swapped to.
+   * @param `swapPool` - The SPL swap pool the exchange is taking place in.
    * @param `swapAmount` - The amount being swapped.
    * @param `minAmountOut` - The minimum output amount based on swapAmount and slippage.
    */
-  async swap({
+  async splTokenSwap({
     marginAccount,
     pools,
     outputToken,
+    swapPool,
     swapAmount,
     minAmountOut,
     repayWithOutput
@@ -1153,6 +1174,7 @@ export class Pool {
     marginAccount: MarginAccount
     pools: Pool[]
     outputToken: Pool
+    swapPool: SPLSwapPool
     swapAmount: TokenAmount
     minAmountOut: TokenAmount
     repayWithOutput: boolean
@@ -1165,6 +1187,19 @@ export class Pool {
     const transitInstructions: TransactionInstruction[] = []
     const instructions: TransactionInstruction[] = []
     const repayInstructions: TransactionInstruction[] = []
+
+    // Setup check for swap
+    const projectedRiskLevel = this.projectAfterMarginSwap(
+      marginAccount,
+      swapAmount.tokens,
+      minAmountOut.tokens,
+      outputToken,
+      true
+    ).riskIndicator
+    if (projectedRiskLevel >= 1) {
+      console.error(`Swap would exceed maximum risk (projected: ${projectedRiskLevel})`)
+      return "Setup check failed"
+    }
 
     // Refresh prices
     await this.withMarginRefreshAllPositionPrices({
@@ -1217,17 +1252,18 @@ export class Pool {
         marginAccount
       })
       await this.withMarginBorrow({
-        instructions: instructions,
+        instructions: registerInstructions,
         marginAccount,
-        change: PoolTokenChange.shiftBy(accountPoolPosition.loanBalance.add(difference))
+        change: PoolTokenChange.setTo(accountPoolPosition.loanBalance.add(difference))
       })
     }
 
     // Swap ix
-    await this.withSwap({
+    await this.withSPLTokenSwap({
       instructions,
       marginAccount,
       outputToken,
+      swapPool,
       changeKind,
       minAmountOut,
       sourceAccount,
@@ -1258,10 +1294,11 @@ export class Pool {
     ])
   }
 
-  async withSwap({
+  async withSPLTokenSwap({
     instructions,
     marginAccount,
     outputToken,
+    swapPool,
     changeKind,
     minAmountOut,
     sourceAccount,
@@ -1272,6 +1309,7 @@ export class Pool {
     instructions: TransactionInstruction[]
     marginAccount: MarginAccount
     outputToken: Pool
+    swapPool: SPLSwapPool
     changeKind: PoolTokenChange
     minAmountOut: TokenAmount
     sourceAccount: Address
@@ -1279,47 +1317,20 @@ export class Pool {
     transitSourceAccount: Address
     transitDestinationAccount: Address
   }): Promise<void> {
-    // TODO: check tokenMintA and tokenMintB for matching pools.
-    // If no pool is found, a user would have to swap twice from A > X > B,
-    // so we should ideally check matching pools on the UI before getting here.
-    const devnetCluster = marginAccount.programs.config.url.includes("devnet")
-    const swapPair = `${this.symbol}/${outputToken.symbol}`
-    const swapPoolAccounts = devnetCluster ? orcaSwapPoolsDevnet[swapPair] : orcaSwapPools[swapPair]
-
-    // Determine the direction of the swap based on token mints.
-    // The instruction relies on the swap `vaultFrom` and `vaultInto` to determine
-    // the direction of the swap.
-    let swapSourceVault: string
-    let swapDestinationVault: string
-    if (
-      swapPoolAccounts.tokenMintA === this.addresses.tokenMint.toBase58() &&
-      swapPoolAccounts.tokenMintB === outputToken.addresses.tokenMint.toBase58()
-    ) {
-      // Swapping from token A to token B on swap pool
-      swapSourceVault = swapPoolAccounts.tokenB
-      swapDestinationVault = swapPoolAccounts.tokenA
-    } else if (
-      swapPoolAccounts.tokenMintB === this.addresses.tokenMint.toBase58() &&
-      swapPoolAccounts.tokenMintA === outputToken.addresses.tokenMint.toBase58()
-    ) {
-      // Swapping from token B to token A on swap pool
-      swapSourceVault = swapPoolAccounts.tokenA
-      swapDestinationVault = swapPoolAccounts.tokenB
-    } else {
-      // Pedantic. We can't reach this condition if correct pool is selected
-      throw new Error("Invalid swap pool selected")
+    // Determine the direction of the swap
+    let swapAtoB = true
+    if (this.addresses.tokenMint.toBase58() === swapPool.tokenMintB) {
+      swapAtoB = false
     }
 
     // Swap
     await marginAccount.withAdapterInvoke({
       instructions,
       adapterProgram: this.programs.config.marginSwapProgramId,
-      // TODO: check if this evaluates to DUheebnZ below
       adapterMetadata: findDerivedAccount(
         this.programs.config.metadataProgramId,
         this.programs.config.marginSwapProgramId
       ),
-      // adapterMetadata: new PublicKey("DUheebnZrHMGzEMbs9FpPFTkbmVdZnyW92CVwrYd3aGa"),
       adapterInstruction: await this.programs.marginSwap.methods
         .marginSwap(changeKind.changeKind.asParam(), changeKind.value, minAmountOut.lamports)
         .accounts({
@@ -1341,13 +1352,14 @@ export class Pool {
             depositNoteMint: outputToken.addresses.depositNoteMint
           },
           swapInfo: {
-            swapPool: swapPoolAccounts.swapPool,
-            authority: findDerivedAccount(new PublicKey(swapPoolAccounts.swapProgram), swapPoolAccounts.swapPool),
-            vaultFrom: swapSourceVault,
-            vaultInto: swapDestinationVault,
-            tokenMint: swapPoolAccounts.poolMint,
-            feeAccount: swapPoolAccounts.feeAccount,
-            swapProgram: swapPoolAccounts.swapProgram
+            swapPool: swapPool.swapPool,
+            authority: findDerivedAccount(new PublicKey(swapPool.swapProgram), swapPool.swapPool),
+            // authority: swapPool.authority,
+            vaultFrom: swapAtoB ? swapPool.tokenB : swapPool.tokenA,
+            vaultInto: swapAtoB ? swapPool.tokenA : swapPool.tokenB,
+            tokenMint: swapPool.poolMint,
+            feeAccount: swapPool.feeAccount,
+            swapProgram: swapPool.swapProgram
           }
         })
         .instruction()
@@ -1580,22 +1592,33 @@ export class Pool {
     })
   }
 
-  projectAfterAction(marginAccount: MarginAccount, amount: number, action: PoolAction): PoolProjection {
+  projectAfterAction(
+    marginAccount: MarginAccount,
+    amount: number,
+    action: PoolAction,
+    // For swap projections
+    minAmountOut?: number,
+    outputToken?: Pool
+  ): PoolProjection {
     switch (action) {
       case "deposit":
         return this.projectAfterDeposit(marginAccount, amount)
       case "withdraw":
         return this.projectAfterWithdraw(marginAccount, amount)
       case "borrow":
-        return this.projectAfterBorrow(marginAccount, amount)
+        return this.projectAfterBorrowAndNotWithdraw(marginAccount, amount)
       case "repay":
         return this.projectAfterRepay(marginAccount, amount)
+      case "repayFromDeposit":
+        return this.projectAfterRepayFromDeposit(marginAccount, amount)
+      case "swap":
+        return this.projectAfterMarginSwap(marginAccount, amount, minAmountOut, outputToken)
       default:
         throw new Error("Unknown pool action")
     }
   }
 
-  /// Projects the deposit and borrow rates after a deposit into the pool.
+  /// Projects the deposit / borrow rates and user's risk level after a deposit into the pool.
   projectAfterDeposit(marginAccount: MarginAccount, amount: number): PoolProjection {
     if (this.info === undefined) {
       return this.getDefaultPoolProjection(marginAccount)
@@ -1625,7 +1648,7 @@ export class Pool {
     return { riskIndicator, depositRate, borrowRate }
   }
 
-  /// Projects the deposit and borrow rates after a withdrawal from the pool.
+  /// Projects the deposit / borrow rates and user's risk level after a withdrawal from the pool.
   projectAfterWithdraw(marginAccount: MarginAccount, amount: number): PoolProjection {
     const position = marginAccount.poolPositions[this.symbol]
     if (this.info === undefined || amount > position.depositBalance.tokens) {
@@ -1660,7 +1683,7 @@ export class Pool {
     return { riskIndicator, depositRate, borrowRate }
   }
 
-  /// Projects the deposit and borrow rates after a borrow from the pool.
+  /// Projects the deposit / borrow rates and user's risk level after a borrow from the pool.
   projectAfterBorrow(marginAccount: MarginAccount, amount: number): PoolProjection {
     if (this.info === undefined) {
       return this.getDefaultPoolProjection(marginAccount)
@@ -1679,18 +1702,18 @@ export class Pool {
     const loanNoteValueModifer = this.loanNoteMetadata.valueModifier
     const amountValue = Number128.from(numberToBn(amount * this.prices.priceValue.toNumber()))
 
-    const requireCollateral = marginAccount.valuation.requiredCollateral
+    const requiredCollateral = marginAccount.valuation.requiredCollateral
       .add(amountValue.div(loanNoteValueModifer))
       .toNumber()
     const weightedCollateral = marginAccount.valuation.weightedCollateral.toNumber()
     const liabilities = marginAccount.valuation.liabilities.add(amountValue).toNumber()
 
-    const riskIndicator = marginAccount.computeRiskIndicator(requireCollateral, weightedCollateral, liabilities)
+    const riskIndicator = marginAccount.computeRiskIndicator(requiredCollateral, weightedCollateral, liabilities)
 
     return { riskIndicator, depositRate, borrowRate }
   }
 
-  /// Projects the deposit and borrow rates after repaying a loan from the pool.
+  /// Projects the deposit / borrow rates and user's risk level after repaying a loan from the pool.
   projectAfterRepay(marginAccount: MarginAccount, amount: number): PoolProjection {
     const position = marginAccount.poolPositions[this.symbol]
     if (position === undefined || this.info === undefined || amount > position.loanBalance.tokens) {
@@ -1725,7 +1748,7 @@ export class Pool {
     return { riskIndicator, depositRate, borrowRate }
   }
 
-  /// Projects the deposit and borrow rates after repaying a loan from the pool.
+  /// Projects the deposit / borrow rates and user's risk level after repaying a loan from the pool.
   projectAfterRepayFromDeposit(marginAccount: MarginAccount, amount: number): PoolProjection {
     const position = marginAccount.poolPositions[this.symbol]
     if (
@@ -1768,7 +1791,7 @@ export class Pool {
     return { riskIndicator, depositRate, borrowRate }
   }
 
-  /// Projects the deposit and borrow rates after a borrow from the pool.
+  /// Projects the deposit / borrow rates and user's risk level after a borrow from the pool.
   projectAfterBorrowAndNotWithdraw(marginAccount: MarginAccount, amount: number): PoolProjection {
     if (this.info === undefined) {
       return this.getDefaultPoolProjection(marginAccount)
@@ -1801,6 +1824,73 @@ export class Pool {
     return { riskIndicator, depositRate, borrowRate }
   }
 
+  /// Projects the user's risk level after a swap.
+  projectAfterMarginSwap(
+    marginAccount: MarginAccount,
+    amount: number,
+    minAmountOut: number | undefined,
+    outputToken: Pool | undefined,
+    setupCheck?: boolean
+  ): PoolProjection {
+    const defaults = this.getDefaultPoolProjection(marginAccount)
+    if (!minAmountOut || !outputToken) {
+      return defaults
+    }
+
+    // Prices
+    const inputTokenPrice = this.prices.priceValue.toNumber()
+    const outputTokenPrice = outputToken.prices.priceValue.toNumber()
+
+    // Swap values
+    const inputSwapValue = amount * inputTokenPrice
+    const minAmountOutValue = minAmountOut * outputTokenPrice
+
+    // Total Liabilities
+    const totalLiabilities = marginAccount.valuation.liabilities.toNumber()
+
+    // Position-specific valuations
+    const inputTokenPosition = marginAccount.poolPositions[this.symbol]
+    const inputDepositBalance = inputTokenPosition ? inputTokenPosition.depositBalance.tokens : 0
+    const outputTokenPosition = marginAccount.poolPositions[outputToken.symbol]
+    const outputLoanBalance = outputTokenPosition ? outputTokenPosition.loanBalance.tokens : 0
+
+    const inputRequiredCollateralFactor =
+      this.loanNoteMetadata.valueModifier.toNumber() *
+      (setupCheck ? MarginAccount.SETUP_LEVERAGE_FRACTION.toNumber() : 1)
+    const inputTokenAssetValue = inputDepositBalance * inputTokenPrice
+    const outputRequiredCollateralFactor =
+      outputToken.loanNoteMetadata.valueModifier.toNumber() *
+      (setupCheck ? MarginAccount.SETUP_LEVERAGE_FRACTION.toNumber() : 1)
+    const outputTokenLiabilityValue = outputLoanBalance * outputTokenPrice
+
+    // Collateral values
+    const requiredCollateral =
+      marginAccount.valuation[setupCheck ? "requiredSetupCollateral" : "requiredCollateral"].toNumber()
+    const weightedCollateral = marginAccount.valuation.weightedCollateral.toNumber()
+    const inputTokenWeight = this.depositNoteMetadata.valueModifier.toNumber()
+    const outputTokenWeight = outputToken.depositNoteMetadata.valueModifier.toNumber()
+
+    // Projected risk equation
+    const riskIndicator =
+      (totalLiabilities +
+        requiredCollateral -
+        ((1 + outputRequiredCollateralFactor) / outputRequiredCollateralFactor) *
+          Math.max(outputTokenLiabilityValue - minAmountOutValue, 0) +
+        ((1 + inputRequiredCollateralFactor) / inputRequiredCollateralFactor) *
+          Math.max(inputSwapValue - inputTokenAssetValue, 0)) /
+      (weightedCollateral +
+        outputTokenWeight * Math.max(minAmountOutValue - outputTokenLiabilityValue, 0) -
+        inputTokenWeight * Math.max(inputTokenAssetValue - inputSwapValue, 0))
+
+    // TODO: add pool projections for rates
+    return {
+      riskIndicator,
+      depositRate: defaults.depositRate,
+      borrowRate: defaults.borrowRate
+    }
+  }
+
+  // TODO: this should return values that indicate the return value hasn't changed
   private getDefaultPoolProjection(marginAccount: MarginAccount) {
     return {
       riskIndicator: marginAccount.riskIndicator,
