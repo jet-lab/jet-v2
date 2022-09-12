@@ -1847,20 +1847,18 @@ export class Pool {
 
     // Position-specific valuations
     const inputTokenPosition = marginAccount.poolPositions[this.symbol]
+    const inputDepositBalance = inputTokenPosition ? inputTokenPosition.depositBalance.tokens : 0
     const outputTokenPosition = marginAccount.poolPositions[outputToken.symbol]
-    if (!inputTokenPosition.loanPosition || !outputTokenPosition.loanPosition) {
-      console.error("No pool positions for margin account")
-      return defaults
-    }
+    const outputLoanBalance = outputTokenPosition ? outputTokenPosition.loanBalance.tokens : 0
 
     const inputRequiredCollateralFactor =
-      inputTokenPosition.loanPosition.valueModifier.toNumber() *
+      this.loanNoteMetadata.valueModifier.toNumber() *
       (setupCheck ? MarginAccount.SETUP_LEVERAGE_FRACTION.toNumber() : 1)
-    const inputTokenAssetValue = inputTokenPosition.depositBalance.tokens * inputTokenPrice
+    const inputTokenAssetValue = inputDepositBalance * inputTokenPrice
     const outputRequiredCollateralFactor =
-      outputTokenPosition.loanPosition.valueModifier.toNumber() *
+      outputToken.loanNoteMetadata.valueModifier.toNumber() *
       (setupCheck ? MarginAccount.SETUP_LEVERAGE_FRACTION.toNumber() : 1)
-    const outputTokenLiabilityValue = outputTokenPosition.loanBalance.tokens * outputTokenPrice
+    const outputTokenLiabilityValue = outputLoanBalance * outputTokenPrice
 
     // Collateral values
     const requiredCollateral =
