@@ -1,5 +1,7 @@
+import bs58 from "bs58";
 import { getAccount, NATIVE_MINT } from "@solana/spl-token"
-import { Program, AnchorProvider, BN, translateAddress } from "@project-serum/anchor"
+
+import { Program, AnchorProvider, BN, translateAddress, BorshInstructionCoder, StateClient } from "@project-serum/anchor"
 import { JetMargin, JetMarginPool, JetMarginSerum, JetMarginSwap, JetMetadata, TokenAmount, PoolAction } from ".."
 import {
   JetControl,
@@ -19,8 +21,12 @@ import {
   TransactionResponse,
   ParsedInstruction,
   ParsedInnerInstruction,
-  PartiallyDecodedInstruction
+  PartiallyDecodedInstruction,
+  ParsedTransaction,
+  TransactionInstruction,
+  Transaction
 } from "@solana/web3.js"
+import { program } from "@project-serum/anchor/dist/cjs/spl/token"
 
 interface TokenMintsList {
   tokenMint: PublicKey
@@ -193,6 +199,7 @@ export class MarginClient {
       return null
     }
 
+
     const tx: Partial<AccountTransaction> = {
       tradeAction
     } as { tradeAction: PoolAction }
@@ -209,6 +216,7 @@ export class MarginClient {
         const parsedIxnArray: ParsedInstruction[] = []
         let amount = new BN(0)
         let amountIn = new BN(0)
+    
 
         ixs?.forEach((ix: ParsedInnerInstruction) => {
           ix.instructions.forEach((inst: ParsedInstruction | PartiallyDecodedInstruction) => {
@@ -217,12 +225,39 @@ export class MarginClient {
                 parsedIxnArray.push(inst)
                 // Default amount is the value of the final parsed instruction
                 amount = new BN(inst.parsed.info.amount)
+                
+              }else{
+                  // if (tradeAction === "borrow") {
+                  //   let marginPrograms = this.getPrograms(provider, config)
+                  //   const decoder = new BorshInstructionCoder(marginPrograms.marginPool.idl);
+                  //   //let decodedIxData = decoder.decode(inst.data);
+                  //   console.log(inst.parsed.type + " " + inst?.parsed.info.amount)
+                  //   console.log("borrow action amount")
+                  // }
+              }
+            }else{
+              if (tradeAction === "borrow") {
+            
+                let ix = this.intoTransactionInstruction(tx, inst)
+                if(ix){
+                  let marginPrograms = this.getPrograms(provider, config)
+                  const decoder = new BorshInstructionCoder(marginPrograms.marginPool.idl);
+                  let decodedIxData = decoder.decode(ix.data);
+                  let ixAccounts = this.getAnchorAccountsFromInstruction(decodedIxData, marginPrograms.marginPool);
+                }
               }
             }
           })
         })
         // If trade action is swap, set up input amount as well
         // Get value of amount in the first parsed instruction
+
+        if (tradeAction === "borrow" && parsedIxnArray[0]) {
+          amountIn = new BN(parsedIxnArray[0].parsed.info.amount)
+          console.log("borrow action amount")
+          console.log(parsedIxnArray[0].parsed.info.amount)
+
+        }
         if (tradeAction === "swap" && parsedIxnArray[0]) {
           amountIn = new BN(parsedIxnArray[0].parsed.info.amount)
         }
@@ -285,7 +320,7 @@ export class MarginClient {
     return null
   }
 
-  static async getTransactionHistory(
+  static async  getTransactionHistory(
     provider: AnchorProvider,
     pubKey: PublicKey,
     mints: Mints,
@@ -310,9 +345,88 @@ export class MarginClient {
     }
 
     const parsedTransactions = await Promise.all(
-      jetTransactions.map(async (t, idx) => await MarginClient.getTransactionData(t, mints, config, idx, provider))
+      jetTransactions.map(async (t, idx) => await MarginClient.getTransactionData(t, mints, config, idx, provider)  )
     )
     const filteredParsedTransactions = parsedTransactions.filter(tx => !!tx) as AccountTransaction[]
     return filteredParsedTransactions.sort((a, b) => a.slot - b.slot)
   }
+
+  static intoTransactionInstruction(
+    tx: ParsedTransaction,
+    instruction: ParsedInstruction | PartiallyDecodedInstruction
+  ): TransactionInstruction | undefined {
+    const message = tx.message;
+    if ("parsed" in instruction) return;
+  
+    const keys = [];
+    for (const account of instruction.accounts) {
+      const accountKey = message.accountKeys.find(({ pubkey }) =>
+        pubkey.equals(account)
+      );
+      if (!accountKey) return;
+    }
+
+    bs58.decode(instruction.data)
+  
+    return new TransactionInstruction({
+      data: Buffer.from(bs58.decode(instruction.data)),
+      keys: keys,
+      programId: instruction.programId,
+    });
+  }
+
+  static intoParsedTransaction(tx: Transaction): ParsedTransaction {
+    const message = tx.compileMessage();
+    return {
+      signatures: tx.signatures.map((value) =>
+        bs58.encode(value.signature as any)
+      ),
+      message: {
+        accountKeys: message.accountKeys.map((key, index) => ({
+          pubkey: key,
+          signer: tx.signatures.some(({ publicKey }) => publicKey.equals(key)),
+          writable: message.isAccountWritable(index),
+        })),
+        instructions: message.instructions.map((ix) => ({
+          programId: message.accountKeys[ix.programIdIndex],
+          accounts: ix.accounts.map((index) => message.accountKeys[index]),
+          data: ix.data,
+        })),
+        recentBlockhash: message.recentBlockhash,
+      },
+    };
+  }
+
+  static getAnchorAccountsFromInstruction(
+    decodedIx: Object | null,
+    program: Program
+  ):
+    | {
+        name: string;
+        isMut: boolean;
+        isSigner: boolean;
+        pda?: Object;
+      }[]
+    | null {
+    if (decodedIx) {
+      // get ix accounts
+      const idlInstructions = program.idl.instructions.filter(
+        // @ts-ignore
+        (ix) => ix.name === decodedIx.name
+      );
+      if (idlInstructions.length === 0) {
+        return null;
+      }
+      return idlInstructions[0].accounts as {
+        // type coercing since anchor doesn't export the underlying type
+        name: string;
+        isMut: boolean;
+        isSigner: boolean;
+        pda?: Object;
+      }[];
+    }
+    return null;
+  }
 }
+
+

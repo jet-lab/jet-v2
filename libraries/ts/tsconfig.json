@@ -1,5 +1,5 @@
 {
-  "include": ["./src/**/*", "./src/**/*.json"],
+  "include": ["./src/**/*", "./src/**/*.json", "./*"],
   "compilerOptions": {
     "sourceMap": true,
     "declaration": true,
@@ -15,8 +15,9 @@
     "baseUrl": ".",
     "typeRoots": ["node_modules/@types"],
     "moduleResolution": "node",
-    "target": "ES2015",
-    "module": "ES2020",
+    "target": "es2022",
+    "module": "CommonJS",
+    "lib": ["es2022"],
     "outDir": "dist/esm",
     "rootDir": "./src",
     "strict": true,

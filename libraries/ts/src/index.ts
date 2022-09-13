@@ -19,3 +19,53 @@ export * from "./margin"
 export * from "./token"
 export * from "./types"
 export * from "./utils"
+
+
+// import { PublicKey } from "@solana/web3.js"
+// import { MarginAccount, MarginClient,PoolManager} from "./margin"
+// import {AnchorProvider, Wallet} from '@project-serum/anchor'
+// import {Connection, Keypair} from '@solana/web3.js'
+
+
+// let pubkey = new PublicKey('8oPT9UsUkW7zHqZzGnx1BuSKd4JHCEhWEXXbJkbknouh')
+
+
+// let connection = new Connection('https://jetprot-main-0d7b.mainnet.rpcpool.com/cad6ce6e-2bbf-4a77-bea5-3a30d03ad0e9')
+// const walletKepair = Keypair.generate()
+// const walletPubkey = walletKepair.publicKey
+
+
+
+// const options = AnchorProvider.defaultOptions()
+// const wallet = new Wallet(walletKepair)
+// const provider = new AnchorProvider(connection, wallet, options)
+
+
+// async function main(){
+
+//     // Load programs
+// let config = await MarginClient.getConfig("mainnet-beta")
+// let programs = MarginClient.getPrograms(provider, config)
+
+// const poolManager = new PoolManager(programs, provider);
+// const tokenPools = await poolManager.loadAll();
+
+// const mints: any = {};
+// for (const pool of Object.values(tokenPools)) {
+//   mints[pool.symbol] = {
+//     tokenMint: pool.addresses.tokenMint,
+//     depositNoteMint: pool.addresses.depositNoteMint,
+//     loanNoteMint: pool.addresses.loanNoteMint
+//   };
+// }
+
+// const transactions = await MarginClient.getTransactionHistory(
+//     provider,
+//     new PublicKey('CoAFgUnxRRcMm6HFcaN1VEJtn3y2ACL92AynFKLWaDLX'),
+//     mints,
+//     'mainnet-beta'
+//   );
+
+// }
+
+
