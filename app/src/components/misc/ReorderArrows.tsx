@@ -1,4 +1,3 @@
-import { animateElementOut, animateElementIn } from '../../utils/ui';
 import { ReactComponent as ArrowLeft } from '../../styles/icons/arrow-left.svg';
 import { ReactComponent as ArrowRight } from '../../styles/icons/arrow-right.svg';
 import { ReactComponent as ArrowUp } from '../../styles/icons/arrow-up.svg';
@@ -17,34 +16,22 @@ export function ReorderArrows(props: {
 }) {
   // Updates global state
   function reorderComponent(backInOrder: boolean) {
-    // Identify what the next component in the order is
-    const nextComponent =
-      props.order[backInOrder ? props.order.indexOf(props.component) - 1 : props.order.indexOf(props.component) + 1];
-    // Animate both elements out of view for a nice visual transition
-    animateElementOut(props.component);
-    setTimeout(() => animateElementOut(nextComponent), 150);
-    // During animation
-    setTimeout(() => {
-      // Clone the global order of components
-      const orderClone = JSON.parse(JSON.stringify(props.order));
-      // Find the component's current position in array
-      const currentPosition = orderClone.indexOf(props.component);
-      let newPosition = currentPosition;
-      // If moving back in the order, decrement the position
-      if (backInOrder && currentPosition > 0) {
-        newPosition--;
-        // If moving forward in the order, increment the position
-      } else if (!backInOrder && currentPosition < orderClone.length - 1) {
-        newPosition++;
-      }
-      // Reorder the array based on the new position
-      orderClone.splice(newPosition, 0, orderClone.splice(currentPosition, 1)[0]);
-      // Update the global state with new order
-      props.setOrder(orderClone);
-      // Animate elements back into view
-      animateElementIn(props.component);
-      setTimeout(() => animateElementIn(nextComponent), 150);
-    }, 400);
+    // Clone the global order of components
+    const orderClone = JSON.parse(JSON.stringify(props.order));
+    // Find the component's current position in array
+    const currentPosition = orderClone.indexOf(props.component);
+    let newPosition = currentPosition;
+    // If moving back in the order, decrement the position
+    if (backInOrder && currentPosition > 0) {
+      newPosition--;
+      // If moving forward in the order, increment the position
+    } else if (!backInOrder && currentPosition < orderClone.length - 1) {
+      newPosition++;
+    }
+    // Reorder the array based on the new position
+    orderClone.splice(newPosition, 0, orderClone.splice(currentPosition, 1)[0]);
+    // Update the global state with new order
+    props.setOrder(orderClone);
   }
 
   // Return whether a component is at the beginning or end of array (and only show the arrow they can move from)
@@ -86,14 +73,12 @@ export function ReorderArrows(props: {
   }
 
   return (
-    <div className="view-element-item view-element-item-hidden">
-      <div
-        className={`reorder-arrows ${
-          props.vertical ? 'reorder-arrows-vertical column' : ''
-        } ${getHiddenArrowClass()} flex align-center justify-between`}>
-        {renderDecreaseArrow()}
-        {renderIncreaseArrow()}
-      </div>
+    <div
+      className={`reorder-arrows ${
+        props.vertical ? 'reorder-arrows-vertical column' : ''
+      } ${getHiddenArrowClass()} flex align-center justify-between`}>
+      {renderDecreaseArrow()}
+      {renderIncreaseArrow()}
     </div>
   );
 }

@@ -1,7 +1,7 @@
 /***************************
   Jet-Antd Library
 ***************************/
-@import '../../lib/jet-antd/lib/jet-antd.less';
+@import './jet-antd.less';
 
 /***************************
   App Specific Styles
@@ -81,144 +81,6 @@ html {
     }
   }
 
-  // Walkthrough Modal
-  .walkthrough-modal {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: calc(100% - (@spacing-sm * 2));
-    max-width: 260px;
-    background: @primary;
-    border-radius: @sm-border-radius;
-    box-shadow: @drop-shadow;
-    padding: @spacing-lg;
-    transition: top 0.3s ease, left 0.3s ease, opacity 0.05s ease;
-    z-index: 110;
-
-    &-copilot {
-      position: absolute;
-      bottom: @spacing-xs;
-      right: @spacing-xs;
-      svg {
-        width: 75px;
-        height: 75px;
-        path {
-          fill: @primary-3;
-        }
-      }
-    }
-    &-body {
-      width: 100%;
-      &-title {
-        font-size: @xl-font-size;
-        color: @secondary-4;
-      }
-      .ant-divider {
-        margin: @spacing-xs 0 0 0;
-      }
-      &-description {
-        font-size: @base-font-size;
-        margin-top: @spacing-sm;
-        color: @secondary;
-      }
-      &-detail {
-        margin-top: @spacing-sm;
-        color: @secondary-3;
-      }
-      &-cta {
-        font-size: @lg-font-size;
-        margin: @spacing-base 0 0 0;
-        color: @secondary-4;
-      }
-      button {
-        margin: @spacing-base 0 0 0;
-      }
-    }
-    &-btn {
-      padding-right: 34px;
-      .jet-plane {
-        position: absolute;
-        bottom: 2px;
-        right: 6px;
-        transform: rotate(90deg);
-        width: 17px;
-        height: 17px;
-        animation: flying 1.25s ease-out infinite;
-        transition: bottom @transition-duration ease;
-        svg {
-          path {
-            fill: @primary-3;
-          }
-        }
-      }
-    }
-    &-close {
-      position: absolute;
-      top: @spacing-base;
-      right: 8px;
-      padding: 5px 0 0 15px;
-      z-index: 1000;
-      cursor: pointer;
-
-      &::before,
-      &::after {
-        content: '';
-        position: absolute;
-        top: 0;
-        right: 0;
-        width: 12px;
-        height: 1px;
-        border-radius: @round-radius;
-        transform: rotate(45deg);
-        background: @secondary-3;
-        transition: background-color @transition-duration ease;
-      }
-      &::after {
-        transform: rotate(-45deg);
-      }
-
-      &:hover {
-        &::before,
-        &::after {
-          background: @secondary;
-        }
-      }
-    }
-    &-wrapper {
-      position: absolute;
-      width: 100%;
-      min-width: 100vw;
-      height: 100%;
-      min-height: 100vh;
-      top: 0;
-      left: 0;
-      background: @modal-bg;
-      z-index: 100;
-    }
-  }
-  // Flying animation
-  @keyframes flying {
-    0% {
-      bottom: 7px;
-      transform: rotate(80deg);
-    }
-    25% {
-      transform: rotate(77deg);
-    }
-    50% {
-      bottom: 9px;
-      transform: rotate(80deg);
-    }
-    75% {
-      transform: rotate(83deg);
-    }
-    100% {
-      bottom: 7px;
-      transform: rotate(80deg);
-    }
-  }
-
   // Sparkline Chart
   .sparkline-chart {
     position: relative;
@@ -229,10 +91,6 @@ html {
     }
     circle {
       display: none;
-    }
-    &-up,
-    &-down {
-      margin-top: -15px;
     }
     &-up {
       polyline {
@@ -247,6 +105,7 @@ html {
       }
     }
     .ant-skeleton {
+      margin-top: 20px !important;
       h3 {
         width: 100%;
         height: 1px;
@@ -284,15 +143,15 @@ html {
   // Reorder Arrows
   .reorder-arrows {
     position: absolute;
-    width: calc(100% - 16px);
+    width: calc(100% - 20px);
     top: 0;
     right: 0;
-    padding: 6px 8px;
+    padding: 8px 10px;
     z-index: 100;
     &-vertical {
-      padding: 8px 6px;
+      padding: 10px 8px;
       width: unset;
-      height: calc(100% - 16px);
+      height: calc(100% - 20px);
     }
     &-down-only {
       justify-content: flex-start;
@@ -326,6 +185,12 @@ html {
 
   // Token Input
   .token-input {
+    // If there's a specified external value
+    &.external-value {
+      input {
+        background: @primary !important;
+      }
+    }
     // Main input and token selector
     &-main {
       width: 100%;
@@ -333,7 +198,7 @@ html {
       overflow: hidden;
 
       .ant-select {
-        width: 45px;
+        width: 95px;
         height: 45px;
         background: @primary-3;
         position: absolute;
@@ -342,9 +207,7 @@ html {
         padding: unset;
         margin: unset;
         border-radius: calc(@sm-border-radius - 1px);
-        border-top-right-radius: 0;
-        border-bottom-right-radius: 0;
-        box-shadow: inset 0px -0.5px 1px @light-shadow, inset 0.5px 0.5px 1.5px @dark-shadow;
+        box-shadow: inset 1px 0px 2px @dark-shadow;
         transition: background-color @transition-duration ease;
         z-index: 100;
         &:hover,
@@ -355,8 +218,21 @@ html {
         &-selector {
           min-width: unset;
           padding: @spacing-sm;
-          .ant-typography {
-            display: none;
+          padding-right: 20px;
+          .ant-select-selection-item {
+            .ant-typography {
+              display: none;
+            }
+            .token-symbol {
+              position: relative;
+              transform: unset;
+              background: unset;
+              font-size: calc(@lg-font-size - 1px);
+              margin-right: -7px;
+              padding-left: 14px;
+              display: unset;
+              color: @secondary-3;
+            }
           }
         }
         &-arrow {
@@ -365,16 +241,29 @@ html {
         &-selection-item {
           display: unset;
         }
+
+        .jet-icon {
+          position: absolute;
+          top: calc(50% - 1px);
+          transform: translateY(-50%);
+          right: -10px;
+          width: 10px;
+          height: 10px;
+          * {
+            fill: @secondary-3;
+          }
+        }
       }
       input {
         position: relative;
         width: 100%;
-        padding: 14px 35px 14px 55px;
+        padding: 14px 25px 14px 100px;
         margin: unset;
         font-size: @lg-font-size;
+        text-align: right;
         &:hover,
         &:focus {
-          box-shadow: @neu-shadow-inset-sm;
+          box-shadow: @neu-shadow-inset-sm-2;
         }
 
         &.zeroed {
@@ -385,6 +274,10 @@ html {
         }
         &[disabled] {
           opacity: 1 !important;
+          &:hover,
+          &:focus {
+            box-shadow: @neu-shadow-inset-sm;
+          }
         }
       }
       .ant-typography {
@@ -400,12 +293,20 @@ html {
     }
     &-dropdown {
       width: 287px !important;
+      .ant-select-item-option {
+        .jet-icon {
+          display: none;
+        }
+      }
     }
     // Disabled / error messages
     &-message {
       width: calc(100% - 10px);
       padding: @spacing-xs;
       margin-bottom: @spacing-xs;
+      .ant-typography {
+        font-size: calc(@base-font-size - 2px);
+      }
     }
     // Input slider and MAX button
     &-slider {
@@ -572,11 +473,14 @@ html {
 
   // Disclaimer Modal
   .disclaimer-modal {
+    .ant-modal-content {
+      max-width: 335px;
+    }
     &-bullets {
       position: relative;
-      width: calc(100% - (@spacing-base * 2));
+      width: calc(100% - (@spacing-sm * 2));
       margin-top: @spacing-base;
-      padding: @spacing-xs @spacing-base;
+      padding: @spacing-xs @spacing-sm;
       border-radius: @border-radius;
       background: @gradient;
       &::before {
@@ -731,6 +635,9 @@ html {
         .ant-typography:last-of-type {
           text-align: right;
         }
+        button {
+          margin: unset;
+        }
       }
     }
 
@@ -784,8 +691,8 @@ html {
     }
   }
 
-  // Swap Panels
-  .swap-panel {
+  // Swap Entry
+  .swap-entry {
     .swap-section-head {
       margin-bottom: @spacing-xs;
     }
@@ -797,8 +704,31 @@ html {
     .ant-modal-body {
       padding: 0 @spacing-sm !important;
     }
+    .slippage-btns {
+      .ant-radio-button-wrapper,
+      .swap-slippage-input {
+        padding-left: 0;
+        padding-right: 0;
+        width: 25% !important;
+      }
+    }
+    .quick-fill-btns {
+      width: 100%;
+      .ant-radio-button-wrapper {
+        width: 50%;
+        * {
+          font-size: @sm-font-size !important;
+        }
+      }
+    }
+    .repay-with-output {
+      transition: opacity @transition-duration ease;
+    }
+    .ant-checkbox-wrapper {
+      width: unset;
+    }
     .swap-assets {
-      margin: @spacing-sm 0 @spacing-xs 0;
+      margin: @spacing-xs 0 @spacing-sm 0;
       padding: @spacing-xs;
       transition: all @transition-duration ease;
       svg {
@@ -815,8 +745,6 @@ html {
       }
     }
     .swap-slippage {
-      margin: 0 0 @spacing-sm 0;
-
       .ant-radio-button-wrapper {
         width: 45px;
       }
@@ -843,6 +771,8 @@ html {
           font-weight: bold;
           color: @secondary-3;
           text-align: right;
+          margin-top: 4px;
+          margin-bottom: 3px;
         }
         .ant-typography {
           position: absolute;
@@ -902,27 +832,6 @@ html {
       z-index: 1;
       &-content {
         padding: unset !important;
-      }
-    }
-    .powered-by {
-      margin: @spacing-sm 0 @spacing-xs 0;
-      cursor: pointer;
-      svg {
-        width: 18px;
-        height: 18px;
-        margin-right: @spacing-xs;
-      }
-      span {
-        opacity: @subtle-opacity;
-        transition: opacity @transition-duration ease;
-        &:first-of-type {
-          font-size: @xs-font-size;
-        }
-      }
-      &:hover {
-        span {
-          opacity: 1;
-        }
       }
     }
   }
@@ -991,13 +900,15 @@ html {
       width: calc(100% - (@spacing-xl * 2));
       padding: @spacing-lg @spacing-xl @spacing-xl @spacing-xl;
       &-item {
-        width: 25%;
+        width: 33%;
         h1 {
           margin: @spacing-sm 0 @spacing-xs 0;
         }
         .assets-liabilities {
-          .ant-typography-success {
-            text-align: right;
+          .ant-typography {
+            &:first-of-type {
+              text-align: right;
+            }
           }
           &-divider {
             height: 15px;
@@ -1010,7 +921,7 @@ html {
         .risk-meter {
           max-width: 125px;
           position: absolute;
-          bottom: @spacing-xs;
+          bottom: @spacing-base;
         }
         .ant-skeleton {
           margin: 24px 0 18px 0;
@@ -1050,6 +961,11 @@ html {
       .jet-icon {
         * {
           fill: @secondary;
+        }
+        &.jupiter-logo {
+          width: 16px;
+          height: 16px;
+          margin-right: @spacing-xs;
         }
       }
     }
@@ -1095,83 +1011,8 @@ html {
     }
   }
 
-  // Trade / Swaps Views
-  .trade-view,
+  // Swap View
   .swaps-view {
-    // Pair Selector
-    .pair-selector {
-      width: calc(100% - (@spacing-xs * 2) - (@spacing-xl * 2));
-      padding: @spacing-sm @spacing-xl;
-
-      // Select
-      &-select {
-        position: relative;
-        .ant-select {
-          height: 55px;
-          background: unset;
-          margin: -5px 0 0 0;
-          padding-right: unset;
-          &-open {
-            background: unset;
-          }
-          &-selector {
-            padding-left: unset;
-            padding-right: 40px;
-            line-height: 60px;
-          }
-          &-selection-item {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: @secondary;
-            font-size: @xxl-font-size;
-            svg {
-              &:first-of-type {
-                height: @spacing-xxl;
-                width: @spacing-xxl;
-                margin-right: @spacing-sm;
-              }
-            }
-          }
-          .anticon {
-            font-size: @lg-font-size;
-            margin-left: 0;
-          }
-          .jet-icon {
-            width: 18px;
-            height: 18px;
-            margin: @spacing-xs 0 0 0;
-            * {
-              fill: @secondary;
-            }
-          }
-        }
-        .ant-typography {
-          position: absolute;
-          bottom: 0;
-          font-size: @base-font-size;
-          color: @secondary-5;
-        }
-      }
-
-      // Pair price data
-      &-data {
-        &-item {
-          margin: 0 @spacing-xl;
-          &-title {
-            margin-bottom: @spacing-xs;
-            color: @secondary-5;
-            white-space: nowrap;
-          }
-          .ant-skeleton {
-            display: flex;
-            align-items: center;
-            height: 17px;
-          }
-        }
-      }
-    }
-
     // Order Entry, Orderbook and Trades Table
     .order-entry,
     .orderbook,
@@ -1236,7 +1077,9 @@ html {
 
     // Order entry
     .order-entry {
+      height: 600px;
       &-head {
+        height: 50px;
         .ant-tabs {
           width: 100%;
           text-transform: uppercase;
@@ -1257,9 +1100,9 @@ html {
       }
       &-body {
         width: calc(100% - (@spacing-lg * 2));
+        height: 465px;
         padding: @spacing-lg;
         &-section {
-          margin-bottom: @spacing-base;
           &-price {
             width: 100%;
             .tick-arrows {
@@ -1325,7 +1168,7 @@ html {
           }
           .order-review,
           .order-error {
-            width: 85%;
+            width: 100%;
             margin-top: 8px;
             text-align: center;
             transition: all @transition-duration ease;
@@ -1356,6 +1199,21 @@ html {
             background: linear-gradient(90deg, transparent 0%, @primary 35%);
           }
         }
+
+        .ant-checkbox-wrapper + .ant-typography {
+          text-align: left !important;
+        }
+        .order-review {
+          margin-top: @spacing-sm;
+        }
+        .swap-assets {
+          background: unset;
+          padding: unset;
+          .jet-icon {
+            width: 35px;
+            height: 35px;
+          }
+        }
       }
       &-footer {
         button {
@@ -1363,415 +1221,240 @@ html {
         }
       }
     }
+  }
 
-    // Orderbook
-    .orderbook {
-      &-head {
-        // Market price component
-        .market-price {
-          .ant-typography {
-            cursor: pointer;
-            &:active {
-              opacity: @disabled-opacity;
-            }
-            .jet-icon {
-              width: 12px;
-              height: 12px;
-              margin-right: 2px;
-            }
-            &-success {
-              svg * {
-                fill: @success;
-              }
-            }
-            &-danger {
-              svg * {
-                fill: @danger;
-              }
+  // Swaps Graph
+  .swaps-graph {
+    width: calc(100% - 395px);
+    height: 600px;
+    &-head {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: calc(100% - (@spacing-base * 2));
+      height: 50px;
+      padding: 0 @spacing-base;
+      background: @header-bg;
+      &-info {
+        margin: @spacing-xs;
+        h2 {
+          margin: 0 @spacing-xs;
+          text-transform: unset;
+          .jet-icon {
+            width: 12px;
+            height: 12px;
+            margin-right: 2px;
+          }
+          &.price-up {
+            color: @success;
+            svg * {
+              fill: @success;
             }
           }
-          .ant-skeleton {
-            width: 100px;
-            margin-bottom: @spacing-lg;
+          &.price-down {
+            color: @danger;
+            svg * {
+              fill: @danger;
+            }
           }
         }
-
-        // Grouping section
-        &-grouping {
-          position: absolute;
-          bottom: @spacing-base;
-          right: @spacing-base;
-          .ant-typography {
-            margin: unset;
-          }
-
-          &-btns {
-            margin-left: 4px;
-            .anticon {
-              margin-left: 1px;
-              font-size: @base-font-size;
-              cursor: pointer;
-              svg * {
-                fill: @secondary-3;
-                transition: fill @transition-duration ease;
-              }
-
-              &:hover {
-                svg * {
-                  fill: @secondary;
-                }
-              }
-              &:active {
-                svg * {
-                  fill: @secondary-4;
-                }
-              }
-            }
+        .trade-icon {
+          width: 15px;
+          height: 15px;
+          * {
+            fill: @secondary-3;
           }
         }
       }
-
-      &-body {
-        &-top {
-          width: 100%;
-          &-section {
-            width: 33.3%;
-            .small-accent-text {
-              padding: @spacing-xs @spacing-sm;
+      &-subinfo {
+        margin: 0 @spacing-xs;
+        color: @secondary-5;
+      }
+      &-period {
+        position: absolute;
+        top: @spacing-base;
+        right: @spacing-base;
+        z-index: 10;
+        .ant-typography {
+          font-size: @base-font-size;
+          .anticon {
+            font-size: @xs-font-size;
+          }
+          &:first-of-type {
+            color: @secondary-5;
+            margin-right: -5px;
+          }
+        }
+        .ant-dropdown-trigger {
+          letter-spacing: unset;
+        }
+      }
+    }
+    &-container {
+      width: 100%;
+      padding: @spacing-xs;
+      * {
+        font-family: 'Lato', Helvetica, Arial, sans-serif !important;
+      }
+      text {
+        fill: @secondary-5;
+      }
+      line {
+        stroke: rgba(var(--primary-2), @half-opacity);
+      }
+      .apexcharts-line-series {
+        path {
+          stroke: @jet-green;
+          stroke-width: 2px;
+        }
+      }
+      .apexcharts-tooltip-title {
+        background: @header-bg !important;
+      }
+      .apexcharts-tooltip-marker {
+        background-color: @purple !important;
+      }
+      .apexcharts {
+        &-xcrosshairs,
+        &-ycrosshairs {
+          stroke: @jet-green-3;
+        }
+        &-toolbar {
+          padding-right: @spacing-xl;
+          div {
+            svg {
+              stroke: transparent;
+            }
+            svg,
+            path:last-of-type {
+              fill: @secondary-5;
+              transition: fill @transition-duration ease;
+            }
+            &:hover {
+              svg,
+              path:last-of-type {
+                fill: @secondary-3;
+              }
+            }
+            &:active {
+              opacity: @subtle-opacity;
             }
           }
         }
-        &-row {
-          width: 100%;
+        &-reset-icon {
+          path:last-of-type {
+            fill: transparent !important;
+          }
+        }
+        &-menu-icon {
+          margin-left: @spacing-xs;
+          svg,
+          path:last-of-type {
+            fill: @secondary-3 !important;
+          }
+        }
+        &-element-hidden {
+          display: none !important;
+        }
+        &-selected {
+          svg,
+          path:last-of-type {
+            fill: @secondary-3 !important;
+          }
+        }
+        &-menu,
+        &-tooltip {
+          color: @secondary-3;
+          padding: unset;
           border-radius: @sm-border-radius;
+          box-shadow: @drop-shadow;
+          backdrop-filter: blur(2px);
+          background: rgba(var(--primary-3), @disabled-opacity);
+          border: unset;
           overflow: hidden;
-          &-half {
-            position: relative;
-            width: calc(50% - (@spacing-sm * 2));
-            padding: @spacing-sm;
-            transition: background-color @transition-duration ease;
-            cursor: pointer;
+
+          &-item {
+            text-align: center;
+            padding: @btn-padding;
+            transition: background-color @transition-duration-short ease;
             &:hover {
               background: @primary-3;
             }
-            &:active {
-              opacity: @disabled-opacity;
-            }
-            &.no-interaction {
-              cursor: unset;
-              &:hover {
-                background: unset;
-              }
-              &:active {
-                opacity: unset;
-              }
-            }
-
-            .ant-skeleton {
-              width: 100px;
-              &.align-right {
-                margin-left: -65px;
-              }
-            }
-          }
-          &-bg {
-            position: absolute;
-            top: 0;
-            height: 100%;
-
-            &.bid {
-              right: 0;
-              background: @success-bg;
-            }
-            &.ask {
-              left: 0;
-              background: @danger-bg;
-            }
           }
         }
-      }
-      &-footer {
-        &-spread {
-          position: relative;
-          width: 100%;
-          padding: @spacing-sm;
-          background: @gradient;
-          border-radius: @sm-border-radius;
+        &-xaxistooltip,
+        &-yaxistooltip {
+          color: @secondary-3;
+          backdrop-filter: blur(2px);
+          background: rgba(var(--primary-3), @disabled-opacity);
+          border: unset;
           &::before {
-            content: '';
-            position: absolute;
-            top: 1px;
-            left: 1px;
-            width: calc(100% - 2px);
-            height: calc(100% - 2px);
-            border-radius: calc(@sm-border-radius - 1px);
-            background: @primary;
+            border-bottom-color: rgba(var(--primary-3), @disabled-opacity);
           }
-
-          .ant-skeleton {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: @spacing-xxl;
-            h3 {
-              width: 100%;
-            }
-          }
-          .ant-typography {
-            z-index: 1;
-          }
-        }
-      }
-    }
-
-    // Recent trades
-    .recent-trades {
-      &-head {
-        &-bottom {
-          .ant-typography {
-            font-size: @base-font-size;
-            &.high-price,
-            &.low-price {
-              color: @secondary-4;
-            }
-          }
-        }
-      }
-      &-body {
-        padding-bottom: @spacing-sm;
-        tbody tr {
-          cursor: pointer;
-          td {
-            &:first-of-type {
-              border-top-left-radius: @sm-border-radius;
-              border-bottom-left-radius: @sm-border-radius;
-            }
-            &:last-of-type {
-              border-top-right-radius: @sm-border-radius;
-              border-bottom-right-radius: @sm-border-radius;
-            }
-            transition: background-color @transition-duration ease;
-          }
-          &:hover {
-            td {
-              background: @primary-3;
-            }
-          }
-          &:active {
-            opacity: @disabled-opacity;
-          }
-        }
-      }
-    }
-
-    // Candle Stick Chart
-    .candle-stick-chart {
-      height: 400px;
-      &-head {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: calc(100% - (@spacing-base * 2));
-        height: calc(68px - (@spacing-base * 2));
-        padding: @spacing-base;
-        background: @header-bg;
-        &-info {
-          margin: @spacing-xs;
-          h2 {
-            margin: 0 @spacing-xs;
-            text-transform: unset;
-            .jet-icon {
-              width: 12px;
-              height: 12px;
-              margin-right: 2px;
-            }
-            &.price-up {
-              color: @success;
-              svg * {
-                fill: @success;
-              }
-            }
-            &.price-down {
-              color: @danger;
-              svg * {
-                fill: @danger;
-              }
-            }
-          }
-          .trade-icon {
-            width: 15px;
-            height: 15px;
-            * {
-              fill: @secondary-3;
-            }
-          }
-        }
-        &-subinfo {
-          margin: 0 @spacing-xs;
-          color: @secondary-5;
-        }
-        &-period {
-          position: absolute;
-          top: @spacing-base;
-          right: @spacing-base;
-          z-index: 10;
-          .ant-typography {
-            font-size: @base-font-size;
-            .anticon {
-              font-size: @xs-font-size;
-            }
-            &:first-of-type {
-              color: @secondary-5;
-              margin-right: -5px;
-            }
-          }
-          .ant-dropdown-trigger {
-            letter-spacing: unset;
-          }
-        }
-      }
-      &-container {
-        width: 100%;
-        padding: @spacing-xs;
-        * {
-          font-family: 'Lato', Helvetica, Arial, sans-serif !important;
-        }
-        text {
-          fill: @secondary-5;
-        }
-        line {
-          stroke: rgba(var(--primary-2), @half-opacity);
-        }
-        .apexcharts {
-          &-xcrosshairs,
-          &-ycrosshairs {
-            stroke: @jet-green-3;
-          }
-          &-toolbar {
-            padding-right: @spacing-xl;
-            div {
-              svg {
-                stroke: transparent;
-              }
-              svg,
-              path:last-of-type {
-                fill: @secondary-5;
-                transition: fill @transition-duration ease;
-              }
-              &:hover {
-                svg,
-                path:last-of-type {
-                  fill: @secondary-3;
-                }
-              }
-              &:active {
-                opacity: @subtle-opacity;
-              }
-            }
-          }
-          &-reset-icon {
-            path:last-of-type {
-              fill: transparent !important;
-            }
-          }
-          &-menu-icon {
-            margin-left: @spacing-xs;
-            svg,
-            path:last-of-type {
-              fill: @secondary-3 !important;
-            }
-          }
-          &-element-hidden {
-            display: none !important;
-          }
-          &-selected {
-            svg,
-            path:last-of-type {
-              fill: @secondary-3 !important;
-            }
-          }
-          &-menu,
-          &-tooltip {
-            color: @secondary-3;
-            padding: unset;
-            border-radius: @sm-border-radius;
-            box-shadow: @drop-shadow;
-            backdrop-filter: blur(2px);
-            background: rgba(var(--primary-3), @disabled-opacity);
+          &::after {
             border: unset;
-            overflow: hidden;
-
-            &-item {
-              text-align: center;
-              padding: @btn-padding;
-              transition: background-color @transition-duration-short ease;
-              &:hover {
-                background: @primary-3;
-              }
-            }
           }
-          &-xaxistooltip,
-          &-yaxistooltip {
-            color: @secondary-3;
-            backdrop-filter: blur(2px);
-            background: rgba(var(--primary-3), @disabled-opacity);
-            border: unset;
-            &::before {
-              border-bottom-color: rgba(var(--primary-3), @disabled-opacity);
-            }
-            &::after {
-              border: unset;
-            }
-          }
-        }
-        tspan {
-          text-transform: uppercase;
         }
       }
-      .loading-skeletons {
-        width: calc(100% - (@spacing-base * 2));
-        height: 350px;
-        position: absolute;
-        top: calc(50% + 20px);
-        left: 50%;
-        transform: translate(-50%, -50%);
-        overflow: hidden;
-
-        .ant-skeleton {
-          margin: @spacing-base 0;
-          h3 {
-            width: 100%;
-            height: 1px;
-          }
+      tspan {
+        text-transform: uppercase;
+      }
+    }
+    &-tooltip {
+      padding: @spacing-xs @spacing-base;
+      span {
+        font-size: @sm-font-size;
+        font-style: italic;
+        color: @secondary-5;
+        margin-bottom: 5px;
+      }
+      p {
+        margin: 4px 0;
+        color: @secondary-3;
+        i {
+          font-style: italic;
+          color: @secondary-4;
         }
       }
     }
-  }
-  // Swaps View
-  .swaps-view {
-    .order-entry {
-      height: 600px;
-
-      &-head {
-        height: 50px;
+    .apexcharts-yaxis-annotations,
+    .apexcharts-xaxis-annotations {
+      line {
+        stroke: @purple;
+        stroke-linecap: square;
+        stroke-width: 1px;
       }
-      &-body {
-        height: 465px;
-      }
-
-      .order-review {
-        margin-top: @spacing-base;
+      text {
+        fill: @secondary-3;
       }
     }
-  }
-  // Pair Search Modal
-  .pair-search-modal {
-    .ant-modal-content {
-      max-width: 450px;
-      padding: @spacing-base;
-      input {
-        font-size: @xxl-font-size;
+    .apexcharts-annotation-text {
+      display: none;
+    }
+    .my-swap {
+      fill: @jet-green;
+      stroke: @jet-green;
+      + text {
+        stroke: @primary-3;
+        stroke-width: 0.5px;
+        fill: @primary-3;
+      }
+    }
+    .loading-skeletons {
+      width: calc(100% - (@spacing-base * 2));
+      height: 350px;
+      position: absolute;
+      top: calc(50% + 20px);
+      left: 50%;
+      transform: translate(-50%, -50%);
+      overflow: hidden;
+
+      .ant-skeleton {
+        margin: @spacing-base 0;
+        h3 {
+          width: 100%;
+          height: 1px;
+        }
       }
     }
   }
@@ -1784,8 +1467,7 @@ html {
     .pool-detail {
       position: relative;
       width: calc(100% - (@spacing-sm * 2));
-      max-width: 725px;
-      min-height: 325px;
+      max-width: 600px;
       margin: @spacing-base @spacing-sm;
       &-title {
         .ant-skeleton {
@@ -1819,7 +1501,6 @@ html {
             }
           }
           .pie-chart-section {
-            padding-top: @spacing-xxl;
             .small-accent-text {
               margin: unset;
             }
@@ -1837,10 +1518,10 @@ html {
             &::after {
               content: '';
               position: absolute;
-              top: 25px;
-              right: -20px;
+              top: 20px;
+              right: 0px;
               width: 1px;
-              height: 225px;
+              height: 200px;
               background: @primary-2;
             }
             h1 {
@@ -1883,58 +1564,6 @@ html {
       }
     }
 
-    // Fiat / Native Toggle
-    .fiat-toggle {
-      width: 60px;
-      margin: 0 auto;
-      padding: unset;
-      background: @primary-2;
-      box-shadow: @neu-shadow-inset-2;
-      border-radius: @round-radius;
-      overflow: hidden;
-      transition: all @transition-duration-short ease;
-      cursor: pointer;
-      &:hover {
-        box-shadow: @neu-shadow-inset-3;
-      }
-      &:active {
-        background: @primary-3;
-        box-shadow: @neu-shadow-inset-2;
-        transition: background-color @transition-duration-short ease;
-        .fiat-toggle-half.active {
-          background: @jet-green-2;
-        }
-      }
-
-      &-half {
-        width: 50%;
-        height: 100%;
-        padding: 2px 0;
-        transition: background-color @transition-duration-short ease;
-        &:first-of-type {
-          padding-left: 5px;
-        }
-        &:last-of-type {
-          padding-right: 5px;
-        }
-
-        svg * {
-          fill: @secondary;
-          opacity: @subtle-opacity;
-        }
-
-        &.active {
-          background: @jet-green;
-          box-shadow: @neu-shadow;
-
-          svg * {
-            fill: @primary;
-            opacity: 1;
-          }
-        }
-      }
-    }
-
     // Radar
     .radar {
       position: relative;
@@ -1953,7 +1582,7 @@ html {
         }
       }
       .ant-table {
-        padding: @spacing-base;
+        padding: @spacing-sm 0;
         td,
         th {
           padding: calc(@spacing-sm - 2px) @spacing-sm;
@@ -2012,7 +1641,8 @@ html {
   }
 
   // Table token for PoolsTable, PairRelatedAccount and FullAccountBalance
-  .table-token {
+  .table-token,
+  .price {
     min-width: 175px;
     &-abbrev {
       display: none;
@@ -2035,10 +1665,11 @@ html {
       font-size: inherit;
       top: 14px;
 
+      &:nth-last-child(2),
       &:last-of-type {
         opacity: @half-opacity;
         font-size: @btn-font-size;
-        top: 30px;
+        top: 28px;
       }
     }
     .ant-skeleton {
@@ -2082,20 +1713,26 @@ html {
           fill: @success;
         }
       }
-      &-withdraw {
+      &-repay {
+        color: @jet-blue;
+        .jet-icon * {
+          fill: @jet-blue;
+        }
+      }
+      &-withdraw,
+      &-transfer {
         color: @danger;
         .jet-icon * {
           fill: @danger;
         }
       }
-      &-borrow,
-      &-repay {
+      &-borrow {
         color: @warning;
         .jet-icon * {
           fill: @warning;
         }
       }
-      &-transfer {
+      &-swap {
         color: @purple;
         .jet-icon * {
           fill: @purple;
@@ -2121,7 +1758,7 @@ html {
         position: relative;
         padding: @spacing-base @spacing-base @spacing-xs @spacing-base;
         &-pagination {
-          padding: @spacing-xs 155px @spacing-xs calc(@spacing-base * 2);
+          padding: @spacing-xs 165px @spacing-xs calc(@spacing-base * 2);
         }
         table {
           tr {
@@ -2160,8 +1797,9 @@ html {
     }
     .download-btns {
       position: absolute;
-      left: calc(@spacing-base * 2);
-      bottom: @spacing-base;
+      top: calc(50% - 8px);
+      left: -7px;
+      transform: translate(-50%);
       svg {
         font-size: @lg-font-size;
         * {
@@ -2271,8 +1909,8 @@ html {
       padding: 0 @spacing-xl;
       background: @header-bg;
       .download-btns {
-        top: 50%;
-        left: -40px;
+        top: calc(50% - 8px);
+        left: -7px;
         transform: translate(-50%);
       }
     }
@@ -2322,145 +1960,11 @@ html {
   }
 }
 
-// Larger screens
-@media screen and (min-width: 1700px) {
-  .jet-app {
-    // Token input
-    .token-input {
-      &-main {
-        .ant-select {
-          height: 50px;
-        }
-      }
-      &-dropdown {
-        width: 360px !important;
-      }
-      &-slider {
-        .ant-slider {
-          width: calc(100% - 65px);
-        }
-      }
-    }
-
-    // Action modals
-    .action-modal {
-      .ant-modal-content {
-        max-width: 375px;
-      }
-    }
-
-    // Sparkline Chart
-    .sparkline-chart {
-      max-width: 450px;
-      &-options {
-        bottom: -15px;
-        .ant-typography {
-          font-size: @sm-font-size;
-        }
-      }
-    }
-
-    // Trade View
-    .trade-view {
-      .order-entry,
-      .orderbook,
-      .recent-trades {
-        max-width: 430px;
-        height: 585px;
-        &-head {
-          height: 80px;
-        }
-      }
-      .orderbook {
-        .market-price {
-          .ant-typography {
-            margin-bottom: @spacing-sm;
-          }
-        }
-        &-body {
-          height: 400px;
-          &-row-half {
-            padding: @spacing-base @spacing-sm;
-            .ant-skeleton.align-right {
-              margin-left: -15px;
-            }
-          }
-        }
-      }
-      .pair-selector {
-        justify-content: space-evenly;
-        &-select {
-          .ant-typography {
-            font-size: @sm-font-size;
-          }
-        }
-      }
-      .candle-stick-chart {
-        height: 413px;
-        &-head {
-          height: calc(80px - (@spacing-base * 2));
-        }
-      }
-    }
-    .pair-search-modal {
-      .ant-modal-content {
-        max-width: 550px;
-      }
-    }
-
-    // Pools View
-    .pools-view {
-      .pools-table {
-        &-head {
-          height: 50px;
-        }
-      }
-      .pool-detail {
-        max-width: 955px;
-      }
-      .radar {
-        max-width: 425px;
-      }
-    }
-
-    // Accounts View
-    .accounts-view {
-      .full-account-balance {
-        &-header {
-          height: 62px;
-        }
-      }
-    }
-
-    // Account table {
-    .account-table {
-      .ant-tabs {
-        &-nav-list {
-          height: 62px;
-        }
-        .ant-table {
-          &-pagination {
-            padding-right: 195px;
-          }
-        }
-      }
-      .full-accounts-text {
-        font-size: @sm-font-size;
-      }
-    }
-
-    // Table token
-    .table-token {
-      span {
-        top: 32px;
-      }
-    }
-  }
-}
 // Tablet styling
 @media screen and (max-width: 1000px) {
   .jet-app {
-    .table-token {
+    .table-token,
+    .price {
       min-width: unset;
       &-name {
         display: none;
@@ -2469,21 +1973,17 @@ html {
         display: unset;
       }
     }
+    .ant-table {
+      overflow: scroll !important;
+    }
   }
 }
 // Mobile styling
 @media screen and (max-width: 800px) {
   .jet-app {
-    // Walkthrough modal
-    .walkthrough-modal {
-      display: none;
-      &-wrapper {
-        display: none;
-      }
-    }
-
-    // Reorder Arrows
-    .reorder-arrows {
+    // Reorder Arrows && TPS Banner
+    .reorder-arrows,
+    .tps-banner {
       display: none;
     }
 
@@ -2534,36 +2034,9 @@ html {
       }
     }
 
-    // Trade View
-    .trade-view {
-      .pair-selector {
-        justify-content: center;
-        flex-wrap: wrap;
-        padding-left: @spacing-lg;
-        padding-right: @spacing-lg;
-        padding-bottom: 40px;
-        &-select,
-        &-data,
-        &-data {
-          flex-wrap: wrap;
-          &-half {
-            width: 100%;
-            margin: @spacing-xs;
-            &:last-of-type {
-              margin-bottom: @spacing-lg;
-            }
-          }
-          &-item {
-            width: 50%;
-          }
-        }
-        &-select {
-          .ant-typography {
-            display: none;
-          }
-        }
-      }
-      .candle-stick-chart {
+    // Swaps view
+    .swaps-view {
+      .swaps-graph {
         &-head {
           &-info {
             flex-direction: column;
@@ -2588,6 +2061,9 @@ html {
           padding: 4px 15px 7px 10px;
         }
       }
+      .order-entry {
+        max-width: 380px !important;
+      }
     }
 
     // Pools View
@@ -2608,6 +2084,10 @@ html {
             width: 100%;
             &::after {
               display: none;
+            }
+            &-section {
+              align-items: flex-start;
+              justify-content: flex-start;
             }
           }
         }

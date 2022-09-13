@@ -7,7 +7,7 @@ import { i64Field, number128Field, pubkey, u64 } from "../utils/layout"
 
 /****************************
  * Anchor program type definitions.
- * Anchor 0.24.2 exports `AllAccountsMap` and `AllInstructionsMap`.
+ * Anchor 0.25.0 exports `AllAccountsMap` and `AllInstructionsMap`.
  * Here we export `AllTypesMap` to generate interfaces for types in `JetMargin` IDL.
  ****************************/
 

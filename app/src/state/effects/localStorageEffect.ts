@@ -1,3 +1,4 @@
+// An effect to pass to atoms so that they utilize browser localStorage
 export function localStorageEffect(key: string) {
   return ({ setSelf, onSet }: any) => {
     let savedValue = localStorage.getItem(key);

@@ -1,6 +1,6 @@
 import { useRecoilValue } from 'recoil';
-import { MarginAccount, Pool, PoolAction, TokenAmount } from '@jet-lab/margin';
-import { CurrentPool } from '../state/borrow/pools';
+import { MarginAccount, Pool, TokenAmount, PoolAction } from '@jet-lab/margin';
+import { CurrentPool } from '../state/pools/pools';
 import { CurrentAccount } from '../state/user/accounts';
 import { CurrentAction, MaxTradeAmounts, TokenInputAmount } from '../state/actions/actions';
 
@@ -8,8 +8,11 @@ import { CurrentAction, MaxTradeAmounts, TokenInputAmount } from '../state/actio
 export function useProjectedRisk(
   marginPool?: Pool,
   marginAccount?: MarginAccount,
-  poolAction?: PoolAction | undefined,
-  inputAmount?: TokenAmount
+  poolAction?: PoolAction,
+  inputAmount?: TokenAmount,
+  // If user is swapping
+  minAmountOut?: TokenAmount,
+  outputToken?: Pool
 ) {
   const currentPool = useRecoilValue(CurrentPool);
   const pool = marginPool ?? currentPool;
@@ -20,12 +23,15 @@ export function useProjectedRisk(
   const tokenInputAmount = useRecoilValue(TokenInputAmount);
   const amount = inputAmount ?? tokenInputAmount;
   const maxTradeAmounts = useRecoilValue(MaxTradeAmounts);
-  const max = action ? maxTradeAmounts[action] : undefined;
+  const max = action && action !== 'transfer' ? maxTradeAmounts[action] : undefined;
 
-  const projectedRiskIndicator =
-    pool && account && action && amount && !amount.isZero() && max && !amount.gt(max)
-      ? pool.projectAfterAction(account, amount.tokens, action).riskIndicator
-      : account?.riskIndicator ?? 0;
+  const canProjectAfterAction =
+    pool && account && action && action !== 'transfer' && amount && !amount.isZero() && max && !amount.gt(max);
+  const defaultActionProjection = account?.riskIndicator ?? 0;
+  const projectedRiskIndicator = canProjectAfterAction
+    ? pool.projectAfterAction(account, amount.tokens, action, minAmountOut && minAmountOut.tokens, outputToken)
+        .riskIndicator
+    : defaultActionProjection;
 
   return projectedRiskIndicator;
 }

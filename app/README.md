@@ -4,9 +4,9 @@
 
 ## Running the UI locally
 
-1. Run `git clone https://github.com/jet-lab/jet-v2-app.git && cd jet-v2-app`
+1. Run `git clone https://github.com/jet-lab/jet-ui.git`
 2. `npm install` or `yarn install`
-3. `npm run start` or `yarn start`
+3. `npm start` or `yarn start`
 4. Open `https://localhost:3000` in your browser
 
 ## Contributors

@@ -1,15 +1,14 @@
 import { useEffect, useState } from 'react';
-import { useSetRecoilState, useResetRecoilState, useRecoilValue } from 'recoil';
+import { useSetRecoilState, useResetRecoilState, useRecoilValue, useRecoilState } from 'recoil';
 import { Dictionary } from '../../../state/settings/localization/localization';
+import { SendingTransaction } from '../../../state/actions/actions';
 import { BlockExplorer, Cluster } from '../../../state/settings/settings';
-import { WalletTokens } from '../../../state/user/walletTokens';
-import { AccountNames, Accounts, useAccountFromName, CurrentAccount } from '../../../state/user/accounts';
-import { CurrentMarketPair } from '../../../state/trade/market';
-import { CurrentPoolSymbol, CurrentPool } from '../../../state/borrow/pools';
+import { AccountNames, Accounts, useAccountFromName } from '../../../state/user/accounts';
+import { CurrentPool } from '../../../state/pools/pools';
 import { CurrentAction, TokenInputAmount, TokenInputString } from '../../../state/actions/actions';
 import { ActionResponse } from '../../../utils/jet/marginActions';
 import { useTokenInputDisabledMessage } from '../../../utils/actions/tokenInput';
-import { useCurrencyFormatting } from '../../../utils/currency';
+import { DEFAULT_DECIMALS, useCurrencyFormatting } from '../../../utils/currency';
 import { formatRiskIndicator } from '../../../utils/format';
 import { getExplorerUrl } from '../../../utils/ui';
 import { notify } from '../../../utils/notify';
@@ -19,33 +18,33 @@ import { Button, Divider, Modal, Select, Typography } from 'antd';
 import { TokenInput } from '../../misc/TokenInput/TokenInput';
 import { ReactComponent as AngleDown } from '../../../styles/icons/arrow-angle-down.svg';
 import { ReactComponent as ArrowDown } from '../../../styles/icons/arrow-down.svg';
+import { ArrowRight } from './ArrowRight';
 
+// Modal to transfer collateral from one marginAccount to another
 export function TransferModal(): JSX.Element {
   const cluster = useRecoilValue(Cluster);
   const dictionary = useRecoilValue(Dictionary);
   const blockExplorer = useRecoilValue(BlockExplorer);
   const { currencyAbbrev } = useCurrencyFormatting();
   const { transfer } = useMarginActions();
-  const walletTokens = useRecoilValue(WalletTokens);
-  const marginAccounts = useRecoilValue(Accounts);
+  const accounts = useRecoilValue(Accounts);
   const currentPool = useRecoilValue(CurrentPool);
-  const setCurrentPoolSymbol = useSetRecoilState(CurrentPoolSymbol);
-  const setCurrentMarketPair = useSetRecoilState(CurrentMarketPair);
+  const decimals = (currentPool?.decimals ?? DEFAULT_DECIMALS) / 2;
   const currentAction = useRecoilValue(CurrentAction);
   const resetCurrentAction = useResetRecoilState(CurrentAction);
   const tokenInputAmount = useRecoilValue(TokenInputAmount);
   const resetTokenInputString = useResetRecoilState(TokenInputString);
   const resetTokenInputAmount = useResetRecoilState(TokenInputAmount);
-  const currentAccount = useRecoilValue(CurrentAccount);
   const accountNames = useRecoilValue(AccountNames);
   const [fromAccountOptions, setFromAccountOptions] = useState<string[]>([]);
   const [fromAccountName, setFromAccountName] = useState<string | undefined>(undefined);
   const fromAccount = useAccountFromName(fromAccountName);
-  const fromAccountPoolPosition = currentPool?.symbol && fromAccount?.poolPositions[currentPool.symbol];
+  const fromAccountPoolPosition =
+    fromAccount && currentPool ? fromAccount.poolPositions[currentPool.symbol] : undefined;
   const [toAccountOptions, setToAccountOptions] = useState<string[]>([]);
   const [toAccountName, setToAccountName] = useState<string | undefined>(undefined);
   const toAccount = useAccountFromName(toAccountName);
-  const toAccountPoolPosition = currentPool?.symbol && toAccount?.poolPositions[currentPool.symbol];
+  const toAccountPoolPosition = currentPool && toAccount ? toAccount.poolPositions[currentPool.symbol] : undefined;
   const fromAdjustedRiskIndicator = useProjectedRisk(currentPool, fromAccount, 'withdraw');
   const fromAdjustedRiskStyle = useRiskStyle(fromAdjustedRiskIndicator);
   const fromRiskStyle = useRiskStyle(fromAccount?.riskIndicator);
@@ -53,7 +52,10 @@ export function TransferModal(): JSX.Element {
   const toAdjustedRiskStyle = useRiskStyle(toAdjustedRiskIndicator);
   const toRiskStyle = useRiskStyle(toAccount?.riskIndicator);
   const disabledMessage = useTokenInputDisabledMessage(fromAccount);
-  const [sendingTransaction, setSendingTransaction] = useState(false);
+  const setTokenInputString = useSetRecoilState(TokenInputString);
+  const [sendingTransaction, setSendingTransaction] = useRecoilState(SendingTransaction);
+  const disabled =
+    sendingTransaction || disabledMessage.length > 0 || tokenInputAmount.isZero() || !(fromAccount && toAccount);
   const { Title, Paragraph, Text } = Typography;
   const { Option } = Select;
 
@@ -99,19 +101,11 @@ export function TransferModal(): JSX.Element {
     setSendingTransaction(false);
   }
 
-  // Set fromAccount to currentAccount on init
-  useEffect(() => {
-    const accountMatch = Object.keys(accountNames).filter(key => key === currentAccount?.address.toString())[0];
-    if (accountMatch) {
-      setFromAccountName(accountNames[accountMatch]);
-    }
-  }, [accountNames, currentAccount]);
-
   // Keep account select options updated with latest choices
   useEffect(() => {
     const fromAccountOptions: string[] = [];
     const toAccountOptions: string[] = [];
-    for (const account of marginAccounts) {
+    for (const account of accounts) {
       if (account.address.toString() !== fromAccount?.address.toString()) {
         toAccountOptions.push(accountNames[account.address.toString()]);
       }
@@ -121,22 +115,57 @@ export function TransferModal(): JSX.Element {
     }
     setFromAccountOptions(fromAccountOptions);
     setToAccountOptions(toAccountOptions);
-  }, [marginAccounts, fromAccount, toAccount, accountNames, fromAccountName, toAccountName]);
+  }, [accounts, fromAccount, toAccount, accountNames, fromAccountName, toAccountName]);
+
+  // Renders the affected balance of either the from or to transfer account
+  function renderAffectedBalance(side: 'from' | 'to') {
+    let render = <></>;
+    const poolPosition = side === 'from' ? fromAccountPoolPosition : toAccountPoolPosition;
+    if (poolPosition && !tokenInputAmount.isZero()) {
+      const balanceText = fromAccountPoolPosition
+        ? currencyAbbrev(poolPosition.depositBalance.tokens - tokenInputAmount.tokens, false, undefined, decimals)
+        : '—';
+      render = (
+        <div className="flex-centered">
+          <ArrowRight />
+          {balanceText}
+        </div>
+      );
+    }
+
+    return render;
+  }
+
+  // Renders the adjusted risk level if user were to transfer
+  function renderAdjustedRisk(side: 'from' | 'to') {
+    let render = <></>;
+    if (!tokenInputAmount.isZero()) {
+      const riskIndicator = side === 'from' ? fromAdjustedRiskIndicator : toAdjustedRiskIndicator;
+      const riskStyle = side === 'from' ? fromAdjustedRiskStyle : toAdjustedRiskStyle;
+      render = (
+        <Paragraph type={riskStyle}>
+          <ArrowRight />
+          {formatRiskIndicator(riskIndicator)}
+        </Paragraph>
+      );
+    }
+
+    return render;
+  }
 
   if (currentAction === 'transfer') {
     return (
       <Modal
         visible
         className="action-modal transfer-modal header-modal"
+        maskClosable={false}
         footer={null}
         onCancel={() => {
-          if (sendingTransaction) {
-            return;
+          if (!sendingTransaction) {
+            resetCurrentAction();
+            resetTokenInputString();
+            resetTokenInputAmount();
           }
-
-          resetCurrentAction();
-          resetTokenInputString();
-          resetTokenInputAmount();
         }}>
         <div className="modal-header flex-centered">
           <Title className="modal-header-title green-text">{dictionary.actions.transfer.title}</Title>
@@ -145,6 +174,7 @@ export function TransferModal(): JSX.Element {
           <Text className="small-accent-text">{dictionary.actions.transfer.from}</Text>
           <Select
             value={fromAccountName}
+            className="dropdown-space-between"
             suffixIcon={<AngleDown className="jet-icon" />}
             onChange={option => setFromAccountName(option)}>
             {fromAccountOptions.map(account => (
@@ -154,7 +184,7 @@ export function TransferModal(): JSX.Element {
             ))}
             {fromAccount && (
               <Option key="fromWallet" value="">
-                {''}
+                —
               </Option>
             )}
           </Select>
@@ -177,52 +207,25 @@ export function TransferModal(): JSX.Element {
         </div>
         <Divider />
         <div className="wallet-balance flex align-center justify-between">
-          <Text className="small-accent-text">{dictionary.common.walletBalance.toUpperCase()}</Text>
-          {walletTokens && currentPool?.symbol && (
-            <Paragraph type="secondary" italic>{`${walletTokens.map[currentPool.symbol].amount.tokens} ${
-              currentPool.symbol
-            }`}</Paragraph>
+          <Text className="small-accent-text">{fromAccountName}</Text>
+          {fromAccountPoolPosition && currentPool?.symbol && (
+            <Paragraph
+              onClick={() => setTokenInputString(fromAccountPoolPosition.depositBalance.uiTokens)}
+              className="token-balance">{`${fromAccountPoolPosition.depositBalance.uiTokens} ${currentPool.symbol}`}</Paragraph>
           )}
         </div>
-        <TokenInput
-          account={fromAccount}
-          onChangeToken={(tokenSymbol: string) => {
-            setCurrentPoolSymbol(tokenSymbol);
-            if (tokenSymbol !== 'USDC') {
-              setCurrentMarketPair(`${tokenSymbol}/USDC`);
-            }
-          }}
-          loading={sendingTransaction}
-          onPressEnter={sendTransfer}
-        />
+        <TokenInput account={fromAccount} hideSlider onPressEnter={sendTransfer} />
         <Divider />
         <div className="from-account flex column">
           <Paragraph className="from-account-text">{fromAccountName ?? '—'}</Paragraph>
-          <div className="action-info from-account-info flex align-between justify-center column">
+          <div className="action-info from-account-info flex align-between justify-start column">
             <div className="action-info-item flex align-center justify-between">
-              <Paragraph className="from-account-text">{dictionary.common.accountBalance}</Paragraph>
+              <Paragraph className="from-account-text">{dictionary.common.balance}</Paragraph>
               <Paragraph className="from-account-text">
                 {fromAccountPoolPosition
-                  ? currencyAbbrev(
-                      fromAccountPoolPosition.depositBalance.tokens,
-                      false,
-                      undefined,
-                      (currentPool?.decimals ?? 6) / 2
-                    )
+                  ? currencyAbbrev(fromAccountPoolPosition.depositBalance.tokens, false, undefined, decimals)
                   : '—'}
-                {!tokenInputAmount.isZero() && (
-                  <>
-                    &nbsp;&#8594;&nbsp;
-                    {fromAccountPoolPosition
-                      ? currencyAbbrev(
-                          fromAccountPoolPosition.depositBalance.tokens - tokenInputAmount.tokens,
-                          false,
-                          undefined,
-                          (currentPool?.decimals ?? 6) / 2
-                        )
-                      : '—'}
-                  </>
-                )}
+                {renderAffectedBalance('from')}
                 {' ' + currentPool?.symbol}
               </Paragraph>
             </div>
@@ -232,11 +235,7 @@ export function TransferModal(): JSX.Element {
                 <Paragraph type={fromAccount ? fromRiskStyle : 'secondary'}>
                   {fromAccount ? formatRiskIndicator(fromAccount.riskIndicator) : '—'}
                 </Paragraph>
-                {!tokenInputAmount.isZero() && (
-                  <Paragraph type={fromAdjustedRiskStyle}>
-                    &nbsp;&#8594;&nbsp;{formatRiskIndicator(fromAdjustedRiskIndicator)}
-                  </Paragraph>
-                )}
+                {renderAdjustedRisk('from')}
               </div>
             </div>
           </div>
@@ -246,19 +245,12 @@ export function TransferModal(): JSX.Element {
         </div>
         <div className="to-account flex column">
           <Paragraph className="to-account-text">{toAccountName ?? '—'}</Paragraph>
-          <div className="action-info to-account-info flex align-between justify-center column">
+          <div className="action-info to-account-info flex align-between justify-start column">
             <div className="action-info-item flex align-center justify-between">
-              <Paragraph className="to-account-text">{dictionary.common.accountBalance}</Paragraph>
+              <Paragraph className="to-account-text">{dictionary.common.balance}</Paragraph>
               <Paragraph className="to-account-text">
                 {toAccountPoolPosition ? currencyAbbrev(toAccountPoolPosition.depositBalance.tokens) : '—'}
-                {!tokenInputAmount.isZero() && (
-                  <>
-                    &nbsp;&#8594;&nbsp;
-                    {toAccountPoolPosition
-                      ? currencyAbbrev(toAccountPoolPosition.depositBalance.tokens + tokenInputAmount.tokens)
-                      : '—'}
-                  </>
-                )}
+                {renderAffectedBalance('to')}
                 {' ' + currentPool?.symbol}
               </Paragraph>
             </div>
@@ -268,22 +260,12 @@ export function TransferModal(): JSX.Element {
                 <Paragraph type={toAccount ? toRiskStyle : 'secondary'}>
                   {toAccount ? formatRiskIndicator(toAccount.riskIndicator) : '—'}
                 </Paragraph>
-                {!tokenInputAmount.isZero() && (
-                  <Paragraph type={toAdjustedRiskStyle}>
-                    &nbsp;&#8594;&nbsp;{formatRiskIndicator(toAdjustedRiskIndicator)}
-                  </Paragraph>
-                )}
+                {renderAdjustedRisk('to')}
               </div>
             </div>
           </div>
         </div>
-        <Button
-          block
-          disabled={
-            sendingTransaction || disabledMessage.length < 0 || tokenInputAmount.isZero() || !(fromAccount && toAccount)
-          }
-          loading={sendingTransaction}
-          onClick={sendTransfer}>
+        <Button block disabled={disabled} loading={sendingTransaction} onClick={sendTransfer}>
           {sendingTransaction ? dictionary.common.sending + '..' : dictionary.actions[currentAction ?? 'deposit'].title}
         </Button>
         <div className={`action-modal-overlay ${sendingTransaction ? 'showing' : ''}`}></div>

@@ -1,24 +1,16 @@
 import { atom } from 'recoil';
 import { localStorageEffect } from '../effects/localStorageEffect';
 
-// Trade View component order
-export const TradeViewOrder = atom({
-  key: 'tradeViewOrder',
-  default: ['accountSnapshot', 'pairSelector', 'tradeRow', 'candleStickChart', 'pairRelatedAccount'] as string[],
-  effects: [localStorageEffect('jetAppTradeViewOrder')],
-  dangerouslyAllowMutability: true
-});
-export const TradeRowOrder = atom({
-  key: 'tradeRowOrder',
-  default: ['orderEntry', 'orderbook', 'recentTrades'] as string[],
-  effects: [localStorageEffect('jetAppTradeRowOrder')],
-  dangerouslyAllowMutability: true
+// Controls mobile nav drawer
+export const NavDrawerOpen = atom({
+  key: 'navDrawerOpen',
+  default: false as boolean
 });
 
 // Pools View component order
 export const PoolsViewOrder = atom({
   key: 'PoolsViewOrder',
-  default: ['accountSnapshot', 'poolsRow', 'poolsTable'] as string[],
+  default: ['accountSnapshot', 'poolsTable', 'poolsRow'] as string[],
   effects: [localStorageEffect('jetAppPoolsViewOrder')],
   dangerouslyAllowMutability: true
 });
@@ -32,7 +24,7 @@ export const PoolsRowOrder = atom({
 // Swaps View component order
 export const SwapsViewOrder = atom({
   key: 'SwapsViewOrder',
-  default: ['accountSnapshot', 'swapsRow', 'swapsHistory'] as string[],
+  default: ['accountSnapshot', 'swapsRow', 'fullAccountBalance'] as string[],
   effects: [localStorageEffect('jetAppSwapsViewOrder')],
   dangerouslyAllowMutability: true
 });

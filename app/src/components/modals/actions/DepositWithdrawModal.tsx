@@ -1,17 +1,16 @@
-import { useState } from 'react';
 import { useRecoilState, useSetRecoilState, useResetRecoilState, useRecoilValue } from 'recoil';
 import { PoolAction } from '@jet-lab/margin';
 import { Dictionary } from '../../../state/settings/localization/localization';
+import { SendingTransaction } from '../../../state/actions/actions';
 import { BlockExplorer, Cluster } from '../../../state/settings/settings';
 import { WalletTokens } from '../../../state/user/walletTokens';
 import { CurrentAccount } from '../../../state/user/accounts';
-import { CurrentMarketPair } from '../../../state/trade/market';
-import { CurrentPoolSymbol, CurrentPool } from '../../../state/borrow/pools';
+import { CurrentPool } from '../../../state/pools/pools';
 import { CurrentAction, TokenInputAmount, TokenInputString } from '../../../state/actions/actions';
 import { useTokenInputDisabledMessage } from '../../../utils/actions/tokenInput';
 import { useCurrencyFormatting } from '../../../utils/currency';
 import { formatRiskIndicator, formatRate } from '../../../utils/format';
-import { getExplorerUrl } from '../../../utils/ui';
+import { getExplorerUrl, getTokenStyleType } from '../../../utils/ui';
 import { notify } from '../../../utils/notify';
 import { useProjectedRisk, useRiskStyle } from '../../../utils/risk';
 import { ActionResponse } from '../../../utils/jet/marginActions';
@@ -20,6 +19,7 @@ import { ArrowRight } from './ArrowRight';
 import { TokenInput } from '../../misc/TokenInput/TokenInput';
 import { Button, Modal, Tabs, Typography } from 'antd';
 
+// Modal to Deposit / Withdraw using the current Pool
 export function DepositWithdrawModal(): JSX.Element {
   const cluster = useRecoilValue(Cluster);
   const dictionary = useRecoilValue(Dictionary);
@@ -28,21 +28,20 @@ export function DepositWithdrawModal(): JSX.Element {
   const { deposit, withdraw } = useMarginActions();
   const walletTokens = useRecoilValue(WalletTokens);
   const currentPool = useRecoilValue(CurrentPool);
-  const setCurrentPoolSymbol = useSetRecoilState(CurrentPoolSymbol);
-  const setCurrentMarketPair = useSetRecoilState(CurrentMarketPair);
   const [currentAction, setCurrentAction] = useRecoilState(CurrentAction);
   const resetCurrentAction = useResetRecoilState(CurrentAction);
   const currentAccount = useRecoilValue(CurrentAccount);
   const accountPoolPosition = currentPool ? currentAccount?.poolPositions[currentPool.symbol] : undefined;
   const tokenInputAmount = useRecoilValue(TokenInputAmount);
+  const setTokenInputString = useSetRecoilState(TokenInputString);
   const resetTokenInputString = useResetRecoilState(TokenInputString);
   const resetTokenInputAmount = useResetRecoilState(TokenInputAmount);
   const riskStyle = useRiskStyle();
   const projectedRiskIndicator = useProjectedRisk();
   const projectedRiskStyle = useRiskStyle(projectedRiskIndicator);
-  const [sendingTransaction, setSendingTransaction] = useState(false);
+  const [sendingTransaction, setSendingTransaction] = useRecoilState(SendingTransaction);
   const disabledMessage = useTokenInputDisabledMessage();
-  const disabled = sendingTransaction || disabledMessage.length < 0 || tokenInputAmount.isZero();
+  const disabled = sendingTransaction || disabledMessage.length > 0;
   const { Paragraph, Text } = Typography;
   const { TabPane } = Tabs;
 
@@ -96,7 +95,7 @@ export function DepositWithdrawModal(): JSX.Element {
       decimals = currentPool.decimals;
     }
 
-    const abbreviatedDepositBalance = currencyAbbrev(depositBalance, false, undefined, decimals);
+    const abbreviatedDepositBalance = currencyAbbrev(balance ?? depositBalance, false, undefined, decimals);
     return abbreviatedDepositBalance;
   }
 
@@ -113,7 +112,7 @@ export function DepositWithdrawModal(): JSX.Element {
       render = (
         <>
           <ArrowRight />
-          {affectedBalance}
+          <Paragraph type={getTokenStyleType(affectedBalance)}>{affectedBalance}</Paragraph>
         </>
       );
     }
@@ -150,10 +149,10 @@ export function DepositWithdrawModal(): JSX.Element {
       const affectedRiskLevel = formatRiskIndicator(projectedRiskIndicator);
 
       render = (
-        <Paragraph type={projectedRiskStyle}>
+        <>
           <ArrowRight />
-          {affectedRiskLevel}
-        </Paragraph>
+          <Paragraph type={projectedRiskStyle}>{affectedRiskLevel}</Paragraph>
+        </>
       );
     }
 
@@ -164,10 +163,29 @@ export function DepositWithdrawModal(): JSX.Element {
   function renderWalletBalance() {
     let render = <></>;
     if (walletTokens && currentPool) {
-      const walletBalance = walletTokens.map[currentPool.symbol].amount.tokens + ' ' + currentPool.symbol;
+      const walletBalance = walletTokens.map[currentPool.symbol].amount.uiTokens;
       render = (
-        <Paragraph type="secondary" italic>
-          {walletBalance}
+        <Paragraph
+          onClick={() => (!disabled ? setTokenInputString(walletBalance) : null)}
+          className={!disabled ? 'token-balance' : 'secondary-text'}>
+          {walletBalance + ' ' + currentPool.symbol}
+        </Paragraph>
+      );
+    }
+
+    return render;
+  }
+
+  // Renders the account balance for current pool token
+  function renderAccountBalance() {
+    let render = <></>;
+    if (currentAccount && currentPool) {
+      const accountBalance = currentAccount.poolPositions[currentPool.symbol].depositBalance.uiTokens;
+      render = (
+        <Paragraph
+          onClick={() => (!disabled ? setTokenInputString(accountBalance) : null)}
+          className={!disabled ? 'token-balance' : 'secondary-text'}>
+          {accountBalance + ' ' + currentPool.symbol}
         </Paragraph>
       );
     }
@@ -200,7 +218,7 @@ export function DepositWithdrawModal(): JSX.Element {
 
   if (currentAccount && (currentAction === 'deposit' || currentAction === 'withdraw')) {
     return (
-      <Modal visible className="action-modal" footer={null} onCancel={handleCancel}>
+      <Modal visible className="action-modal" maskClosable={false} footer={null} onCancel={handleCancel}>
         <Tabs
           activeKey={currentAction ?? 'deposit'}
           onChange={(action: string) => setCurrentAction(action as PoolAction)}>
@@ -209,29 +227,19 @@ export function DepositWithdrawModal(): JSX.Element {
           ))}
         </Tabs>
         <div className="wallet-balance flex align-center justify-between">
-          <Text className="small-accent-text">{dictionary.common.walletBalance.toUpperCase()}</Text>
-          {renderWalletBalance()}
+          <Text className="small-accent-text">
+            {dictionary.common[currentAction === 'deposit' ? 'walletBalance' : 'accountBalance'].toUpperCase()}
+          </Text>
+          {currentAction === 'deposit' ? renderWalletBalance() : renderAccountBalance()}
         </div>
-        <TokenInput
-          account={currentAction === 'withdraw' ? currentAccount : undefined}
-          onChangeToken={(tokenSymbol: string) => {
-            setCurrentPoolSymbol(tokenSymbol);
-            // If we're not switching to USDC, also update the currentMarketPair
-            if (tokenSymbol !== 'USDC') {
-              setCurrentMarketPair(`${tokenSymbol}/USDC`);
-            }
-          }}
-          loading={sendingTransaction}
-          onPressEnter={depositWithdraw}
-        />
+        <TokenInput onPressEnter={depositWithdraw} />
         <div className="action-info flex-centered column">
           <div className="action-info-item flex align-center justify-between">
-            <Paragraph type="success">{dictionary.common.accountBalance}</Paragraph>
-            <Paragraph type="success">
-              {getDepositBalance()}
+            <Paragraph type="secondary">{dictionary.common.accountBalance}</Paragraph>
+            <div className="flex-centered">
+              <Paragraph type={getTokenStyleType(getDepositBalance())}>{getDepositBalance()}</Paragraph>
               {renderAffectedDepositBalance()}
-              {' ' + (currentPool ? currentPool.symbol : '—')}
-            </Paragraph>
+            </div>
           </div>
           <div className="action-info-item flex align-center justify-between">
             <Paragraph type="secondary">{dictionary.common.poolDepositRate}</Paragraph>
@@ -248,7 +256,11 @@ export function DepositWithdrawModal(): JSX.Element {
             </div>
           </div>
         </div>
-        <Button block disabled={disabled} loading={sendingTransaction} onClick={depositWithdraw}>
+        <Button
+          block
+          disabled={disabled || tokenInputAmount.isZero()}
+          loading={sendingTransaction}
+          onClick={depositWithdraw}>
           {getSubmitText()}
         </Button>
         <div className={`action-modal-overlay ${sendingTransaction ? 'showing' : ''}`}></div>

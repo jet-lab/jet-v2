@@ -9,6 +9,8 @@
     "name": "Name",
     "abbreviation": "Abbreviation",
     "price": "Price",
+    "buy": "Buy",
+    "sell": "Sell",
     "currentPrice": "Current Price",
     "priceHistory": "Price History",
     "marketPrice": "Market Price",
@@ -20,11 +22,15 @@
     "borrowRate": "Borrow Rate",
     "poolBorrowRate": "Pool Borrow Rate",
     "collateral": "Collateral",
+    "required": "Required",
     "requiredCollateral": "Required Collateral",
+    "effective": "Effective",
     "effectiveCollateral": "Effective Collateral",
+    "availableCollateral": "Available Collateral",
     "risk": "Risk",
     "riskLevel": "Risk Level",
     "publicKey": "Public Key",
+    "balance": "Balance",
     "wallet": "Wallet",
     "walletBalance": "Wallet Balance",
     "connectYourWallet": "Connect your wallet",
@@ -35,6 +41,7 @@
     "accountLeverage": "Account Leverage",
     "debtBalance": "Debt Balance",
     "notAvailable": "N/A",
+    "unknown": "Unknown",
     "noData": "No Data",
     "max": "Max",
     "loading": "Loading",
@@ -51,7 +58,8 @@
       "title": "Deposit",
       "pastTense": "Deposited",
       "disabledMessages": {
-        "noBalanceForDeposit": "You have no {{ASSET}} in your wallet to deposit."
+        "noBalanceForDeposit": "You have no {{ASSET}} in your wallet to deposit.",
+        "notEnoughSolForFees": "You don't have enough SOL in your wallet to cover transaction fees."
       },
       "warningMessages": {},
       "errorMessages": {
@@ -79,6 +87,17 @@
     "repay": {
       "title": "Repay",
       "pastTense": "Repayed",
+      "repayFromWallet": "Repay From Wallet",
+      "disabledMessages": {
+        "noDebtForRepay": "You don't owe any {{ASSET}}."
+      },
+      "warningMessages": {},
+      "errorMessages": {}
+    },
+    "repayFromDeposit": {
+      "title": "Repay",
+      "pastTense": "Repayed",
+      "repayFromWallet": "Repay From Wallet",
       "disabledMessages": {
         "noDebtForRepay": "You don't owe any {{ASSET}}."
       },
@@ -88,12 +107,48 @@
     "swap": {
       "title": "Swap",
       "pastTense": "Swapped",
-      "poweredBy": "Powered by",
       "for": "For",
       "slippage": "Slippage",
+      "min": "Min.",
+      "minimumReceived": "Minimum Received",
+      "leverageSwap": "Leverage Swap",
+      "maxLeverage": "Max Leverage",
+      "repayWithOutput": "Repay my loan of {{BALANCE}} {{ASSET}}",
+      "swapBalances": "Swap Token Balances",
+      "swapThis": "Swap This",
+      "oraclePrice": "Oracle Price",
+      "poolPrice": "Pool Price",
+      "recieve": "Receive",
+      "mySwap": "My Swap",
+      "inputToken": "Input token",
+      "outputToken": "Output token",
+      "sellQuantity": "Sell Quantity",
+      "swapsGraph": {
+        "title": "Swap Price",
+        "sellAmount": "Amount of Tokens Sold"
+      },
+      "disabledMessages": {
+        "noBalanceForSwap": "You have no {{ASSET}} in your {{WALLET_OR_ACCOUNT}} to swap."
+      },
+      "warningMessages": {
+        "maxSlippageExceeded": "This swap would have exceeded your max slippage. Please try again."
+      },
+      "errorMessages": {
+        "noPools": "There are no swap pools found for this pair. Please try another output token."
+      },
+      "reviewMessages": {
+        "swapReview": "You're swapping {{AMOUNT}} {{INPUT_TOKEN}} for {{SIZE}} {{OUTPUT_TOKEN}}.",
+        "marginSwapTotalReview": "You're borrowing {{AMOUNT}} {{INPUT_TOKEN}} and swapping it for {{SIZE}} {{OUTPUT_TOKEN}}.",
+        "marginSwapPartialReview": "You're borrowing {{MARGIN_AMOUNT}} {{INPUT_TOKEN}} and swapping {{AMOUNT}} {{INPUT_TOKEN}} for {{SIZE}} {{OUTPUT_TOKEN}}."
+      }
+    },
+    "jupiterSwap": {
+      "title": "Jupiter",
+      "pastTense": "Jupiter Swapped",
+      "walletSwap": "Wallet Swap",
+      "poweredBy": "Powered by",
       "bestRoute": "Best Route",
       "priceImpact": "Price Impact",
-      "minimumRecieved": "Minimum Recieved",
       "feesPaid": "Fees Paid",
       "disabledMessages": {
         "noBalanceForSwap": "You have no {{ASSET}} in your {{WALLET_OR_ACCOUNT}} to swap."
@@ -101,11 +156,6 @@
       "warningMessages": {},
       "errorMessages": {
         "noRoutes": "No routes found swapping {{INPUT_TOKEN}} for {{OUTPUT_TOKEN}}."
-      },
-      "reviewMessages": {
-        "swapReview": "You're swapping {{AMOUNT}} {{INPUT_TOKEN}} for {{SIZE}} {{OUTPUT_TOKEN}}.",
-        "marginSwapTotalReview": "You're swapping {{AMOUNT}} {{INPUT_TOKEN}} ON MARGIN for {{SIZE}} {{OUTPUT_TOKEN}}.",
-        "marginSwapPartialReview": "You're swapping {{AMOUNT}} {{INPUT_TOKEN}} and swapping {{MARGIN_AMOUNT}} {{INPUT_TOKEN}} ON MARGIN for {{SIZE}} {{OUTPUT_TOKEN}}."
       }
     },
     "transfer": {
@@ -128,6 +178,7 @@
       "title": "New Account",
       "accountName": "Account Name",
       "accountNamePlaceholder": "Name of account",
+      "customNamesComingSoon": "Custom account names coming soon.",
       "rentFeeInfo": "The Solana Blockchain requires a one-time rent fee of {{RENT_FEE}} SOL for each new margin account.",
       "disabledMessages": {
         "noSolForRentFee": "You don't have enough SOL to cover the rent and transaction fees for a new account."
@@ -153,8 +204,8 @@
     "txFailed": "Transaction failed.",
     "txCancelled": "Transaction cancelled.",
     "walletConnected": "Wallet {{PUBLIC_KEY}} connected.",
-    "tpsDegraded": "Solana network is experiencing degraded performance. Transactions may fail to send or confirm. (TPS: {{TPS}})",
-    "tpsSevere": "Solana network is experiencing severe performance issues. Transactions will likely fail to send or confirm. (TPS: {{TPS}})",
+    "tpsDegraded": "Your connection to the Solana network is experiencing degraded performance. Transactions may fail to send or confirm. (TPS: {{TPS}}, Ping: {{PING}})",
+    "tpsSevere": "Your connection to the Solana network is experiencing severe performance issues. Transactions will likely fail to send or confirm. (TPS: {{TPS}}, Ping: {{PING}})",
     "wallet": {
       "connect": {
         "message": "Wallet Connected",
@@ -214,6 +265,10 @@
     "alerts": {
       "disclaimer": {
         "title": "Disclaimer",
+        "lendAndBorrow": "Lend and Borrow the most popular assets.",
+        "tradeWithSize": "Trade with size using our powerful Margin Account system.",
+        "swapFavoriteCoins": "Swap your favorite coins with leverage, quickly and effortlessly.",
+        "manageAllAssets": "Manage all your assets in one easy to use, simple interface.",
         "disclaimerDetail": "You are now entering Jet Protocol Mainnet. Do not proceed if you do not understand and accept the {{TERMS_LINK}}, {{PRIVACY_LINK}}, and the potential for financial loss.",
         "acceptRisks": "I understand and accept the risks.",
         "enterMainnet": "Enter Mainnet"
@@ -412,7 +467,9 @@
     "currentBalance": "Current Balance",
     "fiatValue": "{{FIAT_CURRENCY}} Value",
     "percentOfPortfolio": "% of Portfolio",
-    "depositBorrowRates": "Deposit / Borrow Rates",
+    "depositRate": "Deposit Rate",
+    "borrowRate": "Borrow Rate",
+    "depositBorrowRates": "Deposit | Borrow Rates",
     "rowsPerPage": "Rows per page",
     "balancesFilterPlaceholder": "e.g. Solana",
     "ordersFilterPlaceholder": "e.g. November 3, 2022",
@@ -513,118 +570,6 @@
     "title": "Notifications",
     "riskLevelName": "High Account Risk",
     "riskLevelDescription": "Recieve notifications when your account risk rises into liquidation territory."
-  },
-  "copilot": {
-    "title": "Copilot",
-    "walkthrough": {
-      "title": "Flight School",
-      "start": "Start",
-      "welcome": {
-        "title": "Welcome Aboard Pilot",
-        "description": "DeFi can be confusing, so we've added this interacive Flight School to help you out. I'm your Copilot and I'm here to show you around.",
-        "callToAction": "Ready to get started?",
-        "nextButtonText": "Let's go"
-      },
-      "aboutJet": {
-        "title": "1. What can I do with Jet?",
-        "description": "Jet's primary dashboards are Pools and Trade. With Pools, you can lend your crypto to earn yield or borrow against it at a competitive rate.",
-        "extraDescription": "The Trade dashboard allows you to trade on Serum, with the option to utilize the power of Leverage through your Margin Accounts.",
-        "altButtonText": "Want to learn more?",
-        "nextButtonText": "Next stop"
-      },
-      "walletButton": {
-        "title": "2. Connect your wallet",
-        "description": "In order to use those assets in your crypto wallet, you'll have to connect it to the dashboard.",
-        "altButtonText": "Don't have a wallet?",
-        "nextButtonText": "Next stop"
-      },
-      "accountSnapshot": {
-        "title": "3. Account Snapshot",
-        "description": "The Account Snapshot is your best friend, and follows you around the app.",
-        "detail": "Here you can create new Margin Accounts, and switch between them.",
-        "nextButtonText": "Next stop"
-      },
-      "pairSelector": {
-        "title": "4. Pair Selector",
-        "description": "Here you can select which asset pair you'd like to trade, and see up-to-date market data.",
-        "nextButtonText": "Next stop"
-      },
-      "orderbook": {
-        "title": "5. The Orderbook",
-        "description": "This is where the magic happens, an up to date visual on the current Bids, Asks, and Market Price from the Serum DEX.",
-        "detail": "TIP: As orders are placed, they'll populate this book. If you click on one of the rows, it will prefill the price so you can place a similar order.",
-        "nextButtonText": "Next stop"
-      },
-      "recentTrades": {
-        "title": "6. Recent Trades",
-        "description": "A table of the latest filled orders from the Serum orderbook.",
-        "detail": "TIP: You can click on any price to prefill it in the Order Entry.",
-        "nextButtonText": "Next stop"
-      },
-      "orderEntry": {
-        "title": "7. Order Entry",
-        "description": "This is your ultimate tool within the Trade dashboard. Place Limit and Market orders to your exact specifications.",
-        "detail": "TIP: As you fill in the information of your order, we'll recap it for you at the bottom to make sure it's exactly what you want.",
-        "nextButtonText": "Next stop"
-      },
-      "candleStickChart": {
-        "title": "8. Candlestick Chart",
-        "description": "In depth analysis of an assets Opening, Closing, High, and Low prices for a particular timeframe and period.",
-        "detail": "TIP: Use the tools on the right side of the chart to change the view and data timeframe / period.",
-        "nextButtonText": "Next stop"
-      },
-      "pairRelatedAccount": {
-        "title": "9. Pair Related Account",
-        "description": "An accounting of your current Balances, Orders, and Fills related to the market pair you're trading.",
-        "detail": "TIP: Use the Accounts page to your advantage for more in-depth data and history on all your positions.",
-        "nextButtonText": "Next stop"
-      },
-      "poolsTable": {
-        "title": "10. Pools Table",
-        "description": "The Pools Table is the centerpiece of the Pools dashboard, allowing you to select any supported tokens to either lend and earn yield, or borrow against your deposited collateral.",
-        "detail": "Think of pools like the 'take a penny, leave a penny' bowl at your local grocery store. Anybody can contribute, anybody can benefit.",
-        "nextButtonText": "Next stop"
-      },
-      "poolDetail": {
-        "title": "11. Pool Detail",
-        "description": "This is a more in-depth look at the currently selected Pool. View price history and utilization statistics that will help you make an informed decision.",
-        "nextButtonText": "Next stop"
-      },
-      "radar": {
-        "title": "12. Radar",
-        "description": "Radar is where you come to compare Lending and Borrowing rates across different Solana protocols.",
-        "nextButtonText": "Next stop"
-      },
-      "fullAccountHistory": {
-        "title": "13. Account History Table",
-        "description": "This is where you can find detailed and useful data on your orders, positions, balances and transaction histories.",
-        "detail": "TIP: Click on a transaction in the table to view it on your preferred Block Explorer.",
-        "nextButtonText": "Next stop"
-      },
-      "fullAccountBalance": {
-        "title": "14. Account Balances Table",
-        "description": "Similar to the Pair Related Account table on the Trade dashboard, this table is a representation of your account's asset balances.",
-        "nextButtonText": "Next stop"
-      },
-      "settingsBtn": {
-        "title": "15. Settings",
-        "description": "Make this your preferred dashboard by adjusting your settings, switching between Solana clusters, and even updating your RPC endpoint.",
-        "detail": "TIP: If you ever want to revisit Flight School, you can enroll any time in your Settings modal.",
-        "nextButtonText": "Next stop"
-      },
-      "notificationsBtn": {
-        "title": "16. Notifications",
-        "description": "Through our integration with Dialect, you can receive on-chain notifications, so you can keep your positions healthy even in turbulent market conditions.",
-        "nextButtonText": "Final stop"
-      },
-      "end": {
-        "title": "Happy Flying",
-        "description": "Looks like you're ready to take to the skies. If you have any feedback or questions feel free to contact us on our Discord.",
-        "detail": "FINAL TIP: Veteran pilots like to have complete control over their dashboard, so we've added arrow buttons on every component allowing you to reorganize Jet to your liking.",
-        "altButtonText": "Read the docs.",
-        "nextButtonText": "Take Off"
-      }
-    }
   },
   "termsPrivacy": {
     "privacyPolicy": "Privacy Policy",

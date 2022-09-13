@@ -1,32 +1,40 @@
-import { useSetRecoilState, useRecoilValue, useRecoilState } from 'recoil';
+import { useState } from 'react';
+import { useRecoilValue, useRecoilState } from 'recoil';
 import { Dictionary } from '../../../state/settings/localization/localization';
 import { PoolsViewOrder } from '../../../state/views/views';
-import { FilteredPoolsList, PoolOptions, PoolsTextFilter } from '../../../state/borrow/pools';
+import { FilteredPools, PoolOptions } from '../../../state/pools/pools';
 import { createDummyArray } from '../../../utils/ui';
 import { ReorderArrows } from '../../misc/ReorderArrows';
 import { Info } from '../../misc/Info';
-import { PoolRow } from './PoolRow';
 import { Input, Typography } from 'antd';
+import { PoolRow } from './PoolRow';
 import { SearchOutlined } from '@ant-design/icons';
 
+// Table to display all Jet lending/borrowing pools
 export function PoolsTable(): JSX.Element {
   const dictionary = useRecoilValue(Dictionary);
   const [poolsViewOrder, setPoolsViewOrder] = useRecoilState(PoolsViewOrder);
+  const [filterText, setFilterText] = useState('');
+  const filteredPools = useRecoilValue(FilteredPools(filterText));
   const poolOptions = useRecoilValue(PoolOptions);
-  const filteredPoolsList = useRecoilValue(FilteredPoolsList);
-  const setFilter = useSetRecoilState(PoolsTextFilter);
+  const placeholderArrayLength = Object.keys(poolOptions).length > 0 ? Object.keys(poolOptions).length : 4;
+  const poolsArray = filteredPools.length ? filteredPools : createDummyArray(placeholderArrayLength, 'symbol');
   const { Paragraph, Text } = Typography;
 
+  // Align columns
+  const alignLeft: React.CSSProperties = { textAlign: 'left' };
+  const alignRight: React.CSSProperties = { textAlign: 'right' };
+
   return (
-    <div className="pools-table view-element view-element-hidden">
-      <div className="pools-table-head view-element-item view-element-item-hidden flex align-center justify-between">
+    <div className="pools-table view-element">
+      <div className="pools-table-head flex align-center justify-between">
         <Paragraph strong>{dictionary.poolsView.poolsTable.allAssets}</Paragraph>
         <div className="account-table-search">
           <SearchOutlined />
           <Input
             type="text"
             placeholder={dictionary.poolsView.poolsTable.searchExample}
-            onChange={e => setFilter(e.target.value)}
+            onChange={e => setFilterText(e.target.value)}
           />
         </div>
       </div>
@@ -34,40 +42,34 @@ export function PoolsTable(): JSX.Element {
         <table style={{ tableLayout: 'auto' }}>
           <thead className="ant-table-thead">
             <tr>
-              <th className="ant-table-cell" style={{ textAlign: 'left' }}>
+              <th className="ant-table-cell" style={alignLeft}>
                 {dictionary.common.token}
               </th>
-              <th className="ant-table-cell" style={{ textAlign: 'right' }}>
-                {
-                  <Info term="collateralWeight">
-                    <Text className="info-element">{dictionary.poolsView.collateralWeight}</Text>
-                  </Info>
-                }
-              </th>
-              <th className="ant-table-cell" style={{ textAlign: 'right' }}>
+              <th className="ant-table-cell" style={alignRight}>
                 <Info term="utilizationRate">
                   <Text className="info-element">{dictionary.poolsView.utilizationRate}</Text>
                 </Info>
               </th>
-              <th className="ant-table-cell" style={{ textAlign: 'right' }}>
+              <th className="ant-table-cell" style={alignRight}>
                 {dictionary.poolsView.totalBorrowed}
               </th>
-              <th className="ant-table-cell" style={{ textAlign: 'right' }}>
+              <th className="ant-table-cell" style={alignRight}>
                 {dictionary.poolsView.availableLiquidity}
               </th>
-              <th className="ant-table-cell" style={{ textAlign: 'right' }}>
-                <Info term="depositBorrowRate">
-                  <Text className="info-element">{dictionary.accountsView.depositBorrowRates}</Text>
+              <th className="ant-table-cell" style={alignRight}>
+                <Info term="depositRate">
+                  <Text className="info-element">{dictionary.accountsView.depositRate}</Text>
                 </Info>
               </th>
-              <th className="ant-table-cell" style={{ textAlign: 'right' }}></th>
+              <th className="ant-table-cell" style={alignRight}>
+                <Info term="borrowRate">
+                  <Text className="info-element">{dictionary.accountsView.borrowRate}</Text>
+                </Info>
+              </th>
             </tr>
           </thead>
           <tbody className="ant-table-tbody">
-            {(filteredPoolsList.length
-              ? filteredPoolsList
-              : createDummyArray(Object.keys(poolOptions).length, 'symbol')
-            ).map(pool => (
+            {poolsArray.map(pool => (
               <PoolRow key={pool.symbol} pool={pool} />
             ))}
           </tbody>

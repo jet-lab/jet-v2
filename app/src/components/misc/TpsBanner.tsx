@@ -1,16 +1,33 @@
 import { useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 import { Connection } from '@solana/web3.js';
+import { Cluster, PreferredRpcNode, rpcNodes } from '../../state/settings/settings';
 import { Dictionary } from '../../state/settings/localization/localization';
 import { MS_PER_MINUTE } from '../../utils/time';
 import { Alert } from 'antd';
 
 // Banner to show user that the Solana network is running slowly
 export function TpsBanner(): JSX.Element {
+  const cluster = useRecoilValue(Cluster);
+  const rpcNode = useRecoilValue(PreferredRpcNode);
   const dictionary = useRecoilValue(Dictionary);
+  const nodeIndexer = cluster === 'mainnet-beta' ? 'mainnetBeta' : 'devnet';
+  const ping = rpcNodes[rpcNode][`${nodeIndexer}Ping`];
   const [tps, setTps] = useState<number | undefined>(undefined);
-  const unusuallySlow = tps && tps < 1200;
-  const criticallySlow = tps && tps < 800;
+  const unusuallySlow = (tps && tps < 1500) || ping > 750;
+  const criticallySlow = (tps && tps < 1000) || ping > 1500;
+
+  // Returns the conditional TPS warning message
+  function getTpsMessage() {
+    let message = dictionary.notifications.tpsDegraded;
+    if (criticallySlow) {
+      message = dictionary.notifications.tpsSevere;
+    }
+
+    // Add dynamic values
+    message = message.replaceAll('{{TPS}}', tps?.toString() ?? '').replaceAll('{{PING}}', ping.toString() + 'ms');
+    return message;
+  }
 
   // On mount, initiate an interval of checking Solana TPS
   useEffect(() => {
@@ -41,16 +58,7 @@ export function TpsBanner(): JSX.Element {
   // Render the TPS banner (if TPS is slow enough)
   if (unusuallySlow) {
     return (
-      <Alert
-        closable
-        className="tps-banner"
-        type={criticallySlow ? 'error' : 'warning'}
-        message={
-          criticallySlow
-            ? dictionary.notifications.tpsSevere.replaceAll('{{TPS}}', tps.toString())
-            : dictionary.notifications.tpsDegraded.replaceAll('{{TPS}}', tps.toString())
-        }
-      />
+      <Alert closable className="tps-banner" type={criticallySlow ? 'error' : 'warning'} message={getTpsMessage()} />
     );
   } else {
     return <></>;

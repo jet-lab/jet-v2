@@ -4,6 +4,9 @@ import { BN } from '@project-serum/anchor';
 import { TokenAmount } from '@jet-lab/margin';
 import { FiatCurrency, USDConversionRates } from '../state/settings/settings';
 
+// Default decimal precision for tokens
+export const DEFAULT_DECIMALS = 4;
+
 // Hook for currency formatting functions
 export function useCurrencyFormatting() {
   const fiatCurrency = useRecoilValue(FiatCurrency);
@@ -16,9 +19,7 @@ export function useCurrencyFormatting() {
         ? Math.ceil(value * 10 ** (decimals ?? 2)) / 10 ** (decimals ?? 2)
         : Math.floor(value * 10 ** (decimals ?? 2)) / 10 ** (decimals ?? 2);
       const convertedValue =
-        fiatValues && fiatCurrency !== 'USD' && conversionRates[fiatCurrency]
-          ? roundedDownValue * conversionRates[fiatCurrency]
-          : roundedDownValue;
+        fiatCurrency !== 'USD' ? roundedDownValue * conversionRates[fiatCurrency] : roundedDownValue;
       const currencyFormat = new Intl.NumberFormat('en-US', {
         style: fiatValues ? 'currency' : undefined,
         currency: fiatValues ? fiatCurrency : undefined,

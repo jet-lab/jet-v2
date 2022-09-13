@@ -1,7 +1,7 @@
 import { TokenAmount } from '@jet-lab/margin';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
 import { Dictionary } from '../../../state/settings/localization/localization';
-import { CurrentPool } from '../../../state/borrow/pools';
+import { CurrentPool } from '../../../state/pools/pools';
 import { TokenInputAmount, TokenInputString } from '../../../state/actions/actions';
 import { Button, Slider } from 'antd';
 import { getTokenAmountFromNumber } from '../../../utils/currency';

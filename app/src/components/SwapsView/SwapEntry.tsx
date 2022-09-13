@@ -5,61 +5,112 @@ import { SwapsRowOrder } from '../../state/views/views';
 import { BlockExplorer, Cluster } from '../../state/settings/settings';
 import { Dictionary } from '../../state/settings/localization/localization';
 import { CurrentAccount } from '../../state/user/accounts';
-import { CurrentPoolSymbol, Pools, CurrentPool } from '../../state/borrow/pools';
-import { CurrentMarketPair } from '../../state/trade/market';
-import { CurrentSwapOutput, TokenInputAmount, TokenInputString } from '../../state/actions/actions';
+import { CurrentPoolSymbol, Pools, CurrentPool } from '../../state/pools/pools';
+import {
+  CurrentAction,
+  CurrentSwapOutput,
+  SendingTransaction,
+  TokenInputAmount,
+  TokenInputString
+} from '../../state/actions/actions';
 import { useProjectedRisk, useRiskStyle } from '../../utils/risk';
 import { formatRiskIndicator } from '../../utils/format';
 import { notify } from '../../utils/notify';
-import { getExplorerUrl } from '../../utils/ui';
-import { getTokenAmountFromNumber, useCurrencyFormatting } from '../../utils/currency';
+import { getExplorerUrl, getTokenStyleType } from '../../utils/ui';
+import { DEFAULT_DECIMALS, useCurrencyFormatting } from '../../utils/currency';
 import { getMinOutputAmount, getOutputTokenAmount, useSwapReviewMessage } from '../../utils/actions/swap';
 import { ActionResponse, useMarginActions } from '../../utils/jet/marginActions';
-import { Button, Divider, Input, Radio, Typography } from 'antd';
 import { Info } from '../misc/Info';
 import { TokenInput } from '../misc/TokenInput/TokenInput';
 import { ReorderArrows } from '../misc/ReorderArrows';
-import { ConnectionFeedback } from '../misc/ConnectionFeedback';
+import { ConnectionFeedback } from '../misc/ConnectionFeedback/ConnectionFeedback';
+import { ArrowRight } from '../modals/actions/ArrowRight';
+import { Button, Checkbox, Input, Radio, Typography } from 'antd';
 import { ReactComponent as SwapIcon } from '../../styles/icons/function-swap.svg';
+import { CurrentSplSwapPool, SwapFees, SwapPoolTokenAmounts } from '../../state/swap/splSwap';
 
+// Component for user to enter and submit a swap action
 export function SwapEntry(): JSX.Element {
   const cluster = useRecoilValue(Cluster);
   const dictionary = useRecoilValue(Dictionary);
   const blockExplorer = useRecoilValue(BlockExplorer);
   const [swapsRowOrder, setSwapsRowOrder] = useRecoilState(SwapsRowOrder);
   const { currencyAbbrev } = useCurrencyFormatting();
-  const { swap } = useMarginActions();
+  const { splTokenSwap } = useMarginActions();
+  // Margin account
+  const currentAction = useRecoilValue(CurrentAction);
   const currentAccount = useRecoilValue(CurrentAccount);
-  const setCurrentPoolSymbol = useSetRecoilState(CurrentPoolSymbol);
-  const setCurrentMarketPair = useSetRecoilState(CurrentMarketPair);
-  const currentPool = useRecoilValue(CurrentPool);
+  // Pools
   const pools = useRecoilValue(Pools);
+  // Input token pool
+  const setCurrentPoolSymbol = useSetRecoilState(CurrentPoolSymbol);
+  const currentPool = useRecoilValue(CurrentPool);
+  const poolDecimals = (currentPool?.decimals ?? DEFAULT_DECIMALS) / 2;
+  const poolPosition = currentAccount && currentPool && currentAccount.poolPositions[currentPool.symbol];
+  const overallInputBalance = poolPosition ? poolPosition.depositBalance.tokens - poolPosition.loanBalance.tokens : 0;
+  const depositBalanceString = poolPosition ? poolPosition.depositBalance.uiTokens : '0';
+  const maxSwapString = poolPosition ? poolPosition.maxTradeAmounts.swap.uiTokens : '0';
   const tokenInputAmount = useRecoilValue(TokenInputAmount);
+  const [tokenInputString, setTokenInputString] = useRecoilState(TokenInputString);
   const resetTokenInputString = useResetRecoilState(TokenInputString);
+  // Output token pool
   const [outputToken, setOutputToken] = useRecoilState(CurrentSwapOutput);
-  const [slippage, setSlippage] = useState(0.005);
+  const outputDecimals = (outputToken?.decimals ?? DEFAULT_DECIMALS) / 2;
+  const outputPoolPosition = currentAccount && outputToken && currentAccount?.poolPositions[outputToken.symbol];
+  const overallOutputBalance = outputPoolPosition
+    ? outputPoolPosition.depositBalance.tokens - outputPoolPosition.loanBalance.tokens
+    : 0;
+  const hasOutputLoan = outputPoolPosition ? !outputPoolPosition.loanBalance.isZero() : false;
+  // Orca pools
+  const swapPool = useRecoilValue(CurrentSplSwapPool);
+  const swapPoolTokenAmounts = useRecoilValue(SwapPoolTokenAmounts);
+  const noOrcaPool = currentPool && outputToken && !swapPool;
+  const swapFees = useRecoilValue(SwapFees);
+  const [slippage, setSlippage] = useState(0.001);
   const [slippageInput, setSlippageInput] = useState('');
+  const swapOutputTokens = getOutputTokenAmount(
+    tokenInputAmount,
+    swapPoolTokenAmounts?.source,
+    swapPoolTokenAmounts?.destination,
+    swapPool?.pool.swapType,
+    swapFees,
+    swapPool?.pool.amp ?? 1
+  );
+  const minOutAmount = getMinOutputAmount(
+    tokenInputAmount,
+    swapPoolTokenAmounts?.source,
+    swapPoolTokenAmounts?.destination,
+    swapPool?.pool.swapType,
+    swapFees,
+    slippage,
+    0
+  );
+  const [repayLoanWithOutput, setRepayLoanWithOutput] = useState(false);
+  // Swap / health feedback
   const riskStyle = useRiskStyle();
-  const currentAccountPoolPosition =
-    currentPool && currentAccount ? currentAccount.poolPositions[currentPool.symbol] : undefined;
-  const projectedRiskIndicator = useProjectedRisk(undefined, currentAccount, 'borrow', getMarginInputAmount());
+  const projectedRiskIndicator = useProjectedRisk(
+    undefined,
+    currentAccount,
+    'swap',
+    tokenInputAmount,
+    swapOutputTokens,
+    outputToken
+  );
   const projectedRiskStyle = useRiskStyle(projectedRiskIndicator);
-  const swapReviewMessage = useSwapReviewMessage(currentAccount, currentPool, outputToken);
-  const [sendingSwap, setSendingSwap] = useState(false);
+  const swapReviewMessage = useSwapReviewMessage(
+    currentAccount,
+    currentPool,
+    outputToken,
+    swapPoolTokenAmounts?.source,
+    swapPoolTokenAmounts?.destination,
+    swapPool?.pool.swapType,
+    swapFees,
+    swapPool?.pool.amp ?? 1
+  );
+  const [sendingTransaction, setSendingTransaction] = useRecoilState(SendingTransaction);
+  const [switchingAssets, setSwitchingAssets] = useState(false);
+  const disabled = sendingTransaction || !currentPool || !outputToken || noOrcaPool || projectedRiskIndicator >= 1;
   const { Paragraph, Text } = Typography;
-
-  // Calculate marginInputAmount
-  function getMarginInputAmount() {
-    let marginInputAmount = TokenAmount.zero(currentPool?.decimals ?? 6);
-    if (currentAccountPoolPosition && currentAccountPoolPosition.depositBalance.tokens < tokenInputAmount.tokens) {
-      marginInputAmount = getTokenAmountFromNumber(
-        tokenInputAmount.tokens - currentAccountPoolPosition.depositBalance.tokens,
-        currentPool?.decimals ?? 6
-      );
-    }
-
-    return marginInputAmount;
-  }
 
   // Parse slippage input
   function getSlippageInput() {
@@ -68,18 +119,91 @@ export function SwapEntry(): JSX.Element {
       setSlippage(slippage / 100);
     }
   }
-  useEffect(getSlippageInput, [slippageInput]);
+  useEffect(getSlippageInput, [setSlippage, slippageInput]);
+
+  // Renders the user's collateral balance for input token
+  function renderInputCollateralBalance() {
+    let render = <></>;
+    if (currentPool) {
+      render = (
+        <Paragraph
+          onClick={() => {
+            if (!disabled) {
+              setTokenInputString(depositBalanceString);
+            }
+          }}
+          className={
+            !disabled ? 'token-balance' : 'secondary-text'
+          }>{`${depositBalanceString} ${currentPool.symbol}`}</Paragraph>
+      );
+    }
+
+    return render;
+  }
+
+  // Renders the user's overall balance for output token after current swap
+  function renderAffectedBalance(side: 'input' | 'output') {
+    let render = <></>;
+    const amount = side === 'input' ? tokenInputAmount : swapOutputTokens;
+    const overallBalance = side === 'input' ? overallInputBalance : overallOutputBalance;
+    if (amount && !amount.isZero() && !currentAction) {
+      const affectedBalance = side === 'input' ? overallBalance - amount.tokens : overallBalance + amount.tokens;
+      render = (
+        <div className="flex-centered">
+          <ArrowRight />
+          <Paragraph type={getTokenStyleType(affectedBalance)}>
+            {currencyAbbrev(affectedBalance, false, undefined, poolDecimals / 2)}
+          </Paragraph>
+        </div>
+      );
+    }
+
+    return render;
+  }
+
+  // Render the user's risk level projection after the current swap
+  function renderAffectedRiskLevel() {
+    let render = <></>;
+    if (swapOutputTokens && projectedRiskIndicator) {
+      render = (
+        <div className="flex-centered">
+          <ArrowRight />
+          <Paragraph type={projectedRiskStyle}>{formatRiskIndicator(projectedRiskIndicator)}</Paragraph>
+        </div>
+      );
+    }
+
+    return render;
+  }
+
+  // Returns text for the swap submit button
+  function getSubmitText() {
+    const inputText = currentPool?.symbol ?? '';
+    const outputText = outputToken ? `${dictionary.actions.swap.for} ${outputToken.symbol}` : '';
+    let text = `${dictionary.actions.swap.title} ${inputText} ${outputText}`;
+    if (sendingTransaction) {
+      text = dictionary.common.sending + '..';
+    }
+
+    return text;
+  }
 
   // Swap
   async function sendSwap() {
-    if (!currentPool || !outputToken) {
+    if (!currentPool || !outputToken || noOrcaPool || !swapPool) {
       return;
     }
 
-    setSendingSwap(true);
+    setSendingTransaction(true);
     const swapTitle = dictionary.actions.swap.title.toLowerCase();
-    const minOutAmount = getMinOutputAmount(tokenInputAmount, currentPool, outputToken, slippage);
-    const [txId, resp] = await swap(currentPool, outputToken, tokenInputAmount, minOutAmount);
+    const [txId, resp] = await splTokenSwap(
+      currentPool,
+      outputToken,
+      swapPool.pool,
+      tokenInputAmount,
+      minOutAmount,
+      hasOutputLoan && repayLoanWithOutput
+    );
     if (resp === ActionResponse.Success) {
       notify(
         dictionary.notifications.actions.successTitle.replaceAll('{{ACTION}}', swapTitle),
@@ -100,125 +224,156 @@ export function SwapEntry(): JSX.Element {
           .replaceAll('{{AMOUNT}}', tokenInputAmount.uiTokens),
         'warning'
       );
-    } else {
-      notify(
-        dictionary.notifications.actions.failedTitle.replaceAll('{{ACTION}}', swapTitle),
-        dictionary.notifications.actions.failedDescription
-          .replaceAll('{{ACTION}}', swapTitle)
-          .replaceAll('{{ASSET}}', currentPool.symbol)
-          .replaceAll('{{AMOUNT}}', tokenInputAmount.uiTokens),
-        'error'
-      );
-    }
-    setSendingSwap(false);
+    } else if (resp === ActionResponse.Failed)
+      if (resp === ActionResponse.Failed) {
+        notify(
+          dictionary.notifications.actions.failedTitle.replaceAll('{{ACTION}}', swapTitle),
+          dictionary.notifications.actions.failedDescription
+            .replaceAll('{{ACTION}}', swapTitle)
+            .replaceAll('{{ASSET}}', currentPool.symbol)
+            .replaceAll('{{AMOUNT}}', tokenInputAmount.uiTokens),
+          'error'
+        );
+      }
+    setSendingTransaction(false);
   }
 
-  // Set initial outputToken
+  // Disable repayLoanWithOutput if user has no loan to repay
   useEffect(() => {
-    if (pools && !outputToken) {
+    if (!hasOutputLoan) {
+      setRepayLoanWithOutput(false);
+    }
+  }, [hasOutputLoan]);
+
+  // Set initial outputToken, update selected swap pool
+  useEffect(() => {
+    const canFindOutput =
+      !outputToken || currentPool?.symbol === outputToken.symbol || currentPool?.symbol === outputToken.symbol;
+    if (pools && canFindOutput) {
       const output = Object.values(pools.tokenPools).filter(pool => pool.symbol !== currentPool?.symbol)[0];
       setOutputToken(output);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentPool?.symbol, outputToken]);
+  }, [currentPool?.symbol, outputToken?.symbol]);
 
   return (
-    <div className="order-entry swap-panel view-element view-element-hidden flex column">
-      <div className="order-entry-head view-element-item view-element-item-hidden flex column">
+    <div className="order-entry swap-entry view-element flex column">
+      <div className="order-entry-head flex column">
         <ReorderArrows component="swapEntry" order={swapsRowOrder} setOrder={setSwapsRowOrder} />
         <div className="order-entry-head-top flex-centered">
           <Paragraph className="order-entry-head-top-title">{dictionary.swapsView.orderEntry.title}</Paragraph>
         </div>
       </div>
-      <div className="order-entry-body view-element-item view-element-item-hidden">
+      <div className="order-entry-body flex align-center justify-evenly column">
         <ConnectionFeedback />
         <div className="swap-tokens">
           <div className="swap-section-head flex align-center justify-between">
-            <Text className="small-accent-text">{dictionary.actions.swap.title.toUpperCase()}</Text>
-            {currentPool && (
-              <Paragraph type="secondary" italic>{`${
-                currentPool && currentAccount
-                  ? currentAccount.poolPositions[currentPool.symbol as string]?.depositBalance.tokens
-                  : 0
-              } ${currentPool ? currentPool.symbol : '—'}`}</Paragraph>
-            )}
+            <Text className="small-accent-text">{dictionary.common.account.toUpperCase()}</Text>
+            {renderInputCollateralBalance()}
           </div>
           <TokenInput
-            account={currentAccount}
-            onChangeToken={(tokenSymbol: string) => {
-              setCurrentPoolSymbol(tokenSymbol);
-              if (tokenSymbol !== 'USDC') {
-                setCurrentMarketPair(`${tokenSymbol}/USDC`);
-              }
-            }}
-            dropdownStyle={{ minWidth: 308 }}
             action="swap"
+            value={currentAction ? TokenAmount.zero(0) : undefined}
             onPressEnter={sendSwap}
-            loading={sendingSwap}
+            hideSlider
+            dropdownStyle={{ minWidth: 308, maxWidth: 308 }}
           />
-          <div className="flex-centered">
-            <Button
-              className="function-btn swap-assets"
-              shape="round"
-              icon={<SwapIcon className="jet-icon" />}
-              disabled={sendingSwap || !outputToken}
-              onClick={() => {
-                if (outputToken) {
-                  resetTokenInputString();
-                  setCurrentPoolSymbol(outputToken.symbol);
-                  setOutputToken(currentPool);
-                }
-              }}
-            />
-          </div>
-          <div className="swap-section-head flex align-center justify-between">
-            <Text className="small-accent-text">{dictionary.actions.swap.for.toUpperCase()}</Text>
-            {currentPool && (
-              <Paragraph type="secondary" italic>{`${
-                outputToken && currentAccount
-                  ? currentAccount.poolPositions[outputToken.symbol as string]?.depositBalance.tokens ?? 0
-                  : 0
-              } ${outputToken ? outputToken.symbol : '—'}`}</Paragraph>
-            )}
-          </div>
-          <TokenInput
-            account={currentAccount}
-            tokenSymbol={outputToken?.symbol}
-            onChangeToken={(tokenSymbol: string) => {
-              if (!pools) {
-                return;
-              }
-
-              const poolMatch = Object.values(pools.tokenPools).filter(pool => pool.symbol === tokenSymbol)[0];
-              if (poolMatch) {
-                setOutputToken(poolMatch);
+          <Radio.Group
+            className="flex-centered quick-fill-btns"
+            value={tokenInputString}
+            onChange={e => setTokenInputString(e.target.value)}
+            style={{ marginTop: '-5px' }}>
+            <Radio.Button
+              className="small-btn"
+              key="accountBalance"
+              value={depositBalanceString !== '0' && depositBalanceString}
+              disabled={depositBalanceString === '0' || sendingTransaction}>
+              {dictionary.common.accountBalance}
+            </Radio.Button>
+            <Radio.Button
+              className="small-btn"
+              key="maxLeverage"
+              value={maxSwapString !== '0' && maxSwapString}
+              disabled={maxSwapString === '0' || sendingTransaction}>
+              {dictionary.actions.swap.maxLeverage}
+            </Radio.Button>
+          </Radio.Group>
+        </div>
+        <div className="flex-centered" style={{ marginBottom: '-25px', marginTop: '-10px' }}>
+          <Button
+            className="function-btn swap-assets"
+            shape="round"
+            icon={<SwapIcon className="jet-icon" />}
+            disabled={sendingTransaction || !outputToken}
+            onClick={() => {
+              if (outputToken) {
+                const outputString = swapOutputTokens?.uiTokens ?? '0';
+                setCurrentPoolSymbol(outputToken.symbol);
+                setOutputToken(currentPool);
+                // Allow UI to update and then adjust amounts
+                setSwitchingAssets(true);
+                setTimeout(() => {
+                  setTokenInputString(outputString);
+                  setSwitchingAssets(false);
+                }, 500);
               }
             }}
-            dropdownStyle={{ minWidth: 308 }}
-            tokenValue={getOutputTokenAmount(tokenInputAmount, currentPool, outputToken) ?? TokenAmount.zero(0)}
-            onPressEnter={sendSwap}
-            loading={sendingSwap}
           />
         </div>
-        <Divider />
+        <div className="swap-tokens">
+          <div className="swap-section-head flex align-center justify-start">
+            <Text className="small-accent-text">{dictionary.actions.swap.recieve.toUpperCase()}</Text>
+          </div>
+          <TokenInput
+            poolSymbol={outputToken?.symbol}
+            value={
+              currentAction
+                ? TokenAmount.zero(0)
+                : getOutputTokenAmount(
+                    tokenInputAmount,
+                    swapPoolTokenAmounts?.source,
+                    swapPoolTokenAmounts?.destination,
+                    swapPool?.pool.swapType,
+                    swapFees,
+                    swapPool?.pool.amp ?? 1
+                  ) ?? TokenAmount.zero(0)
+            }
+            onChangeToken={(tokenSymbol: string) => {
+              // Set outputToken on token select
+              if (pools) {
+                const poolMatch = Object.values(pools.tokenPools).filter(pool => pool.symbol === tokenSymbol)[0];
+                if (poolMatch) {
+                  setOutputToken(poolMatch);
+                }
+              }
+            }}
+            onPressEnter={sendSwap}
+            dropdownStyle={{ minWidth: 308, maxWidth: 308 }}
+          />
+        </div>
         <div className="swap-slippage flex column">
           <Info term="slippage">
             <Text className="small-accent-text info-element">{dictionary.actions.swap.slippage.toUpperCase()}</Text>
           </Info>
-          <Radio.Group className="flex-centered" value={slippage} onChange={e => setSlippage(e.target.value)}>
+          <Radio.Group
+            className="flex-centered slippage-btns"
+            value={slippage}
+            onChange={e => setSlippage(e.target.value)}>
             {[0.001, 0.005, 0.01].map(percentage => (
-              <Radio.Button key={percentage} value={percentage} disabled={sendingSwap}>
+              <Radio.Button key={percentage} value={percentage} disabled={sendingTransaction}>
                 {percentage * 100}%
               </Radio.Button>
             ))}
             <div
-              className={`swap-slippage-input flex-centered ${slippage.toString() === slippageInput ? 'active' : ''}`}
+              className={`swap-slippage-input flex-centered ${
+                (slippage * 100).toString() === slippageInput ? 'active' : ''
+              }`}
               onClick={getSlippageInput}>
               <Input
                 type="string"
-                placeholder="0.10"
+                placeholder="0.75"
                 value={slippageInput}
-                disabled={sendingSwap}
+                disabled={sendingTransaction}
                 onChange={e => {
                   let inputString = e.target.value;
                   if (isNaN(+inputString) || +inputString < 0) {
@@ -234,67 +389,69 @@ export function SwapEntry(): JSX.Element {
             </div>
           </Radio.Group>
         </div>
+        {hasOutputLoan && (
+          <div className="flex-centered repay-with-output" style={{ width: '100%' }}>
+            <Checkbox
+              onClick={() => setRepayLoanWithOutput(!repayLoanWithOutput)}
+              disabled={!hasOutputLoan}
+              checked={repayLoanWithOutput}>
+              {dictionary.actions.swap.repayWithOutput
+                .replace('{{ASSET}}', outputToken?.symbol ?? '')
+                .replace('{{BALANCE}}', outputPoolPosition?.loanBalance.uiTokens ?? '')}
+            </Checkbox>
+          </div>
+        )}
         <div className="order-entry-body-section-info flex-centered column">
           <div className="order-entry-body-section-info-item flex align-center justify-between">
-            <Paragraph type="danger">{dictionary.common.loanBalance}</Paragraph>
-            <Paragraph type="danger">
-              {currencyAbbrev(
-                currentAccountPoolPosition?.loanBalance.tokens ?? 0,
-                false,
-                undefined,
-                (currentPool?.decimals ?? 6) / 2
-              )}
-              {!getMarginInputAmount().isZero() && currentAccountPoolPosition ? (
-                <>
-                  &nbsp;&#8594;&nbsp;
-                  {currencyAbbrev(
-                    currentAccountPoolPosition.loanBalance.tokens + getMarginInputAmount().tokens,
-                    false,
-                    undefined,
-                    (currentPool?.decimals ?? 6) / 2
-                  )}
-                </>
-              ) : (
-                <></>
-              )}
-              {' ' + (currentPool?.symbol ?? '—')}
-            </Paragraph>
+            <Paragraph type="secondary">{`${currentPool?.symbol ?? '—'} ${dictionary.common.balance}`}</Paragraph>
+            <div className="flex-centered">
+              <Paragraph type={getTokenStyleType(overallInputBalance)}>
+                {currencyAbbrev(overallInputBalance, false, undefined, poolDecimals / 2)}
+              </Paragraph>
+              {renderAffectedBalance('input')}
+            </div>
+          </div>
+          <div className="order-entry-body-section-info-item flex align-center justify-between">
+            <Paragraph type="secondary">{`${outputToken?.symbol ?? '—'} ${dictionary.common.balance}`}</Paragraph>
+            <div className="flex-centered">
+              <Paragraph type={getTokenStyleType(overallOutputBalance)}>
+                {currencyAbbrev(overallOutputBalance, false, undefined, outputDecimals / 2)}
+              </Paragraph>
+              {renderAffectedBalance('output')}
+            </div>
           </div>
           <div className="order-entry-body-section-info-item flex align-center justify-between">
             <Paragraph type="secondary">{dictionary.common.riskLevel}</Paragraph>
             <div className="flex-centered">
               <Paragraph type={riskStyle}>{formatRiskIndicator(currentAccount?.riskIndicator ?? 0)}</Paragraph>
-              {!getMarginInputAmount().isZero() ? (
-                <Paragraph type={projectedRiskStyle}>
-                  &nbsp;&#8594;&nbsp;{formatRiskIndicator(projectedRiskIndicator)}
-                </Paragraph>
-              ) : (
-                <></>
-              )}
+              {renderAffectedRiskLevel()}
             </div>
           </div>
-          <div className="order-entry-body-section-info-item flex align-center justify-between">
-            <Paragraph type="secondary">{dictionary.actions.swap.minimumRecieved}</Paragraph>
-            <Paragraph>
-              {getMinOutputAmount(tokenInputAmount, currentPool, outputToken, slippage).uiTokens} {outputToken?.symbol}
+        </div>
+        {noOrcaPool || swapReviewMessage.length ? (
+          <div className="order-entry-body-section flex-centered">
+            <Paragraph
+              italic
+              type={noOrcaPool ? 'danger' : undefined}
+              className={`order-review ${noOrcaPool || swapReviewMessage.length ? '' : 'no-opacity'}`}>
+              {noOrcaPool ? dictionary.actions.swap.errorMessages.noPools : swapReviewMessage}
             </Paragraph>
           </div>
-        </div>
-        <div className="order-entry-body-section flex-centered">
-          <Paragraph italic className={`order-review ${swapReviewMessage.length ? '' : 'no-opacity'}`}>
-            {swapReviewMessage}
-          </Paragraph>
-        </div>
+        ) : (
+          <></>
+        )}
       </div>
-      <div className="order-entry-footer view-element-item view-element-item-hidden flex-centered">
+      <div className="order-entry-footer flex-centered">
         <Button
           block
-          disabled={sendingSwap || tokenInputAmount.isZero() || !currentPool || !outputToken}
-          loading={!tokenInputAmount.isZero() && sendingSwap}
-          onClick={sendSwap}>
-          {sendingSwap ? dictionary.common.sending + '..' : dictionary.actions.swap.title}
+          disabled={disabled || tokenInputAmount.isZero()}
+          loading={sendingTransaction}
+          onClick={sendSwap}
+          style={sendingTransaction ? { zIndex: 1002 } : undefined}>
+          {getSubmitText()}
         </Button>
       </div>
+      <div className={`action-modal-overlay ${sendingTransaction || switchingAssets ? 'showing' : ''}`}></div>
     </div>
   );
 }
