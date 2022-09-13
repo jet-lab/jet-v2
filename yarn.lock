@@ -2218,9 +2218,9 @@
     eventemitter3 "^4.0.0"
 
 "@solana/wallet-adapter-base@^0.9.9":
-  version "0.9.16"
-  resolved "https://registry.yarnpkg.com/@solana/wallet-adapter-base/-/wallet-adapter-base-0.9.16.tgz#7b67e145f47a9cdc8e702eacc02fa867084a9bf4"
-  integrity sha512-nwzpzo3SjjsCkgN5ROQqoL7Y90j4QUlqxL17sg/qMcoYIBVfalyu87IZAfL5B06eSQ8jmtgnuQJW+91WcLo1ag==
+  version "0.9.9"
+  resolved "https://registry.yarnpkg.com/@solana/wallet-adapter-base/-/wallet-adapter-base-0.9.9.tgz#110f99bc9eee18af2625fd6170264e4363e25ffd"
+  integrity sha512-Z0zB+36JWRytE2OzMiB2DACRyVwiUdEg2Xy1nPR0rESCTXKI8wQGTb4g6ELjmTTU7+elKqsPE+fhFsJykn76pQ==
   dependencies:
     eventemitter3 "^4.0.0"
 
@@ -3094,16 +3094,7 @@
   dependencies:
     "@types/react" "*"
 
-"@types/react@*":
-  version "17.0.37"
-  resolved "https://registry.yarnpkg.com/@types/react/-/react-17.0.37.tgz#6884d0aa402605935c397ae689deed115caad959"
-  integrity sha512-2FS1oTqBGcH/s0E+CjrCCR9+JMpsu9b69RTFO+40ua43ZqP5MmQ4iUde/dMjWR909KxZwmOQIFq6AV6NjEG5xg==
-  dependencies:
-    "@types/prop-types" "*"
-    "@types/scheduler" "*"
-    csstype "^3.0.2"
-
-"@types/react@17.0.37":
+"@types/react@*", "@types/react@17.0.37":
   version "17.0.37"
   resolved "https://registry.yarnpkg.com/@types/react/-/react-17.0.37.tgz#6884d0aa402605935c397ae689deed115caad959"
   integrity sha512-2FS1oTqBGcH/s0E+CjrCCR9+JMpsu9b69RTFO+40ua43ZqP5MmQ4iUde/dMjWR909KxZwmOQIFq6AV6NjEG5xg==
