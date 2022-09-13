@@ -1248,11 +1248,11 @@ export class Pool {
     if (swapAmount.gt(accountPoolPosition.depositBalance) && marginAccount.pools) {
       const difference = swapAmount.sub(accountPoolPosition.depositBalance)
       await this.withGetOrRegisterLoanPosition({
-        instructions: transitInstructions,
+        instructions: registerInstructions,
         marginAccount
       })
       await this.withMarginBorrow({
-        instructions: transitInstructions,
+        instructions: registerInstructions,
         marginAccount,
         change: PoolTokenChange.setTo(accountPoolPosition.loanBalance.add(difference))
       })
