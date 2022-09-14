@@ -23,8 +23,6 @@
     "@ant-design/icons": "^4.5.0",
     "@jet-lab/e2e-react-adapter": "^0.1.1",
     "@jet-lab/margin": "*",
-    "@jup-ag/core": "1.0.0-beta.24",
-    "@jup-ag/react-hook": "1.0.0-beta.24",
     "@orca-so/stablecurve": "^1.0.4",
     "@project-serum/anchor": "^0.25.0",
     "@solana/spl-token": "^0.2.0",
