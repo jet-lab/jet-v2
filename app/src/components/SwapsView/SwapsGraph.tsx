@@ -1,48 +1,48 @@
 import { useEffect, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
-import { Dictionary } from '../../state/settings/localization/localization';
-import ApexCharts from 'apexcharts';
-import { Typography } from 'antd';
-import { SwapsRowOrder } from '../../state/views/views';
-import { ReorderArrows } from '../misc/ReorderArrows';
-import { CurrentSwapOutput, TokenInputAmount, TokenInputString } from '../../state/actions/actions';
-import { CurrentPool } from '../../state/pools/pools';
-
-import { generateSwapPrices, getOutputTokenAmount } from '../../utils/actions/swap';
-import { useCurrencyFormatting } from '../../utils/currency';
 import { TokenAmount } from '@jet-lab/margin';
 import { BN } from '@project-serum/anchor';
+import { Dictionary } from '../../state/settings/localization/localization';
+import { SwapsRowOrder } from '../../state/views/views';
 import { CurrentAccount } from '../../state/user/accounts';
-import { LoadingOutlined } from '@ant-design/icons';
+import { CurrentSwapOutput, TokenInputAmount, TokenInputString } from '../../state/actions/actions';
 import { CurrentSplSwapPool, SwapFees, SwapPoolTokenAmounts } from '../../state/swap/splSwap';
+import { CurrentPool } from '../../state/pools/pools';
+import { generateSwapPrices, getOutputTokenAmount } from '../../utils/actions/swap';
+import { useCurrencyFormatting } from '../../utils/currency';
+import { ReorderArrows } from '../misc/ReorderArrows';
+import { ConnectionFeedback } from '../misc/ConnectionFeedback/ConnectionFeedback';
+import ApexCharts from 'apexcharts';
+import { Typography } from 'antd';
+import { LoadingOutlined } from '@ant-design/icons';
 
-// TODO: clean and match the way the other component files are structured
+// Graph for displaying pricing and slippage data for current swap pair
 export function SwapsGraph(): JSX.Element {
   const dictionary = useRecoilValue(Dictionary);
   const currentAccount = useRecoilValue(CurrentAccount);
-  const { currencyFormatter } = useCurrencyFormatting();
+  const { currencyFormatter, currencyAbbrev } = useCurrencyFormatting();
   const [swapsRowOrder, setSwapsRowOrder] = useRecoilState(SwapsRowOrder);
   const currentPool = useRecoilValue(CurrentPool);
   const outputToken = useRecoilValue(CurrentSwapOutput);
-  // For updating token value on chart interaction
   const tokenInputAmount = useRecoilValue(TokenInputAmount);
   const [tokenInputString, setTokenInputString] = useRecoilState(TokenInputString);
   const [currentChart, setCurrentChart] = useState<ApexCharts | undefined>(undefined);
-  const { Title } = Typography;
   const swapPool = useRecoilValue(CurrentSplSwapPool);
   const swapPoolTokenAmounts = useRecoilValue(SwapPoolTokenAmounts);
   const swapFees = useRecoilValue(SwapFees);
-  const loading = !swapPoolTokenAmounts;
+  const swapPoolLoading = !swapPoolTokenAmounts;
   const swapSourceTokens = swapPoolTokenAmounts?.source.lamports.toNumber();
   const swapDestinationTokens = swapPoolTokenAmounts?.destination.lamports.toNumber();
   const swapMaxTradeAmount =
     currentAccount?.poolPositions[currentPool?.symbol ?? '']?.maxTradeAmounts.swap.lamports.toNumber();
+  const { Title, Text } = Typography;
 
   // Create and render chart on new data / market pair
   useEffect(() => {
-    if (!swapPoolTokenAmounts || !currentAccount || !swapPool) {
+    if (!swapPoolTokenAmounts || !swapPool) {
       return;
     }
+
     // Exponents
     const expoSource = Math.pow(10, swapPoolTokenAmounts.source.decimals);
     const expoDestination = Math.pow(10, swapPoolTokenAmounts.destination.decimals);
@@ -89,19 +89,15 @@ export function SwapsGraph(): JSX.Element {
     const worstOutput = chartData[chartData.length - 1][1];
     const range = Math.abs(poolPrice - worstOutput);
 
-    // Price annotation prefix and suffix
-    const priceAnnotationPrefix = swapPool.pool.swapType === 'constantProduct' ? '$' : '';
-    const swapPoolKey = swapPool.inverted
-      ? `${outputToken?.symbol}/${currentPool?.symbol}`
-      : `${currentPool?.symbol}/${outputToken?.symbol}`;
-    const priceAnnotationSuffix = swapPool.pool.swapType === 'constantProduct' ? '' : ` ${swapPoolKey}`;
+    // Quote token of the pool, uses Token B for consistency
+    const poolQuoteToken = !swapPool.inverted ? ` ${outputToken?.symbol}` : ` ${currentPool?.symbol}`;
 
     // Create and render new chart
     const swapsGraph = new ApexCharts(document.querySelector('.swaps-graph-container'), {
       chart: {
         type: 'line',
-        width: '98%',
-        height: '530px',
+        width: '95%',
+        height: '525px',
         zoom: {
           zoomedArea: {
             fill: {
@@ -114,9 +110,6 @@ export function SwapsGraph(): JSX.Element {
               width: 1
             }
           }
-        },
-        toolbar: {
-          show: true
         },
         animations: {
           enabled: false
@@ -147,22 +140,25 @@ export function SwapsGraph(): JSX.Element {
             swapFees,
             swapPool?.pool.amp ?? 1
           );
-          const swapInString = Math.round(xAmount * expoSource) / expoSource;
-          const swapOutString = Math.round((outputAmount?.tokens ?? 0.0) * expoDestination) / expoDestination;
-          const priceString = Math.round(series[seriesIndex][dataPointIndex] * 10000) / 10000;
+          const swapInString = currencyAbbrev((xAmount * expoSource) / expoSource);
+          const swapOutString = currencyAbbrev(((outputAmount?.tokens ?? 0.0) * expoDestination) / expoDestination);
+          const priceString = currencyAbbrev((series[seriesIndex][dataPointIndex] * 10000) / 10000);
           return (
             '<div class="swaps-graph-tooltip">' +
-            `<p>${dictionary.common.sell}: <strong>${swapInString} ${
+            `<div class="flex align-center justify-between"><p>${dictionary.common.sell}</p> <p>${swapInString} ${
               currentPool?.symbol ?? ` ${dictionary.actions.swap.inputToken}`
-            }</strong></p>` +
-            `<p>${dictionary.actions.swap.recieve}: <strong>${swapOutString} ${
-              outputToken?.symbol ?? ` ${dictionary.actions.swap.outputToken}`
-            }</strong></p>` +
-            `<p>${dictionary.common.price}: <strong>${priceAnnotationPrefix}${priceString}${priceAnnotationSuffix}</strong>` +
-            `<div style='flex flex-centered'><button class='small-btn'>${dictionary.actions.swap.swapThis.toUpperCase()}</button></div>` +
+            }</></div>` +
+            `<div class="flex align-center justify-between"><p>${
+              dictionary.actions.swap.recieve
+            }</p> <p>${swapOutString} ${outputToken?.symbol ?? ` ${dictionary.actions.swap.outputToken}`}</p></div>` +
+            `<div class="flex align-center justify-between"><p>${dictionary.common.price}</p> <p>${priceString}${poolQuoteToken}</p></div>` +
+            `<div style="flex-centered"><button class="small-btn">${dictionary.actions.swap.swapThis.toUpperCase()}</button></div>` +
             '</div>'
           );
         }
+      },
+      markers: {
+        colors: ['var(--primary-3)']
       },
       annotations: {
         yaxis: [
@@ -172,54 +168,29 @@ export function SwapsGraph(): JSX.Element {
             fillColor: 'var(--jet-green)',
             strokeWidth: '1px',
             borderWidth: '1px',
-            opacity: 0.5,
-            label: {
-              style: {
-                background: 'var(--secondary-3)'
-              },
-              text: 'Swap Fees',
-              position: 'left',
-              offsetX: 60,
-              offsetY: 16
-            }
+            opacity: 0.25
           },
           {
+            id: 'pool-price',
             y: poolPrice,
-            fillColor: 'var(--secondary-2)',
-            strokeColor: 'var(--purple)',
-            strokeWidth: '1px',
             label: {
-              style: {
-                background: 'var(--secondary-3)'
-              },
-              text: `${dictionary.actions.swap.poolPrice}: ${priceAnnotationPrefix}${currencyFormatter(
-                poolPrice,
-                false,
-                3
-              )}${priceAnnotationSuffix}`,
+              text: `${dictionary.actions.swap.poolPrice}: ${currencyFormatter(poolPrice, false, 3)}${poolQuoteToken}`,
               offsetY: 6
             }
           },
           {
+            id: 'oracle-price',
             y: oraclePrice,
-            fillColor: 'var(--secondary-2)',
-            strokeColor: 'var(--secondary-2)',
-            strokeWidth: '2px',
             label: {
-              style: {
-                background: 'var(--secondary-3)'
-              },
-              text: `${dictionary.actions.swap.oraclePrice}: ${priceAnnotationPrefix}${currencyFormatter(
+              text: `${dictionary.actions.swap.oraclePrice}: ${currencyFormatter(
                 oraclePrice,
                 false,
                 3
-              )}${priceAnnotationSuffix}`,
-              offsetX: -180,
+              )}${poolQuoteToken}`,
               offsetY: 6
             }
           }
-        ],
-        points: []
+        ]
       },
       series: [
         {
@@ -229,12 +200,12 @@ export function SwapsGraph(): JSX.Element {
       ],
       xaxis: {
         title: {
-          text: currentPool ? `${dictionary.actions.swap.sellQuantity} ${currentPool!.symbol}` : '—'
+          text: `${dictionary.actions.swap.sellQuantity} (${currentPool?.symbol ?? '—'})`
         },
         labels: {
           padding: 0,
           formatter: (value: number) => {
-            return currencyFormatter(value, false, 3, false);
+            return currencyAbbrev(value, false, 2);
           }
         },
         tooltip: {
@@ -252,12 +223,12 @@ export function SwapsGraph(): JSX.Element {
       },
       yaxis: {
         title: {
-          text: currentPool && outputToken ? `${currentPool?.symbol}/${outputToken?.symbol} price` : '—'
+          text: `${currentPool?.symbol ?? '—'} / ${outputToken?.symbol ?? '—'} ${dictionary.common.price}`
         },
         labels: {
           padding: 20,
           formatter: (value: number) => {
-            return currencyFormatter(value, false, 2);
+            return currencyAbbrev(value, false, 2);
           }
         },
         axisTicks: {
@@ -273,32 +244,26 @@ export function SwapsGraph(): JSX.Element {
         strokeDashArray: 5,
         xaxis: {
           lines: {
-            show: true,
-            offsetX: 0
+            show: true
           }
         },
         yaxis: {
           lines: {
-            show: true,
-            offsetX: 0
+            show: false
           }
         }
       },
       stroke: {
         width: [1],
         dashArray: [0],
-        // lineCap: "round",
         curve: 'straight'
       },
-      plotOptions: {},
-      colors: ['#f0f0f0'],
-      legend: {
-        show: true
-      }
+      plotOptions: {}
     });
+
+    // Render chart
     swapsGraph.render();
     setCurrentChart(swapsGraph);
-
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     // Only re-render the pool when the numbers in the pool change
@@ -315,7 +280,7 @@ export function SwapsGraph(): JSX.Element {
       return;
     }
     try {
-      currentChart?.removeAnnotation('my-swap');
+      currentChart?.removeAnnotation('your-swap');
     } catch (e) {
       console.warn('Unable to remove any existing annotations', e);
     }
@@ -340,18 +305,15 @@ export function SwapsGraph(): JSX.Element {
     try {
       currentChart?.addPointAnnotation(
         {
-          id: 'my-swap',
+          id: 'your-swap',
           x: parseFloat(tokenInputString),
           y: swapPrice,
           marker: {
-            size: 3,
-            fillColor: '#c53727'
+            size: 3
           },
           label: {
-            borderColor: '#2badff',
-            text: `${dictionary.actions.swap.mySwap}: ${tokenInputString} ${currentPool?.symbol ?? ''} → ${
-              outputToken?.symbol ?? ''
-            }`
+            text: `${dictionary.actions.swap.yourSwap}: ${tokenInputString} ${currentPool?.symbol ?? ''}`,
+            offsetY: -2
           }
         },
         false
@@ -371,9 +333,30 @@ export function SwapsGraph(): JSX.Element {
           </div>
         </div>
       </div>
-      {loading && (
+      <ConnectionFeedback />
+      {swapPoolLoading && currentAccount && (
         <div className="overlay-message">
           <LoadingOutlined />
+        </div>
+      )}
+      {currentChart && (
+        <div className="swaps-graph-key flex-centered">
+          <div className="swaps-graph-key-item flex-centered">
+            <span className="swaps-graph-key-item-line price-impact"></span>
+            <Text>{dictionary.actions.swap.priceImpact}</Text>
+          </div>
+          <div className="swaps-graph-key-item flex-centered">
+            <span className="swaps-graph-key-item-line oracle-price"></span>
+            <Text>{dictionary.actions.swap.oraclePrice}</Text>
+          </div>
+          <div className="swaps-graph-key-item flex-centered">
+            <span className="swaps-graph-key-item-line pool-price"></span>
+            <Text>{dictionary.actions.swap.poolPrice}</Text>
+          </div>
+          <div className="swaps-graph-key-item flex-centered">
+            <span className="swaps-graph-key-item-line swap-fees"></span>
+            <Text>{dictionary.actions.swap.swapFees}</Text>
+          </div>
         </div>
       )}
       <div className="swaps-graph-container flex-centered"></div>

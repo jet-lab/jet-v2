@@ -5,7 +5,7 @@ import { SwapsRowOrder } from '../../state/views/views';
 import { BlockExplorer, Cluster } from '../../state/settings/settings';
 import { Dictionary } from '../../state/settings/localization/localization';
 import { CurrentAccount } from '../../state/user/accounts';
-import { CurrentPoolSymbol, Pools, CurrentPool } from '../../state/pools/pools';
+import { CurrentPoolSymbol, Pools, CurrentPool, PoolOptions } from '../../state/pools/pools';
 import {
   CurrentAction,
   CurrentSwapOutput,
@@ -27,7 +27,8 @@ import { ConnectionFeedback } from '../misc/ConnectionFeedback/ConnectionFeedbac
 import { ArrowRight } from '../modals/actions/ArrowRight';
 import { Button, Checkbox, Input, Radio, Typography } from 'antd';
 import { ReactComponent as SwapIcon } from '../../styles/icons/function-swap.svg';
-import { CurrentSplSwapPool, SwapFees, SwapPoolTokenAmounts } from '../../state/swap/splSwap';
+import { CurrentSplSwapPool, hasOrcaPool, SwapFees, SwapPoolTokenAmounts } from '../../state/swap/splSwap';
+import { useTokenInputErrorMessage } from '../../utils/actions/tokenInput';
 
 // Component for user to enter and submit a swap action
 export function SwapEntry(): JSX.Element {
@@ -42,6 +43,7 @@ export function SwapEntry(): JSX.Element {
   const currentAccount = useRecoilValue(CurrentAccount);
   // Pools
   const pools = useRecoilValue(Pools);
+  const poolOptions = useRecoilValue(PoolOptions);
   // Input token pool
   const setCurrentPoolSymbol = useSetRecoilState(CurrentPoolSymbol);
   const currentPool = useRecoilValue(CurrentPool);
@@ -107,6 +109,7 @@ export function SwapEntry(): JSX.Element {
     swapFees,
     swapPool?.pool.amp ?? 1
   );
+  const errorMessage = useTokenInputErrorMessage(undefined, projectedRiskIndicator);
   const [sendingTransaction, setSendingTransaction] = useRecoilState(SendingTransaction);
   const [switchingAssets, setSwitchingAssets] = useState(false);
   const disabled = sendingTransaction || !currentPool || !outputToken || noOrcaPool || projectedRiskIndicator >= 1;
@@ -247,10 +250,23 @@ export function SwapEntry(): JSX.Element {
 
   // Set initial outputToken, update selected swap pool
   useEffect(() => {
+    if (!currentPool) {
+      return;
+    }
+
     const canFindOutput =
-      !outputToken || currentPool?.symbol === outputToken.symbol || currentPool?.symbol === outputToken.symbol;
+      !outputToken || currentPool.symbol === outputToken.symbol || currentPool.symbol === outputToken.symbol;
     if (pools && canFindOutput) {
-      const output = Object.values(pools.tokenPools).filter(pool => pool.symbol !== currentPool?.symbol)[0];
+      let output = Object.values(pools.tokenPools).filter(pool => {
+        if (pool.symbol !== currentPool?.symbol && hasOrcaPool(cluster, currentPool.symbol, pool.symbol)) {
+          return true;
+        } else {
+          return false;
+        }
+      })[0];
+      if (!output) {
+        output = Object.values(pools.tokenPools).filter(pool => pool.symbol !== currentPool?.symbol)[0];
+      }
       setOutputToken(output);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -338,6 +354,16 @@ export function SwapEntry(): JSX.Element {
                     swapPool?.pool.amp ?? 1
                   ) ?? TokenAmount.zero(0)
             }
+            tokenOptions={poolOptions.filter(pool => {
+              if (
+                pool.symbol !== currentPool?.symbol &&
+                hasOrcaPool(cluster, currentPool?.symbol ?? '', pool.symbol ?? '')
+              ) {
+                return true;
+              } else {
+                return false;
+              }
+            })}
             onChangeToken={(tokenSymbol: string) => {
               // Set outputToken on token select
               if (pools) {
@@ -428,13 +454,19 @@ export function SwapEntry(): JSX.Element {
             </div>
           </div>
         </div>
-        {noOrcaPool || swapReviewMessage.length ? (
+        {noOrcaPool || errorMessage || swapReviewMessage.length ? (
           <div className="order-entry-body-section flex-centered">
             <Paragraph
               italic
-              type={noOrcaPool ? 'danger' : undefined}
-              className={`order-review ${noOrcaPool || swapReviewMessage.length ? '' : 'no-opacity'}`}>
-              {noOrcaPool ? dictionary.actions.swap.errorMessages.noPools : swapReviewMessage}
+              type={noOrcaPool || errorMessage.length ? 'danger' : undefined}
+              className={`order-review ${
+                noOrcaPool || errorMessage.length || swapReviewMessage.length ? '' : 'no-opacity'
+              }`}>
+              {noOrcaPool
+                ? dictionary.actions.swap.errorMessages.noPools
+                : errorMessage.length
+                ? errorMessage
+                : swapReviewMessage}
             </Paragraph>
           </div>
         ) : (

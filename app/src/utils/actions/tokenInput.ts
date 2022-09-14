@@ -144,7 +144,7 @@ export function useTokenInputWarningMessage(account?: MarginAccount | undefined)
 }
 
 // Check if user input is dangerous / would cause error
-export function useTokenInputErrorMessage(account?: MarginAccount | undefined): string {
+export function useTokenInputErrorMessage(account?: MarginAccount | undefined, projectedRisk?: number): string {
   const dictionary = useRecoilValue(Dictionary);
   const currentPool = useRecoilValue(CurrentPool);
   const currentAction = useRecoilValue(CurrentAction);
@@ -160,14 +160,15 @@ export function useTokenInputErrorMessage(account?: MarginAccount | undefined): 
     !tokenInputAmount.isZero()
       ? currentPool.projectAfterAction(currentAccount, tokenInputAmount.tokens, currentAction).riskIndicator
       : currentAccount?.riskIndicator ?? 0;
+  const risk = projectedRisk ?? projectedRiskIndicator;
 
   let errorMessage = '';
   if (marginAccount && !tokenInputAmount.isZero() && walletTokens) {
     // User's new Risk Level would be above our maximum
-    if (projectedRiskIndicator >= MarginAccount.RISK_LIQUIDATION_LEVEL) {
+    if (risk >= MarginAccount.RISK_LIQUIDATION_LEVEL) {
       errorMessage = dictionary.actions.errorMessages.maxRiskLevel.replaceAll(
         '{{NEW_RISK}}',
-        formatRiskIndicator(projectedRiskIndicator)
+        formatRiskIndicator(risk)
       );
     }
   }

@@ -119,10 +119,12 @@
       "oraclePrice": "Oracle Price",
       "poolPrice": "Pool Price",
       "recieve": "Receive",
-      "mySwap": "My Swap",
+      "yourSwap": "Your Swap",
       "inputToken": "Input token",
       "outputToken": "Output token",
       "sellQuantity": "Sell Quantity",
+      "priceImpact": "Price Impact",
+      "swapFees": "Swap Fees",
       "swapsGraph": {
         "title": "Swap Price",
         "sellAmount": "Amount of Tokens Sold"

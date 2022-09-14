@@ -1302,25 +1302,53 @@ html {
       line {
         stroke: rgba(var(--primary-2), @half-opacity);
       }
-      .apexcharts-line-series {
-        path {
-          stroke: @jet-green;
-          stroke-width: 2px;
-        }
-      }
-      .apexcharts-tooltip-title {
-        background: @header-bg !important;
-      }
-      .apexcharts-tooltip-marker {
-        background-color: @purple !important;
-      }
       .apexcharts {
         &-xcrosshairs,
         &-ycrosshairs {
-          stroke: @jet-green-3;
+          stroke: @jet-blue;
+        }
+        &-zoom-rect {
+          opacity: 0;
+        }
+        &-yaxis-annotations {
+          rect {
+            border-radius: 50px;
+            fill: @jet-green;
+            stroke: @jet-green;
+            ry: 10;
+            rx: 10;
+            &:first-of-type {
+              ry: 0;
+              rx: 0;
+            }
+
+            + text {
+              fill: @primary-2;
+            }
+          }
+        }
+        &-tooltip {
+          &-title {
+            background: @header-bg !important;
+          }
+          &-marker {
+            background-color: @purple !important;
+          }
+        }
+        &-line-series {
+          path {
+            stroke: @jet-blue;
+            stroke-linecap: square;
+            stroke-width: 1.5px;
+            stroke-dasharray: 6px;
+          }
         }
         &-toolbar {
-          padding-right: @spacing-xl;
+          backdrop-filter: blur(2px);
+          background: rgba(var(--primary-3), @disabled-opacity);
+          border-radius: @round-radius;
+          box-shadow: @drop-shadow;
+          padding: 4px 15px 7px 10px;
           div {
             svg {
               stroke: transparent;
@@ -1401,7 +1429,8 @@ html {
       }
     }
     &-tooltip {
-      padding: @spacing-xs @spacing-base;
+      min-width: 150px;
+      padding: @spacing-sm @spacing-base @spacing-xs @spacing-base;
       span {
         font-size: @sm-font-size;
         font-style: italic;
@@ -1409,18 +1438,39 @@ html {
         margin-bottom: 5px;
       }
       p {
-        margin: 4px 0;
+        margin: 1px 0;
         color: @secondary-3;
         i {
           font-style: italic;
           color: @secondary-4;
         }
       }
+      button {
+        background: @primary-4;
+        width: 100%;
+        margin: 5px 0 0 0;
+        color: @secondary-3;
+        border-radius: @round-radius;
+      }
+    }
+    line {
+      stroke: @primary-3;
+      stroke-width: 1.25px;
+    }
+    .apexcharts-yaxis-title-text,
+    .apexcharts-xaxis-title-text {
+      fill: @secondary-3;
+      font-weight: @semi-bold-weight;
+      font-size: calc(@base-font-size - 1px);
+      letter-spacing: 0.7px;
+    }
+    .apexcharts-yaxis-label,
+    .apexcharts-xaxis-label {
+      font-size: @sm-font-size;
     }
     .apexcharts-yaxis-annotations,
     .apexcharts-xaxis-annotations {
       line {
-        stroke: @purple;
         stroke-linecap: square;
         stroke-width: 1px;
       }
@@ -1431,15 +1481,78 @@ html {
     .apexcharts-annotation-text {
       display: none;
     }
-    .my-swap {
-      fill: @jet-green;
-      stroke: @jet-green;
+    .your-swap {
+      fill: @jet-blue;
+      stroke: @jet-blue;
+      stroke-width: 4px;
+      ry: 10;
+      rx: 10;
       + text {
         stroke: @primary-3;
-        stroke-width: 0.5px;
+        stroke-width: 0px;
         fill: @primary-3;
       }
     }
+    .pool-price {
+      fill: @jet-green;
+      stroke: @jet-green;
+    }
+    .oracle-price {
+      fill: @purple !important;
+      stroke: @purple !important;
+    }
+    text.pool-price,
+    text.oracle-price {
+      fill: @primary-2 !important;
+      stroke-width: 0px !important;
+    }
+
+    &-key {
+      position: absolute;
+      top: 63px;
+      left: 10px;
+      height: 20px;
+      backdrop-filter: blur(2px);
+      background: rgba(var(--primary-3), @disabled-opacity);
+      border-radius: @round-radius;
+      box-shadow: @drop-shadow;
+      padding: 4px 15px 7px 10px;
+      z-index: 100;
+
+      &-item {
+        margin-right: @spacing-sm;
+        &:first-of-type {
+          margin-left: @spacing-sm;
+        }
+        &-line {
+          height: 0px;
+          width: 20px;
+          margin-right: @spacing-xs;
+          margin-bottom: -2px;
+
+          &.price-impact {
+            border-bottom: 2px dashed @jet-blue;
+          }
+          &.pool-price {
+            border-bottom: 2px solid @jet-green;
+          }
+          &.oracle-price {
+            border-bottom: 2px solid @purple;
+          }
+          &.swap-fees {
+            height: 15px;
+            width: 15px;
+            border-top: 1px solid @jet-green;
+            background: rgba(134, 206, 184, 0.25);
+          }
+        }
+      }
+      .ant-typography {
+        color: @secondary-3;
+        font-size: calc(@base-font-size - 3px);
+      }
+    }
+
     .loading-skeletons {
       width: calc(100% - (@spacing-base * 2));
       height: 350px;
@@ -2037,29 +2150,7 @@ html {
     // Swaps view
     .swaps-view {
       .swaps-graph {
-        &-head {
-          &-info {
-            flex-direction: column;
-            align-items: flex-start;
-          }
-          &-subinfo {
-            display: none;
-          }
-          &-period {
-            top: unset;
-            bottom: @spacing-xs;
-            right: unset;
-            left: @spacing-lg;
-          }
-        }
-        .apexcharts-toolbar {
-          margin: 18px @spacing-xl 0 0;
-          backdrop-filter: blur(2px);
-          background: rgba(var(--primary-3), @disabled-opacity);
-          border-radius: @round-radius;
-          box-shadow: @drop-shadow;
-          padding: 4px 15px 7px 10px;
-        }
+        display: none;
       }
       .order-entry {
         max-width: 380px !important;
