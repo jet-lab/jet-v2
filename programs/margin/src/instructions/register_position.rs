@@ -18,9 +18,7 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{Mint, Token, TokenAccount};
 
-use jet_metadata::PositionTokenMetadata;
-
-use crate::{events, util::Require, Approver, MarginAccount};
+use crate::{events, util::Require, Approver, MarginAccount, TokenMeta};
 
 #[derive(Accounts)]
 pub struct RegisterPosition<'info> {
@@ -35,23 +33,23 @@ pub struct RegisterPosition<'info> {
     #[account(mut)]
     pub margin_account: AccountLoader<'info, MarginAccount>,
 
-    /// The mint for the position token being registered
-    pub position_token_mint: Account<'info, Mint>,
+    /// The mint for the token being registered
+    pub token_mint: Account<'info, Mint>,
 
     /// The metadata account that references the correct oracle for the token
-    #[account(has_one = position_token_mint)]
-    pub metadata: Account<'info, PositionTokenMetadata>,
+    #[account(has_one = token_mint)]
+    pub metadata: Account<'info, TokenMeta>,
 
     /// The token account to store hold the position assets in the custody of the
     /// margin account.
     #[account(init,
               seeds = [
                   margin_account.key().as_ref(),
-                  position_token_mint.key().as_ref()
+                  token_mint.key().as_ref()
               ],
               bump,
               payer = payer,
-              token::mint = position_token_mint,
+              token::mint = token_mint,
               token::authority = margin_account
     )]
     pub token_account: Account<'info, TokenAccount>,
@@ -64,7 +62,7 @@ pub struct RegisterPosition<'info> {
 pub fn register_position_handler(ctx: Context<RegisterPosition>) -> Result<()> {
     let metadata = &ctx.accounts.metadata;
     let mut account = ctx.accounts.margin_account.load_mut()?;
-    let position_token = &ctx.accounts.position_token_mint;
+    let position_token = &ctx.accounts.token_mint;
     let address = ctx.accounts.token_account.key();
     account.verify_authority(ctx.accounts.authority.key())?;
 
@@ -73,7 +71,7 @@ pub fn register_position_handler(ctx: Context<RegisterPosition>) -> Result<()> {
         position_token.decimals,
         address,
         metadata.adapter_program,
-        metadata.token_kind.into(),
+        metadata.position_kind,
         metadata.value_modifier,
         metadata.max_staleness,
         &[Approver::MarginAccountAuthority],

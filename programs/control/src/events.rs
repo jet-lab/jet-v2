@@ -1,7 +1,5 @@
 use anchor_lang::prelude::*;
-use jet_metadata::{
-    LiquidatorMetadata, MarginAdapterMetadata, PositionTokenMetadata, TokenMetadata,
-};
+use jet_metadata::{LiquidatorMetadata, MarginAdapterMetadata, TokenMetadata};
 
 #[event]
 pub struct AuthorityCreated {
@@ -39,5 +37,5 @@ pub struct PositionTokenMetadataConfigured {
     pub requester: Pubkey,
     pub authority: Pubkey,
     pub metadata_account: Pubkey,
-    pub metadata: PositionTokenMetadata,
+    // pub metadata: TokenMeta, //todo?
 }

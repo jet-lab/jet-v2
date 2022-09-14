@@ -29,6 +29,7 @@ pub(crate) mod syscall;
 /// Utilities used only in this crate
 pub(crate) mod util;
 
+pub use instructions::PositionParams;
 use instructions::*;
 pub use state::*;
 pub use util::Invocation;
@@ -197,9 +198,25 @@ pub mod jet_margin {
     /// | --- | --- |
     /// | **Event Name** | **Description** |
     /// | [`events::PositionRegistered`] | The position registered (includes the margin account pubkey, the authority pubkey of that margin account, and the position itself). |
-
     pub fn register_position(ctx: Context<RegisterPosition>) -> Result<()> {
         register_position_handler(ctx)
+    }
+
+    pub fn register_token(
+        ctx: Context<RegisterToken>,
+        params: Option<PositionParams>,
+    ) -> Result<()> {
+        register_token_handler(ctx, params)
+    }
+
+    pub fn mutate_token(ctx: Context<MutateToken>, params: Option<PositionParams>) -> Result<()> {
+        mutate_token_handler(ctx, params)
+    }
+
+    pub fn refresh_position_price<'c, 'info>(
+        ctx: Context<'_, '_, 'c, 'info, RefreshPositionPrice<'info>>,
+    ) -> Result<()> {
+        refresh_position_price_handler(ctx)
     }
 
     /// Update the balance of a position stored in the margin account to
@@ -603,6 +620,35 @@ pub mod jet_margin {
         data: Vec<u8>,
     ) -> Result<()> {
         liquidator_invoke_handler(ctx, data)
+    }
+}
+
+/// todo: replace with airspace authority once introduced
+pub(crate) mod control {
+    use anchor_lang::prelude::*;
+    declare_id!("JPCtrLreUqsEbdhtxZ8zpd8wBydKz4nuEjX5u9Eg5H8");
+
+    mod root_authority {
+        use super::*;
+        declare_id!("2J2K1wHK3U8bsow1shUZJvEx1L2og2h5T5JGPqBS1uKA");
+    }
+
+    #[cfg(not(feature = "testing"))]
+    const AUTHORITY_DISCRIMINATOR: [u8; 8] = [36, 108, 254, 18, 167, 144, 27, 36];
+
+    /// This checks that the provided authority is either:
+    /// - the control program's Authority account
+    /// - the ROOT_AUTHORITY that is authorized to execute instructions in control
+    #[cfg(not(feature = "testing"))]
+    pub fn is_market_authority<'info, A: ToAccountInfo<'info>>(info: &A) -> bool {
+        let info = info.to_account_info();
+        info.key == &root_authority::ID
+            || info.owner == &ID && info.data.borrow()[0..8] == AUTHORITY_DISCRIMINATOR
+    }
+
+    #[cfg(feature = "testing")]
+    pub fn is_market_authority<A>(_: A) -> bool {
+        true
     }
 }
 

@@ -576,6 +576,114 @@ impl Valuation {
     }
 }
 
+
+/// A metadata account describing how a token mint may be utilized in jet-margin
+#[account]
+#[derive(Default, Debug, Eq, PartialEq)]
+pub struct TokenMeta {
+    /// The token mint's address
+    pub token_mint: Pubkey,
+
+    /// Type of position that may be registered for this token
+    pub position_kind: PositionKind,
+
+    /// A modifier to adjust the token value, based on the kind of token
+    pub value_modifier: u16,
+
+    /// The maximum staleness (seconds) that's acceptable for balances of this token
+    pub max_staleness: u64,
+
+    /// The program that:
+    /// - prices the token
+    /// - controls the balance of the position if it is a Claim or AdapterCollateral
+    pub adapter_program: Pubkey,
+
+    ////////////
+    // Optional/Conditional fields
+    // these should be set to Default::default() if unused/irrelevant
+    /// mint for another token that these tokens are derived from or based on
+    pub underlying_mint: Pubkey,
+
+    /// This token should always be priced equivalently to the underlying
+    /// todo: prevent this from being true unless dependency token is priced by margin with a valid oracle (put underlying meta in remaining_accounts)
+    /// todo: prevent dependency tokens from being modified to adapter pricing if there are any dependent tokens (add a counter field)
+    pub(crate) price_as_underlying: bool,
+
+    /// The address of the price oracle which contains the price data for the token.
+    /// only used if adapter_program == margin
+    pub(crate) pyth_price: Pubkey,
+
+    /// The address of the pyth product metadata associated with the price oracle
+    /// only used if adapter_program == margin
+    pub(crate) pyth_product: Pubkey,
+}
+
+impl TokenMeta {
+    /// sanity check that the data is well formed
+    pub fn verify(&self) {
+        if self.adapter_program != crate::ID {
+            assert_eq!(self.pyth_price, Pubkey::default());
+            assert_eq!(self.pyth_product, Pubkey::default());
+            assert_eq!(self.price_as_underlying, false);
+        } else {
+        }
+        if self.underlying_mint == Pubkey::default() {
+            assert_eq!(self.price_as_underlying, false);
+        }
+    }
+
+    pub fn price_source(&self) -> PriceSource {
+        if self.adapter_program == crate::ID {
+            if self.price_as_underlying {
+                PriceSource::Underlying(self.underlying_mint)
+            } else {
+                PriceSource::Oracle {
+                    pyth_price: self.pyth_price,
+                    pyth_product: self.pyth_product,
+                }
+            }
+        } else {
+            PriceSource::Adapter(self.adapter_program)
+        }
+    }
+
+    pub fn set_price_source(&mut self, price_source: PriceSource) {
+        match price_source {
+            PriceSource::Adapter(adapter) => {
+                self.adapter_program = adapter;
+                self.price_as_underlying = false;
+                self.pyth_price = Pubkey::default();
+                self.pyth_product = Pubkey::default();
+            }
+            PriceSource::Underlying(underlying) => {
+                self.adapter_program = crate::ID;
+                self.underlying_mint = underlying;
+                self.price_as_underlying = true;
+                self.pyth_price = Pubkey::default();
+                self.pyth_product = Pubkey::default();
+            }
+            PriceSource::Oracle {
+                pyth_price,
+                pyth_product,
+            } => {
+                self.adapter_program = crate::ID;
+                self.price_as_underlying = false;
+                self.pyth_price = pyth_price;
+                self.pyth_product = pyth_product;
+            }
+        }
+    }
+}
+
+pub enum PriceSource {
+    Adapter(Pubkey),
+    Underlying(Pubkey),
+    Oracle {
+        pyth_price: Pubkey,
+        pyth_product: Pubkey,
+    },
+}
+
 #[cfg(test)]
 mod tests {
     use crate::{syscall::thread_local_mock::mock_stack_height, util::Invocation};

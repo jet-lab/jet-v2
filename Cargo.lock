@@ -1819,6 +1819,7 @@ version = "1.0.0"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
+ "jet-margin",
  "jet-margin-pool",
  "jet-metadata",
  "solana-program",
@@ -1836,6 +1837,7 @@ dependencies = [
  "jet-metadata",
  "jet-proto-math",
  "jet-proto-proc-macros",
+ "pyth-sdk-solana",
  "serde",
  "serde_test",
  "static_assertions",

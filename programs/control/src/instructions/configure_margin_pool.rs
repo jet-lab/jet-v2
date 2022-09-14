@@ -17,12 +17,13 @@
 
 use anchor_lang::prelude::*;
 
+use jet_margin::cpi::accounts::{MutateToken, PositionTokenAccounts};
+use jet_margin::program::JetMargin;
+use jet_margin::{PositionKind, PositionParams, TokenMeta};
 use jet_margin_pool::program::JetMarginPool;
 use jet_margin_pool::MarginPoolConfig;
 use jet_margin_pool::{cpi::accounts::Configure, MarginPool};
-use jet_metadata::cpi::accounts::SetEntry;
-use jet_metadata::program::JetMetadata;
-use jet_metadata::{PositionTokenMetadata, TokenKind, TokenMetadata};
+use jet_metadata::TokenKind;
 
 use crate::events;
 
@@ -45,30 +46,25 @@ pub struct ConfigureMarginPool<'info> {
     #[cfg_attr(not(feature = "testing"), account(address = crate::ROOT_AUTHORITY))]
     pub requester: Signer<'info>,
     pub authority: Box<Account<'info, Authority>>,
-
-    /// CHECK:
     pub token_mint: UncheckedAccount<'info>,
 
     #[account(mut, has_one = token_mint)]
     pub margin_pool: Box<Account<'info, MarginPool>>,
 
     #[account(mut, has_one = token_mint)]
-    pub token_metadata: Box<Account<'info, TokenMetadata>>,
+    pub token_metadata: Box<Account<'info, TokenMeta>>,
 
-    #[account(mut, constraint = deposit_metadata.underlying_token_mint == token_mint.key())]
-    pub deposit_metadata: Box<Account<'info, PositionTokenMetadata>>,
+    #[account(mut, constraint = deposit_metadata.underlying_mint == token_mint.key())]
+    pub deposit_metadata: Box<Account<'info, TokenMeta>>,
 
-    #[account(mut, constraint = loan_metadata.underlying_token_mint == token_mint.key())]
-    pub loan_metadata: Box<Account<'info, PositionTokenMetadata>>,
+    #[account(mut, constraint = loan_metadata.underlying_mint == token_mint.key())]
+    pub loan_metadata: Box<Account<'info, TokenMeta>>,
 
-    /// CHECK:
     pub pyth_product: UncheckedAccount<'info>,
-
-    /// CHECK:
     pub pyth_price: UncheckedAccount<'info>,
-
     pub margin_pool_program: Program<'info, JetMarginPool>,
-    pub metadata_program: Program<'info, JetMetadata>,
+    pub margin_program: Program<'info, JetMargin>,
+    pub system_program: Program<'info, System>,
 }
 
 impl<'info> ConfigureMarginPool<'info> {
@@ -84,32 +80,34 @@ impl<'info> ConfigureMarginPool<'info> {
         )
     }
 
-    fn set_metadata_context(&self) -> CpiContext<'_, '_, '_, 'info, SetEntry<'info>> {
+    fn set_deposit_metadata_context(&self) -> CpiContext<'_, '_, '_, 'info, MutateToken<'info>> {
         CpiContext::new(
-            self.metadata_program.to_account_info(),
-            SetEntry {
-                metadata_account: self.token_metadata.to_account_info(),
-                authority: self.authority.to_account_info(),
+            self.margin_program.to_account_info(),
+            MutateToken {
+                metadata: self.deposit_metadata.to_account_info(),
+                other: PositionTokenAccounts {
+                    requester: self.requester.to_account_info(),
+                    token_mint: self.system_program.to_account_info(),
+                    adapter_program: self.margin_pool_program.to_account_info(),
+                    pyth_price: self.pyth_price.to_account_info(),
+                    pyth_product: self.pyth_product.to_account_info(),
+                },
             },
         )
     }
 
-    fn set_deposit_metadata_context(&self) -> CpiContext<'_, '_, '_, 'info, SetEntry<'info>> {
+    fn set_loan_metadata_context(&self) -> CpiContext<'_, '_, '_, 'info, MutateToken<'info>> {
         CpiContext::new(
-            self.metadata_program.to_account_info(),
-            SetEntry {
-                metadata_account: self.deposit_metadata.to_account_info(),
-                authority: self.authority.to_account_info(),
-            },
-        )
-    }
-
-    fn set_loan_metadata_context(&self) -> CpiContext<'_, '_, '_, 'info, SetEntry<'info>> {
-        CpiContext::new(
-            self.metadata_program.to_account_info(),
-            SetEntry {
-                metadata_account: self.loan_metadata.to_account_info(),
-                authority: self.authority.to_account_info(),
+            self.margin_program.to_account_info(),
+            MutateToken {
+                metadata: self.loan_metadata.to_account_info(),
+                other: PositionTokenAccounts {
+                    requester: self.requester.to_account_info(),
+                    token_mint: self.system_program.to_account_info(),
+                    adapter_program: self.margin_pool_program.to_account_info(),
+                    pyth_price: self.pyth_price.to_account_info(),
+                    pyth_product: self.pyth_product.to_account_info(),
+                },
             },
         )
     }
@@ -132,80 +130,37 @@ pub fn configure_margin_pool_handler(
         )?;
     }
 
-    if *ctx.accounts.pyth_price.key != Pubkey::default() {
-        let mut metadata = ctx.accounts.token_metadata.clone();
-        let mut data = vec![];
+    jet_margin::cpi::mutate_token(
+        ctx.accounts
+            .set_deposit_metadata_context()
+            .with_signer(&[&authority]),
+        metadata.as_ref().map(|params| PositionParams {
+            position_kind: params.token_kind.into(),
+            value_modifier: params.collateral_weight,
+            max_staleness: 0,
+        }),
+    )?;
+    emit!(events::PositionTokenMetadataConfigured {
+        requester: ctx.accounts.requester.key(),
+        authority: ctx.accounts.authority.key(),
+        metadata_account: ctx.accounts.deposit_metadata.key(),
+    });
 
-        metadata.pyth_product = ctx.accounts.pyth_product.key();
-        metadata.pyth_price = ctx.accounts.pyth_price.key();
-
-        metadata.try_serialize(&mut data)?;
-
-        jet_metadata::cpi::set_entry(
-            ctx.accounts
-                .set_metadata_context()
-                .with_signer(&[&authority]),
-            0,
-            data,
-        )?;
-
-        emit!(events::TokenMetadataConfigured {
-            requester: ctx.accounts.requester.key(),
-            authority: ctx.accounts.authority.key(),
-            metadata_account: ctx.accounts.token_metadata.key(),
-            metadata: metadata.into_inner(),
-        })
-    }
-
-    if let Some(params) = metadata {
-        let mut metadata = ctx.accounts.deposit_metadata.clone();
-        let mut data = vec![];
-
-        metadata.token_kind = params.token_kind;
-        metadata.value_modifier = params.collateral_weight;
-        metadata.max_staleness = 0;
-
-        metadata.try_serialize(&mut data)?;
-
-        jet_metadata::cpi::set_entry(
-            ctx.accounts
-                .set_deposit_metadata_context()
-                .with_signer(&[&authority]),
-            0,
-            data,
-        )?;
-
-        emit!(events::PositionTokenMetadataConfigured {
-            requester: ctx.accounts.requester.key(),
-            authority: ctx.accounts.authority.key(),
-            metadata_account: ctx.accounts.deposit_metadata.key(),
-            metadata: metadata.into_inner(),
-        });
-
-        metadata = ctx.accounts.loan_metadata.clone();
-        let mut data = vec![];
-
-        metadata.token_kind = TokenKind::Claim;
-        metadata.value_modifier = params.max_leverage;
-        metadata.max_staleness = 0;
-
-        metadata.try_serialize(&mut data)?;
-
-        jet_metadata::cpi::set_entry(
-            ctx.accounts
-                .set_loan_metadata_context()
-                .with_signer(&[&authority]),
-            0,
-            data,
-        )?;
-
-        emit!(events::PositionTokenMetadataConfigured {
-            requester: ctx.accounts.requester.key(),
-            authority: ctx.accounts.authority.key(),
-            metadata_account: ctx.accounts.loan_metadata.key(),
-            metadata: metadata.into_inner(),
-        });
-    }
+    jet_margin::cpi::mutate_token(
+        ctx.accounts
+            .set_loan_metadata_context()
+            .with_signer(&[&authority]),
+        metadata.as_ref().map(|params| PositionParams {
+            position_kind: PositionKind::Claim,
+            value_modifier: params.max_leverage,
+            max_staleness: 0,
+        }),
+    )?;
+    emit!(events::PositionTokenMetadataConfigured {
+        requester: ctx.accounts.requester.key(),
+        authority: ctx.accounts.authority.key(),
+        metadata_account: ctx.accounts.loan_metadata.key(),
+    });
 
     Ok(())
 }

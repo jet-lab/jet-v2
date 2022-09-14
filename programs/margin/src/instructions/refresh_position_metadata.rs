@@ -17,9 +17,7 @@
 
 use anchor_lang::prelude::*;
 
-use jet_metadata::PositionTokenMetadata;
-
-use crate::{events, MarginAccount};
+use crate::{events, MarginAccount, TokenMeta};
 
 #[derive(Accounts)]
 pub struct RefreshPositionMetadata<'info> {
@@ -28,7 +26,7 @@ pub struct RefreshPositionMetadata<'info> {
     pub margin_account: AccountLoader<'info, MarginAccount>,
 
     /// The metadata account for the token, which has been updated
-    pub metadata: Account<'info, PositionTokenMetadata>,
+    pub metadata: Account<'info, TokenMeta>,
 }
 
 /// Refresh the metadata for a position
@@ -37,8 +35,8 @@ pub fn refresh_position_metadata_handler(ctx: Context<RefreshPositionMetadata>) 
     let mut account = ctx.accounts.margin_account.load_mut()?;
 
     let position = account.refresh_position_metadata(
-        &metadata.position_token_mint,
-        metadata.token_kind.into(),
+        &metadata.token_mint,
+        metadata.position_kind,
         metadata.value_modifier,
         metadata.max_staleness,
     )?;
