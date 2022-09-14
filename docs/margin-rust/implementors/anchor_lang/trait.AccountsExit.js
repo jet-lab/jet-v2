@@ -1,3 +1,0 @@
-(function() {var implementors = {};
-implementors["jet_margin_swap"] = [{"text":"impl&lt;'info&gt; AccountsExit&lt;'info&gt; for <a class=\"struct\" href=\"jet_margin_swap/struct.MarginPoolInfo.html\" title=\"struct jet_margin_swap::MarginPoolInfo\">MarginPoolInfo</a>&lt;'info&gt; <span class=\"where fmt-newline\">where<br>&nbsp;&nbsp;&nbsp;&nbsp;'info: 'info,&nbsp;</span>","synthetic":false,"types":["jet_margin_swap::MarginPoolInfo"]}];
-if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

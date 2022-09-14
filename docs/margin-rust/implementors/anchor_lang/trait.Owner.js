@@ -1,4 +1,0 @@
-(function() {var implementors = {};
-implementors["jet_margin"] = [{"text":"impl Owner for <a class=\"struct\" href=\"jet_margin/struct.MarginAccount.html\" title=\"struct jet_margin::MarginAccount\">MarginAccount</a>","synthetic":false,"types":["jet_margin::state::MarginAccount"]},{"text":"impl Owner for <a class=\"struct\" href=\"jet_margin/struct.Liquidation.html\" title=\"struct jet_margin::Liquidation\">Liquidation</a>","synthetic":false,"types":["jet_margin::state::Liquidation"]}];
-implementors["jet_margin_pool"] = [{"text":"impl Owner for <a class=\"struct\" href=\"jet_margin_pool/struct.MarginPool.html\" title=\"struct jet_margin_pool::MarginPool\">MarginPool</a>","synthetic":false,"types":["jet_margin_pool::state::MarginPool"]}];
-if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

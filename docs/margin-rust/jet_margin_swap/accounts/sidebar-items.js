@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"struct":[["MarginPoolInfo","Generated client accounts for [`MarginPoolInfo`]."],["MarginSplSwap","Generated client accounts for [`MarginSplSwap`]."],["SwapInfo","Generated client accounts for [`SwapInfo`]."]]};

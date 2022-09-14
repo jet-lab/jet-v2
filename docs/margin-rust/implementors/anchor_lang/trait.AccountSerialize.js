@@ -1,3 +1,0 @@
-(function() {var implementors = {};
-implementors["jet_margin_pool"] = [{"text":"impl AccountSerialize for <a class=\"struct\" href=\"jet_margin_pool/struct.MarginPool.html\" title=\"struct jet_margin_pool::MarginPool\">MarginPool</a>","synthetic":false,"types":["jet_margin_pool::state::MarginPool"]}];
-if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

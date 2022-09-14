@@ -1,3 +1,0 @@
-(function() {var implementors = {};
-implementors["jet_margin"] = [{"text":"impl ZeroCopy for <a class=\"struct\" href=\"jet_margin/struct.MarginAccount.html\" title=\"struct jet_margin::MarginAccount\">MarginAccount</a>","synthetic":false,"types":["jet_margin::state::MarginAccount"]},{"text":"impl ZeroCopy for <a class=\"struct\" href=\"jet_margin/struct.Liquidation.html\" title=\"struct jet_margin::Liquidation\">Liquidation</a>","synthetic":false,"types":["jet_margin::state::Liquidation"]}];
-if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()
