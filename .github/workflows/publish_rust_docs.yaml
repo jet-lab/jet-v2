@@ -35,10 +35,10 @@ jobs:
           files: |
             programs
 
-  build_ts_docs:
+  build_and_deploy:
     runs-on: ubuntu-latest
-    # needs: changed_files_ts
-    # if: needs.changed_files_ts.outputs.ts-docs == 'true'
+    needs: [changed_files_ts, changed_files_rust] 
+    if: [needs.changed_files_ts.outputs.ts-docs == 'true', needs.changed_files_rust.outputs.rust-docs == 'true']
     steps:
       - name: Checkout
         uses: actions/checkout@v2.4.2
@@ -46,28 +46,13 @@ jobs:
       - name: Install dependencies
         run: yarn install --frozen-lockfile
 
-      - name: Build Documentation
+      - name: Build TS Documentation
         working-directory: ./libraries/ts
         run: yarn docs 
 
-  build_rust_docs:
-    runs-on: ubuntu-latest
-    # needs: changed_files_rust
-    # if: needs.changed_files_rust.outputs.rust-docs == 'true'
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2.4.2
-
-      - name: Install dependencies
-        run: yarn install --frozen-lockfile
-
-      - name: Build Documentation
+      - name: Build Rust Documentation
         run: yarn docs:rust
-      
-  deploy:
-    runs-on: ubuntu-latest
-    needs: [build_ts_docs, build_rust_docs]
-    steps:
+
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4.4.0
         with:
