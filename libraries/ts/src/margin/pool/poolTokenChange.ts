@@ -17,7 +17,7 @@ export class PoolTokenChangeKind {
   }
 
   isShiftBy(): boolean {
-    return 'shiftBy' in this.kind
+    return "shiftBy" in this.kind
   }
 }
 
