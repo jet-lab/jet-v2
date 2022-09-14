@@ -302,7 +302,6 @@ export class AssociatedToken {
 
   /**
    * Fetch all the account info for multiple accounts specified by an array of public keys.
-   * This
    *
    * @private
    * @static
