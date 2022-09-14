@@ -1,5 +1,5 @@
 export type JetMetadata = {
-  version: "0.1.0"
+  version: "1.0.0"
   name: "jet_metadata"
   instructions: [
     {
@@ -205,7 +205,7 @@ export type JetMetadata = {
 }
 
 export const IDL: JetMetadata = {
-  version: "0.1.0",
+  version: "1.0.0",
   name: "jet_metadata",
   instructions: [
     {

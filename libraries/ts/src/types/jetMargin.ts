@@ -1,5 +1,5 @@
 export type JetMargin = {
-  version: "0.1.0"
+  version: "1.0.0"
   name: "jet_margin"
   constants: [
     {
@@ -424,11 +424,11 @@ export type JetMargin = {
             type: "i64"
           },
           {
-            name: "valueChange"
+            name: "equityChange"
             type: "i128"
           },
           {
-            name: "minValueChange"
+            name: "minEquityChange"
             type: "i128"
           }
         ]
@@ -485,6 +485,10 @@ export type JetMargin = {
       type: {
         kind: "struct"
         fields: [
+          {
+            name: "equity"
+            type: "i128"
+          },
           {
             name: "liabilities"
             type: "i128"
@@ -581,9 +585,7 @@ export type JetMargin = {
           },
           {
             name: "kind"
-            type: {
-              defined: "PositionKind"
-            }
+            type: "u32"
           },
           {
             name: "exponent"
@@ -843,11 +845,6 @@ export type JetMargin = {
       name: "PositionClosed"
       fields: [
         {
-          name: "marginAccount"
-          type: "publicKey"
-          index: false
-        },
-        {
           name: "authority"
           type: "publicKey"
           index: false
@@ -879,11 +876,6 @@ export type JetMargin = {
     {
       name: "PositionBalanceUpdated"
       fields: [
-        {
-          name: "marginAccount"
-          type: "publicKey"
-          index: false
-        },
         {
           name: "position"
           type: {
@@ -1160,7 +1152,7 @@ export type JetMargin = {
 }
 
 export const IDL: JetMargin = {
-  version: "0.1.0",
+  version: "1.0.0",
   name: "jet_margin",
   constants: [
     {
@@ -1585,11 +1577,11 @@ export const IDL: JetMargin = {
             type: "i64"
           },
           {
-            name: "valueChange",
+            name: "equityChange",
             type: "i128"
           },
           {
-            name: "minValueChange",
+            name: "minEquityChange",
             type: "i128"
           }
         ]
@@ -1646,6 +1638,10 @@ export const IDL: JetMargin = {
       type: {
         kind: "struct",
         fields: [
+          {
+            name: "equity",
+            type: "i128"
+          },
           {
             name: "liabilities",
             type: "i128"
@@ -1742,9 +1738,7 @@ export const IDL: JetMargin = {
           },
           {
             name: "kind",
-            type: {
-              defined: "PositionKind"
-            }
+            type: "u32"
           },
           {
             name: "exponent",
@@ -2004,11 +1998,6 @@ export const IDL: JetMargin = {
       name: "PositionClosed",
       fields: [
         {
-          name: "marginAccount",
-          type: "publicKey",
-          index: false
-        },
-        {
           name: "authority",
           type: "publicKey",
           index: false
@@ -2040,11 +2029,6 @@ export const IDL: JetMargin = {
     {
       name: "PositionBalanceUpdated",
       fields: [
-        {
-          name: "marginAccount",
-          type: "publicKey",
-          index: false
-        },
         {
           name: "position",
           type: {

@@ -9,31 +9,26 @@ export type JetMarginSwap = {
           name: "marginAccount"
           isMut: false
           isSigner: true
-          docs: ["The margin account being executed on"]
         },
         {
           name: "sourceAccount"
           isMut: true
           isSigner: false
-          docs: ["The account with the source deposit to be exchanged from"]
         },
         {
           name: "destinationAccount"
           isMut: true
           isSigner: false
-          docs: ["The destination account to send the deposit that is exchanged into"]
         },
         {
           name: "transitSourceAccount"
           isMut: true
           isSigner: false
-          docs: ["Temporary account for moving tokens"]
         },
         {
           name: "transitDestinationAccount"
           isMut: true
           isSigner: false
-          docs: ["Temporary account for moving tokens"]
         },
         {
           name: "swapInfo"
@@ -72,7 +67,6 @@ export type JetMarginSwap = {
               name: "swapProgram"
               isMut: false
               isSigner: false
-              docs: ["The address of the swap program"]
             }
           ]
         },
@@ -180,32 +174,27 @@ export const IDL: JetMarginSwap = {
         {
           name: "marginAccount",
           isMut: false,
-          isSigner: true,
-          docs: ["The margin account being executed on"]
+          isSigner: true
         },
         {
           name: "sourceAccount",
           isMut: true,
-          isSigner: false,
-          docs: ["The account with the source deposit to be exchanged from"]
+          isSigner: false
         },
         {
           name: "destinationAccount",
           isMut: true,
-          isSigner: false,
-          docs: ["The destination account to send the deposit that is exchanged into"]
+          isSigner: false
         },
         {
           name: "transitSourceAccount",
           isMut: true,
-          isSigner: false,
-          docs: ["Temporary account for moving tokens"]
+          isSigner: false
         },
         {
           name: "transitDestinationAccount",
           isMut: true,
-          isSigner: false,
-          docs: ["Temporary account for moving tokens"]
+          isSigner: false
         },
         {
           name: "swapInfo",
@@ -243,8 +232,7 @@ export const IDL: JetMarginSwap = {
             {
               name: "swapProgram",
               isMut: false,
-              isSigner: false,
-              docs: ["The address of the swap program"]
+              isSigner: false
             }
           ]
         },

@@ -1,5 +1,5 @@
 export type JetMarginPool = {
-  version: "0.1.0"
+  version: "1.0.0"
   name: "jet_margin_pool"
   instructions: [
     {
@@ -651,7 +651,7 @@ export type JetMarginPool = {
             type: "u16"
           },
           {
-            name: "managementFeeCollectThreshold"
+            name: "reserved"
             type: "u64"
           }
         ]
@@ -805,6 +805,11 @@ export type JetMarginPool = {
           type: {
             defined: "MarginPoolSummary"
           }
+          index: false
+        },
+        {
+          name: "version"
+          type: "u8"
           index: false
         }
       ]
@@ -1117,11 +1122,11 @@ export type JetMarginPool = {
     },
     {
       code: 141105
-      name: "InvalidPrice"
+      name: "InvalidPoolPrice"
     },
     {
       code: 141106
-      name: "InvalidOracle"
+      name: "InvalidPoolOracle"
     },
     {
       code: 141107
@@ -1136,7 +1141,7 @@ export type JetMarginPool = {
 }
 
 export const IDL: JetMarginPool = {
-  version: "0.1.0",
+  version: "1.0.0",
   name: "jet_margin_pool",
   instructions: [
     {
@@ -1788,7 +1793,7 @@ export const IDL: JetMarginPool = {
             type: "u16"
           },
           {
-            name: "managementFeeCollectThreshold",
+            name: "reserved",
             type: "u64"
           }
         ]
@@ -1942,6 +1947,11 @@ export const IDL: JetMarginPool = {
           type: {
             defined: "MarginPoolSummary"
           },
+          index: false
+        },
+        {
+          name: "version",
+          type: "u8",
           index: false
         }
       ]
@@ -2254,11 +2264,11 @@ export const IDL: JetMarginPool = {
     },
     {
       code: 141105,
-      name: "InvalidPrice"
+      name: "InvalidPoolPrice"
     },
     {
       code: 141106,
-      name: "InvalidOracle"
+      name: "InvalidPoolOracle"
     },
     {
       code: 141107,

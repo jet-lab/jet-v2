@@ -1,5 +1,5 @@
 export type JetControl = {
-  version: "0.1.0"
+  version: "1.0.0"
   name: "jet_control"
   constants: [
     {
@@ -13,6 +13,7 @@ export type JetControl = {
   instructions: [
     {
       name: "createAuthority"
+      docs: ["Create the master authority account"]
       accounts: [
         {
           name: "authority"
@@ -34,6 +35,12 @@ export type JetControl = {
     },
     {
       name: "createMarginPool"
+      docs: [
+        "Register an SPL token for use with the protocol, by creating",
+        "a margin pool which can accept deposits for the token.",
+        "",
+        "Does not require special permission"
+      ]
       accounts: [
         {
           name: "requester"
@@ -120,6 +127,7 @@ export type JetControl = {
     },
     {
       name: "registerAdapter"
+      docs: ["Register a program to be allowed for use as margin adapter in the", "protocol."]
       accounts: [
         {
           name: "requester"
@@ -161,6 +169,7 @@ export type JetControl = {
     },
     {
       name: "configureMarginPool"
+      docs: ["Configure details about a margin pool"]
       accounts: [
         {
           name: "requester"
@@ -239,6 +248,7 @@ export type JetControl = {
     },
     {
       name: "setLiquidator"
+      docs: ["Configure an address as being allowed to perform the functions", "of a liquidator."]
       accounts: [
         {
           name: "requester"
@@ -308,16 +318,19 @@ export type JetControl = {
         fields: [
           {
             name: "tokenKind"
+            docs: ["Description of this token"]
             type: {
               defined: "TokenKind"
             }
           },
           {
             name: "collateralWeight"
+            docs: ["The weight of the asset's value relative to other tokens when used as collateral."]
             type: "u16"
           },
           {
             name: "maxLeverage"
+            docs: ["The maximum leverage allowed on loans for the token"]
             type: "u16"
           }
         ]
@@ -515,6 +528,11 @@ export type JetControl = {
           name: "metadataAccount"
           type: "publicKey"
           index: false
+        },
+        {
+          name: "isLiquidator"
+          type: "bool"
+          index: false
         }
       ]
     },
@@ -603,7 +621,7 @@ export type JetControl = {
 }
 
 export const IDL: JetControl = {
-  version: "0.1.0",
+  version: "1.0.0",
   name: "jet_control",
   constants: [
     {
@@ -617,6 +635,7 @@ export const IDL: JetControl = {
   instructions: [
     {
       name: "createAuthority",
+      docs: ["Create the master authority account"],
       accounts: [
         {
           name: "authority",
@@ -638,6 +657,12 @@ export const IDL: JetControl = {
     },
     {
       name: "createMarginPool",
+      docs: [
+        "Register an SPL token for use with the protocol, by creating",
+        "a margin pool which can accept deposits for the token.",
+        "",
+        "Does not require special permission"
+      ],
       accounts: [
         {
           name: "requester",
@@ -724,6 +749,7 @@ export const IDL: JetControl = {
     },
     {
       name: "registerAdapter",
+      docs: ["Register a program to be allowed for use as margin adapter in the", "protocol."],
       accounts: [
         {
           name: "requester",
@@ -765,6 +791,7 @@ export const IDL: JetControl = {
     },
     {
       name: "configureMarginPool",
+      docs: ["Configure details about a margin pool"],
       accounts: [
         {
           name: "requester",
@@ -843,6 +870,7 @@ export const IDL: JetControl = {
     },
     {
       name: "setLiquidator",
+      docs: ["Configure an address as being allowed to perform the functions", "of a liquidator."],
       accounts: [
         {
           name: "requester",
@@ -912,16 +940,19 @@ export const IDL: JetControl = {
         fields: [
           {
             name: "tokenKind",
+            docs: ["Description of this token"],
             type: {
               defined: "TokenKind"
             }
           },
           {
             name: "collateralWeight",
+            docs: ["The weight of the asset's value relative to other tokens when used as collateral."],
             type: "u16"
           },
           {
             name: "maxLeverage",
+            docs: ["The maximum leverage allowed on loans for the token"],
             type: "u16"
           }
         ]
@@ -1118,6 +1149,11 @@ export const IDL: JetControl = {
         {
           name: "metadataAccount",
           type: "publicKey",
+          index: false
+        },
+        {
+          name: "isLiquidator",
+          type: "bool",
           index: false
         }
       ]
