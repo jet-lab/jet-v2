@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":[["Collect",""],["Deposit",""],["MarginBorrow",""],["MarginPoolSummary","Common fields from MarginPool for event logging."],["MarginRepay",""],["PoolConfigured",""],["PoolCreated",""],["Repay",""],["Withdraw",""]]};

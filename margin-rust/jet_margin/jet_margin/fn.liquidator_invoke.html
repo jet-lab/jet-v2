@@ -1,0 +1,58 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Perform an action by invoking another program, for the purposes of liquidating a margin account."><meta name="keywords" content="rust, rustlang, rust-lang, liquidator_invoke"><title>liquidator_invoke in jet_margin::jet_margin - Rust</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../normalize.css"><link rel="stylesheet" type="text/css" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../main.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc fn"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../jet_margin/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div>
+        </a><h2 class="location"></h2>
+    </nav>
+    <nav class="sidebar"><a class="sidebar-logo" href="../../jet_margin/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div>
+        </a><div class="sidebar-elems"><h2 class="location"><a href="index.html">In jet_margin::jet_margin</a></h2></div></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../jet_margin/index.html"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><button type="button" id="help-button" title="help">?</button><div id="settings-menu" tabindex="-1">
+                                <a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../wheel.svg"></a></div>
+                        </div></form></nav></div><section id="main-content" class="content"><div class="main-heading">
+    <h1 class="fqn"><span class="in-band">Function <a href="../index.html">jet_margin</a>::<wbr><a href="index.html">jet_margin</a>::<wbr><a class="fn" href="#">liquidator_invoke</a><button id="copy-path" onclick="copy_path(this)" title="Copy item path to clipboard"><img src="../../clipboard.svg" width="19" height="18" alt="Copy item path"></button></span></h1><span class="out-of-band"><a class="srclink" href="../../src/jet_margin/lib.rs.html#577-582">source</a> · <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">[<span class="inner">&#x2212;</span>]</a></span></div><div class="docblock item-decl"><pre class="rust fn"><code>pub fn liquidator_invoke&lt;'info&gt;(<br>&nbsp;&nbsp;&nbsp;&nbsp;ctx: Context&lt;'_, '_, '_, 'info, LiquidatorInvoke&lt;'info&gt;&gt;, <br>&nbsp;&nbsp;&nbsp;&nbsp;data: <a class="struct" href="https://doc.rust-lang.org/1.63.0/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.63.0/std/primitive.u8.html">u8</a>&gt;<br>) -&gt; Result&lt;<a class="primitive" href="https://doc.rust-lang.org/1.63.0/std/primitive.unit.html">()</a>&gt;</code></pre></div><details class="rustdoc-toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Perform an action by invoking another program, for the purposes of
+liquidating a margin account.</p>
+<p>This instruction does the following:</p>
+<ol>
+<li>
+<p>Load the margin account.</p>
+</li>
+<li>
+<p>Let <code>start_value</code> be the valuation of the margin account before invoking the liquidator.</p>
+</li>
+<li>
+<p>Emit the <code>LiquidatorInvokeBegin</code> event for data logging (see table below).</p>
+</li>
+<li>
+<p>Loop through adapter and store positions, getting and storing as <code>margin_account</code>, <code>adapter_program</code>, <code>accounts</code> and <code>signed</code>.</p>
+</li>
+<li>
+<p>Emit each adapter position as an <code>event</code> (see table below).</p>
+</li>
+<li>
+<p>Let<code>liquidation</code> be a mutable copy of the liquidated account.</p>
+</li>
+<li>
+<p>Let <code>end_value</code> be the valuation of the margin account after the liquidation attempt, after verifying that a liquidation did occur.</p>
+</li>
+<li>
+<p>Emit the <code>LiquidatorInvokeEnd</code> event for data logging (see table below).</p>
+</li>
+<li>
+<p>Return <code>Ok(())</code>.</p>
+</li>
+</ol>
+<p><strong>Parameters of liquidator_invoke.rs:</strong></p>
+<div><table><thead><tr><th></th><th></th></tr></thead><tbody>
+<tr><td><strong>Name</strong></td><td><strong>Description</strong></td></tr>
+<tr><td><code>liquidator</code></td><td>The liquidator processing the margin account.</td></tr>
+<tr><td><code>liquidation</code></td><td>The account to persist the state of liquidation.</td></tr>
+<tr><td><code>margin_account</code></td><td>The margin account to proxy an action for.</td></tr>
+<tr><td><code>adapter_program</code></td><td>The program to be invoked.</td></tr>
+<tr><td><code>adapter_metadata</code></td><td>The metadata about the proxy program.</td></tr>
+</tbody></table>
+</div>
+<p><strong>Events emitted by liquidator_invoke.rs:</strong></p>
+<div><table><thead><tr><th></th><th></th></tr></thead><tbody>
+<tr><td><strong>Event Name</strong></td><td><strong>Description</strong></td></tr>
+<tr><td><a href="../events/struct.LiquidatorInvokeBegin.html" title="events::LiquidatorInvokeBegin"><code>events::LiquidatorInvokeBegin</code></a></td><td>Marks the beginning of this liquidation event (includes the margin account pubkey, the adapter program pubkey, and the liquidator pubkey that is liquidating that margin account or adapter position).</td></tr>
+<tr><td><a href="../events/enum.PositionEvent.html" title="events::PositionEvent"><code>events::PositionEvent</code></a> <em>(Note that each single event represents an different adapter position)</em></td><td>Each adapter position is emitted as an event (includes the margin account, the adapter program, the accounts, and a value of <code>true</code> for the <code>signed</code> field.</td></tr>
+<tr><td><a href="../events/struct.LiquidatorInvokeEnd.html" title="events::LiquidatorInvokeEnd"><code>events::LiquidatorInvokeEnd</code></a></td><td>Marks the ending of this liquidator event (includes the liquidation data and the valuation of the account after liquidation has been performed).</td></tr>
+</tbody></table>
+</div></div></details></section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="jet_margin" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.63.0 (4b91a6ea7 2022-08-08)" ></div>
+</body></html>

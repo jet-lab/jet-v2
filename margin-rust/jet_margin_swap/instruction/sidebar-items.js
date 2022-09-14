@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":[["state","Instruction struct definitions for `#[state]` methods."]],"struct":[["MarginSwap","Instruction."]]};
