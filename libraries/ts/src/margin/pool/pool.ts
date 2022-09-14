@@ -18,7 +18,7 @@ import { chunks, Number128, Number192 } from "../../utils"
 import { PositionTokenMetadata } from "../positionTokenMetadata"
 
 /** A set of possible actions to perform on a margin pool. */
-export type PoolAction = "deposit" | "withdraw" | "borrow" | "repay" | "swap" | "transfer"
+export type PoolAction = "deposit" | "withdraw" | "borrow" | "repay" | "repayFromDeposit" | "swap" | "transfer"
 
 /** The PDA addresses associated with a [[Pool]] */
 export interface PoolAddresses {
@@ -75,6 +75,7 @@ export interface SPLSwapPool {
   swapProgram: string
   swapFees: number
   swapType: "constantProduct" | "stable"
+  amp?: number
 }
 
 export const feesBuffer: number = LAMPORTS_PER_SOL * 0.075
@@ -1247,11 +1248,11 @@ export class Pool {
     if (swapAmount.gt(accountPoolPosition.depositBalance) && marginAccount.pools) {
       const difference = swapAmount.sub(accountPoolPosition.depositBalance)
       await this.withGetOrRegisterLoanPosition({
-        instructions: registerInstructions,
+        instructions: transitInstructions,
         marginAccount
       })
       await this.withMarginBorrow({
-        instructions: registerInstructions,
+        instructions: transitInstructions,
         marginAccount,
         change: PoolTokenChange.setTo(accountPoolPosition.loanBalance.add(difference))
       })
@@ -1605,9 +1606,11 @@ export class Pool {
       case "withdraw":
         return this.projectAfterWithdraw(marginAccount, amount)
       case "borrow":
-        return this.projectAfterBorrow(marginAccount, amount)
+        return this.projectAfterBorrowAndNotWithdraw(marginAccount, amount)
       case "repay":
         return this.projectAfterRepay(marginAccount, amount)
+      case "repayFromDeposit":
+        return this.projectAfterRepayFromDeposit(marginAccount, amount)
       case "swap":
         return this.projectAfterMarginSwap(marginAccount, amount, minAmountOut, outputToken)
       default:
@@ -1847,20 +1850,18 @@ export class Pool {
 
     // Position-specific valuations
     const inputTokenPosition = marginAccount.poolPositions[this.symbol]
+    const inputDepositBalance = inputTokenPosition ? inputTokenPosition.depositBalance.tokens : 0
     const outputTokenPosition = marginAccount.poolPositions[outputToken.symbol]
-    if (!inputTokenPosition.loanPosition || !outputTokenPosition.loanPosition) {
-      console.error("No pool positions for margin account")
-      return defaults
-    }
+    const outputLoanBalance = outputTokenPosition ? outputTokenPosition.loanBalance.tokens : 0
 
     const inputRequiredCollateralFactor =
-      inputTokenPosition.loanPosition.valueModifier.toNumber() *
+      this.loanNoteMetadata.valueModifier.toNumber() *
       (setupCheck ? MarginAccount.SETUP_LEVERAGE_FRACTION.toNumber() : 1)
-    const inputTokenAssetValue = inputTokenPosition.depositBalance.tokens * inputTokenPrice
+    const inputTokenAssetValue = inputDepositBalance * inputTokenPrice
     const outputRequiredCollateralFactor =
-      outputTokenPosition.loanPosition.valueModifier.toNumber() *
+      outputToken.loanNoteMetadata.valueModifier.toNumber() *
       (setupCheck ? MarginAccount.SETUP_LEVERAGE_FRACTION.toNumber() : 1)
-    const outputTokenLiabilityValue = outputTokenPosition.loanBalance.tokens * outputTokenPrice
+    const outputTokenLiabilityValue = outputLoanBalance * outputTokenPrice
 
     // Collateral values
     const requiredCollateral =
