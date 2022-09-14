@@ -32,15 +32,18 @@ anchor-lang = { git = "https://github.com/jet-lab/anchor", branch = "master" }
 anchor-spl = { git = "https://github.com/jet-lab/anchor", branch = "master" }
 
 jet-static-program-registry = { path = "../../libraries/rust/static-program-registry" }
+agnostic-orderbook = { git = "https://github.com/jet-lab/agnostic-orderbook.git", branch = "main", features = ["lib", "utils"] }
 spl-token = "3"
 pyth-sdk-solana = "0.4"
 
+jet-bonds = { path = "../../programs/bonds", features = ["no-entrypoint"] }
 jet-control = { path = "../../programs/control", features = ["no-entrypoint", "testing"] }
 jet-margin = { path = "../../programs/margin", features = ["no-entrypoint"] }
 jet-margin-pool = { path = "../../programs/margin-pool", features = ["no-entrypoint", "testing"] }
 jet-margin-swap = { path = "../../programs/margin-swap", features = ["no-entrypoint"] }
 jet-metadata = { path = "../../programs/metadata", features = ["no-entrypoint", "testing"] }
 
+jet-bonds-sdk = { path = "../../libraries/rust/bonds-sdk", features = ["builder"] }
 jet-margin-sdk = { path = "../../libraries/rust/margin-sdk", features = ["testing"] }
 
 mock-adapter = { path = "../mock-adapter", features = ["no-entrypoint"] }

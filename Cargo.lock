@@ -1819,6 +1819,7 @@ dependencies = [
 name = "hosted-tests"
 version = "0.1.0"
 dependencies = [
+ "agnostic-orderbook",
  "anchor-lang",
  "anchor-spl",
  "anyhow",
@@ -1830,6 +1831,8 @@ dependencies = [
  "futures",
  "futures-retry",
  "itertools 0.10.3",
+ "jet-bonds",
+ "jet-bonds-sdk",
  "jet-control 1.0.0",
  "jet-margin 1.0.0",
  "jet-margin-pool 1.0.0",

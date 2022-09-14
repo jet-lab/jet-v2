@@ -88,8 +88,12 @@ impl BondsIxBuilder {
         self.keys.insert("payer", *payer);
         self
     }
-    pub fn with_crank(mut self, crank: &Pubkey) -> Self {
-        let crank_metadata = Pubkey::find_program_address(&[todo!()], &jet_metadata::ID).0;
+    pub fn with_crank(mut self, crank: &Pubkey, metadata_seed: Option<String>) -> Self {
+        let crank_metadata = Pubkey::find_program_address(
+            &[crank.as_ref(), metadata_seed.unwrap_or_default().as_bytes()],
+            &jet_metadata::ID,
+        )
+        .0;
         self.keys.insert("crank", *crank);
         self.keys.insert("crank_metadata", crank_metadata);
         self
@@ -553,9 +557,6 @@ impl BondsIxBuilder {
             ticket_holder.as_ref(),
             seed.as_slice(),
         ])
-    }
-    pub fn crank_metadata_key(&self, crank: &Pubkey) -> Pubkey {
-        Pubkey::find_program_address(&[todo!()], &jet_metadata::ID).0
     }
 
     pub fn jet_bonds_id() -> Pubkey {

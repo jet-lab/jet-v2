@@ -4,6 +4,7 @@ use jet_bonds::{
     orderbook::state::{CallbackFlags, CallbackInfo},
     tickets::state::SplitTicket,
 };
+use rand::rngs::OsRng;
 use solana_sdk::pubkey::Pubkey;
 
 use crate::builder::error::Result;
@@ -102,7 +103,7 @@ impl ConsumeEventsInfo {
                     keys.push(maker);
                     if let Some(acc) = loan {
                         keys.push(acc.key);
-                        seeds.push(acc.seed.clone());
+                        seeds.push(acc.seed);
                     }
                     if let Some(key) = maker_adapter {
                         keys.push(key);
@@ -135,8 +136,8 @@ pub fn make_seed(rng: &mut impl rand::RngCore) -> Vec<u8> {
 
 pub fn build_consume_events_info(
     event_queue: EventQueue<'_, CallbackInfo>,
-    rng: &mut impl rand::RngCore,
 ) -> Result<ConsumeEventsInfo> {
+    let rng = &mut OsRng::default();
     let mut info = ConsumeEventsInfo::default();
 
     for event in event_queue.iter() {
