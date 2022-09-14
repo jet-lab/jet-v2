@@ -1,5 +1,5 @@
 import { useRecoilValue, useRecoilState } from 'recoil';
-import { CurrentPoolSymbol, PoolOptions } from '../../../state/pools/pools';
+import { CurrentPoolSymbol, PoolOption, PoolOptions } from '../../../state/pools/pools';
 import { TokenLogo } from '../TokenLogo';
 import { Select, Typography } from 'antd';
 import { ReactComponent as AngleDown } from '../../../styles/icons/arrow-angle-down.svg';
@@ -8,6 +8,8 @@ import { ReactComponent as AngleDown } from '../../../styles/icons/arrow-angle-d
 export function TokenSelect(props: {
   // Optionally, specify currently active Pool for this dropdown
   poolSymbol?: string | undefined;
+  // Optionally, specify which tokens a user can choose from in the TokenSelect
+  tokenOptions?: PoolOption[];
   // Optionally, specify what occurs when the user switches their token
   onChangeToken?: (token: string) => unknown;
   // Optionally, override the styles of the token selector dropdown
@@ -33,7 +35,7 @@ export function TokenSelect(props: {
         // Default to updating the currentPool
         setCurrentPoolSymbol(tokenSymbol);
       }}>
-      {poolOptions.map(option => (
+      {(props.tokenOptions ?? poolOptions).map(option => (
         <Option key={option.symbol} value={option.symbol}>
           <div className="flex-centered">
             <TokenLogo height={20} symbol={option.symbol} />

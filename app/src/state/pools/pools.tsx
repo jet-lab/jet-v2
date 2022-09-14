@@ -13,7 +13,7 @@ export interface JetMarginPools {
   tokenPools: Record<string, Pool>;
 }
 // A simpler interface for when we're simply selecting a pool
-interface PoolOption {
+export interface PoolOption {
   name: string | undefined;
   symbol: string | undefined;
 }

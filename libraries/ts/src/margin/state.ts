@@ -74,7 +74,7 @@ const PriceInfoLayout = struct<PriceInfoData>([
   u64("timestamp"),
   s32("exponent"),
   u8("isValid"),
-  blob(3, "_reserved") as any as Layout<number[]>
+  blob(3, "_reserved") as any
 ])
 console.assert(PriceInfoLayout.span === 24, "Unexpected PriceInfoLayout span", PriceInfoLayout.span, "expected", 24)
 
@@ -91,7 +91,7 @@ const AccountPositionLayout = struct<AccountPositionInfo>([
   u16("valueModifier"),
   u64("maxStaleness"),
   u8("flags"),
-  blob(23, "_reserved")
+  blob(23, "_reserved") as any
 ])
 console.assert(
   AccountPositionLayout.span === 192,

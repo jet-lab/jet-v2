@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useRecoilState, useRecoilValue, useResetRecoilState, useSetRecoilState } from 'recoil';
 import { feesBuffer, MarginAccount, numberToBn, TokenAmount, PoolAction } from '@jet-lab/margin';
-import { CurrentPool, usePoolFromName } from '../../../state/pools/pools';
+import { CurrentPool, PoolOption, usePoolFromName } from '../../../state/pools/pools';
 import {
   CurrentAction,
   MaxTradeAmounts,
@@ -31,6 +31,8 @@ export function TokenInput(props: {
   action?: PoolAction;
   // Optionally, specify which pool this input should base its references on (defaults to currentPool)
   poolSymbol?: string;
+  // Optionally, specify which tokens a user can choose from in the TokenSelect
+  tokenOptions?: PoolOption[];
   // Optionally, specify what occurs when the user switches their token (defaults to updating currentPool)
   onChangeToken?: (token: string) => unknown;
   // Specify what occurs if user presses enter while focusing the input
@@ -238,6 +240,7 @@ export function TokenInput(props: {
       <div className="token-input-main flex-centered">
         <TokenSelect
           poolSymbol={tokenPool?.symbol}
+          tokenOptions={props.tokenOptions}
           onChangeToken={props.onChangeToken}
           dropdownStyle={props.dropdownStyle}
         />

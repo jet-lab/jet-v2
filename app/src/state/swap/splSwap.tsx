@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { atom, useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 import { SPLSwapPool, TokenAmount } from '@jet-lab/margin';
-import { Cluster } from '../settings/settings';
+import { Cluster, ClusterOption } from '../settings/settings';
 import { ActionRefresh, ACTION_REFRESH_INTERVAL, CurrentSwapOutput } from '../actions/actions';
 import { useProvider } from '../../utils/jet/provider';
 import orcaPools from '@jet-lab/margin/src/margin/swap/orca-swap-pools.json';
@@ -40,7 +40,6 @@ export const SwapPoolTokenAmounts = atom({
       }
     | undefined
 });
-
 export function useSplSwapSyncer() {
   const cluster = useRecoilValue(Cluster);
   const { provider } = useProvider();
@@ -69,6 +68,7 @@ export function useSplSwapSyncer() {
       setSwapFees(0.0);
       return;
     }
+
     setSwapPoolTokenAmounts(undefined);
     // Check if the direct swap pool exists
     const key = `${currentPool.symbol}/${outputToken.symbol}`;
@@ -128,4 +128,14 @@ export function useSplSwapSyncer() {
   }, [provider, cluster, currentSwapPool, actionRefresh, setSwapPoolTokenAmounts]);
 
   return <></>;
+}
+
+// Check if a given pair has a corresponding Orca pool
+export function hasOrcaPool(cluster: ClusterOption, inputSymbol: string, outputSymbol: string) {
+  const pair = `${inputSymbol}/${outputSymbol}`;
+  const inversePair = `${outputSymbol}/${inputSymbol}`;
+  return (
+    Object.keys(cluster === 'devnet' ? orcaPoolsDevnet : orcaPools).includes(inversePair) ||
+    Object.keys(cluster === 'devnet' ? orcaPoolsDevnet : orcaPools).includes(pair)
+  );
 }

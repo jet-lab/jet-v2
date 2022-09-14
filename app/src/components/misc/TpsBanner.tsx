@@ -1,14 +1,15 @@
 import { useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
-import { Connection } from '@solana/web3.js';
 import { Cluster, PreferredRpcNode, rpcNodes } from '../../state/settings/settings';
 import { Dictionary } from '../../state/settings/localization/localization';
+import { useProvider } from '../../utils/jet/provider';
 import { MS_PER_MINUTE } from '../../utils/time';
 import { Alert } from 'antd';
 
 // Banner to show user that the Solana network is running slowly
 export function TpsBanner(): JSX.Element {
   const cluster = useRecoilValue(Cluster);
+  const { provider } = useProvider();
   const rpcNode = useRecoilValue(PreferredRpcNode);
   const dictionary = useRecoilValue(Dictionary);
   const nodeIndexer = cluster === 'mainnet-beta' ? 'mainnetBeta' : 'devnet';
@@ -33,10 +34,8 @@ export function TpsBanner(): JSX.Element {
   useEffect(() => {
     async function getSolanaTps() {
       try {
-        // Create a new connection at main solana endpoint
-        const connection = new Connection('https://api.mainnet-beta.solana.com/');
         // Get performance samples
-        const samples = await connection.getRecentPerformanceSamples(15);
+        const samples = await provider.connection.getRecentPerformanceSamples(15);
         // Reduce to the total transactions-per-second
         const totalTps = samples.reduce((acc, val) => {
           return acc + val.numTransactions / val.samplePeriodSecs;
@@ -53,7 +52,7 @@ export function TpsBanner(): JSX.Element {
     // Check TPS every 30 seconds
     const tpsInterval = setInterval(getSolanaTps, MS_PER_MINUTE / 2);
     return () => clearInterval(tpsInterval);
-  }, []);
+  }, [provider.connection]);
 
   // Render the TPS banner (if TPS is slow enough)
   if (unusuallySlow) {
