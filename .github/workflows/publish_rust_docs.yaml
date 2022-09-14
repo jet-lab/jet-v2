@@ -9,7 +9,7 @@ on:
   workflow_dispatch: {}
 
 jobs:
-    changed_files_ts:
+  changed_files_ts:
     runs-on: ubuntu-latest
     outputs:
       ts-docs: ${{steps.check-if-files-changed.outputs.any_changed}}
@@ -50,7 +50,6 @@ jobs:
         working-directory: ./libraries/ts
         run: yarn docs 
 
-    needs: changed_files_rust
     if: needs.changed_files_rust.outputs.rust-docs == 'true'
     steps:
       - name: Checkout
