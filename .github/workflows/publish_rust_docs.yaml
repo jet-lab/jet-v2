@@ -24,8 +24,8 @@ jobs:
 
   build:
     runs-on: ubuntu-latest
-    needs: changed_files
-    if: needs.changed_files.outputs.rust-docs == 'true'
+    # needs: changed_files
+    # if: needs.changed_files.outputs.rust-docs == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@v2.4.2
