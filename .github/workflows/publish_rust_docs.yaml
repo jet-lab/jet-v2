@@ -35,9 +35,9 @@ jobs:
           files: |
             programs
 
-  build:
+  build_ts_docs:
     runs-on: ubuntu-latest
-    needs: [changed_files_ts, changed_files_rust]
+    needs: changed_files_ts
     if: needs.changed_files_ts.outputs.ts-docs == 'true'
     steps:
       - name: Checkout
@@ -50,6 +50,9 @@ jobs:
         working-directory: ./libraries/ts
         run: yarn docs 
 
+  build_rust_docs:
+    runs-on: ubuntu-latest
+    needs: changed_files_rust
     if: needs.changed_files_rust.outputs.rust-docs == 'true'
     steps:
       - name: Checkout
