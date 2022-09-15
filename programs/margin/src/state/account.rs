@@ -788,6 +788,7 @@ mod tests {
             invocation: Invocation::default(),
             positions: [0; 7432],
         };
+
         let pos = register_position(&mut margin_account, 0, TokenKind::AdapterCollateral);
 
         margin_account.set_position_balance(&pos, &pos, 1).unwrap();
