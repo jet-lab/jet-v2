@@ -64,7 +64,6 @@ pub struct ConfigureMarginPool<'info> {
     pub pyth_price: UncheckedAccount<'info>,
     pub margin_pool_program: Program<'info, JetMarginPool>,
     pub margin_program: Program<'info, JetMargin>,
-    pub system_program: Program<'info, System>,
 }
 
 impl<'info> ConfigureMarginPool<'info> {
@@ -87,7 +86,7 @@ impl<'info> ConfigureMarginPool<'info> {
                 metadata: self.deposit_metadata.to_account_info(),
                 other: PositionTokenAccounts {
                     requester: self.requester.to_account_info(),
-                    token_mint: self.system_program.to_account_info(),
+                    token_mint: self.token_mint.to_account_info(),
                     adapter_program: self.margin_pool_program.to_account_info(),
                     pyth_price: self.pyth_price.to_account_info(),
                     pyth_product: self.pyth_product.to_account_info(),
@@ -103,7 +102,7 @@ impl<'info> ConfigureMarginPool<'info> {
                 metadata: self.loan_metadata.to_account_info(),
                 other: PositionTokenAccounts {
                     requester: self.requester.to_account_info(),
-                    token_mint: self.system_program.to_account_info(),
+                    token_mint: self.token_mint.to_account_info(),
                     adapter_program: self.margin_pool_program.to_account_info(),
                     pyth_price: self.pyth_price.to_account_info(),
                     pyth_product: self.pyth_product.to_account_info(),

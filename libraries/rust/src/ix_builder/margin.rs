@@ -149,7 +149,7 @@ impl MarginIxBuilder {
             authority: self.authority(),
             payer: self.payer,
             margin_account: self.address,
-            position_token_mint,
+            token_mint: position_token_mint,
             metadata,
             token_account,
             token_program: Token::id(),

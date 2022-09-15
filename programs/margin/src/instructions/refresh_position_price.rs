@@ -32,7 +32,6 @@ pub struct RefreshPositionPrice<'info> {
 
     // pub pyth_product: AccountInfo<'info>,
     pub pyth_price: AccountInfo<'info>,
-
     // remaining_accounts: [Account<'info, TokenMeta>] (for underlying)
 }
 
@@ -67,7 +66,7 @@ fn get_price_from_oracle<'c, 'info: 'c, I: Iterator<Item = &'c AccountInfo<'info
         crate::PriceSource::Adapter(_) => panic!("must be priced by adapter"),
         crate::PriceSource::Underlying(underlying) => {
             let underyling_meta =
-                Account::<TokenMeta>::try_from(&remaining_accounts.next().unwrap())?;
+                Account::<TokenMeta>::try_from(remaining_accounts.next().unwrap())?;
             if underyling_meta.token_mint != underlying {
                 panic!("wrong underlying meta");
             } else {
@@ -80,7 +79,7 @@ fn get_price_from_oracle<'c, 'info: 'c, I: Iterator<Item = &'c AccountInfo<'info
         } => {
             assert_eq!(&pyth_price, pyth_price_info.key);
             let price_feed =
-                pyth_sdk_solana::load_price_feed_from_account_info(&pyth_price_info).unwrap();
+                pyth_sdk_solana::load_price_feed_from_account_info(pyth_price_info).unwrap();
             let price_obj = price_feed.get_current_price().unwrap();
             let ema_obj = price_feed.get_ema_price().unwrap();
             Ok(PriceChangeInfo {

@@ -576,7 +576,6 @@ impl Valuation {
     }
 }
 
-
 /// A metadata account describing how a token mint may be utilized in jet-margin
 #[account]
 #[derive(Default, Debug, Eq, PartialEq)]
@@ -624,11 +623,11 @@ impl TokenMeta {
         if self.adapter_program != crate::ID {
             assert_eq!(self.pyth_price, Pubkey::default());
             assert_eq!(self.pyth_product, Pubkey::default());
-            assert_eq!(self.price_as_underlying, false);
+            assert!(!self.price_as_underlying);
         } else {
         }
         if self.underlying_mint == Pubkey::default() {
-            assert_eq!(self.price_as_underlying, false);
+            assert!(!self.price_as_underlying);
         }
     }
 

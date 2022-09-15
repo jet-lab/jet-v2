@@ -112,7 +112,7 @@ impl ControlIxBuilder {
             fee_destination: get_margin_pool_fee_destination_address(&pool_builder.address),
 
             margin_pool_program: jet_margin_pool::ID,
-            metadata_program: jet_metadata::ID,
+            margin_program: jet_margin::ID,
             token_program: anchor_spl::token::ID,
             system_program: system_program::ID,
             rent: solana_sdk::sysvar::rent::ID,
@@ -150,7 +150,7 @@ impl ControlIxBuilder {
             pyth_price: config.pyth_price.unwrap_or_default(),
 
             margin_pool_program: jet_margin_pool::ID,
-            metadata_program: jet_metadata::ID,
+            margin_program: jet_margin::ID,
         }
         .to_account_metas(None);
 
