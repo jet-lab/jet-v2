@@ -231,7 +231,9 @@ impl AccountPosition {
     }
 
     pub fn collateral_value(&self) -> Number128 {
-        assert_eq!(self.kind(), PositionKind::Deposit);
+        assert!(
+            self.kind() == PositionKind::Deposit || self.kind() == PositionKind::AdapterCollateral
+        );
 
         Number128::from_decimal(self.value_modifier, -2) * self.value()
     }
