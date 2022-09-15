@@ -40,6 +40,7 @@ export interface AccountTransaction {
   blockTime: string
   signature: string
   sigIndex: number // Signature index that we used to find this transaction
+  slot: number
   tradeAction: PoolAction
   tradeAmount: TokenAmount
   tradeAmountInput?: TokenAmount
@@ -173,6 +174,7 @@ export class MarginClient {
       tx.timestamp = parsedTx.blockTime
       tx.blockDate = dateTime.toLocaleDateString()
       tx.blockTime = dateTime.toLocaleTimeString("en-US", { hour12: false })
+      tx.slot = parsedTx.slot
       tx.sigIndex = sigIndex ? sigIndex : 0
       tx.signature = parsedTx.transaction.signatures[0]
       tx.status = parsedTx.meta?.err ? "error" : "success"
@@ -311,6 +313,6 @@ export class MarginClient {
       jetTransactions.map(async (t, idx) => await MarginClient.getTransactionData(t, mints, config, idx, provider))
     )
     const filteredParsedTransactions = parsedTransactions.filter(tx => !!tx) as AccountTransaction[]
-    return filteredParsedTransactions.sort((a, b) => a.sigIndex - b.sigIndex)
+    return filteredParsedTransactions.sort((a, b) => a.slot - b.slot)
   }
 }
