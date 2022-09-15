@@ -34,3 +34,11 @@ pub use margin_swap::*;
 pub fn get_metadata_address(address: &Pubkey) -> Pubkey {
     Pubkey::find_program_address(&[address.as_ref()], &jet_metadata::ID).0
 }
+
+/// Get the address of a [jet_metadata] account.
+///
+/// Metadata addresses are PDAs of various metadata types. Refer to `jet_metadata` for
+/// the different account types.
+pub fn token_metadata_address(mint: &Pubkey) -> Pubkey {
+    Pubkey::find_program_address(&[b"token-metadata", mint.as_ref()], &jet_margin::ID).0
+}

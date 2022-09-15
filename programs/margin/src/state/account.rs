@@ -606,15 +606,15 @@ pub struct TokenMeta {
     /// This token should always be priced equivalently to the underlying
     /// todo: prevent this from being true unless dependency token is priced by margin with a valid oracle (put underlying meta in remaining_accounts)
     /// todo: prevent dependency tokens from being modified to adapter pricing if there are any dependent tokens (add a counter field)
-    pub(crate) price_as_underlying: bool,
+    pub price_as_underlying: bool,
 
     /// The address of the price oracle which contains the price data for the token.
     /// only used if adapter_program == margin
-    pub(crate) pyth_price: Pubkey,
+    pub pyth_price: Pubkey,
 
     /// The address of the pyth product metadata associated with the price oracle
     /// only used if adapter_program == margin
-    pub(crate) pyth_product: Pubkey,
+    pub pyth_product: Pubkey,
 }
 
 impl TokenMeta {

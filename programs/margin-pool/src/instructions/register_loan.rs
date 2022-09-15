@@ -18,7 +18,7 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{Token, TokenAccount};
 
-use jet_margin::{AdapterResult, MarginAccount, PositionChange};
+use jet_margin::{AdapterResult, MarginAccount, PositionChange, TokenMeta};
 
 use crate::state::*;
 
@@ -30,9 +30,7 @@ pub struct RegisterLoan<'info> {
     /// This will be required for margin to register the position,
     /// so requiring it here makes it easier for clients to ensure
     /// that it will be sent.
-    ///
-    /// CHECK:
-    pub position_token_metadata: AccountInfo<'info>,
+    pub loan_note_metadata: Account<'info, TokenMeta>,
 
     /// The token account to store the loan notes representing the claim
     /// against the margin account
@@ -47,7 +45,6 @@ pub struct RegisterLoan<'info> {
     pub loan_note_account: Account<'info, TokenAccount>,
 
     /// The mint for the notes representing loans from the pool
-    /// CHECK:
     pub loan_note_mint: AccountInfo<'info>,
 
     #[account(has_one = loan_note_mint)]

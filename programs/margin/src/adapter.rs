@@ -21,13 +21,13 @@ use crate::{
     events::{PositionClosed, PositionEvent, PositionRegistered, PositionTouched},
     util::{ErrorMessage, Require},
     AccountPositionKey, AdapterPositionFlags, Approver, ErrorCode, MarginAccount, SignerSeeds,
+    TokenMeta,
 };
 use anchor_lang::{
     prelude::*,
     solana_program::{instruction::Instruction, program},
 };
 use anchor_spl::token::{Mint, TokenAccount};
-use jet_metadata::PositionTokenMetadata;
 
 pub struct InvokeAdapter<'a, 'info> {
     /// The margin account to proxy an action for
@@ -277,8 +277,7 @@ fn register_position(
     mint_address: Pubkey,
     token_account_address: Pubkey,
 ) -> Result<AccountPositionKey> {
-    let mut metadata: Result<Account<PositionTokenMetadata>> =
-        err!(ErrorCode::PositionNotRegisterable);
+    let mut metadata: Result<Account<TokenMeta>> = err!(ErrorCode::PositionNotRegisterable);
     let mut token_account: Result<Account<TokenAccount>> = err!(ErrorCode::PositionNotRegisterable);
     let mut mint: Result<Account<Mint>> = err!(ErrorCode::PositionNotRegisterable);
     for info in remaining_accounts {
@@ -286,10 +285,10 @@ fn register_position(
             token_account = Ok(Account::<TokenAccount>::try_from(info)?);
         } else if info.key == &mint_address {
             mint = Ok(Account::<Mint>::try_from(info)?);
-        } else if info.owner == &PositionTokenMetadata::owner() {
-            if let Ok(ptm) = Account::<PositionTokenMetadata>::try_from(info) {
-                if ptm.position_token_mint == mint_address {
-                    metadata = Ok(ptm);
+        } else if info.owner == &TokenMeta::owner() {
+            if let Ok(tm) = Account::<TokenMeta>::try_from(info) {
+                if tm.token_mint == mint_address {
+                    metadata = Ok(tm);
                 }
             }
         }
@@ -308,7 +307,7 @@ fn register_position(
         mint.decimals,
         token_account.key(),
         metadata.adapter_program,
-        metadata.token_kind.into(),
+        metadata.position_kind,
         metadata.value_modifier,
         metadata.max_staleness,
         approvals,

@@ -24,5 +24,6 @@ pub fn register_token_handler(
     ctx: Context<RegisterToken>,
     params: Option<PositionParams>,
 ) -> Result<()> {
+    ctx.accounts.metadata.token_mint = ctx.accounts.other.token_mint.key();
     mutate_token_impl(&ctx.accounts.other, &mut ctx.accounts.metadata, params)
 }

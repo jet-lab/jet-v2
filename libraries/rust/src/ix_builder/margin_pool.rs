@@ -26,6 +26,8 @@ use jet_margin_pool::instruction as ix_data;
 use jet_margin_pool::program::JetMarginPool;
 use jet_margin_pool::{accounts as ix_accounts, TokenChange};
 
+use super::token_metadata_address;
+
 /// Utility for creating instructions to interact with the margin
 /// pools program for a specific pool.
 pub struct MarginPoolIxBuilder {
@@ -327,12 +329,10 @@ impl MarginPoolIxBuilder {
     /// Instruction to register a loan position with a margin pool.
     pub fn register_loan(&self, margin_account: Pubkey, payer: Pubkey) -> (Pubkey, Instruction) {
         let loan_note_account = loan_token_account(&margin_account, &self.loan_note_mint).0;
-        let position_token_metadata =
-            Pubkey::find_program_address(&[self.loan_note_mint.as_ref()], &jet_metadata::ID).0;
 
         let accounts = ix_accounts::RegisterLoan {
             margin_account,
-            position_token_metadata,
+            loan_note_metadata: token_metadata_address(&self.loan_note_mint),
             margin_pool: self.address,
             loan_note_account,
             loan_note_mint: self.loan_note_mint,

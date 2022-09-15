@@ -20,8 +20,8 @@ use jet_control::TokenMetadataParams;
 use jet_margin_pool::MarginPoolConfig;
 use solana_sdk::{instruction::Instruction, pubkey::Pubkey, system_program};
 
-use super::get_metadata_address;
 use super::margin_pool::MarginPoolIxBuilder;
+use super::{get_metadata_address, token_metadata_address};
 
 /// A builder for [`jet_control::instruction`] instructions.
 pub struct ControlIxBuilder {
@@ -106,9 +106,8 @@ impl ControlIxBuilder {
             deposit_note_mint: pool_builder.deposit_note_mint,
             loan_note_mint: pool_builder.loan_note_mint,
             token_mint: *token,
-            deposit_note_metadata: get_metadata_address(&pool_builder.deposit_note_mint),
-            loan_note_metadata: get_metadata_address(&pool_builder.loan_note_mint),
-            token_metadata: get_metadata_address(&pool_builder.token_mint),
+            deposit_note_metadata: token_metadata_address(&pool_builder.deposit_note_mint),
+            loan_note_metadata: token_metadata_address(&pool_builder.loan_note_mint),
             fee_destination: get_margin_pool_fee_destination_address(&pool_builder.address),
 
             margin_pool_program: jet_margin_pool::ID,
@@ -140,17 +139,19 @@ impl ControlIxBuilder {
             requester: self.requester,
             authority: get_control_authority_address(),
 
-            token_mint: *token,
             margin_pool: pool_builder.address,
-            token_metadata: get_metadata_address(token),
-            deposit_metadata: get_metadata_address(&pool_builder.deposit_note_mint),
-            loan_metadata: get_metadata_address(&pool_builder.loan_note_mint),
+            token_mint: *token,
+            deposit_note_mint: pool_builder.deposit_note_mint,
+            loan_note_mint: pool_builder.loan_note_mint,
+            deposit_metadata: token_metadata_address(&pool_builder.deposit_note_mint),
+            loan_metadata: token_metadata_address(&pool_builder.loan_note_mint),
 
             pyth_product: config.pyth_product.unwrap_or_default(),
             pyth_price: config.pyth_price.unwrap_or_default(),
 
             margin_pool_program: jet_margin_pool::ID,
             margin_program: jet_margin::ID,
+            system_program: system_program::ID,
         }
         .to_account_metas(None);
 

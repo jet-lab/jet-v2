@@ -56,10 +56,6 @@ pub struct CreateMarginPool<'info> {
 
     /// CHECK:
     #[account(mut)]
-    token_metadata: UncheckedAccount<'info>,
-
-    /// CHECK:
-    #[account(mut)]
     deposit_note_metadata: UncheckedAccount<'info>,
 
     /// CHECK:
@@ -130,6 +126,7 @@ impl<'info> CreateMarginPool<'info> {
                 other: PositionTokenAccounts {
                     requester: self.requester.to_account_info(),
                     token_mint: self.deposit_note_mint.to_account_info(),
+                    underlying_mint: self.token_mint.to_account_info(),
                     adapter_program: self.margin_pool_program.to_account_info(),
                     pyth_price: self.system_program.to_account_info(),
                     pyth_product: self.system_program.to_account_info(),
@@ -147,6 +144,7 @@ impl<'info> CreateMarginPool<'info> {
                 other: PositionTokenAccounts {
                     requester: self.requester.to_account_info(),
                     token_mint: self.loan_note_mint.to_account_info(),
+                    underlying_mint: self.token_mint.to_account_info(),
                     adapter_program: self.margin_pool_program.to_account_info(),
                     pyth_price: self.system_program.to_account_info(),
                     pyth_product: self.system_program.to_account_info(),

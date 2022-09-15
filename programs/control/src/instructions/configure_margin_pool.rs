@@ -46,24 +46,29 @@ pub struct ConfigureMarginPool<'info> {
     #[cfg_attr(not(feature = "testing"), account(address = crate::ROOT_AUTHORITY))]
     pub requester: Signer<'info>,
     pub authority: Box<Account<'info, Authority>>,
-    pub token_mint: UncheckedAccount<'info>,
 
-    #[account(mut, has_one = token_mint)]
+    #[account(mut,
+        has_one = token_mint,
+        has_one = deposit_note_mint,
+        has_one = loan_note_mint
+    )]
     pub margin_pool: Box<Account<'info, MarginPool>>,
 
-    #[account(mut, has_one = token_mint)]
-    pub token_metadata: Box<Account<'info, TokenMeta>>,
+    pub token_mint: UncheckedAccount<'info>,
+    pub deposit_note_mint: UncheckedAccount<'info>,
+    pub loan_note_mint: UncheckedAccount<'info>,
 
-    #[account(mut, constraint = deposit_metadata.underlying_mint == token_mint.key())]
+    #[account(mut, constraint = deposit_metadata.token_mint == deposit_note_mint.key())]
     pub deposit_metadata: Box<Account<'info, TokenMeta>>,
 
-    #[account(mut, constraint = loan_metadata.underlying_mint == token_mint.key())]
+    #[account(mut, constraint = loan_metadata.token_mint == loan_note_mint.key())]
     pub loan_metadata: Box<Account<'info, TokenMeta>>,
 
     pub pyth_product: UncheckedAccount<'info>,
     pub pyth_price: UncheckedAccount<'info>,
     pub margin_pool_program: Program<'info, JetMarginPool>,
     pub margin_program: Program<'info, JetMargin>,
+    pub system_program: Program<'info, System>,
 }
 
 impl<'info> ConfigureMarginPool<'info> {
@@ -86,10 +91,11 @@ impl<'info> ConfigureMarginPool<'info> {
                 metadata: self.deposit_metadata.to_account_info(),
                 other: PositionTokenAccounts {
                     requester: self.requester.to_account_info(),
-                    token_mint: self.token_mint.to_account_info(),
+                    token_mint: self.deposit_note_mint.to_account_info(),
+                    underlying_mint: self.token_mint.to_account_info(),
                     adapter_program: self.margin_pool_program.to_account_info(),
-                    pyth_price: self.pyth_price.to_account_info(),
-                    pyth_product: self.pyth_product.to_account_info(),
+                    pyth_price: self.system_program.to_account_info(),
+                    pyth_product: self.system_program.to_account_info(),
                 },
             },
         )
@@ -102,10 +108,11 @@ impl<'info> ConfigureMarginPool<'info> {
                 metadata: self.loan_metadata.to_account_info(),
                 other: PositionTokenAccounts {
                     requester: self.requester.to_account_info(),
-                    token_mint: self.token_mint.to_account_info(),
+                    token_mint: self.loan_note_mint.to_account_info(),
+                    underlying_mint: self.token_mint.to_account_info(),
                     adapter_program: self.margin_pool_program.to_account_info(),
-                    pyth_price: self.pyth_price.to_account_info(),
-                    pyth_product: self.pyth_product.to_account_info(),
+                    pyth_price: self.system_program.to_account_info(),
+                    pyth_product: self.system_program.to_account_info(),
                 },
             },
         )

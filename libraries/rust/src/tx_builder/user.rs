@@ -19,7 +19,6 @@ use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
 use jet_margin_pool::program::JetMarginPool;
-use jet_metadata::{PositionTokenMetadata, TokenMetadata};
 
 use anyhow::{bail, Result};
 use solana_sdk::instruction::Instruction;
@@ -30,7 +29,7 @@ use solana_sdk::transaction::Transaction;
 
 use anchor_lang::{AccountDeserialize, Id};
 
-use jet_margin::{MarginAccount, PositionKind};
+use jet_margin::{MarginAccount, PositionKind, TokenMeta};
 use jet_margin_pool::TokenChange;
 use jet_simulation::solana_rpc_api::SolanaRpcClient;
 
@@ -267,7 +266,7 @@ impl MarginTxBuilder {
     pub async fn borrow(&self, token_mint: &Pubkey, change: TokenChange) -> Result<Transaction> {
         let mut instructions = vec![];
         let pool = MarginPoolIxBuilder::new(*token_mint);
-        let token_metadata = self.get_token_metadata(token_mint).await?;
+        let token_metadata = self.get_token_meta(token_mint).await?;
 
         let deposit_position = self
             .get_or_create_position(&mut instructions, &pool.deposit_note_mint)
@@ -403,7 +402,7 @@ impl MarginTxBuilder {
             .get_or_create_position(&mut instructions, &destination_pool.deposit_note_mint)
             .await?;
 
-        let destination_metadata = self.get_token_metadata(destination_token_mint).await?;
+        let destination_metadata = self.get_token_meta(destination_token_mint).await?;
 
         // Only refreshing the destination due to transaction size.
         // The most common scenario would be that a new margin position is created
@@ -497,7 +496,7 @@ impl MarginTxBuilder {
 
     /// Refresh a user's position in a margin pool
     pub async fn refresh_pool_position(&self, token_mint: &Pubkey) -> Result<Transaction> {
-        let metadata = self.get_token_metadata(token_mint).await?;
+        let metadata = self.get_token_meta(token_mint).await?;
         let ix_builder = MarginPoolIxBuilder::new(*token_mint);
         let ix = self.ix.adapter_invoke(
             ix_builder.margin_refresh_position(self.ix.address, metadata.pyth_price),
@@ -572,54 +571,34 @@ impl MarginTxBuilder {
         let mut seen_pools = HashSet::new();
 
         for position in state.positions() {
-            let p_metadata = self.get_position_metadata(&position.token).await?;
-            if seen_pools.contains(&p_metadata.underlying_token_mint) {
+            let p_metadata = self.get_token_meta(&position.token).await?;
+            if seen_pools.contains(&p_metadata.underlying_mint) {
                 continue;
             }
-            let t_metadata = self
-                .get_token_metadata(&p_metadata.underlying_token_mint)
-                .await?;
-            let ix_builder = MarginPoolIxBuilder::new(p_metadata.underlying_token_mint);
+            let t_metadata = self.get_token_meta(&p_metadata.underlying_mint).await?;
+            let ix_builder = MarginPoolIxBuilder::new(p_metadata.underlying_mint);
             let ix = self.ix.accounting_invoke(
                 ix_builder.margin_refresh_position(self.ix.address, t_metadata.pyth_price),
             );
 
             instructions.push(ix);
-            seen_pools.insert(p_metadata.underlying_token_mint);
+            seen_pools.insert(p_metadata.underlying_mint);
         }
 
         Ok(())
     }
 
-    async fn get_token_metadata(&self, token_mint: &Pubkey) -> Result<TokenMetadata> {
-        let (md_address, _) =
-            Pubkey::find_program_address(&[token_mint.as_ref()], &jet_metadata::ID);
-        let account_data = self.rpc.get_account(&md_address).await?;
-
-        match account_data {
-            None => bail!("no metadata {} found for token {}", md_address, token_mint),
-            Some(account) => Ok(TokenMetadata::try_deserialize(&mut &account.data[..])?),
-        }
-    }
-
-    async fn get_position_metadata(
-        &self,
-        position_token_mint: &Pubkey,
-    ) -> Result<PositionTokenMetadata> {
-        let (md_address, _) =
-            Pubkey::find_program_address(&[position_token_mint.as_ref()], &jet_metadata::ID);
-
+    async fn get_token_meta(&self, token_mint: &Pubkey) -> Result<TokenMeta> {
+        let md_address = token_metadata_address(token_mint);
         let account_data = self.rpc.get_account(&md_address).await?;
 
         match account_data {
             None => bail!(
                 "no metadata {} found for position token {}",
                 md_address,
-                position_token_mint
+                token_mint
             ),
-            Some(account) => Ok(PositionTokenMetadata::try_deserialize(
-                &mut &account.data[..],
-            )?),
+            Some(account) => Ok(TokenMeta::try_deserialize(&mut &account.data[..])?),
         }
     }
 

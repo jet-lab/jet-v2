@@ -24,9 +24,46 @@ use anchor_lang::prelude::{Id, System, ToAccountMetas};
 use anchor_lang::InstructionData;
 use anchor_spl::token::Token;
 
-use jet_margin::accounts as ix_account;
-use jet_margin::instruction as ix_data;
 use jet_margin::program::JetMargin;
+use jet_margin::{accounts as ix_account, PositionParams};
+use jet_margin::{instruction as ix_data, PositionKind};
+
+use super::token_metadata_address;
+
+/// registers a token as a form of collateral in margin that can be directly priced by margin
+pub fn register_direct_collateral(
+    requester: Pubkey,
+    token_mint: Pubkey,
+    pyth_price: Pubkey,
+    pyth_product: Pubkey,
+    collateral_weight: u16,
+) -> Instruction {
+    let accounts = ix_account::RegisterToken {
+        metadata: token_metadata_address(&token_mint),
+        other: ix_account::PositionTokenAccounts {
+            requester,
+            token_mint,
+            adapter_program: JetMargin::id(),
+            pyth_price,
+            pyth_product,
+            underlying_mint: SYSTEM_PROGAM_ID,
+        },
+        system_program: SYSTEM_PROGAM_ID,
+    };
+
+    Instruction {
+        program_id: JetMargin::id(),
+        data: ix_data::RegisterToken {
+            params: Some(PositionParams {
+                position_kind: PositionKind::Deposit,
+                value_modifier: collateral_weight,
+                max_staleness: 0,
+            }),
+        }
+        .data(),
+        accounts: accounts.to_account_metas(None),
+    }
+}
 
 /// Utility for creating instructions to interact with the margin
 /// program for a specific account.
@@ -142,8 +179,7 @@ impl MarginIxBuilder {
     pub fn register_position(&self, position_token_mint: Pubkey) -> (Pubkey, Instruction) {
         let (token_account, _) = owned_position_token_account(&self.address, &position_token_mint);
 
-        let (metadata, _) =
-            Pubkey::find_program_address(&[position_token_mint.as_ref()], &jet_metadata::ID);
+        let metadata = token_metadata_address(&position_token_mint);
 
         let accounts = ix_account::RegisterPosition {
             authority: self.authority(),
@@ -200,11 +236,8 @@ impl MarginIxBuilder {
     ///
     /// `position_token_mint` - The mint for the position to be refreshed
     pub fn refresh_position_metadata(&self, position_token_mint: &Pubkey) -> Instruction {
-        let (metadata, _) =
-            Pubkey::find_program_address(&[position_token_mint.as_ref()], &jet_metadata::ID);
-
         let accounts = ix_account::RefreshPositionMetadata {
-            metadata,
+            metadata: token_metadata_address(position_token_mint),
             margin_account: self.address,
         };
 

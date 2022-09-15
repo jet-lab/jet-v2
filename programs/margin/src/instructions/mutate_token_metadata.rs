@@ -33,6 +33,9 @@ pub struct PositionTokenAccounts<'info> {
 
     /// set iff margin is the adapter program
     pub pyth_product: AccountInfo<'info>,
+
+    /// optional
+    pub underlying_mint: AccountInfo<'info>,
 }
 
 pub fn mutate_token_handler(
@@ -63,8 +66,7 @@ pub fn mutate_token_impl(
 
     if_not_default! {
         metadata = {
-            underlying_mint: accounts.token_mint.key(),
-            token_mint: accounts.token_mint.key(),
+            underlying_mint: accounts.underlying_mint.key(),
             adapter_program: accounts.adapter_program.key(),
             pyth_price: accounts.pyth_price.key(),
             pyth_product: accounts.pyth_product.key(),

@@ -27,8 +27,8 @@ use anyhow::{bail, Error};
 
 use jet_margin::{AccountPosition, MarginAccount, PositionKind};
 use jet_margin_sdk::ix_builder::{
-    get_control_authority_address, get_metadata_address, ControlIxBuilder, MarginPoolConfiguration,
-    MarginPoolIxBuilder,
+    get_control_authority_address, get_metadata_address, register_direct_collateral,
+    ControlIxBuilder, MarginPoolConfiguration, MarginPoolIxBuilder,
 };
 use jet_margin_sdk::solana::transaction::TransactionBuilder;
 use jet_margin_sdk::spl_swap::SplSwapPool;
@@ -178,11 +178,20 @@ impl MarginClient {
     }
 
     /// Create a new margin pool for a token
+    /// register in margin the token and its associated loan and deposit notes
     pub async fn create_pool(&self, setup_info: &MarginPoolSetupInfo) -> Result<(), Error> {
-        let ix =
+        let register_token = register_direct_collateral(
+            self.rpc.payer().pubkey(),
+            setup_info.token,
+            setup_info.oracle.price,
+            setup_info.oracle.product,
+            setup_info.collateral_weight,
+        );
+
+        let create_pool =
             ControlIxBuilder::new(self.rpc.payer().pubkey()).create_margin_pool(&setup_info.token);
 
-        send_and_confirm(&self.rpc, &[ix], &[]).await?;
+        send_and_confirm(&self.rpc, &[register_token, create_pool], &[]).await?;
 
         self.configure_margin_pool(
             &setup_info.token,
