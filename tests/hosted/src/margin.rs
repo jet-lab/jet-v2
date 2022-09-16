@@ -33,7 +33,7 @@ use jet_margin_sdk::ix_builder::{
 use jet_margin_sdk::solana::transaction::TransactionBuilder;
 use jet_margin_sdk::spl_swap::SplSwapPool;
 use jet_margin_sdk::tokens::TokenOracle;
-use jet_rpc::solana_rpc_api::{SolanaConnection, SolanaRpcClient};
+use jet_rpc::solana_rpc_api::{AsyncSigner, SolanaConnection, SolanaRpcClient};
 use solana_sdk::instruction::Instruction;
 use solana_sdk::signature::{Keypair, Signer};
 use solana_sdk::system_program;
@@ -64,7 +64,7 @@ impl MarginClient {
         Self { rpc }
     }
 
-    pub fn user(&self, keypair: &Keypair, seed: u16) -> Result<MarginUser, Error> {
+    pub fn user(&self, signer: AsyncSigner, seed: u16) -> Result<MarginUser, Error> {
         let tx = MarginTxBuilder::new(
             self.rpc.clone() as Arc<dyn SolanaRpcClient>,
             Some(Keypair::from_bytes(&keypair.to_bytes())?),
@@ -227,7 +227,7 @@ impl MarginClient {
 #[derive(Clone)]
 pub struct MarginUser {
     tx: MarginTxBuilder,
-    rpc: Arc<dyn SolanaRpcClient>,
+    rpc: Arc<dyn SolanaConnection>,
 }
 
 impl std::fmt::Debug for MarginUser {

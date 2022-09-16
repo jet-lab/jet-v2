@@ -27,6 +27,7 @@ use jet_margin_sdk::solana::transaction::{SendTransactionBuilder, TransactionBui
 use jet_margin_sdk::spl_swap::SplSwapPool;
 use jet_margin_sdk::util::asynchronous::MapAsync;
 use jet_rpc::generate_test_keypair;
+use jet_rpc::solana_rpc_api::SolanaConnection;
 use jet_rpc::solana_rpc_api::SolanaRpcClient;
 use jet_static_program_registry::{
     orca_swap_v1, orca_swap_v2, related_programs, spl_token_swap_v2,
@@ -53,7 +54,7 @@ pub type SwapRegistry = HashMap<Pubkey, HashMap<Pubkey, SplSwapPool>>;
 pub const ONE: u64 = 1_000_000_000;
 
 pub async fn create_swap_pools(
-    rpc: &Arc<dyn SolanaRpcClient>,
+    rpc: Arc<dyn SolanaConnection>,
     mints: &[Pubkey],
 ) -> Result<SwapRegistry> {
     let mut registry = SwapRegistry::new();
@@ -72,7 +73,7 @@ pub async fn create_swap_pools(
 }
 
 async fn create_and_insert(
-    rpc: &Arc<dyn SolanaRpcClient>,
+    rpc: Arc<dyn SolanaRpcClient>,
     one: Pubkey,
     two: Pubkey,
 ) -> Result<(Pubkey, Pubkey, SplSwapPool)> {
@@ -127,7 +128,7 @@ impl SwapPoolConfig for SplSwapPool {
     /// Configure a new swap pool. Supply the amount of tokens to avoid needing
     /// to deposit tokens separately.
     async fn configure(
-        rpc: &Arc<dyn SolanaRpcClient>,
+        rpc: Arc<dyn SolanaConnection>,
         program_id: &Pubkey,
         mint_a: &Pubkey,
         mint_b: &Pubkey,
@@ -243,7 +244,7 @@ impl SwapPoolConfig for SplSwapPool {
 
     async fn swap_tx<S: Signer + Sync + Send>(
         &self,
-        rpc: &Arc<dyn SolanaRpcClient>,
+        rpc: Arc<dyn SolanaRpcClient>,
         source: &Pubkey,
         dest: &Pubkey,
         amount_in: u64,

@@ -1,9 +1,11 @@
 use std::collections::HashMap;
+use std::sync::Arc;
 
 use anyhow::{Error, Result};
 
 use jet_margin_sdk::tokens::TokenPrice;
 use jet_margin_sdk::util::asynchronous::MapAsync;
+use jet_rpc::solana_rpc_api::SolanaRpcClient;
 use jet_rpc::{create_test_wallet, generate_test_keypair};
 use solana_sdk::native_token::LAMPORTS_PER_SOL;
 use solana_sdk::pubkey::Pubkey;
@@ -105,9 +107,9 @@ pub async fn create_tokens(
     let tokens: Vec<Pubkey> = (0..n)
         .map_async(|_| setup_token(ctx, 9, 1_00, 4_00, 1.0))
         .await?;
-    let owner = ctx.rpc.payer().pubkey();
+    let owner = ctx.rpc.payer();
     let (swaps, vaults) = try_join!(
-        create_swap_pools(&ctx.rpc, &tokens),
+        create_swap_pools(ctx.rpc.clone(), &tokens),
         tokens
             .iter()
             .map_async(|mint| { ctx.tokens.create_account_funded(mint, &owner, u64::MAX / 4) })
@@ -117,7 +119,7 @@ pub async fn create_tokens(
         .into_iter()
         .zip(vaults)
         .collect::<HashMap<Pubkey, Pubkey>>();
-    let pricer = TokenPricer::new(&ctx.rpc, vaults, &swaps);
+    let pricer = TokenPricer::new(ctx.rpc.clone(), vaults, &swaps);
 
     Ok((tokens, swaps, pricer))
 }
@@ -128,7 +130,7 @@ pub async fn setup_user(
     tokens: Vec<(Pubkey, u64, u64)>,
 ) -> Result<TestUser> {
     // Create our two user wallets, with some SOL funding to get started
-    let wallet = create_test_wallet(&ctx.rpc, 10 * LAMPORTS_PER_SOL).await?;
+    let wallet = create_test_wallet(Arc::new(ctx.rpc), 10 * LAMPORTS_PER_SOL).await?;
 
     // Create the user context helpers, which give a simple interface for executing
     // common actions on a margin account

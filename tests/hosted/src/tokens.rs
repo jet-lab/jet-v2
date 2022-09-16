@@ -22,11 +22,11 @@ use std::time::Duration;
 use anyhow::{bail, Error};
 use bytemuck::Zeroable;
 
-use jet_margin_sdk::solana::transaction::{SendTransactionBuilder, TransactionBuilder};
+use jet_margin_sdk::solana::transaction::TransactionBuilder;
 use jet_margin_sdk::tokens::{TokenOracle, TokenPrice};
 use jet_margin_sdk::util::asynchronous::with_retries_and_timeout;
 use jet_rpc::generate_test_keypair;
-use jet_rpc::solana_rpc_api::{SolanaConnection, SolanaRpcClient};
+use jet_rpc::solana_rpc_api::{AsyncSigner, SolanaConnection, SolanaRpcClient};
 use solana_sdk::instruction::Instruction;
 use solana_sdk::program_pack::Pack;
 use solana_sdk::pubkey::Pubkey;
@@ -72,6 +72,7 @@ impl TokenManager {
         mint_authority: Option<&Pubkey>,
         freeze_authority: Option<&Pubkey>,
     ) -> Result<Pubkey, Error> {
+        let signer = AsyncSigner::new(keypair);
         let payer = self.rpc.payer();
         let space = spl_token::state::Mint::LEN;
         let rent_lamports = self
@@ -80,8 +81,8 @@ impl TokenManager {
             .await?;
 
         let ix_create_account = system_instruction::create_account(
-            &payer.pubkey(),
-            &keypair.pubkey(),
+            &payer,
+            &signer.pubkey(),
             rent_lamports,
             space as u64,
             &spl_token::ID,
@@ -89,22 +90,22 @@ impl TokenManager {
 
         let ix_initialize = spl_token::instruction::initialize_mint(
             &spl_token::ID,
-            &keypair.pubkey(),
-            mint_authority.unwrap_or(&payer.pubkey()),
+            &signer.pubkey(),
+            mint_authority.unwrap_or(&payer),
             freeze_authority,
             decimals,
         )?;
 
         self.rpc
-            .sign_send_instructions(&[ix_create_account, ix_initialize], &[&keypair])
+            .sign_send_instructions(&[ix_create_account, ix_initialize], &[signer.clone()])
             .await?;
 
-        Ok(keypair.pubkey())
+        Ok(signer.pubkey())
     }
 
     /// Create a new token account belonging to the owner, with the supplied mint
     pub async fn create_account(&self, mint: &Pubkey, owner: &Pubkey) -> Result<Pubkey, Error> {
-        let keypair = generate_test_keypair();
+        let signer = AsyncSigner::new(generate_test_keypair());
         let payer = self.rpc.payer();
         let space = spl_token::state::Account::LEN;
         let rent_lamports = self
@@ -114,7 +115,7 @@ impl TokenManager {
 
         let ix_create_account = system_instruction::create_account(
             &payer,
-            &keypair.pubkey(),
+            &signer.pubkey(),
             rent_lamports,
             space as u64,
             &spl_token::ID,
@@ -122,16 +123,15 @@ impl TokenManager {
 
         let ix_initialize = spl_token::instruction::initialize_account(
             &spl_token::ID,
-            &keypair.pubkey(),
+            &signer.pubkey(),
             mint,
             owner,
         )?;
-
         self.rpc
-            .sign_send_instructions(&[ix_create_account, ix_initialize], &[&keypair])
+            .sign_send_instructions(&[ix_create_account, ix_initialize], &[signer.clone()])
             .await?;
 
-        Ok(keypair.pubkey())
+        Ok(signer.pubkey())
     }
 
     /// Create a new token account with some initial balance
@@ -167,7 +167,7 @@ impl TokenManager {
                 key_account: *mint,
                 metadata_account: address,
                 authority: Self::get_authority_address(),
-                payer: payer.pubkey(),
+                payer,
                 system_program: system_program::ID,
             }
             .to_account_metas(None),
@@ -250,7 +250,10 @@ impl TokenManager {
 
     pub async fn refresh_to_same_price(&self, mint: &Pubkey) -> Result<(), Error> {
         self.rpc
-            .send_and_confirm_transaction(self.refresh_to_same_price_tx(mint).await?.)
+            .sign_send_instructions(
+                &self.refresh_to_same_price_tx(mint).await?.instructions,
+                &[],
+            )
             .await?;
 
         Ok(())
@@ -292,7 +295,7 @@ impl TokenManager {
     /// Set the oracle price of a token
     pub async fn set_price(&self, mint: &Pubkey, price: &TokenPrice) -> Result<(), Error> {
         self.rpc
-            .send_and_confirm(self.set_price_tx(mint, price)?)
+            .sign_send_instructions(&self.set_price_tx(mint, price)?.instructions, &[])
             .await?;
 
         Ok(())
@@ -346,7 +349,7 @@ impl TokenManager {
         value: &T,
     ) -> Result<(), Error> {
         self.rpc
-            .send_and_confirm(self.set_pod_metadata_tx(address, value)?)
+            .sign_send_instructions(&self.set_pod_metadata_tx(address, value)?.instructions, &[])
             .await?;
 
         Ok(())

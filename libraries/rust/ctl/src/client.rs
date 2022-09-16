@@ -59,7 +59,7 @@ impl ClientConfig {
             &mut remote_wallet_manager,
         )
         .map(Arc::from)
-        .map(|s| AsyncSigner::new(s))
+        .map(|s| AsyncSigner::new_from_arc(s))
         .ok();
 
         Ok(ClientConfig {

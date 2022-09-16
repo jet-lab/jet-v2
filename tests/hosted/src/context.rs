@@ -45,8 +45,7 @@ pub struct MarginTestContext {
 impl std::fmt::Debug for MarginTestContext {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("MarginTestContext")
-            .field("authority", &self.authority)
-            .field("payer", &self.payer)
+            .field("payer", &self.rpc.payer())
             .finish()
     }
 }

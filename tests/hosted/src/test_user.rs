@@ -2,8 +2,10 @@ use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 
 use anyhow::Result;
-use jet_margin_sdk::solana::transaction::{SendTransactionBuilder, TransactionBuilder};
+use jet_margin_sdk::solana::transaction::TransactionBuilder;
 use jet_margin_sdk::util::asynchronous::MapAsync;
+use jet_rpc::solana_rpc_api::AsyncSigner;
+use solana_sdk::instruction::Instruction;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::{Keypair, Signer};
 
@@ -149,7 +151,16 @@ impl<'a> TestUser<'a> {
             vec![]
         };
         txs.push(self.user.liquidate_begin_tx(refresh_positions).await?);
-        self.ctx.rpc.send_and_confirm_condensed(txs).await?;
+        let ixs = txs
+            .clone()
+            .into_iter()
+            .flat_map(|tx| tx.instructions)
+            .collect::<Vec<Instruction>>();
+        let signers = txs
+            .into_iter()
+            .flat_map(|tx| tx.signers.map(|s| AsyncSigner::new(s)))
+            .collect::<Vec<AsyncSigner>>();
+        self.ctx.rpc.sign_send_instructions(&ixs, &signers).await?;
 
         Ok(())
     }
