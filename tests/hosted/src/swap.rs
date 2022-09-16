@@ -26,7 +26,8 @@ use itertools::Itertools;
 use jet_margin_sdk::solana::transaction::{SendTransactionBuilder, TransactionBuilder};
 use jet_margin_sdk::spl_swap::SplSwapPool;
 use jet_margin_sdk::util::asynchronous::MapAsync;
-use jet_simulation::{generate_keypair, solana_rpc_api::SolanaRpcClient};
+use jet_rpc::generate_test_keypair;
+use jet_rpc::solana_rpc_api::SolanaRpcClient;
 use jet_static_program_registry::{
     orca_swap_v1, orca_swap_v2, related_programs, spl_token_swap_v2,
 };
@@ -138,7 +139,7 @@ impl SwapPoolConfig for SplSwapPool {
 
         // Create a TokenManager instance
         let token_manager = TokenManager::new(rpc.clone());
-        let keypair = generate_keypair();
+        let keypair = generate_test_keypair();
 
         // Create an empty pool state account
         // The SPL Token Swap program requires extra padding of 1 byte

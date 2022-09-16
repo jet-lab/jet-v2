@@ -36,7 +36,24 @@ pub async fn process_deploy_manager(
     client: &Client,
     params: DeployBondMarketParameters,
 ) -> Result<Plan> {
-    let init_manager = BondsIxBuilder::new_from_seed(&params.token_mint, map_seed(params.seed))
-        .with_payer(&client.signer()?);
-    todo!()
+    let seed = map_seed(params.seed);
+    let ix = BondsIxBuilder::new_from_seed(&params.token_mint, seed)
+        .with_payer(&client.signer()?)
+        .with_authority(&params.program_authority);
+    let init_manager = ix.initialize_manager(
+        params.version_tag,
+        seed,
+        params.duration,
+        &params.token_mint,
+        &params.token_oracle.unwrap_or_default(),
+        &params.ticket_oracle.unwrap_or_default(),
+    )?;
+    Ok(client
+        .plan()?
+        .instructions(
+            [],
+            [format!("initialize-manager {}", ix.manager())],
+            [init_manager],
+        )
+        .build())
 }

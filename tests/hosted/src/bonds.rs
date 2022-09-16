@@ -18,7 +18,7 @@ use jet_bonds_sdk::builder::{event_builder::build_consume_events_info, BondsIxBu
 use jet_margin_sdk::ix_builder::{
     get_control_authority_address, get_metadata_address, ControlIxBuilder,
 };
-use jet_simulation::{send_and_confirm, solana_rpc_api::SolanaRpcClient};
+use jet_rpc::solana_rpc_api::{SolanaConnection, SolanaRpcClient};
 use solana_sdk::{
     hash::Hash,
     instruction::Instruction,
@@ -66,10 +66,8 @@ mod keys {
 }
 
 pub struct BondsTestManager {
-    client: Arc<dyn SolanaRpcClient>,
+    ctx: Arc<dyn SolanaConnection>,
     pub ix_builder: BondsIxBuilder,
-    pub kps: Keys<Keypair>,
-    pub keys: Keys<Pubkey>,
 }
 
 #[derive(Debug, Default, Clone)]
@@ -95,155 +93,27 @@ impl<T> Keys<T> {
 
 impl Clone for BondsTestManager {
     fn clone(&self) -> Self {
-        Self {
-            client: self.client.clone(),
-            ix_builder: self.ix_builder.clone(),
-            kps: Keys(
-                self.kps
-                    .0
-                    .iter()
-                    .map(|(k, v)| (k.clone(), Keypair::from_bytes(&v.to_bytes()).unwrap()))
-                    .collect(),
-            ),
-            keys: self.keys.clone(),
-        }
+        todo!()
     }
 }
 
 impl BondsTestManager {
     pub async fn full(client: Arc<dyn SolanaRpcClient>) -> Result<Self> {
-        Self::new(client)
-            .await?
-            .with_bonds()
-            .await?
-            .with_crank()
-            .await?
-            .with_margin()
-            .await
+        Self::new(client).await?.with_bonds().await
+        // .with_crank()
+        // .await?
+        // .with_margin()
+        // .await
     }
 
-    pub async fn new(client: Arc<dyn SolanaRpcClient>) -> Result<Self> {
-        let payer = client.payer();
-        let program_authority = keys::authority();
-
-        let test_token_mint = {
-            let mint_keypair = Keypair::new();
-            let recent_blockhash = client.get_latest_blockhash().await?;
-            let rent = client
-                .get_minimum_balance_for_rent_exemption(Mint::LEN)
-                .await?;
-            let transaction =
-                initialize_test_mint_transaction(&mint_keypair, payer, 6, rent, recent_blockhash);
-            client.send_and_confirm_transaction(&transaction).await?;
-            mint_keypair
-        };
-
-        let ix_builder =
-            BondsIxBuilder::new_from_seed(&test_token_mint.pubkey(), BOND_MANAGER_SEED)
-                .with_payer(&payer.pubkey())
-                .with_authority(&program_authority.pubkey());
-
-        let mut manager = Self {
-            client: client.clone(),
-            ix_builder,
-            kps: Keys::new(),
-            keys: Keys::new(),
-        };
-        manager.insert_kp(
-            "payer",
-            Keypair::from_base58_string(&payer.to_base58_string()),
-        );
-        manager.insert_kp("authority", program_authority);
-        manager.insert_kp("token_mint", test_token_mint);
-
-        Ok(manager)
-    }
+    pub async fn new(client: Arc<dyn SolanaRpcClient>) -> Result<Self> {}
 
     pub async fn with_bonds(mut self) -> Result<Self> {
-        let eq_kp = Keypair::new();
-        let bids_kp = Keypair::new();
-        let asks_kp = Keypair::new();
-
-        let init_eq = {
-            let rent = self
-                .client
-                .get_minimum_balance_for_rent_exemption(event_queue_len(
-                    EVENT_QUEUE_CAPACITY as usize,
-                ))
-                .await?;
-            self.ix_builder.initialize_event_queue(
-                &eq_kp.pubkey(),
-                EVENT_QUEUE_CAPACITY as usize,
-                rent,
-            )?
-        };
-
-        let init_bids = {
-            let rent = self
-                .client
-                .get_minimum_balance_for_rent_exemption(orderbook_slab_len(
-                    ORDERBOOK_CAPACITY as usize,
-                ))
-                .await?;
-            self.ix_builder.initialize_orderbook_slab(
-                &bids_kp.pubkey(),
-                ORDERBOOK_CAPACITY as usize,
-                rent,
-            )?
-        };
-        let init_asks = {
-            let rent = self
-                .client
-                .get_minimum_balance_for_rent_exemption(orderbook_slab_len(
-                    ORDERBOOK_CAPACITY as usize,
-                ))
-                .await?;
-            self.ix_builder.initialize_orderbook_slab(
-                &asks_kp.pubkey(),
-                ORDERBOOK_CAPACITY as usize,
-                rent,
-            )?
-        };
-
-        self.ix_builder = self.ix_builder.with_orderbook_accounts(
-            Some(bids_kp.pubkey()),
-            Some(asks_kp.pubkey()),
-            Some(eq_kp.pubkey()),
-        );
-
-        let ixns = vec![init_eq, init_bids, init_asks];
-        self.insert_kp("eq", eq_kp);
-        self.insert_kp("bids", bids_kp);
-        self.insert_kp("asks", asks_kp);
-
-        self.sign_send_transaction(&ixns, None).await?;
-
-        let init_manager = self.ix_builder.initialize_manager(
-            BOND_MANAGER_TAG,
-            BOND_MANAGER_SEED,
-            STAKE_DURATION,
-            self.keys.unwrap("token_mint")?,
-            &Pubkey::default(),
-            &Pubkey::default(),
-        )?;
-        let init_orderbook = self
-            .ix_builder
-            .initialize_orderbook(self.keys.unwrap("authority")?, MIN_ORDER_SIZE)?;
-        self.sign_send_transaction(&[init_manager, init_orderbook], None)
-            .await?;
-
-        Ok(self)
+        todo!()
     }
 
     pub async fn with_crank(mut self) -> Result<Self> {
-        let crank = Keypair::new();
-
-        self.ix_builder = self.ix_builder.with_crank(&crank.pubkey());
-        let auth_crank = self.ix_builder.authorize_crank_instruction()?;
-        self.insert_kp("crank", crank);
-
-        self.sign_send_transaction(&[auth_crank], None).await?;
-        Ok(self)
+        todo!()
     }
 
     /// set up metadata authorization for margin to invoke bonds
@@ -341,7 +211,7 @@ impl BondsTestManager {
     pub async fn create_authority(&self) -> Result<()> {
         let ix = ControlIxBuilder::new(self.client.payer().pubkey()).create_authority();
 
-        send_and_confirm(&self.client, &[ix], &[]).await?;
+        self.ctx.sign_send_instructions(&[ix], &[]).await?;
         Ok(())
     }
 
@@ -361,7 +231,7 @@ impl BondsTestManager {
     pub async fn register_adapter(&self, adapter: &Pubkey) -> Result<()> {
         let ix = ControlIxBuilder::new(self.client.payer().pubkey()).register_adapter(adapter);
 
-        send_and_confirm(&self.client, &[ix], &[]).await?;
+        self.ctx.sign_send_instructions(&[ix], &[]).await?;
         Ok(())
     }
 

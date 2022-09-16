@@ -5,7 +5,7 @@ use anchor_lang::prelude::Pubkey;
 use anyhow::Result;
 use clap::{AppSettings, Parser, Subcommand};
 use client::{Client, ClientConfig};
-use jet_rpc::{solana_rpc_api::RpcConnection, LOCALHOST_URL};
+use jet_rpc::{connection::RpcConnection, LOCALHOST_URL};
 use serde::Deserialize;
 use serde_with::{serde_as, DisplayFromStr};
 

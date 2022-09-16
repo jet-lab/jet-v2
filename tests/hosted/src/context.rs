@@ -2,16 +2,18 @@ use std::cell::RefCell;
 use std::sync::{Arc, Mutex};
 
 use anyhow::Error;
+use jet_rpc::connection::Client;
+use jet_rpc::create_test_wallet;
 use rand::rngs::mock::StepRng;
+use solana_sdk::native_token::LAMPORTS_PER_SOL;
 use tokio::sync::OnceCell;
 
-use solana_sdk::native_token::LAMPORTS_PER_SOL;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::{Keypair, Signer};
 
 use jet_margin_pool::MarginPoolConfig;
 use jet_metadata::TokenKind;
-use jet_simulation::solana_rpc_api::SolanaRpcClient;
+use jet_rpc::solana_rpc_api::{SolanaConnection, SolanaRpcClient};
 
 use crate::{margin::MarginClient, tokens::TokenManager};
 
@@ -33,12 +35,9 @@ pub struct MarginPoolSetupInfo {
 
 /// Utilities for testing things in the context of the margin system
 pub struct MarginTestContext {
-    pub rpc: Arc<dyn SolanaRpcClient>,
+    pub rpc: Arc<dyn SolanaConnection>,
     pub tokens: TokenManager,
     pub margin: MarginClient,
-
-    pub authority: Keypair,
-    pub payer: Keypair,
 
     rng: Mutex<RefCell<MockRng>>,
 }
@@ -55,9 +54,9 @@ impl std::fmt::Debug for MarginTestContext {
 impl MarginTestContext {
     #[cfg(not(feature = "localnet"))]
     pub async fn new() -> Result<Self, Error> {
-        use jet_simulation::runtime::TestRuntime;
+        use jet_rpc::runtime::TestRuntime;
         use jet_static_program_registry::{orca_swap_v1, orca_swap_v2, spl_token_swap_v2};
-        let runtime = jet_simulation::create_test_runtime![
+        let runtime = jet_rpc::create_test_runtime![
             jet_bonds,
             jet_control,
             jet_margin,
@@ -89,15 +88,14 @@ impl MarginTestContext {
     }
 
     pub async fn new_with_runtime(runtime: Arc<dyn SolanaRpcClient>) -> Result<Self, Error> {
-        let payer = Keypair::from_bytes(&runtime.payer().to_bytes()).unwrap();
+        let payer = create_test_wallet(runtime.clone(), 20 * LAMPORTS_PER_SOL).await?;
         let rng = MockRng(StepRng::new(0, 1));
+        let conn = Arc::new(Client::new(runtime, payer.into()));
         let ctx = MarginTestContext {
-            tokens: TokenManager::new(runtime.clone()),
-            margin: MarginClient::new(runtime.clone()),
-            authority: Keypair::new(),
+            tokens: TokenManager::new(conn.clone()),
+            margin: MarginClient::new(conn.clone()),
             rng: Mutex::new(RefCell::new(rng)),
-            rpc: runtime,
-            payer,
+            rpc: conn,
         };
 
         ctx.margin.create_authority_if_missing().await?;
@@ -112,7 +110,8 @@ impl MarginTestContext {
     }
 
     pub async fn create_wallet(&self, sol_amount: u64) -> Result<Keypair, Error> {
-        jet_simulation::create_wallet(&self.rpc, sol_amount * LAMPORTS_PER_SOL).await
+        todo!()
+        // jet_rpc::create_wallet(&self.rpc, sol_amount * LAMPORTS_PER_SOL).await
     }
 
     pub fn generate_key(&self) -> Keypair {

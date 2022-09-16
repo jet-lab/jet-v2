@@ -1840,7 +1840,7 @@ dependencies = [
  "jet-margin-swap 1.0.0",
  "jet-metadata 1.0.0",
  "jet-proto-math 1.1.0 (git+https://github.com/jet-lab/program-libraries?branch=main)",
- "jet-simulation",
+ "jet-rpc",
  "jet-static-program-registry 0.1.0",
  "mock-adapter",
  "parking_lot 0.12.1",

@@ -5,14 +5,12 @@ use anyhow::Result;
 
 use itertools::Itertools;
 use jet_margin_sdk::cat;
-use jet_margin_sdk::solana::keypair::clone;
 use jet_margin_sdk::solana::transaction::{SendTransactionBuilder, TransactionBuilder};
 use jet_margin_sdk::spl_swap::SplSwapPool;
 use jet_margin_sdk::tokens::TokenPrice;
 use jet_margin_sdk::util::asynchronous::{AndAsync, MapAsync};
-use jet_simulation::solana_rpc_api::SolanaRpcClient;
+use jet_rpc::solana_rpc_api::SolanaConnection;
 use solana_sdk::pubkey::Pubkey;
-use solana_sdk::signature::Keypair;
 
 use tokio::try_join;
 
@@ -22,9 +20,8 @@ use crate::tokens::TokenManager;
 pub const ONE: u64 = 1_000_000_000;
 
 pub struct TokenPricer {
-    rpc: Arc<dyn SolanaRpcClient>,
+    rpc: Arc<dyn SolanaConnection>,
     pub tokens: TokenManager,
-    payer: Keypair,
     vaults: HashMap<Pubkey, Pubkey>,
     swap_registry: HashMap<Pubkey, HashMap<Pubkey, SplSwapPool>>,
 }
@@ -34,7 +31,6 @@ impl Clone for TokenPricer {
         Self {
             rpc: self.rpc.clone(),
             tokens: self.tokens.clone(),
-            payer: clone(&self.payer),
             vaults: self.vaults.clone(),
             swap_registry: self.swap_registry.clone(),
         }
@@ -42,25 +38,23 @@ impl Clone for TokenPricer {
 }
 
 impl TokenPricer {
-    pub fn new_without_swaps(rpc: &Arc<dyn SolanaRpcClient>) -> Self {
+    pub fn new_without_swaps(rpc: Arc<dyn SolanaConnection>) -> Self {
         Self {
             rpc: rpc.clone(),
             tokens: TokenManager::new(rpc.clone()),
-            payer: clone(rpc.payer()),
             vaults: HashMap::new(),
             swap_registry: SwapRegistry::new(),
         }
     }
 
     pub fn new(
-        rpc: &Arc<dyn SolanaRpcClient>,
+        rpc: Arc<dyn SolanaConnection>,
         vaults: HashMap<Pubkey, Pubkey>,
         swap_registry: &SwapRegistry,
     ) -> Self {
         Self {
             rpc: rpc.clone(),
             tokens: TokenManager::new(rpc.clone()),
-            payer: clone(rpc.payer()),
             vaults,
             swap_registry: swap_registry.clone(),
         }

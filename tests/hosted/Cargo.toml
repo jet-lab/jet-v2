@@ -48,7 +48,7 @@ jet-margin-sdk = { path = "../../libraries/rust/margin-sdk", features = ["testin
 
 mock-adapter = { path = "../mock-adapter", features = ["no-entrypoint"] }
 
-jet-simulation = { git = "https://github.com/jet-lab/jet-simulation", branch = "master" }
+jet-rpc = { path = "../../libraries/rust/rpc" }
 jet-proto-math = "1"
 
 itertools = "0.10.3"
