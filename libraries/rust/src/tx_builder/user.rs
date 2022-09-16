@@ -594,7 +594,7 @@ impl MarginTxBuilder {
 
         match account_data {
             None => bail!(
-                "no metadata {} found for position token {}",
+                "no TokenMeta account found at {} for token {}",
                 md_address,
                 token_mint
             ),

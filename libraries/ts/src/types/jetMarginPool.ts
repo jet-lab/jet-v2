@@ -419,7 +419,7 @@ export type JetMarginPool = {
           isSigner: true
         },
         {
-          name: "positionTokenMetadata"
+          name: "loanNoteMetadata"
           isMut: false
           isSigner: false
         },
@@ -1556,7 +1556,7 @@ export const IDL: JetMarginPool = {
           isSigner: true
         },
         {
-          name: "positionTokenMetadata",
+          name: "loanNoteMetadata",
           isMut: false,
           isSigner: false
         },

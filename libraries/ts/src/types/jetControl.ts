@@ -33,90 +33,91 @@ export type JetControl = {
       args: []
     },
     {
-      name: "createMarginPool"
-      accounts: [
+      "name": "createMarginPool",
+      "docs": [
+        "Register an SPL token for use with the protocol, by creating",
+        "a margin pool which can accept deposits for the token.",
+        "",
+        "Does not require special permission"
+      ],
+      "accounts": [
         {
-          name: "requester"
-          isMut: true
-          isSigner: true
+          "name": "requester",
+          "isMut": true,
+          "isSigner": true
         },
         {
-          name: "authority"
-          isMut: false
-          isSigner: false
+          "name": "authority",
+          "isMut": false,
+          "isSigner": false
         },
         {
-          name: "marginPool"
-          isMut: true
-          isSigner: false
+          "name": "marginPool",
+          "isMut": true,
+          "isSigner": false
         },
         {
-          name: "vault"
-          isMut: true
-          isSigner: false
+          "name": "vault",
+          "isMut": true,
+          "isSigner": false
         },
         {
-          name: "depositNoteMint"
-          isMut: true
-          isSigner: false
+          "name": "depositNoteMint",
+          "isMut": true,
+          "isSigner": false
         },
         {
-          name: "loanNoteMint"
-          isMut: true
-          isSigner: false
+          "name": "loanNoteMint",
+          "isMut": true,
+          "isSigner": false
         },
         {
-          name: "tokenMint"
-          isMut: false
-          isSigner: false
+          "name": "tokenMint",
+          "isMut": false,
+          "isSigner": false
         },
         {
-          name: "tokenMetadata"
-          isMut: true
-          isSigner: false
+          "name": "depositNoteMetadata",
+          "isMut": true,
+          "isSigner": false
         },
         {
-          name: "depositNoteMetadata"
-          isMut: true
-          isSigner: false
+          "name": "loanNoteMetadata",
+          "isMut": true,
+          "isSigner": false
         },
         {
-          name: "loanNoteMetadata"
-          isMut: true
-          isSigner: false
+          "name": "feeDestination",
+          "isMut": true,
+          "isSigner": false
         },
         {
-          name: "feeDestination"
-          isMut: true
-          isSigner: false
+          "name": "marginPoolProgram",
+          "isMut": false,
+          "isSigner": false
         },
         {
-          name: "marginPoolProgram"
-          isMut: false
-          isSigner: false
+          "name": "marginProgram",
+          "isMut": false,
+          "isSigner": false
         },
         {
-          name: "metadataProgram"
-          isMut: false
-          isSigner: false
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
         },
         {
-          name: "tokenProgram"
-          isMut: false
-          isSigner: false
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
         },
         {
-          name: "systemProgram"
-          isMut: false
-          isSigner: false
-        },
-        {
-          name: "rent"
-          isMut: false
-          isSigner: false
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false
         }
-      ]
-      args: []
+      ],
+      "args": []
     },
     {
       name: "registerAdapter"
@@ -160,78 +161,91 @@ export type JetControl = {
       args: []
     },
     {
-      name: "configureMarginPool"
-      accounts: [
+      "name": "configureMarginPool",
+      "docs": [
+        "Configure details about a margin pool"
+      ],
+      "accounts": [
         {
-          name: "requester"
-          isMut: false
-          isSigner: true
+          "name": "requester",
+          "isMut": false,
+          "isSigner": true
         },
         {
-          name: "authority"
-          isMut: false
-          isSigner: false
+          "name": "authority",
+          "isMut": false,
+          "isSigner": false
         },
         {
-          name: "tokenMint"
-          isMut: false
-          isSigner: false
+          "name": "marginPool",
+          "isMut": true,
+          "isSigner": false
         },
         {
-          name: "marginPool"
-          isMut: true
-          isSigner: false
+          "name": "tokenMint",
+          "isMut": false,
+          "isSigner": false
         },
         {
-          name: "tokenMetadata"
-          isMut: true
-          isSigner: false
+          "name": "depositNoteMint",
+          "isMut": false,
+          "isSigner": false
         },
         {
-          name: "depositMetadata"
-          isMut: true
-          isSigner: false
+          "name": "loanNoteMint",
+          "isMut": false,
+          "isSigner": false
         },
         {
-          name: "loanMetadata"
-          isMut: true
-          isSigner: false
+          "name": "depositMetadata",
+          "isMut": true,
+          "isSigner": false
         },
         {
-          name: "pythProduct"
-          isMut: false
-          isSigner: false
+          "name": "loanMetadata",
+          "isMut": true,
+          "isSigner": false
         },
         {
-          name: "pythPrice"
-          isMut: false
-          isSigner: false
+          "name": "pythProduct",
+          "isMut": false,
+          "isSigner": false
         },
         {
-          name: "marginPoolProgram"
-          isMut: false
-          isSigner: false
+          "name": "pythPrice",
+          "isMut": false,
+          "isSigner": false
         },
         {
-          name: "metadataProgram"
-          isMut: false
-          isSigner: false
+          "name": "marginPoolProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "marginProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
         }
-      ]
-      args: [
+      ],
+      "args": [
         {
-          name: "metadata"
-          type: {
-            option: {
-              defined: "TokenMetadataParams"
+          "name": "metadata",
+          "type": {
+            "option": {
+              "defined": "TokenMetadataParams"
             }
           }
         },
         {
-          name: "poolConfig"
-          type: {
-            option: {
-              defined: "MarginPoolConfig"
+          "name": "poolConfig",
+          "type": {
+            "option": {
+              "defined": "MarginPoolConfig"
             }
           }
         }
@@ -637,90 +651,91 @@ export const IDL: JetControl = {
       args: []
     },
     {
-      name: "createMarginPool",
-      accounts: [
+      "name": "createMarginPool",
+      "docs": [
+        "Register an SPL token for use with the protocol, by creating",
+        "a margin pool which can accept deposits for the token.",
+        "",
+        "Does not require special permission"
+      ],
+      "accounts": [
         {
-          name: "requester",
-          isMut: true,
-          isSigner: true
+          "name": "requester",
+          "isMut": true,
+          "isSigner": true
         },
         {
-          name: "authority",
-          isMut: false,
-          isSigner: false
+          "name": "authority",
+          "isMut": false,
+          "isSigner": false
         },
         {
-          name: "marginPool",
-          isMut: true,
-          isSigner: false
+          "name": "marginPool",
+          "isMut": true,
+          "isSigner": false
         },
         {
-          name: "vault",
-          isMut: true,
-          isSigner: false
+          "name": "vault",
+          "isMut": true,
+          "isSigner": false
         },
         {
-          name: "depositNoteMint",
-          isMut: true,
-          isSigner: false
+          "name": "depositNoteMint",
+          "isMut": true,
+          "isSigner": false
         },
         {
-          name: "loanNoteMint",
-          isMut: true,
-          isSigner: false
+          "name": "loanNoteMint",
+          "isMut": true,
+          "isSigner": false
         },
         {
-          name: "tokenMint",
-          isMut: false,
-          isSigner: false
+          "name": "tokenMint",
+          "isMut": false,
+          "isSigner": false
         },
         {
-          name: "tokenMetadata",
-          isMut: true,
-          isSigner: false
+          "name": "depositNoteMetadata",
+          "isMut": true,
+          "isSigner": false
         },
         {
-          name: "depositNoteMetadata",
-          isMut: true,
-          isSigner: false
+          "name": "loanNoteMetadata",
+          "isMut": true,
+          "isSigner": false
         },
         {
-          name: "loanNoteMetadata",
-          isMut: true,
-          isSigner: false
+          "name": "feeDestination",
+          "isMut": true,
+          "isSigner": false
         },
         {
-          name: "feeDestination",
-          isMut: true,
-          isSigner: false
+          "name": "marginPoolProgram",
+          "isMut": false,
+          "isSigner": false
         },
         {
-          name: "marginPoolProgram",
-          isMut: false,
-          isSigner: false
+          "name": "marginProgram",
+          "isMut": false,
+          "isSigner": false
         },
         {
-          name: "metadataProgram",
-          isMut: false,
-          isSigner: false
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
         },
         {
-          name: "tokenProgram",
-          isMut: false,
-          isSigner: false
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
         },
         {
-          name: "systemProgram",
-          isMut: false,
-          isSigner: false
-        },
-        {
-          name: "rent",
-          isMut: false,
-          isSigner: false
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false
         }
       ],
-      args: []
+      "args": []
     },
     {
       name: "registerAdapter",
@@ -764,78 +779,91 @@ export const IDL: JetControl = {
       args: []
     },
     {
-      name: "configureMarginPool",
-      accounts: [
+      "name": "configureMarginPool",
+      "docs": [
+        "Configure details about a margin pool"
+      ],
+      "accounts": [
         {
-          name: "requester",
-          isMut: false,
-          isSigner: true
+          "name": "requester",
+          "isMut": false,
+          "isSigner": true
         },
         {
-          name: "authority",
-          isMut: false,
-          isSigner: false
+          "name": "authority",
+          "isMut": false,
+          "isSigner": false
         },
         {
-          name: "tokenMint",
-          isMut: false,
-          isSigner: false
+          "name": "marginPool",
+          "isMut": true,
+          "isSigner": false
         },
         {
-          name: "marginPool",
-          isMut: true,
-          isSigner: false
+          "name": "tokenMint",
+          "isMut": false,
+          "isSigner": false
         },
         {
-          name: "tokenMetadata",
-          isMut: true,
-          isSigner: false
+          "name": "depositNoteMint",
+          "isMut": false,
+          "isSigner": false
         },
         {
-          name: "depositMetadata",
-          isMut: true,
-          isSigner: false
+          "name": "loanNoteMint",
+          "isMut": false,
+          "isSigner": false
         },
         {
-          name: "loanMetadata",
-          isMut: true,
-          isSigner: false
+          "name": "depositMetadata",
+          "isMut": true,
+          "isSigner": false
         },
         {
-          name: "pythProduct",
-          isMut: false,
-          isSigner: false
+          "name": "loanMetadata",
+          "isMut": true,
+          "isSigner": false
         },
         {
-          name: "pythPrice",
-          isMut: false,
-          isSigner: false
+          "name": "pythProduct",
+          "isMut": false,
+          "isSigner": false
         },
         {
-          name: "marginPoolProgram",
-          isMut: false,
-          isSigner: false
+          "name": "pythPrice",
+          "isMut": false,
+          "isSigner": false
         },
         {
-          name: "metadataProgram",
-          isMut: false,
-          isSigner: false
+          "name": "marginPoolProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "marginProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
         }
       ],
-      args: [
+      "args": [
         {
-          name: "metadata",
-          type: {
-            option: {
-              defined: "TokenMetadataParams"
+          "name": "metadata",
+          "type": {
+            "option": {
+              "defined": "TokenMetadataParams"
             }
           }
         },
         {
-          name: "poolConfig",
-          type: {
-            option: {
-              defined: "MarginPoolConfig"
+          "name": "poolConfig",
+          "type": {
+            "option": {
+              "defined": "MarginPoolConfig"
             }
           }
         }

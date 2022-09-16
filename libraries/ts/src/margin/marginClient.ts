@@ -1,6 +1,6 @@
 import { getAccount, NATIVE_MINT } from "@solana/spl-token"
-import { Program, AnchorProvider, BN, translateAddress } from "@project-serum/anchor"
-import { JetMargin, JetMarginPool, JetMarginSerum, JetMarginSwap, JetMetadata, TokenAmount, PoolAction } from ".."
+import { Program, AnchorProvider, BN, translateAddress, Address } from "@project-serum/anchor"
+import { JetMargin, JetMarginPool, JetMarginSerum, JetMarginSwap, JetMetadata, TokenAmount, PoolAction, findDerivedAccount, PositionKind } from ".."
 import {
   JetControl,
   JetControlIdl,
@@ -19,7 +19,9 @@ import {
   TransactionResponse,
   ParsedInstruction,
   ParsedInnerInstruction,
-  PartiallyDecodedInstruction
+  PartiallyDecodedInstruction,
+  SystemProgram,
+  TransactionInstruction
 } from "@solana/web3.js"
 
 interface TokenMintsList {
@@ -63,6 +65,57 @@ export interface MarginPrograms {
   marginSerum: Program<JetMarginSerum>
   marginSwap: Program<JetMarginSwap>
   metadata: Program<JetMetadata>
+}
+
+/**
+ * Execute administrative instructions in margin
+ * not related to a specific margin account
+ */
+export class MarginAdmin {
+  requester: PublicKey
+
+  constructor(public programs: MarginPrograms, public provider: AnchorProvider) {
+    this.requester = provider.wallet.publicKey
+  }
+
+  /**
+   * registers a token as a form of collateral in margin that can be directly priced by margin
+   */
+  async registerDirectCollateral({
+    tokenMint,
+    pythPrice,
+    pythProduct,
+    collateralWeight,
+    programs = this.programs,
+    requester = this.requester
+  }: {
+    tokenMint: Address
+    pythPrice: Address
+    pythProduct: Address
+    collateralWeight: number,
+    programs?: MarginPrograms
+    requester?: Address
+  }): Promise<TransactionInstruction> {
+    return await programs.margin.methods
+      .registerToken({
+        positionKind: PositionKind.Deposit as never,
+        valueModifier: collateralWeight,
+        maxStaleness: new BN(0),
+      })
+      .accounts({
+        metadata: tokenMetaPda(programs.config.marginProgramId, tokenMint),
+        other: {
+          requester,
+          tokenMint,
+          adapterProgram: programs.margin.programId,
+          pythPrice,
+          pythProduct,
+          underlyingMint: SystemProgram.programId,
+        },
+        systemProgram: SystemProgram.programId,
+      })
+      .instruction()
+  }
 }
 
 export class MarginClient {
@@ -315,4 +368,8 @@ export class MarginClient {
     const filteredParsedTransactions = parsedTransactions.filter(tx => !!tx) as AccountTransaction[]
     return filteredParsedTransactions.sort((a, b) => a.slot - b.slot)
   }
+}
+
+export function tokenMetaPda(marginProgramId: Address, tokenMint: Address): PublicKey {
+  return findDerivedAccount(marginProgramId, "token-metadata", tokenMint)
 }

@@ -1,4 +1,5 @@
 use anchor_lang::prelude::*;
+use anchor_spl::token::Mint;
 
 use crate::{control::is_market_authority, PositionKind, TokenMeta};
 
@@ -15,13 +16,14 @@ pub struct MutateToken<'info> {
     pub other: PositionTokenAccounts<'info>,
 }
 
-/// Requester is required. Otherwise pass in the system program to avoid changing the field
+/// requester and token_mint are required.
+/// others are optional or conditional, pass Pubkey::default() to avoid setting them
 #[derive(Accounts)]
 pub struct PositionTokenAccounts<'info> {
     #[account(mut, constraint = is_market_authority(&requester))]
     pub requester: Signer<'info>,
 
-    pub token_mint: AccountInfo<'info>,
+    pub token_mint: Account<'info, Mint>,
 
     /// The program that is allowed to:
     /// - set the price

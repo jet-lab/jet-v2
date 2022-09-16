@@ -130,6 +130,176 @@ export type JetMargin = {
       args: []
     },
     {
+      "name": "registerToken",
+      "accounts": [
+        {
+          "name": "metadata",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "other",
+          "accounts": [
+            {
+              "name": "requester",
+              "isMut": true,
+              "isSigner": true
+            },
+            {
+              "name": "tokenMint",
+              "isMut": false,
+              "isSigner": false
+            },
+            {
+              "name": "adapterProgram",
+              "isMut": false,
+              "isSigner": false,
+              "docs": [
+                "The program that is allowed to:",
+                "- set the price",
+                "- register/close claim or adapter collateral positions"
+              ]
+            },
+            {
+              "name": "pythPrice",
+              "isMut": false,
+              "isSigner": false,
+              "docs": [
+                "set iff margin is the adapter program"
+              ]
+            },
+            {
+              "name": "pythProduct",
+              "isMut": false,
+              "isSigner": false,
+              "docs": [
+                "set iff margin is the adapter program"
+              ]
+            },
+            {
+              "name": "underlyingMint",
+              "isMut": false,
+              "isSigner": false,
+              "docs": [
+                "optional"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "params",
+          "type": {
+            "option": {
+              "defined": "PositionParams"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "mutateToken",
+      "accounts": [
+        {
+          "name": "metadata",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "other",
+          "accounts": [
+            {
+              "name": "requester",
+              "isMut": true,
+              "isSigner": true
+            },
+            {
+              "name": "tokenMint",
+              "isMut": false,
+              "isSigner": false
+            },
+            {
+              "name": "adapterProgram",
+              "isMut": false,
+              "isSigner": false,
+              "docs": [
+                "The program that is allowed to:",
+                "- set the price",
+                "- register/close claim or adapter collateral positions"
+              ]
+            },
+            {
+              "name": "pythPrice",
+              "isMut": false,
+              "isSigner": false,
+              "docs": [
+                "set iff margin is the adapter program"
+              ]
+            },
+            {
+              "name": "pythProduct",
+              "isMut": false,
+              "isSigner": false,
+              "docs": [
+                "set iff margin is the adapter program"
+              ]
+            },
+            {
+              "name": "underlyingMint",
+              "isMut": false,
+              "isSigner": false,
+              "docs": [
+                "optional"
+              ]
+            }
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "params",
+          "type": {
+            "option": {
+              "defined": "PositionParams"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "refreshPositionPrice",
+      "accounts": [
+        {
+          "name": "marginAccount",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The margin account with the position to be refreshed"
+          ]
+        },
+        {
+          "name": "metadata",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "The metadata account for the token, which has been updated"
+          ]
+        },
+        {
+          "name": "pythPrice",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
       name: "updatePositionBalance"
       accounts: [
         {
@@ -433,6 +603,88 @@ export type JetMargin = {
           }
         ]
       }
+    },
+    {
+      "name": "tokenMeta",
+      "docs": [
+        "A metadata account describing how a token mint may be utilized in jet-margin"
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "tokenMint",
+            "docs": [
+              "The token mint's address"
+            ],
+            "type": "publicKey"
+          },
+          {
+            "name": "positionKind",
+            "docs": [
+              "Type of position that may be registered for this token"
+            ],
+            "type": {
+              "defined": "PositionKind"
+            }
+          },
+          {
+            "name": "valueModifier",
+            "docs": [
+              "A modifier to adjust the token value, based on the kind of token"
+            ],
+            "type": "u16"
+          },
+          {
+            "name": "maxStaleness",
+            "docs": [
+              "The maximum staleness (seconds) that's acceptable for balances of this token"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "adapterProgram",
+            "docs": [
+              "The program that:",
+              "- prices the token",
+              "- controls the balance of the position if it is a Claim or AdapterCollateral"
+            ],
+            "type": "publicKey"
+          },
+          {
+            "name": "underlyingMint",
+            "docs": [
+              "mint for another token that these tokens are derived from or based on"
+            ],
+            "type": "publicKey"
+          },
+          {
+            "name": "priceAsUnderlying",
+            "docs": [
+              "This token should always be priced equivalently to the underlying",
+              "todo: prevent this from being true unless dependency token is priced by margin with a valid oracle (put underlying meta in remaining_accounts)",
+              "todo: prevent dependency tokens from being modified to adapter pricing if there are any dependent tokens (add a counter field)"
+            ],
+            "type": "bool"
+          },
+          {
+            "name": "pythPrice",
+            "docs": [
+              "The address of the price oracle which contains the price data for the token.",
+              "only used if adapter_program == margin"
+            ],
+            "type": "publicKey"
+          },
+          {
+            "name": "pythProduct",
+            "docs": [
+              "The address of the pyth product metadata associated with the price oracle",
+              "only used if adapter_program == margin"
+            ],
+            "type": "publicKey"
+          }
+        ]
+      }
     }
   ]
   types: [
@@ -508,6 +760,28 @@ export type JetMargin = {
           {
             name: "pastDue"
             type: "bool"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PositionParams",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "positionKind",
+            "type": {
+              "defined": "PositionKind"
+            }
+          },
+          {
+            "name": "valueModifier",
+            "type": "u16"
+          },
+          {
+            "name": "maxStaleness",
+            "type": "u64"
           }
         ]
       }
@@ -1291,6 +1565,176 @@ export const IDL: JetMargin = {
       args: []
     },
     {
+      "name": "registerToken",
+      "accounts": [
+        {
+          "name": "metadata",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "other",
+          "accounts": [
+            {
+              "name": "requester",
+              "isMut": true,
+              "isSigner": true
+            },
+            {
+              "name": "tokenMint",
+              "isMut": false,
+              "isSigner": false
+            },
+            {
+              "name": "adapterProgram",
+              "isMut": false,
+              "isSigner": false,
+              "docs": [
+                "The program that is allowed to:",
+                "- set the price",
+                "- register/close claim or adapter collateral positions"
+              ]
+            },
+            {
+              "name": "pythPrice",
+              "isMut": false,
+              "isSigner": false,
+              "docs": [
+                "set iff margin is the adapter program"
+              ]
+            },
+            {
+              "name": "pythProduct",
+              "isMut": false,
+              "isSigner": false,
+              "docs": [
+                "set iff margin is the adapter program"
+              ]
+            },
+            {
+              "name": "underlyingMint",
+              "isMut": false,
+              "isSigner": false,
+              "docs": [
+                "optional"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "params",
+          "type": {
+            "option": {
+              "defined": "PositionParams"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "mutateToken",
+      "accounts": [
+        {
+          "name": "metadata",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "other",
+          "accounts": [
+            {
+              "name": "requester",
+              "isMut": true,
+              "isSigner": true
+            },
+            {
+              "name": "tokenMint",
+              "isMut": false,
+              "isSigner": false
+            },
+            {
+              "name": "adapterProgram",
+              "isMut": false,
+              "isSigner": false,
+              "docs": [
+                "The program that is allowed to:",
+                "- set the price",
+                "- register/close claim or adapter collateral positions"
+              ]
+            },
+            {
+              "name": "pythPrice",
+              "isMut": false,
+              "isSigner": false,
+              "docs": [
+                "set iff margin is the adapter program"
+              ]
+            },
+            {
+              "name": "pythProduct",
+              "isMut": false,
+              "isSigner": false,
+              "docs": [
+                "set iff margin is the adapter program"
+              ]
+            },
+            {
+              "name": "underlyingMint",
+              "isMut": false,
+              "isSigner": false,
+              "docs": [
+                "optional"
+              ]
+            }
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "params",
+          "type": {
+            "option": {
+              "defined": "PositionParams"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "refreshPositionPrice",
+      "accounts": [
+        {
+          "name": "marginAccount",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The margin account with the position to be refreshed"
+          ]
+        },
+        {
+          "name": "metadata",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "The metadata account for the token, which has been updated"
+          ]
+        },
+        {
+          "name": "pythPrice",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
       name: "updatePositionBalance",
       accounts: [
         {
@@ -1594,6 +2038,88 @@ export const IDL: JetMargin = {
           }
         ]
       }
+    },
+    {
+      "name": "tokenMeta",
+      "docs": [
+        "A metadata account describing how a token mint may be utilized in jet-margin"
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "tokenMint",
+            "docs": [
+              "The token mint's address"
+            ],
+            "type": "publicKey"
+          },
+          {
+            "name": "positionKind",
+            "docs": [
+              "Type of position that may be registered for this token"
+            ],
+            "type": {
+              "defined": "PositionKind"
+            }
+          },
+          {
+            "name": "valueModifier",
+            "docs": [
+              "A modifier to adjust the token value, based on the kind of token"
+            ],
+            "type": "u16"
+          },
+          {
+            "name": "maxStaleness",
+            "docs": [
+              "The maximum staleness (seconds) that's acceptable for balances of this token"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "adapterProgram",
+            "docs": [
+              "The program that:",
+              "- prices the token",
+              "- controls the balance of the position if it is a Claim or AdapterCollateral"
+            ],
+            "type": "publicKey"
+          },
+          {
+            "name": "underlyingMint",
+            "docs": [
+              "mint for another token that these tokens are derived from or based on"
+            ],
+            "type": "publicKey"
+          },
+          {
+            "name": "priceAsUnderlying",
+            "docs": [
+              "This token should always be priced equivalently to the underlying",
+              "todo: prevent this from being true unless dependency token is priced by margin with a valid oracle (put underlying meta in remaining_accounts)",
+              "todo: prevent dependency tokens from being modified to adapter pricing if there are any dependent tokens (add a counter field)"
+            ],
+            "type": "bool"
+          },
+          {
+            "name": "pythPrice",
+            "docs": [
+              "The address of the price oracle which contains the price data for the token.",
+              "only used if adapter_program == margin"
+            ],
+            "type": "publicKey"
+          },
+          {
+            "name": "pythProduct",
+            "docs": [
+              "The address of the pyth product metadata associated with the price oracle",
+              "only used if adapter_program == margin"
+            ],
+            "type": "publicKey"
+          }
+        ]
+      }
     }
   ],
   types: [
@@ -1669,6 +2195,28 @@ export const IDL: JetMargin = {
           {
             name: "pastDue",
             type: "bool"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PositionParams",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "positionKind",
+            "type": {
+              "defined": "PositionKind"
+            }
+          },
+          {
+            "name": "valueModifier",
+            "type": "u16"
+          },
+          {
+            "name": "maxStaleness",
+            "type": "u64"
           }
         ]
       }

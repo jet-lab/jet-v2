@@ -3,7 +3,7 @@ import { TOKEN_PROGRAM_ID } from "@solana/spl-token"
 import { PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY, Transaction, TransactionInstruction } from "@solana/web3.js"
 import { findDerivedAccount } from "../../utils/pda"
 import { MarginTokenConfig } from "../config"
-import { MarginPrograms } from "../marginClient"
+import { MarginAdmin, MarginPrograms, tokenMetaPda } from "../marginClient"
 import { TokenKind } from "../metadata"
 import { PoolAddresses, Pool } from "./pool"
 import { MarginPoolConfigData } from "./state"
@@ -176,11 +176,10 @@ export class PoolManager {
         depositNoteMint: addresses.depositNoteMint,
         loanNoteMint: addresses.loanNoteMint,
         tokenMint: addresses.tokenMint,
-        tokenMetadata: addresses.tokenMetadata,
         depositNoteMetadata: addresses.depositNoteMetadata,
         loanNoteMetadata: addresses.loanNoteMetadata,
         marginPoolProgram: programs.config.marginPoolProgramId,
-        metadataProgram: programs.config.metadataProgramId,
+        marginProgram: programs.config.marginProgramId,
         tokenProgram: TOKEN_PROGRAM_ID,
         systemProgram: SystemProgram.programId,
         rent: SYSVAR_RENT_PUBKEY
@@ -249,14 +248,16 @@ export class PoolManager {
         requester,
         authority: addresses.controlAuthority,
         tokenMint: addresses.tokenMint,
+        depositNoteMint: addresses.depositNoteMint,
+        loanNoteMint: addresses.loanNoteMint,
         marginPool: address,
-        tokenMetadata: addresses.tokenMetadata,
         depositMetadata: addresses.depositNoteMetadata,
         loanMetadata: addresses.loanNoteMetadata,
         pythProduct: pythProduct,
         pythPrice: pythPrice,
         marginPoolProgram: programs.config.marginPoolProgramId,
-        metadataProgram: programs.config.metadataProgramId
+        marginProgram: programs.config.marginProgramId,
+        systemProgram: SystemProgram.programId,
       })
       .instruction()
     instructions.push(ix)
@@ -276,9 +277,9 @@ export class PoolManager {
     const depositNoteMint = findDerivedAccount(programId, marginPool, "deposit-notes")
     const loanNoteMint = findDerivedAccount(programId, marginPool, "loan-notes")
     const marginPoolAdapterMetadata = findDerivedAccount(programs.config.metadataProgramId, programId)
-    const tokenMetadata = findDerivedAccount(programs.config.metadataProgramId, tokenMintAddress)
-    const depositNoteMetadata = findDerivedAccount(programs.config.metadataProgramId, depositNoteMint)
-    const loanNoteMetadata = findDerivedAccount(programs.config.metadataProgramId, loanNoteMint)
+    const tokenMetadata = tokenMetaPda(programs.config.marginProgramId, tokenMintAddress)
+    const depositNoteMetadata = tokenMetaPda(programs.config.marginProgramId, depositNoteMint)
+    const loanNoteMetadata = tokenMetaPda(programs.config.marginProgramId, loanNoteMint)
     const controlAuthority = findDerivedAccount(programs.config.controlProgramId)
 
     return {

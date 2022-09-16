@@ -2,30 +2,30 @@ import { AccountInfo, PublicKey } from "@solana/web3.js"
 import BN from "bn.js"
 import { findDerivedAccount, Number128 } from "../utils"
 import { MarginPrograms } from "./marginClient"
-import { PositionTokenMetadataInfo, TokenKind } from "./metadata"
-import { PositionKind } from "./state"
+import { TokenKind } from "./metadata"
+import { TokenMetaInfo, PositionKind } from "./state"
 
-export class PositionTokenMetadata {
+export class TokenMeta {
   private programs: MarginPrograms
   tokenMint: PublicKey
   address: PublicKey
-  info: PositionTokenMetadataInfo | undefined
+  info: TokenMetaInfo | undefined
 
   valueModifier: Number128 = Number128.ZERO
-  tokenKind: PositionKind = PositionKind.NoValue
+  positionKind: PositionKind = PositionKind.NoValue
 
   static derive(programs: MarginPrograms, tokenMint: PublicKey) {
-    return findDerivedAccount(programs.config.metadataProgramId, tokenMint)
+    return findDerivedAccount(programs.config.marginProgramId, tokenMint)
   }
 
   constructor({ programs, tokenMint }: { programs: MarginPrograms; tokenMint: PublicKey }) {
     this.programs = programs
     this.tokenMint = tokenMint
-    this.address = PositionTokenMetadata.derive(programs, tokenMint)
+    this.address = TokenMeta.derive(programs, tokenMint)
   }
 
   static async load(programs: MarginPrograms, tokenMint: PublicKey) {
-    const metadata = new PositionTokenMetadata({ programs, tokenMint: tokenMint })
+    const metadata = new TokenMeta({ programs, tokenMint: tokenMint })
     await metadata.refresh()
     return metadata
   }
@@ -41,18 +41,18 @@ export class PositionTokenMetadata {
       this.valueModifier = Number128.ZERO
       return
     }
-    this.info = this.programs.metadata.coder.accounts.decode<PositionTokenMetadataInfo>(
-      "positionTokenMetadata",
+    this.info = this.programs.margin.coder.accounts.decode<TokenMetaInfo>(
+      "tokenMeta",
       info.data
     )
     this.valueModifier = Number128.fromDecimal(new BN(this.info.valueModifier), -2)
-    this.tokenKind = PositionTokenMetadata.decodeTokenKind(this.info.tokenKind)
+    this.positionKind = TokenMeta.decodeTokenKind(this.info.positionKind)
   }
 
   static decodeTokenKind(kind: TokenKind) {
-    if ("nonCollateral" in kind) {
+    if ("noValue" in kind) {
       return PositionKind.NoValue
-    } else if ("collateral" in kind) {
+    } else if ("deposit" in kind) {
       return PositionKind.Deposit
     } else if ("claim" in kind) {
       return PositionKind.Claim

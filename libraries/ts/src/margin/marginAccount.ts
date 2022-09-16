@@ -22,7 +22,7 @@ import {
   MarginAccountData,
   PositionKind
 } from "./state"
-import { MarginPrograms } from "./marginClient"
+import { MarginPrograms, tokenMetaPda } from "./marginClient"
 import { findDerivedAccount } from "../utils/pda"
 import {
   AssociatedToken,
@@ -251,6 +251,23 @@ export class MarginAccount {
    */
   findLiquidationAddress(liquidator: Address): PublicKey {
     return findDerivedAccount(this.programs.config.marginProgramId, this.address, liquidator)
+  }
+
+  /**
+   * Derive the address of a token metadata account.
+   *
+   * ## Remarks
+   *
+   * Some account types such as pools, adapters and position mints have
+   * metadata associated with them. The metadata type is determined by the account type.
+   *
+   * @param {Address} mint
+   * @return {PublicKey}
+   * @memberof MarginAccount
+   */
+  findTokenMetadataAddress(mint: Address): PublicKey {
+    const accountAddress = translateAddress(mint)
+    return tokenMetaPda(this.programs.config.marginProgramId, accountAddress)
   }
 
   /**
@@ -1117,7 +1134,7 @@ export class MarginAccount {
     instructions: TransactionInstruction[]
     positionMint: Address
   }): Promise<void> {
-    const metadata = this.findMetadataAddress(positionMint)
+    const metadata = this.findTokenMetadataAddress(positionMint)
     const ix = await this.programs.margin.methods
       .refreshPositionMetadata()
       .accounts({
@@ -1287,7 +1304,7 @@ export class MarginAccount {
     positionTokenMint: Address
   }): Promise<PublicKey> {
     const tokenAccount = this.findPositionTokenAddress(positionTokenMint)
-    const metadata = this.findMetadataAddress(positionTokenMint)
+    const metadata = this.findTokenMetadataAddress(positionTokenMint)
 
     const ix = await this.programs.margin.methods
       .registerPosition()

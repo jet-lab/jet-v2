@@ -600,6 +600,7 @@ pub struct TokenMeta {
     ////////////
     // Optional/Conditional fields
     // these should be set to Default::default() if unused/irrelevant
+    //
     /// mint for another token that these tokens are derived from or based on
     pub underlying_mint: Pubkey,
 

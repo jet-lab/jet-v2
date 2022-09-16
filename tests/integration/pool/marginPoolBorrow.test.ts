@@ -2,7 +2,7 @@ import { expect } from "chai"
 import * as anchor from "@project-serum/anchor"
 import { AnchorProvider, BN } from "@project-serum/anchor"
 import NodeWallet from "@project-serum/anchor/dist/cjs/nodewallet"
-import { Keypair, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js"
+import { Keypair, LAMPORTS_PER_SOL, PublicKey, Transaction } from "@solana/web3.js"
 
 import {
   MarginAccount,
@@ -12,7 +12,8 @@ import {
   MarginPoolConfigData,
   PoolManager,
   TokenAmount,
-  MarginConfig
+  MarginConfig,
+  MarginAdmin
 } from "../../../libraries/ts/src"
 
 import { PythClient } from "../pyth/pythClient"
@@ -39,6 +40,7 @@ describe("margin pool borrow", async () => {
   const ownerKeypair = payer
   const programs = MarginClient.getPrograms(provider, DEFAULT_MARGIN_CONFIG)
   const manager = new PoolManager(programs, provider)
+  const marginAdmin = new MarginAdmin(programs, provider)
   let USDC: TestToken = null as any
   let SOL: TestToken = null as any
 

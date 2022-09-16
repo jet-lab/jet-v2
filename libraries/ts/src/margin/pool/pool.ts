@@ -15,7 +15,7 @@ import { TokenMetadata } from "../metadata/state"
 import { findDerivedAccount } from "../../utils/pda"
 import { PriceInfo } from "../accountPosition"
 import { chunks, Number128, Number192 } from "../../utils"
-import { PositionTokenMetadata } from "../positionTokenMetadata"
+import { TokenMeta } from "../tokenMeta"
 
 /** A set of possible actions to perform on a margin pool. */
 export type PoolAction = "deposit" | "withdraw" | "borrow" | "repay" | "repayFromDeposit" | "swap" | "transfer"
@@ -90,17 +90,17 @@ export class Pool {
   /**
    * The metadata of the [[Pool]] deposit note mint
    *
-   * @type {PositionTokenMetadata}
+   * @type {TokenMeta}
    * @memberof Pool
    */
-  depositNoteMetadata: PositionTokenMetadata
+  depositNoteMetadata: TokenMeta
   /**
    * The metadata of the [[Pool]] loan note mint
    *
-   * @type {PositionTokenMetadata}
+   * @type {TokenMeta}
    * @memberof Pool
    */
-  loanNoteMetadata: PositionTokenMetadata
+  loanNoteMetadata: TokenMeta
 
   /**
    * The address of the [[Pool]]
@@ -330,7 +330,6 @@ export class Pool {
    *     depositNoteMint: Mint
    *     loanNoteMint: Mint
    *     tokenPriceOracle: PriceData
-   *     tokenMetadata: TokenMetadata
    *   }}
    * @memberof Pool
    */
@@ -341,7 +340,6 @@ export class Pool {
     depositNoteMint: Mint
     loanNoteMint: Mint
     tokenPriceOracle: PriceData
-    tokenMetadata: TokenMetadata
   }
   /**
    * Creates a Pool
@@ -351,8 +349,8 @@ export class Pool {
    * @param tokenConfig
    */
   constructor(public programs: MarginPrograms, public addresses: PoolAddresses, public tokenConfig: MarginTokenConfig) {
-    this.depositNoteMetadata = new PositionTokenMetadata({ programs, tokenMint: addresses.depositNoteMint })
-    this.loanNoteMetadata = new PositionTokenMetadata({ programs, tokenMint: addresses.loanNoteMint })
+    this.depositNoteMetadata = new TokenMeta({ programs, tokenMint: addresses.depositNoteMint })
+    this.loanNoteMetadata = new TokenMeta({ programs, tokenMint: addresses.loanNoteMint })
 
     const zero = new BN(0)
     this.prices = {
@@ -373,7 +371,6 @@ export class Pool {
       vaultMintInfo,
       depositNoteMintInfo,
       loanNoteMintInfo,
-      tokenMetadataInfo,
       depositNoteMetadataInfo,
       loanNoteMetadataInfo
     ] = await this.programs.marginPool.provider.connection.getMultipleAccountsInfo([
@@ -382,7 +379,6 @@ export class Pool {
       this.addresses.vault,
       this.addresses.depositNoteMint,
       this.addresses.loanNoteMint,
-      this.addresses.tokenMetadata,
       this.addresses.depositNoteMetadata,
       this.addresses.loanNoteMetadata
     ])
@@ -393,7 +389,6 @@ export class Pool {
       !vaultMintInfo ||
       !depositNoteMintInfo ||
       !loanNoteMintInfo ||
-      !tokenMetadataInfo ||
       !depositNoteMetadataInfo ||
       !loanNoteMetadataInfo
     ) {
@@ -415,10 +410,6 @@ export class Pool {
         depositNoteMint: AssociatedToken.decodeMint(depositNoteMintInfo, this.addresses.depositNoteMint),
         loanNoteMint: AssociatedToken.decodeMint(loanNoteMintInfo, this.addresses.loanNoteMint),
         tokenPriceOracle: parsePriceData(oracleInfo.data),
-        tokenMetadata: this.programs.metadata.coder.accounts.decode<TokenMetadata>(
-          "tokenMetadata",
-          tokenMetadataInfo.data
-        )
       }
     }
 
@@ -698,7 +689,7 @@ export class Pool {
         .accounts({
           marginAccount: marginAccount.address,
           marginPool: this.address,
-          tokenPriceOracle: this.info?.tokenMetadata.pythPrice
+          tokenPriceOracle: this.info?.marginPool.tokenPriceOracle
         })
         .instruction()
     })
@@ -1547,7 +1538,7 @@ export class Pool {
         .registerLoan()
         .accounts({
           marginAccount: marginAccount.address,
-          positionTokenMetadata: this.addresses.loanNoteMetadata,
+          loanNoteMetadata: this.addresses.loanNoteMetadata,
           marginPool: this.address,
           loanNoteMint: this.addresses.loanNoteMint,
           loanNoteAccount,
