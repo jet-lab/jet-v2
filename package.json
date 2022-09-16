@@ -1,7 +1,7 @@
 {
   "private": "true",
   "workspaces": [
-    "libraries/ts"
+    "app"
   ],
   "license": "AGPL-3.0-or-later",
   "scripts": {
@@ -22,7 +22,7 @@
     "@project-serum/serum": "^0.13.65",
     "@pythnetwork/client": "^2.7.0",
     "@solana/spl-token": "^0.2.0",
-    "@solana/web3.js": "^1.41.4"
+    "@solana/web3.js": "^1.32.0"
   },
   "devDependencies": {
     "@tsconfig/recommended": "^1.0.1",
