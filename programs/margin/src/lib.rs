@@ -88,8 +88,6 @@ pub mod jet_margin {
 
     /// Create a new margin account for a user
     ///
-    /// ## create\_account.rs
-    ///
     /// This instruction does the following:
     ///
     /// 1.  Let `account` be a mutable reference to the margin account.
@@ -125,8 +123,6 @@ pub mod jet_margin {
     }
 
     /// Close a user's margin account
-    ///
-    /// ## close\_account.rs
     ///
     /// This instruction does the following:
     ///
@@ -165,8 +161,6 @@ pub mod jet_margin {
 
     /// Register a position for some token that will be custodied by margin.
     /// Currently this applies to anything other than a claim.
-    ///
-    /// ## register\_position.rs
     ///
     /// This instruction does the following:
     ///
@@ -222,8 +216,6 @@ pub mod jet_margin {
     /// Update the balance of a position stored in the margin account to
     /// match the actual balance stored by the SPL token acount.
     ///
-    /// ## update\_position\_balance.rs
-    ///
     /// This instruction does the following:
     ///
     /// 1.  Let `margin_account` be a mutable reference to the margin account.
@@ -259,8 +251,6 @@ pub mod jet_margin {
     /// Update the metadata for a position stored in the margin account,
     /// in the case where the metadata has changed after the position was
     /// created.
-    ///
-    /// ## refresh\_position\_metadata.rs
 
     /// This instruction does the following:
     ///
@@ -295,8 +285,6 @@ pub mod jet_margin {
     }
 
     /// Close out a position, freeing up space in the account.
-    ///
-    /// ## close\_position.rs
     ///
     /// This instruction does the following:
     ///
@@ -341,8 +329,6 @@ pub mod jet_margin {
     /// Verify that the account is healthy, by validating the collateralization
     /// ration is above the minimum.
     ///
-    /// ## verify\_healthy.rs
-    ///
     /// This instruction does the following:
     ///
     /// 1.  Let `account` be the loaded margin account.
@@ -376,8 +362,6 @@ pub mod jet_margin {
 
     /// Perform an action by invoking other programs, allowing them to alter
     /// the balances of the token accounts belonging to this margin account.
-    ///
-    /// /// ## adapter\_invoke.rs
     ///
     /// This instruction does the following:
     ///
@@ -430,8 +414,6 @@ pub mod jet_margin {
     /// refresh the state of the margin account to be consistent with the actual
     /// underlying prices or positions, but not permitting new position changes.
     ///
-    /// ## accounting\_invoke.rs
-    ///
     /// This instruction does the following:
     ///
     /// 1.  Emit `AccountingInvokeBegin` events for data logging (see table below).
@@ -471,8 +453,6 @@ pub mod jet_margin {
     }
 
     /// Begin liquidating an account
-    ///
-    /// ## liquidate\_begin.rs
     ///
     /// This instruction does the following:
     ///
@@ -524,8 +504,6 @@ pub mod jet_margin {
 
     /// Stop liquidating an account
     ///
-    /// ## liquidate\_end.rs
-    ///
     /// This instruction does the following:
     ///
     /// 1.  Let `account` be a mutable reference to the margin account.
@@ -571,8 +549,6 @@ pub mod jet_margin {
 
     /// Perform an action by invoking another program, for the purposes of
     /// liquidating a margin account.
-    ///
-    /// ## liquidator\_invoke.rs
     ///
     /// This instruction does the following:
     ///
