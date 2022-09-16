@@ -4,12 +4,12 @@ use std::sync::Arc;
 use anyhow::Result;
 
 use itertools::Itertools;
-use jet_margin_sdk::cat;
-use jet_margin_sdk::solana::transaction::{SendTransactionBuilder, TransactionBuilder};
 use jet_margin_sdk::spl_swap::SplSwapPool;
 use jet_margin_sdk::tokens::TokenPrice;
-use jet_margin_sdk::util::asynchronous::{AndAsync, MapAsync};
+use jet_rpc::cat;
 use jet_rpc::solana_rpc_api::{AsyncSigner, SolanaConnection, SolanaRpcClient};
+use jet_rpc::transaction::{SendTransactionBuilder, TransactionBuilder};
+use jet_rpc::util::asynchronous::{AndAsync, MapAsync};
 use solana_sdk::instruction::Instruction;
 use solana_sdk::pubkey::Pubkey;
 
@@ -79,7 +79,7 @@ impl TokenPricer {
             .collect::<Vec<Instruction>>();
         let signers = txs
             .into_iter()
-            .flat_map(|tx| AsyncSigner::new(tx))
+            .flat_map(|tx| tx.signers.into_iter().collect::<Vec<AsyncSigner>>())
             .collect::<Vec<AsyncSigner>>();
         self.rpc.sign_send_instructions(&ixns, &signers).await?;
 
@@ -93,7 +93,7 @@ impl TokenPricer {
         for (other_mint, pool) in self.swap_registry[mint].iter() {
             println!("    relative to {other_mint}");
             let other_price = self.get_oracle_price(other_mint).await?;
-            let balances = pool.balances(&self.rpc).await?;
+            let balances = pool.balances(self.client()).await?;
             let this_balance = *balances.get(mint).unwrap();
             let other_balance = *balances.get(other_mint).unwrap();
             let relative_price = other_balance as f64 / this_balance as f64;
@@ -150,15 +150,21 @@ impl TokenPricer {
                 let vault_b = self.vaults.get(mint_b).unwrap();
                 txs.push(cat![
                     pool.swap_tx(
-                        self.rpc as Arc<dyn SolanaRpcClient>,
+                        Arc::new(self.rpc.clone()),
                         vault_a,
                         vault_b,
                         a_to_swap,
-                        &self.payer
+                        self.rpc.payer()
                     )
                     .await?,
-                    pool.swap_tx(&self.rpc, vault_b, vault_a, b_to_swap, &self.payer)
-                        .await?,
+                    pool.swap_tx(
+                        Arc::new(self.rpc.clone()),
+                        vault_b,
+                        vault_a,
+                        b_to_swap,
+                        self.rpc.payer()
+                    )
+                    .await?,
                 ]);
             }
         }
@@ -209,7 +215,11 @@ impl TokenPricer {
         let mut snapshot = SwapSnapshot::new();
         for ((mint_a, mint_b), balances) in balance_checks
             .iter()
-            .map_async(|(mints, pool)| mints.and_result(pool.balances(&self.rpc)))
+            .map_async(|(mints, pool)| {
+                mints.and_result(
+                    pool.balances(Arc::new(self.rpc.clone()) as Arc<dyn SolanaRpcClient>),
+                )
+            })
             .await?
         {
             snapshot.entry(*mint_a).or_default().insert(
@@ -242,7 +252,7 @@ impl TokenPricer {
         for (other_mint, pool) in self.swap_registry[mint].iter() {
             let other_price = self.get_oracle_price(other_mint).await?;
             let desired_relative_price = price / other_price;
-            let balances = pool.balances(&self.rpc).await?;
+            let balances = pool.balances(self.client()).await?;
             let (this_to_swap, other_to_swap) = set_constant_product_price(
                 *balances.get(mint).unwrap(),
                 *balances.get(other_mint).unwrap(),
@@ -251,9 +261,9 @@ impl TokenPricer {
             let this = self.vaults.get(mint).unwrap();
             let other = self.vaults.get(other_mint).unwrap();
             txs.push(cat![
-                pool.swap_tx(&self.rpc, this, other, this_to_swap, &self.payer)
+                pool.swap_tx(self.client(), this, other, this_to_swap, self.rpc.payer())
                     .await?,
-                pool.swap_tx(&self.rpc, other, this, other_to_swap, &self.payer)
+                pool.swap_tx(self.client(), other, this, other_to_swap, self.rpc.payer())
                     .await?,
             ]);
         }
@@ -279,6 +289,11 @@ impl TokenPricer {
         let price = px.agg.price as f64 * (10f64.powf(px.expo.into()));
 
         Ok(price)
+    }
+
+    /// Upcast the `SolanaConnection` type into a `SolanaRpcClient` for methods that don't require building transactions
+    pub fn client(&self) -> Arc<dyn SolanaRpcClient> {
+        Arc::new(self.rpc.clone())
     }
 }
 

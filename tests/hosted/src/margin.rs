@@ -30,10 +30,10 @@ use jet_margin_sdk::ix_builder::{
     get_control_authority_address, get_metadata_address, ControlIxBuilder, MarginPoolConfiguration,
     MarginPoolIxBuilder,
 };
-use jet_margin_sdk::solana::transaction::TransactionBuilder;
 use jet_margin_sdk::spl_swap::SplSwapPool;
 use jet_margin_sdk::tokens::TokenOracle;
 use jet_rpc::solana_rpc_api::{AsyncSigner, SolanaConnection, SolanaRpcClient};
+use jet_rpc::transaction::TransactionBuilder;
 use solana_sdk::instruction::Instruction;
 use solana_sdk::signature::{Keypair, Signer};
 use solana_sdk::system_program;
@@ -66,9 +66,9 @@ impl MarginClient {
 
     pub fn user(&self, signer: AsyncSigner, seed: u16) -> Result<MarginUser, Error> {
         let tx = MarginTxBuilder::new(
-            self.rpc.clone() as Arc<dyn SolanaRpcClient>,
-            Some(Keypair::from_bytes(&keypair.to_bytes())?),
-            keypair.pubkey(),
+            self.rpc.clone(),
+            Some(signer.clone()),
+            signer.pubkey(),
             seed,
         );
 
@@ -80,16 +80,16 @@ impl MarginClient {
 
     pub fn liquidator(
         &self,
-        keypair: &Keypair,
+        signer: AsyncSigner,
         owner: &Pubkey,
         seed: u16,
     ) -> Result<MarginUser, Error> {
         let tx = MarginTxBuilder::new_liquidator(
             self.rpc.clone(),
-            Some(Keypair::from_bytes(&keypair.to_bytes())?),
+            Some(signer.clone()),
             *owner,
             seed,
-            keypair.pubkey(),
+            signer.pubkey(),
         );
 
         Ok(MarginUser {
@@ -138,7 +138,7 @@ impl MarginClient {
     }
 
     pub async fn create_authority(&self) -> Result<(), Error> {
-        let ix = ControlIxBuilder::new(self.rpc.payer()).create_authority();
+        let ix = ControlIxBuilder::new(self.rpc.payer().pubkey()).create_authority();
 
         self.rpc.sign_send_instructions(&[ix], &[]).await?;
         Ok(())
@@ -158,7 +158,7 @@ impl MarginClient {
     }
 
     pub async fn register_adapter(&self, adapter: &Pubkey) -> Result<(), Error> {
-        let ix = ControlIxBuilder::new(self.rpc.payer()).register_adapter(adapter);
+        let ix = ControlIxBuilder::new(self.rpc.payer().pubkey()).register_adapter(adapter);
 
         self.rpc.sign_send_instructions(&[ix], &[]).await?;
         Ok(())
@@ -169,7 +169,8 @@ impl MarginClient {
         token: &Pubkey,
         config: &MarginPoolConfiguration,
     ) -> Result<(), Error> {
-        let ix = ControlIxBuilder::new(self.rpc.payer()).configure_margin_pool(token, config);
+        let ix =
+            ControlIxBuilder::new(self.rpc.payer().pubkey()).configure_margin_pool(token, config);
 
         self.rpc.sign_send_instructions(&[ix], &[]).await?;
 
@@ -178,7 +179,8 @@ impl MarginClient {
 
     /// Create a new margin pool for a token
     pub async fn create_pool(&self, setup_info: &MarginPoolSetupInfo) -> Result<(), Error> {
-        let ix = ControlIxBuilder::new(self.rpc.payer()).create_margin_pool(&setup_info.token);
+        let ix =
+            ControlIxBuilder::new(self.rpc.payer().pubkey()).create_margin_pool(&setup_info.token);
 
         self.rpc.sign_send_instructions(&[ix], &[]).await?;
 
@@ -205,7 +207,8 @@ impl MarginClient {
         liquidator: Pubkey,
         is_liquidator: bool,
     ) -> Result<(), Error> {
-        let ix = ControlIxBuilder::new(self.rpc.payer()).set_liquidator(&liquidator, is_liquidator);
+        let ix = ControlIxBuilder::new(self.rpc.payer().pubkey())
+            .set_liquidator(&liquidator, is_liquidator);
 
         self.rpc.sign_send_instructions(&[ix], &[]).await?;
 

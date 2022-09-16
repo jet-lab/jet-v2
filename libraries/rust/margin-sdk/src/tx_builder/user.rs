@@ -22,9 +22,10 @@ use jet_margin_pool::program::JetMarginPool;
 use jet_metadata::{PositionTokenMetadata, TokenMetadata};
 
 use anyhow::{bail, Result};
+use jet_rpc::solana_rpc_api::{AsyncSigner, SolanaConnection, SolanaRpcClient};
+use jet_rpc::transaction::{SendTransactionBuilder, TransactionBuilder};
 use solana_sdk::instruction::Instruction;
 use solana_sdk::pubkey::Pubkey;
-use solana_sdk::signature::Keypair;
 use solana_sdk::signer::Signer;
 use solana_sdk::transaction::Transaction;
 
@@ -32,15 +33,8 @@ use anchor_lang::{AccountDeserialize, Id};
 
 use jet_margin::{MarginAccount, PositionKind};
 use jet_margin_pool::TokenChange;
-use jet_simulation::solana_rpc_api::SolanaRpcClient;
 
-use crate::{
-    ix_builder::*,
-    solana::{
-        keypair::clone,
-        transaction::{SendTransactionBuilder, TransactionBuilder},
-    },
-};
+use crate::ix_builder::*;
 
 /// [Transaction] builder for a margin account, which supports invoking adapter
 /// actions signed as the margin account.
@@ -49,9 +43,9 @@ use crate::{
 /// Both margin accounts and liquidators can use this builder, and it will invoke
 /// the correct `adapter_invoke_ix`.
 pub struct MarginTxBuilder {
-    rpc: Arc<dyn SolanaRpcClient>,
+    rpc: Arc<dyn SolanaConnection>,
     ix: MarginIxBuilder,
-    signer: Option<Keypair>,
+    signer: Option<AsyncSigner>,
     is_liquidator: bool,
 }
 
@@ -60,10 +54,7 @@ impl Clone for MarginTxBuilder {
         Self {
             rpc: self.rpc.clone(),
             ix: self.ix.clone(),
-            signer: self
-                .signer
-                .as_ref()
-                .map(|kp| Keypair::from_bytes(&kp.to_bytes()).unwrap()),
+            signer: self.signer.clone(),
             is_liquidator: self.is_liquidator,
         }
     }
@@ -73,8 +64,8 @@ impl MarginTxBuilder {
     /// Create a [MarginTxBuilder] for an ordinary user. Liquidators should use
     /// `Self::new_liquidator`.
     pub fn new(
-        rpc: Arc<dyn SolanaRpcClient>,
-        signer: Option<Keypair>,
+        rpc: Arc<dyn SolanaConnection>,
+        signer: Option<AsyncSigner>,
         owner: Pubkey,
         seed: u16,
     ) -> MarginTxBuilder {
@@ -95,8 +86,8 @@ impl MarginTxBuilder {
     /// their pubkey would be the same as `rpc.payer()`, however we explicitly
     /// supply it to support cases where the liquidator is not the fee payer.
     pub fn new_liquidator(
-        rpc: Arc<dyn SolanaRpcClient>,
-        signer: Option<Keypair>,
+        rpc: Arc<dyn SolanaConnection>,
+        signer: Option<AsyncSigner>,
         owner: Pubkey,
         seed: u16,
         liquidator: Pubkey,
@@ -113,8 +104,10 @@ impl MarginTxBuilder {
     }
 
     async fn create_transaction(&self, instructions: &[Instruction]) -> Result<Transaction> {
-        let signers = self.signer.as_ref().map(|s| vec![s]).unwrap_or_default();
-
+        let mut signers = vec![];
+        if let Some(signer) = self.signer.clone() {
+            signers.push(signer)
+        }
         self.rpc.create_transaction(&signers, instructions).await
     }
 
@@ -122,11 +115,10 @@ impl MarginTxBuilder {
         &self,
         instructions: &[Instruction],
     ) -> Result<TransactionBuilder> {
-        let signers = self
-            .signer
-            .as_ref()
-            .map(|s| vec![clone(s)])
-            .unwrap_or_default();
+        let mut signers = vec![];
+        if let Some(signer) = self.signer.clone() {
+            signers.push(signer)
+        }
 
         Ok(TransactionBuilder {
             signers,

@@ -23,12 +23,14 @@ use anyhow::Error;
 use anyhow::Result;
 use async_trait::async_trait;
 use itertools::Itertools;
-use jet_margin_sdk::solana::transaction::{SendTransactionBuilder, TransactionBuilder};
 use jet_margin_sdk::spl_swap::SplSwapPool;
-use jet_margin_sdk::util::asynchronous::MapAsync;
 use jet_rpc::generate_test_keypair;
+use jet_rpc::solana_rpc_api::AsyncSigner;
 use jet_rpc::solana_rpc_api::SolanaConnection;
 use jet_rpc::solana_rpc_api::SolanaRpcClient;
+use jet_rpc::transaction::SendTransactionBuilder;
+use jet_rpc::transaction::TransactionBuilder;
+use jet_rpc::util::asynchronous::MapAsync;
 use jet_static_program_registry::{
     orca_swap_v1, orca_swap_v2, related_programs, spl_token_swap_v2,
 };
@@ -62,7 +64,7 @@ pub async fn create_swap_pools(
         .iter()
         .combinations(2)
         .map(|c| (*c[0], *c[1]))
-        .map_async(|(one, two)| create_and_insert(rpc, one, two))
+        .map_async(|(one, two)| create_and_insert(rpc.clone(), one, two))
         .await?
     {
         registry.entry(one).or_default().insert(two, pool);
@@ -73,7 +75,7 @@ pub async fn create_swap_pools(
 }
 
 async fn create_and_insert(
-    rpc: Arc<dyn SolanaRpcClient>,
+    rpc: Arc<dyn SolanaConnection>,
     one: Pubkey,
     two: Pubkey,
 ) -> Result<(Pubkey, Pubkey, SplSwapPool)> {
@@ -93,7 +95,7 @@ async fn create_and_insert(
 #[async_trait]
 pub trait SwapPoolConfig: Sized {
     async fn configure(
-        rpc: &Arc<dyn SolanaRpcClient>,
+        rpc: Arc<dyn SolanaConnection>,
         program_id: &Pubkey,
         mint_a: &Pubkey,
         mint_b: &Pubkey,
@@ -101,25 +103,24 @@ pub trait SwapPoolConfig: Sized {
         b_amount: u64,
     ) -> Result<Self, Error>;
 
-    async fn balances(&self, rpc: &Arc<dyn SolanaRpcClient>)
-        -> Result<HashMap<Pubkey, u64>, Error>;
+    async fn balances(&self, rpc: Arc<dyn SolanaRpcClient>) -> Result<HashMap<Pubkey, u64>, Error>;
 
-    async fn swap<S: Signer + Sync + Send>(
+    async fn swap(
         &self,
-        rpc: &Arc<dyn SolanaRpcClient>,
+        rpc: Arc<dyn SolanaConnection>,
         source: &Pubkey,
         dest: &Pubkey,
         amount_in: u64,
-        signer: &S,
+        signer: AsyncSigner,
     ) -> Result<(), Error>;
 
-    async fn swap_tx<S: Signer + Sync + Send>(
+    async fn swap_tx(
         &self,
-        rpc: &Arc<dyn SolanaRpcClient>,
+        rpc: Arc<dyn SolanaRpcClient>,
         source: &Pubkey,
         dest: &Pubkey,
         amount_in: u64,
-        signer: &S,
+        signer: AsyncSigner,
     ) -> Result<TransactionBuilder, Error>;
 }
 
@@ -140,7 +141,7 @@ impl SwapPoolConfig for SplSwapPool {
 
         // Create a TokenManager instance
         let token_manager = TokenManager::new(rpc.clone());
-        let keypair = generate_test_keypair();
+        let signer = AsyncSigner::new(generate_test_keypair());
 
         // Create an empty pool state account
         // The SPL Token Swap program requires extra padding of 1 byte
@@ -149,7 +150,7 @@ impl SwapPoolConfig for SplSwapPool {
         let rent_lamports = rpc.get_minimum_balance_for_rent_exemption(space).await?;
         let ix_pool_state_account = system_instruction::create_account(
             &rpc.payer().pubkey(),
-            &keypair.pubkey(),
+            &signer.pubkey(),
             rent_lamports,
             space as u64,
             program_id,
@@ -157,7 +158,7 @@ impl SwapPoolConfig for SplSwapPool {
 
         // Pool authority
         let (pool_authority, pool_nonce) =
-            Pubkey::find_program_address(&[keypair.pubkey().as_ref()], program_id);
+            Pubkey::find_program_address(&[signer.pubkey().as_ref()], program_id);
         // The accounts are funded to avoid having to fund them further
         let (token_a, token_b, pool_mint) = try_join!(
             // Token A account
@@ -179,7 +180,7 @@ impl SwapPoolConfig for SplSwapPool {
             client::instruction::initialize(
                 program_id,
                 &spl_token::id(),
-                &keypair.pubkey(),
+                &signer.pubkey(),
                 &pool_authority,
                 &token_a,
                 &token_b,
@@ -208,12 +209,12 @@ impl SwapPoolConfig for SplSwapPool {
 
         // Create and send transaction
         let transaction = rpc
-            .create_transaction(&[&keypair], &[ix_pool_state_account, ix_init])
+            .create_transaction(&[signer.clone()], &[ix_pool_state_account, ix_init])
             .await?;
         rpc.send_and_confirm_transaction(&transaction).await?;
 
         Ok(Self {
-            pool: keypair.pubkey(),
+            pool: signer.pubkey(),
             pool_authority,
             mint_a: *mint_a,
             mint_b: *mint_b,
@@ -225,10 +226,7 @@ impl SwapPoolConfig for SplSwapPool {
         })
     }
 
-    async fn balances(
-        &self,
-        rpc: &Arc<dyn SolanaRpcClient>,
-    ) -> Result<HashMap<Pubkey, u64>, Error> {
+    async fn balances(&self, rpc: Arc<dyn SolanaRpcClient>) -> Result<HashMap<Pubkey, u64>, Error> {
         let mut mint_to_balance: HashMap<Pubkey, u64> = HashMap::new();
         mint_to_balance.insert(
             self.mint_a,
@@ -242,13 +240,13 @@ impl SwapPoolConfig for SplSwapPool {
         Ok(mint_to_balance)
     }
 
-    async fn swap_tx<S: Signer + Sync + Send>(
+    async fn swap_tx(
         &self,
         rpc: Arc<dyn SolanaRpcClient>,
         source: &Pubkey,
         dest: &Pubkey,
         amount_in: u64,
-        signer: &S,
+        signer: AsyncSigner,
     ) -> Result<TransactionBuilder, Error> {
         if amount_in == 0 {
             return Ok(TransactionBuilder::default());
@@ -291,16 +289,20 @@ impl SwapPoolConfig for SplSwapPool {
         })
     }
 
-    async fn swap<S: Signer + Sync + Send>(
+    async fn swap(
         &self,
-        rpc: &Arc<dyn SolanaRpcClient>,
+        rpc: Arc<dyn SolanaConnection>,
         source: &Pubkey,
         dest: &Pubkey,
         amount_in: u64,
-        signer: &S,
+        signer: AsyncSigner,
     ) -> Result<(), Error> {
-        let tx = self.swap_tx(rpc, source, dest, amount_in, signer).await?;
-        rpc.send_and_confirm(tx).await?;
+        let tx = self
+            .swap_tx(Arc::new(rpc.clone()), source, dest, amount_in, signer)
+            .await?;
+
+        rpc.sign_send_instructions(&tx.instructions, &tx.signers)
+            .await?;
 
         Ok(())
     }

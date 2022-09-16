@@ -25,7 +25,7 @@ use std::{
 use anchor_lang::AccountDeserialize;
 use anyhow::Result;
 use jet_proto_math::Number128;
-use jet_simulation::solana_rpc_api::SolanaRpcClient;
+use jet_rpc::solana_rpc_api::SolanaRpcClient;
 use solana_sdk::{program_pack::Pack, pubkey::Pubkey};
 use spl_token_swap::state::SwapV1;
 
@@ -61,12 +61,13 @@ pub struct SplSwapPool {
 impl SplSwapPool {
     /// Get all swap pools that contain pairs of supported mints
     pub async fn get_pools(
-        rpc: &Arc<dyn SolanaRpcClient>,
+        rpc: Arc<dyn SolanaRpcClient>,
         supported_mints: &HashSet<Pubkey>,
         swap_program: Pubkey,
     ) -> anyhow::Result<HashMap<(Pubkey, Pubkey), Self>> {
         let size = SwapV1::LEN + 1;
         let accounts = rpc
+            .clone()
             .get_program_accounts(&swap_program, Some(size))
             .await
             .unwrap();
@@ -88,21 +89,21 @@ impl SplSwapPool {
             };
 
             // Get the token balances of both sides
-            let token_a = match find_token(rpc, &swap.token_a).await {
+            let token_a = match find_token(rpc.clone(), &swap.token_a).await {
                 Ok(val) => val,
                 Err(_) => {
                     continue;
                 }
             };
-            let token_b = match find_token(rpc, &swap.token_b).await {
+            let token_b = match find_token(rpc.clone(), &swap.token_b).await {
                 Ok(val) => val,
                 Err(_) => {
                     continue;
                 }
             };
 
-            let mint_a_info = find_mint(rpc, mint_a).await;
-            let mint_b_info = find_mint(rpc, mint_b).await;
+            let mint_a_info = find_mint(rpc.clone(), mint_a).await;
+            let mint_b_info = find_mint(rpc.clone(), mint_b).await;
 
             let token_a_balance =
                 Number128::from_decimal(token_a.amount, -(mint_a_info?.decimals as i32));
@@ -161,7 +162,7 @@ impl SplSwapPool {
 
 // helper function to find token account
 async fn find_token(
-    rpc: &Arc<dyn SolanaRpcClient>,
+    rpc: Arc<dyn SolanaRpcClient>,
     address: &Pubkey,
 ) -> Result<anchor_spl::token::TokenAccount> {
     let account = rpc.get_account(address).await?.unwrap();
@@ -173,7 +174,7 @@ async fn find_token(
 
 // helper function to find mint account
 async fn find_mint(
-    rpc: &Arc<dyn SolanaRpcClient>,
+    rpc: Arc<dyn SolanaRpcClient>,
     address: &Pubkey,
 ) -> Result<anchor_spl::token::Mint> {
     let account = rpc.get_account(address).await?.unwrap();

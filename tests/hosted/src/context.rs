@@ -13,7 +13,7 @@ use solana_sdk::signature::{Keypair, Signer};
 
 use jet_margin_pool::MarginPoolConfig;
 use jet_metadata::TokenKind;
-use jet_rpc::solana_rpc_api::{SolanaConnection, SolanaRpcClient};
+use jet_rpc::solana_rpc_api::{AsyncSigner, SolanaConnection, SolanaRpcClient};
 
 use crate::{margin::MarginClient, tokens::TokenManager};
 
@@ -119,13 +119,18 @@ impl MarginTestContext {
 
     /// Generate a new wallet keypair for a liquidator with the pubkey that
     /// stores the [LiquidatorMetadata]
-    pub async fn create_liquidator(&self, sol_amount: u64) -> Result<Keypair, Error> {
+    pub async fn create_liquidator(&self, sol_amount: u64) -> Result<AsyncSigner, Error> {
         let liquidator = self.create_wallet(sol_amount).await?;
 
         self.margin
             .set_liquidator_metadata(liquidator.pubkey(), true)
             .await?;
-        Ok(liquidator)
+        Ok(AsyncSigner::new(liquidator))
+    }
+
+    /// lets us swap between traits
+    pub fn client(&self) -> Arc<dyn SolanaRpcClient> {
+        Arc::new(self.rpc.clone())
     }
 }
 

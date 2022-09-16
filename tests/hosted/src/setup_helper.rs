@@ -4,8 +4,7 @@ use std::sync::Arc;
 use anyhow::{Error, Result};
 
 use jet_margin_sdk::tokens::TokenPrice;
-use jet_margin_sdk::util::asynchronous::MapAsync;
-use jet_rpc::solana_rpc_api::SolanaRpcClient;
+use jet_rpc::util::asynchronous::MapAsync;
 use jet_rpc::{create_test_wallet, generate_test_keypair};
 use solana_sdk::native_token::LAMPORTS_PER_SOL;
 use solana_sdk::pubkey::Pubkey;
@@ -107,7 +106,7 @@ pub async fn create_tokens(
     let tokens: Vec<Pubkey> = (0..n)
         .map_async(|_| setup_token(ctx, 9, 1_00, 4_00, 1.0))
         .await?;
-    let owner = ctx.rpc.payer();
+    let owner = ctx.rpc.payer().pubkey();
     let (swaps, vaults) = try_join!(
         create_swap_pools(ctx.rpc.clone(), &tokens),
         tokens
@@ -130,11 +129,11 @@ pub async fn setup_user(
     tokens: Vec<(Pubkey, u64, u64)>,
 ) -> Result<TestUser> {
     // Create our two user wallets, with some SOL funding to get started
-    let wallet = create_test_wallet(Arc::new(ctx.rpc), 10 * LAMPORTS_PER_SOL).await?;
+    let wallet = create_test_wallet(Arc::new(ctx.rpc.clone()), 10 * LAMPORTS_PER_SOL).await?;
 
     // Create the user context helpers, which give a simple interface for executing
     // common actions on a margin account
-    let user = ctx.margin.user(&wallet, 0)?;
+    let user = ctx.margin.user(wallet.clone(), 0)?;
 
     // Initialize the margin accounts for each user
     user.create_account().await?;

@@ -12,9 +12,7 @@ testing = ["jet-control/testing", "jet-margin/testing", "jet-metadata/testing", 
 
 [dependencies]
 anyhow = "1"
-async-recursion = "1"
 async-trait = "0.1"
-base64 = "0.13"
 bincode = "1.3"
 bytemuck = "1"
 futures = "0.3"
@@ -30,7 +28,7 @@ anchor-lang = { git = "https://github.com/jet-lab/anchor", branch = "master" }
 anchor-spl = { git = "https://github.com/jet-lab/anchor", branch = "master" }
 anchor-client = { git = "https://github.com/jet-lab/anchor", branch = "master" }
 
-jet-simulation = { git = "https://github.com/jet-lab/jet-simulation", branch = "master" }
+jet-rpc = { path = "../rpc" }
 jet-control = { path = "../../../programs/control", features = ["no-entrypoint"] }
 jet-margin = { path = "../../../programs/margin", features = ["no-entrypoint"] }
 jet-metadata = { path = "../../../programs/metadata", features = ["no-entrypoint"] }

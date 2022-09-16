@@ -3,6 +3,7 @@ use std::collections::HashSet;
 use anyhow::Error;
 
 use jet_margin_sdk::{spl_swap::SplSwapPool, tokens::TokenPrice};
+use jet_rpc::{assert_custom_program_error, create_test_wallet};
 use jet_static_program_registry::{orca_swap_v1, orca_swap_v2, spl_token_swap_v2};
 use solana_sdk::native_token::LAMPORTS_PER_SOL;
 use solana_sdk::pubkey::Pubkey;
@@ -16,7 +17,6 @@ use hosted_tests::{
 
 use jet_margin_pool::{MarginPoolConfig, PoolFlags, TokenChange};
 use jet_metadata::TokenKind;
-use jet_simulation::{assert_custom_program_error, create_wallet};
 
 const ONE_USDC: u64 = 1_000_000;
 const ONE_TSOL: u64 = LAMPORTS_PER_SOL;
@@ -97,13 +97,13 @@ async fn swap_test_impl(swap_program_id: Pubkey) -> Result<(), anyhow::Error> {
     let env = setup_environment(ctx).await?;
 
     // Create our two user wallets, with some SOL funding to get started
-    let wallet_a = create_wallet(&ctx.rpc, 10 * LAMPORTS_PER_SOL).await?;
-    let wallet_b = create_wallet(&ctx.rpc, 10 * LAMPORTS_PER_SOL).await?;
+    let wallet_a = create_test_wallet(ctx.client(), 10 * LAMPORTS_PER_SOL).await?;
+    let wallet_b = create_test_wallet(ctx.client(), 10 * LAMPORTS_PER_SOL).await?;
 
     // Create the user context helpers, which give a simple interface for executing
     // common actions on a margin account
-    let user_a = ctx.margin.user(&wallet_a, 0)?;
-    let user_b = ctx.margin.user(&wallet_b, 0)?;
+    let user_a = ctx.margin.user(wallet_a.clone(), 0)?;
+    let user_b = ctx.margin.user(wallet_b.clone(), 0)?;
 
     // Initialize the margin accounts for each user
     user_a.create_account().await?;
@@ -111,7 +111,7 @@ async fn swap_test_impl(swap_program_id: Pubkey) -> Result<(), anyhow::Error> {
 
     // Create a swap pool with sufficient liquidity
     let swap_pool = SplSwapPool::configure(
-        &ctx.rpc,
+        ctx.rpc.clone(),
         &swap_program_id,
         &env.usdc,
         &env.tsol,
@@ -125,7 +125,7 @@ async fn swap_test_impl(swap_program_id: Pubkey) -> Result<(), anyhow::Error> {
     supported_mints.insert(env.usdc);
     supported_mints.insert(env.tsol);
 
-    let swap_pools = SplSwapPool::get_pools(&ctx.rpc, &supported_mints, swap_program_id)
+    let swap_pools = SplSwapPool::get_pools(ctx.client(), &supported_mints, swap_program_id)
         .await
         .unwrap();
     assert_eq!(swap_pools.len(), 1);

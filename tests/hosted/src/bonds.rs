@@ -14,15 +14,19 @@ use jet_bonds::{
     control::state::BondManager,
     orderbook::state::{event_queue_len, orderbook_slab_len, CallbackInfo},
 };
-use jet_bonds_sdk::builder::{event_builder::build_consume_events_info, BondsIxBuilder};
+use jet_bonds_sdk::builder::{event_builder::build_consume_events_info, BondsIxBuilder, UnwrapKey};
 use jet_margin_sdk::ix_builder::{
     get_control_authority_address, get_metadata_address, ControlIxBuilder,
 };
-use jet_rpc::solana_rpc_api::{SolanaConnection, SolanaRpcClient};
+use jet_rpc::{
+    connection::Client,
+    create_test_wallet,
+    solana_rpc_api::{AsyncSigner, SolanaConnection, SolanaRpcClient},
+};
 use solana_sdk::{
     hash::Hash,
     instruction::Instruction,
-    message::Message,
+    native_token::LAMPORTS_PER_SOL,
     pubkey::Pubkey,
     signature::{Keypair, Signature},
     signer::Signer,
@@ -98,7 +102,7 @@ impl Clone for BondsTestManager {
 }
 
 impl BondsTestManager {
-    pub async fn full(client: Arc<dyn SolanaRpcClient>) -> Result<Self> {
+    pub async fn full(client: Arc<dyn SolanaConnection>) -> Result<Self> {
         Self::new(client).await?.with_bonds().await
         // .with_crank()
         // .await?
@@ -106,10 +110,17 @@ impl BondsTestManager {
         // .await
     }
 
-    pub async fn new(client: Arc<dyn SolanaRpcClient>) -> Result<Self> {}
+    pub async fn new(ctx: Arc<dyn SolanaConnection>) -> Result<Self> {
+        let ix = BondsIxBuilder::new(Pubkey::default());
+
+        Ok(Self {
+            ctx,
+            ix_builder: ix,
+        })
+    }
 
     pub async fn with_bonds(mut self) -> Result<Self> {
-        todo!()
+        todo!("run init through ctl")
     }
 
     pub async fn with_crank(mut self) -> Result<Self> {
@@ -128,26 +139,11 @@ impl BondsTestManager {
     pub async fn sign_send_transaction(
         &self,
         instructions: &[Instruction],
-        add_signers: Option<&[&Keypair]>,
+        add_signers: &[AsyncSigner],
     ) -> Result<Signature> {
-        let mut signers = Vec::<&Keypair>::new();
-        let owned_kps = self.kps.inner();
-        let mut keypairs = owned_kps.iter().map(|(_, v)| v).collect::<Vec<&Keypair>>();
-        if let Some(extra_signers) = add_signers {
-            keypairs.extend_from_slice(extra_signers);
-        }
-        let msg = Message::new(instructions, Some(self.keys.unwrap("payer")?));
-        for signer in msg.signer_keys() {
-            for kp in keypairs.clone() {
-                if &kp.pubkey() == signer {
-                    signers.push(kp);
-                }
-            }
-        }
-        let mut tx = Transaction::new_unsigned(msg);
-        tx.sign(&signers, self.client.get_latest_blockhash().await?);
-
-        self.client.send_and_confirm_transaction(&tx).await
+        self.ctx
+            .sign_send_instructions(instructions, add_signers)
+            .await
     }
     pub async fn consume_events(&self) -> Result<Signature> {
         let mut eq = self.load_event_queue().await?;
@@ -158,23 +154,23 @@ impl BondsTestManager {
             .ix_builder
             .consume_events(accounts, num_events, seeds)?;
 
-        self.sign_send_transaction(&[consume], None).await
+        self.sign_send_transaction(&[consume], &[]).await
     }
     pub async fn pause_ticket_redemption(&self) -> Result<Signature> {
         let pause = self.ix_builder.pause_ticket_redemption()?;
 
-        self.sign_send_transaction(&[pause], None).await
+        self.sign_send_transaction(&[pause], &[]).await
     }
     pub async fn resume_ticket_redemption(&self) -> Result<Signature> {
         let resume = self.ix_builder.resume_ticket_redemption()?;
 
-        self.sign_send_transaction(&[resume], None).await
+        self.sign_send_transaction(&[resume], &[]).await
     }
 
     pub async fn pause_orders(&self) -> Result<Signature> {
         let pause = self.ix_builder.pause_order_matching()?;
 
-        self.sign_send_transaction(&[pause], None).await
+        self.sign_send_transaction(&[pause], &[]).await
     }
 
     pub async fn resume_orders(&self) -> Result<()> {
@@ -184,20 +180,14 @@ impl BondsTestManager {
             }
 
             let resume = self.ix_builder.resume_order_matching()?;
-            self.sign_send_transaction(&[resume], None).await?;
+            self.sign_send_transaction(&[resume], &[]).await?;
         }
 
         Ok(())
     }
-
-    pub fn insert_kp(&mut self, k: &str, kp: Keypair) {
-        self.keys.insert(k, kp.pubkey());
-        self.kps.insert(k, kp);
-    }
-
     pub async fn create_authority_if_missing(&self) -> Result<()> {
         if self
-            .client
+            .ctx
             .get_account(&get_control_authority_address())
             .await?
             .is_none()
@@ -209,7 +199,7 @@ impl BondsTestManager {
     }
 
     pub async fn create_authority(&self) -> Result<()> {
-        let ix = ControlIxBuilder::new(self.client.payer().pubkey()).create_authority();
+        let ix = ControlIxBuilder::new(self.ctx.payer().pubkey()).create_authority();
 
         self.ctx.sign_send_instructions(&[ix], &[]).await?;
         Ok(())
@@ -217,7 +207,7 @@ impl BondsTestManager {
 
     pub async fn register_adapter_if_unregistered(&self, adapter: &Pubkey) -> Result<()> {
         if self
-            .client
+            .ctx
             .get_account(&get_metadata_address(adapter))
             .await?
             .is_none()
@@ -229,7 +219,7 @@ impl BondsTestManager {
     }
 
     pub async fn register_adapter(&self, adapter: &Pubkey) -> Result<()> {
-        let ix = ControlIxBuilder::new(self.client.payer().pubkey()).register_adapter(adapter);
+        let ix = ControlIxBuilder::new(self.ctx.payer().pubkey()).register_adapter(adapter);
 
         self.ctx.sign_send_instructions(&[ix], &[]).await?;
         Ok(())
@@ -267,11 +257,11 @@ impl BondsTestManager {
         })
     }
     pub async fn load_account(&self, k: &str) -> Result<Vec<u8>> {
-        self.load_data(self.keys.unwrap(k)?).await
+        self.load_data(&self.ix_builder.unwrap_key(k)?).await
     }
     pub async fn load_data(&self, key: &Pubkey) -> Result<Vec<u8>> {
         Ok(self
-            .client
+            .ctx
             .get_account(key)
             .await?
             .ok_or_else(|| anyhow::Error::msg("failed to fetch key: {key}"))?

@@ -41,7 +41,7 @@ impl Keys {
     }
 }
 
-trait UnwrapKey {
+pub trait UnwrapKey {
     fn unwrap_key(&self, msg: &str) -> Result<Pubkey>;
 }
 
@@ -54,6 +54,12 @@ impl UnwrapKey for Option<Pubkey> {
 impl UnwrapKey for Option<&Pubkey> {
     fn unwrap_key(&self, msg: &str) -> Result<Pubkey> {
         Ok(*self.ok_or(BondsIxError::MissingPubkey(msg.into()))?)
+    }
+}
+
+impl UnwrapKey for BondsIxBuilder {
+    fn unwrap_key(&self, k: &str) -> Result<Pubkey> {
+        self.keys.unwrap(k)
     }
 }
 

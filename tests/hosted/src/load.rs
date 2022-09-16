@@ -1,6 +1,6 @@
 use anchor_lang::prelude::Pubkey;
 use anyhow::Result;
-use jet_margin_sdk::util::asynchronous::MapAsync;
+use jet_rpc::util::asynchronous::MapAsync;
 use std::time::Duration;
 
 use crate::{

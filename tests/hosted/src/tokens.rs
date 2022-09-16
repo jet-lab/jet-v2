@@ -22,11 +22,11 @@ use std::time::Duration;
 use anyhow::{bail, Error};
 use bytemuck::Zeroable;
 
-use jet_margin_sdk::solana::transaction::TransactionBuilder;
 use jet_margin_sdk::tokens::{TokenOracle, TokenPrice};
-use jet_margin_sdk::util::asynchronous::with_retries_and_timeout;
 use jet_rpc::generate_test_keypair;
 use jet_rpc::solana_rpc_api::{AsyncSigner, SolanaConnection, SolanaRpcClient};
+use jet_rpc::transaction::TransactionBuilder;
+use jet_rpc::util::asynchronous::with_retries_and_timeout;
 use solana_sdk::instruction::Instruction;
 use solana_sdk::program_pack::Pack;
 use solana_sdk::pubkey::Pubkey;
@@ -81,7 +81,7 @@ impl TokenManager {
             .await?;
 
         let ix_create_account = system_instruction::create_account(
-            &payer,
+            &payer.pubkey(),
             &signer.pubkey(),
             rent_lamports,
             space as u64,
@@ -91,7 +91,7 @@ impl TokenManager {
         let ix_initialize = spl_token::instruction::initialize_mint(
             &spl_token::ID,
             &signer.pubkey(),
-            mint_authority.unwrap_or(&payer),
+            mint_authority.unwrap_or(&payer.pubkey()),
             freeze_authority,
             decimals,
         )?;
@@ -114,7 +114,7 @@ impl TokenManager {
             .await?;
 
         let ix_create_account = system_instruction::create_account(
-            &payer,
+            &payer.pubkey(),
             &signer.pubkey(),
             rent_lamports,
             space as u64,
@@ -151,7 +151,6 @@ impl TokenManager {
 
     /// Create oracle accounts for a token
     pub async fn create_oracle(&self, mint: &Pubkey) -> Result<TokenOracle, Error> {
-        let payer = self.rpc.payer();
         let (price_address, price_bump) = Pubkey::find_program_address(
             &[mint.as_ref(), b"oracle:price".as_ref()],
             &jet_metadata::ID,
@@ -167,7 +166,7 @@ impl TokenManager {
                 key_account: *mint,
                 metadata_account: address,
                 authority: Self::get_authority_address(),
-                payer,
+                payer: self.rpc.payer().pubkey(),
                 system_program: system_program::ID,
             }
             .to_account_metas(None),
@@ -237,7 +236,7 @@ impl TokenManager {
                     &spl_token::ID,
                     mint,
                     destination,
-                    &payer,
+                    &payer.pubkey(),
                     &[],
                     amount,
                 )?],
