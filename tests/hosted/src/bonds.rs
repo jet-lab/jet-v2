@@ -238,7 +238,7 @@ impl BondsTestManager {
     pub async fn with_crank(mut self) -> Result<Self> {
         let crank = Keypair::new();
 
-        self.ix_builder = self.ix_builder.with_crank(&crank.pubkey(), None);
+        self.ix_builder = self.ix_builder.with_crank(&crank.pubkey());
         let auth_crank = self.ix_builder.authorize_crank_instruction()?;
         self.insert_kp("crank", crank);
 

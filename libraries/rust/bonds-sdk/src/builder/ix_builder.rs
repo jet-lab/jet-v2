@@ -4,7 +4,6 @@ use anchor_lang::{
     prelude::{AccountMeta, Pubkey},
     InstructionData, ToAccountMetas,
 };
-use bonds_metadata::jet_bonds_metadata;
 use jet_bonds::{
     control::instructions::{InitializeBondManagerParams, InitializeOrderbookParams},
     margin::state::Obligation,
@@ -90,11 +89,7 @@ impl BondsIxBuilder {
         self
     }
     pub fn with_crank(mut self, crank: &Pubkey) -> Self {
-        let crank_metadata = Pubkey::find_program_address(
-            &[jet_bonds_metadata::seeds::CRANK_SIGNER, crank.as_ref()],
-            &jet_bonds_metadata::ID,
-        )
-        .0;
+        let crank_metadata = todo!();
         self.keys.insert("crank", *crank);
         self.keys.insert("crank_metadata", crank_metadata);
         self
@@ -536,22 +531,7 @@ impl BondsIxBuilder {
     }
 
     pub fn authorize_crank_instruction(&self) -> Result<Instruction> {
-        let data = jet_bonds_metadata::instruction::AuthorizeCrankSigner {}.data();
-        let crank = self.keys.unwrap("crank")?;
-        let metadata_account = self.crank_metadata_key(&crank);
-        let accounts = jet_bonds_metadata::accounts::AuthorizeCrankSigner {
-            crank_signer: crank,
-            metadata_account,
-            authority: self.keys.unwrap("authority")?,
-            payer: self.keys.unwrap("payer")?,
-            system_program: solana_sdk::system_program::ID,
-        }
-        .to_account_metas(None);
-        Ok(Instruction::new_with_bytes(
-            jet_bonds_metadata::ID,
-            &data,
-            accounts,
-        ))
+        todo!()
     }
 }
 
@@ -575,11 +555,7 @@ impl BondsIxBuilder {
         ])
     }
     pub fn crank_metadata_key(&self, crank: &Pubkey) -> Pubkey {
-        Pubkey::find_program_address(
-            &[jet_bonds_metadata::seeds::CRANK_SIGNER, crank.as_ref()],
-            &jet_bonds_metadata::ID,
-        )
-        .0
+        todo!()
     }
 
     pub fn jet_bonds_id() -> Pubkey {
