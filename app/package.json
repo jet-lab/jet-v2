@@ -17,9 +17,7 @@
     "e2e": "npx cypress run",
     "e2e:gui": "npx cypress open",
     "start:ci": "serve -s build",
-    "e2e:ci": "start-server-and-test start:ci http://localhost:3000 e2e",
-    "debug": "cd ../libraries/ts && tsc && npm link && cd ../../app && npm link @jet-lab/margin && npx craco start",
-    "debug:legacy": "cd ../libraries/ts && tsc && npm link && cd ../../app && npm link @jet-lab/margin && NODE_OPTIONS=--openssl-legacy-provider npx craco start"
+    "e2e:ci": "start-server-and-test start:ci http://localhost:3000 e2e"
   },
   "dependencies": {
     "@ant-design/icons": "^4.5.0",
