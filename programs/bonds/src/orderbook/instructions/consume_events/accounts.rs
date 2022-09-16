@@ -2,7 +2,7 @@ use std::convert::TryInto;
 
 use anchor_lang::prelude::*;
 use anchor_spl::token::Token;
-use jet_metadata::CrankMetadata;
+use bonds_metadata::CrankMetadata;
 
 use crate::{
     control::state::BondManager,

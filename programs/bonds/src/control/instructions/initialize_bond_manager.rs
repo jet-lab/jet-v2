@@ -96,7 +96,7 @@ pub struct InitializeBondManager<'info> {
         mint::authority = bond_manager,
         mint::freeze_authority = bond_manager,
     )]
-    pub deposits: Account<'info, Mint>,
+    pub collateral: Account<'info, Mint>,
 
     /// The controlling signer for this program
     pub program_authority: Signer<'info>,
@@ -135,7 +135,7 @@ pub fn handler(
     manager.underlying_token_vault = ctx.accounts.underlying_token_vault.key();
     manager.bond_ticket_mint = ctx.accounts.bond_ticket_mint.key();
     manager.claims_mint = ctx.accounts.claims.key();
-    manager.deposits_mint = ctx.accounts.deposits.key();
+    manager.collateral_mint = ctx.accounts.collateral.key();
     manager.seed = params.seed;
     manager.bump = [*ctx.bumps.get("bond_manager").unwrap()];
     manager.orderbook_paused = false;

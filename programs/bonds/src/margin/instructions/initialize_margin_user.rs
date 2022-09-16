@@ -37,7 +37,7 @@ pub struct InitializeMarginUser<'info> {
     /// The Boheader account
     #[account(
         has_one = claims_mint @ BondsError::WrongClaimMint,
-        has_one = deposits_mint @ BondsError::WrongDepositsMint
+        has_one = collateral_mint @ BondsError::WrongDepositsMint
     )]
     pub bond_manager: AccountLoader<'info, BondManager>,
 
@@ -62,11 +62,11 @@ pub struct InitializeMarginUser<'info> {
             borrower_account.key().as_ref(),
         ],
         bump,
-        token::mint = deposits_mint,
+        token::mint = collateral_mint,
         token::authority = bond_manager,
         payer = payer)]
-    pub deposits: Account<'info, TokenAccount>,
-    pub deposits_mint: Account<'info, Mint>,
+    pub collateral: Account<'info, TokenAccount>,
+    pub collateral_mint: Account<'info, Mint>,
 
     pub underlying_settlement: Account<'info, TokenAccount>,
     pub ticket_settlement: Account<'info, TokenAccount>,
@@ -98,7 +98,7 @@ pub fn handler(ctx: Context<InitializeMarginUser>) -> Result<()> {
             margin_account: ctx.accounts.margin_account.key(),
             bond_manager: ctx.accounts.bond_manager.key(),
             claims: ctx.accounts.claims.key(),
-            collateral: ctx.accounts.deposits.key(),
+            collateral: ctx.accounts.collateral.key(),
             underlying_settlement: ctx.accounts.underlying_settlement.key(),
             ticket_settlement: ctx.accounts.ticket_settlement.key(),
         } ignoring {

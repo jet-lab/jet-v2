@@ -4,6 +4,7 @@ use anchor_lang::{
     prelude::{AccountMeta, Pubkey},
     InstructionData, ToAccountMetas,
 };
+use bonds_metadata::jet_bonds_metadata;
 use jet_bonds::{
     control::instructions::{InitializeBondManagerParams, InitializeOrderbookParams},
     margin::state::Obligation,
@@ -24,7 +25,7 @@ pub struct BondsIxBuilder {
     bond_ticket_mint: Pubkey,
     underlying_token_vault: Pubkey,
     claims: Pubkey,
-    deposits: Pubkey,
+    collateral: Pubkey,
     orderbook_market_state: Pubkey,
     keys: Keys,
 }
@@ -65,14 +66,14 @@ impl BondsIxBuilder {
         let orderbook_market_state =
             bonds_pda(&[jet_bonds::seeds::ORDERBOOK_MARKET_STATE, manager.as_ref()]);
         let claims = bonds_pda(&[jet_bonds::seeds::CLAIM_NOTES, manager.as_ref()]);
-        let deposits = bonds_pda(&[jet_bonds::seeds::DEPOSIT_NOTES, manager.as_ref()]);
+        let collateral = bonds_pda(&[jet_bonds::seeds::DEPOSIT_NOTES, manager.as_ref()]);
         let keys = Keys::default();
         Self {
             manager,
             bond_ticket_mint,
             underlying_token_vault,
             claims,
-            deposits,
+            collateral,
             orderbook_market_state,
             keys,
         }
@@ -88,10 +89,10 @@ impl BondsIxBuilder {
         self.keys.insert("payer", *payer);
         self
     }
-    pub fn with_crank(mut self, crank: &Pubkey, metadata_seed: Option<String>) -> Self {
+    pub fn with_crank(mut self, crank: &Pubkey) -> Self {
         let crank_metadata = Pubkey::find_program_address(
-            &[crank.as_ref(), metadata_seed.unwrap_or_default().as_bytes()],
-            &jet_metadata::ID,
+            &[jet_bonds_metadata::seeds::CRANK_SIGNER, crank.as_ref()],
+            &jet_bonds_metadata::ID,
         )
         .0;
         self.keys.insert("crank", *crank);
@@ -207,7 +208,7 @@ impl BondsIxBuilder {
             underlying_token_vault: self.underlying_token_vault,
             bond_ticket_mint: self.bond_ticket_mint,
             claims: self.claims,
-            deposits: self.deposits,
+            collateral: self.collateral,
             program_authority: self.keys.unwrap("authority")?,
             underlying_oracle: *underlying_oracle,
             ticket_oracle: *ticket_oracle,
@@ -285,9 +286,9 @@ impl BondsIxBuilder {
             borrower_account,
             margin_account: owner,
             claims: bonds_pda(&[jet_bonds::seeds::CLAIM_NOTES, borrower_account.as_ref()]),
-            deposits: bonds_pda(&[jet_bonds::seeds::DEPOSIT_NOTES, borrower_account.as_ref()]),
+            collateral: bonds_pda(&[jet_bonds::seeds::DEPOSIT_NOTES, borrower_account.as_ref()]),
             claims_mint: self.claims,
-            deposits_mint: self.deposits,
+            collateral_mint: self.collateral,
             underlying_settlement: get_associated_token_address(
                 &owner,
                 &self.keys.unwrap("underlying_mint")?,
@@ -535,7 +536,22 @@ impl BondsIxBuilder {
     }
 
     pub fn authorize_crank_instruction(&self) -> Result<Instruction> {
-        todo!()
+        let data = jet_bonds_metadata::instruction::AuthorizeCrankSigner {}.data();
+        let crank = self.keys.unwrap("crank")?;
+        let metadata_account = self.crank_metadata_key(&crank);
+        let accounts = jet_bonds_metadata::accounts::AuthorizeCrankSigner {
+            crank_signer: crank,
+            metadata_account,
+            authority: self.keys.unwrap("authority")?,
+            payer: self.keys.unwrap("payer")?,
+            system_program: solana_sdk::system_program::ID,
+        }
+        .to_account_metas(None);
+        Ok(Instruction::new_with_bytes(
+            jet_bonds_metadata::ID,
+            &data,
+            accounts,
+        ))
     }
 }
 
@@ -557,6 +573,13 @@ impl BondsIxBuilder {
             ticket_holder.as_ref(),
             seed.as_slice(),
         ])
+    }
+    pub fn crank_metadata_key(&self, crank: &Pubkey) -> Pubkey {
+        Pubkey::find_program_address(
+            &[jet_bonds_metadata::seeds::CRANK_SIGNER, crank.as_ref()],
+            &jet_bonds_metadata::ID,
+        )
+        .0
     }
 
     pub fn jet_bonds_id() -> Pubkey {

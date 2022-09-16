@@ -30,8 +30,8 @@ pub struct BondManager {
     /// These claim notes are monitored by margin to ensure claims are repaid.
     pub claims_mint: Pubkey,
     /// Mint owned by bonds to issue collateral value to a user
-    /// The deposit notes are monitored by the margin program to track value
-    pub deposits_mint: Pubkey,
+    /// The collateral notes are monitored by the margin program to track value
+    pub collateral_mint: Pubkey,
     /// oracle that defines the value of the underlying asset
     pub underlying_oracle: Pubkey,
     /// oracle that defines the value of the bond tickets
