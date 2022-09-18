@@ -63,6 +63,11 @@ mod jet_control {
         instructions::register_adapter_handler(ctx)
     }
 
+    /// Register a crank allowed to consume the orderbook event queue
+    pub fn register_orderbook_crank(ctx: Context<RegisterOrderbookCrank>) -> Result<()> {
+        instructions::register_orderbook_crank_handler(ctx)
+    }
+
     /// Configure details about a margin pool
     pub fn configure_margin_pool(
         ctx: Context<ConfigureMarginPool>,

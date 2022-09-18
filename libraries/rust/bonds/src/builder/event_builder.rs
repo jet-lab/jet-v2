@@ -135,9 +135,9 @@ pub fn make_seed(rng: &mut impl rand::RngCore) -> Vec<u8> {
 
 pub fn build_consume_events_info(
     event_queue: EventQueue<'_, CallbackInfo>,
-    rng: &mut impl rand::RngCore,
 ) -> Result<ConsumeEventsInfo> {
     let mut info = ConsumeEventsInfo::default();
+    let rng = &mut rand::rngs::OsRng::default();
 
     for event in event_queue.iter() {
         if info.count_bytes() > MAX_BYTES {

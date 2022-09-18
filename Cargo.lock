@@ -1879,6 +1879,7 @@ dependencies = [
 name = "hosted-tests"
 version = "0.1.0"
 dependencies = [
+ "agnostic-orderbook",
  "anchor-lang",
  "anchor-spl",
  "anyhow",
@@ -1898,7 +1899,7 @@ dependencies = [
  "jet-margin-sdk",
  "jet-margin-swap",
  "jet-metadata",
- "jet-proto-math 1.1.0 (git+https://github.com/jet-lab/program-libraries?branch=main)",
+ "jet-proto-math 1.1.0 (git+https://github.com/jet-lab/program-libraries?branch=fixed-point-math)",
  "jet-simulation",
  "jet-static-program-registry",
  "mock-adapter",
@@ -1907,6 +1908,7 @@ dependencies = [
  "rand 0.7.3",
  "serial_test 0.6.0",
  "solana-sdk",
+ "spl-associated-token-account",
  "spl-token 3.3.1",
  "tokio",
 ]
@@ -2138,6 +2140,7 @@ dependencies = [
  "anchor-lang",
  "jet-bonds",
  "jet-metadata",
+ "jet-simulation",
  "rand 0.8.5",
  "solana-sdk",
  "spl-associated-token-account",
@@ -2279,9 +2282,11 @@ dependencies = [
 [[package]]
 name = "jet-proto-math"
 version = "1.1.0"
-source = "git+https://github.com/jet-lab/program-libraries?branch=fixed-point-math#4759528cab6e0a186fba57b653744499fc343665"
+source = "git+https://github.com/jet-lab/program-libraries?branch=fixed-point-math#1847a3abe629f99e1942f7d5ae34b4b3d74820d2"
 dependencies = [
+ "anchor-lang",
  "bytemuck",
+ "num-traits",
  "static_assertions",
  "thiserror",
  "uint 0.9.3",
@@ -5200,9 +5205,9 @@ dependencies = [
 
 [[package]]
 name = "tokio-stream"
-version = "0.1.9"
+version = "0.1.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "df54d54117d6fdc4e4fea40fe1e4e566b3505700e148a6827e59b34b0d2600d9"
+checksum = "f6edf2d6bc038a43d31353570e27270603f4648d18f5ed10c0e179abe43255af"
 dependencies = [
  "futures-core",
  "pin-project-lite",

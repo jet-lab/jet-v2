@@ -1,4 +1,5 @@
 pub mod apply;
+pub mod bonds;
 pub mod global;
 pub mod governance;
 pub mod margin;

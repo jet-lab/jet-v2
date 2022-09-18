@@ -8,9 +8,14 @@ pub enum BondsIxError {
     #[error("Failed to insert key: ({0})")]
     FailedInsert(String),
 
-    #[cfg(feature = "utils")]
     #[error("Client error: ({msg})")]
     Client { msg: String },
 }
 
 pub type Result<T> = std::result::Result<T, BondsIxError>;
+
+pub(crate) fn client_err(err: impl ToString) -> BondsIxError {
+    BondsIxError::Client {
+        msg: err.to_string(),
+    }
+}

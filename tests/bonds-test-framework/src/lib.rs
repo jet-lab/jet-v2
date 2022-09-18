@@ -326,7 +326,7 @@ impl TestManager {
     pub async fn consume_events(&self) -> Result<Signature> {
         let mut eq = self.load_event_queue().await?;
 
-        let info = build_consume_events_info(eq.inner(), &mut OsRng::default())?;
+        let info = build_consume_events_info(eq.inner())?;
         let (accounts, num_events, seeds) = info.as_params();
         let consume = self
             .ix_builder

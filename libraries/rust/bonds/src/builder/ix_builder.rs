@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Arc};
 
 use anchor_lang::{InstructionData, ToAccountMetas};
 use jet_bonds::{
@@ -7,6 +7,7 @@ use jet_bonds::{
     orderbook::state::{event_queue_len, orderbook_slab_len, OrderParams},
     tickets::instructions::StakeBondTicketsParams,
 };
+use jet_simulation::solana_rpc_api::SolanaRpcClient;
 use rand::rngs::OsRng;
 use solana_sdk::{
     instruction::{AccountMeta, Instruction},
@@ -16,7 +17,7 @@ use spl_associated_token_account::get_associated_token_address;
 
 use crate::builder::event_builder::make_seed;
 
-use super::error::{BondsIxError, Result};
+use super::error::{client_err, BondsIxError, Result};
 
 #[derive(Clone)]
 pub struct BondsIxBuilder {
@@ -536,6 +537,40 @@ impl BondsIxBuilder {
 
     pub fn authorize_crank_instruction(&self) -> Result<Instruction> {
         todo!()
+    }
+    pub async fn create_orderbook_accounts(
+        &self,
+        rpc: Arc<dyn SolanaRpcClient>,
+        event_queue: Pubkey,
+        bids: Pubkey,
+        asks: Pubkey,
+        queue_capacity: usize,
+        book_capacity: usize,
+    ) -> Result<Vec<Instruction>> {
+        let init_eq = {
+            let rent = rpc
+                .get_minimum_balance_for_rent_exemption(event_queue_len(queue_capacity))
+                .await
+                .map_err(client_err)?;
+            self.initialize_event_queue(&event_queue, queue_capacity, rent)?
+        };
+
+        let init_bids = {
+            let rent = rpc
+                .get_minimum_balance_for_rent_exemption(orderbook_slab_len(book_capacity))
+                .await
+                .map_err(client_err)?;
+            self.initialize_orderbook_slab(&bids, book_capacity, rent)?
+        };
+        let init_asks = {
+            let rent = rpc
+                .get_minimum_balance_for_rent_exemption(orderbook_slab_len(book_capacity))
+                .await
+                .map_err(client_err)?;
+            self.initialize_orderbook_slab(&asks, book_capacity, rent)?
+        };
+
+        Ok(vec![init_eq, init_bids, init_asks])
     }
 }
 

@@ -28,11 +28,14 @@ serial_test = "0.6.0"
 
 solana-sdk = "1.10"
 
+agnostic-orderbook = { git = "https://github.com/jet-lab/agnostic-orderbook.git", branch = "main", features = ["lib", "utils"] }
+
 anchor-lang = { git = "https://github.com/jet-lab/anchor", branch = "master" }
 anchor-spl = { git = "https://github.com/jet-lab/anchor", branch = "master" }
 
 jet-static-program-registry = { path = "../../libraries/rust/static-program-registry" }
-spl-token = "3"
+spl-token = "3.1.0"
+spl-associated-token-account = "1.0"
 pyth-sdk-solana = "0.4"
 
 jet-bonds = { path = "../../programs/bonds", features = ["no-entrypoint"] }
@@ -48,6 +51,6 @@ jet-bonds-lib = { path = "../../libraries/rust/bonds" }
 mock-adapter = { path = "../mock-adapter", features = ["no-entrypoint"] }
 
 jet-simulation = { git = "https://github.com/jet-lab/jet-simulation", branch = "master" }
-jet-proto-math = "1"
+jet-proto-math = { git = "https://github.com/jet-lab/program-libraries", branch = "fixed-point-math", features = ["full"] }
 
 itertools = "0.10.3"
