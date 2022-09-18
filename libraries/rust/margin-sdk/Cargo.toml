@@ -1,0 +1,43 @@
+[package]
+name = "jet-margin-sdk"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "jet_margin_sdk"
+path = "src/lib.rs"
+
+[features]
+testing = ["jet-control/testing", "jet-margin/testing", "jet-metadata/testing", "jet-margin-pool/testing", "jet-margin-swap/testing"]
+
+[dependencies]
+anyhow = "1"
+async-trait = "0.1"
+bincode = "1.3"
+bytemuck = "1"
+futures = "0.3"
+thiserror = "1"
+tokio = { version = "1", features = ["rt"] }
+
+jet-proto-math = { git = "https://github.com/jet-lab/program-libraries", branch = "main" }
+
+pyth-sdk-solana = "0.4"
+solana-sdk = "1.10"
+
+anchor-lang = { git = "https://github.com/jet-lab/anchor", branch = "master" }
+anchor-spl = { git = "https://github.com/jet-lab/anchor", branch = "master" }
+anchor-client = { git = "https://github.com/jet-lab/anchor", branch = "master" }
+
+jet-rpc = { path = "../rpc" }
+jet-control = { path = "../../../programs/control", features = ["no-entrypoint"] }
+jet-margin = { path = "../../../programs/margin", features = ["no-entrypoint"] }
+jet-metadata = { path = "../../../programs/metadata", features = ["no-entrypoint"] }
+jet-margin-pool = { path = "../../../programs/margin-pool", features = ["no-entrypoint"] }
+jet-margin-swap = { path = "../../../programs/margin-swap", features = ["no-entrypoint"] }
+
+# Token swaps
+spl-token = "3"
+spl-token-swap = "2"
+
+[dev-dependencies]
+jet-static-program-registry = { path = "../static-program-registry" }

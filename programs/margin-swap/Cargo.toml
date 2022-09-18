@@ -25,4 +25,4 @@ anchor-spl = { git = "https://github.com/jet-lab/anchor", branch = "master" }
 jet-margin-pool = { path = "../margin-pool", features = ["cpi", "no-entrypoint"] }
 jet-margin = { path = "../margin", features = ["cpi", "no-entrypoint"] }
 
-jet-static-program-registry = { path = "../../libraries/static-program-registry" }
+jet-static-program-registry = { path = "../../libraries/rust/static-program-registry" }

@@ -2,7 +2,7 @@
   "private": "true",
   "workspaces": [
     "app",
-    "libraries/ts"
+    "libraries/ts/*"
   ],
   "license": "AGPL-3.0-or-later",
   "scripts": {

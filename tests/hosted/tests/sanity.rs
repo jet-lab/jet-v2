@@ -10,11 +10,10 @@ use jet_margin_sdk::{
     tokens::TokenPrice,
 };
 use jet_metadata::TokenKind;
-use jet_simulation::{assert_custom_program_error, create_wallet};
 
-use solana_sdk::native_token::LAMPORTS_PER_SOL;
+use jet_rpc::{assert_custom_program_error, create_test_wallet};
 use solana_sdk::pubkey::Pubkey;
-use solana_sdk::signature::Signer;
+use solana_sdk::{native_token::LAMPORTS_PER_SOL, signer::Signer};
 
 use hosted_tests::{
     context::{test_context, MarginTestContext},
@@ -88,13 +87,13 @@ async fn sanity_test() -> Result<(), anyhow::Error> {
     let env = setup_environment(ctx).await?;
 
     // Create our two user wallets, with some SOL funding to get started
-    let wallet_a = create_wallet(&ctx.rpc, 10 * LAMPORTS_PER_SOL).await?;
-    let wallet_b = create_wallet(&ctx.rpc, 10 * LAMPORTS_PER_SOL).await?;
+    let wallet_a = create_test_wallet(ctx.client(), 10 * LAMPORTS_PER_SOL).await?;
+    let wallet_b = create_test_wallet(ctx.client(), 10 * LAMPORTS_PER_SOL).await?;
 
     // Create the user context helpers, which give a simple interface for executing
     // common actions on a margin account
-    let user_a = ctx.margin.user(&wallet_a, 0)?;
-    let user_b = ctx.margin.user(&wallet_b, 0)?;
+    let user_a = ctx.margin.user(wallet_a.clone(), 0)?;
+    let user_b = ctx.margin.user(wallet_b.clone(), 0)?;
 
     // Initialize the margin accounts for each user
     user_a.create_account().await?;

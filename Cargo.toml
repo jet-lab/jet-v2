@@ -3,8 +3,7 @@ members = [
     "programs/*",
     "tests/hosted",
     "tests/mock-adapter",
-    "libraries/rust",
-    "libraries/static-program-registry",
+    "libraries/rust/*",
 ]
 
 [patch.crates-io]

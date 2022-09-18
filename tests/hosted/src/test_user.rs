@@ -2,10 +2,12 @@ use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 
 use anyhow::Result;
-use jet_margin_sdk::solana::transaction::{SendTransactionBuilder, TransactionBuilder};
-use jet_margin_sdk::util::asynchronous::MapAsync;
+use jet_rpc::solana_rpc_api::AsyncSigner;
+use jet_rpc::transaction::TransactionBuilder;
+use jet_rpc::util::asynchronous::MapAsync;
+use solana_sdk::instruction::Instruction;
 use solana_sdk::pubkey::Pubkey;
-use solana_sdk::signature::{Keypair, Signer};
+use solana_sdk::signature::Signer;
 
 use jet_margin_pool::TokenChange;
 use jet_static_program_registry::orca_swap_v2;
@@ -149,7 +151,16 @@ impl<'a> TestUser<'a> {
             vec![]
         };
         txs.push(self.user.liquidate_begin_tx(refresh_positions).await?);
-        self.ctx.rpc.send_and_confirm_condensed(txs).await?;
+        let ixs = txs
+            .clone()
+            .into_iter()
+            .flat_map(|tx| tx.instructions)
+            .collect::<Vec<Instruction>>();
+        let signers = txs
+            .into_iter()
+            .flat_map(|tx| tx.signers)
+            .collect::<Vec<AsyncSigner>>();
+        self.ctx.rpc.sign_send_instructions(&ixs, &signers).await?;
 
         Ok(())
     }
@@ -176,7 +187,7 @@ impl<'a> TestUser<'a> {
 #[derive(Debug)]
 pub struct TestLiquidator<'a> {
     pub ctx: &'a MarginTestContext,
-    pub wallet: Keypair,
+    pub wallet: AsyncSigner,
 }
 
 impl<'a> TestLiquidator<'a> {
@@ -188,10 +199,10 @@ impl<'a> TestLiquidator<'a> {
     }
 
     pub fn for_user(&self, user: &MarginUser) -> Result<TestUser<'a>> {
-        let liquidation = self
-            .ctx
-            .margin
-            .liquidator(&self.wallet, user.owner(), user.seed())?;
+        let liquidation =
+            self.ctx
+                .margin
+                .liquidator(self.wallet.clone(), user.owner(), user.seed())?;
 
         Ok(TestUser {
             ctx: self.ctx,

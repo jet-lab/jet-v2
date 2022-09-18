@@ -30,9 +30,10 @@ use jet_margin_sdk::ix_builder::{
     get_control_authority_address, get_metadata_address, ControlIxBuilder, MarginPoolConfiguration,
     MarginPoolIxBuilder,
 };
-use jet_margin_sdk::solana::transaction::TransactionBuilder;
 use jet_margin_sdk::spl_swap::SplSwapPool;
 use jet_margin_sdk::tokens::TokenOracle;
+use jet_rpc::solana_rpc_api::{AsyncSigner, SolanaConnection, SolanaRpcClient};
+use jet_rpc::transaction::TransactionBuilder;
 use solana_sdk::instruction::Instruction;
 use solana_sdk::signature::{Keypair, Signer};
 use solana_sdk::system_program;
@@ -42,7 +43,6 @@ use jet_control::TokenMetadataParams;
 use jet_margin_pool::{Amount, MarginPool, MarginPoolConfig, TokenChange};
 use jet_margin_sdk::tx_builder::MarginTxBuilder;
 use jet_metadata::{LiquidatorMetadata, MarginAdapterMetadata, TokenKind, TokenMetadata};
-use jet_simulation::{send_and_confirm, solana_rpc_api::SolanaRpcClient};
 
 /// Information needed to create a new margin pool
 pub struct MarginPoolSetupInfo {
@@ -56,19 +56,19 @@ pub struct MarginPoolSetupInfo {
 
 /// Utility for making use of the Jet margin system.
 pub struct MarginClient {
-    rpc: Arc<dyn SolanaRpcClient>,
+    rpc: Arc<dyn SolanaConnection>,
 }
 
 impl MarginClient {
-    pub fn new(rpc: Arc<dyn SolanaRpcClient>) -> Self {
+    pub fn new(rpc: Arc<dyn SolanaConnection>) -> Self {
         Self { rpc }
     }
 
-    pub fn user(&self, keypair: &Keypair, seed: u16) -> Result<MarginUser, Error> {
+    pub fn user(&self, signer: AsyncSigner, seed: u16) -> Result<MarginUser, Error> {
         let tx = MarginTxBuilder::new(
             self.rpc.clone(),
-            Some(Keypair::from_bytes(&keypair.to_bytes())?),
-            keypair.pubkey(),
+            Some(signer.clone()),
+            signer.pubkey(),
             seed,
         );
 
@@ -80,16 +80,16 @@ impl MarginClient {
 
     pub fn liquidator(
         &self,
-        keypair: &Keypair,
+        signer: AsyncSigner,
         owner: &Pubkey,
         seed: u16,
     ) -> Result<MarginUser, Error> {
         let tx = MarginTxBuilder::new_liquidator(
             self.rpc.clone(),
-            Some(Keypair::from_bytes(&keypair.to_bytes())?),
+            Some(signer.clone()),
             *owner,
             seed,
-            keypair.pubkey(),
+            signer.pubkey(),
         );
 
         Ok(MarginUser {
@@ -140,7 +140,7 @@ impl MarginClient {
     pub async fn create_authority(&self) -> Result<(), Error> {
         let ix = ControlIxBuilder::new(self.rpc.payer().pubkey()).create_authority();
 
-        send_and_confirm(&self.rpc, &[ix], &[]).await?;
+        self.rpc.sign_send_instructions(&[ix], &[]).await?;
         Ok(())
     }
 
@@ -160,7 +160,7 @@ impl MarginClient {
     pub async fn register_adapter(&self, adapter: &Pubkey) -> Result<(), Error> {
         let ix = ControlIxBuilder::new(self.rpc.payer().pubkey()).register_adapter(adapter);
 
-        send_and_confirm(&self.rpc, &[ix], &[]).await?;
+        self.rpc.sign_send_instructions(&[ix], &[]).await?;
         Ok(())
     }
 
@@ -172,7 +172,7 @@ impl MarginClient {
         let ix =
             ControlIxBuilder::new(self.rpc.payer().pubkey()).configure_margin_pool(token, config);
 
-        send_and_confirm(&self.rpc, &[ix], &[]).await?;
+        self.rpc.sign_send_instructions(&[ix], &[]).await?;
 
         Ok(())
     }
@@ -182,7 +182,7 @@ impl MarginClient {
         let ix =
             ControlIxBuilder::new(self.rpc.payer().pubkey()).create_margin_pool(&setup_info.token);
 
-        send_and_confirm(&self.rpc, &[ix], &[]).await?;
+        self.rpc.sign_send_instructions(&[ix], &[]).await?;
 
         self.configure_margin_pool(
             &setup_info.token,
@@ -210,7 +210,7 @@ impl MarginClient {
         let ix = ControlIxBuilder::new(self.rpc.payer().pubkey())
             .set_liquidator(&liquidator, is_liquidator);
 
-        send_and_confirm(&self.rpc, &[ix], &[]).await?;
+        self.rpc.sign_send_instructions(&[ix], &[]).await?;
 
         Ok(())
     }
@@ -230,7 +230,7 @@ impl MarginClient {
 #[derive(Clone)]
 pub struct MarginUser {
     tx: MarginTxBuilder,
-    rpc: Arc<dyn SolanaRpcClient>,
+    rpc: Arc<dyn SolanaConnection>,
 }
 
 impl std::fmt::Debug for MarginUser {

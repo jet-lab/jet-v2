@@ -1,6 +1,7 @@
 use anyhow::{Error, Result};
 
 use jet_margin_sdk::tokens::TokenPrice;
+use jet_rpc::{assert_custom_program_error, create_test_wallet};
 use solana_sdk::clock::Clock;
 use solana_sdk::native_token::LAMPORTS_PER_SOL;
 use solana_sdk::pubkey::Pubkey;
@@ -13,7 +14,6 @@ use hosted_tests::{
 
 use jet_margin_pool::{MarginPoolConfig, PoolFlags, TokenChange};
 use jet_metadata::TokenKind;
-use jet_simulation::{assert_custom_program_error, create_wallet};
 
 const ONE_USDC: u64 = 1_000_000;
 const ONE_TSOL: u64 = LAMPORTS_PER_SOL;
@@ -73,13 +73,13 @@ async fn rounding_poc() -> Result<()> {
     let ctx = test_context().await;
     let env = setup_environment(ctx).await?;
 
-    let wallet_a = create_wallet(&ctx.rpc, 10 * LAMPORTS_PER_SOL).await?;
-    let wallet_b = create_wallet(&ctx.rpc, 10 * LAMPORTS_PER_SOL).await?;
-    let wallet_c = create_wallet(&ctx.rpc, 10 * LAMPORTS_PER_SOL).await?;
+    let wallet_a = create_test_wallet(ctx.client(), 10 * LAMPORTS_PER_SOL).await?;
+    let wallet_b = create_test_wallet(ctx.client(), 10 * LAMPORTS_PER_SOL).await?;
+    let wallet_c = create_test_wallet(ctx.client(), 10 * LAMPORTS_PER_SOL).await?;
 
-    let user_a = ctx.margin.user(&wallet_a, 0)?;
-    let user_b = ctx.margin.user(&wallet_b, 0)?;
-    let user_c = ctx.margin.user(&wallet_c, 0)?;
+    let user_a = ctx.margin.user(wallet_a.clone(), 0)?;
+    let user_b = ctx.margin.user(wallet_b.clone(), 0)?;
+    let user_c = ctx.margin.user(wallet_c.clone(), 0)?;
 
     user_a.create_account().await?;
     user_b.create_account().await?;

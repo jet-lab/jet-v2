@@ -8,12 +8,12 @@ use hosted_tests::{
 };
 use jet_margin::ErrorCode;
 use jet_margin_sdk::tokens::TokenPrice;
+use jet_rpc::assert_custom_program_error;
 use solana_sdk::native_token::LAMPORTS_PER_SOL;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::Signer;
 
 use jet_margin_pool::TokenChange;
-use jet_simulation::assert_custom_program_error;
 
 const ONE_USDC: u64 = 1_000_000;
 const ONE_TSOL: u64 = LAMPORTS_PER_SOL;
@@ -187,7 +187,7 @@ async fn no_one_else_can_liquidate_after_liquidate_begin() -> Result<()> {
     let rogue_liquidator = ctx.create_liquidator(100).await?;
     let user_b_rliq =
         ctx.margin
-            .liquidator(&rogue_liquidator, scen.user_b.owner(), scen.user_b.seed())?;
+            .liquidator(rogue_liquidator, scen.user_b.owner(), scen.user_b.seed())?;
 
     // Should fail to begin liquidation
     assert_custom_program_error(

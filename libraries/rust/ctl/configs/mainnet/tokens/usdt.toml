@@ -1,0 +1,23 @@
+[token]
+symbol = "USDT"
+name = "USDT"
+precision = 2
+
+[config]
+mint = "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB"
+pyth_price = "3vxLXJqLqF3JG5TCbYycbKWRBbCJQLxQmBGCkyqEEefL"
+pyth_product = "Av6XyAMJnyi68FdsKSPYgzfXGjYrrt6jcAMwtvzLCqaM"
+
+token_kind = 'Collateral'
+collateral_weight = 1_00
+max_leverage = 20_00
+
+[margin_pool]
+flags = 0b0010 # ALLOW_LENDING
+utilization_rate_1 = 85_00
+utilization_rate_2 = 95_00
+borrow_rate_0 = 50
+borrow_rate_1 = 600
+borrow_rate_2 = 4000
+borrow_rate_3 = 16000
+management_fee_rate = 20_00

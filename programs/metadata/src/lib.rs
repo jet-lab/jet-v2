@@ -200,6 +200,13 @@ pub struct LiquidatorMetadata {
     pub liquidator: Pubkey,
 }
 
+/// An account referencing a crank for a bonds market event queue
+/// calls `consume_events` instructions
+#[account]
+pub struct CrankMetadata {
+    pub crank_signer: Pubkey,
+}
+
 /// An account representing the Control program's authority
 ///
 /// This can be used when specifying the account parameters for an
