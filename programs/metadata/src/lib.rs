@@ -200,6 +200,18 @@ pub struct LiquidatorMetadata {
     pub liquidator: Pubkey,
 }
 
+/// An account referencing a bonds order book cranker, allowed to use the consume events
+/// instructions on order books.
+#[account]
+#[derive(Default, Debug, Eq, PartialEq)]
+pub struct CrankMetadata {
+    pub crank: Pubkey,
+}
+
+impl CrankMetadata {
+    pub const SEED: &[u8] = b"crank_metadata";
+}
+
 /// An account representing the Control program's authority
 ///
 /// This can be used when specifying the account parameters for an

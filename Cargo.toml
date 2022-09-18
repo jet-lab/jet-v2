@@ -1,10 +1,10 @@
 [workspace]
 members = [
     "programs/*",
+    "tests/bonds-test-framework",
     "tests/hosted",
     "tests/mock-adapter",
-    "libraries/rust",
-    "libraries/static-program-registry",
+    "libraries/rust/*"
 ]
 
 [patch.crates-io]
