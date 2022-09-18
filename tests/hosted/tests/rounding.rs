@@ -73,9 +73,9 @@ async fn rounding_poc() -> Result<()> {
     let ctx = test_context().await;
     let env = setup_environment(ctx).await?;
 
-    let wallet_a = create_test_wallet(ctx.client(), 10 * LAMPORTS_PER_SOL).await?;
-    let wallet_b = create_test_wallet(ctx.client(), 10 * LAMPORTS_PER_SOL).await?;
-    let wallet_c = create_test_wallet(ctx.client(), 10 * LAMPORTS_PER_SOL).await?;
+    let wallet_a = create_test_wallet(ctx.rpc.clone(), 10 * LAMPORTS_PER_SOL).await?;
+    let wallet_b = create_test_wallet(ctx.rpc.clone(), 10 * LAMPORTS_PER_SOL).await?;
+    let wallet_c = create_test_wallet(ctx.rpc.clone(), 10 * LAMPORTS_PER_SOL).await?;
 
     let user_a = ctx.margin.user(wallet_a.clone(), 0)?;
     let user_b = ctx.margin.user(wallet_b.clone(), 0)?;

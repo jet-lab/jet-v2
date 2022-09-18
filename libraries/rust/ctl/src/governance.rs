@@ -3,7 +3,7 @@ use std::{str::FromStr, sync::Arc};
 use anyhow::{bail, Context, Result};
 
 use anchor_lang::{idl::IdlAccount, AnchorDeserialize};
-use jet_rpc::solana_rpc_api::SolanaRpcClient;
+use jet_rpc::solana_rpc_api::SolanaRpc;
 use solana_client::{
     client_error::{ClientError, ClientErrorKind},
     rpc_request::RpcError,
@@ -374,7 +374,7 @@ fn get_transaction_instructions(tx: &Transaction) -> Vec<InstructionData> {
 /// Returns None for if RpcClient returns `AccountNotFound`,
 /// which means the transaction was probably removed.
 async fn get_prosposal_transaction(
-    rpc: Arc<dyn SolanaRpcClient>,
+    rpc: Arc<dyn SolanaRpc>,
     address: &Pubkey,
 ) -> Result<Option<ProposalTransactionV2>> {
     let proposal_tx = get_borsh_account::<ProposalTransactionV2>(rpc, address).await;
@@ -392,7 +392,7 @@ async fn get_prosposal_transaction(
 }
 
 async fn get_borsh_account<T: AnchorDeserialize>(
-    rpc: Arc<dyn SolanaRpcClient>,
+    rpc: Arc<dyn SolanaRpc>,
     address: &Pubkey,
 ) -> Result<T> {
     let data = rpc.get_account_data(address).await?;

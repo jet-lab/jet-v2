@@ -22,7 +22,7 @@ use jet_margin_pool::program::JetMarginPool;
 use jet_metadata::{PositionTokenMetadata, TokenMetadata};
 
 use anyhow::{bail, Result};
-use jet_rpc::solana_rpc_api::{AsyncSigner, SolanaConnection, SolanaRpcClient};
+use jet_rpc::solana_rpc_api::{AsyncSigner, SolanaConnection, SolanaRpc};
 use jet_rpc::transaction::{SendTransactionBuilder, TransactionBuilder};
 use solana_sdk::instruction::Instruction;
 use solana_sdk::pubkey::Pubkey;

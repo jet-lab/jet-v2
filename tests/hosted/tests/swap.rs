@@ -97,8 +97,8 @@ async fn swap_test_impl(swap_program_id: Pubkey) -> Result<(), anyhow::Error> {
     let env = setup_environment(ctx).await?;
 
     // Create our two user wallets, with some SOL funding to get started
-    let wallet_a = create_test_wallet(ctx.client(), 10 * LAMPORTS_PER_SOL).await?;
-    let wallet_b = create_test_wallet(ctx.client(), 10 * LAMPORTS_PER_SOL).await?;
+    let wallet_a = create_test_wallet(ctx.rpc.clone(), 10 * LAMPORTS_PER_SOL).await?;
+    let wallet_b = create_test_wallet(ctx.rpc.clone(), 10 * LAMPORTS_PER_SOL).await?;
 
     // Create the user context helpers, which give a simple interface for executing
     // common actions on a margin account
@@ -125,7 +125,7 @@ async fn swap_test_impl(swap_program_id: Pubkey) -> Result<(), anyhow::Error> {
     supported_mints.insert(env.usdc);
     supported_mints.insert(env.tsol);
 
-    let swap_pools = SplSwapPool::get_pools(ctx.client(), &supported_mints, swap_program_id)
+    let swap_pools = SplSwapPool::get_pools(ctx.rpc.clone(), &supported_mints, swap_program_id)
         .await
         .unwrap();
     assert_eq!(swap_pools.len(), 1);

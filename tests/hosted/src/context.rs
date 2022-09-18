@@ -2,8 +2,8 @@ use std::cell::RefCell;
 use std::sync::{Arc, Mutex};
 
 use anyhow::Error;
-use jet_rpc::connection::Client;
-use jet_rpc::create_test_wallet;
+use jet_rpc::connection::Connection;
+use jet_rpc::{create_test_wallet, generate_test_keypair};
 use rand::rngs::mock::StepRng;
 use solana_sdk::native_token::LAMPORTS_PER_SOL;
 use tokio::sync::OnceCell;
@@ -13,7 +13,7 @@ use solana_sdk::signature::{Keypair, Signer};
 
 use jet_margin_pool::MarginPoolConfig;
 use jet_metadata::TokenKind;
-use jet_rpc::solana_rpc_api::{AsyncSigner, SolanaConnection, SolanaRpcClient};
+use jet_rpc::solana_rpc_api::{AsyncSigner, SolanaConnection, SolanaRpc};
 
 use crate::{margin::MarginClient, tokens::TokenManager};
 
@@ -75,7 +75,6 @@ impl MarginTestContext {
                 spl_token_swap_v2::processor::Processor::process
             ),
         ];
-
         Self::new_with_runtime(Arc::new(runtime)).await
     }
 
@@ -86,10 +85,13 @@ impl MarginTestContext {
         Self::new_with_runtime(Arc::new(runtime)).await
     }
 
-    pub async fn new_with_runtime(runtime: Arc<dyn SolanaRpcClient>) -> Result<Self, Error> {
-        let payer = create_test_wallet(runtime.clone(), 20 * LAMPORTS_PER_SOL).await?;
+    pub async fn new_with_runtime(runtime: Arc<dyn SolanaRpc>) -> Result<Self, Error> {
+        let payer = AsyncSigner::new(generate_test_keypair());
+        runtime
+            .request_airdrop(&payer.pubkey(), 20 * LAMPORTS_PER_SOL)
+            .await?;
         let rng = MockRng(StepRng::new(0, 1));
-        let conn = Arc::new(Client::new(runtime, payer.into()));
+        let conn = Arc::new(Connection::new(runtime, payer));
         let ctx = MarginTestContext {
             tokens: TokenManager::new(conn.clone()),
             margin: MarginClient::new(conn.clone()),
@@ -98,12 +100,12 @@ impl MarginTestContext {
         };
 
         ctx.margin.create_authority_if_missing().await?;
-        ctx.margin
-            .register_adapter_if_unregistered(&jet_margin_pool::ID)
-            .await?;
-        ctx.margin
-            .register_adapter_if_unregistered(&jet_margin_swap::ID)
-            .await?;
+        // ctx.margin
+        //     .register_adapter_if_unregistered(&jet_margin_pool::ID)
+        //     .await?;
+        // ctx.margin
+        //     .register_adapter_if_unregistered(&jet_margin_swap::ID)
+        //     .await?;
 
         Ok(ctx)
     }
@@ -126,11 +128,6 @@ impl MarginTestContext {
             .set_liquidator_metadata(liquidator.pubkey(), true)
             .await?;
         Ok(AsyncSigner::new(liquidator))
-    }
-
-    /// lets us swap between traits
-    pub fn client(&self) -> Arc<dyn SolanaRpcClient> {
-        Arc::new(self.rpc.clone())
     }
 }
 

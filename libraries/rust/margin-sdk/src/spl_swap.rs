@@ -25,7 +25,7 @@ use std::{
 use anchor_lang::AccountDeserialize;
 use anyhow::Result;
 use jet_proto_math::Number128;
-use jet_rpc::solana_rpc_api::SolanaRpcClient;
+use jet_rpc::solana_rpc_api::{SolanaConnection, SolanaRpc};
 use solana_sdk::{program_pack::Pack, pubkey::Pubkey};
 use spl_token_swap::state::SwapV1;
 
@@ -61,7 +61,7 @@ pub struct SplSwapPool {
 impl SplSwapPool {
     /// Get all swap pools that contain pairs of supported mints
     pub async fn get_pools(
-        rpc: Arc<dyn SolanaRpcClient>,
+        rpc: Arc<dyn SolanaConnection>,
         supported_mints: &HashSet<Pubkey>,
         swap_program: Pubkey,
     ) -> anyhow::Result<HashMap<(Pubkey, Pubkey), Self>> {
@@ -162,7 +162,7 @@ impl SplSwapPool {
 
 // helper function to find token account
 async fn find_token(
-    rpc: Arc<dyn SolanaRpcClient>,
+    rpc: Arc<dyn SolanaConnection>,
     address: &Pubkey,
 ) -> Result<anchor_spl::token::TokenAccount> {
     let account = rpc.get_account(address).await?.unwrap();
@@ -174,7 +174,7 @@ async fn find_token(
 
 // helper function to find mint account
 async fn find_mint(
-    rpc: Arc<dyn SolanaRpcClient>,
+    rpc: Arc<dyn SolanaConnection>,
     address: &Pubkey,
 ) -> Result<anchor_spl::token::Mint> {
     let account = rpc.get_account(address).await?.unwrap();

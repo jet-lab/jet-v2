@@ -4,6 +4,7 @@ use std::sync::Arc;
 use anyhow::{Error, Result};
 
 use jet_margin_sdk::tokens::TokenPrice;
+use jet_rpc::solana_rpc_api::SolanaConnection;
 use jet_rpc::util::asynchronous::MapAsync;
 use jet_rpc::{create_test_wallet, generate_test_keypair};
 use solana_sdk::native_token::LAMPORTS_PER_SOL;
@@ -14,13 +15,11 @@ use jet_margin_pool::{MarginPoolConfig, PoolFlags, TokenChange};
 use jet_metadata::TokenKind;
 use tokio::try_join;
 
+use crate::context::test_context;
 use crate::pricing::TokenPricer;
 use crate::swap::{create_swap_pools, SwapRegistry};
 use crate::test_user::{TestLiquidator, TestUser};
-use crate::{
-    context::{test_context, MarginTestContext},
-    margin::MarginPoolSetupInfo,
-};
+use crate::{context::MarginTestContext, margin::MarginPoolSetupInfo};
 
 const DEFAULT_POOL_CONFIG: MarginPoolConfig = MarginPoolConfig {
     borrow_rate_0: 10,

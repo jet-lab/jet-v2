@@ -27,7 +27,7 @@ use jet_margin_sdk::spl_swap::SplSwapPool;
 use jet_rpc::generate_test_keypair;
 use jet_rpc::solana_rpc_api::AsyncSigner;
 use jet_rpc::solana_rpc_api::SolanaConnection;
-use jet_rpc::solana_rpc_api::SolanaRpcClient;
+use jet_rpc::solana_rpc_api::SolanaRpc;
 use jet_rpc::transaction::SendTransactionBuilder;
 use jet_rpc::transaction::TransactionBuilder;
 use jet_rpc::util::asynchronous::MapAsync;
@@ -103,7 +103,7 @@ pub trait SwapPoolConfig: Sized {
         b_amount: u64,
     ) -> Result<Self, Error>;
 
-    async fn balances(&self, rpc: Arc<dyn SolanaRpcClient>) -> Result<HashMap<Pubkey, u64>, Error>;
+    async fn balances(&self, rpc: Arc<dyn SolanaRpc>) -> Result<HashMap<Pubkey, u64>, Error>;
 
     async fn swap(
         &self,
@@ -116,7 +116,7 @@ pub trait SwapPoolConfig: Sized {
 
     async fn swap_tx(
         &self,
-        rpc: Arc<dyn SolanaRpcClient>,
+        rpc: Arc<dyn SolanaConnection>,
         source: &Pubkey,
         dest: &Pubkey,
         amount_in: u64,
@@ -226,7 +226,7 @@ impl SwapPoolConfig for SplSwapPool {
         })
     }
 
-    async fn balances(&self, rpc: Arc<dyn SolanaRpcClient>) -> Result<HashMap<Pubkey, u64>, Error> {
+    async fn balances(&self, rpc: Arc<dyn SolanaRpc>) -> Result<HashMap<Pubkey, u64>, Error> {
         let mut mint_to_balance: HashMap<Pubkey, u64> = HashMap::new();
         mint_to_balance.insert(
             self.mint_a,
@@ -242,7 +242,7 @@ impl SwapPoolConfig for SplSwapPool {
 
     async fn swap_tx(
         &self,
-        rpc: Arc<dyn SolanaRpcClient>,
+        rpc: Arc<dyn SolanaConnection>,
         source: &Pubkey,
         dest: &Pubkey,
         amount_in: u64,
@@ -298,11 +298,10 @@ impl SwapPoolConfig for SplSwapPool {
         signer: AsyncSigner,
     ) -> Result<(), Error> {
         let tx = self
-            .swap_tx(Arc::new(rpc.clone()), source, dest, amount_in, signer)
+            .swap_tx(rpc.clone(), source, dest, amount_in, signer)
             .await?;
 
-        rpc.sign_send_instructions(&tx.instructions, &tx.signers)
-            .await?;
+        rpc.send_and_confirm(tx).await?;
 
         Ok(())
     }

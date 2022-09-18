@@ -10,7 +10,7 @@ use anyhow::{anyhow, bail, Context, Error, Result};
 
 use dialoguer::Confirm;
 use indicatif::{MultiProgress, ProgressBar};
-use jet_rpc::solana_rpc_api::{AsyncSigner, SolanaRpcClient};
+use jet_rpc::solana_rpc_api::{AsyncSigner, SolanaRpc};
 use solana_cli_config::{Config as SolanaConfig, CONFIG_FILE as SOLANA_CONFIG_FILE};
 use solana_sdk::{
     compute_budget::ComputeBudgetInstruction, hash::Hash, instruction::Instruction,
@@ -58,8 +58,8 @@ impl ClientConfig {
             "wallet",
             &mut remote_wallet_manager,
         )
-        .map(Arc::from)
-        .map(|s| AsyncSigner::new_from_arc(s))
+        .map(Arc::<dyn Signer>::from)
+        .map(AsyncSigner::new_from_arc)
         .ok();
 
         Ok(ClientConfig {
@@ -80,14 +80,14 @@ pub struct Client {
     pub network_kind: NetworkKind,
 
     /// The rpc connection for this client
-    pub rpc: Arc<dyn SolanaRpcClient>,
+    pub rpc: Arc<dyn SolanaRpc>,
 
     /// The configuration for this client
     pub config: ClientConfig,
 }
 
 impl Client {
-    pub async fn new(rpc: Arc<dyn SolanaRpcClient>, config: ClientConfig) -> Result<Self> {
+    pub async fn new(rpc: Arc<dyn SolanaRpc>, config: ClientConfig) -> Result<Self> {
         let recent_blockhash = rpc.get_latest_blockhash().await?;
         let network_kind = Self::get_network_kind(rpc.clone()).await?;
 
@@ -102,7 +102,7 @@ impl Client {
     }
 
     /// Get the current network type
-    async fn get_network_kind(rpc: Arc<dyn SolanaRpcClient>) -> Result<NetworkKind> {
+    async fn get_network_kind(rpc: Arc<dyn SolanaRpc>) -> Result<NetworkKind> {
         let mainnet_hash = Hash::from_str(MAINNET_HASH).unwrap();
         let devnet_hash = Hash::from_str(DEVNET_HASH).unwrap();
 

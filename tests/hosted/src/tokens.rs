@@ -24,8 +24,8 @@ use bytemuck::Zeroable;
 
 use jet_margin_sdk::tokens::{TokenOracle, TokenPrice};
 use jet_rpc::generate_test_keypair;
-use jet_rpc::solana_rpc_api::{AsyncSigner, SolanaConnection, SolanaRpcClient};
-use jet_rpc::transaction::TransactionBuilder;
+use jet_rpc::solana_rpc_api::{AsyncSigner, SolanaConnection, SolanaRpc};
+use jet_rpc::transaction::{sign_send_instructions, SendTransactionBuilder, TransactionBuilder};
 use jet_rpc::util::asynchronous::with_retries_and_timeout;
 use solana_sdk::instruction::Instruction;
 use solana_sdk::program_pack::Pack;
@@ -96,10 +96,14 @@ impl TokenManager {
             decimals,
         )?;
 
-        self.rpc
-            .sign_send_instructions(&[ix_create_account, ix_initialize], &[signer.clone()])
+        let tx = self
+            .rpc
+            .create_transaction(
+                &[signer.clone(), payer],
+                &[ix_create_account, ix_initialize],
+            )
             .await?;
-
+        self.rpc.send_and_confirm_transaction(&tx).await?;
         Ok(signer.pubkey())
     }
 
@@ -127,9 +131,11 @@ impl TokenManager {
             mint,
             owner,
         )?;
-        self.rpc
-            .sign_send_instructions(&[ix_create_account, ix_initialize], &[signer.clone()])
+        let tx = self
+            .rpc
+            .create_transaction(&[signer.clone()], &[ix_create_account, ix_initialize])
             .await?;
+        self.rpc.send_and_confirm_transaction(&tx).await?;
 
         Ok(signer.pubkey())
     }
@@ -190,9 +196,11 @@ impl TokenManager {
             std::mem::size_of::<pyth_sdk_solana::state::ProductAccount>(),
         );
 
-        self.rpc
-            .sign_send_instructions(&[ix_create_price, ix_create_product], &[])
+        let tx = self
+            .rpc
+            .create_transaction(&[], &[ix_create_price, ix_create_product])
             .await?;
+        self.rpc.send_and_confirm_transaction(&tx).await?;
 
         let mut product_account = pyth_sdk_solana::state::ProductAccount {
             ver: pyth_sdk_solana::state::VERSION,
@@ -230,30 +238,30 @@ impl TokenManager {
     ) -> Result<(), Error> {
         let payer = self.rpc.payer();
 
-        self.rpc
-            .sign_send_instructions(
-                &[spl_token::instruction::mint_to(
-                    &spl_token::ID,
-                    mint,
-                    destination,
-                    &payer.pubkey(),
-                    &[],
-                    amount,
-                )?],
+        sign_send_instructions(
+            self.rpc.clone(),
+            &[spl_token::instruction::mint_to(
+                &spl_token::ID,
+                mint,
+                destination,
+                &payer.pubkey(),
                 &[],
-            )
-            .await?;
+                amount,
+            )?],
+            &[],
+        )
+        .await?;
 
         Ok(())
     }
 
     pub async fn refresh_to_same_price(&self, mint: &Pubkey) -> Result<(), Error> {
-        self.rpc
-            .sign_send_instructions(
-                &self.refresh_to_same_price_tx(mint).await?.instructions,
-                &[],
-            )
-            .await?;
+        sign_send_instructions(
+            self.rpc.clone(),
+            &self.refresh_to_same_price_tx(mint).await?.instructions,
+            &[],
+        )
+        .await?;
 
         Ok(())
     }
@@ -293,9 +301,12 @@ impl TokenManager {
 
     /// Set the oracle price of a token
     pub async fn set_price(&self, mint: &Pubkey, price: &TokenPrice) -> Result<(), Error> {
-        self.rpc
-            .sign_send_instructions(&self.set_price_tx(mint, price)?.instructions, &[])
-            .await?;
+        sign_send_instructions(
+            self.rpc.clone(),
+            &self.set_price_tx(mint, price)?.instructions,
+            &[],
+        )
+        .await?;
 
         Ok(())
     }
@@ -347,9 +358,12 @@ impl TokenManager {
         address: &Pubkey,
         value: &T,
     ) -> Result<(), Error> {
-        self.rpc
-            .sign_send_instructions(&self.set_pod_metadata_tx(address, value)?.instructions, &[])
-            .await?;
+        sign_send_instructions(
+            self.rpc.clone(),
+            &self.set_pod_metadata_tx(address, value)?.instructions,
+            &[],
+        )
+        .await?;
 
         Ok(())
     }

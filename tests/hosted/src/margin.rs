@@ -32,8 +32,8 @@ use jet_margin_sdk::ix_builder::{
 };
 use jet_margin_sdk::spl_swap::SplSwapPool;
 use jet_margin_sdk::tokens::TokenOracle;
-use jet_rpc::solana_rpc_api::{AsyncSigner, SolanaConnection, SolanaRpcClient};
-use jet_rpc::transaction::TransactionBuilder;
+use jet_rpc::solana_rpc_api::{AsyncSigner, SolanaConnection, SolanaRpc};
+use jet_rpc::transaction::{SendTransactionBuilder, TransactionBuilder};
 use solana_sdk::instruction::Instruction;
 use solana_sdk::signature::{Keypair, Signer};
 use solana_sdk::system_program;
@@ -125,22 +125,24 @@ impl MarginClient {
     }
 
     pub async fn create_authority_if_missing(&self) -> Result<(), Error> {
-        if self
-            .rpc
-            .get_account(&get_control_authority_address())
-            .await?
-            .is_none()
-        {
-            self.create_authority().await?;
-        }
+        // if self
+        //     .rpc
+        //     .get_account(&get_control_authority_address())
+        //     .await?
+        //     .is_none()
+        // {
+        //     self.create_authority().await?;
+        // }
+        self.rpc.get_account(&self.rpc.payer().pubkey()).await?;
 
         Ok(())
     }
 
     pub async fn create_authority(&self) -> Result<(), Error> {
         let ix = ControlIxBuilder::new(self.rpc.payer().pubkey()).create_authority();
+        let tx = self.rpc.create_transaction(&[], &[ix]).await?;
 
-        self.rpc.sign_send_instructions(&[ix], &[]).await?;
+        self.rpc.send_and_confirm_transaction(&tx).await?;
         Ok(())
     }
 
@@ -160,7 +162,9 @@ impl MarginClient {
     pub async fn register_adapter(&self, adapter: &Pubkey) -> Result<(), Error> {
         let ix = ControlIxBuilder::new(self.rpc.payer().pubkey()).register_adapter(adapter);
 
-        self.rpc.sign_send_instructions(&[ix], &[]).await?;
+        let tx = self.rpc.create_transaction(&[], &[ix]).await?;
+
+        self.rpc.send_and_confirm_transaction(&tx).await?;
         Ok(())
     }
 
@@ -172,7 +176,9 @@ impl MarginClient {
         let ix =
             ControlIxBuilder::new(self.rpc.payer().pubkey()).configure_margin_pool(token, config);
 
-        self.rpc.sign_send_instructions(&[ix], &[]).await?;
+        let tx = self.rpc.create_transaction(&[], &[ix]).await?;
+
+        self.rpc.send_and_confirm_transaction(&tx).await?;
 
         Ok(())
     }
@@ -182,7 +188,9 @@ impl MarginClient {
         let ix =
             ControlIxBuilder::new(self.rpc.payer().pubkey()).create_margin_pool(&setup_info.token);
 
-        self.rpc.sign_send_instructions(&[ix], &[]).await?;
+        let tx = self.rpc.create_transaction(&[], &[ix]).await?;
+
+        self.rpc.send_and_confirm_transaction(&tx).await?;
 
         self.configure_margin_pool(
             &setup_info.token,
@@ -210,7 +218,9 @@ impl MarginClient {
         let ix = ControlIxBuilder::new(self.rpc.payer().pubkey())
             .set_liquidator(&liquidator, is_liquidator);
 
-        self.rpc.sign_send_instructions(&[ix], &[]).await?;
+        let tx = self.rpc.create_transaction(&[], &[ix]).await?;
+
+        self.rpc.send_and_confirm_transaction(&tx).await?;
 
         Ok(())
     }
@@ -236,8 +246,8 @@ pub struct MarginUser {
 impl std::fmt::Debug for MarginUser {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("MarginUser")
-            // .field("tx", &self.tx)
-            // .field("rpc", &self.rpc)
+            //     .field("tx", &self.tx)
+            //     .field("rpc", &self.rpc)
             .finish()
     }
 }

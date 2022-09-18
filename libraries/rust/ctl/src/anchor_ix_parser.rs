@@ -9,7 +9,7 @@ use anchor_syn::{
 };
 use anyhow::{anyhow, bail, Context, Result};
 use borsh::BorshDeserialize;
-use jet_rpc::solana_rpc_api::SolanaRpcClient;
+use jet_rpc::solana_rpc_api::SolanaRpc;
 use solana_sdk::{instruction::Instruction, pubkey::Pubkey};
 
 pub struct ParsedInstruction {
@@ -24,12 +24,12 @@ pub enum ParsedAccountInput {
 }
 
 pub struct AnchorParser {
-    rpc: Arc<dyn SolanaRpcClient>,
+    rpc: Arc<dyn SolanaRpc>,
     idls: HashMap<Pubkey, Idl>,
 }
 
 impl AnchorParser {
-    pub fn new(rpc: Arc<dyn SolanaRpcClient>) -> Self {
+    pub fn new(rpc: Arc<dyn SolanaRpc>) -> Self {
         Self {
             rpc,
             idls: HashMap::new(),

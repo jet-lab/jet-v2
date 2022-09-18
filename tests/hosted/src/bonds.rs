@@ -19,9 +19,9 @@ use jet_margin_sdk::ix_builder::{
     get_control_authority_address, get_metadata_address, ControlIxBuilder,
 };
 use jet_rpc::{
-    connection::Client,
     create_test_wallet,
-    solana_rpc_api::{AsyncSigner, SolanaConnection, SolanaRpcClient},
+    solana_rpc_api::{AsyncSigner, SolanaConnection, SolanaRpc},
+    transaction::sign_send_instructions,
 };
 use solana_sdk::{
     hash::Hash,
@@ -141,9 +141,7 @@ impl BondsTestManager {
         instructions: &[Instruction],
         add_signers: &[AsyncSigner],
     ) -> Result<Signature> {
-        self.ctx
-            .sign_send_instructions(instructions, add_signers)
-            .await
+        sign_send_instructions(self.ctx.clone(), instructions, add_signers).await
     }
     pub async fn consume_events(&self) -> Result<Signature> {
         let mut eq = self.load_event_queue().await?;
@@ -201,7 +199,7 @@ impl BondsTestManager {
     pub async fn create_authority(&self) -> Result<()> {
         let ix = ControlIxBuilder::new(self.ctx.payer().pubkey()).create_authority();
 
-        self.ctx.sign_send_instructions(&[ix], &[]).await?;
+        sign_send_instructions(self.ctx.clone(), &[ix], &[]).await?;
         Ok(())
     }
 
@@ -221,7 +219,7 @@ impl BondsTestManager {
     pub async fn register_adapter(&self, adapter: &Pubkey) -> Result<()> {
         let ix = ControlIxBuilder::new(self.ctx.payer().pubkey()).register_adapter(adapter);
 
-        self.ctx.sign_send_instructions(&[ix], &[]).await?;
+        sign_send_instructions(self.ctx.clone(), &[ix], &[]).await?;
         Ok(())
     }
 

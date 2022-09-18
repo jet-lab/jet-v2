@@ -32,7 +32,7 @@
 //! ```ignore
 //! use std::sync::Arc;
 //!
-//! use jet_simulation::solana_rpc_api::{RpcConnection, SolanaRpcClient};
+//! use jet_simulation::solana_rpc_api::{RpcConnection, SolanaRpc};
 //! use solana_client::rpc_client::nonblocking::RpcClient;
 //!
 //! #[tokio::main]

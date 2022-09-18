@@ -3,9 +3,8 @@ use std::collections::HashMap;
 
 use anyhow::Result;
 use jet_rpc::solana_rpc_api::AsyncSigner;
-use jet_rpc::transaction::TransactionBuilder;
+use jet_rpc::transaction::{SendTransactionBuilder, TransactionBuilder};
 use jet_rpc::util::asynchronous::MapAsync;
-use solana_sdk::instruction::Instruction;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::Signer;
 
@@ -31,7 +30,6 @@ impl<'a> std::fmt::Debug for TestUser<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("TestUser")
             .field("user", &self.user.address())
-            // .field("liquidator", &self.liquidator.address())
             .field("mint_to_token_account", &self.mint_to_token_account)
             .finish()
     }
@@ -151,16 +149,7 @@ impl<'a> TestUser<'a> {
             vec![]
         };
         txs.push(self.user.liquidate_begin_tx(refresh_positions).await?);
-        let ixs = txs
-            .clone()
-            .into_iter()
-            .flat_map(|tx| tx.instructions)
-            .collect::<Vec<Instruction>>();
-        let signers = txs
-            .into_iter()
-            .flat_map(|tx| tx.signers)
-            .collect::<Vec<AsyncSigner>>();
-        self.ctx.rpc.sign_send_instructions(&ixs, &signers).await?;
+        self.ctx.rpc.send_and_confirm_condensed(txs).await?;
 
         Ok(())
     }
