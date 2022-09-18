@@ -1,9 +1,6 @@
 use std::collections::HashMap;
 
-use anchor_lang::{
-    prelude::{AccountMeta, Pubkey},
-    InstructionData, ToAccountMetas,
-};
+use anchor_lang::{InstructionData, ToAccountMetas};
 use jet_bonds::{
     control::instructions::{InitializeBondManagerParams, InitializeOrderbookParams},
     margin::state::Obligation,
@@ -11,7 +8,10 @@ use jet_bonds::{
     tickets::instructions::StakeBondTicketsParams,
 };
 use rand::rngs::OsRng;
-use solana_sdk::instruction::Instruction;
+use solana_sdk::{
+    instruction::{AccountMeta, Instruction},
+    pubkey::Pubkey,
+};
 use spl_associated_token_account::get_associated_token_address;
 
 use crate::builder::event_builder::make_seed;
