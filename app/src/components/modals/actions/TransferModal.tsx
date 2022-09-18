@@ -210,7 +210,7 @@ export function TransferModal(): JSX.Element {
           <Text className="small-accent-text">{fromAccountName}</Text>
           {fromAccountPoolPosition && currentPool?.symbol && (
             <Paragraph
-              onClick={() => setTokenInputString(fromAccountPoolPosition.depositBalance.uiTokens)}
+              onClick={() => setTokenInputString(fromAccountPoolPosition.depositBalance.tokens.toString())}
               className="token-balance">{`${fromAccountPoolPosition.depositBalance.uiTokens} ${currentPool.symbol}`}</Paragraph>
           )}
         </div>

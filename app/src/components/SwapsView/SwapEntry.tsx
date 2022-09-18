@@ -289,7 +289,6 @@ export function SwapEntry(): JSX.Element {
           </div>
           <TokenInput
             action="swap"
-            value={currentAction ? TokenAmount.zero(0) : undefined}
             onPressEnter={sendSwap}
             hideSlider
             dropdownStyle={{ minWidth: 308, maxWidth: 308 }}
@@ -338,21 +337,19 @@ export function SwapEntry(): JSX.Element {
         </div>
         <div className="swap-tokens">
           <div className="swap-section-head flex align-center justify-start">
-            <Text className="small-accent-text">{dictionary.actions.swap.recieve.toUpperCase()}</Text>
+            <Text className="small-accent-text">{dictionary.actions.swap.receive.toUpperCase()}</Text>
           </div>
           <TokenInput
             poolSymbol={outputToken?.symbol}
             value={
-              currentAction
-                ? TokenAmount.zero(0)
-                : getOutputTokenAmount(
-                    tokenInputAmount,
-                    swapPoolTokenAmounts?.source,
-                    swapPoolTokenAmounts?.destination,
-                    swapPool?.pool.swapType,
-                    swapFees,
-                    swapPool?.pool.amp ?? 1
-                  ) ?? TokenAmount.zero(0)
+              getOutputTokenAmount(
+                tokenInputAmount,
+                swapPoolTokenAmounts?.source,
+                swapPoolTokenAmounts?.destination,
+                swapPool?.pool.swapType,
+                swapFees,
+                swapPool?.pool.amp ?? 1
+              ) ?? TokenAmount.zero(0)
             }
             tokenOptions={poolOptions.filter(pool => {
               if (

@@ -35,6 +35,8 @@ export function SwapsGraph(): JSX.Element {
   const swapDestinationTokens = swapPoolTokenAmounts?.destination.lamports.toNumber();
   const swapMaxTradeAmount =
     currentAccount?.poolPositions[currentPool?.symbol ?? '']?.maxTradeAmounts.swap.lamports.toNumber();
+  const [oraclePrice, setOraclePrice] = useState(0);
+  const [poolPrice, setPoolPrice] = useState(0);
   const { Title, Text } = Typography;
 
   // Create and render chart on new data / market pair
@@ -54,6 +56,7 @@ export function SwapsGraph(): JSX.Element {
     const oraclePrice = !swapPool.inverted
       ? currentPool!.tokenPrice / outputToken!.tokenPrice
       : outputToken!.tokenPrice / currentPool!.tokenPrice;
+    setOraclePrice(oraclePrice);
 
     // Current pool price
     let poolPrice = 0.0;
@@ -63,6 +66,7 @@ export function SwapsGraph(): JSX.Element {
     } else if (swapPool.pool.swapType === 'stable') {
       poolPrice = oraclePrice;
     }
+    setPoolPrice(poolPrice);
     const priceWithFee = !swapPool?.inverted ? 1 - swapFees : 1 + swapFees;
 
     // Show 2x what the user can trade
@@ -97,7 +101,7 @@ export function SwapsGraph(): JSX.Element {
       chart: {
         type: 'line',
         width: '95%',
-        height: '525px',
+        height: '500px',
         zoom: {
           zoomedArea: {
             fill: {
@@ -121,7 +125,7 @@ export function SwapsGraph(): JSX.Element {
                 new BN(config.config.series[config.seriesIndex].data[config.dataPointIndex][0] * expoSource),
                 swapPoolTokenAmounts.source.decimals
               );
-              setTokenInputString(tokenAmount.uiTokens);
+              setTokenInputString(tokenAmount.tokens.toString());
             } catch (e) {
               console.error(e);
             }
@@ -149,7 +153,7 @@ export function SwapsGraph(): JSX.Element {
               currentPool?.symbol ?? ` ${dictionary.actions.swap.inputToken}`
             }</></div>` +
             `<div class="flex align-center justify-between"><p>${
-              dictionary.actions.swap.recieve
+              dictionary.actions.swap.receive
             }</p> <p>${swapOutString} ${outputToken?.symbol ?? ` ${dictionary.actions.swap.outputToken}`}</p></div>` +
             `<div class="flex align-center justify-between"><p>${dictionary.common.price}</p> <p>${priceString}${poolQuoteToken}</p></div>` +
             `<div style="flex-centered"><button class="small-btn">${dictionary.actions.swap.swapThis.toUpperCase()}</button></div>` +
@@ -158,7 +162,8 @@ export function SwapsGraph(): JSX.Element {
         }
       },
       markers: {
-        colors: ['var(--primary-3)']
+        colors: ['var(--jet-blue)'],
+        strokeWidth: 0
       },
       annotations: {
         yaxis: [
@@ -354,7 +359,7 @@ export function SwapsGraph(): JSX.Element {
             <Text>{dictionary.actions.swap.poolPrice}</Text>
           </div>
           <div className="swaps-graph-key-item flex-centered">
-            <span className="swaps-graph-key-item-line swap-fees"></span>
+            <span className={`swaps-graph-key-item-line swap-fees ${oraclePrice < poolPrice ? 'reverse' : ''}`}></span>
             <Text>{dictionary.actions.swap.swapFees}</Text>
           </div>
         </div>

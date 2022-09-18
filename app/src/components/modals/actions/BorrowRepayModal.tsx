@@ -46,15 +46,19 @@ export function BorrowRepayModal(): JSX.Element {
   const { Paragraph, Text } = Typography;
   const { TabPane } = Tabs;
 
+  function displayRepayFromDepositAsRepay() {
+    return !currentAction ? '' : currentAction === 'repayFromDeposit' ? 'repay' : currentAction;
+  }
+
   // Borrow / Repay
   async function borrowRepay() {
     setSendingTransaction(true);
     const [txId, resp] = currentAction === 'borrow' ? await borrow() : await repay(accountRepay);
     if (resp === ActionResponse.Success) {
       notify(
-        dictionary.notifications.actions.successTitle.replaceAll('{{ACTION}}', currentAction ?? ''),
+        dictionary.notifications.actions.successTitle.replaceAll('{{ACTION}}', displayRepayFromDepositAsRepay()),
         dictionary.notifications.actions.successDescription
-          .replaceAll('{{ACTION}}', currentAction ?? '')
+          .replaceAll('{{ACTION}}', displayRepayFromDepositAsRepay())
           .replaceAll('{{ASSET}}', currentPool?.symbol ?? '')
           .replaceAll('{{AMOUNT}}', tokenInputAmount.uiTokens),
         'success',
@@ -64,18 +68,18 @@ export function BorrowRepayModal(): JSX.Element {
       resetCurrentAction();
     } else if (resp === ActionResponse.Cancelled) {
       notify(
-        dictionary.notifications.actions.cancelledTitle.replaceAll('{{ACTION}}', currentAction ?? ''),
+        dictionary.notifications.actions.cancelledTitle.replaceAll('{{ACTION}}', displayRepayFromDepositAsRepay()),
         dictionary.notifications.actions.cancelledDescription
-          .replaceAll('{{ACTION}}', currentAction ?? '')
+          .replaceAll('{{ACTION}}', displayRepayFromDepositAsRepay())
           .replaceAll('{{ASSET}}', currentPool?.symbol ?? '')
           .replaceAll('{{AMOUNT}}', tokenInputAmount.uiTokens),
         'warning'
       );
     } else {
       notify(
-        dictionary.notifications.actions.failedTitle.replaceAll('{{ACTION}}', currentAction ?? ''),
+        dictionary.notifications.actions.failedTitle.replaceAll('{{ACTION}}', displayRepayFromDepositAsRepay()),
         dictionary.notifications.actions.failedDescription
-          .replaceAll('{{ACTION}}', currentAction ?? '')
+          .replaceAll('{{ACTION}}', displayRepayFromDepositAsRepay())
           .replaceAll('{{ASSET}}', currentPool?.symbol ?? '')
           .replaceAll('{{AMOUNT}}', tokenInputAmount.uiTokens),
         'error'

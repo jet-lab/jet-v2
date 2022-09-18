@@ -1,7 +1,8 @@
 import { useRecoilValue } from 'recoil';
-import { AnchorProvider, BN } from '@project-serum/anchor';
+import { AnchorProvider } from '@project-serum/anchor';
 import { PublicKey } from '@solana/web3.js';
 import { computeOutputAmount } from '@orca-so/stablecurve';
+import { BN } from 'bn.js';
 import { MarginAccount, Pool, SPLSwapPool, TokenAmount } from '@jet-lab/margin';
 import { Dictionary } from '../../state/settings/localization/localization';
 import { TokenInputAmount } from '../../state/actions/actions';

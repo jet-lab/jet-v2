@@ -118,7 +118,7 @@
       "swapThis": "Swap This",
       "oraclePrice": "Oracle Price",
       "poolPrice": "Pool Price",
-      "recieve": "Receive",
+      "receive": "Receive",
       "yourSwap": "Your Swap",
       "inputToken": "Input token",
       "outputToken": "Output token",
@@ -434,8 +434,15 @@
       "title": "Place Swap"
     }
   },
-  "bondsView": {
-    "title": "Bonds"
+  "fixedView": {
+    "lend": {
+      "title": "Lend",
+      "chartTitle": "Asks"
+    },
+    "borrow": {
+      "title": "Borrow",
+      "chartTitle": "Bids"
+    }
   },
   "accountsView": {
     "title": "Accounts",
@@ -571,7 +578,7 @@
   "notificationsModal": {
     "title": "Notifications",
     "riskLevelName": "High Account Risk",
-    "riskLevelDescription": "Recieve notifications when your account risk rises into liquidation territory."
+    "riskLevelDescription": "Receive notifications when your account risk rises into liquidation territory."
   },
   "termsPrivacy": {
     "privacyPolicy": "Privacy Policy",

@@ -1011,8 +1011,9 @@ html {
     }
   }
 
-  // Swap View
-  .swaps-view {
+  // Swap And Fixed View
+  .swaps-view,
+  .fixed-term-view {
     // Order Entry, Orderbook and Trades Table
     .order-entry,
     .orderbook,
@@ -1223,8 +1224,9 @@ html {
     }
   }
 
-  // Swaps Graph
-  .swaps-graph {
+  // Graphs
+  .swaps-graph,
+  .fixed-term-graph {
     width: calc(100% - 395px);
     height: 600px;
     &-head {
@@ -1344,11 +1346,7 @@ html {
           }
         }
         &-toolbar {
-          backdrop-filter: blur(2px);
-          background: rgba(var(--primary-3), @disabled-opacity);
-          border-radius: @round-radius;
-          box-shadow: @drop-shadow;
-          padding: 4px 15px 7px 10px;
+          margin-top: -22px;
           div {
             svg {
               stroke: transparent;
@@ -1457,6 +1455,9 @@ html {
       stroke: @primary-3;
       stroke-width: 1.25px;
     }
+    .apexcharts-xaxis-title + line {
+      display: none;
+    }
     .apexcharts-yaxis-title-text,
     .apexcharts-xaxis-title-text {
       fill: @secondary-3;
@@ -1484,7 +1485,7 @@ html {
     .your-swap {
       fill: @jet-blue;
       stroke: @jet-blue;
-      stroke-width: 4px;
+      stroke-width: 5px;
       ry: 10;
       rx: 10;
       + text {
@@ -1496,10 +1497,12 @@ html {
     .pool-price {
       fill: @jet-green;
       stroke: @jet-green;
+      stroke-width: 5px;
     }
     .oracle-price {
       fill: @purple !important;
       stroke: @purple !important;
+      stroke-width: 5px;
     }
     text.pool-price,
     text.oracle-price {
@@ -1509,14 +1512,9 @@ html {
 
     &-key {
       position: absolute;
-      top: 63px;
+      top: 65px;
       left: 10px;
       height: 20px;
-      backdrop-filter: blur(2px);
-      background: rgba(var(--primary-3), @disabled-opacity);
-      border-radius: @round-radius;
-      box-shadow: @drop-shadow;
-      padding: 4px 15px 7px 10px;
       z-index: 100;
 
       &-item {
@@ -1544,6 +1542,11 @@ html {
             width: 15px;
             border-top: 1px solid @jet-green;
             background: rgba(134, 206, 184, 0.25);
+
+            &.reverse {
+              border: unset;
+              border-bottom: 1px solid @jet-green;
+            }
           }
         }
       }

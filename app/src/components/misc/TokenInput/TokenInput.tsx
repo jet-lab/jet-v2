@@ -20,6 +20,7 @@ import { TokenSlider } from './TokenSlider';
 import { Input, Typography } from 'antd';
 import { WalletTokens } from '../../../state/user/walletTokens';
 import { CurrentAccount } from '../../../state/user/accounts';
+import { fromLocaleString } from '../../../utils/format';
 
 // Main component for token inputs when the user takes one of the main actions (deposit, borrow, etc)
 export function TokenInput(props: {
@@ -75,7 +76,7 @@ export function TokenInput(props: {
   useEffect(() => {
     if (tokenInputAmount.gt(maxInput)) {
       setTokenInputAmount(maxInput);
-      setTokenInputString(maxInput.uiTokens);
+      setTokenInputString(maxInput.tokens.toString());
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tokenAction]);
@@ -88,7 +89,7 @@ export function TokenInput(props: {
     }
 
     // Remove unnecessary 0's from beginning / end of input string
-    let inputString = tokenInputString.replace(/,/g, '');
+    let inputString = fromLocaleString(tokenInputString);
     while (
       inputString.includes('.') &&
       (inputString[inputString.length - 1] === '.' ||
@@ -104,7 +105,7 @@ export function TokenInput(props: {
     // Adjust state
     setTokenInputAmount(withinMaxRange);
     if (inputTokenAmount.gt(withinMaxRange)) {
-      setTokenInputString(withinMaxRange.uiTokens);
+      setTokenInputString(withinMaxRange.tokens.toString());
     }
   }, [
     tokenPool,
@@ -178,7 +179,7 @@ export function TokenInput(props: {
 
     const withinMaxRange = TokenAmount.min(tokenInputAmount, maxInput);
     setTokenInputAmount(withinMaxRange);
-    setTokenInputString(withinMaxRange.uiTokens);
+    setTokenInputString(withinMaxRange.tokens.toString());
     if (!withinMaxRange.isZero()) {
       props.onPressEnter();
     }
@@ -195,7 +196,7 @@ export function TokenInput(props: {
 
     // Has no input, style as such
     if (inputAmount.isZero()) {
-      classNames += ' zeroed';
+      classNames += 'zeroed';
     }
 
     // Not disabled and has a warning or error message
@@ -251,11 +252,11 @@ export function TokenInput(props: {
           onChange={e => handleInputChange(e.target.value)}
           onPressEnter={() => {
             if (!disabled) {
-              setTokenInputString(tokenInputAmount.uiTokens);
+              setTokenInputString(tokenInputAmount.tokens.toString());
               handlePressEnter();
             }
           }}
-          onBlur={() => setTokenInputString(tokenInputAmount.uiTokens)}
+          onBlur={() => setTokenInputString(tokenInputAmount.tokens.toString())}
         />
       </div>
       {renderFeedbackMessage()}

@@ -37,7 +37,7 @@ export function TokenSlider(props: {
     const percentageAmount = props.maxInput.tokens * (percent / 100);
     const roundedAmount = (percentageAmount * 10 ** currentPool.decimals) / 10 ** currentPool.decimals;
     const roundedAmountTokens = getTokenAmountFromNumber(roundedAmount, currentPool.decimals);
-    setTokenInputString(roundedAmountTokens.uiTokens);
+    setTokenInputString(roundedAmountTokens.tokens.toString());
   }
 
   // Handle "max" button click
@@ -48,7 +48,7 @@ export function TokenSlider(props: {
 
     const preciseMaxAmount = (props.maxInput.tokens * 10 ** currentPool.decimals) / 10 ** currentPool.decimals;
     const preciseMaxAmountTokens = getTokenAmountFromNumber(preciseMaxAmount, currentPool.decimals);
-    setTokenInputString(preciseMaxAmountTokens.uiTokens);
+    setTokenInputString(preciseMaxAmountTokens.tokens.toString());
   }
 
   return (
