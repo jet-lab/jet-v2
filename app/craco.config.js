@@ -1,5 +1,4 @@
 const CracoLessPlugin = require('craco-less');
-const { addBeforeLoader, loaderByName } = require('@craco/craco');
 
 module.exports = {
   plugins: [
@@ -26,14 +25,6 @@ module.exports = {
           }
         });
       });
-
-      const wasmLoader = {
-        test: /\.wasm$/,
-        exclude: /node_modules/,
-        loaders: ['wasm-loader']
-      };
-
-      addBeforeLoader(config, loaderByName('file-loader'), wasmLoader);
 
       config.module.rules.push({
         test: /\.mjsx?$/,

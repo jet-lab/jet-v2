@@ -18,8 +18,8 @@ export const FixedMarketOrderBookAtom = selector<Orderbook>({
     if (market) {
       const rawOrderBook = await market.fetchOrderbook();
       return {
-        asks: rawOrderBook.asks.sort((a, b) => Number(a.price) - Number(b.price)),
-        bids: rawOrderBook.bids.sort((a, b) => Number(b.price) - Number(a.price))
+        asks: rawOrderBook.asks.sort((a, b) => Number(a.limit_price) - Number(b.limit_price)),
+        bids: rawOrderBook.bids.sort((a, b) => Number(b.limit_price) - Number(a.limit_price))
       };
     } else {
       return {
