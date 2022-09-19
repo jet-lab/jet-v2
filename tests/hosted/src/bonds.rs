@@ -73,7 +73,7 @@ mod keys {
             mod key_strings {
                 $(#[allow(non_upper_case_globals)] pub const $name: &str = $json;)+
                 pub fn get(_s: &str) -> solana_sdk::signature::Keypair {
-                    solana_sdk::signature::read_keypair(&mut s.as_bytes().clone()).unwrap()
+                    // solana_sdk::signature::read_keypair(&mut s.as_bytes().clone()).unwrap()
                     solana_sdk::signature::Keypair::new()
                 }
             }
