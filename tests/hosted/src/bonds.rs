@@ -293,7 +293,7 @@ impl TestManager {
         if let Some(extra_signers) = add_signers {
             keypairs.extend_from_slice(extra_signers);
         }
-        keypairs.push(&self.client.payer());
+        keypairs.push(self.client.payer());
 
         let msg = Message::new(instructions, Some(&self.client.payer().pubkey()));
         for signer in msg.signer_keys() {

@@ -76,7 +76,7 @@ pub async fn process_create_bond_market(
         return Ok(Plan::default());
     }
 
-    let ctl = ControlIxBuilder::new(resolve_payer(&client)?);
+    let ctl = ControlIxBuilder::new(resolve_payer(client)?);
 
     let init_manager = ctl.create_bond_market(
         &params.token_mint,

@@ -197,8 +197,7 @@ pub async fn get_execute_instructions(
                 let ix_accounts = proposal_tx
                     .instructions
                     .iter()
-                    .map(|ix| ix.accounts.iter())
-                    .flatten()
+                    .flat_map(|ix| ix.accounts.iter())
                     .map(|md| AccountMeta {
                         pubkey: md.pubkey,
                         is_signer: md.is_signer && md.pubkey.is_on_curve(),

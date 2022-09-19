@@ -206,6 +206,7 @@ impl Client {
         }
 
         let mut ui_progress_group = ProgressTracker::new();
+        #[allow(clippy::needless_collect)] //todo: does clippy advice make sense here?
         let ui_progress_tx = plan
             .iter()
             .map(|_| ui_progress_group.add_line("in queue"))

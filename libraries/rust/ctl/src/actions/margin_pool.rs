@@ -123,9 +123,7 @@ pub async fn process_collect_pool_fees(client: &Client) -> Result<Plan> {
     Ok(instructions
         .chunks(6)
         .fold(client.plan()?, |plan, chunk| {
-            let (steps, ix_list): (Vec<String>, Vec<Instruction>) =
-                chunk.into_iter().cloned().unzip();
-
+            let (steps, ix_list): (Vec<String>, Vec<Instruction>) = chunk.iter().cloned().unzip();
             plan.instructions([], steps, ix_list)
         })
         .build())

@@ -143,11 +143,11 @@ impl Debt {
     }
 
     // The obligation is fully repaid by this repayment, and the obligation account is being closed
-    pub fn fully_repay_obligation<'info, F: Fn() -> Result<Account<'info, Obligation>>>(
+    pub fn fully_repay_obligation(
         &mut self,
         sequence_number: ObligationSequenceNumber,
         amount_repaid: u64,
-        next_obligation: F,
+        next_obligation: Result<Account<Obligation>>,
     ) -> Result<()> {
         if sequence_number != self.next_unpaid_obligation_seqno {
             todo!()
@@ -156,7 +156,7 @@ impl Debt {
         self.next_unpaid_obligation_seqno.try_add_assign(1)?;
 
         if self.next_unpaid_obligation_seqno < self.next_new_obligation_seqno {
-            let next_obligation = next_obligation()?;
+            let next_obligation = next_obligation?;
             require_eq!(
                 next_obligation.sequence_number,
                 self.next_unpaid_obligation_seqno,

@@ -1,8 +1,5 @@
-use std::sync::Arc;
-
 use anyhow::Result;
 use hosted_tests::{bonds::TestManager, context::test_context, margin::MarginClient};
-use jet_simulation::solana_rpc_api::RpcConnection;
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() -> Result<()> {

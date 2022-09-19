@@ -80,7 +80,7 @@ pub fn build_order_amount(amount: u64, interest_rate: u64) -> OrderAmount {
 /// Quote is principal
 ///
 /// Example usage
-/// ```no_run
+/// ```ignore
 /// // 100 token lamports at 10% interest
 /// let price = calculate_implied_price(110, 100);
 /// ```

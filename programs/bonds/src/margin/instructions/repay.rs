@@ -77,18 +77,14 @@ pub fn handler(ctx: Context<Repay>, amount: u64) -> Result<()> {
 
         obligation.close(ctx.accounts.payer.to_account_info())?;
 
-        let next_obligation = ctx.accounts.next_obligation.clone();
         let user_key = user.key();
+        let next_obligation = Account::<Obligation>::try_from(&ctx.accounts.next_obligation)
+            .and_then(|ob| {
+                require_eq!(ob.borrower_account, user_key, BondsError::UserNotInMarket);
+                Ok(ob)
+            });
         user.debt
-            .fully_repay_obligation(obligation.sequence_number, amount, || {
-                let next_obligation = Account::<Obligation>::try_from(&next_obligation)?;
-                require_eq!(
-                    next_obligation.borrower_account,
-                    user_key,
-                    BondsError::UserNotInMarket
-                );
-                Ok(next_obligation)
-            })?;
+            .fully_repay_obligation(obligation.sequence_number, amount, next_obligation)?;
     }
 
     emit!(ObligationRepay {
