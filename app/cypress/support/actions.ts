@@ -1,21 +1,23 @@
 export const loadPageAndCreateAccount = () => {
-  cy.visit('http://localhost:3000/');
+  const url = Cypress.config().baseUrl;
+
+  cy.visit(url);
 
   cy.contains('Connect Wallet').click();
   cy.contains('E2E').click();
 
   cy.contains('I understand and accept the risks').click();
   cy.contains('Enter Mainnet').click();
-  cy.get('.walkthrough-modal-close').click();
+  // cy.get('.walkthrough-modal-close').click();
 
-  cy.contains('Wallet Connected');
-  cy.get('.nav-section .anticon-setting ').click();
+  cy.contains('Connected');
+  cy.get('.nav-section .settings-btn').click();
   cy.contains('Devnet').click();
   cy.contains('Save Preferences').click();
 
   cy.contains('Pools').click();
-  airdrop('SOL', 'SOL');
-  cy.contains('Create an account', { timeout: 5000 }).click();
+  airdrop('SOL', 'Solana');
+  cy.contains('Create an account', { timeout: 10000 }).click();
   cy.get('.ant-modal-content input.ant-input').type('My new test account');
   cy.contains('Create Account').click();
   cy.contains('Account created.', { timeout: 10000 });
@@ -28,13 +30,12 @@ export const airdrop = (symbol: string, asset: string) => {
   cy.wait(1000);
   cy.contains('Airdrop').click();
   cy.contains('Airdrop successful', { timeout: 10000 });
-  cy.contains('Airdrop successful', { timeout: 10000 });
   cy.contains(`${symbol} was successfully processed`, { timeout: 10000 });
 };
 
 export const deposit = (symbol: string, amount: number) => {
   cy.get(`.${symbol}-pools-table-row`, { timeout: 30000 }).click();
-  cy.get(`.account-snapshot-footer.view-element-item`, { timeout: 10000 });
+  cy.get(`.account-snapshot-footer button`, { timeout: 10000 });
   cy.contains('Deposit', { timeout: 10000 }).click();
   const input = cy.get('.ant-modal-content input.ant-input', { timeout: 10000 }).should('not.be.disabled');
   input.click().type(`${amount}`);
@@ -44,7 +45,7 @@ export const deposit = (symbol: string, amount: number) => {
 
 export const borrow = (symbol: string, amount: number) => {
   cy.get(`.${symbol}-pools-table-row`, { timeout: 30000 }).click();
-  cy.get(`.account-snapshot-footer.view-element-item`, { timeout: 10000 });
+  cy.get(`.account-snapshot-footer button`, { timeout: 10000 });
   cy.contains('Borrow', { timeout: 10000 }).click();
   const input = cy.get('.ant-modal-content input.ant-input', { timeout: 10000 }).should('not.be.disabled');
   input.click().type(`${amount}`);
@@ -54,7 +55,7 @@ export const borrow = (symbol: string, amount: number) => {
 
 export const withdraw = (symbol: string, amount: number) => {
   cy.get(`.${symbol}-pools-table-row`, { timeout: 30000 }).click();
-  cy.get(`.account-snapshot-footer.view-element-item`, { timeout: 10000 });
+  cy.get(`.account-snapshot-footer button`, { timeout: 10000 });
   cy.contains('Withdraw', { timeout: 10000 }).click();
   const input = cy.get('.ant-modal-content input.ant-input', { timeout: 10000 }).should('not.be.disabled');
   input.click().type(`${amount}`);
@@ -64,7 +65,7 @@ export const withdraw = (symbol: string, amount: number) => {
 
 export const assertWithdrawnAndRepay = (symbol: string, amount: number) => {
   cy.get(`.${symbol}-pools-table-row`, { timeout: 30000 }).click();
-  cy.get(`.account-snapshot-footer.view-element-item`, { timeout: 10000 });
+  cy.get(`.account-snapshot-footer button`, { timeout: 10000 });
   cy.contains('Repay', { timeout: 10000 }).click();
   const walletBalance = cy.get('.ant-modal-content div.wallet-balance div.ant-typography-secondary', {
     timeout: 10000
@@ -75,7 +76,7 @@ export const assertWithdrawnAndRepay = (symbol: string, amount: number) => {
 
 export const repay = (symbol: string, amount: number) => {
   cy.get(`.${symbol}-pools-table-row`, { timeout: 30000 }).click();
-  cy.get(`.account-snapshot-footer.view-element-item`, { timeout: 10000 });
+  cy.get(`.account-snapshot-footer button`, { timeout: 10000 });
   cy.contains('Repay', { timeout: 10000 }).click();
   const input = cy.get('.ant-modal-content input.ant-input', { timeout: 10000 }).should('not.be.disabled');
   input.click().type(`${amount}`);

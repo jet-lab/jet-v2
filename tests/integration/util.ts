@@ -24,7 +24,7 @@ import {
   SystemProgram,
   Transaction
 } from "@solana/web3.js"
-import { MarginConfig, MarginPrograms, MarginTokenConfig } from "../../libraries/ts/src"
+import { MarginConfig, MarginPrograms, MarginTokenConfig } from "@jet-lab/margin"
 
 export const CONTROL_PROGRAM_ID = new PublicKey("JPCtrLreUqsEbdhtxZ8zpd8wBydKz4nuEjX5u9Eg5H8")
 export const MARGIN_PROGRAM_ID = new PublicKey("JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ")

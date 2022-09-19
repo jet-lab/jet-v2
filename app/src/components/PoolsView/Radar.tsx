@@ -3,16 +3,21 @@ import { useRecoilState, useRecoilValue } from 'recoil';
 import axios from 'axios';
 import { Dictionary } from '../../state/settings/localization/localization';
 import { PoolsRowOrder } from '../../state/views/views';
-import { CurrentPool } from '../../state/borrow/pools';
+import { CurrentPool } from '../../state/pools/pools';
 import { LightTheme } from '../../state/settings/settings';
 import { Skeleton, Table, Typography } from 'antd';
 import { ReorderArrows } from '../misc/ReorderArrows';
 
+// Component to display interest rate comparisons across protocols
 export function Radar(): JSX.Element {
   const dictionary = useRecoilValue(Dictionary);
   const [poolsRowOrder, setPoolsRowOrder] = useRecoilState(PoolsRowOrder);
   const lightTheme = useRecoilValue(LightTheme);
   const currentPool = useRecoilValue(CurrentPool);
+  const [loaded, setLoaded] = useState(false);
+  const { Paragraph } = Typography;
+
+  // Track these protocols
   const [rates, setRates] = useState([
     {
       key: 'jet',
@@ -35,8 +40,6 @@ export function Radar(): JSX.Element {
       rates: {} as any
     }
   ]);
-  const [loaded, setLoaded] = useState(false);
-  const { Paragraph } = Typography;
 
   // Table data
   const radarTableColumns = [
@@ -46,12 +49,7 @@ export function Radar(): JSX.Element {
       key: 'protocol',
       align: 'left' as any,
       render: (key: string) => (
-        <img
-          width={key === 'port' ? '60px' : '70px'}
-          height="auto"
-          src={`img/protocols/${key}_${lightTheme ? 'black' : 'white'}.png`}
-          alt={`${key.toUpperCase()} Logo`}
-        />
+        <img width="60px" height="auto" src={`img/protocols/${key}_${lightTheme ? 'black' : 'white'}.png`} alt={key} />
       )
     },
     {
@@ -106,15 +104,15 @@ export function Radar(): JSX.Element {
   }, []);
 
   return (
-    <div className="radar view-element view-element-hidden flex align-center justify-start column">
-      <div className="radar-head view-element-item view-element-item-hidden flex-centered">
+    <div className="radar view-element flex align-center justify-start column">
+      <div className="radar-head flex-centered">
         <ReorderArrows component="radar" order={poolsRowOrder} setOrder={setPoolsRowOrder} />
         <Paragraph strong>{dictionary.poolsView.radar.interestRadar}</Paragraph>
       </div>
       <Table
         dataSource={rates}
         columns={radarTableColumns}
-        className="no-row-interaction view-element-item view-element-item-hidden"
+        className="no-row-interaction"
         rowKey={row => `${row.key}-${Math.random()}`}
         pagination={false}
       />

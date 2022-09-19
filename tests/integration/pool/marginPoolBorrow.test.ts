@@ -13,7 +13,7 @@ import {
   PoolManager,
   TokenAmount,
   MarginConfig
-} from "../../../libraries/ts/src"
+} from "@jet-lab/margin"
 
 import { PythClient } from "../pyth/pythClient"
 import {

@@ -6,12 +6,14 @@ import { Dictionary } from '../../state/settings/localization/localization';
 import { Cluster, DisclaimersAccepted } from '../../state/settings/settings';
 import { Button, Checkbox, Modal, Typography } from 'antd';
 
+// Disclaimer modal if the current wallet hasn't accepted terms/conditions yet
 export function DisclaimerModal(): JSX.Element {
   const cluster = useRecoilValue(Cluster);
   const dictionary = useRecoilValue(Dictionary);
   const { publicKey } = useWallet();
   const [disclaimersAccepted, setDisclaimersAccepted] = useRecoilState(DisclaimersAccepted);
   const [dislaimerChecked, setDisclaimerChecked] = useState(false);
+  const disclaimerNotAccepted = publicKey && cluster === 'mainnet-beta' && !disclaimersAccepted[publicKey.toBase58()];
   const { Text } = Typography;
 
   // Set up dislaimer with inline links
@@ -36,18 +38,18 @@ export function DisclaimerModal(): JSX.Element {
     </a>
   ));
 
-  if (publicKey && cluster === 'mainnet-beta' && !disclaimersAccepted[publicKey.toBase58()]) {
+  // If wallet hasn't accepted disclaimer, show modal
+  if (disclaimerNotAccepted) {
     return (
-      <Modal visible className="disclaimer-modal" footer={null} closable={false}>
+      <Modal visible className="disclaimer-modal" maskClosable={false} footer={null} closable={false}>
         <div className="modal-content flex-centered column">
           <img src="img/jet/jet_logo.png" width="100px" height="auto" alt="Jet Protocol" />
           <div className="disclaimer-modal-bullets flex align-start justify-center column">
             <ul>
-              <li>TODO: Add something</li>
-              <li>TODO: Add something</li>
-              <li>TODO: Add something</li>
-              <li>TODO: Add something</li>
-              <li>TODO: Add something</li>
+              <li>{dictionary.modals.alerts.disclaimer.lendAndBorrow}</li>
+              <li>{dictionary.modals.alerts.disclaimer.tradeWithSize}</li>
+              <li>{dictionary.modals.alerts.disclaimer.swapFavoriteCoins}</li>
+              <li>{dictionary.modals.alerts.disclaimer.manageAllAssets}</li>
             </ul>
           </div>
           <Text>{disclaimer}</Text>

@@ -1,27 +1,27 @@
 {
-  "accountLeverage": {
-    "term": "Account Leverage",
-    "definition": "TODO: Norman definition here"
+  "leverage": {
+    "term": "Leverage",
+    "definition": "The ratio of assets to equity (or account value) in your margin account."
+  },
+  "accountAssets": {
+    "term": "Account Assets",
+    "definition": "The total USD value of all your deposits in this margin account."
+  },
+  "accountLiabilities": {
+    "term": "Account Liabilities",
+    "definition": "The total USD value of all your loans in this margin account."
   },
   "accountValue": {
     "term": "Account Value",
-    "definition": "TODO: Norman definition here"
+    "definition": "The USD value of your equity in this margin account, assets minus liabilities."
   },
   "projectedRiskLevel": {
     "term": "Projected Risk Level",
     "definition": "A real-time representation of what your Risk Level would be if the current trade is submitted."
   },
-  "ask": {
-    "term": "Ask",
-    "definition": "TODO: Norman definition here"
-  },
   "liquidity": {
     "term": "Liquidity",
     "definition": "The efficiency or ease with which an asset can be converted into stablecoins without affecting the asset’s market price."
-  },
-  "bid": {
-    "term": "Bid",
-    "definition": "TODO: Norman definition here"
   },
   "borrowRate": {
     "term": "Borrow Interest Rate",
@@ -33,15 +33,19 @@
   },
   "collateralWeight": {
     "term": "Collateral Weight",
-    "definition": "TODO: Norman definition here"
+    "definition": "A multiplier that adjusts the contribution of an asset's USD value to account collateral."
   },
   "requiredCollateral": {
     "term": "Required Collateral",
-    "definition": "TODO: Norman definition here"
+    "definition": "The minimum effective collateral required to maintain a healthy account, quoted in USD. Determined by the size and composition of your liabilities."
   },
   "effectiveCollateral": {
     "term": "Effective Collateral",
-    "definition": "TODO: Norman definition here"
+    "definition": "The USD value of your collateral (with weights applied) less your liablities. This is the total amount of collateral the protocol attributes to your margin account."
+  },
+  "availableCollateral": {
+    "term": "Available Collateral",
+    "definition": "The difference between your effective collateral and required collateral, quoted in USD. This represents the collateral available for setting up new positions, or your buffer against liquidation. When available collateral reaches zero, your margin account is sunject to liquidation."
   },
   "riskLevel": {
     "term": "Risk Level",
@@ -61,7 +65,7 @@
   },
   "slippage": {
     "term": "Slippage",
-    "definition": "TODO: Norman definition here"
+    "definition": "The maximum acceptable degradation in price compared to the inputs above. If the pool price moves slightly against you between now and when your swap is executed, the transaction will be cancelled if the move is greater than the slippage you set here."
   },
   "utilizationRate": {
     "term": "Utilization Ratio",

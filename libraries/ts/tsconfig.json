@@ -1,6 +1,7 @@
 {
   "include": ["./src/**/*", "./src/**/*.json"],
   "compilerOptions": {
+    "target": "ES6",
     "sourceMap": true,
     "declaration": true,
     "declarationMap": true,
@@ -15,7 +16,6 @@
     "baseUrl": ".",
     "typeRoots": ["node_modules/@types"],
     "moduleResolution": "node",
-    "target": "ES2015",
     "module": "ES2020",
     "outDir": "dist/esm",
     "rootDir": "./src",

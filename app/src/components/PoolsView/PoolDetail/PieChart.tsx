@@ -1,8 +1,16 @@
 import { useState, useEffect } from 'react';
 import { useRecoilValue } from 'recoil';
-import { CurrentPool } from '../../../state/borrow/pools';
+import { CurrentPool } from '../../../state/pools/pools';
 
-export function PieChart(props: { percentage: number; text: string; term?: string }): JSX.Element {
+// Pie Chart component showing a percentage value
+export function PieChart(props: {
+  // Percentage of data to fill in chart
+  percentage: number;
+  // Data-related text
+  text: string;
+  // Optionally add a term's definition of tooltip
+  term?: string;
+}): JSX.Element {
   const currentPool = useRecoilValue(CurrentPool);
   const [percent, setPercent] = useState(0);
 

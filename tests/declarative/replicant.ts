@@ -10,7 +10,7 @@ import {
   Pool,
   PoolTokenChange,
   PoolManager
-} from "../../libraries/ts/src/index"
+} from "@jet-lab/margin"
 import { createAssociatedTokenAccountInstruction, getAssociatedTokenAddress } from "@solana/spl-token"
 import {
   Account,
@@ -42,7 +42,13 @@ export class Replicant {
   provider: AnchorProvider
   faucetProgramId: PublicKey
 
-  constructor(config: any, marginConfig: MarginConfig, keyfile: string, cluster: MarginCluster, connection: Connection) {
+  constructor(
+    config: any,
+    marginConfig: MarginConfig,
+    keyfile: string,
+    cluster: MarginCluster,
+    connection: Connection
+  ) {
     this.account = new Account(
       Keypair.fromSecretKey(Uint8Array.from(JSON.parse(fs.readFileSync(keyfile).toString()))).secretKey
     )

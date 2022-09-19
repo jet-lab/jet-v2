@@ -1,0 +1,3941 @@
+/**************************
+  This is a stylesheet for both Jet UI stylings
+  and targeted Antd component stylings. Please review our frontend
+  documentation for best development/design practices.
+  
+  *Note* Do not include any antd default stylesheets in your app.
+***************************/
+/***************************
+  Jet Variables
+***************************/
+:root {
+  // Light theme color variables
+  --lt-primary: 219, 225, 234;
+  --lt-primary-2: 205, 205, 205;
+  --lt-primary-3: 210, 210, 210;
+  --lt-primary-4: 215, 215, 215;
+  --lt-secondary: 5, 5, 5;
+  --lt-secondary-2: 10, 10, 10;
+  --lt-secondary-3: 30, 30, 30;
+  --lt-secondary-4: 70, 70, 70;
+  --lt-secondary-5: 100, 100, 100;
+
+  // Dark theme color variables
+  --dt-primary: 60, 60, 60;
+  --dt-primary-2: 41, 41, 41;
+  --dt-primary-3: 33, 33, 33;
+  --dt-primary-4: 30, 29, 29;
+  --dt-secondary: 244, 244, 244;
+  --dt-secondary-2: 226, 226, 226;
+  --dt-secondary-3: 199, 199, 199;
+  --dt-secondary-4: 172, 172, 172;
+  --dt-secondary-5: 136, 136, 136;
+
+  // Reference color variables (set to dark theme by default)
+  --primary: var(--dt-primary);
+  --primary-2: var(--dt-primary-2);
+  --primary-3: var(--dt-primary-3);
+  --primary-4: var(--dt-primary-4);
+  --secondary: var(--dt-secondary);
+  --secondary-2: var(--dt-secondary-2);
+  --secondary-3: var(--dt-secondary-3);
+  --secondary-4: var(--dt-secondary-4);
+  --secondary-5: var(--dt-secondary-5);
+
+  // Light theme shadow variables
+  --lt-light-shadow: rgba(255, 255, 255, 1);
+  --lt-dark-shadow: rgba(0, 0, 0, 0.25);
+
+  // Dark theme shadow variables
+  --dt-light-shadow: rgba(255, 255, 255, 0.2);
+  --dt-dark-shadow: rgba(0, 0, 0, 1);
+
+  // Reference shadow variables (set to dark theme by default)
+  --light-shadow: var(--dt-light-shadow);
+  --dark-shadow: var(--dt-dark-shadow);
+
+  // Drop shadows
+  --lt-drop-shadow: 0 3px 6px rgba(0, 0, 0, 0.1), 0 3px 6px rgba(0, 0, 0, 0.1);
+  --dt-drop-shadow: 0 3px 6px rgba(0, 0, 0, 0.2), 0 3px 6px rgba(0, 0, 0, 0.2);
+
+  // Reference for drop shadow (set to dark theme by default)
+  --drop-shadow: var(--dt-drop-shadow);
+
+  // Headers
+  --lt-header-background: rgba(0, 0, 0, 0.05);
+  --dt-header-background: rgba(0, 0, 0, 0.15);
+  --header-background: var(--dt-header-background);
+
+  // Other root colors
+  --dt-jet-green: #86ceb8;
+  --lt-jet-green: #598a7b;
+  --jet-green: var(--dt-jet-green);
+
+  --dt-jet-green-2: #71a897;
+  --lt-jet-green-2: #417666;
+  --jet-green-2: var(--dt-jet-green-2);
+
+  --dt-jet-green-3: #639485;
+  --lt-jet-green-3: #275548;
+  --jet-green-3: var(--dt-jet-green-3);
+
+  --dt-jet-blue: #84c1ca;
+  --lt-jet-blue: #3f8191;
+  --jet-blue: var(--dt-jet-blue);
+
+  --dt-jet-blue-2: #65a5b5;
+  --lt-jet-blue-2: #225f6e;
+  --jet-blue-2: var(--dt-jet-blue-2);
+
+  --dt-purple: #a79adb;
+  --lt-purple: #8b7fbd;
+  --purple: var(--dt-purple);
+
+  --dt-success: #86ceb8;
+  --lt-success: #4a8f7a;
+  --success: var(--dt-success);
+
+  --dt-warning: #ebe6bb;
+  --lt-warning: #cfb16b;
+  --warning: var(--dt-warning);
+
+  --dt-danger: #e36868;
+  --lt-danger: #b84444;
+  --danger: var(--dt-danger);
+
+  // Base font size
+  --base-font-size: 14px;
+
+  // Base spacing
+  --spacing-base: 15px;
+
+  // Max view width
+  --max-view-width: 1000px;
+}
+
+// Base colors
+@primary: rgb(var(--primary));
+@primary-2: rgb(var(--primary-2));
+@primary-3: rgb(var(--primary-3));
+@primary-4: rgb(var(--primary-4));
+@secondary: rgb(var(--secondary));
+@secondary-2: rgb(var(--secondary-2));
+@secondary-3: rgb(var(--secondary-3));
+@secondary-4: rgb(var(--secondary-4));
+@secondary-5: rgb(var(--secondary-5));
+@jet-green: var(--jet-green);
+@jet-green-2: var(--jet-green-2);
+@jet-green-3: var(--jet-green-3);
+@jet-blue: var(--jet-blue);
+@jet-blue-2: var(--jet-blue-2);
+@purple: var(--purple);
+@success: var(--success);
+@success-2: var(--success-2);
+@warning: var(--warning);
+@danger: var(--danger);
+
+// Gradients
+@gradient: linear-gradient(135deg, @jet-green 0%, @jet-blue 100%);
+
+// Backgrounds
+@header-bg: var(--header-background);
+@modal-bg: rgba(0, 0, 0, 0.75);
+@success-bg: rgba(134, 206, 184, 0.25);
+@danger-bg: rgba(227, 104, 104, 0.25);
+
+// Base shadow elements
+@light-shadow: var(--light-shadow);
+@dark-shadow: var(--dark-shadow);
+
+// Regular neu shadows
+@neu-shadow: -2px -2px 10px @light-shadow, 2px 2px 10px @dark-shadow;
+@neu-shadow-2: -2px -2px 6px @light-shadow, 2px 2px 6px @dark-shadow;
+@neu-shadow-3: -1px -1px 5px @light-shadow, 1px 1px 5px @dark-shadow;
+@neu-shadow-sm: -1px -1px 3px @light-shadow, 1px 1px 3px @dark-shadow;
+@neu-shadow-sm-2: -1px -1px 3px @light-shadow, 1px 1px 3px @dark-shadow;
+
+// Inset neu shadows
+@neu-shadow-inset: inset -2px -2px 8px @light-shadow, inset 2px 2px 8px @dark-shadow;
+@neu-shadow-inset-2: inset -2px -2px 4px @light-shadow, inset 2px 2px 4px @dark-shadow;
+@neu-shadow-inset-3: inset -1px -1px 4px @light-shadow, inset 1px 1px 4px @dark-shadow;
+@neu-shadow-inset-sm: inset -1px -1px 2px @light-shadow, inset 1px 1px 2px @dark-shadow;
+@neu-shadow-inset-sm-2: inset -0.5px -0.5px 1.5px @light-shadow, inset 0.5px 0.5px 1.5px @dark-shadow;
+@neu-shadow-inset-color: inset -1px -1px 2px rgba(255, 255, 255, 0.35), inset 1px 1px 2px rgba(0, 0, 0, 0.35);
+
+// Drop shadow
+@drop-shadow: var(--drop-shadow);
+
+// Border radius
+@xs-border-radius: 3px;
+@sm-border-radius: 5px;
+@border-radius: 10px;
+@lg-border-radius: 15px;
+@round-radius: 50px;
+
+// Button padding
+@btn-padding: 9px 12px;
+
+// Fonts
+@base-font-size: var(--base-font-size);
+// 8px
+@xs-font-size: calc(@base-font-size * 0.571428571428571);
+// 10px
+@sm-font-size: calc(@base-font-size * 0.714285714285714);
+// 12px
+@btn-font-size: calc(@base-font-size * 0.857142857142857);
+// 16px
+@lg-font-size: calc(@base-font-size * 1.142857142857143);
+// 20px
+@xl-font-size: calc(@base-font-size * 1.428571428571429);
+// 30px
+@xxl-font-size: calc(@base-font-size * 2.142857142857143);
+
+@semi-bold-weight: 400;
+@bold-weight: 700;
+
+// Opacities
+@subtle-opacity: 0.85;
+@disabled-opacity: 0.75;
+@half-opacity: 0.5;
+
+// Spacing
+@spacing-base: var(--spacing-base);
+@spacing-xs: calc(@spacing-base - 10px);
+@spacing-sm: calc(@spacing-base - 5px);
+@spacing-lg: calc(@spacing-base + 5px);
+@spacing-xl: calc(@spacing-base + 10px);
+@spacing-xxl: calc(@spacing-base + 15px);
+
+// View width clamp
+@view-clamp: clamp(250px, calc(100% - @spacing-sm * 2), var(--max-view-width));
+
+// Transition Duration
+@transition-duration-short: 0.075s;
+@transition-duration: 0.1s;
+@transition-duration-long: 0.3s;
+
+/***************************
+  General Jet UI Styles / Boilerplate
+***************************/
+::-webkit-scrollbar {
+  display: none;
+  width: calc(@spacing-xs - 2px);
+  &-thumb {
+    background: @primary-2;
+    border-radius: @round-radius;
+  }
+  &-corner {
+    display: none;
+  }
+}
+.jet-app {
+  position: relative;
+  margin: 0;
+  background: @primary;
+  color: @secondary;
+  overflow-x: hidden;
+  font-size: @base-font-size;
+  font-family: 'Lato', Helvetica Neue, Helvetica, Arial, sans-serif;
+  letter-spacing: 0.25px;
+  width: 100vw;
+  min-height: calc(100vh - 25px);
+  padding-bottom: @spacing-xxl;
+  * {
+    font-family: inherit;
+    &:focus-visible {
+      outline: unset;
+    }
+  }
+  .show-scrollbar::-webkit-scrollbar {
+    display: unset;
+  }
+
+  // Jet Svg's
+  svg.jet-icon {
+    width: 25px;
+    height: 25px;
+    * {
+      fill: @secondary;
+    }
+  }
+
+  // Animations
+  .animated {
+    transition: all @transition-duration ease;
+  }
+  .flash-opacity {
+    opacity: @half-opacity;
+  }
+  .flash-opacity-subtle {
+    opacity: @disabled-opacity;
+  }
+  .flash-background-success {
+    background-color: @success-bg;
+  }
+  .flash-background-danger {
+    background-color: @danger-bg;
+  }
+  .shimmer {
+    background: @secondary-3 -webkit-gradient(linear, 100% 0, 0 0, from(@secondary), color-stop(0.5, white), to(@secondary));
+    background-position: -50px top;
+    background-repeat: no-repeat;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    -webkit-background-size: 50px 100%;
+    -webkit-animation: shimmer 2s infinite;
+
+    path {
+      fill: @secondary-3;
+      -webkit-animation: shimmer-svg 2s infinite;
+    }
+  }
+  @keyframes shimmer {
+    0% {
+      background-position: -50rem top;
+    }
+    70% {
+      background-position: 200px top;
+    }
+    100% {
+      background-position: 200px top;
+    }
+  }
+  @keyframes shimmer-svg {
+    0% {
+      fill: @secondary;
+    }
+    50% {
+      fill: @secondary-3;
+    }
+    100% {
+      fill: @secondary;
+    }
+  }
+
+  // Flexbox utility
+  .flex {
+    display: flex;
+  }
+  .flex-centered {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .align-center {
+    align-items: center;
+  }
+  .align-evenly {
+    align-items: space-evenly;
+  }
+  .align-between {
+    align-items: space-between;
+  }
+  .align-start {
+    align-items: flex-start;
+  }
+  .align-end {
+    align-items: flex-end;
+  }
+  .justify-center {
+    justify-content: center;
+  }
+  .justify-evenly {
+    justify-content: space-evenly;
+  }
+  .justify-between {
+    justify-content: space-between;
+  }
+  .justify-start {
+    justify-content: flex-start;
+  }
+  .justify-end {
+    justify-content: flex-end;
+  }
+  .column {
+    flex-direction: column;
+  }
+  .wrap {
+    flex-wrap: wrap;
+  }
+
+  // Disabled elements
+  *[disabled],
+  .disabled,
+  .ant-typography-disabled {
+    opacity: @disabled-opacity !important;
+    cursor: not-allowed !important;
+  }
+
+  // Hidden elements
+  .no-display {
+    display: none !important;
+  }
+  .no-opacity {
+    opacity: 0 !important;
+  }
+  .no-shadow {
+    box-shadow: unset !important;
+  }
+
+  // Text
+  h1,
+  h2,
+  h3,
+  h4,
+  p,
+  th,
+  td,
+  span {
+    position: relative;
+    text-decoration: none;
+    font-style: normal;
+    font-weight: normal;
+    color: @secondary;
+  }
+  h1 {
+    font-size: @xxl-font-size;
+    font-weight: @semi-bold-weight;
+    line-height: @xxl-font-size;
+    margin: @spacing-base 0;
+  }
+  h2 {
+    color: @secondary-3;
+    font-size: @lg-font-size;
+    font-weight: @semi-bold-weight;
+    line-height: @lg-font-size;
+    text-transform: uppercase;
+    margin: @spacing-sm 0;
+  }
+  h3,
+  h4 {
+    font-weight: @semi-bold-weight;
+  }
+  a,
+  i {
+    text-decoration: none;
+    -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+    -webkit-touch-callout: none;
+    -moz-user-select: none;
+    -khtml-user-select: none;
+    -webkit-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    font-style: normal;
+    color: inherit;
+  }
+  span {
+    color: @secondary-3;
+  }
+  code {
+    font-family: monospace;
+  }
+  b,
+  strong {
+    font-weight: @bold-weight;
+  }
+  mark {
+    background-color: @jet-green-2;
+  }
+  .small-accent-text {
+    font-size: @sm-font-size;
+    color: @secondary-5;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+  }
+  .not-available-text {
+    color: @secondary-4;
+  }
+  .green-text {
+    opacity: 1;
+    color: @jet-green;
+  }
+  .gradient-text {
+    opacity: 1;
+    background-image: @gradient;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .token-balance {
+    color: @secondary-3;
+    font-style: italic;
+    transition: color @transition-duration ease;
+    cursor: pointer;
+    &:hover {
+      color: @secondary;
+    }
+    &:active {
+      opacity: @subtle-opacity;
+    }
+  }
+  .secondary-text,
+  .ant-typography-secondary {
+    color: @secondary-3;
+  }
+  .success-text,
+  .ant-typography-success {
+    color: @success !important;
+  }
+  .warning-text,
+  .ant-typography-warning {
+    color: @warning !important;
+  }
+  .danger-text,
+  .ant-typography-danger {
+    color: @danger !important;
+  }
+  .italic-text,
+  .ant-typography i {
+    font-style: italic;
+  }
+  .center-text {
+    text-align: center;
+  }
+  .text-btn,
+  .ant-btn-text span,
+  .link-btn,
+  a.ant-typography,
+  .ant-btn-link span {
+    opacity: 1;
+    text-decoration: none;
+    cursor: pointer;
+    transition: opacity @transition-duration ease;
+
+    &:hover {
+      text-decoration: underline;
+      text-underline-offset: 1px;
+    }
+    &:active {
+      opacity: @subtle-opacity;
+    }
+    &.disabled {
+      &:hover {
+        text-decoration: none;
+      }
+    }
+  }
+  .link-btn,
+  a.ant-typography,
+  .ant-btn-link span {
+    color: @jet-blue;
+  }
+  // Views
+  .view {
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    width: @view-clamp;
+    padding: @spacing-lg @spacing-sm;
+    margin: 0 auto;
+    transition: margin @transition-duration ease;
+
+    &-header {
+      font-size: 90px;
+      line-height: 90px;
+      opacity: 1;
+      margin: 0;
+    }
+    &-subheader {
+      font-weight: @bold-weight;
+      text-transform: uppercase;
+      font-size: @sm-font-size;
+      margin: 0;
+    }
+    &-row {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+    }
+    // For transitions
+    &-element {
+      position: relative;
+      width: calc(100% - (@spacing-xs * 2));
+      margin: @spacing-base @spacing-xs;
+      border-radius: @lg-border-radius;
+      box-shadow: @neu-shadow;
+      background: @primary;
+      overflow: hidden;
+    }
+  }
+
+  /***************************
+    Jet / Antd Components
+  ***************************/
+
+  // Buttons
+  button,
+  .ant-btn,
+  .ant-radio-button-wrapper,
+  .ant-pagination-item {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: @sm-border-radius;
+    padding: @btn-padding;
+    -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+    -webkit-touch-callout: none;
+    margin: @spacing-xs;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-weight: @bold-weight;
+    font-size: @btn-font-size;
+    background: @jet-green;
+    color: @primary;
+    white-space: nowrap;
+    opacity: @subtle-opacity;
+    transition: opacity @transition-duration ease-out, background-color @transition-duration ease;
+    cursor: pointer;
+    span {
+      text-transform: inherit;
+      letter-spacing: inherit;
+      font-size: inherit;
+      font-weight: inherit;
+      color: inherit;
+    }
+    // Buttons with icons
+    svg {
+      margin-right: @spacing-xs;
+      &.jet-icon {
+        margin-right: 2px;
+      }
+      * {
+        fill: @primary;
+      }
+    }
+
+    // Buttons with only icons
+    &-icon-only {
+      svg {
+        margin: unset;
+      }
+    }
+
+    // Loading icon
+    .ant-btn-loading-icon {
+      margin-right: @spacing-xs;
+      display: none;
+
+      svg {
+        margin: unset;
+      }
+    }
+    &-loading {
+      .ant-btn-loading-icon {
+        display: inline-block;
+      }
+    }
+
+    &:hover,
+    &:active {
+      opacity: 1;
+    }
+    &:active {
+      opacity: @subtle-opacity;
+      box-shadow: @neu-shadow-inset-color;
+    }
+
+    // Secondary / Connect button / Dropdown buttons
+    &.secondary-btn,
+    &-background-ghost,
+    &-ghost {
+      background: unset;
+      border: 1px solid @secondary-3;
+      color: @secondary-3;
+      span {
+        opacity: 1;
+        color: inherit;
+      }
+      svg * {
+        fill: @secondary;
+      }
+
+      &:hover {
+        opacity: 1;
+      }
+      &:active {
+        box-shadow: unset;
+        background: rgba(var(--primary-3), @subtle-opacity);
+      }
+    }
+
+    // Tertiary button
+    &.tertiary-btn,
+    &-dashed {
+      background: unset;
+      span {
+        color: @jet-green;
+        z-index: 2;
+      }
+      svg * {
+        fill: @jet-green;
+      }
+
+      &::before {
+        content: '';
+        position: absolute;
+        top: -1px;
+        left: -1px;
+        width: calc(100% + 2px);
+        height: calc(100% + 2px);
+        border-radius: @sm-border-radius;
+        background: @jet-green;
+        z-index: 0;
+      }
+      &::after {
+        content: '';
+        position: absolute;
+        top: 0px;
+        left: 0px;
+        width: 100%;
+        height: 100%;
+        border-radius: calc(@sm-border-radius - 1px);
+        background: @primary;
+        z-index: 1;
+      }
+
+      &:hover {
+        opacity: 1;
+
+        span,
+        &::before,
+        &::after {
+          opacity: @subtle-opacity;
+        }
+      }
+      &:active {
+        box-shadow: unset;
+        &::after {
+          background: rgba(var(--primary-3), @subtle-opacity);
+        }
+      }
+
+      &.disabled,
+      &[disabled] {
+        opacity: @half-opacity !important;
+        &:hover,
+        &:active {
+          opacity: @half-opacity !important;
+          background: unset !important;
+        }
+      }
+    }
+
+    // Function button
+    &.function-btn {
+      background: @primary-2;
+      color: @secondary;
+      font-weight: unset;
+      opacity: 1;
+      &:hover,
+      &.active {
+        background: @primary-3;
+        opacity: 1;
+      }
+      &:active {
+        box-shadow: unset;
+        opacity: @disabled-opacity;
+      }
+      * {
+        fill: @secondary;
+      }
+      &.disabled,
+      &[disabled] {
+        &:hover {
+          background: @primary-2;
+        }
+      }
+    }
+
+    // Text / Link button
+    &-text,
+    &-link {
+      background: unset;
+      color: @secondary;
+      padding: unset;
+      margin: unset;
+      opacity: @subtle-opacity;
+      transition: opacity @transition-duration ease;
+
+      &:hover {
+        opacity: 1;
+      }
+      &:active {
+        opacity: @subtle-opacity;
+        box-shadow: unset;
+      }
+    }
+    &-link {
+      color: @jet-blue;
+      svg * {
+        fill: @jet-blue;
+      }
+    }
+    &-text {
+      padding: @btn-padding;
+      transition: opacity @transition-duration ease-out, background-color @transition-duration ease;
+      svg * {
+        fill: @secondary;
+      }
+      &:hover {
+        opacity: 1;
+        background: rgba(var(--primary-3), @subtle-opacity);
+        span {
+          text-decoration: unset;
+        }
+      }
+      &:active {
+        background: @primary-3;
+      }
+    }
+
+    // Full width button
+    &.full-width,
+    &-block {
+      width: 100%;
+      margin: @spacing-xs 0;
+    }
+
+    // Smaller button
+    &.small-btn,
+    &.small-btn span,
+    &.ant-btn-sm,
+    &.ant-btn-sm span {
+      font-weight: @bold-weight;
+      font-size: @sm-font-size;
+    }
+
+    // Larger button
+    &.large-btn,
+    &.large-btn span,
+    &.ant-btn-lg,
+    &.ant-btn-lg span {
+      font-size: @lg-font-size;
+    }
+
+    // Error button
+    &.error-btn,
+    &-dangerous {
+      background: @danger;
+
+      &:active {
+        box-shadow: @neu-shadow-inset-color;
+      }
+    }
+
+    // Antd circle button
+    &.ant-btn-circle {
+      border-radius: @round-radius;
+    }
+
+    // Antd round button
+    &.ant-btn-round {
+      border-radius: @round-radius;
+    }
+
+    //Antd icon only button
+    &-icon-only {
+      padding-left: @spacing-sm;
+      padding-right: @spacing-sm;
+
+      .ant-btn-loading-icon {
+        margin: unset;
+      }
+    }
+
+    // Disabled
+    &.disabled,
+    &[disabled] {
+      background: @secondary-5;
+      opacity: @disabled-opacity;
+      &.secondary-btn:hover {
+        background: inherit;
+      }
+      &:active {
+        box-shadow: unset;
+      }
+
+      span {
+        cursor: not-allowed;
+      }
+    }
+    &.ant-pagination-item {
+      margin-right: @spacing-xs !important;
+      margin-left: @spacing-xs !important;
+      padding-right: unset !important;
+      padding-left: unset !important;
+    }
+    &.ant-pagination-item-link[disabled],
+    &.ant-pagination-item-link.disabled {
+      background: unset !important;
+      svg * {
+        fill: @secondary-5 !important;
+      }
+    }
+
+    // Group of Antd buttons
+    &-group {
+      button {
+        margin: unset;
+
+        &:first-of-type {
+          border-top-right-radius: 0;
+          border-bottom-right-radius: 0;
+
+          &::before {
+            border-radius: inherit;
+          }
+        }
+        &:last-of-type {
+          border-top-left-radius: 0;
+          border-bottom-left-radius: 0;
+          border-left: unset;
+
+          &::before {
+            border-radius: inherit;
+          }
+        }
+      }
+    }
+  }
+
+  // Icon button
+  .icon-btn {
+    padding: @spacing-sm;
+    margin: @spacing-xs;
+    border-radius: @round-radius;
+    font-size: @lg-font-size;
+    transition: background-color @transition-duration ease;
+    cursor: pointer;
+    svg * {
+      fill: @secondary-3;
+      transition: fill @transition-duration ease;
+    }
+    &:hover,
+    &.active {
+      background: @primary-3;
+      svg * {
+        fill: @secondary;
+      }
+    }
+    &:active {
+      opacity: @disabled-opacity;
+    }
+  }
+
+  // General Input
+  input {
+    width: 100%;
+    padding: @spacing-sm @spacing-base;
+    margin: @spacing-xs 0;
+    box-shadow: @neu-shadow-inset-sm;
+    background: @primary-2;
+    color: @secondary;
+    font-size: @base-font-size;
+    border: none;
+    border-radius: @sm-border-radius;
+    box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+    -webkit-appearance: none;
+    -moz-box-sizing: border-box;
+    transition: box-shadow @transition-duration ease-out, color @transition-duration-short ease;
+
+    &::placeholder {
+      opacity: @subtle-opacity;
+    }
+    &::-webkit-outer-spin-button,
+    &::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    &:hover,
+    &:focus,
+    &.has-value {
+      box-shadow: @neu-shadow-inset-sm-2;
+    }
+    &.disabled,
+    &.warning,
+    &.error {
+      border: unset;
+      border-bottom: 2px solid;
+    }
+    &.warning {
+      border-color: @warning;
+    }
+    &.error {
+      border-color: @danger;
+    }
+
+    &[type='number'] {
+      -moz-appearance: textfield;
+    }
+
+    // Secondary input style
+    &.secondary-input {
+      background: transparent;
+      box-shadow: unset;
+      border-radius: unset;
+      border-bottom: 1px solid @primary-3;
+      padding: @spacing-xs @spacing-sm;
+      transition: border-color @transition-duration ease;
+
+      &[disabled] {
+        border-color: @secondary-3;
+        &:hover,
+        &:focus,
+        &.has-value {
+          border-color: @secondary-3;
+        }
+      }
+      &.warning {
+        border-color: @warning;
+      }
+      &.error {
+        border-color: @danger;
+      }
+      &:hover,
+      &.has-value {
+        border-color: @jet-green-3;
+      }
+      &:focus {
+        border-color: @jet-green;
+      }
+    }
+
+    // Antd checkbox
+    &[type='checkbox'] {
+      position: relative;
+      width: 18px;
+      height: 18px;
+      padding: unset;
+      opacity: 0;
+      box-shadow: unset;
+      &:checked {
+        + span {
+          &::after {
+            background: @jet-green;
+          }
+          &:hover::after {
+            background: @jet-green;
+          }
+        }
+      }
+      &[disabled] {
+        + span {
+          cursor: not-allowed;
+          opacity: @disabled-opacity;
+          &:hover::after {
+            background: transparent;
+          }
+        }
+      }
+    }
+    // Antd Radio
+    &[type='radio'] {
+      position: relative;
+      width: 15px;
+      height: 15px;
+      margin: 0;
+      padding: 0;
+      border-radius: @round-radius;
+      box-shadow: unset;
+      background: @primary-3;
+      cursor: pointer;
+
+      &::after {
+        content: '';
+        width: 9px;
+        height: 9px;
+        position: absolute;
+        top: 3px;
+        left: 3px;
+        background: @gradient;
+        border-radius: @round-radius;
+        opacity: 0;
+        transition: opacity @transition-duration ease;
+      }
+    }
+
+    // Remove all the weird clear buttons
+    &[type='search']::-ms-clear {
+      display: none;
+      width: 0;
+      height: 0;
+    }
+    &[type='search']::-ms-reveal {
+      display: none;
+      width: 0;
+      height: 0;
+    }
+    &[type='search']::-webkit-search-decoration,
+    &[type='search']::-webkit-search-cancel-button,
+    &[type='search']::-webkit-search-results-button,
+    &[type='search']::-webkit-search-results-decoration {
+      display: none;
+    }
+  }
+  // Antd Checkbox
+  .ant-checkbox-wrapper {
+    position: relative;
+    width: 100%;
+    cursor: pointer;
+    &:hover {
+      .ant-checkbox-inner {
+        border-color: @secondary-3;
+      }
+      span {
+        color: @secondary-3;
+      }
+    }
+    &-disabled:hover {
+      .ant-checkbox-inner {
+        border-color: @secondary-4;
+        cursor: not-allowed !important;
+      }
+      &.secondary-checkbox {
+        .ant-checkbox-inner {
+          &::after {
+            background: unset !important;
+          }
+        }
+        span {
+          color: @secondary-4 !important;
+        }
+      }
+    }
+    span {
+      margin-left: calc(18px + @spacing-xs);
+      line-height: 18px;
+      color: @secondary-4;
+      transition: color @transition-duration ease;
+    }
+    .ant-checkbox {
+      position: relative;
+      margin: unset;
+      &-inner {
+        position: absolute;
+        width: 16px;
+        height: 16px;
+        top: 0;
+        left: 0;
+        opacity: 1;
+        margin: -1px 0 0 0;
+        border: 1px solid @secondary-4;
+        border-radius: @xs-border-radius;
+        overflow: hidden;
+        cursor: pointer;
+        &::before {
+          content: '';
+          position: absolute;
+          top: 4px;
+          left: 3px;
+          width: 8px;
+          height: 4px;
+          border: 2px solid transparent;
+          border-top: unset;
+          border-right: unset;
+          transform: rotate(-45deg);
+          transition: border-color @transition-duration ease;
+          z-index: 1;
+        }
+        &::after {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: transparent;
+          transition: background-color @transition-duration ease;
+        }
+      }
+      input {
+        position: absolute;
+        top: 0;
+        left: 0;
+        margin: -1px 0 0 0;
+      }
+      &-checked {
+        .ant-checkbox-inner {
+          border-color: @jet-green !important;
+          background: @jet-green !important;
+          &::before {
+            border-color: @primary !important;
+          }
+          &::after {
+            background: @jet-green !important;
+          }
+        }
+        + span {
+          color: @jet-green !important;
+        }
+      }
+    }
+    &-disabled {
+      cursor: unset;
+      &:hover {
+        .ant-checkbox-inner {
+          &::after {
+            background: unset;
+          }
+        }
+        span {
+          color: @secondary-4;
+        }
+      }
+      span {
+        opacity: @disabled-opacity;
+      }
+    }
+
+    // Secondary checkbox
+    &.secondary-checkbox {
+      input {
+        margin-top: -3px;
+      }
+      span {
+        font-size: @sm-font-size;
+        text-transform: uppercase;
+      }
+      &:hover {
+        .ant-checkbox-inner {
+          &::after {
+            background: @jet-green-3;
+          }
+        }
+        span {
+          color: @secondary-3;
+        }
+      }
+      .ant-checkbox {
+        &-inner {
+          position: absolute;
+          width: 18px;
+          height: 18px;
+          top: 0;
+          left: 0;
+          opacity: 1;
+          margin: -3px 0 0 0;
+          background: @primary-2;
+          border-radius: unset;
+          border: unset;
+          cursor: pointer;
+          &::after {
+            content: '';
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 12px;
+            height: 12px;
+            background: transparent;
+            transition: background-color @transition-duration ease;
+          }
+          &:hover::after {
+            background: @jet-green-3;
+          }
+        }
+        &-checked {
+          .ant-checkbox-inner {
+            background: @primary-2 !important;
+            &::before {
+              border-color: transparent !important;
+            }
+          }
+          + span {
+            color: @secondary-3 !important;
+          }
+        }
+      }
+    }
+  }
+  // Antd Number Input
+  .ant-input-number {
+    position: relative;
+
+    &-handler-wrap {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      right: @spacing-sm;
+
+      span {
+        opacity: @subtle-opacity;
+        margin: 0 1px;
+        cursor: pointer;
+
+        &:hover {
+          opacity: 1;
+        }
+      }
+    }
+  }
+
+  // General table
+  table {
+    position: relative;
+    width: 100%;
+    border-radius: @border-radius;
+    border-collapse: collapse;
+    border-spacing: 0 @spacing-xs;
+    background: inherit;
+    color: inherit;
+    overflow-x: scroll;
+
+    thead {
+      position: relative;
+
+      tr {
+        &:hover,
+        &:active {
+          background: inherit;
+          box-shadow: unset;
+        }
+      }
+      th {
+        min-width: 70px;
+        background: inherit;
+        padding: @spacing-xs @spacing-base;
+        font-size: @sm-font-size;
+        letter-spacing: 0.07em;
+        text-transform: uppercase;
+        text-align: left;
+        color: @secondary-5;
+
+        .ant-typography {
+          font-size: @sm-font-size;
+          letter-spacing: 0.07em;
+          text-transform: uppercase;
+          text-align: left;
+          color: @secondary-5;
+        }
+        &:first-of-type {
+          padding-left: @spacing-base;
+        }
+        &:last-of-type {
+          padding-right: @spacing-base;
+          min-width: unset;
+        }
+      }
+    }
+    tbody {
+      tr {
+        border-radius: @round-radius;
+        overflow: hidden;
+        transition: background-color @transition-duration ease-in-out, box-shadow @transition-duration-short ease;
+        cursor: pointer;
+
+        &:hover {
+          background: @header-bg;
+        }
+        &:active {
+          box-shadow: @neu-shadow-inset-sm;
+          transition: background-color @transition-duration ease;
+        }
+        &.active {
+          box-shadow: @neu-shadow-inset-sm-2;
+          background: @header-bg;
+
+          &:active {
+            box-shadow: @neu-shadow-inset-sm;
+            transition: background-color @transition-duration ease;
+          }
+        }
+
+        // No interaction on row
+        &.no-interaction {
+          cursor: unset !important;
+          td {
+            cursor: unset !important;
+          }
+          &:hover {
+            background: unset !important;
+            td {
+              background: unset !important;
+            }
+          }
+          &:active {
+            opacity: unset !important;
+            box-shadow: unset !important;
+          }
+        }
+
+        // Darker bg on row
+        &.dark-bg {
+          td {
+            background: rgba(0, 0, 0, 0.08) !important;
+          }
+          &:hover {
+            td {
+              background: rgba(0, 0, 0, 0.08) !important;
+            }
+          }
+        }
+      }
+    }
+    td {
+      min-width: 75px;
+      background: inherit;
+      color: @secondary-3;
+      position: relative;
+      font-size: @base-font-size;
+      border-radius: unset;
+      padding: 12px @spacing-base;
+      background: transparent;
+      text-align: left;
+      overflow: hidden;
+      transition: opacity @transition-duration ease;
+      cursor: pointer;
+      span {
+        font-size: @base-font-size;
+      }
+
+      &:first-of-type {
+        border-top-left-radius: @round-radius;
+        border-bottom-left-radius: @round-radius;
+      }
+      &:last-of-type {
+        border-top-right-radius: @round-radius;
+        border-bottom-right-radius: @round-radius;
+      }
+    }
+  }
+  // Antd table
+  .ant-table-wrapper {
+    position: relative;
+
+    .ant-table {
+      overflow-x: scroll;
+      &::-webkit-scrollbar {
+        height: calc(@spacing-xs - 2px);
+        display: unset;
+      }
+      &-bordered {
+        tr {
+          td {
+            border-bottom: 1px solid @primary-2;
+            border-radius: unset;
+          }
+          &:last-of-type {
+            td {
+              border: unset;
+            }
+          }
+        }
+      }
+      &-placeholder {
+        cursor: unset !important;
+        td {
+          cursor: unset !important;
+        }
+        &:hover {
+          background: unset !important;
+          td {
+            background: unset !important;
+          }
+        }
+        &:active {
+          opacity: unset !important;
+          box-shadow: unset !important;
+        }
+      }
+    }
+
+    .ant-pagination {
+      list-style: none;
+      display: flex;
+      align-items: center;
+      padding: 0;
+      margin: 0;
+      font-size: @base-font-size;
+
+      button {
+        background: unset;
+        color: @secondary;
+      }
+    }
+    // Space between rows
+    &.row-space {
+      table {
+        border-collapse: separate;
+      }
+    }
+
+    // Empty table
+    .ant-table-empty {
+      td {
+        padding: 10px 0 60px 0 !important;
+        font-size: @lg-font-size !important;
+        font-style: italic;
+        color: @secondary-4;
+      }
+      &::after {
+        display: none;
+      }
+    }
+  }
+  // If you don't want row interactions
+  .no-row-interaction {
+    tbody {
+      tr {
+        cursor: unset;
+        td {
+          border-radius: unset;
+          cursor: unset;
+        }
+
+        &:hover {
+          background: inherit;
+        }
+        &:active {
+          box-shadow: unset;
+        }
+      }
+    }
+  }
+  // If table's last column is an icon
+  .last-column-icon {
+    tbody {
+      tr {
+        td:last-of-type {
+          opacity: 0;
+          transition: opacity @transition-duration ease;
+        }
+
+        &.active,
+        &:hover {
+          td:last-of-type {
+            opacity: inherit;
+          }
+        }
+      }
+    }
+  }
+  // Fix mozilla table row background issue
+  @-moz-document url-prefix() {
+    tr.active {
+      background: @primary;
+    }
+  }
+
+  // Antd Radios
+  .ant-radio-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    margin: @spacing-xs @spacing-sm;
+    padding: 0;
+    color: @secondary-3;
+    font-size: @base-font-size;
+    list-style: none;
+    cursor: pointer;
+    span {
+      font-size: @base-font-size;
+      color: inherit;
+    }
+
+    .ant-radio {
+      width: 15px;
+      height: 15px;
+      margin-right: @spacing-xs;
+      padding: 0;
+      color: @secondary;
+      font-size: @base-font-size;
+      list-style: none;
+      font-feature-settings: 'tnum';
+      position: relative;
+      outline: none;
+      cursor: pointer;
+
+      &-checked {
+        input[type='radio']::after {
+          opacity: 1;
+        }
+      }
+    }
+  }
+
+  // Antd Radio Button
+  .ant-radio-button-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: @primary-3;
+    color: @secondary-2;
+    margin: 0;
+    transition: background-color @transition-duration ease;
+    &:hover {
+      background-color: @primary-3;
+    }
+    &:active {
+      box-shadow: unset;
+    }
+    &.active,
+    &-checked {
+      background: @jet-green;
+      color: @primary;
+      box-shadow: unset;
+      &:hover {
+        background: @jet-green;
+      }
+    }
+    input[type='radio'] {
+      display: none;
+    }
+  }
+
+  // Antd Radio Group
+  .ant-radio-group {
+    display: flex;
+    margin: @spacing-xs 0;
+
+    .ant-radio-button-wrapper {
+      border-radius: @round-radius;
+      padding: 4px 10px;
+      margin: 0 @spacing-xs;
+    }
+  }
+
+  // Antd Divider
+  .ant-divider {
+    position: relative;
+    width: 100%;
+    min-width: 50px;
+    height: 2px;
+    margin: @spacing-sm 0;
+    border-radius: @border-radius;
+    box-shadow: @neu-shadow-inset-sm-2;
+    background: @primary-3;
+
+    &-vertical {
+      width: 3px;
+      min-width: unset;
+      height: 100%;
+      min-height: 50px;
+    }
+
+    &-with-text {
+      height: auto;
+      box-shadow: unset;
+      background: unset;
+      &::before,
+      &::after {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 30%;
+        height: 3px;
+        border-radius: @border-radius;
+        box-shadow: @neu-shadow-inset-2;
+        background: @primary-2;
+        z-index: 1;
+      }
+      &::after {
+        left: unset;
+        right: 0;
+      }
+      span {
+        color: @secondary-5;
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 2;
+      }
+
+      &-left {
+        &::before {
+          width: 10%;
+        }
+        &::after {
+          width: 45%;
+        }
+        span {
+          left: 32%;
+        }
+      }
+      &-right {
+        &::before {
+          width: 45%;
+        }
+        &::after {
+          width: 10%;
+        }
+        span {
+          left: 75%;
+        }
+      }
+    }
+  }
+
+  // Antd Breadcrumb
+  .ant-breadcrumb {
+    span {
+      a {
+        opacity: @subtle-opacity;
+        &:hover {
+          opacity: 1;
+        }
+      }
+      &:last-of-type {
+        opacity: 1;
+        span {
+          opacity: inherit;
+        }
+        .ant-breadcrumb-separator {
+          display: none;
+        }
+      }
+    }
+    &-separator {
+      margin: 0 @spacing-sm;
+    }
+  }
+
+  // Antd Page Header
+  .ant-page-header {
+    position: relative;
+    padding: @spacing-base @spacing-lg;
+    border: 1px solid @primary-2;
+
+    &-back {
+      margin-right: @spacing-base;
+      opacity: @subtle-opacity;
+      transition: opacity @transition-duration ease;
+      cursor: pointer;
+      &:hover {
+        opacity: 1;
+      }
+      &:active {
+        opacity: @subtle-opacity;
+      }
+
+      .anticon,
+      .jet-icon {
+        font-size: @lg-font-size;
+      }
+    }
+
+    &-heading {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      &-left,
+      &-right {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+      }
+      &-title {
+        margin-right: @spacing-base;
+        font-size: @xxl-font-size;
+        line-height: @xxl-font-size;
+        font-weight: @semi-bold-weight;
+      }
+      &-sub-title {
+        font-size: @base-font-size;
+        opacity: @subtle-opacity;
+      }
+    }
+  }
+
+  // Antd Pagination
+  .ant-pagination {
+    display: flex;
+    padding: unset;
+    list-style: none;
+
+    &-item,
+    &-prev,
+    &-next {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    &-item {
+      background: unset;
+      padding: @spacing-xs @spacing-sm;
+      color: @secondary-5;
+      opacity: @subtle-opacity;
+      font-size: @base-font-size;
+      transition: all @transition-duration ease;
+      &-link {
+        * {
+          margin: unset;
+          fill: @secondary-5 !important;
+          transition: fill @transition-duration ease;
+        }
+        &:hover {
+          * {
+            fill: @secondary !important;
+          }
+        }
+      }
+
+      &:hover {
+        opacity: 1;
+      }
+      &:active,
+      &-active {
+        opacity: 1;
+        color: @secondary-3;
+        box-shadow: unset;
+      }
+
+      &-ellipsis {
+        display: none;
+      }
+    }
+    &-options {
+      display: none;
+    }
+    .anticon {
+      cursor: pointer;
+    }
+
+    // Simple mode
+    input {
+      background: unset;
+      box-shadow: unset;
+      padding: unset;
+      margin: 0 -20px 0 0;
+      width: unset;
+      &:hover,
+      &:focus {
+        box-shadow: unset;
+      }
+    }
+
+    // Antd table pagination
+    &.ant-table-pagination-right {
+      justify-content: flex-end;
+    }
+  }
+
+  // Antd Modal
+  .ant-modal-wrap {
+    width: 100%;
+    min-width: 100vw;
+    height: 100%;
+    min-height: 100vh;
+    position: fixed;
+    top: 0;
+    left: 0;
+    background: @modal-bg;
+    z-index: 1003;
+
+    .ant-modal-content {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: calc(100% - (@spacing-sm * 2));
+      max-width: 320px;
+      background: @primary;
+      border-radius: @lg-border-radius;
+      padding: @spacing-lg @spacing-xs;
+      overflow: hidden;
+
+      .ant-modal-title {
+        font-size: @xxl-font-size;
+        font-weight: @semi-bold-weight;
+        line-height: calc(@xl-font-size + 5px);
+        padding: @spacing-lg 0 @spacing-sm 0;
+      }
+
+      .ant-modal-body {
+        max-height: 85vh;
+        overflow-x: hidden;
+        overflow-y: scroll;
+        padding: 0 calc(@spacing-lg - @spacing-xs);
+        &::-webkit-scrollbar {
+          display: unset;
+        }
+        h2 {
+          font-weight: @semi-bold-weight;
+        }
+        p {
+          margin: @spacing-sm 0;
+        }
+      }
+
+      .ant-modal-footer {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column-reverse;
+        padding-top: @spacing-base;
+
+        .ant-btn {
+          width: calc(100% - @spacing-lg);
+          &:first-of-type {
+            margin: unset;
+            padding-bottom: unset;
+            background: unset;
+            border: unset;
+            color: @secondary-3;
+
+            &:hover {
+              text-decoration: underline;
+              text-underline-offset: 1px;
+            }
+            &:active {
+              box-shadow: unset;
+            }
+          }
+        }
+      }
+
+      .ant-modal-close {
+        position: absolute;
+        top: 12px;
+        right: 6px;
+        background: unset;
+        z-index: 1000;
+        cursor: pointer;
+        span {
+          display: none;
+        }
+
+        &::before,
+        &::after {
+          content: '';
+          position: absolute;
+          top: 0;
+          right: 0;
+          width: 14px;
+          height: 1px;
+          border-radius: @round-radius;
+          transform: rotate(45deg);
+          background: @secondary-3;
+          transition: background-color @transition-duration ease;
+        }
+        &::after {
+          transform: rotate(-45deg);
+        }
+
+        &:hover {
+          &::before,
+          &::after {
+            background: @secondary;
+          }
+        }
+        &:active {
+          box-shadow: unset;
+        }
+      }
+    }
+
+    // Modals with headers
+    .header-modal {
+      .modal-header {
+        width: 100%;
+        position: absolute;
+        top: 0;
+        left: 0;
+        height: 45px;
+        background: @primary-2;
+
+        &-title {
+          font-size: @lg-font-size;
+          font-weight: @bold-weight;
+          margin: unset;
+        }
+      }
+      .ant-modal-content {
+        padding-top: calc(@spacing-lg * 2.75);
+      }
+    }
+  }
+  // When modal is closed
+  .ant-fade-leave {
+    + .ant-modal-wrap {
+      display: none;
+    }
+  }
+
+  // Antd Switch
+  .ant-switch {
+    position: relative;
+    height: 18px;
+    min-width: 37px;
+    background: @primary-3;
+    padding: unset;
+    border-radius: @round-radius;
+    cursor: pointer;
+    span {
+      color: @secondary-3;
+    }
+    svg * {
+      fill: @secondary-3;
+    }
+
+    &-handle {
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 14px;
+      height: 14px;
+      border-radius: @round-radius;
+      transition: all @transition-duration ease;
+
+      &::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: @jet-green;
+        border-radius: @round-radius;
+      }
+    }
+    &-inner {
+      margin: 0 0 0 20px;
+      transition: margin @transition-duration ease;
+    }
+    &:active {
+      box-shadow: unset;
+      .ant-switch-handle {
+        width: 24px;
+      }
+      &.ant-switch-checked {
+        .ant-switch-handle {
+          left: calc(100% - 26px);
+        }
+      }
+    }
+
+    // Checked state
+    &-checked {
+      background: @jet-green;
+      span {
+        color: @primary;
+      }
+      svg * {
+        fill: @primary;
+      }
+
+      .ant-switch-handle {
+        top: 2px;
+        left: calc(100% - 16px);
+
+        &::before {
+          background: @primary-3;
+        }
+      }
+      .ant-switch-inner {
+        margin: 0 20px 0 0;
+      }
+
+      // Checked and disabled
+      &.ant-switch-disabled:hover {
+        opacity: @disabled-opacity;
+      }
+    }
+
+    // Unchecked and disabled
+    &-disabled {
+      cursor: not-allowed;
+      opacity: @disabled-opacity;
+
+      &:hover {
+        opacity: @disabled-opacity;
+      }
+    }
+
+    // Secondary switch
+    &.secondary-switch {
+      background: rgba(0, 0, 0, 0.3);
+      box-shadow: inset -1.5px -1.5px 3.5px var(--dt-light-shadow), inset 1.5px 1.5px 3.5px var(--dt-dark-shadow);
+
+      .ant-switch-handle {
+        &::before {
+          background: rgba(255, 255, 255, 0.4);
+          box-shadow: inset -1.5px -1.5px 3.5px var(--dt-light-shadow), inset 1.5px 1.5px 3.5px var(--dt-dark-shadow);
+        }
+      }
+      span {
+        color: rgb(var(--lt-primary));
+        opacity: @subtle-opacity;
+        -webkit-text-fill-color: unset;
+      }
+
+      &.ant-switch-checked {
+        background: @gradient;
+        box-shadow: @neu-shadow-inset-color;
+
+        .ant-switch-handle {
+          &::before {
+            background: rgba(0, 0, 0, 0.75);
+          }
+        }
+      }
+    }
+  }
+
+  // Antd Tooltip / Popover
+  .ant-tooltip,
+  .ant-popover {
+    pointer-events: none;
+    position: absolute;
+    max-width: 200px;
+    background: @primary-2;
+    color: @secondary-3;
+    padding: @spacing-sm;
+    border-radius: @border-radius;
+    backdrop-filter: blur(2px);
+    background: rgba(var(--primary-3), @subtle-opacity);
+    pointer-events: all !important;
+    transition: all @transition-duration ease;
+    z-index: 2000;
+
+    &-title {
+      font-size: @lg-font-size;
+      border-bottom: 1px solid @jet-green;
+    }
+    &-arrow {
+      pointer-events: none;
+      position: absolute;
+      overflow: hidden;
+      bottom: calc(0% - 8px);
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0;
+      height: 0;
+      border-left: 8px solid transparent;
+      border-right: 8px solid transparent;
+      border-top: 8px solid rgba(var(--primary-3), @subtle-opacity);
+      z-index: 9;
+    }
+    &-inner {
+      font-size: @base-font-size;
+    }
+
+    // Other placements
+    &-placement-left .ant-tooltip-arrow,
+    &-placement-left .ant-popover-arrow {
+      top: calc(50% - 8px);
+      left: calc(100% + 4px);
+      border-top: 8px solid transparent;
+      border-left: 8px solid rgba(var(--primary-3), @subtle-opacity);
+      border-right: unset;
+      border-bottom: 8px solid transparent;
+    }
+    &-placement-right .ant-tooltip-arrow,
+    &-placement-right .ant-popover-arrow {
+      top: calc(50% - 8px);
+      left: calc(0% - 4px);
+      border-top: 8px solid transparent;
+      border-left: unset;
+      border-right: 8px solid rgba(var(--primary-3), @subtle-opacity);
+      border-bottom: 8px solid transparent;
+    }
+    &-placement-bottom .ant-tooltip-arrow,
+    &-placement-bottom .ant-popover-arrow {
+      top: calc(0% - 8px);
+      border-top: unset;
+      border-left: 8px solid transparent;
+      border-right: 8px solid transparent;
+      border-bottom: 8px solid rgba(var(--primary-3), @subtle-opacity);
+    }
+
+    // When mouse leaves + when hidden
+    &-hidden,
+    &.ant-zoom-big-fast-leave {
+      display: none;
+    }
+    // Slider tooltip follow patter
+    &.ant-zoom-down-leave,
+    &.ant-zoom-down-leave-active,
+    &.ant-zoom-big-leave,
+    &.ant-zoom-big-leave-active {
+      display: none;
+    }
+  }
+
+  // Antd select
+  .ant-select {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: @spacing-xs 0;
+    padding: calc(@spacing-sm - 2px) @spacing-base calc(@spacing-sm - 2px) 0;
+    font-size: @base-font-size;
+    border-radius: @sm-border-radius;
+    background: rgba(var(--primary-3), @disabled-opacity);
+    transition: background-color @transition-duration ease;
+    cursor: pointer;
+    &:hover {
+      background: @primary-3;
+    }
+    &-selector {
+      min-width: 80px;
+      width: 100%;
+      min-height: 12px;
+      padding: 0 @spacing-base;
+      white-space: nowrap;
+      z-index: 1;
+    }
+    &-arrow {
+      position: absolute;
+      right: @spacing-base;
+    }
+    .jet-icon {
+      width: 10px;
+      height: 10px;
+      margin-top: 2px;
+      * {
+        fill: @secondary-3;
+      }
+    }
+    &-open {
+      background: @primary-3;
+      &:hover {
+        background: @primary-3;
+      }
+    }
+    &-selection {
+      &-item {
+        display: flex;
+        font-size: @base-font-size;
+        color: @secondary-3;
+      }
+      &-search {
+        display: none;
+        input {
+          background: transparent;
+          box-shadow: unset;
+          border-radius: unset;
+          border-bottom: 1px solid @primary-3;
+          padding: @spacing-sm;
+          transition: border-color @transition-duration ease-out, background-color @transition-duration ease;
+
+          &[disabled] {
+            border-color: @secondary-3;
+            &:hover,
+            &:focus,
+            &.has-value {
+              border-color: @secondary-3;
+            }
+          }
+          &.warning {
+            border-color: @warning;
+          }
+          &.error {
+            border-color: @danger;
+          }
+          &:hover,
+          &.has-value {
+            border-color: @jet-green-2;
+          }
+          &:focus {
+            border-color: @jet-green;
+          }
+        }
+      }
+    }
+    &-show-search {
+      padding: 0;
+      background: unset;
+      .ant-select-selector {
+        padding: unset;
+      }
+      .ant-select-selection {
+        &-item {
+          position: absolute;
+          top: 50%;
+          left: @spacing-base;
+          transform: translateY(-50%);
+          z-index: -1;
+        }
+        &-search {
+          display: unset;
+        }
+      }
+      &:hover,
+      &.ant-select-open {
+        background: unset;
+      }
+    }
+
+    &-dropdown {
+      position: absolute;
+      max-height: 200px;
+      overflow-x: hidden;
+      overflow-y: scroll;
+      font-size: inherit;
+      backdrop-filter: blur(2px);
+      background: rgba(var(--primary-3), @subtle-opacity);
+      color: @secondary;
+      border-radius: @sm-border-radius;
+      outline: none;
+      pointer-events: unset !important;
+      z-index: 1004;
+      &::-webkit-scrollbar {
+        display: unset;
+        &-thumb {
+          background: @secondary-5;
+        }
+      }
+
+      // For when dropdown is not visible
+      &.ant-slide-up-leave-active {
+        display: none;
+      }
+
+      // Bigger dropdown sizing
+      &.lg-dropdown {
+        font-size: @spacing-base;
+      }
+      &.xl-dropdown {
+        font-size: @xxl-font-size;
+      }
+
+      // Round dropdown
+      &.rounded-dropdown {
+        border-radius: @sm-border-radius;
+      }
+
+      // Space between dropdown items
+      &.dropdown-space-between {
+        .ant-select-item-option-content {
+          padding: @spacing-xs 0;
+          justify-content: space-between;
+          span {
+            font-size: @base-font-size;
+          }
+        }
+      }
+    }
+    &-item {
+      text-align: center;
+      padding: @btn-padding;
+      transition: background-color @transition-duration-short ease;
+      cursor: pointer;
+
+      &-option-state {
+        display: none;
+      }
+      &-option-selected {
+        background: @primary-4;
+      }
+      &-option-active {
+        background: @primary-4;
+      }
+      &-option-content {
+        width: 100%;
+        min-height: 12px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: @secondary-3;
+
+        svg,
+        img {
+          height: 18px;
+          margin-right: @spacing-xs;
+        }
+      }
+    }
+
+    // Disabled
+    &-disabled {
+      cursor: not-allowed;
+      &:hover {
+        background: rgba(var(--primary-3), @disabled-opacity);
+      }
+    }
+
+    // Autocomplete
+    &-auto-complete {
+      padding: unset;
+      border-bottom-left-radius: 0;
+      border-bottom-right-radius: 0;
+      background: unset;
+      &:hover,
+      &.ant-select-focused {
+        background: unset;
+      }
+      .ant-select-selection-search {
+        display: block;
+      }
+      .ant-select-selector {
+        padding: unset;
+      }
+      input {
+        padding: @spacing-sm;
+        margin: unset;
+      }
+    }
+  }
+
+  // Antd Dropdown Menu
+  .ant-dropdown {
+    position: absolute;
+    min-width: 75px;
+    background: @primary-2;
+    color: @secondary;
+    border-radius: @sm-border-radius;
+    backdrop-filter: blur(2px);
+    background: rgba(var(--primary-3), @subtle-opacity);
+    overflow: hidden;
+    pointer-events: unset !important;
+    z-index: 1002;
+
+    &-trigger {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: @secondary-3;
+      white-space: nowrap;
+      padding: 0 @spacing-base;
+      letter-spacing: 0.07em;
+      font-size: @btn-font-size;
+      transition: color @transition-duration ease;
+      cursor: pointer;
+
+      // Down icon
+      .anticon {
+        margin-left: @spacing-xs;
+        svg {
+          * {
+            fill: @secondary-3;
+            transition: fill @transition-duration ease;
+          }
+        }
+      }
+      .jet-icon {
+        width: 10px;
+        height: 10px;
+        margin-left: @spacing-xs;
+        * {
+          fill: @secondary-3;
+          transition: fill @transition-duration ease;
+        }
+      }
+
+      &:hover,
+      &.ant-dropdown-open {
+        color: @secondary;
+        svg * {
+          fill: @secondary;
+        }
+      }
+      &.ant-typography-disabled {
+        &:hover,
+        &.ant-dropdown-open {
+          color: @secondary-3;
+          svg * {
+            fill: @secondary-3;
+          }
+        }
+      }
+    }
+
+    &-menu {
+      width: 100%;
+      max-height: 200px;
+      position: relative;
+      list-style: none;
+      padding: 0;
+      display: flex;
+      align-items: flex-start;
+      justify-content: flex-start;
+      flex-direction: column;
+      margin: unset;
+      overflow-y: scroll;
+      cursor: pointer;
+      &::-webkit-scrollbar {
+        display: unset;
+        &-thumb {
+          background: @secondary-5;
+        }
+      }
+
+      &-item {
+        width: inherit;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: @spacing-sm 0;
+        transition: background-color @transition-duration-short ease;
+
+        &:hover,
+        &-active,
+        &.active {
+          background: @primary-4;
+          * {
+            color: @jet-green;
+            fill: @jet-green;
+          }
+        }
+      }
+      &-title-content {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      // Minimum width menu
+      &.min-width-menu {
+        min-width: 125px !important;
+        &-sm {
+          min-width: 50px !important;
+        }
+      }
+    }
+
+    // When mouse leaves + hidden
+    &-hidden {
+      display: none;
+    }
+    &.ant-slide-up-leave-active {
+      display: none;
+    }
+
+    // Dropdown button
+    &-button {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      button {
+        background: @primary-2;
+        color: @secondary;
+        padding: @spacing-xs @spacing-sm;
+        height: 25px;
+        opacity: 1;
+        font-weight: unset;
+        text-transform: unset;
+        &:hover,
+        &.active {
+          background: @primary-3;
+          opacity: 1;
+        }
+        &:active {
+          box-shadow: unset;
+          opacity: @disabled-opacity;
+        }
+        * {
+          fill: @secondary;
+        }
+        &:first-of-type {
+          border-right: 2px solid @primary-3;
+        }
+      }
+      .anticon,
+      .jet-icon {
+        margin: unset !important;
+      }
+      .ant-dropdown-trigger {
+        padding: 0 7px;
+      }
+    }
+  }
+
+  // Antd Collapse
+  .ant-collapse {
+    width: 100%;
+    max-width: 400px;
+    border-radius: @border-radius;
+    border: 2px solid @primary-2;
+    overflow: hidden;
+    margin: @spacing-sm 0;
+
+    &-content {
+      padding: @spacing-sm @spacing-lg;
+      opacity: @subtle-opacity;
+      height: unset;
+      border-radius: @border-radius;
+
+      &-inactive,
+      &-hidden {
+        display: none;
+      }
+    }
+
+    &-header {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      cursor: pointer;
+      padding: @spacing-base @spacing-lg;
+      padding-right: @spacing-xl;
+      background: @primary-2;
+      opacity: @subtle-opacity;
+      font-size: @base-font-size;
+
+      .anticon,
+      .jet-icon {
+        color: @primary-2;
+        opacity: @subtle-opacity;
+      }
+      span {
+        margin-right: @spacing-sm;
+      }
+    }
+  }
+
+  // Antd Card
+  .ant-card {
+    width: 95%;
+    max-width: 300px;
+    border-radius: @border-radius;
+    box-shadow: @neu-shadow;
+    margin: @spacing-xs 0;
+    overflow: hidden;
+    transition: box-shadow @transition-duration ease;
+    &.clickable,
+    &-hoverable {
+      cursor: pointer;
+
+      &:hover {
+        box-shadow: @neu-shadow-3;
+        transition: unset;
+      }
+      &:active {
+        box-shadow: @neu-shadow-inset;
+      }
+      &.active {
+        box-shadow: @neu-shadow-inset-2;
+      }
+    }
+
+    // Optional cover image
+    &-cover {
+      width: 100%;
+      height: 150px;
+
+      img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+    }
+    // Card heading, w/optional extra element(s)
+    &-head {
+      position: relative;
+      padding: @spacing-lg;
+      padding-bottom: 0;
+      margin-bottom: @spacing-base;
+
+      &::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        bottom: 0px;
+        width: 100%;
+        height: 2px;
+        border-radius: @border-radius;
+        box-shadow: @neu-shadow-inset-2;
+        background: @secondary-3;
+      }
+
+      &-wrapper {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        padding-bottom: @spacing-xs;
+
+        .ant-card-head-title {
+          opacity: @subtle-opacity;
+        }
+        .ant-card-extra {
+          margin-left: @spacing-xl;
+        }
+      }
+    }
+    // With tabs
+    .ant-tabs {
+      &-content {
+        padding: unset;
+      }
+      &-nav {
+        &::before {
+          display: none;
+        }
+      }
+    }
+
+    // Body content of card
+    &-body {
+      padding: @spacing-sm @spacing-xl @spacing-base @spacing-xl;
+    }
+    // Small card
+    &-small {
+      p,
+      span {
+        font-size: @sm-font-size;
+      }
+      &-head {
+        padding: @spacing-base;
+        padding-bottom: 0;
+      }
+      &-body {
+        padding: @spacing-base;
+        padding-top: @spacing-sm;
+      }
+    }
+  }
+
+  // Antd Tabs
+  .ant-tabs {
+    &-nav {
+      position: relative;
+      .ant-tabs-nav-operations {
+        display: none;
+      }
+      .ant-tabs-nav-list {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        overflow-x: scroll;
+
+        .ant-tabs-tab {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: @spacing-base @spacing-sm;
+          letter-spacing: 0.07em;
+          color: @secondary-5;
+          white-space: nowrap;
+          transition: color @transition-duration ease;
+          cursor: pointer;
+          span {
+            color: inherit;
+          }
+
+          &:hover {
+            color: @secondary-2;
+          }
+          &-active {
+            color: @jet-green;
+            &:hover {
+              color: @jet-green;
+            }
+          }
+        }
+      }
+    }
+    &-ink-bar {
+      position: absolute;
+      left: 0;
+      bottom: 0px;
+      width: 100%;
+      height: 1px;
+      background: @jet-green;
+      transition: left @transition-duration ease-out, background-color @transition-duration ease-out,
+        width @transition-duration ease;
+    }
+
+    // No active tabs
+    &.no-active-tabs {
+      .ant-tabs-ink-bar {
+        width: 0%;
+        background: transparent;
+      }
+    }
+
+    // Danger color
+    &.danger {
+      .ant-tabs-tab {
+        &-active {
+          color: @danger;
+        }
+      }
+      .ant-tabs-ink-bar {
+        background: @danger;
+      }
+    }
+  }
+
+  // Antd Timeline
+  .ant-timeline {
+    box-sizing: border-box;
+    color: @secondary;
+    font-size: @base-font-size;
+    margin: @spacing-sm 0;
+    padding: 0;
+    list-style: none;
+
+    &-item {
+      position: relative;
+      padding-bottom: 18px;
+      font-size: inherit;
+
+      &-tail {
+        position: absolute;
+        top: 10px;
+        left: 6px;
+        height: calc(100% - 10px);
+        border-left: 2px solid @primary-2;
+      }
+      &-head {
+        position: absolute;
+        width: 10px;
+        height: 10px;
+        background: @gradient;
+        border: 2px solid @primary-2;
+        border-radius: 100px;
+      }
+      &-content {
+        position: relative;
+        top: -4px;
+        margin: 0 0 0 24px;
+        word-break: break-word;
+        opacity: @subtle-opacity;
+      }
+
+      &-last {
+        .ant-timeline-item-tail {
+          display: none;
+        }
+      }
+
+      // Incomplete timeline item
+      &.incomplete {
+        .ant-timeline-item-head {
+          background: @primary-2;
+        }
+        .ant-timeline-item-content {
+          opacity: @subtle-opacity;
+        }
+      }
+    }
+    &-pending {
+      .ant-timeline-item {
+        &-last {
+          .ant-timeline-item-tail {
+            display: unset;
+          }
+        }
+        &-pending {
+          .ant-timeline-item-head {
+            background: @primary-2;
+          }
+          .ant-timeline-item-tail {
+            display: none;
+          }
+          .anticon,
+          .jet-icon {
+            position: absolute;
+            top: -1px;
+            left: -1px;
+          }
+        }
+      }
+    }
+  }
+
+  // Antd Slider
+  .ant-slider {
+    position: relative;
+    width: 100%;
+    padding-bottom: @spacing-xl;
+
+    &-rail {
+      position: absolute;
+      width: calc(100% + 12px);
+      margin-left: -6px;
+      height: 6px;
+      background-color: @primary-2;
+      border-radius: @round-radius;
+    }
+    &-track {
+      position: absolute;
+      margin-left: -6px;
+      height: 6px;
+      background: @gradient;
+      border-radius: @round-radius;
+      border-top-right-radius: 0px;
+      border-bottom-right-radius: 0px;
+      transition: width @transition-duration-short ease;
+    }
+    &-step {
+      position: absolute;
+      width: 100%;
+      height: 6px;
+      border-radius: @round-radius;
+    }
+    &-handle {
+      position: absolute;
+      width: 13px;
+      height: 13px;
+      margin-top: -4px;
+      margin-left: -1px;
+      background: @jet-blue;
+      border-radius: @round-radius;
+      transition: left @transition-duration-short ease;
+      cursor: pointer;
+    }
+    &-mark {
+      position: absolute;
+      width: calc(100% - 13px);
+      top: 10px;
+      left: 4px;
+
+      &-text {
+        position: absolute;
+        color: @secondary-5;
+        font-size: @sm-font-size;
+        transition: color @transition-duration ease;
+        cursor: pointer;
+
+        &:hover {
+          color: @secondary-3;
+        }
+        &:active,
+        &-active {
+          color: @secondary;
+          &:hover {
+            color: @secondary;
+          }
+        }
+      }
+    }
+
+    &-disabled {
+      opacity: @half-opacity;
+      cursor: not-allowed;
+
+      .ant-slider-mark-text {
+        cursor: not-allowed;
+        &:hover,
+        &:active {
+          color: @secondary-5;
+        }
+        &-active {
+          &:hover {
+            color: @secondary;
+          }
+        }
+      }
+      .ant-slider-handle {
+        pointer-events: none;
+      }
+    }
+  }
+
+  // Antd Skeleton
+  .ant-skeleton {
+    display: flex;
+    width: 100%;
+    text-align: inherit;
+
+    &-avatar {
+      border-radius: @round-radius;
+      background: @primary-3;
+      margin-right: @spacing-xs;
+
+      &-square {
+        border-radius: @sm-border-radius;
+      }
+    }
+    &-content {
+      display: table-cell;
+      width: 100%;
+      vertical-align: top;
+
+      .ant-skeleton-title {
+        width: 30%;
+        height: 2px;
+        background: @primary-3;
+        border-radius: @sm-border-radius;
+        margin: unset;
+      }
+      .ant-skeleton-paragraph {
+        margin-top: @spacing-sm;
+        border-radius: @sm-border-radius;
+        padding: 0;
+
+        li {
+          width: 100%;
+          height: 2px;
+          margin-top: @spacing-xs;
+          list-style: none;
+          background: @primary-3;
+          border-radius: @sm-border-radius;
+        }
+      }
+    }
+    &-active {
+      .ant-skeleton-avatar,
+      .ant-skeleton-title,
+      .ant-skeleton-paragraph li {
+        animation: skeleton-loading 1.25s ease infinite;
+      }
+    }
+
+    // Custom alignment of skeleton items
+    &.align-center {
+      .ant-skeleton-content {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+      }
+    }
+    &.align-right {
+      .ant-skeleton-content {
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+        flex-direction: column;
+      }
+    }
+  }
+  // Shimmer animation
+  @keyframes skeleton-loading {
+    0% {
+      opacity: 1;
+    }
+    50% {
+      opacity: @half-opacity;
+    }
+    100% {
+      opacity: 1;
+    }
+  }
+
+  // Antd List
+  .ant-list {
+    position: relative;
+    width: 100%;
+    margin: @spacing-sm 0;
+    border-radius: @border-radius;
+    color: @secondary;
+    font-size: @base-font-size;
+    list-style: none;
+
+    &-items {
+      padding: 0;
+      margin: 0;
+    }
+    &-header,
+    &-footer {
+      opacity: @subtle-opacity;
+    }
+    &-header,
+    &-item,
+    &-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: @spacing-base @spacing-lg;
+      border-bottom: 1px solid @primary-2;
+      &:last-of-type {
+        border-bottom: unset;
+      }
+
+      &-meta {
+        display: flex;
+        flex: 1;
+        align-items: flex-start;
+        max-width: 100%;
+
+        &-title {
+          opacity: @subtle-opacity;
+        }
+        &-description {
+          opacity: @subtle-opacity;
+        }
+      }
+      &-action {
+        display: flex;
+        flex: 0 0 auto;
+        margin-left: @spacing-lg;
+        list-style: none;
+        opacity: 1;
+        background-image: @gradient;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+    }
+    &-footer {
+      border-top: 1px solid @primary-2;
+    }
+
+    // Bordered
+    &-bordered {
+      border: 1px solid @primary-2;
+      background: @primary-2;
+    }
+
+    // Small
+    &-sm {
+      font-size: @sm-font-size;
+    }
+  }
+  // Empty image
+  .ant-empty {
+    padding: @spacing-base;
+    opacity: @subtle-opacity;
+    background: inherit;
+    &-image {
+      display: none;
+    }
+    &-description {
+      text-transform: uppercase;
+    }
+  }
+
+  // Antd Badge
+  .ant-badge {
+    opacity: 1;
+    sup {
+      position: absolute;
+      bottom: 1px;
+      margin-left: 2px;
+      border-radius: @round-radius;
+      padding: 1px 5px 0 5px;
+
+      // Shimmer Effect for Notifications
+      background: #e5ebf4 -webkit-gradient(linear, 100% 0, 0 0, from(#e5ebf4), color-stop(0.5, #a9aaab), to(#e5ebf4));
+      background-position: 50px top;
+      background-size: 50px 100%;
+      background-repeat: no-repeat;
+      animation-name: shimmer;
+      animation-duration: 4.5s;
+      animation-iteration-count: infinite;
+    }
+    span {
+      font-weight: @bold-weight;
+      font-size: @sm-font-size;
+      background-image: @gradient;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+  }
+  // Badge Shimmer Animation
+  @keyframes shimmer {
+    0% {
+      background-position: -50px top;
+    }
+    70% {
+      background-position: 200px top;
+    }
+    100% {
+      background-position: 200px top;
+    }
+  }
+
+  // Antd Tag
+  .ant-tag {
+    padding: @spacing-xs @spacing-sm;
+    margin: @spacing-xs;
+    border-radius: @sm-border-radius;
+    border: 1px solid @primary-2;
+    background: @primary-2;
+    opacity: @subtle-opacity;
+    transition: opacity @transition-duration ease;
+    span {
+      margin: 0 0 0 @spacing-sm;
+    }
+
+    &-has-color {
+      color: @primary;
+      svg * {
+        fill: @primary;
+      }
+    }
+    &-hidden {
+      display: none;
+    }
+
+    &:hover {
+      opacity: 1;
+    }
+  }
+
+  // Antd Progress
+  .ant-progress {
+    margin: @spacing-sm 0;
+    padding: 0;
+    color: @secondary;
+    font-size: @base-font-size;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &-line {
+      width: 100%;
+      position: relative;
+      font-size: inherit;
+      display: flex;
+      justify-content: space-between;
+
+      .ant-progress-outer {
+        width: inherit;
+        .ant-progress-inner {
+          position: relative;
+          width: inherit;
+          overflow: hidden;
+          background-color: @primary-2;
+          border-radius: @round-radius;
+
+          .ant-progress-bg {
+            background: @gradient;
+            border-radius: @round-radius;
+          }
+          .ant-progress-success-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            background: @success;
+            border-radius: @round-radius;
+          }
+        }
+      }
+      .ant-progress-text {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        right: -5px;
+        width: 25px;
+      }
+    }
+    &-circle {
+      position: relative;
+      &-path {
+        stroke: @jet-blue;
+      }
+
+      .ant-progress-text {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        margin: unset;
+        font-size: 130%;
+        text-align: center;
+        width: 100%;
+        span {
+          font-size: inherit;
+        }
+      }
+    }
+    &-show-info {
+      .ant-progress-outer {
+        margin-right: 25px;
+        &-outer {
+          width: calc(90% - 20px);
+        }
+
+        &-text {
+          color: @secondary;
+          white-space: nowrap;
+          word-break: normal;
+        }
+      }
+    }
+
+    &-status-success {
+      span {
+        color: @success;
+      }
+      svg * {
+        fill: @success;
+      }
+      &.ant-progress-line .ant-progress-outer .ant-progress-inner .ant-progress-bg {
+        background: @success;
+      }
+      .ant-progress-circle-path {
+        stroke: @success;
+      }
+    }
+    &-status-exception {
+      span {
+        color: @danger;
+      }
+      svg * {
+        fill: @danger;
+      }
+      &.ant-progress-line .ant-progress-outer .ant-progress-inner .ant-progress-bg {
+        background: @danger;
+      }
+      .ant-progress-circle-path {
+        stroke: @danger;
+      }
+    }
+  }
+
+  // Antd Alert
+  .ant-alert {
+    position: relative;
+    padding: @spacing-base;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    background: @gradient;
+    border-radius: @sm-border-radius;
+    border: 1px solid @primary-2;
+    color: @primary;
+    margin: @spacing-sm 0;
+    width: 100%;
+    &-success {
+      background: @success;
+    }
+    &-warning {
+      background: @warning;
+    }
+    &-error {
+      background: @danger;
+    }
+
+    button {
+      position: absolute;
+      top: 50%;
+      right: 0;
+      transform: translateY(-50%);
+      margin: unset;
+      margin-top: 1px;
+      padding: unset;
+      background: unset;
+      &:active {
+        box-shadow: unset;
+      }
+    }
+    .anticon,
+    .jet-icon {
+      margin-right: @spacing-sm;
+
+      * {
+        fill: @primary;
+      }
+    }
+
+    &-with-description {
+      .anticon,
+      .jet-icon {
+        position: absolute;
+        top: @spacing-base;
+        left: @spacing-base;
+      }
+      .ant-alert-content {
+        margin-top: -2px;
+        padding-left: 25px;
+      }
+      .ant-alert-message {
+        border-bottom: 1px solid @primary-2;
+      }
+      .ant-alert-description {
+        margin-top: @spacing-xs;
+        opacity: @subtle-opacity;
+      }
+      button {
+        top: -5px;
+        right: 37px;
+        transform: unset;
+        z-index: 1000;
+      }
+    }
+
+    // Closed
+    &.ant-alert-motion-leave,
+    &.ant-alert-motion-leave-active,
+    &.ant-alert-motion {
+      display: none;
+    }
+  }
+
+  // Antd Notification / Message
+  .ant-notification,
+  .ant-message {
+    position: fixed;
+    bottom: 0px;
+    z-index: 1004;
+
+    &-notice {
+      position: relative;
+      width: 250px;
+      padding: @spacing-base;
+      margin: @spacing-base;
+      border-radius: @sm-border-radius;
+      box-shadow: @drop-shadow;
+      backdrop-filter: blur(2px);
+      background: rgba(var(--primary-3), @subtle-opacity);
+      transition: drop-shadow @transition-duration ease;
+      cursor: pointer;
+
+      &-icon,
+      .anticon,
+      .jet-icon {
+        position: absolute;
+        top: @spacing-base;
+        left: @spacing-sm;
+        font-size: @lg-font-size;
+      }
+      svg * {
+        fill: @secondary;
+      }
+      &-success,
+      &-warning,
+      &-error {
+        .ant-notification-notice-message,
+        .ant-notification-notice-description {
+          margin-left: @spacing-lg;
+        }
+      }
+      &-success {
+        .ant-notification-notice-message {
+          color: @success;
+        }
+        svg * {
+          fill: @success;
+        }
+      }
+      &-warning {
+        .ant-notification-notice-message {
+          color: @warning;
+        }
+        svg * {
+          fill: @warning;
+        }
+      }
+      &-error {
+        .ant-notification-notice-message {
+          color: @danger;
+        }
+        svg * {
+          fill: @danger;
+        }
+      }
+      &-message {
+        font-weight: @bold-weight;
+        margin-top: -2px;
+        padding-bottom: @spacing-xs;
+        border-bottom: 1px solid @secondary-5;
+        text-transform: uppercase;
+      }
+      &-description {
+        color: @secondary-3;
+        font-size: @base-font-size;
+        padding-top: @spacing-xs;
+      }
+
+      &-close {
+        position: absolute;
+        top: 12px;
+        right: @spacing-xs;
+        padding: @spacing-xs;
+        background: unset;
+        z-index: 1000;
+        cursor: pointer;
+        span {
+          display: none;
+        }
+
+        &::before,
+        &::after {
+          content: '';
+          position: absolute;
+          top: 0;
+          right: 0;
+          width: 12px;
+          height: 1px;
+          border-radius: @round-radius;
+          transform: rotate(45deg);
+          background: @secondary-3;
+          transition: background-color @transition-duration ease;
+        }
+        &::after {
+          transform: rotate(-45deg);
+        }
+
+        &:hover {
+          &::before,
+          &::after {
+            background: @secondary;
+          }
+        }
+        &:active {
+          box-shadow: unset;
+        }
+      }
+
+      &:active {
+        opacity: @subtle-opacity;
+        box-shadow: unset;
+      }
+    }
+
+    // When notification goes away
+    &-fade-leave {
+      display: none;
+    }
+  }
+  .ant-message {
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    &-notice {
+      width: unset;
+      background: @primary-2;
+      border: 1px solid @primary;
+
+      &-icon,
+      .anticon,
+      .jet-icon {
+        position: relative;
+        top: unset;
+        left: unset;
+        font-size: @lg-font-size;
+        margin-right: @spacing-sm;
+      }
+      span {
+        opacity: 1;
+        color: @secondary;
+        font-size: @base-font-size;
+      }
+    }
+
+    &-success {
+      .anticon,
+      .jet-icon {
+        * {
+          fill: @success;
+        }
+      }
+      span {
+        color: @success;
+      }
+    }
+    &-warning {
+      .anticon,
+      .jet-icon {
+        * {
+          fill: @warning;
+        }
+      }
+      span {
+        color: @warning;
+      }
+    }
+    &-error {
+      .anticon,
+      .jet-icon {
+        * {
+          fill: @danger;
+        }
+      }
+      span {
+        color: @danger;
+      }
+    }
+
+    // When message goes away
+    .ant-move-up-leave-active {
+      display: none;
+    }
+  }
+
+  // Jet Navbar
+  .navbar-container {
+    width: 100vw;
+    background: rgb(var(--dt-primary-2));
+    z-index: 1000;
+
+    nav {
+      width: clamp(250px, 95%, 1750px);
+      padding: @spacing-xs 0;
+
+      .nav-section {
+        width: 33.3%;
+      }
+      .nav-logo {
+        width: 100px;
+        transition: opacity @transition-duration ease;
+        cursor: pointer;
+        &:hover {
+          opacity: @subtle-opacity;
+        }
+      }
+      .nav-link {
+        position: relative;
+        padding: @spacing-sm;
+        margin: 0 @spacing-sm;
+        color: rgb(var(--dt-secondary-4));
+        letter-spacing: 0.1em;
+        font-size: @btn-font-size;
+        font-weight: @semi-bold-weight;
+        text-transform: uppercase;
+        transition: color @transition-duration ease;
+        cursor: pointer;
+
+        &.active,
+        &:hover {
+          color: rgb(var(--dt-secondary));
+        }
+        &:active {
+          opacity: @subtle-opacity;
+        }
+
+        &.ant-typography-disabled {
+          color: rgb(var(--dt-secondary-5));
+          cursor: help !important;
+          &.active,
+          &:hover {
+            color: rgb(var(--dt-secondary-5));
+          }
+          &:active {
+            opacity: @disabled-opacity;
+          }
+        }
+      }
+      .notifications-btn {
+        width: 16px;
+        height: 16px;
+        margin: unset;
+      }
+      .icon-btn {
+        * {
+          fill: rgb(var(--dt-secondary-3));
+        }
+        &:hover,
+        &.active {
+          background: rgb(var(--dt-primary-3));
+          * {
+            fill: rgb(var(--dt-secondary));
+          }
+        }
+      }
+
+      &.mobile {
+        position: relative;
+        display: none;
+        transition: margin-left @transition-duration;
+
+        .settings-btn,
+        .notifications-btn {
+          font-size: @xl-font-size;
+        }
+        .nav-logo {
+          width: 100px;
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+        }
+        .hamburger {
+          margin: @spacing-xs;
+          width: 20px;
+          height: 17px;
+          cursor: pointer;
+
+          span {
+            width: 100%;
+            height: 2px;
+            background: rgb(var(--dt-secondary-3));
+          }
+
+          &.close {
+            justify-content: center;
+
+            span {
+              transform: rotate(45deg);
+              margin-top: -2px;
+            }
+            span:first-of-type {
+              transform: rotate(-45deg);
+              margin-top: unset;
+            }
+            span:last-of-type {
+              display: none;
+            }
+          }
+        }
+
+        button {
+          color: rgb(var(--dt-primary));
+
+          svg {
+            opacity: @subtle-opacity;
+            * {
+              fill: rgb(var(--dt-primary));
+            }
+          }
+        }
+
+        // Mobile Drawer
+        .drawer {
+          position: absolute;
+          width: 50%;
+          height: calc(100vh - (@spacing-xl * 2));
+          top: 0;
+          left: 100vw;
+          padding: @spacing-xl 0;
+          background: @primary-2;
+          color: @secondary;
+          transition: left @transition-duration;
+
+          &-top {
+            height: 70%;
+            button {
+              margin: @spacing-xl auto;
+            }
+            .nav-link {
+              margin: @spacing-sm auto;
+            }
+          }
+
+          &-bottom {
+            height: 30%;
+            .footer-link {
+              opacity: @subtle-opacity;
+              margin: @spacing-xs 0;
+            }
+            .ant-switch {
+              margin: @spacing-lg 0;
+            }
+          }
+        }
+      }
+
+      // Wallet button
+      .wallet-button {
+        text-transform: unset !important;
+        svg {
+          margin: -10px @spacing-xs -10px 0;
+        }
+      }
+    }
+
+    // Drawer Opened
+    &.drawer-open {
+      .mobile {
+        margin-left: -100vw;
+      }
+
+      & + .view {
+        margin-left: -50vw;
+      }
+    }
+  }
+
+  // Jet Connect Wallet Modal
+  .wallet-modal {
+    img {
+      margin-bottom: @spacing-sm;
+    }
+    .ant-typography {
+      white-space: nowrap;
+    }
+
+    .wallets {
+      position: relative;
+
+      .wallet {
+        width: 225px;
+        margin: @spacing-xs 0;
+        padding: @spacing-xs @spacing-base;
+        cursor: pointer;
+        border-radius: 50px;
+        transition: background-color @transition-duration ease-out, box-shadow @transition-duration-short ease;
+
+        img {
+          margin: 0 @spacing-base 0 @spacing-xs;
+        }
+        p {
+          font-size: @base-font-size;
+        }
+        span {
+          margin: @spacing-sm;
+        }
+        svg {
+          margin: 0 0 0 @spacing-lg;
+          opacity: 0;
+          transition: opacity @transition-duration ease;
+
+          * {
+            fill: @jet-green;
+          }
+        }
+        &.active,
+        &:active,
+        &:hover {
+          background: @primary-2;
+          box-shadow: @neu-shadow-inset-sm;
+
+          svg {
+            opacity: 1;
+          }
+        }
+        &:active {
+          box-shadow: @neu-shadow-inset-2;
+        }
+      }
+    }
+  }
+
+  // Settings Modal
+  .settings-modal {
+    .ant-modal-body {
+      max-height: 70vh !important;
+    }
+    .setting {
+      margin: @spacing-xs 0;
+      &-title {
+        font-size: @sm-font-size;
+        color: @secondary-5;
+        margin: @spacing-xs @spacing-sm;
+      }
+      .ant-select {
+        width: calc(100% - @spacing-base);
+      }
+    }
+  }
+
+  // Jet terms and conditions
+  .terms-privacy {
+    position: absolute;
+    bottom: @spacing-base;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+
+    a {
+      margin: @spacing-xs;
+    }
+    .ant-typography {
+      opacity: @subtle-opacity;
+      margin: @spacing-xs;
+      cursor: pointer;
+
+      &:hover {
+        opacity: 1;
+      }
+    }
+  }
+}
+
+// Larger screens
+@media screen and (min-width: 1700px) {
+  .jet-app {
+    // Antd Modal
+    .ant-modal-wrap {
+      .ant-modal-content {
+        max-width: 400px;
+      }
+    }
+    // Antd Notification
+    .ant-notification {
+      &-notice {
+        width: 300px;
+      }
+    }
+    // Antd Dropdown
+    .ant-dropdown {
+      &-menu {
+        &.min-width-menu {
+          min-width: 150px !important;
+        }
+      }
+    }
+    // Jet Navbar
+    .navbar-container {
+      nav {
+        .nav-logo {
+          width: 110px;
+        }
+      }
+    }
+    // Jet Connect Wallet Modal
+    .wallet-modal {
+      .wallets .wallet {
+        width: 300px;
+      }
+    }
+  }
+}
+// Mobile styling
+@media screen and (max-width: 800px) {
+  .jet-app {
+    // Tables
+    table {
+      td {
+        padding: @spacing-sm @spacing-base;
+      }
+    }
+    .ant-table {
+      padding-left: unset !important;
+      padding-right: unset !important;
+      padding-bottom: @spacing-xs !important;
+      border-left: @spacing-sm solid transparent;
+      border-right: @spacing-sm solid transparent;
+      border-bottom: @spacing-sm solid transparent;
+    }
+
+    // Views
+    .view {
+      padding-top: calc(@spacing-xxl * 2);
+      margin: 0;
+      &-row {
+        justify-content: center;
+      }
+    }
+
+    // Antd Notification / Message
+    .ant-notification,
+    .ant-message {
+      left: 50% !important;
+      right: unset;
+      transform: translateX(-50%);
+    }
+
+    // Jet Navbar
+    .navbar-container {
+      position: fixed;
+      nav {
+        width: calc(100% - (@spacing-sm * 2));
+        padding: 0 @spacing-sm;
+        &.desktop {
+          display: none;
+        }
+        &.mobile {
+          display: flex;
+        }
+
+        .left-container {
+          &-hamburger {
+            display: flex;
+          }
+        }
+
+        .right-container {
+          .nav-link,
+          button {
+            display: none;
+          }
+          &-hamburger {
+            display: flex;
+          }
+        }
+      }
+      &-drawer.open {
+        display: flex;
+      }
+    }
+
+    // Jet Connect Wallet Modal
+    .wallet-modal {
+      span {
+        font-size: @sm-font-size;
+      }
+
+      .ant-modal-content {
+        width: 100%;
+        box-shadow: unset;
+      }
+    }
+
+    // Settings Modal
+    .settings-modal {
+      .ant-modal-body {
+        max-height: 300px;
+        overflow-y: scroll;
+      }
+    }
+  }
+}

@@ -7,7 +7,7 @@ import {
   PoolTokenChange,
   MarginConfig,
   sleep
-} from "../../../libraries/ts/src/"
+} from "@jet-lab/margin"
 import { Connection, Keypair, LAMPORTS_PER_SOL, TransactionInstruction } from "@solana/web3.js"
 import { AnchorProvider, Wallet } from "@project-serum/anchor"
 import { assert } from "chai"
