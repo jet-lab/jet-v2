@@ -9,19 +9,18 @@ import { SolongWalletAdapter } from '@solana/wallet-adapter-solong';
 import { SolletWalletAdapter } from '@solana/wallet-adapter-sollet';
 import { BraveWalletAdapter } from '@solana/wallet-adapter-brave';
 import { E2EWalletAdapter } from '@jet-lab/e2e-react-adapter';
-import { WalletTokensWrapper } from './state/user/walletTokens';
-import { AccountsWrapper } from './state/user/accounts';
-import { PoolsWrapper } from './state/borrow/pools';
-import { PriceHistoryWrapper } from './state/trade/priceHistory';
-// import { MarketWrapper } from './state/trade/market';
-// import { RecentTradesWrapper } from './state/trade/recentTrades';
-import { Navbar } from './components/misc/Navbar/Navbar';
-// import { TradeView } from './views/TradeView';
 import { PoolsView } from './views/PoolsView';
 import { SwapsView } from './views/SwapsView';
 import { AccountsView } from './views/AccountsView';
+import { Navbar } from './components/misc/Navbar/Navbar';
 import { Modals } from './components/modals/Modals';
 import { TermsPrivacy } from './components/misc/TermsPrivacy';
+import { lazy, Suspense } from 'react';
+import { Navigate } from 'react-router-dom';
+
+const StateSyncer = lazy(() => import('./state/StateSyncer'));
+const FixedLendView = lazy(() => import('./views/FixedLendView'));
+const FixedBorrowView = lazy(() => import('./views/FixedBorrowView'));
 
 export function App(): JSX.Element {
   const wallets = [
@@ -34,31 +33,47 @@ export function App(): JSX.Element {
     new E2EWalletAdapter()
   ];
 
+  const isDev = window.location.href.includes('http://localhost:3000');
+
   return (
     <BrowserRouter>
       <RecoilRoot>
         <WalletProvider wallets={wallets} autoConnect localStorageKey="jetAppWallet">
-          <WalletTokensWrapper>
-            <AccountsWrapper>
-              <PoolsWrapper>
-                <PriceHistoryWrapper>
-                  {/* <RecentTradesWrapper>
-                    <MarketWrapper> */}
-                  <Navbar />
-                  <Routes>
-                    {/* <Route path="/" element={<TradeView />} /> */}
-                    <Route path="/" element={<PoolsView />} />
-                    <Route path="/swaps" element={<SwapsView />} />
-                    <Route path="/accounts" element={<AccountsView />} />
-                  </Routes>
-                  <Modals />
-                  <TermsPrivacy />
-                  {/* </MarketWrapper>
-                  </RecentTradesWrapper> */}
-                </PriceHistoryWrapper>
-              </PoolsWrapper>
-            </AccountsWrapper>
-          </WalletTokensWrapper>
+          <Navbar />
+          <Routes>
+            <Route path="/" element={<PoolsView />} />
+            <Route path="/swaps" element={<SwapsView />} />
+            <Route path="/accounts" element={<AccountsView />} />
+            <Route
+              path="/fixed-borrow"
+              element={
+                isDev ? (
+                  <Suspense fallback={<></>}>
+                    <FixedBorrowView />
+                  </Suspense>
+                ) : (
+                  <Navigate to="/" />
+                )
+              }
+            />
+            <Route
+              path="/fixed-lend"
+              element={
+                isDev ? (
+                  <Suspense fallback={<></>}>
+                    <FixedLendView />
+                  </Suspense>
+                ) : (
+                  <Navigate to="/" />
+                )
+              }
+            />
+          </Routes>
+          <Modals />
+          <TermsPrivacy />
+          <Suspense fallback={<></>}>
+            <StateSyncer />
+          </Suspense>
         </WalletProvider>
       </RecoilRoot>
     </BrowserRouter>

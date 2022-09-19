@@ -2,6 +2,7 @@ import { useRecoilValue } from 'recoil';
 import { Geobanned, Dictionary } from '../../state/settings/localization/localization';
 import { Button, Modal, Typography } from 'antd';
 
+// Modal to show user they are in a geobanned region
 export function GeobannedModal(): JSX.Element {
   const dictionary = useRecoilValue(Dictionary);
   const geobanned = useRecoilValue(Geobanned);
@@ -9,7 +10,7 @@ export function GeobannedModal(): JSX.Element {
 
   if (geobanned) {
     return (
-      <Modal visible className="geobanned-modal" footer={null} closable={false}>
+      <Modal visible className="geobanned-modal" maskClosable={false} footer={null} closable={false}>
         <img src="img/ui/region.gif" width="100%" alt="Geobanned gif" />
         <Paragraph type="secondary">
           <b>{dictionary.modals.uhOh}&nbsp;</b>

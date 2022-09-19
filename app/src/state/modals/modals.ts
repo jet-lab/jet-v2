@@ -1,5 +1,4 @@
 import { atom } from 'recoil';
-import { localStorageEffect } from '../effects/localStorageEffect';
 
 // Connect wallet modal
 export const WalletModal = atom({
@@ -12,6 +11,7 @@ export const NewAccountModal = atom({
   key: 'newAccountModal',
   default: false as boolean
 });
+
 // Edit account modal
 export const EditAccountModal = atom({
   key: 'editAccountModal',
@@ -28,21 +28,4 @@ export const SettingsModal = atom({
 export const NotificationsModal = atom({
   key: 'notificationsModal',
   default: false as boolean
-});
-
-// Pair search modal
-export const PairSearchModal = atom({
-  key: 'pairSearchModal',
-  default: false as boolean
-});
-
-// Product walkthrough
-export const WalkthroughModal = atom({
-  key: 'walkthroughModal',
-  default: false as boolean
-});
-export const WalkthroughCompleted = atom({
-  key: 'walkthroughCompleted',
-  default: false as boolean,
-  effects: [localStorageEffect('jetAppWalkthroughCompleted')]
 });

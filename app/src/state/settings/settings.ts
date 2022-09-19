@@ -126,8 +126,8 @@ export const USDConversionRates = atom({
     ({ setSelf }) => {
       axios
         .get('https://api.jetprotocol.io/v1/rates')
-        .then(({ data }) => {
-          const conversions = data.data;
+        .then(resp => {
+          const conversions = resp.data;
           if (conversions) {
             setSelf(conversions.rates);
           }
