@@ -49,6 +49,13 @@ mod jet_control {
         instructions::create_authority_handler(ctx)
     }
 
+    pub fn create_bond_market(
+        ctx: Context<CreateBondMarket>,
+        params: jet_bonds::control::instructions::InitializeBondManagerParams,
+    ) -> Result<()> {
+        instructions::create_bond_market_handler(ctx, params)
+    }
+
     /// Register an SPL token for use with the protocol, by creating
     /// a margin pool which can accept deposits for the token.
     ///

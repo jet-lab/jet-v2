@@ -16,6 +16,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 use anchor_lang::{InstructionData, ToAccountMetas};
+use jet_bonds::control::instructions::InitializeBondManagerParams;
 use jet_control::TokenMetadataParams;
 use jet_margin_pool::MarginPoolConfig;
 use solana_sdk::{instruction::Instruction, pubkey::Pubkey, system_program};
@@ -113,6 +114,42 @@ impl ControlIxBuilder {
             program_id: jet_control::ID,
             data: jet_control::instruction::RegisterAdapter {}.data(),
         }
+    }
+
+    /// Instruction to create a bond market.
+    ///
+    /// The market will be initialized with the given parameters, but orders will not be able to be placed until the
+    /// orderbook is initialized as well
+    pub fn create_bond_market(&self, params: InitializeBondManagerParams) -> Instruction {
+        // let pool_builder = BondsIxBuilder::new(*token);
+        // let accounts = jet_control::accounts::CreateMarginPool {
+        //     requester: self.payer,
+        //     authority: get_control_authority_address(),
+
+        //     margin_pool: pool_builder.address,
+        //     vault: pool_builder.vault,
+        //     deposit_note_mint: pool_builder.deposit_note_mint,
+        //     loan_note_mint: pool_builder.loan_note_mint,
+        //     token_mint: *token,
+        //     deposit_note_metadata: get_metadata_address(&pool_builder.deposit_note_mint),
+        //     loan_note_metadata: get_metadata_address(&pool_builder.loan_note_mint),
+        //     token_metadata: get_metadata_address(&pool_builder.token_mint),
+        //     fee_destination: get_margin_pool_fee_destination_address(&pool_builder.address),
+
+        //     margin_pool_program: jet_margin_pool::ID,
+        //     metadata_program: jet_metadata::ID,
+        //     token_program: anchor_spl::token::ID,
+        //     system_program: system_program::ID,
+        //     rent: solana_sdk::sysvar::rent::ID,
+        // }
+        // .to_account_metas(None);
+
+        // Instruction {
+        //     accounts,
+        //     program_id: jet_control::ID,
+        //     data: jet_control::instruction::CreateMarginPool {}.data(),
+        // }
+        todo!()
     }
 
     /// Instruction to register a margin pool.

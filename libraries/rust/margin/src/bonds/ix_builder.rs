@@ -1,5 +1,6 @@
 use std::{collections::HashMap, sync::Arc};
 
+use crate::ix_builder::{get_control_authority_address, get_metadata_address};
 use anchor_lang::{InstructionData, ToAccountMetas};
 use jet_bonds::{
     control::instructions::{InitializeBondManagerParams, InitializeOrderbookParams},
@@ -7,7 +8,6 @@ use jet_bonds::{
     orderbook::state::{event_queue_len, orderbook_slab_len, OrderParams},
     tickets::instructions::StakeBondTicketsParams,
 };
-use jet_margin_sdk::ix_builder::{get_control_authority_address, get_metadata_address};
 use jet_simulation::solana_rpc_api::SolanaRpcClient;
 use rand::rngs::OsRng;
 use solana_sdk::{
@@ -16,7 +16,7 @@ use solana_sdk::{
 };
 use spl_associated_token_account::get_associated_token_address;
 
-use crate::builder::event_builder::make_seed;
+use super::event_builder::make_seed;
 
 use super::error::{client_err, BondsIxError, Result};
 

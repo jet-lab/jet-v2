@@ -208,10 +208,6 @@ pub struct CrankMetadata {
     pub crank: Pubkey,
 }
 
-impl CrankMetadata {
-    pub const SEED: &[u8] = b"crank_metadata";
-}
-
 /// An account representing the Control program's authority
 ///
 /// This can be used when specifying the account parameters for an

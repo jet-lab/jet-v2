@@ -52,29 +52,39 @@ pub const EVENT_QUEUE_CAPACITY: usize = 1_000;
 pub const STAKE_DURATION: i64 = 3; // in seconds
 pub const MIN_ORDER_SIZE: u64 = 10;
 
-mod keys {
-    json_keypairs! {
-        payer = "[222,147,115,219,200,207,183,34,103,192,44,23,43,203,127,70,67,170,118,146,40,128,166,176,91,184,240,89,157,92,138,41,12,48,55,127,230,6,125,75,21,171,39,213,6,155,83,215,2,250,164,163,97,165,211,0,204,244,39,28,66,112,134,180]";
-        authority = "[39,147,77,63,116,164,246,7,32,209,175,208,128,14,177,244,45,71,65,156,25,123,37,149,13,154,122,109,65,99,210,163,119,197,146,64,183,117,85,212,178,252,172,16,127,0,85,40,51,163,146,80,31,186,233,84,244,109,213,213,255,149,121,207]";
-        // test_mint = "[250,147,202,203,141,69,148,144,94,77,227,139,131,238,119,177,155,59,20,90,232,125,84,36,38,159,178,180,109,242,88,156,151,27,163,56,120,190,145,77,103,139,67,48,60,172,93,127,35,86,111,179,36,15,254,100,98,127,5,36,144,37,67,23]";
-        // event_queue = "[42,34,186,11,198,208,249,238,14,243,74,72,179,215,135,80,229,102,180,177,101,238,158,154,53,132,165,200,59,29,76,35,194,139,110,207,15,55,88,75,12,9,247,35,74,68,152,56,166,95,89,33,229,86,189,111,82,60,98,107,37,70,81,127]";
-        // crank = "[78,122,206,47,0,102,125,42,154,126,250,137,110,198,174,2,137,75,111,54,34,93,221,115,77,222,133,247,129,233,156,0,50,26,219,183,209,148,208,168,131,217,2,159,31,202,77,155,22,129,62,12,119,47,130,91,28,192,91,204,32,21,101,165]";
-    }
+lazy_static::lazy_static! {
+    static ref PAYER: Keypair = map_keypair_file(
+        shellexpand::env("$PWD/tests/keypairs/test-mint.json")
+            .unwrap()
+            .to_string()
+    )
+    .unwrap();
+    static ref MINT: Keypair = map_keypair_file(
+        shellexpand::env("$PWD/tests/keypairs/test-mint.json")
+            .unwrap()
+            .to_string()
+    )
+    .unwrap();
 
-    macro_rules! json_keypairs {
-        ($($name:ident = $json:literal;)+) => {
-            $(pub fn $name() -> solana_sdk::signature::Keypair {
-                key_strings::get(key_strings::$name)
-            })+
-            mod key_strings {
-                $(#[allow(non_upper_case_globals)] pub const $name: &str = $json;)+
-                pub fn get(s: &str) -> solana_sdk::signature::Keypair {
-                    solana_sdk::signature::read_keypair(&mut s.as_bytes().clone()).unwrap()
-                }
-            }
-        };
-    }
-    use json_keypairs;
+    static ref QUEUE: Keypair = map_keypair_file(shellexpand::env("$PWD/tests/keypairs/event_queue.json")
+        .unwrap()
+        .to_string()).unwrap();
+    static ref BIDS: Keypair = map_keypair_file(shellexpand::env("$PWD/tests/keypairs/bids.json")
+        .unwrap()
+        .to_string()).unwrap();
+    static ref ASKS: Keypair = map_keypair_file(shellexpand::env("$PWD/tests/keypairs/asks.json")
+        .unwrap()
+        .to_string()).unwrap();
+
+}
+
+fn map_keypair_file(path: String) -> Result<Keypair> {
+    solana_clap_utils::keypair::keypair_from_path(&Default::default(), &path, "", false)
+        .map_err(|_| anyhow::Error::msg("failed to read keypair"))
+}
+
+fn clone_kp(kp: &Keypair) -> Keypair {
+    Keypair::from_base58_string(&kp.to_base58_string())
 }
 
 #[derive(Debug, Default, Clone)]
@@ -136,18 +146,16 @@ impl TestManager {
 
     pub async fn new(client: Arc<dyn SolanaRpcClient>) -> Result<Self> {
         let payer = client.payer();
-        let program_authority = keys::authority();
 
         let test_token_mint = {
-            let mint_keypair = Keypair::new();
             let recent_blockhash = client.get_latest_blockhash().await?;
             let rent = client
                 .get_minimum_balance_for_rent_exemption(Mint::LEN)
                 .await?;
             let transaction =
-                initialize_test_mint_transaction(&mint_keypair, payer, 6, rent, recent_blockhash);
+                initialize_test_mint_transaction(&MINT, payer, 6, rent, recent_blockhash);
             client.send_and_confirm_transaction(&transaction).await?;
-            mint_keypair
+            &MINT
         };
 
         let ix_builder =
@@ -160,19 +168,17 @@ impl TestManager {
             keys: Keys::new(),
         };
         manager.insert_kp(
-            "payer",
-            Keypair::from_base58_string(&payer.to_base58_string()),
+            "token_mint",
+            Keypair::from_base58_string(&MINT.to_base58_string()),
         );
-        manager.insert_kp("authority", program_authority);
-        manager.insert_kp("token_mint", test_token_mint);
 
         Ok(manager)
     }
 
     pub async fn with_bonds(mut self) -> Result<Self> {
-        let eq_kp = Keypair::new();
-        let bids_kp = Keypair::new();
-        let asks_kp = Keypair::new();
+        let eq_kp = &QUEUE;
+        let bids_kp = &BIDS;
+        let asks_kp = &ASKS;
 
         let init_eq = {
             let rent = self
@@ -222,9 +228,9 @@ impl TestManager {
         );
 
         let ixns = vec![init_eq, init_bids, init_asks];
-        self.insert_kp("eq", eq_kp);
-        self.insert_kp("bids", bids_kp);
-        self.insert_kp("asks", asks_kp);
+        self.insert_kp("eq", clone_kp(eq_kp));
+        self.insert_kp("bids", clone_kp(bids_kp));
+        self.insert_kp("asks", clone_kp(asks_kp));
 
         self.sign_send_transaction(&ixns, None).await?;
 
@@ -247,7 +253,7 @@ impl TestManager {
         let crank = Keypair::new();
 
         self.ix_builder = self.ix_builder.with_crank(&crank.pubkey());
-        let auth_crank = ControlIxBuilder::new(*self.keys.unwrap("payer")?)
+        let auth_crank = ControlIxBuilder::new(self.client.payer().pubkey())
             .register_orderbook_crank(&crank.pubkey());
         self.insert_kp("crank", crank);
 
@@ -275,7 +281,9 @@ impl TestManager {
         if let Some(extra_signers) = add_signers {
             keypairs.extend_from_slice(extra_signers);
         }
-        let msg = Message::new(instructions, Some(self.keys.unwrap("payer")?));
+        keypairs.push(&self.client.payer());
+
+        let msg = Message::new(instructions, Some(&self.client.payer().pubkey()));
         for signer in msg.signer_keys() {
             for kp in keypairs.clone() {
                 if &kp.pubkey() == signer {
@@ -567,12 +575,12 @@ impl<P: Proxy> BondsUser<P> {
 impl<P: Proxy> BondsUser<P> {
     pub async fn fund(&self) -> Result<()> {
         let create_token = create_associated_token_account(
-            self.manager.keys.unwrap("payer")?,
+            &self.manager.client.payer().pubkey(),
             &self.proxy.pubkey(),
             self.manager.keys.unwrap("token_mint")?,
         );
         let create_ticket = create_associated_token_account(
-            self.manager.keys.unwrap("payer")?,
+            &self.manager.client.payer().pubkey(),
             &self.proxy.pubkey(),
             &self.manager.ix_builder.ticket_mint(),
         );

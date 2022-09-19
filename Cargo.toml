@@ -1,7 +1,6 @@
 [workspace]
 members = [
     "programs/*",
-    "tests/bonds-test-framework",
     "tests/hosted",
     "tests/mock-adapter",
     "libraries/rust/*",

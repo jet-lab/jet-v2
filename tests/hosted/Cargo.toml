@@ -22,6 +22,10 @@ futures-retry = "0.6"
 parking_lot = "0.12"
 anyhow = { version = "1", features = ["backtrace"] }
 rand = "0.7"
+lazy_static = "1.4.0"
+shellexpand = "2.1.0"
+solana-clap-utils = "1.10"
+
 
 tokio = { version = "1", features = ["macros", "time"] }
 serial_test = "0.6.0"

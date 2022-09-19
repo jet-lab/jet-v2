@@ -24,4 +24,5 @@ anchor-lang = { git = "https://github.com/jet-lab/anchor", branch = "master" }
 anchor-spl = { git = "https://github.com/jet-lab/anchor", branch = "master" }
 
 jet-metadata = { path = "../metadata", features = ["cpi"] }
+jet-bonds = { path = "../bonds", features = ["cpi"] }
 jet-margin-pool = { path = "../margin-pool", features = ["cpi"] }
