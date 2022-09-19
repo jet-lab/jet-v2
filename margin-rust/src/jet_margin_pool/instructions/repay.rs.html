@@ -131,6 +131,7 @@
 <span id="125">125</span>
 <span id="126">126</span>
 <span id="127">127</span>
+<span id="128">128</span>
 </pre><pre class="rust"><code><span class="comment">// SPDX-License-Identifier: AGPL-3.0-or-later</span>
 <span class="comment">//</span>
 <span class="comment">// Copyright (C) 2022 JET PROTOCOL HOLDINGS, LLC.</span>
@@ -250,6 +251,7 @@
 
     <span class="macro">emit!</span>(<span class="ident">events::Repay</span> {
         <span class="ident">margin_pool</span>: <span class="ident">pool</span>.<span class="ident">key</span>(),
+        <span class="ident">user</span>: <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">repayment_account_authority</span>.<span class="ident">key</span>(),
         <span class="ident">loan_account</span>: <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">loan_account</span>.<span class="ident">key</span>(),
         <span class="ident">repayment_token_account</span>: <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">repayment_token_account</span>.<span class="ident">key</span>(),
         <span class="ident">repaid_tokens</span>: <span class="ident">repay_amount</span>.<span class="ident">tokens</span>,

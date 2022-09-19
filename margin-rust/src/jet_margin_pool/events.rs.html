@@ -117,6 +117,7 @@
 <span id="111">111</span>
 <span id="112">112</span>
 <span id="113">113</span>
+<span id="114">114</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="kw">crate</span>::{<span class="ident">MarginPool</span>, <span class="ident">MarginPoolConfig</span>};
 <span class="kw">use</span> <span class="ident">anchor_lang::prelude</span>::<span class="kw-2">*</span>;
 
@@ -190,6 +191,7 @@
 <span class="attribute">#[<span class="ident">event</span>]</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Repay</span> {
     <span class="kw">pub</span> <span class="ident">margin_pool</span>: <span class="ident">Pubkey</span>,
+    <span class="kw">pub</span> <span class="ident">user</span>: <span class="ident">Pubkey</span>,
     <span class="kw">pub</span> <span class="ident">loan_account</span>: <span class="ident">Pubkey</span>,
     <span class="kw">pub</span> <span class="ident">repayment_token_account</span>: <span class="ident">Pubkey</span>,
     <span class="kw">pub</span> <span class="ident">repaid_tokens</span>: <span class="ident">u64</span>,
