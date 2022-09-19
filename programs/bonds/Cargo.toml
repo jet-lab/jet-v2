@@ -17,7 +17,7 @@ default = []
 devnet = []
 cli = ["no-entrypoint", "serde"]
 mock-margin = []
-testing = ["jet-metadata/testing", "jet-margin/testing"]
+testing = ["jet-margin/testing"]
 
 [dependencies]
 arrayref = "0.3.6"
@@ -36,5 +36,4 @@ anchor-spl =  { git = "https://github.com/jet-lab/anchor", branch = "master" }
 
 jet-proto-math = { git = "https://github.com/jet-lab/program-libraries", branch = "main", features = ["traits"] }
 
-jet-metadata = { path = "../metadata", features = ["no-entrypoint"] }
 jet-margin = { path = "../margin", features = ["no-entrypoint"] }

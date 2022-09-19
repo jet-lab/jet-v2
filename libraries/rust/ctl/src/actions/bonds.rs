@@ -1,9 +1,6 @@
 use anyhow::Result;
 use clap::Parser;
-use jet_margin_sdk::{
-    bonds::{BondsIxBuilder, InitializeBondManagerParams, InitializeOrderbookParams},
-    ix_builder::ControlIxBuilder,
-};
+use jet_margin_sdk::bonds::BondsIxBuilder;
 use serde::{Deserialize, Serialize};
 use solana_sdk::pubkey::Pubkey;
 
@@ -64,8 +61,9 @@ pub async fn process_create_bond_market(
     client: &Client,
     params: BondMarketParameters,
 ) -> Result<Plan> {
+    let payer = resolve_payer(client)?;
     let seed = map_seed(params.seed);
-    let bonds = BondsIxBuilder::new_from_seed(&params.token_mint, seed);
+    let bonds = BondsIxBuilder::new_from_seed(&params.token_mint, seed, payer);
 
     if client.account_exists(&bonds.manager()).await? {
         println!("the market {} already exists", bonds.manager());
@@ -75,26 +73,22 @@ pub async fn process_create_bond_market(
         println!("the token {} does not exist", params.token_mint);
         return Ok(Plan::default());
     }
+    let init_manager = bonds.initialize_manager(
+        payer,
+        MANAGER_VERSION,
+        seed,
+        params.duration,
+        Pubkey::default(),
+        Pubkey::default(),
+    )?;
+    let init_orderbook = bonds.initialize_orderbook(
+        payer,
+        params.event_queue,
+        params.bids,
+        params.asks,
+        params.min_order_size,
+    )?;
 
-    let ctl = ControlIxBuilder::new(resolve_payer(client)?);
-
-    let init_manager = ctl.create_bond_market(
-        &params.token_mint,
-        InitializeBondManagerParams {
-            version_tag: MANAGER_VERSION,
-            seed,
-            duration: params.duration,
-        },
-    );
-    let init_orderbook = ctl.initialize_bond_orderbook(
-        &bonds.manager(),
-        &params.event_queue,
-        &params.bids,
-        &params.asks,
-        InitializeOrderbookParams {
-            min_base_order_size: params.min_order_size,
-        },
-    );
     Ok(client
         .plan()?
         .instructions(

@@ -2085,7 +2085,6 @@ dependencies = [
  "borsh 0.9.3",
  "bytemuck",
  "jet-margin",
- "jet-metadata",
  "jet-proto-math 1.1.0 (git+https://github.com/jet-lab/program-libraries?branch=main)",
  "num-derive",
  "num-traits",

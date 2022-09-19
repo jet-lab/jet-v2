@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 use jet_metadata::{
-    CrankMetadata, LiquidatorMetadata, MarginAdapterMetadata, PositionTokenMetadata, TokenMetadata,
+    LiquidatorMetadata, MarginAdapterMetadata, PositionTokenMetadata, TokenMetadata,
 };
 
 #[event]
@@ -23,14 +23,6 @@ pub struct AdapterRegistered {
     pub requester: Pubkey,
     pub authority: Pubkey,
     pub adapter: MarginAdapterMetadata,
-    pub metadata_account: Pubkey,
-}
-
-#[event]
-pub struct CrankRegistered {
-    pub requester: Pubkey,
-    pub authority: Pubkey,
-    pub crank: CrankMetadata,
     pub metadata_account: Pubkey,
 }
 

@@ -16,17 +16,14 @@ use solana_sdk::{native_token::LAMPORTS_PER_SOL, signer::Signer};
 #[tokio::test(flavor = "multi_thread")]
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn full_direct() -> Result<(), anyhow::Error> {
-    let ctx = test_context().await;
-    let manager = BondsTestManager::full(ctx.rpc.clone()).await?;
+    let manager = BondsTestManager::full(test_context().await.rpc.clone()).await?;
     _full_workflow::<NoProxy>(Arc::new(manager)).await
 }
 
 #[tokio::test(flavor = "multi_thread")]
 #[serial_test::serial]
 async fn full_through_margin() -> Result<()> {
-    let ctx = test_context().await;
-    let manager = BondsTestManager::full(ctx.rpc.clone()).await?;
-
+    let manager = BondsTestManager::full(test_context().await.rpc.clone()).await?;
     _full_workflow::<MarginIxBuilder>(Arc::new(manager)).await
 }
 

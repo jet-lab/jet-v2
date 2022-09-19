@@ -29,7 +29,7 @@ pub struct RedeemTicket<'info> {
     /// The BondManager responsible for the asset
     #[account(
         has_one = underlying_token_vault @ BondsError::WrongVault,
-        constraint = !bond_manager.load()?.tickets_paused,
+        constraint = !bond_manager.load()?.tickets_paused @ BondsError::TicketsPaused,
     )]
     pub bond_manager: AccountLoader<'info, BondManager>,
 

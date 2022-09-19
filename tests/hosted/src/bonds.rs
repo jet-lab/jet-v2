@@ -12,7 +12,7 @@ use anchor_spl::token::TokenAccount;
 use anyhow::Result;
 use async_trait::async_trait;
 use jet_bonds::{
-    control::{instructions::InitializeBondManagerParams, state::BondManager},
+    control::state::BondManager,
     orderbook::state::{event_queue_len, orderbook_slab_len, CallbackInfo, OrderParams},
     tickets::state::ClaimTicket,
 };
@@ -54,36 +54,32 @@ pub const EVENT_QUEUE_CAPACITY: usize = 1_000;
 pub const STAKE_DURATION: i64 = 3; // in seconds
 pub const MIN_ORDER_SIZE: u64 = 10;
 
-lazy_static::lazy_static! {
-    static ref PAYER: Keypair = map_keypair_file(
-        shellexpand::env("$PWD/tests/keypairs/test-mint.json")
-            .unwrap()
-            .to_string()
-    )
-    .unwrap();
-    /// Testing mint keypair
-    static ref MINT: Keypair = map_keypair_file(
-        shellexpand::env("$PWD/tests/keypairs/test-mint.json")
-            .unwrap()
-            .to_string()
-    )
-    .unwrap();
+mod keys {
+    json_keypairs! {
+        // payer = "[222,147,115,219,200,207,183,34,103,192,44,23,43,203,127,70,67,170,118,146,40,128,166,176,91,184,240,89,157,92,138,41,12,48,55,127,230,6,125,75,21,171,39,213,6,155,83,215,2,250,164,163,97,165,211,0,204,244,39,28,66,112,134,180]";
+        // authority = "[39,147,77,63,116,164,246,7,32,209,175,208,128,14,177,244,45,71,65,156,25,123,37,149,13,154,122,109,65,99,210,163,119,197,146,64,183,117,85,212,178,252,172,16,127,0,85,40,51,163,146,80,31,186,233,84,244,109,213,213,255,149,121,207]";
+        // crank = "[78,122,206,47,0,102,125,42,154,126,250,137,110,198,174,2,137,75,111,54,34,93,221,115,77,222,133,247,129,233,156,0,50,26,219,183,209,148,208,168,131,217,2,159,31,202,77,155,22,129,62,12,119,47,130,91,28,192,91,204,32,21,101,165]";
+        mint = "[250,147,202,203,141,69,148,144,94,77,227,139,131,238,119,177,155,59,20,90,232,125,84,36,38,159,178,180,109,242,88,156,151,27,163,56,120,190,145,77,103,139,67,48,60,172,93,127,35,86,111,179,36,15,254,100,98,127,5,36,144,37,67,23]";
+        event_queue = "[17,178,10,115,120,189,199,226,30,15,225,157,153,108,142,238,82,232,15,41,9,119,235,92,230,149,252,151,251,85,131,100,163,103,168,51,55,212,247,70,167,179,79,144,86,148,191,231,11,240,130,202,3,103,140,88,228,106,241,163,98,186,133,74]";
+        asks = "[180,100,93,218,69,198,217,206,12,228,118,151,236,0,24,149,56,130,98,118,72,244,162,132,48,22,138,163,214,53,15,39,5,180,8,81,202,31,5,125,215,251,232,36,95,225,56,25,188,133,170,50,162,43,19,48,23,11,192,101,37,127,232,105]";
+        bids = "[48,221,229,8,201,54,217,152,135,227,0,97,39,63,142,189,225,213,14,30,183,186,83,136,142,103,192,238,123,130,32,76,16,69,198,90,48,147,197,19,238,252,56,224,52,170,40,67,205,131,196,191,96,235,151,183,206,42,84,110,70,66,66,97]";
+    }
 
-    static ref QUEUE: Keypair = map_keypair_file(shellexpand::env("$PWD/tests/keypairs/event_queue.json")
-        .unwrap()
-        .to_string()).unwrap();
-    static ref BIDS: Keypair = map_keypair_file(shellexpand::env("$PWD/tests/keypairs/bids.json")
-        .unwrap()
-        .to_string()).unwrap();
-    static ref ASKS: Keypair = map_keypair_file(shellexpand::env("$PWD/tests/keypairs/asks.json")
-        .unwrap()
-        .to_string()).unwrap();
-
-}
-
-fn map_keypair_file(path: String) -> Result<Keypair> {
-    solana_clap_utils::keypair::keypair_from_path(&Default::default(), &path, "", false)
-        .map_err(|_| anyhow::Error::msg("failed to read keypair"))
+    macro_rules! json_keypairs {
+        ($($name:ident = $json:literal;)+) => {
+            $(pub fn $name() -> solana_sdk::signature::Keypair {
+                key_strings::get(key_strings::$name)
+            })+
+            mod key_strings {
+                $(#[allow(non_upper_case_globals)] pub const $name: &str = $json;)+
+                pub fn get(_s: &str) -> solana_sdk::signature::Keypair {
+                    solana_sdk::signature::read_keypair(&mut s.as_bytes().clone()).unwrap()
+                    solana_sdk::signature::Keypair::new()
+                }
+            }
+        };
+    }
+    use json_keypairs;
 }
 
 fn clone_kp(kp: &Keypair) -> Keypair {
@@ -149,20 +145,16 @@ impl TestManager {
 
     pub async fn new(client: Arc<dyn SolanaRpcClient>) -> Result<Self> {
         let payer = client.payer();
-
-        let test_token_mint = {
-            let recent_blockhash = client.get_latest_blockhash().await?;
-            let rent = client
-                .get_minimum_balance_for_rent_exemption(Mint::LEN)
-                .await?;
-            let transaction =
-                initialize_test_mint_transaction(&MINT, payer, 6, rent, recent_blockhash);
-            client.send_and_confirm_transaction(&transaction).await?;
-            &MINT
-        };
+        let mint = keys::mint();
+        let recent_blockhash = client.get_latest_blockhash().await?;
+        let rent = client
+            .get_minimum_balance_for_rent_exemption(Mint::LEN)
+            .await?;
+        let transaction = initialize_test_mint_transaction(&mint, payer, 6, rent, recent_blockhash);
+        client.send_and_confirm_transaction(&transaction).await?;
 
         let ix_builder =
-            BondsIxBuilder::new_from_seed(&test_token_mint.pubkey(), BOND_MANAGER_SEED)
+            BondsIxBuilder::new_from_seed(&mint.pubkey(), BOND_MANAGER_SEED, payer.pubkey())
                 .with_payer(&payer.pubkey());
         let mut manager = Self {
             client: client.clone(),
@@ -172,16 +164,16 @@ impl TestManager {
         };
         manager.insert_kp(
             "token_mint",
-            Keypair::from_base58_string(&MINT.to_base58_string()),
+            Keypair::from_base58_string(&mint.to_base58_string()),
         );
 
         Ok(manager)
     }
 
     pub async fn with_bonds(mut self) -> Result<Self> {
-        let eq_kp = &QUEUE;
-        let bids_kp = &BIDS;
-        let asks_kp = &ASKS;
+        let eq_kp = &keys::event_queue();
+        let bids_kp = &keys::bids();
+        let asks_kp = &keys::asks();
 
         let init_eq = {
             let rent = self
@@ -237,24 +229,22 @@ impl TestManager {
 
         self.sign_send_transaction(&ixns, None).await?;
 
-        let ctl = ControlIxBuilder::new(self.client.payer().pubkey());
-        let init_manager = ctl.create_bond_market(
-            &MINT.pubkey(),
-            InitializeBondManagerParams {
-                version_tag: BOND_MANAGER_TAG,
-                seed: BOND_MANAGER_SEED,
-                duration: STAKE_DURATION,
-            },
-        );
-        let init_orderbook = ctl.initialize_bond_orderbook(
-            &self.ix_builder.manager(),
-            &QUEUE.pubkey(),
-            &BIDS.pubkey(),
-            &ASKS.pubkey(),
-            jet_bonds::control::instructions::InitializeOrderbookParams {
-                min_base_order_size: MIN_ORDER_SIZE,
-            },
-        );
+        let init_manager = self.ix_builder.initialize_manager(
+            self.client.payer().pubkey(),
+            BOND_MANAGER_TAG,
+            BOND_MANAGER_SEED,
+            STAKE_DURATION,
+            Pubkey::default(),
+            Pubkey::default(),
+        )?;
+        let init_orderbook = self.ix_builder.initialize_orderbook(
+            self.client.payer().pubkey(),
+            eq_kp.pubkey(),
+            bids_kp.pubkey(),
+            asks_kp.pubkey(),
+            MIN_ORDER_SIZE,
+        )?;
+
         self.sign_send_transaction(&[init_manager, init_orderbook], None)
             .await?;
 
@@ -265,8 +255,9 @@ impl TestManager {
         let crank = Keypair::new();
 
         self.ix_builder = self.ix_builder.with_crank(&crank.pubkey());
-        let auth_crank = ControlIxBuilder::new(self.client.payer().pubkey())
-            .register_orderbook_crank(&crank.pubkey());
+        let auth_crank = self
+            .ix_builder
+            .authorize_crank(self.client.payer().pubkey(), crank.pubkey())?;
         self.insert_kp("crank", crank);
 
         self.sign_send_transaction(&[auth_crank], None).await?;
@@ -732,15 +723,16 @@ pub struct OrderAmount {
 }
 
 impl OrderAmount {
-    pub fn from_amount_rate(amount: u64, rate: u64) -> Self {
+    /// rate is in basis points
+    pub fn from_amount_rate(amount: u64, rate_bps: u64) -> Self {
         let quote = amount;
-        let base = quote + ((quote * rate) / 10_000);
+        let base = quote + ((quote * rate_bps) / 10_000);
         let price = Fp32::from(quote) / base;
 
         OrderAmount {
             base,
             quote,
-            price: price.as_u64().unwrap(),
+            price: price.downcast_u64().unwrap(),
         }
     }
 }

@@ -50,6 +50,8 @@ pub enum BondsError {
     PriceMissing,
     #[msg("claim ticket is not from this manager")]
     TicketNotFromManager,
+    #[msg("tickets are paused")]
+    TicketsPaused,
     #[msg("this signer is not authorized to place a permissioned order")]
     UnauthorizedCaller,
     #[msg("this user does not own the user account")]
@@ -62,6 +64,10 @@ pub enum BondsError {
     WrongAdapter,
     #[msg("asks account does not belong to this market")]
     WrongAsks,
+    #[msg("the market is configured for a different airspace")]
+    WrongAirspace,
+    #[msg("the signer is not authorized to perform this action in the current airspace")]
+    WrongAirspaceAuthorization,
     #[msg("bids account does not belong to this market")]
     WrongBids,
     #[msg("adapter does not belong to given bond manager")]

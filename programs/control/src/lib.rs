@@ -49,13 +49,6 @@ mod jet_control {
         instructions::create_authority_handler(ctx)
     }
 
-    pub fn create_bond_market(
-        ctx: Context<CreateBondMarket>,
-        params: jet_bonds::control::instructions::InitializeBondManagerParams,
-    ) -> Result<()> {
-        instructions::create_bond_market_handler(ctx, params)
-    }
-
     /// Register an SPL token for use with the protocol, by creating
     /// a margin pool which can accept deposits for the token.
     ///
@@ -64,22 +57,10 @@ mod jet_control {
         instructions::create_margin_pool_handler(ctx)
     }
 
-    /// Initialize an orderbook for a bond market
-    pub fn initialize_bond_orderbook(
-        ctx: Context<InitializeBondOrderbook>,
-        params: jet_bonds::control::instructions::InitializeOrderbookParams,
-    ) -> Result<()> {
-        instructions::initialize_bond_orderbook_handler(ctx, params)
-    }
     /// Register a program to be allowed for use as margin adapter in the
     /// protocol.
     pub fn register_adapter(ctx: Context<RegisterAdapter>) -> Result<()> {
         instructions::register_adapter_handler(ctx)
-    }
-
-    /// Register a crank allowed to consume the orderbook event queue
-    pub fn register_orderbook_crank(ctx: Context<RegisterOrderbookCrank>) -> Result<()> {
-        instructions::register_orderbook_crank_handler(ctx)
     }
 
     /// Configure details about a margin pool

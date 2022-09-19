@@ -2,10 +2,9 @@ use std::convert::TryInto;
 
 use anchor_lang::prelude::*;
 use anchor_spl::token::Token;
-use jet_metadata::CrankMetadata;
 
 use crate::{
-    control::state::BondManager,
+    control::state::{BondManager, CrankAuthorization},
     margin::state::{MarginUser, Obligation},
     orderbook::state::EventQueue,
     serialization::{AnchorAccount, Mut},
@@ -40,8 +39,11 @@ pub struct ConsumeEvents<'info> {
     #[account(mut)]
     pub event_queue: AccountInfo<'info>,
 
-    #[account(has_one = crank @ BondsError::WrongCrankAuthority)]
-    pub crank_metadata: Account<'info, CrankMetadata>,
+    #[account(
+        has_one = crank @ BondsError::WrongCrankAuthority,
+        constraint = crank_authorization.airspace == bond_manager.load()?.airspace @ BondsError::WrongAirspaceAuthorization
+    )]
+    pub crank_authorization: Account<'info, CrankAuthorization>,
     pub crank: Signer<'info>,
 
     /// The account paying rent for PDA initialization

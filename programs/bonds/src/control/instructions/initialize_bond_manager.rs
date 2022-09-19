@@ -1,6 +1,5 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{Mint, Token, TokenAccount};
-use jet_metadata::ControlAuthority;
 
 use crate::{
     control::{events::BondManagerInitialized, state::BondManager},
@@ -99,9 +98,12 @@ pub struct InitializeBondManager<'info> {
     )]
     pub collateral: Account<'info, Mint>,
 
-    /// The authority to create markets, which must sign
-    #[account(signer)]
-    pub program_authority: Box<Account<'info, ControlAuthority>>,
+    /// The authority that must sign to make this change
+    pub authority: Signer<'info>,
+
+    /// The airspace being modified
+    // #[account(has_one = authority @ BondsError::WrongAirspaceAuthorization)] fixme airspace
+    pub airspace: AccountInfo<'info>,
 
     /// The oracle for the underlying asset price
     /// CHECK: determined by caller
@@ -132,7 +134,7 @@ pub fn handler(
     let manager = &mut ctx.accounts.bond_manager.load_init()?;
 
     manager.version_tag = params.version_tag;
-    manager.program_authority = ctx.accounts.program_authority.key();
+    manager.airspace = ctx.accounts.airspace.key();
     manager.underlying_token_mint = ctx.accounts.underlying_token_mint.key();
     manager.underlying_token_vault = ctx.accounts.underlying_token_vault.key();
     manager.bond_ticket_mint = ctx.accounts.bond_ticket_mint.key();

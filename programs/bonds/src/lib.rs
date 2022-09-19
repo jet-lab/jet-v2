@@ -142,6 +142,16 @@ pub mod jet_bonds {
     // =============================================
     //
 
+    /// authorize an address to run orderbook consume_event instructions
+    pub fn authorize_crank(ctx: Context<AuthorizeCrank>) -> Result<()> {
+        jet_bonds::instructions::authorize_crank::handler(ctx)
+    }
+
+    /// unauthorize an address to run orderbook consume_event instructions
+    pub fn revoke_crank(ctx: Context<RevokeCrank>) -> Result<()> {
+        jet_bonds::instructions::revoke_crank::handler(ctx)
+    }
+
     /// Initializes a BondManager for a bond ticket market
     pub fn initialize_bond_manager(
         ctx: Context<InitializeBondManager>,
@@ -332,6 +342,9 @@ pub mod seeds {
 
     #[constant]
     pub const CLAIM_TICKET: &[u8] = b"claim_ticket";
+
+    #[constant]
+    pub const CRANK_AUTHORIZATION: &[u8] = b"crank_authorization";
 
     #[constant]
     pub const DEPOSIT_NOTES: &[u8] = b"deposit_notes";

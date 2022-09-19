@@ -1,6 +1,5 @@
 use std::{collections::HashMap, sync::Arc};
 
-use crate::ix_builder::{get_control_authority_address, get_metadata_address};
 use anchor_lang::{InstructionData, ToAccountMetas};
 use jet_bonds::{margin::state::Obligation, tickets::instructions::StakeBondTicketsParams};
 use jet_simulation::solana_rpc_api::SolanaRpcClient;
@@ -22,7 +21,10 @@ use super::error::{client_err, BondsIxError, Result};
 
 #[derive(Clone)]
 pub struct BondsIxBuilder {
+    airspace: Pubkey,
+    authority: Pubkey,
     manager: Pubkey,
+    underlying_mint: Pubkey,
     bond_ticket_mint: Pubkey,
     underlying_token_vault: Pubkey,
     claims: Pubkey,
@@ -60,7 +62,7 @@ impl UnwrapKey for Option<&Pubkey> {
 }
 
 impl BondsIxBuilder {
-    pub fn new(manager: Pubkey) -> Self {
+    pub fn new(underlying_mint: Pubkey, manager: Pubkey, authority: Pubkey) -> Self {
         let bond_ticket_mint = bonds_pda(&[jet_bonds::seeds::BOND_TICKET_MINT, manager.as_ref()]);
         let underlying_token_vault =
             bonds_pda(&[jet_bonds::seeds::UNDERLYING_TOKEN_VAULT, manager.as_ref()]);
@@ -70,7 +72,10 @@ impl BondsIxBuilder {
         let collateral = bonds_pda(&[jet_bonds::seeds::DEPOSIT_NOTES, manager.as_ref()]);
         let keys = Keys::default();
         Self {
+            airspace: Pubkey::default(), // fixme airspace
+            authority,
             manager,
+            underlying_mint,
             bond_ticket_mint,
             underlying_token_vault,
             claims,
@@ -81,8 +86,8 @@ impl BondsIxBuilder {
     }
 
     /// derives the bond manager key from a mint and seed
-    pub fn new_from_seed(mint: &Pubkey, seed: [u8; 32]) -> Self {
-        let builder = Self::new(Self::bond_manager_key(mint, seed));
+    pub fn new_from_seed(mint: &Pubkey, seed: [u8; 32], authority: Pubkey) -> Self {
+        let builder = Self::new(*mint, Self::bond_manager_key(mint, seed), authority);
         builder.with_mint(mint)
     }
 
@@ -90,10 +95,12 @@ impl BondsIxBuilder {
         self.keys.insert("payer", *payer);
         self
     }
+
     pub fn with_crank(mut self, crank: &Pubkey) -> Self {
         self.keys.insert("crank", *crank);
         self
     }
+
     pub fn with_orderbook_accounts(
         mut self,
         bids: Option<Pubkey>,
@@ -111,6 +118,7 @@ impl BondsIxBuilder {
         }
         self
     }
+
     pub fn with_mint(mut self, underlying_mint: &Pubkey) -> Self {
         self.keys.insert("underlying_mint", *underlying_mint);
         self
@@ -166,7 +174,7 @@ impl BondsIxBuilder {
             underlying_token_vault: self.underlying_token_vault,
             orderbook_market_state: self.orderbook_market_state,
             event_queue: self.keys.unwrap("event_queue")?,
-            crank_metadata: get_metadata_address(&self.keys.unwrap("crank")?),
+            crank_authorization: crank_authorization(&self.keys.unwrap("crank")?),
             crank: self.keys.unwrap("crank")?,
             payer: self.keys.unwrap("payer")?,
             system_program: solana_sdk::system_program::ID,
@@ -184,12 +192,12 @@ impl BondsIxBuilder {
     #[allow(clippy::too_many_arguments)]
     pub fn initialize_manager(
         &self,
+        payer: Pubkey,
         version_tag: u64,
         seed: [u8; 32],
         duration: i64,
-        underlying_mint: &Pubkey,
-        underlying_oracle: &Pubkey,
-        ticket_oracle: &Pubkey,
+        underlying_oracle: Pubkey,
+        ticket_oracle: Pubkey,
     ) -> Result<Instruction> {
         let data = jet_bonds::instruction::InitializeBondManager {
             params: InitializeBondManagerParams {
@@ -201,15 +209,16 @@ impl BondsIxBuilder {
         .data();
         let accounts = jet_bonds::accounts::InitializeBondManager {
             bond_manager: self.manager,
-            underlying_token_mint: *underlying_mint,
+            underlying_token_mint: self.underlying_mint,
             underlying_token_vault: self.underlying_token_vault,
             bond_ticket_mint: self.bond_ticket_mint,
             claims: self.claims,
             collateral: self.collateral,
-            program_authority: get_control_authority_address(),
-            underlying_oracle: *underlying_oracle,
-            ticket_oracle: *ticket_oracle,
-            payer: self.keys.unwrap("payer")?,
+            authority: self.authority,
+            airspace: self.airspace,
+            underlying_oracle,
+            ticket_oracle,
+            payer,
             rent: solana_sdk::sysvar::rent::ID,
             token_program: spl_token::ID,
             system_program: solana_sdk::system_program::ID,
@@ -247,7 +256,14 @@ impl BondsIxBuilder {
         ))
     }
 
-    pub fn initialize_orderbook(&self, min_base_order_size: u64) -> Result<Instruction> {
+    pub fn initialize_orderbook(
+        &self,
+        payer: Pubkey,
+        event_queue: Pubkey,
+        bids: Pubkey,
+        asks: Pubkey,
+        min_base_order_size: u64,
+    ) -> Result<Instruction> {
         let data = jet_bonds::instruction::InitializeOrderbook {
             params: InitializeOrderbookParams {
                 min_base_order_size,
@@ -257,11 +273,12 @@ impl BondsIxBuilder {
         let accounts = jet_bonds::accounts::InitializeOrderbook {
             bond_manager: self.manager,
             orderbook_market_state: self.orderbook_market_state,
-            event_queue: self.keys.unwrap("event_queue")?,
-            bids: self.keys.unwrap("bids")?,
-            asks: self.keys.unwrap("asks")?,
-            program_authority: get_control_authority_address(),
-            payer: self.keys.unwrap("payer")?,
+            event_queue,
+            bids,
+            asks,
+            authority: self.authority,
+            airspace: self.airspace,
+            payer,
             system_program: solana_sdk::system_program::ID,
         }
         .to_account_metas(None);
@@ -490,7 +507,8 @@ impl BondsIxBuilder {
         let accounts = jet_bonds::accounts::PauseOrderMatching {
             bond_manager: self.manager,
             orderbook_market_state: self.orderbook_market_state,
-            program_authority: get_control_authority_address(),
+            authority: self.authority,
+            airspace: self.airspace,
         }
         .to_account_metas(None);
 
@@ -505,7 +523,8 @@ impl BondsIxBuilder {
             event_queue: self.keys.unwrap("event_queue")?,
             bids: self.keys.unwrap("bids")?,
             asks: self.keys.unwrap("asks")?,
-            program_authority: get_control_authority_address(),
+            authority: self.authority,
+            airspace: self.airspace,
         }
         .to_account_metas(None);
 
@@ -523,7 +542,22 @@ impl BondsIxBuilder {
         let data = jet_bonds::instruction::ModifyBondManager { data, offset }.data();
         let accounts = jet_bonds::accounts::ModifyBondManager {
             bond_manager: self.manager,
-            program_authority: get_control_authority_address(),
+            authority: self.authority,
+            airspace: self.airspace,
+        }
+        .to_account_metas(None);
+        Ok(Instruction::new_with_bytes(jet_bonds::ID, &data, accounts))
+    }
+
+    pub fn authorize_crank(&self, payer: Pubkey, crank: Pubkey) -> Result<Instruction> {
+        let data = jet_bonds::instruction::AuthorizeCrank {}.data();
+        let accounts = jet_bonds::accounts::AuthorizeCrank {
+            crank,
+            crank_authorization: crank_authorization(&crank),
+            authority: self.authority,
+            airspace: self.airspace,
+            payer,
+            system_program: solana_sdk::system_program::ID,
         }
         .to_account_metas(None);
         Ok(Instruction::new_with_bytes(jet_bonds::ID, &data, accounts))
@@ -592,4 +626,12 @@ impl BondsIxBuilder {
 
 pub fn bonds_pda(seeds: &[&[u8]]) -> Pubkey {
     Pubkey::find_program_address(seeds, &jet_bonds::ID).0
+}
+
+pub fn crank_authorization(crank: &Pubkey) -> Pubkey {
+    Pubkey::find_program_address(
+        &[jet_bonds::seeds::CRANK_AUTHORIZATION, crank.as_ref()],
+        &jet_bonds::ID,
+    )
+    .0
 }

@@ -11,7 +11,7 @@ pub struct BondManager {
     /// Versioning and tag information
     pub version_tag: u64,
     /// The address allowed to make changes to this program state
-    pub program_authority: Pubkey,
+    pub airspace: Pubkey,
     /// The market state of the agnostic orderbook
     pub orderbook_market_state: Pubkey,
     /// The orderbook event queue
@@ -96,4 +96,11 @@ impl Serialize for BondManager {
         s.serialize_field("duration", &self.duration)?;
         s.end()
     }
+}
+
+/// This authorizes a crank to act on any orderbook within the airspace
+#[account]
+pub struct CrankAuthorization {
+    pub crank: Pubkey,
+    pub airspace: Pubkey,
 }
