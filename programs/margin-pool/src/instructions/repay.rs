@@ -117,6 +117,7 @@ pub fn repay_handler(ctx: Context<Repay>, change_kind: ChangeKind, amount: u64) 
 
     emit!(events::Repay {
         margin_pool: pool.key(),
+        user: ctx.accounts.repayment_account_authority.key(),
         loan_account: ctx.accounts.loan_account.key(),
         repayment_token_account: ctx.accounts.repayment_token_account.key(),
         repaid_tokens: repay_amount.tokens,

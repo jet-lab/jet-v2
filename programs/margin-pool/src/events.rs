@@ -71,6 +71,7 @@ pub struct MarginRepay {
 #[event]
 pub struct Repay {
     pub margin_pool: Pubkey,
+    pub user: Pubkey,
     pub loan_account: Pubkey,
     pub repayment_token_account: Pubkey,
     pub repaid_tokens: u64,
