@@ -1023,6 +1023,11 @@ export type JetMarginPool = {
           index: false
         },
         {
+          name: "user"
+          type: "publicKey"
+          index: false
+        },
+        {
           name: "loanAccount"
           type: "publicKey"
           index: false
@@ -2156,6 +2161,11 @@ export const IDL: JetMarginPool = {
       fields: [
         {
           name: "marginPool",
+          type: "publicKey",
+          index: false
+        },
+        {
+          name: "user",
           type: "publicKey",
           index: false
         },
