@@ -4,7 +4,7 @@ import NodeWallet from "@project-serum/anchor/dist/cjs/nodewallet"
 import { LAMPORTS_PER_SOL } from "@solana/web3.js"
 import { expect } from "chai"
 
-import { MarginAccount, MarginClient, Pool, PoolManager } from "../../libraries/ts/src"
+import { MarginAccount, MarginClient, Pool, PoolManager } from "@jet-lab/margin"
 import { createAuthority, createUserWallet, DEFAULT_CONFIRM_OPTS, DEFAULT_MARGIN_CONFIG } from "./util"
 
 describe("margin account", () => {
