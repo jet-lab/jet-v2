@@ -19,6 +19,8 @@ spl-associated-token-account = { version = "1.0" }
 jet-bonds = { path = "../../../programs/bonds", features = ["no-entrypoint"] }
 jet-metadata = { path = "../../../programs/metadata", features = ["no-entrypoint"] }
 
+jet-margin-sdk = { path = "../margin" }
+
 jet-simulation = { git = "https://github.com/jet-lab/jet-simulation", branch = "master" }
 anchor-lang = { git = "https://github.com/jet-lab/anchor", branch = "master" }
 

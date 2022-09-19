@@ -1,5 +1,6 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{Mint, Token, TokenAccount};
+use jet_metadata::ControlAuthority;
 
 use crate::{
     control::{events::BondManagerInitialized, state::BondManager},
@@ -98,8 +99,9 @@ pub struct InitializeBondManager<'info> {
     )]
     pub collateral: Account<'info, Mint>,
 
-    /// The controlling signer for this program
-    pub program_authority: Signer<'info>,
+    /// The authority to create markets, which must sign
+    #[account(signer)]
+    pub program_authority: Box<Account<'info, ControlAuthority>>,
 
     /// The oracle for the underlying asset price
     /// CHECK: determined by caller

@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use actions::margin_pool::ConfigurePoolCliOptions;
+use actions::{bonds::BondMarketParameters, margin_pool::ConfigurePoolCliOptions};
 use anchor_lang::prelude::Pubkey;
 use anyhow::Result;
 use clap::{AppSettings, Parser, Subcommand};
@@ -8,10 +8,10 @@ use client::{Client, ClientConfig};
 use serde::Deserialize;
 use serde_with::{serde_as, DisplayFromStr};
 
-mod actions;
+pub mod actions;
 mod anchor_ix_parser;
 mod app_config;
-mod client;
+pub mod client;
 mod config;
 mod governance;
 mod serum;
@@ -23,7 +23,7 @@ mod serum;
 pub struct CliOpts {
     /// The target proposal to add transactions to, instead of executing them directly
     #[clap(global = true, long, value_parser, env = "JET_GOV_PROPOSAL_ID")]
-    target_proposal: Option<Pubkey>,
+    pub target_proposal: Option<Pubkey>,
 
     /// The target proposal option to add the transactions to
     #[clap(
@@ -33,32 +33,32 @@ pub struct CliOpts {
         env = "JET_GOV_PROPOSAL_OPT",
         default_value_t = 0
     )]
-    target_proposal_option: u8,
+    pub target_proposal_option: u8,
 
     /// Prefix transactions with a change to the compute limit
     #[clap(global = true, long)]
-    compute_budget: Option<u32>,
+    pub compute_budget: Option<u32>,
 
     /// Simulate transactions only
     #[clap(global = true, long)]
-    dry_run: bool,
+    pub dry_run: bool,
 
     /// The path to the signer to use (i.e. keypair or ledger-wallet)
     #[clap(global = true, long, short = 'k')]
-    signer_path: Option<String>,
+    pub signer_path: Option<String>,
 
     /// The network endpoint to use
     #[clap(global = true, long, short = 'u')]
-    rpc_endpoint: Option<String>,
+    pub rpc_endpoint: Option<String>,
 
     #[clap(subcommand)]
-    command: Command,
+    pub command: Command,
 }
 
 #[serde_as]
 #[derive(Debug, Subcommand, Deserialize)]
 #[serde(tag = "action")]
-enum Command {
+pub enum Command {
     /// Deploy a program via governance/multisig
     ProgramDeploy {
         /// The address of the program to be upgraded
@@ -171,6 +171,9 @@ enum Command {
     /// Show a summary of all margin pools
     ListMarginPools,
 
+    /// Create a new margin pool for a token
+    CreateBondMarket(BondMarketParameters),
+
     /// List the top margin accounts by asset value
     ListTopMarginAccounts {
         /// The number of accounts to show
@@ -255,6 +258,9 @@ pub async fn run(opts: CliOpts) -> Result<()> {
             actions::margin_pool::process_collect_pool_fees(&client).await?
         }
         Command::ListMarginPools => actions::margin_pool::process_list_pools(&client).await?,
+        Command::CreateBondMarket(params) => {
+            actions::bonds::process_create_bond_market(&client, params).await?
+        }
         Command::ListTopMarginAccounts { limit } => {
             actions::margin::process_list_top_accounts(&client, limit).await?
         }

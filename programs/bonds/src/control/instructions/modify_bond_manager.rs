@@ -1,6 +1,7 @@
 use std::io::Write;
 
 use anchor_lang::prelude::*;
+use jet_metadata::ControlAuthority;
 
 use crate::{control::state::BondManager, BondsError};
 
@@ -13,8 +14,9 @@ pub struct ModifyBondManager<'info> {
     )]
     pub bond_manager: AccountLoader<'info, BondManager>,
 
-    /// The controlling signer for this program
-    pub program_authority: Signer<'info>,
+    /// The authority to create markets, which must sign
+    #[account(signer)]
+    pub program_authority: Box<Account<'info, ControlAuthority>>,
 }
 
 pub fn handler(ctx: Context<ModifyBondManager>, data: Vec<u8>, offset: usize) -> Result<()> {

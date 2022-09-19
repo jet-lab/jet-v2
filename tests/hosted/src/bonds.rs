@@ -22,15 +22,8 @@ use jet_margin_sdk::ix_builder::{
     get_control_authority_address, get_metadata_address, ControlIxBuilder, MarginIxBuilder,
 };
 use jet_proto_math::fixed_point::Fp32;
-use jet_simulation::{
-    create_test_runtime, create_wallet,
-    runtime::TestRuntime,
-    send_and_confirm,
-    solana_rpc_api::{RpcConnection, SolanaRpcClient},
-};
-use rand::rngs::OsRng;
+use jet_simulation::{create_wallet, send_and_confirm, solana_rpc_api::SolanaRpcClient};
 use solana_sdk::{
-    commitment_config::CommitmentConfig,
     hash::Hash,
     instruction::Instruction,
     message::Message,
@@ -46,7 +39,6 @@ use spl_associated_token_account::{
     get_associated_token_address, instruction::create_associated_token_account,
 };
 use spl_token::{instruction::initialize_mint, state::Mint};
-use tokio::sync::OnceCell;
 
 pub const LOCALNET_URL: &str = "http://127.0.0.1:8899";
 pub const DEVNET_URL: &str = "https://api.devnet.solana.com/";
@@ -136,8 +128,8 @@ impl TestManager {
             .await?
             .with_bonds()
             .await?
-            // .with_crank()
-            // .await?
+            .with_crank()
+            .await?
             .with_margin()
             .await
     }
@@ -160,9 +152,7 @@ impl TestManager {
 
         let ix_builder =
             BondsIxBuilder::new_from_seed(&test_token_mint.pubkey(), BOND_MANAGER_SEED)
-                .with_payer(&payer.pubkey())
-                .with_authority(&program_authority.pubkey());
-
+                .with_payer(&payer.pubkey());
         let mut manager = Self {
             client: client.clone(),
             ix_builder,
@@ -246,9 +236,7 @@ impl TestManager {
             &Pubkey::default(),
             &Pubkey::default(),
         )?;
-        let init_orderbook = self
-            .ix_builder
-            .initialize_orderbook(self.keys.unwrap("authority")?, MIN_ORDER_SIZE)?;
+        let init_orderbook = self.ix_builder.initialize_orderbook(MIN_ORDER_SIZE)?;
         self.sign_send_transaction(&[init_manager, init_orderbook], None)
             .await?;
 
@@ -259,7 +247,8 @@ impl TestManager {
         let crank = Keypair::new();
 
         self.ix_builder = self.ix_builder.with_crank(&crank.pubkey());
-        let auth_crank = self.ix_builder.authorize_crank_instruction()?;
+        let auth_crank = ControlIxBuilder::new(*self.keys.unwrap("payer")?)
+            .register_orderbook_crank(&crank.pubkey());
         self.insert_kp("crank", crank);
 
         self.sign_send_transaction(&[auth_crank], None).await?;

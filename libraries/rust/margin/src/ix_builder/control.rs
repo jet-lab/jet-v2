@@ -91,6 +91,30 @@ impl ControlIxBuilder {
         }
     }
 
+    /// Instruction to register a crank signer with the control program.
+
+    pub fn register_orderbook_crank(&self, crank: &Pubkey) -> Instruction {
+        let accounts = jet_control::accounts::RegisterOrderbookCrank {
+            requester: self.requester,
+            authority: get_control_authority_address(),
+
+            crank: *crank,
+            metadata_account: get_metadata_address(crank),
+
+            payer: self.payer,
+
+            metadata_program: jet_metadata::ID,
+            system_program: system_program::ID,
+        }
+        .to_account_metas(None);
+
+        Instruction {
+            accounts,
+            program_id: jet_control::ID,
+            data: jet_control::instruction::RegisterAdapter {}.data(),
+        }
+    }
+
     /// Instruction to register a margin pool.
     ///
     /// The margin pool is created with default settings, and must be configured

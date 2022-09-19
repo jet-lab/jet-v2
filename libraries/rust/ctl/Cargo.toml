@@ -18,6 +18,8 @@ futures = "0.3"
 bytemuck = "1"
 bincode = "1"
 tokio = { version = "1.0", features = ["time", "rt"] }
+lazy_static = "1.4.0"
+shellexpand = "2.1.0"
 
 serde = { version = "1.0", features = ["derive"] }
 serde_with = "1.5"
@@ -46,3 +48,4 @@ solana-remote-wallet = "1.10"
 serum_dex = "0.5"
 jet-proto-math = "1"
 jet-margin-sdk = { path = "../margin" }
+jet-bonds-lib = { path = "../bonds" }

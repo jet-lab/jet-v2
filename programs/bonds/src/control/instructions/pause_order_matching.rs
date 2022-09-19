@@ -1,4 +1,5 @@
 use anchor_lang::prelude::*;
+use jet_metadata::ControlAuthority;
 
 use crate::{control::state::BondManager, orderbook::state::CallbackInfo, BondsError};
 
@@ -15,8 +16,9 @@ pub struct PauseOrderMatching<'info> {
     #[account(mut)]
     pub orderbook_market_state: AccountInfo<'info>,
 
-    /// The controlling signer for this program
-    pub program_authority: Signer<'info>,
+    /// The authority to create markets, which must sign
+    #[account(signer)]
+    pub program_authority: Box<Account<'info, ControlAuthority>>,
 }
 
 pub fn handler(ctx: Context<PauseOrderMatching>) -> Result<()> {

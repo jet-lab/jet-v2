@@ -7,10 +7,7 @@ use solana_account_decoder::parse_bpf_loader::{
 };
 use solana_sdk::{bpf_loader_upgradeable, pubkey::Pubkey};
 
-use crate::{
-    client::{Client, Plan},
-    governance::JET_GOVERNANCE_PROGRAM,
-};
+use crate::client::{Client, Plan};
 
 pub async fn process_deploy(
     client: &Client,
@@ -41,7 +38,7 @@ pub async fn process_deploy(
                 &program_id,
                 &buffer_id,
                 &program_authority,
-                &client.signer()?
+                &client.signer()?,
             )],
         )
         .build())

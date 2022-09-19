@@ -3,6 +3,7 @@ use anchor_lang::{
     prelude::*,
     solana_program::{program::invoke_signed, system_instruction::create_account},
 };
+use jet_metadata::ControlAuthority;
 
 use crate::{
     control::{events::OrderbookInitialized, state::BondManager},
@@ -42,8 +43,9 @@ pub struct InitializeOrderbook<'info> {
     #[account(mut)]
     pub asks: AccountInfo<'info>,
 
-    /// Signing account responsible for changes to the bond market
-    pub program_authority: Signer<'info>,
+    /// The authority to create markets, which must sign
+    #[account(signer)]
+    pub program_authority: Box<Account<'info, ControlAuthority>>,
 
     /// The account paying rent for PDA initialization
     #[account(mut)]

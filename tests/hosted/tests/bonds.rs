@@ -8,15 +8,66 @@ use hosted_tests::{
     context::test_context,
 };
 use jet_bonds::orderbook::state::OrderParams;
+use jet_margin_sdk::ix_builder::MarginIxBuilder;
 use jet_proto_math::fixed_point::Fp32;
+use jet_simulation::create_wallet;
+use solana_sdk::{native_token::LAMPORTS_PER_SOL, signer::Signer};
 
 #[tokio::test(flavor = "multi_thread")]
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn full_direct() -> Result<(), anyhow::Error> {
-    // Get the mocked runtime
     let ctx = test_context().await;
     let manager = BondsTestManager::full(ctx.rpc.clone()).await?;
     _full_workflow::<NoProxy>(Arc::new(manager)).await
+}
+
+#[tokio::test(flavor = "multi_thread")]
+#[serial_test::serial]
+async fn full_through_margin() -> Result<()> {
+    let ctx = test_context().await;
+    let manager = BondsTestManager::full(ctx.rpc.clone()).await?;
+
+    _full_workflow::<MarginIxBuilder>(Arc::new(manager)).await
+}
+
+#[tokio::test(flavor = "multi_thread")]
+#[serial_test::serial]
+#[allow(unused_variables)] //todo remove this once fixme is addressed
+async fn margin() -> Result<()> {
+    let ctx = test_context().await;
+    let manager = BondsTestManager::full(ctx.rpc.clone()).await?;
+
+    // create user
+    let wallet = create_wallet(&ctx.rpc.clone(), 100 * LAMPORTS_PER_SOL).await?;
+    let margin = MarginIxBuilder::new(wallet.pubkey(), 0);
+    manager
+        .sign_send_transaction(&[margin.create_account()], Some(&[&wallet]))
+        .await?;
+
+    let user = BondsUser::new_with_proxy_funded(Arc::new(manager), wallet, margin).await?;
+    user.initialize_margin_user().await?;
+
+    // place a borrow order
+    let borrow_amount = OrderAmount::from_amount_rate(1_000, 2_000);
+    let borrow_params = OrderParams {
+        max_bond_ticket_qty: borrow_amount.base,
+        max_underlying_token_qty: borrow_amount.quote,
+        limit_price: borrow_amount.price,
+        match_limit: 1,
+        post_only: false,
+        post_allowed: true,
+        auto_stake: true,
+    };
+
+    // this fails checks in margin after the bonds ix completes successfully
+    // FIXME:
+    // - get claim registerable in margin
+    // - get usdc registerable in margin
+    // - register usdc position directly
+    // - deposit usdc to position
+    // user.margin_borrow_order(borrow_params).await?;
+
+    Ok(())
 }
 
 async fn _full_workflow<P: Proxy>(manager: Arc<BondsTestManager>) -> Result<()> {

@@ -7,6 +7,7 @@ use jet_bonds::{
     orderbook::state::{event_queue_len, orderbook_slab_len, OrderParams},
     tickets::instructions::StakeBondTicketsParams,
 };
+use jet_margin_sdk::ix_builder::get_control_authority_address;
 use jet_simulation::solana_rpc_api::SolanaRpcClient;
 use rand::rngs::OsRng;
 use solana_sdk::{
@@ -120,10 +121,6 @@ impl BondsIxBuilder {
         self.keys.insert("underlying_mint", *underlying_mint);
         self
     }
-    pub fn with_authority(mut self, authority: &Pubkey) -> Self {
-        self.keys.insert("authority", *authority);
-        self
-    }
 }
 
 impl BondsIxBuilder {
@@ -209,7 +206,7 @@ impl BondsIxBuilder {
             bond_ticket_mint: self.bond_ticket_mint,
             claims: self.claims,
             collateral: self.collateral,
-            program_authority: self.keys.unwrap("authority")?,
+            program_authority: get_control_authority_address(),
             underlying_oracle: *underlying_oracle,
             ticket_oracle: *ticket_oracle,
             payer: self.keys.unwrap("payer")?,
@@ -249,11 +246,7 @@ impl BondsIxBuilder {
             &jet_bonds::ID,
         ))
     }
-    pub fn initialize_orderbook(
-        &self,
-        program_authority: &Pubkey,
-        min_base_order_size: u64,
-    ) -> Result<Instruction> {
+    pub fn initialize_orderbook(&self, min_base_order_size: u64) -> Result<Instruction> {
         let data = jet_bonds::instruction::InitializeOrderbook {
             params: InitializeOrderbookParams {
                 min_base_order_size,
@@ -266,7 +259,7 @@ impl BondsIxBuilder {
             event_queue: self.keys.unwrap("event_queue")?,
             bids: self.keys.unwrap("bids")?,
             asks: self.keys.unwrap("asks")?,
-            program_authority: *program_authority,
+            program_authority: get_control_authority_address(),
             payer: self.keys.unwrap("payer")?,
             system_program: solana_sdk::system_program::ID,
         }
@@ -496,7 +489,7 @@ impl BondsIxBuilder {
         let accounts = jet_bonds::accounts::PauseOrderMatching {
             bond_manager: self.manager,
             orderbook_market_state: self.orderbook_market_state,
-            program_authority: self.keys.unwrap("authority")?,
+            program_authority: get_control_authority_address(),
         }
         .to_account_metas(None);
 
@@ -511,7 +504,7 @@ impl BondsIxBuilder {
             event_queue: self.keys.unwrap("event_queue")?,
             bids: self.keys.unwrap("bids")?,
             asks: self.keys.unwrap("asks")?,
-            program_authority: self.keys.unwrap("authority")?,
+            program_authority: get_control_authority_address(),
         }
         .to_account_metas(None);
 
@@ -529,7 +522,7 @@ impl BondsIxBuilder {
         let data = jet_bonds::instruction::ModifyBondManager { data, offset }.data();
         let accounts = jet_bonds::accounts::ModifyBondManager {
             bond_manager: self.manager,
-            program_authority: self.keys.unwrap("authority")?,
+            program_authority: get_control_authority_address(),
         }
         .to_account_metas(None);
         Ok(Instruction::new_with_bytes(jet_bonds::ID, &data, accounts))
@@ -592,9 +585,6 @@ impl BondsIxBuilder {
             ticket_holder.as_ref(),
             seed.as_slice(),
         ])
-    }
-    pub fn crank_metadata_key(&self, crank: &Pubkey) -> Pubkey {
-        todo!()
     }
 
     pub fn jet_bonds_id() -> Pubkey {
