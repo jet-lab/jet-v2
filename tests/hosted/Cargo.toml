@@ -42,7 +42,7 @@ spl-token = "3.1.0"
 spl-associated-token-account = "1.0"
 pyth-sdk-solana = "0.4"
 
-jet-bonds = { path = "../../programs/bonds", features = ["no-entrypoint"] }
+jet-bonds = { path = "../../programs/bonds", features = ["no-entrypoint", "testing"] }
 jet-control = { path = "../../programs/control", features = ["no-entrypoint", "testing"] }
 jet-margin = { path = "../../programs/margin", features = ["no-entrypoint"] }
 jet-margin-pool = { path = "../../programs/margin-pool", features = ["no-entrypoint", "testing"] }
@@ -50,7 +50,6 @@ jet-margin-swap = { path = "../../programs/margin-swap", features = ["no-entrypo
 jet-metadata = { path = "../../programs/metadata", features = ["no-entrypoint", "testing"] }
 
 jet-margin-sdk = { path = "../../libraries/rust/margin", features = ["testing"] }
-jet-bonds-lib = { path = "../../libraries/rust/bonds" }
 
 mock-adapter = { path = "../mock-adapter", features = ["no-entrypoint"] }
 

@@ -1,12 +1,14 @@
 use std::sync::Arc;
 
 use anyhow::Result;
-use hosted_tests::{bonds::TestManager, margin::MarginClient};
+use hosted_tests::{bonds::TestManager, context::test_context, margin::MarginClient};
 use jet_simulation::solana_rpc_api::RpcConnection;
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() -> Result<()> {
-    let rpc = Arc::new(RpcConnection::new_local_funded()?);
+    // let rpc = Arc::new(RpcConnection::new_local_funded()?);
+    let rpc = crate::test_context().await.rpc.clone();
+
     let margin = MarginClient::new(rpc.clone());
     margin.create_authority_if_missing().await?;
     margin

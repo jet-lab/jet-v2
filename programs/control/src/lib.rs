@@ -64,6 +64,13 @@ mod jet_control {
         instructions::create_margin_pool_handler(ctx)
     }
 
+    /// Initialize an orderbook for a bond market
+    pub fn initialize_bond_orderbook(
+        ctx: Context<InitializeBondOrderbook>,
+        params: jet_bonds::control::instructions::InitializeOrderbookParams,
+    ) -> Result<()> {
+        instructions::initialize_bond_orderbook_handler(ctx, params)
+    }
     /// Register a program to be allowed for use as margin adapter in the
     /// protocol.
     pub fn register_adapter(ctx: Context<RegisterAdapter>) -> Result<()> {

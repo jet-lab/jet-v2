@@ -2,12 +2,7 @@ use std::{collections::HashMap, sync::Arc};
 
 use crate::ix_builder::{get_control_authority_address, get_metadata_address};
 use anchor_lang::{InstructionData, ToAccountMetas};
-use jet_bonds::{
-    control::instructions::{InitializeBondManagerParams, InitializeOrderbookParams},
-    margin::state::Obligation,
-    orderbook::state::{event_queue_len, orderbook_slab_len, OrderParams},
-    tickets::instructions::StakeBondTicketsParams,
-};
+use jet_bonds::{margin::state::Obligation, tickets::instructions::StakeBondTicketsParams};
 use jet_simulation::solana_rpc_api::SolanaRpcClient;
 use rand::rngs::OsRng;
 use solana_sdk::{
@@ -15,6 +10,11 @@ use solana_sdk::{
     pubkey::Pubkey,
 };
 use spl_associated_token_account::get_associated_token_address;
+
+pub use jet_bonds::{
+    control::instructions::{InitializeBondManagerParams, InitializeOrderbookParams},
+    orderbook::state::{event_queue_len, orderbook_slab_len, OrderParams},
+};
 
 use super::event_builder::make_seed;
 
@@ -130,6 +130,12 @@ impl BondsIxBuilder {
     pub fn orderbook_state(&self) -> Pubkey {
         self.orderbook_market_state
     }
+    pub fn claims(&self) -> Pubkey {
+        self.claims
+    }
+    pub fn collateral(&self) -> Pubkey {
+        self.collateral
+    }
 }
 
 impl BondsIxBuilder {
@@ -240,6 +246,7 @@ impl BondsIxBuilder {
             &jet_bonds::ID,
         ))
     }
+
     pub fn initialize_orderbook(&self, min_base_order_size: u64) -> Result<Instruction> {
         let data = jet_bonds::instruction::InitializeOrderbook {
             params: InitializeOrderbookParams {
@@ -522,9 +529,6 @@ impl BondsIxBuilder {
         Ok(Instruction::new_with_bytes(jet_bonds::ID, &data, accounts))
     }
 
-    pub fn authorize_crank_instruction(&self) -> Result<Instruction> {
-        todo!()
-    }
     pub async fn create_orderbook_accounts(
         &self,
         rpc: Arc<dyn SolanaRpcClient>,

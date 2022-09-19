@@ -1,6 +1,9 @@
 use anyhow::Result;
 use clap::Parser;
-use jet_bonds_lib::builder::BondsIxBuilder;
+use jet_margin_sdk::{
+    bonds::{BondsIxBuilder, InitializeBondManagerParams, InitializeOrderbookParams},
+    ix_builder::ControlIxBuilder,
+};
 use serde::{Deserialize, Serialize};
 use solana_sdk::pubkey::Pubkey;
 
@@ -62,39 +65,43 @@ pub async fn process_create_bond_market(
     params: BondMarketParameters,
 ) -> Result<Plan> {
     let seed = map_seed(params.seed);
-    let ix = BondsIxBuilder::new_from_seed(&params.token_mint, seed)
-        .with_payer(&resolve_payer(client)?)
-        .with_orderbook_accounts(
-            Some(params.bids),
-            Some(params.asks),
-            Some(params.event_queue),
-        );
+    let bonds = BondsIxBuilder::new_from_seed(&params.token_mint, seed);
 
-    if client.account_exists(&ix.manager()).await? {
-        println!("the pool already exists for token {}", params.token_mint);
+    if client.account_exists(&bonds.manager()).await? {
+        println!("the market {} already exists", bonds.manager());
         return Ok(Plan::default());
     }
-
     if !client.account_exists(&params.token_mint).await? {
         println!("the token {} does not exist", params.token_mint);
         return Ok(Plan::default());
     }
-    let init_manager = ix.initialize_manager(
-        MANAGER_VERSION,
-        seed,
-        params.duration,
+
+    let ctl = ControlIxBuilder::new(resolve_payer(&client)?);
+
+    let init_manager = ctl.create_bond_market(
         &params.token_mint,
-        &params.token_oracle,
-        &params.ticket_oracle,
-    )?;
-    let init_orderbook = ix.initialize_orderbook(params.min_order_size)?;
+        InitializeBondManagerParams {
+            version_tag: MANAGER_VERSION,
+            seed,
+            duration: params.duration,
+        },
+    );
+    let init_orderbook = ctl.initialize_bond_orderbook(
+        &bonds.manager(),
+        &params.event_queue,
+        &params.bids,
+        &params.asks,
+        InitializeOrderbookParams {
+            min_base_order_size: params.min_order_size,
+        },
+    );
     Ok(client
         .plan()?
         .instructions(
             [],
             [
                 format!("initialize-bond-manager for token {}", params.token_mint),
-                format!("initialize-order-book for bond market {}", ix.manager()),
+                format!("initialize-order-book for bond market {}", bonds.manager()),
             ],
             [init_manager, init_orderbook],
         )

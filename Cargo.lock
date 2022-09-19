@@ -1851,7 +1851,6 @@ dependencies = [
  "futures-retry",
  "itertools 0.10.4",
  "jet-bonds",
- "jet-bonds-lib",
  "jet-control",
  "jet-margin",
  "jet-margin-pool",
@@ -2095,23 +2094,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "jet-bonds-lib"
-version = "0.1.0"
-dependencies = [
- "agnostic-orderbook",
- "anchor-lang",
- "jet-bonds",
- "jet-margin-sdk",
- "jet-metadata",
- "jet-simulation",
- "rand 0.8.5",
- "solana-sdk",
- "spl-associated-token-account",
- "spl-token 3.3.1",
- "thiserror",
-]
-
-[[package]]
 name = "jet-control"
 version = "1.0.0"
 dependencies = [
@@ -2141,7 +2123,6 @@ dependencies = [
  "futures",
  "heck 0.4.0",
  "indicatif",
- "jet-bonds-lib",
  "jet-margin-sdk",
  "jet-proto-math 1.1.0 (git+https://github.com/jet-lab/program-libraries?branch=main)",
  "lazy_static",

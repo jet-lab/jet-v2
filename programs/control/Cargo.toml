@@ -15,7 +15,11 @@ no-idl = []
 no-log-ix-name = []
 cpi = ["no-entrypoint"]
 default = []
-testing = ["jet-metadata/testing", "jet-margin-pool/testing"]
+testing = [
+    "jet-metadata/testing",
+    "jet-bonds/testing",
+    "jet-margin-pool/testing"
+]
 devnet = []
 
 [dependencies]

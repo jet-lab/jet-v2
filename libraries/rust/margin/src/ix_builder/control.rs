@@ -16,10 +16,12 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 use anchor_lang::{InstructionData, ToAccountMetas};
-use jet_bonds::control::instructions::InitializeBondManagerParams;
+use jet_bonds::control::instructions::{InitializeBondManagerParams, InitializeOrderbookParams};
 use jet_control::TokenMetadataParams;
 use jet_margin_pool::MarginPoolConfig;
 use solana_sdk::{instruction::Instruction, pubkey::Pubkey, system_program};
+
+use crate::bonds::BondsIxBuilder;
 
 use super::get_metadata_address;
 use super::margin_pool::MarginPoolIxBuilder;
@@ -120,36 +122,39 @@ impl ControlIxBuilder {
     ///
     /// The market will be initialized with the given parameters, but orders will not be able to be placed until the
     /// orderbook is initialized as well
-    pub fn create_bond_market(&self, params: InitializeBondManagerParams) -> Instruction {
-        // let pool_builder = BondsIxBuilder::new(*token);
-        // let accounts = jet_control::accounts::CreateMarginPool {
-        //     requester: self.payer,
-        //     authority: get_control_authority_address(),
+    pub fn create_bond_market(
+        &self,
+        token: &Pubkey,
+        params: InitializeBondManagerParams,
+    ) -> Instruction {
+        let ix = BondsIxBuilder::new_from_seed(token, params.seed);
+        let accounts = jet_control::accounts::CreateBondMarket {
+            requester: self.payer,
+            authority: get_control_authority_address(),
+            initialization_accounts: jet_control::accounts::InitializeBondManager {
+                bond_manager: ix.manager(),
+                underlying_token_vault: ix.vault(),
+                underlying_token_mint: *token,
+                bond_ticket_mint: ix.ticket_mint(),
+                claims: ix.claims(),
+                collateral: ix.collateral(),
+                program_authority: get_control_authority_address(),
+                underlying_oracle: Default::default(),
+                ticket_oracle: Default::default(),
+                payer: self.payer,
+                rent: solana_sdk::sysvar::rent::ID,
+                token_program: anchor_spl::token::ID,
+                system_program: system_program::ID,
+            },
+            bonds_program: jet_bonds::ID,
+        }
+        .to_account_metas(None);
 
-        //     margin_pool: pool_builder.address,
-        //     vault: pool_builder.vault,
-        //     deposit_note_mint: pool_builder.deposit_note_mint,
-        //     loan_note_mint: pool_builder.loan_note_mint,
-        //     token_mint: *token,
-        //     deposit_note_metadata: get_metadata_address(&pool_builder.deposit_note_mint),
-        //     loan_note_metadata: get_metadata_address(&pool_builder.loan_note_mint),
-        //     token_metadata: get_metadata_address(&pool_builder.token_mint),
-        //     fee_destination: get_margin_pool_fee_destination_address(&pool_builder.address),
-
-        //     margin_pool_program: jet_margin_pool::ID,
-        //     metadata_program: jet_metadata::ID,
-        //     token_program: anchor_spl::token::ID,
-        //     system_program: system_program::ID,
-        //     rent: solana_sdk::sysvar::rent::ID,
-        // }
-        // .to_account_metas(None);
-
-        // Instruction {
-        //     accounts,
-        //     program_id: jet_control::ID,
-        //     data: jet_control::instruction::CreateMarginPool {}.data(),
-        // }
-        todo!()
+        Instruction {
+            accounts,
+            program_id: jet_control::ID,
+            data: jet_control::instruction::CreateBondMarket { params }.data(),
+        }
     }
 
     /// Instruction to register a margin pool.
@@ -223,6 +228,39 @@ impl ControlIxBuilder {
                 pool_config: config.parameters.clone(),
             }
             .data(),
+        }
+    }
+
+    /// Initialize the pdas necessary for the orderbook
+    pub fn initialize_bond_orderbook(
+        &self,
+        market: &Pubkey,
+        queue: &Pubkey,
+        bids: &Pubkey,
+        asks: &Pubkey,
+        params: InitializeOrderbookParams,
+    ) -> Instruction {
+        let ix = BondsIxBuilder::new(*market);
+        let accounts = jet_control::accounts::InitializeBondOrderbook {
+            requester: self.payer,
+            authority: get_control_authority_address(),
+            initialization_accounts: jet_control::accounts::InitializeOrderbook {
+                bond_manager: ix.manager(),
+                orderbook_market_state: ix.orderbook_state(),
+                event_queue: *queue,
+                bids: *bids,
+                asks: *asks,
+                program_authority: get_control_authority_address(),
+                payer: self.payer,
+                system_program: system_program::ID,
+            },
+            bonds_program: jet_bonds::ID,
+        }
+        .to_account_metas(None);
+        Instruction {
+            program_id: jet_control::ID,
+            accounts,
+            data: jet_control::instruction::InitializeBondOrderbook { params }.data(),
         }
     }
 

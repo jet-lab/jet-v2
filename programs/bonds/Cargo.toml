@@ -17,6 +17,7 @@ default = []
 devnet = []
 cli = ["no-entrypoint", "serde"]
 mock-margin = []
+testing = ["jet-metadata/testing", "jet-margin/testing"]
 
 [dependencies]
 arrayref = "0.3.6"

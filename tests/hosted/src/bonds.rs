@@ -12,14 +12,16 @@ use anchor_spl::token::TokenAccount;
 use anyhow::Result;
 use async_trait::async_trait;
 use jet_bonds::{
-    control::state::BondManager,
+    control::{instructions::InitializeBondManagerParams, state::BondManager},
     orderbook::state::{event_queue_len, orderbook_slab_len, CallbackInfo, OrderParams},
     tickets::state::ClaimTicket,
 };
 
-use jet_bonds_lib::builder::{event_builder::build_consume_events_info, BondsIxBuilder};
-use jet_margin_sdk::ix_builder::{
-    get_control_authority_address, get_metadata_address, ControlIxBuilder, MarginIxBuilder,
+use jet_margin_sdk::{
+    bonds::{event_builder::build_consume_events_info, BondsIxBuilder},
+    ix_builder::{
+        get_control_authority_address, get_metadata_address, ControlIxBuilder, MarginIxBuilder,
+    },
 };
 use jet_proto_math::fixed_point::Fp32;
 use jet_simulation::{create_wallet, send_and_confirm, solana_rpc_api::SolanaRpcClient};
@@ -59,6 +61,7 @@ lazy_static::lazy_static! {
             .to_string()
     )
     .unwrap();
+    /// Testing mint keypair
     static ref MINT: Keypair = map_keypair_file(
         shellexpand::env("$PWD/tests/keypairs/test-mint.json")
             .unwrap()
@@ -234,15 +237,24 @@ impl TestManager {
 
         self.sign_send_transaction(&ixns, None).await?;
 
-        let init_manager = self.ix_builder.initialize_manager(
-            BOND_MANAGER_TAG,
-            BOND_MANAGER_SEED,
-            STAKE_DURATION,
-            self.keys.unwrap("token_mint")?,
-            &Pubkey::default(),
-            &Pubkey::default(),
-        )?;
-        let init_orderbook = self.ix_builder.initialize_orderbook(MIN_ORDER_SIZE)?;
+        let ctl = ControlIxBuilder::new(self.client.payer().pubkey());
+        let init_manager = ctl.create_bond_market(
+            &MINT.pubkey(),
+            InitializeBondManagerParams {
+                version_tag: BOND_MANAGER_TAG,
+                seed: BOND_MANAGER_SEED,
+                duration: STAKE_DURATION,
+            },
+        );
+        let init_orderbook = ctl.initialize_bond_orderbook(
+            &self.ix_builder.manager(),
+            &QUEUE.pubkey(),
+            &BIDS.pubkey(),
+            &ASKS.pubkey(),
+            jet_bonds::control::instructions::InitializeOrderbookParams {
+                min_base_order_size: MIN_ORDER_SIZE,
+            },
+        );
         self.sign_send_transaction(&[init_manager, init_orderbook], None)
             .await?;
 
