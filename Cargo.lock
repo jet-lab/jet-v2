@@ -2240,7 +2240,7 @@ dependencies = [
  "num-traits",
  "static_assertions",
  "thiserror",
- "uint 0.9.3",
+ "uint 0.9.4",
 ]
 
 [[package]]
@@ -2253,7 +2253,7 @@ dependencies = [
  "num-traits",
  "static_assertions",
  "thiserror",
- "uint 0.9.3",
+ "uint 0.9.4",
 ]
 
 [[package]]
@@ -2350,9 +2350,9 @@ checksum = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
 
 [[package]]
 name = "libc"
-version = "0.2.132"
+version = "0.2.133"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8371e4e5341c3a96db127eb2465ac681ced4c433e01dd0e938adbef26ba93ba5"
+checksum = "c0f80d65747a3e43d1596c7c5492d95d5edddaabd45a7fcdb02b95f644164966"
 
 [[package]]
 name = "libloading"
@@ -5270,9 +5270,9 @@ dependencies = [
 
 [[package]]
 name = "uint"
-version = "0.9.3"
+version = "0.9.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "12f03af7ccf01dd611cc450a0d10dbc9b745770d096473e2faf0ca6e2d66d1e0"
+checksum = "a45526d29728d135c2900b0d30573fe3ee79fceb12ef534c7bb30e810a91b601"
 dependencies = [
  "byteorder",
  "crunchy",
