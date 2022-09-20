@@ -80,6 +80,15 @@ pub fn ui_price(_price: u64) -> f64 {
     todo!()
 }
 
+#[wasm_bindgen]
+pub fn build_order_amount_deprecated(amount: u64, interest_rate: u64) -> super::types::OrderAmount {
+    let quote = amount;
+    let base = quote + ((quote * interest_rate) / 10_000);
+    let price = calculate_implied_price(base, quote);
+
+    super::types::OrderAmount { base, quote, price }
+}
+
 /// For calculation of an implied limit price given to the bonds orderbook
 ///
 /// Base is principal plus interest
