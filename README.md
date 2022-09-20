@@ -24,7 +24,7 @@
 
 # Install
 
-Make sure you update Solana to the latest version
+Make sure you update Solana to the latest version.
 
 ```bash
 sh -c "$(curl -sSfL https://release.solana.com/v1.11.10/install)"
