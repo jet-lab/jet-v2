@@ -2,10 +2,7 @@ use jet_proto_math::fixed_point::Fp32;
 use js_sys::{Array, Uint8Array};
 use wasm_bindgen::prelude::*;
 
-use super::{
-    critbit::Slab,
-    types::{Order, OrderAmount},
-};
+use super::{critbit::Slab, types::Order};
 
 /// Converts a buffer from an orderbook side into an array of orders on the book
 ///
@@ -65,7 +62,7 @@ pub fn fixed_point_to_decimal(fp: u64) -> u64 {
 ///
 /// NOTE: price is returned in fixed point 32 format
 #[wasm_bindgen]
-pub fn rate_to_price(interest_rate: f64, duration: u64) -> u64 {
+pub fn rate_to_price(_interest_rate: f64, _duration: u64) -> u64 {
     todo!()
 }
 
@@ -73,13 +70,13 @@ pub fn rate_to_price(interest_rate: f64, duration: u64) -> u64 {
 ///
 /// NOTE: price is expected to be in fixed point 32 format
 #[wasm_bindgen]
-pub fn price_to_rate(price: u64, duration: u64) -> u64 {
+pub fn price_to_rate(_price: u64, _duration: u64) -> u64 {
     todo!()
 }
 
 /// Converts a fixed point 32 price to an f64 for UI display
 #[wasm_bindgen]
-pub fn ui_price(price: u64) -> f64 {
+pub fn ui_price(_price: u64) -> f64 {
     todo!()
 }
 
