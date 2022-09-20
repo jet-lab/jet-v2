@@ -48,13 +48,20 @@ yarn
 
 # Test
 
-Run
-
+Run the full test suite used by the github CI workflow. This requires all dependencies to be installed:
 ```bash
-yarn test
+./check
 ```
 
-to run the test suite
+Run it in a docker container that already contains all the solana and anchor dependencies. This only requires docker:
+```bash
+./check in-docker
+```
+
+Run a single job from the workflow:
+```bash
+./check [in-docker] [job-name (e.g. anchor-test)]
+```
 
 # App
 
