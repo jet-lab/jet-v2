@@ -27,7 +27,7 @@ use anchor_lang::{
     solana_program::{instruction::Instruction, program},
 };
 use anchor_spl::token::{Mint, TokenAccount};
-use jet_metadata::PositionTokenMetadata;
+use jet_metadata::{PositionTokenMetadata, TokenKind};
 
 pub struct InvokeAdapter<'a, 'info> {
     /// The margin account to proxy an action for
@@ -300,6 +300,12 @@ fn register_position(
 
     if mint.key() != token_account.mint {
         msg!("token account has the wrong mint");
+        return err!(ErrorCode::PositionNotRegisterable);
+    }
+    if metadata.token_kind != TokenKind::AdapterCollateral
+        && metadata.token_kind != TokenKind::Claim
+    {
+        msg!("adapters may only register claims and adapter collaterals. deposits are registered by margin");
         return err!(ErrorCode::PositionNotRegisterable);
     }
 

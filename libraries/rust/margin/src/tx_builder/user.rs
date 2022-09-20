@@ -203,6 +203,7 @@ impl MarginTxBuilder {
             PositionKind::Claim => {
                 self.adapter_invoke_ix(pool.close_loan(*self.address(), self.ix.payer))
             }
+            PositionKind::AdapterCollateral => panic!("pools do not issue AdapterCollateral"),
         };
 
         self.create_transaction(&[ix]).await
