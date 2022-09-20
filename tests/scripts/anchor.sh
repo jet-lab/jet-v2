@@ -2,7 +2,9 @@
 
 set -e
 
-solana -ul logs &
+if [[ ${SOLANA_LOGS:-false} == true ]]; then
+	solana -ul logs &
+fi
 
 # initialize some state on chain to test against
 RUST_BACKTRACE=1 cargo run --package hosted-tests --bin launch_bonds
