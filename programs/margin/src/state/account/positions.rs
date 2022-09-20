@@ -131,6 +131,10 @@ pub enum PositionKind {
 
     /// The position contains a balance of tokens that are owed as a part of some debt.
     Claim,
+
+    /// The position contains a balance managed by a trusted adapter to represent the amount of collateral custodied by that adapter.
+    /// The token account is owned by the adapter. Collateral is accessed through instructions to the adapter.
+    AdapterCollateral,
 }
 
 impl From<TokenKind> for PositionKind {
@@ -139,6 +143,7 @@ impl From<TokenKind> for PositionKind {
             TokenKind::NonCollateral => PositionKind::NoValue,
             TokenKind::Collateral => PositionKind::Deposit,
             TokenKind::Claim => PositionKind::Claim,
+            TokenKind::AdapterCollateral => PositionKind::AdapterCollateral,
         }
     }
 }
@@ -226,7 +231,9 @@ impl AccountPosition {
     }
 
     pub fn collateral_value(&self) -> Number128 {
-        assert_eq!(self.kind(), PositionKind::Deposit);
+        assert!(
+            self.kind() == PositionKind::Deposit || self.kind() == PositionKind::AdapterCollateral
+        );
 
         Number128::from_decimal(self.value_modifier, -2) * self.value()
     }
@@ -263,7 +270,9 @@ impl AccountPosition {
         approvals.contains(&Approver::MarginAccountAuthority)
             && match self.kind() {
                 PositionKind::NoValue | PositionKind::Deposit => true,
-                PositionKind::Claim => approvals.contains(&Approver::Adapter(self.adapter)),
+                PositionKind::Claim | PositionKind::AdapterCollateral => {
+                    approvals.contains(&Approver::Adapter(self.adapter))
+                }
             }
     }
 }
@@ -297,6 +306,7 @@ impl Serialize for PositionKind {
             PositionKind::NoValue => "NoValue",
             PositionKind::Claim => "Claim",
             PositionKind::Deposit => "Deposit",
+            PositionKind::AdapterCollateral => "AdapterCollateral",
         })
     }
 }
