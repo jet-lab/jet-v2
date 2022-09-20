@@ -15,14 +15,15 @@ import {
 } from "@solana/web3.js";
 import { BN } from "bn.js";
 import { assert } from "chai";
-import { BondMarket, calculateOrderAmount } from "../../libraries/ts/src";
-import { BondsUser } from "../../libraries/ts/src/bondsUser";
-import { JetBonds, JetBondsIdl } from "../../libraries/ts/src/types";
-import CONFIG from "../../config.json";
-import TEST_MINT_KEYPAIR from "../deps/keypairs/test_mint-keypair.json";
-import ALICE_KEYPAIR from "../deps/keypairs/alice-keypair.json";
-import BOB_KEYPAIR from "../deps/keypairs/bob-keypair.json";
+import { BondMarket, build_order_amount_deprecated } from "@jet-lab/jet-bonds-client";
+import { BondsUser } from "@jet-lab/jet-bonds-client";
+import { JetBonds, JetBondsIdl } from "@jet-lab/jet-bonds-client";
+import CONFIG from "./config.json";
+import TEST_MINT_KEYPAIR from "../../keypairs/test-mint.json";
+import ALICE_KEYPAIR from "../../keypairs/alice-keypair.json";
+import BOB_KEYPAIR from "../../keypairs/bob-keypair.json";
 import { TestMint, Transactor } from "./utils";
+import { bnToBigInt } from "@jet-lab/margin/src";
 
 describe("jet-bonds", async () => {
   const confirmOptions: ConfirmOptions = {
@@ -214,9 +215,9 @@ describe("jet-bonds", async () => {
     await transactor.signSendInstructions([borrow], confirmOptions);
   });
 
-  const BORROW_ORDER_AMOUNT = calculateOrderAmount(
-    BORROW_AMOUNT,
-    BORROW_INTEREST
+  const BORROW_ORDER_AMOUNT = build_order_amount_deprecated(
+    bnToBigInt(BORROW_AMOUNT),
+    bnToBigInt(BORROW_INTEREST)
   );
   it("loads orderbook and asserts borrow order", async () => {
     const orderbook = await bondMarket.fetchOrderbook();
@@ -228,7 +229,7 @@ describe("jet-bonds", async () => {
         BORROW_ORDER_AMOUNT.base.toString()
     );
     assert(
-      new BN(order.price.toString()).toString() ===
+      new BN(order.limit_price.toString()).toString() ===
         BORROW_ORDER_AMOUNT.price.toString()
     );
     // posted quote cannot be directly compared with the quote value in the OrderAmount

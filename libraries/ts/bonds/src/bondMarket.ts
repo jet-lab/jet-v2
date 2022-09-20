@@ -5,7 +5,7 @@ import {
   SystemProgram,
   TransactionInstruction,
 } from "@solana/web3.js";
-import { build_order_amount } from "../wasm-utils/pkg/wasm_utils";
+import { build_order_amount_deprecated } from "../wasm-utils/pkg";
 import { Orderbook } from "./orderbook";
 import { JetBonds } from "./types";
 import { fetchData, findDerivedAccount } from "./utils";
@@ -382,7 +382,7 @@ export const buildOrderAmount = (
   amount: BN,
   interestRate: BN
 ): { maxBondTicketQty: BN; maxUnderlyingTokenQty: BN; limitPrice: BN } => {
-  let orderAmount = build_order_amount(
+  let orderAmount = build_order_amount_deprecated(
     BigInt(amount.toString()),
     BigInt(interestRate.toString())
   );

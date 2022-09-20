@@ -9,7 +9,7 @@
     "clean": "rimraf dist/ && rimraf wasm-utils/pkg/",
     "copy:wasm": "copyfiles -u 1 wasm-utils/pkg/* dist/wasm-utils",
     "build": "tsc -p tsconfig.json && tsc -p tsconfig.cjs.json",
-    "build:wasm": "wasm-pack build ./wasm-utils",
+    "build:wasm": "wasm-pack build --target nodejs ./wasm-utils",
     "lint": "tslint -c tslint.json src/**/*.ts",
     "prepublish": "yarn clean && yarn build:wasm && yarn copy:wasm && yarn build && npm pack"
   },
@@ -26,7 +26,7 @@
     "rimraf": "^3.0.2",
     "tslint": "^6.1.3",
     "typescript": "4.6.4",
-    "wasm-pack": "^0.10.3"
+    "wasm-pack": "0.10.1"
   },
   "files": [
     "dist",

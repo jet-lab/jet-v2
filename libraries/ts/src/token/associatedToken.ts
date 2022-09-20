@@ -791,6 +791,10 @@ export const bigIntToBn = (bigInt: bigint | null | undefined): BN => {
   return bigInt ? new BN(bigInt.toString()) : new BN(0)
 }
 
+export const bnToBigInt = (bn: BN | null | undefined): bigint => {
+  return bn ? BigInt(bn.toString()) : 0n
+}
+
 /** Convert BigInt (SPL Token) to BN. */
 export const bigIntToNumber = (bigint: bigint | null | undefined): number => {
   return bigint ? Number(bigint) : 0
@@ -800,5 +804,5 @@ export function numberToBigInt(number: number | null | undefined) {
   // Stomp out any fraction component of the number
   return number !== null && number !== undefined
     ? BigInt(number.toLocaleString("fullwide", { useGrouping: false, maximumFractionDigits: 0 }))
-    : BigInt(0)
+    : 0n
 }
