@@ -427,11 +427,11 @@ impl MarginAccount {
                     return Err(error!(error));
                 }
 
-                (PositionKind::Deposit, None) => {
+                (PositionKind::AdapterCollateral | PositionKind::Deposit, None) => {
                     equity += position.value();
                     weighted_collateral += position.collateral_value();
                 }
-                (PositionKind::Deposit, Some(e)) => {
+                (PositionKind::AdapterCollateral | PositionKind::Deposit, Some(e)) => {
                     stale_collateral_list.push((position.token, e));
                 }
             }
@@ -578,7 +578,10 @@ impl Valuation {
 
 #[cfg(test)]
 mod tests {
-    use crate::{syscall::thread_local_mock::mock_stack_height, util::Invocation};
+    use crate::{
+        syscall::{sys, thread_local_mock::mock_stack_height, Sys},
+        util::Invocation,
+    };
 
     use super::*;
     use itertools::Itertools;
@@ -773,6 +776,44 @@ mod tests {
     }
 
     #[test]
+    fn valuation_succeeds_ignoring_stale_adapter_collateral_with_balance() {
+        let mut margin_account = MarginAccount {
+            version: 1,
+            bump_seed: [0],
+            user_seed: [0; 2],
+            reserved0: [0; 3],
+            owner: Pubkey::new_unique(),
+            liquidation: Pubkey::default(),
+            liquidator: Pubkey::default(),
+            invocation: Invocation::default(),
+            positions: [0; 7432],
+        };
+
+        let pos = register_position(&mut margin_account, 0, TokenKind::AdapterCollateral);
+
+        margin_account.set_position_balance(&pos, &pos, 1).unwrap();
+        let valuation = margin_account.valuation().unwrap();
+        assert_eq!(valuation.effective_collateral, Number128::ZERO);
+        assert_eq!(valuation.equity, Number128::ZERO);
+
+        margin_account
+            .set_position_price(
+                &pos,
+                &PriceInfo {
+                    value: 1,
+                    timestamp: sys().unix_timestamp(),
+                    exponent: 2,
+                    is_valid: 1,
+                    _reserved: Default::default(),
+                },
+            )
+            .unwrap();
+        let valuation = margin_account.valuation().unwrap();
+        assert_eq!(valuation.effective_collateral, Number128::ONE * 100);
+        assert_eq!(valuation.equity, Number128::ONE);
+    }
+
+    #[test]
     fn test_mutate_positions() {
         let margin_address = Pubkey::new_unique();
         let adapter = Pubkey::new_unique();
@@ -899,6 +940,107 @@ mod tests {
         // There should be no positions left
         assert_eq!(margin_account.positions().count(), 0);
         assert_eq!(margin_account.positions, [0; 7432]);
+    }
+
+    #[test]
+    fn registering_adapter_collateral_requires_adapter_and_owner_approval() {
+        let margin_address = Pubkey::new_unique();
+        let adapter = Pubkey::new_unique();
+        let mut margin_account = MarginAccount {
+            version: 1,
+            bump_seed: [0],
+            user_seed: [0; 2],
+            reserved0: [0; 3],
+            owner: Pubkey::new_unique(),
+            liquidation: Pubkey::default(),
+            liquidator: Pubkey::default(),
+            invocation: Invocation::default(),
+            positions: [0; 7432],
+        };
+        let (token_a, address_a) = create_position_input(&margin_address);
+        let (token_b, address_b) = create_position_input(&margin_address);
+        let (token_c, address_c) = create_position_input(&margin_address);
+        let (token_d, address_d) = create_position_input(&margin_address);
+
+        margin_account
+            .register_position(
+                token_a,
+                6,
+                address_a,
+                adapter,
+                PositionKind::AdapterCollateral,
+                0,
+                0,
+                &[],
+            )
+            .unwrap_err();
+        margin_account
+            .register_position(
+                token_b,
+                6,
+                address_b,
+                adapter,
+                PositionKind::AdapterCollateral,
+                0,
+                0,
+                &[Approver::MarginAccountAuthority],
+            )
+            .unwrap_err();
+        margin_account
+            .register_position(
+                token_c,
+                6,
+                address_c,
+                adapter,
+                PositionKind::AdapterCollateral,
+                0,
+                0,
+                &[Approver::Adapter(adapter)],
+            )
+            .unwrap_err();
+        margin_account
+            .register_position(
+                token_d,
+                6,
+                address_d,
+                adapter,
+                PositionKind::AdapterCollateral,
+                0,
+                0,
+                &[Approver::MarginAccountAuthority, Approver::Adapter(adapter)],
+            )
+            .unwrap();
+    }
+
+    #[test]
+    fn adapter_collateral() {
+        let margin_address = Pubkey::new_unique();
+        let adapter = Pubkey::new_unique();
+        let mut margin_account = MarginAccount {
+            version: 1,
+            bump_seed: [0],
+            user_seed: [0; 2],
+            reserved0: [0; 3],
+            owner: Pubkey::new_unique(),
+            liquidation: Pubkey::default(),
+            liquidator: Pubkey::default(),
+            invocation: Invocation::default(),
+            positions: [0; 7432],
+        };
+        let (token, address) = create_position_input(&margin_address);
+
+        margin_account
+            .register_position(
+                token,
+                6,
+                address,
+                adapter,
+                PositionKind::AdapterCollateral,
+                0,
+                0,
+                &[Approver::MarginAccountAuthority, Approver::Adapter(adapter)],
+            )
+            .unwrap();
     }
 
     #[test]
