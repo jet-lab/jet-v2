@@ -52,8 +52,8 @@ pub struct InitializeMarginUser<'info> {
         token::mint = claims_mint,
         token::authority = bond_manager,
         payer = payer)]
-    pub claims: Account<'info, TokenAccount>,
-    pub claims_mint: Account<'info, Mint>,
+    pub claims: Box<Account<'info, TokenAccount>>,
+    pub claims_mint: Box<Account<'info, Mint>>,
 
     /// Token account used by the margin program to track owned assets
     #[account(init,
@@ -65,11 +65,11 @@ pub struct InitializeMarginUser<'info> {
         token::mint = collateral_mint,
         token::authority = bond_manager,
         payer = payer)]
-    pub collateral: Account<'info, TokenAccount>,
-    pub collateral_mint: Account<'info, Mint>,
+    pub collateral: Box<Account<'info, TokenAccount>>,
+    pub collateral_mint: Box<Account<'info, Mint>>,
 
-    pub underlying_settlement: Account<'info, TokenAccount>,
-    pub ticket_settlement: Account<'info, TokenAccount>,
+    pub underlying_settlement: Box<Account<'info, TokenAccount>>,
+    pub ticket_settlement: Box<Account<'info, TokenAccount>>,
 
     #[account(mut)]
     pub payer: Signer<'info>,

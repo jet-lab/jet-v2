@@ -4,6 +4,7 @@ use anchor_spl::token::{Mint, Token, TokenAccount};
 use crate::{
     control::{events::BondManagerInitialized, state::BondManager},
     seeds,
+    utils::init,
 };
 
 /// Parameters for the initialization of the [BondManager]
@@ -50,10 +51,10 @@ pub struct InitializeBondManager<'info> {
         token::mint = underlying_token_mint,
         token::authority = bond_manager,
     )]
-    pub underlying_token_vault: Account<'info, TokenAccount>,
+    pub underlying_token_vault: Box<Account<'info, TokenAccount>>,
 
     /// The mint for the assets underlying the bond tickets
-    pub underlying_token_mint: Account<'info, Mint>,
+    pub underlying_token_mint: Box<Account<'info, Mint>>,
 
     /// The minting account for the bond tickets
     #[account(
@@ -68,7 +69,7 @@ pub struct InitializeBondManager<'info> {
         mint::authority = bond_manager,
         mint::freeze_authority = bond_manager,
     )]
-    pub bond_ticket_mint: Account<'info, Mint>,
+    pub bond_ticket_mint: Box<Account<'info, Mint>>,
 
     /// Mints tokens to a margin account to represent debt that must be collateralized
     #[account(init,
@@ -82,7 +83,7 @@ pub struct InitializeBondManager<'info> {
         mint::authority = bond_manager,
         mint::freeze_authority = bond_manager,
     )]
-    pub claims: Account<'info, Mint>,
+    pub claims: Box<Account<'info, Mint>>,
 
     /// Mints tokens to a margin account to represent debt that must be collateralized
     #[account(init,
@@ -96,7 +97,7 @@ pub struct InitializeBondManager<'info> {
         mint::authority = bond_manager,
         mint::freeze_authority = bond_manager,
     )]
-    pub collateral: Account<'info, Mint>,
+    pub collateral: Box<Account<'info, Mint>>,
 
     /// The authority that must sign to make this change
     pub authority: Signer<'info>,
@@ -132,22 +133,31 @@ pub fn handler(
     params: InitializeBondManagerParams,
 ) -> Result<()> {
     let manager = &mut ctx.accounts.bond_manager.load_init()?;
-
-    manager.version_tag = params.version_tag;
-    manager.airspace = ctx.accounts.airspace.key();
-    manager.underlying_token_mint = ctx.accounts.underlying_token_mint.key();
-    manager.underlying_token_vault = ctx.accounts.underlying_token_vault.key();
-    manager.bond_ticket_mint = ctx.accounts.bond_ticket_mint.key();
-    manager.claims_mint = ctx.accounts.claims.key();
-    manager.collateral_mint = ctx.accounts.collateral.key();
-    manager.seed = params.seed;
-    manager.bump = [*ctx.bumps.get("bond_manager").unwrap()];
-    manager.orderbook_paused = false;
-    manager.tickets_paused = false;
-    manager.duration = params.duration;
-    manager.underlying_oracle = ctx.accounts.underlying_oracle.key();
-    manager.ticket_oracle = ctx.accounts.ticket_oracle.key();
-
+    init! {
+        manager = BondManager {
+            version_tag: params.version_tag,
+            airspace: ctx.accounts.airspace.key(),
+            underlying_token_mint: ctx.accounts.underlying_token_mint.key(),
+            underlying_token_vault: ctx.accounts.underlying_token_vault.key(),
+            bond_ticket_mint: ctx.accounts.bond_ticket_mint.key(),
+            claims_mint: ctx.accounts.claims.key(),
+            collateral_mint: ctx.accounts.collateral.key(),
+            seed: params.seed,
+            bump: [*ctx.bumps.get("bond_manager").unwrap()],
+            orderbook_paused: false,
+            tickets_paused: false,
+            duration: params.duration,
+            underlying_oracle: ctx.accounts.underlying_oracle.key(),
+            ticket_oracle: ctx.accounts.ticket_oracle.key(),
+        } ignoring {
+            orderbook_market_state,
+            event_queue,
+            asks,
+            bids,
+            nonce,
+            _reserved,
+        }
+    }
     emit!(BondManagerInitialized {
         version: manager.version_tag,
         address: ctx.accounts.bond_manager.key(),

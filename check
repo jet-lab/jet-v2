@@ -40,8 +40,8 @@ cargo-test() {
 all() {
     cargo-lint
     cargo-test
-    anchor-test
     hosted-tests-localnet
+    anchor-test
 }
 
 in-docker() {

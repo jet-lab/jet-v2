@@ -215,19 +215,14 @@ impl TestManager {
                 rent,
             )?
         };
-
         self.ix_builder = self.ix_builder.with_orderbook_accounts(
             Some(bids_kp.pubkey()),
             Some(asks_kp.pubkey()),
             Some(eq_kp.pubkey()),
         );
-
-        let ixns = vec![init_eq, init_bids, init_asks];
         self.insert_kp("eq", clone_kp(eq_kp));
         self.insert_kp("bids", clone_kp(bids_kp));
         self.insert_kp("asks", clone_kp(asks_kp));
-
-        self.sign_send_transaction(&ixns, None).await?;
 
         let init_manager = self.ix_builder.initialize_manager(
             self.client.payer().pubkey(),
@@ -245,8 +240,11 @@ impl TestManager {
             MIN_ORDER_SIZE,
         )?;
 
-        self.sign_send_transaction(&[init_manager, init_orderbook], None)
-            .await?;
+        self.sign_send_transaction(
+            &[init_eq, init_bids, init_asks, init_manager, init_orderbook],
+            None,
+        )
+        .await?;
 
         Ok(self)
     }
