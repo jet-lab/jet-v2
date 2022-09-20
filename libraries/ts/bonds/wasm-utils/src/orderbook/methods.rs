@@ -61,16 +61,26 @@ pub fn fixed_point_to_decimal(fp: u64) -> u64 {
     Fp32::upcast_fp32(fp).as_u64().unwrap()
 }
 
-/// Builds an `OrderAmount` consisting of a base, quote and limit price value 3-tuple
+/// Given an interest rate and bond duration, calculates a price
 ///
-/// utility for constructing order parameters from a given loan amount and desired rate
+/// NOTE: price is returned in fixed point 32 format
 #[wasm_bindgen]
-pub fn build_order_amount(amount: u64, interest_rate: u64) -> OrderAmount {
-    let quote = amount;
-    let base = quote + ((quote * interest_rate) / 10_000);
-    let price = calculate_implied_price(base, quote);
+pub fn rate_to_price(interest_rate: f64, duration: u64) -> u64 {
+    todo!()
+}
 
-    OrderAmount { base, quote, price }
+/// Given a price and bond duration, calculates an interest rate
+///
+/// NOTE: price is expected to be in fixed point 32 format
+#[wasm_bindgen]
+pub fn price_to_rate(price: u64, duration: u64) -> u64 {
+    todo!()
+}
+
+/// Converts a fixed point 32 price to an f64 for UI display
+#[wasm_bindgen]
+pub fn ui_price(price: u64) -> f64 {
+    todo!()
 }
 
 /// For calculation of an implied limit price given to the bonds orderbook
