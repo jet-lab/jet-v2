@@ -2,6 +2,8 @@ use anchor_lang::AccountDeserialize;
 use anyhow::Result;
 use jet_bonds::control::state::BondManager;
 use jet_margin_sdk::bonds::{BondsIxBuilder, OrderParams};
+use jet_proto_math::fixed_point::{Fp32, FP32_ONE};
+use rand::{thread_rng, Rng};
 use solana_client::{rpc_client::RpcClient, rpc_config::RpcSendTransactionConfig};
 use solana_sdk::{
     commitment_config::CommitmentConfig,
@@ -25,6 +27,8 @@ const DEVNET_USDC_FAUCET: Pubkey = pubkey!("MV2QoKwWmRQnu8HY56Hsmfhb6aC6L6mLirmQ
 
 const TOKEN_AMOUNT: u64 = 10_000_000_000;
 const TICKET_AMOUNT: u64 = 5_000_000_000;
+
+const BOND_DURATION: u64 = 5;
 
 lazy_static::lazy_static! {
     static ref PAYER: String = shellexpand::env("$PWD/tests/keypairs/payer.json")
@@ -171,37 +175,6 @@ impl<'a> User<'a> {
     }
 }
 
-fn main() -> Result<()> {
-    let conn = RpcClient::new_with_commitment(ENDPOINT, CommitmentConfig::confirmed());
-    let wallet = map_keypair_file(PAYER.clone())?;
-    let alice_kp = map_keypair_file(ALICE.clone())?;
-    let bob_kp = map_keypair_file(BOB.clone())?;
-
-    let client = Client::new(conn, wallet, DEVNET_USDC, Pubkey::default().to_bytes())?;
-
-    let alice = User::new(&client, alice_kp)?;
-    let bob = User::new(&client, bob_kp)?;
-
-    alice.init_and_fund(TOKEN_AMOUNT, TICKET_AMOUNT)?;
-    bob.init_and_fund(TOKEN_AMOUNT, TICKET_AMOUNT)?;
-
-    // let asks_data = &mut client.conn.get_account_data(&client.ix.asks()?)?;
-    // let asks = agnostic_orderbook::state::critbit::Slab::<jet_bonds::orderbook::state::CallbackInfo>::from_buffer(
-    //         asks_data,
-    //         agnostic_orderbook::state::AccountTag::Asks,
-    //     )?;
-    // let bids_data = &mut client.conn.get_account_data(&client.ix.bids()?)?;
-    // let bids = agnostic_orderbook::state::critbit::Slab::<jet_bonds::orderbook::state::CallbackInfo>::from_buffer(
-    //         bids_data,
-    //         agnostic_orderbook::state::AccountTag::Bids,
-    //     )?;
-
-    // dbg!(bids.into_iter(true).next().is_some());
-    // dbg!(asks.into_iter(true).next().is_some());
-
-    Ok(())
-}
-
 fn airdrop_ix(token_account: &Pubkey, faucet: &Pubkey, mint: &Pubkey, amount: u64) -> Instruction {
     let mut data = vec![1];
     data.extend_from_slice(&amount.to_le_bytes());
@@ -215,4 +188,115 @@ fn airdrop_ix(token_account: &Pubkey, faucet: &Pubkey, mint: &Pubkey, amount: u6
         AccountMeta::new_readonly(*faucet, false),
     ];
     Instruction::new_with_bytes(FAUCET_PID, &data, keys)
+}
+
+fn rate_to_price(rate: f64, tenor: u64) -> Option<u64> {
+    let per_year = Fp32::upcast_fp32((FP32_ONE as f64 * tenor as f64 / 31_536_000 as f64) as u64);
+    let fp_rate = Fp32::upcast_fp32((rate * FP32_ONE as f64) as u64);
+    let price = Fp32::ONE / (Fp32::ONE + fp_rate * per_year);
+    price.downcast_u64()
+}
+
+fn ui_price(fp: u64) -> f64 {
+    fp as f64 / FP32_ONE as f64
+}
+
+fn main() -> Result<()> {
+    let conn = RpcClient::new_with_commitment(ENDPOINT, CommitmentConfig::confirmed());
+    let wallet = map_keypair_file(PAYER.clone())?;
+    let alice_kp = map_keypair_file(ALICE.clone())?;
+    let bob_kp = map_keypair_file(BOB.clone())?;
+
+    let client = Client::new(conn, wallet, DEVNET_USDC, Pubkey::default().to_bytes())?;
+
+    let alice = User::new(&client, alice_kp)?;
+    let bob = User::new(&client, bob_kp)?;
+
+    // alice.init_and_fund(TOKEN_AMOUNT, TICKET_AMOUNT)?;
+    // bob.init_and_fund(TOKEN_AMOUNT, TICKET_AMOUNT)?;
+
+    let params = |tickets, tokens, price| OrderParams {
+        max_bond_ticket_qty: tickets,
+        max_underlying_token_qty: tokens,
+        limit_price: price,
+        match_limit: 100,
+        post_only: false,
+        post_allowed: true,
+        auto_stake: true,
+    };
+
+    let mut rng = thread_rng();
+
+    for _ in 0..100 {
+        let num: f64 = rng.sample(rand_distr::StandardNormal);
+        let rate = (0.05 * num).exp();
+        let mut principal: u64 = rng.gen();
+        principal %= 100_000;
+        let interest = principal as f64 * rate * BOND_DURATION as f64;
+
+        let borrow = params(
+            principal + interest as u64,
+            u64::MAX,
+            rate_to_price(rate, BOND_DURATION).unwrap(),
+        );
+        // alice.borrow_order(borrow)?;
+    }
+
+    for _ in 0..100 {
+        let num: f64 = rng.sample(rand_distr::StandardNormal);
+        let rate = (0.05 * num).exp();
+        let mut principal: u64 = rng.gen();
+        principal %= 100_000;
+
+        let lend = params(
+            u64::MAX,
+            principal,
+            rate_to_price(rate, BOND_DURATION).unwrap(),
+        );
+        // bob.lend_order(lend)?;
+    }
+
+    // read and display the orderbook
+    let asks_data = &mut client.conn.get_account_data(&client.ix.asks()?)?;
+    let asks = agnostic_orderbook::state::critbit::Slab::<jet_bonds::orderbook::state::CallbackInfo>::from_buffer(
+            asks_data,
+            agnostic_orderbook::state::AccountTag::Asks,
+        )?;
+    let bids_data = &mut client.conn.get_account_data(&client.ix.bids()?)?;
+    let bids = agnostic_orderbook::state::critbit::Slab::<jet_bonds::orderbook::state::CallbackInfo>::from_buffer(
+            bids_data,
+            agnostic_orderbook::state::AccountTag::Bids,
+        )?;
+
+    #[derive(Debug)]
+    struct Order {
+        pub base: u64,
+        pub quote: u64,
+        pub price_fp32: u64,
+        pub price_f64: f64,
+    }
+    dbg!(asks
+        .into_iter(true)
+        .map(|n| Order {
+            base: n.base_quantity,
+            quote: Fp32::upcast_fp32(n.price())
+                .u64_mul(n.base_quantity)
+                .unwrap(),
+            price_fp32: n.price(),
+            price_f64: ui_price(n.price())
+        })
+        .collect::<Vec<Order>>());
+    dbg!(bids
+        .into_iter(true)
+        .map(|n| Order {
+            base: n.base_quantity,
+            quote: Fp32::upcast_fp32(n.price())
+                .u64_mul(n.base_quantity)
+                .unwrap(),
+            price_fp32: n.price(),
+            price_f64: ui_price(n.price())
+        })
+        .collect::<Vec<Order>>());
+
+    Ok(())
 }
