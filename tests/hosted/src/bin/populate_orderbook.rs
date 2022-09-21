@@ -191,8 +191,9 @@ fn airdrop_ix(token_account: &Pubkey, faucet: &Pubkey, mint: &Pubkey, amount: u6
 }
 
 fn rate_to_price(rate: f64, tenor: u64) -> Option<u64> {
+    let per_year = Fp32::upcast_fp32((FP32_ONE as f64 * tenor as f64 / 31_536_000 as f64) as u64);
     let fp_rate = Fp32::upcast_fp32((rate * FP32_ONE as f64) as u64);
-    let price = Fp32::ONE / (Fp32::ONE + fp_rate * tenor);
+    let price = Fp32::ONE / (Fp32::ONE + fp_rate * per_year);
     price.downcast_u64()
 }
 
@@ -211,8 +212,8 @@ fn main() -> Result<()> {
     let alice = User::new(&client, alice_kp)?;
     let bob = User::new(&client, bob_kp)?;
 
-    alice.init_and_fund(TOKEN_AMOUNT, TICKET_AMOUNT)?;
-    bob.init_and_fund(TOKEN_AMOUNT, TICKET_AMOUNT)?;
+    // alice.init_and_fund(TOKEN_AMOUNT, TICKET_AMOUNT)?;
+    // bob.init_and_fund(TOKEN_AMOUNT, TICKET_AMOUNT)?;
 
     let params = |tickets, tokens, price| OrderParams {
         max_bond_ticket_qty: tickets,
@@ -223,7 +224,6 @@ fn main() -> Result<()> {
         post_allowed: true,
         auto_stake: true,
     };
-    let price = |base: u64, quote: u64| (Fp32::from(quote) / base).as_u64().unwrap();
 
     let mut rng = thread_rng();
 
@@ -239,7 +239,7 @@ fn main() -> Result<()> {
             u64::MAX,
             rate_to_price(rate, BOND_DURATION).unwrap(),
         );
-        alice.borrow_order(borrow)?;
+        // alice.borrow_order(borrow)?;
     }
 
     for _ in 0..100 {
@@ -253,7 +253,7 @@ fn main() -> Result<()> {
             principal,
             rate_to_price(rate, BOND_DURATION).unwrap(),
         );
-        bob.lend_order(lend)?;
+        // bob.lend_order(lend)?;
     }
 
     // read and display the orderbook
