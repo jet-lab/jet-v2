@@ -16,7 +16,7 @@ jobs:
       - name: Setup Rust
         uses: actions-rs/toolchain@v1
         with:
-          target: aarch64-apple-darwin
+          target: x86_64-apple-darwin
           toolchain: stable
 
       - name: Get cargo-macos cache
@@ -30,7 +30,7 @@ jobs:
             target/
 
       - name: Check Build Errors
-        run: cargo check --target aarch64-apple-darwin
+        run: cargo check --target x86_64-apple-darwin
 
 
   anchor-test:
