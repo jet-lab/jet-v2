@@ -6,12 +6,12 @@
   "module": "./dist/esm/index.js",
   "license": "AGPL-3.0-or-later",
   "scripts": {
-    "clean": "rimraf dist/ && rimraf wasm-utils/pkg/",
-    "copy:wasm": "copyfiles -u 1 wasm-utils/pkg/* dist/wasm-utils",
-    "build": "tsc -p tsconfig.json && tsc -p tsconfig.cjs.json",
-    "build:wasm": "wasm-pack build --target nodejs ./wasm-utils",
+    "clean": "rimraf dist/",
+    "build": "yarn build:wasm && yarn build:tsc",
+    "build:wasm": "wasm-pack build --target bundler ./wasm-utils --out-dir ../dist/wasm-utils/pkg",
+    "build:tsc": "tsc -p tsconfig.json & tsc -p tsconfig.cjs.json; wait",
     "lint": "tslint -c tslint.json src/**/*.ts",
-    "prepublish": "yarn clean && yarn build:wasm && yarn copy:wasm && yarn build && npm pack"
+    "prepublish": "yarn build:wasm && yarn build"
   },
   "dependencies": {
     "@jet-lab/margin": "*",
