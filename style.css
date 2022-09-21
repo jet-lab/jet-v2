@@ -2,46 +2,57 @@
 
 body {
   margin: 0;
-  background-color: #0e1718;
+  background-color: #464646;
 }
-
 
 a {
   color: #3d9e83;
+  text-decoration: none;
+  padding-left: 2em;
 }
 a:visited {
   text-decoration: none;
-  color: white;
+  color: #f4f4f4;
 }
 a:hover {
   text-decoration: none;
-  color: #8ebbb1;
+  color: #278db6;
 }
 a:focus {
   text-decoration: none;
   color: #8ebbb1;
-} 
-
-#title{
-  font-family: 'Lato', Helvetica, Arial, sans-serif;
-  font-size: 50px;
-  color: #278db6;
-  text-align: center;
-  flex-direction: column;
-  margin-top: 5em;
 }
-#link-tree {
-  background-color: transparent;
+
+#title {
+  font-family: "Lato", Helvetica, Arial, sans-serif;
+  font-size: 2em;
+  background: #333333;
+  color: #86ceb8;
   display: flex;
-  justify-content: center;
-  justify-items: center;
-  position: absolute;
-  height: 200px;
-  width: 600px;
-  text-align: center;
-  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-end;
+  height: 2em;
+  padding: 0.5em 1em;
+}
+
+#link-tree {
   top: calc(50% - 100px);
   left: calc(50% - 300px);
-  font-size: 30px;
-  font-family: 'Lato', Helvetica, Arial, sans-serif;
+  font-size: 1.8em;
+  font-family: "Lato", Helvetica, Arial, sans-serif;
+}
+
+li {
+  height: 1.5em;
+  list-style-type: none;
+  padding: 0.25em 0 0 5em;
+  margin: 0.5em 0;
+}
+
+.typescript_logo {
+  content: url('https://upload.wikimedia.org/wikipedia/commons/4/4c/Typescript_logo_2020.svg');
+}
+
+.rust_logo {
+  content: url('https://www.rust-lang.org/logos/rust-logo-128x128-blk.png')
 }

@@ -442,6 +442,16 @@
 <span id="436">436</span>
 <span id="437">437</span>
 <span id="438">438</span>
+<span id="439">439</span>
+<span id="440">440</span>
+<span id="441">441</span>
+<span id="442">442</span>
+<span id="443">443</span>
+<span id="444">444</span>
+<span id="445">445</span>
+<span id="446">446</span>
+<span id="447">447</span>
+<span id="448">448</span>
 </pre><pre class="rust"><code><span class="comment">// SPDX-License-Identifier: AGPL-3.0-or-later</span>
 <span class="comment">//</span>
 <span class="comment">// Copyright (C) 2022 JET PROTOCOL HOLDINGS, LLC.</span>
@@ -575,6 +585,10 @@
 
     <span class="doccomment">/// The position contains a balance of tokens that are owed as a part of some debt.</span>
     <span class="ident">Claim</span>,
+
+    <span class="doccomment">/// The position contains a balance managed by a trusted adapter to represent the amount of collateral custodied by that adapter.</span>
+    <span class="doccomment">/// The token account is owned by the adapter. Collateral is accessed through instructions to the adapter.</span>
+    <span class="ident">AdapterCollateral</span>,
 }
 
 <span class="kw">impl</span> <span class="ident">From</span><span class="op">&lt;</span><span class="ident">TokenKind</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">PositionKind</span> {
@@ -583,6 +597,7 @@
             <span class="ident">TokenKind::NonCollateral</span> =&gt; <span class="ident">PositionKind::NoValue</span>,
             <span class="ident">TokenKind::Collateral</span> =&gt; <span class="ident">PositionKind::Deposit</span>,
             <span class="ident">TokenKind::Claim</span> =&gt; <span class="ident">PositionKind::Claim</span>,
+            <span class="ident">TokenKind::AdapterCollateral</span> =&gt; <span class="ident">PositionKind::AdapterCollateral</span>,
         }
     }
 }
@@ -670,7 +685,9 @@
     }
 
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">collateral_value</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Number128</span> {
-        <span class="macro">assert_eq!</span>(<span class="self">self</span>.<span class="ident">kind</span>(), <span class="ident">PositionKind::Deposit</span>);
+        <span class="macro">assert!</span>(
+            <span class="self">self</span>.<span class="ident">kind</span>() <span class="op">==</span> <span class="ident">PositionKind::Deposit</span> <span class="op">|</span><span class="op">|</span> <span class="self">self</span>.<span class="ident">kind</span>() <span class="op">==</span> <span class="ident">PositionKind::AdapterCollateral</span>
+        );
 
         <span class="ident">Number128::from_decimal</span>(<span class="self">self</span>.<span class="ident">value_modifier</span>, <span class="op">-</span><span class="number">2</span>) <span class="op">*</span> <span class="self">self</span>.<span class="ident">value</span>()
     }
@@ -707,7 +724,9 @@
         <span class="ident">approvals</span>.<span class="ident">contains</span>(<span class="kw-2">&amp;</span><span class="ident">Approver::MarginAccountAuthority</span>)
             <span class="op">&amp;&amp;</span> <span class="kw">match</span> <span class="self">self</span>.<span class="ident">kind</span>() {
                 <span class="ident">PositionKind::NoValue</span> <span class="op">|</span> <span class="ident">PositionKind::Deposit</span> =&gt; <span class="bool-val">true</span>,
-                <span class="ident">PositionKind::Claim</span> =&gt; <span class="ident">approvals</span>.<span class="ident">contains</span>(<span class="kw-2">&amp;</span><span class="ident">Approver::Adapter</span>(<span class="self">self</span>.<span class="ident">adapter</span>)),
+                <span class="ident">PositionKind::Claim</span> <span class="op">|</span> <span class="ident">PositionKind::AdapterCollateral</span> =&gt; {
+                    <span class="ident">approvals</span>.<span class="ident">contains</span>(<span class="kw-2">&amp;</span><span class="ident">Approver::Adapter</span>(<span class="self">self</span>.<span class="ident">adapter</span>))
+                }
             }
     }
 }
@@ -741,6 +760,7 @@
             <span class="ident">PositionKind::NoValue</span> =&gt; <span class="string">&quot;NoValue&quot;</span>,
             <span class="ident">PositionKind::Claim</span> =&gt; <span class="string">&quot;Claim&quot;</span>,
             <span class="ident">PositionKind::Deposit</span> =&gt; <span class="string">&quot;Deposit&quot;</span>,
+            <span class="ident">PositionKind::AdapterCollateral</span> =&gt; <span class="string">&quot;AdapterCollateral&quot;</span>,
         })
     }
 }
