@@ -1,3 +1,6 @@
+#![allow(clippy::all)]
+#![allow(warnings)]
+
 use anchor_lang::AccountDeserialize;
 use anyhow::Result;
 use jet_bonds::control::state::BondManager;
