@@ -25,6 +25,8 @@ import BOB_KEYPAIR from "../../keypairs/bob-keypair.json";
 import { TestMint, Transactor } from "./utils";
 import { bnToBigInt } from "@jet-lab/margin/src";
 
+const BN_MAX = new BN(9007199254740991)
+
 describe("jet-bonds", async () => {
   const confirmOptions: ConfirmOptions = {
     skipPreflight: true,
@@ -176,11 +178,11 @@ describe("jet-bonds", async () => {
 
     assert(
       resultingTokens.toString() ===
-        new BN(STARTING_TOKENS).sub(TOKENS_EXCHANGED).toString()
+      new BN(STARTING_TOKENS).sub(TOKENS_EXCHANGED).toString()
     );
     assert(
       resultingTickets.toString() ===
-        new BN(TOKENS_EXCHANGED.toNumber()).toString()
+      new BN(TOKENS_EXCHANGED.toNumber()).toString()
     );
   });
 
@@ -199,38 +201,33 @@ describe("jet-bonds", async () => {
 
     assert(
       resultingTickets.toString() ===
-        TOKENS_EXCHANGED.sub(STAKE_AMOUNT).toString()
+      TOKENS_EXCHANGED.sub(STAKE_AMOUNT).toString()
     );
     assert(claimTicket.redeemable.toString() === STAKE_AMOUNT.toString());
   });
 
-  const BORROW_AMOUNT = new BN(1_000 * ONE_TOKEN);
-  const BORROW_INTEREST = new BN(1_500);
-  it("alice makes a borrow offer", async () => {
+  it("alice makes an offer to sell tickets", async () => {
     const borrow = await bondMarket.sellTicketsOrderIx({
-      amount: BORROW_AMOUNT,
-      interest: BORROW_INTEREST, // 15% interest
+      maxBondTicketQty: new BN(1000),
+      maxUnderlyingTokenQty: BN_MAX,
+      limitPrice: new BN(1.2),
       vaultAuthority: alice.key!,
     });
     await transactor.signSendInstructions([borrow], confirmOptions);
   });
 
-  const BORROW_ORDER_AMOUNT = build_order_amount_deprecated(
-    bnToBigInt(BORROW_AMOUNT),
-    bnToBigInt(BORROW_INTEREST)
-  );
-  it("loads orderbook and asserts borrow order", async () => {
+  it("load orderbook and assert sell order", async () => {
     const orderbook = await bondMarket.fetchOrderbook();
     const order = orderbook.asks[0];
 
     assert(new PublicKey(order.owner).toString() === alice.key.toString());
     assert(
       new BN(order.base_size.toString()).toString() ===
-        BORROW_ORDER_AMOUNT.base.toString()
+      new BN(1000).toString()
     );
     assert(
       new BN(order.limit_price.toString()).toString() ===
-        BORROW_ORDER_AMOUNT.price.toString()
+      new BN(1.2).toString()
     );
     // posted quote cannot be directly compared with the quote value in the OrderAmount
   });
@@ -239,8 +236,9 @@ describe("jet-bonds", async () => {
     await createTicketAccount(bob);
 
     const lend = await bondMarket.lendOrderIx({
-      amount: new BN(10_000 * ONE_TOKEN),
-      interest: new BN(1_000), // 10% interest
+      maxBondTicketQty: BN_MAX,
+      maxUnderlyingTokenQty: new BN(1000),
+      limitPrice: new BN(1.2),
       seed: Uint8Array.of(0),
       vaultAuthority: bob.key,
       payer: payer.publicKey,
