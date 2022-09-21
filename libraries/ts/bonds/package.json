@@ -8,7 +8,7 @@
   "scripts": {
     "clean": "rimraf dist/",
     "build": "yarn build:wasm && yarn build:tsc",
-    "build:wasm": "wasm-pack build --target bundler ./wasm-utils --out-dir ../dist/wasm-utils/pkg",
+    "build:wasm": "wasm-pack build --target nodejs ./wasm-utils --out-dir ../dist/wasm-utils/pkg",
     "build:tsc": "tsc -p tsconfig.json & tsc -p tsconfig.cjs.json; wait",
     "lint": "tslint -c tslint.json src/**/*.ts",
     "prepublish": "yarn build:wasm && yarn build"
