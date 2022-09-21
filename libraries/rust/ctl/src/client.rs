@@ -346,7 +346,13 @@ impl<'client> PlanBuilder<'client> {
             &ix_list,
             Some(&self.client.config.signer.as_ref().unwrap().pubkey()),
         );
-        transaction.partial_sign(&signers, self.client.recent_blockhash);
+        for key in transaction.message().clone().signer_keys() {
+            for signer in signers.clone() {
+                if key == &signer.pubkey() {
+                    transaction.partial_sign(&[signer], self.client.recent_blockhash)
+                }
+            }
+        }
 
         self.entries.push(TransactionEntry { steps, transaction });
 

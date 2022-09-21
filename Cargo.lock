@@ -1868,6 +1868,7 @@ dependencies = [
  "serial_test",
  "shellexpand",
  "solana-clap-utils",
+ "solana-client",
  "solana-sdk",
  "spl-associated-token-account",
  "spl-token 3.3.1",

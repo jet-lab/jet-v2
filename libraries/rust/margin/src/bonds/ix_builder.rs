@@ -126,6 +126,9 @@ impl BondsIxBuilder {
 }
 
 impl BondsIxBuilder {
+    pub fn token_mint(&self) -> Pubkey {
+        self.underlying_mint
+    }
     pub fn ticket_mint(&self) -> Pubkey {
         self.bond_ticket_mint
     }
@@ -143,6 +146,15 @@ impl BondsIxBuilder {
     }
     pub fn collateral(&self) -> Pubkey {
         self.collateral
+    }
+    pub fn event_queue(&self) -> Result<Pubkey> {
+        self.keys.unwrap("event_queue")
+    }
+    pub fn bids(&self) -> Result<Pubkey> {
+        self.keys.unwrap("bids")
+    }
+    pub fn asks(&self) -> Result<Pubkey> {
+        self.keys.unwrap("asks")
     }
 }
 
