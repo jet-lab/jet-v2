@@ -18,7 +18,7 @@ anchor-test() {
     yarn --cwd libraries/ts/bonds build:wasm
     yarn --cwd libraries/ts/bonds copy:wasm
     yarn --cwd libraries/ts/bonds build
-	anchor test  --skip-lint --skip-build $@ -- --features testing
+	anchor test $@ -- --features testing
 }
 
 hosted-tests-localnet() {
