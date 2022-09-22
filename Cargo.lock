@@ -5514,6 +5514,7 @@ dependencies = [
  "bytemuck",
  "jet-proto-math 1.1.0 (git+https://github.com/jet-lab/program-libraries?branch=fixed-point-math)",
  "js-sys",
+ "rand 0.8.5",
  "serde",
  "wasm-bindgen",
 ]
