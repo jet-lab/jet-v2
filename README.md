@@ -24,18 +24,6 @@
 
 # Install
 
-Jet V2 requires [node](https://nodejs.org/en/) and [rust](https://www.rust-lang.org/tools/install).
-
-## Node 18
-
-Update node to version 18
-
-```bash
-npm i -g n
-n 18
-node --version # v18.9.0
-```
-
 ## Solana
 
 Make sure you update Solana to a newer version.
