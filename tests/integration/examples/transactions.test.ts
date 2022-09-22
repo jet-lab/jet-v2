@@ -1,11 +1,8 @@
 /*
 
-import { MarginClient, MarginPrograms } from "../../../libraries/ts/src/margin/marginClient"
-import { MarginAccount } from "../../../libraries/ts/src/margin/marginAccount"
-import { Pool, PoolManager, PoolTokenChange } from "../../../libraries/ts/src/margin/pool"
+import { MarginClient, MarginPrograms, MarginAccount, Pool, PoolManager, PoolTokenChange, MarginConfig, PositionKind, TokenFaucet, TokenFormat } from "@jet-lab/margin"
 import { Connection, Keypair, LAMPORTS_PER_SOL } from "@solana/web3.js"
 import { AnchorProvider, BN, Wallet } from "@project-serum/anchor"
-import { MarginConfig, PositionKind, TokenFaucet, TokenFormat } from "../../../libraries/ts/src"
 import { assert } from "chai"
 
 //An example of loading margin accounts and getting a margin account's risk indicator

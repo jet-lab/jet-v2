@@ -18,17 +18,14 @@ import {
   fiatOptions
 } from '../../state/settings/settings';
 import { getPing, toggleLightTheme } from '../../utils/ui';
-import { Button, Input, Modal, Radio, Select, Switch, Typography } from 'antd';
+import { Input, Modal, Radio, Select, Typography } from 'antd';
 import { ReactComponent as AngleDown } from '../../styles/icons/arrow-angle-down.svg';
-import { ReactComponent as JetPlane } from '../../styles/icons/jet/jet_plane.svg';
 
+// Modal for changing app preferences
 export function SettingsModal(): JSX.Element {
   const dictionary = useRecoilValue(Dictionary);
   const settingsModalOpen = useRecoilValue(SettingsModalState);
   const resetSettingsModalOpen = useResetRecoilState(SettingsModalState);
-  // Walkthrough
-  // const setWalkthroughCompleted = useSetRecoilState(WalkthroughCompleted);
-  // const setWalkthroughModalOpen = useSetRecoilState(WalkthroughModal);
   // Cluster
   const [cluster, setCluster] = useRecoilState(Cluster);
   const [clusterSetting, setClusterSetting] = useState(cluster);
@@ -148,16 +145,49 @@ export function SettingsModal(): JSX.Element {
     setRpcNodes(rpcNodes);
   }, [dictionary.settingsModal.rpcNode.custom, rpcNodes, setRpcNodes]);
 
+  // Returns RPC ping className for styling
+  function getPingClassName(ping: number) {
+    let className = 'ping-indicator-color';
+    if (ping < 1000) {
+      className += ' fast';
+    } else if (ping < 2500) {
+      className += ' slow';
+    } else {
+      className += ' poor';
+    }
+
+    return className;
+  }
+
+  // Renders custom node input
+  function renderCustomInput() {
+    let render = <></>;
+    if (preferredNodeSetting === 'custom') {
+      render = (
+        <Input
+          className={customNodeInputError ? 'error' : ''}
+          value={customNodeInput}
+          placeholder={dictionary.settingsModal.rpcNode.customInputPlaceholder}
+          onChange={e => setCustomNodeInput(e.target.value)}
+          onPressEnter={() => (checkSettingsChange() ? saveSettings() : null)}
+        />
+      );
+    }
+
+    return render;
+  }
+
   if (settingsModalOpen) {
     return (
       <Modal
         visible
         className="settings-modal header-modal show-scrollbar"
+        maskClosable={false}
         onCancel={cancelSettings}
         cancelText={dictionary.modals.cancel}
         onOk={saveSettings}
         okText={dictionary.settingsModal.savePreferences}
-        okButtonProps={{ disabled: loading || !checkSettingsChange(), loading }}>
+        okButtonProps={{ disabled: loading, loading }}>
         <div className="modal-header flex-centered">
           <Title className="modal-header-title green-text">{dictionary.settingsModal.title}</Title>
         </div>
@@ -169,37 +199,22 @@ export function SettingsModal(): JSX.Element {
             value={preferredNodeSetting}
             suffixIcon={<AngleDown className="jet-icon" />}
             onChange={node => setPreferredNodeSetting(node)}>
-            {rpcNodeOptions.map(node => (
-              <Option key={rpcNodes[node].name} value={node}>
-                {rpcNodes[node].name}
-                <div className="ping-indicator flex-centered">
-                  <div
-                    className={`ping-indicator-color ${
-                      rpcNodes[node][`${nodeIndexer}Ping`]
-                        ? rpcNodes[node][`${nodeIndexer}Ping`] < 1000
-                          ? 'fast'
-                          : rpcNodes[node][`${nodeIndexer}Ping`] < 2500
-                          ? 'slow'
-                          : 'poor'
-                        : ''
-                    }`}></div>
-                  {rpcNodes[node][`${nodeIndexer}Ping`] ? rpcNodes[node][`${nodeIndexer}Ping`] + 'ms' : '(-)'}
-                </div>
-              </Option>
-            ))}
+            {rpcNodeOptions.map(node => {
+              const nodePing = rpcNodes[node][`${nodeIndexer}Ping`];
+
+              return (
+                <Option key={rpcNodes[node].name} value={node}>
+                  {rpcNodes[node].name}
+                  <div className="ping-indicator flex-centered">
+                    <div className={getPingClassName(nodePing)}></div>
+                    {nodePing ? nodePing + 'ms' : '(-)'}
+                  </div>
+                </Option>
+              );
+            })}
           </Select>
-          {preferredNodeSetting === 'custom' && (
-            <>
-              <Input
-                className={customNodeInputError ? 'error' : ''}
-                value={customNodeInput}
-                placeholder={dictionary.settingsModal.rpcNode.customInputPlaceholder}
-                onChange={e => setCustomNodeInput(e.target.value)}
-                onPressEnter={() => (checkSettingsChange() ? saveSettings() : null)}
-              />
-              <Text type="danger">{customNodeInputError}</Text>
-            </>
-          )}
+          {renderCustomInput()}
+          <Text type="danger">{customNodeInputError}</Text>
         </div>
         <div className="setting flex align-start justify-center column">
           <Text strong className="setting-title">
@@ -285,32 +300,17 @@ export function SettingsModal(): JSX.Element {
             </Radio>
           </Radio.Group>
         </div>
+        {/*
         <div className="setting flex align-start justify-center column">
           <Text strong className="setting-title">
             {dictionary.settingsModal.theme.title.toUpperCase()}
           </Text>
           <div className="flex-centered">
             <Switch onClick={() => setLightTheme(!lightTheme)} checked={!lightTheme} />
-            {lightTheme ? dictionary.settingsModal.theme.light : dictionary.settingsModal.theme.dark}
+            {dictionary.settingsModal.theme[lightTheme ? 'light' : 'dark']}
           </div>
         </div>
-        <div className="setting flex align-start justify-center column">
-          <Text strong className="setting-title">
-            {dictionary.copilot.walkthrough.title.toUpperCase()}
-          </Text>
-          <Button
-            ghost
-            disabled
-            className="walkthrough-modal-btn"
-            onClick={() => {
-              // resetSettingsModalOpen();
-              // setWalkthroughModalOpen(true);
-              // setWalkthroughCompleted(false);
-            }}>
-            {dictionary.copilot.walkthrough.start}
-            <JetPlane className="jet-icon jet-plane" />
-          </Button>
-        </div>
+        */}
       </Modal>
     );
   } else {

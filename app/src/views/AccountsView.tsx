@@ -5,8 +5,8 @@ import { FullAccountBalance } from '../components/tables/FullAccountBalance';
 import { FullAccountHistory } from '../components/tables/FullAccountHistory';
 import { Dictionary } from '../state/settings/localization/localization';
 import { AccountsViewOrder } from '../state/views/views';
-import { animateViewIn } from '../utils/ui';
 
+// App view for managing / checking margin accounts
 export function AccountsView(): JSX.Element {
   const dictionary = useRecoilValue(Dictionary);
 
@@ -30,6 +30,5 @@ export function AccountsView(): JSX.Element {
     return <div className="accounts-view view">{accountViewComponents}</div>;
   };
 
-  useEffect(() => animateViewIn(), []);
   return accountView();
 }

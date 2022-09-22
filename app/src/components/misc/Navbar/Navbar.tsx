@@ -1,14 +1,15 @@
-import { useState } from 'react';
+import { useRecoilState } from 'recoil';
 import { TpsBanner } from '../TpsBanner';
 import { WalletButton } from '../WalletButton';
 import { NavLogo } from './NavLogo';
 import { NavLinks } from './NavLinks';
 import { NavButtons } from './NavButtons';
 import { NavFooterLinks } from './NavFooterLinks';
+import { NavDrawerOpen } from '../../../state/views/views';
 
 // The Navigation Bar for the application
 export function Navbar(): JSX.Element {
-  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useRecoilState(NavDrawerOpen);
 
   return (
     <div className={`navbar-container flex-centered column ${drawerOpen ? 'drawer-open' : ''}`}>

@@ -36,3 +36,10 @@ export function formatRemainder(value: string): string {
 export function formatMarketPair(pair: string): string {
   return pair.split('/')[0] + ' / ' + pair.split('/')[1];
 }
+
+// Remove locale formatting from number string
+export function fromLocaleString(num: string): string {
+  const { format } = new Intl.NumberFormat(navigator.language);
+  const decimalSign = /^0(.)1$/.exec(format(0.1));
+  return num.replace(new RegExp(`[^${decimalSign}\\d]`, 'g'), '.').replace(',', '');
+}

@@ -1,6 +1,6 @@
 import { useLocation } from 'react-router-dom';
 import { useRecoilState, SetterOrUpdater } from 'recoil';
-import { TradeViewOrder, PoolsViewOrder, SwapsViewOrder, AccountsViewOrder } from '../../../state/views/views';
+import { PoolsViewOrder, SwapsViewOrder, AccountsViewOrder } from '../../../state/views/views';
 import { ReorderArrows } from '../ReorderArrows';
 import { SnapshotHead } from './SnapshotHead';
 import { SnapshotBody } from './SnapshotBody';
@@ -9,7 +9,6 @@ import { SnapshotFooter } from './SnapshotFooter';
 // The snapshot of data / base actions that follows the user around the app
 export function AccountSnapshot(): JSX.Element {
   const { pathname } = useLocation();
-  const [tradeViewOrder, setTradeViewOrder] = useRecoilState(TradeViewOrder);
   const [poolsViewOrder, setPoolsViewOrder] = useRecoilState(PoolsViewOrder);
   const [swapsViewOrder, setSwapsViewOrder] = useRecoilState(SwapsViewOrder);
   const [accountsViewOrder, setAccountsViewOrder] = useRecoilState(AccountsViewOrder);
@@ -21,11 +20,6 @@ export function AccountSnapshot(): JSX.Element {
   } {
     switch (pathname) {
       case '/':
-        return {
-          order: tradeViewOrder,
-          setOrder: setTradeViewOrder
-        };
-      case '/borrow':
         return {
           order: poolsViewOrder,
           setOrder: setPoolsViewOrder
@@ -44,7 +38,7 @@ export function AccountSnapshot(): JSX.Element {
   }
 
   return (
-    <div className="account-snapshot view-element view-element-hidden flex-centered column">
+    <div className="account-snapshot view-element flex-centered column">
       <SnapshotHead />
       <SnapshotBody />
       <SnapshotFooter />

@@ -1,68 +1,82 @@
-import { useEffect, useState, useRef } from 'react';
-import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
-import { MarginAccount, PoolAction, TokenAmount } from '@jet-lab/margin';
-import { CurrentPool, usePoolFromName } from '../../../state/borrow/pools';
-import { WalletTokens } from '../../../state/user/walletTokens';
-import { CurrentAction, MaxTradeAmounts, TokenInputAmount, TokenInputString } from '../../../state/actions/actions';
+import { useEffect, useState } from 'react';
+import { useRecoilState, useRecoilValue, useResetRecoilState, useSetRecoilState } from 'recoil';
+import { feesBuffer, MarginAccount, numberToBn, TokenAmount, PoolAction } from '@jet-lab/margin';
+import { CurrentPool, PoolOption, usePoolFromName } from '../../../state/pools/pools';
+import {
+  CurrentAction,
+  MaxTradeAmounts,
+  SendingTransaction,
+  TokenInputAmount,
+  TokenInputString
+} from '../../../state/actions/actions';
 import {
   useTokenInputDisabledMessage,
   useTokenInputWarningMessage,
   useTokenInputErrorMessage
 } from '../../../utils/actions/tokenInput';
-import { getTokenAmountFromNumber } from '../../../utils/currency';
+import { DEFAULT_DECIMALS, getTokenAmountFromNumber } from '../../../utils/currency';
 import { TokenSelect } from './TokenSelect';
 import { TokenSlider } from './TokenSlider';
 import { Input, Typography } from 'antd';
+import { WalletTokens } from '../../../state/user/walletTokens';
+import { CurrentAccount } from '../../../state/user/accounts';
+import { fromLocaleString } from '../../../utils/format';
 
 // Main component for token inputs when the user takes one of the main actions (deposit, borrow, etc)
 export function TokenInput(props: {
-  // A specific account to base input properties on (like maximum input, errors, etc)
-  account: MarginAccount | undefined;
-  // Specify what occurs when the user switches their token
-  onChangeToken: (token: string) => unknown;
+  // Optionally, specify a value to be represented by this input (default to tokenInputAmount)
+  value?: TokenAmount;
+  // Optionally specify an account (defaults to currentAccount)
+  account?: MarginAccount;
+  // Optionally, can specify which action to base input's references on (defaults to currentAction)
+  action?: PoolAction;
+  // Optionally, specify which pool this input should base its references on (defaults to currentPool)
+  poolSymbol?: string;
+  // Optionally, specify which tokens a user can choose from in the TokenSelect
+  tokenOptions?: PoolOption[];
+  // Optionally, specify what occurs when the user switches their token (defaults to updating currentPool)
+  onChangeToken?: (token: string) => unknown;
   // Specify what occurs if user presses enter while focusing the input
   onPressEnter: () => unknown;
-  // Specify a condition to show the input's loading state
-  loading: boolean;
-  // Optionally, can specify what token the input is referencing (overrides currentPool reference)
-  tokenSymbol?: string;
-  // Optionally, can specify what token value of the input is (if based on other factors, overrides tokenInputAmount state)
-  tokenValue?: TokenAmount;
-  // Optionally, can specify which action to base input's references on (for instance, only show maximum inputs for the Swap action)
-  action?: PoolAction;
+  // Optionally, hide input slider
+  hideSlider?: boolean;
   // Optionally, override the styles of the token selector dropdown
   dropdownStyle?: React.CSSProperties;
 }): JSX.Element {
+  const walletTokens = useRecoilValue(WalletTokens);
+  const currentAccount = useRecoilValue(CurrentAccount);
+  const account = props.account ?? currentAccount;
   // The pool being interacted with (or specified externally)
   const currentPool = useRecoilValue(CurrentPool);
-  const poolFromToken = usePoolFromName(props.tokenSymbol);
+  const poolFromToken = usePoolFromName(props.poolSymbol);
   const tokenPool = poolFromToken ?? currentPool;
-  const tokenPoolRef = useRef(tokenPool);
-  const walletTokens = useRecoilValue(WalletTokens);
   const currentAction = useRecoilValue(CurrentAction);
   // If an action was specified, reference that action otherwise reference the currentAction
   const tokenAction = props.action ?? currentAction;
   // We track user input as a string (so they can enter decimals ex: '0.0001'), but then parse into a TokenAmount
   const [tokenInputAmount, setTokenInputAmount] = useRecoilState(TokenInputAmount);
+  const resetTokenInputAmount = useResetRecoilState(TokenInputAmount);
   // Track/update the user's input amount as a string, to be converted to a TokenAmount
   const [tokenInputString, setTokenInputString] = useRecoilState(TokenInputString);
+  const resetTokenInputString = useResetRecoilState(TokenInputString);
   // If an input amount was specified, reference that amount otherwise reference the current tokenInputAmount
-  const inputAmount = props.tokenValue ?? tokenInputAmount;
-  const zeroInputAmount = TokenAmount.zero(tokenPool?.decimals ?? 0);
+  const inputAmount = props.value ?? tokenInputAmount;
+  const zeroInputAmount = TokenAmount.zero(tokenPool?.decimals ?? DEFAULT_DECIMALS);
   const [maxInput, setMaxInput] = useState(zeroInputAmount);
   const setMaxTradeAmounts = useSetRecoilState(MaxTradeAmounts);
-  const disabledMessage = useTokenInputDisabledMessage(props.account);
-  const warningMessage = useTokenInputWarningMessage(props.account);
-  const errorMessage = useTokenInputErrorMessage(props.account);
-  // If we're given an external value, are loading, can't enter an input or have a disabled message
-  const disabled = props.tokenValue !== undefined || disabledMessage.length > 0 || maxInput.isZero();
-  const { Paragraph, Text } = Typography;
+  const disabledMessage = useTokenInputDisabledMessage();
+  const warningMessage = useTokenInputWarningMessage();
+  const errorMessage = useTokenInputErrorMessage();
+  // If we're given an external value, are sendingTransaction, can't enter an input or have a disabled message
+  const sendingTransaction = useRecoilValue(SendingTransaction);
+  const disabled = sendingTransaction || props.value !== undefined || disabledMessage.length > 0 || maxInput.isZero();
+  const { Text } = Typography;
 
-  // If current action changes, keep input within the max range
+  // If current action changes, keep input within the maxInput range
   useEffect(() => {
     if (tokenInputAmount.gt(maxInput)) {
       setTokenInputAmount(maxInput);
-      setTokenInputString(maxInput.uiTokens);
+      setTokenInputString(maxInput.tokens.toString());
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tokenAction]);
@@ -70,12 +84,12 @@ export function TokenInput(props: {
   // Keep tokenInputAmount up to date with tokenInputString
   useEffect(() => {
     // Create TokenAmount from tokenInputString and update tokenInputAmount
-    if (!tokenPool || tokenInputString === tokenInputAmount.uiTokens || props.tokenValue !== undefined) {
+    if (!tokenPool || tokenInputString === tokenInputAmount.uiTokens || props.value !== undefined) {
       return;
     }
 
     // Remove unnecessary 0's from beginning / end of input string
-    let inputString = tokenInputString;
+    let inputString = fromLocaleString(tokenInputString);
     while (
       inputString.includes('.') &&
       (inputString[inputString.length - 1] === '.' ||
@@ -84,52 +98,63 @@ export function TokenInput(props: {
       inputString = inputString.substring(0, inputString.length - 1);
     }
 
-    // Keep input within the user's max range
+    // Keep input within the user's maxInput range
     const inputTokenAmount = getTokenAmountFromNumber(parseFloat(inputString), tokenPool.decimals);
     const withinMaxRange = TokenAmount.min(inputTokenAmount, maxInput);
 
     // Adjust state
     setTokenInputAmount(withinMaxRange);
+    if (inputTokenAmount.gt(withinMaxRange)) {
+      setTokenInputString(withinMaxRange.tokens.toString());
+    }
   }, [
     tokenPool,
     tokenInputString,
     tokenInputAmount.uiTokens,
-    props.tokenValue,
+    props.value,
     maxInput,
     setTokenInputAmount,
     setTokenInputString
   ]);
 
-  // Reset tokenInput and update maxInput on action / pool change
+  // Update maxInput on pool position update
   useEffect(() => {
-    // Use the reference to see if we've changed pools, and if so reset
-    const hasChangedPools = tokenPool?.symbol !== tokenPoolRef.current?.symbol;
-    if (hasChangedPools) {
-      setTokenInputAmount(zeroInputAmount);
-      setTokenInputString(zeroInputAmount.uiTokens);
-      tokenPoolRef.current = tokenPool;
+    if (!tokenPool || !tokenAction || !account) {
+      return;
     }
 
-    let max = zeroInputAmount;
-    // If props.account is undefined or tokenAction is 'deposit', we will use the WALLET
-    if (!props.account && walletTokens && tokenPool?.symbol) {
-      max = walletTokens.map[tokenPool.symbol].amount;
-      // Otherwise we're using an ACCOUNT
-    } else if (tokenAction && props.account?.positions && tokenPool?.symbol) {
-      const poolPosition = props.account.poolPositions[tokenPool.symbol];
+    let maxInput = zeroInputAmount;
+    // If user is depositing or swapping with jupiter, reference their wallet
+    if (tokenAction === 'deposit') {
+      maxInput = walletTokens ? walletTokens.map[tokenPool.symbol].amount : zeroInputAmount;
+
+      // If SOL, need to save some for fees
+      if (tokenPool.symbol === 'SOL') {
+        maxInput = maxInput.subb(numberToBn(feesBuffer));
+      }
+      // Otherwise reference their margin account
+    } else {
+      const poolPosition = account.poolPositions[tokenPool.symbol];
       if (poolPosition) {
-        const maxTradeAmounts = poolPosition.maxTradeAmounts;
-        setMaxTradeAmounts(maxTradeAmounts);
-        max = maxTradeAmounts[tokenAction];
+        const maxInputTradeAmounts = poolPosition.maxTradeAmounts;
+        setMaxTradeAmounts(maxInputTradeAmounts);
+        maxInput = maxInputTradeAmounts[tokenAction];
       }
     }
-    setMaxInput(max);
+    setMaxInput(maxInput);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tokenAction, tokenPool, props.account]);
+  }, [tokenAction, tokenPool?.symbol, account?.poolPositions]);
+
+  // Reset input on action / pool change
+  useEffect(() => {
+    resetTokenInputAmount();
+    resetTokenInputString();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tokenAction, tokenPool?.symbol]);
 
   // Handle / parse user input from a string
   function handleInputChange(inputString: string) {
-    if (!tokenPool || props.tokenValue !== undefined) {
+    if (!tokenPool || props.value !== undefined) {
       return;
     }
 
@@ -154,7 +179,7 @@ export function TokenInput(props: {
 
     const withinMaxRange = TokenAmount.min(tokenInputAmount, maxInput);
     setTokenInputAmount(withinMaxRange);
-    setTokenInputString(withinMaxRange.uiTokens);
+    setTokenInputString(withinMaxRange.tokens.toString());
     if (!withinMaxRange.isZero()) {
       props.onPressEnter();
     }
@@ -165,13 +190,13 @@ export function TokenInput(props: {
     let classNames = '';
 
     // If disabled
-    if (disabledMessage.length > 0) {
+    if (!props.value && disabledMessage.length > 0) {
       classNames += 'disabled';
     }
 
     // Has no input, style as such
     if (inputAmount.isZero()) {
-      classNames += ' zeroed';
+      classNames += 'zeroed';
     }
 
     // Not disabled and has a warning or error message
@@ -188,8 +213,8 @@ export function TokenInput(props: {
   // Render TokenSlider (if no external value is provided)
   function renderTokenSlider() {
     let render = <></>;
-    if (!props.tokenValue) {
-      render = <TokenSlider maxInput={maxInput} disabled={props.loading || disabled} />;
+    if (!props.hideSlider && !props.value) {
+      render = <TokenSlider maxInput={maxInput} disabled={disabled} />;
     }
 
     return render;
@@ -198,7 +223,7 @@ export function TokenInput(props: {
   // Render input feedback / disabled messages (if no external value is provided)
   function renderFeedbackMessage() {
     let render = <></>;
-    if (!props.tokenValue) {
+    if (!props.value) {
       render = (
         <div className="token-input-message flex align-start justify-start">
           <Text type={warningMessage ? 'warning' : errorMessage ? 'danger' : 'secondary'}>
@@ -212,17 +237,27 @@ export function TokenInput(props: {
   }
 
   return (
-    <div className="token-input flex-centered column">
+    <div className={`token-input flex-centered column ${props.value ? 'external-value' : ''}`}>
       <div className="token-input-main flex-centered">
-        <TokenSelect tokenPool={tokenPool} onChangeToken={props.onChangeToken} dropdownStyle={props.dropdownStyle} />
+        <TokenSelect
+          poolSymbol={tokenPool?.symbol}
+          tokenOptions={props.tokenOptions}
+          onChangeToken={props.onChangeToken}
+          dropdownStyle={props.dropdownStyle}
+        />
         <Input
-          disabled={props.loading || disabled}
-          value={props.tokenValue ? props.tokenValue.uiTokens : tokenInputString}
+          disabled={disabled}
+          value={props.value ? props.value.uiTokens : tokenInputString}
           className={getClassNames()}
           onChange={e => handleInputChange(e.target.value)}
-          onPressEnter={() => handlePressEnter()}
+          onPressEnter={() => {
+            if (!disabled) {
+              setTokenInputString(tokenInputAmount.tokens.toString());
+              handlePressEnter();
+            }
+          }}
+          onBlur={() => setTokenInputString(tokenInputAmount.tokens.toString())}
         />
-        <Paragraph>{props.tokenSymbol ?? currentPool?.symbol ?? '—'}</Paragraph>
       </div>
       {renderFeedbackMessage()}
       {renderTokenSlider()}

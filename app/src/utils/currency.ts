@@ -4,6 +4,9 @@ import { BN } from '@project-serum/anchor';
 import { TokenAmount } from '@jet-lab/margin';
 import { FiatCurrency, USDConversionRates } from '../state/settings/settings';
 
+// Default decimal precision for tokens
+export const DEFAULT_DECIMALS = 4;
+
 // Hook for currency formatting functions
 export function useCurrencyFormatting() {
   const fiatCurrency = useRecoilValue(FiatCurrency);
@@ -16,10 +19,9 @@ export function useCurrencyFormatting() {
         ? Math.ceil(value * 10 ** (decimals ?? 2)) / 10 ** (decimals ?? 2)
         : Math.floor(value * 10 ** (decimals ?? 2)) / 10 ** (decimals ?? 2);
       const convertedValue =
-        fiatValues && fiatCurrency !== 'USD' && conversionRates[fiatCurrency]
-          ? roundedDownValue * conversionRates[fiatCurrency]
-          : roundedDownValue;
-      const currencyFormat = new Intl.NumberFormat('en-US', {
+        fiatCurrency !== 'USD' ? roundedDownValue * conversionRates[fiatCurrency] : roundedDownValue;
+
+      const currencyFormat = new Intl.NumberFormat(navigator.language, {
         style: fiatValues ? 'currency' : undefined,
         currency: fiatValues ? fiatCurrency : undefined,
         maximumFractionDigits: decimals && !fiatValues ? decimals : 2
@@ -80,6 +82,8 @@ export function getDecimalCount(number: number): number {
 
 // Create a TokenAmount from a number and decimal precision
 export function getTokenAmountFromNumber(number: number, decimals: number): TokenAmount {
-  const nonNegative = Math.max(number * 10 ** decimals, 0);
-  return new TokenAmount(new BN(nonNegative), decimals);
+  let safeNum = Math.max(number * 10 ** decimals, 0);
+  safeNum = Math.min(safeNum, Number.MAX_SAFE_INTEGER);
+  safeNum = typeof safeNum === 'number' ? safeNum : 0;
+  return new TokenAmount(new BN(safeNum), decimals);
 }

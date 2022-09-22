@@ -58,6 +58,7 @@ impl MarginTestContext {
         use jet_simulation::runtime::TestRuntime;
         use jet_static_program_registry::{orca_swap_v1, orca_swap_v2, spl_token_swap_v2};
         let runtime = jet_simulation::create_test_runtime![
+            jet_bonds,
             jet_control,
             jet_margin,
             jet_metadata,
@@ -105,6 +106,9 @@ impl MarginTestContext {
             .await?;
         ctx.margin
             .register_adapter_if_unregistered(&jet_margin_swap::ID)
+            .await?;
+        ctx.margin
+            .register_adapter_if_unregistered(&jet_bonds::ID)
             .await?;
 
         Ok(ctx)

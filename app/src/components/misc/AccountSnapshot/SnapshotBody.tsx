@@ -1,12 +1,12 @@
 import { useRecoilValue } from 'recoil';
 import { Dictionary } from '../../../state/settings/localization/localization';
-import { WalletInit } from '../../../state/user/walletTokens';
-import { AccountsInit, CurrentAccount } from '../../../state/user/accounts';
+import { WalletTokens } from '../../../state/user/walletTokens';
+import { Accounts, CurrentAccount } from '../../../state/user/accounts';
 import { useCurrencyFormatting } from '../../../utils/currency';
 import { formatRiskIndicator } from '../../../utils/format';
-import { useRiskLevel, useRiskStyle } from '../../../utils/risk';
+import { useRiskStyle } from '../../../utils/risk';
 import { Typography, Skeleton } from 'antd';
-import { ConnectionFeedback } from '../ConnectionFeedback';
+import { ConnectionFeedback } from '../ConnectionFeedback/ConnectionFeedback';
 import { Info } from '../Info';
 import { RiskMeter } from '../RiskMeter';
 
@@ -14,11 +14,10 @@ import { RiskMeter } from '../RiskMeter';
 export function SnapshotBody(): JSX.Element {
   const dictionary = useRecoilValue(Dictionary);
   const { currencyFormatter, currencyAbbrev } = useCurrencyFormatting();
-  const walletInit = useRecoilValue(WalletInit);
-  const accountsInit = useRecoilValue(AccountsInit);
-  const initialAccountsLoad = walletInit && !accountsInit;
+  const walletTokens = useRecoilValue(WalletTokens);
+  const accounts = useRecoilValue(Accounts);
+  const initialAccountsLoad = walletTokens && !accounts.length;
   const currentAccount = useRecoilValue(CurrentAccount);
-  const riskLevel = useRiskLevel();
   const riskStyle = useRiskStyle();
   const { Title, Text } = Typography;
 
@@ -40,8 +39,21 @@ export function SnapshotBody(): JSX.Element {
     return render;
   }
 
+  // Renders the account's available collateral
+  function renderAvailableCollateral() {
+    const availableCollateral = currentAccount
+      ? currentAccount.valuation.effectiveCollateral.sub(currentAccount.valuation.requiredCollateral).toNumber()
+      : 0;
+    let render = <Title>{currencyFormatter(availableCollateral, true)}</Title>;
+    if (initialAccountsLoad) {
+      render = <Skeleton className="align-center" paragraph={false} active />;
+    }
+
+    return render;
+  }
+
   // Renders the account's required/effective collateral
-  function renderCollateral(type: 'required' | 'effective') {
+  function getCollateral(type: 'required' | 'effective') {
     const requiredCollateral = currentAccount?.valuation.requiredCollateral.toNumber() ?? 0;
     const effectiveCollateral = currentAccount?.valuation.effectiveCollateral.toNumber() ?? 0;
     let collateral = requiredCollateral;
@@ -49,12 +61,7 @@ export function SnapshotBody(): JSX.Element {
       collateral = effectiveCollateral;
     }
 
-    let render = <Title>{currencyAbbrev(collateral, true)}</Title>;
-    if (initialAccountsLoad) {
-      render = <Skeleton className="align-center" paragraph={false} active />;
-    }
-
-    return render;
+    return collateral;
   }
 
   // Renders the account's Risk Level
@@ -88,7 +95,7 @@ export function SnapshotBody(): JSX.Element {
   }
 
   return (
-    <div className="account-snapshot-body view-element-item view-element-item-hidden flex justify-center align-start wrap">
+    <div className="account-snapshot-body flex justify-center align-start wrap">
       <div className="account-snapshot-body-item flex-centered column">
         <Info term="accountValue">
           <Text className="small-accent-text info-element">{dictionary.common.accountBalance}</Text>
@@ -105,25 +112,25 @@ export function SnapshotBody(): JSX.Element {
         </div>
       </div>
       <div className="account-snapshot-body-item flex-centered column">
-        <Info term="requiredCollateral">
-          <Text className="small-accent-text info-element">{dictionary.common.requiredCollateral}</Text>
+        <Info term="availableCollateral">
+          <Text className="small-accent-text info-element">{dictionary.common.availableCollateral}</Text>
         </Info>
-        {renderCollateral('required')}
-      </div>
-      <div className="account-snapshot-body-item flex-centered column">
-        <Info term="effectiveCollateral">
-          <Text className="small-accent-text info-element">{dictionary.common.effectiveCollateral}</Text>
-        </Info>
-        {renderCollateral('effective')}
+        {renderAvailableCollateral()}
+        <div className="assets-liabilities flex-centered">
+          <Text type="secondary">
+            {dictionary.common.effective} : {currencyAbbrev(getCollateral('effective'), true)}
+          </Text>
+          <div className="assets-liabilities-divider"></div>
+          <Text type="secondary">
+            {dictionary.common.required} : {currencyAbbrev(getCollateral('required'), true)}
+          </Text>
+        </div>
       </div>
       <div className="account-snapshot-body-item flex-centered column">
         <Info term="riskLevel">
           <Text className="small-accent-text info-element">{dictionary.common.riskLevel}</Text>
         </Info>
         {renderRiskLevel()}
-        <Text type="secondary" italic>
-          {walletInit && accountsInit ? dictionary.accountsView.riskMeter[`${riskLevel}Detail`] : ''}
-        </Text>
         <RiskMeter />
       </div>
       <ConnectionFeedback />
