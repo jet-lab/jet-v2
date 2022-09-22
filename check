@@ -15,7 +15,7 @@ DOCKER_IMAGE=jetprotocol/builder:solana-1.10.35-anchor-0.25.0-3
 anchor-test() {
     yarn install --frozen-lockfile
     yarn --cwd libraries/ts/margin build
-    wasm-pack build --target nodejs ./libraries/ts/bonds/wasm-utils
+    yarn --cwd libraries/ts/bonds build:wasm
     yarn --cwd libraries/ts/bonds copy:wasm
     yarn --cwd libraries/ts/bonds build
 	anchor test  --skip-lint --skip-build $@ -- --features testing
