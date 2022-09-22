@@ -123,27 +123,25 @@ pub mod jet_margin {
     ///
     /// This instruction does the following:
     ///
-    /// 1.  Let `account`be a reference to the margin account being closed.
+    /// 1.  Load the margin account.
     ///     
     /// 2.  Check if the loaded margin account has any open positions.
     ///     
     ///     a.  If open positions exist, then return [`ErrorCode::AccountNotEmpty`].
     ///         
-    /// 3.  Emit the `AccountClosed` event for data logging (see table below).
+    /// 3.  Emit the [`events::AccountClosed`] event for data logging (see table below).
     ///     
-    /// 4.  Load the margin account.
-    ///     
-    /// 5.  Return `Ok(())`.
+    /// 4.  Return `Ok(())`.
     ///     
     ///
-    /// **Accounts expected with close\_account.rs:**
+    /// **[Accounts](jet_margin::accounts::CloseAccount) expected with close\_account.rs:**
     ///
-    /// |     |     |
-    /// | --- | --- |
-    /// | **Name** | **Description** |
-    /// | `owner` | The owner of the account being closed. |
-    /// | `receiver` | The account to get any returned rent. |
-    /// | `margin_account` | The account being closed. |
+    /// |     |     |     |
+    /// | --- | --- | --- |
+    /// | **Name** | **Type** | **Description** |
+    /// | `owner` | `signer` | The owner of the account being closed. |
+    /// | `receiver` | `writable` | The account to get any returned rent. |
+    /// | `margin_account` | `writable` | The account being closed. |
     ///
     /// **Events emitted by close\_account.rs:**
     ///
@@ -169,20 +167,20 @@ pub mod jet_margin {
     /// 3.  Return `Ok(())`.
     ///     
     ///
-    /// **Accounts expected with register\_position.rs:**
+    /// **[Accounts](jet_margin::accounts::RegisterPosition) expected with register\_position.rs:**
     ///
-    /// |     |     |
-    /// | --- | --- |
+    /// |     |     |     |
+    /// | --- | --- | --- |
     /// | **Name** | **Description** |
-    /// | `authority` | The authority that can change the margin account. |
-    /// | `payer` | The address paying for rent. |
-    /// | `margin_account` | The margin account to register position type with. |
-    /// | `position_token_mint` | The mint for the position token being registered. |
-    /// | `metadata` | The metadata account that references the correct oracle for the token. |
-    /// | `token_account` | The token account to store hold the position assets in the custody of the margin account. |
-    /// | `token_program` | The token program of the token accounts to store for this margin account. |
-    /// | `rent` | The rent to open the account. |
-    /// | `system_program` | The system program. |
+    /// | `authority` | `signer` | The authority that can change the margin account. |
+    /// | `payer` | `signer (writable)` | The address paying for rent. |
+    /// | `margin_account` | `` |  The margin account to register position type with. |
+    /// | `position_token_mint` | `` | The mint for the position token being registered. |
+    /// | `metadata` | `` | The metadata account that references the correct oracle for the token. |
+    /// | `token_account` | `` | The token account to store hold the position assets in the custody of the margin account. |
+    /// | `token_program` | `` | The token program of the token accounts to store for this margin account. |
+    /// | `rent` | `` | The rent to open the account. |
+    /// | `system_program` | `` | The system program. |
     ///
     /// **Events emitted by register\_position.rs:**
     ///
@@ -201,24 +199,26 @@ pub mod jet_margin {
     ///
     /// This instruction does the following:
     ///
-    /// 1.  Let `margin_account` be a mutable reference to the margin account.
+    /// 1.  Load a mutable instance of the margin account.
     ///     
     /// 2.  Let `token_account` be a reference to the token account.
     ///     
     /// 3.  Load a margin account position and update it with `token_account`, `account`, and `balance`.
     ///     
-    /// 4.  Emit the `PositionBalanceUpdated` event for data logging (see table below).
+    /// 4.  Emit the [`events::PositionBalanceUpdated`] event for data logging (see table below).
     ///     
     /// 5.  Return `Ok(())`.
     ///     
     ///
-    /// **Accounts expected with update\_position\_balance.rs:**
+    /// **[Accounts](jet_margin::accounts::RegisterPosition) expected with update\_position\_balance.rs:**
     ///
-    /// |     |     |
-    /// | --- | --- |
-    /// | **Name** | **Description** |
-    /// | `margin_account` | The margin account to update. |
-    /// | `token_account` | The token account to update the balance for. |
+    /// |     |     |     |
+    /// | --- | --- | --- |
+    /// | **Name** | | **Type** | **Description** |
+    /// | `authority` | `signer` | The pubkey paying rent for the new margin account opening. |    
+    /// | `payer` | `signer` | The pubkey paying rent for the new margin account opening. |
+    /// | `margin_account` | `writable` | The margin account to update. |
+    /// | `token_account` | `` | The token account to update the balance for. |
     ///
     /// **Events emitted by update\_position\_balance.rs:**
     ///
