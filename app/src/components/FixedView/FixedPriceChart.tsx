@@ -5,8 +5,25 @@ import { Suspense, useEffect, useRef, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { ReorderArrows } from '../misc/ReorderArrows';
 import { Dictionary } from '../../state/settings/localization/localization';
-import { FixedLendRowOrder } from '../../state/views/fixed-term';
-import { FixedMarketOrderBookAtom } from '../../state/fixed/fixed-term-market-sync';
+import { FixedBorrowRowOrder, FixedLendRowOrder } from '../../state/views/fixed-term';
+import { AllFixedMarketsOrderBooksAtom, FixedMarketOrderBookAtom } from '../../state/fixed/fixed-term-market-sync';
+import { MockBook, MockOrder } from '../../state/fixed/mocks';
+import { useCurrencyFormatting } from '../../utils/currency';
+
+interface Formatter {
+  currencyFormatter: (
+    value: number,
+    fiatValues?: boolean | undefined,
+    decimals?: number | undefined,
+    ciel?: boolean | undefined
+  ) => string;
+  currencyAbbrev: (
+    total: number,
+    fiatValues?: boolean | undefined,
+    price?: number | undefined,
+    decimals?: number | undefined
+  ) => string;
+}
 
 interface FixedChart {
   type: 'bids' | 'asks';
@@ -19,7 +36,7 @@ interface DataPoint {
 }
 
 // Setup data for the chart
-const getChartData = (orders: Order[]): DataPoint[] =>
+const getChartData = (orders: MockOrder[]): DataPoint[] =>
   orders.reduce((all, order) => {
     const previousPoint = all.length > 0 ? all[all.length - 1] : { x: 0, y: 0 };
     const point = {
@@ -30,7 +47,11 @@ const getChartData = (orders: Order[]): DataPoint[] =>
     return all;
   }, [] as Array<{ x: number; y: number }>);
 
-const getOptions = (data: DataPoint[], decimals: number, type: string) => {
+const getOptions = (books: MockBook[], decimals: number, type: string, formatting: Formatter) => {
+  const series = books.map(book => ({
+    name: book.market,
+    data: getChartData(type === 'asks' ? book.asks : book.bids)
+  }));
   return {
     chart: {
       type: 'line',
@@ -41,35 +62,31 @@ const getOptions = (data: DataPoint[], decimals: number, type: string) => {
       type: 'numeric',
       tickAmount: 10,
       labels: {
-        formatter: (val: string) => {
-          return (parseFloat(val) / 10 ** decimals).toFixed(2);
-        }
+        formatter: (val: string) => formatting.currencyFormatter(parseInt(val), false, decimals)
       }
     },
     yaxis: {
       type: 'numeric',
       tickAmount: 10,
       labels: {
-        formatter: (val: string) => {
-          return (parseFloat(val) / 10 ** decimals).toFixed(2);
-        }
+        formatter: (val: string) => formatting.currencyFormatter(parseInt(val), false, decimals)
       }
     },
-    series: [{ name: type, data }],
+    series,
     theme: {
       mode: 'dark'
     },
     tooltip: {
       enabled: true,
-      custom: ({ dataPointIndex }: any) => {
-        const item = data[dataPointIndex];
+      custom: ({ dataPointIndex, seriesIndex }: any) => {
+        const item = series[seriesIndex].data[dataPointIndex];
         if (!item) return;
         const rate = 1 / (item.x / item.y) - 1; // TODO FIXME, scale rate by tenor length
         const amount = item.x;
         const repay = item.y;
         return `<div className="flex-centered column">
-            <div>Amount ${amount}</div>
-            <div>Repay ${repay}</div>
+            <div>Amount ${formatting.currencyFormatter(amount, false, 2)}</div>
+            <div>Repay ${formatting.currencyFormatter(repay, false, 2)}</div>
             <div>Rate ${(rate * 100).toFixed(2)}%</div>
           </div>`;
       }
@@ -80,6 +97,9 @@ const getOptions = (data: DataPoint[], decimals: number, type: string) => {
 const FixedPriceChart = ({ type, decimals = 6 }: FixedChart) => {
   const orderBook = useRecoilValue(FixedMarketOrderBookAtom);
   const [currentChart, setCurrentChart] = useState<ApexCharts | undefined>(undefined);
+  const formatting = useCurrencyFormatting();
+
+  const books = useRecoilValue(AllFixedMarketsOrderBooksAtom);
   const ref = useRef<HTMLDivElement>(null);
 
   const orders = orderBook[type];
@@ -87,8 +107,7 @@ const FixedPriceChart = ({ type, decimals = 6 }: FixedChart) => {
   // Initialize chart
   useEffect(() => {
     if (ref.current && !currentChart) {
-      const data = getChartData(orders);
-      const opts = getOptions(data, decimals, type);
+      const opts = getOptions(books, decimals, type, formatting);
       const fixedPriceChart = new ApexCharts(document.querySelector(`.fixed-term-graph-container`), opts);
       fixedPriceChart.render();
       setCurrentChart(fixedPriceChart);
@@ -98,8 +117,7 @@ const FixedPriceChart = ({ type, decimals = 6 }: FixedChart) => {
   // Update chart
   useEffect(() => {
     if (ref.current && orders.length > 0 && currentChart) {
-      const data = getChartData(orders);
-      const opts = getOptions(data, decimals, type);
+      const opts = getOptions(books, decimals, type, formatting);
       currentChart.updateOptions(opts);
     }
   }, [orders, currentChart, ref.current]);
@@ -115,8 +133,7 @@ const FixedPriceChart = ({ type, decimals = 6 }: FixedChart) => {
 
 export const FixedPriceChartContainer = ({ type }: FixedChart) => {
   const dictionary = useRecoilValue(Dictionary);
-  const [lendRowOrder, setLendRowOrder] = useRecoilState(FixedLendRowOrder);
-  // const [borrowOrder, setBorrowOrder] = useRecoilState(FixedBorrowRowOrder);
+  const [rowOrder, setRowOrder] = useRecoilState(type === 'asks' ? FixedLendRowOrder : FixedBorrowRowOrder);
 
   return (
     <div className="fixed-term-graph view-element view-element-hidden flex align-center justify-end column">
@@ -130,7 +147,7 @@ export const FixedPriceChartContainer = ({ type }: FixedChart) => {
       <Suspense fallback={<div>Loading</div>}>
         <FixedPriceChart type={type} decimals={6} />
       </Suspense>
-      <ReorderArrows component="fixedChart" order={lendRowOrder} setOrder={setLendRowOrder} />
+      <ReorderArrows component="fixedChart" order={rowOrder} setOrder={setRowOrder} />
     </div>
   );
 };

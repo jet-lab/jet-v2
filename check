@@ -14,7 +14,7 @@ DOCKER_IMAGE=jetprotocol/builder:solana-1.10.35-anchor-0.25.0-3
 
 anchor-test() {
     yarn install --frozen-lockfile
-    yarn --cwd libraries/ts build
+    yarn --cwd libraries/ts/margin build
     yarn --cwd libraries/ts/bonds build:wasm
     yarn --cwd libraries/ts/bonds copy:wasm
     yarn --cwd libraries/ts/bonds build

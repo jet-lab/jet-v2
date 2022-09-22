@@ -3,7 +3,8 @@
   "workspaces": [
     "app",
     "libraries/ts/bonds",
-    "libraries/ts"
+    "libraries/ts/margin",
+    "tests"
   ],
   "license": "AGPL-3.0-or-later",
   "scripts": {
@@ -18,30 +19,7 @@
     "test": "./check",
     "test:devnet": "npx ts-mocha -p ./tsconfig.json -t 1000000 tests/declarative/*.sim.ts",
     "test:nobuild": "anchor test --skip-lint --skip-build -- --features testing",
-    "test:gui": "cd app && yarn e2e:gui && cd ../app-beta && yarn e2e:gui"
-  },
-  "dependencies": {
-    "@jet-lab/jet-bonds-client": "*",
-    "@jet-lab/margin": "*",
-    "@project-serum/anchor": "0.24.2",
-    "@project-serum/serum": "^0.13.65",
-    "@pythnetwork/client": "^2.7.0",
-    "@solana/spl-token": "^0.2.0",
-    "@solana/web3.js": "1.56.2"
-  },
-  "devDependencies": {
-    "@tsconfig/recommended": "^1.0.1",
-    "@types/bn.js": "^5.1.0",
-    "@types/chai": "^4.3.1",
-    "@types/mocha": "^9.1.1",
-    "@typescript-eslint/eslint-plugin": "^5.27.1",
-    "@typescript-eslint/parser": "^5.27.1",
-    "chai": "^4.3.6",
-    "eslint": "^7.32.0",
-    "husky": "^8.0.1",
-    "mocha": "^10.0.0",
-    "prettier": "^2.5.1",
-    "ts-mocha": "^10.0.0",
-    "typescript": "4.6.4"
+    "test:gui": "cd app && yarn e2e:gui && cd ../app-beta && yarn e2e:gui",
+    "start": "cd app && yarn start"
   }
 }
