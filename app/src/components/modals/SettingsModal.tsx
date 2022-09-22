@@ -177,6 +177,38 @@ export function SettingsModal(): JSX.Element {
     return render
   }
 
+  // Returns RPC ping className for styling
+  function getPingClassName(ping: number) {
+    let className = 'ping-indicator-color';
+    if (ping < 1000) {
+      className += ' fast';
+    } else if (ping < 2500) {
+      className += ' slow';
+    } else {
+      className += ' poor';
+    }
+
+    return className;
+  }
+
+  // Renders custom node input
+  function renderCustomInput() {
+    let render = <></>;
+    if (preferredNodeSetting === 'custom') {
+      render = (
+        <Input
+          className={customNodeInputError ? 'error' : ''}
+          value={customNodeInput}
+          placeholder={dictionary.settingsModal.rpcNode.customInputPlaceholder}
+          onChange={e => setCustomNodeInput(e.target.value)}
+          onPressEnter={() => (checkSettingsChange() ? saveSettings() : null)}
+        />
+      );
+    }
+
+    return render;
+  }
+
   if (settingsModalOpen) {
     return (
       <Modal

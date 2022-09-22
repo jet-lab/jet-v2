@@ -33,6 +33,8 @@ export function App(): JSX.Element {
     new E2EWalletAdapter()
   ]
 
+  const isDev = window.location.href.includes('http://localhost:3000');
+
   return (
     <BrowserRouter>
       <RecoilRoot>
