@@ -2,7 +2,7 @@
   <h1>@jet-lab/margin</h1>
 
 [![Version](https://img.shields.io/npm/v/@jet-lab/margin?color=red)](https://www.npmjs.com/package/@jet-lab/margin/)
-[![Docs](https://img.shields.io/badge/doc-typedocs-success)](https://jet-lab.github.io/margin/)
+[![Docs](https://img.shields.io/badge/docs-TypeScript-success)](https://jet-lab.github.io/jet-v2/ts-client/)
 [![Discord](https://img.shields.io/discord/833805114602291200?color=blueviolet)](https://discord.gg/RW2hsqwfej)
 [![License](https://img.shields.io/github/license/jet-lab/jet-v2?color=blue)](./LICENSE)
 
@@ -26,7 +26,7 @@ $ yarn add @jet-lab/margin
 
 ## Usage
 
-> View the [typedocs](https://jet-lab.github.io/margin/) for the full package documentation and available API.
+> View the [typedocs](https://jet-lab.github.io/jet-v2/ts-client) for the full package documentation and available API.
 > 
 > View more [examples](https://github.com/jet-lab/jet-v2/tree/master/tests/integration/examples) for usage reference.
 

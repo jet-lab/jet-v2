@@ -74,3 +74,20 @@ You may have to run the app in legacy mode if you get the following error
 cd app
 yarn start:legacy
 ```
+
+# Documentations
+[![Docs](https://img.shields.io/badge/docs-TypeScript-success)](https://jet-lab.github.io/jet-v2/ts-client/)
+[![Docs](https://img.shields.io/badge/docs-Rust-success)](https://jet-lab.github.io/jet-v2/margin-rust/jet_margin/)
+
+
+Developer resources for integrating with Jet Margin Program.
+## Margin Program 
+
+> View the [rust docs](https://jet-lab.github.io/jet-v2/margin-rust/jet_margin/) for the full package documentation and available API.
+> 
+
+## Margin TypeScript Client
+
+> View the [typedocs](https://jet-lab.github.io/jet-v2/ts-client) for the full package documentation and available API.
+> 
+> View more [examples](https://github.com/jet-lab/jet-v2/tree/master/tests/integration/examples) for usage reference.
