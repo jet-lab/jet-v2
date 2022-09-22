@@ -10,6 +10,7 @@
     "build": "yarn build:wasm && yarn build:tsc",
     "build:wasm": "wasm-pack build --target nodejs ./wasm-utils --out-dir ../dist/wasm-utils/pkg",
     "build:tsc": "tsc -p tsconfig.json & tsc -p tsconfig.cjs.json; wait",
+    "watch": "(trap 'kill 0' SIGINT; wasm-pack build --target nodejs ./wasm-utils --out-dir ../dist/wasm-utils/pkg & tsc --watch --pretty | cat)",
     "lint": "tslint -c tslint.json src/**/*.ts",
     "prepublish": "yarn build:wasm && yarn build"
   },
