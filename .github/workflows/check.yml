@@ -7,32 +7,6 @@ on:
   pull_request:
 
 jobs:
-  build_aarch64:
-    runs-on: macos-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-
-      - name: Setup Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          target: aarch64-apple-darwin
-          toolchain: stable
-
-      - name: Get cargo-macos cache
-        uses: actions/cache@v3
-        with:
-          key: cargo-macos
-          path: |
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-
-      - name: Check Build Errors
-        run: cargo check --target aarch64-apple-darwin
-
-
   anchor-test:
     runs-on: ubuntu-latest
     container:
