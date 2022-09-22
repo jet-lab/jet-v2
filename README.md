@@ -39,7 +39,7 @@ cargo install --git https://github.com/project-serum/anchor avm --locked --force
 
 avm install 0.24.2
 avm use 0.24.2
-anchor --version # anchor-cli 0.24.0
+anchor --version # anchor-cli 0.24.2
 ```
 
 ## Apple Silicon Workaround
