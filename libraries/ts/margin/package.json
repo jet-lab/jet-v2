@@ -43,6 +43,7 @@
     "@solana/spl-token": "^0.2.0",
     "@solana/web3.js": "^1.63.0",
     "assert": "^2.0.0",
+    "axios": "^0.27.2",
     "bs58": "^5.0.0"
   },
   "devDependencies": {
