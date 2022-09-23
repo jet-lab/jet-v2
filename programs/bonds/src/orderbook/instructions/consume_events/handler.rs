@@ -175,6 +175,7 @@ fn handle_out<'info>(
         ..
     } = event;
 
+    let order_id: &u128 = bytemuck::cast_ref(order_id);
     let price = (order_id >> 64) as u64;
     // todo defensive rounding
     let quote_size = fp32_mul(*base_size, price).ok_or(BondsError::ArithmeticOverflow)?;

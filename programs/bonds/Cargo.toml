@@ -29,7 +29,7 @@ num-traits = "0.2"
 pyth-sdk-solana = "0.4"
 serde = { version = "1.0", optional = true }
 
-agnostic-orderbook = { git = "https://github.com/jet-lab/agnostic-orderbook.git", branch = "main", features = ["lib", "utils"] }
+agnostic-orderbook = { git = "https://github.com/jet-lab/agnostic-orderbook.git", branch = "aarch64-target", features = ["lib", "utils"] }
 
 anchor-lang = { git = "https://github.com/jet-lab/anchor", branch = "master" }
 anchor-spl =  { git = "https://github.com/jet-lab/anchor", branch = "master" }

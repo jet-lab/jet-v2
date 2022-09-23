@@ -66,7 +66,7 @@ dependencies = [
 [[package]]
 name = "agnostic-orderbook"
 version = "1.0.0"
-source = "git+https://github.com/jet-lab/agnostic-orderbook.git?branch=main#04a43646c00c1976dc9f5e76621f5f043b91d1fa"
+source = "git+https://github.com/jet-lab/agnostic-orderbook.git?branch=aarch64-target#11fb74765bce07aedf4c3387260bf0cc8ddeb544"
 dependencies = [
  "bonfida-utils",
  "borsh 0.9.3",

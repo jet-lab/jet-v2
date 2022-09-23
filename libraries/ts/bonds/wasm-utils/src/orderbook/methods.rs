@@ -25,7 +25,8 @@ pub fn get_orders_from_slab(slab_bytes: &[u8]) -> Array {
         slab_clone
             .into_iter(true)
             .map(|leaf| {
-                let handle = slab.find_by_key(leaf.key).unwrap();
+                let leaf_key: u128 = bytemuck::cast(leaf.key);
+                let handle = slab.find_by_key(leaf_key).unwrap();
                 let callback = slab.get_callback_info(handle);
                 Order {
                     owner: Uint8Array::from(&callback.owner[..]),
@@ -35,7 +36,7 @@ pub fn get_orders_from_slab(slab_bytes: &[u8]) -> Array {
                         .decimal_u64_mul(leaf.base_quantity)
                         .unwrap(),
                     limit_price: leaf.price(),
-                    order_id: Uint8Array::from(&leaf.key.to_le_bytes()[..]),
+                    order_id: Uint8Array::from(&leaf_key.to_le_bytes()[..]),
                 }
             })
             .map(JsValue::from),
