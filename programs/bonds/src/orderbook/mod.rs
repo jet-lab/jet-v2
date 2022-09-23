@@ -4,4 +4,4 @@ pub mod instructions;
 pub mod state;
 
 /// Anchor events
-pub(crate) mod events;
+pub mod events;
