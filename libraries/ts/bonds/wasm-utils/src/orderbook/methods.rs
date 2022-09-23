@@ -8,6 +8,7 @@ use js_sys::{Array, Uint8Array};
 use wasm_bindgen::prelude::*;
 
 use super::{critbit::Slab, types::Order};
+use interest_pricing::InterestPricer;
 
 const SECONDS_PER_YEAR: u64 = 31_536_000;
 
@@ -65,14 +66,24 @@ pub fn fixed_point_to_decimal(fp: u64) -> u64 {
     Fp32::upcast_fp32(fp).as_decimal_u64().unwrap()
 }
 
+/// Given a price and bond duration, calculates an interest rate
+///
+/// price: underlying per bond ticket: fixed point 32 (left shifted 32 bits to get fractional precision)
+/// tenor: seconds
+/// return: interest rate in basis points
 #[wasm_bindgen]
 pub fn price_to_rate(price: u64, tenor: u64) -> u64 {
-    interest_pricing::price_to_apr(price, tenor)
+    interest_pricing::PricerImpl::price_fp32_to_bps_yearly_interest(price, tenor)
 }
 
+/// Given an interest rate and bond duration, calculates a price
+///
+/// interest_rate: basis points
+/// tenor: seconds
+/// return: price: underlying per bond ticket: fixed point 32 (left shifted 32 bits to get fractional precision)
 #[wasm_bindgen]
 pub fn rate_to_price(interest_rate: u64, tenor: u64) -> u64 {
-    interest_pricing::apr_to_price(interest_rate, tenor)
+    interest_pricing::PricerImpl::yearly_interest_bps_to_fp32_price(interest_rate, tenor)
 }
 
 /// this has a bunch of alternative implementations for converting between
@@ -83,63 +94,70 @@ pub fn rate_to_price(interest_rate: u64, tenor: u64) -> u64 {
 mod interest_pricing {
     use super::*;
 
-    /// Given an interest rate and bond duration, calculates a price
-    ///
-    /// Interest rate is given as basis points. Tenor is in seconds.
-    ///
-    /// NOTE: price is returned in fixed point 32 representation
-    pub fn linear_rate_to_price(interest_rate: u64, tenor: u64) -> u64 {
-        let year_proportion = Number::from(tenor) / SECONDS_PER_YEAR;
-        let rate = Number::from(interest_rate) / 10_000;
-        let price = (Number::ONE / (Number::ONE + rate * year_proportion)) * FP32_ONE;
-        Fp32::wrap_u128(price.as_u128(0)).downcast_u64().unwrap()
+    pub type PricerImpl = AprPricer;
+
+    pub trait InterestPricer {
+        fn yearly_interest_bps_to_fp32_price(interest_bps: u64, tenor_seconds: u64) -> u64 {
+            f64_to_fp32(Self::interest_to_price(
+                bps_to_f64(interest_bps),
+                SECONDS_PER_YEAR as f64,
+                tenor_seconds as f64,
+            ))
+        }
+        fn price_fp32_to_bps_yearly_interest(price_fp32: u64, tenor_seconds: u64) -> u64 {
+            f64_to_bps(Self::price_to_interest(
+                fp32_to_f64(price_fp32),
+                tenor_seconds as f64,
+                SECONDS_PER_YEAR as f64,
+            ))
+        }
+        fn interest_to_price(interest: f64, interest_term: f64, price_term: f64) -> f64;
+        fn price_to_interest(price: f64, price_term: f64, interest_term: f64) -> f64;
     }
 
-    // rate  = (1 - price) / tenor * price
+    pub struct LinearInterestPricer;
+    impl InterestPricer for LinearInterestPricer {
+        fn interest_to_price(interest_rate: f64, interest_term: f64, price_term: f64) -> f64 {
+            1.0 + linear_uncompounded_interest_conversion(interest_rate, interest_term, price_term)
+        }
 
-    /// Given a price and bond duration, calculates an interest rate
-    ///
-    /// Tenor is in seconds, returns an interest rate in basis points
-    ///
-    /// NOTE: price is expected to be in fixed point 32 representation
-    pub fn price_to_linear_rate(price: u64, tenor: u64) -> u64 {
-        let year_proportion = Number::from(tenor) / SECONDS_PER_YEAR;
-        let price = Number::from(price) / FP32_ONE; // convert to decimal representation
-        let rate = (Number::ONE - price) / year_proportion * price;
-        (rate * 10_000).as_u64(0)
+        fn price_to_interest(price: f64, price_term: f64, interest_term: f64) -> f64 {
+            linear_uncompounded_interest_conversion(price - 1.0, price_term, interest_term)
+        }
     }
 
-    pub fn apy_to_price(apy: u64, tenor: u64) -> u64 {
-        let apy = bps_to_f64(apy);
-        let price = yield_to_yield(apy, SECONDS_PER_YEAR as f64, tenor as f64);
-        f64_to_fp64(price)
+    /// yearly interest = yearly rate that is compounded continuously for the tenor duration to receive the price
+    pub struct AprPricer;
+    impl InterestPricer for AprPricer {
+        fn interest_to_price(interest_rate: f64, interest_term: f64, price_term: f64) -> f64 {
+            1.0 + rate_to_yield(interest_rate, interest_term, price_term)
+        }
+
+        fn price_to_interest(price: f64, price_term: f64, interest_term: f64) -> f64 {
+            yield_to_rate(price - 1.0, price_term, interest_term)
+        }
     }
 
-    pub fn price_to_apy(price: u64, tenor: u64) -> u64 {
-        let price = fp64_to_f64(price);
-        let apy = yield_to_yield(price, tenor as f64, SECONDS_PER_YEAR as f64);
-        f64_to_bps(apy)
+    /// for tenor < 1y: yearly interest = annualized yield that would be received from compounding each tenor over 1y
+    /// for tenor > 1y: yearly interest = annualized yield that would need to be compounded to ultimately receive the price of the tenor
+    pub struct ApyPricer;
+    impl InterestPricer for ApyPricer {
+        fn interest_to_price(interest_rate: f64, interest_term: f64, price_term: f64) -> f64 {
+            1.0 + yield_to_yield(interest_rate, interest_term, price_term)
+        }
+
+        fn price_to_interest(price: f64, price_term: f64, interest_term: f64) -> f64 {
+            yield_to_yield(price - 1.0, price_term, interest_term)
+        }
     }
 
-    pub fn apr_to_price(apr: u64, tenor: u64) -> u64 {
-        let apr = bps_to_f64(apr);
-        let price = rate_to_yield(apr, SECONDS_PER_YEAR as f64, tenor as f64);
-        f64_to_fp64(price)
-    }
-
-    pub fn price_to_apr(price: u64, tenor: u64) -> u64 {
-        let price = fp64_to_f64(price);
-        let apy = yield_to_rate(price, tenor as f64, SECONDS_PER_YEAR as f64);
-        f64_to_bps(apy)
-    }
-
-    pub fn f64_to_fp64(f: f64) -> u64 {
+    pub fn f64_to_fp32(f: f64) -> u64 {
         let shifted = f * (2u64 << 32) as f64;
         assert!(shifted < u64::MAX as f64);
         shifted.round() as u64
     }
 
-    pub fn fp64_to_f64(fp: u64) -> f64 {
+    pub fn fp32_to_f64(fp: u64) -> f64 {
         (fp as f64) / (2u64 << 32) as f64
     }
 
@@ -166,6 +184,29 @@ mod interest_pricing {
     /// compounds over the smaller periods to get to the larger period
     pub fn yield_to_yield(input: f64, input_term: f64, output_term: f64) -> f64 {
         (1f64 + input).powf(output_term / input_term) - 1f64
+    }
+
+    pub fn linear_uncompounded_interest_conversion(
+        input: f64,
+        input_term: f64,
+        output_term: f64,
+    ) -> f64 {
+        input * output_term / input_term
+    }
+
+    pub fn linear_rate_to_price_number(interest_rate: u64, tenor: u64) -> u64 {
+        let year_proportion = Number::from(tenor) / SECONDS_PER_YEAR;
+        let rate = Number::from(interest_rate) / 10_000;
+        let price = (Number::ONE / (Number::ONE + rate * year_proportion)) * FP32_ONE;
+        Fp32::wrap_u128(price.as_u128(0)).downcast_u64().unwrap()
+    }
+
+    // rate  = (1 - price) / tenor * price
+    pub fn price_to_linear_rate_number(price: u64, tenor: u64) -> u64 {
+        let year_proportion = Number::from(tenor) / SECONDS_PER_YEAR;
+        let price = Number::from(price) / FP32_ONE; // convert to decimal representation
+        let rate = (Number::ONE - price) / year_proportion * price;
+        (rate * 10_000).as_u64(0)
     }
 }
 
@@ -210,29 +251,31 @@ mod test {
     // tenor: as fraction of the period. Period is always annual
     // let price = x;
     // assert(price == rate_to_price(price_to_rate(price, tenor), tenor));
-    use crate::orderbook::methods::{interest_pricing::*, *};
+    use crate::orderbook::methods::interest_pricing::*;
+
+    use super::SECONDS_PER_YEAR;
 
     #[test]
     fn conversions() {
-        generic_conversions(rate_to_price, price_to_rate)
+        generic_conversions::<PricerImpl>()
     }
 
     #[test]
     fn conversions_linear() {
-        generic_conversions(linear_rate_to_price, price_to_linear_rate)
+        generic_conversions::<LinearInterestPricer>()
     }
 
     #[test]
     fn conversions_apr() {
-        generic_conversions(apr_to_price, price_to_apr)
+        generic_conversions::<AprPricer>()
     }
 
     #[test]
     fn conversions_apy() {
-        generic_conversions(apy_to_price, price_to_apy)
+        generic_conversions::<ApyPricer>()
     }
 
-    fn generic_conversions(to_price: fn(u64, u64) -> u64, from_price: fn(u64, u64) -> u64) {
+    fn generic_conversions<P: InterestPricer>() {
         use rand::RngCore;
 
         let mut rng = rand::thread_rng();
@@ -244,8 +287,58 @@ mod test {
             })
             .collect();
         for (rate, tenor) in nums {
-            assert_eq!(rate, from_price(to_price(rate, tenor), tenor))
+            assert_eq!(
+                rate,
+                P::price_fp32_to_bps_yearly_interest(
+                    P::yearly_interest_bps_to_fp32_price(rate, tenor),
+                    tenor
+                )
+            )
         }
+    }
+
+    #[test]
+    fn apy() {
+        let apy_bps = 1000;
+        assert_price_generates_expected_yield::<ApyPricer>(
+            apy_bps,
+            SECONDS_PER_YEAR / 12,
+            0.007974140428903741,
+        );
+        assert_price_generates_expected_yield::<ApyPricer>(apy_bps, SECONDS_PER_YEAR, 0.1);
+        assert_price_generates_expected_yield::<ApyPricer>(apy_bps, 2 * SECONDS_PER_YEAR, 0.21);
+    }
+
+    #[test]
+    fn apr() {
+        let apr_bps = 1000;
+        assert_price_generates_expected_yield::<AprPricer>(
+            apr_bps,
+            SECONDS_PER_YEAR / 12,
+            0.008368152207446989,
+        );
+        assert_price_generates_expected_yield::<AprPricer>(
+            apr_bps,
+            SECONDS_PER_YEAR,
+            0.10517091807564762,
+        );
+        assert_price_generates_expected_yield::<AprPricer>(
+            apr_bps,
+            2 * SECONDS_PER_YEAR,
+            0.22140275816016983,
+        );
+    }
+
+    fn assert_price_generates_expected_yield<P: InterestPricer>(
+        bps: u64,
+        tenor: u64,
+        expected_yield: f64,
+    ) {
+        let actual_price = P::yearly_interest_bps_to_fp32_price(bps, tenor);
+        roughly_eq(
+            1.0 + expected_yield,
+            actual_price as f64 / (2u64 << 32) as f64,
+        );
     }
 
     #[test]
@@ -256,7 +349,8 @@ mod test {
 
     fn roughly_eq(x: f64, y: f64) {
         let diff = (x - y).abs();
-        assert!(diff < 0.000_000_001 * x);
-        assert!(diff < 0.000_000_001 * y);
+        if diff > 0.000_000_001 * x || diff > 0.000_000_001 * y {
+            panic!("\nnot roughly equal:\n  {x}\n  {y}\n")
+        }
     }
 }
