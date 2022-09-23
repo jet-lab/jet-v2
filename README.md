@@ -24,7 +24,9 @@
 
 # Install
 
-Make sure you update Solana to the latest version.
+## Solana
+
+Make sure you update Solana to a newer version.
 
 ```bash
 sh -c "$(curl -sSfL https://release.solana.com/v1.11.10/install)"
@@ -35,14 +37,26 @@ Install anchor. Please see the [Anchor Documentation](https://project-serum.gith
 ```bash
 cargo install --git https://github.com/project-serum/anchor avm --locked --force
 
-avm install latest
-avm use latest
-anchor --version # anchor-cli 0.25.0
+avm install 0.24.2
+avm use 0.24.2
+anchor --version # anchor-cli 0.24.2
 ```
+
+## Apple Silicon Workaround
+
+Jet V2 compiles to Web Assembly and `arm64` macs require a specific version of wasm-pack to be installed. This is a workaround until wasm-pack can be [patched](https://github.com/rustwasm/wasm-pack/issues/1157) upstream. Only wasm-pack 0.10.1 supports Windows while only 0.10.3 supports Apple Silicon.
+
+```bash
+arch # arm64
+(cd libraries/ts/bonds && yarn add --dev wasm-pack@0.10.3)
+```
+
+## Yarn
 
 Install the project's node_modules
 
 ```bash
+npm i -g yarn
 yarn
 ```
 
@@ -74,7 +88,9 @@ yarn start
 
 to run the app.
 
-You may have to run the app in legacy mode if you get the following error
+## Mac and Linux Workaround
+
+You may have to run the app in legacy mode if you get the following error:
 `error:0308010C:digital envelope routines::unsupported`
 
 ```bash

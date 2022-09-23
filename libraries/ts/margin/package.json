@@ -27,12 +27,12 @@
   },
   "scripts": {
     "clean": "rimraf dist/",
-    "build": "tsc -p tsconfig.json && tsc -p tsconfig-cjs.json",
+    "build": "tsc && tsc -p tsconfig-cjs.json",
     "compile": "tsc -p tsconfig.json && tsc -p tsconfig-cjs.json",
     "docs": "typedoc --excludePrivate --includeVersion ./src/index.ts",
     "fmt": "prettier src/ tests/ types/ --check",
     "fmt:fix": "prettier src/ tests/ types/ --write",
-    "watch": "tsc --watch",
+    "watch": "(trap 'kill 0' SIGINT; tsc --watch --preserveWatchOutput --pretty & tsc -p tsconfig-cjs.json --watch --preserveWatchOutput --pretty)",
     "prepublishOnly": "yarn compile"
   },
   "dependencies": {

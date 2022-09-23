@@ -3,7 +3,7 @@
   "name": "app",
   "version": "0.1.0",
   "scripts": {
-    "start": "webpack serve --mode development --open --hot",
+    "start": "webpack serve --mode development --open --hot | cat",
     "build": "webpack --mode production",
     "e2e": "npx cypress run",
     "e2e:gui": "npx cypress open",
