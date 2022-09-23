@@ -1,0 +1,27 @@
+[token]
+symbol = "SRM"
+name = "Serum"
+precision = 2
+
+faucet = "2pUWPKjuACUqLGqUJATHc7eTYhYQqtSWbKE77Hu5G74Q"
+faucet_limit = 100_000_000
+
+[config]
+mint = "5zq1tdJfRZ8boTGjKE9dCA77nyFEm4c1uji8Q3nfWfaY"
+pyth_price = "JDhzaj9F3Fh5kbDCy94qPReC6v8STLWTaUy94S9CtRUC"
+pyth_product = "4rmzFz9BazqhXEXo9BS2Nvcq1TRemE58Us5uz6ZANmwR"
+
+token_kind = 'Collateral'
+collateral_weight = 80
+max_leverage = 10_00
+
+[margin_pool]
+flags = 0b0010 # ALLOW_LENDING
+utilization_rate_1 = 85_00
+utilization_rate_2 = 95_00
+borrow_rate_0 = 50
+borrow_rate_1 = 600
+borrow_rate_2 = 4000
+borrow_rate_3 = 16000
+management_fee_rate = 20_00
+management_fee_collect_threshold = 10_000_000

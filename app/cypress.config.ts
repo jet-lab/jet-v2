@@ -9,7 +9,8 @@ const cypressConfig = {
     viewportHeight: 960,
     env: {
       hideXHR: true
-    }
+    },
+    baseUrl: 'http://localhost:3000'
   }
 };
 

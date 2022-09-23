@@ -16,17 +16,6 @@
       rel="stylesheet" />
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-YVCT1QHB5G"></script>
     <script>
-      // Standardize app sizes
-      const adjustSizing = () => {
-        if (window.innerWidth > 1700) {
-          document.documentElement.style.setProperty('--base-font-size', '16px');
-          document.documentElement.style.setProperty('--spacing-base', '16px');
-          document.documentElement.style.setProperty('--max-view-width', '1440px');
-        }
-      };
-      adjustSizing();
-      window.addEventListener('resize', adjustSizing);
-
       // Google analytics
       window.dataLayer = window.dataLayer || [];
       function gtag() {

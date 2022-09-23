@@ -1,8 +1,8 @@
 import { useSetRecoilState, useResetRecoilState, useRecoilValue } from 'recoil';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Dictionary } from '../../state/settings/localization/localization';
-import { WalletTokens, WalletInit } from '../../state/user/walletTokens';
-import { Accounts, AccountsInit } from '../../state/user/accounts';
+import { WalletTokens } from '../../state/user/walletTokens';
+import { Accounts } from '../../state/user/accounts';
 import { WalletModal } from '../../state/modals/modals';
 import { formatPubkey } from '../../utils/format';
 import { notify } from '../../utils/notify';
@@ -13,9 +13,7 @@ import { ReactComponent as WalletIcon } from '../../styles/icons/wallet-icon.svg
 export function WalletButton(props: { mobile?: boolean }): JSX.Element {
   const dictionary = useRecoilValue(Dictionary);
   const { wallet, connected, disconnect, publicKey } = useWallet();
-  const resetWalletInit = useResetRecoilState(WalletInit);
   const resetWalletTokens = useResetRecoilState(WalletTokens);
-  const resetAccountsInit = useResetRecoilState(AccountsInit);
   const resetAccounts = useResetRecoilState(Accounts);
   const setWalletModalOpen = useSetRecoilState(WalletModal);
 
@@ -29,9 +27,7 @@ export function WalletButton(props: { mobile?: boolean }): JSX.Element {
       // Disconnect the wallet
       await disconnect();
       // Reset relevant state
-      resetWalletInit();
       resetWalletTokens();
-      resetAccountsInit();
       resetAccounts();
       // Notify user of disconnection
       notify(

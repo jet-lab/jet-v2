@@ -16,6 +16,11 @@ export function getExplorerUrl(
   return baseUrl + txId + clusterParam;
 }
 
+// Opens a link in a new tab
+export function openLinkInBrowser(url: string) {
+  window.open(url, '_blank', 'noopener');
+}
+
 // Get ping time for an endpoint
 export async function getPing(endpoint: string) {
   try {
@@ -26,6 +31,18 @@ export async function getPing(endpoint: string) {
     return endTime - startTime;
   } catch {
     return 0;
+  }
+}
+
+// Get typography type for token values
+export function getTokenStyleType(tokenAmount: number | string, showDangerIfPositive?: boolean) {
+  const amount = parseFloat(tokenAmount.toString());
+  if (amount > 0) {
+    return showDangerIfPositive ? 'danger' : 'success';
+  } else if (amount < 0) {
+    return 'danger';
+  } else {
+    return 'secondary';
   }
 }
 
@@ -54,45 +71,8 @@ export function useChangeView() {
       return;
     }
 
-    setTimeout(() => navigate(route, { replace }), APP_TRANSITION_TIMEOUT);
-    animateViewOut();
+    navigate(route, { replace });
   };
-}
-
-// Animate view in
-export function animateViewOut() {
-  const viewElements = document.querySelectorAll('.view-element');
-  const viewElementItems = document.querySelectorAll('.view-element-item');
-  viewElements.forEach(element => element.classList.add('view-element-hidden'));
-  setTimeout(() => viewElementItems.forEach(item => item.classList.add('view-element-item-hidden')), 200);
-}
-
-// Animate view in
-export function animateViewIn() {
-  const viewElements = document.querySelectorAll('.view-element');
-  const viewElementItems = document.querySelectorAll('.view-element-item');
-  viewElements.forEach(element => element.classList.remove('view-element-hidden'));
-  setTimeout(() => viewElementItems.forEach(item => item.classList.remove('view-element-item-hidden')), 200);
-}
-
-// Animate element out
-export function animateElementOut(el: string) {
-  const className = `.${camelToDash(el)}`;
-  const elements = document.querySelectorAll(className.includes('row') ? `${className} .view-element` : className);
-  const elementItems = document.querySelectorAll(`${className} .view-element-item`);
-  elements.forEach(element => element.classList.add('view-element-transition-setup'));
-  elements.forEach(element => element.classList.add('view-element-transitioning'));
-  elementItems.forEach(item => item.classList.add('view-element-item-hidden'));
-}
-
-// Animate element in
-export function animateElementIn(el: string) {
-  const className = `.${camelToDash(el)}`;
-  const elements = document.querySelectorAll(className.includes('row') ? `${className} .view-element` : className);
-  const elementItems = document.querySelectorAll(`${className} .view-element-item`);
-  setTimeout(() => elements.forEach(element => element.classList.remove('view-element-transition-setup')), 200);
-  elements.forEach(element => element.classList.remove('view-element-transitioning'));
-  elementItems.forEach(item => item.classList.remove('view-element-item-hidden'));
 }
 
 // Switch from camelCase to dash-case
@@ -100,7 +80,7 @@ export function camelToDash(input: string) {
   let value = input;
   for (let i = 0; i < value.length; i++) {
     if (value[i] === value[i].toUpperCase()) {
-      const letterDash = '-' + value[i].toLowerCase();
+      const letterDash = '—' + value[i].toLowerCase();
       value = value.slice(0, i) + letterDash + value.slice(i + 1);
     }
   }
@@ -123,11 +103,6 @@ export function createDummyArray(size: number, idString: string) {
     dummyArray.push(element);
   }
   return dummyArray;
-}
-
-// Sleep function
-export function sleep(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 // Light / dark with transition maintenance

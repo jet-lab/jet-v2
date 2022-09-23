@@ -4,14 +4,7 @@ import { AnchorProvider, BN } from "@project-serum/anchor"
 import NodeWallet from "@project-serum/anchor/dist/cjs/nodewallet"
 import { Keypair, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js"
 
-import {
-  MarginAccount,
-  PoolTokenChange,
-  MarginClient,
-  Pool,
-  MarginPoolConfigData,
-  PoolManager
-} from "../../../libraries/ts/src"
+import { MarginAccount, PoolTokenChange, MarginClient, Pool, MarginPoolConfigData, PoolManager } from "@jet-lab/margin"
 
 import { PythClient } from "../pyth/pythClient"
 import {

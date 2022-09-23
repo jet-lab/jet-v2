@@ -24,7 +24,7 @@
 
 # Install
 
-Make sure you update Solana to the latest version
+Make sure you update Solana to the latest version.
 
 ```bash
 sh -c "$(curl -sSfL https://release.solana.com/v1.11.10/install)"
@@ -48,13 +48,20 @@ yarn
 
 # Test
 
-Run
-
+Run the full test suite used by the github CI workflow. This requires all dependencies to be installed:
 ```bash
-yarn test
+./check
 ```
 
-to run the test suite
+Run it in a docker container that already contains all the solana and anchor dependencies. This only requires docker:
+```bash
+./check in-docker
+```
+
+Run a single job from the workflow:
+```bash
+./check [in-docker] [job-name (e.g. anchor-test)]
+```
 
 # App
 

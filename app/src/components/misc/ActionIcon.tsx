@@ -1,6 +1,6 @@
 import { useRecoilValue } from 'recoil';
-import { PoolAction } from '@jet-lab/margin';
 import { CurrentAction } from '../../state/actions/actions';
+import { PoolAction } from '@jet-lab/margin';
 import { ReactComponent as DepositIcon } from '../../styles/icons/function-deposit.svg';
 import { ReactComponent as WithdrawIcon } from '../../styles/icons/function-withdraw.svg';
 import { ReactComponent as BorrowIcon } from '../../styles/icons/function-borrow.svg';

@@ -15,7 +15,11 @@ no-idl = []
 no-log-ix-name = []
 cpi = ["no-entrypoint"]
 default = []
-testing = ["jet-metadata/testing", "jet-margin-pool/testing"]
+testing = [
+    "jet-metadata/testing",
+    "jet-bonds/testing",
+    "jet-margin-pool/testing"
+]
 devnet = []
 
 [dependencies]
@@ -24,4 +28,5 @@ anchor-lang = { git = "https://github.com/jet-lab/anchor", branch = "master" }
 anchor-spl = { git = "https://github.com/jet-lab/anchor", branch = "master" }
 
 jet-metadata = { path = "../metadata", features = ["cpi"] }
+jet-bonds = { path = "../bonds", features = ["cpi"] }
 jet-margin-pool = { path = "../margin-pool", features = ["cpi"] }

@@ -6,6 +6,7 @@ feature_groups! {
         mod liquidate;
     }
     "batch2" {
+        mod bonds;
         mod load;
         mod pool_overpayment;
         mod positions;

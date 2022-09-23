@@ -3,16 +3,30 @@ import { LAMPORTS_PER_SOL } from '@solana/web3.js';
 import { TokenAmount, PoolAction, Pool } from '@jet-lab/margin';
 
 // Current action (controls action modals)
-export const actionOptions: PoolAction[] = ['deposit', 'withdraw', 'borrow', 'repay', 'swap', 'transfer'];
+export const actionOptions: PoolAction[] = [
+  'deposit',
+  'withdraw',
+  'borrow',
+  'repay',
+  'repayFromDeposit',
+  'swap',
+  'transfer'
+];
 export const CurrentAction = atom({
   key: 'currentAction',
   default: undefined as PoolAction | undefined
 });
 
 // Any time we need to refresh data, trigger this state change throughout relevant Wrappers
-export const ACTION_REFRESH_INTERVAL = 4000;
+export const ACTION_REFRESH_INTERVAL = 10000;
 export const ActionRefresh = atom({
   key: 'actionRefresh',
+  default: false as boolean
+});
+
+// Sending a transaction
+export const SendingTransaction = atom({
+  key: 'sendingTransaction',
   default: false as boolean
 });
 

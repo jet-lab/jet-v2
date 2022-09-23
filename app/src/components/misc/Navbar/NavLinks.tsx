@@ -1,10 +1,12 @@
 import { useLocation } from 'react-router-dom';
-import { useRecoilValue } from 'recoil';
+import { useRecoilValue, useSetRecoilState } from 'recoil';
 import { Dictionary } from '../../../state/settings/localization/localization';
+import { NavDrawerOpen } from '../../../state/views/views';
+import { SendingTransaction } from '../../../state/actions/actions';
 import { useChangeView } from '../../../utils/ui';
 import { Tooltip, Typography } from 'antd';
 
-type Route = '/' | '/trade' | '/swaps' | '/accounts';
+type Route = '/' | '/swaps' | '/accounts';
 interface Link {
   title: string;
   route: Route;
@@ -15,7 +17,6 @@ interface Link {
 export function NavLinks(): JSX.Element {
   const dictionary = useRecoilValue(Dictionary);
   const navLinks: Link[] = [
-    { title: dictionary.tradeView.title, route: '/trade', disabled: true },
     { title: dictionary.poolsView.title, route: '/', disabled: false },
     { title: dictionary.swapsView.title, route: '/swaps', disabled: false },
     { title: dictionary.accountsView.title, route: '/accounts', disabled: false }
@@ -41,15 +42,22 @@ export function NavLinks(): JSX.Element {
 
 // One navigation link
 function NavLink(link: Link): JSX.Element {
+  const sendingTransaction = useRecoilValue(SendingTransaction);
   const { pathname } = useLocation();
   const changeView = useChangeView();
+  const setDrawerOpen = useSetRecoilState(NavDrawerOpen);
   const { Text } = Typography;
 
   return (
     <Text
       key={link.title}
       disabled={link.disabled}
-      onClick={() => (!link.disabled ? changeView(link.route) : null)}
+      onClick={() => {
+        if (!link.disabled && !sendingTransaction) {
+          changeView(link.route);
+          setDrawerOpen(false);
+        }
+      }}
       className={`nav-link ${pathname === link.route ? 'active' : ''}`}>
       {link.title}
     </Text>
