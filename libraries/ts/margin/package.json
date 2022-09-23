@@ -27,7 +27,7 @@
   },
   "scripts": {
     "clean": "rimraf dist/",
-    "build": "tsc -p tsconfig.json && tsc -p tsconfig-cjs.json",
+    "build": "tsc && tsc -p tsconfig-cjs.json",
     "compile": "tsc -p tsconfig.json && tsc -p tsconfig-cjs.json",
     "docs": "typedoc --excludePrivate --includeVersion ./src/index.ts",
     "fmt": "prettier src/ tests/ types/ --check",
