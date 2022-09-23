@@ -162,7 +162,7 @@ pub mod jet_margin {
     ///
     /// 1.  Register a new position that belongs to the individual margin account, allocate account space for it, and set the parameters for that asset type.
     ///     
-    /// 2.  Emit the `PositionRegistered` event for data logging (see table below).
+    /// 2.  Emit the [`events::PositionRegistered`] event for data logging (see table below).
     ///     
     /// 3.  Return `Ok(())`.
     ///     
@@ -174,13 +174,13 @@ pub mod jet_margin {
     /// | **Name** | **Description** |
     /// | `authority` | `signer` | The authority that can change the margin account. |
     /// | `payer` | `signer (writable)` | The address paying for rent. |
-    /// | `margin_account` | `` |  The margin account to register position type with. |
-    /// | `position_token_mint` | `` | The mint for the position token being registered. |
-    /// | `metadata` | `` | The metadata account that references the correct oracle for the token. |
-    /// | `token_account` | `` | The token account to store hold the position assets in the custody of the margin account. |
-    /// | `token_program` | `` | The token program of the token accounts to store for this margin account. |
-    /// | `rent` | `` | The rent to open the account. |
-    /// | `system_program` | `` | The system program. |
+    /// | `margin_account` | `writable` |  The margin account to register position type with. |
+    /// | `position_token_mint` | `read only` | The mint for the position token being registered. |
+    /// | `metadata` | `read only` | The metadata account that references the correct oracle for the token. |
+    /// | `token_account` | `read only` | The token account to store hold the position assets in the custody of the margin account. |
+    /// | `token_program` | `read only` | The token program of the token accounts to store for this margin account. |
+    /// | `rent` | `read only` | The rent to open the account. |
+    /// | `system_program` | `read only` | The system program. |
     ///
     /// **Events emitted by register\_position.rs:**
     ///
@@ -199,7 +199,7 @@ pub mod jet_margin {
     ///
     /// This instruction does the following:
     ///
-    /// 1.  Load a mutable instance of the margin account.
+    /// 1.  Load the margin account.
     ///     
     /// 2.  Let `token_account` be a reference to the token account.
     ///     
@@ -218,7 +218,7 @@ pub mod jet_margin {
     /// | `authority` | `signer` | The pubkey paying rent for the new margin account opening. |    
     /// | `payer` | `signer` | The pubkey paying rent for the new margin account opening. |
     /// | `margin_account` | `writable` | The margin account to update. |
-    /// | `token_account` | `` | The token account to update the balance for. |
+    /// | `token_account` | `read only` | The token account to update the balance for. |
     ///
     /// **Events emitted by update\_position\_balance.rs:**
     ///
@@ -244,18 +244,18 @@ pub mod jet_margin {
     ///     
     /// 3.  Update the position with refreshed metadata.
     ///     
-    /// 4.  Emit the `PositionMetadataRefreshed` event for data logging (see table below).
+    /// 4.  Emit the [`events::PositionMetadataRefreshed`]] event for data logging (see table below).
     ///     
     /// 5.  Return `Ok(())`.
     ///     
     ///
-    /// **Accounts expected with refresh\_position\_metadata.rs:**
+    /// **[Accounts](jet_margin::accounts::RefreshPositionMetadata) expected with refresh\_position\_metadata.rs:**
     ///
-    /// |     |     |
-    /// | --- | --- |
-    /// | **Name** | **Description** |
-    /// | `margin_account` | The margin account with the position to be refreshed. |
-    /// | `metadata` | The metadata account for the token, which has been updated. |
+    /// |     |     |     |
+    /// | --- | --- | --- |
+    /// | **Name** | **Type** | **Description** |
+    /// | `margin_account` | `writable` | The margin account with the position to be refreshed. |
+    /// | `metadata` | `read only` | The metadata account for the token, which has been updated. |
     ///
     /// **Events emitted by refresh\_position\_metadata.rs:**
     ///
@@ -273,32 +273,32 @@ pub mod jet_margin {
     ///
     /// This instruction does the following:
     ///
-    /// 1.  Let `account` be a mutable reference to the margin account.
+    /// 1.  Let `account` be the loaded margin account.
     ///
     /// 2.  Verify the authority of `account`.
     ///
     /// 3.  Record unregistering (closing) the position in question of `account`, which involves passing the token mint account, token account, and margin account authority.
     ///
-    /// 4.  If the token account authority of the account is the same as the authority.
+    /// 4.  If the token account authority of the account is the same as the authority:
     ///
     ///     a.  Return the token account.
     ///
-    /// 5.  Emit the `PositionClosed` event for data logging (see table below):
+    /// 5.  Emit the [`events::PositionClosed`] event for data logging (see table below):
     ///
     /// 6.  Return `Ok(())`.
     ///
     ///
-    /// **Accounts expected with close\_position.rs:**
+    /// **[Accounts](jet_margin::accounts::ClosePosition) expected with close\_position.rs:**
     ///
-    /// |     |     |
-    /// | --- | --- |
-    /// | **Name** | **Description** |
-    /// | `authority` | The authority that can change the margin account. |
-    /// | `receiver` | The receiver for the rent released. |
-    /// | `margin_account` | The margin account with the position to close. |
-    /// | `position_token_mint` | The mint for the position token being deregistered. |
-    /// | `token_account` | The token account for the position being closed. |
-    /// | `token_program` | The token program for the position being closed. |
+    /// |     |     |     |
+    /// | --- | --- | --- |
+    /// | **Name** | **Type** | **Description** |
+    /// | `authority` | `signer` | The authority that can change the margin account. |
+    /// | `receiver` | `writable` | The receiver for the rent released. |
+    /// | `margin_account` | `writable` | The margin account with the position to close. |
+    /// | `position_token_mint` | `read only` | The mint for the position token being deregistered. |
+    /// | `token_account` | `writable` | The token account for the position being closed. |
+    /// | `token_program` | `read only` | The token program for the position being closed. |
     ///
     /// **Events emitted by close\_position.rs:**
     ///
@@ -323,17 +323,17 @@ pub mod jet_margin {
     ///     
     ///    a.  If there are unhealthy positions exist for this margin account, return `False`.
     ///
-    /// 3.  Emit the `VerifiedHealthy` event for data logging (see table below).
+    /// 3.  Emit the [`events::VerifiedHealthy`] event for data logging (see table below).
     ///
     /// 4.  Return `Ok(())`.
     ///
     ///
-    /// **Accounts expected with verify\_healthy.rs:**
+    /// **[Accounts](jet_margin::accounts::VerifyHealthy) expected with verify\_healthy.rs:**
     ///
-    /// |     |     |
-    /// | --- | --- |
-    /// | **Name** | **Description** |
-    /// | `margin_account` | The account to verify the health of. |
+    /// |     |     |     |
+    /// | --- | --- | --- |
+    /// | **Name** | **Type** | **Description** |
+    /// | `margin_account` | `read only` | The account to verify the health of. |
     ///
     /// **Events emitted by verify\_healthy.rs:**
     ///
@@ -352,34 +352,34 @@ pub mod jet_margin {
     ///
     /// This instruction does the following:
     ///
-    /// 1.  If a read account has the `liquidation` parameter set to a pubkey:
+    /// 1.  If an account that is read has the `liquidation` parameter set to a pubkey:
     ///     
     ///     a.  This means that that margin account is already under liquidation by the liquidator at that pubkey.
     ///         
-    ///     b.  Return `ErrorCode::Liquidating`.
+    ///     b.  Return [`ErrorCode::Liquidating`].
     ///         
-    /// 2.  Emit the `AdapterInvokeBegin` event for data logging (see table below).
+    /// 2.  Emit the [`events::AdapterInvokeBegin`] event for data logging (see table below).
     ///     
     /// 3.  Check if any positions that have changed via adapters.
     ///     
-    ///     a.  For each changed position, emit each existing adapter position as an `event` (see table below).
+    ///     a.  For each position that changed, emit each existing adapter position as [`events::PositionEvent`].
     ///         
-    /// 4.  Emit the `AdapterInvokeEnd` event for data logging (see table below).
+    /// 4.  Emit the [`events::AdapterInvokeEnd`] event for data logging.
     ///     
     /// 5.  Verify that margin accounts positions via adapter are healthy.
     ///     
     /// 6.  Return `Ok(())`.
     ///     
     ///
-    /// **Accounts expected with adapter\_invoke.rs:**
+    /// **[Accounts](jet_margin::accounts::AdapterInvoke) expected with adapter\_invoke.rs:**
     ///
-    /// |     |     |
-    /// | --- | --- |
-    /// | **Name** | **Description** |
-    /// | `owner` | The authority that owns the margin account. |
-    /// | `margin_account` | The margin account to proxy an action for. |
-    /// | `adapter_program` | The program to be invoked. |
-    /// | `adapter_metadata` | The metadata about the proxy program. |
+    /// |     |     |     |
+    /// | --- | --- | --- |
+    /// | **Name** | **Type** | **Description** |
+    /// | `owner` | `signer` | The authority that owns the margin account. |
+    /// | `margin_account` | `writable` | The margin account to proxy an action for. |
+    /// | `adapter_program` | `read only` | The program to be invoked. |
+    /// | `adapter_metadata` | `read only` | The metadata about the proxy program. |
     ///
     /// **Events emitted by adapter\_invoke.rs:**
     ///
@@ -403,16 +403,14 @@ pub mod jet_margin {
     ///
     ///
     /// This instruction does the following:
-    ///
-    /// 1.  Emit `AccountingInvokeBegin` events for data logging (see table below).
     ///     
-    /// 2.  Check if any positions that have changed via adapters.
+    /// 1.  Check if any positions that have changed via adapters.
     ///     
-    ///     a.  For each changed position, emit each existing adapter position as an `event` (see table below).
+    ///     a.  For each changed position, emit each existing adapter position as [`events::PositionEvent`] (see table below).
     ///         
-    /// 3.  Emit [`events::AccountingInvokeBegin`] event for data logging (see table below).
+    /// 2.  Emit [`events::AccountingInvokeBegin`] event for data logging (see table below).
     ///     
-    /// 4.  Return `Ok(())`.
+    /// 3.  Return `Ok(())`.
     ///     
     ///
     /// **[Accounts](jet_margin::accounts::AccountingInvoke) expected with accounting\_invoke.rs:**
@@ -447,7 +445,7 @@ pub mod jet_margin {
     ///
     /// 1.  Read `liquidation` and `liquidator` from the account.
     ///     
-    /// 2.  Let `account` be a mutable reference to the margin account.
+    /// 2.  Load `account` as a reference to the margin account.
     ///     
     /// 3.  Verify that the account is subject to liquidation, return `False` if not.
     ///     
@@ -457,28 +455,28 @@ pub mod jet_margin {
     ///         
     ///     b.  Else if there is no liquidator assigned to the unhealthy account, the liquidator can claim this unhealthy account and begin the process of liquidation.
     ///         
-    ///     c.  Otherwise return `ErrorCode::Liquidating` because it is already claimed by some other liquidator.
+    ///     c.  Otherwise return [`ErrorCode::Liquidating`] because it is already claimed by some other liquidator.
     ///        
     /// 5.  Record the valuation of the account.
     ///     
     /// 6.  Record the minimum valuation change of the account.
     ///     
-    /// 7.  Emit the `LiquidationBegun` event for data logging (see table below).
+    /// 7.  Emit the [`events::LiquidationBegun`] event for data logging (see table below).
     ///     
     /// 8.  Return `Ok(())`.
     ///     
     ///
-    /// **Accounts expected with liquidate\_begin.rs:**
+    /// **[Accounts](jet_margin::accounts::LiquidateBegin) expected with liquidate\_begin.rs:**
     ///
-    /// |     |     |
-    /// | --- | --- |
-    /// | **Name** | **Description** |
-    /// | `margin_account` | The account in need of liquidation. |
-    /// | `payer` | The address paying rent. |
-    /// | `liquidator` | The liquidator account performing the liquidation. |
-    /// | `liquidator_metadata` | The metadata describing the liquidator. |
-    /// | `liquidation` | The account to persist the state of liquidation. |
-    /// | `system_program` | The system program. |
+    /// |     |     |     |
+    /// | --- | --- | --- |
+    /// | **Name** | **Type** | **Description** |
+    /// | `margin_account` | `writable` | The account in need of liquidation. |
+    /// | `payer` | `signer` | The address paying rent. |
+    /// | `liquidator` | `signer` | The liquidator account performing the liquidation. |
+    /// | `liquidator_metadata` | `read only` | The metadata describing the liquidator. |
+    /// | `liquidation` | `read only` | The account to persist the state of liquidation. |
+    /// | `system_program` | `read only` | The system program. |
     ///
     /// **Events emitted by liquidate\_begin.rs:**
     ///
@@ -496,7 +494,7 @@ pub mod jet_margin {
     ///
     /// This instruction does the following:
     ///
-    /// 1.  Let `account` be a mutable reference to the margin account.
+    /// 1.  Let `account` be a reference to the margin account.
     ///     
     /// 2.  Let `start_time` be the time that the liquidation on this margin account began, if it exists
     ///     
@@ -508,23 +506,23 @@ pub mod jet_margin {
     ///         
     /// 4.  Check if the entity trying to end the liquidation is not the liquidator.
     ///     
-    ///     a.  If not, return `ErrorCode::UnauthorizedLiquidator`.
+    ///     a.  If not, return [`ErrorCode::UnauthorizedLiquidator`].
     ///         
     /// 5.  Record the end of the liquidation.
     ///     
-    /// 6.  Emit the `LiquidationEnded` event for data logging (see table below).
+    /// 6.  Emit the [`events::LiquidationEnded`] event for data logging (see table below).
     ///     
     /// 7.  Return `Ok(())`.
     ///     
     ///
-    /// **Accounts expected with liquidate\_end.rs:**
+    /// **[Accounts](jet_margin::accounts::LiquidateEnd) expected with liquidate\_end.rs:**
     ///
-    /// |     |     |
-    /// | --- | --- |
-    /// | **Name** | **Description** |
-    /// | `authority` | The pubkey calling the instruction to end liquidation. |
-    /// | `margin_account` | The account in need of liquidation. |
-    /// | `liquidation` | The account to persist the state of liquidation. |
+    /// |     |     |     |
+    /// | --- | --- | --- |
+    /// | **Name** | **Type** | **Description** |
+    /// | `authority` | `signer (writable)` | The pubkey calling the instruction to end liquidation. |
+    /// | `margin_account` | `writable` | The account in need of liquidation. |
+    /// | `liquidation` | `writable` | The account to persist the state of liquidation. |
     ///
     /// **Events emitted by liquidate\_end.rs:**
     ///
@@ -547,31 +545,31 @@ pub mod jet_margin {
     ///     
     /// 2.  Let `start_value` be the valuation of the margin account before invoking the liquidator.
     ///     
-    /// 3.  Emit the `LiquidatorInvokeBegin` event for data logging (see table below).
+    /// 3.  Emit the [`events::LiquidatorInvokeBegin`] event for data logging (see table below).
     ///     
     /// 4.  Loop through adapter and store positions, getting and storing as `margin_account`, `adapter_program`, `accounts` and `signed`.
     ///     
-    /// 5.  Emit each adapter position as an `event` (see table below).
+    /// 5.  Emit each adapter position as [`events::PositionEvent`].
     ///     
-    /// 6.  Let`liquidation` be a mutable copy of the liquidated account.
+    /// 6.  Load`liquidation` asa copy of the liquidated account.
     ///     
     /// 7.  Let `end_value` be the valuation of the margin account after the liquidation attempt, after verifying that a liquidation did occur.
     ///     
-    /// 8.  Emit the `LiquidatorInvokeEnd` event for data logging (see table below).
+    /// 8.  Emit the [`events::LiquidatorInvokeEnd`] event for data logging.
     ///     
     /// 9.  Return `Ok(())`.
     ///         
     ///
-    /// **Accounts expected with liquidator\_invoke.rs:**
+    /// **[Accounts](jet_margin::accounts::LiquidatorInvoke) expected with liquidator\_invoke.rs:**
     ///
-    /// |     |     |
-    /// | --- | --- |
-    /// | **Name** | **Description** |
-    /// | `liquidator` | The liquidator processing the margin account. |
-    /// | `liquidation` | The account to persist the state of liquidation. |
-    /// | `margin_account` | The margin account to proxy an action for. |
-    /// | `adapter_program` | The program to be invoked. |
-    /// | `adapter_metadata` | The metadata about the proxy program. |
+    /// |     |     |     |
+    /// | --- | --- | --- |
+    /// | **Name** | **Type** | **Description** |
+    /// | `liquidator` | `signer` | The liquidator processing the margin account. |
+    /// | `liquidation` | `writable` | The account to persist the state of liquidation. |
+    /// | `margin_account` | `writable` | The margin account to proxy an action for. |
+    /// | `adapter_program` | `read only` | The program to be invoked. |
+    /// | `adapter_metadata` | `read only` | The metadata about the proxy program. |
     ///
     /// **Events emitted by liquidator\_invoke.rs:**
     ///
