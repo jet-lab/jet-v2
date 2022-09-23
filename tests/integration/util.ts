@@ -122,9 +122,10 @@ export async function createToken(
   owner: Keypair,
   decimals: number,
   supply: number,
-  symbol: string
+  symbol: string,
+  keypair?: Keypair
 ): Promise<TestToken> {
-  const mint = Keypair.generate()
+  const mint = keypair ?? Keypair.generate()
   const vault = Keypair.generate()
   const transaction = new Transaction().add(
     SystemProgram.createAccount({

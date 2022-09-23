@@ -1,8 +1,12 @@
-use std::sync::Arc;
+use std::{fs::OpenOptions, io::Write, sync::Arc};
 
 use anyhow::Result;
 use hosted_tests::{bonds::TestManager, margin::MarginClient};
 use jet_simulation::solana_rpc_api::RpcConnection;
+
+lazy_static::lazy_static! {
+    static ref CONFIG_PATH: String = shellexpand::env("$PWD/tests/integration/bonds/config.json").unwrap().to_string();
+}
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() -> Result<()> {
@@ -18,6 +22,23 @@ async fn main() -> Result<()> {
         .await?
         .with_bonds(&keys::event_queue(), &keys::bids(), &keys::asks())
         .await?;
+    x.pause_orders().await?;
+
+    {
+        let json = format!(
+            "{{ \"jetBondsPid\": \"{}\", \"bondManager\": \"{}\" }}",
+            jet_bonds::ID,
+            x.ix_builder.manager()
+        );
+        let mut io = OpenOptions::new()
+            .write(true)
+            .create(true)
+            .truncate(true)
+            .open(CONFIG_PATH.to_string())
+            .unwrap();
+        io.write_all(json.as_bytes()).unwrap();
+    }
+
     println!("deployed bond manager to {:?}", x.ix_builder.manager());
 
     Ok(())
