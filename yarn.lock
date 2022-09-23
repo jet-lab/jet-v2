@@ -8510,10 +8510,10 @@ wait-on@6.0.0:
     minimist "^1.2.5"
     rxjs "^7.1.0"
 
-wasm-pack@0.10.1:
-  version "0.10.1"
-  resolved "https://registry.npmjs.org/wasm-pack/-/wasm-pack-0.10.1.tgz#5d50649aee827192c42c941991856d47b90cff27"
-  integrity sha512-bw480KaaJQhL6UX8wAm6YCO497uaULDrsvUey3EB86dKAfFc6qCGVN1kItcwUklEeufonwo9mwz9/fy9xLOPtQ==
+wasm-pack@0.10.3:
+  version "0.10.3"
+  resolved "https://registry.yarnpkg.com/wasm-pack/-/wasm-pack-0.10.3.tgz#2d7dd78ba539c34b3817e2249c3f30c646c84b69"
+  integrity sha512-dg1PPyp+QwWrhfHsgG12K/y5xzwfaAoK1yuVC/DUAuQsDy5JywWDuA7Y/ionGwQz+JBZVw8jknaKBnaxaJfwTA==
   dependencies:
     binary-install "^0.1.0"
 
