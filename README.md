@@ -56,7 +56,6 @@ arch # arm64
 Install the project's node_modules
 
 ```bash
-npm i -g yarn
 yarn
 ```
 
@@ -82,18 +81,8 @@ Run a single job from the workflow:
 Run
 
 ```bash
-cd app
+yarn
 yarn start
 ```
 
 to run the app.
-
-## Mac and Linux Workaround
-
-You may have to run the app in legacy mode if you get the following error:
-`error:0308010C:digital envelope routines::unsupported`
-
-```bash
-cd app
-yarn start:legacy
-```
