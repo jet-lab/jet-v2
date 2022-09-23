@@ -22,6 +22,7 @@ import {
   TokenInvalidMintError
 } from "@solana/spl-token"
 import { Connection, PublicKey, TransactionInstruction, SystemProgram, AccountInfo } from "@solana/web3.js"
+import { chunks } from "../utils"
 import { findDerivedAccount } from "../utils/pda"
 import { TokenAmount } from "./tokenAmount"
 
@@ -130,7 +131,7 @@ export class AssociatedToken {
     return new AssociatedToken(pubkey, info, amount)
   }
 
-  /** Loads multiple token accounts, loads wrapped SOL. */
+  /** Loads multiple token accounts, loads wrapped SOL. Batches by 100 (RPC limit) */
   static async loadMultiple({
     connection,
     mints,
@@ -154,7 +155,8 @@ export class AssociatedToken {
   /**
    * Loads multiple associated token accounts by owner.
    * If the native mint is provided, loads the native SOL balance of the owner instead.
-   * If a mints array is not provided, loads all associated token accounts and the SOL balance of the owner. */
+   * If a mints array is not provided, loads all associated token accounts and the SOL balance of the owner.
+   * Batches by 100 (RPC limit) */
   static async loadMultipleOrNative({
     connection,
     owner,
@@ -186,7 +188,7 @@ export class AssociatedToken {
           addresses.push(AssociatedToken.derive(mint, ownerAddress))
         }
       }
-      accountInfos = await connection.getMultipleAccountsInfo(addresses)
+      accountInfos = await AssociatedToken.loadMultipleAccountsInfoBatched(connection, addresses)
     } else {
       const { value } = await connection.getTokenAccountsByOwner(ownerAddress, { programId: TOKEN_PROGRAM_ID })
       accountInfos = value.map(acc => acc.account)
@@ -208,7 +210,7 @@ export class AssociatedToken {
 
     if (decimals === undefined) {
       decimals = []
-      const mintInfos = await connection.getMultipleAccountsInfo(mints.map(translateAddress))
+      const mintInfos = await AssociatedToken.loadMultipleAccountsInfoBatched(connection, mints.map(translateAddress))
       for (let i = 0; i < mintInfos.length; i++) {
         const mintInfo = mintInfos[i]
         if (translateAddress(mints[i]).equals(NATIVE_MINT)) {
@@ -251,6 +253,9 @@ export class AssociatedToken {
     return accounts
   }
 
+  /**
+   * Loads multiple token accounts and their mints by address.
+   * Batches by 100 (RPC limit) */
   static async loadMultipleAux({
     connection,
     addresses,
@@ -266,13 +271,13 @@ export class AssociatedToken {
 
     const pubkeys = addresses.map(address => translateAddress(address))
 
-    const accountInfos = await connection.getMultipleAccountsInfo(pubkeys)
+    const accountInfos = await AssociatedToken.loadMultipleAccountsInfoBatched(connection, pubkeys)
     if (decimals === undefined) {
       decimals = []
       const mintPubkeys = accountInfos.map(acc => {
         return (acc && AccountLayout.decode(acc.data).mint) ?? PublicKey.default
       })
-      const mintInfos = await connection.getMultipleAccountsInfo(mintPubkeys)
+      const mintInfos = await AssociatedToken.loadMultipleAccountsInfoBatched(connection, mintPubkeys)
       for (let i = 0; i < mintInfos.length; i++) {
         const mintInfo = mintInfos[i]
         if (mintPubkeys[i].equals(PublicKey.default)) {
@@ -293,6 +298,28 @@ export class AssociatedToken {
       accounts.push(account)
     }
     return accounts
+  }
+
+  /**
+   * Fetch all the account info for multiple accounts specified by an array of public keys.
+   *
+   * @private
+   * @static
+   * @param {Connection} connection The connection used to fetch.
+   * @param {PublicKey[]} publicKeys The accounts to fetch.
+   * @param {number} [batchSize=100] The maximum batch size. Default 100, which is an RPC limit.
+   * @return {(Promise<(AccountInfo<Buffer> | null)[]>)} An array of accounts returned in the same order as the publicKeys array
+   * @memberof AssociatedToken
+   */
+  private static async loadMultipleAccountsInfoBatched(
+    connection: Connection,
+    publicKeys: PublicKey[],
+    batchSize: number = 100
+  ): Promise<(AccountInfo<Buffer> | null)[]> {
+    const batches = chunks(batchSize, publicKeys)
+    const promises = batches.map(batch => connection.getMultipleAccountsInfo(batch))
+    const infos = await Promise.all(promises)
+    return infos.flat(1)
   }
 
   /** TODO:
@@ -764,6 +791,10 @@ export const bigIntToBn = (bigInt: bigint | null | undefined): BN => {
   return bigInt ? new BN(bigInt.toString()) : new BN(0)
 }
 
+export const bnToBigInt = (bn: BN | null | undefined): bigint => {
+  return bn ? BigInt(bn.toString()) : 0n
+}
+
 /** Convert BigInt (SPL Token) to BN. */
 export const bigIntToNumber = (bigint: bigint | null | undefined): number => {
   return bigint ? Number(bigint) : 0
@@ -773,5 +804,5 @@ export function numberToBigInt(number: number | null | undefined) {
   // Stomp out any fraction component of the number
   return number !== null && number !== undefined
     ? BigInt(number.toLocaleString("fullwide", { useGrouping: false, maximumFractionDigits: 0 }))
-    : BigInt(0)
+    : 0n
 }

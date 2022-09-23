@@ -2,13 +2,15 @@ import { useState } from 'react';
 import { useRecoilState, useResetRecoilState, useRecoilValue } from 'recoil';
 import axios from 'axios';
 import { useWallet } from '@solana/wallet-adapter-react';
+import { SendingTransaction } from '../../state/actions/actions';
 import { EditAccountModal as EditAccountModalOpen } from '../../state/modals/modals';
 import { Cluster } from '../../state/settings/settings';
 import { Dictionary } from '../../state/settings/localization/localization';
-import { CurrentAccountName, FavoriteAccounts, CurrentAccount, AccountNames } from '../../state/user/accounts';
+import { CurrentAccountAddress, CurrentAccount, AccountNames } from '../../state/user/accounts';
 import { notify } from '../../utils/notify';
 import { Input, Modal, Typography } from 'antd';
 
+// Modal for editing account information
 export function EditAccountModal(): JSX.Element {
   const editAccountModalOpen = useRecoilValue(EditAccountModalOpen);
   const resetEditAccountModal = useResetRecoilState(EditAccountModalOpen);
@@ -16,12 +18,11 @@ export function EditAccountModal(): JSX.Element {
   const dictionary = useRecoilValue(Dictionary);
   const { publicKey } = useWallet();
   const currentAccount = useRecoilValue(CurrentAccount);
-  const [currentAccountName, setCurrentAccountName] = useRecoilState(CurrentAccountName);
+  const [currentAccountAddress, setCurrentAccountAddress] = useRecoilState(CurrentAccountAddress);
   const accountNames = useRecoilValue(AccountNames);
-  const [favoriteAccounts, setFavoriteAccounts] = useRecoilState(FavoriteAccounts);
   const [newAccountName, setNewAccountName] = useState<string | undefined>(undefined);
   const [inputError, setInputError] = useState<string | undefined>();
-  const [sendingTransaction, setSendingTransaction] = useState(false);
+  const [sendingTransaction, setSendingTransaction] = useRecoilState(SendingTransaction);
   const { Title, Text } = Typography;
 
   // Change account name
@@ -29,6 +30,8 @@ export function EditAccountModal(): JSX.Element {
     if (!currentAccount || !newAccountName || !publicKey) {
       return;
     }
+
+    // Check if name is already in use, error if so
     const nameMatch = Object.values(accountNames).filter(
       name => name.toLowerCase() === newAccountName.toLowerCase()
     )[0];
@@ -37,10 +40,12 @@ export function EditAccountModal(): JSX.Element {
       return;
     }
 
+    // Begin loading and track the old account name for notification
     setSendingTransaction(true);
-    const oldAccountName = currentAccountName ?? '';
+    const oldAccountName = accountNames[currentAccountAddress] ?? '';
+    // Update in database (TODO: put editing account names back in)
     axios
-      .put(`https://api.jetprotocol.io/v1/margin/${publicKey.toString()}/accounts`, {
+      .put(``, {
         alias: newAccountName,
         network: cluster,
         publicKey: currentAccount.address.toString()
@@ -54,12 +59,7 @@ export function EditAccountModal(): JSX.Element {
           'success'
         );
 
-        const favoriteAccountsClone = { ...favoriteAccounts };
-        const walletFavoriteAccounts = favoriteAccountsClone[publicKey.toString()] ?? [];
-        walletFavoriteAccounts[walletFavoriteAccounts.indexOf(oldAccountName)] = newAccountName;
-        favoriteAccountsClone[publicKey.toString()] = walletFavoriteAccounts;
-        setFavoriteAccounts(favoriteAccountsClone);
-        setCurrentAccountName(newAccountName);
+        setCurrentAccountAddress(newAccountName);
         setNewAccountName(undefined);
         resetEditAccountModal();
       })
@@ -78,6 +78,7 @@ export function EditAccountModal(): JSX.Element {
     return (
       <Modal
         className="header-modal edit-account-modal"
+        maskClosable={false}
         visible={editAccountModalOpen}
         onCancel={resetEditAccountModal}
         onOk={changeAccountName}
@@ -88,14 +89,14 @@ export function EditAccountModal(): JSX.Element {
         }}>
         <div className="modal-header flex-centered">
           <Title className="modal-header-title green-text">
-            {dictionary.modals.editAccount.title.replace('{{ACCOUNT_NAME}}', currentAccountName ?? '')}
+            {dictionary.modals.editAccount.title.replace('{{ACCOUNT_NAME}}', accountNames[currentAccountAddress] ?? '')}
           </Title>
         </div>
         <Text className="small-accent-text">{dictionary.actions.newAccount.accountName.toUpperCase()}</Text>
         <Input
           type="text"
           className={inputError ? 'error' : ''}
-          placeholder={currentAccountName}
+          placeholder={accountNames[currentAccountAddress]}
           value={newAccountName}
           disabled={sendingTransaction}
           onChange={e => {

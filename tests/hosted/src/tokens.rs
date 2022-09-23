@@ -33,6 +33,7 @@ use solana_sdk::{system_instruction, system_program};
 
 use anchor_lang::{InstructionData, ToAccountMetas};
 
+use jet_proto_math::number_128::Number128;
 use jet_simulation::{generate_keypair, send_and_confirm, solana_rpc_api::SolanaRpcClient};
 
 /// Utility for managing the creation of tokens and their prices
@@ -301,10 +302,10 @@ impl TokenManager {
         let clock = self.rpc.get_clock().expect("could not get the clock");
         let mut price_data = default_price();
 
-        let price_value = jet_proto_math::Number128::from_decimal(price.price, price.exponent)
-            .as_u64(price_data.expo) as i64;
-        let twap_value = jet_proto_math::Number128::from_decimal(price.twap, price.exponent)
-            .as_u64(price_data.expo) as i64;
+        let price_value =
+            Number128::from_decimal(price.price, price.exponent).as_u64(price_data.expo) as i64;
+        let twap_value =
+            Number128::from_decimal(price.twap, price.exponent).as_u64(price_data.expo) as i64;
 
         price_data.agg.price = price_value;
         price_data.agg.conf = price.confidence;

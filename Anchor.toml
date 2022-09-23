@@ -12,6 +12,7 @@ wallet = "~/.config/solana/id.json"
 skip-lint = true
 
 [programs.devnet]
+jet_bonds = "JBond79m9K6HqYwngCjiJHb311GTXggo46kGcT2GijUc"
 jet_control = "JPCtrLreUqsEbdhtxZ8zpd8wBydKz4nuEjX5u9Eg5H8"
 jet_margin = "JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ"
 jet_margin_pool = "JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ"
@@ -19,6 +20,7 @@ jet_margin_swap = "JPMAa5dnWLFRvUsumawFcGhnwikqZziLLfqn9SLNXPN"
 jet_metadata = "JPMetawzxw7WyH3qHUVScYHWFBGhjwqDnM2R9qVbRLp"
 
 [programs.localnet]
+jet_bonds = "JBond79m9K6HqYwngCjiJHb311GTXggo46kGcT2GijUc"
 jet_control = "JPCtrLreUqsEbdhtxZ8zpd8wBydKz4nuEjX5u9Eg5H8"
 jet_margin = "JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ"
 jet_margin_pool = "JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ"
@@ -42,5 +44,8 @@ program = "./deps/spl_token_faucet.so"
 address = "SwaPpA9LAaLfeLi3a68M4DjnLqgtticKg6CnyNwgAC8"
 program = "./deps/spl-token-swap/crates.io-spl_token_swap==2.0.0.so"
 
+[test]
+startup_wait = 10000
+
 [scripts]
-test = "npx ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.test.ts"
+test = "tests/scripts/anchor.sh"

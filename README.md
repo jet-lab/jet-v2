@@ -4,8 +4,8 @@
   <h1>Jet V2</h1>
 
   <p>
-    <a target="_blank" href="https://github.com/jet-lab/jet-v2/actions/workflows/rust_coverage.yml">
-      <img alt="Build" src="https://github.com/jet-lab/jet-v2/actions/workflows/rust_coverage.yml/badge.svg" />
+    <a target="_blank" href="https://github.com/jet-lab/jet-v2/actions/workflows/check.yml">
+      <img alt="Build" src="https://github.com/jet-lab/jet-v2/actions/workflows/check.yml/badge.svg" />
     </a>
     <a target="_blank" href="https://discord.com/channels/880316176612343891">
       <img alt="Discord" src="https://img.shields.io/discord/833805114602291200?color=blueviolet" />
@@ -24,30 +24,77 @@
 
 # Install
 
-To install Anchor please see the [Anchor Documentation](https://project-serum.github.io/anchor/getting-started/installation.html)
+Make sure you update Solana to the latest version.
 
-Make sure you update Solana to the latest version
-
-```
-sh -c "$(curl -sSfL https://release.solana.com/v1.10.23/install)"
+```bash
+sh -c "$(curl -sSfL https://release.solana.com/v1.11.10/install)"
 ```
 
-Install anchor
+Install anchor. Please see the [Anchor Documentation](https://project-serum.github.io/anchor/getting-started/installation.html)
 
-```
-yarn @project-serum/anchor-cli@0.24.2 -g
+```bash
+cargo install --git https://github.com/project-serum/anchor avm --locked --force
+
+avm install latest
+avm use latest
+anchor --version # anchor-cli 0.25.0
 ```
 
 Install the project's node_modules
 
-```
+```bash
 yarn
 ```
 
-Then run
+# Test
 
-```
-yarn test
+Run the full test suite used by the github CI workflow. This requires all dependencies to be installed:
+```bash
+./check
 ```
 
-to run the test suite
+Run it in a docker container that already contains all the solana and anchor dependencies. This only requires docker:
+```bash
+./check in-docker
+```
+
+Run a single job from the workflow:
+```bash
+./check [in-docker] [job-name (e.g. anchor-test)]
+```
+
+# App
+
+Run
+
+```bash
+cd app
+yarn start
+```
+
+to run the app.
+
+You may have to run the app in legacy mode if you get the following error
+`error:0308010C:digital envelope routines::unsupported`
+
+```bash
+cd app
+yarn start:legacy
+```
+
+# Documentations
+[![Docs](https://img.shields.io/badge/docs-TypeScript-success)](https://jet-lab.github.io/jet-v2/ts-client/)
+[![Docs](https://img.shields.io/badge/docs-Rust-success)](https://jet-lab.github.io/jet-v2/margin-rust/jet_margin/)
+
+
+Developer resources for integrating with Jet Margin Program.
+## Margin Program 
+
+> View the [rust docs](https://jet-lab.github.io/jet-v2/margin-rust/jet_margin/) for the full package documentation and available API.
+> 
+
+## Margin TypeScript Client
+
+> View the [typedocs](https://jet-lab.github.io/jet-v2/ts-client) for the full package documentation and available API.
+> 
+> View more [examples](https://github.com/jet-lab/jet-v2/tree/master/tests/integration/examples) for usage reference.

@@ -1,7 +1,7 @@
 import { TokenAmount } from '@jet-lab/margin';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
 import { Dictionary } from '../../../state/settings/localization/localization';
-import { CurrentPool } from '../../../state/borrow/pools';
+import { CurrentPool } from '../../../state/pools/pools';
 import { TokenInputAmount, TokenInputString } from '../../../state/actions/actions';
 import { Button, Slider } from 'antd';
 import { getTokenAmountFromNumber } from '../../../utils/currency';
@@ -37,7 +37,7 @@ export function TokenSlider(props: {
     const percentageAmount = props.maxInput.tokens * (percent / 100);
     const roundedAmount = (percentageAmount * 10 ** currentPool.decimals) / 10 ** currentPool.decimals;
     const roundedAmountTokens = getTokenAmountFromNumber(roundedAmount, currentPool.decimals);
-    setTokenInputString(roundedAmountTokens.uiTokens);
+    setTokenInputString(roundedAmountTokens.tokens.toString());
   }
 
   // Handle "max" button click
@@ -48,7 +48,7 @@ export function TokenSlider(props: {
 
     const preciseMaxAmount = (props.maxInput.tokens * 10 ** currentPool.decimals) / 10 ** currentPool.decimals;
     const preciseMaxAmountTokens = getTokenAmountFromNumber(preciseMaxAmount, currentPool.decimals);
-    setTokenInputString(preciseMaxAmountTokens.uiTokens);
+    setTokenInputString(preciseMaxAmountTokens.tokens.toString());
   }
 
   return (

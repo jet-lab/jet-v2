@@ -3,11 +3,11 @@ import { useRecoilValue } from 'recoil';
 import { AccountSnapshot } from '../components/misc/AccountSnapshot/AccountSnapshot';
 import { SwapEntry } from '../components/SwapsView/SwapEntry';
 import { SwapsGraph } from '../components/SwapsView/SwapsGraph';
-import { SwapsHistory } from '../components/SwapsView/SwapsHistory';
+import { FullAccountBalance } from '../components/tables/FullAccountBalance';
 import { Dictionary } from '../state/settings/localization/localization';
 import { SwapsViewOrder, SwapsRowOrder } from '../state/views/views';
-import { animateViewIn } from '../utils/ui';
 
+// App view for margin swapping
 export function SwapsView(): JSX.Element {
   const dictionary = useRecoilValue(Dictionary);
 
@@ -39,7 +39,7 @@ export function SwapsView(): JSX.Element {
   const viewComponents: Record<string, JSX.Element> = {
     accountSnapshot: <AccountSnapshot key="accountSnapshot" />,
     swapsRow: swapsRow(),
-    swapsHistory: <SwapsHistory key="swapsHistory" />
+    fullAccountBalance: <FullAccountBalance key="fullAccountBalance" />
   };
   const accountView = (): JSX.Element => {
     const swapsViewComponents: JSX.Element[] = [];
@@ -49,6 +49,5 @@ export function SwapsView(): JSX.Element {
     return <div className="swaps-view view">{swapsViewComponents}</div>;
   };
 
-  useEffect(() => animateViewIn(), []);
   return accountView();
 }

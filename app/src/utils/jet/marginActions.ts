@@ -1,19 +1,27 @@
-import { useRecoilValue, useSetRecoilState } from 'recoil';
-import axios from 'axios';
+import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
+// import axios from 'axios';
 import { TransactionInstruction } from '@solana/web3.js';
-import { Order } from '@project-serum/serum/lib/market';
 import { NATIVE_MINT } from '@solana/spl-token';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { MarginAccount, Pool, PoolTokenChange, sleep, TokenAmount, TokenFaucet, TokenFormat } from '@jet-lab/margin';
-import { Cluster } from '../../state/settings/settings';
-import { Pools, CurrentPool } from '../../state/borrow/pools';
-import { CurrentMarket } from '../../state/trade/market';
+import {
+  chunks,
+  MarginAccount,
+  Pool,
+  PoolTokenChange,
+  sleep,
+  SPLSwapPool,
+  TokenAmount,
+  TokenFaucet
+} from '@jet-lab/margin';
+import { MarginConfig } from '../../state/config/marginConfig';
+import { Pools, CurrentPool } from '../../state/pools/pools';
 import { WalletTokens } from '../../state/user/walletTokens';
-import { CurrentAccount } from '../../state/user/accounts';
+import { CurrentAccount, CurrentAccountAddress, FavoriteAccounts } from '../../state/user/accounts';
+import { Dictionary } from '../../state/settings/localization/localization';
 import { TokenInputAmount, ActionRefresh } from '../../state/actions/actions';
-import { OrderSide, OrderType, OrderPrice, OrderSize } from '../../state/trade/order';
 import { useProvider } from './provider';
-import { useMarginConfig } from './marginConfig';
+import { NOTIFICATION_DURATION } from '../notify';
+import { message } from 'antd';
 
 export enum ActionResponse {
   Success = 'SUCCESS',
@@ -21,26 +29,24 @@ export enum ActionResponse {
   Cancelled = 'CANCELLED'
 }
 export function useMarginActions() {
-  const cluster = useRecoilValue(Cluster);
-  const config = useMarginConfig();
+  // const cluster = useRecoilValue(Cluster);
+  const config = useRecoilValue(MarginConfig);
+  const dictionary = useRecoilValue(Dictionary);
   const { programs, provider } = useProvider();
   const pools = useRecoilValue(Pools);
   const currentPool = useRecoilValue(CurrentPool);
-  const currentMarket = useRecoilValue(CurrentMarket);
   const wallet = useWallet();
   const walletTokens = useRecoilValue(WalletTokens);
   const currentAccount = useRecoilValue(CurrentAccount);
+  const setCurrentAccountAddress = useSetRecoilState(CurrentAccountAddress);
+  const [favoriteAccounts, setFavoriteAccounts] = useRecoilState(FavoriteAccounts);
   const accountPoolPosition = currentPool?.symbol && currentAccount?.poolPositions[currentPool.symbol];
   const tokenInputAmount = useRecoilValue(TokenInputAmount);
-  const orderSide = useRecoilValue(OrderSide);
-  const orderType = useRecoilValue(OrderType);
-  const orderPrice = useRecoilValue(OrderPrice);
-  const orderSize = useRecoilValue(OrderSize);
   const setActionRefresh = useSetRecoilState(ActionRefresh);
 
-  // Refresh to trigger new data fetching after 2 seconds
+  // Refresh to trigger new data fetching after a timeout
   async function actionRefresh() {
-    await sleep(3000);
+    await sleep(1000);
     setActionRefresh(true);
     setActionRefresh(false);
   }
@@ -94,15 +100,26 @@ export function useMarginActions() {
       );
 
       await newMarginAccount.createAccount();
-      if (accountName) {
-        axios
-          .put(`https://api.jetprotocol.io/v1/margin/${wallet.publicKey?.toString()}/accounts`, {
-            alias: accountName,
-            network: cluster,
-            publicKey: newMarginAccount.address.toString()
-          })
-          .catch(err => err);
-      }
+
+      // TODO add account names back
+      // if (accountName) {
+      //   axios
+      //     .put(``, {
+      //       alias: accountName,
+      //       network: cluster,
+      //       publicKey: newMarginAccount.address.toString()
+      //     })
+      //     .catch(err => err);
+      // }
+
+      // Update favorite accounts and set UI to new account
+      const favoriteAccountsClone = { ...favoriteAccounts };
+      const favoriteWalletAccounts = favoriteAccountsClone[wallet.publicKey.toString()] ?? [];
+      const newWalletFavorites: string[] = [...favoriteWalletAccounts];
+      newWalletFavorites.push(newMarginAccount.address.toString());
+      favoriteAccountsClone[wallet.publicKey.toString()] = newWalletFavorites;
+      setFavoriteAccounts(favoriteAccountsClone);
+      setCurrentAccountAddress(newMarginAccount.address.toString());
 
       await actionRefresh();
       return [undefined, ActionResponse.Success];
@@ -182,8 +199,7 @@ export function useMarginActions() {
       const txId = await currentPool.marginBorrow({
         marginAccount: currentAccount,
         pools: Object.values(pools.tokenPools),
-        change: PoolTokenChange.shiftBy(accountPoolPosition.loanBalance.add(tokenInputAmount)),
-        destination: TokenFormat.unwrappedSol
+        change: PoolTokenChange.shiftBy(tokenInputAmount)
       });
       await actionRefresh();
       return [txId, ActionResponse.Success];
@@ -198,7 +214,7 @@ export function useMarginActions() {
   }
 
   // Repay
-  async function repay(sourceAccount?: MarginAccount): Promise<[string | undefined, ActionResponse]> {
+  async function repay(accountRepay: boolean): Promise<[string | undefined, ActionResponse]> {
     if (!pools || !currentPool || !walletTokens || !currentAccount || !accountPoolPosition) {
       console.error('Accounts and/or pools not loaded');
       throw new Error();
@@ -211,9 +227,7 @@ export function useMarginActions() {
     try {
       const txId = await currentPool.marginRepay({
         marginAccount: currentAccount,
-        source: sourceAccount
-          ? sourceAccount.poolPositions[currentPool.symbol].depositPosition?.address
-          : walletTokens.map[currentPool.symbol].address,
+        source: accountRepay ? undefined : walletTokens.map[currentPool.symbol].address,
         pools: Object.values(pools.tokenPools),
         change,
         closeLoan
@@ -231,32 +245,41 @@ export function useMarginActions() {
   }
 
   // Swap
-  async function swap(
+  async function splTokenSwap(
     inputToken: Pool,
     outputToken: Pool,
+    swapPool: SPLSwapPool,
     swapAmount: TokenAmount,
-    minAmountOut: TokenAmount
-  ): Promise<[string | undefined, ActionResponse]> {
+    minAmountOut: TokenAmount,
+    repayWithOutput: boolean
+  ): Promise<[string | undefined, ActionResponse | undefined]> {
     if (!pools || !inputToken || !outputToken || !currentAccount) {
       console.error('Input/output tokens or current account undefined');
       throw new Error();
     }
 
     try {
-      const txId = await inputToken.swap({
+      const txId = await inputToken.splTokenSwap({
         marginAccount: currentAccount,
         pools: Object.values(pools.tokenPools),
         outputToken,
+        swapPool,
         swapAmount,
         minAmountOut,
-        repayWithOutput: true // FIXME!
+        repayWithOutput
       });
       await actionRefresh();
+      if (txId === 'Setup check failed') {
+        return [undefined, ActionResponse.Failed];
+      }
       return [txId, ActionResponse.Success];
     } catch (err: any) {
       console.error(err);
       if (err.toString().includes('User rejected') || err.toString().includes('Failed to sign')) {
         return [undefined, ActionResponse.Cancelled];
+      } else if (err.toString().includes('"Custom":16')) {
+        message.warning(dictionary.actions.swap.warningMessages.maxSlippageExceeded, NOTIFICATION_DURATION);
+        return [undefined, undefined];
       } else {
         return [undefined, ActionResponse.Failed];
       }
@@ -273,6 +296,7 @@ export function useMarginActions() {
       throw new Error();
     }
 
+    const refreshInstructions: TransactionInstruction[] = [];
     const instructions: TransactionInstruction[] = [];
     const fromChange = tokenInputAmount.eq(fromAccount.poolPositions[currentPool.symbol].maxTradeAmounts.withdraw)
       ? PoolTokenChange.setTo(0)
@@ -281,6 +305,26 @@ export function useMarginActions() {
       toAccount.poolPositions[currentPool.symbol].depositBalance.add(tokenInputAmount)
     );
     try {
+      // Refresh positions
+      await currentPool.withMarginRefreshAllPositionPrices({
+        instructions: refreshInstructions,
+        pools: pools.tokenPools,
+        marginAccount: fromAccount
+      });
+      await currentPool.withMarginRefreshAllPositionPrices({
+        instructions: refreshInstructions,
+        pools: pools.tokenPools,
+        marginAccount: toAccount
+      });
+
+      // toAccount deposit position
+      const toAccountDepositPosition = await currentPool.withGetOrRegisterDepositPosition({
+        instructions,
+        marginAccount: toAccount
+      });
+      await toAccount.withUpdatePositionBalance({ instructions, position: toAccountDepositPosition });
+
+      // Withdraw and deposit ix
       await currentPool.withWithdraw({
         instructions,
         marginAccount: fromAccount,
@@ -289,59 +333,11 @@ export function useMarginActions() {
       });
       await currentPool.withDeposit({
         instructions,
-        marginAccount: fromAccount,
+        marginAccount: toAccount,
         source: fromAccount.walletTokens.map[currentPool.symbol].address,
         change: toChange
       });
-      const txId = await currentAccount.sendAndConfirm(instructions);
-      await actionRefresh();
-      return [txId, ActionResponse.Success];
-    } catch (err: any) {
-      console.error(err);
-      if (err.toString().includes('User rejected') || err.toString().includes('Failed to sign')) {
-        return [undefined, ActionResponse.Cancelled];
-      } else {
-        return [undefined, ActionResponse.Failed];
-      }
-    }
-  }
-
-  // Place order
-  async function placeOrder(): Promise<[string | undefined, ActionResponse]> {
-    if (!currentMarket || !currentAccount) {
-      console.error('Accounts and/or market not loaded');
-      throw new Error();
-    }
-
-    try {
-      const txId = await currentMarket.placeOrder({
-        marginAccount: currentAccount,
-        orderSide,
-        orderType,
-        orderPrice,
-        orderSize
-      });
-      await actionRefresh();
-      return [txId, ActionResponse.Success];
-    } catch (err: any) {
-      console.error(err);
-      if (err.toString().includes('User rejected') || err.toString().includes('Failed to sign')) {
-        return [undefined, ActionResponse.Cancelled];
-      } else {
-        return [undefined, ActionResponse.Failed];
-      }
-    }
-  }
-
-  // Cancel order
-  async function cancelOrder(order: Order): Promise<[string | undefined, ActionResponse]> {
-    if (!currentMarket || !currentAccount) {
-      console.error('Accounts and/or market not loaded');
-      throw new Error();
-    }
-
-    try {
-      const txId = await currentMarket.cancelOrder({ marginAccount: currentAccount, order });
+      const txId = await currentAccount.sendAll([chunks(11, refreshInstructions), instructions]);
       await actionRefresh();
       return [txId, ActionResponse.Success];
     } catch (err: any) {
@@ -361,9 +357,7 @@ export function useMarginActions() {
     withdraw,
     borrow,
     repay,
-    swap,
-    transfer,
-    placeOrder,
-    cancelOrder
+    splTokenSwap,
+    transfer
   };
 }

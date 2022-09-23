@@ -1,19 +1,17 @@
 import { Connection } from "@solana/web3.js"
 import * as os from "os"
 
-import { MarginConfig } from "../../libraries/ts/src/margin/config"
-import { MarginClient } from "../../libraries/ts/src/margin/marginClient"
+import { MarginConfig, MarginClient } from "@jet-lab/margin"
 import { Replicant } from "./replicant"
 
 import TEST_CONFIG from "./scenarios/borrow.json"
 
 describe("Deposit and Borrow", () => {
-
-  let marginConfig: MarginConfig;
-  let connection: Connection;
+  let marginConfig: MarginConfig
+  let connection: Connection
 
   it("Load config", async () => {
-    marginConfig = await MarginClient.getConfig('devnet')
+    marginConfig = await MarginClient.getConfig("devnet")
 
     connection = new Connection(marginConfig.url, "processed")
   })

@@ -1,10 +1,11 @@
 import { useRecoilValue } from 'recoil';
-import { MarginAccount } from '@jet-lab/margin';
+import { feesBuffer, MarginAccount } from '@jet-lab/margin';
 import { Dictionary } from '../../state/settings/localization/localization';
 import { WalletTokens } from '../../state/user/walletTokens';
 import { AccountNames, CurrentAccount } from '../../state/user/accounts';
-import { Pools, CurrentPool } from '../../state/borrow/pools';
+import { Pools, CurrentPool } from '../../state/pools/pools';
 import { CurrentAction, TokenInputAmount } from '../../state/actions/actions';
+import { NewAccountModal } from '../../state/modals/modals';
 import { formatRiskIndicator } from '../format';
 
 // Check if user input should be disabled and return the relevant message
@@ -17,6 +18,7 @@ export function useTokenInputDisabledMessage(account?: MarginAccount): string {
   const currentAccount = useRecoilValue(CurrentAccount);
   const marginAccount = account ?? currentAccount;
   const currentAction = useRecoilValue(CurrentAction);
+  const newAccountModalOpen = useRecoilValue(NewAccountModal);
   const poolPosition = marginAccount && currentPool?.symbol && marginAccount.poolPositions[currentPool.symbol];
   if (!pools || !currentPool || !marginAccount) {
     return '';
@@ -31,6 +33,9 @@ export function useTokenInputDisabledMessage(account?: MarginAccount): string {
         '{{ASSET}}',
         tokenSymbol
       );
+      // User doesn't have enough SOL to cover fees
+    } else if (walletTokens && walletTokens.map.SOL.amount.lamports.toNumber() <= feesBuffer) {
+      disabledMessage = dictionary.actions.deposit.disabledMessages.notEnoughSolForFees;
     }
   } else if (currentAction === 'withdraw') {
     // No collateral to withdraw
@@ -63,7 +68,7 @@ export function useTokenInputDisabledMessage(account?: MarginAccount): string {
     } else if (!pools.tokenPools[tokenSymbol]?.vault.tokens) {
       disabledMessage = dictionary.actions.disabledMessages.notEnoughLiquidity;
     }
-  } else if (currentAction === 'repay') {
+  } else if (currentAction === 'repay' || currentAction === 'repayFromDeposit') {
     // User has no loan balance to repay
     if (poolPosition && !poolPosition.loanBalance.tokens) {
       disabledMessage = dictionary.actions.repay.disabledMessages.noDebtForRepay.replaceAll('{{ASSET}}', tokenSymbol);
@@ -88,7 +93,7 @@ export function useTokenInputDisabledMessage(account?: MarginAccount): string {
         .replaceAll('{{ASSET}}', tokenSymbol)
         .replaceAll('{{ACCOUNT_NAME}}', accountName);
     }
-  } else if (currentAction === 'newAccount') {
+  } else if (newAccountModalOpen) {
     // User is opening new account and has no SOL to cover the rent fee
     if (walletTokens && !walletTokens.map[tokenSymbol].amount.tokens) {
       disabledMessage = dictionary.actions.newAccount.disabledMessages.noSolForRentFee;
@@ -106,22 +111,25 @@ export function useTokenInputWarningMessage(account?: MarginAccount | undefined)
   const marginAccount = account ?? currentAccount;
   const currentAction = useRecoilValue(CurrentAction);
   const tokenInputAmount = useRecoilValue(TokenInputAmount);
-  const projectedRiskIndicator =
+  const canProjectRisk =
     currentPool &&
     currentAccount &&
     currentAction &&
     !(currentAction === 'swap' || currentAction === 'transfer') &&
-    !tokenInputAmount.isZero()
-      ? currentPool.projectAfterAction(currentAccount, tokenInputAmount.tokens, currentAction).riskIndicator
-      : currentAccount?.riskIndicator ?? 0;
+    !tokenInputAmount.isZero();
+  const defaultRiskProjection = currentAccount?.riskIndicator ?? 0;
+  const projectedRiskIndicator = canProjectRisk
+    ? currentPool.projectAfterAction(currentAccount, tokenInputAmount.tokens, currentAction).riskIndicator
+    : defaultRiskProjection;
 
-  let warningMessage = '';
-  if (
+  // If we should check for a risk level warning
+  const checkForWarning =
     currentPool &&
     marginAccount &&
     !tokenInputAmount.isZero() &&
-    (marginAccount?.summary.borrowedValue || currentAction === 'borrow')
-  ) {
+    (marginAccount?.summary.borrowedValue || currentAction === 'borrow');
+  let warningMessage = '';
+  if (checkForWarning) {
     // User's new Risk Level would be in liduidation territory (subject to market volatility)
     if (
       projectedRiskIndicator >= MarginAccount.RISK_WARNING_LEVEL &&
@@ -136,7 +144,7 @@ export function useTokenInputWarningMessage(account?: MarginAccount | undefined)
 }
 
 // Check if user input is dangerous / would cause error
-export function useTokenInputErrorMessage(account?: MarginAccount | undefined): string {
+export function useTokenInputErrorMessage(account?: MarginAccount | undefined, projectedRisk?: number): string {
   const dictionary = useRecoilValue(Dictionary);
   const currentPool = useRecoilValue(CurrentPool);
   const currentAction = useRecoilValue(CurrentAction);
@@ -152,14 +160,15 @@ export function useTokenInputErrorMessage(account?: MarginAccount | undefined): 
     !tokenInputAmount.isZero()
       ? currentPool.projectAfterAction(currentAccount, tokenInputAmount.tokens, currentAction).riskIndicator
       : currentAccount?.riskIndicator ?? 0;
+  const risk = projectedRisk ?? projectedRiskIndicator;
 
   let errorMessage = '';
   if (marginAccount && !tokenInputAmount.isZero() && walletTokens) {
     // User's new Risk Level would be above our maximum
-    if (projectedRiskIndicator >= MarginAccount.RISK_LIQUIDATION_LEVEL) {
+    if (risk >= MarginAccount.RISK_LIQUIDATION_LEVEL) {
       errorMessage = dictionary.actions.errorMessages.maxRiskLevel.replaceAll(
         '{{NEW_RISK}}',
-        formatRiskIndicator(projectedRiskIndicator)
+        formatRiskIndicator(risk)
       );
     }
   }

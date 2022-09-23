@@ -21,8 +21,7 @@ import {
   Transaction
 } from "@solana/web3.js"
 
-import { TokenSwap, CurveType, MarginSwap } from "../../../libraries/ts/src"
-import { sleep } from "../../../libraries/ts/src/utils/sleep"
+import { TokenSwap, CurveType, MarginSwap, sleep } from "@jet-lab/margin"
 
 import { DEFAULT_CONFIRM_OPTS, getTokenAccountInfo, ORCA_SWAP_PROGRAM_ID } from "../util"
 ;[ORCA_SWAP_PROGRAM_ID].forEach(function (swapProgramId) {

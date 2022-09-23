@@ -13,13 +13,17 @@ set -euxo pipefail
 DOCKER_IMAGE=jetprotocol/builder:solana-1.10.35-anchor-0.25.0-3
 
 anchor-test() {
-	  yarn install --frozen-lockfile
-	  anchor test -- --features testing
+    yarn install --frozen-lockfile
+    yarn --cwd libraries/ts build
+    yarn --cwd libraries/ts/bonds build:wasm
+    yarn --cwd libraries/ts/bonds copy:wasm
+    yarn --cwd libraries/ts/bonds build
+	anchor test $@ -- --features testing
 }
 
 hosted-tests-localnet() {
-    tests/hosted/on_localnet.sh anchor-build
-    SOLANA_LOGS=true tests/hosted/on_localnet.sh test combined
+    tests/scripts/on_localnet.sh anchor-build
+    SOLANA_LOGS=true tests/scripts/on_localnet.sh test combined
 }
 
 cargo-lint() {
@@ -40,8 +44,8 @@ cargo-test() {
 all() {
     cargo-lint
     cargo-test
-    anchor-test
     hosted-tests-localnet
+    anchor-test
 }
 
 in-docker() {

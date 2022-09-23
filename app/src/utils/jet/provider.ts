@@ -5,7 +5,7 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import { AnchorProvider, Wallet } from '@project-serum/anchor';
 import { MarginClient } from '@jet-lab/margin';
 import { Cluster, rpcNodes, PreferredRpcNode } from '../../state/settings/settings';
-import { useMarginConfig } from './marginConfig';
+import { MarginConfig } from '../../state/config/marginConfig';
 
 // Anchor connection / provider hook
 export function useProvider() {
@@ -13,7 +13,7 @@ export function useProvider() {
   const node = useRecoilValue(PreferredRpcNode);
   const endpoint = rpcNodes[node][cluster === 'mainnet-beta' ? 'mainnetBeta' : cluster];
   const connection = useMemo(() => new Connection(endpoint, 'recent'), [endpoint]);
-  const config = useMarginConfig();
+  const config = useRecoilValue(MarginConfig);
   const wallet = useWallet();
 
   const provider = useMemo(() => {

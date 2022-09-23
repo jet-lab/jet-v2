@@ -13,7 +13,7 @@ import {
   PoolManager,
   TokenAmount,
   MarginConfig
-} from "../../../libraries/ts/src"
+} from "@jet-lab/margin"
 
 import { PythClient } from "../pyth/pythClient"
 import {
@@ -451,19 +451,19 @@ describe("margin pool borrow", async () => {
 
       expect(transactions).to.have.length(7)
 
-      expect(transactions[0].tradeAction).to.equals("withdraw")
-      expect(transactions[0].tokenSymbol).to.equals("SOL")
-      expect(transactions[0].tradeAmount.tokens).to.approximately(50, 0.0001)
+      expect(transactions[0].tradeAction).to.equals("deposit")
+      expect(transactions[0].tokenSymbol).to.equals("USDC")
+      expect(transactions[0].tradeAmount.tokens).to.approximately(500000, 0.0001)
       expect(transactions[0].signature).to.be.a("string")
 
-      expect(transactions[1].tradeAction).to.equals("withdraw")
-      expect(transactions[1].tokenSymbol).to.equals("USDC")
-      expect(transactions[1].tradeAmount.tokens).to.approximately(100000, 0.0001)
+      expect(transactions[1].tradeAction).to.equals("deposit")
+      expect(transactions[1].tokenSymbol).to.equals("SOL")
+      expect(transactions[1].tradeAmount.tokens).to.approximately(50, 0.0001)
       expect(transactions[1].signature).to.be.a("string")
 
-      expect(transactions[2].tradeAction).to.equals("withdraw")
-      expect(transactions[2].tokenSymbol).to.equals("USDC")
-      expect(transactions[2].tradeAmount.tokens).to.approximately(400000, 0.0001)
+      expect(transactions[2].tradeAction).to.equals("borrow")
+      expect(transactions[2].tokenSymbol).to.equals("SOL")
+      expect(transactions[2].tradeAmount.tokens).to.approximately(10, 0.0001)
       expect(transactions[2].signature).to.be.a("string")
 
       expect(transactions[3].tradeAction).to.equals("margin repay")
@@ -471,19 +471,19 @@ describe("margin pool borrow", async () => {
       expect(transactions[3].tradeAmount.tokens).to.approximately(10, 0.0001)
       expect(transactions[3].signature).to.be.a("string")
 
-      expect(transactions[4].tradeAction).to.equals("borrow")
-      expect(transactions[4].tokenSymbol).to.equals("SOL")
-      expect(transactions[4].tradeAmount.tokens).to.approximately(10, 0.0001)
+      expect(transactions[4].tradeAction).to.equals("withdraw")
+      expect(transactions[4].tokenSymbol).to.equals("USDC")
+      expect(transactions[4].tradeAmount.tokens).to.approximately(400000, 0.0001)
       expect(transactions[4].signature).to.be.a("string")
 
-      expect(transactions[5].tradeAction).to.equals("deposit")
-      expect(transactions[5].tokenSymbol).to.equals("SOL")
-      expect(transactions[5].tradeAmount.tokens).to.approximately(50, 0.0001)
+      expect(transactions[5].tradeAction).to.equals("withdraw")
+      expect(transactions[5].tokenSymbol).to.equals("USDC")
+      expect(transactions[5].tradeAmount.tokens).to.approximately(100000, 0.0001)
       expect(transactions[5].signature).to.be.a("string")
 
-      expect(transactions[6].tradeAction).to.equals("deposit")
-      expect(transactions[6].tokenSymbol).to.equals("USDC")
-      expect(transactions[6].tradeAmount.tokens).to.approximately(500000, 0.0001)
+      expect(transactions[6].tradeAction).to.equals("withdraw")
+      expect(transactions[6].tokenSymbol).to.equals("SOL")
+      expect(transactions[6].tradeAmount.tokens).to.approximately(50, 0.0001)
       expect(transactions[6].signature).to.be.a("string")
     })
   })

@@ -87,6 +87,8 @@ pub mod jet_margin {
 
     /// Create a new margin account for a user
     ///
+    /// This instruction does the following:
+    /// 
     /// 1.  Create and load the margin account.
     ///     
     /// 2.  Initialize the margin account by setting the margin account version, owner,
@@ -119,7 +121,6 @@ pub mod jet_margin {
     }
 
     /// Close a user's margin account
-    ///
     ///
     /// This instruction does the following:
     ///
@@ -156,7 +157,6 @@ pub mod jet_margin {
 
     /// Register a position for some token that will be custodied by margin.
     /// Currently this applies to anything other than a claim.
-    ///
     ///
     /// This instruction does the following:
     ///
@@ -196,7 +196,6 @@ pub mod jet_margin {
     /// Update the balance of a position stored in the margin account to
     /// match the actual balance stored by the SPL token acount.
     ///
-    ///
     /// This instruction does the following:
     ///
     /// 1.  Load the margin account.
@@ -234,8 +233,7 @@ pub mod jet_margin {
     /// Update the metadata for a position stored in the margin account,
     /// in the case where the metadata has changed after the position was
     /// created.
-    ///
-
+    /// 
     /// This instruction does the following:
     ///
     /// 1.  Read account token metadata.
@@ -269,7 +267,6 @@ pub mod jet_margin {
     }
 
     /// Close out a position, freeing up space in the account.
-    ///
     ///
     /// This instruction does the following:
     ///
@@ -314,7 +311,6 @@ pub mod jet_margin {
     /// Verify that the account is healthy, by validating the collateralization
     /// ration is above the minimum.
     ///
-    ///
     /// This instruction does the following:
     ///
     /// 1.  Let `account` be the loaded margin account.
@@ -348,7 +344,6 @@ pub mod jet_margin {
 
     /// Perform an action by invoking other programs, allowing them to alter
     /// the balances of the token accounts belonging to this margin account.
-    ///
     ///
     /// This instruction does the following:
     ///
@@ -401,7 +396,6 @@ pub mod jet_margin {
     /// refresh the state of the margin account to be consistent with the actual
     /// underlying prices or positions, but not permitting new position changes.
     ///
-    ///
     /// This instruction does the following:
     ///     
     /// 1.  Check if any positions that have changed via adapters.
@@ -439,7 +433,6 @@ pub mod jet_margin {
     }
 
     /// Begin liquidating an account
-    ///
     ///
     /// This instruction does the following:
     ///
@@ -491,12 +484,11 @@ pub mod jet_margin {
 
     /// Stop liquidating an account
     ///
-    ///
     /// This instruction does the following:
     ///
     /// 1.  Let `account` be a reference to the margin account.
     ///     
-    /// 2.  Let `start_time` be the time that the liquidation on this margin account began, if it exists
+    /// 2.  Let `start_time` be the time that the liquidation on this margin account began, if it exists.
     ///     
     /// 3.  Let `timed_out` be the boolean representing the type of account:
     ///     
@@ -537,7 +529,6 @@ pub mod jet_margin {
 
     /// Perform an action by invoking another program, for the purposes of
     /// liquidating a margin account.
-    ///
     ///
     /// This instruction does the following:
     ///
