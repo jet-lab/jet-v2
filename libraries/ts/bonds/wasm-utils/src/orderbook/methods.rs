@@ -98,11 +98,14 @@ mod interest_pricing {
 
     pub trait InterestPricer {
         fn yearly_interest_bps_to_fp32_price(interest_bps: u64, tenor_seconds: u64) -> u64 {
-            f64_to_fp32(1.0 / (1.0 + Self::interest_to_single_term_yield(
-                bps_to_f64(interest_bps),
-                SECONDS_PER_YEAR as f64,
-                tenor_seconds as f64,
-            )))
+            f64_to_fp32(
+                1.0 / (1.0
+                    + Self::interest_to_single_term_yield(
+                        bps_to_f64(interest_bps),
+                        SECONDS_PER_YEAR as f64,
+                        tenor_seconds as f64,
+                    )),
+            )
         }
         fn price_fp32_to_bps_yearly_interest(price_fp32: u64, tenor_seconds: u64) -> u64 {
             f64_to_bps(Self::single_term_yield_to_interest(
@@ -112,14 +115,19 @@ mod interest_pricing {
             ))
         }
         /// based on the number representing "interest", return the proportion of growth over the term of one loan
-        fn interest_to_single_term_yield(interest: f64, interest_term: f64, price_term: f64) -> f64;
+        fn interest_to_single_term_yield(interest: f64, interest_term: f64, price_term: f64)
+            -> f64;
         /// based on the proportion of growth over the term of one loan, return the number representing "interest"
         fn single_term_yield_to_interest(price: f64, price_term: f64, interest_term: f64) -> f64;
     }
 
     pub struct LinearPricer;
     impl InterestPricer for LinearPricer {
-        fn interest_to_single_term_yield(interest_rate: f64, interest_term: f64, price_term: f64) -> f64 {
+        fn interest_to_single_term_yield(
+            interest_rate: f64,
+            interest_term: f64,
+            price_term: f64,
+        ) -> f64 {
             linear_uncompounded_interest_conversion(interest_rate, interest_term, price_term)
         }
 
@@ -131,7 +139,11 @@ mod interest_pricing {
     /// yearly interest = yearly rate that is compounded continuously for the tenor duration to receive the price
     pub struct AprPricer;
     impl InterestPricer for AprPricer {
-        fn interest_to_single_term_yield(interest_rate: f64, interest_term: f64, price_term: f64) -> f64 {
+        fn interest_to_single_term_yield(
+            interest_rate: f64,
+            interest_term: f64,
+            price_term: f64,
+        ) -> f64 {
             rate_to_yield(interest_rate, interest_term, price_term)
         }
 
@@ -144,7 +156,11 @@ mod interest_pricing {
     /// for tenor > 1y: yearly interest = annualized yield that would need to be compounded to ultimately receive the price of the tenor
     pub struct ApyPricer;
     impl InterestPricer for ApyPricer {
-        fn interest_to_single_term_yield(interest_rate: f64, interest_term: f64, price_term: f64) -> f64 {
+        fn interest_to_single_term_yield(
+            interest_rate: f64,
+            interest_term: f64,
+            price_term: f64,
+        ) -> f64 {
             yield_to_yield(interest_rate, interest_term, price_term)
         }
 
@@ -375,27 +391,27 @@ mod test {
         /// you should buy the yearly. If you think *either* price is more (or
         /// equally) likely to go up than it is to go down, then the monthly is
         /// still the obvious choice.
-        /// 
+        ///
         /// Let's say the yearly grows by 10% after a single year. So if you
         /// lend $100, you'll get $110 at the end. That means its price is
         /// 1/1.1. Likewise, the monthly would need to grow by
         /// 0.00797414042890374107 each month to reach the same total after a
         /// year, because 1.00797414042890374107^12 = 1.1
-        /// 
+        ///
         /// Using either APY or APR, it is clear that the monthly tenors have
         /// equivalent yield. Linear pricing suggests they have a different
         /// yield, which is not helpful.
         #[test]
         fn equal_profitability() {
-            let monthly_price = f64_to_fp32(1.0/1.00797414042890374107);
-            let yearly_price = f64_to_fp32(1.0/1.1);
-            
+            let monthly_price = f64_to_fp32(1.0 / 1.0079741404289037);
+            let yearly_price = f64_to_fp32(1.0 / 1.1);
+
             assert_eq!(
-                ApyPricer::price_fp32_to_bps_yearly_interest(monthly_price, SECONDS_PER_YEAR/12),
+                ApyPricer::price_fp32_to_bps_yearly_interest(monthly_price, SECONDS_PER_YEAR / 12),
                 ApyPricer::price_fp32_to_bps_yearly_interest(yearly_price, SECONDS_PER_YEAR)
             );
             assert_eq!(
-                AprPricer::price_fp32_to_bps_yearly_interest(monthly_price, SECONDS_PER_YEAR/12),
+                AprPricer::price_fp32_to_bps_yearly_interest(monthly_price, SECONDS_PER_YEAR / 12),
                 AprPricer::price_fp32_to_bps_yearly_interest(yearly_price, SECONDS_PER_YEAR)
             );
             // Linear pricing says that the monthly has lower interest, which
@@ -404,8 +420,10 @@ mod test {
             // conclusion described in the rustdoc. Linear pricing is not
             // effective at comparing different tenors.
             assert!(
-                LinearPricer::price_fp32_to_bps_yearly_interest(monthly_price, SECONDS_PER_YEAR/12)
-                < LinearPricer::price_fp32_to_bps_yearly_interest(yearly_price, SECONDS_PER_YEAR)
+                LinearPricer::price_fp32_to_bps_yearly_interest(
+                    monthly_price,
+                    SECONDS_PER_YEAR / 12
+                ) < LinearPricer::price_fp32_to_bps_yearly_interest(yearly_price, SECONDS_PER_YEAR)
             );
         }
     }
