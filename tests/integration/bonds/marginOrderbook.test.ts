@@ -1,4 +1,4 @@
-import { expect } from "chai"
+import { assert, expect } from "chai"
 import * as anchor from "@project-serum/anchor"
 import { AnchorProvider, BN } from "@project-serum/anchor"
 import NodeWallet from "@project-serum/anchor/dist/cjs/nodewallet"
@@ -16,15 +16,18 @@ import {
   DEFAULT_MARGIN_CONFIG,
   getMintSupply,
   getTokenBalance,
+  loadToken,
   MARGIN_POOL_PROGRAM_ID,
   registerAdapter,
   sendToken,
   TestToken
 } from "../util"
 
+import CONFIG from "./config.json"
 import TEST_MINT_KEYPAIR from "../../keypairs/test-mint.json"
+import { BondMarket, JetBonds, JetBondsIdl } from "@jet-lab/jet-bonds-client"
 
-describe("margin pool deposit", async () => {
+describe("margin bonds borrowing", async () => {
   // SUITE SETUP
   const provider = AnchorProvider.local(undefined, DEFAULT_CONFIRM_OPTS)
   anchor.setProvider(provider)
@@ -43,7 +46,7 @@ describe("margin pool deposit", async () => {
   it("Create tokens", async () => {
     // SETUP
     let usdcKeypair = Keypair.fromSecretKey(Uint8Array.of(...TEST_MINT_KEYPAIR))
-    USDC = await createToken(provider, payer, 6, 10_000_000, "USDC", usdcKeypair)
+    USDC = await loadToken(provider, payer, 6, 10_000_000, "USDC", usdcKeypair)
     SOL = await createToken(provider, payer, 9, 10_000, "SOL")
 
     // ACT
@@ -272,5 +275,12 @@ describe("margin pool deposit", async () => {
     expect(await getTokenBalance(provider, "processed", marginPool_SOL.addresses.vault)).to.eq(550 + 1)
   })
 
-  provider.opts.skipPreflight = true
+  let bondsProgram: anchor.Program<JetBonds>
+  let bondMarket: BondMarket
+  it("loads bond market", async () => {
+    let bondsProgram = new anchor.Program(JetBondsIdl, CONFIG.jetBondsPid, provider)
+    let bondMarket = await BondMarket.load(bondsProgram, CONFIG.bondManager)
+
+    assert(bondMarket.address.toBase58() === CONFIG.bondManager)
+  })
 })
