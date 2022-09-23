@@ -9,7 +9,7 @@
     "clean": "rimraf dist/",
     "build": "yarn build:wasm && yarn build:tsc",
     "build:wasm": "wasm-pack build --target nodejs ./wasm-utils ; copyfiles -u 1 wasm-utils/pkg/* dist/wasm-utils",
-    "build:tsc": "tsc --preserveWatchOutput& tsc -p tsconfig-cjs.json --preserveWatchOutput; wait",
+    "build:tsc": "tsc & tsc -p tsconfig-cjs.json ; wait",
     "watch": "(trap 'kill 0' SIGINT; yarn watch:wasm & yarn watch:tsc)",
     "watch:wasm": "cargo watch -i .gitignore -i 'libraries/ts/bonds/dist/wasm-utils/pkg/*' -s 'wasm-pack build --target nodejs libraries/ts/bonds/wasm-utils' -s 'copyfiles -u 4 libraries/ts/bonds/wasm-utils/pkg/* libraries/ts/bonds/dist/wasm-utils'",
     "watch:tsc": "(trap 'kill 0' SIGINT; tsc --watch --preserveWatchOutput --pretty & tsc -p tsconfig-cjs.json --watch --preserveWatchOutput --pretty)",
