@@ -286,7 +286,7 @@ mod test {
     #[allow(arithmetic_overflow)] // ensures that we're not relying on test-specific behavior
     fn price_cannot_be_greater_than_one() {
         // 3<<31 is 1.5 in fp32
-        price_to_rate(3<<31, SECONDS_PER_YEAR);
+        price_to_rate(3 << 31, SECONDS_PER_YEAR);
     }
 
     /// price of zero is nonsense. this means you pay back interest on a loan
@@ -309,15 +309,15 @@ mod test {
 
     #[test]
     fn price_of_one_is_zero_interest() {
-        assert_eq!(0, price_to_rate(1<<32, SECONDS_PER_YEAR));
-        assert_eq!(1<<32, rate_to_price(0, SECONDS_PER_YEAR));
+        assert_eq!(0, price_to_rate(1 << 32, SECONDS_PER_YEAR));
+        assert_eq!(1 << 32, rate_to_price(0, SECONDS_PER_YEAR));
     }
 
     #[test]
     #[should_panic]
     #[allow(arithmetic_overflow)] // ensures that we're not relying on test-specific behavior
     fn rate_should_be_capped_to_prevent_nonsensical_price_of_zero() {
-        rate_to_price(1<<18, SECONDS_PER_YEAR);
+        rate_to_price(1 << 18, SECONDS_PER_YEAR);
     }
 
     #[test]
