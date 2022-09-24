@@ -83,7 +83,9 @@ pub fn price_to_rate(price: u64, tenor: u64) -> u64 {
 /// return: price: underlying per bond ticket: fixed point 32 (left shifted 32 bits to get fractional precision)
 #[wasm_bindgen]
 pub fn rate_to_price(interest_rate: u64, tenor: u64) -> u64 {
-    interest_pricing::PricerImpl::yearly_interest_bps_to_fp32_price(interest_rate, tenor)
+    let px = interest_pricing::PricerImpl::yearly_interest_bps_to_fp32_price(interest_rate, tenor);
+    assert!(px > 0);
+    px
 }
 
 /// this has a bunch of alternative implementations for converting between
@@ -170,17 +172,21 @@ mod interest_pricing {
     }
 
     pub fn f64_to_fp32(f: f64) -> u64 {
-        let shifted = f * (2u64 << 32) as f64;
-        assert!(shifted < u64::MAX as f64);
+        let shifted = f * (1u64 << 32) as f64;
+        assert!(shifted <= u64::MAX as f64);
+        assert!(shifted >= 0.0);
         shifted.round() as u64
     }
 
     pub fn fp32_to_f64(fp: u64) -> f64 {
-        (fp as f64) / (2u64 << 32) as f64
+        (fp as f64) / (1u64 << 32) as f64
     }
 
     pub fn f64_to_bps(f: f64) -> u64 {
-        (f * 10_000.0).round() as u64
+        let bps = f * 10_000.0;
+        assert!(bps <= u64::MAX as f64);
+        assert!(bps >= 0.0);
+        bps.round() as u64
     }
 
     pub fn bps_to_f64(bps: u64) -> f64 {
@@ -269,9 +275,50 @@ mod test {
     // tenor: as fraction of the period. Period is always annual
     // let price = x;
     // assert(price == rate_to_price(price_to_rate(price, tenor), tenor));
-    use crate::orderbook::methods::interest_pricing::*;
+    use crate::orderbook::methods::{interest_pricing::*, *};
 
     use super::SECONDS_PER_YEAR;
+
+    /// any price that would cause negative interest cannot be represented
+    /// correctly by u64 and it makes no sense as a loan.
+    #[test]
+    #[should_panic]
+    #[allow(arithmetic_overflow)] // ensures that we're not relying on test-specific behavior
+    fn price_cannot_be_greater_than_one() {
+        // 3<<31 is 1.5 in fp32
+        price_to_rate(3<<31, SECONDS_PER_YEAR);
+    }
+
+    /// price of zero is nonsense. this means you pay back interest on a loan
+    /// that had no principal. in other words it's an infinite interest rate,
+    /// so you can't actually represent it with a u64.
+    #[test]
+    #[should_panic]
+    #[allow(arithmetic_overflow)] // ensures that we're not relying on test-specific behavior
+    fn price_cannot_be_zero() {
+        price_to_rate(0, SECONDS_PER_YEAR);
+    }
+
+    /// since this is a test then an overflow would fail, unlike in production
+    /// code. this just makes sure that the lowest price greater than 1 can
+    /// still result in an interest rate that isn't going to overflow u64
+    #[test]
+    fn price_may_be_small() {
+        price_to_rate(1, SECONDS_PER_YEAR);
+    }
+
+    #[test]
+    fn price_of_one_is_zero_interest() {
+        assert_eq!(0, price_to_rate(1<<32, SECONDS_PER_YEAR));
+        assert_eq!(1<<32, rate_to_price(0, SECONDS_PER_YEAR));
+    }
+
+    #[test]
+    #[should_panic]
+    #[allow(arithmetic_overflow)] // ensures that we're not relying on test-specific behavior
+    fn rate_should_be_capped_to_prevent_nonsensical_price_of_zero() {
+        rate_to_price(1<<18, SECONDS_PER_YEAR);
+    }
 
     #[test]
     fn conversions() {
@@ -436,7 +483,7 @@ mod test {
         let actual_price = P::yearly_interest_bps_to_fp32_price(bps, tenor);
         roughly_eq(
             1.0 / (1.0 + expected_yield),
-            actual_price as f64 / (2u64 << 32) as f64,
+            actual_price as f64 / (1u64 << 32) as f64,
         );
     }
 
