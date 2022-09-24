@@ -87,14 +87,6 @@ yarn start
 
 to run the app.
 
-You may have to run the app in legacy mode if you get the following error
-`error:0308010C:digital envelope routines::unsupported`
-
-```bash
-cd app
-yarn start:legacy
-```
-
 # Documentations
 [![Docs](https://img.shields.io/badge/docs-TypeScript-success)](https://jet-lab.github.io/jet-v2/ts-client/)
 [![Docs](https://img.shields.io/badge/docs-Rust-success)](https://jet-lab.github.io/jet-v2/margin-rust/jet_margin/)
