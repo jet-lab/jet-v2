@@ -1,4 +1,4 @@
 pub mod instructions;
 pub mod state;
 
-pub mod events;
+pub(crate) mod events;
