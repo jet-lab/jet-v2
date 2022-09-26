@@ -1,6 +1,5 @@
 ignore/**
 lib
-dist
 test-ledger
 
 .anchor

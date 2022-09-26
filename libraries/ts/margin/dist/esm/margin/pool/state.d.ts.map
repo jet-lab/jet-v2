@@ -1,0 +1,1 @@
+{"version":3,"file":"state.d.ts","sourceRoot":"","sources":["../../../../src/margin/pool/state.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,cAAc,EAAE,QAAQ,EAAE,OAAO,EAAE,MAAM,wDAAwD,CAAA;AAC1G,OAAO,EAAE,aAAa,EAAE,MAAM,aAAa,CAAA;AAE3C,oBAAY,cAAc,GAAG,OAAO,CAAC,cAAc,CAAC,aAAa,CAAC,CAAC,YAAY,CAAC,EAAE,QAAQ,CAAC,aAAa,CAAC,CAAC,CAAA;AAC1G,oBAAY,oBAAoB,GAAG,cAAc,CAAC,QAAQ,CAAC,CAAA"}
