@@ -89,7 +89,7 @@ module.exports = {
       Buffer: ["buffer", "Buffer"]
     }),
     new DefinePlugin({
-      "process.env": JSON.stringify(dotenv.config().parsed)
+      "process.env": JSON.stringify(dotenv.config().parsed || {})
     })
   ]
 }
