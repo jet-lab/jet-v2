@@ -28,7 +28,7 @@ use std::result::Result;
 
 use crate::{
     util::{Invocation, Require},
-    ErrorCode, MAX_PRICE_QUOTE_AGE, MAX_USER_POSITIONS,
+    ErrorCode, MAX_PRICE_QUOTE_AGE, MAX_USER_POSITIONS, TokenKind,
 };
 
 mod positions;
@@ -180,7 +180,7 @@ impl MarginAccount {
         decimals: u8,
         address: Pubkey,
         adapter: Pubkey,
-        kind: PositionKind,
+        kind: TokenKind,
         value_modifier: u16,
         max_staleness: u64,
         approvals: &[Approver],
@@ -237,7 +237,7 @@ impl MarginAccount {
     pub fn refresh_position_metadata(
         &mut self,
         mint: &Pubkey,
-        kind: PositionKind,
+        kind: TokenKind,
         value_modifier: u16,
         max_staleness: u64,
     ) -> Result<AccountPosition, ErrorCode> {
@@ -415,8 +415,7 @@ impl MarginAccount {
             };
 
             match (kind, stale_reason) {
-                (PositionKind::NoValue, _) => (),
-                (PositionKind::Claim, None) => {
+                (TokenKind::Claim, None) => {
                     if position.balance > 0
                         && position.flags.contains(AdapterPositionFlags::PAST_DUE)
                     {
@@ -427,16 +426,16 @@ impl MarginAccount {
                     liabilities += position.value();
                     required_collateral += position.required_collateral_value();
                 }
-                (PositionKind::Claim, Some(error)) => {
+                (TokenKind::Claim, Some(error)) => {
                     msg!("claim position is stale: {:?}", position);
                     return Err(error!(error));
                 }
 
-                (PositionKind::AdapterCollateral | PositionKind::Deposit, None) => {
+                (TokenKind::AdapterCollateral | TokenKind::Collateral, None) => {
                     equity += position.value();
                     weighted_collateral += position.collateral_value();
                 }
-                (PositionKind::AdapterCollateral | PositionKind::Deposit, Some(e)) => {
+                (TokenKind::AdapterCollateral | TokenKind::Collateral, Some(e)) => {
                     stale_collateral_list.push((position.token, e));
                 }
             }
@@ -596,7 +595,6 @@ mod tests {
 
     use super::*;
     use itertools::Itertools;
-    use jet_metadata::TokenKind;
     use serde_test::{assert_ser_tokens, Token};
 
     fn create_position_input(margin_address: &Pubkey) -> (Pubkey, Pubkey) {
@@ -649,7 +647,7 @@ mod tests {
             2,
             key,
             key,
-            PositionKind::NoValue,
+            TokenKind::Collateral,
             5000,
             1000,
             approvals,
@@ -669,7 +667,7 @@ mod tests {
                 is_valid: 0,
                 _reserved: [0, 0, 0]
             },
-            kind: NoValue,
+            kind: Collateral,
             exponent: -2,
             value_modifier: 5000,
             max_staleness: 1000
@@ -755,7 +753,7 @@ mod tests {
                 Token::U8(0),
                 Token::StructEnd,
                 Token::Str("kind"),
-                Token::Str("NoValue"),
+                Token::Str("Collateral"),
                 Token::Str("exponent"),
                 Token::I16(0),
                 Token::Str("valueModifier"),
@@ -855,7 +853,7 @@ mod tests {
                 6,
                 address_a,
                 adapter,
-                PositionKind::Deposit,
+                TokenKind::Collateral,
                 0,
                 0,
                 user_approval,
@@ -868,7 +866,7 @@ mod tests {
                 6,
                 address_b,
                 adapter,
-                PositionKind::Claim,
+                TokenKind::Claim,
                 0,
                 0,
                 adapter_approval,
@@ -881,7 +879,7 @@ mod tests {
                 6,
                 address_c,
                 adapter,
-                PositionKind::Deposit,
+                TokenKind::Collateral,
                 0,
                 0,
                 user_approval,
@@ -912,7 +910,7 @@ mod tests {
                 9,
                 address_e,
                 adapter,
-                PositionKind::NoValue,
+                TokenKind::Collateral,
                 0,
                 100,
                 user_approval,
@@ -926,7 +924,7 @@ mod tests {
                 9,
                 address_d,
                 adapter,
-                PositionKind::NoValue,
+                TokenKind::Collateral,
                 0,
                 100,
                 user_approval,
@@ -980,7 +978,7 @@ mod tests {
                 6,
                 address_a,
                 adapter,
-                PositionKind::AdapterCollateral,
+                TokenKind::AdapterCollateral,
                 0,
                 0,
                 &[],
@@ -992,7 +990,7 @@ mod tests {
                 6,
                 address_b,
                 adapter,
-                PositionKind::AdapterCollateral,
+                TokenKind::AdapterCollateral,
                 0,
                 0,
                 &[Approver::MarginAccountAuthority],
@@ -1004,7 +1002,7 @@ mod tests {
                 6,
                 address_c,
                 adapter,
-                PositionKind::AdapterCollateral,
+                TokenKind::AdapterCollateral,
                 0,
                 0,
                 &[Approver::Adapter(adapter)],
@@ -1016,7 +1014,7 @@ mod tests {
                 6,
                 address_d,
                 adapter,
-                PositionKind::AdapterCollateral,
+                TokenKind::AdapterCollateral,
                 0,
                 0,
                 &[Approver::MarginAccountAuthority, Approver::Adapter(adapter)],
@@ -1047,7 +1045,7 @@ mod tests {
                 6,
                 address,
                 adapter,
-                PositionKind::AdapterCollateral,
+                TokenKind::AdapterCollateral,
                 0,
                 0,
                 &[Approver::MarginAccountAuthority, Approver::Adapter(adapter)],

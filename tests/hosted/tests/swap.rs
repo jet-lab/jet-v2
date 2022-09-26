@@ -15,7 +15,7 @@ use hosted_tests::{
 };
 
 use jet_margin_pool::{MarginPoolConfig, PoolFlags, TokenChange};
-use jet_metadata::TokenKind;
+use jet_margin::TokenKind;
 use jet_simulation::{assert_custom_program_error, create_wallet};
 
 const ONE_USDC: u64 = 1_000_000;

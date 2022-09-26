@@ -3,14 +3,13 @@ use std::collections::HashMap;
 use anyhow::Error;
 
 use jet_control::TokenMetadataParams;
-use jet_margin::PositionKind;
+use jet_margin::TokenKind;
 use jet_margin_pool::{MarginPoolConfig, PoolFlags, TokenChange};
 use jet_margin_sdk::{
     ix_builder::{MarginPoolConfiguration, MarginPoolIxBuilder},
     tokens::TokenPrice,
     tx_builder::TokenDepositsConfig,
 };
-use jet_metadata::TokenKind;
 use jet_simulation::{assert_custom_program_error, create_wallet};
 
 use solana_sdk::native_token::LAMPORTS_PER_SOL;
@@ -297,7 +296,7 @@ async fn sanity_test() -> Result<(), anyhow::Error> {
             &env.usdc,
             &MarginPoolConfiguration {
                 metadata: Some(TokenMetadataParams {
-                    token_kind: TokenKind::Collateral,
+                    token_kind: jet_metadata::TokenKind::Collateral,
                     collateral_weight: 0xBEEF,
                     max_leverage: 0xFEED,
                 }),
@@ -329,7 +328,7 @@ async fn sanity_test() -> Result<(), anyhow::Error> {
 
     // Close a specific position
     user_a
-        .close_token_position(&env.tsol, PositionKind::Deposit)
+        .close_token_position(&env.tsol, TokenKind::Collateral)
         .await?;
 
     // Close all User A empty accounts

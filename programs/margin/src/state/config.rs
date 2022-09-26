@@ -16,17 +16,16 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 use anchor_lang::prelude::*;
+use bytemuck::Contiguous;
 
 use crate::ErrorCode;
 
 /// Description of the token's usage
-#[derive(AnchorSerialize, AnchorDeserialize, Eq, PartialEq, Clone, Copy, Debug)]
+#[derive(AnchorSerialize, AnchorDeserialize, Contiguous, Eq, PartialEq, Clone, Copy, Debug)]
+#[repr(u32)]
 pub enum TokenKind {
-    /// The token has no value within the margin system
-    NoValue,
-
     /// The token can be used as collateral
-    Collateral,
+    Collateral = 1,
 
     /// The token represents a debt that needs to be repaid
     Claim,
@@ -39,14 +38,14 @@ pub enum TokenKind {
 
 impl Default for TokenKind {
     fn default() -> TokenKind {
-        Self::NoValue
+        Self::Collateral
     }
 }
 
 impl From<jet_metadata::TokenKind> for TokenKind {
     fn from(kind: jet_metadata::TokenKind) -> Self {
         match kind {
-            jet_metadata::TokenKind::NonCollateral => Self::NoValue,
+            jet_metadata::TokenKind::NonCollateral => Self::Collateral,
             jet_metadata::TokenKind::Collateral => Self::Collateral,
             jet_metadata::TokenKind::Claim => Self::Claim,
             jet_metadata::TokenKind::AdapterCollateral => Self::AdapterCollateral,

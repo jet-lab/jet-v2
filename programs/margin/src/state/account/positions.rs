@@ -119,52 +119,6 @@ impl TryFrom<PriceChangeInfo> for PriceInfo {
     }
 }
 
-#[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone, Copy, Contiguous, Eq, PartialEq)]
-#[repr(u32)]
-pub enum PositionKind {
-    /// The position is not worth anything
-    NoValue = 0,
-
-    /// The position contains a balance of available collateral
-    Deposit,
-
-    /// The position contains a balance of tokens that are owed as a part of some debt.
-    Claim,
-
-    /// The position contains a balance managed by a trusted adapter to represent the amount of collateral custodied by that adapter.
-    /// The token account is owned by the adapter. Collateral is accessed through instructions to the adapter.
-    AdapterCollateral,
-}
-
-impl From<TokenKind> for PositionKind {
-    fn from(token: TokenKind) -> Self {
-        match token {
-            TokenKind::NoValue => PositionKind::NoValue,
-            TokenKind::Collateral => PositionKind::Deposit,
-            TokenKind::Claim => PositionKind::Claim,
-            TokenKind::AdapterCollateral => PositionKind::AdapterCollateral,
-        }
-    }
-}
-
-// FIXME: remove after migration from metadata
-impl From<jet_metadata::TokenKind> for PositionKind {
-    fn from(val: jet_metadata::TokenKind) -> Self {
-        match val {
-            jet_metadata::TokenKind::NonCollateral => Self::NoValue,
-            jet_metadata::TokenKind::Claim => Self::Claim,
-            jet_metadata::TokenKind::Collateral => Self::Deposit,
-            jet_metadata::TokenKind::AdapterCollateral => Self::AdapterCollateral,
-        }
-    }
-}
-
-impl Default for PositionKind {
-    fn default() -> Self {
-        PositionKind::NoValue
-    }
-}
-
 #[assert_size(192)]
 #[derive(Pod, Zeroable, AnchorSerialize, AnchorDeserialize, Default, Clone, Copy)]
 #[repr(C)]
@@ -237,8 +191,8 @@ mod _idl {
 unsafe impl Pod for AdapterPositionFlags {}
 
 impl AccountPosition {
-    pub fn kind(&self) -> PositionKind {
-        PositionKind::from_integer(self.kind).unwrap()
+    pub fn kind(&self) -> TokenKind {
+        TokenKind::from_integer(self.kind).unwrap_or_default()
     }
 
     pub fn calculate_value(&mut self) {
@@ -253,14 +207,14 @@ impl AccountPosition {
 
     pub fn collateral_value(&self) -> Number128 {
         assert!(
-            self.kind() == PositionKind::Deposit || self.kind() == PositionKind::AdapterCollateral
+            self.kind() == TokenKind::Collateral || self.kind() == TokenKind::AdapterCollateral
         );
 
         Number128::from_decimal(self.value_modifier, -2) * self.value()
     }
 
     pub fn required_collateral_value(&self) -> Number128 {
-        assert_eq!(self.kind(), PositionKind::Claim);
+        assert_eq!(self.kind(), TokenKind::Claim);
 
         let modifier = Number128::from_decimal(self.value_modifier, -2);
 
@@ -301,10 +255,10 @@ impl AccountPosition {
         }
 
         match self.kind() {
-            PositionKind::NoValue | PositionKind::Deposit => {
+            TokenKind::Collateral => {
                 authority_approved && !adapter_approved
             }
-            PositionKind::Claim | PositionKind::AdapterCollateral => {
+            TokenKind::Claim | TokenKind::AdapterCollateral => {
                 authority_approved && adapter_approved
             }
         }
@@ -331,16 +285,15 @@ impl std::fmt::Debug for AccountPosition {
 }
 
 #[cfg(any(test, feature = "cli"))]
-impl Serialize for PositionKind {
+impl Serialize for TokenKind {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
         serializer.serialize_str(match *self {
-            PositionKind::NoValue => "NoValue",
-            PositionKind::Claim => "Claim",
-            PositionKind::Deposit => "Deposit",
-            PositionKind::AdapterCollateral => "AdapterCollateral",
+            TokenKind::Claim => "Claim",
+            TokenKind::Collateral => "Collateral",
+            TokenKind::AdapterCollateral => "AdapterCollateral",
         })
     }
 }

@@ -31,7 +31,7 @@ use solana_sdk::transaction::Transaction;
 
 use anchor_lang::{AccountDeserialize, Id};
 
-use jet_margin::{MarginAccount, PositionKind, TokenConfig, TokenOracle};
+use jet_margin::{MarginAccount, TokenConfig, TokenOracle, TokenKind};
 use jet_margin_pool::TokenChange;
 use jet_simulation::solana_rpc_api::SolanaRpcClient;
 
@@ -224,18 +224,18 @@ impl MarginTxBuilder {
     pub async fn close_pool_position(
         &self,
         token_mint: &Pubkey,
-        kind: PositionKind,
+        kind: TokenKind,
     ) -> Result<Transaction> {
         let pool = MarginPoolIxBuilder::new(*token_mint);
         let ix = match kind {
-            PositionKind::NoValue | PositionKind::Deposit => self.ix.close_position(
+            TokenKind::Collateral => self.ix.close_position(
                 pool.deposit_note_mint,
                 self.ix.get_token_account_address(&pool.deposit_note_mint).0,
             ),
-            PositionKind::Claim => {
+            TokenKind::Claim => {
                 self.adapter_invoke_ix(pool.close_loan(*self.address(), self.ix.payer))
             }
-            PositionKind::AdapterCollateral => panic!("pools do not issue AdapterCollateral"),
+            TokenKind::AdapterCollateral => panic!("pools do not issue AdapterCollateral"),
         };
 
         self.create_transaction(&[ix]).await
@@ -252,7 +252,7 @@ impl MarginTxBuilder {
             .positions()
             .filter(|p| p.balance == 0)
             .map(|p| {
-                if p.adapter == JetMarginPool::id() && p.kind() == PositionKind::Claim {
+                if p.adapter == JetMarginPool::id() && p.kind() == TokenKind::Claim {
                     let pool = MarginPoolIxBuilder::new(*loan_to_token.get(&p.token).unwrap());
                     self.adapter_invoke_ix(pool.close_loan(*self.address(), self.ix.payer))
                 } else {

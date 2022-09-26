@@ -26,7 +26,7 @@ use anchor_lang::{
 use anchor_spl::associated_token::get_associated_token_address;
 use anyhow::{bail, Error};
 
-use jet_margin::{AccountPosition, MarginAccount, PositionKind};
+use jet_margin::{AccountPosition, MarginAccount, TokenKind};
 use jet_margin_sdk::ix_builder::{
     derive_airspace, derive_permit, get_control_authority_address, get_metadata_address,
     AirspaceIxBuilder, ControlIxBuilder, MarginPoolConfiguration, MarginPoolIxBuilder,
@@ -44,7 +44,7 @@ use jet_margin_pool::{Amount, MarginPool, MarginPoolConfig, TokenChange};
 use jet_margin_sdk::tx_builder::{
     global_initialize_instructions, AirspaceAdmin, MarginTxBuilder, TokenDepositsConfig,
 };
-use jet_metadata::{LiquidatorMetadata, MarginAdapterMetadata, TokenKind, TokenMetadata};
+use jet_metadata::{LiquidatorMetadata, MarginAdapterMetadata, TokenMetadata};
 use jet_simulation::{send_and_confirm, solana_rpc_api::SolanaRpcClient};
 
 /// Information needed to create a new margin pool
@@ -244,7 +244,7 @@ impl MarginClient {
                 pyth_price: Some(setup_info.oracle.price),
                 pyth_product: Some(setup_info.oracle.product),
                 metadata: Some(TokenMetadataParams {
-                    token_kind: TokenKind::Collateral,
+                    token_kind: jet_metadata::TokenKind::Collateral,
                     collateral_weight: setup_info.collateral_weight,
                     max_leverage: setup_info.max_leverage,
                 }),
@@ -502,7 +502,7 @@ impl MarginUser {
     pub async fn close_token_position(
         &self,
         token_mint: &Pubkey,
-        kind: PositionKind,
+        kind: TokenKind,
     ) -> Result<(), Error> {
         self.send_confirm_tx(self.tx.close_pool_position(token_mint, kind).await?)
             .await
