@@ -76,11 +76,11 @@ pub const MAX_USER_POSITIONS: usize = 24;
 
 /// This crate documents the instructions used in the `margin` program of the
 /// [jet-v2 repo](https://github.com/jet-lab/jet-v2/).
-/// 
+///
 /// Handler functions are described for each instruction well as struct parameters
 /// (and their types and descriptions are listed) and any handler function
 /// parameters aside from parameters that exist in every instruction handler function.
-/// 
+///
 /// Accounts associated with events emitted for the purposes of data logging are also included.
 
 #[program]
@@ -108,7 +108,7 @@ pub mod jet_margin {
     /// | `owner` | `signer` | The owner of the new margin account. |
     /// | `payer` | `signer` | The pubkey paying rent for the new margin account opening. |
     /// | `margin_account` | `writable` | The margin account to initialize for the owner. |
-    /// | `system_program` | `read only` | The system program. |
+    /// | `system_program` | `read only` | The [system native program](https://docs.solana.com/developing/runtime-facilities/programs#system-program). |
     ///
     /// **Events emitted by create\_account.rs:**
     ///
@@ -176,14 +176,14 @@ pub mod jet_margin {
     /// | --- | --- | --- |
     /// | **Name** | **Description** |
     /// | `authority` | `signer` | The authority that can change the margin account. |
-    /// | `payer` | `signer (writable)` | The address paying for rent. |
+    /// | `payer` | `signer` | The address paying for rent. |
     /// | `margin_account` | `writable` |  The margin account to register position type with. |
     /// | `position_token_mint` | `read only` | The mint for the position token being registered. |
     /// | `metadata` | `read only` | The metadata account that references the correct oracle for the token. |
-    /// | `token_account` | `read only` | The token account to store hold the position assets in the custody of the margin account. |
-    /// | `token_program` | `read only` | The token program of the token accounts to store for this margin account. |
-    /// | `rent` | `read only` | The rent to open the account. |
-    /// | `system_program` | `read only` | The system program. |
+    /// | `token_account` | `writable` | The token account to store hold the position assets in the custody of the margin account. |
+    /// | `token_program` | `read only` | The [spl token program](https://spl.solana.com/token). |
+    /// | `rent` | `read only` | The [rent sysvar](https://docs.solana.com/developing/runtime-facilities/sysvars#rent). The rent to open the account. |
+    /// | `system_program` | `read only` | The [system native program](https://docs.solana.com/developing/runtime-facilities/programs#system-program). |
     ///
     /// **Events emitted by register\_position.rs:**
     ///
@@ -205,7 +205,7 @@ pub mod jet_margin {
     ///     
     /// 2.  Load the token account.
     ///     
-    /// 3.  Load the margin account position.
+    /// 3.  Update the margin account position.
     ///     
     /// 4.  Emit the [`events::PositionBalanceUpdated`] event (see Events table below) for data logging.
     ///     
@@ -219,7 +219,6 @@ pub mod jet_margin {
     /// | **Name** | | **Type** | **Description** |
     /// | `margin_account` | `writable` | The margin account to update. |
     /// | `token_account` | `read only` | The token account to update the balance for. |
-    /// | `position` | `read only` | The margin account position. |
     ///
     /// **Events emitted by update\_position\_balance.rs:**
     ///
@@ -256,8 +255,7 @@ pub mod jet_margin {
     /// | **Name** | **Type** | **Description** |
     /// | `margin_account` | `writable` | The margin account with the position to be refreshed. |
     /// | `metadata` | `read only` | The metadata account for the token, which has been updated. |
-    /// | `position` | `read only` | The position of the margin account to refresh metadata for. |
-
+    ///
     /// **Events emitted by refresh\_position\_metadata.rs:**
     ///
     /// |     |     |
@@ -296,7 +294,7 @@ pub mod jet_margin {
     /// | `margin_account` | `writable` | The margin account with the position to close. |
     /// | `position_token_mint` | `read only` | The mint for the position token being deregistered. |
     /// | `token_account` | `writable` | The token account for the position being closed. |
-    /// | `token_program` | `read only` | The token program for the position being closed. |
+    /// | `token_program` | `read only` | The [spl token program](https://spl.solana.com/token). |
     ///
     /// **Events emitted by close\_position.rs:**
     ///
@@ -318,7 +316,7 @@ pub mod jet_margin {
     ///
     /// 2.  Check if positions for that margin account are healthy.
     ///     
-    ///    a.  If unhealthy positions exist for this margin account, return `False`.
+    ///     a.  If unhealthy positions exist for this margin account, return `False`.
     ///
     /// 3.  Emit the [`events::VerifiedHealthy`] event (see Events table below) for data logging.
     ///
@@ -415,7 +413,7 @@ pub mod jet_margin {
     /// |     |     |     |
     /// | --- | --- | --- |
     /// | **Name** | **Type** |  **Description** |
-    /// | `margin_account` | `writeable` | The margin account to proxy an action for. |
+    /// | `margin_account` | `writable` | The margin account to proxy an action for. |
     /// | `adapter_program` | `read only` | The program to be invoked. |
     /// | `adapter_metadata` | `read only` | The metadata about the proxy program. |
     ///
@@ -474,8 +472,8 @@ pub mod jet_margin {
     /// | `payer` | `signer` | The address paying rent. |
     /// | `liquidator` | `signer` | The liquidator account performing the liquidation. |
     /// | `liquidator_metadata` | `read only` | The metadata describing the liquidator. |
-    /// | `liquidation` | `read only` | The account to persist the state of liquidation. |
-    /// | `system_program` | `read only` | The system program. |
+    /// | `liquidation` | `writable` | The account to persist the state of liquidation. |
+    /// | `system_program` | `read only` | The [system native program](https://docs.solana.com/developing/runtime-facilities/programs#system-program). |
     ///
     /// **Events emitted by liquidate\_begin.rs:**
     ///
@@ -496,11 +494,11 @@ pub mod jet_margin {
     ///     
     /// 2. Load the start time from the liquidation account.
     ///     
-    /// 3.Check if the current liquidation has timed out. Reference [LIQUIDATION_TIMEOUT](`jet_margin::LIQUIDATION_TIMEOUT`).
+    /// 3.Check if the current liquidation has timed out. Reference [`LIQUIDATION_TIMEOUT`](`jet_margin::LIQUIDATION_TIMEOUT`).
     ///         
     /// 4. If the liquidator is not timed out, and the liquidator is not the authorized liquidator, return [`ErrorCode::UnauthorizedLiquidator`].
     ///         
-    /// 5. End the liquidation by setting the `liquidation` and `liquidator` fields of [MarginAccount](`jet_margin::MarginAccount`).
+    /// 5. End the liquidation by setting the `liquidation` and `liquidator` fields of [`MarginAccount`](`jet_margin::MarginAccount`).
     ///     
     /// 6. Emit the [`events::LiquidationEnded`] event (see Events table below) for data logging.
     ///     
@@ -512,7 +510,7 @@ pub mod jet_margin {
     /// |     |     |     |
     /// | --- | --- | --- |
     /// | **Name** | **Type** | **Description** |
-    /// | `authority` | `signer (writable)` | The pubkey calling the instruction to end liquidation. |
+    /// | `authority` | `signer` | The pubkey calling the instruction to end liquidation. |
     /// | `margin_account` | `writable` | The account in need of liquidation. |
     /// | `liquidation` | `writable` | The account to persist the state of liquidation. |
     ///
