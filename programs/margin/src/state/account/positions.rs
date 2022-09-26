@@ -294,7 +294,9 @@ impl AccountPosition {
         for approval in approvals {
             match approval {
                 Approver::MarginAccountAuthority => authority_approved = true,
-                Approver::Adapter(_) => adapter_approved = true,
+                Approver::Adapter(approving_adapter) => {
+                    adapter_approved = *approving_adapter == self.adapter
+                }
             }
         }
 
