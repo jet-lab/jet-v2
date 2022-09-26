@@ -14,6 +14,7 @@
     "build:bonds": "yarn --cwd libraries/ts/bonds build",
     "build": "yarn --cwd app build:app",
     "build:cloudflare": "curl https://sh.rustup.rs -sSf | sh -s -- -y && . \"$HOME/.cargo/env\" && cargo install wasm-pack && yarn build:wasm && yarn build:margin && yarn build:bonds && yarn build",
+    "start": "yarn --cwd app start",
     "compile": "npx tsc",
     "docs:rust": "cargo doc -p jet-margin -p jet-margin-pool -p jet-margin-swap --no-deps && cp -r ./target/doc/* ./docs/margin-rust",
     "fmt": "prettier --check .",
