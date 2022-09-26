@@ -25,7 +25,7 @@ import {
 
 import CONFIG from "./config.json"
 import TEST_MINT_KEYPAIR from "../../keypairs/test-mint.json"
-import { BondMarket, JetBonds, JetBondsIdl } from "@jet-lab/jet-bonds-client"
+import { BondMarket, JetBonds, JetBondsIdl, MarginUserInfo } from "@jet-lab/jet-bonds-client"
 import { createAssociatedTokenAccountInstruction, getAssociatedTokenAddress } from "@solana/spl-token"
 
 describe("margin bonds borrowing", async () => {
@@ -253,57 +253,106 @@ describe("margin bonds borrowing", async () => {
     bondMarket = await BondMarket.load(bondsProgram, CONFIG.bondManager)
   })
 
-  let margin_a_usdc
-  let margin_a_usdc_tickets
+  const registerNewMarginUser = async (
+    marginAccount: MarginAccount,
+    bondMarket: BondMarket,
+    payer: Keypair,
+    provider: AnchorProvider
+  ) => {
+    const tokenAcc = await getAssociatedTokenAddress(
+      bondMarket.addresses.underlyingTokenMint,
+      marginAccount.address,
+      true
+    )
+    const ticketAcc = await getAssociatedTokenAddress(bondMarket.addresses.bondTicketMint, marginAccount.address, true)
+    await provider.sendAndConfirm(
+      new Transaction()
+        .add(
+          createAssociatedTokenAccountInstruction(
+            payer.publicKey,
+            tokenAcc,
+            marginAccount.address,
+            bondMarket.addresses.underlyingTokenMint
+          )
+        )
+        .add(
+          createAssociatedTokenAccountInstruction(
+            payer.publicKey,
+            ticketAcc,
+            marginAccount.address,
+            bondMarket.addresses.bondTicketMint
+          )
+        ),
+      [payer]
+    )
+
+    const register = await bondMarket.registerAccountWithMarket(marginAccount, payer.publicKey)
+    let ix = []
+    await marginAccount.withAdapterInvoke({
+      instructions: ix,
+      adapterProgram: bondsProgram.programId,
+      adapterMetadata: CONFIG.bondsMetadata,
+      adapterInstruction: register
+    })
+    await provider.sendAndConfirm(new Transaction().add(...ix), [payer])
+  }
 
   it("margin users create bond market accounts", async () => {
     assert(bondMarket)
 
     // register token wallets with margin accounts
-    margin_a_usdc = await getAssociatedTokenAddress(USDC.mint, marginAccount_A.address, true)
-    margin_a_usdc_tickets = await getAssociatedTokenAddress(
-      bondMarket.addresses.bondTicketMint,
-      marginAccount_A.address,
-      true
-    )
+    await registerNewMarginUser(marginAccount_A, bondMarket, wallet_a.payer, provider_a)
+    await registerNewMarginUser(marginAccount_B, bondMarket, wallet_b.payer, provider_b)
 
-    await provider_a.sendAndConfirm(
-      new Transaction().add(
-        createAssociatedTokenAccountInstruction(
-          wallet_a.payer.publicKey,
-          margin_a_usdc,
-          marginAccount_A.address,
-          USDC.mint
-        )
-      ),
-      [wallet_a.payer]
-    )
-    await provider_a.sendAndConfirm(
-      new Transaction().add(
-        createAssociatedTokenAccountInstruction(
-          wallet_a.payer.publicKey,
-          margin_a_usdc_tickets,
-          marginAccount_A.address,
-          bondMarket.addresses.bondTicketMint
-        )
-      ),
-      [wallet_a.payer]
-    )
+    let borrower_a: MarginUserInfo = await bondMarket.fetchMarginUser(marginAccount_A)
+    let borrower_b: MarginUserInfo = await bondMarket.fetchMarginUser(marginAccount_B)
 
-    let register = await bondMarket.registerAccountWithMarket(marginAccount_A, wallet_a.payer.publicKey)
-    let instructions = []
-    let withAdapter = await marginAccount_A.withAdapterInvoke({
-      instructions,
-      adapterProgram: bondsProgram.programId,
-      adapterMetadata: CONFIG.bondsMetadata,
-      adapterInstruction: register
-    })
-    await provider_a.sendAndConfirm(new Transaction().add(...instructions), [wallet_a.payer])
+    // TODO: figure out why this assert fails
+    // assert(borrower_a.bondManager.toString() === bondMarket.address.toString())
+    // assert(borrower_b.marginAccount.toString() === marginAccount_B.address.toString())
   })
 
   it("margin users place lend orders", async () => {})
 
-  it("margin users place borrow orders", async () => {})
+  it("margin users place borrow orders", async () => {
+    const borrowNowA = await bondMarket.borrowNowIx(marginAccount_A, wallet_a.payer.publicKey, new BN(1000), new BN(0))
+    const requestBorrowB = await bondMarket.requestBorrowIx(
+      marginAccount_B,
+      wallet_b.payer.publicKey,
+      new BN(1000),
+      new BN(1000),
+      new BN(0)
+    )
+    let ix_a = []
+    let ix_b = []
+
+    await marginAccount_A.withAdapterInvoke({
+      instructions: ix_a,
+      adapterProgram: bondsProgram.programId,
+      adapterMetadata: CONFIG.bondsMetadata,
+      adapterInstruction: borrowNowA
+    })
+    await marginAccount_B.withAdapterInvoke({
+      instructions: ix_b,
+      adapterProgram: bondsProgram.programId,
+      adapterMetadata: CONFIG.bondsMetadata,
+      adapterInstruction: requestBorrowB
+    })
+
+    // await provider_a.sendAndConfirm(new Transaction().add(...ix_a), [wallet_a.payer])
+    // await provider_b.sendAndConfirm(new Transaction().add(...ix_b), [wallet_b.payer])
+
+    console.log("b pubkey: " + provider_b.wallet.publicKey.toString())
+    console.log("b payer: " + wallet_b.payer.publicKey.toString())
+    let tx = new Transaction().add(...ix_b)
+    for (let i in tx.instructions) {
+      for (let j in tx.instructions[i].keys) {
+        if (tx.instructions[i].keys[j].isSigner) {
+          console.log("signer: " + tx.instructions[i].keys[j].pubkey.toString())
+        }
+      }
+    }
+  })
 
   it("loads orderbook and has correct orders", async () => {})
 

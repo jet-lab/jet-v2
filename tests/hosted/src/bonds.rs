@@ -13,6 +13,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use jet_bonds::{
     control::state::BondManager,
+    margin::state::MarginUser,
     orderbook::state::{event_queue_len, orderbook_slab_len, CallbackInfo, OrderParams},
     tickets::state::ClaimTicket,
 };
@@ -481,6 +482,7 @@ impl TestManager {
             asks: asks_data,
         })
     }
+
     pub async fn load_account(&self, k: &str) -> Result<Vec<u8>> {
         self.load_data(self.keys.unwrap(k)?).await
     }
@@ -734,6 +736,14 @@ impl<P: Proxy> BondsUser<P> {
             .load_anchor::<TokenAccount>(&key)
             .await
             .map(|a| a.amount)
+    }
+
+    pub async fn load_margin_user(&self) -> Result<MarginUser> {
+        let key = self
+            .manager
+            .ix_builder
+            .margin_user_account(self.proxy.pubkey());
+        self.manager.load_anchor(&key).await
     }
 }
 

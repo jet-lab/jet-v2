@@ -298,11 +298,7 @@ impl BondsIxBuilder {
     }
 
     pub fn initialize_margin_user(&self, owner: Pubkey) -> Result<Instruction> {
-        let borrower_account = bonds_pda(&[
-            jet_bonds::seeds::MARGIN_BORROWER,
-            self.manager.as_ref(),
-            owner.as_ref(),
-        ]);
+        let borrower_account = self.margin_user_account(owner);
         let accounts = jet_bonds::accounts::InitializeMarginUser {
             bond_manager: self.manager,
             payer: self.keys.unwrap("payer")?,
@@ -628,6 +624,14 @@ impl BondsIxBuilder {
             self.manager.as_ref(),
             ticket_holder.as_ref(),
             seed.as_slice(),
+        ])
+    }
+
+    pub fn margin_user_account(&self, owner: Pubkey) -> Pubkey {
+        bonds_pda(&[
+            jet_bonds::seeds::MARGIN_BORROWER,
+            self.manager.as_ref(),
+            owner.as_ref(),
         ])
     }
 

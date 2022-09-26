@@ -32,7 +32,7 @@ async fn full_through_margin() -> Result<()> {
 #[allow(unused_variables)] //todo remove this once fixme is addressed
 async fn margin() -> Result<()> {
     let ctx = test_context().await;
-    let manager = BondsTestManager::full(ctx.rpc.clone()).await?;
+    let manager = Arc::new(BondsTestManager::full(ctx.rpc.clone()).await?);
 
     // create user
     let wallet = create_wallet(&ctx.rpc.clone(), 100 * LAMPORTS_PER_SOL).await?;
@@ -41,8 +41,11 @@ async fn margin() -> Result<()> {
         .sign_send_transaction(&[margin.create_account()], Some(&[&wallet]))
         .await?;
 
-    let user = BondsUser::new_with_proxy_funded(Arc::new(manager), wallet, margin).await?;
+    let user = BondsUser::new_with_proxy_funded(manager.clone(), wallet, margin).await?;
     user.initialize_margin_user().await?;
+
+    let borrower_account = user.load_margin_user().await?;
+    assert_eq!(borrower_account.bond_manager, manager.ix_builder.manager());
 
     // place a borrow order
     let borrow_amount = OrderAmount::from_amount_rate(1_000, 2_000);
