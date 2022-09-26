@@ -24,7 +24,7 @@
 
 # Install
 
-## Solana
+## Solana 
 
 Make sure you update Solana to a newer version.
 
