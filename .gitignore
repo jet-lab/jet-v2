@@ -16,5 +16,7 @@ lcov.info
 yarn-error.log
 tsconfig.tsbuildinfo
 
+app/build
+
 .env
 # documentations

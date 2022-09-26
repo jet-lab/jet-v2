@@ -3,12 +3,12 @@
   "name": "app",
   "version": "0.1.0",
   "scripts": {
-    "start": "webpack serve --mode development --open --hot | cat",
+    "dev": "webpack serve --mode development --open --hot | cat",
     "build": "webpack --mode production",
     "e2e": "npx cypress run",
     "e2e:gui": "npx cypress open",
-    "start:ci": "serve -s build",
-    "e2e:ci": "start-server-and-test start:ci http://localhost:3000 e2e"
+    "start": "serve -s build",
+    "e2e:ci": "start-server-and-test start http://localhost:3000 e2e"
   },
   "dependencies": {
     "@ant-design/icons": "^4.7.0",
@@ -27,7 +27,8 @@
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.4.1",
     "react-string-replace": "^1.1.0",
-    "recoil": "^0.7.5"
+    "recoil": "^0.7.5",
+    "serve": "^14.0.1"
   },
   "devDependencies": {
     "@babel/preset-env": "^7.19.1",

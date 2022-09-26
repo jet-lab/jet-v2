@@ -8,7 +8,13 @@
   ],
   "license": "AGPL-3.0-or-later",
   "scripts": {
-    "build": "npx tsc",
+    "postinstall": "sh setup.sh",
+    "build": "yarn build:margin && yarn build:wasm && yarn build:bonds && yarn build:app",
+    "build:margin": "yarn --cwd libraries/ts/margin build",
+    "build:wasm": "wasm-pack build --target nodejs ./libraries/ts/bonds/wasm-utils ; copyfiles -u 1 ./libraries/ts/bonds/wasm-utils/pkg/* ./libraries/ts/bonds/dist/wasm-utils",
+    "build:bonds": "yarn --cwd libraries/ts/bonds build",
+    "build:app": "yarn --cwd app build",
+    "start": "yarn --cwd app start",
     "compile": "npx tsc",
     "docs:rust": "cargo doc -p jet-margin -p jet-margin-pool -p jet-margin-swap --no-deps && cp -r ./target/doc/* ./docs/margin-rust",
     "fmt": "prettier --check .",
@@ -20,6 +26,6 @@
     "test:devnet": "npx ts-mocha -p ./tsconfig.json -t 1000000 tests/declarative/*.sim.ts",
     "test:nobuild": "anchor test --skip-lint --skip-build -- --features testing",
     "test:gui": "cd app && yarn e2e:gui && cd ../app-beta && yarn e2e:gui",
-    "start": "yarn --cwd libraries/ts/margin build && yarn --cwd libraries/ts/bonds build && (trap 'kill 0' SIGINT; yarn --cwd libraries/ts/margin watch & yarn --cwd libraries/ts/bonds watch & yarn --cwd app start) "
+    "dev": "yarn --cwd libraries/ts/margin build && yarn --cwd libraries/ts/bonds build && (trap 'kill 0' SIGINT; yarn --cwd libraries/ts/margin watch & yarn --cwd libraries/ts/bonds watch & yarn --cwd app dev) "
   }
 }

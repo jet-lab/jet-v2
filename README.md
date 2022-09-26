@@ -82,10 +82,16 @@ Run
 
 ```bash
 yarn
-yarn start
+yarn dev
 ```
 
 to run the app.
+
+If `watch` or `wasm-pack` are missing (they should be installed automatically after running `yarn`) Install Cargo dependencies
+```bash
+cargo install cargo-watch
+curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+```
 
 # Documentations
 [![Docs](https://img.shields.io/badge/docs-TypeScript-success)](https://jet-lab.github.io/jet-v2/ts-client/)
