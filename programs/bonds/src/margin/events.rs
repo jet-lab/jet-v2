@@ -6,6 +6,10 @@ pub struct MarginUserInitialized {
     pub bond_manager: Pubkey,
     pub borrower_account: Pubkey,
     pub margin_account: Pubkey,
+    pub claims: Pubkey,
+    pub collateral: Pubkey,
+    pub underlying_settlement: Pubkey,
+    pub ticket_settlement: Pubkey,
 }
 
 #[event]
