@@ -31,7 +31,7 @@
     "docs": "typedoc --excludePrivate --includeVersion ./src/index.ts",
     "fmt": "prettier src/ tests/ types/ --check",
     "fmt:fix": "prettier src/ tests/ types/ --write",
-    "watch": "tsc --watch --preserveWatchOutput --pretty",
+    "watch": "tsc --watch --preserveWatchOutput --pretty & tsc -p tsconfig-cjs.json --watch --preserveWatchOutput --pretty",
     "prepublishOnly": "yarn build"
   },
   "dependencies": {
