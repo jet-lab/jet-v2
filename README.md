@@ -42,13 +42,12 @@ avm use 0.24.2
 anchor --version # anchor-cli 0.24.2
 ```
 
-## Apple Silicon Workaround
+## Wasm Pack
 
-Jet V2 compiles to Web Assembly and `arm64` macs require a specific version of wasm-pack to be installed. This is a workaround until wasm-pack can be [patched](https://github.com/rustwasm/wasm-pack/issues/1157) upstream. Only wasm-pack 0.10.1 supports Windows while only 0.10.3 supports Apple Silicon.
+Install the wasm-pack tool
 
 ```bash
-arch # arm64
-(cd libraries/ts/bonds && yarn add --dev wasm-pack@0.10.3)
+cargo install wasm-pack
 ```
 
 ## Yarn
