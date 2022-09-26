@@ -8,7 +8,7 @@ fi
 
 if ! command -v wasm-pack &> /dev/null
 then
-    curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | s
+    curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 else
     echo wasm-pack exists ⚡
 fi
