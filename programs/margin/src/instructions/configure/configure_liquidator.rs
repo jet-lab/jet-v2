@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use anchor_lang::prelude::*;
+use anchor_lang::{prelude::*, AccountsClose};
 
 use jet_airspace::state::Airspace;
 
@@ -60,7 +60,7 @@ pub fn configure_liquidator_handler(
     let config = &mut ctx.accounts.liquidator_config;
 
     if !is_liquidator {
-        return crate::util::close_account(&config.to_account_info(), &ctx.accounts.payer);
+        return config.close(ctx.accounts.payer.to_account_info());
     };
 
     config.liquidator = ctx.accounts.liquidator.key();

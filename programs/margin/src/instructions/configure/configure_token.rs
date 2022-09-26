@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use anchor_lang::prelude::*;
+use anchor_lang::{prelude::*, AccountsClose};
 
 use anchor_spl::token::Mint;
 use jet_airspace::state::Airspace;
@@ -83,7 +83,7 @@ pub fn configure_token_handler(
 
     let updated_config = match updated_config {
         Some(update) => update,
-        None => return crate::util::close_account(&config.to_account_info(), &ctx.accounts.payer),
+        None => return config.close(ctx.accounts.payer.to_account_info()),
     };
 
     if config.underlying_mint != Pubkey::default()

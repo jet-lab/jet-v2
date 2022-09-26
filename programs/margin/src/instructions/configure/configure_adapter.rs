@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use anchor_lang::prelude::*;
+use anchor_lang::{prelude::*, AccountsClose};
 
 use jet_airspace::state::Airspace;
 
@@ -57,7 +57,7 @@ pub fn configure_adapter_handler(ctx: Context<ConfigureAdapter>, is_adapter: boo
     let config = &mut ctx.accounts.adapter_config;
 
     if !is_adapter {
-        return crate::util::close_account(&config.to_account_info(), &ctx.accounts.payer);
+        return config.close(ctx.accounts.payer.to_account_info());
     };
 
     config.adapter_program = ctx.accounts.adapter_program.key();
