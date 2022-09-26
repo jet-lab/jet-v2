@@ -78,6 +78,14 @@ Run a single job from the workflow:
 
 # App
 
+Ensure you have a `/app/.env` file with the required variables:
+```
+REACT_APP_RPC_TOKEN = <YOUR_RPC_TOKEN>
+REACT_APP_RPC_DEV_TOKEN = <YOUR_DEV_RPC_TOKEN>
+REACT_APP_IP_REGISTRY = <YOUR_IP_REGISTRY_TOKEN>
+REACT_APP_LOGROCKET_PROJECT = ""
+```
+
 Run
 
 ```bash
