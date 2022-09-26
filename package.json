@@ -13,7 +13,7 @@
     "build:wasm": "wasm-pack build --target nodejs ./libraries/ts/bonds/wasm-utils ; copyfiles -u 1 ./libraries/ts/bonds/wasm-utils/pkg/* ./libraries/ts/bonds/dist/wasm-utils",
     "build:bonds": "yarn --cwd libraries/ts/bonds build",
     "build": "yarn --cwd app build:app",
-    "build:cloudflare": "curl https://sh.rustup.rs -sSf | sh -s -- -y && . \"$HOME/.cargo/env\" && cargo install wasm-pack && yarn build:wasm && yarn build:margin && yarn build:bonds && yarn build_1",
+    "build:cloudflare": "curl https://sh.rustup.rs -sSf | sh -s -- -y && . \"$HOME/.cargo/env\" && cargo install wasm-pack && yarn build:wasm && yarn build:margin && yarn build:bonds && yarn build",
     "compile": "npx tsc",
     "docs:rust": "cargo doc -p jet-margin -p jet-margin-pool -p jet-margin-swap --no-deps && cp -r ./target/doc/* ./docs/margin-rust",
     "fmt": "prettier --check .",
