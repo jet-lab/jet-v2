@@ -6,7 +6,8 @@
   "module": "./dist/esm/index.js",
   "license": "AGPL-3.0-or-later",
   "scripts": {
-    "build": "yarn build:wasm && yarn build:tsc",
+    "build": "yarn build:tsc",
+    "build:with-wasm": "yarn build:wasm && yarn build:tsc",
     "build:wasm": "wasm-pack build --target nodejs ./wasm-utils ; copyfiles -u 1 wasm-utils/pkg/* dist/wasm-utils",
     "build:tsc": "tsc & tsc -p tsconfig-cjs.json ; wait",
     "watch": "yarn watch:wasm & yarn watch:tsc",
