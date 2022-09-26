@@ -1,6 +1,6 @@
 import { Program, BN, Address } from "@project-serum/anchor"
 import { getAssociatedTokenAddress, TOKEN_PROGRAM_ID } from "@solana/spl-token"
-import { PublicKey, SystemProgram, TransactionInstruction } from "@solana/web3.js"
+import { PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY, TransactionInstruction } from "@solana/web3.js"
 import { MarginAccount } from "@jet-lab/margin"
 import { Orderbook } from "./orderbook"
 import { JetBonds } from "./types"
@@ -324,8 +324,42 @@ export class BondMarket {
       .instruction()
   }
 
+  async registerAccountWithMarket(user: MarginAccount, payer: Address): Promise<TransactionInstruction> {
+    const borrowerAccount = await this.deriveMarginUserAddress(user)
+    const claims = await this.deriveMarginUserClaims(borrowerAccount)
+    const collateral = await this.deriveMarginUserClaims(borrowerAccount)
+
+    // TODO: fix this when spl tokens can be made positions
+    const underlyingSettlement = await getAssociatedTokenAddress(this.addresses.underlyingTokenMint, user.address, true)
+    const ticketSettlement = await getAssociatedTokenAddress(this.addresses.bondTicketMint, user.address, true)
+    return await this.program.methods
+      .initializeMarginUser()
+      .accounts({
+        ...this.addresses,
+        borrowerAccount,
+        marginAccount: user.address,
+        claims,
+        collateral,
+        underlyingSettlement,
+        ticketSettlement,
+        payer,
+        rent: SYSVAR_RENT_PUBKEY,
+        systemProgram: SystemProgram.programId,
+        tokenProgram: TOKEN_PROGRAM_ID
+      })
+      .instruction()
+  }
+
   async deriveMarginUserAddress(user: MarginAccount): Promise<PublicKey> {
     return await findDerivedAccount(["margin_borrower", this.address, user.address], this.program.programId)
+  }
+
+  async deriveMarginUserClaims(borrowerAccount: Address): Promise<PublicKey> {
+    return await findDerivedAccount(["user_claims", borrowerAccount], this.program.programId)
+  }
+
+  async deriveMarginUserCollateral(borrowerAccount: Address): Promise<PublicKey> {
+    return await findDerivedAccount(["deposit_notes", borrowerAccount], this.program.programId)
   }
 
   async deriveObligationAddress(user: MarginAccount, seed: BN): Promise<PublicKey> {

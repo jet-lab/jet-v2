@@ -1,7 +1,8 @@
 use std::{fs::OpenOptions, io::Write, sync::Arc};
 
 use anyhow::Result;
-use hosted_tests::{bonds::TestManager, margin::MarginClient};
+use hosted_tests::bonds::TestManager;
+use jet_margin_sdk::ix_builder::get_metadata_address;
 use jet_simulation::solana_rpc_api::RpcConnection;
 
 lazy_static::lazy_static! {
@@ -12,23 +13,24 @@ lazy_static::lazy_static! {
 async fn main() -> Result<()> {
     let rpc = Arc::new(RpcConnection::new_local_funded()?);
 
-    let margin = MarginClient::new(rpc.clone());
-    margin.create_authority_if_missing().await?;
-    margin
-        .register_adapter_if_unregistered(&jet_bonds::ID)
-        .await?;
-
     let x = TestManager::new(rpc, &keys::mint())
         .await?
         .with_bonds(&keys::event_queue(), &keys::bids(), &keys::asks())
+        .await?
+        .with_margin()
         .await?;
     x.pause_orders().await?;
 
     {
         let json = format!(
-            "{{ \"jetBondsPid\": \"{}\", \"bondManager\": \"{}\" }}",
+            "{{ 
+    \"jetBondsPid\": \"{}\",
+    \"bondManager\": \"{}\",
+    \"bondsMetadata\": \"{}\"
+}}",
             jet_bonds::ID,
-            x.ix_builder.manager()
+            x.ix_builder.manager(),
+            get_metadata_address(&jet_bonds::ID),
         );
         let mut io = OpenOptions::new()
             .write(true)

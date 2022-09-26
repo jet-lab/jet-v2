@@ -7,7 +7,7 @@ use agnostic_orderbook::state::{
     orderbook::OrderBookState,
     AccountTag,
 };
-use anchor_lang::AccountDeserialize;
+use anchor_lang::{AccountDeserialize, AnchorSerialize, InstructionData, ToAccountMetas};
 use anchor_spl::token::TokenAccount;
 use anyhow::Result;
 use async_trait::async_trait;
@@ -23,6 +23,7 @@ use jet_margin_sdk::{
         get_control_authority_address, get_metadata_address, ControlIxBuilder, MarginIxBuilder,
     },
 };
+use jet_metadata::TokenKind;
 use jet_proto_math::fixed_point::Fp32;
 use jet_simulation::{create_wallet, send_and_confirm, solana_rpc_api::SolanaRpcClient};
 use solana_sdk::{
@@ -34,7 +35,7 @@ use solana_sdk::{
     pubkey::Pubkey,
     signature::{Keypair, Signature},
     signer::Signer,
-    system_instruction,
+    system_instruction, system_program,
     transaction::Transaction,
 };
 use spl_associated_token_account::{
@@ -236,6 +237,7 @@ impl TestManager {
         self.create_authority_if_missing().await?;
         self.register_adapter_if_unregistered(&jet_bonds::ID)
             .await?;
+        self.register_bonds_position_metadatata().await?;
 
         Ok(self)
     }
@@ -347,6 +349,58 @@ impl TestManager {
         {
             self.register_adapter(adapter).await?;
         }
+
+        Ok(())
+    }
+
+    pub async fn register_bonds_position_metadatata(&self) -> Result<()> {
+        let manager = self.load_manager().await?;
+        let pos_data = jet_margin_sdk::jet_metadata::PositionTokenMetadata {
+            position_token_mint: manager.claims_mint,
+            underlying_token_mint: manager.underlying_token_mint,
+            adapter_program: jet_bonds::ID,
+            token_kind: TokenKind::Claim,
+            value_modifier: 0,
+            max_staleness: 1_000,
+        };
+        let address = get_metadata_address(&manager.claims_mint);
+
+        let create = Instruction {
+            program_id: jet_metadata::ID,
+            accounts: jet_metadata::accounts::CreateEntry {
+                key_account: manager.claims_mint,
+                metadata_account: address,
+                authority: get_control_authority_address(),
+                payer: self.client.payer().pubkey(),
+                system_program: system_program::ID,
+            }
+            .to_account_metas(None),
+            data: jet_metadata::instruction::CreateEntry {
+                seed: String::new(),
+                space: std::mem::size_of::<jet_margin_sdk::jet_metadata::PositionTokenMetadata>()
+                    as u64,
+            }
+            .data(),
+        };
+        let mut metadata = vec![];
+        pos_data.serialize(&mut metadata)?;
+
+        let set = Instruction {
+            program_id: jet_metadata::ID,
+            accounts: jet_metadata::accounts::SetEntry {
+                metadata_account: address,
+                authority: get_control_authority_address(),
+            }
+            .to_account_metas(None),
+            data: jet_metadata::instruction::SetEntry {
+                offset: 0,
+                data: metadata,
+            }
+            .data(),
+        };
+
+        self.sign_send_transaction(&[create], None).await?;
+        self.sign_send_transaction(&[set], None).await?;
 
         Ok(())
     }

@@ -2,7 +2,7 @@ import { assert, expect } from "chai"
 import * as anchor from "@project-serum/anchor"
 import { AnchorProvider, BN } from "@project-serum/anchor"
 import NodeWallet from "@project-serum/anchor/dist/cjs/nodewallet"
-import { Keypair, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js"
+import { Keypair, LAMPORTS_PER_SOL, PublicKey, Transaction } from "@solana/web3.js"
 
 import { MarginAccount, PoolTokenChange, MarginClient, Pool, MarginPoolConfigData, PoolManager } from "@jet-lab/margin"
 
@@ -26,6 +26,7 @@ import {
 import CONFIG from "./config.json"
 import TEST_MINT_KEYPAIR from "../../keypairs/test-mint.json"
 import { BondMarket, JetBonds, JetBondsIdl } from "@jet-lab/jet-bonds-client"
+import { createAssociatedTokenAccountInstruction, getAssociatedTokenAddress } from "@solana/spl-token"
 
 describe("margin bonds borrowing", async () => {
   // SUITE SETUP
@@ -38,51 +39,12 @@ describe("margin bonds borrowing", async () => {
   let USDC: TestToken = null as never
   let SOL: TestToken = null as never
 
-  it("Fund payer", async () => {
-    const airdropSignature = await provider.connection.requestAirdrop(provider.wallet.publicKey, 300 * LAMPORTS_PER_SOL)
-    await provider.connection.confirmTransaction(airdropSignature)
-  })
-
-  it("Create tokens", async () => {
-    // SETUP
-    let usdcKeypair = Keypair.fromSecretKey(Uint8Array.of(...TEST_MINT_KEYPAIR))
-    USDC = await loadToken(provider, payer, 6, 10_000_000, "USDC", usdcKeypair)
-    SOL = await createToken(provider, payer, 9, 10_000, "SOL")
-
-    // ACT
-    const usdc_supply = await getMintSupply(provider, USDC.mint, 6)
-    const usdc_balance = await getTokenBalance(provider, DEFAULT_CONFIRM_OPTS.commitment, USDC.vault)
-    const sol_supply = await getMintSupply(provider, SOL.mint, 9)
-    const sol_balance = await getTokenBalance(provider, DEFAULT_CONFIRM_OPTS.commitment, SOL.vault)
-
-    // TEST
-    expect(usdc_supply).to.eq(10_000_000)
-    expect(usdc_balance).to.eq(10_000_000)
-    expect(sol_supply).to.eq(10_000)
-    expect(sol_balance).to.eq(10_000)
-  })
-
   let USDC_oracle: Keypair[]
   let SOL_oracle: Keypair[]
 
   const pythClient = new PythClient({
     pythProgramId: "FT9EZnpdo3tPfUCGn8SBkvN9DMpSStAg3YvAqvYrtSvL",
     url: "http://127.0.0.1:8899/"
-  })
-
-  it("Create oracles", async () => {
-    USDC_oracle = [Keypair.generate(), Keypair.generate()]
-    await pythClient.createPriceAccount(payer, USDC_oracle[0], "USD", USDC_oracle[1], 1, 0.01, -8)
-    SOL_oracle = [Keypair.generate(), Keypair.generate()]
-    await pythClient.createPriceAccount(payer, SOL_oracle[0], "USD", SOL_oracle[1], 100, 1, -8)
-  })
-
-  it("Create authority", async () => {
-    await createAuthority(programs, provider)
-  })
-
-  it("Register adapter", async () => {
-    await registerAdapter(programs, provider, payer, MARGIN_POOL_PROGRAM_ID, payer)
   })
 
   const ONE_USDC = 1_000_000
@@ -104,13 +66,63 @@ describe("margin bonds borrowing", async () => {
   let marginPool_SOL: Pool
   let pools: Pool[]
 
-  it("Load Pools", async () => {
+  let wallet_a: NodeWallet
+  let wallet_b: NodeWallet
+  let wallet_c: NodeWallet
+
+  let provider_a: AnchorProvider
+  let provider_b: AnchorProvider
+  let provider_c: AnchorProvider
+
+  let marginAccount_A: MarginAccount
+  let marginAccount_B: MarginAccount
+  let marginAccount_C: MarginAccount
+
+  let user_a_usdc_account: PublicKey
+  let user_a_sol_account: PublicKey
+  let user_b_sol_account: PublicKey
+  let user_b_usdc_account: PublicKey
+  let user_c_sol_account: PublicKey
+  let user_c_usdc_account: PublicKey
+
+  const bondsProgram: anchor.Program<JetBonds> = new anchor.Program(JetBondsIdl, CONFIG.jetBondsPid, provider)
+  let bondMarket: BondMarket
+
+  before(async () => {
+    // Fund payer
+    const airdropSignature = await provider.connection.requestAirdrop(provider.wallet.publicKey, 300 * LAMPORTS_PER_SOL)
+    await provider.connection.confirmTransaction(airdropSignature)
+
+    // create tokens
+    // SETUP
+    let usdcKeypair = Keypair.fromSecretKey(Uint8Array.of(...TEST_MINT_KEYPAIR))
+    USDC = await loadToken(provider, payer, 6, 10_000_000, "USDC", usdcKeypair)
+    SOL = await createToken(provider, payer, 9, 10_000, "SOL")
+
+    // ACT
+    const usdc_supply = await getMintSupply(provider, USDC.mint, 6)
+    const usdc_balance = await getTokenBalance(provider, DEFAULT_CONFIRM_OPTS.commitment, USDC.vault)
+    const sol_supply = await getMintSupply(provider, SOL.mint, 9)
+    const sol_balance = await getTokenBalance(provider, DEFAULT_CONFIRM_OPTS.commitment, SOL.vault)
+
+    // create oracles
+    USDC_oracle = [Keypair.generate(), Keypair.generate()]
+    await pythClient.createPriceAccount(payer, USDC_oracle[0], "USD", USDC_oracle[1], 1, 0.01, -8)
+    SOL_oracle = [Keypair.generate(), Keypair.generate()]
+    await pythClient.createPriceAccount(payer, SOL_oracle[0], "USD", SOL_oracle[1], 100, 1, -8)
+
+    // create authority
+    await createAuthority(programs, provider)
+
+    // register adapter
+    await registerAdapter(programs, provider, payer, MARGIN_POOL_PROGRAM_ID, payer)
+
+    // load pools
     marginPool_SOL = await manager.load({ tokenMint: SOL.mint, tokenConfig: SOL.tokenConfig })
     marginPool_USDC = await manager.load({ tokenMint: USDC.mint, tokenConfig: USDC.tokenConfig })
     pools = [marginPool_SOL, marginPool_USDC]
-  })
 
-  it("Create margin pools", async () => {
+    // create margin pools
     await manager.create({
       tokenMint: USDC.mint,
       collateralWeight: 1_00,
@@ -127,17 +139,8 @@ describe("margin bonds borrowing", async () => {
       pythPrice: SOL_oracle[1].publicKey,
       marginPoolConfig: DEFAULT_POOL_CONFIG
     })
-  })
 
-  let wallet_a: NodeWallet
-  let wallet_b: NodeWallet
-  let wallet_c: NodeWallet
-
-  let provider_a: AnchorProvider
-  let provider_b: AnchorProvider
-  let provider_c: AnchorProvider
-
-  it("Create our two user wallets, with some SOL funding to get started", async () => {
+    // create user wallets
     wallet_a = await createUserWallet(provider, 10 * LAMPORTS_PER_SOL)
     wallet_b = await createUserWallet(provider, 10 * LAMPORTS_PER_SOL)
     wallet_c = await createUserWallet(provider, 10 * LAMPORTS_PER_SOL)
@@ -145,13 +148,8 @@ describe("margin bonds borrowing", async () => {
     provider_a = new AnchorProvider(provider.connection, wallet_a, DEFAULT_CONFIRM_OPTS)
     provider_b = new AnchorProvider(provider.connection, wallet_b, DEFAULT_CONFIRM_OPTS)
     provider_c = new AnchorProvider(provider.connection, wallet_c, DEFAULT_CONFIRM_OPTS)
-  })
 
-  let marginAccount_A: MarginAccount
-  let marginAccount_B: MarginAccount
-  let marginAccount_C: MarginAccount
-
-  it("Initialize the margin accounts for each user", async () => {
+    // create margin accounts
     anchor.setProvider(provider_a)
     marginAccount_A = await MarginAccount.load({
       programs,
@@ -178,16 +176,9 @@ describe("margin bonds borrowing", async () => {
       seed: 0
     })
     await marginAccount_C.createAccount()
-  })
 
-  let user_a_usdc_account: PublicKey
-  let user_a_sol_account: PublicKey
-  let user_b_sol_account: PublicKey
-  let user_b_usdc_account: PublicKey
-  let user_c_sol_account: PublicKey
-  let user_c_usdc_account: PublicKey
+    // give users tokens
 
-  it("Create some tokens for each user to deposit", async () => {
     // SETUP
     const payer_A: Keypair = Keypair.fromSecretKey((wallet_a as NodeWallet).payer.secretKey)
     user_a_usdc_account = await createTokenAccount(provider, USDC.mint, wallet_a.publicKey, payer_A)
@@ -209,19 +200,11 @@ describe("margin bonds borrowing", async () => {
     await sendToken(provider, SOL.mint, 1, 9, ownerKeypair, SOL.vault, user_c_sol_account)
     await sendToken(provider, USDC.mint, 1, 6, ownerKeypair, USDC.vault, user_c_usdc_account)
 
-    // TEST
-    expect(await getTokenBalance(provider, "processed", user_a_usdc_account)).to.eq(500_000)
-    expect(await getTokenBalance(provider, "processed", user_a_sol_account)).to.eq(50)
-    expect(await getTokenBalance(provider, "processed", user_b_sol_account)).to.eq(500)
-    expect(await getTokenBalance(provider, "processed", user_b_usdc_account)).to.eq(50)
-  })
-
-  it("Refresh pools", async () => {
+    // refresh pools
     await marginPool_USDC.refresh()
     await marginPool_SOL.refresh()
-  })
 
-  it("Deposit user funds into their margin accounts", async () => {
+    // deposit into margin accounts
     // ACT
     await marginPool_USDC.deposit({
       marginAccount: marginAccount_A,
@@ -266,21 +249,65 @@ describe("margin bonds borrowing", async () => {
     await marginAccount_B.refresh()
     await marginAccount_C.refresh()
 
-    // TEST
-    expect(await getTokenBalance(provider, "processed", user_b_sol_account)).to.eq(0)
-    expect(await getTokenBalance(provider, "processed", user_b_usdc_account)).to.eq(0)
-    expect(await getTokenBalance(provider, "processed", user_a_usdc_account)).to.eq(0)
-    expect(await getTokenBalance(provider, "processed", user_a_sol_account)).to.eq(0)
-    expect(await getTokenBalance(provider, "processed", marginPool_USDC.addresses.vault)).to.eq(500_050 + 1)
-    expect(await getTokenBalance(provider, "processed", marginPool_SOL.addresses.vault)).to.eq(550 + 1)
+    // load the bond market
+    bondMarket = await BondMarket.load(bondsProgram, CONFIG.bondManager)
   })
 
-  let bondsProgram: anchor.Program<JetBonds>
-  let bondMarket: BondMarket
-  it("loads bond market", async () => {
-    let bondsProgram = new anchor.Program(JetBondsIdl, CONFIG.jetBondsPid, provider)
-    let bondMarket = await BondMarket.load(bondsProgram, CONFIG.bondManager)
+  let margin_a_usdc
+  let margin_a_usdc_tickets
 
-    assert(bondMarket.address.toBase58() === CONFIG.bondManager)
+  it("margin users create bond market accounts", async () => {
+    assert(bondMarket)
+
+    // register token wallets with margin accounts
+    margin_a_usdc = await getAssociatedTokenAddress(USDC.mint, marginAccount_A.address, true)
+    margin_a_usdc_tickets = await getAssociatedTokenAddress(
+      bondMarket.addresses.bondTicketMint,
+      marginAccount_A.address,
+      true
+    )
+
+    await provider_a.sendAndConfirm(
+      new Transaction().add(
+        createAssociatedTokenAccountInstruction(
+          wallet_a.payer.publicKey,
+          margin_a_usdc,
+          marginAccount_A.address,
+          USDC.mint
+        )
+      ),
+      [wallet_a.payer]
+    )
+    await provider_a.sendAndConfirm(
+      new Transaction().add(
+        createAssociatedTokenAccountInstruction(
+          wallet_a.payer.publicKey,
+          margin_a_usdc_tickets,
+          marginAccount_A.address,
+          bondMarket.addresses.bondTicketMint
+        )
+      ),
+      [wallet_a.payer]
+    )
+
+    let register = await bondMarket.registerAccountWithMarket(marginAccount_A, wallet_a.payer.publicKey)
+    let instructions = []
+    let withAdapter = await marginAccount_A.withAdapterInvoke({
+      instructions,
+      adapterProgram: bondsProgram.programId,
+      adapterMetadata: CONFIG.bondsMetadata,
+      adapterInstruction: register
+    })
+    await provider_a.sendAndConfirm(new Transaction().add(...instructions), [wallet_a.payer])
   })
+
+  it("margin users place lend orders", async () => {})
+
+  it("margin users place borrow orders", async () => {})
+
+  it("loads orderbook and has correct orders", async () => {})
+
+  it("margin users cancel lend orders", async () => {})
+
+  it("margin users cancel borrow orders", async () => {})
 })
