@@ -108,7 +108,7 @@ pub mod jet_margin {
     /// | `owner` | `signer` | The owner of the new margin account. |
     /// | `payer` | `signer` | The pubkey paying rent for the new margin account opening. |
     /// | `margin_account` | `writable` | The margin account to initialize for the owner. |
-    /// | `system_program` | `read only` | The [system native program](https://docs.solana.com/developing/runtime-facilities/programs#system-program). |
+    /// | `system_program` | `read_only` | The [system native program](https://docs.solana.com/developing/runtime-facilities/programs#system-program). |
     ///
     /// **Events emitted by create\_account.rs:**
     ///
@@ -178,12 +178,12 @@ pub mod jet_margin {
     /// | `authority` | `signer` | The authority that can change the margin account. |
     /// | `payer` | `signer` | The address paying for rent. |
     /// | `margin_account` | `writable` |  The margin account to register position type with. |
-    /// | `position_token_mint` | `read only` | The mint for the position token being registered. |
-    /// | `metadata` | `read only` | The metadata account that references the correct oracle for the token. |
+    /// | `position_token_mint` | `read_only` | The mint for the position token being registered. |
+    /// | `metadata` | `read_only` | The metadata account that references the correct oracle for the token. |
     /// | `token_account` | `writable` | The token account to store hold the position assets in the custody of the margin account. |
-    /// | `token_program` | `read only` | The [spl token program](https://spl.solana.com/token). |
-    /// | `rent` | `read only` | The [rent sysvar](https://docs.solana.com/developing/runtime-facilities/sysvars#rent). The rent to open the account. |
-    /// | `system_program` | `read only` | The [system native program](https://docs.solana.com/developing/runtime-facilities/programs#system-program). |
+    /// | `token_program` | `read_only` | The [spl token program](https://spl.solana.com/token). |
+    /// | `rent` | `read_only` | The [rent sysvar](https://docs.solana.com/developing/runtime-facilities/sysvars#rent). The rent to open the account. |
+    /// | `system_program` | `read_only` | The [system native program](https://docs.solana.com/developing/runtime-facilities/programs#system-program). |
     ///
     /// **Events emitted by register\_position.rs:**
     ///
@@ -218,7 +218,7 @@ pub mod jet_margin {
     /// | --- | --- | --- |
     /// | **Name** | | **Type** | **Description** |
     /// | `margin_account` | `writable` | The margin account to update. |
-    /// | `token_account` | `read only` | The token account to update the balance for. |
+    /// | `token_account` | `read_only` | The token account to update the balance for. |
     ///
     /// **Events emitted by update\_position\_balance.rs:**
     ///
@@ -254,7 +254,7 @@ pub mod jet_margin {
     /// | --- | --- | --- |
     /// | **Name** | **Type** | **Description** |
     /// | `margin_account` | `writable` | The margin account with the position to be refreshed. |
-    /// | `metadata` | `read only` | The metadata account for the token, which has been updated. |
+    /// | `metadata` | `read_only` | The metadata account for the token, which has been updated. |
     ///
     /// **Events emitted by refresh\_position\_metadata.rs:**
     ///
@@ -292,9 +292,9 @@ pub mod jet_margin {
     /// | `authority` | `signer` | The authority that can change the margin account. |
     /// | `receiver` | `writable` | The receiver for the rent released. |
     /// | `margin_account` | `writable` | The margin account with the position to close. |
-    /// | `position_token_mint` | `read only` | The mint for the position token being deregistered. |
+    /// | `position_token_mint` | `read_only` | The mint for the position token being deregistered. |
     /// | `token_account` | `writable` | The token account for the position being closed. |
-    /// | `token_program` | `read only` | The [spl token program](https://spl.solana.com/token). |
+    /// | `token_program` | `read_only` | The [spl token program](https://spl.solana.com/token). |
     ///
     /// **Events emitted by close\_position.rs:**
     ///
@@ -328,7 +328,7 @@ pub mod jet_margin {
     /// |     |     |     |
     /// | --- | --- | --- |
     /// | **Name** | **Type** | **Description** |
-    /// | `margin_account` | `read only` | The account to verify the health of. |
+    /// | `margin_account` | `read_only` | The account to verify the health of. |
     ///
     /// **Events emitted by verify\_healthy.rs:**
     ///
@@ -371,8 +371,8 @@ pub mod jet_margin {
     /// | **Name** | **Type** | **Description** |
     /// | `owner` | `signer` | The authority that owns the margin account. |
     /// | `margin_account` | `writable` | The margin account to proxy an action for. |
-    /// | `adapter_program` | `read only` | The program to be invoked. |
-    /// | `adapter_metadata` | `read only` | The metadata about the proxy program. |
+    /// | `adapter_program` | `read_only` | The program to be invoked. |
+    /// | `adapter_metadata` | `read_only` | The metadata about the proxy program. |
     ///
     /// **Events emitted by adapter\_invoke.rs:**
     ///
@@ -380,8 +380,7 @@ pub mod jet_margin {
     /// | --- | --- |
     /// | **Event Name** | **Description** |
     /// | [`events::AdapterInvokeBegin`] | Marks the start of the adapter invocation (includes the margin account pubkey and the adapter program pubkey). |
-    // TODO: Better wording for PositionEvent below (made an attempt, let's see what Qiqi thinks)
-    /// | [`events::PositionEvent`] _(Note that each single event represents a different adapter position)_ | The [PositionEvent](events::PositionEvent) of each adapter. |
+    /// | [`events::PositionEvent`] _(Note that each single event represents a different adapter position)_ | The [PositionEvent](events::PositionEvent) describing the change in position. |
     /// | [`events::AdapterInvokeEnd`] | Marks the ending of the adapter invocation (includes no data except for the event itself being emitted). |
 
     pub fn adapter_invoke<'info>(
@@ -414,8 +413,8 @@ pub mod jet_margin {
     /// | --- | --- | --- |
     /// | **Name** | **Type** |  **Description** |
     /// | `margin_account` | `writable` | The margin account to proxy an action for. |
-    /// | `adapter_program` | `read only` | The program to be invoked. |
-    /// | `adapter_metadata` | `read only` | The metadata about the proxy program. |
+    /// | `adapter_program` | `read_only` | The program to be invoked. |
+    /// | `adapter_metadata` | `read_only` | The metadata about the proxy program. |
     ///
     /// **Events emitted by accounting\_invoke.rs:**
     ///
@@ -423,8 +422,7 @@ pub mod jet_margin {
     /// | --- | --- |
     /// | **Name** | **Description** |
     /// | [`events::AccountingInvokeBegin`] | Signify that the accounting invocation process has begun. |
-    // TODO: Better wording for PositionEvent below (made an attempt, let's see what Qiqi thinks)
-    /// | [`events::PositionEvent`] _(Note that each single event represents an different adapter position)_ | The [PositionEvent](events::PositionEvent) of each adapter. |
+    /// | [`events::PositionEvent`] _(Note that each single event represents an different adapter position)_ | The [PositionEvent](events::PositionEvent) describing the change in position. |
     /// | [`events::AccountingInvokeEnd`] | Signify that the accounting invocation process has ended. |
 
     pub fn accounting_invoke<'info>(
@@ -471,9 +469,9 @@ pub mod jet_margin {
     /// | `margin_account` | `writable` | The account in need of liquidation. |
     /// | `payer` | `signer` | The address paying rent. |
     /// | `liquidator` | `signer` | The liquidator account performing the liquidation. |
-    /// | `liquidator_metadata` | `read only` | The metadata describing the liquidator. |
+    /// | `liquidator_metadata` | `read_only` | The metadata describing the liquidator. |
     /// | `liquidation` | `writable` | The account to persist the state of liquidation. |
-    /// | `system_program` | `read only` | The [system native program](https://docs.solana.com/developing/runtime-facilities/programs#system-program). |
+    /// | `system_program` | `read_only` | The [system native program](https://docs.solana.com/developing/runtime-facilities/programs#system-program). |
     ///
     /// **Events emitted by liquidate\_begin.rs:**
     ///
@@ -557,8 +555,8 @@ pub mod jet_margin {
     /// | `liquidator` | `signer` | The liquidator processing the margin account. |
     /// | `liquidation` | `writable` | The account to persist the state of liquidation. |
     /// | `margin_account` | `writable` | The margin account to proxy an action for. |
-    /// | `adapter_program` | `read only` | The program to be invoked. |
-    /// | `adapter_metadata` | `read only` | The metadata about the proxy program. |
+    /// | `adapter_program` | `read_only` | The program to be invoked. |
+    /// | `adapter_metadata` | `read_only` | The metadata about the proxy program. |
     ///
     /// **Events emitted by liquidator\_invoke.rs:**
     ///
@@ -566,8 +564,7 @@ pub mod jet_margin {
     /// | --- | --- |
     /// | **Event Name** | **Description** |
     /// | [`events::LiquidatorInvokeBegin`] | Marks the beginning of this liquidation event. |
-    // TODO: Better wording for PositionEvent below (made an attempt, let's see what Qiqi thinks)
-    /// | [`events::PositionEvent`] _(Note that each single event represents an different adapter position)_ | The [PositionEvent](events::PositionEvent) of each adapter. |
+    /// | [`events::PositionEvent`] _(Note that each single event represents an different adapter position)_ | The [PositionEvent](events::PositionEvent) describing the change in position. |
     /// | [`events::LiquidatorInvokeEnd`] | Marks the ending of this liquidator event. |
 
     pub fn liquidator_invoke<'info>(
