@@ -6,7 +6,7 @@ on:
       - "master"
     paths:
       - "programs"
-      - "libraries/ts/src/**"
+      - "libraries/ts/margin/src/**"
   workflow_dispatch: {}
 
 jobs:
@@ -48,7 +48,7 @@ jobs:
         run: yarn install --frozen-lockfile
 
       - name: Build TS Documentation
-        working-directory: ./libraries/ts
+        working-directory: ./libraries/ts/margin
         run: yarn docs 
 
       - name: Build Rust Documentation
