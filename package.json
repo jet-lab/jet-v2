@@ -2,20 +2,19 @@
   "private": "true",
   "workspaces": [
     "app",
-    "libraries/ts/bonds",
     "libraries/ts/margin",
     "tests"
   ],
   "license": "AGPL-3.0-or-later",
   "scripts": {
-    "build:all": "yarn build:margin && yarn build:wasm && yarn build:bonds && yarn build:app",
+    "build": "yarn build:wasm && yarn build:margin && yarn build:app",
+    "build:wasm": "wasm-pack build --target nodejs ./libraries/ts/margin/wasm-utils ; copyfiles -u 4 ./libraries/ts/margin/wasm-utils/pkg/* ./libraries/ts/margin/dist/wasm-utils",
     "build:margin": "yarn --cwd libraries/ts/margin build",
-    "build:wasm": "wasm-pack build --target nodejs ./libraries/ts/bonds/wasm-utils ; copyfiles -u 1 ./libraries/ts/bonds/wasm-utils/pkg/* ./libraries/ts/bonds/dist/wasm-utils",
-    "build:bonds": "yarn --cwd libraries/ts/bonds build",
-    "build": "yarn --cwd app build:app",
-    "build:cloudflare": "curl https://sh.rustup.rs -sSf | sh -s -- -y && . \"$HOME/.cargo/env\" && cargo install wasm-pack && yarn build:wasm && yarn build:margin && yarn build:bonds && yarn build",
+    "build:app": "yarn --cwd app build:app",
+    "build:cloudflare": "curl https://sh.rustup.rs -sSf | sh -s -- -y && . \"$HOME/.cargo/env\" && cargo install wasm-pack && yarn build:wasm && yarn build:margin && yarn build:app",
     "start": "yarn --cwd app start",
     "compile": "npx tsc",
+    "clean": "rm -rf node_modules app/node_modules libraries/ts/margin/node_modules tests/node_modules app/build app/dist libraries/ts/margin/dist",
     "docs:rust": "cargo doc -p jet-margin -p jet-margin-pool -p jet-margin-swap --no-deps && cp -r ./target/doc/* ./docs/margin-rust",
     "fmt": "prettier --check .",
     "fmt:fix": "prettier --write .",
@@ -26,6 +25,10 @@
     "test:devnet": "npx ts-mocha -p ./tsconfig.json -t 1000000 tests/declarative/*.sim.ts",
     "test:nobuild": "anchor test --skip-lint --skip-build -- --features testing",
     "test:gui": "cd app && yarn e2e:gui && cd ../app-beta && yarn e2e:gui",
-    "dev": "yarn --cwd libraries/ts/margin watch & yarn --cwd libraries/ts/bonds watch & yarn --cwd app dev"
+    "dev": "yarn --cwd libraries/ts/margin watch & yarn --cwd app dev"
+  },
+  "devDependencies": {
+    "copyfiles": "^2.4.1",
+    "wasm-pack": "0.10.3"
   }
 }

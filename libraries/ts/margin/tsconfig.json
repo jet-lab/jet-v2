@@ -1,7 +1,8 @@
 {
-  "include": ["./src/**/*", "./src/**/*.json"],
+  "include": ["./src/**/*", "./src/**/*.json", "./wasm-utils/pkg"],
+  "exclude": ["**/*.wasm"],
   "compilerOptions": {
-    "target": "es2020",
+    "target": "ES2020",
     "sourceMap": true,
     "declaration": true,
     "declarationMap": true,

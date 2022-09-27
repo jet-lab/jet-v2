@@ -1,3 +1,4 @@
+export { JetBonds, IDL as JetBondsIdl } from "./jetBonds"
 export { JetControl, IDL as JetControlIdl } from "./jetControl"
 export { JetMargin, IDL as JetMarginIdl } from "./jetMargin"
 export { JetMetadata, IDL as JetMetadataIdl } from "./jetMetadata"

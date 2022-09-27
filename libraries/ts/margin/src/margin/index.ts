@@ -15,6 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+export * from "./bonds"
 export * from "./config"
 export * from "./marginAccount"
 export * from "./marginClient"

@@ -1,4 +1,4 @@
-import { BondMarket, JetBondsIdl, Orderbook } from "@jet-lab/jet-bonds-client"
+import { BondMarket, JetBondsIdl, Orderbook } from "@jet-lab/margin"
 import { Program } from "@project-serum/anchor"
 import { useEffect } from "react"
 import { atom, selector, useRecoilState } from "recoil"

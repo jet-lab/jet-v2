@@ -16,7 +16,7 @@ import { MarginAccount } from "../marginAccount"
 import { MarginPrograms } from "../marginClient"
 
 export type SelfTradeBehavior = "decrementTake" | "cancelProvide" | "abortTransaction"
-export type OrderSide = "sell" | "buy" | "ask" | "bid"
+export type SerumOrderSide = "sell" | "buy" | "ask" | "bid"
 export type OrderType = "limit" | "ioc" | "postOnly"
 export type OrderStatus = "open" | "partialFilled" | "filled" | "cancelled"
 
@@ -160,7 +160,7 @@ export class Market {
     return markets
   }
 
-  static encodeOrderSide(side: OrderSide): number {
+  static encodeOrderSide(side: SerumOrderSide): number {
     switch (side) {
       case "bid":
       case "buy":
@@ -204,7 +204,7 @@ export class Market {
     payer
   }: {
     marginAccount: MarginAccount
-    orderSide: OrderSide
+    orderSide: SerumOrderSide
     orderType: OrderType
     orderPrice: number
     orderSize: TokenAmount
@@ -306,7 +306,7 @@ export class Market {
   }: {
     instructions: TransactionInstruction[]
     marginAccount: MarginAccount
-    orderSide: OrderSide
+    orderSide: SerumOrderSide
     orderType: OrderType
     orderPrice: number
     orderSize: TokenAmount
@@ -552,7 +552,7 @@ export class Market {
    * Loads the Orderbook
    * @param provider
    */
-  async loadOrderbook(provider: AnchorProvider): Promise<Orderbook> {
+  async loadOrderbook(provider: AnchorProvider): Promise<SerumOrderbookWrapper> {
     const bidsBuffer = (await provider.connection.getAccountInfo(translateAddress(this.marketConfig.bids)))?.data
     const asksBuffer = (await provider.connection.getAccountInfo(translateAddress(this.marketConfig.asks)))?.data
     if (!bidsBuffer || !asksBuffer) {
@@ -561,7 +561,7 @@ export class Market {
 
     const bids = SerumOrderbook.decode(this.serum, bidsBuffer)
     const asks = SerumOrderbook.decode(this.serum, asksBuffer)
-    return new Orderbook(this.serum, bids, asks)
+    return new SerumOrderbookWrapper(this.serum, bids, asks)
   }
 
   /**
@@ -630,13 +630,13 @@ export class Market {
   }
 }
 
-export class Orderbook {
+export class SerumOrderbookWrapper {
   market: SerumMarket
   bids: SerumOrderbook
   asks: SerumOrderbook
 
   /**
-   * Creates a Margin Orderbook
+   * Creates a Margin SerumOrderbookWrapper
    * @param market
    * @param bids
    * @param asks
@@ -648,7 +648,7 @@ export class Orderbook {
   }
 
   /**
-   * Load an Orderbook for a given market
+   * Load an SerumOrderbookWrapper for a given market
    * @param market
    * @param bidsBuffer
    * @param asksBuffer
@@ -656,7 +656,7 @@ export class Orderbook {
   static load({ market, bidsBuffer, asksBuffer }: { market: SerumMarket; bidsBuffer: Buffer; asksBuffer: Buffer }) {
     const bids = SerumOrderbook.decode(market, bidsBuffer)
     const asks = SerumOrderbook.decode(market, asksBuffer)
-    return new Orderbook(market, bids, asks)
+    return new SerumOrderbookWrapper(market, bids, asks)
   }
 
   /**

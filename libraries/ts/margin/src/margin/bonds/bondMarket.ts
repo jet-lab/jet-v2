@@ -1,11 +1,12 @@
-import { Program, BN, Address } from "@project-serum/anchor"
+import { Program, BN, Address, translateAddress } from "@project-serum/anchor"
 import { getAssociatedTokenAddress, TOKEN_PROGRAM_ID } from "@solana/spl-token"
 import { PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY, TransactionInstruction } from "@solana/web3.js"
-import { MarginAccount } from "@jet-lab/margin"
+import { MarginAccount } from ".."
 import { Orderbook } from "./orderbook"
-import { JetBonds } from "./types"
-import { fetchData, findDerivedAccount } from "./utils"
-import { rate_to_price } from "../wasm-utils/pkg"
+import { JetBonds } from "../../types"
+import { rate_to_price } from "../../../wasm-utils/pkg"
+import assert from "assert"
+import { findDerivedAccount } from "../../utils"
 
 export const OrderSideBorrow = { borrow: {} }
 export const OrderSideLend = { lend: {} }
@@ -141,9 +142,11 @@ export class BondMarket {
     bondManager: Address,
     jetMetadataProgramId: Address
   ): Promise<BondMarket> {
-    let data = await fetchData(program.provider.connection, bondManager)
+    let data = (await program.provider.connection.getAccountInfo(translateAddress(bondManager)))?.data
+    assert(data, "could not fetch account")
+
     let info: BondManagerInfo = program.coder.accounts.decode("BondManager", data)
-    const claimsMetadata = await findDerivedAccount([info.claimsMint], new PublicKey(jetMetadataProgramId))
+    const claimsMetadata = findDerivedAccount(new PublicKey(jetMetadataProgramId), info.claimsMint)
 
     return new BondMarket(new PublicKey(bondManager), new PublicKey(claimsMetadata), program, info)
   }
@@ -192,11 +195,11 @@ export class BondMarket {
     params: OrderParams,
     seed: Uint8Array
   ): Promise<TransactionInstruction> {
-    const borrowerAccount = await this.deriveMarginUserAddress(user)
-    const obligation = await this.deriveObligationAddress(borrowerAccount, seed)
-    const claims = await this.deriveMarginUserClaims(borrowerAccount)
+    const borrowerAccount = this.deriveMarginUserAddress(user)
+    const obligation = this.deriveObligationAddress(borrowerAccount, seed)
+    const claims = this.deriveMarginUserClaims(borrowerAccount)
 
-    return this.program.methods
+    return await this.program.methods
       .marginBorrowOrder(params, Buffer.from(seed))
       .accounts({
         ...this.addresses,
@@ -257,7 +260,7 @@ export class BondMarket {
     params: OrderParams,
     seed: Uint8Array
   ): Promise<TransactionInstruction> {
-    const splitTicket = await this.deriveSplitTicket(user, seed)
+    const splitTicket = this.deriveSplitTicket(user, seed)
     return await this.program.methods
       .lendOrder(params, Buffer.from(seed))
       .accounts({
@@ -293,9 +296,9 @@ export class BondMarket {
   }
 
   async registerAccountWithMarket(user: MarginAccount, payer: Address): Promise<TransactionInstruction> {
-    const borrowerAccount = await this.deriveMarginUserAddress(user)
-    const claims = await this.deriveMarginUserClaims(borrowerAccount)
-    const collateral = await this.deriveMarginUserCollateral(borrowerAccount)
+    const borrowerAccount = this.deriveMarginUserAddress(user)
+    const claims = this.deriveMarginUserClaims(borrowerAccount)
+    const collateral = this.deriveMarginUserCollateral(borrowerAccount)
 
     const underlyingSettlement = await getAssociatedTokenAddress(this.addresses.underlyingTokenMint, user.address, true)
     const ticketSettlement = await getAssociatedTokenAddress(this.addresses.bondTicketMint, user.address, true)
@@ -336,31 +339,28 @@ export class BondMarket {
       .instruction()
   }
 
-  async deriveMarginUserAddress(user: MarginAccount): Promise<PublicKey> {
-    return await findDerivedAccount(["margin_borrower", this.address, user.address], this.program.programId)
+  deriveMarginUserAddress(user: MarginAccount): PublicKey {
+    return findDerivedAccount(this.program.programId, "margin_borrower", this.address, user.address)
   }
 
-  async deriveMarginUserClaims(borrowerAccount: Address): Promise<PublicKey> {
-    return await findDerivedAccount(["user_claims", borrowerAccount], this.program.programId)
+  deriveMarginUserClaims(borrowerAccount: Address): PublicKey {
+    return findDerivedAccount(this.program.programId, "user_claims", borrowerAccount)
   }
 
-  async deriveMarginUserCollateral(borrowerAccount: Address): Promise<PublicKey> {
-    return await findDerivedAccount(["deposit_notes", borrowerAccount], this.program.programId)
+  deriveMarginUserCollateral(borrowerAccount: Address): PublicKey {
+    return findDerivedAccount(this.program.programId, "deposit_notes", borrowerAccount)
   }
 
-  async deriveObligationAddress(borrowerAccount: Address, seed: Uint8Array): Promise<PublicKey> {
-    return await findDerivedAccount(["obligation", borrowerAccount, seed], this.program.programId)
+  deriveObligationAddress(borrowerAccount: Address, seed: Uint8Array): PublicKey {
+    return findDerivedAccount(this.program.programId, "obligation", borrowerAccount, seed)
   }
 
-  async deriveClaimTicketKey(ticketHolder: Address, seed: Uint8Array): Promise<PublicKey> {
-    return await findDerivedAccount(
-      ["claim_ticket", this.address, new PublicKey(ticketHolder), seed],
-      this.program.programId
-    )
+  deriveClaimTicketKey(ticketHolder: Address, seed: Uint8Array): PublicKey {
+    return findDerivedAccount(this.program.programId, "claim_ticket", this.address, new PublicKey(ticketHolder), seed)
   }
 
-  async deriveSplitTicket(user: Address, seed: Uint8Array): Promise<PublicKey> {
-    return await findDerivedAccount(["split_ticket", user, seed], this.program.programId)
+  deriveSplitTicket(user: Address, seed: Uint8Array): PublicKey {
+    return findDerivedAccount(this.program.programId, "split_ticket", user, seed)
   }
 
   async fetchOrderbook(): Promise<Orderbook> {
@@ -368,7 +368,7 @@ export class BondMarket {
   }
 
   async fetchMarginUser(user: MarginAccount): Promise<MarginUserInfo> {
-    let data = (await this.provider.connection.getAccountInfo(await this.deriveMarginUserAddress(user)))!.data
+    let data = (await this.provider.connection.getAccountInfo(this.deriveMarginUserAddress(user)))!.data
 
     return await this.program.coder.accounts.decode("MarginUser", data)
   }
