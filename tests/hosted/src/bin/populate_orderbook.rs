@@ -283,7 +283,7 @@ fn main() -> Result<()> {
         .map(|n| Order {
             base: n.base_quantity,
             quote: Fp32::upcast_fp32(n.price())
-                .u64_mul(n.base_quantity)
+                .decimal_u64_mul(n.base_quantity)
                 .unwrap(),
             price_fp32: n.price(),
             price_f64: ui_price(n.price())
@@ -294,7 +294,7 @@ fn main() -> Result<()> {
         .map(|n| Order {
             base: n.base_quantity,
             quote: Fp32::upcast_fp32(n.price())
-                .u64_mul(n.base_quantity)
+                .decimal_u64_mul(n.base_quantity)
                 .unwrap(),
             price_fp32: n.price(),
             price_f64: ui_price(n.price())
