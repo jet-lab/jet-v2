@@ -1,8 +1,8 @@
-import { assert, expect } from "chai"
+import { assert } from "chai"
 import * as anchor from "@project-serum/anchor"
 import { AnchorProvider, BN } from "@project-serum/anchor"
 import NodeWallet from "@project-serum/anchor/dist/cjs/nodewallet"
-import { Keypair, LAMPORTS_PER_SOL, PublicKey, Transaction } from "@solana/web3.js"
+import { Keypair, LAMPORTS_PER_SOL, PublicKey, Transaction, TransactionInstruction } from "@solana/web3.js"
 
 import { MarginAccount, PoolTokenChange, MarginClient, Pool, MarginPoolConfigData, PoolManager } from "@jet-lab/margin"
 
@@ -287,7 +287,7 @@ describe("margin bonds borrowing", async () => {
     )
 
     const register = await bondMarket.registerAccountWithMarket(marginAccount, payer.publicKey)
-    let ix = []
+    let ix: TransactionInstruction[] = []
     await marginAccount.withAdapterInvoke({
       instructions: ix,
       adapterProgram: bondsProgram.programId,
@@ -307,54 +307,87 @@ describe("margin bonds borrowing", async () => {
     let borrower_a: MarginUserInfo = await bondMarket.fetchMarginUser(marginAccount_A)
     let borrower_b: MarginUserInfo = await bondMarket.fetchMarginUser(marginAccount_B)
 
-    // TODO: figure out why this assert fails
-    // assert(borrower_a.bondManager.toString() === bondMarket.address.toString())
-    // assert(borrower_b.marginAccount.toString() === marginAccount_B.address.toString())
+    assert(borrower_a.bondManager.toBase58() === bondMarket.addresses.bondManager.toBase58())
+    assert(borrower_b.marginAccount.toBase58() === marginAccount_B.address.toBase58())
   })
 
-  it("margin users place lend orders", async () => {})
+  const airdropMarginWallet = async (margin: MarginAccount, token: TestToken, amount: number) => {
+    const tokenAcc = await getAssociatedTokenAddress(token.mint, margin.address, true)
+    await sendToken(provider, token.mint, amount, token.tokenConfig.decimals, ownerKeypair, token.vault, tokenAcc)
+  }
+
+  const withBondsInvoke = async (
+    margin: MarginAccount,
+    ix: TransactionInstruction
+  ): Promise<TransactionInstruction[]> => {
+    let ixns = []
+    await marginAccount_A.withAdapterInvoke({
+      instructions: ixns,
+      adapterProgram: bondsProgram.programId,
+      adapterMetadata: CONFIG.bondsMetadata,
+      adapterInstruction: ix
+    })
+
+    return ixns
+  }
+
+  const makeTx = (ix: TransactionInstruction[]) => {
+    return new Transaction().add(...ix)
+  }
+
+  it("margin users place lend orders", async () => {
+    // give margin spl wallets some liquidity
+    await airdropMarginWallet(marginAccount_A, USDC, 100_000)
+    await airdropMarginWallet(marginAccount_B, USDC, 100_000)
+
+    const lendNowA = await bondMarket.lendNowIx(
+      marginAccount_A,
+      new BN(1_000),
+      wallet_a.payer.publicKey,
+      Uint8Array.from([0, 0, 0, 0])
+    )
+    const offerLoanB = await bondMarket.offerLoanIx(
+      marginAccount_B,
+      new BN(1_500),
+      new BN(1_000),
+      wallet_b.payer.publicKey,
+      Uint8Array.from([0, 0, 0, 0])
+    )
+    const invokeA = await withBondsInvoke(marginAccount_A, lendNowA)
+    const invokeB = await withBondsInvoke(marginAccount_B, offerLoanB)
+
+    provider_a.sendAndConfirm(makeTx(invokeA), [wallet_a.payer])
+    provider_b.sendAndConfirm(makeTx(invokeB), [wallet_b.payer])
+  })
 
   it("margin users place borrow orders", async () => {
-    const borrowNowA = await bondMarket.borrowNowIx(marginAccount_A, wallet_a.payer.publicKey, new BN(1000), new BN(0))
+    const borrowNowA = await bondMarket.borrowNowIx(
+      marginAccount_A,
+      wallet_a.payer.publicKey,
+      new BN(1000),
+      Uint8Array.from([0, 0, 0, 0])
+    )
     const requestBorrowB = await bondMarket.requestBorrowIx(
       marginAccount_B,
       wallet_b.payer.publicKey,
       new BN(1000),
       new BN(1000),
-      new BN(0)
+      Uint8Array.from([0, 0, 0, 0])
     )
-    let ix_a = []
-    let ix_b = []
+    const invokeA = await withBondsInvoke(marginAccount_A, borrowNowA)
+    const invokeB = await withBondsInvoke(marginAccount_B, requestBorrowB)
 
-    await marginAccount_A.withAdapterInvoke({
-      instructions: ix_a,
-      adapterProgram: bondsProgram.programId,
-      adapterMetadata: CONFIG.bondsMetadata,
-      adapterInstruction: borrowNowA
-    })
-    await marginAccount_B.withAdapterInvoke({
-      instructions: ix_b,
-      adapterProgram: bondsProgram.programId,
-      adapterMetadata: CONFIG.bondsMetadata,
-      adapterInstruction: requestBorrowB
-    })
-
-    // await provider_a.sendAndConfirm(new Transaction().add(...ix_a), [wallet_a.payer])
-    // await provider_b.sendAndConfirm(new Transaction().add(...ix_b), [wallet_b.payer])
-
-    console.log("b pubkey: " + provider_b.wallet.publicKey.toString())
-    console.log("b payer: " + wallet_b.payer.publicKey.toString())
-    let tx = new Transaction().add(...ix_b)
-    for (let i in tx.instructions) {
-      for (let j in tx.instructions[i].keys) {
-        if (tx.instructions[i].keys[j].isSigner) {
-          console.log("signer: " + tx.instructions[i].keys[j].pubkey.toString())
-        }
-      }
-    }
+    // TODO: blocked until spl tokens can be positions
+    // await provider_a.sendAndConfirm(new Transaction().add(...invokeA), [wallet_a.payer])
+    // await provider_b.sendAndConfirm(new Transaction().add(...invokeB), [wallet_b.payer])
   })
 
-  it("loads orderbook and has correct orders", async () => {})
+  it("loads orderbook and has correct orders", async () => {
+    const orderbook = await bondMarket.fetchOrderbook()
+
+    console.log(JSON.stringify(orderbook))
+    // TODO make asserts
+  })
 
   it("margin users cancel lend orders", async () => {})
 

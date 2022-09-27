@@ -60,7 +60,7 @@ pub struct MarginBorrowOrder<'info> {
     // pub event_adapter: AccountInfo<'info>,
 }
 
-pub fn handler(ctx: Context<MarginBorrowOrder>, params: OrderParams, seed: u64) -> Result<()> {
+pub fn handler(ctx: Context<MarginBorrowOrder>, params: OrderParams, seed: Vec<u8>) -> Result<()> {
     let (callback_info, order_summary) = ctx.accounts.orderbook_mut.place_order(
         ctx.accounts.borrower_account.key(),
         Side::Ask,
@@ -87,7 +87,7 @@ pub fn handler(ctx: Context<MarginBorrowOrder>, params: OrderParams, seed: u64) 
             ctx.accounts.system_program.to_account_info(),
             &Obligation::make_seeds(
                 ctx.accounts.borrower_account.key().as_ref(),
-                &seed.to_le_bytes(),
+                seed.as_slice(),
             ),
         )?;
         *obligation = Obligation {

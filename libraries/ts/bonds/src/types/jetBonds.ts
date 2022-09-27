@@ -503,7 +503,7 @@ export type JetBonds = {
         },
         {
           name: "seed"
-          type: "u64"
+          type: "bytes"
         }
       ]
     },
@@ -2932,7 +2932,7 @@ export const IDL: JetBonds = {
         },
         {
           name: "seed",
-          type: "u64"
+          type: "bytes"
         }
       ]
     },

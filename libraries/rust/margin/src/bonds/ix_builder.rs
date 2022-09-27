@@ -459,7 +459,7 @@ impl BondsIxBuilder {
         let seed = make_seed(&mut OsRng::default());
         let data = jet_bonds::instruction::MarginBorrowOrder {
             params,
-            seed: u64::from_le_bytes(seed.clone().try_into().unwrap()),
+            seed: seed.clone(),
         }
         .data();
         let accounts = jet_bonds::accounts::MarginBorrowOrder {
