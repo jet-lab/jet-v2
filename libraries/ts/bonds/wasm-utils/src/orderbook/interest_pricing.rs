@@ -1,8 +1,27 @@
 #![allow(unused)]
 //! this has a bunch of alternative implementations for converting between
-//! interest rates and ticket prices.
-//! not all are currently in use, but they're kept around to enable easy
-//! swapping out as we decide how to show interest to users in the ui
+//! interest rates and ticket prices. not all are currently in use, but they're
+//! kept around to enable easy swapping out as we decide how to show interest to
+//! users in the ui
+//!
+//! definitions:
+//! - interest rate: general term for a number that represents growth in value.
+//!   may or may not involve compounding. r% interest represents growth from x
+//!   to x plus r% of x.
+//! - yield: the actual growth in value of an investment, including any
+//!   potential effects of compounding.
+//! - nominal rate: The rate of return that does not include compounding.
+//!   Typically, it has a compounding period that differs from the rate term.
+//!   For example, you may have a compounding period of 1 month, and your yield
+//!   over that month would be 1%. The yearly nominal rate is calculated by
+//!   multiplying the monthly rate of return by 12, which is 12%. Likewise, this
+//!   ignores the effects of compounding. To calculate actual yield, you need to
+//!   know both the rate term and the compounding period.
+//! - continuous nominal rate: Nominal rate with an instantaneous compounding
+//!   period. Yield is calculated by compounding this rate continuously.
+//! - price: the price of a ticket. price = 1 / (1 + yield)
+//! - APY - Annual Percent Yield: yield that would be realized after one year.
+//! - APR - Annual Percent Rate: continuous nominal rate with a yearly term.
 
 use std::f64::consts::E;
 
@@ -19,7 +38,7 @@ pub trait InterestPricer {
     fn yearly_interest_bps_to_fp32_price(interest_bps: u64, tenor_seconds: u64) -> u64 {
         let px = f64_to_fp32(
             1.0 / (1.0
-                + Self::interest_to_single_term_yield(
+                + Self::interest_rate_to_yield(
                     bps_to_f64(interest_bps),
                     SECONDS_PER_YEAR as f64,
                     tenor_seconds as f64,
@@ -29,46 +48,36 @@ pub trait InterestPricer {
         px
     }
     fn price_fp32_to_bps_yearly_interest(price_fp32: u64, tenor_seconds: u64) -> u64 {
-        f64_to_bps(Self::single_term_yield_to_interest(
+        f64_to_bps(Self::yield_to_interest_rate(
             1.0 / fp32_to_f64(price_fp32) - 1.0,
             tenor_seconds as f64,
             SECONDS_PER_YEAR as f64,
         ))
     }
-    /// based on the number representing "interest", return the proportion of growth over the term of one loan
-    fn interest_to_single_term_yield(interest: f64, interest_term: f64, price_term: f64) -> f64;
-    /// based on the proportion of growth over the term of one loan, return the number representing "interest"
-    fn single_term_yield_to_interest(price: f64, price_term: f64, interest_term: f64) -> f64;
+    fn interest_rate_to_yield(interest_rate: f64, interest_term: f64, yield_term: f64) -> f64;
+    fn yield_to_interest_rate(price: f64, yield_term: f64, interest_term: f64) -> f64;
 }
 
-pub struct LinearPricer;
-impl InterestPricer for LinearPricer {
-    fn interest_to_single_term_yield(
-        interest_rate: f64,
-        interest_term: f64,
-        price_term: f64,
-    ) -> f64 {
-        linear_uncompounded_interest_conversion(interest_rate, interest_term, price_term)
+pub struct NominalRatePricer;
+impl InterestPricer for NominalRatePricer {
+    fn interest_rate_to_yield(interest_rate: f64, interest_term: f64, yield_term: f64) -> f64 {
+        nominal_interest_rate_conversion(interest_rate, interest_term, yield_term)
     }
 
-    fn single_term_yield_to_interest(price: f64, price_term: f64, interest_term: f64) -> f64 {
-        linear_uncompounded_interest_conversion(price, price_term, interest_term)
+    fn yield_to_interest_rate(price: f64, yield_term: f64, interest_term: f64) -> f64 {
+        nominal_interest_rate_conversion(price, yield_term, interest_term)
     }
 }
 
 /// yearly interest = yearly rate that is compounded continuously for the tenor duration to receive the price
 pub struct AprPricer;
 impl InterestPricer for AprPricer {
-    fn interest_to_single_term_yield(
-        interest_rate: f64,
-        interest_term: f64,
-        price_term: f64,
-    ) -> f64 {
-        rate_to_yield(interest_rate, interest_term, price_term)
+    fn interest_rate_to_yield(interest_rate: f64, interest_term: f64, yield_term: f64) -> f64 {
+        continuous_nominal_rate_to_yield(interest_rate, interest_term, yield_term)
     }
 
-    fn single_term_yield_to_interest(price: f64, price_term: f64, interest_term: f64) -> f64 {
-        yield_to_rate(price, price_term, interest_term)
+    fn yield_to_interest_rate(price: f64, yield_term: f64, interest_term: f64) -> f64 {
+        yield_to_continuous_nominal_rate(price, yield_term, interest_term)
     }
 }
 
@@ -76,16 +85,12 @@ impl InterestPricer for AprPricer {
 /// for tenor > 1y: yearly interest = annualized yield that would need to be compounded to ultimately receive the price of the tenor
 pub struct ApyPricer;
 impl InterestPricer for ApyPricer {
-    fn interest_to_single_term_yield(
-        interest_rate: f64,
-        interest_term: f64,
-        price_term: f64,
-    ) -> f64 {
-        yield_to_yield(interest_rate, interest_term, price_term)
+    fn interest_rate_to_yield(interest_rate: f64, interest_term: f64, yield_term: f64) -> f64 {
+        yield_to_yield(interest_rate, interest_term, yield_term)
     }
 
-    fn single_term_yield_to_interest(price: f64, price_term: f64, interest_term: f64) -> f64 {
-        yield_to_yield(price, price_term, interest_term)
+    fn yield_to_interest_rate(price: f64, yield_term: f64, interest_term: f64) -> f64 {
+        yield_to_yield(price, yield_term, interest_term)
     }
 }
 
@@ -113,13 +118,13 @@ pub fn bps_to_f64(bps: u64) -> f64 {
 
 /// rate is continuously compounded over some rate_term
 /// yield is the total interest that would occur over the yield term with continuous compounding
-pub fn rate_to_yield(rate: f64, rate_term: f64, yield_term: f64) -> f64 {
+pub fn continuous_nominal_rate_to_yield(rate: f64, rate_term: f64, yield_term: f64) -> f64 {
     E.powf(rate * yield_term / rate_term) - 1f64
 }
 
 /// rate is continuously compounded over some rate_term
 /// yield is the total interest that would occur over the yield term with continuous compounding
-pub fn yield_to_rate(yld: f64, yield_term: f64, rate_term: f64) -> f64 {
+pub fn yield_to_continuous_nominal_rate(yld: f64, yield_term: f64, rate_term: f64) -> f64 {
     (yld + 1.0).ln() * rate_term / yield_term
 }
 
@@ -128,12 +133,9 @@ pub fn yield_to_yield(input: f64, input_term: f64, output_term: f64) -> f64 {
     (1f64 + input).powf(output_term / input_term) - 1f64
 }
 
-pub fn linear_uncompounded_interest_conversion(
-    input: f64,
-    input_term: f64,
-    output_term: f64,
-) -> f64 {
-    input * output_term / input_term
+/// Converts one interest rate to another by scaling it linearly
+pub fn nominal_interest_rate_conversion(input_rate: f64, input_term: f64, output_term: f64) -> f64 {
+    input_rate * output_term / input_term
 }
 
 pub fn linear_rate_to_price_number(interest_rate: u64, tenor: u64) -> u64 {
@@ -216,7 +218,7 @@ mod test {
 
     #[test]
     fn conversions_linear() {
-        generic_conversions::<LinearPricer>()
+        generic_conversions::<NominalRatePricer>()
     }
 
     #[test]
@@ -356,10 +358,13 @@ mod test {
             // conclusion described in the rustdoc. Linear pricing is not
             // effective at comparing different tenors.
             assert!(
-                LinearPricer::price_fp32_to_bps_yearly_interest(
+                NominalRatePricer::price_fp32_to_bps_yearly_interest(
                     monthly_price,
                     SECONDS_PER_YEAR / 12
-                ) < LinearPricer::price_fp32_to_bps_yearly_interest(yearly_price, SECONDS_PER_YEAR)
+                ) < NominalRatePricer::price_fp32_to_bps_yearly_interest(
+                    yearly_price,
+                    SECONDS_PER_YEAR
+                )
             );
         }
     }
@@ -378,7 +383,10 @@ mod test {
 
     #[test]
     fn happy_path() {
-        roughly_eq(0.105_170_918, rate_to_yield(0.1, 1.0, 1.0));
+        roughly_eq(
+            0.105_170_918,
+            continuous_nominal_rate_to_yield(0.1, 1.0, 1.0),
+        );
         roughly_eq(0.126_825_030_131_969_72, yield_to_yield(0.01, 1.0, 12.0));
     }
 
