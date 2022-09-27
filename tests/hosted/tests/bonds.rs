@@ -130,10 +130,10 @@ async fn _full_workflow<P: Proxy>(manager: Arc<BondsTestManager>) -> Result<()> 
     // quote amounts of the post are a result of an fp32 mul, so we cannot directly compare
     assert_eq!(
         Fp32::upcast_fp32(borrow_order.price())
-            .u64_mul(borrow_order.base_quantity)
+            .decimal_u64_mul(borrow_order.base_quantity)
             .unwrap(),
         Fp32::upcast_fp32(borrow_amount.price)
-            .u64_mul(borrow_amount.base)
+            .decimal_u64_mul(borrow_amount.base)
             .unwrap()
     );
 
@@ -162,10 +162,10 @@ async fn _full_workflow<P: Proxy>(manager: Arc<BondsTestManager>) -> Result<()> 
     // quote amounts of the post are a result of an fp32 mul, so we cannot directly compare
     assert_eq!(
         Fp32::upcast_fp32(lend_order.price())
-            .u64_mul(lend_order.base_quantity)
+            .decimal_u64_mul(lend_order.base_quantity)
             .unwrap(),
         Fp32::upcast_fp32(lend_amount.price)
-            .u64_mul(lend_amount.base)
+            .decimal_u64_mul(lend_amount.base)
             .unwrap()
     );
 
