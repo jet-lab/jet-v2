@@ -100,7 +100,7 @@ mod jet_metadata {
         let mut metadata = ctx.accounts.metadata_account.data.borrow_mut();
 
         let offset: usize = offset as usize;
-        (&mut metadata[offset..offset + data.len()]).copy_from_slice(&data);
+        metadata[offset..offset + data.len()].copy_from_slice(&data);
         Ok(())
     }
 

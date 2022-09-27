@@ -380,7 +380,7 @@ impl AccountPositionList {
         self.map[self.length] = key;
 
         self.length += 1;
-        (&mut self.map[..self.length]).sort_by_key(|p| p.mint);
+        (self.map[..self.length]).sort_by_key(|p| p.mint);
 
         // mark position as not free
         free_position.token = mint;
@@ -412,7 +412,7 @@ impl AccountPositionList {
         self.positions[map.index] = Zeroable::zeroed();
 
         // Move the map elements up by 1 to replace map position being removed
-        (&mut self.map).copy_within(map_index + 1..self.length, map_index);
+        self.map.copy_within(map_index + 1..self.length, map_index);
 
         self.length -= 1;
         // Clear the map at the last slot of the array, as it is shifted up
@@ -441,7 +441,7 @@ impl AccountPositionList {
     }
 
     fn get_map_index(&self, mint: &Pubkey) -> Option<usize> {
-        (&self.map[..self.length])
+        self.map[..self.length]
             .binary_search_by_key(mint, |p| p.mint)
             .ok()
     }
