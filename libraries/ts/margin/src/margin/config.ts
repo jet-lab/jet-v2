@@ -1,4 +1,5 @@
 import { Address } from "@project-serum/anchor"
+import axios from "axios"
 
 export const MARGIN_CONFIG_URL = "https://storage.googleapis.com/jet-app-config/config.json"
 export type MarginCluster = "localnet" | "devnet" | "mainnet-beta" | MarginConfig
@@ -50,8 +51,6 @@ export interface MarginMarketConfig {
 }
 
 export async function getLatestConfig(cluster: string): Promise<MarginConfig> {
-  // only works in browser or node version >=18
-  // @ts-ignore
-  let response = await fetch(MARGIN_CONFIG_URL)
-  return (await response.json())[cluster]
+  let response = await axios.get(MARGIN_CONFIG_URL)
+  return (await response.data)[cluster]
 }

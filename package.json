@@ -3,11 +3,18 @@
   "workspaces": [
     "app",
     "libraries/ts/bonds",
-    "libraries/ts"
+    "libraries/ts/margin",
+    "tests"
   ],
   "license": "AGPL-3.0-or-later",
   "scripts": {
-    "build": "npx tsc",
+    "build:all": "yarn build:margin && yarn build:wasm && yarn build:bonds && yarn build:app",
+    "build:margin": "yarn --cwd libraries/ts/margin build",
+    "build:wasm": "wasm-pack build --target nodejs ./libraries/ts/bonds/wasm-utils ; copyfiles -u 1 ./libraries/ts/bonds/wasm-utils/pkg/* ./libraries/ts/bonds/dist/wasm-utils",
+    "build:bonds": "yarn --cwd libraries/ts/bonds build",
+    "build": "yarn --cwd app build:app",
+    "build:cloudflare": "curl https://sh.rustup.rs -sSf | sh -s -- -y && . \"$HOME/.cargo/env\" && cargo install wasm-pack && yarn build:wasm && yarn build:margin && yarn build:bonds && yarn build",
+    "start": "yarn --cwd app start",
     "compile": "npx tsc",
     "docs:rust": "cargo doc -p jet-margin -p jet-margin-pool -p jet-margin-swap --no-deps && cp -r ./target/doc/* ./docs/margin-rust",
     "fmt": "prettier --check .",
@@ -18,31 +25,7 @@
     "test": "./check",
     "test:devnet": "npx ts-mocha -p ./tsconfig.json -t 1000000 tests/declarative/*.sim.ts",
     "test:nobuild": "anchor test --skip-lint --skip-build -- --features testing",
-    "test:gui": "cd app && yarn e2e:gui && cd ../app-beta && yarn e2e:gui"
-  },
-  "dependencies": {
-    "@jet-lab/jet-bonds-client": "*",
-    "@jet-lab/margin": "*",
-    "@project-serum/anchor": "0.24.2",
-    "@project-serum/serum": "^0.13.65",
-    "@pythnetwork/client": "^2.7.0",
-    "@solana/spl-token": "^0.2.0",
-    "@solana/web3.js": "1.56.2"
-  },
-  "devDependencies": {
-    "@tsconfig/recommended": "^1.0.1",
-    "@types/bn.js": "^5.1.0",
-    "@types/chai": "^4.3.1",
-    "@types/mocha": "^9.1.1",
-    "@typescript-eslint/eslint-plugin": "^5.27.1",
-    "@typescript-eslint/parser": "^5.27.1",
-    "chai": "^4.3.6",
-    "eslint": "^7.32.0",
-    "husky": "^8.0.1",
-    "mocha": "^10.0.0",
-    "prettier": "^2.5.1",
-    "ts-mocha": "^10.0.0",
-    "typescript": "4.6.4",
-    "wasm-pack": "^0.10.3"
+    "test:gui": "cd app && yarn e2e:gui && cd ../app-beta && yarn e2e:gui",
+    "dev": "yarn --cwd libraries/ts/margin watch & yarn --cwd libraries/ts/bonds watch & yarn --cwd app dev"
   }
 }

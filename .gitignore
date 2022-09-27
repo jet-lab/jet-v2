@@ -1,11 +1,12 @@
 ignore/**
-**/lib
-**/dist
+lib
+dist
 test-ledger
 
 .anchor
 .DS_Store
 .terraform*
+*.tgz
 target
 **/*.rs.bk
 node_modules
@@ -13,5 +14,9 @@ lcov.info
 .husky
 .vscode
 yarn-error.log
+tsconfig.tsbuildinfo
 
+app/build
+
+.env
 # documentations

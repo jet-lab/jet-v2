@@ -1,14 +1,18 @@
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { Dictionary } from '../../state/settings/localization/localization';
 import { ReorderArrows } from '../misc/ReorderArrows';
-import { Typography } from 'antd';
+import { Button, Input, Typography } from 'antd';
 import { FixedLendRowOrder } from '../../state/views/fixed-term';
+import { FixedMarketAtom } from '../../state/fixed/fixed-term-market-sync';
+import { CurrentAccount } from '../../state/user/accounts';
 
 export const FixedLendOrderEntry = () => {
   const dictionary = useRecoilValue(Dictionary);
   const [rowOrder, setRowOrder] = useRecoilState(FixedLendRowOrder);
+  const market = useRecoilValue(FixedMarketAtom);
+  const marginAccount = useRecoilValue(CurrentAccount);
 
-  const { Paragraph, Text } = Typography;
+  const { Paragraph } = Typography;
 
   return (
     <div className="order-entry fixed-lend-entry view-element view-element-hidden flex column">
@@ -18,7 +22,11 @@ export const FixedLendOrderEntry = () => {
           <Paragraph className="order-entry-head-top-title">{dictionary.fixedView.lend.title}</Paragraph>
         </div>
       </div>
-      <Text>Content will go here</Text>
+      <div className="order-entry-body">
+        <Input placeholder="enter order value" type="number" />
+        <Input placeholder="enter interest" type="number" />
+        <Button>Create Lend Order</Button>
+      </div>
     </div>
   );
 };
