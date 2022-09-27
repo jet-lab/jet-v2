@@ -356,8 +356,8 @@ describe("margin bonds borrowing", async () => {
     const invokeA = await withBondsInvoke(marginAccount_A, lendNowA)
     const invokeB = await withBondsInvoke(marginAccount_B, offerLoanB)
 
-    provider_a.sendAndConfirm(makeTx(invokeA), [wallet_a.payer])
-    provider_b.sendAndConfirm(makeTx(invokeB), [wallet_b.payer])
+    await provider_a.sendAndConfirm(makeTx(invokeA), [wallet_a.payer])
+    await provider_b.sendAndConfirm(makeTx(invokeB), [wallet_b.payer])
   })
 
   it("margin users place borrow orders", async () => {
