@@ -36,7 +36,7 @@ pub fn refresh_position_config_handler(ctx: Context<RefreshPositionConfig>) -> R
 
     let position = account.refresh_position_metadata(
         &config.mint,
-        config.token_kind.into(),
+        config.token_kind,
         config.value_modifier,
         config.max_staleness,
     )?;

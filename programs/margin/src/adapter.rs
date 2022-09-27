@@ -322,7 +322,7 @@ fn register_position(
             mint.decimals,
             token_account.key(),
             config.adapter_program().unwrap_or_default(),
-            config.token_kind.into(),
+            config.token_kind,
             config.value_modifier,
             config.max_staleness,
             approvals,
