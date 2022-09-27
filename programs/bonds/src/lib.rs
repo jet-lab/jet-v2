@@ -114,7 +114,7 @@ pub mod orderbook;
 pub mod tickets;
 
 mod errors;
-mod events;
+pub mod events;
 pub use errors::BondsError;
 
 /// Utilities for safely serializing and deserializing solana accounts
