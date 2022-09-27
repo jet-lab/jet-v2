@@ -11,8 +11,12 @@ use solana_sdk::{
 use spl_associated_token_account::get_associated_token_address;
 
 pub use jet_bonds::{
-    control::instructions::{InitializeBondManagerParams, InitializeOrderbookParams},
+    control::{
+        instructions::{InitializeBondManagerParams, InitializeOrderbookParams},
+        state::BondManager,
+    },
     orderbook::state::{event_queue_len, orderbook_slab_len, OrderParams},
+    ID,
 };
 
 use crate::ix_builder::get_metadata_address;
