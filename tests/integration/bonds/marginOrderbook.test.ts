@@ -321,7 +321,7 @@ describe("margin bonds borrowing", async () => {
     ix: TransactionInstruction
   ): Promise<TransactionInstruction[]> => {
     let ixns = []
-    await marginAccount_A.withAdapterInvoke({
+    await margin.withAdapterInvoke({
       instructions: ixns,
       adapterProgram: bondsProgram.programId,
       adapterMetadata: CONFIG.bondsMetadata,
@@ -358,6 +358,8 @@ describe("margin bonds borrowing", async () => {
 
     await provider_a.sendAndConfirm(makeTx(invokeA), [wallet_a.payer])
     await provider_b.sendAndConfirm(makeTx(invokeB), [wallet_b.payer])
+
+    // TODO assert proper user token balances
   })
 
   it("margin users place borrow orders", async () => {
@@ -385,11 +387,10 @@ describe("margin bonds borrowing", async () => {
   it("loads orderbook and has correct orders", async () => {
     const orderbook = await bondMarket.fetchOrderbook()
 
-    console.log(JSON.stringify(orderbook))
-    // TODO make asserts
+    // TODO make asserts on order validity
   })
 
-  it("margin users cancel lend orders", async () => {})
-
-  it("margin users cancel borrow orders", async () => {})
+  it("margin users cancel orders", async () => {
+    // TODO cancel orders and assert user token balances are correct
+  })
 })
