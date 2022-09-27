@@ -828,7 +828,7 @@
         <span class="self">self</span>.<span class="ident">map</span>[<span class="self">self</span>.<span class="ident">length</span>] <span class="op">=</span> <span class="ident">key</span>;
 
         <span class="self">self</span>.<span class="ident">length</span> <span class="op">+</span><span class="op">=</span> <span class="number">1</span>;
-        (<span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">map</span>[..<span class="self">self</span>.<span class="ident">length</span>]).<span class="ident">sort_by_key</span>(<span class="op">|</span><span class="ident">p</span><span class="op">|</span> <span class="ident">p</span>.<span class="ident">mint</span>);
+        (<span class="self">self</span>.<span class="ident">map</span>[..<span class="self">self</span>.<span class="ident">length</span>]).<span class="ident">sort_by_key</span>(<span class="op">|</span><span class="ident">p</span><span class="op">|</span> <span class="ident">p</span>.<span class="ident">mint</span>);
 
         <span class="comment">// mark position as not free</span>
         <span class="ident">free_position</span>.<span class="ident">token</span> <span class="op">=</span> <span class="ident">mint</span>;
@@ -860,7 +860,7 @@
         <span class="self">self</span>.<span class="ident">positions</span>[<span class="ident">map</span>.<span class="ident">index</span>] <span class="op">=</span> <span class="ident">Zeroable::zeroed</span>();
 
         <span class="comment">// Move the map elements up by 1 to replace map position being removed</span>
-        (<span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">map</span>).<span class="ident">copy_within</span>(<span class="ident">map_index</span> <span class="op">+</span> <span class="number">1</span>..<span class="self">self</span>.<span class="ident">length</span>, <span class="ident">map_index</span>);
+        <span class="self">self</span>.<span class="ident">map</span>.<span class="ident">copy_within</span>(<span class="ident">map_index</span> <span class="op">+</span> <span class="number">1</span>..<span class="self">self</span>.<span class="ident">length</span>, <span class="ident">map_index</span>);
 
         <span class="self">self</span>.<span class="ident">length</span> <span class="op">-</span><span class="op">=</span> <span class="number">1</span>;
         <span class="comment">// Clear the map at the last slot of the array, as it is shifted up</span>
@@ -889,7 +889,7 @@
     }
 
     <span class="kw">fn</span> <span class="ident">get_map_index</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">mint</span>: <span class="kw-2">&amp;</span><span class="ident">Pubkey</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span> {
-        (<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">map</span>[..<span class="self">self</span>.<span class="ident">length</span>])
+        <span class="self">self</span>.<span class="ident">map</span>[..<span class="self">self</span>.<span class="ident">length</span>]
             .<span class="ident">binary_search_by_key</span>(<span class="ident">mint</span>, <span class="op">|</span><span class="ident">p</span><span class="op">|</span> <span class="ident">p</span>.<span class="ident">mint</span>)
             .<span class="ident">ok</span>()
     }

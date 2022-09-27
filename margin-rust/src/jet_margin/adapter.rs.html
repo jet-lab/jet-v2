@@ -436,7 +436,6 @@
 <span id="436">436</span>
 <span id="437">437</span>
 <span id="438">438</span>
-<span id="439">439</span>
 </pre><pre class="rust"><code><span class="comment">// SPDX-License-Identifier: AGPL-3.0-or-later</span>
 <span class="comment">//</span>
 <span class="comment">// Copyright (C) 2022 JET PROTOCOL HOLDINGS, LLC.</span>
@@ -667,8 +666,8 @@
                     <span class="ident">net_registration</span> <span class="op">+</span><span class="op">=</span> <span class="number">1</span>;
                 }
             },
-            <span class="ident">PositionChange::Close</span>(<span class="ident">token_account</span>) =&gt; <span class="kw">match</span> <span class="ident">position</span> {
-                <span class="prelude-val">Some</span>(<span class="ident">pos</span>) =&gt; {
+            <span class="ident">PositionChange::Close</span>(<span class="ident">token_account</span>) =&gt; {
+                <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">pos</span>) <span class="op">=</span> <span class="ident">position</span> {
                     <span class="kw">if</span> <span class="ident">pos</span>.<span class="ident">address</span> <span class="op">!</span><span class="op">=</span> <span class="ident">token_account</span> {
                         <span class="macro">msg!</span>(<span class="string">&quot;position registered for this mint with a different token account&quot;</span>);
                         <span class="kw">return</span> <span class="macro">err!</span>(<span class="ident">ErrorCode::PositionNotRegisterable</span>);
@@ -681,8 +680,7 @@
                     <span class="ident">key</span> <span class="op">=</span> <span class="prelude-val">None</span>;
                     <span class="ident">net_registration</span> <span class="op">-</span><span class="op">=</span> <span class="number">1</span>;
                 }
-                <span class="prelude-val">None</span> =&gt; (),
-            },
+            }
         }
     }
     <span class="prelude-val">Ok</span>(<span class="kw">match</span> <span class="ident">net_registration</span> {
