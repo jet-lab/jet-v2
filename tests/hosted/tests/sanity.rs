@@ -76,7 +76,7 @@ async fn setup_environment(ctx: &MarginTestContext) -> Result<TestEnv, Error> {
                         price: pool_info.oracle.price,
                         product: pool_info.oracle.product,
                     },
-                    token_kind: pool_info.token_kind.into(),
+                    token_kind: pool_info.token_kind,
                     collateral_weight: pool_info.collateral_weight,
                 }),
             )

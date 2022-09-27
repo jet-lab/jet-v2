@@ -1100,7 +1100,7 @@ mod tests {
             _ => (),
         }
 
-        acc.register_position(key, 2, key, key, kind.into(), 10000, 0, &approvals)?;
+        acc.register_position(key, 2, key, key, kind, 10000, 0, &approvals)?;
 
         Ok(key)
     }
