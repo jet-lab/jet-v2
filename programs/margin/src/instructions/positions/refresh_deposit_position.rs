@@ -37,7 +37,7 @@ pub fn refresh_deposit_position_handler(ctx: Context<RefreshDepositPosition>) ->
     let mut margin_account = ctx.accounts.margin_account.load_mut()?;
     let config = &ctx.accounts.config;
 
-    match config.oracle {
+    match config.oracle() {
         Some(TokenOracle::Pyth { price, .. }) => {
             let price_oracle_key = ctx.accounts.price_oracle.key();
             if price_oracle_key != price {

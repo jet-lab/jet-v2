@@ -56,7 +56,7 @@ impl From<jet_metadata::TokenKind> for TokenKind {
 /// The configuration account specifying parameters for a token when used
 /// in a position within a margin account.
 #[account]
-#[derive(Default, Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq)]
 pub struct TokenConfig {
     /// The mint for the token
     pub mint: Pubkey,
@@ -67,18 +67,9 @@ pub struct TokenConfig {
     /// The space this config is valid within
     pub airspace: Pubkey,
 
-    /// The adapter program in control of positions of this token
-    ///
-    /// If this is `None`, then the margin program is in control of this asset, and
-    /// thus determining its price. The `oracle` field must be set to allow the margin
-    /// program to price the asset.
-    pub adapter_program: Option<Pubkey>,
-
-    /// The oracle for the token
-    ///
-    /// This only has effect in the margin program when the price for the token is not
-    /// being managed by an adapter.
-    pub oracle: Option<TokenOracle>,
+    /// The administrator of this token, which has the authority to provide information
+    /// about (e.g. prices) and otherwise modify position states for these tokens.
+    pub admin: TokenAdmin,
 
     /// Description of this token
     ///
@@ -102,19 +93,21 @@ impl TokenConfig {
             return err!(ErrorCode::InvalidConfig);
         }
 
-        match (&self.adapter_program, &self.oracle) {
-            (&Some(_), &Some(_)) => {
-                msg!("cannot set both adapter and oracle for a token");
-                return err!(ErrorCode::InvalidConfig);
-            }
-            (None, None) => {
-                msg!("must set either adapter or oracle for a token");
-                return err!(ErrorCode::InvalidConfig);
-            }
-            _ => (),
-        }
-
         Ok(())
+    }
+
+    pub fn adapter_program(&self) -> Option<Pubkey> {
+        match self.admin {
+            TokenAdmin::Adapter(address) => Some(address),
+            _ => None
+        }
+    }
+
+    pub fn oracle(&self) -> Option<TokenOracle> {
+        match self.admin {
+            TokenAdmin::Margin { oracle } => Some(oracle),
+            _ => None
+        }
     }
 }
 
@@ -128,6 +121,21 @@ pub enum TokenOracle {
         /// The pyth address with product information for a token
         product: Pubkey,
     },
+}
+
+/// Description of which program administers a token
+#[derive(AnchorSerialize, AnchorDeserialize, Debug, Eq, PartialEq, Clone, Copy)]
+pub enum TokenAdmin {
+    /// This margin program administers the token directly
+    Margin {
+        /// An oracle that can be used to collect price information for a token
+        oracle: TokenOracle
+    },
+
+    /// The token is administered by the given adapter program
+    /// 
+    /// The adapter is responsible for providing price information for the token.
+    Adapter(Pubkey),
 }
 
 /// Configuration for allowed liquidators

@@ -707,7 +707,7 @@ impl MarginTxBuilder {
                 continue;
             }
 
-            let token_oracle = match p_config.oracle.unwrap() {
+            let token_oracle = match p_config.oracle().unwrap() {
                 TokenOracle::Pyth { price, .. } => price,
             };
 

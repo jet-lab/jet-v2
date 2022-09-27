@@ -321,7 +321,7 @@ fn register_position(
             mint.key(),
             mint.decimals,
             token_account.key(),
-            config.adapter_program.unwrap_or_default(),
+            config.adapter_program().unwrap_or_default(),
             config.token_kind.into(),
             config.value_modifier,
             config.max_staleness,

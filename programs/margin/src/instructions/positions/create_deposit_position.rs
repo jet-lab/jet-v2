@@ -66,7 +66,7 @@ pub fn create_deposit_position_handler(ctx: Context<CreateDepositPosition>) -> R
         position_token.key(),
         position_token.decimals,
         address,
-        config.adapter_program.unwrap_or_default(),
+        config.adapter_program().unwrap_or_default(),
         config.token_kind.into(),
         config.value_modifier,
         config.max_staleness,

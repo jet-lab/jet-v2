@@ -20,18 +20,15 @@ use anchor_lang::{prelude::*, AccountsClose};
 use anchor_spl::token::Mint;
 use jet_airspace::state::Airspace;
 
-use crate::{seeds::TOKEN_CONFIG_SEED, ErrorCode, TokenConfig, TokenKind, TokenOracle};
+use crate::{seeds::TOKEN_CONFIG_SEED, ErrorCode, TokenConfig, TokenKind, TokenAdmin};
 
 #[derive(AnchorDeserialize, AnchorSerialize, Debug, Eq, PartialEq, Clone)]
 pub struct TokenConfigUpdate {
     /// The underlying token represented, if any
     pub underlying_mint: Pubkey,
 
-    /// The adapter program in control of positions of this token
-    pub adapter_program: Option<Pubkey>,
-
-    /// The oracle for the token
-    pub oracle: Option<TokenOracle>,
+    /// The administration authority for the token
+    pub admin: TokenAdmin,
 
     /// Description of this token
     pub token_kind: TokenKind,
@@ -96,8 +93,7 @@ pub fn configure_token_handler(
     config.mint = ctx.accounts.mint.key();
     config.airspace = ctx.accounts.airspace.key();
     config.underlying_mint = updated_config.underlying_mint;
-    config.adapter_program = updated_config.adapter_program;
-    config.oracle = updated_config.oracle;
+    config.admin = updated_config.admin;
     config.token_kind = updated_config.token_kind;
     config.value_modifier = updated_config.value_modifier;
     config.max_staleness = updated_config.max_staleness;

@@ -24,7 +24,7 @@ use crate::{
     },
     solana::transaction::TransactionBuilder,
 };
-use jet_margin::{TokenConfigUpdate, TokenKind, TokenOracle};
+use jet_margin::{TokenAdmin, TokenConfigUpdate, TokenKind, TokenOracle};
 
 /// Utility for constructing transactions for administrative functions on protocol
 /// resources within an airspace.
@@ -85,18 +85,16 @@ impl AirspaceAdmin {
 
         if let Some(metadata) = &config.metadata {
             let mut deposit_note_config_update = TokenConfigUpdate {
-                adapter_program: Some(jet_margin_pool::ID),
+                admin: TokenAdmin::Adapter(jet_margin_pool::ID),
                 underlying_mint: token_mint,
-                oracle: None,
                 token_kind: metadata.token_kind.into(),
                 value_modifier: metadata.collateral_weight,
                 max_staleness: 0,
             };
 
             let mut loan_note_config_update = TokenConfigUpdate {
-                adapter_program: Some(jet_margin_pool::ID),
+                admin: TokenAdmin::Adapter(jet_margin_pool::ID),
                 underlying_mint: token_mint,
-                oracle: None,
                 token_kind: TokenKind::Claim,
                 value_modifier: metadata.max_leverage,
                 max_staleness: 0,
@@ -128,12 +126,13 @@ impl AirspaceAdmin {
     ) -> TransactionBuilder {
         let margin_config_ix = MarginConfigIxBuilder::new(self.airspace, self.payer);
         let config_update = config.map(|config| TokenConfigUpdate {
-            adapter_program: None,
             underlying_mint: token_mint,
-            oracle: Some(config.oracle),
             token_kind: config.token_kind,
             value_modifier: config.collateral_weight,
             max_staleness: 0,
+            admin: TokenAdmin::Margin {
+                oracle: config.oracle,
+            },
         });
 
         vec![margin_config_ix.configure_token(token_mint, config_update)].into()
