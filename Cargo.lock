@@ -1849,7 +1849,7 @@ dependencies = [
  "bytemuck",
  "futures",
  "futures-retry",
- "itertools 0.10.4",
+ "itertools 0.10.5",
  "jet-bonds",
  "jet-control",
  "jet-margin",
@@ -2062,9 +2062,9 @@ dependencies = [
 
 [[package]]
 name = "itertools"
-version = "0.10.4"
+version = "0.10.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d8bf247779e67a9082a4790b45e71ac7cfd1321331a5c856a74a9faebdab78d0"
+checksum = "b0fd2260e829bddf4cb6ea802289de2f86d6a7a690192fbe91b3f46e0f2c8473"
 dependencies = [
  "either",
 ]
@@ -2153,7 +2153,7 @@ dependencies = [
  "anchor-spl",
  "bitflags",
  "bytemuck",
- "itertools 0.10.4",
+ "itertools 0.10.5",
  "jet-metadata",
  "jet-proto-math 1.1.0 (git+https://github.com/jet-lab/program-libraries?branch=main)",
  "jet-proto-proc-macros",
@@ -2235,7 +2235,7 @@ dependencies = [
 [[package]]
 name = "jet-proto-math"
 version = "1.1.0"
-source = "git+https://github.com/jet-lab/program-libraries?branch=fixed-point-math#1847a3abe629f99e1942f7d5ae34b4b3d74820d2"
+source = "git+https://github.com/jet-lab/program-libraries?branch=fixed-point-math#9b9a5a72718f3af8322b31e61b182772d28eec11"
 dependencies = [
  "anchor-lang",
  "bytemuck",
@@ -2428,9 +2428,9 @@ checksum = "0717cef1bc8b636c6e1c1bbdefc09e6322da8a9321966e8928ef80d20f7f770f"
 
 [[package]]
 name = "lock_api"
-version = "0.4.8"
+version = "0.4.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9f80bf5aacaf25cbfc8210d1cfb718f2bf3b11c4c54e5afe36c236853a8ec390"
+checksum = "435011366fe56583b16cf956f9df0095b405b82d76425bc8981c0e22e60ec4df"
 dependencies = [
  "autocfg",
  "scopeguard",
@@ -2793,9 +2793,9 @@ dependencies = [
 
 [[package]]
 name = "once_cell"
-version = "1.14.0"
+version = "1.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2f7254b99e31cad77da24b08ebf628882739a608578bb1bcdfc1f9c21260d7c0"
+checksum = "e82dad04139b71a90c080c8463fe0dc7902db5192d939bd0950f074d014339e1"
 
 [[package]]
 name = "opaque-debug"
@@ -3360,9 +3360,9 @@ dependencies = [
 
 [[package]]
 name = "reqwest"
-version = "0.11.11"
+version = "0.11.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b75aa69a3f06bbcc66ede33af2af253c6f7a86b1ca0033f60c580a27074fbf92"
+checksum = "431949c384f4e2ae07605ccaa56d1d9d2ecdb5cadd4f9577ccfab29f2e5149fc"
 dependencies = [
  "async-compression",
  "base64 0.13.0",
@@ -3377,9 +3377,9 @@ dependencies = [
  "hyper-rustls",
  "ipnet",
  "js-sys",
- "lazy_static",
  "log",
  "mime",
+ "once_cell",
  "percent-encoding",
  "pin-project-lite",
  "rustls",
@@ -4041,7 +4041,7 @@ dependencies = [
  "futures-util",
  "indexmap",
  "indicatif",
- "itertools 0.10.4",
+ "itertools 0.10.5",
  "jsonrpc-core",
  "lazy_static",
  "log",
@@ -4262,7 +4262,7 @@ dependencies = [
  "console_log",
  "curve25519-dalek",
  "getrandom 0.1.16",
- "itertools 0.10.4",
+ "itertools 0.10.5",
  "js-sys",
  "lazy_static",
  "libsecp256k1",
@@ -4294,7 +4294,7 @@ dependencies = [
  "base64 0.13.0",
  "bincode",
  "enum-iterator",
- "itertools 0.10.4",
+ "itertools 0.10.5",
  "libc",
  "libloading",
  "log",
@@ -4359,7 +4359,7 @@ dependencies = [
  "fnv",
  "im",
  "index_list",
- "itertools 0.10.4",
+ "itertools 0.10.5",
  "lazy_static",
  "log",
  "lz4",
@@ -4419,7 +4419,7 @@ dependencies = [
  "ed25519-dalek-bip32",
  "generic-array",
  "hmac 0.12.1",
- "itertools 0.10.4",
+ "itertools 0.10.5",
  "js-sys",
  "lazy_static",
  "libsecp256k1",
@@ -4495,7 +4495,7 @@ dependencies = [
  "futures-util",
  "histogram",
  "indexmap",
- "itertools 0.10.4",
+ "itertools 0.10.5",
  "libc",
  "log",
  "nix",
@@ -5514,6 +5514,7 @@ dependencies = [
  "bytemuck",
  "jet-proto-math 1.1.0 (git+https://github.com/jet-lab/program-libraries?branch=fixed-point-math)",
  "js-sys",
+ "rand_chacha 0.3.1",
  "serde",
  "wasm-bindgen",
 ]
