@@ -1,10 +1,13 @@
 #![allow(unused)]
-//! this has a bunch of alternative implementations for converting between
-//! interest rates and ticket prices. not all are currently in use, but they're
-//! kept around to enable easy swapping out as we decide how to show interest to
-//! users in the ui
+//! Convert between interest rates and ticket prices.
 //!
-//! definitions:
+//! This has three different implementations for three different ways of
+//! defining "interest rate": APR, APY, and Nominal. Not all are currently in
+//! use, but they're kept around to enable easy swapping out as we decide how to
+//! show interest to users in the ui. At some point, we may decide to display
+//! different types of interest in different parts of the ui.
+//!
+//! Definitions:
 //! - interest rate: general term for a number that represents growth in value.
 //!   may or may not involve compounding. r% interest represents growth from x
 //!   to x plus r% of x.
@@ -20,8 +23,8 @@
 //! - continuous nominal rate: Nominal rate with an instantaneous compounding
 //!   period. Yield is calculated by compounding this rate continuously.
 //! - price: the price of a ticket. price = 1 / (1 + yield)
-//! - APY - Annual Percent Yield: yield that would be realized after one year.
-//! - APR - Annual Percent Rate: continuous nominal rate with a yearly term.
+//! - APY: Annual Percent Yield: yield that would be realized after one year.
+//! - APR: Annual Percent Rate: continuous nominal rate with a yearly term.
 
 use std::f64::consts::E;
 
@@ -95,14 +98,14 @@ impl InterestPricer for ApyPricer {
 }
 
 pub fn f64_to_fp32(f: f64) -> u64 {
-    let shifted = f * (1u64 << 32) as f64;
+    let shifted = f * FP32_ONE as f64;
     assert!(shifted <= u64::MAX as f64);
     assert!(shifted >= 0.0);
     shifted.round() as u64
 }
 
 pub fn fp32_to_f64(fp: u64) -> f64 {
-    (fp as f64) / (1u64 << 32) as f64
+    fp as f64 / FP32_ONE as f64
 }
 
 pub fn f64_to_bps(f: f64) -> u64 {
@@ -198,10 +201,10 @@ mod test {
     fn price_of_one_is_zero_interest() {
         assert_eq!(
             0,
-            PricerImpl::price_fp32_to_bps_yearly_interest(1 << 32, SECONDS_PER_YEAR)
+            PricerImpl::price_fp32_to_bps_yearly_interest(FP32_ONE as u64, SECONDS_PER_YEAR)
         );
         assert_eq!(
-            1 << 32,
+            FP32_ONE as u64,
             PricerImpl::yearly_interest_bps_to_fp32_price(0, SECONDS_PER_YEAR)
         );
     }
@@ -382,7 +385,7 @@ mod test {
         let actual_price = P::yearly_interest_bps_to_fp32_price(bps, tenor);
         roughly_eq(
             1.0 / (1.0 + expected_yield),
-            actual_price as f64 / (1u64 << 32) as f64,
+            actual_price as f64 / FP32_ONE as f64,
         );
     }
 

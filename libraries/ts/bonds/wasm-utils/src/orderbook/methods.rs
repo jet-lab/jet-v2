@@ -1,10 +1,10 @@
-use jet_proto_math::fixed_point::{Fp32, FP32_ONE};
+use jet_proto_math::fixed_point::Fp32;
 use js_sys::{Array, Uint8Array};
 use wasm_bindgen::prelude::*;
 
 use super::{
     critbit::Slab,
-    interest_pricing::{InterestPricer, PricerImpl},
+    interest_pricing::{fp32_to_f64, InterestPricer, PricerImpl},
     types::Order,
 };
 
@@ -85,7 +85,7 @@ pub fn rate_to_price(interest_rate: u64, tenor: u64) -> u64 {
 /// Converts a fixed point 32 price to an f64 for UI display
 #[wasm_bindgen]
 pub fn ui_price(price: u64) -> f64 {
-    price as f64 / FP32_ONE as f64
+    fp32_to_f64(price)
 }
 
 #[wasm_bindgen]
