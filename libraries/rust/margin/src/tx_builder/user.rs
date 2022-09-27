@@ -31,7 +31,7 @@ use solana_sdk::transaction::Transaction;
 
 use anchor_lang::{AccountDeserialize, Id};
 
-use jet_margin::{MarginAccount, TokenConfig, TokenOracle, TokenKind};
+use jet_margin::{MarginAccount, TokenConfig, TokenKind, TokenOracle};
 use jet_margin_pool::TokenChange;
 use jet_simulation::solana_rpc_api::SolanaRpcClient;
 

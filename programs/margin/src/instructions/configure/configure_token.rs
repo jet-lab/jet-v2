@@ -20,7 +20,7 @@ use anchor_lang::{prelude::*, AccountsClose};
 use anchor_spl::token::Mint;
 use jet_airspace::state::Airspace;
 
-use crate::{seeds::TOKEN_CONFIG_SEED, ErrorCode, TokenConfig, TokenKind, TokenAdmin};
+use crate::{seeds::TOKEN_CONFIG_SEED, ErrorCode, TokenAdmin, TokenConfig, TokenKind};
 
 #[derive(AnchorDeserialize, AnchorSerialize, Debug, Eq, PartialEq, Clone)]
 pub struct TokenConfigUpdate {

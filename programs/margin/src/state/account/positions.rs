@@ -255,9 +255,7 @@ impl AccountPosition {
         }
 
         match self.kind() {
-            TokenKind::Collateral => {
-                authority_approved && !adapter_approved
-            }
+            TokenKind::Collateral => authority_approved && !adapter_approved,
             TokenKind::Claim | TokenKind::AdapterCollateral => {
                 authority_approved && adapter_approved
             }

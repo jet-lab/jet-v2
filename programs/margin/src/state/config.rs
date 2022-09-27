@@ -99,14 +99,14 @@ impl TokenConfig {
     pub fn adapter_program(&self) -> Option<Pubkey> {
         match self.admin {
             TokenAdmin::Adapter(address) => Some(address),
-            _ => None
+            _ => None,
         }
     }
 
     pub fn oracle(&self) -> Option<TokenOracle> {
         match self.admin {
             TokenAdmin::Margin { oracle } => Some(oracle),
-            _ => None
+            _ => None,
         }
     }
 }
@@ -129,11 +129,11 @@ pub enum TokenAdmin {
     /// This margin program administers the token directly
     Margin {
         /// An oracle that can be used to collect price information for a token
-        oracle: TokenOracle
+        oracle: TokenOracle,
     },
 
     /// The token is administered by the given adapter program
-    /// 
+    ///
     /// The adapter is responsible for providing price information for the token.
     Adapter(Pubkey),
 }

@@ -28,7 +28,7 @@ use std::result::Result;
 
 use crate::{
     util::{Invocation, Require},
-    ErrorCode, MAX_PRICE_QUOTE_AGE, MAX_USER_POSITIONS, TokenKind,
+    ErrorCode, TokenKind, MAX_PRICE_QUOTE_AGE, MAX_USER_POSITIONS,
 };
 
 mod positions;
