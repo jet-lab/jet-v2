@@ -228,8 +228,8 @@ fn apply_changes(
                     net_registration += 1;
                 }
             },
-            PositionChange::Close(token_account) => match position {
-                Some(pos) => {
+            PositionChange::Close(token_account) => {
+                if let Some(pos) = position {
                     if pos.address != token_account {
                         msg!("position registered for this mint with a different token account");
                         return err!(ErrorCode::PositionNotRegisterable);
@@ -242,8 +242,7 @@ fn apply_changes(
                     key = None;
                     net_registration -= 1;
                 }
-                None => (),
-            },
+            }
         }
     }
     Ok(match net_registration {
