@@ -380,8 +380,8 @@ describe("margin bonds borrowing", async () => {
     const invokeB = await withBondsInvoke(marginAccount_B, requestBorrowB)
 
     // TODO: blocked until spl tokens can be positions
-    await provider_a.sendAndConfirm(makeTx(invokeA), [wallet_a.payer])
-    await provider_b.sendAndConfirm(makeTx(invokeB), [wallet_b.payer])
+    // await provider_a.sendAndConfirm(makeTx(invokeA), [wallet_a.payer])
+    // await provider_b.sendAndConfirm(makeTx(invokeB), [wallet_b.payer])
   })
 
   it("loads orderbook and has correct orders", async () => {

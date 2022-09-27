@@ -133,15 +133,19 @@ export class BondMarket {
    * class for interaction with the market
    *
    * @param program The anchor `JetBonds` program
-   * @param address The address of the `bondManager` account
+   * @param bondManager The address of the `bondManager` account
    * @returns
    */
-  static async load(program: Program<JetBonds>, address: Address, jetMetadataProgramId: Address): Promise<BondMarket> {
-    let data = await fetchData(program.provider.connection, address)
+  static async load(
+    program: Program<JetBonds>,
+    bondManager: Address,
+    jetMetadataProgramId: Address
+  ): Promise<BondMarket> {
+    let data = await fetchData(program.provider.connection, bondManager)
     let info: BondManagerInfo = program.coder.accounts.decode("BondManager", data)
     const claimsMetadata = await findDerivedAccount([info.claimsMint], new PublicKey(jetMetadataProgramId))
 
-    return new BondMarket(new PublicKey(address), new PublicKey(claimsMetadata), program, info)
+    return new BondMarket(new PublicKey(bondManager), new PublicKey(claimsMetadata), program, info)
   }
 
   async requestBorrowIx(
