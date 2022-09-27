@@ -20,4 +20,4 @@ wasm-bindgen = { version = "0.2.82", features = ["serde-serialize"] }
 jet-proto-math = { git = "https://github.com/jet-lab/program-libraries", branch = "fixed-point-math", features = ["fixed-point", "number"] }
 
 [dev-dependencies]
-rand = "0.8.5"
+rand_chacha = "0.3.1"

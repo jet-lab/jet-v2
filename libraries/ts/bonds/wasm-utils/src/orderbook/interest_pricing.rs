@@ -162,6 +162,8 @@ pub fn price_to_linear_rate_number(price: u64, tenor: u64) -> u64 {
 
 #[cfg(test)]
 mod test {
+    use rand_chacha::rand_core::{SeedableRng, RngCore};
+
     use super::*;
 
     /// any price that would cause negative interest cannot be represented
@@ -232,9 +234,7 @@ mod test {
     }
 
     fn generic_conversions<P: InterestPricer>() {
-        use rand::RngCore;
-
-        let mut rng = rand::thread_rng();
+        let mut rng = rand_chacha::ChaCha8Rng::seed_from_u64(10);
         let nums: Vec<_> = (0..1024)
             .map(|_| {
                 let x: u64 = rng.next_u64() % 10_000;
@@ -337,8 +337,8 @@ mod test {
         /// year, because 1.00797414042890374107^12 = 1.1
         ///
         /// Using either APY or APR, it is clear that the monthly tenors have
-        /// equivalent yield. Linear pricing suggests they have a different
-        /// yield, which is not helpful.
+        /// equivalent yield. Nominal pricing without a standard compounding
+        /// term suggests they have a different yield, which is not helpful.
         #[test]
         fn equal_profitability() {
             let monthly_price = f64_to_fp32(1.0 / 1.0079741404289037);
@@ -352,11 +352,16 @@ mod test {
                 AprPricer::price_fp32_to_bps_yearly_interest(monthly_price, SECONDS_PER_YEAR / 12),
                 AprPricer::price_fp32_to_bps_yearly_interest(yearly_price, SECONDS_PER_YEAR)
             );
-            // Linear pricing says that the monthly has lower interest, which
-            // would imply that you should invest in the yearly unless you need
-            // the liquidity of the shorter term loan. This is contrary to the
-            // conclusion described in the rustdoc. Linear pricing is not
-            // effective at comparing different tenors.
+            // Nominal pricing with differing compounding terms (based on the
+            // tenor) suggest that the monthly has lower interest, which would
+            // imply that you should invest in the yearly unless you need the
+            // liquidity of the shorter term loan. This is contrary to the
+            // conclusion described in the rustdoc. This form of nominal pricing
+            // is not effective at comparing different tenors. A common
+            // compounding term is required to make interest rates comparable
+            // across different tenors, which means the tenor itself cannot be
+            // the compounding term.  A continuous compounding term seems to be
+            // the most universal choice.
             assert!(
                 NominalRatePricer::price_fp32_to_bps_yearly_interest(
                     monthly_price,
