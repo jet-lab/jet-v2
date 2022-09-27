@@ -162,7 +162,7 @@ pub fn price_to_linear_rate_number(price: u64, tenor: u64) -> u64 {
 
 #[cfg(test)]
 mod test {
-    use rand_chacha::rand_core::{SeedableRng, RngCore};
+    use rand_chacha::rand_core::{RngCore, SeedableRng};
 
     use super::*;
 
