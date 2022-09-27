@@ -44,6 +44,10 @@ pub struct CliOpts {
     #[clap(global = true, long)]
     pub dry_run: bool,
 
+    /// Don't ask for confirmation
+    #[clap(global = true, long)]
+    pub no_confirm: bool,
+
     /// The path to the signer to use (i.e. keypair or ledger-wallet)
     #[clap(global = true, long, short = 'k')]
     pub signer_path: Option<String>,
@@ -170,6 +174,27 @@ pub enum BondsCommand {
 
 #[serde_as]
 #[derive(Debug, Subcommand, Deserialize)]
+#[serde(tag = "test-action")]
+pub enum TestCommand {
+    /// Initialize a test environment
+    InitEnv {
+        /// A config file specifying the resources to be intiailized
+        config_path: PathBuf,
+    },
+
+    /// Generate the application config from a test environment
+    GenerateAppConfig {
+        /// The config path used to initialize the environment
+        config_path: PathBuf,
+
+        /// The output file path for the generated config
+        #[clap(long, short = 'o')]
+        output: PathBuf,
+    },
+}
+
+#[serde_as]
+#[derive(Debug, Subcommand, Deserialize)]
 #[serde(tag = "action")]
 pub enum Command {
     /// Deploy a program via governance/multisig
@@ -231,6 +256,12 @@ pub enum Command {
         #[clap(subcommand)]
         subcmd: BondsCommand,
     },
+
+    /// Test management
+    Test {
+        #[clap(subcommand)]
+        subcmd: TestCommand,
+    },
 }
 
 pub async fn run(opts: CliOpts) -> Result<()> {
@@ -239,7 +270,7 @@ pub async fn run(opts: CliOpts) -> Result<()> {
         .map(solana_clap_utils::input_validators::normalize_to_url_if_moniker);
     let client_config = ClientConfig::new(
         opts.dry_run,
-        false,
+        opts.no_confirm,
         opts.signer_path,
         rpc_endpoint,
         opts.compute_budget,
@@ -270,6 +301,7 @@ pub async fn run(opts: CliOpts) -> Result<()> {
         Command::Margin { subcmd } => run_margin_command(&client, subcmd).await?,
         Command::MarginPool { subcmd } => run_margin_pool_command(&client, subcmd).await?,
         Command::Bonds { subcmd } => run_bonds_command(&client, subcmd).await?,
+        Command::Test { subcmd } => run_test_command(&client, subcmd).await?,
     };
 
     if let Some(proposal_id) = opts.target_proposal {
@@ -360,5 +392,18 @@ async fn run_bonds_command(client: &Client, command: BondsCommand) -> Result<Pla
         BondsCommand::CreateMarket(params) => {
             actions::bonds::process_create_bond_market(client, params).await
         }
+    }
+}
+
+async fn run_test_command(client: &Client, command: TestCommand) -> Result<Plan> {
+    match command {
+        TestCommand::InitEnv { config_path } => {
+            actions::test::process_init_env(client, config_path).await
+        }
+
+        TestCommand::GenerateAppConfig {
+            config_path,
+            output,
+        } => actions::test::process_generate_app_config(client, config_path, output).await,
     }
 }

@@ -127,7 +127,7 @@ impl AirspaceAdmin {
         let margin_config_ix = MarginConfigIxBuilder::new(self.airspace, self.payer);
         let config_update = config.map(|config| TokenConfigUpdate {
             underlying_mint: token_mint,
-            token_kind: config.token_kind,
+            token_kind: TokenKind::Collateral,
             value_modifier: config.collateral_weight,
             max_staleness: 0,
             admin: TokenAdmin::Margin {
@@ -180,12 +180,6 @@ impl AirspaceAdmin {
 pub struct TokenDepositsConfig {
     /// The oracle for the token
     pub oracle: TokenOracle,
-
-    /// Description of this token
-    ///
-    /// This determines the way the margin program values a token as a position in a
-    /// margin account.
-    pub token_kind: TokenKind,
 
     /// Adjust the collateral value of deposits in the associated token
     pub collateral_weight: u16,

@@ -94,9 +94,10 @@ async fn margin() -> Result<()> {
         auto_stake: true,
     };
     let mut ixs = vec![
-        pricer.set_oracle_price_tx(&collateral, 1.0).unwrap(),
+        pricer.set_oracle_price_tx(&collateral, 1.0).await.unwrap(),
         pricer
             .set_oracle_price_tx(&manager.ix_builder.token_mint(), 1.0)
+            .await
             .unwrap(),
     ];
     ixs.extend(user.margin_borrow_order(borrow_params).await.unwrap());

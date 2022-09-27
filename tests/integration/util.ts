@@ -1,4 +1,4 @@
-import { AnchorProvider } from '@project-serum/anchor';
+import { AnchorProvider, translateAddress } from '@project-serum/anchor';
 import NodeWallet from '@project-serum/anchor/dist/cjs/nodewallet';
 import {
   AccountLayout,
@@ -52,7 +52,8 @@ export const DEFAULT_MARGIN_CONFIG: MarginConfig = {
   serumProgramId: SystemProgram.programId,
   url: 'http://localhost',
   tokens: {},
-  markets: {}
+  markets: {},
+  airspaces: []
 };
 
 export interface TestToken {

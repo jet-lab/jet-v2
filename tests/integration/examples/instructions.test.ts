@@ -101,7 +101,7 @@ describe('Typescript examples', () => {
       await marginAccount.withUpdatePositionBalance({ instructions, position: position_B });
 
       // Both position_A and position_B are the same position
-      assert.equal(position_A.toString, position_B.toString);
+      assert.equal(position_A.toString(), position_B.toString());
     });
 
     it('Update the metadata for a position stored in the margin account', async () => {

@@ -11,7 +11,7 @@ use serde::{ser::SerializeStruct, Deserialize, Serialize, Serializer};
 pub struct BondManager {
     /// Versioning and tag information
     pub version_tag: u64,
-    /// The address allowed to make changes to this program state
+    /// The airspace the market is a part of
     pub airspace: Pubkey,
     /// The market state of the agnostic orderbook
     pub orderbook_market_state: Pubkey,
@@ -55,9 +55,10 @@ pub struct BondManager {
 
 impl BondManager {
     /// for signing CPIs with the bond manager account
-    pub fn authority_seeds(&self) -> [&[u8]; 4] {
+    pub fn authority_seeds(&self) -> [&[u8]; 5] {
         [
             crate::seeds::BOND_MANAGER,
+            self.airspace.as_ref(),
             self.underlying_token_mint.as_ref(),
             &self.seed,
             &self.bump,

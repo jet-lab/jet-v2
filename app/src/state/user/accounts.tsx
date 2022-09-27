@@ -11,6 +11,7 @@ import { ActionRefresh, ACTION_REFRESH_INTERVAL } from '../actions/actions';
 import { walletParam, WalletTokens } from './walletTokens';
 import { Pools } from '../pools/pools';
 import { useProvider } from '../../utils/jet/provider';
+import { MarginConfig } from '../config/marginConfig';
 
 // Interfaces for account order and tx history
 export interface AccountHistory {
@@ -87,6 +88,7 @@ export const AccountHistoryLoaded = atom({
 // A syncer to be called so that we can have dependent atom state
 export function useAccountsSyncer() {
   const cluster = useRecoilValue(Cluster);
+  const marginConfig = useRecoilValue(MarginConfig);
   const dictionary = useRecoilValue(Dictionary);
   const { programs, provider } = useProvider();
   const { publicKey } = useWallet();
@@ -191,7 +193,7 @@ export function useAccountsSyncer() {
 
       const mints: any = {};
       for (const pool of Object.values(pools.tokenPools)) {
-        mints[pool.symbol] = {
+        mints[pool.name] = {
           tokenMint: pool.addresses.tokenMint,
           depositNoteMint: pool.addresses.depositNoteMint,
           loanNoteMint: pool.addresses.loanNoteMint
@@ -203,7 +205,7 @@ export function useAccountsSyncer() {
         currentAccount.provider,
         currentAccount.address,
         mints,
-        cluster
+        marginConfig
       );
 
       setAccountHistoryLoaded(true);

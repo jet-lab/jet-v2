@@ -29,8 +29,7 @@ export function AirdropButton(): JSX.Element {
     }
 
     setSendingTransaction(true);
-    const [txId, resp] = await airdrop(currentPool);
-    const amount = currentPool.symbol === 'SOL' ? '1' : '100';
+    const [amount, txId, resp] = await airdrop(currentPool);
     if (resp === ActionResponse.Success) {
       notify(
         dictionary.notifications.actions.successTitle.replace('{{ACTION}}', dictionary.poolsView.poolDetail.airdrop),
@@ -63,19 +62,19 @@ export function AirdropButton(): JSX.Element {
     setSendingTransaction(false);
   }
 
-  if (cluster === 'devnet') {
-    return (
-      <Button
-        type="dashed"
-        style={{ marginLeft: 20 }}
-        onClick={() => (connected ? doAirdrop() : setWalletModalOpen(true))}
-        disabled={!currentPool || sendingTransaction}
-        loading={sendingTransaction}
-        icon={<CloudFilled />}>
-        {dictionary.poolsView.poolDetail.airdrop}
-      </Button>
-    );
-  } else {
+  if (cluster === 'mainnet-beta') {
     return <></>;
   }
+
+  return (
+    <Button
+      type="dashed"
+      style={{ marginLeft: 20 }}
+      onClick={() => (connected ? doAirdrop() : setWalletModalOpen(true))}
+      disabled={!currentPool || sendingTransaction}
+      loading={sendingTransaction}
+      icon={<CloudFilled />}>
+      {dictionary.poolsView.poolDetail.airdrop}
+    </Button>
+  );
 }

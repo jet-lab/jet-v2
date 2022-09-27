@@ -1,6 +1,6 @@
 import { useRecoilState } from 'recoil';
 import { Pool } from '@jet-lab/margin';
-import { CurrentPoolSymbol } from '../../../state/pools/pools';
+import { CurrentPoolTokenName } from '../../../state/pools/pools';
 import { formatRate } from '../../../utils/format';
 import { useCurrencyFormatting } from '../../../utils/currency';
 import { TokenLogo } from '../../misc/TokenLogo';
@@ -9,7 +9,7 @@ import { Skeleton, Typography } from 'antd';
 // Component for each row of the PoolsTable
 export const PoolRow = (props: { pool: Pool }) => {
   const { pool } = props;
-  const [currentPoolSymbol, setCurrentPoolSymbol] = useRecoilState(CurrentPoolSymbol);
+  const [currentPoolTokenName, setCurrentPoolTokenName] = useRecoilState(CurrentPoolTokenName);
   const { currencyFormatter, currencyAbbrev } = useCurrencyFormatting();
   const poolPrice = currencyFormatter(pool.tokenPrice, true);
   const { Text } = Typography;
@@ -20,7 +20,7 @@ export const PoolRow = (props: { pool: Pool }) => {
   // Returns the class list for the PoolRow
   function getRowClassnames() {
     return `ant-table-row ant-table-row-level-0 ${pool.symbol}-pools-table-row ${
-      pool.symbol === currentPoolSymbol ? 'active' : ''
+      pool.symbol === currentPoolTokenName ? 'active' : ''
     }`;
   }
 
@@ -89,7 +89,7 @@ export const PoolRow = (props: { pool: Pool }) => {
   }
 
   return (
-    <tr className={getRowClassnames()} onClick={() => setCurrentPoolSymbol(pool.symbol)} key={pool.symbol}>
+    <tr className={getRowClassnames()} onClick={() => setCurrentPoolTokenName(pool.name)} key={pool.name}>
       <td className="ant-table-cell" style={{ textAlign: 'left' }}>
         <div className="table-token">
           <TokenLogo height={22} symbol={pool?.symbol} />

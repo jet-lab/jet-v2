@@ -254,7 +254,7 @@ fn override_pool_config_with_options(
         management_fee_rate,
     } = margin_pool;
 
-    let orig_params = config.parameters.clone().unwrap();
+    let orig_params = config.parameters.unwrap();
     let params = config.parameters.as_mut().unwrap();
 
     override_field!(overridden, params, flags);
@@ -323,7 +323,7 @@ async fn download_margin_pool_config(
         .await?;
 
     Ok(MarginPoolConfiguration {
-        parameters: Some(margin_pool_data.config.clone()),
+        parameters: Some(margin_pool_data.config),
         pyth_price: Some(margin_pool_data.token_price_oracle),
         pyth_product: None,
         metadata: Some(TokenMetadataParams {

@@ -75,6 +75,7 @@ impl From<BondManager> for BondsIxBuilder {
             authority: Pubkey::default(), //todo
             manager: bonds_pda(&[
                 seeds::BOND_MANAGER,
+                bond_manager.airspace.as_ref(),
                 bond_manager.underlying_token_mint.as_ref(),
                 &bond_manager.seed,
             ]),
@@ -92,6 +93,7 @@ impl From<BondManager> for BondsIxBuilder {
 
 impl BondsIxBuilder {
     pub fn new(
+        airspace: Pubkey,
         underlying_mint: Pubkey,
         manager: Pubkey,
         authority: Pubkey,
@@ -106,7 +108,7 @@ impl BondsIxBuilder {
         let collateral = bonds_pda(&[jet_bonds::seeds::DEPOSIT_NOTES, manager.as_ref()]);
         let keys = Keys::default();
         Self {
-            airspace: Pubkey::default(), // fixme airspace
+            airspace,
             authority,
             manager,
             underlying_mint,
@@ -122,14 +124,16 @@ impl BondsIxBuilder {
 
     /// derives the bond manager key from a mint and seed
     pub fn new_from_seed(
+        airspace: &Pubkey,
         mint: &Pubkey,
         seed: [u8; 32],
         authority: Pubkey,
         underlying_oracle: Pubkey,
     ) -> Self {
         let builder = Self::new(
+            *airspace,
             *mint,
-            Self::bond_manager_key(mint, seed),
+            Self::bond_manager_key(airspace, mint, seed),
             authority,
             underlying_oracle,
         );
@@ -688,8 +692,13 @@ impl BondsIxBuilder {
 }
 
 impl BondsIxBuilder {
-    pub fn bond_manager_key(mint: &Pubkey, seed: [u8; 32]) -> Pubkey {
-        bonds_pda(&[jet_bonds::seeds::BOND_MANAGER, mint.as_ref(), &seed])
+    pub fn bond_manager_key(airspace: &Pubkey, mint: &Pubkey, seed: [u8; 32]) -> Pubkey {
+        bonds_pda(&[
+            jet_bonds::seeds::BOND_MANAGER,
+            airspace.as_ref(),
+            mint.as_ref(),
+            &seed,
+        ])
     }
     pub fn split_ticket_key(&self, user: &Pubkey, seed: Vec<u8>) -> Pubkey {
         bonds_pda(&[
@@ -718,6 +727,26 @@ impl BondsIxBuilder {
     pub fn jet_bonds_id() -> Pubkey {
         jet_bonds::ID
     }
+}
+
+pub fn derive_bond_manager(airspace: &Pubkey, token_mint: &Pubkey, seed: [u8; 32]) -> Pubkey {
+    bonds_pda(&[
+        jet_bonds::seeds::BOND_MANAGER,
+        airspace.as_ref(),
+        token_mint.as_ref(),
+        &seed,
+    ])
+}
+
+pub fn derive_bond_manager_from_duration_seed(
+    airspace: &Pubkey,
+    token_mint: &Pubkey,
+    duration: i64,
+) -> Pubkey {
+    let mut seed = [0u8; 32];
+    seed[..8].copy_from_slice(&duration.to_le_bytes());
+
+    derive_bond_manager(airspace, token_mint, seed)
 }
 
 pub fn bonds_pda(seeds: &[&[u8]]) -> Pubkey {

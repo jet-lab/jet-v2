@@ -23,6 +23,9 @@ mod margin;
 mod margin_pool;
 mod margin_swap;
 
+/// Instruction builder for the protocol test service
+pub mod test_service;
+
 pub use airspace::*;
 pub use control::*;
 pub use margin::*;

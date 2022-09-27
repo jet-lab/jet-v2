@@ -61,8 +61,14 @@ impl Client {
         seed: [u8; 32],
         token_oracle: Pubkey,
     ) -> Result<Self> {
-        let mut ix = BondsIxBuilder::new_from_seed(&mint, seed, signer.pubkey(), token_oracle)
-            .with_payer(&signer.pubkey());
+        let mut ix = BondsIxBuilder::new_from_seed(
+            &Pubkey::default(),
+            &mint,
+            seed,
+            signer.pubkey(),
+            token_oracle,
+        )
+        .with_payer(&signer.pubkey());
         let bond_manager = {
             let data = conn.get_account_data(&ix.manager())?;
 

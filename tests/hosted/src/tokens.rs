@@ -22,6 +22,7 @@ use std::time::Duration;
 use anyhow::{bail, Error};
 use bytemuck::Zeroable;
 
+use jet_margin_sdk::ix_builder::test_service::{self, derive_token_info};
 use jet_margin_sdk::solana::transaction::{SendTransactionBuilder, TransactionBuilder};
 use jet_margin_sdk::tokens::{TokenOracle, TokenPrice};
 use jet_margin_sdk::util::asynchronous::with_retries_and_timeout;
@@ -323,14 +324,14 @@ impl TokenManager {
     /// Set the oracle price of a token
     pub async fn set_price(&self, mint: &Pubkey, price: &TokenPrice) -> Result<(), Error> {
         self.rpc
-            .send_and_confirm(self.set_price_tx(mint, price)?)
+            .send_and_confirm(self.set_price_tx(mint, price).await?)
             .await?;
 
         Ok(())
     }
 
     /// Set the oracle price of a token
-    pub fn set_price_tx(
+    pub async fn set_price_tx(
         &self,
         mint: &Pubkey,
         price: &TokenPrice,
@@ -355,7 +356,21 @@ impl TokenManager {
             &jet_metadata::ID,
         );
 
-        self.set_pod_metadata_tx(&price_address, &price_data)
+        let mut tx = self.set_pod_metadata_tx(&price_address, &price_data)?;
+
+        let mint_info = derive_token_info(mint);
+
+        if self.rpc.get_account(&mint_info).await?.is_some() {
+            tx.instructions.push(test_service::token_update_pyth_price(
+                &self.rpc.payer().pubkey(),
+                mint,
+                price.price,
+                price.confidence as i64,
+                price.exponent,
+            ));
+        }
+
+        Ok(tx)
     }
 
     /// Get the current balance of a token account

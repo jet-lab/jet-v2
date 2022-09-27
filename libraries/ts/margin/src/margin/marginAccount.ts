@@ -292,7 +292,7 @@ export class MarginAccount {
 
   /**
    * Derive the address of the config account for a given token.
-   * 
+   *
    * @param tokenMint The mint address for the token to derive the config address for.
    */
   findTokenConfigAddress(tokenMint: Address): PublicKey {
@@ -395,7 +395,8 @@ export class MarginAccount {
       let liquidationData: LiquidationData | undefined = undefined
       if (!marginAccount.liquidation.equals(PublicKey.default)) {
         liquidationData =
-          (await this.programs.margin.account.liquidationState.fetchNullable(marginAccount.liquidation))?.state ?? undefined
+          (await this.programs.margin.account.liquidationState.fetchNullable(marginAccount.liquidation))?.state ??
+          undefined
       }
       this.info = {
         marginAccount,
@@ -414,9 +415,8 @@ export class MarginAccount {
     const poolConfigs = Object.values(this.programs.config.tokens)
 
     for (let i = 0; i < poolConfigs.length; i++) {
-      const poolConfig = poolConfigs[i]
-      const tokenConfig = this.programs.config.tokens[poolConfig.symbol]
-      const pool = this.pools?.[poolConfig.symbol]
+      const tokenConfig = poolConfigs[i]
+      const pool = this.pools?.[tokenConfig.symbol]
       if (!pool?.info) {
         continue
       }
@@ -447,16 +447,16 @@ export class MarginAccount {
         collateralWeight.isZero() || lamportPrice.isZero()
           ? Number128.ZERO
           : this.valuation.requiredCollateral
-            .sub(this.valuation.effectiveCollateral.mul(warningRiskLevel))
-            .div(collateralWeight.mul(warningRiskLevel))
-            .div(lamportPrice)
+              .sub(this.valuation.effectiveCollateral.mul(warningRiskLevel))
+              .div(collateralWeight.mul(warningRiskLevel))
+              .div(lamportPrice)
       ).toTokenAmount(pool.decimals)
 
       // Buying power
       // FIXME
       const buyingPower = TokenAmount.zero(pool.decimals)
 
-      positions[poolConfig.symbol] = {
+      positions[tokenConfig.symbol] = {
         tokenConfig,
         pool,
         depositPosition: depositNotePosition,
@@ -784,11 +784,10 @@ export class MarginAccount {
     // Build out the map
     const map: Record<string, AssociatedToken> = {}
     for (let i = 0; i < poolConfigs.length; i++) {
-      const poolConfig = poolConfigs[i]
-      const tokenConfig = programs.config.tokens[poolConfig.symbol]
+      const tokenConfig = poolConfigs[i]
 
       // Find the associated token pubkey
-      const mint = translateAddress(poolConfig.mint)
+      const mint = translateAddress(tokenConfig.mint)
       const associatedTokenOrNative = mint.equals(NATIVE_MINT)
         ? ownerAddress
         : AssociatedToken.derive(mint, ownerAddress)
@@ -800,7 +799,7 @@ export class MarginAccount {
       }
 
       // Add it to the map
-      map[poolConfig.symbol] = token
+      map[tokenConfig.symbol] = token
     }
     return { all, map }
   }
@@ -1325,22 +1324,29 @@ export class MarginAccount {
 
   /**
    * Get instruction to create a new deposit position
-   * 
+   *
    * ## Remarks
-   * 
+   *
    * A deposit position are tokens deposited directly into a margin account, without the use
    * of any other programs (like pools).
-   * 
+   *
    * @param args
    * @param {TransactionInstruction[]} args.instructions Instructions array to append to.
    * @param {Address} args.tokenMint The mint for the relevant token for the position
    * @return {Promise<PublicKey>} Returns the address of the token account to be created for the position.
    */
-  async withCreateDepositPosition({ instructions, tokenMint }: { instructions: TransactionInstruction[], tokenMint: Address }): Promise<PublicKey> {
+  async withCreateDepositPosition({
+    instructions,
+    tokenMint
+  }: {
+    instructions: TransactionInstruction[]
+    tokenMint: Address
+  }): Promise<PublicKey> {
     const tokenAccount = AssociatedToken.derive(tokenMint, this.address)
     const tokenConfig = this.findTokenConfigAddress(tokenMint)
 
-    const ix = await this.programs.margin.methods.createDepositPosition()
+    const ix = await this.programs.margin.methods
+      .createDepositPosition()
       .accounts({
         authority: this.owner,
         payer: this.provider.wallet.publicKey,

@@ -21,6 +21,7 @@ import {
   ParsedInnerInstruction,
   PartiallyDecodedInstruction
 } from "@solana/web3.js"
+import assert from "assert"
 
 interface TokenMintsList {
   tokenMint: PublicKey
@@ -201,6 +202,7 @@ export class MarginClient {
       const matchingPost = parsedTx.meta.postTokenBalances?.find(
         post => post.mint === pre.mint && post.owner === pre.owner
       )
+
       if (matchingPost && matchingPost.uiTokenAmount.amount !== pre.uiTokenAmount.amount) {
         let token: MarginTokenConfig | null = null
         let tokenIn: MarginTokenConfig | null = null
@@ -236,8 +238,7 @@ export class MarginClient {
         }
 
         for (let j = 0; j < Object.entries(mints).length; j++) {
-          const tokenAbbrev = Object.entries(mints)[j][0]
-          const tokenMints = Object.entries(mints)[j][1]
+          const [tokenName, tokenMints] = Object.entries(mints)[j]
           if (
             Object.values(tokenMints)
               .map((t: PublicKey) => t.toBase58())
@@ -261,7 +262,7 @@ export class MarginClient {
               const firstMint = await getAccount(provider.connection, new PublicKey(firstTransferIxSource))
               const sourceAccountMint = await getAccount(provider.connection, new PublicKey(finalTransferIxSource))
               const tokenConfig = Object.values(config.tokens).find(config =>
-                sourceAccountMint.mint.equals(new PublicKey(config.mint))
+                sourceAccountMint.mint.equals(translateAddress(config.mint))
               )
               const firstTokenConfig = Object.values(config.tokens).find(config =>
                 firstMint.mint.equals(new PublicKey(config.mint))
@@ -269,7 +270,9 @@ export class MarginClient {
               token = tokenConfig as MarginTokenConfig
               tokenIn = firstTokenConfig as MarginTokenConfig
             } else {
-              token = config.tokens[tokenAbbrev] as MarginTokenConfig
+              token = Object.values(config.tokens).find(config =>
+                config.name == tokenName
+              ) as MarginTokenConfig
             }
             if (
               translateAddress(token.mint).equals(NATIVE_MINT) &&
@@ -290,10 +293,9 @@ export class MarginClient {
     provider: AnchorProvider,
     pubKey: PublicKey,
     mints: Mints,
-    cluster: MarginCluster,
+    config: MarginConfig,
     pageSize = 100
   ): Promise<AccountTransaction[]> {
-    const config = await MarginClient.getConfig(cluster)
     const signatures = await provider.connection.getSignaturesForAddress(pubKey, undefined, "confirmed")
     const jetTransactions: ParsedTransactionWithMeta[] = []
     let page = 0
