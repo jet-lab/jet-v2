@@ -3,31 +3,31 @@ match the actual balance stored by the SPL token acount.</p>
 <p>This instruction does the following:</p>
 <ol>
 <li>
-<p>Let <code>margin_account</code> be a mutable reference to the margin account.</p>
+<p>Load the margin account.</p>
 </li>
 <li>
-<p>Let <code>token_account</code> be a reference to the token account.</p>
+<p>Load the token account.</p>
 </li>
 <li>
-<p>Load a margin account position and update it with <code>token_account</code>, <code>account</code>, and <code>balance</code>.</p>
+<p>Update the margin account position.</p>
 </li>
 <li>
-<p>Emit the <code>PositionBalanceUpdated</code> event for data logging (see table below).</p>
+<p>Emit the <a href="../events/struct.PositionBalanceUpdated.html" title="events::PositionBalanceUpdated"><code>events::PositionBalanceUpdated</code></a> event (see Events table below) for data logging.</p>
 </li>
 <li>
 <p>Return <code>Ok(())</code>.</p>
 </li>
 </ol>
-<p><strong>Parameters of update_position_balance.rs:</strong></p>
-<div><table><thead><tr><th></th><th></th></tr></thead><tbody>
-<tr><td><strong>Name</strong></td><td><strong>Description</strong></td></tr>
-<tr><td><code>margin_account</code></td><td>The margin account to update.</td></tr>
-<tr><td><code>token_account</code></td><td>The token account to update the balance for.</td></tr>
+<p><strong><a href="../accounts/struct.UpdatePositionBalance.html">Accounts</a> expected with update_position_balance.rs:</strong></p>
+<div><table><thead><tr><th></th><th></th><th></th></tr></thead><tbody>
+<tr><td><strong>Name</strong></td><td></td><td><strong>Type</strong></td></tr>
+<tr><td><code>margin_account</code></td><td><code>writable</code></td><td>The margin account to update.</td></tr>
+<tr><td><code>token_account</code></td><td><code>read_only</code></td><td>The token account to update the balance for.</td></tr>
 </tbody></table>
 </div>
 <p><strong>Events emitted by update_position_balance.rs:</strong></p>
 <div><table><thead><tr><th></th><th></th></tr></thead><tbody>
 <tr><td><strong>Event Name</strong></td><td><strong>Description</strong></td></tr>
-<tr><td><a href="../events/struct.PositionBalanceUpdated.html" title="events::PositionBalanceUpdated"><code>events::PositionBalanceUpdated</code></a></td><td>The updated position (includes the token account, margin account pubkey, and token balance).</td></tr>
+<tr><td><a href="../events/struct.PositionBalanceUpdated.html" title="events::PositionBalanceUpdated"><code>events::PositionBalanceUpdated</code></a></td><td>The updated position.</td></tr>
 </tbody></table>
 </div></div></details></section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="jet_margin" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0 (a55dd71d5 2022-09-19)" ></div></body></html>
