@@ -7,6 +7,7 @@ use agnostic_orderbook::state::{
     orderbook::OrderBookState,
     AccountTag,
 };
+use anchor_lang::Discriminator;
 use anchor_lang::{AccountDeserialize, AnchorSerialize, InstructionData, ToAccountMetas};
 use anchor_spl::token::TokenAccount;
 use anyhow::Result;
@@ -23,6 +24,7 @@ use jet_margin_sdk::{
     ix_builder::{
         get_control_authority_address, get_metadata_address, ControlIxBuilder, MarginIxBuilder,
     },
+    jet_metadata::PositionTokenMetadata,
 };
 use jet_metadata::TokenKind;
 use jet_proto_math::fixed_point::Fp32;
@@ -356,7 +358,7 @@ impl TestManager {
 
     pub async fn register_bonds_position_metadatata(&self) -> Result<()> {
         let manager = self.load_manager().await?;
-        let pos_data = jet_margin_sdk::jet_metadata::PositionTokenMetadata {
+        let pos_data = PositionTokenMetadata {
             position_token_mint: manager.claims_mint,
             underlying_token_mint: manager.underlying_token_mint,
             adapter_program: jet_bonds::ID,
@@ -378,12 +380,11 @@ impl TestManager {
             .to_account_metas(None),
             data: jet_metadata::instruction::CreateEntry {
                 seed: String::new(),
-                space: std::mem::size_of::<jet_margin_sdk::jet_metadata::PositionTokenMetadata>()
-                    as u64,
+                space: 8 + std::mem::size_of::<PositionTokenMetadata>() as u64,
             }
             .data(),
         };
-        let mut metadata = vec![];
+        let mut metadata = PositionTokenMetadata::discriminator().to_vec();
         pos_data.serialize(&mut metadata)?;
 
         let set = Instruction {
@@ -400,8 +401,7 @@ impl TestManager {
             .data(),
         };
 
-        self.sign_send_transaction(&[create], None).await?;
-        self.sign_send_transaction(&[set], None).await?;
+        self.sign_send_transaction(&[create, set], None).await?;
 
         Ok(())
     }

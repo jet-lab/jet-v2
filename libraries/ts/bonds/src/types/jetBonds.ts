@@ -411,7 +411,13 @@ export type JetBonds = {
           name: "tokenProgram"
           isMut: false
           isSigner: false
-        }
+        },
+        {
+          name: "claimsMetadata"
+          isMut: false
+          isSigner: false
+          docs: ["Token metadata account used by the margin program to register claims positions"]
+        },
       ]
       args: []
     },
@@ -448,12 +454,6 @@ export type JetBonds = {
           isMut: true
           isSigner: false
           docs: ["Token mint used by the margin program to track the debt that must be collateralized"]
-        },
-        {
-          name: "claimsMetadata"
-          isMut: false
-          isSigner: false
-          docs: ["Token metadata account used by the margin program to register claims positions"]
         },
         {
           name: "bondManager"
@@ -2846,7 +2846,13 @@ export const IDL: JetBonds = {
           name: "tokenProgram",
           isMut: false,
           isSigner: false
-        }
+        },
+        {
+          name: "claimsMetadata",
+          isMut: false,
+          isSigner: false,
+          docs: ["Token metadata account used by the margin program to register claims positions"]
+        },
       ],
       args: []
     },
@@ -2883,12 +2889,6 @@ export const IDL: JetBonds = {
           isMut: true,
           isSigner: false,
           docs: ["Token mint used by the margin program to track the debt that must be collateralized"]
-        },
-        {
-          name: "claimsMetadata",
-          isMut: false,
-          isSigner: false,
-          docs: ["Token metadata account used by the margin program to register claims positions"]
         },
         {
           name: "bondManager",
