@@ -15,6 +15,8 @@ pub use jet_bonds::{
     orderbook::state::{event_queue_len, orderbook_slab_len, OrderParams},
 };
 
+use crate::ix_builder::get_metadata_address;
+
 use super::event_builder::make_seed;
 
 use super::error::{client_err, BondsIxError, Result};
@@ -456,6 +458,8 @@ impl BondsIxBuilder {
             self.manager.as_ref(),
             user.as_ref(),
         ]);
+        let claims_metadata = get_metadata_address(&self.claims);
+
         let seed = make_seed(&mut OsRng::default());
         let data = jet_bonds::instruction::MarginBorrowOrder {
             params,
@@ -469,11 +473,13 @@ impl BondsIxBuilder {
             margin_account: user,
             claims: bonds_pda(&[jet_bonds::seeds::CLAIM_NOTES, borrower_account.as_ref()]),
             claims_mint: self.claims,
+            claims_metadata,
             payer: self.keys.unwrap("payer")?,
             token_program: spl_token::ID,
             system_program: solana_sdk::system_program::ID,
         }
         .to_account_metas(None);
+
         Ok(Instruction::new_with_bytes(jet_bonds::ID, &data, accounts))
     }
 

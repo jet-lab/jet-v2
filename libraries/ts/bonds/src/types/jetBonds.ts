@@ -449,7 +449,12 @@ export type JetBonds = {
           isSigner: false
           docs: ["Token mint used by the margin program to track the debt that must be collateralized"]
         },
-
+        {
+          name: "claimsMetadata"
+          isMut: false
+          isSigner: false
+          docs: ["Token metadata account used by the margin program to register claims positions"]
+        },
         {
           name: "bondManager"
           isMut: true
@@ -2878,6 +2883,12 @@ export const IDL: JetBonds = {
           isMut: true,
           isSigner: false,
           docs: ["Token mint used by the margin program to track the debt that must be collateralized"]
+        },
+        {
+          name: "claimsMetadata",
+          isMut: false,
+          isSigner: false,
+          docs: ["Token metadata account used by the margin program to register claims positions"]
         },
         {
           name: "bondManager",

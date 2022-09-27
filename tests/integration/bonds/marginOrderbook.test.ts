@@ -250,7 +250,7 @@ describe("margin bonds borrowing", async () => {
     await marginAccount_C.refresh()
 
     // load the bond market
-    bondMarket = await BondMarket.load(bondsProgram, CONFIG.bondManager)
+    bondMarket = await BondMarket.load(bondsProgram, CONFIG.bondManager, programs.metadata.programId)
   })
 
   const registerNewMarginUser = async (
@@ -380,8 +380,8 @@ describe("margin bonds borrowing", async () => {
     const invokeB = await withBondsInvoke(marginAccount_B, requestBorrowB)
 
     // TODO: blocked until spl tokens can be positions
-    // await provider_a.sendAndConfirm(new Transaction().add(...invokeA), [wallet_a.payer])
-    // await provider_b.sendAndConfirm(new Transaction().add(...invokeB), [wallet_b.payer])
+    await provider_a.sendAndConfirm(makeTx(invokeA), [wallet_a.payer])
+    await provider_b.sendAndConfirm(makeTx(invokeB), [wallet_b.payer])
   })
 
   it("loads orderbook and has correct orders", async () => {

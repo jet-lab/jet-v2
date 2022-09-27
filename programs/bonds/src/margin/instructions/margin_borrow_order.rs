@@ -46,6 +46,10 @@ pub struct MarginBorrowOrder<'info> {
     #[account(mut)]
     pub claims_mint: UncheckedAccount<'info>,
 
+    /// Token metadata account used by the margin program to register claims positions
+    /// CHECK: handled by margin program
+    pub claims_metadata: UncheckedAccount<'info>,
+
     pub orderbook_mut: OrderbookMut<'info>,
 
     /// payer for `Obligation` initialization

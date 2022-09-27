@@ -97,6 +97,7 @@ export class BondMarket {
     underlyingTokenVault: PublicKey
     bondTicketMint: PublicKey
     claimsMint: PublicKey
+    claimsMetadata: PublicKey
     collateralMint: PublicKey
     underlyingOracle: PublicKey
     ticketOracle: PublicKey
@@ -104,9 +105,15 @@ export class BondMarket {
   readonly info: BondManagerInfo
   readonly program: Program<JetBonds>
 
-  private constructor(bondManager: PublicKey, program: Program<JetBonds>, info: BondManagerInfo) {
+  private constructor(
+    bondManager: PublicKey,
+    claimsMetadata: PublicKey,
+    program: Program<JetBonds>,
+    info: BondManagerInfo
+  ) {
     this.addresses = {
       ...info,
+      claimsMetadata,
       bondManager
     }
     this.program = program
@@ -129,11 +136,12 @@ export class BondMarket {
    * @param address The address of the `bondManager` account
    * @returns
    */
-  static async load(program: Program<JetBonds>, address: Address): Promise<BondMarket> {
+  static async load(program: Program<JetBonds>, address: Address, jetMetadataProgramId: Address): Promise<BondMarket> {
     let data = await fetchData(program.provider.connection, address)
     let info: BondManagerInfo = program.coder.accounts.decode("BondManager", data)
+    const claimsMetadata = await findDerivedAccount([info.claimsMint], new PublicKey(jetMetadataProgramId))
 
-    return new BondMarket(new PublicKey(address), program, info)
+    return new BondMarket(new PublicKey(address), new PublicKey(claimsMetadata), program, info)
   }
 
   async requestBorrowIx(
