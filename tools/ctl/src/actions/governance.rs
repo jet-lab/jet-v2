@@ -7,7 +7,7 @@ use spl_governance::state::{
 };
 
 use crate::client::{Client, Plan};
-use crate::governance::JET_GOVERNANCE_PROGRAM;
+use crate::governance::{JET_GOVERNANCE_PROGRAM, JET_STAKING_PROGRAM};
 
 pub async fn process_proposal_create(
     client: &Client,
@@ -78,6 +78,34 @@ pub async fn process_proposal_sign_off(client: &Client, proposal_address: Pubkey
                 &proposal_address,
                 &client.signer()?,
                 Some(&proposal.token_owner_record),
+            )],
+        )
+        .build())
+}
+
+pub async fn process_proposal_finalize(client: &Client, proposal_address: Pubkey) -> Result<Plan> {
+    let proposal = crate::governance::get_proposal_state(client, &proposal_address).await?;
+    let (governance, _) =
+        crate::governance::get_governance_and_realm(client, &proposal.governance).await?;
+
+    let (jet_max_weight, _) = Pubkey::find_program_address(
+        &[governance.realm.as_ref(), b"max-vote-weight-record"],
+        &JET_STAKING_PROGRAM,
+    );
+
+    Ok(client
+        .plan()?
+        .instructions(
+            [],
+            [format!("finalize proposal {proposal_address}")],
+            [spl_governance::instruction::finalize_vote(
+                &JET_GOVERNANCE_PROGRAM,
+                &governance.realm,
+                &proposal.governance,
+                &proposal_address,
+                &proposal.token_owner_record,
+                &proposal.governing_token_mint,
+                Some(jet_max_weight),
             )],
         )
         .build())

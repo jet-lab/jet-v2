@@ -17,8 +17,13 @@ use solana_client::{
     rpc_request::{RpcError, RpcResponseErrorData},
 };
 use solana_sdk::{
-    compute_budget::ComputeBudgetInstruction, hash::Hash, instruction::Instruction,
-    program_pack::Pack, signer::Signer, transaction::Transaction,
+    commitment_config::{CommitmentConfig, CommitmentLevel},
+    compute_budget::ComputeBudgetInstruction,
+    hash::Hash,
+    instruction::Instruction,
+    program_pack::Pack,
+    signer::Signer,
+    transaction::Transaction,
 };
 
 const MAINNET_HASH: &str = "5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d";
@@ -206,7 +211,8 @@ impl Client {
         }
 
         let mut ui_progress_group = ProgressTracker::new();
-        #[allow(clippy::needless_collect)] //todo: does clippy advice make sense here?
+
+        #[allow(clippy::needless_collect)]
         let ui_progress_tx = plan
             .iter()
             .map(|_| ui_progress_group.add_line("in queue"))
@@ -293,7 +299,12 @@ impl Client {
                 let status = self
                     .config
                     .rpc_client
-                    .get_signature_status(&signature)
+                    .get_signature_status_with_commitment(
+                        &signature,
+                        CommitmentConfig {
+                            commitment: CommitmentLevel::Confirmed,
+                        },
+                    )
                     .await?;
 
                 if SystemTime::now().duration_since(start_time).unwrap() > max_wait_time {
@@ -346,13 +357,7 @@ impl<'client> PlanBuilder<'client> {
             &ix_list,
             Some(&self.client.config.signer.as_ref().unwrap().pubkey()),
         );
-        for key in transaction.message().clone().signer_keys() {
-            for signer in signers.clone() {
-                if key == &signer.pubkey() {
-                    transaction.partial_sign(&[signer], self.client.recent_blockhash)
-                }
-            }
-        }
+        transaction.partial_sign(&signers, self.client.recent_blockhash);
 
         self.entries.push(TransactionEntry { steps, transaction });
 

@@ -31,6 +31,7 @@ use crate::{
     client::{Client, NetworkKind, Plan, TransactionEntry},
 };
 
+pub const JET_STAKING_PROGRAM: Pubkey = pubkey!("JPLockxtkngHkaQT5AuRYow3HyUv5qWzmhwsCPd653n");
 pub const JET_GOVERNANCE_PROGRAM: Pubkey = pubkey!("JPGov2SBA6f7XSJF5R4Si5jEJekGiyrwP2m7gSEqLUs");
 pub const JET_ENG_GOVERNANCE: Pubkey = pubkey!("7R6FjP2HfXAgKQjURC4tCBrUmRQLCgEUeX2berrfU4ox");
 pub const JET_ENG_TREASURY: Pubkey = pubkey!("2J2K1wHK3U8bsow1shUZJvEx1L2og2h5T5JGPqBS1uKA");
