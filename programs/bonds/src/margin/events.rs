@@ -30,6 +30,8 @@ pub struct ObligationRepay {
 
 #[event]
 pub struct ObligationFulfilled {
+    pub obligation: Pubkey,
+    pub orderbook_user: Pubkey,
     pub borrower: Pubkey,
     pub timestamp: i64,
 }
