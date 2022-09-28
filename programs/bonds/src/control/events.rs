@@ -28,7 +28,6 @@ pub struct OrderbookInitialized {
 #[event]
 pub struct PositionRefreshed {
     pub borrower_account: Pubkey,
-    // TODO: is this sufficient as margin will pick up the position balances?
 }
 
 #[event]
