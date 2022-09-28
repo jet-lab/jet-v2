@@ -47,4 +47,4 @@ solana-remote-wallet = "1.10"
 
 serum_dex = "0.5"
 jet-proto-math = "1"
-jet-margin-sdk = { path = "../margin" }
+jet-margin-sdk = { path = "../../libraries/rust/margin" }
