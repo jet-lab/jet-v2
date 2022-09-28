@@ -53,8 +53,6 @@ pub mod mock_adapter {
 
     pub fn noop(ctx: Context<NoAccounts>, result: Option<AdapterResult>) -> Result<()> {
         match result {
-            // false positive
-            #[allow(clippy::explicit_auto_deref)]
             Some(result) => write_adapter_result(&*ctx.accounts.margin_account.load()?, &result),
             None => Ok(()),
         }
