@@ -28,15 +28,15 @@ import TEST_MINT_KEYPAIR from "../../keypairs/test-mint.json"
 import USDC_ORACLE_PRICE from "../../keypairs/usdc-price.json"
 import USDC_ORACLE_PRODUCT from "../../keypairs/usdc-product.json"
 import {
+  bnToBigInt,
   BondMarket,
   JetBonds,
   JetBondsIdl,
   MarginUserInfo,
   OrderSideLend,
   rate_to_price
-} from "@jet-lab/jet-bonds-client"
+} from "@jet-lab/margin"
 import { createAssociatedTokenAccountInstruction, getAssociatedTokenAddress } from "@solana/spl-token"
-import { bnToBigInt } from "@jet-lab/jet-bonds-client/src"
 
 describe("margin bonds borrowing", async () => {
   // SUITE SETUP
