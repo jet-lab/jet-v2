@@ -28,7 +28,7 @@ import { ArrowRight } from '../modals/actions/ArrowRight';
 import { Button, Checkbox, Input, Radio, Typography } from 'antd';
 import SwapIcon from '../../styles/icons/function-swap.svg';
 import { CurrentSplSwapPool, hasOrcaPool, SwapFees, SwapPoolTokenAmounts } from '../../state/swap/splSwap';
-import { useTokenInputErrorMessage } from '../../utils/actions/tokenInput';
+import { useTokenInputDisabledMessage, useTokenInputErrorMessage } from '../../utils/actions/tokenInput';
 
 // Component for user to enter and submit a swap action
 export function SwapEntry(): JSX.Element {
@@ -55,6 +55,7 @@ export function SwapEntry(): JSX.Element {
   const tokenInputAmount = useRecoilValue(TokenInputAmount);
   const [tokenInputString, setTokenInputString] = useRecoilState(TokenInputString);
   const resetTokenInputString = useResetRecoilState(TokenInputString);
+  const disabledMessage = useTokenInputDisabledMessage();
   // Output token pool
   const [outputToken, setOutputToken] = useRecoilState(CurrentSwapOutput);
   const outputDecimals = (outputToken?.decimals ?? DEFAULT_DECIMALS) / 2;
@@ -112,7 +113,13 @@ export function SwapEntry(): JSX.Element {
   const errorMessage = useTokenInputErrorMessage(undefined, projectedRiskIndicator);
   const [sendingTransaction, setSendingTransaction] = useRecoilState(SendingTransaction);
   const [switchingAssets, setSwitchingAssets] = useState(false);
-  const disabled = sendingTransaction || !currentPool || !outputToken || noOrcaPool || projectedRiskIndicator >= 1;
+  const disabled =
+    sendingTransaction ||
+    !currentPool ||
+    !outputToken ||
+    noOrcaPool ||
+    projectedRiskIndicator >= 1 ||
+    disabledMessage.length > 0;
   const { Paragraph, Text } = Typography;
 
   // Parse slippage input

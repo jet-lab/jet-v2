@@ -5,6 +5,8 @@ import BTC from '../../styles/icons/cryptos/BTC.svg';
 import SRM from '../../styles/icons/cryptos/SRM.svg';
 import ETH from '../../styles/icons/cryptos/ETH.svg';
 import USDT from '../../styles/icons/cryptos/USDT.svg';
+import ST_SOL from '../../styles/icons/cryptos/stSOL.svg';
+import ORCA from '../../styles/icons/cryptos/ORCA.svg';
 import MSOL from '../../styles/icons/cryptos/MSOL.svg';
 
 // Component to render the SVG logo of a token
@@ -33,6 +35,10 @@ export function TokenLogo(props: {
       return <USDT className="token-logo" height={height} width={height} style={style} />;
     case 'mSOL':
       return <MSOL className="token-logo" height={height} width={height} style={style} />;
+    case 'stSOL':
+      return <ST_SOL className="token-logo" height={height} width={height} style={style} />;
+    case 'ORCA':
+      return <ORCA className="token-logo" height={height} width={height} style={style} />;
     default:
       return <Skeleton.Avatar active size={height} shape="square" style={style} />;
   }
