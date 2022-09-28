@@ -131,7 +131,7 @@ jobs:
       - name: Deploy Bonds
         run: |
           solana program deploy -u d --program-id JBond79m9K6HqYwngCjiJHb311GTXggo46kGcT2GijUc target/deploy/jet_bonds.so
-          anchor idl upgrade -f ./target/idl/jet-bonds.json JBond79m9K6HqYwngCjiJHb311GTXggo46kGcT2GijUc --provider.cluster devnet
+          anchor idl upgrade -f ./target/idl/jet_margin_swap.json JBond79m9K6HqYwngCjiJHb311GTXggo46kGcT2GijUc --provider.cluster devnet
 
       - name: Build Programs for Testing
         run: |
@@ -146,6 +146,3 @@ jobs:
           tags: gcr.io/${{ secrets.GCP_PROJECT }}/${{ env.VALIDATOR_IMG }}:latest,gcr.io/${{ secrets.GCP_PROJECT }}/${{ env.VALIDATOR_IMG }}:${{ steps.sha.outputs.sha }}
           build-args: |
             SOLANA_VERSION=${{ env.SOLANA_CLI_VERSION }}
-
-
-s
