@@ -5,16 +5,19 @@ import { ReorderArrows } from "../misc/ReorderArrows"
 import { Select } from "antd"
 import AngleDown from "../../styles/icons/arrow-angle-down.svg"
 import { useCurrencyFormatting } from "../../utils/currency"
+import { generateMarkets } from "../../state/fixed/mocks"
 
 const { Option } = Select
 
 interface FixedMarketSelectorProps {
   type: "asks" | "bids"
 }
+const mockMarkets = generateMarkets()
+
 export const FixedMarketSelector = ({ type }: FixedMarketSelectorProps) => {
   const [order, setOrder] = useRecoilState(type === "asks" ? FixedLendViewOrder : FixedBorrowViewOrder)
   const markets = useRecoilValue(AllFixedMarketsAtom)
-  const market = useRecoilValue(FixedMarketAtom)
+  const mockMarket = mockMarkets[0]
   const [selectedMarket, setSelectedMarket] = useRecoilState(SelectedFixedMarketAtom)
   const formatting = useCurrencyFormatting()
   return (
@@ -34,28 +37,29 @@ export const FixedMarketSelector = ({ type }: FixedMarketSelectorProps) => {
         <div className="stats">
           <div className="single-stat">
             <div className="header">Total Lent</div>
-            <div>{formatting.currencyAbbrev(market.totalLent)}</div>
+            <div>{formatting.currencyAbbrev(mockMarket.totalLent)}</div>
           </div>
           <div className="single-stat">
             <div className="header">Total Borrow</div>
-            <div>{formatting.currencyAbbrev(market.totalBorrowed)}</div>
+            <div>{formatting.currencyAbbrev(mockMarket.totalBorrowed)}</div>
           </div>
           <div className="single-stat">
             <div className="header">12 hrs change</div>
-            <div>{formatting.currencyAbbrev(market.change12hrs)}%</div>
+            <div>{formatting.currencyAbbrev(mockMarket.change12hrs)}%</div>
           </div>
           <div className="single-stat">
             <div className="header">24 hrs change</div>
-            <div>{formatting.currencyAbbrev(market.change24hrs)}%</div>
+            <div>{formatting.currencyAbbrev(mockMarket.change24hrs)}%</div>
           </div>
           <div className="single-stat">
             <div className="header">Volume</div>
-            <div>{formatting.currencyAbbrev(market.volume)}</div>
+            <div>{formatting.currencyAbbrev(mockMarket.volume)}</div>
           </div>
           <div className="single-stat">
             <div className="header">Daily Range</div>
             <div>
-              {formatting.currencyAbbrev(market.dailyRange[0])}-{formatting.currencyAbbrev(market.dailyRange[1])}
+              {formatting.currencyAbbrev(mockMarket.dailyRange[0])}-
+              {formatting.currencyAbbrev(mockMarket.dailyRange[1])}
             </div>
           </div>
         </div>

@@ -32,17 +32,15 @@ export const FixedMarketOrderBookAtom = selector<Orderbook>({
 })
 
 export const useFixedTermSync = () => {
-  const { provider } = useProvider()
+  const { provider, programs } = useProvider()
   const [market, setMarket] = useRecoilState(FixedMarketAtom)
   useEffect(() => {
-    const program = new Program(JetBondsIdl, "DMCynpScPPEFj6h5zbVrdMTd1HoBWmLyRhzbTfTYyN1Q", provider)
-    BondMarket.load(program, "HWg6LPw2sjTBfBeu8Au3dHcsnsSRCmnkaoPqZBeqS7bt").then(result => {
+    BondMarket.load(programs.bonds, market.addresses.bondManager, programs.metadata.programId).then(result => {
       if (!market || !result.address.equals(market.address)) {
         setMarket(result)
       }
     })
   }, [provider])
-  return null
 }
 
 // Mocked Fixed Markets State
