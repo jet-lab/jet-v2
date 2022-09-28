@@ -8,11 +8,11 @@
   ],
   "license": "AGPL-3.0-or-later",
   "scripts": {
-    "build:all": "yarn build:margin && yarn build:wasm && yarn build:bonds && yarn build:app",
+    "build:all": "yarn build:margin && yarn build:wasm && yarn build:bonds && cd app && yarn build:app",
     "build:margin": "yarn --cwd libraries/ts/margin build",
     "build:wasm": "wasm-pack build --target nodejs ./libraries/ts/bonds/wasm-utils ; copyfiles -u 1 ./libraries/ts/bonds/wasm-utils/pkg/* ./libraries/ts/bonds/dist/wasm-utils",
     "build:bonds": "yarn --cwd libraries/ts/bonds build",
-    "build:app": "yarn --cwd app build:app",
+    "build": "yarn --cwd app build:app",
     "build:cloudflare": "curl https://sh.rustup.rs -sSf | sh -s -- -y && . \"$HOME/.cargo/env\" && cargo install wasm-pack && yarn build:wasm && yarn build:margin && yarn build:bonds && yarn build",
     "start": "yarn --cwd app start",
     "compile": "npx tsc",
