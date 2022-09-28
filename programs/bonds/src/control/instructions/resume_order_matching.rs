@@ -52,8 +52,8 @@ pub fn handler(ctx: Context<ResumeOrderMatching>) -> Result<()> {
     resume_matching::process::<CallbackInfo>(ctx.program_id, accounts, params)?;
 
     emit!(ToggleOrderMatching {
-        market: ctx.accounts.orderbook_market_state.key(),
-        state: true
+        bond_manager: ctx.accounts.bond_manager.key(),
+        is_orderbook_paused: false
     });
 
     Ok(())

@@ -39,8 +39,8 @@ pub fn handler(ctx: Context<PauseOrderMatching>) -> Result<()> {
     )?;
 
     emit!(ToggleOrderMatching {
-        market: ctx.accounts.orderbook_market_state.key(),
-        state: false
+        bond_manager: ctx.accounts.bond_manager.key(),
+        is_orderbook_paused: true
     });
 
     Ok(())

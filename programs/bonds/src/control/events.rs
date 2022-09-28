@@ -32,6 +32,6 @@ pub struct PositionRefreshed {
 
 #[event]
 pub struct ToggleOrderMatching {
-    pub market: Pubkey,
-    pub state: bool,
+    pub bond_manager: Pubkey,
+    pub is_orderbook_paused: bool,
 }
