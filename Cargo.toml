@@ -4,7 +4,8 @@ members = [
     "tests/hosted",
     "tests/mock-adapter",
     "libraries/rust/*",
-    "libraries/ts/bonds/wasm-utils"
+    "libraries/ts/bonds/wasm-utils",
+    "tools/ctl"
 ]
 
 [patch.crates-io]
