@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useRecoilState, useRecoilValue, useResetRecoilState, useSetRecoilState } from 'recoil';
+import { useRecoilState, useRecoilValue, useResetRecoilState } from 'recoil';
 import { feesBuffer, MarginAccount, numberToBn, TokenAmount, PoolAction } from '@jet-lab/margin';
 import { CurrentPool, PoolOption, usePoolFromName } from '../../../state/pools/pools';
 import {
@@ -63,7 +63,7 @@ export function TokenInput(props: {
   const inputAmount = props.value ?? tokenInputAmount;
   const zeroInputAmount = TokenAmount.zero(tokenPool?.decimals ?? DEFAULT_DECIMALS);
   const [maxInput, setMaxInput] = useState(zeroInputAmount);
-  const setMaxTradeAmounts = useSetRecoilState(MaxTradeAmounts);
+  const [maxTradeAmounts, setMaxTradeAmounts] = useRecoilState(MaxTradeAmounts);
   const disabledMessage = useTokenInputDisabledMessage();
   const warningMessage = useTokenInputWarningMessage();
   const errorMessage = useTokenInputErrorMessage();
@@ -124,24 +124,24 @@ export function TokenInput(props: {
     }
 
     let maxInput = zeroInputAmount;
-    // If user is depositing or swapping with jupiter, reference their wallet
-    if (tokenAction === 'deposit') {
-      maxInput = walletTokens ? walletTokens.map[tokenPool.symbol].amount : zeroInputAmount;
+    const poolPosition = account.poolPositions[tokenPool.symbol];
+    if (poolPosition) {
+      const maxInputTradeAmounts = poolPosition.maxTradeAmounts;
+      setMaxTradeAmounts(maxInputTradeAmounts);
 
-      // If SOL, need to save some for fees
-      if (tokenPool.symbol === 'SOL') {
-        maxInput = maxInput.subb(numberToBn(feesBuffer));
+      // If user is depositing or swapping with jupiter, reference their wallet
+      if (tokenAction === 'deposit') {
+        maxInput = walletTokens ? walletTokens.map[tokenPool.symbol].amount : zeroInputAmount;
+        // If SOL, need to save some for fees
+        if (tokenPool.symbol === 'SOL') {
+          maxInput = maxInput.subb(numberToBn(feesBuffer));
+        }
+        // Otherwise reference their margin account
+      } else {
+        maxInput = maxTradeAmounts[tokenAction] ?? maxInputTradeAmounts[tokenAction];
       }
-      // Otherwise reference their margin account
-    } else {
-      const poolPosition = account.poolPositions[tokenPool.symbol];
-      if (poolPosition) {
-        const maxInputTradeAmounts = poolPosition.maxTradeAmounts;
-        setMaxTradeAmounts(maxInputTradeAmounts);
-        maxInput = maxInputTradeAmounts[tokenAction];
-      }
+      setMaxInput(maxInput);
     }
-    setMaxInput(maxInput);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tokenAction, tokenPool?.symbol, account?.poolPositions]);
 
@@ -236,8 +236,18 @@ export function TokenInput(props: {
     return render;
   }
 
+  // Reset recoil state
+  const reset = useResetRecoilState(MaxTradeAmounts);
+
   return (
     <div className={`token-input flex-centered column ${props.value ? 'external-value' : ''}`}>
+      <div
+        data-testid="reset-max-trade"
+        className="pixel"
+        onClick={() => {
+          reset();
+        }}
+      />
       <div className="token-input-main flex-centered">
         <TokenSelect
           poolSymbol={tokenPool?.symbol}

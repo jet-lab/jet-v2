@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from "react"
-import { useRecoilState, useRecoilValue, useResetRecoilState } from "recoil"
-import { Dictionary, uiDictionary, PreferredLanguage } from "../../state/settings/localization/localization"
-import { SettingsModal as SettingsModalState } from "../../state/modals/modals"
+import { useEffect, useRef, useState } from 'react';
+import { useRecoilState, useRecoilValue, useResetRecoilState } from 'recoil';
+import { Dictionary, uiDictionary, PreferredLanguage } from '../../state/settings/localization/localization';
+import { SettingsModal as SettingsModalState } from '../../state/modals/modals';
 import {
   Explorer,
   BlockExplorer,
@@ -16,103 +16,103 @@ import {
   PreferDayMonthYear,
   FiatCurrency,
   fiatOptions
-} from "../../state/settings/settings"
-import { getPing, toggleLightTheme } from "../../utils/ui"
-import { Input, Modal, Radio, Select, Typography } from "antd"
-import AngleDown from "../../styles/icons/arrow-angle-down.svg"
+} from '../../state/settings/settings';
+import { getPing, toggleLightTheme } from '../../utils/ui';
+import { Input, Modal, Radio, Select, Typography } from 'antd';
+import AngleDown from '../../styles/icons/arrow-angle-down.svg';
 
 // Modal for changing app preferences
 export function SettingsModal(): JSX.Element {
-  const dictionary = useRecoilValue(Dictionary)
-  const settingsModalOpen = useRecoilValue(SettingsModalState)
-  const resetSettingsModalOpen = useResetRecoilState(SettingsModalState)
+  const dictionary = useRecoilValue(Dictionary);
+  const settingsModalOpen = useRecoilValue(SettingsModalState);
+  const resetSettingsModalOpen = useResetRecoilState(SettingsModalState);
   // Cluster
-  const [cluster, setCluster] = useRecoilState(Cluster)
-  const [clusterSetting, setClusterSetting] = useState(cluster)
+  const [cluster, setCluster] = useRecoilState(Cluster);
+  const [clusterSetting, setClusterSetting] = useState(cluster);
   // Rpc Node
-  const [rpcNodes, setRpcNodes] = useRecoilState(RpcNodes)
-  const [preferredNode, setPreferredNode] = useRecoilState(PreferredRpcNode)
-  const [preferredNodeSetting, setPreferredNodeSetting] = useState(preferredNode)
-  const nodeIndexer = cluster === "mainnet-beta" ? "mainnetBeta" : "devnet"
-  const [customNodeInput, setCustomNodeInput] = useState(rpcNodes.custom[nodeIndexer])
-  const [customNodeInputError, setCustomNodeInputError] = useState("")
+  const [rpcNodes, setRpcNodes] = useRecoilState(RpcNodes);
+  const [preferredNode, setPreferredNode] = useRecoilState(PreferredRpcNode);
+  const [preferredNodeSetting, setPreferredNodeSetting] = useState(preferredNode);
+  const nodeIndexer = cluster === 'mainnet-beta' ? 'mainnetBeta' : 'devnet';
+  const [customNodeInput, setCustomNodeInput] = useState(rpcNodes.custom[nodeIndexer]);
+  const [customNodeInputError, setCustomNodeInputError] = useState('');
   // Fiat Currency
-  const [fiatCurrency, setFiatCurrency] = useRecoilState(FiatCurrency)
-  const [fiatCurrencySetting, setFiatCurrencySetting] = useState(fiatCurrency)
+  const [fiatCurrency, setFiatCurrency] = useRecoilState(FiatCurrency);
+  const [fiatCurrencySetting, setFiatCurrencySetting] = useState(fiatCurrency);
   // Explorer
-  const [explorer, setExplorer] = useRecoilState(BlockExplorer)
-  const [explorerSetting, setExplorerSetting] = useState(explorer)
+  const [explorer, setExplorer] = useRecoilState(BlockExplorer);
+  const [explorerSetting, setExplorerSetting] = useState(explorer);
   // Language
-  const [preferredLanguage, setPreferredLanguage] = useRecoilState(PreferredLanguage)
-  const [preferredLanguageSetting, setPreferredLanguageSetting] = useState(preferredLanguage)
+  const [preferredLanguage, setPreferredLanguage] = useRecoilState(PreferredLanguage);
+  const [preferredLanguageSetting, setPreferredLanguageSetting] = useState(preferredLanguage);
   // Time Display
-  const [preferredTimeDisplay, setPreferredTimeDisplay] = useRecoilState(PreferredTimeDisplay)
-  const [preferredTimeDisplaySetting, setPreferredTimeDisplaySetting] = useState(preferredTimeDisplay)
-  const [preferDayMonthYear, setPreferDayMonthYear] = useRecoilState(PreferDayMonthYear)
-  const [preferDayMonthYearSetting, setPreferDayMonthYearSetting] = useState(preferDayMonthYear)
+  const [preferredTimeDisplay, setPreferredTimeDisplay] = useRecoilState(PreferredTimeDisplay);
+  const [preferredTimeDisplaySetting, setPreferredTimeDisplaySetting] = useState(preferredTimeDisplay);
+  const [preferDayMonthYear, setPreferDayMonthYear] = useRecoilState(PreferDayMonthYear);
+  const [preferDayMonthYearSetting, setPreferDayMonthYearSetting] = useState(preferDayMonthYear);
   // Theme
-  const [lightTheme, setLightTheme] = useRecoilState(LightTheme)
-  const initialTheme = useRef(lightTheme)
-  const [loading, setLoading] = useState(false)
-  const { Title, Text } = Typography
-  const { Option } = Select
+  const [lightTheme, setLightTheme] = useRecoilState(LightTheme);
+  const initialTheme = useRef(lightTheme);
+  const [loading, setLoading] = useState(false);
+  const { Title, Text } = Typography;
+  const { Option } = Select;
 
   // Save settings to global state and localstorage
   async function saveSettings() {
-    setLoading(true)
-    if (preferredNodeSetting === "custom") {
-      const ping = await getPing(customNodeInput)
+    setLoading(true);
+    if (preferredNodeSetting === 'custom') {
+      const ping = await getPing(customNodeInput);
       if (ping) {
-        localStorage.setItem(`jetCustomNode-${cluster}`, customNodeInput)
-        rpcNodes.custom[nodeIndexer] = customNodeInput
-        rpcNodes.custom[`${nodeIndexer}Ping`] = ping
-        setCustomNodeInputError("")
-        setRpcNodes(rpcNodes)
+        localStorage.setItem(`jetCustomNode-${cluster}`, customNodeInput);
+        rpcNodes.custom[nodeIndexer] = customNodeInput;
+        rpcNodes.custom[`${nodeIndexer}Ping`] = ping;
+        setCustomNodeInputError('');
+        setRpcNodes(rpcNodes);
       } else {
-        setCustomNodeInputError(dictionary.settingsModal.rpcNode.errorMessages.invalidNode)
-        setLoading(false)
-        return
+        setCustomNodeInputError(dictionary.settingsModal.rpcNode.errorMessages.invalidNode);
+        setLoading(false);
+        return;
       }
     }
     if (preferredNodeSetting !== preferredNode) {
-      setPreferredNode(preferredNodeSetting)
+      setPreferredNode(preferredNodeSetting);
     }
     if (clusterSetting !== cluster) {
-      setCluster(clusterSetting)
+      setCluster(clusterSetting);
     }
     if (fiatCurrencySetting !== fiatCurrency) {
-      setFiatCurrency(fiatCurrencySetting)
+      setFiatCurrency(fiatCurrencySetting);
     }
     if (explorerSetting !== explorer) {
-      setExplorer(explorerSetting)
+      setExplorer(explorerSetting);
     }
     if (preferredLanguageSetting !== preferredLanguage) {
-      setPreferredLanguage(preferredLanguageSetting)
+      setPreferredLanguage(preferredLanguageSetting);
     }
     if (preferredTimeDisplaySetting !== preferredTimeDisplay) {
-      setPreferredTimeDisplay(preferredTimeDisplaySetting)
+      setPreferredTimeDisplay(preferredTimeDisplaySetting);
     }
     if (preferDayMonthYearSetting !== preferDayMonthYear) {
-      setPreferDayMonthYear(preferDayMonthYearSetting)
+      setPreferDayMonthYear(preferDayMonthYearSetting);
     }
-    initialTheme.current = lightTheme
-    resetSettingsModalOpen()
-    setLoading(false)
+    initialTheme.current = lightTheme;
+    resetSettingsModalOpen();
+    setLoading(false);
   }
 
   // Reset settings to their global state on cancel
   function cancelSettings() {
-    setPreferredNodeSetting(preferredNode)
-    setCustomNodeInput(rpcNodes.custom[nodeIndexer])
-    setCustomNodeInputError("")
-    setClusterSetting(cluster)
-    setFiatCurrencySetting(fiatCurrency)
-    setExplorerSetting(explorer)
-    setPreferredLanguageSetting(preferredLanguage)
-    setPreferredTimeDisplaySetting(preferredTimeDisplay)
-    setPreferDayMonthYearSetting(preferDayMonthYear)
-    setLightTheme(initialTheme.current)
-    resetSettingsModalOpen()
+    setPreferredNodeSetting(preferredNode);
+    setCustomNodeInput(rpcNodes.custom[nodeIndexer]);
+    setCustomNodeInputError('');
+    setClusterSetting(cluster);
+    setFiatCurrencySetting(fiatCurrency);
+    setExplorerSetting(explorer);
+    setPreferredLanguageSetting(preferredLanguage);
+    setPreferredTimeDisplaySetting(preferredTimeDisplay);
+    setPreferDayMonthYearSetting(preferDayMonthYear);
+    setLightTheme(initialTheme.current);
+    resetSettingsModalOpen();
   }
 
   // Check if anything has changes
@@ -128,53 +128,53 @@ export function SettingsModal(): JSX.Element {
       preferDayMonthYearSetting !== preferDayMonthYear ||
       initialTheme.current !== lightTheme
     ) {
-      return true
+      return true;
     }
 
-    return false
+    return false;
   }
 
   // Light / dark toggle
   useEffect(() => {
-    toggleLightTheme(lightTheme)
-  }, [lightTheme])
+    toggleLightTheme(lightTheme);
+  }, [lightTheme]);
 
   // Localize 'custom' option on mount
   useEffect(() => {
-    rpcNodes.custom.name = dictionary.settingsModal.rpcNode.custom
-    setRpcNodes(rpcNodes)
-  }, [dictionary.settingsModal.rpcNode.custom, rpcNodes, setRpcNodes])
+    rpcNodes.custom.name = dictionary.settingsModal.rpcNode.custom;
+    setRpcNodes(rpcNodes);
+  }, [dictionary.settingsModal.rpcNode.custom, rpcNodes, setRpcNodes]);
 
   // Returns RPC ping className for styling
   function getPingClassName(ping: number) {
-    let className = "ping-indicator-color"
+    let className = 'ping-indicator-color';
     if (ping < 1000) {
-      className += " fast"
+      className += ' fast';
     } else if (ping < 2500) {
-      className += " slow"
+      className += ' slow';
     } else {
-      className += " poor"
+      className += ' poor';
     }
 
-    return className
+    return className;
   }
 
   // Renders custom node input
   function renderCustomInput() {
-    let render = <></>
-    if (preferredNodeSetting === "custom") {
+    let render = <></>;
+    if (preferredNodeSetting === 'custom') {
       render = (
         <Input
-          className={customNodeInputError ? "error" : ""}
+          className={customNodeInputError ? 'error' : ''}
           value={customNodeInput}
           placeholder={dictionary.settingsModal.rpcNode.customInputPlaceholder}
           onChange={e => setCustomNodeInput(e.target.value)}
           onPressEnter={() => (checkSettingsChange() ? saveSettings() : null)}
         />
-      )
+      );
     }
 
-    return render
+    return render;
   }
 
   if (settingsModalOpen) {
@@ -200,17 +200,17 @@ export function SettingsModal(): JSX.Element {
             suffixIcon={<AngleDown className="jet-icon" />}
             onChange={node => setPreferredNodeSetting(node)}>
             {rpcNodeOptions.map(node => {
-              const nodePing = rpcNodes[node][`${nodeIndexer}Ping`]
+              const nodePing = rpcNodes[node][`${nodeIndexer}Ping`];
 
               return (
                 <Option key={rpcNodes[node].name} value={node}>
                   {rpcNodes[node].name}
                   <div className="ping-indicator flex-centered">
                     <div className={getPingClassName(nodePing)}></div>
-                    {nodePing ? nodePing + "ms" : "(-)"}
+                    {nodePing ? nodePing + 'ms' : '(-)'}
                   </div>
                 </Option>
-              )
+              );
             })}
           </Select>
           {renderCustomInput()}
@@ -312,8 +312,8 @@ export function SettingsModal(): JSX.Element {
         </div>
         */}
       </Modal>
-    )
+    );
   } else {
-    return <></>
+    return <></>;
   }
 }

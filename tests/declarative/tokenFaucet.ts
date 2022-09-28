@@ -1,5 +1,5 @@
-import { BN } from "@project-serum/anchor"
-import { TOKEN_PROGRAM_ID } from "@solana/spl-token"
+import { BN } from '@project-serum/anchor';
+import { TOKEN_PROGRAM_ID } from '@solana/spl-token';
 import {
   Connection,
   Keypair,
@@ -7,7 +7,7 @@ import {
   sendAndConfirmTransaction,
   Transaction,
   TransactionInstruction
-} from "@solana/web3.js"
+} from '@solana/web3.js';
 
 export const airdropTokens = async (
   connection: Connection,
@@ -17,7 +17,7 @@ export const airdropTokens = async (
   tokenDestinationAddress: PublicKey,
   amount: BN
 ) => {
-  const pubkeyNonce = await PublicKey.findProgramAddress([Buffer.from("faucet")], faucetProgramId)
+  const pubkeyNonce = await PublicKey.findProgramAddress([Buffer.from('faucet')], faucetProgramId);
 
   const keys = [
     { pubkey: pubkeyNonce[0], isSigner: false, isWritable: false },
@@ -29,33 +29,33 @@ export const airdropTokens = async (
     { pubkey: tokenDestinationAddress, isSigner: false, isWritable: true },
     { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
     { pubkey: faucetAddress, isSigner: false, isWritable: false }
-  ]
+  ];
 
   const tx = new Transaction().add(
     new TransactionInstruction({
       programId: faucetProgramId,
-      data: Buffer.from([1, ...amount.toArray("le", 8)]),
+      data: Buffer.from([1, ...amount.toArray('le', 8)]),
       keys
     })
-  )
+  );
   const txid = await sendAndConfirmTransaction(connection, tx, [feePayerAccount], {
     skipPreflight: false,
-    commitment: "singleGossip"
-  })
-  console.log(txid)
-}
+    commitment: 'singleGossip'
+  });
+  console.log(txid);
+};
 
 const getMintPubkeyFromTokenAccountPubkey = async (connection: Connection, tokenAccountPubkey: PublicKey) => {
   try {
-    const tokenMintData = (await connection.getParsedAccountInfo(tokenAccountPubkey, "singleGossip")).value!.data
+    const tokenMintData = (await connection.getParsedAccountInfo(tokenAccountPubkey, 'singleGossip')).value!.data;
     //@ts-expect-error (doing the data parsing into steps so this ignore line is not moved around by formatting)
-    const tokenMintAddress = tokenMintData.parsed.info.mint
+    const tokenMintAddress = tokenMintData.parsed.info.mint;
 
-    return new PublicKey(tokenMintAddress)
+    return new PublicKey(tokenMintAddress);
   } catch (err) {
-    console.log(err)
+    console.log(err);
     throw new Error(
-      "Error calculating mint address from token account. Are you sure you inserted a valid token account address"
-    )
+      'Error calculating mint address from token account. Are you sure you inserted a valid token account address'
+    );
   }
-}
+};

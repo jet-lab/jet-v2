@@ -1,7 +1,7 @@
 /***************************
   Jet-Antd Library
 ***************************/
-@import "./jet-antd.less";
+@import './jet-antd.less';
 
 /***************************
   App Specific Styles
@@ -24,6 +24,11 @@ html {
         }
       }
     }
+  }
+
+  .pixel {
+    width: 1px !important;
+    height: 1px !important;
   }
 
   // TPS warning banner
@@ -484,7 +489,7 @@ html {
       border-radius: @border-radius;
       background: @gradient;
       &::before {
-        content: "";
+        content: '';
         position: absolute;
         top: 1px;
         left: 1px;
@@ -791,7 +796,7 @@ html {
       border-radius: @border-radius;
       background: @gradient;
       &::before {
-        content: "";
+        content: '';
         position: absolute;
         top: 1px;
         left: 1px;
@@ -856,7 +861,7 @@ html {
         max-width: calc(100% - 150px);
         overflow-x: scroll;
         &::after {
-          content: "";
+          content: '';
           position: absolute;
           height: 72%;
           width: 100px;
@@ -1148,7 +1153,7 @@ html {
             border-radius: @border-radius;
             background: @gradient;
             &::before {
-              content: "";
+              content: '';
               position: absolute;
               top: 1px;
               left: 1px;
@@ -1296,7 +1301,7 @@ html {
       width: 100%;
       padding: @spacing-xs;
       * {
-        font-family: "Lato", Helvetica, Arial, sans-serif !important;
+        font-family: 'Lato', Helvetica, Arial, sans-serif !important;
       }
       text {
         fill: @secondary-5;
@@ -1632,7 +1637,7 @@ html {
           }
           &:first-of-type {
             &::after {
-              content: "";
+              content: '';
               position: absolute;
               top: 20px;
               right: 0px;
@@ -1781,8 +1786,8 @@ html {
       font-size: inherit;
       top: 14px;
 
-      &:nth-last-child(2),
-      &:last-of-type {
+      &:nth-last-child(2).price-name,
+      &:last-of-type.price-abbrev {
         opacity: @half-opacity;
         font-size: @btn-font-size;
         top: 28px;
@@ -1885,7 +1890,7 @@ html {
         }
       }
       &::after {
-        content: "";
+        content: '';
         position: absolute;
         left: 2.5%;
         bottom: calc(@spacing-base * 3);
