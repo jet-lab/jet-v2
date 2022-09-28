@@ -6,8 +6,7 @@ use serde::{ser::SerializeStruct, Deserialize, Serialize, Serializer};
 ///
 /// Utilized by program instructions to verify given transaction accounts are correct. Contains data
 /// about the bond market including the tenor and ticket<->token conversion rate
-#[cfg(feature = "cli")]
-#[derive(Deserialize)]
+#[cfg_attr(feature = "cli", derive(Deserialize))]
 #[account(zero_copy)]
 pub struct BondManager {
     /// Versioning and tag information

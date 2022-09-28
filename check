@@ -1,5 +1,6 @@
 #!/bin/bash
 # CI validation script.
+# 
 # Run a single job from the CI workflow:
 #   ./check <job-name>
 #           (wrap the job name in quotes if it has spaces)
@@ -7,23 +8,25 @@
 #   ./check all
 # Run jobs in the container used for CI:
 #   ./check in-docker '<job-name or all>'
-
-set -euxo pipefail
+#
+# This script can also be sourced:
+#   . check
+# Then you can run any of the subcommands without calling ./check:
+#   anchor-test    # tab completion is available
 
 DOCKER_IMAGE=jetprotocol/builder:solana-1.10.35-anchor-0.25.0-3
 
 #################
 # Workflow Jobs
 
-anchor-test() {
-    [[ "$@" == *--skip-yarn* ]] || yarn-build
-    args="$(sed s/--skip-yarn//g <<< "$@")"
+anchor-test() { args=$@
+    extract-arg --skip-yarn || yarn-build
 	anchor test $args -- --features testing
 }
 
-hosted-tests-localnet() {
-    tests/scripts/on_localnet.sh anchor-build
-    SOLANA_LOGS=true tests/scripts/on_localnet.sh test combined
+hosted-tests-localnet() { args=$@
+    extract-arg --skip-build || tests/scripts/on_localnet.sh anchor-build
+    SOLANA_LOGS=true tests/scripts/on_localnet.sh test combined $args
 }
 
 cargo-lint() {
@@ -66,11 +69,29 @@ in-docker() {
         /jet-v2/check $@
 }
 
-if [[ "$@" == '' ]]; then
-    all
-else
-    $@
-fi
+# assumes "args" variable is set.
+# returns whether args contains the passed in string as an independent argument
+# removes the string from args
+extract-arg() {
+    [[ "$args" == "$1" ]] && args='' || \
+    [[ "$args" == "$1 "* ]] && args="$(sed 's/--skip-build //g' <<< "$args")" || \
+    [[ "$args" == *" $1" ]] && args="$(sed 's/ --skip-build//g' <<< "$args")" || \
+    [[ "$args" == *" $1 "* ]] && args="$(sed 's/ --skip-build//g' <<< "$args")" || \
+        return 1
+}
 
-set +x
-echo -e '\n\n ✔ all good'
+#################
+# run
+
+if (return 0 2>/dev/null); then
+    echo sourced
+else
+    set -euxo pipefail
+    if [[ "$@" == '' ]]; then
+        all
+    else
+        $@
+    fi
+    set +x
+    echo -e '\n\n ✔ all good'
+fi
