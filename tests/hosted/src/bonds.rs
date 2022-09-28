@@ -28,7 +28,9 @@ use jet_margin_sdk::{
 };
 use jet_metadata::TokenKind;
 use jet_proto_math::fixed_point::Fp32;
-use jet_simulation::{create_wallet, send_and_confirm, solana_rpc_api::SolanaRpcClient};
+use jet_simulation::{
+    create_wallet, generate_keypair, send_and_confirm, solana_rpc_api::SolanaRpcClient,
+};
 use solana_sdk::{
     hash::Hash,
     instruction::Instruction,
@@ -109,13 +111,13 @@ impl Clone for TestManager {
 
 impl TestManager {
     pub async fn full(client: Arc<dyn SolanaRpcClient>) -> Result<Self> {
-        TestManager::new(client, &Keypair::new())
+        TestManager::new(client, &generate_keypair())
             .await?
             .with_bonds(
-                &Keypair::new(),
-                &Keypair::new(),
-                &Keypair::new(),
-                Keypair::new().pubkey(),
+                &generate_keypair(),
+                &generate_keypair(),
+                &generate_keypair(),
+                generate_keypair().pubkey(),
             )
             .await?
             .with_crank()
@@ -229,7 +231,7 @@ impl TestManager {
     }
 
     pub async fn with_crank(mut self) -> Result<Self> {
-        let crank = Keypair::new();
+        let crank = generate_keypair();
 
         self.ix_builder = self.ix_builder.with_crank(&crank.pubkey());
         let auth_crank = self

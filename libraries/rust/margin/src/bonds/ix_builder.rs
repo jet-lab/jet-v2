@@ -305,7 +305,6 @@ impl BondsIxBuilder {
 
     pub fn initialize_margin_user(&self, owner: Pubkey) -> Result<Instruction> {
         let borrower_account = self.margin_user_account(owner);
-        let claims = bonds_pda(&[jet_bonds::seeds::CLAIM_NOTES, borrower_account.as_ref()]);
         let accounts = jet_bonds::accounts::InitializeMarginUser {
             bond_manager: self.manager,
             payer: self.keys.unwrap("payer")?,
@@ -323,7 +322,7 @@ impl BondsIxBuilder {
             rent: solana_sdk::sysvar::rent::ID,
             token_program: spl_token::ID,
             system_program: solana_sdk::system_program::ID,
-            claims_metadata: get_metadata_address(&claims),
+            claims_metadata: get_metadata_address(&self.claims),
         }
         .to_account_metas(None);
         Ok(Instruction::new_with_bytes(
