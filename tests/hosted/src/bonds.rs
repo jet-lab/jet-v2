@@ -111,7 +111,12 @@ impl TestManager {
     pub async fn full(client: Arc<dyn SolanaRpcClient>) -> Result<Self> {
         TestManager::new(client, &Keypair::new())
             .await?
-            .with_bonds(&Keypair::new(), &Keypair::new(), &Keypair::new())
+            .with_bonds(
+                &Keypair::new(),
+                &Keypair::new(),
+                &Keypair::new(),
+                Keypair::new().pubkey(),
+            )
             .await?
             .with_crank()
             .await?
@@ -147,6 +152,7 @@ impl TestManager {
         eq_kp: &Keypair,
         bids_kp: &Keypair,
         asks_kp: &Keypair,
+        token_oracle: Pubkey,
     ) -> Result<Self> {
         let init_eq = {
             let rent = self
@@ -202,7 +208,7 @@ impl TestManager {
             BOND_MANAGER_TAG,
             BOND_MANAGER_SEED,
             STAKE_DURATION,
-            Pubkey::default(),
+            token_oracle,
             Pubkey::default(),
         )?;
         let init_orderbook = self.ix_builder.initialize_orderbook(

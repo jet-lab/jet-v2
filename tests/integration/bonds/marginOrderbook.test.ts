@@ -25,8 +25,18 @@ import {
 
 import CONFIG from "./config.json"
 import TEST_MINT_KEYPAIR from "../../keypairs/test-mint.json"
-import { BondMarket, JetBonds, JetBondsIdl, MarginUserInfo } from "@jet-lab/jet-bonds-client"
+import USDC_ORACLE_PRICE from "../../keypairs/usdc-price.json"
+import USDC_ORACLE_PRODUCT from "../../keypairs/usdc-product.json"
+import {
+  BondMarket,
+  JetBonds,
+  JetBondsIdl,
+  MarginUserInfo,
+  OrderSideLend,
+  rate_to_price
+} from "@jet-lab/jet-bonds-client"
 import { createAssociatedTokenAccountInstruction, getAssociatedTokenAddress } from "@solana/spl-token"
+import { bnToBigInt } from "@jet-lab/jet-bonds-client/src"
 
 describe("margin bonds borrowing", async () => {
   // SUITE SETUP
@@ -295,6 +305,9 @@ describe("margin bonds borrowing", async () => {
       adapterInstruction: register
     })
     await provider.sendAndConfirm(new Transaction().add(...ix), [payer])
+
+    const refresh = await bondMarket.refreshPosition(marginAccount, false)
+    await provider.sendAndConfirm(new Transaction().add(refresh))
   }
 
   it("margin users create bond market accounts", async () => {
@@ -335,6 +348,11 @@ describe("margin bonds borrowing", async () => {
     return new Transaction().add(...ix)
   }
 
+  const loanOfferParams = {
+    amount: new BN(1_500),
+    rate: new BN(1_000)
+  }
+
   it("margin users place lend orders", async () => {
     // give margin spl wallets some liquidity
     await airdropMarginWallet(marginAccount_A, USDC, 100_000)
@@ -348,8 +366,8 @@ describe("margin bonds borrowing", async () => {
     )
     const offerLoanB = await bondMarket.offerLoanIx(
       marginAccount_B,
-      new BN(1_500),
-      new BN(1_000),
+      loanOfferParams.amount,
+      loanOfferParams.rate,
       wallet_b.payer.publicKey,
       Uint8Array.from([0, 0, 0, 0])
     )
@@ -362,6 +380,11 @@ describe("margin bonds borrowing", async () => {
     // TODO assert proper user token balances
   })
 
+  const borrowRequestParams = {
+    amount: new BN(1000),
+    rate: new BN(1000)
+  }
+
   it("margin users place borrow orders", async () => {
     const borrowNowA = await bondMarket.borrowNowIx(
       marginAccount_A,
@@ -372,8 +395,8 @@ describe("margin bonds borrowing", async () => {
     const requestBorrowB = await bondMarket.requestBorrowIx(
       marginAccount_B,
       wallet_b.payer.publicKey,
-      new BN(1000),
-      new BN(1000),
+      borrowRequestParams.amount,
+      borrowRequestParams.rate,
       Uint8Array.from([0, 0, 0, 0])
     )
     const invokeA = await withBondsInvoke(marginAccount_A, borrowNowA)
@@ -384,13 +407,31 @@ describe("margin bonds borrowing", async () => {
     // await provider_b.sendAndConfirm(makeTx(invokeB), [wallet_b.payer])
   })
 
+  let loanId: BN
+
   it("loads orderbook and has correct orders", async () => {
     const orderbook = await bondMarket.fetchOrderbook()
 
-    // TODO make asserts on order validity
+    const offeredLoan = orderbook.bids[0]
+    loanId = new BN(offeredLoan.order_id)
+
+    // const requestedBorrow = orderbook.asks[0]
+
+    assert(
+      offeredLoan.limit_price === rate_to_price(bnToBigInt(loanOfferParams.rate), bnToBigInt(bondMarket.info.duration))
+    )
+    assert(offeredLoan.quote_size === bnToBigInt(loanOfferParams.amount))
+    // assert(requestedBorrow.quote_size === bnToBigInt(borrowRequestParams.amount))
+    // assert(
+    //   requestedBorrow.limit_price ===
+    //     rate_to_price(bnToBigInt(borrowRequestParams.rate), bnToBigInt(bondMarket.info.duration))
+    // )
   })
 
   it("margin users cancel orders", async () => {
-    // TODO cancel orders and assert user token balances are correct
+    const cancelLoan = await bondMarket.cancelOrderIx(marginAccount_A, loanId, OrderSideLend)
+    const invokeCancelLoan = await withBondsInvoke(marginAccount_A, cancelLoan)
+
+    await provider_a.sendAndConfirm(makeTx(invokeCancelLoan))
   })
 })

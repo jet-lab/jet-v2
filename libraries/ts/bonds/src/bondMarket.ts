@@ -273,24 +273,18 @@ export class BondMarket {
       .instruction()
   }
 
-  async cancelOrderIx(args: {
-    orderId: BN
-    side: OrderSide
-    user: Address
-    userVault?: Address
-  }): Promise<TransactionInstruction> {
+  async cancelOrderIx(user: MarginAccount, orderId: BN, side: OrderSide): Promise<TransactionInstruction> {
     const userVault =
-      args.userVault ?? args.side === OrderSideBorrow
-        ? await getAssociatedTokenAddress(this.addresses.underlyingTokenMint, new PublicKey(args.user))
-        : await getAssociatedTokenAddress(this.addresses.bondTicketMint, new PublicKey(args.user))
-    const marketAccount =
-      args.side === OrderSideBorrow ? this.addresses.underlyingTokenVault : this.addresses.bondTicketMint
+      side === OrderSideBorrow
+        ? await getAssociatedTokenAddress(this.addresses.underlyingTokenMint, user.address)
+        : await getAssociatedTokenAddress(this.addresses.bondTicketMint, user.address)
+    const marketAccount = side === OrderSideBorrow ? this.addresses.underlyingTokenVault : this.addresses.bondTicketMint
 
     return await this.program.methods
-      .cancelOrder(args.orderId)
+      .cancelOrder(orderId)
       .accounts({
         ...this.addresses,
-        user: args.user,
+        user: user.address,
         userVault,
         marketAccount,
         tokenProgram: TOKEN_PROGRAM_ID
@@ -318,6 +312,25 @@ export class BondMarket {
         payer,
         rent: SYSVAR_RENT_PUBKEY,
         systemProgram: SystemProgram.programId,
+        tokenProgram: TOKEN_PROGRAM_ID
+      })
+      .instruction()
+  }
+
+  /**
+   *
+   * @param user the margin account to refresh
+   * @param expectPrice in the edge case where we want to refresh an account with a broken oracle, set to false
+   * @returns a `TransactionInstruction` to refresh the bonds related margin positions
+   */
+  async refreshPosition(user: MarginAccount, expectPrice: boolean): Promise<TransactionInstruction> {
+    const borrowerAccount = await this.deriveMarginUserAddress(user)
+    return await this.program.methods
+      .refreshPosition(expectPrice)
+      .accounts({
+        ...this.addresses,
+        borrowerAccount,
+        marginAccount: user.address,
         tokenProgram: TOKEN_PROGRAM_ID
       })
       .instruction()
