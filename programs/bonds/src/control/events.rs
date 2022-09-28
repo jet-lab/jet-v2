@@ -30,3 +30,9 @@ pub struct PositionRefreshed {
     pub borrower_account: Pubkey,
     // TODO: is this sufficient as margin will pick up the position balances?
 }
+
+#[event]
+pub struct ToggleOrderMatching {
+    pub market: Pubkey,
+    pub state: bool,
+}

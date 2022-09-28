@@ -1,7 +1,11 @@
 use agnostic_orderbook::instruction::resume_matching;
 use anchor_lang::prelude::*;
 
-use crate::{control::state::BondManager, orderbook::state::CallbackInfo, BondsError};
+use crate::{
+    control::{events::ToggleOrderMatching, state::BondManager},
+    orderbook::state::CallbackInfo,
+    BondsError,
+};
 
 #[derive(Accounts)]
 pub struct ResumeOrderMatching<'info> {
@@ -46,5 +50,11 @@ pub fn handler(ctx: Context<ResumeOrderMatching>) -> Result<()> {
     };
     let params = resume_matching::Params {};
     resume_matching::process::<CallbackInfo>(ctx.program_id, accounts, params)?;
+
+    emit!(ToggleOrderMatching {
+        market: ctx.accounts.orderbook_market_state.key(),
+        state: true
+    });
+
     Ok(())
 }

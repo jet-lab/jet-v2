@@ -1,6 +1,10 @@
 use anchor_lang::prelude::*;
 
-use crate::{control::state::BondManager, orderbook::state::CallbackInfo, BondsError};
+use crate::{
+    control::{events::ToggleOrderMatching, state::BondManager},
+    orderbook::state::CallbackInfo,
+    BondsError,
+};
 
 #[derive(Accounts)]
 pub struct PauseOrderMatching<'info> {
@@ -33,5 +37,11 @@ pub fn handler(ctx: Context<PauseOrderMatching>) -> Result<()> {
         accounts,
         params,
     )?;
+
+    emit!(ToggleOrderMatching {
+        market: ctx.accounts.orderbook_market_state.key(),
+        state: false
+    });
+
     Ok(())
 }
