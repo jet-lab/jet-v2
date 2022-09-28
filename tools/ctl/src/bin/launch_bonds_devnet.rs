@@ -5,7 +5,7 @@ use jet_margin_sdk::bonds::{event_queue_len, orderbook_slab_len, BondManager, Bo
 use jetctl::{
     actions::bonds::BondMarketParameters,
     client::{Client, ClientConfig, Plan},
-    CliOpts, Command,
+    BondsCommand, CliOpts, Command,
 };
 use solana_sdk::{
     native_token::LAMPORTS_PER_SOL, pubkey, pubkey::Pubkey, signature::Keypair, signer::Signer,
@@ -47,7 +47,7 @@ lazy_static::lazy_static! {
         dry_run: false,
         signer_path: Some(PAYER_PATH.clone()),
         rpc_endpoint: Some(ENDPOINT.to_string()),
-        command: Command::CreateBondMarket(PARAMS.clone()),
+        command: Command::Bonds { subcmd: BondsCommand::CreateMarket(PARAMS.clone()) },
     };
 }
 

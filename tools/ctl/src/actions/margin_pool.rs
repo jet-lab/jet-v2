@@ -124,6 +124,7 @@ pub async fn process_collect_pool_fees(client: &Client) -> Result<Plan> {
         .chunks(6)
         .fold(client.plan()?, |plan, chunk| {
             let (steps, ix_list): (Vec<String>, Vec<Instruction>) = chunk.iter().cloned().unzip();
+
             plan.instructions([], steps, ix_list)
         })
         .build())
@@ -167,6 +168,7 @@ pub async fn process_configure_pool(
         },
         true => download_margin_pool_config(client, &margin_pool).await?,
     };
+    let mut changed = false;
 
     println!("changes to pool for token {}:", options.token_config.mint);
 
@@ -175,6 +177,7 @@ pub async fn process_configure_pool(
     {
         configuration.pyth_price = options.token_config.pyth_price;
         configuration.pyth_product = options.token_config.pyth_product;
+        changed = true;
 
         println!(
             "set oracle: price={}, product={}",
@@ -185,43 +188,49 @@ pub async fn process_configure_pool(
         configuration.pyth_price = None;
         configuration.pyth_product = None;
     }
-
-    override_pool_config_with_options(&mut configuration, &options);
     println!();
 
-    Ok(client
-        .plan()?
-        .instructions(
-            [],
-            [format!(
-                "configure-margin-pool for token {}",
-                options.token_config.mint
-            )],
-            [ctrl.configure_margin_pool(&options.token_config.mint, &configuration)],
-        )
-        .build())
-}
+    changed = override_pool_config_with_options(&mut configuration, &options) && changed;
 
-macro_rules! override_field {
-    ($obj:ident, $field:ident) => {
-        if let Some(value) = $field {
-            if *value != $obj.$field {
-                println!(
-                    "set {}: {:?} -> {:?}",
-                    stringify!($field),
-                    &$obj.$field,
-                    &value
-                );
-                $obj.$field = (*value).into();
-            }
-        }
-    };
+    if changed {
+        Ok(client
+            .plan()?
+            .instructions(
+                [],
+                [format!(
+                    "configure-margin-pool for token {}",
+                    options.token_config.mint
+                )],
+                [ctrl.configure_margin_pool(&options.token_config.mint, &configuration)],
+            )
+            .build())
+    } else {
+        Ok(client.plan()?.build())
+    }
 }
 
 fn override_pool_config_with_options(
     config: &mut MarginPoolConfiguration,
     options: &ConfigurePoolCliOptions,
-) {
+) -> bool {
+    macro_rules! override_field {
+        ($overridden:ident, $obj:ident, $field:ident) => {
+            if let Some(value) = $field {
+                if *value != $obj.$field {
+                    println!(
+                        "set {}: {:?} -> {:?}",
+                        stringify!($field),
+                        &$obj.$field,
+                        &value
+                    );
+                    $obj.$field = (*value).into();
+                    $overridden = true;
+                }
+            }
+        };
+    }
+
+    let mut overridden = false;
     let ConfigurePoolCliOptions {
         margin_pool,
         token_config,
@@ -247,14 +256,14 @@ fn override_pool_config_with_options(
     let orig_params = config.parameters.clone().unwrap();
     let params = config.parameters.as_mut().unwrap();
 
-    override_field!(params, flags);
-    override_field!(params, utilization_rate_1);
-    override_field!(params, utilization_rate_2);
-    override_field!(params, borrow_rate_0);
-    override_field!(params, borrow_rate_1);
-    override_field!(params, borrow_rate_2);
-    override_field!(params, borrow_rate_3);
-    override_field!(params, management_fee_rate);
+    override_field!(overridden, params, flags);
+    override_field!(overridden, params, utilization_rate_1);
+    override_field!(overridden, params, utilization_rate_2);
+    override_field!(overridden, params, borrow_rate_0);
+    override_field!(overridden, params, borrow_rate_1);
+    override_field!(overridden, params, borrow_rate_2);
+    override_field!(overridden, params, borrow_rate_3);
+    override_field!(overridden, params, management_fee_rate);
 
     if orig_params == *params {
         config.parameters = None;
@@ -263,12 +272,14 @@ fn override_pool_config_with_options(
     if token_kind.is_some() || collateral_weight.is_some() || max_leverage.is_some() {
         let metadata = config.metadata.as_mut().unwrap();
 
-        override_field!(metadata, token_kind);
-        override_field!(metadata, collateral_weight);
-        override_field!(metadata, max_leverage);
+        override_field!(overridden, metadata, token_kind);
+        override_field!(overridden, metadata, collateral_weight);
+        override_field!(overridden, metadata, max_leverage);
     } else {
         config.metadata = None;
     }
+
+    overridden
 }
 
 async fn find_all_margin_pools(client: &Client) -> Result<Vec<(Pubkey, MarginPool)>> {
