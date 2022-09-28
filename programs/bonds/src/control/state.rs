@@ -1,11 +1,13 @@
 use anchor_lang::prelude::*;
 #[cfg(feature = "cli")]
-use serde::{ser::SerializeStruct, Serialize, Serializer};
+use serde::{ser::SerializeStruct, Deserialize, Serialize, Serializer};
 
 /// The `BondManager` contains all the information necessary to run the bond market
 ///
 /// Utilized by program instructions to verify given transaction accounts are correct. Contains data
 /// about the bond market including the tenor and ticket<->token conversion rate
+#[cfg(feature = "cli")]
+#[derive(Deserialize)]
 #[account(zero_copy)]
 pub struct BondManager {
     /// Versioning and tag information
@@ -72,7 +74,7 @@ impl Serialize for BondManager {
     {
         let mut s = serializer.serialize_struct("BondManager", 14)?;
         s.serialize_field("version", &self.version_tag)?;
-        s.serialize_field("programAuthority", &self.program_authority.to_string())?;
+        s.serialize_field("airspace", &self.airspace.to_string())?;
         s.serialize_field(
             "orderbookMarketState",
             &self.orderbook_market_state.to_string(),
@@ -90,9 +92,12 @@ impl Serialize for BondManager {
         )?;
         s.serialize_field("bondTicketMint", &self.bond_ticket_mint.to_string())?;
         s.serialize_field("claimsMint", &self.claims_mint.to_string())?;
-        s.serialize_field("oracle", &self.oracle.to_string())?;
-        s.serialize_field("seed", &self.seed)?;
-        s.serialize_field("conversionFactor", &self.conversion_factor)?;
+        s.serialize_field("collateralMint", &self.collateral_mint.to_string())?;
+        s.serialize_field("underlyingOracle", &self.underlying_oracle.to_string())?;
+        s.serialize_field("ticketOracle", &self.ticket_oracle.to_string())?;
+        s.serialize_field("seed", &Pubkey::new_from_array(self.seed).to_string())?;
+        s.serialize_field("orderbookPaused", &self.orderbook_paused)?;
+        s.serialize_field("ticketsPaused", &self.tickets_paused)?;
         s.serialize_field("duration", &self.duration)?;
         s.end()
     }

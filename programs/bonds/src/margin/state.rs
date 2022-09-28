@@ -2,6 +2,8 @@ use anchor_lang::{prelude::*, solana_program::clock::UnixTimestamp};
 use bytemuck::Zeroable;
 use jet_margin::{AdapterResult, MarginAccount};
 use jet_proto_math::traits::{TryAddAssign, TrySubAssign};
+#[cfg(feature = "cli")]
+use serde::{ser::SerializeStruct, Serialize, Serializer};
 
 use crate::{orderbook::state::OrderTag, BondsError};
 
@@ -40,15 +42,18 @@ impl Serialize for MarginUser {
         S: Serializer,
     {
         let mut s = serializer.serialize_struct("MarginUser", 9)?;
-        s.serialize_field("user", &self.user.to_string())?;
+        s.serialize_field("version", &self.version)?;
+        s.serialize_field("marginAccount", &self.margin_account.to_string())?;
         s.serialize_field("bondManager", &self.bond_manager.to_string())?;
-        s.serialize_field("eventAdapter", &self.event_adapter.to_string())?;
         s.serialize_field("claims", &self.claims.to_string())?;
-        s.serialize_field("bondTicketsStored", &self.bond_tickets_stored)?;
-        s.serialize_field("underlyingTokenStored", &self.underlying_token_stored)?;
-        s.serialize_field("outstandingObligations", &self.outstanding_obligations)?;
-        s.serialize_field("debt", &self.debt.total())?;
-        s.serialize_field("nonce", &self.nonce)?;
+        s.serialize_field("collateral", &self.collateral.to_string())?;
+        s.serialize_field(
+            "underlyingSettlement",
+            &self.underlying_settlement.to_string(),
+        )?;
+        s.serialize_field("ticketSettlement", &self.ticket_settlement.to_string())?;
+        s.serialize_field("debt", &self.debt)?;
+        s.serialize_field("assets", &self.assets)?;
         s.end()
     }
 }
@@ -72,6 +77,25 @@ pub struct Debt {
     /// This debt will be due when the loan term ends.
     /// This includes all debt, including past due debt
     committed: u64,
+}
+
+#[cfg(feature = "cli")]
+impl Serialize for Debt {
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut s = serializer.serialize_struct("Debt", 9)?;
+        s.serialize_field("nextNewObligationSeqNo", &self.next_new_obligation_seqno)?;
+        s.serialize_field(
+            "nextUnpaidObligationSeqNo",
+            &self.next_unpaid_obligation_seqno,
+        )?;
+        s.serialize_field("nextObligationMaturity", &self.next_obligation_maturity)?;
+        s.serialize_field("pending", &self.pending)?;
+        s.serialize_field("committed", &self.committed)?;
+        s.end()
+    }
 }
 
 pub type ObligationSequenceNumber = u64;
@@ -187,6 +211,19 @@ pub struct Assets {
     _reserved0: [u8; 64],
 }
 
+#[cfg(feature = "cli")]
+impl Serialize for Assets {
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut s = serializer.serialize_struct("Assets", 9)?;
+        s.serialize_field("entitledTokens", &self.entitled_tokens)?;
+        s.serialize_field("entitledTickets", &self.entitled_tickets)?;
+        s.end()
+    }
+}
+
 #[account]
 #[derive(Debug)]
 pub struct Obligation {
@@ -224,12 +261,10 @@ impl Serialize for Obligation {
         S: Serializer,
     {
         let mut s = serializer.serialize_struct("Obligation", 6)?;
-        s.serialize_field(
-            "MarginUserAccount",
-            &self.orderbook_user_account.to_string(),
-        )?;
+        s.serialize_field("sequenceNumber", &self.sequence_number)?;
+        s.serialize_field("borrowerAccount", &self.borrower_account.to_string())?;
         s.serialize_field("bondManager", &self.bond_manager.to_string())?;
-        s.serialize_field("orderTag", &self.order_tag.0)?;
+        s.serialize_field("orderTag", &self.order_tag.bytes())?;
         s.serialize_field("maturationTimestamp", &self.maturation_timestamp)?;
         s.serialize_field("balance", &self.balance)?;
         s.serialize_field("flags", &self.flags.bits())?;
