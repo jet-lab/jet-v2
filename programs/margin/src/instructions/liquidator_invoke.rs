@@ -75,8 +75,6 @@ pub fn liquidator_invoke_handler<'info>(
 
     let liquidation = &mut *ctx.accounts.liquidation.load_mut()?;
 
-    // false positive
-    #[allow(clippy::explicit_auto_deref)]
     let end_value = update_and_verify_liquidation(
         &*ctx.accounts.margin_account.load()?,
         liquidation,
