@@ -296,18 +296,11 @@ describe("margin bonds borrowing", async () => {
       [payer]
     )
 
-    const register = await bondMarket.registerAccountWithMarket(marginAccount, payer.publicKey)
-    let ix: TransactionInstruction[] = []
-    await marginAccount.withAdapterInvoke({
-      instructions: ix,
-      adapterProgram: bondsProgram.programId,
-      adapterMetadata: CONFIG.bondsMetadata,
-      adapterInstruction: register
-    })
-    await provider.sendAndConfirm(new Transaction().add(...ix), [payer])
-
-    const refresh = await bondMarket.refreshPosition(marginAccount, false)
-    await provider.sendAndConfirm(new Transaction().add(refresh))
+    let ixs: TransactionInstruction[] = [
+      await viaMargin(marginAccount, await bondMarket.registerAccountWithMarket(marginAccount, payer.publicKey)),
+      await viaMargin(marginAccount, await bondMarket.refreshPosition(marginAccount, false)),
+    ]
+    await provider.sendAndConfirm(new Transaction().add(...ixs), [payer])
   }
 
   it("margin users create bond market accounts", async () => {
@@ -329,10 +322,10 @@ describe("margin bonds borrowing", async () => {
     await sendToken(provider, token.mint, amount, token.tokenConfig.decimals, ownerKeypair, token.vault, tokenAcc)
   }
 
-  const withBondsInvoke = async (
+  const viaMargin = async (
     margin: MarginAccount,
     ix: TransactionInstruction
-  ): Promise<TransactionInstruction[]> => {
+  ): Promise<TransactionInstruction> => {
     let ixns = []
     await margin.withAdapterInvoke({
       instructions: ixns,
@@ -340,8 +333,7 @@ describe("margin bonds borrowing", async () => {
       adapterMetadata: CONFIG.bondsMetadata,
       adapterInstruction: ix
     })
-
-    return ixns
+    return ixns[0]
   }
 
   const makeTx = (ix: TransactionInstruction[]) => {
@@ -371,11 +363,11 @@ describe("margin bonds borrowing", async () => {
       wallet_b.payer.publicKey,
       Uint8Array.from([0, 0, 0, 0])
     )
-    const invokeA = await withBondsInvoke(marginAccount_A, lendNowA)
-    const invokeB = await withBondsInvoke(marginAccount_B, offerLoanB)
+    const invokeA = await viaMargin(marginAccount_A, lendNowA)
+    const invokeB = await viaMargin(marginAccount_B, offerLoanB)
 
-    await provider_a.sendAndConfirm(makeTx(invokeA), [wallet_a.payer])
-    await provider_b.sendAndConfirm(makeTx(invokeB), [wallet_b.payer])
+    await provider_a.sendAndConfirm(makeTx([invokeA]), [wallet_a.payer])
+    await provider_b.sendAndConfirm(makeTx([invokeB]), [wallet_b.payer])
 
     // TODO assert proper user token balances
   })
@@ -399,12 +391,14 @@ describe("margin bonds borrowing", async () => {
       borrowRequestParams.rate,
       Uint8Array.from([0, 0, 0, 0])
     )
-    const invokeA = await withBondsInvoke(marginAccount_A, borrowNowA)
-    const invokeB = await withBondsInvoke(marginAccount_B, requestBorrowB)
+    const refreshA = await viaMargin(marginAccount_A, await bondMarket.refreshPosition(marginAccount_A, false))
+    const refreshB = await viaMargin(marginAccount_B, await bondMarket.refreshPosition(marginAccount_B, false))
+    const invokeA = await viaMargin(marginAccount_A, borrowNowA)
+    const invokeB = await viaMargin(marginAccount_B, requestBorrowB)
 
-    // TODO: blocked until spl tokens can be positions
-    // await provider_a.sendAndConfirm(makeTx(invokeA), [wallet_a.payer])
-    // await provider_b.sendAndConfirm(makeTx(invokeB), [wallet_b.payer])
+    // TODO: refresh position is not able to get a properly formatted price from the oracle
+    await provider_a.sendAndConfirm(makeTx([refreshA, invokeA]), [wallet_a.payer])
+    await provider_b.sendAndConfirm(makeTx([refreshB, invokeB]), [wallet_b.payer])
   })
 
   let loanId: BN
@@ -430,8 +424,8 @@ describe("margin bonds borrowing", async () => {
 
   it("margin users cancel orders", async () => {
     const cancelLoan = await bondMarket.cancelOrderIx(marginAccount_A, loanId, OrderSideLend)
-    const invokeCancelLoan = await withBondsInvoke(marginAccount_A, cancelLoan)
+    const invokeCancelLoan = await viaMargin(marginAccount_A, cancelLoan)
 
-    await provider_a.sendAndConfirm(makeTx(invokeCancelLoan))
+    await provider_a.sendAndConfirm(makeTx([invokeCancelLoan]))
   })
 })

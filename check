@@ -57,7 +57,7 @@ all() {
     cargo-lint
     cargo-test
     hosted-tests-localnet
-    anchor-test
+    anchor-test --skip-build
 }
 
 # runs whatever command follows in a docker container
@@ -74,9 +74,9 @@ in-docker() {
 # removes the string from args
 extract-arg() {
     [[ "$args" == "$1" ]] && args='' || \
-    [[ "$args" == "$1 "* ]] && args="$(sed 's/--skip-build //g' <<< "$args")" || \
-    [[ "$args" == *" $1" ]] && args="$(sed 's/ --skip-build//g' <<< "$args")" || \
-    [[ "$args" == *" $1 "* ]] && args="$(sed 's/ --skip-build//g' <<< "$args")" || \
+    [[ "$args" == "$1 "* ]] && args="$(sed "s/$1 //g" <<< "$args")" || \
+    [[ "$args" == *" $1" ]] && args="$(sed "s/ $1//g" <<< "$args")" || \
+    [[ "$args" == *" $1 "* ]] && args="$(sed "s/ $1//g" <<< "$args")" || \
         return 1
 }
 
