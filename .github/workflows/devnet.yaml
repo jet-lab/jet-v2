@@ -146,3 +146,6 @@ jobs:
           tags: gcr.io/${{ secrets.GCP_PROJECT }}/${{ env.VALIDATOR_IMG }}:latest,gcr.io/${{ secrets.GCP_PROJECT }}/${{ env.VALIDATOR_IMG }}:${{ steps.sha.outputs.sha }}
           build-args: |
             SOLANA_VERSION=${{ env.SOLANA_CLI_VERSION }}
+
+
+s
