@@ -1,39 +1,34 @@
-import { MarginAccount } from "@jet-lab/margin";
-import { Address, BN } from "@project-serum/anchor";
-import { getAssociatedTokenAddress, TOKEN_PROGRAM_ID } from "@solana/spl-token";
-import {
-  PublicKey,
-  SystemProgram,
-  SYSVAR_RENT_PUBKEY,
-  TransactionInstruction,
-} from "@solana/web3.js";
-import { BondMarket, ClaimTicket, OrderParams } from "./bondMarket";
-import { fetchData, findDerivedAccount } from "./utils";
+import { MarginAccount } from "@jet-lab/margin"
+import { Address, BN } from "@project-serum/anchor"
+import { getAssociatedTokenAddress, TOKEN_PROGRAM_ID } from "@solana/spl-token"
+import { PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY, TransactionInstruction } from "@solana/web3.js"
+import { BondMarket, ClaimTicket, OrderParams } from "./bondMarket"
+import { fetchData, findDerivedAccount } from "./utils"
 
 /**  The underlying token */
-export const AssetKindToken = { underlyingToken: {} };
+export const AssetKindToken = { underlyingToken: {} }
 /** The bond tickets */
-export const AssetKindTicket = { bondTicket: {} };
+export const AssetKindTicket = { bondTicket: {} }
 /** Bond tickets or their underlying token */
-export type AssetKind = typeof AssetKindTicket | typeof AssetKindToken;
+export type AssetKind = typeof AssetKindTicket | typeof AssetKindToken
 
 /** MarginUser account as found on-chain */
 export interface MarginUserInfo {
-  user: PublicKey;
-  bondManager: PublicKey;
-  eventAdapter: PublicKey;
-  bondTicketsStored: BN;
-  underlyingTokenStored: BN;
-  outstandingObligations: BN;
-  debt: DebtInfo;
-  claims: PublicKey;
-  nonce: BN;
+  user: PublicKey
+  bondManager: PublicKey
+  eventAdapter: PublicKey
+  bondTicketsStored: BN
+  underlyingTokenStored: BN
+  outstandingObligations: BN
+  debt: DebtInfo
+  claims: PublicKey
+  nonce: BN
 }
 
 export interface DebtInfo {
-  pending: BN;
-  committed: BN;
-  pastDue: BN;
+  pending: BN
+  committed: BN
+  pastDue: BN
 }
 
 /**
@@ -42,16 +37,16 @@ export interface DebtInfo {
  * Allows placing orders
  */
 export class BondsUser {
-  readonly bondMarket: BondMarket;
-  readonly user: Address;
-  readonly marginAccount?: MarginAccount;
-  readonly borrowerAccount?: MarginUserInfo;
+  readonly bondMarket: BondMarket
+  readonly user: Address
+  readonly marginAccount?: MarginAccount
+  readonly borrowerAccount?: MarginUserInfo
   readonly addresses: {
-    ticketAccount: Address;
-    marginAccount?: Address;
-    borrowerAccount?: Address;
-    claims?: Address;
-  };
+    ticketAccount: Address
+    marginAccount?: Address
+    borrowerAccount?: Address
+    claims?: Address
+  }
 
   private constructor(
     market: BondMarket,
@@ -61,20 +56,20 @@ export class BondsUser {
     borrowerAccount?: MarginUserInfo,
     borrowerAccountAddress?: Address
   ) {
-    this.bondMarket = market;
-    this.user = user;
-    this.marginAccount = marginAccount;
-    this.borrowerAccount = borrowerAccount;
+    this.bondMarket = market
+    this.user = user
+    this.marginAccount = marginAccount
+    this.borrowerAccount = borrowerAccount
     this.addresses = {
       ticketAccount,
       marginAccount: marginAccount ? marginAccount.address : undefined,
       borrowerAccount: borrowerAccountAddress,
-      claims: borrowerAccount ? borrowerAccount.claims : undefined,
-    };
+      claims: borrowerAccount ? borrowerAccount.claims : undefined
+    }
   }
 
   get provider() {
-    return this.bondMarket.provider;
+    return this.bondMarket.provider
   }
 
   /**
@@ -84,8 +79,8 @@ export class BondsUser {
    * @returns BondsUser
    */
   static async load(market: BondMarket, user: Address): Promise<BondsUser> {
-    const ticketAccount = await market.deriveTicketAddress(user);
-    return new BondsUser(market, user, ticketAccount);
+    const ticketAccount = await market.deriveTicketAddress(user)
+    return new BondsUser(market, user, ticketAccount)
   }
 
   /**
@@ -96,28 +91,16 @@ export class BondsUser {
    * @param marginAccount the marginAccount
    * @returns `BondsUser`
    */
-  static async loadWithMarginAccount(
-    market: BondMarket,
-    marginAccount: MarginAccount
-  ): Promise<BondsUser> {
+  static async loadWithMarginAccount(market: BondMarket, marginAccount: MarginAccount): Promise<BondsUser> {
     // TODO: use margin spl accounts when change is in
-    const ticketAccount = await market.deriveTicketAddress(marginAccount.owner);
-    const borrowerAccountAddress = await BondsUser.deriveMarginUser(
-      market,
-      marginAccount.address
-    );
-    let borrowerAccount: MarginUserInfo | undefined;
+    const ticketAccount = await market.deriveTicketAddress(marginAccount.owner)
+    const borrowerAccountAddress = await BondsUser.deriveMarginUser(market, marginAccount.address)
+    let borrowerAccount: MarginUserInfo | undefined
     try {
-      const data = await fetchData(
-        market.program.provider.connection,
-        borrowerAccountAddress
-      );
-      borrowerAccount = market.program.coder.accounts.decode(
-        "MarginUser",
-        data
-      );
+      const data = await fetchData(market.program.provider.connection, borrowerAccountAddress)
+      borrowerAccount = market.program.coder.accounts.decode("MarginUser", data)
     } catch {
-      borrowerAccount = undefined;
+      borrowerAccount = undefined
     }
     return new BondsUser(
       market,
@@ -126,25 +109,25 @@ export class BondsUser {
       marginAccount,
       borrowerAccount,
       borrowerAccountAddress
-    );
+    )
   }
 
   async borrowOrderIx(args: {
-    maxBondTicketQty: BN;
-    maxUnderlyingTokenQty: BN;
-    limitPrice: BN;
-    seed: Uint8Array;
-    payer: Address;
-    vaultAuthority?: Address;
-    ticketVault?: Address;
-    tokenVault?: Address;
-    matchLimit?: BN;
-    postOnly?: boolean;
-    postAllowed?: boolean;
-    autoStake?: boolean;
+    maxBondTicketQty: BN
+    maxUnderlyingTokenQty: BN
+    limitPrice: BN
+    seed: Uint8Array
+    payer: Address
+    vaultAuthority?: Address
+    ticketVault?: Address
+    tokenVault?: Address
+    matchLimit?: BN
+    postOnly?: boolean
+    postAllowed?: boolean
+    autoStake?: boolean
   }): Promise<TransactionInstruction> {
     if (this.marginAccount) {
-      throw "Margin Account needed to place a borrow order";
+      throw "Margin Account needed to place a borrow order"
     }
     const params: OrderParams = {
       maxBondTicketQty: args.maxBondTicketQty,
@@ -153,13 +136,13 @@ export class BondsUser {
       matchLimit: args.matchLimit ?? new BN(1_000),
       postOnly: args.postOnly ?? false,
       postAllowed: args.postAllowed ?? true,
-      autoStake: args.autoStake ?? true,
-    };
+      autoStake: args.autoStake ?? true
+    }
     const obligation = await BondsUser.deriveObligation(
       this.marginAccount!.address,
       args.seed,
       this.bondMarket.program.programId
-    );
+    )
     return await this.bondMarket.program.methods
       .marginBorrowOrder(params, new BN(args.seed))
       .accounts({
@@ -168,31 +151,24 @@ export class BondsUser {
         obligation,
         payer: args.payer,
         systemProgram: SystemProgram.programId,
-        tokenProgram: TOKEN_PROGRAM_ID,
+        tokenProgram: TOKEN_PROGRAM_ID
       })
-      .instruction();
+      .instruction()
   }
 
-  async exchangeTokensForTicketsIx(
-    amount: BN
-  ): Promise<TransactionInstruction> {
+  async exchangeTokensForTicketsIx(amount: BN): Promise<TransactionInstruction> {
     return await this.bondMarket.exchangeTokensForTicketsIx({
       amount,
       user: this.user,
-      userBondTicketVault: this.addresses.ticketAccount,
-    });
+      userBondTicketVault: this.addresses.ticketAccount
+    })
   }
 
   async loadClaimTicket(seed: Uint8Array): Promise<ClaimTicket> {
-    const key = await this.bondMarket.deriveClaimTicketKey(this.user, seed);
-    const data = (await this.bondMarket.provider.connection.getAccountInfo(
-      key
-    ))!.data;
+    const key = await this.bondMarket.deriveClaimTicketKey(this.user, seed)
+    const data = (await this.bondMarket.provider.connection.getAccountInfo(key))!.data
 
-    return await this.bondMarket.program.coder.accounts.decode(
-      "ClaimTicket",
-      data
-    );
+    return await this.bondMarket.program.coder.accounts.decode("ClaimTicket", data)
   }
 
   /**
@@ -209,16 +185,10 @@ export class BondsUser {
   ): Promise<TransactionInstruction> {
     const underlyingSettlement =
       tokenAddress ??
-      (await getAssociatedTokenAddress(
-        this.bondMarket.addresses.underlyingTokenMint,
-        new PublicKey(this.user)
-      ));
+      (await getAssociatedTokenAddress(this.bondMarket.addresses.underlyingTokenMint, new PublicKey(this.user)))
     const ticketSettlement =
       tokenAddress ??
-      (await getAssociatedTokenAddress(
-        this.bondMarket.addresses.bondTicketMint,
-        new PublicKey(this.user)
-      ));
+      (await getAssociatedTokenAddress(this.bondMarket.addresses.bondTicketMint, new PublicKey(this.user)))
     return await this.bondMarket.program.methods
       .initializeMarginUser()
       .accounts({
@@ -229,28 +199,18 @@ export class BondsUser {
         payer,
         rent: SYSVAR_RENT_PUBKEY,
         systemProgram: SystemProgram.programId,
-        tokenProgram: TOKEN_PROGRAM_ID,
+        tokenProgram: TOKEN_PROGRAM_ID
       })
-      .instruction();
+      .instruction()
   }
 
-  static async deriveMarginUser(
-    bondMarket: BondMarket,
-    marginAccountAddress: Address
-  ): Promise<PublicKey> {
+  static async deriveMarginUser(bondMarket: BondMarket, marginAccountAddress: Address): Promise<PublicKey> {
     return await findDerivedAccount(
       ["margin_borrower", bondMarket.address, marginAccountAddress],
       bondMarket.program.programId
-    );
+    )
   }
-  static async deriveObligation(
-    borrowerAccount: Address,
-    seed: Uint8Array,
-    programId: Address
-  ): Promise<PublicKey> {
-    return await findDerivedAccount(
-      ["obligation", borrowerAccount, seed],
-      new PublicKey(programId)
-    );
+  static async deriveObligation(borrowerAccount: Address, seed: Uint8Array, programId: Address): Promise<PublicKey> {
+    return await findDerivedAccount(["obligation", borrowerAccount, seed], new PublicKey(programId))
   }
 }

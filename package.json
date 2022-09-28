@@ -8,7 +8,7 @@
   ],
   "license": "AGPL-3.0-or-later",
   "scripts": {
-    "build:all": "yarn build:margin && yarn build:wasm && yarn build:bonds && yarn build:app",
+    "build:all": "yarn build:margin && yarn build:wasm && yarn build:bonds && cd app && yarn build:app",
     "build:margin": "yarn --cwd libraries/ts/margin build",
     "build:wasm": "wasm-pack build --target nodejs ./libraries/ts/bonds/wasm-utils ; copyfiles -u 1 ./libraries/ts/bonds/wasm-utils/pkg/* ./libraries/ts/bonds/dist/wasm-utils",
     "build:bonds": "yarn --cwd libraries/ts/bonds build",
