@@ -4,7 +4,7 @@ members = [
     "tests/hosted",
     "tests/mock-adapter",
     "libraries/rust/*",
-    "libraries/ts/margin/wasm-utils"
+    "libraries/ts/margin/wasm-utils",
     "tools/ctl"
 ]
 
