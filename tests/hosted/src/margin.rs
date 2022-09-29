@@ -29,7 +29,8 @@ use anyhow::{bail, Error};
 use jet_margin::{AccountPosition, MarginAccount, TokenKind};
 use jet_margin_sdk::ix_builder::{
     derive_airspace, derive_permit, get_control_authority_address, get_metadata_address,
-    AirspaceIxBuilder, ControlIxBuilder, MarginPoolConfiguration, MarginPoolIxBuilder,
+    AirspaceIxBuilder, ControlIxBuilder, MarginConfigIxBuilder, MarginPoolConfiguration,
+    MarginPoolIxBuilder,
 };
 use jet_margin_sdk::solana::transaction::{SendTransactionBuilder, TransactionBuilder};
 use jet_margin_sdk::spl_swap::SplSwapPool;
@@ -258,10 +259,13 @@ impl MarginClient {
         liquidator: Pubkey,
         is_liquidator: bool,
     ) -> Result<(), Error> {
-        let ix = ControlIxBuilder::new(self.rpc.payer().pubkey())
+        let control_ix = ControlIxBuilder::new(self.rpc.payer().pubkey())
             .set_liquidator(&liquidator, is_liquidator);
+        let margin_ix =
+            MarginConfigIxBuilder::new(self.tx_admin.airspace, self.rpc.payer().pubkey())
+                .configure_liquidator(liquidator, is_liquidator);
 
-        send_and_confirm(&self.rpc, &[ix], &[]).await?;
+        send_and_confirm(&self.rpc, &[control_ix, margin_ix], &[]).await?;
 
         Ok(())
     }
