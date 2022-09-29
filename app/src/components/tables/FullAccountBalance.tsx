@@ -76,14 +76,14 @@ export function FullAccountBalance(): JSX.Element {
           <Text className="price-name">{`${balance.tokenSymbol} ≈ ${currencyFormatter(
             pools.tokenPools[balance.tokenSymbol]?.tokenPrice ?? 0,
             true,
-            balance.tokenSymbol === 'USDC' ? 0 : undefined,
-            balance.tokenSymbol === 'USDC'
+            balance.tokenSymbol === ('USDC' || 'USDT') ? 0 : undefined,
+            balance.tokenSymbol === ('USDC' || 'USDT')
           )}`}</Text>
           <Text className="price-abbrev">{`≈ ${currencyFormatter(
             pools.tokenPools[balance.tokenSymbol]?.tokenPrice ?? 0,
             true,
-            balance.tokenSymbol === 'USDC' ? 0 : undefined,
-            balance.tokenSymbol === 'USDC'
+            balance.tokenSymbol === ('USDC' || 'USDT') ? 0 : undefined,
+            balance.tokenSymbol === ('USDC' || 'USDT')
           )}`}</Text>
         </div>
       );

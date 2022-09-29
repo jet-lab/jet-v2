@@ -1,5 +1,5 @@
-import { AnchorProvider } from "@project-serum/anchor"
-import NodeWallet from "@project-serum/anchor/dist/cjs/nodewallet"
+import { AnchorProvider } from '@project-serum/anchor';
+import NodeWallet from '@project-serum/anchor/dist/cjs/nodewallet';
 import {
   AccountLayout,
   ACCOUNT_SIZE,
@@ -14,7 +14,7 @@ import {
   MintLayout,
   MINT_SIZE,
   TOKEN_PROGRAM_ID
-} from "@solana/spl-token"
+} from '@solana/spl-token';
 import {
   Commitment,
   ConfirmOptions,
@@ -23,23 +23,23 @@ import {
   PublicKey,
   SystemProgram,
   Transaction
-} from "@solana/web3.js"
-import { MarginConfig, MarginPrograms, MarginTokenConfig } from "@jet-lab/margin"
+} from '@solana/web3.js';
+import { MarginConfig, MarginPrograms, MarginTokenConfig } from '@jet-lab/margin';
 
-export const CONTROL_PROGRAM_ID = new PublicKey("JPCtrLreUqsEbdhtxZ8zpd8wBydKz4nuEjX5u9Eg5H8")
-export const MARGIN_PROGRAM_ID = new PublicKey("JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ")
-export const MARGIN_POOL_PROGRAM_ID = new PublicKey("JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ")
-export const MARGIN_SWAP_PROGRAM_ID = new PublicKey("JPMAa5dnWLFRvUsumawFcGhnwikqZziLLfqn9SLNXPN")
-export const METADATA_PROGRAM_ID = new PublicKey("JPMetawzxw7WyH3qHUVScYHWFBGhjwqDnM2R9qVbRLp")
-export const ORCA_SWAP_PROGRAM_ID = new PublicKey("9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP")
+export const CONTROL_PROGRAM_ID = new PublicKey('JPCtrLreUqsEbdhtxZ8zpd8wBydKz4nuEjX5u9Eg5H8');
+export const MARGIN_PROGRAM_ID = new PublicKey('JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ');
+export const MARGIN_POOL_PROGRAM_ID = new PublicKey('JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ');
+export const MARGIN_SWAP_PROGRAM_ID = new PublicKey('JPMAa5dnWLFRvUsumawFcGhnwikqZziLLfqn9SLNXPN');
+export const METADATA_PROGRAM_ID = new PublicKey('JPMetawzxw7WyH3qHUVScYHWFBGhjwqDnM2R9qVbRLp');
+export const ORCA_SWAP_PROGRAM_ID = new PublicKey('9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP');
 
 export const DEFAULT_CONFIRM_OPTS: ConfirmOptions = {
-  commitment: "processed",
+  commitment: 'processed',
   // Some libs (anchor) ignore commitment and use preflight commitment
   // Therefore, set both even if preflight is skipped
-  preflightCommitment: "processed",
+  preflightCommitment: 'processed',
   skipPreflight: true
-}
+};
 
 export const DEFAULT_MARGIN_CONFIG: MarginConfig = {
   controlProgramId: CONTROL_PROGRAM_ID,
@@ -50,25 +50,25 @@ export const DEFAULT_MARGIN_CONFIG: MarginConfig = {
   metadataProgramId: METADATA_PROGRAM_ID,
   orcaSwapProgramId: ORCA_SWAP_PROGRAM_ID,
   serumProgramId: SystemProgram.programId,
-  url: "http://localhost",
+  url: 'http://localhost',
   tokens: {},
   markets: {}
-}
+};
 
 export interface TestToken {
-  mint: PublicKey
-  vault: PublicKey
-  tokenConfig: MarginTokenConfig
+  mint: PublicKey;
+  vault: PublicKey;
+  tokenConfig: MarginTokenConfig;
 }
 
 export async function createAuthority(programs: MarginPrograms, provider: AnchorProvider): Promise<void> {
-  const [authority] = await PublicKey.findProgramAddress([], CONTROL_PROGRAM_ID)
+  const [authority] = await PublicKey.findProgramAddress([], CONTROL_PROGRAM_ID);
 
-  const accountInfo = await provider.connection.getAccountInfo(authority, "processed" as Commitment)
+  const accountInfo = await provider.connection.getAccountInfo(authority, 'processed' as Commitment);
   if (!accountInfo) {
-    const lamports = 1 * LAMPORTS_PER_SOL
-    const airdropSignature = await provider.connection.requestAirdrop(authority, lamports)
-    await provider.connection.confirmTransaction(airdropSignature)
+    const lamports = 1 * LAMPORTS_PER_SOL;
+    const airdropSignature = await provider.connection.requestAirdrop(authority, lamports);
+    await provider.connection.confirmTransaction(airdropSignature);
 
     const tx = await programs.control.methods
       .createAuthority()
@@ -77,9 +77,9 @@ export async function createAuthority(programs: MarginPrograms, provider: Anchor
         payer: provider.wallet.publicKey,
         systemProgram: SystemProgram.programId
       })
-      .transaction()
+      .transaction();
 
-    await provider.sendAndConfirm(tx)
+    await provider.sendAndConfirm(tx);
   }
 }
 
@@ -90,11 +90,11 @@ export async function registerAdapter(
   adapterProgramId: PublicKey,
   payer: Keypair
 ): Promise<void> {
-  const [metadataAccount] = await PublicKey.findProgramAddress([adapterProgramId.toBuffer()], METADATA_PROGRAM_ID)
+  const [metadataAccount] = await PublicKey.findProgramAddress([adapterProgramId.toBuffer()], METADATA_PROGRAM_ID);
 
-  const accountInfo = await provider.connection.getAccountInfo(metadataAccount, "processed" as Commitment)
+  const accountInfo = await provider.connection.getAccountInfo(metadataAccount, 'processed' as Commitment);
   if (!accountInfo) {
-    const [authority] = await PublicKey.findProgramAddress([], CONTROL_PROGRAM_ID)
+    const [authority] = await PublicKey.findProgramAddress([], CONTROL_PROGRAM_ID);
 
     const tx = await programs.control.methods
       .registerAdapter()
@@ -107,12 +107,12 @@ export async function registerAdapter(
         metadataProgram: METADATA_PROGRAM_ID,
         systemProgram: SystemProgram.programId
       })
-      .transaction()
+      .transaction();
     try {
-      await provider.sendAndConfirm(tx)
+      await provider.sendAndConfirm(tx);
     } catch (err) {
-      console.log(err)
-      throw err
+      console.log(err);
+      throw err;
     }
   }
 }
@@ -124,8 +124,8 @@ export async function createToken(
   supply: number,
   symbol: string
 ): Promise<TestToken> {
-  const mint = Keypair.generate()
-  const vault = Keypair.generate()
+  const mint = Keypair.generate();
+  const vault = Keypair.generate();
   const transaction = new Transaction().add(
     SystemProgram.createAccount({
       fromPubkey: owner.publicKey,
@@ -150,78 +150,78 @@ export async function createToken(
       BigInt(supply) * BigInt(pow10(decimals)),
       decimals
     )
-  )
-  await provider.sendAndConfirm(transaction, [owner, mint, vault])
+  );
+  await provider.sendAndConfirm(transaction, [owner, mint, vault]);
   const tokenConfig: MarginTokenConfig = {
     symbol,
     name: symbol,
     decimals,
     precision: decimals,
     mint: mint.publicKey
-  }
+  };
 
   return {
     mint: mint.publicKey,
     vault: vault.publicKey,
     tokenConfig
-  }
+  };
 }
 
 export async function createTokenAccount(provider: AnchorProvider, mint: PublicKey, owner: PublicKey, payer: Keypair) {
-  const tokenAddress = await getAssociatedTokenAddress(mint, owner, true)
+  const tokenAddress = await getAssociatedTokenAddress(mint, owner, true);
   const transaction = new Transaction().add(
     createAssociatedTokenAccountInstruction(payer.publicKey, tokenAddress, owner, mint)
-  )
-  await provider.sendAndConfirm(transaction, [payer])
-  return tokenAddress
+  );
+  await provider.sendAndConfirm(transaction, [payer]);
+  return tokenAddress;
 }
 
 export async function createUserWallet(provider: AnchorProvider, lamports: number): Promise<NodeWallet> {
-  const account = Keypair.generate()
-  const wallet = new NodeWallet(account)
-  const airdropSignature = await provider.connection.requestAirdrop(account.publicKey, lamports)
-  await provider.connection.confirmTransaction(airdropSignature)
-  return wallet
+  const account = Keypair.generate();
+  const wallet = new NodeWallet(account);
+  const airdropSignature = await provider.connection.requestAirdrop(account.publicKey, lamports);
+  await provider.connection.confirmTransaction(airdropSignature);
+  return wallet;
 }
 
 export async function getMintSupply(provider: AnchorProvider, mintPublicKey: PublicKey, decimals: number) {
-  const mintAccount = await provider.connection.getAccountInfo(mintPublicKey)
+  const mintAccount = await provider.connection.getAccountInfo(mintPublicKey);
   if (!mintAccount) {
-    throw new Error("Mint does not exist")
+    throw new Error('Mint does not exist');
   }
-  const mintInfo = MintLayout.decode(Buffer.from(mintAccount.data))
-  return Number(mintInfo.supply) / pow10(decimals)
+  const mintInfo = MintLayout.decode(Buffer.from(mintAccount.data));
+  return Number(mintInfo.supply) / pow10(decimals);
 }
 
 export async function getTokenAccountInfo(provider: AnchorProvider, address: PublicKey) {
-  const info = await provider.connection.getAccountInfo(address)
+  const info = await provider.connection.getAccountInfo(address);
   if (!info) {
-    throw new Error("Account does not exist")
+    throw new Error('Account does not exist');
   }
-  return AccountLayout.decode(Buffer.from(info.data))
+  return AccountLayout.decode(Buffer.from(info.data));
 }
 
 export async function getTokenBalance(
   provider: AnchorProvider,
-  commitment: Commitment = "processed",
+  commitment: Commitment = 'processed',
   tokenAddress: PublicKey
 ) {
-  const balance = await provider.connection.getTokenAccountBalance(tokenAddress, commitment)
-  return balance.value.uiAmount
+  const balance = await provider.connection.getTokenAccountBalance(tokenAddress, commitment);
+  return balance.value.uiAmount;
 }
 
 export function pow10(decimals: number): number {
   switch (decimals) {
     case 6:
-      return 1_000_000
+      return 1_000_000;
     case 7:
-      return 10_000_000
+      return 10_000_000;
     case 8:
-      return 100_000_000
+      return 100_000_000;
     case 9:
-      return 1_000_000_000
+      return 1_000_000_000;
     default:
-      throw new Error(`Unsupported number of decimals: ${decimals}.`)
+      throw new Error(`Unsupported number of decimals: ${decimals}.`);
   }
 }
 
@@ -243,6 +243,6 @@ export async function sendToken(
       amount * pow10(decimals),
       decimals
     )
-  )
-  await provider.sendAndConfirm(transaction, [owner])
+  );
+  await provider.sendAndConfirm(transaction, [owner]);
 }
