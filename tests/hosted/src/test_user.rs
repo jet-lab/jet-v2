@@ -2,8 +2,9 @@ use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 
 use anyhow::Result;
+use jet_margin_sdk::cat;
 use jet_margin_sdk::solana::transaction::{SendTransactionBuilder, TransactionBuilder};
-use jet_margin_sdk::util::asynchronous::MapAsync;
+use jet_margin_sdk::util::asynchronous::{AndAsync, MapAsync};
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::{Keypair, Signer};
 
@@ -170,6 +171,21 @@ impl<'a> TestUser<'a> {
             .iter()
             .map_async(|position| tokens.refresh_to_same_price_tx(&position.token))
             .await
+    }
+
+    pub async fn refresh_positions_with_oracles_txs(&self) -> Result<Vec<TransactionBuilder>> {
+        let tokens = TokenManager::new(self.ctx.rpc.clone());
+        Ok(self
+            .user
+            .tx
+            .refresh_all_pool_positions_underlying_to_tx()
+            .await?
+            .into_iter()
+            .map_async(|(ul, pos)| pos.and_result(tokens.refresh_to_same_price_tx2(ul)))
+            .await?
+            .into_iter()
+            .map(|(tx2, tx1)| cat![tx1, tx2])
+            .collect())
     }
 }
 

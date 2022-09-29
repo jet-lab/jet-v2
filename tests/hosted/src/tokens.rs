@@ -270,6 +270,25 @@ impl TokenManager {
         self.set_pod_metadata_tx(&price_address, &account)
     }
 
+    pub async fn refresh_to_same_price_tx2(
+        &self,
+        mint: Pubkey,
+    ) -> Result<TransactionBuilder, Error> {
+        let price_address = Pubkey::find_program_address(
+            &[mint.as_ref(), b"oracle:price".as_ref()],
+            &jet_metadata::ID,
+        )
+        .0;
+        let mut account: pyth_sdk_solana::state::PriceAccount =
+            self.get_pod_metadata(&price_address).await?;
+
+        let clock = self.rpc.get_clock().expect("could not get the clock");
+        account.agg.pub_slot = clock.slot;
+        account.timestamp = clock.unix_timestamp;
+
+        self.set_pod_metadata_tx(&price_address, &account)
+    }
+
     pub async fn get_price(
         &self,
         mint: &Pubkey,

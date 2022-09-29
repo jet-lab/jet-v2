@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use anyhow::{Error, Result};
 
+use jet_margin_sdk::solana::transaction::SendTransactionBuilder;
 use jet_margin_sdk::tokens::TokenPrice;
 use jet_margin_sdk::util::asynchronous::MapAsync;
 use solana_sdk::native_token::LAMPORTS_PER_SOL;
@@ -156,14 +157,18 @@ pub async fn setup_user(
         assert_eq!(in_wallet, ctx.tokens.get_balance(&token_account).await?);
     }
 
-    user.refresh_all_pool_positions().await?;
-
-    Ok(TestUser {
+    let test_user = TestUser {
         ctx,
         user,
-        // liquidator: user_liq,
         mint_to_token_account,
-    })
+    };
+
+    // todo try to remove this and let tests do it instead only when necessary
+    ctx.rpc
+        .send_and_confirm_condensed(test_user.refresh_positions_with_oracles_txs().await?)
+        .await?;
+
+    Ok(test_user)
 }
 
 /// Environment where no user has a balance

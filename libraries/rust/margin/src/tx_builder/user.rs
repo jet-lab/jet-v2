@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::sync::Arc;
 
 use jet_margin_pool::program::JetMarginPool;
@@ -34,6 +34,7 @@ use jet_margin::{MarginAccount, PositionKind};
 use jet_margin_pool::TokenChange;
 use jet_simulation::solana_rpc_api::SolanaRpcClient;
 
+use crate::util::data::Join;
 use crate::{
     ix_builder::*,
     solana::{
@@ -265,7 +266,11 @@ impl MarginTxBuilder {
     ///
     /// `token_mint` - The address of the mint for the tokens to borrow
     /// `amount` - The amount of tokens to borrow
-    pub async fn borrow(&self, token_mint: &Pubkey, change: TokenChange) -> Result<Transaction> {
+    pub async fn borrow(
+        &self,
+        token_mint: &Pubkey,
+        change: TokenChange,
+    ) -> Result<TransactionBuilder> {
         let mut instructions = vec![];
         let pool = MarginPoolIxBuilder::new(*token_mint);
         let token_metadata = self.get_token_metadata(token_mint).await?;
@@ -285,7 +290,7 @@ impl MarginTxBuilder {
             pool.margin_borrow(self.ix.address, deposit_position, loan_position, change);
 
         instructions.push(self.adapter_invoke_ix(inner_borrow_ix));
-        self.create_transaction(&instructions).await
+        self.create_transaction_builder(&instructions)
     }
 
     /// Transaction to repay a loan of tokens in a margin account from the account's deposits
@@ -465,18 +470,19 @@ impl MarginTxBuilder {
         assert!(self.is_liquidator);
 
         // Get the margin account and refresh positions
-        let mut instructions = vec![];
-        if refresh_positions {
-            self.create_pool_instructions(&mut instructions).await?;
-        }
+        let mut txs = if refresh_positions {
+            self.refresh_all_pool_positions().await?.ijoin()
+        } else {
+            TransactionBuilder::default()
+        };
 
         // Add liquidation instruction
-        instructions.push(
+        txs.instructions.push(
             self.ix
                 .liquidate_begin(self.signer.as_ref().unwrap().pubkey()),
         );
 
-        self.create_transaction_builder(&instructions)
+        Ok(txs)
     }
 
     /// Transaction to end liquidating user account
@@ -507,12 +513,13 @@ impl MarginTxBuilder {
         self.create_transaction(&[ix]).await
     }
 
-    /// Refresh all of a user's positions based in the margin pool
-    pub async fn refresh_all_pool_positions(&self) -> Result<Vec<Transaction>> {
-        let mut instructions = vec![];
-        self.create_pool_instructions(&mut instructions).await?;
-
-        self.get_chunk_transactions(12, instructions).await
+    /// Append instructions to refresh pool positions to instructions
+    pub async fn refresh_all_pool_positions(&self) -> Result<Vec<TransactionBuilder>> {
+        Ok(self
+            .refresh_all_pool_positions_underlying_to_tx()
+            .await?
+            .into_values()
+            .collect())
     }
 
     /// Refresh the metadata for a position
@@ -568,13 +575,15 @@ impl MarginTxBuilder {
     }
 
     /// Append instructions to refresh pool positions to instructions
-    async fn create_pool_instructions(&self, instructions: &mut Vec<Instruction>) -> Result<()> {
+    pub async fn refresh_all_pool_positions_underlying_to_tx(
+        &self,
+    ) -> Result<HashMap<Pubkey, TransactionBuilder>> {
         let state = self.get_account_state().await?;
-        let mut seen_pools = HashSet::new();
+        let mut txns = HashMap::new();
 
         for position in state.positions() {
             let p_metadata = self.get_position_metadata(&position.token).await?;
-            if seen_pools.contains(&p_metadata.underlying_token_mint) {
+            if txns.contains_key(&p_metadata.underlying_token_mint) {
                 continue;
             }
             let t_metadata = self
@@ -585,11 +594,13 @@ impl MarginTxBuilder {
                 ix_builder.margin_refresh_position(self.ix.address, t_metadata.pyth_price),
             );
 
-            instructions.push(ix);
-            seen_pools.insert(p_metadata.underlying_token_mint);
+            txns.insert(
+                p_metadata.underlying_token_mint,
+                self.create_transaction_builder(&[ix])?,
+            );
         }
 
-        Ok(())
+        Ok(txns)
     }
 
     async fn get_token_metadata(&self, token_mint: &Pubkey) -> Result<TokenMetadata> {
