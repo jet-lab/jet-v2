@@ -176,7 +176,9 @@ async fn _full_workflow<P: Proxy>(manager: Arc<BondsTestManager>) -> Result<()> 
     assert!(eq.inner().iter().next().is_none());
     assert!(manager.consume_events().await.is_err());
 
+    assert!(manager.load_orderbook_market_state().await?.pause_matching == true as u8);
     manager.resume_orders().await?;
+    assert!(manager.load_orderbook_market_state().await?.pause_matching == false as u8);
 
     let remaining_order = manager.load_orderbook().await?.asks()?[0];
 
@@ -185,6 +187,8 @@ async fn _full_workflow<P: Proxy>(manager: Arc<BondsTestManager>) -> Result<()> 
         borrow_order.base_quantity - lend_order.base_quantity
     );
     assert_eq!(remaining_order.price(), borrow_order.price());
+
+    alice.cancel_order(remaining_order.order_id()).await?;
 
     let mut eq = manager.load_event_queue().await?;
     assert!(eq.inner().iter().next().is_some());

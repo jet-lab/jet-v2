@@ -135,7 +135,7 @@ impl<'info> OrderbookMut<'info> {
     ) -> Result<(Side, CallbackFlags, OrderSummary)> {
         let side = get_side_from_order_id(order_id);
         let mut buf;
-        let mut slab: Slab<CallbackInfo> = match side {
+        let slab: Slab<CallbackInfo> = match side {
             Side::Bid => {
                 buf = self.bids.data.borrow_mut();
                 Slab::from_buffer(&mut buf, agnostic_orderbook::state::AccountTag::Bids)?
@@ -145,17 +145,24 @@ impl<'info> OrderbookMut<'info> {
                 Slab::from_buffer(&mut buf, agnostic_orderbook::state::AccountTag::Asks)?
             }
         };
-        let callback_info = slab
-            .remove_by_key(order_id)
-            .ok_or_else(|| {
-                msg!("Given Order ID: [{}]", order_id);
-                error!(BondsError::OrderNotFound)
-            })?
-            .1;
+        let handle = slab.find_by_key(order_id).ok_or_else(|| {
+            msg!("Given Order ID: [{}]", order_id);
+            error!(BondsError::OrderNotFound)
+        })?;
+        let info = slab.get_callback_info(handle);
+
+        let info_owner = info.owner;
+        let flags = info.flags;
+
+        // drop the refs so the orderbook can borrow the slab data
+        drop(info);
+        drop(slab);
+        drop(buf);
+
         require_eq!(
-            Pubkey::new_from_array(callback_info.owner),
+            Pubkey::new_from_array(info_owner),
             owner,
-            BondsError::WrongMarginUser
+            BondsError::WrongUserAccount
         );
         let orderbook_params = cancel_order::Params { order_id };
         let order_summary = agnostic_orderbook::instruction::cancel_order::process::<CallbackInfo>(
@@ -170,7 +177,7 @@ impl<'info> OrderbookMut<'info> {
             order_id,
         });
 
-        Ok((side, callback_info.flags, order_summary))
+        Ok((side, flags, order_summary))
     }
 }
 
