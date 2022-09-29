@@ -5,7 +5,7 @@ import { bigIntToBn, bnToBigInt, MarginAccount } from "@jet-lab/margin"
 import { Orderbook } from "./orderbook"
 import { JetBonds } from "./types"
 import { fetchData, findDerivedAccount } from "./utils"
-import { rate_to_price } from "../wasm-utils/pkg"
+import { order_id_to_string, rate_to_price } from "../wasm-utils/pkg"
 
 export const OrderSideBorrow = { borrow: {} }
 export const OrderSideLend = { lend: {} }
@@ -220,8 +220,7 @@ export class BondMarket {
   ): Promise<TransactionInstruction> {
     const userTokenVault = await getAssociatedTokenAddress(this.addresses.underlyingTokenMint, user.address, true)
     const userTicketVault = await getAssociatedTokenAddress(this.addresses.bondTicketMint, user.address, true)
-    const limitPriceBigInt = rate_to_price(bnToBigInt(rate), bnToBigInt(this.info.duration))
-    const limitPrice = bigIntToBn(limitPriceBigInt)
+    const limitPrice = bigIntToBn(rate_to_price(bnToBigInt(rate), bnToBigInt(this.info.duration)))
     const params: OrderParams = {
       maxBondTicketQty: new BN(U64_MAX.toString()),
       maxUnderlyingTokenQty: new BN(amount),
@@ -274,15 +273,16 @@ export class BondMarket {
       .instruction()
   }
 
-  async cancelOrderIx(user: MarginAccount, orderId: BN, side: OrderSide): Promise<TransactionInstruction> {
+  async cancelOrderIx(user: MarginAccount, orderId: Uint8Array, side: OrderSide): Promise<TransactionInstruction> {
     const userVault =
       side === OrderSideBorrow
         ? await getAssociatedTokenAddress(this.addresses.underlyingTokenMint, user.address, true)
         : await getAssociatedTokenAddress(this.addresses.bondTicketMint, user.address, true)
     const marketAccount = side === OrderSideBorrow ? this.addresses.underlyingTokenVault : this.addresses.bondTicketMint
 
+    const bnOrderId = new BN(order_id_to_string(orderId))
     return await this.program.methods
-      .cancelOrder(orderId)
+      .cancelOrder(bnOrderId)
       .accounts({
         ...this.addresses,
         user: user.address,

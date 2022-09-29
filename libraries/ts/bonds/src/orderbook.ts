@@ -14,20 +14,9 @@ export class Orderbook {
     const asksBuf = (await bondMarket.provider.connection.getAccountInfo(bondMarket.info.asks))!.data
     const bidsBuf = (await bondMarket.provider.connection.getAccountInfo(bondMarket.info.bids))!.data
 
-    const asksRaw = getOrdersFromSlab(new Uint8Array(asksBuf))
-    const bidsRaw = getOrdersFromSlab(new Uint8Array(bidsBuf))
-
-    const asks = this.deserializeOrders(asksRaw)
-    const bids = this.deserializeOrders(bidsRaw)
+    const asks = getOrdersFromSlab(new Uint8Array(asksBuf))
+    const bids = getOrdersFromSlab(new Uint8Array(bidsBuf))
 
     return new Orderbook(bids, asks)
-  }
-
-  static deserializeOrders(rawOrders: any[]): Order[] {
-    let orders: Order[] = []
-    for (let order in rawOrders) {
-      orders.push(rawOrders[order])
-    }
-    return orders
   }
 }

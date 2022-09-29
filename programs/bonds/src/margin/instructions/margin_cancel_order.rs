@@ -1,8 +1,7 @@
-use agnostic_orderbook::state::Side;
 use anchor_lang::prelude::*;
 use anchor_spl::token::Token;
 
-use crate::{margin::state::MarginUser, orderbook::state::*, utils::burn, BondsError};
+use crate::{margin::state::MarginUser, orderbook::state::*, BondsError};
 
 #[derive(Accounts)]
 pub struct MarginCancelOrder<'info> {
@@ -38,7 +37,7 @@ pub struct MarginCancelOrder<'info> {
 
 /// remove order from the book
 pub fn handler(ctx: Context<MarginCancelOrder>, order_id: u128) -> Result<()> {
-    let (side, callback_flags, order_summary) = ctx
+    let (_, callback_flags, _) = ctx
         .accounts
         .orderbook_mut
         .cancel_order(order_id, ctx.accounts.borrower_account.key())?;
@@ -47,28 +46,6 @@ pub fn handler(ctx: Context<MarginCancelOrder>, order_id: u128) -> Result<()> {
         callback_flags.contains(CallbackFlags::MARGIN),
         BondsError::UnauthorizedCaller
     );
-    // credit the user account with unused funds
-    // todo is this redundant with consume_events for Out events?
-    match side {
-        Side::Bid => panic!("program bug - corrupted callback flags - cannot bid on margin"),
-        Side::Ask => {
-            if callback_flags.contains(CallbackFlags::NEW_DEBT) {
-                ctx.accounts
-                    .borrower_account
-                    .debt
-                    .cancel_borrow_order(order_summary.total_base_qty)?;
-                burn!(
-                    ctx,
-                    claims_mint,
-                    claims,
-                    order_summary.total_base_qty,
-                    orderbook_mut
-                )?;
-            } else {
-                panic!("program bug - corrupted callback flags - cannot ask on margin without issuing new debt")
-            }
-        }
-    }
 
     Ok(())
 }

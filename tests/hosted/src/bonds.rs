@@ -707,6 +707,16 @@ impl<P: Proxy> BondsUser<P> {
             .sign_send_transaction(&[self.proxy.invoke_signed(lend)], Some(&[&self.owner]))
             .await
     }
+
+    pub async fn cancel_order(&self, order_id: u128) -> Result<Signature> {
+        let cancel = self
+            .manager
+            .ix_builder
+            .cancel_order(&self.proxy.pubkey(), order_id)?;
+        self.manager
+            .sign_send_transaction(&[self.proxy.invoke_signed(cancel)], Some(&[&self.owner]))
+            .await
+    }
 }
 
 impl<P: Proxy> BondsUser<P> {
