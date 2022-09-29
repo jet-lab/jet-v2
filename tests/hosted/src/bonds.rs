@@ -712,7 +712,7 @@ impl<P: Proxy> BondsUser<P> {
         let cancel = self
             .manager
             .ix_builder
-            .cancel_order(&self.proxy.pubkey(), order_id)?;
+            .cancel_order(self.proxy.pubkey(), order_id)?;
         self.manager
             .sign_send_transaction(&[self.proxy.invoke_signed(cancel)], Some(&[&self.owner]))
             .await

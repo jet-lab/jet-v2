@@ -63,7 +63,9 @@ impl<'a, 'info> EventIterator<'a, 'info> {
             }) => self.extract_fill_accounts(maker_info, taker_info),
             OrderbookEvent::Out(OutInfo { info, .. }) => {
                 Ok(EventAccounts::Out(Box::new(OutAccounts {
-                    user: self.accounts.next_user_account(info.out_account)?,
+                    user: self
+                        .accounts
+                        .next_user_account(info.out_account.to_bytes())?,
                     user_adapter_account: self.accounts.next_adapter_if_needed(info)?,
                 })))
             }
@@ -86,7 +88,7 @@ impl<'a, 'info> EventIterator<'a, 'info> {
                     self.system_program.to_account_info(),
                     &[
                         crate::seeds::SPLIT_TICKET,
-                        &maker_info.fill_account,
+                        &maker_info.fill_account.to_bytes(),
                         &self.seeds.next().ok_or(BondsError::InsufficientSeeds)?,
                     ],
                 )?,
@@ -98,7 +100,7 @@ impl<'a, 'info> EventIterator<'a, 'info> {
                     self.system_program.to_account_info(),
                     &[
                         crate::seeds::OBLIGATION,
-                        &maker_info.fill_account,
+                        &maker_info.fill_account.to_bytes(),
                         &self.seeds.next().ok_or(BondsError::InsufficientSeeds)?,
                     ],
                 )?,
