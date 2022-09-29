@@ -17,43 +17,37 @@
 
 use anchor_lang::prelude::*;
 
-use crate::{
-    seeds::DEFAULT_DIRECTIVES,
-    state::{DefaultDirectives, Directives, GovernorId},
-};
+use crate::{seeds::GOVERNOR_ID, state::GovernorId, GOVERNOR_DEFAULT};
 
 #[derive(Accounts)]
-pub struct SetDefaultDirectives<'info> {
-    /// Payer for rent
+pub struct CreateGovernorId<'info> {
     #[account(mut)]
     payer: Signer<'info>,
 
-    /// The current airspace governor
-    governor: Signer<'info>,
-
-    /// The identity account for the governor
-    #[account(has_one = governor)]
-    governor_id: Account<'info, GovernorId>,
-
-    /// The default directives account
+    /// The governer identity account
     #[account(init_if_needed,
-              seeds = [DEFAULT_DIRECTIVES],
+              seeds = [GOVERNOR_ID],
               bump,
               payer = payer,
-              space = DefaultDirectives::SIZE
+              space = GovernorId::SIZE
     )]
-    default_directives: Account<'info, DefaultDirectives>,
+    governor_id: Account<'info, GovernorId>,
 
     system_program: Program<'info, System>,
 }
 
-pub fn set_default_directives_handler(
-    ctx: Context<SetDefaultDirectives>,
-    new_directives: Directives,
-) -> Result<()> {
-    let default = &mut ctx.accounts.default_directives;
+pub fn create_governor_id_handler(ctx: Context<CreateGovernorId>) -> Result<()> {
+    let governor_id = &mut ctx.accounts.governor_id;
 
-    ***default = new_directives;
+    if governor_id.governor == Pubkey::default() {
+        if cfg!(feature = "testing") {
+            // In testing environments, governor can be set by first caller
+            governor_id.governor = ctx.accounts.payer.key();
+        } else {
+            // In production/mainnet, governor has hardcoded default
+            governor_id.governor = GOVERNOR_DEFAULT;
+        }
+    }
 
     Ok(())
 }

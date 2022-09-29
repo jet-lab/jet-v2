@@ -197,14 +197,9 @@ pub struct TokenDepositsConfig {
 /// This primarily sets up the root permissions for the protocol. Must be signed by the default
 /// governing address for the protocol. When built with the `testing` feature, the first signer
 /// to submit these instructions becomes set as the governor address.
-pub fn global_initialize_instructions(payer: Pubkey, governor: Pubkey) -> TransactionBuilder {
-    let as_ix = AirspaceIxBuilder::new("", payer, governor);
-    let ctrl_ix = ControlIxBuilder::new_for_authority(payer, governor);
+pub fn global_initialize_instructions(payer: Pubkey) -> TransactionBuilder {
+    let as_ix = AirspaceIxBuilder::new("", payer, payer);
+    let ctrl_ix = ControlIxBuilder::new_for_authority(payer, payer);
 
-    vec![
-        ctrl_ix.create_authority(),
-        as_ix.set_governor(governor),
-        as_ix.set_default_directives(Default::default()),
-    ]
-    .into()
+    vec![ctrl_ix.create_authority(), as_ix.create_governor_id()].into()
 }

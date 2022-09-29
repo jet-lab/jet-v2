@@ -17,11 +17,7 @@
 
 use anchor_lang::prelude::*;
 
-use crate::{
-    events::AirspaceCreated,
-    seeds::{AIRSPACE, DEFAULT_DIRECTIVES},
-    state::{Airspace, DefaultDirectives},
-};
+use crate::{events::AirspaceCreated, seeds::AIRSPACE, state::Airspace};
 
 #[derive(Accounts)]
 #[instruction(seed: String)]
@@ -38,10 +34,6 @@ pub struct AirspaceCreate<'info> {
     )]
     airspace: Account<'info, Airspace>,
 
-    /// The default configuration for resources
-    #[account(seeds = [DEFAULT_DIRECTIVES], bump)]
-    default_directives: Account<'info, DefaultDirectives>,
-
     system_program: Program<'info, System>,
 }
 
@@ -54,7 +46,6 @@ pub fn airspace_create_handler(
     let airspace = &mut ctx.accounts.airspace;
 
     airspace.authority = authority;
-    airspace.directives = **ctx.accounts.default_directives;
     airspace.is_restricted = is_restricted;
 
     emit!(AirspaceCreated {

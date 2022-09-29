@@ -349,7 +349,7 @@ impl TestManager {
         let payer = self.client.payer().pubkey();
 
         self.client
-            .send_and_confirm(global_initialize_instructions(payer, payer))
+            .send_and_confirm(global_initialize_instructions(payer))
             .await?;
         Ok(())
     }

@@ -148,10 +148,7 @@ impl MarginClient {
 
     pub async fn init_globals(&self) -> Result<(), Error> {
         self.rpc
-            .send_and_confirm(global_initialize_instructions(
-                self.rpc.payer().pubkey(),
-                self.rpc.payer().pubkey(),
-            ))
+            .send_and_confirm(global_initialize_instructions(self.rpc.payer().pubkey()))
             .await?;
 
         Ok(())

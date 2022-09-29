@@ -17,49 +17,22 @@
 
 use anchor_lang::prelude::*;
 
-use crate::{seeds::GOVERNOR_ID, state::GovernorId, AirspaceErrorCode, GOVERNOR_DEFAULT};
+use crate::state::GovernorId;
 
 #[derive(Accounts)]
 pub struct SetGovernor<'info> {
-    #[account(mut)]
-    payer: Signer<'info>,
-
     /// The current governor
     governor: Signer<'info>,
 
     /// The governer identity account
-    #[account(init_if_needed,
-              seeds = [GOVERNOR_ID],
-              bump,
-              payer = payer,
-              space = GovernorId::SIZE
-    )]
+    #[account(mut, has_one = governor)]
     governor_id: Account<'info, GovernorId>,
 
     system_program: Program<'info, System>,
 }
 
 pub fn set_governor_handler(ctx: Context<SetGovernor>, new_governor: Pubkey) -> Result<()> {
-    let governor_id = &mut ctx.accounts.governor_id;
-    let governor = &ctx.accounts.governor;
-
-    if governor_id.governor == Pubkey::default() {
-        if cfg!(feature = "testing") {
-            // In testing environments, governor can be set by first caller
-            governor_id.governor = governor.key();
-        } else {
-            // In production/mainnet, governor has hardcoded default
-            governor_id.governor = GOVERNOR_DEFAULT;
-        }
-    }
-
-    // Verify the signer is actually current governor
-    if governor_id.governor != governor.key() {
-        msg!("requester is not the real governor");
-        return err!(AirspaceErrorCode::PermissionDenied);
-    }
-
-    governor_id.governor = new_governor;
+    ctx.accounts.governor_id.governor = new_governor;
 
     Ok(())
 }

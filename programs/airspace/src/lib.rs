@@ -26,16 +26,11 @@ use instructions::*;
 pub mod events;
 pub mod state;
 
-use state::Directives;
-
 pub mod seeds {
     use super::constant;
 
     #[constant]
     pub const GOVERNOR_ID: &[u8] = b"governor-id";
-
-    #[constant]
-    pub const DEFAULT_DIRECTIVES: &[u8] = b"default-directives";
 
     #[constant]
     pub const AIRSPACE: &[u8] = b"airspace";
@@ -55,6 +50,15 @@ pub const GOVERNOR_DEFAULT: Pubkey = pubkey!("7R6FjP2HfXAgKQjURC4tCBrUmRQLCgEUeX
 pub mod jet_airspace {
     use super::*;
 
+    /// Create the governor identity account
+    ///
+    /// If this is a testing environment, the signer on the first transaction executing this
+    /// instruction becomes the first governor. For mainnet environment the first governor
+    /// is set from a hardcoded default.
+    pub fn create_governor_id(ctx: Context<CreateGovernorId>) -> Result<()> {
+        instructions::create_governor_id_handler(ctx)
+    }
+
     /// Set the protocol governor address. Must be signed by the current governor address.
     ///
     /// # Parameters
@@ -62,19 +66,6 @@ pub mod jet_airspace {
     /// * `new_governor` - The new address with governor authority
     pub fn set_governor(ctx: Context<SetGovernor>, new_governor: Pubkey) -> Result<()> {
         instructions::set_governor_handler(ctx, new_governor)
-    }
-
-    /// Set the default directive configuration for all new airspaces. Must be signed by the
-    /// current governor address.
-    ///
-    /// # Parameters
-    ///
-    /// * `new_directives` - The new configuration to use for new airspaces by default
-    pub fn set_default_directives(
-        ctx: Context<SetDefaultDirectives>,
-        new_directives: Directives,
-    ) -> Result<()> {
-        instructions::set_default_directives_handler(ctx, new_directives)
     }
 
     /// Create a new airspace, which serves as an isolation boundary for resources in the protocol
@@ -104,19 +95,6 @@ pub mod jet_airspace {
         new_authority: Pubkey,
     ) -> Result<()> {
         instructions::airspace_set_authority_handler(ctx, new_authority)
-    }
-
-    /// Set the directive configuration for this specific airspace. Must be signed by the current
-    /// governor address.
-    ///
-    /// # Parameters
-    ///
-    /// * `new_authority` - The address that the authority is being changed to.
-    pub fn airspace_set_directives(
-        ctx: Context<AirspaceSetDirectives>,
-        new_directives: Directives,
-    ) -> Result<()> {
-        instructions::airspace_set_directives_handler(ctx, new_directives)
     }
 
     /// Create a new license for an address to serve as an airspace regulator.

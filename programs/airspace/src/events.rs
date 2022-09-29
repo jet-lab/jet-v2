@@ -17,8 +17,6 @@
 
 use anchor_lang::prelude::*;
 
-use crate::state::Directives;
-
 #[event]
 pub struct AirspaceCreated {
     pub airspace: Pubkey,
@@ -48,10 +46,4 @@ pub struct AirspacePermitRevoked {
     pub airspace: Pubkey,
     pub issuer: Pubkey,
     pub owner: Pubkey,
-}
-
-#[event]
-pub struct AirspaceDirectivesChanged {
-    pub airspace: Pubkey,
-    pub new_directives: Directives,
 }

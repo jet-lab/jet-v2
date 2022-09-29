@@ -18,10 +18,7 @@
 use anchor_lang::{InstructionData, ToAccountMetas};
 use solana_sdk::{instruction::Instruction, pubkey::Pubkey, system_program};
 
-use jet_airspace::{
-    seeds::{AIRSPACE, AIRSPACE_PERMIT, AIRSPACE_PERMIT_ISSUER, DEFAULT_DIRECTIVES, GOVERNOR_ID},
-    state::Directives,
-};
+use jet_airspace::seeds::{AIRSPACE, AIRSPACE_PERMIT, AIRSPACE_PERMIT_ISSUER, GOVERNOR_ID};
 
 /// A builder for [`jet_airspace::instruction`] instructions.
 pub struct AirspaceIxBuilder {
@@ -51,6 +48,22 @@ impl AirspaceIxBuilder {
         }
     }
 
+    /// Create the governor identity account
+    pub fn create_governor_id(&self) -> Instruction {
+        let accounts = jet_airspace::accounts::CreateGovernorId {
+            payer: self.authority,
+            governor_id: derive_governor_id(),
+            system_program: system_program::ID,
+        }
+        .to_account_metas(None);
+
+        Instruction {
+            accounts,
+            program_id: jet_airspace::ID,
+            data: jet_airspace::instruction::CreateGovernorId {}.data(),
+        }
+    }
+
     /// Set the protocol governor address
     ///
     /// # Params
@@ -58,7 +71,6 @@ impl AirspaceIxBuilder {
     /// `new_governor` - The new governor address
     pub fn set_governor(&self, new_governor: Pubkey) -> Instruction {
         let accounts = jet_airspace::accounts::SetGovernor {
-            payer: self.payer,
             governor: self.authority,
             governor_id: derive_governor_id(),
             system_program: system_program::ID,
@@ -72,28 +84,6 @@ impl AirspaceIxBuilder {
         }
     }
 
-    /// Set the default airspace directives
-    ///
-    /// # Params
-    ///
-    /// `new_directives` - The directive values to use by default in new airspaces
-    pub fn set_default_directives(&self, new_directives: Directives) -> Instruction {
-        let accounts = jet_airspace::accounts::SetDefaultDirectives {
-            payer: self.payer,
-            governor: self.authority,
-            governor_id: derive_governor_id(),
-            default_directives: derive_default_directives(),
-            system_program: system_program::ID,
-        }
-        .to_account_metas(None);
-
-        Instruction {
-            accounts,
-            program_id: jet_airspace::ID,
-            data: jet_airspace::instruction::SetDefaultDirectives { new_directives }.data(),
-        }
-    }
-
     /// Create the airspace
     ///
     /// # Params
@@ -103,7 +93,6 @@ impl AirspaceIxBuilder {
         let accounts = jet_airspace::accounts::AirspaceCreate {
             payer: self.payer,
             airspace: self.address,
-            default_directives: derive_default_directives(),
             system_program: system_program::ID,
         }
         .to_account_metas(None);
@@ -136,28 +125,6 @@ impl AirspaceIxBuilder {
             accounts,
             program_id: jet_airspace::ID,
             data: jet_airspace::instruction::AirspaceSetAuthority { new_authority }.data(),
-        }
-    }
-
-    /// Set the airspace directives
-    ///
-    /// # Params
-    ///
-    /// `new_directives` - The new directive values to use in the airspace
-    pub fn set_directives(&self, new_directives: Directives) -> Instruction {
-        let accounts = jet_airspace::accounts::SetDefaultDirectives {
-            payer: self.payer,
-            governor: self.authority,
-            governor_id: derive_governor_id(),
-            default_directives: derive_default_directives(),
-            system_program: system_program::ID,
-        }
-        .to_account_metas(None);
-
-        Instruction {
-            accounts,
-            program_id: jet_airspace::ID,
-            data: jet_airspace::instruction::SetDefaultDirectives { new_directives }.data(),
         }
     }
 
@@ -269,11 +236,6 @@ pub fn derive_governor_id() -> Pubkey {
 /// Derive the airspace address for a given seed
 pub fn derive_airspace(seed: &str) -> Pubkey {
     Pubkey::find_program_address(&[AIRSPACE, seed.as_bytes()], &jet_airspace::ID).0
-}
-
-/// Derive the address for the default directives account
-pub fn derive_default_directives() -> Pubkey {
-    Pubkey::find_program_address(&[DEFAULT_DIRECTIVES], &jet_airspace::ID).0
 }
 
 /// Derive the address for the account identifying permit issuers

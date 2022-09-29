@@ -15,8 +15,6 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use std::ops::{Deref, DerefMut};
-
 use anchor_lang::prelude::*;
 
 macro_rules! declare_account_size {
@@ -45,9 +43,6 @@ pub struct Airspace {
     /// permission from an authorized regulator. If false, any user may request a permit without
     /// the need for any authorization.
     pub is_restricted: bool,
-
-    /// Configuration for specific resources in the airspace to interpret
-    pub directives: Directives,
 }
 
 declare_account_size!(Airspace, 304);
@@ -91,34 +86,3 @@ pub struct GovernorId {
 }
 
 declare_account_size!(GovernorId, 40);
-
-/// The set of directives are configuration for resources in an airspace, which are managed
-/// by the protocol governance. The authority for an airspace has no control over this
-/// configuration.
-#[derive(Default, AnchorDeserialize, AnchorSerialize, Debug, Clone, Copy)]
-pub struct Directives {
-    /// The fee applied to interest earned on margin pools.
-    pub margin_pool_management_fee_rate: u16,
-}
-
-/// Account containing the default set of directives that airspaces will be created with
-#[account]
-pub struct DefaultDirectives {
-    pub value: Directives,
-}
-
-declare_account_size!(DefaultDirectives, 256);
-
-impl Deref for DefaultDirectives {
-    type Target = Directives;
-
-    fn deref(&self) -> &Self::Target {
-        &self.value
-    }
-}
-
-impl DerefMut for DefaultDirectives {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.value
-    }
-}
