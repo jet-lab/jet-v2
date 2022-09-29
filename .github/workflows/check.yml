@@ -10,7 +10,7 @@ jobs:
   anchor-test:
     runs-on: ubuntu-latest
     container:
-      image: jetprotocol/builder:solana-1.10.35-anchor-0.25.0-3
+      image: jetprotocol/builder:test
     env:
       HOME: /root
     steps:
@@ -18,16 +18,21 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Get anchor-test cache
-        uses: actions/cache@v3
-        with:
-          key: anchor-test
-          path: |
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-            !target/idl
-            !target/deploy
+        run: |
+          echo ls /root && ls /root
+          echo pwd && pwd
+          echo ls && ls
+          mv /root/target-cache target
+        # uses: actions/cache@v3
+        # with:
+        #   key: anchor-test
+        #   path: |
+        #     ~/.cargo/registry/index/
+        #     ~/.cargo/registry/cache/
+        #     ~/.cargo/git/db/
+        #     target/
+        #     !target/idl
+        #     !target/deploy
 
       - name: ./check anchor-test
         run: |
@@ -38,7 +43,7 @@ jobs:
   hosted-tests-localnet-batch1:
     runs-on: ubuntu-latest
     container:
-      image: jetprotocol/builder:solana-1.10.35-anchor-0.25.0-3
+      image: jetprotocol/builder:test
     env:
       HOME: /root
       BATCH: batch1
@@ -47,16 +52,17 @@ jobs:
         uses: actions/checkout@v3
       
       - name: Get hosted-tests-localnet cache
-        uses: actions/cache@v3
-        with:
-          key: hosted-tests-localnet
-          path: |
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-            !target/idl
-            !target/deploy
+        run: mv /root/target-cache target
+        # uses: actions/cache@v3
+        # with:
+        #   key: hosted-tests-localnet
+        #   path: |
+        #     ~/.cargo/registry/index/
+        #     ~/.cargo/registry/cache/
+        #     ~/.cargo/git/db/
+        #     target/
+        #     !target/idl
+        #     !target/deploy
 
       - run: ./check hosted-tests-localnet
 
@@ -64,7 +70,7 @@ jobs:
   hosted-tests-localnet-batch2:
     runs-on: ubuntu-latest
     container:
-      image: jetprotocol/builder:solana-1.10.35-anchor-0.25.0-3
+      image: jetprotocol/builder:test
     env:
       HOME: /root
       BATCH: batch2
@@ -73,16 +79,17 @@ jobs:
         uses: actions/checkout@v3
       
       - name: Get hosted-tests-localnet cache
-        uses: actions/cache@v3
-        with:
-          key: hosted-tests-localnet
-          path: |
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-            !target/idl
-            !target/deploy
+        run: mv /root/target-cache target
+        # uses: actions/cache@v3
+        # with:
+        #   key: hosted-tests-localnet
+        #   path: |
+        #     ~/.cargo/registry/index/
+        #     ~/.cargo/registry/cache/
+        #     ~/.cargo/git/db/
+        #     target/
+        #     !target/idl
+        #     !target/deploy
 
       - run: ./check hosted-tests-localnet
 
@@ -90,7 +97,7 @@ jobs:
   cargo-lint:
     runs-on: ubuntu-latest
     container:
-      image: jetprotocol/builder:solana-1.10.35-anchor-0.25.0-3
+      image: jetprotocol/builder:test
     env:
       HOME: /root
     steps:
@@ -98,14 +105,15 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Get cargo-lint cache
-        uses: actions/cache@v3
-        with:
-          key: cargo-lint
-          path: |
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/debug
+        run: mv /root/target-cache target
+        # uses: actions/cache@v3
+        # with:
+        #   key: cargo-lint
+        #   path: |
+        #     ~/.cargo/registry/index/
+        #     ~/.cargo/registry/cache/
+        #     ~/.cargo/git/db/
+        #     target/debug
 
       - run: ./check cargo-lint
 
@@ -113,7 +121,7 @@ jobs:
   cargo-test:
     runs-on: ubuntu-latest
     container:
-      image: jetprotocol/builder:solana-1.10.35-anchor-0.25.0-3
+      image: jetprotocol/builder:test
     env:
       HOME: /root
       CODECOV: true
@@ -121,14 +129,15 @@ jobs:
       - uses: actions/checkout@v3
 
       - name: Get cargo-test cache
-        uses: actions/cache@v3
-        with:
-          key: cargo-test
-          path: |
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
+        run: mv /root/target-cache target
+        # uses: actions/cache@v3
+        # with:
+        #   key: cargo-test
+        #   path: |
+        #     ~/.cargo/registry/index/
+        #     ~/.cargo/registry/cache/
+        #     ~/.cargo/git/db/
+        #     target/
 
       - run: ./check cargo-test
 
