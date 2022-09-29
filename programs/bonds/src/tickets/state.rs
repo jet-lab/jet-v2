@@ -1,6 +1,4 @@
 use anchor_lang::prelude::*;
-#[cfg(feature = "cli")]
-use serde::{ser::SerializeStruct, Serialize, Serializer};
 
 use crate::{orderbook::state::OrderTag, BondsError};
 
@@ -18,21 +16,6 @@ pub struct ClaimTicket {
     pub maturation_timestamp: i64,
     /// The number of tokens this claim  is redeemable for
     pub redeemable: u64,
-}
-
-#[cfg(feature = "cli")]
-impl Serialize for ClaimTicket {
-    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        let mut s = serializer.serialize_struct("ClaimTicket", 4)?;
-        s.serialize_field("owner", &self.owner.to_string())?;
-        s.serialize_field("bondManager", &self.bond_manager.to_string())?;
-        s.serialize_field("maturationTimestamp", &self.maturation_timestamp)?;
-        s.serialize_field("redeemable", &self.redeemable)?;
-        s.end()
-    }
 }
 
 /// A split ticket represents a claim of underlying tokens as the result of a lending action.
@@ -64,24 +47,6 @@ pub struct SplitTicket {
 impl SplitTicket {
     pub fn make_seeds<'a>(user: &'a [u8], bytes: &'a [u8]) -> [&'a [u8]; 3] {
         [crate::seeds::SPLIT_TICKET, user, bytes]
-    }
-}
-
-#[cfg(feature = "cli")]
-impl Serialize for SplitTicket {
-    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        let mut s = serializer.serialize_struct("SplitTicket", 7)?;
-        s.serialize_field("owner", &self.owner.to_string())?;
-        s.serialize_field("bondManager", &self.bond_manager.to_string())?;
-        s.serialize_field("orderTag", &self.order_tag.bytes())?;
-        s.serialize_field("struckTimestamp", &self.struck_timestamp)?;
-        s.serialize_field("maturationTimestamp", &self.maturation_timestamp)?;
-        s.serialize_field("principal", &self.principal)?;
-        s.serialize_field("interest", &self.interest)?;
-        s.end()
     }
 }
 

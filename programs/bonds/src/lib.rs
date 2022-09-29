@@ -208,7 +208,7 @@ pub mod jet_bonds {
     pub fn margin_borrow_order(
         ctx: Context<MarginBorrowOrder>,
         params: OrderParams,
-        seed: u64,
+        seed: Vec<u8>,
     ) -> Result<()> {
         jet_bonds::instructions::margin_borrow_order::handler(ctx, params, seed)
     }

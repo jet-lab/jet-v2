@@ -20,6 +20,7 @@ pub struct MarginBorrowOrder<'info> {
     #[account(
         mut,
         has_one = margin_account,
+        has_one = claims @ BondsError::WrongClaimAccount,
     )]
     pub borrower_account: Box<Account<'info, MarginUser>>,
 
@@ -32,13 +33,8 @@ pub struct MarginBorrowOrder<'info> {
     pub margin_account: Signer<'info>,
 
     /// Token account used by the margin program to track the debt that must be collateralized
-    /// CHECK: constraint
-    #[account(
-        mut,
-        constraint =
-            borrower_account.claims == claims.key()
-            @ BondsError::WrongClaimAccount
-    )]
+    /// CHECK: borrower_account
+    #[account(mut)]
     pub claims: UncheckedAccount<'info>,
 
     /// Token mint used by the margin program to track the debt that must be collateralized
@@ -60,7 +56,7 @@ pub struct MarginBorrowOrder<'info> {
     // pub event_adapter: AccountInfo<'info>,
 }
 
-pub fn handler(ctx: Context<MarginBorrowOrder>, params: OrderParams, seed: u64) -> Result<()> {
+pub fn handler(ctx: Context<MarginBorrowOrder>, params: OrderParams, seed: Vec<u8>) -> Result<()> {
     let (callback_info, order_summary) = ctx.accounts.orderbook_mut.place_order(
         ctx.accounts.borrower_account.key(),
         Side::Ask,
@@ -87,7 +83,7 @@ pub fn handler(ctx: Context<MarginBorrowOrder>, params: OrderParams, seed: u64) 
             ctx.accounts.system_program.to_account_info(),
             &Obligation::make_seeds(
                 ctx.accounts.borrower_account.key().as_ref(),
-                &seed.to_le_bytes(),
+                seed.as_slice(),
             ),
         )?;
         *obligation = Obligation {
@@ -110,6 +106,8 @@ pub fn handler(ctx: Context<MarginBorrowOrder>, params: OrderParams, seed: u64) 
         order_summary,
     });
 
+    // this is just used to make sure the position is still registered.
+    // it's actually registered by initialize_margin_user
     return_to_margin(
         &ctx.accounts.margin_account.to_account_info(),
         &AdapterResult {
