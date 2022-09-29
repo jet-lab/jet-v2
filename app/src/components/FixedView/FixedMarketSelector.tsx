@@ -1,22 +1,26 @@
-import { useRecoilState, useRecoilValue } from "recoil"
-import { AllFixedMarketsAtom, FixedMarketAtom, SelectedFixedMarketAtom } from "../../state/fixed/fixed-term-market-sync"
-import { FixedBorrowViewOrder, FixedLendViewOrder } from "../../state/views/fixed-term"
-import { ReorderArrows } from "../misc/ReorderArrows"
-import { Select } from "antd"
-import AngleDown from "../../styles/icons/arrow-angle-down.svg"
-import { useCurrencyFormatting } from "../../utils/currency"
+import { useRecoilState, useRecoilValue } from 'recoil';
+import {
+  AllFixedMarketsAtom,
+  FixedMarketAtom,
+  SelectedFixedMarketAtom
+} from '../../state/fixed/fixed-term-market-sync';
+import { FixedBorrowViewOrder, FixedLendViewOrder } from '../../state/views/fixed-term';
+import { ReorderArrows } from '../misc/ReorderArrows';
+import { Select } from 'antd';
+import AngleDown from '../../styles/icons/arrow-angle-down.svg';
+import { useCurrencyFormatting } from '../../utils/currency';
 
-const { Option } = Select
+const { Option } = Select;
 
 interface FixedMarketSelectorProps {
-  type: "asks" | "bids"
+  type: 'asks' | 'bids';
 }
 export const FixedMarketSelector = ({ type }: FixedMarketSelectorProps) => {
-  const [order, setOrder] = useRecoilState(type === "asks" ? FixedLendViewOrder : FixedBorrowViewOrder)
-  const markets = useRecoilValue(AllFixedMarketsAtom)
-  const market = useRecoilValue(FixedMarketAtom)
-  const [selectedMarket, setSelectedMarket] = useRecoilState(SelectedFixedMarketAtom)
-  const formatting = useCurrencyFormatting()
+  const [order, setOrder] = useRecoilState(type === 'asks' ? FixedLendViewOrder : FixedBorrowViewOrder);
+  const markets = useRecoilValue(AllFixedMarketsAtom);
+  const market = useRecoilValue(FixedMarketAtom);
+  const [selectedMarket, setSelectedMarket] = useRecoilState(SelectedFixedMarketAtom);
+  const formatting = useCurrencyFormatting();
   return (
     <div className="fixed-term-selector-view view-element">
       <div className="fixed-term-selector-view-container">
@@ -63,5 +67,5 @@ export const FixedMarketSelector = ({ type }: FixedMarketSelectorProps) => {
 
       <ReorderArrows component="marketSelector" order={order} setOrder={setOrder} vertical />
     </div>
-  )
-}
+  );
+};

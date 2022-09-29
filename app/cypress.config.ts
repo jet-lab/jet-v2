@@ -7,8 +7,8 @@ const cypressConfig = {
     env: {
       hideXHR: true
     },
-    baseUrl: "http://localhost:3000"
+    baseUrl: 'http://localhost:3000'
   }
-}
+};
 
-export default cypressConfig
+export default cypressConfig;

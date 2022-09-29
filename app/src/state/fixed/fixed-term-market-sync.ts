@@ -1,9 +1,9 @@
-import { BondMarket, JetBondsIdl, Orderbook } from "@jet-lab/jet-bonds-client"
-import { Program } from "@project-serum/anchor"
-import { useEffect } from "react"
-import { atom, selector, useRecoilState } from "recoil"
-import { useProvider } from "../../utils/jet/provider"
-import { generateMarkets, generateOrderBook, MockBook, MockMarket } from "./mocks"
+import { BondMarket, JetBondsIdl, Orderbook } from '@jet-lab/jet-bonds-client';
+import { Program } from '@project-serum/anchor';
+import { useEffect } from 'react';
+import { atom, selector, useRecoilState } from 'recoil';
+import { useProvider } from '../../utils/jet/provider';
+import { generateMarkets, generateOrderBook, MockBook, MockMarket } from './mocks';
 
 // TODO, Eventually this should be an atom family
 // export const FixedMarketAtom = atom<BondMarket | null>({
@@ -47,37 +47,37 @@ import { generateMarkets, generateOrderBook, MockBook, MockMarket } from "./mock
 
 // Mocked Fixed Markets State
 export const AllFixedMarketsAtom = atom<MockMarket[]>({
-  key: "allFixedMarkets",
+  key: 'allFixedMarkets',
   default: generateMarkets()
-})
+});
 
 export const SelectedFixedMarketAtom = atom<number>({
-  key: "selectedFixedMarketIndex",
+  key: 'selectedFixedMarketIndex',
   default: 0
-})
+});
 
 export const FixedMarketAtom = selector<MockMarket>({
-  key: "selectedFixedMarket",
+  key: 'selectedFixedMarket',
   get: ({ get }) => {
-    const list = get(AllFixedMarketsAtom)
-    const index = get(SelectedFixedMarketAtom)
-    return list[index]
+    const list = get(AllFixedMarketsAtom);
+    const index = get(SelectedFixedMarketAtom);
+    return list[index];
   }
-})
+});
 
 export const AllFixedMarketsOrderBooksAtom = selector<MockBook[]>({
-  key: "allFixedMarketOrderBooks",
+  key: 'allFixedMarketOrderBooks',
   get: ({ get }) => {
-    const list = get(AllFixedMarketsAtom)
-    return list.map(market => generateOrderBook(market))
+    const list = get(AllFixedMarketsAtom);
+    return list.map(market => generateOrderBook(market));
   }
-})
+});
 
 export const FixedMarketOrderBookAtom = selector<MockBook>({
-  key: "selectedFixedMarketOrderBook",
+  key: 'selectedFixedMarketOrderBook',
   get: ({ get }) => {
-    const list = get(AllFixedMarketsOrderBooksAtom)
-    const index = get(SelectedFixedMarketAtom)
-    return list[index]
+    const list = get(AllFixedMarketsOrderBooksAtom);
+    const index = get(SelectedFixedMarketAtom);
+    return list[index];
   }
-})
+});

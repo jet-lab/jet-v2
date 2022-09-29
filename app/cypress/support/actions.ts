@@ -33,17 +33,21 @@ export const airdrop = (symbol: string, asset: string) => {
 export const deposit = (symbol: string, amount: number) => {
   cy.get(`.${symbol}-pools-table-row`, { timeout: 30000 }).click();
   cy.get(`.account-snapshot-footer button`).contains('Deposit', { timeout: 1000 }).click();
-  const input = cy.get('.ant-modal-content input.ant-input', { timeout: 5000 }).should('not.be.disabled');
+  const input = cy.get('.ant-modal-content input.ant-input', { timeout: 30000 }).should('not.be.disabled');
   input.click().type(`${amount}`);
   cy.get('.ant-modal-body button.ant-btn').contains('Deposit').click();
   cy.contains('deposit successful', { timeout: 10000 });
   cy.wait(5000);
 };
 
-export const borrow = (symbol: string, amount: number) => {
+export const borrow = (symbol: string, amount: number, resetMaxState?: boolean) => {
   cy.get(`.${symbol}-pools-table-row`, { timeout: 30000 }).click();
   cy.get(`.account-snapshot-footer button`).contains('Borrow', { timeout: 1000 }).click();
-  const input = cy.get('.ant-modal-content input.ant-input', { timeout: 5000 }).should('not.be.disabled');
+  if (resetMaxState) {
+    // Reset max trade values to simulate borrowing on existing account
+    cy.get('[data-testid="reset-max-trade"]').click();
+  }
+  const input = cy.get('.ant-modal-content input.ant-input', { timeout: 10000 }).should('not.be.disabled');
   input.click().type(`${amount}`);
   cy.get('.ant-modal-body button.ant-btn').contains('Borrow').click();
   cy.contains('borrow successful', { timeout: 10000 });
@@ -53,31 +57,25 @@ export const borrow = (symbol: string, amount: number) => {
 export const withdraw = (symbol: string, amount: number) => {
   cy.get(`.${symbol}-pools-table-row`, { timeout: 30000 }).click();
   cy.get(`.account-snapshot-footer button`).contains('Withdraw', { timeout: 1000 }).click();
-  const input = cy.get('.ant-modal-content input.ant-input', { timeout: 5000 }).should('not.be.disabled');
+  const input = cy.get('.ant-modal-content input.ant-input', { timeout: 30000 }).should('not.be.disabled');
   input.click().type(`${amount}`);
   cy.get('.ant-modal-body button.ant-btn').contains('Withdraw').click();
   cy.contains('withdraw successful', { timeout: 10000 });
   cy.wait(5000);
 };
 
-export const repay = (symbol: string, amount: number) => {
+export const repay = (symbol: string, amount: number, fromDeposit: boolean) => {
   cy.get(`.${symbol}-pools-table-row`, { timeout: 30000 }).click();
   cy.get(`.account-snapshot-footer button`).contains('Repay', { timeout: 1000 }).click();
-  const input = cy.get('.ant-modal-content input.ant-input', { timeout: 5000 }).should('not.be.disabled');
+  const input = cy.get('.ant-modal-content input.ant-input', { timeout: 30000 }).should('not.be.disabled');
   input.click().type(`${amount}`);
-  cy.contains('Repay From Wallet').siblings().should('have.class', 'ant-switch-checked');
-  cy.get('.ant-modal-body button.ant-btn').contains('Repay').click();
-  cy.contains('repay successful', { timeout: 10000 });
-};
-
-export const repayFromDeposit = (symbol: string, amount: number) => {
-  cy.get(`.${symbol}-pools-table-row`, { timeout: 30000 }).click();
-  cy.get(`.account-snapshot-footer button`).contains('Repay', { timeout: 1000 }).click();
-  const input = cy.get('.ant-modal-content input.ant-input', { timeout: 5000 }).should('not.be.disabled');
-  input.click().type(`${amount}`);
-  const toggle = cy.get('button.ant-switch').should('have.class', 'ant-switch-checked');
-  toggle.click();
-  cy.contains('Repay From Wallet').siblings().should('not.have.class', 'ant-switch-checked');
+  const isRepayFromWallet = cy.get('button.ant-switch').should('have.class', 'ant-switch-checked');
+  if (fromDeposit && isRepayFromWallet) {
+    isRepayFromWallet.click();
+  }
+  cy.contains('Repay From Wallet')
+    .siblings()
+    .should(fromDeposit ? 'not.have.class' : 'have.class', 'ant-switch-checked');
   cy.get('.ant-modal-body button.ant-btn').contains('Repay').click();
   cy.contains(`${symbol} was successfully processed.`, { timeout: 10000 });
   cy.wait(5000);

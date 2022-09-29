@@ -1,4 +1,4 @@
-import { Address, BN } from "@project-serum/anchor"
+import { Address } from "@project-serum/anchor"
 import { Connection, PublicKey } from "@solana/web3.js"
 
 export class DerivedAccount {

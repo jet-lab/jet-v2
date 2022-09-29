@@ -1,6 +1,6 @@
-import * as anchor from "@project-serum/anchor"
-import { AnchorProvider, BN } from "@project-serum/anchor"
-import NodeWallet from "@project-serum/anchor/dist/cjs/nodewallet"
+import * as anchor from '@project-serum/anchor';
+import { AnchorProvider, BN } from '@project-serum/anchor';
+import NodeWallet from '@project-serum/anchor/dist/cjs/nodewallet';
 import {
   MarginAccount,
   MarginClient,
@@ -10,8 +10,8 @@ import {
   Pool,
   PoolTokenChange,
   PoolManager
-} from "@jet-lab/margin"
-import { createAssociatedTokenAccountInstruction, getAssociatedTokenAddress } from "@solana/spl-token"
+} from '@jet-lab/margin';
+import { createAssociatedTokenAccountInstruction, getAssociatedTokenAddress } from '@solana/spl-token';
 import {
   Account,
   Connection,
@@ -21,26 +21,26 @@ import {
   PublicKey,
   sendAndConfirmTransaction,
   Transaction
-} from "@solana/web3.js"
-import assert from "assert"
-import * as fs from "fs"
+} from '@solana/web3.js';
+import assert from 'assert';
+import * as fs from 'fs';
 
-import { airdropTokens } from "./tokenFaucet"
+import { airdropTokens } from './tokenFaucet';
 
-const ZERO_BN = new BN(0)
+const ZERO_BN = new BN(0);
 
 export class Replicant {
-  account: Account
-  cluster: MarginCluster
-  config: any
-  connection: Connection
-  keyfile: string
-  marginConfig: MarginConfig
-  poolManager: PoolManager
-  pools?: Pool[]
-  programs: MarginPrograms
-  provider: AnchorProvider
-  faucetProgramId: PublicKey
+  account: Account;
+  cluster: MarginCluster;
+  config: any;
+  connection: Connection;
+  keyfile: string;
+  marginConfig: MarginConfig;
+  poolManager: PoolManager;
+  pools?: Pool[];
+  programs: MarginPrograms;
+  provider: AnchorProvider;
+  faucetProgramId: PublicKey;
 
   constructor(
     config: any,
@@ -51,24 +51,24 @@ export class Replicant {
   ) {
     this.account = new Account(
       Keypair.fromSecretKey(Uint8Array.from(JSON.parse(fs.readFileSync(keyfile).toString()))).secretKey
-    )
-    this.cluster = cluster
-    this.config = config
-    this.connection = connection
-    this.keyfile = keyfile
+    );
+    this.cluster = cluster;
+    this.config = config;
+    this.connection = connection;
+    this.keyfile = keyfile;
 
-    this.marginConfig = marginConfig
+    this.marginConfig = marginConfig;
 
-    const confirmOptions: ConfirmOptions = { skipPreflight: true, commitment: "processed" }
+    const confirmOptions: ConfirmOptions = { skipPreflight: true, commitment: 'processed' };
     // @ts-ignore
-    this.provider = new AnchorProvider(this.connection, new NodeWallet(this.account), confirmOptions)
-    anchor.setProvider(this.provider)
+    this.provider = new AnchorProvider(this.connection, new NodeWallet(this.account), confirmOptions);
+    anchor.setProvider(this.provider);
 
-    this.programs = MarginClient.getPrograms(this.provider, this.marginConfig)
-    this.poolManager = new PoolManager(this.programs, this.provider)
+    this.programs = MarginClient.getPrograms(this.provider, this.marginConfig);
+    this.poolManager = new PoolManager(this.programs, this.provider);
 
-    assert(this.marginConfig.faucetProgramId)
-    this.faucetProgramId = new PublicKey(this.marginConfig.faucetProgramId)
+    assert(this.marginConfig.faucetProgramId);
+    this.faucetProgramId = new PublicKey(this.marginConfig.faucetProgramId);
   }
 
   static async create(
@@ -79,26 +79,26 @@ export class Replicant {
     connection: Connection
   ): Promise<Replicant> {
     if (!fs.existsSync(keyfile)) {
-      const keypair = Keypair.generate()
-      fs.writeFileSync(keyfile, JSON.stringify(Array.from(keypair.secretKey)))
-      const airdropSignature = await connection.requestAirdrop(keypair.publicKey, 2 * LAMPORTS_PER_SOL)
-      await connection.confirmTransaction(airdropSignature)
-      await sleep(4 * 1000)
+      const keypair = Keypair.generate();
+      fs.writeFileSync(keyfile, JSON.stringify(Array.from(keypair.secretKey)));
+      const airdropSignature = await connection.requestAirdrop(keypair.publicKey, 2 * LAMPORTS_PER_SOL);
+      await connection.confirmTransaction(airdropSignature);
+      await sleep(4 * 1000);
     }
 
-    return new Replicant(config, marginConfig, keyfile, cluster, connection)
+    return new Replicant(config, marginConfig, keyfile, cluster, connection);
   }
 
   async fundUser(): Promise<void> {
-    const tokenAccounts = {}
+    const tokenAccounts = {};
     for (const account of this.config.accounts) {
       for (const token of Object.keys(account.tokens)) {
         if (!tokenAccounts[token]) {
-          const tokenConfig = this.marginConfig.tokens[token]
+          const tokenConfig = this.marginConfig.tokens[token];
           const tokenAccount: PublicKey = await getAssociatedTokenAddress(
             new PublicKey(tokenConfig.mint),
             this.account.publicKey
-          )
+          );
           if (!(await this.connection.getAccountInfo(tokenAccount))) {
             await sendAndConfirmTransaction(
               this.connection,
@@ -111,23 +111,23 @@ export class Replicant {
                 )
               ),
               [this.account]
-            )
+            );
           }
-          tokenAccounts[token] = tokenAccount
+          tokenAccounts[token] = tokenAccount;
         }
       }
     }
   }
 
   async loadPools(): Promise<void> {
-    this.pools = Object.values<Pool>(await this.poolManager.loadAll(this.programs))
+    this.pools = Object.values<Pool>(await this.poolManager.loadAll(this.programs));
   }
 
   async createAccounts(): Promise<void> {
     for (const account of this.config.accounts) {
-      assert(account.name)
-      assert(account.seed != undefined)
-      assert(account.tokens)
+      assert(account.name);
+      assert(account.seed != undefined);
+      assert(account.tokens);
 
       //console.log(`user.name = ${user.name}`)
 
@@ -136,14 +136,14 @@ export class Replicant {
         provider: this.provider,
         owner: this.account.publicKey,
         seed: account.seed
-      })
-      const accountInfo = await this.connection.getAccountInfo(marginAccount.address)
+      });
+      const accountInfo = await this.connection.getAccountInfo(marginAccount.address);
       if (!accountInfo) {
         //console.log(`createAccount`)
-        await marginAccount.createAccount()
-        await marginAccount.refresh()
+        await marginAccount.createAccount();
+        await marginAccount.refresh();
       } else {
-        await closeEmptyPositions(marginAccount)
+        await closeEmptyPositions(marginAccount);
       }
     }
   }
@@ -155,41 +155,41 @@ export class Replicant {
         provider: this.provider,
         owner: this.account.publicKey,
         seed: account.seed
-      })
+      });
 
       for (const tokenConfig of Object.values<any>(this.marginConfig.tokens)) {
-        const token = account.tokens[tokenConfig.symbol]
-        let expectedDeposit = ZERO_BN
+        const token = account.tokens[tokenConfig.symbol];
+        let expectedDeposit = ZERO_BN;
         if (token && token.deposit && token.deposit != 0) {
-          expectedDeposit = new BN(token.deposit * 10 ** tokenConfig.decimals)
+          expectedDeposit = new BN(token.deposit * 10 ** tokenConfig.decimals);
         }
 
         if (!expectedDeposit.eq(ZERO_BN)) {
-          let existingDeposit = ZERO_BN
+          let existingDeposit = ZERO_BN;
 
           let marginPool: Pool = await this.poolManager.load({
             tokenMint: tokenConfig.mint,
             tokenConfig,
             programs: this.programs
-          })
+          });
 
-          await marginPool.refresh()
+          await marginPool.refresh();
 
-          const position = await marginAccount.getPosition(marginPool.addresses.depositNoteMint)
+          const position = await marginAccount.getPosition(marginPool.addresses.depositNoteMint);
           if (position) {
-            existingDeposit = position.balance
+            existingDeposit = position.balance;
           }
 
           if (existingDeposit.eq(ZERO_BN)) {
-            assert(tokenConfig.decimals)
-            assert(tokenConfig.faucet)
+            assert(tokenConfig.decimals);
+            assert(tokenConfig.faucet);
             const tokenAccount: PublicKey = await getAssociatedTokenAddress(
               new PublicKey(tokenConfig.mint),
               this.account.publicKey,
               true
-            )
+            );
             //console.log(`DEPOSIT ${poolConfig.symbol} = ${expectedDeposit} | ${existingDeposit}`)
-            const amount = expectedDeposit.sub(existingDeposit)
+            const amount = expectedDeposit.sub(existingDeposit);
 
             await airdropTokens(
               this.connection,
@@ -199,12 +199,12 @@ export class Replicant {
               new PublicKey(tokenConfig.faucet),
               tokenAccount,
               amount
-            )
+            );
             const txid = await marginPool.deposit({
               marginAccount,
               source: tokenAccount,
               change: PoolTokenChange.shiftBy(amount)
-            })
+            });
           }
         }
       }
@@ -218,52 +218,52 @@ export class Replicant {
         provider: this.provider,
         owner: this.account.publicKey,
         seed: account.seed
-      })
+      });
 
       for (const tokenConfig of Object.values(this.marginConfig.tokens)) {
-        const token = account.tokens[tokenConfig.symbol]
-        let expectedBorrow = ZERO_BN
+        const token = account.tokens[tokenConfig.symbol];
+        let expectedBorrow = ZERO_BN;
         if (token && token.borrow) {
-          expectedBorrow = new BN(token.borrow * 10 ** tokenConfig.decimals)
+          expectedBorrow = new BN(token.borrow * 10 ** tokenConfig.decimals);
         }
 
-        const tokenMultiplier = new BN(10 ** tokenConfig.decimals)
+        const tokenMultiplier = new BN(10 ** tokenConfig.decimals);
 
         let marginPool: Pool = await this.poolManager.load({
           tokenMint: new PublicKey(tokenConfig.mint),
           tokenConfig,
           programs: this.programs
-        })
+        });
 
-        let existingBorrow = ZERO_BN
+        let existingBorrow = ZERO_BN;
 
         if (marginAccount.info) {
           for (let i = 0; i < marginAccount.info.positions.length.toNumber(); i++) {
-            const position = marginAccount.info.positions.positions[i]
+            const position = marginAccount.info.positions.positions[i];
             if (position.token.equals(marginPool.addresses.loanNoteMint)) {
-              existingBorrow = position.balance
-              break
+              existingBorrow = position.balance;
+              break;
             }
           }
         }
 
         if (!expectedBorrow.eq(ZERO_BN) || !existingBorrow.eq(ZERO_BN)) {
           //console.log(`BORROW ${poolConfig.symbol} = ${expectedBorrow} | ${existingBorrow}`)
-          assert(tokenConfig.decimals)
-          assert(tokenConfig.faucet)
+          assert(tokenConfig.decimals);
+          assert(tokenConfig.faucet);
           if (existingBorrow.lt(expectedBorrow)) {
-            const amount = expectedBorrow.sub(existingBorrow)
+            const amount = expectedBorrow.sub(existingBorrow);
             await marginPool.marginBorrow({
               marginAccount,
               pools: this.pools!,
               change: PoolTokenChange.shiftBy(amount)
-            })
+            });
           } else if (existingBorrow.gt(expectedBorrow)) {
-            const amount = existingBorrow.sub(expectedBorrow)
+            const amount = existingBorrow.sub(expectedBorrow);
 
             //TODO this needs to be tested.
-            console.log(`amount = ${amount}`)
-            assert(false)
+            console.log(`amount = ${amount}`);
+            assert(false);
             //await marginPool.marginWithdraw({ marginAccount, destination: tokenAccount, amount: PoolAmount.tokens(amount) });
           }
         }
@@ -310,8 +310,8 @@ export class Replicant {
         provider: this.provider,
         owner: this.account.publicKey,
         seed: account.seed
-      })
-      await printAccount(marginAccount)
+      });
+      await printAccount(marginAccount);
     }
   }
 
@@ -322,36 +322,36 @@ export class Replicant {
         provider: this.provider,
         owner: this.account.publicKey,
         seed: account.seed
-      })
-      await this.closeAccount(marginAccount)
+      });
+      await this.closeAccount(marginAccount);
       //await printAccount(marginAccount)
     }
   }
 
   async closeAccount(marginAccount: MarginAccount) {
-    await marginAccount.refresh()
+    await marginAccount.refresh();
 
-    let dirty = false
+    let dirty = false;
 
     for (const position of marginAccount.getPositions()) {
       switch (position.kind) {
         case 2: {
           for (const pool of this.pools!) {
             if (pool.addresses.loanNoteMint.toString() == position.token.toBase58()) {
-              const depositPosition = getDepositPosition(marginAccount, pool.addresses.depositNoteMint)
-              const existingDeposit = depositPosition ? depositPosition.balance : ZERO_BN
+              const depositPosition = getDepositPosition(marginAccount, pool.addresses.depositNoteMint);
+              const existingDeposit = depositPosition ? depositPosition.balance : ZERO_BN;
               if (existingDeposit.lt(new BN(position.balance.toNumber() * 1.1))) {
-                const tokenConfig = this.marginConfig.tokens[pool.symbol!]
-                assert(tokenConfig)
-                assert(tokenConfig.decimals)
-                assert(tokenConfig.faucet)
+                const tokenConfig = this.marginConfig.tokens[pool.symbol!];
+                assert(tokenConfig);
+                assert(tokenConfig.decimals);
+                assert(tokenConfig.faucet);
                 const tokenAccount: PublicKey = await getAssociatedTokenAddress(
                   new PublicKey(tokenConfig.mint),
                   this.account.publicKey,
                   true
-                )
+                );
                 //console.log(`DEPOSIT ${pool.symbol} = ${position.balance} | ${existingDeposit}`)
-                const amount = new BN(position.balance.toNumber() * 1.1).sub(existingDeposit)
+                const amount = new BN(position.balance.toNumber() * 1.1).sub(existingDeposit);
                 await airdropTokens(
                   this.connection,
                   this.faucetProgramId,
@@ -360,27 +360,27 @@ export class Replicant {
                   new PublicKey(tokenConfig.faucet),
                   tokenAccount,
                   amount
-                )
+                );
                 const txid = await pool.deposit({
                   marginAccount,
                   source: tokenAccount,
                   change: PoolTokenChange.shiftBy(amount)
-                })
+                });
               }
 
-              dirty = true
-              const change = PoolTokenChange.setTo(0)
-              await pool.marginRepay({ marginAccount, pools: this.pools!, change, closeLoan: true })
-              break
+              dirty = true;
+              const change = PoolTokenChange.setTo(0);
+              await pool.marginRepay({ marginAccount, pools: this.pools!, change, closeLoan: true });
+              break;
             }
           }
-          break
+          break;
         }
       }
     }
 
     if (dirty) {
-      await marginAccount.refresh()
+      await marginAccount.refresh();
     }
 
     for (const position of marginAccount.getPositions()) {
@@ -392,25 +392,25 @@ export class Replicant {
                 new PublicKey(pool.tokenMint),
                 this.account.publicKey,
                 true
-              )
+              );
               if (position.balance.gt(ZERO_BN)) {
-                const change = PoolTokenChange.setTo(0)
-                await pool.withdraw({ marginAccount, pools: this.pools!, change, destination })
+                const change = PoolTokenChange.setTo(0);
+                await pool.withdraw({ marginAccount, pools: this.pools!, change, destination });
               }
               //console.log('');
               //console.log(`position = ${JSON.stringify(position)}`);
               //console.log('');
-              await marginAccount.closePosition(position)
-              await marginAccount.refresh()
-              break
+              await marginAccount.closePosition(position);
+              await marginAccount.refresh();
+              break;
             }
           }
-          break
+          break;
         }
       }
     }
 
-    await marginAccount.closeAccount()
+    await marginAccount.closeAccount();
   }
 }
 
@@ -419,52 +419,52 @@ export function getDepositPosition(marginAccount: MarginAccount, depositNoteMint
     switch (position.kind) {
       case 1: {
         if (depositNoteMint.toString() == position.token.toBase58()) {
-          return position
+          return position;
         }
-        break
+        break;
       }
     }
   }
 }
 
 export async function closeEmptyPositions(marginAccount: MarginAccount) {
-  let closed = false
+  let closed = false;
   for (const position of marginAccount.getPositions().reverse()) {
     if (position.balance.eq(ZERO_BN)) {
-      await marginAccount.closePosition(position)
-      closed = true
+      await marginAccount.closePosition(position);
+      closed = true;
     }
   }
   if (closed) {
-    await marginAccount.refresh()
+    await marginAccount.refresh();
   }
 }
 
 export async function printAccount(marginAccount: MarginAccount) {
-  console.log("")
-  console.log(`maginAccount.address = ${marginAccount.address}`)
-  await marginAccount.refresh()
+  console.log('');
+  console.log(`maginAccount.address = ${marginAccount.address}`);
+  await marginAccount.refresh();
   for (const position of marginAccount.getPositions()) {
     switch (position.kind) {
       case 0: {
-        break
+        break;
       }
       case 1: {
-        console.log(`  deposit balance: ${position.balance}`)
-        break
+        console.log(`  deposit balance: ${position.balance}`);
+        break;
       }
       case 2: {
-        console.log(`  claim balance: ${position.balance}`)
-        break
+        console.log(`  claim balance: ${position.balance}`);
+        break;
       }
     }
   }
   for (const position of marginAccount.getPositions()) {
-    console.log(`position = ${JSON.stringify(position)}`)
+    console.log(`position = ${JSON.stringify(position)}`);
   }
-  console.log("")
+  console.log('');
 }
 
 export function sleep(ms: number) {
-  return new Promise(resolve => setTimeout(resolve, ms))
+  return new Promise(resolve => setTimeout(resolve, ms));
 }

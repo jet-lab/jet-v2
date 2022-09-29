@@ -417,7 +417,7 @@ export type JetBonds = {
           isMut: false
           isSigner: false
           docs: ["Token metadata account used by the margin program to register claims positions"]
-        },
+        }
       ]
       args: []
     },
@@ -2852,7 +2852,7 @@ export const IDL: JetBonds = {
           isMut: false,
           isSigner: false,
           docs: ["Token metadata account used by the margin program to register claims positions"]
-        },
+        }
       ],
       args: []
     },

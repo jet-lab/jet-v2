@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@600&display=swap");
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@600&display=swap');
 
 body {
   margin: 0;
@@ -24,7 +24,7 @@ a:focus {
 }
 
 #title {
-  font-family: "Lato", Helvetica, Arial, sans-serif;
+  font-family: 'Lato', Helvetica, Arial, sans-serif;
   font-size: 2em;
   background: #333333;
   color: #86ceb8;
@@ -39,7 +39,7 @@ a:focus {
   top: calc(50% - 100px);
   left: calc(50% - 300px);
   font-size: 1.8em;
-  font-family: "Lato", Helvetica, Arial, sans-serif;
+  font-family: 'Lato', Helvetica, Arial, sans-serif;
 }
 
 li {
@@ -54,5 +54,5 @@ li {
 }
 
 .rust_logo {
-  content: url('https://www.rust-lang.org/logos/rust-logo-128x128-blk.png')
+  content: url('https://www.rust-lang.org/logos/rust-logo-128x128-blk.png');
 }
