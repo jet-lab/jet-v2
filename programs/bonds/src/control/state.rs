@@ -1,12 +1,12 @@
 use anchor_lang::prelude::*;
-#[cfg(feature = "cli")]
+#[cfg(any(feature = "cli", test))]
 use serde::{ser::SerializeStruct, Deserialize, Serialize, Serializer};
 
 /// The `BondManager` contains all the information necessary to run the bond market
 ///
 /// Utilized by program instructions to verify given transaction accounts are correct. Contains data
 /// about the bond market including the tenor and ticket<->token conversion rate
-#[cfg_attr(feature = "cli", derive(Deserialize))]
+#[cfg_attr(any(feature = "cli", test), derive(Deserialize))]
 #[account(zero_copy)]
 pub struct BondManager {
     /// Versioning and tag information
@@ -65,7 +65,7 @@ impl BondManager {
     }
 }
 
-#[cfg(feature = "cli")]
+#[cfg(any(feature = "cli", test))]
 impl Serialize for BondManager {
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
     where
@@ -107,4 +107,33 @@ impl Serialize for BondManager {
 pub struct CrankAuthorization {
     pub crank: Pubkey,
     pub airspace: Pubkey,
+}
+
+#[test]
+fn serialize_bond_manager() {
+    let json =
+        serde_json::to_string_pretty(&<BondManager as bytemuck::Zeroable>::zeroed()).unwrap();
+    let expected = "{
+      \"version\": 0,
+      \"airspace\": \"11111111111111111111111111111111\",
+      \"orderbookMarketState\": \"11111111111111111111111111111111\",
+      \"eventQueue\": \"11111111111111111111111111111111\",
+      \"asks\": \"11111111111111111111111111111111\",
+      \"bids\": \"11111111111111111111111111111111\",
+      \"underlyingTokenMint\": \"11111111111111111111111111111111\",
+      \"underlyingTokenVault\": \"11111111111111111111111111111111\",
+      \"bondTicketMint\": \"11111111111111111111111111111111\",
+      \"claimsMint\": \"11111111111111111111111111111111\",
+      \"collateralMint\": \"11111111111111111111111111111111\",
+      \"underlyingOracle\": \"11111111111111111111111111111111\",
+      \"ticketOracle\": \"11111111111111111111111111111111\",
+      \"seed\": \"11111111111111111111111111111111\",
+      \"orderbookPaused\": false,
+      \"ticketsPaused\": false,
+      \"duration\": 0
+    }";
+    assert_eq!(
+        itertools::Itertools::join(&mut expected.split_whitespace(), " "),
+        itertools::Itertools::join(&mut json.split_whitespace(), " ")
+    )
 }

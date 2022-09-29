@@ -37,3 +37,8 @@ anchor-spl =  { git = "https://github.com/jet-lab/anchor", branch = "master" }
 jet-proto-math = { git = "https://github.com/jet-lab/program-libraries", branch = "main", features = ["traits"] }
 
 jet-margin = { path = "../margin", features = ["no-entrypoint"] }
+
+[dev-dependencies]
+serde = "1.0"
+serde_json = "1.0"
+itertools = "*"
