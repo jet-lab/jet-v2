@@ -17,21 +17,17 @@ use crate::{
 
 use super::{ConsumeEvents, EventAccounts, FillAccounts, LoanAccount, OutAccounts, UserAccount};
 
-pub trait Queue<'c, 'info> {
-    fn queue(&self, seeds: Vec<Vec<u8>>) -> Result<EventIterator<'c, 'info>>;
-}
-
-impl<'c, 'info> Queue<'c, 'info> for Context<'_, '_, 'c, 'info, ConsumeEvents<'info>> {
-    fn queue(&self, seeds: Vec<Vec<u8>>) -> Result<EventIterator<'c, 'info>> {
-        let queue = EventQueue::deserialize_market(self.accounts.event_queue.to_account_info())?;
-        Ok(EventIterator {
-            queue: queue.iter(),
-            accounts: self.remaining_accounts.iter(),
-            system_program: self.accounts.system_program.to_account_info(),
-            payer: self.accounts.payer.to_account_info(),
-            seeds: seeds.into_iter(),
-        })
-    }
+pub fn queue<'c, 'info>(
+    ctx: &Context<'_, '_, 'c, 'info, ConsumeEvents<'info>>,
+    seeds: Vec<Vec<u8>>,
+) -> Result<EventIterator<'c, 'info>> {
+    Ok(EventIterator {
+        queue: EventQueue::deserialize_market(ctx.accounts.event_queue.to_account_info())?.iter(),
+        accounts: ctx.remaining_accounts.iter(),
+        system_program: ctx.accounts.system_program.to_account_info(),
+        payer: ctx.accounts.payer.to_account_info(),
+        seeds: seeds.into_iter(),
+    })
 }
 
 pub struct EventIterator<'a, 'info> {
