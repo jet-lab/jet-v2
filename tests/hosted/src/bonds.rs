@@ -27,7 +27,7 @@ use jet_margin_sdk::{
     solana::transaction::SendTransactionBuilder,
     tx_builder::global_initialize_instructions,
 };
-use jet_metadata::{TokenKind, PositionTokenMetadata};
+use jet_metadata::{PositionTokenMetadata, TokenKind};
 use jet_proto_math::fixed_point::Fp32;
 use jet_simulation::{
     create_wallet, generate_keypair, send_and_confirm, solana_rpc_api::SolanaRpcClient,
