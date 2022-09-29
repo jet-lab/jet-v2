@@ -145,7 +145,13 @@ impl<'info> OrderbookMut<'info> {
                 Slab::from_buffer(&mut buf, agnostic_orderbook::state::AccountTag::Asks)?
             }
         };
-        let callback_info = slab.remove_by_key(order_id).unwrap().1;
+        let callback_info = slab
+            .remove_by_key(order_id)
+            .ok_or_else(|| {
+                msg!("Given Order ID: [{}]", order_id);
+                error!(BondsError::OrderNotFound)
+            })?
+            .1;
         require_eq!(
             Pubkey::new_from_array(callback_info.owner),
             owner,

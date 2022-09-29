@@ -84,19 +84,15 @@ impl ErrorIfMissing for &AccountPosition {
     const ERROR: ErrorCode = ErrorCode::PositionNotRegistered;
 }
 
-pub trait ErrorMessage {
-    fn log_on_error(self, msg: &str) -> Self;
-}
-
-impl<T, E> ErrorMessage for std::result::Result<T, E> {
-    fn log_on_error(self, msg: &str) -> Self {
-        if self.is_err() {
-            msg!(msg);
+macro_rules! log_on_error {
+    ($result:expr, $($args:tt)*) => {{
+        if $result.is_err() {
+            msg!($($args)*);
         }
-
-        self
-    }
+        $result
+    }};
 }
+pub(crate) use log_on_error;
 
 /// Data made available to invoked programs by the margin program. Put data here if:
 /// - adapters need a guarantee that the margin program is the actual source of the data, or
