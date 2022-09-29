@@ -380,7 +380,7 @@ impl AccountPositionList {
         self.map[self.length] = key;
 
         self.length += 1;
-        (self.map[..self.length]).sort_by_key(|p| p.mint);
+        self.map[..self.length].sort_by_key(|p| p.mint);
 
         // mark position as not free
         free_position.token = mint;

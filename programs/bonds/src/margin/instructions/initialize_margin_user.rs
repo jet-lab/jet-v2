@@ -1,11 +1,12 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{accessor::mint, Mint, Token, TokenAccount};
+use jet_margin::{AdapterResult, PositionChange};
 
 use crate::{
     control::state::BondManager,
     margin::{
         events::MarginUserInitialized,
-        state::{MarginUser, MARGIN_USER_VERSION},
+        state::{return_to_margin, MarginUser, MARGIN_USER_VERSION},
     },
     seeds,
     utils::init,
@@ -76,6 +77,9 @@ pub struct InitializeMarginUser<'info> {
     pub rent: Sysvar<'info, Rent>,
     pub system_program: Program<'info, System>,
     pub token_program: Program<'info, Token>,
+
+    /// Token metadata account needed by the margin program to register the claim position
+    pub claims_metadata: AccountInfo<'info>,
 }
 
 pub fn handler(ctx: Context<InitializeMarginUser>) -> Result<()> {
@@ -113,5 +117,13 @@ pub fn handler(ctx: Context<InitializeMarginUser>) -> Result<()> {
         margin_account: ctx.accounts.margin_account.key(),
     });
 
-    Ok(())
+    return_to_margin(
+        &ctx.accounts.margin_account.to_account_info(),
+        &AdapterResult {
+            position_changes: vec![(
+                ctx.accounts.claims_mint.key(),
+                vec![PositionChange::Register(ctx.accounts.claims.key())],
+            )],
+        },
+    )
 }

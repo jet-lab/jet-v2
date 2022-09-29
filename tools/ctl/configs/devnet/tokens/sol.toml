@@ -1,0 +1,24 @@
+[token]
+symbol = "SOL"
+name = "SOL"
+precision = 2
+
+[config]
+mint = "So11111111111111111111111111111111111111112"
+pyth_price = "J83w4HKfqxwcq3BEMMkPFSppX3gqekLyLJBexebFVkix"
+pyth_product = "3Mnn2fX6rQyUsyELYms1sBJyChWofzSNRoqYzvgMVz5E"
+
+token_kind = 'Collateral'
+collateral_weight = 85
+max_leverage = 10_00
+
+[margin_pool]
+flags = 0b0010 # ALLOW_LENDING
+utilization_rate_1 = 85_00
+utilization_rate_2 = 95_00
+borrow_rate_0 = 50
+borrow_rate_1 = 600
+borrow_rate_2 = 4000
+borrow_rate_3 = 16000
+management_fee_rate = 20_00
+management_fee_collect_threshold = 1_000_000

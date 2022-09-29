@@ -122,9 +122,10 @@ export async function createToken(
   owner: Keypair,
   decimals: number,
   supply: number,
-  symbol: string
+  symbol: string,
+  keypair?: Keypair
 ): Promise<TestToken> {
-  const mint = Keypair.generate();
+  const mint = keypair ?? Keypair.generate();
   const vault = Keypair.generate();
   const transaction = new Transaction().add(
     SystemProgram.createAccount({
@@ -163,6 +164,50 @@ export async function createToken(
   return {
     mint: mint.publicKey,
     vault: vault.publicKey,
+    tokenConfig
+  };
+}
+export async function loadToken(
+  provider: AnchorProvider,
+  owner: Keypair,
+  decimals: number,
+  supply: number,
+  symbol: string,
+  keypair: Keypair
+): Promise<TestToken> {
+  const mint = keypair;
+  const vault = await getAssociatedTokenAddress(keypair.publicKey, owner.publicKey);
+  const init = createAssociatedTokenAccountInstruction(
+    provider.wallet.publicKey,
+    vault,
+    owner.publicKey,
+    keypair.publicKey
+  );
+  // const init = createInitializeAccountInstruction(vault.publicKey, mint.publicKey, owner.publicKey)
+  const mintTo = createMintToCheckedInstruction(
+    mint.publicKey,
+    vault,
+    mint.publicKey,
+    BigInt(supply) * BigInt(pow10(decimals)),
+    decimals
+  );
+
+  let transaction = new Transaction().add(init);
+  await provider.sendAndConfirm(transaction, []);
+  transaction = new Transaction().add(mintTo);
+  await provider.sendAndConfirm(transaction, [mint]);
+
+  const tokenConfig: MarginTokenConfig = {
+    symbol,
+    name: symbol,
+    decimals,
+    precision: decimals,
+    mint: mint.publicKey
+  };
+
+  return {
+    mint: mint.publicKey,
+    vault,
     tokenConfig
   };
 }

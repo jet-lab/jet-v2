@@ -34,7 +34,7 @@ anchor-spl = { git = "https://github.com/jet-lab/anchor", branch = "master" }
 anchor-client = { git = "https://github.com/jet-lab/anchor", branch = "master" }
 
 jet-simulation = { git = "https://github.com/jet-lab/jet-simulation", branch = "master" }
-jet-bonds = { path = "../../../programs/bonds", features = ["no-entrypoint"] }
+jet-bonds = { path = "../../../programs/bonds", features = ["no-entrypoint", "cli"] }
 jet-control = { path = "../../../programs/control", features = ["no-entrypoint"] }
 jet-margin = { path = "../../../programs/margin", features = ["no-entrypoint"] }
 jet-metadata = { path = "../../../programs/metadata", features = ["no-entrypoint"] }

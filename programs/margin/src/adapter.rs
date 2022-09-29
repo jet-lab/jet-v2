@@ -19,7 +19,7 @@ use std::{collections::BTreeMap, convert::TryInto};
 
 use crate::{
     events::{PositionClosed, PositionEvent, PositionRegistered, PositionTouched},
-    util::{ErrorMessage, Require},
+    util::{log_on_error, Require},
     AccountPositionKey, AdapterPositionFlags, Approver, ErrorCode, MarginAccount, SignerSeeds,
 };
 use anchor_lang::{
@@ -293,9 +293,17 @@ fn register_position(
             }
         }
     }
-    let metadata = metadata.log_on_error("position token metadata not found for mint")?;
-    let token_account = token_account.log_on_error("position token mint not found")?;
-    let mint = mint.log_on_error("position token account not found")?;
+    let metadata = log_on_error!(
+        metadata,
+        "position token metadata not found for mint {:?}",
+        mint_address
+    )?;
+    let token_account = log_on_error!(
+        token_account,
+        "position token account {:?} not found",
+        token_account_address
+    )?;
+    let mint = log_on_error!(mint, "position token mint {:?} not found", mint_address)?;
 
     if mint.key() != token_account.mint {
         msg!("token account has the wrong mint");
