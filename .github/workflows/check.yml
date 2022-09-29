@@ -22,7 +22,8 @@ jobs:
           echo ls /root && ls /root
           echo pwd && pwd
           echo ls && ls
-          mv /root/target-cache target
+          mv $(pwd) /root/jet-v2
+          mv /root/target-cache /root/jet-v2/target
         # uses: actions/cache@v3
         # with:
         #   key: anchor-test
@@ -37,6 +38,7 @@ jobs:
       - name: ./check anchor-test
         run: |
           chmod -R 777 /root
+          cd /root/jet-v2
           ./check anchor-test
 
 
@@ -52,7 +54,9 @@ jobs:
         uses: actions/checkout@v3
       
       - name: Get hosted-tests-localnet cache
-        run: mv /root/target-cache target
+        run: |
+          mv $(pwd) /root/jet-v2
+          mv /root/target-cache /root/jet-v2/target
         # uses: actions/cache@v3
         # with:
         #   key: hosted-tests-localnet
@@ -64,7 +68,7 @@ jobs:
         #     !target/idl
         #     !target/deploy
 
-      - run: ./check hosted-tests-localnet
+      - run: cd /root/jet-v2 && ./check hosted-tests-localnet
 
 
   hosted-tests-localnet-batch2:
@@ -79,7 +83,9 @@ jobs:
         uses: actions/checkout@v3
       
       - name: Get hosted-tests-localnet cache
-        run: mv /root/target-cache target
+        run: |
+          mv $(pwd) /root/jet-v2
+          mv /root/target-cache /root/jet-v2/target
         # uses: actions/cache@v3
         # with:
         #   key: hosted-tests-localnet
@@ -91,7 +97,7 @@ jobs:
         #     !target/idl
         #     !target/deploy
 
-      - run: ./check hosted-tests-localnet
+      - run: cd /root/jet-v2 && ./check hosted-tests-localnet
 
 
   cargo-lint:
@@ -105,7 +111,9 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Get cargo-lint cache
-        run: mv /root/target-cache target
+        run: |
+          mv $(pwd) /root/jet-v2
+          mv /root/target-cache /root/jet-v2/target
         # uses: actions/cache@v3
         # with:
         #   key: cargo-lint
@@ -115,7 +123,7 @@ jobs:
         #     ~/.cargo/git/db/
         #     target/debug
 
-      - run: ./check cargo-lint
+      - run: cd /root/jet-v2 && ./check cargo-lint
 
 
   cargo-test:
@@ -129,7 +137,9 @@ jobs:
       - uses: actions/checkout@v3
 
       - name: Get cargo-test cache
-        run: mv /root/target-cache target
+        run: |
+          mv $(pwd) /root/jet-v2
+          mv /root/target-cache /root/jet-v2/target
         # uses: actions/cache@v3
         # with:
         #   key: cargo-test
@@ -139,7 +149,7 @@ jobs:
         #     ~/.cargo/git/db/
         #     target/
 
-      - run: ./check cargo-test
+      - run: cd /root/jet-v2 && ./check cargo-test
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v2
