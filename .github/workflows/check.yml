@@ -23,6 +23,7 @@ jobs:
           echo pwd && pwd
           echo ls && ls
           mv $(pwd) /root/jet-v2
+          mkdir $(pwd)
           mv /root/target-cache /root/jet-v2/target
         # uses: actions/cache@v3
         # with:
@@ -56,6 +57,7 @@ jobs:
       - name: Get hosted-tests-localnet cache
         run: |
           mv $(pwd) /root/jet-v2
+          mkdir $(pwd)
           mv /root/target-cache /root/jet-v2/target
         # uses: actions/cache@v3
         # with:
@@ -85,6 +87,7 @@ jobs:
       - name: Get hosted-tests-localnet cache
         run: |
           mv $(pwd) /root/jet-v2
+          mkdir $(pwd)
           mv /root/target-cache /root/jet-v2/target
         # uses: actions/cache@v3
         # with:
@@ -113,6 +116,7 @@ jobs:
       - name: Get cargo-lint cache
         run: |
           mv $(pwd) /root/jet-v2
+          mkdir $(pwd)
           mv /root/target-cache /root/jet-v2/target
         # uses: actions/cache@v3
         # with:
@@ -139,6 +143,7 @@ jobs:
       - name: Get cargo-test cache
         run: |
           mv $(pwd) /root/jet-v2
+          mkdir $(pwd)
           mv /root/target-cache /root/jet-v2/target
         # uses: actions/cache@v3
         # with:
