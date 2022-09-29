@@ -1,7 +1,7 @@
 import { Program, BN, Address } from "@project-serum/anchor"
 import { getAssociatedTokenAddress, TOKEN_PROGRAM_ID } from "@solana/spl-token"
 import { PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY, TransactionInstruction } from "@solana/web3.js"
-import { MarginAccount } from "@jet-lab/margin"
+import { bigIntToBn, bnToBigInt, MarginAccount } from "@jet-lab/margin"
 import { Orderbook } from "./orderbook"
 import { JetBonds } from "./types"
 import { fetchData, findDerivedAccount } from "./utils"
@@ -220,7 +220,8 @@ export class BondMarket {
   ): Promise<TransactionInstruction> {
     const userTokenVault = await getAssociatedTokenAddress(this.addresses.underlyingTokenMint, user.address, true)
     const userTicketVault = await getAssociatedTokenAddress(this.addresses.bondTicketMint, user.address, true)
-    const limitPrice = new BN(rate_to_price(BigInt(rate.toString()), BigInt(this.info.duration.toString())).toString())
+    const limitPriceBigInt = rate_to_price(bnToBigInt(rate), bnToBigInt(this.info.duration))
+    const limitPrice = bigIntToBn(limitPriceBigInt)
     const params: OrderParams = {
       maxBondTicketQty: new BN(U64_MAX.toString()),
       maxUnderlyingTokenQty: new BN(amount),
@@ -276,8 +277,8 @@ export class BondMarket {
   async cancelOrderIx(user: MarginAccount, orderId: BN, side: OrderSide): Promise<TransactionInstruction> {
     const userVault =
       side === OrderSideBorrow
-        ? await getAssociatedTokenAddress(this.addresses.underlyingTokenMint, user.address)
-        : await getAssociatedTokenAddress(this.addresses.bondTicketMint, user.address)
+        ? await getAssociatedTokenAddress(this.addresses.underlyingTokenMint, user.address, true)
+        : await getAssociatedTokenAddress(this.addresses.bondTicketMint, user.address, true)
     const marketAccount = side === OrderSideBorrow ? this.addresses.underlyingTokenVault : this.addresses.bondTicketMint
 
     return await this.program.methods

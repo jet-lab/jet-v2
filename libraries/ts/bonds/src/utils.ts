@@ -45,10 +45,6 @@ export const fetchData = async (connection: Connection, address: Address): Promi
   return data
 }
 
-export const bnToBigInt = (num: BN): bigint => {
-  return BigInt(num.toString())
-}
-
 export const logAccounts = ({ ...accounts }) => {
   for (let name in accounts) {
     console.log(name + ": " + accounts[name])
