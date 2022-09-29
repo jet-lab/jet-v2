@@ -2,32 +2,30 @@
 <p>This instruction does the following:</p>
 <ol>
 <li>
-<p>Let <code>account</code> be a mutable reference to the margin account.</p>
+<p>Create and load the margin account.</p>
 </li>
 <li>
-<p>Initialize the margin account by setting the margin account version, owner,
-bump seed, user seed, and setting liquidator pubkey field to the default
-(if an account is being liquidated, the liquidator pubkey will be set here).</p>
+<p>Initialize the margin account.</p>
 </li>
 <li>
-<p>Emit the <code>AccountCreated</code> event for data logging (see table below):</p>
+<p>Emit the <a href="../events/struct.AccountCreated.html" title="events::AccountCreated"><code>events::AccountCreated</code></a> event (see Events table below) for data logging.</p>
 </li>
 <li>
 <p>Return <code>Ok(())</code>.</p>
 </li>
 </ol>
-<p><strong>Parameters of create_account.rs:</strong></p>
-<div><table><thead><tr><th></th><th></th></tr></thead><tbody>
-<tr><td><strong>Name</strong></td><td><strong>Description</strong></td></tr>
-<tr><td><code>owner</code></td><td>The owner of the new margin account.</td></tr>
-<tr><td><code>payer</code></td><td>The pubkey paying rent for the new margin account opening.</td></tr>
-<tr><td><code>margin_account</code></td><td>The margin account to initialize for the owner.</td></tr>
-<tr><td><code>system_program</code></td><td>The system program.</td></tr>
+<p><strong><a href="../accounts/struct.CreateAccount.html">Accounts</a> expected with create_account.rs:</strong></p>
+<div><table><thead><tr><th></th><th></th><th></th></tr></thead><tbody>
+<tr><td><strong>Name</strong></td><td><strong>Type</strong></td><td><strong>Description</strong></td></tr>
+<tr><td><code>owner</code></td><td><code>signer</code></td><td>The owner of the new margin account.</td></tr>
+<tr><td><code>payer</code></td><td><code>signer</code></td><td>The pubkey paying rent for the new margin account opening.</td></tr>
+<tr><td><code>margin_account</code></td><td><code>writable</code></td><td>The margin account to initialize for the owner.</td></tr>
+<tr><td><code>system_program</code></td><td><code>read_only</code></td><td>The <a href="https://docs.solana.com/developing/runtime-facilities/programs#system-program">system native program</a>.</td></tr>
 </tbody></table>
 </div>
 <p><strong>Events emitted by create_account.rs:</strong></p>
 <div><table><thead><tr><th></th><th></th></tr></thead><tbody>
 <tr><td><strong>Event Name</strong></td><td><strong>Description</strong></td></tr>
-<tr><td><a href="../events/struct.AccountCreated.html" title="events::AccountCreated"><code>events::AccountCreated</code></a></td><td>The created account (includes the margin account pubkey, the owner of margin account’s the pubkey, and the seed).</td></tr>
+<tr><td><a href="../events/struct.AccountCreated.html" title="events::AccountCreated"><code>events::AccountCreated</code></a></td><td>The created account.</td></tr>
 </tbody></table>
 </div></div></details></section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="jet_margin" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0 (a55dd71d5 2022-09-19)" ></div></body></html>

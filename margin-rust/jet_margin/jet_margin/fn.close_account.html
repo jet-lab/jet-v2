@@ -2,33 +2,33 @@
 <p>This instruction does the following:</p>
 <ol>
 <li>
-<p>Let <code>account</code>be a reference to the margin account being closed.</p>
+<p>Load the margin account.</p>
 </li>
 <li>
 <p>Check if the loaded margin account has any open positions.</p>
-<p>a.  If open positions exist, then return <code>ErrorCode::AccountNotEmpty</code>.</p>
+<p>a.  If open positions exist, then return <a href="../enum.ErrorCode.html#variant.AccountNotEmpty" title="ErrorCode::AccountNotEmpty"><code>ErrorCode::AccountNotEmpty</code></a>.</p>
 </li>
 <li>
-<p>Emit the <code>AccountClosed</code> event for data logging (see table below).</p>
+<p>Emit the <a href="../events/struct.AccountClosed.html" title="events::AccountClosed"><code>events::AccountClosed</code></a> event (see Events table below) for data logging.</p>
 </li>
 <li>
-<p>Load the margin account.</p>
+<p>Close the account and return the rent to the receiver.</p>
 </li>
 <li>
 <p>Return <code>Ok(())</code>.</p>
 </li>
 </ol>
-<p><strong>Parameters of close_account.rs:</strong></p>
-<div><table><thead><tr><th></th><th></th></tr></thead><tbody>
-<tr><td><strong>Name</strong></td><td><strong>Description</strong></td></tr>
-<tr><td><code>owner</code></td><td>The owner of the account being closed.</td></tr>
-<tr><td><code>receiver</code></td><td>The account to get any returned rent.</td></tr>
-<tr><td><code>margin_account</code></td><td>The account being closed.</td></tr>
+<p><strong><a href="../accounts/struct.CloseAccount.html">Accounts</a> expected with close_account.rs:</strong></p>
+<div><table><thead><tr><th></th><th></th><th></th></tr></thead><tbody>
+<tr><td><strong>Name</strong></td><td><strong>Type</strong></td><td><strong>Description</strong></td></tr>
+<tr><td><code>owner</code></td><td><code>signer</code></td><td>The owner of the account being closed.</td></tr>
+<tr><td><code>receiver</code></td><td><code>writable</code></td><td>The account to get any returned rent.</td></tr>
+<tr><td><code>margin_account</code></td><td><code>writable</code></td><td>The account being closed.</td></tr>
 </tbody></table>
 </div>
 <p><strong>Events emitted by close_account.rs:</strong></p>
 <div><table><thead><tr><th></th><th></th></tr></thead><tbody>
 <tr><td><strong>Event Name</strong></td><td><strong>Description</strong></td></tr>
-<tr><td><a href="../events/struct.AccountClosed.html" title="events::AccountClosed"><code>events::AccountClosed</code></a></td><td>The closed account (includes the margin account pubkey).</td></tr>
+<tr><td><a href="../events/struct.AccountClosed.html" title="events::AccountClosed"><code>events::AccountClosed</code></a></td><td>The closed account.</td></tr>
 </tbody></table>
 </div></div></details></section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="jet_margin" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0 (a55dd71d5 2022-09-19)" ></div></body></html>

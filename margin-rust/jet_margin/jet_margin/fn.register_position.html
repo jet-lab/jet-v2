@@ -3,32 +3,32 @@ Currently this applies to anything other than a claim.</p>
 <p>This instruction does the following:</p>
 <ol>
 <li>
-<p>Register a new position that belongs to the individual margin account, allocate account space for it, and set the parameters for that asset type.</p>
+<p>Register a new position that belongs to the individual margin account.</p>
 </li>
 <li>
-<p>Emit the <code>PositionRegistered</code> event for data logging (see table below).</p>
+<p>Emit the <a href="../events/struct.PositionRegistered.html" title="events::PositionRegistered"><code>events::PositionRegistered</code></a> event (see Events table below) for data logging.</p>
 </li>
 <li>
 <p>Return <code>Ok(())</code>.</p>
 </li>
 </ol>
-<p><strong>Parameters of register_position.rs:</strong></p>
-<div><table><thead><tr><th></th><th></th></tr></thead><tbody>
-<tr><td><strong>Name</strong></td><td><strong>Description</strong></td></tr>
-<tr><td><code>authority</code></td><td>The authority that can change the margin account.</td></tr>
-<tr><td><code>payer</code></td><td>The address paying for rent.</td></tr>
-<tr><td><code>margin_account</code></td><td>The margin account to register position type with.</td></tr>
-<tr><td><code>position_token_mint</code></td><td>The mint for the position token being registered.</td></tr>
-<tr><td><code>metadata</code></td><td>The metadata account that references the correct oracle for the token.</td></tr>
-<tr><td><code>token_account</code></td><td>The token account to store hold the position assets in the custody of the margin account.</td></tr>
-<tr><td><code>token_program</code></td><td>The token program of the token accounts to store for this margin account.</td></tr>
-<tr><td><code>rent</code></td><td>The rent to open the account.</td></tr>
-<tr><td><code>system_program</code></td><td>The system program.</td></tr>
+<p><strong><a href="../accounts/struct.RegisterPosition.html">Accounts</a> expected with register_position.rs:</strong></p>
+<div><table><thead><tr><th></th><th></th><th></th></tr></thead><tbody>
+<tr><td><strong>Name</strong></td><td><strong>Description</strong></td><td></td></tr>
+<tr><td><code>authority</code></td><td><code>signer</code></td><td>The authority that can change the margin account.</td></tr>
+<tr><td><code>payer</code></td><td><code>signer</code></td><td>The address paying for rent.</td></tr>
+<tr><td><code>margin_account</code></td><td><code>writable</code></td><td>The margin account to register position type with.</td></tr>
+<tr><td><code>position_token_mint</code></td><td><code>read_only</code></td><td>The mint for the position token being registered.</td></tr>
+<tr><td><code>metadata</code></td><td><code>read_only</code></td><td>The metadata account that references the correct oracle for the token.</td></tr>
+<tr><td><code>token_account</code></td><td><code>writable</code></td><td>The token account to store hold the position assets in the custody of the margin account.</td></tr>
+<tr><td><code>token_program</code></td><td><code>read_only</code></td><td>The <a href="https://spl.solana.com/token">spl token program</a>.</td></tr>
+<tr><td><code>rent</code></td><td><code>read_only</code></td><td>The <a href="https://docs.solana.com/developing/runtime-facilities/sysvars#rent">rent sysvar</a>. The rent to open the account.</td></tr>
+<tr><td><code>system_program</code></td><td><code>read_only</code></td><td>The <a href="https://docs.solana.com/developing/runtime-facilities/programs#system-program">system native program</a>.</td></tr>
 </tbody></table>
 </div>
 <p><strong>Events emitted by register_position.rs:</strong></p>
 <div><table><thead><tr><th></th><th></th></tr></thead><tbody>
 <tr><td><strong>Event Name</strong></td><td><strong>Description</strong></td></tr>
-<tr><td><a href="../events/struct.PositionRegistered.html" title="events::PositionRegistered"><code>events::PositionRegistered</code></a></td><td>The position registered (includes the margin account pubkey, the authority pubkey of that margin account, and the position itself).</td></tr>
+<tr><td><a href="../events/struct.PositionRegistered.html" title="events::PositionRegistered"><code>events::PositionRegistered</code></a></td><td>The position registered.</td></tr>
 </tbody></table>
 </div></div></details></section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="jet_margin" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0 (a55dd71d5 2022-09-19)" ></div></body></html>
