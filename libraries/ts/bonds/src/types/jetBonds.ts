@@ -753,22 +753,6 @@ export type JetBonds = {
           docs: ["The signing authority for this user account"]
         },
         {
-          name: "userVault"
-          isMut: false
-          isSigner: false
-          docs: ["The vault to collect regained funds"]
-        },
-        {
-          name: "marketAccount"
-          isMut: false
-          isSigner: false
-          docs: [
-            "Account controlled by the market to disperse funds",
-            "Bond ticket mint or underlying vault depending on book side"
-          ]
-        },
-
-        {
           name: "bondManager"
           isMut: true
           isSigner: false
@@ -793,12 +777,6 @@ export type JetBonds = {
           name: "asks"
           isMut: true
           isSigner: false
-        },
-        {
-          name: "tokenProgram"
-          isMut: false
-          isSigner: false
-          docs: ["Spl token program"]
         }
       ]
       args: [
@@ -3119,21 +3097,6 @@ export const IDL: JetBonds = {
           docs: ["The signing authority for this user account"]
         },
         {
-          name: "userVault",
-          isMut: false,
-          isSigner: false,
-          docs: ["The vault to collect regained funds"]
-        },
-        {
-          name: "marketAccount",
-          isMut: false,
-          isSigner: false,
-          docs: [
-            "Account controlled by the market to disperse funds",
-            "Bond ticket mint or underlying vault depending on book side"
-          ]
-        },
-        {
           name: "bondManager",
           isMut: true,
           isSigner: false,
@@ -3158,12 +3121,6 @@ export const IDL: JetBonds = {
           name: "asks",
           isMut: true,
           isSigner: false
-        },
-        {
-          name: "tokenProgram",
-          isMut: false,
-          isSigner: false,
-          docs: ["Spl token program"]
         }
       ],
       args: [

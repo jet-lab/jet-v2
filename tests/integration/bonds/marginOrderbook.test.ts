@@ -22,8 +22,6 @@ import {
   createUserWallet,
   DEFAULT_CONFIRM_OPTS,
   DEFAULT_MARGIN_CONFIG,
-  getMintSupply,
-  getTokenBalance,
   loadToken,
   MARGIN_POOL_PROGRAM_ID,
   registerAdapter,
@@ -36,14 +34,11 @@ import TEST_MINT_KEYPAIR from '../../keypairs/test-mint.json';
 import USDC_ORACLE_PRICE from '../../keypairs/usdc-price.json';
 import USDC_ORACLE_PRODUCT from '../../keypairs/usdc-product.json';
 import {
-  base_to_quote,
   BondMarket,
   JetBonds,
   JetBondsIdl,
   MarginUserInfo,
   OrderSideLend,
-  order_id_to_string,
-  quote_to_base,
   rate_to_price
 } from '@jet-lab/jet-bonds-client';
 import { createAssociatedTokenAccountInstruction, getAssociatedTokenAddress } from '@solana/spl-token';
@@ -122,14 +117,11 @@ describe('margin bonds borrowing', async () => {
     USDC = await loadToken(provider, payer, 6, 10_000_000, 'USDC', usdcKeypair);
     SOL = await createToken(provider, payer, 9, 10_000, 'SOL');
 
-    // ACT
-    const usdc_supply = await getMintSupply(provider, USDC.mint, 6);
-    const usdc_balance = await getTokenBalance(provider, DEFAULT_CONFIRM_OPTS.commitment, USDC.vault);
-    const sol_supply = await getMintSupply(provider, SOL.mint, 9);
-    const sol_balance = await getTokenBalance(provider, DEFAULT_CONFIRM_OPTS.commitment, SOL.vault);
-
     // create oracles
-    USDC_oracle = [Keypair.generate(), Keypair.generate()];
+    USDC_oracle = [
+      Keypair.fromSecretKey(Uint8Array.of(...USDC_ORACLE_PRODUCT)),
+      Keypair.fromSecretKey(Uint8Array.of(...USDC_ORACLE_PRICE))
+    ];
     await pythClient.createPriceAccount(payer, USDC_oracle[0], 'USD', USDC_oracle[1], 1, 0.01, -8);
     SOL_oracle = [Keypair.generate(), Keypair.generate()];
     await pythClient.createPriceAccount(payer, SOL_oracle[0], 'USD', SOL_oracle[1], 100, 1, -8);
@@ -378,8 +370,6 @@ describe('margin bonds borrowing', async () => {
 
     await provider_a.sendAndConfirm(makeTx([invokeA]), [wallet_a.payer]);
     await provider_b.sendAndConfirm(makeTx([invokeB]), [wallet_b.payer]);
-
-    // TODO assert proper user token balances
   });
 
   const borrowRequestParams = {
@@ -416,21 +406,21 @@ describe('margin bonds borrowing', async () => {
   it('loads orderbook and has correct orders', async () => {
     const orderbook = await bondMarket.fetchOrderbook();
     const offeredLoan = orderbook.bids[0];
-
-    const genString = order_id_to_string(offeredLoan.order_id);
+    // const requestedBorrow = orderbook.asks[0]
 
     loanId = offeredLoan.order_id;
-
-    // const requestedBorrow = orderbook.asks[0]
 
     assert(
       offeredLoan.limit_price === rate_to_price(bnToBigInt(loanOfferParams.rate), bnToBigInt(bondMarket.info.duration))
     );
 
+    // TODO this test requires utilization of the wasm math utils to properly derive order values to be found on the orderbook
     // assert(
     //   offeredLoan.quote_size === loanQuote,
     //   'Quote amount does not match given params, Given: [' + loanQuote + ']; On book: [' + offeredLoan.quote_size + ']'
     // );
+
+    // TODO this requires borrow orders to properly post
     // assert(requestedBorrow.quote_size === bnToBigInt(borrowRequestParams.amount))
     // assert(
     //   requestedBorrow.limit_price ===
@@ -442,6 +432,6 @@ describe('margin bonds borrowing', async () => {
     const cancelLoan = await bondMarket.cancelOrderIx(marginAccount_B, loanId, OrderSideLend);
     const invokeCancelLoan = await viaMargin(marginAccount_B, cancelLoan);
 
-    // await provider_b.sendAndConfirm(makeTx([invokeCancelLoan]));
+    await provider_b.sendAndConfirm(makeTx([invokeCancelLoan]));
   });
 });

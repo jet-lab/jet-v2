@@ -274,21 +274,13 @@ export class BondMarket {
   }
 
   async cancelOrderIx(user: MarginAccount, orderId: Uint8Array, side: OrderSide): Promise<TransactionInstruction> {
-    const userVault =
-      side === OrderSideBorrow
-        ? await getAssociatedTokenAddress(this.addresses.underlyingTokenMint, user.address, true)
-        : await getAssociatedTokenAddress(this.addresses.bondTicketMint, user.address, true)
-    const marketAccount = side === OrderSideBorrow ? this.addresses.underlyingTokenVault : this.addresses.bondTicketMint
-
     const bnOrderId = new BN(order_id_to_string(orderId))
+
     return await this.program.methods
       .cancelOrder(bnOrderId)
       .accounts({
         ...this.addresses,
-        user: user.address,
-        userVault,
-        marketAccount,
-        tokenProgram: TOKEN_PROGRAM_ID
+        user: user.address
       })
       .instruction()
   }
