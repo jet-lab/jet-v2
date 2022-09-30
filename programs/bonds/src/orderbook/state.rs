@@ -438,18 +438,22 @@ impl<'a> EventQueue<'a> {
     const ADAPTER_OFFSET: usize = EventAdapterMetadata::LEN + 8;
 
     pub fn deserialize_market(info: AccountInfo<'a>) -> Result<Self> {
+        require!(
+            info.owner == &crate::id(),
+            BondsError::WrongEventQueue
+        );
         Self::deserialize(info, false)
     }
 
     pub fn deserialize_user_adapter(info: AccountInfo<'a>) -> Result<Self> {
-        Self::deserialize(info, true)
-    }
-
-    fn deserialize(info: AccountInfo<'a>, is_adapter: bool) -> Result<Self> {
         require!(
             info.owner != &crate::id(),
             BondsError::UserDoesNotOwnAdapter
         );
+        Self::deserialize(info, true)
+    }
+
+    fn deserialize(info: AccountInfo<'a>, is_adapter: bool) -> Result<Self> {
         let adapter_offset = if is_adapter { Self::ADAPTER_OFFSET } else { 0 };
         let buf = &info.data.borrow();
         let capacity = (buf.len() - 8 - EventQueueHeader::LEN - adapter_offset)
