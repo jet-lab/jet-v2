@@ -51,14 +51,15 @@ pub fn order_id_to_string(order_id: &[u8]) -> String {
 /// Given a base quanity and fixed-point 32 price value, calculate the quote
 #[wasm_bindgen]
 pub fn base_to_quote(base: u64, price: u64) -> u64 {
-    let quote = Fp32::upcast_fp32(price) * base;
-    quote.as_decimal_u64().unwrap()
+    Fp32::upcast_fp32(price).decimal_u64_mul(base).unwrap()
 }
 
 /// Given a base quanity and fixed-point 32 price value, calculate the quote
 #[wasm_bindgen]
 pub fn quote_to_base(quote: u64, price: u64) -> u64 {
-    Fp32::upcast_fp32(price).u64_div(quote).unwrap()
+    (Fp32::from(quote) / Fp32::upcast_fp32(price))
+        .as_decimal_u64()
+        .unwrap()
 }
 
 /// Given a fixed-point 32 value, convert to decimal representation
@@ -116,7 +117,7 @@ pub fn build_order_amount_deprecated(amount: u64, interest_rate: u64) -> super::
 #[wasm_bindgen]
 pub fn calculate_implied_price(base: u64, quote: u64) -> u64 {
     let price = Fp32::from(quote) / base;
-    price.as_decimal_u64().unwrap()
+    price.downcast_u64().unwrap()
 }
 
 /// This is meant to ensure that the api is using the PricerImpl type alias,
@@ -141,4 +142,34 @@ fn wasm_uses_tested_implementation() {
             );
         }
     }
+}
+
+/// Utilizes the same numbers as in the integrated test
+#[test]
+fn integrated_sanity_test_rate_price_covnersion() {
+    let base = 1_200_000;
+    let quote = 1_000_000;
+    let tenor = 13_000;
+
+    let price = calculate_implied_price(base, quote);
+    let rate = price_to_rate(price, tenor);
+
+    assert_eq!(price, rate_to_price(rate, tenor));
+}
+
+/// Utilizes the same numbers as in the integrated test
+///
+/// NOTE: Accounts for rounding!
+#[test]
+fn integrated_sanity_test_base_quote_covnersion() {
+    let base = 1_200_000;
+    let quote = 1_000_000;
+
+    let price = calculate_implied_price(base, quote);
+
+    let derived_base = quote_to_base(quote, price);
+    let derived_quote = base_to_quote(base, price);
+
+    assert_eq!(base, derived_base);
+    assert_eq!(quote - 1, derived_quote);
 }
