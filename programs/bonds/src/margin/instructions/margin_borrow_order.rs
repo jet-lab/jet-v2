@@ -58,7 +58,7 @@ pub struct MarginBorrowOrder<'info> {
 
 pub fn handler(ctx: Context<MarginBorrowOrder>, params: OrderParams, seed: Vec<u8>) -> Result<()> {
     let (callback_info, order_summary) = ctx.accounts.orderbook_mut.place_order(
-        ctx.accounts.borrower_account.key(),
+        ctx.accounts.margin_account.key(),
         Side::Ask,
         params,
         ctx.accounts.borrower_account.key(),
