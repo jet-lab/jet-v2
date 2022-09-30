@@ -438,10 +438,7 @@ impl<'a> EventQueue<'a> {
     const ADAPTER_OFFSET: usize = EventAdapterMetadata::LEN + 8;
 
     pub fn deserialize_market(info: AccountInfo<'a>) -> Result<Self> {
-        require!(
-            info.owner == &crate::id(),
-            BondsError::WrongEventQueue
-        );
+        require!(info.owner == &crate::id(), BondsError::WrongEventQueue);
         Self::deserialize(info, false)
     }
 
