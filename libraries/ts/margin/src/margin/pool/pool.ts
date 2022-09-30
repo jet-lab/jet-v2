@@ -1876,13 +1876,11 @@ export class Pool {
 
     // Projected risk equation
     if (repayWithProceeds) {
-      console.log("repayWithProceeds")
-
       riskIndicator =
         (totalLiabilities +
           requiredCollateral -
           ((1 + outputRequiredCollateralFactor) / outputRequiredCollateralFactor) *
-            Math.max(outputTokenLiabilityValue - minAmountOutValue, 0) +
+            (outputTokenLiabilityValue - Math.max(outputTokenLiabilityValue - minAmountOutValue, 0)) +
           ((1 + inputRequiredCollateralFactor) / inputRequiredCollateralFactor) *
             Math.max(inputSwapValue - inputTokenAssetValue, 0)) /
         (weightedCollateral +
