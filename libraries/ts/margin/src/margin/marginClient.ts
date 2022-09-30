@@ -1,5 +1,5 @@
 import { getAccount, NATIVE_MINT } from "@solana/spl-token"
-import { Program, AnchorProvider, BN, translateAddress } from "@project-serum/anchor"
+import { Program, AnchorProvider, BN, translateAddress, BorshInstructionCoder, BorshAccountsCoder } from "@project-serum/anchor"
 import { JetMargin, JetMarginPool, JetMarginSerum, JetMarginSwap, JetMetadata, TokenAmount, PoolAction } from ".."
 import {
   JetControl,
@@ -19,8 +19,13 @@ import {
   TransactionResponse,
   ParsedInstruction,
   ParsedInnerInstruction,
-  PartiallyDecodedInstruction
+  PartiallyDecodedInstruction,
+  ParsedTransaction,
+  TransactionInstruction
 } from "@solana/web3.js"
+import bs58 from "bs58"
+import { program } from "@project-serum/anchor/dist/cjs/spl/token"
+import { IdlTypeDef } from "@project-serum/anchor/dist/cjs/idl"
 
 interface TokenMintsList {
   tokenMint: PublicKey
@@ -210,6 +215,11 @@ export class MarginClient {
         let amount = new BN(0)
         let amountIn = new BN(0)
 
+        if (tradeAction === "swap") {
+          const instruction = parsedTx.transaction.message.instructions
+          this.intoTransactionInstruction(parsedTx.transaction, instruction[0], provider, config)
+        }
+
         ixs?.forEach((ix: ParsedInnerInstruction) => {
           ix.instructions.forEach((inst: ParsedInstruction | PartiallyDecodedInstruction) => {
             if ("parsed" in inst) {
@@ -314,5 +324,100 @@ export class MarginClient {
     )
     const filteredParsedTransactions = parsedTransactions.filter(tx => !!tx) as AccountTransaction[]
     return filteredParsedTransactions.sort((a, b) => a.slot - b.slot)
+  }
+
+    static intoTransactionInstruction(
+      tx: ParsedTransaction,
+      instruction: ParsedInstruction | PartiallyDecodedInstruction,
+      provider: AnchorProvider,
+      config: MarginConfig
+    ): TransactionInstruction | void {
+      const message = tx.message;
+      if ("parsed" in instruction) return console.log('none found');
+
+      let instructionProgramIds: PublicKey[];
+      instructionProgramIds = message.instructions.map((ix) => ix.programId);
+
+      const bs58decodedIxData = bs58.decode(instruction.data);
+
+      console.log("decodedIxData", bs58decodedIxData)
+
+      // bs58.decode(instruction.data)
+      const keys = [];
+
+      const result = new TransactionInstruction({
+        data: Buffer.from(bs58.decode(instruction.data)),
+        keys: keys,
+        programId: instruction.programId,
+      });
+
+      return result;
+    }
+
+  static getAnchorAccountsFromInstruction(
+    decodedIx: Object | null,
+    program: Program
+  ):
+    | {
+        name: string;
+        isMut: boolean;
+        isSigner: boolean;
+        pda?: Object;
+      }[]
+    | null {
+    if (decodedIx) {
+      // get ix accounts
+      const idlInstructions = program.idl.instructions.filter(
+        // @ts-ignore
+        (ix) => ix.name === decodedIx.name
+      );
+      if (idlInstructions.length === 0) {
+        return null;
+      }
+      return idlInstructions[0].accounts as {
+        // type coercing since anchor doesn't export the underlying type
+        name: string;
+        isMut: boolean;cccccbcrlrledfictehdttfhcidikivjenfukvfjfntr
+        isSigner: boolean;
+        pda?: Object;
+      }[];
+    }
+    return null;
+  }
+
+  static getDecodedInfoFromAccount(account, config) {
+    // const { lamports } = account;
+  const url = config;
+  const anchorProgram = useAnchorProgram(
+    account.details?.owner.toString() || "",
+    url
+  );
+  const rawData = account?.details?.rawData;
+  // const programName = getAnchorProgramName(anchorProgram) || "Unknown Program";
+
+  const decodedAccountData = () => {
+    let decodedAccountData: any | null = null;
+    let accountDef: IdlTypeDef | undefined = undefined;
+    if (anchorProgram && rawData) {
+      const coder = new BorshAccountsCoder(anchorProgram.idl);
+      const accountDefTmp = anchorProgram.idl.accounts?.find(
+        (accountType: any) =>
+          (rawData as Buffer)
+            .slice(0, 8)
+            .equals(BorshAccountsCoder.accountDiscriminator(accountType.name))
+      );
+      if (accountDefTmp) {
+        accountDef = accountDefTmp;
+        decodedAccountData = coder.decode(accountDef.name, rawData);
+      }
+    }
+
+    return {
+      decodedAccountData,
+      accountDef,
+    };
+  };
+
+  decodedAccountData()
   }
 }
