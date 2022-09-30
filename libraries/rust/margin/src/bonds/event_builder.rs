@@ -154,13 +154,15 @@ pub fn build_consume_events_info(
                     .contains(CallbackFlags::AUTO_STAKE)
                 {
                     let seed = make_seed(rng);
-                    let key =
-                        bonds_pda(&SplitTicket::make_seeds(&maker_callback_info.owner, &seed));
+                    let key = bonds_pda(&SplitTicket::make_seeds(
+                        &maker_callback_info.fill_account.to_bytes(),
+                        &seed,
+                    ));
                     Some(LoanAccountKey { key, seed })
                 } else if maker_callback_info.flags.contains(CallbackFlags::NEW_DEBT) {
                     let seed = make_seed(rng);
                     let key = bonds_pda(&Obligation::make_seeds(
-                        &maker_callback_info.fill_account,
+                        &maker_callback_info.fill_account.to_bytes(),
                         &seed,
                     ));
                     Some(LoanAccountKey { key, seed })
@@ -169,7 +171,7 @@ pub fn build_consume_events_info(
                 };
 
                 EventAccountKeys::Fill(FillAccountsKeys {
-                    maker: Pubkey::new_from_array(maker_callback_info.fill_account),
+                    maker: maker_callback_info.fill_account,
                     loan,
                     maker_adapter: maker_callback_info.adapter(),
                     taker_adapter: taker_callback_info.adapter(),
@@ -177,7 +179,7 @@ pub fn build_consume_events_info(
             }
             EventRef::Out(OutEventRef { callback_info, .. }) => {
                 EventAccountKeys::Out(OutAccountsKeys {
-                    user: Pubkey::new_from_array(callback_info.fill_account),
+                    user: callback_info.out_account,
                     user_adapter_account: callback_info.adapter(),
                 })
             }

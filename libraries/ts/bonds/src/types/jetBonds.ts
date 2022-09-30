@@ -513,74 +513,6 @@ export type JetBonds = {
       ]
     },
     {
-      name: "marginCancelOrder"
-      docs: ["Cancel an order that was placed on margin"]
-      accounts: [
-        {
-          name: "borrowerAccount"
-          isMut: true
-          isSigner: false
-          docs: ["The account tracking borrower debts"]
-        },
-        {
-          name: "marginAccount"
-          isMut: false
-          isSigner: true
-          docs: ["The signing authority for this user account"]
-        },
-        {
-          name: "claims"
-          isMut: true
-          isSigner: false
-          docs: ["Token account used by the margin program to track the debt that must be collateralized"]
-        },
-        {
-          name: "claimsMint"
-          isMut: true
-          isSigner: false
-          docs: ["Token mint used by the margin program to track the debt that must be collateralized"]
-        },
-
-        {
-          name: "bondManager"
-          isMut: true
-          isSigner: false
-          docs: ["The `BondManager` account tracks global information related to this particular bond market"]
-        },
-        {
-          name: "orderbookMarketState"
-          isMut: true
-          isSigner: false
-        },
-        {
-          name: "eventQueue"
-          isMut: true
-          isSigner: false
-        },
-        {
-          name: "bids"
-          isMut: true
-          isSigner: false
-        },
-        {
-          name: "asks"
-          isMut: true
-          isSigner: false
-        },
-        {
-          name: "tokenProgram"
-          isMut: false
-          isSigner: false
-        }
-      ]
-      args: [
-        {
-          name: "orderId"
-          type: "u128"
-        }
-      ]
-    },
-    {
       name: "refreshPosition"
       docs: ["Refresh the associated margin account `claims` for a given `MarginUser` account"]
       accounts: [
@@ -821,22 +753,6 @@ export type JetBonds = {
           docs: ["The signing authority for this user account"]
         },
         {
-          name: "userVault"
-          isMut: false
-          isSigner: false
-          docs: ["The vault to collect regained funds"]
-        },
-        {
-          name: "marketAccount"
-          isMut: false
-          isSigner: false
-          docs: [
-            "Account controlled by the market to disperse funds",
-            "Bond ticket mint or underlying vault depending on book side"
-          ]
-        },
-
-        {
           name: "bondManager"
           isMut: true
           isSigner: false
@@ -861,12 +777,6 @@ export type JetBonds = {
           name: "asks"
           isMut: true
           isSigner: false
-        },
-        {
-          name: "tokenProgram"
-          isMut: false
-          isSigner: false
-          docs: ["Spl token program"]
         }
       ]
       args: [
@@ -2948,73 +2858,6 @@ export const IDL: JetBonds = {
       ]
     },
     {
-      name: "marginCancelOrder",
-      docs: ["Cancel an order that was placed on margin"],
-      accounts: [
-        {
-          name: "borrowerAccount",
-          isMut: true,
-          isSigner: false,
-          docs: ["The account tracking borrower debts"]
-        },
-        {
-          name: "marginAccount",
-          isMut: false,
-          isSigner: true,
-          docs: ["The signing authority for this user account"]
-        },
-        {
-          name: "claims",
-          isMut: true,
-          isSigner: false,
-          docs: ["Token account used by the margin program to track the debt that must be collateralized"]
-        },
-        {
-          name: "claimsMint",
-          isMut: true,
-          isSigner: false,
-          docs: ["Token mint used by the margin program to track the debt that must be collateralized"]
-        },
-        {
-          name: "bondManager",
-          isMut: true,
-          isSigner: false,
-          docs: ["The `BondManager` account tracks global information related to this particular bond market"]
-        },
-        {
-          name: "orderbookMarketState",
-          isMut: true,
-          isSigner: false
-        },
-        {
-          name: "eventQueue",
-          isMut: true,
-          isSigner: false
-        },
-        {
-          name: "bids",
-          isMut: true,
-          isSigner: false
-        },
-        {
-          name: "asks",
-          isMut: true,
-          isSigner: false
-        },
-        {
-          name: "tokenProgram",
-          isMut: false,
-          isSigner: false
-        }
-      ],
-      args: [
-        {
-          name: "orderId",
-          type: "u128"
-        }
-      ]
-    },
-    {
       name: "refreshPosition",
       docs: ["Refresh the associated margin account `claims` for a given `MarginUser` account"],
       accounts: [
@@ -3254,21 +3097,6 @@ export const IDL: JetBonds = {
           docs: ["The signing authority for this user account"]
         },
         {
-          name: "userVault",
-          isMut: false,
-          isSigner: false,
-          docs: ["The vault to collect regained funds"]
-        },
-        {
-          name: "marketAccount",
-          isMut: false,
-          isSigner: false,
-          docs: [
-            "Account controlled by the market to disperse funds",
-            "Bond ticket mint or underlying vault depending on book side"
-          ]
-        },
-        {
           name: "bondManager",
           isMut: true,
           isSigner: false,
@@ -3293,12 +3121,6 @@ export const IDL: JetBonds = {
           name: "asks",
           isMut: true,
           isSigner: false
-        },
-        {
-          name: "tokenProgram",
-          isMut: false,
-          isSigner: false,
-          docs: ["Spl token program"]
         }
       ],
       args: [

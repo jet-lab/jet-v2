@@ -519,6 +519,17 @@ impl BondsIxBuilder {
         Ok(Instruction::new_with_bytes(jet_bonds::ID, &data, accounts))
     }
 
+    pub fn cancel_order(&self, owner: Pubkey, order_id: u128) -> Result<Instruction> {
+        let data = jet_bonds::instruction::CancelOrder { order_id }.data();
+        let accounts = jet_bonds::accounts::CancelOrder {
+            owner,
+            orderbook_mut: self.orderbook_mut()?,
+        }
+        .to_account_metas(None);
+
+        Ok(Instruction::new_with_bytes(jet_bonds::ID, &data, accounts))
+    }
+
     pub fn pause_order_matching(&self) -> Result<Instruction> {
         let data = jet_bonds::instruction::PauseOrderMatching {}.data();
         let accounts = jet_bonds::accounts::PauseOrderMatching {
