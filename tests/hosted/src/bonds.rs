@@ -371,7 +371,7 @@ impl TestManager {
             underlying_token_mint: manager.underlying_token_mint,
             adapter_program: jet_bonds::ID,
             token_kind: TokenKind::Claim,
-            value_modifier: 0,
+            value_modifier: 1_000,
             max_staleness: 1_000,
         };
         let address = get_metadata_address(&manager.claims_mint);
