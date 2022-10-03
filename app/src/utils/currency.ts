@@ -14,7 +14,7 @@ export function useCurrencyFormatting() {
 
   // Format USD or crypto with default or desired decimals
   const currencyFormatter = useCallback(
-    (value: number, fiatValues?: boolean, decimals?: number, ciel?: boolean): string => {
+    (value: number, fiatValues?: boolean, decimals?: number, ciel?: boolean, accounting?: boolean): string => {
       const roundedDownValue = ciel
         ? Math.ceil(value * 10 ** (decimals ?? 2)) / 10 ** (decimals ?? 2)
         : Math.floor(value * 10 ** (decimals ?? 2)) / 10 ** (decimals ?? 2);
@@ -29,7 +29,13 @@ export function useCurrencyFormatting() {
 
       // Set and strip trailing 0's / unnecessary decimal if not fiat
       let uiCurrency = currencyFormat.format(convertedValue);
-      if (!fiatValues) {
+      if (accounting && fiatValues) {
+        // Use accounting-style fiat formatting,
+        // Represent negative numbers in parantheses
+        if (convertedValue < 0) {
+          uiCurrency = '(' + currencyFormat.format(convertedValue).replace('-', '') + ')';
+        }
+      } else if (!fiatValues) {
         while (
           uiCurrency.indexOf('.') !== -1 &&
           (uiCurrency[uiCurrency.length - 1] === '0' || uiCurrency[uiCurrency.length - 1] === '.')
@@ -49,7 +55,8 @@ export function useCurrencyFormatting() {
     fiatValues?: boolean,
     price?: number,
     decimals?: number,
-    precision?: boolean
+    precision?: boolean,
+    accounting?: boolean
   ): string {
     let t = total;
     if (price && fiatValues) {
@@ -65,6 +72,9 @@ export function useCurrencyFormatting() {
 
     if (precision) {
       if (fiatValues) {
+        if (accounting) {
+          return currencyFormatter(t, fiatValues, 2, undefined, true);
+        }
         // Do not truncate fiat values under million
         return currencyFormatter(t, fiatValues, 2);
       } else {

@@ -241,6 +241,7 @@ export function FullAccountBalance(): JSX.Element {
             true,
             undefined,
             undefined,
+            true,
             true
           );
           const percent =
