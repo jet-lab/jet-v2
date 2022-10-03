@@ -14,8 +14,8 @@ export function useCurrencyFormatting() {
 
   // Format USD or crypto with default or desired decimals
   const currencyFormatter = useCallback(
-    (value: number, fiatValues?: boolean, decimals?: number, ciel?: boolean, accounting?: boolean): string => {
-      const roundedDownValue = ciel
+    (value: number, fiatValues?: boolean, decimals?: number, ceil?: boolean, accounting?: boolean): string => {
+      const roundedDownValue = ceil
         ? Math.ceil(value * 10 ** (decimals ?? 2)) / 10 ** (decimals ?? 2)
         : Math.floor(value * 10 ** (decimals ?? 2)) / 10 ** (decimals ?? 2);
       const convertedValue =
