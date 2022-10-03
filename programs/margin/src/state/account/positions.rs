@@ -17,7 +17,6 @@
 
 use anchor_lang::prelude::*;
 use bytemuck::{Contiguous, Pod, Zeroable};
-use jet_metadata::TokenKind;
 #[cfg(any(test, feature = "cli"))]
 use serde::ser::{Serialize, SerializeStruct, Serializer};
 
@@ -28,7 +27,7 @@ use anchor_lang::Result as AnchorResult;
 use std::{convert::TryFrom, result::Result};
 
 use super::Approver;
-use crate::{ErrorCode, PriceChangeInfo, MAX_ORACLE_CONFIDENCE, MAX_ORACLE_STALENESS};
+use crate::{ErrorCode, PriceChangeInfo, TokenKind, MAX_ORACLE_CONFIDENCE, MAX_ORACLE_STALENESS};
 
 const POS_PRICE_VALID: u8 = 1;
 
@@ -120,40 +119,6 @@ impl TryFrom<PriceChangeInfo> for PriceInfo {
     }
 }
 
-#[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone, Copy, Contiguous, Eq, PartialEq)]
-#[repr(u32)]
-pub enum PositionKind {
-    /// The position is not worth anything
-    NoValue = 0,
-
-    /// The position contains a balance of available collateral
-    Deposit,
-
-    /// The position contains a balance of tokens that are owed as a part of some debt.
-    Claim,
-
-    /// The position contains a balance managed by a trusted adapter to represent the amount of collateral custodied by that adapter.
-    /// The token account is owned by the adapter. Collateral is accessed through instructions to the adapter.
-    AdapterCollateral,
-}
-
-impl From<TokenKind> for PositionKind {
-    fn from(token: TokenKind) -> Self {
-        match token {
-            TokenKind::NonCollateral => PositionKind::NoValue,
-            TokenKind::Collateral => PositionKind::Deposit,
-            TokenKind::Claim => PositionKind::Claim,
-            TokenKind::AdapterCollateral => PositionKind::AdapterCollateral,
-        }
-    }
-}
-
-impl Default for PositionKind {
-    fn default() -> Self {
-        PositionKind::NoValue
-    }
-}
-
 #[assert_size(192)]
 #[derive(Pod, Zeroable, AnchorSerialize, AnchorDeserialize, Default, Clone, Copy)]
 #[repr(C)]
@@ -194,7 +159,8 @@ pub struct AccountPosition {
     /// Flags that are set by the adapter
     pub flags: AdapterPositionFlags,
 
-    _reserved: [u8; 23],
+    /// Unused
+    pub _reserved: [u8; 23],
 }
 
 bitflags::bitflags! {
@@ -212,12 +178,21 @@ bitflags::bitflags! {
     }
 }
 
+mod _idl {
+    use super::*;
+
+    #[derive(Zeroable, AnchorSerialize, AnchorDeserialize, Default)]
+    pub struct AdapterPositionFlags {
+        pub flags: u8,
+    }
+}
+
 // `AdapterPositionFlags` fits requriements for `Pod`, but bitflags macro makes auto-deriving it problematic
 unsafe impl Pod for AdapterPositionFlags {}
 
 impl AccountPosition {
-    pub fn kind(&self) -> PositionKind {
-        PositionKind::from_integer(self.kind).unwrap()
+    pub fn kind(&self) -> TokenKind {
+        TokenKind::from_integer(self.kind).unwrap_or_default()
     }
 
     pub fn calculate_value(&mut self) {
@@ -232,14 +207,14 @@ impl AccountPosition {
 
     pub fn collateral_value(&self) -> Number128 {
         assert!(
-            self.kind() == PositionKind::Deposit || self.kind() == PositionKind::AdapterCollateral
+            self.kind() == TokenKind::Collateral || self.kind() == TokenKind::AdapterCollateral
         );
 
         Number128::from_decimal(self.value_modifier, -2) * self.value()
     }
 
     pub fn required_collateral_value(&self) -> Number128 {
-        assert_eq!(self.kind(), PositionKind::Claim);
+        assert_eq!(self.kind(), TokenKind::Claim);
 
         let modifier = Number128::from_decimal(self.value_modifier, -2);
 
@@ -267,13 +242,24 @@ impl AccountPosition {
     }
 
     pub fn may_be_registered_or_closed(&self, approvals: &[Approver]) -> bool {
-        approvals.contains(&Approver::MarginAccountAuthority)
-            && match self.kind() {
-                PositionKind::NoValue | PositionKind::Deposit => true,
-                PositionKind::Claim | PositionKind::AdapterCollateral => {
-                    approvals.contains(&Approver::Adapter(self.adapter))
+        let mut authority_approved = false;
+        let mut adapter_approved = false;
+
+        for approval in approvals {
+            match approval {
+                Approver::MarginAccountAuthority => authority_approved = true,
+                Approver::Adapter(approving_adapter) => {
+                    adapter_approved = *approving_adapter == self.adapter
                 }
             }
+        }
+
+        match self.kind() {
+            TokenKind::Collateral => authority_approved && !adapter_approved,
+            TokenKind::Claim | TokenKind::AdapterCollateral => {
+                authority_approved && adapter_approved
+            }
+        }
     }
 }
 
@@ -297,16 +283,15 @@ impl std::fmt::Debug for AccountPosition {
 }
 
 #[cfg(any(test, feature = "cli"))]
-impl Serialize for PositionKind {
+impl Serialize for TokenKind {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
         serializer.serialize_str(match *self {
-            PositionKind::NoValue => "NoValue",
-            PositionKind::Claim => "Claim",
-            PositionKind::Deposit => "Deposit",
-            PositionKind::AdapterCollateral => "AdapterCollateral",
+            TokenKind::Claim => "Claim",
+            TokenKind::Collateral => "Collateral",
+            TokenKind::AdapterCollateral => "AdapterCollateral",
         })
     }
 }

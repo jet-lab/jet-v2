@@ -28,6 +28,9 @@ mod register_position;
 mod update_position_balance;
 mod verify_healthy;
 
+mod configure;
+mod positions;
+
 pub use accounting_invoke::*;
 pub use adapter_invoke::*;
 pub use close_account::*;
@@ -40,3 +43,6 @@ pub use refresh_position_metadata::*;
 pub use register_position::*;
 pub use update_position_balance::*;
 pub use verify_healthy::*;
+
+pub use configure::*;
+pub use positions::*;

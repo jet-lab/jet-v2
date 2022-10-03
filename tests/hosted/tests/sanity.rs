@@ -3,13 +3,13 @@ use std::collections::HashMap;
 use anyhow::Error;
 
 use jet_control::TokenMetadataParams;
-use jet_margin::PositionKind;
+use jet_margin::TokenKind;
 use jet_margin_pool::{MarginPoolConfig, PoolFlags, TokenChange};
 use jet_margin_sdk::{
     ix_builder::{MarginPoolConfiguration, MarginPoolIxBuilder},
     tokens::TokenPrice,
+    tx_builder::TokenDepositsConfig,
 };
-use jet_metadata::TokenKind;
 use jet_simulation::{assert_custom_program_error, create_wallet};
 
 use solana_sdk::native_token::LAMPORTS_PER_SOL;
@@ -20,6 +20,7 @@ use hosted_tests::{
     context::{test_context, MarginTestContext},
     margin::MarginPoolSetupInfo,
 };
+use spl_associated_token_account::get_associated_token_address;
 
 const ONE_USDC: u64 = 1_000_000;
 const ONE_TSOL: u64 = LAMPORTS_PER_SOL;
@@ -67,6 +68,19 @@ async fn setup_environment(ctx: &MarginTestContext) -> Result<TestEnv, Error> {
     ];
 
     for pool_info in pools {
+        ctx.margin
+            .configure_token_deposits(
+                &pool_info.token,
+                Some(&TokenDepositsConfig {
+                    oracle: jet_margin::TokenOracle::Pyth {
+                        price: pool_info.oracle.price,
+                        product: pool_info.oracle.product,
+                    },
+                    token_kind: pool_info.token_kind,
+                    collateral_weight: pool_info.collateral_weight,
+                }),
+            )
+            .await?;
         ctx.margin.create_pool(&pool_info).await?;
     }
 
@@ -227,13 +241,62 @@ async fn sanity_test() -> Result<(), anyhow::Error> {
     assert!(usdc_deposit_amount <= ctx.tokens.get_balance(&user_a_usdc_account).await?);
     assert!(tsol_deposit_amount <= ctx.tokens.get_balance(&user_b_tsol_account).await?);
 
+    // Check users can create deposit positions and deposit/withdraw
+    let user_a_usdc_deposit_account = get_associated_token_address(user_a.address(), &env.usdc);
+    let user_b_tsol_deposit_account = get_associated_token_address(user_b.address(), &env.tsol);
+    user_a
+        .transfer_deposit(
+            &env.usdc,
+            &wallet_a.pubkey(),
+            &user_a_usdc_account,
+            &user_a_usdc_deposit_account,
+            usdc_deposit_amount,
+        )
+        .await?;
+    user_b
+        .transfer_deposit(
+            &env.tsol,
+            &wallet_b.pubkey(),
+            &user_b_tsol_account,
+            &user_b_tsol_deposit_account,
+            tsol_deposit_amount,
+        )
+        .await?;
+
+    assert!(usdc_deposit_amount <= ctx.tokens.get_balance(&user_a_usdc_deposit_account).await?);
+    assert!(tsol_deposit_amount <= ctx.tokens.get_balance(&user_b_tsol_deposit_account).await?);
+
+    // Withdraw deposits
+    user_a
+        .transfer_deposit(
+            &env.usdc,
+            user_a.owner(),
+            &user_a_usdc_deposit_account,
+            &user_a_usdc_account,
+            usdc_deposit_amount,
+        )
+        .await?;
+    user_b
+        .transfer_deposit(
+            &env.tsol,
+            user_b.owner(),
+            &user_b_tsol_deposit_account,
+            &user_b_tsol_account,
+            tsol_deposit_amount,
+        )
+        .await?;
+
+    // Now verify that the users got all their tokens back
+    assert!(usdc_deposit_amount <= ctx.tokens.get_balance(&user_a_usdc_account).await?);
+    assert!(tsol_deposit_amount <= ctx.tokens.get_balance(&user_b_tsol_account).await?);
+
     // Check if we can update the metadata
     ctx.margin
         .configure_margin_pool(
             &env.usdc,
             &MarginPoolConfiguration {
                 metadata: Some(TokenMetadataParams {
-                    token_kind: TokenKind::Collateral,
+                    token_kind: jet_metadata::TokenKind::Collateral,
                     collateral_weight: 0xBEEF,
                     max_leverage: 0xFEED,
                 }),
@@ -265,7 +328,7 @@ async fn sanity_test() -> Result<(), anyhow::Error> {
 
     // Close a specific position
     user_a
-        .close_token_position(&env.tsol, PositionKind::Deposit)
+        .close_token_position(&env.tsol, TokenKind::Collateral)
         .await?;
 
     // Close all User A empty accounts
@@ -295,13 +358,8 @@ async fn sanity_test() -> Result<(), anyhow::Error> {
     assert_custom_program_error(jet_margin::ErrorCode::AccountNotEmpty, b_close_acc_result);
 
     // User B had a USDC loan which created a corresponding deposit.
-    // They should be able to close all USDC positions
-    user_b.close_token_positions(&env.usdc).await?;
-
-    // close the tsol deposit
-    user_b
-        .close_token_position(&env.tsol, PositionKind::Deposit)
-        .await?;
+    // They should be able to close all now empty positions
+    user_b.close_empty_positions(&loan_to_token).await?;
 
     // Close User B's account
     user_b.close_account().await?;

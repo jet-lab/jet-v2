@@ -18,7 +18,7 @@ type AllTypesMap<IDL extends Idl> = AccountMap<AllTypes<IDL>>
  * Program Accounts
  ****************************/
 
-export type LiquidationData = TypeDef<AllAccountsMap<JetMargin>["liquidation"], IdlTypes<JetMargin>>
+export type LiquidationData = TypeDef<AllTypesMap<JetMargin>["Liquidation"], IdlTypes<JetMargin>>
 export type MarginAccountData = TypeDef<AllAccountsMap<JetMargin>["marginAccount"], IdlTypes<JetMargin>>
 
 /****************************
@@ -91,7 +91,7 @@ const AccountPositionLayout = struct<AccountPositionInfo>([
   u16("valueModifier"),
   u64("maxStaleness"),
   u8("flags"),
-  blob(23, "_reserved")
+  blob(23, "_reserved") as any as Layout<number[]>
 ])
 console.assert(
   AccountPositionLayout.span === 192,
