@@ -43,7 +43,6 @@ use crate::{
         keypair::clone,
         transaction::{SendTransactionBuilder, TransactionBuilder},
     },
-    util::data::Concat,
 };
 
 /// [Transaction] builder for a margin account, which supports invoking adapter
