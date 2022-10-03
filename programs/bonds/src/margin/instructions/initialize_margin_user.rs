@@ -115,8 +115,6 @@ pub fn handler(ctx: Context<InitializeMarginUser>) -> Result<()> {
         bond_manager: ctx.accounts.bond_manager.key(),
         borrower_account: ctx.accounts.borrower_account.key(),
         margin_account: ctx.accounts.margin_account.key(),
-        claims: ctx.accounts.claims.key(),
-        collateral: ctx.accounts.collateral.key(),
         underlying_settlement: ctx.accounts.underlying_settlement.key(),
         ticket_settlement: ctx.accounts.ticket_settlement.key(),
     });

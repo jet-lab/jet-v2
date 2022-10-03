@@ -6,11 +6,8 @@ pub struct BondManagerInitialized {
     pub address: Pubkey,
     pub airspace: Pubkey,
     pub underlying_token_mint: Pubkey,
-    pub underlying_token_vault: Pubkey,
     pub underlying_oracle: Pubkey,
     pub ticket_oracle: Pubkey,
-    pub claims_mint: Pubkey,
-    pub collateral_mint: Pubkey,
     pub duration: i64,
 }
 
