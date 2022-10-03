@@ -24,7 +24,7 @@ export function useCurrencyFormatting() {
       const currencyFormat = new Intl.NumberFormat(navigator.language, {
         style: fiatValues ? 'currency' : undefined,
         currency: fiatValues ? fiatCurrency : undefined,
-        maximumFractionDigits: decimals && !fiatValues ? decimals : 2
+        maximumFractionDigits: decimals ?? 2
       });
 
       // Set and strip trailing 0's / unnecessary decimal if not fiat
@@ -49,7 +49,7 @@ export function useCurrencyFormatting() {
     fiatValues?: boolean,
     price?: number,
     decimals?: number,
-    preciseThousands?: boolean
+    precision?: boolean
   ): string {
     let t = total;
     if (price && fiatValues) {
@@ -60,19 +60,19 @@ export function useCurrencyFormatting() {
       return currencyFormatter(t / 1000000000000, fiatValues, 1) + 'T';
     } else if (t > 1000000000) {
       return currencyFormatter(t / 1000000000, fiatValues, 1) + 'B';
-    } else if (t > 1000000) {
-      return currencyFormatter(t / 1000000, fiatValues, 1) + 'M';
-    } else if (t > 1000) {
-      if (preciseThousands) {
-        if (t > 9999) {
-          return currencyFormatter(t / 1000, fiatValues, 1) + 'K';
-        } else if (t > 1000) {
-          return currencyFormatter(t, fiatValues, 2);
-        }
-      }
-      return currencyFormatter(t / 1000, fiatValues, 1) + 'K';
+    }
+    
+    if (precision) {
+      // Show number up to the 9th character, regardless of decimal places
+      return currencyFormatter(t, fiatValues, 2);
     } else {
-      return currencyFormatter(t, fiatValues, fiatValues ? 2 : decimals);
+      if (t > 1000000) {
+        return currencyFormatter(t / 1000000, fiatValues, 1) + 'M';
+      } else if (t > 1000) {
+        return currencyFormatter(t / 1000, fiatValues, 1) + 'K';
+      } else {
+        return currencyFormatter(t, fiatValues, fiatValues ? 2 : decimals);
+      }
     }
   }
 
