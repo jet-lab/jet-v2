@@ -7,7 +7,7 @@ use hosted_tests::{
     test_user::TestLiquidator,
 };
 use jet_margin::ErrorCode;
-use jet_margin_sdk::{cat, solana::transaction::SendTransactionBuilder, tokens::TokenPrice};
+use jet_margin_sdk::{solana::transaction::SendTransactionBuilder, tokens::TokenPrice};
 use solana_sdk::native_token::LAMPORTS_PER_SOL;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::Signer;
@@ -58,14 +58,14 @@ async fn scenario(debug: bool) -> Result<Scenario1> {
     }
     // Have each user borrow the other's funds
     ctx.rpc
-        .send_and_confirm(cat![
+        .send_and_confirm_condensed(vec![
             ctx.tokens.refresh_to_same_price_tx(&tsol).await.unwrap(),
             user_a
                 .user
                 .tx
                 .borrow(&tsol, TokenChange::shift(8000 * ONE_TSOL))
                 .await
-                .unwrap()
+                .unwrap(),
         ])
         .await
         .unwrap();
@@ -74,7 +74,7 @@ async fn scenario(debug: bool) -> Result<Scenario1> {
         println!("first borrow done");
     }
     ctx.rpc
-        .send_and_confirm(cat![
+        .send_and_confirm_condensed(vec![
             ctx.tokens.refresh_to_same_price_tx(&usdc).await?,
             user_b
                 .user
@@ -118,15 +118,15 @@ async fn scenario(debug: bool) -> Result<Scenario1> {
     })
 }
 
-/// Account liquidations
-///
-/// This test creates 2 users who deposit collateral and take loans in the
-/// margin account. The price of the loan token moves adversely, leading to
-/// liquidations. One user borrowed conservatively, and is not subject to
-/// liquidation, while the other user gets liquidated.
+/// The liquidation tests have a history of being flakey. In case of flakiness,
+/// this test can help diagnose if the cause was the setup code, and help narrow
+/// down where in the setup code the failure occurred. We don't need to
+/// reproduce the issue reliably to debug it because this will print it every
+/// time. Also you won't get noise from other tests running simultaneously
+/// because this is the only test with debug enabled.
 #[tokio::test(flavor = "multi_thread")]
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
-async fn drewbugger() -> Result<()> {
+async fn scenario_runs() -> Result<()> {
     println!("starting the test");
     scenario(true).await?;
     println!("finished the test");

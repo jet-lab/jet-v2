@@ -695,7 +695,10 @@ impl MarginTxBuilder {
 
             txns.insert(
                 p_metadata.underlying_token_mint,
-                self.create_transaction_builder(&[ix])?,
+                TransactionBuilder {
+                    instructions: vec![ix],
+                    signers: vec![],
+                },
             );
         }
 
