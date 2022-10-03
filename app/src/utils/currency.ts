@@ -24,10 +24,10 @@ export function useCurrencyFormatting() {
       const currencyFormat = new Intl.NumberFormat(navigator.language, {
         style: fiatValues ? 'currency' : undefined,
         currency: fiatValues ? fiatCurrency : undefined,
+        minimumFractionDigits: decimals,
         maximumFractionDigits: decimals ?? 2
       });
 
-      // Set and strip trailing 0's / unnecessary decimal if not fiat
       let uiCurrency = currencyFormat.format(convertedValue);
       if (accounting && fiatValues) {
         // Use accounting-style fiat formatting,
@@ -35,7 +35,8 @@ export function useCurrencyFormatting() {
         if (convertedValue < 0) {
           uiCurrency = '(' + currencyFormat.format(convertedValue).replace('-', '') + ')';
         }
-      } else if (!fiatValues) {
+      } else if (!fiatValues && !accounting) {
+      // Set and strip trailing 0's / unnecessary decimals
         while (
           uiCurrency.indexOf('.') !== -1 &&
           (uiCurrency[uiCurrency.length - 1] === '0' || uiCurrency[uiCurrency.length - 1] === '.')
@@ -48,6 +49,30 @@ export function useCurrencyFormatting() {
     },
     [conversionRates, fiatCurrency]
   );
+
+  function dynamicDecimals(value: number) {
+    if (value > 1000000000) {
+      return currencyFormatter(value / 1000000000, false, 1) + 'B';
+    } else if (value > 100000000) {
+      return currencyFormatter(value, false, 0, undefined, true);
+    } else if (value > 10000000) {
+      return currencyFormatter(value, false, 1, undefined, true);
+    } else if (value > 1000000) {
+      return currencyFormatter(value, false, 2, undefined, true);
+    } else if (value > 100000) {
+      return currencyFormatter(value, false, 3, undefined, true);
+    } else if (value > 10000) {
+      return currencyFormatter(value, false, 4, undefined, true);
+    } else if (value > 1000) {
+      return currencyFormatter(value, false, 5, undefined, true);
+    } else if (value > 100) {
+      return currencyFormatter(value, false, 6, undefined, true);
+    } else if (value > 10) {
+      return currencyFormatter(value, false, 7, undefined, true);
+    } else if (value > 1 || value < 1) {
+      return currencyFormatter(value, false, 8, undefined, true);
+    }
+  }
 
   // Abbreviate large currency amounts
   function currencyAbbrev(
@@ -78,9 +103,9 @@ export function useCurrencyFormatting() {
         // Do not truncate fiat values under million
         return currencyFormatter(t, fiatValues, 2);
       } else {
-        // If not fiat values, show number up to the 9th character
-        // regardless of decimal places
-        return currencyFormatter(t, fiatValues, 2);
+        // If not fiat values, show up to the 9th character
+        // with dynamic decimal places
+        return dynamicDecimals(t);
       }
     }
 
