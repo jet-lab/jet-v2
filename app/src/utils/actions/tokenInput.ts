@@ -26,6 +26,12 @@ export function useTokenInputDisabledMessage(account?: MarginAccount): string {
 
   const tokenSymbol = currentPool.symbol;
   let disabledMessage = '';
+
+  // Display message if user doesn't have enough SOL to cover fees
+  if (walletTokens && walletTokens.map.SOL.amount.lamports.toNumber() <= feesBuffer) {
+    return (disabledMessage = dictionary.actions.deposit.disabledMessages.notEnoughSolForFees);
+  }
+
   if (currentAction === 'deposit') {
     // No wallet balance to deposit
     if (walletTokens && !walletTokens.map[tokenSymbol].amount.tokens) {
@@ -33,9 +39,6 @@ export function useTokenInputDisabledMessage(account?: MarginAccount): string {
         '{{ASSET}}',
         tokenSymbol
       );
-      // User doesn't have enough SOL to cover fees
-    } else if (walletTokens && walletTokens.map.SOL.amount.lamports.toNumber() <= feesBuffer) {
-      disabledMessage = dictionary.actions.deposit.disabledMessages.notEnoughSolForFees;
     }
   } else if (currentAction === 'withdraw') {
     // No collateral to withdraw

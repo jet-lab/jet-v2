@@ -14,12 +14,12 @@ import { getExplorerUrl } from "../../utils/ui"
 
 // Modal to show user they are currently being liquidated
 export function LiquidationModal(): JSX.Element {
-  const dictionary = useRecoilValue(Dictionary)
-  const { currencyFormatter } = useCurrencyFormatting()
-  const accountNames = useRecoilValue(AccountNames)
-  const currentAccount = useRecoilValue(CurrentAccount)
-  const currentAccountAddress = useRecoilValue(CurrentAccountAddress)
-  const setCurrentAction = useSetRecoilState(CurrentAction)
+  const dictionary = useRecoilValue(Dictionary);
+  const { currencyFormatter } = useCurrencyFormatting();
+  const accountNames = useRecoilValue(AccountNames);
+  const currentAccount = useRecoilValue(CurrentAccount);
+  const currentAccountAddress = useRecoilValue(CurrentAccountAddress);
+  const setCurrentAction = useSetRecoilState(CurrentAction);
   // Amount of USDC needed to end liquidation
   const requiredFunds = currentAccount?.poolPositions?.USDC?.liquidationEndingCollateral.tokens ?? 0
   const { Title, Paragraph, Text } = Typography
@@ -41,12 +41,12 @@ export function LiquidationModal(): JSX.Element {
   // Set up liquidation detail text
   let liquidationDetail = reactStringReplace(
     dictionary.modals.alerts.liquidation.liquidationDetail,
-    "{{ACCOUNT_NAME}}",
+    '{{ACCOUNT_NAME}}',
     () => <strong>{currentAccountAddress}</strong>
-  )
-  liquidationDetail = reactStringReplace(liquidationDetail, "{{BRING_RISK_DOWN}}", () => (
+  );
+  liquidationDetail = reactStringReplace(liquidationDetail, '{{BRING_RISK_DOWN}}', () => (
     <strong>{dictionary.modals.alerts.liquidation.bringRiskDown}</strong>
-  ))
+  ));
 
   // If our current account is being liquidated
   if (currentAccount && currentAccount.isBeingLiquidated) {
@@ -88,6 +88,6 @@ export function LiquidationModal(): JSX.Element {
     </Modal>
   )
   } else {
-    return <></>
+    return <></>;
   }
 }

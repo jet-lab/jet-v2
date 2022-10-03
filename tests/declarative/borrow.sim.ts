@@ -1,70 +1,70 @@
-import { Connection } from "@solana/web3.js"
-import * as os from "os"
+import { Connection } from '@solana/web3.js';
+import * as os from 'os';
 
-import { MarginConfig, MarginClient } from "@jet-lab/margin"
-import { Replicant } from "./replicant"
+import { MarginConfig, MarginClient } from '@jet-lab/margin';
+import { Replicant } from './replicant';
 
-import TEST_CONFIG from "./scenarios/borrow.json"
+import TEST_CONFIG from './scenarios/borrow.json';
 
-describe("Deposit and Borrow", () => {
-  let marginConfig: MarginConfig
-  let connection: Connection
+describe('Deposit and Borrow', () => {
+  let marginConfig: MarginConfig;
+  let connection: Connection;
 
-  it("Load config", async () => {
-    marginConfig = await MarginClient.getConfig("devnet")
+  it('Load config', async () => {
+    marginConfig = await MarginClient.getConfig('devnet');
 
-    connection = new Connection(marginConfig.url, "processed")
-  })
+    connection = new Connection(marginConfig.url, 'processed');
+  });
 
-  const replicants: Replicant[] = []
+  const replicants: Replicant[] = [];
 
-  it("Create users", async () => {
+  it('Create users', async () => {
     for (const userConfig of TEST_CONFIG.users) {
       replicants.push(
         await Replicant.create(
           TEST_CONFIG,
           marginConfig,
-          os.homedir() + "/.config/solana/" + userConfig.keypair,
-          "devnet",
+          os.homedir() + '/.config/solana/' + userConfig.keypair,
+          'devnet',
           connection
         )
-      )
+      );
     }
-  })
+  });
 
-  it("Fund users", async () => {
+  it('Fund users', async () => {
     for (const replicant of replicants) {
-      await replicant.fundUser()
+      await replicant.fundUser();
     }
-  })
+  });
 
-  it("Load pools", async () => {
+  it('Load pools', async () => {
     for (const replicant of replicants) {
-      await replicant.loadPools()
+      await replicant.loadPools();
     }
-  })
+  });
 
-  it("Create margin accounts", async () => {
+  it('Create margin accounts', async () => {
     for (const replicant of replicants) {
-      await replicant.createAccounts()
+      await replicant.createAccounts();
     }
-  })
+  });
 
-  it("Process deposits", async () => {
+  it('Process deposits', async () => {
     for (const replicant of replicants) {
-      await replicant.processDeposits()
+      await replicant.processDeposits();
     }
-  })
+  });
 
-  it("Process borrows", async () => {
+  it('Process borrows', async () => {
     for (const replicant of replicants) {
-      await replicant.processBorrows()
+      await replicant.processBorrows();
     }
-  })
+  });
 
-  it("Close margin accounts", async () => {
+  it('Close margin accounts', async () => {
     for (const replicant of replicants) {
-      await replicant.closeAccounts()
+      await replicant.closeAccounts();
     }
-  })
-})
+  });
+});

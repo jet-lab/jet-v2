@@ -1,1 +1,1 @@
-export { JetBonds, IDL as JetBondsIdl } from "./jetBonds";
+export { JetBonds, IDL as JetBondsIdl } from "./jetBonds"

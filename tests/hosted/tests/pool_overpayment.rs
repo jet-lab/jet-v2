@@ -10,8 +10,8 @@ use hosted_tests::{
     margin::MarginPoolSetupInfo,
 };
 
+use jet_margin::TokenKind;
 use jet_margin_pool::{MarginPoolConfig, PoolFlags, TokenChange};
-use jet_metadata::TokenKind;
 use jet_simulation::create_wallet;
 
 const ONE_USDC: u64 = 1_000_000;

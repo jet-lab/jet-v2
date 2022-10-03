@@ -84,19 +84,15 @@ impl ErrorIfMissing for &AccountPosition {
     const ERROR: ErrorCode = ErrorCode::PositionNotRegistered;
 }
 
-pub trait ErrorMessage {
-    fn log_on_error(self, msg: &str) -> Self;
-}
-
-impl<T, E> ErrorMessage for std::result::Result<T, E> {
-    fn log_on_error(self, msg: &str) -> Self {
-        if self.is_err() {
-            msg!(msg);
+macro_rules! log_on_error {
+    ($result:expr, $($args:tt)*) => {{
+        if $result.is_err() {
+            msg!($($args)*);
         }
-
-        self
-    }
+        $result
+    }};
 }
+pub(crate) use log_on_error;
 
 /// Data made available to invoked programs by the margin program. Put data here if:
 /// - adapters need a guarantee that the margin program is the actual source of the data, or
@@ -146,6 +142,15 @@ impl Invocation {
     pub fn directly_invoked(&self) -> bool {
         let height = sys().get_stack_height();
         height != 0 && self.caller_heights.contains(height as u8 - 1)
+    }
+}
+
+mod _idl {
+    use anchor_lang::prelude::*;
+
+    #[derive(AnchorSerialize, AnchorDeserialize, Default)]
+    pub struct Invocation {
+        pub flags: u8,
     }
 }
 

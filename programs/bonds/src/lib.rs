@@ -208,14 +208,9 @@ pub mod jet_bonds {
     pub fn margin_borrow_order(
         ctx: Context<MarginBorrowOrder>,
         params: OrderParams,
-        seed: u64,
+        seed: Vec<u8>,
     ) -> Result<()> {
         jet_bonds::instructions::margin_borrow_order::handler(ctx, params, seed)
-    }
-
-    /// Cancel an order that was placed on margin
-    pub fn margin_cancel_order(ctx: Context<MarginCancelOrder>, order_id: u128) -> Result<()> {
-        jet_bonds::instructions::margin_cancel_order::handler(ctx, order_id)
     }
 
     /// Refresh the associated margin account `claims` for a given `MarginUser` account

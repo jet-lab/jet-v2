@@ -220,7 +220,8 @@ export function useMarginActions() {
       throw new Error();
     }
 
-    const closeLoan = tokenInputAmount.eq(accountPoolPosition.maxTradeAmounts.repay);
+    const repayType = accountRepay ? 'repayFromDeposit' : 'repay';
+    const closeLoan = tokenInputAmount.eq(accountPoolPosition.maxTradeAmounts[repayType]);
     const change = closeLoan
       ? PoolTokenChange.setTo(0)
       : PoolTokenChange.setTo(accountPoolPosition.loanBalance.sub(tokenInputAmount));

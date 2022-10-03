@@ -38,6 +38,15 @@ impl Clone for TransactionBuilder {
     }
 }
 
+impl From<Vec<Instruction>> for TransactionBuilder {
+    fn from(instructions: Vec<Instruction>) -> Self {
+        TransactionBuilder {
+            instructions,
+            signers: vec![],
+        }
+    }
+}
+
 impl TransactionBuilder {
     /// convert transaction to base64 string that would be submitted to rpc node
     pub fn encode(&self, hash: Hash, payer: &Keypair) -> Result<String> {

@@ -248,7 +248,7 @@ export function DepositWithdrawModal(): JSX.Element {
               {renderAffectedDepositRate()}
             </Paragraph>
           </div>
-          <div className="action-info-item flex align-center justify-between">
+          <div className="action-info-item flex align-center justify-between" data-testid="predicted-risk">
             <Paragraph type="secondary">{dictionary.common.riskLevel}</Paragraph>
             <div className="flex-centered">
               <Paragraph type={riskStyle}>{formatRiskIndicator(currentAccount.riskIndicator)}</Paragraph>

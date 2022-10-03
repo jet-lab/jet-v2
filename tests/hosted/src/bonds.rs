@@ -7,12 +7,14 @@ use agnostic_orderbook::state::{
     orderbook::OrderBookState,
     AccountTag,
 };
-use anchor_lang::AccountDeserialize;
+use anchor_lang::Discriminator;
+use anchor_lang::{AccountDeserialize, AnchorSerialize, InstructionData, ToAccountMetas};
 use anchor_spl::token::TokenAccount;
 use anyhow::Result;
 use async_trait::async_trait;
 use jet_bonds::{
     control::state::BondManager,
+    margin::state::MarginUser,
     orderbook::state::{event_queue_len, orderbook_slab_len, CallbackInfo, OrderParams},
     tickets::state::ClaimTicket,
 };
@@ -22,9 +24,14 @@ use jet_margin_sdk::{
     ix_builder::{
         get_control_authority_address, get_metadata_address, ControlIxBuilder, MarginIxBuilder,
     },
+    solana::transaction::SendTransactionBuilder,
+    tx_builder::global_initialize_instructions,
 };
+use jet_metadata::{PositionTokenMetadata, TokenKind};
 use jet_proto_math::fixed_point::Fp32;
-use jet_simulation::{create_wallet, send_and_confirm, solana_rpc_api::SolanaRpcClient};
+use jet_simulation::{
+    create_wallet, generate_keypair, send_and_confirm, solana_rpc_api::SolanaRpcClient,
+};
 use solana_sdk::{
     hash::Hash,
     instruction::Instruction,
@@ -34,7 +41,7 @@ use solana_sdk::{
     pubkey::Pubkey,
     signature::{Keypair, Signature},
     signer::Signer,
-    system_instruction,
+    system_instruction, system_program,
     transaction::Transaction,
 };
 use spl_associated_token_account::{
@@ -105,9 +112,14 @@ impl Clone for TestManager {
 
 impl TestManager {
     pub async fn full(client: Arc<dyn SolanaRpcClient>) -> Result<Self> {
-        TestManager::new(client, &Keypair::new())
+        TestManager::new(client, &generate_keypair())
             .await?
-            .with_bonds(&Keypair::new(), &Keypair::new(), &Keypair::new())
+            .with_bonds(
+                &generate_keypair(),
+                &generate_keypair(),
+                &generate_keypair(),
+                generate_keypair().pubkey(),
+            )
             .await?
             .with_crank()
             .await?
@@ -143,6 +155,7 @@ impl TestManager {
         eq_kp: &Keypair,
         bids_kp: &Keypair,
         asks_kp: &Keypair,
+        token_oracle: Pubkey,
     ) -> Result<Self> {
         let init_eq = {
             let rent = self
@@ -198,7 +211,7 @@ impl TestManager {
             BOND_MANAGER_TAG,
             BOND_MANAGER_SEED,
             STAKE_DURATION,
-            Pubkey::default(),
+            token_oracle,
             Pubkey::default(),
         )?;
         let init_orderbook = self.ix_builder.initialize_orderbook(
@@ -219,7 +232,7 @@ impl TestManager {
     }
 
     pub async fn with_crank(mut self) -> Result<Self> {
-        let crank = Keypair::new();
+        let crank = generate_keypair();
 
         self.ix_builder = self.ix_builder.with_crank(&crank.pubkey());
         let auth_crank = self
@@ -236,6 +249,7 @@ impl TestManager {
         self.create_authority_if_missing().await?;
         self.register_adapter_if_unregistered(&jet_bonds::ID)
             .await?;
+        self.register_bonds_position_metadatata().await?;
 
         Ok(self)
     }
@@ -325,16 +339,18 @@ impl TestManager {
             .await?
             .is_none()
         {
-            self.create_authority().await?;
+            self.init_globals().await?;
         }
 
         Ok(())
     }
 
-    pub async fn create_authority(&self) -> Result<()> {
-        let ix = ControlIxBuilder::new(self.client.payer().pubkey()).create_authority();
+    pub async fn init_globals(&self) -> Result<()> {
+        let payer = self.client.payer().pubkey();
 
-        send_and_confirm(&self.client, &[ix], &[]).await?;
+        self.client
+            .send_and_confirm(global_initialize_instructions(payer))
+            .await?;
         Ok(())
     }
 
@@ -347,6 +363,56 @@ impl TestManager {
         {
             self.register_adapter(adapter).await?;
         }
+
+        Ok(())
+    }
+
+    pub async fn register_bonds_position_metadatata(&self) -> Result<()> {
+        let manager = self.load_manager().await?;
+        let pos_data = PositionTokenMetadata {
+            position_token_mint: manager.claims_mint,
+            underlying_token_mint: manager.underlying_token_mint,
+            adapter_program: jet_bonds::ID,
+            token_kind: TokenKind::Claim,
+            value_modifier: 0,
+            max_staleness: 1_000,
+        };
+        let address = get_metadata_address(&manager.claims_mint);
+
+        let create = Instruction {
+            program_id: jet_metadata::ID,
+            accounts: jet_metadata::accounts::CreateEntry {
+                key_account: manager.claims_mint,
+                metadata_account: address,
+                authority: get_control_authority_address(),
+                payer: self.client.payer().pubkey(),
+                system_program: system_program::ID,
+            }
+            .to_account_metas(None),
+            data: jet_metadata::instruction::CreateEntry {
+                seed: String::new(),
+                space: 8 + std::mem::size_of::<PositionTokenMetadata>() as u64,
+            }
+            .data(),
+        };
+        let mut metadata = PositionTokenMetadata::discriminator().to_vec();
+        pos_data.serialize(&mut metadata)?;
+
+        let set = Instruction {
+            program_id: jet_metadata::ID,
+            accounts: jet_metadata::accounts::SetEntry {
+                metadata_account: address,
+                authority: get_control_authority_address(),
+            }
+            .to_account_metas(None),
+            data: jet_metadata::instruction::SetEntry {
+                offset: 0,
+                data: metadata,
+            }
+            .data(),
+        };
+
+        self.sign_send_transaction(&[create, set], None).await?;
 
         Ok(())
     }
@@ -427,6 +493,7 @@ impl TestManager {
             asks: asks_data,
         })
     }
+
     pub async fn load_account(&self, k: &str) -> Result<Vec<u8>> {
         self.load_data(self.keys.unwrap(k)?).await
     }
@@ -643,6 +710,16 @@ impl<P: Proxy> BondsUser<P> {
             .sign_send_transaction(&[self.proxy.invoke_signed(lend)], Some(&[&self.owner]))
             .await
     }
+
+    pub async fn cancel_order(&self, order_id: u128) -> Result<Signature> {
+        let cancel = self
+            .manager
+            .ix_builder
+            .cancel_order(self.proxy.pubkey(), order_id)?;
+        self.manager
+            .sign_send_transaction(&[self.proxy.invoke_signed(cancel)], Some(&[&self.owner]))
+            .await
+    }
 }
 
 impl<P: Proxy> BondsUser<P> {
@@ -680,6 +757,14 @@ impl<P: Proxy> BondsUser<P> {
             .load_anchor::<TokenAccount>(&key)
             .await
             .map(|a| a.amount)
+    }
+
+    pub async fn load_margin_user(&self) -> Result<MarginUser> {
+        let key = self
+            .manager
+            .ix_builder
+            .margin_user_account(self.proxy.pubkey());
+        self.manager.load_anchor(&key).await
     }
 }
 

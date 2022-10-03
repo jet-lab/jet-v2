@@ -17,9 +17,9 @@ import { Modals } from "./components/modals/Modals"
 import { TermsPrivacy } from "./components/misc/TermsPrivacy"
 import { lazy } from "react"
 
-const StateSyncer = lazy(() => import("./state/StateSyncer"))
-const FixedLendView = lazy(() => import("./views/FixedLendView"))
-const FixedBorrowView = lazy(() => import("./views/FixedBorrowView"))
+const StateSyncer = lazy(() => import('./state/StateSyncer'));
+const FixedLendView = lazy(() => import('./views/FixedLendView'));
+const FixedBorrowView = lazy(() => import('./views/FixedBorrowView'));
 
 export function App(): JSX.Element {
   const wallets = [
@@ -30,7 +30,7 @@ export function App(): JSX.Element {
     new MathWalletAdapter(),
     new SolletWalletAdapter(),
     new E2EWalletAdapter()
-  ]
+  ];
 
   return (
     <BrowserRouter>
@@ -50,5 +50,5 @@ export function App(): JSX.Element {
         </WalletProvider>
       </RecoilRoot>
     </BrowserRouter>
-  )
+  );
 }

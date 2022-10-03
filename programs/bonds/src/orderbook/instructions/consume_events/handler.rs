@@ -18,7 +18,7 @@ use crate::{
     BondsError,
 };
 
-use super::{ConsumeEvents, EventAccounts, FillAccounts, OutAccounts, Queue};
+use super::{queue, ConsumeEvents, EventAccounts, FillAccounts, OutAccounts};
 
 pub fn handler<'info>(
     ctx: Context<'_, '_, '_, 'info, ConsumeEvents<'info>>,
@@ -28,7 +28,7 @@ pub fn handler<'info>(
     let duration = ctx.accounts.bond_manager.load()?.duration;
 
     let mut num_iters = 0;
-    for event in ctx.queue(seeds)?.take(num_events as usize) {
+    for event in queue(&ctx, seeds)?.take(num_events as usize) {
         let (accounts, event) = event?;
 
         // Delegate event processing to the appropriate handler

@@ -11,9 +11,15 @@ use solana_sdk::{
 use spl_associated_token_account::get_associated_token_address;
 
 pub use jet_bonds::{
-    control::instructions::{InitializeBondManagerParams, InitializeOrderbookParams},
+    control::{
+        instructions::{InitializeBondManagerParams, InitializeOrderbookParams},
+        state::BondManager,
+    },
     orderbook::state::{event_queue_len, orderbook_slab_len, OrderParams},
+    ID,
 };
+
+use crate::ix_builder::get_metadata_address;
 
 use super::event_builder::make_seed;
 
@@ -298,11 +304,7 @@ impl BondsIxBuilder {
     }
 
     pub fn initialize_margin_user(&self, owner: Pubkey) -> Result<Instruction> {
-        let borrower_account = bonds_pda(&[
-            jet_bonds::seeds::MARGIN_BORROWER,
-            self.manager.as_ref(),
-            owner.as_ref(),
-        ]);
+        let borrower_account = self.margin_user_account(owner);
         let accounts = jet_bonds::accounts::InitializeMarginUser {
             bond_manager: self.manager,
             payer: self.keys.unwrap("payer")?,
@@ -320,6 +322,7 @@ impl BondsIxBuilder {
             rent: solana_sdk::sysvar::rent::ID,
             token_program: spl_token::ID,
             system_program: solana_sdk::system_program::ID,
+            claims_metadata: get_metadata_address(&self.claims),
         }
         .to_account_metas(None);
         Ok(Instruction::new_with_bytes(
@@ -460,10 +463,11 @@ impl BondsIxBuilder {
             self.manager.as_ref(),
             user.as_ref(),
         ]);
+
         let seed = make_seed(&mut OsRng::default());
         let data = jet_bonds::instruction::MarginBorrowOrder {
             params,
-            seed: u64::from_le_bytes(seed.clone().try_into().unwrap()),
+            seed: seed.clone(),
         }
         .data();
         let accounts = jet_bonds::accounts::MarginBorrowOrder {
@@ -478,6 +482,7 @@ impl BondsIxBuilder {
             system_program: solana_sdk::system_program::ID,
         }
         .to_account_metas(None);
+
         Ok(Instruction::new_with_bytes(jet_bonds::ID, &data, accounts))
     }
 
@@ -511,6 +516,17 @@ impl BondsIxBuilder {
             system_program: solana_sdk::system_program::ID,
         }
         .to_account_metas(None);
+        Ok(Instruction::new_with_bytes(jet_bonds::ID, &data, accounts))
+    }
+
+    pub fn cancel_order(&self, owner: Pubkey, order_id: u128) -> Result<Instruction> {
+        let data = jet_bonds::instruction::CancelOrder { order_id }.data();
+        let accounts = jet_bonds::accounts::CancelOrder {
+            owner,
+            orderbook_mut: self.orderbook_mut()?,
+        }
+        .to_account_metas(None);
+
         Ok(Instruction::new_with_bytes(jet_bonds::ID, &data, accounts))
     }
 
@@ -628,6 +644,14 @@ impl BondsIxBuilder {
             self.manager.as_ref(),
             ticket_holder.as_ref(),
             seed.as_slice(),
+        ])
+    }
+
+    pub fn margin_user_account(&self, owner: Pubkey) -> Pubkey {
+        bonds_pda(&[
+            jet_bonds::seeds::MARGIN_BORROWER,
+            self.manager.as_ref(),
+            owner.as_ref(),
         ])
     }
 

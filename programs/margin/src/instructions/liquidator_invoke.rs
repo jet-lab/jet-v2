@@ -20,7 +20,7 @@ use anchor_lang::prelude::*;
 use jet_metadata::MarginAdapterMetadata;
 
 use crate::adapter::{self, InvokeAdapter};
-use crate::{events, ErrorCode, Liquidation, MarginAccount, Valuation};
+use crate::{events, ErrorCode, Liquidation, LiquidationState, MarginAccount, Valuation};
 
 #[derive(Accounts)]
 pub struct LiquidatorInvoke<'info> {
@@ -29,7 +29,7 @@ pub struct LiquidatorInvoke<'info> {
 
     /// Account to persist the state of the liquidation
     #[account(mut)]
-    pub liquidation: AccountLoader<'info, Liquidation>,
+    pub liquidation: AccountLoader<'info, LiquidationState>,
 
     /// The margin account to proxy an action for
     #[account(mut,
@@ -73,7 +73,7 @@ pub fn liquidator_invoke_handler<'info>(
         event.emit();
     }
 
-    let liquidation = &mut *ctx.accounts.liquidation.load_mut()?;
+    let liquidation = &mut ctx.accounts.liquidation.load_mut()?.state;
     let end_value = update_and_verify_liquidation(
         &*ctx.accounts.margin_account.load()?,
         liquidation,
