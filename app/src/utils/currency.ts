@@ -24,18 +24,14 @@ export function useCurrencyFormatting() {
       const currencyFormat = new Intl.NumberFormat(navigator.language, {
         style: fiatValues ? 'currency' : undefined,
         currency: fiatValues ? fiatCurrency : undefined,
+        currencyDisplay: fiatValues ? 'narrowSymbol' : undefined,
         minimumFractionDigits: decimals,
-        maximumFractionDigits: decimals ?? 2
+        maximumFractionDigits: decimals ?? 2,
+        currencySign: accounting && fiatValues ? "accounting" : undefined
       });
 
       let uiCurrency = currencyFormat.format(convertedValue);
-      if (accounting && fiatValues) {
-        // Use accounting-style fiat formatting,
-        // Represent negative numbers in parantheses
-        if (convertedValue < 0) {
-          uiCurrency = '(' + currencyFormat.format(convertedValue).replace('-', '') + ')';
-        }
-      } else if (!fiatValues && !accounting) {
+      if (!fiatValues && !accounting) {
       // Set and strip trailing 0's / unnecessary decimals
         while (
           uiCurrency.indexOf('.') !== -1 &&
