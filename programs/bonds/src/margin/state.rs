@@ -33,26 +33,6 @@ pub struct MarginUser {
     pub assets: Assets,
 }
 
-#[cfg(feature = "cli")]
-impl Serialize for MarginUser {
-    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        let mut s = serializer.serialize_struct("MarginUser", 9)?;
-        s.serialize_field("user", &self.user.to_string())?;
-        s.serialize_field("bondManager", &self.bond_manager.to_string())?;
-        s.serialize_field("eventAdapter", &self.event_adapter.to_string())?;
-        s.serialize_field("claims", &self.claims.to_string())?;
-        s.serialize_field("bondTicketsStored", &self.bond_tickets_stored)?;
-        s.serialize_field("underlyingTokenStored", &self.underlying_token_stored)?;
-        s.serialize_field("outstandingObligations", &self.outstanding_obligations)?;
-        s.serialize_field("debt", &self.debt.total())?;
-        s.serialize_field("nonce", &self.nonce)?;
-        s.end()
-    }
-}
-
 #[derive(Zeroable, Debug, Clone, AnchorSerialize, AnchorDeserialize)]
 pub struct Debt {
     /// The sequence number for the next obligation to be created
@@ -214,26 +194,6 @@ pub struct Obligation {
 impl Obligation {
     pub fn make_seeds<'a>(user: &'a [u8], bytes: &'a [u8]) -> [&'a [u8]; 3] {
         [crate::seeds::OBLIGATION, user, bytes]
-    }
-}
-
-#[cfg(feature = "cli")]
-impl Serialize for Obligation {
-    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        let mut s = serializer.serialize_struct("Obligation", 6)?;
-        s.serialize_field(
-            "MarginUserAccount",
-            &self.orderbook_user_account.to_string(),
-        )?;
-        s.serialize_field("bondManager", &self.bond_manager.to_string())?;
-        s.serialize_field("orderTag", &self.order_tag.0)?;
-        s.serialize_field("maturationTimestamp", &self.maturation_timestamp)?;
-        s.serialize_field("balance", &self.balance)?;
-        s.serialize_field("flags", &self.flags.bits())?;
-        s.end()
     }
 }
 

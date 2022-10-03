@@ -37,6 +37,7 @@ pub struct PositionRegistered {
 
 #[event]
 pub struct PositionClosed {
+    pub margin_account: Pubkey,
     pub authority: Pubkey,
     pub token: Pubkey,
 }

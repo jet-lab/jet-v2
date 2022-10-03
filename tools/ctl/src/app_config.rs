@@ -4,6 +4,7 @@ use std::{
 };
 
 use anyhow::{bail, Context, Result};
+use jet_margin_sdk::bonds::BondManager;
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
 
@@ -12,7 +13,8 @@ use solana_sdk::pubkey::Pubkey;
 use crate::{
     client::Client,
     config::{
-        ConfigType, DependenciesDefinition, RpcDefinition, SerumMarketsDefinition, TokenDefinition,
+        BondMarketsDefinition, ConfigType, DependenciesDefinition, RpcDefinition,
+        SerumMarketsDefinition, TokenDefinition,
     },
     serum::SerumMarketAccount,
 };
@@ -21,6 +23,9 @@ use crate::{
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct JetAppConfig {
+    #[serde_as(as = "DisplayFromStr")]
+    pub bonds_program_id: Pubkey,
+
     #[serde_as(as = "DisplayFromStr")]
     pub control_program_id: Pubkey,
 
@@ -53,6 +58,7 @@ pub struct JetAppConfig {
 
     pub tokens: HashMap<String, TokenInfo>,
     pub markets: HashMap<String, SerumMarketInfo>,
+    pub bond_markets: HashMap<String, BondMarketInfo>,
 }
 
 #[serde_as]
@@ -92,6 +98,19 @@ pub struct SerumMarketInfo {
     pub market_info: SerumMarketAccount,
 }
 
+#[serde_as]
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BondMarketInfo {
+    pub symbol: String,
+
+    #[serde_as(as = "DisplayFromStr")]
+    pub bond_manager: Pubkey,
+
+    #[serde(flatten)]
+    pub market_info: BondManager,
+}
+
 impl JetAppConfig {
     pub async fn generate_from_config_dir(client: &Client, dir: &Path) -> Result<Self> {
         let rpc = Self::read_rpc_config(dir.join("rpc.toml")).await?;
@@ -103,8 +122,11 @@ impl JetAppConfig {
             dir.join("serum-markets.toml"),
         )
         .await?;
+        let bond_markets =
+            Self::generate_bond_market_map(client, dir.join("bond-markets.toml")).await?;
 
         Ok(Self {
+            bonds_program_id: jet_margin_sdk::bonds::ID,
             control_program_id: jet_margin_sdk::jet_control::ID,
             margin_program_id: jet_margin_sdk::jet_margin::ID,
             margin_pool_program_id: jet_margin_sdk::jet_margin_pool::ID,
@@ -117,6 +139,7 @@ impl JetAppConfig {
             url: rpc.default,
             tokens,
             markets,
+            bond_markets,
         })
     }
 
@@ -183,6 +206,38 @@ impl JetAppConfig {
         }
 
         Ok(markets)
+    }
+
+    async fn generate_bond_market_map(
+        client: &Client,
+        path: PathBuf,
+    ) -> Result<HashMap<String, BondMarketInfo>> {
+        let mut bond_markets = HashMap::new();
+        let market_def = Self::read_bonds_config(path).await?;
+
+        for market in market_def.markets {
+            let manager: BondManager = client.read_anchor_account(&market.manager).await?;
+            bond_markets.insert(
+                format!("{}_{}", market.symbol, market.tenor),
+                BondMarketInfo {
+                    symbol: market.symbol.clone(),
+                    bond_manager: market.manager,
+                    market_info: manager,
+                },
+            );
+        }
+
+        Ok(bond_markets)
+    }
+
+    async fn read_bonds_config(path: PathBuf) -> Result<BondMarketsDefinition> {
+        match crate::config::read_config_file(&path)
+            .await
+            .with_context(|| format!("while reading bond market definition at {:?}", &path))?
+        {
+            ConfigType::BondMarkets(market_def) => Ok(market_def),
+            _ => bail!("config {path:?} is not in the right format"),
+        }
     }
 
     async fn read_token_config(path: PathBuf) -> Result<TokenDefinition> {

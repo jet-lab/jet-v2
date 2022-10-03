@@ -5,7 +5,9 @@ use jetctl::{
     client::{Client, ClientConfig, Plan},
     BondsCommand, CliOpts, Command,
 };
-use solana_sdk::{pubkey, pubkey::Pubkey, signature::Keypair, signer::Signer};
+use solana_sdk::{
+    native_token::LAMPORTS_PER_SOL, pubkey, pubkey::Pubkey, signature::Keypair, signer::Signer,
+};
 
 const USDC: Pubkey = pubkey!("4ruM7B4Hz4MUxy7DSFBRK9zCFLvkbLccB6S3zJ7t2525");
 const ENDPOINT: &str = "https://api.devnet.solana.com";
@@ -13,6 +15,8 @@ const ORDERBOOK_CAPACITY: usize = 200;
 const QUEUE_CAPACITY: usize = 400;
 
 lazy_static::lazy_static! {
+    static ref CONFIG_PATH: String = shellexpand::env("$PWD/target/config.json").unwrap().to_string();
+
     static ref PAYER_PATH: String = shellexpand::env("$PWD/tests/keypairs/payer.json")
     .unwrap().to_string();
     static ref QUEUE_PATH: String = shellexpand::env("$PWD/tests/keypairs/event_queue.json")
@@ -50,29 +54,29 @@ fn map_keypair_file(path: String) -> Result<Keypair> {
         .map_err(|_| anyhow::Error::msg("failed to read keypair"))
 }
 
-// async fn airdrop_payer(client: &Client) -> Result<()> {
-//     let payer = client.signer()?;
-//     loop {
-//         let sol = client.rpc().get_balance(&payer).await?;
-//         println!("Payer balance: {}", (sol as f64) / LAMPORTS_PER_SOL as f64);
-//         if sol >= 20 * LAMPORTS_PER_SOL {
-//             break;
-//         }
-//         if let Err(e) = client
-//             .rpc()
-//             .request_airdrop(&payer, 2 * LAMPORTS_PER_SOL)
-//             .await
-//         {
-//             println!("failed to obtain a full 20 sol airdrop.");
-//             println!("Final balance: {}", (sol as f64) / LAMPORTS_PER_SOL as f64);
-//             println!("Error: {e}");
-//             break;
-//         }
-//         println!("successful airdrop iteration...");
-//     }
-//     println!("Airdrop payer success!");
-//     Ok(())
-// }
+async fn airdrop_payer(client: &Client) -> Result<()> {
+    let payer = client.signer()?;
+    loop {
+        let sol = client.rpc().get_balance(&payer).await?;
+        println!("Payer balance: {}", (sol as f64) / LAMPORTS_PER_SOL as f64);
+        if sol >= 20 * LAMPORTS_PER_SOL {
+            break;
+        }
+        if let Err(e) = client
+            .rpc()
+            .request_airdrop(&payer, 2 * LAMPORTS_PER_SOL)
+            .await
+        {
+            println!("failed to obtain a full 20 sol airdrop.");
+            println!("Final balance: {}", (sol as f64) / LAMPORTS_PER_SOL as f64);
+            println!("Error: {e}");
+            break;
+        }
+        println!("successful airdrop iteration...");
+    }
+    println!("Airdrop payer success!");
+    Ok(())
+}
 
 fn map_seed(seed: Vec<u8>) -> [u8; 32] {
     let mut buf = [0u8; 32];
@@ -147,12 +151,12 @@ async fn main() -> Result<()> {
     let payer = client.signer()?;
 
     // get us some sol
-    // airdrop_payer(&client).await?;
+    airdrop_payer(&client).await?;
 
     // fund the ob accounts
     let bonds = BondsIxBuilder::new_from_seed(&USDC, map_seed(PARAMS.seed.clone()), payer)
         .with_payer(&payer);
-    let _init_ob_accs = create_orderbook_accounts(
+    let init_ob_accs = create_orderbook_accounts(
         &client,
         &bonds,
         PARAMS.clone(),
@@ -160,7 +164,7 @@ async fn main() -> Result<()> {
         ORDERBOOK_CAPACITY,
     )
     .await?;
-    // client.execute(init_ob_accs).await?;
+    client.execute(init_ob_accs).await?;
 
     // init a usdc market
     let create_market =
@@ -168,11 +172,11 @@ async fn main() -> Result<()> {
     client.execute(create_market).await?;
 
     // no-matching market
-    let _pause = client
+    let pause = client
         .plan()?
         .instructions([], ["pause-market"], [bonds.pause_order_matching()?])
         .build();
-    // client.execute(pause).await?;
+    client.execute(pause).await?;
 
     Ok(())
 }

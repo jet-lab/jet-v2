@@ -1,14 +1,17 @@
 import { Program, BN, Address } from "@project-serum/anchor"
 import { getAssociatedTokenAddress, TOKEN_PROGRAM_ID } from "@solana/spl-token"
-import { PublicKey, SystemProgram, TransactionInstruction } from "@solana/web3.js"
-import { build_order_amount_deprecated } from "../wasm-utils/pkg"
+import { PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY, TransactionInstruction } from "@solana/web3.js"
+import { bigIntToBn, bnToBigInt, MarginAccount } from "@jet-lab/margin"
 import { Orderbook } from "./orderbook"
 import { JetBonds } from "./types"
 import { fetchData, findDerivedAccount } from "./utils"
+import { order_id_to_string, rate_to_price } from "../wasm-utils/pkg"
 
 export const OrderSideBorrow = { borrow: {} }
 export const OrderSideLend = { lend: {} }
 export type OrderSide = typeof OrderSideBorrow | typeof OrderSideLend
+
+export const U64_MAX = 18_446_744_073_709_551_615n
 
 export interface OrderParams {
   maxBondTicketQty: BN
@@ -46,6 +49,33 @@ export interface BondManagerInfo {
   nonce: BN
 }
 
+/** MarginUser account as found on-chain */
+export interface MarginUserInfo {
+  version: BN
+  marginAccount: PublicKey
+  bondManager: PublicKey
+  claims: PublicKey
+  collateral: PublicKey
+  underlyingSettlement: PublicKey
+  ticketSettlement: PublicKey
+  debt: DebtInfo
+  assets: AssetInfo
+}
+
+export interface DebtInfo {
+  nextNewObligationSeqNo: BN
+  nextUnpaidObligationSeqNo: BN
+  nextObligationMaturity: BN
+  pending: BN
+  committed: BN
+}
+
+export interface AssetInfo {
+  entitledTokens: BN
+  entitledTickets: BN
+  _reserved0: number[]
+}
+
 export interface ClaimTicket {
   owner: PublicKey
   bondManager: PublicKey
@@ -67,6 +97,7 @@ export class BondMarket {
     underlyingTokenVault: PublicKey
     bondTicketMint: PublicKey
     claimsMint: PublicKey
+    claimsMetadata: PublicKey
     collateralMint: PublicKey
     underlyingOracle: PublicKey
     ticketOracle: PublicKey
@@ -74,9 +105,15 @@ export class BondMarket {
   readonly info: BondManagerInfo
   readonly program: Program<JetBonds>
 
-  private constructor(bondManager: PublicKey, program: Program<JetBonds>, info: BondManagerInfo) {
+  private constructor(
+    bondManager: PublicKey,
+    claimsMetadata: PublicKey,
+    program: Program<JetBonds>,
+    info: BondManagerInfo
+  ) {
     this.addresses = {
       ...info,
+      claimsMetadata,
       bondManager
     }
     this.program = program
@@ -96,102 +133,177 @@ export class BondMarket {
    * class for interaction with the market
    *
    * @param program The anchor `JetBonds` program
-   * @param address The address of the `bondManager` account
+   * @param bondManager The address of the `bondManager` account
    * @returns
    */
-  static async load(program: Program<JetBonds>, address: Address): Promise<BondMarket> {
-    let data = await fetchData(program.provider.connection, address)
+  static async load(
+    program: Program<JetBonds>,
+    bondManager: Address,
+    jetMetadataProgramId: Address
+  ): Promise<BondMarket> {
+    let data = await fetchData(program.provider.connection, bondManager)
     let info: BondManagerInfo = program.coder.accounts.decode("BondManager", data)
+    const claimsMetadata = await findDerivedAccount([info.claimsMint], new PublicKey(jetMetadataProgramId))
 
-    return new BondMarket(new PublicKey(address), program, info)
+    return new BondMarket(new PublicKey(bondManager), new PublicKey(claimsMetadata), program, info)
   }
 
-  async exchangeTokensForTicketsIx(args: {
-    amount: BN
-    user: Address
-    userTokenVault?: Address
-    userTokenVaultAuthority?: Address
-    userBondTicketVault?: Address
-  }): Promise<TransactionInstruction> {
-    let authority = args.userTokenVaultAuthority ?? args.user
-    authority = new PublicKey(authority)
+  async requestBorrowIx(
+    user: MarginAccount,
+    payer: Address,
+    amount: BN,
+    rate: BN,
+    seed: Uint8Array
+  ): Promise<TransactionInstruction> {
+    const limitPrice = new BN(rate_to_price(BigInt(rate.toString()), BigInt(this.info.duration.toString())).toString())
+    const params: OrderParams = {
+      maxBondTicketQty: new BN(U64_MAX.toString()),
+      maxUnderlyingTokenQty: amount,
+      limitPrice,
+      matchLimit: new BN(U64_MAX.toString()),
+      postOnly: true,
+      postAllowed: false,
+      autoStake: true
+    }
+    return await this.borrowIx(user, payer, params, seed)
+  }
+  async borrowNowIx(
+    user: MarginAccount,
+    payer: Address,
+    amount: BN,
+    seed: Uint8Array
+  ): Promise<TransactionInstruction> {
+    // TODO: determine best rate values here
+    // const limitPrice = new BN(rate_to_price(U64_MAX, BigInt(this.info.duration.toString())).toString())
+    const params: OrderParams = {
+      maxBondTicketQty: new BN(U64_MAX.toString()),
+      maxUnderlyingTokenQty: amount,
+      limitPrice: new BN(U64_MAX.toString()),
+      matchLimit: new BN(U64_MAX.toString()),
+      postOnly: true,
+      postAllowed: false,
+      autoStake: true
+    }
+    return await this.borrowIx(user, payer, params, seed)
+  }
+  async borrowIx(
+    user: MarginAccount,
+    payer: Address,
+    params: OrderParams,
+    seed: Uint8Array
+  ): Promise<TransactionInstruction> {
+    const borrowerAccount = await this.deriveMarginUserAddress(user)
+    const obligation = await this.deriveObligationAddress(borrowerAccount, seed)
+    const claims = await this.deriveMarginUserClaims(borrowerAccount)
 
-    const tokenVault =
-      args.userTokenVault ?? (await getAssociatedTokenAddress(this.addresses.underlyingTokenMint, authority))
-    const ticketVault =
-      args.userBondTicketVault ?? (await getAssociatedTokenAddress(this.addresses.bondTicketMint, authority))
-
-    return await this.program.methods
-      .exchangeTokens(args.amount)
+    return this.program.methods
+      .marginBorrowOrder(params, Buffer.from(seed))
       .accounts({
         ...this.addresses,
-        userBondTicketVault: new PublicKey(ticketVault),
-        userUnderlyingTokenVault: new PublicKey(tokenVault),
-        userAuthority: args.user,
+        borrowerAccount,
+        marginAccount: user.address,
+        obligation,
+        claims,
+        payer,
+        systemProgram: SystemProgram.programId,
         tokenProgram: TOKEN_PROGRAM_ID
       })
       .instruction()
   }
 
-  /**
-   * Creates a `Lend` order instruction. Amount is underlying token lamports. Interest is basis points
-   * @param maxBondTicketQty Maximum quantity of bond tickets to order fill
-   * @param maxUnderlyingTokenQty Maximum quantity of underlying to lend
-   * @param limitPrice limit price for matching orders
-   * @param seed BN used to seed a `SplitTicket` intialization. (If auto_stake is enabled)
-   * @param payer Payer for PDA initialization. Counted as `vaultAuthority` if not provided
-   * @param vaultAuthority Authority over the token vault
-   * @param ticketVault Ticket vault to receive matched funds
-   * @param tokenVault Token vault containing funds for the order
-   * @param matchLimit Maximum number of orders to match with
-   * @param postOnly Only succeed if order did not match
-   * @param postAllowed Post remaining unfilled as an order on the book
-   * @param autoStake Automatically stake any matched bond tickets
-   * @returns `TransactionInstruction`
-   */
-  async lendOrderIx(args: {
-    maxBondTicketQty: BN
-    maxUnderlyingTokenQty: BN
-    limitPrice: BN
+  async offerLoanIx(
+    user: MarginAccount,
+    amount: BN,
+    rate: BN,
+    payer: Address,
     seed: Uint8Array
-    payer: Address
-    vaultAuthority?: Address
-    ticketVault?: Address
-    tokenVault?: Address
-    matchLimit?: BN
-    postOnly?: boolean
-    postAllowed?: boolean
-    autoStake?: boolean
-  }): Promise<TransactionInstruction> {
-    let params: OrderParams = {
-      maxBondTicketQty: args.maxBondTicketQty,
-      maxUnderlyingTokenQty: args.maxUnderlyingTokenQty,
-      limitPrice: args.limitPrice,
-      matchLimit: args.matchLimit ?? new BN(100),
-      postOnly: args.postOnly ?? false,
-      postAllowed: args.postAllowed ?? true,
-      autoStake: args.autoStake ?? true
+  ): Promise<TransactionInstruction> {
+    const userTokenVault = await getAssociatedTokenAddress(this.addresses.underlyingTokenMint, user.address, true)
+    const userTicketVault = await getAssociatedTokenAddress(this.addresses.bondTicketMint, user.address, true)
+    const limitPrice = bigIntToBn(rate_to_price(bnToBigInt(rate), bnToBigInt(this.info.duration)))
+    const params: OrderParams = {
+      maxBondTicketQty: new BN(U64_MAX.toString()),
+      maxUnderlyingTokenQty: new BN(amount),
+      limitPrice,
+      matchLimit: new BN(U64_MAX.toString()),
+      postOnly: false,
+      postAllowed: true,
+      autoStake: true
     }
-    const authority = args.vaultAuthority ?? args.payer
-    const ticketVault =
-      args.ticketVault ?? (await getAssociatedTokenAddress(this.info.bondTicketMint, new PublicKey(authority)))
-    const tokenVault =
-      args.tokenVault ?? (await getAssociatedTokenAddress(this.info.underlyingTokenMint, new PublicKey(authority)))
+    return await this.lendIx(user.address, userTicketVault, userTokenVault, payer, params, seed)
+  }
 
-    const splitTicket = await findDerivedAccount(
-      ["split_ticket", authority, Buffer.from(args.seed)],
-      this.program.programId
-    )
+  async lendNowIx(user: MarginAccount, amount: BN, payer: Address, seed: Uint8Array): Promise<TransactionInstruction> {
+    const userTokenVault = await getAssociatedTokenAddress(this.addresses.underlyingTokenMint, user.address, true)
+    const userTicketVault = await getAssociatedTokenAddress(this.addresses.bondTicketMint, user.address, true)
+    const params: OrderParams = {
+      maxBondTicketQty: new BN(U64_MAX.toString()),
+      maxUnderlyingTokenQty: new BN(amount),
+      limitPrice: new BN(0),
+      matchLimit: new BN(U64_MAX.toString()),
+      postOnly: false,
+      postAllowed: false,
+      autoStake: true
+    }
 
+    return await this.lendIx(user.address, userTicketVault, userTokenVault, payer, params, seed)
+  }
+
+  async lendIx(
+    user: Address,
+    userTicketVault: Address,
+    userTokenVault: Address,
+    payer: Address,
+    params: OrderParams,
+    seed: Uint8Array
+  ): Promise<TransactionInstruction> {
+    const splitTicket = await this.deriveSplitTicket(user, seed)
     return await this.program.methods
-      .lendOrder(params, Buffer.from(args.seed))
+      .lendOrder(params, Buffer.from(seed))
       .accounts({
         ...this.addresses,
-        user: authority,
-        userTicketVault: ticketVault,
-        userTokenVault: tokenVault,
-        splitTicket: splitTicket,
-        payer: args.payer,
+        user,
+        userTicketVault,
+        userTokenVault,
+        splitTicket,
+        payer,
+        systemProgram: SystemProgram.programId,
+        tokenProgram: TOKEN_PROGRAM_ID
+      })
+      .instruction()
+  }
+
+  async cancelOrderIx(user: MarginAccount, orderId: Uint8Array, side: OrderSide): Promise<TransactionInstruction> {
+    const bnOrderId = new BN(order_id_to_string(orderId))
+
+    return await this.program.methods
+      .cancelOrder(bnOrderId)
+      .accounts({
+        ...this.addresses,
+        user: user.address
+      })
+      .instruction()
+  }
+
+  async registerAccountWithMarket(user: MarginAccount, payer: Address): Promise<TransactionInstruction> {
+    const borrowerAccount = await this.deriveMarginUserAddress(user)
+    const claims = await this.deriveMarginUserClaims(borrowerAccount)
+    const collateral = await this.deriveMarginUserCollateral(borrowerAccount)
+
+    const underlyingSettlement = await getAssociatedTokenAddress(this.addresses.underlyingTokenMint, user.address, true)
+    const ticketSettlement = await getAssociatedTokenAddress(this.addresses.bondTicketMint, user.address, true)
+    return await this.program.methods
+      .initializeMarginUser()
+      .accounts({
+        ...this.addresses,
+        borrowerAccount,
+        marginAccount: user.address,
+        claims,
+        collateral,
+        underlyingSettlement,
+        ticketSettlement,
+        payer,
+        rent: SYSVAR_RENT_PUBKEY,
         systemProgram: SystemProgram.programId,
         tokenProgram: TOKEN_PROGRAM_ID
       })
@@ -199,111 +311,38 @@ export class BondMarket {
   }
 
   /**
-   * Creates a `Borrow` order instruction. Amount is underlying token lamports. Interest is basis points
-   * @param maxBondTicketQty Maximum quantity of bond tickets to order fill
-   * @param maxUnderlyingTokenQty Maximum quantity of underlying to lend
-   * @param limitPrice limit price for matching orders
-   * @param vaultAuthority Authority over the token vault
-   * @param ticketVault Ticket vault to receive matched funds
-   * @param tokenVault Token vault containing funds for the order
-   * @param matchLimit Maximum number of orders to match with
-   * @param postOnly Only succeed if order did not match
-   * @param postAllowed Post remaining unfilled as an order on the book
-   * @param autoStake Automatically stake any matched bond tickets
-   * @returns `TransactionInstruction`
+   *
+   * @param user the margin account to refresh
+   * @param expectPrice in the edge case where we want to refresh an account with a broken oracle, set to false
+   * @returns a `TransactionInstruction` to refresh the bonds related margin positions
    */
-  async sellTicketsOrderIx(args: {
-    maxBondTicketQty: BN
-    maxUnderlyingTokenQty: BN
-    limitPrice: BN
-    vaultAuthority: Address
-    ticketVault?: Address
-    tokenVault?: Address
-    matchLimit?: BN
-    postOnly?: boolean
-    postAllowed?: boolean
-    autoStake?: boolean
-  }): Promise<TransactionInstruction> {
-    let params: OrderParams = {
-      maxBondTicketQty: args.maxBondTicketQty,
-      maxUnderlyingTokenQty: args.maxUnderlyingTokenQty,
-      limitPrice: args.limitPrice,
-      matchLimit: args.matchLimit ?? new BN(100),
-      postOnly: args.postOnly ?? false,
-      postAllowed: args.postAllowed ?? true,
-      autoStake: args.autoStake ?? true
-    }
-    const ticketVault =
-      args.ticketVault ??
-      (await getAssociatedTokenAddress(this.info.bondTicketMint, new PublicKey(args.vaultAuthority)))
-    const tokenVault =
-      args.tokenVault ??
-      (await getAssociatedTokenAddress(this.info.underlyingTokenMint, new PublicKey(args.vaultAuthority)))
-
+  async refreshPosition(user: MarginAccount, expectPrice: boolean): Promise<TransactionInstruction> {
+    const borrowerAccount = await this.deriveMarginUserAddress(user)
     return await this.program.methods
-      .sellTicketsOrder(params)
+      .refreshPosition(expectPrice)
       .accounts({
         ...this.addresses,
-        user: args.vaultAuthority,
-        userTicketVault: ticketVault,
-        userTokenVault: tokenVault,
+        borrowerAccount,
+        marginAccount: user.address,
         tokenProgram: TOKEN_PROGRAM_ID
       })
       .instruction()
   }
 
-  async cancelOrderIx(args: {
-    orderId: BN
-    side: OrderSide
-    user: Address
-    userVault?: Address
-  }): Promise<TransactionInstruction> {
-    const userVault =
-      args.userVault ?? args.side === OrderSideBorrow
-        ? await getAssociatedTokenAddress(this.addresses.underlyingTokenMint, new PublicKey(args.user))
-        : await getAssociatedTokenAddress(this.addresses.bondTicketMint, new PublicKey(args.user))
-    const marketAccount =
-      args.side === OrderSideBorrow ? this.addresses.underlyingTokenVault : this.addresses.bondTicketMint
-
-    return await this.program.methods
-      .cancelOrder(args.orderId)
-      .accounts({
-        ...this.addresses,
-        user: args.user,
-        userVault,
-        marketAccount,
-        tokenProgram: TOKEN_PROGRAM_ID
-      })
-      .instruction()
+  async deriveMarginUserAddress(user: MarginAccount): Promise<PublicKey> {
+    return await findDerivedAccount(["margin_borrower", this.address, user.address], this.program.programId)
   }
 
-  async stakeTicketsIx(args: {
-    amount: BN
-    seed: Uint8Array
-    user: Address
-    ticketAccount?: Address
-  }): Promise<TransactionInstruction> {
-    const claimTicket = await this.deriveClaimTicketKey(args.user, args.seed)
-    const bondTicketTokenAccount =
-      args.ticketAccount ?? (await getAssociatedTokenAddress(this.addresses.bondTicketMint, new PublicKey(args.user)))
-    return await this.program.methods
-      .stakeBondTickets({
-        amount: args.amount,
-        ticketSeed: Buffer.from(args.seed)
-      })
-      .accounts({
-        ...this.addresses,
-        claimTicket,
-        bondTicketTokenAccount,
-        ticketHolder: args.user,
-        tokenProgram: TOKEN_PROGRAM_ID,
-        systemProgram: SystemProgram.programId
-      })
-      .instruction()
+  async deriveMarginUserClaims(borrowerAccount: Address): Promise<PublicKey> {
+    return await findDerivedAccount(["user_claims", borrowerAccount], this.program.programId)
   }
 
-  async deriveTicketAddress(user: Address): Promise<PublicKey> {
-    return await getAssociatedTokenAddress(this.addresses.bondTicketMint, new PublicKey(user))
+  async deriveMarginUserCollateral(borrowerAccount: Address): Promise<PublicKey> {
+    return await findDerivedAccount(["deposit_notes", borrowerAccount], this.program.programId)
+  }
+
+  async deriveObligationAddress(borrowerAccount: Address, seed: Uint8Array): Promise<PublicKey> {
+    return await findDerivedAccount(["obligation", borrowerAccount, seed], this.program.programId)
   }
 
   async deriveClaimTicketKey(ticketHolder: Address, seed: Uint8Array): Promise<PublicKey> {
@@ -313,25 +352,17 @@ export class BondMarket {
     )
   }
 
+  async deriveSplitTicket(user: Address, seed: Uint8Array): Promise<PublicKey> {
+    return await findDerivedAccount(["split_ticket", user, seed], this.program.programId)
+  }
+
   async fetchOrderbook(): Promise<Orderbook> {
     return await Orderbook.load(this)
   }
-}
 
-/**
- * Builds order parameters for a given loan amount and interest rate
- *
- * @param amount amount to be lent or borrowed
- * @param interestRate desired interest rate, in basis points
- */
-export const buildOrderAmount = (
-  amount: BN,
-  interestRate: BN
-): { maxBondTicketQty: BN; maxUnderlyingTokenQty: BN; limitPrice: BN } => {
-  let orderAmount = build_order_amount_deprecated(BigInt(amount.toString()), BigInt(interestRate.toString()))
-  return {
-    maxBondTicketQty: new BN(orderAmount.base.toString()),
-    maxUnderlyingTokenQty: new BN(orderAmount.quote.toString()),
-    limitPrice: new BN(orderAmount.price.toString())
+  async fetchMarginUser(user: MarginAccount): Promise<MarginUserInfo> {
+    let data = (await this.provider.connection.getAccountInfo(await this.deriveMarginUserAddress(user)))!.data
+
+    return await this.program.coder.accounts.decode("MarginUser", data)
   }
 }

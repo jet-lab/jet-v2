@@ -42,6 +42,12 @@ pub fn get_orders_from_slab(slab_bytes: &[u8]) -> Array {
     )
 }
 
+/// Given some bytes, reconstruct the u128 order_id and pass it back as a string
+#[wasm_bindgen]
+pub fn order_id_to_string(order_id: &[u8]) -> String {
+    u128::from_le_bytes(order_id.try_into().unwrap()).to_string()
+}
+
 /// Given a base quanity and fixed-point 32 price value, calculate the quote
 #[wasm_bindgen]
 pub fn base_to_quote(base: u64, price: u64) -> u64 {
@@ -52,8 +58,7 @@ pub fn base_to_quote(base: u64, price: u64) -> u64 {
 /// Given a base quanity and fixed-point 32 price value, calculate the quote
 #[wasm_bindgen]
 pub fn quote_to_base(quote: u64, price: u64) -> u64 {
-    let base = Fp32::upcast_fp32(price) / quote;
-    base.as_decimal_u64().unwrap()
+    Fp32::upcast_fp32(price).u64_div(quote).unwrap()
 }
 
 /// Given a fixed-point 32 value, convert to decimal representation

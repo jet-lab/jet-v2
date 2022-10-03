@@ -17,11 +17,13 @@
 
 use solana_sdk::pubkey::Pubkey;
 
+mod airspace;
 mod control;
 mod margin;
 mod margin_pool;
 mod margin_swap;
 
+pub use airspace::*;
 pub use control::*;
 pub use margin::*;
 pub use margin_pool::*;
