@@ -21,8 +21,10 @@ use anchor_lang::solana_program::clock::UnixTimestamp;
 
 declare_id!("JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ");
 
-mod adapter;
 pub mod events;
+pub mod seeds;
+
+mod adapter;
 mod instructions;
 mod state;
 pub(crate) mod syscall;
@@ -34,6 +36,7 @@ pub use state::*;
 pub use util::Invocation;
 
 pub use adapter::{AdapterResult, PositionChange, PriceChangeInfo};
+pub use instructions::TokenConfigUpdate;
 
 /// The maximum confidence deviation allowed for an oracle price.
 ///
@@ -433,6 +436,68 @@ pub mod jet_margin {
     ) -> Result<()> {
         liquidator_invoke_handler(ctx, data)
     }
+
+    /// Update the config for a token position stored in the margin account,
+    /// in the case where the token config has changed after the position was
+    /// created.
+    pub fn refresh_position_config(ctx: Context<RefreshPositionConfig>) -> Result<()> {
+        refresh_position_config_handler(ctx)
+    }
+
+    /// Refresh the price/balance for a deposit position
+    pub fn refresh_deposit_position(ctx: Context<RefreshDepositPosition>) -> Result<()> {
+        refresh_deposit_position_handler(ctx)
+    }
+
+    /// Create a new account for holding SPL token deposits directly by a margin account.
+    pub fn create_deposit_position(ctx: Context<CreateDepositPosition>) -> Result<()> {
+        create_deposit_position_handler(ctx)
+    }
+
+    /// Transfer tokens into or out of a token account being used for deposits.
+    pub fn transfer_deposit(ctx: Context<TransferDeposit>, amount: u64) -> Result<()> {
+        transfer_deposit_handler(ctx, amount)
+    }
+
+    /// Set the configuration for a token, which allows it to be used as a position in a margin
+    /// account.
+    ///
+    /// The configuration for a token only applies for the associated airspace, and changing any
+    /// configuration requires the airspace authority to sign.
+    ///
+    /// The account storing the configuration will be funded if not already. If a `None` is provided as
+    /// the updated configuration, then the account will be defunded.
+    pub fn configure_token(
+        ctx: Context<ConfigureToken>,
+        update: Option<TokenConfigUpdate>,
+    ) -> Result<()> {
+        configure_token_handler(ctx, update)
+    }
+
+    /// Set the configuration for an adapter.
+    ///
+    /// The configuration for a token only applies for the associated airspace, and changing any
+    /// configuration requires the airspace authority to sign.
+    ///
+    /// The account storing the configuration will be funded if not already. If a `None` is provided as
+    /// the updated configuration, then the account will be defunded.
+    pub fn configure_adapter(ctx: Context<ConfigureAdapter>, is_adapter: bool) -> Result<()> {
+        configure_adapter_handler(ctx, is_adapter)
+    }
+
+    /// Set the configuration for a liquidator.
+    ///
+    /// The configuration for a token only applies for the associated airspace, and changing any
+    /// configuration requires the airspace authority to sign.
+    ///
+    /// The account storing the configuration will be funded if not already. If a `None` is provided as
+    /// the updated configuration, then the account will be defunded.
+    pub fn configure_liquidator(
+        ctx: Context<ConfigureLiquidator>,
+        is_liquidator: bool,
+    ) -> Result<()> {
+        configure_liquidator_handler(ctx, is_liquidator)
+    }
 }
 
 #[error_code]
@@ -530,6 +595,18 @@ pub enum ErrorCode {
     /// 141041 - The liquidation attempted to extract too much value
     #[msg("attempted to extract too much value during liquidation")]
     LiquidationLostValue,
+
+    /// 141050 - The airspace does not match
+    #[msg("attempting to mix entities from different airspaces")]
+    WrongAirspace = 135_050,
+
+    /// 141051 - Attempting to use or set configuration that is not valid
+    #[msg("attempting to use or set invalid configuration")]
+    InvalidConfig = 135_051,
+
+    /// 141051 - Attempting to use or set an oracle that is not valid
+    #[msg("attempting to use or set invalid configuration")]
+    InvalidOracle = 135_052,
 }
 
 /// Writes the result of position changes from an adapter invocation.

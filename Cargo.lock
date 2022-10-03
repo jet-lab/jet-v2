@@ -1850,6 +1850,7 @@ dependencies = [
  "futures",
  "futures-retry",
  "itertools 0.10.5",
+ "jet-airspace",
  "jet-bonds",
  "jet-control",
  "jet-margin",
@@ -2076,6 +2077,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6c8af84674fe1f223a982c933a0ee1086ac4d4052aa0fb8060c12c6ad838e754"
 
 [[package]]
+name = "jet-airspace"
+version = "0.1.0"
+dependencies = [
+ "anchor-lang",
+ "solana-program",
+]
+
+[[package]]
 name = "jet-bonds"
 version = "0.1.0"
 dependencies = [
@@ -2156,9 +2165,11 @@ dependencies = [
  "bitflags",
  "bytemuck",
  "itertools 0.10.5",
+ "jet-airspace",
  "jet-metadata",
  "jet-proto-math 1.1.0 (git+https://github.com/jet-lab/program-libraries?branch=main)",
  "jet-proto-proc-macros",
+ "pyth-sdk-solana",
  "serde",
  "serde_test",
  "static_assertions",
@@ -2196,6 +2207,7 @@ dependencies = [
  "bincode",
  "bytemuck",
  "futures",
+ "jet-airspace",
  "jet-bonds",
  "jet-control",
  "jet-margin",

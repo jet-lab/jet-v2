@@ -1,0 +1,21 @@
+[package]
+name = "jet-airspace"
+version = "0.1.0"
+description = "Permissions program for Jet Protocol "
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "jet_airspace"
+
+[features]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+cpi = ["no-entrypoint"]
+default = []
+testing = []
+
+[dependencies]
+solana-program = "1.10"
+anchor-lang = { git = "https://github.com/jet-lab/anchor", branch = "master", features = ["init-if-needed"]}
