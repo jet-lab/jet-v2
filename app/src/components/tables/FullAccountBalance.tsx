@@ -157,7 +157,7 @@ export function FullAccountBalance(): JSX.Element {
     if (accounts && balance?.tokenSymbol) {
       render = (
         <Text type={side === 'borrow' ? 'danger' : 'success'}>
-          {formatRate(balance[side === 'borrow' ? 'borrowRate' : 'depositRate'])}
+          {formatRate(balance[side === 'borrow' ? 'borrowRate' : 'depositRate'], 2)}
         </Text>
       );
     }

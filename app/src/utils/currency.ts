@@ -56,23 +56,30 @@ export function useCurrencyFormatting() {
       t = total * price;
     }
 
+    // In all cases, truncate trillions and billions
     if (t > 1000000000000) {
       return currencyFormatter(t / 1000000000000, fiatValues, 1) + 'T';
     } else if (t > 1000000000) {
       return currencyFormatter(t / 1000000000, fiatValues, 1) + 'B';
     }
-    
+
     if (precision) {
-      // Show number up to the 9th character, regardless of decimal places
-      return currencyFormatter(t, fiatValues, 2);
-    } else {
-      if (t > 1000000) {
-        return currencyFormatter(t / 1000000, fiatValues, 1) + 'M';
-      } else if (t > 1000) {
-        return currencyFormatter(t / 1000, fiatValues, 1) + 'K';
+      if (fiatValues) {
+        // Do not truncate fiat values under million
+        return currencyFormatter(t, fiatValues, 2);
       } else {
-        return currencyFormatter(t, fiatValues, fiatValues ? 2 : decimals);
+        // If not fiat values, show number up to the 9th character
+        // regardless of decimal places
+        return currencyFormatter(t, fiatValues, 2);
       }
+    }
+
+    if (t > 1000000) {
+      return currencyFormatter(t / 1000000, fiatValues, 1) + 'M';
+    } else if (t > 1000) {
+      return currencyFormatter(t / 1000, fiatValues, 1) + 'K';
+    } else {
+      return currencyFormatter(t, fiatValues, fiatValues ? 2 : decimals);
     }
   }
 
