@@ -15,8 +15,7 @@ import { AccountsView } from "./views/AccountsView"
 import { Navbar } from "./components/misc/Navbar/Navbar"
 import { Modals } from "./components/modals/Modals"
 import { TermsPrivacy } from "./components/misc/TermsPrivacy"
-import { lazy, Suspense } from "react"
-import { Navigate } from "react-router-dom"
+import { lazy } from "react"
 
 const StateSyncer = lazy(() => import("./state/StateSyncer"))
 const FixedLendView = lazy(() => import("./views/FixedLendView"))
