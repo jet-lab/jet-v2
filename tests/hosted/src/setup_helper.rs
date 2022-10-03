@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use anyhow::{Error, Result};
 
+use jet_margin::TokenKind;
 use jet_margin_sdk::solana::transaction::SendTransactionBuilder;
 use jet_margin_sdk::tokens::TokenPrice;
 use jet_margin_sdk::util::asynchronous::MapAsync;
@@ -10,7 +11,6 @@ use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::Signer;
 
 use jet_margin_pool::{MarginPoolConfig, PoolFlags, TokenChange};
-use jet_metadata::TokenKind;
 use jet_simulation::{create_wallet, generate_keypair};
 use tokio::try_join;
 

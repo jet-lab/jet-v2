@@ -38,6 +38,24 @@ impl Clone for TransactionBuilder {
     }
 }
 
+impl From<Vec<Instruction>> for TransactionBuilder {
+    fn from(instructions: Vec<Instruction>) -> Self {
+        TransactionBuilder {
+            instructions,
+            signers: vec![],
+        }
+    }
+}
+
+impl From<Instruction> for TransactionBuilder {
+    fn from(ix: Instruction) -> Self {
+        TransactionBuilder {
+            instructions: vec![ix],
+            signers: vec![],
+        }
+    }
+}
+
 impl TransactionBuilder {
     /// convert transaction to base64 string that would be submitted to rpc node
     pub fn encode(&self, hash: Hash, payer: &Keypair) -> Result<String> {
@@ -53,14 +71,14 @@ impl TransactionBuilder {
 }
 
 impl Concat for TransactionBuilder {
-    fn concat(mut self, other: Self) -> Self {
+    fn cat(mut self, other: Self) -> Self {
         self.instructions.extend(other.instructions.into_iter());
         self.signers.extend(other.signers.into_iter());
 
         Self { ..self }
     }
 
-    fn concat_ref(mut self, other: &Self) -> Self {
+    fn cat_ref(mut self, other: &Self) -> Self {
         self.instructions
             .extend(other.instructions.clone().into_iter());
         self.signers.extend(clone_vec(&other.signers).into_iter());

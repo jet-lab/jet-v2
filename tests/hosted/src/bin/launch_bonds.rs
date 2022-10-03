@@ -2,6 +2,7 @@ use std::{fs::OpenOptions, io::Write, sync::Arc};
 
 use anyhow::Result;
 use hosted_tests::bonds::TestManager;
+use hosted_tests::margin::MarginClient;
 use jet_margin_sdk::ix_builder::get_metadata_address;
 use jet_simulation::solana_rpc_api::RpcConnection;
 use solana_sdk::signer::Signer;
@@ -13,6 +14,14 @@ lazy_static::lazy_static! {
 #[tokio::main(flavor = "multi_thread")]
 async fn main() -> Result<()> {
     let rpc = Arc::new(RpcConnection::new_local_funded()?);
+
+    let margin = MarginClient::new(rpc.clone());
+    margin.init_globals().await?;
+    margin.create_airspace_if_missing(false).await?;
+    margin.create_authority_if_missing().await?;
+    margin
+        .register_adapter_if_unregistered(&jet_bonds::ID)
+        .await?;
 
     let x = TestManager::new(rpc, &keys::mint())
         .await?

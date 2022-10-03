@@ -23,11 +23,13 @@ use std::sync::Arc;
 use anchor_lang::{
     AccountDeserialize, AccountSerialize, AnchorDeserialize, InstructionData, ToAccountMetas,
 };
+use anchor_spl::associated_token::get_associated_token_address;
 use anyhow::{bail, Error};
 
-use jet_margin::{AccountPosition, MarginAccount, PositionKind};
+use jet_margin::{AccountPosition, MarginAccount, TokenKind};
 use jet_margin_sdk::ix_builder::{
-    get_control_authority_address, get_metadata_address, ControlIxBuilder, MarginPoolConfiguration,
+    derive_airspace, derive_permit, get_control_authority_address, get_metadata_address,
+    AirspaceIxBuilder, ControlIxBuilder, MarginConfigIxBuilder, MarginPoolConfiguration,
     MarginPoolIxBuilder,
 };
 use jet_margin_sdk::solana::transaction::{SendTransactionBuilder, TransactionBuilder};
@@ -40,8 +42,10 @@ use solana_sdk::{pubkey::Pubkey, transaction::Transaction};
 
 use jet_control::TokenMetadataParams;
 use jet_margin_pool::{Amount, MarginPool, MarginPoolConfig, TokenChange};
-use jet_margin_sdk::tx_builder::MarginTxBuilder;
-use jet_metadata::{LiquidatorMetadata, MarginAdapterMetadata, TokenKind, TokenMetadata};
+use jet_margin_sdk::tx_builder::{
+    global_initialize_instructions, AirspaceAdmin, MarginTxBuilder, TokenDepositsConfig,
+};
+use jet_metadata::{LiquidatorMetadata, MarginAdapterMetadata, TokenMetadata};
 use jet_simulation::{send_and_confirm, solana_rpc_api::SolanaRpcClient};
 
 /// Information needed to create a new margin pool
@@ -57,19 +61,28 @@ pub struct MarginPoolSetupInfo {
 /// Utility for making use of the Jet margin system.
 pub struct MarginClient {
     rpc: Arc<dyn SolanaRpcClient>,
+    tx_admin: AirspaceAdmin,
+    airspace: AirspaceIxBuilder,
 }
 
 impl MarginClient {
     pub fn new(rpc: Arc<dyn SolanaRpcClient>) -> Self {
-        Self { rpc }
+        let payer = rpc.payer().pubkey();
+
+        Self {
+            tx_admin: AirspaceAdmin::new("test", payer, payer),
+            airspace: AirspaceIxBuilder::new("test", payer, payer),
+            rpc,
+        }
     }
 
     pub fn user(&self, keypair: &Keypair, seed: u16) -> Result<MarginUser, Error> {
-        let tx = MarginTxBuilder::new(
+        let tx = MarginTxBuilder::new_with_airspace(
             self.rpc.clone(),
             Some(Keypair::from_bytes(&keypair.to_bytes())?),
             keypair.pubkey(),
             seed,
+            self.tx_admin.airspace,
         );
 
         Ok(MarginUser {
@@ -124,6 +137,31 @@ impl MarginClient {
         MarginPool::try_deserialize(&mut &account.unwrap().data[..]).map_err(Error::from)
     }
 
+    pub async fn create_airspace_if_missing(&self, is_restricted: bool) -> Result<(), Error> {
+        let airspace = derive_airspace("test");
+
+        if self.rpc.get_account(&airspace).await?.is_none() {
+            self.create_airspace(is_restricted).await?;
+        }
+
+        Ok(())
+    }
+
+    pub async fn init_globals(&self) -> Result<(), Error> {
+        self.rpc
+            .send_and_confirm(global_initialize_instructions(self.rpc.payer().pubkey()))
+            .await?;
+
+        Ok(())
+    }
+
+    pub async fn create_airspace(&self, is_restricted: bool) -> Result<(), Error> {
+        self.rpc
+            .send_and_confirm(vec![self.airspace.create(is_restricted)].into())
+            .await?;
+        Ok(())
+    }
+
     pub async fn create_authority_if_missing(&self) -> Result<(), Error> {
         if self
             .rpc
@@ -158,9 +196,23 @@ impl MarginClient {
     }
 
     pub async fn register_adapter(&self, adapter: &Pubkey) -> Result<(), Error> {
-        let ix = ControlIxBuilder::new(self.rpc.payer().pubkey()).register_adapter(adapter);
+        self.rpc
+            .send_and_confirm(self.tx_admin.configure_margin_adapter(*adapter, true))
+            .await?;
+        Ok(())
+    }
 
-        send_and_confirm(&self.rpc, &[ix], &[]).await?;
+    pub async fn configure_token_deposits(
+        &self,
+        token_mint: &Pubkey,
+        config: Option<&TokenDepositsConfig>,
+    ) -> Result<(), Error> {
+        self.rpc
+            .send_and_confirm(
+                self.tx_admin
+                    .configure_margin_token_deposits(*token_mint, config.cloned()),
+            )
+            .await?;
         Ok(())
     }
 
@@ -190,7 +242,7 @@ impl MarginClient {
                 pyth_price: Some(setup_info.oracle.price),
                 pyth_product: Some(setup_info.oracle.product),
                 metadata: Some(TokenMetadataParams {
-                    token_kind: TokenKind::Collateral,
+                    token_kind: jet_metadata::TokenKind::Collateral,
                     collateral_weight: setup_info.collateral_weight,
                     max_leverage: setup_info.max_leverage,
                 }),
@@ -207,10 +259,13 @@ impl MarginClient {
         liquidator: Pubkey,
         is_liquidator: bool,
     ) -> Result<(), Error> {
-        let ix = ControlIxBuilder::new(self.rpc.payer().pubkey())
+        let control_ix = ControlIxBuilder::new(self.rpc.payer().pubkey())
             .set_liquidator(&liquidator, is_liquidator);
+        let margin_ix =
+            MarginConfigIxBuilder::new(self.tx_admin.airspace, self.rpc.payer().pubkey())
+                .configure_liquidator(liquidator, is_liquidator);
 
-        send_and_confirm(&self.rpc, &[ix], &[]).await?;
+        send_and_confirm(&self.rpc, &[control_ix, margin_ix], &[]).await?;
 
         Ok(())
     }
@@ -286,6 +341,13 @@ impl MarginUser {
     }
 
     pub async fn create_account(&self) -> Result<(), Error> {
+        let permit_account = derive_permit(self.tx.airspace(), &self.signer());
+
+        if self.rpc.get_account(&permit_account).await?.is_none() {
+            let airspace = AirspaceIxBuilder::new("test", self.signer(), self.signer());
+            self.rpc
+                .send_and_confirm(vec![airspace.permit_create(self.signer())].into());
+        }
         self.send_confirm_tx(self.tx.create_account().await?).await
     }
 
@@ -448,9 +510,40 @@ impl MarginUser {
     pub async fn close_token_position(
         &self,
         token_mint: &Pubkey,
-        kind: PositionKind,
+        kind: TokenKind,
     ) -> Result<(), Error> {
         self.send_confirm_tx(self.tx.close_pool_position(token_mint, kind).await?)
             .await
+    }
+
+    /// Create a new token account attached to the margin account
+    pub async fn create_deposit_position(&self, token_mint: &Pubkey) -> Result<Pubkey, Error> {
+        self.send_confirm_tx(self.tx.create_deposit_position(token_mint).await?)
+            .await?;
+
+        Ok(get_associated_token_address(self.address(), token_mint))
+    }
+
+    /// Close a previously created deposit position
+    pub async fn close_deposit_position(&self, token_mint: &Pubkey) -> Result<(), Error> {
+        self.send_confirm_tx(self.tx.close_deposit_position(token_mint).await?)
+            .await
+    }
+
+    /// Move funds in/out deposit account
+    pub async fn transfer_deposit(
+        &self,
+        mint: &Pubkey,
+        source_owner: &Pubkey,
+        source: &Pubkey,
+        destination: &Pubkey,
+        amount: u64,
+    ) -> Result<(), Error> {
+        self.send_confirm_tx(
+            self.tx
+                .transfer_deposit(*mint, *source_owner, *source, *destination, amount)
+                .await?,
+        )
+        .await
     }
 }
