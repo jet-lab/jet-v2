@@ -288,8 +288,8 @@
       },
       "liquidation": {
         "title": "Liquidation in Progress",
-        "liquidationDetail": "Liquidation has now begun on account {{ACCOUNT_NAME}}. To cease liquidation, you must deposit funds to {{BRING_RISK_DOWN}}.",
-        "bringRiskDown": "bring your Risk Level below 1.0 immediately",
+        "liquidationDetail": "Liquidation has now begun on account {{ACCOUNT_NAME}}. To cease liquidation, you must try to end liquidation and deposit funds to {{BRING_RISK_DOWN}}.",
+        "bringRiskDown": "end liquidation and bring your Risk Level below 1.0 immediately",
         "fundsRequired": "Funds Required"
       }
     },
