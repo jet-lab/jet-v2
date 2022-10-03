@@ -56,8 +56,10 @@ export function useCurrencyFormatting() {
       return currencyFormatter(t / 1000000000, fiatValues, 1) + 'B';
     } else if (t > 1000000) {
       return currencyFormatter(t / 1000000, fiatValues, 1) + 'M';
-    } else if (t > 1000) {
+    } else if (t > 9999) {
       return currencyFormatter(t / 1000, fiatValues, 1) + 'K';
+    } else if (t > 1000) {
+      return currencyFormatter(t, fiatValues, 2);
     } else {
       return currencyFormatter(t, fiatValues, fiatValues ? 2 : decimals);
     }
