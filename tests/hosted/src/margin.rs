@@ -307,11 +307,6 @@ impl MarginUser {
         Ok(())
     }
 
-    async fn send_and_confirm(&self, tx: TransactionBuilder) -> Result<(), Error> {
-        self.rpc.send_and_confirm(tx).await?;
-        Ok(())
-    }
-
     async fn send_confirm_all_tx(
         &self,
         transactions: impl IntoIterator<Item = Transaction>,
@@ -397,8 +392,9 @@ impl MarginUser {
             .await
     }
 
-    pub async fn borrow(&self, mint: &Pubkey, change: TokenChange) -> Result<(), Error> {
-        self.send_and_confirm(self.tx.borrow(mint, change).await?)
+    pub async fn borrow(&self, mint: &Pubkey, change: TokenChange) -> Result<Signature, Error> {
+        self.rpc
+            .send_and_confirm(self.tx.borrow(mint, change).await?)
             .await
     }
 

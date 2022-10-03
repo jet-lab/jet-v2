@@ -694,13 +694,7 @@ impl MarginTxBuilder {
                 ix_builder.margin_refresh_position(self.ix.address, t_metadata.pyth_price),
             );
 
-            txns.insert(
-                p_metadata.underlying_token_mint,
-                TransactionBuilder {
-                    instructions: vec![ix],
-                    signers: vec![],
-                },
-            );
+            txns.insert(p_metadata.underlying_token_mint, ix.into());
         }
 
         Ok(txns)
