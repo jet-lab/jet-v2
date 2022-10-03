@@ -518,6 +518,7 @@ impl MarginTxBuilder {
             self.ix
                 .liquidate_begin(self.signer.as_ref().unwrap().pubkey()),
         );
+        txs.signers.push(clone(self.signer.as_ref().unwrap()));
 
         Ok(txs)
     }
