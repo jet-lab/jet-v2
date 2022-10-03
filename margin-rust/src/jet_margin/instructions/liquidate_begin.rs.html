@@ -101,6 +101,11 @@
 <span id="101">101</span>
 <span id="102">102</span>
 <span id="103">103</span>
+<span id="104">104</span>
+<span id="105">105</span>
+<span id="106">106</span>
+<span id="107">107</span>
+<span id="108">108</span>
 </pre><pre class="rust"><code><span class="comment">// SPDX-License-Identifier: AGPL-3.0-or-later</span>
 <span class="comment">//</span>
 <span class="comment">// Copyright (C) 2022 JET PROTOCOL HOLDINGS, LLC.</span>
@@ -122,7 +127,10 @@
 
 <span class="kw">use</span> <span class="ident">jet_proto_math::Number128</span>;
 
-<span class="kw">use</span> <span class="kw">crate</span>::{<span class="ident">events</span>, <span class="ident">ErrorCode</span>, <span class="ident">Liquidation</span>, <span class="ident">MarginAccount</span>, <span class="ident">LIQUIDATION_MAX_EQUITY_LOSS_BPS</span>};
+<span class="kw">use</span> <span class="kw">crate</span>::{
+    <span class="ident">events</span>, <span class="ident">ErrorCode</span>, <span class="ident">Liquidation</span>, <span class="ident">LiquidationState</span>, <span class="ident">MarginAccount</span>,
+    <span class="ident">LIQUIDATION_MAX_EQUITY_LOSS_BPS</span>,
+};
 <span class="kw">use</span> <span class="ident">jet_metadata::LiquidatorMetadata</span>;
 
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Accounts</span>)]</span>
@@ -152,9 +160,9 @@
         ]</span>,
         <span class="ident">bump</span>,
         <span class="ident">payer</span> <span class="op">=</span> <span class="ident">payer</span>,
-        <span class="ident">space</span> <span class="op">=</span> <span class="number">8</span> <span class="op">+</span> <span class="ident">std::mem::size_of</span>::<span class="op">&lt;</span><span class="ident">Liquidation</span><span class="op">&gt;</span>(),
+        <span class="ident">space</span> <span class="op">=</span> <span class="number">8</span> <span class="op">+</span> <span class="ident">std::mem::size_of</span>::<span class="op">&lt;</span><span class="ident">LiquidationState</span><span class="op">&gt;</span>(),
     )]
-    <span class="kw">pub</span> <span class="ident">liquidation</span>: <span class="ident">AccountLoader</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span>, <span class="ident">Liquidation</span><span class="op">&gt;</span>,
+    <span class="kw">pub</span> <span class="ident">liquidation</span>: <span class="ident">AccountLoader</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span>, <span class="ident">LiquidationState</span><span class="op">&gt;</span>,
 
     <span class="ident">system_program</span>: <span class="ident">Program</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span>, <span class="ident">System</span><span class="op">&gt;</span>,
 }
@@ -191,14 +199,16 @@
     <span class="kw">let</span> <span class="ident">min_equity_change</span> <span class="op">=</span> (<span class="ident">valuation</span>.<span class="ident">effective_collateral</span> <span class="op">-</span> <span class="ident">valuation</span>.<span class="ident">required_collateral</span>)
         <span class="op">*</span> <span class="ident">Number128::from_bps</span>(<span class="ident">LIQUIDATION_MAX_EQUITY_LOSS_BPS</span>);
 
-    <span class="kw">let</span> <span class="ident">liquidation_data</span> <span class="op">=</span> <span class="ident">Liquidation::new</span>(<span class="ident">Clock::get</span>()<span class="question-mark">?</span>.<span class="ident">unix_timestamp</span>, <span class="ident">min_equity_change</span>);
-    <span class="kw-2">*</span><span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">liquidation</span>.<span class="ident">load_init</span>()<span class="question-mark">?</span> <span class="op">=</span> <span class="ident">liquidation_data</span>;
+    <span class="kw">let</span> <span class="ident">liquidation_state</span> <span class="op">=</span> <span class="ident">LiquidationState</span> {
+        <span class="ident">state</span>: <span class="ident">Liquidation::new</span>(<span class="ident">Clock::get</span>()<span class="question-mark">?</span>.<span class="ident">unix_timestamp</span>, <span class="ident">min_equity_change</span>),
+    };
+    <span class="kw-2">*</span><span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">liquidation</span>.<span class="ident">load_init</span>()<span class="question-mark">?</span> <span class="op">=</span> <span class="ident">liquidation_state</span>;
 
     <span class="macro">emit!</span>(<span class="ident">events::LiquidationBegun</span> {
         <span class="ident">margin_account</span>: <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">margin_account</span>.<span class="ident">key</span>(),
         <span class="ident">liquidator</span>: <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">liquidator</span>.<span class="ident">key</span>(),
         <span class="ident">liquidation</span>: <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">liquidation</span>.<span class="ident">key</span>(),
-        <span class="ident">liquidation_data</span>,
+        <span class="ident">liquidation_data</span>: <span class="ident">liquidation_state</span>.<span class="ident">state</span>,
         <span class="ident">valuation_summary</span>: <span class="ident">valuation</span>.<span class="ident">into</span>(),
     });
 

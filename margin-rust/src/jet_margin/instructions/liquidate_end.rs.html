@@ -60,11 +60,6 @@
 <span id="60">60</span>
 <span id="61">61</span>
 <span id="62">62</span>
-<span id="63">63</span>
-<span id="64">64</span>
-<span id="65">65</span>
-<span id="66">66</span>
-<span id="67">67</span>
 </pre><pre class="rust"><code><span class="comment">// SPDX-License-Identifier: AGPL-3.0-or-later</span>
 <span class="comment">//</span>
 <span class="comment">// Copyright (C) 2022 JET PROTOCOL HOLDINGS, LLC.</span>
@@ -83,10 +78,9 @@
 <span class="comment">// along with this program.  If not, see &lt;https://www.gnu.org/licenses/&gt;.</span>
 
 <span class="kw">use</span> <span class="ident">anchor_lang::prelude</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident">anchor_lang::AccountsClose</span>;
 
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::events</span>;
-<span class="kw">use</span> <span class="kw">crate</span>::{<span class="ident">ErrorCode</span>, <span class="ident">Liquidation</span>, <span class="ident">MarginAccount</span>, <span class="ident">LIQUIDATION_TIMEOUT</span>};
+<span class="kw">use</span> <span class="kw">crate</span>::{<span class="ident">ErrorCode</span>, <span class="ident">LiquidationState</span>, <span class="ident">MarginAccount</span>, <span class="ident">LIQUIDATION_TIMEOUT</span>};
 
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Accounts</span>)]</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">LiquidateEnd</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span> {
@@ -100,13 +94,13 @@
     <span class="kw">pub</span> <span class="ident">margin_account</span>: <span class="ident">AccountLoader</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span>, <span class="ident">MarginAccount</span><span class="op">&gt;</span>,
 
     <span class="doccomment">/// Account to persist the state of the liquidation</span>
-    <span class="attribute">#[<span class="ident">account</span>(<span class="kw-2">mut</span>)]</span>
-    <span class="kw">pub</span> <span class="ident">liquidation</span>: <span class="ident">AccountLoader</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span>, <span class="ident">Liquidation</span><span class="op">&gt;</span>,
+    <span class="attribute">#[<span class="ident">account</span>(<span class="kw-2">mut</span>, <span class="ident">close</span> <span class="op">=</span> <span class="ident">authority</span>)]</span>
+    <span class="kw">pub</span> <span class="ident">liquidation</span>: <span class="ident">AccountLoader</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span>, <span class="ident">LiquidationState</span><span class="op">&gt;</span>,
 }
 
 <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">liquidate_end_handler</span>(<span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">LiquidateEnd</span><span class="op">&gt;</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
     <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">account</span> <span class="op">=</span> <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">margin_account</span>.<span class="ident">load_mut</span>()<span class="question-mark">?</span>;
-    <span class="kw">let</span> <span class="ident">start_time</span> <span class="op">=</span> <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">liquidation</span>.<span class="ident">load</span>()<span class="question-mark">?</span>.<span class="ident">start_time</span>();
+    <span class="kw">let</span> <span class="ident">start_time</span> <span class="op">=</span> <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">liquidation</span>.<span class="ident">load</span>()<span class="question-mark">?</span>.<span class="ident">state</span>.<span class="ident">start_time</span>();
 
     <span class="kw">let</span> <span class="ident">timed_out</span> <span class="op">=</span> <span class="ident">Clock::get</span>()<span class="question-mark">?</span>.<span class="ident">unix_timestamp</span> <span class="op">-</span> <span class="ident">start_time</span> <span class="op">&gt;</span><span class="op">=</span> <span class="ident">LIQUIDATION_TIMEOUT</span>;
 
@@ -119,10 +113,6 @@
     }
 
     <span class="ident">account</span>.<span class="ident">end_liquidation</span>();
-
-    <span class="ident">ctx</span>.<span class="ident">accounts</span>
-        .<span class="ident">liquidation</span>
-        .<span class="ident">close</span>(<span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">authority</span>.<span class="ident">to_account_info</span>())<span class="question-mark">?</span>;
 
     <span class="macro">emit!</span>(<span class="ident">events::LiquidationEnded</span> {
         <span class="ident">margin_account</span>: <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">margin_account</span>.<span class="ident">key</span>(),

@@ -156,6 +156,7 @@
 <span id="156">156</span>
 <span id="157">157</span>
 <span id="158">158</span>
+<span id="159">159</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">anchor_lang::prelude</span>::<span class="kw-2">*</span>;
 
 <span class="kw">use</span> <span class="kw">crate</span>::{<span class="ident">AccountPosition</span>, <span class="ident">Liquidation</span>, <span class="ident">Valuation</span>};
@@ -195,6 +196,7 @@
 
 <span class="attribute">#[<span class="ident">event</span>]</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">PositionClosed</span> {
+    <span class="kw">pub</span> <span class="ident">margin_account</span>: <span class="ident">Pubkey</span>,
     <span class="kw">pub</span> <span class="ident">authority</span>: <span class="ident">Pubkey</span>,
     <span class="kw">pub</span> <span class="ident">token</span>: <span class="ident">Pubkey</span>,
 }

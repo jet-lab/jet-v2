@@ -431,21 +431,6 @@
 <span id="431">431</span>
 <span id="432">432</span>
 <span id="433">433</span>
-<span id="434">434</span>
-<span id="435">435</span>
-<span id="436">436</span>
-<span id="437">437</span>
-<span id="438">438</span>
-<span id="439">439</span>
-<span id="440">440</span>
-<span id="441">441</span>
-<span id="442">442</span>
-<span id="443">443</span>
-<span id="444">444</span>
-<span id="445">445</span>
-<span id="446">446</span>
-<span id="447">447</span>
-<span id="448">448</span>
 </pre><pre class="rust"><code><span class="comment">// SPDX-License-Identifier: AGPL-3.0-or-later</span>
 <span class="comment">//</span>
 <span class="comment">// Copyright (C) 2022 JET PROTOCOL HOLDINGS, LLC.</span>
@@ -465,7 +450,6 @@
 
 <span class="kw">use</span> <span class="ident">anchor_lang::prelude</span>::<span class="kw-2">*</span>;
 <span class="kw">use</span> <span class="ident">bytemuck</span>::{<span class="ident">Contiguous</span>, <span class="ident">Pod</span>, <span class="ident">Zeroable</span>};
-<span class="kw">use</span> <span class="ident">jet_metadata::TokenKind</span>;
 <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">any</span>(<span class="ident">test</span>, <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;cli&quot;</span>))]</span>
 <span class="kw">use</span> <span class="ident">serde::ser</span>::{<span class="ident">Serialize</span>, <span class="ident">SerializeStruct</span>, <span class="ident">Serializer</span>};
 
@@ -476,7 +460,7 @@
 <span class="kw">use</span> <span class="ident">std</span>::{<span class="ident">convert::TryFrom</span>, <span class="ident">result::Result</span>};
 
 <span class="kw">use</span> <span class="ident"><span class="kw">super</span>::Approver</span>;
-<span class="kw">use</span> <span class="kw">crate</span>::{<span class="ident">ErrorCode</span>, <span class="ident">PriceChangeInfo</span>, <span class="ident">MAX_ORACLE_CONFIDENCE</span>, <span class="ident">MAX_ORACLE_STALENESS</span>};
+<span class="kw">use</span> <span class="kw">crate</span>::{<span class="ident">ErrorCode</span>, <span class="ident">PriceChangeInfo</span>, <span class="ident">TokenKind</span>, <span class="ident">MAX_ORACLE_CONFIDENCE</span>, <span class="ident">MAX_ORACLE_STALENESS</span>};
 
 <span class="kw">const</span> <span class="ident">POS_PRICE_VALID</span>: <span class="ident">u8</span> <span class="op">=</span> <span class="number">1</span>;
 
@@ -568,40 +552,6 @@
     }
 }
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">AnchorSerialize</span>, <span class="ident">AnchorDeserialize</span>, <span class="ident">Debug</span>, <span class="ident">Clone</span>, <span class="ident">Copy</span>, <span class="ident">Contiguous</span>, <span class="ident">Eq</span>, <span class="ident">PartialEq</span>)]</span>
-<span class="attribute">#[<span class="ident">repr</span>(<span class="ident">u32</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">PositionKind</span> {
-    <span class="doccomment">/// The position is not worth anything</span>
-    <span class="ident">NoValue</span> <span class="op">=</span> <span class="number">0</span>,
-
-    <span class="doccomment">/// The position contains a balance of available collateral</span>
-    <span class="ident">Deposit</span>,
-
-    <span class="doccomment">/// The position contains a balance of tokens that are owed as a part of some debt.</span>
-    <span class="ident">Claim</span>,
-
-    <span class="doccomment">/// The position contains a balance managed by a trusted adapter to represent the amount of collateral custodied by that adapter.</span>
-    <span class="doccomment">/// The token account is owned by the adapter. Collateral is accessed through instructions to the adapter.</span>
-    <span class="ident">AdapterCollateral</span>,
-}
-
-<span class="kw">impl</span> <span class="ident">From</span><span class="op">&lt;</span><span class="ident">TokenKind</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">PositionKind</span> {
-    <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">token</span>: <span class="ident">TokenKind</span>) -&gt; <span class="self">Self</span> {
-        <span class="kw">match</span> <span class="ident">token</span> {
-            <span class="ident">TokenKind::NonCollateral</span> =&gt; <span class="ident">PositionKind::NoValue</span>,
-            <span class="ident">TokenKind::Collateral</span> =&gt; <span class="ident">PositionKind::Deposit</span>,
-            <span class="ident">TokenKind::Claim</span> =&gt; <span class="ident">PositionKind::Claim</span>,
-            <span class="ident">TokenKind::AdapterCollateral</span> =&gt; <span class="ident">PositionKind::AdapterCollateral</span>,
-        }
-    }
-}
-
-<span class="kw">impl</span> <span class="ident">Default</span> <span class="kw">for</span> <span class="ident">PositionKind</span> {
-    <span class="kw">fn</span> <span class="ident">default</span>() -&gt; <span class="self">Self</span> {
-        <span class="ident">PositionKind::NoValue</span>
-    }
-}
-
 <span class="attribute">#[<span class="ident">assert_size</span>(<span class="number">192</span>)]</span>
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Pod</span>, <span class="ident">Zeroable</span>, <span class="ident">AnchorSerialize</span>, <span class="ident">AnchorDeserialize</span>, <span class="ident">Default</span>, <span class="ident">Clone</span>, <span class="ident">Copy</span>)]</span>
 <span class="attribute">#[<span class="ident">repr</span>(<span class="ident">C</span>)]</span>
@@ -642,7 +592,8 @@
     <span class="doccomment">/// Flags that are set by the adapter</span>
     <span class="kw">pub</span> <span class="ident">flags</span>: <span class="ident">AdapterPositionFlags</span>,
 
-    <span class="ident">_reserved</span>: [<span class="ident">u8</span>; <span class="number">23</span>],
+    <span class="doccomment">/// Unused</span>
+    <span class="kw">pub</span> <span class="ident">_reserved</span>: [<span class="ident">u8</span>; <span class="number">23</span>],
 }
 
 <span class="macro">bitflags::bitflags!</span> {
@@ -660,12 +611,21 @@
     }
 }
 
+<span class="kw">mod</span> <span class="ident">_idl</span> {
+    <span class="kw">use</span> <span class="kw">super</span>::<span class="kw-2">*</span>;
+
+    <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Zeroable</span>, <span class="ident">AnchorSerialize</span>, <span class="ident">AnchorDeserialize</span>, <span class="ident">Default</span>)]</span>
+    <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">AdapterPositionFlags</span> {
+        <span class="kw">pub</span> <span class="ident">flags</span>: <span class="ident">u8</span>,
+    }
+}
+
 <span class="comment">// `AdapterPositionFlags` fits requriements for `Pod`, but bitflags macro makes auto-deriving it problematic</span>
 <span class="kw">unsafe</span> <span class="kw">impl</span> <span class="ident">Pod</span> <span class="kw">for</span> <span class="ident">AdapterPositionFlags</span> {}
 
 <span class="kw">impl</span> <span class="ident">AccountPosition</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">kind</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">PositionKind</span> {
-        <span class="ident">PositionKind::from_integer</span>(<span class="self">self</span>.<span class="ident">kind</span>).<span class="ident">unwrap</span>()
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">kind</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">TokenKind</span> {
+        <span class="ident">TokenKind::from_integer</span>(<span class="self">self</span>.<span class="ident">kind</span>).<span class="ident">unwrap_or_default</span>()
     }
 
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">calculate_value</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) {
@@ -680,14 +640,14 @@
 
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">collateral_value</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Number128</span> {
         <span class="macro">assert!</span>(
-            <span class="self">self</span>.<span class="ident">kind</span>() <span class="op">==</span> <span class="ident">PositionKind::Deposit</span> <span class="op">|</span><span class="op">|</span> <span class="self">self</span>.<span class="ident">kind</span>() <span class="op">==</span> <span class="ident">PositionKind::AdapterCollateral</span>
+            <span class="self">self</span>.<span class="ident">kind</span>() <span class="op">==</span> <span class="ident">TokenKind::Collateral</span> <span class="op">|</span><span class="op">|</span> <span class="self">self</span>.<span class="ident">kind</span>() <span class="op">==</span> <span class="ident">TokenKind::AdapterCollateral</span>
         );
 
         <span class="ident">Number128::from_decimal</span>(<span class="self">self</span>.<span class="ident">value_modifier</span>, <span class="op">-</span><span class="number">2</span>) <span class="op">*</span> <span class="self">self</span>.<span class="ident">value</span>()
     }
 
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">required_collateral_value</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Number128</span> {
-        <span class="macro">assert_eq!</span>(<span class="self">self</span>.<span class="ident">kind</span>(), <span class="ident">PositionKind::Claim</span>);
+        <span class="macro">assert_eq!</span>(<span class="self">self</span>.<span class="ident">kind</span>(), <span class="ident">TokenKind::Claim</span>);
 
         <span class="kw">let</span> <span class="ident">modifier</span> <span class="op">=</span> <span class="ident">Number128::from_decimal</span>(<span class="self">self</span>.<span class="ident">value_modifier</span>, <span class="op">-</span><span class="number">2</span>);
 
@@ -715,13 +675,24 @@
     }
 
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">may_be_registered_or_closed</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">approvals</span>: <span class="kw-2">&amp;</span>[<span class="ident">Approver</span>]) -&gt; <span class="ident">bool</span> {
-        <span class="ident">approvals</span>.<span class="ident">contains</span>(<span class="kw-2">&amp;</span><span class="ident">Approver::MarginAccountAuthority</span>)
-            <span class="op">&amp;&amp;</span> <span class="kw">match</span> <span class="self">self</span>.<span class="ident">kind</span>() {
-                <span class="ident">PositionKind::NoValue</span> <span class="op">|</span> <span class="ident">PositionKind::Deposit</span> =&gt; <span class="bool-val">true</span>,
-                <span class="ident">PositionKind::Claim</span> <span class="op">|</span> <span class="ident">PositionKind::AdapterCollateral</span> =&gt; {
-                    <span class="ident">approvals</span>.<span class="ident">contains</span>(<span class="kw-2">&amp;</span><span class="ident">Approver::Adapter</span>(<span class="self">self</span>.<span class="ident">adapter</span>))
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">authority_approved</span> <span class="op">=</span> <span class="bool-val">false</span>;
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">adapter_approved</span> <span class="op">=</span> <span class="bool-val">false</span>;
+
+        <span class="kw">for</span> <span class="ident">approval</span> <span class="kw">in</span> <span class="ident">approvals</span> {
+            <span class="kw">match</span> <span class="ident">approval</span> {
+                <span class="ident">Approver::MarginAccountAuthority</span> =&gt; <span class="ident">authority_approved</span> <span class="op">=</span> <span class="bool-val">true</span>,
+                <span class="ident">Approver::Adapter</span>(<span class="ident">approving_adapter</span>) =&gt; {
+                    <span class="ident">adapter_approved</span> <span class="op">=</span> <span class="kw-2">*</span><span class="ident">approving_adapter</span> <span class="op">==</span> <span class="self">self</span>.<span class="ident">adapter</span>
                 }
             }
+        }
+
+        <span class="kw">match</span> <span class="self">self</span>.<span class="ident">kind</span>() {
+            <span class="ident">TokenKind::Collateral</span> =&gt; <span class="ident">authority_approved</span> <span class="op">&amp;&amp;</span> <span class="op">!</span><span class="ident">adapter_approved</span>,
+            <span class="ident">TokenKind::Claim</span> <span class="op">|</span> <span class="ident">TokenKind::AdapterCollateral</span> =&gt; {
+                <span class="ident">authority_approved</span> <span class="op">&amp;&amp;</span> <span class="ident">adapter_approved</span>
+            }
+        }
     }
 }
 
@@ -745,16 +716,15 @@
 }
 
 <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">any</span>(<span class="ident">test</span>, <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;cli&quot;</span>))]</span>
-<span class="kw">impl</span> <span class="ident">Serialize</span> <span class="kw">for</span> <span class="ident">PositionKind</span> {
+<span class="kw">impl</span> <span class="ident">Serialize</span> <span class="kw">for</span> <span class="ident">TokenKind</span> {
     <span class="kw">fn</span> <span class="ident">serialize</span><span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">serializer</span>: <span class="ident">S</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">S::Ok</span>, <span class="ident">S::Error</span><span class="op">&gt;</span>
     <span class="kw">where</span>
         <span class="ident">S</span>: <span class="ident">Serializer</span>,
     {
         <span class="ident">serializer</span>.<span class="ident">serialize_str</span>(<span class="kw">match</span> <span class="kw-2">*</span><span class="self">self</span> {
-            <span class="ident">PositionKind::NoValue</span> =&gt; <span class="string">&quot;NoValue&quot;</span>,
-            <span class="ident">PositionKind::Claim</span> =&gt; <span class="string">&quot;Claim&quot;</span>,
-            <span class="ident">PositionKind::Deposit</span> =&gt; <span class="string">&quot;Deposit&quot;</span>,
-            <span class="ident">PositionKind::AdapterCollateral</span> =&gt; <span class="string">&quot;AdapterCollateral&quot;</span>,
+            <span class="ident">TokenKind::Claim</span> =&gt; <span class="string">&quot;Claim&quot;</span>,
+            <span class="ident">TokenKind::Collateral</span> =&gt; <span class="string">&quot;Collateral&quot;</span>,
+            <span class="ident">TokenKind::AdapterCollateral</span> =&gt; <span class="string">&quot;AdapterCollateral&quot;</span>,
         })
     }
 }
@@ -828,7 +798,7 @@
         <span class="self">self</span>.<span class="ident">map</span>[<span class="self">self</span>.<span class="ident">length</span>] <span class="op">=</span> <span class="ident">key</span>;
 
         <span class="self">self</span>.<span class="ident">length</span> <span class="op">+</span><span class="op">=</span> <span class="number">1</span>;
-        (<span class="self">self</span>.<span class="ident">map</span>[..<span class="self">self</span>.<span class="ident">length</span>]).<span class="ident">sort_by_key</span>(<span class="op">|</span><span class="ident">p</span><span class="op">|</span> <span class="ident">p</span>.<span class="ident">mint</span>);
+        <span class="self">self</span>.<span class="ident">map</span>[..<span class="self">self</span>.<span class="ident">length</span>].<span class="ident">sort_by_key</span>(<span class="op">|</span><span class="ident">p</span><span class="op">|</span> <span class="ident">p</span>.<span class="ident">mint</span>);
 
         <span class="comment">// mark position as not free</span>
         <span class="ident">free_position</span>.<span class="ident">token</span> <span class="op">=</span> <span class="ident">mint</span>;

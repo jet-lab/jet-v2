@@ -1,3 +1,3 @@
 (function() {var implementors = {};
-implementors["jet_margin"] = [{"text":"impl Contiguous for <a class=\"enum\" href=\"jet_margin/enum.PositionKind.html\" title=\"enum jet_margin::PositionKind\">PositionKind</a>","synthetic":false,"types":["jet_margin::state::account::positions::PositionKind"]}];
+implementors["jet_margin"] = [{"text":"impl Contiguous for <a class=\"enum\" href=\"jet_margin/enum.TokenKind.html\" title=\"enum jet_margin::TokenKind\">TokenKind</a>","synthetic":false,"types":["jet_margin::state::config::TokenKind"]}];
 if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

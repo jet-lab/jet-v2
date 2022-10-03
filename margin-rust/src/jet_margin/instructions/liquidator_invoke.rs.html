@@ -130,7 +130,7 @@
 <span class="kw">use</span> <span class="ident">jet_metadata::MarginAdapterMetadata</span>;
 
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::adapter</span>::{<span class="self">self</span>, <span class="ident">InvokeAdapter</span>};
-<span class="kw">use</span> <span class="kw">crate</span>::{<span class="ident">events</span>, <span class="ident">ErrorCode</span>, <span class="ident">Liquidation</span>, <span class="ident">MarginAccount</span>, <span class="ident">Valuation</span>};
+<span class="kw">use</span> <span class="kw">crate</span>::{<span class="ident">events</span>, <span class="ident">ErrorCode</span>, <span class="ident">Liquidation</span>, <span class="ident">LiquidationState</span>, <span class="ident">MarginAccount</span>, <span class="ident">Valuation</span>};
 
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Accounts</span>)]</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">LiquidatorInvoke</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span> {
@@ -139,7 +139,7 @@
 
     <span class="doccomment">/// Account to persist the state of the liquidation</span>
     <span class="attribute">#[<span class="ident">account</span>(<span class="kw-2">mut</span>)]</span>
-    <span class="kw">pub</span> <span class="ident">liquidation</span>: <span class="ident">AccountLoader</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span>, <span class="ident">Liquidation</span><span class="op">&gt;</span>,
+    <span class="kw">pub</span> <span class="ident">liquidation</span>: <span class="ident">AccountLoader</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span>, <span class="ident">LiquidationState</span><span class="op">&gt;</span>,
 
     <span class="doccomment">/// The margin account to proxy an action for</span>
     <span class="attribute">#[<span class="ident">account</span>(<span class="kw-2">mut</span>,
@@ -183,7 +183,7 @@
         <span class="ident">event</span>.<span class="ident">emit</span>();
     }
 
-    <span class="kw">let</span> <span class="ident">liquidation</span> <span class="op">=</span> <span class="kw-2">&amp;mut</span> <span class="kw-2">*</span><span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">liquidation</span>.<span class="ident">load_mut</span>()<span class="question-mark">?</span>;
+    <span class="kw">let</span> <span class="ident">liquidation</span> <span class="op">=</span> <span class="kw-2">&amp;mut</span> <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">liquidation</span>.<span class="ident">load_mut</span>()<span class="question-mark">?</span>.<span class="ident">state</span>;
     <span class="kw">let</span> <span class="ident">end_value</span> <span class="op">=</span> <span class="ident">update_and_verify_liquidation</span>(
         <span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">margin_account</span>.<span class="ident">load</span>()<span class="question-mark">?</span>,
         <span class="ident">liquidation</span>,

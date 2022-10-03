@@ -85,6 +85,7 @@
 <span id="85">85</span>
 <span id="86">86</span>
 <span id="87">87</span>
+<span id="88">88</span>
 </pre><pre class="rust"><code><span class="comment">// SPDX-License-Identifier: AGPL-3.0-or-later</span>
 <span class="comment">//</span>
 <span class="comment">// Copyright (C) 2022 JET PROTOCOL HOLDINGS, LLC.</span>
@@ -166,6 +167,7 @@
     }
 
     <span class="macro">emit!</span>(<span class="ident">events::PositionClosed</span> {
+        <span class="ident">margin_account</span>: <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">margin_account</span>.<span class="ident">key</span>(),
         <span class="ident">authority</span>: <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">authority</span>.<span class="ident">key</span>(),
         <span class="ident">token</span>: <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">position_token_mint</span>.<span class="ident">key</span>(),
     });
