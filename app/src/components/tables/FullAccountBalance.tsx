@@ -236,7 +236,13 @@ export function FullAccountBalance(): JSX.Element {
         const poolPosition = currentAccount.poolPositions[token.symbol];
         if (poolPosition) {
           const netBalance = poolPosition.depositBalance.sub(poolPosition.loanBalance);
-          const fiatValue = currencyAbbrev(poolPosition.depositValue - poolPosition.loanValue, true);
+          const fiatValue = currencyAbbrev(
+            poolPosition.depositValue - poolPosition.loanValue,
+            true,
+            undefined,
+            undefined,
+            true
+          );
           const percent =
             (poolPosition.depositBalance.tokens + poolPosition.loanBalance.tokens) /
             (currentAccount.summary.depositedValue + currentAccount.summary.borrowedValue);

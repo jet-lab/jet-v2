@@ -44,7 +44,13 @@ export function useCurrencyFormatting() {
   );
 
   // Abbreviate large currency amounts
-  function currencyAbbrev(total: number, fiatValues?: boolean, price?: number, decimals?: number): string {
+  function currencyAbbrev(
+    total: number,
+    fiatValues?: boolean,
+    price?: number,
+    decimals?: number,
+    preciseThousands?: boolean
+  ): string {
     let t = total;
     if (price && fiatValues) {
       t = total * price;
@@ -56,10 +62,15 @@ export function useCurrencyFormatting() {
       return currencyFormatter(t / 1000000000, fiatValues, 1) + 'B';
     } else if (t > 1000000) {
       return currencyFormatter(t / 1000000, fiatValues, 1) + 'M';
-    } else if (t > 9999) {
-      return currencyFormatter(t / 1000, fiatValues, 1) + 'K';
     } else if (t > 1000) {
-      return currencyFormatter(t, fiatValues, 2);
+      if (preciseThousands) {
+        if (t > 9999) {
+          return currencyFormatter(t / 1000, fiatValues, 1) + 'K';
+        } else if (t > 1000) {
+          return currencyFormatter(t, fiatValues, 2);
+        }
+      }
+      return currencyFormatter(t / 1000, fiatValues, 1) + 'K';
     } else {
       return currencyFormatter(t, fiatValues, fiatValues ? 2 : decimals);
     }
