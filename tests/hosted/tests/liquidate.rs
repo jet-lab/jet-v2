@@ -33,18 +33,10 @@ struct Scenario1 {
 /// C ratio = 127%
 #[allow(clippy::erasing_op)]
 async fn scenario1() -> Result<Scenario1> {
-    scenario(false).await
-}
-
-#[allow(clippy::erasing_op)]
-async fn scenario(debug: bool) -> Result<Scenario1> {
     let ctx = test_context().await;
     let usdc = setup_token(ctx, 6, 1_00, 4_00, 1.0).await?;
     let tsol = setup_token(ctx, 9, 95, 4_00, 100.0).await?;
 
-    if debug {
-        println!("set up the tokens");
-    }
     // Create wallet for the liquidator
     let user_a = setup_user(
         ctx,
@@ -53,9 +45,6 @@ async fn scenario(debug: bool) -> Result<Scenario1> {
     .await?;
     let user_b = setup_user(ctx, vec![(tsol, 0, 10_000 * ONE_TSOL)]).await?;
 
-    if debug {
-        println!("set up the users");
-    }
     // Have each user borrow the other's funds
     ctx.rpc
         .send_and_confirm_condensed(vec![
@@ -70,9 +59,6 @@ async fn scenario(debug: bool) -> Result<Scenario1> {
         .await
         .unwrap();
 
-    if debug {
-        println!("first borrow done");
-    }
     ctx.rpc
         .send_and_confirm_condensed(vec![
             ctx.tokens.refresh_to_same_price_tx(&usdc).await?,
@@ -84,9 +70,6 @@ async fn scenario(debug: bool) -> Result<Scenario1> {
         ])
         .await?;
 
-    if debug {
-        println!("got to the middle");
-    }
     // User A deposited 5'000'000 USD worth, borrowed 800'000 USD worth
     // User B deposited 1'000'000 USD worth, borrowed 3'500'000 USD worth
     // TSOL collateral counts 95%
@@ -116,22 +99,6 @@ async fn scenario(debug: bool) -> Result<Scenario1> {
         usdc,
         liquidator: TestLiquidator::new(ctx).await?,
     })
-}
-
-/// The liquidation tests have a history of being flakey. In case of flakiness,
-/// this test can help diagnose if the cause was the setup code, and help narrow
-/// down where in the setup code the failure occurred. We don't need to
-/// reproduce the issue reliably to debug it because this will print it every
-/// time. Also you won't get noise from other tests running simultaneously
-/// because this is the only test with debug enabled.
-#[tokio::test(flavor = "multi_thread")]
-#[cfg_attr(not(feature = "localnet"), serial_test::serial)]
-async fn scenario_runs() -> Result<()> {
-    println!("starting the test");
-    scenario(true).await?;
-    println!("finished the test");
-
-    Ok(())
 }
 
 /// Account liquidations
