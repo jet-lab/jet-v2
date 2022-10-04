@@ -119,7 +119,7 @@ export function FullAccountBalance(): JSX.Element {
     if (accounts && balance?.tokenSymbol) {
       render = (
         <Text type={balance.depositBalance.isZero() ? undefined : 'success'}>
-          {currencyAbbrev(balance.depositBalance.tokens, false, undefined, balance.depositBalance.decimals / 2)}
+          {currencyAbbrev(balance.depositBalance.tokens, false, undefined, balance.depositBalance.decimals / 2, true)}
         </Text>
       );
     }
@@ -133,7 +133,7 @@ export function FullAccountBalance(): JSX.Element {
     if (accounts && balance?.tokenSymbol) {
       render = (
         <Text type={balance.loanBalance.isZero() ? undefined : 'warning'}>
-          {currencyAbbrev(balance.loanBalance.tokens, false, undefined, balance.loanBalance.decimals / 2)}
+          {currencyAbbrev(balance.loanBalance.tokens, false, undefined, balance.loanBalance.decimals / 2, true)}
         </Text>
       );
     }
@@ -157,7 +157,7 @@ export function FullAccountBalance(): JSX.Element {
     if (accounts && balance?.tokenSymbol) {
       render = (
         <Text type={side === 'borrow' ? 'danger' : 'success'}>
-          {formatRate(balance[side === 'borrow' ? 'borrowRate' : 'depositRate'])}
+          {formatRate(balance[side === 'borrow' ? 'borrowRate' : 'depositRate'], 2)}
         </Text>
       );
     }
@@ -236,7 +236,14 @@ export function FullAccountBalance(): JSX.Element {
         const poolPosition = currentAccount.poolPositions[token.symbol];
         if (poolPosition) {
           const netBalance = poolPosition.depositBalance.sub(poolPosition.loanBalance);
-          const fiatValue = currencyAbbrev(poolPosition.depositValue - poolPosition.loanValue, true);
+          const fiatValue = currencyAbbrev(
+            poolPosition.depositValue - poolPosition.loanValue,
+            true,
+            undefined,
+            undefined,
+            true,
+            true
+          );
           const percent =
             (poolPosition.depositBalance.tokens + poolPosition.loanBalance.tokens) /
             (currentAccount.summary.depositedValue + currentAccount.summary.borrowedValue);

@@ -24,9 +24,10 @@ use jet_margin_sdk::{
     ix_builder::{
         get_control_authority_address, get_metadata_address, ControlIxBuilder, MarginIxBuilder,
     },
-    jet_metadata::PositionTokenMetadata,
+    solana::transaction::SendTransactionBuilder,
+    tx_builder::global_initialize_instructions,
 };
-use jet_metadata::TokenKind;
+use jet_metadata::{PositionTokenMetadata, TokenKind};
 use jet_proto_math::fixed_point::Fp32;
 use jet_simulation::{
     create_wallet, generate_keypair, send_and_confirm, solana_rpc_api::SolanaRpcClient,
@@ -338,16 +339,18 @@ impl TestManager {
             .await?
             .is_none()
         {
-            self.create_authority().await?;
+            self.init_globals().await?;
         }
 
         Ok(())
     }
 
-    pub async fn create_authority(&self) -> Result<()> {
-        let ix = ControlIxBuilder::new(self.client.payer().pubkey()).create_authority();
+    pub async fn init_globals(&self) -> Result<()> {
+        let payer = self.client.payer().pubkey();
 
-        send_and_confirm(&self.client, &[ix], &[]).await?;
+        self.client
+            .send_and_confirm(global_initialize_instructions(payer))
+            .await?;
         Ok(())
     }
 
@@ -705,6 +708,16 @@ impl<P: Proxy> BondsUser<P> {
                 .lend_order(&self.proxy.pubkey(), None, None, params, seed)?;
         self.manager
             .sign_send_transaction(&[self.proxy.invoke_signed(lend)], Some(&[&self.owner]))
+            .await
+    }
+
+    pub async fn cancel_order(&self, order_id: u128) -> Result<Signature> {
+        let cancel = self
+            .manager
+            .ix_builder
+            .cancel_order(self.proxy.pubkey(), order_id)?;
+        self.manager
+            .sign_send_transaction(&[self.proxy.invoke_signed(cancel)], Some(&[&self.owner]))
             .await
     }
 }

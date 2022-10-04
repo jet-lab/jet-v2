@@ -13,7 +13,7 @@ to the `package.json`
 From the package root, run:
 
 ```
-wasm-pack build --target nodejs libraries/ts/wasm-utils
+wasm-pack build --target nodejs libraries/ts/bonds/wasm-utils
 ```
 
 And finally,

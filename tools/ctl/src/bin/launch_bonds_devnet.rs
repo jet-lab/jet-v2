@@ -1,7 +1,5 @@
-use std::{fs::OpenOptions, io::Write};
-
 use anyhow::Result;
-use jet_margin_sdk::bonds::{event_queue_len, orderbook_slab_len, BondManager, BondsIxBuilder};
+use jet_margin_sdk::bonds::{event_queue_len, orderbook_slab_len, BondsIxBuilder};
 use jetctl::{
     actions::bonds::BondMarketParameters,
     client::{Client, ClientConfig, Plan},
@@ -140,63 +138,6 @@ async fn create_orderbook_accounts(
         .build())
 }
 
-async fn generate_config_file(client: &Client, bonds: &BondsIxBuilder) -> Result<()> {
-    let bond_manager: BondManager = client.read_anchor_account(&bonds.manager()).await?;
-
-    let json = format!(
-        "{{
-\"programId\": \"{}\",
-\"bondManager\": \"{{
-    \"symbol\": USDC,
-    \"address\": \"{}\",
-    \"versionTag\": \"{}\",
-    \"airspace\": \"{}\",
-    \"orderbookMarketState\": \"{}\",
-    \"eventQueue\": \"{}\",
-    \"asks\": \"{}\",
-    \"bids\": \"{}\",
-    \"underlyingTokenMint\": \"{}\",
-    \"underlyingTokenVault\": \"{}\",
-    \"bondTicketMint\": \"{}\",
-    \"claimsMint\": \"{}\",
-    \"collateralMint\": \"{}\",
-    \"underlyingOracle\": \"{}\",
-    \"ticketOracle\": \"{}\",
-    \"seed\": \"{:?}\",
-    \"orderbookPaused\": \"{}\",
-    \"ticketsPaused\": \"{}\",
-    \"duration\": \"{}\",
-}}",
-        jet_margin_sdk::bonds::ID,
-        bonds.manager(),
-        bond_manager.version_tag,
-        bond_manager.airspace,
-        bond_manager.orderbook_market_state,
-        bond_manager.event_queue,
-        bond_manager.asks,
-        bond_manager.bids,
-        bond_manager.underlying_token_mint,
-        bond_manager.underlying_token_vault,
-        bond_manager.bond_ticket_mint,
-        bond_manager.claims_mint,
-        bond_manager.collateral_mint,
-        bond_manager.underlying_oracle,
-        bond_manager.ticket_oracle,
-        bond_manager.seed.to_vec(),
-        bond_manager.orderbook_paused,
-        bond_manager.tickets_paused,
-        bond_manager.duration,
-    );
-    let mut io = OpenOptions::new()
-        .write(true)
-        .create(true)
-        .truncate(true)
-        .open(CONFIG_PATH.to_string())?;
-    io.write_all(json.as_bytes())?;
-
-    Ok(())
-}
-
 #[tokio::main]
 async fn main() -> Result<()> {
     let client_config = ClientConfig::new(
@@ -236,8 +177,6 @@ async fn main() -> Result<()> {
         .instructions([], ["pause-market"], [bonds.pause_order_matching()?])
         .build();
     client.execute(pause).await?;
-
-    generate_config_file(&client, &bonds).await?;
 
     Ok(())
 }

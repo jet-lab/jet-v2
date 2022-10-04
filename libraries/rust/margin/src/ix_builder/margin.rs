@@ -15,18 +15,20 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+use anchor_spl::associated_token::{self, get_associated_token_address};
+use jet_margin::seeds::{ADAPTER_CONFIG_SEED, LIQUIDATOR_CONFIG_SEED, TOKEN_CONFIG_SEED};
 use solana_sdk::instruction::Instruction;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::system_program::ID as SYSTEM_PROGAM_ID;
 use solana_sdk::sysvar::{rent::Rent, SysvarId};
 
 use anchor_lang::prelude::{Id, System, ToAccountMetas};
-use anchor_lang::InstructionData;
+use anchor_lang::{system_program, InstructionData};
 use anchor_spl::token::Token;
 
-use jet_margin::accounts as ix_account;
 use jet_margin::instruction as ix_data;
 use jet_margin::program::JetMargin;
+use jet_margin::{accounts as ix_account, TokenConfigUpdate};
 
 /// Utility for creating instructions to interact with the margin
 /// program for a specific account.
@@ -43,6 +45,9 @@ pub struct MarginIxBuilder {
 
     /// The address of the margin account for the owner
     pub address: Pubkey,
+
+    /// The address of the airspace the margin account belongs to
+    pub airspace: Pubkey,
 
     /// The authority to use in place of the owner
     authority: Option<Pubkey>,
@@ -65,6 +70,20 @@ impl MarginIxBuilder {
         payer: Pubkey,
         authority: Option<Pubkey>,
     ) -> Self {
+        Self::new_with_payer_and_airspace(owner, seed, payer, Pubkey::default(), authority)
+    }
+
+    /// Create a new [MarginIxBuilder] with a custom payer and authority.
+    /// The authority is expected to sign the instructions generated, and
+    /// is normally the margin account or its registered liquidator.
+    /// If the authority is not set, it defaults to the margin account.
+    pub fn new_with_payer_and_airspace(
+        owner: Pubkey,
+        seed: u16,
+        payer: Pubkey,
+        airspace: Pubkey,
+        authority: Option<Pubkey>,
+    ) -> Self {
         let (address, _) = Pubkey::find_program_address(
             &[owner.as_ref(), seed.to_le_bytes().as_ref()],
             &jet_margin::ID,
@@ -75,6 +94,7 @@ impl MarginIxBuilder {
             payer,
             address,
             authority,
+            airspace,
         }
     }
 
@@ -215,6 +235,51 @@ impl MarginIxBuilder {
         }
     }
 
+    /// Get instruction to refresh the config for a position
+    ///
+    /// # Params
+    ///
+    /// `position_token_mint` - The mint for the position to be refreshed
+    pub fn refresh_position_config(&self, position_token_mint: &Pubkey) -> Instruction {
+        let config = MarginConfigIxBuilder::new(self.airspace, self.payer)
+            .derive_token_config(position_token_mint);
+
+        let accounts = ix_account::RefreshPositionConfig {
+            config,
+            margin_account: self.address,
+        };
+
+        Instruction {
+            program_id: JetMargin::id(),
+            data: ix_data::RefreshPositionConfig.data(),
+            accounts: accounts.to_account_metas(None),
+        }
+    }
+
+    /// Get instruction to refresh the price value for a deposit account
+    ///
+    /// # Params
+    ///
+    /// `token_config` - The token config for the position to be refreshed
+    /// `price_oracle` - The price oracle for the token, stored in the token config
+    pub fn refresh_deposit_position(
+        &self,
+        token_config: &Pubkey,
+        price_oracle: &Pubkey,
+    ) -> Instruction {
+        let accounts = ix_account::RefreshDepositPosition {
+            config: *token_config,
+            price_oracle: *price_oracle,
+            margin_account: self.address,
+        };
+
+        Instruction {
+            program_id: JetMargin::id(),
+            data: ix_data::RefreshDepositPosition.data(),
+            accounts: accounts.to_account_metas(None),
+        }
+    }
+
     /// Get instruction to invoke through an adapter
     ///
     /// # Params
@@ -315,6 +380,61 @@ impl MarginIxBuilder {
         }
     }
 
+    /// Create a new token account registered as a position
+    ///
+    /// Can be used to deposit tokens into the custody of the margin account, without
+    /// the use of any adapters to manage it.
+    ///
+    /// # Params
+    ///
+    /// `token_mint` - The mint for the token to be deposited
+    pub fn create_deposit_position(&self, token_mint: Pubkey) -> Instruction {
+        let config_ix = MarginConfigIxBuilder::new(self.airspace, self.payer);
+        let token_account = get_associated_token_address(&self.address, &token_mint);
+        let accounts = ix_account::CreateDepositPosition {
+            margin_account: self.address,
+            authority: self.authority(),
+            payer: self.payer,
+            mint: token_mint,
+            config: config_ix.derive_token_config(&token_mint),
+            token_account,
+            associated_token_program: associated_token::ID,
+            token_program: spl_token::ID,
+            system_program: system_program::ID,
+            rent: Rent::id(),
+        };
+
+        Instruction {
+            program_id: jet_margin::ID,
+            accounts: accounts.to_account_metas(None),
+            data: ix_data::CreateDepositPosition.data(),
+        }
+    }
+
+    /// Transfer tokens into or out of a deposit account associated with the margin account
+    pub fn transfer_deposit(
+        &self,
+        source_owner: Pubkey,
+        source: Pubkey,
+        destination: Pubkey,
+        amount: u64,
+    ) -> Instruction {
+        let accounts = ix_account::TransferDeposit {
+            owner: self.owner,
+            margin_account: self.address,
+            source_owner,
+            source,
+            destination,
+            token_program: spl_token::ID,
+        };
+
+        Instruction {
+            program_id: jet_margin::ID,
+            data: ix_data::TransferDeposit { amount }.data(),
+            accounts: accounts.to_account_metas(None),
+        }
+    }
+
     /// Verify that an account is healthy
     ///
     pub fn verify_healthy(&self) -> Instruction {
@@ -343,6 +463,99 @@ impl MarginIxBuilder {
     }
 }
 
+/// Utility for creating instructions that modify configuration for the margin program within
+/// an airspace
+#[derive(Eq, PartialEq, Clone)]
+pub struct MarginConfigIxBuilder {
+    airspace: Pubkey,
+    authority: Pubkey,
+    payer: Pubkey,
+}
+
+impl MarginConfigIxBuilder {
+    /// Create a new [MarginConfigIxBuilder] for a given airspace, with the payer as the authority
+    pub fn new(airspace: Pubkey, payer: Pubkey) -> Self {
+        Self {
+            airspace,
+            payer,
+            authority: payer,
+        }
+    }
+
+    /// Set the configuration for a token that can be used as a position within a margin account
+    pub fn configure_token(
+        &self,
+        token_mint: Pubkey,
+        new_config: Option<TokenConfigUpdate>,
+    ) -> Instruction {
+        let accounts = ix_account::ConfigureToken {
+            authority: self.authority,
+            airspace: self.airspace,
+            payer: self.payer,
+            mint: token_mint,
+            token_config: self.derive_token_config(&token_mint),
+            system_program: system_program::ID,
+        };
+
+        Instruction {
+            program_id: jet_margin::ID,
+            data: ix_data::ConfigureToken { update: new_config }.data(),
+            accounts: accounts.to_account_metas(None),
+        }
+    }
+
+    /// Set the configuration for an adapter program
+    pub fn configure_adapter(&self, program_id: Pubkey, is_adapter: bool) -> Instruction {
+        let accounts = ix_account::ConfigureAdapter {
+            authority: self.authority,
+            airspace: self.airspace,
+            payer: self.payer,
+            adapter_program: program_id,
+            adapter_config: self.derive_adapter_config(&program_id),
+            system_program: system_program::ID,
+        };
+
+        Instruction {
+            program_id: jet_margin::ID,
+            data: ix_data::ConfigureAdapter { is_adapter }.data(),
+            accounts: accounts.to_account_metas(None),
+        }
+    }
+
+    /// Set the configuration for a liquidator
+    pub fn configure_liquidator(&self, liquidator: Pubkey, is_liquidator: bool) -> Instruction {
+        let accounts = ix_account::ConfigureLiquidator {
+            authority: self.authority,
+            airspace: self.airspace,
+            payer: self.payer,
+            liquidator,
+            liquidator_config: self.derive_liquidator_config(&liquidator),
+            system_program: system_program::ID,
+        };
+
+        Instruction {
+            program_id: jet_margin::ID,
+            data: ix_data::ConfigureLiquidator { is_liquidator }.data(),
+            accounts: accounts.to_account_metas(None),
+        }
+    }
+
+    /// Derive address for the config account for a given token
+    pub fn derive_token_config(&self, token_mint: &Pubkey) -> Pubkey {
+        derive_token_config(&self.airspace, token_mint)
+    }
+
+    /// Derive address for the config account for a given adapter
+    pub fn derive_adapter_config(&self, adapter_program_id: &Pubkey) -> Pubkey {
+        derive_adapter_config(&self.airspace, adapter_program_id)
+    }
+
+    /// Derive address for the config account for a given liquidator
+    pub fn derive_liquidator_config(&self, liquidator: &Pubkey) -> Pubkey {
+        derive_liquidator_config(&self.airspace, liquidator)
+    }
+}
+
 /// The token account that holds position tokens when the position is custodied
 /// by the margin account
 pub fn owned_position_token_account(
@@ -353,6 +566,41 @@ pub fn owned_position_token_account(
         &[margin_account.as_ref(), position_token_mint.as_ref()],
         &JetMargin::id(),
     )
+}
+
+/// Derive address for the config account for a given token
+pub fn derive_token_config(airspace: &Pubkey, token_mint: &Pubkey) -> Pubkey {
+    Pubkey::find_program_address(
+        &[TOKEN_CONFIG_SEED, airspace.as_ref(), token_mint.as_ref()],
+        &jet_margin::ID,
+    )
+    .0
+}
+
+/// Derive address for the config account for a given adapter
+pub fn derive_adapter_config(airspace: &Pubkey, adapter_program_id: &Pubkey) -> Pubkey {
+    Pubkey::find_program_address(
+        &[
+            ADAPTER_CONFIG_SEED,
+            airspace.as_ref(),
+            adapter_program_id.as_ref(),
+        ],
+        &jet_margin::ID,
+    )
+    .0
+}
+
+/// Derive address for the config account for a given liquidator
+pub fn derive_liquidator_config(airspace: &Pubkey, liquidator: &Pubkey) -> Pubkey {
+    Pubkey::find_program_address(
+        &[
+            LIQUIDATOR_CONFIG_SEED,
+            airspace.as_ref(),
+            liquidator.as_ref(),
+        ],
+        &jet_margin::ID,
+    )
+    .0
 }
 
 /// Generic invocation logic that can be applied to any margin account invoke

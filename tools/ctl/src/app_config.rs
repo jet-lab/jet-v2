@@ -24,6 +24,9 @@ use crate::{
 #[serde(rename_all = "camelCase")]
 pub struct JetAppConfig {
     #[serde_as(as = "DisplayFromStr")]
+    pub bonds_program_id: Pubkey,
+
+    #[serde_as(as = "DisplayFromStr")]
     pub control_program_id: Pubkey,
 
     #[serde_as(as = "DisplayFromStr")]
@@ -123,6 +126,7 @@ impl JetAppConfig {
             Self::generate_bond_market_map(client, dir.join("bond-markets.toml")).await?;
 
         Ok(Self {
+            bonds_program_id: jet_margin_sdk::bonds::ID,
             control_program_id: jet_margin_sdk::jet_control::ID,
             margin_program_id: jet_margin_sdk::jet_margin::ID,
             margin_pool_program_id: jet_margin_sdk::jet_margin_pool::ID,

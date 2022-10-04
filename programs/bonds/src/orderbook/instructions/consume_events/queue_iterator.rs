@@ -17,21 +17,17 @@ use crate::{
 
 use super::{ConsumeEvents, EventAccounts, FillAccounts, LoanAccount, OutAccounts, UserAccount};
 
-pub trait Queue<'c, 'info> {
-    fn queue(&self, seeds: Vec<Vec<u8>>) -> Result<EventIterator<'c, 'info>>;
-}
-
-impl<'c, 'info> Queue<'c, 'info> for Context<'_, '_, 'c, 'info, ConsumeEvents<'info>> {
-    fn queue(&self, seeds: Vec<Vec<u8>>) -> Result<EventIterator<'c, 'info>> {
-        let queue = EventQueue::deserialize_market(self.accounts.event_queue.to_account_info())?;
-        Ok(EventIterator {
-            queue: queue.iter(),
-            accounts: self.remaining_accounts.iter(),
-            system_program: self.accounts.system_program.to_account_info(),
-            payer: self.accounts.payer.to_account_info(),
-            seeds: seeds.into_iter(),
-        })
-    }
+pub fn queue<'c, 'info>(
+    ctx: &Context<'_, '_, 'c, 'info, ConsumeEvents<'info>>,
+    seeds: Vec<Vec<u8>>,
+) -> Result<EventIterator<'c, 'info>> {
+    Ok(EventIterator {
+        queue: EventQueue::deserialize_market(ctx.accounts.event_queue.to_account_info())?.iter(),
+        accounts: ctx.remaining_accounts.iter(),
+        system_program: ctx.accounts.system_program.to_account_info(),
+        payer: ctx.accounts.payer.to_account_info(),
+        seeds: seeds.into_iter(),
+    })
 }
 
 pub struct EventIterator<'a, 'info> {
@@ -63,7 +59,9 @@ impl<'a, 'info> EventIterator<'a, 'info> {
             }) => self.extract_fill_accounts(maker_info, taker_info),
             OrderbookEvent::Out(OutInfo { info, .. }) => {
                 Ok(EventAccounts::Out(Box::new(OutAccounts {
-                    user: self.accounts.next_user_account(info.out_account)?,
+                    user: self
+                        .accounts
+                        .next_user_account(info.out_account.to_bytes())?,
                     user_adapter_account: self.accounts.next_adapter_if_needed(info)?,
                 })))
             }
@@ -86,7 +84,7 @@ impl<'a, 'info> EventIterator<'a, 'info> {
                     self.system_program.to_account_info(),
                     &[
                         crate::seeds::SPLIT_TICKET,
-                        &maker_info.fill_account,
+                        &maker_info.fill_account.to_bytes(),
                         &self.seeds.next().ok_or(BondsError::InsufficientSeeds)?,
                     ],
                 )?,
@@ -98,7 +96,7 @@ impl<'a, 'info> EventIterator<'a, 'info> {
                     self.system_program.to_account_info(),
                     &[
                         crate::seeds::OBLIGATION,
-                        &maker_info.fill_account,
+                        &maker_info.fill_account.to_bytes(),
                         &self.seeds.next().ok_or(BondsError::InsufficientSeeds)?,
                     ],
                 )?,
