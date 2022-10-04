@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 
 use anyhow::Result;
 use hosted_tests::{
@@ -8,10 +8,15 @@ use hosted_tests::{
     context::test_context,
 };
 use jet_bonds::orderbook::state::OrderParams;
-use jet_margin_sdk::solana::transaction::SendTransactionBuilder;
 use jet_margin_sdk::{
     ix_builder::MarginIxBuilder,
     margin_integrator::{NoProxy, Proxy},
+    solana::transaction::InverseSendTransactionBuilder,
+    tx_builder::bonds::BondsPositionRefresher,
+};
+use jet_margin_sdk::{
+    margin_integrator::RefreshingProxy, solana::transaction::SendTransactionBuilder,
+    tx_builder::MarginTxBuilder,
 };
 use jet_proto_math::fixed_point::Fp32;
 use jet_simulation::create_wallet;
@@ -46,7 +51,29 @@ async fn margin() -> Result<()> {
         .send_and_confirm_1tx(&[margin.create_account()], &[&wallet])
         .await?;
 
-    let user = BondsUser::new_with_proxy_funded(manager.clone(), wallet, margin).await?;
+    let mut bonds_position_refresher = BondsPositionRefresher {
+        margin_account: margin.pubkey(),
+        bond_markets: HashMap::new(),
+        rpc: client.clone(),
+    };
+    bonds_position_refresher
+        .add_bond_market(manager.ix_builder.manager())
+        .await?;
+
+    let proxy = RefreshingProxy {
+        proxy: margin.clone(),
+        refreshers: vec![
+            Arc::new(MarginTxBuilder::new(
+                client.clone(),
+                None,
+                wallet.pubkey(),
+                0,
+            )),
+            Arc::new(bonds_position_refresher),
+        ],
+    };
+
+    let user = BondsUser::new_with_proxy_funded(manager.clone(), wallet, proxy.clone()).await?;
     user.initialize_margin_user().await?;
 
     let borrower_account = user.load_margin_user().await?;
@@ -64,16 +91,15 @@ async fn margin() -> Result<()> {
         auto_stake: true,
     };
 
-    // margin.refresh_deposit_position(token_config, price_oracle)
-
     // this fails checks in margin after the bonds ix completes successfully
     // FIXME:
     // - get claim registerable in margin
     // - get usdc registerable in margin
     // - register usdc position directly
     // - deposit usdc to position
-    client
-        .send_and_confirm(user.margin_borrow_order(borrow_params)?)
+    user.margin_borrow_order(borrow_params)
+        .await?
+        .send_and_confirm_condensed(&client)
         .await?;
 
     Ok(())

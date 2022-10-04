@@ -28,7 +28,7 @@ pub struct TransactionBuilder {
     /// see above
     pub instructions: Vec<Instruction>,
     /// required for the included instructions, does not include a payer
-    pub signers: Vec<Keypair>,
+    pub signers: Vec<Keypair>, //todo Arc<dyn Signer>
 }
 
 impl Clone for TransactionBuilder {
@@ -86,6 +86,46 @@ impl Concat for TransactionBuilder {
         self.signers.extend(clone_vec(&other.signers).into_iter());
 
         Self { ..self }
+    }
+}
+
+/// Convert types to a TransactionBuilder while including signers. Serves a
+/// similar purpose to From<Instruction>, but it's used when you also need to
+/// add signers.
+pub trait WithSigner: Sized {
+    /// convert to a TransactionBuilder that includes this signer
+    fn with_signer(self, signer: Keypair) -> TransactionBuilder {
+        self.with_signers(&[signer])
+    }
+    /// convert to a TransactionBuilder that includes these signers
+    fn with_signers(self, signers: &[Keypair]) -> TransactionBuilder;
+}
+
+impl WithSigner for Instruction {
+    fn with_signers(self, signers: &[Keypair]) -> TransactionBuilder {
+        TransactionBuilder {
+            instructions: vec![self],
+            signers: clone_vec(signers),
+        }
+    }
+}
+
+impl WithSigner for &[Instruction] {
+    fn with_signers(self, signers: &[Keypair]) -> TransactionBuilder {
+        TransactionBuilder {
+            instructions: self.to_vec(),
+            signers: clone_vec(signers),
+        }
+    }
+}
+
+impl WithSigner for TransactionBuilder {
+    fn with_signers(mut self, signers: &[Keypair]) -> TransactionBuilder {
+        self.signers.extend(clone_vec(signers));
+        TransactionBuilder {
+            instructions: self.instructions,
+            signers: self.signers,
+        }
     }
 }
 

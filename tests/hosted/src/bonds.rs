@@ -538,7 +538,7 @@ impl GenerateProxy for MarginIxBuilder {
     }
 }
 
-pub struct BondsUser<P: GenerateProxy> {
+pub struct BondsUser<P: Proxy> {
     pub owner: Keypair,
     pub proxy: P,
     pub token_acc: Pubkey,
@@ -546,7 +546,7 @@ pub struct BondsUser<P: GenerateProxy> {
     client: Arc<dyn SolanaRpcClient>,
 }
 
-impl<P: Proxy + GenerateProxy> BondsUser<P> {
+impl<P: Proxy> BondsUser<P> {
     pub fn new_with_proxy(manager: Arc<TestManager>, owner: Keypair, proxy: P) -> Result<Self> {
         let token_acc =
             get_associated_token_address(&proxy.pubkey(), &manager.ix_builder.token_mint());
@@ -569,7 +569,9 @@ impl<P: Proxy + GenerateProxy> BondsUser<P> {
         user.fund().await?;
         Ok(user)
     }
+}
 
+impl<P: Proxy + GenerateProxy> BondsUser<P> {
     pub async fn new(manager: Arc<TestManager>) -> Result<Self> {
         let owner = create_wallet(&manager.client, 10 * LAMPORTS_PER_SOL).await?;
         let proxy = P::generate(manager.clone(), &owner).await?;
@@ -583,7 +585,7 @@ impl<P: Proxy + GenerateProxy> BondsUser<P> {
     }
 }
 
-impl<P: Proxy + GenerateProxy> BondsUser<P> {
+impl<P: Proxy> BondsUser<P> {
     pub async fn fund(&self) -> Result<()> {
         let create_token = create_associated_token_account(
             &self.manager.client.payer().pubkey(),
@@ -666,20 +668,17 @@ impl<P: Proxy + GenerateProxy> BondsUser<P> {
             .await
     }
 
-    pub fn margin_borrow_order(&self, params: OrderParams) -> Result<TransactionBuilder> {
-        let refresh = self
-            .manager
-            .ix_builder
-            .refresh_position(self.proxy.pubkey())?;
+    pub async fn margin_borrow_order(
+        &self,
+        params: OrderParams,
+    ) -> Result<Vec<TransactionBuilder>> {
         let borrow = self
             .manager
             .ix_builder
             .margin_borrow_order(self.proxy.pubkey(), params)?;
-
-        Ok(TransactionBuilder {
-            instructions: vec![self.proxy.invoke(refresh), self.proxy.invoke_signed(borrow)],
-            signers: vec![clone(&self.owner)],
-        })
+        self.proxy
+            .refresh_and_invoke_signed(borrow, clone(&self.owner))
+            .await
     }
 
     pub async fn lend_order(&self, params: OrderParams, seed: Vec<u8>) -> Result<Signature> {
@@ -703,7 +702,7 @@ impl<P: Proxy + GenerateProxy> BondsUser<P> {
     }
 }
 
-impl<P: Proxy + GenerateProxy> BondsUser<P> {
+impl<P: Proxy> BondsUser<P> {
     pub fn claim_ticket_key(&self, seed: Vec<u8>) -> Pubkey {
         self.manager
             .ix_builder

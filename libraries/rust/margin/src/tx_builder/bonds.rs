@@ -14,7 +14,7 @@ use crate::{
 };
 
 #[async_trait]
-impl PositionRefresher for MarginBondsIntegrator {
+impl PositionRefresher for BondsPositionRefresher {
     async fn refresh_positions(&self) -> Result<Vec<TransactionBuilder>> {
         let mut ret = vec![];
         for bond_market in self.bond_markets.values() {
@@ -24,8 +24,8 @@ impl PositionRefresher for MarginBondsIntegrator {
                     .positions()
                     .filter(|p| p.adapter == jet_bonds::id())
             {
-                if position.address == bond_market.claims()
-                    || position.address == bond_market.collateral()
+                if position.token == bond_market.claims()
+                    || position.token == bond_market.collateral()
                 {
                     ret.push(bond_market.refresh_position(self.margin_account)?.into())
                 }
@@ -36,14 +36,19 @@ impl PositionRefresher for MarginBondsIntegrator {
     }
 }
 
-struct MarginBondsIntegrator {
-    margin_account: Pubkey,
-    bond_markets: HashMap<Pubkey, BondsIxBuilder>,
-    rpc: Arc<dyn SolanaRpcClient>,
+///
+pub struct BondsPositionRefresher {
+    ///
+    pub margin_account: Pubkey,
+    ///
+    pub bond_markets: HashMap<Pubkey, BondsIxBuilder>,
+    ///
+    pub rpc: Arc<dyn SolanaRpcClient>,
 }
 
-impl MarginBondsIntegrator {
-    async fn add_bond_market(&mut self, manager: Pubkey) -> Result<()> {
+impl BondsPositionRefresher {
+    /// register a bond market to check when refreshing positions
+    pub async fn add_bond_market(&mut self, manager: Pubkey) -> Result<()> {
         self.bond_markets.insert(
             manager,
             get_anchor_account::<BondManager>(self.rpc.clone(), &manager)

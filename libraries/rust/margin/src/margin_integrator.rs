@@ -3,36 +3,30 @@ use std::sync::Arc;
 use anyhow::Result;
 use async_trait::async_trait;
 use futures::future::join_all;
-use solana_sdk::{instruction::Instruction, pubkey::Pubkey};
+use solana_sdk::{instruction::Instruction, pubkey::Pubkey, signature::Keypair};
 
-use crate::{ix_builder::MarginIxBuilder, solana::transaction::TransactionBuilder};
+use crate::{
+    ix_builder::MarginIxBuilder,
+    solana::transaction::{TransactionBuilder, WithSigner},
+};
 
 /// A variant of Proxy with the ability to refresh a margin account's positions.
 /// This makes it easier to invoke_signed an adapter program while abstracting
-/// away all the special requirements of the margin account. This isn't part of
-/// Proxy itself because refreshing positions has expensive dependencies that
-/// shouldn't necessarily be a part of a basic instruction builder (which Proxy
-/// is). These dependencies like an RPC client and ix builders for other
-/// adapters implementing PositionRefresher can be attached to the Proxy using
-/// this struct.
+/// away all the special requirements of the margin account into only this
+/// single struct.
+#[derive(Clone)]
 pub struct RefreshingProxy<P: Proxy> {
-    proxy: P,
-    refreshers: Vec<Arc<dyn PositionRefresher>>,
+    /// underlying proxy
+    pub proxy: P,
+    /// adapter-specific implementations that can refresh positions in a margin
+    /// account
+    pub refreshers: Vec<Arc<dyn PositionRefresher>>,
 }
 
 impl<P: Proxy> RefreshingProxy<P> {
-    /// Refresh the positions using refresh() then invoke_signed the instruction
-    /// through margin
-    async fn refresh_and_invoke_signed(&self, ix: Instruction) -> Result<Vec<TransactionBuilder>> {
-        let mut refresh = self.refresh().await?;
-        refresh.push(self.proxy.invoke_signed(ix).into());
-
-        Ok(refresh)
-    }
-
     /// Just get the instructions necessary to refresh any positions that are
     /// refreshable by the included refreshers.
-    async fn refresh(&self) -> Result<Vec<TransactionBuilder>> {
+    pub async fn refresh(&self) -> Result<Vec<TransactionBuilder>> {
         Ok(join_all(
             self.refreshers
                 .clone()
@@ -48,6 +42,32 @@ impl<P: Proxy> RefreshingProxy<P> {
     }
 }
 
+#[async_trait(?Send)]
+impl<P: Proxy> Proxy for RefreshingProxy<P> {
+    async fn refresh_and_invoke_signed(
+        &self,
+        ix: Instruction,
+        signer: Keypair,
+    ) -> Result<Vec<TransactionBuilder>> {
+        let mut refresh = self.refresh().await?;
+        refresh.push(self.proxy.invoke_signed(ix).with_signer(signer));
+
+        Ok(refresh)
+    }
+
+    fn pubkey(&self) -> Pubkey {
+        self.proxy.pubkey()
+    }
+
+    fn invoke(&self, ix: Instruction) -> Instruction {
+        self.proxy.invoke(ix)
+    }
+
+    fn invoke_signed(&self, ix: Instruction) -> Instruction {
+        self.proxy.invoke_signed(ix)
+    }
+}
+
 /// Enable generic refreshing of any margin positions without caring how
 #[async_trait]
 pub trait PositionRefresher {
@@ -57,6 +77,7 @@ pub trait PositionRefresher {
 
 /// Allows wrapping of instructions for execution by a program that acts as a
 /// proxy, such as margin
+#[async_trait(?Send)]
 pub trait Proxy {
     /// the address of the proxying account, such as the margin account
     fn pubkey(&self) -> Pubkey;
@@ -64,6 +85,15 @@ pub trait Proxy {
     fn invoke(&self, ix: Instruction) -> Instruction;
     /// when the proxy will need to sign
     fn invoke_signed(&self, ix: Instruction) -> Instruction;
+    /// attempt to refresh any positions where the refresh method is understood
+    /// by the proxy implementation.
+    async fn refresh_and_invoke_signed(
+        &self,
+        ix: Instruction,
+        signer: Keypair, //todo Signer
+    ) -> Result<Vec<TransactionBuilder>> {
+        Ok(vec![self.invoke_signed(ix).with_signer(signer)])
+    }
 }
 
 /// Dummy proxy implementation that passes along instructions untouched
