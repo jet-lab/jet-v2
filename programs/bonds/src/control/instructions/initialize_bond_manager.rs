@@ -161,8 +161,11 @@ pub fn handler(
     emit!(BondManagerInitialized {
         version: manager.version_tag,
         address: ctx.accounts.bond_manager.key(),
-        underlying_token: manager.underlying_token_mint,
+        underlying_token_mint: manager.underlying_token_mint,
         duration: manager.duration,
+        airspace: manager.airspace,
+        underlying_oracle: manager.underlying_oracle,
+        ticket_oracle: manager.ticket_oracle,
     });
 
     Ok(())
