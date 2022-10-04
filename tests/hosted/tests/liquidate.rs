@@ -7,7 +7,7 @@ use hosted_tests::{
     test_user::TestLiquidator,
 };
 use jet_margin::ErrorCode;
-use jet_margin_sdk::tokens::TokenPrice;
+use jet_margin_sdk::{solana::transaction::SendTransactionBuilder, tokens::TokenPrice};
 use solana_sdk::native_token::LAMPORTS_PER_SOL;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::Signer;
@@ -46,15 +46,28 @@ async fn scenario1() -> Result<Scenario1> {
     let user_b = setup_user(ctx, vec![(tsol, 0, 10_000 * ONE_TSOL)]).await?;
 
     // Have each user borrow the other's funds
-    ctx.tokens.refresh_to_same_price(&tsol).await?;
-    user_a
-        .user
-        .borrow(&tsol, TokenChange::shift(8000 * ONE_TSOL))
-        .await?;
-    ctx.tokens.refresh_to_same_price(&usdc).await?;
-    user_b
-        .user
-        .borrow(&usdc, TokenChange::shift(3_500_000 * ONE_USDC))
+    ctx.rpc
+        .send_and_confirm_condensed(vec![
+            ctx.tokens.refresh_to_same_price_tx(&tsol).await.unwrap(),
+            user_a
+                .user
+                .tx
+                .borrow(&tsol, TokenChange::shift(8000 * ONE_TSOL))
+                .await
+                .unwrap(),
+        ])
+        .await
+        .unwrap();
+
+    ctx.rpc
+        .send_and_confirm_condensed(vec![
+            ctx.tokens.refresh_to_same_price_tx(&usdc).await?,
+            user_b
+                .user
+                .tx
+                .borrow(&usdc, TokenChange::shift(3_500_000 * ONE_USDC))
+                .await?,
+        ])
         .await?;
 
     // User A deposited 5'000'000 USD worth, borrowed 800'000 USD worth
