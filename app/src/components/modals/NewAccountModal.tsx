@@ -144,7 +144,7 @@ export function NewAccountModal(): JSX.Element {
   if (newAccountModalOpen) {
     return (
       <Modal
-        visible
+        open
         className="header-modal new-account-modal"
         maskClosable={false}
         onCancel={() => {
