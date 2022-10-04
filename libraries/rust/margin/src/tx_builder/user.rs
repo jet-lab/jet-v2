@@ -730,11 +730,8 @@ impl MarginTxBuilder {
                 TokenOracle::Pyth { price, .. } => price,
             };
 
-            instructions.push(
-                self.ix
-                    .refresh_deposit_position(&cfg_addr, &token_oracle)
-                    .into(),
-            );
+            let refresh = self.ix.refresh_deposit_position(&cfg_addr, &token_oracle);
+            instructions.push(refresh.into());
         }
 
         Ok(instructions)
