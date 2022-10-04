@@ -71,6 +71,8 @@ pub fn handler(ctx: Context<Repay>, amount: u64) -> Result<()> {
             .partially_repay_obligation(obligation.sequence_number, amount)?;
     } else {
         emit!(ObligationFulfilled {
+            obligation: obligation.key(),
+            orderbook_user: user.key(),
             borrower: obligation.borrower_account,
             timestamp: Clock::get()?.unix_timestamp,
         });
