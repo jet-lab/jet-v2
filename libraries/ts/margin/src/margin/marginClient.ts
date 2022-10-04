@@ -224,7 +224,8 @@ export class MarginClient {
         // If trade action is swap, set up input amount as well
         // Get value of amount in the first parsed instruction
         if (tradeAction === "swap" && parsedIxnArray[0]) {
-          amountIn = new BN(parsedIxnArray[0].parsed.info.amount)
+          amountIn = new BN(parsedIxnArray[1].parsed.info.amount)
+          amount = new BN(parsedIxnArray[2].parsed.info.amount)
         }
 
         // if we could not find a token transfer, default to token values changes
@@ -255,8 +256,8 @@ export class MarginClient {
                   }
                 })
               })
-              const firstTransferIxSource: string = transferIxs[0].parsed.info.source
-              const finalTransferIxSource: string = transferIxs[transferIxs.length - 1].parsed.info.source
+              const firstTransferIxSource: string = transferIxs[1].parsed.info.source
+              const finalTransferIxSource: string = transferIxs[2].parsed.info.source
               const firstMint = await getAccount(provider.connection, new PublicKey(firstTransferIxSource))
               const sourceAccountMint = await getAccount(provider.connection, new PublicKey(finalTransferIxSource))
               const tokenConfig = Object.values(config.tokens).find(config =>
