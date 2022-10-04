@@ -41,12 +41,14 @@ async fn full_through_margin() -> Result<()> {
 #[allow(unused_variables)] //todo remove this once fixme is addressed
 async fn margin() -> Result<()> {
     let ctx = test_context().await;
-    let manager = Arc::new(BondsTestManager::full(ctx.rpc.clone()).await?);
+    let manager = Arc::new(BondsTestManager::full(ctx.rpc.clone()).await.unwrap());
     let client = manager.client.clone();
-    let ([collateral], _, pricer) = tokens(ctx).await?;
+    let ([collateral], _, pricer) = tokens(ctx).await.unwrap();
 
     // set up user
-    let user = setup_user(ctx, vec![(collateral, 0, u64::MAX / 2)]).await?;
+    let user = setup_user(ctx, vec![(collateral, 0, u64::MAX / 2)])
+        .await
+        .unwrap();
     let margin = user.user.tx.ix.clone();
     let wallet = user.user.signer;
 
@@ -66,15 +68,18 @@ async fn margin() -> Result<()> {
                     client.clone(),
                     &[manager.ix_builder.manager()],
                 )
-                .await?,
+                .await
+                .unwrap(),
             ),
         ],
     };
 
-    let user = BondsUser::new_with_proxy_funded(manager.clone(), wallet, proxy.clone()).await?;
-    user.initialize_margin_user().await?;
+    let user = BondsUser::new_with_proxy_funded(manager.clone(), wallet, proxy.clone())
+        .await
+        .unwrap();
+    user.initialize_margin_user().await.unwrap();
 
-    let borrower_account = user.load_margin_user().await?;
+    let borrower_account = user.load_margin_user().await.unwrap();
     assert_eq!(borrower_account.bond_manager, manager.ix_builder.manager());
 
     // place a borrow order
@@ -89,11 +94,16 @@ async fn margin() -> Result<()> {
         auto_stake: true,
     };
     let mut ixs = vec![
-        pricer.set_oracle_price_tx(&collateral, 1.0)?,
-        pricer.set_oracle_price_tx(&manager.ix_builder.token_mint(), 1.0)?,
+        pricer.set_oracle_price_tx(&collateral, 1.0).unwrap(),
+        pricer
+            .set_oracle_price_tx(&manager.ix_builder.token_mint(), 1.0)
+            .unwrap(),
     ];
-    ixs.extend(user.margin_borrow_order(borrow_params).await?);
-    client.send_and_confirm_condensed(ixs).await?;
+    ixs.extend(user.margin_borrow_order(borrow_params).await.unwrap());
+    client
+        .send_and_confirm_condensed_in_order(ixs)
+        .await
+        .unwrap();
 
     Ok(())
 }

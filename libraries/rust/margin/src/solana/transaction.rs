@@ -103,10 +103,7 @@ pub trait WithSigner: Sized {
 
 impl WithSigner for Instruction {
     fn with_signers(self, signers: &[Keypair]) -> TransactionBuilder {
-        TransactionBuilder {
-            instructions: vec![self],
-            signers: clone_vec(signers),
-        }
+        vec![self].with_signers(signers)
     }
 }
 
@@ -219,7 +216,15 @@ pub trait SendTransactionBuilder {
     }
 
     /// Send, minimizing number of transactions - see `condense` doc
+    /// sends transactions all at once
     async fn send_and_confirm_condensed(
+        &self,
+        transactions: Vec<TransactionBuilder>,
+    ) -> Result<Vec<Signature>>;
+
+    /// Send, minimizing number of transactions - see `condense` doc
+    /// sends transactions one at a time after confirming the last
+    async fn send_and_confirm_condensed_in_order(
         &self,
         transactions: Vec<TransactionBuilder>,
     ) -> Result<Vec<Signature>>;
@@ -244,6 +249,16 @@ impl SendTransactionBuilder for Arc<dyn SolanaRpcClient> {
         condense(&transactions, self.payer())?
             .into_iter()
             .map_async(|tx| self.send_and_confirm(tx))
+            .await
+    }
+
+    async fn send_and_confirm_condensed_in_order(
+        &self,
+        transactions: Vec<TransactionBuilder>,
+    ) -> Result<Vec<Signature>> {
+        condense(&transactions, self.payer())?
+            .into_iter()
+            .map_async_chunked(1, |tx| self.send_and_confirm(tx))
             .await
     }
 }
@@ -276,6 +291,12 @@ pub trait InverseSendTransactionBuilder {
         self,
         client: &C,
     ) -> Result<Vec<Signature>>;
+
+    /// SendTransactionBuilder::send_and_confirm_condensed_in_order
+    async fn send_and_confirm_condensed_in_order<C: SendTransactionBuilder + Sync>(
+        self,
+        client: &C,
+    ) -> Result<Vec<Signature>>;
 }
 
 #[async_trait]
@@ -285,5 +306,12 @@ impl InverseSendTransactionBuilder for Vec<TransactionBuilder> {
         client: &C,
     ) -> Result<Vec<Signature>> {
         client.send_and_confirm_condensed(self).await
+    }
+
+    async fn send_and_confirm_condensed_in_order<C: SendTransactionBuilder + Sync>(
+        self,
+        client: &C,
+    ) -> Result<Vec<Signature>> {
+        client.send_and_confirm_condensed_in_order(self).await
     }
 }
