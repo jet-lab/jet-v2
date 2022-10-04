@@ -1,0 +1,40 @@
+{
+    {
+        "id": 2249,
+        "signature": "35W7ri8p9UFZivBqGkt6dupgxQJNC2VvgCsRN8GF9B3F7MRzNWdh8HsYh88cCRN5uiY9iKjr5Vjmy8RycbHuykqb",
+        "adapter": "JPMAa5dnWLFRvUsumawFcGhnwikqZziLLfqn9SLNXPN",
+        "adapter_identifier": "",
+        "token1": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+        "token1_amount": 999.9985849999999,
+        "token1_price": 0.9999775000000001,
+        "token2": "7dHbWXmci3dT8UFYWYZweBLXgycu7Y3iL6trKn1Y7ARj",
+        "token2_amount": 26.817826247000003,
+        "token2_price": 37.2,
+        "margin_account": "3CUFVw1czzTetJG3QWBLLfwbvugVwF8boby7kCAb312C",
+        "liquidator": null,
+        "activity_type": "MarginSwap",
+        "activity_slot": 152639340,
+        "activity_timestamp": "2022-09-27T12:53:17",
+        "activity_value": 999.9760850318376,
+        "is_primary_activity": true
+    },
+    {
+        "id": 2248,
+        "signature": "4JfTqcuWme2muhDCVLn2hHwKz33g4LyxWn2WVYwwgBTxpztNj9feWsVczAfCkEf43b8YdoyJuWZxaz8Qomgpbtw3",
+        "adapter": "JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ",
+        "adapter_identifier": "FMo7J3g7bHgsdqLFs5h6nWoF4kQpoxyGYdojLBSfTQV2",
+        "token1": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+        "token1_amount": 999.318803,
+        "token1_price": 0.9999775000000001,
+        "token2": "",
+        "token2_amount": 0.0,
+        "token2_price": 0.0,
+        "margin_account": "3CUFVw1czzTetJG3QWBLLfwbvugVwF8boby7kCAb312C",
+        "liquidator": null,
+        "activity_type": "MarginBorrow",
+        "activity_slot": 152639337,
+        "activity_timestamp": "2022-09-27T12:53:16",
+        "activity_value": 999.2963183269326,
+        "is_primary_activity": true
+    }
+}
