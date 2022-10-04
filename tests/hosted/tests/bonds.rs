@@ -1,4 +1,4 @@
-use std::{collections::HashMap, sync::Arc};
+use std::sync::Arc;
 
 use anyhow::Result;
 use hosted_tests::{
@@ -6,13 +6,12 @@ use hosted_tests::{
         BondsUser, GenerateProxy, OrderAmount, TestManager as BondsTestManager, STARTING_TOKENS,
     },
     context::test_context,
-    setup_helper::{setup_token, setup_user},
+    setup_helper::{setup_user, tokens},
 };
 use jet_bonds::orderbook::state::OrderParams;
 use jet_margin_sdk::{
     ix_builder::MarginIxBuilder,
     margin_integrator::{NoProxy, Proxy},
-    solana::transaction::InverseSendTransactionBuilder,
     tx_builder::bonds::BondsPositionRefresher,
 };
 use jet_margin_sdk::{
@@ -20,8 +19,8 @@ use jet_margin_sdk::{
     tx_builder::MarginTxBuilder,
 };
 use jet_proto_math::fixed_point::Fp32;
-use jet_simulation::create_wallet;
-use solana_sdk::{native_token::LAMPORTS_PER_SOL, signer::Signer};
+
+use solana_sdk::signer::Signer;
 
 #[tokio::test(flavor = "multi_thread")]
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
@@ -44,28 +43,14 @@ async fn margin() -> Result<()> {
     let ctx = test_context().await;
     let manager = Arc::new(BondsTestManager::full(ctx.rpc.clone()).await?);
     let client = manager.client.clone();
+    let ([collateral], _, pricer) = tokens(ctx).await?;
 
-    let collateral = setup_token(ctx, 6, 1_00, 4_00, 1.0).await?;
+    // set up user
     let user = setup_user(ctx, vec![(collateral, 0, u64::MAX / 2)]).await?;
     let margin = user.user.tx.ix.clone();
     let wallet = user.user.signer;
 
-    // // create user
-    // let wallet = create_wallet(&ctx.rpc.clone(), 100 * LAMPORTS_PER_SOL).await?;
-    // let margin = MarginIxBuilder::new(wallet.pubkey(), 0);
-    client
-        .send_and_confirm_1tx(&[margin.create_account()], &[&wallet])
-        .await?;
-
-    let mut bonds_position_refresher = BondsPositionRefresher {
-        margin_account: margin.pubkey(),
-        bond_markets: HashMap::new(),
-        rpc: client.clone(),
-    };
-    bonds_position_refresher
-        .add_bond_market(manager.ix_builder.manager())
-        .await?;
-
+    // set up proxy
     let proxy = RefreshingProxy {
         proxy: margin.clone(),
         refreshers: vec![
@@ -75,7 +60,14 @@ async fn margin() -> Result<()> {
                 wallet.pubkey(),
                 0,
             )),
-            Arc::new(bonds_position_refresher),
+            Arc::new(
+                BondsPositionRefresher::new(
+                    margin.pubkey(),
+                    client.clone(),
+                    &[manager.ix_builder.manager()],
+                )
+                .await?,
+            ),
         ],
     };
 
@@ -96,17 +88,12 @@ async fn margin() -> Result<()> {
         post_allowed: true,
         auto_stake: true,
     };
-
-    // this fails checks in margin after the bonds ix completes successfully
-    // FIXME:
-    // - get claim registerable in margin
-    // - get usdc registerable in margin
-    // - register usdc position directly
-    // - deposit usdc to position
-    user.margin_borrow_order(borrow_params)
-        .await?
-        .send_and_confirm_condensed(&client)
-        .await?;
+    let mut ixs = vec![
+        pricer.set_oracle_price_tx(&collateral, 1.0)?,
+        pricer.set_oracle_price_tx(&manager.ix_builder.token_mint(), 1.0)?,
+    ];
+    ixs.extend(user.margin_borrow_order(borrow_params).await?);
+    client.send_and_confirm_condensed(ixs).await?;
 
     Ok(())
 }

@@ -53,6 +53,8 @@ use spl_associated_token_account::{
 };
 use spl_token::{instruction::initialize_mint, state::Mint};
 
+use crate::tokens::TokenManager;
+
 pub const LOCALNET_URL: &str = "http://127.0.0.1:8899";
 pub const DEVNET_URL: &str = "https://api.devnet.solana.com/";
 
@@ -112,13 +114,17 @@ impl Clone for TestManager {
 
 impl TestManager {
     pub async fn full(client: Arc<dyn SolanaRpcClient>) -> Result<Self> {
+        let mint = generate_keypair();
+        let oracle = TokenManager::new(client.clone())
+            .create_oracle(&mint.pubkey())
+            .await?;
         TestManager::new(
             client,
+            &mint,
             &generate_keypair(),
             &generate_keypair(),
             &generate_keypair(),
-            &generate_keypair(),
-            generate_keypair().pubkey(),
+            oracle.price,
         )
         .await?
         .with_crank()
@@ -133,7 +139,7 @@ impl TestManager {
         eq_kp: &Keypair,
         bids_kp: &Keypair,
         asks_kp: &Keypair,
-        token_oracle: Pubkey,
+        underlying_oracle: Pubkey,
     ) -> Result<Self> {
         let payer = client.payer();
         let recent_blockhash = client.get_latest_blockhash().await?;
@@ -147,7 +153,7 @@ impl TestManager {
             &mint.pubkey(),
             BOND_MANAGER_SEED,
             payer.pubkey(),
-            token_oracle,
+            underlying_oracle,
         )
         .with_payer(&payer.pubkey());
         let mut this = Self {

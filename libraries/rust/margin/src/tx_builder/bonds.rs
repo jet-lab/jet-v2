@@ -9,7 +9,7 @@ use jet_simulation::solana_rpc_api::SolanaRpcClient;
 use solana_sdk::pubkey::Pubkey;
 
 use crate::{
-    bonds::BondsIxBuilder, margin_integrator::PositionRefresher,
+    bonds::BondsIxBuilder, ix_builder::accounting_invoke, margin_integrator::PositionRefresher,
     solana::transaction::TransactionBuilder,
 };
 
@@ -27,7 +27,13 @@ impl PositionRefresher for BondsPositionRefresher {
                 if position.token == bond_market.claims()
                     || position.token == bond_market.collateral()
                 {
-                    ret.push(bond_market.refresh_position(self.margin_account)?.into())
+                    ret.push(
+                        accounting_invoke(
+                            self.margin_account,
+                            bond_market.refresh_position(self.margin_account)?,
+                        )
+                        .into(),
+                    )
                 }
             }
         }
@@ -47,6 +53,24 @@ pub struct BondsPositionRefresher {
 }
 
 impl BondsPositionRefresher {
+    ///
+    pub async fn new(
+        margin_account: Pubkey,
+        rpc: Arc<dyn SolanaRpcClient>,
+        bond_markets: &[Pubkey],
+    ) -> Result<Self> {
+        let mut ret = Self {
+            margin_account,
+            bond_markets: HashMap::new(),
+            rpc,
+        };
+        for b in bond_markets {
+            ret.add_bond_market(*b).await?;
+        }
+
+        Ok(ret)
+    }
+
     /// register a bond market to check when refreshing positions
     pub async fn add_bond_market(&mut self, manager: Pubkey) -> Result<()> {
         self.bond_markets.insert(
