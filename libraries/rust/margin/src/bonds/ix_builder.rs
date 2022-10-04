@@ -68,6 +68,28 @@ impl UnwrapKey for Option<&Pubkey> {
     }
 }
 
+impl From<BondManager> for BondsIxBuilder {
+    fn from(bond_manager: BondManager) -> Self {
+        BondsIxBuilder {
+            airspace: bond_manager.airspace,
+            authority: Pubkey::default(), //todo
+            manager: bonds_pda(&[
+                seeds::BOND_MANAGER,
+                bond_manager.underlying_token_mint.as_ref(),
+                &bond_manager.seed,
+            ]),
+            underlying_mint: bond_manager.underlying_token_mint,
+            bond_ticket_mint: bond_manager.bond_ticket_mint,
+            underlying_token_vault: bond_manager.underlying_token_vault,
+            claims: bond_manager.claims_mint,
+            collateral: bond_manager.collateral_mint,
+            orderbook_market_state: bond_manager.orderbook_market_state,
+            underlying_oracle: bond_manager.underlying_oracle,
+            keys: Keys::default(),
+        }
+    }
+}
+
 impl BondsIxBuilder {
     pub fn new(
         underlying_mint: Pubkey,

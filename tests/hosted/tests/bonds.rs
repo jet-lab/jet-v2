@@ -3,13 +3,16 @@ use std::sync::Arc;
 use anyhow::Result;
 use hosted_tests::{
     bonds::{
-        BondsUser, NoProxy, OrderAmount, Proxy, TestManager as BondsTestManager, STARTING_TOKENS,
+        BondsUser, GenerateProxy, OrderAmount, TestManager as BondsTestManager, STARTING_TOKENS,
     },
     context::test_context,
 };
 use jet_bonds::orderbook::state::OrderParams;
-use jet_margin_sdk::ix_builder::MarginIxBuilder;
 use jet_margin_sdk::solana::transaction::SendTransactionBuilder;
+use jet_margin_sdk::{
+    ix_builder::MarginIxBuilder,
+    margin_integrator::{NoProxy, Proxy},
+};
 use jet_proto_math::fixed_point::Fp32;
 use jet_simulation::create_wallet;
 use solana_sdk::{native_token::LAMPORTS_PER_SOL, signer::Signer};
@@ -76,7 +79,7 @@ async fn margin() -> Result<()> {
     Ok(())
 }
 
-async fn _full_workflow<P: Proxy>(manager: Arc<BondsTestManager>) -> Result<()> {
+async fn _full_workflow<P: Proxy + GenerateProxy>(manager: Arc<BondsTestManager>) -> Result<()> {
     let alice = BondsUser::<P>::new_funded(manager.clone()).await?;
 
     const START_TICKETS: u64 = 1_000_000;

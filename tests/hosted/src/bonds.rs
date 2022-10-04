@@ -24,6 +24,7 @@ use jet_margin_sdk::{
     ix_builder::{
         get_control_authority_address, get_metadata_address, ControlIxBuilder, MarginIxBuilder,
     },
+    margin_integrator::{NoProxy, Proxy},
     solana::{
         keypair::clone,
         transaction::{SendTransactionBuilder, TransactionBuilder},
@@ -512,49 +513,21 @@ impl TestManager {
 }
 
 #[async_trait]
-pub trait Proxy {
+pub trait GenerateProxy {
     async fn generate(manager: Arc<TestManager>, owner: &Keypair) -> Result<Self>
     where
         Self: Sized;
-    fn pubkey(&self) -> Pubkey;
-    fn invoke(&self, ix: Instruction) -> Instruction;
-    fn invoke_signed(&self, ix: Instruction) -> Instruction;
 }
 
-pub struct NoProxy(Pubkey);
 #[async_trait]
-impl Proxy for NoProxy {
-    fn pubkey(&self) -> Pubkey {
-        self.0
-    }
-
-    fn invoke(&self, ix: Instruction) -> Instruction {
-        ix
-    }
-
-    fn invoke_signed(&self, ix: Instruction) -> Instruction {
-        ix
-    }
-
+impl GenerateProxy for NoProxy {
     async fn generate(_manager: Arc<TestManager>, owner: &Keypair) -> Result<Self> {
         Ok(NoProxy(owner.pubkey()))
     }
 }
 
 #[async_trait]
-impl Proxy for MarginIxBuilder {
-    fn pubkey(&self) -> Pubkey {
-        self.address
-    }
-
-    fn invoke(&self, ix: Instruction) -> Instruction {
-        self.accounting_invoke(ix)
-    }
-
-    fn invoke_signed(&self, ix: Instruction) -> Instruction {
-        self.adapter_invoke(ix)
-    }
-
+impl GenerateProxy for MarginIxBuilder {
     async fn generate(manager: Arc<TestManager>, owner: &Keypair) -> Result<Self> {
         let margin = MarginIxBuilder::new(owner.pubkey(), 0);
         manager
@@ -565,7 +538,7 @@ impl Proxy for MarginIxBuilder {
     }
 }
 
-pub struct BondsUser<P: Proxy> {
+pub struct BondsUser<P: GenerateProxy> {
     pub owner: Keypair,
     pub proxy: P,
     pub token_acc: Pubkey,
@@ -573,7 +546,7 @@ pub struct BondsUser<P: Proxy> {
     client: Arc<dyn SolanaRpcClient>,
 }
 
-impl<P: Proxy> BondsUser<P> {
+impl<P: Proxy + GenerateProxy> BondsUser<P> {
     pub fn new_with_proxy(manager: Arc<TestManager>, owner: Keypair, proxy: P) -> Result<Self> {
         let token_acc =
             get_associated_token_address(&proxy.pubkey(), &manager.ix_builder.token_mint());
@@ -610,7 +583,7 @@ impl<P: Proxy> BondsUser<P> {
     }
 }
 
-impl<P: Proxy> BondsUser<P> {
+impl<P: Proxy + GenerateProxy> BondsUser<P> {
     pub async fn fund(&self) -> Result<()> {
         let create_token = create_associated_token_account(
             &self.manager.client.payer().pubkey(),
@@ -730,7 +703,7 @@ impl<P: Proxy> BondsUser<P> {
     }
 }
 
-impl<P: Proxy> BondsUser<P> {
+impl<P: Proxy + GenerateProxy> BondsUser<P> {
     pub fn claim_ticket_key(&self, seed: Vec<u8>) -> Pubkey {
         self.manager
             .ix_builder

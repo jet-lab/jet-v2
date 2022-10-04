@@ -19,6 +19,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use anchor_spl::associated_token::get_associated_token_address;
+use async_trait::async_trait;
 use jet_margin_pool::program::JetMarginPool;
 use jet_metadata::{PositionTokenMetadata, TokenMetadata};
 
@@ -36,6 +37,7 @@ use jet_margin_pool::TokenChange;
 use jet_simulation::solana_rpc_api::SolanaRpcClient;
 
 use crate::cat;
+use crate::margin_integrator::PositionRefresher;
 use crate::util::data::Join;
 use crate::{
     ix_builder::*,
@@ -71,6 +73,16 @@ impl Clone for MarginTxBuilder {
                 .map(|kp| Keypair::from_bytes(&kp.to_bytes()).unwrap()),
             is_liquidator: self.is_liquidator,
         }
+    }
+}
+
+#[async_trait]
+impl PositionRefresher for MarginTxBuilder {
+    async fn refresh_positions(&self) -> Result<Vec<TransactionBuilder>> {
+        Ok(cat![
+            self.refresh_all_pool_positions().await?,
+            self.refresh_deposit_positions().await?,
+        ])
     }
 }
 
@@ -701,7 +713,7 @@ impl MarginTxBuilder {
     }
 
     /// Append instructions to refresh deposit positions
-    async fn refresh_deposit_positions(&self) -> Result<Vec<TransactionBuilder>> {
+    pub async fn refresh_deposit_positions(&self) -> Result<Vec<TransactionBuilder>> {
         let state = self.get_account_state().await?;
         let mut instructions = vec![];
         for position in state.positions() {

@@ -53,6 +53,8 @@
 
 /// Instruction builders for programs and adapters supported by the SDK
 pub mod ix_builder;
+/// generic code to integrate adapters with margin
+pub mod margin_integrator;
 /// things that should be provided by the solana sdk, but are not
 pub mod solana;
 /// Utilities for swap adapters
