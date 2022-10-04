@@ -26,7 +26,7 @@ anchor-test() { args=$@
 
 hosted-tests-localnet() { args=$@
     extract-arg --skip-build || tests/scripts/on_localnet.sh anchor-build
-    SOLANA_LOGS=true tests/scripts/on_localnet.sh test combined $args
+    SOLANA_LOGS=${SOLANA_LOGS:-true} tests/scripts/on_localnet.sh test combined $args
 }
 
 cargo-lint() {
