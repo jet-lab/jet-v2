@@ -6,6 +6,7 @@ use hosted_tests::{
         BondsUser, GenerateProxy, OrderAmount, TestManager as BondsTestManager, STARTING_TOKENS,
     },
     context::test_context,
+    setup_helper::{setup_token, setup_user},
 };
 use jet_bonds::orderbook::state::OrderParams;
 use jet_margin_sdk::{
@@ -44,9 +45,14 @@ async fn margin() -> Result<()> {
     let manager = Arc::new(BondsTestManager::full(ctx.rpc.clone()).await?);
     let client = manager.client.clone();
 
-    // create user
-    let wallet = create_wallet(&ctx.rpc.clone(), 100 * LAMPORTS_PER_SOL).await?;
-    let margin = MarginIxBuilder::new(wallet.pubkey(), 0);
+    let collateral = setup_token(ctx, 6, 1_00, 4_00, 1.0).await?;
+    let user = setup_user(ctx, vec![(collateral, 0, u64::MAX / 2)]).await?;
+    let margin = user.user.tx.ix.clone();
+    let wallet = user.user.signer;
+
+    // // create user
+    // let wallet = create_wallet(&ctx.rpc.clone(), 100 * LAMPORTS_PER_SOL).await?;
+    // let margin = MarginIxBuilder::new(wallet.pubkey(), 0);
     client
         .send_and_confirm_1tx(&[margin.create_account()], &[&wallet])
         .await?;

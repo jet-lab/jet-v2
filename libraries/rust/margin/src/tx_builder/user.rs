@@ -55,7 +55,8 @@ use crate::{
 /// the correct `adapter_invoke_ix`.
 pub struct MarginTxBuilder {
     rpc: Arc<dyn SolanaRpcClient>,
-    ix: MarginIxBuilder,
+    ///
+    pub ix: MarginIxBuilder,
     config_ix: MarginConfigIxBuilder,
     signer: Option<Keypair>,
     is_liquidator: bool,
