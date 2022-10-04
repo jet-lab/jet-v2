@@ -207,3 +207,43 @@ impl SendTransactionBuilder for Arc<dyn SolanaRpcClient> {
             .await
     }
 }
+
+/// Analogous to SendTransactionBuilder, but allows you to call it with the
+/// TransactionBuilder as the receiver when it would enable a cleaner
+/// method-chaining syntax.
+impl TransactionBuilder {
+    /// SendTransactionBuilder::compile
+    pub async fn compile<C: SendTransactionBuilder>(self, client: &C) -> Result<Transaction> {
+        client.compile(self).await
+    }
+
+    /// SendTransactionBuilder::send_and_confirm
+    pub async fn send_and_confirm<C: SendTransactionBuilder>(
+        self,
+        client: &C,
+    ) -> Result<Signature> {
+        client.send_and_confirm(self).await
+    }
+}
+
+/// Analogous to SendTransactionBuilder, but allows you to call it with the
+/// Vec<TransactionBuilder> as the receiver when it would enable a cleaner
+/// method-chaining syntax.
+#[async_trait]
+pub trait InverseSendTransactionBuilder {
+    /// SendTransactionBuilder::send_and_confirm_condensed
+    async fn send_and_confirm_condensed<C: SendTransactionBuilder + Sync>(
+        self,
+        client: &C,
+    ) -> Result<Vec<Signature>>;
+}
+
+#[async_trait]
+impl InverseSendTransactionBuilder for Vec<TransactionBuilder> {
+    async fn send_and_confirm_condensed<C: SendTransactionBuilder + Sync>(
+        self,
+        client: &C,
+    ) -> Result<Vec<Signature>> {
+        client.send_and_confirm_condensed(self).await
+    }
+}

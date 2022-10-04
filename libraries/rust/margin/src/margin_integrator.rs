@@ -4,22 +4,36 @@ use anyhow::Result;
 use async_trait::async_trait;
 use futures::future::join_all;
 use solana_sdk::{instruction::Instruction, pubkey::Pubkey};
-use tokio::join;
 
-use crate::{
-    ix_builder::MarginIxBuilder, solana::transaction::TransactionBuilder,
-    util::asynchronous::MapAsync,
-};
+use crate::{ix_builder::MarginIxBuilder, solana::transaction::TransactionBuilder};
 
-///
-pub struct FreshInvoker<P: Proxy> {
+/// A variant of Proxy with the ability to refresh a margin account's positions.
+/// This makes it easier to invoke_signed an adapter program while abstracting
+/// away all the special requirements of the margin account. This isn't part of
+/// Proxy itself because refreshing positions has expensive dependencies that
+/// shouldn't necessarily be a part of a basic instruction builder (which Proxy
+/// is). These dependencies like an RPC client and ix builders for other
+/// adapters implementing PositionRefresher can be attached to the Proxy using
+/// this struct.
+pub struct RefreshingProxy<P: Proxy> {
     proxy: P,
     refreshers: Vec<Arc<dyn PositionRefresher>>,
 }
 
-impl<P: Proxy> FreshInvoker<P> {
+impl<P: Proxy> RefreshingProxy<P> {
+    /// Refresh the positions using refresh() then invoke_signed the instruction
+    /// through margin
     async fn refresh_and_invoke_signed(&self, ix: Instruction) -> Result<Vec<TransactionBuilder>> {
-        let mut refresh = join_all(
+        let mut refresh = self.refresh().await?;
+        refresh.push(self.proxy.invoke_signed(ix).into());
+
+        Ok(refresh)
+    }
+
+    /// Just get the instructions necessary to refresh any positions that are
+    /// refreshable by the included refreshers.
+    async fn refresh(&self) -> Result<Vec<TransactionBuilder>> {
+        Ok(join_all(
             self.refreshers
                 .clone()
                 .iter()
@@ -30,10 +44,7 @@ impl<P: Proxy> FreshInvoker<P> {
         .collect::<Result<Vec<Vec<_>>>>()?
         .into_iter()
         .flatten()
-        .collect::<Vec<_>>();
-        refresh.push(self.proxy.invoke_signed(ix).into());
-
-        Ok(refresh)
+        .collect::<Vec<_>>())
     }
 }
 
