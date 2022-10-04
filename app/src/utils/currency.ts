@@ -27,12 +27,12 @@ export function useCurrencyFormatting() {
         currencyDisplay: fiatValues ? 'narrowSymbol' : undefined,
         minimumFractionDigits: decimals,
         maximumFractionDigits: decimals ?? 2,
-        currencySign: accounting && fiatValues ? "accounting" : undefined
+        currencySign: accounting && fiatValues ? 'accounting' : undefined
       });
 
       let uiCurrency = currencyFormat.format(convertedValue);
       if (!fiatValues && !accounting) {
-      // Set and strip trailing 0's / unnecessary decimals
+        // Set and strip trailing 0's / unnecessary decimals
         while (
           uiCurrency.indexOf('.') !== -1 &&
           (uiCurrency[uiCurrency.length - 1] === '0' || uiCurrency[uiCurrency.length - 1] === '.')
