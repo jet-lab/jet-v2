@@ -62,6 +62,7 @@ impl MarginTestContext {
             jet_control,
             jet_margin,
             jet_metadata,
+            jet_airspace,
             jet_margin_pool,
             jet_margin_swap,
             (
@@ -76,6 +77,10 @@ impl MarginTestContext {
                 spl_token_swap_v2::id(),
                 spl_token_swap_v2::processor::Processor::process
             ),
+            (
+                spl_associated_token_account::ID,
+                spl_associated_token_account::processor::process_instruction
+            )
         ];
 
         Self::new_with_runtime(Arc::new(runtime)).await
@@ -100,7 +105,8 @@ impl MarginTestContext {
             payer,
         };
 
-        ctx.margin.create_authority_if_missing().await?;
+        ctx.margin.init_globals().await?;
+        ctx.margin.create_airspace_if_missing(false).await?;
         ctx.margin
             .register_adapter_if_unregistered(&jet_margin_pool::ID)
             .await?;

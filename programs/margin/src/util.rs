@@ -145,6 +145,15 @@ impl Invocation {
     }
 }
 
+mod _idl {
+    use anchor_lang::prelude::*;
+
+    #[derive(AnchorSerialize, AnchorDeserialize, Default)]
+    pub struct Invocation {
+        pub flags: u8,
+    }
+}
+
 #[derive(Pod, Zeroable, Copy, Clone, Default, PartialEq, Eq)]
 #[repr(transparent)]
 struct BitSet(u8);
