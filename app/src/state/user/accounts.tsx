@@ -199,12 +199,15 @@ export function useAccountsSyncer() {
       }
 
       // Account trasactions
-      const transactions = await MarginClient.getTransactionHistory(
+      const transactions = cluster === 'devnet' ? await MarginClient.getTransactionHistory(
         currentAccount.provider,
         currentAccount.address,
         mints,
         cluster
-      );
+      ) : await MarginClient.getBlackBoxHistory(
+        currentAccount.address,
+        cluster
+      );     
 
       setAccountHistoryLoaded(true);
       return {
