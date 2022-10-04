@@ -52,5 +52,5 @@ fn cat_vec() {
     let one = vec![1, 2, 3];
     let two = vec![4, 5, 6];
     assert_eq!(one.clone().cat_ref(&two), one.clone().cat(two.clone()));
-    assert_eq!(one.clone().cat_ref(&two), [1, 2, 3, 4, 5, 6]);
+    assert_eq!(one.cat_ref(&two), [1, 2, 3, 4, 5, 6]);
 }
