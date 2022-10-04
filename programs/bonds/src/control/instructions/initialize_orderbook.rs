@@ -132,6 +132,8 @@ pub fn handler(ctx: Context<InitializeOrderbook>, params: InitializeOrderbookPar
         event_queue: manager.event_queue,
         bids: manager.bids,
         asks: manager.asks,
+        min_base_order_size,
+        tick_size: TICK_SIZE
     });
 
     Ok(())
