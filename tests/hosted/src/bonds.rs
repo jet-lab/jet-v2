@@ -24,7 +24,10 @@ use jet_margin_sdk::{
     ix_builder::{
         get_control_authority_address, get_metadata_address, ControlIxBuilder, MarginIxBuilder,
     },
-    solana::transaction::SendTransactionBuilder,
+    solana::{
+        keypair::clone,
+        transaction::{SendTransactionBuilder, TransactionBuilder},
+    },
     tx_builder::global_initialize_instructions,
 };
 use jet_metadata::{PositionTokenMetadata, TokenKind};
@@ -61,10 +64,6 @@ pub const EVENT_QUEUE_CAPACITY: usize = 1_000;
 pub const STAKE_DURATION: i64 = 3; // in seconds
 pub const MIN_ORDER_SIZE: u64 = 10;
 
-fn clone_kp(kp: &Keypair) -> Keypair {
-    Keypair::from_base58_string(&kp.to_base58_string())
-}
-
 #[derive(Debug, Default, Clone)]
 pub struct Keys<T>(HashMap<String, T>);
 
@@ -87,7 +86,7 @@ impl<T> Keys<T> {
 }
 
 pub struct TestManager {
-    client: Arc<dyn SolanaRpcClient>,
+    pub client: Arc<dyn SolanaRpcClient>,
     pub ix_builder: BondsIxBuilder,
     pub kps: Keys<Keypair>,
     pub keys: Keys<Pubkey>,
@@ -112,22 +111,29 @@ impl Clone for TestManager {
 
 impl TestManager {
     pub async fn full(client: Arc<dyn SolanaRpcClient>) -> Result<Self> {
-        TestManager::new(client, &generate_keypair())
-            .await?
-            .with_bonds(
-                &generate_keypair(),
-                &generate_keypair(),
-                &generate_keypair(),
-                generate_keypair().pubkey(),
-            )
-            .await?
-            .with_crank()
-            .await?
-            .with_margin()
-            .await
+        TestManager::new(
+            client,
+            &generate_keypair(),
+            &generate_keypair(),
+            &generate_keypair(),
+            &generate_keypair(),
+            generate_keypair().pubkey(),
+        )
+        .await?
+        .with_crank()
+        .await?
+        .with_margin()
+        .await
     }
 
-    pub async fn new(client: Arc<dyn SolanaRpcClient>, mint: &Keypair) -> Result<Self> {
+    pub async fn new(
+        client: Arc<dyn SolanaRpcClient>,
+        mint: &Keypair,
+        eq_kp: &Keypair,
+        bids_kp: &Keypair,
+        asks_kp: &Keypair,
+        token_oracle: Pubkey,
+    ) -> Result<Self> {
         let payer = client.payer();
         let recent_blockhash = client.get_latest_blockhash().await?;
         let rent = client
@@ -136,35 +142,29 @@ impl TestManager {
         let transaction = initialize_test_mint_transaction(mint, payer, 6, rent, recent_blockhash);
         client.send_and_confirm_transaction(&transaction).await?;
 
-        let ix_builder =
-            BondsIxBuilder::new_from_seed(&mint.pubkey(), BOND_MANAGER_SEED, payer.pubkey())
-                .with_payer(&payer.pubkey());
-        let mut manager = Self {
+        let ix_builder = BondsIxBuilder::new_from_seed(
+            &mint.pubkey(),
+            BOND_MANAGER_SEED,
+            payer.pubkey(),
+            token_oracle,
+        )
+        .with_payer(&payer.pubkey());
+        let mut this = Self {
             client: client.clone(),
             ix_builder,
             kps: Keys::new(),
             keys: Keys::new(),
         };
-        manager.insert_kp("token_mint", clone_kp(mint));
+        this.insert_kp("token_mint", clone(mint));
 
-        Ok(manager)
-    }
-
-    pub async fn with_bonds(
-        mut self,
-        eq_kp: &Keypair,
-        bids_kp: &Keypair,
-        asks_kp: &Keypair,
-        token_oracle: Pubkey,
-    ) -> Result<Self> {
         let init_eq = {
-            let rent = self
+            let rent = this
                 .client
                 .get_minimum_balance_for_rent_exemption(event_queue_len(
                     EVENT_QUEUE_CAPACITY as usize,
                 ))
                 .await?;
-            self.ix_builder.initialize_event_queue(
+            this.ix_builder.initialize_event_queue(
                 &eq_kp.pubkey(),
                 EVENT_QUEUE_CAPACITY as usize,
                 rent,
@@ -172,63 +172,62 @@ impl TestManager {
         };
 
         let init_bids = {
-            let rent = self
+            let rent = this
                 .client
                 .get_minimum_balance_for_rent_exemption(orderbook_slab_len(
                     ORDERBOOK_CAPACITY as usize,
                 ))
                 .await?;
-            self.ix_builder.initialize_orderbook_slab(
+            this.ix_builder.initialize_orderbook_slab(
                 &bids_kp.pubkey(),
                 ORDERBOOK_CAPACITY as usize,
                 rent,
             )?
         };
         let init_asks = {
-            let rent = self
+            let rent = this
                 .client
                 .get_minimum_balance_for_rent_exemption(orderbook_slab_len(
                     ORDERBOOK_CAPACITY as usize,
                 ))
                 .await?;
-            self.ix_builder.initialize_orderbook_slab(
+            this.ix_builder.initialize_orderbook_slab(
                 &asks_kp.pubkey(),
                 ORDERBOOK_CAPACITY as usize,
                 rent,
             )?
         };
-        self.ix_builder = self.ix_builder.with_orderbook_accounts(
+        this.ix_builder = this.ix_builder.with_orderbook_accounts(
             Some(bids_kp.pubkey()),
             Some(asks_kp.pubkey()),
             Some(eq_kp.pubkey()),
         );
-        self.insert_kp("eq", clone_kp(eq_kp));
-        self.insert_kp("bids", clone_kp(bids_kp));
-        self.insert_kp("asks", clone_kp(asks_kp));
+        this.insert_kp("eq", clone(eq_kp));
+        this.insert_kp("bids", clone(bids_kp));
+        this.insert_kp("asks", clone(asks_kp));
 
-        let init_manager = self.ix_builder.initialize_manager(
-            self.client.payer().pubkey(),
+        let init_manager = this.ix_builder.initialize_manager(
+            this.client.payer().pubkey(),
             BOND_MANAGER_TAG,
             BOND_MANAGER_SEED,
             STAKE_DURATION,
-            token_oracle,
             Pubkey::default(),
         )?;
-        let init_orderbook = self.ix_builder.initialize_orderbook(
-            self.client.payer().pubkey(),
+        let init_orderbook = this.ix_builder.initialize_orderbook(
+            this.client.payer().pubkey(),
             eq_kp.pubkey(),
             bids_kp.pubkey(),
             asks_kp.pubkey(),
             MIN_ORDER_SIZE,
         )?;
 
-        self.sign_send_transaction(
+        this.sign_send_transaction(
             &[init_eq, init_bids, init_asks, init_manager, init_orderbook],
             None,
         )
         .await?;
 
-        Ok(self)
+        Ok(this)
     }
 
     pub async fn with_crank(mut self) -> Result<Self> {
@@ -571,17 +570,19 @@ pub struct BondsUser<P: Proxy> {
     pub proxy: P,
     pub token_acc: Pubkey,
     manager: Arc<TestManager>,
+    client: Arc<dyn SolanaRpcClient>,
 }
 
 impl<P: Proxy> BondsUser<P> {
     pub fn new_with_proxy(manager: Arc<TestManager>, owner: Keypair, proxy: P) -> Result<Self> {
         let token_acc =
-            get_associated_token_address(&proxy.pubkey(), manager.keys.unwrap("token_mint")?);
+            get_associated_token_address(&proxy.pubkey(), &manager.ix_builder.token_mint());
 
         Ok(Self {
             owner,
             proxy,
             token_acc,
+            client: manager.client.clone(),
             manager,
         })
     }
@@ -614,7 +615,7 @@ impl<P: Proxy> BondsUser<P> {
         let create_token = create_associated_token_account(
             &self.manager.client.payer().pubkey(),
             &self.proxy.pubkey(),
-            self.manager.keys.unwrap("token_mint")?,
+            &self.manager.ix_builder.token_mint(),
         );
         let create_ticket = create_associated_token_account(
             &self.manager.client.payer().pubkey(),
@@ -623,9 +624,9 @@ impl<P: Proxy> BondsUser<P> {
         );
         let fund = spl_token::instruction::mint_to(
             &spl_token::ID,
-            self.manager.keys.unwrap("token_mint")?,
+            &self.manager.ix_builder.token_mint(),
             &self.token_acc,
-            self.manager.keys.unwrap("token_mint")?,
+            &self.manager.ix_builder.token_mint(),
             &[],
             STARTING_TOKENS,
         )?;
@@ -636,26 +637,27 @@ impl<P: Proxy> BondsUser<P> {
 
         Ok(())
     }
+
     pub async fn initialize_margin_user(&self) -> Result<Signature> {
         let ix = self
             .manager
             .ix_builder
             .initialize_margin_user(self.proxy.pubkey())?;
-        self.manager
-            .sign_send_transaction(&[self.proxy.invoke_signed(ix)], Some(&[&self.owner]))
+        self.client
+            .send_and_confirm_1tx(&[self.proxy.invoke_signed(ix)], &[&self.owner])
             .await
     }
 
     pub async fn convert_tokens(&self, amount: u64) -> Result<Signature> {
         let ix = self.manager.ix_builder.convert_tokens(
-            Some(&self.proxy.pubkey()),
+            Some(self.proxy.pubkey()),
             None,
             None,
             None,
             amount,
         )?;
-        self.manager
-            .sign_send_transaction(&[self.proxy.invoke_signed(ix)], Some(&[&self.owner]))
+        self.client
+            .send_and_confirm_1tx(&[self.proxy.invoke_signed(ix)], &[&self.owner])
             .await
     }
 
@@ -663,10 +665,10 @@ impl<P: Proxy> BondsUser<P> {
         let ix = self
             .manager
             .ix_builder
-            .stake_tickets(&self.proxy.pubkey(), None, amount, seed)?;
+            .stake_tickets(self.proxy.pubkey(), None, amount, seed)?;
 
-        self.manager
-            .sign_send_transaction(&[self.proxy.invoke_signed(ix)], Some(&[&self.owner]))
+        self.client
+            .send_and_confirm_1tx(&[self.proxy.invoke_signed(ix)], &[&self.owner])
             .await
     }
 
@@ -675,9 +677,9 @@ impl<P: Proxy> BondsUser<P> {
         let ix = self
             .manager
             .ix_builder
-            .redeem_ticket(&self.proxy.pubkey(), &ticket, None)?;
-        self.manager
-            .sign_send_transaction(&[self.proxy.invoke_signed(ix)], Some(&[&self.owner]))
+            .redeem_ticket(self.proxy.pubkey(), ticket, None)?;
+        self.client
+            .send_and_confirm_1tx(&[self.proxy.invoke_signed(ix)], &[&self.owner])
             .await
     }
 
@@ -685,29 +687,35 @@ impl<P: Proxy> BondsUser<P> {
         let borrow =
             self.manager
                 .ix_builder
-                .sell_tickets_order(&self.proxy.pubkey(), None, None, params)?;
-        self.manager
-            .sign_send_transaction(&[self.proxy.invoke_signed(borrow)], Some(&[&self.owner]))
+                .sell_tickets_order(self.proxy.pubkey(), None, None, params)?;
+        self.client
+            .send_and_confirm_1tx(&[self.proxy.invoke_signed(borrow)], &[&self.owner])
             .await
     }
 
-    pub async fn margin_borrow_order(&self, params: OrderParams) -> Result<Signature> {
+    pub fn margin_borrow_order(&self, params: OrderParams) -> Result<TransactionBuilder> {
+        let refresh = self
+            .manager
+            .ix_builder
+            .refresh_position(self.proxy.pubkey())?;
         let borrow = self
             .manager
             .ix_builder
             .margin_borrow_order(self.proxy.pubkey(), params)?;
-        self.manager
-            .sign_send_transaction(&[self.proxy.invoke_signed(borrow)], Some(&[&self.owner]))
-            .await
+
+        Ok(TransactionBuilder {
+            instructions: vec![self.proxy.invoke(refresh), self.proxy.invoke_signed(borrow)],
+            signers: vec![clone(&self.owner)],
+        })
     }
 
     pub async fn lend_order(&self, params: OrderParams, seed: Vec<u8>) -> Result<Signature> {
         let lend =
             self.manager
                 .ix_builder
-                .lend_order(&self.proxy.pubkey(), None, None, params, seed)?;
-        self.manager
-            .sign_send_transaction(&[self.proxy.invoke_signed(lend)], Some(&[&self.owner]))
+                .lend_order(self.proxy.pubkey(), None, None, params, seed)?;
+        self.client
+            .send_and_confirm_1tx(&[self.proxy.invoke_signed(lend)], &[&self.owner])
             .await
     }
 
@@ -716,8 +724,8 @@ impl<P: Proxy> BondsUser<P> {
             .manager
             .ix_builder
             .cancel_order(self.proxy.pubkey(), order_id)?;
-        self.manager
-            .sign_send_transaction(&[self.proxy.invoke_signed(cancel)], Some(&[&self.owner]))
+        self.client
+            .send_and_confirm_1tx(&[self.proxy.invoke_signed(cancel)], &[&self.owner])
             .await
     }
 }
@@ -737,7 +745,7 @@ impl<P: Proxy> BondsUser<P> {
     pub async fn tokens(&self) -> Result<u64> {
         let key = get_associated_token_address(
             &self.proxy.pubkey(),
-            self.manager.keys.unwrap("token_mint")?,
+            &self.manager.ix_builder.token_mint(),
         );
 
         self.manager

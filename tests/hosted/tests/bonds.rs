@@ -9,6 +9,7 @@ use hosted_tests::{
 };
 use jet_bonds::orderbook::state::OrderParams;
 use jet_margin_sdk::ix_builder::MarginIxBuilder;
+use jet_margin_sdk::solana::transaction::SendTransactionBuilder;
 use jet_proto_math::fixed_point::Fp32;
 use jet_simulation::create_wallet;
 use solana_sdk::{native_token::LAMPORTS_PER_SOL, signer::Signer};
@@ -33,12 +34,13 @@ async fn full_through_margin() -> Result<()> {
 async fn margin() -> Result<()> {
     let ctx = test_context().await;
     let manager = Arc::new(BondsTestManager::full(ctx.rpc.clone()).await?);
+    let client = manager.client.clone();
 
     // create user
     let wallet = create_wallet(&ctx.rpc.clone(), 100 * LAMPORTS_PER_SOL).await?;
     let margin = MarginIxBuilder::new(wallet.pubkey(), 0);
-    manager
-        .sign_send_transaction(&[margin.create_account()], Some(&[&wallet]))
+    client
+        .send_and_confirm_1tx(&[margin.create_account()], &[&wallet])
         .await?;
 
     let user = BondsUser::new_with_proxy_funded(manager.clone(), wallet, margin).await?;
@@ -59,13 +61,17 @@ async fn margin() -> Result<()> {
         auto_stake: true,
     };
 
+    // margin.refresh_deposit_position(token_config, price_oracle)
+
     // this fails checks in margin after the bonds ix completes successfully
     // FIXME:
     // - get claim registerable in margin
     // - get usdc registerable in margin
     // - register usdc position directly
     // - deposit usdc to position
-    // user.margin_borrow_order(borrow_params).await?;
+    client
+        .send_and_confirm(user.margin_borrow_order(borrow_params)?)
+        .await?;
 
     Ok(())
 }

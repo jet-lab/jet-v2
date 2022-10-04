@@ -19,6 +19,8 @@ use crate::{
     },
 };
 
+use super::keypair::clone_refs;
+
 /// A group of instructions that are expected to be executed in the same transaction
 /// Can be merged with other TransactionBuilder instances with `cat`, `concat`, or `ijoin`
 #[derive(Debug, Default)]
@@ -150,8 +152,23 @@ pub trait SendTransactionBuilder {
     /// Converts a TransactionBuilder to a Transaction,
     /// finalizing its set of instructions as the selection for the actual Transaction
     async fn compile(&self, tx: TransactionBuilder) -> Result<Transaction>;
+
     /// Sends the transaction unchanged
     async fn send_and_confirm(&self, transaction: TransactionBuilder) -> Result<Signature>;
+
+    /// simple ad hoc transaction sender
+    async fn send_and_confirm_1tx(
+        &self,
+        instructions: &[Instruction],
+        signers: &[&Keypair],
+    ) -> Result<Signature> {
+        self.send_and_confirm(TransactionBuilder {
+            instructions: instructions.to_vec(),
+            signers: clone_refs(signers),
+        })
+        .await
+    }
+
     /// Send, minimizing number of transactions - see `condense` doc
     async fn send_and_confirm_condensed(
         &self,
