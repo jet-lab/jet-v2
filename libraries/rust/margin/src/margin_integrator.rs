@@ -14,18 +14,22 @@ use crate::{
 /// This makes it easier to invoke_signed an adapter program while abstracting
 /// away all the special requirements of the margin account into only this
 /// single struct.
+///
+/// This is a separate struct rather than having the functionality added to
+/// MarginIxBuilder because it has expensive dependencies like rpc clients and
+/// other adapter implementations, and it's not appropriate to make these things
+/// required for a simple single-program instruction builder like MarginIxBuilder.
 #[derive(Clone)]
 pub struct RefreshingProxy<P: Proxy> {
     /// underlying proxy
     pub proxy: P,
-    /// adapter-specific implementations that can refresh positions in a margin
-    /// account
+    /// adapter-specific implementations to refresh positions in a margin account
     pub refreshers: Vec<Arc<dyn PositionRefresher>>,
 }
 
 impl<P: Proxy> RefreshingProxy<P> {
-    /// Just get the instructions necessary to refresh any positions that are
-    /// refreshable by the included refreshers.
+    /// The instructions to refresh any positions that are refreshable by the
+    /// included refreshers.
     pub async fn refresh(&self) -> Result<Vec<TransactionBuilder>> {
         Ok(join_all(
             self.refreshers

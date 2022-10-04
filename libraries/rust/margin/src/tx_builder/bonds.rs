@@ -42,18 +42,18 @@ impl PositionRefresher for BondsPositionRefresher {
     }
 }
 
-///
+/// Refreshes margin positions that are managed by the bonds program
 pub struct BondsPositionRefresher {
-    ///
-    pub margin_account: Pubkey,
-    ///
-    pub bond_markets: HashMap<Pubkey, BondsIxBuilder>,
-    ///
-    pub rpc: Arc<dyn SolanaRpcClient>,
+    /// the address to search for positions
+    margin_account: Pubkey,
+    /// known bond markets that may or may not have positions
+    bond_markets: HashMap<Pubkey, BondsIxBuilder>,
+    /// client to execute search for margin account
+    rpc: Arc<dyn SolanaRpcClient>,
 }
 
 impl BondsPositionRefresher {
-    ///
+    /// search for the bond markets and then instantiate the struct
     pub async fn new(
         margin_account: Pubkey,
         rpc: Arc<dyn SolanaRpcClient>,
