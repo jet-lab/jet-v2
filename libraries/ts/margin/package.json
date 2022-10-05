@@ -33,8 +33,7 @@
     "fmt:fix": "prettier src/ tests/ types/ --write",
     "watch": "tsc --watch --preserveWatchOutput --pretty & tsc -p tsconfig-cjs.json --watch --preserveWatchOutput --pretty",
     "prepublishOnly": "yarn build",
-    "semantic-release": "semantic-release --branches master",
-    "commit": "git cz"
+    "semantic-release": "semantic-release --branches ci-tslib-publishing"
   },
   "dependencies": {
     "@project-serum/anchor": "0.24.2",
