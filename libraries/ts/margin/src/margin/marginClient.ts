@@ -334,91 +334,98 @@ export class MarginClient {
     return filteredParsedTransactions.sort((a, b) => a.slot - b.slot)
   }
 
-// Blackbox history for mainnet
-static async setupBlackboxTx(config: MarginConfig, flightLog: FlightLog): Promise<AccountTransaction | null> {
-  const accTransaction: Partial<AccountTransaction> = {}
+  // Blackbox history for mainnet
+  static async setupBlackboxTx(config: MarginConfig, flightLog: FlightLog): Promise<AccountTransaction | null> {
+    const accTransaction: Partial<AccountTransaction> = {}
 
-  switch (flightLog.activity_type) {
-    case "Deposit":
-      accTransaction.tradeAction = "deposit"
-      break
-    case "Withdraw":
-      accTransaction.tradeAction = "withdraw"
-      break
-    case "MarginBorrow":
-      accTransaction.tradeAction = "borrow"
-      break
-    case "MarginRepay":
-      accTransaction.tradeAction = "repay"
-      break
-    case "Repay":
-      accTransaction.tradeAction = "repay"
-      break
-    case "MarginSwap":
-      accTransaction.tradeAction = "swap"
-      break
+    switch (flightLog.activity_type) {
+      case "Deposit":
+        accTransaction.tradeAction = "deposit"
+        break
+      case "Withdraw":
+        accTransaction.tradeAction = "withdraw"
+        break
+      case "MarginBorrow":
+        accTransaction.tradeAction = "borrow"
+        break
+      case "MarginRepay":
+        accTransaction.tradeAction = "repay"
+        break
+      case "Repay":
+        accTransaction.tradeAction = "repay"
+        break
+      case "MarginSwap":
+        accTransaction.tradeAction = "swap"
+        break
+    }
+
+    const inputTokenConfig = Object.values(config.tokens).find(config => flightLog.token1 === config.mint.toString())
+
+    const outputTokenConfig =
+      flightLog.token2 !== ""
+        ? Object.values(config.tokens).find(config => flightLog.token2 === config.mint)
+        : undefined
+
+    let token1 = inputTokenConfig as MarginTokenConfig
+    let token2 = outputTokenConfig
+
+    let token1Amount = new TokenAmount(
+      new BN(Math.round(flightLog.token1_amount * Math.pow(10, token1.decimals))),
+      token1.decimals
+    )
+    // Blackbox is currently stripping timezones, fix that locally until it's updated
+    let timestamp = flightLog.activity_timestamp
+    if (!timestamp.endsWith("Z")) {
+      timestamp = `${timestamp}Z`
+    }
+    accTransaction.timestamp = new Date(timestamp).getTime() / 1000
+    accTransaction.blockDate = timestamp
+    accTransaction.signature = flightLog.signature
+    accTransaction.sigIndex = flightLog.id
+    accTransaction.slot = flightLog.activity_slot
+    accTransaction.tokenNameInput = token1.name
+    // If there is a token2 (e.g. a swap/trade), input is token1, else undefined
+    accTransaction.tokenSymbolInput = token2 ? token1.symbol : undefined
+    accTransaction.tradeAmountInput = token2 ? token1Amount : undefined
+    accTransaction.tokenName = token2?.name
+    accTransaction.tradeAmount = !token2
+      ? token1Amount
+      : new TokenAmount(new BN(Math.round(flightLog.token2_amount * Math.pow(10, token2.decimals))), token2.decimals)
+    accTransaction.tokenSymbol = !token2 ? token1.symbol : token2.symbol
+    accTransaction.tokenDecimals = !token2 ? token1.decimals : token2.decimals
+
+    return accTransaction as AccountTransaction
   }
 
-  const inputTokenConfig = Object.values(config.tokens).find(config =>
-    new PublicKey(flightLog.token1).equals(new PublicKey(config.mint))
-  )
+  static async getBlackBoxHistory(
+    pubKey: PublicKey,
+    cluster: MarginCluster,
+    pageSize = 100
+  ): Promise<AccountTransaction[]> {
+    const flightLogURL = `https://blackbox.jetprotocol.io/margin/accounts/activity/${pubKey}`
 
-  const outputTokenConfig = Object.values(config.tokens).find(config =>
-    new PublicKey(flightLog.token2).equals(new PublicKey(config.mint))
-  )
+    const response = await fetch(flightLogURL)
+    const jetTransactions: FlightLog[] = await response.json()
+    const config = await MarginClient.getConfig(cluster)
 
-  let token1 = inputTokenConfig as MarginTokenConfig
-  let token2 = outputTokenConfig as MarginTokenConfig
+    // let page = 0
+    // let processed = 0
+    // while (processed < signatures.length) {
+    //   const paginatedSignatures = signatures.slice(page * pageSize, (page + 1) * pageSize)
+    //   const transactions = await provider.connection.getParsedTransactions(
+    //     paginatedSignatures.map(s => s.signature),
+    //     "confirmed"
+    //   )
+    //   const filteredTxs = MarginClient.filterTransactions(transactions, config)
+    //   jetTransactions.push(...filteredTxs)
+    //   page++
+    //   processed += paginatedSignatures.length
+    // }
 
-  accTransaction.timestamp = new Date(flightLog.activity_timestamp).getTime() / 1000
-  accTransaction.blockDate = flightLog.activity_timestamp
-  accTransaction.signature = flightLog.signature
-  accTransaction.sigIndex = flightLog.id
-  accTransaction.slot = flightLog.activity_slot
-  accTransaction.tokenNameInput = token1.name
-  accTransaction.tokenSymbolInput = token1.symbol
-  accTransaction.tradeAmountInput = new TokenAmount(new BN(Math.round(flightLog.token1_amount * token1.decimals)), token1.decimals) 
-  accTransaction.tokenName = token2.name
-  accTransaction.tradeAmount = new TokenAmount(new BN(Math.round(flightLog.token2_amount * token2.decimals)), token2.decimals)
-  accTransaction.tokenSymbol = token2.symbol
-  accTransaction.tokenDecimals = token1.decimals
-
-  return accTransaction as AccountTransaction
-}
-
-static async getBlackBoxHistory(
-  pubKey: PublicKey,
-  cluster: MarginCluster,
-  pageSize = 100
-): Promise<AccountTransaction[]> {
-  // URL:
-  const flightLogURL = `https://blackbox.jetprotocol.io/margin/accounts/activity/${pubKey}`
-
-  const response = await fetch(flightLogURL)
-  const jetTransactions: FlightLog[] = await response.json()
-  const config = await MarginClient.getConfig(cluster)
-
-  // let page = 0
-  // let processed = 0
-  // while (processed < signatures.length) {
-  //   const paginatedSignatures = signatures.slice(page * pageSize, (page + 1) * pageSize)
-  //   const transactions = await provider.connection.getParsedTransactions(
-  //     paginatedSignatures.map(s => s.signature),
-  //     "confirmed"
-  //   )
-  //   const filteredTxs = MarginClient.filterTransactions(transactions, config)
-  //   jetTransactions.push(...filteredTxs)
-  //   page++
-  //   processed += paginatedSignatures.length
-  // }
-
-  const parsedTransactions = await Promise.all(
-    jetTransactions.map(async (t, idx) => await MarginClient.setupBlackboxTx(config, t))
-  )
-  const filteredParsedTransactions = parsedTransactions.filter(tx => !!tx) as AccountTransaction[]
-  return filteredParsedTransactions.sort((a, b) => a.slot - b.slot)
-}
-
-
-
+    const parsedTransactions = await Promise.all(
+      jetTransactions.map(async (t, idx) => await MarginClient.setupBlackboxTx(config, t))
+    )
+    const filteredParsedTransactions = parsedTransactions.filter(tx => !!tx) as AccountTransaction[]
+    return filteredParsedTransactions.sort((a, b) => a.slot - b.slot)
+  }
 }
