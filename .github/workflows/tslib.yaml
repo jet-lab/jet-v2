@@ -1,0 +1,13 @@
+name: TS Lib Publish
+
+on:
+  push:
+    branches: 
+      - "master"
+    paths:
+      - "libraries/ts/margin/src/**"
+  workflow_dispatch: {}
+
+jobs:
+  build_and_deploy:
+    runs-on: ubuntu-latest
