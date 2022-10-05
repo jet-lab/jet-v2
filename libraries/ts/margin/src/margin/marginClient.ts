@@ -334,28 +334,28 @@ export class MarginClient {
     return filteredParsedTransactions.sort((a, b) => a.slot - b.slot)
   }
 
-  // Blackbox history for mainnet
-  static async setupBlackboxTx(config: MarginConfig, flightLog: FlightLog): Promise<AccountTransaction | null> {
-    const accTransaction: Partial<AccountTransaction> = {}
+  // Blackbox history on mainnet only
+  static async getBlackboxTx(config: MarginConfig, flightLog: FlightLog): Promise<AccountTransaction | null> {
+    const tx: Partial<AccountTransaction> = {}
 
     switch (flightLog.activity_type) {
       case "Deposit":
-        accTransaction.tradeAction = "deposit"
+        tx.tradeAction = "deposit"
         break
       case "Withdraw":
-        accTransaction.tradeAction = "withdraw"
+        tx.tradeAction = "withdraw"
         break
       case "MarginBorrow":
-        accTransaction.tradeAction = "borrow"
+        tx.tradeAction = "borrow"
         break
       case "MarginRepay":
-        accTransaction.tradeAction = "repay"
+        tx.tradeAction = "repay"
         break
       case "Repay":
-        accTransaction.tradeAction = "repay"
+        tx.tradeAction = "repay"
         break
       case "MarginSwap":
-        accTransaction.tradeAction = "swap"
+        tx.tradeAction = "swap"
         break
     }
 
@@ -378,23 +378,23 @@ export class MarginClient {
     if (!timestamp.endsWith("Z")) {
       timestamp = `${timestamp}Z`
     }
-    accTransaction.timestamp = new Date(timestamp).getTime() / 1000
-    accTransaction.blockDate = timestamp
-    accTransaction.signature = flightLog.signature
-    accTransaction.sigIndex = flightLog.id
-    accTransaction.slot = flightLog.activity_slot
-    accTransaction.tokenNameInput = token1.name
+    tx.timestamp = new Date(timestamp).getTime() / 1000
+    tx.blockDate = timestamp
+    tx.signature = flightLog.signature
+    tx.sigIndex = flightLog.id
+    tx.slot = flightLog.activity_slot
+    tx.tokenNameInput = token1.name
     // If there is a token2 (e.g. a swap/trade), input is token1, else undefined
-    accTransaction.tokenSymbolInput = token2 ? token1.symbol : undefined
-    accTransaction.tradeAmountInput = token2 ? token1Amount : undefined
-    accTransaction.tokenName = token2?.name
-    accTransaction.tradeAmount = !token2
+    tx.tokenSymbolInput = token2 ? token1.symbol : undefined
+    tx.tradeAmountInput = token2 ? token1Amount : undefined
+    tx.tokenName = token2?.name
+    tx.tradeAmount = !token2
       ? token1Amount
       : new TokenAmount(new BN(Math.round(flightLog.token2_amount * Math.pow(10, token2.decimals))), token2.decimals)
-    accTransaction.tokenSymbol = !token2 ? token1.symbol : token2.symbol
-    accTransaction.tokenDecimals = !token2 ? token1.decimals : token2.decimals
+    tx.tokenSymbol = !token2 ? token1.symbol : token2.symbol
+    tx.tokenDecimals = !token2 ? token1.decimals : token2.decimals
 
-    return accTransaction as AccountTransaction
+    return tx as AccountTransaction
   }
 
   static async getBlackBoxHistory(
@@ -423,7 +423,7 @@ export class MarginClient {
     // }
 
     const parsedTransactions = await Promise.all(
-      jetTransactions.map(async (t, idx) => await MarginClient.setupBlackboxTx(config, t))
+      jetTransactions.map(async (t, idx) => await MarginClient.getBlackboxTx(config, t))
     )
     const filteredParsedTransactions = parsedTransactions.filter(tx => !!tx) as AccountTransaction[]
     return filteredParsedTransactions.sort((a, b) => a.slot - b.slot)
