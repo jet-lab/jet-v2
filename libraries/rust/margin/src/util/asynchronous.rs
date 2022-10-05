@@ -73,11 +73,10 @@ impl<Item: Send, Iter: Iterator<Item = Item> + Sized> MapAsync<Item> for Iter {}
 /// Useful since async lambdas are unstable
 #[async_trait]
 pub trait AndAsync: Sized {
-    // combine item with a future result to return from a lambda
-    // needed to comment this out for codecov. feel free to uncomment if needed
-    // async fn and<R, Fut: futures::Future<Output = R> + Send>(self, fut: Fut) -> (Self, R) {
-    //     (self, fut.await)
-    // }
+    /// combine item with a future result to return from a lambda
+    async fn and<R, Fut: futures::Future<Output = R> + Send>(self, fut: Fut) -> (Self, R) {
+        (self, fut.await)
+    }
 
     /// combine item with a future Result to return from a lambda
     async fn and_result<R, Fut: futures::Future<Output = Result<R>> + Send>(
