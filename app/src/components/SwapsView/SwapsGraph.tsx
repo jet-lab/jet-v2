@@ -10,6 +10,7 @@ import { CurrentSplSwapPool, SwapFees, SwapPoolTokenAmounts } from '../../state/
 import { CurrentPool } from '../../state/pools/pools';
 import { generateSwapPrices, getOutputTokenAmount } from '../../utils/actions/swap';
 import { useCurrencyFormatting } from '../../utils/currency';
+import { fromLocaleString } from '../../utils/format';
 import { ReorderArrows } from '../misc/ReorderArrows';
 import { ConnectionFeedback } from '../misc/ConnectionFeedback/ConnectionFeedback';
 import ApexCharts from 'apexcharts';
@@ -311,7 +312,7 @@ export function SwapsGraph(): JSX.Element {
       currentChart?.addPointAnnotation(
         {
           id: 'your-swap',
-          x: parseFloat(tokenInputString),
+          x: parseFloat(fromLocaleString(tokenInputString)),
           y: swapPrice,
           marker: {
             size: 3
