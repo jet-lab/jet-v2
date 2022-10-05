@@ -97,7 +97,8 @@ export function SwapEntry(): JSX.Element {
     'swap',
     tokenInputAmount,
     swapOutputTokens,
-    outputToken
+    outputToken,
+    repayLoanWithOutput
   );
   const projectedRiskStyle = useRiskStyle(projectedRiskIndicator);
   const swapReviewMessage = useSwapReviewMessage(
