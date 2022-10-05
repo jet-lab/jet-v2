@@ -9,5 +9,23 @@ on:
   workflow_dispatch: {}
 
 jobs:
-  build_and_deploy:
     runs-on: ubuntu-latest
+
+
+
+    publish:
+      runs-on: ubuntu-latest
+      steps:
+        - name: Checkout
+          uses: actions/checkout@v2
+
+        - name: Setup Nodejs
+          uses: actions/checkout@v2
+            with:
+            cache: npm
+
+        - name: Install Dependencies
+          run: npm ci
+
+        - name: Semantic Release
+          run: npm run semantic-release
