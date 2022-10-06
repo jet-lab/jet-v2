@@ -1,7 +1,7 @@
 use std::{collections::HashMap, sync::Arc};
 
 use anchor_lang::{InstructionData, ToAccountMetas};
-use jet_bonds::{margin::state::Obligation, tickets::instructions::StakeBondTicketsParams};
+use jet_bonds::{margin::state::Obligation, seeds, tickets::instructions::StakeBondTicketsParams};
 use jet_simulation::solana_rpc_api::SolanaRpcClient;
 use rand::rngs::OsRng;
 use solana_sdk::{
@@ -36,6 +36,7 @@ pub struct BondsIxBuilder {
     claims: Pubkey,
     collateral: Pubkey,
     orderbook_market_state: Pubkey,
+    underlying_oracle: Pubkey,
     keys: Keys,
 }
 
@@ -67,8 +68,35 @@ impl UnwrapKey for Option<&Pubkey> {
     }
 }
 
+impl From<BondManager> for BondsIxBuilder {
+    fn from(bond_manager: BondManager) -> Self {
+        BondsIxBuilder {
+            airspace: bond_manager.airspace,
+            authority: Pubkey::default(), //todo
+            manager: bonds_pda(&[
+                seeds::BOND_MANAGER,
+                bond_manager.underlying_token_mint.as_ref(),
+                &bond_manager.seed,
+            ]),
+            underlying_mint: bond_manager.underlying_token_mint,
+            bond_ticket_mint: bond_manager.bond_ticket_mint,
+            underlying_token_vault: bond_manager.underlying_token_vault,
+            claims: bond_manager.claims_mint,
+            collateral: bond_manager.collateral_mint,
+            orderbook_market_state: bond_manager.orderbook_market_state,
+            underlying_oracle: bond_manager.underlying_oracle,
+            keys: Keys::default(),
+        }
+    }
+}
+
 impl BondsIxBuilder {
-    pub fn new(underlying_mint: Pubkey, manager: Pubkey, authority: Pubkey) -> Self {
+    pub fn new(
+        underlying_mint: Pubkey,
+        manager: Pubkey,
+        authority: Pubkey,
+        underlying_oracle: Pubkey,
+    ) -> Self {
         let bond_ticket_mint = bonds_pda(&[jet_bonds::seeds::BOND_TICKET_MINT, manager.as_ref()]);
         let underlying_token_vault =
             bonds_pda(&[jet_bonds::seeds::UNDERLYING_TOKEN_VAULT, manager.as_ref()]);
@@ -87,13 +115,24 @@ impl BondsIxBuilder {
             claims,
             collateral,
             orderbook_market_state,
+            underlying_oracle,
             keys,
         }
     }
 
     /// derives the bond manager key from a mint and seed
-    pub fn new_from_seed(mint: &Pubkey, seed: [u8; 32], authority: Pubkey) -> Self {
-        let builder = Self::new(*mint, Self::bond_manager_key(mint, seed), authority);
+    pub fn new_from_seed(
+        mint: &Pubkey,
+        seed: [u8; 32],
+        authority: Pubkey,
+        underlying_oracle: Pubkey,
+    ) -> Self {
+        let builder = Self::new(
+            *mint,
+            Self::bond_manager_key(mint, seed),
+            authority,
+            underlying_oracle,
+        );
         builder.with_mint(mint)
     }
 
@@ -207,14 +246,12 @@ impl BondsIxBuilder {
         Ok(Instruction::new_with_bytes(jet_bonds::ID, &data, accounts))
     }
 
-    #[allow(clippy::too_many_arguments)]
     pub fn initialize_manager(
         &self,
         payer: Pubkey,
         version_tag: u64,
         seed: [u8; 32],
         duration: i64,
-        underlying_oracle: Pubkey,
         ticket_oracle: Pubkey,
     ) -> Result<Instruction> {
         let data = jet_bonds::instruction::InitializeBondManager {
@@ -234,7 +271,7 @@ impl BondsIxBuilder {
             collateral: self.collateral,
             authority: self.authority,
             airspace: self.airspace,
-            underlying_oracle,
+            underlying_oracle: self.underlying_oracle,
             ticket_oracle,
             payer,
             rent: solana_sdk::sysvar::rent::ID,
@@ -259,6 +296,7 @@ impl BondsIxBuilder {
             &jet_bonds::ID,
         ))
     }
+
     pub fn initialize_event_queue(
         &self,
         queue: &Pubkey,
@@ -336,25 +374,25 @@ impl BondsIxBuilder {
     /// else needs vault addresses and authority
     pub fn convert_tokens(
         &self,
-        user: Option<&Pubkey>,
-        token_vault: Option<&Pubkey>,
-        ticket_vault: Option<&Pubkey>,
-        vault_authority: Option<&Pubkey>,
+        user: Option<Pubkey>,
+        token_vault: Option<Pubkey>,
+        ticket_vault: Option<Pubkey>,
+        vault_authority: Option<Pubkey>,
         amount: u64,
     ) -> Result<Instruction> {
         let user_bond_ticket_vault = match ticket_vault {
-            Some(vault) => *vault,
+            Some(vault) => vault,
             None => get_associated_token_address(&user.unwrap_key("user")?, &self.bond_ticket_mint),
         };
         let user_underlying_token_vault = match token_vault {
-            Some(vault) => *vault,
+            Some(vault) => vault,
             None => get_associated_token_address(
                 &user.unwrap_key("user")?,
                 &self.keys.unwrap("underlying_mint")?,
             ),
         };
         let user_authority = match vault_authority {
-            Some(auth) => *auth,
+            Some(auth) => auth,
             None => user.unwrap_key("user")?,
         };
 
@@ -374,16 +412,16 @@ impl BondsIxBuilder {
 
     pub fn stake_tickets(
         &self,
-        ticket_holder: &Pubkey,
-        ticket_vault: Option<&Pubkey>,
+        ticket_holder: Pubkey,
+        ticket_vault: Option<Pubkey>,
         amount: u64,
         seed: Vec<u8>,
     ) -> Result<Instruction> {
-        let claim_ticket = self.claim_ticket_key(ticket_holder, seed.clone());
+        let claim_ticket = self.claim_ticket_key(&ticket_holder, seed.clone());
 
         let bond_ticket_token_account = match ticket_vault {
-            Some(vault) => *vault,
-            None => get_associated_token_address(ticket_holder, &self.bond_ticket_mint),
+            Some(vault) => vault,
+            None => get_associated_token_address(&ticket_holder, &self.bond_ticket_mint),
         };
         let data = jet_bonds::instruction::StakeBondTickets {
             params: StakeBondTicketsParams {
@@ -395,7 +433,7 @@ impl BondsIxBuilder {
         let accounts = jet_bonds::accounts::StakeBondTickets {
             claim_ticket,
             bond_manager: self.manager,
-            ticket_holder: *ticket_holder,
+            ticket_holder,
             bond_ticket_token_account,
             bond_ticket_mint: self.bond_ticket_mint,
             payer: self.keys.unwrap("payer")?,
@@ -408,18 +446,20 @@ impl BondsIxBuilder {
 
     pub fn redeem_ticket(
         &self,
-        holder: &Pubkey,
-        ticket: &Pubkey,
-        token_vault: Option<&Pubkey>,
+        ticket_holder: Pubkey,
+        ticket: Pubkey,
+        token_vault: Option<Pubkey>,
     ) -> Result<Instruction> {
         let claimant_token_account = match token_vault {
-            Some(vault) => *vault,
-            None => get_associated_token_address(holder, &self.keys.unwrap("underlying_mint")?),
+            Some(vault) => vault,
+            None => {
+                get_associated_token_address(&ticket_holder, &self.keys.unwrap("underlying_mint")?)
+            }
         };
         let data = jet_bonds::instruction::RedeemTicket {}.data();
         let accounts = jet_bonds::accounts::RedeemTicket {
-            ticket: *ticket,
-            ticket_holder: *holder,
+            ticket,
+            ticket_holder,
             claimant_token_account,
             bond_manager: self.manager,
             underlying_token_vault: self.underlying_token_vault,
@@ -429,24 +469,44 @@ impl BondsIxBuilder {
         Ok(Instruction::new_with_bytes(jet_bonds::ID, &data, accounts))
     }
 
+    pub fn refresh_position(&self, margin_account: Pubkey) -> Result<Instruction> {
+        Ok(Instruction {
+            program_id: jet_bonds::ID,
+            accounts: jet_bonds::accounts::RefreshPosition {
+                bond_manager: self.manager,
+                margin_user: bonds_pda(&[
+                    seeds::MARGIN_BORROWER,
+                    self.manager.as_ref(),
+                    margin_account.as_ref(),
+                ]),
+                margin_account,
+                claims_mint: self.claims,
+                underlying_oracle: self.underlying_oracle,
+                token_program: spl_token::ID,
+            }
+            .to_account_metas(None),
+            data: jet_bonds::instruction::RefreshPosition { expect_price: true }.data(),
+        })
+    }
+
     pub fn sell_tickets_order(
         &self,
-        user: &Pubkey,
-        ticket_vault: Option<&Pubkey>,
-        token_vault: Option<&Pubkey>,
+        user: Pubkey,
+        ticket_vault: Option<Pubkey>,
+        token_vault: Option<Pubkey>,
         params: OrderParams,
     ) -> Result<Instruction> {
         let user_ticket_vault = match ticket_vault {
-            Some(vault) => *vault,
-            None => get_associated_token_address(user, &self.bond_ticket_mint),
+            Some(vault) => vault,
+            None => get_associated_token_address(&user, &self.bond_ticket_mint),
         };
         let user_token_vault = match token_vault {
-            Some(vault) => *vault,
-            None => get_associated_token_address(user, &self.keys.unwrap("underlying_mint")?),
+            Some(vault) => vault,
+            None => get_associated_token_address(&user, &self.keys.unwrap("underlying_mint")?),
         };
         let data = jet_bonds::instruction::SellTicketsOrder { params }.data();
         let accounts = jet_bonds::accounts::SellTicketsOrder {
-            user: *user,
+            user,
             user_ticket_vault,
             user_token_vault,
             bond_ticket_mint: self.bond_ticket_mint,
@@ -488,24 +548,24 @@ impl BondsIxBuilder {
 
     pub fn lend_order(
         &self,
-        user: &Pubkey,
-        ticket_vault: Option<&Pubkey>,
-        token_vault: Option<&Pubkey>,
+        user: Pubkey,
+        ticket_vault: Option<Pubkey>,
+        token_vault: Option<Pubkey>,
         params: OrderParams,
         seed: Vec<u8>,
     ) -> Result<Instruction> {
         let user_ticket_vault = match ticket_vault {
-            Some(vault) => *vault,
-            None => get_associated_token_address(user, &self.bond_ticket_mint),
+            Some(vault) => vault,
+            None => get_associated_token_address(&user, &self.bond_ticket_mint),
         };
         let user_token_vault = match token_vault {
-            Some(vault) => *vault,
-            None => get_associated_token_address(user, &self.keys.unwrap("underlying_mint")?),
+            Some(vault) => vault,
+            None => get_associated_token_address(&user, &self.keys.unwrap("underlying_mint")?),
         };
-        let split_ticket = self.split_ticket_key(user, seed.clone());
+        let split_ticket = self.split_ticket_key(&user, seed.clone());
         let data = jet_bonds::instruction::LendOrder { params, seed }.data();
         let accounts = jet_bonds::accounts::LendOrder {
-            user: *user,
+            user,
             user_ticket_vault,
             user_token_vault,
             underlying_token_vault: self.underlying_token_vault,
