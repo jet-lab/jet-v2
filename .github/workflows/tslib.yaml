@@ -19,7 +19,7 @@ jobs:
 
         - name: Setup Nodejs
           uses: actions/checkout@v2
-            with:
+          with:
             cache: npm
 
         - name: Install Dependencies
