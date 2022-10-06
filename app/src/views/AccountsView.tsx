@@ -8,6 +8,7 @@ import { AccountsViewOrder } from '../state/views/views';
 
 // App view for managing / checking margin accounts
 export function AccountsView(): JSX.Element {
+  alert("Accounts rendering");
   const dictionary = useRecoilValue(Dictionary);
 
   // Localize page title

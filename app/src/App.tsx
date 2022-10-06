@@ -22,6 +22,7 @@ const FixedLendView = lazy(() => import('./views/FixedLendView'));
 const FixedBorrowView = lazy(() => import('./views/FixedBorrowView'));
 
 export function App(): JSX.Element {
+  alert('App rendering');
   const isDevnet = localStorage.getItem('jetAppCluster') === 'devnet'
 
   const wallets = [

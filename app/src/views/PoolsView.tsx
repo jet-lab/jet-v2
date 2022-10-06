@@ -9,6 +9,7 @@ import { PoolsRowOrder, PoolsViewOrder } from '../state/views/views';
 
 // App view for using / viewing Jet pools
 export function PoolsView(): JSX.Element {
+  alert("Pools rendering");
   const dictionary = useRecoilValue(Dictionary);
 
   // Localize page title
