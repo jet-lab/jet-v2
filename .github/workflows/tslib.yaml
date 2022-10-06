@@ -3,7 +3,7 @@ name: TS Lib Publish
 on:
   push:
     branches: 
-      - "master"
+      - "ci-tslib-publishing"
     paths:
       - "libraries/ts/margin/src/**"
   workflow_dispatch: {}
