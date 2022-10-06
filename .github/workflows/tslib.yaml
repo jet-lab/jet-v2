@@ -9,8 +9,6 @@ on:
   workflow_dispatch: {}
 
 jobs:
-  runs-on: ubuntu-latest
-
   publish:
     runs-on: ubuntu-latest
     steps:
