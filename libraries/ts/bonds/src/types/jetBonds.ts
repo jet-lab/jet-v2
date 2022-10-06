@@ -31,11 +31,11 @@ export type JetBonds = {
       value: 'b"claim_ticket"'
     },
     {
-      name: "DEPOSIT_NOTES"
+      name: "COLLATERAL_NOTES"
       type: {
         defined: "&[u8]"
       }
-      value: 'b"deposit_notes"'
+      value: 'b"collateral_notes"'
     },
     {
       name: "SPLIT_TICKET"
@@ -84,7 +84,7 @@ export type JetBonds = {
       type: {
         defined: "&[u8]"
       }
-      value: 'b"user_claims"'
+      value: 'b"claim_notes"'
     }
   ]
   instructions: [
@@ -2376,11 +2376,11 @@ export const IDL: JetBonds = {
       value: 'b"claim_ticket"'
     },
     {
-      name: "DEPOSIT_NOTES",
+      name: "COLLATERAL_NOTES",
       type: {
         defined: "&[u8]"
       },
-      value: 'b"deposit_notes"'
+      value: 'b"collateral_notes"'
     },
     {
       name: "SPLIT_TICKET",
@@ -2429,7 +2429,7 @@ export const IDL: JetBonds = {
       type: {
         defined: "&[u8]"
       },
-      value: 'b"user_claims"'
+      value: 'b"claim_notes"'
     }
   ],
   instructions: [

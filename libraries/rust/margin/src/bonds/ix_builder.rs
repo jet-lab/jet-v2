@@ -37,6 +37,7 @@ pub struct BondsIxBuilder {
     collateral: Pubkey,
     orderbook_market_state: Pubkey,
     underlying_oracle: Pubkey,
+    ticket_oracle: Pubkey,
     keys: Keys,
 }
 
@@ -85,6 +86,7 @@ impl From<BondManager> for BondsIxBuilder {
             collateral: bond_manager.collateral_mint,
             orderbook_market_state: bond_manager.orderbook_market_state,
             underlying_oracle: bond_manager.underlying_oracle,
+            ticket_oracle: bond_manager.ticket_oracle,
             keys: Keys::default(),
         }
     }
@@ -96,6 +98,7 @@ impl BondsIxBuilder {
         manager: Pubkey,
         authority: Pubkey,
         underlying_oracle: Pubkey,
+        ticket_oracle: Pubkey,
     ) -> Self {
         let bond_ticket_mint = bonds_pda(&[jet_bonds::seeds::BOND_TICKET_MINT, manager.as_ref()]);
         let underlying_token_vault =
@@ -103,7 +106,7 @@ impl BondsIxBuilder {
         let orderbook_market_state =
             bonds_pda(&[jet_bonds::seeds::ORDERBOOK_MARKET_STATE, manager.as_ref()]);
         let claims = bonds_pda(&[jet_bonds::seeds::CLAIM_NOTES, manager.as_ref()]);
-        let collateral = bonds_pda(&[jet_bonds::seeds::DEPOSIT_NOTES, manager.as_ref()]);
+        let collateral = bonds_pda(&[jet_bonds::seeds::COLLATERAL_NOTES, manager.as_ref()]);
         let keys = Keys::default();
         Self {
             airspace: Pubkey::default(), // fixme airspace
@@ -116,6 +119,7 @@ impl BondsIxBuilder {
             collateral,
             orderbook_market_state,
             underlying_oracle,
+            ticket_oracle,
             keys,
         }
     }
@@ -126,12 +130,14 @@ impl BondsIxBuilder {
         seed: [u8; 32],
         authority: Pubkey,
         underlying_oracle: Pubkey,
+        ticket_oracle: Pubkey,
     ) -> Self {
         let builder = Self::new(
             *mint,
             Self::bond_manager_key(mint, seed),
             authority,
             underlying_oracle,
+            ticket_oracle,
         );
         builder.with_mint(mint)
     }
@@ -252,7 +258,6 @@ impl BondsIxBuilder {
         version_tag: u64,
         seed: [u8; 32],
         duration: i64,
-        ticket_oracle: Pubkey,
     ) -> Result<Instruction> {
         let data = jet_bonds::instruction::InitializeBondManager {
             params: InitializeBondManagerParams {
@@ -272,7 +277,7 @@ impl BondsIxBuilder {
             authority: self.authority,
             airspace: self.airspace,
             underlying_oracle: self.underlying_oracle,
-            ticket_oracle,
+            ticket_oracle: self.ticket_oracle,
             payer,
             rent: solana_sdk::sysvar::rent::ID,
             token_program: spl_token::ID,
@@ -349,7 +354,10 @@ impl BondsIxBuilder {
             borrower_account,
             margin_account: owner,
             claims: bonds_pda(&[jet_bonds::seeds::CLAIM_NOTES, borrower_account.as_ref()]),
-            collateral: bonds_pda(&[jet_bonds::seeds::DEPOSIT_NOTES, borrower_account.as_ref()]),
+            collateral: bonds_pda(&[
+                jet_bonds::seeds::COLLATERAL_NOTES,
+                borrower_account.as_ref(),
+            ]),
             claims_mint: self.claims,
             collateral_mint: self.collateral,
             underlying_settlement: get_associated_token_address(
@@ -469,7 +477,11 @@ impl BondsIxBuilder {
         Ok(Instruction::new_with_bytes(jet_bonds::ID, &data, accounts))
     }
 
-    pub fn refresh_position(&self, margin_account: Pubkey) -> Result<Instruction> {
+    pub fn refresh_position(
+        &self,
+        margin_account: Pubkey,
+        expect_price: bool,
+    ) -> Result<Instruction> {
         Ok(Instruction {
             program_id: jet_bonds::ID,
             accounts: jet_bonds::accounts::RefreshPosition {
@@ -480,12 +492,12 @@ impl BondsIxBuilder {
                     margin_account.as_ref(),
                 ]),
                 margin_account,
-                claims_mint: self.claims,
                 underlying_oracle: self.underlying_oracle,
+                ticket_oracle: self.ticket_oracle,
                 token_program: spl_token::ID,
             }
             .to_account_metas(None),
-            data: jet_bonds::instruction::RefreshPosition { expect_price: true }.data(),
+            data: jet_bonds::instruction::RefreshPosition { expect_price }.data(),
         })
     }
 
@@ -517,11 +529,15 @@ impl BondsIxBuilder {
         Ok(Instruction::new_with_bytes(jet_bonds::ID, &data, accounts))
     }
 
-    pub fn margin_borrow_order(&self, user: Pubkey, params: OrderParams) -> Result<Instruction> {
-        let borrower_account = bonds_pda(&[
+    pub fn margin_borrow_order(
+        &self,
+        margin_account: Pubkey,
+        params: OrderParams,
+    ) -> Result<Instruction> {
+        let margin_user = bonds_pda(&[
             jet_bonds::seeds::MARGIN_BORROWER,
             self.manager.as_ref(),
-            user.as_ref(),
+            margin_account.as_ref(),
         ]);
 
         let seed = make_seed(&mut OsRng::default());
@@ -532,11 +548,13 @@ impl BondsIxBuilder {
         .data();
         let accounts = jet_bonds::accounts::MarginBorrowOrder {
             orderbook_mut: self.orderbook_mut()?,
-            borrower_account,
-            obligation: bonds_pda(&Obligation::make_seeds(borrower_account.as_ref(), &seed)),
-            margin_account: user,
-            claims: bonds_pda(&[jet_bonds::seeds::CLAIM_NOTES, borrower_account.as_ref()]),
+            margin_user,
+            obligation: bonds_pda(&Obligation::make_seeds(margin_user.as_ref(), &seed)),
+            margin_account,
+            claims: bonds_pda(&[jet_bonds::seeds::CLAIM_NOTES, margin_user.as_ref()]),
             claims_mint: self.claims,
+            collateral: bonds_pda(&[jet_bonds::seeds::COLLATERAL_NOTES, margin_user.as_ref()]),
+            collateral_mint: self.collateral,
             payer: self.keys.unwrap("payer")?,
             token_program: spl_token::ID,
             system_program: solana_sdk::system_program::ID,
@@ -549,16 +567,16 @@ impl BondsIxBuilder {
     pub fn lend_order(
         &self,
         user: Pubkey,
-        ticket_vault: Option<Pubkey>,
-        token_vault: Option<Pubkey>,
+        lender_tickets: Option<Pubkey>,
+        lender_tokens: Option<Pubkey>,
         params: OrderParams,
         seed: Vec<u8>,
     ) -> Result<Instruction> {
-        let user_ticket_vault = match ticket_vault {
+        let lender_tickets = match lender_tickets {
             Some(vault) => vault,
             None => get_associated_token_address(&user, &self.bond_ticket_mint),
         };
-        let user_token_vault = match token_vault {
+        let lender_tokens = match lender_tokens {
             Some(vault) => vault,
             None => get_associated_token_address(&user, &self.keys.unwrap("underlying_mint")?),
         };
@@ -566,14 +584,54 @@ impl BondsIxBuilder {
         let data = jet_bonds::instruction::LendOrder { params, seed }.data();
         let accounts = jet_bonds::accounts::LendOrder {
             user,
-            user_ticket_vault,
-            user_token_vault,
-            underlying_token_vault: self.underlying_token_vault,
-            split_ticket,
+            lender_tickets,
             orderbook_mut: self.orderbook_mut()?,
-            payer: self.keys.unwrap("payer")?,
+            lend: jet_bonds::accounts::Lend {
+                lender_tokens,
+                underlying_token_vault: self.underlying_token_vault,
+                split_ticket,
+                payer: self.keys.unwrap("payer")?,
+                token_program: spl_token::ID,
+                system_program: solana_sdk::system_program::ID,
+            },
+        }
+        .to_account_metas(None);
+        Ok(Instruction::new_with_bytes(jet_bonds::ID, &data, accounts))
+    }
+
+    pub fn margin_lend_order(
+        &self,
+        margin_account: Pubkey,
+        lender_tokens: Option<Pubkey>,
+        params: OrderParams,
+        seed: Vec<u8>,
+    ) -> Result<Instruction> {
+        let margin_user = bonds_pda(&[
+            jet_bonds::seeds::MARGIN_BORROWER,
+            self.manager.as_ref(),
+            margin_account.as_ref(),
+        ]);
+        let lender_tokens = match lender_tokens {
+            Some(account) => account,
+            None => get_associated_token_address(&margin_account, &self.underlying_mint),
+        };
+        let split_ticket = self.split_ticket_key(&margin_account, seed.clone());
+        let data = jet_bonds::instruction::MarginLendOrder { params, seed }.data();
+        let accounts = jet_bonds::accounts::MarginLendOrder {
+            margin_user,
+            margin_account,
+            collateral: bonds_pda(&[jet_bonds::seeds::COLLATERAL_NOTES, margin_user.as_ref()]),
+            collateral_mint: self.collateral,
+            orderbook_mut: self.orderbook_mut()?,
+            lend: jet_bonds::accounts::Lend {
+                lender_tokens,
+                underlying_token_vault: self.underlying_token_vault,
+                split_ticket,
+                payer: self.keys.unwrap("payer")?,
+                token_program: spl_token::ID,
+                system_program: solana_sdk::system_program::ID,
+            },
             token_program: spl_token::ID,
-            system_program: solana_sdk::system_program::ID,
         }
         .to_account_metas(None);
         Ok(Instruction::new_with_bytes(jet_bonds::ID, &data, accounts))

@@ -83,7 +83,13 @@ pub async fn process_create_bond_market<'a>(
             anyhow::Error::msg(format!("failed to resolve signer for asks. Error: {e:?}"))
         })?,
     ];
-    let bonds = BondsIxBuilder::new_from_seed(&params.token_mint, seed, payer, params.token_oracle);
+    let bonds = BondsIxBuilder::new_from_seed(
+        &params.token_mint,
+        seed,
+        payer,
+        params.token_oracle,
+        params.ticket_oracle,
+    );
 
     let mut steps = vec![];
     let mut instructions = vec![];
@@ -96,13 +102,8 @@ pub async fn process_create_bond_market<'a>(
         println!("the token {} does not exist", params.token_mint);
         return Ok(Plan::default());
     } else {
-        let init_manager = bonds.initialize_manager(
-            payer,
-            MANAGER_VERSION,
-            seed,
-            params.duration,
-            Pubkey::default(),
-        )?;
+        let init_manager =
+            bonds.initialize_manager(payer, MANAGER_VERSION, seed, params.duration)?;
         steps.push(format!(
             "initialize-bond-manager for token [{}]",
             params.token_mint

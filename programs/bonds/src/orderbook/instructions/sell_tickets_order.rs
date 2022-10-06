@@ -57,12 +57,12 @@ pub fn handler(ctx: Context<SellTicketsOrder>, params: OrderParams) -> Result<()
                 authority: ctx.accounts.user.to_account_info(),
             },
         ),
-        order_summary.total_base_qty,
+        order_summary.base_combined(),
     )?;
     emit!(crate::events::SellTicketsOrder {
         bond_market: ctx.accounts.orderbook_mut.bond_manager.key(),
         borrower: ctx.accounts.user.key(),
-        order_summary,
+        order_summary: order_summary.summary(),
     });
 
     Ok(())

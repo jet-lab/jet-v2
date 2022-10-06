@@ -60,9 +60,16 @@ impl Client {
         mint: Pubkey,
         seed: [u8; 32],
         token_oracle: Pubkey,
+        ticket_oracle: Pubkey,
     ) -> Result<Self> {
-        let mut ix = BondsIxBuilder::new_from_seed(&mint, seed, signer.pubkey(), token_oracle)
-            .with_payer(&signer.pubkey());
+        let mut ix = BondsIxBuilder::new_from_seed(
+            &mint,
+            seed,
+            signer.pubkey(),
+            token_oracle,
+            ticket_oracle,
+        )
+        .with_payer(&signer.pubkey());
         let bond_manager = {
             let data = conn.get_account_data(&ix.manager())?;
 
@@ -222,6 +229,7 @@ fn main() -> Result<()> {
         wallet,
         DEVNET_USDC,
         Pubkey::default().to_bytes(),
+        Pubkey::default(),
         Pubkey::default(),
     )?;
 

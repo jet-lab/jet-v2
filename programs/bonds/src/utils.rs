@@ -72,13 +72,17 @@ macro_rules! burn {
 pub(crate) use burn;
 
 /// transfer underlying tokens from vault to user
+/// signed by the bond manager
 macro_rules! withdraw {
+    // both `from` and `to` are field names in ctx.accounts
     ($ctx:ident, $from:ident, $to:ident, $amount:expr $(, $bond_manager_nesting:ident)?) => {
         crate::utils::withdraw!($ctx, $ctx.accounts.$from.to_account_info(), $ctx.accounts.$to.to_account_info(), $amount $(, $bond_manager_nesting)?)
     };
+    // `from` is a field name in ctx.accounts, `to` is AccountInfo
     ($ctx:ident, $from:ident, $to:expr, $amount:expr $(, $bond_manager_nesting:ident)?) => {
         crate::utils::withdraw!($ctx, $ctx.accounts.$from.to_account_info(), $to, $amount $(, $bond_manager_nesting)?)
     };
+    // both `from` and `to` are AccountInfo
     ($ctx:ident, $from:expr, $to:expr, $amount:expr $(, $bond_manager_nesting:ident)?) => {
         anchor_spl::token::transfer(
             anchor_lang::prelude::CpiContext::new(
@@ -95,21 +99,6 @@ macro_rules! withdraw {
     };
 }
 pub(crate) use withdraw;
-
-/// builds context for an spl transfer invocation
-macro_rules! transfer_context {
-    ($ctx:ident, $to:ident, $from:ident, $authority:ident) => {
-        anchor_lang::prelude::CpiContext::new(
-            $ctx.accounts.token_program.to_account_info(),
-            anchor_spl::token::Transfer {
-                from: $ctx.accounts.$from.to_account_info(),
-                to: $ctx.accounts.$to.to_account_info(),
-                authority: $ctx.accounts.$authority.to_account_info(),
-            },
-        )
-    };
-}
-pub(crate) use transfer_context;
 
 /// builds accounts for an instruction on the agnostic orderbook
 macro_rules! orderbook_accounts {

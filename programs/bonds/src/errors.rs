@@ -84,10 +84,14 @@ pub enum BondsError {
     DoesNotOwnMarket,
     #[msg("the wrong account was provided for the token account that represents a user's claims")]
     WrongClaimAccount,
+    #[msg(
+        "the wrong account was provided for the token account that represents a user's collateral"
+    )]
+    WrongCollateralAccount,
     #[msg("the wrong account was provided for the claims token mint")]
     WrongClaimMint,
-    #[msg("the wrong account was provided for the claims token mint")]
-    WrongDepositsMint,
+    #[msg("the wrong account was provided for the collateral token mint")]
+    WrongCollateralMint,
     #[msg("wrong oracle address was sent to instruction")]
     WrongOracle,
     #[msg("wrong margin borrower account address was sent to instruction")]

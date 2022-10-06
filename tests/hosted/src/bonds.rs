@@ -20,7 +20,7 @@ use jet_bonds::{
 };
 
 use jet_margin_sdk::{
-    bonds::{event_builder::build_consume_events_info, BondsIxBuilder},
+    bonds::{bonds_pda, event_builder::build_consume_events_info, BondsIxBuilder},
     ix_builder::{
         get_control_authority_address, get_metadata_address, ControlIxBuilder, MarginIxBuilder,
     },
@@ -118,6 +118,13 @@ impl TestManager {
         let oracle = TokenManager::new(client.clone())
             .create_oracle(&mint.pubkey())
             .await?;
+        let bond_ticket_mint = bonds_pda(&[
+            jet_bonds::seeds::BOND_TICKET_MINT,
+            BondsIxBuilder::bond_manager_key(&mint.pubkey(), BOND_MANAGER_SEED).as_ref(),
+        ]);
+        let ticket_oracle = TokenManager::new(client.clone())
+            .create_oracle(&bond_ticket_mint)
+            .await?;
         TestManager::new(
             client,
             &mint,
@@ -125,6 +132,7 @@ impl TestManager {
             &generate_keypair(),
             &generate_keypair(),
             oracle.price,
+            ticket_oracle.price,
         )
         .await?
         .with_crank()
@@ -140,6 +148,7 @@ impl TestManager {
         bids_kp: &Keypair,
         asks_kp: &Keypair,
         underlying_oracle: Pubkey,
+        ticket_oracle: Pubkey,
     ) -> Result<Self> {
         let payer = client.payer();
         let recent_blockhash = client.get_latest_blockhash().await?;
@@ -154,6 +163,7 @@ impl TestManager {
             BOND_MANAGER_SEED,
             payer.pubkey(),
             underlying_oracle,
+            ticket_oracle,
         )
         .with_payer(&payer.pubkey());
         let mut this = Self {
@@ -218,7 +228,6 @@ impl TestManager {
             BOND_MANAGER_TAG,
             BOND_MANAGER_SEED,
             STAKE_DURATION,
-            Pubkey::default(),
         )?;
         let init_orderbook = this.ix_builder.initialize_orderbook(
             this.client.payer().pubkey(),

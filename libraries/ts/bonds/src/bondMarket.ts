@@ -337,11 +337,11 @@ export class BondMarket {
   }
 
   async deriveMarginUserClaims(borrowerAccount: Address): Promise<PublicKey> {
-    return await findDerivedAccount(["user_claims", borrowerAccount], this.program.programId)
+    return await findDerivedAccount(["claim_notes", borrowerAccount], this.program.programId)
   }
 
   async deriveMarginUserCollateral(borrowerAccount: Address): Promise<PublicKey> {
-    return await findDerivedAccount(["deposit_notes", borrowerAccount], this.program.programId)
+    return await findDerivedAccount(["collateral_notes", borrowerAccount], this.program.programId)
   }
 
   async deriveObligationAddress(borrowerAccount: Address, seed: Uint8Array): Promise<PublicKey> {

@@ -159,6 +159,7 @@ async fn main() -> Result<()> {
         map_seed(PARAMS.seed.clone()),
         payer,
         PARAMS.token_oracle,
+        PARAMS.ticket_oracle,
     )
     .with_payer(&payer);
     let init_ob_accs = create_orderbook_accounts(

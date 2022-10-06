@@ -1,5 +1,6 @@
 use crate::{
-    control::state::BondManager, events::OrderCancelled, utils::orderbook_accounts, BondsError,
+    control::state::BondManager, events::OrderCancelled, serialization,
+    tickets::state::SplitTicket, utils::orderbook_accounts, BondsError,
 };
 use agnostic_orderbook::{
     instruction::cancel_order,
@@ -17,6 +18,7 @@ use anchor_lang::{
     prelude::*,
     solana_program::{clock::UnixTimestamp, hash::hash},
 };
+use anchor_spl::token::{accessor::mint, Token, TokenAccount};
 use bytemuck::{CheckedBitPattern, NoUninit, Pod, Zeroable};
 use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
@@ -69,6 +71,14 @@ pub struct OrderbookMut<'info> {
 }
 
 impl<'info> OrderbookMut<'info> {
+    pub fn underlying_mint(&self) -> Pubkey {
+        self.bond_manager.load().unwrap().underlying_token_mint
+    }
+
+    pub fn vault(&self) -> Pubkey {
+        self.bond_manager.load().unwrap().underlying_token_vault
+    }
+
     #[allow(clippy::too_many_arguments)]
     pub fn place_order(
         &self,
@@ -79,7 +89,7 @@ impl<'info> OrderbookMut<'info> {
         out: Pubkey,
         adapter: Option<Pubkey>,
         extra_flags: CallbackFlags,
-    ) -> Result<(CallbackInfo, OrderSummary)> {
+    ) -> Result<(CallbackInfo, SensibleOrderSummary)> {
         let OrderParams {
             max_bond_ticket_qty,
             max_underlying_token_qty,
@@ -123,7 +133,13 @@ impl<'info> OrderbookMut<'info> {
             BondsError::OrderRejected
         );
 
-        Ok((callback_info, order_summary))
+        Ok((
+            callback_info,
+            SensibleOrderSummary {
+                summary: order_summary,
+                params,
+            },
+        ))
     }
 
     /// cancels an order within the aaob
@@ -172,6 +188,80 @@ impl<'info> OrderbookMut<'info> {
         });
 
         Ok((side, flags, order_summary))
+    }
+}
+
+#[derive(Accounts)]
+pub struct Lend<'info> {
+    /// SplitTicket that will be created if the order is filled as a taker and `auto_stake` is enabled
+    #[account(mut)]
+    pub split_ticket: AccountInfo<'info>,
+
+    #[account(mut)]
+    pub lender_tokens: Account<'info, TokenAccount>,
+
+    /// The market token vault
+    #[account(mut)]
+    pub underlying_token_vault: Account<'info, TokenAccount>,
+
+    #[account(mut)]
+    pub payer: Signer<'info>,
+    pub system_program: Program<'info, System>,
+    pub token_program: Program<'info, Token>,
+}
+
+impl<'info> Lend<'info> {
+    pub fn lender_mint(&self) -> Pubkey {
+        mint(&self.lender_tokens.to_account_info()).unwrap()
+    }
+
+    pub fn vault(&self) -> Pubkey {
+        self.underlying_token_vault.key()
+    }
+
+    pub fn lend(
+        &self,
+        user: Pubkey,
+        authority: AccountInfo<'info>,
+        seed: &[u8],
+        callback_info: CallbackInfo,
+        order_summary: &SensibleOrderSummary,
+        bond_manager: &AccountLoader<'info, BondManager>,
+    ) -> Result<()> {
+        if callback_info.flags.contains(CallbackFlags::AUTO_STAKE)
+            && order_summary.base_filled() > 0
+        {
+            let mut split_ticket = serialization::init::<SplitTicket>(
+                self.split_ticket.to_account_info(),
+                self.payer.to_account_info(),
+                self.system_program.to_account_info(),
+                &SplitTicket::make_seeds(user.as_ref(), seed),
+            )?;
+            let timestamp = Clock::get()?.unix_timestamp;
+
+            *split_ticket = SplitTicket {
+                owner: user,
+                bond_manager: bond_manager.key(),
+                order_tag: callback_info.order_tag,
+                struck_timestamp: timestamp,
+                maturation_timestamp: timestamp + bond_manager.load()?.duration,
+                principal: order_summary.quote_filled(),
+                interest: order_summary.base_filled() - order_summary.quote_filled(),
+            };
+        }
+        anchor_spl::token::transfer(
+            anchor_lang::prelude::CpiContext::new(
+                self.token_program.to_account_info(),
+                anchor_spl::token::Transfer {
+                    from: self.lender_tokens.to_account_info(),
+                    to: self.underlying_token_vault.to_account_info(),
+                    authority,
+                },
+            ),
+            order_summary.quote_combined()?,
+        )?;
+
+        Ok(())
     }
 }
 
@@ -334,6 +424,60 @@ impl WithQuoteQty for OrderSummary {
         // todo defensive rounding - depends on how this function is used
         fp32_mul(self.total_base_qty_posted, price)
             .ok_or_else(|| error!(BondsError::FixedPointDivision))
+    }
+}
+
+pub struct SensibleOrderSummary {
+    params: OrderParams,
+    summary: OrderSummary,
+}
+
+// fixme i think most of these are wrong. there may be issues with the aaob
+// implementation which is a huge mess of spaghetti code
+impl SensibleOrderSummary {
+    pub fn summary(&self) -> OrderSummary {
+        OrderSummary {
+            posted_order_id: self.summary.posted_order_id,
+            total_base_qty: self.summary.total_base_qty,
+            total_quote_qty: self.summary.total_quote_qty,
+            total_base_qty_posted: self.summary.total_base_qty_posted,
+        }
+    }
+
+    // todo defensive rounding - depends on how this function is used
+    pub fn quote_posted(&self) -> Result<u64> {
+        fp32_mul(self.summary.total_base_qty_posted, self.params.limit_price)
+            .ok_or_else(|| error!(BondsError::FixedPointDivision))
+    }
+
+    pub fn base_posted(&self) -> u64 {
+        self.summary.total_base_qty_posted
+    }
+
+    /// wrong
+    pub fn quote_filled(&self) -> u64 {
+        self.summary.total_quote_qty
+    }
+
+    /// wrong
+    pub fn base_filled(&self) -> u64 {
+        self.summary.total_base_qty
+    }
+
+    /// wrong
+    /// the total of all quote posted and filled
+    /// NOT the same as the "max quote"
+    pub fn quote_combined(&self) -> Result<u64> {
+        // Ok(self.quote_posted()? + self.quote_filled())
+        Ok(self.summary.total_quote_qty)
+    }
+
+    /// wrong
+    /// the total of all base posted and filled
+    /// NOT the same as the "max base"
+    pub fn base_combined(&self) -> u64 {
+        // self.base_posted() + self.base_filled()
+        self.summary.total_base_qty
     }
 }
 

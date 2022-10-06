@@ -213,6 +213,15 @@ pub mod jet_bonds {
         jet_bonds::instructions::margin_borrow_order::handler(ctx, params, seed)
     }
 
+    /// Place a `Lend` order to the book by depositing tokens
+    pub fn margin_lend_order(
+        ctx: Context<MarginLendOrder>,
+        params: OrderParams,
+        seed: Vec<u8>,
+    ) -> Result<()> {
+        jet_bonds::instructions::margin_lend_order::handler(ctx, params, seed)
+    }
+
     /// Refresh the associated margin account `claims` for a given `MarginUser` account
     pub fn refresh_position(ctx: Context<RefreshPosition>, expect_price: bool) -> Result<()> {
         jet_bonds::instructions::refresh_position::handler(ctx, expect_price)
@@ -342,7 +351,10 @@ pub mod seeds {
     pub const CRANK_AUTHORIZATION: &[u8] = b"crank_authorization";
 
     #[constant]
-    pub const DEPOSIT_NOTES: &[u8] = b"deposit_notes";
+    pub const CLAIM_NOTES: &[u8] = b"claim_notes";
+
+    #[constant]
+    pub const COLLATERAL_NOTES: &[u8] = b"collateral_notes";
 
     #[constant]
     pub const SPLIT_TICKET: &[u8] = b"split_ticket";
@@ -361,7 +373,4 @@ pub mod seeds {
 
     #[constant]
     pub const UNDERLYING_TOKEN_VAULT: &[u8] = b"underlying_token_vault";
-
-    #[constant]
-    pub const CLAIM_NOTES: &[u8] = b"user_claims";
 }

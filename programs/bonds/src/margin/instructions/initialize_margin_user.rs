@@ -38,7 +38,7 @@ pub struct InitializeMarginUser<'info> {
     /// The Boheader account
     #[account(
         has_one = claims_mint @ BondsError::WrongClaimMint,
-        has_one = collateral_mint @ BondsError::WrongDepositsMint
+        has_one = collateral_mint @ BondsError::WrongCollateralMint
     )]
     pub bond_manager: AccountLoader<'info, BondManager>,
 
@@ -59,7 +59,7 @@ pub struct InitializeMarginUser<'info> {
     /// Token account used by the margin program to track owned assets
     #[account(init,
         seeds = [
-            seeds::DEPOSIT_NOTES,
+            seeds::COLLATERAL_NOTES,
             borrower_account.key().as_ref(),
         ],
         bump,

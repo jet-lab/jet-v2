@@ -19,6 +19,14 @@ pub struct MarginBorrow {
 }
 
 #[event]
+pub struct MarginLend {
+    pub bond_market: Pubkey,
+    pub margin_account: Pubkey,
+    pub lender: Pubkey,
+    pub order_summary: OrderSummary,
+}
+
+#[event]
 pub struct ObligationRepay {
     pub orderbook_user: Pubkey,
     pub obligation: Pubkey,
