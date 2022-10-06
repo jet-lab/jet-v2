@@ -293,6 +293,8 @@ export class MarginClient {
     cluster: MarginCluster,
     pageSize = 100
   ): Promise<AccountTransaction[]> {
+    console.log(pubKey.toString())
+
     const config = await MarginClient.getConfig(cluster)
     const signatures = await provider.connection.getSignaturesForAddress(pubKey, undefined, "confirmed")
     const jetTransactions: ParsedTransactionWithMeta[] = []
