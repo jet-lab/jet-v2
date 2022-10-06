@@ -54,8 +54,14 @@ struct Client {
 }
 
 impl Client {
-    pub fn new(conn: RpcClient, signer: Keypair, mint: Pubkey, seed: [u8; 32]) -> Result<Self> {
-        let mut ix = BondsIxBuilder::new_from_seed(&mint, seed, signer.pubkey())
+    pub fn new(
+        conn: RpcClient,
+        signer: Keypair,
+        mint: Pubkey,
+        seed: [u8; 32],
+        token_oracle: Pubkey,
+    ) -> Result<Self> {
+        let mut ix = BondsIxBuilder::new_from_seed(&mint, seed, signer.pubkey(), token_oracle)
             .with_payer(&signer.pubkey());
         let bond_manager = {
             let data = conn.get_account_data(&ix.manager())?;
@@ -71,6 +77,7 @@ impl Client {
 
         Ok(Self { conn, ix, signer })
     }
+
     pub fn sign_send_transaction(
         &self,
         instructions: &[Instruction],
@@ -144,7 +151,7 @@ impl<'a> User<'a> {
         let fund_ticket =
             self.client
                 .ix
-                .convert_tokens(Some(&self.key()), None, None, None, ticket_amount)?;
+                .convert_tokens(Some(self.key()), None, None, None, ticket_amount)?;
 
         self.send_instructions(&[init_token, init_ticket, fund_token, fund_ticket])?;
         println!("funding success!");
@@ -155,7 +162,7 @@ impl<'a> User<'a> {
         let lend = self
             .client
             .ix
-            .lend_order(&self.key(), None, None, params, vec![])?;
+            .lend_order(self.key(), None, None, params, vec![])?;
 
         self.send_instructions(&[lend])
     }
@@ -163,7 +170,7 @@ impl<'a> User<'a> {
         let borrow = self
             .client
             .ix
-            .sell_tickets_order(&self.key(), None, None, params)?;
+            .sell_tickets_order(self.key(), None, None, params)?;
 
         self.send_instructions(&[borrow])
     }
@@ -210,7 +217,13 @@ fn main() -> Result<()> {
     let alice_kp = map_keypair_file(ALICE.clone())?;
     let bob_kp = map_keypair_file(BOB.clone())?;
 
-    let client = Client::new(conn, wallet, DEVNET_USDC, Pubkey::default().to_bytes())?;
+    let client = Client::new(
+        conn,
+        wallet,
+        DEVNET_USDC,
+        Pubkey::default().to_bytes(),
+        Pubkey::default(),
+    )?;
 
     let alice = User::new(&client, alice_kp)?;
     let bob = User::new(&client, bob_kp)?;

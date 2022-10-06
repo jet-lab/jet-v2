@@ -1598,7 +1598,8 @@ export class Pool {
     action: PoolAction,
     // For swap projections
     minAmountOut?: number,
-    outputToken?: Pool
+    outputToken?: Pool,
+    repayWithProceeds?: boolean
   ): PoolProjection {
     switch (action) {
       case "deposit":
@@ -1612,7 +1613,7 @@ export class Pool {
       case "repayFromDeposit":
         return this.projectAfterRepayFromDeposit(marginAccount, amount)
       case "swap":
-        return this.projectAfterMarginSwap(marginAccount, amount, minAmountOut, outputToken)
+        return this.projectAfterMarginSwap(marginAccount, amount, minAmountOut, outputToken, repayWithProceeds === true)
       default:
         throw new Error("Unknown pool action")
     }
@@ -1830,7 +1831,8 @@ export class Pool {
     amount: number,
     minAmountOut: number | undefined,
     outputToken: Pool | undefined,
-    setupCheck?: boolean
+    repayWithProceeds: boolean,
+    setupCheck?: boolean,
   ): PoolProjection {
     const defaults = this.getDefaultPoolProjection(marginAccount)
     if (!minAmountOut || !outputToken) {
@@ -1870,17 +1872,30 @@ export class Pool {
     const inputTokenWeight = this.depositNoteMetadata.valueModifier.toNumber()
     const outputTokenWeight = outputToken.depositNoteMetadata.valueModifier.toNumber()
 
+    let riskIndicator: number
+
     // Projected risk equation
-    const riskIndicator =
-      (totalLiabilities +
-        requiredCollateral -
-        ((1 + outputRequiredCollateralFactor) / outputRequiredCollateralFactor) *
-          Math.max(outputTokenLiabilityValue - minAmountOutValue, 0) +
-        ((1 + inputRequiredCollateralFactor) / inputRequiredCollateralFactor) *
-          Math.max(inputSwapValue - inputTokenAssetValue, 0)) /
-      (weightedCollateral +
-        outputTokenWeight * Math.max(minAmountOutValue - outputTokenLiabilityValue, 0) -
-        inputTokenWeight * Math.max(inputTokenAssetValue - inputSwapValue, 0))
+    if (repayWithProceeds) {
+      riskIndicator =
+        (totalLiabilities +
+          requiredCollateral -
+          ((1 + outputRequiredCollateralFactor) / outputRequiredCollateralFactor) *
+            (outputTokenLiabilityValue - Math.max(outputTokenLiabilityValue - minAmountOutValue, 0)) +
+          ((1 + inputRequiredCollateralFactor) / inputRequiredCollateralFactor) *
+            Math.max(inputSwapValue - inputTokenAssetValue, 0)) /
+        (weightedCollateral +
+          outputTokenWeight * Math.max(minAmountOutValue - outputTokenLiabilityValue, 0) -
+          inputTokenWeight * (inputTokenAssetValue - Math.max(inputTokenAssetValue - inputSwapValue, 0)))
+    } else {
+      riskIndicator =
+        (totalLiabilities +
+          requiredCollateral +
+          ((1 + inputRequiredCollateralFactor) / inputRequiredCollateralFactor) *
+            Math.max(inputSwapValue - inputTokenAssetValue, 0)) /
+        (weightedCollateral +
+          outputTokenWeight * minAmountOutValue -
+          inputTokenWeight * (inputTokenAssetValue - Math.max(inputTokenAssetValue - inputSwapValue, 0)))
+    }
 
     // TODO: add pool projections for rates
     return {

@@ -156,8 +156,9 @@ export class BondMarket {
     seed: Uint8Array
   ): Promise<TransactionInstruction> {
     const limitPrice = new BN(rate_to_price(BigInt(rate.toString()), BigInt(this.info.duration.toString())).toString())
+    // TODO: rethink amounts here, current is placeholder
     const params: OrderParams = {
-      maxBondTicketQty: new BN(U64_MAX.toString()),
+      maxBondTicketQty: amount,
       maxUnderlyingTokenQty: amount,
       limitPrice,
       matchLimit: new BN(U64_MAX.toString()),
@@ -173,10 +174,9 @@ export class BondMarket {
     amount: BN,
     seed: Uint8Array
   ): Promise<TransactionInstruction> {
-    // TODO: determine best rate values here
-    // const limitPrice = new BN(rate_to_price(U64_MAX, BigInt(this.info.duration.toString())).toString())
+    // TODO: rethink amounts here, current is placeholder
     const params: OrderParams = {
-      maxBondTicketQty: new BN(U64_MAX.toString()),
+      maxBondTicketQty: amount,
       maxUnderlyingTokenQty: amount,
       limitPrice: new BN(U64_MAX.toString()),
       matchLimit: new BN(U64_MAX.toString()),
@@ -292,6 +292,9 @@ export class BondMarket {
 
     const underlyingSettlement = await getAssociatedTokenAddress(this.addresses.underlyingTokenMint, user.address, true)
     const ticketSettlement = await getAssociatedTokenAddress(this.addresses.bondTicketMint, user.address, true)
+
+    // await user.getOrRegisterPosition(this.addresses.claimsMint)
+
     return await this.program.methods
       .initializeMarginUser()
       .accounts({
