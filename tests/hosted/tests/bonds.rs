@@ -3,15 +3,24 @@ use std::sync::Arc;
 use anyhow::Result;
 use hosted_tests::{
     bonds::{
-        BondsUser, NoProxy, OrderAmount, Proxy, TestManager as BondsTestManager, STARTING_TOKENS,
+        BondsUser, GenerateProxy, OrderAmount, TestManager as BondsTestManager, STARTING_TOKENS,
     },
     context::test_context,
+    setup_helper::{setup_user, tokens},
 };
 use jet_bonds::orderbook::state::OrderParams;
-use jet_margin_sdk::ix_builder::MarginIxBuilder;
+use jet_margin_sdk::{
+    ix_builder::MarginIxBuilder,
+    margin_integrator::{NoProxy, Proxy},
+    tx_builder::bonds::BondsPositionRefresher,
+};
+use jet_margin_sdk::{
+    margin_integrator::RefreshingProxy, solana::transaction::SendTransactionBuilder,
+    tx_builder::MarginTxBuilder,
+};
 use jet_proto_math::fixed_point::Fp32;
-use jet_simulation::create_wallet;
-use solana_sdk::{native_token::LAMPORTS_PER_SOL, signer::Signer};
+
+use solana_sdk::signer::Signer;
 
 #[tokio::test(flavor = "multi_thread")]
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
@@ -32,19 +41,45 @@ async fn full_through_margin() -> Result<()> {
 #[allow(unused_variables)] //todo remove this once fixme is addressed
 async fn margin() -> Result<()> {
     let ctx = test_context().await;
-    let manager = Arc::new(BondsTestManager::full(ctx.rpc.clone()).await?);
+    let manager = Arc::new(BondsTestManager::full(ctx.rpc.clone()).await.unwrap());
+    let client = manager.client.clone();
+    let ([collateral], _, pricer) = tokens(ctx).await.unwrap();
 
-    // create user
-    let wallet = create_wallet(&ctx.rpc.clone(), 100 * LAMPORTS_PER_SOL).await?;
-    let margin = MarginIxBuilder::new(wallet.pubkey(), 0);
-    manager
-        .sign_send_transaction(&[margin.create_account()], Some(&[&wallet]))
-        .await?;
+    // set up user
+    let user = setup_user(ctx, vec![(collateral, 0, u64::MAX / 2)])
+        .await
+        .unwrap();
+    let margin = user.user.tx.ix.clone();
+    let wallet = user.user.signer;
 
-    let user = BondsUser::new_with_proxy_funded(manager.clone(), wallet, margin).await?;
-    user.initialize_margin_user().await?;
+    // set up proxy
+    let proxy = RefreshingProxy {
+        proxy: margin.clone(),
+        refreshers: vec![
+            Arc::new(MarginTxBuilder::new(
+                client.clone(),
+                None,
+                wallet.pubkey(),
+                0,
+            )),
+            Arc::new(
+                BondsPositionRefresher::new(
+                    margin.pubkey(),
+                    client.clone(),
+                    &[manager.ix_builder.manager()],
+                )
+                .await
+                .unwrap(),
+            ),
+        ],
+    };
 
-    let borrower_account = user.load_margin_user().await?;
+    let user = BondsUser::new_with_proxy_funded(manager.clone(), wallet, proxy.clone())
+        .await
+        .unwrap();
+    user.initialize_margin_user().await.unwrap();
+
+    let borrower_account = user.load_margin_user().await.unwrap();
     assert_eq!(borrower_account.bond_manager, manager.ix_builder.manager());
 
     // place a borrow order
@@ -58,19 +93,22 @@ async fn margin() -> Result<()> {
         post_allowed: true,
         auto_stake: true,
     };
-
-    // this fails checks in margin after the bonds ix completes successfully
-    // FIXME:
-    // - get claim registerable in margin
-    // - get usdc registerable in margin
-    // - register usdc position directly
-    // - deposit usdc to position
-    // user.margin_borrow_order(borrow_params).await?;
+    let mut ixs = vec![
+        pricer.set_oracle_price_tx(&collateral, 1.0).unwrap(),
+        pricer
+            .set_oracle_price_tx(&manager.ix_builder.token_mint(), 1.0)
+            .unwrap(),
+    ];
+    ixs.extend(user.margin_borrow_order(borrow_params).await.unwrap());
+    client
+        .send_and_confirm_condensed_in_order(ixs)
+        .await
+        .unwrap();
 
     Ok(())
 }
 
-async fn _full_workflow<P: Proxy>(manager: Arc<BondsTestManager>) -> Result<()> {
+async fn _full_workflow<P: Proxy + GenerateProxy>(manager: Arc<BondsTestManager>) -> Result<()> {
     let alice = BondsUser::<P>::new_funded(manager.clone()).await?;
 
     const START_TICKETS: u64 = 1_000_000;

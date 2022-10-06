@@ -32,11 +32,12 @@ use jet_margin_sdk::ix_builder::{
     AirspaceIxBuilder, ControlIxBuilder, MarginConfigIxBuilder, MarginPoolConfiguration,
     MarginPoolIxBuilder,
 };
+use jet_margin_sdk::solana::keypair::clone;
 use jet_margin_sdk::solana::transaction::{SendTransactionBuilder, TransactionBuilder};
 use jet_margin_sdk::spl_swap::SplSwapPool;
 use jet_margin_sdk::tokens::TokenOracle;
 use solana_sdk::instruction::Instruction;
-use solana_sdk::signature::{Keypair, Signer};
+use solana_sdk::signature::{Keypair, Signature, Signer};
 use solana_sdk::system_program;
 use solana_sdk::{pubkey::Pubkey, transaction::Transaction};
 
@@ -87,6 +88,7 @@ impl MarginClient {
 
         Ok(MarginUser {
             tx,
+            signer: clone(keypair),
             rpc: self.rpc.clone(),
         })
     }
@@ -107,6 +109,7 @@ impl MarginClient {
 
         Ok(MarginUser {
             tx,
+            signer: clone(keypair),
             rpc: self.rpc.clone(),
         })
     }
@@ -282,10 +285,20 @@ impl MarginClient {
     }
 }
 
-#[derive(Clone)]
 pub struct MarginUser {
-    tx: MarginTxBuilder,
+    pub tx: MarginTxBuilder,
+    pub signer: Keypair,
     rpc: Arc<dyn SolanaRpcClient>,
+}
+
+impl Clone for MarginUser {
+    fn clone(&self) -> Self {
+        Self {
+            tx: self.tx.clone(),
+            signer: clone(&self.signer),
+            rpc: self.rpc.clone(),
+        }
+    }
 }
 
 impl std::fmt::Debug for MarginUser {
@@ -301,8 +314,9 @@ impl MarginUser {
     pub async fn print(&self) {
         println!("{:#?}", self.tx.get_account_state().await.unwrap())
     }
+
     async fn send_confirm_tx(&self, tx: Transaction) -> Result<(), Error> {
-        let _ = self.rpc.send_and_confirm_transaction(&tx).await?;
+        self.rpc.send_and_confirm_transaction(&tx).await?;
         Ok(())
     }
 
@@ -360,8 +374,9 @@ impl MarginUser {
             .await
     }
 
-    pub async fn refresh_all_pool_positions(&self) -> Result<(), Error> {
-        self.send_confirm_all_tx(self.tx.refresh_all_pool_positions().await?)
+    pub async fn refresh_all_pool_positions(&self) -> Result<Vec<Signature>, Error> {
+        self.rpc
+            .send_and_confirm_condensed(self.tx.refresh_all_pool_positions().await?)
             .await
     }
 
@@ -390,8 +405,9 @@ impl MarginUser {
             .await
     }
 
-    pub async fn borrow(&self, mint: &Pubkey, change: TokenChange) -> Result<(), Error> {
-        self.send_confirm_tx(self.tx.borrow(mint, change).await?)
+    pub async fn borrow(&self, mint: &Pubkey, change: TokenChange) -> Result<Signature, Error> {
+        self.rpc
+            .send_and_confirm(self.tx.borrow(mint, change).await?)
             .await
     }
 

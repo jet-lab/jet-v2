@@ -14,4 +14,9 @@ pub mod keypair {
     pub fn clone_vec(vec: &[Keypair]) -> Vec<Keypair> {
         vec.iter().map(clone).collect()
     }
+
+    /// Clone is not implemented for Keypair
+    pub fn clone_refs(vec: &[&Keypair]) -> Vec<Keypair> {
+        vec.iter().map(|k| clone(k)).collect()
+    }
 }

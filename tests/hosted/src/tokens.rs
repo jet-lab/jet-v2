@@ -217,6 +217,23 @@ impl TokenManager {
         })
     }
 
+    /// Derive oracle accounts for a token
+    pub fn derive_oracle(&self, mint: &Pubkey) -> TokenOracle {
+        let (price_address, _) = Pubkey::find_program_address(
+            &[mint.as_ref(), b"oracle:price".as_ref()],
+            &jet_metadata::ID,
+        );
+        let (product_address, _) = Pubkey::find_program_address(
+            &[mint.as_ref(), b"oracle:product".as_ref()],
+            &jet_metadata::ID,
+        );
+
+        TokenOracle {
+            price: price_address,
+            product: product_address,
+        }
+    }
+
     /// Mint tokens to an account
     pub async fn mint(
         &self,
@@ -254,6 +271,25 @@ impl TokenManager {
     pub async fn refresh_to_same_price_tx(
         &self,
         mint: &Pubkey,
+    ) -> Result<TransactionBuilder, Error> {
+        let price_address = Pubkey::find_program_address(
+            &[mint.as_ref(), b"oracle:price".as_ref()],
+            &jet_metadata::ID,
+        )
+        .0;
+        let mut account: pyth_sdk_solana::state::PriceAccount =
+            self.get_pod_metadata(&price_address).await?;
+
+        let clock = self.rpc.get_clock().expect("could not get the clock");
+        account.agg.pub_slot = clock.slot;
+        account.timestamp = clock.unix_timestamp;
+
+        self.set_pod_metadata_tx(&price_address, &account)
+    }
+
+    pub async fn refresh_to_same_price_tx2(
+        &self,
+        mint: Pubkey,
     ) -> Result<TransactionBuilder, Error> {
         let price_address = Pubkey::find_program_address(
             &[mint.as_ref(), b"oracle:price".as_ref()],

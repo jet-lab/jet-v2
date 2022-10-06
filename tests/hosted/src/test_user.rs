@@ -2,10 +2,11 @@ use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 
 use anyhow::Result;
+use jet_margin_sdk::cat;
 use jet_margin_sdk::solana::transaction::{SendTransactionBuilder, TransactionBuilder};
-use jet_margin_sdk::util::asynchronous::MapAsync;
+use jet_margin_sdk::util::asynchronous::{AndAsync, MapAsync};
 use solana_sdk::pubkey::Pubkey;
-use solana_sdk::signature::{Keypair, Signer};
+use solana_sdk::signature::{Keypair, Signature, Signer};
 
 use jet_margin_pool::TokenChange;
 use jet_static_program_registry::orca_swap_v2;
@@ -77,10 +78,17 @@ impl<'a> TestUser<'a> {
             .await
     }
 
-    pub async fn borrow(&self, mint: &Pubkey, amount: u64) -> Result<()> {
-        self.ctx.tokens.refresh_to_same_price(mint).await?;
-        self.user.refresh_all_pool_positions().await?;
-        self.user.borrow(mint, TokenChange::shift(amount)).await
+    pub async fn borrow(&self, mint: &Pubkey, amount: u64) -> Result<Vec<Signature>> {
+        let mut txs = vec![self.ctx.tokens.refresh_to_same_price_tx(mint).await?];
+        txs.extend(self.user.tx.refresh_all_pool_positions().await?);
+        txs.push(
+            self.user
+                .tx
+                .borrow(mint, TokenChange::shift(amount))
+                .await?,
+        );
+
+        self.ctx.rpc.send_and_confirm_condensed(txs).await
     }
 
     pub async fn borrow_to_wallet(&self, mint: &Pubkey, amount: u64) -> Result<()> {
@@ -170,6 +178,21 @@ impl<'a> TestUser<'a> {
             .iter()
             .map_async(|position| tokens.refresh_to_same_price_tx(&position.token))
             .await
+    }
+
+    pub async fn refresh_positions_with_oracles_txs(&self) -> Result<Vec<TransactionBuilder>> {
+        let tokens = TokenManager::new(self.ctx.rpc.clone());
+        Ok(self
+            .user
+            .tx
+            .refresh_all_pool_positions_underlying_to_tx()
+            .await?
+            .into_iter()
+            .map_async(|(ul, pos)| pos.and_result(tokens.refresh_to_same_price_tx2(ul)))
+            .await?
+            .into_iter()
+            .map(|(tx2, tx1)| cat![tx1, tx2])
+            .collect())
     }
 }
 

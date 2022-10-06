@@ -8,7 +8,10 @@ export function formatPubkey(publicKey: PublicKey | string, halfLength = 4): str
 
 // Format rates
 export function formatRate(rate: number, decimals?: number) {
-  return parseFloat(formatRemainder((rate * 100).toFixed(decimals ?? 2))).toLocaleString() + '%';
+  if (decimals) {
+    return ((rate * 100).toFixed(decimals)).toLocaleString() + '%';
+  }
+  return parseFloat(formatRemainder((rate * 100).toFixed(2))).toLocaleString() + '%';
 }
 
 // Format leverage

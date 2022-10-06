@@ -12,7 +12,8 @@ export function useProjectedRisk(
   inputAmount?: TokenAmount,
   // If user is swapping
   minAmountOut?: TokenAmount,
-  outputToken?: Pool
+  outputToken?: Pool,
+  swapRepayWithProceeds?: boolean
 ) {
   const currentPool = useRecoilValue(CurrentPool);
   const pool = marginPool ?? currentPool;
@@ -29,7 +30,7 @@ export function useProjectedRisk(
     pool && account && action && action !== 'transfer' && amount && !amount.isZero() && max && !amount.gt(max);
   const defaultActionProjection = account?.riskIndicator ?? 0;
   const projectedRiskIndicator = canProjectAfterAction
-    ? pool.projectAfterAction(account, amount.tokens, action, minAmountOut && minAmountOut.tokens, outputToken)
+    ? pool.projectAfterAction(account, amount.tokens, action, minAmountOut && minAmountOut.tokens, outputToken, swapRepayWithProceeds)
         .riskIndicator
     : defaultActionProjection;
 

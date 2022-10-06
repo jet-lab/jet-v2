@@ -31,7 +31,7 @@ export function SnapshotBody(): JSX.Element {
       accountBalance = depositedValue - borrowedValue;
     }
 
-    let render = <Title>{currencyFormatter(accountBalance, true)}</Title>;
+    let render = <Title>{currencyFormatter(accountBalance, true, 0)}</Title>;
     if (initialAccountsLoad) {
       render = <Skeleton className="align-center" paragraph={false} active />;
     }
@@ -44,7 +44,7 @@ export function SnapshotBody(): JSX.Element {
     const availableCollateral = currentAccount
       ? currentAccount.valuation.effectiveCollateral.sub(currentAccount.valuation.requiredCollateral).toNumber()
       : 0;
-    let render = <Title>{currencyFormatter(availableCollateral, true)}</Title>;
+    let render = <Title>{currencyFormatter(availableCollateral, true, 0)}</Title>;
     if (initialAccountsLoad) {
       render = <Skeleton className="align-center" paragraph={false} active />;
     }
@@ -103,11 +103,11 @@ export function SnapshotBody(): JSX.Element {
         {renderAccountBalance()}
         <div className="assets-liabilities flex-centered">
           <Text type="success">
-            {dictionary.common.assets} : {currencyAbbrev(getAccountAssets(), true)}
+            {dictionary.common.assets} : {currencyAbbrev(getAccountAssets(), true, undefined, 1)}
           </Text>
           <div className="assets-liabilities-divider"></div>
           <Text type="danger">
-            {dictionary.accountSnapshot.liabilities} : {currencyAbbrev(getAccountLiabilities(), true)}
+            {dictionary.accountSnapshot.liabilities} : {currencyAbbrev(getAccountLiabilities(), true, undefined, 1)}
           </Text>
         </div>
       </div>
@@ -118,11 +118,11 @@ export function SnapshotBody(): JSX.Element {
         {renderAvailableCollateral()}
         <div className="assets-liabilities flex-centered">
           <Text type="secondary">
-            {dictionary.common.effective} : {currencyAbbrev(getCollateral('effective'), true)}
+            {dictionary.common.effective} : {currencyAbbrev(getCollateral('effective'), true, undefined, 1)}
           </Text>
           <div className="assets-liabilities-divider"></div>
           <Text type="secondary">
-            {dictionary.common.required} : {currencyAbbrev(getCollateral('required'), true)}
+            {dictionary.common.required} : {currencyAbbrev(getCollateral('required'), true, undefined, 1)}
           </Text>
         </div>
       </div>
