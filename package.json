@@ -27,6 +27,7 @@
     "test:nobuild": "anchor test --skip-lint --skip-build -- --features testing",
     "test:gui": "cd app && yarn e2e:gui && cd ../app-beta && yarn e2e:gui",
     "dev": "yarn --cwd libraries/ts/margin watch & yarn --cwd libraries/ts/bonds watch & yarn --cwd app dev",
-    "commit:tslib": "cd libraries/ts/margin && git cz"
+    "commit:tslib": "cd libraries/ts/margin && git cz",
+    "semantic-release": "cd libraries/ts/margin && semantic-release --branches ci-tslib-publishing"
   }
 }
