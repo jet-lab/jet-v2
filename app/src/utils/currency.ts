@@ -14,7 +14,7 @@ export function useCurrencyFormatting() {
 
   // Format USD or crypto with default or desired decimals
   const currencyFormatter = useCallback(
-    (value: number, fiatValues?: boolean, decimals?: number, ciel?: boolean): string => {
+    (value: number, fiatValues?: boolean, decimals?: number, ciel?: boolean, accounting?: boolean): string => {
       const roundedDownValue = ciel
         ? Math.ceil(value * 10 ** (decimals ?? 2)) / 10 ** (decimals ?? 2)
         : Math.floor(value * 10 ** (decimals ?? 2)) / 10 ** (decimals ?? 2);
@@ -24,12 +24,15 @@ export function useCurrencyFormatting() {
       const currencyFormat = new Intl.NumberFormat(navigator.language, {
         style: fiatValues ? 'currency' : undefined,
         currency: fiatValues ? fiatCurrency : undefined,
-        maximumFractionDigits: decimals && !fiatValues ? decimals : 2
+        currencyDisplay: fiatValues ? 'narrowSymbol' : undefined,
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals ?? 2,
+        currencySign: accounting && fiatValues ? "accounting" : undefined
       });
 
-      // Set and strip trailing 0's / unnecessary decimal if not fiat
       let uiCurrency = currencyFormat.format(convertedValue);
-      if (!fiatValues) {
+      if (!fiatValues && !accounting) {
+      // Set and strip trailing 0's / unnecessary decimals
         while (
           uiCurrency.indexOf('.') !== -1 &&
           (uiCurrency[uiCurrency.length - 1] === '0' || uiCurrency[uiCurrency.length - 1] === '.')
@@ -43,18 +46,66 @@ export function useCurrencyFormatting() {
     [conversionRates, fiatCurrency]
   );
 
+  function dynamicDecimals(value: number) {
+    if (value < 10) {
+      return currencyFormatter(value, false, 8, undefined, true);
+    } else if (value < 100) {
+      return currencyFormatter(value, false, 7, undefined, true);
+    } else if (value < 1000) {
+      return currencyFormatter(value, false, 6, undefined, true);
+    } else if (value < 10000) {
+      return currencyFormatter(value, false, 5, undefined, true);
+    } else if (value < 100000) {
+      return currencyFormatter(value, false, 4, undefined, true);
+    } else if (value < 1000000) {
+      return currencyFormatter(value, false, 3, undefined, true);
+    } else if (value < 10000000) {
+      return currencyFormatter(value, false, 2, undefined, true);
+    } else if (value < 100000000) {
+      return currencyFormatter(value, false, 1, undefined, true);
+    } else if (value < 1000000000) {
+      return currencyFormatter(value, false, 0, undefined, true);
+    } else if (value >= 1000000000) {
+      return currencyFormatter(value / 1000000000, false, 1) + 'B';
+    }
+  }
+
   // Abbreviate large currency amounts
-  function currencyAbbrev(total: number, fiatValues?: boolean, price?: number, decimals?: number): string {
+  function currencyAbbrev(
+    total: number,
+    fiatValues?: boolean,
+    price?: number,
+    decimals?: number,
+    precision?: boolean,
+    accounting?: boolean
+  ): string {
     let t = total;
     if (price && fiatValues) {
       t = total * price;
     }
 
+    // In all cases, truncate trillions and billions
     if (t > 1000000000000) {
       return currencyFormatter(t / 1000000000000, fiatValues, 1) + 'T';
     } else if (t > 1000000000) {
       return currencyFormatter(t / 1000000000, fiatValues, 1) + 'B';
-    } else if (t > 1000000) {
+    }
+
+    if (precision) {
+      if (fiatValues) {
+        if (accounting) {
+          return currencyFormatter(t, fiatValues, 2, undefined, true);
+        }
+        // Do not truncate fiat values under million
+        return currencyFormatter(t, fiatValues, 2);
+      } else {
+        // If not fiat values, show up to the 9th character
+        // with dynamic decimal places
+        return dynamicDecimals(t);
+      }
+    }
+
+    if (t > 1000000) {
       return currencyFormatter(t / 1000000, fiatValues, 1) + 'M';
     } else if (t > 1000) {
       return currencyFormatter(t / 1000, fiatValues, 1) + 'K';
