@@ -15,7 +15,7 @@ pub struct RefreshPosition<'info> {
         has_one = bond_manager @ BondsError::UserNotInMarket,
         has_one = margin_account @ BondsError::WrongClaimAccount,
     )]
-    pub borrower_account: Account<'info, MarginUser>,
+    pub margin_user: Account<'info, MarginUser>,
 
     /// CHECK: has_one on orderbook user
     pub margin_account: AccountInfo<'info>,
@@ -40,7 +40,7 @@ pub struct RefreshPosition<'info> {
 pub fn handler(ctx: Context<RefreshPosition>, expect_price: bool) -> Result<()> {
     let mut position_changes = vec![PositionChange::Flags(
         AdapterPositionFlags::PAST_DUE,
-        ctx.accounts.borrower_account.debt.is_past_due(),
+        ctx.accounts.margin_user.debt.is_past_due(),
     )];
 
     // always try to update the price, but conditionally permit position updates if price fails
@@ -59,7 +59,7 @@ pub fn handler(ctx: Context<RefreshPosition>, expect_price: bool) -> Result<()> 
     )?;
 
     emit!(PositionRefreshed {
-        borrower_account: ctx.accounts.borrower_account.key(),
+        borrower_account: ctx.accounts.margin_user.key(),
     });
 
     Ok(())

@@ -19,6 +19,8 @@ use crate::{
     },
 };
 
+use super::keypair::clone_refs;
+
 /// A group of instructions that are expected to be executed in the same transaction
 /// Can be merged with other TransactionBuilder instances with `cat`, `concat`, or `ijoin`
 #[derive(Debug, Default)]
@@ -26,7 +28,7 @@ pub struct TransactionBuilder {
     /// see above
     pub instructions: Vec<Instruction>,
     /// required for the included instructions, does not include a payer
-    pub signers: Vec<Keypair>,
+    pub signers: Vec<Keypair>, //todo Arc<dyn Signer>
 }
 
 impl Clone for TransactionBuilder {
@@ -84,6 +86,43 @@ impl Concat for TransactionBuilder {
         self.signers.extend(clone_vec(&other.signers).into_iter());
 
         Self { ..self }
+    }
+}
+
+/// Convert types to a TransactionBuilder while including signers. Serves a
+/// similar purpose to From<Instruction>, but it's used when you also need to
+/// add signers.
+pub trait WithSigner: Sized {
+    /// convert to a TransactionBuilder that includes this signer
+    fn with_signer(self, signer: Keypair) -> TransactionBuilder {
+        self.with_signers(&[signer])
+    }
+    /// convert to a TransactionBuilder that includes these signers
+    fn with_signers(self, signers: &[Keypair]) -> TransactionBuilder;
+}
+
+impl WithSigner for Instruction {
+    fn with_signers(self, signers: &[Keypair]) -> TransactionBuilder {
+        vec![self].with_signers(signers)
+    }
+}
+
+impl WithSigner for &[Instruction] {
+    fn with_signers(self, signers: &[Keypair]) -> TransactionBuilder {
+        TransactionBuilder {
+            instructions: self.to_vec(),
+            signers: clone_vec(signers),
+        }
+    }
+}
+
+impl WithSigner for TransactionBuilder {
+    fn with_signers(mut self, signers: &[Keypair]) -> TransactionBuilder {
+        self.signers.extend(clone_vec(signers));
+        TransactionBuilder {
+            instructions: self.instructions,
+            signers: self.signers,
+        }
     }
 }
 
@@ -159,10 +198,33 @@ pub trait SendTransactionBuilder {
     /// Converts a TransactionBuilder to a Transaction,
     /// finalizing its set of instructions as the selection for the actual Transaction
     async fn compile(&self, tx: TransactionBuilder) -> Result<Transaction>;
+
     /// Sends the transaction unchanged
     async fn send_and_confirm(&self, transaction: TransactionBuilder) -> Result<Signature>;
+
+    /// simple ad hoc transaction sender
+    async fn send_and_confirm_1tx(
+        &self,
+        instructions: &[Instruction],
+        signers: &[&Keypair],
+    ) -> Result<Signature> {
+        self.send_and_confirm(TransactionBuilder {
+            instructions: instructions.to_vec(),
+            signers: clone_refs(signers),
+        })
+        .await
+    }
+
     /// Send, minimizing number of transactions - see `condense` doc
+    /// sends transactions all at once
     async fn send_and_confirm_condensed(
+        &self,
+        transactions: Vec<TransactionBuilder>,
+    ) -> Result<Vec<Signature>>;
+
+    /// Send, minimizing number of transactions - see `condense` doc
+    /// sends transactions one at a time after confirming the last
+    async fn send_and_confirm_condensed_in_order(
         &self,
         transactions: Vec<TransactionBuilder>,
     ) -> Result<Vec<Signature>>;
@@ -188,5 +250,68 @@ impl SendTransactionBuilder for Arc<dyn SolanaRpcClient> {
             .into_iter()
             .map_async(|tx| self.send_and_confirm(tx))
             .await
+    }
+
+    async fn send_and_confirm_condensed_in_order(
+        &self,
+        transactions: Vec<TransactionBuilder>,
+    ) -> Result<Vec<Signature>> {
+        condense(&transactions, self.payer())?
+            .into_iter()
+            .map_async_chunked(1, |tx| self.send_and_confirm(tx))
+            .await
+    }
+}
+
+/// Analogous to SendTransactionBuilder, but allows you to call it with the
+/// TransactionBuilder as the receiver when it would enable a cleaner
+/// method-chaining syntax.
+impl TransactionBuilder {
+    /// SendTransactionBuilder::compile
+    pub async fn compile<C: SendTransactionBuilder>(self, client: &C) -> Result<Transaction> {
+        client.compile(self).await
+    }
+
+    /// SendTransactionBuilder::send_and_confirm
+    pub async fn send_and_confirm<C: SendTransactionBuilder>(
+        self,
+        client: &C,
+    ) -> Result<Signature> {
+        client.send_and_confirm(self).await
+    }
+}
+
+/// Analogous to SendTransactionBuilder, but allows you to call it with the
+/// Vec<TransactionBuilder> as the receiver when it would enable a cleaner
+/// method-chaining syntax.
+#[async_trait]
+pub trait InverseSendTransactionBuilder {
+    /// SendTransactionBuilder::send_and_confirm_condensed
+    async fn send_and_confirm_condensed<C: SendTransactionBuilder + Sync>(
+        self,
+        client: &C,
+    ) -> Result<Vec<Signature>>;
+
+    /// SendTransactionBuilder::send_and_confirm_condensed_in_order
+    async fn send_and_confirm_condensed_in_order<C: SendTransactionBuilder + Sync>(
+        self,
+        client: &C,
+    ) -> Result<Vec<Signature>>;
+}
+
+#[async_trait]
+impl InverseSendTransactionBuilder for Vec<TransactionBuilder> {
+    async fn send_and_confirm_condensed<C: SendTransactionBuilder + Sync>(
+        self,
+        client: &C,
+    ) -> Result<Vec<Signature>> {
+        client.send_and_confirm_condensed(self).await
+    }
+
+    async fn send_and_confirm_condensed_in_order<C: SendTransactionBuilder + Sync>(
+        self,
+        client: &C,
+    ) -> Result<Vec<Signature>> {
+        client.send_and_confirm_condensed_in_order(self).await
     }
 }

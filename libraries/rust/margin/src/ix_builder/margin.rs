@@ -299,7 +299,7 @@ impl MarginIxBuilder {
     ///
     /// `adapter_ix` - The instruction to be invoked
     pub fn accounting_invoke(&self, adapter_ix: Instruction) -> Instruction {
-        invoke!(self.address, adapter_ix, AccountingInvoke)
+        accounting_invoke(self.address, adapter_ix)
     }
 
     /// Begin liquidating a margin account
@@ -461,6 +461,15 @@ impl MarginIxBuilder {
             Some(authority) => authority,
         }
     }
+}
+
+/// Get instruction to invoke through an adapter for permissionless accounting instructions
+///
+/// # Params
+///
+/// `adapter_ix` - The instruction to be invoked
+pub fn accounting_invoke(margin_account: Pubkey, adapter_ix: Instruction) -> Instruction {
+    invoke!(margin_account, adapter_ix, AccountingInvoke)
 }
 
 /// Utility for creating instructions that modify configuration for the margin program within

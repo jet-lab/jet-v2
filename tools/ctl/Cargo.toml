@@ -10,6 +10,7 @@ path = "src/lib.rs"
 [dependencies]
 anyhow = "1.0"
 borsh = "0.9"
+chrono = "0.4"
 bs58 = "0.4"
 flate2 = "1.0"
 heck = "0.4"

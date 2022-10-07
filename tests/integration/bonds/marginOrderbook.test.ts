@@ -391,14 +391,22 @@ describe('margin bonds borrowing', async () => {
       borrowRequestParams.rate,
       Uint8Array.from([0, 0, 0, 0])
     );
+
+    await marginPool_USDC.marginRefreshPositionPrice(marginAccount_A);
+    await marginPool_USDC.marginRefreshPositionPrice(marginAccount_B);
+    await marginPool_SOL.marginRefreshPositionPrice(marginAccount_A);
+    await marginPool_SOL.marginRefreshPositionPrice(marginAccount_B);
+    await marginAccount_A.refresh();
+    await marginAccount_B.refresh();
+
     const refreshA = await viaMargin(marginAccount_A, await bondMarket.refreshPosition(marginAccount_A, false));
     const refreshB = await viaMargin(marginAccount_B, await bondMarket.refreshPosition(marginAccount_B, false));
     const invokeA = await viaMargin(marginAccount_A, borrowNowA);
     const invokeB = await viaMargin(marginAccount_B, requestBorrowB);
 
     // TODO: refresh position is not able to get a properly formatted price from the oracle
-    // await provider_a.sendAndConfirm(makeTx([refreshA, invokeA]), [wallet_a.payer])
-    // await provider_b.sendAndConfirm(makeTx([refreshB, invokeB]), [wallet_b.payer])
+    await provider_a.sendAndConfirm(makeTx([refreshA, invokeA]), [wallet_a.payer]);
+    await provider_b.sendAndConfirm(makeTx([refreshB, invokeB]), [wallet_b.payer]);
   });
 
   let loanId: Uint8Array;
