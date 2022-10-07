@@ -23,17 +23,17 @@ async fn main() -> Result<()> {
         .register_adapter_if_unregistered(&jet_bonds::ID)
         .await?;
 
-    let x = TestManager::new(rpc, &keys::mint())
-        .await?
-        .with_bonds(
-            &keys::event_queue(),
-            &keys::bids(),
-            &keys::asks(),
-            keys::usdc_price().pubkey(),
-        )
-        .await?
-        .with_margin()
-        .await?;
+    let x = TestManager::new(
+        rpc,
+        &keys::mint(),
+        &keys::event_queue(),
+        &keys::bids(),
+        &keys::asks(),
+        keys::usdc_price().pubkey(),
+    )
+    .await?
+    .with_margin()
+    .await?;
     x.pause_orders().await?;
 
     {

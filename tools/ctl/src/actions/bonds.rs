@@ -83,7 +83,7 @@ pub async fn process_create_bond_market<'a>(
             anyhow::Error::msg(format!("failed to resolve signer for asks. Error: {e:?}"))
         })?,
     ];
-    let bonds = BondsIxBuilder::new_from_seed(&params.token_mint, seed, payer);
+    let bonds = BondsIxBuilder::new_from_seed(&params.token_mint, seed, payer, params.token_oracle);
 
     let mut steps = vec![];
     let mut instructions = vec![];
@@ -101,7 +101,6 @@ pub async fn process_create_bond_market<'a>(
             MANAGER_VERSION,
             seed,
             params.duration,
-            Pubkey::default(),
             Pubkey::default(),
         )?;
         steps.push(format!(
