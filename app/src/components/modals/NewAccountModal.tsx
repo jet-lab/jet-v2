@@ -15,7 +15,6 @@ import { useMarginActions } from '../../utils/jet/marginActions';
 import { ActionResponse } from '../../utils/jet/marginActions';
 import { getExplorerUrl } from '../../utils/ui';
 import { Input, Modal, Tooltip, Typography } from 'antd';
-import BN from 'bn.js';
 
 // Modal for user to create a new margin account
 export function NewAccountModal(): JSX.Element {
@@ -109,7 +108,7 @@ export function NewAccountModal(): JSX.Element {
 
   // Check if user has enough SOL to cover rent + fees
   useEffect(() => {
-    if (walletTokens && walletTokens.map.SOL.amount.lamports.gte(new BN(feesBuffer))) {
+    if (walletTokens && walletTokens.map.SOL.amount.lamports.gten(feesBuffer)) {
       setDisabled(false);
     } else {
       setDisabled(true);

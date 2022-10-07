@@ -729,26 +729,6 @@ impl BondsIxBuilder {
     }
 }
 
-pub fn derive_bond_manager(airspace: &Pubkey, token_mint: &Pubkey, seed: [u8; 32]) -> Pubkey {
-    bonds_pda(&[
-        jet_bonds::seeds::BOND_MANAGER,
-        airspace.as_ref(),
-        token_mint.as_ref(),
-        &seed,
-    ])
-}
-
-pub fn derive_bond_manager_from_duration_seed(
-    airspace: &Pubkey,
-    token_mint: &Pubkey,
-    duration: i64,
-) -> Pubkey {
-    let mut seed = [0u8; 32];
-    seed[..8].copy_from_slice(&duration.to_le_bytes());
-
-    derive_bond_manager(airspace, token_mint, seed)
-}
-
 pub fn bonds_pda(seeds: &[&[u8]]) -> Pubkey {
     Pubkey::find_program_address(seeds, &jet_bonds::ID).0
 }

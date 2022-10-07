@@ -3,7 +3,7 @@ use std::{collections::HashMap, path::Path};
 use anchor_lang::prelude::Rent;
 use anyhow::{bail, Result};
 use jet_margin_sdk::{
-    bonds::derive_bond_manager_from_duration_seed,
+    bonds::bonds_pda,
     ix_builder::{derive_airspace, test_service::derive_token_mint},
     test_service::{init_environment, AirspaceConfig, EnvironmentConfig, TokenDescription},
 };
@@ -146,4 +146,24 @@ async fn generate_bond_markets_app_config_from_env(
     }
 
     Ok(bond_markets)
+}
+
+fn derive_bond_manager(airspace: &Pubkey, token_mint: &Pubkey, seed: [u8; 32]) -> Pubkey {
+    bonds_pda(&[
+        jet_margin_sdk::jet_bonds::seeds::BOND_MANAGER,
+        airspace.as_ref(),
+        token_mint.as_ref(),
+        &seed,
+    ])
+}
+
+fn derive_bond_manager_from_duration_seed(
+    airspace: &Pubkey,
+    token_mint: &Pubkey,
+    duration: i64,
+) -> Pubkey {
+    let mut seed = [0u8; 32];
+    seed[..8].copy_from_slice(&duration.to_le_bytes());
+
+    derive_bond_manager(airspace, token_mint, seed)
 }
