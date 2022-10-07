@@ -2,24 +2,24 @@ export const loadPageAndCreateAccount = () => {
   const url = Cypress.config().baseUrl;
 
   cy.visit(url);
-
-  cy.contains('Connect Wallet').click();
-  cy.contains('E2E').click();
-
-  cy.contains('I understand and accept the risks').click();
-  cy.contains('Enter Mainnet').click();
-
-  cy.contains('Connected');
   cy.get('.nav-section .settings-btn').click();
   cy.contains('Devnet').click();
   cy.contains('Save Preferences').click();
+  cy.reload();
+  cy.contains('Connect Wallet').click();
+  cy.contains('E2E').click();
+  cy.contains('Connected');
 
   cy.contains('All Assets').click();
-  airdrop('SOL', 'Solana');
+  airdrop('SOL', 'SOL');
   cy.contains('Create an account', { timeout: 5000 }).click();
-  cy.contains('Create Account').click();
+  cy.contains('New Account', { timeout: 60000 });
+
+  // remove wait time when app performance is optimized
+  cy.wait(8000);
+  cy.contains('Create Account', { timeout: 60000 }).click();
   cy.contains('Account created', { timeout: 10000 });
-  cy.contains('ACCOUNT 1', { timeout: 10000 });
+  cy.contains('Account 1', { timeout: 10000 });
 };
 
 export const airdrop = (symbol: string, asset: string) => {
