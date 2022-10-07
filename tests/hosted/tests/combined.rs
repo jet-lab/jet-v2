@@ -9,7 +9,6 @@ feature_groups! {
         mod bonds;
         mod load;
         mod pool_overpayment;
-        mod positions;
         mod rounding;
         mod sanity;
         mod swap;
