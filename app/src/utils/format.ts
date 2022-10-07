@@ -9,7 +9,7 @@ export function formatPubkey(publicKey: PublicKey | string, halfLength = 4): str
 // Format rates
 export function formatRate(rate: number, decimals?: number) {
   if (decimals) {
-    return ((rate * 100).toFixed(decimals)).toLocaleString() + '%';
+    return (rate * 100).toFixed(decimals).toLocaleString() + '%';
   }
   return parseFloat(formatRemainder((rate * 100).toFixed(2))).toLocaleString() + '%';
 }
