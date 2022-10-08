@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":[["handler",""]],"struct":[["InitializeOrderbook","Initialization of the orderbook for a given asset and tenor"],["InitializeOrderbookParams","Parameters necessary for orderbook initialization"]]};

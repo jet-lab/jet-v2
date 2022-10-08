@@ -18,7 +18,7 @@
 <ul class="tsd-hierarchy">
 <li><span class="target">TokenFaucet</span></li></ul></section><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/jet-lab/jet-v2/blob/5034871/libraries/ts/margin/src/token/tokenFaucet.ts#L12">libraries/ts/margin/src/token/tokenFaucet.ts:12</a></li></ul></aside>
+<li>Defined in <a href="https://github.com/jet-lab/jet-v2/blob/7e6296a/libraries/ts/margin/src/token/tokenFaucet.ts#L16">libraries/ts/margin/src/token/tokenFaucet.ts:16</a></li></ul></aside>
 <section class="tsd-panel-group tsd-index-group">
 <section class="tsd-panel tsd-index-panel">
 <details class="tsd-index-content tsd-index-accordion" open><summary class="tsd-accordion-summary tsd-index-summary">
@@ -32,6 +32,7 @@
 <h3 class="tsd-index-heading">Methods</h3>
 <div class="tsd-index-list"><a href="TokenFaucet.html#airdrop" class="tsd-index-link tsd-kind-method tsd-parent-kind-class"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><rect fill="var(--color-icon-background)" stroke="#FF4DB8" stroke-width="1.5" x="1" y="1" width="22" height="22" rx="12" id="icon-2048-path"></rect><path d="M9.162 16V7.24H10.578L11.514 10.072C11.602 10.328 11.674 10.584 11.73 10.84C11.794 11.088 11.842 11.28 11.874 11.416C11.906 11.28 11.954 11.088 12.018 10.84C12.082 10.584 12.154 10.324 12.234 10.06L13.122 7.24H14.538V16H13.482V12.82C13.482 12.468 13.49 12.068 13.506 11.62C13.53 11.172 13.558 10.716 13.59 10.252C13.622 9.78 13.654 9.332 13.686 8.908C13.726 8.476 13.762 8.1 13.794 7.78L12.366 12.16H11.334L9.894 7.78C9.934 8.092 9.97 8.456 10.002 8.872C10.042 9.28 10.078 9.716 10.11 10.18C10.142 10.636 10.166 11.092 10.182 11.548C10.206 12.004 10.218 12.428 10.218 12.82V16H9.162Z" fill="var(--color-text)" id="icon-2048-text"></path></svg><span>airdrop</span></a>
 <a href="TokenFaucet.html#airdropToken" class="tsd-index-link tsd-kind-method tsd-parent-kind-class"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg><span>airdrop<wbr/>Token</span></a>
+<a href="TokenFaucet.html#tokenRequest" class="tsd-index-link tsd-kind-method tsd-parent-kind-class"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg><span>token<wbr/>Request</span></a>
 </div></section></div></details></section></section>
 <section class="tsd-panel-group tsd-member-group">
 <h2>Constructors</h2>
@@ -46,7 +47,7 @@
 <section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class"><a id="airdrop" class="tsd-anchor"></a>
 <h3 class="tsd-anchor-link"><code class="tsd-tag ts-flagStatic">Static</code> <span>airdrop</span><a href="#airdrop" aria-label="Permalink" class="tsd-anchor-icon"><svg class="icon icon-tabler icon-tabler-link" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><use href="#icon-anchor-a"></use><use href="#icon-anchor-b"></use><use href="#icon-anchor-c"></use></svg></a></h3>
 <ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class">
-<li class="tsd-signature tsd-anchor-link" id="airdrop.airdrop-1">airdrop<span class="tsd-signature-symbol">(</span>programs<span class="tsd-signature-symbol">: </span><a href="../interfaces/MarginPrograms.html" class="tsd-signature-type" data-tsd-kind="Interface">MarginPrograms</a>, provider<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">AnchorProvider</span>, lamports<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">BN</span>, token<span class="tsd-signature-symbol">: </span><a href="../interfaces/MarginTokenConfig.html" class="tsd-signature-type" data-tsd-kind="Interface">MarginTokenConfig</a>, owner<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">Address</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">&gt;</span><a href="#airdrop.airdrop-1" aria-label="Permalink" class="tsd-anchor-icon"><svg class="icon icon-tabler icon-tabler-link" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><use href="#icon-anchor-a"></use><use href="#icon-anchor-b"></use><use href="#icon-anchor-c"></use></svg></a></li>
+<li class="tsd-signature tsd-anchor-link" id="airdrop.airdrop-1">airdrop<span class="tsd-signature-symbol">(</span>provider<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">AnchorProvider</span>, cluster<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">&quot;localnet&quot;</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">&quot;devnet&quot;</span>, lamports<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">BN</span>, token<span class="tsd-signature-symbol">: </span><a href="../interfaces/MarginTokenConfig.html" class="tsd-signature-type" data-tsd-kind="Interface">MarginTokenConfig</a>, owner<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">Address</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">&gt;</span><a href="#airdrop.airdrop-1" aria-label="Permalink" class="tsd-anchor-icon"><svg class="icon icon-tabler icon-tabler-link" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><use href="#icon-anchor-a"></use><use href="#icon-anchor-b"></use><use href="#icon-anchor-c"></use></svg></a></li>
 <li class="tsd-description">
 <div class="tsd-comment tsd-typography"><p>Airdrops native SOL if the mint is the native mint.</p>
 </div>
@@ -54,9 +55,9 @@
 <h4 class="tsd-parameters-title">Parameters</h4>
 <ul class="tsd-parameter-list">
 <li>
-<h5>programs: <a href="../interfaces/MarginPrograms.html" class="tsd-signature-type" data-tsd-kind="Interface">MarginPrograms</a></h5></li>
-<li>
 <h5>provider: <span class="tsd-signature-type">AnchorProvider</span></h5></li>
+<li>
+<h5>cluster: <span class="tsd-signature-type">&quot;localnet&quot;</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">&quot;devnet&quot;</span></h5></li>
 <li>
 <h5>lamports: <span class="tsd-signature-type">BN</span></h5></li>
 <li>
@@ -65,11 +66,11 @@
 <h5>owner: <span class="tsd-signature-type">Address</span><span class="tsd-signature-symbol"> = provider.wallet.publicKey</span></h5></li></ul></div>
 <h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">&gt;</span></h4><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/jet-lab/jet-v2/blob/5034871/libraries/ts/margin/src/token/tokenFaucet.ts#L93">libraries/ts/margin/src/token/tokenFaucet.ts:93</a></li></ul></aside></li></ul></section>
+<li>Defined in <a href="https://github.com/jet-lab/jet-v2/blob/7e6296a/libraries/ts/margin/src/token/tokenFaucet.ts#L72">libraries/ts/margin/src/token/tokenFaucet.ts:72</a></li></ul></aside></li></ul></section>
 <section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class"><a id="airdropToken" class="tsd-anchor"></a>
 <h3 class="tsd-anchor-link"><code class="tsd-tag ts-flagStatic">Static</code> <span>airdrop<wbr/>Token</span><a href="#airdropToken" aria-label="Permalink" class="tsd-anchor-icon"><svg class="icon icon-tabler icon-tabler-link" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><use href="#icon-anchor-a"></use><use href="#icon-anchor-b"></use><use href="#icon-anchor-c"></use></svg></a></h3>
 <ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class">
-<li class="tsd-signature tsd-anchor-link" id="airdropToken.airdropToken-1">airdrop<wbr/>Token<span class="tsd-signature-symbol">(</span>programs<span class="tsd-signature-symbol">: </span><a href="../interfaces/MarginPrograms.html" class="tsd-signature-type" data-tsd-kind="Interface">MarginPrograms</a>, provider<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">AnchorProvider</span>, faucet<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Address</span>, user<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Address</span>, mint<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Address</span>, lamports<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">BN</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">&gt;</span><a href="#airdropToken.airdropToken-1" aria-label="Permalink" class="tsd-anchor-icon"><svg class="icon icon-tabler icon-tabler-link" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><use href="#icon-anchor-a"></use><use href="#icon-anchor-b"></use><use href="#icon-anchor-c"></use></svg></a></li>
+<li class="tsd-signature tsd-anchor-link" id="airdropToken.airdropToken-1">airdrop<wbr/>Token<span class="tsd-signature-symbol">(</span>provider<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">AnchorProvider</span>, user<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Address</span>, mint<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Address</span>, lamports<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">BN</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">&gt;</span><a href="#airdropToken.airdropToken-1" aria-label="Permalink" class="tsd-anchor-icon"><svg class="icon icon-tabler icon-tabler-link" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><use href="#icon-anchor-a"></use><use href="#icon-anchor-b"></use><use href="#icon-anchor-c"></use></svg></a></li>
 <li class="tsd-description">
 <div class="tsd-comment tsd-typography"><p>TODO:</p>
 
@@ -81,11 +82,7 @@
 <h4 class="tsd-parameters-title">Parameters</h4>
 <ul class="tsd-parameter-list">
 <li>
-<h5>programs: <a href="../interfaces/MarginPrograms.html" class="tsd-signature-type" data-tsd-kind="Interface">MarginPrograms</a></h5></li>
-<li>
 <h5>provider: <span class="tsd-signature-type">AnchorProvider</span></h5></li>
-<li>
-<h5>faucet: <span class="tsd-signature-type">Address</span></h5></li>
 <li>
 <h5>user: <span class="tsd-signature-type">Address</span></h5></li>
 <li>
@@ -94,7 +91,28 @@
 <h5>lamports: <span class="tsd-signature-type">BN</span></h5></li></ul></div>
 <h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">&gt;</span></h4><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/jet-lab/jet-v2/blob/5034871/libraries/ts/margin/src/token/tokenFaucet.ts#L71">libraries/ts/margin/src/token/tokenFaucet.ts:71</a></li></ul></aside></li></ul></section></section></div>
+<li>Defined in <a href="https://github.com/jet-lab/jet-v2/blob/7e6296a/libraries/ts/margin/src/token/tokenFaucet.ts#L57">libraries/ts/margin/src/token/tokenFaucet.ts:57</a></li></ul></aside></li></ul></section>
+<section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class"><a id="tokenRequest" class="tsd-anchor"></a>
+<h3 class="tsd-anchor-link"><code class="tsd-tag ts-flagStatic">Static</code> <span>token<wbr/>Request</span><a href="#tokenRequest" aria-label="Permalink" class="tsd-anchor-icon"><svg class="icon icon-tabler icon-tabler-link" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><use href="#icon-anchor-a"></use><use href="#icon-anchor-b"></use><use href="#icon-anchor-c"></use></svg></a></h3>
+<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class">
+<li class="tsd-signature tsd-anchor-link" id="tokenRequest.tokenRequest-1">token<wbr/>Request<span class="tsd-signature-symbol">(</span>provider<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">AnchorProvider</span>, mint<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Address</span>, user<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Address</span>, destination<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Address</span>, lamports<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">BN</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">TransactionInstruction</span><span class="tsd-signature-symbol">&gt;</span><a href="#tokenRequest.tokenRequest-1" aria-label="Permalink" class="tsd-anchor-icon"><svg class="icon icon-tabler icon-tabler-link" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><use href="#icon-anchor-a"></use><use href="#icon-anchor-b"></use><use href="#icon-anchor-c"></use></svg></a></li>
+<li class="tsd-description">
+<div class="tsd-parameters">
+<h4 class="tsd-parameters-title">Parameters</h4>
+<ul class="tsd-parameter-list">
+<li>
+<h5>provider: <span class="tsd-signature-type">AnchorProvider</span></h5></li>
+<li>
+<h5>mint: <span class="tsd-signature-type">Address</span></h5></li>
+<li>
+<h5>user: <span class="tsd-signature-type">Address</span></h5></li>
+<li>
+<h5>destination: <span class="tsd-signature-type">Address</span></h5></li>
+<li>
+<h5>lamports: <span class="tsd-signature-type">BN</span></h5></li></ul></div>
+<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">TransactionInstruction</span><span class="tsd-signature-symbol">&gt;</span></h4><aside class="tsd-sources">
+<ul>
+<li>Defined in <a href="https://github.com/jet-lab/jet-v2/blob/7e6296a/libraries/ts/margin/src/token/tokenFaucet.ts#L17">libraries/ts/margin/src/token/tokenFaucet.ts:17</a></li></ul></aside></li></ul></section></section></div>
 <div class="col-4 col-menu menu-sticky-wrap menu-highlight">
 <div class="tsd-navigation settings">
 <details class="tsd-index-accordion"><summary class="tsd-accordion-summary">
@@ -120,7 +138,8 @@
 <ul>
 <li class="tsd-kind-constructor tsd-parent-kind-class"><a href="TokenFaucet.html#constructor" class="tsd-index-link"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-512-path"></use><use href="#icon-512-text"></use></svg>constructor</a></li>
 <li class="tsd-kind-method tsd-parent-kind-class"><a href="TokenFaucet.html#airdrop" class="tsd-index-link"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg>airdrop</a></li>
-<li class="tsd-kind-method tsd-parent-kind-class"><a href="TokenFaucet.html#airdropToken" class="tsd-index-link"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg>airdrop<wbr/>Token</a></li></ul></li></ul></nav></div></div>
+<li class="tsd-kind-method tsd-parent-kind-class"><a href="TokenFaucet.html#airdropToken" class="tsd-index-link"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg>airdrop<wbr/>Token</a></li>
+<li class="tsd-kind-method tsd-parent-kind-class"><a href="TokenFaucet.html#tokenRequest" class="tsd-index-link"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg>token<wbr/>Request</a></li></ul></li></ul></nav></div></div>
 <div class="container tsd-generator">
 <p>Generated using <a href="https://typedoc.org/" target="_blank">TypeDoc</a></p></div>
 <div class="overlay"></div><script src="../assets/main.js"></script></body></html>
