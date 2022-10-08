@@ -43,6 +43,19 @@ export function formatMarketPair(pair: string): string {
 // Remove locale formatting from number string
 export function fromLocaleString(num: string): string {
   const { format } = new Intl.NumberFormat(navigator.language);
-  const decimalSign = /^0(.)1$/.exec(format(0.1));
-  return num.replace(new RegExp(`[^${decimalSign}\\d]`, 'g'), '.').replace(',', '');
+
+  const decimalSign = format(0.1).substring(1, 2);
+  const thousands = format(1000);
+  const thousandSeparator = thousands.length === 5 ? thousands.substring(1, 2) : null;
+  let strippedNum = num;
+  // Remove thousands separator
+  if (thousandSeparator) {
+    strippedNum = strippedNum.replace(thousandSeparator, '')
+  }
+  // Replace , with . if applicable
+  if (decimalSign !== '.') {
+    strippedNum = strippedNum.replace(decimalSign, '.')
+  }
+
+  return strippedNum;
 }

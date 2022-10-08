@@ -32,6 +32,7 @@ use jet_margin_sdk::ix_builder::{
     AirspaceIxBuilder, ControlIxBuilder, MarginConfigIxBuilder, MarginPoolConfiguration,
     MarginPoolIxBuilder,
 };
+use jet_margin_sdk::solana::keypair::clone;
 use jet_margin_sdk::solana::transaction::{SendTransactionBuilder, TransactionBuilder};
 use jet_margin_sdk::spl_swap::SplSwapPool;
 use jet_margin_sdk::tokens::TokenOracle;
@@ -87,6 +88,7 @@ impl MarginClient {
 
         Ok(MarginUser {
             tx,
+            signer: clone(keypair),
             rpc: self.rpc.clone(),
         })
     }
@@ -107,6 +109,7 @@ impl MarginClient {
 
         Ok(MarginUser {
             tx,
+            signer: clone(keypair),
             rpc: self.rpc.clone(),
         })
     }
@@ -282,10 +285,20 @@ impl MarginClient {
     }
 }
 
-#[derive(Clone)]
 pub struct MarginUser {
     pub tx: MarginTxBuilder,
+    pub signer: Keypair,
     rpc: Arc<dyn SolanaRpcClient>,
+}
+
+impl Clone for MarginUser {
+    fn clone(&self) -> Self {
+        Self {
+            tx: self.tx.clone(),
+            signer: clone(&self.signer),
+            rpc: self.rpc.clone(),
+        }
+    }
 }
 
 impl std::fmt::Debug for MarginUser {

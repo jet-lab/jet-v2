@@ -154,8 +154,13 @@ async fn main() -> Result<()> {
     airdrop_payer(&client).await?;
 
     // fund the ob accounts
-    let bonds = BondsIxBuilder::new_from_seed(&USDC, map_seed(PARAMS.seed.clone()), payer)
-        .with_payer(&payer);
+    let bonds = BondsIxBuilder::new_from_seed(
+        &USDC,
+        map_seed(PARAMS.seed.clone()),
+        payer,
+        PARAMS.token_oracle,
+    )
+    .with_payer(&payer);
     let init_ob_accs = create_orderbook_accounts(
         &client,
         &bonds,
