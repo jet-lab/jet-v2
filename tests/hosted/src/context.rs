@@ -117,6 +117,10 @@ impl MarginTestContext {
             .register_adapter_if_unregistered(&jet_bonds::ID)
             .await?;
 
+        ctx.margin
+            .register_adapter_if_unregistered(&spl_token::ID)
+            .await?;
+
         Ok(ctx)
     }
 

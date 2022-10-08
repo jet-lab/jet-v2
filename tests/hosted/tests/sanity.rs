@@ -12,13 +12,13 @@ use jet_margin_sdk::{
 };
 use jet_simulation::{assert_custom_program_error, create_wallet};
 
-use solana_sdk::native_token::LAMPORTS_PER_SOL;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::Signer;
+use solana_sdk::{native_token::LAMPORTS_PER_SOL, transaction::Transaction};
 
 use hosted_tests::{
     context::{test_context, MarginTestContext},
-    margin::MarginPoolSetupInfo,
+    margin::{MarginPoolSetupInfo, MarginUser},
 };
 use spl_associated_token_account::get_associated_token_address;
 
@@ -326,6 +326,15 @@ async fn sanity_test() -> Result<(), anyhow::Error> {
             .value_modifier
     );
 
+    // Adapter cannot change the account owner for a token account owned by the margin program
+    let authority_change_result =
+        try_change_position_account_owner(&user_a, &env.usdc, &Pubkey::default()).await;
+
+    assert_custom_program_error(
+        jet_margin::ErrorCode::InvalidAccountModification,
+        authority_change_result,
+    );
+
     // Close a specific position
     user_a
         .close_token_position(&env.tsol, TokenKind::Collateral)
@@ -363,6 +372,36 @@ async fn sanity_test() -> Result<(), anyhow::Error> {
 
     // Close User B's account
     user_b.close_account().await?;
+
+    Ok(())
+}
+
+async fn try_change_position_account_owner(
+    user: &MarginUser,
+    mint: &Pubkey,
+    new_owner: &Pubkey,
+) -> anyhow::Result<()> {
+    let user_state = user.get_account_state().await?;
+    let position = user_state.get_position(mint).unwrap();
+
+    let set_authority_ix = spl_token::instruction::set_authority(
+        &spl_token::ID,
+        &position.address,
+        Some(new_owner),
+        spl_token::instruction::AuthorityType::AccountOwner,
+        user.address(),
+        &[],
+    )?;
+
+    let invoke_ix = user.tx.ix.adapter_invoke(set_authority_ix);
+    user.rpc
+        .send_and_confirm_transaction(&Transaction::new_signed_with_payer(
+            &[invoke_ix],
+            Some(&user.signer()),
+            &[&user.signer],
+            user.rpc.get_latest_blockhash().await?,
+        ))
+        .await?;
 
     Ok(())
 }
