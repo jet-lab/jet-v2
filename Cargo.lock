@@ -572,7 +572,7 @@ dependencies = [
  "bonfida-macros",
  "borsh 0.9.3",
  "bytemuck",
- "pyth-sdk-solana",
+ "pyth-sdk-solana 0.4.2",
  "solana-program",
  "spl-token 3.3.1",
 ]
@@ -1861,15 +1861,18 @@ dependencies = [
  "jet-proto-math 1.1.0 (git+https://github.com/jet-lab/program-libraries?branch=fixed-point-math)",
  "jet-simulation",
  "jet-static-program-registry",
+ "jet-test-service",
  "lazy_static",
  "mock-adapter",
  "parking_lot 0.12.1",
- "pyth-sdk-solana",
+ "pyth-sdk-solana 0.4.2",
  "rand 0.7.3",
  "rand_distr",
+ "serde_json",
  "serial_test",
  "shellexpand",
  "solana-clap-utils",
+ "solana-cli-config",
  "solana-client",
  "solana-sdk",
  "spl-associated-token-account",
@@ -2100,7 +2103,7 @@ dependencies = [
  "jet-proto-math 1.1.0 (git+https://github.com/jet-lab/program-libraries?branch=main)",
  "num-derive",
  "num-traits",
- "pyth-sdk-solana",
+ "pyth-sdk-solana 0.4.2",
  "serde",
  "serde_json",
 ]
@@ -2139,7 +2142,7 @@ dependencies = [
  "jet-margin-sdk",
  "jet-proto-math 1.1.0 (git+https://github.com/jet-lab/program-libraries?branch=main)",
  "lazy_static",
- "pyth-sdk-solana",
+ "pyth-sdk-solana 0.4.2",
  "serde",
  "serde_json",
  "serde_with",
@@ -2170,7 +2173,7 @@ dependencies = [
  "jet-metadata",
  "jet-proto-math 1.1.0 (git+https://github.com/jet-lab/program-libraries?branch=main)",
  "jet-proto-proc-macros",
- "pyth-sdk-solana",
+ "pyth-sdk-solana 0.4.2",
  "serde",
  "serde_test",
  "static_assertions",
@@ -2187,7 +2190,7 @@ dependencies = [
  "jet-margin",
  "jet-metadata",
  "jet-proto-math 1.1.0 (git+https://github.com/jet-lab/program-libraries?branch=main)",
- "pyth-sdk-solana",
+ "pyth-sdk-solana 0.4.2",
  "serde",
  "serde_test",
  "static_assertions",
@@ -2218,8 +2221,10 @@ dependencies = [
  "jet-proto-math 1.1.0 (git+https://github.com/jet-lab/program-libraries?branch=main)",
  "jet-simulation",
  "jet-static-program-registry",
- "pyth-sdk-solana",
+ "jet-test-service",
+ "pyth-sdk-solana 0.4.2",
  "rand 0.8.5",
+ "serde",
  "solana-sdk",
  "spl-associated-token-account",
  "spl-token 3.3.1",
@@ -2245,6 +2250,24 @@ version = "1.0.0"
 dependencies = [
  "anchor-lang",
  "solana-program",
+]
+
+[[package]]
+name = "jet-oracle-mirror"
+version = "0.1.0"
+dependencies = [
+ "anchor-lang",
+ "anyhow",
+ "clap 3.2.22",
+ "humantime",
+ "jet-margin-sdk",
+ "pyth-sdk-solana 0.6.1",
+ "serde_json",
+ "solana-clap-utils",
+ "solana-cli-config",
+ "solana-client",
+ "solana-sdk",
+ "tokio",
 ]
 
 [[package]]
@@ -2297,7 +2320,7 @@ dependencies = [
  "bytemuck",
  "futures",
  "parking_lot 0.12.1",
- "pyth-sdk-solana",
+ "pyth-sdk-solana 0.4.2",
  "rand 0.7.3",
  "solana-account-decoder",
  "solana-client",
@@ -2318,6 +2341,16 @@ dependencies = [
  "spl-token-swap 0.1.0",
  "spl-token-swap 2.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "spl-token-swap 2.1.0 (git+https://github.com/solana-labs/solana-program-library?rev=813aa3304022528cbf3cf7a3d32bca339194a492)",
+]
+
+[[package]]
+name = "jet-test-service"
+version = "0.1.0"
+dependencies = [
+ "anchor-lang",
+ "anchor-spl",
+ "bytemuck",
+ "pyth-sdk-solana 0.4.2",
 ]
 
 [[package]]
@@ -3105,6 +3138,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "pyth-sdk"
+version = "0.6.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9a993cc2b76d9842ee92f00d3104a67d403e8a5a745d2474caf42361b3fc815a"
+dependencies = [
+ "borsh 0.9.3",
+ "borsh-derive 0.9.3",
+ "hex",
+ "schemars",
+ "serde",
+]
+
+[[package]]
 name = "pyth-sdk-solana"
 version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3115,7 +3161,24 @@ dependencies = [
  "bytemuck",
  "num-derive",
  "num-traits",
- "pyth-sdk",
+ "pyth-sdk 0.4.2",
+ "serde",
+ "solana-program",
+ "thiserror",
+]
+
+[[package]]
+name = "pyth-sdk-solana"
+version = "0.6.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "97f071fdeb5129de07a2cb70bb4f3a9e4be1e4cc6b85132bdea0967e601eb757"
+dependencies = [
+ "borsh 0.9.3",
+ "borsh-derive 0.9.3",
+ "bytemuck",
+ "num-derive",
+ "num-traits",
+ "pyth-sdk 0.6.1",
  "serde",
  "solana-program",
  "thiserror",

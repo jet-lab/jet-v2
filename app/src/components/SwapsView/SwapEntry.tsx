@@ -5,7 +5,7 @@ import { SwapsRowOrder } from '../../state/views/views';
 import { BlockExplorer, Cluster } from '../../state/settings/settings';
 import { Dictionary } from '../../state/settings/localization/localization';
 import { CurrentAccount } from '../../state/user/accounts';
-import { CurrentPoolSymbol, Pools, CurrentPool, PoolOptions } from '../../state/pools/pools';
+import { CurrentPoolTokenName, Pools, CurrentPool, PoolOptions } from '../../state/pools/pools';
 import {
   CurrentAction,
   CurrentSwapOutput,
@@ -45,7 +45,7 @@ export function SwapEntry(): JSX.Element {
   const pools = useRecoilValue(Pools);
   const poolOptions = useRecoilValue(PoolOptions);
   // Input token pool
-  const setCurrentPoolSymbol = useSetRecoilState(CurrentPoolSymbol);
+  const setCurrentPoolTokenName = useSetRecoilState(CurrentPoolTokenName);
   const currentPool = useRecoilValue(CurrentPool);
   const poolDecimals = (currentPool?.decimals ?? DEFAULT_DECIMALS) / 2;
   const poolPosition = currentAccount && currentPool && currentAccount.poolPositions[currentPool.symbol];
@@ -331,7 +331,7 @@ export function SwapEntry(): JSX.Element {
             onClick={() => {
               if (outputToken) {
                 const outputString = swapOutputTokens?.uiTokens ?? '0';
-                setCurrentPoolSymbol(outputToken.symbol);
+                setCurrentPoolTokenName(outputToken.name);
                 setOutputToken(currentPool);
                 // Allow UI to update and then adjust amounts
                 setSwitchingAssets(true);

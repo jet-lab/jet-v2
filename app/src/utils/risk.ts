@@ -30,8 +30,14 @@ export function useProjectedRisk(
     pool && account && action && action !== 'transfer' && amount && !amount.isZero() && max && !amount.gt(max);
   const defaultActionProjection = account?.riskIndicator ?? 0;
   const projectedRiskIndicator = canProjectAfterAction
-    ? pool.projectAfterAction(account, amount.tokens, action, minAmountOut && minAmountOut.tokens, outputToken, swapRepayWithProceeds)
-        .riskIndicator
+    ? pool.projectAfterAction(
+        account,
+        amount.tokens,
+        action,
+        minAmountOut && minAmountOut.tokens,
+        outputToken,
+        swapRepayWithProceeds
+      ).riskIndicator
     : defaultActionProjection;
 
   return projectedRiskIndicator;

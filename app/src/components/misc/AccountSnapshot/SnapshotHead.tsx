@@ -41,7 +41,7 @@ export function SnapshotHead(): JSX.Element {
             newFavorites.splice(accountIndex, 1);
           }
           // Otherwise, if we're adding the account to favorites
-        } else {
+        } else if (!newFavorites.includes(accountKey)) {
           newFavorites.push(accountKey);
           setCurrentAccountAddress(accountKey);
         }
