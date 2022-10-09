@@ -14,6 +14,7 @@ use solana_cli_config::{Config as SolanaConfig, CONFIG_FILE as SOLANA_CONFIG_FIL
 use solana_client::{
     client_error::ClientErrorKind,
     nonblocking::rpc_client::RpcClient,
+    rpc_config::RpcSendTransactionConfig,
     rpc_request::{RpcError, RpcResponseErrorData},
 };
 use solana_sdk::{
@@ -33,7 +34,7 @@ const DEVNET_HASH: &str = "EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG";
 pub enum NetworkKind {
     Mainnet,
     Devnet,
-    Other,
+    Localnet,
 }
 
 pub struct ClientConfig {
@@ -122,7 +123,7 @@ impl Client {
         Ok(match network_hash {
             hash if hash == mainnet_hash => NetworkKind::Mainnet,
             hash if hash == devnet_hash => NetworkKind::Devnet,
-            _ => NetworkKind::Other,
+            _ => NetworkKind::Localnet,
         })
     }
 
@@ -137,6 +138,16 @@ impl Client {
         }
     }
 
+    pub fn sign(&self, tx: &mut Transaction) -> Result<()> {
+        match &self.config.signer {
+            None => bail!("no wallet/signer configured"),
+            Some(signer) => {
+                tx.partial_sign(&[&**signer], self.recent_blockhash);
+                Ok(())
+            }
+        }
+    }
+
     /// Check if an account exists (has a balance)
     pub async fn account_exists(&self, address: &Pubkey) -> Result<bool> {
         Ok(self.config.rpc_client.get_balance(address).await? > 0)
@@ -144,14 +155,13 @@ impl Client {
 
     /// Deserialize an anchor compatible account
     pub async fn read_anchor_account<T: AccountDeserialize>(&self, address: &Pubkey) -> Result<T> {
-        let account_data = self.rpc().get_account_data(address).await?;
+        let account_data = self.get_account_data(address).await?;
         Ok(AccountDeserialize::try_deserialize(&mut &account_data[..])?)
     }
 
     /// Read a mint account
     pub async fn read_mint(&self, address: &Pubkey) -> Result<spl_token::state::Mint> {
         let account_data = self
-            .rpc()
             .get_account_data(address)
             .await
             .with_context(|| format!("while retrieving mint data for {address}"))?;
@@ -210,7 +220,7 @@ impl Client {
             }
         }
 
-        let mut ui_progress_group = ProgressTracker::new();
+        let mut ui_progress_group = ProgressTracker::new(self.config.no_confirm);
 
         #[allow(clippy::needless_collect)]
         let ui_progress_tx = plan
@@ -218,7 +228,9 @@ impl Client {
             .map(|_| ui_progress_group.add_line("in queue"))
             .collect::<Vec<_>>();
 
-        std::thread::spawn(move || ui_progress_group.join().unwrap());
+        if !self.config.no_confirm {
+            std::thread::spawn(move || ui_progress_group.join().unwrap());
+        }
 
         for (entry, ui_progress_bar) in plan.iter().zip(ui_progress_tx.into_iter()) {
             match self.config.dry_run {
@@ -270,7 +282,13 @@ impl Client {
             let signature = self
                 .config
                 .rpc_client
-                .send_transaction(transaction)
+                .send_transaction_with_config(
+                    transaction,
+                    RpcSendTransactionConfig {
+                        preflight_commitment: Some(CommitmentLevel::Processed),
+                        ..Default::default()
+                    },
+                )
                 .await
                 .map_err(|e| match e.kind {
                     ClientErrorKind::RpcError(RpcError::RpcResponseError {
@@ -302,7 +320,7 @@ impl Client {
                     .get_signature_status_with_commitment(
                         &signature,
                         CommitmentConfig {
-                            commitment: CommitmentLevel::Confirmed,
+                            commitment: CommitmentLevel::Processed,
                         },
                     )
                     .await?;
@@ -324,6 +342,21 @@ impl Client {
                 }
             }
         }
+    }
+
+    async fn get_account_data(&self, address: &Pubkey) -> Result<Vec<u8>> {
+        Ok(self
+            .rpc()
+            .get_account_with_commitment(
+                address,
+                CommitmentConfig {
+                    commitment: CommitmentLevel::Processed,
+                },
+            )
+            .await?
+            .value
+            .ok_or_else(|| anyhow::format_err!("could not find account {}", address))?
+            .data)
     }
 }
 
@@ -377,21 +410,23 @@ pub struct TransactionEntry {
 struct ProgressTracker {
     container: MultiProgress,
     next_index: usize,
+    disabled: bool,
 }
 
 impl ProgressTracker {
-    fn new() -> Self {
+    fn new(disabled: bool) -> Self {
         ProgressTracker {
             container: MultiProgress::new(),
             next_index: 0,
+            disabled,
         }
     }
 
     fn add_line(&mut self, msg: impl Into<Cow<'static, str>>) -> Spinner {
-        let mut spinner = Spinner::new(self.next_index, msg);
+        let mut spinner = Spinner::new(self.disabled, self.next_index, msg);
 
         self.next_index += 1;
-        spinner.bar = self.container.add(spinner.bar);
+        spinner.bar = spinner.bar.map(|bar| self.container.add(bar));
 
         spinner
     }
@@ -403,12 +438,16 @@ impl ProgressTracker {
 
 #[derive(Debug)]
 pub struct Spinner {
-    bar: ProgressBar,
+    bar: Option<ProgressBar>,
     idx: usize,
 }
 
 impl Spinner {
-    pub fn new(idx: usize, msg: impl Into<Cow<'static, str>>) -> Self {
+    pub fn new(disabled: bool, idx: usize, msg: impl Into<Cow<'static, str>>) -> Self {
+        if disabled {
+            return Self { idx, bar: None };
+        }
+
         let bar = ProgressBar::new_spinner();
 
         bar.enable_steady_tick(100);
@@ -418,26 +457,33 @@ impl Spinner {
                 .tick_strings(&["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]),
         );
 
-        let instance = Self { idx, bar };
+        let instance = Self {
+            idx,
+            bar: Some(bar),
+        };
         instance.set_message(msg);
 
         instance
     }
 
     pub fn set_message(&self, msg: impl Into<Cow<'static, str>>) {
-        self.bar.set_message(self.style_msg(msg));
+        if let Some(bar) = &self.bar {
+            bar.set_message(self.style_msg(msg));
+        }
     }
 
     pub fn finish_with_message(&self, msg: impl Into<Cow<'static, str>>) {
-        self.bar
-            .set_style(indicatif::ProgressStyle::default_spinner().template("✅ {msg}"));
-        self.bar.finish_with_message(self.style_msg(msg));
+        if let Some(bar) = &self.bar {
+            bar.set_style(indicatif::ProgressStyle::default_spinner().template("✅ {msg}"));
+            bar.finish_with_message(self.style_msg(msg));
+        }
     }
 
     pub fn abandon_with_message(&self, msg: impl Into<Cow<'static, str>>) {
-        self.bar
-            .set_style(indicatif::ProgressStyle::default_spinner().template(" {msg}"));
-        self.bar.abandon_with_message(self.style_msg(msg));
+        if let Some(bar) = &self.bar {
+            bar.set_style(indicatif::ProgressStyle::default_spinner().template(" {msg}"));
+            bar.abandon_with_message(self.style_msg(msg));
+        }
     }
 
     fn style_msg(&self, msg: impl Into<Cow<'static, str>>) -> String {

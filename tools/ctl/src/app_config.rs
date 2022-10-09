@@ -24,6 +24,9 @@ use crate::{
 #[serde(rename_all = "camelCase")]
 pub struct JetAppConfig {
     #[serde_as(as = "DisplayFromStr")]
+    pub airspace_program_id: Pubkey,
+
+    #[serde_as(as = "DisplayFromStr")]
     pub bonds_program_id: Pubkey,
 
     #[serde_as(as = "DisplayFromStr")]
@@ -57,7 +60,16 @@ pub struct JetAppConfig {
     pub url: String,
 
     pub tokens: HashMap<String, TokenInfo>,
-    pub markets: HashMap<String, SerumMarketInfo>,
+    pub airspaces: Vec<AirspaceInfo>,
+    pub serum_markets: HashMap<String, SerumMarketInfo>,
+}
+
+#[serde_as]
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AirspaceInfo {
+    pub name: String,
+    pub tokens: Vec<String>,
     pub bond_markets: HashMap<String, BondMarketInfo>,
 }
 
@@ -116,7 +128,7 @@ impl JetAppConfig {
         let rpc = Self::read_rpc_config(dir.join("rpc.toml")).await?;
         let deps = Self::read_dependency_programs(dir.join("dependencies.toml")).await?;
         let tokens = Self::generate_token_map_from_dir(client, dir.join("tokens")).await?;
-        let markets = Self::generate_market_map(
+        let serum_markets = Self::generate_market_map(
             client,
             &deps.serum_program_id,
             dir.join("serum-markets.toml"),
@@ -125,8 +137,15 @@ impl JetAppConfig {
         let bond_markets =
             Self::generate_bond_market_map(client, dir.join("bond-markets.toml")).await?;
 
+        let airspaces = vec![AirspaceInfo {
+            name: "default".to_owned(),
+            tokens: tokens.keys().cloned().collect(),
+            bond_markets,
+        }];
+
         Ok(Self {
-            bonds_program_id: jet_margin_sdk::bonds::ID,
+            airspace_program_id: jet_margin_sdk::jet_airspace::ID,
+            bonds_program_id: jet_margin_sdk::jet_bonds::ID,
             control_program_id: jet_margin_sdk::jet_control::ID,
             margin_program_id: jet_margin_sdk::jet_margin::ID,
             margin_pool_program_id: jet_margin_sdk::jet_margin_pool::ID,
@@ -138,8 +157,8 @@ impl JetAppConfig {
             faucet_program_id: deps.faucet_program_id,
             url: rpc.default,
             tokens,
-            markets,
-            bond_markets,
+            airspaces,
+            serum_markets,
         })
     }
 
@@ -181,6 +200,11 @@ impl JetAppConfig {
         path: PathBuf,
     ) -> Result<HashMap<String, SerumMarketInfo>> {
         let mut markets = HashMap::new();
+
+        if !path.exists() {
+            return Ok(markets);
+        }
+
         let market_def = Self::read_serum_config(path).await?;
 
         for market in market_def.markets {
@@ -213,6 +237,11 @@ impl JetAppConfig {
         path: PathBuf,
     ) -> Result<HashMap<String, BondMarketInfo>> {
         let mut bond_markets = HashMap::new();
+
+        if !path.exists() {
+            return Ok(bond_markets);
+        }
+
         let market_def = Self::read_bonds_config(path).await?;
 
         for market in market_def.markets {

@@ -43,6 +43,7 @@ lazy_static::lazy_static! {
         target_proposal_option: 0,
         compute_budget: None,
         dry_run: false,
+        no_confirm: false,
         signer_path: Some(PAYER_PATH.clone()),
         rpc_endpoint: Some(ENDPOINT.to_string()),
         command: Command::Bonds { subcmd: BondsCommand::CreateMarket(PARAMS.clone()) },
@@ -155,6 +156,7 @@ async fn main() -> Result<()> {
 
     // fund the ob accounts
     let bonds = BondsIxBuilder::new_from_seed(
+        &Pubkey::default(),
         &USDC,
         map_seed(PARAMS.seed.clone()),
         payer,
