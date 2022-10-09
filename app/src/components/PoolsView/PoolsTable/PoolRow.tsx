@@ -60,7 +60,7 @@ export const PoolRow = (props: { pool: Pool }) => {
     let render = <Skeleton className="align-right" paragraph={false} active />;
     if (pool.borrowedTokens) {
       const tokensAbbrev = currencyAbbrev(pool.borrowedTokens.tokens, false, pool.tokenPrice, pool.precision);
-      render = <Text>{`${tokensAbbrev} ${pool.symbol}`}</Text>;
+      render = <Text>{`${tokensAbbrev}`}</Text>;
     }
 
     return render;
@@ -71,7 +71,7 @@ export const PoolRow = (props: { pool: Pool }) => {
     let render = <Skeleton className="align-right" paragraph={false} active />;
     if (pool.borrowedTokens) {
       const tokensAbbrev = currencyAbbrev(pool.vault.tokens, false, pool.tokenPrice, pool.precision);
-      render = <Text>{`${tokensAbbrev} ${pool.symbol}`}</Text>;
+      render = <Text>{`${tokensAbbrev}`}</Text>;
     }
 
     return render;
