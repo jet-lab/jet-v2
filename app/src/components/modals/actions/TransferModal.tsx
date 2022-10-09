@@ -29,7 +29,7 @@ export function TransferModal(): JSX.Element {
   const { transfer } = useMarginActions();
   const accounts = useRecoilValue(Accounts);
   const currentPool = useRecoilValue(CurrentPool);
-  const precision = (currentPool?.precision ?? DEFAULT_DECIMALS);
+  const precision = currentPool?.precision ?? DEFAULT_DECIMALS;
   const currentAction = useRecoilValue(CurrentAction);
   const resetCurrentAction = useResetRecoilState(CurrentAction);
   const tokenInputAmount = useRecoilValue(TokenInputAmount);

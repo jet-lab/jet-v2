@@ -16,8 +16,7 @@ export function useCurrencyFormatting() {
   const currencyFormatter = useCallback(
     (value: number, fiatValues?: boolean, decimals?: number, ceil?: boolean, accounting?: boolean): string => {
       const roundedValue = Math.round(value * 10 ** (decimals ?? 2)) / 10 ** (decimals ?? 2);
-      const convertedValue =
-        fiatCurrency !== 'USD' ? roundedValue * conversionRates[fiatCurrency] : roundedValue;
+      const convertedValue = fiatCurrency !== 'USD' ? roundedValue * conversionRates[fiatCurrency] : roundedValue;
 
       const currencyFormat = new Intl.NumberFormat(navigator.language, {
         style: fiatValues ? 'currency' : undefined,
@@ -79,14 +78,14 @@ export function useCurrencyFormatting() {
         // with dynamic decimal places
         const multiple = Math.pow(10, decimals);
         // TODO: We might want to also abbreviate the values here
-        return format((Math.round(t * multiple) / multiple));
+        return format(Math.round(t * multiple) / multiple);
       }
     }
 
     if (t > 1000000) {
       return currencyFormatter(t / 1000000, fiatValues, 1) + 'M';
-    // } else if (t > 1000) {
-    //   return currencyFormatter(t / 1000, fiatValues, 1) + 'K';
+      // } else if (t > 1000) {
+      //   return currencyFormatter(t / 1000, fiatValues, 1) + 'K';
     } else {
       return currencyFormatter(t, fiatValues, fiatValues ? 2 : decimals);
     }
