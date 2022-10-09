@@ -157,13 +157,14 @@ export function SwapEntry(): JSX.Element {
     let render = <></>;
     const amount = side === 'input' ? tokenInputAmount : swapOutputTokens;
     const overallBalance = side === 'input' ? overallInputBalance : overallOutputBalance;
+    const precision = side === 'input' ? poolPrecision : outputPrecision;
     if (amount && !amount.isZero() && !currentAction) {
       const affectedBalance = side === 'input' ? overallBalance - amount.tokens : overallBalance + amount.tokens;
       render = (
         <div className="flex-centered">
           <ArrowRight />
           <Paragraph type={getTokenStyleType(affectedBalance)}>
-            {currencyAbbrev(affectedBalance, false, undefined, poolPrecision)}
+            {currencyAbbrev(affectedBalance, false, undefined, precision)}
           </Paragraph>
         </div>
       );
