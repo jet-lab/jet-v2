@@ -46,7 +46,7 @@ export function PoolDetail(): JSX.Element {
     let render = <Skeleton className="align-center" paragraph={false} active style={{ margin: '10px 0' }} />;
     if (init) {
       const totalValueAbbrev = currencyAbbrev(currentPool.totalValue.tokens, false, undefined, currentPool.precision);
-      render = <Title className="green-text">{`${totalValueAbbrev} ${currentPool.symbol}`}</Title>;
+      render = <Title className="green-text">{`${totalValueAbbrev}`}</Title>;
     }
 
     return render;
@@ -60,7 +60,6 @@ export function PoolDetail(): JSX.Element {
       render = (
         <div className="pie-chart-section-info-item">
           <Text type="success">{vaultAbbrev}</Text>
-          <Text>{currentPool.symbol}</Text>
         </div>
       );
     }
@@ -76,7 +75,6 @@ export function PoolDetail(): JSX.Element {
       render = (
         <div className="pie-chart-section-info-item">
           <Text type="danger">{borrowedAbbrev}</Text>
-          <Text>{currentPool.symbol}</Text>
         </div>
       );
     }
