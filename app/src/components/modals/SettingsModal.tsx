@@ -223,6 +223,7 @@ export function SettingsModal(): JSX.Element {
           <Radio.Group value={clusterSetting} onChange={e => setClusterSetting(e.target.value)}>
             <Radio value="mainnet-beta">{dictionary.settingsModal.cluster.mainnetBeta}</Radio>
             <Radio value="devnet">{dictionary.settingsModal.cluster.devnet}</Radio>
+            <Radio value="localnet">{dictionary.settingsModal.cluster.localnet}</Radio>
           </Radio.Group>
         </div>
         <div className="setting flex align-start justify-center column">

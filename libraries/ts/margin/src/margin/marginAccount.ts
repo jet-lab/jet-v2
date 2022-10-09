@@ -415,9 +415,8 @@ export class MarginAccount {
     const poolConfigs = Object.values(this.programs.config.tokens)
 
     for (let i = 0; i < poolConfigs.length; i++) {
-      const poolConfig = poolConfigs[i]
-      const tokenConfig = this.programs.config.tokens[poolConfig.symbol]
-      const pool = this.pools?.[poolConfig.symbol]
+      const tokenConfig = poolConfigs[i]
+      const pool = this.pools?.[tokenConfig.symbol]
       if (!pool?.info) {
         continue
       }
@@ -457,7 +456,7 @@ export class MarginAccount {
       // FIXME
       const buyingPower = TokenAmount.zero(pool.decimals)
 
-      positions[poolConfig.symbol] = {
+      positions[tokenConfig.symbol] = {
         tokenConfig,
         pool,
         depositPosition: depositNotePosition,
@@ -785,11 +784,10 @@ export class MarginAccount {
     // Build out the map
     const map: Record<string, AssociatedToken> = {}
     for (let i = 0; i < poolConfigs.length; i++) {
-      const poolConfig = poolConfigs[i]
-      const tokenConfig = programs.config.tokens[poolConfig.symbol]
+      const tokenConfig = poolConfigs[i]
 
       // Find the associated token pubkey
-      const mint = translateAddress(poolConfig.mint)
+      const mint = translateAddress(tokenConfig.mint)
       const associatedTokenOrNative = mint.equals(NATIVE_MINT)
         ? ownerAddress
         : AssociatedToken.derive(mint, ownerAddress)
@@ -801,7 +799,7 @@ export class MarginAccount {
       }
 
       // Add it to the map
-      map[poolConfig.symbol] = token
+      map[tokenConfig.symbol] = token
     }
     return { all, map }
   }

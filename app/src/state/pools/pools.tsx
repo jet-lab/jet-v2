@@ -30,12 +30,13 @@ export const Pools = atom({
   default: undefined as JetMarginPools | undefined,
   dangerouslyAllowMutability: true
 });
+
 // Track the current pool by its symbol, so it's lightweight
 // and we can reference this value to select the entire state
-export const CurrentPoolSymbol = atom({
-  key: 'currentPoolSymbol',
-  default: 'BTC',
-  effects: [localStorageEffect('jetAppCurrentPool')]
+export const CurrentPoolTokenName = atom({
+  key: 'currentPoolTokenName',
+  default: 'Bitcoin',
+  effects: [localStorageEffect('jetAppCurrentPoolToken')]
 });
 
 // Select the current pool's state
@@ -43,13 +44,13 @@ export const CurrentPool = selector<Pool | undefined>({
   key: 'currentPool',
   get: ({ get }) => {
     const pools = get(Pools);
-    const symbol = get(CurrentPoolSymbol);
 
-    const currentPool = pools?.tokenPools[symbol];
-    return currentPool;
+    const tokenName = get(CurrentPoolTokenName);
+    return pools?.tokenPools[tokenName];
   },
   dangerouslyAllowMutability: true
 });
+
 // Return a simple list of pool options to choose from
 export const PoolOptions = selector<PoolOption[]>({
   key: 'poolOptions',
@@ -116,9 +117,9 @@ export function usePoolsSyncer() {
       let totalSupply = 0;
       let totalBorrowed = 0;
       for (const token of Object.values(tokenPools)) {
-        const tokenPrice = tokenPools[token.symbol].tokenPrice;
-        const vault = tokenPools[token.symbol].vault.tokens;
-        const borrowedTokens = tokenPools[token.symbol].borrowedTokens.tokens;
+        const tokenPrice = tokenPools[token.name].tokenPrice;
+        const vault = tokenPools[token.name].vault.tokens;
+        const borrowedTokens = tokenPools[token.name].borrowedTokens.tokens;
 
         totalSupply += vault * tokenPrice;
         totalBorrowed += borrowedTokens * tokenPrice;

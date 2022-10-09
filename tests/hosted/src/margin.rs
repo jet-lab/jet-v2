@@ -71,8 +71,8 @@ impl MarginClient {
         let payer = rpc.payer().pubkey();
 
         Self {
-            tx_admin: AirspaceAdmin::new("test", payer, payer),
-            airspace: AirspaceIxBuilder::new("test", payer, payer),
+            tx_admin: AirspaceAdmin::new("default", payer, payer),
+            airspace: AirspaceIxBuilder::new("default", payer, payer),
             rpc,
         }
     }
@@ -141,7 +141,7 @@ impl MarginClient {
     }
 
     pub async fn create_airspace_if_missing(&self, is_restricted: bool) -> Result<(), Error> {
-        let airspace = derive_airspace("test");
+        let airspace = derive_airspace("default");
 
         if self.rpc.get_account(&airspace).await?.is_none() {
             self.create_airspace(is_restricted).await?;
@@ -249,7 +249,7 @@ impl MarginClient {
                     collateral_weight: setup_info.collateral_weight,
                     max_leverage: setup_info.max_leverage,
                 }),
-                parameters: Some(setup_info.config.clone()),
+                parameters: Some(setup_info.config),
             },
         )
         .await?;
@@ -352,7 +352,7 @@ impl MarginUser {
         let permit_account = derive_permit(self.tx.airspace(), &self.signer());
 
         if self.rpc.get_account(&permit_account).await?.is_none() {
-            let airspace = AirspaceIxBuilder::new("test", self.signer(), self.signer());
+            let airspace = AirspaceIxBuilder::new("default", self.signer(), self.signer());
             self.rpc
                 .send_and_confirm(vec![airspace.permit_create(self.signer())].into());
         }

@@ -42,7 +42,7 @@ pub struct Configure<'info> {
 pub fn configure_handler(ctx: Context<Configure>, config: Option<MarginPoolConfig>) -> Result<()> {
     let pool = &mut ctx.accounts.margin_pool;
 
-    if let Some(new_config) = config.clone() {
+    if let Some(new_config) = config {
         pool.config = new_config;
     }
 
@@ -71,7 +71,6 @@ pub fn configure_handler(ctx: Context<Configure>, config: Option<MarginPoolConfi
         }
 
         pool.token_price_oracle = ctx.accounts.pyth_price.key();
-        msg!("oracle = {}", &pool.token_price_oracle);
     }
 
     emit!(events::PoolConfigured {
