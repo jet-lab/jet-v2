@@ -124,7 +124,13 @@ export function FullAccountBalance(): JSX.Element {
     if (accounts && balance?.tokenSymbol) {
       render = (
         <Text type={balance.depositBalance.isZero() ? undefined : 'success'}>
-          {currencyAbbrev(balance.depositBalance.tokens, false, undefined, pools.tokenPools[balance.tokenSymbol]?.precision ?? 2, true)}
+          {currencyAbbrev(
+            balance.depositBalance.tokens,
+            false,
+            undefined,
+            pools.tokenPools[balance.tokenSymbol]?.precision ?? 2,
+            true
+          )}
         </Text>
       );
     }
@@ -138,7 +144,13 @@ export function FullAccountBalance(): JSX.Element {
     if (accounts && balance?.tokenSymbol) {
       render = (
         <Text type={balance.loanBalance.isZero() ? undefined : 'warning'}>
-          {currencyAbbrev(balance.loanBalance.tokens, false, undefined, pools.tokenPools[balance.tokenSymbol]?.precision ?? 2, true)}
+          {currencyAbbrev(
+            balance.loanBalance.tokens,
+            false,
+            undefined,
+            pools.tokenPools[balance.tokenSymbol]?.precision ?? 2,
+            true
+          )}
         </Text>
       );
     }

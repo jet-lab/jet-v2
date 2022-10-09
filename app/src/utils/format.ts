@@ -50,11 +50,11 @@ export function fromLocaleString(num: string): string {
   let strippedNum = num;
   // Remove thousands separator
   if (thousandSeparator) {
-    strippedNum = strippedNum.replace(thousandSeparator, '')
+    strippedNum = strippedNum.replace(thousandSeparator, '');
   }
   // Replace , with . if applicable
   if (decimalSign !== '.') {
-    strippedNum = strippedNum.replace(decimalSign, '.')
+    strippedNum = strippedNum.replace(decimalSign, '.');
   }
 
   return strippedNum;

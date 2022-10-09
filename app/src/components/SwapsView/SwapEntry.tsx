@@ -47,7 +47,7 @@ export function SwapEntry(): JSX.Element {
   // Input token pool
   const setCurrentPoolTokenName = useSetRecoilState(CurrentPoolTokenName);
   const currentPool = useRecoilValue(CurrentPool);
-  const poolPrecision = (currentPool?.precision ?? DEFAULT_DECIMALS);
+  const poolPrecision = currentPool?.precision ?? DEFAULT_DECIMALS;
   const poolPosition = currentAccount && currentPool && currentAccount.poolPositions[currentPool.symbol];
   const overallInputBalance = poolPosition ? poolPosition.depositBalance.tokens - poolPosition.loanBalance.tokens : 0;
   const depositBalanceString = poolPosition ? poolPosition.depositBalance.uiTokens : '0';
@@ -58,7 +58,7 @@ export function SwapEntry(): JSX.Element {
   const disabledMessage = useTokenInputDisabledMessage();
   // Output token pool
   const [outputToken, setOutputToken] = useRecoilState(CurrentSwapOutput);
-  const outputPrecision = (outputToken?.precision ?? DEFAULT_DECIMALS);
+  const outputPrecision = outputToken?.precision ?? DEFAULT_DECIMALS;
   const outputPoolPosition = currentAccount && outputToken && currentAccount?.poolPositions[outputToken.symbol];
   const overallOutputBalance = outputPoolPosition
     ? outputPoolPosition.depositBalance.tokens - outputPoolPosition.loanBalance.tokens
