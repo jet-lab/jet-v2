@@ -76,14 +76,19 @@ export function FullAccountBalance(): JSX.Element {
           <Text className="price-name">{`${balance.tokenSymbol} ≈ ${currencyFormatter(
             pools.tokenPools[balance.tokenSymbol]?.tokenPrice ?? 0,
             true,
-            balance.tokenSymbol === ('USDC' || 'USDT') ? 0 : undefined,
-            balance.tokenSymbol === ('USDC' || 'USDT')
+            // Round currencies to 2 decimal units
+            2,
+            false,
+            true
           )}`}</Text>
+          {/* price-abbrev is shown on smaller displays */}
           <Text className="price-abbrev">{`≈ ${currencyFormatter(
             pools.tokenPools[balance.tokenSymbol]?.tokenPrice ?? 0,
             true,
-            balance.tokenSymbol === ('USDC' || 'USDT') ? 0 : undefined,
-            balance.tokenSymbol === ('USDC' || 'USDT')
+            // Round currencies to 2 decimal units
+            2,
+            false,
+            true
           )}`}</Text>
         </div>
       );
@@ -119,7 +124,7 @@ export function FullAccountBalance(): JSX.Element {
     if (accounts && balance?.tokenSymbol) {
       render = (
         <Text type={balance.depositBalance.isZero() ? undefined : 'success'}>
-          {currencyAbbrev(balance.depositBalance.tokens, false, undefined, balance.depositBalance.decimals / 2, true)}
+          {currencyAbbrev(balance.depositBalance.tokens, false, undefined, pools.tokenPools[balance.tokenSymbol]?.precision ?? 2, true)}
         </Text>
       );
     }
@@ -133,7 +138,7 @@ export function FullAccountBalance(): JSX.Element {
     if (accounts && balance?.tokenSymbol) {
       render = (
         <Text type={balance.loanBalance.isZero() ? undefined : 'warning'}>
-          {currencyAbbrev(balance.loanBalance.tokens, false, undefined, balance.loanBalance.decimals / 2, true)}
+          {currencyAbbrev(balance.loanBalance.tokens, false, undefined, pools.tokenPools[balance.tokenSymbol]?.precision ?? 2, true)}
         </Text>
       );
     }
