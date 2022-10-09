@@ -14,12 +14,10 @@ export function useCurrencyFormatting() {
 
   // Format USD or crypto with default or desired decimals
   const currencyFormatter = useCallback(
-    (value: number, fiatValues?: boolean, decimals?: number, ciel?: boolean, accounting?: boolean): string => {
-      const roundedDownValue = ciel
-        ? Math.ceil(value * 10 ** (decimals ?? 2)) / 10 ** (decimals ?? 2)
-        : Math.floor(value * 10 ** (decimals ?? 2)) / 10 ** (decimals ?? 2);
+    (value: number, fiatValues?: boolean, decimals?: number, ceil?: boolean, accounting?: boolean): string => {
+      const roundedValue = Math.round(value * 10 ** (decimals ?? 2)) / 10 ** (decimals ?? 2);
       const convertedValue =
-        fiatCurrency !== 'USD' ? roundedDownValue * conversionRates[fiatCurrency] : roundedDownValue;
+        fiatCurrency !== 'USD' ? roundedValue * conversionRates[fiatCurrency] : roundedValue;
 
       const currencyFormat = new Intl.NumberFormat(navigator.language, {
         style: fiatValues ? 'currency' : undefined,
