@@ -45,7 +45,7 @@ export function PoolDetail(): JSX.Element {
   function renderPoolSize() {
     let render = <Skeleton className="align-center" paragraph={false} active style={{ margin: '10px 0' }} />;
     if (init) {
-      const totalValueAbbrev = currencyAbbrev(currentPool.totalValue.tokens, false, undefined, 2);
+      const totalValueAbbrev = currencyAbbrev(currentPool.totalValue.tokens, false, undefined, currentPool.precision);
       render = <Title className="green-text">{`${totalValueAbbrev} ${currentPool.symbol}`}</Title>;
     }
 
@@ -56,7 +56,7 @@ export function PoolDetail(): JSX.Element {
   function renderAvailableLiquidity() {
     let render = <Skeleton paragraph={false} active style={{ marginTop: 5 }} />;
     if (init) {
-      const vaultAbbrev = currencyAbbrev(currentPool.vault.tokens, false, undefined, currentPool.decimals);
+      const vaultAbbrev = currencyAbbrev(currentPool.vault.tokens, false, undefined, currentPool.precision);
       render = (
         <div className="pie-chart-section-info-item">
           <Text type="success">{vaultAbbrev}</Text>
@@ -72,7 +72,7 @@ export function PoolDetail(): JSX.Element {
   function renderTotalBorrowed() {
     let render = <Skeleton paragraph={false} active style={{ marginTop: 5 }} />;
     if (init) {
-      const borrowedAbbrev = currencyAbbrev(currentPool.borrowedTokens.tokens, false, undefined, currentPool.decimals);
+      const borrowedAbbrev = currencyAbbrev(currentPool.borrowedTokens.tokens, false, undefined, currentPool.precision);
       render = (
         <div className="pie-chart-section-info-item">
           <Text type="danger">{borrowedAbbrev}</Text>

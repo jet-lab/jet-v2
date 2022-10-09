@@ -90,10 +90,7 @@ export function DepositWithdrawModal(): JSX.Element {
       depositBalance = accountPoolPosition.depositBalance.tokens;
     }
 
-    let decimals = 2;
-    if (currentPool) {
-      decimals = currentPool.decimals;
-    }
+    const decimals = currentPool?.precision ?? 2;
 
     const abbreviatedDepositBalance = currencyAbbrev(balance ?? depositBalance, false, undefined, decimals);
     return abbreviatedDepositBalance;
