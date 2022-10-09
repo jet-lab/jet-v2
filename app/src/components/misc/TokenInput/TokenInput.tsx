@@ -244,7 +244,7 @@ export function TokenInput(props: {
       />
       <div className="token-input-main flex-centered">
         <TokenSelect
-          poolTokenName={tokenPool?.symbol}
+          poolSymbol={tokenPool?.symbol}
           tokenOptions={props.tokenOptions}
           onChangeToken={props.onChangeToken}
           dropdownStyle={props.dropdownStyle}
