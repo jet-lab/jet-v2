@@ -44,30 +44,6 @@ export function useCurrencyFormatting() {
     [conversionRates, fiatCurrency]
   );
 
-  function dynamicDecimals(value: number) {
-    if (value < 10) {
-      return currencyFormatter(value, false, 8, undefined, true);
-    } else if (value < 100) {
-      return currencyFormatter(value, false, 7, undefined, true);
-    } else if (value < 1000) {
-      return currencyFormatter(value, false, 6, undefined, true);
-    } else if (value < 10000) {
-      return currencyFormatter(value, false, 5, undefined, true);
-    } else if (value < 100000) {
-      return currencyFormatter(value, false, 4, undefined, true);
-    } else if (value < 1000000) {
-      return currencyFormatter(value, false, 3, undefined, true);
-    } else if (value < 10000000) {
-      return currencyFormatter(value, false, 2, undefined, true);
-    } else if (value < 100000000) {
-      return currencyFormatter(value, false, 1, undefined, true);
-    } else if (value < 1000000000) {
-      return currencyFormatter(value, false, 0, undefined, true);
-    } else if (value >= 1000000000) {
-      return currencyFormatter(value / 1000000000, false, 1) + 'B';
-    }
-  }
-
   // Abbreviate large currency amounts
   function currencyAbbrev(
     total: number,
@@ -81,6 +57,8 @@ export function useCurrencyFormatting() {
     if (price && fiatValues) {
       t = total * price;
     }
+
+    const { format } = Intl.NumberFormat(navigator.language);
 
     // In all cases, truncate trillions and billions
     if (t > 1000000000000) {
@@ -99,7 +77,9 @@ export function useCurrencyFormatting() {
       } else {
         // If not fiat values, show up to the 9th character
         // with dynamic decimal places
-        return dynamicDecimals(t);
+        const multiple = Math.pow(10, decimals);
+        // TODO: We might want to also abbreviate the values here
+        return format((Math.round(t * multiple) / multiple));
       }
     }
 
