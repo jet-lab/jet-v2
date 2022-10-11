@@ -5,7 +5,7 @@ import { SwapsRowOrder } from '../../state/views/views';
 import { BlockExplorer, Cluster } from '../../state/settings/settings';
 import { Dictionary } from '../../state/settings/localization/localization';
 import { CurrentAccount } from '../../state/user/accounts';
-import { CurrentPoolTokenName, Pools, CurrentPool, PoolOptions } from '../../state/pools/pools';
+import { CurrentPoolSymbol, Pools, CurrentPool, PoolOptions } from '../../state/pools/pools';
 import {
   CurrentAction,
   CurrentSwapOutput,
@@ -45,9 +45,9 @@ export function SwapEntry(): JSX.Element {
   const pools = useRecoilValue(Pools);
   const poolOptions = useRecoilValue(PoolOptions);
   // Input token pool
-  const setCurrentPoolTokenName = useSetRecoilState(CurrentPoolTokenName);
+  const setCurrentPoolSymbol = useSetRecoilState(CurrentPoolSymbol);
   const currentPool = useRecoilValue(CurrentPool);
-  const poolDecimals = (currentPool?.decimals ?? DEFAULT_DECIMALS) / 2;
+  const poolPrecision = currentPool?.precision ?? DEFAULT_DECIMALS;
   const poolPosition = currentAccount && currentPool && currentAccount.poolPositions[currentPool.symbol];
   const overallInputBalance = poolPosition ? poolPosition.depositBalance.tokens - poolPosition.loanBalance.tokens : 0;
   const depositBalanceString = poolPosition ? poolPosition.depositBalance.uiTokens : '0';
@@ -58,7 +58,7 @@ export function SwapEntry(): JSX.Element {
   const disabledMessage = useTokenInputDisabledMessage();
   // Output token pool
   const [outputToken, setOutputToken] = useRecoilState(CurrentSwapOutput);
-  const outputDecimals = (outputToken?.decimals ?? DEFAULT_DECIMALS) / 2;
+  const outputPrecision = outputToken?.precision ?? DEFAULT_DECIMALS;
   const outputPoolPosition = currentAccount && outputToken && currentAccount?.poolPositions[outputToken.symbol];
   const overallOutputBalance = outputPoolPosition
     ? outputPoolPosition.depositBalance.tokens - outputPoolPosition.loanBalance.tokens
@@ -157,13 +157,14 @@ export function SwapEntry(): JSX.Element {
     let render = <></>;
     const amount = side === 'input' ? tokenInputAmount : swapOutputTokens;
     const overallBalance = side === 'input' ? overallInputBalance : overallOutputBalance;
+    const precision = side === 'input' ? poolPrecision : outputPrecision;
     if (amount && !amount.isZero() && !currentAction) {
       const affectedBalance = side === 'input' ? overallBalance - amount.tokens : overallBalance + amount.tokens;
       render = (
         <div className="flex-centered">
           <ArrowRight />
           <Paragraph type={getTokenStyleType(affectedBalance)}>
-            {currencyAbbrev(affectedBalance, false, undefined, poolDecimals / 2)}
+            {currencyAbbrev(affectedBalance, false, undefined, precision)}
           </Paragraph>
         </div>
       );
@@ -331,7 +332,7 @@ export function SwapEntry(): JSX.Element {
             onClick={() => {
               if (outputToken) {
                 const outputString = swapOutputTokens?.uiTokens ?? '0';
-                setCurrentPoolTokenName(outputToken.name);
+                setCurrentPoolSymbol(outputToken.symbol);
                 setOutputToken(currentPool);
                 // Allow UI to update and then adjust amounts
                 setSwitchingAssets(true);
@@ -437,7 +438,7 @@ export function SwapEntry(): JSX.Element {
             <Paragraph type="secondary">{`${currentPool?.symbol ?? '—'} ${dictionary.common.balance}`}</Paragraph>
             <div className="flex-centered">
               <Paragraph type={getTokenStyleType(overallInputBalance)}>
-                {currencyAbbrev(overallInputBalance, false, undefined, poolDecimals / 2)}
+                {currencyAbbrev(overallInputBalance, false, undefined, poolPrecision)}
               </Paragraph>
               {renderAffectedBalance('input')}
             </div>
@@ -446,7 +447,7 @@ export function SwapEntry(): JSX.Element {
             <Paragraph type="secondary">{`${outputToken?.symbol ?? '—'} ${dictionary.common.balance}`}</Paragraph>
             <div className="flex-centered">
               <Paragraph type={getTokenStyleType(overallOutputBalance)}>
-                {currencyAbbrev(overallOutputBalance, false, undefined, outputDecimals / 2)}
+                {currencyAbbrev(overallOutputBalance, false, undefined, outputPrecision)}
               </Paragraph>
               {renderAffectedBalance('output')}
             </div>

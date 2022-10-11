@@ -14,7 +14,7 @@ interface Formatter {
     value: number,
     fiatValues?: boolean | undefined,
     decimals?: number | undefined,
-    ciel?: boolean | undefined
+    ceil?: boolean | undefined
   ) => string;
   currencyAbbrev: (
     total: number,

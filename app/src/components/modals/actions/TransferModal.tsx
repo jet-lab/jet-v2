@@ -29,7 +29,7 @@ export function TransferModal(): JSX.Element {
   const { transfer } = useMarginActions();
   const accounts = useRecoilValue(Accounts);
   const currentPool = useRecoilValue(CurrentPool);
-  const decimals = (currentPool?.decimals ?? DEFAULT_DECIMALS) / 2;
+  const precision = currentPool?.precision ?? DEFAULT_DECIMALS;
   const currentAction = useRecoilValue(CurrentAction);
   const resetCurrentAction = useResetRecoilState(CurrentAction);
   const tokenInputAmount = useRecoilValue(TokenInputAmount);
@@ -123,7 +123,7 @@ export function TransferModal(): JSX.Element {
     const poolPosition = side === 'from' ? fromAccountPoolPosition : toAccountPoolPosition;
     if (poolPosition && !tokenInputAmount.isZero()) {
       const balanceText = fromAccountPoolPosition
-        ? currencyAbbrev(poolPosition.depositBalance.tokens - tokenInputAmount.tokens, false, undefined, decimals)
+        ? currencyAbbrev(poolPosition.depositBalance.tokens - tokenInputAmount.tokens, false, undefined, precision)
         : '—';
       render = (
         <div className="flex-centered">
@@ -223,7 +223,7 @@ export function TransferModal(): JSX.Element {
               <Paragraph className="from-account-text">{dictionary.common.balance}</Paragraph>
               <Paragraph className="from-account-text">
                 {fromAccountPoolPosition
-                  ? currencyAbbrev(fromAccountPoolPosition.depositBalance.tokens, false, undefined, decimals)
+                  ? currencyAbbrev(fromAccountPoolPosition.depositBalance.tokens, false, undefined, precision)
                   : '—'}
                 {renderAffectedBalance('from')}
                 {' ' + currentPool?.symbol}
