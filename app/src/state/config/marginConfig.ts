@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import axios from 'axios';
 import { atom, useRecoilValue, useSetRecoilState } from 'recoil';
 import { MarginClient, MarginConfig as JetMarginConfig } from '@jet-lab/margin';
 import { Cluster } from '../settings/settings';
@@ -14,7 +15,16 @@ export function useMarginConfigSyncer() {
   const cluster = useRecoilValue(Cluster);
   const setMarginConfig = useSetRecoilState(MarginConfig);
 
+  async function getLocalnetConfig() {
+    let response = await axios.get('/localnet.config.json');
+    return await response.data;
+  }
+
   useEffect(() => {
-    MarginClient.getConfig(cluster).then(config => setMarginConfig(config));
+    if (cluster == 'localnet') {
+      getLocalnetConfig().then(config => setMarginConfig(config));
+    } else {
+      MarginClient.getConfig(cluster).then(config => setMarginConfig(config));
+    }
   }, [cluster, setMarginConfig]);
 }

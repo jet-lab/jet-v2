@@ -74,6 +74,7 @@ pub async fn process_list_pools(client: &Client) -> Result<Plan> {
             "Loans",
             "Interest Rate",
             "Fees",
+            "Interest Accrued Until",
         ]);
 
     let summary_tasks = pools
@@ -253,7 +254,7 @@ fn override_pool_config_with_options(
         management_fee_rate,
     } = margin_pool;
 
-    let orig_params = config.parameters.clone().unwrap();
+    let orig_params = config.parameters.unwrap();
     let params = config.parameters.as_mut().unwrap();
 
     override_field!(overridden, params, flags);
@@ -322,7 +323,7 @@ async fn download_margin_pool_config(
         .await?;
 
     Ok(MarginPoolConfiguration {
-        parameters: Some(margin_pool_data.config.clone()),
+        parameters: Some(margin_pool_data.config),
         pyth_price: Some(margin_pool_data.token_price_oracle),
         pyth_product: None,
         metadata: Some(TokenMetadataParams {
@@ -342,6 +343,7 @@ struct PoolSummary {
     fee_vault_balance: f64,
     loans: f64,
     rate: f64,
+    interest_accrued_until: String,
 }
 
 impl From<PoolSummary> for comfy_table::Cells {
@@ -363,6 +365,7 @@ impl From<PoolSummary> for comfy_table::Cells {
             entry.loans.into(),
             rate.into(),
             entry.fee_vault_balance.into(),
+            entry.interest_accrued_until.into(),
         ])
     }
 }
@@ -407,6 +410,8 @@ async fn collect_pool_summary(
         token_mint.decimals,
     );
     let rate = pool.interest_rate().to_string().parse::<f64>()?;
+    let interest_accrued_until =
+        chrono::NaiveDateTime::from_timestamp(pool.accrued_until, 0).to_string();
 
     Ok(PoolSummary {
         token,
@@ -416,6 +421,7 @@ async fn collect_pool_summary(
         fee_vault_balance,
         loans,
         rate,
+        interest_accrued_until,
     })
 }
 

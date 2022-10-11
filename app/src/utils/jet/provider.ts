@@ -11,7 +11,10 @@ import { MarginConfig } from '../../state/config/marginConfig';
 export function useProvider() {
   const cluster = useRecoilValue(Cluster);
   const node = useRecoilValue(PreferredRpcNode);
-  const endpoint = rpcNodes[node][cluster === 'mainnet-beta' ? 'mainnetBeta' : cluster];
+  const endpoint =
+    cluster === 'localnet'
+      ? 'http://localhost:8899'
+      : rpcNodes[node][cluster === 'mainnet-beta' ? 'mainnetBeta' : cluster];
   const connection = useMemo(() => new Connection(endpoint, 'recent'), [endpoint]);
   const config = useRecoilValue(MarginConfig);
   const wallet = useWallet();

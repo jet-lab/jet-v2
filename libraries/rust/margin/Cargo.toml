@@ -21,6 +21,7 @@ futures = "0.3"
 thiserror = "1"
 tokio = { version = "1", features = ["rt"] }
 rand = { version = "0.8.5" }
+serde = { version = "1", features = ["derive"] }
 
 jet-proto-math = { git = "https://github.com/jet-lab/program-libraries", branch = "main" }
 
@@ -34,6 +35,7 @@ anchor-spl = { git = "https://github.com/jet-lab/anchor", branch = "master" }
 anchor-client = { git = "https://github.com/jet-lab/anchor", branch = "master" }
 
 jet-simulation = { git = "https://github.com/jet-lab/jet-simulation", branch = "master" }
+jet-test-service = { path = "../../../programs/test-service", features = ["no-entrypoint"] }
 jet-bonds = { path = "../../../programs/bonds", features = ["no-entrypoint", "cli"] }
 jet-airspace = { path = "../../../programs/airspace", features = ["no-entrypoint"] }
 jet-control = { path = "../../../programs/control", features = ["no-entrypoint"] }

@@ -1,7 +1,11 @@
 use std::cell::RefCell;
+use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
+use anchor_lang::prelude::Rent;
 use anyhow::Error;
+use jet_margin_sdk::jet_margin_pool::PoolFlags;
+use jet_margin_sdk::solana::transaction::{condense, SendTransactionBuilder};
 use rand::rngs::mock::StepRng;
 use tokio::sync::OnceCell;
 
@@ -9,7 +13,10 @@ use solana_sdk::native_token::LAMPORTS_PER_SOL;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::{Keypair, Signer};
 
-use jet_margin_pool::MarginPoolConfig;
+use jet_margin_sdk::test_service::{
+    init_environment, AirspaceConfig, AirspaceTokenConfig, BondMarketConfig, EnvironmentConfig,
+    MarginPoolConfig, TokenDescription,
+};
 use jet_metadata::TokenKind;
 use jet_simulation::solana_rpc_api::SolanaRpcClient;
 
@@ -58,6 +65,7 @@ impl MarginTestContext {
         use jet_simulation::runtime::TestRuntime;
         use jet_static_program_registry::{orca_swap_v1, orca_swap_v2, spl_token_swap_v2};
         let runtime = jet_simulation::create_test_runtime![
+            jet_test_service,
             jet_bonds,
             jet_control,
             jet_margin,
@@ -88,9 +96,34 @@ impl MarginTestContext {
 
     #[cfg(feature = "localnet")]
     pub async fn new() -> Result<Self, Error> {
-        let runtime = jet_simulation::solana_rpc_api::RpcConnection::new_local_funded()?;
+        use jet_simulation::solana_rpc_api::RpcConnection;
 
-        Self::new_with_runtime(Arc::new(runtime)).await
+        let solana_config =
+            solana_cli_config::Config::load(solana_cli_config::CONFIG_FILE.as_ref().unwrap())
+                .unwrap_or_default();
+
+        let payer_key_json = std::fs::read_to_string(&solana_config.keypair_path)?;
+        let payer_key_bytes: Vec<u8> = serde_json::from_str(&payer_key_json)?;
+        let payer = Keypair::from_bytes(&payer_key_bytes).unwrap();
+
+        let rpc = RpcConnection::new_optimistic(
+            Keypair::from_bytes(&payer_key_bytes).unwrap(),
+            "http://127.0.0.1:8899",
+        );
+
+        let runtime = Arc::new(rpc);
+
+        let rng = MockRng(StepRng::new(0, 1));
+        let ctx = MarginTestContext {
+            tokens: TokenManager::new(runtime.clone()),
+            margin: MarginClient::new(runtime.clone()),
+            authority: Keypair::new(),
+            rng: Mutex::new(RefCell::new(rng)),
+            rpc: runtime,
+            payer,
+        };
+
+        Ok(ctx)
     }
 
     pub async fn new_with_runtime(runtime: Arc<dyn SolanaRpcClient>) -> Result<Self, Error> {
@@ -105,17 +138,10 @@ impl MarginTestContext {
             payer,
         };
 
-        ctx.margin.init_globals().await?;
-        ctx.margin.create_airspace_if_missing(false).await?;
-        ctx.margin
-            .register_adapter_if_unregistered(&jet_margin_pool::ID)
-            .await?;
-        ctx.margin
-            .register_adapter_if_unregistered(&jet_margin_swap::ID)
-            .await?;
-        ctx.margin
-            .register_adapter_if_unregistered(&jet_bonds::ID)
-            .await?;
+        let init_txs = init_environment(&ctx.default_config(), &Rent::default())?;
+        for tx in condense(&init_txs, &ctx.payer)? {
+            ctx.rpc.send_and_confirm(tx).await?;
+        }
 
         Ok(ctx)
     }
@@ -137,6 +163,64 @@ impl MarginTestContext {
             .set_liquidator_metadata(liquidator.pubkey(), true)
             .await?;
         Ok(liquidator)
+    }
+
+    fn default_config(&self) -> EnvironmentConfig {
+        const DEFAULT_POOL_CONFIG: MarginPoolConfig = MarginPoolConfig {
+            borrow_rate_0: 10,
+            borrow_rate_1: 20,
+            borrow_rate_2: 30,
+            borrow_rate_3: 40,
+            utilization_rate_1: 10,
+            utilization_rate_2: 20,
+            management_fee_rate: 10,
+            flags: PoolFlags::ALLOW_LENDING.bits(),
+        };
+
+        EnvironmentConfig {
+            authority: self.payer.pubkey(),
+            tokens: vec![
+                TokenDescription {
+                    symbol: "USDC".to_owned(),
+                    name: "USDC".to_owned(),
+                    decimals: 6,
+                    precision: 2,
+                },
+                TokenDescription {
+                    symbol: "BTC".to_owned(),
+                    name: "Bitcoin".to_owned(),
+                    decimals: 6,
+                    precision: 6,
+                },
+            ],
+            airspaces: vec![AirspaceConfig {
+                name: "default".to_owned(),
+                is_restricted: false,
+                tokens: HashMap::from_iter([
+                    (
+                        "USDC".to_owned(),
+                        AirspaceTokenConfig {
+                            collateral_weight: 100,
+                            max_leverage: 20_00,
+                            margin_pool_config: Some(DEFAULT_POOL_CONFIG),
+                            bond_markets: vec![BondMarketConfig {
+                                duration: 5,
+                                min_order_size: 10,
+                            }],
+                        },
+                    ),
+                    (
+                        "Bitcoin".to_owned(),
+                        AirspaceTokenConfig {
+                            collateral_weight: 75,
+                            max_leverage: 10_00,
+                            margin_pool_config: Some(DEFAULT_POOL_CONFIG),
+                            bond_markets: vec![],
+                        },
+                    ),
+                ]),
+            }],
+        }
     }
 }
 

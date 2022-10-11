@@ -211,7 +211,7 @@ export function SwapsGraph(): JSX.Element {
         labels: {
           padding: 0,
           formatter: (value: number) => {
-            return currencyAbbrev(value, false, 2);
+            return currencyAbbrev(value, false, currentPool?.precision ?? 2);
           }
         },
         tooltip: {
@@ -234,7 +234,7 @@ export function SwapsGraph(): JSX.Element {
         labels: {
           padding: 20,
           formatter: (value: number) => {
-            return currencyAbbrev(value, false, 2);
+            return currencyAbbrev(value, false, outputToken?.precision ?? 2);
           }
         },
         axisTicks: {

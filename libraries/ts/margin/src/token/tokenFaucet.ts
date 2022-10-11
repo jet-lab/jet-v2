@@ -1,61 +1,47 @@
 import {
   createAssociatedTokenAccountInstruction,
   createMintToInstruction,
+  getAssociatedTokenAddress,
   NATIVE_MINT,
   TOKEN_PROGRAM_ID
 } from "@solana/spl-token"
-import { Connection, PublicKey, Transaction, TransactionInstruction } from "@solana/web3.js"
+import { Connection, LAMPORTS_PER_SOL, PublicKey, Transaction, TransactionInstruction } from "@solana/web3.js"
 import { AssociatedToken } from "./associatedToken"
-import { Address, BN, AnchorProvider, translateAddress } from "@project-serum/anchor"
+import { Address, BN, AnchorProvider, translateAddress, Program } from "@project-serum/anchor"
 import { MarginPrograms, MarginTokenConfig } from "../margin"
+import { IDL as JetTestServiceIdl } from "../types/jetTestService"
+
+const TEST_SERVICE_ID = new PublicKey("JPTSApMSqCHBww7vDhpaSmzipTV3qPg6vxub4qneKoy")
 
 export class TokenFaucet {
-  /**
-   * TODO:
-   * @private
-   * @static
-   * @param {TransactionInstruction[]} instructions
-   * @param {PublicKey} tokenMint
-   * @param {PublicKey} tokenFaucet
-   * @param {PublicKey} tokenAccount
-   * @memberof TokenFaucet
-   */
-  private static async withAirdrop(
-    instructions: TransactionInstruction[],
-    programs: MarginPrograms,
-    tokenMint: Address,
-    tokenFaucet: Address,
-    tokenAccount: Address,
+  static async tokenRequest(
+    provider: AnchorProvider,
+    mint: Address,
+    user: Address,
+    destination: Address,
     lamports: BN
-  ) {
-    if (!programs.config.faucetProgramId) {
-      throw new Error("No spl token faucet program id")
-    }
+  ): Promise<TransactionInstruction> {
+    const testService = new Program(JetTestServiceIdl, TEST_SERVICE_ID, provider)
 
-    const pubkeyNonce = await PublicKey.findProgramAddress(
-      [Buffer.from("faucet", "utf8")],
-      translateAddress(programs.config.faucetProgramId)
+    mint = translateAddress(mint)
+    user = translateAddress(user)
+    destination = translateAddress(destination)
+
+    const tokenInfoAddress = PublicKey.findProgramAddressSync(
+      [Buffer.from("token-info"), mint.toBuffer()],
+      TEST_SERVICE_ID
     )
 
-    const keys = [
-      { pubkey: pubkeyNonce[0], isSigner: false, isWritable: false },
-      {
-        pubkey: translateAddress(tokenMint),
-        isSigner: false,
-        isWritable: true
-      },
-      { pubkey: translateAddress(tokenAccount), isSigner: false, isWritable: true },
-      { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
-      { pubkey: translateAddress(tokenFaucet), isSigner: false, isWritable: false }
-    ]
-
-    const faucetIx = new TransactionInstruction({
-      programId: translateAddress(programs.config.faucetProgramId),
-      data: Buffer.from([1, ...lamports.toArray("le", 8)]),
-      keys
-    })
-
-    instructions.push(faucetIx)
+    return testService.methods
+      .tokenRequest(lamports)
+      .accounts({
+        mint,
+        destination,
+        info: tokenInfoAddress[0],
+        requester: user,
+        tokenProgram: TOKEN_PROGRAM_ID
+      })
+      .instruction()
   }
 
   /**
@@ -68,14 +54,7 @@ export class TokenFaucet {
    * @returns {Promise<string>}
    * @memberof TokenFaucet
    */
-  static async airdropToken(
-    programs: MarginPrograms,
-    provider: AnchorProvider,
-    faucet: Address,
-    user: Address,
-    mint: Address,
-    lamports: BN
-  ): Promise<string> {
+  static async airdropToken(provider: AnchorProvider, user: Address, mint: Address, lamports: BN): Promise<string> {
     const instructions: TransactionInstruction[] = []
 
     // Check for user token account
@@ -83,7 +62,7 @@ export class TokenFaucet {
     const address = await AssociatedToken.withCreate(instructions, provider, user, mint)
 
     // Create airdrop instructions
-    await this.withAirdrop(instructions, programs, mint, faucet, address, lamports)
+    instructions.push(await this.tokenRequest(provider, mint, user, address, lamports))
 
     // Execute airdrop
     return provider.sendAndConfirm(new Transaction().add(...instructions))
@@ -91,15 +70,14 @@ export class TokenFaucet {
 
   /** Airdrops native SOL if the mint is the native mint. */
   static async airdrop(
-    programs: MarginPrograms,
     provider: AnchorProvider,
+    cluster: "localnet" | "devnet",
     lamports: BN,
     token: MarginTokenConfig,
     owner: Address = provider.wallet.publicKey
   ): Promise<string> {
     const mintAddress = translateAddress(token.mint)
     const ownerAddress = translateAddress(owner)
-    const faucet = token.faucet
 
     const ix: TransactionInstruction[] = []
 
@@ -119,18 +97,17 @@ export class TokenFaucet {
     if (mintAddress.equals(NATIVE_MINT)) {
       // Sol airdrop
       // Use a specific endpoint. A hack because some devnet endpoints are unable to airdrop
-      const endpoint = new Connection("https://api.devnet.solana.com", AnchorProvider.defaultOptions().commitment)
-      const airdropTxnId = await endpoint.requestAirdrop(ownerAddress, parseInt(lamports.toString()))
-      await endpoint.confirmTransaction(airdropTxnId)
-      return airdropTxnId
-    } else if (faucet) {
-      // Faucet airdrop
-      await this.withAirdrop(ix, programs, mintAddress, translateAddress(faucet), destination, lamports)
-      return await provider.sendAndConfirm(new Transaction().add(...ix))
+      const endpoint =
+        cluster == "localnet"
+          ? provider.connection
+          : new Connection("https://api.devnet.solana.com", AnchorProvider.defaultOptions().commitment)
+
+      const blockhash = await endpoint.getLatestBlockhash()
+      const signature = await endpoint.requestAirdrop(ownerAddress, LAMPORTS_PER_SOL)
+      await endpoint.confirmTransaction({ signature, ...blockhash })
+      return signature
     } else {
-      // Mint to the destination token account
-      const mintToIx = createMintToInstruction(mintAddress, destination, ownerAddress, BigInt(lamports.toString()))
-      ix.push(mintToIx)
+      ix.push(await this.tokenRequest(provider, mintAddress, owner, destination, lamports))
       return await provider.sendAndConfirm(new Transaction().add(...ix))
     }
   }

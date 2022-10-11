@@ -22,6 +22,7 @@ import { TokenInputAmount, ActionRefresh } from '../../state/actions/actions';
 import { useProvider } from './provider';
 import { NOTIFICATION_DURATION } from '../notify';
 import { message } from 'antd';
+import { Cluster } from '../../state/settings/settings';
 
 export enum ActionResponse {
   Success = 'SUCCESS',
@@ -31,6 +32,7 @@ export enum ActionResponse {
 export function useMarginActions() {
   // const cluster = useRecoilValue(Cluster);
   const config = useRecoilValue(MarginConfig);
+  const cluster = useRecoilValue(Cluster);
   const dictionary = useRecoilValue(Dictionary);
   const { programs, provider } = useProvider();
   const pools = useRecoilValue(Pools);
@@ -52,7 +54,7 @@ export function useMarginActions() {
   }
 
   // If on devnet, user can airdrop themself tokens
-  async function airdrop(pool: Pool): Promise<[string | undefined, ActionResponse]> {
+  async function airdrop(pool: Pool): Promise<[string, string | undefined, ActionResponse]> {
     if (!config) {
       throw new Error('No Config');
     }
@@ -62,21 +64,31 @@ export function useMarginActions() {
     if (!wallet.publicKey) {
       throw new Error('No Public Key');
     }
-
-    // If SOL, only airdrop 1 token
-    let amount = TokenAmount.tokens('100', pool.decimals);
-    if (pool.addresses.tokenMint.equals(NATIVE_MINT)) {
-      amount = TokenAmount.tokens('1', pool.decimals);
+    if (cluster === 'mainnet-beta') {
+      throw new Error('Cannot airdrop on mainnet');
     }
 
+    // Airdrop 10 tokens by default
+    let amount = TokenAmount.tokens(10, pool.decimals);
+
+    if (pool.symbol == 'USDC') {
+      // provide larger amounts for USDC like
+      amount = TokenAmount.tokens(100_000, pool.decimals);
+    } else if (pool.symbol == 'SOL') {
+      if (cluster == 'localnet') {
+        amount = TokenAmount.tokens(100, pool.decimals);
+      } else {
+        amount = TokenAmount.tokens(1, pool.decimals);
+      }
+    }
     const token = config.tokens[pool.symbol];
     try {
-      const txId = await TokenFaucet.airdrop(programs, provider, amount.lamports, token, wallet.publicKey);
+      const txId = await TokenFaucet.airdrop(provider, cluster, amount.lamports, token, wallet.publicKey);
       await actionRefresh();
-      return [txId, ActionResponse.Success];
+      return [amount.uiTokens, txId, ActionResponse.Success];
     } catch (err) {
       console.error(err);
-      return [undefined, ActionResponse.Failed];
+      return ['0', undefined, ActionResponse.Failed];
     }
   }
 
