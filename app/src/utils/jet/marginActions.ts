@@ -81,8 +81,7 @@ export function useMarginActions() {
         amount = TokenAmount.tokens(1, pool.decimals);
       }
     }
-
-    const token = config.tokens[pool.name];
+    const token = config.tokens[pool.symbol];
     try {
       const txId = await TokenFaucet.airdrop(provider, cluster, amount.lamports, token, wallet.publicKey);
       await actionRefresh();

@@ -193,7 +193,7 @@ export function useAccountsSyncer() {
 
       const mints: any = {};
       for (const pool of Object.values(pools.tokenPools)) {
-        mints[pool.name] = {
+        mints[pool.symbol] = {
           tokenMint: pool.addresses.tokenMint,
           depositNoteMint: pool.addresses.depositNoteMint,
           loanNoteMint: pool.addresses.loanNoteMint

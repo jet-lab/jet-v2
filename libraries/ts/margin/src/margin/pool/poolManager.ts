@@ -77,7 +77,7 @@ export class PoolManager {
         tokenMint: tokenConfig.mint,
         tokenConfig
       })
-      pools[tokenConfig.name] = pool
+      pools[tokenConfig.symbol] = pool
     }
     return pools
   }

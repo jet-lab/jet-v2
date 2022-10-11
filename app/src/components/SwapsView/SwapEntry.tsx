@@ -5,7 +5,7 @@ import { SwapsRowOrder } from '../../state/views/views';
 import { BlockExplorer, Cluster } from '../../state/settings/settings';
 import { Dictionary } from '../../state/settings/localization/localization';
 import { CurrentAccount } from '../../state/user/accounts';
-import { CurrentPoolTokenName, Pools, CurrentPool, PoolOptions } from '../../state/pools/pools';
+import { CurrentPoolSymbol, Pools, CurrentPool, PoolOptions } from '../../state/pools/pools';
 import {
   CurrentAction,
   CurrentSwapOutput,
@@ -45,7 +45,7 @@ export function SwapEntry(): JSX.Element {
   const pools = useRecoilValue(Pools);
   const poolOptions = useRecoilValue(PoolOptions);
   // Input token pool
-  const setCurrentPoolTokenName = useSetRecoilState(CurrentPoolTokenName);
+  const setCurrentPoolSymbol = useSetRecoilState(CurrentPoolSymbol);
   const currentPool = useRecoilValue(CurrentPool);
   const poolPrecision = currentPool?.precision ?? DEFAULT_DECIMALS;
   const poolPosition = currentAccount && currentPool && currentAccount.poolPositions[currentPool.symbol];
@@ -157,13 +157,14 @@ export function SwapEntry(): JSX.Element {
     let render = <></>;
     const amount = side === 'input' ? tokenInputAmount : swapOutputTokens;
     const overallBalance = side === 'input' ? overallInputBalance : overallOutputBalance;
+    const precision = side === 'input' ? poolPrecision : outputPrecision;
     if (amount && !amount.isZero() && !currentAction) {
       const affectedBalance = side === 'input' ? overallBalance - amount.tokens : overallBalance + amount.tokens;
       render = (
         <div className="flex-centered">
           <ArrowRight />
           <Paragraph type={getTokenStyleType(affectedBalance)}>
-            {currencyAbbrev(affectedBalance, false, undefined, poolPrecision)}
+            {currencyAbbrev(affectedBalance, false, undefined, precision)}
           </Paragraph>
         </div>
       );
@@ -331,7 +332,7 @@ export function SwapEntry(): JSX.Element {
             onClick={() => {
               if (outputToken) {
                 const outputString = swapOutputTokens?.uiTokens ?? '0';
-                setCurrentPoolTokenName(outputToken.name);
+                setCurrentPoolSymbol(outputToken.symbol);
                 setOutputToken(currentPool);
                 // Allow UI to update and then adjust amounts
                 setSwitchingAssets(true);

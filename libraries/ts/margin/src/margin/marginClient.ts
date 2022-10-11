@@ -21,7 +21,6 @@ import {
   ParsedInnerInstruction,
   PartiallyDecodedInstruction
 } from "@solana/web3.js"
-import assert from "assert"
 
 interface TokenMintsList {
   tokenMint: PublicKey

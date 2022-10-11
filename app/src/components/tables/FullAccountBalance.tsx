@@ -6,7 +6,7 @@ import { Dictionary } from '../../state/settings/localization/localization';
 import { FiatCurrency } from '../../state/settings/settings';
 import { AccountsViewOrder, SwapsViewOrder } from '../../state/views/views';
 import { WalletTokens } from '../../state/user/walletTokens';
-import { CurrentPoolTokenName, Pools } from '../../state/pools/pools';
+import { CurrentPoolSymbol, Pools } from '../../state/pools/pools';
 import { AccountBalance, Accounts, CurrentAccount } from '../../state/user/accounts';
 import { ActionRefresh, CurrentSwapOutput } from '../../state/actions/actions';
 import { useCurrencyFormatting } from '../../utils/currency';
@@ -28,7 +28,7 @@ export function FullAccountBalance(): JSX.Element {
   const [accountsViewOrder, setAccountsViewOrder] = useRecoilState(AccountsViewOrder);
   const [swapsViewOrder, setSwapsViewOrder] = useRecoilState(SwapsViewOrder);
   const walletTokens = useRecoilValue(WalletTokens);
-  const currentPoolSymbol = useRecoilValue(CurrentPoolTokenName);
+  const currentPoolSymbol = useRecoilValue(CurrentPoolSymbol);
   const pools = useRecoilValue(Pools);
   const currentSwapOutput = useRecoilValue(CurrentSwapOutput);
   const currentAccount = useRecoilValue(CurrentAccount);
