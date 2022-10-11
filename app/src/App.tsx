@@ -22,7 +22,7 @@ const FixedLendView = lazy(() => import('./views/FixedLendView'));
 const FixedBorrowView = lazy(() => import('./views/FixedBorrowView'));
 
 export function App(): JSX.Element {
-  const isDevnet = localStorage.getItem('jetAppCluster') === 'devnet'
+  const isDevnet = localStorage.getItem('jetAppCluster') === 'devnet';
 
   const wallets = [
     new PhantomWalletAdapter(),
@@ -31,7 +31,7 @@ export function App(): JSX.Element {
     new SolongWalletAdapter(),
     new MathWalletAdapter(),
     new SolletWalletAdapter(),
-    ... isDevnet ? [new E2EWalletAdapter()] : []
+    ...(isDevnet ? [new E2EWalletAdapter()] : [])
   ];
 
   return (

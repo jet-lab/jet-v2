@@ -84,6 +84,7 @@ pub async fn process_create_bond_market<'a>(
         })?,
     ];
     let bonds = BondsIxBuilder::new_from_seed(
+        &Pubkey::default(),
         &params.token_mint,
         seed,
         payer,

@@ -134,6 +134,11 @@ export function useSplSwapSyncer() {
 export function hasOrcaPool(cluster: ClusterOption, inputSymbol: string, outputSymbol: string) {
   const pair = `${inputSymbol}/${outputSymbol}`;
   const inversePair = `${outputSymbol}/${inputSymbol}`;
+
+  if (cluster === 'localnet') {
+    return false;
+  }
+
   return (
     Object.keys(cluster === 'devnet' ? orcaPoolsDevnet : orcaPools).includes(inversePair) ||
     Object.keys(cluster === 'devnet' ? orcaPoolsDevnet : orcaPools).includes(pair)

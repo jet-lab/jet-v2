@@ -8,12 +8,18 @@ export const APP_TRANSITION_TIMEOUT = 500;
 // Return explorer URL for a tx based on preferred block explorer
 export function getExplorerUrl(
   txId: string,
-  cluster: 'mainnet-beta' | 'devnet',
+  cluster: 'mainnet-beta' | 'devnet' | 'localnet',
   explorer: 'solanaExplorer' | 'solscan' | 'solanaBeach'
 ) {
   const baseUrl = blockExplorers[explorer].url;
-  const clusterParam = cluster === 'devnet' ? '?cluster=devnet' : '';
-  return baseUrl + txId + clusterParam;
+
+  function getClusterParam() {
+    if (cluster === 'localnet') {
+      return `?cluster=custom&customUrl=http%3A%2F%2Flocalhost%3A8899`;
+    }
+  }
+
+  return baseUrl + txId + getClusterParam();
 }
 
 // Opens a link in a new tab

@@ -30,6 +30,7 @@ pub struct InitializeBondManager<'info> {
         init,
         seeds = [
             seeds::BOND_MANAGER,
+            airspace.key().as_ref(),
             underlying_token_mint.key().as_ref(),
             &params.seed,
         ],

@@ -95,10 +95,7 @@ export function BorrowRepayModal(): JSX.Element {
       loanBalance = accountPoolPosition.loanBalance.tokens;
     }
 
-    let decimals = 2;
-    if (currentPool) {
-      decimals = currentPool.decimals;
-    }
+    const decimals = currentPool?.precision ?? 2;
 
     const abbreviatedLoanBalance = currencyAbbrev(balance ?? loanBalance, false, undefined, decimals);
     return abbreviatedLoanBalance;

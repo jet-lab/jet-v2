@@ -159,6 +159,7 @@ impl TestManager {
         client.send_and_confirm_transaction(&transaction).await?;
 
         let ix_builder = BondsIxBuilder::new_from_seed(
+            &Pubkey::default(),
             &mint.pubkey(),
             BOND_MANAGER_SEED,
             payer.pubkey(),

@@ -11,7 +11,11 @@
     "noImplicitAny": false,
     "resolveJsonModule": true,
     "sourceMap": true,
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "baseUrl": "./",
+    "paths": {
+      "@jet-lab/margin": ["../libraries/ts/margin/src/index.ts"]
+    }
   },
   "include": ["../libraries/ts/**/*", "../tests/integration/**/*"],
   "exclude": ["../**/dist/**/*"]

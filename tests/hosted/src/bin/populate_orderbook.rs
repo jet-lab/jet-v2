@@ -63,6 +63,7 @@ impl Client {
         ticket_oracle: Pubkey,
     ) -> Result<Self> {
         let mut ix = BondsIxBuilder::new_from_seed(
+            &Pubkey::default(),
             &mint,
             seed,
             signer.pubkey(),
