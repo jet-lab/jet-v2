@@ -6,7 +6,7 @@ import { Dictionary } from '../../state/settings/localization/localization';
 import { FiatCurrency } from '../../state/settings/settings';
 import { AccountsViewOrder, SwapsViewOrder } from '../../state/views/views';
 import { WalletTokens } from '../../state/user/walletTokens';
-import { CurrentPoolTokenName, Pools } from '../../state/pools/pools';
+import { CurrentPoolSymbol, Pools } from '../../state/pools/pools';
 import { AccountBalance, Accounts, CurrentAccount } from '../../state/user/accounts';
 import { ActionRefresh, CurrentSwapOutput } from '../../state/actions/actions';
 import { useCurrencyFormatting } from '../../utils/currency';
@@ -28,7 +28,7 @@ export function FullAccountBalance(): JSX.Element {
   const [accountsViewOrder, setAccountsViewOrder] = useRecoilState(AccountsViewOrder);
   const [swapsViewOrder, setSwapsViewOrder] = useRecoilState(SwapsViewOrder);
   const walletTokens = useRecoilValue(WalletTokens);
-  const currentPoolSymbol = useRecoilValue(CurrentPoolTokenName);
+  const currentPoolSymbol = useRecoilValue(CurrentPoolSymbol);
   const pools = useRecoilValue(Pools);
   const currentSwapOutput = useRecoilValue(CurrentSwapOutput);
   const currentAccount = useRecoilValue(CurrentAccount);
@@ -76,14 +76,19 @@ export function FullAccountBalance(): JSX.Element {
           <Text className="price-name">{`${balance.tokenSymbol} ≈ ${currencyFormatter(
             pools.tokenPools[balance.tokenSymbol]?.tokenPrice ?? 0,
             true,
-            balance.tokenSymbol === ('USDC' || 'USDT') ? 0 : undefined,
-            balance.tokenSymbol === ('USDC' || 'USDT')
+            // Round currencies to 2 decimal units
+            2,
+            false,
+            true
           )}`}</Text>
+          {/* price-abbrev is shown on smaller displays */}
           <Text className="price-abbrev">{`≈ ${currencyFormatter(
             pools.tokenPools[balance.tokenSymbol]?.tokenPrice ?? 0,
             true,
-            balance.tokenSymbol === ('USDC' || 'USDT') ? 0 : undefined,
-            balance.tokenSymbol === ('USDC' || 'USDT')
+            // Round currencies to 2 decimal units
+            2,
+            false,
+            true
           )}`}</Text>
         </div>
       );
@@ -119,7 +124,13 @@ export function FullAccountBalance(): JSX.Element {
     if (accounts && balance?.tokenSymbol) {
       render = (
         <Text type={balance.depositBalance.isZero() ? undefined : 'success'}>
-          {currencyAbbrev(balance.depositBalance.tokens, false, undefined, balance.depositBalance.decimals / 2, true)}
+          {currencyAbbrev(
+            balance.depositBalance.tokens,
+            false,
+            undefined,
+            pools.tokenPools[balance.tokenSymbol]?.precision ?? 2,
+            true
+          )}
         </Text>
       );
     }
@@ -133,7 +144,13 @@ export function FullAccountBalance(): JSX.Element {
     if (accounts && balance?.tokenSymbol) {
       render = (
         <Text type={balance.loanBalance.isZero() ? undefined : 'warning'}>
-          {currencyAbbrev(balance.loanBalance.tokens, false, undefined, balance.loanBalance.decimals / 2, true)}
+          {currencyAbbrev(
+            balance.loanBalance.tokens,
+            false,
+            undefined,
+            pools.tokenPools[balance.tokenSymbol]?.precision ?? 2,
+            true
+          )}
         </Text>
       );
     }

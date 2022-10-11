@@ -1,6 +1,6 @@
 import { useRecoilState } from 'recoil';
 import { Pool } from '@jet-lab/margin';
-import { CurrentPoolTokenName } from '../../../state/pools/pools';
+import { CurrentPoolSymbol } from '../../../state/pools/pools';
 import { formatRate } from '../../../utils/format';
 import { useCurrencyFormatting } from '../../../utils/currency';
 import { TokenLogo } from '../../misc/TokenLogo';
@@ -9,7 +9,7 @@ import { Skeleton, Typography } from 'antd';
 // Component for each row of the PoolsTable
 export const PoolRow = (props: { pool: Pool }) => {
   const { pool } = props;
-  const [currentPoolTokenName, setCurrentPoolTokenName] = useRecoilState(CurrentPoolTokenName);
+  const [currentPoolSymbol, setCurrentPoolSymbol] = useRecoilState(CurrentPoolSymbol);
   const { currencyFormatter, currencyAbbrev } = useCurrencyFormatting();
   const poolPrice = currencyFormatter(pool.tokenPrice, true);
   const { Text } = Typography;
@@ -20,7 +20,7 @@ export const PoolRow = (props: { pool: Pool }) => {
   // Returns the class list for the PoolRow
   function getRowClassnames() {
     return `ant-table-row ant-table-row-level-0 ${pool.symbol}-pools-table-row ${
-      pool.symbol === currentPoolTokenName ? 'active' : ''
+      pool.symbol === currentPoolSymbol ? 'active' : ''
     }`;
   }
 
@@ -59,8 +59,8 @@ export const PoolRow = (props: { pool: Pool }) => {
   function renderBorrowedTokens() {
     let render = <Skeleton className="align-right" paragraph={false} active />;
     if (pool.borrowedTokens) {
-      const tokensAbbrev = currencyAbbrev(pool.borrowedTokens.tokens, false, pool.tokenPrice, pool.decimals / 2);
-      render = <Text>{`${tokensAbbrev} ${pool.symbol}`}</Text>;
+      const tokensAbbrev = currencyAbbrev(pool.borrowedTokens.tokens, false, pool.tokenPrice, pool.precision);
+      render = <Text>{`${tokensAbbrev}`}</Text>;
     }
 
     return render;
@@ -70,8 +70,8 @@ export const PoolRow = (props: { pool: Pool }) => {
   function renderAvailableLiquidity() {
     let render = <Skeleton className="align-right" paragraph={false} active />;
     if (pool.borrowedTokens) {
-      const tokensAbbrev = currencyAbbrev(pool.vault.tokens, false, pool.tokenPrice, pool.decimals / 2);
-      render = <Text>{`${tokensAbbrev} ${pool.symbol}`}</Text>;
+      const tokensAbbrev = currencyAbbrev(pool.vault.tokens, false, pool.tokenPrice, pool.precision);
+      render = <Text>{`${tokensAbbrev}`}</Text>;
     }
 
     return render;
@@ -89,7 +89,7 @@ export const PoolRow = (props: { pool: Pool }) => {
   }
 
   return (
-    <tr className={getRowClassnames()} onClick={() => setCurrentPoolTokenName(pool.name)} key={pool.name}>
+    <tr className={getRowClassnames()} onClick={() => setCurrentPoolSymbol(pool.symbol)} key={pool.symbol}>
       <td className="ant-table-cell" style={{ textAlign: 'left' }}>
         <div className="table-token">
           <TokenLogo height={22} symbol={pool?.symbol} />
