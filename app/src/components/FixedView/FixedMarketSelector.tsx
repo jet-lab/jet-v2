@@ -7,7 +7,7 @@ import {
 import { FixedBorrowViewOrder, FixedLendViewOrder } from '../../state/views/fixed-term';
 import { ReorderArrows } from '../misc/ReorderArrows';
 import { Select } from 'antd';
-import AngleDown from '../../styles/icons/arrow-angle-down.svg';
+import AngleDown from '../../assets/icons/arrow-angle-down.svg';
 import { useCurrencyFormatting } from '../../utils/currency';
 
 const { Option } = Select;

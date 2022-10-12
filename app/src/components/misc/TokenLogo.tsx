@@ -1,13 +1,13 @@
 import { Skeleton } from 'antd';
-import USDC from '../../styles/icons/cryptos/USDC.svg';
-import SOL from '../../styles/icons/cryptos/SOL.svg';
-import BTC from '../../styles/icons/cryptos/BTC.svg';
-import SRM from '../../styles/icons/cryptos/SRM.svg';
-import ETH from '../../styles/icons/cryptos/ETH.svg';
-import USDT from '../../styles/icons/cryptos/USDT.svg';
-import ST_SOL from '../../styles/icons/cryptos/stSOL.svg';
-import ORCA from '../../styles/icons/cryptos/ORCA.svg';
-import MSOL from '../../styles/icons/cryptos/MSOL.svg';
+import USDC from '../../assets/icons/cryptos/USDC.svg';
+import SOL from '../../assets/icons/cryptos/SOL.svg';
+import BTC from '../../assets/icons/cryptos/BTC.svg';
+import SRM from '../../assets/icons/cryptos/SRM.svg';
+import ETH from '../../assets/icons/cryptos/ETH.svg';
+import USDT from '../../assets/icons/cryptos/USDT.svg';
+import ST_SOL from '../../assets/icons/cryptos/stSOL.svg';
+import ORCA from '../../assets/icons/cryptos/ORCA.svg';
+import MSOL from '../../assets/icons/cryptos/MSOL.svg';
 
 // Component to render the SVG logo of a token
 export function TokenLogo(props: {

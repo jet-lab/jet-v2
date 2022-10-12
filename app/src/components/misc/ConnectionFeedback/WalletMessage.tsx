@@ -5,7 +5,7 @@ import { WalletTokens } from '../../../state/user/walletTokens';
 import { WalletModal } from '../../../state/modals/modals';
 import { Button } from 'antd';
 import { LoadingOutlined } from '@ant-design/icons';
-import WalletLockedIcon from '../../../styles/icons/wallet-locked.svg';
+import WalletLockedIcon from '../../../assets/icons/wallet-locked.svg';
 
 // A feedback message overlaying components that can only used with a connected wallet
 export function WalletMessage(): JSX.Element {

@@ -220,7 +220,7 @@ export function BorrowRepayModal(): JSX.Element {
     (currentAction === 'borrow' || currentAction === 'repay' || currentAction === 'repayFromDeposit')
   ) {
     return (
-      <Modal visible className="action-modal" maskClosable={false} footer={null} onCancel={handleCancel}>
+      <Modal open className="action-modal" maskClosable={false} footer={null} onCancel={handleCancel}>
         <Tabs
           activeKey={currentAction === 'borrow' ? 'borrow' : 'repay'}
           onChange={(action: string) => setCurrentAction(action as PoolAction)}>

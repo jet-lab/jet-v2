@@ -1,4 +1,4 @@
-import { useRecoilValue } from 'recoil';
+import { useRecoilValue, useSetRecoilState } from 'recoil';
 import { Dictionary } from '../../../state/settings/localization/localization';
 import { WalletTokens } from '../../../state/user/walletTokens';
 import { Accounts, CurrentAccount } from '../../../state/user/accounts';
@@ -9,10 +9,14 @@ import { Typography, Skeleton } from 'antd';
 import { ConnectionFeedback } from '../ConnectionFeedback/ConnectionFeedback';
 import { Info } from '../Info';
 import { RiskMeter } from '../RiskMeter';
+import axios from 'axios';
+import { USDConversionRates } from '../../../state/settings/settings';
+import { useEffect } from 'react';
 
 // Body of the Account Snapshot, where users can see data for the currently selected margin account
 export function SnapshotBody(): JSX.Element {
   const dictionary = useRecoilValue(Dictionary);
+  const setUsdConversion = useSetRecoilState(USDConversionRates);
   const { currencyFormatter, currencyAbbrev } = useCurrencyFormatting();
   const walletTokens = useRecoilValue(WalletTokens);
   const accounts = useRecoilValue(Accounts);
@@ -20,6 +24,18 @@ export function SnapshotBody(): JSX.Element {
   const currentAccount = useRecoilValue(CurrentAccount);
   const riskStyle = useRiskStyle();
   const { Title, Text } = Typography;
+
+  useEffect(() => {
+    axios
+      .get('https://api.jetprotocol.io/v1/rates')
+      .then(resp => {
+        const conversions = resp.data;
+        if (conversions) {
+          setUsdConversion(conversions.rates);
+        }
+      })
+      .catch(err => err);
+  }, []);
 
   // Renders the account balance
   function renderAccountBalance() {
