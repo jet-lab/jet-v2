@@ -16,8 +16,8 @@ import { useProjectedRisk, useRiskStyle } from '../../../utils/risk';
 import { useMarginActions } from '../../../utils/jet/marginActions';
 import { Button, Divider, Modal, Select, Typography } from 'antd';
 import { TokenInput } from '../../misc/TokenInput/TokenInput';
-import AngleDown from '../../../styles/icons/arrow-angle-down.svg';
-import ArrowDown from '../../../styles/icons/arrow-down.svg';
+import AngleDown from '../../../assets/icons/arrow-angle-down.svg';
+import ArrowDown from '../../../assets/icons/arrow-down.svg';
 import { ArrowRight } from './ArrowRight';
 
 // Modal to transfer collateral from one marginAccount to another

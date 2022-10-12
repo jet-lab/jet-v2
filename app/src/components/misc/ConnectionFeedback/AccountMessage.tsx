@@ -5,7 +5,7 @@ import { Accounts, AccountsLoading } from '../../../state/user/accounts';
 import { Button } from 'antd';
 import { LoadingOutlined } from '@ant-design/icons';
 import { NewAccountModal } from '../../../state/modals/modals';
-import AccountLockedIcon from '../../../styles/icons/account-locked.svg';
+import AccountLockedIcon from '../../../assets/icons/account-locked.svg';
 
 // A feedback message overlaying components that can only used from an account
 export function AccountMessage(): JSX.Element {

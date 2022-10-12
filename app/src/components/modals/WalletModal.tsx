@@ -8,7 +8,7 @@ import { WalletModal as WalletModalState } from '../../state/modals/modals';
 import { formatPubkey } from '../../utils/format';
 import { notify } from '../../utils/notify';
 import { Modal, Divider, Typography } from 'antd';
-import ArrowIcon from '../../styles/icons/arrow-icon.svg';
+import ArrowIcon from '../../assets/icons/arrow-icon.svg';
 
 // Modal to connect user's Solana wallet to app
 export function WalletModal(): JSX.Element {
