@@ -1,17 +1,17 @@
 {
-  "mSOL/USDC": {
-    "swapPool": "Hme4Jnqhdz2jAPUMnS7jGE5zv6Y1ynqrUEhmUAWkXmzn",
-    "authority": "2SdMq2FyJx1kEhvqwxwAfvSF3woFHyhks28zAoF6bXwt",
-    "poolMint": "8PSfyiTVwPb6Rr2iZ8F3kNpbg65BCfJM9v8LfB916r44",
-    "tokenMintA": "mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqcJm7So",
-    "tokenMintB": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
-    "tokenA": "GBa7G5f1FqAXEgByuHXsqsEdpyMjRgT9SNxZwmmnEJAY",
-    "tokenB": "7hFgNawzzmpDM8TTVCKm8jykBrym8C3TQdb8TDAfAVkD",
-    "feeAccount": "3W3Skj2vQsNEMhGRQprFXQy3Q8ZbM6ojdgiDCokVPWno",
-    "swapProgram": "9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP",
-    "swapFees": 0.003,
-    "swapType": "constantProduct"
-  },
+    "mSOL/USDC": {
+      "swapPool": "Hme4Jnqhdz2jAPUMnS7jGE5zv6Y1ynqrUEhmUAWkXmzn",
+      "authority": "2SdMq2FyJx1kEhvqwxwAfvSF3woFHyhks28zAoF6bXwt",
+      "poolMint": "8PSfyiTVwPb6Rr2iZ8F3kNpbg65BCfJM9v8LfB916r44",
+      "tokenMintA": "mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqcJm7So",
+      "tokenMintB": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+      "tokenA": "GBa7G5f1FqAXEgByuHXsqsEdpyMjRgT9SNxZwmmnEJAY",
+      "tokenB": "7hFgNawzzmpDM8TTVCKm8jykBrym8C3TQdb8TDAfAVkD",
+      "feeAccount": "3W3Skj2vQsNEMhGRQprFXQy3Q8ZbM6ojdgiDCokVPWno",
+      "swapProgram": "9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP",
+      "swapFees": 0.003,
+      "swapType": "constantProduct"
+    },
   "mSOL/USDT": {
     "swapPool": "Afofkb7JTc32rdpqiyc3RDmGF5s9N6W1ujcdYVfGZ5Je",
     "authority": "Avz8Qp1eMJW5Hc1eWPRUaKJHq3WidDbobajWbk9buHRY",
@@ -21,19 +21,6 @@
     "tokenA": "RTXKRxghfWJpE344UG7UhKnCwN2Gyv6KnNSTFDnaASF",
     "tokenB": "J15KntYr6iout4ce2kcD2QEdkVbLN4EHHFLfCtke3f6Y",
     "feeAccount": "7GPvi21QbwMyBoXU5Zqf8VhnuEh7VH4A1SRPgHJ36eE7",
-    "swapProgram": "9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP",
-    "swapFees": 0.003,
-    "swapType": "constantProduct"
-  },
-  "BTC/mSOL": {
-    "swapPool": "8DRw5wQE1pyg6RB1UwypGNFgb2Pzp2hpyDDNwo76Lcc8",
-    "authority": "5rsPGjwygNru1LyXJe9JNuNHPWCLvooExxJtzH4HEukg",
-    "poolMint": "8nKJ4z9FSw6wrVZKASqBiS9DS1CiNsRnqwCCKVQjqdkB",
-    "tokenMintA": "9n4nbM75f5Ui33ZbPYXn59EwSgE8CGsHtAeTH5YFeJ9E",
-    "tokenMintB": "mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqcJm7So",
-    "tokenA": "6D3sxC6yEe84FUnF5Kpbgx6gN57N9poJCKAtrCeCWdJo",
-    "tokenB": "EPoVJLhi9QtVPVo8n31M5k5Knvb48j8zbYyRrUbrHwC5",
-    "feeAccount": "AqiLHbUAy4UWWKGVVgbHsaUVCMg1zemNkgsYBPSirT92",
     "swapProgram": "9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP",
     "swapFees": 0.003,
     "swapType": "constantProduct"
@@ -65,32 +52,6 @@
     "swapFees": 0.0007,
     "swapType": "stable",
     "amp": 100
-  },
-  "BTC/USDC": {
-    "swapPool": "2dwHmCoAGxCXvTbLTMjqAhvEFAHWUt9kZaroJJJdmoD4",
-    "authority": "EWCJQRDzWCqLJzyH1WESRzQLykUiUAHakjLBmWbxtset",
-    "poolMint": "J3kvcay3N16FBdawgnqoJ9v9p6XCvyCLE2Z9F5RLvGkj",
-    "tokenMintA": "9n4nbM75f5Ui33ZbPYXn59EwSgE8CGsHtAeTH5YFeJ9E",
-    "tokenMintB": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
-    "tokenA": "D3Wv78j9STkfJx3vhzoCzpMZ4RqCg8oaTNGzi1rZpdJg",
-    "tokenB": "HMFLg2GtbWSSEe92Vuf2LQdUpCacGj2m2PwvMqzwQFNi",
-    "feeAccount": "HR7c67SkeLvCpHrVSu7MiiAERQh6iD1NrCJsj3kWiZnK",
-    "swapProgram": "9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP",
-    "swapFees": 0.003,
-    "swapType": "constantProduct"
-  },
-  "BTC/SOL": {
-    "swapPool": "7N2AEJ98qBs4PwEwZ6k5pj8uZBKMkZrKZeiC7A64B47u",
-    "authority": "DQis4MfMHmQtphcnXySBHXZf321GZqhk1ETJfkzbAvAr",
-    "poolMint": "Acxs19v6eUMTEfdvkvWkRB4bwFCHm3XV9jABCy7c1mXe",
-    "tokenMintA": "9n4nbM75f5Ui33ZbPYXn59EwSgE8CGsHtAeTH5YFeJ9E",
-    "tokenMintB": "So11111111111111111111111111111111111111112",
-    "tokenA": "9G5TBPbEUg2iaFxJ29uVAT8ZzxY77esRshyHiLYZKRh8",
-    "tokenB": "5eqcnUasgU2NRrEAeWxvFVRTTYWJWfAJhsdffvc6nJc2",
-    "feeAccount": "4yPG4A9jB3ibDMVXEN2aZW4oA1e1xzzA3z5VWjkZd18B",
-    "swapProgram": "9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP",
-    "swapFees": 0.003,
-    "swapType": "constantProduct"
   },
   "SOL/USDC": {
     "swapPool": "EGZ7tiLeH62TPV1gL8WwbXGzEPa9zmcpVnnkPKKnrE2U",
