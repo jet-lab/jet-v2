@@ -3,8 +3,8 @@
   "name": "app",
   "version": "0.1.0",
   "scripts": {
-    "dev": "webpack serve --mode development --open --hot | cat",
-    "build:app": "webpack --mode production",
+    "dev": "webpack serve --mode development",
+    "build:app": "webpack --mode production && cp -r public/* build/",
     "e2e": "npx cypress run",
     "e2e:gui": "npx cypress open",
     "start": "serve -s build",
