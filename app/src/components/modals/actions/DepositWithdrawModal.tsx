@@ -90,10 +90,7 @@ export function DepositWithdrawModal(): JSX.Element {
       depositBalance = accountPoolPosition.depositBalance.tokens;
     }
 
-    let decimals = 2;
-    if (currentPool) {
-      decimals = currentPool.decimals;
-    }
+    const decimals = currentPool?.precision ?? 2;
 
     const abbreviatedDepositBalance = currencyAbbrev(balance ?? depositBalance, false, undefined, decimals);
     return abbreviatedDepositBalance;
@@ -218,7 +215,7 @@ export function DepositWithdrawModal(): JSX.Element {
 
   if (currentAccount && (currentAction === 'deposit' || currentAction === 'withdraw')) {
     return (
-      <Modal visible className="action-modal" maskClosable={false} footer={null} onCancel={handleCancel}>
+      <Modal open className="action-modal" maskClosable={false} footer={null} onCancel={handleCancel}>
         <Tabs
           activeKey={currentAction ?? 'deposit'}
           onChange={(action: string) => setCurrentAction(action as PoolAction)}>

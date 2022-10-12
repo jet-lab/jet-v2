@@ -72,15 +72,12 @@ export class PoolManager {
   async loadAll(programs: MarginPrograms = this.programs): Promise<Record<string, Pool>> {
     // FIXME: This could be faster with fewer round trips to rpc
     const pools: Record<string, Pool> = {}
-    for (const poolConfig of Object.values(programs.config.tokens)) {
-      const tokenConfig: MarginTokenConfig | undefined = programs.config.tokens[poolConfig.symbol]
-      if (tokenConfig) {
-        const pool = await this.load({
-          tokenMint: poolConfig.mint,
-          tokenConfig
-        })
-        pools[poolConfig.symbol] = pool
-      }
+    for (const tokenConfig of Object.values(programs.config.tokens)) {
+      const pool = await this.load({
+        tokenMint: tokenConfig.mint,
+        tokenConfig
+      })
+      pools[tokenConfig.symbol] = pool
     }
     return pools
   }

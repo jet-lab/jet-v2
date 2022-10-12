@@ -10,4 +10,4 @@ fi
 RUST_BACKTRACE=1 cargo run --package hosted-tests --bin launch_bonds
 
 # run the typescript tests
-npx ts-mocha -p ./tests/tsconfig.json -t 1000000 'tests/**/*.test.ts'
+npx ts-mocha -p ./tests/tsconfig.json -t 1000000 --paths 'tests/**/*.test.ts'

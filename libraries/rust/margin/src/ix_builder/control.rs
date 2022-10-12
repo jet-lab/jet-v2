@@ -159,7 +159,7 @@ impl ControlIxBuilder {
             program_id: jet_control::ID,
             data: jet_control::instruction::ConfigureMarginPool {
                 metadata: config.metadata.clone(),
-                pool_config: config.parameters.clone(),
+                pool_config: config.parameters,
             }
             .data(),
         }

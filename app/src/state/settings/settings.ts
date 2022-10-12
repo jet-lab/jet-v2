@@ -80,7 +80,7 @@ export const PreferredRpcNode = atom({
 });
 
 // Connection cluster
-export type ClusterOption = 'devnet' | 'mainnet-beta';
+export type ClusterOption = 'localnet' | 'devnet' | 'mainnet-beta';
 export const clusterOptions: ClusterOption[] = ['devnet', 'mainnet-beta'];
 export const Cluster = atom({
   key: 'cluster',
@@ -121,20 +121,7 @@ export const FiatValues = atom({
 });
 export const USDConversionRates = atom({
   key: 'usdConversionRates',
-  default: {} as Record<string, number>,
-  effects: [
-    ({ setSelf }) => {
-      axios
-        .get('https://api.jetprotocol.io/v1/rates')
-        .then(resp => {
-          const conversions = resp.data;
-          if (conversions) {
-            setSelf(conversions.rates);
-          }
-        })
-        .catch(err => err);
-    }
-  ]
+  default: {} as Record<string, number>
 });
 
 // Block Explorer

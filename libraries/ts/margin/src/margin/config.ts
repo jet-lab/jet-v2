@@ -17,6 +17,31 @@ export interface MarginConfig {
   url: string
   tokens: Record<string, MarginTokenConfig>
   markets: Record<string, MarginMarketConfig>
+  airspaces: AirspaceConfig[]
+}
+
+export interface AirspaceConfig {
+  name: string
+  tokens: string[]
+  bondMarkets: Record<string, BondMarketConfig>
+}
+
+export interface BondMarketConfig {
+  symbol: string
+  bondManager: Address
+  version: number
+  duration: number
+  airspace: Address
+  orderbookMarketState: Address
+  eventQueue: Address
+  asks: Address
+  bids: Address
+  underlyingTokenMint: Address
+  underlyingTokenVault: Address
+  bondTicketMint: Address
+  claimsMint: Address
+  collateralMint: Address
+  underlyingOracle: Address
 }
 
 export interface MarginTokenConfig {

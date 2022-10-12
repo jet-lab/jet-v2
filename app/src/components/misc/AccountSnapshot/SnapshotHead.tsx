@@ -6,7 +6,7 @@ import { WalletTokens } from '../../../state/user/walletTokens';
 import { AccountNames, CurrentAccountAddress, FavoriteAccounts } from '../../../state/user/accounts';
 import { Typography, Button, Dropdown, Menu, Tabs } from 'antd';
 import { StarFilled, StarOutlined } from '@ant-design/icons';
-import AngleDown from '../../../styles/icons/arrow-angle-down.svg';
+import AngleDown from '../../../assets/icons/arrow-angle-down.svg';
 
 // Head of the Account Snapshot, where user can select/edit/create their margin accounts
 export function SnapshotHead(): JSX.Element {
@@ -41,7 +41,7 @@ export function SnapshotHead(): JSX.Element {
             newFavorites.splice(accountIndex, 1);
           }
           // Otherwise, if we're adding the account to favorites
-        } else {
+        } else if (!newFavorites.includes(accountKey)) {
           newFavorites.push(accountKey);
           setCurrentAccountAddress(accountKey);
         }

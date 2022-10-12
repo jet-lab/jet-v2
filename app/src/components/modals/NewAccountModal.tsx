@@ -108,7 +108,7 @@ export function NewAccountModal(): JSX.Element {
 
   // Check if user has enough SOL to cover rent + fees
   useEffect(() => {
-    if (walletTokens && walletTokens.map.SOL.amount.lamports.toNumber() >= feesBuffer) {
+    if (walletTokens && walletTokens.map.SOL.amount.lamports.gten(feesBuffer)) {
       setDisabled(false);
     } else {
       setDisabled(true);
@@ -144,7 +144,7 @@ export function NewAccountModal(): JSX.Element {
   if (newAccountModalOpen) {
     return (
       <Modal
-        visible
+        open
         className="header-modal new-account-modal"
         maskClosable={false}
         onCancel={() => {

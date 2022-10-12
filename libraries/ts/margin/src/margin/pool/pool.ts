@@ -1832,7 +1832,7 @@ export class Pool {
     minAmountOut: number | undefined,
     outputToken: Pool | undefined,
     repayWithProceeds: boolean,
-    setupCheck?: boolean,
+    setupCheck?: boolean
   ): PoolProjection {
     const defaults = this.getDefaultPoolProjection(marginAccount)
     if (!minAmountOut || !outputToken) {

@@ -106,7 +106,7 @@ impl TokenPricer {
     /// Sets price in oracle and swap for only a single asset
     pub async fn set_price(&self, mint: &Pubkey, price: f64) -> Result<()> {
         let mut txs = self.set_price_in_swap_pools_tx(mint, price).await?;
-        let oracle_tx = self.set_oracle_price_tx(mint, price)?;
+        let oracle_tx = self.set_oracle_price_tx(mint, price).await?;
         txs.push(oracle_tx);
         self.rpc.send_and_confirm_condensed(txs).await?;
 
@@ -157,7 +157,7 @@ impl TokenPricer {
         } else {
             mint_prices
         } {
-            txs.push(self.set_oracle_price_tx(&mint, price)?)
+            txs.push(self.set_oracle_price_tx(&mint, price).await?)
         }
 
         self.rpc.send_and_confirm_condensed(txs).await?;
@@ -251,17 +251,23 @@ impl TokenPricer {
         Ok(txs)
     }
 
-    pub fn set_oracle_price_tx(&self, mint: &Pubkey, price: f64) -> Result<TransactionBuilder> {
+    pub async fn set_oracle_price_tx(
+        &self,
+        mint: &Pubkey,
+        price: f64,
+    ) -> Result<TransactionBuilder> {
         let price = (price * 100_000_000.0) as i64;
-        self.tokens.set_price_tx(
-            mint,
-            &TokenPrice {
-                exponent: -8,
-                price,
-                confidence: 0,
-                twap: price as u64,
-            },
-        )
+        self.tokens
+            .set_price_tx(
+                mint,
+                &TokenPrice {
+                    exponent: -8,
+                    price,
+                    confidence: 0,
+                    twap: price as u64,
+                },
+            )
+            .await
     }
 
     pub async fn get_oracle_price(&self, mint: &Pubkey) -> Result<f64> {

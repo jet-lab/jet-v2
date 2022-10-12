@@ -89,14 +89,7 @@ export function TokenInput(props: {
     }
 
     // Remove unnecessary 0's from beginning / end of input string
-    let inputString = fromLocaleString(tokenInputString);
-    while (
-      inputString.includes('.') &&
-      (inputString[inputString.length - 1] === '.' ||
-        (inputString[inputString.length - 1] === '0' && inputString[inputString.length - 2] !== '.'))
-    ) {
-      inputString = inputString.substring(0, inputString.length - 1);
-    }
+    const inputString = parseFloat(fromLocaleString(tokenInputString)).toString();
 
     // Keep input within the user's maxInput range
     const inputTokenAmount = getTokenAmountFromNumber(parseFloat(inputString), tokenPool.decimals);
@@ -105,7 +98,8 @@ export function TokenInput(props: {
     // Adjust state
     setTokenInputAmount(withinMaxRange);
     if (inputTokenAmount.gt(withinMaxRange)) {
-      setTokenInputString(withinMaxRange.tokens.toString());
+      const { format } = new Intl.NumberFormat(navigator.language);
+      setTokenInputString(format(withinMaxRange.tokens));
     }
   }, [
     tokenPool,

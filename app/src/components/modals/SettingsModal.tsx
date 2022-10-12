@@ -19,7 +19,7 @@ import {
 } from '../../state/settings/settings';
 import { getPing, toggleLightTheme } from '../../utils/ui';
 import { Input, Modal, Radio, Select, Typography } from 'antd';
-import AngleDown from '../../styles/icons/arrow-angle-down.svg';
+import AngleDown from '../../assets/icons/arrow-angle-down.svg';
 
 // Modal for changing app preferences
 export function SettingsModal(): JSX.Element {
@@ -180,7 +180,7 @@ export function SettingsModal(): JSX.Element {
   if (settingsModalOpen) {
     return (
       <Modal
-        visible
+        open
         className="settings-modal header-modal show-scrollbar"
         maskClosable={false}
         onCancel={cancelSettings}
@@ -223,6 +223,7 @@ export function SettingsModal(): JSX.Element {
           <Radio.Group value={clusterSetting} onChange={e => setClusterSetting(e.target.value)}>
             <Radio value="mainnet-beta">{dictionary.settingsModal.cluster.mainnetBeta}</Radio>
             <Radio value="devnet">{dictionary.settingsModal.cluster.devnet}</Radio>
+            <Radio value="localnet">{dictionary.settingsModal.cluster.localnet}</Radio>
           </Radio.Group>
         </div>
         <div className="setting flex align-start justify-center column">

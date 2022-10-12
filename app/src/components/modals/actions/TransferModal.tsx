@@ -16,8 +16,8 @@ import { useProjectedRisk, useRiskStyle } from '../../../utils/risk';
 import { useMarginActions } from '../../../utils/jet/marginActions';
 import { Button, Divider, Modal, Select, Typography } from 'antd';
 import { TokenInput } from '../../misc/TokenInput/TokenInput';
-import AngleDown from '../../../styles/icons/arrow-angle-down.svg';
-import ArrowDown from '../../../styles/icons/arrow-down.svg';
+import AngleDown from '../../../assets/icons/arrow-angle-down.svg';
+import ArrowDown from '../../../assets/icons/arrow-down.svg';
 import { ArrowRight } from './ArrowRight';
 
 // Modal to transfer collateral from one marginAccount to another
@@ -29,7 +29,7 @@ export function TransferModal(): JSX.Element {
   const { transfer } = useMarginActions();
   const accounts = useRecoilValue(Accounts);
   const currentPool = useRecoilValue(CurrentPool);
-  const decimals = (currentPool?.decimals ?? DEFAULT_DECIMALS) / 2;
+  const precision = currentPool?.precision ?? DEFAULT_DECIMALS;
   const currentAction = useRecoilValue(CurrentAction);
   const resetCurrentAction = useResetRecoilState(CurrentAction);
   const tokenInputAmount = useRecoilValue(TokenInputAmount);
@@ -123,7 +123,7 @@ export function TransferModal(): JSX.Element {
     const poolPosition = side === 'from' ? fromAccountPoolPosition : toAccountPoolPosition;
     if (poolPosition && !tokenInputAmount.isZero()) {
       const balanceText = fromAccountPoolPosition
-        ? currencyAbbrev(poolPosition.depositBalance.tokens - tokenInputAmount.tokens, false, undefined, decimals)
+        ? currencyAbbrev(poolPosition.depositBalance.tokens - tokenInputAmount.tokens, false, undefined, precision)
         : '—';
       render = (
         <div className="flex-centered">
@@ -156,7 +156,7 @@ export function TransferModal(): JSX.Element {
   if (currentAction === 'transfer') {
     return (
       <Modal
-        visible
+        open
         className="action-modal transfer-modal header-modal"
         maskClosable={false}
         footer={null}
@@ -223,7 +223,7 @@ export function TransferModal(): JSX.Element {
               <Paragraph className="from-account-text">{dictionary.common.balance}</Paragraph>
               <Paragraph className="from-account-text">
                 {fromAccountPoolPosition
-                  ? currencyAbbrev(fromAccountPoolPosition.depositBalance.tokens, false, undefined, decimals)
+                  ? currencyAbbrev(fromAccountPoolPosition.depositBalance.tokens, false, undefined, precision)
                   : '—'}
                 {renderAffectedBalance('from')}
                 {' ' + currentPool?.symbol}
