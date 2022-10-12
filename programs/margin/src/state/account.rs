@@ -32,6 +32,9 @@ use crate::{
 };
 
 mod positions;
+mod loader;
+mod operations;
+mod structure;
 
 pub use positions::*;
 
