@@ -180,7 +180,7 @@ export function SettingsModal(): JSX.Element {
   if (settingsModalOpen) {
     return (
       <Modal
-        visible
+        open
         className="settings-modal header-modal show-scrollbar"
         maskClosable={false}
         onCancel={cancelSettings}

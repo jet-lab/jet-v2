@@ -156,7 +156,7 @@ export function TransferModal(): JSX.Element {
   if (currentAction === 'transfer') {
     return (
       <Modal
-        visible
+        open
         className="action-modal transfer-modal header-modal"
         maskClosable={false}
         footer={null}

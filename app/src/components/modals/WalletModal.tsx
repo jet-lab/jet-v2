@@ -65,7 +65,7 @@ export function WalletModal(): JSX.Element {
   // If wallet modal is open and we're not already connected
   if (WalletModalOpen && !publicKey) {
     return (
-      <Modal visible className="wallet-modal" maskClosable={false} footer={null} onCancel={resetWalletModal}>
+      <Modal open className="wallet-modal" maskClosable={false} footer={null} onCancel={resetWalletModal}>
         <div className="flex-centered column">
           <img src="img/jet/jet_logo.png" width="120px" height="auto" alt="Jet Protocol" />
           <Text>{dictionary.settingsModal.wallet.worldOfDefi}</Text>
