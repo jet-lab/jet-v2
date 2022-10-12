@@ -8,7 +8,7 @@ import { WalletModal as WalletModalState } from '../../state/modals/modals';
 import { formatPubkey } from '../../utils/format';
 import { notify } from '../../utils/notify';
 import { Modal, Divider, Typography } from 'antd';
-import ArrowIcon from '../../styles/icons/arrow-icon.svg';
+import ArrowIcon from '../../assets/icons/arrow-icon.svg';
 
 // Modal to connect user's Solana wallet to app
 export function WalletModal(): JSX.Element {
@@ -65,7 +65,7 @@ export function WalletModal(): JSX.Element {
   // If wallet modal is open and we're not already connected
   if (WalletModalOpen && !publicKey) {
     return (
-      <Modal visible className="wallet-modal" maskClosable={false} footer={null} onCancel={resetWalletModal}>
+      <Modal open className="wallet-modal" maskClosable={false} footer={null} onCancel={resetWalletModal}>
         <div className="flex-centered column">
           <img src="img/jet/jet_logo.png" width="120px" height="auto" alt="Jet Protocol" />
           <Text>{dictionary.settingsModal.wallet.worldOfDefi}</Text>

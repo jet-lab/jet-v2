@@ -14,7 +14,7 @@ import { Tabs, Table, Skeleton, Typography, Input, Dropdown, Menu } from 'antd';
 import { ReorderArrows } from '../misc/ReorderArrows';
 import { ConnectionFeedback } from '../misc/ConnectionFeedback/ConnectionFeedback';
 import { DownloadOutlined, SearchOutlined } from '@ant-design/icons';
-import AngleDown from '../../styles/icons/arrow-angle-down.svg';
+import AngleDown from '../../assets/icons/arrow-angle-down.svg';
 import { ActionIcon } from '../misc/ActionIcon';
 
 // Table to show margin account's transaction history

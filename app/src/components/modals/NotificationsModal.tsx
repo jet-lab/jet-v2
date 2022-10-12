@@ -13,7 +13,7 @@ export function NotificationsModal() {
   if (notificationsModalOpen) {
     return (
       <Modal
-        visible
+        open
         className="header-modal notifications-modal"
         maskClosable={false}
         onCancel={resetNotificationsModalOpen}>

@@ -10,7 +10,7 @@ export function GeobannedModal(): JSX.Element {
 
   if (geobanned) {
     return (
-      <Modal visible className="geobanned-modal" maskClosable={false} footer={null} closable={false}>
+      <Modal open className="geobanned-modal" maskClosable={false} footer={null} closable={false}>
         <img src="img/ui/region.gif" width="100%" alt="Geobanned gif" />
         <Paragraph type="secondary">
           <b>{dictionary.modals.uhOh}&nbsp;</b>

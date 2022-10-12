@@ -7,7 +7,7 @@ import { WalletModal } from '../../state/modals/modals';
 import { formatPubkey } from '../../utils/format';
 import { notify } from '../../utils/notify';
 import { Button } from 'antd';
-import WalletIcon from '../../styles/icons/wallet-icon.svg';
+import WalletIcon from '../../assets/icons/wallet-icon.svg';
 
 // Button for connecting and disconnecting the user's wallet to the app
 export function WalletButton(props: { mobile?: boolean }): JSX.Element {
