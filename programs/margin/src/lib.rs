@@ -113,7 +113,7 @@ pub mod jet_margin {
     /// |     |     |
     /// | --- | --- |
     /// | **Event Name** | **Description** |
-    /// | [`events::AccountCreated`] | The created account. |
+    /// | [`events::AccountCreated`] | Marks the creation of the account. |
 
     pub fn create_account(ctx: Context<CreateAccount>, seed: u16) -> Result<()> {
         create_account_handler(ctx, seed)
@@ -137,7 +137,7 @@ pub mod jet_margin {
     /// |     |     |
     /// | --- | --- |
     /// | **Event Name** | **Description** |
-    /// | [`events::AccountClosed`] | The closed account. |
+    /// | [`events::AccountClosed`] | Marks the closure of the account. |
 
     pub fn close_account(ctx: Context<CloseAccount>) -> Result<()> {
         close_account_handler(ctx)
@@ -170,7 +170,7 @@ pub mod jet_margin {
     /// |     |     |
     /// | --- | --- |
     /// | **Event Name** | **Description** |
-    /// | [`events::PositionRegistered`] | The position registered. |
+    /// | [`events::PositionRegistered`] | Marks the registration of the position. |
     pub fn register_position(ctx: Context<RegisterPosition>) -> Result<()> {
         register_position_handler(ctx)
     }
@@ -196,7 +196,7 @@ pub mod jet_margin {
     /// |     |     |
     /// | --- | --- |
     /// | **Event Name** | **Description** |
-    /// | [`events::PositionBalanceUpdated`] | The updated position. |
+    /// | [`events::PositionBalanceUpdated`] | Marks the updating of the position balance. |
     ///
     pub fn update_position_balance(ctx: Context<UpdatePositionBalance>) -> Result<()> {
         update_position_balance_handler(ctx)
@@ -219,7 +219,8 @@ pub mod jet_margin {
     /// |     |     |
     /// | --- | --- |
     /// | **Event Name** | **Description** |
-    /// | [`events::PositionMetadataRefreshed`] | The position of which metadata was refreshed. |
+    /// | [`events::PositionMetadataRefreshed`] | Marks the refreshing of position metadata. |
+    /// 
     pub fn refresh_position_metadata(ctx: Context<RefreshPositionMetadata>) -> Result<()> {
         refresh_position_metadata_handler(ctx)
     }
@@ -246,7 +247,8 @@ pub mod jet_margin {
     /// |     |     |
     /// | --- | --- |
     /// | **Event Name** | **Description** |
-    /// | [`events::PositionClosed`] | The closed position. |
+    /// | [`events::PositionClosed`] | Marks the closure of the position. |
+    /// 
     pub fn close_position(ctx: Context<ClosePosition>) -> Result<()> {
         close_position_handler(ctx)
     }
@@ -265,6 +267,13 @@ pub mod jet_margin {
     /// | **Name** | **Type** | **Description** |
     /// | `margin_account` | `read_only` | The account to verify the health of. |
     ///
+    /// # Events
+    ///
+    /// |     |     |
+    /// | --- | --- |
+    /// | **Event Name** | **Description** |
+    /// | [`events::VerifiedHealthy`] | Marks the verification of the position. |
+    /// 
     pub fn verify_healthy(ctx: Context<VerifyHealthy>) -> Result<()> {
         verify_healthy_handler(ctx)
     }
@@ -302,7 +311,7 @@ pub mod jet_margin {
     /// | --- | --- |
     /// | **Event Name** | **Description** |
     /// | [`events::AdapterInvokeBegin`] | Marks the start of the adapter invocation (includes the margin account pubkey and the adapter program pubkey). |
-    /// | [`events::PositionEvent`] _(Note that each single event represents a different adapter position)_ | The [PositionEvent](events::PositionEvent) describing the change in position. |
+    /// | [`events::PositionEvent`] _(Note that each single event represents a different adapter position)_ | The [PositionEvent](events::PositionEvent) describes the change in position. |
     /// | [`events::AdapterInvokeEnd`] | Marks the ending of the adapter invocation (includes no data except for the event itself being emitted). |
     pub fn adapter_invoke<'info>(
         ctx: Context<'_, '_, '_, 'info, AdapterInvoke<'info>>,
@@ -376,7 +385,7 @@ pub mod jet_margin {
     /// |     |     |
     /// | --- | --- |
     /// | **Event Name** | **Description** |
-    /// | [`events::LiquidationBegun`] | The event marking the beginning of liquidation. |
+    /// | [`events::LiquidationBegun`] | Marks the beginning of the liquidation. |
     pub fn liquidate_begin(ctx: Context<LiquidateBegin>) -> Result<()> {
         liquidate_begin_handler(ctx)
     }
@@ -400,7 +409,7 @@ pub mod jet_margin {
     /// |     |     |
     /// | --- | --- |
     /// | **Event Name** | **Description** |
-    /// | [`events::LiquidationEnded`] | The event marking the end of liquidation. |
+    /// | [`events::LiquidationEnded`] | Marks the ending of the liquidation. |
     pub fn liquidate_end(ctx: Context<LiquidateEnd>) -> Result<()> {
         liquidate_end_handler(ctx)
     }
