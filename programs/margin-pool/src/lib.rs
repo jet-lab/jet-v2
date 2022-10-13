@@ -65,7 +65,7 @@ mod jet_margin_pool {
     /// |     |     |
     /// | --- | --- |
     /// | **Event Name** | **Description** |
-    /// | [`events::PoolCreated`] | The pool created. |
+    /// | [`events::PoolCreated`] | Marks the pool creation. |
     /// 
     pub fn create_pool(ctx: Context<CreatePool>, fee_destination: Pubkey) -> Result<()> {
         instructions::create_pool_handler(ctx, fee_destination)
@@ -95,7 +95,7 @@ mod jet_margin_pool {
     /// |     |     |
     /// | --- | --- |
     /// | **Event Name** | **Description** |
-    /// | [`events::Collect`] | The collected fees. |
+    /// | [`events::Collect`] | Marks the collection of the fees. |
     /// TODO make sure its ok I switched the function below (did this to match the instruction layout tree like the rest of them do)
     /// 
     pub fn collect(ctx: Context<Collect>) -> Result<()> {
@@ -124,33 +124,43 @@ mod jet_margin_pool {
     /// |     |     |
     /// | --- | --- |
     /// | **Event Name** | **Description** |
-    /// | [`events::PoolConfigured`] | The pool that was configured. |
+    /// | [`events::PoolConfigured`] | Marks the configuration of the pool. |
+    /// 
     pub fn configure(ctx: Context<Configure>, config: Option<MarginPoolConfig>) -> Result<()> {
         instructions::configure_handler(ctx, config)
     }
 
     /// Deposit tokens into the pool in exchange for notes
     ///
-    /// * `seed` - An abritrary integer used to derive the new account address. This allows
+    /// TODO
+    /// * `change_kind` - An abritrary integer used to derive the new account address. This allows
+    ///            a user to own multiple margin accounts, by creating new accounts with different
+    ///            seed values.
+    /// TODO
+    /// * `amoount` - An abritrary integer used to derive the new account address. This allows
     ///            a user to own multiple margin accounts, by creating new accounts with different
     ///            seed values.
     ///
-    /// # [Accounts](jet_margin::accounts::CreateAccount)
+    /// # [Accounts](jet_margin::accounts::Deposit)
     ///     
     /// |     |     |     |
     /// | --- | --- | --- |
     /// | **Name** | **Type** | **Description** |
-    /// | `owner` | `signer` | The owner of the new margin account. |
-    /// | `payer` | `signer` | The pubkey paying rent for the new margin account opening. |
-    /// | `margin_account` | `writable` | The margin account to initialize for the owner. |
-    /// | `system_program` | `read_only` | The [system native program](https://docs.solana.com/developing/runtime-facilities/programs#system-program). |
+    /// | `margin_pool` | `writable` | The pool to deposit into. |
+    /// | `vault` | `writable` | The vault for the pool, where tokens are held. |
+    /// | `deposit_note_mint` | `writable` | The mint for the deposit notes. |
+    /// | `depositor` | `signer` | The [ The address with authority to deposit the tokens. |
+    /// | `source` | `writable` | The source of the tokens to be deposited. |
+    /// | `destination` | `writtable` | The destination of the deposit notes. |
+    /// | `token_progarm` | `read_only` | The [system native program](https://docs.solana.com/developing/runtime-facilities/programs#system-program). |
     ///
     /// # Events
     ///
     /// |     |     |
     /// | --- | --- |
     /// | **Event Name** | **Description** |
-    /// | [`events::Collect`] | The collected fees. |
+    /// | [`events::Deposit`] | Marks the deposit. |
+    /// 
     pub fn deposit(ctx: Context<Deposit>, change_kind: ChangeKind, amount: u64) -> Result<()> {
         instructions::deposit_handler(ctx, change_kind, amount)
     }
@@ -180,7 +190,7 @@ mod jet_margin_pool {
     /// |     |     |
     /// | --- | --- |
     /// | **Event Name** | **Description** |
-    /// | [`events::AccountCreated`] | The created account. |
+    /// | [`events::Withdraw`] | Marks the withdraw. |
     pub fn withdraw(ctx: Context<Withdraw>, change_kind: ChangeKind, amount: u64) -> Result<()> {
         instructions::withdraw_handler(ctx, change_kind, amount)
     }
@@ -235,7 +245,6 @@ mod jet_margin_pool {
     /// TODO: double check my description for beneficiary 
     /// | `beneficiary` | `writable` | The destination for the  account closing the loan(?). |
     /// | `token_program` | `read_only` | The [spl token program](https://spl.solana.com/token). |
-    /// 
     pub fn close_loan(ctx: Context<CloseLoan>) -> Result<()> {
         instructions::close_loan_handler(ctx)
     }
