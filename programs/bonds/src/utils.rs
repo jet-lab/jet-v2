@@ -25,7 +25,6 @@ macro_rules! init {
         }
     };
 }
-
 pub(crate) use init;
 
 /// Shortcut to mint tokens in the standard case where
@@ -91,7 +90,7 @@ pub(crate) use burn_notes;
 /// derive BondTokenManager on the accounts struct to use this macro
 macro_rules! withdraw {
     // both `from` and `to` are field names in ctx.accounts
-    ($ctx:ident, $from:ident, $to:ident, $amount:expr $(,)?) => {
+    ($ctx:expr, $from:ident, $to:ident, $amount:expr $(,)?) => {
         crate::utils::withdraw!(
             $ctx,
             $ctx.accounts.$from.to_account_info(),
@@ -100,11 +99,11 @@ macro_rules! withdraw {
         )
     };
     // `from` is a field name in ctx.accounts, `to` is AccountInfo
-    ($ctx:ident, $from:ident, $to:expr, $amount:expr $(, $bond_manager_nesting:ident)?) => {
+    ($ctx:expr, $from:ident, $to:expr, $amount:expr $(, $bond_manager_nesting:ident)?) => {
         crate::utils::withdraw!($ctx, $ctx.accounts.$from.to_account_info(), $to, $amount)
     };
     // both `from` and `to` are AccountInfo
-    ($ctx:ident, $from:expr, $to:expr, $amount:expr $(, $bond_manager_nesting:ident)?) => {{
+    ($ctx:expr, $from:expr, $to:expr, $amount:expr $(, $bond_manager_nesting:ident)?) => {{
         use crate::utils::BondManagerProvider;
         use crate::utils::TokenProgramProvider;
         anchor_spl::token::transfer(

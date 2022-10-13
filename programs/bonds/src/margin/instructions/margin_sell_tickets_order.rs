@@ -1,69 +1,59 @@
 use agnostic_orderbook::state::Side;
 use anchor_lang::prelude::*;
-use anchor_spl::token::{accessor::mint, Mint, Token, TokenAccount};
+use proc_macros::BondTokenManager;
 
-use crate::{orderbook::state::*, serialization::RemainingAccounts, BondsError};
+use crate::{
+    margin::state::MarginUser,
+    orderbook::{
+        instructions::sell_tickets_order::*,
+        state::{CallbackFlags, OrderParams},
+    },
+    serialization::RemainingAccounts,
+    utils::mint_to,
+    BondsError,
+};
 
-#[derive(Accounts)]
+#[derive(Accounts, BondTokenManager)]
 pub struct MarginSellTicketsOrder<'info> {
-    /// Signing authority over the ticket vault transferring for a borrow order
-    pub user: Signer<'info>,
-
-    /// Account containing the bond tickets being sold
-    #[account(mut, constraint =
-        mint(&user_ticket_vault.to_account_info()).unwrap()
-        == bond_ticket_mint.key() @ BondsError::WrongTicketMint
+    /// The account tracking borrower debts
+    #[account(mut,
+        constraint = margin_user.margin_account == inner.owner.key() @ BondsError::UnauthorizedCaller,
+        has_one = collateral @ BondsError::WrongCollateralAccount,
     )]
-    pub user_ticket_vault: Account<'info, TokenAccount>,
+    pub margin_user: Box<Account<'info, MarginUser>>,
 
-    /// The account to recieve the matched tokens
-    #[account(mut, constraint =
-        mint(&user_token_vault.to_account_info()).unwrap()
-        == orderbook_mut.bond_manager.load().unwrap().underlying_token_mint.key() @ BondsError::WrongUnderlyingTokenMint
-    )]
-    pub user_token_vault: Account<'info, TokenAccount>,
+    /// Token account used by the margin program to track the debt that must be collateralized
+    #[account(mut)]
+    pub collateral: AccountInfo<'info>,
 
-    pub orderbook_mut: OrderbookMut<'info>,
+    /// Token mint used by the margin program to track the debt that must be collateralized
+    #[account(mut)]
+    pub collateral_mint: AccountInfo<'info>,
 
-    /// The market ticket mint
-    #[account(mut, address = orderbook_mut.bond_manager.load().unwrap().bond_ticket_mint.key() @ BondsError::WrongTicketMint)]
-    pub bond_ticket_mint: Account<'info, Mint>,
-
-    pub token_program: Program<'info, Token>,
-    // Optional event adapter account
-    // pub event_adapter: AccountInfo<'info>,
+    #[bond_manager(orderbook_mut)]
+    #[token_program]
+    pub inner: SellTicketsOrder<'info>,
 }
 
 pub fn handler(ctx: Context<MarginSellTicketsOrder>, params: OrderParams) -> Result<()> {
-    let (_, order_summary) = ctx.accounts.orderbook_mut.place_order(
-        ctx.accounts.user.key(),
+    let (_, order_summary) = ctx.accounts.inner.orderbook_mut.place_order(
+        ctx.accounts.inner.owner.key(),
         Side::Ask,
         params,
-        ctx.accounts.user_token_vault.key(),
-        ctx.accounts.user_ticket_vault.key(),
+        ctx.accounts.margin_user.key(),
+        ctx.accounts.margin_user.key(),
         ctx.remaining_accounts
             .iter()
             .maybe_next_adapter()?
             .map(|a| a.key()),
-        CallbackFlags::empty(),
+        CallbackFlags::MARGIN,
+    )?;
+    mint_to!(
+        ctx,
+        collateral_mint,
+        collateral,
+        order_summary.quote_posted()?,
     )?;
 
-    anchor_spl::token::burn(
-        CpiContext::new(
-            ctx.accounts.token_program.to_account_info(),
-            anchor_spl::token::Burn {
-                mint: ctx.accounts.bond_ticket_mint.to_account_info(),
-                from: ctx.accounts.user_ticket_vault.to_account_info(),
-                authority: ctx.accounts.user.to_account_info(),
-            },
-        ),
-        order_summary.base_combined(),
-    )?;
-    emit!(crate::events::SellTicketsOrder {
-        bond_market: ctx.accounts.orderbook_mut.bond_manager.key(),
-        borrower: ctx.accounts.user.key(),
-        order_summary: order_summary.summary(),
-    });
-
-    Ok(())
+    ctx.accounts.inner.sell_tickets(order_summary)
 }

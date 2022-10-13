@@ -1,6 +1,5 @@
 use agnostic_orderbook::state::Side;
 use anchor_lang::prelude::*;
-use anchor_spl::token::Token;
 use proc_macros::BondTokenManager;
 
 use crate::{
@@ -36,7 +35,6 @@ pub struct MarginLendOrder<'info> {
     #[token_program]
     pub inner: LendOrder<'info>,
 
-    pub token_program: Program<'info, Token>,
     // Optional event adapter account
     // pub event_adapter: AccountInfo<'info>,
 }
