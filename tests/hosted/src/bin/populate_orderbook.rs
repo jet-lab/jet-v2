@@ -78,9 +78,9 @@ impl Client {
         };
 
         ix = ix.with_orderbook_accounts(
-            Some(bond_manager.bids),
-            Some(bond_manager.asks),
-            Some(bond_manager.event_queue),
+            bond_manager.bids,
+            bond_manager.asks,
+            bond_manager.event_queue,
         );
 
         Ok(Self { conn, ix, signer })
@@ -282,12 +282,12 @@ fn main() -> Result<()> {
     }
 
     // read and display the orderbook
-    let asks_data = &mut client.conn.get_account_data(&client.ix.asks()?)?;
+    let asks_data = &mut client.conn.get_account_data(&client.ix.asks())?;
     let asks = agnostic_orderbook::state::critbit::Slab::<jet_bonds::orderbook::state::CallbackInfo>::from_buffer(
             asks_data,
             agnostic_orderbook::state::AccountTag::Asks,
         )?;
-    let bids_data = &mut client.conn.get_account_data(&client.ix.bids()?)?;
+    let bids_data = &mut client.conn.get_account_data(&client.ix.bids())?;
     let bids = agnostic_orderbook::state::critbit::Slab::<jet_bonds::orderbook::state::CallbackInfo>::from_buffer(
             bids_data,
             agnostic_orderbook::state::AccountTag::Bids,

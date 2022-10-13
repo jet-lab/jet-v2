@@ -221,9 +221,9 @@ impl TestManager {
             )?
         };
         this.ix_builder = this.ix_builder.with_orderbook_accounts(
-            Some(bids_kp.pubkey()),
-            Some(asks_kp.pubkey()),
-            Some(eq_kp.pubkey()),
+            bids_kp.pubkey(),
+            asks_kp.pubkey(),
+            eq_kp.pubkey(),
         );
         this.insert_kp("eq", clone(eq_kp));
         this.insert_kp("bids", clone(bids_kp));

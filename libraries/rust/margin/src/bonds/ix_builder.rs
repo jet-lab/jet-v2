@@ -1,4 +1,4 @@
-use std::{collections::HashMap, sync::Arc};
+use std::sync::Arc;
 
 use anchor_lang::{InstructionData, ToAccountMetas};
 use jet_bonds::{margin::state::Obligation, seeds, tickets::instructions::StakeBondTicketsParams};
@@ -38,20 +38,16 @@ pub struct BondsIxBuilder {
     orderbook_market_state: Pubkey,
     underlying_oracle: Pubkey,
     ticket_oracle: Pubkey,
-    /// #[deprecated(note = "if an address is truly needed, its presence should be guaranteed at compile time using a field")]
-    keys: Keys,
+    orderbook: Option<OrderBookAddresses>,
+    payer: Option<Pubkey>,
+    crank: Option<Pubkey>,
 }
 
-#[derive(Debug, Default, Clone)]
-pub struct Keys(HashMap<String, Pubkey>);
-
-impl Keys {
-    pub fn insert(&mut self, k: &str, v: Pubkey) {
-        self.0.insert(k.into(), v);
-    }
-    pub fn unwrap(&self, k: &str) -> Result<Pubkey> {
-        self.0.get(k).unwrap_key(k)
-    }
+#[derive(Clone)]
+pub struct OrderBookAddresses {
+    bids: Pubkey,
+    asks: Pubkey,
+    event_queue: Pubkey,
 }
 
 trait UnwrapKey {
@@ -89,7 +85,13 @@ impl From<BondManager> for BondsIxBuilder {
             orderbook_market_state: bond_manager.orderbook_market_state,
             underlying_oracle: bond_manager.underlying_oracle,
             ticket_oracle: bond_manager.ticket_oracle,
-            keys: Keys::default(),
+            orderbook: Some(OrderBookAddresses {
+                bids: bond_manager.bids,
+                asks: bond_manager.asks,
+                event_queue: bond_manager.event_queue,
+            }),
+            payer: None,
+            crank: None,
         }
     }
 }
@@ -110,7 +112,6 @@ impl BondsIxBuilder {
             bonds_pda(&[jet_bonds::seeds::ORDERBOOK_MARKET_STATE, manager.as_ref()]);
         let claims = bonds_pda(&[jet_bonds::seeds::CLAIM_NOTES, manager.as_ref()]);
         let collateral = bonds_pda(&[jet_bonds::seeds::COLLATERAL_NOTES, manager.as_ref()]);
-        let keys = Keys::default();
         Self {
             airspace,
             authority,
@@ -123,7 +124,9 @@ impl BondsIxBuilder {
             orderbook_market_state,
             underlying_oracle,
             ticket_oracle,
-            keys,
+            orderbook: None,
+            payer: None,
+            crank: None,
         }
     }
 
@@ -136,47 +139,38 @@ impl BondsIxBuilder {
         underlying_oracle: Pubkey,
         ticket_oracle: Pubkey,
     ) -> Self {
-        let builder = Self::new(
+        Self::new(
             *airspace,
             *mint,
             Self::bond_manager_key(airspace, mint, seed),
             authority,
             underlying_oracle,
             ticket_oracle,
-        );
-        builder.with_mint(mint)
+        )
     }
 
     pub fn with_payer(mut self, payer: &Pubkey) -> Self {
-        self.keys.insert("payer", *payer);
+        self.payer = Some(*payer);
         self
     }
 
     pub fn with_crank(mut self, crank: &Pubkey) -> Self {
-        self.keys.insert("crank", *crank);
+        self.crank = Some(*crank);
         self
     }
 
     pub fn with_orderbook_accounts(
         mut self,
-        bids: Option<Pubkey>,
-        asks: Option<Pubkey>,
-        event_queue: Option<Pubkey>,
+        bids: Pubkey,
+        asks: Pubkey,
+        event_queue: Pubkey,
     ) -> Self {
-        if let Some(bids) = bids {
-            self.keys.insert("bids", bids);
-        }
-        if let Some(asks) = asks {
-            self.keys.insert("asks", asks);
-        }
-        if let Some(eq) = event_queue {
-            self.keys.insert("event_queue", eq);
-        }
-        self
-    }
+        self.orderbook = Some(OrderBookAddresses {
+            bids,
+            asks,
+            event_queue,
+        });
 
-    pub fn with_mint(mut self, underlying_mint: &Pubkey) -> Self {
-        self.keys.insert("underlying_mint", *underlying_mint);
         self
     }
 }
@@ -203,14 +197,14 @@ impl BondsIxBuilder {
     pub fn collateral(&self) -> Pubkey {
         self.collateral
     }
-    pub fn event_queue(&self) -> Result<Pubkey> {
-        self.keys.unwrap("event_queue")
+    pub fn event_queue(&self) -> Pubkey {
+        self.orderbook.as_ref().unwrap().event_queue
     }
-    pub fn bids(&self) -> Result<Pubkey> {
-        self.keys.unwrap("bids")
+    pub fn bids(&self) -> Pubkey {
+        self.orderbook.as_ref().unwrap().bids
     }
-    pub fn asks(&self) -> Result<Pubkey> {
-        self.keys.unwrap("asks")
+    pub fn asks(&self) -> Pubkey {
+        self.orderbook.as_ref().unwrap().asks
     }
 }
 
@@ -219,9 +213,9 @@ impl BondsIxBuilder {
         Ok(jet_bonds::accounts::OrderbookMut {
             bond_manager: self.manager,
             orderbook_market_state: self.orderbook_market_state,
-            event_queue: self.keys.unwrap("event_queue")?,
-            bids: self.keys.unwrap("bids")?,
-            asks: self.keys.unwrap("asks")?,
+            event_queue: self.orderbook.as_ref().unwrap().event_queue,
+            bids: self.orderbook.as_ref().unwrap().bids,
+            asks: self.orderbook.as_ref().unwrap().asks,
         })
     }
 
@@ -241,10 +235,10 @@ impl BondsIxBuilder {
             bond_ticket_mint: self.bond_ticket_mint,
             underlying_token_vault: self.underlying_token_vault,
             orderbook_market_state: self.orderbook_market_state,
-            event_queue: self.keys.unwrap("event_queue")?,
-            crank_authorization: crank_authorization(&self.keys.unwrap("crank")?),
-            crank: self.keys.unwrap("crank")?,
-            payer: self.keys.unwrap("payer")?,
+            event_queue: self.orderbook.as_ref().unwrap().event_queue,
+            crank_authorization: crank_authorization(&self.crank.unwrap()),
+            crank: self.crank.unwrap(),
+            payer: self.payer.unwrap(),
             system_program: solana_sdk::system_program::ID,
             token_program: spl_token::ID,
         }
@@ -299,7 +293,7 @@ impl BondsIxBuilder {
         rent: u64,
     ) -> Result<Instruction> {
         Ok(solana_sdk::system_instruction::create_account(
-            &self.keys.unwrap("payer")?,
+            &self.payer.unwrap(),
             slab,
             rent,
             orderbook_slab_len(capacity) as u64,
@@ -314,7 +308,7 @@ impl BondsIxBuilder {
         rent: u64,
     ) -> Result<Instruction> {
         Ok(solana_sdk::system_instruction::create_account(
-            &self.keys.unwrap("payer")?,
+            &self.payer.unwrap(),
             queue,
             rent,
             event_queue_len(capacity) as u64,
@@ -355,7 +349,7 @@ impl BondsIxBuilder {
         let borrower_account = self.margin_user_account(owner);
         let accounts = jet_bonds::accounts::InitializeMarginUser {
             bond_manager: self.manager,
-            payer: self.keys.unwrap("payer")?,
+            payer: self.payer.unwrap(),
             borrower_account,
             margin_account: owner,
             claims: bonds_pda(&[jet_bonds::seeds::CLAIM_NOTES, borrower_account.as_ref()]),
@@ -365,10 +359,7 @@ impl BondsIxBuilder {
             ]),
             claims_mint: self.claims,
             collateral_mint: self.collateral,
-            underlying_settlement: get_associated_token_address(
-                &owner,
-                &self.keys.unwrap("underlying_mint")?,
-            ),
+            underlying_settlement: get_associated_token_address(&owner, &self.underlying_mint),
             ticket_settlement: get_associated_token_address(&owner, &self.bond_ticket_mint),
             rent: solana_sdk::sysvar::rent::ID,
             token_program: spl_token::ID,
@@ -399,10 +390,7 @@ impl BondsIxBuilder {
         };
         let user_underlying_token_vault = match token_vault {
             Some(vault) => vault,
-            None => get_associated_token_address(
-                &user.unwrap_key("user")?,
-                &self.keys.unwrap("underlying_mint")?,
-            ),
+            None => get_associated_token_address(&user.unwrap_key("user")?, &self.underlying_mint),
         };
         let user_authority = match vault_authority {
             Some(auth) => auth,
@@ -449,7 +437,7 @@ impl BondsIxBuilder {
             ticket_holder,
             bond_ticket_token_account,
             bond_ticket_mint: self.bond_ticket_mint,
-            payer: self.keys.unwrap("payer")?,
+            payer: self.payer.unwrap(),
             token_program: spl_token::ID,
             system_program: solana_sdk::system_program::ID,
         }
@@ -577,7 +565,7 @@ impl BondsIxBuilder {
         };
         let user_token_vault = match token_vault {
             Some(vault) => vault,
-            None => get_associated_token_address(&authority, &self.keys.unwrap("underlying_mint")?),
+            None => get_associated_token_address(&authority, &self.underlying_mint),
         };
         Ok(jet_bonds::accounts::SellTicketsOrder {
             authority,
@@ -611,7 +599,7 @@ impl BondsIxBuilder {
             claims_mint: self.claims,
             collateral: margin_user.collateral,
             collateral_mint: self.collateral,
-            payer: self.keys.unwrap("payer")?,
+            payer: self.payer.unwrap(),
             token_program: spl_token::ID,
             system_program: solana_sdk::system_program::ID,
         }
@@ -684,7 +672,7 @@ impl BondsIxBuilder {
         };
         let lender_tokens = match lender_tokens {
             Some(vault) => vault,
-            None => get_associated_token_address(&authority, &self.keys.unwrap("underlying_mint")?),
+            None => get_associated_token_address(&authority, &self.underlying_mint),
         };
         let split_ticket = self.split_ticket_key(&user, seed);
         Ok(jet_bonds::accounts::LendOrder {
@@ -697,7 +685,7 @@ impl BondsIxBuilder {
             lender_tokens,
             underlying_token_vault: self.underlying_token_vault,
             ticket_mint: self.bond_ticket_mint,
-            payer: self.keys.unwrap("payer")?,
+            payer: self.payer.unwrap(),
             orderbook_mut: self.orderbook_mut()?,
             token_program: spl_token::ID,
             system_program: solana_sdk::system_program::ID,
@@ -733,9 +721,9 @@ impl BondsIxBuilder {
         let accounts = jet_bonds::accounts::ResumeOrderMatching {
             bond_manager: self.manager,
             orderbook_market_state: self.orderbook_market_state,
-            event_queue: self.keys.unwrap("event_queue")?,
-            bids: self.keys.unwrap("bids")?,
-            asks: self.keys.unwrap("asks")?,
+            event_queue: self.orderbook.as_ref().unwrap().event_queue,
+            bids: self.orderbook.as_ref().unwrap().bids,
+            asks: self.orderbook.as_ref().unwrap().asks,
             authority: self.authority,
             airspace: self.airspace,
         }
