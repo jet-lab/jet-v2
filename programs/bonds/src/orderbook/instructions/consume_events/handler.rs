@@ -97,11 +97,15 @@ fn handle_fill<'info>(
 
     match maker_side {
         Side::Bid => {
+            if maker_info.flags.contains(CallbackFlags::MARGIN) {
+                maker.margin_user()?.assets.collateral_to_burn += quote_size;
+            }
             if maker_info.flags.contains(CallbackFlags::AUTO_STAKE) {
+                maker.margin_user()?.assets.entitled_collateral += base_size;
                 let principal = *quote_size;
                 let interest = base_size.safe_sub(principal)?;
                 *loan.unwrap().auto_stake()? = SplitTicket {
-                    owner: maker.as_owner().key(),
+                    owner: maker.pubkey(),
                     bond_manager: ctx.accounts.bond_manager.key(),
                     order_tag: maker_info.order_tag,
                     maturation_timestamp,
@@ -110,8 +114,7 @@ fn handle_fill<'info>(
                     interest,
                 };
             } else if maker_info.flags.contains(CallbackFlags::MARGIN) {
-                let mut margin_user = maker.margin_user()?;
-                margin_user.assets.entitled_tickets += base_size;
+                maker.margin_user()?.assets.entitled_tickets += base_size;
             } else {
                 mint_to!(ctx, bond_ticket_mint, maker.as_token_account(), *base_size)?;
             }
@@ -120,6 +123,7 @@ fn handle_fill<'info>(
             if maker_info.flags.contains(CallbackFlags::MARGIN) {
                 let mut margin_user = maker.margin_user()?;
                 margin_user.assets.entitled_tokens += quote_size;
+                margin_user.assets.collateral_to_burn += quote_size;
                 if maker_info.flags.contains(CallbackFlags::NEW_DEBT) {
                     let sequence_number = margin_user
                         .debt

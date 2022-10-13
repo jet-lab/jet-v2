@@ -154,17 +154,30 @@ impl Debt {
     }
 }
 
-#[derive(Zeroable, Debug, Clone, AnchorSerialize, AnchorDeserialize)]
+// todo better encapsulation like Debt. ideally we can actually track remaining
+// open order and staked ticket quantities, which will help deal with rounding
+// issues.
+#[derive(Zeroable, Debug, Clone, AnchorSerialize, AnchorDeserialize, PartialEq, Eq)]
 pub struct Assets {
-    /// tokens to transfer into settlement account with next position refresh
+    /// tokens to transfer into settlement account
     pub entitled_tokens: u64,
-    /// tickets to transfer into settlement account with next position refresh
+    /// tickets to transfer into settlement account
     pub entitled_tickets: u64,
+    /// amount of collateral tokens that must be burned in order to settle the entitled balances
+    pub collateral_to_burn: u64,
+    /// amount of collateral tokens that may be issued
+    pub entitled_collateral: u64,
     /// reserved data that may be used to determine the size of a user's collateral
     /// pessimistically prepared to persist aggregated values for:
     /// base and quote quantities, separately for bid/ask, on open orders and unsettled fills
     /// 2^3 = 8 u64's
     _reserved0: [u8; 64],
+}
+
+impl Assets {
+    pub fn is_settled(&self) -> bool {
+        self == &Self::zeroed()
+    }
 }
 
 #[account]

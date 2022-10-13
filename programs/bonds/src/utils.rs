@@ -1,3 +1,7 @@
+use crate::control::state::BondManager;
+use anchor_lang::prelude::{AccountLoader, Program};
+use anchor_spl::token::Token;
+
 /// Initialize a struct that has already been instantiated with invalid data.
 /// Ensure safety by providing a compile-time guarantee that your code handles every field.
 /// Ensure performance by not:
@@ -21,82 +25,101 @@ macro_rules! init {
         }
     };
 }
+
 pub(crate) use init;
 
 /// Shortcut to mint tokens in the standard case where
 /// - bond_manager_authority is the mint authority
 /// - all required accounts are available in a Context
 ///
-/// There is some weirdness here with the optional parameter "bond_manager_call". If the bond
-/// manager must be accessed with a method call instead of directly accessing the field, use ()
-/// A clearer and more general solution would be nice but this works for now
+/// derive BondTokenManager on the accounts struct to use this macro
 macro_rules! mint_to {
-    ($ctx:ident, $mint:ident, $recipient:ident, $amount:expr $(, $bond_manager_nesting:ident)?) => {
-        crate::utils::mint_to!($ctx, $mint, $ctx.accounts.$recipient.to_account_info(), $amount $(, $bond_manager_nesting)?)
+    ($ctx:expr, $mint:ident, $recipient:ident, $amount:expr $(,)?) => {
+        crate::utils::mint_to!(
+            $ctx,
+            $mint,
+            $ctx.accounts.$recipient.to_account_info(),
+            $amount
+        )
     };
-    ($ctx:ident, $mint:ident, $recipient:expr, $amount:expr $(, $bond_manager_nesting:ident)?) => {
+    ($ctx:expr, $mint:ident, $recipient:expr, $amount:expr) => {{
+        use crate::utils::BondManagerProvider;
+        use crate::utils::TokenProgramProvider;
         anchor_spl::token::mint_to(
             anchor_lang::prelude::CpiContext::new(
-                $ctx.accounts.token_program.to_account_info(),
+                $ctx.accounts.token_program().to_account_info(),
                 anchor_spl::token::MintTo {
                     mint: $ctx.accounts.$mint.to_account_info(),
                     to: $recipient,
-                    authority: $ctx.accounts.$($bond_manager_nesting.)?bond_manager.to_account_info(),
+                    authority: $ctx.accounts.bond_manager().to_account_info(),
                 },
             )
-            .with_signer(&[&$ctx.accounts.$($bond_manager_nesting.)?bond_manager.load()?.authority_seeds()]),
+            .with_signer(&[&$ctx.accounts.bond_manager().load()?.authority_seeds()]),
             $amount,
         )
-    };
+    }};
 }
 pub(crate) use mint_to;
 
 /// same as above but for burning
 /// burn from account owned by bond manager
-macro_rules! burn {
-    ($ctx:ident, $mint:ident, $target:ident, $amount:expr $(, $bond_manager_nesting:ident)?) => {
+/// this is used for collateral or claim notes
+/// this is not used for tickets since they are owned by someone else
+/// derive BondTokenManager on the accounts struct to use this macro
+macro_rules! burn_notes {
+    ($ctx:ident, $mint:ident, $target:ident, $amount:expr $(,)?) => {{
+        use crate::utils::BondManagerProvider;
+        use crate::utils::TokenProgramProvider;
         anchor_spl::token::burn(
             anchor_lang::prelude::CpiContext::new(
-                $ctx.accounts.token_program.to_account_info(),
+                $ctx.accounts.token_program().to_account_info(),
                 anchor_spl::token::Burn {
                     mint: $ctx.accounts.$mint.to_account_info(),
                     from: $ctx.accounts.$target.to_account_info(),
-                    authority: $ctx.accounts.$($bond_manager_nesting.)?bond_manager.to_account_info(),
+                    authority: $ctx.accounts.bond_manager().to_account_info(),
                 },
             )
-            .with_signer(&[&$ctx.accounts.$($bond_manager_nesting.)?bond_manager.load()?.authority_seeds()]),
+            .with_signer(&[&$ctx.accounts.bond_manager().load()?.authority_seeds()]),
             $amount,
         )
-    };
+    }};
 }
-pub(crate) use burn;
+pub(crate) use burn_notes;
 
 /// transfer underlying tokens from vault to user
 /// signed by the bond manager
+/// derive BondTokenManager on the accounts struct to use this macro
 macro_rules! withdraw {
     // both `from` and `to` are field names in ctx.accounts
-    ($ctx:ident, $from:ident, $to:ident, $amount:expr $(, $bond_manager_nesting:ident)?) => {
-        crate::utils::withdraw!($ctx, $ctx.accounts.$from.to_account_info(), $ctx.accounts.$to.to_account_info(), $amount $(, $bond_manager_nesting)?)
+    ($ctx:ident, $from:ident, $to:ident, $amount:expr $(,)?) => {
+        crate::utils::withdraw!(
+            $ctx,
+            $ctx.accounts.$from.to_account_info(),
+            $ctx.accounts.$to.to_account_info(),
+            $amount
+        )
     };
     // `from` is a field name in ctx.accounts, `to` is AccountInfo
     ($ctx:ident, $from:ident, $to:expr, $amount:expr $(, $bond_manager_nesting:ident)?) => {
-        crate::utils::withdraw!($ctx, $ctx.accounts.$from.to_account_info(), $to, $amount $(, $bond_manager_nesting)?)
+        crate::utils::withdraw!($ctx, $ctx.accounts.$from.to_account_info(), $to, $amount)
     };
     // both `from` and `to` are AccountInfo
-    ($ctx:ident, $from:expr, $to:expr, $amount:expr $(, $bond_manager_nesting:ident)?) => {
+    ($ctx:ident, $from:expr, $to:expr, $amount:expr $(, $bond_manager_nesting:ident)?) => {{
+        use crate::utils::BondManagerProvider;
+        use crate::utils::TokenProgramProvider;
         anchor_spl::token::transfer(
             anchor_lang::prelude::CpiContext::new(
-                $ctx.accounts.token_program.to_account_info(),
+                $ctx.accounts.token_program().to_account_info(),
                 anchor_spl::token::Transfer {
                     from: $from,
                     to: $to,
-                    authority: $ctx.accounts.$($bond_manager_nesting.)?bond_manager.to_account_info(),
+                    authority: $ctx.accounts.bond_manager().to_account_info(),
                 },
             )
-            .with_signer(&[&$ctx.accounts.$($bond_manager_nesting.)?bond_manager.load()?.authority_seeds()]),
+            .with_signer(&[&$ctx.accounts.bond_manager().load()?.authority_seeds()]),
             $amount,
         )
-    };
+    }};
 }
 pub(crate) use withdraw;
 
@@ -112,3 +135,20 @@ macro_rules! orderbook_accounts {
     };
 }
 pub(crate) use orderbook_accounts;
+
+/// Wraps an Accounts struct to use in these macros
+pub struct Ctx<'a, T> {
+    pub accounts: &'a T,
+}
+
+pub fn ctx<'a, T>(accounts: &'a T) -> Ctx<'a, T> {
+    Ctx { accounts }
+}
+
+pub trait BondManagerProvider<'info> {
+    fn bond_manager(&self) -> AccountLoader<'info, BondManager>;
+}
+
+pub trait TokenProgramProvider<'info> {
+    fn token_program(&self) -> Program<'info, Token>;
+}

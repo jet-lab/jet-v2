@@ -590,7 +590,7 @@ impl BondsIxBuilder {
             user,
             lender_tickets,
             orderbook_mut: self.orderbook_mut()?,
-            lend: jet_bonds::accounts::Lend {
+            lend: jet_bonds::accounts::LendOrder {
                 lender_tokens,
                 underlying_token_vault: self.underlying_token_vault,
                 split_ticket,
@@ -627,7 +627,7 @@ impl BondsIxBuilder {
             collateral: bonds_pda(&[jet_bonds::seeds::COLLATERAL_NOTES, margin_user.as_ref()]),
             collateral_mint: self.collateral,
             orderbook_mut: self.orderbook_mut()?,
-            lend: jet_bonds::accounts::Lend {
+            lend: jet_bonds::accounts::LendOrder {
                 lender_tokens,
                 underlying_token_vault: self.underlying_token_vault,
                 split_ticket,

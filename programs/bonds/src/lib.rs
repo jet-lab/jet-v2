@@ -144,12 +144,12 @@ pub mod jet_bonds {
 
     /// authorize an address to run orderbook consume_event instructions
     pub fn authorize_crank(ctx: Context<AuthorizeCrank>) -> Result<()> {
-        jet_bonds::instructions::authorize_crank::handler(ctx)
+        instructions::authorize_crank::handler(ctx)
     }
 
     /// unauthorize an address to run orderbook consume_event instructions
     pub fn revoke_crank(ctx: Context<RevokeCrank>) -> Result<()> {
-        jet_bonds::instructions::revoke_crank::handler(ctx)
+        instructions::revoke_crank::handler(ctx)
     }
 
     /// Initializes a BondManager for a bond ticket market
@@ -157,7 +157,7 @@ pub mod jet_bonds {
         ctx: Context<InitializeBondManager>,
         params: InitializeBondManagerParams,
     ) -> Result<()> {
-        jet_bonds::instructions::initialize_bond_manager::handler(ctx, params)
+        instructions::initialize_bond_manager::handler(ctx, params)
     }
 
     /// Initializes a new orderbook
@@ -165,7 +165,7 @@ pub mod jet_bonds {
         ctx: Context<InitializeOrderbook>,
         params: InitializeOrderbookParams,
     ) -> Result<()> {
-        jet_bonds::instructions::initialize_orderbook::handler(ctx, params)
+        instructions::initialize_orderbook::handler(ctx, params)
     }
 
     /// Modify a `BondManager` account
@@ -175,12 +175,12 @@ pub mod jet_bonds {
         data: Vec<u8>,
         offset: usize,
     ) -> Result<()> {
-        jet_bonds::instructions::modify_bond_manager::handler(ctx, data, offset)
+        instructions::modify_bond_manager::handler(ctx, data, offset)
     }
 
     /// Pause matching of orders placed in the orderbook
     pub fn pause_order_matching(ctx: Context<PauseOrderMatching>) -> Result<()> {
-        jet_bonds::instructions::pause_order_matching::handler(ctx)
+        instructions::pause_order_matching::handler(ctx)
     }
 
     /// Resume matching of orders placed in the orderbook
@@ -188,7 +188,7 @@ pub mod jet_bonds {
     /// existing matches. Check the `orderbook_market_state.pause_matching` variable
     /// to determine success
     pub fn resume_order_matching(ctx: Context<ResumeOrderMatching>) -> Result<()> {
-        jet_bonds::instructions::resume_order_matching::handler(ctx)
+        instructions::resume_order_matching::handler(ctx)
     }
     //
     // =============================================
@@ -201,7 +201,7 @@ pub mod jet_bonds {
 
     /// Create a new borrower account
     pub fn initialize_margin_user(ctx: Context<InitializeMarginUser>) -> Result<()> {
-        jet_bonds::instructions::initialize_margin_user::handler(ctx)
+        instructions::initialize_margin_user::handler(ctx)
     }
 
     /// Place a borrow order by leveraging margin account value
@@ -210,7 +210,7 @@ pub mod jet_bonds {
         params: OrderParams,
         seed: Vec<u8>,
     ) -> Result<()> {
-        jet_bonds::instructions::margin_borrow_order::handler(ctx, params, seed)
+        instructions::margin_borrow_order::handler(ctx, params, seed)
     }
 
     /// Place a `Lend` order to the book by depositing tokens
@@ -219,22 +219,22 @@ pub mod jet_bonds {
         params: OrderParams,
         seed: Vec<u8>,
     ) -> Result<()> {
-        jet_bonds::instructions::margin_lend_order::handler(ctx, params, seed)
+        instructions::margin_lend_order::handler(ctx, params, seed)
     }
 
     /// Refresh the associated margin account `claims` for a given `MarginUser` account
     pub fn refresh_position(ctx: Context<RefreshPosition>, expect_price: bool) -> Result<()> {
-        jet_bonds::instructions::refresh_position::handler(ctx, expect_price)
+        instructions::refresh_position::handler(ctx, expect_price)
     }
 
     /// Repay debt on an Obligation
     pub fn repay(ctx: Context<Repay>, amount: u64) -> Result<()> {
-        jet_bonds::instructions::repay::handler(ctx, amount)
+        instructions::repay::handler(ctx, amount)
     }
 
     /// Settle payments to a margin account
     pub fn settle(ctx: Context<Settle>) -> Result<()> {
-        jet_bonds::instructions::settle::handler(ctx)
+        instructions::settle::handler(ctx)
     }
 
     //
@@ -248,17 +248,17 @@ pub mod jet_bonds {
 
     /// Place an order to the book to sell tickets, which will burn them
     pub fn sell_tickets_order(ctx: Context<SellTicketsOrder>, params: OrderParams) -> Result<()> {
-        jet_bonds::instructions::sell_tickets_order::handler(ctx, params)
+        instructions::sell_tickets_order::handler(ctx, params)
     }
 
     /// Cancels an order on the book
     pub fn cancel_order(ctx: Context<CancelOrder>, order_id: u128) -> Result<()> {
-        jet_bonds::instructions::cancel_order::handler(ctx, order_id)
+        instructions::cancel_order::handler(ctx, order_id)
     }
 
     /// Place a `Lend` order to the book by depositing tokens
     pub fn lend_order(ctx: Context<LendOrder>, params: OrderParams, seed: Vec<u8>) -> Result<()> {
-        jet_bonds::instructions::lend_order::handler(ctx, params, seed)
+        instructions::lend_order::handler(ctx, params, seed)
     }
 
     /// Crank specific instruction, processes the event queue
@@ -267,7 +267,7 @@ pub mod jet_bonds {
         num_events: u32,
         seed_bytes: Vec<Vec<u8>>,
     ) -> Result<()> {
-        jet_bonds::instructions::consume_events::handler(ctx, num_events, seed_bytes)
+        instructions::consume_events::handler(ctx, num_events, seed_bytes)
     }
 
     //
@@ -282,12 +282,12 @@ pub mod jet_bonds {
     /// Exchange underlying token for bond tickets
     /// WARNING: tickets must be staked for redeption of underlying
     pub fn exchange_tokens(ctx: Context<ExchangeTokens>, amount: u64) -> Result<()> {
-        jet_bonds::instructions::exchange_tokens::handler(ctx, amount)
+        instructions::exchange_tokens::handler(ctx, amount)
     }
 
     /// Redeems staked tickets for their underlying value
     pub fn redeem_ticket(ctx: Context<RedeemTicket>) -> Result<()> {
-        jet_bonds::instructions::redeem_ticket::handler(ctx)
+        instructions::redeem_ticket::handler(ctx)
     }
 
     /// Stakes bond tickets for later redemption
@@ -295,7 +295,7 @@ pub mod jet_bonds {
         ctx: Context<StakeBondTickets>,
         params: StakeBondTicketsParams,
     ) -> Result<()> {
-        jet_bonds::instructions::stake_bond_tickets::handler(ctx, params)
+        instructions::stake_bond_tickets::handler(ctx, params)
     }
 
     /// Transfer staked tickets to a new owner
@@ -303,7 +303,7 @@ pub mod jet_bonds {
         ctx: Context<TransferTicketOwnership>,
         new_owner: Pubkey,
     ) -> Result<()> {
-        jet_bonds::instructions::transfer_ticket_ownership::handler(ctx, new_owner)
+        instructions::transfer_ticket_ownership::handler(ctx, new_owner)
     }
     //
     // =============================================
@@ -319,13 +319,13 @@ pub mod jet_bonds {
         ctx: Context<RegisterAdapter>,
         params: RegisterAdapterParams,
     ) -> Result<()> {
-        jet_bonds::instructions::register_adapter::handler(ctx, params)
+        instructions::register_adapter::handler(ctx, params)
     }
 
     /// Pop the given number of events off the adapter queue
     /// Event logic is left to the outside program
     pub fn pop_adapter_events(ctx: Context<PopAdapterEvents>, num_events: u32) -> Result<()> {
-        jet_bonds::instructions::pop_adapter_events::handler(ctx, num_events)
+        instructions::pop_adapter_events::handler(ctx, num_events)
     }
     //
     // =============================================

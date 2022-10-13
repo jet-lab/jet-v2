@@ -18,9 +18,9 @@ pub struct RedeemTicket<'info> {
     #[account(mut)]
     pub ticket: UncheckedAccount<'info>,
 
-    /// The account that owns the ticket
+    /// The account that must sign to redeem the ticket
     #[account(mut)]
-    pub ticket_holder: Signer<'info>,
+    pub authority: Signer<'info>,
 
     /// The token account designated to recieve the assets underlying the claim
     #[account(mut)]
@@ -41,64 +41,63 @@ pub struct RedeemTicket<'info> {
     pub token_program: Program<'info, Token>,
 }
 
-pub fn handler(ctx: Context<RedeemTicket>) -> Result<()> {
-    let redeemable: u64;
-    let maturation_timestamp: i64;
+impl<'info> RedeemTicket<'info> {
+    pub fn redeem(&self, ticket_holder: Pubkey) -> Result<u64> {
+        let redeemable: u64;
+        let maturation_timestamp: i64;
 
-    match deserialize_ticket(ctx.accounts.ticket.to_account_info())? {
-        TicketKind::Claim(ticket) => {
-            ticket.verify_owner_manager(
-                ctx.accounts.ticket_holder.key,
-                &ctx.accounts.bond_manager.key(),
-            )?;
-
-            redeemable = ticket.redeemable;
-            maturation_timestamp = ticket.maturation_timestamp;
-
-            ticket.close(ctx.accounts.ticket_holder.to_account_info())?;
+        match deserialize_ticket(self.ticket.to_account_info())? {
+            TicketKind::Claim(ticket) => {
+                ticket.verify_owner_manager(&ticket_holder, &self.bond_manager.key())?;
+                redeemable = ticket.redeemable;
+                maturation_timestamp = ticket.maturation_timestamp;
+                ticket.close(self.authority.to_account_info())?;
+            }
+            TicketKind::Split(ticket) => {
+                ticket.verify_owner_manager(&ticket_holder, &self.bond_manager.key())?;
+                redeemable = ticket.principal.safe_add(ticket.interest)?;
+                maturation_timestamp = ticket.maturation_timestamp;
+                ticket.close(self.authority.to_account_info())?;
+            }
         }
-        TicketKind::Split(ticket) => {
-            ticket.verify_owner_manager(
-                ctx.accounts.ticket_holder.key,
-                &ctx.accounts.bond_manager.key(),
-            )?;
 
-            redeemable = ticket.principal.safe_add(ticket.interest)?;
-            maturation_timestamp = ticket.maturation_timestamp;
-
-            ticket.close(ctx.accounts.ticket_holder.to_account_info())?;
+        let current_time = Clock::get()?.unix_timestamp;
+        if current_time < maturation_timestamp {
+            msg!(
+                "Matures at time: [{:?}]\nCurrent time: [{:?}]",
+                maturation_timestamp,
+                current_time
+            );
+            return err!(BondsError::ImmatureBond);
         }
-    }
 
-    let current_time = Clock::get()?.unix_timestamp;
-    if current_time < maturation_timestamp {
-        msg!(
-            "Matures at slot: [{:?}]\nCurrent Slot: [{:?}]",
+        // transfer from the vault to the bond_holder
+        transfer(
+            CpiContext::new(
+                self.token_program.to_account_info(),
+                Transfer {
+                    to: self.claimant_token_account.to_account_info(),
+                    from: self.underlying_token_vault.to_account_info(),
+                    authority: self.bond_manager.to_account_info(),
+                },
+            )
+            .with_signer(&[&self.bond_manager.load()?.authority_seeds()]),
+            redeemable,
+        )?;
+        emit!(TicketRedeemed {
+            bond_manager: self.bond_manager.key(),
+            ticket_holder,
+            redeemed_value: redeemable,
             maturation_timestamp,
-            current_time
-        );
-        return err!(BondsError::ImmatureBond);
-    }
+            redeemed_timestamp: current_time,
+        });
 
-    // transfer from the vault to the bond_holder
-    transfer(
-        CpiContext::new(
-            ctx.accounts.token_program.to_account_info(),
-            Transfer {
-                to: ctx.accounts.claimant_token_account.to_account_info(),
-                from: ctx.accounts.underlying_token_vault.to_account_info(),
-                authority: ctx.accounts.bond_manager.to_account_info(),
-            },
-        )
-        .with_signer(&[&ctx.accounts.bond_manager.load()?.authority_seeds()]),
-        redeemable,
-    )?;
-    emit!(TicketRedeemed {
-        bond_manager: ctx.accounts.bond_manager.key(),
-        ticket_holder: ctx.accounts.ticket_holder.key(),
-        redeemed_value: redeemable,
-        maturation_timestamp,
-        redeemed_timestamp: current_time,
-    });
+        Ok(redeemable)
+    }
+}
+
+pub fn handler(ctx: Context<RedeemTicket>) -> Result<()> {
+    ctx.accounts.redeem(ctx.accounts.authority.key())?;
+
     Ok(())
 }

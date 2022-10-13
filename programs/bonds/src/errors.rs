@@ -6,6 +6,8 @@ pub enum BondsError {
     ArithmeticOverflow,
     #[msg("underflow occured on checked_sub")]
     ArithmeticUnderflow,
+    #[msg("The margin user account must be settled before executing this instruction")]
+    AssetsUnsettled,
     #[msg("bad fixed-point division")]
     FixedPointDivision,
     #[msg("owner does not own the ticket")]
@@ -94,8 +96,10 @@ pub enum BondsError {
     WrongCollateralMint,
     #[msg("wrong oracle address was sent to instruction")]
     WrongOracle,
-    #[msg("wrong margin borrower account address was sent to instruction")]
+    #[msg("wrong margin user account address was sent to instruction")]
     WrongMarginUser,
+    #[msg("wrong authority for the margin user account address was sent to instruction")]
+    WrongMarginUserAuthority,
     #[msg("incorrect authority account")]
     WrongProgramAuthority,
     #[msg("not the ticket mint for this bond market")]

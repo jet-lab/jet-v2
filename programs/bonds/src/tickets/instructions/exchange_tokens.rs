@@ -1,11 +1,12 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{transfer, Mint, Token, TokenAccount, Transfer};
+use proc_macros::BondTokenManager;
 
 use crate::{
     control::state::BondManager, tickets::events::TokensExchanged, utils::mint_to, BondsError,
 };
 
-#[derive(Accounts)]
+#[derive(Accounts, BondTokenManager)]
 pub struct ExchangeTokens<'info> {
     /// The BondManager manages asset tokens for a particular bond duration
     #[account(

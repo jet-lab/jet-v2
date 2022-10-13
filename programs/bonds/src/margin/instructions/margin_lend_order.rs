@@ -1,24 +1,28 @@
 use agnostic_orderbook::state::Side;
 use anchor_lang::prelude::*;
 use anchor_spl::token::Token;
+use proc_macros::BondTokenManager;
 
 use crate::{
-    margin::state::MarginUser, orderbook::state::*, serialization::RemainingAccounts,
-    utils::mint_to, BondsError,
+    margin::state::MarginUser,
+    orderbook::{
+        instructions::lend_order::*,
+        state::{CallbackFlags, OrderParams},
+    },
+    serialization::RemainingAccounts,
+    utils::mint_to,
+    BondsError,
 };
 
-#[derive(Accounts)]
+#[derive(Accounts, BondTokenManager)]
 pub struct MarginLendOrder<'info> {
     /// The account tracking borrower debts
     #[account(
         mut,
-        has_one = margin_account,
+        constraint = margin_user.margin_account.key() == inner.authority.key(),
         has_one = collateral @ BondsError::WrongCollateralAccount,
     )]
     pub margin_user: Box<Account<'info, MarginUser>>,
-
-    /// The margin account for this borrow order
-    pub margin_account: Signer<'info>,
 
     /// Token account used by the margin program to track the debt that must be collateralized
     #[account(mut)]
@@ -28,13 +32,9 @@ pub struct MarginLendOrder<'info> {
     #[account(mut)]
     pub collateral_mint: AccountInfo<'info>,
 
-    pub orderbook_mut: OrderbookMut<'info>,
-
-    #[account(
-        constraint = lend.lender_mint() == orderbook_mut.underlying_mint() @ BondsError::WrongUnderlyingTokenMint,
-        constraint = lend.vault() == orderbook_mut.vault() @ BondsError::WrongVault,
-    )]
-    pub lend: Lend<'info>,
+    #[bond_manager(orderbook_mut)]
+    #[token_program]
+    pub inner: LendOrder<'info>,
 
     pub token_program: Program<'info, Token>,
     // Optional event adapter account
@@ -42,8 +42,8 @@ pub struct MarginLendOrder<'info> {
 }
 
 pub fn handler(ctx: Context<MarginLendOrder>, params: OrderParams, seed: Vec<u8>) -> Result<()> {
-    let (callback_info, order_summary) = ctx.accounts.orderbook_mut.place_order(
-        ctx.accounts.margin_account.key(),
+    let (callback_info, order_summary) = ctx.accounts.inner.orderbook_mut.place_order(
+        ctx.accounts.inner.authority.key(),
         Side::Bid,
         params,
         ctx.accounts.margin_user.key(),
@@ -52,26 +52,24 @@ pub fn handler(ctx: Context<MarginLendOrder>, params: OrderParams, seed: Vec<u8>
             .iter()
             .maybe_next_adapter()?
             .map(|a| a.key()),
-        CallbackFlags::empty(),
+        CallbackFlags::MARGIN,
     )?;
-    ctx.accounts.lend.lend(
+    let staked = ctx.accounts.inner.lend(
         ctx.accounts.margin_user.key(),
-        ctx.accounts.margin_account.to_account_info(),
         &seed,
         callback_info,
         &order_summary,
-        &ctx.accounts.orderbook_mut.bond_manager,
+        &ctx.accounts.inner.orderbook_mut.bond_manager,
     )?;
     mint_to!(
         ctx,
         collateral_mint,
         collateral,
-        order_summary.quote_combined()?,
-        orderbook_mut
+        staked + order_summary.quote_posted()?,
     )?;
     emit!(crate::events::MarginLend {
-        bond_market: ctx.accounts.orderbook_mut.bond_manager.key(),
-        margin_account: ctx.accounts.margin_account.key(),
+        bond_market: ctx.accounts.inner.orderbook_mut.bond_manager.key(),
+        margin_account: ctx.accounts.inner.authority.key(),
         lender: ctx.accounts.margin_user.key(),
         order_summary: order_summary.summary(),
     });

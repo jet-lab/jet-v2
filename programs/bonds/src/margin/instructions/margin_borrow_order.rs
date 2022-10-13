@@ -2,6 +2,7 @@ use agnostic_orderbook::state::Side;
 use anchor_lang::prelude::*;
 use anchor_spl::token::Token;
 use jet_margin::{AdapterResult, PositionChange};
+use proc_macros::BondTokenManager;
 
 use crate::{
     margin::{
@@ -14,7 +15,7 @@ use crate::{
     BondsError,
 };
 
-#[derive(Accounts)]
+#[derive(Accounts, BondTokenManager)]
 pub struct MarginBorrowOrder<'info> {
     /// The account tracking borrower debts
     #[account(
@@ -50,6 +51,7 @@ pub struct MarginBorrowOrder<'info> {
     #[account(mut)]
     pub collateral_mint: AccountInfo<'info>,
 
+    #[bond_manager]
     pub orderbook_mut: OrderbookMut<'info>,
 
     /// payer for `Obligation` initialization
@@ -102,13 +104,12 @@ pub fn handler(ctx: Context<MarginBorrowOrder>, params: OrderParams, seed: Vec<u
         };
     }
     let total_debt = order_summary.base_combined();
-    mint_to!(ctx, claims_mint, claims, total_debt, orderbook_mut)?;
+    mint_to!(ctx, claims_mint, claims, total_debt)?;
     mint_to!(
         ctx,
         collateral_mint,
         collateral,
-        order_summary.quote_combined()?,
-        orderbook_mut
+        order_summary.quote_posted()?
     )?;
 
     emit!(MarginBorrow {
