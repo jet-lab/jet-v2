@@ -3,12 +3,17 @@ use anchor_lang::prelude::*;
 use anchor_spl::token::{accessor::mint, Mint, Token, TokenAccount};
 use proc_macros::BondTokenManager;
 
-use crate::{orderbook::state::*, serialization::RemainingAccounts, BondsError, utils::{withdraw, ctx}};
+use crate::{
+    orderbook::state::*,
+    serialization::RemainingAccounts,
+    utils::{ctx, withdraw},
+    BondsError,
+};
 
 #[derive(Accounts, BondTokenManager)]
 pub struct SellTicketsOrder<'info> {
     /// Signing authority over the ticket vault transferring for a borrow order
-    pub owner: Signer<'info>,
+    pub authority: Signer<'info>,
 
     /// Account containing the bond tickets being sold
     #[account(mut, constraint =
@@ -54,24 +59,24 @@ impl<'info> SellTicketsOrder<'info> {
                 anchor_spl::token::Burn {
                     mint: self.bond_ticket_mint.to_account_info(),
                     from: self.user_ticket_vault.to_account_info(),
-                    authority: self.owner.to_account_info(),
+                    authority: self.authority.to_account_info(),
                 },
             ),
             order_summary.base_combined(),
         )?;
         emit!(crate::events::SellTicketsOrder {
             bond_market: self.orderbook_mut.bond_manager.key(),
-            owner: self.owner.key(),
+            owner: self.authority.key(),
             order_summary: order_summary.summary(),
         });
-    
+
         Ok(())
     }
 }
 
 pub fn handler(ctx: Context<SellTicketsOrder>, params: OrderParams) -> Result<()> {
     let (_, order_summary) = ctx.accounts.orderbook_mut.place_order(
-        ctx.accounts.owner.key(),
+        ctx.accounts.authority.key(),
         Side::Ask,
         params,
         ctx.accounts.user_token_vault.key(),

@@ -14,7 +14,7 @@ use crate::{
     margin::state::{Obligation, ObligationFlags},
     orderbook::state::{fp32_mul, CallbackFlags, CallbackInfo, FillInfo, OutInfo},
     tickets::state::SplitTicket,
-    utils::{mint_to, withdraw, map},
+    utils::{map, mint_to, withdraw},
     BondsError,
 };
 

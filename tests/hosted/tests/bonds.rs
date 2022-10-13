@@ -125,12 +125,10 @@ async fn _full_workflow<P: Proxy + GenerateProxy>(manager: Arc<BondsTestManager>
     const STAKE_AMOUNT: u64 = 10_000;
     let ticket_seed = vec![];
 
-    alice
-        .stake_tokens(STAKE_AMOUNT, ticket_seed.clone())
-        .await?;
+    alice.stake_tokens(STAKE_AMOUNT, &ticket_seed).await?;
     assert_eq!(alice.tickets().await?, START_TICKETS - STAKE_AMOUNT);
 
-    let ticket = alice.load_claim_ticket(ticket_seed.clone()).await?;
+    let ticket = alice.load_claim_ticket(&ticket_seed).await?;
     assert_eq!(ticket.redeemable, STAKE_AMOUNT);
     assert_eq!(ticket.bond_manager, manager.ix_builder.manager());
     assert_eq!(ticket.owner, alice.proxy.pubkey());
@@ -139,7 +137,7 @@ async fn _full_workflow<P: Proxy + GenerateProxy>(manager: Arc<BondsTestManager>
     let bond_manager = manager.load_manager().await?;
 
     assert!(bond_manager.tickets_paused);
-    assert!(alice.redeem_claim_ticket(ticket_seed).await.is_err());
+    assert!(alice.redeem_claim_ticket(&ticket_seed).await.is_err());
 
     manager.resume_ticket_redemption().await?;
 
@@ -193,7 +191,7 @@ async fn _full_workflow<P: Proxy + GenerateProxy>(manager: Arc<BondsTestManager>
         post_allowed: true,
         auto_stake: true,
     };
-    bob.lend_order(lend_params, vec![]).await?;
+    bob.lend_order(lend_params, &[]).await?;
 
     assert_eq!(bob.tokens().await?, STARTING_TOKENS - lend_amount.quote);
 

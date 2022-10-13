@@ -170,7 +170,7 @@ impl<'a> User<'a> {
         let lend = self
             .client
             .ix
-            .lend_order(self.key(), None, None, params, vec![])?;
+            .lend_order(self.key(), None, None, params, &[])?;
 
         self.send_instructions(&[lend])
     }

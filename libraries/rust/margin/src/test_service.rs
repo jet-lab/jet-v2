@@ -232,6 +232,7 @@ fn create_airspace_token_bond_markets_tx(
             bond_manager_seed,
             config.authority,
             derive_pyth_price(&mint),
+            Pubkey::default(), //todo oracle
         );
 
         txs.push(TransactionBuilder {
@@ -258,13 +259,7 @@ fn create_airspace_token_bond_markets_tx(
                     &jet_bonds::ID,
                 ),
                 bonds_ix
-                    .initialize_manager(
-                        config.authority,
-                        0,
-                        bond_manager_seed,
-                        bm_config.duration,
-                        Pubkey::default(),
-                    )
+                    .initialize_manager(config.authority, 0, bond_manager_seed, bm_config.duration)
                     .unwrap(),
                 bonds_ix
                     .initialize_orderbook(

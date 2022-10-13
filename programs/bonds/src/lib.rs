@@ -213,6 +213,19 @@ pub mod jet_bonds {
         instructions::margin_borrow_order::handler(ctx, params, seed)
     }
 
+    /// Sell tickets that are already owned
+    pub fn margin_sell_tickets_order(
+        ctx: Context<MarginSellTicketsOrder>,
+        params: OrderParams,
+    ) -> Result<()> {
+        instructions::margin_sell_tickets_order::handler(ctx, params)
+    }
+
+    /// Redeem a staked ticket
+    pub fn margin_redeem_ticket(ctx: Context<MarginRedeemTicket>) -> Result<()> {
+        instructions::margin_redeem_ticket::handler(ctx)
+    }
+
     /// Place a `Lend` order to the book by depositing tokens
     pub fn margin_lend_order(
         ctx: Context<MarginLendOrder>,

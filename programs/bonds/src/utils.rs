@@ -140,7 +140,7 @@ pub struct Ctx<'a, T> {
     pub accounts: &'a T,
 }
 
-pub fn ctx<'a, T>(accounts: &'a T) -> Ctx<'a, T> {
+pub fn ctx<T>(accounts: &T) -> Ctx<'_, T> {
     Ctx { accounts }
 }
 

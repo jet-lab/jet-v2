@@ -11,9 +11,9 @@ use syn::{self, DeriveInput};
 /// with #[token_manager(subfield)]. If token_manager is another level deep
 /// within "subsubfield", use #[token_manager(subfield::subsubfield)]. There is
 /// no limit to the accessible depth.
-/// 
+///
 /// Examples
-/// 
+///
 /// ```ignore
 /// #[derive(BondTokenManager)]
 /// struct BaseCase<'info> {
@@ -21,7 +21,7 @@ use syn::{self, DeriveInput};
 ///     token_program: Program<'info, Token>,
 /// }
 /// ```
-/// 
+///
 /// ```ignore
 /// #[derive(BondTokenManager)]
 /// struct Top<'info> {
@@ -29,12 +29,12 @@ use syn::{self, DeriveInput};
 ///     nested: Bottom<'info>,
 ///     token_program: Program<'info, Token>,
 /// }
-/// 
+///
 /// struct Bottom<'info> {
 ///     bond_manager: AccountLoader<'info, BondManager>,
 /// }
 /// ```
-/// 
+///
 /// ```ignore
 /// #[derive(BondTokenManager)]
 /// struct Top<'info> {
@@ -42,16 +42,16 @@ use syn::{self, DeriveInput};
 ///     #[token_program(mid_two::bottom)]
 ///     mid_one: MiddleOne<'info>,
 /// }
-/// 
+///
 /// struct MiddleOne<'info> {
 ///     mid_two: MiddleTwo<'info>,
 /// }
-/// 
+///
 /// struct MiddleTwo<'info> {
 ///     bond_manager: AccountLoader<'info, BondManager>,
 ///     bottom: Bottom<'info>,
 /// }
-/// 
+///
 /// struct Bottom<'info> {
 ///     token_program: Program<'info, Token>,
 /// }
@@ -67,7 +67,7 @@ pub fn bond_token_manager_derive(input: TokenStream) -> TokenStream {
 fn impl_bond_manager_provider(ast: &DeriveInput) -> quote::__private::TokenStream {
     let name = &ast.ident;
     let lt = &ast.generics.lifetimes().next();
-    let accessor = find_attr_path_as_accessor(&ast, "bond_manager").unwrap_or_default();
+    let accessor = find_attr_path_as_accessor(ast, "bond_manager").unwrap_or_default();
     quote! {
         impl<#lt> crate::utils::BondManagerProvider<#lt> for #name<#lt> {
             fn bond_manager(&self) -> anchor_lang::prelude::AccountLoader<#lt, crate::control::state::BondManager> {
@@ -80,7 +80,7 @@ fn impl_bond_manager_provider(ast: &DeriveInput) -> quote::__private::TokenStrea
 fn impl_token_program_provider(ast: &DeriveInput) -> quote::__private::TokenStream {
     let name = &ast.ident;
     let lt = &ast.generics.lifetimes().next();
-    let accessor = find_attr_path_as_accessor(&ast, "token_program").unwrap_or_default();
+    let accessor = find_attr_path_as_accessor(ast, "token_program").unwrap_or_default();
     quote! {
         impl<#lt> crate::utils::TokenProgramProvider<#lt> for #name<#lt> {
             fn token_program(&self) -> anchor_lang::prelude::Program<#lt, anchor_spl::token::Token> {
@@ -95,7 +95,7 @@ fn impl_token_program_provider(ast: &DeriveInput) -> quote::__private::TokenStre
 /// use to access a field with the name `attr_name` within the annotated field
 /// of this struct. It will also include any path passed as an argument as
 /// intermediary fields.
-/// 
+///
 /// ```ignore
 /// /// Searching this struct for "thing" returns ".bar.thing"
 /// struct Foo {
@@ -103,7 +103,7 @@ fn impl_token_program_provider(ast: &DeriveInput) -> quote::__private::TokenStre
 ///     bar: Bar,
 /// }
 /// ```
-/// 
+///
 /// ```ignore
 /// /// Searching this struct for "thing" returns ".bar.some.nesting.thing"
 /// struct Foo {
@@ -111,7 +111,7 @@ fn impl_token_program_provider(ast: &DeriveInput) -> quote::__private::TokenStre
 ///     bar: Bar,
 /// }
 /// ```
-/// 
+///
 /// Returns None if not a struct or there is no field with the attribute.
 fn find_attr_path_as_accessor(
     ast: &DeriveInput,

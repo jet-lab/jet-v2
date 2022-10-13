@@ -120,7 +120,12 @@ impl TestManager {
             .await?;
         let bond_ticket_mint = bonds_pda(&[
             jet_bonds::seeds::BOND_TICKET_MINT,
-            BondsIxBuilder::bond_manager_key(&mint.pubkey(), BOND_MANAGER_SEED).as_ref(),
+            BondsIxBuilder::bond_manager_key(
+                &Pubkey::default(), //todo airspace
+                &mint.pubkey(),
+                BOND_MANAGER_SEED,
+            )
+            .as_ref(),
         ]);
         let ticket_oracle = TokenManager::new(client.clone())
             .create_oracle(&bond_ticket_mint)
@@ -652,7 +657,7 @@ impl<P: Proxy> BondsUser<P> {
             .await
     }
 
-    pub async fn stake_tokens(&self, amount: u64, seed: Vec<u8>) -> Result<Signature> {
+    pub async fn stake_tokens(&self, amount: u64, seed: &[u8]) -> Result<Signature> {
         let ix = self
             .manager
             .ix_builder
@@ -663,7 +668,7 @@ impl<P: Proxy> BondsUser<P> {
             .await
     }
 
-    pub async fn redeem_claim_ticket(&self, seed: Vec<u8>) -> Result<Signature> {
+    pub async fn redeem_claim_ticket(&self, seed: &[u8]) -> Result<Signature> {
         let ticket = self.claim_ticket_key(seed);
         let ix = self
             .manager
@@ -697,7 +702,7 @@ impl<P: Proxy> BondsUser<P> {
             .await
     }
 
-    pub async fn lend_order(&self, params: OrderParams, seed: Vec<u8>) -> Result<Signature> {
+    pub async fn lend_order(&self, params: OrderParams, seed: &[u8]) -> Result<Signature> {
         let lend =
             self.manager
                 .ix_builder
@@ -719,12 +724,12 @@ impl<P: Proxy> BondsUser<P> {
 }
 
 impl<P: Proxy> BondsUser<P> {
-    pub fn claim_ticket_key(&self, seed: Vec<u8>) -> Pubkey {
+    pub fn claim_ticket_key(&self, seed: &[u8]) -> Pubkey {
         self.manager
             .ix_builder
             .claim_ticket_key(&self.proxy.pubkey(), seed)
     }
-    pub async fn load_claim_ticket(&self, seed: Vec<u8>) -> Result<ClaimTicket> {
+    pub async fn load_claim_ticket(&self, seed: &[u8]) -> Result<ClaimTicket> {
         let key = self.claim_ticket_key(seed);
 
         self.manager.load_anchor(&key).await

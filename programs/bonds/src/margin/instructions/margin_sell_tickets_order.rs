@@ -17,7 +17,7 @@ use crate::{
 pub struct MarginSellTicketsOrder<'info> {
     /// The account tracking borrower debts
     #[account(mut,
-        constraint = margin_user.margin_account == inner.owner.key() @ BondsError::UnauthorizedCaller,
+        constraint = margin_user.margin_account == inner.authority.key() @ BondsError::UnauthorizedCaller,
         has_one = collateral @ BondsError::WrongCollateralAccount,
     )]
     pub margin_user: Box<Account<'info, MarginUser>>,
@@ -37,7 +37,7 @@ pub struct MarginSellTicketsOrder<'info> {
 
 pub fn handler(ctx: Context<MarginSellTicketsOrder>, params: OrderParams) -> Result<()> {
     let (_, order_summary) = ctx.accounts.inner.orderbook_mut.place_order(
-        ctx.accounts.inner.owner.key(),
+        ctx.accounts.inner.authority.key(),
         Side::Ask,
         params,
         ctx.accounts.margin_user.key(),

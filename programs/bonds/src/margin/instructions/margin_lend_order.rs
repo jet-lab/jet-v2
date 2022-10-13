@@ -34,7 +34,6 @@ pub struct MarginLendOrder<'info> {
     #[bond_manager(orderbook_mut)]
     #[token_program]
     pub inner: LendOrder<'info>,
-
     // Optional event adapter account
     // pub event_adapter: AccountInfo<'info>,
 }
