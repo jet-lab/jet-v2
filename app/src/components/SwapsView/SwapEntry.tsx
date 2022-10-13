@@ -26,7 +26,7 @@ import { ReorderArrows } from '../misc/ReorderArrows';
 import { ConnectionFeedback } from '../misc/ConnectionFeedback/ConnectionFeedback';
 import { ArrowRight } from '../modals/actions/ArrowRight';
 import { Button, Checkbox, Input, Radio, Typography } from 'antd';
-import SwapIcon from '../../styles/icons/function-swap.svg';
+import SwapIcon from '../../assets/icons/function-swap.svg';
 import { CurrentSplSwapPool, hasOrcaPool, SwapFees, SwapPoolTokenAmounts } from '../../state/swap/splSwap';
 import { useTokenInputDisabledMessage, useTokenInputErrorMessage } from '../../utils/actions/tokenInput';
 

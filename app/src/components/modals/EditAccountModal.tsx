@@ -79,7 +79,7 @@ export function EditAccountModal(): JSX.Element {
       <Modal
         className="header-modal edit-account-modal"
         maskClosable={false}
-        visible={editAccountModalOpen}
+        open={editAccountModalOpen}
         onCancel={resetEditAccountModal}
         onOk={changeAccountName}
         okText={dictionary.settingsModal.save}

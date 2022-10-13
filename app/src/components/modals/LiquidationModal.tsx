@@ -34,7 +34,7 @@ export function LiquidationModal(): JSX.Element {
   // If our current account is being liquidated
   if (currentAccount && currentAccount.isBeingLiquidated) {
     return (
-      <Modal visible className="liquidation-modal" maskClosable={false} footer={null} closable={false}>
+      <Modal open className="liquidation-modal" maskClosable={false} footer={null} closable={false}>
         <Title type="danger">
           <WarningFilled />
           {dictionary.modals.alerts.liquidation.title}

@@ -1,18 +1,27 @@
 const path = require('path');
 const { ProvidePlugin, DefinePlugin } = require('webpack');
 const dotenv = require('dotenv');
-
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 module.exports = {
   entry: './src/index.tsx',
   output: {
+    filename: 'bundle.[contenthash].js',
     path: path.join(__dirname, '/build'),
-    filename: 'bundle.js'
+    clean: true
   },
   devtool: 'source-map',
   devServer: {
+    static: {
+      directory: path.resolve(__dirname, 'public')
+    },
     port: 3000,
-    historyApiFallback: true
+    open: true,
+    hot: true,
+    compress: true,
+    historyApiFallback: true,
+    client: {
+      logging: 'info'
+    }
   },
   module: {
     rules: [
