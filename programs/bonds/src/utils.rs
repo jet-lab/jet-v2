@@ -151,3 +151,12 @@ pub trait BondManagerProvider<'info> {
 pub trait TokenProgramProvider<'info> {
     fn token_program(&self) -> Program<'info, Token>;
 }
+
+macro_rules! map {
+    ($option:ident.$($tt:tt)*) => {
+        if let Some(x) = $option.as_mut() {
+            x.$($tt)*
+        }
+    };
+}
+pub(crate) use map;

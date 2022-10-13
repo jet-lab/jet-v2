@@ -10,7 +10,6 @@ use crate::{
 pub struct MarginRedeemTicket<'info> {
     #[account(mut,
 		constraint = margin_user.margin_account == inner.authority.key() @ BondsError::WrongMarginUserAuthority,
-		constraint = margin_user.assets.is_settled() @ BondsError::AssetsUnsettled,
         has_one = collateral,
 	)]
     pub margin_user: Account<'info, MarginUser>,
@@ -33,6 +32,7 @@ pub fn handler(ctx: Context<MarginRedeemTicket>) -> Result<()> {
         .accounts
         .inner
         .redeem(ctx.accounts.inner.authority.key())?;
+    ctx.accounts.margin_user.assets.redeem_staked_tickets(redeemed);
     burn_notes!(ctx, collateral_mint, collateral, redeemed)?;
 
     Ok(())

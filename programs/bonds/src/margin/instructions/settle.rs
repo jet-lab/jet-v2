@@ -61,24 +61,45 @@ pub struct Settle<'info> {
 
 pub fn handler(ctx: Context<Settle>) -> Result<()> {
     let claim_balance = ctx.accounts.claims.amount;
+    let ctokens_held = ctx.accounts.collateral.amount;
     let assets = &ctx.accounts.margin_user.assets;
-    let debt = &ctx.accounts.margin_user.debt;
-    let total = debt.total();
+    let debt = ctx.accounts.margin_user.debt.total();
+    let ctokens_deserved = assets.collateral()?;
 
-    if claim_balance > total {
-        burn_notes!(ctx, claims_mint, claims, claim_balance - total)?;
+    // Notify margin of the current debt owed to bonds
+    if claim_balance > debt {
+        burn_notes!(ctx, claims_mint, claims, claim_balance - debt)?;
     }
-    if claim_balance < total {
-        mint_to!(ctx, claims_mint, claims, total - claim_balance)?;
+    if claim_balance < debt {
+        mint_to!(ctx, claims_mint, claims, debt - claim_balance)?;
     }
 
+    // Notify margin of the amount of collateral that will in the custody of
+    // bonds after this settlement
+    if ctokens_held > ctokens_deserved {
+        burn_notes!(
+            ctx,
+            collateral_mint,
+            collateral,
+            ctokens_held - ctokens_deserved
+        )?;
+    }
+    if ctokens_held < ctokens_deserved {
+        mint_to!(
+            ctx,
+            collateral_mint,
+            collateral,
+            ctokens_deserved - ctokens_held
+        )?;
+    }
+
+    // Disburse entitled funds due to fills
     mint_to!(
         ctx,
         bond_ticket_mint,
         ticket_settlement,
         assets.entitled_tickets
     )?;
-
     withdraw!(
         ctx,
         underlying_token_vault,
@@ -86,28 +107,9 @@ pub fn handler(ctx: Context<Settle>) -> Result<()> {
         assets.entitled_tokens
     )?;
 
-    if assets.collateral_to_burn > assets.entitled_collateral {
-        burn_notes!(
-            ctx,
-            collateral_mint,
-            collateral,
-            assets.collateral_to_burn - assets.entitled_collateral //todo account for defensive rounding, this may need to be minned with balance
-        )?;
-    }
-    if assets.collateral_to_burn < assets.entitled_collateral {
-        mint_to!(
-            ctx,
-            collateral_mint,
-            collateral,
-            assets.entitled_collateral - assets.collateral_to_burn //todo account for defensive rounding, this may need to be minned with balance
-        )?;
-    }
-
-    let assets = &mut ctx.accounts.margin_user.assets;
-    assets.entitled_tickets = 0;
-    assets.entitled_tokens = 0;
-    assets.collateral_to_burn = 0;
-    assets.entitled_collateral = 0;
+    // Update margin user assets to reflect the settlement
+    ctx.accounts.margin_user.assets.entitled_tickets = 0;
+    ctx.accounts.margin_user.assets.entitled_tokens = 0;
 
     Ok(())
 }

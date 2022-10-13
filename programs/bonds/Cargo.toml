@@ -19,6 +19,9 @@ cli = ["no-entrypoint", "serde"]
 mock-margin = []
 testing = ["jet-margin/testing"]
 
+[profile.release]
+overflow-checks = true
+
 [dependencies]
 arrayref = "0.3.6"
 bitflags = "1.0.3"

@@ -14,7 +14,7 @@ use crate::{
     margin::state::{Obligation, ObligationFlags},
     orderbook::state::{fp32_mul, CallbackFlags, CallbackInfo, FillInfo, OutInfo},
     tickets::state::SplitTicket,
-    utils::{mint_to, withdraw},
+    utils::{mint_to, withdraw, map},
     BondsError,
 };
 
@@ -90,19 +90,21 @@ fn handle_fill<'info>(
         quote_size,
         base_size,
         ..
-    } = event;
-    let maker_side = Side::from_u8(*taker_side).unwrap().opposite();
+    } = *event;
+    let maker_side = Side::from_u8(taker_side).unwrap().opposite();
     let fill_timestamp = taker_info.order_submitted_timestamp();
     let maturation_timestamp = duration.safe_add(fill_timestamp)?;
+    let mut margin_user = maker_info
+        .flags
+        .contains(CallbackFlags::MARGIN)
+        .then_some(maker.margin_user()?);
 
     match maker_side {
         Side::Bid => {
-            if maker_info.flags.contains(CallbackFlags::MARGIN) {
-                maker.margin_user()?.assets.collateral_to_burn += quote_size;
-            }
+            map!(margin_user.assets.reduce_order(quote_size));
             if maker_info.flags.contains(CallbackFlags::AUTO_STAKE) {
-                maker.margin_user()?.assets.entitled_collateral += base_size;
-                let principal = *quote_size;
+                map!(margin_user.assets.stake_tickets(quote_size)?);
+                let principal = quote_size;
                 let interest = base_size.safe_sub(principal)?;
                 *loan.unwrap().auto_stake()? = SplitTicket {
                     owner: maker.pubkey(),
@@ -113,28 +115,27 @@ fn handle_fill<'info>(
                     principal,
                     interest,
                 };
-            } else if maker_info.flags.contains(CallbackFlags::MARGIN) {
-                maker.margin_user()?.assets.entitled_tickets += base_size;
+            } else if let Some(mut margin_user) = margin_user {
+                margin_user.assets.entitled_tickets += base_size;
             } else {
-                mint_to!(ctx, bond_ticket_mint, maker.as_token_account(), *base_size)?;
+                mint_to!(ctx, bond_ticket_mint, maker.as_token_account(), base_size)?;
             }
         }
         Side::Ask => {
-            if maker_info.flags.contains(CallbackFlags::MARGIN) {
-                let mut margin_user = maker.margin_user()?;
+            if let Some(mut margin_user) = margin_user {
+                margin_user.assets.reduce_order(quote_size);
                 margin_user.assets.entitled_tokens += quote_size;
-                margin_user.assets.collateral_to_burn += quote_size;
                 if maker_info.flags.contains(CallbackFlags::NEW_DEBT) {
                     let sequence_number = margin_user
                         .debt
-                        .new_obligation_from_fill(*base_size, maturation_timestamp)?;
+                        .new_obligation_from_fill(base_size, maturation_timestamp)?;
                     *loan.unwrap().new_debt()? = Obligation {
                         sequence_number,
                         borrower_account: margin_user.key(),
                         bond_manager: ctx.accounts.bond_manager.key(),
                         order_tag: maker_info.order_tag,
                         maturation_timestamp,
-                        balance: *base_size,
+                        balance: base_size,
                         flags: ObligationFlags::default(),
                     };
                 }
@@ -143,7 +144,7 @@ fn handle_fill<'info>(
                     ctx,
                     underlying_token_vault,
                     maker.as_token_account(),
-                    *quote_size
+                    quote_size
                 )?;
             }
         }

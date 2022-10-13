@@ -6,8 +6,6 @@ pub enum BondsError {
     ArithmeticOverflow,
     #[msg("underflow occured on checked_sub")]
     ArithmeticUnderflow,
-    #[msg("The margin user account must be settled before executing this instruction")]
-    AssetsUnsettled,
     #[msg("bad fixed-point division")]
     FixedPointDivision,
     #[msg("owner does not own the ticket")]
