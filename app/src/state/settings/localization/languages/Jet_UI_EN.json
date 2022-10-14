@@ -29,6 +29,7 @@
     "availableCollateral": "Available Collateral",
     "risk": "Risk",
     "riskLevel": "Risk Level",
+    "priceImpact": "Price Impact",
     "publicKey": "Public Key",
     "balance": "Balance",
     "wallet": "Wallet",
@@ -133,7 +134,8 @@
         "noBalanceForSwap": "You have no {{ASSET}} in your {{WALLET_OR_ACCOUNT}} to swap."
       },
       "warningMessages": {
-        "maxSlippageExceeded": "This swap would have exceeded your max slippage. Please try again."
+        "maxSlippageExceeded": "This swap would have exceeded your max slippage. Please try again.",
+        "largePriceImpact": "This swap will move the pool price significantly. Please choose a lower amount."
       },
       "errorMessages": {
         "noPools": "There are no swap pools found for this pair. Please try another output token."

@@ -21,7 +21,6 @@ function constantProductSwap(sourceAmount: number, swapSourceAmount: number, swa
 }
 
 // Calculate token output based on current prices
-// TODO: add a variable for pool type (stable vs constantProduct)
 export function getOutputTokenAmount(
   swapAmount: TokenAmount | undefined,
   sourceTokenAmount: TokenAmount | undefined,
