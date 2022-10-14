@@ -1,7 +1,7 @@
-* @suscd @partiallysorted @nevi-me @dnut @jetjake @tristyn @zachanon
+* @suscd @nevi-me @dnut @jetjake @zachanon
 .dockerignore @dnut @suscd @jetjake @davodesign84
 .github/ @dnut @suscd @jetjake @davodesign84
 Dockerfile @dnut @suscd @jetjake @davodesign84
 programs/ @dnut @suscd
 programs/bonds/ @dnut @suscd @zachanon
-app/ @davodesign84 @qiqicodes
+app/ @davodesign84 @qiqicodes @nevi-me
