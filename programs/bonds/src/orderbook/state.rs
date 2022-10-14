@@ -89,6 +89,12 @@ impl<'info> OrderbookMut<'info> {
             post_allowed,
             auto_stake: _,
         } = params;
+
+        // No orders should have an interest rate <=0
+        if max_underlying_token_qty >= max_bond_ticket_qty {
+            return err!(BondsError::InvalidInterest);
+        }
+
         let mut manager = self.bond_manager.load_mut()?;
         let callback_info = CallbackInfo::new(
             self.bond_manager.key(),
