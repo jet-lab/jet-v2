@@ -158,7 +158,7 @@ export class BondMarket {
     const limitPrice = new BN(rate_to_price(BigInt(rate.toString()), BigInt(this.info.duration.toString())).toString())
     // TODO: rethink amounts here, current is placeholder
     const params: OrderParams = {
-      maxBondTicketQty: amount,
+      maxBondTicketQty: amount.add(new BN(1)),
       maxUnderlyingTokenQty: amount,
       limitPrice,
       matchLimit: new BN(U64_MAX.toString()),
@@ -176,7 +176,7 @@ export class BondMarket {
   ): Promise<TransactionInstruction> {
     // TODO: rethink amounts here, current is placeholder
     const params: OrderParams = {
-      maxBondTicketQty: amount,
+      maxBondTicketQty: amount.add(new BN(1)),
       maxUnderlyingTokenQty: amount,
       limitPrice: new BN(U64_MAX.toString()),
       matchLimit: new BN(U64_MAX.toString()),
