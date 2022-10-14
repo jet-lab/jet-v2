@@ -25,17 +25,13 @@ pub fn handler<'info>(
     num_events: u32,
     seeds: Vec<Vec<u8>>,
 ) -> Result<()> {
-    let duration = ctx.accounts.bond_manager.load()?.duration;
-
     let mut num_iters = 0;
     for event in queue(&ctx, seeds)?.take(num_events as usize) {
         let (accounts, event) = event?;
 
         // Delegate event processing to the appropriate handler
         match accounts {
-            EventAccounts::Fill(accounts) => {
-                handle_fill(&ctx, duration, accounts, &event.unwrap_fill()?)
-            }
+            EventAccounts::Fill(accounts) => handle_fill(&ctx, accounts, &event.unwrap_fill()?),
             EventAccounts::Out(accounts) => handle_out(&ctx, *accounts, &event.unwrap_out()?),
         }?;
 
@@ -61,7 +57,6 @@ pub fn handler<'info>(
 
 fn handle_fill<'info>(
     ctx: &Context<'_, '_, '_, 'info, ConsumeEvents<'info>>,
-    duration: i64,
     accounts: Box<FillAccounts<'info>>,
     fill: &FillInfo,
 ) -> Result<()> {
@@ -91,9 +86,13 @@ fn handle_fill<'info>(
         base_size,
         ..
     } = event;
+    let manager = ctx.accounts.bond_manager.load()?;
     let maker_side = Side::from_u8(*taker_side).unwrap().opposite();
     let fill_timestamp = taker_info.order_submitted_timestamp();
-    let maturation_timestamp = duration.safe_add(fill_timestamp)?;
+    let maturation_timestamp = manager
+        .duration
+        .safe_add(fill_timestamp)?
+        .safe_add(manager.deposit_duration)?;
 
     match maker_side {
         Side::Bid => {

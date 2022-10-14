@@ -79,6 +79,9 @@ pub struct BondMarketConfig {
     /// The duration for staking
     pub duration: i64,
 
+    /// duration added for loan orders
+    pub deposit_duration: i64,
+
     /// The minimum order size for the AOB
     pub min_order_size: u64,
 }
@@ -277,6 +280,7 @@ fn create_airspace_token_bond_markets_tx(
                         0,
                         bond_manager_seed,
                         bm_config.duration,
+                        bm_config.deposit_duration,
                         Pubkey::default(),
                     )
                     .unwrap(),

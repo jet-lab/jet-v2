@@ -235,10 +235,19 @@ async fn _full_workflow<P: Proxy + GenerateProxy>(manager: Arc<BondsTestManager>
     // only works on simulation right now
     // Access violation in stack frame 5 at address 0x200005ff8 of size 8 by instruction #22627
     #[cfg(not(feature = "localnet"))]
-    manager.consume_events().await?;
+    {
+        manager.consume_events().await?;
 
-    // assert SplitTicket
-
+        // assert SplitTicket
+        let split_ticket = bob.load_split_ticket(vec![]).await?;
+        let bond_manager = manager.load_manager().await?;
+        assert!(
+            split_ticket.maturation_timestamp
+                == split_ticket.struck_timestamp
+                    + bond_manager.duration
+                    + bond_manager.deposit_duration
+        );
+    }
     // make an adapter
 
     // place and match a bunch of orders

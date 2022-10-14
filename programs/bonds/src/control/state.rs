@@ -49,6 +49,8 @@ pub struct BondManager {
     pub(crate) _reserved: [u8; 28],
     /// Units added to the initial stake timestamp to determine claim maturity
     pub duration: i64,
+    /// Number of slots added to initial strike timestamp to determine loan maturity
+    pub deposit_duration: i64,
     /// Used to generate unique order tags
     pub nonce: u64,
 }
@@ -99,6 +101,7 @@ impl Serialize for BondManager {
         s.serialize_field("orderbookPaused", &self.orderbook_paused)?;
         s.serialize_field("ticketsPaused", &self.tickets_paused)?;
         s.serialize_field("duration", &self.duration)?;
+        s.serialize_field("depositDuration", &self.deposit_duration)?;
         s.end()
     }
 }

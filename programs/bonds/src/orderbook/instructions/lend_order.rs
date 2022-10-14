@@ -1,6 +1,7 @@
 use agnostic_orderbook::state::Side;
 use anchor_lang::prelude::*;
 use anchor_spl::token::{accessor::mint, transfer, Token, TokenAccount};
+use jet_proto_math::traits::SafeAdd;
 
 use crate::{
     orderbook::state::*,
@@ -74,14 +75,15 @@ pub fn handler(ctx: Context<LendOrder>, params: OrderParams, seed: Vec<u8>) -> R
             &SplitTicket::make_seeds(ctx.accounts.user.key().as_ref(), seed.as_slice()),
         )?;
         let timestamp = Clock::get()?.unix_timestamp;
-
+        let manager = ctx.accounts.orderbook_mut.bond_manager.load()?;
         *split_ticket = SplitTicket {
             owner: ctx.accounts.user.key(),
             bond_manager: ctx.accounts.orderbook_mut.bond_manager.key(),
             order_tag: callback_info.order_tag,
             struck_timestamp: timestamp,
             maturation_timestamp: timestamp
-                + ctx.accounts.orderbook_mut.bond_manager.load()?.duration,
+                .safe_add(manager.duration)?
+                .safe_add(manager.deposit_duration)?,
             principal: order_summary.total_quote_qty,
             interest: order_summary.total_base_qty - order_summary.total_quote_qty,
         }

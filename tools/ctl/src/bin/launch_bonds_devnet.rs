@@ -28,6 +28,7 @@ lazy_static::lazy_static! {
 
     static ref PARAMS: BondMarketParameters = BondMarketParameters {
         duration: 5,
+        deposit_duration: 1,
         min_order_size: 1_000,
         seed: Pubkey::default().to_bytes().to_vec(),
         token_mint: USDC,

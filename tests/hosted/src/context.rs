@@ -205,6 +205,7 @@ impl MarginTestContext {
                             margin_pool_config: Some(DEFAULT_POOL_CONFIG),
                             bond_markets: vec![BondMarketConfig {
                                 duration: 5,
+                                deposit_duration: 1,
                                 min_order_size: 10,
                             }],
                         },

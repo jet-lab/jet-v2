@@ -18,6 +18,9 @@ pub struct BondMarketParameters {
     pub duration: i64,
 
     #[clap(long)]
+    pub deposit_duration: i64,
+
+    #[clap(long)]
     pub min_order_size: u64,
 
     #[clap(long)]
@@ -107,6 +110,7 @@ pub async fn process_create_bond_market<'a>(
             MANAGER_VERSION,
             seed,
             params.duration,
+            params.deposit_duration,
             Pubkey::default(),
         )?;
         steps.push(format!(

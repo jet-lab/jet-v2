@@ -16,7 +16,7 @@ use jet_bonds::{
     control::state::BondManager,
     margin::state::MarginUser,
     orderbook::state::{event_queue_len, orderbook_slab_len, CallbackInfo, OrderParams},
-    tickets::state::ClaimTicket,
+    tickets::state::{ClaimTicket, SplitTicket},
 };
 
 use jet_margin_sdk::{
@@ -65,6 +65,7 @@ pub const FEEDER_FUND_SEED: u64 = u64::from_le_bytes(*b"feedingf");
 pub const ORDERBOOK_CAPACITY: usize = 1_000;
 pub const EVENT_QUEUE_CAPACITY: usize = 1_000;
 pub const STAKE_DURATION: i64 = 3; // in seconds
+pub const DEPOSIT_DURATION: i64 = 1;
 pub const MIN_ORDER_SIZE: u64 = 10;
 
 #[derive(Debug, Default, Clone)]
@@ -219,6 +220,7 @@ impl TestManager {
             BOND_MANAGER_TAG,
             BOND_MANAGER_SEED,
             STAKE_DURATION,
+            DEPOSIT_DURATION,
             Pubkey::default(),
         )?;
         let init_orderbook = this.ix_builder.initialize_orderbook(
@@ -715,8 +717,18 @@ impl<P: Proxy> BondsUser<P> {
             .ix_builder
             .claim_ticket_key(&self.proxy.pubkey(), seed)
     }
+    pub fn split_ticket_key(&self, seed: Vec<u8>) -> Pubkey {
+        self.manager
+            .ix_builder
+            .split_ticket_key(&self.proxy.pubkey(), seed)
+    }
     pub async fn load_claim_ticket(&self, seed: Vec<u8>) -> Result<ClaimTicket> {
         let key = self.claim_ticket_key(seed);
+
+        self.manager.load_anchor(&key).await
+    }
+    pub async fn load_split_ticket(&self, seed: Vec<u8>) -> Result<SplitTicket> {
+        let key = self.split_ticket_key(seed);
 
         self.manager.load_anchor(&key).await
     }

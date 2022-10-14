@@ -9,6 +9,7 @@ pub struct BondManagerInitialized {
     pub underlying_oracle: Pubkey,
     pub ticket_oracle: Pubkey,
     pub duration: i64,
+    pub deposit_duration: i64,
 }
 
 #[event]
