@@ -30,6 +30,17 @@ export function formatRiskIndicator(riskIndicator?: number, decimals?: number) {
   }
 }
 
+// Format price impact on swaps or trades
+export function formatPriceImpact(impact?: number) {
+  if (!impact) {
+    return '0';
+  } else if (impact < 0.005) {
+    return '<0.5%';
+  } else {
+    return `${(impact * 100).toFixed(2)}%`;
+  }
+}
+
 // Remove trailing 0's and decimal if necessary
 export function formatRemainder(value: string): string {
   return parseFloat(value).toString();
