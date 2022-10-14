@@ -156,10 +156,10 @@ impl<'a> User<'a> {
             &DEVNET_USDC,
             token_amount,
         );
-        let fund_ticket =
-            self.client
-                .ix
-                .convert_tokens(Some(self.key()), None, None, None, ticket_amount)?;
+        let fund_ticket = self
+            .client
+            .ix
+            .convert_tokens(self.key(), None, None, ticket_amount)?;
 
         self.send_instructions(&[init_token, init_ticket, fund_token, fund_ticket])?;
         println!("funding success!");

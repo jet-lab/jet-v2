@@ -374,27 +374,22 @@ impl BondsIxBuilder {
         ))
     }
 
-    /// can derive keys from `user`
-    /// else needs vault addresses and authority
+    /// can derive keys from `owner`
+    /// else needs vault addresses
     pub fn convert_tokens(
         &self,
-        user: Option<Pubkey>,
+        owner: Pubkey,
         token_vault: Option<Pubkey>,
         ticket_vault: Option<Pubkey>,
-        vault_authority: Option<Pubkey>,
         amount: u64,
     ) -> Result<Instruction> {
         let user_bond_ticket_vault = match ticket_vault {
             Some(vault) => vault,
-            None => get_associated_token_address(&user.unwrap_key("user")?, &self.bond_ticket_mint),
+            None => get_associated_token_address(&owner, &self.bond_ticket_mint),
         };
         let user_underlying_token_vault = match token_vault {
             Some(vault) => vault,
-            None => get_associated_token_address(&user.unwrap_key("user")?, &self.underlying_mint),
-        };
-        let user_authority = match vault_authority {
-            Some(auth) => auth,
-            None => user.unwrap_key("user")?,
+            None => get_associated_token_address(&owner, &self.underlying_mint),
         };
 
         let data = jet_bonds::instruction::ExchangeTokens { amount }.data();
@@ -404,7 +399,7 @@ impl BondsIxBuilder {
             bond_ticket_mint: self.bond_ticket_mint,
             user_bond_ticket_vault,
             user_underlying_token_vault,
-            user_authority,
+            user_authority: owner,
             token_program: spl_token::ID,
         }
         .to_account_metas(None);
@@ -798,7 +793,16 @@ impl BondsIxBuilder {
 
         Ok(vec![init_eq, init_bids, init_asks])
     }
+}
 
+/// helpful addresses for a MarginUser account
+struct MarginUser {
+    address: Pubkey,
+    claims: Pubkey,
+    collateral: Pubkey,
+}
+
+impl BondsIxBuilder {
     fn margin_user(&self, margin_account: Pubkey) -> MarginUser {
         let address = bonds_pda(&[
             jet_bonds::seeds::MARGIN_BORROWER,
@@ -811,16 +815,7 @@ impl BondsIxBuilder {
             claims: bonds_pda(&[jet_bonds::seeds::CLAIM_NOTES, address.as_ref()]),
         }
     }
-}
 
-/// helpful addresses for a MarginUser account
-struct MarginUser {
-    address: Pubkey,
-    claims: Pubkey,
-    collateral: Pubkey,
-}
-
-impl BondsIxBuilder {
     pub fn bond_manager_key(airspace: &Pubkey, mint: &Pubkey, seed: [u8; 32]) -> Pubkey {
         bonds_pda(&[
             jet_bonds::seeds::BOND_MANAGER,

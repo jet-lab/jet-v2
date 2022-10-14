@@ -645,13 +645,10 @@ impl<P: Proxy> BondsUser<P> {
     }
 
     pub async fn convert_tokens(&self, amount: u64) -> Result<Signature> {
-        let ix = self.manager.ix_builder.convert_tokens(
-            Some(self.proxy.pubkey()),
-            None,
-            None,
-            None,
-            amount,
-        )?;
+        let ix = self
+            .manager
+            .ix_builder
+            .convert_tokens(self.proxy.pubkey(), None, None, amount)?;
         self.client
             .send_and_confirm_1tx(&[self.proxy.invoke_signed(ix)], &[&self.owner])
             .await
