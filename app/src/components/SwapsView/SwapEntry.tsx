@@ -89,11 +89,11 @@ export function SwapEntry(): JSX.Element {
     0
   );
   // Exponents
-  const expoSource = !swapPoolTokenAmounts ? 0 : Math.pow(10, swapPoolTokenAmounts.source.decimals);
-  const expoDestination = !swapPoolTokenAmounts ? 0 : Math.pow(10, swapPoolTokenAmounts.destination.decimals);
+  const expoSource = swapPoolTokenAmounts ? Math.pow(10, swapPoolTokenAmounts.source.decimals) : 0;
+  const expoDestination = swapPoolTokenAmounts ? Math.pow(10, swapPoolTokenAmounts.destination.decimals) : 0;
   // Get the swap pool account balances
-  const balanceSourceToken = !swapPoolTokenAmounts ? 0 : swapPoolTokenAmounts.source.lamports.toNumber();
-  const balanceDestinationToken = !swapPoolTokenAmounts ? 0 : swapPoolTokenAmounts.destination.lamports.toNumber();
+  const balanceSourceToken = swapPoolTokenAmounts ? swapPoolTokenAmounts.source.lamports.toNumber() : 0;
+  const balanceDestinationToken = swapPoolTokenAmounts ? swapPoolTokenAmounts.destination.lamports.toNumber() : 0;
   const poolPrice = !swapPool
     ? 0.0
     : swapPool.pool.swapType === 'stable'
