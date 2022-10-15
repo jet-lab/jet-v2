@@ -26,3 +26,6 @@ jet-margin-pool = { path = "../margin-pool", features = ["cpi", "no-entrypoint"]
 jet-margin = { path = "../margin", features = ["cpi", "no-entrypoint"] }
 
 jet-static-program-registry = { path = "../../libraries/rust/static-program-registry" }
+
+# Saber, commit from 18 Sep 2022
+saber-stable-swap = { package = "stable-swap-anchor", git = "https://github.com/saber-hq/stable-swap", rev = "c790c9009abab26dc0d6fe1a7749ea01a4ae5f9f" }

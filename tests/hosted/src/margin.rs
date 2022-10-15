@@ -34,6 +34,7 @@ use jet_margin_sdk::ix_builder::{
 };
 use jet_margin_sdk::solana::keypair::clone;
 use jet_margin_sdk::solana::transaction::{SendTransactionBuilder, TransactionBuilder};
+use jet_margin_sdk::swap::saber_swap::SaberSwapPool;
 use jet_margin_sdk::swap::spl_swap::SplSwapPool;
 use jet_margin_sdk::tokens::TokenOracle;
 use solana_sdk::instruction::Instruction;
@@ -426,12 +427,14 @@ impl MarginUser {
             .await
     }
 
-    /// Swap between two tokens using a swap pool.
+    /// Swap between two tokens using an SPL swap pool.
     ///
     /// The `source_mint` and `destination_mint` determine the direction of
     /// the swap.
+    ///
+    /// TODO: We can make this generic to handle different swap pools
     #[allow(clippy::too_many_arguments)]
-    pub async fn swap(
+    pub async fn spl_swap(
         &self,
         program_id: &Pubkey,
         source_mint: &Pubkey,
@@ -450,7 +453,7 @@ impl MarginUser {
         };
         self.send_confirm_tx(
             self.tx
-                .swap(
+                .spl_swap(
                     source_mint,
                     destination_mint,
                     transit_source_account,
@@ -458,6 +461,51 @@ impl MarginUser {
                     &swap_pool.pool,
                     &swap_pool.pool_mint,
                     &swap_pool.fee_account,
+                    source_token,
+                    destination_token,
+                    program_id,
+                    change,
+                    minimum_amount_out,
+                )
+                .await?,
+        )
+        .await
+    }
+
+    /// Swap between two tokens using an SPL swap pool.
+    ///
+    /// The `source_mint` and `destination_mint` determine the direction of
+    /// the swap.
+    ///
+    /// TODO: We can make this generic to handle different swap pools
+    #[allow(clippy::too_many_arguments)]
+    pub async fn saber_swap(
+        &self,
+        program_id: &Pubkey,
+        source_mint: &Pubkey,
+        destination_mint: &Pubkey,
+        transit_source_account: &Pubkey,
+        transit_destination_account: &Pubkey,
+        swap_pool: &SaberSwapPool,
+        change: TokenChange,
+        minimum_amount_out: u64,
+    ) -> Result<(), Error> {
+        // Determine the order of token_a and token_b based on direction of swap
+        let (source_token, destination_token, fee_account) = if source_mint == &swap_pool.mint_a {
+            (&swap_pool.token_a, &swap_pool.token_b, &swap_pool.fee_b)
+        } else {
+            (&swap_pool.token_b, &swap_pool.token_a, &swap_pool.fee_a)
+        };
+        self.send_confirm_tx(
+            self.tx
+                .saber_swap(
+                    source_mint,
+                    destination_mint,
+                    transit_source_account,
+                    transit_destination_account,
+                    &swap_pool.pool,
+                    &swap_pool.pool_mint,
+                    fee_account,
                     source_token,
                     destination_token,
                     program_id,

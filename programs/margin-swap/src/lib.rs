@@ -48,6 +48,21 @@ mod jet_margin_swap {
             minimum_amount_out,
         )
     }
+
+    /// Swap using Saber for stable pools
+    pub fn saber_stable_swap(
+        ctx: Context<SaberStableSwap>,
+        withdrawal_change_kind: ChangeKind,
+        withdrawal_amount: u64,
+        minimum_amount_out: u64,
+    ) -> Result<()> {
+        saber_stable_swap_handler(
+            ctx,
+            withdrawal_change_kind,
+            withdrawal_amount,
+            minimum_amount_out,
+        )
+    }
 }
 
 #[derive(Accounts)]

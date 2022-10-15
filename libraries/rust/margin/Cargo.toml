@@ -48,6 +48,7 @@ jet-margin-swap = { path = "../../../programs/margin-swap", features = ["no-entr
 spl-token = "3"
 spl-token-swap = "2"
 spl-associated-token-account = "1"
+saber-client = { package = "stable-swap-client", git = "https://github.com/saber-hq/stable-swap" }
 
 [dev-dependencies]
 jet-static-program-registry = { path = "../static-program-registry" }

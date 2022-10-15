@@ -34,7 +34,7 @@ agnostic-orderbook = { git = "https://github.com/jet-lab/agnostic-orderbook.git"
 anchor-lang = { git = "https://github.com/jet-lab/anchor", branch = "master" }
 anchor-spl =  { git = "https://github.com/jet-lab/anchor", branch = "master" }
 
-jet-proto-math = { git = "https://github.com/jet-lab/program-libraries", branch = "main", features = ["traits"] }
+jet-proto-math = { git = "https://github.com/jet-lab/program-libraries", branch = "fixed-point-math-uint-091", features = ["traits"] }
 
 jet-margin = { path = "../margin", features = ["no-entrypoint"] }
 

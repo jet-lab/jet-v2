@@ -44,6 +44,8 @@ anchor-spl = { git = "https://github.com/jet-lab/anchor", branch = "master" }
 jet-static-program-registry = { path = "../../libraries/rust/static-program-registry" }
 spl-token = "3.1.0"
 spl-associated-token-account = "1.0"
+saber-client = { package = "stable-swap-client", git = "https://github.com/saber-hq/stable-swap" }
+saber-program = { package = "stable-swap", git = "https://github.com/saber-hq/stable-swap" }
 pyth-sdk-solana = "0.4"
 
 jet-bonds = { path = "../../programs/bonds", features = ["no-entrypoint", "testing"] }
@@ -60,6 +62,6 @@ jet-margin-sdk = { path = "../../libraries/rust/margin", features = ["testing"] 
 mock-adapter = { path = "../mock-adapter", features = ["no-entrypoint"] }
 
 jet-simulation = { git = "https://github.com/jet-lab/jet-simulation", branch = "master" }
-jet-proto-math = { git = "https://github.com/jet-lab/program-libraries", branch = "fixed-point-math", features = ["full"] }
+jet-proto-math = { git = "https://github.com/jet-lab/program-libraries", branch = "fixed-point-math-uint-091", features = ["full"] }
 
 itertools = "0.10.3"
