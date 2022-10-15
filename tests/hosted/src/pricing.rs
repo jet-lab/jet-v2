@@ -7,7 +7,7 @@ use itertools::Itertools;
 use jet_margin_sdk::cat;
 use jet_margin_sdk::solana::keypair::clone;
 use jet_margin_sdk::solana::transaction::{SendTransactionBuilder, TransactionBuilder};
-use jet_margin_sdk::spl_swap::SplSwapPool;
+use jet_margin_sdk::swap::spl_swap::SplSwapPool;
 use jet_margin_sdk::tokens::TokenPrice;
 use jet_margin_sdk::util::asynchronous::{AndAsync, MapAsync};
 use jet_simulation::solana_rpc_api::SolanaRpcClient;
@@ -16,7 +16,7 @@ use solana_sdk::signature::Keypair;
 
 use tokio::try_join;
 
-use crate::swap::{SwapPoolConfig, SwapRegistry};
+use crate::spl_swap::{SwapPoolConfig, SwapRegistry};
 use crate::tokens::TokenManager;
 
 pub const ONE: u64 = 1_000_000_000;

@@ -4,6 +4,6 @@ pub mod load;
 pub mod margin;
 pub mod pricing;
 pub mod setup_helper;
-pub mod swap;
+pub mod spl_swap;
 pub mod test_user;
 pub mod tokens;

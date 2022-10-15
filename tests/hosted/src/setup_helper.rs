@@ -15,7 +15,7 @@ use jet_simulation::{create_wallet, generate_keypair};
 use tokio::try_join;
 
 use crate::pricing::TokenPricer;
-use crate::swap::{create_swap_pools, SwapRegistry};
+use crate::spl_swap::{create_swap_pools, SwapRegistry};
 use crate::test_user::{TestLiquidator, TestUser};
 use crate::{
     context::{test_context, MarginTestContext},
