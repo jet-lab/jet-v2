@@ -137,7 +137,7 @@ impl<'a> TestUser<'a> {
             .create_account(dst, self.user.address())
             .await?;
         self.user
-            .swap(
+            .spl_swap(
                 &orca_swap_v2::id(),
                 src,
                 dst,

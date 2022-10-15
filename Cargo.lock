@@ -1910,7 +1910,7 @@ dependencies = [
  "jet-margin-sdk",
  "jet-margin-swap",
  "jet-metadata",
- "jet-proto-math 1.1.0 (git+https://github.com/jet-lab/program-libraries?branch=fixed-point-math)",
+ "jet-proto-math 1.1.0 (git+https://github.com/jet-lab/program-libraries?branch=fixed-point-math-uint-091)",
  "jet-simulation",
  "jet-static-program-registry",
  "jet-test-service",
@@ -1929,6 +1929,8 @@ dependencies = [
  "solana-sdk",
  "spl-associated-token-account",
  "spl-token 3.3.1",
+ "stable-swap",
+ "stable-swap-client 1.8.1 (git+https://github.com/saber-hq/stable-swap)",
  "tokio",
 ]
 
@@ -2160,9 +2162,9 @@ dependencies = [
  "bitflags",
  "borsh 0.9.3",
  "bytemuck",
- "itertools 0.10.5",
+ "itertools 0.9.0",
  "jet-margin",
- "jet-proto-math 1.1.0 (git+https://github.com/jet-lab/program-libraries?branch=main)",
+ "jet-proto-math 1.1.0 (git+https://github.com/jet-lab/program-libraries?branch=fixed-point-math-uint-091)",
  "num-derive",
  "num-traits",
  "pyth-sdk-solana 0.4.2",
@@ -2230,7 +2232,7 @@ dependencies = [
  "anchor-spl",
  "bitflags",
  "bytemuck",
- "itertools 0.10.5",
+ "itertools 0.9.0",
  "jet-airspace",
  "jet-metadata",
  "jet-proto-math 1.1.0 (git+https://github.com/jet-lab/program-libraries?branch=main)",
@@ -2291,6 +2293,7 @@ dependencies = [
  "spl-associated-token-account",
  "spl-token 3.3.1",
  "spl-token-swap 2.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "stable-swap-client 1.8.1 (git+https://github.com/saber-hq/stable-swap)",
  "thiserror",
  "tokio",
 ]
@@ -2304,6 +2307,7 @@ dependencies = [
  "jet-margin",
  "jet-margin-pool",
  "jet-static-program-registry",
+ "stable-swap-anchor",
 ]
 
 [[package]]
@@ -2335,14 +2339,14 @@ dependencies = [
 [[package]]
 name = "jet-proto-math"
 version = "1.1.0"
-source = "git+https://github.com/jet-lab/program-libraries?branch=fixed-point-math#9b9a5a72718f3af8322b31e61b182772d28eec11"
+source = "git+https://github.com/jet-lab/program-libraries?branch=fixed-point-math-uint-091#7899484aa50d284b41330c6aac4b0321508e7fd3"
 dependencies = [
  "anchor-lang",
  "bytemuck",
  "num-traits",
  "static_assertions",
  "thiserror",
- "uint 0.9.4",
+ "uint 0.9.1",
 ]
 
 [[package]]
@@ -2350,12 +2354,10 @@ name = "jet-proto-math"
 version = "1.1.0"
 source = "git+https://github.com/jet-lab/program-libraries?branch=main#7e00d07729d2a079d7d0af5c49b359965df6256f"
 dependencies = [
- "anchor-lang",
  "bytemuck",
- "num-traits",
  "static_assertions",
  "thiserror",
- "uint 0.9.4",
+ "uint 0.9.1",
 ]
 
 [[package]]
@@ -5027,6 +5029,61 @@ dependencies = [
 ]
 
 [[package]]
+name = "stable-swap"
+version = "1.8.1"
+source = "git+https://github.com/saber-hq/stable-swap#c790c9009abab26dc0d6fe1a7749ea01a4ae5f9f"
+dependencies = [
+ "solana-program",
+ "spl-token 3.3.1",
+ "stable-swap-client 1.8.1 (git+https://github.com/saber-hq/stable-swap)",
+ "stable-swap-math",
+]
+
+[[package]]
+name = "stable-swap-anchor"
+version = "1.8.1"
+source = "git+https://github.com/saber-hq/stable-swap?rev=c790c9009abab26dc0d6fe1a7749ea01a4ae5f9f#c790c9009abab26dc0d6fe1a7749ea01a4ae5f9f"
+dependencies = [
+ "anchor-lang",
+ "stable-swap-client 1.8.1 (git+https://github.com/saber-hq/stable-swap?rev=c790c9009abab26dc0d6fe1a7749ea01a4ae5f9f)",
+]
+
+[[package]]
+name = "stable-swap-client"
+version = "1.8.1"
+source = "git+https://github.com/saber-hq/stable-swap?rev=c790c9009abab26dc0d6fe1a7749ea01a4ae5f9f#c790c9009abab26dc0d6fe1a7749ea01a4ae5f9f"
+dependencies = [
+ "arrayref",
+ "num-derive",
+ "num-traits",
+ "solana-program",
+ "thiserror",
+]
+
+[[package]]
+name = "stable-swap-client"
+version = "1.8.1"
+source = "git+https://github.com/saber-hq/stable-swap#c790c9009abab26dc0d6fe1a7749ea01a4ae5f9f"
+dependencies = [
+ "arrayref",
+ "num-derive",
+ "num-traits",
+ "solana-program",
+ "thiserror",
+]
+
+[[package]]
+name = "stable-swap-math"
+version = "1.8.1"
+source = "git+https://github.com/saber-hq/stable-swap#c790c9009abab26dc0d6fe1a7749ea01a4ae5f9f"
+dependencies = [
+ "borsh 0.9.3",
+ "num-traits",
+ "stable-swap-client 1.8.1 (git+https://github.com/saber-hq/stable-swap)",
+ "uint 0.9.1",
+]
+
+[[package]]
 name = "stable_deref_trait"
 version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5444,9 +5501,9 @@ dependencies = [
 
 [[package]]
 name = "uint"
-version = "0.9.4"
+version = "0.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a45526d29728d135c2900b0d30573fe3ee79fceb12ef534c7bb30e810a91b601"
+checksum = "6470ab50f482bde894a037a57064480a246dbfdd5960bd65a44824693f08da5f"
 dependencies = [
  "byteorder",
  "crunchy",
@@ -5667,7 +5724,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "bytemuck",
- "jet-proto-math 1.1.0 (git+https://github.com/jet-lab/program-libraries?branch=fixed-point-math)",
+ "jet-proto-math 1.1.0 (git+https://github.com/jet-lab/program-libraries?branch=fixed-point-math-uint-091)",
  "js-sys",
  "rand_chacha 0.3.1",
  "serde",

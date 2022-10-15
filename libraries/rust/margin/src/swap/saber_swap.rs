@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-//! The spl swap module gets all spl swap pools that contain pairs of supported mints
+//! The saber swap module gets all saber swap pools that contain pairs of supported mints
 
 use std::{
     collections::{HashMap, HashSet},
@@ -24,20 +24,14 @@ use std::{
 
 use jet_proto_math::Number128;
 use jet_simulation::solana_rpc_api::SolanaRpcClient;
+use saber_client::state::SwapInfo;
 use solana_sdk::{program_pack::Pack, pubkey::Pubkey};
-use spl_token_swap::state::SwapV1;
 
 use super::{find_mint, find_token};
 
-/// Addresses of an [`spl_token_swap`] compatible swap pool, required when using
-/// [`jet_margin_swap`].
-///
-/// Supported pools are:
-/// * spl_token_swap
-/// * orca_v1
-/// * orca_v2
+/// TODO
 #[derive(Debug, Clone, Copy)]
-pub struct SplSwapPool {
+pub struct SaberSwapPool {
     /// The address of the swap pool
     pub pool: Pubkey,
     /// The PDA of the pool authority, derived using the pool address and a nonce
@@ -52,62 +46,68 @@ pub struct SplSwapPool {
     pub token_a: Pubkey,
     /// The SPL token account that tokens are deposited into
     pub token_b: Pubkey,
-    /// The account that collects fees from the pool
-    pub fee_account: Pubkey,
+    /// The account that receives fees for token A
+    pub fee_a: Pubkey,
+    /// The account that receives fees for token B
+    pub fee_b: Pubkey,
     /// The program of the pool, to distinguish between various supported pools
     pub program: Pubkey,
 }
 
-impl SplSwapPool {
+impl SaberSwapPool {
     /// Get all swap pools that contain pairs of supported mints
     pub async fn get_pools(
         rpc: &Arc<dyn SolanaRpcClient>,
         supported_mints: &HashSet<Pubkey>,
-        swap_program: Pubkey,
     ) -> anyhow::Result<HashMap<(Pubkey, Pubkey), Self>> {
-        let size = SwapV1::LEN + 1;
+        let swap_program = saber_client::id();
+        let size = SwapInfo::LEN;
         let accounts = rpc
-            .get_program_accounts(&swap_program, Some(size))
+            .get_program_accounts(&swap_program, Some(size)) // Some(size)
             .await
             .unwrap();
 
         let mut pool_sizes = HashMap::with_capacity(accounts.len());
         for (swap_address, pool_account) in accounts {
-            let swap = SwapV1::unpack(&pool_account.data[1..]);
+            let swap = SwapInfo::unpack(&pool_account.data);
             let swap = match swap {
                 Ok(swap) => swap,
                 Err(_) => continue,
             };
 
+            if !swap.is_initialized || swap.is_paused {
+                continue;
+            }
+
             let (mint_a, mint_b) = match (
-                supported_mints.get(&swap.token_a_mint),
-                supported_mints.get(&swap.token_b_mint),
+                supported_mints.get(&swap.token_a.mint),
+                supported_mints.get(&swap.token_b.mint),
             ) {
                 (Some(a), Some(b)) => (a, b),
                 _ => continue,
             };
 
             // Get the token balances of both sides
-            let token_a = match find_token(rpc, &swap.token_a).await {
+            let token_a = match find_token(rpc, &swap.token_a.reserves).await {
                 Ok(val) => val,
                 Err(_) => {
                     continue;
                 }
             };
-            let token_b = match find_token(rpc, &swap.token_b).await {
+            let token_b = match find_token(rpc, &swap.token_b.reserves).await {
                 Ok(val) => val,
                 Err(_) => {
                     continue;
                 }
             };
 
-            let mint_a_info = find_mint(rpc, mint_a).await;
-            let mint_b_info = find_mint(rpc, mint_b).await;
+            let mint_a_info = find_mint(rpc, mint_a).await?;
+            let mint_b_info = find_mint(rpc, mint_b).await?;
 
             let token_a_balance =
-                Number128::from_decimal(token_a.amount, -(mint_a_info?.decimals as i32));
+                Number128::from_decimal(token_a.amount, -(mint_a_info.decimals as i32));
             let token_b_balance =
-                Number128::from_decimal(token_b.amount, -(mint_b_info?.decimals as i32));
+                Number128::from_decimal(token_b.amount, -(mint_b_info.decimals as i32));
 
             let total_token = token_a_balance * token_b_balance;
 
@@ -117,16 +117,16 @@ impl SplSwapPool {
 
             // Check if there is a pool, insert if none, replace if smaller
             pool_sizes
-                .entry((swap.token_a_mint, swap.token_b_mint))
+                .entry((swap.token_a.mint, swap.token_b.mint))
                 .and_modify(|(e_pool, e_value)| {
                     if &total_token > e_value {
                         // Replace with current pool
-                        *e_pool = Self::from_swap_v1(swap_address, swap_program, &swap);
+                        *e_pool = Self::from_saber_swap(swap_address, swap_program, &swap);
                         *e_value = total_token;
                     }
                 })
                 .or_insert((
-                    Self::from_swap_v1(swap_address, swap_program, &swap),
+                    Self::from_saber_swap(swap_address, swap_program, &swap),
                     total_token,
                 ));
         }
@@ -139,20 +139,21 @@ impl SplSwapPool {
     }
 
     #[inline]
-    /// Little helper to get a [SplSwapPool] from its on-chain rep
-    fn from_swap_v1(swap_address: Pubkey, swap_program: Pubkey, swap: &SwapV1) -> Self {
-        SplSwapPool {
+    /// Little helper to get a [SaberSwapPool] from its on-chain rep
+    fn from_saber_swap(swap_address: Pubkey, swap_program: Pubkey, swap: &SwapInfo) -> Self {
+        SaberSwapPool {
             pool: swap_address,
             pool_authority: Pubkey::find_program_address(
                 &[swap_address.as_ref(), &[swap.nonce]],
                 &swap_program,
             )
             .0,
-            mint_a: swap.token_a_mint,
-            mint_b: swap.token_b_mint,
-            token_a: swap.token_a,
-            token_b: swap.token_b,
-            fee_account: swap.pool_fee_account,
+            mint_a: swap.token_a.mint,
+            mint_b: swap.token_b.mint,
+            token_a: swap.token_a.reserves,
+            token_b: swap.token_b.reserves,
+            fee_a: swap.token_a.admin_fees,
+            fee_b: swap.token_b.admin_fees,
             pool_mint: swap.pool_mint,
             program: swap_program,
         }

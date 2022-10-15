@@ -17,7 +17,7 @@ serde = { version = "1.0", features = ["derive"] }
 js-sys = "0.3.59"
 wasm-bindgen = { version = "0.2.82", features = ["serde-serialize"] }
 
-jet-proto-math = { git = "https://github.com/jet-lab/program-libraries", branch = "fixed-point-math", features = ["fixed-point", "number"] }
+jet-proto-math = { git = "https://github.com/jet-lab/program-libraries", branch = "fixed-point-math-uint-091", features = ["fixed-point", "number"] }
 
 [dev-dependencies]
 rand_chacha = "0.3.1"

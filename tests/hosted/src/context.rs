@@ -88,6 +88,10 @@ impl MarginTestContext {
             (
                 spl_associated_token_account::ID,
                 spl_associated_token_account::processor::process_instruction
+            ),
+            (
+                saber_client::id(),
+                saber_program::processor::Processor::process
             )
         ];
 
