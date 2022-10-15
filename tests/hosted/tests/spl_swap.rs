@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use anyhow::Error;
 
-use jet_margin_sdk::{spl_swap::SplSwapPool, tokens::TokenPrice, tx_builder::TokenDepositsConfig};
+use jet_margin_sdk::{swap::spl_swap::SplSwapPool, tokens::TokenPrice, tx_builder::TokenDepositsConfig};
 use jet_static_program_registry::{orca_swap_v1, orca_swap_v2, spl_token_swap_v2};
 use solana_sdk::native_token::LAMPORTS_PER_SOL;
 use solana_sdk::pubkey::Pubkey;
@@ -11,7 +11,7 @@ use solana_sdk::signature::Signer;
 use hosted_tests::{
     context::{test_context, MarginTestContext},
     margin::MarginPoolSetupInfo,
-    swap::SwapPoolConfig,
+    spl_swap::SwapPoolConfig,
 };
 
 use jet_margin::TokenKind;
