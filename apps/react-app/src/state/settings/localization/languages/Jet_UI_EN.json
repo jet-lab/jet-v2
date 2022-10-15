@@ -30,6 +30,7 @@
     "risk": "Risk",
     "riskLevel": "Risk Level",
     "priceImpact": "Price Impact",
+    "swapFee": "Swap Fee",
     "publicKey": "Public Key",
     "pythDataStale": "Pyth Data Stale",
     "balance": "Balance",

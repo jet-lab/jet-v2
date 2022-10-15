@@ -1,7 +1,16 @@
 import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 import { TransactionInstruction } from '@solana/web3.js';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { chunks, MarginAccount, Pool, PoolTokenChange, SPLSwapPool, TokenAmount, TokenFaucet } from '@jet-lab/margin';
+import {
+  chunks,
+  MarginAccount,
+  Pool,
+  PoolTokenChange,
+  SPLSwapPool,
+  SwapPath,
+  TokenAmount,
+  TokenFaucet
+} from '@jet-lab/margin';
 import { MainConfig } from '@state/config/marginConfig';
 import { Pools } from '@state/pools/pools';
 import { WalletTokens } from '@state/user/walletTokens';
@@ -260,11 +269,53 @@ export function useMarginActions() {
     }
   }
 
+  // // Swap
+  // async function splTokenSwap(
+  //   inputToken: Pool,
+  //   outputToken: Pool,
+  //   swapPool: SPLSwapPool,
+  //   swapAmount: TokenAmount,
+  //   minAmountOut: TokenAmount,
+  //   repayWithOutput: boolean
+  // ): Promise<[string | undefined, ActionResponse | undefined]> {
+  //   if (!pools || !inputToken || !outputToken || !currentAccount) {
+  //     console.error('Input/output tokens or current account undefined');
+  //     throw new Error();
+  //   }
+
+  //   try {
+  //     const txId = await inputToken.splTokenSwap({
+  //       marginAccount: currentAccount,
+  //       pools: Object.values(pools.tokenPools),
+  //       outputToken,
+  //       swapPool,
+  //       swapAmount,
+  //       minAmountOut,
+  //       repayWithOutput
+  //     });
+  //     await actionRefresh();
+  //     if (txId === 'Setup check failed') {
+  //       return [undefined, ActionResponse.Failed];
+  //     }
+  //     return [txId, ActionResponse.Success];
+  //   } catch (err: any) {
+  //     console.error(err);
+  //     if (err.toString().includes('User rejected') || err.toString().includes('Failed to sign')) {
+  //       return [undefined, ActionResponse.Cancelled];
+  //     } else if (err.toString().includes('"Custom":16')) {
+  //       message.warning(dictionary.actions.swap.warningMessages.maxSlippageExceeded, NOTIFICATION_DURATION);
+  //       return [undefined, undefined];
+  //     } else {
+  //       return [undefined, ActionResponse.Failed];
+  //     }
+  //   }
+  // }
+
   // Swap
-  async function splTokenSwap(
+  async function routeSwap(
     inputToken: Pool,
     outputToken: Pool,
-    swapPool: SPLSwapPool,
+    swapPaths: SwapPath[],
     swapAmount: TokenAmount,
     minAmountOut: TokenAmount,
     repayWithOutput: boolean
@@ -275,15 +326,15 @@ export function useMarginActions() {
     }
 
     try {
-      const txId = await inputToken.splTokenSwap({
+      const txId = await inputToken.routeSwap({
         marginAccount: currentAccount,
         pools: Object.values(pools.tokenPools),
         markets: markets.map(m => m.market),
         outputToken,
-        swapPool,
         swapAmount,
         minAmountOut,
-        repayWithOutput
+        repayWithOutput,
+        swapPaths
       });
       await actionRefresh();
       if (txId === 'Setup check failed') {
@@ -374,7 +425,7 @@ export function useMarginActions() {
     withdraw,
     borrow,
     repay,
-    splTokenSwap,
+    routeSwap,
     transfer
   };
 }

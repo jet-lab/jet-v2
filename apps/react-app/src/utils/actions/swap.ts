@@ -1,12 +1,12 @@
 import { useRecoilValue } from 'recoil';
-import { AnchorProvider } from '@project-serum/anchor';
 import { PublicKey } from '@solana/web3.js';
 import { computeOutputAmount } from '@orca-so/stablecurve';
 import { BN } from 'bn.js';
-import { MarginAccount, Pool, SPLSwapPool, TokenAmount } from '@jet-lab/margin';
+import { MarginAccount, Pool, TokenAmount } from '@jet-lab/margin';
 import { Dictionary } from '@state/settings/localization/localization';
 import { TokenInputAmount } from '@state/actions/actions';
-import { DEFAULT_DECIMALS, getTokenAmountFromNumber } from '../currency';
+import { getTokenAmountFromNumber } from '../currency';
+import axios from 'axios';
 
 // Calculate the token output for a constant product swap
 function constantProductSwap(sourceAmount: number, swapSourceAmount: number, swapDestinationAmount: number): number[] {
@@ -61,18 +61,48 @@ export function getOutputTokenAmount(
 }
 
 // Calculate minimum output based on input and slippage
-export function getMinOutputAmount(
-  swapAmount: TokenAmount | undefined,
-  sourceTokenAmount: TokenAmount | undefined,
-  destinationTokenAmount: TokenAmount | undefined,
-  poolType: 'constantProduct' | 'stable' | undefined,
-  fees: number,
-  slippage: number
-) {
-  const outputAmount =
-    getOutputTokenAmount(swapAmount, sourceTokenAmount, destinationTokenAmount, poolType, fees) ??
-    TokenAmount.zero(destinationTokenAmount?.decimals ?? DEFAULT_DECIMALS);
-  return getTokenAmountFromNumber(outputAmount.tokens - outputAmount.tokens * slippage, outputAmount.decimals);
+// export function getMinOutputAmount(
+//   swapAmount: TokenAmount | undefined,
+//   sourceTokenAmount: TokenAmount | undefined,
+//   destinationTokenAmount: TokenAmount | undefined,
+//   poolType: 'constantProduct' | 'stable' | undefined,
+//   fees: number,
+//   slippage: number
+// ) {
+//   const outputAmount =
+//     getOutputTokenAmount(swapAmount, sourceTokenAmount, destinationTokenAmount, poolType, fees) ??
+//     TokenAmount.zero(destinationTokenAmount?.decimals ?? DEFAULT_DECIMALS);
+//   return getTokenAmountFromNumber(outputAmount.tokens - outputAmount.tokens * slippage, outputAmount.decimals);
+// }
+
+export async function getSwapRoutes(
+  sourceToken: PublicKey,
+  targetToken: PublicKey,
+  swapAmount: TokenAmount
+): Promise<SwapRoute[] | undefined> {
+  return (
+    await axios.get<any, any>(
+      `http://localhost:3005/swap/quote/${sourceToken.toBase58()}/${targetToken.toBase58()}/${swapAmount.lamports.toNumber()}`
+    )
+  ).data;
+}
+
+export interface SwapRoute {
+  input: number;
+  output: number;
+  path: SwapPath[];
+  fees: {
+    fee_bps: number;
+    tokens: number;
+    mint: string;
+  }[];
+}
+
+export interface SwapPath {
+  from_token: string;
+  to_token: string;
+  program: string;
+  swap_pool: string;
 }
 
 // Show review message for swap
@@ -201,13 +231,3 @@ export function generateSwapPrices(
   return swappedAmounts;
 }
 
-export async function getSwapPoolPrice(provider: AnchorProvider, pool: SPLSwapPool) {
-  const tokenAccountBalanceA = (await provider.connection.getTokenAccountBalance(new PublicKey(pool.tokenA))).value;
-  const tokenAccountBalanceB = (await provider.connection.getTokenAccountBalance(new PublicKey(pool.tokenB))).value;
-  const balanceTokenA = getTokenAmountFromNumber(tokenAccountBalanceA?.uiAmount ?? 0, tokenAccountBalanceA.decimals);
-  const balanceTokenB = getTokenAmountFromNumber(tokenAccountBalanceB?.uiAmount ?? 0, tokenAccountBalanceB.decimals);
-  return {
-    balanceTokenA,
-    balanceTokenB
-  };
-}

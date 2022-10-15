@@ -17,7 +17,7 @@ import { formatPriceImpact, formatRiskIndicator } from '@utils/format';
 import { notify } from '@utils/notify';
 import { getExplorerUrl, getTokenStyleType } from '@utils/ui';
 import { DEFAULT_DECIMALS, useCurrencyFormatting } from '@utils/currency';
-import { getMinOutputAmount, getOutputTokenAmount, useSwapReviewMessage } from '@utils/actions/swap';
+import { getSwapRoutes, useSwapReviewMessage } from '@utils/actions/swap';
 import { ActionResponse, useMarginActions } from '@utils/jet/marginActions';
 import { Info } from '@components/misc/Info';
 import { TokenInput } from '@components/misc/TokenInput/TokenInput';
@@ -26,19 +26,19 @@ import { ConnectionFeedback } from '@components/misc/ConnectionFeedback/Connecti
 import { ArrowRight } from '@components/modals/actions/ArrowRight';
 import { Button, Checkbox, Input, Radio, Typography } from 'antd';
 import SwapIcon from '@assets/icons/function-swap.svg';
-import { CurrentSplSwapPool, hasOrcaPool, SplSwapPools, SwapFees, SwapPoolTokenAmounts } from '@state/swap/splSwap';
+import { SwapFees, SwapPoolTokenAmounts, SwapRoutes } from '@state/swap/splSwap';
 import { useTokenInputDisabledMessage, useTokenInputErrorMessage } from '@utils/actions/tokenInput';
 import debounce from 'lodash.debounce';
 import { useJetStore } from '@jet-lab/store';
+import BN from 'bn.js';
 
 // Component for user to enter and submit a swap action
 export function SwapEntry(): JSX.Element {
   const { cluster, explorer } = useJetStore(state => state.settings);
-  const splSwapPools = useRecoilValue(SplSwapPools);
   const dictionary = useRecoilValue(Dictionary);
   const [swapsRowOrder, setSwapsRowOrder] = useRecoilState(SwapsRowOrder);
   const { currencyAbbrev } = useCurrencyFormatting();
-  const { splTokenSwap } = useMarginActions();
+  const { routeSwap } = useMarginActions();
   // Margin account
   const currentAction = useRecoilValue(CurrentAction);
   const currentAccount = useRecoilValue(CurrentAccount);
@@ -72,56 +72,44 @@ export function SwapEntry(): JSX.Element {
     ? outputPoolPosition.depositBalance.tokens - outputPoolPosition.loanBalance.tokens
     : 0;
   const hasOutputLoan = outputPoolPosition ? !outputPoolPosition.loanBalance.isZero() : false;
-  // Orca pools
-  const swapPool = useRecoilValue(CurrentSplSwapPool);
   const swapPoolTokenAmounts = useRecoilValue(SwapPoolTokenAmounts);
-  const noOrcaPool = currentPool && outputToken && !swapPool;
+  const swapRoutes = useRecoilValue(SwapRoutes);
   const swapFees = useRecoilValue(SwapFees);
   const [slippage, setSlippage] = useState(0.001);
   const [slippageInput, setSlippageInput] = useState('');
-  const swapOutputTokens = getOutputTokenAmount(
-    tokenInputAmount,
-    swapPoolTokenAmounts?.source,
-    swapPoolTokenAmounts?.destination,
-    swapPool?.pool.swapType,
-    swapFees,
-    swapPool?.pool.amp ?? 1
-  );
-  const minOutAmount = getMinOutputAmount(
-    tokenInputAmount,
-    swapPoolTokenAmounts?.source,
-    swapPoolTokenAmounts?.destination,
-    swapPool?.pool.swapType,
-    swapFees,
-    slippage
-  );
+  const [swapOutputTokens, setSwapOutputTokens] = useState(TokenAmount.zero(0));
+  const [minOutAmount, setMinOutAmount] = useState(TokenAmount.zero(0));
   // Exponents
   const expoSource = swapPoolTokenAmounts ? Math.pow(10, swapPoolTokenAmounts.source.decimals) : 0;
   const expoDestination = swapPoolTokenAmounts ? Math.pow(10, swapPoolTokenAmounts.destination.decimals) : 0;
   // Get the swap pool account balances
   const balanceSourceToken = swapPoolTokenAmounts ? swapPoolTokenAmounts.source.lamports.toNumber() : 0;
   const balanceDestinationToken = swapPoolTokenAmounts ? swapPoolTokenAmounts.destination.lamports.toNumber() : 0;
-  const poolPrice =
-    !swapPool || !currentPool || !outputToken
-      ? 0.0
-      : swapPool.pool.swapType === 'stable'
-      ? !swapPool.inverted
-        ? currentPool.tokenPrice / outputToken.tokenPrice
-        : outputToken.tokenPrice / currentPool.tokenPrice
-      : !swapPool.inverted
-      ? balanceDestinationToken / expoDestination / (balanceSourceToken / expoSource)
-      : balanceSourceToken / expoSource / (balanceDestinationToken / expoDestination);
-  const swapPrice =
-    !swapPool || !minOutAmount || minOutAmount.isZero() || !tokenInputAmount || tokenInputAmount.isZero()
-      ? 0.0
-      : !swapPool.inverted
-      ? minOutAmount.lamports.toNumber() / expoDestination / (tokenInputAmount.lamports.toNumber() / expoSource)
-      : tokenInputAmount.lamports.toNumber() / expoSource / (minOutAmount.lamports.toNumber() / expoDestination);
-  const priceImpact = !swapPool
-    ? 0.0
-    : !swapPool.inverted
-    ? (poolPrice - swapPrice) / poolPrice
-    : (swapPrice - poolPrice) / poolPrice;
+  // const poolPrice =
+  //   !swapPool || !currentPool || !outputToken
+  //     ? 0.0
+  //     : swapPool.pool.swapType === 'stable'
+  //     ? !swapPool.inverted
+  //       ? currentPool.tokenPrice / outputToken.tokenPrice
+  //       : outputToken.tokenPrice / currentPool.tokenPrice
+  //     : !swapPool.inverted
+  //     ? balanceDestinationToken / expoDestination / (balanceSourceToken / expoSource)
+  //     : balanceSourceToken / expoSource / (balanceDestinationToken / expoDestination);
+  // const swapPrice =
+  //   !swapPool || !minOutAmount || minOutAmount.isZero() || !tokenInputAmount || tokenInputAmount.isZero()
+  //     ? 0.0
+  //     : !swapPool.inverted
+  //     ? minOutAmount.lamports.toNumber() / expoDestination / (tokenInputAmount.lamports.toNumber() / expoSource)
+  //     : tokenInputAmount.lamports.toNumber() / expoSource / (minOutAmount.lamports.toNumber() / expoDestination);
+  // const priceImpact = !swapPool
+  //   ? 0.0
+  //   : !swapPool.inverted
+  //   ? (poolPrice - swapPrice) / poolPrice
+  //   : (swapPrice - poolPrice) / poolPrice;
+  const poolPrice = 0.0;
+  const swapPrice = 0.0;
+  const priceImpact = 0.0;
+  const [swapFeeUsd, setSwapFeeUsd] = useState(0.0);
   const priceImpactStyle = priceImpact <= 0.01 ? 'success' : priceImpact <= 0.03 ? 'warning' : 'danger';
   const [repayLoanWithOutput, setRepayLoanWithOutput] = useState(false);
   // Swap / health feedback
@@ -142,19 +130,14 @@ export function SwapEntry(): JSX.Element {
     outputToken,
     swapPoolTokenAmounts?.source,
     swapPoolTokenAmounts?.destination,
-    swapPool?.pool.swapType,
+    'constantProduct',
     swapFees
   );
   const errorMessage = useTokenInputErrorMessage(undefined, projectedRiskIndicator);
   const [sendingTransaction, setSendingTransaction] = useRecoilState(SendingTransaction);
   const [switchingAssets, setSwitchingAssets] = useState(false);
   const disabled =
-    sendingTransaction ||
-    !currentPool ||
-    !outputToken ||
-    noOrcaPool ||
-    projectedRiskIndicator >= 1 ||
-    disabledMessage.length > 0;
+    sendingTransaction || !currentPool || !outputToken || projectedRiskIndicator >= 1 || disabledMessage.length > 0;
   const { Paragraph, Text } = Typography;
 
   // Parse slippage input
@@ -165,6 +148,33 @@ export function SwapEntry(): JSX.Element {
     }
   }
   useEffect(getSlippageInput, [setSlippage, slippageInput]);
+
+  // Changes in routes and slippage
+  useEffect(() => {
+    if (!outputToken || !pools) {
+      return;
+    }
+    if (!swapRoutes.length) {
+      setSwapOutputTokens(TokenAmount.zero(0));
+      setMinOutAmount(TokenAmount.zero(0));
+      setSwapFeeUsd(0.0);
+      return;
+    }
+    // TODO: assume that the user will take the cheapest route always
+    const currentRoute = swapRoutes[0];
+    setSwapOutputTokens(new TokenAmount(new BN(currentRoute.output), outputToken.decimals));
+    setMinOutAmount(new TokenAmount(new BN(Math.round(currentRoute.output * (1 - slippage))), outputToken.decimals));
+    let totalFee = 0.0;
+    currentRoute.fees.forEach((fee: any) => { // TODO: add type
+      const pool = Object.values(pools.tokenPools).find(p => {
+        return p.tokenMint.toBase58() === fee.mint;
+      });
+      if (pool) {
+        totalFee += (pool.tokenPrice * fee.tokens) / Math.pow(10, pool.decimals);
+      }
+    });
+    setSwapFeeUsd(totalFee);
+  }, [swapRoutes, slippage, outputToken?.decimals, pools]);
 
   // Renders the user's collateral balance for input token
   function renderInputCollateralBalance() {
@@ -240,6 +250,23 @@ export function SwapEntry(): JSX.Element {
     return render;
   }
 
+  function renderSwapFee() {
+    let render = (
+      <div className="flex-centered">
+        <Paragraph type="success">$0</Paragraph>
+      </div>
+    );
+    if (swapOutputTokens) {
+      render = (
+        <div className="flex-centered">
+          <Paragraph>{currencyAbbrev(swapFeeUsd, 2, true, undefined, true, true)}</Paragraph>
+        </div>
+      );
+    }
+
+    return render;
+  }
+
   // Returns text for the swap submit button
   function getSubmitText() {
     const inputText = currentPool?.symbol ?? '';
@@ -254,16 +281,16 @@ export function SwapEntry(): JSX.Element {
 
   // Swap
   async function sendSwap() {
-    if (!currentPool || !outputToken || noOrcaPool || !swapPool) {
+    if (!currentPool || !outputToken) {
       return;
     }
 
     setSendingTransaction(true);
     const swapTitle = dictionary.actions.swap.title.toLowerCase();
-    const [txId, resp] = await splTokenSwap(
+    const [txId, resp] = await routeSwap(
       currentPool,
       outputToken,
-      swapPool.pool,
+      swapRoutes[0].path, // TODO: must not be empty
       tokenInputAmount,
       minOutAmount,
       hasOutputLoan && repayLoanWithOutput
@@ -303,6 +330,17 @@ export function SwapEntry(): JSX.Element {
     setSendingTransaction(false);
   }
 
+  // Get the swap route
+  useEffect(() => {
+    //
+    if (!currentPool || !outputToken || !tokenInputAmount || tokenInputAmount.isZero()) {
+      return;
+    }
+    getSwapRoutes(currentPool.tokenMint, outputToken.tokenMint, tokenInputAmount)
+      .then(routes => {})
+      .catch(e => console.error(e));
+  }, [tokenInputAmount, currentPool?.symbol, outputToken?.symbol]); // TODO: input and output pools
+
   // Disable repayLoanWithOutput if user has no loan to repay
   useEffect(() => {
     if (!hasOutputLoan) {
@@ -320,7 +358,7 @@ export function SwapEntry(): JSX.Element {
       !outputToken || currentPool.symbol === outputToken.symbol || currentPool.symbol === outputToken.symbol;
     if (pools && canFindOutput) {
       let output = Object.values(pools.tokenPools).filter(pool => {
-        if (pool.symbol !== currentPool?.symbol && hasOrcaPool(splSwapPools, currentPool.symbol, pool.symbol)) {
+        if (pool.symbol !== currentPool?.symbol) {
           return true;
         } else {
           return false;
@@ -403,21 +441,9 @@ export function SwapEntry(): JSX.Element {
           </div>
           <TokenInput
             poolSymbol={outputToken?.symbol}
-            value={
-              getOutputTokenAmount(
-                tokenInputAmount,
-                swapPoolTokenAmounts?.source,
-                swapPoolTokenAmounts?.destination,
-                swapPool?.pool.swapType,
-                swapFees,
-                swapPool?.pool.amp ?? 1
-              ) ?? TokenAmount.zero(0)
-            }
+            value={swapOutputTokens}
             tokenOptions={poolOptions.filter(pool => {
-              if (
-                pool.symbol !== currentPool?.symbol &&
-                hasOrcaPool(splSwapPools, currentPool?.symbol ?? '', pool.symbol ?? '')
-              ) {
+              if (pool.symbol !== currentPool?.symbol) {
                 return true;
               } else {
                 return false;
@@ -516,20 +542,18 @@ export function SwapEntry(): JSX.Element {
             <Paragraph type="secondary">{dictionary.common.priceImpact}</Paragraph>
             {renderPriceImpact()}
           </div>
+          <div className="order-entry-body-section-info-item flex align-center justify-between">
+            <Paragraph type="secondary">{dictionary.common.swapFee}</Paragraph>
+            {renderSwapFee()}
+          </div>
         </div>
-        {noOrcaPool || errorMessage || swapReviewMessage.length ? (
+        {errorMessage || swapReviewMessage.length ? (
           <div className="order-entry-body-section flex-centered">
             <Paragraph
               italic
-              type={noOrcaPool || errorMessage.length ? 'danger' : undefined}
-              className={`order-review ${
-                noOrcaPool || errorMessage.length || swapReviewMessage.length ? '' : 'no-opacity'
-              }`}>
-              {noOrcaPool
-                ? dictionary.actions.swap.errorMessages.noPools
-                : errorMessage.length
-                ? errorMessage
-                : swapReviewMessage}
+              type={errorMessage.length ? 'danger' : undefined}
+              className={`order-review ${errorMessage.length || swapReviewMessage.length ? '' : 'no-opacity'}`}>
+              {errorMessage.length ? errorMessage : swapReviewMessage}
             </Paragraph>
           </div>
         ) : (

@@ -71,6 +71,15 @@ init-idl() {
     anchor idl init -f ./target/idl/jet_fixed_term.json $MRKT_PID --provider.cluster localnet
 }
 
+upgrade-idl() {
+    anchor idl upgrade -f ./target/idl/jet_metadata.json $META_PID --provider.cluster localnet
+    anchor idl upgrade -f ./target/idl/jet_control.json $CTRL_PID --provider.cluster localnet
+    # anchor idl upgrade -f ./target/idl/jet_margin.json $MRGN_PID --provider.cluster localnet
+    anchor idl upgrade -f ./target/idl/jet_margin_pool.json $POOL_PID --provider.cluster localnet
+    anchor idl upgrade -f ./target/idl/jet_margin_swap.json $MGNSWAP_PID --provider.cluster localnet
+    # anchor idl upgrade -f ./target/idl/jet_fixed_term.json $BOND_PID --provider.cluster localnet
+}
+
 start-validator() {
     solana-test-validator \
         --bpf-program $JTS_PID $JTS_SO \

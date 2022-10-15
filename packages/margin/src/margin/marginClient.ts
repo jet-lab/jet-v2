@@ -167,7 +167,8 @@ export class MarginClient {
       borrow: "Instruction: MarginBorrow",
       "margin repay": "Instruction: MarginRepay",
       repay: "Instruction: Repay",
-      swap: "Instruction: MarginSwap"
+      swap: "Instruction: MarginSwap",
+      routeSwap: "Instruction: RouteSwap"
     }
     let tradeAction = ""
 
