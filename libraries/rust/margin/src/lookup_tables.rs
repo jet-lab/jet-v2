@@ -23,7 +23,7 @@ use anyhow::{Result, bail, Context};
 use jet_simulation::solana_rpc_api::SolanaRpcClient;
 use solana_address_lookup_table_program::state::AddressLookupTable;
 use solana_sdk::{
-    commitment_config::CommitmentConfig, pubkey::Pubkey, signer::Signer, signature::Signature, transaction::VersionedTransaction, instruction::Instruction, message::v0
+    commitment_config::CommitmentConfig, pubkey::Pubkey, signer::Signer, signature::{Signature, Keypair}, transaction::VersionedTransaction, instruction::Instruction, message::v0, address_lookup_table_account::AddressLookupTableAccount
 };
 
 /// TODO
@@ -71,4 +71,34 @@ pub async fn extend_lookup_table(
     rpc.confirm_transactions(&[signature]).await?;
 
     Ok(())
+}
+
+/// Use a lookup table
+/// 
+/// TODO assumes the payer is not different, change if we find that it's so
+pub async fn use_lookup_table(
+    rpc: &Arc<dyn SolanaRpcClient>,
+    table_address: Pubkey,
+    instructions: &[Instruction],
+    keypairs: &[&Keypair]
+) -> Result<VersionedTransaction> {
+    let table = rpc.get_account(&table_address).await?.with_context(|| format!("Address {table_address} could not be found"))?;
+    let table = AddressLookupTable::deserialize(&table.data)?;
+    let lookup_table_account = AddressLookupTableAccount {
+        key: table_address,
+        addresses: table.addresses.to_vec()
+    };
+
+    let mut signers = vec![rpc.payer()];
+    signers.extend_from_slice(keypairs);
+
+    let blockhash = rpc.get_latest_blockhash().await?;
+    let tx = VersionedTransaction::try_new(
+        solana_sdk::message::VersionedMessage::V0(
+            v0::Message::try_compile(&rpc.payer().pubkey(), instructions, &[lookup_table_account], blockhash)?
+        ),
+        &signers
+    )?;
+
+    Ok(tx)
 }
