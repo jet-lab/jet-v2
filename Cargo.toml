@@ -10,5 +10,5 @@ members = [
 
 [patch.crates-io]
 jet-proto-math = { git = "https://github.com/jet-lab/program-libraries", branch = "fixed-point-math-uint-091" }
-anchor-lang = { git = "https://github.com/jet-lab/anchor", branch = "master" }
-anchor-spl = { git = "https://github.com/jet-lab/anchor", branch = "master" }
+anchor-lang = { git = "https://github.com/jet-lab/anchor", branch = "temp-version-bump-1-11" }
+anchor-spl = { git = "https://github.com/jet-lab/anchor", branch = "temp-version-bump-1-11" }

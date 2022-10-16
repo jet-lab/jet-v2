@@ -19,8 +19,8 @@ testing = ["jet-margin-pool/testing", "jet-margin/testing"]
 devnet = ["jet-static-program-registry/devnet"]
 
 [dependencies]
-anchor-lang = { git = "https://github.com/jet-lab/anchor", branch = "master" }
-anchor-spl = { git = "https://github.com/jet-lab/anchor", branch = "master" }
+anchor-lang = { git = "https://github.com/jet-lab/anchor", branch = "temp-version-bump-1-11" }
+anchor-spl = { git = "https://github.com/jet-lab/anchor", branch = "temp-version-bump-1-11" }
 
 jet-margin-pool = { path = "../margin-pool", features = ["cpi", "no-entrypoint"] }
 jet-margin = { path = "../margin", features = ["cpi", "no-entrypoint"] }

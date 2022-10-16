@@ -26,13 +26,13 @@ borsh = "0.9.1"
 bytemuck = {version = "1.7.2", features = ["derive"]}
 num-derive = "0.3.3"
 num-traits = "0.2"
-pyth-sdk-solana = "0.4"
+pyth-sdk-solana = { git = "https://github.com/nevi-me/pyth-sdk-rs", branch = "solana-1-11" }
 serde = { version = "1.0", optional = true }
 
 agnostic-orderbook = { git = "https://github.com/jet-lab/agnostic-orderbook.git", branch = "main", features = ["lib", "utils"] }
 
-anchor-lang = { git = "https://github.com/jet-lab/anchor", branch = "master" }
-anchor-spl =  { git = "https://github.com/jet-lab/anchor", branch = "master" }
+anchor-lang = { git = "https://github.com/jet-lab/anchor", branch = "temp-version-bump-1-11" }
+anchor-spl =  { git = "https://github.com/jet-lab/anchor", branch = "temp-version-bump-1-11" }
 
 jet-proto-math = { git = "https://github.com/jet-lab/program-libraries", branch = "fixed-point-math-uint-091", features = ["traits"] }
 

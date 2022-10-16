@@ -51,7 +51,7 @@ pub fn configure_handler(ctx: Context<Configure>, config: Option<MarginPoolConfi
         let product_account = pyth_sdk_solana::state::load_product_account(&**product_data)
             .map_err(|_| ErrorCode::InvalidPoolOracle)?;
 
-        let expected_price_key = Pubkey::new_from_array(product_account.px_acc.val);
+        let expected_price_key = product_account.px_acc;
         if expected_price_key != *ctx.accounts.pyth_price.key {
             msg!("oracle product account does not match price account");
             return err!(ErrorCode::InvalidPoolOracle);
