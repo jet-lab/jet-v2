@@ -69,6 +69,9 @@ pub mod util;
 /// jet-bonds sdk
 pub mod bonds;
 
+/// Lookup tables
+pub mod lookup_tables;
+
 /// Utilities for test environments
 pub mod test_service;
 
