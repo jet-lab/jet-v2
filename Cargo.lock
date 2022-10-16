@@ -2227,6 +2227,7 @@ dependencies = [
  "pyth-sdk-solana 0.4.2",
  "rand 0.8.5",
  "serde",
+ "solana-address-lookup-table-program",
  "solana-sdk",
  "spl-associated-token-account",
  "spl-token 3.3.1",
