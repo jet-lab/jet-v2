@@ -34,7 +34,8 @@ anchor-lang = { git = "https://github.com/jet-lab/anchor", branch = "master" }
 anchor-spl = { git = "https://github.com/jet-lab/anchor", branch = "master" }
 anchor-client = { git = "https://github.com/jet-lab/anchor", branch = "master" }
 
-jet-simulation = { git = "https://github.com/jet-lab/jet-simulation", branch = "master" }
+# waiting on PR 10 to be merged
+jet-simulation = { git = "https://github.com/jet-lab/jet-simulation", branch = "nonblocking-rpcclient" }
 jet-test-service = { path = "../../../programs/test-service", features = ["no-entrypoint"] }
 jet-bonds = { path = "../../../programs/bonds", features = ["no-entrypoint", "cli"] }
 jet-airspace = { path = "../../../programs/airspace", features = ["no-entrypoint"] }

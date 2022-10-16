@@ -160,7 +160,7 @@ async fn rounding_poc() -> Result<()> {
         .await
         .unwrap();
 
-    let mut clk: Clock = match ctx.rpc.get_clock() {
+    let mut clk: Clock = match ctx.rpc.get_clock().await {
         Some(c) => c,
         None => panic!("bad"),
     };

@@ -281,7 +281,7 @@ impl TokenManager {
         let mut account: pyth_sdk_solana::state::PriceAccount =
             self.get_pod_metadata(&price_address).await?;
 
-        let clock = self.rpc.get_clock().expect("could not get the clock");
+        let clock = self.rpc.get_clock().await.expect("could not get the clock");
         account.agg.pub_slot = clock.slot;
         account.timestamp = clock.unix_timestamp;
 
@@ -300,7 +300,7 @@ impl TokenManager {
         let mut account: pyth_sdk_solana::state::PriceAccount =
             self.get_pod_metadata(&price_address).await?;
 
-        let clock = self.rpc.get_clock().expect("could not get the clock");
+        let clock = self.rpc.get_clock().await.expect("could not get the clock");
         account.agg.pub_slot = clock.slot;
         account.timestamp = clock.unix_timestamp;
 
@@ -336,7 +336,7 @@ impl TokenManager {
         mint: &Pubkey,
         price: &TokenPrice,
     ) -> Result<TransactionBuilder, Error> {
-        let clock = self.rpc.get_clock().expect("could not get the clock");
+        let clock = self.rpc.get_clock().await.expect("could not get the clock");
         let mut price_data = default_price();
 
         let price_value =
