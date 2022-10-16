@@ -22,7 +22,7 @@ use std::{
     sync::Arc,
 };
 
-use jet_proto_math::Number128;
+use jet_proto_math::number_128::Number128;
 use jet_simulation::solana_rpc_api::SolanaRpcClient;
 use solana_sdk::{program_pack::Pack, pubkey::Pubkey};
 use spl_token_swap::state::SwapV1;

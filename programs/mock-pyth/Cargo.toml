@@ -18,6 +18,6 @@ mainnet-beta = []
 devnet = []
 
 [dependencies]
-anchor-lang = { git = "https://github.com/jet-lab/anchor", branch = "master" }
+anchor-lang = { git = "https://github.com/jet-lab/anchor", branch = "temp-version-bump-1-11" }
 arrayref = "0.3.6"
 bytemuck = { version = "1.4.0" }

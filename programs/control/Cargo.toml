@@ -23,9 +23,9 @@ testing = [
 devnet = []
 
 [dependencies]
-solana-program = "1.10"
-anchor-lang = { git = "https://github.com/jet-lab/anchor", branch = "master" }
-anchor-spl = { git = "https://github.com/jet-lab/anchor", branch = "master" }
+solana-program = "1.11"
+anchor-lang = { git = "https://github.com/jet-lab/anchor", branch = "temp-version-bump-1-11" }
+anchor-spl = { git = "https://github.com/jet-lab/anchor", branch = "temp-version-bump-1-11" }
 
 jet-metadata = { path = "../metadata", features = ["cpi"] }
 jet-bonds = { path = "../bonds", features = ["cpi"] }

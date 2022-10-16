@@ -422,7 +422,7 @@ async fn collect_pool_summary(
         .unwrap();
 
     let loans = spl_token::amount_to_ui_amount(
-        jet_proto_math::Number::from_bits(pool.borrowed_tokens).as_u64(0),
+        jet_proto_math::number::Number::from_bits(pool.borrowed_tokens).as_u64(0),
         token_mint.decimals,
     );
     let rate = pool.interest_rate().to_string().parse::<f64>()?;

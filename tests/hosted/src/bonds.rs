@@ -598,11 +598,13 @@ impl<P: Proxy> BondsUser<P> {
             &self.manager.client.payer().pubkey(),
             &self.proxy.pubkey(),
             &self.manager.ix_builder.token_mint(),
+            &spl_token::id(),
         );
         let create_ticket = create_associated_token_account(
             &self.manager.client.payer().pubkey(),
             &self.proxy.pubkey(),
             &self.manager.ix_builder.ticket_mint(),
+            &spl_token::id(),
         );
         let fund = spl_token::instruction::mint_to(
             &spl_token::ID,

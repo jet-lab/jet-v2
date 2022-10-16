@@ -141,11 +141,13 @@ impl<'a> User<'a> {
             &self.client.signer.pubkey(),
             &self.key(),
             &self.client.ix.token_mint(),
+            &spl_token::id(),
         );
         let init_ticket = create_associated_token_account(
             &self.client.signer.pubkey(),
             &self.key(),
             &self.client.ix.ticket_mint(),
+            &spl_token::id(),
         );
 
         let fund_token = airdrop_ix(

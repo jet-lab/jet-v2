@@ -21,7 +21,7 @@ use bytemuck::{Contiguous, Pod, Zeroable};
 #[cfg(any(test, feature = "cli"))]
 use serde::ser::{Serialize, SerializeStruct, Serializer};
 
-use jet_proto_math::Number128;
+use jet_proto_math::number_128::Number128;
 
 use anchor_lang::Result as AnchorResult;
 use std::result::Result;
