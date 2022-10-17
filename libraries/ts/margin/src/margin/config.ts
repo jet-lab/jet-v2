@@ -6,6 +6,7 @@ export type MarginCluster = "localnet" | "devnet" | "mainnet-beta" | MarginConfi
 
 export interface MarginConfig {
   bondsProgramId?: string
+  metadataAccount: string
   controlProgramId: Address
   marginProgramId: Address
   marginPoolProgramId: Address
