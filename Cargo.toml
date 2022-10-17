@@ -3,6 +3,7 @@ members = [
     "programs/*",
     "tests/hosted",
     "tests/mock-adapter",
+    "tests/bench-program",
     "libraries/rust/*",
     "libraries/ts/bonds/wasm-utils",
     "tools/*"

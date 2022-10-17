@@ -1,0 +1,87 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+//
+// Copyright (C) 2022 JET PROTOCOL HOLDINGS, LLC.
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Affero General Public License for more details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+use std::convert::TryFrom;
+
+use anchor_lang::prelude::*;
+
+use crate::adapter::{self, InvokeAdapter};
+use crate::{events, ErrorCode, AdapterConfig, MarginAccountV2};
+
+#[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone)]
+pub struct InstructionParams {
+    pub program_index: u8,
+    pub account_indices: Vec<u8>,
+    pub data: Vec<u8>,
+}
+
+#[derive(Accounts)]
+pub struct InvokeMultiple<'info> {
+    /// The authority that owns the margin account
+    pub owner: Signer<'info>,
+
+    /// The margin account to proxy an action for
+    #[account(mut, has_one = owner)]
+    pub margin_account: AccountLoader<'info, MarginAccountV2>,
+}
+
+pub fn invoke_mulitple_handler<'info>(
+    ctx: Context<'_, '_, '_, 'info, InvokeMultiple<'info>>,
+    instructions: Vec<InstructionParams>,
+) -> Result<()> {
+    if ctx.accounts.margin_account.load()?.liquidation != Pubkey::default() {
+        msg!("account is being liquidated");
+        return Err(ErrorCode::Liquidating.into());
+    }
+
+    for instruction in instructions {
+        let program_index = instruction.program_index as usize;
+        let program_account = &ctx.remaining_accounts[program_index];
+        let adapter_config_account = &ctx.remaining_accounts[program_index + 1];
+
+        let adapter_config = Account::<AdapterConfig>::try_from(adapter_config_account)?;
+
+    }
+
+    emit!(events::AdapterInvokeBegin {
+        margin_account: ctx.accounts.margin_account.key(),
+        adapter_program: ctx.accounts.adapter_program.key(),
+    });
+
+    let events = adapter::invoke(
+        &InvokeAdapter {
+            margin_account: &ctx.accounts.margin_account,
+            adapter_program: &ctx.accounts.adapter_program,
+            accounts: ctx.remaining_accounts,
+            signed: true,
+        },
+        data,
+    )?;
+
+    for event in events {
+        event.emit();
+    }
+
+    emit!(events::AdapterInvokeEnd {});
+
+    ctx.accounts
+        .margin_account
+        .load()?
+        .verify_healthy_positions()?;
+
+    Ok(())
+}

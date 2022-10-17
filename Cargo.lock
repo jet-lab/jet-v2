@@ -1048,7 +1048,7 @@ dependencies = [
  "autocfg",
  "cfg-if",
  "crossbeam-utils",
- "memoffset",
+ "memoffset 0.6.5",
  "once_cell",
  "scopeguard",
 ]
@@ -1507,7 +1507,7 @@ version = "0.3.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1e1c54951450cbd39f3dbcf1005ac413b49487dabf18a720ad2383eccfeffb92"
 dependencies = [
- "memoffset",
+ "memoffset 0.6.5",
  "rustc_version 0.3.3",
 ]
 
@@ -2050,6 +2050,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "intrusive-collections"
+version = "0.9.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bfe531a7789d7120f3e17d4f3f2cd95f54418ba7354f60b7b622b6644a07888a"
+dependencies = [
+ "memoffset 0.5.6",
+]
+
+[[package]]
 name = "ipnet"
 version = "2.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2088,6 +2097,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "jet-bench-program"
+version = "0.1.0"
+dependencies = [
+ "bytemuck",
+ "jet-margin",
+ "solana-program",
+ "thiserror",
+]
+
+[[package]]
 name = "jet-bonds"
 version = "0.1.0"
 dependencies = [
@@ -2118,6 +2137,14 @@ dependencies = [
  "jet-margin-pool",
  "jet-metadata",
  "solana-program",
+]
+
+[[package]]
+name = "jet-core"
+version = "0.1.0"
+dependencies = [
+ "bytemuck",
+ "thiserror",
 ]
 
 [[package]]
@@ -2168,8 +2195,10 @@ dependencies = [
  "anchor-spl",
  "bitflags",
  "bytemuck",
+ "intrusive-collections",
  "itertools 0.10.5",
  "jet-airspace",
+ "jet-core",
  "jet-metadata",
  "jet-proto-math 1.1.0 (git+https://github.com/jet-lab/program-libraries?branch=main)",
  "jet-proto-proc-macros",
@@ -2539,6 +2568,15 @@ dependencies = [
 
 [[package]]
 name = "memoffset"
+version = "0.5.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "043175f069eda7b85febe4a74abbaeff828d9f8b448515d3151a14a3542811aa"
+dependencies = [
+ "autocfg",
+]
+
+[[package]]
+name = "memoffset"
 version = "0.6.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5aa361d4faea93603064a027415f07bd8e1d5c88c9fbf68bf56a285428fd79ce"
@@ -2653,7 +2691,7 @@ dependencies = [
  "cc",
  "cfg-if",
  "libc",
- "memoffset",
+ "memoffset 0.6.5",
 ]
 
 [[package]]

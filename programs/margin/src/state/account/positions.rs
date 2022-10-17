@@ -318,6 +318,14 @@ impl Serialize for AccountPosition {
     }
 }
 
+struct AccountPositionNode {
+    position: AccountPosition
+}
+
+pub struct AccountPositionMap {
+
+}
+
 #[assert_size(40)]
 #[derive(AnchorSerialize, AnchorDeserialize, Default, Pod, Zeroable, Debug, Clone, Copy)]
 #[repr(C)]

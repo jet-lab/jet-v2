@@ -17,9 +17,12 @@
 
 use anchor_lang::prelude::Pubkey;
 
-use crate::{util::Seeds, ErrorCode, TokenConfig};
+use jet_core::Seeds;
+use jet_proto_math::Number128;
 
-use super::{positions::AccountPosition, structure::MarginAccountV1};
+use crate::{ErrorCode, TokenConfig, PriceInfo};
+
+use super::{positions::AccountPosition, v1};
 
 /// Implements operations for margin accounts, and handles any version
 /// differences with regards to the underlying account state.
@@ -28,11 +31,11 @@ pub struct MarginAccountOperator<'a> {
 }
 
 enum MarginAccountVersion<'a> {
-    V1(&'a mut MarginAccountV1),
+    V1(&'a mut v1::MarginAccount),
 }
 
-/// Defines the common operations that can be performed on a margin account
-trait MarginAccountOperations {
+/// Defines the operations that can be performed on margin account state
+pub trait MarginAccountOperations {
     /// Get the seeds needed to sign for the margin account
     fn signer_seeds(&self) -> Seeds;
 
@@ -41,21 +44,42 @@ trait MarginAccountOperations {
         &mut self,
         config: &TokenConfig,
         address: Pubkey,
-    ) -> Result<AccountPosition, ErrorCode>;
+    ) -> Result<&mut dyn MarginPosition, ErrorCode>;
 
     /// Free the space from a previously registered position no longer needed
     fn unregister_position(&mut self, mint: &Pubkey, address: &Pubkey) -> Result<(), ErrorCode>;
+    
+    fn get_position_mut(&mut self, mint: &Pubkey) -> Result<&mut dyn MarginPosition, ErrorCode>;
+}
 
-    /// Update the configuration for an existing position
-    fn refresh_position_config(
-        &mut self,
-        config: &TokenConfig,
-    ) -> Result<AccountPosition, ErrorCode>;
+pub trait MarginAccountInfo {
+    fn version(&self) -> u8;
+    fn owner(&self) -> &Pubkey;
+    fn airspace(&self) -> &Pubkey;
+}
 
-    /// Iterates over all positions, applying a reducing function to return a
-    /// new value.
-    fn reduce_positions<F, R>(&self, action: F) -> R
-    where
-        F: FnMut(R, &AccountPosition) -> R,
-        R: Default;
+pub trait MarginPosition {
+    /// The token/mint for the asset held by this position
+    fn token(&self) -> &Pubkey;
+
+    /// The address of the account containing the value held by this position
+    fn address(&self) -> &Pubkey;
+
+    /// The adapter with authority over this position
+    fn adapter(&self) -> Option<&Pubkey>;
+
+    /// The last recorded value of the position
+    fn value(&self) -> &Number128;
+
+    /// The last recorded price for the asset
+    fn price(&self) -> &PriceInfo;
+
+    /// The last recorded token balance held by this position
+    fn balance(&self) -> u64;
+
+    /// Update the current balance
+    fn set_balance(&mut self, balance: u64);
+
+    /// Update the price of the asset
+    fn set_price(&mut self, price: &PriceInfo);
 }

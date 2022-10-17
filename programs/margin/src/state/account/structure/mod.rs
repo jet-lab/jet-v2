@@ -28,34 +28,6 @@ pub const MARGIN_ACCOUNT_SEED: &[u8; SEED_LEN] = b"margin-account";
 
 const SEED_LEN: usize = 14;
 
-#[account(zero_copy)]
-#[repr(C)]
-// bytemuck requires a higher alignment than 1 for unit tests to run.
-#[cfg_attr(not(target_arch = "bpf"), repr(align(8)))]
-pub struct MarginAccountV1 {
-    pub version: u8,
-    pub bump_seed: [u8; 1],
-    pub user_seed: [u8; 2],
-
-    /// Data an adapter can use to check what the margin program thinks about the current invocation
-    /// Must normally be zeroed, except during an invocation.
-    pub invocation: Invocation,
-
-    pub reserved0: [u8; 3],
-
-    /// The owner of this account, which generally has to sign for any changes to it
-    pub owner: Pubkey,
-
-    /// The state of an active liquidation for this account
-    pub liquidation: Pubkey,
-
-    /// The active liquidator for this account
-    pub liquidator: Pubkey,
-
-    /// The storage for tracking account balances
-    pub positions: [u8; 7432],
-}
-
 #[assert_size(80)]
 #[derive(Pod, Zeroable, Default, Clone, Copy)]
 #[repr(C)]

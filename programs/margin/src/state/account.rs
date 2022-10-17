@@ -35,6 +35,8 @@ mod positions;
 mod loader;
 mod operations;
 mod structure;
+mod v1;
+mod v2;
 
 pub use positions::*;
 

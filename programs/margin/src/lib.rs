@@ -602,11 +602,19 @@ pub enum ErrorCode {
 
     /// 141051 - Attempting to use or set configuration that is not valid
     #[msg("attempting to use or set invalid configuration")]
-    InvalidConfig = 135_051,
+    InvalidConfig,
 
     /// 141051 - Attempting to use or set an oracle that is not valid
     #[msg("attempting to use or set invalid configuration")]
-    InvalidOracle = 135_052,
+    InvalidOracle,
+
+    /// 141060 - The margin account is invalid (not a margin account, or not initialized)
+    #[msg("not a valid margin account")]
+    InvalidAccount = 135_060,
+
+    /// 141061 - The margin account is already created, cannot be reinitialized
+    #[msg("account already created")]
+    AlreadyCreatedAccount,
 }
 
 /// Writes the result of position changes from an adapter invocation.
