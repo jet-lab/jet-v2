@@ -202,7 +202,7 @@ export function useAccountsSyncer() {
 
       // Account trasactions
       const transactions =
-        cluster === 'devnet'
+        cluster !== 'mainnet-beta'
           ? await MarginClient.getTransactionHistory(
               currentAccount.provider,
               currentAccount.address,
