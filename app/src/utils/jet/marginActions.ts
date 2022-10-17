@@ -13,7 +13,7 @@ import {
   TokenAmount,
   TokenFaucet
 } from '@jet-lab/margin';
-import { MarginConfig } from '../../state/config/marginConfig';
+import { MainConfig } from '../../state/config/marginConfig';
 import { Pools, CurrentPool } from '../../state/pools/pools';
 import { WalletTokens } from '../../state/user/walletTokens';
 import { CurrentAccount, CurrentAccountAddress, FavoriteAccounts } from '../../state/user/accounts';
@@ -31,7 +31,7 @@ export enum ActionResponse {
 }
 export function useMarginActions() {
   // const cluster = useRecoilValue(Cluster);
-  const config = useRecoilValue(MarginConfig);
+  const config = useRecoilValue(MainConfig);
   const cluster = useRecoilValue(Cluster);
   const dictionary = useRecoilValue(Dictionary);
   const { programs, provider } = useProvider();

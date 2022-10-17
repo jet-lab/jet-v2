@@ -100,5 +100,8 @@ module.exports = {
     new DefinePlugin({
       'process.env': JSON.stringify(dotenv.config().parsed || {})
     })
-  ]
+  ],
+  experiments: {
+    asyncWebAssembly: true
+  }
 };

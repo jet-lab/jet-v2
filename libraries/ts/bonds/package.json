@@ -8,10 +8,10 @@
   "scripts": {
     "build": "yarn build:tsc",
     "build:with-wasm": "yarn build:wasm && yarn build:tsc",
-    "build:wasm": "wasm-pack build --target nodejs ./wasm-utils ; copyfiles -u 1 wasm-utils/pkg/* dist/wasm-utils",
+    "build:wasm": "wasm-pack build --target bundler ./wasm-utils ; copyfiles -u 1 wasm-utils/pkg/* dist/wasm-utils",
     "build:tsc": "tsc & tsc -p tsconfig-cjs.json ; wait",
     "watch": "yarn watch:wasm & yarn watch:tsc",
-    "watch:wasm": "cargo watch -w 'libraries/ts/bonds/wasm-utils/src'  -w 'libraries/ts/bonds/wasm-utils/Cargo.toml' -s 'wasm-pack build --target nodejs libraries/ts/bonds/wasm-utils' -s 'copyfiles -u 4 libraries/ts/bonds/wasm-utils/pkg/* libraries/ts/bonds/dist/wasm-utils'",
+    "watch:wasm": "cargo watch -w 'libraries/ts/bonds/wasm-utils/src'  -w 'libraries/ts/bonds/wasm-utils/Cargo.toml' -s 'wasm-pack build --target bundler libraries/ts/bonds/wasm-utils' -s 'copyfiles -u 4 libraries/ts/bonds/wasm-utils/pkg/* libraries/ts/bonds/dist/wasm-utils'",
     "watch:tsc": "tsc --watch --preserveWatchOutput --pretty & tsc -p tsconfig-cjs.json --watch --preserveWatchOutput --pretty",
     "copy:wasm": "copyfiles -u 1 wasm-utils/pkg/* dist/wasm-utils",
     "lint": "tslint -c tslint.json src/**/*.ts",

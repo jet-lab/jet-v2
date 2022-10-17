@@ -1,83 +1,75 @@
-import { BondMarket, JetBondsIdl, Orderbook } from '@jet-lab/jet-bonds-client';
+import { BondMarket, JetBonds, JetBondsIdl, Orderbook } from '@jet-lab/jet-bonds-client';
 import { Program } from '@project-serum/anchor';
 import { useEffect } from 'react';
-import { atom, selector, useRecoilState } from 'recoil';
+import { atom, selector, useRecoilValue, useSetRecoilState } from 'recoil';
 import { useProvider } from '../../utils/jet/provider';
-import { generateMarkets, generateOrderBook, MockBook, MockMarket } from './mocks';
+import { AirspaceConfig, BondMarketConfig } from '@jet-lab/margin';
+import { MainConfig } from '../config/marginConfig';
 
-// TODO, Eventually this should be an atom family
-// export const FixedMarketAtom = atom<BondMarket | null>({
-//   key: 'fixedMarketAtom',
-//   default: null,
-//   dangerouslyAllowMutability: true
-// });
-
-// export const FixedMarketOrderBookAtom = selector<Orderbook>({
-//   key: 'fixedMarketOrderBookAtom',
-//   get: async ({ get }) => {
-//     const market = get(FixedMarketAtom);
-//     if (market) {
-//       const rawOrderBook = await market.fetchOrderbook();
-//       return {
-//         asks: rawOrderBook.asks.sort((a, b) => Number(a.price) - Number(b.price)),
-//         bids: rawOrderBook.bids.sort((a, b) => Number(b.price) - Number(a.price))
-//       };
-//     } else {
-//       return {
-//         asks: [],
-//         bids: []
-//       };
-//     }
-//   }
-// });
-
-// export const useFixedTermSync = () => {
-//   const { provider } = useProvider();
-//   const [market, setMarket] = useRecoilState(FixedMarketAtom);
-//   useEffect(() => {
-//     const program = new Program(JetBondsIdl, 'DMCynpScPPEFj6h5zbVrdMTd1HoBWmLyRhzbTfTYyN1Q', provider);
-//     BondMarket.load(program, 'HWg6LPw2sjTBfBeu8Au3dHcsnsSRCmnkaoPqZBeqS7bt').then(result => {
-//       if (!market || !result.address.equals(market.address)) {
-//         setMarket(result);
-//       }
-//     });
-//   }, [provider]);
-//   return null;
-// };
-
-// Mocked Fixed Markets State
-export const AllFixedMarketsAtom = atom<MockMarket[]>({
+export const AllFixedMarketsAtom = atom<Array<MarketAndconfig>>({
   key: 'allFixedMarkets',
-  default: generateMarkets()
+  default: [],
+  dangerouslyAllowMutability: true
 });
 
 export const SelectedFixedMarketAtom = atom<number>({
   key: 'selectedFixedMarketIndex',
-  default: 0
+  default: 0,
+  dangerouslyAllowMutability: true
 });
 
-export const FixedMarketAtom = selector<MockMarket>({
-  key: 'selectedFixedMarket',
+export const FixedMarketAtom = selector<MarketAndconfig | null>({
+  key: 'fixedMarketAtom',
   get: ({ get }) => {
     const list = get(AllFixedMarketsAtom);
-    const index = get(SelectedFixedMarketAtom);
-    return list[index];
-  }
+    const selected = get(SelectedFixedMarketAtom);
+    return list[selected];
+  },
+  dangerouslyAllowMutability: true
 });
 
-export const AllFixedMarketsOrderBooksAtom = selector<MockBook[]>({
+export const AllFixedMarketsOrderBooksAtom = selector<Orderbook[]>({
   key: 'allFixedMarketOrderBooks',
-  get: ({ get }) => {
+  get: async ({ get }) => {
     const list = get(AllFixedMarketsAtom);
-    return list.map(market => generateOrderBook(market));
-  }
+    return Promise.all(
+      list.map(async market => {
+        const raw = await market.market.fetchOrderbook();
+        return {
+          asks: raw.asks.sort((a, b) => Number(a.limit_price) - Number(b.limit_price)),
+          bids: raw.bids.sort((a, b) => Number(b.limit_price) - Number(a.limit_price))
+        };
+      })
+    );
+  },
+  dangerouslyAllowMutability: true
 });
 
-export const FixedMarketOrderBookAtom = selector<MockBook>({
-  key: 'selectedFixedMarketOrderBook',
-  get: ({ get }) => {
-    const list = get(AllFixedMarketsOrderBooksAtom);
-    const index = get(SelectedFixedMarketAtom);
-    return list[index];
-  }
-});
+interface MarketAndconfig {
+  market: BondMarket;
+  config: BondMarketConfig;
+  name: string;
+}
+export const useFixedTermSync = (): void => {
+  const { provider } = useProvider();
+  const setMarkets = useSetRecoilState(AllFixedMarketsAtom);
+  const config = useRecoilValue(MainConfig);
+
+  const loadBondMarkets = async (airspace: AirspaceConfig, program: Program<JetBonds>, bondsProgramId: string) => {
+    const markets: MarketAndconfig[] = await Promise.all(
+      Object.entries(airspace.bondMarkets).map(async ([name, marketConfig]) => {
+        const market = await BondMarket.load(program, marketConfig.bondManager, bondsProgramId);
+        return { market, config: marketConfig, name };
+      })
+    );
+    setMarkets(markets);
+  };
+  useEffect(() => {
+    if (config) {
+      const program = new Program(JetBondsIdl, config.bondsProgramId, provider);
+      const airspace = config.airspaces.find(airspace => airspace.name === 'default');
+      loadBondMarkets(airspace, program, config.bondsProgramId);
+    }
+  }, [config]);
+  return null;
+};
