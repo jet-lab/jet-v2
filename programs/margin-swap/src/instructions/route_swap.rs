@@ -18,12 +18,9 @@
 use anchor_lang::solana_program::account_info::next_account_infos;
 use anchor_spl::token::Token;
 use jet_margin_pool::ChangeKind;
-use jet_static_program_registry::{
-    orca_swap_v1, orca_swap_v2, spl_token_swap_v2,
-};
+use jet_static_program_registry::{orca_swap_v1, orca_swap_v2, spl_token_swap_v2};
 
 use crate::*;
-
 
 #[derive(Accounts)]
 pub struct RouteSwap<'info> {
@@ -62,7 +59,7 @@ pub struct RouteSwap<'info> {
     pub token_program: Program<'info, Token>,
 }
 
-impl<'a, 'b, 'c, 'info> RouteSwap<'info> {
+impl<'info> RouteSwap<'info> {
     #[inline(never)]
     fn withdraw(&self, change_kind: ChangeKind, amount_in: u64) -> Result<()> {
         jet_margin_pool::cpi::withdraw(
@@ -116,7 +113,7 @@ impl<'a, 'b, 'c, 'info> RouteSwap<'info> {
         &self,
         accounts: &[AccountInfo<'info>],
         amount_in: u64,
-        minimum_amount_out: u64
+        minimum_amount_out: u64,
     ) -> Result<()> {
         assert!(accounts.len() >= 7);
         let swap_pool = &accounts[0];
@@ -144,8 +141,9 @@ impl<'a, 'b, 'c, 'info> RouteSwap<'info> {
                 fee_account.key,
                 None,
                 client::instruction::Swap {
-                    amount_in, minimum_amount_out
-                }
+                    amount_in,
+                    minimum_amount_out,
+                },
             )?
         })?;
 
@@ -162,7 +160,7 @@ impl<'a, 'b, 'c, 'info> RouteSwap<'info> {
                 token_mint.to_account_info(),
                 fee_account.to_account_info(),
                 self.token_program.to_account_info(),
-            ]
+            ],
         )?;
 
         Ok(())
@@ -173,7 +171,7 @@ impl<'a, 'b, 'c, 'info> RouteSwap<'info> {
         &self,
         accounts: &[AccountInfo<'info>],
         amount_in: u64,
-        minimum_amount_out: u64
+        minimum_amount_out: u64,
     ) -> Result<()> {
         assert!(accounts.len() >= 7);
         let swap_pool = &accounts[0];
@@ -214,7 +212,6 @@ impl<'a, 'b, 'c, 'info> RouteSwap<'info> {
 
         Ok(())
     }
-
 }
 
 pub fn route_swap_handler<'a, 'b, 'c, 'info>(
@@ -222,14 +219,16 @@ pub fn route_swap_handler<'a, 'b, 'c, 'info>(
     withdrawal_change_kind: ChangeKind,
     withdrawal_amount: u64,
     minimum_amount_out: u64,
-    swap_routes: [SwapRouteDetail; 3]
+    swap_routes: [SwapRouteDetail; 3],
 ) -> Result<()> {
     // Validate input and find out how many swaps there are
     // TODO: measure compute impact
-    let valid_swaps = match (swap_routes[0].validate()?, swap_routes[1].validate()?, swap_routes[2].validate()?) {
-        (_, false, true) | (false, _, _) => {
-            return Err(error!(crate::ErrorCode::InvalidSwapRoute))
-        },
+    let valid_swaps = match (
+        swap_routes[0].validate()?,
+        swap_routes[1].validate()?,
+        swap_routes[2].validate()?,
+    ) {
+        (_, false, true) | (false, _, _) => return Err(error!(crate::ErrorCode::InvalidSwapRoute)),
         (true, true, true) => 3,
         (true, true, false) => 2,
         (true, false, _) => 1,
@@ -254,7 +253,7 @@ pub fn route_swap_handler<'a, 'b, 'c, 'info>(
 
     let destination_opening_balance =
         token::accessor::amount(&ctx.accounts.transit_destination_account.to_account_info())?;
-    
+
     // Execute the first swap
     let route = &swap_routes[0];
     // Don't process split paths in current iteration
@@ -274,13 +273,15 @@ pub fn route_swap_handler<'a, 'b, 'c, 'info>(
         SwapRouteIdentifier::Empty => unreachable!(),
         SwapRouteIdentifier::Spl => {
             let swap_accounts = next_account_infos(&mut remaining_accounts, 7)?;
-            ctx.accounts.spl_swap(swap_accounts, swap_amount_in, swap_min_out)?;
-        },
+            ctx.accounts
+                .spl_swap(swap_accounts, swap_amount_in, swap_min_out)?;
+        }
         SwapRouteIdentifier::Whirlpool => todo!(),
         SwapRouteIdentifier::SaberStable => {
             let swap_accounts = next_account_infos(&mut remaining_accounts, 7)?;
-            ctx.accounts.saber_stable_swap(swap_accounts, swap_amount_in, swap_min_out)?;
-        },
+            ctx.accounts
+                .saber_stable_swap(swap_accounts, swap_amount_in, swap_min_out)?;
+        }
     }
 
     let destination_closing_balance =
@@ -290,7 +291,7 @@ pub fn route_swap_handler<'a, 'b, 'c, 'info>(
     let swap_amount_out = destination_closing_balance
         .checked_sub(destination_opening_balance)
         .unwrap();
-        // Deposit back into the pool
+    // Deposit back into the pool
     ctx.accounts.deposit(swap_amount_out)?; // TODO: specify accounts
 
     // Return any interim and source dust
