@@ -65,7 +65,7 @@ export const useFixedTermSync = (): void => {
     setMarkets(markets);
   };
   useEffect(() => {
-    if (config) {
+    if (config?.bondsProgramId) {
       const program = new Program(JetBondsIdl, config.bondsProgramId, provider);
       const airspace = config.airspaces.find(airspace => airspace.name === 'default');
       loadBondMarkets(airspace, program, config.bondsProgramId);
