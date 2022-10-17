@@ -72,17 +72,24 @@ start-validator() {
         $@
 }
 
+<<<<<<< HEAD
 start-oracle() {
     cargo run --bin jet-oracle-mirror -- -s $SOLANA_MAINNET_RPC -tl &
 }
 
+=======
+>>>>>>> 742c09b (misc fixes for localnet)
 resume-validator() {
     start-validator &
 
     spid=$!
 
     sleep ${VALIDATOR_STARTUP:-5}
+<<<<<<< HEAD
     start-oracle
+=======
+    cargo run --bin jet-oracle-mirror -- -s $MAINNET_ENDPOINT -tl &
+>>>>>>> 742c09b (misc fixes for localnet)
 
     wait $spid
 }
