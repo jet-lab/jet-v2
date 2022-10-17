@@ -108,17 +108,15 @@ export function NewAccountModal(): JSX.Element {
 
   // Check if user has enough SOL to cover rent + fees
   useEffect(() => {
-    // if (walletTokens && walletTokens.map.SOL.amount.lamports.toNumber() >= feesBuffer) {
-
-    if (walletTokens && walletTokens.map.SOL.amount.lamports.isZero()) {
-      console.info('Please deposit SOL. Wallet needs SOL to create a margin account.');
-      return;
-    }
-
-    if (walletTokens && walletTokens.map.SOL.amount.lamports.gten(feesBuffer)) {
+    try {
+      if (walletTokens && walletTokens.map.SOL.amount.lamports.gten(feesBuffer)) {
+        setDisabled(false);
+      } else {
+        setDisabled(true);
+      }
+    } catch (err) {
       setDisabled(false);
-    } else {
-      setDisabled(true);
+      console.error(err);
     }
   }, [walletTokens]);
 
