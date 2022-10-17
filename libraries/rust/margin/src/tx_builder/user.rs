@@ -429,6 +429,84 @@ impl MarginTxBuilder {
     /// - `transit_source_account` and `transit_destination_account` should be
     ///   created in a separate transaction to avoid packet size limits.
     #[allow(clippy::too_many_arguments)]
+    pub async fn route_swap(
+        &self,
+        source_token_mint: &Pubkey,
+        destination_token_mint: &Pubkey,
+        transit_source_account: &Pubkey,
+        transit_destination_account: &Pubkey,
+        swap_pool: &Pubkey,
+        pool_mint: &Pubkey,
+        fee_account: &Pubkey,
+        source_token_account: &Pubkey,
+        destination_token_account: &Pubkey,
+        swap_program: &Pubkey,
+        change: TokenChange,
+        minimum_amount_out: u64,
+    ) -> Result<Transaction> {
+        let mut instructions = vec![];
+        let source_pool = MarginPoolIxBuilder::new(*source_token_mint);
+        let destination_pool = MarginPoolIxBuilder::new(*destination_token_mint);
+
+        let source_position = self
+            .get_or_create_position(&mut instructions, &source_pool.deposit_note_mint)
+            .await?;
+        let destination_position = self
+            .get_or_create_position(&mut instructions, &destination_pool.deposit_note_mint)
+            .await?;
+
+        let destination_metadata = self.get_token_metadata(destination_token_mint).await?;
+
+        // Only refreshing the destination due to transaction size.
+        // The most common scenario would be that a new margin position is created
+        // for the destination of the swap. If its position price is not set before
+        // the swap, a liquidator would be accused of extracting too much value
+        // as the destination becomes immediately stale after creation.
+        // instructions.push(
+        //     self.ix.accounting_invoke(
+        //         destination_pool
+        //             .margin_refresh_position(*self.address(), destination_metadata.pyth_price),
+        //     ),
+        // );
+
+        let (swap_authority, _) = Pubkey::find_program_address(&[swap_pool.as_ref()], fee_account); // TODO: replace program
+        let swap_pool = MarginSwapIxBuilder::new(
+            *source_token_mint,
+            *destination_token_mint,
+            *swap_pool,
+            swap_authority,
+            *pool_mint,
+            *fee_account,
+            *swap_program,
+        );
+
+        // added TokenChange here for LevSwap fix
+        let inner_swap_ix = swap_pool.route_swap(
+            *self.address(),
+            *transit_source_account,
+            *transit_destination_account,
+            source_position,
+            destination_position,
+            *source_token_account,
+            *destination_token_account,
+            &source_pool,
+            &destination_pool,
+            change,
+            minimum_amount_out,
+        );
+
+        instructions.push(self.adapter_invoke_ix(inner_swap_ix));
+
+        self.create_transaction(&instructions).await
+    }
+
+    /// Transaction to swap one token for another
+    ///
+    /// # Notes
+    ///
+    /// - `transit_source_account` and `transit_destination_account` should be
+    ///   created in a separate transaction to avoid packet size limits.
+    #[allow(clippy::too_many_arguments)]
     pub async fn spl_swap(
         &self,
         source_token_mint: &Pubkey,
@@ -478,6 +556,7 @@ impl MarginTxBuilder {
             swap_authority,
             *pool_mint,
             *fee_account,
+            *swap_program,
         );
 
         // added TokenChange here for LevSwap fix
@@ -557,6 +636,7 @@ impl MarginTxBuilder {
             swap_authority,
             *pool_mint,
             *fee_account,
+            *swap_program,
         );
 
         // added TokenChange here for LevSwap fix
