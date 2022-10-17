@@ -1,6 +1,6 @@
 use agnostic_orderbook::state::Side;
 use anchor_lang::prelude::*;
-use anchor_spl::token::{accessor::mint, Token, TokenAccount};
+use anchor_spl::token::{accessor::mint, Mint, Token, TokenAccount};
 use proc_macros::BondTokenManager;
 
 use crate::{
@@ -37,7 +37,7 @@ pub struct LendOrder<'info> {
 
     /// The market token vault
     #[account(mut, address = orderbook_mut.ticket_mint() @ BondsError::WrongTicketMint)]
-    pub ticket_mint: Account<'info, TokenAccount>,
+    pub ticket_mint: Account<'info, Mint>,
 
     #[account(mut)]
     pub payer: Signer<'info>,

@@ -36,6 +36,8 @@ pub enum BondsError {
     MissingSplitTicket,
     #[msg("consume_events instruction failed to consume a single event")]
     NoEvents,
+    #[msg("expected additional remaining accounts, but there were none")]
+    NoMoreAccounts,
     #[msg("expected an obligation with a different sequence number")]
     ObligationHasWrongSequenceNumber,
     #[msg("there was a problem loading the price oracle")]

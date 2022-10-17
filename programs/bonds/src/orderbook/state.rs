@@ -306,7 +306,7 @@ bitflags! {
         /// interest needs to start being accrued because this is new debt
         const NEW_DEBT   = 1 << 1;
 
-        /// order placed by a MarginUser. margin user == owner == fill_account == out_account
+        /// order placed by a MarginUser. margin user == fill_account == out_account
         const MARGIN     = 1 << 2;
     }
 }

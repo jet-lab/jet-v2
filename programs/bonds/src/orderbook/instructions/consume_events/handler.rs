@@ -97,7 +97,8 @@ fn handle_fill<'info>(
     let mut margin_user = maker_info
         .flags
         .contains(CallbackFlags::MARGIN)
-        .then_some(maker.margin_user()?);
+        .then(|| maker.margin_user())
+        .transpose()?;
 
     match maker_side {
         Side::Bid => {

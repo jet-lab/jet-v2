@@ -38,7 +38,7 @@ pub struct SellTicketsOrder<'info> {
 
     /// The market ticket mint
     #[account(mut, address = orderbook_mut.bond_manager.load().unwrap().underlying_token_vault.key() @ BondsError::WrongTicketMint)]
-    pub underlying_token_vault: Account<'info, Mint>,
+    pub underlying_token_vault: Account<'info, TokenAccount>,
 
     pub token_program: Program<'info, Token>,
     // Optional event adapter account
