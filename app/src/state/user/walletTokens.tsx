@@ -12,6 +12,7 @@ export const walletParam = new URLSearchParams(document.location.search).get('wa
 // The connected solana wallet's token balances
 export const WalletTokens = atom({
   key: 'walletTokens',
+  dangerouslyAllowMutability: true,
   default: undefined as MarginWalletTokens | undefined
 });
 
