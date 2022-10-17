@@ -3,7 +3,8 @@ use std::collections::HashSet;
 use anyhow::Error;
 
 use jet_margin_sdk::{
-    swap::spl_swap::SplSwapPool, tokens::TokenPrice, tx_builder::TokenDepositsConfig,
+    ix_builder::MarginSwapRouteIxBuilder, swap::spl_swap::SplSwapPool, tokens::TokenPrice,
+    tx_builder::TokenDepositsConfig,
 };
 use jet_static_program_registry::{orca_swap_v1, orca_swap_v2, spl_token_swap_v2};
 use solana_sdk::native_token::LAMPORTS_PER_SOL;
@@ -67,7 +68,7 @@ async fn setup_environment(ctx: &MarginTestContext) -> Result<TestEnv, Error> {
             oracle: tsol_oracle,
         },
         MarginPoolSetupInfo {
-            token: usdc,
+            token: usdt,
             token_kind: TokenKind::Collateral,
             collateral_weight: 1_00,
             max_leverage: 10_00,
@@ -188,19 +189,22 @@ async fn route_swap_test() -> Result<(), anyhow::Error> {
 
     user_a.refresh_all_pool_positions().await?;
 
+    // Create a swap route and execute it
+    let mut swap_builder = MarginSwapRouteIxBuilder::new(
+        *user_a.address(),
+        env.usdc,
+        env.tsol,
+        TokenChange::shift(1),
+        0,
+    );
+
+    swap_builder.add_spl_swap_route(&swap_pool, &env.usdc, 0)?;
+
+    // TODO: add some tests to check validity
+    swap_builder.finalize()?;
+
     // Now user A swaps their USDC for TSOL
-    user_a
-        .route_swap(
-            &swap_program_id,
-            &env.usdc,
-            &env.tsol,
-            &user_a_usdc_transit,
-            &user_a_tsol_transit,
-            &swap_pool,
-            TokenChange::shift(1),
-            0,
-        )
-        .await?;
+    user_a.route_swap(&swap_builder).await?;
 
     Ok(())
 }
