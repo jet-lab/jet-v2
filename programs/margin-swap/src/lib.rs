@@ -63,6 +63,23 @@ mod jet_margin_swap {
             minimum_amount_out,
         )
     }
+
+    /// Route a swap to one or more venues
+    pub fn route_swap<'a, 'b, 'c, 'info>(
+        ctx: Context<'a, 'b, 'c, 'info, RouteSwap<'info>>,
+        withdrawal_change_kind: ChangeKind,
+        withdrawal_amount: u64,
+        minimum_amount_out: u64,
+        swap_routes: [SwapRouteDetail; 3],
+    ) -> Result<()> {
+        route_swap_handler(
+            ctx,
+            withdrawal_change_kind,
+            withdrawal_amount,
+            minimum_amount_out,
+            swap_routes,
+        )
+    }
 }
 
 #[derive(Accounts)]
@@ -84,4 +101,63 @@ pub struct MarginPoolInfo<'info> {
 pub enum ErrorCode {
     #[msg("Zero tokens have been withdrawn from a pool for the swap")]
     NoSwapTokensWithdrawn,
+
+    #[msg("An invalid swap route has been provided")]
+    InvalidSwapRoute,
+
+    #[msg("An invalid swap route parameter has been provided")]
+    InvalidSwapRouteParam,
+}
+
+#[repr(u8)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, AnchorSerialize, AnchorDeserialize)]
+pub enum SwapRouteIdentifier {
+    Empty = 0,
+    Spl,
+    Whirlpool,
+    SaberStable,
+}
+
+impl Default for SwapRouteIdentifier {
+    fn default() -> Self {
+        Self::Empty
+    }
+}
+
+#[repr(C)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, AnchorSerialize, AnchorDeserialize)]
+pub struct SwapRouteDetail {
+    pub route_a: SwapRouteIdentifier,
+    pub route_b: SwapRouteIdentifier,
+    pub destination_mint: Pubkey,
+    pub split: u8,
+}
+
+impl Default for SwapRouteDetail {
+    fn default() -> Self {
+        Self {
+            // TODO: check from our audits if it's safe to pass an enum, or if we should use u8
+            route_a: SwapRouteIdentifier::Empty,
+            route_b: SwapRouteIdentifier::Empty,
+            destination_mint: Default::default(),
+            split: 0,
+        }
+    }
+}
+
+impl SwapRouteDetail {
+    pub fn validate(&self) -> Result<bool> {
+        use SwapRouteIdentifier::*;
+        match (self.route_a, self.route_b, self.split) {
+            (Empty, Empty, _) => Ok(false),
+            (_, Empty, 0) => Ok(true),
+            (Empty, _, _) | (_, _, 0) | (_, _, 100..) => {
+                Err(error!(ErrorCode::InvalidSwapRouteParam))
+            }
+            _ => {
+                // TODO validate enums based on above TODO, could be false if out of range
+                Ok(true)
+            }
+        }
+    }
 }

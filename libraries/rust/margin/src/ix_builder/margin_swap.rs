@@ -41,6 +41,8 @@ pub struct MarginSwapIxBuilder {
     pub pool_mint: Pubkey,
     /// The account that accumulates transaction fees
     pub fee_account: Pubkey,
+    /// The swap program
+    pub swap_program: Pubkey,
 }
 
 impl MarginSwapIxBuilder {
@@ -56,6 +58,7 @@ impl MarginSwapIxBuilder {
         authority: Pubkey,
         pool_mint: Pubkey,
         fee_account: Pubkey,
+        swap_program: Pubkey,
     ) -> Self {
         Self {
             token_a,
@@ -64,6 +67,7 @@ impl MarginSwapIxBuilder {
             swap_pool_authority: authority,
             pool_mint,
             fee_account,
+            swap_program,
         }
     }
 
