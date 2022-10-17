@@ -114,7 +114,7 @@ export function NewAccountModal(): JSX.Element {
       } else {
         setDisabled(true);
       }
-    } catch(err) {
+    } catch (err) {
       setDisabled(false);
       console.error(err);
     }
