@@ -28,7 +28,7 @@ export function useTokenInputDisabledMessage(account?: MarginAccount): string {
   let disabledMessage = '';
 
   // Display message if user doesn't have enough SOL to cover fees
-  if (walletTokens && walletTokens.map.SOL.amount.lamports.lten(feesBuffer)) {
+  if (walletTokens && walletTokens.map.SOL.amount.lamports.lte(feesBuffer)) {
     return (disabledMessage = dictionary.actions.deposit.disabledMessages.notEnoughSolForFees);
   }
 
