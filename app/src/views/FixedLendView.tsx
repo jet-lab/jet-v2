@@ -15,7 +15,7 @@ const rowComponents: Record<string, React.FC<any>> = {
 
 const rowComponentsProps: Record<string, object> = {
   fixedLendEntry: { key: 'fixedLendEntry' },
-  fixedLendChart: { key: 'fixedLendChart', type: 'asks' }
+  fixedLendChart: { key: 'fixedLendChart', type: 'bids' }
 };
 
 const FixedRow = (): JSX.Element => {
@@ -42,7 +42,7 @@ const viewComponentsProps: Record<string, object> = {
   accountSnapshot: { key: 'accountSnapshot' },
   fixedRow: { key: 'fixedRow' },
   fullAccountBalance: { key: 'fullAccountBalance' },
-  marketSelector: { key: 'marketSelector', type: 'asks' }
+  marketSelector: { key: 'marketSelector', type: 'bids' }
 };
 
 const MainView = (): JSX.Element => {

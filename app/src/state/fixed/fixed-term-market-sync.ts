@@ -28,14 +28,19 @@ export const FixedMarketAtom = selector<MarketAndconfig | null>({
   dangerouslyAllowMutability: true
 });
 
-export const AllFixedMarketsOrderBooksAtom = selector<Orderbook[]>({
+export interface ExtendedOrderBook extends Orderbook {
+  name: string;
+}
+
+export const AllFixedMarketsOrderBooksAtom = selector<ExtendedOrderBook[]>({
   key: 'allFixedMarketOrderBooks',
   get: async ({ get }) => {
     const list = get(AllFixedMarketsAtom);
-    return Promise.all(
+    return await Promise.all(
       list.map(async market => {
         const raw = await market.market.fetchOrderbook();
         return {
+          name: market.name,
           asks: raw.asks.sort((a, b) => Number(a.limit_price) - Number(b.limit_price)),
           bids: raw.bids.sort((a, b) => Number(b.limit_price) - Number(a.limit_price))
         };
