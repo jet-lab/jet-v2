@@ -1,5 +1,5 @@
 use anchor_lang::AccountDeserialize;
-use anyhow::{anyhow, Context, Result};
+use anyhow::{anyhow, bail, Context, Result};
 use clap::Parser;
 use comfy_table::{presets::UTF8_FULL, Table};
 use jet_margin_sdk::{
@@ -208,6 +208,22 @@ pub async fn process_configure_pool(
     } else {
         Ok(client.plan()?.build())
     }
+}
+
+pub async fn process_show_pool(client: &Client, token: Pubkey) -> Result<Plan> {
+    let margin_pool = MarginPoolIxBuilder::new(token);
+
+    if !client.account_exists(&margin_pool.address).await? {
+        bail!("pool for token {} does not exist", token);
+    }
+
+    let margin_pool_data = client
+        .read_anchor_account::<MarginPool>(&margin_pool.address)
+        .await?;
+
+    println!("{:#?}", &margin_pool_data.config);
+
+    Ok(Plan::default())
 }
 
 fn override_pool_config_with_options(

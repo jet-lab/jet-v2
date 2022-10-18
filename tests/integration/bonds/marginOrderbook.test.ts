@@ -331,8 +331,6 @@ describe('margin bonds borrowing', async () => {
     let ixns = [];
     await margin.withAdapterInvoke({
       instructions: ixns,
-      adapterProgram: bondsProgram.programId,
-      adapterMetadata: CONFIG.bondsMetadata,
       adapterInstruction: ix
     });
     return ixns[0];
