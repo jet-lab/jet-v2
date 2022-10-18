@@ -146,14 +146,7 @@ impl AirspaceAdmin {
     ) -> TransactionBuilder {
         let margin_config_ix = MarginConfigIxBuilder::new(self.airspace, self.payer);
 
-        // FIXME: remove control legacy
-        let ctrl_ix = ControlIxBuilder::new(self.payer);
-
-        vec![
-            ctrl_ix.register_adapter(&adapter_program_id),
-            margin_config_ix.configure_adapter(adapter_program_id, is_adapter),
-        ]
-        .into()
+        vec![margin_config_ix.configure_adapter(adapter_program_id, is_adapter)].into()
     }
 
     /// Configure an adapter that can be invoked through a margin account

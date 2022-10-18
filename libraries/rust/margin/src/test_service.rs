@@ -30,12 +30,13 @@ use crate::{
     bonds::BondsIxBuilder,
     ix_builder::{
         test_service::{self, derive_pyth_price, derive_pyth_product, derive_token_mint},
-        MarginPoolConfiguration,
+        ControlIxBuilder, MarginPoolConfiguration,
     },
     solana::transaction::TransactionBuilder,
     tx_builder::{global_initialize_instructions, AirspaceAdmin, TokenDepositsConfig},
 };
 
+static ADAPTERS: &[Pubkey] = &[jet_margin_pool::ID, jet_margin_swap::ID, jet_bonds::ID];
 const ORDERBOOK_CAPACITY: usize = 1_000;
 const EVENT_QUEUE_CAPACITY: usize = 1_000;
 
@@ -113,12 +114,14 @@ pub struct MarginPoolConfig {
 impl From<MarginPoolConfig> for jet_margin_pool::MarginPoolConfig {
     fn from(config: MarginPoolConfig) -> Self {
         Self {
+            flags: config.flags,
             utilization_rate_1: config.utilization_rate_1,
             utilization_rate_2: config.utilization_rate_2,
             borrow_rate_0: config.borrow_rate_0,
             borrow_rate_1: config.borrow_rate_1,
             borrow_rate_2: config.borrow_rate_2,
             borrow_rate_3: config.borrow_rate_3,
+            management_fee_rate: config.management_fee_rate,
             ..Default::default()
         }
     }
@@ -160,10 +163,23 @@ pub fn init_environment(
 
     txs.push(global_initialize_instructions(config.authority));
 
+    txs.extend(create_global_adapter_register_tx(config));
     txs.extend(create_token_tx(config));
     txs.extend(create_airspace_tx(config, rent)?);
 
     Ok(txs)
+}
+
+fn create_global_adapter_register_tx(config: &EnvironmentConfig) -> Vec<TransactionBuilder> {
+    let ctrl_ix = ControlIxBuilder::new(config.authority);
+    let instructions = ADAPTERS
+        .iter()
+        .map(|adapter| ctrl_ix.register_adapter(adapter))
+        .collect();
+    vec![TransactionBuilder {
+        instructions,
+        signers: vec![],
+    }]
 }
 
 fn create_airspace_tx(
@@ -177,12 +193,10 @@ fn create_airspace_tx(
 
         txs.push(as_admin.create_airspace(as_config.is_restricted));
 
-        let adapters = [jet_margin_pool::ID, jet_margin_swap::ID, jet_bonds::ID];
-
         txs.extend(
-            adapters
-                .into_iter()
-                .map(|adapter| as_admin.configure_margin_adapter(adapter, true)),
+            ADAPTERS
+                .iter()
+                .map(|adapter| as_admin.configure_margin_adapter(*adapter, true)),
         );
 
         for (name, tk_config) in &as_config.tokens {

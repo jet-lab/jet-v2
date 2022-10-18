@@ -900,8 +900,6 @@ export class Pool {
 
     await marginAccount.withAdapterInvoke({
       instructions,
-      adapterProgram: this.programs.config.marginPoolProgramId,
-      adapterMetadata: this.addresses.marginPoolAdapterMetadata,
       adapterInstruction: await this.programs.marginPool.methods
         .marginBorrow(change.changeKind.asParam(), change.value)
         .accounts({
@@ -996,8 +994,6 @@ export class Pool {
 
     await marginAccount.withAdapterInvoke({
       instructions,
-      adapterProgram: this.programs.config.marginPoolProgramId,
-      adapterMetadata: this.addresses.marginPoolAdapterMetadata,
       adapterInstruction: await this.programs.marginPool.methods
         .marginRepay(change.changeKind.asParam(), change.value)
         .accounts({
@@ -1127,8 +1123,6 @@ export class Pool {
 
     await marginAccount.withAdapterInvoke({
       instructions,
-      adapterProgram: this.programs.config.marginPoolProgramId,
-      adapterMetadata: this.addresses.marginPoolAdapterMetadata,
       adapterInstruction: await this.programs.marginPool.methods
         .withdraw(change.changeKind.asParam(), change.value)
         .accounts({
@@ -1325,11 +1319,6 @@ export class Pool {
     // Swap
     await marginAccount.withAdapterInvoke({
       instructions,
-      adapterProgram: this.programs.config.marginSwapProgramId,
-      adapterMetadata: findDerivedAccount(
-        this.programs.config.metadataProgramId,
-        this.programs.config.marginSwapProgramId
-      ),
       adapterInstruction: await this.programs.marginSwap.methods
         .marginSwap(changeKind.changeKind.asParam(), changeKind.value, minAmountOut.lamports)
         .accounts({
@@ -1540,8 +1529,6 @@ export class Pool {
     const loanNoteAccount = this.findLoanPositionAddress(marginAccount)
     await marginAccount.withAdapterInvoke({
       instructions: instructions,
-      adapterProgram: this.programs.config.marginPoolProgramId,
-      adapterMetadata: this.addresses.marginPoolAdapterMetadata,
       adapterInstruction: await this.programs.marginPool.methods
         .registerLoan()
         .accounts({
@@ -1575,8 +1562,6 @@ export class Pool {
     )
     await marginAccount.withAdapterInvoke({
       instructions,
-      adapterProgram: this.programs.config.marginPoolProgramId,
-      adapterMetadata: this.addresses.marginPoolAdapterMetadata,
       adapterInstruction: await this.programs.marginPool.methods
         .closeLoan()
         .accounts({

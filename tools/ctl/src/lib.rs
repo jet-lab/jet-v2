@@ -162,6 +162,12 @@ pub enum MarginPoolCommand {
 
     /// Show a summary of all margin pools
     List,
+
+    /// Show configuration for a pool
+    Show {
+        /// The token to show the pool for
+        token: Pubkey,
+    },
 }
 
 #[serde_as]
@@ -384,6 +390,9 @@ async fn run_margin_pool_command(client: &Client, command: MarginPoolCommand) ->
             actions::margin_pool::process_collect_pool_fees(client).await
         }
         MarginPoolCommand::List => actions::margin_pool::process_list_pools(client).await,
+        MarginPoolCommand::Show { token } => {
+            actions::margin_pool::process_show_pool(client, token).await
+        }
     }
 }
 
