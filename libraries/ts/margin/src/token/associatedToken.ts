@@ -536,18 +536,18 @@ export class AssociatedToken {
   static async withWrapNative(
     instructions: TransactionInstruction[],
     provider: AnchorProvider,
-    feesBuffer: number
+    feesBuffer: BN
   ): Promise<PublicKey> {
     const owner = translateAddress(provider.wallet.publicKey)
     const ownerInfo = await provider.connection.getAccountInfo(owner)
-    const ownerLamports = Math.max((ownerInfo?.lamports ?? 0) - feesBuffer, 0)
+    const ownerLamports = BN.max(new BN(ownerInfo?.lamports ?? 0).sub(feesBuffer), new BN(0))
 
     //this will add instructions to create ata if ata does not exist, if exist, we will get the ata address
     const associatedToken = await this.withCreate(instructions, provider, owner, NATIVE_MINT)
     //IX to transfer sol to ATA
     const transferIx = SystemProgram.transfer({
       fromPubkey: owner,
-      lamports: ownerLamports,
+      lamports: BigInt(ownerLamports.toString()),
       toPubkey: associatedToken
     })
     const syncNativeIX = createSyncNativeInstruction(associatedToken)
@@ -576,7 +576,7 @@ export class AssociatedToken {
     instructions: TransactionInstruction[],
     provider: AnchorProvider,
     mint: Address,
-    feesBuffer: number
+    feesBuffer: BN
   ): Promise<PublicKey> {
     const mintPubkey = translateAddress(mint)
 
@@ -619,7 +619,7 @@ export class AssociatedToken {
     instructions: TransactionInstruction[],
     provider: AnchorProvider,
     mint: Address,
-    feesBuffer: number
+    feesBuffer: BN
   ): Promise<PublicKey> {
     const owner = provider.wallet.publicKey
     const mintPubkey = translateAddress(mint)
@@ -673,7 +673,7 @@ export class AssociatedToken {
     instructions: TransactionInstruction[]
     provider: AnchorProvider
     mint: Address
-    feesBuffer: number
+    feesBuffer: BN
     source: Address | TokenFormat
   }): Promise<PublicKey> {
     let sourceAddress: PublicKey | undefined

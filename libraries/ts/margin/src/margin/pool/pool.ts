@@ -78,7 +78,7 @@ export interface SPLSwapPool {
   amp?: number
 }
 
-export const feesBuffer: number = LAMPORTS_PER_SOL * 0.075
+export const feesBuffer: BN = new BN(LAMPORTS_PER_SOL).mul(new BN(0.075))
 
 /**
  * A pool in which a [[MarginAccount]] can register a deposit and/or a borrow position.
@@ -1027,7 +1027,7 @@ export class Pool {
     depositPosition: Address
     source: TokenAddress
     change: PoolTokenChange
-    feesBuffer: number
+    feesBuffer: BN
     sourceAuthority?: Address
   }): Promise<void> {
     const wrappedSource = await AssociatedToken.withBeginTransferFromSource({
