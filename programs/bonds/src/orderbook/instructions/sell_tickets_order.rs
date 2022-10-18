@@ -51,7 +51,7 @@ impl<'info> SellTicketsOrder<'info> {
             ctx(self),
             underlying_token_vault,
             user_token_vault,
-            order_summary.quote_filled()
+            order_summary.quote_filled()?
         )?;
         anchor_spl::token::burn(
             CpiContext::new(

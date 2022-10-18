@@ -383,13 +383,13 @@ impl SensibleOrderSummary {
     }
 
     /// wrong
-    pub fn quote_filled(&self) -> u64 {
-        self.summary.total_quote_qty
+    pub fn quote_filled(&self) -> Result<u64> {
+        Ok(self.summary.total_quote_qty - self.quote_posted()?)
     }
 
     /// wrong
     pub fn base_filled(&self) -> u64 {
-        self.summary.total_base_qty
+        self.summary.total_base_qty - self.summary.total_base_qty_posted
     }
 
     /// wrong

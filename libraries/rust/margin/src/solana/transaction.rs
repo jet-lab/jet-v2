@@ -11,6 +11,7 @@ use solana_sdk::{
 use std::cmp::{max, min};
 use std::sync::Arc;
 
+use crate::util::data::DeepReverse;
 use crate::{
     solana::keypair::clone_vec,
     util::{
@@ -29,6 +30,13 @@ pub struct TransactionBuilder {
     pub instructions: Vec<Instruction>,
     /// required for the included instructions, does not include a payer
     pub signers: Vec<Keypair>, //todo Arc<dyn Signer>
+}
+
+impl DeepReverse for TransactionBuilder {
+    fn deep_reverse(mut self) -> Self {
+        self.instructions.reverse();
+        self
+    }
 }
 
 impl Clone for TransactionBuilder {
@@ -134,6 +142,16 @@ const MAX_TX_SIZE: usize = 1232;
 /// - transaction may not exceed size limit
 /// - instructions order is not modified
 pub fn condense(txs: &[TransactionBuilder], payer: &Keypair) -> Result<Vec<TransactionBuilder>> {
+    condense_right(txs, payer)
+}
+
+/// the last transaction is maximized in size, the first is not.
+fn condense_right(txs: &[TransactionBuilder], payer: &Keypair) -> Result<Vec<TransactionBuilder>> {
+    Ok(condense_left(&txs.to_vec().deep_reverse(), payer)?.deep_reverse())
+}
+
+/// the first transaction is maximized in size, the last is not.
+fn condense_left(txs: &[TransactionBuilder], payer: &Keypair) -> Result<Vec<TransactionBuilder>> {
     let hash = Hash::new(&[0; HASH_BYTES]);
     let mut shrink_me = txs.to_vec();
     let mut condensed = vec![];
