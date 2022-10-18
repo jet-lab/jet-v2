@@ -11,7 +11,7 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import { Transaction, TransactionInstruction } from '@solana/web3.js';
 import { MainConfig } from '../../state/config/marginConfig';
 import { useProvider } from '../../utils/jet/provider';
-import { AssociatedToken, PoolTokenChange } from '@jet-lab/margin';
+import { AssociatedToken } from '@jet-lab/margin';
 
 function randomIntFromInterval(min: number, max: number) {
   return Math.floor(Math.random() * (max - min + 1) + min);
@@ -41,7 +41,7 @@ export const FixedLendOrderEntry = () => {
   const offerLoan = async () => {
     let ixns: TransactionInstruction[] = [];
 
-    const tokenMint= marketAndConfig.market.addresses.underlyingTokenMint;
+    const tokenMint = marketAndConfig.market.addresses.underlyingTokenMint;
     const ticketMint = marketAndConfig.market.addresses.bondTicketMint;
 
     await AssociatedToken.withCreate(ixns, provider, marginAccount.address, tokenMint);

@@ -5,7 +5,7 @@ import { useRecoilState, useRecoilValue } from 'recoil';
 import { ReorderArrows } from '../misc/ReorderArrows';
 import { Dictionary } from '../../state/settings/localization/localization';
 import { FixedBorrowRowOrder, FixedLendRowOrder } from '../../state/views/fixed-term';
-import { AllFixedMarketsOrderBooksAtom } from '../../state/fixed/fixed-term-market-sync';
+import { AllFixedMarketsOrderBooksAtom, ExtendedOrderBook } from '../../state/fixed/fixed-term-market-sync';
 import { useCurrencyFormatting } from '../../utils/currency';
 import { Order, Orderbook } from '@jet-lab/jet-bonds-client';
 
@@ -46,11 +46,12 @@ const getChartData = (orders: Order[]): DataPoint[] =>
     return all;
   }, [] as Array<{ x: number; y: number }>);
 
-const getOptions = (books: Orderbook[], decimals: number, type: string, formatting: Formatter) => {
-  const series = Object.entries(books).map(([id, book]) => ({
-    name: id,
+const getOptions = (books: ExtendedOrderBook[], decimals: number, type: string, formatting: Formatter) => {
+  const series = books.map(book => ({
+    name: book.name,
     data: getChartData(type === 'asks' ? book.asks : book.bids)
   }));
+
   return {
     chart: {
       type: 'line',
@@ -108,7 +109,7 @@ const FixedPriceChart = ({ type, decimals = 6 }: FixedChart) => {
       fixedPriceChart.render();
       setCurrentChart(fixedPriceChart);
     }
-  }, [ref.current]);
+  }, [ref.current, books]);
 
   // Update chart
   useEffect(() => {
@@ -116,7 +117,7 @@ const FixedPriceChart = ({ type, decimals = 6 }: FixedChart) => {
       const opts = getOptions(books, decimals, type, formatting);
       currentChart.updateOptions(opts);
     }
-  }, [currentChart, ref.current]);
+  }, [currentChart, ref.current, books]);
 
   // Clean on dismount
   useEffect(() => currentChart?.destroy(), []);
