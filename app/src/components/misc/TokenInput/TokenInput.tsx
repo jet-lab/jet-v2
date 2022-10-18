@@ -128,7 +128,7 @@ export function TokenInput(props: {
         maxInput = walletTokens ? walletTokens.map[tokenPool.symbol].amount : zeroInputAmount;
         // If SOL, need to save some for fees
         if (tokenPool.symbol === 'SOL') {
-          maxInput = maxInput.subb(numberToBn(feesBuffer));
+          maxInput = maxInput.subb(feesBuffer);
         }
         // Otherwise reference their margin account
       } else {
