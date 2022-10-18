@@ -31,7 +31,7 @@ anchor-spl = { git = "https://github.com/jet-lab/anchor", branch = "temp-version
 
 pyth-sdk-solana = "0.6"
 
-jet-proto-math = { git = "https://github.com/jet-lab/program-libraries", branch = "fixed-point-math-uint-091", features = ["number-128"] }
+jet-proto-math = { git = "https://github.com/jet-lab/program-libraries", branch = "fixed-point-math-uint-091", features = ["number-128", "number"] }
 jet-proto-proc-macros = "1"
 jet-metadata = { path = "../metadata", features = ["no-entrypoint"] }
 jet-airspace = { path = "../airspace", features = ["no-entrypoint"] }

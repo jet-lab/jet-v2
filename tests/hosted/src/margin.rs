@@ -32,6 +32,7 @@ use jet_margin_sdk::ix_builder::{
     AirspaceIxBuilder, ControlIxBuilder, MarginConfigIxBuilder, MarginPoolConfiguration,
     MarginPoolIxBuilder, MarginSwapRouteIxBuilder,
 };
+use jet_margin_sdk::lookup_tables::LookupTable;
 use jet_margin_sdk::solana::keypair::clone;
 use jet_margin_sdk::solana::transaction::{SendTransactionBuilder, TransactionBuilder};
 use jet_margin_sdk::swap::saber_swap::SaberSwapPool;
@@ -429,10 +430,23 @@ impl MarginUser {
 
     /// Execute a swap route
     #[allow(clippy::too_many_arguments)]
-    pub async fn route_swap(&self, builder: &MarginSwapRouteIxBuilder) -> Result<Signature, Error> {
-        self.rpc
-            .send_and_confirm(self.tx.route_swap(builder).await?)
-            .await
+    pub async fn route_swap(
+        &self,
+        builder: &MarginSwapRouteIxBuilder,
+        account_lookup_tables: &[Pubkey],
+    ) -> Result<Signature, Error> {
+        // If there are lookup tables, use them
+        if account_lookup_tables.is_empty() {
+            self.rpc
+                .send_and_confirm(self.tx.route_swap(builder).await?)
+                .await
+        } else {
+            let versioned_tx = self
+                .tx
+                .route_swap_with_lookup(builder, account_lookup_tables, &self.signer)
+                .await?;
+            LookupTable::send_versioned_transaction(&self.rpc, &versioned_tx).await
+        }
     }
 
     /// Swap between two tokens using an SPL swap pool.
