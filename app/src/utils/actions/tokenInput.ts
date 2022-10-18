@@ -30,12 +30,12 @@ export function useTokenInputDisabledMessage(account?: MarginAccount): string {
 
   // Display message if user doesn't have enough SOL to cover fees
   if (walletTokens && walletTokens.map.SOL.amount.lamports.lte(feesBuffer)) {
-    return (disabledMessage = `Please make sure you have a buffer of at least ${(
-      feesBuffer.toNumber() / LAMPORTS_PER_SOL
-    ).toString()} SOL in your wallet to cover transaction fees.`);
 
-    //      Please make sure you have a buffer of ${ (feesBuffer.toNumber() / LAMPORTS_PER_SOL).toString() } SOL in your wallet to cover transaction fees."
-  }
+    return (disabledMessage = dictionary.actions.deposit.disabledMessages.notEnoughSolForFees.replace(
+      '{{BUFFER}}', 
+      (feesBuffer.toNumber() / LAMPORTS_PER_SOL).toString(),
+    ));
+  } 
 
   if (currentAction === 'deposit') {
     // No wallet balance to deposit
