@@ -109,27 +109,25 @@ pub struct PriceChangeInfo {
 /// accounts structure:
 ///
 /// remaining accounts repeat this pattern for each invoke:
-/// 
+///
 /// /// The program to be invoked
 /// adapter_program: AccountInfo<'info>,
-/// 
+///
 /// /// The metadata about the proxy program
 /// #[account(has_one = adapter_program)]
 /// adapter_metadata: Account<'info, MarginAdapterMetadata>,
-/// 
+///
 /// /// all accounts needed for specific instruciton
 /// instruction_accounts: Vec<AccountInfo<'info>>
 pub fn invoke_many<'a, 'info>(
     margin_account: &'a AccountLoader<'info, MarginAccount>,
     accounts: &'a [AccountInfo<'info>],
-    data: Vec<(u8, Vec<u8>)>,
+    instructions: Vec<IxData>,
     signed: bool,
 ) -> Result<Vec<PositionEvent>> {
     let mut remaining = accounts.iter().cloned();
     let mut events = vec![];
-    for datum in data {
-        let (num_accounts, ix_data) = datum;
-
+    for IxData { num_accounts, data } in instructions {
         //todo errors
         let adapter_program = remaining.next().unwrap();
         let adapter_metadata =
@@ -147,11 +145,17 @@ pub fn invoke_many<'a, 'info>(
                 accounts: &accounts,
                 signed,
             },
-            ix_data,
+            data,
         )?);
     }
 
     Ok(events)
+}
+
+#[derive(AnchorSerialize, AnchorDeserialize)]
+pub struct IxData {
+    pub num_accounts: u8,
+    pub data: Vec<u8>,
 }
 
 /// Invoke a margin adapter with the requested data

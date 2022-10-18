@@ -17,7 +17,7 @@
 
 use anchor_lang::prelude::*;
 
-use crate::adapter;
+use crate::adapter::{self, IxData};
 use crate::{events, MarginAccount};
 
 #[derive(Accounts)]
@@ -31,7 +31,7 @@ pub struct AccountingInvoke<'info> {
 
 pub fn accounting_invoke_handler<'info>(
     ctx: Context<'_, '_, '_, 'info, AccountingInvoke<'info>>,
-    data: Vec<(u8, Vec<u8>)>,
+    instructions: Vec<IxData>,
 ) -> Result<()> {
     emit!(events::AccountingInvokeBegin {
         margin_account: ctx.accounts.margin_account.key(),
@@ -41,7 +41,7 @@ pub fn accounting_invoke_handler<'info>(
     let events = adapter::invoke_many(
         &ctx.accounts.margin_account,
         ctx.remaining_accounts,
-        data,
+        instructions,
         false,
     )?;
 

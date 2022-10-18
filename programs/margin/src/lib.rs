@@ -35,7 +35,7 @@ use instructions::*;
 pub use state::*;
 pub use util::Invocation;
 
-pub use adapter::{AdapterResult, PositionChange, PriceChangeInfo};
+pub use adapter::{AdapterResult, IxData, PositionChange, PriceChangeInfo};
 pub use instructions::TokenConfigUpdate;
 
 /// The maximum confidence deviation allowed for an oracle price.
@@ -306,9 +306,9 @@ pub mod jet_margin {
     /// | [`events::AdapterInvokeEnd`] | Marks the ending of the adapter invocation (includes no data except for the event itself being emitted). |
     pub fn adapter_invoke<'info>(
         ctx: Context<'_, '_, '_, 'info, AdapterInvoke<'info>>,
-        data: Vec<(u8, Vec<u8>)>,
+        instructions: Vec<IxData>,
     ) -> Result<()> {
-        adapter_invoke_handler(ctx, data)
+        adapter_invoke_handler(ctx, instructions)
     }
 
     /// Perform an action by invoking other programs, allowing them only to
@@ -346,9 +346,9 @@ pub mod jet_margin {
     /// | [`events::AccountingInvokeEnd`] | Signify that the accounting invocation process has ended. |
     pub fn accounting_invoke<'info>(
         ctx: Context<'_, '_, '_, 'info, AccountingInvoke<'info>>,
-        data: Vec<(u8, Vec<u8>)>,
+        instructions: Vec<IxData>,
     ) -> Result<()> {
-        accounting_invoke_handler(ctx, data)
+        accounting_invoke_handler(ctx, instructions)
     }
 
     /// Begin liquidating an account
@@ -432,9 +432,9 @@ pub mod jet_margin {
     /// | [`events::LiquidatorInvokeEnd`] | Marks the ending of this liquidator event. |
     pub fn liquidator_invoke<'info>(
         ctx: Context<'_, '_, '_, 'info, LiquidatorInvoke<'info>>,
-        data: Vec<(u8, Vec<u8>)>,
+        instructions: Vec<IxData>,
     ) -> Result<()> {
-        liquidator_invoke_handler(ctx, data)
+        liquidator_invoke_handler(ctx, instructions)
     }
 
     /// Update the config for a token position stored in the margin account,

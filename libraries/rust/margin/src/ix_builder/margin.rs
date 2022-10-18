@@ -659,7 +659,10 @@ macro_rules! invoke_single {
         Instruction {
             program_id: JetMargin::id(),
             data: ix_data::$Instruction {
-                data: vec![(num_accounts, $adapter_ix.data)],
+                instructions: vec![jet_margin::IxData {
+                    num_accounts,
+                    data: $adapter_ix.data
+                }],
             }
             .data(),
             accounts,

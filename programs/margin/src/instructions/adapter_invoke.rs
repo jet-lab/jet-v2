@@ -17,7 +17,7 @@
 
 use anchor_lang::prelude::*;
 
-use crate::adapter;
+use crate::adapter::{self, IxData};
 use crate::{events, ErrorCode, MarginAccount};
 
 #[derive(Accounts)]
@@ -34,7 +34,7 @@ pub struct AdapterInvoke<'info> {
 
 pub fn adapter_invoke_handler<'info>(
     ctx: Context<'_, '_, '_, 'info, AdapterInvoke<'info>>,
-    data: Vec<(u8, Vec<u8>)>,
+    instructions: Vec<IxData>,
 ) -> Result<()> {
     if ctx.accounts.margin_account.load()?.liquidation != Pubkey::default() {
         msg!("account is being liquidated");
@@ -49,7 +49,7 @@ pub fn adapter_invoke_handler<'info>(
     let events = adapter::invoke_many(
         &ctx.accounts.margin_account,
         ctx.remaining_accounts,
-        data,
+        instructions,
         true,
     )?;
 

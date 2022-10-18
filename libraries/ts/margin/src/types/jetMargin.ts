@@ -553,24 +553,16 @@ export type JetMargin = {
           isMut: true
           isSigner: false
           docs: ["The margin account to proxy an action for"]
-        },
-        {
-          name: "adapterProgram"
-          isMut: false
-          isSigner: false
-          docs: ["The program to be invoked"]
-        },
-        {
-          name: "adapterMetadata"
-          isMut: false
-          isSigner: false
-          docs: ["The metadata about the proxy program"]
         }
       ]
       args: [
         {
-          name: "data"
-          type: "bytes"
+          "name": "instructions",
+          "type": {
+            "vec": {
+              "defined": "IxData"
+            }
+          }
         }
       ]
     },
@@ -618,24 +610,16 @@ export type JetMargin = {
           isMut: true
           isSigner: false
           docs: ["The margin account to proxy an action for"]
-        },
-        {
-          name: "adapterProgram"
-          isMut: false
-          isSigner: false
-          docs: ["The program to be invoked"]
-        },
-        {
-          name: "adapterMetadata"
-          isMut: false
-          isSigner: false
-          docs: ["The metadata about the proxy program"]
         }
       ]
       args: [
         {
-          name: "data"
-          type: "bytes"
+          "name": "instructions",
+          "type": {
+            "vec": {
+              "defined": "IxData"
+            }
+          }
         }
       ]
     },
@@ -861,24 +845,16 @@ export type JetMargin = {
           isMut: true
           isSigner: false
           docs: ["The margin account to proxy an action for"]
-        },
-        {
-          name: "adapterProgram"
-          isMut: false
-          isSigner: false
-          docs: ["The program to be invoked"]
-        },
-        {
-          name: "adapterMetadata"
-          isMut: false
-          isSigner: false
-          docs: ["The metadata about the proxy program"]
         }
       ]
       args: [
         {
-          name: "data"
-          type: "bytes"
+          "name": "instructions",
+          "type": {
+            "vec": {
+              "defined": "IxData"
+            }
+          }
         }
       ]
     },
@@ -1452,6 +1428,22 @@ export type JetMargin = {
             name: "exponent"
             docs: ["The exponent for the price values"]
             type: "i32"
+          }
+        ]
+      }
+    },
+    {
+      "name": "IxData",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "numAccounts",
+            "type": "u8"
+          },
+          {
+            "name": "data",
+            "type": "bytes"
           }
         ]
       }
@@ -2825,24 +2817,16 @@ export const IDL: JetMargin = {
           isMut: true,
           isSigner: false,
           docs: ["The margin account to proxy an action for"]
-        },
-        {
-          name: "adapterProgram",
-          isMut: false,
-          isSigner: false,
-          docs: ["The program to be invoked"]
-        },
-        {
-          name: "adapterMetadata",
-          isMut: false,
-          isSigner: false,
-          docs: ["The metadata about the proxy program"]
         }
       ],
       args: [
         {
-          name: "data",
-          type: "bytes"
+          "name": "instructions",
+          "type": {
+            "vec": {
+              "defined": "IxData"
+            }
+          }
         }
       ]
     },
@@ -2890,24 +2874,16 @@ export const IDL: JetMargin = {
           isMut: true,
           isSigner: false,
           docs: ["The margin account to proxy an action for"]
-        },
-        {
-          name: "adapterProgram",
-          isMut: false,
-          isSigner: false,
-          docs: ["The program to be invoked"]
-        },
-        {
-          name: "adapterMetadata",
-          isMut: false,
-          isSigner: false,
-          docs: ["The metadata about the proxy program"]
         }
       ],
       args: [
         {
-          name: "data",
-          type: "bytes"
+          "name": "instructions",
+          "type": {
+            "vec": {
+              "defined": "IxData"
+            }
+          }
         }
       ]
     },
@@ -3133,24 +3109,16 @@ export const IDL: JetMargin = {
           isMut: true,
           isSigner: false,
           docs: ["The margin account to proxy an action for"]
-        },
-        {
-          name: "adapterProgram",
-          isMut: false,
-          isSigner: false,
-          docs: ["The program to be invoked"]
-        },
-        {
-          name: "adapterMetadata",
-          isMut: false,
-          isSigner: false,
-          docs: ["The metadata about the proxy program"]
         }
       ],
       args: [
         {
-          name: "data",
-          type: "bytes"
+          "name": "instructions",
+          "type": {
+            "vec": {
+              "defined": "IxData"
+            }
+          }
         }
       ]
     },
@@ -3724,6 +3692,22 @@ export const IDL: JetMargin = {
             name: "exponent",
             docs: ["The exponent for the price values"],
             type: "i32"
+          }
+        ]
+      }
+    },
+    {
+      "name": "IxData",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "numAccounts",
+            "type": "u8"
+          },
+          {
+            "name": "data",
+            "type": "bytes"
           }
         ]
       }
