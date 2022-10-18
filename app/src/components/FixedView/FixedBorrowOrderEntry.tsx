@@ -132,7 +132,7 @@ export const FixedBorrowOrderEntry = () => {
       <div className="order-entry-head view-element-item view-element-item-hidden flex column">
         <ReorderArrows component="fixedLendEntry" order={rowOrder} setOrder={setRowOrder} />
         <div className="order-entry-head-top flex-centered">
-          <Paragraph className="order-entry-head-top-title">{dictionary.fixedView.borrow.title}</Paragraph>
+          <Paragraph className="order-entry-head-top-title">{dictionary.fixedView.lend.title}</Paragraph>
         </div>
       </div>
       <div className="order-entry-body">
