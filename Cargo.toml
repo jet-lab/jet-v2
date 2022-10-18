@@ -12,3 +12,4 @@ members = [
 jet-proto-math = { git = "https://github.com/jet-lab/program-libraries", branch = "fixed-point-math-uint-091" }
 anchor-lang = { git = "https://github.com/jet-lab/anchor", branch = "temp-version-bump-1-11" }
 anchor-spl = { git = "https://github.com/jet-lab/anchor", branch = "temp-version-bump-1-11" }
+pyth-sdk-solana = { git = "https://github.com/nevi-me/pyth-sdk-rs", branch = "solana-1-11" }

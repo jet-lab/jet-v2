@@ -19,8 +19,9 @@
 
 use std::sync::Arc;
 
+use anchor_client::solana_client::rpc_config::RpcSendTransactionConfig;
 use anyhow::{bail, Context, Result};
-use jet_simulation::solana_rpc_api::SolanaRpcClient;
+use jet_simulation::solana_rpc_api::{RpcConnection, SolanaRpcClient};
 use solana_address_lookup_table_program::state::AddressLookupTable;
 use solana_sdk::{
     address_lookup_table_account::AddressLookupTableAccount,
@@ -32,6 +33,7 @@ use solana_sdk::{
     signer::Signer,
     transaction::VersionedTransaction,
 };
+use solana_transaction_status::UiTransactionEncoding;
 
 /// TODO
 pub async fn create_lookup_table(
@@ -122,4 +124,38 @@ pub async fn use_lookup_table(
     )?;
 
     Ok(tx)
+}
+
+/// Send a versioned transaction and wait for its confirmation
+///
+/// We are using this until we can update to solana 1.14 which supports this with `SerializedTransaction`
+pub async fn send_versioned_transaction(
+    rpc: &Arc<dyn SolanaRpcClient>,
+    transaction: &VersionedTransaction,
+) -> Result<()> {
+    let serialized = bincode::serialize(transaction)?;
+    let encoded = base64::encode(serialized);
+
+    let connection = rpc
+        .as_any()
+        .downcast_ref::<RpcConnection>()
+        .context("rpc is not an RpcConnection")?;
+    // TODO: inherit the config of the client
+    let config = RpcSendTransactionConfig {
+        skip_preflight: true,
+        preflight_commitment: None,
+        encoding: Some(UiTransactionEncoding::Base64),
+        ..Default::default()
+    };
+    let signature = connection
+        .get_client()
+        .send::<String>(
+            solana_client::rpc_request::RpcRequest::SendTransaction,
+            serde_json::json!([encoded, config]),
+        )
+        .await?;
+    rpc.confirm_transactions(&[signature.parse::<Signature>()?])
+        .await?;
+
+    Ok(())
 }

@@ -28,7 +28,7 @@ serde = { version = "1.0", optional = true }
 anchor-lang = { git = "https://github.com/jet-lab/anchor", branch = "temp-version-bump-1-11" }
 anchor-spl = { git = "https://github.com/jet-lab/anchor", branch = "temp-version-bump-1-11" }
 
-pyth-sdk-solana = { git = "https://github.com/nevi-me/pyth-sdk-rs", branch = "solana-1-11" }
+pyth-sdk-solana = "0.6"
 
 jet-proto-math = { git = "https://github.com/jet-lab/program-libraries", branch = "fixed-point-math-uint-091" }
 jet-margin = { path = "../margin", features = ["cpi"] }
