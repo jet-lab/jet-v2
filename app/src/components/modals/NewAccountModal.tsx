@@ -109,7 +109,7 @@ export function NewAccountModal(): JSX.Element {
   // Check if user has enough SOL to cover rent + fees
   useEffect(() => {
     try {
-      if (walletTokens && walletTokens.map.SOL.amount.lamports.gten(feesBuffer)) {
+      if (walletTokens && walletTokens.map.SOL.amount.lamports.gte(feesBuffer)) {
         setDisabled(false);
       } else {
         setDisabled(true);
