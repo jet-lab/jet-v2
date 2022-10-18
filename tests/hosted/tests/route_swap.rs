@@ -1,9 +1,12 @@
-use std::collections::HashSet;
+use std::{collections::HashSet, time::Duration};
 
 use anyhow::Error;
 
 use jet_margin_sdk::{
-    ix_builder::MarginSwapRouteIxBuilder, swap::spl_swap::SplSwapPool, tokens::TokenPrice,
+    ix_builder::{MarginPoolIxBuilder, MarginSwapRouteIxBuilder},
+    lookup_tables::LookupTable,
+    swap::spl_swap::SplSwapPool,
+    tokens::TokenPrice,
     tx_builder::TokenDepositsConfig,
 };
 use jet_static_program_registry::{orca_swap_v1, orca_swap_v2, spl_token_swap_v2};
@@ -98,7 +101,7 @@ async fn setup_environment(ctx: &MarginTestContext) -> Result<TestEnv, Error> {
 
 #[tokio::test(flavor = "multi_thread")]
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
-async fn route_swap_test() -> Result<(), anyhow::Error> {
+async fn route_swap() -> Result<(), anyhow::Error> {
     let swap_program_id = spl_token_swap_v2::id();
     // Get the mocked runtime
     let ctx = test_context().await;
@@ -106,16 +109,19 @@ async fn route_swap_test() -> Result<(), anyhow::Error> {
 
     // Create our two user wallets, with some SOL funding to get started
     let wallet_a = create_wallet(&ctx.rpc, 10 * LAMPORTS_PER_SOL).await?;
+    let wallet_b = create_wallet(&ctx.rpc, 10 * LAMPORTS_PER_SOL).await?;
 
     // Create the user context helpers, which give a simple interface for executing
     // common actions on a margin account
     let user_a = ctx.margin.user(&wallet_a, 0)?;
+    let user_b = ctx.margin.user(&wallet_b, 0)?;
 
     // Initialize the margin accounts for each user
     user_a.create_account().await?;
+    user_b.create_account().await?;
 
     // Create a swap pool with sufficient liquidity
-    let swap_pool = SplSwapPool::configure(
+    let swap_pool_spl_usdt_tsol = SplSwapPool::configure(
         &ctx.rpc,
         &swap_program_id,
         &env.usdc,
@@ -136,11 +142,8 @@ async fn route_swap_test() -> Result<(), anyhow::Error> {
     assert_eq!(swap_pools.len(), 1);
 
     for pool in swap_pools.values() {
-        assert_eq!(swap_pool.pool, pool.pool);
+        assert_eq!(swap_pool_spl_usdt_tsol.pool, pool.pool);
     }
-
-    let user_a_usdc_transit = user_a.create_deposit_position(&env.usdc).await?;
-    let user_a_tsol_transit = user_a.create_deposit_position(&env.tsol).await?;
 
     // Create some tokens for each user to deposit
     let user_a_usdc_account = ctx
@@ -150,6 +153,10 @@ async fn route_swap_test() -> Result<(), anyhow::Error> {
     let user_a_tsol_account = ctx
         .tokens
         .create_account_funded(&env.tsol, &wallet_a.pubkey(), 100 * ONE_TSOL)
+        .await?;
+    let user_b_tsol_account = ctx
+        .tokens
+        .create_account_funded(&env.tsol, &wallet_b.pubkey(), 10 * ONE_TSOL)
         .await?;
 
     // Set the prices for each token
@@ -186,25 +193,77 @@ async fn route_swap_test() -> Result<(), anyhow::Error> {
             TokenChange::shift(1_000 * ONE_USDC),
         )
         .await?;
+    user_b
+        .deposit(
+            &env.tsol,
+            &user_b_tsol_account,
+            TokenChange::shift(10 * ONE_TSOL),
+        )
+        .await?;
 
     user_a.refresh_all_pool_positions().await?;
+    user_b.refresh_all_pool_positions().await?;
+
+    // Add a lookup table for the swap route
+    let table = LookupTable::create_lookup_table(&ctx.rpc).await.unwrap();
+    println!("Using lookup table {table}");
+
+    // Add accounts to the lookup table
+    let usdc_pool = MarginPoolIxBuilder::new(env.usdc);
+    let tsol_pool = MarginPoolIxBuilder::new(env.tsol);
+    let usdt_pool = MarginPoolIxBuilder::new(env.tsol);
+    let accounts = &[
+        // Pools
+        usdc_pool.token_mint,
+        usdc_pool.address,
+        usdc_pool.vault,
+        usdc_pool.deposit_note_mint,
+        usdc_pool.loan_note_mint,
+        tsol_pool.token_mint,
+        tsol_pool.address,
+        tsol_pool.vault,
+        tsol_pool.deposit_note_mint,
+        tsol_pool.loan_note_mint,
+        usdt_pool.token_mint,
+        usdt_pool.address,
+        usdt_pool.vault,
+        usdt_pool.deposit_note_mint,
+        usdt_pool.loan_note_mint,
+        // Swap pools
+        swap_pool_spl_usdt_tsol.pool,
+        swap_pool_spl_usdt_tsol.pool_mint,
+        swap_pool_spl_usdt_tsol.token_a,
+        swap_pool_spl_usdt_tsol.token_b,
+        swap_pool_spl_usdt_tsol.fee_account,
+        // More pools
+    ];
+
+    LookupTable::extend_lookup_table(&ctx.rpc, table, accounts)
+        .await
+        .unwrap();
+
+    tokio::time::sleep(Duration::from_secs(10)).await;
 
     // Create a swap route and execute it
     let mut swap_builder = MarginSwapRouteIxBuilder::new(
         *user_a.address(),
         env.usdc,
         env.tsol,
-        TokenChange::shift(1),
+        TokenChange::shift(100 * ONE_USDC),
         0,
     );
 
-    swap_builder.add_spl_swap_route(&swap_pool, &env.usdc, 0)?;
+    swap_builder
+        .add_spl_swap_route(&swap_pool_spl_usdt_tsol, &env.usdc, 0)
+        .unwrap();
 
     // TODO: add some tests to check validity
-    swap_builder.finalize()?;
+    swap_builder.finalize().unwrap();
 
     // Now user A swaps their USDC for TSOL
-    user_a.route_swap(&swap_builder).await?;
+    let signature = user_a.route_swap(&swap_builder, &[table]).await.unwrap();
+
+    println!("Signature {signature}");
 
     Ok(())
 }

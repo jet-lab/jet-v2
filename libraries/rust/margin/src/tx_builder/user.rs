@@ -28,7 +28,7 @@ use solana_sdk::instruction::Instruction;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::Keypair;
 use solana_sdk::signer::Signer;
-use solana_sdk::transaction::Transaction;
+use solana_sdk::transaction::{Transaction, VersionedTransaction};
 
 use anchor_lang::{AccountDeserialize, Id};
 
@@ -37,6 +37,7 @@ use jet_margin_pool::TokenChange;
 use jet_simulation::solana_rpc_api::SolanaRpcClient;
 
 use crate::cat;
+use crate::lookup_tables::LookupTable;
 use crate::margin_integrator::PositionRefresher;
 use crate::util::data::Join;
 use crate::{
@@ -425,6 +426,54 @@ impl MarginTxBuilder {
     /// Transaction to swap tokens in a chain of up to 3 legs.
     ///
     /// The function accepts the instruction route builder which is expected to be finalized.
+    pub async fn route_swap_with_lookup(
+        &self,
+        builder: &MarginSwapRouteIxBuilder,
+        account_lookup_tables: &[Pubkey],
+        signer: &Keypair,
+    ) -> Result<VersionedTransaction> {
+        // TODO: DRY with the below
+
+        // We can't get the instruction if not finalized, get it to check.
+        let inner_swap_ix = builder.get_instruction()?;
+
+        let mut instructions = vec![];
+        for deposit_note_mint in builder.get_pool_note_mints() {
+            self.get_or_create_position(&mut instructions, deposit_note_mint)
+                .await?;
+        }
+        for token_mint in builder.get_spl_token_mints() {
+            // Check if an ATA exists before creating it
+            let ata = get_associated_token_address(self.address(), token_mint);
+            if self.rpc.get_account(&ata).await?.is_none() {
+                let ix = spl_associated_token_account::instruction::create_associated_token_account(
+                    &self.signer(),
+                    self.address(),
+                    token_mint,
+                    &spl_token::id(),
+                );
+                instructions.push(ix);
+            }
+        }
+
+        // TODO: necessary to refresh prices here? Or can we do it separately?
+
+        instructions.push(self.adapter_invoke_ix(inner_swap_ix));
+
+        // TODO: can we use > 1 table?
+        let tx = LookupTable::use_lookup_table(
+            &self.rpc,
+            account_lookup_tables[0],
+            &instructions,
+            &[signer],
+        )
+        .await?;
+        Ok(tx)
+    }
+
+    /// Transaction to swap tokens in a chain of up to 3 legs.
+    ///
+    /// The function accepts the instruction route builder which is expected to be finalized.
     pub async fn route_swap(
         &self,
         builder: &MarginSwapRouteIxBuilder,
@@ -438,20 +487,22 @@ impl MarginTxBuilder {
                 .await?;
         }
         for token_mint in builder.get_spl_token_mints() {
-            let ix = spl_associated_token_account::instruction::create_associated_token_account(
-                &self.signer(),
-                self.address(),
-                token_mint,
-                &spl_token::id(),
-            );
-            instructions.push(ix);
+            // Check if an ATA exists before creating it
+            let ata = get_associated_token_address(self.address(), token_mint);
+            if self.rpc.get_account(&ata).await?.is_none() {
+                let ix = spl_associated_token_account::instruction::create_associated_token_account(
+                    &self.signer(),
+                    self.address(),
+                    token_mint,
+                    &spl_token::id(),
+                );
+                instructions.push(ix);
+            }
         }
 
         // TODO: necessary to refresh prices here? Or can we do it separately?
 
         instructions.push(self.adapter_invoke_ix(inner_swap_ix));
-
-        // TODO: transaction might be large, use a versioned one
 
         self.create_transaction_builder(&instructions)
     }

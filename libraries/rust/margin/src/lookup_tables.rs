@@ -17,7 +17,7 @@
 
 //! Interact with the lookup table program, generate lookups into tables.
 
-use std::sync::Arc;
+use std::{sync::Arc, time::Duration};
 
 use anchor_client::solana_client::rpc_config::RpcSendTransactionConfig;
 use anyhow::{bail, Context, Result};
@@ -35,127 +35,138 @@ use solana_sdk::{
 };
 use solana_transaction_status::UiTransactionEncoding;
 
-/// TODO
-pub async fn create_lookup_table(
-    rpc: &Arc<dyn SolanaRpcClient>,
-    // TODO: think more about how we want to handle authority, as they need to sign
-    // authority: Option<Pubkey>,
-) -> Result<Pubkey> {
-    let recent_slot = rpc.get_slot(Some(CommitmentConfig::finalized())).await?;
-    // let authority = authority.unwrap_or_else(|| rpc.payer().pubkey());
-    let authority = rpc.payer().pubkey();
-    let (create_ix, table_address) =
-        solana_address_lookup_table_program::instruction::create_lookup_table(
-            authority,
-            rpc.payer().pubkey(),
-            recent_slot,
-        );
+/// Lookup tables are used to interact with the lookup table program
+///
+/// Note: this structure is experimental, and is subject to change
+pub struct LookupTable;
 
-    let tx = rpc.create_transaction(&[], &[create_ix]).await?;
+impl LookupTable {
+    /// TODO
+    pub async fn create_lookup_table(
+        rpc: &Arc<dyn SolanaRpcClient>,
+        // TODO: think more about how we want to handle authority, as they need to sign
+        // authority: Option<Pubkey>,
+    ) -> Result<Pubkey> {
+        let recent_slot = rpc.get_slot(Some(CommitmentConfig::finalized())).await?;
+        // let authority = authority.unwrap_or_else(|| rpc.payer().pubkey());
+        let authority = rpc.payer().pubkey();
+        let (create_ix, table_address) =
+            solana_address_lookup_table_program::instruction::create_lookup_table(
+                authority,
+                rpc.payer().pubkey(),
+                recent_slot,
+            );
 
-    rpc.send_and_confirm_transaction(&tx).await?;
+        let tx = rpc.create_transaction(&[], &[create_ix]).await?;
 
-    Ok(table_address)
-}
+        rpc.send_and_confirm_transaction(&tx).await?;
 
-/// TODO add authority
-pub async fn extend_lookup_table(
-    rpc: &Arc<dyn SolanaRpcClient>,
-    table_address: Pubkey,
-    accounts: &[Pubkey],
-) -> Result<()> {
-    if accounts.is_empty() {
-        bail!("Cannot extend lookup table if there are no accounts to add")
-    }
-    // Keep track of the last signature
-    let authority = rpc.payer().pubkey();
-    let payer = rpc.payer().pubkey();
-    let mut signature = Signature::default();
-    for pubkeys in accounts.chunks(20) {
-        let ix = solana_address_lookup_table_program::instruction::extend_lookup_table(
-            table_address,
-            authority,
-            Some(payer),
-            pubkeys.to_vec(),
-        );
-
-        let tx = rpc.create_transaction(&[], &[ix]).await?;
-
-        signature = rpc.send_and_confirm_transaction(&tx).await?;
+        Ok(table_address)
     }
 
-    // Check that the last signature is confirmed
-    rpc.confirm_transactions(&[signature]).await?;
+    /// TODO add authority
+    pub async fn extend_lookup_table(
+        rpc: &Arc<dyn SolanaRpcClient>,
+        table_address: Pubkey,
+        accounts: &[Pubkey],
+    ) -> Result<()> {
+        if accounts.is_empty() {
+            bail!("Cannot extend lookup table if there are no accounts to add")
+        }
+        // Keep track of the last signature
+        let authority = rpc.payer().pubkey();
+        let payer = rpc.payer().pubkey();
+        let mut signature = Signature::default();
+        for pubkeys in accounts.chunks(20) {
+            let ix = solana_address_lookup_table_program::instruction::extend_lookup_table(
+                table_address,
+                authority,
+                Some(payer),
+                pubkeys.to_vec(),
+            );
 
-    Ok(())
-}
+            let tx = rpc.create_transaction(&[], &[ix]).await?;
 
-/// Use a lookup table
-///
-/// TODO assumes the payer is not different, change if we find that it's so
-pub async fn use_lookup_table(
-    rpc: &Arc<dyn SolanaRpcClient>,
-    table_address: Pubkey,
-    instructions: &[Instruction],
-    keypairs: &[&Keypair],
-) -> Result<VersionedTransaction> {
-    let table = rpc
-        .get_account(&table_address)
-        .await?
-        .with_context(|| format!("Address {table_address} could not be found"))?;
-    let table = AddressLookupTable::deserialize(&table.data)?;
-    let lookup_table_account = AddressLookupTableAccount {
-        key: table_address,
-        addresses: table.addresses.to_vec(),
-    };
+            signature = rpc.send_and_confirm_transaction(&tx).await?;
+        }
 
-    let mut signers = vec![rpc.payer()];
-    signers.extend_from_slice(keypairs);
+        // Trying to use the lookup table immediately doesn't work
+        tokio::time::sleep(Duration::from_secs(10)).await;
 
-    let blockhash = rpc.get_latest_blockhash().await?;
-    let tx = VersionedTransaction::try_new(
-        solana_sdk::message::VersionedMessage::V0(v0::Message::try_compile(
-            &rpc.payer().pubkey(),
-            instructions,
-            &[lookup_table_account],
-            blockhash,
-        )?),
-        &signers,
-    )?;
+        // // Check that the last signature is confirmed
+        // rpc.confirm_transactions(&[signature]).await?;
 
-    Ok(tx)
-}
+        Ok(())
+    }
 
-/// Send a versioned transaction and wait for its confirmation
-///
-/// We are using this until we can update to solana 1.14 which supports this with `SerializedTransaction`
-pub async fn send_versioned_transaction(
-    rpc: &Arc<dyn SolanaRpcClient>,
-    transaction: &VersionedTransaction,
-) -> Result<()> {
-    let serialized = bincode::serialize(transaction)?;
-    let encoded = base64::encode(serialized);
+    /// Use a lookup table
+    ///
+    /// TODO assumes the payer is not different, change if we find that it's so
+    pub async fn use_lookup_table(
+        rpc: &Arc<dyn SolanaRpcClient>,
+        table_address: Pubkey,
+        instructions: &[Instruction],
+        keypairs: &[&Keypair],
+    ) -> Result<VersionedTransaction> {
+        let table = rpc
+            .get_account(&table_address)
+            .await?
+            .with_context(|| format!("Address {table_address} could not be found"))?;
+        let table = AddressLookupTable::deserialize(&table.data)?;
+        let lookup_table_account = AddressLookupTableAccount {
+            key: table_address,
+            addresses: table.addresses.to_vec(),
+        };
 
-    let connection = rpc
-        .as_any()
-        .downcast_ref::<RpcConnection>()
-        .context("rpc is not an RpcConnection")?;
-    // TODO: inherit the config of the client
-    let config = RpcSendTransactionConfig {
-        skip_preflight: true,
-        preflight_commitment: None,
-        encoding: Some(UiTransactionEncoding::Base64),
-        ..Default::default()
-    };
-    let signature = connection
-        .get_client()
-        .send::<String>(
-            solana_client::rpc_request::RpcRequest::SendTransaction,
-            serde_json::json!([encoded, config]),
-        )
-        .await?;
-    rpc.confirm_transactions(&[signature.parse::<Signature>()?])
-        .await?;
+        let mut signers = vec![rpc.payer()];
+        signers.extend_from_slice(keypairs);
 
-    Ok(())
+        let blockhash = rpc.get_latest_blockhash().await?;
+        let tx = VersionedTransaction::try_new(
+            solana_sdk::message::VersionedMessage::V0(v0::Message::try_compile(
+                &rpc.payer().pubkey(),
+                instructions,
+                &[lookup_table_account],
+                blockhash,
+            )?),
+            &signers,
+        )?;
+
+        Ok(tx)
+    }
+
+    /// Send a versioned transaction and wait for its confirmation
+    ///
+    /// We are using this until we can update to solana 1.14 which supports this with `SerializedTransaction`
+    pub async fn send_versioned_transaction(
+        rpc: &Arc<dyn SolanaRpcClient>,
+        transaction: &VersionedTransaction,
+    ) -> Result<Signature> {
+        let serialized = bincode::serialize(transaction)?;
+        let encoded = base64::encode(serialized);
+
+        let connection = rpc
+            .as_any()
+            .downcast_ref::<RpcConnection>()
+            .context("rpc is not an RpcConnection")?;
+        // TODO: inherit the config of the client
+        let config = RpcSendTransactionConfig {
+            skip_preflight: true,
+            preflight_commitment: None,
+            encoding: Some(UiTransactionEncoding::Base64),
+            ..Default::default()
+        };
+        let signature = connection
+            .get_client()
+            .send::<String>(
+                solana_client::rpc_request::RpcRequest::SendTransaction,
+                serde_json::json!([encoded, config]),
+            )
+            .await?;
+        let signature = signature.parse::<Signature>()?;
+        // rpc.confirm_transactions(&[signature])
+        //     .await?;
+
+        Ok(signature)
+    }
 }
