@@ -531,7 +531,7 @@ export class AssociatedToken {
   /** Wraps SOL in an associated token account. The account will only be created if it doesn't exist.
    * @param instructions
    * @param provider
-   * @param {number} feesBuffer How much tokens should remain unwrapped to pay for fees
+   * @param {BN} feesBuffer How much tokens should remain unwrapped to pay for fees
    */
   static async withWrapNative(
     instructions: TransactionInstruction[],
@@ -545,11 +545,13 @@ export class AssociatedToken {
     //this will add instructions to create ata if ata does not exist, if exist, we will get the ata address
     const associatedToken = await this.withCreate(instructions, provider, owner, NATIVE_MINT)
     //IX to transfer sol to ATA
+
     const transferIx = SystemProgram.transfer({
       fromPubkey: owner,
       lamports: BigInt(ownerLamports.toString()),
       toPubkey: associatedToken
     })
+
     const syncNativeIX = createSyncNativeInstruction(associatedToken)
     instructions.push(transferIx, syncNativeIX)
     return associatedToken
