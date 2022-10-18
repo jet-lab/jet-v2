@@ -2043,7 +2043,7 @@ dependencies = [
  "bitflags",
  "borsh 0.9.3",
  "bytemuck",
- "itertools 0.10.5",
+ "itertools 0.9.0",
  "jet-margin",
  "jet-proto-math",
  "num-derive",
@@ -2113,7 +2113,7 @@ dependencies = [
  "anchor-spl",
  "bitflags",
  "bytemuck",
- "itertools 0.10.5",
+ "itertools 0.9.0",
  "jet-airspace",
  "jet-metadata",
  "jet-proto-math",
@@ -2170,8 +2170,11 @@ dependencies = [
  "pyth-sdk-solana 0.6.1",
  "rand 0.8.5",
  "serde",
+ "serde_json",
  "solana-address-lookup-table-program",
+ "solana-client",
  "solana-sdk",
+ "solana-transaction-status",
  "spl-associated-token-account",
  "spl-token 3.5.0",
  "spl-token-swap 2.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -2245,10 +2248,9 @@ dependencies = [
 
 [[package]]
 name = "jet-simulation"
-version = "0.2.0"
-source = "git+https://github.com/jet-lab/jet-simulation?branch=solana-1-11#f33244e818cb666d53c4c0849075e6379b5a84e0"
+version = "0.3.0"
+source = "git+https://github.com/jet-lab/jet-simulation?branch=flexible-versions#14910d70e209c99063fa249fee3e7fed14718bde"
 dependencies = [
- "anchor-lang",
  "anyhow",
  "async-trait",
  "bincode",

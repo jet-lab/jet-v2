@@ -20,5 +20,5 @@ testing = []
 anchor-lang = { git = "https://github.com/jet-lab/anchor", branch = "temp-version-bump-1-11" }
 anchor-spl = { git = "https://github.com/jet-lab/anchor", branch = "temp-version-bump-1-11" }
 
-pyth-sdk-solana = { git = "https://github.com/nevi-me/pyth-sdk-rs", branch = "solana-1-11" }
+pyth-sdk-solana = "0.6"
 bytemuck = "1.7"
