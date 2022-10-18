@@ -286,7 +286,7 @@ impl MarginIxBuilder {
     ///
     /// `adapter_ix` - The instruction to be invoked
     pub fn adapter_invoke(&self, adapter_ix: Instruction) -> Instruction {
-        invoke!(
+        invoke_single!(
             self.address,
             adapter_ix,
             AdapterInvoke { owner: self.owner }
@@ -340,7 +340,7 @@ impl MarginIxBuilder {
             &jet_margin::id(),
         );
 
-        invoke!(
+        invoke_single!(
             self.address,
             adapter_ix,
             LiquidatorInvoke {
@@ -469,7 +469,7 @@ impl MarginIxBuilder {
 ///
 /// `adapter_ix` - The instruction to be invoked
 pub fn accounting_invoke(margin_account: Pubkey, adapter_ix: Instruction) -> Instruction {
-    invoke!(margin_account, adapter_ix, AccountingInvoke)
+    invoke_single!(margin_account, adapter_ix, AccountingInvoke)
 }
 
 /// Utility for creating instructions that modify configuration for the margin program within
@@ -614,7 +614,7 @@ pub fn derive_liquidator_config(airspace: &Pubkey, liquidator: &Pubkey) -> Pubke
 
 /// Generic invocation logic that can be applied to any margin account invoke
 /// instruction, such as adapter_invoke, liquidate_invoke, and accounting_invoke
-macro_rules! invoke {
+macro_rules! invoke_single {
     (
         $margin_account:expr,
         $adapter_ix:ident,
@@ -627,14 +627,24 @@ macro_rules! invoke {
 
         let mut accounts = ix_account::$Instruction {
             margin_account: $margin_account,
-            adapter_program: $adapter_ix.program_id,
-            adapter_metadata,
             $(
                 $($additional_field: $value),*
             )?
         }
         .to_account_metas(None);
 
+        accounts.push(anchor_lang::prelude::AccountMeta {
+            pubkey: $adapter_ix.program_id,
+            is_signer: false,
+            is_writable: false,
+        });
+        accounts.push(anchor_lang::prelude::AccountMeta {
+            pubkey: adapter_metadata,
+            is_signer: false,
+            is_writable: false,
+        });
+
+        let num_accounts = $adapter_ix.accounts.len() as u8;
         for acc in $adapter_ix.accounts {
             if acc.pubkey == $margin_account {
                 accounts.push(anchor_lang::prelude::AccountMeta {
@@ -649,11 +659,11 @@ macro_rules! invoke {
         Instruction {
             program_id: JetMargin::id(),
             data: ix_data::$Instruction {
-                data: $adapter_ix.data,
+                data: vec![(num_accounts, $adapter_ix.data)],
             }
             .data(),
             accounts,
         }
     }};
 }
-use invoke;
+use invoke_single;

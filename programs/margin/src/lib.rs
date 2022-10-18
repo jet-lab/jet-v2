@@ -306,7 +306,7 @@ pub mod jet_margin {
     /// | [`events::AdapterInvokeEnd`] | Marks the ending of the adapter invocation (includes no data except for the event itself being emitted). |
     pub fn adapter_invoke<'info>(
         ctx: Context<'_, '_, '_, 'info, AdapterInvoke<'info>>,
-        data: Vec<u8>,
+        data: Vec<(u8, Vec<u8>)>,
     ) -> Result<()> {
         adapter_invoke_handler(ctx, data)
     }
@@ -346,7 +346,7 @@ pub mod jet_margin {
     /// | [`events::AccountingInvokeEnd`] | Signify that the accounting invocation process has ended. |
     pub fn accounting_invoke<'info>(
         ctx: Context<'_, '_, '_, 'info, AccountingInvoke<'info>>,
-        data: Vec<u8>,
+        data: Vec<(u8, Vec<u8>)>,
     ) -> Result<()> {
         accounting_invoke_handler(ctx, data)
     }
@@ -432,7 +432,7 @@ pub mod jet_margin {
     /// | [`events::LiquidatorInvokeEnd`] | Marks the ending of this liquidator event. |
     pub fn liquidator_invoke<'info>(
         ctx: Context<'_, '_, '_, 'info, LiquidatorInvoke<'info>>,
-        data: Vec<u8>,
+        data: Vec<(u8, Vec<u8>)>,
     ) -> Result<()> {
         liquidator_invoke_handler(ctx, data)
     }

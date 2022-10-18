@@ -17,9 +17,7 @@
 
 use anchor_lang::prelude::*;
 
-use jet_metadata::MarginAdapterMetadata;
-
-use crate::adapter::{self, InvokeAdapter};
+use crate::adapter;
 use crate::{events, ErrorCode, MarginAccount};
 
 #[derive(Accounts)]
@@ -30,19 +28,13 @@ pub struct AdapterInvoke<'info> {
     /// The margin account to proxy an action for
     #[account(mut, has_one = owner)]
     pub margin_account: AccountLoader<'info, MarginAccount>,
-
-    /// The program to be invoked
-    /// CHECK:
-    pub adapter_program: AccountInfo<'info>,
-
-    /// The metadata about the proxy program
-    #[account(has_one = adapter_program)]
-    pub adapter_metadata: Account<'info, MarginAdapterMetadata>,
+    //
+    // see invoke_many doc for remaining_accounts structure
 }
 
 pub fn adapter_invoke_handler<'info>(
     ctx: Context<'_, '_, '_, 'info, AdapterInvoke<'info>>,
-    data: Vec<u8>,
+    data: Vec<(u8, Vec<u8>)>,
 ) -> Result<()> {
     if ctx.accounts.margin_account.load()?.liquidation != Pubkey::default() {
         msg!("account is being liquidated");
@@ -51,23 +43,19 @@ pub fn adapter_invoke_handler<'info>(
 
     emit!(events::AdapterInvokeBegin {
         margin_account: ctx.accounts.margin_account.key(),
-        adapter_program: ctx.accounts.adapter_program.key(),
+        adapter_program: Pubkey::default(), //todo
     });
 
-    let events = adapter::invoke(
-        &InvokeAdapter {
-            margin_account: &ctx.accounts.margin_account,
-            adapter_program: &ctx.accounts.adapter_program,
-            accounts: ctx.remaining_accounts,
-            signed: true,
-        },
+    let events = adapter::invoke_many(
+        &ctx.accounts.margin_account,
+        ctx.remaining_accounts,
         data,
+        true,
     )?;
 
     for event in events {
         event.emit();
     }
-
     emit!(events::AdapterInvokeEnd {});
 
     ctx.accounts

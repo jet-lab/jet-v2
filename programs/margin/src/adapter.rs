@@ -28,7 +28,7 @@ use anchor_lang::{
     solana_program::{instruction::Instruction, program},
 };
 use anchor_spl::token::{Mint, TokenAccount};
-use jet_metadata::PositionTokenMetadata;
+use jet_metadata::{MarginAdapterMetadata, PositionTokenMetadata};
 
 pub struct InvokeAdapter<'a, 'info> {
     /// The margin account to proxy an action for
@@ -101,6 +101,57 @@ pub struct PriceChangeInfo {
 
     /// The exponent for the price values
     pub exponent: i32,
+}
+
+/// Invoke a margin adapter with the requested data
+/// * `signed` - sign with the margin account
+///
+/// accounts structure:
+///
+/// remaining accounts repeat this pattern for each invoke:
+/// 
+/// /// The program to be invoked
+/// adapter_program: AccountInfo<'info>,
+/// 
+/// /// The metadata about the proxy program
+/// #[account(has_one = adapter_program)]
+/// adapter_metadata: Account<'info, MarginAdapterMetadata>,
+/// 
+/// /// all accounts needed for specific instruciton
+/// instruction_accounts: Vec<AccountInfo<'info>>
+pub fn invoke_many<'a, 'info>(
+    margin_account: &'a AccountLoader<'info, MarginAccount>,
+    accounts: &'a [AccountInfo<'info>],
+    data: Vec<(u8, Vec<u8>)>,
+    signed: bool,
+) -> Result<Vec<PositionEvent>> {
+    let mut remaining = accounts.iter().cloned();
+    let mut events = vec![];
+    for datum in data {
+        let (num_accounts, ix_data) = datum;
+
+        //todo errors
+        let adapter_program = remaining.next().unwrap();
+        let adapter_metadata =
+            Account::<MarginAdapterMetadata>::try_from(&remaining.next().unwrap()).unwrap();
+        assert!(&adapter_metadata.adapter_program == adapter_program.key);
+        let accounts = remaining
+            .by_ref()
+            .take(num_accounts as usize)
+            .collect::<Vec<_>>();
+
+        events.extend(invoke(
+            &InvokeAdapter {
+                margin_account,
+                adapter_program: &adapter_program,
+                accounts: &accounts,
+                signed,
+            },
+            ix_data,
+        )?);
+    }
+
+    Ok(events)
 }
 
 /// Invoke a margin adapter with the requested data

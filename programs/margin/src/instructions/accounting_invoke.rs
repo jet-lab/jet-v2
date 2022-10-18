@@ -17,9 +17,7 @@
 
 use anchor_lang::prelude::*;
 
-use jet_metadata::MarginAdapterMetadata;
-
-use crate::adapter::{self, InvokeAdapter};
+use crate::adapter;
 use crate::{events, MarginAccount};
 
 #[derive(Accounts)]
@@ -27,33 +25,24 @@ pub struct AccountingInvoke<'info> {
     /// The margin account to proxy an action for
     #[account(mut)]
     pub margin_account: AccountLoader<'info, MarginAccount>,
-
-    /// The program to be invoked
-    /// CHECK:
-    pub adapter_program: AccountInfo<'info>,
-
-    /// The metadata about the proxy program
-    #[account(has_one = adapter_program)]
-    pub adapter_metadata: Account<'info, MarginAdapterMetadata>,
+    //
+    // see invoke_many doc for remaining_accounts structure
 }
 
 pub fn accounting_invoke_handler<'info>(
     ctx: Context<'_, '_, '_, 'info, AccountingInvoke<'info>>,
-    data: Vec<u8>,
+    data: Vec<(u8, Vec<u8>)>,
 ) -> Result<()> {
     emit!(events::AccountingInvokeBegin {
         margin_account: ctx.accounts.margin_account.key(),
-        adapter_program: ctx.accounts.adapter_program.key(),
+        adapter_program: Pubkey::default(), //todo
     });
 
-    let events = adapter::invoke(
-        &InvokeAdapter {
-            margin_account: &ctx.accounts.margin_account,
-            adapter_program: &ctx.accounts.adapter_program,
-            accounts: ctx.remaining_accounts,
-            signed: false,
-        },
+    let events = adapter::invoke_many(
+        &ctx.accounts.margin_account,
+        ctx.remaining_accounts,
         data,
+        false,
     )?;
 
     for event in events {
