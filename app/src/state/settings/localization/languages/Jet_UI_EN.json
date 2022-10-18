@@ -60,7 +60,7 @@
       "pastTense": "Deposited",
       "disabledMessages": {
         "noBalanceForDeposit": "You have no {{ASSET}} in your wallet to deposit.",
-        "notEnoughSolForFees": "`Please make sure you have a buffer of at least {{BUFFER}} SOL in your wallet to cover potential transaction fees.`)"
+        "notEnoughSolForFees": "Please make sure you have a buffer of at least {{BUFFER}} SOL in your wallet to cover potential transaction fees."
       },
       "warningMessages": {},
       "errorMessages": {
