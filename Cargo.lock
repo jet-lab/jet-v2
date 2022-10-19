@@ -3002,7 +3002,7 @@ dependencies = [
 [[package]]
 name = "pyth-sdk"
 version = "0.6.1"
-source = "git+https://github.com/nevi-me/pyth-sdk-rs?branch=solana-1-11#be19d53b07b6dcf29190da626b2ae484fe2c3b57"
+source = "git+https://github.com/pyth-network/pyth-sdk-rs?branch=main#bc063915c3d2babe06c000998d608775c0c30e47"
 dependencies = [
  "borsh 0.9.3",
  "borsh-derive 0.9.3",
@@ -3031,7 +3031,7 @@ dependencies = [
 [[package]]
 name = "pyth-sdk-solana"
 version = "0.6.1"
-source = "git+https://github.com/nevi-me/pyth-sdk-rs?branch=solana-1-11#be19d53b07b6dcf29190da626b2ae484fe2c3b57"
+source = "git+https://github.com/pyth-network/pyth-sdk-rs?branch=main#bc063915c3d2babe06c000998d608775c0c30e47"
 dependencies = [
  "borsh 0.9.3",
  "borsh-derive 0.9.3",
