@@ -43,7 +43,12 @@ export function DepositWithdrawModal(): JSX.Element {
   const disabledMessage = useTokenInputDisabledMessage();
   const disabled = sendingTransaction || disabledMessage.length > 0;
   const { Paragraph, Text } = Typography;
-  const { TabPane } = Tabs;
+  const tabItems = ['deposit', 'withdraw'].map((action: string) => {
+    return {
+      label: action,
+      key: action
+    };
+  });
 
   // Deposit / Withdraw
   async function depositWithdraw() {
@@ -218,11 +223,9 @@ export function DepositWithdrawModal(): JSX.Element {
       <Modal open className="action-modal" maskClosable={false} footer={null} onCancel={handleCancel}>
         <Tabs
           activeKey={currentAction ?? 'deposit'}
-          onChange={(action: string) => setCurrentAction(action as PoolAction)}>
-          {['deposit', 'withdraw'].map(action => (
-            <TabPane tab={action} key={action}></TabPane>
-          ))}
-        </Tabs>
+          onChange={(action: string) => setCurrentAction(action as PoolAction)}
+          items={tabItems}
+        />
         <div className="wallet-balance flex align-center justify-between">
           <Text className="small-accent-text">
             {dictionary.common[currentAction === 'deposit' ? 'walletBalance' : 'accountBalance'].toUpperCase()}
