@@ -5,7 +5,7 @@ use anyhow::Error;
 use jet_margin_sdk::{
     ix_builder::{MarginPoolIxBuilder, MarginSwapRouteIxBuilder},
     lookup_tables::LookupTable,
-    swap::spl_swap::SplSwapPool,
+    swap::{spl_swap::SplSwapPool, saber_swap::SaberSwapPool},
     tokens::TokenPrice,
     tx_builder::TokenDepositsConfig,
 };
@@ -17,7 +17,7 @@ use solana_sdk::signature::Signer;
 use hosted_tests::{
     context::{test_context, MarginTestContext},
     margin::MarginPoolSetupInfo,
-    spl_swap::SwapPoolConfig,
+    spl_swap::SwapPoolConfig, saber_swap::SaberSwapPoolConfig,
 };
 
 use jet_margin::TokenKind;
@@ -25,6 +25,8 @@ use jet_margin_pool::{MarginPoolConfig, PoolFlags, TokenChange};
 use jet_simulation::{assert_custom_program_error, create_wallet};
 
 const ONE_USDC: u64 = 1_000_000;
+const ONE_USDT: u64 = 1_000_000;
+const ONE_MSOL: u64 = LAMPORTS_PER_SOL;
 const ONE_TSOL: u64 = LAMPORTS_PER_SOL;
 
 const DEFAULT_POOL_CONFIG: MarginPoolConfig = MarginPoolConfig {
@@ -41,17 +43,20 @@ const DEFAULT_POOL_CONFIG: MarginPoolConfig = MarginPoolConfig {
 
 struct TestEnv {
     usdc: Pubkey,
-    tsol: Pubkey,
     usdt: Pubkey,
+    tsol: Pubkey,
+    msol: Pubkey,
 }
 
 async fn setup_environment(ctx: &MarginTestContext) -> Result<TestEnv, Error> {
     let usdc = ctx.tokens.create_token(6, None, None).await?;
     let usdc_oracle = ctx.tokens.create_oracle(&usdc).await?;
-    let tsol = ctx.tokens.create_token(9, None, None).await?;
-    let tsol_oracle = ctx.tokens.create_oracle(&tsol).await?;
     let usdt = ctx.tokens.create_token(6, None, None).await?;
     let usdt_oracle = ctx.tokens.create_oracle(&usdt).await?;
+    let tsol = ctx.tokens.create_token(9, None, None).await?;
+    let tsol_oracle = ctx.tokens.create_oracle(&tsol).await?;
+    let msol = ctx.tokens.create_token(9, None, None).await?;
+    let msol_oracle = ctx.tokens.create_oracle(&msol).await?;
 
     let pools = [
         MarginPoolSetupInfo {
@@ -63,6 +68,14 @@ async fn setup_environment(ctx: &MarginTestContext) -> Result<TestEnv, Error> {
             oracle: usdc_oracle,
         },
         MarginPoolSetupInfo {
+            token: usdt,
+            token_kind: TokenKind::Collateral,
+            collateral_weight: 1_00,
+            max_leverage: 10_00,
+            config: DEFAULT_POOL_CONFIG,
+            oracle: usdt_oracle,
+        },
+        MarginPoolSetupInfo {
             token: tsol,
             token_kind: TokenKind::Collateral,
             collateral_weight: 95,
@@ -71,12 +84,12 @@ async fn setup_environment(ctx: &MarginTestContext) -> Result<TestEnv, Error> {
             oracle: tsol_oracle,
         },
         MarginPoolSetupInfo {
-            token: usdt,
+            token: msol,
             token_kind: TokenKind::Collateral,
-            collateral_weight: 1_00,
-            max_leverage: 10_00,
+            collateral_weight: 90,
+            max_leverage: 3_00,
             config: DEFAULT_POOL_CONFIG,
-            oracle: usdt_oracle,
+            oracle: tsol_oracle,
         },
     ];
 
@@ -96,9 +109,10 @@ async fn setup_environment(ctx: &MarginTestContext) -> Result<TestEnv, Error> {
         ctx.margin.create_pool(&pool_info).await?;
     }
 
-    Ok(TestEnv { usdc, tsol, usdt })
+    Ok(TestEnv { usdc, tsol, usdt, msol })
 }
 
+// #[cfg(reature = "localnet")]
 #[tokio::test(flavor = "multi_thread")]
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn route_swap() -> Result<(), anyhow::Error> {
@@ -120,8 +134,8 @@ async fn route_swap() -> Result<(), anyhow::Error> {
     user_a.create_account().await?;
     user_b.create_account().await?;
 
-    // Create a swap pool with sufficient liquidity
-    let swap_pool_spl_usdt_tsol = SplSwapPool::configure(
+    // Create swap pools with some liquidity
+    let swap_pool_spl_usdc_tsol = SplSwapPool::configure(
         &ctx.rpc,
         &swap_program_id,
         &env.usdc,
@@ -131,19 +145,42 @@ async fn route_swap() -> Result<(), anyhow::Error> {
     )
     .await?;
 
+    // TOOD: replace with a different pool type
+    let swap_pool_spl_msol_usdt = SplSwapPool::configure(
+        &ctx.rpc,
+        &swap_program_id,
+        &env.msol,
+        &env.usdt,
+        // Set a 106 price relative to SOL at 100
+        1_060_000 * ONE_USDT,
+        10_000 * ONE_MSOL,
+    )
+    .await?;
+
     // Check if the swap pool can be found
     let mut supported_mints = HashSet::new();
     supported_mints.insert(env.usdc);
+    supported_mints.insert(env.usdt);
+    supported_mints.insert(env.msol);
     supported_mints.insert(env.tsol);
 
     let swap_pools = SplSwapPool::get_pools(&ctx.rpc, &supported_mints, swap_program_id)
         .await
         .unwrap();
-    assert_eq!(swap_pools.len(), 1);
+    assert_eq!(swap_pools.len(), 2);
 
-    for pool in swap_pools.values() {
-        assert_eq!(swap_pool_spl_usdt_tsol.pool, pool.pool);
-    }
+    // Add Saber swap pool
+    // Create a swap pool with sufficient liquidity
+    println!("Creating saber swap pool");
+    let swap_pool_sbr_msol_tsol = SaberSwapPool::configure(
+        &ctx.rpc,
+        &env.msol,
+        &env.tsol,
+        // Set a 1.06 rate
+        10_000 * ONE_MSOL,
+        10_600 * ONE_TSOL,
+    )
+    .await?;
 
     // Create some tokens for each user to deposit
     let user_a_usdc_account = ctx
@@ -229,13 +266,25 @@ async fn route_swap() -> Result<(), anyhow::Error> {
         usdt_pool.vault,
         usdt_pool.deposit_note_mint,
         usdt_pool.loan_note_mint,
-        // Swap pools
-        swap_pool_spl_usdt_tsol.pool,
-        swap_pool_spl_usdt_tsol.pool_mint,
-        swap_pool_spl_usdt_tsol.token_a,
-        swap_pool_spl_usdt_tsol.token_b,
-        swap_pool_spl_usdt_tsol.fee_account,
-        // More pools
+        // SPL swap pools
+        swap_pool_spl_usdc_tsol.pool,
+        swap_pool_spl_usdc_tsol.pool_mint,
+        swap_pool_spl_usdc_tsol.token_a,
+        swap_pool_spl_usdc_tsol.token_b,
+        swap_pool_spl_usdc_tsol.fee_account,
+        swap_pool_spl_msol_usdt.pool,
+        swap_pool_spl_msol_usdt.pool_mint,
+        swap_pool_spl_msol_usdt.token_a,
+        swap_pool_spl_msol_usdt.token_b,
+        swap_pool_spl_msol_usdt.fee_account,
+        // Saber swap pools
+        swap_pool_sbr_msol_tsol.pool,
+        swap_pool_sbr_msol_tsol.pool_authority,
+        swap_pool_sbr_msol_tsol.pool_mint,
+        swap_pool_sbr_msol_tsol.token_a,
+        swap_pool_sbr_msol_tsol.token_b,
+        swap_pool_sbr_msol_tsol.fee_a,
+        swap_pool_sbr_msol_tsol.fee_b,
     ];
 
     LookupTable::extend_lookup_table(&ctx.rpc, table, accounts)
@@ -250,12 +299,15 @@ async fn route_swap() -> Result<(), anyhow::Error> {
         env.usdc,
         env.tsol,
         TokenChange::shift(100 * ONE_USDC),
-        0,
+        99 * ONE_TSOL,
     );
 
     swap_builder
-        .add_spl_swap_route(&swap_pool_spl_usdt_tsol, &env.usdc, 0)
-        .unwrap();
+        .add_spl_swap_route(&swap_pool_spl_usdc_tsol, &env.usdc, 0)?;
+    
+    // Adding a disconnected swap should fail
+    let result = swap_builder.add_spl_swap_route(&swap_pool_spl_msol_usdt, &env.msol, 0);
+    assert!(result.is_err());
 
     // TODO: add some tests to check validity
     swap_builder.finalize().unwrap();
