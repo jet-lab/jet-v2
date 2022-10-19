@@ -106,17 +106,18 @@ export function NewAccountModal(): JSX.Element {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [programs]);
 
-  // Check if user has enough SOL to cover rent + fees
+  // Check if user has enough SOL to cover rent + fees.
+  // If user's SOL is less than feeBuffer amount, disable user from creating new account.
   useEffect(() => {
     try {
-      if (walletTokens && walletTokens.map.SOL.amount.lamports.gten(feesBuffer)) {
+      if (walletTokens && walletTokens.map.SOL.amount.lamports.gte(feesBuffer)) {
         setDisabled(false);
       } else {
         setDisabled(true);
       }
     } catch (err) {
       setDisabled(false);
-      console.error(err);
+      console.warn(err);
     }
   }, [walletTokens]);
 

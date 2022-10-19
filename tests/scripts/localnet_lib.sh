@@ -74,6 +74,17 @@ start-validator() {
         $@
 }
 
+resume-validator() {
+    start-validator &
+
+    spid=$!
+
+    sleep ${VALIDATOR_STARTUP:-5}
+    cargo run --bin jet-oracle-mirror -- -s $MAINNET_ENDPOINT -tl &
+
+    wait $spid
+}
+
 start-new-validator() {
     start-validator -r &
 

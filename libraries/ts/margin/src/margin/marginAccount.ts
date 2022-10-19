@@ -499,7 +499,7 @@ export class MarginAccount {
       walletAmount = this.walletTokens.map[pool.symbol].amount
     }
     if (pool.tokenMint.equals(NATIVE_MINT)) {
-      walletAmount = TokenAmount.max(walletAmount.subb(numberToBn(feesBuffer)), TokenAmount.zero(pool.decimals))
+      walletAmount = TokenAmount.max(walletAmount.subb(feesBuffer), TokenAmount.zero(pool.decimals))
     }
 
     // Max deposit
@@ -1601,13 +1601,9 @@ export class MarginAccount {
    *
    * @param {{
    *     instructions: TransactionInstruction[]
-   *     adapterProgram: Address
-   *     adapterMetadata: Address
    *     adapterInstruction: TransactionInstruction
    *   }} {
    *     instructions,
-   *     adapterProgram,
-   *     adapterMetadata,
    *     adapterInstruction
    *   }
    * @return {Promise<void>}
@@ -1615,13 +1611,9 @@ export class MarginAccount {
    */
   async withAdapterInvoke({
     instructions,
-    adapterProgram,
-    adapterMetadata,
     adapterInstruction
   }: {
     instructions: TransactionInstruction[]
-    adapterProgram: Address
-    adapterMetadata: Address
     adapterInstruction: TransactionInstruction
   }): Promise<void> {
     const ix = await this.programs.margin.methods
@@ -1629,8 +1621,8 @@ export class MarginAccount {
       .accounts({
         owner: this.owner,
         marginAccount: this.address,
-        adapterProgram,
-        adapterMetadata
+        adapterProgram: adapterInstruction.programId,
+        adapterMetadata: findDerivedAccount(this.programs.metadata.programId, adapterInstruction.programId)
       })
       .remainingAccounts(this.invokeAccounts(adapterInstruction))
       .instruction()
