@@ -45,6 +45,10 @@ address = "4bXpkKSV8swHSnwqtzuboGPaPDeEgAn4Vt8GfarV5rZt"
 program = "./deps/spl_token_faucet.so"
 
 [[test.genesis]]
+address = "SSwpkEEcbUqx4vtoEByFjSkhKdCT862DNVb52nZg1UZ"
+program = "./deps/saber_stable_swap.so"
+
+[[test.genesis]]
 address = "SwaPpA9LAaLfeLi3a68M4DjnLqgtticKg6CnyNwgAC8"
 program = "./deps/spl-token-swap/crates.io-spl_token_swap==2.0.0.so"
 

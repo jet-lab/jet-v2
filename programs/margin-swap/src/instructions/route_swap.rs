@@ -122,9 +122,8 @@ impl<'info> RouteSwap<'info> {
         let vault_from = &accounts[3];
         let token_mint = &accounts[4];
         let fee_account = &accounts[5];
+        // CHECK: The swap program gets validated by use_client! below
         let swap_program = &accounts[6];
-
-        // TODO: debug why the authority is incorrect while it works on the other side
 
         let swap_ix = use_client!(swap_program.key(), {
             client::instruction::swap(
