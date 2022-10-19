@@ -5,7 +5,7 @@ use anyhow::Error;
 use jet_margin_sdk::{
     ix_builder::{MarginPoolIxBuilder, MarginSwapRouteIxBuilder},
     lookup_tables::LookupTable,
-    swap::{spl_swap::SplSwapPool, saber_swap::SaberSwapPool},
+    swap::{saber_swap::SaberSwapPool, spl_swap::SplSwapPool},
     tokens::TokenPrice,
     tx_builder::TokenDepositsConfig,
 };
@@ -17,7 +17,8 @@ use solana_sdk::signature::Signer;
 use hosted_tests::{
     context::{test_context, MarginTestContext},
     margin::MarginPoolSetupInfo,
-    spl_swap::SwapPoolConfig, saber_swap::SaberSwapPoolConfig,
+    saber_swap::SaberSwapPoolConfig,
+    spl_swap::SwapPoolConfig,
 };
 
 use jet_margin::TokenKind;
@@ -109,7 +110,12 @@ async fn setup_environment(ctx: &MarginTestContext) -> Result<TestEnv, Error> {
         ctx.margin.create_pool(&pool_info).await?;
     }
 
-    Ok(TestEnv { usdc, tsol, usdt, msol })
+    Ok(TestEnv {
+        usdc,
+        tsol,
+        usdt,
+        msol,
+    })
 }
 
 // #[cfg(reature = "localnet")]
@@ -171,7 +177,6 @@ async fn route_swap() -> Result<(), anyhow::Error> {
 
     // Add Saber swap pool
     // Create a swap pool with sufficient liquidity
-    println!("Creating saber swap pool");
     let swap_pool_sbr_msol_tsol = SaberSwapPool::configure(
         &ctx.rpc,
         &env.msol,
@@ -299,12 +304,11 @@ async fn route_swap() -> Result<(), anyhow::Error> {
         env.usdc,
         env.tsol,
         TokenChange::shift(100 * ONE_USDC),
-        99 * ONE_TSOL,
+        ONE_TSOL * 99 / 100,
     );
 
-    swap_builder
-        .add_spl_swap_route(&swap_pool_spl_usdc_tsol, &env.usdc, 0)?;
-    
+    swap_builder.add_spl_swap_route(&swap_pool_spl_usdc_tsol, &env.usdc, 0)?;
+
     // Adding a disconnected swap should fail
     let result = swap_builder.add_spl_swap_route(&swap_pool_spl_msol_usdt, &env.msol, 0);
     assert!(result.is_err());

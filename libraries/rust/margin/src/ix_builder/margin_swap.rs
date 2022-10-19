@@ -320,15 +320,15 @@ impl MarginSwapRouteIxBuilder {
         swap_split: u8,
     ) -> anyhow::Result<()> {
         // Check the swap split early
-        if swap_split > 99 {
-            bail!("Invalid swap split, must be < 100");
+        if swap_split > 90 {
+            bail!("Invalid swap split, must be <= 90");
         }
         // TODO: check if this is the second+ leg of a multi route, and add pool accounts for the previous
         // Check that source token is valid
         let (dst_token, vault_from, vault_into) = if src_token == &pool.mint_a {
-            (pool.mint_b, pool.token_a, pool.token_b) // TODO: check the direction
+            (pool.mint_b, pool.token_b, pool.token_a) // TODO: check the direction
         } else if src_token == &pool.mint_b {
-            (pool.mint_a, pool.token_b, pool.token_a)
+            (pool.mint_a, pool.token_a, pool.token_b)
         } else {
             bail!("Invalid source token")
         };
