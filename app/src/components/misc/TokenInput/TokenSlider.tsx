@@ -51,6 +51,7 @@ export function TokenSlider(props: {
     setTokenInputString(preciseMaxAmountTokens.tokens.toString());
   }
 
+  const formatter = (value: number) => `$(value)%`;
   return (
     <div className="token-input-slider flex align-center justify-between">
       <Slider
@@ -60,8 +61,7 @@ export function TokenSlider(props: {
         step={1}
         disabled={props.disabled}
         onChange={(percent: number) => handleChange(percent)}
-        tipFormatter={value => value + '%'}
-        tooltipPlacement="bottom"
+        tooltip={{ formatter, placement: 'bottom' }}
         marks={{
           0: '0%',
           25: '25%',
