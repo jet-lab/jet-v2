@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use agnostic_orderbook::state::orderbook::OrderBookState;
 use anyhow::Result;
 use hosted_tests::{
     bonds::{
@@ -106,6 +107,9 @@ async fn margin() -> Result<()> {
         .await
         .unwrap();
 
+    let borrower_account = user.load_margin_user().await.unwrap();
+    assert!(borrower_account.debt.total() == borrow_params.max_bond_ticket_qty);
+
     Ok(())
 }
 
@@ -157,7 +161,6 @@ async fn _full_workflow<P: Proxy + GenerateProxy>(manager: Arc<BondsTestManager>
         post_allowed: true,
         auto_stake: true,
     };
-
     alice.sell_tickets_order(borrow_params).await?;
 
     assert_eq!(
@@ -244,4 +247,71 @@ async fn _full_workflow<P: Proxy + GenerateProxy>(manager: Arc<BondsTestManager>
     // place and match a bunch of orders
 
     Ok(())
+}
+
+fn orderbook_unit_tests() {
+    let mut asks: Vec<u8> = {
+        // init the slab here
+        todo!()
+    };
+    let mut bids: Vec<u8> = {
+        // init the slab here
+        todo!()
+    };
+    let mut eq: Vec<u8> = { todo!() };
+
+    // scenario a: No-fill, post
+    // scenario b: No-fill, no post
+    // scenario c: Partial-fill posted, post
+    // scenario d: Partial-fill posted, no post
+    // scenario e: Partial-fill order, post
+    // scenario f: Partial-fill order, post
+
+    let order_a = OrderParams {
+        max_bond_ticket_qty: todo!(),
+        max_underlying_token_qty: todo!(),
+        limit_price: todo!(),
+        match_limit: todo!(),
+        post_only: todo!(),
+        post_allowed: todo!(),
+        auto_stake: todo!(),
+    };
+    let order_b = OrderParams {
+        max_bond_ticket_qty: todo!(),
+        max_underlying_token_qty: todo!(),
+        limit_price: todo!(),
+        match_limit: todo!(),
+        post_only: todo!(),
+        post_allowed: todo!(),
+        auto_stake: todo!(),
+    };
+    let order_c = OrderParams {
+        max_bond_ticket_qty: todo!(),
+        max_underlying_token_qty: todo!(),
+        limit_price: todo!(),
+        match_limit: todo!(),
+        post_only: todo!(),
+        post_allowed: todo!(),
+        auto_stake: todo!(),
+    };
+    let asks = {
+        // init the slab here
+        todo!()
+    };
+    let bids = {
+        // init the slab here
+        todo!()
+    };
+    let eq = { todo!() };
+
+    let mut orderbook = OrderBookState::new_safe().unwrap();
+
+    let order_summary_a = orderbook.new_order(order_a);
+    assert!(true);
+
+    let order_summary_b = orderbook.new_order(order_a);
+    assert!(true);
+
+    let order_summary_c = orderbook.new_order(order_a);
+    assert!(true);
 }
