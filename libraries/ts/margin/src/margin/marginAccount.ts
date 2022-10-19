@@ -499,7 +499,7 @@ export class MarginAccount {
       walletAmount = this.walletTokens.map[pool.symbol].amount
     }
     if (pool.tokenMint.equals(NATIVE_MINT)) {
-      walletAmount = TokenAmount.max(walletAmount.subb(numberToBn(feesBuffer)), TokenAmount.zero(pool.decimals))
+      walletAmount = TokenAmount.max(walletAmount.subb(feesBuffer), TokenAmount.zero(pool.decimals))
     }
 
     // Max deposit
