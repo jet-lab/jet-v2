@@ -18,7 +18,9 @@
 use anchor_lang::prelude::*;
 use std::convert::TryInto;
 
-use crate::{ErrorCode, MarginAccount, PriceChangeInfo, TokenConfig, TokenOracle};
+use crate::{
+    ErrorCode, MarginAccount, PriceChangeInfo, TokenConfig, TokenOracle, MAX_ORACLE_STALENESS,
+};
 
 #[derive(Accounts)]
 pub struct RefreshDepositPosition<'info> {
@@ -55,21 +57,29 @@ pub fn refresh_deposit_position_handler(ctx: Context<RefreshDepositPosition>) ->
                 }
             };
 
-            let price_obj = price_feed.get_current_price().ok_or_else(|| {
-                msg!("current pyth price is invalid");
-                ErrorCode::InvalidOracle
-            })?;
-            let ema_obj = price_feed.get_ema_price().ok_or_else(|| {
-                msg!("current pyth ema price is invalid");
-                ErrorCode::InvalidOracle
-            })?;
+            // Required post pyth-sdk 0.6.1.
+            // See https://github.com/pyth-network/pyth-sdk-rs/commit/4f4f8c79efcee6402a94dd81a0aa1750a1a12297
+            let clock = Clock::get()?;
+
+            let price_obj = price_feed
+                .get_price_no_older_than(clock.unix_timestamp, MAX_ORACLE_STALENESS as u64)
+                .ok_or_else(|| {
+                    msg!("current pyth price is invalid");
+                    ErrorCode::InvalidOracle
+                })?;
+            let ema_obj = price_feed
+                .get_ema_price_no_older_than(clock.unix_timestamp, MAX_ORACLE_STALENESS as u64)
+                .ok_or_else(|| {
+                    msg!("current pyth ema price is invalid");
+                    ErrorCode::InvalidOracle
+                })?;
 
             let price_info = PriceChangeInfo {
                 value: price_obj.price,
                 confidence: price_obj.conf,
                 twap: ema_obj.price,
                 exponent: price_obj.expo,
-                publish_time: price_feed.publish_time,
+                publish_time: price_obj.publish_time,
             };
 
             let position = margin_account.get_position_mut(&config.mint).unwrap();

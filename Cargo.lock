@@ -1918,7 +1918,7 @@ dependencies = [
  "lazy_static",
  "mock-adapter",
  "parking_lot 0.12.1",
- "pyth-sdk-solana 0.4.2",
+ "pyth-sdk-solana 0.7.0",
  "rand 0.7.3",
  "rand_distr",
  "serde_json",
@@ -2184,7 +2184,7 @@ dependencies = [
  "jet-margin-sdk",
  "jet-program-common",
  "lazy_static",
- "pyth-sdk-solana 0.4.2",
+ "pyth-sdk-solana 0.7.0",
  "serde",
  "serde_json",
  "serde_with",
@@ -2220,7 +2220,7 @@ dependencies = [
  "jet-program-proc-macros",
  "num-derive",
  "num-traits",
- "pyth-sdk-solana 0.4.2",
+ "pyth-sdk-solana 0.7.0",
  "serde",
  "serde_json",
  "static_assertions",
@@ -2276,7 +2276,7 @@ dependencies = [
  "jet-metadata",
  "jet-program-common",
  "jet-program-proc-macros",
- "pyth-sdk-solana 0.4.2",
+ "pyth-sdk-solana 0.7.0",
  "serde",
  "serde_test",
  "solana-program",
@@ -2294,7 +2294,7 @@ dependencies = [
  "jet-margin",
  "jet-metadata",
  "jet-program-common",
- "pyth-sdk-solana 0.4.2",
+ "pyth-sdk-solana 0.7.0",
  "serde",
  "serde_test",
  "solana-program",
@@ -2327,7 +2327,7 @@ dependencies = [
  "jet-simulation",
  "jet-static-program-registry",
  "jet-test-service",
- "pyth-sdk-solana 0.4.2",
+ "pyth-sdk-solana 0.7.0",
  "rand 0.8.5",
  "serde",
  "solana-sdk",
@@ -2368,7 +2368,7 @@ dependencies = [
  "humantime",
  "jet-margin-sdk",
  "jet-simulation",
- "pyth-sdk-solana 0.6.1",
+ "pyth-sdk-solana 0.7.0",
  "serde_json",
  "solana-clap-utils",
  "solana-cli-config",
@@ -2444,7 +2444,7 @@ dependencies = [
  "anchor-spl",
  "bytemuck",
  "jet-program-common",
- "pyth-sdk-solana 0.4.2",
+ "pyth-sdk-solana 0.7.0",
  "spl-token-swap 2.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -3268,9 +3268,9 @@ dependencies = [
 
 [[package]]
 name = "pyth-sdk"
-version = "0.6.1"
+version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9a993cc2b76d9842ee92f00d3104a67d403e8a5a745d2474caf42361b3fc815a"
+checksum = "00bf2540203ca3c7a5712fdb8b5897534b7f6a0b6e7b0923ff00466c5f9efcb3"
 dependencies = [
  "borsh 0.9.3",
  "borsh-derive 0.9.3",
@@ -3298,16 +3298,16 @@ dependencies = [
 
 [[package]]
 name = "pyth-sdk-solana"
-version = "0.6.1"
+version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "97f071fdeb5129de07a2cb70bb4f3a9e4be1e4cc6b85132bdea0967e601eb757"
+checksum = "c637b4d8e9558e596a13cd5a11e406431c80eed4fbed01e4b1ff474257b04db9"
 dependencies = [
  "borsh 0.9.3",
  "borsh-derive 0.9.3",
  "bytemuck",
  "num-derive",
  "num-traits",
- "pyth-sdk 0.6.1",
+ "pyth-sdk 0.7.0",
  "serde",
  "solana-program",
  "thiserror",
