@@ -11,7 +11,9 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import { Transaction, TransactionInstruction } from '@solana/web3.js';
 import { MainConfig } from '../../state/config/marginConfig';
 import { useProvider } from '../../utils/jet/provider';
-import { AssociatedToken } from '@jet-lab/margin';
+import { Pools } from '../../state/pools/pools';
+import { TOKEN_PROGRAM_ID } from '@solana/spl-token';
+// import { AssociatedToken } from '@jet-lab/margin';
 
 function randomIntFromInterval(min: number, max: number) {
   return Math.floor(Math.random() * (max - min + 1) + min);
@@ -23,6 +25,7 @@ export const FixedBorrowOrderEntry = () => {
   const marketAndConfig = useRecoilValue(FixedMarketAtom);
   const marginAccount = useRecoilValue(CurrentAccount);
   const { provider } = useProvider();
+  const pools = useRecoilValue(Pools);
   const wallet = useWallet();
   const config = useRecoilValue(MainConfig);
   const decimals = useMemo(() => {
@@ -41,17 +44,35 @@ export const FixedBorrowOrderEntry = () => {
   const offerLoan = async () => {
     let ixns: TransactionInstruction[] = [];
 
-    const tokenMint = marketAndConfig.market.addresses.underlyingTokenMint;
-    const ticketMint = marketAndConfig.market.addresses.bondTicketMint;
+    // const tokenMint = marketAndConfig.market.addresses.underlyingTokenMint;
+    // const ticketMint = marketAndConfig.market.addresses.bondTicketMint;
 
-    await AssociatedToken.withCreate(ixns, provider, marginAccount.address, tokenMint);
-    await AssociatedToken.withCreate(ixns, provider, marginAccount.address, ticketMint);
+    // await AssociatedToken.withCreate(ixns, provider, marginAccount.address, tokenMint);
+    // await AssociatedToken.withCreate(ixns, provider, marginAccount.address, ticketMint);
 
-    AssociatedToken.withTransfer(ixns, tokenMint, wallet.publicKey, marginAccount.address, amount);
+    // AssociatedToken.withTransfer(ixns, tokenMint, wallet.publicKey, marginAccount.address, amount);
 
     const createAccountIx = await marketAndConfig.market.registerAccountWithMarket(marginAccount, wallet.publicKey);
 
-    const loanOffer = await marketAndConfig.market.requestBorrowIx(
+    await marginAccount.withAdapterInvoke({
+      instructions: ixns,
+      adapterInstruction: createAccountIx
+    });
+
+    await provider
+      .sendAndConfirm(new Transaction().add(...ixns))
+      .then(result => {
+        console.log('SUCCESS: ', result);
+      })
+      .catch(e => {
+        console.log('ERROR: ', e);
+      });
+
+    await marginAccount.withUpdateAllPositionBalances({
+      instructions: ixns
+    });
+
+    const borrowOffer = await marketAndConfig.market.requestBorrowIx(
       marginAccount,
       wallet.publicKey,
       amount,
@@ -64,14 +85,27 @@ export const FixedBorrowOrderEntry = () => {
       ])
     );
 
+    const borrowerAccount = await marketAndConfig.market.deriveMarginUserAddress(marginAccount);
+    const refreshIx = await marketAndConfig.market.program.methods
+      .refreshPosition(true)
+      .accounts({
+        borrowerAccount,
+        marginAccount: marginAccount.address,
+        claimsMint: marketAndConfig.market.addresses.claimsMint,
+        bondManager: marketAndConfig.market.addresses.bondManager,
+        underlyingOracle: marketAndConfig.market.addresses.underlyingOracle,
+        tokenProgram: TOKEN_PROGRAM_ID
+      })
+      .instruction();
+
     await marginAccount.withAdapterInvoke({
       instructions: ixns,
-      adapterInstruction: createAccountIx
+      adapterInstruction: refreshIx
     });
 
     await marginAccount.withAdapterInvoke({
       instructions: ixns,
-      adapterInstruction: loanOffer
+      adapterInstruction: borrowOffer
     });
 
     await provider
@@ -89,7 +123,7 @@ export const FixedBorrowOrderEntry = () => {
       <div className="order-entry-head view-element-item view-element-item-hidden flex column">
         <ReorderArrows component="fixedLendEntry" order={rowOrder} setOrder={setRowOrder} />
         <div className="order-entry-head-top flex-centered">
-          <Paragraph className="order-entry-head-top-title">{dictionary.fixedView.lend.title}</Paragraph>
+          <Paragraph className="order-entry-head-top-title">{dictionary.fixedView.borrow.title}</Paragraph>
         </div>
       </div>
       <div className="order-entry-body">
@@ -107,7 +141,7 @@ export const FixedBorrowOrderEntry = () => {
           step=".01"
           min="0"
         />
-        <Button onClick={offerLoan}>Create Lend Order</Button>
+        <Button onClick={offerLoan}>Create Borrow Order</Button>
       </div>
     </div>
   );

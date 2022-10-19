@@ -133,7 +133,10 @@ export class BondMarket {
   ): Promise<BondMarket> {
     let data = await fetchData(program.provider.connection, bondManager)
     let info: BondManagerInfo = program.coder.accounts.decode("BondManager", data)
-    const claimsMetadata = await findDerivedAccount(["token-config", info.programAuthority, info.claimsMint], new PublicKey(jetMarginProgramId))
+    const claimsMetadata = await findDerivedAccount(
+      ["token-config", info.programAuthority, info.claimsMint],
+      new PublicKey(jetMarginProgramId)
+    )
     const marginAdapterMetadata = await findDerivedAccount([program.programId], new PublicKey(jetMarginProgramId))
     return new BondMarket(
       new PublicKey(bondManager),
@@ -160,6 +163,8 @@ export class BondMarket {
       postAllowed: true,
       autoStake: true
     }
+
+    console.log(params)
     return await this.borrowIx(user, payer, params, seed)
   }
   async borrowNowIx(
