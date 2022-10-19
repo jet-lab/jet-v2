@@ -46,11 +46,11 @@ export const FixedBorrowOrderEntry = () => {
   const offerLoan = async () => {
     let ixns: TransactionInstruction[] = [];
 
-    const tokenMint = marketAndConfig.market.addresses.underlyingTokenMint;
-    const ticketMint = marketAndConfig.market.addresses.bondTicketMint;
+    // const tokenMint = marketAndConfig.market.addresses.underlyingTokenMint;
+    // const ticketMint = marketAndConfig.market.addresses.bondTicketMint;
 
-    await AssociatedToken.withCreate(ixns, provider, marginAccount.address, tokenMint);
-    await AssociatedToken.withCreate(ixns, provider, marginAccount.address, ticketMint);
+    // await AssociatedToken.withCreate(ixns, provider, marginAccount.address, tokenMint);
+    // await AssociatedToken.withCreate(ixns, provider, marginAccount.address, ticketMint);
 
     // AssociatedToken.withTransfer(ixns, tokenMint, wallet.publicKey, marginAccount.address, amount);
 
@@ -132,7 +132,7 @@ export const FixedBorrowOrderEntry = () => {
       <div className="order-entry-head view-element-item view-element-item-hidden flex column">
         <ReorderArrows component="fixedLendEntry" order={rowOrder} setOrder={setRowOrder} />
         <div className="order-entry-head-top flex-centered">
-          <Paragraph className="order-entry-head-top-title">{dictionary.fixedView.lend.title}</Paragraph>
+          <Paragraph className="order-entry-head-top-title">{dictionary.fixedView.borrow.title}</Paragraph>
         </div>
       </div>
       <div className="order-entry-body">
