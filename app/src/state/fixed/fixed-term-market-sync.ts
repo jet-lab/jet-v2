@@ -5,6 +5,7 @@ import { atom, selector, useRecoilValue, useSetRecoilState } from 'recoil';
 import { useProvider } from '../../utils/jet/provider';
 import { AirspaceConfig, BondMarketConfig } from '@jet-lab/margin';
 import { MainConfig } from '../config/marginConfig';
+import { PublicKey } from '@solana/web3.js';
 
 export const AllFixedMarketsAtom = atom<Array<MarketAndconfig>>({
   key: 'allFixedMarkets',
@@ -60,10 +61,10 @@ export const useFixedTermSync = (): void => {
   const setMarkets = useSetRecoilState(AllFixedMarketsAtom);
   const config = useRecoilValue(MainConfig);
 
-  const loadBondMarkets = async (airspace: AirspaceConfig, program: Program<JetBonds>, bondsProgramId: string) => {
+  const loadBondMarkets = async (airspace: AirspaceConfig, program: Program<JetBonds>, marginProgramId: PublicKey) => {
     const markets: MarketAndconfig[] = await Promise.all(
       Object.entries(airspace.bondMarkets).map(async ([name, marketConfig]) => {
-        const market = await BondMarket.load(program, marketConfig.bondManager, bondsProgramId);
+        const market = await BondMarket.load(program, marketConfig.bondManager, marginProgramId);
         return { market, config: marketConfig, name };
       })
     );
@@ -73,7 +74,7 @@ export const useFixedTermSync = (): void => {
     if (config?.bondsProgramId) {
       const program = new Program(JetBondsIdl, config.bondsProgramId, provider);
       const airspace = config.airspaces.find(airspace => airspace.name === 'default');
-      loadBondMarkets(airspace, program, config.bondsProgramId);
+      loadBondMarkets(airspace, program, new PublicKey(config.marginProgramId));
     }
   }, [config]);
   return null;

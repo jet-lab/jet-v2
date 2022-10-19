@@ -129,12 +129,12 @@ export class BondMarket {
   static async load(
     program: Program<JetBonds>,
     bondManager: Address,
-    jetMetadataProgramId: Address
+    jetMarginProgramId: Address
   ): Promise<BondMarket> {
     let data = await fetchData(program.provider.connection, bondManager)
     let info: BondManagerInfo = program.coder.accounts.decode("BondManager", data)
-    const claimsMetadata = await findDerivedAccount([info.claimsMint], new PublicKey(jetMetadataProgramId))
-    const marginAdapterMetadata = await findDerivedAccount([program.programId], new PublicKey(jetMetadataProgramId))
+    const claimsMetadata = await findDerivedAccount(["token-config", info.programAuthority, info.claimsMint], new PublicKey(jetMarginProgramId))
+    const marginAdapterMetadata = await findDerivedAccount([program.programId], new PublicKey(jetMarginProgramId))
     return new BondMarket(
       new PublicKey(bondManager),
       new PublicKey(claimsMetadata),
