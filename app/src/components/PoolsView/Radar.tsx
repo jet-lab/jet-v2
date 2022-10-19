@@ -28,10 +28,6 @@ export function Radar(): JSX.Element {
       rates: {} as any
     },
     {
-      key: 'apricot',
-      rates: {} as any
-    },
-    {
       key: 'port',
       rates: {} as any
     },
