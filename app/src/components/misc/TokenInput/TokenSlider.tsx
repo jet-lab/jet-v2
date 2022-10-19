@@ -17,6 +17,7 @@ export function TokenSlider(props: {
   const currentPool = useRecoilValue(CurrentPool);
   const tokenInputAmount = useRecoilValue(TokenInputAmount);
   const setTokenInputString = useSetRecoilState(TokenInputString);
+  const formatter = (value: number) => `${value}%`;
 
   // Returns a slider percentage based on current input and max input
   function getSliderValue() {
@@ -51,7 +52,6 @@ export function TokenSlider(props: {
     setTokenInputString(preciseMaxAmountTokens.tokens.toString());
   }
 
-  const formatter = (value: number) => `$(value)%`;
   return (
     <div className="token-input-slider flex align-center justify-between">
       <Slider
