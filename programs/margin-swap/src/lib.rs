@@ -107,6 +107,9 @@ pub enum ErrorCode {
 
     #[msg("An invalid swap route parameter has been provided")]
     InvalidSwapRouteParam,
+
+    #[msg("The swap exceeds the maximum slippage tolerance")]
+    SlippageExceeded,
 }
 
 #[repr(u8)]

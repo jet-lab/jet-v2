@@ -15,7 +15,6 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use anchor_lang::solana_program::account_info::next_account_infos;
 use anchor_spl::token::Token;
 use jet_margin_pool::ChangeKind;
 use jet_static_program_registry::{orca_swap_v1, orca_swap_v2, spl_token_swap_v2};
@@ -84,24 +83,31 @@ impl<'info> RouteSwap<'info> {
 
     /// Deposit to the destination pool of the swap
     #[inline(never)]
-    fn deposit(&self, amount: u64) -> Result<()> {
+    fn deposit(
+        &self,
+        pool_accounts: &[AccountInfo<'info>; 3],
+        source: &AccountInfo<'info>,
+        destination: &AccountInfo<'info>,
+        change_kind: ChangeKind,
+        amount: u64,
+    ) -> Result<()> {
+        let margin_pool = &pool_accounts[0];
+        let vault = &pool_accounts[1];
+        let note_mint = &pool_accounts[2];
         jet_margin_pool::cpi::deposit(
             CpiContext::new(
                 self.margin_pool_program.to_account_info(),
                 Deposit {
-                    margin_pool: self.destination_margin_pool.margin_pool.to_account_info(),
-                    vault: self.destination_margin_pool.vault.to_account_info(),
-                    deposit_note_mint: self
-                        .destination_margin_pool
-                        .deposit_note_mint
-                        .to_account_info(),
+                    margin_pool: margin_pool.to_account_info(),
+                    vault: vault.to_account_info(),
+                    deposit_note_mint: note_mint.to_account_info(),
                     depositor: self.margin_account.to_account_info(),
-                    source: self.transit_destination_account.to_account_info(),
-                    destination: self.destination_account.to_account_info(),
+                    source: source.to_account_info(),
+                    destination: destination.to_account_info(),
                     token_program: self.token_program.to_account_info(),
                 },
             ),
-            ChangeKind::ShiftBy,
+            change_kind,
             amount,
         )?;
 
@@ -233,10 +239,15 @@ pub fn route_swap_handler<'a, 'b, 'c, 'info>(
         (true, false, _) => 1,
     };
 
+    // In all cases we first withdraw from the source pool
+
     // Get the balance before the withdrawal. The balance should almost always
     // be zero, however it could already have a value.
     let source_opening_balance =
         token::accessor::amount(&ctx.accounts.transit_source_account.to_account_info())?;
+    let destination_opening_balance =
+        token::accessor::amount(&ctx.accounts.transit_destination_account.to_account_info())?;
+
     ctx.accounts
         .withdraw(withdrawal_change_kind, withdrawal_amount)?;
     let source_closing_balance =
@@ -250,61 +261,176 @@ pub fn route_swap_handler<'a, 'b, 'c, 'info>(
         return err!(crate::ErrorCode::NoSwapTokensWithdrawn);
     }
 
-    let destination_opening_balance =
-        token::accessor::amount(&ctx.accounts.transit_destination_account.to_account_info())?;
+    let mut acc_ix = 0;
+    // TODO: will use for bounds checking
+    let _remaining_accounts_len = ctx.remaining_accounts.len();
 
-    // Execute the first swap
-    let route = &swap_routes[0];
-    // Don't process split paths in current iteration
-    if route.split > 0 {
-        return err!(crate::ErrorCode::InvalidSwapRouteParam);
+    // TODO: went the long way so I can find a pattern as I go along
+    for leg in 0..valid_swaps {
+        let route = &swap_routes[leg];
+        let (source_pool_accounts, source_ata, source_pool_dep_note) = match leg {
+            0 => {
+                // First leg of 2 or more
+
+                let source_pool_accounts = [
+                    ctx.accounts
+                        .source_margin_pool
+                        .margin_pool
+                        .to_account_info(),
+                    ctx.accounts.source_margin_pool.vault.to_account_info(),
+                    ctx.accounts
+                        .source_margin_pool
+                        .deposit_note_mint
+                        .to_account_info(),
+                ];
+
+                let source_ata = ctx.accounts.transit_source_account.to_account_info();
+                let source_pool_dep_note = ctx.accounts.source_account.to_account_info();
+
+                (source_pool_accounts, source_ata, source_pool_dep_note)
+            }
+            _ => {
+                // Not the first leg
+
+                let source_pool_accounts = [
+                    ctx.remaining_accounts[acc_ix].to_account_info(),
+                    ctx.remaining_accounts[acc_ix + 1].to_account_info(),
+                    ctx.remaining_accounts[acc_ix + 2].to_account_info(),
+                ];
+
+                let source_ata = ctx.remaining_accounts[acc_ix + 3].to_account_info();
+                let source_pool_dep_note = ctx.remaining_accounts[acc_ix + 4].to_account_info();
+                acc_ix += 5;
+
+                (source_pool_accounts, source_ata, source_pool_dep_note)
+            }
+        };
+        acc_ix = exec_swap(
+            &ctx,
+            route,
+            &source_pool_accounts,
+            &source_ata,
+            &source_pool_dep_note,
+            swap_amount_in,
+            acc_ix,
+        )?;
     }
 
-    let swap_min_out = if valid_swaps == 1 {
-        minimum_amount_out
-    } else {
-        0
-    };
+    // If the swap would have resulted in 0 tokens, the swap program would error out,
+    // thus balance below will be positive.
 
-    let mut remaining_accounts = ctx.remaining_accounts.iter();
+    let dest_pool_accounts = &[
+        ctx.accounts
+            .destination_margin_pool
+            .margin_pool
+            .to_account_info(),
+        ctx.accounts.destination_margin_pool.vault.to_account_info(),
+        ctx.accounts
+            .destination_margin_pool
+            .deposit_note_mint
+            .to_account_info(),
+    ];
 
-    match route.route_a {
-        SwapRouteIdentifier::Empty => unreachable!(),
-        SwapRouteIdentifier::Spl => {
-            let swap_accounts = next_account_infos(&mut remaining_accounts, 7)?;
-            ctx.accounts
-                .spl_swap(swap_accounts, swap_amount_in, swap_min_out)?;
-        }
-        SwapRouteIdentifier::Whirlpool => todo!(),
-        SwapRouteIdentifier::SaberStable => {
-            let swap_accounts = next_account_infos(&mut remaining_accounts, 7)?;
-            ctx.accounts
-                .saber_stable_swap(swap_accounts, swap_amount_in, swap_min_out)?;
-        }
-    }
+    let destination_ata = ctx.accounts.transit_destination_account.to_account_info();
+    let destination_pool_dep_note = ctx.accounts.destination_account.to_account_info();
 
     let destination_closing_balance =
         token::accessor::amount(&ctx.accounts.transit_destination_account.to_account_info())?;
-    // If the swap would have resulted in 0 tokens, the swap program would error out,
-    // thus balance below will be positive.
+
     let swap_amount_out = destination_closing_balance
         .checked_sub(destination_opening_balance)
         .unwrap();
-    // Deposit back into the pool
-    ctx.accounts.deposit(swap_amount_out)?; // TODO: specify accounts
-
-    // Return any interim and source dust
-    let source_amount_after_swap =
-        token::accessor::amount(&ctx.accounts.transit_source_account.to_account_info())?;
-
-    let leftover_balance_from_source_account = source_amount_after_swap
-        .checked_sub(source_opening_balance)
-        .unwrap();
-
-    // if there was leftover balance in the source transit account, deposit into the pool
-    if leftover_balance_from_source_account > 0 {
-        ctx.accounts.deposit(leftover_balance_from_source_account)?; // TODO: specify accounts
+    // Check if slippage tolerance is exceeded
+    if swap_amount_out < minimum_amount_out {
+        msg!("Amount out = {swap_amount_out} less than minimum {minimum_amount_out}");
+        return Err(error!(crate::ErrorCode::SlippageExceeded));
     }
+    ctx.accounts.deposit(
+        dest_pool_accounts,
+        &destination_ata,
+        &destination_pool_dep_note,
+        ChangeKind::ShiftBy,
+        swap_amount_out,
+    )?;
 
     Ok(())
+}
+
+fn exec_swap<'a, 'b, 'c, 'info>(
+    ctx: &Context<'a, 'b, 'c, 'info, RouteSwap<'info>>,
+    route: &SwapRouteDetail,
+    source_pool_accounts: &[AccountInfo<'info>; 3],
+    source_ata: &AccountInfo<'info>,
+    source_pool_dep_note: &AccountInfo<'info>,
+    swap_amount_in: u64,
+    acc_ix: usize,
+) -> Result<usize> {
+    let mut acc_ix = acc_ix;
+    let source_ata_opening = token::accessor::amount(source_ata)?;
+    // Record the opening balance of the input
+    //
+    // Get the swap accounts
+    // TODO: is it better to use next_accounts? That requires advancing the iterator
+
+    // Get the amount for the current leg if there is a split
+    let curr_swap_in = if route.split == 0 {
+        swap_amount_in
+    } else {
+        // This is safe as we have checked that split < 100
+        (swap_amount_in * route.split as u64) / 100
+    };
+
+    // TODO: handle splits
+    match route.route_a {
+        SwapRouteIdentifier::Empty => todo!(),
+        SwapRouteIdentifier::Spl => {
+            // TODO: add bounds check
+            let accounts = &ctx.remaining_accounts[acc_ix..acc_ix + 7];
+            acc_ix += 7;
+            // We don't need to check the destination balance on this leg
+            // TODO: handle percentages
+            ctx.accounts.spl_swap(accounts, curr_swap_in, 0)?;
+        }
+        SwapRouteIdentifier::Whirlpool => todo!(),
+        SwapRouteIdentifier::SaberStable => todo!(),
+    }
+
+    // Handle the next leg
+    if route.split > 0 {
+        let curr_swap_in = swap_amount_in.checked_sub(curr_swap_in).unwrap();
+        assert!(curr_swap_in > 0); // TODO: limit split to 90 to avoid too small amounts
+
+        match route.route_b {
+            SwapRouteIdentifier::Empty => todo!(),
+            SwapRouteIdentifier::Spl => {
+                // TODO: add bounds check
+                let accounts = &ctx.remaining_accounts[acc_ix..acc_ix + 7];
+                acc_ix += 7;
+                // We don't need to check the destination balance on this leg
+                // TODO: handle percentages
+                ctx.accounts.spl_swap(accounts, curr_swap_in, 0)?;
+            }
+            SwapRouteIdentifier::Whirlpool => todo!(),
+            SwapRouteIdentifier::SaberStable => todo!(),
+        }
+    }
+
+    // After the swaps above, we can now return any dust to the input token's pool
+    // TODO: if we've taken a reference, does the token amount change?
+    let source_ata_closing = token::accessor::amount(source_ata)?;
+    let swapped_amount = source_ata_opening.checked_sub(source_ata_closing).unwrap();
+
+    if swapped_amount < swap_amount_in {
+        // We swapped less than we had to, return dust back
+        let remaining_bal = swap_amount_in - swapped_amount;
+        ctx.accounts.deposit(
+            source_pool_accounts,
+            source_ata,
+            source_pool_dep_note,
+            ChangeKind::ShiftBy,
+            remaining_bal,
+        )?;
+    }
+
+    Ok(acc_ix)
 }
