@@ -1,15 +1,15 @@
 use std::sync::Arc;
 
-use agnostic_orderbook::state::orderbook::OrderBookState;
 use anyhow::Result;
 use hosted_tests::{
     bonds::{
-        BondsUser, GenerateProxy, OrderAmount, TestManager as BondsTestManager, STARTING_TOKENS,
+        BondsUser, GenerateProxy, OrderAmount, TestManager as BondsTestManager, MIN_ORDER_SIZE,
+        STARTING_TOKENS,
     },
     context::test_context,
     setup_helper::{setup_user, tokens},
 };
-use jet_bonds::orderbook::state::OrderParams;
+use jet_bonds::orderbook::state::{CallbackInfo, OrderParams};
 use jet_margin_sdk::{
     ix_builder::MarginIxBuilder,
     margin_integrator::{NoProxy, Proxy},
@@ -150,7 +150,7 @@ async fn _full_workflow<P: Proxy + GenerateProxy>(manager: Arc<BondsTestManager>
     let bond_manager = manager.load_manager().await?;
     assert!(!bond_manager.tickets_paused);
 
-    // borrow 100 usdc at 20% interest
+    // Scenario a: post a borrow order to an empty book
     let borrow_amount = OrderAmount::from_amount_rate(1_000, 2_000);
     let borrow_params = OrderParams {
         max_bond_ticket_qty: borrow_amount.base,
@@ -161,6 +161,32 @@ async fn _full_workflow<P: Proxy + GenerateProxy>(manager: Arc<BondsTestManager>
         post_allowed: true,
         auto_stake: true,
     };
+
+    // simulate
+    let mut eq = manager.load_event_queue().await?;
+    let mut orderbook = manager.load_orderbook().await?;
+    let summary_a = orderbook.inner()?.new_order(
+        borrow_params.as_new_order_params(
+            agnostic_orderbook::state::Side::Ask,
+            CallbackInfo::default(),
+        ),
+        &mut eq.inner(),
+        MIN_ORDER_SIZE,
+    )?;
+    assert!(summary_a.posted_order_id.is_some());
+    assert_eq!(summary_a.total_base_qty, borrow_params.max_bond_ticket_qty);
+    assert_eq!(
+        summary_a.total_quote_qty,
+        Fp32::upcast_fp32(borrow_params.limit_price)
+            .decimal_u64_mul(borrow_params.max_bond_ticket_qty)
+            .unwrap()
+    );
+    assert_eq!(
+        summary_a.total_base_qty_posted,
+        borrow_params.max_bond_ticket_qty
+    );
+
+    // send to validator
     alice.sell_tickets_order(borrow_params).await?;
 
     assert_eq!(
@@ -182,11 +208,8 @@ async fn _full_workflow<P: Proxy + GenerateProxy>(manager: Arc<BondsTestManager>
             .unwrap()
     );
 
-    manager.pause_orders().await?;
-    let bob = BondsUser::<P>::new_funded(manager.clone()).await?;
-
-    // // lend 100 usdc at 15% interest
-    let lend_amount = OrderAmount::from_amount_rate(1_000, 1_500);
+    // Scenario b: post a lend order that partially fills the borrow order
+    let lend_amount = OrderAmount::from_amount_rate(500, 1_500);
     let lend_params = OrderParams {
         max_bond_ticket_qty: lend_amount.base,
         max_underlying_token_qty: lend_amount.quote,
@@ -196,7 +219,37 @@ async fn _full_workflow<P: Proxy + GenerateProxy>(manager: Arc<BondsTestManager>
         post_allowed: true,
         auto_stake: true,
     };
-    bob.lend_order(lend_params, vec![]).await?;
+
+    // simulate
+    let mut eq = manager.load_event_queue().await?;
+    let mut orderbook = manager.load_orderbook().await?;
+    let summary_b = orderbook.inner()?.new_order(
+        lend_params.as_new_order_params(
+            agnostic_orderbook::state::Side::Bid,
+            CallbackInfo::default(),
+        ),
+        &mut eq.inner(),
+        MIN_ORDER_SIZE,
+    )?;
+    assert!(summary_b.posted_order_id.is_none());
+    assert_eq!(summary_b.total_base_qty, lend_params.max_bond_ticket_qty);
+    dbg!(lend_params.max_underlying_token_qty);
+    dbg!(lend_params.max_bond_ticket_qty);
+    dbg!(Fp32::upcast_fp32(borrow_params.limit_price)
+        .decimal_u64_mul(lend_params.max_bond_ticket_qty)
+        .unwrap());
+
+    assert_eq!(
+        summary_b.total_quote_qty,
+        lend_params.max_underlying_token_qty
+            - Fp32::upcast_fp32(lend_params.limit_price)
+                .decimal_u64_mul(lend_params.max_bond_ticket_qty)
+                .unwrap()
+    );
+
+    // send to validator
+    let bob = BondsUser::<P>::new_funded(manager.clone()).await?;
+    bob.lend_order(lend_params, vec![0]).await?;
 
     assert_eq!(bob.tokens().await?, STARTING_TOKENS - lend_amount.quote);
 
@@ -214,26 +267,41 @@ async fn _full_workflow<P: Proxy + GenerateProxy>(manager: Arc<BondsTestManager>
             .unwrap()
     );
 
-    let mut eq = manager.load_event_queue().await?;
-    assert!(eq.inner().iter().next().is_none());
-    assert!(manager.consume_events().await.is_err());
+    // manager.pause_orders().await?;
 
-    assert!(manager.load_orderbook_market_state().await?.pause_matching == true as u8);
-    manager.resume_orders().await?;
-    assert!(manager.load_orderbook_market_state().await?.pause_matching == false as u8);
+    // // // lend 100 usdc at 15% interest
+    // let lend_amount = OrderAmount::from_amount_rate(1_000, 1_500);
+    // let lend_params = OrderParams {
+    //     max_bond_ticket_qty: lend_amount.base,
+    //     max_underlying_token_qty: lend_amount.quote,
+    //     limit_price: lend_amount.price,
+    //     match_limit: 1,
+    //     post_only: false,
+    //     post_allowed: true,
+    //     auto_stake: true,
+    // };
+    // bob.lend_order(lend_params, vec![]).await?;
 
-    let remaining_order = manager.load_orderbook().await?.asks()?[0];
+    // let mut eq = manager.load_event_queue().await?;
+    // assert!(eq.inner().iter().next().is_none());
+    // assert!(manager.consume_events().await.is_err());
 
-    assert_eq!(
-        remaining_order.base_quantity,
-        borrow_order.base_quantity - lend_order.base_quantity
-    );
-    assert_eq!(remaining_order.price(), borrow_order.price());
+    // assert!(manager.load_orderbook_market_state().await?.pause_matching == true as u8);
+    // manager.resume_orders().await?;
+    // assert!(manager.load_orderbook_market_state().await?.pause_matching == false as u8);
 
-    alice.cancel_order(remaining_order.order_id()).await?;
+    // let remaining_order = manager.load_orderbook().await?.asks()?[0];
 
-    let mut eq = manager.load_event_queue().await?;
-    assert!(eq.inner().iter().next().is_some());
+    // assert_eq!(
+    //     remaining_order.base_quantity,
+    //     borrow_order.base_quantity - lend_order.base_quantity
+    // );
+    // assert_eq!(remaining_order.price(), borrow_order.price());
+
+    // alice.cancel_order(remaining_order.order_id()).await?;
+
+    // let mut eq = manager.load_event_queue().await?;
+    // assert!(eq.inner().iter().next().is_some());
 
     // only works on simulation right now
     // Access violation in stack frame 5 at address 0x200005ff8 of size 8 by instruction #22627
@@ -247,71 +315,4 @@ async fn _full_workflow<P: Proxy + GenerateProxy>(manager: Arc<BondsTestManager>
     // place and match a bunch of orders
 
     Ok(())
-}
-
-fn orderbook_unit_tests() {
-    let mut asks: Vec<u8> = {
-        // init the slab here
-        todo!()
-    };
-    let mut bids: Vec<u8> = {
-        // init the slab here
-        todo!()
-    };
-    let mut eq: Vec<u8> = { todo!() };
-
-    // scenario a: No-fill, post
-    // scenario b: No-fill, no post
-    // scenario c: Partial-fill posted, post
-    // scenario d: Partial-fill posted, no post
-    // scenario e: Partial-fill order, post
-    // scenario f: Partial-fill order, post
-
-    let order_a = OrderParams {
-        max_bond_ticket_qty: todo!(),
-        max_underlying_token_qty: todo!(),
-        limit_price: todo!(),
-        match_limit: todo!(),
-        post_only: todo!(),
-        post_allowed: todo!(),
-        auto_stake: todo!(),
-    };
-    let order_b = OrderParams {
-        max_bond_ticket_qty: todo!(),
-        max_underlying_token_qty: todo!(),
-        limit_price: todo!(),
-        match_limit: todo!(),
-        post_only: todo!(),
-        post_allowed: todo!(),
-        auto_stake: todo!(),
-    };
-    let order_c = OrderParams {
-        max_bond_ticket_qty: todo!(),
-        max_underlying_token_qty: todo!(),
-        limit_price: todo!(),
-        match_limit: todo!(),
-        post_only: todo!(),
-        post_allowed: todo!(),
-        auto_stake: todo!(),
-    };
-    let asks = {
-        // init the slab here
-        todo!()
-    };
-    let bids = {
-        // init the slab here
-        todo!()
-    };
-    let eq = { todo!() };
-
-    let mut orderbook = OrderBookState::new_safe().unwrap();
-
-    let order_summary_a = orderbook.new_order(order_a);
-    assert!(true);
-
-    let order_summary_b = orderbook.new_order(order_a);
-    assert!(true);
-
-    let order_summary_c = orderbook.new_order(order_a);
-    assert!(true);
 }
