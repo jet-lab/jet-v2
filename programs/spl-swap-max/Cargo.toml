@@ -1,0 +1,21 @@
+[package]
+name = "spl-swap-max"
+version = "0.1.0"
+description = ""
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "spl_swap_max"
+
+[features]
+no-entrypoint = []
+cpi = ["no-entrypoint"]
+default = []
+testing = []
+
+[dependencies]
+solana-program = "1.10"
+anchor-lang = { git = "https://github.com/jet-lab/anchor", branch = "master", features = ["init-if-needed"]}
+anchor-spl =  { git = "https://github.com/jet-lab/anchor", branch = "master" }
+jet-static-program-registry = { path = "../../libraries/rust/static-program-registry" }

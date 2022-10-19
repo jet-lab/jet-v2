@@ -4845,6 +4845,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "spl-swap-max"
+version = "0.1.0"
+dependencies = [
+ "anchor-lang",
+ "anchor-spl",
+ "jet-static-program-registry",
+ "solana-program",
+]
+
+[[package]]
 name = "spl-token"
 version = "3.0.1"
 source = "git+https://github.com/solana-labs/solana-program-library?rev=3613cea3cabbb5f7e4445d6203b7292d413732da#3613cea3cabbb5f7e4445d6203b7292d413732da"

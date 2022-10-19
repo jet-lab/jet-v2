@@ -1,5 +1,6 @@
 pub mod programs;
 
+use anchor_lang::prelude::ProgramError;
 pub use paste::paste;
 pub use programs::*;
 
@@ -13,6 +14,13 @@ pub mod macro_imports {
 pub enum RegistryError {
     #[msg("program id is not associated with a registered program (static-program-registry)")]
     UnknownProgramId,
+}
+
+impl From<RegistryError> for ProgramError {
+    fn from(registry: RegistryError) -> Self {
+        let anchor: anchor_lang::error::Error = registry.into();
+        anchor.into()
+    }
 }
 
 /// Declares a program ID for a module.
