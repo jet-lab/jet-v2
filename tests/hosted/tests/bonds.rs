@@ -321,13 +321,7 @@ async fn _full_workflow<P: Proxy + GenerateProxy>(manager: Arc<BondsTestManager>
     // order cancelling
     let order_id = manager.load_orderbook().await?.bids()?[0].key;
     bob.cancel_order(order_id).await?;
-    assert!(manager
-        .load_orderbook()
-        .await?
-        .bids()?
-        .iter()
-        .next()
-        .is_none());
+    assert!(manager.load_orderbook().await?.bids()?.first().is_none());
 
     // only works on simulation right now
     // Access violation in stack frame 5 at address 0x200005ff8 of size 8 by instruction #22627
