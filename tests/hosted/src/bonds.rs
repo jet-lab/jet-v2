@@ -390,20 +390,42 @@ impl TestManager {
 
     pub async fn register_bonds_position_metadatata(&self) -> Result<()> {
         let manager = self.load_manager().await?;
+        self.register_bonds_position_metadatata_impl(
+            manager.claims_mint,
+            manager.underlying_token_mint,
+            TokenKind::Claim,
+        )
+        .await?;
+        self.register_bonds_position_metadatata_impl(
+            manager.collateral_mint,
+            manager.bond_ticket_mint,
+            TokenKind::AdapterCollateral,
+        )
+        .await?;
+
+        Ok(())
+    }
+
+    pub async fn register_bonds_position_metadatata_impl(
+        &self,
+        position_token_mint: Pubkey,
+        underlying_token_mint: Pubkey,
+        token_kind: TokenKind,
+    ) -> Result<()> {
         let pos_data = PositionTokenMetadata {
-            position_token_mint: manager.claims_mint,
-            underlying_token_mint: manager.underlying_token_mint,
+            position_token_mint,
+            underlying_token_mint,
             adapter_program: jet_bonds::ID,
-            token_kind: TokenKind::Claim,
+            token_kind,
             value_modifier: 1_000,
             max_staleness: 1_000,
         };
-        let address = get_metadata_address(&manager.claims_mint);
+        let address = get_metadata_address(&position_token_mint);
 
         let create = Instruction {
             program_id: jet_metadata::ID,
             accounts: jet_metadata::accounts::CreateEntry {
-                key_account: manager.claims_mint,
+                key_account: position_token_mint,
                 metadata_account: address,
                 authority: get_control_authority_address(),
                 payer: self.client.payer().pubkey(),
@@ -686,6 +708,21 @@ impl<P: Proxy> BondsUser<P> {
             .await
     }
 
+    pub async fn margin_sell_tickets_order(
+        &self,
+        params: OrderParams,
+    ) -> Result<Vec<TransactionBuilder>> {
+        let ix = self.manager.ix_builder.margin_sell_tickets_order(
+            self.proxy.pubkey(),
+            None,
+            None,
+            params,
+        )?;
+        self.proxy
+            .refresh_and_invoke_signed(ix, clone(&self.owner))
+            .await
+    }
+
     pub async fn margin_borrow_order(
         &self,
         params: OrderParams,
@@ -696,6 +733,20 @@ impl<P: Proxy> BondsUser<P> {
             .margin_borrow_order(self.proxy.pubkey(), params)?;
         self.proxy
             .refresh_and_invoke_signed(borrow, clone(&self.owner))
+            .await
+    }
+
+    pub async fn margin_lend_order(
+        &self,
+        params: OrderParams,
+        seed: &[u8],
+    ) -> Result<Vec<TransactionBuilder>> {
+        let ix =
+            self.manager
+                .ix_builder
+                .margin_lend_order(self.proxy.pubkey(), None, params, seed)?;
+        self.proxy
+            .refresh_and_invoke_signed(ix, clone(&self.owner))
             .await
     }
 

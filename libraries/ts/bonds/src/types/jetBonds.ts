@@ -636,6 +636,14 @@ export type JetBonds = {
           "docs": [
             "Token metadata account needed by the margin program to register the claim position"
           ]
+        },
+        {
+          "name": "collateralMetadata",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Token metadata account needed by the margin program to register the collateral position"
+          ]
         }
       ],
       "args": []
@@ -4057,6 +4065,14 @@ export const IDL: JetBonds = {
           "isSigner": false,
           "docs": [
             "Token metadata account needed by the margin program to register the claim position"
+          ]
+        },
+        {
+          "name": "collateralMetadata",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Token metadata account needed by the margin program to register the collateral position"
           ]
         }
       ],

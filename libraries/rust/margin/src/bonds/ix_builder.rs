@@ -365,6 +365,7 @@ impl BondsIxBuilder {
             token_program: spl_token::ID,
             system_program: solana_sdk::system_program::ID,
             claims_metadata: get_metadata_address(&self.claims),
+            collateral_metadata: get_metadata_address(&self.collateral),
         }
         .to_account_metas(None);
         Ok(Instruction::new_with_bytes(
@@ -796,14 +797,14 @@ impl BondsIxBuilder {
 }
 
 /// helpful addresses for a MarginUser account
-struct MarginUser {
-    address: Pubkey,
-    claims: Pubkey,
-    collateral: Pubkey,
+pub struct MarginUser {
+    pub address: Pubkey,
+    pub claims: Pubkey,
+    pub collateral: Pubkey,
 }
 
 impl BondsIxBuilder {
-    fn margin_user(&self, margin_account: Pubkey) -> MarginUser {
+    pub fn margin_user(&self, margin_account: Pubkey) -> MarginUser {
         let address = bonds_pda(&[
             jet_bonds::seeds::MARGIN_BORROWER,
             self.manager.as_ref(),

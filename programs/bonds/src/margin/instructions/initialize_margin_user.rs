@@ -80,6 +80,9 @@ pub struct InitializeMarginUser<'info> {
 
     /// Token metadata account needed by the margin program to register the claim position
     pub claims_metadata: AccountInfo<'info>,
+
+    /// Token metadata account needed by the margin program to register the collateral position
+    pub collateral_metadata: AccountInfo<'info>,
 }
 
 pub fn handler(ctx: Context<InitializeMarginUser>) -> Result<()> {
@@ -122,10 +125,16 @@ pub fn handler(ctx: Context<InitializeMarginUser>) -> Result<()> {
     return_to_margin(
         &ctx.accounts.margin_account.to_account_info(),
         &AdapterResult {
-            position_changes: vec![(
-                ctx.accounts.claims_mint.key(),
-                vec![PositionChange::Register(ctx.accounts.claims.key())],
-            )],
+            position_changes: vec![
+                (
+                    ctx.accounts.claims_mint.key(),
+                    vec![PositionChange::Register(ctx.accounts.claims.key())],
+                ),
+                (
+                    ctx.accounts.collateral_mint.key(),
+                    vec![PositionChange::Register(ctx.accounts.collateral.key())],
+                ),
+            ],
         },
     )
 }

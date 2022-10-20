@@ -99,6 +99,7 @@ export class BondMarket {
     claimsMint: PublicKey
     claimsMetadata: PublicKey
     collateralMint: PublicKey
+    collateralMetadata: PublicKey
     underlyingOracle: PublicKey
     ticketOracle: PublicKey
   }
@@ -108,12 +109,14 @@ export class BondMarket {
   private constructor(
     bondManager: PublicKey,
     claimsMetadata: PublicKey,
+    collateralMetadata: PublicKey,
     program: Program<JetBonds>,
     info: BondManagerInfo
   ) {
     this.addresses = {
       ...info,
       claimsMetadata,
+      collateralMetadata,
       bondManager
     }
     this.program = program
@@ -144,8 +147,9 @@ export class BondMarket {
     let data = await fetchData(program.provider.connection, bondManager)
     let info: BondManagerInfo = program.coder.accounts.decode("BondManager", data)
     const claimsMetadata = await findDerivedAccount([info.claimsMint], new PublicKey(jetMetadataProgramId))
+    const collateralMetadata = await findDerivedAccount([info.collateralMint], new PublicKey(jetMetadataProgramId))
 
-    return new BondMarket(new PublicKey(bondManager), new PublicKey(claimsMetadata), program, info)
+    return new BondMarket(new PublicKey(bondManager), new PublicKey(claimsMetadata), new PublicKey(collateralMetadata), program, info)
   }
 
   async requestBorrowIx(
