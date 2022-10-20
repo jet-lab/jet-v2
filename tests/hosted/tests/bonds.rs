@@ -3,13 +3,12 @@ use std::sync::Arc;
 use anyhow::Result;
 use hosted_tests::{
     bonds::{
-        BondsUser, GenerateProxy, OrderAmount, TestManager as BondsTestManager, MIN_ORDER_SIZE,
-        STARTING_TOKENS,
+        BondsUser, GenerateProxy, OrderAmount, TestManager as BondsTestManager, STARTING_TOKENS,
     },
     context::test_context,
     setup_helper::{setup_user, tokens},
 };
-use jet_bonds::orderbook::state::{CallbackInfo, OrderParams};
+use jet_bonds::orderbook::state::OrderParams;
 use jet_margin_sdk::{
     ix_builder::MarginIxBuilder,
     margin_integrator::{NoProxy, Proxy},
@@ -163,16 +162,10 @@ async fn _full_workflow<P: Proxy + GenerateProxy>(manager: Arc<BondsTestManager>
     };
 
     // simulate
-    let mut eq = manager.load_event_queue().await?;
-    let mut orderbook = manager.load_orderbook().await?;
-    let summary_a = orderbook.inner()?.new_order(
-        a_params.as_new_order_params(
-            agnostic_orderbook::state::Side::Ask,
-            CallbackInfo::default(),
-        ),
-        &mut eq.inner(),
-        MIN_ORDER_SIZE,
-    )?;
+    let summary_a = manager
+        .simulate_new_order(a_params, agnostic_orderbook::state::Side::Ask)
+        .await?;
+
     assert!(summary_a.posted_order_id.is_some());
     assert_eq!(summary_a.total_base_qty, a_params.max_bond_ticket_qty);
     assert_eq!(
@@ -221,16 +214,9 @@ async fn _full_workflow<P: Proxy + GenerateProxy>(manager: Arc<BondsTestManager>
     };
 
     // simulate
-    let mut eq = manager.load_event_queue().await?;
-    let mut orderbook = manager.load_orderbook().await?;
-    let summary_b = orderbook.inner()?.new_order(
-        b_params.as_new_order_params(
-            agnostic_orderbook::state::Side::Bid,
-            CallbackInfo::default(),
-        ),
-        &mut eq.inner(),
-        MIN_ORDER_SIZE,
-    )?;
+    let summary_b = manager
+        .simulate_new_order(b_params, agnostic_orderbook::state::Side::Bid)
+        .await?;
 
     let trade_price = Fp32::upcast_fp32(borrow_order.price());
     let base_trade_qty = borrow_order
@@ -274,16 +260,9 @@ async fn _full_workflow<P: Proxy + GenerateProxy>(manager: Arc<BondsTestManager>
     };
 
     // simulate
-    let mut eq = manager.load_event_queue().await?;
-    let mut orderbook = manager.load_orderbook().await?;
-    let summary_c = orderbook.inner()?.new_order(
-        c_params.as_new_order_params(
-            agnostic_orderbook::state::Side::Bid,
-            CallbackInfo::default(),
-        ),
-        &mut eq.inner(),
-        MIN_ORDER_SIZE,
-    )?;
+    let summary_c = manager
+        .simulate_new_order(c_params, agnostic_orderbook::state::Side::Bid)
+        .await?;
 
     let existing_order = manager.load_orderbook().await?.asks()?[0];
 

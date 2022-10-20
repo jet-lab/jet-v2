@@ -22,11 +22,6 @@ pub struct Order {
     pub limit_price: u64,
 }
 
-#[wasm_bindgen]
-pub struct KeyWrapper {
-    pub key: Pubkey,
-}
-
 /// Represents a 3-tuple of order parameters, returned when calculating order parameters from a given
 /// amount and interest rate
 #[wasm_bindgen]
