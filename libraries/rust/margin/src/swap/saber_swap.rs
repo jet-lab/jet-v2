@@ -22,10 +22,15 @@ use std::{
     sync::Arc,
 };
 
+use anchor_lang::ToAccountMetas;
+use anyhow::{bail, Result};
+use jet_margin_swap::{accounts as ix_accounts, SwapRouteIdentifier};
 use jet_proto_math::number_128::Number128;
 use jet_simulation::solana_rpc_api::SolanaRpcClient;
 use saber_client::state::SwapInfo;
-use solana_sdk::{program_pack::Pack, pubkey::Pubkey};
+use solana_sdk::{instruction::AccountMeta, program_pack::Pack, pubkey::Pubkey};
+
+use crate::ix_builder::SwapAccounts;
 
 use super::{find_mint, find_token};
 
@@ -157,5 +162,46 @@ impl SaberSwapPool {
             pool_mint: swap.pool_mint,
             program: swap_program,
         }
+    }
+}
+
+impl SwapAccounts for SaberSwapPool {
+    fn to_account_meta(&self, src_token: &Pubkey) -> Result<Vec<AccountMeta>> {
+        let (vault_from, vault_into, fee_account) = if src_token == &self.mint_a {
+            (self.token_b, self.token_a, self.fee_b)
+        } else if src_token == &self.mint_b {
+            (self.token_a, self.token_b, self.fee_a)
+        } else {
+            bail!("Invalid source token")
+        };
+        let (swap_authority, _) =
+            Pubkey::find_program_address(&[self.pool.as_ref()], &self.program);
+        let accounts = ix_accounts::SaberSwapInfo {
+            swap_pool: self.pool,
+            authority: swap_authority,
+            vault_into,
+            vault_from,
+            token_mint: self.pool_mint,
+            admin_fee_destination: fee_account,
+            swap_program: self.program,
+        }
+        .to_account_metas(None);
+
+        Ok(accounts)
+    }
+
+    fn dst_token(&self, src_token: &Pubkey) -> Result<Pubkey> {
+        let dst_token = if src_token == &self.mint_a {
+            self.mint_b
+        } else if src_token == &self.mint_b {
+            self.mint_a
+        } else {
+            bail!("Invalid source token")
+        };
+        Ok(dst_token)
+    }
+
+    fn route_type(&self) -> SwapRouteIdentifier {
+        SwapRouteIdentifier::SaberStable
     }
 }
