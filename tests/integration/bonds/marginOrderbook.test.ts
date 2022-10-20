@@ -33,6 +33,8 @@ import CONFIG from './config.json';
 import TEST_MINT_KEYPAIR from '../../keypairs/test-mint.json';
 import USDC_ORACLE_PRICE from '../../keypairs/usdc-price.json';
 import USDC_ORACLE_PRODUCT from '../../keypairs/usdc-product.json';
+import TICKET_ORACLE_PRICE from '../../keypairs/ticket-price.json';
+import TICKET_ORACLE_PRODUCT from '../../keypairs/ticket-product.json';
 import {
   BondMarket,
   JetBonds,
@@ -55,6 +57,7 @@ describe('margin bonds borrowing', async () => {
   let SOL: TestToken = null as never;
 
   let USDC_oracle: Keypair[];
+  let ticket_oracle: Keypair[];
   let SOL_oracle: Keypair[];
 
   const pythClient = new PythClient({
@@ -122,7 +125,12 @@ describe('margin bonds borrowing', async () => {
       Keypair.fromSecretKey(Uint8Array.of(...USDC_ORACLE_PRODUCT)),
       Keypair.fromSecretKey(Uint8Array.of(...USDC_ORACLE_PRICE))
     ];
+    ticket_oracle = [
+      Keypair.fromSecretKey(Uint8Array.of(...TICKET_ORACLE_PRODUCT)),
+      Keypair.fromSecretKey(Uint8Array.of(...TICKET_ORACLE_PRICE))
+    ];
     await pythClient.createPriceAccount(payer, USDC_oracle[0], 'USD', USDC_oracle[1], 1, 0.01, -8);
+    await pythClient.createPriceAccount(payer, ticket_oracle[0], 'USD', ticket_oracle[1], 1, 0.01, -8);
     SOL_oracle = [Keypair.generate(), Keypair.generate()];
     await pythClient.createPriceAccount(payer, SOL_oracle[0], 'USD', SOL_oracle[1], 100, 1, -8);
 
@@ -237,6 +245,7 @@ describe('margin bonds borrowing', async () => {
       change: PoolTokenChange.shiftBy(new BN(ONE_USDC))
     });
     await pythClient.setPythPrice(ownerKeypair, USDC_oracle[1].publicKey, 1, 0.01, -8);
+    await pythClient.setPythPrice(ownerKeypair, ticket_oracle[1].publicKey, 0.9, 0.01, -8);
     await marginPool_USDC.marginRefreshPositionPrice(marginAccount_A);
     await marginPool_USDC.marginRefreshPositionPrice(marginAccount_B);
     await marginPool_USDC.marginRefreshPositionPrice(marginAccount_C);
