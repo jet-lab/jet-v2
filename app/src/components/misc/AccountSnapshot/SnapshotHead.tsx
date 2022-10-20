@@ -21,8 +21,13 @@ export function SnapshotHead(): JSX.Element {
   const [newAccountModalOpen, setNewAccountModalOpen] = useRecoilState(NewAccountModal);
   // const setEditAccountModalOpen = useSetRecoilState(EditAccountModal);
   const { Text } = Typography;
-  const { TabPane } = Tabs;
-
+  const walletFavoriteAccountsItems = walletFavoriteAccounts.map(key => {
+    const name = accountNames[key] ?? '';
+    return {
+      label: name.toUpperCase(),
+      key: key
+    };
+  });
   // Update user's favorite accounts
   function updateFavoriteAccounts(accountPubkey: string, remove?: boolean) {
     if (!publicKey) {
@@ -63,12 +68,9 @@ export function SnapshotHead(): JSX.Element {
           onChange={(key: string) => setCurrentAccountAddress(key)}
           className={
             !currentAccountAddress || !walletFavoriteAccounts.includes(currentAccountAddress) ? 'no-active-tabs' : ''
-          }>
-          {walletFavoriteAccounts.map(key => {
-            const name = accountNames[key] ?? '';
-            return <TabPane key={key} tab={name.toUpperCase()} active={key === currentAccountAddress}></TabPane>;
-          })}
-        </Tabs>
+          }
+          items={walletFavoriteAccountsItems}
+        />
       );
     }
 
