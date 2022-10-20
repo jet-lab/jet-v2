@@ -5671,7 +5671,6 @@ dependencies = [
  "js-sys",
  "rand_chacha 0.3.1",
  "serde",
- "solana-sdk",
  "wasm-bindgen",
 ]
 
