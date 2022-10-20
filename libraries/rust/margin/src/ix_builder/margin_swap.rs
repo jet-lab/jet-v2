@@ -32,7 +32,6 @@ use spl_associated_token_account::get_associated_token_address;
 
 use crate::ix_builder::MarginPoolIxBuilder;
 use crate::jet_margin_pool::TokenChange;
-use crate::swap::spl_swap::SplSwapPool;
 
 use super::owned_position_token_account;
 
@@ -209,12 +208,20 @@ impl MarginSwapIxBuilder {
     }
 }
 
+/// Trait to get required information from a swap pool for the [MarginSwapRouteIxBuilder]
+pub trait SwapAccounts {
+    /// Convert the pool to a vec of [AccountMeta]
+    fn to_account_meta(&self, src_token: &Pubkey) -> Result<Vec<AccountMeta>>;
+    /// Determine the pool destination token based on its source token in the swap
+    fn dst_token(&self, src_token: &Pubkey) -> Result<Pubkey>;
+    /// The identifier of the route
+    fn route_type(&self) -> SwapRouteIdentifier;
+}
+
 /// TODO Document
 ///
 /// TODO Do we want to refresh positions here, or separately?
 /// It could make sense to expect a refresh to be separate, let's see what fits in.
-///
-/// TODO tests might not work because the ATA program might not be enabled for them
 pub struct MarginSwapRouteIxBuilder {
     /// The margin account creating the swap
     margin_account: Pubkey,
@@ -312,10 +319,10 @@ impl MarginSwapRouteIxBuilder {
         }
     }
 
-    /// Add a swap for an SPL token swap pool
-    pub fn add_spl_swap_route(
+    /// Add
+    pub fn add_swap_route<T: SwapAccounts>(
         &mut self,
-        pool: &SplSwapPool,
+        pool: &T,
         src_token: &Pubkey,
         swap_split: u8,
     ) -> anyhow::Result<()> {
@@ -325,13 +332,7 @@ impl MarginSwapRouteIxBuilder {
         }
         // TODO: check if this is the second+ leg of a multi route, and add pool accounts for the previous
         // Check that source token is valid
-        let (dst_token, vault_from, vault_into) = if src_token == &pool.mint_a {
-            (pool.mint_b, pool.token_b, pool.token_a) // TODO: check the direction
-        } else if src_token == &pool.mint_b {
-            (pool.mint_a, pool.token_a, pool.token_b)
-        } else {
-            bail!("Invalid source token")
-        };
+        let dst_token = pool.dst_token(src_token)?;
         // Run common checks
         self.verify_addition(src_token, &dst_token, swap_split)?;
 
@@ -362,18 +363,7 @@ impl MarginSwapRouteIxBuilder {
         }
 
         // Build accounts
-        let (_swap_authority, _) =
-            Pubkey::find_program_address(&[pool.pool.as_ref()], &pool.program);
-        let mut accounts = ix_accounts::SwapInfo {
-            swap_pool: pool.pool,
-            authority: pool.pool_authority,
-            vault_into,
-            vault_from,
-            token_mint: pool.pool_mint,
-            fee_account: pool.fee_account,
-            swap_program: pool.program,
-        }
-        .to_account_metas(None);
+        let mut accounts = pool.to_account_meta(src_token)?;
 
         self.account_metas.append(&mut accounts);
 
@@ -385,11 +375,11 @@ impl MarginSwapRouteIxBuilder {
             .context("Unable to get route detail")?;
         if self.expects_multi_route {
             // This is the second leg of the multi-route
-            route.route_b = SwapRouteIdentifier::Spl;
+            route.route_b = pool.route_type();
             self.expects_multi_route = false;
             self.next_route_index += 1;
         } else {
-            route.route_a = SwapRouteIdentifier::Spl;
+            route.route_a = pool.route_type();
             route.split = swap_split;
             if swap_split > 0 {
                 self.expects_multi_route = true;

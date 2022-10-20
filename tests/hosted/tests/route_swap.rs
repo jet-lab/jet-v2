@@ -307,10 +307,10 @@ async fn route_swap() -> Result<(), anyhow::Error> {
         ONE_TSOL * 99 / 100,
     );
 
-    swap_builder.add_spl_swap_route(&swap_pool_spl_usdc_tsol, &env.usdc, 0)?;
+    swap_builder.add_swap_route(&swap_pool_spl_usdc_tsol, &env.usdc, 0)?;
 
     // Adding a disconnected swap should fail
-    let result = swap_builder.add_spl_swap_route(&swap_pool_spl_msol_usdt, &env.msol, 0);
+    let result = swap_builder.add_swap_route(&swap_pool_spl_msol_usdt, &env.msol, 0);
     assert!(result.is_err());
 
     // TODO: add some tests to check validity
