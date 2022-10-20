@@ -264,7 +264,7 @@ export function SettingsModal(): JSX.Element {
             value={fiatCurrencySetting}
             suffixIcon={<AngleDown className="jet-icon" />}
             onChange={value => setFiatCurrencySetting(value)}
-            dropdownClassName="dropdown-space-between">
+            popupClassName="dropdown-space-between">
             {Object.keys(fiatOptions).map(abbrev => (
               <Option key={abbrev} value={abbrev}>
                 {/* @ts-ignore */}

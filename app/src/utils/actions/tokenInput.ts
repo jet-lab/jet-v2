@@ -7,6 +7,7 @@ import { Pools, CurrentPool } from '../../state/pools/pools';
 import { CurrentAction, TokenInputAmount } from '../../state/actions/actions';
 import { NewAccountModal } from '../../state/modals/modals';
 import { formatRiskIndicator } from '../format';
+import { LAMPORTS_PER_SOL } from '@solana/web3.js';
 
 // Check if user input should be disabled and return the relevant message
 export function useTokenInputDisabledMessage(account?: MarginAccount): string {
@@ -29,7 +30,10 @@ export function useTokenInputDisabledMessage(account?: MarginAccount): string {
 
   // Display message if user doesn't have enough SOL to cover fees
   if (walletTokens && walletTokens.map.SOL.amount.lamports.lte(feesBuffer)) {
-    return (disabledMessage = dictionary.actions.deposit.disabledMessages.notEnoughSolForFees);
+    return (disabledMessage = dictionary.actions.deposit.disabledMessages.notEnoughSolForFees.replace(
+      '{{BUFFER}}',
+      (feesBuffer.toNumber() / LAMPORTS_PER_SOL).toString()
+    ));
   }
 
   if (currentAction === 'deposit') {
