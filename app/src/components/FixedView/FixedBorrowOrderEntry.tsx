@@ -11,8 +11,9 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import { Transaction, TransactionInstruction } from '@solana/web3.js';
 import { MainConfig } from '../../state/config/marginConfig';
 import { useProvider } from '../../utils/jet/provider';
-import { Pools } from '../../state/pools/pools';
+import { CurrentPool, Pools } from '../../state/pools/pools';
 import { TOKEN_PROGRAM_ID } from '@solana/spl-token';
+import { AssociatedToken } from '@jet-lab/margin';
 // import { AssociatedToken } from '@jet-lab/margin';
 
 function randomIntFromInterval(min: number, max: number) {
@@ -26,6 +27,7 @@ export const FixedBorrowOrderEntry = () => {
   const marginAccount = useRecoilValue(CurrentAccount);
   const { provider } = useProvider();
   const pools = useRecoilValue(Pools);
+  const currentPool = useRecoilValue(CurrentPool);
   const wallet = useWallet();
   const config = useRecoilValue(MainConfig);
   const decimals = useMemo(() => {
@@ -44,11 +46,11 @@ export const FixedBorrowOrderEntry = () => {
   const offerLoan = async () => {
     let ixns: TransactionInstruction[] = [];
 
-    // const tokenMint = marketAndConfig.market.addresses.underlyingTokenMint;
-    // const ticketMint = marketAndConfig.market.addresses.bondTicketMint;
+    const tokenMint = marketAndConfig.market.addresses.underlyingTokenMint;
+    const ticketMint = marketAndConfig.market.addresses.bondTicketMint;
 
-    // await AssociatedToken.withCreate(ixns, provider, marginAccount.address, tokenMint);
-    // await AssociatedToken.withCreate(ixns, provider, marginAccount.address, ticketMint);
+    await AssociatedToken.withCreate(ixns, provider, marginAccount.address, tokenMint);
+    await AssociatedToken.withCreate(ixns, provider, marginAccount.address, ticketMint);
 
     // AssociatedToken.withTransfer(ixns, tokenMint, wallet.publicKey, marginAccount.address, amount);
 
@@ -66,10 +68,17 @@ export const FixedBorrowOrderEntry = () => {
       })
       .catch(e => {
         console.log('ERROR: ', e);
+        if (e.logs) {
+          console.log(e.logs);
+        }
       });
 
-    await marginAccount.withUpdateAllPositionBalances({
-      instructions: ixns
+    ixns = [];
+
+    await currentPool.withMarginRefreshAllPositionPrices({
+      instructions: ixns,
+      pools: pools.tokenPools,
+      marginAccount
     });
 
     const borrowOffer = await marketAndConfig.market.requestBorrowIx(
