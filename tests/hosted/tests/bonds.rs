@@ -239,7 +239,7 @@ async fn _full_workflow<P: Proxy + GenerateProxy>(manager: Arc<BondsTestManager>
 
     // Cannot make a bad borrow order
     let bad_params = OrderParams {
-        max_bond_ticket_qty: 0,
+        limit_price: jet_proto_math::fixed_point::FP32_ONE as u64 + 1, // price more than one implies a negative interest rate
         ..borrow_params
     };
     assert!(alice.sell_tickets_order(bad_params).await.is_err());

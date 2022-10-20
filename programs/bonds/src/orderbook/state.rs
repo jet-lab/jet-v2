@@ -25,6 +25,9 @@ use std::convert::TryInto;
 /// The tick_size used in fp32 operations on the orderbook
 pub const TICK_SIZE: u64 = 1;
 
+/// One represented as a fixed-point 32 integer
+const FP32_ONE: u64 = 1 << 32;
+
 /// Find the len of the byteslab representing an orderbook side, given the maximum number of orders
 pub const fn orderbook_slab_len(capacity: usize) -> usize {
     capacity * (LeafNode::LEN + CallbackInfo::LEN + InnerNode::LEN)
@@ -91,7 +94,7 @@ impl<'info> OrderbookMut<'info> {
         } = params;
 
         // No orders should have an interest rate <=0
-        if max_underlying_token_qty >= max_bond_ticket_qty {
+        if limit_price >= FP32_ONE {
             return err!(BondsError::InvalidInterest);
         }
 
