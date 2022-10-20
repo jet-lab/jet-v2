@@ -168,6 +168,7 @@ export class BondMarket {
     }
     return await this.borrowIx(user, payer, params, seed)
   }
+
   async borrowNowIx(
     user: MarginAccount,
     payer: Address,
@@ -186,24 +187,28 @@ export class BondMarket {
     }
     return await this.borrowIx(user, payer, params, seed)
   }
+
   async borrowIx(
     user: MarginAccount,
     payer: Address,
     params: OrderParams,
     seed: Uint8Array
   ): Promise<TransactionInstruction> {
-    const borrowerAccount = await this.deriveMarginUserAddress(user)
-    const obligation = await this.deriveObligationAddress(borrowerAccount, seed)
-    const claims = await this.deriveMarginUserClaims(borrowerAccount)
+    const marginUser = await this.deriveMarginUserAddress(user)
+    const obligation = await this.deriveObligationAddress(marginUser, seed)
+    const claims = await this.deriveMarginUserClaims(marginUser)
+    const collateral = await this.deriveMarginUserCollateral(marginUser)
 
     return this.program.methods
       .marginBorrowOrder(params, Buffer.from(seed))
       .accounts({
         ...this.addresses,
-        borrowerAccount,
+        orderbookMut: this.orderbookMut(),
+        marginUser,
         marginAccount: user.address,
         obligation,
         claims,
+        collateral,
         payer,
         systemProgram: SystemProgram.programId,
         tokenProgram: TOKEN_PROGRAM_ID
@@ -257,15 +262,19 @@ export class BondMarket {
     params: OrderParams,
     seed: Uint8Array
   ): Promise<TransactionInstruction> {
-    const splitTicket = await this.deriveSplitTicket(user, seed)
+    let ticketSettlement = userTicketVault
+    if (params.autoStake) {
+      ticketSettlement = await this.deriveSplitTicket(user, seed)
+    }
     return await this.program.methods
       .lendOrder(params, Buffer.from(seed))
       .accounts({
         ...this.addresses,
-        user,
-        userTicketVault,
-        userTokenVault,
-        splitTicket,
+        orderbookMut: this.orderbookMut(),
+        ticketMint: this.addresses.bondTicketMint,
+        authority: user,
+        ticketSettlement,
+        lenderTokens: userTokenVault,
         payer,
         systemProgram: SystemProgram.programId,
         tokenProgram: TOKEN_PROGRAM_ID
@@ -280,9 +289,20 @@ export class BondMarket {
       .cancelOrder(bnOrderId)
       .accounts({
         ...this.addresses,
-        user: user.address
+        owner: user.address,
+        orderbookMut: this.orderbookMut(),
       })
       .instruction()
+  }
+
+  orderbookMut() {
+    return {
+      bondManager: this.addresses.bondManager,
+      orderbookMarketState: this.addresses.orderbookMarketState,
+      eventQueue: this.addresses.eventQueue,
+      bids: this.addresses.bids,
+      asks: this.addresses.asks,
+    }
   }
 
   async registerAccountWithMarket(user: MarginAccount, payer: Address): Promise<TransactionInstruction> {
@@ -320,12 +340,12 @@ export class BondMarket {
    * @returns a `TransactionInstruction` to refresh the bonds related margin positions
    */
   async refreshPosition(user: MarginAccount, expectPrice: boolean): Promise<TransactionInstruction> {
-    const borrowerAccount = await this.deriveMarginUserAddress(user)
+    const marginUser = await this.deriveMarginUserAddress(user)
     return await this.program.methods
       .refreshPosition(expectPrice)
       .accounts({
         ...this.addresses,
-        borrowerAccount,
+        marginUser,
         marginAccount: user.address,
         tokenProgram: TOKEN_PROGRAM_ID
       })
@@ -366,6 +386,6 @@ export class BondMarket {
   async fetchMarginUser(user: MarginAccount): Promise<MarginUserInfo> {
     let data = (await this.provider.connection.getAccountInfo(await this.deriveMarginUserAddress(user)))!.data
 
-    return await this.program.coder.accounts.decode("MarginUser", data)
+    return await this.program.coder.accounts.decode("marginUser", data)
   }
 }
