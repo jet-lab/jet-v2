@@ -318,9 +318,55 @@ async fn _full_workflow<P: Proxy + GenerateProxy>(manager: Arc<BondsTestManager>
         STARTING_TOKENS - summary_b.total_quote_qty - summary_c.total_quote_qty
     );
 
+    // order cancelling
+    let order_id = manager.load_orderbook().await?.bids()?[0].key;
+    bob.cancel_order(order_id).await?;
+    assert!(manager
+        .load_orderbook()
+        .await?
+        .bids()?
+        .iter()
+        .next()
+        .is_none());
+
     // only works on simulation right now
     // Access violation in stack frame 5 at address 0x200005ff8 of size 8 by instruction #22627
     #[cfg(not(feature = "localnet"))]
-    manager.consume_events().await?;
+    {
+        manager.consume_events().await?;
+
+        assert!(manager
+            .load_event_queue()
+            .await?
+            .inner()
+            .iter()
+            .next()
+            .is_none());
+
+        // test order pausing
+        manager.pause_orders().await?;
+
+        alice.sell_tickets_order(a_params).await?;
+        bob.lend_order(b_params, vec![2]).await?;
+
+        assert!(manager
+            .load_event_queue()
+            .await?
+            .inner()
+            .iter()
+            .next()
+            .is_none());
+
+        manager.resume_orders().await?;
+
+        assert!(manager
+            .load_event_queue()
+            .await?
+            .inner()
+            .iter()
+            .next()
+            .is_some());
+    }
+
     Ok(())
 }
