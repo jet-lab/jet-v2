@@ -107,7 +107,8 @@ async fn margin() -> Result<()> {
         .unwrap();
 
     let borrower_account = user.load_margin_user().await.unwrap();
-    assert!(borrower_account.debt.total() == borrow_params.max_bond_ticket_qty);
+    let posted_order = manager.load_orderbook().await?.asks()?[0];
+    assert_eq!(borrower_account.debt.total(), posted_order.base_quantity);
 
     Ok(())
 }
