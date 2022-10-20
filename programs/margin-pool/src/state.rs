@@ -15,13 +15,15 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+use std::cmp::Ordering;
+use std::convert::TryFrom;
+
 use anchor_lang::{prelude::*, solana_program::clock::UnixTimestamp};
+use jet_margin::MAX_ORACLE_STALENESS;
 use jet_proto_math::number::Number;
 use pyth_sdk_solana::PriceFeed;
 #[cfg(any(test, feature = "cli"))]
 use serde::ser::{Serialize, SerializeStruct, Serializer};
-use std::cmp::Ordering;
-use std::convert::TryFrom;
 
 use crate::{util, Amount, AmountKind, ChangeKind, ErrorCode, TokenChange};
 
@@ -283,11 +285,13 @@ impl MarginPool {
     /// Calculate the prices for the deposit and loan notes, based on
     /// the price of the underlying token.
     pub fn calculate_prices(&self, pyth_price: &PriceFeed) -> Result<PriceResult> {
+        let clock = Clock::get()?;
+        let max_staleness = MAX_ORACLE_STALENESS as u64;
         let price_obj = pyth_price
-            .get_current_price()
+            .get_price_no_older_than(clock.unix_timestamp, max_staleness)
             .ok_or(ErrorCode::InvalidPoolPrice)?;
         let ema_obj = pyth_price
-            .get_ema_price()
+            .get_ema_price_no_older_than(clock.unix_timestamp, max_staleness)
             .ok_or(ErrorCode::InvalidPoolPrice)?;
 
         let price_value = Number::from_decimal(price_obj.price, price_obj.expo);
@@ -298,21 +302,20 @@ impl MarginPool {
         let loan_note_exchange_rate = self.loan_note_exchange_rate();
 
         let deposit_note_price = i64::try_from(
-            (price_value * deposit_note_exchange_rate).as_u64_rounded(pyth_price.expo),
+            (price_value * deposit_note_exchange_rate).as_u64_rounded(price_obj.expo),
         )
         .unwrap();
         let deposit_note_conf =
-            (conf_value * deposit_note_exchange_rate).as_u64_rounded(pyth_price.expo);
-        let deposit_note_twap = i64::try_from(
-            (twap_value * deposit_note_exchange_rate).as_u64_rounded(pyth_price.expo),
-        )
-        .unwrap();
-        let loan_note_price =
-            i64::try_from((price_value * loan_note_exchange_rate).as_u64_rounded(pyth_price.expo))
+            (conf_value * deposit_note_exchange_rate).as_u64_rounded(price_obj.expo);
+        let deposit_note_twap =
+            i64::try_from((twap_value * deposit_note_exchange_rate).as_u64_rounded(price_obj.expo))
                 .unwrap();
-        let loan_note_conf = (conf_value * loan_note_exchange_rate).as_u64_rounded(pyth_price.expo);
+        let loan_note_price =
+            i64::try_from((price_value * loan_note_exchange_rate).as_u64_rounded(price_obj.expo))
+                .unwrap();
+        let loan_note_conf = (conf_value * loan_note_exchange_rate).as_u64_rounded(price_obj.expo);
         let loan_note_twap =
-            i64::try_from((twap_value * loan_note_exchange_rate).as_u64_rounded(pyth_price.expo))
+            i64::try_from((twap_value * loan_note_exchange_rate).as_u64_rounded(price_obj.expo))
                 .unwrap();
 
         Ok(PriceResult {

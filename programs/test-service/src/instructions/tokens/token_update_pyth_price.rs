@@ -16,10 +16,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 use anchor_lang::prelude::*;
 
-use pyth_sdk_solana::{
-    state::{PriceAccount, Rational},
-    PriceStatus,
-};
+use pyth_sdk_solana::state::{PriceAccount, PriceStatus, Rational};
 
 use crate::{state::TokenInfo, util::load_pyth_account};
 

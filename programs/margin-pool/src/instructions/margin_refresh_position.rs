@@ -17,6 +17,7 @@
 
 use anchor_lang::prelude::*;
 
+use jet_margin::MAX_ORACLE_STALENESS;
 use jet_margin::{AdapterResult, MarginAccount, PositionChange, PriceChangeInfo};
 
 use crate::state::*;
@@ -50,6 +51,14 @@ pub fn margin_refresh_position_handler(ctx: Context<MarginRefreshPosition>) -> R
         }
     };
 
+    // Required post pyth-sdk 0.6.1.
+    // See https://github.com/pyth-network/pyth-sdk-rs/commit/4f4f8c79efcee6402a94dd81a0aa1750a1a12297
+    let clock = Clock::get()?;
+
+    let price = token_oracle
+        .get_price_no_older_than(clock.unix_timestamp, MAX_ORACLE_STALENESS as u64)
+        .ok_or(ErrorCode::InvalidPoolPrice)?;
+
     let prices = pool.calculate_prices(&token_oracle)?;
 
     // Tell the margin program what the current prices are
@@ -60,8 +69,8 @@ pub fn margin_refresh_position_handler(ctx: Context<MarginRefreshPosition>) -> R
                 (
                     pool.deposit_note_mint,
                     vec![PositionChange::Price(PriceChangeInfo {
-                        publish_time: token_oracle.publish_time,
-                        exponent: token_oracle.expo,
+                        publish_time: price.publish_time,
+                        exponent: price.expo,
                         value: prices.deposit_note_price,
                         confidence: prices.deposit_note_conf,
                         twap: prices.deposit_note_twap,
@@ -70,8 +79,8 @@ pub fn margin_refresh_position_handler(ctx: Context<MarginRefreshPosition>) -> R
                 (
                     pool.loan_note_mint,
                     vec![PositionChange::Price(PriceChangeInfo {
-                        publish_time: token_oracle.publish_time,
-                        exponent: token_oracle.expo,
+                        publish_time: price.publish_time,
+                        exponent: price.expo,
                         value: prices.loan_note_price,
                         confidence: prices.loan_note_conf,
                         twap: prices.loan_note_twap,
