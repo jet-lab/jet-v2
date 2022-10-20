@@ -89,10 +89,7 @@ fn handle_fill<'info>(
     let manager = ctx.accounts.bond_manager.load()?;
     let maker_side = Side::from_u8(*taker_side).unwrap().opposite();
     let fill_timestamp = taker_info.order_submitted_timestamp();
-    let maturation_timestamp = manager
-        .duration
-        .safe_add(fill_timestamp)?
-        .safe_add(manager.deposit_duration)?;
+    let maturation_timestamp = manager.lender_duration.safe_add(fill_timestamp)?;
 
     match maker_side {
         Side::Bid => {

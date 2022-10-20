@@ -81,9 +81,7 @@ pub fn handler(ctx: Context<LendOrder>, params: OrderParams, seed: Vec<u8>) -> R
             bond_manager: ctx.accounts.orderbook_mut.bond_manager.key(),
             order_tag: callback_info.order_tag,
             struck_timestamp: timestamp,
-            maturation_timestamp: timestamp
-                .safe_add(manager.duration)?
-                .safe_add(manager.deposit_duration)?,
+            maturation_timestamp: timestamp.safe_add(manager.lender_duration)?,
             principal: order_summary.total_quote_qty,
             interest: order_summary.total_base_qty - order_summary.total_quote_qty,
         }

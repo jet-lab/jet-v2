@@ -255,16 +255,16 @@ impl BondsIxBuilder {
         payer: Pubkey,
         version_tag: u64,
         seed: [u8; 32],
-        duration: i64,
-        deposit_duration: i64,
+        borrower_duration: i64,
+        lender_duration: i64,
         ticket_oracle: Pubkey,
     ) -> Result<Instruction> {
         let data = jet_bonds::instruction::InitializeBondManager {
             params: InitializeBondManagerParams {
                 version_tag,
                 seed,
-                duration,
-                deposit_duration,
+                borrower_duration,
+                lender_duration,
             },
         }
         .data();

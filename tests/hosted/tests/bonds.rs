@@ -241,11 +241,9 @@ async fn _full_workflow<P: Proxy + GenerateProxy>(manager: Arc<BondsTestManager>
         // assert SplitTicket
         let split_ticket = bob.load_split_ticket(vec![]).await?;
         let bond_manager = manager.load_manager().await?;
-        assert!(
-            split_ticket.maturation_timestamp
-                == split_ticket.struck_timestamp
-                    + bond_manager.duration
-                    + bond_manager.deposit_duration
+        assert_eq!(
+            split_ticket.maturation_timestamp,
+            split_ticket.struck_timestamp + bond_manager.lender_duration
         );
     }
     // make an adapter
