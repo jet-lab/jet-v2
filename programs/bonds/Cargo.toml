@@ -33,7 +33,7 @@ pyth-sdk-solana = "0.4"
 serde = { version = "1.0", optional = true }
 proc-macros = { path = "../../libraries/rust/proc-macros" }
 
-agnostic-orderbook = { git = "https://github.com/jet-lab/agnostic-orderbook.git", branch = "main", features = ["lib", "utils"] }
+agnostic-orderbook = { git = "https://github.com/jet-lab/agnostic-orderbook.git", branch = "paused-order-summary-posted-amounts", features = ["lib", "utils"] }
 
 anchor-lang = { git = "https://github.com/jet-lab/anchor", branch = "master" }
 anchor-spl =  { git = "https://github.com/jet-lab/anchor", branch = "master" }

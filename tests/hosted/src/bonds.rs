@@ -891,14 +891,25 @@ pub struct OrderAmount {
 
 impl OrderAmount {
     /// rate is in basis points
-    pub fn from_amount_rate(amount: u64, rate_bps: u64) -> Self {
-        let quote = amount;
-        let base = quote + ((quote * rate_bps) / 10_000);
+    pub fn from_quote_amount_rate(quote: u64, rate_bps: u64) -> Self {
+        let base = quote + quote * rate_bps / 10_000;
+        let price = Fp32::from(quote) / base;
+
+        OrderAmount {
+            base: u64::MAX,
+            quote,
+            price: price.downcast_u64().unwrap(),
+        }
+    }
+
+    /// rate is in basis points
+    pub fn from_base_amount_rate(base: u64, rate_bps: u64) -> Self {
+        let quote = base * 10_000 / (rate_bps + 10_000);
         let price = Fp32::from(quote) / base;
 
         OrderAmount {
             base,
-            quote,
+            quote: u64::MAX,
             price: price.downcast_u64().unwrap(),
         }
     }
