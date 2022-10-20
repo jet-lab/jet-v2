@@ -392,7 +392,14 @@ fn exec_swap<'a, 'b, 'c, 'info>(
             ctx.accounts.spl_swap(accounts, curr_swap_in, 0)?;
         }
         SwapRouteIdentifier::Whirlpool => todo!(),
-        SwapRouteIdentifier::SaberStable => todo!(),
+        SwapRouteIdentifier::SaberStable => {
+            // TODO: add bounds check
+            let accounts = &ctx.remaining_accounts[acc_ix..acc_ix + 7];
+            acc_ix += 7;
+            // We don't need to check the destination balance on this leg
+            // TODO: handle percentages
+            ctx.accounts.saber_stable_swap(accounts, curr_swap_in, 0)?;
+        },
     }
 
     // Handle the next leg
@@ -411,7 +418,14 @@ fn exec_swap<'a, 'b, 'c, 'info>(
                 ctx.accounts.spl_swap(accounts, curr_swap_in, 0)?;
             }
             SwapRouteIdentifier::Whirlpool => todo!(),
-            SwapRouteIdentifier::SaberStable => todo!(),
+            SwapRouteIdentifier::SaberStable => {
+                // TODO: add bounds check
+                let accounts = &ctx.remaining_accounts[acc_ix..acc_ix + 7];
+                acc_ix += 7;
+                // We don't need to check the destination balance on this leg
+                // TODO: handle percentages
+                ctx.accounts.saber_stable_swap(accounts, curr_swap_in, 0)?;
+            },
         }
     }
 

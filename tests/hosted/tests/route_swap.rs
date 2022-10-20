@@ -192,13 +192,17 @@ async fn route_swap() -> Result<(), anyhow::Error> {
         .tokens
         .create_account_funded(&env.usdc, &wallet_a.pubkey(), 1_000 * ONE_USDC)
         .await?;
-    let user_a_tsol_account = ctx
+    let user_a_msol_account = ctx
         .tokens
-        .create_account_funded(&env.tsol, &wallet_a.pubkey(), 100 * ONE_TSOL)
+        .create_account_funded(&env.msol, &wallet_a.pubkey(), 100 * ONE_MSOL)
         .await?;
     let user_b_tsol_account = ctx
         .tokens
         .create_account_funded(&env.tsol, &wallet_b.pubkey(), 10 * ONE_TSOL)
+        .await?;
+    let user_b_msol_account = ctx
+        .tokens
+        .create_account_funded(&env.msol, &wallet_b.pubkey(), 10 * ONE_MSOL)
         .await?;
 
     // Set the prices for each token
@@ -226,6 +230,18 @@ async fn route_swap() -> Result<(), anyhow::Error> {
             },
         )
         .await?;
+    ctx.tokens
+        .set_price(
+            // Set price to 106 USD +- 1
+            &env.msol,
+            &TokenPrice {
+                exponent: -8,
+                price: 10_600_000_000,
+                confidence: 100_000_000,
+                twap: 10_600_000_000,
+            },
+        )
+        .await?;
 
     // Deposit user funds into their margin accounts
     user_a
@@ -235,11 +251,25 @@ async fn route_swap() -> Result<(), anyhow::Error> {
             TokenChange::shift(1_000 * ONE_USDC),
         )
         .await?;
+    user_a
+        .deposit(
+            &env.msol,
+            &user_a_msol_account,
+            TokenChange::shift(ONE_MSOL),
+        )
+        .await?;
     user_b
         .deposit(
             &env.tsol,
             &user_b_tsol_account,
             TokenChange::shift(10 * ONE_TSOL),
+        )
+        .await?;
+    user_b
+        .deposit(
+            &env.msol,
+            &user_b_msol_account,
+            TokenChange::shift(10 * ONE_MSOL),
         )
         .await?;
 
@@ -255,6 +285,11 @@ async fn route_swap() -> Result<(), anyhow::Error> {
     let tsol_pool = MarginPoolIxBuilder::new(env.tsol);
     let usdt_pool = MarginPoolIxBuilder::new(env.tsol);
     let accounts = &[
+        // Programs
+        jet_margin::id(),
+        jet_margin_pool::id(),
+        jet_margin_swap::id(),
+        spl_token::id(),
         // Pools
         usdc_pool.token_mint,
         usdc_pool.address,
@@ -282,6 +317,7 @@ async fn route_swap() -> Result<(), anyhow::Error> {
         swap_pool_spl_msol_usdt.token_a,
         swap_pool_spl_msol_usdt.token_b,
         swap_pool_spl_msol_usdt.fee_account,
+        swap_pool_spl_msol_usdt.program,
         // Saber swap pools
         swap_pool_sbr_msol_tsol.pool,
         swap_pool_sbr_msol_tsol.pool_authority,
@@ -290,6 +326,7 @@ async fn route_swap() -> Result<(), anyhow::Error> {
         swap_pool_sbr_msol_tsol.token_b,
         swap_pool_sbr_msol_tsol.fee_a,
         swap_pool_sbr_msol_tsol.fee_b,
+        swap_pool_sbr_msol_tsol.program,
     ];
 
     LookupTable::extend_lookup_table(&ctx.rpc, table, accounts)
@@ -301,19 +338,21 @@ async fn route_swap() -> Result<(), anyhow::Error> {
     // Create a swap route and execute it
     let mut swap_builder = MarginSwapRouteIxBuilder::new(
         *user_a.address(),
+        env.msol,
         env.usdc,
-        env.tsol,
-        TokenChange::shift(100 * ONE_USDC),
-        ONE_TSOL * 99 / 100,
+        TokenChange::shift(ONE_MSOL),
+        106 * ONE_USDC * 98 / 100,
     );
 
-    swap_builder.add_swap_route(&swap_pool_spl_usdc_tsol, &env.usdc, 0)?;
+    swap_builder.add_swap_route(&swap_pool_sbr_msol_tsol, &env.msol, 0)?;
+
+    swap_builder.add_swap_route(&swap_pool_spl_usdc_tsol, &env.tsol, 0)?;
 
     // Adding a disconnected swap should fail
     let result = swap_builder.add_swap_route(&swap_pool_spl_msol_usdt, &env.usdc, 0);
     assert!(result.is_err());
 
-    swap_builder.add_swap_route(&swap_pool_sbr_msol_tsol, &env.msol, 0)?;
+    
 
     // TODO: add some tests to check validity
     swap_builder.finalize().unwrap();

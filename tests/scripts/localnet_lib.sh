@@ -57,6 +57,24 @@ run() {
         --bin $@
 }
 
+init-idl() {
+    anchor idl init -f ./target/idl/jet_metadata.json $META_PID --provider.cluster localnet
+    anchor idl init -f ./target/idl/jet_control.json $CTRL_PID --provider.cluster localnet
+    anchor idl init -f ./target/idl/jet_margin.json $MRGN_PID --provider.cluster localnet
+    anchor idl init -f ./target/idl/jet_margin_pool.json $POOL_PID --provider.cluster localnet
+    anchor idl init -f ./target/idl/jet_margin_swap.json $MGNSWAP_PID --provider.cluster localnet
+    anchor idl init -f ./target/idl/jet_bonds.json $BOND_PID --provider.cluster localnet
+}
+
+upgrade-idl() {
+    anchor idl upgrade -f ./target/idl/jet_metadata.json $META_PID --provider.cluster localnet
+    anchor idl upgrade -f ./target/idl/jet_control.json $CTRL_PID --provider.cluster localnet
+    anchor idl upgrade -f ./target/idl/jet_margin.json $MRGN_PID --provider.cluster localnet
+    anchor idl upgrade -f ./target/idl/jet_margin_pool.json $POOL_PID --provider.cluster localnet
+    anchor idl upgrade -f ./target/idl/jet_margin_swap.json $MGNSWAP_PID --provider.cluster localnet
+    anchor idl upgrade -f ./target/idl/jet_bonds.json $BOND_PID --provider.cluster localnet
+}
+
 start-validator() {
     solana-test-validator \
         --bpf-program $JTS_PID $JTS_SO \
@@ -96,6 +114,8 @@ start-new-validator() {
     spid=$!
 
     sleep ${VALIDATOR_STARTUP:-5}
+
+    # init-idl &
 
     cargo run --bin jetctl -- test init-env -ul --no-confirm localnet.toml
     cargo run --bin jetctl -- test generate-app-config -ul --no-confirm localnet.toml -o app/public/localnet.config.json
