@@ -40,7 +40,6 @@ export function FullAccountHistory(): JSX.Element {
   const transactionsRef = useRef<any>();
   const loadingAccounts = walletTokens && !filteredTxHistory?.length;
   const { Paragraph, Text } = Typography;
-  const { TabPane } = Tabs;
 
   // Renders the date/time column for table
   function renderDateColumn(transaction: AccountTransaction) {
@@ -195,23 +194,32 @@ export function FullAccountHistory(): JSX.Element {
   return (
     <div className="full-account-history account-table view-element flex-centered">
       <ConnectionFeedback />
-      <Tabs activeKey={currentTable} onChange={table => setCurrentTable(table)}>
-        <TabPane key="transactions" tab={dictionary.accountsView.accountHistory}>
-          <Table
-            ref={transactionsRef}
-            dataSource={accounts && accountHistoryLoaded ? filteredTxHistory : createDummyArray(pageSize, 'signature')}
-            columns={transactionHistoryColumns}
-            pagination={{ pageSize }}
-            className={accounts && filteredTxHistory?.length ? '' : 'no-row-interaction'}
-            rowKey={row => `${row.tokenSymbol}-${Math.random()}`}
-            rowClassName={(transaction, index) => ((index + 1) % 2 === 0 ? 'dark-bg' : '')}
-            onRow={(transaction: AccountTransaction) => ({
-              onClick: () => openLinkInBrowser(getExplorerUrl(transaction.signature, cluster, blockExplorer))
-            })}
-            locale={{ emptyText: dictionary.accountsView.noAccountHistory }}
-          />
-        </TabPane>
-      </Tabs>
+      <Tabs
+        activeKey={currentTable}
+        onChange={table => setCurrentTable(table)}
+        items={[
+          {
+            label: dictionary.accountsView.accountHistory,
+            key: 'transactions',
+            children: (
+              <Table
+                ref={transactionsRef}
+                dataSource={
+                  accounts && accountHistoryLoaded ? filteredTxHistory : createDummyArray(pageSize, 'signature')
+                }
+                columns={transactionHistoryColumns}
+                pagination={{ pageSize }}
+                className={accounts && filteredTxHistory?.length ? '' : 'no-row-interaction'}
+                rowKey={row => `${row.tokenSymbol}-${Math.random()}`}
+                rowClassName={(transaction, index) => ((index + 1) % 2 === 0 ? 'dark-bg' : '')}
+                onRow={(transaction: AccountTransaction) => ({
+                  onClick: () => openLinkInBrowser(getExplorerUrl(transaction.signature, cluster, blockExplorer))
+                })}
+                locale={{ emptyText: dictionary.accountsView.noAccountHistory }}
+              />
+            )
+          }
+        ]}></Tabs>
       <div className="page-size-dropdown flex-centered">
         <Paragraph italic>{dictionary.accountsView.rowsPerPage}:</Paragraph>
         <Dropdown
