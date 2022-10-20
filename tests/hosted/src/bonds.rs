@@ -5,7 +5,7 @@ use agnostic_orderbook::state::{
     event_queue::EventQueue,
     market_state::MarketState as OrderBookMarketState,
     orderbook::OrderBookState,
-    AccountTag,
+    AccountTag, OrderSummary,
 };
 use anchor_lang::Discriminator;
 use anchor_lang::{AccountDeserialize, AnchorSerialize, InstructionData, ToAccountMetas};
@@ -16,7 +16,7 @@ use jet_bonds::{
     control::state::BondManager,
     margin::state::MarginUser,
     orderbook::state::{event_queue_len, orderbook_slab_len, CallbackInfo, OrderParams},
-    tickets::state::ClaimTicket,
+    tickets::state::{ClaimTicket, SplitTicket},
 };
 
 use jet_margin_sdk::{
@@ -466,6 +466,23 @@ impl TestManager {
         send_and_confirm(&self.client, &[ix], &[]).await?;
         Ok(())
     }
+
+    pub async fn simulate_new_order(
+        &self,
+        params: OrderParams,
+        side: agnostic_orderbook::state::Side,
+    ) -> Result<OrderSummary> {
+        let mut eq = self.load_event_queue().await?;
+        let mut orderbook = self.load_orderbook().await?;
+        orderbook
+            .inner()?
+            .new_order(
+                params.as_new_order_params(side, CallbackInfo::default()),
+                &mut eq.inner(),
+                MIN_ORDER_SIZE,
+            )
+            .map_err(anyhow::Error::new)
+    }
 }
 
 pub struct OwnedEQ(Vec<u8>);
@@ -787,11 +804,25 @@ impl<P: Proxy> BondsUser<P> {
             .ix_builder
             .claim_ticket_key(&self.proxy.pubkey(), seed)
     }
+
+    pub fn split_ticket_key(&self, seed: &[u8]) -> Pubkey {
+        self.manager
+            .ix_builder
+            .split_ticket_key(&self.proxy.pubkey(), seed)
+    }
+
     pub async fn load_claim_ticket(&self, seed: &[u8]) -> Result<ClaimTicket> {
         let key = self.claim_ticket_key(seed);
 
         self.manager.load_anchor(&key).await
     }
+
+    pub async fn load_split_ticket(&self, seed: &[u8]) -> Result<SplitTicket> {
+        let key = self.split_ticket_key(seed);
+
+        self.manager.load_anchor(&key).await
+    }
+
     /// loads the current state of the user token wallet
     pub async fn tokens(&self) -> Result<u64> {
         let key = get_associated_token_address(

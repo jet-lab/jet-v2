@@ -14,7 +14,7 @@ lazy_static::lazy_static! {
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() -> Result<()> {
-    let rpc = Arc::new(RpcConnection::new_local_funded()?);
+    let rpc = Arc::new(RpcConnection::new_local_funded().await?);
 
     let margin = MarginClient::new(rpc.clone());
     margin.init_globals().await?;
