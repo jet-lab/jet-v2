@@ -856,9 +856,19 @@ impl BondsIxBuilder {
             &seed,
         ])
     }
+
     pub fn split_ticket_key(&self, user: &Pubkey, seed: &[u8]) -> Pubkey {
         bonds_pda(&[jet_bonds::seeds::SPLIT_TICKET, user.as_ref(), seed])
     }
+
+    pub fn claims_mint(manager_key: &Pubkey) -> Pubkey {
+        bonds_pda(&[jet_bonds::seeds::CLAIM_NOTES, manager_key.as_ref()])
+    }
+
+    pub fn collateral_mint(manager_key: &Pubkey) -> Pubkey {
+        bonds_pda(&[jet_bonds::seeds::COLLATERAL_NOTES, manager_key.as_ref()])
+    }
+
     pub fn claim_ticket_key(&self, ticket_holder: &Pubkey, seed: &[u8]) -> Pubkey {
         bonds_pda(&[
             jet_bonds::seeds::CLAIM_TICKET,
