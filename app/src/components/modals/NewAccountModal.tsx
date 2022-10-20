@@ -106,19 +106,18 @@ export function NewAccountModal(): JSX.Element {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [programs]);
 
-  // Check if user has enough SOL to cover rent + fees
+  // Check if user has enough SOL to cover rent + fees.
+  // If user's SOL is less than feeBuffer amount, disable user from creating new account.
   useEffect(() => {
-    // if (walletTokens && walletTokens.map.SOL.amount.lamports.toNumber() >= feesBuffer) {
-
-    if (walletTokens && walletTokens.map.SOL.amount.lamports.isZero()) {
-      console.info('Please deposit SOL. Wallet needs SOL to create a margin account.');
-      return;
-    }
-
-    if (walletTokens && walletTokens.map.SOL.amount.lamports.gten(feesBuffer)) {
+    try {
+      if (walletTokens && walletTokens.map.SOL.amount.lamports.gte(feesBuffer)) {
+        setDisabled(false);
+      } else {
+        setDisabled(true);
+      }
+    } catch (err) {
       setDisabled(false);
-    } else {
-      setDisabled(true);
+      console.warn(err);
     }
   }, [walletTokens]);
 
