@@ -90,7 +90,7 @@ impl<'info> OrderbookMut<'info> {
         fill: Pubkey,
         out: Pubkey,
         adapter: Option<Pubkey>,
-        extra_flags: CallbackFlags,
+        flags: CallbackFlags,
     ) -> Result<(CallbackInfo, SensibleOrderSummary)> {
         let OrderParams {
             max_bond_ticket_qty,
@@ -109,7 +109,7 @@ impl<'info> OrderbookMut<'info> {
             out,
             adapter.unwrap_or_default(),
             Clock::get()?.unix_timestamp,
-            params.callback_flags() | extra_flags,
+            flags,
             manager.nonce,
         );
         manager.nonce += 1;
@@ -139,7 +139,7 @@ impl<'info> OrderbookMut<'info> {
             callback_info,
             SensibleOrderSummary {
                 summary: order_summary,
-                params,
+                limit_price,
             },
         ))
     }
@@ -332,16 +332,6 @@ pub struct OrderParams {
     pub auto_stake: bool,
 }
 
-impl OrderParams {
-    /// Returns any callback flags that are implied by these parameters
-    /// These params do not comprehensively define all flags: there may be other reasons to set flags for an order
-    pub fn callback_flags(&self) -> CallbackFlags {
-        let mut flags = CallbackFlags::empty();
-        flags.set(CallbackFlags::AUTO_STAKE, self.auto_stake);
-        flags
-    }
-}
-
 /// Trait to retrieve the posted quote values from an `OrderSummary`
 pub trait WithQuoteQty {
     fn posted_quote(&self, price: u64) -> Result<u64>;
@@ -356,7 +346,7 @@ impl WithQuoteQty for OrderSummary {
 }
 
 pub struct SensibleOrderSummary {
-    params: OrderParams,
+    limit_price: u64,
     summary: OrderSummary,
 }
 
@@ -374,7 +364,7 @@ impl SensibleOrderSummary {
 
     // todo defensive rounding - depends on how this function is used
     pub fn quote_posted(&self) -> Result<u64> {
-        fp32_mul(self.summary.total_base_qty_posted, self.params.limit_price)
+        fp32_mul(self.summary.total_base_qty_posted, self.limit_price)
             .ok_or_else(|| error!(BondsError::FixedPointDivision))
     }
 
@@ -382,17 +372,14 @@ impl SensibleOrderSummary {
         self.summary.total_base_qty_posted
     }
 
-    /// wrong
     pub fn quote_filled(&self) -> Result<u64> {
         Ok(self.summary.total_quote_qty - self.quote_posted()?)
     }
 
-    /// wrong
     pub fn base_filled(&self) -> u64 {
         self.summary.total_base_qty - self.summary.total_base_qty_posted
     }
 
-    /// wrong
     /// the total of all quote posted and filled
     /// NOT the same as the "max quote"
     pub fn quote_combined(&self) -> Result<u64> {
@@ -400,7 +387,6 @@ impl SensibleOrderSummary {
         Ok(self.summary.total_quote_qty)
     }
 
-    /// wrong
     /// the total of all base posted and filled
     /// NOT the same as the "max base"
     pub fn base_combined(&self) -> u64 {

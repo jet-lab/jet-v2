@@ -198,8 +198,9 @@ impl Assets {
     pub fn reduce_order(&mut self, quote: u64) {
         if quote + 1 >= self.posted_quote {
             self.posted_quote = 0;
+        } else {
+            self.posted_quote -= quote + 1;
         }
-        self.posted_quote -= quote + 1;
     }
 
     /// make sure the order has already been accounted for before calling this method
@@ -210,8 +211,9 @@ impl Assets {
     pub fn redeem_staked_tickets(&mut self, tickets: u64) {
         if tickets >= self.tickets_staked {
             self.tickets_staked = 0;
+        } else {
+            self.tickets_staked -= tickets;
         }
-        self.tickets_staked -= tickets;
     }
 
     /// represents the amount of collateral in staked tickets and open orders.

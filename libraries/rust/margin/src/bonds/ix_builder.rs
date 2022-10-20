@@ -454,6 +454,37 @@ impl BondsIxBuilder {
         Ok(Instruction::new_with_bytes(jet_bonds::ID, &data, accounts))
     }
 
+    pub fn settle(
+        &self,
+        margin_account: Pubkey,
+        underlying_settlement: Option<Pubkey>,
+        ticket_settlement: Option<Pubkey>,
+    ) -> Result<Instruction> {
+        let user = self.margin_user(margin_account);
+        let accounts = jet_bonds::accounts::Settle {
+            bond_manager: self.manager,
+            bond_ticket_mint: self.bond_ticket_mint,
+            token_program: spl_token::ID,
+            margin_user: user.address,
+            claims: user.claims,
+            claims_mint: self.claims,
+            collateral: user.collateral,
+            collateral_mint: self.collateral,
+            underlying_token_vault: self.underlying_token_vault,
+            underlying_settlement: underlying_settlement.unwrap_or_else(|| {
+                get_associated_token_address(&margin_account, &self.underlying_mint)
+            }),
+            ticket_settlement: ticket_settlement.unwrap_or_else(|| {
+                get_associated_token_address(&margin_account, &self.bond_ticket_mint)
+            }),
+        };
+        Ok(Instruction::new_with_bytes(
+            jet_bonds::ID,
+            &jet_bonds::instruction::Settle {}.data(),
+            accounts.to_account_metas(None),
+        ))
+    }
+
     pub fn margin_redeem_ticket(
         &self,
         margin_account: Pubkey,

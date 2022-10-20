@@ -769,6 +769,16 @@ impl<P: Proxy> BondsUser<P> {
             .send_and_confirm_1tx(&[self.proxy.invoke_signed(cancel)], &[&self.owner])
             .await
     }
+
+    pub async fn settle(&self) -> Result<Signature> {
+        let cancel = self
+            .manager
+            .ix_builder
+            .settle(self.proxy.pubkey(), None, None)?;
+        self.client
+            .send_and_confirm_1tx(&[self.proxy.invoke_signed(cancel)], &[&self.owner])
+            .await
+    }
 }
 
 impl<P: Proxy> BondsUser<P> {
@@ -795,13 +805,38 @@ impl<P: Proxy> BondsUser<P> {
             .map(|a| a.amount)
     }
 
-    /// loads the current state of the user token wallet
+    /// loads the current state of the user ticket wallet
     pub async fn tickets(&self) -> Result<u64> {
         let key = get_associated_token_address(
             &self.proxy.pubkey(),
             &self.manager.ix_builder.ticket_mint(),
         );
+        self.manager
+            .load_anchor::<TokenAccount>(&key)
+            .await
+            .map(|a| a.amount)
+    }
 
+    /// loads the current state of the user collateral balance
+    pub async fn collateral(&self) -> Result<u64> {
+        let key = self
+            .manager
+            .ix_builder
+            .margin_user(self.proxy.pubkey())
+            .collateral;
+        self.manager
+            .load_anchor::<TokenAccount>(&key)
+            .await
+            .map(|a| a.amount)
+    }
+
+    /// loads the current state of the user claim balance
+    pub async fn claims(&self) -> Result<u64> {
+        let key = self
+            .manager
+            .ix_builder
+            .margin_user(self.proxy.pubkey())
+            .claims;
         self.manager
             .load_anchor::<TokenAccount>(&key)
             .await

@@ -93,6 +93,7 @@ pub fn handler(ctx: Context<MarginBorrowOrder>, params: OrderParams, seed: Vec<u
             ctx.accounts.system_program.to_account_info(),
             &Obligation::make_seeds(ctx.accounts.margin_user.key().as_ref(), seed.as_slice()),
         )?;
+        ctx.accounts.margin_user.assets.entitled_tokens += order_summary.quote_filled()?;
         *obligation = Obligation {
             sequence_number,
             borrower_account: ctx.accounts.margin_user.key(),

@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
 use anchor_lang::prelude::Pubkey;
-use anchor_spl::token::TokenAccount;
 use anyhow::Result;
 use hosted_tests::{
     bonds::{
@@ -16,11 +15,9 @@ use jet_margin_sdk::{
     margin_integrator::{NoProxy, Proxy},
     solana::transaction::InverseSendTransactionBuilder,
     tx_builder::bonds::BondsPositionRefresher,
+    util::data::Concat,
 };
-use jet_margin_sdk::{
-    margin_integrator::RefreshingProxy, solana::transaction::SendTransactionBuilder,
-    tx_builder::MarginTxBuilder,
-};
+use jet_margin_sdk::{margin_integrator::RefreshingProxy, tx_builder::MarginTxBuilder};
 use jet_proto_math::fixed_point::Fp32;
 
 use solana_sdk::signer::Signer;
@@ -39,15 +36,15 @@ async fn full_through_margin() -> Result<()> {
     _full_workflow::<MarginIxBuilder>(Arc::new(manager)).await
 }
 
-async fn create_bonds_margin_user_with_pool_positions(
+async fn create_bonds_margin_user(
     ctx: &MarginTestContext,
     manager: Arc<BondsTestManager>,
-    tokens: Vec<(Pubkey, u64, u64)>,
+    pool_positions: Vec<(Pubkey, u64, u64)>,
 ) -> BondsUser<RefreshingProxy<MarginIxBuilder>> {
     let client = manager.client.clone();
 
     // set up user
-    let user = setup_user(ctx, tokens).await.unwrap();
+    let user = setup_user(ctx, pool_positions).await.unwrap();
     let margin = user.user.tx.ix.clone();
     let wallet = user.user.signer;
 
@@ -92,36 +89,23 @@ async fn margin_borrow() -> Result<()> {
     let client = manager.client.clone();
     let ([collateral], _, pricer) = tokens(ctx).await.unwrap();
 
-    let user = create_bonds_margin_user_with_pool_positions(
-        ctx,
-        manager.clone(),
-        vec![(collateral, 0, u64::MAX / 2)],
-    )
-    .await;
+    let user =
+        create_bonds_margin_user(ctx, manager.clone(), vec![(collateral, 0, u64::MAX / 2)]).await;
 
-    // place a borrow order
-    let borrow_amount = OrderAmount::from_amount_rate(1_000, 2_000);
-    let borrow_params = OrderParams {
-        max_bond_ticket_qty: borrow_amount.base,
-        max_underlying_token_qty: borrow_amount.quote,
-        limit_price: borrow_amount.price,
-        match_limit: 1,
-        post_only: false,
-        post_allowed: true,
-        auto_stake: true,
-    };
-    let mut ixs = vec![
+    vec![
         pricer.set_oracle_price_tx(&collateral, 1.0).await.unwrap(),
         pricer
             .set_oracle_price_tx(&manager.ix_builder.token_mint(), 1.0)
-            .await
-            .unwrap(),
-    ];
-    ixs.extend(user.margin_borrow_order(borrow_params).await.unwrap());
-    client
-        .send_and_confirm_condensed_in_order(ixs)
-        .await
-        .unwrap();
+            .await?,
+    ]
+    .cat(user.margin_borrow_order(params(1_000, 2_000)).await?)
+    .send_and_confirm_condensed_in_order(&client)
+    .await?;
+
+    assert_eq!(STARTING_TOKENS, user.tokens().await?);
+    assert_eq!(0, user.tickets().await?);
+    assert_eq!(999, user.collateral().await?);
+    assert_eq!(1_200, user.claims().await?);
 
     Ok(())
 }
@@ -133,36 +117,134 @@ async fn margin_lend() -> Result<()> {
     let manager = Arc::new(BondsTestManager::full(ctx.rpc.clone()).await.unwrap());
     let client = manager.client.clone();
 
-    let user = create_bonds_margin_user_with_pool_positions(ctx, manager.clone(), vec![]).await;
+    let user = create_bonds_margin_user(ctx, manager.clone(), vec![]).await;
 
-    // place a borrow order
-    let borrow_amount = OrderAmount::from_amount_rate(1_000, 2_000);
-    let borrow_params = OrderParams {
-        max_bond_ticket_qty: borrow_amount.base,
-        max_underlying_token_qty: borrow_amount.quote,
-        limit_price: borrow_amount.price,
-        match_limit: 1,
-        post_only: false,
-        post_allowed: true,
-        auto_stake: false,
-    };
-    user.margin_lend_order(borrow_params, &[])
-        .await
-        .unwrap()
+    user.margin_lend_order(params(1_000, 2_000), &[])
+        .await?
         .send_and_confirm_condensed_in_order(&client)
-        .await
-        .unwrap();
+        .await?;
 
-    let collateral = manager
-        .ix_builder
-        .margin_user(user.proxy.pubkey())
-        .collateral;
-    let collateral_balance = manager
-        .load_anchor::<TokenAccount>(&collateral)
-        .await
-        .map(|a| a.amount)
-        .unwrap();
-    assert_eq!(999, collateral_balance);
+    assert_eq!(STARTING_TOKENS - 1_000, user.tokens().await?);
+    assert_eq!(0, user.tickets().await?);
+    assert_eq!(999, user.collateral().await?);
+    assert_eq!(0, user.claims().await?);
+
+    Ok(())
+}
+
+#[tokio::test(flavor = "multi_thread")]
+#[cfg_attr(not(feature = "localnet"), serial_test::serial)]
+async fn margin_borrow_then_margin_lend() -> Result<()> {
+    let ctx = test_context().await;
+    let manager = Arc::new(BondsTestManager::full(ctx.rpc.clone()).await.unwrap());
+    let client = manager.client.clone();
+    let ([collateral], _, pricer) = tokens(ctx).await.unwrap();
+
+    let borrower =
+        create_bonds_margin_user(ctx, manager.clone(), vec![(collateral, 0, u64::MAX / 2)]).await;
+    let lender = create_bonds_margin_user(ctx, manager.clone(), vec![]).await;
+
+    vec![
+        pricer.set_oracle_price_tx(&collateral, 1.0).await.unwrap(),
+        pricer
+            .set_oracle_price_tx(&manager.ix_builder.token_mint(), 1.0)
+            .await?,
+    ]
+    .cat(borrower.margin_borrow_order(params(1_000, 2_000)).await?)
+    .send_and_confirm_condensed_in_order(&client)
+    .await?;
+
+    assert_eq!(STARTING_TOKENS, borrower.tokens().await?);
+    assert_eq!(0, borrower.tickets().await?);
+    assert_eq!(999, borrower.collateral().await?);
+    assert_eq!(1_200, borrower.claims().await?);
+
+    lender
+        .margin_lend_order(params(1_000, 2_000), &[])
+        .await?
+        .send_and_confirm_condensed_in_order(&client)
+        .await?;
+
+    assert_eq!(STARTING_TOKENS - 1_000, lender.tokens().await?);
+    assert_eq!(0, lender.tickets().await?);
+    assert_eq!(1_200, lender.collateral().await?);
+    assert_eq!(0, lender.claims().await?);
+
+    #[cfg(not(feature = "localnet"))]
+    {
+        manager.consume_events().await?;
+        lender.settle().await?;
+        borrower.settle().await?;
+
+        assert_eq!(STARTING_TOKENS + 1_000, borrower.tokens().await?);
+        assert_eq!(0, borrower.tickets().await?);
+        assert_eq!(0, borrower.collateral().await?);
+        assert_eq!(1_200, borrower.claims().await?);
+
+        assert_eq!(STARTING_TOKENS - 1_000, lender.tokens().await?);
+        assert_eq!(0, lender.tickets().await?);
+        assert_eq!(1_200, lender.collateral().await?);
+        assert_eq!(0, lender.claims().await?);
+    }
+
+    Ok(())
+}
+
+#[tokio::test(flavor = "multi_thread")]
+#[cfg_attr(not(feature = "localnet"), serial_test::serial)]
+async fn margin_lend_then_margin_borrow() -> Result<()> {
+    let ctx = test_context().await;
+    let manager = Arc::new(BondsTestManager::full(ctx.rpc.clone()).await.unwrap());
+    let client = manager.client.clone();
+    let ([collateral], _, pricer) = tokens(ctx).await.unwrap();
+
+    let borrower =
+        create_bonds_margin_user(ctx, manager.clone(), vec![(collateral, 0, u64::MAX / 2)]).await;
+    let lender = create_bonds_margin_user(ctx, manager.clone(), vec![]).await;
+
+    lender
+        .margin_lend_order(params(1_000, 2_000), &[])
+        .await?
+        .send_and_confirm_condensed_in_order(&client)
+        .await?;
+
+    assert_eq!(STARTING_TOKENS - 1_000, lender.tokens().await?);
+    assert_eq!(0, lender.tickets().await?);
+    assert_eq!(999, lender.collateral().await?);
+    assert_eq!(0, lender.claims().await?);
+
+    vec![
+        pricer.set_oracle_price_tx(&collateral, 1.0).await.unwrap(),
+        pricer
+            .set_oracle_price_tx(&manager.ix_builder.token_mint(), 1.0)
+            .await?,
+    ]
+    .cat(borrower.margin_borrow_order(params(1_000, 2_000)).await?)
+    .send_and_confirm_condensed_in_order(&client)
+    .await?;
+
+    assert_eq!(STARTING_TOKENS, borrower.tokens().await?); // todo a program change could safely make this STARTING_TOKENS + 1_000
+    assert_eq!(0, borrower.tickets().await?);
+    assert_eq!(0, borrower.collateral().await?);
+    assert_eq!(1_200, borrower.claims().await?);
+
+    #[cfg(not(feature = "localnet"))]
+    {
+        manager.consume_events().await?;
+        lender.settle().await?;
+        borrower.settle().await?;
+
+        // todo improve the rounding situation to make this 1_000
+        assert_eq!(STARTING_TOKENS + 999, borrower.tokens().await?);
+        assert_eq!(0, borrower.tickets().await?);
+        assert_eq!(0, borrower.collateral().await?);
+        assert_eq!(1_200, borrower.claims().await?);
+
+        assert_eq!(STARTING_TOKENS - 1_000, lender.tokens().await?);
+        assert_eq!(0, lender.tickets().await?);
+        assert_eq!(1_200, lender.collateral().await?);
+        assert_eq!(0, lender.claims().await?);
+    }
 
     Ok(())
 }
@@ -174,38 +256,18 @@ async fn margin_sell_tickets() -> Result<()> {
     let manager = Arc::new(BondsTestManager::full(ctx.rpc.clone()).await.unwrap());
     let client = manager.client.clone();
 
-    let user = create_bonds_margin_user_with_pool_positions(ctx, manager.clone(), vec![]).await;
-
+    let user = create_bonds_margin_user(ctx, manager.clone(), vec![]).await;
     user.convert_tokens(10_000).await.unwrap();
 
-    // place a borrow order
-    let borrow_amount = OrderAmount::from_amount_rate(1_000, 2_000);
-    let borrow_params = OrderParams {
-        max_bond_ticket_qty: borrow_amount.base,
-        max_underlying_token_qty: borrow_amount.quote,
-        limit_price: borrow_amount.price,
-        match_limit: 1,
-        post_only: false,
-        post_allowed: true,
-        auto_stake: true,
-    };
-    user.margin_sell_tickets_order(borrow_params)
-        .await
-        .unwrap()
+    user.margin_sell_tickets_order(params(1_000, 2_000))
+        .await?
         .send_and_confirm_condensed_in_order(&client)
-        .await
-        .unwrap();
+        .await?;
 
-    let collateral = manager
-        .ix_builder
-        .margin_user(user.proxy.pubkey())
-        .collateral;
-    let collateral_balance = manager
-        .load_anchor::<TokenAccount>(&collateral)
-        .await
-        .map(|a| a.amount)
-        .unwrap();
-    assert_eq!(999, collateral_balance);
+    assert_eq!(STARTING_TOKENS - 10_000, user.tokens().await?);
+    assert_eq!(8_800, user.tickets().await?);
+    assert_eq!(999, user.collateral().await?);
+    assert_eq!(0, user.claims().await?);
 
     Ok(())
 }
@@ -343,4 +405,17 @@ async fn _full_workflow<P: Proxy + GenerateProxy>(manager: Arc<BondsTestManager>
     // place and match a bunch of orders
 
     Ok(())
+}
+
+fn params(underlying: u64, rate_bps: u64) -> OrderParams {
+    let borrow_amount = OrderAmount::from_amount_rate(underlying, rate_bps);
+    OrderParams {
+        max_bond_ticket_qty: borrow_amount.base,
+        max_underlying_token_qty: borrow_amount.quote,
+        limit_price: borrow_amount.price,
+        match_limit: 1,
+        post_only: false,
+        post_allowed: true,
+        auto_stake: true,
+    }
 }

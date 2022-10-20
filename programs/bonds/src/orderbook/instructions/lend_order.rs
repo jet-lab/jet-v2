@@ -130,7 +130,11 @@ pub fn handler(ctx: Context<LendOrder>, params: OrderParams, seed: Vec<u8>) -> R
             .iter()
             .maybe_next_adapter()?
             .map(|a| a.key()),
-        CallbackFlags::empty(),
+        if params.auto_stake {
+            CallbackFlags::AUTO_STAKE
+        } else {
+            CallbackFlags::empty()
+        },
     )?;
     ctx.accounts.lend(
         ctx.accounts.authority.key(),

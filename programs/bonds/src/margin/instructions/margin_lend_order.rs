@@ -49,7 +49,12 @@ pub fn handler(ctx: Context<MarginLendOrder>, params: OrderParams, seed: Vec<u8>
             .iter()
             .maybe_next_adapter()?
             .map(|a| a.key()),
-        CallbackFlags::MARGIN,
+        CallbackFlags::MARGIN
+            | if params.auto_stake {
+                CallbackFlags::AUTO_STAKE
+            } else {
+                CallbackFlags::empty()
+            },
     )?;
     let staked = ctx.accounts.inner.lend(
         ctx.accounts.margin_user.key(),
@@ -58,6 +63,7 @@ pub fn handler(ctx: Context<MarginLendOrder>, params: OrderParams, seed: Vec<u8>
         &order_summary,
         &ctx.accounts.inner.orderbook_mut.bond_manager,
     )?;
+    ctx.accounts.margin_user.assets.stake_tickets(staked)?;
     mint_to!(
         ctx,
         collateral_mint,

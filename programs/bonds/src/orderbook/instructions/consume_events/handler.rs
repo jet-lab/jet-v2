@@ -104,7 +104,7 @@ fn handle_fill<'info>(
         Side::Bid => {
             map!(margin_user.assets.reduce_order(quote_size));
             if maker_info.flags.contains(CallbackFlags::AUTO_STAKE) {
-                map!(margin_user.assets.stake_tickets(quote_size)?);
+                map!(margin_user.assets.stake_tickets(base_size)?);
                 let principal = quote_size;
                 let interest = base_size.safe_sub(principal)?;
                 *loan.unwrap().auto_stake()? = SplitTicket {
@@ -164,7 +164,6 @@ fn handle_out<'info>(
         user_adapter_account,
     } = accounts;
     let OutInfo { event, info } = out;
-
     // push to adapter if flagged
     if let Some(mut adapter) = user_adapter_account {
         if adapter.push_event(*event, Some(info), None).is_err() {
@@ -173,7 +172,6 @@ fn handle_out<'info>(
             msg!("user adapter failed to push event");
         }
     }
-
     let OutEvent {
         side,
         order_id,
@@ -181,19 +179,37 @@ fn handle_out<'info>(
         ..
     } = event;
 
+    let margin_user = info
+        .flags
+        .contains(CallbackFlags::MARGIN)
+        .then(|| user.margin_user())
+        .transpose()?;
+
     let price = (order_id >> 64) as u64;
     // todo defensive rounding
     let quote_size = fp32_mul(*base_size, price).ok_or(BondsError::ArithmeticOverflow)?;
     match Side::from_u8(*side).unwrap() {
-        Side::Bid => withdraw!(
-            ctx,
-            underlying_token_vault,
-            user.as_token_account(),
-            quote_size
-        ),
+        Side::Bid => {
+            if let Some(mut margin_user) = margin_user {
+                margin_user.assets.entitled_tokens += quote_size;
+                Ok(())
+            } else {
+                withdraw!(
+                    ctx,
+                    underlying_token_vault,
+                    user.as_token_account(),
+                    quote_size
+                )
+            }
+        }
         Side::Ask => {
-            if info.flags.contains(CallbackFlags::NEW_DEBT) {
-                user.margin_user()?.debt.process_out(*base_size)
+            if let Some(mut margin_user) = margin_user {
+                if info.flags.contains(CallbackFlags::NEW_DEBT) {
+                    margin_user.debt.process_out(*base_size)
+                } else {
+                    margin_user.assets.entitled_tickets += base_size;
+                    Ok(())
+                }
             } else {
                 mint_to!(ctx, bond_ticket_mint, user.as_token_account(), *base_size)
             }
