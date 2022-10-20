@@ -107,6 +107,15 @@ async fn margin_borrow() -> Result<()> {
     assert_eq!(999, user.collateral().await?);
     assert_eq!(1_200, user.claims().await?);
 
+    let borrower_account = user.load_margin_user().await.unwrap();
+    let posted_order = manager.load_orderbook().await?.asks()?[0];
+    assert_eq!(
+        borrower_account.debt.total(),
+        Fp32::upcast_fp32(posted_order.price())
+            .decimal_u64_mul(posted_order.base_quantity)
+            .unwrap()
+    );
+
     Ok(())
 }
 
@@ -268,15 +277,6 @@ async fn margin_sell_tickets() -> Result<()> {
     assert_eq!(8_800, user.tickets().await?);
     assert_eq!(999, user.collateral().await?);
     assert_eq!(0, user.claims().await?);
-
-    let borrower_account = user.load_margin_user().await.unwrap();
-    let posted_order = manager.load_orderbook().await?.asks()?[0];
-    assert_eq!(
-        borrower_account.debt.total(),
-        Fp32::upcast_fp32(posted_order.price())
-            .decimal_u64_mul(posted_order.base_quantity)
-            .unwrap()
-    );
 
     Ok(())
 }
@@ -538,3 +538,46 @@ fn params(underlying: u64, rate_bps: u64) -> OrderParams {
         auto_stake: true,
     }
 }
+
+
+
+
+// fn borrow_params(amount: u64, rate_bps: u64) -> OrderParams {
+//     let borrow_amount = OrderAmount::from_amount_rate(underlying, rate_bps);
+//     OrderParams {
+//         max_bond_ticket_qty: borrow_amount.base,
+//         max_underlying_token_qty: borrow_amount.quote,
+//         limit_price: borrow_amount.price,
+//         match_limit: 1,
+//         post_only: false,
+//         post_allowed: true,
+//         auto_stake: true,
+//     }
+// }
+
+
+// fn lend_params(amount: u64, rate_bps: u64) -> OrderParams {
+//     let borrow_amount = OrderAmount::from_amount_rate(underlying, rate_bps);
+//     OrderParams {
+//         max_bond_ticket_qty: borrow_amount.base,
+//         max_underlying_token_qty: borrow_amount.quote,
+//         limit_price: borrow_amount.price,
+//         match_limit: 1,
+//         post_only: false,
+//         post_allowed: true,
+//         auto_stake: true,
+//     }
+// }
+
+// fn sell_tickets_params(amount: u64, rate_bps: u64) -> OrderParams {
+//     let borrow_amount = OrderAmount::from_amount_rate(underlying, rate_bps);
+//     OrderParams {
+//         max_bond_ticket_qty: borrow_amount.base,
+//         max_underlying_token_qty: borrow_amount.quote,
+//         limit_price: borrow_amount.price,
+//         match_limit: 1,
+//         post_only: false,
+//         post_allowed: true,
+//         auto_stake: true,
+//     }
+// }
