@@ -16,7 +16,7 @@ use jet_bonds::{
     control::state::BondManager,
     margin::state::MarginUser,
     orderbook::state::{event_queue_len, orderbook_slab_len, CallbackInfo, OrderParams},
-    tickets::state::ClaimTicket,
+    tickets::state::{ClaimTicket, SplitTicket},
 };
 
 use jet_margin_sdk::{
@@ -715,8 +715,18 @@ impl<P: Proxy> BondsUser<P> {
             .ix_builder
             .claim_ticket_key(&self.proxy.pubkey(), seed)
     }
+    pub fn split_ticket_key(&self, seed: Vec<u8>) -> Pubkey {
+        self.manager
+            .ix_builder
+            .split_ticket_key(&self.proxy.pubkey(), seed)
+    }
     pub async fn load_claim_ticket(&self, seed: Vec<u8>) -> Result<ClaimTicket> {
         let key = self.claim_ticket_key(seed);
+
+        self.manager.load_anchor(&key).await
+    }
+    pub async fn load_split_ticket(&self, seed: Vec<u8>) -> Result<SplitTicket> {
+        let key = self.split_ticket_key(seed);
 
         self.manager.load_anchor(&key).await
     }

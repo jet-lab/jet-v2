@@ -73,10 +73,12 @@ pub fn handler(ctx: Context<MarginBorrowOrder>, params: OrderParams, seed: Vec<u
 
     let debt = &mut ctx.accounts.borrower_account.debt;
     debt.post_borrow_order(order_summary.total_base_qty_posted)?;
-    if order_summary.total_base_qty > 0 {
+
+    let filled_base_qty = order_summary.total_base_qty - order_summary.total_base_qty_posted;
+    if filled_base_qty > 0 {
         let maturation_timestamp = bond_manager.load()?.duration + Clock::get()?.unix_timestamp;
-        let sequence_number = debt
-            .new_obligation_without_posting(order_summary.total_base_qty, maturation_timestamp)?;
+        let sequence_number =
+            debt.new_obligation_without_posting(filled_base_qty, maturation_timestamp)?;
         let mut obligation = serialization::init::<Obligation>(
             ctx.accounts.obligation.to_account_info(),
             ctx.accounts.payer.to_account_info(),
@@ -92,12 +94,17 @@ pub fn handler(ctx: Context<MarginBorrowOrder>, params: OrderParams, seed: Vec<u
             bond_manager: bond_manager.key(),
             order_tag: callback_info.order_tag,
             maturation_timestamp,
-            balance: order_summary.total_base_qty,
+            balance: filled_base_qty,
             flags: ObligationFlags::default(),
         };
     }
-    let total_debt = order_summary.total_base_qty_posted + order_summary.total_base_qty;
-    mint_to!(ctx, claims_mint, claims, total_debt, orderbook_mut)?;
+    mint_to!(
+        ctx,
+        claims_mint,
+        claims,
+        order_summary.total_base_qty,
+        orderbook_mut
+    )?;
 
     emit!(MarginBorrow {
         bond_manager: bond_manager.key(),
