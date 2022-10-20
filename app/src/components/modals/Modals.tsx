@@ -18,7 +18,6 @@ import { TransferModal } from './actions/TransferModal';
 import { NewAccountModal } from './NewAccountModal';
 import { SettingsModal } from './SettingsModal';
 import { NotificationsModal } from './NotificationsModal';
-import { LiquidationModal } from './LiquidationModal';
 
 // Wrapper component to include all app modals
 export function Modals(): JSX.Element {
@@ -30,7 +29,6 @@ export function Modals(): JSX.Element {
   // const editAccountModalOpen = useRecoilValue(EditAccountModalState);
   const settingsModalOpen = useRecoilValue(SettingsModalState);
   const notificationsModalOpen = useRecoilValue(NotificationsModalState);
-  const liquidationModalOpen = currentAccount?.isBeingLiquidated;
 
   // Disable scroll when these modals are open
   useEffect(() => {
@@ -41,8 +39,7 @@ export function Modals(): JSX.Element {
       newAccountModalOpen ||
       // editAccountModalOpen ||
       settingsModalOpen ||
-      notificationsModalOpen ||
-      liquidationModalOpen
+      notificationsModalOpen
     ) {
       document.body.style.overflowY = 'hidden';
     } else {
@@ -55,8 +52,7 @@ export function Modals(): JSX.Element {
     newAccountModalOpen,
     // editAccountModalOpen,
     settingsModalOpen,
-    notificationsModalOpen,
-    liquidationModalOpen
+    notificationsModalOpen
   ]);
 
   return (
@@ -71,7 +67,6 @@ export function Modals(): JSX.Element {
       {/* <EditAccountModal /> */}
       <SettingsModal />
       <NotificationsModal />
-      <LiquidationModal />
     </>
   );
 }
