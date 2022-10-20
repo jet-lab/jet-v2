@@ -108,7 +108,12 @@ async fn margin() -> Result<()> {
 
     let borrower_account = user.load_margin_user().await.unwrap();
     let posted_order = manager.load_orderbook().await?.asks()?[0];
-    assert_eq!(borrower_account.debt.total(), posted_order.base_quantity);
+    assert_eq!(
+        borrower_account.debt.total(),
+        Fp32::upcast_fp32(posted_order.price())
+            .decimal_u64_mul(posted_order.base_quantity)
+            .unwrap()
+    );
 
     Ok(())
 }

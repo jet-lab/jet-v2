@@ -326,16 +326,25 @@ impl OrderParams {
     }
 }
 
-/// Trait to retrieve the posted quote values from an `OrderSummary`
-pub trait WithQuoteQty {
-    fn posted_quote(&self, price: u64) -> Result<u64>;
+/// Trait to calculate quanities implied by an `OrderSummary` and limit price
+pub trait OrderQuantities {
+    /// How much base value was filled by matching orders
+    fn base_filled(&self) -> u64;
+    /// How much quote value was filled by matching orders
+    fn quote_filled(&self, limit_price: u64) -> u64;
+    /// How much quote value was posted to the order book
+    fn quote_posted(&self, limit_price: u64) -> u64;
 }
 
-impl WithQuoteQty for OrderSummary {
-    fn posted_quote(&self, price: u64) -> Result<u64> {
-        // todo defensive rounding - depends on how this function is used
-        fp32_mul(self.total_base_qty_posted, price)
-            .ok_or_else(|| error!(BondsError::FixedPointDivision))
+impl OrderQuantities for OrderSummary {
+    fn base_filled(&self) -> u64 {
+        self.total_base_qty - self.total_base_qty_posted
+    }
+    fn quote_filled(&self, limit_price: u64) -> u64 {
+        self.total_quote_qty - self.quote_posted(limit_price)
+    }
+    fn quote_posted(&self, limit_price: u64) -> u64 {
+        fp32_mul(self.total_base_qty_posted, limit_price).unwrap_or(u64::MAX)
     }
 }
 
