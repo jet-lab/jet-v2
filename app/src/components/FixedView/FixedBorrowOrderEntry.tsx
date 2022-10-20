@@ -46,11 +46,11 @@ export const FixedBorrowOrderEntry = () => {
   const offerLoan = async () => {
     let ixns: TransactionInstruction[] = [];
 
-    // const tokenMint = marketAndConfig.market.addresses.underlyingTokenMint;
-    // const ticketMint = marketAndConfig.market.addresses.bondTicketMint;
+    const tokenMint = marketAndConfig.market.addresses.underlyingTokenMint;
+    const ticketMint = marketAndConfig.market.addresses.bondTicketMint;
 
-    // await AssociatedToken.withCreate(ixns, provider, marginAccount.address, tokenMint);
-    // await AssociatedToken.withCreate(ixns, provider, marginAccount.address, ticketMint);
+    await AssociatedToken.withCreate(ixns, provider, marginAccount.address, tokenMint);
+    await AssociatedToken.withCreate(ixns, provider, marginAccount.address, ticketMint);
 
     // AssociatedToken.withTransfer(ixns, tokenMint, wallet.publicKey, marginAccount.address, amount);
 
