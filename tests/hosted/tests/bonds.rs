@@ -333,66 +333,9 @@ async fn _full_workflow<P: Proxy + GenerateProxy>(manager: Arc<BondsTestManager>
         STARTING_TOKENS - summary_b.total_quote_qty - summary_c.total_quote_qty
     );
 
-    // let lend_order = manager.load_orderbook().await?.bids()?[0];
-
-    // assert_eq!(lend_order.price(), lend_amount.price);
-    // assert_eq!(lend_order.base_quantity, lend_amount.base);
-    // // quote amounts of the post are a result of an fp32 mul, so we cannot directly compare
-    // assert_eq!(
-    //     Fp32::upcast_fp32(lend_order.price())
-    //         .decimal_u64_mul(lend_order.base_quantity)
-    //         .unwrap(),
-    //     Fp32::upcast_fp32(lend_amount.price)
-    //         .decimal_u64_mul(lend_amount.base)
-    //         .unwrap()
-    // );
-
-    // manager.pause_orders().await?;
-
-    // // // lend 100 usdc at 15% interest
-    // let lend_amount = OrderAmount::from_amount_rate(1_000, 1_500);
-    // let lend_params = OrderParams {
-    //     max_bond_ticket_qty: lend_amount.base,
-    //     max_underlying_token_qty: lend_amount.quote,
-    //     limit_price: lend_amount.price,
-    //     match_limit: 1,
-    //     post_only: false,
-    //     post_allowed: true,
-    //     auto_stake: true,
-    // };
-    // bob.lend_order(lend_params, vec![]).await?;
-
-    // let mut eq = manager.load_event_queue().await?;
-    // assert!(eq.inner().iter().next().is_none());
-    // assert!(manager.consume_events().await.is_err());
-
-    // assert!(manager.load_orderbook_market_state().await?.pause_matching == true as u8);
-    // manager.resume_orders().await?;
-    // assert!(manager.load_orderbook_market_state().await?.pause_matching == false as u8);
-
-    // let remaining_order = manager.load_orderbook().await?.asks()?[0];
-
-    // assert_eq!(
-    //     remaining_order.base_quantity,
-    //     borrow_order.base_quantity - lend_order.base_quantity
-    // );
-    // assert_eq!(remaining_order.price(), borrow_order.price());
-
-    // alice.cancel_order(remaining_order.order_id()).await?;
-
-    // let mut eq = manager.load_event_queue().await?;
-    // assert!(eq.inner().iter().next().is_some());
-
     // only works on simulation right now
     // Access violation in stack frame 5 at address 0x200005ff8 of size 8 by instruction #22627
     #[cfg(not(feature = "localnet"))]
     manager.consume_events().await?;
-
-    // assert SplitTicket
-
-    // make an adapter
-
-    // place and match a bunch of orders
-
     Ok(())
 }
