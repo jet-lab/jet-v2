@@ -531,14 +531,19 @@ export class AssociatedToken {
 
   /**
    * Transfer tokens from one owner to another
-   * @param instructions 
-   * @param mint 
-   * @param sourceOwner 
-   * @param destinationOwner 
-   * @param amount 
+   * @param instructions
+   * @param mint
+   * @param sourceOwner
+   * @param destinationOwner
+   * @param amount
    */
   static withTransfer(
-    instructions: TransactionInstruction[], mint: Address, sourceOwner: Address, destinationOwner: Address, amount: BN) {
+    instructions: TransactionInstruction[],
+    mint: Address,
+    sourceOwner: Address,
+    destinationOwner: Address,
+    amount: BN
+  ) {
     const authority = translateAddress(sourceOwner)
     const source = this.derive(mint, sourceOwner)
     const destination = this.derive(mint, destinationOwner)
