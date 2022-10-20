@@ -18,6 +18,7 @@
 use solana_sdk::pubkey::Pubkey;
 
 use crate::{
+    bonds::BondsIxBuilder,
     ix_builder::{
         derive_airspace, AirspaceIxBuilder, ControlIxBuilder, MarginConfigIxBuilder,
         MarginPoolConfiguration,
@@ -165,6 +166,45 @@ impl AirspaceAdmin {
             margin_config_ix.configure_liquidator(liquidator, is_liquidator),
         ]
         .into()
+    }
+
+    /// Register a bond market for use with margin accounts
+    pub fn register_bond_market(
+        &self,
+        token_mint: Pubkey,
+        seed: [u8; 32],
+        collateral_weight: u16,
+        max_leverage: u16,
+    ) -> TransactionBuilder {
+        let margin_config_ix = MarginConfigIxBuilder::new(self.airspace, self.payer);
+        let bond_manager = BondsIxBuilder::bond_manager_key(&self.airspace, &token_mint, seed);
+        let claims_mint = BondsIxBuilder::claims_mint(&bond_manager);
+        let collateral_mint = BondsIxBuilder::collateral_mint(&bond_manager);
+
+        let claims_update = TokenConfigUpdate {
+            admin: TokenAdmin::Adapter(jet_bonds::ID),
+            underlying_mint: token_mint,
+            token_kind: TokenKind::Claim,
+            value_modifier: collateral_weight,
+            max_staleness: 0,
+        };
+
+        let collateral_update = TokenConfigUpdate {
+            admin: TokenAdmin::Adapter(jet_bonds::ID),
+            underlying_mint: token_mint,
+            token_kind: TokenKind::Claim,
+            value_modifier: max_leverage,
+            max_staleness: 0,
+        };
+
+        let claims_update_ix = margin_config_ix.configure_token(claims_mint, Some(claims_update));
+        let collateral_update_ix =
+            margin_config_ix.configure_token(collateral_mint, Some(collateral_update));
+
+        TransactionBuilder {
+            instructions: vec![claims_update_ix, collateral_update_ix],
+            signers: vec![],
+        }
     }
 }
 
