@@ -40,6 +40,25 @@ export const AllFixedMarketsOrderBooksAtom = selector<ExtendedOrderBook[]>({
     return await Promise.all(
       list.map(async market => {
         const raw = await market.market.fetchOrderbook();
+
+        console.log(
+          'BORROWS',
+          raw.asks.map(order => ({
+            base_size: Number(order.base_size),
+            limit_price: Number(order.limit_price),
+            quote_size: Number(order.quote_size)
+          }))
+        );
+
+        console.log(
+          'LENDS',
+          raw.bids.map(order => ({
+            base_size: Number(order.base_size),
+            limit_price: Number(order.limit_price),
+            quote_size: Number(order.quote_size)
+          }))
+        );
+
         return {
           name: market.name,
           asks: raw.asks.sort((a, b) => Number(a.limit_price) - Number(b.limit_price)),
