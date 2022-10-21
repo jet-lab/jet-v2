@@ -26,13 +26,13 @@
     "node": ">=11"
   },
   "scripts": {
-    "clean": "rimraf dist/",
     "build": "tsc & tsc -p tsconfig-cjs.json; wait",
+    "clean": "rm -rf ./dist",
     "docs": "typedoc --excludePrivate --includeVersion ./src/index.ts",
     "fmt": "prettier src/ tests/ types/ --check",
     "fmt:fix": "prettier src/ tests/ types/ --write",
-    "watch": "tsc --watch --preserveWatchOutput --pretty & tsc -p tsconfig-cjs.json --watch --preserveWatchOutput --pretty",
-    "prepublishOnly": "yarn build"
+    "prepublishOnly": "yarn build",
+    "watch": "tsc --watch --preserveWatchOutput --pretty & tsc -p tsconfig-cjs.json --watch --preserveWatchOutput --pretty"
   },
   "dependencies": {
     "@project-serum/anchor": "0.24.2",
@@ -48,7 +48,6 @@
   "devDependencies": {
     "@tsconfig/recommended": "^1.0.1",
     "@types/bn.js": "^5.1.0",
-    "rimraf": "^3.0.2",
     "typedoc": "^0.23.14",
     "typescript": "4.6.4"
   }
