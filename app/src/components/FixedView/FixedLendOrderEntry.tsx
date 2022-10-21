@@ -12,6 +12,8 @@ import { Transaction, TransactionInstruction } from '@solana/web3.js';
 import { MainConfig } from '../../state/config/marginConfig';
 import { useProvider } from '../../utils/jet/provider';
 import { AssociatedToken } from '@jet-lab/margin';
+import { CurrentPool, Pools } from '../../state/pools/pools';
+import { TOKEN_PROGRAM_ID } from '@solana/spl-token';
 
 function randomIntFromInterval(min: number, max: number) {
   return Math.floor(Math.random() * (max - min + 1) + min);
@@ -23,6 +25,8 @@ export const FixedLendOrderEntry = () => {
   const marketAndConfig = useRecoilValue(FixedMarketAtom);
   const marginAccount = useRecoilValue(CurrentAccount);
   const { provider } = useProvider();
+  const pools = useRecoilValue(Pools);
+  const currentPool = useRecoilValue(CurrentPool);
   const wallet = useWallet();
   const config = useRecoilValue(MainConfig);
   const decimals = useMemo(() => {
@@ -61,6 +65,30 @@ export const FixedLendOrderEntry = () => {
         randomIntFromInterval(0, 127)
       ])
     );
+
+    await currentPool.withMarginRefreshAllPositionPrices({
+      instructions: ixns,
+      pools: pools.tokenPools,
+      marginAccount
+    });
+
+    const borrowerAccount = await marketAndConfig.market.deriveMarginUserAddress(marginAccount);
+    const refreshIx = await marketAndConfig.market.program.methods
+      .refreshPosition(true)
+      .accounts({
+        borrowerAccount,
+        marginAccount: marginAccount.address,
+        claimsMint: marketAndConfig.market.addresses.claimsMint,
+        bondManager: marketAndConfig.market.addresses.bondManager,
+        underlyingOracle: marketAndConfig.market.addresses.underlyingOracle,
+        tokenProgram: TOKEN_PROGRAM_ID
+      })
+      .instruction();
+
+    await marginAccount.withAdapterInvoke({
+      instructions: ixns,
+      adapterInstruction: refreshIx
+    });
     await marginAccount.withAdapterInvoke({
       instructions: ixns,
       adapterInstruction: loanOffer

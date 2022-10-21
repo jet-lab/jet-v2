@@ -7,7 +7,7 @@ import { Dictionary } from '../../state/settings/localization/localization';
 import { FixedBorrowRowOrder, FixedLendRowOrder } from '../../state/views/fixed-term';
 import { AllFixedMarketsOrderBooksAtom, ExtendedOrderBook } from '../../state/fixed/fixed-term-market-sync';
 import { useCurrencyFormatting } from '../../utils/currency';
-import { Order, Orderbook } from '@jet-lab/jet-bonds-client';
+import { Order } from '@jet-lab/jet-bonds-client';
 
 interface Formatter {
   currencyFormatter: (
