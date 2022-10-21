@@ -16,6 +16,8 @@ pub struct MarginBorrow {
     pub margin_account: Pubkey,
     pub borrower_account: Pubkey,
     pub order_summary: OrderSummary,
+    pub post_only: bool,
+    pub post_allowed: bool,
 }
 
 #[event]

@@ -144,6 +144,9 @@ pub fn handler(ctx: Context<LendOrder>, params: OrderParams, seed: Vec<u8>) -> R
         bond_market: ctx.accounts.orderbook_mut.bond_manager.key(),
         lender: ctx.accounts.authority.key(),
         order_summary: order_summary.summary(),
+        auto_stake: params.auto_stake,
+        post_only: params.post_only,
+        post_allowed: params.post_allowed,
     });
 
     Ok(())

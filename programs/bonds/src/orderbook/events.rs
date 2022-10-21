@@ -13,6 +13,9 @@ pub struct LendOrder {
     pub bond_market: Pubkey,
     pub lender: Pubkey,
     pub order_summary: OrderSummary,
+    pub auto_stake: bool,
+    pub post_only: bool,
+    pub post_allowed: bool,
 }
 
 #[event]

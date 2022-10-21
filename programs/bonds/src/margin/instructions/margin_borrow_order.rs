@@ -118,6 +118,8 @@ pub fn handler(ctx: Context<MarginBorrowOrder>, params: OrderParams, seed: Vec<u
         margin_account: ctx.accounts.margin_account.key(),
         borrower_account: ctx.accounts.margin_user.key(),
         order_summary: order_summary.summary(),
+        post_only: params.post_only,
+        post_allowed: params.post_allowed,
     });
 
     // this is just used to make sure the position is still registered.
