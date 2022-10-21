@@ -156,14 +156,13 @@ export class BondMarket {
     seed: Uint8Array
   ): Promise<TransactionInstruction> {
     const limitPrice = new BN(rate_to_price(BigInt(rate.toString()), BigInt(this.info.duration.toString())).toString())
-    // TODO: rethink amounts here, current is placeholder
     const params: OrderParams = {
-      maxBondTicketQty: amount,
+      maxBondTicketQty: new BN(U64_MAX.toString()),
       maxUnderlyingTokenQty: amount,
       limitPrice,
       matchLimit: new BN(U64_MAX.toString()),
-      postOnly: true,
-      postAllowed: false,
+      postOnly: false,
+      postAllowed: true,
       autoStake: true
     }
     return await this.borrowIx(user, payer, params, seed)
@@ -176,11 +175,11 @@ export class BondMarket {
   ): Promise<TransactionInstruction> {
     // TODO: rethink amounts here, current is placeholder
     const params: OrderParams = {
-      maxBondTicketQty: amount,
+      maxBondTicketQty: new BN(U64_MAX.toString()),
       maxUnderlyingTokenQty: amount,
-      limitPrice: new BN(U64_MAX.toString()),
+      limitPrice: new BN(0),
       matchLimit: new BN(U64_MAX.toString()),
-      postOnly: true,
+      postOnly: false,
       postAllowed: false,
       autoStake: true
     }

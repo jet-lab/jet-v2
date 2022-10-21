@@ -325,7 +325,7 @@ async fn owner_can_end_liquidation_after_timeout() -> Result<()> {
 
     scen.liquidator.begin(&scen.user_b, false).await.unwrap();
 
-    let mut clock = ctx.rpc.get_clock().unwrap();
+    let mut clock = ctx.rpc.get_clock().await.unwrap();
     clock.unix_timestamp += 61;
     ctx.rpc.set_clock(clock);
 

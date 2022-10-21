@@ -22,7 +22,7 @@ export function TokenSelect(props: {
 
   return (
     <Select
-      dropdownClassName="token-input-dropdown dropdown-space-between"
+      popupClassName="token-input-dropdown dropdown-space-between"
       dropdownStyle={props.dropdownStyle}
       value={props.poolSymbol ? props.poolSymbol : currentPoolSymbol}
       onChange={tokenSymbol => {
