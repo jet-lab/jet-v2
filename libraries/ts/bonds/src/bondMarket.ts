@@ -159,7 +159,7 @@ export class BondMarket {
       maxUnderlyingTokenQty: amount,
       limitPrice,
       matchLimit: new BN(U64_MAX.toString()),
-      postOnly: false,
+      postOnly: true,
       postAllowed: true,
       autoStake: true
     }
@@ -223,7 +223,7 @@ export class BondMarket {
       maxUnderlyingTokenQty: new BN(amount),
       limitPrice,
       matchLimit: new BN(U64_MAX.toString()),
-      postOnly: false,
+      postOnly: true,
       postAllowed: true,
       autoStake: true
     }
