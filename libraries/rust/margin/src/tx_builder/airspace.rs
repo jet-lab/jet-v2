@@ -192,7 +192,7 @@ impl AirspaceAdmin {
         let collateral_update = TokenConfigUpdate {
             admin: TokenAdmin::Adapter(jet_bonds::ID),
             underlying_mint: token_mint,
-            token_kind: TokenKind::Claim,
+            token_kind: TokenKind::AdapterCollateral,
             value_modifier: max_leverage,
             max_staleness: 0,
         };
