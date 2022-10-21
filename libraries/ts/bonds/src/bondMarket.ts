@@ -164,8 +164,6 @@ export class BondMarket {
       postAllowed: true,
       autoStake: true
     }
-
-    console.log(params)
     return await this.borrowIx(user, payer, params, seed)
   }
   async borrowNowIx(
