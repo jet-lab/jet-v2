@@ -5,7 +5,7 @@ import { bigIntToBn, bnToBigInt, MarginAccount } from "@jet-lab/margin"
 import { Orderbook } from "./orderbook"
 import { JetBonds } from "./types"
 import { fetchData, findDerivedAccount } from "./utils"
-import { order_id_to_string, rate_to_price } from "../wasm-utils/pkg"
+import { order_id_to_string, rate_to_price } from "./wasm-utils"
 export const OrderSideBorrow = { borrow: {} }
 export const OrderSideLend = { lend: {} }
 export type OrderSide = typeof OrderSideBorrow | typeof OrderSideLend

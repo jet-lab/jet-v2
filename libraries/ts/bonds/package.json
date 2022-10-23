@@ -8,13 +8,14 @@
   "scripts": {
     "build": "yarn build:wasm && yarn build:tsc",
     "build:tsc": "tsc & tsc -p tsconfig-cjs.json; wait",
-    "build:wasm": "wasm-pack build --target nodejs ./wasm-utils; copyfiles -u 2 wasm-utils/pkg/* dist/wasm-utils",
+    "build:wasm": "make build-wasm",
+    "build:wasm-esm": "make build-esm",
     "clean": "rm -rf ./dist & rm -rf ./wasm-utils/pkg",
     "lint": "tslint -c tslint.json src/**/*.ts",
-    "prepublish": "yarn build:with-wasm",
+    "prepublish": "yarn build",
     "watch": "yarn watch:wasm & yarn watch:tsc",
-    "watch:tsc": "tsc --watch --preserveWatchOutput --pretty & tsc -p tsconfig-cjs.json --watch --preserveWatchOutput --pretty",
-    "watch:wasm": "cargo watch -w 'libraries/ts/bonds/wasm-utils/src'  -w 'libraries/ts/bonds/wasm-utils/Cargo.toml' -s 'wasm-pack build --target nodejs libraries/ts/bonds/wasm-utils' -s 'copyfiles -u 4 libraries/ts/bonds/wasm-utils/pkg/* libraries/ts/bonds/dist/wasm-utils'"
+    "watch:tsc": "tsc --watch --preserveWatchOutput --pretty",
+    "watch:wasm": "cargo watch -w 'libraries/ts/bonds/wasm-utils/src'  -w 'libraries/ts/bonds/wasm-utils/Cargo.toml' -s 'yarn --cwd libraries/ts/bonds/ build:wasm-esm'"
   },
   "dependencies": {
     "@jet-lab/margin": "*",
@@ -24,7 +25,6 @@
     "@solana/web3.js": "^1.63.0"
   },
   "devDependencies": {
-    "copyfiles": "^2.4.1",
     "prettier": "^2.3.2",
     "tslint": "^6.1.3",
     "typescript": "4.6.4",
