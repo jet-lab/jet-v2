@@ -11,7 +11,7 @@
     "build:wasm": "wasm-pack build --target nodejs ./wasm-utils; copyfiles -u 2 wasm-utils/pkg/* dist/wasm-utils",
     "clean": "rm -rf ./dist & rm -rf ./wasm-utils/pkg",
     "lint": "tslint -c tslint.json src/**/*.ts",
-    "prepublish": "yarn build:with-wasm",
+    "prepublish": "yarn build",
     "watch": "yarn watch:wasm & yarn watch:tsc",
     "watch:tsc": "tsc --watch --preserveWatchOutput --pretty & tsc -p tsconfig-cjs.json --watch --preserveWatchOutput --pretty",
     "watch:wasm": "cargo watch -w 'libraries/ts/bonds/wasm-utils/src'  -w 'libraries/ts/bonds/wasm-utils/Cargo.toml' -s 'wasm-pack build --target nodejs libraries/ts/bonds/wasm-utils' -s 'copyfiles -u 4 libraries/ts/bonds/wasm-utils/pkg/* libraries/ts/bonds/dist/wasm-utils'"

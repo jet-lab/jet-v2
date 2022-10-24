@@ -49,7 +49,7 @@ cargo-test() {
 yarn-build() {
     yarn install --frozen-lockfile
     yarn --cwd libraries/ts/margin build
-    yarn --cwd libraries/ts/bonds build:with-wasm
+    yarn --cwd libraries/ts/bonds build
 }
 
 # runs every workflow job. default if no args are given
