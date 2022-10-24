@@ -8,10 +8,11 @@
   ],
   "license": "AGPL-3.0-or-later",
   "scripts": {
-    "build:all": "yarn build:margin && yarn build:bonds && yarn build",
+    "build:all": "yarn build:libs && yarn build:app",
+    "build:libs": "yarn build:margin && yarn build:bonds",
     "build:margin": "yarn --cwd libraries/ts/margin build",
     "build:bonds": "yarn --cwd libraries/ts/bonds build",
-    "build": "yarn --cwd app build",
+    "build:app": "yarn --cwd app build",
     "build:cloudflare": "curl https://sh.rustup.rs -sSf | sh -s -- -y && . \"$HOME/.cargo/env\" && cargo install wasm-pack && yarn build:all",
     "clean": "rm -rf ./target & rm -rf ./test-ledger & yarn --cwd app clean & yarn --cwd libraries/ts/margin clean & yarn --cwd libraries/ts/bonds clean & find . -name 'node_modules' -type d -prune -exec rm -rf '{}' +",
     "compile": "npx tsc",
