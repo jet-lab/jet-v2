@@ -1,4 +1,4 @@
-import { AnchorProvider, translateAddress } from '@project-serum/anchor';
+import { AnchorProvider, BN } from '@project-serum/anchor';
 import NodeWallet from '@project-serum/anchor/dist/cjs/nodewallet';
 import {
   AccountLayout,
@@ -25,6 +25,9 @@ import {
   Transaction
 } from '@solana/web3.js';
 import { MarginConfig, MarginPrograms, MarginTokenConfig } from '@jet-lab/margin';
+
+import CONFIG from '../../app/public/localnet.config.json';
+import { TokenFaucet } from '../../node_modules/@jet-lab/margin/src/token/tokenFaucet';
 
 export const CONTROL_PROGRAM_ID = new PublicKey('JPCtrLreUqsEbdhtxZ8zpd8wBydKz4nuEjX5u9Eg5H8');
 export const MARGIN_PROGRAM_ID = new PublicKey('JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ');
@@ -208,6 +211,25 @@ export async function loadToken(
 
   return {
     mint: mint.publicKey,
+    vault,
+    tokenConfig
+  };
+}
+
+export async function airdropToken(provider: AnchorProvider, owner: PublicKey, name: string): Promise<TestToken> {
+  const token = CONFIG.tokens[name];
+  const tokenConfig: MarginTokenConfig = {
+    symbol: token.symbol,
+    name,
+    decimals: token.decimals,
+    precision: token.precision,
+    mint: token.mint
+  };
+  const vault = await getAssociatedTokenAddress(new PublicKey(token.mint), owner);
+  await TokenFaucet.airdrop(provider, 'localnet', new BN(1_000_000 * 10 ** token.decimals), tokenConfig, owner);
+
+  return {
+    mint: new PublicKey(token.mint),
     vault,
     tokenConfig
   };
