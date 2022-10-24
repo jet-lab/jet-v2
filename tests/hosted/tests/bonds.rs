@@ -207,6 +207,19 @@ async fn _full_workflow<P: Proxy + GenerateProxy>(manager: Arc<BondsTestManager>
             .unwrap()
     );
 
+    // Cannot self trade
+    let crossing_amount = OrderAmount::from_amount_rate(500, 1_500);
+    let crossing_params = OrderParams {
+        max_bond_ticket_qty: crossing_amount.base,
+        max_underlying_token_qty: crossing_amount.quote,
+        limit_price: crossing_amount.price,
+        match_limit: 100,
+        post_only: false,
+        post_allowed: true,
+        auto_stake: true,
+    };
+    assert!(alice.lend_order(crossing_params, vec![]).await.is_err());
+
     // Scenario b: post a lend order that partially fills the borrow order and does not post remaining
     let b_amount = OrderAmount::from_amount_rate(500, 1_500);
     let b_params = OrderParams {
