@@ -4,7 +4,6 @@ use anchor_spl::token::{accessor::mint, Mint, Token, TokenAccount};
 use proc_macros::BondTokenManager;
 
 use crate::{
-    control::state::BondManager,
     orderbook::state::*,
     serialization::{self, RemainingAccounts},
     tickets::state::SplitTicket,
@@ -63,7 +62,6 @@ impl<'info> LendOrder<'info> {
         seed: &[u8],
         callback_info: CallbackInfo,
         order_summary: &SensibleOrderSummary,
-        bond_manager: &AccountLoader<'info, BondManager>,
     ) -> Result<u64> {
         let staked = if order_summary.base_filled() > 0 {
             if callback_info.flags.contains(CallbackFlags::AUTO_STAKE) {
@@ -77,10 +75,11 @@ impl<'info> LendOrder<'info> {
                 let timestamp = Clock::get()?.unix_timestamp;
                 *split_ticket = SplitTicket {
                     owner: user,
-                    bond_manager: bond_manager.key(),
+                    bond_manager: self.orderbook_mut.bond_manager.key(),
                     order_tag: callback_info.order_tag,
                     struck_timestamp: timestamp,
-                    maturation_timestamp: timestamp + bond_manager.load()?.duration,
+                    maturation_timestamp: timestamp
+                        + self.orderbook_mut.bond_manager.load()?.duration,
                     principal: order_summary.quote_filled()?,
                     interest: order_summary.base_filled() - order_summary.quote_filled()?,
                 };
@@ -141,7 +140,6 @@ pub fn handler(ctx: Context<LendOrder>, params: OrderParams, seed: Vec<u8>) -> R
         &seed,
         callback_info,
         &order_summary,
-        &ctx.accounts.orderbook_mut.bond_manager,
     )?;
     emit!(crate::events::LendOrder {
         bond_market: ctx.accounts.orderbook_mut.bond_manager.key(),

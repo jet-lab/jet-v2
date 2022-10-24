@@ -25,7 +25,7 @@ serde = { version = "1", features = ["derive"] }
 
 jet-proto-math = { git = "https://github.com/jet-lab/program-libraries", branch = "main" }
 
-agnostic-orderbook = { git = "https://github.com/jet-lab/agnostic-orderbook.git", branch = "paused-order-summary-posted-amounts", features = ["lib", "utils"] }
+agnostic-orderbook = { git = "https://github.com/jet-lab/agnostic-orderbook.git", branch = "main", features = ["lib", "utils"] }
 
 pyth-sdk-solana = "0.4"
 solana-sdk = "1.10"

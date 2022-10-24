@@ -61,7 +61,6 @@ pub fn handler(ctx: Context<MarginLendOrder>, params: OrderParams, seed: Vec<u8>
         &seed,
         callback_info,
         &order_summary,
-        &ctx.accounts.inner.orderbook_mut.bond_manager,
     )?;
     ctx.accounts.margin_user.assets.stake_tickets(staked)?;
     mint_to!(
