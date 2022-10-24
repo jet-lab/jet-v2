@@ -253,10 +253,10 @@ impl CallbackInfo {
 }
 
 impl agnostic_orderbook::state::orderbook::CallbackInfo for CallbackInfo {
-    type CallbackId = [u8; 16];
+    type CallbackId = Pubkey;
 
     fn as_callback_id(&self) -> &Self::CallbackId {
-        self.order_tag.bytes()
+        &self.owner
     }
 }
 
