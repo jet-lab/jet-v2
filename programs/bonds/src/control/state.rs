@@ -47,8 +47,10 @@ pub struct BondManager {
     pub tickets_paused: bool,
     /// reserved for future use
     pub(crate) _reserved: [u8; 28],
-    /// Units added to the initial stake timestamp to determine claim maturity
-    pub duration: i64,
+    /// Length of time before a borrow is marked as due, in seconds
+    pub borrow_duration: i64,
+    /// Length of time before a claim is marked as mature, in seconds
+    pub lend_duration: i64,
     /// Used to generate unique order tags
     pub nonce: u64,
 }
@@ -98,7 +100,8 @@ impl Serialize for BondManager {
         s.serialize_field("seed", &Pubkey::new_from_array(self.seed).to_string())?;
         s.serialize_field("orderbookPaused", &self.orderbook_paused)?;
         s.serialize_field("ticketsPaused", &self.tickets_paused)?;
-        s.serialize_field("duration", &self.duration)?;
+        s.serialize_field("borrowDuration", &self.borrow_duration)?;
+        s.serialize_field("lendDuration", &self.lend_duration)?;
         s.end()
     }
 }
@@ -131,7 +134,8 @@ fn serialize_bond_manager() {
       \"seed\": \"11111111111111111111111111111111\",
       \"orderbookPaused\": false,
       \"ticketsPaused\": false,
-      \"duration\": 0
+      \"borrowDuration\": 0,
+      \"lendDuration\": 0
     }";
     assert_eq!(
         itertools::Itertools::join(&mut expected.split_whitespace(), " "),
