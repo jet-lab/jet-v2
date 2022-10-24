@@ -57,6 +57,7 @@ pub struct MarginBorrowOrder<'info> {
 }
 
 pub fn handler(ctx: Context<MarginBorrowOrder>, params: OrderParams, seed: Vec<u8>) -> Result<()> {
+    let limit_price = params.limit_price;
     let (callback_info, order_summary) = ctx.accounts.orderbook_mut.place_order(
         ctx.accounts.margin_account.key(),
         Side::Ask,
@@ -72,12 +73,13 @@ pub fn handler(ctx: Context<MarginBorrowOrder>, params: OrderParams, seed: Vec<u
     let bond_manager = &ctx.accounts.orderbook_mut.bond_manager;
 
     let debt = &mut ctx.accounts.borrower_account.debt;
-    debt.post_borrow_order(order_summary.total_base_qty_posted)?;
-    if order_summary.total_base_qty > 0 {
-        let maturation_timestamp =
-            bond_manager.load()?.borrower_duration + Clock::get()?.unix_timestamp;
-        let sequence_number = debt
-            .new_obligation_without_posting(order_summary.total_base_qty, maturation_timestamp)?;
+    debt.post_borrow_order(order_summary.quote_posted(limit_price))?;
+
+    let filled_quote_qty = order_summary.quote_filled(limit_price);
+    if filled_quote_qty > 0 {
+        let maturation_timestamp = bond_manager.load()?.duration + Clock::get()?.unix_timestamp;
+        let sequence_number =
+            debt.new_obligation_without_posting(filled_quote_qty, maturation_timestamp)?;
         let mut obligation = serialization::init::<Obligation>(
             ctx.accounts.obligation.to_account_info(),
             ctx.accounts.payer.to_account_info(),
@@ -93,12 +95,17 @@ pub fn handler(ctx: Context<MarginBorrowOrder>, params: OrderParams, seed: Vec<u
             bond_manager: bond_manager.key(),
             order_tag: callback_info.order_tag,
             maturation_timestamp,
-            balance: order_summary.total_base_qty,
+            balance: filled_quote_qty,
             flags: ObligationFlags::default(),
         };
     }
-    let total_debt = order_summary.total_base_qty_posted + order_summary.total_base_qty;
-    mint_to!(ctx, claims_mint, claims, total_debt, orderbook_mut)?;
+    mint_to!(
+        ctx,
+        claims_mint,
+        claims,
+        order_summary.total_quote_qty,
+        orderbook_mut
+    )?;
 
     emit!(MarginBorrow {
         bond_manager: bond_manager.key(),

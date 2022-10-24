@@ -5,7 +5,7 @@ use agnostic_orderbook::state::{
     event_queue::EventQueue,
     market_state::MarketState as OrderBookMarketState,
     orderbook::OrderBookState,
-    AccountTag,
+    AccountTag, OrderSummary,
 };
 use anchor_lang::Discriminator;
 use anchor_lang::{AccountDeserialize, AnchorSerialize, InstructionData, ToAccountMetas};
@@ -431,6 +431,23 @@ impl TestManager {
 
         send_and_confirm(&self.client, &[ix], &[]).await?;
         Ok(())
+    }
+
+    pub async fn simulate_new_order(
+        &self,
+        params: OrderParams,
+        side: agnostic_orderbook::state::Side,
+    ) -> Result<OrderSummary> {
+        let mut eq = self.load_event_queue().await?;
+        let mut orderbook = self.load_orderbook().await?;
+        orderbook
+            .inner()?
+            .new_order(
+                params.as_new_order_params(side, CallbackInfo::default()),
+                &mut eq.inner(),
+                MIN_ORDER_SIZE,
+            )
+            .map_err(anyhow::Error::new)
     }
 }
 

@@ -296,6 +296,12 @@ fn create_airspace_token_bond_markets_tx(
             ],
             signers: vec![key_eq, key_bids, key_asks],
         });
+        txs.push(admin.register_bond_market(
+            mint,
+            bond_manager_seed,
+            tk_config.collateral_weight,
+            tk_config.max_leverage,
+        ));
     }
 
     txs

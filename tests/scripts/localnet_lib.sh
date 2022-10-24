@@ -28,8 +28,6 @@ SPLSWAP_SO=$SPL_V20_FROM_CRATES
 ORCAv1_SO=$ORCA_V1_MAINNET
 ORCAv2_SO=$ORCA_V2_MAINNET
 
-MAINNET_ENDPOINT=https://ssc-dao.genesysgo.net
-
 PROGRAM_FEATURES='testing'
 TEST_FEATURES="${BATCH:-batch_all},localnet"
 
@@ -74,13 +72,17 @@ start-validator() {
         $@
 }
 
+start-oracle() {
+    cargo run --bin jet-oracle-mirror -- -s $SOLANA_MAINNET_RPC -tl &
+}
+
 resume-validator() {
     start-validator &
 
     spid=$!
 
     sleep ${VALIDATOR_STARTUP:-5}
-    cargo run --bin jet-oracle-mirror -- -s $MAINNET_ENDPOINT -tl &
+    start-oracle
 
     wait $spid
 }
@@ -95,7 +97,7 @@ start-new-validator() {
     cargo run --bin jetctl -- test init-env -ul --no-confirm localnet.toml
     cargo run --bin jetctl -- test generate-app-config -ul --no-confirm localnet.toml -o app/public/localnet.config.json
 
-    cargo run --bin jet-oracle-mirror -- -s $MAINNET_ENDPOINT -tl &
+    start-oracle
 
     wait $spid
 }
