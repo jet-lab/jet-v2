@@ -134,8 +134,8 @@ fn serialize_bond_manager() {
       \"seed\": \"11111111111111111111111111111111\",
       \"orderbookPaused\": false,
       \"ticketsPaused\": false,
-      \"duration\": 0,
-      \"depositDuration\": 0
+      \"borrowerDuration\": 0,
+      \"lenderDuration\": 0
     }";
     assert_eq!(
         itertools::Itertools::join(&mut expected.split_whitespace(), " "),
