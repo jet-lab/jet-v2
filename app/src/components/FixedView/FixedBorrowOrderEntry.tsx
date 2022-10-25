@@ -11,11 +11,10 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import { MainConfig } from '../../state/config/marginConfig';
 import { useProvider } from '../../utils/jet/provider';
 import { CurrentPool, Pools } from '../../state/pools/pools';
-import { createFixedBorrowOrder } from '@jet-lab/jet-bonds-client'
+import { createFixedBorrowOrder } from '@jet-lab/jet-bonds-client';
 import { notify } from '../../utils/notify';
 import { getExplorerUrl } from '../../utils/ui';
 import { BlockExplorer, Cluster } from '../../state/settings/settings';
-
 
 export const FixedBorrowOrderEntry = () => {
   const dictionary = useRecoilValue(Dictionary);
@@ -23,23 +22,22 @@ export const FixedBorrowOrderEntry = () => {
   const marketAndConfig = useRecoilValue(FixedMarketAtom);
   const marginAccount = useRecoilValue(CurrentAccount);
   const { provider } = useProvider();
-  const cluster = useRecoilValue(Cluster)
-  const blockExplorer = useRecoilValue(BlockExplorer)
+  const cluster = useRecoilValue(Cluster);
+  const blockExplorer = useRecoilValue(BlockExplorer);
   const pools = useRecoilValue(Pools);
   const currentPool = useRecoilValue(CurrentPool);
   const wallet = useWallet();
   const marginConfig = useRecoilValue(MainConfig);
 
-
   const token = useMemo(() => {
-    if(!marginConfig || !marketAndConfig) return null
+    if (!marginConfig || !marketAndConfig) return null;
     return Object.values(marginConfig?.tokens).find(token => {
       return marketAndConfig.config.underlyingTokenMint === token.mint.toString();
     });
-  }, [marginConfig, marketAndConfig?.config])
+  }, [marginConfig, marketAndConfig?.config]);
 
   const decimals = useMemo(() => {
-    if (!token) return null
+    if (!token) return null;
     if (!marginConfig || !marketAndConfig?.config) return 6;
     return token.decimals;
   }, [token]);
@@ -49,8 +47,7 @@ export const FixedBorrowOrderEntry = () => {
 
   const { Paragraph } = Typography;
 
-
-  if (!decimals) return null
+  if (!decimals) return null;
 
   const createBorrowOrder = async () => {
     let signature: string;
@@ -64,23 +61,23 @@ export const FixedBorrowOrderEntry = () => {
         pools: pools.tokenPools,
         currentPool,
         amount,
-        basisPoints,
-      })
+        basisPoints
+      });
       notify(
-        "Borrow order created",
+        'Borrow order created',
         `Your borrow order for ${amount.div(new BN(10 ** decimals))} ${token.name} was created successfully`,
-        "success",
+        'success',
         getExplorerUrl(signature, cluster, blockExplorer)
-      )
+      );
     } catch (e) {
       notify(
-        "Borrow order failed",
-        `Your borrow order for ${amount.div(new BN(decimals)).toNumber()} ${token.name} failed`,
-        "error",
-        getExplorerUrl(signature, cluster, blockExplorer)
-      )
+        'Borrow order failed',
+        `Your borrow order for ${amount.div(new BN(10 ** decimals))} ${token.name} failed`,
+        'error',
+        getExplorerUrl(e.signature, cluster, blockExplorer)
+      );
     }
-  }
+  };
 
   return (
     <div className="order-entry fixed-lend-entry view-element view-element-hidden flex column">

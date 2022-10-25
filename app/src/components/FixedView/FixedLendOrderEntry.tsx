@@ -8,16 +8,13 @@ import { CurrentAccount } from '../../state/user/accounts';
 import { useMemo, useState } from 'react';
 import BN from 'bn.js';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { Transaction, TransactionInstruction } from '@solana/web3.js';
 import { MainConfig } from '../../state/config/marginConfig';
 import { useProvider } from '../../utils/jet/provider';
-import { AssociatedToken } from '@jet-lab/margin';
 import { CurrentPool, Pools } from '../../state/pools/pools';
-import { TOKEN_PROGRAM_ID } from '@solana/spl-token';
-
-function randomIntFromInterval(min: number, max: number) {
-  return Math.floor(Math.random() * (max - min + 1) + min);
-}
+import { createFixedLendOrder } from '@jet-lab/jet-bonds-client';
+import { notify } from '../../utils/notify';
+import { getExplorerUrl } from '../../utils/ui';
+import { BlockExplorer, Cluster } from '../../state/settings/settings';
 
 export const FixedLendOrderEntry = () => {
   const dictionary = useRecoilValue(Dictionary);
@@ -28,14 +25,22 @@ export const FixedLendOrderEntry = () => {
   const pools = useRecoilValue(Pools);
   const currentPool = useRecoilValue(CurrentPool);
   const wallet = useWallet();
-  const config = useRecoilValue(MainConfig);
-  const decimals = useMemo(() => {
-    if (!config || !marketAndConfig) return 6;
-    const token = Object.values(config.tokens).find(token => {
+  const marginConfig = useRecoilValue(MainConfig);
+  const cluster = useRecoilValue(Cluster);
+  const blockExplorer = useRecoilValue(BlockExplorer);
+
+  const token = useMemo(() => {
+    if (!marginConfig || !marketAndConfig) return null;
+    return Object.values(marginConfig?.tokens).find(token => {
       return marketAndConfig.config.underlyingTokenMint === token.mint.toString();
     });
+  }, [marginConfig, marketAndConfig?.config]);
+
+  const decimals = useMemo(() => {
+    if (!token) return null;
+    if (!marginConfig || !marketAndConfig?.config) return 6;
     return token.decimals;
-  }, [config, marketAndConfig]);
+  }, [token]);
 
   const [amount, setAmount] = useState(new BN(0));
   const [basisPoints, setBasisPoints] = useState(new BN(0));
@@ -43,46 +48,33 @@ export const FixedLendOrderEntry = () => {
   const { Paragraph } = Typography;
 
   const offerLoan = async () => {
-    let ixns: TransactionInstruction[] = [];
-
-    const tokenMint = marketAndConfig.market.addresses.underlyingTokenMint;
-    const ticketMint = marketAndConfig.market.addresses.bondTicketMint;
-
-    await AssociatedToken.withCreate(ixns, provider, marginAccount.address, tokenMint);
-    await AssociatedToken.withCreate(ixns, provider, marginAccount.address, ticketMint);
-
-    AssociatedToken.withTransfer(ixns, tokenMint, wallet.publicKey, marginAccount.address, amount);
-
-    const loanOffer = await marketAndConfig.market.offerLoanIx(
-      marginAccount,
-      amount,
-      basisPoints,
-      wallet.publicKey,
-      Uint8Array.from([
-        randomIntFromInterval(0, 127),
-        randomIntFromInterval(0, 127),
-        randomIntFromInterval(0, 127),
-        randomIntFromInterval(0, 127)
-      ])
-    );
-
-    await currentPool.withMarginRefreshAllPositionPrices({
-      instructions: ixns,
-      pools: pools.tokenPools,
-      marginAccount
-    });
-    await marginAccount.withAdapterInvoke({
-      instructions: ixns,
-      adapterInstruction: loanOffer
-    });
-    await provider
-      .sendAndConfirm(new Transaction().add(...ixns))
-      .then(result => {
-        console.log('SUCCESS: ', result);
-      })
-      .catch(e => {
-        console.log('ERROR: ', e);
+    let signature: string;
+    try {
+      signature = await createFixedLendOrder({
+        market: marketAndConfig.market,
+        marginAccount,
+        marginConfig,
+        provider,
+        walletAddress: wallet.publicKey,
+        pools: pools.tokenPools,
+        currentPool,
+        amount,
+        basisPoints
       });
+      notify(
+        'Lend order created',
+        `Your lend order for ${amount.div(new BN(10 ** decimals))} ${token.name} was created successfully`,
+        'success',
+        getExplorerUrl(signature, cluster, blockExplorer)
+      );
+    } catch (e) {
+      notify(
+        'Lend order failed',
+        `Your lend order for ${amount.div(new BN(10 ** decimals))} ${token.name} failed`,
+        'error',
+        getExplorerUrl(e.signature, cluster, blockExplorer)
+      );
+    }
   };
 
   return (
