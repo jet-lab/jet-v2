@@ -126,7 +126,7 @@ async fn non_margin_orders_for_proxy<P: Proxy + GenerateProxy>(
     );
 
     // Cannot self trade
-    let crossing_amount = OrderAmount::from_amount_rate(500, 1_500);
+    let crossing_amount = OrderAmount::from_quote_amount_rate(500, 1_500);
     let crossing_params = OrderParams {
         max_bond_ticket_qty: crossing_amount.base,
         max_underlying_token_qty: crossing_amount.quote,
@@ -136,7 +136,7 @@ async fn non_margin_orders_for_proxy<P: Proxy + GenerateProxy>(
         post_allowed: true,
         auto_stake: true,
     };
-    assert!(alice.lend_order(crossing_params, vec![]).await.is_err());
+    assert!(alice.lend_order(crossing_params, &[]).await.is_err());
 
     // Scenario b: post a lend order that partially fills the borrow order and does not post remaining
     let b_amount = OrderAmount::from_quote_amount_rate(500, 1_500);
