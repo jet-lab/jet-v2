@@ -8,17 +8,14 @@ import { CurrentAccount } from '../../state/user/accounts';
 import { useMemo, useState } from 'react';
 import BN from 'bn.js';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { Transaction, TransactionInstruction } from '@solana/web3.js';
 import { MainConfig } from '../../state/config/marginConfig';
 import { useProvider } from '../../utils/jet/provider';
 import { CurrentPool, Pools } from '../../state/pools/pools';
-import { TOKEN_PROGRAM_ID } from '@solana/spl-token';
-import { AssociatedToken } from '@jet-lab/margin';
-// import { AssociatedToken } from '@jet-lab/margin';
+import { createFixedBorrowOrder } from '@jet-lab/jet-bonds-client'
+import { notify } from '../../utils/notify';
+import { getExplorerUrl } from '../../utils/ui';
+import { BlockExplorer, Cluster } from '../../state/settings/settings';
 
-function randomIntFromInterval(min: number, max: number) {
-  return Math.floor(Math.random() * (max - min + 1) + min);
-}
 
 export const FixedBorrowOrderEntry = () => {
   const dictionary = useRecoilValue(Dictionary);
@@ -26,106 +23,64 @@ export const FixedBorrowOrderEntry = () => {
   const marketAndConfig = useRecoilValue(FixedMarketAtom);
   const marginAccount = useRecoilValue(CurrentAccount);
   const { provider } = useProvider();
+  const cluster = useRecoilValue(Cluster)
+  const blockExplorer = useRecoilValue(BlockExplorer)
   const pools = useRecoilValue(Pools);
   const currentPool = useRecoilValue(CurrentPool);
   const wallet = useWallet();
-  const config = useRecoilValue(MainConfig);
-  const decimals = useMemo(() => {
-    if (!config || !marketAndConfig) return 6;
-    const token = Object.values(config.tokens).find(token => {
+  const marginConfig = useRecoilValue(MainConfig);
+
+
+  const token = useMemo(() => {
+    if(!marginConfig || !marketAndConfig) return null
+    return Object.values(marginConfig?.tokens).find(token => {
       return marketAndConfig.config.underlyingTokenMint === token.mint.toString();
     });
+  }, [marginConfig, marketAndConfig?.config])
+
+  const decimals = useMemo(() => {
+    if (!token) return null
+    if (!marginConfig || !marketAndConfig?.config) return 6;
     return token.decimals;
-  }, [config, marketAndConfig]);
+  }, [token]);
 
   const [amount, setAmount] = useState(new BN(0));
   const [basisPoints, setBasisPoints] = useState(new BN(0));
 
   const { Paragraph } = Typography;
 
-  const offerLoan = async () => {
-    let ixns: TransactionInstruction[] = [];
 
-    const tokenMint = marketAndConfig.market.addresses.underlyingTokenMint;
-    const ticketMint = marketAndConfig.market.addresses.bondTicketMint;
+  if (!decimals) return null
 
-    await AssociatedToken.withCreate(ixns, provider, marginAccount.address, tokenMint);
-    await AssociatedToken.withCreate(ixns, provider, marginAccount.address, ticketMint);
-
-    // AssociatedToken.withTransfer(ixns, tokenMint, wallet.publicKey, marginAccount.address, amount);
-
-    const createAccountIx = await marketAndConfig.market.registerAccountWithMarket(marginAccount, wallet.publicKey);
-
-    await marginAccount.withAdapterInvoke({
-      instructions: ixns,
-      adapterInstruction: createAccountIx
-    });
-
-    await provider
-      .sendAndConfirm(new Transaction().add(...ixns))
-      .then(result => {
-        console.log('SUCCESS: ', result);
+  const createBorrowOrder = async () => {
+    let signature: string;
+    try {
+      signature = await createFixedBorrowOrder({
+        market: marketAndConfig.market,
+        marginAccount,
+        marginConfig,
+        provider,
+        walletAddress: wallet.publicKey,
+        pools: pools.tokenPools,
+        currentPool,
+        amount,
+        basisPoints,
       })
-      .catch(e => {
-        console.log('ERROR: ', e);
-        if (e.logs) {
-          console.log(e.logs);
-        }
-      });
-
-    ixns = [];
-
-    await currentPool.withMarginRefreshAllPositionPrices({
-      instructions: ixns,
-      pools: pools.tokenPools,
-      marginAccount
-    });
-
-    const borrowOffer = await marketAndConfig.market.requestBorrowIx(
-      marginAccount,
-      wallet.publicKey,
-      amount,
-      basisPoints,
-      Uint8Array.from([
-        randomIntFromInterval(0, 127),
-        randomIntFromInterval(0, 127),
-        randomIntFromInterval(0, 127),
-        randomIntFromInterval(0, 127)
-      ])
-    );
-
-    const borrowerAccount = await marketAndConfig.market.deriveMarginUserAddress(marginAccount);
-    const refreshIx = await marketAndConfig.market.program.methods
-      .refreshPosition(true)
-      .accounts({
-        borrowerAccount,
-        marginAccount: marginAccount.address,
-        claimsMint: marketAndConfig.market.addresses.claimsMint,
-        bondManager: marketAndConfig.market.addresses.bondManager,
-        underlyingOracle: marketAndConfig.market.addresses.underlyingOracle,
-        tokenProgram: TOKEN_PROGRAM_ID
-      })
-      .instruction();
-
-    await marginAccount.withAdapterInvoke({
-      instructions: ixns,
-      adapterInstruction: refreshIx
-    });
-
-    await marginAccount.withAdapterInvoke({
-      instructions: ixns,
-      adapterInstruction: borrowOffer
-    });
-
-    await provider
-      .sendAndConfirm(new Transaction().add(...ixns))
-      .then(result => {
-        console.log('SUCCESS: ', result);
-      })
-      .catch(e => {
-        console.log('ERROR: ', e);
-      });
-  };
+      notify(
+        "Borrow order created",
+        `Your borrow order for ${amount.div(new BN(10 ** decimals))} ${token.name} was created successfully`,
+        "success",
+        getExplorerUrl(signature, cluster, blockExplorer)
+      )
+    } catch (e) {
+      notify(
+        "Borrow order failed",
+        `Your borrow order for ${amount.div(new BN(decimals)).toNumber()} ${token.name} failed`,
+        "error",
+        getExplorerUrl(signature, cluster, blockExplorer)
+      )
+    }
+  }
 
   return (
     <div className="order-entry fixed-lend-entry view-element view-element-hidden flex column">
@@ -150,7 +105,7 @@ export const FixedBorrowOrderEntry = () => {
           step=".01"
           min="0"
         />
-        <Button onClick={offerLoan}>Create Borrow Order</Button>
+        <Button onClick={createBorrowOrder}>Create Borrow Order</Button>
       </div>
     </div>
   );
