@@ -213,3 +213,54 @@ export const createFixedBorrowOrder = async ({
     instructions.push(borrowInstructions)
     return sendAll(provider, [instructions])
 }
+
+interface ICancelOrder {
+    market: BondMarket
+    marginAccount: MarginAccount
+    provider: AnchorProvider
+    orderId: Uint8Array
+    pools: Record<string, Pool>
+    currentPool: Pool
+}
+export const cancelOrder = async ({
+    market,
+    marginAccount,
+    provider,
+    orderId,
+    pools,
+    currentPool
+}: ICancelOrder): Promise<string> => {
+    let instructions: TransactionInstruction[] = []
+    const borrowerAccount = await market.deriveMarginUserAddress(marginAccount)
+
+    // refresh pools positions
+    await currentPool.withMarginRefreshAllPositionPrices({
+        instructions,
+        pools,
+        marginAccount
+    })
+
+    // refresh market instruction
+    const refreshIx = await market.program.methods
+        .refreshPosition(true)
+        .accounts({
+            borrowerAccount,
+            marginAccount: marginAccount.address,
+            claimsMint: market.addresses.claimsMint,
+            bondManager: market.addresses.bondManager,
+            underlyingOracle: market.addresses.underlyingOracle,
+            tokenProgram: TOKEN_PROGRAM_ID
+        })
+        .instruction()
+
+    await marginAccount.withAdapterInvoke({
+        instructions,
+        adapterInstruction: refreshIx
+    })
+    const cancelLoan = await market.cancelOrderIx(marginAccount, orderId);
+    await marginAccount.withAdapterInvoke({
+        instructions,
+        adapterInstruction: cancelLoan
+    })
+    return sendAll(provider, [instructions])
+}

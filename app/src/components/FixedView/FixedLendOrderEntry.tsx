@@ -5,7 +5,7 @@ import { Button, Input, Typography } from 'antd';
 import { FixedLendRowOrder } from '../../state/views/fixed-term';
 import { FixedMarketAtom } from '../../state/fixed/fixed-term-market-sync';
 import { CurrentAccount } from '../../state/user/accounts';
-import { useMemo, useState } from 'react';
+import { Suspense, useMemo, useState } from 'react';
 import BN from 'bn.js';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { MainConfig } from '../../state/config/marginConfig';
@@ -15,6 +15,7 @@ import { createFixedLendOrder } from '@jet-lab/jet-bonds-client';
 import { notify } from '../../utils/notify';
 import { getExplorerUrl } from '../../utils/ui';
 import { BlockExplorer, Cluster } from '../../state/settings/settings';
+import { OrderList } from './OrderList';
 
 export const FixedLendOrderEntry = () => {
   const dictionary = useRecoilValue(Dictionary);
@@ -101,6 +102,11 @@ export const FixedLendOrderEntry = () => {
           min="0"
         />
         <Button onClick={offerLoan}>Create Lend Order</Button>
+
+        <hr />
+        <Suspense fallback={<div>Loading...</div>}>
+          <OrderList />
+        </Suspense>
       </div>
     </div>
   );
