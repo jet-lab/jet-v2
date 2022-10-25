@@ -70,7 +70,6 @@ export const createFixedLendOrder = async ({
     }
 
     const lenderAccount = await market.deriveMarginUserAddress(marginAccount)
-
     const instructions: TransactionInstruction[][] = []
     // Create relevant accounts if they do not exist
     const accountInstructions: TransactionInstruction[] = []

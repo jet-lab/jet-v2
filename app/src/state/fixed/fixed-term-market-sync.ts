@@ -6,6 +6,8 @@ import { useProvider } from '../../utils/jet/provider';
 import { AirspaceConfig, BondMarketConfig } from '@jet-lab/margin';
 import { MainConfig } from '../config/marginConfig';
 import { PublicKey } from '@solana/web3.js';
+import bs58 from "bs58"
+
 
 export const AllFixedMarketsAtom = atom<Array<MarketAndconfig>>({
   key: 'allFixedMarkets',
@@ -46,7 +48,8 @@ export const AllFixedMarketsOrderBooksAtom = selector<ExtendedOrderBook[]>({
           raw.asks.map(order => ({
             base_size: Number(order.base_size),
             limit_price: Number(order.limit_price),
-            quote_size: Number(order.quote_size)
+            quote_size: Number(order.quote_size),
+            owner: bs58.encode(order.owner)
           }))
         );
 
@@ -55,7 +58,8 @@ export const AllFixedMarketsOrderBooksAtom = selector<ExtendedOrderBook[]>({
           raw.bids.map(order => ({
             base_size: Number(order.base_size),
             limit_price: Number(order.limit_price),
-            quote_size: Number(order.quote_size)
+            quote_size: Number(order.quote_size),
+            owner: bs58.encode(order.owner)
           }))
         );
 
