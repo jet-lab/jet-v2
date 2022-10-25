@@ -27,6 +27,7 @@ max_leverage = 20_00
 [[airspace.tokens.USDC.bond_markets]]
 duration = 5
 min_order_size = 10
+paused = true
 
 [airspace.tokens.USDC.margin_pool_config]
 flags = 0b0010 # ALLOW_LENDING

@@ -206,6 +206,7 @@ impl MarginTestContext {
                             bond_markets: vec![BondMarketConfig {
                                 duration: 5,
                                 min_order_size: 10,
+                                paused: false,
                             }],
                         },
                     ),
