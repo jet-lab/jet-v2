@@ -1,5 +1,5 @@
 import { BondMarket } from "./bondMarket"
-import { get_orders_from_slab as getOrdersFromSlab, Order } from "../wasm-utils/pkg"
+import { get_orders_from_slab as getOrdersFromSlab, Order } from "./wasm-utils"
 
 export class Orderbook {
   readonly bids: Order[]
