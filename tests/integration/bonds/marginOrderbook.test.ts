@@ -415,7 +415,7 @@ describe('margin bonds borrowing', async () => {
   });
 
   it('margin users cancel orders', async () => {
-    const cancelLoan = await bondMarket.cancelOrderIx(marginAccount_B, loanId, OrderSideLend);
+    const cancelLoan = await bondMarket.cancelOrderIx(marginAccount_B, loanId);
     const invokeCancelLoan = await viaMargin(marginAccount_B, cancelLoan);
 
     await provider_b.sendAndConfirm(makeTx([invokeCancelLoan]));

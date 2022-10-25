@@ -7,9 +7,6 @@ import { JetBonds } from "./types"
 import { fetchData, findDerivedAccount } from "./utils"
 import { order_id_to_string, rate_to_price } from "./wasm-utils"
 
-export const OrderSideBorrow = { borrow: {} }
-export const OrderSideLend = { lend: {} }
-export type OrderSide = typeof OrderSideBorrow | typeof OrderSideLend
 export const U64_MAX = 18_446_744_073_709_551_615n
 export interface OrderParams {
   maxBondTicketQty: BN
@@ -265,7 +262,7 @@ export class BondMarket {
       })
       .instruction()
   }
-  async cancelOrderIx(user: MarginAccount, orderId: Uint8Array, side: OrderSide): Promise<TransactionInstruction> {
+  async cancelOrderIx(user: MarginAccount, orderId: Uint8Array): Promise<TransactionInstruction> {
     const bnOrderId = new BN(order_id_to_string(orderId))
     return await this.program.methods
       .cancelOrder(bnOrderId)
