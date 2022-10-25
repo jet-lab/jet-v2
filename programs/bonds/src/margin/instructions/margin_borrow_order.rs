@@ -5,13 +5,13 @@ use jet_margin::{AdapterResult, PositionChange};
 use proc_macros::BondTokenManager;
 
 use crate::{
+    bond_token_manager::BondTokenManager,
     margin::{
         events::MarginBorrow,
         state::{return_to_margin, MarginUser, Obligation, ObligationFlags},
     },
     orderbook::state::*,
     serialization::{self, RemainingAccounts},
-    utils::mint_to,
     BondsError,
 };
 
@@ -105,12 +105,11 @@ pub fn handler(ctx: Context<MarginBorrowOrder>, params: OrderParams, seed: Vec<u
         };
     }
     let total_debt = order_summary.base_combined();
-    mint_to!(ctx, claims_mint, claims, total_debt)?;
-    mint_to!(
-        ctx,
-        collateral_mint,
-        collateral,
-        order_summary.quote_posted()?
+    ctx.mint(&ctx.accounts.claims_mint, &ctx.accounts.claims, total_debt)?;
+    ctx.mint(
+        &ctx.accounts.collateral_mint,
+        &ctx.accounts.collateral,
+        order_summary.quote_posted()?,
     )?;
 
     emit!(MarginBorrow {

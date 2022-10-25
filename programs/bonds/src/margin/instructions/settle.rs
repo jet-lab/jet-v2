@@ -3,9 +3,7 @@ use anchor_spl::token::{Token, TokenAccount};
 use proc_macros::BondTokenManager;
 
 use crate::{
-    control::state::BondManager,
-    margin::state::MarginUser,
-    utils::{burn_notes, mint_to, withdraw},
+    bond_token_manager::BondTokenManager, control::state::BondManager, margin::state::MarginUser,
     BondsError,
 };
 
@@ -68,43 +66,47 @@ pub fn handler(ctx: Context<Settle>) -> Result<()> {
 
     // Notify margin of the current debt owed to bonds
     if claim_balance > debt {
-        burn_notes!(ctx, claims_mint, claims, claim_balance - debt)?;
+        ctx.burn_notes(
+            &ctx.accounts.claims_mint,
+            &ctx.accounts.claims,
+            claim_balance - debt,
+        )?;
     }
     if claim_balance < debt {
-        mint_to!(ctx, claims_mint, claims, debt - claim_balance)?;
+        ctx.mint(
+            &ctx.accounts.claims_mint,
+            &ctx.accounts.claims,
+            debt - claim_balance,
+        )?;
     }
 
     // Notify margin of the amount of collateral that will in the custody of
     // bonds after this settlement
     if ctokens_held > ctokens_deserved {
-        burn_notes!(
-            ctx,
-            collateral_mint,
-            collateral,
-            ctokens_held - ctokens_deserved
+        ctx.burn_notes(
+            &ctx.accounts.collateral_mint,
+            &ctx.accounts.collateral,
+            ctokens_held - ctokens_deserved,
         )?;
     }
     if ctokens_held < ctokens_deserved {
-        mint_to!(
-            ctx,
-            collateral_mint,
-            collateral,
-            ctokens_deserved - ctokens_held
+        ctx.mint(
+            &ctx.accounts.collateral_mint,
+            &ctx.accounts.collateral,
+            ctokens_deserved - ctokens_held,
         )?;
     }
 
     // Disburse entitled funds due to fills
-    mint_to!(
-        ctx,
-        bond_ticket_mint,
-        ticket_settlement,
-        assets.entitled_tickets
+    ctx.mint(
+        &ctx.accounts.bond_ticket_mint,
+        &ctx.accounts.ticket_settlement,
+        assets.entitled_tickets,
     )?;
-    withdraw!(
-        ctx,
-        underlying_token_vault,
-        underlying_settlement,
-        assets.entitled_tokens
+    ctx.withdraw(
+        &ctx.accounts.underlying_token_vault,
+        &ctx.accounts.underlying_settlement,
+        assets.entitled_tokens,
     )?;
 
     // Update margin user assets to reflect the settlement

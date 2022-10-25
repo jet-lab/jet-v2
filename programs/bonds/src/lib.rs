@@ -117,6 +117,7 @@ mod errors;
 pub mod events;
 pub use errors::BondsError;
 
+mod bond_token_manager;
 /// Utilities for safely serializing and deserializing solana accounts
 pub(crate) mod serialization;
 /// local utilities for the crate

@@ -3,7 +3,8 @@ use anchor_spl::token::{transfer, Mint, Token, TokenAccount, Transfer};
 use proc_macros::BondTokenManager;
 
 use crate::{
-    control::state::BondManager, tickets::events::TokensExchanged, utils::mint_to, BondsError,
+    bond_token_manager::BondTokenManager, control::state::BondManager,
+    tickets::events::TokensExchanged, BondsError,
 };
 
 #[derive(Accounts, BondTokenManager)]
@@ -53,7 +54,11 @@ impl<'info> ExchangeTokens<'info> {
 
 pub fn handler(ctx: Context<ExchangeTokens>, amount: u64) -> Result<()> {
     transfer(ctx.accounts.transfer_context(), amount)?;
-    mint_to!(ctx, bond_ticket_mint, user_bond_ticket_vault, amount)?;
+    ctx.mint(
+        &ctx.accounts.bond_ticket_mint,
+        &ctx.accounts.user_bond_ticket_vault,
+        amount,
+    )?;
 
     emit!(TokensExchanged {
         bond_manager: ctx.accounts.bond_manager.key(),

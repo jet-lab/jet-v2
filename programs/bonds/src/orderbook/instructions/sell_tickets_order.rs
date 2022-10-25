@@ -4,9 +4,7 @@ use anchor_spl::token::{accessor::mint, Mint, Token, TokenAccount};
 use proc_macros::BondTokenManager;
 
 use crate::{
-    orderbook::state::*,
-    serialization::RemainingAccounts,
-    utils::{ctx, withdraw},
+    bond_token_manager::BondTokenManager, orderbook::state::*, serialization::RemainingAccounts,
     BondsError,
 };
 
@@ -47,11 +45,10 @@ pub struct SellTicketsOrder<'info> {
 
 impl<'info> SellTicketsOrder<'info> {
     pub fn sell_tickets(&self, order_summary: SensibleOrderSummary) -> Result<()> {
-        withdraw!(
-            ctx(self),
-            underlying_token_vault,
-            user_token_vault,
-            order_summary.quote_filled()?
+        self.withdraw(
+            &self.underlying_token_vault,
+            &self.user_token_vault,
+            order_summary.quote_filled()?,
         )?;
         anchor_spl::token::burn(
             CpiContext::new(

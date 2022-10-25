@@ -2,11 +2,13 @@ use proc_macro::TokenStream;
 use quote::quote;
 use syn::{self, DeriveInput};
 
-/// Implements both traits BondManagerProvider and TokenProgramProvider. By
-/// default, this expects fields named token_program and bond_manager with the
-/// appropriate types. If either field is missing, then the data must be nested.
-/// Annotate the nesting field with attribute #[token_manager] if that field
-/// contains a token_manager. If further nested, and the field contains a
+/// Implements BondTokenManager by implementing BondManagerProvider and
+/// TokenProgramProvider.
+///
+/// By default, this expects fields named token_program and bond_manager with
+/// the appropriate types. If either field is missing, then the data must be
+/// nested. Annotate the nesting field with attribute #[token_manager] if that
+/// field contains a token_manager. If further nested, and the field contains a
 /// sub-field called "subfield" which contains the token_manager, mark the field
 /// with #[token_manager(subfield)]. If token_manager is another level deep
 /// within "subsubfield", use #[token_manager(subfield::subsubfield)]. There is
@@ -69,7 +71,7 @@ fn impl_bond_manager_provider(ast: &DeriveInput) -> quote::__private::TokenStrea
     let lt = &ast.generics.lifetimes().next();
     let accessor = find_attr_path_as_accessor(ast, "bond_manager").unwrap_or_default();
     quote! {
-        impl<#lt> crate::utils::BondManagerProvider<#lt> for #name<#lt> {
+        impl<#lt> crate::bond_token_manager::BondManagerProvider<#lt> for #name<#lt> {
             fn bond_manager(&self) -> anchor_lang::prelude::AccountLoader<#lt, crate::control::state::BondManager> {
                 self #accessor.bond_manager.clone()
             }
@@ -82,7 +84,7 @@ fn impl_token_program_provider(ast: &DeriveInput) -> quote::__private::TokenStre
     let lt = &ast.generics.lifetimes().next();
     let accessor = find_attr_path_as_accessor(ast, "token_program").unwrap_or_default();
     quote! {
-        impl<#lt> crate::utils::TokenProgramProvider<#lt> for #name<#lt> {
+        impl<#lt> crate::bond_token_manager::TokenProgramProvider<#lt> for #name<#lt> {
             fn token_program(&self) -> anchor_lang::prelude::Program<#lt, anchor_spl::token::Token> {
                 self #accessor.token_program.clone()
             }

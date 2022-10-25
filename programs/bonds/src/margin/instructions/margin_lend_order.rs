@@ -3,13 +3,13 @@ use anchor_lang::prelude::*;
 use proc_macros::BondTokenManager;
 
 use crate::{
+    bond_token_manager::BondTokenManager,
     margin::state::MarginUser,
     orderbook::{
         instructions::lend_order::*,
         state::{CallbackFlags, OrderParams},
     },
     serialization::RemainingAccounts,
-    utils::mint_to,
     BondsError,
 };
 
@@ -63,10 +63,9 @@ pub fn handler(ctx: Context<MarginLendOrder>, params: OrderParams, seed: Vec<u8>
         &order_summary,
     )?;
     ctx.accounts.margin_user.assets.stake_tickets(staked)?;
-    mint_to!(
-        ctx,
-        collateral_mint,
-        collateral,
+    ctx.mint(
+        &ctx.accounts.collateral_mint,
+        &ctx.accounts.collateral,
         staked + order_summary.quote_posted()?,
     )?;
     emit!(crate::events::MarginLend {

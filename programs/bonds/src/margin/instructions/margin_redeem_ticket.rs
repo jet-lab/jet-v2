@@ -2,8 +2,8 @@ use anchor_lang::prelude::*;
 use proc_macros::BondTokenManager;
 
 use crate::{
-    margin::state::MarginUser, tickets::instructions::redeem_ticket::*, utils::burn_notes,
-    BondsError,
+    bond_token_manager::BondTokenManager, margin::state::MarginUser,
+    tickets::instructions::redeem_ticket::*, BondsError,
 };
 
 #[derive(Accounts, BondTokenManager)]
@@ -36,7 +36,11 @@ pub fn handler(ctx: Context<MarginRedeemTicket>) -> Result<()> {
         .margin_user
         .assets
         .redeem_staked_tickets(redeemed);
-    burn_notes!(ctx, collateral_mint, collateral, redeemed)?;
+    ctx.burn_notes(
+        &ctx.accounts.collateral_mint,
+        &ctx.accounts.collateral,
+        redeemed,
+    )?;
 
     Ok(())
 }

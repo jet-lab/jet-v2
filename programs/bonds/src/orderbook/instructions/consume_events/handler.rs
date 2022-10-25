@@ -10,11 +10,12 @@ use jet_proto_math::traits::{SafeAdd, SafeSub};
 use num_traits::FromPrimitive;
 
 use crate::{
+    bond_token_manager::BondTokenManager,
     events::skip_err,
     margin::state::{Obligation, ObligationFlags},
     orderbook::state::{fp32_mul, CallbackFlags, CallbackInfo, FillInfo, OutInfo},
     tickets::state::SplitTicket,
-    utils::{map, mint_to, withdraw},
+    utils::map,
     BondsError,
 };
 
@@ -119,7 +120,11 @@ fn handle_fill<'info>(
             } else if let Some(mut margin_user) = margin_user {
                 margin_user.assets.entitled_tickets += base_size;
             } else {
-                mint_to!(ctx, bond_ticket_mint, maker.as_token_account(), base_size)?;
+                ctx.mint(
+                    &ctx.accounts.bond_ticket_mint,
+                    &maker.as_token_account(),
+                    base_size,
+                )?;
             }
         }
         Side::Ask => {
@@ -141,11 +146,10 @@ fn handle_fill<'info>(
                     };
                 }
             } else {
-                withdraw!(
-                    ctx,
-                    underlying_token_vault,
-                    maker.as_token_account(),
-                    quote_size
+                ctx.withdraw(
+                    &ctx.accounts.underlying_token_vault,
+                    &maker.as_token_account(),
+                    quote_size,
                 )?;
             }
         }
@@ -194,11 +198,10 @@ fn handle_out<'info>(
                 margin_user.assets.entitled_tokens += quote_size;
                 Ok(())
             } else {
-                withdraw!(
-                    ctx,
-                    underlying_token_vault,
-                    user.as_token_account(),
-                    quote_size
+                ctx.withdraw(
+                    &ctx.accounts.underlying_token_vault,
+                    &user.as_token_account(),
+                    quote_size,
                 )
             }
         }
@@ -211,7 +214,11 @@ fn handle_out<'info>(
                     Ok(())
                 }
             } else {
-                mint_to!(ctx, bond_ticket_mint, user.as_token_account(), *base_size)
+                ctx.mint(
+                    &ctx.accounts.bond_ticket_mint,
+                    &user.as_token_account(),
+                    *base_size,
+                )
             }
         }
     }

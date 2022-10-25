@@ -4,10 +4,10 @@ use anchor_spl::token::{accessor::mint, Mint, Token, TokenAccount};
 use proc_macros::BondTokenManager;
 
 use crate::{
+    bond_token_manager::BondTokenManager,
     orderbook::state::*,
     serialization::{self, RemainingAccounts},
     tickets::state::SplitTicket,
-    utils::{ctx, mint_to},
     BondsError,
 };
 
@@ -86,11 +86,10 @@ impl<'info> LendOrder<'info> {
                 order_summary.base_filled()
             } else {
                 // no auto_stake: issue free tickets to the user for immediate fill
-                mint_to!(
-                    ctx(self),
-                    ticket_mint,
-                    ticket_settlement,
-                    order_summary.base_filled()
+                self.mint(
+                    &self.ticket_mint,
+                    &self.ticket_settlement,
+                    order_summary.base_filled(),
                 )?;
                 0
             }
