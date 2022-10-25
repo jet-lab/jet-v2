@@ -2,12 +2,38 @@ const path = require('path');
 const { ProvidePlugin, DefinePlugin } = require('webpack');
 const dotenv = require('dotenv');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
+const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
+
+const plugins = [
+  new HtmlWebpackPlugin({
+    template: path.join(__dirname, '/src/index.html')
+  }),
+  new ProvidePlugin({
+    process: 'process/browser'
+  }),
+  new ProvidePlugin({
+    Buffer: ['buffer', 'Buffer']
+  }),
+  new DefinePlugin({
+    'process.env': JSON.stringify(dotenv.config().parsed || {})
+  })
+]
+
+if (process.env.ANALYZE) {
+  plugins.push(new BundleAnalyzerPlugin({
+    analyzerMode: 'server'
+  }))
+}
+
 module.exports = {
   entry: './src/index.tsx',
   output: {
-    filename: 'bundle.[contenthash].js',
+    filename: 'bundle.[name].[contenthash].js',
     path: path.join(__dirname, '/build'),
     clean: true
+  },
+  optimization: {
+    chunkIds: 'named',
   },
   devtool: 'source-map',
   devServer: {
@@ -87,21 +113,8 @@ module.exports = {
       url: false
     }
   },
-  plugins: [
-    new HtmlWebpackPlugin({
-      template: path.join(__dirname, '/src/index.html')
-    }),
-    new ProvidePlugin({
-      process: 'process/browser'
-    }),
-    new ProvidePlugin({
-      Buffer: ['buffer', 'Buffer']
-    }),
-    new DefinePlugin({
-      'process.env': JSON.stringify(dotenv.config().parsed || {})
-    })
-  ],
   experiments: {
     asyncWebAssembly: true
   }
+  plugins,
 };

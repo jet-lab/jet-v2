@@ -9,7 +9,8 @@
     "e2e": "npx cypress run",
     "e2e:ci": "start-server-and-test start http://localhost:3000 e2e",
     "e2e:gui": "npx cypress open",
-    "start": "serve -s build"
+    "start": "serve -s build",
+    "analyze": "ANALYZE=true webpack --mode production"
   },
   "dependencies": {
     "@ant-design/icons": "^4.7.0",
@@ -47,6 +48,7 @@
     "@types/react": "^18.0.20",
     "@types/react-csv": "^1.1.3",
     "@types/react-dom": "^18.0.6",
+    "@types/webpack-bundle-analyzer": "^4.6.0",
     "babel-loader": "^8.2.5",
     "babel-preset-env": "^1.7.0",
     "buffer": "^6.0.3",
@@ -62,6 +64,7 @@
     "ts-loader": "^9.4.1",
     "typescript": "^4.8.3",
     "webpack": "^5.74.0",
+    "webpack-bundle-analyzer": "^4.6.1",
     "webpack-cli": "^4.10.0",
     "webpack-dev-server": "^4.11.1"
   }
