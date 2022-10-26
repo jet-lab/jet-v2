@@ -13,3 +13,7 @@ build-esm:
 build:
 	make build-esm;
 	make build-cjs;
+
+watch:
+	tsc --watch --preserveWatchOutput --pretty & tsc -p tsconfig-cjs.json --watch --preserveWatchOutput --pretty;
+	cargo watch -w 'libraries/ts/bonds/wasm-utils/src'  -w 'libraries/ts/bonds/wasm-utils/Cargo.toml' -s 'wasm-pack build --target bundler libraries/ts/bonds/wasm-utils --out-dir libraries/ts/bonds/src/wasm-utils';

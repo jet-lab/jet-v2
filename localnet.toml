@@ -25,7 +25,7 @@ collateral_weight = 1_00
 max_leverage = 20_00
 
 [[airspace.tokens.USDC.bond_markets]]
-duration = 5
+duration = 86400
 min_order_size = 10
 paused = true
 

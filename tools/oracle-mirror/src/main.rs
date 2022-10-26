@@ -1,4 +1,7 @@
-use std::{path::PathBuf, str::FromStr};
+use std::{
+    path::{Path, PathBuf},
+    str::FromStr,
+};
 
 use anchor_lang::{AccountDeserialize, Discriminator};
 use anyhow::{bail, Result};
@@ -88,8 +91,14 @@ async fn run(opts: CliOpts) -> Result<()> {
 
     let oracle_list = discover_oracles(&source_client, &target_client).await?;
 
+    let mut id_file = None;
+
     loop {
         sync_oracles(&source_client, &target_client, &signer, &oracle_list).await?;
+
+        if id_file.is_none() {
+            id_file = Some(RunningProcessIdFile::new());
+        }
 
         tokio::time::sleep(opts.interval.into()).await;
     }
@@ -260,5 +269,28 @@ trait PythAttributeGetter {
 impl PythAttributeGetter for ProductAccount {
     fn get_attr(&self, name: &str) -> Option<&str> {
         self.iter().find(|(k, _)| *k == name).map(|(_, v)| v)
+    }
+}
+
+struct RunningProcessIdFile;
+
+impl RunningProcessIdFile {
+    const PATH: &'static str = "tests/oracle-mirror.pid";
+
+    fn new() -> Self {
+        let pid = std::process::id();
+        std::fs::write(Self::PATH, pid.to_string()).unwrap();
+
+        Self
+    }
+}
+
+impl Drop for RunningProcessIdFile {
+    fn drop(&mut self) {
+        let file = Path::new(Self::PATH);
+
+        if file.exists() {
+            std::fs::remove_file(file).unwrap()
+        }
     }
 }

@@ -2,6 +2,7 @@ ignore/**
 lib
 dist
 test-ledger
+tests/oracle-mirror.pid
 
 .anchor
 .DS_Store

@@ -13,6 +13,7 @@ jobs:
       image: jetprotocol/builder:solana-1.10.35-anchor-0.25.0-3
     env:
       HOME: /root
+      SOLANA_MAINNET_RPC: ${{ secrets.SOLANA_MAINNET_RPC }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3

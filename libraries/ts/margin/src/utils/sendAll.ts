@@ -111,36 +111,25 @@ export async function sendAll(
   const signedUnflattened = slices.map(slice => signedTxs.slice(...slice))
 
   let lastTxn = ""
-
-  for (let i = 0; i < signedUnflattened.length; i++) {
-    const transactions = signedUnflattened[i]
-    const txnArray = await Promise.all(
-      transactions.map(async tx => {
-        const rawTx = tx.serialize()
-
-        try {
-          return await sendAndConfirmRawTransaction(provider.connection, rawTx, opts)
-        } catch (err: any) {
-          // Thrown if the underlying 'confirmTransaction' encounters a failed tx
-          // the 'confirmTransaction' error does not return logs so we make another rpc call to get them
-          // Choose the shortest available commitment for 'getTransaction'
-          // (the json RPC does not support any shorter than "confirmed" for 'getTransaction')
-          // because that will see the tx sent with `sendAndConfirmRawTransaction` no matter which
-          // commitment `sendAndConfirmRawTransaction` used
-
-          await provider.connection.confirmTransaction(bs58.encode(tx.signature!), "confirmed")
-          const failedTx = await provider.connection.getTransaction(bs58.encode(tx.signature!), {
-            commitment: "confirmed"
-          })
-          const logs = failedTx?.meta?.logMessages
-          const message = `${err.message}\n${JSON.stringify(logs, undefined, 2)}`
-          throw !logs ? err : new SendTransactionError(message)
-        }
-      })
-    )
-    // Return the txid of the final transaction in the array
-    // TODO: We should return an array instead of only the final txn
-    lastTxn = txnArray[txnArray.length - 1] ?? ""
+  try {
+    for (let i = 0; i < signedUnflattened.length; i++) {
+      const transactions = signedUnflattened[i]
+      const txnArray = await Promise.all(
+        transactions.map(async tx => {
+          const rawTx = tx.serialize()
+            return await sendAndConfirmRawTransaction(provider.connection, rawTx, opts).catch((err) => {
+              let customErr = new ConfirmError(err.message)
+              customErr.signature = bs58.encode(tx.signature!)
+              throw customErr
+            })
+        })
+      )
+      // Return the txid of the final transaction in the array
+      // TODO: We should return an array instead of only the final txn
+      lastTxn = txnArray[txnArray.length - 1] ?? ""
+    }
+  } catch(e: any) {
+    throw e
   }
   return lastTxn
 }
@@ -162,13 +151,15 @@ async function sendAndConfirmRawTransaction(
   const status = (await connection.confirmTransaction(signature, options && options.commitment)).value
 
   if (status.err) {
-    throw new ConfirmError(`Raw transaction ${signature} failed (${JSON.stringify(status)})`)
+    const error = new ConfirmError(`Raw transaction ${signature} failed (${JSON.stringify(status)})`)
+    throw error
   }
 
   return signature
 }
 
 class ConfirmError extends Error {
+  signature?: string;
   constructor(message?: string) {
     super(message)
   }

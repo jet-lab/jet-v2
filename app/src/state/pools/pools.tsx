@@ -3,7 +3,7 @@ import { atom, useRecoilValue, selector, selectorFamily, useSetRecoilState } fro
 import { PoolManager as MarginPoolManager, Pool } from '@jet-lab/margin';
 import { localStorageEffect } from '../effects/localStorageEffect';
 import { ActionRefresh, ACTION_REFRESH_INTERVAL } from '../actions/actions';
-import { MarginConfig } from '../config/marginConfig';
+import { MainConfig } from '../config/marginConfig';
 import { useProvider } from '../../utils/jet/provider';
 
 // Our app's interface for interacting with margin pools
@@ -54,7 +54,7 @@ export const CurrentPool = selector<Pool | undefined>({
 export const PoolOptions = selector<PoolOption[]>({
   key: 'poolOptions',
   get: ({ get }) => {
-    const config = get(MarginConfig);
+    const config = get(MainConfig);
     if (!config) {
       return [];
     }
