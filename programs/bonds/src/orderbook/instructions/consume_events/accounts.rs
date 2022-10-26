@@ -14,6 +14,26 @@ use crate::{
 
 #[derive(Accounts)]
 pub struct ConsumeEvents<'info> {
+    pub market: MarketAccounts<'info>,
+
+    #[account(
+        has_one = crank @ BondsError::WrongCrankAuthority,
+        constraint = crank_authorization.airspace == market.bond_manager.load()?.airspace @ BondsError::WrongAirspaceAuthorization
+    )]
+    pub crank_authorization: Box<Account<'info, CrankAuthorization>>,
+    pub crank: Signer<'info>,
+
+    /// The account paying rent for PDA initialization
+    #[account(mut)]
+    pub payer: Signer<'info>,
+    pub system_program: Program<'info, System>,
+    pub token_program: Program<'info, Token>,
+    // remaining_accounts: [EventAccounts],
+}
+
+/// Accounts that manage bond market operations
+#[derive(Accounts)]
+pub struct MarketAccounts<'info> {
     /// The `BondManager` account tracks global information related to this particular bond market
     #[account(
         has_one = bond_ticket_mint @ BondsError::WrongTicketMint,
@@ -38,20 +58,6 @@ pub struct ConsumeEvents<'info> {
     /// CHECK: handled by aaob
     #[account(mut)]
     pub event_queue: AccountInfo<'info>,
-
-    #[account(
-        has_one = crank @ BondsError::WrongCrankAuthority,
-        constraint = crank_authorization.airspace == bond_manager.load()?.airspace @ BondsError::WrongAirspaceAuthorization
-    )]
-    pub crank_authorization: Account<'info, CrankAuthorization>,
-    pub crank: Signer<'info>,
-
-    /// The account paying rent for PDA initialization
-    #[account(mut)]
-    pub payer: Signer<'info>,
-    pub system_program: Program<'info, System>,
-    pub token_program: Program<'info, Token>,
-    // remaining_accounts: [EventAccounts],
 }
 
 /// These are the additional accounts that need to be provided in the ix

@@ -6,6 +6,7 @@ use agnostic_orderbook::{
     },
 };
 use anchor_lang::prelude::*;
+use anchor_spl::token::{MintTo, Transfer};
 use jet_proto_math::traits::{SafeAdd, SafeSub};
 use num_traits::FromPrimitive;
 
@@ -14,7 +15,6 @@ use crate::{
     margin::state::{Obligation, ObligationFlags},
     orderbook::state::{fp32_mul, CallbackFlags, CallbackInfo, FillInfo, OutInfo},
     tickets::state::SplitTicket,
-    utils::{mint_to, withdraw},
     BondsError,
 };
 
@@ -25,7 +25,7 @@ pub fn handler<'info>(
     num_events: u32,
     seeds: Vec<Vec<u8>>,
 ) -> Result<()> {
-    let duration = ctx.accounts.bond_manager.load()?.duration;
+    let duration = ctx.accounts.market.bond_manager.load()?.duration;
 
     let mut num_iters = 0;
     for event in queue(&ctx, seeds)?.take(num_events as usize) {
@@ -48,8 +48,8 @@ pub fn handler<'info>(
     agnostic_orderbook::instruction::consume_events::process::<CallbackInfo>(
         ctx.program_id,
         consume_events::Accounts {
-            market: &ctx.accounts.orderbook_market_state.to_account_info(),
-            event_queue: &ctx.accounts.event_queue.to_account_info(),
+            market: &ctx.accounts.market.orderbook_market_state.to_account_info(),
+            event_queue: &ctx.accounts.market.event_queue.to_account_info(),
         },
         consume_events::Params {
             number_of_entries_to_consume: num_iters,
@@ -102,7 +102,7 @@ fn handle_fill<'info>(
                 let interest = base_size.safe_sub(principal)?;
                 *loan.unwrap().auto_stake()? = SplitTicket {
                     owner: maker.as_owner().key(),
-                    bond_manager: ctx.accounts.bond_manager.key(),
+                    bond_manager: ctx.accounts.market.bond_manager.key(),
                     order_tag: maker_info.order_tag,
                     maturation_timestamp,
                     struck_timestamp: fill_timestamp,
@@ -113,7 +113,23 @@ fn handle_fill<'info>(
                 let mut margin_user = maker.margin_user()?;
                 margin_user.assets.entitled_tickets += base_size;
             } else {
-                mint_to!(ctx, bond_ticket_mint, maker.as_token_account(), *base_size)?;
+                anchor_spl::token::mint_to(
+                    CpiContext::new(
+                        ctx.accounts.token_program.to_account_info(),
+                        MintTo {
+                            mint: ctx.accounts.market.bond_ticket_mint.to_account_info(),
+                            to: maker.as_token_account(),
+                            authority: ctx.accounts.market.bond_manager.to_account_info(),
+                        },
+                    )
+                    .with_signer(&[&ctx
+                        .accounts
+                        .market
+                        .bond_manager
+                        .load()?
+                        .authority_seeds()]),
+                    *base_size,
+                )?;
             }
         }
         Side::Ask => {
@@ -127,7 +143,7 @@ fn handle_fill<'info>(
                     *loan.unwrap().new_debt()? = Obligation {
                         sequence_number,
                         borrower_account: margin_user.key(),
-                        bond_manager: ctx.accounts.bond_manager.key(),
+                        bond_manager: ctx.accounts.market.bond_manager.key(),
                         order_tag: maker_info.order_tag,
                         maturation_timestamp,
                         balance: *base_size,
@@ -135,11 +151,22 @@ fn handle_fill<'info>(
                     };
                 }
             } else {
-                withdraw!(
-                    ctx,
-                    underlying_token_vault,
-                    maker.as_token_account(),
-                    *quote_size
+                anchor_spl::token::transfer(
+                    CpiContext::new(
+                        ctx.accounts.token_program.to_account_info(),
+                        Transfer {
+                            from: ctx.accounts.market.underlying_token_vault.to_account_info(),
+                            to: maker.as_token_account(),
+                            authority: ctx.accounts.market.bond_manager.to_account_info(),
+                        },
+                    )
+                    .with_signer(&[&ctx
+                        .accounts
+                        .market
+                        .bond_manager
+                        .load()?
+                        .authority_seeds()]),
+                    *quote_size,
                 )?;
             }
         }
@@ -179,17 +206,44 @@ fn handle_out<'info>(
     // todo defensive rounding
     let quote_size = fp32_mul(*base_size, price).ok_or(BondsError::ArithmeticOverflow)?;
     match Side::from_u8(*side).unwrap() {
-        Side::Bid => withdraw!(
-            ctx,
-            underlying_token_vault,
-            user.as_token_account(),
-            quote_size
+        Side::Bid => anchor_spl::token::transfer(
+            CpiContext::new(
+                ctx.accounts.token_program.to_account_info(),
+                Transfer {
+                    from: ctx.accounts.market.underlying_token_vault.to_account_info(),
+                    to: user.as_token_account(),
+                    authority: ctx.accounts.market.bond_manager.to_account_info(),
+                },
+            )
+            .with_signer(&[&ctx
+                .accounts
+                .market
+                .bond_manager
+                .load()?
+                .authority_seeds()]),
+            quote_size,
         ),
         Side::Ask => {
             if info.flags.contains(CallbackFlags::NEW_DEBT) {
                 user.margin_user()?.debt.process_out(*base_size)
             } else {
-                mint_to!(ctx, bond_ticket_mint, user.as_token_account(), *base_size)
+                anchor_spl::token::mint_to(
+                    CpiContext::new(
+                        ctx.accounts.token_program.to_account_info(),
+                        MintTo {
+                            mint: ctx.accounts.market.bond_ticket_mint.to_account_info(),
+                            to: user.as_token_account(),
+                            authority: ctx.accounts.market.bond_manager.to_account_info(),
+                        },
+                    )
+                    .with_signer(&[&ctx
+                        .accounts
+                        .market
+                        .bond_manager
+                        .load()?
+                        .authority_seeds()]),
+                    *base_size,
+                )
             }
         }
     }

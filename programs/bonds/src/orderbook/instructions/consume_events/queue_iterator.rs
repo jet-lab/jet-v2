@@ -22,7 +22,8 @@ pub fn queue<'c, 'info>(
     seeds: Vec<Vec<u8>>,
 ) -> Result<EventIterator<'c, 'info>> {
     Ok(EventIterator {
-        queue: EventQueue::deserialize_market(ctx.accounts.event_queue.to_account_info())?.iter(),
+        queue: EventQueue::deserialize_market(ctx.accounts.market.event_queue.to_account_info())?
+            .iter(),
         accounts: ctx.remaining_accounts.iter(),
         system_program: ctx.accounts.system_program.to_account_info(),
         payer: ctx.accounts.payer.to_account_info(),

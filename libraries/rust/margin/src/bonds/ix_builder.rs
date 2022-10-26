@@ -230,11 +230,13 @@ impl BondsIxBuilder {
         }
         .data();
         let mut accounts = jet_bonds::accounts::ConsumeEvents {
-            bond_manager: self.manager,
-            bond_ticket_mint: self.bond_ticket_mint,
-            underlying_token_vault: self.underlying_token_vault,
-            orderbook_market_state: self.orderbook_market_state,
-            event_queue: self.keys.unwrap("event_queue")?,
+            market: jet_bonds::accounts::MarketAccounts {
+                bond_manager: self.manager,
+                bond_ticket_mint: self.bond_ticket_mint,
+                underlying_token_vault: self.underlying_token_vault,
+                orderbook_market_state: self.orderbook_market_state,
+                event_queue: self.keys.unwrap("event_queue")?,
+            },
             crank_authorization: crank_authorization(&self.keys.unwrap("crank")?),
             crank: self.keys.unwrap("crank")?,
             payer: self.keys.unwrap("payer")?,
