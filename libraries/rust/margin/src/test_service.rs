@@ -81,6 +81,10 @@ pub struct BondMarketConfig {
 
     /// The minimum order size for the AOB
     pub min_order_size: u64,
+
+    /// Whether or not order matching should be paused for the market
+    #[serde(default)]
+    pub paused: bool,
 }
 
 /// Configuration for margin pools
@@ -287,6 +291,14 @@ fn create_airspace_token_bond_markets_tx(
             ],
             signers: vec![key_eq, key_bids, key_asks],
         });
+
+        if bm_config.paused {
+            txs.last_mut()
+                .unwrap()
+                .instructions
+                .push(bonds_ix.pause_order_matching().unwrap());
+        }
+
         txs.push(admin.register_bond_market(
             mint,
             bond_manager_seed,
