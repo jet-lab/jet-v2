@@ -101,7 +101,7 @@ describe('margin bonds borrowing', async () => {
   const bondsProgram: anchor.Program<JetBonds> = new anchor.Program(JetBondsIdl, CONFIG.bondsProgramId, provider);
   let bondMarket: BondMarket;
 
-  it('tell me what failed', async () => {
+  it('setup', async () => {
     // Fund payer
     const airdropSignature = await provider.connection.requestAirdrop(
       provider.wallet.publicKey,
