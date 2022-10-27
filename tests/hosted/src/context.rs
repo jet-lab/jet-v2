@@ -74,6 +74,75 @@ impl From<SolanaTestContext> for MarginTestContext {
     }
 }
 
+// impl MarginTestContext {
+//     #[cfg(not(feature = "localnet"))]
+//     pub async fn new() -> Result<Self, Error> {
+//         use jet_simulation::runtime::TestRuntime;
+//         use jet_static_program_registry::{orca_swap_v1, orca_swap_v2, spl_token_swap_v2};
+//         let runtime = jet_simulation::create_test_runtime![
+//             jet_test_service,
+//             jet_bonds,
+//             jet_control,
+//             jet_margin,
+//             jet_metadata,
+//             jet_airspace,
+//             jet_margin_pool,
+//             jet_margin_swap,
+//             orca_whirlpool_program,
+//             (
+//                 orca_swap_v1::id(),
+//                 orca_swap_v1::processor::Processor::process
+//             ),
+//             (
+//                 orca_swap_v2::id(),
+//                 orca_swap_v2::processor::Processor::process
+//             ),
+//             (
+//                 spl_token_swap_v2::id(),
+//                 spl_token_swap_v2::processor::Processor::process
+//             ),
+//             (
+//                 spl_associated_token_account::ID,
+//                 spl_associated_token_account::processor::process_instruction
+//             ),
+//             (
+//                 saber_client::id(),
+//                 saber_program::processor::Processor::process
+//             ),
+//         ];
+
+//         Self::new_with_runtime(Arc::new(runtime)).await
+//     }
+
+//     #[cfg(feature = "localnet")]
+//     pub async fn new() -> Result<Self, Error> {
+//         use jet_simulation::solana_rpc_api::RpcConnection;
+
+//         let solana_config =
+//             solana_cli_config::Config::load(solana_cli_config::CONFIG_FILE.as_ref().unwrap())
+//                 .unwrap_or_default();
+
+//         let payer_key_json = std::fs::read_to_string(&solana_config.keypair_path)?;
+//         let payer_key_bytes: Vec<u8> = serde_json::from_str(&payer_key_json)?;
+//         let payer = Keypair::from_bytes(&payer_key_bytes).unwrap();
+
+//         let rpc = RpcConnection::new_optimistic(
+//             Keypair::from_bytes(&payer_key_bytes).unwrap(),
+//             "http://127.0.0.1:8899",
+//         );
+
+//         let runtime = Arc::new(rpc);
+
+//         let rng = MockRng(StepRng::new(0, 1));
+//         let ctx = MarginTestContext {
+//             tokens: TokenManager::new(runtime.clone()),
+//             margin: MarginClient::new(runtime.clone()),
+//             authority: Keypair::new(),
+//             rpc: solana.rpc.clone(),
+//             solana,
+//             payer,
+//         }
+//     }
 impl MarginTestContext {
     pub async fn new(seed: &str) -> Result<Self, Error> {
         Self::new_with_runtime(SolanaTestContext::new(seed).await).await

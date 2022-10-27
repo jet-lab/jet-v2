@@ -509,7 +509,7 @@ fn exec_swap_split<'a, 'b, 'c, 'info>(
                 .spl_swap(accounts, src_ata, dst_ata, swap_amount_in, 0)?;
             dst_ata_closing = token::accessor::amount(dst_ata)?;
         }
-        SwapRouteIdentifier::Whirlpool => todo!(),
+        SwapRouteIdentifier::OrcaWhirlpool => todo!(),
         SwapRouteIdentifier::SaberStable => {
             let accounts =
                 &ctx.remaining_accounts[account_index..account_index + SABER_SWAP_ACC_LEN];
