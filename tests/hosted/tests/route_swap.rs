@@ -341,7 +341,7 @@ async fn route_swap() -> Result<(), anyhow::Error> {
         env.msol,
         env.usdc,
         TokenChange::shift(ONE_MSOL),
-        106 * ONE_USDC * 98 / 100,
+        106 * ONE_USDC * 92 / 100,
     );
 
     swap_builder.add_swap_route(&swap_pool_sbr_msol_tsol, &env.msol, 0)?;
@@ -351,8 +351,6 @@ async fn route_swap() -> Result<(), anyhow::Error> {
     // Adding a disconnected swap should fail
     let result = swap_builder.add_swap_route(&swap_pool_spl_msol_usdt, &env.usdc, 0);
     assert!(result.is_err());
-
-    
 
     // TODO: add some tests to check validity
     swap_builder.finalize().unwrap();

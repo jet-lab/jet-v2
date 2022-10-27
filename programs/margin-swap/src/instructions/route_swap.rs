@@ -118,6 +118,8 @@ impl<'info> RouteSwap<'info> {
     fn spl_swap(
         &self,
         accounts: &[AccountInfo<'info>],
+        source_ata: &AccountInfo<'info>,
+        dst_ata: &AccountInfo<'info>,
         amount_in: u64,
         minimum_amount_out: u64,
     ) -> Result<()> {
@@ -138,10 +140,10 @@ impl<'info> RouteSwap<'info> {
                 swap_pool.key,
                 authority.key,
                 &self.margin_account.key(),
-                self.transit_source_account.key,
+                source_ata.key,
                 vault_into.key,
                 vault_from.key,
-                self.transit_destination_account.key,
+                dst_ata.key,
                 token_mint.key,
                 fee_account.key,
                 None,
@@ -158,10 +160,10 @@ impl<'info> RouteSwap<'info> {
                 swap_pool.to_account_info(),
                 self.margin_account.to_account_info(),
                 authority.to_account_info(),
-                self.transit_source_account.to_account_info(),
+                source_ata.to_account_info(),
                 vault_into.to_account_info(),
                 vault_from.to_account_info(),
-                self.transit_destination_account.to_account_info(),
+                dst_ata.to_account_info(),
                 token_mint.to_account_info(),
                 fee_account.to_account_info(),
                 self.token_program.to_account_info(),
@@ -175,6 +177,8 @@ impl<'info> RouteSwap<'info> {
     fn saber_stable_swap(
         &self,
         accounts: &[AccountInfo<'info>],
+        source_ata: &AccountInfo<'info>,
+        dst_ata: &AccountInfo<'info>,
         amount_in: u64,
         minimum_amount_out: u64,
     ) -> Result<()> {
@@ -200,12 +204,12 @@ impl<'info> RouteSwap<'info> {
                     swap: swap_pool.to_account_info(),
                 },
                 input: saber_stable_swap::SwapToken {
-                    user: self.transit_source_account.to_account_info(),
+                    user: source_ata.to_account_info(),
                     reserve: vault_into.to_account_info(),
                 },
                 output: saber_stable_swap::SwapOutput {
                     user_token: saber_stable_swap::SwapToken {
-                        user: self.transit_destination_account.to_account_info(),
+                        user: dst_ata.to_account_info(),
                         reserve: vault_from.to_account_info(),
                     },
                     fees: fee_account.to_account_info(),
@@ -254,7 +258,7 @@ pub fn route_swap_handler<'a, 'b, 'c, 'info>(
         token::accessor::amount(&ctx.accounts.transit_source_account.to_account_info())?;
 
     // The closing balance should be > opening balance after the withdrawal
-    let swap_amount_in = source_closing_balance
+    let mut swap_amount_in = source_closing_balance
         .checked_sub(source_opening_balance)
         .unwrap();
     if swap_amount_in == 0 {
@@ -268,7 +272,7 @@ pub fn route_swap_handler<'a, 'b, 'c, 'info>(
     // TODO: went the long way so I can find a pattern as I go along
     for leg in 0..valid_swaps {
         let route = &swap_routes[leg];
-        let (source_pool_accounts, source_ata, source_pool_dep_note) = match leg {
+        let (source_pool_accounts, src_transit, source_pool_dep_note) = match leg {
             0 => {
                 // First leg of 2 or more
 
@@ -291,29 +295,38 @@ pub fn route_swap_handler<'a, 'b, 'c, 'info>(
             }
             _ => {
                 // Not the first leg
+                let source_ata = ctx.remaining_accounts[acc_ix].to_account_info();
 
                 let source_pool_accounts = [
-                    ctx.remaining_accounts[acc_ix].to_account_info(),
                     ctx.remaining_accounts[acc_ix + 1].to_account_info(),
                     ctx.remaining_accounts[acc_ix + 2].to_account_info(),
+                    ctx.remaining_accounts[acc_ix + 3].to_account_info(),
                 ];
 
-                let source_ata = ctx.remaining_accounts[acc_ix + 3].to_account_info();
                 let source_pool_dep_note = ctx.remaining_accounts[acc_ix + 4].to_account_info();
                 acc_ix += 5;
 
                 (source_pool_accounts, source_ata, source_pool_dep_note)
             }
         };
-        acc_ix = exec_swap(
+        // If this is the last/only leg, the destination transit is known, else get after swap accounts
+        let dst_transit = if leg + 1 == valid_swaps {
+            Some(&ctx.accounts.transit_destination_account)
+        } else {
+            None
+        };
+        let result = exec_swap(
             &ctx,
             route,
             &source_pool_accounts,
-            &source_ata,
+            &src_transit,
+            dst_transit,
             &source_pool_dep_note,
             swap_amount_in,
             acc_ix,
         )?;
+        acc_ix = result.0;
+        swap_amount_in = result.1;
     }
 
     // If the swap would have resulted in 0 tokens, the swap program would error out,
@@ -342,7 +355,11 @@ pub fn route_swap_handler<'a, 'b, 'c, 'info>(
         .unwrap();
     // Check if slippage tolerance is exceeded
     if swap_amount_out < minimum_amount_out {
-        msg!("Amount out = {swap_amount_out} less than minimum {minimum_amount_out}");
+        msg!(
+            "Amount out = {} less than minimum {}",
+            swap_amount_out,
+            minimum_amount_out
+        );
         return Err(error!(crate::ErrorCode::SlippageExceeded));
     }
     ctx.accounts.deposit(
@@ -356,17 +373,21 @@ pub fn route_swap_handler<'a, 'b, 'c, 'info>(
     Ok(())
 }
 
+#[allow(clippy::too_many_arguments)]
 fn exec_swap<'a, 'b, 'c, 'info>(
     ctx: &Context<'a, 'b, 'c, 'info, RouteSwap<'info>>,
     route: &SwapRouteDetail,
     source_pool_accounts: &[AccountInfo<'info>; 3],
     source_ata: &AccountInfo<'info>,
+    dest_ata: Option<&AccountInfo<'info>>,
     source_pool_dep_note: &AccountInfo<'info>,
     swap_amount_in: u64,
     acc_ix: usize,
-) -> Result<usize> {
+) -> Result<(usize, u64)> {
     let mut acc_ix = acc_ix;
+    // TODO: Test that these are indeed token accounts before using the accessor
     let source_ata_opening = token::accessor::amount(source_ata)?;
+    let dst_ata_opening: u64;
     // Record the opening balance of the input
     //
     // Get the swap accounts
@@ -381,7 +402,7 @@ fn exec_swap<'a, 'b, 'c, 'info>(
     };
 
     // TODO: handle splits
-    match route.route_a {
+    let dst_ata = match route.route_a {
         SwapRouteIdentifier::Empty => todo!(),
         SwapRouteIdentifier::Spl => {
             // TODO: add bounds check
@@ -389,7 +410,11 @@ fn exec_swap<'a, 'b, 'c, 'info>(
             acc_ix += 7;
             // We don't need to check the destination balance on this leg
             // TODO: handle percentages
-            ctx.accounts.spl_swap(accounts, curr_swap_in, 0)?;
+            let dst_ata = dest_ata.unwrap_or_else(|| ctx.remaining_accounts.get(acc_ix).unwrap());
+            dst_ata_opening = token::accessor::amount(dst_ata)?;
+            ctx.accounts
+                .spl_swap(accounts, source_ata, dst_ata, curr_swap_in, 0)?;
+            dst_ata
         }
         SwapRouteIdentifier::Whirlpool => todo!(),
         SwapRouteIdentifier::SaberStable => {
@@ -398,9 +423,13 @@ fn exec_swap<'a, 'b, 'c, 'info>(
             acc_ix += 7;
             // We don't need to check the destination balance on this leg
             // TODO: handle percentages
-            ctx.accounts.saber_stable_swap(accounts, curr_swap_in, 0)?;
-        },
-    }
+            let dst_ata = dest_ata.unwrap_or_else(|| ctx.remaining_accounts.get(acc_ix).unwrap());
+            dst_ata_opening = token::accessor::amount(dst_ata)?;
+            ctx.accounts
+                .saber_stable_swap(accounts, source_ata, dst_ata, curr_swap_in, 0)?;
+            dst_ata
+        }
+    };
 
     // Handle the next leg
     if route.split > 0 {
@@ -415,7 +444,10 @@ fn exec_swap<'a, 'b, 'c, 'info>(
                 acc_ix += 7;
                 // We don't need to check the destination balance on this leg
                 // TODO: handle percentages
-                ctx.accounts.spl_swap(accounts, curr_swap_in, 0)?;
+                let dst_ata =
+                    dest_ata.unwrap_or_else(|| ctx.remaining_accounts.get(acc_ix).unwrap());
+                ctx.accounts
+                    .spl_swap(accounts, source_ata, dst_ata, curr_swap_in, 0)?;
             }
             SwapRouteIdentifier::Whirlpool => todo!(),
             SwapRouteIdentifier::SaberStable => {
@@ -424,15 +456,21 @@ fn exec_swap<'a, 'b, 'c, 'info>(
                 acc_ix += 7;
                 // We don't need to check the destination balance on this leg
                 // TODO: handle percentages
-                ctx.accounts.saber_stable_swap(accounts, curr_swap_in, 0)?;
-            },
+                let dst_ata =
+                    dest_ata.unwrap_or_else(|| ctx.remaining_accounts.get(acc_ix).unwrap());
+                ctx.accounts
+                    .saber_stable_swap(accounts, source_ata, dst_ata, curr_swap_in, 0)?;
+            }
         }
     }
 
     // After the swaps above, we can now return any dust to the input token's pool
     // TODO: if we've taken a reference, does the token amount change?
     let source_ata_closing = token::accessor::amount(source_ata)?;
+    let dst_ata_closing = token::accessor::amount(dst_ata)?;
     let swapped_amount = source_ata_opening.checked_sub(source_ata_closing).unwrap();
+
+    let next_swap_amount_in = dst_ata_closing.checked_sub(dst_ata_opening).unwrap();
 
     if swapped_amount < swap_amount_in {
         // We swapped less than we had to, return dust back
@@ -446,5 +484,5 @@ fn exec_swap<'a, 'b, 'c, 'info>(
         )?;
     }
 
-    Ok(acc_ix)
+    Ok((acc_ix, next_swap_amount_in))
 }

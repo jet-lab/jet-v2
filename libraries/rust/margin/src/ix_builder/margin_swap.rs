@@ -338,6 +338,10 @@ impl MarginSwapRouteIxBuilder {
 
         // Add a margin pool from the previous swap if next_route > 0
         if self.next_route_index > 0 && !self.expects_multi_route {
+            // Add ATA where the pool transfer will come from
+            let src_ata = get_associated_token_address(&self.margin_account, src_token);
+            self.account_metas.push(AccountMeta::new(src_ata, false));
+
             // It depends on whether this is a multi-hop or not.
             let pool = MarginPoolIxBuilder::new(*src_token);
             let mut pool_accounts = ix_accounts::MarginPoolInfo {
@@ -349,9 +353,6 @@ impl MarginSwapRouteIxBuilder {
 
             self.account_metas.append(&mut pool_accounts);
 
-            // Add an ATA where the pool transfer will come from
-            let ata = get_associated_token_address(&self.margin_account, src_token);
-            self.account_metas.push(AccountMeta::new(ata, false));
             self.spl_token_accounts.insert(*src_token);
 
             // Add the pool destination account
