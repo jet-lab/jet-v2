@@ -57,6 +57,21 @@ mod jet_margin_swap {
         )
     }
 
+    /// Swap using Orca Whirlpool for stable pools
+    pub fn orca_whirlpool_swap(
+        ctx: Context<OrcaWhirlpoolSwap>,
+        withdrawal_change_kind: ChangeKind,
+        withdrawal_amount: u64,
+        minimum_amount_out: u64,
+    ) -> Result<()> {
+        orca_whirlpool_swap_handler(
+            ctx,
+            withdrawal_change_kind,
+            withdrawal_amount,
+            minimum_amount_out,
+        )
+    }
+
     /// Swap using Saber for stable pools
     pub fn saber_stable_swap(ctx: Context<SaberSwapInfo>) -> Result<()> {
         saber_stable_swap_handler(ctx)
@@ -118,7 +133,7 @@ pub enum ErrorCode {
 pub enum SwapRouteIdentifier {
     Empty = 0,
     Spl,
-    Whirlpool,
+    OrcaWhirlpool,
     SaberStable,
 }
 
