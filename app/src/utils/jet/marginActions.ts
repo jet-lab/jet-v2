@@ -231,12 +231,12 @@ export function useMarginActions() {
       console.error('Accounts and/or pools not loaded');
       throw new Error();
     }
-
-    const repayType = accountRepay ? 'repayFromDeposit' : 'repay';
-    const closeLoan = tokenInputAmount.eq(accountPoolPosition.maxTradeAmounts[repayType]);
+    
+    const closeLoan = tokenInputAmount.gte(accountPoolPosition.loanBalance);
     const change = closeLoan
       ? PoolTokenChange.setTo(0)
-      : PoolTokenChange.setTo(accountPoolPosition.loanBalance.sub(tokenInputAmount));
+      : PoolTokenChange.shiftBy(tokenInputAmount);
+
     try {
       const txId = await currentPool.marginRepay({
         marginAccount: currentAccount,
