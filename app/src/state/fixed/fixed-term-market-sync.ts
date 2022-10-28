@@ -6,8 +6,7 @@ import { useProvider } from '../../utils/jet/provider';
 import { AirspaceConfig, BondMarketConfig } from '@jet-lab/margin';
 import { MainConfig } from '../config/marginConfig';
 import { PublicKey } from '@solana/web3.js';
-import bs58 from "bs58"
-
+import bs58 from 'bs58';
 
 export const AllFixedMarketsAtom = atom<Array<MarketAndconfig>>({
   key: 'allFixedMarkets',
