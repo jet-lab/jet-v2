@@ -1,5 +1,5 @@
 import { useRecoilValue } from 'recoil';
-import { Geobanned, Dictionary } from '../../state/settings/localization/localization';
+import { Geobanned, Dictionary } from '@state/settings/localization/localization';
 import { Button, Modal, Typography } from 'antd';
 
 // Modal to show user they are in a geobanned region

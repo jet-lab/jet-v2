@@ -1,10 +1,10 @@
 import { useEffect } from 'react';
 import { useRecoilValue } from 'recoil';
-import { AccountSnapshot } from '../components/misc/AccountSnapshot/AccountSnapshot';
-import { FullAccountBalance } from '../components/tables/FullAccountBalance';
-import { FullAccountHistory } from '../components/tables/FullAccountHistory';
-import { Dictionary } from '../state/settings/localization/localization';
-import { AccountsViewOrder } from '../state/views/views';
+import { AccountSnapshot } from '@components/misc/AccountSnapshot/AccountSnapshot';
+import { FullAccountBalance } from '@components/tables/FullAccountBalance';
+import { FullAccountHistory } from '@components/tables/FullAccountHistory';
+import { Dictionary } from '@state/settings/localization/localization';
+import { AccountsViewOrder } from '@state/views/views';
 
 // App view for managing / checking margin accounts
 export function AccountsView(): JSX.Element {

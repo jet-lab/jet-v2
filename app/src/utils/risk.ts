@@ -1,8 +1,8 @@
 import { useRecoilValue } from 'recoil';
 import { MarginAccount, Pool, TokenAmount, PoolAction } from '@jet-lab/margin';
-import { CurrentPool } from '../state/pools/pools';
-import { CurrentAccount } from '../state/user/accounts';
-import { CurrentAction, MaxTradeAmounts, TokenInputAmount } from '../state/actions/actions';
+import { CurrentPool } from '@state/pools/pools';
+import { CurrentAccount } from '@state/user/accounts';
+import { CurrentAction, MaxTradeAmounts, TokenInputAmount } from '@state/actions/actions';
 
 // Project user's risk from an action
 export function useProjectedRisk(

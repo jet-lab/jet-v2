@@ -1,4 +1,4 @@
-import { useChangeView } from '../../../utils/ui';
+import { useChangeView } from '@utils/ui';
 
 // Jet logo in the Navbar
 export function NavLogo(): JSX.Element {

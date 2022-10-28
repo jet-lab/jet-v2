@@ -1,6 +1,6 @@
 import { Connection } from '@solana/web3.js';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { blockExplorers } from '../state/settings/settings';
+import { blockExplorers } from '@state/settings/settings';
 
 // Timeout for app page / theme transitions (in ms)
 export const APP_TRANSITION_TIMEOUT = 500;

@@ -1,11 +1,11 @@
 import { useRecoilValue } from 'recoil';
 import { feesBuffer, MarginAccount } from '@jet-lab/margin';
-import { Dictionary } from '../../state/settings/localization/localization';
-import { WalletTokens } from '../../state/user/walletTokens';
-import { AccountNames, CurrentAccount } from '../../state/user/accounts';
-import { Pools, CurrentPool } from '../../state/pools/pools';
-import { CurrentAction, TokenInputAmount } from '../../state/actions/actions';
-import { NewAccountModal } from '../../state/modals/modals';
+import { Dictionary } from '@state/settings/localization/localization';
+import { WalletTokens } from '@state/user/walletTokens';
+import { AccountNames, CurrentAccount } from '@state/user/accounts';
+import { Pools, CurrentPool } from '@state/pools/pools';
+import { CurrentAction, TokenInputAmount } from '@state/actions/actions';
+import { NewAccountModal } from '@state/modals/modals';
 import { formatRiskIndicator } from '../format';
 import { LAMPORTS_PER_SOL } from '@solana/web3.js';
 

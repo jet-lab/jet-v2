@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRecoilState, useRecoilValue, useResetRecoilState } from 'recoil';
-import { Dictionary, uiDictionary, PreferredLanguage } from '../../state/settings/localization/localization';
-import { SettingsModal as SettingsModalState } from '../../state/modals/modals';
+import { Dictionary, uiDictionary, PreferredLanguage } from '@state/settings/localization/localization';
+import { SettingsModal as SettingsModalState } from '@state/modals/modals';
 import {
   Explorer,
   BlockExplorer,
@@ -15,10 +15,10 @@ import {
   PreferDayMonthYear,
   FiatCurrency,
   fiatOptions
-} from '../../state/settings/settings';
-import { getPing } from '../../utils/ui';
+} from '@state/settings/settings';
+import { getPing } from '@utils/ui';
 import { Input, Modal, Radio, Select, Typography } from 'antd';
-import AngleDown from '../../assets/icons/arrow-angle-down.svg';
+import AngleDown from '@assets/icons/arrow-angle-down.svg';
 
 // Modal for changing app preferences
 export function SettingsModal(): JSX.Element {

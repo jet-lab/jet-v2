@@ -2,12 +2,12 @@ import { useState } from 'react';
 import { useRecoilState, useResetRecoilState, useRecoilValue } from 'recoil';
 import axios from 'axios';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { SendingTransaction } from '../../state/actions/actions';
-import { EditAccountModal as EditAccountModalOpen } from '../../state/modals/modals';
-import { Cluster } from '../../state/settings/settings';
-import { Dictionary } from '../../state/settings/localization/localization';
-import { CurrentAccountAddress, CurrentAccount, AccountNames } from '../../state/user/accounts';
-import { notify } from '../../utils/notify';
+import { SendingTransaction } from '@state/actions/actions';
+import { EditAccountModal as EditAccountModalOpen } from '@state/modals/modals';
+import { Cluster } from '@state/settings/settings';
+import { Dictionary } from '@state/settings/localization/localization';
+import { CurrentAccountAddress, CurrentAccount, AccountNames } from '@state/user/accounts';
+import { notify } from '@utils/notify';
 import { Input, Modal, Typography } from 'antd';
 
 // Modal for editing account information

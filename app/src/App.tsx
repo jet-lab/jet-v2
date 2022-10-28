@@ -9,15 +9,16 @@ import { SolongWalletAdapter } from '@solana/wallet-adapter-solong';
 import { SolletWalletAdapter } from '@solana/wallet-adapter-sollet';
 import { BraveWalletAdapter } from '@solana/wallet-adapter-brave';
 import { AccountsView, PoolsView, SwapsView } from './views';
-import { Navbar } from './components/misc/Navbar/Navbar';
-import { Modals } from './components/modals/Modals';
-import { TermsPrivacy } from './components/misc/TermsPrivacy';
 import { lazy, Suspense } from 'react';
 import './styles/App.less';
+import { Navbar } from '@components/misc/Navbar/Navbar';
+import { Modals } from '@components/modals/Modals';
+import { TermsPrivacy } from '@components/misc/TermsPrivacy';
+import '@styles/App.less';
 
-const StateSyncer = lazy(() => import('./state/StateSyncer'));
-const FixedLendView = lazy(() => import('./views/FixedLendView'));
-const FixedBorrowView = lazy(() => import('./views/FixedBorrowView'));
+const StateSyncer = lazy(() => import('@state/StateSyncer'));
+const FixedLendView = lazy(() => import('@views/FixedLendView'));
+const FixedBorrowView = lazy(() => import('@views/FixedBorrowView'));
 
 export const isDebug =
   window.location.href.includes('?debug-environment=true') && window.location.href.includes('localhost');

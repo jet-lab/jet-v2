@@ -1,6 +1,6 @@
 import { useLocation } from 'react-router-dom';
 import { useRecoilState, SetterOrUpdater } from 'recoil';
-import { PoolsViewOrder, SwapsViewOrder, AccountsViewOrder } from '../../../state/views/views';
+import { PoolsViewOrder, SwapsViewOrder, AccountsViewOrder } from '@state/views/views';
 import { ReorderArrows } from '../ReorderArrows';
 import { SnapshotHead } from './SnapshotHead';
 import { SnapshotBody } from './SnapshotBody';

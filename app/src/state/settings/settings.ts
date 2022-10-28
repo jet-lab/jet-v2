@@ -1,6 +1,6 @@
 import { atom } from 'recoil';
 import { localStorageEffect } from '../effects/localStorageEffect';
-import { getPing } from '../../utils/ui';
+import { getPing } from '@utils/ui';
 
 // Disclaimer accepted
 export const DisclaimersAccepted = atom({

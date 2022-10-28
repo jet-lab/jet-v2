@@ -13,16 +13,16 @@ import {
   TokenAmount,
   TokenFaucet
 } from '@jet-lab/margin';
-import { MainConfig } from '../../state/config/marginConfig';
-import { Pools, CurrentPool } from '../../state/pools/pools';
-import { WalletTokens } from '../../state/user/walletTokens';
-import { CurrentAccount, CurrentAccountAddress, FavoriteAccounts } from '../../state/user/accounts';
-import { Dictionary } from '../../state/settings/localization/localization';
-import { TokenInputAmount, ActionRefresh } from '../../state/actions/actions';
+import { MainConfig } from '@state/config/marginConfig';
+import { Pools, CurrentPool } from '@state/pools/pools';
+import { WalletTokens } from '@state/user/walletTokens';
+import { CurrentAccount, CurrentAccountAddress, FavoriteAccounts } from '@state/user/accounts';
+import { Dictionary } from '@state/settings/localization/localization';
+import { TokenInputAmount, ActionRefresh } from '@state/actions/actions';
 import { useProvider } from './provider';
 import { NOTIFICATION_DURATION } from '../notify';
 import { message } from 'antd';
-import { Cluster } from '../../state/settings/settings';
+import { Cluster } from '@state/settings/settings';
 
 export enum ActionResponse {
   Success = 'SUCCESS',

@@ -4,8 +4,8 @@ import { Connection, ConfirmOptions } from '@solana/web3.js';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { AnchorProvider, Wallet } from '@project-serum/anchor';
 import { MarginClient } from '@jet-lab/margin';
-import { Cluster, rpcNodes, PreferredRpcNode } from '../../state/settings/settings';
-import { MainConfig } from '../../state/config/marginConfig';
+import { Cluster, rpcNodes, PreferredRpcNode } from '@state/settings/settings';
+import { MainConfig } from '@state/config/marginConfig';
 
 // Anchor connection / provider hook
 export function useProvider() {
