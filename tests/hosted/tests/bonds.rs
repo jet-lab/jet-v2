@@ -340,7 +340,7 @@ async fn _full_workflow<P: Proxy + GenerateProxy>(manager: Arc<BondsTestManager>
     // Access violation in stack frame 5 at address 0x200005ff8 of size 8 by instruction #22627
     // #[cfg(not(feature = "localnet"))]
     {
-        manager.consume_events().await?;
+        assert!(manager.consume_events().await.is_ok());
 
         assert!(manager
             .load_event_queue()

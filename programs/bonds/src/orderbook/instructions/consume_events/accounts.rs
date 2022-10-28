@@ -14,11 +14,9 @@ use crate::{
 
 #[derive(Accounts)]
 pub struct ConsumeEvents<'info> {
-    pub market: MarketAccounts<'info>,
-
     #[account(
         has_one = crank @ BondsError::WrongCrankAuthority,
-        constraint = crank_authorization.airspace == market.bond_manager.load()?.airspace @ BondsError::WrongAirspaceAuthorization
+        // constraint = crank_authorization.airspace == market.bond_manager.load()?.airspace @ BondsError::WrongAirspaceAuthorization
     )]
     pub crank_authorization: Box<Account<'info, CrankAuthorization>>,
     pub crank: Signer<'info>,
@@ -28,6 +26,7 @@ pub struct ConsumeEvents<'info> {
     pub payer: Signer<'info>,
     pub system_program: Program<'info, System>,
     pub token_program: Program<'info, Token>,
+    // market: MarketAccounts<'info>,
     // remaining_accounts: [EventAccounts],
 }
 
@@ -35,12 +34,12 @@ pub struct ConsumeEvents<'info> {
 #[derive(Accounts)]
 pub struct MarketAccounts<'info> {
     /// The `BondManager` account tracks global information related to this particular bond market
-    #[account(
-        has_one = bond_ticket_mint @ BondsError::WrongTicketMint,
-        has_one = underlying_token_vault @ BondsError::WrongVault,
-        has_one = orderbook_market_state @ BondsError::WrongMarketState,
-        has_one = event_queue @ BondsError::WrongEventQueue,
-    )]
+    // #[account(
+    //     has_one = bond_ticket_mint @ BondsError::WrongTicketMint,
+    //     has_one = underlying_token_vault @ BondsError::WrongVault,
+    //     has_one = orderbook_market_state @ BondsError::WrongMarketState,
+    //     has_one = event_queue @ BondsError::WrongEventQueue,
+    // )]
     pub bond_manager: AccountLoader<'info, BondManager>,
     /// The market ticket mint
     /// CHECK: has_one
@@ -58,6 +57,44 @@ pub struct MarketAccounts<'info> {
     /// CHECK: handled by aaob
     #[account(mut)]
     pub event_queue: AccountInfo<'info>,
+}
+
+impl<'info> MarketAccounts<'info> {
+    pub fn try_from_remaining_accounts<'a>(
+        remaining_accounts: &'a [AccountInfo<'info>],
+        crank_airspace: Pubkey,
+    ) -> Result<Self> {
+        let accounts = &mut remaining_accounts.iter().take(5);
+
+        let bond_manager =
+            AccountLoader::<BondManager>::try_from(Self::next_market_account(accounts)?)?;
+        let bond_ticket_mint = Self::next_market_account(accounts)?.to_account_info();
+        let underlying_token_vault = Self::next_market_account(accounts)?.to_account_info();
+        let orderbook_market_state = Self::next_market_account(accounts)?.to_account_info();
+        let event_queue = Self::next_market_account(accounts)?.to_account_info();
+
+        let market = Self {
+            bond_manager,
+            bond_ticket_mint,
+            underlying_token_vault,
+            orderbook_market_state,
+            event_queue,
+        };
+        market.run_checks(crank_airspace)?;
+        Ok(market)
+    }
+
+    fn run_checks(&self, crank_airspace: Pubkey) -> Result<()> {
+        Ok(())
+    }
+
+    fn next_market_account<'a>(
+        accounts: &mut impl Iterator<Item = &'a AccountInfo<'info>>,
+    ) -> Result<&'a AccountInfo<'info>> {
+        accounts
+            .next()
+            .ok_or_else(|| error!(BondsError::FailedToDeserializeMarketAccounts))
+    }
 }
 
 /// These are the additional accounts that need to be provided in the ix

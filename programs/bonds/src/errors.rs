@@ -14,6 +14,8 @@ pub enum BondsError {
     DoesNotOwnEventAdapter,
     #[msg("queue does not have room for another event")]
     EventQueueFull,
+    #[msg("failed to deserialize market accounts")]
+    FailedToDeserializeMarketAccounts,
     #[msg("failed to deserialize the SplitTicket or ClaimTicket")]
     FailedToDeserializeTicket,
     #[msg("bond is not mature and cannot be claimed")]

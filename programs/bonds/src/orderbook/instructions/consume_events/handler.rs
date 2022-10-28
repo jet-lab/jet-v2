@@ -18,25 +18,32 @@ use crate::{
     BondsError,
 };
 
-use super::{queue, ConsumeEvents, EventAccounts, FillAccounts, OutAccounts};
+use super::{queue, ConsumeEvents, EventAccounts, FillAccounts, MarketAccounts, OutAccounts};
 
 pub fn handler<'info>(
     ctx: Context<'_, '_, '_, 'info, ConsumeEvents<'info>>,
     num_events: u32,
     seeds: Vec<Vec<u8>>,
 ) -> Result<()> {
-    let duration = ctx.accounts.market.bond_manager.load()?.duration;
+    let market = MarketAccounts::try_from_remaining_accounts(
+        ctx.remaining_accounts,
+        ctx.accounts.crank_authorization.airspace,
+    )?;
+
+    let duration = market.bond_manager.load()?.duration;
 
     let mut num_iters = 0;
-    for event in queue(&ctx, seeds)?.take(num_events as usize) {
+    for event in queue(&ctx, &market, seeds)?.take(num_events as usize) {
         let (accounts, event) = event?;
 
         // Delegate event processing to the appropriate handler
         match accounts {
             EventAccounts::Fill(accounts) => {
-                handle_fill(&ctx, duration, accounts, &event.unwrap_fill()?)
+                handle_fill(&ctx, &market, duration, accounts, &event.unwrap_fill()?)
             }
-            EventAccounts::Out(accounts) => handle_out(&ctx, *accounts, &event.unwrap_out()?),
+            EventAccounts::Out(accounts) => {
+                handle_out(&ctx, &market, *accounts, &event.unwrap_out()?)
+            }
         }?;
 
         num_iters += 1;
@@ -48,8 +55,8 @@ pub fn handler<'info>(
     agnostic_orderbook::instruction::consume_events::process::<CallbackInfo>(
         ctx.program_id,
         consume_events::Accounts {
-            market: &ctx.accounts.market.orderbook_market_state.to_account_info(),
-            event_queue: &ctx.accounts.market.event_queue.to_account_info(),
+            market: &market.orderbook_market_state.to_account_info(),
+            event_queue: &market.event_queue.to_account_info(),
         },
         consume_events::Params {
             number_of_entries_to_consume: num_iters,
@@ -61,6 +68,7 @@ pub fn handler<'info>(
 
 fn handle_fill<'info>(
     ctx: &Context<'_, '_, '_, 'info, ConsumeEvents<'info>>,
+    market: &MarketAccounts<'info>,
     duration: i64,
     accounts: Box<FillAccounts<'info>>,
     fill: &FillInfo,
@@ -102,7 +110,7 @@ fn handle_fill<'info>(
                 let interest = base_size.safe_sub(principal)?;
                 *loan.unwrap().auto_stake()? = SplitTicket {
                     owner: maker.as_owner().key(),
-                    bond_manager: ctx.accounts.market.bond_manager.key(),
+                    bond_manager: market.bond_manager.key(),
                     order_tag: maker_info.order_tag,
                     maturation_timestamp,
                     struck_timestamp: fill_timestamp,
@@ -117,17 +125,12 @@ fn handle_fill<'info>(
                     CpiContext::new(
                         ctx.accounts.token_program.to_account_info(),
                         MintTo {
-                            mint: ctx.accounts.market.bond_ticket_mint.to_account_info(),
+                            mint: market.bond_ticket_mint.to_account_info(),
                             to: maker.as_token_account(),
-                            authority: ctx.accounts.market.bond_manager.to_account_info(),
+                            authority: market.bond_manager.to_account_info(),
                         },
                     )
-                    .with_signer(&[&ctx
-                        .accounts
-                        .market
-                        .bond_manager
-                        .load()?
-                        .authority_seeds()]),
+                    .with_signer(&[&market.bond_manager.load()?.authority_seeds()]),
                     *base_size,
                 )?;
             }
@@ -143,7 +146,7 @@ fn handle_fill<'info>(
                     *loan.unwrap().new_debt()? = Obligation {
                         sequence_number,
                         borrower_account: margin_user.key(),
-                        bond_manager: ctx.accounts.market.bond_manager.key(),
+                        bond_manager: market.bond_manager.key(),
                         order_tag: maker_info.order_tag,
                         maturation_timestamp,
                         balance: *base_size,
@@ -155,17 +158,12 @@ fn handle_fill<'info>(
                     CpiContext::new(
                         ctx.accounts.token_program.to_account_info(),
                         Transfer {
-                            from: ctx.accounts.market.underlying_token_vault.to_account_info(),
+                            from: market.underlying_token_vault.to_account_info(),
                             to: maker.as_token_account(),
-                            authority: ctx.accounts.market.bond_manager.to_account_info(),
+                            authority: market.bond_manager.to_account_info(),
                         },
                     )
-                    .with_signer(&[&ctx
-                        .accounts
-                        .market
-                        .bond_manager
-                        .load()?
-                        .authority_seeds()]),
+                    .with_signer(&[&market.bond_manager.load()?.authority_seeds()]),
                     *quote_size,
                 )?;
             }
@@ -177,6 +175,7 @@ fn handle_fill<'info>(
 
 fn handle_out<'info>(
     ctx: &Context<'_, '_, '_, 'info, ConsumeEvents<'info>>,
+    market: &MarketAccounts<'info>,
     accounts: OutAccounts<'info>,
     out: &OutInfo,
 ) -> Result<()> {
@@ -210,17 +209,12 @@ fn handle_out<'info>(
             CpiContext::new(
                 ctx.accounts.token_program.to_account_info(),
                 Transfer {
-                    from: ctx.accounts.market.underlying_token_vault.to_account_info(),
+                    from: market.underlying_token_vault.to_account_info(),
                     to: user.as_token_account(),
-                    authority: ctx.accounts.market.bond_manager.to_account_info(),
+                    authority: market.bond_manager.to_account_info(),
                 },
             )
-            .with_signer(&[&ctx
-                .accounts
-                .market
-                .bond_manager
-                .load()?
-                .authority_seeds()]),
+            .with_signer(&[&market.bond_manager.load()?.authority_seeds()]),
             quote_size,
         ),
         Side::Ask => {
@@ -231,17 +225,12 @@ fn handle_out<'info>(
                     CpiContext::new(
                         ctx.accounts.token_program.to_account_info(),
                         MintTo {
-                            mint: ctx.accounts.market.bond_ticket_mint.to_account_info(),
+                            mint: market.bond_ticket_mint.to_account_info(),
                             to: user.as_token_account(),
-                            authority: ctx.accounts.market.bond_manager.to_account_info(),
+                            authority: market.bond_manager.to_account_info(),
                         },
                     )
-                    .with_signer(&[&ctx
-                        .accounts
-                        .market
-                        .bond_manager
-                        .load()?
-                        .authority_seeds()]),
+                    .with_signer(&[&market.bond_manager.load()?.authority_seeds()]),
                     *base_size,
                 )
             }
