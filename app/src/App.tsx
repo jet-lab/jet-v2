@@ -15,7 +15,7 @@ import { AccountsView } from './views/AccountsView';
 import { Navbar } from './components/misc/Navbar/Navbar';
 import { Modals } from './components/modals/Modals';
 import { TermsPrivacy } from './components/misc/TermsPrivacy';
-import { lazy } from 'react';
+import { lazy, useMemo } from 'react';
 
 const StateSyncer = lazy(() => import('./state/StateSyncer'));
 const FixedLendView = lazy(() => import('./views/FixedLendView'));
@@ -24,15 +24,18 @@ const FixedBorrowView = lazy(() => import('./views/FixedBorrowView'));
 export function App(): JSX.Element {
   const isDevnet = localStorage.getItem('jetAppCluster') === 'devnet';
 
-  const wallets = [
-    new PhantomWalletAdapter(),
-    new BraveWalletAdapter(),
-    new SolflareWalletAdapter(),
-    new SolongWalletAdapter(),
-    new MathWalletAdapter(),
-    new SolletWalletAdapter(),
-    ...(isDevnet ? [new E2EWalletAdapter()] : [])
-  ];
+  const wallets = useMemo(
+    () => [
+      new PhantomWalletAdapter(),
+      new BraveWalletAdapter(),
+      new SolflareWalletAdapter(),
+      new SolongWalletAdapter(),
+      new MathWalletAdapter(),
+      new SolletWalletAdapter(),
+      ...(isDevnet ? [new E2EWalletAdapter()] : [])
+    ],
+    [isDevnet]
+  );
 
   return (
     <BrowserRouter>
