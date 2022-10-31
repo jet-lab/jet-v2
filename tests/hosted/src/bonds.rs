@@ -789,13 +789,8 @@ impl<P: Proxy> BondsUser<P> {
     }
 
     pub async fn settle(&self) -> Result<Signature> {
-        let cancel = self
-            .manager
-            .ix_builder
-            .settle(self.proxy.pubkey(), None, None)?;
-        self.client
-            .send_and_confirm_1tx(&[self.proxy.invoke_signed(cancel)], &[&self.owner])
-            .await
+        let settle = self.manager.ix_builder.margin_settle(self.proxy.pubkey());
+        self.client.send_and_confirm_1tx(&[settle], &[]).await
     }
 }
 

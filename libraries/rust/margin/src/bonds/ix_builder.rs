@@ -354,11 +354,8 @@ impl BondsIxBuilder {
             payer: self.payer.unwrap(),
             borrower_account,
             margin_account: owner,
-            claims: bonds_pda(&[jet_bonds::seeds::CLAIM_NOTES, borrower_account.as_ref()]),
-            collateral: bonds_pda(&[
-                jet_bonds::seeds::COLLATERAL_NOTES,
-                borrower_account.as_ref(),
-            ]),
+            claims: BondsIxBuilder::user_claims(borrower_account),
+            collateral: BondsIxBuilder::user_collateral(borrower_account),
             claims_mint: self.claims,
             collateral_mint: self.collateral,
             underlying_settlement: get_associated_token_address(&owner, &self.underlying_mint),
@@ -827,6 +824,35 @@ impl BondsIxBuilder {
 
         Ok(vec![init_eq, init_bids, init_asks])
     }
+
+    pub fn margin_settle(&self, margin_account: Pubkey) -> Instruction {
+        let data = jet_bonds::instruction::Settle {}.data();
+        let margin_user = self.margin_user_account(margin_account);
+        let claims = BondsIxBuilder::user_claims(margin_user);
+        let collateral = BondsIxBuilder::user_collateral(margin_user);
+        let accounts = jet_bonds::accounts::Settle {
+            margin_user,
+            bond_manager: self.manager,
+            token_program: spl_token::ID,
+            claims,
+            claims_mint: self.claims,
+            collateral,
+            collateral_mint: self.collateral,
+            underlying_token_vault: self.underlying_token_vault,
+            bond_ticket_mint: self.bond_ticket_mint,
+            underlying_settlement: get_associated_token_address(
+                &margin_account,
+                &self.underlying_mint,
+            ),
+            ticket_settlement: get_associated_token_address(
+                &margin_account,
+                &self.bond_ticket_mint,
+            ),
+        }
+        .to_account_metas(None);
+
+        Instruction::new_with_bytes(jet_bonds::ID, &data, accounts)
+    }
 }
 
 /// helpful addresses for a MarginUser account
@@ -885,6 +911,17 @@ impl BondsIxBuilder {
             jet_bonds::seeds::MARGIN_BORROWER,
             self.manager.as_ref(),
             owner.as_ref(),
+        ])
+    }
+
+    pub fn user_claims(borrower_account: Pubkey) -> Pubkey {
+        bonds_pda(&[jet_bonds::seeds::CLAIM_NOTES, borrower_account.as_ref()])
+    }
+
+    pub fn user_collateral(borrower_account: Pubkey) -> Pubkey {
+        bonds_pda(&[
+            jet_bonds::seeds::COLLATERAL_NOTES,
+            borrower_account.as_ref(),
         ])
     }
 
