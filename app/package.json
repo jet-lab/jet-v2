@@ -23,6 +23,7 @@
     "apexcharts": "^3.35.5",
     "bn.js": "^5.2.1",
     "bs58": "^5.0.0",
+    "crypto-browserify": "^3.12.0",
     "logrocket": "^3.0.1",
     "process": "^0.11.10",
     "react": "^18.2.0",
@@ -32,6 +33,7 @@
     "react-string-replace": "^1.1.0",
     "recoil": "^0.7.5",
     "serve": "^14.0.1",
+    "stream-browserify": "^3.0.0",
     "util": "^0.12.5"
   },
   "devDependencies": {
