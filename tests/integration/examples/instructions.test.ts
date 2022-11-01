@@ -1,3 +1,4 @@
+/*
 import {
   MarginClient,
   MarginPrograms,
@@ -119,3 +120,4 @@ describe('Typescript examples', () => {
     });
   });
 });
+*/
