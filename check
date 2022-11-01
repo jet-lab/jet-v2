@@ -14,7 +14,7 @@
 # Then you can run any of the subcommands without calling ./check:
 #   anchor-test    # tab completion is available
 
-DOCKER_IMAGE=jetprotocol/builder:solana-1.10.35-anchor-0.25.0-3
+DOCKER_IMAGE=jetprotocol/builder:e2e
 
 #################
 # Workflow Jobs
@@ -22,6 +22,12 @@ DOCKER_IMAGE=jetprotocol/builder:solana-1.10.35-anchor-0.25.0-3
 anchor-test() { args=$@
     extract-arg --skip-yarn || yarn-build
 	anchor test $args -- --features testing
+}
+
+e2e-tests() { args=$@
+    extract-arg --skip-yarn || (yarn-build && yarn build:app)
+    rm -f app/public/localnet.config.json
+    E2E=true anchor test $args -- --features testing
 }
 
 hosted-tests-localnet() { args=$@

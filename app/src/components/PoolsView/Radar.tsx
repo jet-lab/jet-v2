@@ -4,7 +4,6 @@ import axios from 'axios';
 import { Dictionary } from '../../state/settings/localization/localization';
 import { PoolsRowOrder } from '../../state/views/views';
 import { CurrentPool } from '../../state/pools/pools';
-import { LightTheme } from '../../state/settings/settings';
 import { Skeleton, Table, Typography } from 'antd';
 import { ReorderArrows } from '../misc/ReorderArrows';
 
@@ -12,7 +11,6 @@ import { ReorderArrows } from '../misc/ReorderArrows';
 export function Radar(): JSX.Element {
   const dictionary = useRecoilValue(Dictionary);
   const [poolsRowOrder, setPoolsRowOrder] = useRecoilState(PoolsRowOrder);
-  const lightTheme = useRecoilValue(LightTheme);
   const currentPool = useRecoilValue(CurrentPool);
   const [loaded, setLoaded] = useState(false);
   const { Paragraph } = Typography;
@@ -44,9 +42,7 @@ export function Radar(): JSX.Element {
       dataIndex: 'key',
       key: 'protocol',
       align: 'left' as any,
-      render: (key: string) => (
-        <img width="60px" height="auto" src={`img/protocols/${key}_${lightTheme ? 'black' : 'white'}.png`} alt={key} />
-      )
+      render: (key: string) => <img width="60px" height="auto" src={`img/protocols/${key}_white.png`} alt={key} />
     },
     {
       title: dictionary.common.depositRate,

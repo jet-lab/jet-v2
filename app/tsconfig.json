@@ -9,7 +9,8 @@
     "allowJs": true,
     "allowSyntheticDefaultImports": true,
     "moduleResolution": "node",
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "incremental": true
   },
   "include": ["./src/", "./public"]
 }

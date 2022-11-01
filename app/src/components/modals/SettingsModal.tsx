@@ -10,14 +10,13 @@ import {
   RpcNodes,
   rpcNodeOptions,
   PreferredRpcNode,
-  LightTheme,
   PreferredTimeDisplay,
   timeDisplayOptions,
   PreferDayMonthYear,
   FiatCurrency,
   fiatOptions
 } from '../../state/settings/settings';
-import { getPing, toggleLightTheme } from '../../utils/ui';
+import { getPing } from '../../utils/ui';
 import { Input, Modal, Radio, Select, Typography } from 'antd';
 import AngleDown from '../../assets/icons/arrow-angle-down.svg';
 
@@ -50,9 +49,6 @@ export function SettingsModal(): JSX.Element {
   const [preferredTimeDisplaySetting, setPreferredTimeDisplaySetting] = useState(preferredTimeDisplay);
   const [preferDayMonthYear, setPreferDayMonthYear] = useRecoilState(PreferDayMonthYear);
   const [preferDayMonthYearSetting, setPreferDayMonthYearSetting] = useState(preferDayMonthYear);
-  // Theme
-  const [lightTheme, setLightTheme] = useRecoilState(LightTheme);
-  const initialTheme = useRef(lightTheme);
   const [loading, setLoading] = useState(false);
   const { Title, Text } = Typography;
   const { Option } = Select;
@@ -95,7 +91,6 @@ export function SettingsModal(): JSX.Element {
     if (preferDayMonthYearSetting !== preferDayMonthYear) {
       setPreferDayMonthYear(preferDayMonthYearSetting);
     }
-    initialTheme.current = lightTheme;
     resetSettingsModalOpen();
     setLoading(false);
   }
@@ -111,7 +106,6 @@ export function SettingsModal(): JSX.Element {
     setPreferredLanguageSetting(preferredLanguage);
     setPreferredTimeDisplaySetting(preferredTimeDisplay);
     setPreferDayMonthYearSetting(preferDayMonthYear);
-    setLightTheme(initialTheme.current);
     resetSettingsModalOpen();
   }
 
@@ -125,19 +119,13 @@ export function SettingsModal(): JSX.Element {
       explorerSetting !== explorer ||
       preferredLanguageSetting !== preferredLanguage ||
       preferredTimeDisplaySetting !== preferredTimeDisplay ||
-      preferDayMonthYearSetting !== preferDayMonthYear ||
-      initialTheme.current !== lightTheme
+      preferDayMonthYearSetting !== preferDayMonthYear
     ) {
       return true;
     }
 
     return false;
   }
-
-  // Light / dark toggle
-  useEffect(() => {
-    toggleLightTheme(lightTheme);
-  }, [lightTheme]);
 
   // Localize 'custom' option on mount
   useEffect(() => {
@@ -301,17 +289,6 @@ export function SettingsModal(): JSX.Element {
             </Radio>
           </Radio.Group>
         </div>
-        {/*
-        <div className="setting flex align-start justify-center column">
-          <Text strong className="setting-title">
-            {dictionary.settingsModal.theme.title.toUpperCase()}
-          </Text>
-          <div className="flex-centered">
-            <Switch onClick={() => setLightTheme(!lightTheme)} checked={!lightTheme} />
-            {dictionary.settingsModal.theme[lightTheme ? 'light' : 'dark']}
-          </div>
-        </div>
-        */}
       </Modal>
     );
   } else {
