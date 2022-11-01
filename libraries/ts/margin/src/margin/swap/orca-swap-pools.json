@@ -209,5 +209,57 @@
     "swapProgram": "9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP",
     "swapFees": 0.003,
     "swapType": "constantProduct"
+  },
+  "ETH/SOL": {
+    "swapPool": "FcEro2uFpHcb7Z785CBs6q12KMJqUJKa8VTXPi4TTBMf",
+    "authority": "HMxZz8fv2uR9suzAPRbJGNB3wZL1eT3eKL3cpYWUbM8K",
+    "poolMint": "7aYnrdmdCRodDy2Czn6keUquUhjF1jPEmfwZPh488z8U",
+    "tokenMintA": "7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs",
+    "tokenMintB": "So11111111111111111111111111111111111111112",
+    "tokenA": "3uQytDKNd5H6XK8FhTei4wCUmj2eTbLTbiLAtWk2SmbA",
+    "tokenB": "GR3g8Wej3jmv92hYM1t22kaXog2xjkGjQ7V1XzLd1efT",
+    "feeAccount": "YCVJDKdHNi1mhJtWz7QGbBRreMmw1soeipz7wZbQKEK",
+    "swapProgram": "9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP",
+    "swapFees": 0.003,
+    "swapType": "constantProduct"
+  },
+  "ETH/USDC": {
+    "swapPool": "4reGGLbesqpAeAZdAJv9hhgA2tgj45oGcyRuEvhATdMm",
+    "authority": "8uLtzZ1iTLTCPsm3b4QttRmDXcFjhVHRuMS9VTVEwo7E",
+    "poolMint": "7NPtjjAP7vhp4t5NCLyY4DY5rurvyc8cgZ2a2rYabRia",
+    "tokenMintA": "7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs",
+    "tokenMintB": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+    "tokenA": "9KpjcpKwhoFPbixvKDfcAhBQcVXk1CSBTGsJdzojDPRv",
+    "tokenB": "5HaG31FQS4McBVcHxVfwaKaWXE3VCGqvJ1ZDkTxs94cQ",
+    "feeAccount": "AVw52spXtzFh4bb5ghhpJaDbLx3XWuY85eQNDEo3X1yN",
+    "swapProgram": "9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP",
+    "swapFees": 0.003,
+    "swapType": "constantProduct"
+  },
+  "mSOL/ETH": {
+    "swapPool": "A71DQffTzgxBSzXjPL3tmf8XXTNtS5mR2D78Y8rmV2hk",
+    "authority": "FPWpe7QEQnDMivnHksQW2uvcw9tvX1oxejKBX136WRkr",
+    "poolMint": "5qoTq3qC4U7vFxo3iCzbXcaD1UEmDeCD63Dsuoct71oV",
+    "tokenMintA": "mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqcJm7So",
+    "tokenMintB": "7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs",
+    "tokenA": "Fcp5u8bL3V24MXjA4noSfMpcEAP2vSj1WTaA1ZNxACZL",
+    "tokenB": "DuBCBX3y2FjDWUn2ncK5EKQh229JiJ7HTCjYJhNC87K8",
+    "feeAccount": "FSqUYVzF3XZzLcnj132eT6ed3bK95G1yG4MazcHZi99Q",
+    "swapProgram": "9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP",
+    "swapFees": 0.003,
+    "swapType": "constantProduct"
+  },
+  "stSOL/ETH": {
+    "swapPool": "9FtrC9VkqssGygMafJjseqPQXnyorqHV3DyMPBfJrgtj",
+    "authority": "4Y7EQYJ1WWKn8ZXC3Fc6KVnp5LPgqLxyV5Pk9eGm3cuh",
+    "poolMint": "FWurFWADrgmhb6Y44LEaCMnEHS2Tu3QGqd9oBcZtr8gT",
+    "tokenMintA": "7dHbWXmci3dT8UFYWYZweBLXgycu7Y3iL6trKn1Y7ARj",
+    "tokenMintB": "7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs",
+    "tokenA": "FTrSPUnMKmdKkNekKvVUQY1nunr2kWwohMHmBusd79Vj",
+    "tokenB": "2teAyRLAU716sCj9v2634Wi4wcLqtRvV9upXaRvDSFm1",
+    "feeAccount": "28t4Vixx6cE1yunwXNqQ2YU3pU9PbCscK9G3daRYuYCS",
+    "swapProgram": "9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP",
+    "swapFees": 0.003,
+    "swapType": "constantProduct"
   }
 }
