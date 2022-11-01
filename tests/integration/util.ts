@@ -26,7 +26,7 @@ import {
 } from '@solana/web3.js';
 import { MarginConfig, MarginPrograms, MarginTokenConfig } from '@jet-lab/margin';
 
-import CONFIG from '../localnet.config.json';
+import CONFIG from '../../app/public/localnet.config.json';
 import { TokenFaucet } from '../../node_modules/@jet-lab/margin/src/token/tokenFaucet';
 
 export const CONTROL_PROGRAM_ID = new PublicKey('JPCtrLreUqsEbdhtxZ8zpd8wBydKz4nuEjX5u9Eg5H8');

@@ -28,11 +28,7 @@ import {
   TestToken
 } from '../util';
 
-import USDC_ORACLE_PRICE from '../../keypairs/usdc-price.json';
-import USDC_ORACLE_PRODUCT from '../../keypairs/usdc-product.json';
-import TICKET_ORACLE_PRICE from '../../keypairs/ticket-price.json';
-import TICKET_ORACLE_PRODUCT from '../../keypairs/ticket-product.json';
-import CONFIG from 'localnet.config.json';
+import CONFIG from '../../../app/public/localnet.config.json';
 
 import {
   BondMarket,
@@ -114,17 +110,6 @@ describe('margin bonds borrowing', async () => {
     );
     await provider.connection.confirmTransaction(airdropSignature);
 
-    // create oracles
-    USDC_oracle = [
-      Keypair.fromSecretKey(Uint8Array.of(...USDC_ORACLE_PRODUCT)),
-      Keypair.fromSecretKey(Uint8Array.of(...USDC_ORACLE_PRICE))
-    ];
-    ticket_oracle = [
-      Keypair.fromSecretKey(Uint8Array.of(...TICKET_ORACLE_PRODUCT)),
-      Keypair.fromSecretKey(Uint8Array.of(...TICKET_ORACLE_PRICE))
-    ];
-    await pythClient.createPriceAccount(payer, USDC_oracle[0], 'USD', USDC_oracle[1], 1, 0.01, -8);
-    await pythClient.createPriceAccount(payer, ticket_oracle[0], 'USD', ticket_oracle[1], 1, 0.01, -8);
     USDC = await airdropToken(provider, payer.publicKey, 'USDC');
     BTC = await airdropToken(provider, payer.publicKey, 'Bitcoin');
 
@@ -228,8 +213,6 @@ describe('margin bonds borrowing', async () => {
       source: user_c_usdc_account,
       change: PoolTokenChange.shiftBy(new BN(ONE_USDC))
     });
-    await pythClient.setPythPrice(ownerKeypair, USDC_oracle[1].publicKey, 1, 0.01, -8);
-    await pythClient.setPythPrice(ownerKeypair, ticket_oracle[1].publicKey, 0.9, 0.01, -8);
     await marginPool_USDC.marginRefreshPositionPrice(marginAccount_A);
     await marginPool_USDC.marginRefreshPositionPrice(marginAccount_B);
     await marginPool_USDC.marginRefreshPositionPrice(marginAccount_C);
