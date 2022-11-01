@@ -15,8 +15,10 @@ pub struct InitializeBondManagerParams {
     /// This seed allows the creation of many separate ticket managers tracking different
     /// parameters, such as staking duration
     pub seed: [u8; 32],
-    /// Units added to the initial stake timestamp to determine claim maturity
-    pub duration: i64,
+    /// Length of time before a borrow is marked as due, in seconds
+    pub borrow_duration: i64,
+    /// Length of time before a claim is marked as mature, in seconds
+    pub lend_duration: i64,
 }
 
 /// Initialize a [BondManager]
@@ -147,7 +149,8 @@ pub fn handler(
             bump: [*ctx.bumps.get("bond_manager").unwrap()],
             orderbook_paused: false,
             tickets_paused: false,
-            duration: params.duration,
+            borrow_duration: params.borrow_duration,
+            lend_duration: params.lend_duration,
             underlying_oracle: ctx.accounts.underlying_oracle.key(),
             ticket_oracle: ctx.accounts.ticket_oracle.key(),
         } ignoring {
@@ -163,7 +166,8 @@ pub fn handler(
         version: manager.version_tag,
         address: ctx.accounts.bond_manager.key(),
         underlying_token_mint: manager.underlying_token_mint,
-        duration: manager.duration,
+        borrow_duration: manager.borrow_duration,
+        lend_duration: manager.lend_duration,
         airspace: manager.airspace,
         underlying_oracle: manager.underlying_oracle,
         ticket_oracle: manager.ticket_oracle,

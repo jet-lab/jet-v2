@@ -3,7 +3,6 @@ import { useRecoilValue, useResetRecoilState } from 'recoil';
 import { useWallet } from '@solana/wallet-adapter-react';
 import LogRocket from 'logrocket';
 import { Dictionary } from '../../state/settings/localization/localization';
-import { LightTheme } from '../../state/settings/settings';
 import { WalletModal as WalletModalState } from '../../state/modals/modals';
 import { formatPubkey } from '../../utils/format';
 import { notify } from '../../utils/notify';
@@ -14,7 +13,6 @@ import ArrowIcon from '../../assets/icons/arrow-icon.svg';
 export function WalletModal(): JSX.Element {
   const { wallets, wallet, select, publicKey } = useWallet();
   const dictionary = useRecoilValue(Dictionary);
-  const lightTheme = useRecoilValue(LightTheme);
   const WalletModalOpen = useRecoilValue(WalletModalState);
   const resetWalletModal = useResetRecoilState(WalletModalState);
   const { Text } = Typography;
@@ -56,7 +54,7 @@ export function WalletModal(): JSX.Element {
     let path = `img/wallets/${walletName.toLowerCase()}`;
     // If Math Wallet, specify white or black logo (depending on theme)
     if (walletName === 'MathWallet') {
-      path += lightTheme ? '_black' : '_white';
+      path += '_white';
     }
 
     return path + '.png';

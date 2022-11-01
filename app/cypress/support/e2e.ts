@@ -27,3 +27,16 @@ if (!app.document.head.querySelector('[data-hide-command-log-request]')) {
 
   app.document.head.appendChild(style);
 }
+
+Cypress.on('uncaught:exception', (err, runnable) => {
+  // returning false here prevents Cypress from
+  // failing the test
+  debugger;
+  console.log(err);
+  return false;
+});
+
+Cypress.on('fail', (error, runnable) => {
+  debugger;
+  throw error; // throw error to have test still fail
+});

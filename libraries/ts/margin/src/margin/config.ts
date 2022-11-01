@@ -79,5 +79,5 @@ export interface MarginMarketConfig {
 
 export async function getLatestConfig(cluster: string): Promise<MarginConfig> {
   let response = await axios.get(MARGIN_CONFIG_URL)
-  return (await response.data)[cluster]
+  return response.data[cluster]
 }

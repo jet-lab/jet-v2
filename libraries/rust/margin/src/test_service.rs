@@ -76,8 +76,11 @@ pub struct AirspaceTokenConfig {
 /// Configuration for bond markets
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
 pub struct BondMarketConfig {
-    /// The duration for staking
-    pub duration: i64,
+    /// The duration for borrows
+    pub borrow_duration: i64,
+
+    /// The duration for lending
+    pub lend_duration: i64,
 
     /// The minimum order size for the AOB
     pub min_order_size: u64,
@@ -241,7 +244,7 @@ fn create_airspace_token_bond_markets_tx(
         let len_orders = orderbook_slab_len(ORDERBOOK_CAPACITY);
 
         let mut bond_manager_seed = [0u8; 32];
-        bond_manager_seed[..8].copy_from_slice(&bm_config.duration.to_le_bytes());
+        bond_manager_seed[..8].copy_from_slice(&bm_config.borrow_duration.to_le_bytes());
 
         let mint = derive_token_mint(token_name);
         let bonds_ix = BondsIxBuilder::new_from_seed(
@@ -280,7 +283,8 @@ fn create_airspace_token_bond_markets_tx(
                         config.authority,
                         0,
                         bond_manager_seed,
-                        bm_config.duration,
+                        bm_config.borrow_duration,
+                        bm_config.lend_duration,
                         Pubkey::default(),
                     )
                     .unwrap(),
