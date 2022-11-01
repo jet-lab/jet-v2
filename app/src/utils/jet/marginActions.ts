@@ -231,11 +231,9 @@ export function useMarginActions() {
       console.error('Accounts and/or pools not loaded');
       throw new Error();
     }
-    
+
     const closeLoan = tokenInputAmount.gte(accountPoolPosition.loanBalance);
-    const change = closeLoan
-      ? PoolTokenChange.setTo(0)
-      : PoolTokenChange.shiftBy(tokenInputAmount);
+    const change = closeLoan ? PoolTokenChange.setTo(0) : PoolTokenChange.shiftBy(tokenInputAmount);
 
     try {
       const txId = await currentPool.marginRepay({

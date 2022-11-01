@@ -22,7 +22,9 @@ export function useMainConfigSyncer() {
 
   useEffect(() => {
     if (cluster == 'localnet') {
-      getLocalnetConfig().then(config => setMainConfig(config));
+      getLocalnetConfig().then(config => {
+        setMainConfig(config);
+      });
     } else {
       MarginClient.getConfig(cluster).then(config => setMainConfig(config));
     }
