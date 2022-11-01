@@ -81,7 +81,12 @@ pub fn handler(ctx: Context<LendOrder>, params: OrderParams, seed: Vec<u8>) -> R
             order_tag: callback_info.order_tag,
             struck_timestamp: timestamp,
             maturation_timestamp: timestamp
-                + ctx.accounts.orderbook_mut.bond_manager.load()?.duration,
+                + ctx
+                    .accounts
+                    .orderbook_mut
+                    .bond_manager
+                    .load()?
+                    .lend_duration,
             principal: order_summary.total_quote_qty,
             interest: order_summary.total_base_qty - order_summary.total_quote_qty,
         }

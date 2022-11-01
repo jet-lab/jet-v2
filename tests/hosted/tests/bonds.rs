@@ -3,7 +3,8 @@ use std::sync::Arc;
 use anyhow::Result;
 use hosted_tests::{
     bonds::{
-        BondsUser, GenerateProxy, OrderAmount, TestManager as BondsTestManager, STARTING_TOKENS,
+        BondsUser, GenerateProxy, OrderAmount, TestManager as BondsTestManager, LEND_DURATION,
+        STARTING_TOKENS,
     },
     context::test_context,
     setup_helper::{setup_user, tokens},
@@ -259,7 +260,10 @@ async fn _full_workflow<P: Proxy + GenerateProxy>(manager: Arc<BondsTestManager>
     bob.lend_order(b_params, vec![0]).await?;
 
     let split_ticket_b = bob.load_split_ticket(vec![0]).await?;
-    dbg!(split_ticket_b);
+    assert_eq!(
+        split_ticket_b.maturation_timestamp,
+        split_ticket_b.struck_timestamp + LEND_DURATION
+    );
 
     assert_eq!(
         bob.tokens().await?,

@@ -204,7 +204,8 @@ impl MarginTestContext {
                             max_leverage: 20_00,
                             margin_pool_config: Some(DEFAULT_POOL_CONFIG),
                             bond_markets: vec![BondMarketConfig {
-                                duration: 5,
+                                borrow_duration: 3,
+                                lend_duration: 5,
                                 min_order_size: 10,
                                 paused: false,
                             }],

@@ -131,11 +131,14 @@ async fn generate_bond_markets_app_config_from_env(
         let token_mint = derive_token_mint(name);
 
         for b_market in &config.bond_markets {
-            let bond_manager =
-                derive_bond_manager_from_duration_seed(&airspace, &token_mint, b_market.duration);
+            let bond_manager = derive_bond_manager_from_duration_seed(
+                &airspace,
+                &token_mint,
+                b_market.borrow_duration,
+            );
 
             bond_markets.insert(
-                format!("{name}_{}", b_market.duration),
+                format!("{name}_{}", b_market.borrow_duration),
                 BondMarketInfo {
                     symbol: name.clone(),
                     bond_manager,

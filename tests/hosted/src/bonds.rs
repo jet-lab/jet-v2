@@ -64,7 +64,8 @@ pub const BOND_MANAGER_TAG: u64 = u64::from_le_bytes(*b"zachzach");
 pub const FEEDER_FUND_SEED: u64 = u64::from_le_bytes(*b"feedingf");
 pub const ORDERBOOK_CAPACITY: usize = 1_000;
 pub const EVENT_QUEUE_CAPACITY: usize = 1_000;
-pub const STAKE_DURATION: i64 = 3; // in seconds
+pub const BORROW_DURATION: i64 = 3;
+pub const LEND_DURATION: i64 = 5; // in seconds
 pub const MIN_ORDER_SIZE: u64 = 10;
 
 #[derive(Debug, Default, Clone)]
@@ -218,7 +219,8 @@ impl TestManager {
             this.client.payer().pubkey(),
             BOND_MANAGER_TAG,
             BOND_MANAGER_SEED,
-            STAKE_DURATION,
+            BORROW_DURATION,
+            LEND_DURATION,
             Pubkey::default(),
         )?;
         let init_orderbook = this.ix_builder.initialize_orderbook(
