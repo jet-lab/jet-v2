@@ -519,10 +519,12 @@ export class MarginAccount {
     // Max withdraw
     let withdraw = zero
     if (depositNoteValueModifier.isZero()) {
-      withdraw = TokenAmount.min(withdraw, depositBalance)
+      // Set the withdrawable amount to the deposit balance before considering limits
+      withdraw = depositBalance
       withdraw = TokenAmount.min(withdraw, pool.vault)
       withdraw = TokenAmount.max(withdraw, zero)
     } else if (!pool.vault.isZero()) {
+      // Set the withdrawable amount to available collateral before considering limits
       withdraw = this.valuation.availableSetupCollateral
         .div(depositNoteValueModifier)
         .div(lamportPrice)
