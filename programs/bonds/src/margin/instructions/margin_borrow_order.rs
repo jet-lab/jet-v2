@@ -84,7 +84,8 @@ pub fn handler(ctx: Context<MarginBorrowOrder>, params: OrderParams, seed: Vec<u
     let debt = &mut ctx.accounts.margin_user.debt;
     debt.post_borrow_order(order_summary.base_posted())?;
     if order_summary.base_filled() > 0 {
-        let maturation_timestamp = bond_manager.load()?.borrow_duration + Clock::get()?.unix_timestamp;
+        let maturation_timestamp =
+            bond_manager.load()?.borrow_duration + Clock::get()?.unix_timestamp;
         let sequence_number =
             debt.new_obligation_without_posting(order_summary.base_filled(), maturation_timestamp)?;
         let mut obligation = serialization::init::<Obligation>(

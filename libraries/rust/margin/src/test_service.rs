@@ -21,7 +21,7 @@ use jet_bonds::orderbook::state::{event_queue_len, orderbook_slab_len};
 use jet_control::TokenMetadataParams;
 use jet_margin::TokenOracle;
 use jet_test_service::TokenCreateParams;
-use serde::{Deserialize, Serialize, Deserializer};
+use serde::{Deserialize, Deserializer, Serialize};
 use solana_sdk::{
     pubkey::Pubkey, rent::Rent, signature::Keypair, signer::Signer, system_instruction,
 };
