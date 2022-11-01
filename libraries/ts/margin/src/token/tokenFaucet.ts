@@ -103,7 +103,7 @@ export class TokenFaucet {
           : new Connection("https://api.devnet.solana.com", AnchorProvider.defaultOptions().commitment)
 
       const blockhash = await endpoint.getLatestBlockhash()
-      const signature = await endpoint.requestAirdrop(ownerAddress, LAMPORTS_PER_SOL)
+      const signature = await endpoint.requestAirdrop(ownerAddress, lamports.toNumber())
       await endpoint.confirmTransaction({ signature, ...blockhash })
       return signature
     } else {

@@ -3185,7 +3185,7 @@ bs58@^4.0.0, bs58@^4.0.1:
 
 bs58@^5.0.0:
   version "5.0.0"
-  resolved "https://registry.npmjs.org/bs58/-/bs58-5.0.0.tgz#865575b4d13c09ea2a84622df6c8cbeb54ffc279"
+  resolved "https://registry.yarnpkg.com/bs58/-/bs58-5.0.0.tgz#865575b4d13c09ea2a84622df6c8cbeb54ffc279"
   integrity sha512-r+ihvQJvahgYT50JD05dyJNKlmmSlMoOGwn1lCcEzanPglg7TxYjioQUYehQ9mAR/+hOSd2jRc/Z2y5UxBymvQ==
   dependencies:
     base-x "^4.0.0"
@@ -8738,6 +8738,17 @@ util@^0.12.0:
     is-generator-function "^1.0.7"
     is-typed-array "^1.1.3"
     safe-buffer "^5.1.2"
+    which-typed-array "^1.1.2"
+
+util@^0.12.5:
+  version "0.12.5"
+  resolved "https://registry.npmjs.org/util/-/util-0.12.5.tgz#5f17a6059b73db61a875668781a1c2b136bd6fbc"
+  integrity sha512-kZf/K6hEIrWHI6XqOFUiiMa+79wE/D8Q+NCNAWclkyg3b4d2k7s0QGepNjiABc+aR3N1PAyHL7p6UcLY6LmrnA==
+  dependencies:
+    inherits "^2.0.3"
+    is-arguments "^1.0.4"
+    is-generator-function "^1.0.7"
+    is-typed-array "^1.1.3"
     which-typed-array "^1.1.2"
 
 utila@~0.4:

@@ -22,6 +22,7 @@
     "antd": "^4.23.2",
     "apexcharts": "^3.35.5",
     "bn.js": "^5.2.1",
+    "bs58": "^5.0.0",
     "logrocket": "^3.0.1",
     "process": "^0.11.10",
     "react": "^18.2.0",
@@ -30,7 +31,8 @@
     "react-router-dom": "^6.4.1",
     "react-string-replace": "^1.1.0",
     "recoil": "^0.7.5",
-    "serve": "^14.0.1"
+    "serve": "^14.0.1",
+    "util": "^0.12.5"
   },
   "devDependencies": {
     "@babel/preset-env": "^7.19.1",

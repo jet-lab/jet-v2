@@ -15,13 +15,13 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use std::collections::HashMap;
+use std::{collections::HashMap, str::FromStr};
 
 use jet_bonds::orderbook::state::{event_queue_len, orderbook_slab_len};
 use jet_control::TokenMetadataParams;
 use jet_margin::TokenOracle;
 use jet_test_service::TokenCreateParams;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, Deserializer};
 use solana_sdk::{
     pubkey::Pubkey, rent::Rent, signature::Keypair, signer::Signer, system_instruction,
 };
@@ -29,7 +29,10 @@ use solana_sdk::{
 use crate::{
     bonds::BondsIxBuilder,
     ix_builder::{
-        test_service::{self, derive_pyth_price, derive_pyth_product, derive_token_mint},
+        test_service::{
+            self, derive_bond_ticket_mint, derive_pyth_price, derive_pyth_product,
+            derive_token_mint,
+        },
         ControlIxBuilder, MarginPoolConfiguration,
     },
     solana::transaction::TransactionBuilder,
@@ -85,6 +88,24 @@ pub struct BondMarketConfig {
     /// Whether or not order matching should be paused for the market
     #[serde(default)]
     pub paused: bool,
+
+    /// optionally specify a custom oracle for the underlying token
+    #[serde(default)]
+    #[serde(deserialize_with = "pk")]
+    pub underlying_oracle: Option<Pubkey>,
+
+    /// optionally specify a custom oracle for bond tickets
+    #[serde(default)]
+    #[serde(deserialize_with = "pk")]
+    pub ticket_oracle: Option<Pubkey>,
+}
+
+fn pk<'de, D: Deserializer<'de>>(deserializer: D) -> Result<Option<Pubkey>, D::Error> {
+    let s: Option<String> = Deserialize::deserialize(deserializer)?;
+    match s {
+        Some(s) => Ok(Some(Pubkey::from_str(&s).unwrap())),
+        None => Ok(None),
+    }
 }
 
 /// Configuration for margin pools
@@ -244,13 +265,23 @@ fn create_airspace_token_bond_markets_tx(
         bond_manager_seed[..8].copy_from_slice(&bm_config.duration.to_le_bytes());
 
         let mint = derive_token_mint(token_name);
+        let underlying_oracle = bm_config
+            .underlying_oracle
+            .unwrap_or_else(|| derive_pyth_price(&mint));
+        let ticket_oracle = bm_config.ticket_oracle.unwrap_or_else(|| {
+            derive_pyth_price(&derive_bond_ticket_mint(&BondsIxBuilder::bond_manager_key(
+                &admin.airspace,
+                &mint,
+                bond_manager_seed,
+            )))
+        });
         let bonds_ix = BondsIxBuilder::new_from_seed(
             &admin.airspace,
             &mint,
             bond_manager_seed,
             config.authority,
-            derive_pyth_price(&mint),
-            Pubkey::default(), //todo oracle
+            underlying_oracle,
+            ticket_oracle,
         );
 
         txs.push(TransactionBuilder {

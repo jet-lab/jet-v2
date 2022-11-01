@@ -16,25 +16,24 @@ import {
 
 import { PythClient } from '../pyth/pythClient';
 import {
+  airdropToken,
   createAuthority,
-  createToken,
   createTokenAccount,
   createUserWallet,
   DEFAULT_CONFIRM_OPTS,
   DEFAULT_MARGIN_CONFIG,
-  loadToken,
   MARGIN_POOL_PROGRAM_ID,
   registerAdapter,
   sendToken,
   TestToken
 } from '../util';
 
-import CONFIG from './config.json';
-import TEST_MINT_KEYPAIR from '../../keypairs/test-mint.json';
 import USDC_ORACLE_PRICE from '../../keypairs/usdc-price.json';
 import USDC_ORACLE_PRODUCT from '../../keypairs/usdc-product.json';
 import TICKET_ORACLE_PRICE from '../../keypairs/ticket-price.json';
 import TICKET_ORACLE_PRODUCT from '../../keypairs/ticket-product.json';
+import CONFIG from 'localnet.config.json';
+
 import {
   BondMarket,
   JetBonds,
@@ -54,7 +53,7 @@ describe('margin bonds borrowing', async () => {
   const programs = MarginClient.getPrograms(provider, DEFAULT_MARGIN_CONFIG);
   const manager = new PoolManager(programs, provider);
   let USDC: TestToken = null as never;
-  let SOL: TestToken = null as never;
+  let BTC: TestToken = null as never;
 
   let USDC_oracle: Keypair[];
   let ticket_oracle: Keypair[];
@@ -66,6 +65,7 @@ describe('margin bonds borrowing', async () => {
   });
 
   const ONE_USDC = 1_000_000;
+  const ONE_BTC = 10 ** CONFIG.tokens.Bitcoin.decimals;
   const ONE_SOL: number = LAMPORTS_PER_SOL;
 
   const DEFAULT_POOL_CONFIG: MarginPoolConfigData = {
@@ -81,7 +81,7 @@ describe('margin bonds borrowing', async () => {
   };
 
   let marginPool_USDC: Pool;
-  let marginPool_SOL: Pool;
+  let marginPool_BTC: Pool;
   let pools: Pool[];
 
   let wallet_a: NodeWallet;
@@ -97,28 +97,22 @@ describe('margin bonds borrowing', async () => {
   let marginAccount_C: MarginAccount;
 
   let user_a_usdc_account: PublicKey;
-  let user_a_sol_account: PublicKey;
-  let user_b_sol_account: PublicKey;
+  let user_a_BTC_account: PublicKey;
+  let user_b_BTC_account: PublicKey;
   let user_b_usdc_account: PublicKey;
-  let user_c_sol_account: PublicKey;
+  let user_c_BTC_account: PublicKey;
   let user_c_usdc_account: PublicKey;
 
-  const bondsProgram: anchor.Program<JetBonds> = new anchor.Program(JetBondsIdl, CONFIG.jetBondsPid, provider);
+  const bondsProgram: anchor.Program<JetBonds> = new anchor.Program(JetBondsIdl, CONFIG.bondsProgramId, provider);
   let bondMarket: BondMarket;
 
-  before(async () => {
+  it('setup', async () => {
     // Fund payer
     const airdropSignature = await provider.connection.requestAirdrop(
       provider.wallet.publicKey,
       300 * LAMPORTS_PER_SOL
     );
     await provider.connection.confirmTransaction(airdropSignature);
-
-    // create tokens
-    // SETUP
-    let usdcKeypair = Keypair.fromSecretKey(Uint8Array.of(...TEST_MINT_KEYPAIR));
-    USDC = await loadToken(provider, payer, 6, 10_000_000, 'USDC', usdcKeypair);
-    SOL = await createToken(provider, payer, 9, 10_000, 'SOL');
 
     // create oracles
     USDC_oracle = [
@@ -131,8 +125,8 @@ describe('margin bonds borrowing', async () => {
     ];
     await pythClient.createPriceAccount(payer, USDC_oracle[0], 'USD', USDC_oracle[1], 1, 0.01, -8);
     await pythClient.createPriceAccount(payer, ticket_oracle[0], 'USD', ticket_oracle[1], 1, 0.01, -8);
-    SOL_oracle = [Keypair.generate(), Keypair.generate()];
-    await pythClient.createPriceAccount(payer, SOL_oracle[0], 'USD', SOL_oracle[1], 100, 1, -8);
+    USDC = await airdropToken(provider, payer.publicKey, 'USDC');
+    BTC = await airdropToken(provider, payer.publicKey, 'Bitcoin');
 
     // create authority
     await createAuthority(programs, provider);
@@ -141,27 +135,9 @@ describe('margin bonds borrowing', async () => {
     await registerAdapter(programs, provider, payer, MARGIN_POOL_PROGRAM_ID, payer);
 
     // load pools
-    marginPool_SOL = await manager.load({ tokenMint: SOL.mint, tokenConfig: SOL.tokenConfig });
+    marginPool_BTC = await manager.load({ tokenMint: BTC.mint, tokenConfig: BTC.tokenConfig });
     marginPool_USDC = await manager.load({ tokenMint: USDC.mint, tokenConfig: USDC.tokenConfig });
-    pools = [marginPool_SOL, marginPool_USDC];
-
-    // create margin pools
-    await manager.create({
-      tokenMint: USDC.mint,
-      collateralWeight: 1_00,
-      maxLeverage: 4_00,
-      pythProduct: USDC_oracle[0].publicKey,
-      pythPrice: USDC_oracle[1].publicKey,
-      marginPoolConfig: DEFAULT_POOL_CONFIG
-    });
-    await manager.create({
-      tokenMint: SOL.mint,
-      collateralWeight: 95,
-      maxLeverage: 4_00,
-      pythProduct: SOL_oracle[0].publicKey,
-      pythPrice: SOL_oracle[1].publicKey,
-      marginPoolConfig: DEFAULT_POOL_CONFIG
-    });
+    pools = [marginPool_BTC, marginPool_USDC];
 
     // create user wallets
     wallet_a = await createUserWallet(provider, 10 * LAMPORTS_PER_SOL);
@@ -205,27 +181,35 @@ describe('margin bonds borrowing', async () => {
     // SETUP
     const payer_A: Keypair = Keypair.fromSecretKey((wallet_a as NodeWallet).payer.secretKey);
     user_a_usdc_account = await createTokenAccount(provider, USDC.mint, wallet_a.publicKey, payer_A);
-    user_a_sol_account = await createTokenAccount(provider, SOL.mint, wallet_a.publicKey, payer_A);
+    user_a_BTC_account = await createTokenAccount(provider, BTC.mint, wallet_a.publicKey, payer_A);
 
     const payer_B: Keypair = Keypair.fromSecretKey((wallet_b as NodeWallet).payer.secretKey);
-    user_b_sol_account = await createTokenAccount(provider, SOL.mint, wallet_b.publicKey, payer_B);
+    user_b_BTC_account = await createTokenAccount(provider, BTC.mint, wallet_b.publicKey, payer_B);
     user_b_usdc_account = await createTokenAccount(provider, USDC.mint, wallet_b.publicKey, payer_B);
 
     const payer_C: Keypair = Keypair.fromSecretKey((wallet_c as NodeWallet).payer.secretKey);
-    user_c_sol_account = await createTokenAccount(provider, SOL.mint, wallet_c.publicKey, payer_C);
+    user_c_BTC_account = await createTokenAccount(provider, BTC.mint, wallet_c.publicKey, payer_C);
     user_c_usdc_account = await createTokenAccount(provider, USDC.mint, wallet_c.publicKey, payer_C);
 
     // ACT
-    await sendToken(provider, USDC.mint, 500_000, 6, ownerKeypair, USDC.vault, user_a_usdc_account);
-    await sendToken(provider, SOL.mint, 50, 9, ownerKeypair, SOL.vault, user_a_sol_account);
-    await sendToken(provider, SOL.mint, 500, 9, ownerKeypair, SOL.vault, user_b_sol_account);
-    await sendToken(provider, USDC.mint, 50, 6, ownerKeypair, USDC.vault, user_b_usdc_account);
-    await sendToken(provider, SOL.mint, 1, 9, ownerKeypair, SOL.vault, user_c_sol_account);
-    await sendToken(provider, USDC.mint, 1, 6, ownerKeypair, USDC.vault, user_c_usdc_account);
+    await sendToken(
+      provider,
+      USDC.mint,
+      500_000,
+      USDC.tokenConfig.decimals,
+      ownerKeypair,
+      USDC.vault,
+      user_a_usdc_account
+    );
+    await sendToken(provider, BTC.mint, 50, BTC.tokenConfig.decimals, ownerKeypair, BTC.vault, user_a_BTC_account);
+    await sendToken(provider, BTC.mint, 500, BTC.tokenConfig.decimals, ownerKeypair, BTC.vault, user_b_BTC_account);
+    await sendToken(provider, USDC.mint, 50, USDC.tokenConfig.decimals, ownerKeypair, USDC.vault, user_b_usdc_account);
+    await sendToken(provider, BTC.mint, 1, BTC.tokenConfig.decimals, ownerKeypair, BTC.vault, user_c_BTC_account);
+    await sendToken(provider, USDC.mint, 1, USDC.tokenConfig.decimals, ownerKeypair, USDC.vault, user_c_usdc_account);
 
     // refresh pools
     await marginPool_USDC.refresh();
-    await marginPool_SOL.refresh();
+    await marginPool_BTC.refresh();
 
     // deposit into margin accounts
     // ACT
@@ -250,31 +234,34 @@ describe('margin bonds borrowing', async () => {
     await marginPool_USDC.marginRefreshPositionPrice(marginAccount_B);
     await marginPool_USDC.marginRefreshPositionPrice(marginAccount_C);
 
-    await marginPool_SOL.deposit({
+    await marginPool_BTC.deposit({
       marginAccount: marginAccount_A,
-      source: user_a_sol_account,
-      change: PoolTokenChange.shiftBy(new BN(50 * ONE_SOL))
+      source: user_a_BTC_account,
+      change: PoolTokenChange.shiftBy(new BN(50 * ONE_BTC))
     });
-    await marginPool_SOL.deposit({
+    await marginPool_BTC.deposit({
       marginAccount: marginAccount_B,
-      source: user_b_sol_account,
-      change: PoolTokenChange.shiftBy(new BN(500 * ONE_SOL))
+      source: user_b_BTC_account,
+      change: PoolTokenChange.shiftBy(new BN(500 * ONE_BTC))
     });
-    await marginPool_SOL.deposit({
+    await marginPool_BTC.deposit({
       marginAccount: marginAccount_C,
-      source: user_c_sol_account,
-      change: PoolTokenChange.shiftBy(new BN(ONE_SOL))
+      source: user_c_BTC_account,
+      change: PoolTokenChange.shiftBy(new BN(ONE_BTC))
     });
-    await pythClient.setPythPrice(ownerKeypair, SOL_oracle[1].publicKey, 100, 1, -8);
-    await marginPool_SOL.marginRefreshPositionPrice(marginAccount_A);
-    await marginPool_SOL.marginRefreshPositionPrice(marginAccount_B);
-    await marginPool_SOL.marginRefreshPositionPrice(marginAccount_C);
+    await marginPool_BTC.marginRefreshPositionPrice(marginAccount_A);
+    await marginPool_BTC.marginRefreshPositionPrice(marginAccount_B);
+    await marginPool_BTC.marginRefreshPositionPrice(marginAccount_C);
     await marginAccount_A.refresh();
     await marginAccount_B.refresh();
     await marginAccount_C.refresh();
 
     // load the bond market
-    bondMarket = await BondMarket.load(bondsProgram, CONFIG.bondManager, programs.metadata.programId);
+    bondMarket = await BondMarket.load(
+      bondsProgram,
+      CONFIG.airspaces[0].bondMarkets.USDC_86400.bondManager,
+      CONFIG.marginProgramId
+    );
   });
 
   const registerNewMarginUser = async (
@@ -401,8 +388,8 @@ describe('margin bonds borrowing', async () => {
 
     await marginPool_USDC.marginRefreshPositionPrice(marginAccount_A);
     await marginPool_USDC.marginRefreshPositionPrice(marginAccount_B);
-    await marginPool_SOL.marginRefreshPositionPrice(marginAccount_A);
-    await marginPool_SOL.marginRefreshPositionPrice(marginAccount_B);
+    await marginPool_BTC.marginRefreshPositionPrice(marginAccount_A);
+    await marginPool_BTC.marginRefreshPositionPrice(marginAccount_B);
     await marginAccount_A.refresh();
     await marginAccount_B.refresh();
 
@@ -444,7 +431,7 @@ describe('margin bonds borrowing', async () => {
   });
 
   it('margin users cancel orders', async () => {
-    const cancelLoan = await bondMarket.cancelOrderIx(marginAccount_B, loanId, OrderSideLend);
+    const cancelLoan = await bondMarket.cancelOrderIx(marginAccount_B, loanId);
     const invokeCancelLoan = await viaMargin(marginAccount_B, cancelLoan);
 
     await provider_b.sendAndConfirm(makeTx([invokeCancelLoan]));

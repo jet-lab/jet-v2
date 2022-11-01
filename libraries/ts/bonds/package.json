@@ -10,9 +10,7 @@
     "clean": "rm -rf ./dist & rm -rf ./src/wasm-utils",
     "lint": "tslint -c tslint.json src/**/*.ts",
     "prepublishOnly": "yarn build",
-    "watch": "yarn watch:wasm & yarn watch:tsc",
-    "watch:tsc": "tsc --watch --preserveWatchOutput --pretty & tsc -p tsconfig-cjs.json --watch --preserveWatchOutput --pretty",
-    "watch:wasm": "cargo watch -w 'libraries/ts/bonds/wasm-utils/src'  -w 'libraries/ts/bonds/wasm-utils/Cargo.toml' -s 'wasm-pack build --target bundler libraries/ts/bonds/wasm-utils --out-dir libraries/ts/bonds/src/wasm-utils'"
+    "watch": "make watch"
   },
   "dependencies": {
     "@jet-lab/margin": "*",

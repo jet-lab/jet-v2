@@ -19,7 +19,8 @@ import {
   TokenInvalidOwnerError,
   createInitializeAccountInstruction,
   getMinimumBalanceForRentExemptAccount,
-  TokenInvalidMintError
+  TokenInvalidMintError,
+  createTransferInstruction
 } from "@solana/spl-token"
 import { Connection, PublicKey, TransactionInstruction, SystemProgram, AccountInfo } from "@solana/web3.js"
 import { chunks } from "../utils"
@@ -526,6 +527,28 @@ export class AssociatedToken {
     const tokenAddress = this.derive(mintPubkey, ownerPubkey)
     const ix = createCloseAccountInstruction(tokenAddress, rentDestinationPubkey, ownerPubkey)
     instructions.push(ix)
+  }
+
+  /**
+   * Transfer tokens from one owner to another
+   * @param instructions
+   * @param mint
+   * @param sourceOwner
+   * @param destinationOwner
+   * @param amount
+   */
+  static withTransfer(
+    instructions: TransactionInstruction[],
+    mint: Address,
+    sourceOwner: Address,
+    destinationOwner: Address,
+    amount: BN
+  ) {
+    const authority = translateAddress(sourceOwner)
+    const source = this.derive(mint, sourceOwner)
+    const destination = this.derive(mint, destinationOwner)
+
+    instructions.push(createTransferInstruction(source, destination, authority, amount.toNumber()))
   }
 
   /** Wraps SOL in an associated token account. The account will only be created if it doesn't exist.

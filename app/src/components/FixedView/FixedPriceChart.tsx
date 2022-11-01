@@ -5,9 +5,9 @@ import { useRecoilState, useRecoilValue } from 'recoil';
 import { ReorderArrows } from '../misc/ReorderArrows';
 import { Dictionary } from '../../state/settings/localization/localization';
 import { FixedBorrowRowOrder, FixedLendRowOrder } from '../../state/views/fixed-term';
-import { AllFixedMarketsOrderBooksAtom, FixedMarketOrderBookAtom } from '../../state/fixed/fixed-term-market-sync';
-import { MockBook, MockOrder } from '../../state/fixed/mocks';
+import { AllFixedMarketsOrderBooksAtom, ExtendedOrderBook } from '../../state/fixed/fixed-term-market-sync';
 import { useCurrencyFormatting } from '../../utils/currency';
+import { Order } from '@jet-lab/jet-bonds-client';
 
 interface Formatter {
   currencyFormatter: (
@@ -35,7 +35,7 @@ interface DataPoint {
 }
 
 // Setup data for the chart
-const getChartData = (orders: MockOrder[]): DataPoint[] =>
+const getChartData = (orders: Order[]): DataPoint[] =>
   orders.reduce((all, order) => {
     const previousPoint = all.length > 0 ? all[all.length - 1] : { x: 0, y: 0 };
     const point = {
@@ -46,11 +46,12 @@ const getChartData = (orders: MockOrder[]): DataPoint[] =>
     return all;
   }, [] as Array<{ x: number; y: number }>);
 
-const getOptions = (books: MockBook[], decimals: number, type: string, formatting: Formatter) => {
+const getOptions = (books: ExtendedOrderBook[], decimals: number, type: string, formatting: Formatter) => {
   const series = books.map(book => ({
-    name: book.market,
+    name: book.name,
     data: getChartData(type === 'asks' ? book.asks : book.bids)
   }));
+
   return {
     chart: {
       type: 'line',
@@ -94,32 +95,29 @@ const getOptions = (books: MockBook[], decimals: number, type: string, formattin
 };
 
 const FixedPriceChart = ({ type, decimals = 6 }: FixedChart) => {
-  const orderBook = useRecoilValue(FixedMarketOrderBookAtom);
   const [currentChart, setCurrentChart] = useState<ApexCharts | undefined>(undefined);
   const formatting = useCurrencyFormatting();
 
   const books = useRecoilValue(AllFixedMarketsOrderBooksAtom);
   const ref = useRef<HTMLDivElement>(null);
 
-  const orders = orderBook[type];
-
   // Initialize chart
   useEffect(() => {
-    if (ref.current && !currentChart) {
+    if (ref.current && !currentChart && books.length > 0) {
       const opts = getOptions(books, decimals, type, formatting);
       const fixedPriceChart = new ApexCharts(document.querySelector(`.fixed-term-graph-container`), opts);
       fixedPriceChart.render();
       setCurrentChart(fixedPriceChart);
     }
-  }, [ref.current]);
+  }, [ref.current, books]);
 
   // Update chart
   useEffect(() => {
-    if (ref.current && orders.length > 0 && currentChart) {
+    if (ref.current && currentChart) {
       const opts = getOptions(books, decimals, type, formatting);
       currentChart.updateOptions(opts);
     }
-  }, [orders, currentChart, ref.current]);
+  }, [currentChart, ref.current, books]);
 
   // Clean on dismount
   useEffect(() => currentChart?.destroy(), []);

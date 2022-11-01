@@ -13,7 +13,7 @@ import {
   TokenAmount,
   TokenFaucet
 } from '@jet-lab/margin';
-import { MarginConfig } from '../../state/config/marginConfig';
+import { MainConfig } from '../../state/config/marginConfig';
 import { Pools, CurrentPool } from '../../state/pools/pools';
 import { WalletTokens } from '../../state/user/walletTokens';
 import { CurrentAccount, CurrentAccountAddress, FavoriteAccounts } from '../../state/user/accounts';
@@ -31,7 +31,7 @@ export enum ActionResponse {
 }
 export function useMarginActions() {
   // const cluster = useRecoilValue(Cluster);
-  const config = useRecoilValue(MarginConfig);
+  const config = useRecoilValue(MainConfig);
   const cluster = useRecoilValue(Cluster);
   const dictionary = useRecoilValue(Dictionary);
   const { programs, provider } = useProvider();
@@ -231,12 +231,12 @@ export function useMarginActions() {
       console.error('Accounts and/or pools not loaded');
       throw new Error();
     }
-
-    const repayType = accountRepay ? 'repayFromDeposit' : 'repay';
-    const closeLoan = tokenInputAmount.eq(accountPoolPosition.maxTradeAmounts[repayType]);
+    
+    const closeLoan = tokenInputAmount.gte(accountPoolPosition.loanBalance);
     const change = closeLoan
       ? PoolTokenChange.setTo(0)
-      : PoolTokenChange.setTo(accountPoolPosition.loanBalance.sub(tokenInputAmount));
+      : PoolTokenChange.shiftBy(tokenInputAmount);
+
     try {
       const txId = await currentPool.marginRepay({
         marginAccount: currentAccount,

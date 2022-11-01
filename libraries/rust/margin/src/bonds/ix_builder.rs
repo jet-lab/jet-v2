@@ -25,7 +25,7 @@ use super::event_builder::make_seed;
 
 use super::error::{client_err, BondsIxError, Result};
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct BondsIxBuilder {
     airspace: Pubkey,
     authority: Pubkey,
@@ -43,7 +43,7 @@ pub struct BondsIxBuilder {
     crank: Option<Pubkey>,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct OrderBookAddresses {
     bids: Pubkey,
     asks: Pubkey,

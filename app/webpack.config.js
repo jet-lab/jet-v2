@@ -113,5 +113,8 @@ module.exports = {
       url: false
     }
   },
+  experiments: {
+    asyncWebAssembly: true
+  },
   plugins,
 };

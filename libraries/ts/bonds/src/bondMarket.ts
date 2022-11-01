@@ -7,12 +7,7 @@ import { JetBonds } from "./types"
 import { fetchData, findDerivedAccount } from "./utils"
 import { order_id_to_string, rate_to_price } from "./wasm-utils"
 
-export const OrderSideBorrow = { borrow: {} }
-export const OrderSideLend = { lend: {} }
-export type OrderSide = typeof OrderSideBorrow | typeof OrderSideLend
-
 export const U64_MAX = 18_446_744_073_709_551_615n
-
 export interface OrderParams {
   maxBondTicketQty: BN
   maxUnderlyingTokenQty: BN
@@ -28,7 +23,7 @@ export interface OrderParams {
  */
 export interface BondManagerInfo {
   versionTag: BN
-  programAuthority: PublicKey
+  airspace: PublicKey
   orderbookMarketState: PublicKey
   eventQueue: PublicKey
   asks: PublicKey
@@ -102,14 +97,15 @@ export class BondMarket {
     collateralMetadata: PublicKey
     underlyingOracle: PublicKey
     ticketOracle: PublicKey
+    marginAdapterMetadata: PublicKey
   }
   readonly info: BondManagerInfo
   readonly program: Program<JetBonds>
-
   private constructor(
     bondManager: PublicKey,
     claimsMetadata: PublicKey,
     collateralMetadata: PublicKey,
+    marginAdapterMetadata: PublicKey,
     program: Program<JetBonds>,
     info: BondManagerInfo
   ) {
@@ -117,6 +113,7 @@ export class BondMarket {
       ...info,
       claimsMetadata,
       collateralMetadata,
+      marginAdapterMetadata,
       bondManager
     }
     this.program = program
@@ -142,14 +139,28 @@ export class BondMarket {
   static async load(
     program: Program<JetBonds>,
     bondManager: Address,
-    jetMetadataProgramId: Address
+    jetMarginProgramId: Address
   ): Promise<BondMarket> {
     let data = await fetchData(program.provider.connection, bondManager)
     let info: BondManagerInfo = program.coder.accounts.decode("BondManager", data)
-    const claimsMetadata = await findDerivedAccount([info.claimsMint], new PublicKey(jetMetadataProgramId))
-    const collateralMetadata = await findDerivedAccount([info.collateralMint], new PublicKey(jetMetadataProgramId))
-
-    return new BondMarket(new PublicKey(bondManager), new PublicKey(claimsMetadata), new PublicKey(collateralMetadata), program, info)
+    const claimsMetadata = await findDerivedAccount(
+      ["token-config", info.airspace, info.claimsMint],
+      new PublicKey(jetMarginProgramId)
+    )
+    const collateralMetadata = await findDerivedAccount(
+      ["token-config", info.airspace, info.collateralMint],
+      new PublicKey(jetMarginProgramId)
+    )
+    const marginAdapterMetadata = await findDerivedAccount([program.programId], new PublicKey(jetMarginProgramId))
+    
+    return new BondMarket(
+      new PublicKey(bondManager),
+      new PublicKey(claimsMetadata),
+      new PublicKey(collateralMetadata),
+      new PublicKey(marginAdapterMetadata),
+      program,
+      info
+    )
   }
 
   async requestBorrowIx(
@@ -253,7 +264,6 @@ export class BondMarket {
       postAllowed: false,
       autoStake: true
     }
-
     return await this.lendIx(user.address, userTicketVault, userTokenVault, payer, params, seed)
   }
 
@@ -285,9 +295,8 @@ export class BondMarket {
       .instruction()
   }
 
-  async cancelOrderIx(user: MarginAccount, orderId: Uint8Array, side: OrderSide): Promise<TransactionInstruction> {
+  async cancelOrderIx(user: MarginAccount, orderId: Uint8Array): Promise<TransactionInstruction> {
     const bnOrderId = new BN(order_id_to_string(orderId))
-
     return await this.program.methods
       .cancelOrder(bnOrderId)
       .accounts({
@@ -312,12 +321,9 @@ export class BondMarket {
     const borrowerAccount = await this.deriveMarginUserAddress(user)
     const claims = await this.deriveMarginUserClaims(borrowerAccount)
     const collateral = await this.deriveMarginUserCollateral(borrowerAccount)
-
     const underlyingSettlement = await getAssociatedTokenAddress(this.addresses.underlyingTokenMint, user.address, true)
     const ticketSettlement = await getAssociatedTokenAddress(this.addresses.bondTicketMint, user.address, true)
-
     // await user.getOrRegisterPosition(this.addresses.claimsMint)
-
     return await this.program.methods
       .initializeMarginUser()
       .accounts({

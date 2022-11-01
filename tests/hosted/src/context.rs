@@ -207,6 +207,8 @@ impl MarginTestContext {
                                 duration: 5,
                                 min_order_size: 10,
                                 paused: false,
+                                underlying_oracle: None,
+                                ticket_oracle: None,
                             }],
                         },
                     ),

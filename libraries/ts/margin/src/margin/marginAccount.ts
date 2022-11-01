@@ -510,19 +510,27 @@ export class MarginAccount {
     const tokenPrice = Number128.fromDecimal(priceComponent, priceExponent)
     const lamportPrice = tokenPrice.div(Number128.fromDecimal(new BN(1), pool.decimals))
 
+    // A depositNoveValueModifier can be 0
     const depositNoteValueModifier =
       this.getPositionNullable(pool.addresses.depositNoteMint)?.valueModifier ?? pool.depositNoteMetadata.valueModifier
     const loanNoteValueModifier =
       this.getPositionNullable(pool.addresses.loanNoteMint)?.valueModifier ?? pool.loanNoteMetadata.valueModifier
 
     // Max withdraw
-    let withdraw = this.valuation.availableSetupCollateral
-      .div(depositNoteValueModifier)
-      .div(lamportPrice)
-      .toTokenAmount(pool.decimals)
-    withdraw = TokenAmount.min(withdraw, depositBalance)
-    withdraw = TokenAmount.min(withdraw, pool.vault)
-    withdraw = TokenAmount.max(withdraw, zero)
+    let withdraw = zero
+    if (depositNoteValueModifier.isZero()) {
+      withdraw = TokenAmount.min(withdraw, depositBalance)
+      withdraw = TokenAmount.min(withdraw, pool.vault)
+      withdraw = TokenAmount.max(withdraw, zero)
+    } else if (!pool.vault.isZero()) {
+      withdraw = this.valuation.availableSetupCollateral
+        .div(depositNoteValueModifier)
+        .div(lamportPrice)
+        .toTokenAmount(pool.decimals)
+      withdraw = TokenAmount.min(withdraw, depositBalance)
+      withdraw = TokenAmount.min(withdraw, pool.vault)
+      withdraw = TokenAmount.max(withdraw, zero)
+    }
 
     // Max borrow
     let borrow = this.valuation.availableSetupCollateral
