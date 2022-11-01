@@ -194,7 +194,7 @@ export class BondMarket {
     const params: OrderParams = {
       maxBondTicketQty: new BN(U64_MAX.toString()),
       maxUnderlyingTokenQty: amount,
-      limitPrice: new BN(rate_to_price(BigInt("99999"), BigInt(this.info.duration.toString())).toString()),
+      limitPrice: new BN(rate_to_price(BigInt("99999"), BigInt(this.info.lendDuration.toString())).toString()),
       matchLimit: new BN(U64_MAX.toString()),
       postOnly: false,
       postAllowed: false,
