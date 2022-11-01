@@ -40,7 +40,8 @@ export interface BondManagerInfo {
   orderbookPaused: boolean
   ticketsPaused: boolean
   reserved: number[]
-  duration: BN
+  borrowDuration: BN
+  lendDuration: BN
   nonce: BN
 }
 
@@ -170,7 +171,7 @@ export class BondMarket {
     rate: BN,
     seed: Uint8Array
   ): Promise<TransactionInstruction> {
-    const limitPrice = new BN(rate_to_price(BigInt(rate.toString()), BigInt(this.info.duration.toString())).toString())
+    const limitPrice = new BN(rate_to_price(BigInt(rate.toString()), BigInt(this.info.borrowDuration.toString())).toString())
     const params: OrderParams = {
       maxBondTicketQty: new BN(U64_MAX.toString()),
       maxUnderlyingTokenQty: amount,
@@ -239,7 +240,7 @@ export class BondMarket {
   ): Promise<TransactionInstruction> {
     const userTokenVault = await getAssociatedTokenAddress(this.addresses.underlyingTokenMint, user.address, true)
     const userTicketVault = await getAssociatedTokenAddress(this.addresses.bondTicketMint, user.address, true)
-    const limitPrice = bigIntToBn(rate_to_price(bnToBigInt(rate), bnToBigInt(this.info.duration)))
+    const limitPrice = bigIntToBn(rate_to_price(bnToBigInt(rate), bnToBigInt(this.info.lendDuration)))
     const params: OrderParams = {
       maxBondTicketQty: new BN(U64_MAX.toString()),
       maxUnderlyingTokenQty: new BN(amount),

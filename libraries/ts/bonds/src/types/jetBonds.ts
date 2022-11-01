@@ -2153,10 +2153,17 @@ export type JetBonds = {
             }
           },
           {
-            "name": "duration",
+            "name": "borrow_duration"
             "docs": [
-              "Units added to the initial stake timestamp to determine claim maturity"
-            ],
+              "Length of time before a borrow is marked as due, in seconds"
+            ]
+            "type": "i64"
+          },
+          {
+            "name": "lend_duration"
+            "docs": [
+              "Length of time before a claim is marked as mature, in seconds"
+            ]
             "type": "i64"
           },
           {
@@ -5583,9 +5590,16 @@ export const IDL: JetBonds = {
             }
           },
           {
-            "name": "duration",
+            "name": "borrow_duration",
             "docs": [
-              "Units added to the initial stake timestamp to determine claim maturity"
+              "Length of time before a borrow is marked as due, in seconds"
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "lend_duration",
+            "docs": [
+              "Length of time before a claim is marked as mature, in seconds"
             ],
             "type": "i64"
           },

@@ -79,7 +79,7 @@ impl<'info> LendOrder<'info> {
                     order_tag: callback_info.order_tag,
                     struck_timestamp: timestamp,
                     maturation_timestamp: timestamp
-                        + self.orderbook_mut.bond_manager.load()?.duration,
+                        + self.orderbook_mut.bond_manager.load()?.lend_duration,
                     principal: order_summary.quote_filled()?,
                     interest: order_summary.base_filled() - order_summary.quote_filled()?,
                 };

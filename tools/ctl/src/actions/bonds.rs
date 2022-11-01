@@ -15,7 +15,10 @@ const MANAGER_VERSION: u64 = 0;
 #[derive(Debug, Clone, Parser, Serialize, Deserialize)]
 pub struct BondMarketParameters {
     #[clap(long)]
-    pub duration: i64,
+    pub borrow_duration: i64,
+
+    #[clap(long)]
+    pub lend_duration: i64,
 
     #[clap(long)]
     pub min_order_size: u64,
@@ -103,8 +106,13 @@ pub async fn process_create_bond_market<'a>(
         println!("the token {} does not exist", params.token_mint);
         return Ok(Plan::default());
     } else {
-        let init_manager =
-            bonds.initialize_manager(payer, MANAGER_VERSION, seed, params.duration)?;
+        let init_manager = bonds.initialize_manager(
+            payer,
+            MANAGER_VERSION,
+            seed,
+            params.borrow_duration,
+            params.lend_duration,
+        )?;
         steps.push(format!(
             "initialize-bond-manager for token [{}]",
             params.token_mint

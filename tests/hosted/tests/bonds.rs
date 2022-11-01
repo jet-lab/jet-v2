@@ -4,7 +4,8 @@ use anchor_lang::prelude::Pubkey;
 use anyhow::Result;
 use hosted_tests::{
     bonds::{
-        BondsUser, GenerateProxy, OrderAmount, TestManager as BondsTestManager, STARTING_TOKENS,
+        BondsUser, GenerateProxy, OrderAmount, TestManager as BondsTestManager, LEND_DURATION,
+        STARTING_TOKENS,
     },
     context::{test_context, MarginTestContext},
     setup_helper::{setup_user, tokens},
@@ -163,8 +164,11 @@ async fn non_margin_orders_for_proxy<P: Proxy + GenerateProxy>(
     let bob = BondsUser::<P>::new_funded(manager.clone()).await?;
     bob.lend_order(b_params, &[0]).await?;
 
-    let split_ticket_b = bob.load_split_ticket(&[0]).await?;
-    dbg!(split_ticket_b);
+    let split_ticket_b = bob.load_split_ticket(vec![0]).await?;
+    assert_eq!(
+        split_ticket_b.maturation_timestamp,
+        split_ticket_b.struck_timestamp + LEND_DURATION
+    );
 
     assert_eq!(
         bob.tokens().await?,

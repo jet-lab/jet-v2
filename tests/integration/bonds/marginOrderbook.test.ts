@@ -413,7 +413,8 @@ describe('margin bonds borrowing', async () => {
     loanId = offeredLoan.order_id;
 
     assert(
-      offeredLoan.limit_price === rate_to_price(bnToBigInt(loanOfferParams.rate), bnToBigInt(bondMarket.info.duration))
+      offeredLoan.limit_price ===
+        rate_to_price(bnToBigInt(loanOfferParams.rate), bnToBigInt(bondMarket.info.lendDuration))
     );
 
     // TODO this test requires utilization of the wasm math utils to properly derive order values to be found on the orderbook
