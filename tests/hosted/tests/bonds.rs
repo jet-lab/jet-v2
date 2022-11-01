@@ -164,7 +164,7 @@ async fn non_margin_orders_for_proxy<P: Proxy + GenerateProxy>(
     let bob = BondsUser::<P>::new_funded(manager.clone()).await?;
     bob.lend_order(b_params, &[0]).await?;
 
-    let split_ticket_b = bob.load_split_ticket(vec![0]).await?;
+    let split_ticket_b = bob.load_split_ticket(&[0]).await?;
     assert_eq!(
         split_ticket_b.maturation_timestamp,
         split_ticket_b.struck_timestamp + LEND_DURATION
