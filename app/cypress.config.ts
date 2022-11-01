@@ -1,7 +1,7 @@
 const cypressConfig = {
   e2e: {
-    screenshotOnRunFailure: true,
-    video: true,
+    screenshotOnRunFailure: false,
+    video: false,
     viewportWidth: 1280,
     viewportHeight: 720,
     env: {
