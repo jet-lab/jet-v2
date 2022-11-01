@@ -1,5 +1,3 @@
-const timeout = 60000;
-
 export const connectWallet = () => {
   cy.contains('CONNECT').click();
   cy.contains('E2E').click();
@@ -18,53 +16,53 @@ export const loadPageAndCreateAccount = (path?: string) => {
   airdrop('SOL', 'SOL');
   cy.contains('Create an account').click();
   cy.contains('New Account');
-  cy.contains('Create Account', { timeout }).should('not.be.disabled').click();
+  cy.contains('Create Account').should('not.be.disabled').click();
   cy.contains('Account created');
   cy.contains('Account 1');
 };
 
 export const airdrop = (symbol: string, asset: string) => {
-  cy.get(`.${symbol}-pools-table-row`, { timeout }).click();
+  cy.get(`.${symbol}-pools-table-row`).click();
   cy.contains('.ant-typography.pool-detail-header', `${asset}`);
   cy.contains('Airdrop').click();
-  cy.contains('Airdrop successful', { timeout });
-  cy.contains(`${symbol} was successfully processed`, { timeout });
+  cy.contains('Airdrop successful');
+  cy.contains(`${symbol} was successfully processed`);
 };
 
 export const deposit = (symbol: string, amount: number) => {
   cy.get(`.${symbol}-pools-table-row`).click();
-  cy.contains('button', 'Deposit', { timeout }).should('not.be.disabled').click();
+  cy.contains('button', 'Deposit').should('not.be.disabled').click();
   const input = cy.get('.ant-modal-content input.ant-input').should('not.be.disabled');
   input.click().type(`${amount}`);
   cy.get('.ant-modal-body button.ant-btn').contains('Deposit').click();
-  cy.contains('deposit successful', { timeout });
+  cy.contains('deposit successful');
 };
 
 export const borrow = (symbol: string, amount: number, resetMaxState?: boolean) => {
-  cy.get(`.${symbol}-pools-table-row`, { timeout }).click();
-  cy.get(`.account-snapshot-footer button`).contains('Borrow', { timeout }).click();
+  cy.get(`.${symbol}-pools-table-row`).click();
+  cy.get(`.account-snapshot-footer button`).contains('Borrow').click();
   if (resetMaxState) {
     // Reset max trade values to simulate borrowing on existing account
     cy.get('[data-testid="reset-max-trade"]').click();
   }
-  const input = cy.get('.ant-modal-content input.ant-input', { timeout }).should('not.be.disabled');
+  const input = cy.get('.ant-modal-content input.ant-input').should('not.be.disabled');
   input.click().type(`${amount}`);
   cy.get('.ant-modal-body button.ant-btn').contains('Borrow').click();
-  cy.contains('borrow successful', { timeout });
+  cy.contains('borrow successful');
 };
 
 export const withdraw = (symbol: string, amount: number) => {
-  cy.get(`.${symbol}-pools-table-row`, { timeout }).click();
-  cy.get(`.account-snapshot-footer button`).contains('Withdraw', { timeout }).click();
-  const input = cy.get('.ant-modal-content input.ant-input', { timeout }).should('not.be.disabled');
+  cy.get(`.${symbol}-pools-table-row`).click();
+  cy.get(`.account-snapshot-footer button`).contains('Withdraw').click();
+  const input = cy.get('.ant-modal-content input.ant-input').should('not.be.disabled');
   input.click().type(`${amount}`);
   cy.get('.ant-modal-body button.ant-btn').contains('Withdraw').click();
-  cy.contains('withdraw successful', { timeout });
+  cy.contains('withdraw successful');
 };
 
 export const repay = (symbol: string, amount: number, fromDeposit: boolean) => {
-  cy.get(`.${symbol}-pools-table-row`, { timeout }).click();
-  cy.get(`.account-snapshot-footer button`).contains('Repay', { timeout }).click();
+  cy.get(`.${symbol}-pools-table-row`).click();
+  cy.get(`.account-snapshot-footer button`).contains('Repay').click();
   const isRepayFromWallet = cy.get('button.ant-switch').should('have.class', 'ant-switch-checked');
   if (fromDeposit && isRepayFromWallet) {
     isRepayFromWallet.click();
@@ -72,18 +70,18 @@ export const repay = (symbol: string, amount: number, fromDeposit: boolean) => {
   cy.contains('Repay From Wallet')
     .siblings()
     .should(fromDeposit ? 'not.have.class' : 'have.class', 'ant-switch-checked');
-  const input = cy.get('.ant-modal-content input.ant-input', { timeout }).should('not.be.disabled');
+  const input = cy.get('.ant-modal-content input.ant-input').should('not.be.disabled');
   input.click().type(`${amount}`);
   cy.get('.ant-modal-body button.ant-btn').contains('Repay').click();
-  cy.contains(`${symbol} was successfully processed.`, { timeout });
+  cy.contains(`${symbol} was successfully processed.`);
 };
 
 export const swap = (symbol: string, amount: number) => {
-  cy.get(`.${symbol}-pools-table-row`, { timeout }).click();
-  cy.get(`.navbar.nav-link`, { timeout });
-  cy.contains('Swaps', { timeout }).click();
-  const input = cy.get('.order-entry input.ant-input:first-of-type', { timeout }).should('not.be.disabled');
+  cy.get(`.${symbol}-pools-table-row`).click();
+  cy.get(`.navbar.nav-link`);
+  cy.contains('Swaps').click();
+  const input = cy.get('.order-entry input.ant-input:first-of-type').should('not.be.disabled');
   input.click().type(`${amount}`);
   cy.get('.order-entry-footer button.ant-btn').contains('Swap').click();
-  cy.contains('swap successful', { timeout });
+  cy.contains('swap successful');
 };

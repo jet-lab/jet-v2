@@ -1,7 +1,5 @@
 import { loadPageAndCreateAccount, airdrop, deposit, borrow, withdraw, repay } from '../support/actions';
 
-const timeout = 60000;
-
 describe('Main Flows', () => {
   it('Connects a new test wallet and creates an account', () => {
     loadPageAndCreateAccount();
@@ -40,36 +38,36 @@ describe('Main Flows', () => {
     const lendLink = cy.contains('Lend');
     lendLink.click();
 
-    const amountInput = cy.get('input.ant-input[placeholder="enter order value"]', { timeout });
-    const interestInput = cy.get('input.ant-input[placeholder="enter interest"]', { timeout });
+    const amountInput = cy.get('input.ant-input[placeholder="enter order value"]');
+    const interestInput = cy.get('input.ant-input[placeholder="enter interest"]');
     amountInput.click().type(`1000`);
     interestInput.click().type(`5`);
 
-    cy.contains('button', 'Create Lend Order', { timeout }).should('not.be.disabled').click();
+    cy.contains('button', 'Create Lend Order').should('not.be.disabled').click();
 
-    cy.contains('Lend Order Created', { timeout });
+    cy.contains('Lend Order Created');
 
     amountInput.focus().clear();
     amountInput.click().type(`2000`);
     interestInput.focus().clear();
     interestInput.click().type(`10`);
 
-    cy.contains('button', 'Create Lend Order', { timeout }).should('not.be.disabled').click();
-    cy.contains('Lend Order Created', { timeout });
+    cy.contains('button', 'Create Lend Order').should('not.be.disabled').click();
+    cy.contains('Lend Order Created');
   });
 
   it('can create multiple fixed rate borrow orders', () => {
     const borrowLink = cy.contains('Borrow');
     borrowLink.click();
 
-    const submitButton = cy.contains('button', 'Create Borrow Order', { timeout }).should('not.be.disabled');
-    const amountInput = cy.get('input.ant-input[placeholder="enter order value"]', { timeout });
-    const interestInput = cy.get('input.ant-input[placeholder="enter interest"]', { timeout });
+    const submitButton = cy.contains('button', 'Create Borrow Order').should('not.be.disabled');
+    const amountInput = cy.get('input.ant-input[placeholder="enter order value"]');
+    const interestInput = cy.get('input.ant-input[placeholder="enter interest"]');
 
     amountInput.click().type(`1000`);
     interestInput.click().type(`5`);
     submitButton.click();
-    cy.contains('Borrow Order Created', { timeout });
+    cy.contains('Borrow Order Created');
 
     amountInput.focus().clear();
     amountInput.click().type(`2000`);
@@ -77,7 +75,7 @@ describe('Main Flows', () => {
     interestInput.click().type(`10`);
 
     submitButton.click();
-    cy.contains('Borrow Order Created', { timeout });
+    cy.contains('Borrow Order Created');
   });
 });
 
@@ -93,31 +91,31 @@ describe('Error Flows', () => {
 
   it('All lend and borrow transactions should be disabled, because SOL in wallet is under fees buffer amount', () => {
     const disabledInput = () => {
-      cy.get('.ant-modal-content input.ant-input', { timeout }).should('be.disabled');
+      cy.get('.ant-modal-content input.ant-input').should('be.disabled');
     };
     const notEnoughSolMessage = () => {
-      cy.contains('Please make sure you have a buffer of at least', { timeout });
+      cy.contains('Please make sure you have a buffer of at least');
     };
     const closeModal = () => {
-      cy.get('button.ant-modal-close', { timeout }).click();
+      cy.get('button.ant-modal-close').click();
     };
-    cy.get('.SOL-pools-table-row', { timeout }).click();
-    cy.contains('button', 'Deposit', { timeout }).should('not.be.disabled').click();
-    cy.contains('100%', { timeout }).click();
-    cy.contains('.ant-modal-body button', 'Deposit', { timeout }).should('not.be.disabled').click();
-    cy.contains('deposit successful', { timeout });
+    cy.get('.SOL-pools-table-row').click();
+    cy.contains('button', 'Deposit').should('not.be.disabled').click();
+    cy.contains('100%').click();
+    cy.contains('.ant-modal-body button', 'Deposit').should('not.be.disabled').click();
+    cy.contains('deposit successful');
 
-    cy.contains('button', 'Withdraw', { timeout }).click();
+    cy.contains('button', 'Withdraw').click();
     disabledInput();
     notEnoughSolMessage();
     closeModal();
 
-    cy.contains('button', 'Borrow', { timeout }).click();
+    cy.contains('button', 'Borrow').click();
     disabledInput();
     notEnoughSolMessage();
     closeModal();
 
-    cy.contains('button', 'Repay', { timeout }).click();
+    cy.contains('button', 'Repay').click();
     disabledInput();
     notEnoughSolMessage();
     closeModal();
