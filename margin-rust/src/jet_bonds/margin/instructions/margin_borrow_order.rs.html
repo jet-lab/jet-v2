@@ -126,6 +126,7 @@
 <span id="126">126</span>
 <span id="127">127</span>
 <span id="128">128</span>
+<span id="129">129</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">agnostic_orderbook::state::Side</span>;
 <span class="kw">use</span> <span class="ident">anchor_lang::prelude</span>::<span class="kw-2">*</span>;
 <span class="kw">use</span> <span class="ident">anchor_spl::token::Token</span>;
@@ -205,7 +206,8 @@
 
     <span class="kw">let</span> <span class="ident">filled_quote_qty</span> <span class="op">=</span> <span class="ident">order_summary</span>.<span class="ident">quote_filled</span>(<span class="ident">limit_price</span>);
     <span class="kw">if</span> <span class="ident">filled_quote_qty</span> <span class="op">&gt;</span> <span class="number">0</span> {
-        <span class="kw">let</span> <span class="ident">maturation_timestamp</span> <span class="op">=</span> <span class="ident">bond_manager</span>.<span class="ident">load</span>()<span class="question-mark">?</span>.<span class="ident">duration</span> <span class="op">+</span> <span class="ident">Clock::get</span>()<span class="question-mark">?</span>.<span class="ident">unix_timestamp</span>;
+        <span class="kw">let</span> <span class="ident">maturation_timestamp</span> <span class="op">=</span>
+            <span class="ident">bond_manager</span>.<span class="ident">load</span>()<span class="question-mark">?</span>.<span class="ident">borrow_duration</span> <span class="op">+</span> <span class="ident">Clock::get</span>()<span class="question-mark">?</span>.<span class="ident">unix_timestamp</span>;
         <span class="kw">let</span> <span class="ident">sequence_number</span> <span class="op">=</span>
             <span class="ident">debt</span>.<span class="ident">new_obligation_without_posting</span>(<span class="ident">filled_quote_qty</span>, <span class="ident">maturation_timestamp</span>)<span class="question-mark">?</span>;
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">obligation</span> <span class="op">=</span> <span class="ident">serialization::init</span>::<span class="op">&lt;</span><span class="ident">Obligation</span><span class="op">&gt;</span>(

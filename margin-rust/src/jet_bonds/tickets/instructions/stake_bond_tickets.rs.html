@@ -196,7 +196,7 @@
         <span class="ident">bond_manager</span>: <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">bond_manager</span>.<span class="ident">key</span>(),
         <span class="ident">maturation_timestamp</span>: <span class="ident">Clock::get</span>()<span class="question-mark">?</span>
             .<span class="ident">unix_timestamp</span>
-            .<span class="ident">safe_add</span>(<span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">bond_manager</span>.<span class="ident">load</span>()<span class="question-mark">?</span>.<span class="ident">duration</span>)<span class="question-mark">?</span>,
+            .<span class="ident">safe_add</span>(<span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">bond_manager</span>.<span class="ident">load</span>()<span class="question-mark">?</span>.<span class="ident">lend_duration</span>)<span class="question-mark">?</span>,
         <span class="ident">redeemable</span>: <span class="ident">amount</span>,
     };
 

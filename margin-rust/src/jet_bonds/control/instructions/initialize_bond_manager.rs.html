@@ -171,6 +171,10 @@
 <span id="171">171</span>
 <span id="172">172</span>
 <span id="173">173</span>
+<span id="174">174</span>
+<span id="175">175</span>
+<span id="176">176</span>
+<span id="177">177</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">anchor_lang::prelude</span>::<span class="kw-2">*</span>;
 <span class="kw">use</span> <span class="ident">anchor_spl::token</span>::{<span class="ident">Mint</span>, <span class="ident">Token</span>, <span class="ident">TokenAccount</span>};
 
@@ -188,8 +192,10 @@
     <span class="doccomment">/// This seed allows the creation of many separate ticket managers tracking different</span>
     <span class="doccomment">/// parameters, such as staking duration</span>
     <span class="kw">pub</span> <span class="ident">seed</span>: [<span class="ident">u8</span>; <span class="number">32</span>],
-    <span class="doccomment">/// Units added to the initial stake timestamp to determine claim maturity</span>
-    <span class="kw">pub</span> <span class="ident">duration</span>: <span class="ident">i64</span>,
+    <span class="doccomment">/// Length of time before a borrow is marked as due, in seconds</span>
+    <span class="kw">pub</span> <span class="ident">borrow_duration</span>: <span class="ident">i64</span>,
+    <span class="doccomment">/// Length of time before a claim is marked as mature, in seconds</span>
+    <span class="kw">pub</span> <span class="ident">lend_duration</span>: <span class="ident">i64</span>,
 }
 
 <span class="doccomment">/// Initialize a [BondManager]</span>
@@ -320,7 +326,8 @@
             <span class="ident">bump</span>: [<span class="kw-2">*</span><span class="ident">ctx</span>.<span class="ident">bumps</span>.<span class="ident">get</span>(<span class="string">&quot;bond_manager&quot;</span>).<span class="ident">unwrap</span>()],
             <span class="ident">orderbook_paused</span>: <span class="bool-val">false</span>,
             <span class="ident">tickets_paused</span>: <span class="bool-val">false</span>,
-            <span class="ident">duration</span>: <span class="ident">params</span>.<span class="ident">duration</span>,
+            <span class="ident">borrow_duration</span>: <span class="ident">params</span>.<span class="ident">borrow_duration</span>,
+            <span class="ident">lend_duration</span>: <span class="ident">params</span>.<span class="ident">lend_duration</span>,
             <span class="ident">underlying_oracle</span>: <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">underlying_oracle</span>.<span class="ident">key</span>(),
             <span class="ident">ticket_oracle</span>: <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">ticket_oracle</span>.<span class="ident">key</span>(),
         } <span class="ident">ignoring</span> {
@@ -336,7 +343,8 @@
         <span class="ident">version</span>: <span class="ident">manager</span>.<span class="ident">version_tag</span>,
         <span class="ident">address</span>: <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">bond_manager</span>.<span class="ident">key</span>(),
         <span class="ident">underlying_token_mint</span>: <span class="ident">manager</span>.<span class="ident">underlying_token_mint</span>,
-        <span class="ident">duration</span>: <span class="ident">manager</span>.<span class="ident">duration</span>,
+        <span class="ident">borrow_duration</span>: <span class="ident">manager</span>.<span class="ident">borrow_duration</span>,
+        <span class="ident">lend_duration</span>: <span class="ident">manager</span>.<span class="ident">lend_duration</span>,
         <span class="ident">airspace</span>: <span class="ident">manager</span>.<span class="ident">airspace</span>,
         <span class="ident">underlying_oracle</span>: <span class="ident">manager</span>.<span class="ident">underlying_oracle</span>,
         <span class="ident">ticket_oracle</span>: <span class="ident">manager</span>.<span class="ident">ticket_oracle</span>,

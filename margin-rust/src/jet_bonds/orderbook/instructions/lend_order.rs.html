@@ -99,6 +99,11 @@
 <span id="99">99</span>
 <span id="100">100</span>
 <span id="101">101</span>
+<span id="102">102</span>
+<span id="103">103</span>
+<span id="104">104</span>
+<span id="105">105</span>
+<span id="106">106</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">agnostic_orderbook::state::Side</span>;
 <span class="kw">use</span> <span class="ident">anchor_lang::prelude</span>::<span class="kw-2">*</span>;
 <span class="kw">use</span> <span class="ident">anchor_spl::token</span>::{<span class="ident">accessor::mint</span>, <span class="ident">transfer</span>, <span class="ident">Token</span>, <span class="ident">TokenAccount</span>};
@@ -182,7 +187,12 @@
             <span class="ident">order_tag</span>: <span class="ident">callback_info</span>.<span class="ident">order_tag</span>,
             <span class="ident">struck_timestamp</span>: <span class="ident">timestamp</span>,
             <span class="ident">maturation_timestamp</span>: <span class="ident">timestamp</span>
-                <span class="op">+</span> <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">orderbook_mut</span>.<span class="ident">bond_manager</span>.<span class="ident">load</span>()<span class="question-mark">?</span>.<span class="ident">duration</span>,
+                <span class="op">+</span> <span class="ident">ctx</span>
+                    .<span class="ident">accounts</span>
+                    .<span class="ident">orderbook_mut</span>
+                    .<span class="ident">bond_manager</span>
+                    .<span class="ident">load</span>()<span class="question-mark">?</span>
+                    .<span class="ident">lend_duration</span>,
             <span class="ident">principal</span>: <span class="ident">order_summary</span>.<span class="ident">total_quote_qty</span>,
             <span class="ident">interest</span>: <span class="ident">order_summary</span>.<span class="ident">total_base_qty</span> <span class="op">-</span> <span class="ident">order_summary</span>.<span class="ident">total_quote_qty</span>,
         }

@@ -138,6 +138,10 @@
 <span id="138">138</span>
 <span id="139">139</span>
 <span id="140">140</span>
+<span id="141">141</span>
+<span id="142">142</span>
+<span id="143">143</span>
+<span id="144">144</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">anchor_lang::prelude</span>::<span class="kw-2">*</span>;
 <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">any</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;cli&quot;</span>, <span class="ident">test</span>))]</span>
 <span class="kw">use</span> <span class="ident">serde</span>::{<span class="ident">ser::SerializeStruct</span>, <span class="ident">Deserialize</span>, <span class="ident">Serialize</span>, <span class="ident">Serializer</span>};
@@ -187,8 +191,10 @@
     <span class="kw">pub</span> <span class="ident">tickets_paused</span>: <span class="ident">bool</span>,
     <span class="doccomment">/// reserved for future use</span>
     <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">_reserved</span>: [<span class="ident">u8</span>; <span class="number">28</span>],
-    <span class="doccomment">/// Units added to the initial stake timestamp to determine claim maturity</span>
-    <span class="kw">pub</span> <span class="ident">duration</span>: <span class="ident">i64</span>,
+    <span class="doccomment">/// Length of time before a borrow is marked as due, in seconds</span>
+    <span class="kw">pub</span> <span class="ident">borrow_duration</span>: <span class="ident">i64</span>,
+    <span class="doccomment">/// Length of time before a claim is marked as mature, in seconds</span>
+    <span class="kw">pub</span> <span class="ident">lend_duration</span>: <span class="ident">i64</span>,
     <span class="doccomment">/// Used to generate unique order tags</span>
     <span class="kw">pub</span> <span class="ident">nonce</span>: <span class="ident">u64</span>,
 }
@@ -238,7 +244,8 @@
         <span class="ident">s</span>.<span class="ident">serialize_field</span>(<span class="string">&quot;seed&quot;</span>, <span class="kw-2">&amp;</span><span class="ident">Pubkey::new_from_array</span>(<span class="self">self</span>.<span class="ident">seed</span>).<span class="ident">to_string</span>())<span class="question-mark">?</span>;
         <span class="ident">s</span>.<span class="ident">serialize_field</span>(<span class="string">&quot;orderbookPaused&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">orderbook_paused</span>)<span class="question-mark">?</span>;
         <span class="ident">s</span>.<span class="ident">serialize_field</span>(<span class="string">&quot;ticketsPaused&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">tickets_paused</span>)<span class="question-mark">?</span>;
-        <span class="ident">s</span>.<span class="ident">serialize_field</span>(<span class="string">&quot;duration&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">duration</span>)<span class="question-mark">?</span>;
+        <span class="ident">s</span>.<span class="ident">serialize_field</span>(<span class="string">&quot;borrowDuration&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">borrow_duration</span>)<span class="question-mark">?</span>;
+        <span class="ident">s</span>.<span class="ident">serialize_field</span>(<span class="string">&quot;lendDuration&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">lend_duration</span>)<span class="question-mark">?</span>;
         <span class="ident">s</span>.<span class="ident">end</span>()
     }
 }
@@ -271,7 +278,8 @@
       \&quot;seed\&quot;: \&quot;11111111111111111111111111111111\&quot;,
       \&quot;orderbookPaused\&quot;: false,
       \&quot;ticketsPaused\&quot;: false,
-      \&quot;duration\&quot;: 0
+      \&quot;borrowDuration\&quot;: 0,
+      \&quot;lendDuration\&quot;: 0
     }&quot;</span>;
     <span class="macro">assert_eq!</span>(
         <span class="ident">itertools::Itertools::join</span>(<span class="kw-2">&amp;mut</span> <span class="ident">expected</span>.<span class="ident">split_whitespace</span>(), <span class="string">&quot; &quot;</span>),

@@ -32,6 +32,7 @@
 <span id="32">32</span>
 <span id="33">33</span>
 <span id="34">34</span>
+<span id="35">35</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">anchor_lang::prelude</span>::<span class="kw-2">*</span>;
 
 <span class="attribute">#[<span class="ident">event</span>]</span>
@@ -42,7 +43,8 @@
     <span class="kw">pub</span> <span class="ident">underlying_token_mint</span>: <span class="ident">Pubkey</span>,
     <span class="kw">pub</span> <span class="ident">underlying_oracle</span>: <span class="ident">Pubkey</span>,
     <span class="kw">pub</span> <span class="ident">ticket_oracle</span>: <span class="ident">Pubkey</span>,
-    <span class="kw">pub</span> <span class="ident">duration</span>: <span class="ident">i64</span>,
+    <span class="kw">pub</span> <span class="ident">borrow_duration</span>: <span class="ident">i64</span>,
+    <span class="kw">pub</span> <span class="ident">lend_duration</span>: <span class="ident">i64</span>,
 }
 
 <span class="attribute">#[<span class="ident">event</span>]</span>
