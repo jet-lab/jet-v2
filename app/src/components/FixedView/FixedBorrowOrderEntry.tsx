@@ -5,7 +5,7 @@ import { Button, Input, Typography } from 'antd';
 import { FixedLendRowOrder } from '../../state/views/fixed-term';
 import { FixedMarketAtom } from '../../state/fixed/fixed-term-market-sync';
 import { CurrentAccount } from '../../state/user/accounts';
-import { useMemo, useState } from 'react';
+import { Suspense, useMemo, useState } from 'react';
 import BN from 'bn.js';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { MainConfig } from '../../state/config/marginConfig';
@@ -15,6 +15,7 @@ import { createFixedBorrowOrder } from '@jet-lab/jet-bonds-client';
 import { notify } from '../../utils/notify';
 import { getExplorerUrl } from '../../utils/ui';
 import { BlockExplorer, Cluster } from '../../state/settings/settings';
+import { OrderList } from './OrderList';
 
 export const FixedBorrowOrderEntry = () => {
   const dictionary = useRecoilValue(Dictionary);
@@ -64,14 +65,14 @@ export const FixedBorrowOrderEntry = () => {
         basisPoints
       });
       notify(
-        'Borrow order created',
+        'Borrow Order Created',
         `Your borrow order for ${amount.div(new BN(10 ** decimals))} ${token.name} was created successfully`,
         'success',
         getExplorerUrl(signature, cluster, blockExplorer)
       );
     } catch (e) {
       notify(
-        'Borrow order failed',
+        'Borrow Order Failed',
         `Your borrow order for ${amount.div(new BN(10 ** decimals))} ${token.name} failed`,
         'error',
         getExplorerUrl(e.signature, cluster, blockExplorer)
@@ -102,7 +103,14 @@ export const FixedBorrowOrderEntry = () => {
           step=".01"
           min="0"
         />
-        <Button onClick={createBorrowOrder}>Create Borrow Order</Button>
+        <Button disabled={!marketAndConfig?.market} onClick={createBorrowOrder}>
+          Create Borrow Order
+        </Button>
+
+        <hr />
+        <Suspense fallback={<div>Loading...</div>}>
+          <OrderList />
+        </Suspense>
       </div>
     </div>
   );

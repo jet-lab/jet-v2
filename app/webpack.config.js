@@ -17,12 +17,14 @@ const plugins = [
   new DefinePlugin({
     'process.env': JSON.stringify(dotenv.config().parsed || {})
   })
-]
+];
 
 if (process.env.ANALYZE) {
-  plugins.push(new BundleAnalyzerPlugin({
-    analyzerMode: 'server'
-  }))
+  plugins.push(
+    new BundleAnalyzerPlugin({
+      analyzerMode: 'server'
+    })
+  );
 }
 
 module.exports = {
@@ -33,7 +35,7 @@ module.exports = {
     clean: true
   },
   optimization: {
-    chunkIds: 'named',
+    chunkIds: 'named'
   },
   devtool: 'source-map',
   devServer: {
@@ -116,5 +118,5 @@ module.exports = {
   experiments: {
     asyncWebAssembly: true
   },
-  plugins,
+  plugins
 };

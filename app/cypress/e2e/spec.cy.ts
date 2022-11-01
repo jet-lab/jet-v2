@@ -1,28 +1,15 @@
 import { loadPageAndCreateAccount, airdrop, deposit, borrow, withdraw, repay } from '../support/actions';
 
+const timeout = 60000;
+
 describe('Main Flows', () => {
   it('Connects a new test wallet and creates an account', () => {
-    // FIXME, remove this once adapters load correctly. currently v2 doesn't load the SERUM marketplace correctly this would stop the test
-    cy.on('uncaught:exception', (err, runnable, promise) => {
-      console.log('***** ERROR ****');
-
-      // FIXME, remove this when the uncaught promise is fixed in `useFixedTermSync()`
-
-      // when the exception originated from an unhandled promise
-      // rejection, the promise is provided as a third argument
-      // you can turn off failing the test in this case
-      if (promise) {
-        return false;
-      }
-    });
     loadPageAndCreateAccount();
-    // remove wait time when app performance is optimized, account takes some time to load on devnet
-    cy.wait(8000);
   });
 
-  it('Airdrop BTC and deposit collateral', () => {
-    airdrop('BTC', 'Bitcoin');
-    deposit('BTC', 1);
+  it('Airdrop USDC and deposit collateral', () => {
+    airdrop('USDC', 'USDC');
+    deposit('USDC', 1);
   });
 
   it('Deposit and withdraw SOL', () => {
@@ -42,51 +29,95 @@ describe('Main Flows', () => {
     borrow('SOL', 0.3, true);
     repay('SOL', 0.3, true);
   });
+
+  it('can create multiple fixed rate lend orders', () => {
+    airdrop('SOL', 'SOL');
+    airdrop('USDC', 'USDC');
+
+    deposit('SOL', 1);
+    deposit('USDC', 50000);
+
+    const lendLink = cy.contains('Lend');
+    lendLink.click();
+
+    const amountInput = cy.get('input.ant-input[placeholder="enter order value"]', { timeout });
+    const interestInput = cy.get('input.ant-input[placeholder="enter interest"]', { timeout });
+    amountInput.click().type(`1000`);
+    interestInput.click().type(`5`);
+
+    cy.contains('button', 'Create Lend Order', { timeout }).should('not.be.disabled').click();
+
+    cy.contains('Lend Order Created', { timeout });
+
+    amountInput.focus().clear();
+    amountInput.click().type(`2000`);
+    interestInput.focus().clear();
+    interestInput.click().type(`10`);
+
+    cy.contains('button', 'Create Lend Order', { timeout }).should('not.be.disabled').click();
+    cy.contains('Lend Order Created', { timeout });
+  });
+
+  it('can create multiple fixed rate borrow orders', () => {
+    const borrowLink = cy.contains('Borrow');
+    borrowLink.click();
+
+    const submitButton = cy.contains('button', 'Create Borrow Order', { timeout }).should('not.be.disabled');
+    const amountInput = cy.get('input.ant-input[placeholder="enter order value"]', { timeout });
+    const interestInput = cy.get('input.ant-input[placeholder="enter interest"]', { timeout });
+
+    amountInput.click().type(`1000`);
+    interestInput.click().type(`5`);
+    submitButton.click();
+    cy.contains('Borrow Order Created', { timeout });
+
+    amountInput.focus().clear();
+    amountInput.click().type(`2000`);
+    interestInput.focus().clear();
+    interestInput.click().type(`10`);
+
+    submitButton.click();
+    cy.contains('Borrow Order Created', { timeout });
+  });
 });
 
 describe('Error Flows', () => {
   it('Connects a new test wallet and creates an account', () => {
     cy.on('uncaught:exception', (err, runnable, promise) => {
-      console.log('***** ERROR ****');
-      if (promise) {
-        return false;
-      }
+      return false;
     });
 
     cy.clearLocalStorage();
     loadPageAndCreateAccount();
-    cy.wait(8000);
   });
 
   it('All lend and borrow transactions should be disabled, because SOL in wallet is under fees buffer amount', () => {
     const disabledInput = () => {
-      cy.get('.ant-modal-content input.ant-input', { timeout: 30000 }).should('be.disabled');
+      cy.get('.ant-modal-content input.ant-input', { timeout }).should('be.disabled');
     };
     const notEnoughSolMessage = () => {
-      cy.contains("You don't have enough SOL in your wallet to cover transaction fees.", { timeout: 10000 });
+      cy.contains('Please make sure you have a buffer of at least', { timeout });
     };
     const closeModal = () => {
-      cy.get('button.ant-modal-close', { timeout: 1000 }).click();
+      cy.get('button.ant-modal-close', { timeout }).click();
     };
+    cy.get('.SOL-pools-table-row', { timeout }).click();
+    cy.contains('button', 'Deposit', { timeout }).should('not.be.disabled').click();
+    cy.contains('100%', { timeout }).click();
+    cy.contains('.ant-modal-body button', 'Deposit', { timeout }).should('not.be.disabled').click();
+    cy.contains('deposit successful', { timeout });
 
-    deposit('SOL', 0.9);
-    cy.get('.SOL-pools-table-row', { timeout: 30000 }).click();
-    cy.get('button').contains('Deposit', { timeout: 1000 }).click();
-    cy.contains('100%', { timeout: 30000 }).click();
-    notEnoughSolMessage();
-    closeModal();
-
-    cy.get('button').contains('Withdraw', { timeout: 1000 }).click();
+    cy.contains('button', 'Withdraw', { timeout }).click();
     disabledInput();
     notEnoughSolMessage();
     closeModal();
 
-    cy.get('button').contains('Borrow', { timeout: 1000 }).click();
+    cy.contains('button', 'Borrow', { timeout }).click();
     disabledInput();
     notEnoughSolMessage();
     closeModal();
 
-    cy.get('button').contains('Repay', { timeout: 1000 }).click();
+    cy.contains('button', 'Repay', { timeout }).click();
     disabledInput();
     notEnoughSolMessage();
     closeModal();

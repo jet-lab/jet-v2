@@ -117,18 +117,18 @@ export async function sendAll(
       const txnArray = await Promise.all(
         transactions.map(async tx => {
           const rawTx = tx.serialize()
-            return await sendAndConfirmRawTransaction(provider.connection, rawTx, opts).catch((err) => {
-              let customErr = new ConfirmError(err.message)
-              customErr.signature = bs58.encode(tx.signature!)
-              throw customErr
-            })
+          return await sendAndConfirmRawTransaction(provider.connection, rawTx, opts).catch(err => {
+            let customErr = new ConfirmError(err.message)
+            customErr.signature = bs58.encode(tx.signature!)
+            throw customErr
+          })
         })
       )
       // Return the txid of the final transaction in the array
       // TODO: We should return an array instead of only the final txn
       lastTxn = txnArray[txnArray.length - 1] ?? ""
     }
-  } catch(e: any) {
+  } catch (e: any) {
     throw e
   }
   return lastTxn
@@ -159,7 +159,7 @@ async function sendAndConfirmRawTransaction(
 }
 
 class ConfirmError extends Error {
-  signature?: string;
+  signature?: string
   constructor(message?: string) {
     super(message)
   }

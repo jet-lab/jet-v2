@@ -15,15 +15,16 @@ import { AccountsView } from './views/AccountsView';
 import { Navbar } from './components/misc/Navbar/Navbar';
 import { Modals } from './components/modals/Modals';
 import { TermsPrivacy } from './components/misc/TermsPrivacy';
-import { lazy } from 'react';
+import { lazy, Suspense } from 'react';
 
 const StateSyncer = lazy(() => import('./state/StateSyncer'));
 const FixedLendView = lazy(() => import('./views/FixedLendView'));
 const FixedBorrowView = lazy(() => import('./views/FixedBorrowView'));
 
-export function App(): JSX.Element {
-  const isDevnet = localStorage.getItem('jetAppCluster') === 'devnet';
+export const isDebug =
+  window.location.href.includes('?debug-environment=true') && window.location.href.includes('localhost');
 
+export function App(): JSX.Element {
   const wallets = [
     new PhantomWalletAdapter(),
     new BraveWalletAdapter(),
@@ -31,7 +32,7 @@ export function App(): JSX.Element {
     new SolongWalletAdapter(),
     new MathWalletAdapter(),
     new SolletWalletAdapter(),
-    ...(isDevnet ? [new E2EWalletAdapter()] : [])
+    ...(isDebug ? [new E2EWalletAdapter()] : [])
   ];
 
   return (
@@ -43,8 +44,23 @@ export function App(): JSX.Element {
             <Route path="/" element={<PoolsView />} />
             <Route path="/swaps" element={<SwapsView />} />
             <Route path="/accounts" element={<AccountsView />} />
-            <Route path="/fixed-borrow" element={<FixedBorrowView />} />
-            <Route path="/fixed-lend" element={<FixedLendView />} />
+
+            <Route
+              path="/fixed-borrow"
+              element={
+                <Suspense>
+                  <FixedBorrowView />
+                </Suspense>
+              }
+            />
+            <Route
+              path="/fixed-lend"
+              element={
+                <Suspense>
+                  <FixedLendView />
+                </Suspense>
+              }
+            />
           </Routes>
           <Modals />
           <TermsPrivacy />

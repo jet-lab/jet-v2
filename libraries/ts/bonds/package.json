@@ -7,6 +7,8 @@
   "license": "AGPL-3.0-or-later",
   "scripts": {
     "build": "make build",
+    "build:esm": "make build-esm",
+    "build:cjs": "make build-cjs",
     "clean": "rm -rf ./dist & rm -rf ./src/wasm-utils",
     "lint": "tslint -c tslint.json src/**/*.ts",
     "prepublishOnly": "yarn build",

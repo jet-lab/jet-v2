@@ -63,14 +63,14 @@ export const FixedLendOrderEntry = () => {
         basisPoints
       });
       notify(
-        'Lend order created',
+        'Lend Order Created',
         `Your lend order for ${amount.div(new BN(10 ** decimals))} ${token.name} was created successfully`,
         'success',
         getExplorerUrl(signature, cluster, blockExplorer)
       );
     } catch (e) {
       notify(
-        'Lend order failed',
+        'Lend Order Failed',
         `Your lend order for ${amount.div(new BN(10 ** decimals))} ${token.name} failed`,
         'error',
         getExplorerUrl(e.signature, cluster, blockExplorer)
@@ -101,7 +101,9 @@ export const FixedLendOrderEntry = () => {
           step=".01"
           min="0"
         />
-        <Button onClick={offerLoan}>Create Lend Order</Button>
+        <Button disabled={!marketAndConfig?.market} onClick={offerLoan}>
+          Create Lend Order
+        </Button>
 
         <hr />
         <Suspense fallback={<div>Loading...</div>}>

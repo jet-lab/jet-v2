@@ -18,7 +18,7 @@
     "fmt": "prettier src/ tests/ types/ --check",
     "fmt:fix": "prettier src/ tests/ types/ --write",
     "prepublishOnly": "yarn build",
-    "watch": "tsc --watch --preserveWatchOutput --pretty & tsc -p tsconfig-cjs.json --watch --preserveWatchOutput --pretty"
+    "watch": "tsc --watch --preserveWatchOutput --pretty --incremental & tsc --preserveWatchOutput --pretty -p tsconfig-cjs.json --incremental"
   },
   "homepage": "https://github.com/jet-lab/jet-v2/tree/master/libraries/ts/#readme",
   "bugs": {

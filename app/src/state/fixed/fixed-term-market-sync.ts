@@ -6,8 +6,6 @@ import { useProvider } from '../../utils/jet/provider';
 import { AirspaceConfig, BondMarketConfig } from '@jet-lab/margin';
 import { MainConfig } from '../config/marginConfig';
 import { PublicKey } from '@solana/web3.js';
-import bs58 from "bs58"
-
 
 export const AllFixedMarketsAtom = atom<Array<MarketAndconfig>>({
   key: 'allFixedMarkets',
@@ -72,6 +70,7 @@ export const useFixedTermSync = (): void => {
     );
     setMarkets(markets);
   };
+
   useEffect(() => {
     if (config?.bondsProgramId) {
       const program = new Program(JetBondsIdl, config.bondsProgramId, provider);

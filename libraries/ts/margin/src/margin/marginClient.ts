@@ -286,7 +286,7 @@ export class MarginClient {
               token = tokenConfig as MarginTokenConfig
               tokenIn = firstTokenConfig as MarginTokenConfig
             } else {
-              token = Object.values(config.tokens).find(config => config.name == tokenName) as MarginTokenConfig
+              token = config.tokens[tokenName]
             }
             if (
               translateAddress(token.mint).equals(NATIVE_MINT) &&
