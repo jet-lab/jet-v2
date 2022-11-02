@@ -1,21 +1,21 @@
 import { useRecoilState, useRecoilValue } from 'recoil';
-import { Dictionary } from '../../state/settings/localization/localization';
-import { ReorderArrows } from '../misc/ReorderArrows';
+import { Dictionary } from '@state/settings/localization/localization';
+import { ReorderArrows } from '@components/misc/ReorderArrows';
 import { Button, Input, Typography } from 'antd';
-import { FixedLendRowOrder } from '../../state/views/fixed-term';
-import { FixedMarketAtom } from '../../state/fixed/fixed-term-market-sync';
-import { CurrentAccount } from '../../state/user/accounts';
 import { Suspense, useMemo, useState } from 'react';
 import BN from 'bn.js';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { MainConfig } from '../../state/config/marginConfig';
-import { useProvider } from '../../utils/jet/provider';
-import { CurrentPool, Pools } from '../../state/pools/pools';
+import { MainConfig } from '@state/config/marginConfig';
+import { useProvider } from '@utils/jet/provider';
+import { CurrentPool, Pools } from '@state/pools/pools';
 import { createFixedLendOrder } from '@jet-lab/jet-bonds-client';
-import { notify } from '../../utils/notify';
-import { getExplorerUrl } from '../../utils/ui';
-import { BlockExplorer, Cluster } from '../../state/settings/settings';
+import { notify } from '@utils/notify';
+import { getExplorerUrl } from '@utils/ui';
+import { BlockExplorer, Cluster } from '@state/settings/settings';
 import { OrderList } from './OrderList';
+import { FixedLendRowOrder } from '@state/views/fixed-term';
+import { FixedMarketAtom } from '@state/fixed/fixed-term-market-sync';
+import { CurrentAccount } from '@state/user/accounts';
 
 export const FixedLendOrderEntry = () => {
   const dictionary = useRecoilValue(Dictionary);

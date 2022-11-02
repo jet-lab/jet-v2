@@ -10,7 +10,17 @@
     "allowSyntheticDefaultImports": true,
     "moduleResolution": "node",
     "resolveJsonModule": true,
-    "incremental": true
+    "incremental": true,
+    "baseUrl": "src",
+    "paths": {
+      "@components/*": ["components/*"],
+      "@state/*": ["state/*"],
+      "@styles/*": ["styles/*"],
+      "@utils/*": ["utils/*"],
+      "@assets/*": ["assets/*"],
+      "@views/*": ["views/*"]
+    }
   },
-  "include": ["./src/", "./public"]
+  "include": ["src/**/*", "./public"],
+  "exclude": ["node_modules"]
 }

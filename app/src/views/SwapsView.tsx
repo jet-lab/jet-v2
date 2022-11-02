@@ -1,11 +1,11 @@
 import { useEffect } from 'react';
 import { useRecoilValue } from 'recoil';
-import { AccountSnapshot } from '../components/misc/AccountSnapshot/AccountSnapshot';
-import { SwapEntry } from '../components/SwapsView/SwapEntry';
-import { SwapsGraph } from '../components/SwapsView/SwapsGraph';
-import { FullAccountBalance } from '../components/tables/FullAccountBalance';
-import { Dictionary } from '../state/settings/localization/localization';
-import { SwapsViewOrder, SwapsRowOrder } from '../state/views/views';
+import { AccountSnapshot } from '@components/misc/AccountSnapshot/AccountSnapshot';
+import { SwapEntry } from '@components/SwapsView/SwapEntry';
+import { SwapsGraph } from '@components/SwapsView/SwapsGraph';
+import { FullAccountBalance } from '@components/tables/FullAccountBalance';
+import { Dictionary } from '@state/settings/localization/localization';
+import { SwapsViewOrder, SwapsRowOrder } from '@state/views/views';
 
 // App view for margin swapping
 export function SwapsView(): JSX.Element {

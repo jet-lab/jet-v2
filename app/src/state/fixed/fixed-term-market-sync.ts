@@ -2,10 +2,11 @@ import { BondMarket, JetBonds, JetBondsIdl, Orderbook } from '@jet-lab/jet-bonds
 import { Program } from '@project-serum/anchor';
 import { useEffect } from 'react';
 import { atom, selector, useRecoilValue, useSetRecoilState } from 'recoil';
-import { useProvider } from '../../utils/jet/provider';
 import { AirspaceConfig, BondMarketConfig } from '@jet-lab/margin';
 import { MainConfig } from '../config/marginConfig';
 import { PublicKey } from '@solana/web3.js';
+import { useProvider } from '@utils/jet/provider';
+
 
 export const AllFixedMarketsAtom = atom<Array<MarketAndconfig>>({
   key: 'allFixedMarkets',

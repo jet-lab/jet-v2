@@ -2,20 +2,20 @@ import { useEffect, useRef, useState } from 'react';
 import { CSVDownload } from 'react-csv';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { AccountTransaction } from '@jet-lab/margin';
-import { Dictionary } from '../../state/settings/localization/localization';
-import { BlockExplorer, Cluster, PreferDayMonthYear, PreferredTimeDisplay } from '../../state/settings/settings';
-import { AccountsViewOrder } from '../../state/views/views';
-import { WalletTokens } from '../../state/user/walletTokens';
-import { Accounts, CurrentAccountHistory, AccountNames, AccountHistoryLoaded } from '../../state/user/accounts';
-import { ActionRefresh } from '../../state/actions/actions';
-import { createDummyArray, getExplorerUrl, openLinkInBrowser } from '../../utils/ui';
-import { localDayMonthYear, unixToLocalTime, unixToUtcTime, utcDayMonthYear } from '../../utils/time';
+import { Dictionary } from '@state/settings/localization/localization';
+import { BlockExplorer, Cluster, PreferDayMonthYear, PreferredTimeDisplay } from '@state/settings/settings';
+import { AccountsViewOrder } from '@state/views/views';
+import { WalletTokens } from '@state/user/walletTokens';
+import { Accounts, CurrentAccountHistory, AccountNames, AccountHistoryLoaded } from '@state/user/accounts';
+import { ActionRefresh } from '@state/actions/actions';
+import { createDummyArray, getExplorerUrl, openLinkInBrowser } from '@utils/ui';
+import { localDayMonthYear, unixToLocalTime, unixToUtcTime, utcDayMonthYear } from '@utils/time';
 import { Tabs, Table, Skeleton, Typography, Input, Dropdown, Menu } from 'antd';
-import { ReorderArrows } from '../misc/ReorderArrows';
-import { ConnectionFeedback } from '../misc/ConnectionFeedback/ConnectionFeedback';
+import { ReorderArrows } from '@components/misc/ReorderArrows';
+import { ConnectionFeedback } from '@components/misc/ConnectionFeedback/ConnectionFeedback';
 import { DownloadOutlined, SearchOutlined } from '@ant-design/icons';
-import AngleDown from '../../assets/icons/arrow-angle-down.svg';
-import { ActionIcon } from '../misc/ActionIcon';
+import AngleDown from '@assets/icons/arrow-angle-down.svg';
+import { ActionIcon } from '@components/misc/ActionIcon';
 
 // Table to show margin account's transaction history
 export function FullAccountHistory(): JSX.Element {

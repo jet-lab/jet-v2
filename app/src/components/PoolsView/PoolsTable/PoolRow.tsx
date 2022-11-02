@@ -1,9 +1,9 @@
 import { useRecoilState } from 'recoil';
 import { Pool } from '@jet-lab/margin';
-import { CurrentPoolSymbol } from '../../../state/pools/pools';
-import { formatRate } from '../../../utils/format';
-import { useCurrencyFormatting } from '../../../utils/currency';
-import { TokenLogo } from '../../misc/TokenLogo';
+import { CurrentPoolSymbol } from '@state/pools/pools';
+import { formatRate } from '@utils/format';
+import { useCurrencyFormatting } from '@utils/currency';
+import { TokenLogo } from '@components/misc/TokenLogo';
 import { Skeleton, Typography } from 'antd';
 
 // Component for each row of the PoolsTable

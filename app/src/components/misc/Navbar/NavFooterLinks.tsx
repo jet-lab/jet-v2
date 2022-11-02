@@ -1,5 +1,5 @@
 import { useRecoilValue } from 'recoil';
-import { Dictionary } from '../../../state/settings/localization/localization';
+import { Dictionary } from '@state/settings/localization/localization';
 
 // Footer links for the mobile navigation drawer
 export function NavFooterLinks(): JSX.Element {

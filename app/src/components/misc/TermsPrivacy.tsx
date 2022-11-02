@@ -1,5 +1,5 @@
 import { useRecoilValue } from 'recoil';
-import { Dictionary } from '../../state/settings/localization/localization';
+import { Dictionary } from '@state/settings/localization/localization';
 import { Typography } from 'antd';
 
 // Terms of Use, Privacy Policy and Definition links

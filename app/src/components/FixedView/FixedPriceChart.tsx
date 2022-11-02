@@ -2,12 +2,12 @@ import Title from 'antd/lib/typography/Title';
 import ApexCharts from 'apexcharts';
 import { Suspense, useEffect, useRef, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
-import { ReorderArrows } from '../misc/ReorderArrows';
-import { Dictionary } from '../../state/settings/localization/localization';
-import { FixedBorrowRowOrder, FixedLendRowOrder } from '../../state/views/fixed-term';
-import { AllFixedMarketsOrderBooksAtom, ExtendedOrderBook } from '../../state/fixed/fixed-term-market-sync';
-import { useCurrencyFormatting } from '../../utils/currency';
 import { Order } from '@jet-lab/jet-bonds-client';
+import { ReorderArrows } from '@components/misc/ReorderArrows';
+import { Dictionary } from '@state/settings/localization/localization';
+import { FixedBorrowRowOrder, FixedLendRowOrder } from '@state/views/fixed-term';
+import { AllFixedMarketsOrderBooksAtom, ExtendedOrderBook } from '@state/fixed/fixed-term-market-sync';
+import { useCurrencyFormatting } from '@utils/currency';
 
 interface Formatter {
   currencyFormatter: (

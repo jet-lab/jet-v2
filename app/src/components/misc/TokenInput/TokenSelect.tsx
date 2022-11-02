@@ -1,8 +1,8 @@
 import { useRecoilValue, useRecoilState } from 'recoil';
-import { CurrentPoolSymbol, PoolOption, PoolOptions } from '../../../state/pools/pools';
+import { CurrentPoolSymbol, PoolOption, PoolOptions } from '@state/pools/pools';
 import { TokenLogo } from '../TokenLogo';
 import { Select, Typography } from 'antd';
-import AngleDown from '../../../assets/icons/arrow-angle-down.svg';
+import AngleDown from '@assets/icons/arrow-angle-down.svg';
 
 // Select component for the Token Input (to change which token user is interacting with)
 export function TokenSelect(props: {

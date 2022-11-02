@@ -1,9 +1,9 @@
 import { useLocation } from 'react-router-dom';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
-import { Dictionary } from '../../../state/settings/localization/localization';
-import { NavDrawerOpen } from '../../../state/views/views';
-import { SendingTransaction } from '../../../state/actions/actions';
-import { useChangeView } from '../../../utils/ui';
+import { Dictionary } from '@state/settings/localization/localization';
+import { NavDrawerOpen } from '@state/views/views';
+import { SendingTransaction } from '@state/actions/actions';
+import { useChangeView } from '@utils/ui';
 import { Tooltip, Typography } from 'antd';
 import { isDebug } from '../../../App';
 
