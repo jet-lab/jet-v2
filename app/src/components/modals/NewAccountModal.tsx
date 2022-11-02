@@ -94,7 +94,7 @@ export function NewAccountModal(): JSX.Element {
   // Set rent fee for creating a new account
   useEffect(() => {
     async function getNewAccountRentFee() {
-      if (!programs) {
+      if (!programs || networkState !== 'connected') {
         return;
       }
 
@@ -104,7 +104,7 @@ export function NewAccountModal(): JSX.Element {
       const rentFee = rentFeeLamports / LAMPORTS_PER_SOL;
       setNewAccountRentFee(rentFee);
     }
-    if (networkState === 'connected') getNewAccountRentFee();
+    getNewAccountRentFee();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [programs, networkState]);
 
