@@ -2413,6 +2413,7 @@ dependencies = [
  "anchor-spl",
  "bytemuck",
  "pyth-sdk-solana 0.4.2",
+ "spl-token-swap 2.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]

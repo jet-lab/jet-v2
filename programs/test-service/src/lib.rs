@@ -43,6 +43,15 @@ pub mod seeds {
 
     #[constant]
     pub const TOKEN_PYTH_PRODUCT: &[u8] = b"token-pyth-product";
+
+    #[constant]
+    pub const SWAP_POOL_STATE: &[u8] = b"swap-pool-state";
+
+    #[constant]
+    pub const SWAP_POOL_MINT: &[u8] = b"swap-pool-mint";
+
+    #[constant]
+    pub const SWAP_POOL_TOKENS: &[u8] = b"swap-pool-tokens";
 }
 
 #[program]
@@ -84,6 +93,11 @@ pub mod jet_test_service {
         expo: i32,
     ) -> Result<()> {
         token_update_pyth_price_handler(ctx, price, conf, expo)
+    }
+
+    /// Create a SPL swap pool
+    pub fn spl_swap_pool_create(ctx: Context<SplSwapPoolCreate>) -> Result<()> {
+        spl_swap_pool_create_handler(ctx)
     }
 }
 
