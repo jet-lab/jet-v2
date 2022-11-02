@@ -24,21 +24,21 @@ use crate::{error::TestServiceError, seeds::TOKEN_INFO, state::TokenInfo};
 pub struct TokenRequest<'info> {
     /// user requesting tokens
     #[account(mut)]
-    requester: Signer<'info>,
+    pub requester: Signer<'info>,
 
     /// The relevant token mint
     #[account(mut)]
-    mint: Account<'info, Mint>,
+    pub mint: Account<'info, Mint>,
 
     /// The test info for the token
     #[account(has_one = mint)]
-    info: Account<'info, TokenInfo>,
+    pub info: Account<'info, TokenInfo>,
 
     /// The destination account for the minted tokens
     #[account(mut)]
-    destination: Account<'info, TokenAccount>,
+    pub destination: Account<'info, TokenAccount>,
 
-    token_program: Program<'info, Token>,
+    pub token_program: Program<'info, Token>,
 }
 
 pub fn token_request_handler(ctx: Context<TokenRequest>, amount: u64) -> Result<()> {
