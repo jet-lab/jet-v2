@@ -31,6 +31,6 @@ export function useProvider() {
     return new AnchorProvider(connection, wallet as unknown as Wallet, confirmOptions);
   }, [connection, wallet]);
 
-  const programs = useMemo(() => (config && networkStatus === 'connected' ? MarginClient.getPrograms(provider, config) : undefined), [config, provider]);
+  const programs = useMemo(() => (config && networkStatus === 'connected' ? MarginClient.getPrograms(provider, config) : undefined), [config, provider, networkStatus]);
   return { programs, provider };
 }

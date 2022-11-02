@@ -93,11 +93,10 @@ export function NewAccountModal(): JSX.Element {
 
   // Set rent fee for creating a new account
   useEffect(() => {
+    if (!programs || networkState !== 'connected') {
+      return;
+    }
     async function getNewAccountRentFee() {
-      if (!programs || networkState !== 'connected') {
-        return;
-      }
-
       const rentFeeLamports = await programs.connection.getMinimumBalanceForRentExemption(
         programs.margin.account.marginAccount.size
       );
