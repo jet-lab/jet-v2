@@ -208,7 +208,7 @@ impl MarginTestContext {
                                 lend_duration: 5,
                                 min_order_size: 10,
                                 paused: false,
-                                ticket_price: 900,
+                                ticket_price: "0.9".to_string(),
                             }],
                         },
                     ),

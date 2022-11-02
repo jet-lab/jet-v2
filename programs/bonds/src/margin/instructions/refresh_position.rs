@@ -79,7 +79,7 @@ pub fn handler(ctx: Context<RefreshPosition>, expect_price: bool) -> Result<()> 
 
 fn load_price(oracle_info: &AccountInfo) -> Result<PositionChange> {
     let oracle = pyth_sdk_solana::load_price_feed_from_account_info(oracle_info).map_err(|e| {
-        msg!("oracle error: {:?}", e);
+        msg!("oracle error in account {}: {:?}", oracle_info.key, e);
         error!(BondsError::OracleError)
     })?;
     let price = oracle.get_current_price().ok_or(BondsError::PriceMissing)?;

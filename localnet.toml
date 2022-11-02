@@ -32,7 +32,7 @@ borrow_duration = 86400
 lend_duration = 88000
 min_order_size = 10
 paused = true
-ticket_price = 0.9
+ticket_price = "0.9"
 
 [airspace.tokens.USDC.margin_pool_config]
 flags = 0b0010 # ALLOW_LENDING
