@@ -438,11 +438,11 @@
   },
   "fixedView": {
     "lend": {
-      "title": "Lend",
+      "title": "Lend Fixed-Term",
       "chartTitle": "Asks"
     },
     "borrow": {
-      "title": "Borrow",
+      "title": "Borrow Fixed-Term",
       "chartTitle": "Bids"
     }
   },

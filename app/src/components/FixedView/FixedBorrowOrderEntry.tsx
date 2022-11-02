@@ -1,7 +1,7 @@
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { Dictionary } from '@state/settings/localization/localization';
 import { ReorderArrows } from '@components/misc/ReorderArrows';
-import { Button, Input, Typography } from 'antd';
+import { Button, InputNumber, Typography } from 'antd';
 import { Suspense, useMemo, useState } from 'react';
 import { FixedLendRowOrder } from '@state/views/fixed-term';
 import { FixedMarketAtom } from '@state/fixed-market/fixed-term-market-sync';
@@ -16,6 +16,7 @@ import { OrderList } from './OrderList';
 import { notify } from '@utils/notify';
 import { getExplorerUrl } from '@utils/ui';
 import { BlockExplorer, Cluster } from '@state/settings/settings';
+import { marketToString } from '@utils/jet/fixed-term-utils';
 
 export const FixedBorrowOrderEntry = () => {
   const dictionary = useRecoilValue(Dictionary);
@@ -85,32 +86,38 @@ export const FixedBorrowOrderEntry = () => {
       <div className="order-entry-head view-element-item view-element-item-hidden flex column">
         <ReorderArrows component="fixedLendEntry" order={rowOrder} setOrder={setRowOrder} />
         <div className="order-entry-head-top flex-centered">
-          <Paragraph className="order-entry-head-top-title">{dictionary.fixedView.borrow.title}</Paragraph>
+          <Paragraph className="order-entry-head-top-title">{marketToString(marketAndConfig.config)}</Paragraph>
         </div>
       </div>
       <div className="order-entry-body">
-        <Input
-          onChange={e => setAmount(new BN(parseFloat(e.target.value) * 10 ** decimals))}
-          placeholder="enter order value"
-          type="number"
-        />
-        <Input
-          onChange={e => {
-            setBasisPoints(new BN(parseFloat(e.target.value) * 100));
-          }}
-          placeholder="enter interest"
-          type="number"
-          step=".01"
-          min="0"
-        />
+        <div className='fixed-order-entry-fields'>
+        <label>
+          Loan amount
+          <InputNumber
+            onChange={e => setAmount(new BN(e * 10 ** decimals))}
+            min={0}
+            formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+            controls={false}
+            addonAfter={marketAndConfig.config.symbol}
+          />
+        </label>
+        <label>
+          Interest Rate
+          <InputNumber
+            onChange={e => {
+              setBasisPoints(new BN(e * 100));
+            }}
+            type="number"
+            step={0.01}
+            min={0}
+            controls={false}
+            addonAfter="%"
+          />
+        </label>
+        </div>
         <Button disabled={!marketAndConfig?.market} onClick={createBorrowOrder}>
-          Create Borrow Order
+          Request {marketToString(marketAndConfig.config)} loan
         </Button>
-
-        <hr />
-        <Suspense fallback={<div>Loading...</div>}>
-          <OrderList />
-        </Suspense>
       </div>
     </div>
   );

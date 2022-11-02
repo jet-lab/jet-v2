@@ -104,11 +104,6 @@ export const FixedLendOrderEntry = () => {
         <Button disabled={!marketAndConfig?.market} onClick={offerLoan}>
           Create Lend Order
         </Button>
-
-        <hr />
-        <Suspense fallback={<div>Loading...</div>}>
-          <OrderList />
-        </Suspense>
       </div>
     </div>
   );
