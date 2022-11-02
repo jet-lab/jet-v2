@@ -7,6 +7,8 @@ import { Dictionary } from '@state/settings/localization/localization';
 import { FixedLendOrderEntry } from '@components/FixedView/FixedLendOrderEntry';
 import { FixedLendRowOrder, FixedLendViewOrder } from '@state/views/fixed-term';
 import { FixedMarketSelector } from '@components/FixedView/FixedMarketSelector';
+import { NetworkStateAtom } from '@state/network/network-state';
+import { WaitingForNetworkView } from './WaitingForNetwork';
 
 const rowComponents: Record<string, React.FC<any>> = {
   fixedLendEntry: FixedLendOrderEntry,
@@ -47,6 +49,7 @@ const viewComponentsProps: Record<string, object> = {
 
 const MainView = (): JSX.Element => {
   const viewOrder = useRecoilValue(FixedLendViewOrder);
+  
   return (
     <div className="fixed-term-view view">
       {viewOrder.map(key => {
@@ -60,6 +63,8 @@ const MainView = (): JSX.Element => {
 
 export function FixedLendView(): JSX.Element {
   const dictionary = useRecoilValue(Dictionary);
+  const networkState = useRecoilValue(NetworkStateAtom)
+  if (networkState !== 'connected') return <WaitingForNetworkView networkState={networkState}  />
   useEffect(() => {
     document.title = `${dictionary.fixedView.lend.title} | Jet Protocol`;
   }, [dictionary.fixedView.lend.title]);

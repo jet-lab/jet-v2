@@ -7,6 +7,8 @@ import { Dictionary } from '@state/settings/localization/localization';
 import { FixedBorrowOrderEntry } from '@components/FixedView/FixedBorrowOrderEntry';
 import { FixedBorrowRowOrder, FixedBorrowViewOrder } from '@state/views/fixed-term';
 import { FixedMarketSelector } from '@components/FixedView/FixedMarketSelector';
+import { NetworkStateAtom } from '@state/network/network-state';
+import { WaitingForNetworkView } from './WaitingForNetwork';
 
 const rowComponents: Record<string, React.FC<any>> = {
   fixedBorrowEntry: FixedBorrowOrderEntry,
@@ -60,6 +62,9 @@ const MainView = (): JSX.Element => {
 
 export function FixedBorrowView(): JSX.Element {
   const dictionary = useRecoilValue(Dictionary);
+
+  const networkState = useRecoilValue(NetworkStateAtom)
+  if (networkState !== 'connected') return <WaitingForNetworkView networkState={networkState}  />
   useEffect(() => {
     document.title = `${dictionary.fixedView.borrow.title} | Jet Protocol`;
   }, [dictionary.fixedView.borrow.title]);
