@@ -11,7 +11,7 @@ import { ActionRefresh, ACTION_REFRESH_INTERVAL } from '../actions/actions';
 import { walletParam, WalletTokens } from './walletTokens';
 import { Pools } from '../pools/pools';
 import { useProvider } from '@utils/jet/provider';
-import { MarginConfig } from '../config/marginConfig';
+import { MainConfig } from '@state/config/marginConfig';
 
 // Interfaces for account order and tx history
 export interface AccountHistory {
