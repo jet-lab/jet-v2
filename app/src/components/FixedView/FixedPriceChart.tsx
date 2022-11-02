@@ -6,7 +6,7 @@ import { Order } from '@jet-lab/jet-bonds-client';
 import { ReorderArrows } from '@components/misc/ReorderArrows';
 import { Dictionary } from '@state/settings/localization/localization';
 import { FixedBorrowRowOrder, FixedLendRowOrder } from '@state/views/fixed-term';
-import { AllFixedMarketsOrderBooksAtom, ExtendedOrderBook } from '@state/fixed/fixed-term-market-sync';
+import { AllFixedMarketsOrderBooksAtom, ExtendedOrderBook } from '@state/fixed-market/fixed-term-market-sync';
 import { useCurrencyFormatting } from '@utils/currency';
 
 interface Formatter {

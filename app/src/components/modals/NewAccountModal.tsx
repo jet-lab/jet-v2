@@ -15,6 +15,7 @@ import { useMarginActions } from '@utils/jet/marginActions';
 import { ActionResponse } from '@utils/jet/marginActions';
 import { getExplorerUrl } from '@utils/ui';
 import { Input, Modal, Tooltip, Typography } from 'antd';
+import { NetworkStateAtom } from '../../state/network/network-state';
 
 // Modal for user to create a new margin account
 export function NewAccountModal(): JSX.Element {
@@ -35,6 +36,7 @@ export function NewAccountModal(): JSX.Element {
   const [disabled, setDisabled] = useState(true);
   const [inputError, setInputError] = useState<string | undefined>();
   const [sendingTransaction, setSendingTransaction] = useRecoilState(SendingTransaction);
+  const networkState = useRecoilValue(NetworkStateAtom)
   const { Title, Paragraph, Text } = Typography;
 
   // Create a new account with a deposit
@@ -102,9 +104,9 @@ export function NewAccountModal(): JSX.Element {
       const rentFee = rentFeeLamports / LAMPORTS_PER_SOL;
       setNewAccountRentFee(rentFee);
     }
-    getNewAccountRentFee();
+    if (networkState === 'connected') getNewAccountRentFee();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [programs]);
+  }, [programs, networkState]);
 
   // Check if user has enough SOL to cover rent + fees.
   // If user's SOL is less than feeBuffer amount, disable user from creating new account.
