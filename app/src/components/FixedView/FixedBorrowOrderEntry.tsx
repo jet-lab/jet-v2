@@ -1,8 +1,7 @@
 import { useRecoilState, useRecoilValue } from 'recoil';
-import { Dictionary } from '@state/settings/localization/localization';
 import { ReorderArrows } from '@components/misc/ReorderArrows';
-import { Button, InputNumber, Typography } from 'antd';
-import { Suspense, useMemo, useState } from 'react';
+import { Button, InputNumber, Switch, Typography } from 'antd';
+import { useMemo, useState } from 'react';
 import { FixedLendRowOrder } from '@state/views/fixed-term';
 import { FixedMarketAtom } from '@state/fixed-market/fixed-term-market-sync';
 import { CurrentAccount } from '@state/user/accounts';
@@ -12,14 +11,14 @@ import { MainConfig } from '@state/config/marginConfig';
 import { useProvider } from '@utils/jet/provider';
 import { CurrentPool, Pools } from '@state/pools/pools';
 import { createFixedBorrowOrder } from '@jet-lab/jet-bonds-client';
-import { OrderList } from './OrderList';
 import { notify } from '@utils/notify';
 import { getExplorerUrl } from '@utils/ui';
 import { BlockExplorer, Cluster } from '@state/settings/settings';
 import { marketToString } from '@utils/jet/fixed-term-utils';
+import { Tabs } from 'antd';
+import { formatDuration, intervalToDuration } from 'date-fns';
 
 export const FixedBorrowOrderEntry = () => {
-  const dictionary = useRecoilValue(Dictionary);
   const [rowOrder, setRowOrder] = useRecoilState(FixedLendRowOrder);
   const marketAndConfig = useRecoilValue(FixedMarketAtom);
   const marginAccount = useRecoilValue(CurrentAccount);
@@ -30,6 +29,7 @@ export const FixedBorrowOrderEntry = () => {
   const currentPool = useRecoilValue(CurrentPool);
   const wallet = useWallet();
   const marginConfig = useRecoilValue(MainConfig);
+  const [orderType, setOrderType] = useState('limit');
 
   const token = useMemo(() => {
     if (!marginConfig || !marketAndConfig) return null;
@@ -89,36 +89,92 @@ export const FixedBorrowOrderEntry = () => {
           <Paragraph className="order-entry-head-top-title">{marketToString(marketAndConfig.config)}</Paragraph>
         </div>
       </div>
-      <div className="order-entry-body">
-        <div className='fixed-order-entry-fields'>
-        <label>
-          Loan amount
-          <InputNumber
-            onChange={e => setAmount(new BN(e * 10 ** decimals))}
-            min={0}
-            formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-            controls={false}
-            addonAfter={marketAndConfig.config.symbol}
-          />
-        </label>
-        <label>
-          Interest Rate
-          <InputNumber
-            onChange={e => {
-              setBasisPoints(new BN(e * 100));
-            }}
-            type="number"
-            step={0.01}
-            min={0}
-            controls={false}
-            addonAfter="%"
-          />
-        </label>
+      <Tabs
+        defaultActiveKey="limit"
+        activeKey={orderType}
+        onChange={type => setOrderType(type)}
+        items={[
+          {
+            label: 'request loan',
+            key: 'limit'
+          },
+          {
+            label: 'borrow now',
+            key: 'market'
+          }
+        ]}></Tabs>
+      {orderType === 'limit' && (
+        <div className="order-entry-body">
+          <div className="fixed-order-entry-fields">
+            <label>
+              Loan amount
+              <InputNumber
+                onChange={e => setAmount(new BN(e * 10 ** decimals))}
+                min={0}
+                formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                controls={false}
+                addonAfter={marketAndConfig.config.symbol}
+              />
+            </label>
+            <label>
+              Interest Rate
+              <InputNumber
+                onChange={e => {
+                  setBasisPoints(new BN(e * 100));
+                }}
+                type="number"
+                step={0.01}
+                min={0}
+                controls={false}
+                addonAfter="%"
+              />
+            </label>
+          </div>
+          <div className="auto-roll-controls">
+            <Switch disabled={true} />
+            Auto-roll Off
+          </div>
+          <div className="stats">
+            <div className="stat-line">
+              <span>Repayment Date</span>
+              <span>
+                {formatDuration(
+                  intervalToDuration({
+                    start: new Date(0),
+                    end: new Date(marketAndConfig.config.borrowDuration * 1000)
+                  })
+                )}{' '}
+                from fill
+              </span>
+            </div>
+            <div className="stat-line">
+              <span>Repayment Amount</span>
+              <span>
+                {(amount.toNumber() / 10 ** decimals) * (1 + basisPoints.toNumber() / 10000)} {token.symbol}
+              </span>
+            </div>
+            <div className="stat-line">
+              <span>Total Interest</span>
+              <span>
+                {(amount.toNumber() / 10 ** decimals) * (basisPoints.toNumber() / 10000)} {token.symbol}
+              </span>
+            </div>
+            <div className="stat-line">
+              <span>Interest Rate</span>
+              <span>{basisPoints.toNumber() / 100}%</span>
+            </div>
+            <div className="stat-line">Risk Level</div>
+            <div className="stat-line">
+              <span>Auto Roll</span>
+              <span>Off</span>
+            </div>
+          </div>
+          <Button disabled={!marketAndConfig?.market} onClick={createBorrowOrder}>
+            Request {marketToString(marketAndConfig.config)} loan
+          </Button>
         </div>
-        <Button disabled={!marketAndConfig?.market} onClick={createBorrowOrder}>
-          Request {marketToString(marketAndConfig.config)} loan
-        </Button>
-      </div>
+      )}
+      {orderType === 'market' && <div className="coming-soon">Coming soon</div>}
     </div>
   );
 };
