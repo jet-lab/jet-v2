@@ -4,8 +4,8 @@ import { PublicKey } from '@solana/web3.js';
 import { computeOutputAmount } from '@orca-so/stablecurve';
 import { BN } from 'bn.js';
 import { MarginAccount, Pool, SPLSwapPool, TokenAmount } from '@jet-lab/margin';
-import { Dictionary } from '../../state/settings/localization/localization';
-import { TokenInputAmount } from '../../state/actions/actions';
+import { Dictionary } from '@state/settings/localization/localization';
+import { TokenInputAmount } from '@state/actions/actions';
 import { DEFAULT_DECIMALS, getTokenAmountFromNumber } from '../currency';
 
 // Calculate the token output for a constant product swap

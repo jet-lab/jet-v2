@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import axios from 'axios';
-import { Dictionary } from '../../state/settings/localization/localization';
-import { PoolsRowOrder } from '../../state/views/views';
-import { CurrentPool } from '../../state/pools/pools';
+import { Dictionary } from '@state/settings/localization/localization';
+import { PoolsRowOrder } from '@state/views/views';
+import { CurrentPool } from '@state/pools/pools';
 import { Skeleton, Table, Typography } from 'antd';
-import { ReorderArrows } from '../misc/ReorderArrows';
+import { ReorderArrows } from '@components/misc/ReorderArrows';
 
 // Component to display interest rate comparisons across protocols
 export function Radar(): JSX.Element {

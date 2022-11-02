@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useRecoilValue } from 'recoil';
-import { CurrentPool } from '../../../state/pools/pools';
+import { CurrentPool } from '@state/pools/pools';
 
 // Pie Chart component showing a percentage value
 export function PieChart(props: {

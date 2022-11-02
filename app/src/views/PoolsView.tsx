@@ -1,11 +1,11 @@
 import { useEffect } from 'react';
 import { useRecoilValue } from 'recoil';
 import { Dictionary } from '../state/settings/localization/localization';
-import { AccountSnapshot } from '../components/misc/AccountSnapshot/AccountSnapshot';
-import { PoolsTable } from '../components/PoolsView/PoolsTable/PoolsTable';
-import { PoolDetail } from '../components/PoolsView/PoolDetail/PoolDetail';
-import { Radar } from '../components/PoolsView/Radar';
-import { PoolsRowOrder, PoolsViewOrder } from '../state/views/views';
+import { AccountSnapshot } from '@components/misc/AccountSnapshot/AccountSnapshot';
+import { PoolsTable } from '@components/PoolsView/PoolsTable/PoolsTable';
+import { PoolDetail } from '@components/PoolsView/PoolDetail/PoolDetail';
+import { Radar } from '@components/PoolsView/Radar';
+import { PoolsRowOrder, PoolsViewOrder } from '@state/views/views';
 
 // App view for using / viewing Jet pools
 export function PoolsView(): JSX.Element {

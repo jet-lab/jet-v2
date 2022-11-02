@@ -1,13 +1,13 @@
 import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { Dictionary } from '../../../state/settings/localization/localization';
-import { BlockExplorer, Cluster } from '../../../state/settings/settings';
-import { WalletModal } from '../../../state/modals/modals';
-import { SendingTransaction } from '../../../state/actions/actions';
-import { CurrentPool } from '../../../state/pools/pools';
-import { ActionResponse, useMarginActions } from '../../../utils/jet/marginActions';
-import { getExplorerUrl } from '../../../utils/ui';
-import { notify } from '../../../utils/notify';
+import { Dictionary } from '@state/settings/localization/localization';
+import { BlockExplorer, Cluster } from '@state/settings/settings';
+import { WalletModal } from '@state/modals/modals';
+import { SendingTransaction } from '@state/actions/actions';
+import { CurrentPool } from '@state/pools/pools';
+import { ActionResponse, useMarginActions } from '@utils/jet/marginActions';
+import { getExplorerUrl } from '@utils/ui';
+import { notify } from '@utils/notify';
 import { Button } from 'antd';
 import { CloudFilled } from '@ant-design/icons';
 

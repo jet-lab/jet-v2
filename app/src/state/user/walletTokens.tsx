@@ -4,7 +4,7 @@ import { PublicKey } from '@solana/web3.js';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { MarginAccount, MarginWalletTokens } from '@jet-lab/margin';
 import { ActionRefresh, ACTION_REFRESH_INTERVAL } from '../actions/actions';
-import { useProvider } from '../../utils/jet/provider';
+import { useProvider } from '@utils/jet/provider';
 
 // If user wants to view someone else's accounts
 export const walletParam = new URLSearchParams(document.location.search).get('wallet');

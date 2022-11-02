@@ -113,6 +113,14 @@ module.exports = {
       assert: false,
       util: false,
       url: false
+    },
+    alias: {
+      '@components': path.resolve(__dirname, 'src/components'),
+      '@state': path.resolve(__dirname, 'src/state'),
+      '@styles': path.resolve(__dirname, 'src/styles'),
+      '@utils': path.resolve(__dirname, 'src/utils'),
+      '@assets': path.resolve(__dirname, 'src/assets'),
+      '@views': path.resolve(__dirname, 'src/views')
     }
   },
   experiments: {

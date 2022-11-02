@@ -1,12 +1,12 @@
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { Dictionary } from '../../../state/settings/localization/localization';
-import { NewAccountModal } from '../../../state/modals/modals';
-import { WalletTokens } from '../../../state/user/walletTokens';
-import { AccountNames, CurrentAccountAddress, FavoriteAccounts } from '../../../state/user/accounts';
+import { Dictionary } from '@state/settings/localization/localization';
+import { NewAccountModal } from '@state/modals/modals';
+import { WalletTokens } from '@state/user/walletTokens';
+import { AccountNames, CurrentAccountAddress, FavoriteAccounts } from '@state/user/accounts';
 import { Typography, Button, Dropdown, Menu, Tabs } from 'antd';
 import { StarFilled, StarOutlined } from '@ant-design/icons';
-import AngleDown from '../../../assets/icons/arrow-angle-down.svg';
+import AngleDown from '@assets/icons/arrow-angle-down.svg';
 
 // Head of the Account Snapshot, where user can select/edit/create their margin accounts
 export function SnapshotHead(): JSX.Element {

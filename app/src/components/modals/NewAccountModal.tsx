@@ -3,17 +3,17 @@ import { useResetRecoilState, useRecoilValue, useRecoilState } from 'recoil';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { LAMPORTS_PER_SOL } from '@solana/web3.js';
 import { feesBuffer } from '@jet-lab/margin';
-import { Dictionary } from '../../state/settings/localization/localization';
-import { Cluster, BlockExplorer } from '../../state/settings/settings';
-import { SendingTransaction } from '../../state/actions/actions';
-import { NewAccountModal as NewAccountModalState } from '../../state/modals/modals';
-import { AccountNames, Accounts } from '../../state/user/accounts';
-import { WalletTokens } from '../../state/user/walletTokens';
-import { notify } from '../../utils/notify';
-import { useProvider } from '../../utils/jet/provider';
-import { useMarginActions } from '../../utils/jet/marginActions';
-import { ActionResponse } from '../../utils/jet/marginActions';
-import { getExplorerUrl } from '../../utils/ui';
+import { Dictionary } from '@state/settings/localization/localization';
+import { Cluster, BlockExplorer } from '@state/settings/settings';
+import { SendingTransaction } from '@state/actions/actions';
+import { NewAccountModal as NewAccountModalState } from '@state/modals/modals';
+import { AccountNames, Accounts } from '@state/user/accounts';
+import { WalletTokens } from '@state/user/walletTokens';
+import { notify } from '@utils/notify';
+import { useProvider } from '@utils/jet/provider';
+import { useMarginActions } from '@utils/jet/marginActions';
+import { ActionResponse } from '@utils/jet/marginActions';
+import { getExplorerUrl } from '@utils/ui';
 import { Input, Modal, Tooltip, Typography } from 'antd';
 
 // Modal for user to create a new margin account

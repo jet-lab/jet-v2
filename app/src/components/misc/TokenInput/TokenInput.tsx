@@ -1,26 +1,26 @@
 import { useEffect, useState } from 'react';
 import { useRecoilState, useRecoilValue, useResetRecoilState } from 'recoil';
 import { feesBuffer, MarginAccount, numberToBn, TokenAmount, PoolAction } from '@jet-lab/margin';
-import { CurrentPool, PoolOption, usePoolFromName } from '../../../state/pools/pools';
+import { CurrentPool, PoolOption, usePoolFromName } from '@state/pools/pools';
 import {
   CurrentAction,
   MaxTradeAmounts,
   SendingTransaction,
   TokenInputAmount,
   TokenInputString
-} from '../../../state/actions/actions';
+} from '@state/actions/actions';
 import {
   useTokenInputDisabledMessage,
   useTokenInputWarningMessage,
   useTokenInputErrorMessage
-} from '../../../utils/actions/tokenInput';
-import { DEFAULT_DECIMALS, getTokenAmountFromNumber } from '../../../utils/currency';
+} from '@utils/actions/tokenInput';
+import { DEFAULT_DECIMALS, getTokenAmountFromNumber } from '@utils/currency';
 import { TokenSelect } from './TokenSelect';
 import { TokenSlider } from './TokenSlider';
 import { Input, Typography } from 'antd';
-import { WalletTokens } from '../../../state/user/walletTokens';
-import { CurrentAccount } from '../../../state/user/accounts';
-import { fromLocaleString } from '../../../utils/format';
+import { WalletTokens } from '@state/user/walletTokens';
+import { CurrentAccount } from '@state/user/accounts';
+import { fromLocaleString } from '@utils/format';
 
 // Main component for token inputs when the user takes one of the main actions (deposit, borrow, etc)
 export function TokenInput(props: {

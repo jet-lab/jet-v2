@@ -1,5 +1,5 @@
 import { useRecoilValue } from 'recoil';
-import { definitions, PreferredLanguage } from '../../state/settings/localization/localization';
+import { definitions, PreferredLanguage } from '@state/settings/localization/localization';
 import { Tooltip } from 'antd';
 
 // Info icon with a definition tooltip

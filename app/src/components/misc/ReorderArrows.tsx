@@ -1,7 +1,7 @@
-import ArrowLeft from '../../assets/icons/arrow-left.svg';
-import ArrowRight from '../../assets/icons/arrow-right.svg';
-import ArrowUp from '../../assets/icons/arrow-up.svg';
-import ArrowDown from '../../assets/icons/arrow-down.svg';
+import ArrowLeft from '@assets/icons/arrow-left.svg';
+import ArrowRight from '@assets/icons/arrow-right.svg';
+import ArrowUp from '@assets/icons/arrow-up.svg';
+import ArrowDown from '@assets/icons/arrow-down.svg';
 
 // Arrow components for user to customize their UI
 export function ReorderArrows(props: {

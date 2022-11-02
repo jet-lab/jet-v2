@@ -1,5 +1,5 @@
 import { atom } from 'recoil';
-import { localStorageEffect } from '../../state/effects/localStorageEffect';
+import { localStorageEffect } from '@state/effects/localStorageEffect';
 
 export const FixedBorrowViewOrder = atom({
   key: 'FixedBorrowViewOrder',

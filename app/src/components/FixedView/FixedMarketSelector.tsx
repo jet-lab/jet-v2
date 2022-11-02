@@ -1,10 +1,10 @@
-import { useRecoilState, useRecoilValue } from 'recoil';
-import { AllFixedMarketsAtom, SelectedFixedMarketAtom } from '../../state/fixed/fixed-term-market-sync';
-import { FixedBorrowViewOrder, FixedLendViewOrder } from '../../state/views/fixed-term';
-import { ReorderArrows } from '../misc/ReorderArrows';
+import { useRecoilState, useRecoilValue } from 'recoil'; '../misc/ReorderArrows';
+import { AllFixedMarketsAtom, SelectedFixedMarketAtom } from '@state/fixed/fixed-term-market-sync';
+import { FixedBorrowViewOrder, FixedLendViewOrder } from '@state/views/fixed-term';
+import { ReorderArrows } from '@components/misc/ReorderArrows';
 import { Select } from 'antd';
-import AngleDown from '../../assets/icons/arrow-angle-down.svg';
-import { useCurrencyFormatting } from '../../utils/currency';
+import AngleDown from '@assets/icons/arrow-angle-down.svg';
+import { useCurrencyFormatting } from '@utils/currency';
 
 const { Option } = Select;
 

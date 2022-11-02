@@ -1,16 +1,16 @@
 import { useRecoilValue, useSetRecoilState } from 'recoil';
-import { Dictionary } from '../../../state/settings/localization/localization';
-import { WalletTokens } from '../../../state/user/walletTokens';
-import { Accounts, CurrentAccount } from '../../../state/user/accounts';
-import { useCurrencyFormatting } from '../../../utils/currency';
-import { formatRiskIndicator } from '../../../utils/format';
-import { useRiskStyle } from '../../../utils/risk';
+import { Dictionary } from '@state/settings/localization/localization';
+import { WalletTokens } from '@state/user/walletTokens';
+import { Accounts, CurrentAccount } from '@state/user/accounts';
+import { useCurrencyFormatting } from '@utils/currency';
+import { formatRiskIndicator } from '@utils/format';
+import { useRiskStyle } from '@utils/risk';
 import { Typography, Skeleton } from 'antd';
 import { ConnectionFeedback } from '../ConnectionFeedback/ConnectionFeedback';
 import { Info } from '../Info';
 import { RiskMeter } from '../RiskMeter';
 import axios from 'axios';
-import { USDConversionRates } from '../../../state/settings/settings';
+import { USDConversionRates } from '@state/settings/settings';
 import { useEffect } from 'react';
 
 // Body of the Account Snapshot, where users can see data for the currently selected margin account

@@ -1,14 +1,14 @@
 import { useEffect } from 'react';
 import { useRecoilValue } from 'recoil';
-import { CurrentAccount } from '../../state/user/accounts';
-import { Geobanned } from '../../state/settings/localization/localization';
+import { CurrentAccount } from '@state/user/accounts';
+import { Geobanned } from '@state/settings/localization/localization';
 import {
   WalletModal as WalletModalState,
   NewAccountModal as NewAccountModalState,
   SettingsModal as SettingsModalState,
   NotificationsModal as NotificationsModalState
-} from '../../state/modals/modals';
-import { CurrentAction } from '../../state/actions/actions';
+} from '@state/modals/modals';
+import { CurrentAction } from '@state/actions/actions';
 import { GeobannedModal } from './GeobannedModal';
 import { DisclaimerModal } from './DisclaimerModal';
 import { WalletModal } from './WalletModal';

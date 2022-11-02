@@ -2,7 +2,7 @@ import { useCallback } from 'react';
 import { useRecoilValue } from 'recoil';
 import { BN } from '@project-serum/anchor';
 import { TokenAmount } from '@jet-lab/margin';
-import { FiatCurrency, USDConversionRates } from '../state/settings/settings';
+import { FiatCurrency, USDConversionRates } from '@state/settings/settings';
 
 // Default decimal precision for tokens
 export const DEFAULT_DECIMALS = 4;

@@ -1,14 +1,14 @@
 import { useRecoilState, useRecoilValue } from 'recoil';
-import { Dictionary } from '../../../state/settings/localization/localization';
-import { PoolsRowOrder } from '../../../state/views/views';
-import { Pools, CurrentPool } from '../../../state/pools/pools';
-import { useCurrencyFormatting } from '../../../utils/currency';
-import { formatRate } from '../../../utils/format';
+import { Dictionary } from '@state/settings/localization/localization';
+import { PoolsRowOrder } from '@state/views/views';
+import { Pools, CurrentPool } from '@state/pools/pools';
+import { useCurrencyFormatting } from '@utils/currency';
+import { formatRate } from '@utils/format';
 import { PieChart } from './PieChart';
-import { TokenLogo } from '../../misc/TokenLogo';
+import { TokenLogo } from '@components/misc/TokenLogo';
 import { AirdropButton } from './AirdropButton';
-import { ReorderArrows } from '../../misc/ReorderArrows';
-import { Info } from '../../misc/Info';
+import { ReorderArrows } from '@components/misc/ReorderArrows';
+import { Info } from '@components/misc/Info';
 import { Skeleton, Typography } from 'antd';
 
 // Component that shows extra details on the currentPool
