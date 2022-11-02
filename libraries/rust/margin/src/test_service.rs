@@ -29,7 +29,9 @@ use solana_sdk::{
 use crate::{
     bonds::BondsIxBuilder,
     ix_builder::{
-        test_service::{self, derive_pyth_price, derive_pyth_product, derive_token_mint},
+        test_service::{
+            self, derive_pyth_price, derive_pyth_product, derive_token_mint, spl_swap_pool_create,
+        },
         ControlIxBuilder, MarginPoolConfiguration,
     },
     solana::transaction::TransactionBuilder,
@@ -147,6 +149,14 @@ pub struct AirspaceConfig {
     pub tokens: HashMap<String, AirspaceTokenConfig>,
 }
 
+/// Describe the swap pools to initialize
+#[derive(Serialize, Deserialize, Default, Debug, Clone, Eq, PartialEq)]
+pub struct SwapPoolsConfig {
+    /// The token pairs to initialize SPL swap pools for
+    #[serde(default)]
+    pub spl: Vec<String>,
+}
+
 /// Describe an environment to initialize
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
 pub struct EnvironmentConfig {
@@ -155,6 +165,9 @@ pub struct EnvironmentConfig {
 
     /// The airspaces to create
     pub airspaces: Vec<AirspaceConfig>,
+
+    /// The swap pools to create
+    pub swap_pools: SwapPoolsConfig,
 
     /// The authority for all resources in the environment. Expected to sign all
     /// the intiailizer transactions, and pay for everything.
@@ -173,6 +186,7 @@ pub fn init_environment(
     txs.extend(create_global_adapter_register_tx(config));
     txs.extend(create_token_tx(config));
     txs.extend(create_airspace_tx(config, rent)?);
+    txs.extend(create_swap_pools_tx(config)?);
 
     Ok(txs)
 }
@@ -187,6 +201,46 @@ fn create_global_adapter_register_tx(config: &EnvironmentConfig) -> Vec<Transact
         instructions,
         signers: vec![],
     }]
+}
+
+fn create_swap_pools_tx(config: &EnvironmentConfig) -> anyhow::Result<Vec<TransactionBuilder>> {
+    let mut txs = vec![];
+
+    for pair_string in &config.swap_pools.spl {
+        let sep_index = pair_string.find('/').ok_or_else(|| {
+            anyhow::anyhow!(
+                "pool must be specified in 'A/B' format: (invalid: {}",
+                pair_string
+            )
+        })?;
+
+        let (name_a, name_b) = pair_string.split_at(sep_index);
+        let name_b = &name_b[1..];
+
+        verify_token_declared(config, name_a)?;
+        verify_token_declared(config, name_b)?;
+
+        let token_a = derive_token_mint(name_a);
+        let token_b = derive_token_mint(name_b);
+
+        txs.push(TransactionBuilder {
+            instructions: vec![spl_swap_pool_create(&config.authority, &token_a, &token_b)],
+            signers: vec![],
+        });
+    }
+
+    Ok(txs)
+}
+
+fn verify_token_declared(config: &EnvironmentConfig, name: &str) -> anyhow::Result<()> {
+    if !config.tokens.iter().any(|t| t.name == *name) {
+        anyhow::bail!(
+            "configuring token {} in airspace, but not a global token",
+            name
+        );
+    }
+
+    Ok(())
 }
 
 fn create_airspace_tx(
@@ -207,12 +261,7 @@ fn create_airspace_tx(
         );
 
         for (name, tk_config) in &as_config.tokens {
-            if !config.tokens.iter().any(|t| t.name == *name) {
-                anyhow::bail!(
-                    "configuring token {} in airspace, but not a global token",
-                    name
-                );
-            }
+            verify_token_declared(config, name)?;
 
             txs.extend(create_airspace_token_margin_config_tx(
                 &as_admin, name, tk_config,

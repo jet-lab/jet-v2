@@ -15,7 +15,7 @@ use solana_sdk::signature::{Keypair, Signer};
 
 use jet_margin_sdk::test_service::{
     init_environment, AirspaceConfig, AirspaceTokenConfig, BondMarketConfig, EnvironmentConfig,
-    MarginPoolConfig, TokenDescription,
+    MarginPoolConfig, SwapPoolsConfig, TokenDescription,
 };
 use jet_metadata::TokenKind;
 use jet_simulation::solana_rpc_api::SolanaRpcClient;
@@ -222,6 +222,9 @@ impl MarginTestContext {
                     ),
                 ]),
             }],
+            swap_pools: SwapPoolsConfig {
+                spl: vec!["Bitcoin/USDC".to_owned()],
+            },
         }
     }
 }

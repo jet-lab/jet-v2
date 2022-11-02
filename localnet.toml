@@ -16,6 +16,9 @@ name = "Bitcoin"
 decimals = 6
 precision = 6
 
+[swap_pools]
+spl = ["Bitcoin/USDC"]
+
 [[airspace]]
 name = "default"
 is_restricted = false

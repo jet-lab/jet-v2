@@ -17,11 +17,19 @@
 
 use anchor_lang::{InstructionData, ToAccountMetas};
 use solana_sdk::{
-    instruction::Instruction, pubkey, pubkey::Pubkey, rent::Rent, system_program, sysvar::SysvarId,
+    instruction::Instruction,
+    pubkey,
+    pubkey::Pubkey,
+    rent::Rent,
+    system_program,
+    sysvar::{self, SysvarId},
 };
 
 use jet_test_service::{
-    seeds::{TOKEN_INFO, TOKEN_MINT, TOKEN_PYTH_PRICE, TOKEN_PYTH_PRODUCT},
+    seeds::{
+        SWAP_POOL_MINT, SWAP_POOL_STATE, SWAP_POOL_TOKENS, TOKEN_INFO, TOKEN_MINT,
+        TOKEN_PYTH_PRICE, TOKEN_PYTH_PRODUCT,
+    },
     TokenCreateParams,
 };
 
@@ -122,6 +130,35 @@ pub fn token_update_pyth_price(
     }
 }
 
+/// Create a swap pool
+pub fn spl_swap_pool_create(payer: &Pubkey, token_a: &Pubkey, token_b: &Pubkey) -> Instruction {
+    let addrs = derive_swap_pool(token_a, token_b);
+    let accounts = jet_test_service::accounts::SplSwapPoolCreate {
+        payer: *payer,
+        mint_a: *token_a,
+        mint_b: *token_b,
+        info_a: derive_token_info(token_a),
+        info_b: derive_token_info(token_b),
+        pool_state: addrs.state,
+        pool_authority: addrs.authority,
+        pool_mint: addrs.mint,
+        pool_token_a: addrs.token_a_account,
+        pool_token_b: addrs.token_b_account,
+        pool_fees: addrs.fees,
+        swap_program: spl_token_swap::ID,
+        token_program: spl_token::ID,
+        system_program: system_program::ID,
+        rent: sysvar::rent::ID,
+    }
+    .to_account_metas(None);
+
+    Instruction {
+        program_id: jet_test_service::ID,
+        accounts,
+        data: jet_test_service::instruction::SplSwapPoolCreate {}.data(),
+    }
+}
+
 /// Get the token mint address for a given token name
 pub fn derive_token_mint(name: &str) -> Pubkey {
     if name == "SOL" {
@@ -144,4 +181,61 @@ pub fn derive_pyth_product(mint: &Pubkey) -> Pubkey {
 /// Get the pyth price account
 pub fn derive_pyth_price(mint: &Pubkey) -> Pubkey {
     Pubkey::find_program_address(&[TOKEN_PYTH_PRICE, mint.as_ref()], &jet_test_service::ID).0
+}
+
+/// Get the addresses for a swap pool
+pub fn derive_swap_pool(token_a: &Pubkey, token_b: &Pubkey) -> SwapPoolAddress {
+    let state = Pubkey::find_program_address(
+        &[SWAP_POOL_STATE, token_a.as_ref(), token_b.as_ref()],
+        &jet_test_service::ID,
+    )
+    .0;
+    let authority = Pubkey::find_program_address(&[state.as_ref()], &spl_token_swap::ID).0;
+    let token_a_account = Pubkey::find_program_address(
+        &[SWAP_POOL_TOKENS, state.as_ref(), token_a.as_ref()],
+        &jet_test_service::ID,
+    )
+    .0;
+    let token_b_account = Pubkey::find_program_address(
+        &[SWAP_POOL_TOKENS, state.as_ref(), token_b.as_ref()],
+        &jet_test_service::ID,
+    )
+    .0;
+    let mint =
+        Pubkey::find_program_address(&[SWAP_POOL_MINT, state.as_ref()], &jet_test_service::ID).0;
+    let fees = Pubkey::find_program_address(
+        &[SWAP_POOL_TOKENS, state.as_ref(), mint.as_ref()],
+        &jet_test_service::ID,
+    )
+    .0;
+
+    SwapPoolAddress {
+        state,
+        authority,
+        token_a_account,
+        token_b_account,
+        mint,
+        fees,
+    }
+}
+
+/// Set of addresses for a test swap pool
+pub struct SwapPoolAddress {
+    /// The address of the swap pool state
+    pub state: Pubkey,
+
+    /// The authority
+    pub authority: Pubkey,
+
+    /// The token A vault
+    pub token_a_account: Pubkey,
+
+    /// The token B vault
+    pub token_b_account: Pubkey,
+
+    /// The LP token
+    pub mint: Pubkey,
+
+    /// The account to collect fees
+    pub fees: Pubkey,
 }
