@@ -9,7 +9,7 @@ const cypressConfig = {
     },
     baseUrl: 'http://localhost:3000?debug-environment=true',
     defaultCommandTimeout: 60000
-  },
+  }
 };
 
 export default cypressConfig;

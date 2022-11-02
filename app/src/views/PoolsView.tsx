@@ -12,7 +12,7 @@ import { WaitingForNetworkView } from './WaitingForNetwork';
 // App view for using / viewing Jet pools
 export function PoolsView(): JSX.Element {
   const dictionary = useRecoilValue(Dictionary);
-  const networkState = useRecoilValue(NetworkStateAtom)
+  const networkState = useRecoilValue(NetworkStateAtom);
   const rowOrder = useRecoilValue(PoolsRowOrder);
   const viewOrder = useRecoilValue(PoolsViewOrder);
 
@@ -21,7 +21,7 @@ export function PoolsView(): JSX.Element {
     document.title = `${dictionary.poolsView.title} | Jet Protocol`;
   }, [dictionary.poolsView.title]);
 
-  if (networkState !== 'connected') return <WaitingForNetworkView networkState={networkState}  />
+  if (networkState !== 'connected') return <WaitingForNetworkView networkState={networkState} />;
 
   // Row of Pool Detail and Radar components
   const rowComponents: Record<string, JSX.Element> = {

@@ -152,7 +152,9 @@ export class BondMarket {
     rate: BN,
     seed: Uint8Array
   ): Promise<TransactionInstruction> {
-    const limitPrice = new BN(rate_to_price(BigInt(rate.toString()), BigInt(this.info.borrowDuration.toString())).toString())
+    const limitPrice = new BN(
+      rate_to_price(BigInt(rate.toString()), BigInt(this.info.borrowDuration.toString())).toString()
+    )
     const params: OrderParams = {
       maxBondTicketQty: new BN(U64_MAX.toString()),
       maxUnderlyingTokenQty: amount,

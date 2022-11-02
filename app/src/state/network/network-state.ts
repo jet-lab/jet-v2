@@ -1,8 +1,8 @@
-import { atom } from "recoil";
+import { atom } from 'recoil';
 
-export type NetworkState = 'connected' | 'loading' | 'error'
+export type NetworkState = 'connected' | 'loading' | 'error';
 
 export const NetworkStateAtom = atom<NetworkState>({
-    key: 'network-unavailable',
-    default: 'loading'
-})
+  key: 'network-unavailable',
+  default: 'loading'
+});

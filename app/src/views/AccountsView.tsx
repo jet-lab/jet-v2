@@ -11,7 +11,7 @@ import { WaitingForNetworkView } from './WaitingForNetwork';
 // App view for managing / checking margin accounts
 export function AccountsView(): JSX.Element {
   const dictionary = useRecoilValue(Dictionary);
-  const networkState = useRecoilValue(NetworkStateAtom)
+  const networkState = useRecoilValue(NetworkStateAtom);
   const viewOrder = useRecoilValue(AccountsViewOrder);
 
   // Localize page title
@@ -19,7 +19,7 @@ export function AccountsView(): JSX.Element {
     document.title = `${dictionary.accountsView.title} | Jet Protocol`;
   }, [dictionary.accountsView.title]);
 
-  if (networkState !== 'connected') return <WaitingForNetworkView networkState={networkState}  />
+  if (networkState !== 'connected') return <WaitingForNetworkView networkState={networkState} />;
 
   // Account view with ordered components
   const viewComponents: Record<string, JSX.Element> = {

@@ -13,17 +13,16 @@ import { WaitingForNetworkView } from './WaitingForNetwork';
 export function SwapsView(): JSX.Element {
   const dictionary = useRecoilValue(Dictionary);
   const rowOrder = useRecoilValue(SwapsRowOrder);
-  const networkState = useRecoilValue(NetworkStateAtom)
-
+  const networkState = useRecoilValue(NetworkStateAtom);
 
   // Localize page title
   useEffect(() => {
     document.title = `${dictionary.swapsView.title} | Jet Protocol`;
   }, [dictionary.swapsView.title]);
 
-  if (networkState !== 'connected') return <WaitingForNetworkView networkState={networkState}  />
+  if (networkState !== 'connected') return <WaitingForNetworkView networkState={networkState} />;
   // Row of Swap Entry and Swaps Graph
- 
+
   const rowComponents: Record<string, JSX.Element> = {
     swapEntry: <SwapEntry key="swapEntry" />,
     swapsGraph: <SwapsGraph key="swapsGraph" />

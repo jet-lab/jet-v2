@@ -63,8 +63,8 @@ const MainView = (): JSX.Element => {
 export function FixedBorrowView(): JSX.Element {
   const dictionary = useRecoilValue(Dictionary);
 
-  const networkState = useRecoilValue(NetworkStateAtom)
-  if (networkState !== 'connected') return <WaitingForNetworkView networkState={networkState}  />
+  const networkState = useRecoilValue(NetworkStateAtom);
+  if (networkState !== 'connected') return <WaitingForNetworkView networkState={networkState} />;
   useEffect(() => {
     document.title = `${dictionary.fixedView.borrow.title} | Jet Protocol`;
   }, [dictionary.fixedView.borrow.title]);

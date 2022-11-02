@@ -49,7 +49,7 @@ const viewComponentsProps: Record<string, object> = {
 
 const MainView = (): JSX.Element => {
   const viewOrder = useRecoilValue(FixedLendViewOrder);
-  
+
   return (
     <div className="fixed-term-view view">
       {viewOrder.map(key => {
@@ -63,8 +63,8 @@ const MainView = (): JSX.Element => {
 
 export function FixedLendView(): JSX.Element {
   const dictionary = useRecoilValue(Dictionary);
-  const networkState = useRecoilValue(NetworkStateAtom)
-  if (networkState !== 'connected') return <WaitingForNetworkView networkState={networkState}  />
+  const networkState = useRecoilValue(NetworkStateAtom);
+  if (networkState !== 'connected') return <WaitingForNetworkView networkState={networkState} />;
   useEffect(() => {
     document.title = `${dictionary.fixedView.lend.title} | Jet Protocol`;
   }, [dictionary.fixedView.lend.title]);
