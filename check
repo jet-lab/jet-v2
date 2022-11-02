@@ -15,6 +15,7 @@
 #   anchor-test    # tab completion is available
 
 DOCKER_IMAGE=jetprotocol/builder:e2e
+SOLANA_MAINNET_RPC=${SOLANA_MAINNET_RPC:-'https://solana-api.projectserum.com'}
 
 #################
 # Workflow Jobs

@@ -104,6 +104,7 @@ export const createFixedLendOrder = async ({
       marginAccount: marginAccount.address,
       bondManager: market.addresses.bondManager,
       underlyingOracle: market.addresses.underlyingOracle,
+      ticketOracle: market.addresses.ticketOracle,
       tokenProgram: TOKEN_PROGRAM_ID
     })
     .instruction()
@@ -185,6 +186,7 @@ export const createFixedBorrowOrder = async ({
       marginAccount: marginAccount.address,
       bondManager: market.addresses.bondManager,
       underlyingOracle: market.addresses.underlyingOracle,
+      ticketOracle: market.addresses.ticketOracle,
       tokenProgram: TOKEN_PROGRAM_ID
     })
     .instruction()
@@ -246,6 +248,7 @@ export const cancelOrder = async ({
       marginAccount: marginAccount.address,
       bondManager: market.addresses.bondManager,
       underlyingOracle: market.addresses.underlyingOracle,
+      ticketOracle: market.addresses.ticketOracle,
       tokenProgram: TOKEN_PROGRAM_ID
     })
     .instruction()
