@@ -2,6 +2,7 @@ use std::convert::TryInto;
 
 use anchor_lang::prelude::*;
 use anchor_spl::token::Token;
+use proc_macros::BondTokenManager;
 
 use crate::{
     control::state::{BondManager, CrankAuthorization},
@@ -12,7 +13,7 @@ use crate::{
     BondsError,
 };
 
-#[derive(Accounts)]
+#[derive(Accounts, BondTokenManager)]
 pub struct ConsumeEvents<'info> {
     /// The `BondManager` account tracks global information related to this particular bond market
     #[account(
@@ -105,17 +106,21 @@ impl<'info> UserAccount<'info> {
         Self(account)
     }
 
+    pub fn pubkey(&self) -> Pubkey {
+        self.0.key()
+    }
+
     /// token account that will receive a deposit of underlying or tickets
-    pub fn as_token_account(self) -> AccountInfo<'info> {
-        self.0
+    pub fn as_token_account(&self) -> AccountInfo<'info> {
+        self.0.clone()
     }
 
     /// arbitrary unchecked account that will be granted ownership of a split ticket
-    pub fn as_owner(self) -> AccountInfo<'info> {
-        self.0
+    pub fn as_owner(&self) -> AccountInfo<'info> {
+        self.0.clone()
     }
 
-    pub fn margin_user(self) -> Result<AnchorAccount<'info, MarginUser, Mut>> {
-        self.0.try_into()
+    pub fn margin_user(&self) -> Result<AnchorAccount<'info, MarginUser, Mut>> {
+        self.0.clone().try_into()
     }
 }

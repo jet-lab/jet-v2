@@ -36,6 +36,8 @@ pub enum BondsError {
     MissingSplitTicket,
     #[msg("consume_events instruction failed to consume a single event")]
     NoEvents,
+    #[msg("expected additional remaining accounts, but there were none")]
+    NoMoreAccounts,
     #[msg("expected an obligation with a different sequence number")]
     ObligationHasWrongSequenceNumber,
     #[msg("there was a problem loading the price oracle")]
@@ -84,14 +86,20 @@ pub enum BondsError {
     DoesNotOwnMarket,
     #[msg("the wrong account was provided for the token account that represents a user's claims")]
     WrongClaimAccount,
+    #[msg(
+        "the wrong account was provided for the token account that represents a user's collateral"
+    )]
+    WrongCollateralAccount,
     #[msg("the wrong account was provided for the claims token mint")]
     WrongClaimMint,
-    #[msg("the wrong account was provided for the claims token mint")]
-    WrongDepositsMint,
+    #[msg("the wrong account was provided for the collateral token mint")]
+    WrongCollateralMint,
     #[msg("wrong oracle address was sent to instruction")]
     WrongOracle,
-    #[msg("wrong margin borrower account address was sent to instruction")]
+    #[msg("wrong margin user account address was sent to instruction")]
     WrongMarginUser,
+    #[msg("wrong authority for the margin user account address was sent to instruction")]
+    WrongMarginUserAuthority,
     #[msg("incorrect authority account")]
     WrongProgramAuthority,
     #[msg("not the ticket mint for this bond market")]

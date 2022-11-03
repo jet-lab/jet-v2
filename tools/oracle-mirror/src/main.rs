@@ -107,6 +107,7 @@ async fn run(opts: CliOpts) -> Result<()> {
 struct OracleInfo {
     source_oracle: Pubkey,
     target_mint: Pubkey,
+    price_ratio: f64,
 }
 
 async fn sync_oracles(
@@ -122,7 +123,7 @@ async fn sync_oracles(
         let update_target_ix = jet_margin_sdk::ix_builder::test_service::token_update_pyth_price(
             &signer.pubkey(),
             &oracle.target_mint,
-            source_price.agg.price,
+            (source_price.agg.price as f64 * oracle.price_ratio) as i64,
             source_price.agg.conf as i64,
             source_price.expo,
         );
@@ -163,6 +164,7 @@ async fn discover_oracles(source: &RpcClient, target: &RpcClient) -> Result<Vec<
         .await?;
 
     let target_token_infos = target_test_accounts
+        .clone()
         .into_iter()
         .filter_map(|(address, account)| {
             let discriminator = jet_margin_sdk::jet_test_service::state::TokenInfo::discriminator();
@@ -202,12 +204,13 @@ async fn discover_oracles(source: &RpcClient, target: &RpcClient) -> Result<Vec<
         .filter_map(|(_, info)| {
             pyth_products.iter().find_map(|(_, product)| {
                 match (product.get_attr("quote_currency"), product.get_attr("base")) {
-                    (Some(quote), Some(base)) if quote == "USD" && base == info.symbol => {
-                        println!("matched oracle for {base}/{quote}");
+                    (Some(quote), Some(base)) if quote == "USD" && base == info.source_symbol => {
+                        println!("matched oracle for {} with {base}/{quote}", info.name);
 
                         Some(OracleInfo {
                             source_oracle: product.px_acc,
                             target_mint: info.mint,
+                            price_ratio: info.price_ratio,
                         })
                     }
 

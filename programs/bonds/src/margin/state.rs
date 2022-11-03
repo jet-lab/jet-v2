@@ -1,7 +1,7 @@
 use anchor_lang::{prelude::*, solana_program::clock::UnixTimestamp};
 use bytemuck::Zeroable;
 use jet_margin::{AdapterResult, MarginAccount};
-use jet_proto_math::traits::{TryAddAssign, TrySubAssign};
+use jet_proto_math::traits::{SafeAdd, TryAddAssign, TrySubAssign};
 
 use crate::{orderbook::state::OrderTag, BondsError};
 
@@ -154,17 +154,74 @@ impl Debt {
     }
 }
 
-#[derive(Zeroable, Debug, Clone, AnchorSerialize, AnchorDeserialize)]
+#[derive(Zeroable, Debug, Clone, AnchorSerialize, AnchorDeserialize, PartialEq, Eq)]
 pub struct Assets {
-    /// tokens to transfer into settlement account with next position refresh
+    /// tokens to transfer into settlement account
     pub entitled_tokens: u64,
-    /// tickets to transfer into settlement account with next position refresh
+    /// tickets to transfer into settlement account
     pub entitled_tickets: u64,
+
+    /// The number of bond tickets locked up in ClaimTicket or SplitTicket
+    tickets_staked: u64,
+
+    /// The amount of quote included in all orders posted by the user for both
+    /// bids and asks. Since the orderbook tracks base, not quote, this is only
+    /// an approximation. This value must always be less than or equal to the
+    /// actual posted quote.
+    posted_quote: u64,
+
     /// reserved data that may be used to determine the size of a user's collateral
     /// pessimistically prepared to persist aggregated values for:
     /// base and quote quantities, separately for bid/ask, on open orders and unsettled fills
     /// 2^3 = 8 u64's
     _reserved0: [u8; 64],
+}
+
+impl Assets {
+    /// either a bid or ask was placed
+    /// quote: the amount of quote that was posted
+    /// IMPORTANT: always input the quote (underlying), not the base
+    /// always shorts by one lamport to be defensive
+    /// todo maybe this is too defensive
+    pub fn post_order(&mut self, quote: u64) -> Result<()> {
+        if quote > 1 {
+            return self.posted_quote.try_add_assign(quote - 1);
+        }
+        Ok(())
+    }
+
+    /// An order was filled or cancelled
+    /// quote: the amount of quote that was removed from the order
+    /// IMPORTANT: always input the quote (underlying), not the base
+    /// always subtracts an extra lamport to be defensive
+    /// todo maybe this is too defensive
+    pub fn reduce_order(&mut self, quote: u64) {
+        if quote + 1 >= self.posted_quote {
+            self.posted_quote = 0;
+        } else {
+            self.posted_quote -= quote + 1;
+        }
+    }
+
+    /// make sure the order has already been accounted for before calling this method
+    pub fn stake_tickets(&mut self, tickets: u64) -> Result<()> {
+        self.tickets_staked.try_add_assign(tickets)
+    }
+
+    pub fn redeem_staked_tickets(&mut self, tickets: u64) {
+        if tickets >= self.tickets_staked {
+            self.tickets_staked = 0;
+        } else {
+            self.tickets_staked -= tickets;
+        }
+    }
+
+    /// represents the amount of collateral in staked tickets and open orders.
+    /// does not reflect the entitled tickets/tokens because they are expected
+    /// to be disbursed whenever this value is used.
+    pub fn collateral(&self) -> Result<u64> {
+        self.tickets_staked.safe_add(self.posted_quote)
+    }
 }
 
 #[account]

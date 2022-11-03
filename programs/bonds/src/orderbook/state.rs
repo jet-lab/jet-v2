@@ -69,6 +69,18 @@ pub struct OrderbookMut<'info> {
 }
 
 impl<'info> OrderbookMut<'info> {
+    pub fn underlying_mint(&self) -> Pubkey {
+        self.bond_manager.load().unwrap().underlying_token_mint
+    }
+
+    pub fn ticket_mint(&self) -> Pubkey {
+        self.bond_manager.load().unwrap().bond_ticket_mint
+    }
+
+    pub fn vault(&self) -> Pubkey {
+        self.bond_manager.load().unwrap().underlying_token_vault
+    }
+
     #[allow(clippy::too_many_arguments)]
     pub fn place_order(
         &self,
@@ -78,8 +90,8 @@ impl<'info> OrderbookMut<'info> {
         fill: Pubkey,
         out: Pubkey,
         adapter: Option<Pubkey>,
-        extra_flags: CallbackFlags,
-    ) -> Result<(CallbackInfo, OrderSummary)> {
+        flags: CallbackFlags,
+    ) -> Result<(CallbackInfo, SensibleOrderSummary)> {
         let mut manager = self.bond_manager.load_mut()?;
         let callback_info = CallbackInfo::new(
             self.bond_manager.key(),
@@ -88,12 +100,13 @@ impl<'info> OrderbookMut<'info> {
             out,
             adapter.unwrap_or_default(),
             Clock::get()?.unix_timestamp,
-            params.callback_flags() | extra_flags,
+            flags,
             manager.nonce,
         );
         manager.nonce += 1;
 
         let order_params = params.as_new_order_params(side, callback_info);
+        let limit_price = order_params.limit_price;
         let order_summary = new_order::process(
             &crate::id(),
             orderbook_accounts!(self, new_order),
@@ -104,7 +117,13 @@ impl<'info> OrderbookMut<'info> {
             BondsError::OrderRejected
         );
 
-        Ok((callback_info, order_summary))
+        Ok((
+            callback_info,
+            SensibleOrderSummary {
+                summary: order_summary,
+                limit_price,
+            },
+        ))
     }
 
     /// cancels an order within the aaob
@@ -271,7 +290,7 @@ bitflags! {
         /// interest needs to start being accrued because this is new debt
         const NEW_DEBT   = 1 << 1;
 
-        /// order placed by a MarginUser. margin user == owner == fill_account == out_account
+        /// order placed by a MarginUser. margin user == fill_account == out_account
         const MARGIN     = 1 << 2;
     }
 }
@@ -297,15 +316,13 @@ pub struct OrderParams {
     pub auto_stake: bool,
 }
 
-impl OrderParams {
-    /// Returns any callback flags that are implied by these parameters
-    /// These params do not comprehensively define all flags: there may be other reasons to set flags for an order
-    pub fn callback_flags(&self) -> CallbackFlags {
-        let mut flags = CallbackFlags::empty();
-        flags.set(CallbackFlags::AUTO_STAKE, self.auto_stake);
-        flags
-    }
+// todo remove?
+/// Trait to retrieve the posted quote values from an `OrderSummary`
+pub trait WithQuoteQty {
+    fn posted_quote(&self, price: u64) -> Result<u64>;
+}
 
+impl OrderParams {
     /// Transforms the locally defined struct into the expected struct for the agnostic orderbook
     pub fn as_new_order_params(
         &self,
@@ -326,25 +343,53 @@ impl OrderParams {
     }
 }
 
-/// Trait to calculate quanities implied by an `OrderSummary` and limit price
-pub trait OrderQuantities {
-    /// How much base value was filled by matching orders
-    fn base_filled(&self) -> u64;
-    /// How much quote value was filled by matching orders
-    fn quote_filled(&self, limit_price: u64) -> u64;
-    /// How much quote value was posted to the order book
-    fn quote_posted(&self, limit_price: u64) -> u64;
+pub struct SensibleOrderSummary {
+    limit_price: u64,
+    summary: OrderSummary,
 }
 
-impl OrderQuantities for OrderSummary {
-    fn base_filled(&self) -> u64 {
-        self.total_base_qty - self.total_base_qty_posted
+// fixme i think most of these are wrong. there may be issues with the aaob
+// implementation which is a huge mess of spaghetti code
+impl SensibleOrderSummary {
+    pub fn summary(&self) -> OrderSummary {
+        OrderSummary {
+            posted_order_id: self.summary.posted_order_id,
+            total_base_qty: self.summary.total_base_qty,
+            total_quote_qty: self.summary.total_quote_qty,
+            total_base_qty_posted: self.summary.total_base_qty_posted,
+        }
     }
-    fn quote_filled(&self, limit_price: u64) -> u64 {
-        self.total_quote_qty - self.quote_posted(limit_price)
+
+    // todo defensive rounding - depends on how this function is used
+    pub fn quote_posted(&self) -> Result<u64> {
+        fp32_mul(self.summary.total_base_qty_posted, self.limit_price)
+            .ok_or_else(|| error!(BondsError::FixedPointDivision))
     }
-    fn quote_posted(&self, limit_price: u64) -> u64 {
-        fp32_mul(self.total_base_qty_posted, limit_price).unwrap_or(u64::MAX)
+
+    pub fn base_posted(&self) -> u64 {
+        self.summary.total_base_qty_posted
+    }
+
+    pub fn quote_filled(&self) -> Result<u64> {
+        Ok(self.summary.total_quote_qty - self.quote_posted()?)
+    }
+
+    pub fn base_filled(&self) -> u64 {
+        self.summary.total_base_qty - self.summary.total_base_qty_posted
+    }
+
+    /// the total of all quote posted and filled
+    /// NOT the same as the "max quote"
+    pub fn quote_combined(&self) -> Result<u64> {
+        // Ok(self.quote_posted()? + self.quote_filled())
+        Ok(self.summary.total_quote_qty)
+    }
+
+    /// the total of all base posted and filled
+    /// NOT the same as the "max base"
+    pub fn base_combined(&self) -> u64 {
+        // self.base_posted() + self.base_filled()
+        self.summary.total_base_qty
     }
 }
 

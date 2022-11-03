@@ -66,7 +66,7 @@ dependencies = [
 [[package]]
 name = "agnostic-orderbook"
 version = "1.0.0"
-source = "git+https://github.com/jet-lab/agnostic-orderbook.git?branch=main#bf0ea9e21c37371047fae328e7622a4005acab4b"
+source = "git+https://github.com/jet-lab/agnostic-orderbook.git?branch=main#15c47292a59fc5c098ae65727f4ebc749a323dd7"
 dependencies = [
  "bonfida-utils",
  "borsh 0.9.3",
@@ -2165,6 +2165,7 @@ dependencies = [
  "jet-proto-math 1.1.0 (git+https://github.com/jet-lab/program-libraries?branch=main)",
  "num-derive",
  "num-traits",
+ "proc-macros",
  "pyth-sdk-solana 0.4.2",
  "serde",
  "serde_json",
@@ -3185,6 +3186,14 @@ dependencies = [
  "syn 1.0.102",
  "version_check",
  "yansi",
+]
+
+[[package]]
+name = "proc-macros"
+version = "0.1.0"
+dependencies = [
+ "quote 1.0.21",
+ "syn 1.0.102",
 ]
 
 [[package]]

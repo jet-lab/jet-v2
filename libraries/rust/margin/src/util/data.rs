@@ -20,6 +20,17 @@ impl<T: Clone> Concat for Vec<T> {
     }
 }
 
+pub trait DeepReverse {
+    fn deep_reverse(self) -> Self;
+}
+
+impl<T: DeepReverse> DeepReverse for Vec<T> {
+    fn deep_reverse(mut self) -> Self {
+        self.reverse();
+        self.into_iter().map(DeepReverse::deep_reverse).collect()
+    }
+}
+
 /// joins a collection of items that implement Concat using concat method
 #[macro_export]
 macro_rules! cat {

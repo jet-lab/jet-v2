@@ -15,22 +15,23 @@
 #   anchor-test    # tab completion is available
 
 DOCKER_IMAGE=jetprotocol/builder:e2e
+SOLANA_MAINNET_RPC=${SOLANA_MAINNET_RPC:-'https://solana-api.projectserum.com'}
 
 #################
 # Workflow Jobs
 
-anchor-test() { args=$@
+anchor-test() { local args=$@
     extract-arg --skip-yarn || yarn-build
 	anchor test $args -- --features testing
 }
 
-e2e-tests() { args=$@
+e2e-tests() { local args=$@
     extract-arg --skip-yarn || (yarn-build && yarn build:app)
     rm -f app/public/localnet.config.json
     E2E=true anchor test $args -- --features testing
 }
 
-hosted-tests-localnet() { args=$@
+hosted-tests-localnet() { local args=$@
     extract-arg --skip-build || tests/scripts/on_localnet.sh anchor-build
     SOLANA_LOGS=${SOLANA_LOGS:-true} tests/scripts/on_localnet.sh test combined $args
 }
@@ -38,7 +39,6 @@ hosted-tests-localnet() { args=$@
 cargo-lint() {
     cargo fmt --all --check
     cargo clippy --all-targets -- -Dwarnings
-    cargo test --doc
 }
 
 cargo-test() {
@@ -63,6 +63,7 @@ all() {
     cargo-test
     hosted-tests-localnet
     anchor-test --skip-build
+    e2e-tests --skip-build
 }
 
 # runs whatever command follows in a docker container

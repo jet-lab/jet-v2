@@ -69,6 +69,12 @@ pub mod jet_test_service {
         token_create_handler(ctx, params)
     }
 
+    /// Same as token_create except it does not create the mint. The mint should
+    /// be created some other way, such as by an adapter.
+    pub fn token_register(ctx: Context<TokenRegister>, params: TokenCreateParams) -> Result<()> {
+        token_register_handler(ctx, params)
+    }
+
     /// Initialize the token info and oracles for the native token mint
     ///
     /// Since the native mint is a special case that can't be owned by this program,

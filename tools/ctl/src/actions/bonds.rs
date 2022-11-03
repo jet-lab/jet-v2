@@ -92,6 +92,7 @@ pub async fn process_create_bond_market<'a>(
         seed,
         payer,
         params.token_oracle,
+        params.ticket_oracle,
     );
 
     let mut steps = vec![];
@@ -111,7 +112,6 @@ pub async fn process_create_bond_market<'a>(
             seed,
             params.borrow_duration,
             params.lend_duration,
-            Pubkey::default(),
         )?;
         steps.push(format!(
             "initialize-bond-manager for token [{}]",

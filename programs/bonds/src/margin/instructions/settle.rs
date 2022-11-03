@@ -1,19 +1,19 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{Token, TokenAccount};
+use proc_macros::BondTokenManager;
 
 use crate::{
-    control::state::BondManager,
-    margin::state::MarginUser,
-    utils::{burn, mint_to, withdraw},
+    bond_token_manager::BondTokenManager, control::state::BondManager, margin::state::MarginUser,
     BondsError,
 };
 
-#[derive(Accounts)]
+#[derive(Accounts, BondTokenManager)]
 pub struct Settle<'info> {
     /// The account tracking information related to this particular user
-    #[account(
+    #[account(mut,
         has_one = bond_manager @ BondsError::UserNotInMarket,
         has_one = claims @ BondsError::WrongClaimAccount,
+        has_one = collateral @ BondsError::WrongCollateralAccount,
         has_one = underlying_settlement @ BondsError::WrongUnderlyingSettlementAccount,
         has_one = ticket_settlement @ BondsError::WrongTicketSettlementAccount,
     )]
@@ -24,6 +24,7 @@ pub struct Settle<'info> {
         has_one = underlying_token_vault @ BondsError::WrongVault,
         has_one = bond_ticket_mint @ BondsError::WrongOracle,
         has_one = claims_mint @ BondsError::WrongClaimMint,
+        has_one = collateral_mint @ BondsError::WrongCollateralMint,
     )]
     pub bond_manager: AccountLoader<'info, BondManager>,
 
@@ -39,6 +40,13 @@ pub struct Settle<'info> {
     #[account(mut)]
     pub claims_mint: UncheckedAccount<'info>,
 
+    #[account(mut)]
+    pub collateral: Account<'info, TokenAccount>,
+
+    /// CHECK: token program checks it
+    #[account(mut)]
+    pub collateral_mint: UncheckedAccount<'info>,
+
     /// CHECK: token program checks it
     pub underlying_token_vault: AccountInfo<'info>,
     /// CHECK: token program checks it
@@ -51,31 +59,59 @@ pub struct Settle<'info> {
 
 pub fn handler(ctx: Context<Settle>) -> Result<()> {
     let claim_balance = ctx.accounts.claims.amount;
-    let debt = &mut ctx.accounts.margin_user.debt;
-    let total = debt.total();
+    let ctokens_held = ctx.accounts.collateral.amount;
+    let assets = &ctx.accounts.margin_user.assets;
+    let debt = ctx.accounts.margin_user.debt.total();
+    let ctokens_deserved = assets.collateral()?;
 
-    if claim_balance > total {
-        burn!(ctx, claims_mint, claims, claim_balance - total)?;
+    // Notify margin of the current debt owed to bonds
+    if claim_balance > debt {
+        ctx.burn_notes(
+            &ctx.accounts.claims_mint,
+            &ctx.accounts.claims,
+            claim_balance - debt,
+        )?;
     }
-    if claim_balance < total {
-        mint_to!(ctx, claims_mint, claims, total - claim_balance)?;
+    if claim_balance < debt {
+        ctx.mint(
+            &ctx.accounts.claims_mint,
+            &ctx.accounts.claims,
+            debt - claim_balance,
+        )?;
     }
 
-    let assets = &mut ctx.accounts.margin_user.assets;
-    mint_to!(
-        ctx,
-        bond_ticket_mint,
-        ticket_settlement,
-        assets.entitled_tickets
+    // Notify margin of the amount of collateral that will in the custody of
+    // bonds after this settlement
+    if ctokens_held > ctokens_deserved {
+        ctx.burn_notes(
+            &ctx.accounts.collateral_mint,
+            &ctx.accounts.collateral,
+            ctokens_held - ctokens_deserved,
+        )?;
+    }
+    if ctokens_held < ctokens_deserved {
+        ctx.mint(
+            &ctx.accounts.collateral_mint,
+            &ctx.accounts.collateral,
+            ctokens_deserved - ctokens_held,
+        )?;
+    }
+
+    // Disburse entitled funds due to fills
+    ctx.mint(
+        &ctx.accounts.bond_ticket_mint,
+        &ctx.accounts.ticket_settlement,
+        assets.entitled_tickets,
     )?;
-    withdraw!(
-        ctx,
-        underlying_token_vault,
-        underlying_settlement,
-        assets.entitled_tokens
+    ctx.withdraw(
+        &ctx.accounts.underlying_token_vault,
+        &ctx.accounts.underlying_settlement,
+        assets.entitled_tokens,
     )?;
-    assets.entitled_tickets = 0;
-    assets.entitled_tokens = 0;
+
+    // Update margin user assets to reflect the settlement
+    ctx.accounts.margin_user.assets.entitled_tickets = 0;
+    ctx.accounts.margin_user.assets.entitled_tokens = 0;
 
     Ok(())
 }

@@ -18,7 +18,7 @@ yarn-error.log
 tsconfig.tsbuildinfo
 
 app/build
-app/public/localnet.config.json
+localnet.config.json
 
 .env
 # documentations

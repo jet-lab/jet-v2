@@ -1,4 +1,5 @@
 use std::{
+    any::type_name,
     convert::{TryFrom, TryInto},
     marker::PhantomData,
     ops::{Deref, DerefMut},
@@ -7,7 +8,10 @@ use std::{
 use anchor_lang::{prelude::*, Discriminator, ZeroCopy};
 use arrayref::array_ref;
 
-use crate::orderbook::state::{EventAdapterMetadata, EventQueue};
+use crate::{
+    orderbook::state::{EventAdapterMetadata, EventQueue},
+    BondsError,
+};
 
 /// Wrapper for account structs that serializes/deserializes and automatically persists changes
 pub struct AnchorAccount<'info, T: AnchorStruct, A: AccessMode = ReadOnly> {
@@ -23,9 +27,15 @@ impl<'info, T: AnchorStruct, A: AccessMode> TryFrom<&AccountInfo<'info>>
 
     fn try_from(info: &AccountInfo<'info>) -> std::result::Result<Self, Self::Error> {
         if A::is(Mut) && !info.is_writable {
+            msg!("not writable {}", info.key);
             return err!(anchor_lang::error::ErrorCode::AccountNotMutable);
         }
-        let inner: Account<'info, T> = Account::try_from(info)?; // checks owner and discriminator
+        let inner: Account<'info, T> = log_on_error!(
+            Account::<T>::try_from(info),
+            "failed to deserialize {} to {}",
+            info.key,
+            type_name::<T>(),
+        )?; // checks owner and discriminator
 
         Ok(AnchorAccount {
             inner,
@@ -114,7 +124,11 @@ impl<'info, T: ZeroCopy + Owner> AdapterLoader<'info, T> {
 
     /// Runs discriminator checks and returns a mutable AdapterEventQueue
     pub fn load_adapter(acc_info: &AccountInfo<'info>) -> Result<EventQueue<'info>> {
-        Self::run_checks(acc_info)?;
+        log_on_error!(
+            Self::run_checks(acc_info),
+            "provided adapter account failed the checks {:?}",
+            acc_info.key
+        )?;
 
         EventQueue::deserialize_user_adapter(acc_info.clone())
     }
@@ -131,7 +145,7 @@ algebraic! {
 /// Directly deserialize accounts from the remaining_accounts iterator
 pub trait RemainingAccounts<'a, 'info: 'a>: Iterator<Item = &'a AccountInfo<'info>> {
     fn next_account(&mut self) -> Result<&'a AccountInfo<'info>> {
-        Ok(self.next().ok_or(ProgramError::InvalidAccountData)?)
+        Ok(self.next().ok_or(BondsError::NoMoreAccounts)?)
     }
 
     fn next_anchor<T: AnchorStruct, A: AccessMode>(
@@ -249,3 +263,13 @@ macro_rules! algebraic {
     };
 }
 use algebraic;
+
+macro_rules! log_on_error {
+    ($result:expr, $($args:tt)*) => {{
+        if $result.is_err() {
+            msg!($($args)*);
+        }
+        $result
+    }};
+}
+pub(crate) use log_on_error;

@@ -91,7 +91,7 @@ pub struct InitializeBondManager<'info> {
     /// Mints tokens to a margin account to represent debt that must be collateralized
     #[account(init,
         seeds = [
-            seeds::DEPOSIT_NOTES,
+            seeds::COLLATERAL_NOTES,
             bond_manager.key().as_ref(),
         ],
         bump,

@@ -60,6 +60,7 @@ impl Client {
         mint: Pubkey,
         seed: [u8; 32],
         token_oracle: Pubkey,
+        ticket_oracle: Pubkey,
     ) -> Result<Self> {
         let mut ix = BondsIxBuilder::new_from_seed(
             &Pubkey::default(),
@@ -67,6 +68,7 @@ impl Client {
             seed,
             signer.pubkey(),
             token_oracle,
+            ticket_oracle,
         )
         .with_payer(&signer.pubkey());
         let bond_manager = {
@@ -76,9 +78,9 @@ impl Client {
         };
 
         ix = ix.with_orderbook_accounts(
-            Some(bond_manager.bids),
-            Some(bond_manager.asks),
-            Some(bond_manager.event_queue),
+            bond_manager.bids,
+            bond_manager.asks,
+            bond_manager.event_queue,
         );
 
         Ok(Self { conn, ix, signer })
@@ -154,10 +156,10 @@ impl<'a> User<'a> {
             &DEVNET_USDC,
             token_amount,
         );
-        let fund_ticket =
-            self.client
-                .ix
-                .convert_tokens(Some(self.key()), None, None, None, ticket_amount)?;
+        let fund_ticket = self
+            .client
+            .ix
+            .convert_tokens(self.key(), None, None, ticket_amount)?;
 
         self.send_instructions(&[init_token, init_ticket, fund_token, fund_ticket])?;
         println!("funding success!");
@@ -168,7 +170,7 @@ impl<'a> User<'a> {
         let lend = self
             .client
             .ix
-            .lend_order(self.key(), None, None, params, vec![])?;
+            .lend_order(self.key(), None, None, params, &[])?;
 
         self.send_instructions(&[lend])
     }
@@ -229,6 +231,7 @@ fn main() -> Result<()> {
         DEVNET_USDC,
         Pubkey::default().to_bytes(),
         Pubkey::default(),
+        Pubkey::default(),
     )?;
 
     let alice = User::new(&client, alice_kp)?;
@@ -279,12 +282,12 @@ fn main() -> Result<()> {
     }
 
     // read and display the orderbook
-    let asks_data = &mut client.conn.get_account_data(&client.ix.asks()?)?;
+    let asks_data = &mut client.conn.get_account_data(&client.ix.asks())?;
     let asks = agnostic_orderbook::state::critbit::Slab::<jet_bonds::orderbook::state::CallbackInfo>::from_buffer(
             asks_data,
             agnostic_orderbook::state::AccountTag::Asks,
         )?;
-    let bids_data = &mut client.conn.get_account_data(&client.ix.bids()?)?;
+    let bids_data = &mut client.conn.get_account_data(&client.ix.bids())?;
     let bids = agnostic_orderbook::state::critbit::Slab::<jet_bonds::orderbook::state::CallbackInfo>::from_buffer(
             bids_data,
             agnostic_orderbook::state::AccountTag::Bids,
