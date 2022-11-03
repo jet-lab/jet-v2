@@ -153,7 +153,7 @@ export const FixedBorrowOrderEntry = () => {
             <div className="stat-line">
               <span>Repayment Amount</span>
               <span>
-                {(amount.toNumber() / 10 ** decimals) * (1 + basisPoints.toNumber() / 10000)} {token.symbol}
+                {((amount.toNumber() / 10 ** decimals) * (1 + basisPoints.toNumber() / 10000)).toFixed(token.precision)} {token.symbol}
               </span>
             </div>
             <div className="stat-line">
