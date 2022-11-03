@@ -1132,51 +1132,15 @@ html {
     }
   }
 
-  // All Accounts Menu
-  .all-accounts-menu {
-    .ant-dropdown-menu {
-      &-item {
-        width: calc(100% - (@spacing-sm * 2));
-        padding-left: @spacing-sm;
-        padding-right: @spacing-sm;
-      }
-
-      &-title-content {
-        width: 100%;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-
-        .anticon {
-          opacity: 0;
-          transition: opacity @transition-duration ease;
-          color: @secondary-5;
-
-          &-star {
-            margin-right: @spacing-xs;
-            color: @jet-green-3;
-
-            &:active {
-              color: @jet-green !important;
-            }
-          }
-
-          &-edit {
-            margin-left: @spacing-xs;
-          }
-
-          &:active {
-            color: @secondary-3;
-          }
-        }
-
-        &:hover {
-          .anticon {
-            opacity: 1;
-          }
-        }
-      }
-    }
+  .ant-dropdown-menu-title-content {
+    margin: 4px 16px;
+    width: 100%;
+  }
+  .all-accounts-menu-name {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
   }
 
   // Swap And Fixed View
