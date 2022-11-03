@@ -10,7 +10,6 @@ const createRandomSeed = (byteLength: number) => {
   return Uint8Array.from(new Array(byteLength).fill(0).map(() => Math.ceil(Math.random() * (max - min) + min)))
 }
 
-
 // CREATE MARKET ACCOUNT
 interface IWithCreateFixedMarketAccount {
   market: BondMarket
@@ -42,8 +41,6 @@ export const withCreateFixedMarketAccounts = async ({
   }
   return { tokenMint, ticketMint }
 }
-
-
 
 // MARKET MAKER ORDERS
 interface ICreateLendOrder {
@@ -270,7 +267,6 @@ export const cancelOrder = async ({
   return sendAll(provider, [instructions])
 }
 
-
 // MARKET TAKER ORDERS
 
 interface IBorrowNow {
@@ -343,12 +339,7 @@ export const borrowNow = async ({
   })
 
   // Create borrow instruction
-  const borrowNow = await market.borrowNowIx(
-    marginAccount,
-    walletAddress,
-    amount,
-    createRandomSeed(4)
-  )
+  const borrowNow = await market.borrowNowIx(marginAccount, walletAddress, amount, createRandomSeed(4))
 
   await marginAccount.withAdapterInvoke({
     instructions: borrowInstructions,
@@ -404,9 +395,9 @@ export const lendNow = async ({
 
   // refresh pools positions
   const lendInstructions: TransactionInstruction[] = []
-  
+
   AssociatedToken.withTransfer(lendInstructions, tokenMint, walletAddress, marginAccount.address, amount)
-  
+
   await currentPool.withMarginRefreshAllPositionPrices({
     instructions: lendInstructions,
     pools,
@@ -432,12 +423,7 @@ export const lendNow = async ({
   })
 
   // Create borrow instruction
-  const borrowNow = await market.lendNowIx(
-    marginAccount,
-    amount,
-    walletAddress,
-    createRandomSeed(4)
-  )
+  const borrowNow = await market.lendNowIx(marginAccount, amount, walletAddress, createRandomSeed(4))
 
   await marginAccount.withAdapterInvoke({
     instructions: lendInstructions,

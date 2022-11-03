@@ -61,7 +61,7 @@ export const useFixedTermSync = (): void => {
   const { provider } = useProvider();
   const setMarkets = useSetRecoilState(AllFixedMarketsAtom);
   const config = useRecoilValue(MainConfig);
-  const networkState = useRecoilValue(NetworkStateAtom)
+  const networkState = useRecoilValue(NetworkStateAtom);
 
   const loadBondMarkets = async (airspace: AirspaceConfig, program: Program<JetBonds>, marginProgramId: PublicKey) => {
     const markets: MarketAndconfig[] = await Promise.all(

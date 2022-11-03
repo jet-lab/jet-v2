@@ -30,13 +30,7 @@ import {
 
 import CONFIG from '../../../app/public/localnet.config.json';
 
-import {
-  BondMarket,
-  JetBonds,
-  JetBondsIdl,
-  MarginUserInfo,
-  rate_to_price
-} from '@jet-lab/jet-bonds-client';
+import { BondMarket, JetBonds, JetBondsIdl, MarginUserInfo, rate_to_price } from '@jet-lab/jet-bonds-client';
 import { createAssociatedTokenAccountInstruction, getAssociatedTokenAddress } from '@solana/spl-token';
 
 describe('margin bonds borrowing', async () => {

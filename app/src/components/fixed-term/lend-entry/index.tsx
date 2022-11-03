@@ -31,7 +31,7 @@ export const FixedLendOrderEntry = () => {
   const marginConfig = useRecoilValue(MainConfig);
   const blockExplorer = useRecoilValue(BlockExplorer);
 
-  const [orderType, setOrderType] = useState('limit')
+  const [orderType, setOrderType] = useState('limit');
 
   const token = useMemo(() => {
     if (!marginConfig || !marketAndConfig) return null;
@@ -105,8 +105,12 @@ export const FixedLendOrderEntry = () => {
             key: 'market'
           }
         ]}></Tabs>
-      {orderType === 'limit' && <OfferLoan decimals={decimals} token={token} marketAndConfig={marketAndConfig} marginConfig={marginConfig} />}
-      {orderType === 'market' && <LendNow decimals={decimals} token={token} marketAndConfig={marketAndConfig} marginConfig={marginConfig} />}
+      {orderType === 'limit' && (
+        <OfferLoan decimals={decimals} token={token} marketAndConfig={marketAndConfig} marginConfig={marginConfig} />
+      )}
+      {orderType === 'market' && (
+        <LendNow decimals={decimals} token={token} marketAndConfig={marketAndConfig} marginConfig={marginConfig} />
+      )}
     </div>
   );
 };

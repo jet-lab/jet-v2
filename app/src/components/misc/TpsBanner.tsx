@@ -38,7 +38,7 @@ export function TpsBanner(): JSX.Element {
       try {
         // Get performance samples
         const samples = await provider.connection.getRecentPerformanceSamples(15);
-       if (networkStatus) setNetworkStatus('connected');
+        if (networkStatus) setNetworkStatus('connected');
         // Reduce to the total transactions-per-second
         const totalTps = samples.reduce((acc, val) => {
           return acc + val.numTransactions / val.samplePeriodSecs;

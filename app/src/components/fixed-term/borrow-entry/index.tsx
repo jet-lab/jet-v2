@@ -3,7 +3,7 @@ import { ReorderArrows } from '@components/misc/ReorderArrows';
 import { Typography, Tabs } from 'antd';
 import { useMemo, useState } from 'react';
 import { FixedLendRowOrder } from '@state/views/fixed-term';
-import { FixedMarketAtom } from '@state/fixed/fixed-term-market-sync';
+import { FixedMarketAtom } from '@state/fixed-market/fixed-term-market-sync';
 import { MainConfig } from '@state/config/marginConfig';
 import { marketToString } from '@utils/jet/fixed-term-utils';
 import { RequestLoan } from './request-loan';
@@ -54,8 +54,12 @@ export const FixedBorrowOrderEntry = () => {
             key: 'market'
           }
         ]}></Tabs>
-      {orderType === 'limit' && <RequestLoan token={token} decimals={decimals} marketAndConfig={marketAndConfig} marginConfig={marginConfig} />}
-      {orderType === 'market' && <BorrowNow token={token} decimals={decimals} marketAndConfig={marketAndConfig} marginConfig={marginConfig} />}
+      {orderType === 'limit' && (
+        <RequestLoan token={token} decimals={decimals} marketAndConfig={marketAndConfig} marginConfig={marginConfig} />
+      )}
+      {orderType === 'market' && (
+        <BorrowNow token={token} decimals={decimals} marketAndConfig={marketAndConfig} marginConfig={marginConfig} />
+      )}
     </div>
   );
 };

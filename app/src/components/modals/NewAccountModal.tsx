@@ -36,7 +36,7 @@ export function NewAccountModal(): JSX.Element {
   const [disabled, setDisabled] = useState(true);
   const [inputError, setInputError] = useState<string | undefined>();
   const [sendingTransaction, setSendingTransaction] = useRecoilState(SendingTransaction);
-  const networkState = useRecoilValue(NetworkStateAtom)
+  const networkState = useRecoilValue(NetworkStateAtom);
   const { Title, Paragraph, Text } = Typography;
 
   // Create a new account with a deposit

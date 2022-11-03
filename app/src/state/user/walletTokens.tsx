@@ -24,7 +24,7 @@ export function useWalletTokensSyncer() {
   const walletKey = publicKey ?? (walletParam ? new PublicKey(walletParam) : null);
   const setWalletTokens = useSetRecoilState(WalletTokens);
   const actionRefresh = useRecoilValue(ActionRefresh);
-  const networkState = useRecoilValue(NetworkStateAtom)
+  const networkState = useRecoilValue(NetworkStateAtom);
 
   // Fetch wallet tokens on wallet connection
   useEffect(() => {
