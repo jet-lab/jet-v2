@@ -1,28 +1,10 @@
-use agnostic_orderbook::state::OrderSummary;
 use anchor_lang::prelude::*;
 
 #[event]
 pub struct OrderCancelled {
     pub bond_manager: Pubkey,
-    pub user: Pubkey,
+    pub authority: Pubkey,
     pub order_id: u128,
-}
-
-#[event]
-pub struct LendOrder {
-    pub bond_market: Pubkey,
-    pub lender: Pubkey,
-    pub order_summary: OrderSummary,
-    pub auto_stake: bool,
-    pub post_only: bool,
-    pub post_allowed: bool,
-}
-
-#[event]
-pub struct SellTicketsOrder {
-    pub bond_market: Pubkey,
-    pub owner: Pubkey,
-    pub order_summary: OrderSummary,
 }
 
 #[event]

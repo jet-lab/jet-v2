@@ -4,6 +4,7 @@ use jet_program_proc_macros::BondTokenManager;
 
 use crate::{
     bond_token_manager::BondTokenManager,
+    events::OrderType,
     margin::state::MarginUser,
     orderbook::{
         instructions::sell_tickets_order::*,
@@ -54,5 +55,10 @@ pub fn handler(ctx: Context<MarginSellTicketsOrder>, params: OrderParams) -> Res
         order_summary.quote_posted()?,
     )?;
 
-    ctx.accounts.inner.sell_tickets(order_summary)
+    ctx.accounts.inner.sell_tickets(
+        order_summary,
+        &params,
+        ctx.accounts.margin_user.key(),
+        OrderType::MarginSellTickets,
+    )
 }
