@@ -188,7 +188,7 @@ pub fn init_environment(
 
     txs.push(global_initialize_instructions(config.authority));
 
-    txs.extend(create_global_adapter_register_tx(config));
+    txs.extend(create_global_adapter_register_tx(config.authority));
     txs.extend(create_token_tx(config));
     txs.extend(create_airspace_tx(config, rent)?);
     txs.extend(create_swap_pools_tx(config)?);
@@ -196,8 +196,22 @@ pub fn init_environment(
     Ok(txs)
 }
 
-fn create_global_adapter_register_tx(config: &EnvironmentConfig) -> Vec<TransactionBuilder> {
-    let ctrl_ix = ControlIxBuilder::new(config.authority);
+/// Basic environment setup for hosted tests that has only the necessary global
+/// state initialized
+pub fn minimal_environment(authority: Pubkey) -> anyhow::Result<Vec<TransactionBuilder>> {
+    let mut txs = vec![];
+
+    txs.push(global_initialize_instructions(authority));
+    txs.extend(create_global_adapter_register_tx(authority));
+
+    // todo move airspace creation into individual tests
+    txs.push(AirspaceAdmin::new("default", authority, authority).create_airspace(false));
+
+    Ok(txs)
+}
+
+fn create_global_adapter_register_tx(authority: Pubkey) -> Vec<TransactionBuilder> {
+    let ctrl_ix = ControlIxBuilder::new(authority);
     let instructions = ADAPTERS
         .iter()
         .map(|adapter| ctrl_ix.register_adapter(adapter))
