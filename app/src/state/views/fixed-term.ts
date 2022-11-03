@@ -17,7 +17,7 @@ export const FixedBorrowRowOrder = atom({
 
 export const FixedLendViewOrder = atom({
   key: 'FixedLendViewOrder',
-  default: ['accountSnapshot', 'marketSelector', 'fixedRow', 'fullAccountBalance'] as string[],
+  default: ['accountSnapshot', 'marketSelector', 'debtTable', 'fixedRow', 'fullAccountBalance'] as string[],
   effects: [localStorageEffect('jetAppFixedLendViewOrder')],
   dangerouslyAllowMutability: true
 });
