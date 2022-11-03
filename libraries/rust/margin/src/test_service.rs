@@ -30,7 +30,8 @@ use crate::{
     bonds::BondsIxBuilder,
     ix_builder::{
         test_service::{
-            self, derive_pyth_price, derive_pyth_product, derive_token_mint, spl_swap_pool_create,
+            self, derive_bond_ticket_mint, derive_pyth_price, derive_pyth_product,
+            derive_token_mint, spl_swap_pool_create,
         },
         ControlIxBuilder, MarginPoolConfiguration,
     },
@@ -90,6 +91,10 @@ pub struct BondMarketConfig {
     /// Whether or not order matching should be paused for the market
     #[serde(default)]
     pub paused: bool,
+
+    /// the price of the bond tickets relative to the underlying
+    /// multiplied by the underlying price to get the ticket price
+    pub ticket_price: String,
 }
 
 /// Configuration for margin pools
@@ -262,12 +267,17 @@ fn create_airspace_tx(
 
         for (name, tk_config) in &as_config.tokens {
             verify_token_declared(config, name)?;
+            let token = config
+                .tokens
+                .iter()
+                .find(|t| &t.name == name)
+                .expect("cannot find a description for the token that needs a bond market");
 
             txs.extend(create_airspace_token_margin_config_tx(
                 &as_admin, name, tk_config,
             ));
             txs.extend(create_airspace_token_bond_markets_tx(
-                config, rent, &as_admin, name, tk_config,
+                config, rent, &as_admin, token, tk_config,
             ));
         }
     }
@@ -279,7 +289,7 @@ fn create_airspace_token_bond_markets_tx(
     config: &EnvironmentConfig,
     rent: &Rent,
     admin: &AirspaceAdmin,
-    token_name: &str,
+    token: &TokenDescription,
     tk_config: &AirspaceTokenConfig,
 ) -> Vec<TransactionBuilder> {
     let mut txs = vec![];
@@ -295,14 +305,38 @@ fn create_airspace_token_bond_markets_tx(
         let mut bond_manager_seed = [0u8; 32];
         bond_manager_seed[..8].copy_from_slice(&bm_config.borrow_duration.to_le_bytes());
 
-        let mint = derive_token_mint(token_name);
+        let mint = derive_token_mint(&token.name);
+        let ticket_mint = derive_bond_ticket_mint(&BondsIxBuilder::bond_manager_key(
+            &admin.airspace,
+            &mint,
+            bond_manager_seed,
+        ));
         let bonds_ix = BondsIxBuilder::new_from_seed(
             &admin.airspace,
             &mint,
             bond_manager_seed,
             config.authority,
             derive_pyth_price(&mint),
+            derive_pyth_price(&ticket_mint),
         );
+
+        txs.push(TransactionBuilder {
+            instructions: vec![test_service::token_register(
+                &config.authority,
+                ticket_mint,
+                &TokenCreateParams {
+                    symbol: format!("{}_{}", token.symbol.clone(), bm_config.borrow_duration),
+                    name: format!("{}_{}", token.name.clone(), bm_config.borrow_duration),
+                    decimals: token.decimals,
+                    authority: config.authority,
+                    oracle_authority: config.authority,
+                    max_amount: u64::MAX,
+                    source_symbol: token.symbol.clone(),
+                    price_ratio: bm_config.ticket_price.parse::<f64>().unwrap(),
+                },
+            )],
+            signers: vec![],
+        });
 
         txs.push(TransactionBuilder {
             instructions: vec![
@@ -334,7 +368,6 @@ fn create_airspace_token_bond_markets_tx(
                         bond_manager_seed,
                         bm_config.borrow_duration,
                         bm_config.lend_duration,
-                        Pubkey::default(),
                     )
                     .unwrap(),
                 bonds_ix
@@ -427,6 +460,8 @@ fn create_token_tx(config: &EnvironmentConfig) -> Vec<TransactionBuilder> {
                         authority: config.authority,
                         oracle_authority: config.authority,
                         max_amount: u64::MAX,
+                        source_symbol: desc.symbol.clone(),
+                        price_ratio: 1.0,
                     },
                 ),
             };

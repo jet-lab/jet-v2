@@ -18,7 +18,7 @@ pub struct LendOrder {
 #[event]
 pub struct SellTicketsOrder {
     pub bond_market: Pubkey,
-    pub borrower: Pubkey,
+    pub owner: Pubkey,
     pub order_summary: OrderSummary,
 }
 

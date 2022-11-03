@@ -3,7 +3,7 @@ use anyhow::Result;
 use hosted_tests::{
     context::test_context,
     margin::MarginUser,
-    setup_helper::{liquidators, setup_token, setup_user, tokens, users},
+    setup_helper::{setup_token, setup_user},
     test_user::TestLiquidator,
 };
 use jet_margin::ErrorCode;
@@ -359,33 +359,6 @@ async fn liquidator_permission_is_removable() -> Result<()> {
         anchor_lang::error::ErrorCode::AccountDiscriminatorMismatch,
         result,
     );
-
-    Ok(())
-}
-
-#[tokio::test(flavor = "multi_thread")]
-#[cfg_attr(not(feature = "localnet"), serial_test::serial)]
-async fn liquidate_with_swap() -> Result<()> {
-    let ctx = test_context().await;
-    let ([usdc, sol], swaps, pricer) = tokens(ctx).await.unwrap();
-    let [liquidator] = liquidators(ctx).await.unwrap();
-    let [user0, user1] = users(ctx).await.unwrap();
-    user0.deposit(&usdc, 1_000).await.unwrap();
-    user1.deposit(&sol, 1_000).await.unwrap();
-    user1.borrow_to_wallet(&usdc, 800).await.unwrap();
-    pricer.set_price(&sol, 0.9).await.unwrap();
-    liquidator
-        .liquidate(
-            &user1.user,
-            &swaps,
-            &sol,
-            &usdc,
-            TokenChange::shift(800),
-            700,
-        )
-        .await
-        .unwrap();
-    user1.borrow_to_wallet(&usdc, 5).await.unwrap();
 
     Ok(())
 }

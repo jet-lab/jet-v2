@@ -4,6 +4,7 @@ feature_groups! {
     "batch_all";
     "batch1" {
         mod liquidate;
+        mod liquidate_with_swap;
     }
     "batch2" {
         mod bonds;

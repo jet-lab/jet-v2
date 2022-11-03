@@ -30,7 +30,7 @@ impl PositionRefresher for BondsPositionRefresher {
                     ret.push(
                         accounting_invoke(
                             self.margin_account,
-                            bond_market.refresh_position(self.margin_account)?,
+                            bond_market.refresh_position(self.margin_account, false)?,
                         )
                         .into(),
                     )

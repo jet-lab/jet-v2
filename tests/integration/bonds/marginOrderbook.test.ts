@@ -44,7 +44,7 @@ describe('margin bonds borrowing', async () => {
   // SUITE SETUP
   const provider = AnchorProvider.local(undefined, DEFAULT_CONFIRM_OPTS);
   anchor.setProvider(provider);
-  const payer: NodeWallet = (provider.wallet as NodeWallet).payer;
+  const payer = (provider.wallet as NodeWallet).payer;
   const ownerKeypair = payer;
   const programs = MarginClient.getPrograms(provider, DEFAULT_MARGIN_CONFIG);
   const manager = new PoolManager(programs, provider);
@@ -52,6 +52,7 @@ describe('margin bonds borrowing', async () => {
   let BTC: TestToken = null as never;
 
   let USDC_oracle: Keypair[];
+  let ticket_oracle: Keypair[];
   let SOL_oracle: Keypair[];
 
   const pythClient = new PythClient({
@@ -109,8 +110,6 @@ describe('margin bonds borrowing', async () => {
     );
     await provider.connection.confirmTransaction(airdropSignature);
 
-    // create tokens
-    // SETUP
     USDC = await airdropToken(provider, payer.publicKey, 'USDC');
     BTC = await airdropToken(provider, payer.publicKey, 'Bitcoin');
 

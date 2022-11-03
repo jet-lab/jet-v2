@@ -16,7 +16,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 use anchor_lang::prelude::*;
-use anchor_spl::token::{spl_token::native_mint::ID as NATIVE_MINT_ID, Mint, Token};
+use anchor_spl::token::Token;
 
 use pyth_sdk_solana::state::{AccKey, AccountType, PriceAccount, ProductAccount, MAGIC, VERSION};
 
@@ -24,15 +24,16 @@ use crate::{
     seeds::{TOKEN_INFO, TOKEN_PYTH_PRICE, TOKEN_PYTH_PRODUCT},
     state::TokenInfo,
     util::{load_pyth_account, write_pyth_product_attributes},
+    TokenCreateParams,
 };
 
 #[derive(Accounts)]
-pub struct TokenInitNative<'info> {
+#[instruction(params: TokenCreateParams)]
+pub struct TokenRegister<'info> {
     #[account(mut)]
     payer: Signer<'info>,
 
-    #[account(address = NATIVE_MINT_ID)]
-    mint: Account<'info, Mint>,
+    mint: AccountInfo<'info>,
 
     #[account(init,
               seeds = [
@@ -72,22 +73,23 @@ pub struct TokenInitNative<'info> {
     rent: Sysvar<'info, Rent>,
 }
 
-pub fn token_init_native_handler(
-    ctx: Context<TokenInitNative>,
-    oracle_authority: Pubkey,
+pub fn token_register_handler(
+    ctx: Context<TokenRegister>,
+    params: TokenCreateParams,
 ) -> Result<()> {
     let info = &mut ctx.accounts.info;
 
-    info.name = "SOL".to_owned();
-    info.symbol = "SOL".to_owned();
+    info.bump_seed = *ctx.bumps.get("info").unwrap();
+    info.symbol = params.symbol.clone();
+    info.name = params.name;
     info.mint = ctx.accounts.mint.key();
-    info.authority = Pubkey::default();
+    info.authority = params.authority;
     info.pyth_price = ctx.accounts.pyth_price.key();
     info.pyth_product = ctx.accounts.pyth_product.key();
-    info.oracle_authority = oracle_authority;
-    info.max_request_amount = 0;
-    info.source_symbol = "SOL".to_owned();
-    info.price_ratio = 1.0;
+    info.oracle_authority = params.oracle_authority;
+    info.max_request_amount = params.max_amount;
+    info.source_symbol = params.source_symbol.clone();
+    info.price_ratio = params.price_ratio;
 
     let mut pyth_product = load_pyth_account::<ProductAccount>(&ctx.accounts.pyth_product)?;
     let mut pyth_price = load_pyth_account::<PriceAccount>(&ctx.accounts.pyth_price)?;
@@ -104,7 +106,7 @@ pub fn token_init_native_handler(
         &[
             ("asset_type", "Crypto"),
             ("quote_currency", "USD"),
-            ("base", "SOL"),
+            ("base", params.symbol.as_str()),
         ],
     );
 

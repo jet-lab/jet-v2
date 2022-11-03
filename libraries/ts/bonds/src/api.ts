@@ -100,11 +100,11 @@ export const createFixedLendOrder = async ({
   const refreshIx = await market.program.methods
     .refreshPosition(true)
     .accounts({
-      borrowerAccount: lenderAccount,
+      marginUser: lenderAccount,
       marginAccount: marginAccount.address,
-      claimsMint: market.addresses.claimsMint,
       bondManager: market.addresses.bondManager,
       underlyingOracle: market.addresses.underlyingOracle,
+      ticketOracle: market.addresses.ticketOracle,
       tokenProgram: TOKEN_PROGRAM_ID
     })
     .instruction()
@@ -182,11 +182,11 @@ export const createFixedBorrowOrder = async ({
   const refreshIx = await market.program.methods
     .refreshPosition(true)
     .accounts({
-      borrowerAccount,
+      marginUser: borrowerAccount,
       marginAccount: marginAccount.address,
-      claimsMint: market.addresses.claimsMint,
       bondManager: market.addresses.bondManager,
       underlyingOracle: market.addresses.underlyingOracle,
+      ticketOracle: market.addresses.ticketOracle,
       tokenProgram: TOKEN_PROGRAM_ID
     })
     .instruction()
@@ -244,11 +244,11 @@ export const cancelOrder = async ({
   const refreshIx = await market.program.methods
     .refreshPosition(true)
     .accounts({
-      borrowerAccount,
+      marginUser: borrowerAccount,
       marginAccount: marginAccount.address,
-      claimsMint: market.addresses.claimsMint,
       bondManager: market.addresses.bondManager,
       underlyingOracle: market.addresses.underlyingOracle,
+      ticketOracle: market.addresses.ticketOracle,
       tokenProgram: TOKEN_PROGRAM_ID
     })
     .instruction()

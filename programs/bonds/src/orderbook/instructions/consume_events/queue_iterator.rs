@@ -1,8 +1,6 @@
 use std::slice::Iter;
 
-use agnostic_orderbook::state::Side;
 use anchor_lang::prelude::*;
-use num_traits::FromPrimitive;
 
 use crate::{
     events::skip_err,
@@ -110,13 +108,6 @@ impl<'a, 'info> EventIterator<'a, 'info> {
             maker_adapter,
             taker_adapter,
         })))
-    }
-}
-
-pub fn lender_borrower<T>(taker_side: u8, maker: T, taker: T) -> (T, T) {
-    match Side::from_u8(taker_side).unwrap() {
-        Side::Bid => (taker, maker),
-        Side::Ask => (maker, taker),
     }
 }
 
