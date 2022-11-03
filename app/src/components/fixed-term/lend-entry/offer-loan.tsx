@@ -116,7 +116,6 @@ export const OfferLoan = ({
             end: new Date(marketAndConfig.config.borrowDuration * 1000)
           })
         )} from fill`}
-          from fill
         </span>
       </div>
       <div className="stat-line">

@@ -381,8 +381,6 @@ export const lendNow = async ({
   amount
 }: ILendNow): Promise<string> => {
   // Fail if there is no active bonds program id in the config
-
-  console.log(marginConfig, amount)
   if (!marginConfig.bondsProgramId) {
     throw new Error("There is no market configured on this network")
   }
@@ -392,7 +390,7 @@ export const lendNow = async ({
   const instructions: TransactionInstruction[][] = []
   // Create relevant accounts if they do not exist
   const accountInstructions: TransactionInstruction[] = []
-  await withCreateFixedMarketAccounts({
+  const { tokenMint } = await withCreateFixedMarketAccounts({
     market,
     provider,
     marginAccount,
@@ -406,6 +404,9 @@ export const lendNow = async ({
 
   // refresh pools positions
   const lendInstructions: TransactionInstruction[] = []
+  
+  AssociatedToken.withTransfer(lendInstructions, tokenMint, walletAddress, marginAccount.address, amount)
+  
   await currentPool.withMarginRefreshAllPositionPrices({
     instructions: lendInstructions,
     pools,

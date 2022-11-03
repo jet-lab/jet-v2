@@ -11,8 +11,8 @@ import { useProvider } from '@utils/jet/provider';
 import { CurrentPool, Pools } from '@state/pools/pools';
 import { BlockExplorer, Cluster } from '@state/settings/settings';
 import { useRecoilValue } from 'recoil';
-import { useEffect, useState } from 'react';
-import { MarginConfig, MarginTokenConfig, Pool } from '@jet-lab/margin';
+import { useState } from 'react';
+import { MarginConfig, MarginTokenConfig } from '@jet-lab/margin';
 import { MarketAndconfig } from '@state/fixed/fixed-term-market-sync';
 import { formatWithCommas } from '@utils/format';
 
@@ -116,7 +116,6 @@ export const RequestLoan = ({
             end: new Date(marketAndConfig.config.borrowDuration * 1000)
           })
         )} from fill`}
-          from fill
         </span>
       </div>
       <div className="stat-line">
