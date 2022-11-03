@@ -81,30 +81,23 @@ start-oracle() {
 
 resume-validator() {
     start-validator &
-
     start-oracle
-
     wait $VALIDATOR_PID
 }
 
 start-new-validator() {
     start-validator -r &
-
     cargo run --bin jetctl -- test init-env -ul --no-confirm localnet.toml
     cargo run --bin jetctl -- test generate-app-config -ul --no-confirm localnet.toml -o app/public/localnet.config.json
-
     start-oracle
-
     wait $VALIDATOR_PID
 }
 
 with-validator() {
     start-validator -r &
-    
     if [[ ${SOLANA_LOGS:-false} == true ]]; then
         solana -ul logs &
     fi
-
     $@
 }
 
