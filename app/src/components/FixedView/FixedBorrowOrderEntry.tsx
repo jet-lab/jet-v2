@@ -1,6 +1,6 @@
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { ReorderArrows } from '@components/misc/ReorderArrows';
-import { Button, InputNumber, Switch, Typography } from 'antd';
+import { Button, InputNumber, Switch, Typography, Tabs } from 'antd';
 import { useMemo, useState } from 'react';
 import { FixedLendRowOrder } from '@state/views/fixed-term';
 import { FixedMarketAtom } from '@state/fixed-market/fixed-term-market-sync';
@@ -15,7 +15,6 @@ import { notify } from '@utils/notify';
 import { getExplorerUrl } from '@utils/ui';
 import { BlockExplorer, Cluster } from '@state/settings/settings';
 import { marketToString } from '@utils/jet/fixed-term-utils';
-import { Tabs } from 'antd';
 import { formatDuration, intervalToDuration } from 'date-fns';
 
 export const FixedBorrowOrderEntry = () => {
@@ -24,11 +23,12 @@ export const FixedBorrowOrderEntry = () => {
   const marginAccount = useRecoilValue(CurrentAccount);
   const { provider } = useProvider();
   const cluster = useRecoilValue(Cluster);
-  const blockExplorer = useRecoilValue(BlockExplorer);
   const pools = useRecoilValue(Pools);
   const currentPool = useRecoilValue(CurrentPool);
   const wallet = useWallet();
   const marginConfig = useRecoilValue(MainConfig);
+  const blockExplorer = useRecoilValue(BlockExplorer);
+
   const [orderType, setOrderType] = useState('limit');
 
   const token = useMemo(() => {
