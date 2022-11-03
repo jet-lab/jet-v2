@@ -35,7 +35,6 @@ import {
   JetBonds,
   JetBondsIdl,
   MarginUserInfo,
-  OrderSideLend,
   rate_to_price
 } from '@jet-lab/jet-bonds-client';
 import { createAssociatedTokenAccountInstruction, getAssociatedTokenAddress } from '@solana/spl-token';

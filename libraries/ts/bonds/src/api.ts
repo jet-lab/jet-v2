@@ -10,6 +10,8 @@ const createRandomSeed = (byteLength: number) => {
   return Uint8Array.from(new Array(byteLength).fill(0).map(() => Math.ceil(Math.random() * (max - min) + min)))
 }
 
+
+// CREATE MARKET ACCOUNT
 interface IWithCreateFixedMarketAccount {
   market: BondMarket
   provider: AnchorProvider
@@ -41,6 +43,9 @@ export const withCreateFixedMarketAccounts = async ({
   return { tokenMint, ticketMint }
 }
 
+
+
+// MARKET MAKER ORDERS
 interface ICreateLendOrder {
   market: BondMarket
   provider: AnchorProvider
@@ -262,5 +267,182 @@ export const cancelOrder = async ({
     instructions,
     adapterInstruction: cancelLoan
   })
+  return sendAll(provider, [instructions])
+}
+
+
+// MARKET TAKER ORDERS
+
+interface IBorrowNow {
+  market: BondMarket
+  marginAccount: MarginAccount
+  marginConfig: MarginConfig
+  provider: AnchorProvider
+  walletAddress: PublicKey
+  pools: Record<string, Pool>
+  currentPool: Pool
+  amount: BN
+}
+
+export const borrowNow = async ({
+  marginConfig,
+  market,
+  marginAccount,
+  provider,
+  walletAddress,
+  currentPool,
+  pools,
+  amount
+}: IBorrowNow): Promise<string> => {
+  // Fail if there is no active bonds program id in the config
+  if (!marginConfig.bondsProgramId) {
+    throw new Error("There is no market configured on this network")
+  }
+
+  const borrowerAccount = await market.deriveMarginUserAddress(marginAccount)
+
+  const instructions: TransactionInstruction[][] = []
+  // Create relevant accounts if they do not exist
+  const accountInstructions: TransactionInstruction[] = []
+  await withCreateFixedMarketAccounts({
+    market,
+    provider,
+    marginAccount,
+    walletAddress,
+    instructions: accountInstructions,
+    marketAccount: borrowerAccount
+  })
+  if (accountInstructions.length > 0) {
+    instructions.push(accountInstructions)
+  }
+
+  // refresh pools positions
+  const borrowInstructions: TransactionInstruction[] = []
+  await currentPool.withMarginRefreshAllPositionPrices({
+    instructions: borrowInstructions,
+    pools,
+    marginAccount
+  })
+
+  // refresh market instruction
+  const refreshIx = await market.program.methods
+    .refreshPosition(true)
+    .accounts({
+      marginUser: borrowerAccount,
+      marginAccount: marginAccount.address,
+      bondManager: market.addresses.bondManager,
+      underlyingOracle: market.addresses.underlyingOracle,
+      ticketOracle: market.addresses.ticketOracle,
+      tokenProgram: TOKEN_PROGRAM_ID
+    })
+    .instruction()
+
+  await marginAccount.withAdapterInvoke({
+    instructions: borrowInstructions,
+    adapterInstruction: refreshIx
+  })
+
+  // Create borrow instruction
+  const borrowNow = await market.borrowNowIx(
+    marginAccount,
+    walletAddress,
+    amount,
+    createRandomSeed(4)
+  )
+
+  await marginAccount.withAdapterInvoke({
+    instructions: borrowInstructions,
+    adapterInstruction: borrowNow
+  })
+
+  instructions.push(borrowInstructions)
+  return sendAll(provider, [instructions])
+}
+
+interface ILendNow {
+  market: BondMarket
+  marginAccount: MarginAccount
+  marginConfig: MarginConfig
+  provider: AnchorProvider
+  walletAddress: PublicKey
+  pools: Record<string, Pool>
+  currentPool: Pool
+  amount: BN
+}
+
+export const lendNow = async ({
+  marginConfig,
+  market,
+  marginAccount,
+  provider,
+  walletAddress,
+  currentPool,
+  pools,
+  amount
+}: ILendNow): Promise<string> => {
+  // Fail if there is no active bonds program id in the config
+
+  console.log(marginConfig, amount)
+  if (!marginConfig.bondsProgramId) {
+    throw new Error("There is no market configured on this network")
+  }
+
+  const marketAccount = await market.deriveMarginUserAddress(marginAccount)
+
+  const instructions: TransactionInstruction[][] = []
+  // Create relevant accounts if they do not exist
+  const accountInstructions: TransactionInstruction[] = []
+  await withCreateFixedMarketAccounts({
+    market,
+    provider,
+    marginAccount,
+    walletAddress,
+    instructions: accountInstructions,
+    marketAccount
+  })
+  if (accountInstructions.length > 0) {
+    instructions.push(accountInstructions)
+  }
+
+  // refresh pools positions
+  const lendInstructions: TransactionInstruction[] = []
+  await currentPool.withMarginRefreshAllPositionPrices({
+    instructions: lendInstructions,
+    pools,
+    marginAccount
+  })
+
+  // refresh market instruction
+  const refreshIx = await market.program.methods
+    .refreshPosition(true)
+    .accounts({
+      marginUser: marketAccount,
+      marginAccount: marginAccount.address,
+      bondManager: market.addresses.bondManager,
+      underlyingOracle: market.addresses.underlyingOracle,
+      ticketOracle: market.addresses.ticketOracle,
+      tokenProgram: TOKEN_PROGRAM_ID
+    })
+    .instruction()
+
+  await marginAccount.withAdapterInvoke({
+    instructions: lendInstructions,
+    adapterInstruction: refreshIx
+  })
+
+  // Create borrow instruction
+  const borrowNow = await market.lendNowIx(
+    marginAccount,
+    amount,
+    walletAddress,
+    createRandomSeed(4)
+  )
+
+  await marginAccount.withAdapterInvoke({
+    instructions: lendInstructions,
+    adapterInstruction: borrowNow
+  })
+
+  instructions.push(lendInstructions)
   return sendAll(provider, [instructions])
 }

@@ -1,6 +1,6 @@
 import { Button, InputNumber, Switch, Tooltip } from 'antd';
 import { formatDuration, intervalToDuration } from 'date-fns';
-import { createFixedBorrowOrder } from '@jet-lab/jet-bonds-client';
+import { borrowNow, createFixedBorrowOrder } from '@jet-lab/jet-bonds-client';
 import { notify } from '@utils/notify';
 import { getExplorerUrl } from '@utils/ui';
 import BN from 'bn.js'
@@ -37,12 +37,11 @@ export const BorrowNow = ({
     const wallet = useWallet();
     const blockExplorer = useRecoilValue(BlockExplorer);
     const [amount, setAmount] = useState(new BN(0));
-    const [basisPoints, setBasisPoints] = useState(new BN(0));
 
     const createBorrowOrder = async () => {
         let signature: string;
         try {
-            signature = await createFixedBorrowOrder({
+            signature = await borrowNow({
                 market: marketAndConfig.market,
                 marginAccount,
                 marginConfig,
@@ -50,12 +49,11 @@ export const BorrowNow = ({
                 walletAddress: wallet.publicKey,
                 pools: pools.tokenPools,
                 currentPool,
-                amount,
-                basisPoints
+                amount
             });
             notify(
-                'Borrow Order Created',
-                `Your borrow order for ${amount.div(new BN(10 ** decimals))} ${token.name} was created successfully`,
+                'Borrow Successful',
+                `Your borrow order for ${amount.div(new BN(10 ** decimals))} ${token.name} was filled successfully`,
                 'success',
                 getExplorerUrl(signature, cluster, blockExplorer)
             );
@@ -107,18 +105,18 @@ export const BorrowNow = ({
             <div className="stat-line">
                 <span>Repayment Amount</span>
                 <span>
-                    {((amount.toNumber() / 10 ** decimals) * (1 + basisPoints.toNumber() / 10000)).toFixed(token.precision)} {token.symbol}
+                    ??
                 </span>
             </div>
             <div className="stat-line">
                 <span>Total Interest</span>
                 <span>
-                    {(amount.toNumber() / 10 ** decimals) * (basisPoints.toNumber() / 10000)} {token.symbol}
+                    ??
                 </span>
             </div>
             <div className="stat-line">
                 <span>Interest Rate</span>
-                <span>{basisPoints.toNumber() / 100}%</span>
+                <span>??</span>
             </div>
             <div className="stat-line">Risk Level</div>
             <div className="stat-line">
@@ -126,7 +124,7 @@ export const BorrowNow = ({
                 <span>Off</span>
             </div>
         </div>
-        <Button disabled={!marketAndConfig?.market || basisPoints.lte(new BN(0)) || amount.lte(new BN(0))} onClick={createBorrowOrder}>
+        <Button disabled={!marketAndConfig?.market || amount.lte(new BN(0))} onClick={createBorrowOrder}>
             Borrow {marketToString(marketAndConfig.config)}
         </Button>
     </div>
