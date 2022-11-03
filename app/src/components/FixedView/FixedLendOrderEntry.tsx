@@ -171,7 +171,7 @@ export const FixedLendOrderEntry = () => {
               <span>Off</span>
             </div>
           </div>
-          <Button disabled={!marketAndConfig?.market} onClick={offerLoan}>
+          <Button disabled={!marketAndConfig?.market || basisPoints.lte(new BN(0)) || amount.lte(new BN(0))} onClick={offerLoan}>
             Offer {marketToString(marketAndConfig.config)} loan
           </Button>
         </div>

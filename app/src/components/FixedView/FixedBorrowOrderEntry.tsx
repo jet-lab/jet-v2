@@ -172,7 +172,7 @@ export const FixedBorrowOrderEntry = () => {
               <span>Off</span>
             </div>
           </div>
-          <Button disabled={!marketAndConfig?.market} onClick={createBorrowOrder}>
+          <Button disabled={!marketAndConfig?.market  || basisPoints.lte(new BN(0)) || amount.lte(new BN(0))} onClick={createBorrowOrder}>
             Request {marketToString(marketAndConfig.config)} loan
           </Button>
         </div>
