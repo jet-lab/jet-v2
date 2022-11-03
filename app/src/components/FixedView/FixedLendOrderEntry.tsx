@@ -14,7 +14,7 @@ import { getExplorerUrl } from '@utils/ui';
 import { BlockExplorer, Cluster } from '@state/settings/settings';
 import { OrderList } from './OrderList';
 import { FixedLendRowOrder } from '@state/views/fixed-term';
-import { FixedMarketAtom } from '@state/fixed/fixed-term-market-sync';
+import { FixedMarketAtom } from '@state/fixed-market/fixed-term-market-sync';
 import { CurrentAccount } from '@state/user/accounts';
 
 export const FixedLendOrderEntry = () => {

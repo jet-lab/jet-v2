@@ -1,7 +1,7 @@
 import { cancelOrder, Order } from '@jet-lab/jet-bonds-client';
 import base58 from 'bs58';
 import { useRecoilValue } from 'recoil';
-import { AllFixedMarketsOrderBooksAtom, FixedMarketAtom } from '../../state/fixed/fixed-term-market-sync';
+import { AllFixedMarketsOrderBooksAtom, FixedMarketAtom } from '../../state/fixed-market/fixed-term-market-sync';
 import { CurrentPool, Pools } from '../../state/pools/pools';
 import { BlockExplorer, Cluster } from '../../state/settings/settings';
 import { CurrentAccount } from '../../state/user/accounts';

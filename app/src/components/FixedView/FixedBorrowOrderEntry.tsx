@@ -4,7 +4,7 @@ import { ReorderArrows } from '@components/misc/ReorderArrows';
 import { Button, Input, Typography } from 'antd';
 import { Suspense, useMemo, useState } from 'react';
 import { FixedLendRowOrder } from '@state/views/fixed-term';
-import { FixedMarketAtom } from '@state/fixed/fixed-term-market-sync';
+import { FixedMarketAtom } from '@state/fixed-market/fixed-term-market-sync';
 import { CurrentAccount } from '@state/user/accounts';
 import BN from 'bn.js';
 import { useWallet } from '@solana/wallet-adapter-react';
