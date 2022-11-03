@@ -1,6 +1,6 @@
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { ReorderArrows } from '@components/misc/ReorderArrows';
-import { Button, InputNumber, Switch, Tabs, Typography } from 'antd';
+import { Button, InputNumber, Switch, Tabs, Typography, Tooltip } from 'antd';
 import { useMemo, useState } from 'react';
 import BN from 'bn.js';
 import { useWallet } from '@solana/wallet-adapter-react';
@@ -29,8 +29,8 @@ export const FixedLendOrderEntry = () => {
   const marginConfig = useRecoilValue(MainConfig);
   const blockExplorer = useRecoilValue(BlockExplorer);
 
-  const [orderType, setOrderType]= useState('limit')
-  
+  const [orderType, setOrderType] = useState('limit')
+
   const token = useMemo(() => {
     if (!marginConfig || !marketAndConfig) return null;
     return Object.values(marginConfig?.tokens).find(token => {
@@ -132,10 +132,14 @@ export const FixedLendOrderEntry = () => {
               />
             </label>
           </div>
+
           <div className="auto-roll-controls">
-            <Switch disabled={true} />
+            <Tooltip title="Coming soon...">
+              <Switch disabled={true} />
+            </Tooltip>
             Auto-roll Off
           </div>
+          
           <div className="stats">
             <div className="stat-line">
               <span>Repayment Date</span>

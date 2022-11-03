@@ -31,7 +31,14 @@ max_leverage = 20_00
 borrow_duration = 86400
 lend_duration = 88000
 min_order_size = 10
-paused = true
+paused = false
+ticket_price = "0.9"
+
+[[airspace.tokens.USDC.bond_markets]]
+borrow_duration = 604800
+lend_duration = 610000
+min_order_size = 10
+paused = false
 ticket_price = "0.9"
 
 [airspace.tokens.USDC.margin_pool_config]

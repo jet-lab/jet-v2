@@ -1,14 +1,14 @@
 import React, { useEffect } from 'react';
 import { useRecoilValue } from 'recoil';
 import { AccountSnapshot } from '@components/misc/AccountSnapshot/AccountSnapshot';
-import { FixedPriceChartContainer } from '@components/FixedView/FixedPriceChart';
+import { FixedPriceChartContainer } from '@components/fixed-term/FixedPriceChart';
 import { FullAccountBalance } from '@components/tables/FullAccountBalance';
 import { Dictionary } from '@state/settings/localization/localization';
-import { FixedLendOrderEntry } from '@components/FixedView/FixedLendOrderEntry';
+import { FixedLendOrderEntry } from '@components/fixed-term/lend-entry';
 import { FixedLendRowOrder, FixedLendViewOrder } from '@state/views/fixed-term';
-import { FixedMarketSelector } from '@components/FixedView/FixedMarketSelector';
 import { NetworkStateAtom } from '@state/network/network-state';
 import { WaitingForNetworkView } from './WaitingForNetwork';
+import { FixedMarketSelector } from '@components/fixed-term/FixedMarketSelector';
 
 const rowComponents: Record<string, React.FC<any>> = {
   fixedLendEntry: FixedLendOrderEntry,

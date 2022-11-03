@@ -52,7 +52,7 @@ export const AllFixedMarketsOrderBooksAtom = selector<ExtendedOrderBook[]>({
   dangerouslyAllowMutability: true
 });
 
-interface MarketAndconfig {
+export interface MarketAndconfig {
   market: BondMarket;
   config: BondMarketConfig;
   name: string;
