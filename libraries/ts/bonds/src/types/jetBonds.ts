@@ -2761,7 +2761,12 @@ export type JetBonds = {
           "index": false
         },
         {
-          "name": "duration",
+          "name": "borrowDuration",
+          "type": "i64",
+          "index": false
+        },
+        {
+          "name": "lendDuration",
           "type": "i64",
           "index": false
         }
@@ -2873,7 +2878,7 @@ export type JetBonds = {
       ]
     },
     {
-      "name": "MarginBorrow",
+      "name": "OrderPlaced",
       "fields": [
         {
           "name": "bondManager",
@@ -2881,47 +2886,47 @@ export type JetBonds = {
           "index": false
         },
         {
-          "name": "marginAccount",
+          "name": "authority",
           "type": "publicKey",
           "index": false
         },
         {
-          "name": "borrowerAccount",
+          "name": "marginUser",
           "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "orderType",
+          "type": {
+            "defined": "OrderType"
+          },
           "index": false
         },
         {
           "name": "orderSummary",
           "type": {
-            "array": ["u8", 48]
+            "defined": "OrderSummary"
           },
           "index": false
-        }
-      ]
-    },
-    {
-      "name": "MarginLend",
-      "fields": [
+        },
         {
-          "name": "bondMarket",
-          "type": "publicKey",
+          "name": "limitPrice",
+          "type": "u64",
           "index": false
         },
         {
-          "name": "marginAccount",
-          "type": "publicKey",
+          "name": "autoStake",
+          "type": "bool",
           "index": false
         },
         {
-          "name": "lender",
-          "type": "publicKey",
+          "name": "postOnly",
+          "type": "bool",
           "index": false
         },
         {
-          "name": "orderSummary",
-          "type": {
-            "array": ["u8", 48]
-          },
+          "name": "postAllowed",
+          "type": "bool",
           "index": false
         }
       ]
@@ -2985,57 +2990,13 @@ export type JetBonds = {
           "index": false
         },
         {
-          "name": "user",
+          "name": "authority",
           "type": "publicKey",
           "index": false
         },
         {
           "name": "orderId",
           "type": "u128",
-          "index": false
-        }
-      ]
-    },
-    {
-      "name": "LendOrder",
-      "fields": [
-        {
-          "name": "bondMarket",
-          "type": "publicKey",
-          "index": false
-        },
-        {
-          "name": "lender",
-          "type": "publicKey",
-          "index": false
-        },
-        {
-          "name": "orderSummary",
-          "type": {
-            "array": ["u8", 48]
-          }
-          "index": false
-        }
-      ]
-    },
-    {
-      "name": "SellTicketsOrder",
-      "fields": [
-        {
-          "name": "bondMarket",
-          "type": "publicKey",
-          "index": false
-        },
-        {
-          "name": "owner",
-          "type": "publicKey",
-          "index": false
-        },
-        {
-          "name": "orderSummary",
-          "type": {
-            "array": ["u8", 48]
-          }
           "index": false
         }
       ]
@@ -6198,7 +6159,12 @@ export const IDL: JetBonds = {
           "index": false
         },
         {
-          "name": "duration",
+          "name": "borrowDuration",
+          "type": "i64",
+          "index": false
+        },
+        {
+          "name": "lendDuration",
           "type": "i64",
           "index": false
         }
@@ -6310,7 +6276,7 @@ export const IDL: JetBonds = {
       ]
     },
     {
-      "name": "MarginBorrow",
+      "name": "OrderPlaced",
       "fields": [
         {
           "name": "bondManager",
@@ -6318,47 +6284,47 @@ export const IDL: JetBonds = {
           "index": false
         },
         {
-          "name": "marginAccount",
+          "name": "authority",
           "type": "publicKey",
           "index": false
         },
         {
-          "name": "borrowerAccount",
+          "name": "marginUser",
           "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "orderType",
+          "type": {
+            "defined": "OrderType"
+          },
           "index": false
         },
         {
           "name": "orderSummary",
           "type": {
-            "array": ["u8", 48]
+            "defined": "OrderSummary"
           },
           "index": false
-        }
-      ]
-    },
-    {
-      "name": "MarginLend",
-      "fields": [
+        },
         {
-          "name": "bondMarket",
-          "type": "publicKey",
+          "name": "limitPrice",
+          "type": "u64",
           "index": false
         },
         {
-          "name": "marginAccount",
-          "type": "publicKey",
+          "name": "autoStake",
+          "type": "bool",
           "index": false
         },
         {
-          "name": "lender",
-          "type": "publicKey",
+          "name": "postOnly",
+          "type": "bool",
           "index": false
         },
         {
-          "name": "orderSummary",
-          "type": {
-            "array": ["u8", 48]
-          },
+          "name": "postAllowed",
+          "type": "bool",
           "index": false
         }
       ]
@@ -6422,57 +6388,13 @@ export const IDL: JetBonds = {
           "index": false
         },
         {
-          "name": "user",
+          "name": "authority",
           "type": "publicKey",
           "index": false
         },
         {
           "name": "orderId",
           "type": "u128",
-          "index": false
-        }
-      ]
-    },
-    {
-      "name": "LendOrder",
-      "fields": [
-        {
-          "name": "bondMarket",
-          "type": "publicKey",
-          "index": false
-        },
-        {
-          "name": "lender",
-          "type": "publicKey",
-          "index": false
-        },
-        {
-          "name": "orderSummary",
-          "type": {
-            "array": ["u8", 48]
-          },
-          "index": false
-        }
-      ]
-    },
-    {
-      "name": "SellTicketsOrder",
-      "fields": [
-        {
-          "name": "bondMarket",
-          "type": "publicKey",
-          "index": false
-        },
-        {
-          "name": "owner",
-          "type": "publicKey",
-          "index": false
-        },
-        {
-          "name": "orderSummary",
-          "type": {
-            "array": ["u8", 48]
-          },
           "index": false
         }
       ]
