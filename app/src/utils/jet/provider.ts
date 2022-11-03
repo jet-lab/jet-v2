@@ -6,11 +6,13 @@ import { AnchorProvider, Wallet } from '@project-serum/anchor';
 import { MarginClient } from '@jet-lab/margin';
 import { Cluster, rpcNodes, PreferredRpcNode } from '@state/settings/settings';
 import { MainConfig } from '@state/config/marginConfig';
+import { NetworkStateAtom } from '@state/network/network-state';
 
 // Anchor connection / provider hook
 export function useProvider() {
   const cluster = useRecoilValue(Cluster);
   const node = useRecoilValue(PreferredRpcNode);
+  const networkStatus = useRecoilValue(NetworkStateAtom)
   const endpoint =
     cluster === 'localnet'
       ? 'http://localhost:8899'
@@ -29,6 +31,6 @@ export function useProvider() {
     return new AnchorProvider(connection, wallet as unknown as Wallet, confirmOptions);
   }, [connection, wallet]);
 
-  const programs = useMemo(() => (config ? MarginClient.getPrograms(provider, config) : undefined), [config, provider]);
+  const programs = useMemo(() => (config && networkStatus === 'connected' ? MarginClient.getPrograms(provider, config) : undefined), [config, provider, networkStatus]);
   return { programs, provider };
 }

@@ -6,7 +6,7 @@ import { AirspaceConfig, BondMarketConfig } from '@jet-lab/margin';
 import { MainConfig } from '../config/marginConfig';
 import { PublicKey } from '@solana/web3.js';
 import { useProvider } from '@utils/jet/provider';
-
+import { NetworkStateAtom } from '@state/network/network-state';
 
 export const AllFixedMarketsAtom = atom<Array<MarketAndconfig>>({
   key: 'allFixedMarkets',
@@ -61,6 +61,7 @@ export const useFixedTermSync = (): void => {
   const { provider } = useProvider();
   const setMarkets = useSetRecoilState(AllFixedMarketsAtom);
   const config = useRecoilValue(MainConfig);
+  const networkState = useRecoilValue(NetworkStateAtom)
 
   const loadBondMarkets = async (airspace: AirspaceConfig, program: Program<JetBonds>, marginProgramId: PublicKey) => {
     const markets: MarketAndconfig[] = await Promise.all(
@@ -73,11 +74,11 @@ export const useFixedTermSync = (): void => {
   };
 
   useEffect(() => {
-    if (config?.bondsProgramId) {
+    if (networkState === 'connected' && config?.bondsProgramId) {
       const program = new Program(JetBondsIdl, config.bondsProgramId, provider);
       const airspace = config.airspaces.find(airspace => airspace.name === 'default');
       loadBondMarkets(airspace, program, new PublicKey(config.marginProgramId));
     }
-  }, [config]);
+  }, [config, networkState]);
   return null;
 };
