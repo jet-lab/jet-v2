@@ -72,7 +72,7 @@ export const FixedBorrowOrderEntry = () => {
         getExplorerUrl(signature, cluster, blockExplorer)
       );
     } catch (e) {
-      console.log(e)
+      console.log(e);
       notify(
         'Borrow Order Failed',
         `Your borrow order for ${amount.div(new BN(10 ** decimals))} ${token.name} failed`,
@@ -111,7 +111,7 @@ export const FixedBorrowOrderEntry = () => {
               Loan amount
               <InputNumber
                 onChange={e => setAmount(new BN(e * 10 ** decimals))}
-                placeholder={"10,000"}
+                placeholder={'10,000'}
                 min={0}
                 formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
                 controls={false}
@@ -124,7 +124,7 @@ export const FixedBorrowOrderEntry = () => {
                 onChange={e => {
                   setBasisPoints(new BN(e * 100));
                 }}
-                placeholder={"1.5"}
+                placeholder={'1.5'}
                 type="number"
                 step={0.01}
                 min={0}

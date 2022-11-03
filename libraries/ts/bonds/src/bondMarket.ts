@@ -153,7 +153,7 @@ export class BondMarket {
       new PublicKey(jetMarginProgramId)
     )
     const marginAdapterMetadata = await findDerivedAccount([program.programId], new PublicKey(jetMarginProgramId))
-    
+
     return new BondMarket(
       new PublicKey(bondManager),
       new PublicKey(claimsMetadata),
@@ -305,7 +305,7 @@ export class BondMarket {
       .accounts({
         ...this.addresses,
         owner: user.address,
-        orderbookMut: this.orderbookMut(),
+        orderbookMut: this.orderbookMut()
       })
       .instruction()
   }
@@ -316,7 +316,7 @@ export class BondMarket {
       orderbookMarketState: this.addresses.orderbookMarketState,
       eventQueue: this.addresses.eventQueue,
       bids: this.addresses.bids,
-      asks: this.addresses.asks,
+      asks: this.addresses.asks
     }
   }
 

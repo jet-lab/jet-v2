@@ -113,8 +113,8 @@ module.exports = {
       assert: false,
       util: false,
       url: false,
-      stream: require.resolve("stream-browserify"),
-      crypto: require.resolve("crypto-browserify")
+      stream: require.resolve('stream-browserify'),
+      crypto: require.resolve('crypto-browserify')
     },
     alias: {
       '@components': path.resolve(__dirname, 'src/components'),

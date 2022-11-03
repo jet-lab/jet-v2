@@ -37,7 +37,7 @@ export function App(): JSX.Element {
       ...(isDebug ? [new E2EWalletAdapter()] : [])
     ],
     [isDebug]
-  )
+  );
 
   return (
     <BrowserRouter>

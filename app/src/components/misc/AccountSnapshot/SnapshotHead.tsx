@@ -95,11 +95,13 @@ export function SnapshotHead(): JSX.Element {
           trigger={['click']}
           menu={{
             items: Object.keys(accountNames).map(key => {
-              const name = accountNames[key]
+              const name = accountNames[key];
               return {
                 key,
-                label:
-                  <div onClick={() => setCurrentAccountAddress(key)} className="all-accounts-menu-name flex align-center justify-start">
+                label: (
+                  <div
+                    onClick={() => setCurrentAccountAddress(key)}
+                    className="all-accounts-menu-name flex align-center justify-start">
                     {walletFavoriteAccounts.includes(key) ? (
                       <StarFilled style={{ opacity: 1 }} onClick={() => updateFavoriteAccounts(key, true)} />
                     ) : (
@@ -107,10 +109,10 @@ export function SnapshotHead(): JSX.Element {
                     )}
                     <span>{name}</span>
                   </div>
-              }
+                )
+              };
             })
-          }}
-        >
+          }}>
           <Text type="secondary">
             {dictionary.accountSnapshot.allAccounts.toUpperCase()}
             <AngleDown className="jet-icon" />
