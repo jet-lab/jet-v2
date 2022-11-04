@@ -12,13 +12,13 @@ use anchor_lang::{AccountDeserialize, AnchorSerialize, InstructionData, ToAccoun
 use anchor_spl::token::TokenAccount;
 use anyhow::Result;
 use async_trait::async_trait;
+
 use jet_bonds::{
     control::state::BondManager,
     margin::state::MarginUser,
     orderbook::state::{event_queue_len, orderbook_slab_len, CallbackInfo, OrderParams},
     tickets::state::{ClaimTicket, SplitTicket},
 };
-
 use jet_margin_sdk::{
     bonds::{bonds_pda, event_builder::build_consume_events_info, BondsIxBuilder},
     ix_builder::{
@@ -32,7 +32,7 @@ use jet_margin_sdk::{
     tx_builder::global_initialize_instructions,
 };
 use jet_metadata::{PositionTokenMetadata, TokenKind};
-use jet_proto_math::fixed_point::Fp32;
+use jet_program_common::Fp32;
 use jet_simulation::{
     create_wallet, generate_keypair, send_and_confirm, solana_rpc_api::SolanaRpcClient,
 };

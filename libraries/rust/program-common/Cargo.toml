@@ -1,0 +1,19 @@
+[package]
+name = "jet-program-common"
+version = "0.1.0"
+edition = "2021"
+
+description = "A library of common types/utilities suitable for use in solana programs"
+license = "AGPL-3.0-or-later"
+homepage = "https://jetprotocol.io"
+repository = "https://github.com/jet-lab/jet-v2"
+
+[dependencies]
+uint = "0.9"
+thiserror = "1.0.20"
+bytemuck = { version = "1.7", features = ["derive"] }
+static_assertions = "1.1.0"
+
+# Traits
+num-traits = "0.2"
+anchor-lang = { git = "https://github.com/jet-lab/anchor", branch = "master" }

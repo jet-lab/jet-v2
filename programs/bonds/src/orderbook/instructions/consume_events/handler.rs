@@ -6,7 +6,7 @@ use agnostic_orderbook::{
     },
 };
 use anchor_lang::prelude::*;
-use jet_proto_math::traits::{SafeAdd, SafeSub};
+use jet_program_common::traits::{SafeAdd, SafeSub};
 use num_traits::FromPrimitive;
 
 use crate::{
