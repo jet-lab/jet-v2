@@ -6,7 +6,7 @@ use agnostic_orderbook::{
     },
 };
 use anchor_lang::prelude::*;
-use jet_proto_math::traits::{SafeAdd, SafeSub};
+use jet_program_common::traits::{SafeAdd, SafeSub};
 use num_traits::FromPrimitive;
 
 use crate::{
@@ -126,7 +126,7 @@ fn handle_fill<'info>(
             } else {
                 ctx.mint(
                     &ctx.accounts.bond_ticket_mint,
-                    &maker.as_token_account(),
+                    maker.as_token_account(),
                     base_size,
                 )?;
             }
@@ -153,7 +153,7 @@ fn handle_fill<'info>(
             } else {
                 ctx.withdraw(
                     &ctx.accounts.underlying_token_vault,
-                    &maker.as_token_account(),
+                    maker.as_token_account(),
                     quote_size,
                 )?;
             }
@@ -205,7 +205,7 @@ fn handle_out<'info>(
             } else {
                 ctx.withdraw(
                     &ctx.accounts.underlying_token_vault,
-                    &user.as_token_account(),
+                    user.as_token_account(),
                     quote_size,
                 )
             }
@@ -221,7 +221,7 @@ fn handle_out<'info>(
             } else {
                 ctx.mint(
                     &ctx.accounts.bond_ticket_mint,
-                    &user.as_token_account(),
+                    user.as_token_account(),
                     *base_size,
                 )
             }

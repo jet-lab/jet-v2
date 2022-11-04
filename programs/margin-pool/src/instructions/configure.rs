@@ -48,7 +48,7 @@ pub fn configure_handler(ctx: Context<Configure>, config: Option<MarginPoolConfi
 
     if *ctx.accounts.pyth_price.key != Pubkey::default() {
         let product_data = ctx.accounts.pyth_product.try_borrow_data()?;
-        let product_account = pyth_sdk_solana::state::load_product_account(&**product_data)
+        let product_account = pyth_sdk_solana::state::load_product_account(&product_data)
             .map_err(|_| ErrorCode::InvalidPoolOracle)?;
 
         let expected_price_key = Pubkey::new_from_array(product_account.px_acc.val);

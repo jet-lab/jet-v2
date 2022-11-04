@@ -12,13 +12,13 @@ use anchor_lang::{AccountDeserialize, AnchorSerialize, InstructionData, ToAccoun
 use anchor_spl::token::TokenAccount;
 use anyhow::Result;
 use async_trait::async_trait;
+
 use jet_bonds::{
     control::state::BondManager,
     margin::state::MarginUser,
     orderbook::state::{event_queue_len, orderbook_slab_len, CallbackInfo, OrderParams},
     tickets::state::{ClaimTicket, SplitTicket},
 };
-
 use jet_margin_sdk::{
     bonds::{bonds_pda, event_builder::build_consume_events_info, BondsIxBuilder},
     ix_builder::{
@@ -32,7 +32,7 @@ use jet_margin_sdk::{
     tx_builder::global_initialize_instructions,
 };
 use jet_metadata::{PositionTokenMetadata, TokenKind};
-use jet_proto_math::fixed_point::Fp32;
+use jet_program_common::Fp32;
 use jet_simulation::{
     create_wallet, generate_keypair, send_and_confirm, solana_rpc_api::SolanaRpcClient,
 };
@@ -184,40 +184,31 @@ impl TestManager {
         let init_eq = {
             let rent = this
                 .client
-                .get_minimum_balance_for_rent_exemption(event_queue_len(
-                    EVENT_QUEUE_CAPACITY as usize,
-                ))
+                .get_minimum_balance_for_rent_exemption(event_queue_len(EVENT_QUEUE_CAPACITY))
                 .await?;
-            this.ix_builder.initialize_event_queue(
-                &eq_kp.pubkey(),
-                EVENT_QUEUE_CAPACITY as usize,
-                rent,
-            )?
+            this.ix_builder
+                .initialize_event_queue(&eq_kp.pubkey(), EVENT_QUEUE_CAPACITY, rent)?
         };
 
         let init_bids = {
             let rent = this
                 .client
-                .get_minimum_balance_for_rent_exemption(orderbook_slab_len(
-                    ORDERBOOK_CAPACITY as usize,
-                ))
+                .get_minimum_balance_for_rent_exemption(orderbook_slab_len(ORDERBOOK_CAPACITY))
                 .await?;
             this.ix_builder.initialize_orderbook_slab(
                 &bids_kp.pubkey(),
-                ORDERBOOK_CAPACITY as usize,
+                ORDERBOOK_CAPACITY,
                 rent,
             )?
         };
         let init_asks = {
             let rent = this
                 .client
-                .get_minimum_balance_for_rent_exemption(orderbook_slab_len(
-                    ORDERBOOK_CAPACITY as usize,
-                ))
+                .get_minimum_balance_for_rent_exemption(orderbook_slab_len(ORDERBOOK_CAPACITY))
                 .await?;
             this.ix_builder.initialize_orderbook_slab(
                 &asks_kp.pubkey(),
-                ORDERBOOK_CAPACITY as usize,
+                ORDERBOOK_CAPACITY,
                 rent,
             )?
         };

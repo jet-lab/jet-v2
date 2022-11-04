@@ -339,7 +339,7 @@ mod test {
                 mutator(&mut ba, n);
                 assert_eq!(contains, ba.contains(n));
                 for i in 0..8u8 {
-                    if i as u8 != n {
+                    if i != n {
                         // other bits are unchanged
                         assert_eq!(BitSet(byte).contains(i), ba.contains(i));
                     }
@@ -357,9 +357,9 @@ mod test {
         assert_eq!(BitSet(0).min(), None);
         for extremum in 0..8 {
             let top = 2u8.checked_pow(extremum + 1).unwrap_or(u8::MAX);
-            for byte in 2u8.pow(extremum as u32)..top {
-                assert_eq!(extremum as u32, BitSet(byte).max().unwrap());
-                assert_eq!(extremum as u32, BitSet(byte.reverse_bits()).min().unwrap());
+            for byte in 2u8.pow(extremum)..top {
+                assert_eq!(extremum, BitSet(byte).max().unwrap());
+                assert_eq!(extremum, BitSet(byte.reverse_bits()).min().unwrap());
             }
         }
     }

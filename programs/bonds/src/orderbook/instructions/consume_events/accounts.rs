@@ -2,7 +2,7 @@ use std::convert::TryInto;
 
 use anchor_lang::prelude::*;
 use anchor_spl::token::Token;
-use proc_macros::BondTokenManager;
+use jet_program_proc_macros::BondTokenManager;
 
 use crate::{
     control::state::{BondManager, CrankAuthorization},

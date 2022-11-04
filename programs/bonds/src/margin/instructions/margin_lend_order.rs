@@ -1,6 +1,6 @@
 use agnostic_orderbook::state::Side;
 use anchor_lang::prelude::*;
-use proc_macros::BondTokenManager;
+use jet_program_proc_macros::BondTokenManager;
 
 use crate::{
     bond_token_manager::BondTokenManager,

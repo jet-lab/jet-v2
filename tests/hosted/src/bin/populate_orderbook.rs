@@ -5,7 +5,7 @@ use anchor_lang::AccountDeserialize;
 use anyhow::Result;
 use jet_bonds::control::state::BondManager;
 use jet_margin_sdk::bonds::{BondsIxBuilder, OrderParams};
-use jet_proto_math::fixed_point::{Fp32, FP32_ONE};
+use jet_program_common::{Fp32, FP32_ONE};
 use rand::{thread_rng, Rng};
 use solana_client::{rpc_client::RpcClient, rpc_config::RpcSendTransactionConfig};
 use solana_sdk::{

@@ -2,7 +2,7 @@ use std::cmp::min;
 
 use anchor_lang::{prelude::*, AccountsClose};
 use anchor_spl::token::{transfer, Token, TokenAccount, Transfer};
-use jet_proto_math::traits::TrySubAssign;
+use jet_program_common::traits::TrySubAssign;
 
 use crate::{
     events::{ObligationFulfilled, ObligationRepay},
