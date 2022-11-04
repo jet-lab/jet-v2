@@ -38,8 +38,6 @@ export function useWalletTokensSyncer() {
     }
 
     getWalletTokens();
-    const walletTokensInterval = setInterval(getWalletTokens, ACTION_REFRESH_INTERVAL);
-    return () => clearInterval(walletTokensInterval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [publicKey, provider.connection, actionRefresh, networkState]);
 
