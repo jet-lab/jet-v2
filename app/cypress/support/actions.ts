@@ -1,3 +1,5 @@
+import { formatWithCommas } from "./utils";
+
 export const connectWallet = () => {
   cy.contains('CONNECT').click();
   cy.contains('E2E').click();
@@ -35,7 +37,7 @@ export const deposit = (symbol: string, amount: number) => {
   const input = cy.get('.ant-modal-content input.ant-input').should('not.be.disabled');
   input.click().type(`${amount}`);
   cy.get('.ant-modal-body button.ant-btn').contains('Deposit').click();
-  cy.contains('deposit successful');
+  cy.contains(`Your deposit of ${formatWithCommas(amount)} ${symbol} was successfully processed.`);
 };
 
 export const borrow = (symbol: string, amount: number, resetMaxState?: boolean) => {

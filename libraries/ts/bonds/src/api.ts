@@ -292,7 +292,7 @@ export const borrowNow = async ({
 }: IBorrowNow): Promise<string> => {
   // Fail if there is no active bonds program id in the config
   if (!marginConfig.bondsProgramId) {
-    throw new Error("There is no market configured on this network")
+    throw new Error("There is no fixed term market configured on this network")
   }
 
   const borrowerAccount = await market.deriveMarginUserAddress(marginAccount)
@@ -313,9 +313,9 @@ export const borrowNow = async ({
   }
 
   // refresh pools positions
-  const borrowInstructions: TransactionInstruction[] = []
+  const refreshInstructions: TransactionInstruction[] = []
   await currentPool.withMarginRefreshAllPositionPrices({
-    instructions: borrowInstructions,
+    instructions: refreshInstructions,
     pools,
     marginAccount
   })
@@ -334,11 +334,13 @@ export const borrowNow = async ({
     .instruction()
 
   await marginAccount.withAdapterInvoke({
-    instructions: borrowInstructions,
+    instructions: refreshInstructions,
     adapterInstruction: refreshIx
   })
+  instructions.push(refreshInstructions)
 
   // Create borrow instruction
+  const borrowInstructions: TransactionInstruction[] = []
   const borrowNow = await market.borrowNowIx(marginAccount, walletAddress, amount, createRandomSeed(4))
 
   await marginAccount.withAdapterInvoke({
@@ -393,18 +395,13 @@ export const lendNow = async ({
     instructions.push(accountInstructions)
   }
 
-  // refresh pools positions
-  const lendInstructions: TransactionInstruction[] = []
-
-  AssociatedToken.withTransfer(lendInstructions, tokenMint, walletAddress, marginAccount.address, amount)
-
+  // refresh instructions
+  const refreshInstructions: TransactionInstruction[] = []
   await currentPool.withMarginRefreshAllPositionPrices({
-    instructions: lendInstructions,
+    instructions: refreshInstructions,
     pools,
     marginAccount
   })
-
-  // refresh market instruction
   const refreshIx = await market.program.methods
     .refreshPosition(true)
     .accounts({
@@ -418,11 +415,14 @@ export const lendNow = async ({
     .instruction()
 
   await marginAccount.withAdapterInvoke({
-    instructions: lendInstructions,
+    instructions: refreshInstructions,
     adapterInstruction: refreshIx
   })
+  instructions.push(refreshInstructions)
 
   // Create borrow instruction
+  const lendInstructions: TransactionInstruction[] = []
+  AssociatedToken.withTransfer(lendInstructions, tokenMint, walletAddress, marginAccount.address, amount)
   const borrowNow = await market.lendNowIx(marginAccount, amount, walletAddress, createRandomSeed(4))
 
   await marginAccount.withAdapterInvoke({

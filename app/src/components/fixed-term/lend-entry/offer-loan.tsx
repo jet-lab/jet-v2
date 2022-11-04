@@ -49,16 +49,16 @@ export const OfferLoan = ({ token, decimals, marketAndConfig, marginConfig }: Re
         basisPoints
       });
       notify(
-        'Lend Order Created',
-        `Your lend order for ${amount.div(new BN(10 ** decimals))} ${token.name} was created successfully`,
+        'Lend Offer Created',
+        `Your lend offer for ${amount.div(new BN(10 ** decimals))} ${token.name} at ${basisPoints.toNumber() / 100}% was created successfully`,
         'success',
         getExplorerUrl(signature, cluster, blockExplorer)
       );
     } catch (e) {
       console.log(e);
       notify(
-        'Lend Order Failed',
-        `Your lend order for ${amount.div(new BN(10 ** decimals))} ${token.name} failed`,
+        'Lend Offer Failed',
+        `Your lend offer for ${amount.div(new BN(10 ** decimals))} ${token.name} at ${basisPoints.toNumber() / 100}% failed`,
         'error',
         getExplorerUrl(e.signature, cluster, blockExplorer)
       );
@@ -66,11 +66,12 @@ export const OfferLoan = ({ token, decimals, marketAndConfig, marginConfig }: Re
   };
 
   return (
-    <div className="order-entry-body">
-      <div className="fixed-order-entry-fields">
+    <div className="fixed-term order-entry-body">
+      <div className="offer-loan fixed-order-entry-fields">
         <label>
           Loan amount
           <InputNumber
+            className='input-amount'
             onChange={e => setAmount(new BN(e * 10 ** decimals))}
             placeholder={'10,000'}
             min={0}
@@ -82,6 +83,7 @@ export const OfferLoan = ({ token, decimals, marketAndConfig, marginConfig }: Re
         <label>
           Interest Rate
           <InputNumber
+            className='input-rate'
             onChange={e => {
               setBasisPoints(new BN(e * 100));
             }}
@@ -140,6 +142,7 @@ export const OfferLoan = ({ token, decimals, marketAndConfig, marginConfig }: Re
         </div>
       </div>
       <Button
+        className='submit-button'
         disabled={!marketAndConfig?.market || basisPoints.lte(new BN(0)) || amount.lte(new BN(0))}
         onClick={createLendOrder}>
         Request {marketToString(marketAndConfig.config)} loan
