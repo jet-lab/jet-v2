@@ -72,6 +72,7 @@ describe('Fixed Term', () => {
     })
 
     it('issues a lend now order', () => {
+        cy.wait(4000) // TODO, figure out why we need to wait
         const lendLink = cy.contains('Lend');
         lendLink.click();
         const lendNow = cy.contains('lend now')
@@ -84,7 +85,7 @@ describe('Fixed Term', () => {
     })
 
     it('issues a borrow now order', () => {
-        cy.wait(5000) // TODO, figure out why we need to wait
+        cy.wait(4000) // TODO, figure out why we need to wait
         const borrowLink = cy.contains('Borrow');
         borrowLink.click();
         const borrowNowTab = cy.contains('borrow now')
