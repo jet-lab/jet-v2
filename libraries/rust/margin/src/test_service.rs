@@ -184,9 +184,7 @@ pub fn init_environment(
     config: &EnvironmentConfig,
     rent: &Rent,
 ) -> anyhow::Result<Vec<TransactionBuilder>> {
-    let mut txs = vec![];
-
-    txs.push(global_initialize_instructions(config.authority));
+    let mut txs = vec![global_initialize_instructions(config.authority)];
 
     txs.extend(create_global_adapter_register_tx(config.authority));
     txs.extend(create_token_tx(config));
@@ -199,9 +197,8 @@ pub fn init_environment(
 /// Basic environment setup for hosted tests that has only the necessary global
 /// state initialized
 pub fn minimal_environment(authority: Pubkey) -> anyhow::Result<Vec<TransactionBuilder>> {
-    let mut txs = vec![];
+    let mut txs = vec![global_initialize_instructions(authority)];
 
-    txs.push(global_initialize_instructions(authority));
     txs.extend(create_global_adapter_register_tx(authority));
 
     // todo move airspace creation into individual tests

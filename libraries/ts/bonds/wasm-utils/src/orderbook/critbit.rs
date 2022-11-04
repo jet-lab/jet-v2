@@ -460,7 +460,7 @@ impl<'a> Slab<'a> {
                 Node::Leaf => return Some(root),
                 Node::Inner => {
                     let node = self.inner_nodes[(!root) as usize];
-                    root = node.children[if find_max { 1 } else { 0 }];
+                    root = node.children[usize::from(find_max)];
                 }
             }
         }

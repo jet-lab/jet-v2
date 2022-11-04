@@ -1,4 +1,5 @@
 //! Yet another decimal library
+#![allow(clippy::assign_op_pattern)]
 
 use std::{
     fmt::Debug,

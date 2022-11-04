@@ -184,40 +184,31 @@ impl TestManager {
         let init_eq = {
             let rent = this
                 .client
-                .get_minimum_balance_for_rent_exemption(event_queue_len(
-                    EVENT_QUEUE_CAPACITY as usize,
-                ))
+                .get_minimum_balance_for_rent_exemption(event_queue_len(EVENT_QUEUE_CAPACITY))
                 .await?;
-            this.ix_builder.initialize_event_queue(
-                &eq_kp.pubkey(),
-                EVENT_QUEUE_CAPACITY as usize,
-                rent,
-            )?
+            this.ix_builder
+                .initialize_event_queue(&eq_kp.pubkey(), EVENT_QUEUE_CAPACITY, rent)?
         };
 
         let init_bids = {
             let rent = this
                 .client
-                .get_minimum_balance_for_rent_exemption(orderbook_slab_len(
-                    ORDERBOOK_CAPACITY as usize,
-                ))
+                .get_minimum_balance_for_rent_exemption(orderbook_slab_len(ORDERBOOK_CAPACITY))
                 .await?;
             this.ix_builder.initialize_orderbook_slab(
                 &bids_kp.pubkey(),
-                ORDERBOOK_CAPACITY as usize,
+                ORDERBOOK_CAPACITY,
                 rent,
             )?
         };
         let init_asks = {
             let rent = this
                 .client
-                .get_minimum_balance_for_rent_exemption(orderbook_slab_len(
-                    ORDERBOOK_CAPACITY as usize,
-                ))
+                .get_minimum_balance_for_rent_exemption(orderbook_slab_len(ORDERBOOK_CAPACITY))
                 .await?;
             this.ix_builder.initialize_orderbook_slab(
                 &asks_kp.pubkey(),
-                ORDERBOOK_CAPACITY as usize,
+                ORDERBOOK_CAPACITY,
                 rent,
             )?
         };

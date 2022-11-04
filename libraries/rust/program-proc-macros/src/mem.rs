@@ -2,8 +2,6 @@ use proc_macro2::TokenStream;
 use quote::{quote, ToTokens};
 use syn::{Ident, ItemEnum, ItemStruct};
 
-use proc_macro2;
-
 pub fn handler(args: TokenStream, input: TokenStream) -> TokenStream {
     let (ident, item) = (keep_trying! {
         parse!(input as ItemStruct);
@@ -14,11 +12,11 @@ pub fn handler(args: TokenStream, input: TokenStream) -> TokenStream {
         .iter()
         .map(|c| to_token(c, &ident))
         .collect::<Vec<_>>();
-    let tokens = quote! {
+
+    quote! {
         #(#new_tokens)*
         #item
-    };
-    TokenStream::from(tokens)
+    }
 }
 
 macro_rules! parse {
@@ -67,7 +65,7 @@ fn parse_args(args: &TokenStream) -> Vec<Constraint> {
         .map(|arg| {
             let standarg: String = arg
                 .to_string()
-                .replace("\"", "")
+                .replace('\\', "")
                 .chars()
                 .filter(|c| !c.is_whitespace())
                 .collect();
