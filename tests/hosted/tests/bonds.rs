@@ -76,6 +76,13 @@ async fn margin() -> Result<()> {
         ],
     };
 
+    // set a lend order on the book
+    let lender = BondsUser::<NoProxy>::new_funded(manager.clone()).await?;
+    let lend_params = OrderAmount::params_from_quote_amount_rate(500, 1_500);
+
+    lender.lend_order(lend_params, &vec![]).await?;
+    let posted_lend = manager.load_orderbook().await?.bids()?[0];
+
     let user = BondsUser::new_with_proxy_funded(manager.clone(), wallet, proxy.clone())
         .await
         .unwrap();
@@ -85,16 +92,7 @@ async fn margin() -> Result<()> {
     assert_eq!(borrower_account.bond_manager, manager.ix_builder.manager());
 
     // place a borrow order
-    let borrow_amount = OrderAmount::from_quote_amount_rate(1_000, 2_000);
-    let borrow_params = OrderParams {
-        max_bond_ticket_qty: borrow_amount.base,
-        max_underlying_token_qty: borrow_amount.quote,
-        limit_price: borrow_amount.price,
-        match_limit: 1,
-        post_only: false,
-        post_allowed: true,
-        auto_stake: true,
-    };
+    let borrow_params = OrderAmount::params_from_quote_amount_rate(1_000, 2_000);
     let mut ixs = vec![
         pricer.set_oracle_price_tx(&collateral, 1.0).await.unwrap(),
         pricer
@@ -102,23 +100,35 @@ async fn margin() -> Result<()> {
             .await
             .unwrap(),
     ];
-    ixs.extend(user.margin_borrow_order(borrow_params).await.unwrap());
+    ixs.extend(
+        user.margin_borrow_order(borrow_params, &vec![])
+            .await
+            .unwrap(),
+    );
     client
         .send_and_confirm_condensed_in_order(ixs)
         .await
         .unwrap();
 
+    let obligation = user.load_obligation(&vec![]).await?;
+    assert_eq!(
+        obligation.borrower_account,
+        manager.ix_builder.margin_user_account(user.proxy.pubkey())
+    );
+    assert_eq!(obligation.balance, posted_lend.base_quantity);
+
     let borrower_account = user.load_margin_user().await.unwrap();
     let posted_order = manager.load_orderbook().await?.asks()?[0];
+    assert_eq!(borrower_account.debt.pending(), posted_order.base_quantity,);
     assert_eq!(
         borrower_account.debt.total(),
-        Fp32::upcast_fp32(posted_order.price())
-            .decimal_u64_mul(posted_order.base_quantity)
-            .unwrap()
+        posted_order.base_quantity + obligation.balance
     );
 
     user.settle().await?;
-    // TODO: assert balances
+    let assets = user.load_margin_user().await?.assets;
+    assert_eq!(assets.entitled_tickets + assets.entitled_tokens, 0);
+    // TODO: assert balances on claims and user wallet
 
     Ok(())
 }
@@ -435,7 +445,10 @@ async fn margin_borrow() -> Result<()> {
             .set_oracle_price_tx(&manager.ix_builder.token_mint(), 1.0)
             .await?,
     ]
-    .cat(user.margin_borrow_order(underlying(1_000, 2_000)).await?)
+    .cat(
+        user.margin_borrow_order(underlying(1_000, 2_000), &vec![])
+            .await?,
+    )
     .send_and_confirm_condensed_in_order(&client)
     .await?;
 
@@ -493,7 +506,7 @@ async fn margin_borrow_then_margin_lend() -> Result<()> {
     ]
     .cat(
         borrower
-            .margin_borrow_order(underlying(1_000, 2_000))
+            .margin_borrow_order(underlying(1_000, 2_000), &vec![])
             .await?,
     )
     .send_and_confirm_condensed_in_order(&client)
@@ -566,7 +579,7 @@ async fn margin_lend_then_margin_borrow() -> Result<()> {
     ]
     .cat(
         borrower
-            .margin_borrow_order(underlying(1_000, 2_000))
+            .margin_borrow_order(underlying(1_000, 2_000), &vec![])
             .await?,
     )
     .send_and_confirm_condensed_in_order(&client)

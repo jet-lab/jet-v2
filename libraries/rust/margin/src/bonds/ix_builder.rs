@@ -3,7 +3,6 @@ use std::sync::Arc;
 use anchor_lang::{InstructionData, ToAccountMetas};
 use jet_bonds::{margin::state::Obligation, seeds, tickets::instructions::StakeBondTicketsParams};
 use jet_simulation::solana_rpc_api::SolanaRpcClient;
-use rand::rngs::OsRng;
 use solana_sdk::{
     instruction::{AccountMeta, Instruction},
     pubkey::Pubkey,
@@ -20,8 +19,6 @@ pub use jet_bonds::{
 };
 
 use crate::ix_builder::get_metadata_address;
-
-use super::event_builder::make_seed;
 
 use super::error::{client_err, BondsIxError, Result};
 
@@ -608,20 +605,21 @@ impl BondsIxBuilder {
         &self,
         margin_account: Pubkey,
         params: OrderParams,
+        seed: &[u8],
     ) -> Result<Instruction> {
         let margin_user = self.margin_user(margin_account);
-        let seed = make_seed(&mut OsRng::default());
+
         let data = jet_bonds::instruction::MarginBorrowOrder {
             params,
-            seed: seed.clone(),
+            seed: seed.to_vec(),
         }
         .data();
         let accounts = jet_bonds::accounts::MarginBorrowOrder {
             orderbook_mut: self.orderbook_mut()?,
             margin_user: margin_user.address,
-            obligation: bonds_pda(&Obligation::make_seeds(margin_user.address.as_ref(), &seed)),
             margin_account,
             claims: margin_user.claims,
+            obligation: self.obligation_key(&margin_user.address, seed),
             claims_mint: self.claims,
             collateral: margin_user.collateral,
             collateral_mint: self.collateral,
@@ -904,6 +902,9 @@ impl BondsIxBuilder {
             ticket_holder.as_ref(),
             seed,
         ])
+    }
+    pub fn obligation_key(&self, borrower_account: &Pubkey, seed: &[u8]) -> Pubkey {
+        bonds_pda(&Obligation::make_seeds(borrower_account.as_ref(), seed))
     }
 
     pub fn margin_user_account(&self, owner: Pubkey) -> Pubkey {

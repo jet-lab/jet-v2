@@ -23,8 +23,11 @@ pub struct MarginUser {
     /// which are internal to bonds, such as SplitTicket, ClaimTicket, and open orders.
     /// this does *not* represent underlying tokens or bond ticket tokens, those are registered independently in margin
     pub collateral: Pubkey,
-
+    /// The `settle` instruction is permissionless, therefore the user must specify upon margin account creation
+    /// the address to send owed tokens
     pub underlying_settlement: Pubkey,
+    /// The `settle` instruction is permissionless, therefore the user must specify upon margin account creation
+    /// the address to send owed tickets
     pub ticket_settlement: Pubkey,
     /// The amount of debt that must be collateralized or repaid
     /// This debt is expressed in terms of the underlying token - not bond tickets
@@ -92,10 +95,6 @@ impl Debt {
         Ok(seqno)
     }
 
-    pub fn cancel_borrow_order(&mut self, amount: u64) -> Result<()> {
-        self.pending.try_add_assign(amount)
-    }
-
     pub fn new_obligation_from_fill(
         &mut self,
         amount: u64,
@@ -151,6 +150,10 @@ impl Debt {
     pub fn is_past_due(&self) -> bool {
         self.outstanding_obligations() > 0
             && self.next_obligation_maturity <= Clock::get().unwrap().unix_timestamp
+    }
+
+    pub fn pending(&self) -> u64 {
+        self.pending
     }
 }
 

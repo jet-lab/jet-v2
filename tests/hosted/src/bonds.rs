@@ -15,7 +15,7 @@ use async_trait::async_trait;
 
 use jet_bonds::{
     control::state::BondManager,
-    margin::state::MarginUser,
+    margin::state::{MarginUser, Obligation},
     orderbook::state::{event_queue_len, orderbook_slab_len, CallbackInfo, OrderParams},
     tickets::state::{ClaimTicket, SplitTicket},
 };
@@ -744,11 +744,12 @@ impl<P: Proxy> BondsUser<P> {
     pub async fn margin_borrow_order(
         &self,
         params: OrderParams,
+        seed: &[u8],
     ) -> Result<Vec<TransactionBuilder>> {
-        let borrow = self
-            .manager
-            .ix_builder
-            .margin_borrow_order(self.proxy.pubkey(), params)?;
+        let borrow =
+            self.manager
+                .ix_builder
+                .margin_borrow_order(self.proxy.pubkey(), params, seed)?;
         self.proxy
             .refresh_and_invoke_signed(borrow, clone(&self.owner))
             .await
@@ -806,7 +807,15 @@ impl<P: Proxy> BondsUser<P> {
             .ix_builder
             .split_ticket_key(&self.proxy.pubkey(), seed)
     }
-
+    pub fn obligation_key(&self, seed: &[u8]) -> Pubkey {
+        let borrower_account = self
+            .manager
+            .ix_builder
+            .margin_user_account(self.proxy.pubkey());
+        self.manager
+            .ix_builder
+            .obligation_key(&borrower_account, seed)
+    }
     pub async fn load_claim_ticket(&self, seed: &[u8]) -> Result<ClaimTicket> {
         let key = self.claim_ticket_key(seed);
 
@@ -818,7 +827,11 @@ impl<P: Proxy> BondsUser<P> {
 
         self.manager.load_anchor(&key).await
     }
+    pub async fn load_obligation(&self, seed: &[u8]) -> Result<Obligation> {
+        let key = self.obligation_key(seed);
 
+        self.manager.load_anchor(&key).await
+    }
     /// loads the current state of the user token wallet
     pub async fn tokens(&self) -> Result<u64> {
         let key = get_associated_token_address(
@@ -907,6 +920,22 @@ impl OrderAmount {
             base,
             quote: u64::MAX,
             price: price.downcast_u64().unwrap(),
+        }
+    }
+
+    pub fn params_from_quote_amount_rate(amount: u64, rate_bps: u64) -> OrderParams {
+        Self::from_quote_amount_rate(amount, rate_bps).default_order_params()
+    }
+
+    pub fn default_order_params(&self) -> OrderParams {
+        OrderParams {
+            max_bond_ticket_qty: self.base,
+            max_underlying_token_qty: self.quote,
+            limit_price: self.price,
+            match_limit: 1_000,
+            post_only: false,
+            post_allowed: true,
+            auto_stake: true,
         }
     }
 }
