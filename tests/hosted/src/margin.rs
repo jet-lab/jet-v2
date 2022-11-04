@@ -288,7 +288,7 @@ impl MarginClient {
 pub struct MarginUser {
     pub tx: MarginTxBuilder,
     pub signer: Keypair,
-    rpc: Arc<dyn SolanaRpcClient>,
+    pub rpc: Arc<dyn SolanaRpcClient>,
 }
 
 impl Clone for MarginUser {
@@ -554,5 +554,10 @@ impl MarginUser {
                 .await?,
         )
         .await
+    }
+
+    pub async fn get_account_state(&self) -> Result<MarginAccount, Error> {
+        let account = self.rpc.get_account(self.address()).await?.unwrap();
+        Ok(MarginAccount::try_deserialize(&mut &account.data[..])?)
     }
 }

@@ -19,9 +19,11 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use anchor_lang::{
-    prelude::{msg, Clock, SolanaSysvar},
+    prelude::{msg, AccountInfo, Clock, Pubkey, SolanaSysvar},
     solana_program::instruction::TRANSACTION_LEVEL_STACK_HEIGHT,
+    Key,
 };
+use anchor_spl::token::{self, TokenAccount};
 use bytemuck::{Pod, Zeroable};
 
 use crate::{
@@ -179,6 +181,75 @@ impl std::fmt::Debug for BitSet {
         f.debug_tuple("BitSet")
             .field(&format_args!("{:#010b}", &self.0))
             .finish()
+    }
+}
+
+/// Utility for observing how a token account may be changed by an instruction
+pub struct TokenAccountObserver {
+    observing: Vec<(Pubkey, [u8; TokenAccount::LEN])>,
+    owner: Pubkey,
+}
+
+impl TokenAccountObserver {
+    pub fn new(owner: Pubkey) -> Self {
+        Self {
+            observing: Vec::with_capacity(8),
+            owner,
+        }
+    }
+
+    /// Save the current account states to local memory
+    pub fn record_current_states<'a, 'b: 'a>(
+        &mut self,
+        accounts: impl IntoIterator<Item = &'a AccountInfo<'b>>,
+    ) {
+        let authority = self.owner;
+
+        self.observing
+            .extend(accounts.into_iter().filter_map(|acc| {
+                if *acc.owner != token::ID
+                    || acc.data_len() != TokenAccount::LEN
+                    || token::accessor::authority(acc).unwrap() != authority
+                {
+                    return None;
+                }
+
+                let mut data = [0u8; TokenAccount::LEN];
+                data.copy_from_slice(*acc.try_borrow_data().unwrap());
+
+                Some((acc.key(), data))
+            }));
+    }
+
+    /// Compare the current account states with the state saved previously with
+    /// `record_current_states`.
+    ///
+    /// This validates that only the token amount field has changed, and any other
+    /// data in the token account remains the same.
+    pub fn validate_state_changes<'a, 'b: 'a>(
+        &self,
+        accounts: impl IntoIterator<Item = &'a AccountInfo<'b>>,
+    ) -> Result<(), ErrorCode> {
+        let mut token_account_data = [0u8; TokenAccount::LEN];
+
+        for account in accounts {
+            let recorded = match self.observing.iter().find(|(addr, _)| addr == account.key) {
+                None => continue,
+                Some((_, data)) => data,
+            };
+
+            let current = account.try_borrow_data().unwrap();
+
+            token_account_data.copy_from_slice(recorded);
+            token_account_data[64..72].copy_from_slice(&current[64..72]);
+
+            if token_account_data != *current {
+                msg!("token account {} has invalid changes", account.key);
+                return Err(ErrorCode::InvalidAccountModification);
+            }
+        }
+
+        Ok(())
     }
 }
 

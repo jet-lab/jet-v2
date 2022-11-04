@@ -19,7 +19,7 @@ use std::{collections::BTreeMap, convert::TryInto};
 
 use crate::{
     events::{PositionClosed, PositionEvent, PositionRegistered, PositionTouched},
-    util::{log_on_error, Require},
+    util::{log_on_error, Require, TokenAccountObserver},
     AccountPositionKey, AdapterPositionFlags, Approver, ErrorCode, MarginAccount, SignerSeeds,
     TokenConfig,
 };
@@ -107,7 +107,9 @@ pub struct PriceChangeInfo {
 /// * `signed` - sign with the margin account
 pub fn invoke<'info>(ctx: &InvokeAdapter<'_, 'info>, data: Vec<u8>) -> Result<Vec<PositionEvent>> {
     let signer = ctx.margin_account.load()?.signer_seeds_owned();
+    let mut token_account_observer = TokenAccountObserver::new(ctx.margin_account.key());
 
+    token_account_observer.record_current_states(ctx.accounts);
     let accounts = ctx
         .accounts
         .iter()
@@ -135,6 +137,8 @@ pub fn invoke<'info>(ctx: &InvokeAdapter<'_, 'info>, data: Vec<u8>) -> Result<Ve
         program::invoke(&instruction, ctx.accounts)?;
     }
     ctx.margin_account.load_mut()?.invocation.end();
+
+    token_account_observer.validate_state_changes(ctx.accounts)?;
 
     handle_adapter_result(ctx)
 }

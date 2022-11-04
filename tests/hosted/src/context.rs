@@ -111,6 +111,10 @@ impl MarginTestContext {
             .send_and_confirm_condensed_in_order(minimal_environment(ctx.payer.pubkey())?)
             .await?;
 
+        ctx.margin
+            .register_adapter_if_unregistered(&spl_token::ID)
+            .await?;
+
         Ok(ctx)
     }
 

@@ -517,6 +517,10 @@ pub enum ErrorCode {
     #[msg("the current instruction was not directly invoked by the margin program")]
     IndirectInvocation,
 
+    /// 141004
+    #[msg("the invocation has made invalid modifications to an account")]
+    InvalidAccountModification,
+
     /// 141010 - Account cannot record any additional positions
     #[msg("account cannot record any additional positions")]
     MaxPositions = 135_010,
