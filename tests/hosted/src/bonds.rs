@@ -793,6 +793,25 @@ impl<P: Proxy> BondsUser<P> {
         let settle = self.manager.ix_builder.margin_settle(self.proxy.pubkey());
         self.client.send_and_confirm_1tx(&[settle], &[]).await
     }
+
+    pub async fn repay(
+        &self,
+        obligation_seed: &[u8],
+        next_obligation_seed: &[u8],
+        amount: u64,
+    ) -> Result<Signature> {
+        let repay = self.manager.ix_builder.margin_repay(
+            &self.proxy.pubkey(),
+            &self.proxy.pubkey(),
+            obligation_seed,
+            next_obligation_seed,
+            amount,
+        );
+
+        self.client
+            .send_and_confirm_1tx(&[self.proxy.invoke_signed(repay)], &[&self.owner])
+            .await
+    }
 }
 
 impl<P: Proxy> BondsUser<P> {

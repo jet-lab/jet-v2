@@ -851,6 +851,30 @@ impl BondsIxBuilder {
 
         Instruction::new_with_bytes(jet_bonds::ID, &data, accounts)
     }
+
+    pub fn margin_repay(
+        &self,
+        payer: &Pubkey,
+        margin_account: &Pubkey,
+        obligation_seed: &[u8],
+        next_obligation_seed: &[u8],
+        amount: u64,
+    ) -> Instruction {
+        let margin_user = self.margin_user(*margin_account);
+        let data = jet_bonds::instruction::Repay { amount }.data();
+        let accounts = jet_bonds::accounts::Repay {
+            borrower_account: margin_user.address,
+            obligation: self.obligation_key(&margin_user.address, obligation_seed),
+            next_obligation: self.obligation_key(&margin_user.address, next_obligation_seed),
+            source: get_associated_token_address(payer, &self.underlying_mint),
+            payer: *payer,
+            underlying_token_vault: self.underlying_token_vault,
+            token_program: spl_token::ID,
+        }
+        .to_account_metas(None);
+
+        Instruction::new_with_bytes(jet_bonds::ID, &data, accounts)
+    }
 }
 
 /// helpful addresses for a MarginUser account

@@ -41,7 +41,7 @@ async fn non_margin_orders_through_margin_account() -> Result<()> {
 #[tokio::test(flavor = "multi_thread")]
 #[serial_test::serial]
 #[allow(unused_variables)] //todo remove this once fixme is addressed
-async fn margin() -> Result<()> {
+async fn margin_repay() -> Result<()> {
     let ctx = test_context().await;
     let manager = Arc::new(BondsTestManager::full(ctx.rpc.clone()).await.unwrap());
     let client = manager.client.clone();
@@ -129,6 +129,33 @@ async fn margin() -> Result<()> {
     let assets = user.load_margin_user().await?.assets;
     assert_eq!(assets.entitled_tickets + assets.entitled_tokens, 0);
     // TODO: assert balances on claims and user wallet
+
+    let pre_repayment_obligation = user.load_obligation(&vec![]).await?;
+    let pre_repayment_debt = user.load_margin_user().await?.debt;
+    let repayment = 400;
+
+    user.repay(&vec![], &vec![0], repayment).await?;
+
+    let post_repayment_obligation = user.load_obligation(&vec![]).await?;
+    let post_repayment_debt = user.load_margin_user().await?.debt;
+    assert_eq!(
+        pre_repayment_obligation.balance - repayment,
+        post_repayment_obligation.balance
+    );
+    assert_eq!(
+        pre_repayment_debt.total() - repayment,
+        post_repayment_debt.total()
+    );
+
+    user.repay(&vec![], &vec![0], post_repayment_obligation.balance)
+        .await?;
+
+    let repaid_obligation_debt = user.load_margin_user().await?.debt;
+    assert!(user.load_obligation(&vec![]).await.is_err());
+    assert_eq!(
+        repaid_obligation_debt.total(),
+        repaid_obligation_debt.pending()
+    );
 
     Ok(())
 }
