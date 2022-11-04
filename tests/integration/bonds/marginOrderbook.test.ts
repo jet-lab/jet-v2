@@ -14,7 +14,6 @@ import {
   bnToBigInt
 } from '@jet-lab/margin';
 
-import { PythClient } from '../pyth/pythClient';
 import {
   airdropToken,
   createAuthority,
@@ -30,7 +29,7 @@ import {
 
 import CONFIG from '../../../app/public/localnet.config.json';
 
-import { BondMarket, JetBonds, JetBondsIdl, MarginUserInfo, rate_to_price } from '@jet-lab/jet-bonds-client';
+import { BondMarket, JetBonds, JetBondsIdl, lendNow, MarginUserInfo, rate_to_price } from '@jet-lab/jet-bonds-client';
 import { createAssociatedTokenAccountInstruction, getAssociatedTokenAddress } from '@solana/spl-token';
 
 describe('margin bonds borrowing', async () => {
@@ -44,30 +43,8 @@ describe('margin bonds borrowing', async () => {
   let USDC: TestToken = null as never;
   let BTC: TestToken = null as never;
 
-  let USDC_oracle: Keypair[];
-  let ticket_oracle: Keypair[];
-  let SOL_oracle: Keypair[];
-
-  const pythClient = new PythClient({
-    pythProgramId: 'FT9EZnpdo3tPfUCGn8SBkvN9DMpSStAg3YvAqvYrtSvL',
-    url: 'http://127.0.0.1:8899/'
-  });
-
   const ONE_USDC = 1_000_000;
   const ONE_BTC = 10 ** CONFIG.tokens.Bitcoin.decimals;
-  const ONE_SOL: number = LAMPORTS_PER_SOL;
-
-  const DEFAULT_POOL_CONFIG: MarginPoolConfigData = {
-    borrowRate0: 10,
-    borrowRate1: 20,
-    borrowRate2: 30,
-    borrowRate3: 40,
-    utilizationRate1: 10,
-    utilizationRate2: 20,
-    managementFeeRate: 10,
-    managementFeeCollectThreshold: new BN(2),
-    flags: new BN(2) // ALLOW_LENDING
-  };
 
   let marginPool_USDC: Pool;
   let marginPool_BTC: Pool;
@@ -314,20 +291,17 @@ describe('margin bonds borrowing', async () => {
 
   const loanOfferParams = {
     amount: new BN(1_500),
-    rate: new BN(1_000)
+    rate: new BN(500)
   };
 
-  it('margin users place lend orders', async () => {
-    // give margin spl wallets some liquidity
-    await airdropMarginWallet(marginAccount_A, USDC, 100_000);
-    await airdropMarginWallet(marginAccount_B, USDC, 100_000);
+  const borrowRequestParams = {
+    amount: new BN(1000),
+    rate: new BN(100)
+  };
 
-    const lendNowA = await bondMarket.lendNowIx(
-      marginAccount_A,
-      new BN(1_000),
-      wallet_a.payer.publicKey,
-      Uint8Array.from([0, 0, 0, 0])
-    );
+  it('places market maker orders', async () => {
+    // LIMIT LEND ORDER
+    await airdropMarginWallet(marginAccount_B, USDC, 100_000);
     const offerLoanB = await bondMarket.offerLoanIx(
       marginAccount_B,
       loanOfferParams.amount,
@@ -335,25 +309,10 @@ describe('margin bonds borrowing', async () => {
       wallet_b.payer.publicKey,
       Uint8Array.from([0, 0, 0, 0])
     );
-    const invokeA = await viaMargin(marginAccount_A, lendNowA);
-    const invokeB = await viaMargin(marginAccount_B, offerLoanB);
+    const limitLend = await viaMargin(marginAccount_B, offerLoanB);
+    await provider_b.sendAndConfirm(makeTx([limitLend]), [wallet_b.payer]);
 
-    await provider_a.sendAndConfirm(makeTx([invokeA]), [wallet_a.payer]);
-    await provider_b.sendAndConfirm(makeTx([invokeB]), [wallet_b.payer]);
-  });
-
-  const borrowRequestParams = {
-    amount: new BN(1000),
-    rate: new BN(1000)
-  };
-
-  it('margin users place borrow orders', async () => {
-    const borrowNowA = await bondMarket.borrowNowIx(
-      marginAccount_A,
-      wallet_a.payer.publicKey,
-      new BN(1000),
-      Uint8Array.from([0, 0, 0, 0])
-    );
+    // LIMIT BORROW ORDER
     const requestBorrowB = await bondMarket.requestBorrowIx(
       marginAccount_B,
       wallet_b.payer.publicKey,
@@ -361,50 +320,63 @@ describe('margin bonds borrowing', async () => {
       borrowRequestParams.rate,
       Uint8Array.from([0, 0, 0, 0])
     );
+    const refresh = await viaMargin(marginAccount_B, await bondMarket.refreshPosition(marginAccount_B, false));
+    const marketLend = await viaMargin(marginAccount_B, requestBorrowB);
+    await provider_b.sendAndConfirm(makeTx([refresh, marketLend]), [wallet_b.payer]);
+  })
 
-    await marginPool_USDC.marginRefreshPositionPrice(marginAccount_A);
-    await marginPool_USDC.marginRefreshPositionPrice(marginAccount_B);
-    await marginPool_BTC.marginRefreshPositionPrice(marginAccount_A);
-    await marginPool_BTC.marginRefreshPositionPrice(marginAccount_B);
-    await marginAccount_A.refresh();
-    await marginAccount_B.refresh();
+  const lendNowAmount = new BN(100)
+  const borrowNowAmount = new BN(100)
+  it('places market taker orders', async () => {
+    await airdropMarginWallet(marginAccount_A, USDC, 100_000);
+    const lendNowA = await bondMarket.lendNowIx(
+      marginAccount_A,
+      lendNowAmount,
+      wallet_a.payer.publicKey,
+      Uint8Array.from([0, 0, 0, 0])
+    );
+    const lendNow = await viaMargin(marginAccount_A, lendNowA);
+    await provider_a.sendAndConfirm(makeTx([lendNow]), [wallet_a.payer]);
 
+    const borrowNowA = await bondMarket.borrowNowIx(
+      marginAccount_A,
+      wallet_a.payer.publicKey,
+      borrowNowAmount,
+      Uint8Array.from([0, 0, 0, 0])
+    );
+    const borrowNow = await viaMargin(marginAccount_A, borrowNowA);
     const refreshA = await viaMargin(marginAccount_A, await bondMarket.refreshPosition(marginAccount_A, false));
-    const refreshB = await viaMargin(marginAccount_B, await bondMarket.refreshPosition(marginAccount_B, false));
-    const invokeA = await viaMargin(marginAccount_A, borrowNowA);
-    const invokeB = await viaMargin(marginAccount_B, requestBorrowB);
-
-    // TODO: refresh position is not able to get a properly formatted price from the oracle
-    await provider_a.sendAndConfirm(makeTx([refreshA, invokeA]), [wallet_a.payer]);
-    await provider_b.sendAndConfirm(makeTx([refreshB, invokeB]), [wallet_b.payer]);
-  });
+    await provider_a.sendAndConfirm(makeTx([refreshA, borrowNow]), [wallet_a.payer]);
+  })
 
   let loanId: Uint8Array;
 
   it('loads orderbook and has correct orders', async () => {
     const orderbook = await bondMarket.fetchOrderbook();
     const offeredLoan = orderbook.bids[0];
-    // const requestedBorrow = orderbook.asks[0]
+    const requestedBorrow = orderbook.asks[0]
 
     loanId = offeredLoan.order_id;
 
     assert(
       offeredLoan.limit_price ===
-        rate_to_price(bnToBigInt(loanOfferParams.rate), bnToBigInt(bondMarket.info.lendDuration))
+      rate_to_price(bnToBigInt(loanOfferParams.rate), bnToBigInt(bondMarket.info.lendDuration))
     );
 
-    // TODO this test requires utilization of the wasm math utils to properly derive order values to be found on the orderbook
-    // assert(
-    //   offeredLoan.quote_size === loanQuote,
-    //   'Quote amount does not match given params, Given: [' + loanQuote + ']; On book: [' + offeredLoan.quote_size + ']'
-    // );
+    const expectedBorrowOrderSize = Number(offeredLoan.quote_size)
+    const actualBorrowOrderSize = loanOfferParams.amount.sub(borrowNowAmount).toNumber()
+    assert(
+      expectedBorrowOrderSize === actualBorrowOrderSize,
+      'Quote amount does not match given params, Expected: [' + expectedBorrowOrderSize + ']; On book: [' + actualBorrowOrderSize + ']'
+    );
 
-    // TODO this requires borrow orders to properly post
-    // assert(requestedBorrow.quote_size === bnToBigInt(borrowRequestParams.amount))
-    // assert(
-    //   requestedBorrow.limit_price ===
-    //     rate_to_price(bnToBigInt(borrowRequestParams.rate), bnToBigInt(bondMarket.info.duration))
-    // )
+    const expectedLendOrderSize = Number(requestedBorrow.quote_size)
+    const actualLendOrderSize = borrowRequestParams.amount.sub(lendNowAmount).toNumber()
+    assert(expectedLendOrderSize === actualLendOrderSize)
+    assert(
+      requestedBorrow.limit_price ===
+      rate_to_price(bnToBigInt(borrowRequestParams.rate), bnToBigInt(bondMarket.info.borrowDuration))
+    )
   });
 
   it('margin users cancel orders', async () => {
