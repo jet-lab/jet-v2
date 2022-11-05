@@ -28,10 +28,12 @@ use solana_sdk::{
 
 use crate::{
     bonds::BondsIxBuilder,
+    cat,
     ix_builder::{
+        get_metadata_address,
         test_service::{
             self, derive_bond_ticket_mint, derive_pyth_price, derive_pyth_product,
-            derive_token_mint, spl_swap_pool_create,
+            derive_token_mint, if_not_initialized, spl_swap_pool_create,
         },
         ControlIxBuilder, MarginPoolConfiguration,
     },
@@ -186,8 +188,7 @@ pub fn init_environment(
 ) -> anyhow::Result<Vec<TransactionBuilder>> {
     let mut txs = vec![];
 
-    txs.push(global_initialize_instructions(config.authority));
-
+    txs.extend(global_initialize_instructions(config.authority));
     txs.extend(create_global_adapter_register_tx(config.authority));
     txs.extend(create_token_tx(config));
     txs.extend(create_airspace_tx(config, rent)?);
@@ -198,28 +199,19 @@ pub fn init_environment(
 
 /// Basic environment setup for hosted tests that has only the necessary global
 /// state initialized
-pub fn minimal_environment(authority: Pubkey) -> anyhow::Result<Vec<TransactionBuilder>> {
-    let mut txs = vec![];
-
-    txs.push(global_initialize_instructions(authority));
-    txs.extend(create_global_adapter_register_tx(authority));
-
-    // todo move airspace creation into individual tests
-    txs.push(AirspaceAdmin::new("default", authority, authority).create_airspace(false));
-
-    Ok(txs)
+pub fn minimal_environment(authority: Pubkey) -> Vec<TransactionBuilder> {
+    cat![
+        global_initialize_instructions(authority),
+        create_global_adapter_register_tx(authority),
+    ]
 }
 
 fn create_global_adapter_register_tx(authority: Pubkey) -> Vec<TransactionBuilder> {
     let ctrl_ix = ControlIxBuilder::new(authority);
-    let instructions = ADAPTERS
+    ADAPTERS
         .iter()
-        .map(|adapter| ctrl_ix.register_adapter(adapter))
-        .collect();
-    vec![TransactionBuilder {
-        instructions,
-        signers: vec![],
-    }]
+        .map(|a| if_not_initialized(get_metadata_address(a), ctrl_ix.register_adapter(a)).into())
+        .collect()
 }
 
 fn create_swap_pools_tx(config: &EnvironmentConfig) -> anyhow::Result<Vec<TransactionBuilder>> {

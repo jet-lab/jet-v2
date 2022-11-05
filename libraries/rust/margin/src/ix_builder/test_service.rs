@@ -34,6 +34,8 @@ use jet_test_service::{
     TokenCreateParams,
 };
 
+use crate::util::data::Concat;
+
 /// Get instruction to create a token as described
 pub fn token_create(payer: &Pubkey, params: &TokenCreateParams) -> Instruction {
     let mint = derive_token_mint(&params.name);
@@ -181,6 +183,23 @@ pub fn spl_swap_pool_create(payer: &Pubkey, token_a: &Pubkey, token_b: &Pubkey) 
         program_id: jet_test_service::ID,
         accounts,
         data: jet_test_service::instruction::SplSwapPoolCreate {}.data(),
+    }
+}
+
+/// if the account is not initialized, invoke the instruction
+pub fn if_not_initialized(account_to_check: Pubkey, ix: Instruction) -> Instruction {
+    Instruction {
+        program_id: jet_test_service::ID,
+        accounts: jet_test_service::accounts::IfNotInitialized {
+            program: ix.program_id,
+            account_to_check,
+        }
+        .to_account_metas(None)
+        .cat(ix.accounts),
+        data: jet_test_service::instruction::IfNotInitialized {
+            instruction: ix.data,
+        }
+        .data(),
     }
 }
 

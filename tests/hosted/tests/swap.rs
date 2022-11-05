@@ -109,7 +109,7 @@ async fn setup_environment(ctx: &MarginTestContext) -> Result<TestEnv, Error> {
 async fn swap_test_impl(swap_program_id: Pubkey) -> Result<(), anyhow::Error> {
     // Get the mocked runtime
     let ctx = test_context().await;
-    let env = setup_environment(ctx).await?;
+    let env = setup_environment(&ctx).await?;
 
     // Create our two user wallets, with some SOL funding to get started
     let wallet_a = create_wallet(&ctx.rpc, 10 * LAMPORTS_PER_SOL).await?;

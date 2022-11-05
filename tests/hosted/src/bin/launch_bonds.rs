@@ -15,7 +15,7 @@ lazy_static::lazy_static! {
 async fn main() -> Result<()> {
     let rpc = Arc::new(RpcConnection::new_local_funded().await?);
 
-    let margin = MarginClient::new(rpc.clone());
+    let margin = MarginClient::new(rpc.clone(), "default");
     margin.init_globals().await?;
     margin.create_airspace_if_missing(false).await?;
     margin.create_authority_if_missing().await?;

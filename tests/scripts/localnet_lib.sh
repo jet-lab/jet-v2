@@ -70,7 +70,7 @@ start-validator() {
         --bpf-program $ORCAv1_PID $ORCAv1_SO \
         --bpf-program $ORCAv2_PID $ORCAv2_SO \
         --quiet \
-        $@
+        $@ &
     VALIDATOR_PID=$!
     sleep ${VALIDATOR_STARTUP:-5}
 }
@@ -80,13 +80,13 @@ start-oracle() {
 }
 
 resume-validator() {
-    start-validator &
+    start-validator
     start-oracle
     wait $VALIDATOR_PID
 }
 
 start-new-validator() {
-    start-validator -r &
+    start-validator -r
     cargo run --bin jetctl -- test init-env -ul --no-confirm localnet.toml
     cargo run --bin jetctl -- test generate-app-config -ul --no-confirm localnet.toml -o app/public/localnet.config.json
     start-oracle
@@ -94,7 +94,7 @@ start-new-validator() {
 }
 
 with-validator() {
-    start-validator -r &
+    start-validator -r
     if [[ ${SOLANA_LOGS:-false} == true ]]; then
         solana -ul logs &
     fi
@@ -102,6 +102,12 @@ with-validator() {
 }
 
 kill_validator() {
-    [ -z $VALIDATOR_PID ] || (kill $VALIDATOR_PID; pkill solana-test-validator; echo)
+    set +e
+    [ -z $VALIDATOR_PID ] || (
+        kill $VALIDATOR_PID
+        pkill solana-test-validator
+        killall solana-test-validator
+    )
+    return 0
 }
 trap kill_validator EXIT SIGHUP SIGINT SIGTERM

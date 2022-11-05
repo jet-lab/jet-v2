@@ -288,7 +288,7 @@ async fn non_margin_orders_for_proxy<P: Proxy + GenerateProxy>(
 }
 
 async fn create_bonds_margin_user(
-    ctx: &MarginTestContext,
+    ctx: &Arc<MarginTestContext>,
     manager: Arc<BondsTestManager>,
     pool_positions: Vec<(Pubkey, u64, u64)>,
 ) -> BondsUser<RefreshingProxy<MarginIxBuilder>> {
@@ -338,10 +338,10 @@ async fn margin_borrow() -> Result<()> {
     let ctx = test_context().await;
     let manager = Arc::new(BondsTestManager::full(ctx.rpc.clone()).await.unwrap());
     let client = manager.client.clone();
-    let ([collateral], _, pricer) = tokens(ctx).await.unwrap();
+    let ([collateral], _, pricer) = tokens(&ctx).await.unwrap();
 
     let user =
-        create_bonds_margin_user(ctx, manager.clone(), vec![(collateral, 0, u64::MAX / 2)]).await;
+        create_bonds_margin_user(&ctx, manager.clone(), vec![(collateral, 0, u64::MAX / 2)]).await;
 
     vec![
         pricer.set_oracle_price_tx(&collateral, 1.0).await.unwrap(),
@@ -372,7 +372,7 @@ async fn margin_lend() -> Result<()> {
     let manager = Arc::new(BondsTestManager::full(ctx.rpc.clone()).await.unwrap());
     let client = manager.client.clone();
 
-    let user = create_bonds_margin_user(ctx, manager.clone(), vec![]).await;
+    let user = create_bonds_margin_user(&ctx, manager.clone(), vec![]).await;
 
     user.margin_lend_order(underlying(1_000, 2_000), &[])
         .await?
@@ -393,11 +393,11 @@ async fn margin_borrow_then_margin_lend() -> Result<()> {
     let ctx = test_context().await;
     let manager = Arc::new(BondsTestManager::full(ctx.rpc.clone()).await.unwrap());
     let client = manager.client.clone();
-    let ([collateral], _, pricer) = tokens(ctx).await.unwrap();
+    let ([collateral], _, pricer) = tokens(&ctx).await.unwrap();
 
     let borrower =
-        create_bonds_margin_user(ctx, manager.clone(), vec![(collateral, 0, u64::MAX / 2)]).await;
-    let lender = create_bonds_margin_user(ctx, manager.clone(), vec![]).await;
+        create_bonds_margin_user(&ctx, manager.clone(), vec![(collateral, 0, u64::MAX / 2)]).await;
+    let lender = create_bonds_margin_user(&ctx, manager.clone(), vec![]).await;
 
     vec![
         pricer.set_oracle_price_tx(&collateral, 1.0).await.unwrap(),
@@ -455,11 +455,11 @@ async fn margin_lend_then_margin_borrow() -> Result<()> {
     let ctx = test_context().await;
     let manager = Arc::new(BondsTestManager::full(ctx.rpc.clone()).await.unwrap());
     let client = manager.client.clone();
-    let ([collateral], _, pricer) = tokens(ctx).await.unwrap();
+    let ([collateral], _, pricer) = tokens(&ctx).await.unwrap();
 
     let borrower =
-        create_bonds_margin_user(ctx, manager.clone(), vec![(collateral, 0, u64::MAX / 2)]).await;
-    let lender = create_bonds_margin_user(ctx, manager.clone(), vec![]).await;
+        create_bonds_margin_user(&ctx, manager.clone(), vec![(collateral, 0, u64::MAX / 2)]).await;
+    let lender = create_bonds_margin_user(&ctx, manager.clone(), vec![]).await;
 
     lender
         .margin_lend_order(underlying(1_000, 2_000), &[])
@@ -519,7 +519,7 @@ async fn margin_sell_tickets() -> Result<()> {
     let manager = Arc::new(BondsTestManager::full(ctx.rpc.clone()).await.unwrap());
     let client = manager.client.clone();
 
-    let user = create_bonds_margin_user(ctx, manager.clone(), vec![]).await;
+    let user = create_bonds_margin_user(&ctx, manager.clone(), vec![]).await;
     user.convert_tokens(10_000).await.unwrap();
 
     user.margin_sell_tickets_order(tickets(1_200, 2_000))

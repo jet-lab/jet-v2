@@ -71,7 +71,7 @@ async fn setup_environment(ctx: &MarginTestContext) -> Result<TestEnv, Error> {
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn rounding_poc() -> Result<()> {
     let ctx = test_context().await;
-    let env = setup_environment(ctx).await.unwrap();
+    let env = setup_environment(&ctx).await.unwrap();
 
     let wallet_a = create_wallet(&ctx.rpc, 10 * LAMPORTS_PER_SOL)
         .await

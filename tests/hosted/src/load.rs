@@ -45,9 +45,9 @@ pub async fn unhealthy_accounts_load_test(
     } = scenario;
     ctx.margin.set_liquidator_metadata(liquidator, true).await?;
     println!("creating tokens");
-    let (mut mints, _, pricer) = create_tokens(ctx, mint_count).await?;
+    let (mut mints, _, pricer) = create_tokens(&ctx, mint_count).await?;
     println!("creating users");
-    let mut users = create_users(ctx, user_count + 1).await?;
+    let mut users = create_users(&ctx, user_count + 1).await?;
     let big_depositor = users.pop().unwrap();
     println!("creating deposits");
     mints

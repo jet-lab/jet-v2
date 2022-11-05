@@ -20,8 +20,9 @@ use solana_sdk::pubkey::Pubkey;
 use crate::{
     bonds::BondsIxBuilder,
     ix_builder::{
-        derive_airspace, AirspaceIxBuilder, ControlIxBuilder, MarginConfigIxBuilder,
-        MarginPoolConfiguration,
+        derive_airspace, derive_governor_id, get_control_authority_address,
+        test_service::if_not_initialized, AirspaceIxBuilder, ControlIxBuilder,
+        MarginConfigIxBuilder, MarginPoolConfiguration,
     },
     solana::transaction::TransactionBuilder,
 };
@@ -224,9 +225,12 @@ pub struct TokenDepositsConfig {
 /// This primarily sets up the root permissions for the protocol. Must be signed by the default
 /// governing address for the protocol. When built with the `testing` feature, the first signer
 /// to submit these instructions becomes set as the governor address.
-pub fn global_initialize_instructions(payer: Pubkey) -> TransactionBuilder {
+pub fn global_initialize_instructions(payer: Pubkey) -> Vec<TransactionBuilder> {
     let as_ix = AirspaceIxBuilder::new("", payer, payer);
     let ctrl_ix = ControlIxBuilder::new_for_authority(payer, payer);
 
-    vec![ctrl_ix.create_authority(), as_ix.create_governor_id()].into()
+    vec![
+        if_not_initialized(get_control_authority_address(), ctrl_ix.create_authority()).into(),
+        if_not_initialized(derive_governor_id(), as_ix.create_governor_id()).into(),
+    ]
 }
