@@ -2,7 +2,7 @@ use std::cell::RefCell;
 use std::sync::{Arc, Mutex};
 
 use anyhow::Error;
-use jet_margin_sdk::solana::transaction::{InverseSendTransactionBuilder, SendTransactionBuilder};
+use jet_margin_sdk::solana::transaction::InverseSendTransactionBuilder;
 use jet_margin_sdk::util::data::With;
 use rand::rngs::mock::StepRng;
 
