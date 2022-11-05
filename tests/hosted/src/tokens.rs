@@ -34,7 +34,7 @@ use solana_sdk::{system_instruction, system_program};
 
 use anchor_lang::{InstructionData, ToAccountMetas};
 
-use jet_proto_math::number_128::Number128;
+use jet_program_common::Number128;
 use jet_simulation::{generate_keypair, send_and_confirm, solana_rpc_api::SolanaRpcClient};
 
 /// Utility for managing the creation of tokens and their prices

@@ -56,10 +56,10 @@ jet-airspace = { path = "../../programs/airspace", features = ["no-entrypoint", 
 jet-test-service = { path = "../../programs/test-service", features = ["no-entrypoint"] }
 
 jet-margin-sdk = { path = "../../libraries/rust/margin", features = ["testing"] }
+jet-program-common = { path = "../../libraries/rust/program-common" }
 
 mock-adapter = { path = "../mock-adapter", features = ["no-entrypoint"] }
 
 jet-simulation = { git = "https://github.com/jet-lab/jet-simulation", branch = "master" }
-jet-proto-math = { git = "https://github.com/jet-lab/program-libraries", branch = "fixed-point-math", features = ["full"] }
 
 itertools = "0.10.3"

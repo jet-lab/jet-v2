@@ -19,7 +19,7 @@ use jet_margin_sdk::{
     util::data::Concat,
 };
 use jet_margin_sdk::{margin_integrator::RefreshingProxy, tx_builder::MarginTxBuilder};
-use jet_proto_math::fixed_point::Fp32;
+use jet_program_common::Fp32;
 
 use solana_sdk::signer::Signer;
 

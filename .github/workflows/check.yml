@@ -21,7 +21,7 @@ jobs:
       - name: Get anchor-test cache
         uses: actions/cache@v3
         with:
-          key: anchor-test
+          key: ${{ runner.os }}-anchor-test-${{ hashFiles('**/Cargo.lock') }}
           path: |
             ~/.cargo/registry/index/
             ~/.cargo/registry/cache/
@@ -50,7 +50,7 @@ jobs:
       - name: Get hosted-tests-localnet cache
         uses: actions/cache@v3
         with:
-          key: hosted-tests-localnet
+          key: ${{ runner.os }}-hosted-tests-localnet-${{ hashFiles('**/Cargo.lock') }}
           path: |
             ~/.cargo/registry/index/
             ~/.cargo/registry/cache/
@@ -76,7 +76,7 @@ jobs:
       - name: Get hosted-tests-localnet cache
         uses: actions/cache@v3
         with:
-          key: hosted-tests-localnet
+          key: ${{ runner.os }}-hosted-tests-localnet-${{ hashFiles('**/Cargo.lock') }}
           path: |
             ~/.cargo/registry/index/
             ~/.cargo/registry/cache/
@@ -101,12 +101,12 @@ jobs:
       - name: Get cargo-lint cache
         uses: actions/cache@v3
         with:
-          key: cargo-lint
+          key: ${{ runner.os }}-cargo-lint-${{ hashFiles('**/Cargo.lock') }}
           path: |
             ~/.cargo/registry/index/
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
-            target/debug
+            target/
 
       - run: ./check cargo-lint
 
@@ -124,7 +124,7 @@ jobs:
       - name: Get cargo-test cache
         uses: actions/cache@v3
         with:
-          key: cargo-test
+          key: ${{ runner.os }}-cargo-test-${{ hashFiles('**/Cargo.lock') }}
           path: |
             ~/.cargo/registry/index/
             ~/.cargo/registry/cache/
@@ -157,7 +157,7 @@ jobs:
       - name: Get anchor-test cache
         uses: actions/cache@v3
         with:
-          key: anchor-test
+          key: ${{ runner.os }}-e2e-${{ hashFiles('**/Cargo.lock') }}
           path: |
             ~/.cargo/registry/index/
             ~/.cargo/registry/cache/

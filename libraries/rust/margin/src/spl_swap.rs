@@ -24,7 +24,7 @@ use std::{
 
 use anchor_lang::AccountDeserialize;
 use anyhow::Result;
-use jet_proto_math::Number128;
+use jet_program_common::Number128;
 use jet_simulation::solana_rpc_api::SolanaRpcClient;
 use solana_sdk::{program_pack::Pack, pubkey::Pubkey};
 use spl_token_swap::state::SwapV1;
