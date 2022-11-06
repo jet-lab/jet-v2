@@ -155,6 +155,10 @@ impl Debt {
     pub fn pending(&self) -> u64 {
         self.pending
     }
+
+    pub fn committed(&self) -> u64 {
+        self.committed
+    }
 }
 
 #[derive(Zeroable, Debug, Clone, AnchorSerialize, AnchorDeserialize, PartialEq, Eq)]
