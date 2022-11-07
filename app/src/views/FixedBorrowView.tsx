@@ -6,9 +6,9 @@ import { FullAccountBalance } from '@components/tables/FullAccountBalance';
 import { Dictionary } from '@state/settings/localization/localization';
 import { FixedBorrowOrderEntry } from '@components/fixed-term/borrow-entry';
 import { FixedBorrowRowOrder, FixedBorrowViewOrder } from '@state/views/fixed-term';
+import { FixedMarketSelector } from '@components/fixed-term/shared/market-selector';
 import { NetworkStateAtom } from '@state/network/network-state';
 import { WaitingForNetworkView } from './WaitingForNetwork';
-import { FixedMarketSelector } from '@components/fixed-term/FixedMarketSelector';
 
 const rowComponents: Record<string, React.FC<any>> = {
   fixedBorrowEntry: FixedBorrowOrderEntry,
