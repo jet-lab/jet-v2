@@ -1,7 +1,7 @@
 import { useRecoilState, useSetRecoilState, useResetRecoilState, useRecoilValue } from 'recoil';
 import { PoolAction } from '@jet-lab/margin';
 import { Dictionary } from '@state/settings/localization/localization';
-import { SendingTransaction } from '@state/actions/actions';
+import { ActionRefresh, SendingTransaction } from '@state/actions/actions';
 import { BlockExplorer, Cluster } from '@state/settings/settings';
 import { WalletTokens } from '@state/user/walletTokens';
 import { CurrentAccount } from '@state/user/accounts';
@@ -18,6 +18,7 @@ import { useMarginActions } from '@utils/jet/marginActions';
 import { ArrowRight } from './ArrowRight';
 import { TokenInput } from '@components/misc/TokenInput/TokenInput';
 import { Button, Modal, Tabs, Typography } from 'antd';
+import { useEffect } from 'react';
 
 // Modal to Deposit / Withdraw using the current Pool
 export function DepositWithdrawModal(): JSX.Element {
@@ -36,6 +37,7 @@ export function DepositWithdrawModal(): JSX.Element {
   const setTokenInputString = useSetRecoilState(TokenInputString);
   const resetTokenInputString = useResetRecoilState(TokenInputString);
   const resetTokenInputAmount = useResetRecoilState(TokenInputAmount);
+  const setActionRefresh = useSetRecoilState(ActionRefresh);
   const riskStyle = useRiskStyle();
   const projectedRiskIndicator = useProjectedRisk();
   const projectedRiskStyle = useRiskStyle(projectedRiskIndicator);
@@ -49,6 +51,10 @@ export function DepositWithdrawModal(): JSX.Element {
       key: action
     };
   });
+
+  useEffect(() => {
+    if (currentAction === 'deposit' || currentAction === 'withdraw') setActionRefresh(Date.now())
+  }, [currentAction])
 
   // Deposit / Withdraw
   async function depositWithdraw() {

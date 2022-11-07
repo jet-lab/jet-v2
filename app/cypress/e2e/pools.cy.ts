@@ -27,56 +27,6 @@ describe('Main Flows', () => {
     borrow('SOL', 0.3, true);
     repay('SOL', 0.3, true);
   });
-
-  it('can create multiple fixed rate lend orders', () => {
-    airdrop('SOL', 'SOL');
-    airdrop('USDC', 'USDC');
-
-    deposit('SOL', 1);
-    deposit('USDC', 50000);
-
-    const lendLink = cy.contains('Lend');
-    lendLink.click();
-
-    const amountInput = cy.get('input.ant-input[placeholder="enter order value"]');
-    const interestInput = cy.get('input.ant-input[placeholder="enter interest"]');
-    amountInput.click().type(`1000`);
-    interestInput.click().type(`5`);
-
-    cy.contains('button', 'Create Lend Order').should('not.be.disabled').click();
-
-    cy.contains('Lend Order Created');
-
-    amountInput.focus().clear();
-    amountInput.click().type(`2000`);
-    interestInput.focus().clear();
-    interestInput.click().type(`10`);
-
-    cy.contains('button', 'Create Lend Order').should('not.be.disabled').click();
-    cy.contains('Lend Order Created');
-  });
-
-  it('can create multiple fixed rate borrow orders', () => {
-    const borrowLink = cy.contains('Borrow');
-    borrowLink.click();
-
-    const submitButton = cy.contains('button', 'Create Borrow Order').should('not.be.disabled');
-    const amountInput = cy.get('input.ant-input[placeholder="enter order value"]');
-    const interestInput = cy.get('input.ant-input[placeholder="enter interest"]');
-
-    amountInput.click().type(`1000`);
-    interestInput.click().type(`5`);
-    submitButton.click();
-    cy.contains('Borrow Order Created');
-
-    amountInput.focus().clear();
-    amountInput.click().type(`2000`);
-    interestInput.focus().clear();
-    interestInput.click().type(`10`);
-
-    submitButton.click();
-    cy.contains('Borrow Order Created');
-  });
 });
 
 describe('Error Flows', () => {

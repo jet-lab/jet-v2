@@ -6,7 +6,7 @@ import { PoolsTable } from '@components/PoolsView/PoolsTable/PoolsTable';
 import { PoolDetail } from '@components/PoolsView/PoolDetail/PoolDetail';
 import { Radar } from '@components/PoolsView/Radar';
 import { PoolsRowOrder, PoolsViewOrder } from '@state/views/views';
-import { NetworkStateAtom } from '@state/network/network-state'
+import { NetworkStateAtom } from '@state/network/network-state';
 import { WaitingForNetworkView } from './WaitingForNetwork';
 
 // App view for using / viewing Jet pools
@@ -20,8 +20,6 @@ export function PoolsView(): JSX.Element {
   useEffect(() => {
     document.title = `${dictionary.poolsView.title} | Jet Protocol`;
   }, [dictionary.poolsView.title]);
-
-  if (networkState !== 'connected') return <WaitingForNetworkView networkState={networkState} />;
 
   // Row of Pool Detail and Radar components
   const rowComponents: Record<string, JSX.Element> = {
@@ -53,6 +51,8 @@ export function PoolsView(): JSX.Element {
     }
     return <div className="pools-view view">{PoolsViewComponents}</div>;
   };
+
+  if (networkState !== 'connected') return <WaitingForNetworkView networkState={networkState} />;
 
   return PoolsView();
 }

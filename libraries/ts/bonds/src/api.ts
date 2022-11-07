@@ -1,6 +1,6 @@
 import { PublicKey, TransactionInstruction } from "@solana/web3.js"
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token"
-import { AssociatedToken, MarginAccount, MarginConfig, Pool, sendAll } from "@jet-lab/margin"
+import { AssociatedToken, BondMarketConfig, MarginAccount, MarginConfig, Pool, sendAll } from "@jet-lab/margin"
 import { BondMarket } from "./bondMarket"
 import { AnchorProvider, BN } from "@project-serum/anchor"
 
@@ -10,6 +10,7 @@ const createRandomSeed = (byteLength: number) => {
   return Uint8Array.from(new Array(byteLength).fill(0).map(() => Math.ceil(Math.random() * (max - min) + min)))
 }
 
+// CREATE MARKET ACCOUNT
 interface IWithCreateFixedMarketAccount {
   market: BondMarket
   provider: AnchorProvider
@@ -41,6 +42,7 @@ export const withCreateFixedMarketAccounts = async ({
   return { tokenMint, ticketMint }
 }
 
+// MARKET MAKER ORDERS
 interface ICreateLendOrder {
   market: BondMarket
   provider: AnchorProvider
@@ -52,6 +54,7 @@ interface ICreateLendOrder {
   pools: Record<string, Pool>
   currentPool: Pool
   marketAccount?: string
+  marketConfig: BondMarketConfig
 }
 export const createFixedLendOrder = async ({
   market,
@@ -62,7 +65,8 @@ export const createFixedLendOrder = async ({
   amount,
   basisPoints,
   pools,
-  currentPool
+  currentPool,
+  marketConfig
 }: ICreateLendOrder) => {
   // Fail if there is no active bonds program id in the config
   if (!marginConfig.bondsProgramId) {
@@ -79,7 +83,7 @@ export const createFixedLendOrder = async ({
     marginAccount,
     walletAddress,
     instructions: accountInstructions,
-    marketAccount: lenderAccount
+    marketAccount: lenderAccount,
   })
   if (accountInstructions.length > 0) {
     instructions.push(accountInstructions)
@@ -115,7 +119,7 @@ export const createFixedLendOrder = async ({
   })
 
   // create lend instruction
-  const loanOffer = await market.offerLoanIx(marginAccount, amount, basisPoints, walletAddress, createRandomSeed(4))
+  const loanOffer = await market.offerLoanIx(marginAccount, amount, basisPoints, walletAddress, createRandomSeed(4), marketConfig.borrowDuration)
   await marginAccount.withAdapterInvoke({
     instructions: lendInstructions,
     adapterInstruction: loanOffer
@@ -135,6 +139,7 @@ interface ICreateBorrowOrder {
   currentPool: Pool
   amount: BN
   basisPoints: BN
+  marketConfig: BondMarketConfig
 }
 
 export const createFixedBorrowOrder = async ({
@@ -146,7 +151,8 @@ export const createFixedBorrowOrder = async ({
   pools,
   currentPool,
   amount,
-  basisPoints
+  basisPoints,
+  marketConfig
 }: ICreateBorrowOrder): Promise<string> => {
   // Fail if there is no active bonds program id in the config
   if (!marginConfig.bondsProgramId) {
@@ -164,7 +170,7 @@ export const createFixedBorrowOrder = async ({
     marginAccount,
     walletAddress,
     instructions: accountInstructions,
-    marketAccount: borrowerAccount
+    marketAccount: borrowerAccount,
   })
   if (accountInstructions.length > 0) {
     instructions.push(accountInstructions)
@@ -202,7 +208,8 @@ export const createFixedBorrowOrder = async ({
     walletAddress,
     amount,
     basisPoints,
-    createRandomSeed(4)
+    createRandomSeed(4),
+    marketConfig.borrowDuration
   )
 
   await marginAccount.withAdapterInvoke({
@@ -262,5 +269,172 @@ export const cancelOrder = async ({
     instructions,
     adapterInstruction: cancelLoan
   })
+  return sendAll(provider, [instructions])
+}
+
+// MARKET TAKER ORDERS
+
+interface IBorrowNow {
+  market: BondMarket
+  marginAccount: MarginAccount
+  marginConfig: MarginConfig
+  provider: AnchorProvider
+  walletAddress: PublicKey
+  pools: Record<string, Pool>
+  currentPool: Pool
+  amount: BN
+}
+
+export const borrowNow = async ({
+  marginConfig,
+  market,
+  marginAccount,
+  provider,
+  walletAddress,
+  currentPool,
+  pools,
+  amount
+}: IBorrowNow): Promise<string> => {
+  // Fail if there is no active bonds program id in the config
+  if (!marginConfig.bondsProgramId) {
+    throw new Error("There is no fixed term market configured on this network")
+  }
+
+  const borrowerAccount = await market.deriveMarginUserAddress(marginAccount)
+
+  const instructions: TransactionInstruction[][] = []
+  // Create relevant accounts if they do not exist
+  const accountInstructions: TransactionInstruction[] = []
+  await withCreateFixedMarketAccounts({
+    market,
+    provider,
+    marginAccount,
+    walletAddress,
+    instructions: accountInstructions,
+    marketAccount: borrowerAccount
+  })
+  if (accountInstructions.length > 0) {
+    instructions.push(accountInstructions)
+  }
+
+  // refresh pools positions
+  const refreshInstructions: TransactionInstruction[] = []
+  await currentPool.withMarginRefreshAllPositionPrices({
+    instructions: refreshInstructions,
+    pools,
+    marginAccount
+  })
+
+  // refresh market instruction
+  const refreshIx = await market.program.methods
+    .refreshPosition(true)
+    .accounts({
+      marginUser: borrowerAccount,
+      marginAccount: marginAccount.address,
+      bondManager: market.addresses.bondManager,
+      underlyingOracle: market.addresses.underlyingOracle,
+      ticketOracle: market.addresses.ticketOracle,
+      tokenProgram: TOKEN_PROGRAM_ID
+    })
+    .instruction()
+
+  await marginAccount.withAdapterInvoke({
+    instructions: refreshInstructions,
+    adapterInstruction: refreshIx
+  })
+  instructions.push(refreshInstructions)
+
+  // Create borrow instruction
+  const borrowInstructions: TransactionInstruction[] = []
+  const borrowNow = await market.borrowNowIx(marginAccount, walletAddress, amount, createRandomSeed(4))
+
+  await marginAccount.withAdapterInvoke({
+    instructions: borrowInstructions,
+    adapterInstruction: borrowNow
+  })
+
+  instructions.push(borrowInstructions)
+  return sendAll(provider, [instructions])
+}
+
+interface ILendNow {
+  market: BondMarket
+  marginAccount: MarginAccount
+  marginConfig: MarginConfig
+  provider: AnchorProvider
+  walletAddress: PublicKey
+  pools: Record<string, Pool>
+  currentPool: Pool
+  amount: BN
+}
+
+export const lendNow = async ({
+  marginConfig,
+  market,
+  marginAccount,
+  provider,
+  walletAddress,
+  currentPool,
+  pools,
+  amount
+}: ILendNow): Promise<string> => {
+  // Fail if there is no active bonds program id in the config
+  if (!marginConfig.bondsProgramId) {
+    throw new Error("There is no market configured on this network")
+  }
+
+  const marketAccount = await market.deriveMarginUserAddress(marginAccount)
+
+  const instructions: TransactionInstruction[][] = []
+  // Create relevant accounts if they do not exist
+  const accountInstructions: TransactionInstruction[] = []
+  const { tokenMint } = await withCreateFixedMarketAccounts({
+    market,
+    provider,
+    marginAccount,
+    walletAddress,
+    instructions: accountInstructions,
+    marketAccount
+  })
+  if (accountInstructions.length > 0) {
+    instructions.push(accountInstructions)
+  }
+
+  // refresh instructions
+  const refreshInstructions: TransactionInstruction[] = []
+  await currentPool.withMarginRefreshAllPositionPrices({
+    instructions: refreshInstructions,
+    pools,
+    marginAccount
+  })
+  const refreshIx = await market.program.methods
+    .refreshPosition(true)
+    .accounts({
+      marginUser: marketAccount,
+      marginAccount: marginAccount.address,
+      bondManager: market.addresses.bondManager,
+      underlyingOracle: market.addresses.underlyingOracle,
+      ticketOracle: market.addresses.ticketOracle,
+      tokenProgram: TOKEN_PROGRAM_ID
+    })
+    .instruction()
+
+  await marginAccount.withAdapterInvoke({
+    instructions: refreshInstructions,
+    adapterInstruction: refreshIx
+  })
+  instructions.push(refreshInstructions)
+
+  // Create borrow instruction
+  const lendInstructions: TransactionInstruction[] = []
+  AssociatedToken.withTransfer(lendInstructions, tokenMint, walletAddress, marginAccount.address, amount)
+  const borrowNow = await market.lendNowIx(marginAccount, amount, walletAddress, createRandomSeed(4))
+
+  await marginAccount.withAdapterInvoke({
+    instructions: lendInstructions,
+    adapterInstruction: borrowNow
+  })
+
+  instructions.push(lendInstructions)
   return sendAll(provider, [instructions])
 }

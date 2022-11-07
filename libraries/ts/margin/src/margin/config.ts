@@ -32,7 +32,6 @@ export interface BondMarketConfig {
   symbol: string
   bondManager: Address
   version: number
-  duration: number
   airspace: Address
   orderbookMarketState: Address
   eventQueue: Address
@@ -44,6 +43,12 @@ export interface BondMarketConfig {
   claimsMint: Address
   collateralMint: Address
   underlyingOracle: Address
+  ticketOracle: Address
+  seed: Address
+  orderbookPause: boolean
+  ticketsPaused: boolean
+  borrowDuration: number
+  lendDuration: number
 }
 
 export interface MarginTokenConfig {

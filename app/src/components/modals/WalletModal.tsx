@@ -28,7 +28,6 @@ export function WalletModal(): JSX.Element {
           .replaceAll('{{PUBLIC_KEY}}', formatPubkey(publicKey?.toString() ?? '')),
         'success'
       );
-
       // Initiate logRocket
       const logRocketProject = process.env.REACT_APP_LOGROCKET_PROJECT;
       if (logRocketProject) {
