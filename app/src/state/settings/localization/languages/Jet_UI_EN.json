@@ -216,7 +216,7 @@
         "description": "Your {{WALLET_NAME}} wallet {{PUBLIC_KEY}} has been connected."
       },
       "disconnect": {
-        "message": "Wallet Disonnected",
+        "message": "Wallet Disconnected",
         "description": "Your {{WALLET_NAME}} wallet {{PUBLIC_KEY}} has been disconnected."
       }
     },

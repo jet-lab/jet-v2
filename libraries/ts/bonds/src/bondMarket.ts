@@ -196,7 +196,7 @@ export class BondMarket {
     const params: OrderParams = {
       maxBondTicketQty: new BN(U64_MAX.toString()),
       maxUnderlyingTokenQty: amount,
-      limitPrice: new BN(rate_to_price(BigInt("99999"), BigInt(this.info.lendDuration.toString())).toString()),
+      limitPrice: new BN(rate_to_price(BigInt("99999"), BigInt(this.info.borrowDuration.toString())).toString()),
       matchLimit: new BN(U64_MAX.toString()),
       postOnly: false,
       postAllowed: false,
@@ -242,7 +242,7 @@ export class BondMarket {
   ): Promise<TransactionInstruction> {
     const userTokenVault = await getAssociatedTokenAddress(this.addresses.underlyingTokenMint, user.address, true)
     const userTicketVault = await getAssociatedTokenAddress(this.addresses.bondTicketMint, user.address, true)
-    const limitPrice = bigIntToBn(rate_to_price(bnToBigInt(rate), bnToBigInt(this.info.lendDuration)))
+    const limitPrice = bigIntToBn(rate_to_price(bnToBigInt(rate), bnToBigInt(this.info.borrowDuration)))
     const params: OrderParams = {
       maxBondTicketQty: new BN(U64_MAX.toString()),
       maxUnderlyingTokenQty: new BN(amount),
