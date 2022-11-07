@@ -1,7 +1,7 @@
 use anyhow::Result;
 
 use hosted_tests::{
-    context::test_context,
+    margin_test_context,
     setup_helper::{liquidators, tokens, users},
 };
 
@@ -18,7 +18,7 @@ use jet_margin_pool::TokenChange;
 /// swap, which the other liquidate tests are not equipped to do.
 #[tokio::test(flavor = "multi_thread")]
 async fn liquidate_with_swap() -> Result<()> {
-    let ctx = test_context().await;
+    let ctx = margin_test_context!();
     let ([usdc, sol], swaps, pricer) = tokens(&ctx).await.unwrap();
     let [liquidator] = liquidators(&ctx).await.unwrap();
     let [user0, user1] = users(&ctx).await.unwrap();

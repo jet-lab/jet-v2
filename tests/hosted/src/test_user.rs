@@ -172,7 +172,7 @@ impl TestUser {
     }
 
     pub async fn refresh_position_oracles_txs(&self) -> Result<Vec<TransactionBuilder>> {
-        let tokens = TokenManager::new(self.ctx.rpc.clone());
+        let tokens = TokenManager::new(self.ctx.solana.clone());
         self.user
             .positions()
             .await?
@@ -182,7 +182,7 @@ impl TestUser {
     }
 
     pub async fn refresh_positions_with_oracles_txs(&self) -> Result<Vec<TransactionBuilder>> {
-        let tokens = TokenManager::new(self.ctx.rpc.clone());
+        let tokens = TokenManager::new(self.ctx.solana.clone());
         Ok(self
             .user
             .tx

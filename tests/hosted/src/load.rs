@@ -4,7 +4,7 @@ use jet_margin_sdk::util::asynchronous::MapAsync;
 use std::time::Duration;
 
 use crate::{
-    context::test_context,
+    margin_test_context,
     setup_helper::{create_tokens, create_users},
     test_user::ONE,
 };
@@ -34,7 +34,7 @@ impl Default for UnhealthyAccountsLoadTestScenario {
 pub async fn unhealthy_accounts_load_test(
     scenario: UnhealthyAccountsLoadTestScenario,
 ) -> Result<(), anyhow::Error> {
-    let ctx = test_context().await;
+    let ctx = margin_test_context!();
     let UnhealthyAccountsLoadTestScenario {
         user_count,
         mint_count,

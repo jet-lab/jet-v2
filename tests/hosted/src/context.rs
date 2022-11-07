@@ -1,10 +1,8 @@
-use std::cell::RefCell;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use anyhow::Error;
 use jet_margin_sdk::solana::transaction::InverseSendTransactionBuilder;
 use jet_margin_sdk::util::data::With;
-use rand::rngs::mock::StepRng;
 
 use solana_sdk::native_token::LAMPORTS_PER_SOL;
 use solana_sdk::pubkey::Pubkey;
@@ -14,11 +12,25 @@ use jet_margin_sdk::test_service::{minimal_environment, MarginPoolConfig};
 use jet_metadata::TokenKind;
 use jet_simulation::solana_rpc_api::SolanaRpcClient;
 
-use crate::runtime::runtime;
+use crate::runtime::SolanaTestContext;
 use crate::{margin::MarginClient, tokens::TokenManager};
 
-pub async fn test_context() -> Arc<MarginTestContext> {
-    Arc::new(MarginTestContext::new().await.unwrap())
+/// If you don't provide a name, gets the name of the current function name and
+/// uses it to create a test context. Only use this way when called directly in
+/// the test function. If you want to call this in a helper function, pass a
+/// name that is unique to the individual test.
+#[macro_export]
+macro_rules! margin_test_context {
+    () => {
+        $crate::margin_test_context!($crate::fn_name!())
+    };
+    ($name:expr) => {
+        std::sync::Arc::new(
+            $crate::context::MarginTestContext::new($name)
+                .await
+                .unwrap(),
+        )
+    };
 }
 
 pub struct MarginPoolSetupInfo {
@@ -34,11 +46,9 @@ pub struct MarginTestContext {
     pub rpc: Arc<dyn SolanaRpcClient>,
     pub tokens: TokenManager,
     pub margin: MarginClient,
-
     pub authority: Keypair,
     pub payer: Keypair,
-
-    rng: Mutex<RefCell<MockRng>>,
+    pub solana: SolanaTestContext,
 }
 
 impl std::fmt::Debug for MarginTestContext {
@@ -50,22 +60,27 @@ impl std::fmt::Debug for MarginTestContext {
     }
 }
 
+impl From<SolanaTestContext> for MarginTestContext {
+    fn from(solana: SolanaTestContext) -> Self {
+        let payer = Keypair::from_bytes(&solana.rpc.payer().to_bytes()).unwrap();
+        MarginTestContext {
+            tokens: TokenManager::new(solana.clone()),
+            margin: MarginClient::new(solana.rpc.clone(), &payer.pubkey().to_string()[0..8]),
+            authority: Keypair::new(),
+            rpc: solana.rpc.clone(),
+            solana,
+            payer,
+        }
+    }
+}
+
 impl MarginTestContext {
-    pub async fn new() -> Result<Self, Error> {
-        Self::new_with_runtime(runtime().await).await
+    pub async fn new(seed: &str) -> Result<Self, Error> {
+        Self::new_with_runtime(SolanaTestContext::new(seed).await).await
     }
 
-    pub async fn new_with_runtime(runtime: Arc<dyn SolanaRpcClient>) -> Result<Self, Error> {
-        let payer = Keypair::from_bytes(&runtime.payer().to_bytes()).unwrap();
-        let rng = MockRng(StepRng::new(0, 1));
-        let ctx = MarginTestContext {
-            tokens: TokenManager::new(runtime.clone()),
-            margin: MarginClient::new(runtime.clone(), &payer.pubkey().to_string()[0..8]),
-            authority: Keypair::new(),
-            rng: Mutex::new(RefCell::new(rng)),
-            rpc: runtime,
-            payer,
-        };
+    pub async fn new_with_runtime(runtime: SolanaTestContext) -> Result<Self, Error> {
+        let ctx: Self = runtime.into();
 
         minimal_environment(ctx.payer.pubkey())
             .with(ctx.margin.create_airspace_ix(false).into())
@@ -80,7 +95,7 @@ impl MarginTestContext {
     }
 
     pub fn generate_key(&self) -> Keypair {
-        Keypair::generate(&mut *self.rng.lock().unwrap().borrow_mut())
+        self.solana.keygen.generate_key()
     }
 
     /// Generate a new wallet keypair for a liquidator with the pubkey that
@@ -92,27 +107,5 @@ impl MarginTestContext {
             .set_liquidator_metadata(liquidator.pubkey(), true)
             .await?;
         Ok(liquidator)
-    }
-}
-
-struct MockRng(StepRng);
-
-impl rand::CryptoRng for MockRng {}
-
-impl rand::RngCore for MockRng {
-    fn next_u32(&mut self) -> u32 {
-        self.0.next_u32()
-    }
-
-    fn next_u64(&mut self) -> u64 {
-        self.0.next_u64()
-    }
-
-    fn fill_bytes(&mut self, dest: &mut [u8]) {
-        self.0.fill_bytes(dest)
-    }
-
-    fn try_fill_bytes(&mut self, dest: &mut [u8]) -> Result<(), rand::Error> {
-        self.0.try_fill_bytes(dest)
     }
 }

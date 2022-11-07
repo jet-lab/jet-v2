@@ -16,10 +16,7 @@ use solana_sdk::native_token::LAMPORTS_PER_SOL;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::Signer;
 
-use hosted_tests::{
-    context::{test_context, MarginTestContext},
-    margin::MarginPoolSetupInfo,
-};
+use hosted_tests::{context::MarginTestContext, margin::MarginPoolSetupInfo, margin_test_context};
 use spl_associated_token_account::get_associated_token_address;
 
 const ONE_USDC: u64 = 1_000_000;
@@ -96,7 +93,7 @@ async fn setup_environment(ctx: &MarginTestContext) -> Result<TestEnv, Error> {
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn sanity_test() -> Result<(), anyhow::Error> {
     // Get the mocked runtime
-    let ctx = test_context().await;
+    let ctx = margin_test_context!();
 
     let env = setup_environment(&ctx).await?;
 

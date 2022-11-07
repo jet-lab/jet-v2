@@ -60,6 +60,6 @@ jet-program-common = { path = "../../libraries/rust/program-common" }
 
 mock-adapter = { path = "../mock-adapter", features = ["no-entrypoint"] }
 
-jet-simulation = { git = "https://github.com/jet-lab/jet-simulation", branch = "master" }
+jet-simulation = { git = "https://github.com/jet-lab/jet-simulation", branch = "redo-airdrop-funding" }
 
 itertools = "0.10.3"

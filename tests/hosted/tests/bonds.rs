@@ -7,8 +7,9 @@ use hosted_tests::{
         BondsUser, GenerateProxy, OrderAmount, TestManager as BondsTestManager, LEND_DURATION,
         STARTING_TOKENS,
     },
-    context::{test_context, MarginTestContext},
-    setup_helper::{setup_user, tokens},
+    context::MarginTestContext,
+    margin_test_context,
+    setup_helper::{setup_user, tokens}, solana_test_context,
 };
 use jet_bonds::orderbook::state::OrderParams;
 use jet_margin_sdk::{
@@ -26,14 +27,14 @@ use solana_sdk::signer::Signer;
 #[tokio::test(flavor = "multi_thread")]
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn non_margin_orders() -> Result<(), anyhow::Error> {
-    let manager = BondsTestManager::full(test_context().await.rpc.clone()).await?;
+    let manager = BondsTestManager::full(solana_test_context!().clone()).await?;
     non_margin_orders_for_proxy::<NoProxy>(Arc::new(manager)).await
 }
 
 #[tokio::test(flavor = "multi_thread")]
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn non_margin_orders_through_margin_account() -> Result<()> {
-    let manager = BondsTestManager::full(test_context().await.rpc.clone()).await?;
+    let manager = BondsTestManager::full(solana_test_context!().clone()).await?;
     non_margin_orders_for_proxy::<MarginIxBuilder>(Arc::new(manager)).await
 }
 
@@ -335,8 +336,8 @@ async fn create_bonds_margin_user(
 #[tokio::test(flavor = "multi_thread")]
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn margin_borrow() -> Result<()> {
-    let ctx = test_context().await;
-    let manager = Arc::new(BondsTestManager::full(ctx.rpc.clone()).await.unwrap());
+    let ctx = margin_test_context!();
+    let manager = Arc::new(BondsTestManager::full(ctx.solana.clone()).await.unwrap());
     let client = manager.client.clone();
     let ([collateral], _, pricer) = tokens(&ctx).await.unwrap();
 
@@ -368,8 +369,8 @@ async fn margin_borrow() -> Result<()> {
 #[tokio::test(flavor = "multi_thread")]
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn margin_lend() -> Result<()> {
-    let ctx = test_context().await;
-    let manager = Arc::new(BondsTestManager::full(ctx.rpc.clone()).await.unwrap());
+    let ctx = margin_test_context!();
+    let manager = Arc::new(BondsTestManager::full(ctx.solana.clone()).await.unwrap());
     let client = manager.client.clone();
 
     let user = create_bonds_margin_user(&ctx, manager.clone(), vec![]).await;
@@ -390,8 +391,8 @@ async fn margin_lend() -> Result<()> {
 #[tokio::test(flavor = "multi_thread")]
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn margin_borrow_then_margin_lend() -> Result<()> {
-    let ctx = test_context().await;
-    let manager = Arc::new(BondsTestManager::full(ctx.rpc.clone()).await.unwrap());
+    let ctx = margin_test_context!();
+    let manager = Arc::new(BondsTestManager::full(ctx.solana.clone()).await.unwrap());
     let client = manager.client.clone();
     let ([collateral], _, pricer) = tokens(&ctx).await.unwrap();
 
@@ -452,8 +453,8 @@ async fn margin_borrow_then_margin_lend() -> Result<()> {
 #[tokio::test(flavor = "multi_thread")]
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn margin_lend_then_margin_borrow() -> Result<()> {
-    let ctx = test_context().await;
-    let manager = Arc::new(BondsTestManager::full(ctx.rpc.clone()).await.unwrap());
+    let ctx = margin_test_context!();
+    let manager = Arc::new(BondsTestManager::full(ctx.solana.clone()).await.unwrap());
     let client = manager.client.clone();
     let ([collateral], _, pricer) = tokens(&ctx).await.unwrap();
 
@@ -515,8 +516,8 @@ async fn margin_lend_then_margin_borrow() -> Result<()> {
 #[tokio::test(flavor = "multi_thread")]
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn margin_sell_tickets() -> Result<()> {
-    let ctx = test_context().await;
-    let manager = Arc::new(BondsTestManager::full(ctx.rpc.clone()).await.unwrap());
+    let ctx = margin_test_context!();
+    let manager = Arc::new(BondsTestManager::full(ctx.solana.clone()).await.unwrap());
     let client = manager.client.clone();
 
     let user = create_bonds_margin_user(&ctx, manager.clone(), vec![]).await;
