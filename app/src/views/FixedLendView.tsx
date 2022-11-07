@@ -1,12 +1,12 @@
 import React, { useEffect } from 'react';
 import { useRecoilValue } from 'recoil';
 import { AccountSnapshot } from '@components/misc/AccountSnapshot/AccountSnapshot';
-import { FixedPriceChartContainer } from '@components/FixedView/FixedPriceChart';
+import { FixedPriceChartContainer } from '@components/fixed-term/shared/fixed-market-chart';
 import { FullAccountBalance } from '@components/tables/FullAccountBalance';
 import { Dictionary } from '@state/settings/localization/localization';
-import { FixedLendOrderEntry } from '@components/FixedView/FixedLendOrderEntry';
+import { FixedLendOrderEntry } from '@components/fixed-term/lend-entry';
 import { FixedLendRowOrder, FixedLendViewOrder } from '@state/views/fixed-term';
-import { FixedMarketSelector } from '@components/FixedView/FixedMarketSelector';
+import { FixedMarketSelector } from '@components/fixed-term/shared/market-selector';
 import { NetworkStateAtom } from '@state/network/network-state';
 import { WaitingForNetworkView } from './WaitingForNetwork';
 import { DebtTable } from '@components/FixedView/DebtTable';
@@ -67,10 +67,10 @@ const MainView = (): JSX.Element => {
 export function FixedLendView(): JSX.Element {
   const dictionary = useRecoilValue(Dictionary);
   const networkState = useRecoilValue(NetworkStateAtom);
-  if (networkState !== 'connected') return <WaitingForNetworkView networkState={networkState} />;
   useEffect(() => {
     document.title = `${dictionary.fixedView.lend.title} | Jet Protocol`;
   }, [dictionary.fixedView.lend.title]);
+  if (networkState !== 'connected') return <WaitingForNetworkView networkState={networkState} />;
   return <MainView />;
 }
 

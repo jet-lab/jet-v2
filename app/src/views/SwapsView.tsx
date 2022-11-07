@@ -6,7 +6,7 @@ import { SwapsGraph } from '@components/SwapsView/SwapsGraph';
 import { FullAccountBalance } from '@components/tables/FullAccountBalance';
 import { Dictionary } from '@state/settings/localization/localization';
 import { SwapsViewOrder, SwapsRowOrder } from '@state/views/views';
-import { NetworkStateAtom } from '@state/network/network-state'
+import { NetworkStateAtom } from '@state/network/network-state';
 import { WaitingForNetworkView } from './WaitingForNetwork';
 
 // App view for margin swapping
@@ -19,8 +19,6 @@ export function SwapsView(): JSX.Element {
   useEffect(() => {
     document.title = `${dictionary.swapsView.title} | Jet Protocol`;
   }, [dictionary.swapsView.title]);
-
-  if (networkState !== 'connected') return <WaitingForNetworkView networkState={networkState} />;
   // Row of Swap Entry and Swaps Graph
 
   const rowComponents: Record<string, JSX.Element> = {
@@ -54,5 +52,6 @@ export function SwapsView(): JSX.Element {
     return <div className="swaps-view view">{swapsViewComponents}</div>;
   };
 
+  if (networkState !== 'connected') return <WaitingForNetworkView networkState={networkState} />;
   return accountView();
 }

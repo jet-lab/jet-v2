@@ -5,7 +5,7 @@ import { FullAccountBalance } from '@components/tables/FullAccountBalance';
 import { FullAccountHistory } from '@components/tables/FullAccountHistory';
 import { Dictionary } from '@state/settings/localization/localization';
 import { AccountsViewOrder } from '@state/views/views';
-import { NetworkStateAtom } from '@state/network/network-state'
+import { NetworkStateAtom } from '@state/network/network-state';
 import { WaitingForNetworkView } from './WaitingForNetwork';
 
 // App view for managing / checking margin accounts
@@ -19,7 +19,6 @@ export function AccountsView(): JSX.Element {
     document.title = `${dictionary.accountsView.title} | Jet Protocol`;
   }, [dictionary.accountsView.title]);
 
-  if (networkState !== 'connected') return <WaitingForNetworkView networkState={networkState} />;
 
   // Account view with ordered components
   const viewComponents: Record<string, JSX.Element> = {
@@ -35,6 +34,8 @@ export function AccountsView(): JSX.Element {
     }
     return <div className="accounts-view view">{accountViewComponents}</div>;
   };
+
+  if (networkState !== 'connected') return <WaitingForNetworkView networkState={networkState} />;
 
   return accountView();
 }

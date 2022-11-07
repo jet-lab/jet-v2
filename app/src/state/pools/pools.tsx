@@ -4,7 +4,7 @@ import { PoolManager as MarginPoolManager, Pool } from '@jet-lab/margin';
 import { localStorageEffect } from '../effects/localStorageEffect';
 import { ActionRefresh, ACTION_REFRESH_INTERVAL } from '../actions/actions';
 import { useProvider } from '@utils/jet/provider';
-import { MainConfig } from '@state/config/marginConfig'
+import { MainConfig } from '@state/config/marginConfig';
 import { NetworkStateAtom } from '@state/network/network-state';
 
 // Our app's interface for interacting with margin pools
@@ -108,7 +108,7 @@ export function usePoolsSyncer() {
   const setPoolManager = useSetRecoilState(PoolManager);
   const setPools = useSetRecoilState(Pools);
   const actionRefresh = useRecoilValue(ActionRefresh);
-  const networkState = useRecoilValue(NetworkStateAtom)
+  const networkState = useRecoilValue(NetworkStateAtom);
 
   // When we have an anchor provider, instantiate Pool Manager
   useEffect(() => {

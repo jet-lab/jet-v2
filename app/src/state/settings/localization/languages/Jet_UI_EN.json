@@ -216,7 +216,7 @@
         "description": "Your {{WALLET_NAME}} wallet {{PUBLIC_KEY}} has been connected."
       },
       "disconnect": {
-        "message": "Wallet Disonnected",
+        "message": "Wallet Disconnected",
         "description": "Your {{WALLET_NAME}} wallet {{PUBLIC_KEY}} has been disconnected."
       }
     },
@@ -438,11 +438,11 @@
   },
   "fixedView": {
     "lend": {
-      "title": "Lend",
+      "title": "Lend Fixed-Term",
       "chartTitle": "Asks"
     },
     "borrow": {
-      "title": "Borrow",
+      "title": "Borrow Fixed-Term",
       "chartTitle": "Bids"
     },
     "debtTable": {
