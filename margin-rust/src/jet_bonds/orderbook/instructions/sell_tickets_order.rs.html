@@ -67,16 +67,40 @@
 <span id="67">67</span>
 <span id="68">68</span>
 <span id="69">69</span>
+<span id="70">70</span>
+<span id="71">71</span>
+<span id="72">72</span>
+<span id="73">73</span>
+<span id="74">74</span>
+<span id="75">75</span>
+<span id="76">76</span>
+<span id="77">77</span>
+<span id="78">78</span>
+<span id="79">79</span>
+<span id="80">80</span>
+<span id="81">81</span>
+<span id="82">82</span>
+<span id="83">83</span>
+<span id="84">84</span>
+<span id="85">85</span>
+<span id="86">86</span>
+<span id="87">87</span>
+<span id="88">88</span>
+<span id="89">89</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">agnostic_orderbook::state::Side</span>;
 <span class="kw">use</span> <span class="ident">anchor_lang::prelude</span>::<span class="kw-2">*</span>;
 <span class="kw">use</span> <span class="ident">anchor_spl::token</span>::{<span class="ident">accessor::mint</span>, <span class="ident">Mint</span>, <span class="ident">Token</span>, <span class="ident">TokenAccount</span>};
+<span class="kw">use</span> <span class="ident">jet_program_proc_macros::BondTokenManager</span>;
 
-<span class="kw">use</span> <span class="kw">crate</span>::{<span class="ident">orderbook::state</span>::<span class="kw-2">*</span>, <span class="ident">serialization::RemainingAccounts</span>, <span class="ident">BondsError</span>};
+<span class="kw">use</span> <span class="kw">crate</span>::{
+    <span class="ident">bond_token_manager::BondTokenManager</span>, <span class="ident">orderbook::state</span>::<span class="kw-2">*</span>, <span class="ident">serialization::RemainingAccounts</span>,
+    <span class="ident">BondsError</span>,
+};
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Accounts</span>)]</span>
+<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Accounts</span>, <span class="ident">BondTokenManager</span>)]</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">SellTicketsOrder</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span> {
     <span class="doccomment">/// Signing authority over the ticket vault transferring for a borrow order</span>
-    <span class="kw">pub</span> <span class="ident">user</span>: <span class="ident">Signer</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span>,
+    <span class="kw">pub</span> <span class="ident">authority</span>: <span class="ident">Signer</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span>,
 
     <span class="doccomment">/// Account containing the bond tickets being sold</span>
     <span class="attribute">#[<span class="ident">account</span>(<span class="kw-2">mut</span>, <span class="ident">constraint</span> <span class="op">=</span>
@@ -92,20 +116,53 @@
     )]</span>
     <span class="kw">pub</span> <span class="ident">user_token_vault</span>: <span class="ident">Account</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span>, <span class="ident">TokenAccount</span><span class="op">&gt;</span>,
 
+    <span class="attribute">#[<span class="ident">bond_manager</span>]</span>
     <span class="kw">pub</span> <span class="ident">orderbook_mut</span>: <span class="ident">OrderbookMut</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span>,
 
     <span class="doccomment">/// The market ticket mint</span>
     <span class="attribute">#[<span class="ident">account</span>(<span class="kw-2">mut</span>, <span class="ident">address</span> <span class="op">=</span> <span class="ident">orderbook_mut</span>.<span class="ident">bond_manager</span>.<span class="ident">load</span>().<span class="ident">unwrap</span>().<span class="ident">bond_ticket_mint</span>.<span class="ident">key</span>() @ <span class="ident">BondsError::WrongTicketMint</span>)]</span>
     <span class="kw">pub</span> <span class="ident">bond_ticket_mint</span>: <span class="ident">Account</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span>, <span class="ident">Mint</span><span class="op">&gt;</span>,
 
+    <span class="doccomment">/// The market ticket mint</span>
+    <span class="attribute">#[<span class="ident">account</span>(<span class="kw-2">mut</span>, <span class="ident">address</span> <span class="op">=</span> <span class="ident">orderbook_mut</span>.<span class="ident">bond_manager</span>.<span class="ident">load</span>().<span class="ident">unwrap</span>().<span class="ident">underlying_token_vault</span>.<span class="ident">key</span>() @ <span class="ident">BondsError::WrongTicketMint</span>)]</span>
+    <span class="kw">pub</span> <span class="ident">underlying_token_vault</span>: <span class="ident">Account</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span>, <span class="ident">TokenAccount</span><span class="op">&gt;</span>,
+
     <span class="kw">pub</span> <span class="ident">token_program</span>: <span class="ident">Program</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span>, <span class="ident">Token</span><span class="op">&gt;</span>,
     <span class="comment">// Optional event adapter account</span>
     <span class="comment">// pub event_adapter: AccountInfo&lt;&#39;info&gt;,</span>
 }
 
+<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span> <span class="ident">SellTicketsOrder</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">sell_tickets</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">order_summary</span>: <span class="ident">SensibleOrderSummary</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
+        <span class="self">self</span>.<span class="ident">withdraw</span>(
+            <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">underlying_token_vault</span>,
+            <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">user_token_vault</span>,
+            <span class="ident">order_summary</span>.<span class="ident">quote_filled</span>()<span class="question-mark">?</span>,
+        )<span class="question-mark">?</span>;
+        <span class="ident">anchor_spl::token::burn</span>(
+            <span class="ident">CpiContext::new</span>(
+                <span class="self">self</span>.<span class="ident">token_program</span>.<span class="ident">to_account_info</span>(),
+                <span class="ident">anchor_spl::token::Burn</span> {
+                    <span class="ident">mint</span>: <span class="self">self</span>.<span class="ident">bond_ticket_mint</span>.<span class="ident">to_account_info</span>(),
+                    <span class="ident">from</span>: <span class="self">self</span>.<span class="ident">user_ticket_vault</span>.<span class="ident">to_account_info</span>(),
+                    <span class="ident">authority</span>: <span class="self">self</span>.<span class="ident">authority</span>.<span class="ident">to_account_info</span>(),
+                },
+            ),
+            <span class="ident">order_summary</span>.<span class="ident">base_combined</span>(),
+        )<span class="question-mark">?</span>;
+        <span class="macro">emit!</span>(<span class="ident"><span class="kw">crate</span>::events::SellTicketsOrder</span> {
+            <span class="ident">bond_market</span>: <span class="self">self</span>.<span class="ident">orderbook_mut</span>.<span class="ident">bond_manager</span>.<span class="ident">key</span>(),
+            <span class="ident">owner</span>: <span class="self">self</span>.<span class="ident">authority</span>.<span class="ident">key</span>(),
+            <span class="ident">order_summary</span>: <span class="ident">order_summary</span>.<span class="ident">summary</span>(),
+        });
+
+        <span class="prelude-val">Ok</span>(())
+    }
+}
+
 <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">handler</span>(<span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">SellTicketsOrder</span><span class="op">&gt;</span>, <span class="ident">params</span>: <span class="ident">OrderParams</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
     <span class="kw">let</span> (<span class="kw">_</span>, <span class="ident">order_summary</span>) <span class="op">=</span> <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">orderbook_mut</span>.<span class="ident">place_order</span>(
-        <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">user</span>.<span class="ident">key</span>(),
+        <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">authority</span>.<span class="ident">key</span>(),
         <span class="ident">Side::Ask</span>,
         <span class="ident">params</span>,
         <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">user_token_vault</span>.<span class="ident">key</span>(),
@@ -117,24 +174,7 @@
         <span class="ident">CallbackFlags::empty</span>(),
     )<span class="question-mark">?</span>;
 
-    <span class="ident">anchor_spl::token::burn</span>(
-        <span class="ident">CpiContext::new</span>(
-            <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">token_program</span>.<span class="ident">to_account_info</span>(),
-            <span class="ident">anchor_spl::token::Burn</span> {
-                <span class="ident">mint</span>: <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">bond_ticket_mint</span>.<span class="ident">to_account_info</span>(),
-                <span class="ident">from</span>: <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">user_ticket_vault</span>.<span class="ident">to_account_info</span>(),
-                <span class="ident">authority</span>: <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">user</span>.<span class="ident">to_account_info</span>(),
-            },
-        ),
-        <span class="ident">order_summary</span>.<span class="ident">total_base_qty</span>,
-    )<span class="question-mark">?</span>;
-    <span class="macro">emit!</span>(<span class="ident"><span class="kw">crate</span>::events::SellTicketsOrder</span> {
-        <span class="ident">bond_market</span>: <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">orderbook_mut</span>.<span class="ident">bond_manager</span>.<span class="ident">key</span>(),
-        <span class="ident">borrower</span>: <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">user</span>.<span class="ident">key</span>(),
-        <span class="ident">order_summary</span>,
-    });
-
-    <span class="prelude-val">Ok</span>(())
+    <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">sell_tickets</span>(<span class="ident">order_summary</span>)
 }
 </code></pre></div>
 </section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="jet_bonds" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0 (a55dd71d5 2022-09-19)" ></div></body></html>

@@ -453,8 +453,8 @@
 <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">any</span>(<span class="ident">test</span>, <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;cli&quot;</span>))]</span>
 <span class="kw">use</span> <span class="ident">serde::ser</span>::{<span class="ident">Serialize</span>, <span class="ident">SerializeStruct</span>, <span class="ident">Serializer</span>};
 
-<span class="kw">use</span> <span class="ident">jet_proto_math::Number128</span>;
-<span class="kw">use</span> <span class="ident">jet_proto_proc_macros::assert_size</span>;
+<span class="kw">use</span> <span class="ident">jet_program_common::Number128</span>;
+<span class="kw">use</span> <span class="ident">jet_program_proc_macros::assert_size</span>;
 
 <span class="kw">use</span> <span class="ident">anchor_lang::Result</span> <span class="kw">as</span> <span class="ident">AnchorResult</span>;
 <span class="kw">use</span> <span class="ident">std</span>::{<span class="ident">convert::TryFrom</span>, <span class="ident">result::Result</span>};

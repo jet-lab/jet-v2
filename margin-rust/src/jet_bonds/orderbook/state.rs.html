@@ -609,6 +609,51 @@
 <span id="609">609</span>
 <span id="610">610</span>
 <span id="611">611</span>
+<span id="612">612</span>
+<span id="613">613</span>
+<span id="614">614</span>
+<span id="615">615</span>
+<span id="616">616</span>
+<span id="617">617</span>
+<span id="618">618</span>
+<span id="619">619</span>
+<span id="620">620</span>
+<span id="621">621</span>
+<span id="622">622</span>
+<span id="623">623</span>
+<span id="624">624</span>
+<span id="625">625</span>
+<span id="626">626</span>
+<span id="627">627</span>
+<span id="628">628</span>
+<span id="629">629</span>
+<span id="630">630</span>
+<span id="631">631</span>
+<span id="632">632</span>
+<span id="633">633</span>
+<span id="634">634</span>
+<span id="635">635</span>
+<span id="636">636</span>
+<span id="637">637</span>
+<span id="638">638</span>
+<span id="639">639</span>
+<span id="640">640</span>
+<span id="641">641</span>
+<span id="642">642</span>
+<span id="643">643</span>
+<span id="644">644</span>
+<span id="645">645</span>
+<span id="646">646</span>
+<span id="647">647</span>
+<span id="648">648</span>
+<span id="649">649</span>
+<span id="650">650</span>
+<span id="651">651</span>
+<span id="652">652</span>
+<span id="653">653</span>
+<span id="654">654</span>
+<span id="655">655</span>
+<span id="656">656</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="kw">crate</span>::{
     <span class="ident">control::state::BondManager</span>, <span class="ident">events::OrderCancelled</span>, <span class="ident">utils::orderbook_accounts</span>, <span class="ident">BondsError</span>,
 };
@@ -680,6 +725,18 @@
 }
 
 <span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span> <span class="ident">OrderbookMut</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">underlying_mint</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Pubkey</span> {
+        <span class="self">self</span>.<span class="ident">bond_manager</span>.<span class="ident">load</span>().<span class="ident">unwrap</span>().<span class="ident">underlying_token_mint</span>
+    }
+
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">ticket_mint</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Pubkey</span> {
+        <span class="self">self</span>.<span class="ident">bond_manager</span>.<span class="ident">load</span>().<span class="ident">unwrap</span>().<span class="ident">bond_ticket_mint</span>
+    }
+
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">vault</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Pubkey</span> {
+        <span class="self">self</span>.<span class="ident">bond_manager</span>.<span class="ident">load</span>().<span class="ident">unwrap</span>().<span class="ident">underlying_token_vault</span>
+    }
+
     <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">clippy::too_many_arguments</span>)]</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">place_order</span>(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
@@ -689,8 +746,8 @@
         <span class="ident">fill</span>: <span class="ident">Pubkey</span>,
         <span class="ident">out</span>: <span class="ident">Pubkey</span>,
         <span class="ident">adapter</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Pubkey</span><span class="op">&gt;</span>,
-        <span class="ident">extra_flags</span>: <span class="ident">CallbackFlags</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(<span class="ident">CallbackInfo</span>, <span class="ident">OrderSummary</span>)<span class="op">&gt;</span> {
+        <span class="ident">flags</span>: <span class="ident">CallbackFlags</span>,
+    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(<span class="ident">CallbackInfo</span>, <span class="ident">SensibleOrderSummary</span>)<span class="op">&gt;</span> {
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">manager</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">bond_manager</span>.<span class="ident">load_mut</span>()<span class="question-mark">?</span>;
         <span class="kw">let</span> <span class="ident">callback_info</span> <span class="op">=</span> <span class="ident">CallbackInfo::new</span>(
             <span class="self">self</span>.<span class="ident">bond_manager</span>.<span class="ident">key</span>(),
@@ -699,12 +756,13 @@
             <span class="ident">out</span>,
             <span class="ident">adapter</span>.<span class="ident">unwrap_or_default</span>(),
             <span class="ident">Clock::get</span>()<span class="question-mark">?</span>.<span class="ident">unix_timestamp</span>,
-            <span class="ident">params</span>.<span class="ident">callback_flags</span>() <span class="op">|</span> <span class="ident">extra_flags</span>,
+            <span class="ident">flags</span>,
             <span class="ident">manager</span>.<span class="ident">nonce</span>,
         );
         <span class="ident">manager</span>.<span class="ident">nonce</span> <span class="op">+</span><span class="op">=</span> <span class="number">1</span>;
 
         <span class="kw">let</span> <span class="ident">order_params</span> <span class="op">=</span> <span class="ident">params</span>.<span class="ident">as_new_order_params</span>(<span class="ident">side</span>, <span class="ident">callback_info</span>);
+        <span class="kw">let</span> <span class="ident">limit_price</span> <span class="op">=</span> <span class="ident">order_params</span>.<span class="ident">limit_price</span>;
         <span class="kw">let</span> <span class="ident">order_summary</span> <span class="op">=</span> <span class="ident">new_order::process</span>(
             <span class="kw-2">&amp;</span><span class="ident"><span class="kw">crate</span>::id</span>(),
             <span class="macro">orderbook_accounts!</span>(<span class="self">self</span>, <span class="ident">new_order</span>),
@@ -715,7 +773,13 @@
             <span class="ident">BondsError::OrderRejected</span>
         );
 
-        <span class="prelude-val">Ok</span>((<span class="ident">callback_info</span>, <span class="ident">order_summary</span>))
+        <span class="prelude-val">Ok</span>((
+            <span class="ident">callback_info</span>,
+            <span class="ident">SensibleOrderSummary</span> {
+                <span class="ident">summary</span>: <span class="ident">order_summary</span>,
+                <span class="ident">limit_price</span>,
+            },
+        ))
     }
 
     <span class="doccomment">/// cancels an order within the aaob</span>
@@ -882,7 +946,7 @@
         <span class="doccomment">/// interest needs to start being accrued because this is new debt</span>
         <span class="kw">const</span> <span class="ident">NEW_DEBT</span>   <span class="op">=</span> <span class="number">1</span> <span class="op">&lt;</span><span class="op">&lt;</span> <span class="number">1</span>;
 
-        <span class="doccomment">/// order placed by a MarginUser. margin user == owner == fill_account == out_account</span>
+        <span class="doccomment">/// order placed by a MarginUser. margin user == fill_account == out_account</span>
         <span class="kw">const</span> <span class="ident">MARGIN</span>     <span class="op">=</span> <span class="number">1</span> <span class="op">&lt;</span><span class="op">&lt;</span> <span class="number">2</span>;
     }
 }
@@ -908,15 +972,13 @@
     <span class="kw">pub</span> <span class="ident">auto_stake</span>: <span class="ident">bool</span>,
 }
 
-<span class="kw">impl</span> <span class="ident">OrderParams</span> {
-    <span class="doccomment">/// Returns any callback flags that are implied by these parameters</span>
-    <span class="doccomment">/// These params do not comprehensively define all flags: there may be other reasons to set flags for an order</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">callback_flags</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">CallbackFlags</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">flags</span> <span class="op">=</span> <span class="ident">CallbackFlags::empty</span>();
-        <span class="ident">flags</span>.<span class="ident">set</span>(<span class="ident">CallbackFlags::AUTO_STAKE</span>, <span class="self">self</span>.<span class="ident">auto_stake</span>);
-        <span class="ident">flags</span>
-    }
+<span class="comment">// todo remove?</span>
+<span class="doccomment">/// Trait to retrieve the posted quote values from an `OrderSummary`</span>
+<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">WithQuoteQty</span> {
+    <span class="kw">fn</span> <span class="ident">posted_quote</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">price</span>: <span class="ident">u64</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">u64</span><span class="op">&gt;</span>;
+}
 
+<span class="kw">impl</span> <span class="ident">OrderParams</span> {
     <span class="doccomment">/// Transforms the locally defined struct into the expected struct for the agnostic orderbook</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">as_new_order_params</span>(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
@@ -937,25 +999,53 @@
     }
 }
 
-<span class="doccomment">/// Trait to calculate quanities implied by an `OrderSummary` and limit price</span>
-<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">OrderQuantities</span> {
-    <span class="doccomment">/// How much base value was filled by matching orders</span>
-    <span class="kw">fn</span> <span class="ident">base_filled</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">u64</span>;
-    <span class="doccomment">/// How much quote value was filled by matching orders</span>
-    <span class="kw">fn</span> <span class="ident">quote_filled</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">limit_price</span>: <span class="ident">u64</span>) -&gt; <span class="ident">u64</span>;
-    <span class="doccomment">/// How much quote value was posted to the order book</span>
-    <span class="kw">fn</span> <span class="ident">quote_posted</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">limit_price</span>: <span class="ident">u64</span>) -&gt; <span class="ident">u64</span>;
+<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">SensibleOrderSummary</span> {
+    <span class="ident">limit_price</span>: <span class="ident">u64</span>,
+    <span class="ident">summary</span>: <span class="ident">OrderSummary</span>,
 }
 
-<span class="kw">impl</span> <span class="ident">OrderQuantities</span> <span class="kw">for</span> <span class="ident">OrderSummary</span> {
-    <span class="kw">fn</span> <span class="ident">base_filled</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">u64</span> {
-        <span class="self">self</span>.<span class="ident">total_base_qty</span> <span class="op">-</span> <span class="self">self</span>.<span class="ident">total_base_qty_posted</span>
+<span class="comment">// fixme i think most of these are wrong. there may be issues with the aaob</span>
+<span class="comment">// implementation which is a huge mess of spaghetti code</span>
+<span class="kw">impl</span> <span class="ident">SensibleOrderSummary</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">summary</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">OrderSummary</span> {
+        <span class="ident">OrderSummary</span> {
+            <span class="ident">posted_order_id</span>: <span class="self">self</span>.<span class="ident">summary</span>.<span class="ident">posted_order_id</span>,
+            <span class="ident">total_base_qty</span>: <span class="self">self</span>.<span class="ident">summary</span>.<span class="ident">total_base_qty</span>,
+            <span class="ident">total_quote_qty</span>: <span class="self">self</span>.<span class="ident">summary</span>.<span class="ident">total_quote_qty</span>,
+            <span class="ident">total_base_qty_posted</span>: <span class="self">self</span>.<span class="ident">summary</span>.<span class="ident">total_base_qty_posted</span>,
+        }
     }
-    <span class="kw">fn</span> <span class="ident">quote_filled</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">limit_price</span>: <span class="ident">u64</span>) -&gt; <span class="ident">u64</span> {
-        <span class="self">self</span>.<span class="ident">total_quote_qty</span> <span class="op">-</span> <span class="self">self</span>.<span class="ident">quote_posted</span>(<span class="ident">limit_price</span>)
+
+    <span class="comment">// todo defensive rounding - depends on how this function is used</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">quote_posted</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">u64</span><span class="op">&gt;</span> {
+        <span class="ident">fp32_mul</span>(<span class="self">self</span>.<span class="ident">summary</span>.<span class="ident">total_base_qty_posted</span>, <span class="self">self</span>.<span class="ident">limit_price</span>)
+            .<span class="ident">ok_or_else</span>(<span class="op">|</span><span class="op">|</span> <span class="macro">error!</span>(<span class="ident">BondsError::FixedPointDivision</span>))
     }
-    <span class="kw">fn</span> <span class="ident">quote_posted</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">limit_price</span>: <span class="ident">u64</span>) -&gt; <span class="ident">u64</span> {
-        <span class="ident">fp32_mul</span>(<span class="self">self</span>.<span class="ident">total_base_qty_posted</span>, <span class="ident">limit_price</span>).<span class="ident">unwrap_or</span>(<span class="ident">u64::MAX</span>)
+
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">base_posted</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">u64</span> {
+        <span class="self">self</span>.<span class="ident">summary</span>.<span class="ident">total_base_qty_posted</span>
+    }
+
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">quote_filled</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">u64</span><span class="op">&gt;</span> {
+        <span class="prelude-val">Ok</span>(<span class="self">self</span>.<span class="ident">summary</span>.<span class="ident">total_quote_qty</span> <span class="op">-</span> <span class="self">self</span>.<span class="ident">quote_posted</span>()<span class="question-mark">?</span>)
+    }
+
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">base_filled</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">u64</span> {
+        <span class="self">self</span>.<span class="ident">summary</span>.<span class="ident">total_base_qty</span> <span class="op">-</span> <span class="self">self</span>.<span class="ident">summary</span>.<span class="ident">total_base_qty_posted</span>
+    }
+
+    <span class="doccomment">/// the total of all quote posted and filled</span>
+    <span class="doccomment">/// NOT the same as the &quot;max quote&quot;</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">quote_combined</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">u64</span><span class="op">&gt;</span> {
+        <span class="comment">// Ok(self.quote_posted()? + self.quote_filled())</span>
+        <span class="prelude-val">Ok</span>(<span class="self">self</span>.<span class="ident">summary</span>.<span class="ident">total_quote_qty</span>)
+    }
+
+    <span class="doccomment">/// the total of all base posted and filled</span>
+    <span class="doccomment">/// NOT the same as the &quot;max base&quot;</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">base_combined</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">u64</span> {
+        <span class="comment">// self.base_posted() + self.base_filled()</span>
+        <span class="self">self</span>.<span class="ident">summary</span>.<span class="ident">total_base_qty</span>
     }
 }
 

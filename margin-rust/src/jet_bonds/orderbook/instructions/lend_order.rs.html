@@ -104,108 +104,196 @@
 <span id="104">104</span>
 <span id="105">105</span>
 <span id="106">106</span>
+<span id="107">107</span>
+<span id="108">108</span>
+<span id="109">109</span>
+<span id="110">110</span>
+<span id="111">111</span>
+<span id="112">112</span>
+<span id="113">113</span>
+<span id="114">114</span>
+<span id="115">115</span>
+<span id="116">116</span>
+<span id="117">117</span>
+<span id="118">118</span>
+<span id="119">119</span>
+<span id="120">120</span>
+<span id="121">121</span>
+<span id="122">122</span>
+<span id="123">123</span>
+<span id="124">124</span>
+<span id="125">125</span>
+<span id="126">126</span>
+<span id="127">127</span>
+<span id="128">128</span>
+<span id="129">129</span>
+<span id="130">130</span>
+<span id="131">131</span>
+<span id="132">132</span>
+<span id="133">133</span>
+<span id="134">134</span>
+<span id="135">135</span>
+<span id="136">136</span>
+<span id="137">137</span>
+<span id="138">138</span>
+<span id="139">139</span>
+<span id="140">140</span>
+<span id="141">141</span>
+<span id="142">142</span>
+<span id="143">143</span>
+<span id="144">144</span>
+<span id="145">145</span>
+<span id="146">146</span>
+<span id="147">147</span>
+<span id="148">148</span>
+<span id="149">149</span>
+<span id="150">150</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">agnostic_orderbook::state::Side</span>;
 <span class="kw">use</span> <span class="ident">anchor_lang::prelude</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident">anchor_spl::token</span>::{<span class="ident">accessor::mint</span>, <span class="ident">transfer</span>, <span class="ident">Token</span>, <span class="ident">TokenAccount</span>};
+<span class="kw">use</span> <span class="ident">anchor_spl::token</span>::{<span class="ident">accessor::mint</span>, <span class="ident">Mint</span>, <span class="ident">Token</span>, <span class="ident">TokenAccount</span>};
+<span class="kw">use</span> <span class="ident">jet_program_proc_macros::BondTokenManager</span>;
 
 <span class="kw">use</span> <span class="kw">crate</span>::{
+    <span class="ident">bond_token_manager::BondTokenManager</span>,
     <span class="ident">orderbook::state</span>::<span class="kw-2">*</span>,
     <span class="ident">serialization</span>::{<span class="self">self</span>, <span class="ident">RemainingAccounts</span>},
     <span class="ident">tickets::state::SplitTicket</span>,
-    <span class="ident">utils::transfer_context</span>,
     <span class="ident">BondsError</span>,
 };
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Accounts</span>)]</span>
+<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Accounts</span>, <span class="ident">BondTokenManager</span>)]</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">LendOrder</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span> {
     <span class="doccomment">/// Signing authority over the token vault transferring for a lend order</span>
-    <span class="kw">pub</span> <span class="ident">user</span>: <span class="ident">Signer</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span>,
+    <span class="kw">pub</span> <span class="ident">authority</span>: <span class="ident">Signer</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span>,
 
-    <span class="doccomment">/// If auto stake is not enabled, the ticket account that will recieve the bond tickets</span>
-    <span class="attribute">#[<span class="ident">account</span>(<span class="kw-2">mut</span>, <span class="ident">constraint</span> <span class="op">=</span>
-        <span class="ident">mint</span>(<span class="kw-2">&amp;</span><span class="ident">user_ticket_vault</span>.<span class="ident">to_account_info</span>()).<span class="ident">unwrap</span>()
-        <span class="op">==</span> <span class="ident">orderbook_mut</span>.<span class="ident">bond_manager</span>.<span class="ident">load</span>().<span class="ident">unwrap</span>().<span class="ident">bond_ticket_mint</span>.<span class="ident">key</span>() @ <span class="ident">BondsError::WrongTicketMint</span>
-    )]</span>
-    <span class="kw">pub</span> <span class="ident">user_ticket_vault</span>: <span class="ident">Account</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span>, <span class="ident">TokenAccount</span><span class="op">&gt;</span>,
-
-    <span class="attribute">#[<span class="ident">account</span>(<span class="kw-2">mut</span>, <span class="ident">constraint</span> <span class="op">=</span>
-        <span class="ident">mint</span>(<span class="kw-2">&amp;</span><span class="ident">user_token_vault</span>.<span class="ident">to_account_info</span>()).<span class="ident">unwrap</span>()
-        <span class="op">==</span> <span class="ident">orderbook_mut</span>.<span class="ident">bond_manager</span>.<span class="ident">load</span>().<span class="ident">unwrap</span>().<span class="ident">underlying_token_mint</span>.<span class="ident">key</span>() @ <span class="ident">BondsError::WrongUnderlyingTokenMint</span>
-    )]</span>
-    <span class="kw">pub</span> <span class="ident">user_token_vault</span>: <span class="ident">Account</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span>, <span class="ident">TokenAccount</span><span class="op">&gt;</span>,
-
-    <span class="doccomment">/// SplitTicket that will be created if the order is filled as a taker and `auto_stake` is enabled</span>
-    <span class="doccomment">/// CHECK: initialized in instruction</span>
-    <span class="attribute">#[<span class="ident">account</span>(<span class="kw-2">mut</span>)]</span>
-    <span class="kw">pub</span> <span class="ident">split_ticket</span>: <span class="ident">AccountInfo</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span>,
-
+    <span class="attribute">#[<span class="ident">bond_manager</span>]</span>
     <span class="kw">pub</span> <span class="ident">orderbook_mut</span>: <span class="ident">OrderbookMut</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span>,
 
+    <span class="doccomment">/// where to settle tickets on match:</span>
+    <span class="doccomment">/// - SplitTicket that will be created if the order is filled as a taker and `auto_stake` is enabled</span>
+    <span class="doccomment">/// - ticket token account to receive bond tickets</span>
+    <span class="doccomment">/// be careful to check this properly. one way is by using lender_tickets_token_account</span>
+    <span class="attribute">#[<span class="ident">account</span>(<span class="kw-2">mut</span>)]</span>
+    <span class="ident">ticket_settlement</span>: <span class="ident">AccountInfo</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span>,
+
+    <span class="doccomment">/// where to loan tokens from</span>
+    <span class="attribute">#[<span class="ident">account</span>(<span class="kw-2">mut</span>, <span class="ident">constraint</span> <span class="op">=</span> <span class="ident">mint</span>(<span class="kw-2">&amp;</span><span class="ident">lender_tokens</span>.<span class="ident">to_account_info</span>())<span class="question-mark">?</span> <span class="op">==</span> <span class="ident">orderbook_mut</span>.<span class="ident">underlying_mint</span>() @ <span class="ident">BondsError::WrongUnderlyingTokenMint</span>)]</span>
+    <span class="kw">pub</span> <span class="ident">lender_tokens</span>: <span class="ident">Account</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span>, <span class="ident">TokenAccount</span><span class="op">&gt;</span>,
+
     <span class="doccomment">/// The market token vault</span>
-    <span class="attribute">#[<span class="ident">account</span>(<span class="kw-2">mut</span>, <span class="ident">address</span> <span class="op">=</span> <span class="ident">orderbook_mut</span>.<span class="ident">bond_manager</span>.<span class="ident">load</span>().<span class="ident">unwrap</span>().<span class="ident">underlying_token_vault</span>.<span class="ident">key</span>() @ <span class="ident">BondsError::WrongVault</span>)]</span>
+    <span class="attribute">#[<span class="ident">account</span>(<span class="kw-2">mut</span>, <span class="ident">address</span> <span class="op">=</span> <span class="ident">orderbook_mut</span>.<span class="ident">vault</span>() @ <span class="ident">BondsError::WrongVault</span>)]</span>
     <span class="kw">pub</span> <span class="ident">underlying_token_vault</span>: <span class="ident">Account</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span>, <span class="ident">TokenAccount</span><span class="op">&gt;</span>,
 
-    <span class="doccomment">/// payer for `Obligation` initialization</span>
+    <span class="doccomment">/// The market token vault</span>
+    <span class="attribute">#[<span class="ident">account</span>(<span class="kw-2">mut</span>, <span class="ident">address</span> <span class="op">=</span> <span class="ident">orderbook_mut</span>.<span class="ident">ticket_mint</span>() @ <span class="ident">BondsError::WrongTicketMint</span>)]</span>
+    <span class="kw">pub</span> <span class="ident">ticket_mint</span>: <span class="ident">Account</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span>, <span class="ident">Mint</span><span class="op">&gt;</span>,
+
     <span class="attribute">#[<span class="ident">account</span>(<span class="kw-2">mut</span>)]</span>
     <span class="kw">pub</span> <span class="ident">payer</span>: <span class="ident">Signer</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span>,
     <span class="kw">pub</span> <span class="ident">system_program</span>: <span class="ident">Program</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span>, <span class="ident">System</span><span class="op">&gt;</span>,
     <span class="kw">pub</span> <span class="ident">token_program</span>: <span class="ident">Program</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span>, <span class="ident">Token</span><span class="op">&gt;</span>,
-    <span class="comment">// Optional event adapter account</span>
-    <span class="comment">// pub event_adapter: AccountInfo&lt;&#39;info&gt;,</span>
+}
+
+<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span> <span class="ident">LendOrder</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">lender_tickets_token_account</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Pubkey</span><span class="op">&gt;</span> {
+        <span class="ident">Account</span>::<span class="op">&lt;</span><span class="lifetime">&#39;info</span>, <span class="ident">TokenAccount</span><span class="op">&gt;</span><span class="ident">::try_from</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">ticket_settlement</span>)<span class="question-mark">?</span>;
+        <span class="macro">require!</span>(
+            <span class="ident">mint</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">ticket_settlement</span>.<span class="ident">to_account_info</span>())<span class="question-mark">?</span> <span class="op">==</span> <span class="self">self</span>.<span class="ident">orderbook_mut</span>.<span class="ident">ticket_mint</span>(),
+            <span class="ident">BondsError::WrongTicketMint</span>
+        );
+
+        <span class="prelude-val">Ok</span>(<span class="self">self</span>.<span class="ident">ticket_settlement</span>.<span class="ident">key</span>())
+    }
+
+    <span class="doccomment">/// returns the amount of tickets staked</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">lend</span>(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        <span class="ident">user</span>: <span class="ident">Pubkey</span>,
+        <span class="ident">seed</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>],
+        <span class="ident">callback_info</span>: <span class="ident">CallbackInfo</span>,
+        <span class="ident">order_summary</span>: <span class="kw-2">&amp;</span><span class="ident">SensibleOrderSummary</span>,
+    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">u64</span><span class="op">&gt;</span> {
+        <span class="kw">let</span> <span class="ident">staked</span> <span class="op">=</span> <span class="kw">if</span> <span class="ident">order_summary</span>.<span class="ident">base_filled</span>() <span class="op">&gt;</span> <span class="number">0</span> {
+            <span class="kw">if</span> <span class="ident">callback_info</span>.<span class="ident">flags</span>.<span class="ident">contains</span>(<span class="ident">CallbackFlags::AUTO_STAKE</span>) {
+                <span class="comment">// auto_stake: issue split tickets to the user for immediate fill</span>
+                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">split_ticket</span> <span class="op">=</span> <span class="ident">serialization::init</span>::<span class="op">&lt;</span><span class="ident">SplitTicket</span><span class="op">&gt;</span>(
+                    <span class="self">self</span>.<span class="ident">ticket_settlement</span>.<span class="ident">to_account_info</span>(),
+                    <span class="self">self</span>.<span class="ident">payer</span>.<span class="ident">to_account_info</span>(),
+                    <span class="self">self</span>.<span class="ident">system_program</span>.<span class="ident">to_account_info</span>(),
+                    <span class="kw-2">&amp;</span><span class="ident">SplitTicket::make_seeds</span>(<span class="ident">user</span>.<span class="ident">as_ref</span>(), <span class="ident">seed</span>),
+                )<span class="question-mark">?</span>;
+                <span class="kw">let</span> <span class="ident">timestamp</span> <span class="op">=</span> <span class="ident">Clock::get</span>()<span class="question-mark">?</span>.<span class="ident">unix_timestamp</span>;
+                <span class="kw-2">*</span><span class="ident">split_ticket</span> <span class="op">=</span> <span class="ident">SplitTicket</span> {
+                    <span class="ident">owner</span>: <span class="ident">user</span>,
+                    <span class="ident">bond_manager</span>: <span class="self">self</span>.<span class="ident">orderbook_mut</span>.<span class="ident">bond_manager</span>.<span class="ident">key</span>(),
+                    <span class="ident">order_tag</span>: <span class="ident">callback_info</span>.<span class="ident">order_tag</span>,
+                    <span class="ident">struck_timestamp</span>: <span class="ident">timestamp</span>,
+                    <span class="ident">maturation_timestamp</span>: <span class="ident">timestamp</span>
+                        <span class="op">+</span> <span class="self">self</span>.<span class="ident">orderbook_mut</span>.<span class="ident">bond_manager</span>.<span class="ident">load</span>()<span class="question-mark">?</span>.<span class="ident">lend_duration</span>,
+                    <span class="ident">principal</span>: <span class="ident">order_summary</span>.<span class="ident">quote_filled</span>()<span class="question-mark">?</span>,
+                    <span class="ident">interest</span>: <span class="ident">order_summary</span>.<span class="ident">base_filled</span>() <span class="op">-</span> <span class="ident">order_summary</span>.<span class="ident">quote_filled</span>()<span class="question-mark">?</span>,
+                };
+                <span class="ident">order_summary</span>.<span class="ident">base_filled</span>()
+            } <span class="kw">else</span> {
+                <span class="comment">// no auto_stake: issue free tickets to the user for immediate fill</span>
+                <span class="self">self</span>.<span class="ident">mint</span>(
+                    <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">ticket_mint</span>,
+                    <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">ticket_settlement</span>,
+                    <span class="ident">order_summary</span>.<span class="ident">base_filled</span>(),
+                )<span class="question-mark">?</span>;
+                <span class="number">0</span>
+            }
+        } <span class="kw">else</span> {
+            <span class="number">0</span>
+        };
+        <span class="comment">// take all underlying that has been lent plus what may be lent later</span>
+        <span class="ident">anchor_spl::token::transfer</span>(
+            <span class="ident">anchor_lang::prelude::CpiContext::new</span>(
+                <span class="self">self</span>.<span class="ident">token_program</span>.<span class="ident">to_account_info</span>(),
+                <span class="ident">anchor_spl::token::Transfer</span> {
+                    <span class="ident">from</span>: <span class="self">self</span>.<span class="ident">lender_tokens</span>.<span class="ident">to_account_info</span>(),
+                    <span class="ident">to</span>: <span class="self">self</span>.<span class="ident">underlying_token_vault</span>.<span class="ident">to_account_info</span>(),
+                    <span class="ident">authority</span>: <span class="self">self</span>.<span class="ident">authority</span>.<span class="ident">to_account_info</span>(),
+                },
+            ),
+            <span class="ident">order_summary</span>.<span class="ident">quote_combined</span>()<span class="question-mark">?</span>,
+        )<span class="question-mark">?</span>;
+
+        <span class="prelude-val">Ok</span>(<span class="ident">staked</span>)
+    }
 }
 
 <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">handler</span>(<span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">LendOrder</span><span class="op">&gt;</span>, <span class="ident">params</span>: <span class="ident">OrderParams</span>, <span class="ident">seed</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
     <span class="kw">let</span> (<span class="ident">callback_info</span>, <span class="ident">order_summary</span>) <span class="op">=</span> <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">orderbook_mut</span>.<span class="ident">place_order</span>(
-        <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">user</span>.<span class="ident">key</span>(),
+        <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">authority</span>.<span class="ident">key</span>(),
         <span class="ident">Side::Bid</span>,
         <span class="ident">params</span>,
         <span class="kw">if</span> <span class="ident">params</span>.<span class="ident">auto_stake</span> {
-            <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">user</span>.<span class="ident">key</span>()
+            <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">authority</span>.<span class="ident">key</span>()
         } <span class="kw">else</span> {
-            <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">user_ticket_vault</span>.<span class="ident">key</span>()
+            <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">lender_tickets_token_account</span>()<span class="question-mark">?</span>
         },
-        <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">user_token_vault</span>.<span class="ident">key</span>(),
+        <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">lender_tokens</span>.<span class="ident">key</span>(),
         <span class="ident">ctx</span>.<span class="ident">remaining_accounts</span>
             .<span class="ident">iter</span>()
             .<span class="ident">maybe_next_adapter</span>()<span class="question-mark">?</span>
             .<span class="ident">map</span>(<span class="op">|</span><span class="ident">a</span><span class="op">|</span> <span class="ident">a</span>.<span class="ident">key</span>()),
-        <span class="ident">CallbackFlags::empty</span>(),
+        <span class="kw">if</span> <span class="ident">params</span>.<span class="ident">auto_stake</span> {
+            <span class="ident">CallbackFlags::AUTO_STAKE</span>
+        } <span class="kw">else</span> {
+            <span class="ident">CallbackFlags::empty</span>()
+        },
     )<span class="question-mark">?</span>;
-
-    <span class="kw">if</span> <span class="ident">params</span>.<span class="ident">auto_stake</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">split_ticket</span> <span class="op">=</span> <span class="ident">serialization::init</span>::<span class="op">&lt;</span><span class="ident">SplitTicket</span><span class="op">&gt;</span>(
-            <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">split_ticket</span>.<span class="ident">to_account_info</span>(),
-            <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">payer</span>.<span class="ident">to_account_info</span>(),
-            <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">system_program</span>.<span class="ident">to_account_info</span>(),
-            <span class="kw-2">&amp;</span><span class="ident">SplitTicket::make_seeds</span>(<span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">user</span>.<span class="ident">key</span>().<span class="ident">as_ref</span>(), <span class="ident">seed</span>.<span class="ident">as_slice</span>()),
-        )<span class="question-mark">?</span>;
-        <span class="kw">let</span> <span class="ident">timestamp</span> <span class="op">=</span> <span class="ident">Clock::get</span>()<span class="question-mark">?</span>.<span class="ident">unix_timestamp</span>;
-
-        <span class="kw-2">*</span><span class="ident">split_ticket</span> <span class="op">=</span> <span class="ident">SplitTicket</span> {
-            <span class="ident">owner</span>: <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">user</span>.<span class="ident">key</span>(),
-            <span class="ident">bond_manager</span>: <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">orderbook_mut</span>.<span class="ident">bond_manager</span>.<span class="ident">key</span>(),
-            <span class="ident">order_tag</span>: <span class="ident">callback_info</span>.<span class="ident">order_tag</span>,
-            <span class="ident">struck_timestamp</span>: <span class="ident">timestamp</span>,
-            <span class="ident">maturation_timestamp</span>: <span class="ident">timestamp</span>
-                <span class="op">+</span> <span class="ident">ctx</span>
-                    .<span class="ident">accounts</span>
-                    .<span class="ident">orderbook_mut</span>
-                    .<span class="ident">bond_manager</span>
-                    .<span class="ident">load</span>()<span class="question-mark">?</span>
-                    .<span class="ident">lend_duration</span>,
-            <span class="ident">principal</span>: <span class="ident">order_summary</span>.<span class="ident">total_quote_qty</span>,
-            <span class="ident">interest</span>: <span class="ident">order_summary</span>.<span class="ident">total_base_qty</span> <span class="op">-</span> <span class="ident">order_summary</span>.<span class="ident">total_quote_qty</span>,
-        }
-    }
-    <span class="comment">// todo defensive rounding for posted_quote</span>
-    <span class="ident">transfer</span>(
-        <span class="macro">transfer_context!</span>(<span class="ident">ctx</span>, <span class="ident">underlying_token_vault</span>, <span class="ident">user_token_vault</span>, <span class="ident">user</span>),
-        <span class="ident">order_summary</span>.<span class="ident">total_quote_qty</span>,
+    <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">lend</span>(
+        <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">authority</span>.<span class="ident">key</span>(),
+        <span class="kw-2">&amp;</span><span class="ident">seed</span>,
+        <span class="ident">callback_info</span>,
+        <span class="kw-2">&amp;</span><span class="ident">order_summary</span>,
     )<span class="question-mark">?</span>;
     <span class="macro">emit!</span>(<span class="ident"><span class="kw">crate</span>::events::LendOrder</span> {
         <span class="ident">bond_market</span>: <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">orderbook_mut</span>.<span class="ident">bond_manager</span>.<span class="ident">key</span>(),
-        <span class="ident">lender</span>: <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">user</span>.<span class="ident">key</span>(),
-        <span class="ident">order_summary</span>,
+        <span class="ident">lender</span>: <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">authority</span>.<span class="ident">key</span>(),
+        <span class="ident">order_summary</span>: <span class="ident">order_summary</span>.<span class="ident">summary</span>(),
     });
 
     <span class="prelude-val">Ok</span>(())

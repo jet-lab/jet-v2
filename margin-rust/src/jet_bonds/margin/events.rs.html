@@ -33,6 +33,14 @@
 <span id="33">33</span>
 <span id="34">34</span>
 <span id="35">35</span>
+<span id="36">36</span>
+<span id="37">37</span>
+<span id="38">38</span>
+<span id="39">39</span>
+<span id="40">40</span>
+<span id="41">41</span>
+<span id="42">42</span>
+<span id="43">43</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">agnostic_orderbook::state::OrderSummary</span>;
 <span class="kw">use</span> <span class="ident">anchor_lang</span>::{<span class="ident">event</span>, <span class="ident">prelude</span>::<span class="kw-2">*</span>};
 
@@ -50,6 +58,14 @@
     <span class="kw">pub</span> <span class="ident">bond_manager</span>: <span class="ident">Pubkey</span>,
     <span class="kw">pub</span> <span class="ident">margin_account</span>: <span class="ident">Pubkey</span>,
     <span class="kw">pub</span> <span class="ident">borrower_account</span>: <span class="ident">Pubkey</span>,
+    <span class="kw">pub</span> <span class="ident">order_summary</span>: <span class="ident">OrderSummary</span>,
+}
+
+<span class="attribute">#[<span class="ident">event</span>]</span>
+<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">MarginLend</span> {
+    <span class="kw">pub</span> <span class="ident">bond_market</span>: <span class="ident">Pubkey</span>,
+    <span class="kw">pub</span> <span class="ident">margin_account</span>: <span class="ident">Pubkey</span>,
+    <span class="kw">pub</span> <span class="ident">lender</span>: <span class="ident">Pubkey</span>,
     <span class="kw">pub</span> <span class="ident">order_summary</span>: <span class="ident">OrderSummary</span>,
 }
 

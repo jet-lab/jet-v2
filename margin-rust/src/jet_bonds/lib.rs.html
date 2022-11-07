@@ -365,6 +365,29 @@
 <span id="365">365</span>
 <span id="366">366</span>
 <span id="367">367</span>
+<span id="368">368</span>
+<span id="369">369</span>
+<span id="370">370</span>
+<span id="371">371</span>
+<span id="372">372</span>
+<span id="373">373</span>
+<span id="374">374</span>
+<span id="375">375</span>
+<span id="376">376</span>
+<span id="377">377</span>
+<span id="378">378</span>
+<span id="379">379</span>
+<span id="380">380</span>
+<span id="381">381</span>
+<span id="382">382</span>
+<span id="383">383</span>
+<span id="384">384</span>
+<span id="385">385</span>
+<span id="386">386</span>
+<span id="387">387</span>
+<span id="388">388</span>
+<span id="389">389</span>
+<span id="390">390</span>
 </pre><pre class="rust"><code><span class="doccomment">//! An orderbook-based fixed term bond market hosted on the Solana blockchain</span>
 <span class="doccomment">//!</span>
 <span class="doccomment">//! # Interaction</span>
@@ -484,6 +507,7 @@
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">events</span>;
 <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">errors::BondsError</span>;
 
+<span class="kw">mod</span> <span class="ident">bond_token_manager</span>;
 <span class="doccomment">/// Utilities for safely serializing and deserializing solana accounts</span>
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod</span> <span class="ident">serialization</span>;
 <span class="doccomment">/// local utilities for the crate</span>
@@ -511,12 +535,12 @@
 
     <span class="doccomment">/// authorize an address to run orderbook consume_event instructions</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">authorize_crank</span>(<span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">AuthorizeCrank</span><span class="op">&gt;</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="ident">jet_bonds::instructions::authorize_crank::handler</span>(<span class="ident">ctx</span>)
+        <span class="ident">instructions::authorize_crank::handler</span>(<span class="ident">ctx</span>)
     }
 
     <span class="doccomment">/// unauthorize an address to run orderbook consume_event instructions</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">revoke_crank</span>(<span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">RevokeCrank</span><span class="op">&gt;</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="ident">jet_bonds::instructions::revoke_crank::handler</span>(<span class="ident">ctx</span>)
+        <span class="ident">instructions::revoke_crank::handler</span>(<span class="ident">ctx</span>)
     }
 
     <span class="doccomment">/// Initializes a BondManager for a bond ticket market</span>
@@ -524,7 +548,7 @@
         <span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">InitializeBondManager</span><span class="op">&gt;</span>,
         <span class="ident">params</span>: <span class="ident">InitializeBondManagerParams</span>,
     ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="ident">jet_bonds::instructions::initialize_bond_manager::handler</span>(<span class="ident">ctx</span>, <span class="ident">params</span>)
+        <span class="ident">instructions::initialize_bond_manager::handler</span>(<span class="ident">ctx</span>, <span class="ident">params</span>)
     }
 
     <span class="doccomment">/// Initializes a new orderbook</span>
@@ -532,7 +556,7 @@
         <span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">InitializeOrderbook</span><span class="op">&gt;</span>,
         <span class="ident">params</span>: <span class="ident">InitializeOrderbookParams</span>,
     ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="ident">jet_bonds::instructions::initialize_orderbook::handler</span>(<span class="ident">ctx</span>, <span class="ident">params</span>)
+        <span class="ident">instructions::initialize_orderbook::handler</span>(<span class="ident">ctx</span>, <span class="ident">params</span>)
     }
 
     <span class="doccomment">/// Modify a `BondManager` account</span>
@@ -542,12 +566,12 @@
         <span class="ident">data</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>,
         <span class="ident">offset</span>: <span class="ident">usize</span>,
     ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="ident">jet_bonds::instructions::modify_bond_manager::handler</span>(<span class="ident">ctx</span>, <span class="ident">data</span>, <span class="ident">offset</span>)
+        <span class="ident">instructions::modify_bond_manager::handler</span>(<span class="ident">ctx</span>, <span class="ident">data</span>, <span class="ident">offset</span>)
     }
 
     <span class="doccomment">/// Pause matching of orders placed in the orderbook</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">pause_order_matching</span>(<span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">PauseOrderMatching</span><span class="op">&gt;</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="ident">jet_bonds::instructions::pause_order_matching::handler</span>(<span class="ident">ctx</span>)
+        <span class="ident">instructions::pause_order_matching::handler</span>(<span class="ident">ctx</span>)
     }
 
     <span class="doccomment">/// Resume matching of orders placed in the orderbook</span>
@@ -555,7 +579,7 @@
     <span class="doccomment">/// existing matches. Check the `orderbook_market_state.pause_matching` variable</span>
     <span class="doccomment">/// to determine success</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">resume_order_matching</span>(<span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">ResumeOrderMatching</span><span class="op">&gt;</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="ident">jet_bonds::instructions::resume_order_matching::handler</span>(<span class="ident">ctx</span>)
+        <span class="ident">instructions::resume_order_matching::handler</span>(<span class="ident">ctx</span>)
     }
     <span class="comment">//</span>
     <span class="comment">// =============================================</span>
@@ -568,7 +592,7 @@
 
     <span class="doccomment">/// Create a new borrower account</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">initialize_margin_user</span>(<span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">InitializeMarginUser</span><span class="op">&gt;</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="ident">jet_bonds::instructions::initialize_margin_user::handler</span>(<span class="ident">ctx</span>)
+        <span class="ident">instructions::initialize_margin_user::handler</span>(<span class="ident">ctx</span>)
     }
 
     <span class="doccomment">/// Place a borrow order by leveraging margin account value</span>
@@ -577,22 +601,44 @@
         <span class="ident">params</span>: <span class="ident">OrderParams</span>,
         <span class="ident">seed</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>,
     ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="ident">jet_bonds::instructions::margin_borrow_order::handler</span>(<span class="ident">ctx</span>, <span class="ident">params</span>, <span class="ident">seed</span>)
+        <span class="ident">instructions::margin_borrow_order::handler</span>(<span class="ident">ctx</span>, <span class="ident">params</span>, <span class="ident">seed</span>)
+    }
+
+    <span class="doccomment">/// Sell tickets that are already owned</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">margin_sell_tickets_order</span>(
+        <span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">MarginSellTicketsOrder</span><span class="op">&gt;</span>,
+        <span class="ident">params</span>: <span class="ident">OrderParams</span>,
+    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
+        <span class="ident">instructions::margin_sell_tickets_order::handler</span>(<span class="ident">ctx</span>, <span class="ident">params</span>)
+    }
+
+    <span class="doccomment">/// Redeem a staked ticket</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">margin_redeem_ticket</span>(<span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">MarginRedeemTicket</span><span class="op">&gt;</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
+        <span class="ident">instructions::margin_redeem_ticket::handler</span>(<span class="ident">ctx</span>)
+    }
+
+    <span class="doccomment">/// Place a `Lend` order to the book by depositing tokens</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">margin_lend_order</span>(
+        <span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">MarginLendOrder</span><span class="op">&gt;</span>,
+        <span class="ident">params</span>: <span class="ident">OrderParams</span>,
+        <span class="ident">seed</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>,
+    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
+        <span class="ident">instructions::margin_lend_order::handler</span>(<span class="ident">ctx</span>, <span class="ident">params</span>, <span class="ident">seed</span>)
     }
 
     <span class="doccomment">/// Refresh the associated margin account `claims` for a given `MarginUser` account</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">refresh_position</span>(<span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">RefreshPosition</span><span class="op">&gt;</span>, <span class="ident">expect_price</span>: <span class="ident">bool</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="ident">jet_bonds::instructions::refresh_position::handler</span>(<span class="ident">ctx</span>, <span class="ident">expect_price</span>)
+        <span class="ident">instructions::refresh_position::handler</span>(<span class="ident">ctx</span>, <span class="ident">expect_price</span>)
     }
 
     <span class="doccomment">/// Repay debt on an Obligation</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">repay</span>(<span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">Repay</span><span class="op">&gt;</span>, <span class="ident">amount</span>: <span class="ident">u64</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="ident">jet_bonds::instructions::repay::handler</span>(<span class="ident">ctx</span>, <span class="ident">amount</span>)
+        <span class="ident">instructions::repay::handler</span>(<span class="ident">ctx</span>, <span class="ident">amount</span>)
     }
 
     <span class="doccomment">/// Settle payments to a margin account</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">settle</span>(<span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">Settle</span><span class="op">&gt;</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="ident">jet_bonds::instructions::settle::handler</span>(<span class="ident">ctx</span>)
+        <span class="ident">instructions::settle::handler</span>(<span class="ident">ctx</span>)
     }
 
     <span class="comment">//</span>
@@ -606,17 +652,17 @@
 
     <span class="doccomment">/// Place an order to the book to sell tickets, which will burn them</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">sell_tickets_order</span>(<span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">SellTicketsOrder</span><span class="op">&gt;</span>, <span class="ident">params</span>: <span class="ident">OrderParams</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="ident">jet_bonds::instructions::sell_tickets_order::handler</span>(<span class="ident">ctx</span>, <span class="ident">params</span>)
+        <span class="ident">instructions::sell_tickets_order::handler</span>(<span class="ident">ctx</span>, <span class="ident">params</span>)
     }
 
     <span class="doccomment">/// Cancels an order on the book</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">cancel_order</span>(<span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">CancelOrder</span><span class="op">&gt;</span>, <span class="ident">order_id</span>: <span class="ident">u128</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="ident">jet_bonds::instructions::cancel_order::handler</span>(<span class="ident">ctx</span>, <span class="ident">order_id</span>)
+        <span class="ident">instructions::cancel_order::handler</span>(<span class="ident">ctx</span>, <span class="ident">order_id</span>)
     }
 
     <span class="doccomment">/// Place a `Lend` order to the book by depositing tokens</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">lend_order</span>(<span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">LendOrder</span><span class="op">&gt;</span>, <span class="ident">params</span>: <span class="ident">OrderParams</span>, <span class="ident">seed</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="ident">jet_bonds::instructions::lend_order::handler</span>(<span class="ident">ctx</span>, <span class="ident">params</span>, <span class="ident">seed</span>)
+        <span class="ident">instructions::lend_order::handler</span>(<span class="ident">ctx</span>, <span class="ident">params</span>, <span class="ident">seed</span>)
     }
 
     <span class="doccomment">/// Crank specific instruction, processes the event queue</span>
@@ -625,7 +671,7 @@
         <span class="ident">num_events</span>: <span class="ident">u32</span>,
         <span class="ident">seed_bytes</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span><span class="op">&gt;</span>,
     ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="ident">jet_bonds::instructions::consume_events::handler</span>(<span class="ident">ctx</span>, <span class="ident">num_events</span>, <span class="ident">seed_bytes</span>)
+        <span class="ident">instructions::consume_events::handler</span>(<span class="ident">ctx</span>, <span class="ident">num_events</span>, <span class="ident">seed_bytes</span>)
     }
 
     <span class="comment">//</span>
@@ -640,12 +686,12 @@
     <span class="doccomment">/// Exchange underlying token for bond tickets</span>
     <span class="doccomment">/// WARNING: tickets must be staked for redeption of underlying</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">exchange_tokens</span>(<span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">ExchangeTokens</span><span class="op">&gt;</span>, <span class="ident">amount</span>: <span class="ident">u64</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="ident">jet_bonds::instructions::exchange_tokens::handler</span>(<span class="ident">ctx</span>, <span class="ident">amount</span>)
+        <span class="ident">instructions::exchange_tokens::handler</span>(<span class="ident">ctx</span>, <span class="ident">amount</span>)
     }
 
     <span class="doccomment">/// Redeems staked tickets for their underlying value</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">redeem_ticket</span>(<span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">RedeemTicket</span><span class="op">&gt;</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="ident">jet_bonds::instructions::redeem_ticket::handler</span>(<span class="ident">ctx</span>)
+        <span class="ident">instructions::redeem_ticket::handler</span>(<span class="ident">ctx</span>)
     }
 
     <span class="doccomment">/// Stakes bond tickets for later redemption</span>
@@ -653,7 +699,7 @@
         <span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">StakeBondTickets</span><span class="op">&gt;</span>,
         <span class="ident">params</span>: <span class="ident">StakeBondTicketsParams</span>,
     ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="ident">jet_bonds::instructions::stake_bond_tickets::handler</span>(<span class="ident">ctx</span>, <span class="ident">params</span>)
+        <span class="ident">instructions::stake_bond_tickets::handler</span>(<span class="ident">ctx</span>, <span class="ident">params</span>)
     }
 
     <span class="doccomment">/// Transfer staked tickets to a new owner</span>
@@ -661,7 +707,7 @@
         <span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">TransferTicketOwnership</span><span class="op">&gt;</span>,
         <span class="ident">new_owner</span>: <span class="ident">Pubkey</span>,
     ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="ident">jet_bonds::instructions::transfer_ticket_ownership::handler</span>(<span class="ident">ctx</span>, <span class="ident">new_owner</span>)
+        <span class="ident">instructions::transfer_ticket_ownership::handler</span>(<span class="ident">ctx</span>, <span class="ident">new_owner</span>)
     }
     <span class="comment">//</span>
     <span class="comment">// =============================================</span>
@@ -677,13 +723,13 @@
         <span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">RegisterAdapter</span><span class="op">&gt;</span>,
         <span class="ident">params</span>: <span class="ident">RegisterAdapterParams</span>,
     ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="ident">jet_bonds::instructions::register_adapter::handler</span>(<span class="ident">ctx</span>, <span class="ident">params</span>)
+        <span class="ident">instructions::register_adapter::handler</span>(<span class="ident">ctx</span>, <span class="ident">params</span>)
     }
 
     <span class="doccomment">/// Pop the given number of events off the adapter queue</span>
     <span class="doccomment">/// Event logic is left to the outside program</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">pop_adapter_events</span>(<span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">PopAdapterEvents</span><span class="op">&gt;</span>, <span class="ident">num_events</span>: <span class="ident">u32</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="ident">jet_bonds::instructions::pop_adapter_events::handler</span>(<span class="ident">ctx</span>, <span class="ident">num_events</span>)
+        <span class="ident">instructions::pop_adapter_events::handler</span>(<span class="ident">ctx</span>, <span class="ident">num_events</span>)
     }
     <span class="comment">//</span>
     <span class="comment">// =============================================</span>
@@ -709,7 +755,10 @@
     <span class="kw">pub</span> <span class="kw">const</span> <span class="ident">CRANK_AUTHORIZATION</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>] <span class="op">=</span> <span class="string">b&quot;crank_authorization&quot;</span>;
 
     <span class="attribute">#[<span class="ident">constant</span>]</span>
-    <span class="kw">pub</span> <span class="kw">const</span> <span class="ident">DEPOSIT_NOTES</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>] <span class="op">=</span> <span class="string">b&quot;deposit_notes&quot;</span>;
+    <span class="kw">pub</span> <span class="kw">const</span> <span class="ident">CLAIM_NOTES</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>] <span class="op">=</span> <span class="string">b&quot;claim_notes&quot;</span>;
+
+    <span class="attribute">#[<span class="ident">constant</span>]</span>
+    <span class="kw">pub</span> <span class="kw">const</span> <span class="ident">COLLATERAL_NOTES</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>] <span class="op">=</span> <span class="string">b&quot;collateral_notes&quot;</span>;
 
     <span class="attribute">#[<span class="ident">constant</span>]</span>
     <span class="kw">pub</span> <span class="kw">const</span> <span class="ident">SPLIT_TICKET</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>] <span class="op">=</span> <span class="string">b&quot;split_ticket&quot;</span>;
@@ -728,9 +777,6 @@
 
     <span class="attribute">#[<span class="ident">constant</span>]</span>
     <span class="kw">pub</span> <span class="kw">const</span> <span class="ident">UNDERLYING_TOKEN_VAULT</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>] <span class="op">=</span> <span class="string">b&quot;underlying_token_vault&quot;</span>;
-
-    <span class="attribute">#[<span class="ident">constant</span>]</span>
-    <span class="kw">pub</span> <span class="kw">const</span> <span class="ident">CLAIM_NOTES</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>] <span class="op">=</span> <span class="string">b&quot;user_claims&quot;</span>;
 }
 </code></pre></div>
 </section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="jet_bonds" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0 (a55dd71d5 2022-09-19)" ></div></body></html>

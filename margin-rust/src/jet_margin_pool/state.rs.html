@@ -909,7 +909,7 @@
 <span class="comment">// along with this program.  If not, see &lt;https://www.gnu.org/licenses/&gt;.</span>
 
 <span class="kw">use</span> <span class="ident">anchor_lang</span>::{<span class="ident">prelude</span>::<span class="kw-2">*</span>, <span class="ident">solana_program::clock::UnixTimestamp</span>};
-<span class="kw">use</span> <span class="ident">jet_proto_math::Number</span>;
+<span class="kw">use</span> <span class="ident">jet_program_common::Number</span>;
 <span class="kw">use</span> <span class="ident">pyth_sdk_solana::PriceFeed</span>;
 <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">any</span>(<span class="ident">test</span>, <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;cli&quot;</span>))]</span>
 <span class="kw">use</span> <span class="ident">serde::ser</span>::{<span class="ident">Serialize</span>, <span class="ident">SerializeStruct</span>, <span class="ident">Serializer</span>};

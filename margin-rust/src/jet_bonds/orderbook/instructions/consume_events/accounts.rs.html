@@ -119,10 +119,16 @@
 <span id="119">119</span>
 <span id="120">120</span>
 <span id="121">121</span>
+<span id="122">122</span>
+<span id="123">123</span>
+<span id="124">124</span>
+<span id="125">125</span>
+<span id="126">126</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">std::convert::TryInto</span>;
 
 <span class="kw">use</span> <span class="ident">anchor_lang::prelude</span>::<span class="kw-2">*</span>;
 <span class="kw">use</span> <span class="ident">anchor_spl::token::Token</span>;
+<span class="kw">use</span> <span class="ident">jet_program_proc_macros::BondTokenManager</span>;
 
 <span class="kw">use</span> <span class="kw">crate</span>::{
     <span class="ident">control::state</span>::{<span class="ident">BondManager</span>, <span class="ident">CrankAuthorization</span>},
@@ -133,7 +139,7 @@
     <span class="ident">BondsError</span>,
 };
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Accounts</span>)]</span>
+<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Accounts</span>, <span class="ident">BondTokenManager</span>)]</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">ConsumeEvents</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span> {
     <span class="doccomment">/// The `BondManager` account tracks global information related to this particular bond market</span>
     <span class="attribute">#[<span class="ident">account</span>(
@@ -226,18 +232,22 @@
         <span class="self">Self</span>(<span class="ident">account</span>)
     }
 
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">pubkey</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Pubkey</span> {
+        <span class="self">self</span>.<span class="number">0</span>.<span class="ident">key</span>()
+    }
+
     <span class="doccomment">/// token account that will receive a deposit of underlying or tickets</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">as_token_account</span>(<span class="self">self</span>) -&gt; <span class="ident">AccountInfo</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span> {
-        <span class="self">self</span>.<span class="number">0</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">as_token_account</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">AccountInfo</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span> {
+        <span class="self">self</span>.<span class="number">0</span>.<span class="ident">clone</span>()
     }
 
     <span class="doccomment">/// arbitrary unchecked account that will be granted ownership of a split ticket</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">as_owner</span>(<span class="self">self</span>) -&gt; <span class="ident">AccountInfo</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span> {
-        <span class="self">self</span>.<span class="number">0</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">as_owner</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">AccountInfo</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span> {
+        <span class="self">self</span>.<span class="number">0</span>.<span class="ident">clone</span>()
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">margin_user</span>(<span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">AnchorAccount</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span>, <span class="ident">MarginUser</span>, <span class="ident">Mut</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-        <span class="self">self</span>.<span class="number">0</span>.<span class="ident">try_into</span>()
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">margin_user</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">AnchorAccount</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span>, <span class="ident">MarginUser</span>, <span class="ident">Mut</span><span class="op">&gt;</span><span class="op">&gt;</span> {
+        <span class="self">self</span>.<span class="number">0</span>.<span class="ident">clone</span>().<span class="ident">try_into</span>()
     }
 }
 </code></pre></div>

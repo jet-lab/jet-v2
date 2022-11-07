@@ -132,7 +132,7 @@
 
     <span class="kw">if</span> <span class="kw-2">*</span><span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">pyth_price</span>.<span class="ident">key</span> <span class="op">!</span><span class="op">=</span> <span class="ident">Pubkey::default</span>() {
         <span class="kw">let</span> <span class="ident">product_data</span> <span class="op">=</span> <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">pyth_product</span>.<span class="ident">try_borrow_data</span>()<span class="question-mark">?</span>;
-        <span class="kw">let</span> <span class="ident">product_account</span> <span class="op">=</span> <span class="ident">pyth_sdk_solana::state::load_product_account</span>(<span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="kw-2">*</span><span class="ident">product_data</span>)
+        <span class="kw">let</span> <span class="ident">product_account</span> <span class="op">=</span> <span class="ident">pyth_sdk_solana::state::load_product_account</span>(<span class="kw-2">&amp;</span><span class="ident">product_data</span>)
             .<span class="ident">map_err</span>(<span class="op">|</span><span class="kw">_</span><span class="op">|</span> <span class="ident">ErrorCode::InvalidPoolOracle</span>)<span class="question-mark">?</span>;
 
         <span class="kw">let</span> <span class="ident">expected_price_key</span> <span class="op">=</span> <span class="ident">Pubkey::new_from_array</span>(<span class="ident">product_account</span>.<span class="ident">px_acc</span>.<span class="ident">val</span>);

@@ -86,7 +86,7 @@
 <span class="comment">// along with this program.  If not, see &lt;https://www.gnu.org/licenses/&gt;.</span>
 
 <span class="kw">use</span> <span class="ident">anchor_lang::solana_program::clock::UnixTimestamp</span>;
-<span class="kw">use</span> <span class="ident">jet_proto_math::Number</span>;
+<span class="kw">use</span> <span class="ident">jet_program_common::Number</span>;
 
 <span class="kw">pub</span> <span class="kw">const</span> <span class="ident">SECONDS_PER_HOUR</span>: <span class="ident">UnixTimestamp</span> <span class="op">=</span> <span class="number">3600</span>;
 <span class="kw">pub</span> <span class="kw">const</span> <span class="ident">SECONDS_PER_2H</span>: <span class="ident">UnixTimestamp</span> <span class="op">=</span> <span class="ident">SECONDS_PER_HOUR</span> <span class="op">*</span> <span class="number">2</span>;
@@ -128,7 +128,7 @@
 
     <span class="kw">let</span> <span class="ident">x</span> <span class="op">=</span> <span class="ident">rate</span> <span class="op">*</span> <span class="ident">seconds</span> <span class="op">/</span> <span class="ident">SECONDS_PER_YEAR</span>;
 
-    <span class="ident">jet_proto_math::expm1_approx</span>(<span class="ident">x</span>, <span class="ident">terms</span>)
+    <span class="ident">jet_program_common::expm1_approx</span>(<span class="ident">x</span>, <span class="ident">terms</span>)
 }
 
 <span class="doccomment">/// Linear interpolation between (x0, y0) and (x1, y1).</span>

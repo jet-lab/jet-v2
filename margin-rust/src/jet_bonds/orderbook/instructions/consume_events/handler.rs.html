@@ -199,6 +199,35 @@
 <span id="199">199</span>
 <span id="200">200</span>
 <span id="201">201</span>
+<span id="202">202</span>
+<span id="203">203</span>
+<span id="204">204</span>
+<span id="205">205</span>
+<span id="206">206</span>
+<span id="207">207</span>
+<span id="208">208</span>
+<span id="209">209</span>
+<span id="210">210</span>
+<span id="211">211</span>
+<span id="212">212</span>
+<span id="213">213</span>
+<span id="214">214</span>
+<span id="215">215</span>
+<span id="216">216</span>
+<span id="217">217</span>
+<span id="218">218</span>
+<span id="219">219</span>
+<span id="220">220</span>
+<span id="221">221</span>
+<span id="222">222</span>
+<span id="223">223</span>
+<span id="224">224</span>
+<span id="225">225</span>
+<span id="226">226</span>
+<span id="227">227</span>
+<span id="228">228</span>
+<span id="229">229</span>
+<span id="230">230</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">agnostic_orderbook</span>::{
     <span class="ident">instruction::consume_events</span>,
     <span class="ident">state</span>::{
@@ -207,15 +236,16 @@
     },
 };
 <span class="kw">use</span> <span class="ident">anchor_lang::prelude</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident">jet_proto_math::traits</span>::{<span class="ident">SafeAdd</span>, <span class="ident">SafeSub</span>};
+<span class="kw">use</span> <span class="ident">jet_program_common::traits</span>::{<span class="ident">SafeAdd</span>, <span class="ident">SafeSub</span>};
 <span class="kw">use</span> <span class="ident">num_traits::FromPrimitive</span>;
 
 <span class="kw">use</span> <span class="kw">crate</span>::{
+    <span class="ident">bond_token_manager::BondTokenManager</span>,
     <span class="ident">events::skip_err</span>,
     <span class="ident">margin::state</span>::{<span class="ident">Obligation</span>, <span class="ident">ObligationFlags</span>},
     <span class="ident">orderbook::state</span>::{<span class="ident">fp32_mul</span>, <span class="ident">CallbackFlags</span>, <span class="ident">CallbackInfo</span>, <span class="ident">FillInfo</span>, <span class="ident">OutInfo</span>},
     <span class="ident">tickets::state::SplitTicket</span>,
-    <span class="ident">utils</span>::{<span class="ident">mint_to</span>, <span class="ident">withdraw</span>},
+    <span class="ident">utils::map</span>,
     <span class="ident">BondsError</span>,
 };
 
@@ -295,18 +325,25 @@
         <span class="ident">quote_size</span>,
         <span class="ident">base_size</span>,
         ..
-    } <span class="op">=</span> <span class="ident">event</span>;
-    <span class="kw">let</span> <span class="ident">maker_side</span> <span class="op">=</span> <span class="ident">Side::from_u8</span>(<span class="kw-2">*</span><span class="ident">taker_side</span>).<span class="ident">unwrap</span>().<span class="ident">opposite</span>();
+    } <span class="op">=</span> <span class="kw-2">*</span><span class="ident">event</span>;
+    <span class="kw">let</span> <span class="ident">maker_side</span> <span class="op">=</span> <span class="ident">Side::from_u8</span>(<span class="ident">taker_side</span>).<span class="ident">unwrap</span>().<span class="ident">opposite</span>();
     <span class="kw">let</span> <span class="ident">fill_timestamp</span> <span class="op">=</span> <span class="ident">taker_info</span>.<span class="ident">order_submitted_timestamp</span>();
+    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">margin_user</span> <span class="op">=</span> <span class="ident">maker_info</span>
+        .<span class="ident">flags</span>
+        .<span class="ident">contains</span>(<span class="ident">CallbackFlags::MARGIN</span>)
+        .<span class="ident">then</span>(<span class="op">|</span><span class="op">|</span> <span class="ident">maker</span>.<span class="ident">margin_user</span>())
+        .<span class="ident">transpose</span>()<span class="question-mark">?</span>;
 
     <span class="kw">match</span> <span class="ident">maker_side</span> {
         <span class="ident">Side::Bid</span> =&gt; {
+            <span class="macro">map!</span>(<span class="ident">margin_user</span>.<span class="ident">assets</span>.<span class="ident">reduce_order</span>(<span class="ident">quote_size</span>));
             <span class="kw">if</span> <span class="ident">maker_info</span>.<span class="ident">flags</span>.<span class="ident">contains</span>(<span class="ident">CallbackFlags::AUTO_STAKE</span>) {
-                <span class="kw">let</span> <span class="ident">principal</span> <span class="op">=</span> <span class="kw-2">*</span><span class="ident">quote_size</span>;
+                <span class="macro">map!</span>(<span class="ident">margin_user</span>.<span class="ident">assets</span>.<span class="ident">stake_tickets</span>(<span class="ident">base_size</span>)<span class="question-mark">?</span>);
+                <span class="kw">let</span> <span class="ident">principal</span> <span class="op">=</span> <span class="ident">quote_size</span>;
                 <span class="kw">let</span> <span class="ident">interest</span> <span class="op">=</span> <span class="ident">base_size</span>.<span class="ident">safe_sub</span>(<span class="ident">principal</span>)<span class="question-mark">?</span>;
                 <span class="kw">let</span> <span class="ident">maturation_timestamp</span> <span class="op">=</span> <span class="ident">fill_timestamp</span>.<span class="ident">safe_add</span>(<span class="ident">lend_duration</span>)<span class="question-mark">?</span>;
                 <span class="kw-2">*</span><span class="ident">loan</span>.<span class="ident">unwrap</span>().<span class="ident">auto_stake</span>()<span class="question-mark">?</span> <span class="op">=</span> <span class="ident">SplitTicket</span> {
-                    <span class="ident">owner</span>: <span class="ident">maker</span>.<span class="ident">as_owner</span>().<span class="ident">key</span>(),
+                    <span class="ident">owner</span>: <span class="ident">maker</span>.<span class="ident">pubkey</span>(),
                     <span class="ident">bond_manager</span>: <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">bond_manager</span>.<span class="ident">key</span>(),
                     <span class="ident">order_tag</span>: <span class="ident">maker_info</span>.<span class="ident">order_tag</span>,
                     <span class="ident">maturation_timestamp</span>,
@@ -314,38 +351,40 @@
                     <span class="ident">principal</span>,
                     <span class="ident">interest</span>,
                 };
-            } <span class="kw">else</span> <span class="kw">if</span> <span class="ident">maker_info</span>.<span class="ident">flags</span>.<span class="ident">contains</span>(<span class="ident">CallbackFlags::MARGIN</span>) {
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">margin_user</span> <span class="op">=</span> <span class="ident">maker</span>.<span class="ident">margin_user</span>()<span class="question-mark">?</span>;
+            } <span class="kw">else</span> <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="kw-2">mut</span> <span class="ident">margin_user</span>) <span class="op">=</span> <span class="ident">margin_user</span> {
                 <span class="ident">margin_user</span>.<span class="ident">assets</span>.<span class="ident">entitled_tickets</span> <span class="op">+</span><span class="op">=</span> <span class="ident">base_size</span>;
             } <span class="kw">else</span> {
-                <span class="macro">mint_to!</span>(<span class="ident">ctx</span>, <span class="ident">bond_ticket_mint</span>, <span class="ident">maker</span>.<span class="ident">as_token_account</span>(), <span class="kw-2">*</span><span class="ident">base_size</span>)<span class="question-mark">?</span>;
+                <span class="ident">ctx</span>.<span class="ident">mint</span>(
+                    <span class="kw-2">&amp;</span><span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">bond_ticket_mint</span>,
+                    <span class="ident">maker</span>.<span class="ident">as_token_account</span>(),
+                    <span class="ident">base_size</span>,
+                )<span class="question-mark">?</span>;
             }
         }
         <span class="ident">Side::Ask</span> =&gt; {
-            <span class="kw">if</span> <span class="ident">maker_info</span>.<span class="ident">flags</span>.<span class="ident">contains</span>(<span class="ident">CallbackFlags::MARGIN</span>) {
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">margin_user</span> <span class="op">=</span> <span class="ident">maker</span>.<span class="ident">margin_user</span>()<span class="question-mark">?</span>;
+            <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="kw-2">mut</span> <span class="ident">margin_user</span>) <span class="op">=</span> <span class="ident">margin_user</span> {
+                <span class="ident">margin_user</span>.<span class="ident">assets</span>.<span class="ident">reduce_order</span>(<span class="ident">quote_size</span>);
                 <span class="ident">margin_user</span>.<span class="ident">assets</span>.<span class="ident">entitled_tokens</span> <span class="op">+</span><span class="op">=</span> <span class="ident">quote_size</span>;
                 <span class="kw">if</span> <span class="ident">maker_info</span>.<span class="ident">flags</span>.<span class="ident">contains</span>(<span class="ident">CallbackFlags::NEW_DEBT</span>) {
                     <span class="kw">let</span> <span class="ident">maturation_timestamp</span> <span class="op">=</span> <span class="ident">fill_timestamp</span>.<span class="ident">safe_add</span>(<span class="ident">borrow_duration</span>)<span class="question-mark">?</span>;
                     <span class="kw">let</span> <span class="ident">sequence_number</span> <span class="op">=</span> <span class="ident">margin_user</span>
                         .<span class="ident">debt</span>
-                        .<span class="ident">new_obligation_from_fill</span>(<span class="kw-2">*</span><span class="ident">base_size</span>, <span class="ident">maturation_timestamp</span>)<span class="question-mark">?</span>;
+                        .<span class="ident">new_obligation_from_fill</span>(<span class="ident">base_size</span>, <span class="ident">maturation_timestamp</span>)<span class="question-mark">?</span>;
                     <span class="kw-2">*</span><span class="ident">loan</span>.<span class="ident">unwrap</span>().<span class="ident">new_debt</span>()<span class="question-mark">?</span> <span class="op">=</span> <span class="ident">Obligation</span> {
                         <span class="ident">sequence_number</span>,
                         <span class="ident">borrower_account</span>: <span class="ident">margin_user</span>.<span class="ident">key</span>(),
                         <span class="ident">bond_manager</span>: <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">bond_manager</span>.<span class="ident">key</span>(),
                         <span class="ident">order_tag</span>: <span class="ident">maker_info</span>.<span class="ident">order_tag</span>,
                         <span class="ident">maturation_timestamp</span>,
-                        <span class="ident">balance</span>: <span class="kw-2">*</span><span class="ident">base_size</span>,
+                        <span class="ident">balance</span>: <span class="ident">base_size</span>,
                         <span class="ident">flags</span>: <span class="ident">ObligationFlags::default</span>(),
                     };
                 }
             } <span class="kw">else</span> {
-                <span class="macro">withdraw!</span>(
-                    <span class="ident">ctx</span>,
-                    <span class="ident">underlying_token_vault</span>,
+                <span class="ident">ctx</span>.<span class="ident">withdraw</span>(
+                    <span class="kw-2">&amp;</span><span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">underlying_token_vault</span>,
                     <span class="ident">maker</span>.<span class="ident">as_token_account</span>(),
-                    <span class="kw-2">*</span><span class="ident">quote_size</span>
+                    <span class="ident">quote_size</span>,
                 )<span class="question-mark">?</span>;
             }
         }
@@ -364,7 +403,6 @@
         <span class="ident">user_adapter_account</span>,
     } <span class="op">=</span> <span class="ident">accounts</span>;
     <span class="kw">let</span> <span class="ident">OutInfo</span> { <span class="ident">event</span>, <span class="ident">info</span> } <span class="op">=</span> <span class="ident">out</span>;
-
     <span class="comment">// push to adapter if flagged</span>
     <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="kw-2">mut</span> <span class="ident">adapter</span>) <span class="op">=</span> <span class="ident">user_adapter_account</span> {
         <span class="kw">if</span> <span class="ident">adapter</span>.<span class="ident">push_event</span>(<span class="kw-2">*</span><span class="ident">event</span>, <span class="prelude-val">Some</span>(<span class="ident">info</span>), <span class="prelude-val">None</span>).<span class="ident">is_err</span>() {
@@ -373,7 +411,6 @@
             <span class="macro">msg!</span>(<span class="string">&quot;user adapter failed to push event&quot;</span>);
         }
     }
-
     <span class="kw">let</span> <span class="ident">OutEvent</span> {
         <span class="ident">side</span>,
         <span class="ident">order_id</span>,
@@ -381,21 +418,42 @@
         ..
     } <span class="op">=</span> <span class="ident">event</span>;
 
+    <span class="kw">let</span> <span class="ident">margin_user</span> <span class="op">=</span> <span class="ident">info</span>
+        .<span class="ident">flags</span>
+        .<span class="ident">contains</span>(<span class="ident">CallbackFlags::MARGIN</span>)
+        .<span class="ident">then</span>(<span class="op">|</span><span class="op">|</span> <span class="ident">user</span>.<span class="ident">margin_user</span>())
+        .<span class="ident">transpose</span>()<span class="question-mark">?</span>;
+
     <span class="kw">let</span> <span class="ident">price</span> <span class="op">=</span> (<span class="ident">order_id</span> <span class="op">&gt;</span><span class="op">&gt;</span> <span class="number">64</span>) <span class="kw">as</span> <span class="ident">u64</span>;
     <span class="comment">// todo defensive rounding</span>
     <span class="kw">let</span> <span class="ident">quote_size</span> <span class="op">=</span> <span class="ident">fp32_mul</span>(<span class="kw-2">*</span><span class="ident">base_size</span>, <span class="ident">price</span>).<span class="ident">ok_or</span>(<span class="ident">BondsError::ArithmeticOverflow</span>)<span class="question-mark">?</span>;
     <span class="kw">match</span> <span class="ident">Side::from_u8</span>(<span class="kw-2">*</span><span class="ident">side</span>).<span class="ident">unwrap</span>() {
-        <span class="ident">Side::Bid</span> =&gt; <span class="macro">withdraw!</span>(
-            <span class="ident">ctx</span>,
-            <span class="ident">underlying_token_vault</span>,
-            <span class="ident">user</span>.<span class="ident">as_token_account</span>(),
-            <span class="ident">quote_size</span>
-        ),
-        <span class="ident">Side::Ask</span> =&gt; {
-            <span class="kw">if</span> <span class="ident">info</span>.<span class="ident">flags</span>.<span class="ident">contains</span>(<span class="ident">CallbackFlags::NEW_DEBT</span>) {
-                <span class="ident">user</span>.<span class="ident">margin_user</span>()<span class="question-mark">?</span>.<span class="ident">debt</span>.<span class="ident">process_out</span>(<span class="kw-2">*</span><span class="ident">base_size</span>)
+        <span class="ident">Side::Bid</span> =&gt; {
+            <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="kw-2">mut</span> <span class="ident">margin_user</span>) <span class="op">=</span> <span class="ident">margin_user</span> {
+                <span class="ident">margin_user</span>.<span class="ident">assets</span>.<span class="ident">entitled_tokens</span> <span class="op">+</span><span class="op">=</span> <span class="ident">quote_size</span>;
+                <span class="prelude-val">Ok</span>(())
             } <span class="kw">else</span> {
-                <span class="macro">mint_to!</span>(<span class="ident">ctx</span>, <span class="ident">bond_ticket_mint</span>, <span class="ident">user</span>.<span class="ident">as_token_account</span>(), <span class="kw-2">*</span><span class="ident">base_size</span>)
+                <span class="ident">ctx</span>.<span class="ident">withdraw</span>(
+                    <span class="kw-2">&amp;</span><span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">underlying_token_vault</span>,
+                    <span class="ident">user</span>.<span class="ident">as_token_account</span>(),
+                    <span class="ident">quote_size</span>,
+                )
+            }
+        }
+        <span class="ident">Side::Ask</span> =&gt; {
+            <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="kw-2">mut</span> <span class="ident">margin_user</span>) <span class="op">=</span> <span class="ident">margin_user</span> {
+                <span class="kw">if</span> <span class="ident">info</span>.<span class="ident">flags</span>.<span class="ident">contains</span>(<span class="ident">CallbackFlags::NEW_DEBT</span>) {
+                    <span class="ident">margin_user</span>.<span class="ident">debt</span>.<span class="ident">process_out</span>(<span class="kw-2">*</span><span class="ident">base_size</span>)
+                } <span class="kw">else</span> {
+                    <span class="ident">margin_user</span>.<span class="ident">assets</span>.<span class="ident">entitled_tickets</span> <span class="op">+</span><span class="op">=</span> <span class="ident">base_size</span>;
+                    <span class="prelude-val">Ok</span>(())
+                }
+            } <span class="kw">else</span> {
+                <span class="ident">ctx</span>.<span class="ident">mint</span>(
+                    <span class="kw-2">&amp;</span><span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">bond_ticket_mint</span>,
+                    <span class="ident">user</span>.<span class="ident">as_token_account</span>(),
+                    <span class="kw-2">*</span><span class="ident">base_size</span>,
+                )
             }
         }
     }

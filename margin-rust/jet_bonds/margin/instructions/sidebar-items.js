@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":[["initialize_margin_user",""],["margin_borrow_order",""],["refresh_position",""],["repay",""],["settle",""]]};
+window.SIDEBAR_ITEMS = {"mod":[["initialize_margin_user",""],["margin_borrow_order",""],["margin_lend_order",""],["margin_redeem_ticket",""],["margin_sell_tickets_order",""],["refresh_position",""],["repay",""],["settle",""]]};
