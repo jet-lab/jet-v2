@@ -360,7 +360,7 @@ describe('margin bonds borrowing', async () => {
 
     assert(
       offeredLoan.limit_price ===
-      rate_to_price(bnToBigInt(loanOfferParams.rate), bnToBigInt(bondMarket.info.lendDuration))
+      rate_to_price(bnToBigInt(loanOfferParams.rate), bnToBigInt(bondMarket.info.borrowDuration))
     );
 
     const expectedBorrowOrderSize = Number(offeredLoan.quote_size)
