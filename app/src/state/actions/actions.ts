@@ -19,9 +19,9 @@ export const CurrentAction = atom({
 
 // Any time we need to refresh data, trigger this state change throughout relevant Wrappers
 export const ACTION_REFRESH_INTERVAL = 10000;
-export const ActionRefresh = atom({
+export const ActionRefresh = atom<number>({
   key: 'actionRefresh',
-  default: false as boolean
+  default: Date.now()
 });
 
 // Sending a transaction

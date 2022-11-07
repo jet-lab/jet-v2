@@ -153,7 +153,7 @@ export class BondMarket {
       new PublicKey(jetMarginProgramId)
     )
     const marginAdapterMetadata = await findDerivedAccount([program.programId], new PublicKey(jetMarginProgramId))
-    
+
     return new BondMarket(
       new PublicKey(bondManager),
       new PublicKey(claimsMetadata),
@@ -169,10 +169,11 @@ export class BondMarket {
     payer: Address,
     amount: BN,
     rate: BN,
-    seed: Uint8Array
+    seed: Uint8Array,
+    tenor: number
   ): Promise<TransactionInstruction> {
     const limitPrice = new BN(
-      rate_to_price(BigInt(rate.toString()), BigInt(this.info.borrowDuration.toString())).toString()
+      rate_to_price(BigInt(rate.toString()), BigInt(tenor)).toString()
     )
     const params: OrderParams = {
       maxBondTicketQty: new BN(U64_MAX.toString()),
@@ -196,7 +197,7 @@ export class BondMarket {
     const params: OrderParams = {
       maxBondTicketQty: new BN(U64_MAX.toString()),
       maxUnderlyingTokenQty: amount,
-      limitPrice: new BN(rate_to_price(BigInt("99999"), BigInt(this.info.lendDuration.toString())).toString()),
+      limitPrice: new BN(0.00001),
       matchLimit: new BN(U64_MAX.toString()),
       postOnly: false,
       postAllowed: false,
@@ -238,11 +239,12 @@ export class BondMarket {
     amount: BN,
     rate: BN,
     payer: Address,
-    seed: Uint8Array
+    seed: Uint8Array,
+    tenor: number
   ): Promise<TransactionInstruction> {
     const userTokenVault = await getAssociatedTokenAddress(this.addresses.underlyingTokenMint, user.address, true)
     const userTicketVault = await getAssociatedTokenAddress(this.addresses.bondTicketMint, user.address, true)
-    const limitPrice = bigIntToBn(rate_to_price(bnToBigInt(rate), bnToBigInt(this.info.lendDuration)))
+    const limitPrice = bigIntToBn(rate_to_price(bnToBigInt(rate), BigInt(tenor)))
     const params: OrderParams = {
       maxBondTicketQty: new BN(U64_MAX.toString()),
       maxUnderlyingTokenQty: new BN(amount),
@@ -261,7 +263,7 @@ export class BondMarket {
     const params: OrderParams = {
       maxBondTicketQty: new BN(U64_MAX.toString()),
       maxUnderlyingTokenQty: new BN(amount),
-      limitPrice: new BN(0),
+      limitPrice: new BN(2 ** 32),
       matchLimit: new BN(U64_MAX.toString()),
       postOnly: false,
       postAllowed: false,
@@ -305,7 +307,7 @@ export class BondMarket {
       .accounts({
         ...this.addresses,
         owner: user.address,
-        orderbookMut: this.orderbookMut(),
+        orderbookMut: this.orderbookMut()
       })
       .instruction()
   }
@@ -316,7 +318,7 @@ export class BondMarket {
       orderbookMarketState: this.addresses.orderbookMarketState,
       eventQueue: this.addresses.eventQueue,
       bids: this.addresses.bids,
-      asks: this.addresses.asks,
+      asks: this.addresses.asks
     }
   }
 

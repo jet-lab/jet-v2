@@ -93,28 +93,26 @@ export function SnapshotHead(): JSX.Element {
         <Dropdown
           disabled={!walletTokens || !Object.values(accountNames).length}
           trigger={['click']}
-          overlay={
-            <Menu className="all-accounts-menu">
-              {Object.keys(accountNames).map(key => {
-                const name = accountNames[key];
-                return (
-                  <Menu.Item
-                    key={key}
+          menu={{
+            items: Object.keys(accountNames).map(key => {
+              const name = accountNames[key];
+              return {
+                key,
+                label: (
+                  <div
                     onClick={() => setCurrentAccountAddress(key)}
-                    className={key === currentAccountAddress ? 'active' : ''}>
-                    <div className="all-accounts-menu-name flex align-center justify-start">
-                      {walletFavoriteAccounts.includes(key) ? (
-                        <StarFilled style={{ opacity: 1 }} onClick={() => updateFavoriteAccounts(key, true)} />
-                      ) : (
-                        <StarOutlined onClick={() => updateFavoriteAccounts(key)} />
-                      )}
-                      {name}
-                    </div>
-                  </Menu.Item>
-                );
-              })}
-            </Menu>
-          }>
+                    className="all-accounts-menu-name flex align-center justify-start">
+                    {walletFavoriteAccounts.includes(key) ? (
+                      <StarFilled style={{ opacity: 1 }} onClick={() => updateFavoriteAccounts(key, true)} />
+                    ) : (
+                      <StarOutlined onClick={() => updateFavoriteAccounts(key)} />
+                    )}
+                    <span>{name}</span>
+                  </div>
+                )
+              };
+            })
+          }}>
           <Text type="secondary">
             {dictionary.accountSnapshot.allAccounts.toUpperCase()}
             <AngleDown className="jet-icon" />

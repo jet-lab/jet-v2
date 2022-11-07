@@ -11,6 +11,7 @@
     "moduleResolution": "node",
     "resolveJsonModule": true,
     "incremental": true,
+    "skipLibCheck": true,
     "baseUrl": "src",
     "paths": {
       "@components/*": ["components/*"],

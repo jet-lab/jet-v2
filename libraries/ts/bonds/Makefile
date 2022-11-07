@@ -1,13 +1,13 @@
 build-cjs:
 	rm -rf ./src/wasm-utils &&\
 	wasm-pack build --target nodejs ./wasm-utils --out-dir ../src/wasm-utils &&\
-	tsc -p tsconfig-cjs.json &&\
+	yarn tsc -p tsconfig-cjs.json &&\
 	mkdir -p ./dist/cjs && cp -r ./src/wasm-utils ./dist/cjs;
 
 build-esm:
 	rm -rf ./src/wasm-utils &&\
 	wasm-pack build --target bundler ./wasm-utils --out-dir ../src/wasm-utils &&\
-	tsc &&\
+	yarn tsc &&\
 	mkdir -p ./dist/esm && cp -r ./src/wasm-utils ./dist/esm;
 
 build:
