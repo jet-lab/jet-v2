@@ -9,7 +9,6 @@ import {
   PoolTokenChange,
   MarginClient,
   Pool,
-  MarginPoolConfigData,
   PoolManager,
   bnToBigInt
 } from '@jet-lab/margin';
@@ -307,7 +306,8 @@ describe('margin bonds borrowing', async () => {
       loanOfferParams.amount,
       loanOfferParams.rate,
       wallet_b.payer.publicKey,
-      Uint8Array.from([0, 0, 0, 0])
+      Uint8Array.from([0, 0, 0, 0]),
+      CONFIG.airspaces[0].bondMarkets.USDC_86400.borrowDuration
     );
     const limitLend = await viaMargin(marginAccount_B, offerLoanB);
     await provider_b.sendAndConfirm(makeTx([limitLend]), [wallet_b.payer]);
@@ -318,7 +318,8 @@ describe('margin bonds borrowing', async () => {
       wallet_b.payer.publicKey,
       borrowRequestParams.amount,
       borrowRequestParams.rate,
-      Uint8Array.from([0, 0, 0, 0])
+      Uint8Array.from([0, 0, 0, 0]),
+      CONFIG.airspaces[0].bondMarkets.USDC_86400.borrowDuration
     );
     const refresh = await viaMargin(marginAccount_B, await bondMarket.refreshPosition(marginAccount_B, false));
     const marketLend = await viaMargin(marginAccount_B, requestBorrowB);
