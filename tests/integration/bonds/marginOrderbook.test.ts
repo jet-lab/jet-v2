@@ -28,7 +28,7 @@ import {
 
 import CONFIG from '../../../app/public/localnet.config.json';
 
-import { BondMarket, JetBonds, JetBondsIdl, lendNow, MarginUserInfo, rate_to_price } from '@jet-lab/jet-bonds-client';
+import { BondMarket, JetBonds, JetBondsIdl, MarginUserInfo, rate_to_price } from '@jet-lab/jet-bonds-client';
 import { createAssociatedTokenAccountInstruction, getAssociatedTokenAddress } from '@solana/spl-token';
 
 describe('margin bonds borrowing', async () => {
@@ -361,22 +361,22 @@ describe('margin bonds borrowing', async () => {
 
     assert(
       offeredLoan.limit_price ===
-      rate_to_price(bnToBigInt(loanOfferParams.rate), bnToBigInt(bondMarket.info.borrowDuration))
+      rate_to_price(bnToBigInt(loanOfferParams.rate), BigInt(CONFIG.airspaces[0].bondMarkets.USDC_86400.borrowDuration))
     );
 
-    const expectedBorrowOrderSize = Number(offeredLoan.quote_size)
-    const actualBorrowOrderSize = loanOfferParams.amount.sub(borrowNowAmount).toNumber()
+    const expectedBorrowOrderSizeRounded = Math.round(Number(offeredLoan.quote_size) / 10) * 10
+    const actualBorrowOrderSizeRounded = Math.round(loanOfferParams.amount.sub(borrowNowAmount).toNumber() / 10) * 10
     assert(
-      expectedBorrowOrderSize === actualBorrowOrderSize,
-      'Quote amount does not match given params, Expected: [' + expectedBorrowOrderSize + ']; On book: [' + actualBorrowOrderSize + ']'
+      expectedBorrowOrderSizeRounded === actualBorrowOrderSizeRounded,
+      'Quote amount does not match given params, Expected: [' + expectedBorrowOrderSizeRounded + ']; On book: [' + actualBorrowOrderSizeRounded + ']'
     );
 
-    const expectedLendOrderSize = Number(requestedBorrow.quote_size)
-    const actualLendOrderSize = borrowRequestParams.amount.sub(lendNowAmount).toNumber()
-    assert(expectedLendOrderSize === actualLendOrderSize)
+    const expectedLendOrderSizeRounded = Math.round(Number(requestedBorrow.quote_size) / 10) * 10
+    const actualLendOrderSizeRounded = Math.round(borrowRequestParams.amount.sub(lendNowAmount).toNumber() / 10) * 10
+    assert(expectedLendOrderSizeRounded === actualLendOrderSizeRounded)
     assert(
       requestedBorrow.limit_price ===
-      rate_to_price(bnToBigInt(borrowRequestParams.rate), bnToBigInt(bondMarket.info.borrowDuration))
+      rate_to_price(bnToBigInt(borrowRequestParams.rate), BigInt(CONFIG.airspaces[0].bondMarkets.USDC_86400.borrowDuration))
     )
   });
 
