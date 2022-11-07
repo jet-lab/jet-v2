@@ -41,8 +41,8 @@ export function NewAccountModal(): JSX.Element {
   const { Title, Paragraph, Text } = Typography;
 
   useEffect(() => {
-    if (newAccountModalOpen) setActionRefresh(Date.now())
-  }, [newAccountModalOpen])
+    if (newAccountModalOpen) setActionRefresh(Date.now());
+  }, [newAccountModalOpen]);
 
   // Create a new account with a deposit
   async function newAccount() {

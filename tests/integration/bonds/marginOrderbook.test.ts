@@ -4,14 +4,7 @@ import { AnchorProvider, BN } from '@project-serum/anchor';
 import NodeWallet from '@project-serum/anchor/dist/cjs/nodewallet';
 import { Keypair, LAMPORTS_PER_SOL, PublicKey, Transaction, TransactionInstruction } from '@solana/web3.js';
 
-import {
-  MarginAccount,
-  PoolTokenChange,
-  MarginClient,
-  Pool,
-  PoolManager,
-  bnToBigInt
-} from '@jet-lab/margin';
+import { MarginAccount, PoolTokenChange, MarginClient, Pool, PoolManager, bnToBigInt } from '@jet-lab/margin';
 
 import {
   airdropToken,
@@ -324,10 +317,10 @@ describe('margin bonds borrowing', async () => {
     const refresh = await viaMargin(marginAccount_B, await bondMarket.refreshPosition(marginAccount_B, false));
     const marketLend = await viaMargin(marginAccount_B, requestBorrowB);
     await provider_b.sendAndConfirm(makeTx([refresh, marketLend]), [wallet_b.payer]);
-  })
+  });
 
-  const lendNowAmount = new BN(100)
-  const borrowNowAmount = new BN(100)
+  const lendNowAmount = new BN(100);
+  const borrowNowAmount = new BN(100);
   it('places market taker orders', async () => {
     await airdropMarginWallet(marginAccount_A, USDC, 100_000);
     const lendNowA = await bondMarket.lendNowIx(
@@ -348,36 +341,46 @@ describe('margin bonds borrowing', async () => {
     const borrowNow = await viaMargin(marginAccount_A, borrowNowA);
     const refreshA = await viaMargin(marginAccount_A, await bondMarket.refreshPosition(marginAccount_A, false));
     await provider_a.sendAndConfirm(makeTx([refreshA, borrowNow]), [wallet_a.payer]);
-  })
+  });
 
   let loanId: Uint8Array;
 
   it('loads orderbook and has correct orders', async () => {
     const orderbook = await bondMarket.fetchOrderbook();
     const offeredLoan = orderbook.bids[0];
-    const requestedBorrow = orderbook.asks[0]
+    const requestedBorrow = orderbook.asks[0];
 
     loanId = offeredLoan.order_id;
 
     assert(
       offeredLoan.limit_price ===
-      rate_to_price(bnToBigInt(loanOfferParams.rate), BigInt(CONFIG.airspaces[0].bondMarkets.USDC_86400.borrowDuration))
+        rate_to_price(
+          bnToBigInt(loanOfferParams.rate),
+          BigInt(CONFIG.airspaces[0].bondMarkets.USDC_86400.borrowDuration)
+        )
     );
 
-    const expectedBorrowOrderSizeRounded = Math.round(Number(offeredLoan.quote_size) / 10) * 10
-    const actualBorrowOrderSizeRounded = Math.round(loanOfferParams.amount.sub(borrowNowAmount).toNumber() / 10) * 10
+    const expectedBorrowOrderSizeRounded = Math.round(Number(offeredLoan.quote_size) / 10) * 10;
+    const actualBorrowOrderSizeRounded = Math.round(loanOfferParams.amount.sub(borrowNowAmount).toNumber() / 10) * 10;
     assert(
       expectedBorrowOrderSizeRounded === actualBorrowOrderSizeRounded,
-      'Quote amount does not match given params, Expected: [' + expectedBorrowOrderSizeRounded + ']; On book: [' + actualBorrowOrderSizeRounded + ']'
+      'Quote amount does not match given params, Expected: [' +
+        expectedBorrowOrderSizeRounded +
+        ']; On book: [' +
+        actualBorrowOrderSizeRounded +
+        ']'
     );
 
-    const expectedLendOrderSizeRounded = Math.round(Number(requestedBorrow.quote_size) / 10) * 10
-    const actualLendOrderSizeRounded = Math.round(borrowRequestParams.amount.sub(lendNowAmount).toNumber() / 10) * 10
-    assert(expectedLendOrderSizeRounded === actualLendOrderSizeRounded)
+    const expectedLendOrderSizeRounded = Math.round(Number(requestedBorrow.quote_size) / 10) * 10;
+    const actualLendOrderSizeRounded = Math.round(borrowRequestParams.amount.sub(lendNowAmount).toNumber() / 10) * 10;
+    assert(expectedLendOrderSizeRounded === actualLendOrderSizeRounded);
     assert(
       requestedBorrow.limit_price ===
-      rate_to_price(bnToBigInt(borrowRequestParams.rate), BigInt(CONFIG.airspaces[0].bondMarkets.USDC_86400.borrowDuration))
-    )
+        rate_to_price(
+          bnToBigInt(borrowRequestParams.rate),
+          BigInt(CONFIG.airspaces[0].bondMarkets.USDC_86400.borrowDuration)
+        )
+    );
   });
 
   it('margin users cancel orders', async () => {

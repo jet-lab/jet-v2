@@ -3,13 +3,12 @@ import { CSVDownload } from 'react-csv';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { AccountTransaction } from '@jet-lab/margin';
 import { Dictionary } from '@state/settings/localization/localization';
-import { BlockExplorer, Cluster, PreferDayMonthYear, PreferredTimeDisplay } from '@state/settings/settings';
+import { PreferDayMonthYear, PreferredTimeDisplay } from '@state/settings/settings';
 import { AccountsViewOrder } from '@state/views/views';
-import { WalletTokens } from '@state/user/walletTokens';
-import { Accounts, CurrentAccountHistory, AccountNames, AccountHistoryLoaded } from '@state/user/accounts';
+import { Accounts, CurrentAccountHistory } from '@state/user/accounts';
 import { ActionRefresh } from '@state/actions/actions';
 import { localDayMonthYear, unixToLocalTime, unixToUtcTime, utcDayMonthYear } from '@utils/time';
-import { Tabs, Table, Skeleton, Typography, Input, Dropdown, Menu, Button } from 'antd';
+import { Tabs, Table, Typography, Input, Dropdown, Menu } from 'antd';
 import { ReorderArrows } from '@components/misc/ReorderArrows';
 import { ConnectionFeedback } from '@components/misc/ConnectionFeedback/ConnectionFeedback';
 import {
@@ -25,39 +24,20 @@ import type { ColumnsType } from 'antd/es/table';
 
 // Table to show margin account's transaction history
 export function DebtTable(): JSX.Element {
-  const cluster = useRecoilValue(Cluster);
   const dictionary = useRecoilValue(Dictionary);
-  const blockExplorer = useRecoilValue(BlockExplorer);
   const preferredTimeDisplay = useRecoilValue(PreferredTimeDisplay);
   const preferDayMonthYear = useRecoilValue(PreferDayMonthYear);
   const [accountsViewOrder, setAccountsViewOrder] = useRecoilState(AccountsViewOrder);
-  const walletTokens = useRecoilValue(WalletTokens);
   const currentAccountHistory = useRecoilValue(CurrentAccountHistory);
   const [filteredTxHistory, setFilteredTxHistory] = useState<AccountTransaction[] | undefined>(
     currentAccountHistory?.transactions
   );
-  const accountNames = useRecoilValue(AccountNames);
   const accounts = useRecoilValue(Accounts);
   const actionRefresh = useRecoilValue(ActionRefresh);
-  const [currentTable, setCurrentTable] = useState('transactions');
+  const [currentTable] = useState('transactions');
   const [pageSize, setPageSize] = useState(5);
   const [downloadCsv, setDownloadCsv] = useState(false);
-  const loadingAccounts = walletTokens && !filteredTxHistory?.length;
   const { Paragraph, Text } = Typography;
-
-  // Renders the date/time column for table
-  function renderDateColumn(transaction: AccountTransaction) {
-    let render = <Skeleton className="align-left" paragraph={false} active={loadingAccounts} />;
-    if (accounts && transaction?.timestamp) {
-      const dateTime =
-        preferredTimeDisplay === 'local'
-          ? `${localDayMonthYear(transaction.timestamp, preferDayMonthYear)}, ${unixToLocalTime(transaction.timestamp)}`
-          : `${utcDayMonthYear(transaction.timestamp, preferDayMonthYear)}, ${unixToUtcTime(transaction.timestamp)}`;
-      render = <Text>{dateTime}</Text>;
-    }
-
-    return render;
-  }
 
   // Dummy table data
   const postOrderColumns: ColumnsType<PostDataType> = [
