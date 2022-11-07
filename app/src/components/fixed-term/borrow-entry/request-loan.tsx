@@ -46,7 +46,8 @@ export const RequestLoan = ({ token, decimals, marketAndConfig, marginConfig }: 
         pools: pools.tokenPools,
         currentPool,
         amount,
-        basisPoints
+        basisPoints,
+        marketConfig: marketAndConfig.config
       });
       notify(
         'Borrow Offer Created',

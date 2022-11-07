@@ -1,6 +1,6 @@
 import { Button, InputNumber, Switch, Tooltip } from 'antd';
 import { formatDuration, intervalToDuration } from 'date-fns';
-import { borrowNow, createFixedBorrowOrder } from '@jet-lab/jet-bonds-client';
+import { borrowNow } from '@jet-lab/jet-bonds-client';
 import { notify } from '@utils/notify';
 import { getExplorerUrl } from '@utils/ui';
 import BN from 'bn.js';
@@ -12,7 +12,7 @@ import { CurrentPool, Pools } from '@state/pools/pools';
 import { BlockExplorer, Cluster } from '@state/settings/settings';
 import { useRecoilValue } from 'recoil';
 import { useState } from 'react';
-import { MarginConfig, MarginTokenConfig, Pool } from '@jet-lab/margin';
+import { MarginConfig, MarginTokenConfig } from '@jet-lab/margin';
 import { MarketAndconfig } from '@state/fixed-market/fixed-term-market-sync';
 
 interface RequestLoanProps {

@@ -46,7 +46,8 @@ export const OfferLoan = ({ token, decimals, marketAndConfig, marginConfig }: Re
         pools: pools.tokenPools,
         currentPool,
         amount,
-        basisPoints
+        basisPoints,
+        marketConfig: marketAndConfig.config
       });
       notify(
         'Lend Offer Created',

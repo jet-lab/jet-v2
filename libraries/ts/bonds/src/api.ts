@@ -1,6 +1,6 @@
 import { PublicKey, TransactionInstruction } from "@solana/web3.js"
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token"
-import { AssociatedToken, MarginAccount, MarginConfig, Pool, sendAll } from "@jet-lab/margin"
+import { AssociatedToken, BondMarketConfig, MarginAccount, MarginConfig, Pool, sendAll } from "@jet-lab/margin"
 import { BondMarket } from "./bondMarket"
 import { AnchorProvider, BN } from "@project-serum/anchor"
 
@@ -54,6 +54,7 @@ interface ICreateLendOrder {
   pools: Record<string, Pool>
   currentPool: Pool
   marketAccount?: string
+  marketConfig: BondMarketConfig
 }
 export const createFixedLendOrder = async ({
   market,
@@ -64,7 +65,8 @@ export const createFixedLendOrder = async ({
   amount,
   basisPoints,
   pools,
-  currentPool
+  currentPool,
+  marketConfig
 }: ICreateLendOrder) => {
   // Fail if there is no active bonds program id in the config
   if (!marginConfig.bondsProgramId) {
@@ -81,7 +83,7 @@ export const createFixedLendOrder = async ({
     marginAccount,
     walletAddress,
     instructions: accountInstructions,
-    marketAccount: lenderAccount
+    marketAccount: lenderAccount,
   })
   if (accountInstructions.length > 0) {
     instructions.push(accountInstructions)
@@ -117,7 +119,7 @@ export const createFixedLendOrder = async ({
   })
 
   // create lend instruction
-  const loanOffer = await market.offerLoanIx(marginAccount, amount, basisPoints, walletAddress, createRandomSeed(4))
+  const loanOffer = await market.offerLoanIx(marginAccount, amount, basisPoints, walletAddress, createRandomSeed(4), marketConfig.borrowDuration)
   await marginAccount.withAdapterInvoke({
     instructions: lendInstructions,
     adapterInstruction: loanOffer
@@ -137,6 +139,7 @@ interface ICreateBorrowOrder {
   currentPool: Pool
   amount: BN
   basisPoints: BN
+  marketConfig: BondMarketConfig
 }
 
 export const createFixedBorrowOrder = async ({
@@ -148,7 +151,8 @@ export const createFixedBorrowOrder = async ({
   pools,
   currentPool,
   amount,
-  basisPoints
+  basisPoints,
+  marketConfig
 }: ICreateBorrowOrder): Promise<string> => {
   // Fail if there is no active bonds program id in the config
   if (!marginConfig.bondsProgramId) {
@@ -166,7 +170,7 @@ export const createFixedBorrowOrder = async ({
     marginAccount,
     walletAddress,
     instructions: accountInstructions,
-    marketAccount: borrowerAccount
+    marketAccount: borrowerAccount,
   })
   if (accountInstructions.length > 0) {
     instructions.push(accountInstructions)
@@ -204,7 +208,8 @@ export const createFixedBorrowOrder = async ({
     walletAddress,
     amount,
     basisPoints,
-    createRandomSeed(4)
+    createRandomSeed(4),
+    marketConfig.borrowDuration
   )
 
   await marginAccount.withAdapterInvoke({
