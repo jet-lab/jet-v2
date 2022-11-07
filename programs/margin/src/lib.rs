@@ -152,7 +152,7 @@ pub mod jet_margin {
     /// |     |     |
     /// | --- | --- |
     /// | **Event Name** | **Description** |
-    /// | [`events::AccountClosed`] | The closed account. |
+    /// | [`events::AccountClosed`] | Marks the closure of the account. |
 
     pub fn close_account(ctx: Context<CloseAccount>) -> Result<()> {
         close_account_handler(ctx)
@@ -190,7 +190,7 @@ pub mod jet_margin {
     /// |     |     |
     /// | --- | --- |
     /// | **Event Name** | **Description** |
-    /// | [`events::PositionRegistered`] | The position registered. |
+    /// | [`events::PositionRegistered`] | Marks the registration of the position. |
 
     pub fn register_position(ctx: Context<RegisterPosition>) -> Result<()> {
         register_position_handler(ctx)
@@ -226,7 +226,7 @@ pub mod jet_margin {
     /// |     |     |
     /// | --- | --- |
     /// | **Event Name** | **Description** |
-    /// | [`events::PositionBalanceUpdated`] | The updated position. |
+    /// | [`events::PositionBalanceUpdated`] | Marks the updating of the position. |
     ///
     pub fn update_position_balance(ctx: Context<UpdatePositionBalance>) -> Result<()> {
         update_position_balance_handler(ctx)
@@ -263,7 +263,7 @@ pub mod jet_margin {
     /// |     |     |
     /// | --- | --- |
     /// | **Event Name** | **Description** |
-    /// | [`events::PositionMetadataRefreshed`] | The position of which metadata was refreshed. |
+    /// | [`events::PositionMetadataRefreshed`] | Marks the refreshing of the metadata of the position. |
 
     pub fn refresh_position_metadata(ctx: Context<RefreshPositionMetadata>) -> Result<()> {
         refresh_position_metadata_handler(ctx)
@@ -303,7 +303,7 @@ pub mod jet_margin {
     /// |     |     |
     /// | --- | --- |
     /// | **Event Name** | **Description** |
-    /// | [`events::PositionClosed`] | The closed position. |
+    /// | [`events::PositionClosed`] | Marks the closure of the position. |
 
     pub fn close_position(ctx: Context<ClosePosition>) -> Result<()> {
         close_position_handler(ctx)
@@ -337,7 +337,7 @@ pub mod jet_margin {
     /// |     |     |
     /// | --- | --- |
     /// | **Event Name** | **Description** |
-    /// |[`events::VerifiedHealthy`] | The pubkeys of margin accounts with verified healthy accounts. |
+    /// |[`events::VerifiedHealthy`] | Marks the completion of health verification. |
 
     pub fn verify_healthy(ctx: Context<VerifyHealthy>) -> Result<()> {
         verify_healthy_handler(ctx)
