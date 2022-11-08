@@ -126,26 +126,35 @@ pub fn calculate_implied_price(base: u64, quote: u64) -> u64 {
     price.as_decimal_u64().unwrap()
 }
 
-/// The side of the order whose limit price will be adjusted for slippage
-/// in `with_slippage`.
+/// Identifies the role of the user.
 #[wasm_bindgen]
-pub enum Side {
-    Bid,
-    Ask,
+pub enum Trader {
+    Lender,
+    Borrower,
+}
+
+/// Actions that a `Trader` may be taking.
+#[wasm_bindgen]
+#[derive(PartialEq)]
+pub enum Action {
+    RequestLoan,
+    RequestBorrow,
+    LendNow,
+    BorrowNow,
 }
 
 /// Adjusts a price to tolerate an amonut of slipapge.
 /// 
 /// price is the limit price of an order; FP32 representation.
 /// fraction is the amount of slippage, eg 0.05 would be 5%.
-/// side is the side of the order whose price is being adjusted.
+/// trader is the party constructing the order.
 /// 
 /// Returns the adjusted price in FP32 representation.
 #[wasm_bindgen]
-pub fn with_slippage(price: u64, fraction: f64, side: Side) -> u64 {
-    let scale = match side {
-        Side::Bid => 1_f64 + fraction,
-        Side::Ask => 1_f64 - fraction,
+pub fn with_slippage(price: u64, fraction: f64, trader: Trader) -> u64 {
+    let scale = match trader {
+        Trader::Lender => 1_f64 + fraction,
+        Trader::Borrower => 1_f64 - fraction,
     };
 
     f64_to_fp32(fp32_to_f64(price) * scale)
@@ -167,18 +176,6 @@ pub struct EstimatedOrderOutcome {
     pub matches: u32,
 }
 
-/// The type of the hypothetical order being considered.
-/// * Lenders are buyers of tickets, emitting bids into the orderbook.
-/// * Borrowers are ticket sellers, emitting asks into the orderbook.
-#[wasm_bindgen]
-#[derive(PartialEq)]
-pub enum OrderType {
-    LimitBid,
-    LimitAsk,
-    MarketBid,
-    MarketAsk,
-}
-
 /// Estimates the outcome of a hypothetical order.
 /// 
 /// quote_size is the amount of quote lamports the order seeks to trade.
@@ -193,7 +190,7 @@ pub enum OrderType {
 pub fn estimate_order_outcome(
     quote_size: u64,
     taker: Uint8Array,
-    order_type: OrderType,
+    order_type: Action,
     limit_price: Option<u64>,
     resting_orders: &Array,
 ) -> Result<EstimatedOrderOutcome> {
@@ -203,12 +200,12 @@ pub fn estimate_order_outcome(
     let mut filled_base = 0_u64;
     let mut matches = 0_u32;
     let mut last_price = match order_type {  // To enforce ordering of resting orders
-        OrderType::LimitBid | OrderType::MarketBid => u64::MIN,
-        OrderType::LimitAsk | OrderType::MarketAsk => u64::MAX,
+        Action::RequestLoan | Action::LendNow => u64::MIN,
+        Action::RequestBorrow | Action::BorrowNow => u64::MAX,
     };
     let limit_price = match limit_price {
         Some(p) => p,
-        None => if order_type == OrderType::LimitAsk || order_type == OrderType::LimitBid {
+        None => if order_type == Action::RequestBorrow || order_type == Action::RequestLoan {
             return Err(FixedTermWasmError::LimitPriceRequired.into());
         } else {
             0_u64
@@ -227,10 +224,10 @@ pub fn estimate_order_outcome(
         // bids or asks.
 
         match order_type {
-            OrderType::LimitBid | OrderType::MarketBid => if order.limit_price < last_price {
+            Action::RequestLoan | Action::LendNow => if order.limit_price < last_price {
                 return Err(FixedTermWasmError::RestingOrdersNotSorted.into())
             },
-            OrderType::LimitAsk | OrderType::MarketAsk => if order.limit_price > last_price {
+            Action::RequestBorrow | Action::BorrowNow => if order.limit_price > last_price {
                 return Err(FixedTermWasmError::RestingOrdersNotSorted.into())
             }
         };
@@ -238,11 +235,11 @@ pub fn estimate_order_outcome(
 
         // For limit orders we might be done matching.
 
-        if order_type == OrderType::LimitBid {
+        if order_type == Action::RequestLoan {
             if order.limit_price > limit_price {
                 break
             }
-        } else if order_type == OrderType::LimitAsk {
+        } else if order_type == Action::RequestBorrow {
             if order.limit_price < limit_price {
                 break
             }
@@ -273,8 +270,11 @@ pub fn estimate_order_outcome(
         matches += 1;
     }
 
-    // let vwap = f64_to_fp32(filled_quote as f64 / filled_base as f64);
-    let vwap = 0u64;
+    let vwap = if filled_quote == 0 || filled_base == 0 {
+        0
+    } else {
+        f64_to_fp32(filled_quote as f64 / filled_base as f64)
+    };
 
     Ok(
         EstimatedOrderOutcome {
