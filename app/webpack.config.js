@@ -3,6 +3,7 @@ const { ProvidePlugin, DefinePlugin } = require('webpack');
 const dotenv = require('dotenv');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
+const FilterWarningsPlugin = require('webpack-filter-warnings-plugin')
 
 const plugins = [
   new HtmlWebpackPlugin({
@@ -16,6 +17,9 @@ const plugins = [
   }),
   new DefinePlugin({
     'process.env': JSON.stringify(dotenv.config().parsed || {})
+  }),
+  new FilterWarningsPlugin({ 
+    exclude: /__wbg_systeminstruction_free/ 
   })
 ];
 
