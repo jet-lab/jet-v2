@@ -15,7 +15,6 @@
     "watch": "make watch"
   },
   "dependencies": {
-    "@jet-lab/margin": "*",
     "@project-serum/anchor": "0.24.2",
     "@project-serum/serum": "^0.13.65",
     "@solana/spl-token": "^0.2.0",

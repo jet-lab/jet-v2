@@ -33,3 +33,28 @@ pub struct OrderAmount {
     /// fixed-point 32 limit price value
     pub price: u64,
 }
+
+#[wasm_bindgen(module = "utils.js")]
+extern "C" {
+  // This will let Rust regain ownership of `Foo`
+  #[wasm_bindgen(js_name = castInto)]
+  pub fn cast_into_order(value: JsValue) -> Order;
+}
+
+impl From<JsValue> for Order {
+    fn from(order: JsValue) -> Self {
+        cast_into_order(order)
+    }
+}
+
+impl Order {
+    pub fn owned_by(&self, candidate: &Uint8Array) -> bool {
+        let mut a = [0; 32];
+        let mut b = [0; 32];
+
+        self.owner.copy_to(&mut a);
+        candidate.copy_to(&mut b);
+
+        a == b
+    }
+}

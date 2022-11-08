@@ -50,3 +50,8 @@ export const logAccounts = ({ ...accounts }) => {
     console.log(name + ": " + accounts[name])
   }
 }
+
+// A helper for use from wasm to take ownership of exported objects.
+export function castInto(value: any): any {
+  return value
+}

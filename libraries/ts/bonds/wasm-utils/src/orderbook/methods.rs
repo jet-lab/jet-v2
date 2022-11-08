@@ -1,3 +1,4 @@
+use super::{error::FixedTermWasmError, interest_pricing::f64_to_fp32};
 use jet_program_common::Fp32;
 use js_sys::{Array, Uint8Array};
 use wasm_bindgen::prelude::*;
@@ -7,6 +8,9 @@ use super::{
     interest_pricing::{fp32_to_f64, InterestPricer, PricerImpl},
     types::Order,
 };
+
+pub type Result<T> = std::result::Result<T, JsError>;
+
 
 /// Converts a buffer from an orderbook side into an array of orders on the book
 ///
@@ -117,6 +121,165 @@ pub fn build_order_amount_deprecated(amount: u64, interest_rate: u64) -> super::
 pub fn calculate_implied_price(base: u64, quote: u64) -> u64 {
     let price = Fp32::from(quote) / base;
     price.as_decimal_u64().unwrap()
+}
+
+/// The side of the order whose limit price will be adjusted for slippage
+/// in `with_slippage`.
+#[wasm_bindgen]
+pub enum Side {
+    Bid,
+    Ask,
+}
+
+/// Adjusts a price to tolerate an amonut of slipapge.
+/// 
+/// price is the limit price of an order; FP32 representation.
+/// fraction is the amount of slippage, eg 0.05 would be 5%.
+/// side is the side of the order whose price is being adjusted.
+/// 
+/// Returns the adjusted price in FP32 representation.
+#[wasm_bindgen]
+pub fn with_slippage(price: u64, fraction: f64, side: Side) -> u64 {
+    let scale = match side {
+        Side::Bid => 1_f64 + fraction,
+        Side::Ask => 1_f64 - fraction,
+    };
+
+    f64_to_fp32(fp32_to_f64(price) * scale)
+}
+
+/// The estimated result of emitting an order into the orderbook, as produced
+/// by `estimated_order_outcome`.
+#[wasm_bindgen]
+pub struct EstimatedOrderOutcome {
+    /// The approxiamte volume-weighted average price achieved, FP32 representation.
+    pub vwap: u64,
+    /// The number of quote lamports filled.
+    pub filled_quote: u64,
+    /// The number of base lamports filled.
+    pub filled_base: u64,
+    /// The number of requested quote lamports left unfilled.
+    pub unfilled_quote: u64,
+    /// The number of matches contributing to the result.
+    pub matches: u32,
+}
+
+/// The type of the hypothetical order being considered.
+/// * Lenders are buyers of tickets, emitting bids into the orderbook.
+/// * Borrowers are ticket sellers, emitting asks into the orderbook.
+#[wasm_bindgen]
+#[derive(PartialEq)]
+pub enum OrderType {
+    LimitBid,
+    LimitAsk,
+    MarketBid,
+    MarketAsk,
+}
+
+/// Estimates the outcome of a hypothetical order.
+/// 
+/// quote_size is the amount of quote lamports the order seeks to trade.
+/// taker is the would-be owner of the order.
+/// order_type categories the would be order.
+/// limit_price is required for limit order types; FP32 representation.
+/// resting_orders is an array of orders that could be hit by the taker order. The "opposite"
+///     side of the book from the taker, so to speak. These must be ordered appropriately
+///     or an error will be returned, ie sorted ascending (descending) by limit price for
+///     asks (bids).
+#[wasm_bindgen]
+pub fn estimate_order_outcome(
+    quote_size: u64,
+    taker: Uint8Array,
+    order_type: OrderType,
+    limit_price: Option<u64>,
+    resting_orders: &Array,
+) -> Result<EstimatedOrderOutcome> {
+    let mut unfilled_quote = quote_size;
+    let mut filled_quote = 0_u64;
+    let mut filled_base = 0_u64;
+    let mut matches = 0_u32;
+    let mut last_price = match order_type {  // To enforce ordering of resting orders
+        OrderType::LimitBid | OrderType::MarketBid => u64::MIN,
+        OrderType::LimitAsk | OrderType::MarketAsk => u64::MAX,
+    };
+    let limit_price = match limit_price {
+        Some(p) => p,
+        None => if order_type == OrderType::LimitAsk || order_type == OrderType::LimitBid {
+            return Err(FixedTermWasmError::LimitPriceRequired.into());
+        } else {
+            0_u64
+        }
+    };
+
+    for item in resting_orders.iter() {
+        if unfilled_quote == 0 {
+            break
+        }
+
+        let order: Order = item.into();
+
+        // Ensure that we're processing appropriately ordered resting_orders. The correct
+        // ordering depends on whether the hypothetical order being processed is hitting
+        // bids or asks.
+
+        match order_type {
+            OrderType::LimitBid | OrderType::MarketBid => if order.limit_price < last_price {
+                return Err(FixedTermWasmError::RestingOrdersNotSorted.into())
+            },
+            OrderType::LimitAsk | OrderType::MarketAsk => if order.limit_price > last_price {
+                return Err(FixedTermWasmError::RestingOrdersNotSorted.into())
+            }
+        };
+        last_price = order.limit_price;
+
+        // For limit orders we might be done matching.
+
+        if order_type == OrderType::LimitBid {
+            if order.limit_price > limit_price {
+                break
+            }
+        } else if order_type == OrderType::LimitAsk {
+            if order.limit_price < limit_price {
+                break
+            }
+        }
+
+        // Current behaviour of the debt markets is to abort the transaction on self-match,
+        // so we indicate as much if we antipate a self-match. This check must be maintained
+        // consitently with the actual orderbook configuration.
+
+        if order.owned_by(&taker) {
+            return Err(FixedTermWasmError::SelfMatch.into());
+        }
+
+        // Determine the filled amount, making sure to respect both base and quote
+        // quantities available on the order.
+
+        let bfill = std::cmp::min(
+            quote_to_base(
+                std::cmp::min(unfilled_quote, order.quote_size),
+                order.limit_price),
+            order.base_size,
+        );
+        let qfill = base_to_quote(bfill, order.limit_price);
+
+        filled_quote += qfill;
+        filled_base += bfill;
+        unfilled_quote = unfilled_quote.saturating_sub(qfill);
+        matches += 1;
+    }
+
+    let vwap = f64_to_fp32(filled_quote as f64 / filled_base as f64);
+
+    Ok(
+        EstimatedOrderOutcome {
+            vwap,
+            filled_quote,
+            filled_base,
+            unfilled_quote,
+            matches,
+        }
+    )
 }
 
 /// This is meant to ensure that the api is using the PricerImpl type alias,

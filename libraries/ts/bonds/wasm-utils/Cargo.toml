@@ -18,6 +18,7 @@ js-sys = "0.3.59"
 wasm-bindgen = { version = "0.2.82", features = ["serde-serialize"] }
 
 jet-program-common = { path = "../../../rust/program-common" }
+thiserror = "1.0.37"
 
 [dev-dependencies]
 rand_chacha = "0.3.1"

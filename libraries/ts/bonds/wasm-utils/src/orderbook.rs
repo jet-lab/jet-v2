@@ -1,4 +1,5 @@
 mod critbit;
+mod error;
 mod interest_pricing;
 pub mod methods;
 pub mod types;
