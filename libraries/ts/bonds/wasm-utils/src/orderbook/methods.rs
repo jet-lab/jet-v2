@@ -131,8 +131,7 @@ pub fn build_order_amount_deprecated(amount: u64, interest_rate: u64) -> super::
 /// ```
 #[wasm_bindgen]
 pub fn calculate_implied_price(base: u64, quote: u64) -> u64 {
-    let price = Fp32::from(quote) / base;
-    price.as_decimal_u64().unwrap()
+    (Fp32::from(quote) / base).downcast_u64().unwrap() // FIXME panic
 }
 
 /// Identifies the role of the user.
@@ -352,4 +351,15 @@ fn wasm_uses_tested_implementation() {
             );
         }
     }
+}
+
+#[test]
+fn test_calculate_implied_price() {
+    let base_sz = 100;
+    let quote_sz = 50;
+
+    assert_eq!(
+        calculate_implied_price(base_sz, quote_sz),
+        f64_to_fp32(0.5),
+    );
 }

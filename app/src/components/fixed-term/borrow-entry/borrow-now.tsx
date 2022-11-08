@@ -34,22 +34,28 @@ export const BorrowNow = ({ token, decimals, marketAndConfig, marginConfig }: Re
   const [amount, setAmount] = useState(new BN(0));
 
   const estimateOrderOutcome = useCallback((amount: BN) => {
-    const bids = books[0].bids.sort((x, y) => Number(y.limit_price) - Number(x.limit_price))
-    const result = estimate_order_outcome(
-      BigInt(amount.toNumber()),
-      marginAccount.address.toBuffer(),
-      3,
-      null,
-      bids
-    )
+    const cloned = books[0].bids.map(
+      o => new Order(o.owner, o.order_tag, o.order_id, o.base_size, o.quote_size, o.limit_price)
+    );
+    const bids = cloned.sort((x, y) => Number(y.limit_price) - Number(x.limit_price));
+
+    const bidAmounts = bids.map(bid => Number(bid.base_size));
+    console.log(
+      'Bids Amount: ',
+      bidAmounts,
+      ' Total: ',
+      bidAmounts.reduce((sum, val) => sum + val, 0)
+    );
+
+    const result = estimate_order_outcome(BigInt(amount.toNumber()), marginAccount.address.toBuffer(), 3, null, bids);
     console.log({
       vwap: Number(result.vwap),
       filled_base: Number(result.filled_base),
       filled_quote: Number(result.filled_quote),
       matches: Number(result.matches),
       unfilled_quote: Number(result.unfilled_quote)
-    })
-  }, [])
+    });
+  }, []);
 
   useEffect(() => {
     console.log(books[0].bids)
