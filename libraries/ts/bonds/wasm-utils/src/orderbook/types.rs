@@ -34,7 +34,7 @@ pub struct OrderAmount {
     pub price: u64,
 }
 
-#[wasm_bindgen(module = "utils.js")]
+#[wasm_bindgen(module = "/src/orderbook/cast.js")]
 extern "C" {
   // This will let Rust regain ownership of `Foo`
   #[wasm_bindgen(js_name = castInto)]

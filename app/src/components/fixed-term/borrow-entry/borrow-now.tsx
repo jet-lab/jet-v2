@@ -1,6 +1,6 @@
 import { Button, InputNumber, Switch, Tooltip } from 'antd';
 import { formatDuration, intervalToDuration } from 'date-fns';
-import { borrowNow } from '@jet-lab/jet-bonds-client';
+import { borrowNow, estimate_order_outcome, Order } from '@jet-lab/jet-bonds-client';
 import { notify } from '@utils/notify';
 import { getExplorerUrl } from '@utils/ui';
 import BN from 'bn.js';
@@ -11,9 +11,9 @@ import { useProvider } from '@utils/jet/provider';
 import { CurrentPool, Pools } from '@state/pools/pools';
 import { BlockExplorer, Cluster } from '@state/settings/settings';
 import { useRecoilValue } from 'recoil';
-import { useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { MarginConfig, MarginTokenConfig } from '@jet-lab/margin';
-import { MarketAndconfig } from '@state/fixed-market/fixed-term-market-sync';
+import { AllFixedMarketsOrderBooksAtom, MarketAndconfig, FixedMarketAtom } from '@state/fixed-market/fixed-term-market-sync';
 
 interface RequestLoanProps {
   decimals: number;
@@ -30,7 +30,33 @@ export const BorrowNow = ({ token, decimals, marketAndConfig, marginConfig }: Re
   const currentPool = useRecoilValue(CurrentPool);
   const wallet = useWallet();
   const blockExplorer = useRecoilValue(BlockExplorer);
+  const books = useRecoilValue(AllFixedMarketsOrderBooksAtom);
   const [amount, setAmount] = useState(new BN(0));
+
+  const estimateOrderOutcome = useCallback((amount: BN) => {
+    const bids = books[0].bids.sort((x, y) => Number(y.limit_price) - Number(x.limit_price))
+    const result = estimate_order_outcome(
+      BigInt(amount.toNumber()),
+      marginAccount.address.toBuffer(),
+      3,
+      null,
+      bids
+    )
+    console.log({
+      vwap: Number(result.vwap),
+      filled_base: Number(result.filled_base),
+      filled_quote: Number(result.filled_quote),
+      matches: Number(result.matches),
+      unfilled_quote: Number(result.unfilled_quote)
+    })
+  }, [])
+
+  useEffect(() => {
+    console.log(books[0].bids)
+    if (amount.gt(new BN(0)) && books[0].bids.length > 0 && marginAccount.address) {
+      estimateOrderOutcome(amount)
+    }
+  }, [amount])
 
   const createBorrowOrder = async () => {
     let signature: string;

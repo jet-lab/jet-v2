@@ -3,6 +3,9 @@ use jet_program_common::Fp32;
 use js_sys::{Array, Uint8Array};
 use wasm_bindgen::prelude::*;
 
+extern crate console_error_panic_hook;
+
+
 use super::{
     critbit::Slab,
     interest_pricing::{fp32_to_f64, InterestPricer, PricerImpl},
@@ -194,6 +197,7 @@ pub fn estimate_order_outcome(
     limit_price: Option<u64>,
     resting_orders: &Array,
 ) -> Result<EstimatedOrderOutcome> {
+    console_error_panic_hook::set_once();
     let mut unfilled_quote = quote_size;
     let mut filled_quote = 0_u64;
     let mut filled_base = 0_u64;
@@ -216,7 +220,7 @@ pub fn estimate_order_outcome(
             break
         }
 
-        let order: Order = item.into();
+        let order: Order = item.clone().into();
 
         // Ensure that we're processing appropriately ordered resting_orders. The correct
         // ordering depends on whether the hypothetical order being processed is hitting
@@ -269,7 +273,8 @@ pub fn estimate_order_outcome(
         matches += 1;
     }
 
-    let vwap = f64_to_fp32(filled_quote as f64 / filled_base as f64);
+    // let vwap = f64_to_fp32(filled_quote as f64 / filled_base as f64);
+    let vwap = 0u64;
 
     Ok(
         EstimatedOrderOutcome {
