@@ -32,7 +32,7 @@ anchor-lang = { git = "https://github.com/jet-lab/anchor", branch = "master" }
 anchor-spl = { git = "https://github.com/jet-lab/anchor", branch = "master" }
 anchor-client = { git = "https://github.com/jet-lab/anchor", branch = "master" }
 
-jet-simulation = { git = "https://github.com/jet-lab/jet-simulation", branch = "redo-airdrop-funding" }
+jet-simulation = { git = "https://github.com/jet-lab/jet-simulation", branch = "master" }
 jet-program-common = { path = "../program-common" }
 jet-test-service = { path = "../../../programs/test-service", features = ["no-entrypoint"] }
 jet-bonds = { path = "../../../programs/bonds", features = ["no-entrypoint", "cli"] }
