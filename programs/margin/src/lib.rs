@@ -311,7 +311,7 @@ pub mod jet_margin {
     /// | --- | --- |
     /// | **Event Name** | **Description** |
     /// | [`events::AdapterInvokeBegin`] | Marks the start of the adapter invocation (includes the margin account pubkey and the adapter program pubkey). |
-    /// | [`events::PositionEvent`] _(Note that each single event represents a different adapter position)_ | The [PositionEvent](events::PositionEvent) describes the change in position. |
+    /// | [`events::PositionEvent`] _(Note that each single event represents a different adapter position)_ | The [PositionEvent](events::PositionEvent) marks the change in position. |
     /// | [`events::AdapterInvokeEnd`] | Marks the ending of the adapter invocation (includes no data except for the event itself being emitted). |
     pub fn adapter_invoke<'info>(
         ctx: Context<'_, '_, '_, 'info, AdapterInvoke<'info>>,
@@ -351,7 +351,7 @@ pub mod jet_margin {
     /// | --- | --- |
     /// | **Name** | **Description** |
     /// | [`events::AccountingInvokeBegin`] | Signify that the accounting invocation process has begun. |
-    /// | [`events::PositionEvent`] _(Note that each single event represents an different adapter position)_ | The [PositionEvent](events::PositionEvent) describing the change in position. |
+    /// | [`events::PositionEvent`] _(Note that each single event represents an different adapter position)_ | The [PositionEvent](events::PositionEvent) marks the change in position. |
     /// | [`events::AccountingInvokeEnd`] | Signify that the accounting invocation process has ended. |
     pub fn accounting_invoke<'info>(
         ctx: Context<'_, '_, '_, 'info, AccountingInvoke<'info>>,

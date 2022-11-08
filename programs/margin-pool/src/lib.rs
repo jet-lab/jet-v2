@@ -41,8 +41,7 @@ mod jet_margin_pool {
     /// 
     /// # Parameters
     ///
-    /// TODO below fee_destination def
-    /// * `fee_destination` - The account that collects fees on the created pool.
+    /// * `fee_destination` - The address of the account to deposit collected fees, represented as deposit notes.
     ///
     /// # [Accounts](jet_margin::accounts::CreatePool)
     ///     
@@ -65,7 +64,7 @@ mod jet_margin_pool {
     /// |     |     |
     /// | --- | --- |
     /// | **Event Name** | **Description** |
-    /// | [`events::PoolCreated`] | Marks the pool creation. |
+    /// | [`events::PoolCreated`] | The pool created. |
     /// 
     pub fn create_pool(ctx: Context<CreatePool>, fee_destination: Pubkey) -> Result<()> {
         instructions::create_pool_handler(ctx, fee_destination)
@@ -77,7 +76,7 @@ mod jet_margin_pool {
     /// # Parameters
     ///
     /// * [`clock`](solana_program::clock::Clock) - The network time represented as the current slot.       
-    /// ABOVE -- double check that the link works right for Clock
+    /// TODO: ABOVE -- double check that the link works right for Clock in docs
     ///
     /// # [Accounts](jet_margin::accounts::Collect)
     ///     
@@ -105,9 +104,7 @@ mod jet_margin_pool {
     /// Configure an existing pool
     ///
     /// TODO better / more comprehensive defiinition for config? "The data for configuring the respective pool" seems a bit too light
-    /// * `config` - TODO An abritrary integer used to derive the new account address. This allows
-    ///            a user to own multiple margin accounts, by creating new accounts with different
-    ///            seed values.
+    /// * `config` - The data with which to configure the respective pool.
     ///
     /// # [Accounts](jet_margin::accounts::Configure)
     ///     
@@ -125,21 +122,16 @@ mod jet_margin_pool {
     /// | --- | --- |
     /// | **Event Name** | **Description** |
     /// | [`events::PoolConfigured`] | Marks the configuration of the pool. |
-    /// 
     pub fn configure(ctx: Context<Configure>, config: Option<MarginPoolConfig>) -> Result<()> {
         instructions::configure_handler(ctx, config)
     }
 
     /// Deposit tokens into the pool in exchange for notes
     ///
-    /// TODO
-    /// * `change_kind` - An abritrary integer used to derive the new account address. This allows
-    ///            a user to own multiple margin accounts, by creating new accounts with different
-    ///            seed values.
-    /// TODO
-    /// * `amoount` - An abritrary integer used to derive the new account address. This allows
-    ///            a user to own multiple margin accounts, by creating new accounts with different
-    ///            seed values.
+    /// TODO: check my def for change_kind, expand on it w more detail...
+    /// 
+    /// change ()
+    /// * `change` - Contains `change_kind` and `amount`, which specify the pool operation type (in this case a deposit) and amount of tokens. 
     ///
     /// # [Accounts](jet_margin::accounts::Deposit)
     ///     
@@ -148,11 +140,11 @@ mod jet_margin_pool {
     /// | **Name** | **Type** | **Description** |
     /// | `margin_pool` | `writable` | The pool to deposit into. |
     /// | `vault` | `writable` | The vault for the pool, where tokens are held. |
-    /// | `deposit_note_mint` | `writable` | The mint for the deposit notes. |
-    /// | `depositor` | `signer` | The [ The address with authority to deposit the tokens. |
+    /// | `deposit_note_mint` | `writable` | The mint for deposit notes. |
+    /// | `depositor` | `writable` | The address with authority to deposit the tokens. |
     /// | `source` | `writable` | The source of the tokens to be deposited. |
-    /// | `destination` | `writtable` | The destination of the deposit notes. |
-    /// | `token_progarm` | `read_only` | The [system native program](https://docs.solana.com/developing/runtime-facilities/programs#system-program). |
+    /// | `destination` | `writable` | The destination of the deposit notes. |
+    /// | `token_program` | `read_only` | The [spl token program](https://spl.solana.com/token). |
     ///
     /// # Events
     ///
@@ -160,7 +152,6 @@ mod jet_margin_pool {
     /// | --- | --- |
     /// | **Event Name** | **Description** |
     /// | [`events::Deposit`] | Marks the deposit. |
-    /// 
     pub fn deposit(ctx: Context<Deposit>, change_kind: ChangeKind, amount: u64) -> Result<()> {
         instructions::deposit_handler(ctx, change_kind, amount)
     }
@@ -168,34 +159,64 @@ mod jet_margin_pool {
     /// Withdraw tokens from the pool, exchanging in previously received
     /// deposit notes.
     ///
-    /// TODO: change the below, this is just a placeholder to c&p and adjust for each function
     /// # Parameters
     ///
-    /// * `seed` - An abritrary integer used to derive the new account address. This allows
-    ///            a user to own multiple margin accounts, by creating new accounts with different
-    ///            seed values.
+    /// TODO: as with deposit above, check + expand on these defs
+    /// * `change` - Contains `change_kind` and `amount`, which specify the pool operation type (in this case a withdraw) and amount of tokens. 
+    /// 
+    /// * [`clock`](solana_program::clock::Clock) - The network time represented as the current slot.       
+    /// TODO: ABOVE -- double check that the link works right for Clock in docs
     ///
-    /// # [Accounts](jet_margin::accounts::CreateAccount)
+    /// # [Accounts](jet_margin::accounts::Withdraw)
     ///     
     /// |     |     |     |
     /// | --- | --- | --- |
     /// | **Name** | **Type** | **Description** |
-    /// | `owner` | `signer` | The owner of the new margin account. |
-    /// | `payer` | `signer` | The pubkey paying rent for the new margin account opening. |
-    /// | `margin_account` | `writable` | The margin account to initialize for the owner. |
-    /// | `system_program` | `read_only` | The [system native program](https://docs.solana.com/developing/runtime-facilities/programs#system-program). |
+    /// | `depositor` | `signer` | The address with authority to withdraw the deposit. |
+    /// | `margin_pool` | `writable` | The pool to withdraw from. |
+    /// | `vault` | `writable` | The vault for the pool, where tokens are held. |
+    /// | `deposit_note_mint` | `writable` | The mint for the deposit notes. |
+    /// | `source` | `writable` | The source of the deposit notes to be redeemed. |
+    /// | `destination` | `writable` | The destination of the tokens withdrawn. |
+    /// | `token_program` | `read_only` | The [spl token program](https://spl.solana.com/token). |
     ///
     /// # Events
     ///
     /// |     |     |
     /// | --- | --- |
     /// | **Event Name** | **Description** |
-    /// | [`events::Withdraw`] | Marks the withdraw. |
+    /// | [`events::Withdraw`] | Marks the withdrawal. |
     pub fn withdraw(ctx: Context<Withdraw>, change_kind: ChangeKind, amount: u64) -> Result<()> {
         instructions::withdraw_handler(ctx, change_kind, amount)
     }
 
     /// Borrow tokens using a margin account
+    ///
+    /// # Parameters
+    ///
+    /// TODO: as with deposit and withdraw above, cheeck + expand on these defs
+    /// * `change` - Contains `change_kind` and `amount`, which specify the pool operation type (in this case a margin borrow) and amount of tokens. 
+    /// 
+    /// # [Accounts](jet_margin::accounts::MarginBorrow)
+    ///     
+    /// |     |     |     |
+    /// | --- | --- | --- |
+    /// | **Name** | **Type** | **Description** |
+    /// | `margin_account` | `read_only` | The margin account being executed on. |
+    /// | `margin_pool` | `writable` | The pool to borrow from. |
+    /// | `loan_note_mint` | `writable` | The mint for the notes representing loans from the pool. |
+    /// | `deposit_note_mint` | `writable` | The mint for the notes representing deposit into the pool. |
+    /// | `loan_account` | `writable` | The account to receive the loan notes. |
+    /// | `deposit_account` | `writable` | The account to receive the borrowed tokens (as deposit notes). |
+    /// | `token_program` | `read_only` | The [spl token program](https://spl.solana.com/token). |
+    /// 
+    /// # Events
+    ///
+    /// |     |     |
+    /// | --- | --- |
+    /// | **Event Name** | **Description** |
+    /// | [`events::MarginBorrow`] | Marks the margin borrow. |
+    /// 
     pub fn margin_borrow(
         ctx: Context<MarginBorrow>,
         change_kind: ChangeKind,
@@ -204,9 +225,34 @@ mod jet_margin_pool {
         instructions::margin_borrow_handler(ctx, change_kind, amount)
     }
 
-    /// Repay a loan with a maximum amount.
-    /// If the loan balance is lower than the amount, the excess is left in the
-    /// deposit account.
+    /// Repay a margin account debt from an outside token account
+    /// 
+    /// # Parameters
+    ///
+    /// TODO: as with above, check + expand on these defs
+    /// * `change` - Contains `change_kind` and `amount`, which specify the pool operation type (in this case a margin repay) and amount of tokens. 
+
+    /// 
+    /// # [Accounts](jet_margin::accounts::MarginRepay)
+    ///     
+    /// |     |     |     |
+    /// | --- | --- | --- |
+    /// | **Name** | **Type** | **Description** |
+    /// | `margin_account` | `Signer` | The margin account being executed on. |
+    /// | `margin_pool` | `writable` | The pool with the outstanding loan. |
+    /// | `loan_note_mint` | `writable` | The mint for the notes representing loans from the pool. |
+    /// | `deposit_note_mint` | `writable` | The mint for the notes representing deposit into the pool. |
+    /// | `loan_account` | `writable` | The account with the loan notes. |
+    /// | `deposit_account` | `writable` | The account with the deposit to pay off the loan with. |
+    /// | `token_program` | `read_only` | The [spl token program](https://spl.solana.com/token). |
+    /// 
+    /// # Events
+    ///
+    /// |     |     |
+    /// | --- | --- |
+    /// | **Event Name** | **Description** |
+    /// | [`events::MarginRepay`] | Marks the margin repay. |
+    /// 
     pub fn margin_repay(
         ctx: Context<MarginRepay>,
         change_kind: ChangeKind,
@@ -216,17 +262,73 @@ mod jet_margin_pool {
     }
 
     /// Repay a margin account debt from an outside token account
+    /// 
+    /// # Parameters
+    ///
+    /// TODO: as with above, check + expand on these defs
+    /// * `change` - Contains `change_kind` and `amount`, which specify the pool operation type (in this case a repay) and amount. 
+
+    /// 
+    /// # [Accounts](jet_margin::accounts::Repay)
+    ///     
+    /// |     |     |     |
+    /// | --- | --- | --- |
+    /// | **Name** | **Type** | **Description** |
+    /// | `margin_pool` | `writable` | The pool with the outstanding loan. |
+    /// | `loan_note_mint` | `writable` | The mint for the notes representing loans from the pool. |
+    /// | `vault` | `writable` | The vault responsible for storing the pool's tokens. |
+    /// | `loan_account` | `writable` | The account with the loan notes. |
+    /// | `repayment_token_account` | `writable` | The token account repaying the debt. |
+    /// | `repayment_account_authority` | `Signer` | Signing authority for the repaying token account. |
+    /// | `token_program` | `read_only` | The [spl token program](https://spl.solana.com/token). |
+    /// 
+    /// # Events
+    ///
+    /// |     |     |
+    /// | --- | --- |
+    /// | **Event Name** | **Description** |
+    /// | [`events::Repay`] | Marks the repay. |
+    /// 
     pub fn repay(ctx: Context<Repay>, change_kind: ChangeKind, amount: u64) -> Result<()> {
         instructions::repay_handler(ctx, change_kind, amount)
     }
 
     /// Update the pool position on a margin account
+    /// 
+    /// # Parameters
+    /// 
+    /// # [Accounts](jet_margin::accounts::MarginRefreshPosition)
+    ///     
+    /// |     |     |     |
+    /// | --- | --- | --- |
+    /// | **Name** | **Type** | **Description** |
+    /// | `margin_account` | `read_only` | The margin account being executed on. |
+    /// | `margin_pool` | `read_only` | The pool to be refreshed. |
+    /// | `token_price_oracle` | `read_only` | The pyth price account for the pool's token. |
+    ///
     pub fn margin_refresh_position(ctx: Context<MarginRefreshPosition>) -> Result<()> {
         instructions::margin_refresh_position_handler(ctx)
     }
 
     /// Creates the token account to track the loan notes,
     /// then requests margin to register the position
+    /// 
+    /// # [Accounts](jet_margin::accounts::RegisterLoan)
+    ///     
+    /// |     |     |     |
+    /// | --- | --- | --- |
+    /// | **Name** | **Type** | **Description** |
+    /// | `margin_account` | `Signer` | The margin account authority. |
+    /// | `position_token_metadata` | `read_only` | This will be required for margin to register the position, so requiring it here makes it easier for clients to ensure that it will be sent. |
+    /// | `loan_note_account` | `read_only` | The token account to store the loan notes representing the claim against the margin account. |
+    /// | `loan_note_mint` | `read_only` | The mint for the notes representing loans from the pool. |
+    /// | `margin_pool` | `read_only` | The margin pool that will be used for the loan. |
+    /// | `payer` | `writable` | The payer of rent for the loan transaction. |
+    /// TODO check 'payer' def above is correcct
+    /// | `token_program` | `read_only` | The [spl token program](https://spl.solana.com/token). |
+    /// | `system_program` | `read_only` | The [system native program](https://docs.solana.com/developing/runtime-facilities/programs#system-program). |
+    /// | `rent` | `read_only` | The [rent sysvar](https://docs.solana.com/developing/runtime-facilities/sysvars#rent) to create the pool. |
+    /// 
     pub fn register_loan(ctx: Context<RegisterLoan>) -> Result<()> {
         instructions::register_loan_handler(ctx)
     }
@@ -242,9 +344,10 @@ mod jet_margin_pool {
     /// | `loan_note_account` | `read_only` | The account that has the loan obligation that is being closed. |
     /// | `loan_note_mint` | `read_only` | The mint for the notes representing loans from the pool. |
     /// | `margin_pool` | `read_only` | The margin pool that the loan originates from. |
-    /// TODO: double check my description for beneficiary 
-    /// | `beneficiary` | `writable` | The destination for the  account closing the loan(?). |
+    /// TODO: double check my def for 'beneficiary'
+    /// | `beneficiary` | `writable` | The address to return rent to after loan closure, I think? Or is it specifying account closing the loan(?). |
     /// | `token_program` | `read_only` | The [spl token program](https://spl.solana.com/token). |
+    /// 
     pub fn close_loan(ctx: Context<CloseLoan>) -> Result<()> {
         instructions::close_loan_handler(ctx)
     }
