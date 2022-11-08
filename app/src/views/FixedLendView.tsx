@@ -9,6 +9,7 @@ import { FixedLendRowOrder, FixedLendViewOrder } from '@state/views/fixed-term';
 import { FixedMarketSelector } from '@components/fixed-term/shared/market-selector';
 import { NetworkStateAtom } from '@state/network/network-state';
 import { WaitingForNetworkView } from './WaitingForNetwork';
+import { DebtTable } from '@components/fixed-term/shared/DebtTable';
 
 const rowComponents: Record<string, React.FC<any>> = {
   fixedLendEntry: FixedLendOrderEntry,
@@ -36,6 +37,7 @@ const FixedRow = (): JSX.Element => {
 const viewComponents: Record<string, React.FC<any>> = {
   accountSnapshot: AccountSnapshot,
   fixedRow: FixedRow,
+  debtTable: DebtTable,
   fullAccountBalance: FullAccountBalance,
   marketSelector: FixedMarketSelector
 };
@@ -43,6 +45,7 @@ const viewComponents: Record<string, React.FC<any>> = {
 const viewComponentsProps: Record<string, object> = {
   accountSnapshot: { key: 'accountSnapshot' },
   fixedRow: { key: 'fixedRow' },
+  debtTable: { key: 'debtTable' },
   fullAccountBalance: { key: 'fullAccountBalance' },
   marketSelector: { key: 'marketSelector', type: 'bids' }
 };

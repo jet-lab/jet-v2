@@ -19,7 +19,6 @@ export function AccountsView(): JSX.Element {
     document.title = `${dictionary.accountsView.title} | Jet Protocol`;
   }, [dictionary.accountsView.title]);
 
-
   // Account view with ordered components
   const viewComponents: Record<string, JSX.Element> = {
     accountSnapshot: <AccountSnapshot key="accountSnapshot" />,

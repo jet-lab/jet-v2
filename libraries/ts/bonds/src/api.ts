@@ -83,7 +83,7 @@ export const createFixedLendOrder = async ({
     marginAccount,
     walletAddress,
     instructions: accountInstructions,
-    marketAccount: lenderAccount,
+    marketAccount: lenderAccount
   })
   if (accountInstructions.length > 0) {
     instructions.push(accountInstructions)
@@ -119,7 +119,14 @@ export const createFixedLendOrder = async ({
   })
 
   // create lend instruction
-  const loanOffer = await market.offerLoanIx(marginAccount, amount, basisPoints, walletAddress, createRandomSeed(4), marketConfig.borrowDuration)
+  const loanOffer = await market.offerLoanIx(
+    marginAccount,
+    amount,
+    basisPoints,
+    walletAddress,
+    createRandomSeed(4),
+    marketConfig.borrowDuration
+  )
   await marginAccount.withAdapterInvoke({
     instructions: lendInstructions,
     adapterInstruction: loanOffer
@@ -170,7 +177,7 @@ export const createFixedBorrowOrder = async ({
     marginAccount,
     walletAddress,
     instructions: accountInstructions,
-    marketAccount: borrowerAccount,
+    marketAccount: borrowerAccount
   })
   if (accountInstructions.length > 0) {
     instructions.push(accountInstructions)

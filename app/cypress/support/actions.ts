@@ -1,4 +1,4 @@
-import { formatWithCommas } from "./utils";
+import { formatWithCommas } from './utils';
 
 export const connectWallet = () => {
   cy.contains('CONNECT').click();

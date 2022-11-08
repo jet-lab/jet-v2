@@ -3,7 +3,7 @@ import { localStorageEffect } from '@state/effects/localStorageEffect';
 
 export const FixedBorrowViewOrder = atom({
   key: 'FixedBorrowViewOrder',
-  default: ['accountSnapshot', 'marketSelector', 'fixedRow', 'fullAccountBalance'] as string[],
+  default: ['accountSnapshot', 'marketSelector', 'fixedRow', 'debtTable', 'fullAccountBalance'] as string[],
   effects: [localStorageEffect('jetAppFixedBorrowViewOrder')],
   dangerouslyAllowMutability: true
 });
@@ -17,7 +17,7 @@ export const FixedBorrowRowOrder = atom({
 
 export const FixedLendViewOrder = atom({
   key: 'FixedLendViewOrder',
-  default: ['accountSnapshot', 'marketSelector', 'fixedRow', 'fullAccountBalance'] as string[],
+  default: ['accountSnapshot', 'marketSelector', 'fixedRow', 'debtTable', 'fullAccountBalance'] as string[],
   effects: [localStorageEffect('jetAppFixedLendViewOrder')],
   dangerouslyAllowMutability: true
 });

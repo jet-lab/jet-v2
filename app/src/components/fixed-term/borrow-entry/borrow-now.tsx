@@ -68,7 +68,7 @@ export const BorrowNow = ({ token, decimals, marketAndConfig, marginConfig }: Re
         <label>
           Loan amount
           <InputNumber
-            className='input-amount'
+            className="input-amount"
             onChange={e => setAmount(new BN(e * 10 ** decimals))}
             placeholder={'10,000'}
             min={0}
@@ -116,7 +116,10 @@ export const BorrowNow = ({ token, decimals, marketAndConfig, marginConfig }: Re
           <span>Off</span>
         </div>
       </div>
-      <Button className='submit-button' disabled={!marketAndConfig?.market || amount.lte(new BN(0))} onClick={createBorrowOrder}>
+      <Button
+        className="submit-button"
+        disabled={!marketAndConfig?.market || amount.lte(new BN(0))}
+        onClick={createBorrowOrder}>
         Borrow {marketToString(marketAndConfig.config)}
       </Button>
     </div>
