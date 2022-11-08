@@ -128,12 +128,12 @@ pub fn calculate_implied_price(base: u64, quote: u64) -> u64 {
 
 /// Identifies the role of the user.
 #[wasm_bindgen]
-pub enum Trader {
+pub enum Actor {
     Lender,
     Borrower,
 }
 
-/// Actions that a `Trader` may be taking.
+/// Actions that an `Actor` may be taking.
 #[wasm_bindgen]
 #[derive(PartialEq)]
 pub enum Action {
@@ -151,10 +151,10 @@ pub enum Action {
 /// 
 /// Returns the adjusted price in FP32 representation.
 #[wasm_bindgen]
-pub fn with_slippage(price: u64, fraction: f64, trader: Trader) -> u64 {
-    let scale = match trader {
-        Trader::Lender => 1_f64 + fraction,
-        Trader::Borrower => 1_f64 - fraction,
+pub fn with_slippage(price: u64, fraction: f64, actor: Actor) -> u64 {
+    let scale = match actor {
+        Actor::Lender => 1_f64 + fraction,
+        Actor::Borrower => 1_f64 - fraction,
     };
 
     f64_to_fp32(fp32_to_f64(price) * scale)
