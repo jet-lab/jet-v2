@@ -53,8 +53,8 @@ export function DepositWithdrawModal(): JSX.Element {
   });
 
   useEffect(() => {
-    if (currentAction === 'deposit' || currentAction === 'withdraw') setActionRefresh(Date.now())
-  }, [currentAction])
+    if (currentAction === 'deposit' || currentAction === 'withdraw') setActionRefresh(Date.now());
+  }, [currentAction]);
 
   // Deposit / Withdraw
   async function depositWithdraw() {
