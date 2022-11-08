@@ -43,7 +43,8 @@ cargo-build() {
 }
 
 test() {
-    RUST_BACKTRACE=1 with-validator cargo test \
+    RUST_BACKTRACE=1 with-validator cargo nextest run \
+        --retries 2 \
         --features $TEST_FEATURES \
         --package hosted-tests \
         --test $@

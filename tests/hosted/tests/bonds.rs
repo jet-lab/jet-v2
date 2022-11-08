@@ -9,7 +9,8 @@ use hosted_tests::{
     },
     context::MarginTestContext,
     margin_test_context,
-    setup_helper::{setup_user, tokens}, solana_test_context,
+    setup_helper::{setup_user, tokens},
+    solana_test_context,
 };
 use jet_bonds::orderbook::state::OrderParams;
 use jet_margin_sdk::{
