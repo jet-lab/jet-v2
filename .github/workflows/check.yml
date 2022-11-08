@@ -10,7 +10,7 @@ jobs:
   anchor-test:
     runs-on: ubuntu-latest
     container:
-      image: jetprotocol/builder:test2
+      image: jetprotocol/builder:root-rust-1.65.0-node-18.12.1-solana-1.13.5-anchor-0.25.0-1
     env:
       HOME: /root
       SOLANA_MAINNET_RPC: ${{ secrets.SOLANA_MAINNET_RPC }}
@@ -39,7 +39,7 @@ jobs:
   hosted-tests-localnet-batch1:
     runs-on: ubuntu-latest
     container:
-      image: jetprotocol/builder:test2
+      image: jetprotocol/builder:root-rust-1.65.0-node-18.12.1-solana-1.13.5-anchor-0.25.0-1
     env:
       HOME: /root
       BATCH: batch1
@@ -65,7 +65,7 @@ jobs:
   hosted-tests-localnet-batch2:
     runs-on: ubuntu-latest
     container:
-      image: jetprotocol/builder:test2
+      image: jetprotocol/builder:root-rust-1.65.0-node-18.12.1-solana-1.13.5-anchor-0.25.0-1
     env:
       HOME: /root
       BATCH: batch2
@@ -91,7 +91,7 @@ jobs:
   cargo-lint:
     runs-on: ubuntu-latest
     container:
-      image: jetprotocol/builder:test2
+      image: jetprotocol/builder:root-rust-1.65.0-node-18.12.1-solana-1.13.5-anchor-0.25.0-1
     env:
       HOME: /root
     steps:
@@ -114,7 +114,7 @@ jobs:
   cargo-test:
     runs-on: ubuntu-latest
     container:
-      image: jetprotocol/builder:test2
+      image: jetprotocol/builder:root-rust-1.65.0-node-18.12.1-solana-1.13.5-anchor-0.25.0-1
     env:
       HOME: /root
       CODECOV: true
@@ -142,7 +142,7 @@ jobs:
   e2e:
     runs-on: ubuntu-latest
     container:
-      image: jetprotocol/builder:test2
+      image: jetprotocol/builder:root-rust-1.65.0-node-18.12.1-solana-1.13.5-anchor-0.25.0-1
     env:
       HOME: /root
       SOLANA_MAINNET_RPC: ${{ secrets.SOLANA_MAINNET_RPC }}
