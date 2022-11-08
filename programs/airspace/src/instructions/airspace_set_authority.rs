@@ -17,7 +17,7 @@
 
 use anchor_lang::prelude::*;
 
-use crate::state::Airspace;
+use crate::{events::AirspaceAuthoritySet, state::Airspace};
 
 #[derive(Accounts)]
 pub struct AirspaceSetAuthority<'info> {
@@ -36,6 +36,11 @@ pub fn airspace_set_authority_handler(
     let airspace = &mut ctx.accounts.airspace;
 
     airspace.authority = new_authority;
+
+    emit!(AirspaceAuthoritySet {
+        airspace: airspace.key(),
+        authority: new_authority
+    });
 
     Ok(())
 }
