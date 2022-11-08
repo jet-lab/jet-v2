@@ -1,6 +1,6 @@
 import Title from 'antd/lib/typography/Title';
 import ApexCharts from 'apexcharts';
-import { Suspense, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { Order } from '@jet-lab/jet-bonds-client';
 import { ReorderArrows } from '@components/misc/ReorderArrows';
@@ -8,6 +8,7 @@ import { Dictionary } from '@state/settings/localization/localization';
 import { FixedBorrowRowOrder, FixedLendRowOrder } from '@state/views/fixed-term';
 import { AllFixedMarketsOrderBooksAtom, ExtendedOrderBook } from '@state/fixed-market/fixed-term-market-sync';
 import { useCurrencyFormatting } from '@utils/currency';
+import { ResponsiveLineChart } from '@components/shared/charts/line-chart';
 
 interface Formatter {
   currencyFormatter: (
@@ -141,9 +142,10 @@ export const FixedPriceChartContainer = ({ type }: FixedChart) => {
           </div>
         </div>
       </div>
-      <Suspense fallback={<div>Loading</div>}>
+      <ResponsiveLineChart />
+      {/* <Suspense fallback={<div>Loading</div>}>
         <FixedPriceChart type={type} decimals={6} />
-      </Suspense>
+      </Suspense> */}
       <ReorderArrows component="fixedChart" order={rowOrder} setOrder={setRowOrder} />
     </div>
   );
