@@ -21,6 +21,8 @@
     "@solana/wallet-adapter-wallets": "^0.19.5",
     "@solana/web3.js": "^1.63.0",
     "@visx/curve": "^2.1.0",
+    "@visx/grid": "^2.12.2",
+    "@visx/legend": "^2.10.0",
     "@visx/responsive": "^2.10.0",
     "@visx/scale": "^2.2.2",
     "@visx/shape": "^2.12.2",
