@@ -49,7 +49,9 @@ pub fn airspace_create_handler(
     airspace.is_restricted = is_restricted;
 
     emit!(AirspaceCreated {
-        airspace: airspace.key()
+        airspace: airspace.key(),
+        authority,
+        is_restricted
     });
 
     Ok(())
