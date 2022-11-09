@@ -48,7 +48,7 @@ impl<'info> SellTicketsOrder<'info> {
         &self,
         order_summary: SensibleOrderSummary,
         params: &OrderParams,
-        margin_user: Pubkey,
+        margin_user: Option<Pubkey>,
         order_type: OrderType,
     ) -> Result<()> {
         self.withdraw(
@@ -97,10 +97,6 @@ pub fn handler(ctx: Context<SellTicketsOrder>, params: OrderParams) -> Result<()
         CallbackFlags::empty(),
     )?;
 
-    ctx.accounts.sell_tickets(
-        order_summary,
-        &params,
-        Pubkey::default(),
-        OrderType::SellTickets,
-    )
+    ctx.accounts
+        .sell_tickets(order_summary, &params, None, OrderType::SellTickets)
 }

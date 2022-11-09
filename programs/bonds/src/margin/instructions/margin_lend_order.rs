@@ -71,7 +71,7 @@ pub fn handler(ctx: Context<MarginLendOrder>, params: OrderParams, seed: Vec<u8>
     emit!(crate::events::OrderPlaced {
         bond_manager: ctx.accounts.inner.orderbook_mut.bond_manager.key(),
         authority: ctx.accounts.inner.authority.key(),
-        margin_user: ctx.accounts.margin_user.key(),
+        margin_user: Some(ctx.accounts.margin_user.key()),
         order_summary: order_summary.summary(),
         auto_stake: params.auto_stake,
         post_only: params.post_only,

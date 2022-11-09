@@ -58,7 +58,7 @@ pub fn handler(ctx: Context<MarginSellTicketsOrder>, params: OrderParams) -> Res
     ctx.accounts.inner.sell_tickets(
         order_summary,
         &params,
-        ctx.accounts.margin_user.key(),
+        Some(ctx.accounts.margin_user.key()),
         OrderType::MarginSellTickets,
     )
 }

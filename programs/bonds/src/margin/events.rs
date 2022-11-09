@@ -15,7 +15,7 @@ pub struct OrderPlaced {
     pub bond_manager: Pubkey,
     /// The authority placing this order, almost always the margin account
     pub authority: Pubkey,
-    pub margin_user: Pubkey,
+    pub margin_user: Option<Pubkey>,
     pub order_type: OrderType,
     pub order_summary: OrderSummary,
     pub limit_price: u64,

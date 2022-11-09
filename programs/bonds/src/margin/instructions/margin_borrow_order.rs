@@ -116,7 +116,7 @@ pub fn handler(ctx: Context<MarginBorrowOrder>, params: OrderParams, seed: Vec<u
     emit!(OrderPlaced {
         bond_manager: bond_manager.key(),
         authority: ctx.accounts.margin_account.key(),
-        margin_user: ctx.accounts.margin_user.key(),
+        margin_user: Some(ctx.accounts.margin_user.key()),
         order_summary: order_summary.summary(),
         limit_price: params.limit_price,
         auto_stake: params.auto_stake,

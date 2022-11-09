@@ -143,7 +143,7 @@ pub fn handler(ctx: Context<LendOrder>, params: OrderParams, seed: Vec<u8>) -> R
     emit!(crate::events::OrderPlaced {
         bond_manager: ctx.accounts.orderbook_mut.bond_manager.key(),
         authority: ctx.accounts.authority.key(),
-        margin_user: Pubkey::default(),
+        margin_user: None,
         order_summary: order_summary.summary(),
         order_type: crate::events::OrderType::Lend,
         limit_price: params.limit_price,
