@@ -97,31 +97,49 @@ export type JetBonds = {
   "instructions": [
     {
       "name": "authorizeCrank",
+      "docs": [
+        "authorize an address to run orderbook consume_event instructions"
+      ],
       "accounts": [
         {
           "name": "crank",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The crank signer pubkey"
+          ]
         },
         {
           "name": "crankAuthorization",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The account containing the metadata for the key"
+          ]
         },
         {
           "name": "authority",
           "isMut": false,
-          "isSigner": true
+          "isSigner": true,
+          "docs": [
+            "The authority that must sign to make this change"
+          ]
         },
         {
           "name": "airspace",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The airspace being modified"
+          ]
         },
         {
           "name": "payer",
           "isMut": true,
-          "isSigner": true
+          "isSigner": true,
+          "docs": [
+            "The address paying the rent for the account"
+          ]
         },
         {
           "name": "systemProgram",
@@ -133,21 +151,33 @@ export type JetBonds = {
     },
     {
       "name": "revokeCrank",
+      "docs": [
+        "unauthorize an address to run orderbook consume_event instructions"
+      ],
       "accounts": [
         {
           "name": "metadataAccount",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The account containing the metadata for the key"
+          ]
         },
         {
           "name": "authority",
           "isMut": false,
-          "isSigner": true
+          "isSigner": true,
+          "docs": [
+            "The authority that must sign to make this change"
+          ]
         },
         {
           "name": "airspace",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The airspace being modified"
+          ]
         },
         {
           "name": "receiver",
@@ -159,76 +189,121 @@ export type JetBonds = {
     },
     {
       "name": "initializeBondManager",
+      "docs": [
+        "Initializes a BondManager for a bond ticket market"
+      ],
       "accounts": [
         {
           "name": "bondManager",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The `BondManager` manages asset tokens for a particular bond duration"
+          ]
         },
         {
           "name": "underlyingTokenVault",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The vault for storing the token underlying the bond tickets"
+          ]
         },
         {
           "name": "underlyingTokenMint",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The mint for the assets underlying the bond tickets"
+          ]
         },
         {
           "name": "bondTicketMint",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The minting account for the bond tickets"
+          ]
         },
         {
           "name": "claims",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "Mints tokens to a margin account to represent debt that must be collateralized"
+          ]
         },
         {
           "name": "collateral",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "Mints tokens to a margin account to represent debt that must be collateralized"
+          ]
         },
         {
           "name": "authority",
           "isMut": false,
-          "isSigner": true
+          "isSigner": true,
+          "docs": [
+            "The authority that must sign to make this change"
+          ]
         },
         {
           "name": "airspace",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The airspace being modified"
+          ]
         },
         {
           "name": "underlyingOracle",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The oracle for the underlying asset price"
+          ]
         },
         {
           "name": "ticketOracle",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The oracle for the bond ticket price"
+          ]
         },
         {
           "name": "payer",
           "isMut": true,
-          "isSigner": true
+          "isSigner": true,
+          "docs": [
+            "The account paying rent for PDA initialization"
+          ]
         },
         {
           "name": "rent",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "Rent sysvar"
+          ]
         },
         {
           "name": "tokenProgram",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "SPL token program"
+          ]
         },
         {
           "name": "systemProgram",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "Solana system program"
+          ]
         }
       ],
       "args": [
@@ -242,51 +317,83 @@ export type JetBonds = {
     },
     {
       "name": "initializeOrderbook",
+      "docs": [
+        "Initializes a new orderbook"
+      ],
       "accounts": [
         {
           "name": "bondManager",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The `BondManager` account tracks global information related to this particular bond market"
+          ]
         },
         {
           "name": "orderbookMarketState",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "AOB market state"
+          ]
         },
         {
           "name": "eventQueue",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "AOB market event queue",
+            "",
+            "Must be initialized"
+          ]
         },
         {
           "name": "bids",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "AOB market bids"
+          ]
         },
         {
           "name": "asks",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "AOB market asks"
+          ]
         },
         {
           "name": "authority",
           "isMut": false,
-          "isSigner": true
+          "isSigner": true,
+          "docs": [
+            "The authority that must sign to make this change"
+          ]
         },
         {
           "name": "airspace",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The airspace being modified"
+          ]
         },
         {
           "name": "payer",
           "isMut": true,
-          "isSigner": true
+          "isSigner": true,
+          "docs": [
+            "The account paying rent for PDA initialization"
+          ]
         },
         {
           "name": "systemProgram",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "Solana system program"
+          ]
         }
       ],
       "args": [
@@ -300,21 +407,34 @@ export type JetBonds = {
     },
     {
       "name": "modifyBondManager",
+      "docs": [
+        "Modify a `BondManager` account",
+        "Authority use only"
+      ],
       "accounts": [
         {
           "name": "bondManager",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The `BondManager` manages asset tokens for a particular bond duration"
+          ]
         },
         {
           "name": "authority",
           "isMut": false,
-          "isSigner": true
+          "isSigner": true,
+          "docs": [
+            "The authority that must sign to make this change"
+          ]
         },
         {
           "name": "airspace",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The airspace being modified"
+          ]
         }
       ],
       "args": [
@@ -324,17 +444,23 @@ export type JetBonds = {
         },
         {
           "name": "offset",
-          "type": "u32"
+          "type": "u64" // usize in the program
         }
       ]
     },
     {
       "name": "pauseOrderMatching",
+      "docs": [
+        "Pause matching of orders placed in the orderbook"
+      ],
       "accounts": [
         {
           "name": "bondManager",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The `BondManager` manages asset tokens for a particular bond duration"
+          ]
         },
         {
           "name": "orderbookMarketState",
@@ -344,23 +470,38 @@ export type JetBonds = {
         {
           "name": "authority",
           "isMut": false,
-          "isSigner": true
+          "isSigner": true,
+          "docs": [
+            "The authority that must sign to make this change"
+          ]
         },
         {
           "name": "airspace",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The airspace being modified"
+          ]
         }
       ],
       "args": []
     },
     {
       "name": "resumeOrderMatching",
+      "docs": [
+        "Resume matching of orders placed in the orderbook",
+        "NOTE: This instruction may have to be run several times to clear the",
+        "existing matches. Check the `orderbook_market_state.pause_matching` variable",
+        "to determine success"
+      ],
       "accounts": [
         {
           "name": "bondManager",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The `BondManager` manages asset tokens for a particular bond duration"
+          ]
         },
         {
           "name": "orderbookMarketState",
@@ -385,38 +526,60 @@ export type JetBonds = {
         {
           "name": "authority",
           "isMut": false,
-          "isSigner": true
+          "isSigner": true,
+          "docs": [
+            "The authority that must sign to make this change"
+          ]
         },
         {
           "name": "airspace",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The airspace being modified"
+          ]
         }
       ],
       "args": []
     },
     {
       "name": "initializeMarginUser",
+      "docs": [
+        "Create a new borrower account"
+      ],
       "accounts": [
         {
           "name": "borrowerAccount",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The account tracking information related to this particular user"
+          ]
         },
         {
           "name": "marginAccount",
           "isMut": false,
-          "isSigner": true
+          "isSigner": true,
+          "docs": [
+            "The signing authority for this user account"
+          ]
         },
         {
           "name": "bondManager",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The Boheader account"
+          ]
         },
         {
           "name": "claims",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "Token account used by the margin program to track the debt",
+            "that must be collateralized"
+          ]
         },
         {
           "name": "claimsMint",
@@ -426,7 +589,10 @@ export type JetBonds = {
         {
           "name": "collateral",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "Token account used by the margin program to track owned assets"
+          ]
         },
         {
           "name": "collateralMint",
@@ -466,53 +632,83 @@ export type JetBonds = {
         {
           "name": "claimsMetadata",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "Token metadata account needed by the margin program to register the claim position"
+          ]
         },
         {
           "name": "collateralMetadata",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "Token metadata account needed by the margin program to register the collateral position"
+          ]
         }
       ],
       "args": []
     },
     {
       "name": "marginBorrowOrder",
+      "docs": [
+        "Place a borrow order by leveraging margin account value"
+      ],
       "accounts": [
         {
           "name": "marginUser",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The account tracking borrower debts"
+          ]
         },
         {
           "name": "obligation",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "Obligation account minted upon match"
+          ]
         },
         {
           "name": "marginAccount",
           "isMut": false,
-          "isSigner": true
+          "isSigner": true,
+          "docs": [
+            "The margin account for this borrow order"
+          ]
         },
         {
           "name": "claims",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "Token account used by the margin program to track the debt that must be collateralized"
+          ]
         },
         {
           "name": "claimsMint",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "Token mint used by the margin program to track the debt that must be collateralized"
+          ]
         },
         {
           "name": "collateral",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "Token account used by the margin program to track the debt that must be collateralized"
+          ]
         },
         {
           "name": "collateralMint",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "Token mint used by the margin program to track the debt that must be collateralized"
+          ]
         },
         {
           "name": "orderbookMut",
@@ -520,7 +716,10 @@ export type JetBonds = {
             {
               "name": "bondManager",
               "isMut": true,
-              "isSigner": false
+              "isSigner": false,
+              "docs": [
+                "The `BondManager` account tracks global information related to this particular bond market"
+              ]
             },
             {
               "name": "orderbookMarketState",
@@ -547,12 +746,18 @@ export type JetBonds = {
         {
           "name": "payer",
           "isMut": true,
-          "isSigner": true
+          "isSigner": true,
+          "docs": [
+            "payer for `Obligation` initialization"
+          ]
         },
         {
           "name": "systemProgram",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "Solana system program"
+          ]
         },
         {
           "name": "tokenProgram",
@@ -575,21 +780,33 @@ export type JetBonds = {
     },
     {
       "name": "marginSellTicketsOrder",
+      "docs": [
+        "Sell tickets that are already owned"
+      ],
       "accounts": [
         {
           "name": "marginUser",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The account tracking borrower debts"
+          ]
         },
         {
           "name": "collateral",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "Token account used by the margin program to track the debt that must be collateralized"
+          ]
         },
         {
           "name": "collateralMint",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "Token mint used by the margin program to track the debt that must be collateralized"
+          ]
         },
         {
           "name": "inner",
@@ -597,17 +814,26 @@ export type JetBonds = {
             {
               "name": "authority",
               "isMut": false,
-              "isSigner": true
+              "isSigner": true,
+              "docs": [
+                "Signing authority over the ticket vault transferring for a borrow order"
+              ]
             },
             {
               "name": "userTicketVault",
               "isMut": true,
-              "isSigner": false
+              "isSigner": false,
+              "docs": [
+                "Account containing the bond tickets being sold"
+              ]
             },
             {
               "name": "userTokenVault",
               "isMut": true,
-              "isSigner": false
+              "isSigner": false,
+              "docs": [
+                "The account to recieve the matched tokens"
+              ]
             },
             {
               "name": "orderbookMut",
@@ -615,7 +841,10 @@ export type JetBonds = {
                 {
                   "name": "bondManager",
                   "isMut": true,
-                  "isSigner": false
+                  "isSigner": false,
+                  "docs": [
+                    "The `BondManager` account tracks global information related to this particular bond market"
+                  ]
                 },
                 {
                   "name": "orderbookMarketState",
@@ -642,12 +871,18 @@ export type JetBonds = {
             {
               "name": "bondTicketMint",
               "isMut": true,
-              "isSigner": false
+              "isSigner": false,
+              "docs": [
+                "The market ticket mint"
+              ]
             },
             {
               "name": "underlyingTokenVault",
               "isMut": true,
-              "isSigner": false
+              "isSigner": false,
+              "docs": [
+                "The market ticket mint"
+              ]
             },
             {
               "name": "tokenProgram",
@@ -668,6 +903,9 @@ export type JetBonds = {
     },
     {
       "name": "marginRedeemTicket",
+      "docs": [
+        "Redeem a staked ticket"
+      ],
       "accounts": [
         {
           "name": "marginUser",
@@ -677,12 +915,18 @@ export type JetBonds = {
         {
           "name": "collateral",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "Token account used by the margin program to track the collateral value of assets custodied by bonds"
+          ]
         },
         {
           "name": "collateralMint",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "Token mint used by the margin program to track the collateral value of assets custodied by bonds"
+          ]
         },
         {
           "name": "inner",
@@ -690,32 +934,50 @@ export type JetBonds = {
             {
               "name": "ticket",
               "isMut": true,
-              "isSigner": false
+              "isSigner": false,
+              "docs": [
+                "One of either `SplitTicket` or `ClaimTicket` for redemption"
+              ]
             },
             {
               "name": "authority",
               "isMut": true,
-              "isSigner": true
+              "isSigner": true,
+              "docs": [
+                "The account that must sign to redeem the ticket"
+              ]
             },
             {
               "name": "claimantTokenAccount",
               "isMut": true,
-              "isSigner": false
+              "isSigner": false,
+              "docs": [
+                "The token account designated to recieve the assets underlying the claim"
+              ]
             },
             {
               "name": "bondManager",
               "isMut": false,
-              "isSigner": false
+              "isSigner": false,
+              "docs": [
+                "The BondManager responsible for the asset"
+              ]
             },
             {
               "name": "underlyingTokenVault",
               "isMut": true,
-              "isSigner": false
+              "isSigner": false,
+              "docs": [
+                "The vault stores the tokens of the underlying asset managed by the BondManager"
+              ]
             },
             {
               "name": "tokenProgram",
               "isMut": false,
-              "isSigner": false
+              "isSigner": false,
+              "docs": [
+                "SPL token program"
+              ]
             }
           ]
         }
@@ -724,21 +986,33 @@ export type JetBonds = {
     },
     {
       "name": "marginLendOrder",
+      "docs": [
+        "Place a `Lend` order to the book by depositing tokens"
+      ],
       "accounts": [
         {
           "name": "marginUser",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The account tracking borrower debts"
+          ]
         },
         {
           "name": "collateral",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "Token account used by the margin program to track the debt that must be collateralized"
+          ]
         },
         {
           "name": "collateralMint",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "Token mint used by the margin program to track the debt that must be collateralized"
+          ]
         },
         {
           "name": "inner",
@@ -746,7 +1020,10 @@ export type JetBonds = {
             {
               "name": "authority",
               "isMut": false,
-              "isSigner": true
+              "isSigner": true,
+              "docs": [
+                "Signing authority over the token vault transferring for a lend order"
+              ]
             },
             {
               "name": "orderbookMut",
@@ -754,7 +1031,10 @@ export type JetBonds = {
                 {
                   "name": "bondManager",
                   "isMut": true,
-                  "isSigner": false
+                  "isSigner": false,
+                  "docs": [
+                    "The `BondManager` account tracks global information related to this particular bond market"
+                  ]
                 },
                 {
                   "name": "orderbookMarketState",
@@ -781,22 +1061,37 @@ export type JetBonds = {
             {
               "name": "ticketSettlement",
               "isMut": true,
-              "isSigner": false
+              "isSigner": false,
+              "docs": [
+                "where to settle tickets on match:",
+                "- SplitTicket that will be created if the order is filled as a taker and `auto_stake` is enabled",
+                "- ticket token account to receive bond tickets",
+                "be careful to check this properly. one way is by using lender_tickets_token_account"
+              ]
             },
             {
               "name": "lenderTokens",
               "isMut": true,
-              "isSigner": false
+              "isSigner": false,
+              "docs": [
+                "where to loan tokens from"
+              ]
             },
             {
               "name": "underlyingTokenVault",
               "isMut": true,
-              "isSigner": false
+              "isSigner": false,
+              "docs": [
+                "The market token vault"
+              ]
             },
             {
               "name": "ticketMint",
               "isMut": true,
-              "isSigner": false
+              "isSigner": false,
+              "docs": [
+                "The market token vault"
+              ]
             },
             {
               "name": "payer",
@@ -831,11 +1126,17 @@ export type JetBonds = {
     },
     {
       "name": "refreshPosition",
+      "docs": [
+        "Refresh the associated margin account `claims` for a given `MarginUser` account"
+      ],
       "accounts": [
         {
           "name": "marginUser",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The account tracking information related to this particular user"
+          ]
         },
         {
           "name": "marginAccount",
@@ -845,12 +1146,18 @@ export type JetBonds = {
         {
           "name": "bondManager",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The `BondManager` account tracks global information related to this particular bond market"
+          ]
         },
         {
           "name": "underlyingOracle",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The pyth price account"
+          ]
         },
         {
           "name": "ticketOracle",
@@ -860,7 +1167,10 @@ export type JetBonds = {
         {
           "name": "tokenProgram",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "SPL token program"
+          ]
         }
       ],
       "args": [
@@ -872,11 +1182,17 @@ export type JetBonds = {
     },
     {
       "name": "repay",
+      "docs": [
+        "Repay debt on an Obligation"
+      ],
       "accounts": [
         {
           "name": "borrowerAccount",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The account tracking information related to this particular user"
+          ]
         },
         {
           "name": "obligation",
@@ -886,27 +1202,44 @@ export type JetBonds = {
         {
           "name": "nextObligation",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "No payment will be made towards next_obligation: it is needed purely for bookkeeping.",
+            "if the user has additional obligations, this must be the one with the following sequence number.",
+            "otherwise, put whatever address you want in here"
+          ]
         },
         {
           "name": "source",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The token account to deposit tokens from"
+          ]
         },
         {
           "name": "payer",
           "isMut": false,
-          "isSigner": true
+          "isSigner": true,
+          "docs": [
+            "The signing authority for the source_account"
+          ]
         },
         {
           "name": "underlyingTokenVault",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The token vault holding the underlying token of the bond"
+          ]
         },
         {
           "name": "tokenProgram",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "SPL token program"
+          ]
         }
       ],
       "args": [
@@ -918,31 +1251,49 @@ export type JetBonds = {
     },
     {
       "name": "settle",
+      "docs": [
+        "Settle payments to a margin account"
+      ],
       "accounts": [
         {
           "name": "marginUser",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The account tracking information related to this particular user"
+          ]
         },
         {
           "name": "bondManager",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The `BondManager` account tracks global information related to this particular bond market"
+          ]
         },
         {
           "name": "tokenProgram",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "SPL token program"
+          ]
         },
         {
           "name": "claims",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "Token account used by the margin program to track the debt that must be collateralized"
+          ]
         },
         {
           "name": "claimsMint",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "Token mint used by the margin program to track the debt that must be collateralized"
+          ]
         },
         {
           "name": "collateral",
@@ -979,21 +1330,33 @@ export type JetBonds = {
     },
     {
       "name": "sellTicketsOrder",
+      "docs": [
+        "Place an order to the book to sell tickets, which will burn them"
+      ],
       "accounts": [
         {
           "name": "authority",
           "isMut": false,
-          "isSigner": true
+          "isSigner": true,
+          "docs": [
+            "Signing authority over the ticket vault transferring for a borrow order"
+          ]
         },
         {
           "name": "userTicketVault",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "Account containing the bond tickets being sold"
+          ]
         },
         {
           "name": "userTokenVault",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The account to recieve the matched tokens"
+          ]
         },
         {
           "name": "orderbookMut",
@@ -1001,7 +1364,10 @@ export type JetBonds = {
             {
               "name": "bondManager",
               "isMut": true,
-              "isSigner": false
+              "isSigner": false,
+              "docs": [
+                "The `BondManager` account tracks global information related to this particular bond market"
+              ]
             },
             {
               "name": "orderbookMarketState",
@@ -1028,12 +1394,18 @@ export type JetBonds = {
         {
           "name": "bondTicketMint",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The market ticket mint"
+          ]
         },
         {
           "name": "underlyingTokenVault",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The market ticket mint"
+          ]
         },
         {
           "name": "tokenProgram",
@@ -1052,11 +1424,17 @@ export type JetBonds = {
     },
     {
       "name": "cancelOrder",
+      "docs": [
+        "Cancels an order on the book"
+      ],
       "accounts": [
         {
           "name": "owner",
           "isMut": false,
-          "isSigner": true
+          "isSigner": true,
+          "docs": [
+            "The owner of the order"
+          ]
         },
         {
           "name": "orderbookMut",
@@ -1064,7 +1442,10 @@ export type JetBonds = {
             {
               "name": "bondManager",
               "isMut": true,
-              "isSigner": false
+              "isSigner": false,
+              "docs": [
+                "The `BondManager` account tracks global information related to this particular bond market"
+              ]
             },
             {
               "name": "orderbookMarketState",
@@ -1098,11 +1479,17 @@ export type JetBonds = {
     },
     {
       "name": "lendOrder",
+      "docs": [
+        "Place a `Lend` order to the book by depositing tokens"
+      ],
       "accounts": [
         {
           "name": "authority",
           "isMut": false,
-          "isSigner": true
+          "isSigner": true,
+          "docs": [
+            "Signing authority over the token vault transferring for a lend order"
+          ]
         },
         {
           "name": "orderbookMut",
@@ -1110,7 +1497,10 @@ export type JetBonds = {
             {
               "name": "bondManager",
               "isMut": true,
-              "isSigner": false
+              "isSigner": false,
+              "docs": [
+                "The `BondManager` account tracks global information related to this particular bond market"
+              ]
             },
             {
               "name": "orderbookMarketState",
@@ -1137,22 +1527,37 @@ export type JetBonds = {
         {
           "name": "ticketSettlement",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "where to settle tickets on match:",
+            "- SplitTicket that will be created if the order is filled as a taker and `auto_stake` is enabled",
+            "- ticket token account to receive bond tickets",
+            "be careful to check this properly. one way is by using lender_tickets_token_account"
+          ]
         },
         {
           "name": "lenderTokens",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "where to loan tokens from"
+          ]
         },
         {
           "name": "underlyingTokenVault",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The market token vault"
+          ]
         },
         {
           "name": "ticketMint",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The market token vault"
+          ]
         },
         {
           "name": "payer",
@@ -1185,21 +1590,33 @@ export type JetBonds = {
     },
     {
       "name": "consumeEvents",
+      "docs": [
+        "Crank specific instruction, processes the event queue"
+      ],
       "accounts": [
         {
           "name": "bondManager",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The `BondManager` account tracks global information related to this particular bond market"
+          ]
         },
         {
           "name": "bondTicketMint",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The market ticket mint"
+          ]
         },
         {
           "name": "underlyingTokenVault",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The market token vault"
+          ]
         },
         {
           "name": "orderbookMarketState",
@@ -1224,7 +1641,10 @@ export type JetBonds = {
         {
           "name": "payer",
           "isMut": true,
-          "isSigner": true
+          "isSigner": true,
+          "docs": [
+            "The account paying rent for PDA initialization"
+          ]
         },
         {
           "name": "systemProgram",
@@ -1252,41 +1672,66 @@ export type JetBonds = {
     },
     {
       "name": "exchangeTokens",
+      "docs": [
+        "Exchange underlying token for bond tickets",
+        "WARNING: tickets must be staked for redeption of underlying"
+      ],
       "accounts": [
         {
           "name": "bondManager",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The BondManager manages asset tokens for a particular bond duration"
+          ]
         },
         {
           "name": "underlyingTokenVault",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The vault stores the tokens of the underlying asset managed by the BondManager"
+          ]
         },
         {
           "name": "bondTicketMint",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The minting account for the bond tickets"
+          ]
         },
         {
           "name": "userBondTicketVault",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The token account to recieve the exchanged bond tickets"
+          ]
         },
         {
           "name": "userUnderlyingTokenVault",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The user controlled token account to exchange for bond tickets"
+          ]
         },
         {
           "name": "userAuthority",
           "isMut": false,
-          "isSigner": true
+          "isSigner": true,
+          "docs": [
+            "The signing authority in charge of the user's underlying token vault"
+          ]
         },
         {
           "name": "tokenProgram",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "SPL token program"
+          ]
         }
       ],
       "args": [
@@ -1298,82 +1743,131 @@ export type JetBonds = {
     },
     {
       "name": "redeemTicket",
+      "docs": [
+        "Redeems staked tickets for their underlying value"
+      ],
       "accounts": [
         {
           "name": "ticket",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "One of either `SplitTicket` or `ClaimTicket` for redemption"
+          ]
         },
         {
           "name": "authority",
           "isMut": true,
-          "isSigner": true
+          "isSigner": true,
+          "docs": [
+            "The account that must sign to redeem the ticket"
+          ]
         },
         {
           "name": "claimantTokenAccount",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The token account designated to recieve the assets underlying the claim"
+          ]
         },
         {
           "name": "bondManager",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The BondManager responsible for the asset"
+          ]
         },
         {
           "name": "underlyingTokenVault",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The vault stores the tokens of the underlying asset managed by the BondManager"
+          ]
         },
         {
           "name": "tokenProgram",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "SPL token program"
+          ]
         }
       ],
       "args": []
     },
     {
       "name": "stakeBondTickets",
+      "docs": [
+        "Stakes bond tickets for later redemption"
+      ],
       "accounts": [
         {
           "name": "claimTicket",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "A struct used to track maturation and total claimable funds"
+          ]
         },
         {
           "name": "bondManager",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The BondManager account tracks bonded assets of a particular duration"
+          ]
         },
         {
           "name": "ticketHolder",
           "isMut": false,
-          "isSigner": true
+          "isSigner": true,
+          "docs": [
+            "The owner of bond tickets that wishes to stake them for a redeemable ticket"
+          ]
         },
         {
           "name": "bondTicketTokenAccount",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The account tracking the ticket_holder's bond tickets"
+          ]
         },
         {
           "name": "bondTicketMint",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The mint for the bond tickets for this instruction",
+            "A mint is a specific instance of the token program for both the underlying asset and the bond duration"
+          ]
         },
         {
           "name": "payer",
           "isMut": true,
-          "isSigner": true
+          "isSigner": true,
+          "docs": [
+            "The payer for account initialization"
+          ]
         },
         {
           "name": "tokenProgram",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The global on-chain `TokenProgram` for account authority transfer."
+          ]
         },
         {
           "name": "systemProgram",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The global on-chain `SystemProgram` for program account initialization."
+          ]
         }
       ],
       "args": [
@@ -1387,16 +1881,25 @@ export type JetBonds = {
     },
     {
       "name": "tranferTicketOwnership",
+      "docs": [
+        "Transfer staked tickets to a new owner"
+      ],
       "accounts": [
         {
           "name": "ticket",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The ticket to transfer, either a ClaimTicket or SplitTicket"
+          ]
         },
         {
           "name": "currentOwner",
           "isMut": false,
-          "isSigner": true
+          "isSigner": true,
+          "docs": [
+            "The current owner of the ticket"
+          ]
         }
       ],
       "args": [
@@ -1408,31 +1911,49 @@ export type JetBonds = {
     },
     {
       "name": "registerAdapter",
+      "docs": [
+        "Register a new EventAdapter for syncing to the orderbook events"
+      ],
       "accounts": [
         {
           "name": "adapterQueue",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "AdapterEventQueue account owned by outside user or program"
+          ]
         },
         {
           "name": "bondManager",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "BondManager for this Adapter"
+          ]
         },
         {
           "name": "owner",
           "isMut": false,
-          "isSigner": true
+          "isSigner": true,
+          "docs": [
+            "Signing authority over this queue"
+          ]
         },
         {
           "name": "payer",
           "isMut": true,
-          "isSigner": true
+          "isSigner": true,
+          "docs": [
+            "Payer for the initialization rent of the queue"
+          ]
         },
         {
           "name": "systemProgram",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "solana system program"
+          ]
         }
       ],
       "args": [
@@ -1446,16 +1967,26 @@ export type JetBonds = {
     },
     {
       "name": "popAdapterEvents",
+      "docs": [
+        "Pop the given number of events off the adapter queue",
+        "Event logic is left to the outside program"
+      ],
       "accounts": [
         {
           "name": "adapterQueue",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "AdapterEventQueue account owned by outside user or program"
+          ]
         },
         {
           "name": "owner",
           "isMut": false,
-          "isSigner": true
+          "isSigner": true,
+          "docs": [
+            "Signing authority over the AdapterEventQueue"
+          ]
         }
       ],
       "args": [
@@ -1469,63 +2000,113 @@ export type JetBonds = {
   "accounts": [
     {
       "name": "BondManager",
+      "docs": [
+        "The `BondManager` contains all the information necessary to run the bond market",
+        "",
+        "Utilized by program instructions to verify given transaction accounts are correct. Contains data",
+        "about the bond market including the tenor and ticket<->token conversion rate"
+      ],
       "type": {
         "kind": "struct",
         "fields": [
           {
             "name": "versionTag",
+            "docs": [
+              "Versioning and tag information"
+            ],
             "type": "u64"
           },
           {
             "name": "airspace",
+            "docs": [
+              "The airspace the market is a part of"
+            ],
             "type": "publicKey"
           },
           {
             "name": "orderbookMarketState",
+            "docs": [
+              "The market state of the agnostic orderbook"
+            ],
             "type": "publicKey"
           },
           {
             "name": "eventQueue",
+            "docs": [
+              "The orderbook event queue"
+            ],
             "type": "publicKey"
           },
           {
             "name": "asks",
+            "docs": [
+              "The orderbook asks byteslab"
+            ],
             "type": "publicKey"
           },
           {
             "name": "bids",
+            "docs": [
+              "The orderbook bids byteslab"
+            ],
             "type": "publicKey"
           },
           {
             "name": "underlyingTokenMint",
+            "docs": [
+              "The token mint for the underlying asset of the bond tickets"
+            ],
             "type": "publicKey"
           },
           {
             "name": "underlyingTokenVault",
+            "docs": [
+              "Token account storing the underlying asset accounted for by this ticket program"
+            ],
             "type": "publicKey"
           },
           {
             "name": "bondTicketMint",
+            "docs": [
+              "The token mint for the bond tickets"
+            ],
             "type": "publicKey"
           },
           {
             "name": "claimsMint",
+            "docs": [
+              "Mint owned by bonds to issue claims against a user.",
+              "These claim notes are monitored by margin to ensure claims are repaid."
+            ],
             "type": "publicKey"
           },
           {
             "name": "collateralMint",
+            "docs": [
+              "Mint owned by bonds to issue collateral value to a user",
+              "The collateral notes are monitored by the margin program to track value"
+            ],
             "type": "publicKey"
           },
           {
             "name": "underlyingOracle",
+            "docs": [
+              "oracle that defines the value of the underlying asset"
+            ],
             "type": "publicKey"
           },
           {
             "name": "ticketOracle",
+            "docs": [
+              "oracle that defines the value of the bond tickets"
+            ],
             "type": "publicKey"
           },
           {
             "name": "seed",
+            "docs": [
+              "The user-defined part of the seed that generated this bond manager's PDA"
+            ],
             "type": {
               "array": [
                 "u8",
@@ -1535,6 +2116,9 @@ export type JetBonds = {
           },
           {
             "name": "bump",
+            "docs": [
+              "The bump seed value for generating the authority address."
+            ],
             "type": {
               "array": [
                 "u8",
@@ -1544,14 +2128,23 @@ export type JetBonds = {
           },
           {
             "name": "orderbookPaused",
+            "docs": [
+              "Is the market taking orders"
+            ],
             "type": "bool"
           },
           {
             "name": "ticketsPaused",
+            "docs": [
+              "Can tickets be redeemed"
+            ],
             "type": "bool"
           },
           {
             "name": "reserved",
+            "docs": [
+              "reserved for future use"
+            ],
             "type": {
               "array": [
                 "u8",
@@ -1561,14 +2154,23 @@ export type JetBonds = {
           },
           {
             "name": "borrowDuration",
+            "docs": [
+              "Length of time before a borrow is marked as due, in seconds"
+            ],
             "type": "i64"
           },
           {
             "name": "lendDuration",
+            "docs": [
+              "Length of time before a claim is marked as mature, in seconds"
+            ],
             "type": "i64"
           },
           {
             "name": "nonce",
+            "docs": [
+              "Used to generate unique order tags"
+            ],
             "type": "u64"
           }
         ]
@@ -1576,6 +2178,9 @@ export type JetBonds = {
     },
     {
       "name": "CrankAuthorization",
+      "docs": [
+        "This authorizes a crank to act on any orderbook within the airspace"
+      ],
       "type": {
         "kind": "struct",
         "fields": [
@@ -1592,27 +2197,47 @@ export type JetBonds = {
     },
     {
       "name": "MarginUser",
+      "docs": [
+        "An acocunt used to track margin users of the market"
+      ],
       "type": {
         "kind": "struct",
         "fields": [
           {
             "name": "version",
+            "docs": [
+              "used to determine if a migration step is needed before user actions are allowed"
+            ],
             "type": "u8"
           },
           {
             "name": "marginAccount",
+            "docs": [
+              "The margin account used for signing actions"
+            ],
             "type": "publicKey"
           },
           {
             "name": "bondManager",
+            "docs": [
+              "The `BondManager` for the market"
+            ],
             "type": "publicKey"
           },
           {
             "name": "claims",
+            "docs": [
+              "Token account used by the margin program to track the debt"
+            ],
             "type": "publicKey"
           },
           {
             "name": "collateral",
+            "docs": [
+              "Token account used by the margin program to track the collateral value of positions",
+              "which are internal to bonds, such as SplitTicket, ClaimTicket, and open orders.",
+              "this does *not* represent underlying tokens or bond ticket tokens, those are registered independently in margin"
+            ],
             "type": "publicKey"
           },
           {
@@ -1625,12 +2250,19 @@ export type JetBonds = {
           },
           {
             "name": "debt",
+            "docs": [
+              "The amount of debt that must be collateralized or repaid",
+              "This debt is expressed in terms of the underlying token - not bond tickets"
+            ],
             "type": {
               "defined": "Debt"
             }
           },
           {
             "name": "assets",
+            "docs": [
+              "Accounting used to track assets in custody of the bond market"
+            ],
             "type": {
               "defined": "Assets"
             }
@@ -1649,24 +2281,39 @@ export type JetBonds = {
           },
           {
             "name": "borrowerAccount",
+            "docs": [
+              "The user borrower account this obligation is assigned to"
+            ],
             "type": "publicKey"
           },
           {
             "name": "bondManager",
+            "docs": [
+              "The bond manager where the obligation was created"
+            ],
             "type": "publicKey"
           },
           {
             "name": "orderTag",
+            "docs": [
+              "The `OrderTag` associated with the creation of this `Obligation`"
+            ],
             "type": {
               "array": ["u8", 16]
             }
           },
           {
             "name": "maturationTimestamp",
+            "docs": [
+              "The time that the obligation must be repaid"
+            ],
             "type": "u64"
           },
           {
             "name": "balance",
+            "docs": [
+              "The remaining amount due by the end of the loan term"
+            ],
             "type": "u64"
           },
           {
@@ -1686,14 +2333,23 @@ export type JetBonds = {
         "fields": [
           {
             "name": "owner",
+            "docs": [
+              "Signing authority over this Adapter"
+            ],
             "type": "publicKey"
           },
           {
             "name": "manager",
+            "docs": [
+              "The `BondManager` this adapter belongs to"
+            ],
             "type": "publicKey"
           },
           {
             "name": "orderbookUser",
+            "docs": [
+              "The `MarginUser` account this adapter is registered for"
+            ],
             "type": "publicKey"
           }
         ]
@@ -1701,23 +2357,40 @@ export type JetBonds = {
     },
     {
       "name": "ClaimTicket",
+      "docs": [
+        "A `ClaimTicket` represents a claim of tickets that have been staked with the program",
+        "This account is generated by the `StakeBondTickets` program instruction"
+      ],
       "type": {
         "kind": "struct",
         "fields": [
           {
             "name": "owner",
+            "docs": [
+              "The account registered as owner of this claim"
+            ],
             "type": "publicKey"
           },
           {
             "name": "bondManager",
+            "docs": [
+              "The `TicketManager` this claim ticket was established under",
+              "Determines the asset this ticket will be redeemed for"
+            ],
             "type": "publicKey"
           },
           {
             "name": "maturationTimestamp",
+            "docs": [
+              "The slot after which this claim can be redeemed for the underlying value"
+            ],
             "type": "i64"
           },
           {
             "name": "redeemable",
+            "docs": [
+              "The number of tokens this claim  is redeemable for"
+            ],
             "type": "u64"
           }
         ]
@@ -1725,37 +2398,67 @@ export type JetBonds = {
     },
     {
       "name": "SplitTicket",
+      "docs": [
+        "A split ticket represents a claim of underlying tokens as the result of a lending action.",
+        "",
+        "The split ticket is generated when a user places a matched order with the `auto_stake` flag set to true.",
+        "By taking the difference between the matched base and quote quantities, the split ticket assigns principal and",
+        "interest values."
+      ],
       "type": {
         "kind": "struct",
         "fields": [
           {
             "name": "owner",
+            "docs": [
+              "The account registered as owner of this claim"
+            ],
             "type": "publicKey"
           },
           {
             "name": "bondManager",
+            "docs": [
+              "The `TicketManager` this claim ticket was established under",
+              "Determines the asset this ticket will be redeemed for"
+            ],
             "type": "publicKey"
           },
           {
             "name": "orderTag",
+            "docs": [
+              "The `OrderTag` associated with the creation of this struct"
+            ],
             "type": {
               "array": ["u8", 16]
             }
           },
           {
             "name": "struckTimestamp",
+            "docs": [
+              "The time slot during which the ticket was struck"
+            ],
             "type": "i64"
           },
           {
             "name": "maturationTimestamp",
+            "docs": [
+              "The slot after which this claim can be redeemed for the underlying value"
+            ],
             "type": "i64"
           },
           {
             "name": "principal",
+            "docs": [
+              "The total number of principal tokens the bond was struck for"
+            ],
             "type": "u64"
           },
           {
             "name": "interest",
+            "docs": [
+              "The total number of interest tokens struck for this bond",
+              "same underlying asset as the principal token"
+            ],
             "type": "u64"
           }
         ]
@@ -1765,15 +2468,25 @@ export type JetBonds = {
   "types": [
     {
       "name": "InitializeBondManagerParams",
+      "docs": [
+        "Parameters for the initialization of the [BondManager]"
+      ],
       "type": {
         "kind": "struct",
         "fields": [
           {
             "name": "versionTag",
+            "docs": [
+              "Tag information for the `BondManager` account"
+            ],
             "type": "u64"
           },
           {
             "name": "seed",
+            "docs": [
+              "This seed allows the creation of many separate ticket managers tracking different",
+              "parameters, such as staking duration"
+            ],
             "type": {
               "array": [
                 "u8",
@@ -1783,10 +2496,16 @@ export type JetBonds = {
           },
           {
             "name": "borrowDuration",
+            "docs": [
+              "Length of time before a borrow is marked as due, in seconds"
+            ],
             "type": "i64"
           },
           {
             "name": "lendDuration",
+            "docs": [
+              "Length of time before a claim is marked as mature, in seconds"
+            ],
             "type": "i64"
           }
         ]
@@ -1794,11 +2513,17 @@ export type JetBonds = {
     },
     {
       "name": "InitializeOrderbookParams",
+      "docs": [
+        "Parameters necessary for orderbook initialization"
+      ],
       "type": {
         "kind": "struct",
         "fields": [
           {
             "name": "minBaseOrderSize",
+            "docs": [
+              "The minimum order size that can be inserted into the orderbook after matching."
+            ],
             "type": "u64"
           }
         ]
@@ -1811,22 +2536,40 @@ export type JetBonds = {
         "fields": [
           {
             "name": "nextNewObligationSeqno",
+            "docs": [
+              "The sequence number for the next obligation to be created"
+            ],
             "type": "u64"
           },
           {
             "name": "nextUnpaidObligationSeqno",
+            "docs": [
+              "The sequence number of the next obligation to be paid"
+            ],
             "type": "u64"
           },
           {
             "name": "nextObligationMaturity",
+            "docs": [
+              "The maturation timestamp of the next obligation that is unpaid"
+            ],
             "type": "u64"
           },
           {
             "name": "pending",
+            "docs": [
+              "Amount that must be collateralized because there is an open order for it.",
+              "Does not accrue interest because the loan has not been received yet."
+            ],
             "type": "u64"
           },
           {
             "name": "committed",
+            "docs": [
+              "Debt that has already been borrowed because the order was matched.",
+              "This debt will be due when the loan term ends.",
+              "This includes all debt, including past due debt"
+            ],
             "type": "u64"
           }
         ]
@@ -1839,22 +2582,43 @@ export type JetBonds = {
         "fields": [
           {
             "name": "entitledTokens",
+            "docs": [
+              "tokens to transfer into settlement account"
+            ],
             "type": "u64"
           },
           {
             "name": "entitledTickets",
+            "docs": [
+              "tickets to transfer into settlement account"
+            ],
             "type": "u64"
           },
           {
             "name": "ticketsStaked",
+            "docs": [
+              "The number of bond tickets locked up in ClaimTicket or SplitTicket"
+            ],
             "type": "u64"
           },
           {
             "name": "postedQuote",
+            "docs": [
+              "The amount of quote included in all orders posted by the user for both",
+              "bids and asks. Since the orderbook tracks base, not quote, this is only",
+              "an approximation. This value must always be less than or equal to the",
+              "actual posted quote."
+            ],
             "type": "u64"
           },
           {
             "name": "reserved0",
+            "docs": [
+              "reserved data that may be used to determine the size of a user's collateral",
+              "pessimistically prepared to persist aggregated values for:",
+              "base and quote quantities, separately for bid/ask, on open orders and unsettled fills",
+              "2^3 = 8 u64's"
+            ],
             "type": {
               "array": [
                 "u8",
@@ -1872,6 +2636,10 @@ export type JetBonds = {
         "fields": [
           {
             "name": "numEvents",
+            "docs": [
+              "Total capacity of the adapter",
+              "Increases rent cost"
+            ],
             "type": "u32"
           }
         ]
@@ -1879,35 +2647,61 @@ export type JetBonds = {
     },
     {
       "name": "OrderParams",
+      "docs": [
+        "Parameters needed for order placement"
+      ],
       "type": {
         "kind": "struct",
         "fields": [
           {
             "name": "maxBondTicketQty",
+            "docs": [
+              "The maximum quantity of bond tickets to be traded."
+            ],
             "type": "u64"
           },
           {
             "name": "maxUnderlyingTokenQty",
+            "docs": [
+              "The maximum quantity of underlying token to be traded."
+            ],
             "type": "u64"
           },
           {
             "name": "limitPrice",
+            "docs": [
+              "The limit price of the order. This value is understood as a 32-bit fixed point number."
+            ],
             "type": "u64"
           },
           {
             "name": "matchLimit",
+            "docs": [
+              "The maximum number of orderbook postings to match in order to fulfill the order"
+            ],
             "type": "u64"
           },
           {
             "name": "postOnly",
+            "docs": [
+              "The order will not be matched against the orderbook and will be direcly written into it.",
+              "",
+              "The operation will fail if the order's limit_price crosses the spread."
+            ],
             "type": "bool"
           },
           {
             "name": "postAllowed",
+            "docs": [
+              "Should the unfilled portion of the order be reposted to the orderbook"
+            ],
             "type": "bool"
           },
           {
             "name": "autoStake",
+            "docs": [
+              "Should the purchased tickets be automatically staked with the ticket program"
+            ],
             "type": "bool"
           }
         ]
@@ -1915,15 +2709,24 @@ export type JetBonds = {
     },
     {
       "name": "StakeBondTicketsParams",
+      "docs": [
+        "Params needed to stake bond tickets"
+      ],
       "type": {
         "kind": "struct",
         "fields": [
           {
             "name": "amount",
+            "docs": [
+              "number of tickets to stake"
+            ],
             "type": "u64"
           },
           {
             "name": "ticketSeed",
+            "docs": [
+              "uniqueness seed to allow a user to have many `ClaimTicket`s"
+            ],
             "type": "bytes"
           }
         ]
@@ -1954,6 +2757,12 @@ export type JetBonds = {
     },
     {
       "name": "EventAccounts",
+      "docs": [
+        "These are the additional accounts that need to be provided in the ix",
+        "for every event that will be processed.",
+        "For a fill, 2-6 accounts need to be appended to remaining_accounts",
+        "For an out, 1 account needs to be appended to remaining_accounts"
+      ],
       "type": {
         "kind": "enum",
         "variants": [
@@ -1961,7 +2770,7 @@ export type JetBonds = {
             "name": "Fill",
             "fields": [
               {
-                "defined": "Box<FillAccounts<'info>>"
+                "defined": "FillAccounts<'info>"
               }
             ]
           },
@@ -1969,7 +2778,7 @@ export type JetBonds = {
             "name": "Out",
             "fields": [
               {
-                "defined": "Box<OutAccounts<'info>>"
+                "defined": "OutAccounts<'info>"
               }
             ]
           }
@@ -2040,6 +2849,9 @@ export type JetBonds = {
     },
     {
       "name": "TicketKind",
+      "docs": [
+        "Enum used for pattern matching a ticket deserialization"
+      ],
       "type": {
         "kind": "enum",
         "variants": [
@@ -2229,7 +3041,9 @@ export type JetBonds = {
         },
         {
           "name": "marginUser",
-          "type": "publicKey",
+          "type": {
+            "option": "publicKey"
+          },
           "index": false
         },
         {
@@ -2239,13 +3053,13 @@ export type JetBonds = {
           },
           "index": false
         },
-        // {
-        //   "name": "orderSummary",
-        //   "type": {
-        //     "defined": "OrderSummary"
-        //   },
-        //   "index": false
-        // },
+        {
+          "name": "orderSummary",
+          "type": {
+            "array": ["u8", 48]
+          },
+          "index": false
+        },
         {
           "name": "limitPrice",
           "type": "u64",
@@ -2832,31 +3646,49 @@ export const IDL: JetBonds = {
   "instructions": [
     {
       "name": "authorizeCrank",
+      "docs": [
+        "authorize an address to run orderbook consume_event instructions"
+      ],
       "accounts": [
         {
           "name": "crank",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The crank signer pubkey"
+          ]
         },
         {
           "name": "crankAuthorization",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The account containing the metadata for the key"
+          ]
         },
         {
           "name": "authority",
           "isMut": false,
-          "isSigner": true
+          "isSigner": true,
+          "docs": [
+            "The authority that must sign to make this change"
+          ]
         },
         {
           "name": "airspace",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The airspace being modified"
+          ]
         },
         {
           "name": "payer",
           "isMut": true,
-          "isSigner": true
+          "isSigner": true,
+          "docs": [
+            "The address paying the rent for the account"
+          ]
         },
         {
           "name": "systemProgram",
@@ -2868,21 +3700,33 @@ export const IDL: JetBonds = {
     },
     {
       "name": "revokeCrank",
+      "docs": [
+        "unauthorize an address to run orderbook consume_event instructions"
+      ],
       "accounts": [
         {
           "name": "metadataAccount",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The account containing the metadata for the key"
+          ]
         },
         {
           "name": "authority",
           "isMut": false,
-          "isSigner": true
+          "isSigner": true,
+          "docs": [
+            "The authority that must sign to make this change"
+          ]
         },
         {
           "name": "airspace",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The airspace being modified"
+          ]
         },
         {
           "name": "receiver",
@@ -2894,76 +3738,121 @@ export const IDL: JetBonds = {
     },
     {
       "name": "initializeBondManager",
+      "docs": [
+        "Initializes a BondManager for a bond ticket market"
+      ],
       "accounts": [
         {
           "name": "bondManager",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The `BondManager` manages asset tokens for a particular bond duration"
+          ]
         },
         {
           "name": "underlyingTokenVault",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The vault for storing the token underlying the bond tickets"
+          ]
         },
         {
           "name": "underlyingTokenMint",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The mint for the assets underlying the bond tickets"
+          ]
         },
         {
           "name": "bondTicketMint",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The minting account for the bond tickets"
+          ]
         },
         {
           "name": "claims",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "Mints tokens to a margin account to represent debt that must be collateralized"
+          ]
         },
         {
           "name": "collateral",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "Mints tokens to a margin account to represent debt that must be collateralized"
+          ]
         },
         {
           "name": "authority",
           "isMut": false,
-          "isSigner": true
+          "isSigner": true,
+          "docs": [
+            "The authority that must sign to make this change"
+          ]
         },
         {
           "name": "airspace",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The airspace being modified"
+          ]
         },
         {
           "name": "underlyingOracle",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The oracle for the underlying asset price"
+          ]
         },
         {
           "name": "ticketOracle",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The oracle for the bond ticket price"
+          ]
         },
         {
           "name": "payer",
           "isMut": true,
-          "isSigner": true
+          "isSigner": true,
+          "docs": [
+            "The account paying rent for PDA initialization"
+          ]
         },
         {
           "name": "rent",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "Rent sysvar"
+          ]
         },
         {
           "name": "tokenProgram",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "SPL token program"
+          ]
         },
         {
           "name": "systemProgram",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "Solana system program"
+          ]
         }
       ],
       "args": [
@@ -2977,51 +3866,83 @@ export const IDL: JetBonds = {
     },
     {
       "name": "initializeOrderbook",
+      "docs": [
+        "Initializes a new orderbook"
+      ],
       "accounts": [
         {
           "name": "bondManager",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The `BondManager` account tracks global information related to this particular bond market"
+          ]
         },
         {
           "name": "orderbookMarketState",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "AOB market state"
+          ]
         },
         {
           "name": "eventQueue",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "AOB market event queue",
+            "",
+            "Must be initialized"
+          ]
         },
         {
           "name": "bids",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "AOB market bids"
+          ]
         },
         {
           "name": "asks",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "AOB market asks"
+          ]
         },
         {
           "name": "authority",
           "isMut": false,
-          "isSigner": true
+          "isSigner": true,
+          "docs": [
+            "The authority that must sign to make this change"
+          ]
         },
         {
           "name": "airspace",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The airspace being modified"
+          ]
         },
         {
           "name": "payer",
           "isMut": true,
-          "isSigner": true
+          "isSigner": true,
+          "docs": [
+            "The account paying rent for PDA initialization"
+          ]
         },
         {
           "name": "systemProgram",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "Solana system program"
+          ]
         }
       ],
       "args": [
@@ -3035,21 +3956,34 @@ export const IDL: JetBonds = {
     },
     {
       "name": "modifyBondManager",
+      "docs": [
+        "Modify a `BondManager` account",
+        "Authority use only"
+      ],
       "accounts": [
         {
           "name": "bondManager",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The `BondManager` manages asset tokens for a particular bond duration"
+          ]
         },
         {
           "name": "authority",
           "isMut": false,
-          "isSigner": true
+          "isSigner": true,
+          "docs": [
+            "The authority that must sign to make this change"
+          ]
         },
         {
           "name": "airspace",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The airspace being modified"
+          ]
         }
       ],
       "args": [
@@ -3059,17 +3993,23 @@ export const IDL: JetBonds = {
         },
         {
           "name": "offset",
-          "type": "u32"
+          "type": "u64"
         }
       ]
     },
     {
       "name": "pauseOrderMatching",
+      "docs": [
+        "Pause matching of orders placed in the orderbook"
+      ],
       "accounts": [
         {
           "name": "bondManager",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The `BondManager` manages asset tokens for a particular bond duration"
+          ]
         },
         {
           "name": "orderbookMarketState",
@@ -3079,23 +4019,38 @@ export const IDL: JetBonds = {
         {
           "name": "authority",
           "isMut": false,
-          "isSigner": true
+          "isSigner": true,
+          "docs": [
+            "The authority that must sign to make this change"
+          ]
         },
         {
           "name": "airspace",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The airspace being modified"
+          ]
         }
       ],
       "args": []
     },
     {
       "name": "resumeOrderMatching",
+      "docs": [
+        "Resume matching of orders placed in the orderbook",
+        "NOTE: This instruction may have to be run several times to clear the",
+        "existing matches. Check the `orderbook_market_state.pause_matching` variable",
+        "to determine success"
+      ],
       "accounts": [
         {
           "name": "bondManager",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The `BondManager` manages asset tokens for a particular bond duration"
+          ]
         },
         {
           "name": "orderbookMarketState",
@@ -3120,38 +4075,60 @@ export const IDL: JetBonds = {
         {
           "name": "authority",
           "isMut": false,
-          "isSigner": true
+          "isSigner": true,
+          "docs": [
+            "The authority that must sign to make this change"
+          ]
         },
         {
           "name": "airspace",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The airspace being modified"
+          ]
         }
       ],
       "args": []
     },
     {
       "name": "initializeMarginUser",
+      "docs": [
+        "Create a new borrower account"
+      ],
       "accounts": [
         {
           "name": "borrowerAccount",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The account tracking information related to this particular user"
+          ]
         },
         {
           "name": "marginAccount",
           "isMut": false,
-          "isSigner": true
+          "isSigner": true,
+          "docs": [
+            "The signing authority for this user account"
+          ]
         },
         {
           "name": "bondManager",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The Boheader account"
+          ]
         },
         {
           "name": "claims",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "Token account used by the margin program to track the debt",
+            "that must be collateralized"
+          ]
         },
         {
           "name": "claimsMint",
@@ -3161,7 +4138,10 @@ export const IDL: JetBonds = {
         {
           "name": "collateral",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "Token account used by the margin program to track owned assets"
+          ]
         },
         {
           "name": "collateralMint",
@@ -3201,53 +4181,83 @@ export const IDL: JetBonds = {
         {
           "name": "claimsMetadata",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "Token metadata account needed by the margin program to register the claim position"
+          ]
         },
         {
           "name": "collateralMetadata",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "Token metadata account needed by the margin program to register the collateral position"
+          ]
         }
       ],
       "args": []
     },
     {
       "name": "marginBorrowOrder",
+      "docs": [
+        "Place a borrow order by leveraging margin account value"
+      ],
       "accounts": [
         {
           "name": "marginUser",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The account tracking borrower debts"
+          ]
         },
         {
           "name": "obligation",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "Obligation account minted upon match"
+          ]
         },
         {
           "name": "marginAccount",
           "isMut": false,
-          "isSigner": true
+          "isSigner": true,
+          "docs": [
+            "The margin account for this borrow order"
+          ]
         },
         {
           "name": "claims",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "Token account used by the margin program to track the debt that must be collateralized"
+          ]
         },
         {
           "name": "claimsMint",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "Token mint used by the margin program to track the debt that must be collateralized"
+          ]
         },
         {
           "name": "collateral",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "Token account used by the margin program to track the debt that must be collateralized"
+          ]
         },
         {
           "name": "collateralMint",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "Token mint used by the margin program to track the debt that must be collateralized"
+          ]
         },
         {
           "name": "orderbookMut",
@@ -3255,7 +4265,10 @@ export const IDL: JetBonds = {
             {
               "name": "bondManager",
               "isMut": true,
-              "isSigner": false
+              "isSigner": false,
+              "docs": [
+                "The `BondManager` account tracks global information related to this particular bond market"
+              ]
             },
             {
               "name": "orderbookMarketState",
@@ -3282,12 +4295,18 @@ export const IDL: JetBonds = {
         {
           "name": "payer",
           "isMut": true,
-          "isSigner": true
+          "isSigner": true,
+          "docs": [
+            "payer for `Obligation` initialization"
+          ]
         },
         {
           "name": "systemProgram",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "Solana system program"
+          ]
         },
         {
           "name": "tokenProgram",
@@ -3310,21 +4329,33 @@ export const IDL: JetBonds = {
     },
     {
       "name": "marginSellTicketsOrder",
+      "docs": [
+        "Sell tickets that are already owned"
+      ],
       "accounts": [
         {
           "name": "marginUser",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The account tracking borrower debts"
+          ]
         },
         {
           "name": "collateral",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "Token account used by the margin program to track the debt that must be collateralized"
+          ]
         },
         {
           "name": "collateralMint",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "Token mint used by the margin program to track the debt that must be collateralized"
+          ]
         },
         {
           "name": "inner",
@@ -3332,17 +4363,26 @@ export const IDL: JetBonds = {
             {
               "name": "authority",
               "isMut": false,
-              "isSigner": true
+              "isSigner": true,
+              "docs": [
+                "Signing authority over the ticket vault transferring for a borrow order"
+              ]
             },
             {
               "name": "userTicketVault",
               "isMut": true,
-              "isSigner": false
+              "isSigner": false,
+              "docs": [
+                "Account containing the bond tickets being sold"
+              ]
             },
             {
               "name": "userTokenVault",
               "isMut": true,
-              "isSigner": false
+              "isSigner": false,
+              "docs": [
+                "The account to recieve the matched tokens"
+              ]
             },
             {
               "name": "orderbookMut",
@@ -3350,7 +4390,10 @@ export const IDL: JetBonds = {
                 {
                   "name": "bondManager",
                   "isMut": true,
-                  "isSigner": false
+                  "isSigner": false,
+                  "docs": [
+                    "The `BondManager` account tracks global information related to this particular bond market"
+                  ]
                 },
                 {
                   "name": "orderbookMarketState",
@@ -3377,12 +4420,18 @@ export const IDL: JetBonds = {
             {
               "name": "bondTicketMint",
               "isMut": true,
-              "isSigner": false
+              "isSigner": false,
+              "docs": [
+                "The market ticket mint"
+              ]
             },
             {
               "name": "underlyingTokenVault",
               "isMut": true,
-              "isSigner": false
+              "isSigner": false,
+              "docs": [
+                "The market ticket mint"
+              ]
             },
             {
               "name": "tokenProgram",
@@ -3403,6 +4452,9 @@ export const IDL: JetBonds = {
     },
     {
       "name": "marginRedeemTicket",
+      "docs": [
+        "Redeem a staked ticket"
+      ],
       "accounts": [
         {
           "name": "marginUser",
@@ -3412,12 +4464,18 @@ export const IDL: JetBonds = {
         {
           "name": "collateral",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "Token account used by the margin program to track the collateral value of assets custodied by bonds"
+          ]
         },
         {
           "name": "collateralMint",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "Token mint used by the margin program to track the collateral value of assets custodied by bonds"
+          ]
         },
         {
           "name": "inner",
@@ -3425,32 +4483,50 @@ export const IDL: JetBonds = {
             {
               "name": "ticket",
               "isMut": true,
-              "isSigner": false
+              "isSigner": false,
+              "docs": [
+                "One of either `SplitTicket` or `ClaimTicket` for redemption"
+              ]
             },
             {
               "name": "authority",
               "isMut": true,
-              "isSigner": true
+              "isSigner": true,
+              "docs": [
+                "The account that must sign to redeem the ticket"
+              ]
             },
             {
               "name": "claimantTokenAccount",
               "isMut": true,
-              "isSigner": false
+              "isSigner": false,
+              "docs": [
+                "The token account designated to recieve the assets underlying the claim"
+              ]
             },
             {
               "name": "bondManager",
               "isMut": false,
-              "isSigner": false
+              "isSigner": false,
+              "docs": [
+                "The BondManager responsible for the asset"
+              ]
             },
             {
               "name": "underlyingTokenVault",
               "isMut": true,
-              "isSigner": false
+              "isSigner": false,
+              "docs": [
+                "The vault stores the tokens of the underlying asset managed by the BondManager"
+              ]
             },
             {
               "name": "tokenProgram",
               "isMut": false,
-              "isSigner": false
+              "isSigner": false,
+              "docs": [
+                "SPL token program"
+              ]
             }
           ]
         }
@@ -3459,21 +4535,33 @@ export const IDL: JetBonds = {
     },
     {
       "name": "marginLendOrder",
+      "docs": [
+        "Place a `Lend` order to the book by depositing tokens"
+      ],
       "accounts": [
         {
           "name": "marginUser",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The account tracking borrower debts"
+          ]
         },
         {
           "name": "collateral",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "Token account used by the margin program to track the debt that must be collateralized"
+          ]
         },
         {
           "name": "collateralMint",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "Token mint used by the margin program to track the debt that must be collateralized"
+          ]
         },
         {
           "name": "inner",
@@ -3481,7 +4569,10 @@ export const IDL: JetBonds = {
             {
               "name": "authority",
               "isMut": false,
-              "isSigner": true
+              "isSigner": true,
+              "docs": [
+                "Signing authority over the token vault transferring for a lend order"
+              ]
             },
             {
               "name": "orderbookMut",
@@ -3489,7 +4580,10 @@ export const IDL: JetBonds = {
                 {
                   "name": "bondManager",
                   "isMut": true,
-                  "isSigner": false
+                  "isSigner": false,
+                  "docs": [
+                    "The `BondManager` account tracks global information related to this particular bond market"
+                  ]
                 },
                 {
                   "name": "orderbookMarketState",
@@ -3516,22 +4610,37 @@ export const IDL: JetBonds = {
             {
               "name": "ticketSettlement",
               "isMut": true,
-              "isSigner": false
+              "isSigner": false,
+              "docs": [
+                "where to settle tickets on match:",
+                "- SplitTicket that will be created if the order is filled as a taker and `auto_stake` is enabled",
+                "- ticket token account to receive bond tickets",
+                "be careful to check this properly. one way is by using lender_tickets_token_account"
+              ]
             },
             {
               "name": "lenderTokens",
               "isMut": true,
-              "isSigner": false
+              "isSigner": false,
+              "docs": [
+                "where to loan tokens from"
+              ]
             },
             {
               "name": "underlyingTokenVault",
               "isMut": true,
-              "isSigner": false
+              "isSigner": false,
+              "docs": [
+                "The market token vault"
+              ]
             },
             {
               "name": "ticketMint",
               "isMut": true,
-              "isSigner": false
+              "isSigner": false,
+              "docs": [
+                "The market token vault"
+              ]
             },
             {
               "name": "payer",
@@ -3566,11 +4675,17 @@ export const IDL: JetBonds = {
     },
     {
       "name": "refreshPosition",
+      "docs": [
+        "Refresh the associated margin account `claims` for a given `MarginUser` account"
+      ],
       "accounts": [
         {
           "name": "marginUser",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The account tracking information related to this particular user"
+          ]
         },
         {
           "name": "marginAccount",
@@ -3580,12 +4695,18 @@ export const IDL: JetBonds = {
         {
           "name": "bondManager",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The `BondManager` account tracks global information related to this particular bond market"
+          ]
         },
         {
           "name": "underlyingOracle",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The pyth price account"
+          ]
         },
         {
           "name": "ticketOracle",
@@ -3595,7 +4716,10 @@ export const IDL: JetBonds = {
         {
           "name": "tokenProgram",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "SPL token program"
+          ]
         }
       ],
       "args": [
@@ -3607,11 +4731,17 @@ export const IDL: JetBonds = {
     },
     {
       "name": "repay",
+      "docs": [
+        "Repay debt on an Obligation"
+      ],
       "accounts": [
         {
           "name": "borrowerAccount",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The account tracking information related to this particular user"
+          ]
         },
         {
           "name": "obligation",
@@ -3621,27 +4751,44 @@ export const IDL: JetBonds = {
         {
           "name": "nextObligation",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "No payment will be made towards next_obligation: it is needed purely for bookkeeping.",
+            "if the user has additional obligations, this must be the one with the following sequence number.",
+            "otherwise, put whatever address you want in here"
+          ]
         },
         {
           "name": "source",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The token account to deposit tokens from"
+          ]
         },
         {
           "name": "payer",
           "isMut": false,
-          "isSigner": true
+          "isSigner": true,
+          "docs": [
+            "The signing authority for the source_account"
+          ]
         },
         {
           "name": "underlyingTokenVault",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The token vault holding the underlying token of the bond"
+          ]
         },
         {
           "name": "tokenProgram",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "SPL token program"
+          ]
         }
       ],
       "args": [
@@ -3653,31 +4800,49 @@ export const IDL: JetBonds = {
     },
     {
       "name": "settle",
+      "docs": [
+        "Settle payments to a margin account"
+      ],
       "accounts": [
         {
           "name": "marginUser",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The account tracking information related to this particular user"
+          ]
         },
         {
           "name": "bondManager",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The `BondManager` account tracks global information related to this particular bond market"
+          ]
         },
         {
           "name": "tokenProgram",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "SPL token program"
+          ]
         },
         {
           "name": "claims",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "Token account used by the margin program to track the debt that must be collateralized"
+          ]
         },
         {
           "name": "claimsMint",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "Token mint used by the margin program to track the debt that must be collateralized"
+          ]
         },
         {
           "name": "collateral",
@@ -3714,21 +4879,33 @@ export const IDL: JetBonds = {
     },
     {
       "name": "sellTicketsOrder",
+      "docs": [
+        "Place an order to the book to sell tickets, which will burn them"
+      ],
       "accounts": [
         {
           "name": "authority",
           "isMut": false,
-          "isSigner": true
+          "isSigner": true,
+          "docs": [
+            "Signing authority over the ticket vault transferring for a borrow order"
+          ]
         },
         {
           "name": "userTicketVault",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "Account containing the bond tickets being sold"
+          ]
         },
         {
           "name": "userTokenVault",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The account to recieve the matched tokens"
+          ]
         },
         {
           "name": "orderbookMut",
@@ -3736,7 +4913,10 @@ export const IDL: JetBonds = {
             {
               "name": "bondManager",
               "isMut": true,
-              "isSigner": false
+              "isSigner": false,
+              "docs": [
+                "The `BondManager` account tracks global information related to this particular bond market"
+              ]
             },
             {
               "name": "orderbookMarketState",
@@ -3763,12 +4943,18 @@ export const IDL: JetBonds = {
         {
           "name": "bondTicketMint",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The market ticket mint"
+          ]
         },
         {
           "name": "underlyingTokenVault",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The market ticket mint"
+          ]
         },
         {
           "name": "tokenProgram",
@@ -3787,11 +4973,17 @@ export const IDL: JetBonds = {
     },
     {
       "name": "cancelOrder",
+      "docs": [
+        "Cancels an order on the book"
+      ],
       "accounts": [
         {
           "name": "owner",
           "isMut": false,
-          "isSigner": true
+          "isSigner": true,
+          "docs": [
+            "The owner of the order"
+          ]
         },
         {
           "name": "orderbookMut",
@@ -3799,7 +4991,10 @@ export const IDL: JetBonds = {
             {
               "name": "bondManager",
               "isMut": true,
-              "isSigner": false
+              "isSigner": false,
+              "docs": [
+                "The `BondManager` account tracks global information related to this particular bond market"
+              ]
             },
             {
               "name": "orderbookMarketState",
@@ -3833,11 +5028,17 @@ export const IDL: JetBonds = {
     },
     {
       "name": "lendOrder",
+      "docs": [
+        "Place a `Lend` order to the book by depositing tokens"
+      ],
       "accounts": [
         {
           "name": "authority",
           "isMut": false,
-          "isSigner": true
+          "isSigner": true,
+          "docs": [
+            "Signing authority over the token vault transferring for a lend order"
+          ]
         },
         {
           "name": "orderbookMut",
@@ -3845,7 +5046,10 @@ export const IDL: JetBonds = {
             {
               "name": "bondManager",
               "isMut": true,
-              "isSigner": false
+              "isSigner": false,
+              "docs": [
+                "The `BondManager` account tracks global information related to this particular bond market"
+              ]
             },
             {
               "name": "orderbookMarketState",
@@ -3872,22 +5076,37 @@ export const IDL: JetBonds = {
         {
           "name": "ticketSettlement",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "where to settle tickets on match:",
+            "- SplitTicket that will be created if the order is filled as a taker and `auto_stake` is enabled",
+            "- ticket token account to receive bond tickets",
+            "be careful to check this properly. one way is by using lender_tickets_token_account"
+          ]
         },
         {
           "name": "lenderTokens",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "where to loan tokens from"
+          ]
         },
         {
           "name": "underlyingTokenVault",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The market token vault"
+          ]
         },
         {
           "name": "ticketMint",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The market token vault"
+          ]
         },
         {
           "name": "payer",
@@ -3920,21 +5139,33 @@ export const IDL: JetBonds = {
     },
     {
       "name": "consumeEvents",
+      "docs": [
+        "Crank specific instruction, processes the event queue"
+      ],
       "accounts": [
         {
           "name": "bondManager",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The `BondManager` account tracks global information related to this particular bond market"
+          ]
         },
         {
           "name": "bondTicketMint",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The market ticket mint"
+          ]
         },
         {
           "name": "underlyingTokenVault",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The market token vault"
+          ]
         },
         {
           "name": "orderbookMarketState",
@@ -3959,7 +5190,10 @@ export const IDL: JetBonds = {
         {
           "name": "payer",
           "isMut": true,
-          "isSigner": true
+          "isSigner": true,
+          "docs": [
+            "The account paying rent for PDA initialization"
+          ]
         },
         {
           "name": "systemProgram",
@@ -3987,41 +5221,66 @@ export const IDL: JetBonds = {
     },
     {
       "name": "exchangeTokens",
+      "docs": [
+        "Exchange underlying token for bond tickets",
+        "WARNING: tickets must be staked for redeption of underlying"
+      ],
       "accounts": [
         {
           "name": "bondManager",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The BondManager manages asset tokens for a particular bond duration"
+          ]
         },
         {
           "name": "underlyingTokenVault",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The vault stores the tokens of the underlying asset managed by the BondManager"
+          ]
         },
         {
           "name": "bondTicketMint",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The minting account for the bond tickets"
+          ]
         },
         {
           "name": "userBondTicketVault",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The token account to recieve the exchanged bond tickets"
+          ]
         },
         {
           "name": "userUnderlyingTokenVault",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The user controlled token account to exchange for bond tickets"
+          ]
         },
         {
           "name": "userAuthority",
           "isMut": false,
-          "isSigner": true
+          "isSigner": true,
+          "docs": [
+            "The signing authority in charge of the user's underlying token vault"
+          ]
         },
         {
           "name": "tokenProgram",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "SPL token program"
+          ]
         }
       ],
       "args": [
@@ -4033,82 +5292,131 @@ export const IDL: JetBonds = {
     },
     {
       "name": "redeemTicket",
+      "docs": [
+        "Redeems staked tickets for their underlying value"
+      ],
       "accounts": [
         {
           "name": "ticket",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "One of either `SplitTicket` or `ClaimTicket` for redemption"
+          ]
         },
         {
           "name": "authority",
           "isMut": true,
-          "isSigner": true
+          "isSigner": true,
+          "docs": [
+            "The account that must sign to redeem the ticket"
+          ]
         },
         {
           "name": "claimantTokenAccount",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The token account designated to recieve the assets underlying the claim"
+          ]
         },
         {
           "name": "bondManager",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The BondManager responsible for the asset"
+          ]
         },
         {
           "name": "underlyingTokenVault",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The vault stores the tokens of the underlying asset managed by the BondManager"
+          ]
         },
         {
           "name": "tokenProgram",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "SPL token program"
+          ]
         }
       ],
       "args": []
     },
     {
       "name": "stakeBondTickets",
+      "docs": [
+        "Stakes bond tickets for later redemption"
+      ],
       "accounts": [
         {
           "name": "claimTicket",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "A struct used to track maturation and total claimable funds"
+          ]
         },
         {
           "name": "bondManager",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The BondManager account tracks bonded assets of a particular duration"
+          ]
         },
         {
           "name": "ticketHolder",
           "isMut": false,
-          "isSigner": true
+          "isSigner": true,
+          "docs": [
+            "The owner of bond tickets that wishes to stake them for a redeemable ticket"
+          ]
         },
         {
           "name": "bondTicketTokenAccount",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The account tracking the ticket_holder's bond tickets"
+          ]
         },
         {
           "name": "bondTicketMint",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The mint for the bond tickets for this instruction",
+            "A mint is a specific instance of the token program for both the underlying asset and the bond duration"
+          ]
         },
         {
           "name": "payer",
           "isMut": true,
-          "isSigner": true
+          "isSigner": true,
+          "docs": [
+            "The payer for account initialization"
+          ]
         },
         {
           "name": "tokenProgram",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The global on-chain `TokenProgram` for account authority transfer."
+          ]
         },
         {
           "name": "systemProgram",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The global on-chain `SystemProgram` for program account initialization."
+          ]
         }
       ],
       "args": [
@@ -4122,16 +5430,25 @@ export const IDL: JetBonds = {
     },
     {
       "name": "tranferTicketOwnership",
+      "docs": [
+        "Transfer staked tickets to a new owner"
+      ],
       "accounts": [
         {
           "name": "ticket",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The ticket to transfer, either a ClaimTicket or SplitTicket"
+          ]
         },
         {
           "name": "currentOwner",
           "isMut": false,
-          "isSigner": true
+          "isSigner": true,
+          "docs": [
+            "The current owner of the ticket"
+          ]
         }
       ],
       "args": [
@@ -4143,31 +5460,49 @@ export const IDL: JetBonds = {
     },
     {
       "name": "registerAdapter",
+      "docs": [
+        "Register a new EventAdapter for syncing to the orderbook events"
+      ],
       "accounts": [
         {
           "name": "adapterQueue",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "AdapterEventQueue account owned by outside user or program"
+          ]
         },
         {
           "name": "bondManager",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "BondManager for this Adapter"
+          ]
         },
         {
           "name": "owner",
           "isMut": false,
-          "isSigner": true
+          "isSigner": true,
+          "docs": [
+            "Signing authority over this queue"
+          ]
         },
         {
           "name": "payer",
           "isMut": true,
-          "isSigner": true
+          "isSigner": true,
+          "docs": [
+            "Payer for the initialization rent of the queue"
+          ]
         },
         {
           "name": "systemProgram",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "solana system program"
+          ]
         }
       ],
       "args": [
@@ -4181,16 +5516,26 @@ export const IDL: JetBonds = {
     },
     {
       "name": "popAdapterEvents",
+      "docs": [
+        "Pop the given number of events off the adapter queue",
+        "Event logic is left to the outside program"
+      ],
       "accounts": [
         {
           "name": "adapterQueue",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "AdapterEventQueue account owned by outside user or program"
+          ]
         },
         {
           "name": "owner",
           "isMut": false,
-          "isSigner": true
+          "isSigner": true,
+          "docs": [
+            "Signing authority over the AdapterEventQueue"
+          ]
         }
       ],
       "args": [
@@ -4204,63 +5549,113 @@ export const IDL: JetBonds = {
   "accounts": [
     {
       "name": "BondManager",
+      "docs": [
+        "The `BondManager` contains all the information necessary to run the bond market",
+        "",
+        "Utilized by program instructions to verify given transaction accounts are correct. Contains data",
+        "about the bond market including the tenor and ticket<->token conversion rate"
+      ],
       "type": {
         "kind": "struct",
         "fields": [
           {
             "name": "versionTag",
+            "docs": [
+              "Versioning and tag information"
+            ],
             "type": "u64"
           },
           {
             "name": "airspace",
+            "docs": [
+              "The airspace the market is a part of"
+            ],
             "type": "publicKey"
           },
           {
             "name": "orderbookMarketState",
+            "docs": [
+              "The market state of the agnostic orderbook"
+            ],
             "type": "publicKey"
           },
           {
             "name": "eventQueue",
+            "docs": [
+              "The orderbook event queue"
+            ],
             "type": "publicKey"
           },
           {
             "name": "asks",
+            "docs": [
+              "The orderbook asks byteslab"
+            ],
             "type": "publicKey"
           },
           {
             "name": "bids",
+            "docs": [
+              "The orderbook bids byteslab"
+            ],
             "type": "publicKey"
           },
           {
             "name": "underlyingTokenMint",
+            "docs": [
+              "The token mint for the underlying asset of the bond tickets"
+            ],
             "type": "publicKey"
           },
           {
             "name": "underlyingTokenVault",
+            "docs": [
+              "Token account storing the underlying asset accounted for by this ticket program"
+            ],
             "type": "publicKey"
           },
           {
             "name": "bondTicketMint",
+            "docs": [
+              "The token mint for the bond tickets"
+            ],
             "type": "publicKey"
           },
           {
             "name": "claimsMint",
+            "docs": [
+              "Mint owned by bonds to issue claims against a user.",
+              "These claim notes are monitored by margin to ensure claims are repaid."
+            ],
             "type": "publicKey"
           },
           {
             "name": "collateralMint",
+            "docs": [
+              "Mint owned by bonds to issue collateral value to a user",
+              "The collateral notes are monitored by the margin program to track value"
+            ],
             "type": "publicKey"
           },
           {
             "name": "underlyingOracle",
+            "docs": [
+              "oracle that defines the value of the underlying asset"
+            ],
             "type": "publicKey"
           },
           {
             "name": "ticketOracle",
+            "docs": [
+              "oracle that defines the value of the bond tickets"
+            ],
             "type": "publicKey"
           },
           {
             "name": "seed",
+            "docs": [
+              "The user-defined part of the seed that generated this bond manager's PDA"
+            ],
             "type": {
               "array": [
                 "u8",
@@ -4270,6 +5665,9 @@ export const IDL: JetBonds = {
           },
           {
             "name": "bump",
+            "docs": [
+              "The bump seed value for generating the authority address."
+            ],
             "type": {
               "array": [
                 "u8",
@@ -4279,14 +5677,23 @@ export const IDL: JetBonds = {
           },
           {
             "name": "orderbookPaused",
+            "docs": [
+              "Is the market taking orders"
+            ],
             "type": "bool"
           },
           {
             "name": "ticketsPaused",
+            "docs": [
+              "Can tickets be redeemed"
+            ],
             "type": "bool"
           },
           {
             "name": "reserved",
+            "docs": [
+              "reserved for future use"
+            ],
             "type": {
               "array": [
                 "u8",
@@ -4296,14 +5703,23 @@ export const IDL: JetBonds = {
           },
           {
             "name": "borrowDuration",
+            "docs": [
+              "Length of time before a borrow is marked as due, in seconds"
+            ],
             "type": "i64"
           },
           {
             "name": "lendDuration",
+            "docs": [
+              "Length of time before a claim is marked as mature, in seconds"
+            ],
             "type": "i64"
           },
           {
             "name": "nonce",
+            "docs": [
+              "Used to generate unique order tags"
+            ],
             "type": "u64"
           }
         ]
@@ -4311,6 +5727,9 @@ export const IDL: JetBonds = {
     },
     {
       "name": "CrankAuthorization",
+      "docs": [
+        "This authorizes a crank to act on any orderbook within the airspace"
+      ],
       "type": {
         "kind": "struct",
         "fields": [
@@ -4327,27 +5746,47 @@ export const IDL: JetBonds = {
     },
     {
       "name": "MarginUser",
+      "docs": [
+        "An acocunt used to track margin users of the market"
+      ],
       "type": {
         "kind": "struct",
         "fields": [
           {
             "name": "version",
+            "docs": [
+              "used to determine if a migration step is needed before user actions are allowed"
+            ],
             "type": "u8"
           },
           {
             "name": "marginAccount",
+            "docs": [
+              "The margin account used for signing actions"
+            ],
             "type": "publicKey"
           },
           {
             "name": "bondManager",
+            "docs": [
+              "The `BondManager` for the market"
+            ],
             "type": "publicKey"
           },
           {
             "name": "claims",
+            "docs": [
+              "Token account used by the margin program to track the debt"
+            ],
             "type": "publicKey"
           },
           {
             "name": "collateral",
+            "docs": [
+              "Token account used by the margin program to track the collateral value of positions",
+              "which are internal to bonds, such as SplitTicket, ClaimTicket, and open orders.",
+              "this does *not* represent underlying tokens or bond ticket tokens, those are registered independently in margin"
+            ],
             "type": "publicKey"
           },
           {
@@ -4360,12 +5799,19 @@ export const IDL: JetBonds = {
           },
           {
             "name": "debt",
+            "docs": [
+              "The amount of debt that must be collateralized or repaid",
+              "This debt is expressed in terms of the underlying token - not bond tickets"
+            ],
             "type": {
               "defined": "Debt"
             }
           },
           {
             "name": "assets",
+            "docs": [
+              "Accounting used to track assets in custody of the bond market"
+            ],
             "type": {
               "defined": "Assets"
             }
@@ -4384,24 +5830,39 @@ export const IDL: JetBonds = {
           },
           {
             "name": "borrowerAccount",
+            "docs": [
+              "The user borrower account this obligation is assigned to"
+            ],
             "type": "publicKey"
           },
           {
             "name": "bondManager",
+            "docs": [
+              "The bond manager where the obligation was created"
+            ],
             "type": "publicKey"
           },
           {
             "name": "orderTag",
+            "docs": [
+              "The `OrderTag` associated with the creation of this `Obligation`"
+            ],
             "type": {
               "array": ["u8", 16]
             }
           },
           {
             "name": "maturationTimestamp",
+            "docs": [
+              "The time that the obligation must be repaid"
+            ],
             "type": "u64"
           },
           {
             "name": "balance",
+            "docs": [
+              "The remaining amount due by the end of the loan term"
+            ],
             "type": "u64"
           },
           {
@@ -4421,14 +5882,23 @@ export const IDL: JetBonds = {
         "fields": [
           {
             "name": "owner",
+            "docs": [
+              "Signing authority over this Adapter"
+            ],
             "type": "publicKey"
           },
           {
             "name": "manager",
+            "docs": [
+              "The `BondManager` this adapter belongs to"
+            ],
             "type": "publicKey"
           },
           {
             "name": "orderbookUser",
+            "docs": [
+              "The `MarginUser` account this adapter is registered for"
+            ],
             "type": "publicKey"
           }
         ]
@@ -4436,23 +5906,40 @@ export const IDL: JetBonds = {
     },
     {
       "name": "ClaimTicket",
+      "docs": [
+        "A `ClaimTicket` represents a claim of tickets that have been staked with the program",
+        "This account is generated by the `StakeBondTickets` program instruction"
+      ],
       "type": {
         "kind": "struct",
         "fields": [
           {
             "name": "owner",
+            "docs": [
+              "The account registered as owner of this claim"
+            ],
             "type": "publicKey"
           },
           {
             "name": "bondManager",
+            "docs": [
+              "The `TicketManager` this claim ticket was established under",
+              "Determines the asset this ticket will be redeemed for"
+            ],
             "type": "publicKey"
           },
           {
             "name": "maturationTimestamp",
+            "docs": [
+              "The slot after which this claim can be redeemed for the underlying value"
+            ],
             "type": "i64"
           },
           {
             "name": "redeemable",
+            "docs": [
+              "The number of tokens this claim  is redeemable for"
+            ],
             "type": "u64"
           }
         ]
@@ -4460,37 +5947,67 @@ export const IDL: JetBonds = {
     },
     {
       "name": "SplitTicket",
+      "docs": [
+        "A split ticket represents a claim of underlying tokens as the result of a lending action.",
+        "",
+        "The split ticket is generated when a user places a matched order with the `auto_stake` flag set to true.",
+        "By taking the difference between the matched base and quote quantities, the split ticket assigns principal and",
+        "interest values."
+      ],
       "type": {
         "kind": "struct",
         "fields": [
           {
             "name": "owner",
+            "docs": [
+              "The account registered as owner of this claim"
+            ],
             "type": "publicKey"
           },
           {
             "name": "bondManager",
+            "docs": [
+              "The `TicketManager` this claim ticket was established under",
+              "Determines the asset this ticket will be redeemed for"
+            ],
             "type": "publicKey"
           },
           {
             "name": "orderTag",
+            "docs": [
+              "The `OrderTag` associated with the creation of this struct"
+            ],
             "type": {
               "array": ["u8", 16]
             }
           },
           {
             "name": "struckTimestamp",
+            "docs": [
+              "The time slot during which the ticket was struck"
+            ],
             "type": "i64"
           },
           {
             "name": "maturationTimestamp",
+            "docs": [
+              "The slot after which this claim can be redeemed for the underlying value"
+            ],
             "type": "i64"
           },
           {
             "name": "principal",
+            "docs": [
+              "The total number of principal tokens the bond was struck for"
+            ],
             "type": "u64"
           },
           {
             "name": "interest",
+            "docs": [
+              "The total number of interest tokens struck for this bond",
+              "same underlying asset as the principal token"
+            ],
             "type": "u64"
           }
         ]
@@ -4500,15 +6017,25 @@ export const IDL: JetBonds = {
   "types": [
     {
       "name": "InitializeBondManagerParams",
+      "docs": [
+        "Parameters for the initialization of the [BondManager]"
+      ],
       "type": {
         "kind": "struct",
         "fields": [
           {
             "name": "versionTag",
+            "docs": [
+              "Tag information for the `BondManager` account"
+            ],
             "type": "u64"
           },
           {
             "name": "seed",
+            "docs": [
+              "This seed allows the creation of many separate ticket managers tracking different",
+              "parameters, such as staking duration"
+            ],
             "type": {
               "array": [
                 "u8",
@@ -4518,10 +6045,16 @@ export const IDL: JetBonds = {
           },
           {
             "name": "borrowDuration",
+            "docs": [
+              "Length of time before a borrow is marked as due, in seconds"
+            ],
             "type": "i64"
           },
           {
             "name": "lendDuration",
+            "docs": [
+              "Length of time before a claim is marked as mature, in seconds"
+            ],
             "type": "i64"
           }
         ]
@@ -4529,11 +6062,17 @@ export const IDL: JetBonds = {
     },
     {
       "name": "InitializeOrderbookParams",
+      "docs": [
+        "Parameters necessary for orderbook initialization"
+      ],
       "type": {
         "kind": "struct",
         "fields": [
           {
             "name": "minBaseOrderSize",
+            "docs": [
+              "The minimum order size that can be inserted into the orderbook after matching."
+            ],
             "type": "u64"
           }
         ]
@@ -4546,22 +6085,40 @@ export const IDL: JetBonds = {
         "fields": [
           {
             "name": "nextNewObligationSeqno",
+            "docs": [
+              "The sequence number for the next obligation to be created"
+            ],
             "type": "u64"
           },
           {
             "name": "nextUnpaidObligationSeqno",
+            "docs": [
+              "The sequence number of the next obligation to be paid"
+            ],
             "type": "u64"
           },
           {
             "name": "nextObligationMaturity",
+            "docs": [
+              "The maturation timestamp of the next obligation that is unpaid"
+            ],
             "type": "u64"
           },
           {
             "name": "pending",
+            "docs": [
+              "Amount that must be collateralized because there is an open order for it.",
+              "Does not accrue interest because the loan has not been received yet."
+            ],
             "type": "u64"
           },
           {
             "name": "committed",
+            "docs": [
+              "Debt that has already been borrowed because the order was matched.",
+              "This debt will be due when the loan term ends.",
+              "This includes all debt, including past due debt"
+            ],
             "type": "u64"
           }
         ]
@@ -4574,22 +6131,43 @@ export const IDL: JetBonds = {
         "fields": [
           {
             "name": "entitledTokens",
+            "docs": [
+              "tokens to transfer into settlement account"
+            ],
             "type": "u64"
           },
           {
             "name": "entitledTickets",
+            "docs": [
+              "tickets to transfer into settlement account"
+            ],
             "type": "u64"
           },
           {
             "name": "ticketsStaked",
+            "docs": [
+              "The number of bond tickets locked up in ClaimTicket or SplitTicket"
+            ],
             "type": "u64"
           },
           {
             "name": "postedQuote",
+            "docs": [
+              "The amount of quote included in all orders posted by the user for both",
+              "bids and asks. Since the orderbook tracks base, not quote, this is only",
+              "an approximation. This value must always be less than or equal to the",
+              "actual posted quote."
+            ],
             "type": "u64"
           },
           {
             "name": "reserved0",
+            "docs": [
+              "reserved data that may be used to determine the size of a user's collateral",
+              "pessimistically prepared to persist aggregated values for:",
+              "base and quote quantities, separately for bid/ask, on open orders and unsettled fills",
+              "2^3 = 8 u64's"
+            ],
             "type": {
               "array": [
                 "u8",
@@ -4607,6 +6185,10 @@ export const IDL: JetBonds = {
         "fields": [
           {
             "name": "numEvents",
+            "docs": [
+              "Total capacity of the adapter",
+              "Increases rent cost"
+            ],
             "type": "u32"
           }
         ]
@@ -4614,35 +6196,61 @@ export const IDL: JetBonds = {
     },
     {
       "name": "OrderParams",
+      "docs": [
+        "Parameters needed for order placement"
+      ],
       "type": {
         "kind": "struct",
         "fields": [
           {
             "name": "maxBondTicketQty",
+            "docs": [
+              "The maximum quantity of bond tickets to be traded."
+            ],
             "type": "u64"
           },
           {
             "name": "maxUnderlyingTokenQty",
+            "docs": [
+              "The maximum quantity of underlying token to be traded."
+            ],
             "type": "u64"
           },
           {
             "name": "limitPrice",
+            "docs": [
+              "The limit price of the order. This value is understood as a 32-bit fixed point number."
+            ],
             "type": "u64"
           },
           {
             "name": "matchLimit",
+            "docs": [
+              "The maximum number of orderbook postings to match in order to fulfill the order"
+            ],
             "type": "u64"
           },
           {
             "name": "postOnly",
+            "docs": [
+              "The order will not be matched against the orderbook and will be direcly written into it.",
+              "",
+              "The operation will fail if the order's limit_price crosses the spread."
+            ],
             "type": "bool"
           },
           {
             "name": "postAllowed",
+            "docs": [
+              "Should the unfilled portion of the order be reposted to the orderbook"
+            ],
             "type": "bool"
           },
           {
             "name": "autoStake",
+            "docs": [
+              "Should the purchased tickets be automatically staked with the ticket program"
+            ],
             "type": "bool"
           }
         ]
@@ -4650,15 +6258,24 @@ export const IDL: JetBonds = {
     },
     {
       "name": "StakeBondTicketsParams",
+      "docs": [
+        "Params needed to stake bond tickets"
+      ],
       "type": {
         "kind": "struct",
         "fields": [
           {
             "name": "amount",
+            "docs": [
+              "number of tickets to stake"
+            ],
             "type": "u64"
           },
           {
             "name": "ticketSeed",
+            "docs": [
+              "uniqueness seed to allow a user to have many `ClaimTicket`s"
+            ],
             "type": "bytes"
           }
         ]
@@ -4689,6 +6306,12 @@ export const IDL: JetBonds = {
     },
     {
       "name": "EventAccounts",
+      "docs": [
+        "These are the additional accounts that need to be provided in the ix",
+        "for every event that will be processed.",
+        "For a fill, 2-6 accounts need to be appended to remaining_accounts",
+        "For an out, 1 account needs to be appended to remaining_accounts"
+      ],
       "type": {
         "kind": "enum",
         "variants": [
@@ -4696,7 +6319,7 @@ export const IDL: JetBonds = {
             "name": "Fill",
             "fields": [
               {
-                "defined": "Box<FillAccounts<'info>>"
+                "defined": "FillAccounts<'info>"
               }
             ]
           },
@@ -4704,7 +6327,7 @@ export const IDL: JetBonds = {
             "name": "Out",
             "fields": [
               {
-                "defined": "Box<OutAccounts<'info>>"
+                "defined": "OutAccounts<'info>"
               }
             ]
           }
@@ -4775,6 +6398,9 @@ export const IDL: JetBonds = {
     },
     {
       "name": "TicketKind",
+      "docs": [
+        "Enum used for pattern matching a ticket deserialization"
+      ],
       "type": {
         "kind": "enum",
         "variants": [
@@ -4964,7 +6590,9 @@ export const IDL: JetBonds = {
         },
         {
           "name": "marginUser",
-          "type": "publicKey",
+          "type": {
+            "option": "publicKey"
+          },
           "index": false
         },
         {
@@ -4974,13 +6602,13 @@ export const IDL: JetBonds = {
           },
           "index": false
         },
-        // {
-        //   "name": "orderSummary",
-        //   "type": {
-        //     "defined": "OrderSummary"
-        //   },
-        //   "index": false
-        // },
+        {
+          "name": "orderSummary",
+          "type": {
+            "array": ["u8", 48]
+          },
+          "index": false
+        },
         {
           "name": "limitPrice",
           "type": "u64",
