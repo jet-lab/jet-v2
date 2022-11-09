@@ -240,12 +240,10 @@ pub fn estimate_order_outcome(
 
         // For limit orders we might be done matching.
 
-        if (
-            order_type == Action::RequestLoan && order.limit_price > limit_price
-        ) || (
-            order_type == Action::RequestBorrow && order.limit_price < limit_price
-        ) {
-            break
+        if (order_type == Action::RequestLoan && order.limit_price > limit_price)
+            || (order_type == Action::RequestBorrow && order.limit_price < limit_price)
+        {
+            break;
         }
 
         // Current behaviour of the debt markets is to abort the transaction on self-match,
