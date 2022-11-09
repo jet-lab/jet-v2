@@ -12,7 +12,7 @@ jobs:
     container:
       image: jetprotocol/builder:test
     env:
-      HOME: /root
+      HOME: /jet
       SOLANA_MAINNET_RPC: ${{ secrets.SOLANA_MAINNET_RPC }}
     steps:
       - name: Checkout
@@ -41,7 +41,7 @@ jobs:
     container:
       image: jetprotocol/builder:test
     env:
-      HOME: /root
+      HOME: /jet
       BATCH: batch1
     steps:
       - name: Checkout
@@ -67,7 +67,7 @@ jobs:
     container:
       image: jetprotocol/builder:test
     env:
-      HOME: /root
+      HOME: /jet
       BATCH: batch2
     steps:
       - name: Checkout
@@ -93,7 +93,7 @@ jobs:
     container:
       image: jetprotocol/builder:test
     env:
-      HOME: /root
+      HOME: /jet
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -116,7 +116,7 @@ jobs:
     container:
       image: jetprotocol/builder:test
     env:
-      HOME: /root
+      HOME: /jet
       CODECOV: true
     steps:
       - uses: actions/checkout@v3
@@ -144,7 +144,7 @@ jobs:
     container:
       image: jetprotocol/builder:test
     env:
-      HOME: /root
+      HOME: /jet
       SOLANA_MAINNET_RPC: ${{ secrets.SOLANA_MAINNET_RPC }}
       REACT_APP_IP_REGISTRY: ${{ secrets.REACT_APP_IP_REGISTRY }}
       REACT_APP_RPC_DEV_TOKEN: ${{ secrets.REACT_APP_RPC_DEV_TOKEN }}

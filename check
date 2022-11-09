@@ -69,8 +69,10 @@ all() {
 # runs whatever command follows in a docker container
 in-docker() {
     docker run \
+        -u $(id -u) \
         -v "$(dirname $(realpath ${BASH_SOURCE[0]})):/jet-v2" \
         --workdir /jet-v2 \
+        -it \
         $DOCKER_IMAGE \
         /jet-v2/check $@
 }
