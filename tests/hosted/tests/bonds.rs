@@ -41,13 +41,13 @@ async fn non_margin_orders_through_margin_account() -> Result<()> {
 #[tokio::test(flavor = "multi_thread")]
 #[serial_test::serial]
 async fn margin_repay() -> Result<()> {
-    let ctx = test_context().await;
-    let manager = Arc::new(BondsTestManager::full(ctx.rpc.clone()).await.unwrap());
+    let ctx = margin_test_context!();
+    let manager = Arc::new(BondsTestManager::full(ctx.solana.clone()).await.unwrap());
     let client = manager.client.clone();
-    let ([collateral], _, pricer) = tokens(ctx).await.unwrap();
+    let ([collateral], _, pricer) = tokens(&ctx).await.unwrap();
 
     // set up user
-    let user = setup_user(ctx, vec![(collateral, 0, u64::MAX / 2)])
+    let user = setup_user(&ctx, vec![(collateral, 0, u64::MAX / 2)])
         .await
         .unwrap();
     let margin = user.user.tx.ix.clone();
