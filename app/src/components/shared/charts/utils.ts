@@ -1,6 +1,4 @@
-import { ScaleLinear } from 'd3-scale';
-
-export const pointAtCoordinateX = (path: SVGPathElement, x: number) => {
+export const pointAtCoordinateX = (path: SVGPathElement, x: number, tolerance: number): number | undefined => {
   let length_end = path.getTotalLength(),
     length_start = 0,
     point = path.getPointAtLength((length_end + length_start) / 2), // get the middle point
@@ -13,10 +11,14 @@ export const pointAtCoordinateX = (path: SVGPathElement, x: number) => {
     point = path.getPointAtLength((length_end + length_start) / 2);
     if (x < point.x) {
       length_end = (length_start + length_end) / 2;
-    } else {
+    } else if (x > point.x) {
       length_start = (length_start + length_end) / 2;
     }
     if (bisection_iterations_max < ++bisection_iterations) break;
   }
-  return point.y;
+  if (point.x > x + tolerance || point.x < x - tolerance) {
+    return;
+  } else {
+    return point.y;
+  }
 };

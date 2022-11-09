@@ -27,16 +27,16 @@ const sampleData: ISeries = {
   id: 'USDC_86400',
   data: [
     {
-      x: 0,
-      y: 0
+      x: 100,
+      y: 2
     },
     {
-      x: 1,
-      y: 1
+      x: 1500,
+      y: 2.5
     },
     {
-      x: 2,
-      y: 10
+      x: 2500,
+      y: 5
     }
   ]
 };
@@ -45,16 +45,16 @@ const sampleData2: ISeries = {
   id: 'USDC_604800',
   data: [
     {
-      x: 0,
-      y: 0.2
+      x: 800,
+      y: 1.2
     },
     {
-      x: 1,
-      y: 3
+      x: 1500,
+      y: 2.1
     },
     {
-      x: 2,
-      y: 2
+      x: 4000,
+      y: 4.3
     }
   ]
 };
@@ -96,12 +96,26 @@ export const LineChart = ({
   const linesPathsRefs = useRef(series.map(() => createRef<SVGPathElement>()));
 
   const { xScale, yScale, ordinalColorScale } = useMemo(() => {
+    const maxValueOfX = series.reduce((max, series) => {
+      const seriesMax = Math.max(...series.data.map(d => d.x));
+      if (seriesMax > max) {
+        max = seriesMax;
+      }
+      return max;
+    }, 0);
+    const maxValueOfY = series.reduce((max, series) => {
+      const seriesMax = Math.max(...series.data.map(d => d.y));
+      if (seriesMax > max) {
+        max = seriesMax;
+      }
+      return max;
+    }, 0);
     const xScale = scaleLinear<number>({
-      domain: [0, 2],
+      domain: [0, maxValueOfX],
       clamp: true
     });
     const yScale = scaleLinear<number>({
-      domain: [10, 0],
+      domain: [maxValueOfY, 0],
       clamp: true
     });
     xScale.range([0, xMax]);
@@ -124,12 +138,14 @@ export const LineChart = ({
       const yValues: IYValues[] = [];
       paths.map(ref => {
         const path = ref.current;
-        const y = pointAtCoordinateX(path, x - paddingLeft);
-        yValues.push({
-          y,
-          valueOfY: yScale.invert(y),
-          lineId: path.getAttribute('id')
-        });
+        const y = pointAtCoordinateX(path, x - paddingLeft, 5);
+        if (y) {
+          yValues.push({
+            y,
+            valueOfY: yScale.invert(y),
+            lineId: path.getAttribute('id')
+          });
+        }
       });
       showTooltip({
         tooltipData: {
@@ -147,7 +163,7 @@ export const LineChart = ({
   return (
     <>
       <ScaleSVG width={width} height={height}>
-        <Group top={paddingTop} left={paddingLeft}>
+        <Group style={{ cursor: 'crosshair' }} top={paddingTop} left={paddingLeft}>
           {/* This bar is used to target the tooltip across the whole chart */}
           {tooltipData && (
             <Line
@@ -260,22 +276,26 @@ export const LineChart = ({
         {labels => {
           return (
             <div className="chart-legend">
-              {labels.map((label, i) => (
-                <LegendItem
-                  key={`legend-quantile-${i}`}
-                  margin="0 5px"
-                  // onClick={() => {
-                  //     if (events) alert(`clicked: ${JSON.stringify(label)}`);
-                  // }}
-                >
-                  <svg width={12} height={12}>
-                    <circle cx="50%" cy="50%" fill={label.value} r={6} />
-                  </svg>
-                  <LegendLabel align="left" margin="0 0 0 4px">
-                    {label.text}
-                  </LegendLabel>
-                </LegendItem>
-              ))}
+              {labels.map((label, i) => {
+                const split = label.text.split('_');
+                const marketName = friendlyMarketName(split[0], parseInt(split[1]));
+                return (
+                  <LegendItem
+                    key={`legend-quantile-${i}`}
+                    margin="0 5px"
+                    // onClick={() => {
+                    //     if (events) alert(`clicked: ${JSON.stringify(label)}`);
+                    // }}
+                  >
+                    <svg width={12} height={12}>
+                      <circle cx="50%" cy="50%" fill={label.value} r={6} />
+                    </svg>
+                    <LegendLabel align="left" margin="0 0 0 4px">
+                      {marketName}
+                    </LegendLabel>
+                  </LegendItem>
+                );
+              })}
             </div>
           );
         }}
