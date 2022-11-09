@@ -191,7 +191,7 @@ pub async fn process_configure_pool(
     }
     println!();
 
-    changed = override_pool_config_with_options(&mut configuration, &options) && changed;
+    changed = override_pool_config_with_options(&mut configuration, &options) || changed;
 
     if changed {
         Ok(client

@@ -180,9 +180,13 @@ impl Client {
     }
 
     /// Execute a plan
-    pub async fn execute(&self, mut plan: Plan) -> Result<()> {
+    pub async fn execute(&self, plan: Plan) -> Result<()> {
         if plan.is_empty() {
             return Ok(());
+        }
+
+        if self.config.dry_run {
+            println!("this is a dry run");
         }
 
         println!("planning to submit {} transactions:", plan.len());
@@ -191,12 +195,6 @@ impl Client {
             Some(signer) => signer,
             None => bail!("no wallet/signer configured"),
         };
-
-        for entry in &mut plan {
-            entry
-                .transaction
-                .partial_sign(&[&**signer], self.recent_blockhash);
-        }
 
         for (i, entry) in plan.iter().enumerate() {
             let tx_size = entry.transaction.message().serialize().len();
@@ -232,7 +230,14 @@ impl Client {
             std::thread::spawn(move || ui_progress_group.join().unwrap());
         }
 
-        for (entry, ui_progress_bar) in plan.iter().zip(ui_progress_tx.into_iter()) {
+        let tx_count = plan.len();
+
+        for (mut entry, ui_progress_bar) in plan.into_iter().zip(ui_progress_tx.into_iter()) {
+            let recent_blockhash = self.rpc().get_latest_blockhash().await?;
+            entry
+                .transaction
+                .partial_sign(&[&**signer], recent_blockhash);
+
             match self.config.dry_run {
                 false => {
                     self.submit_transaction(&entry.transaction, ui_progress_bar)
@@ -245,7 +250,7 @@ impl Client {
             }
         }
 
-        println!("submitted {} transactions", plan.len());
+        println!("submitted {} transactions", tx_count);
         Ok(())
     }
 

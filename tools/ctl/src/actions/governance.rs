@@ -7,7 +7,7 @@ use spl_governance::state::{
 };
 
 use crate::client::{Client, Plan};
-use crate::governance::{JET_GOVERNANCE_PROGRAM, JET_STAKING_PROGRAM};
+use crate::governance::{find_user_owner_record, JET_GOVERNANCE_PROGRAM, JET_STAKING_PROGRAM};
 
 pub async fn process_proposal_create(
     client: &Client,
@@ -20,12 +20,12 @@ pub async fn process_proposal_create(
     let (governance, realm) =
         crate::governance::get_governance_and_realm(client, &governance_address).await?;
 
-    let proposal_owner_record = get_token_owner_record_address(
-        &JET_GOVERNANCE_PROGRAM,
+    let proposal_owner_record = find_user_owner_record(
+        client,
         &governance.realm,
         realm.config.council_mint.as_ref().unwrap(),
-        &client.signer()?,
-    );
+    )
+    .await?;
 
     let proposal_address = get_proposal_address(
         &JET_GOVERNANCE_PROGRAM,
@@ -54,7 +54,7 @@ pub async fn process_proposal_create(
                 realm.config.council_mint.as_ref().unwrap(),
                 VoteType::SingleChoice,
                 vec!["Approve".to_owned()],
-                false,
+                true,
                 governance.proposals_count,
             )],
         )
