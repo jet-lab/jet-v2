@@ -124,7 +124,7 @@ export const LineChart = ({
       const yValues: IYValues[] = [];
       paths.map(ref => {
         const path = ref.current;
-        const y = pointAtCoordinateX(path, x - paddingLeft, yScale, paddingBottom + paddingTop);
+        const y = pointAtCoordinateX(path, x - paddingLeft);
         yValues.push({
           y,
           valueOfY: yScale.invert(y),

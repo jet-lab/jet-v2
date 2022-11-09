@@ -1,11 +1,6 @@
 import { ScaleLinear } from 'd3-scale';
 
-export const pointAtCoordinateX = (
-  path: SVGPathElement,
-  x: number,
-  yScale: ScaleLinear<number, number, never>,
-  padding: number
-) => {
+export const pointAtCoordinateX = (path: SVGPathElement, x: number) => {
   let length_end = path.getTotalLength(),
     length_start = 0,
     point = path.getPointAtLength((length_end + length_start) / 2), // get the middle point
