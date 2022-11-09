@@ -311,10 +311,10 @@ export const ResponsiveLineChart = ({}) => {
         <LineChart
           height={parent.height}
           width={parent.width}
-          paddingTop={60}
+          paddingTop={64}
           paddingBottom={40}
-          paddingLeft={40}
-          paddingRight={16}
+          paddingLeft={48}
+          paddingRight={24}
           series={[sampleData, sampleData2]}
         />
       )}
