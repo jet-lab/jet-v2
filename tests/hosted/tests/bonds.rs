@@ -145,7 +145,6 @@ async fn margin_repay() -> Result<()> {
         .await?;
 
     let repaid_obligation_debt = user.load_margin_user().await?.debt;
-    assert!(user.load_obligation(&[]).await.is_err());
     assert_eq!(
         repaid_obligation_debt.total(),
         repaid_obligation_debt.pending()
