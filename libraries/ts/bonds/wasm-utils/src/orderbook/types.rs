@@ -36,9 +36,9 @@ pub struct OrderAmount {
 
 #[wasm_bindgen(module = "/src/cast.js")]
 extern "C" {
-  // This will let Rust regain ownership of Order
-  #[wasm_bindgen(js_name = castInto)]
-  pub fn cast_into_order(value: JsValue) -> Order;
+    // This will let Rust regain ownership of Order
+    #[wasm_bindgen(js_name = castInto)]
+    pub fn cast_into_order(value: JsValue) -> Order;
 }
 
 impl From<JsValue> for Order {

@@ -5,7 +5,6 @@ use wasm_bindgen::prelude::*;
 
 extern crate console_error_panic_hook;
 
-
 use super::{
     critbit::Slab,
     interest_pricing::{fp32_to_f64, InterestPricer, PricerImpl},
@@ -13,7 +12,6 @@ use super::{
 };
 
 pub type Result<T> = std::result::Result<T, JsError>;
-
 
 /// Converts a buffer from an orderbook side into an array of orders on the book
 ///
@@ -144,11 +142,11 @@ pub enum Action {
 }
 
 /// Adjusts a price to tolerate an amonut of slipapge.
-/// 
+///
 /// price is the limit price of an order; FP32 representation.
 /// fraction is the amount of slippage, eg 0.05 would be 5%.
 /// trader is the party constructing the order.
-/// 
+///
 /// Returns the adjusted price in FP32 representation.
 #[wasm_bindgen]
 pub fn with_slippage(price: u64, fraction: f64, actor: Actor) -> u64 {
@@ -177,7 +175,7 @@ pub struct EstimatedOrderOutcome {
 }
 
 /// Estimates the outcome of a hypothetical order.
-/// 
+///
 /// quote_size is the amount of quote lamports the order seeks to trade.
 /// taker is the would-be owner of the order.
 /// order_type categories the would be order.
@@ -199,22 +197,25 @@ pub fn estimate_order_outcome(
     let mut filled_quote = 0_u64;
     let mut filled_base = 0_u64;
     let mut matches = 0_u32;
-    let mut last_price = match order_type {  // To enforce ordering of resting orders
+    let mut last_price = match order_type {
+        // To enforce ordering of resting orders
         Action::RequestLoan | Action::LendNow => u64::MIN,
         Action::RequestBorrow | Action::BorrowNow => u64::MAX,
     };
     let limit_price = match limit_price {
         Some(p) => p,
-        None => if order_type == Action::RequestBorrow || order_type == Action::RequestLoan {
-            return Err(FixedTermWasmError::LimitPriceRequired.into());
-        } else {
-            0_u64
+        None => {
+            if order_type == Action::RequestBorrow || order_type == Action::RequestLoan {
+                return Err(FixedTermWasmError::LimitPriceRequired.into());
+            } else {
+                0_u64
+            }
         }
     };
 
     for item in resting_orders.iter() {
         if unfilled_quote == 0 {
-            break
+            break;
         }
 
         let order: Order = item.clone().into();
@@ -224,11 +225,15 @@ pub fn estimate_order_outcome(
         // bids or asks.
 
         match order_type {
-            Action::RequestLoan | Action::LendNow => if order.limit_price < last_price {
-                return Err(FixedTermWasmError::RestingOrdersNotSorted.into())
-            },
-            Action::RequestBorrow | Action::BorrowNow => if order.limit_price > last_price {
-                return Err(FixedTermWasmError::RestingOrdersNotSorted.into())
+            Action::RequestLoan | Action::LendNow => {
+                if order.limit_price < last_price {
+                    return Err(FixedTermWasmError::RestingOrdersNotSorted.into());
+                }
+            }
+            Action::RequestBorrow | Action::BorrowNow => {
+                if order.limit_price > last_price {
+                    return Err(FixedTermWasmError::RestingOrdersNotSorted.into());
+                }
             }
         };
         last_price = order.limit_price;
@@ -237,11 +242,11 @@ pub fn estimate_order_outcome(
 
         if order_type == Action::RequestLoan {
             if order.limit_price > limit_price {
-                break
+                break;
             }
         } else if order_type == Action::RequestBorrow {
             if order.limit_price < limit_price {
-                break
+                break;
             }
         }
 
@@ -259,7 +264,8 @@ pub fn estimate_order_outcome(
         let bfill = std::cmp::min(
             quote_to_base(
                 std::cmp::min(unfilled_quote, order.quote_size),
-                order.limit_price),
+                order.limit_price,
+            ),
             order.base_size,
         );
         let qfill = base_to_quote(bfill, order.limit_price);
@@ -276,15 +282,13 @@ pub fn estimate_order_outcome(
         f64_to_fp32(filled_quote as f64 / filled_base as f64)
     };
 
-    Ok(
-        EstimatedOrderOutcome {
-            vwap,
-            filled_quote,
-            filled_base,
-            unfilled_quote,
-            matches,
-        }
-    )
+    Ok(EstimatedOrderOutcome {
+        vwap,
+        filled_quote,
+        filled_base,
+        unfilled_quote,
+        matches,
+    })
 }
 
 /// This is meant to ensure that the api is using the PricerImpl type alias,
