@@ -344,12 +344,10 @@ impl OrderParams {
 }
 
 pub struct SensibleOrderSummary {
-    limit_price: u64,
-    summary: OrderSummary,
+    pub limit_price: u64,
+    pub summary: OrderSummary,
 }
 
-// fixme i think most of these are wrong. there may be issues with the aaob
-// implementation which is a huge mess of spaghetti code
 impl SensibleOrderSummary {
     pub fn summary(&self) -> OrderSummary {
         OrderSummary {
@@ -381,14 +379,12 @@ impl SensibleOrderSummary {
     /// the total of all quote posted and filled
     /// NOT the same as the "max quote"
     pub fn quote_combined(&self) -> Result<u64> {
-        // Ok(self.quote_posted()? + self.quote_filled())
         Ok(self.summary.total_quote_qty)
     }
 
     /// the total of all base posted and filled
     /// NOT the same as the "max base"
     pub fn base_combined(&self) -> u64 {
-        // self.base_posted() + self.base_filled()
         self.summary.total_base_qty
     }
 }

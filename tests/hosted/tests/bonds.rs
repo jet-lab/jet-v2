@@ -12,7 +12,7 @@ use hosted_tests::{
     setup_helper::{setup_user, tokens},
     solana_test_context,
 };
-use jet_bonds::orderbook::state::OrderParams;
+use jet_bonds::orderbook::state::{OrderParams, SensibleOrderSummary};
 use jet_margin_sdk::{
     ix_builder::MarginIxBuilder,
     margin_integrator::{NoProxy, Proxy},
@@ -23,7 +23,7 @@ use jet_margin_sdk::{
 use jet_margin_sdk::{margin_integrator::RefreshingProxy, tx_builder::MarginTxBuilder};
 use jet_program_common::Fp32;
 
-use solana_sdk::signer::Signer;
+use solana_sdk::{signer::Signer, sysvar::clock::Clock};
 
 #[tokio::test(flavor = "multi_thread")]
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
@@ -166,16 +166,30 @@ async fn non_margin_orders_for_proxy<P: Proxy + GenerateProxy>(
     let bob = BondsUser::<P>::new_funded(manager.clone()).await?;
     bob.lend_order(b_params, &[0]).await?;
 
+    assert_eq!(
+        bob.tokens().await?,
+        STARTING_TOKENS - summary_b.total_quote_qty
+    );
+
     let split_ticket_b = bob.load_split_ticket(&[0]).await?;
     assert_eq!(
         split_ticket_b.maturation_timestamp,
         split_ticket_b.struck_timestamp + LEND_DURATION
     );
-
+    assert_eq!(split_ticket_b.owner, bob.proxy.pubkey());
+    assert_eq!(split_ticket_b.bond_manager, manager.ix_builder.manager());
+    let sensible_b = SensibleOrderSummary {
+        limit_price: b_params.limit_price,
+        summary: summary_b,
+    };
+    assert_eq!(split_ticket_b.principal, sensible_b.quote_filled()?);
     assert_eq!(
-        bob.tokens().await?,
-        STARTING_TOKENS - summary_b.total_quote_qty
+        split_ticket_b.interest,
+        sensible_b.base_filled() - split_ticket_b.principal
     );
+
+    #[cfg(feature = "localnet")]
+    assert!(bob.redeem_split_ticket(vec![0]).await.is_err());
 
     // scenario c: post a lend order that fills the remaining borrow and makes a new post with the remaining
     let c_amount = OrderAmount::from_quote_amount_rate(1_500, 1_500);
@@ -232,14 +246,12 @@ async fn non_margin_orders_for_proxy<P: Proxy + GenerateProxy>(
     assert_eq!(summary_c.total_base_qty_posted, base_qty_to_post);
 
     // run on validator
+    let tokens_before_lend = bob.tokens().await?;
     bob.lend_order(c_params, &[1]).await?;
-
-    let split_ticket_c = bob.load_split_ticket(&[1]).await?;
-    dbg!(split_ticket_c);
 
     assert_eq!(
         bob.tokens().await?,
-        STARTING_TOKENS - summary_b.total_quote_qty - summary_c.total_quote_qty
+        tokens_before_lend - summary_c.total_quote_qty
     );
 
     // order cancelling
@@ -284,6 +296,23 @@ async fn non_margin_orders_for_proxy<P: Proxy + GenerateProxy>(
             .iter()
             .next()
             .is_some());
+    }
+
+    // ticket redemption
+    #[cfg(not(feature = "localnet"))]
+    {
+        manager.client.set_clock(Clock {
+            unix_timestamp: split_ticket_b.maturation_timestamp,
+            ..Default::default()
+        });
+
+        let tokens_before = bob.tokens().await?;
+        bob.redeem_split_ticket(&[0]).await?;
+
+        assert_eq!(
+            bob.tokens().await?,
+            tokens_before + split_ticket_b.principal + split_ticket_b.interest
+        );
     }
 
     Ok(())

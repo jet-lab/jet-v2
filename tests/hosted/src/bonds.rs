@@ -716,6 +716,17 @@ impl<P: Proxy> BondsUser<P> {
             .await
     }
 
+    pub async fn redeem_split_ticket(&self, seed: &[u8]) -> Result<Signature> {
+        let ticket = self.split_ticket_key(seed);
+        let ix = self
+            .manager
+            .ix_builder
+            .redeem_ticket(self.proxy.pubkey(), ticket, None)?;
+        self.client
+            .send_and_confirm_1tx(&[self.proxy.invoke_signed(ix)], &[&self.owner])
+            .await
+    }
+
     pub async fn sell_tickets_order(&self, params: OrderParams) -> Result<Signature> {
         let borrow =
             self.manager
