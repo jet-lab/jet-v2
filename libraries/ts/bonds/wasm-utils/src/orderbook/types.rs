@@ -1,5 +1,9 @@
+use std::fmt::Display;
+
 use js_sys::Uint8Array;
 use wasm_bindgen::prelude::*;
+
+use super::interest_pricing::fp32_to_f64;
 
 #[wasm_bindgen]
 pub struct Order {
@@ -47,7 +51,28 @@ impl From<JsValue> for Order {
     }
 }
 
+#[wasm_bindgen]
 impl Order {
+    #[wasm_bindgen(constructor)]
+    pub fn new(
+        owner: Uint8Array,
+        order_tag: Uint8Array,
+        order_id: Uint8Array,
+        base_size: u64,
+        quote_size: u64,
+        limit_price: u64
+    ) -> Order {
+        Order {
+            owner,
+            order_tag,
+            order_id,
+            base_size,
+            quote_size,
+            limit_price
+        }
+    }
+
+    #[wasm_bindgen]
     pub fn owned_by(&self, candidate: &Uint8Array) -> bool {
         let mut a = [0; 32];
         let mut b = [0; 32];
@@ -56,5 +81,17 @@ impl Order {
         candidate.copy_to(&mut b);
 
         a == b
+    }
+}
+
+impl Display for Order {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "Order(quote_size={}, base_size={}, limit_price={})",
+            self.quote_size,
+            self.base_size,
+            fp32_to_f64(self.limit_price),
+        )
     }
 }

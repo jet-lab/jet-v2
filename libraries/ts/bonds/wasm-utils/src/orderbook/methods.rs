@@ -1,3 +1,9 @@
+// FIXME Don't panic in wasm
+
+
+use crate::console_log;
+use crate::log;
+
 use super::{error::FixedTermWasmError, interest_pricing::f64_to_fp32};
 use jet_program_common::Fp32;
 use js_sys::{Array, Uint8Array};
@@ -63,7 +69,12 @@ pub fn base_to_quote(base: u64, price: u64) -> u64 {
 /// Given a base quanity and fixed-point 32 price value, calculate the quote
 #[wasm_bindgen]
 pub fn quote_to_base(quote: u64, price: u64) -> u64 {
-    Fp32::upcast_fp32(price).u64_div(quote).unwrap()
+
+    // price ~ quote per base
+    // base ~ quote / price
+    // Fp32::upcast_fp32(price).u64_div(quote).unwrap()
+
+    (Fp32::ONE / Fp32::upcast_fp32(price) * quote).as_decimal_u64().unwrap() // FIXME Check floor or ceil
 }
 
 /// Given a fixed-point 32 value, convert to decimal representation
@@ -190,9 +201,10 @@ pub fn estimate_order_outcome(
     taker: Uint8Array,
     order_type: Action,
     limit_price: Option<u64>,
-    resting_orders: &Array,
+    resting_orders: Array,
 ) -> Result<EstimatedOrderOutcome> {
     console_error_panic_hook::set_once();
+
     let mut unfilled_quote = quote_size;
     let mut filled_quote = 0_u64;
     let mut filled_base = 0_u64;
@@ -213,12 +225,20 @@ pub fn estimate_order_outcome(
         }
     };
 
+    console_log!(
+        "Simulating matches with limit price {} and quote size: {}",
+        fp32_to_f64(limit_price),
+        quote_size,
+    );
+
     for item in resting_orders.iter() {
         if unfilled_quote == 0 {
             break;
         }
 
         let order: Order = item.clone().into();
+
+        console_log!("Order {}: {}", matches, order);
 
         // Ensure that we're processing appropriately ordered resting_orders. The correct
         // ordering depends on whether the hypothetical order being processed is hitting
@@ -246,6 +266,8 @@ pub fn estimate_order_outcome(
             break;
         }
 
+        console_log!("limit price check okay");
+
         // Current behaviour of the debt markets is to abort the transaction on self-match,
         // so we indicate as much if we antipate a self-match. This check must be maintained
         // consitently with the actual orderbook configuration.
@@ -257,6 +279,15 @@ pub fn estimate_order_outcome(
         // Determine the filled amount, making sure to respect both base and quote
         // quantities available on the order.
 
+        console_log!("* check unfilled_quote={} nonzero", unfilled_quote);
+        console_log!(
+            "* quote_to_base() gives: {}",
+            quote_to_base(
+                std::cmp::min(unfilled_quote, order.quote_size),
+                order.limit_price,
+            )
+        );
+
         let bfill = std::cmp::min(
             quote_to_base(
                 std::cmp::min(unfilled_quote, order.quote_size),
@@ -266,11 +297,23 @@ pub fn estimate_order_outcome(
         );
         let qfill = base_to_quote(bfill, order.limit_price);
 
+        console_log!("Order filled {} quote and {} base", qfill, bfill);
+
         filled_quote += qfill;
         filled_base += bfill;
         unfilled_quote = unfilled_quote.saturating_sub(qfill);
         matches += 1;
+
+        console_log!("Cumulatively filled {} quote and {} base", filled_quote, filled_base);
+        console_log!("{} quote remaining", unfilled_quote);
     }
+
+    console_log!(
+        "filled_quote: {}, filled_base: {}",
+        filled_quote, filled_base
+    );
+    console_log!("vwap_f64: {}", filled_quote as f64 / filled_base as f64);
+    console_log!("vwap_fp32: {}", f64_to_fp32(filled_quote as f64 / filled_base as f64));
 
     let vwap = if filled_quote == 0 || filled_base == 0 {
         0
