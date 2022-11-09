@@ -1,13 +1,10 @@
 import Title from 'antd/lib/typography/Title';
-import ApexCharts from 'apexcharts';
-import { useEffect, useRef, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { Order } from '@jet-lab/jet-bonds-client';
 import { ReorderArrows } from '@components/misc/ReorderArrows';
 import { Dictionary } from '@state/settings/localization/localization';
 import { FixedBorrowRowOrder, FixedLendRowOrder } from '@state/views/fixed-term';
-import { AllFixedMarketsOrderBooksAtom, ExtendedOrderBook } from '@state/fixed-market/fixed-term-market-sync';
-import { useCurrencyFormatting } from '@utils/currency';
+import { ExtendedOrderBook } from '@state/fixed-market/fixed-term-market-sync';
 import { ResponsiveLineChart } from '@components/shared/charts/line-chart';
 
 interface Formatter {
@@ -95,40 +92,6 @@ const getOptions = (books: ExtendedOrderBook[], decimals: number, type: string, 
   };
 };
 
-const FixedPriceChart = ({ type, decimals = 6 }: FixedChart) => {
-  const [currentChart, setCurrentChart] = useState<ApexCharts | undefined>(undefined);
-  const formatting = useCurrencyFormatting();
-
-  const books = useRecoilValue(AllFixedMarketsOrderBooksAtom);
-  const ref = useRef<HTMLDivElement>(null);
-
-  // Initialize chart
-  useEffect(() => {
-    if (ref.current && !currentChart && books.length > 0) {
-      const opts = getOptions(books, decimals, type, formatting);
-      const fixedPriceChart = new ApexCharts(document.querySelector(`.fixed-term-graph-container`), opts);
-      fixedPriceChart.render();
-      setCurrentChart(fixedPriceChart);
-    }
-  }, [ref.current, books]);
-
-  // Update chart
-  useEffect(() => {
-    if (ref.current && currentChart) {
-      const opts = getOptions(books, decimals, type, formatting);
-      currentChart.updateOptions(opts);
-    }
-  }, [currentChart, ref.current, books]);
-
-  // Clean on dismount
-  useEffect(() => currentChart?.destroy(), []);
-  return (
-    <div
-      ref={ref}
-      className="fixed-term-graph-container view-element-item view-element-item-hidden flex-centered"></div>
-  );
-};
-
 export const FixedPriceChartContainer = ({ type }: FixedChart) => {
   const dictionary = useRecoilValue(Dictionary);
   const [rowOrder, setRowOrder] = useRecoilState(type === 'asks' ? FixedLendRowOrder : FixedBorrowRowOrder);
@@ -143,9 +106,6 @@ export const FixedPriceChartContainer = ({ type }: FixedChart) => {
         </div>
       </div>
       <ResponsiveLineChart />
-      {/* <Suspense fallback={<div>Loading</div>}>
-        <FixedPriceChart type={type} decimals={6} />
-      </Suspense> */}
       <ReorderArrows component="fixedChart" order={rowOrder} setOrder={setRowOrder} />
     </div>
   );
