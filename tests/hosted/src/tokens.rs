@@ -16,7 +16,6 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 use std::io::Write;
-use std::sync::Arc;
 use std::time::Duration;
 
 use anyhow::{bail, Error};
@@ -35,18 +34,20 @@ use solana_sdk::{system_instruction, system_program};
 use anchor_lang::{InstructionData, ToAccountMetas};
 
 use jet_program_common::Number128;
-use jet_simulation::{generate_keypair, send_and_confirm, solana_rpc_api::SolanaRpcClient};
+use jet_simulation::send_and_confirm;
+
+use crate::runtime::SolanaTestContext;
 
 /// Utility for managing the creation of tokens and their prices
 /// in some kind of testing environment
 #[derive(Clone)]
 pub struct TokenManager {
-    rpc: Arc<dyn SolanaRpcClient>,
+    ctx: SolanaTestContext,
 }
 
 impl TokenManager {
-    pub fn new(rpc: Arc<dyn SolanaRpcClient>) -> Self {
-        Self { rpc }
+    pub fn new(ctx: SolanaTestContext) -> Self {
+        Self { ctx }
     }
 
     /// Create a new token mint, with optional mint and freeze authorities.
@@ -62,7 +63,7 @@ impl TokenManager {
         mint_authority: Option<&Pubkey>,
         freeze_authority: Option<&Pubkey>,
     ) -> Result<Pubkey, Error> {
-        let keypair = generate_keypair();
+        let keypair = self.ctx.generate_key();
         self.create_token_from(keypair, decimals, mint_authority, freeze_authority)
             .await
     }
@@ -74,9 +75,10 @@ impl TokenManager {
         mint_authority: Option<&Pubkey>,
         freeze_authority: Option<&Pubkey>,
     ) -> Result<Pubkey, Error> {
-        let payer = self.rpc.payer();
+        let payer = self.ctx.rpc.payer();
         let space = spl_token::state::Mint::LEN;
         let rent_lamports = self
+            .ctx
             .rpc
             .get_minimum_balance_for_rent_exemption(space)
             .await?;
@@ -97,17 +99,23 @@ impl TokenManager {
             decimals,
         )?;
 
-        send_and_confirm(&self.rpc, &[ix_create_account, ix_initialize], &[&keypair]).await?;
+        send_and_confirm(
+            &self.ctx.rpc,
+            &[ix_create_account, ix_initialize],
+            &[&keypair],
+        )
+        .await?;
 
         Ok(keypair.pubkey())
     }
 
     /// Create a new token account belonging to the owner, with the supplied mint
     pub async fn create_account(&self, mint: &Pubkey, owner: &Pubkey) -> Result<Pubkey, Error> {
-        let keypair = generate_keypair();
-        let payer = self.rpc.payer();
+        let keypair = self.ctx.generate_key();
+        let payer = self.ctx.rpc.payer();
         let space = spl_token::state::Account::LEN;
         let rent_lamports = self
+            .ctx
             .rpc
             .get_minimum_balance_for_rent_exemption(space)
             .await?;
@@ -127,7 +135,12 @@ impl TokenManager {
             owner,
         )?;
 
-        send_and_confirm(&self.rpc, &[ix_create_account, ix_initialize], &[&keypair]).await?;
+        send_and_confirm(
+            &self.ctx.rpc,
+            &[ix_create_account, ix_initialize],
+            &[&keypair],
+        )
+        .await?;
 
         Ok(keypair.pubkey())
     }
@@ -149,7 +162,7 @@ impl TokenManager {
 
     /// Create oracle accounts for a token
     pub async fn create_oracle(&self, mint: &Pubkey) -> Result<TokenOracle, Error> {
-        let payer = self.rpc.payer();
+        let payer = self.ctx.rpc.payer();
         let (price_address, price_bump) = Pubkey::find_program_address(
             &[mint.as_ref(), b"oracle:price".as_ref()],
             &jet_metadata::ID,
@@ -189,7 +202,7 @@ impl TokenManager {
             std::mem::size_of::<pyth_sdk_solana::state::ProductAccount>(),
         );
 
-        send_and_confirm(&self.rpc, &[ix_create_price, ix_create_product], &[]).await?;
+        send_and_confirm(&self.ctx.rpc, &[ix_create_price, ix_create_product], &[]).await?;
 
         let mut product_account = pyth_sdk_solana::state::ProductAccount {
             ver: pyth_sdk_solana::state::VERSION,
@@ -242,10 +255,10 @@ impl TokenManager {
         destination: &Pubkey,
         amount: u64,
     ) -> Result<(), Error> {
-        let payer = self.rpc.payer();
+        let payer = self.ctx.rpc.payer();
 
         send_and_confirm(
-            &self.rpc,
+            &self.ctx.rpc,
             &[spl_token::instruction::mint_to(
                 &spl_token::ID,
                 mint,
@@ -262,7 +275,8 @@ impl TokenManager {
     }
 
     pub async fn refresh_to_same_price(&self, mint: &Pubkey) -> Result<(), Error> {
-        self.rpc
+        self.ctx
+            .rpc
             .send_and_confirm(self.refresh_to_same_price_tx(mint).await?)
             .await?;
 
@@ -281,7 +295,12 @@ impl TokenManager {
         let mut account: pyth_sdk_solana::state::PriceAccount =
             self.get_pod_metadata(&price_address).await?;
 
-        let clock = self.rpc.get_clock().await.expect("could not get the clock");
+        let clock = self
+            .ctx
+            .rpc
+            .get_clock()
+            .await
+            .expect("could not get the clock");
         account.agg.pub_slot = clock.slot;
         account.timestamp = clock.unix_timestamp;
 
@@ -300,7 +319,12 @@ impl TokenManager {
         let mut account: pyth_sdk_solana::state::PriceAccount =
             self.get_pod_metadata(&price_address).await?;
 
-        let clock = self.rpc.get_clock().await.expect("could not get the clock");
+        let clock = self
+            .ctx
+            .rpc
+            .get_clock()
+            .await
+            .expect("could not get the clock");
         account.agg.pub_slot = clock.slot;
         account.timestamp = clock.unix_timestamp;
 
@@ -323,7 +347,8 @@ impl TokenManager {
 
     /// Set the oracle price of a token
     pub async fn set_price(&self, mint: &Pubkey, price: &TokenPrice) -> Result<(), Error> {
-        self.rpc
+        self.ctx
+            .rpc
             .send_and_confirm(self.set_price_tx(mint, price).await?)
             .await?;
 
@@ -336,7 +361,12 @@ impl TokenManager {
         mint: &Pubkey,
         price: &TokenPrice,
     ) -> Result<TransactionBuilder, Error> {
-        let clock = self.rpc.get_clock().await.expect("could not get the clock");
+        let clock = self
+            .ctx
+            .rpc
+            .get_clock()
+            .await
+            .expect("could not get the clock");
         let mut price_data = default_price();
 
         let price_value =
@@ -360,9 +390,9 @@ impl TokenManager {
 
         let mint_info = derive_token_info(mint);
 
-        if self.rpc.get_account(&mint_info).await?.is_some() {
+        if self.ctx.rpc.get_account(&mint_info).await?.is_some() {
             tx.instructions.push(test_service::token_update_pyth_price(
-                &self.rpc.payer().pubkey(),
+                &self.ctx.rpc.payer().pubkey(),
                 mint,
                 price.price,
                 price.confidence as i64,
@@ -375,7 +405,7 @@ impl TokenManager {
 
     /// Get the current balance of a token account
     pub async fn get_balance(&self, account: &Pubkey) -> Result<u64, Error> {
-        let account_data = self.rpc.get_account(account).await?;
+        let account_data = self.ctx.rpc.get_account(account).await?;
 
         if account_data.is_none() {
             bail!("account {} does not exist", account);
@@ -391,7 +421,8 @@ impl TokenManager {
         address: &Pubkey,
         value: &T,
     ) -> Result<(), Error> {
-        self.rpc
+        self.ctx
+            .rpc
             .send_and_confirm(self.set_pod_metadata_tx(address, value)?)
             .await?;
 
@@ -428,10 +459,13 @@ impl TokenManager {
     }
 
     async fn get_pod_metadata<T: bytemuck::Pod>(&self, address: &Pubkey) -> Result<T, Error> {
-        let account =
-            with_retries_and_timeout(|| self.rpc.get_account(address), Duration::from_secs(1), 30)
-                .await??
-                .unwrap();
+        let account = with_retries_and_timeout(
+            || self.ctx.rpc.get_account(address),
+            Duration::from_secs(1),
+            30,
+        )
+        .await??
+        .unwrap();
 
         Ok(*bytemuck::from_bytes::<T>(&account.data))
     }
