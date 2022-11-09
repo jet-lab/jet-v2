@@ -20,6 +20,21 @@ impl<T: Clone> Concat for Vec<T> {
     }
 }
 
+/// Add an item to a collection and return the collection
+pub trait With {
+    type Inner;
+    fn with(self, other: Self::Inner) -> Self;
+}
+
+impl<T> With for Vec<T> {
+    type Inner = T;
+
+    fn with(mut self, other: Self::Inner) -> Self {
+        self.push(other);
+        self
+    }
+}
+
 pub trait DeepReverse {
     fn deep_reverse(self) -> Self;
 }

@@ -26,7 +26,7 @@ use itertools::Itertools;
 use jet_margin_sdk::solana::transaction::{SendTransactionBuilder, TransactionBuilder};
 use jet_margin_sdk::spl_swap::SplSwapPool;
 use jet_margin_sdk::util::asynchronous::MapAsync;
-use jet_simulation::{generate_keypair, solana_rpc_api::SolanaRpcClient};
+use jet_simulation::solana_rpc_api::SolanaRpcClient;
 use jet_static_program_registry::{
     orca_swap_v1, orca_swap_v2, related_programs, spl_token_swap_v2,
 };
@@ -36,6 +36,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::try_join;
 
+use crate::runtime::SolanaTestContext;
 use crate::tokens::TokenManager;
 
 // register swap programs
@@ -51,16 +52,13 @@ pub type SwapRegistry = HashMap<Pubkey, HashMap<Pubkey, SplSwapPool>>;
 
 pub const ONE: u64 = 1_000_000_000;
 
-pub async fn create_swap_pools(
-    rpc: &Arc<dyn SolanaRpcClient>,
-    mints: &[Pubkey],
-) -> Result<SwapRegistry> {
+pub async fn create_swap_pools(ctx: &SolanaTestContext, mints: &[Pubkey]) -> Result<SwapRegistry> {
     let mut registry = SwapRegistry::new();
     for (one, two, pool) in mints
         .iter()
         .combinations(2)
         .map(|c| (*c[0], *c[1]))
-        .map_async(|(one, two)| create_and_insert(rpc, one, two))
+        .map_async(|(one, two)| create_and_insert(ctx, one, two))
         .await?
     {
         registry.entry(one).or_default().insert(two, pool);
@@ -71,12 +69,12 @@ pub async fn create_swap_pools(
 }
 
 async fn create_and_insert(
-    rpc: &Arc<dyn SolanaRpcClient>,
+    ctx: &SolanaTestContext,
     one: Pubkey,
     two: Pubkey,
 ) -> Result<(Pubkey, Pubkey, SplSwapPool)> {
     let pool = SplSwapPool::configure(
-        rpc,
+        ctx,
         &orca_swap_v2::id(),
         &one,
         &two,
@@ -91,7 +89,7 @@ async fn create_and_insert(
 #[async_trait]
 pub trait SwapPoolConfig: Sized {
     async fn configure(
-        rpc: &Arc<dyn SolanaRpcClient>,
+        rpc: &SolanaTestContext,
         program_id: &Pubkey,
         mint_a: &Pubkey,
         mint_b: &Pubkey,
@@ -126,7 +124,7 @@ impl SwapPoolConfig for SplSwapPool {
     /// Configure a new swap pool. Supply the amount of tokens to avoid needing
     /// to deposit tokens separately.
     async fn configure(
-        rpc: &Arc<dyn SolanaRpcClient>,
+        ctx: &SolanaTestContext,
         program_id: &Pubkey,
         mint_a: &Pubkey,
         mint_b: &Pubkey,
@@ -135,10 +133,11 @@ impl SwapPoolConfig for SplSwapPool {
     ) -> Result<Self, Error> {
         // Configure the input accounts required by the pool
         // https://spl.solana.com/token-swap#creating-a-new-token-swap-pool
+        let rpc = &ctx.rpc;
 
         // Create a TokenManager instance
-        let token_manager = TokenManager::new(rpc.clone());
-        let keypair = generate_keypair();
+        let token_manager = TokenManager::new(ctx.clone());
+        let keypair = ctx.generate_key();
 
         // Create an empty pool state account
         // The SPL Token Swap program requires extra padding of 1 byte

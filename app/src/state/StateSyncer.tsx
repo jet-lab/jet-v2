@@ -5,7 +5,7 @@ import { useAccountsSyncer } from './user/accounts';
 import { useSplSwapSyncer } from './swap/splSwap';
 import { useFixedTermSync } from './fixed-market/fixed-term-market-sync';
 
-export function StateSyncer(): JSX.Element {
+export const StateSyncer = (): JSX.Element => {
   useMainConfigSyncer();
   usePoolsSyncer();
   useWalletTokensSyncer();

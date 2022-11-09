@@ -16,6 +16,7 @@ use solana_sdk::signature::Keypair;
 
 use tokio::try_join;
 
+use crate::runtime::SolanaTestContext;
 use crate::swap::{SwapPoolConfig, SwapRegistry};
 use crate::tokens::TokenManager;
 
@@ -42,25 +43,25 @@ impl Clone for TokenPricer {
 }
 
 impl TokenPricer {
-    pub fn new_without_swaps(rpc: &Arc<dyn SolanaRpcClient>) -> Self {
+    pub fn new_without_swaps(ctx: &SolanaTestContext) -> Self {
         Self {
-            rpc: rpc.clone(),
-            tokens: TokenManager::new(rpc.clone()),
-            payer: clone(rpc.payer()),
+            rpc: ctx.rpc.clone(),
+            tokens: TokenManager::new(ctx.clone()),
+            payer: clone(ctx.rpc.payer()),
             vaults: HashMap::new(),
             swap_registry: SwapRegistry::new(),
         }
     }
 
     pub fn new(
-        rpc: &Arc<dyn SolanaRpcClient>,
+        ctx: &SolanaTestContext,
         vaults: HashMap<Pubkey, Pubkey>,
         swap_registry: &SwapRegistry,
     ) -> Self {
         Self {
-            rpc: rpc.clone(),
-            tokens: TokenManager::new(rpc.clone()),
-            payer: clone(rpc.payer()),
+            rpc: ctx.rpc.clone(),
+            tokens: TokenManager::new(ctx.clone()),
+            payer: clone(ctx.rpc.payer()),
             vaults,
             swap_registry: swap_registry.clone(),
         }

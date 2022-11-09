@@ -20,6 +20,14 @@ use anchor_lang::prelude::*;
 #[event]
 pub struct AirspaceCreated {
     pub airspace: Pubkey,
+    pub authority: Pubkey,
+    pub is_restricted: bool,
+}
+
+#[event]
+pub struct AirspaceAuthoritySet {
+    pub airspace: Pubkey,
+    pub authority: Pubkey,
 }
 
 #[event]
@@ -44,6 +52,5 @@ pub struct AirspacePermitCreated {
 #[event]
 pub struct AirspacePermitRevoked {
     pub airspace: Pubkey,
-    pub issuer: Pubkey,
-    pub owner: Pubkey,
+    pub permit: Pubkey,
 }

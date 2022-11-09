@@ -82,8 +82,7 @@ pub fn airspace_permit_revoke_handler(ctx: Context<AirspacePermitRevoke>) -> Res
 
     emit!(AirspacePermitRevoked {
         airspace: airspace.key(),
-        issuer: permit.issuer,
-        owner: permit.owner
+        permit: permit.key(),
     });
 
     Ok(())

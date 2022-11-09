@@ -10,7 +10,6 @@ import { NavDrawerOpen } from '@state/views/views';
 // The Navigation Bar for the application
 export function Navbar(): JSX.Element {
   const [drawerOpen, setDrawerOpen] = useRecoilState(NavDrawerOpen);
-
   return (
     <div className={`navbar-container flex-centered column ${drawerOpen ? 'drawer-open' : ''}`}>
       <TpsBanner />

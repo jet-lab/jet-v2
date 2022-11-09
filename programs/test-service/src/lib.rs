@@ -105,7 +105,11 @@ pub mod jet_test_service {
     pub fn spl_swap_pool_create(ctx: Context<SplSwapPoolCreate>) -> Result<()> {
         spl_swap_pool_create_handler(ctx)
     }
-}
 
-#[derive(Accounts)]
-pub struct Initialize {}
+    /// Invokes arbitrary program iff an account is not yet initialized.
+    /// Typically used to run an instruction that initializes the account,
+    /// ensuring multiple initializations will not collide.
+    pub fn if_not_initialized(ctx: Context<IfNotInitialized>, instruction: Vec<u8>) -> Result<()> {
+        if_not_initialized_handler(ctx, instruction)
+    }
+}

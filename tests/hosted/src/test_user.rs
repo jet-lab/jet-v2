@@ -1,5 +1,6 @@
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
+use std::sync::Arc;
 
 use anyhow::Result;
 use jet_margin_sdk::cat;
@@ -20,13 +21,13 @@ pub const ONE: u64 = 1_000_000_000;
 
 /// A MarginUser that takes some extra liberties
 #[derive(Clone)]
-pub struct TestUser<'a> {
-    pub ctx: &'a MarginTestContext,
+pub struct TestUser {
+    pub ctx: Arc<MarginTestContext>,
     pub user: MarginUser,
     pub mint_to_token_account: HashMap<Pubkey, Pubkey>,
 }
 
-impl<'a> std::fmt::Debug for TestUser<'a> {
+impl std::fmt::Debug for TestUser {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("TestUser")
             .field("user", &self.user.address())
@@ -36,7 +37,7 @@ impl<'a> std::fmt::Debug for TestUser<'a> {
     }
 }
 
-impl<'a> TestUser<'a> {
+impl TestUser {
     pub async fn token_account(&mut self, mint: &Pubkey) -> Result<Pubkey> {
         let token_account = match self.mint_to_token_account.entry(*mint) {
             Entry::Occupied(entry) => *entry.get(),
@@ -171,7 +172,7 @@ impl<'a> TestUser<'a> {
     }
 
     pub async fn refresh_position_oracles_txs(&self) -> Result<Vec<TransactionBuilder>> {
-        let tokens = TokenManager::new(self.ctx.rpc.clone());
+        let tokens = TokenManager::new(self.ctx.solana.clone());
         self.user
             .positions()
             .await?
@@ -181,7 +182,7 @@ impl<'a> TestUser<'a> {
     }
 
     pub async fn refresh_positions_with_oracles_txs(&self) -> Result<Vec<TransactionBuilder>> {
-        let tokens = TokenManager::new(self.ctx.rpc.clone());
+        let tokens = TokenManager::new(self.ctx.solana.clone());
         Ok(self
             .user
             .tx
@@ -197,33 +198,33 @@ impl<'a> TestUser<'a> {
 }
 
 #[derive(Debug)]
-pub struct TestLiquidator<'a> {
-    pub ctx: &'a MarginTestContext,
+pub struct TestLiquidator {
+    pub ctx: Arc<MarginTestContext>,
     pub wallet: Keypair,
 }
 
-impl<'a> TestLiquidator<'a> {
-    pub async fn new(ctx: &'a MarginTestContext) -> Result<TestLiquidator> {
+impl TestLiquidator {
+    pub async fn new(ctx: &Arc<MarginTestContext>) -> Result<TestLiquidator> {
         Ok(TestLiquidator {
-            ctx,
+            ctx: ctx.clone(),
             wallet: ctx.create_liquidator(100).await?,
         })
     }
 
-    pub fn for_user(&self, user: &MarginUser) -> Result<TestUser<'a>> {
+    pub fn for_user(&self, user: &MarginUser) -> Result<TestUser> {
         let liquidation = self
             .ctx
             .margin
             .liquidator(&self.wallet, user.owner(), user.seed())?;
 
         Ok(TestUser {
-            ctx: self.ctx,
+            ctx: self.ctx.clone(),
             user: liquidation,
             mint_to_token_account: HashMap::new(),
         })
     }
 
-    pub async fn begin(&self, user: &MarginUser, refresh_positions: bool) -> Result<TestUser<'a>> {
+    pub async fn begin(&self, user: &MarginUser, refresh_positions: bool) -> Result<TestUser> {
         let test_liquidation = self.for_user(user)?;
         test_liquidation
             .user

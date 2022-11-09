@@ -1,10 +1,8 @@
-use std::cell::RefCell;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use anyhow::Error;
-use jet_margin_sdk::solana::transaction::SendTransactionBuilder;
-use rand::rngs::mock::StepRng;
-use tokio::sync::OnceCell;
+use jet_margin_sdk::solana::transaction::InverseSendTransactionBuilder;
+use jet_margin_sdk::util::data::With;
 
 use solana_sdk::native_token::LAMPORTS_PER_SOL;
 use solana_sdk::pubkey::Pubkey;
@@ -14,14 +12,25 @@ use jet_margin_sdk::test_service::{minimal_environment, MarginPoolConfig};
 use jet_metadata::TokenKind;
 use jet_simulation::solana_rpc_api::SolanaRpcClient;
 
+use crate::runtime::SolanaTestContext;
 use crate::{margin::MarginClient, tokens::TokenManager};
 
-static TEST_CONTEXT: OnceCell<MarginTestContext> = OnceCell::const_new();
-
-pub async fn test_context() -> &'static MarginTestContext {
-    TEST_CONTEXT
-        .get_or_init(|| async { MarginTestContext::new().await.unwrap() })
-        .await
+/// If you don't provide a name, gets the name of the current function name and
+/// uses it to create a test context. Only use this way when called directly in
+/// the test function. If you want to call this in a helper function, pass a
+/// name that is unique to the individual test.
+#[macro_export]
+macro_rules! margin_test_context {
+    () => {
+        $crate::margin_test_context!($crate::fn_name!())
+    };
+    ($name:expr) => {
+        std::sync::Arc::new(
+            $crate::context::MarginTestContext::new($name)
+                .await
+                .unwrap(),
+        )
+    };
 }
 
 pub struct MarginPoolSetupInfo {
@@ -37,11 +46,9 @@ pub struct MarginTestContext {
     pub rpc: Arc<dyn SolanaRpcClient>,
     pub tokens: TokenManager,
     pub margin: MarginClient,
-
     pub authority: Keypair,
     pub payer: Keypair,
-
-    rng: Mutex<RefCell<MockRng>>,
+    pub solana: SolanaTestContext,
 }
 
 impl std::fmt::Debug for MarginTestContext {
@@ -53,62 +60,31 @@ impl std::fmt::Debug for MarginTestContext {
     }
 }
 
-impl MarginTestContext {
-    #[cfg(not(feature = "localnet"))]
-    pub async fn new() -> Result<Self, Error> {
-        use jet_simulation::runtime::TestRuntime;
-        use jet_static_program_registry::{orca_swap_v1, orca_swap_v2, spl_token_swap_v2};
-        let runtime = jet_simulation::create_test_runtime![
-            jet_test_service,
-            jet_bonds,
-            jet_control,
-            jet_margin,
-            jet_metadata,
-            jet_airspace,
-            jet_margin_pool,
-            jet_margin_swap,
-            (
-                orca_swap_v1::id(),
-                orca_swap_v1::processor::Processor::process
-            ),
-            (
-                orca_swap_v2::id(),
-                orca_swap_v2::processor::Processor::process
-            ),
-            (
-                spl_token_swap_v2::id(),
-                spl_token_swap_v2::processor::Processor::process
-            ),
-            (
-                spl_associated_token_account::ID,
-                spl_associated_token_account::processor::process_instruction
-            )
-        ];
-
-        Self::new_with_runtime(Arc::new(runtime)).await
-    }
-
-    #[cfg(feature = "localnet")]
-    pub async fn new() -> Result<Self, Error> {
-        let runtime = jet_simulation::solana_rpc_api::RpcConnection::new_local_funded().await?;
-
-        Self::new_with_runtime(Arc::new(runtime)).await
-    }
-
-    pub async fn new_with_runtime(runtime: Arc<dyn SolanaRpcClient>) -> Result<Self, Error> {
-        let payer = Keypair::from_bytes(&runtime.payer().to_bytes()).unwrap();
-        let rng = MockRng(StepRng::new(0, 1));
-        let ctx = MarginTestContext {
-            tokens: TokenManager::new(runtime.clone()),
-            margin: MarginClient::new(runtime.clone()),
+impl From<SolanaTestContext> for MarginTestContext {
+    fn from(solana: SolanaTestContext) -> Self {
+        let payer = Keypair::from_bytes(&solana.rpc.payer().to_bytes()).unwrap();
+        MarginTestContext {
+            tokens: TokenManager::new(solana.clone()),
+            margin: MarginClient::new(solana.rpc.clone(), &payer.pubkey().to_string()[0..8]),
             authority: Keypair::new(),
-            rng: Mutex::new(RefCell::new(rng)),
-            rpc: runtime,
+            rpc: solana.rpc.clone(),
+            solana,
             payer,
-        };
+        }
+    }
+}
 
-        ctx.rpc
-            .send_and_confirm_condensed_in_order(minimal_environment(ctx.payer.pubkey())?)
+impl MarginTestContext {
+    pub async fn new(seed: &str) -> Result<Self, Error> {
+        Self::new_with_runtime(SolanaTestContext::new(seed).await).await
+    }
+
+    pub async fn new_with_runtime(runtime: SolanaTestContext) -> Result<Self, Error> {
+        let ctx: Self = runtime.into();
+
+        minimal_environment(ctx.payer.pubkey())
+            .with(ctx.margin.create_airspace_ix(false).into())
+            .send_and_confirm_condensed(&ctx.rpc)
             .await?;
 
         Ok(ctx)
@@ -119,7 +95,7 @@ impl MarginTestContext {
     }
 
     pub fn generate_key(&self) -> Keypair {
-        Keypair::generate(&mut *self.rng.lock().unwrap().borrow_mut())
+        self.solana.keygen.generate_key()
     }
 
     /// Generate a new wallet keypair for a liquidator with the pubkey that
@@ -131,27 +107,5 @@ impl MarginTestContext {
             .set_liquidator_metadata(liquidator.pubkey(), true)
             .await?;
         Ok(liquidator)
-    }
-}
-
-struct MockRng(StepRng);
-
-impl rand::CryptoRng for MockRng {}
-
-impl rand::RngCore for MockRng {
-    fn next_u32(&mut self) -> u32 {
-        self.0.next_u32()
-    }
-
-    fn next_u64(&mut self) -> u64 {
-        self.0.next_u64()
-    }
-
-    fn fill_bytes(&mut self, dest: &mut [u8]) {
-        self.0.fill_bytes(dest)
-    }
-
-    fn try_fill_bytes(&mut self, dest: &mut [u8]) -> Result<(), rand::Error> {
-        self.0.try_fill_bytes(dest)
     }
 }
