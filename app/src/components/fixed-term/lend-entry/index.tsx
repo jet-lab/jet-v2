@@ -8,11 +8,16 @@ import { FixedMarketAtom } from '@state/fixed-market/fixed-term-market-sync';
 import { marketToString } from '@utils/jet/fixed-term-utils';
 import { OfferLoan } from './offer-loan';
 import { LendNow } from './lend-now';
+import { WalletTokens } from '@state/user/walletTokens';
+import { Accounts } from '@state/user/accounts';
 
 export const FixedLendOrderEntry = () => {
   const [rowOrder, setRowOrder] = useRecoilState(FixedLendRowOrder);
   const marketAndConfig = useRecoilValue(FixedMarketAtom);
   const marginConfig = useRecoilValue(MainConfig);
+  const walletTokens = useRecoilValue(WalletTokens);
+  const accounts = useRecoilValue(Accounts);
+  const noAccount = useMemo(() => !walletTokens || !accounts.length, [accounts, walletTokens]);
 
   const [orderType, setOrderType] = useState('limit');
 
@@ -30,8 +35,7 @@ export const FixedLendOrderEntry = () => {
   }, [token]);
 
   const { Paragraph } = Typography;
-
-  if (!decimals) return null;
+  if (!decimals || noAccount) return null;
 
   return (
     <div className="order-entry fixed-lend-entry view-element view-element-hidden flex column">
