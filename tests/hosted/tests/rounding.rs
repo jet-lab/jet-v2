@@ -6,10 +6,7 @@ use solana_sdk::native_token::LAMPORTS_PER_SOL;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::Signer;
 
-use hosted_tests::{
-    context::{test_context, MarginTestContext},
-    margin::MarginPoolSetupInfo,
-};
+use hosted_tests::{context::MarginTestContext, margin::MarginPoolSetupInfo, margin_test_context};
 
 use jet_margin::TokenKind;
 use jet_margin_pool::{MarginPoolConfig, PoolFlags, TokenChange};
@@ -70,8 +67,8 @@ async fn setup_environment(ctx: &MarginTestContext) -> Result<TestEnv, Error> {
 #[tokio::test(flavor = "multi_thread")]
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn rounding_poc() -> Result<()> {
-    let ctx = test_context().await;
-    let env = setup_environment(ctx).await.unwrap();
+    let ctx = margin_test_context!();
+    let env = setup_environment(&ctx).await.unwrap();
 
     let wallet_a = create_wallet(&ctx.rpc, 10 * LAMPORTS_PER_SOL)
         .await

@@ -20,8 +20,8 @@ use bytemuck::{Contiguous, Pod, Zeroable};
 #[cfg(any(test, feature = "cli"))]
 use serde::ser::{Serialize, SerializeStruct, Serializer};
 
-use jet_proto_math::Number128;
-use jet_proto_proc_macros::assert_size;
+use jet_program_common::Number128;
+use jet_program_proc_macros::assert_size;
 
 use anchor_lang::Result as AnchorResult;
 use std::{convert::TryFrom, result::Result};

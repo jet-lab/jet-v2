@@ -63,7 +63,7 @@ impl<'a> AnchorParser<'a> {
         let data =
             DataValue::Struct(reader.parse_data_struct(&mut &instruction.data[8..], &ix_def.args)?);
 
-        let accounts = reader.parse_accounts(
+        let accounts = IdlReader::parse_accounts(
             &mut instruction.accounts.iter().map(|meta| meta.pubkey),
             &ix_def.accounts,
         )?;
@@ -188,7 +188,6 @@ impl<'a> IdlReader<'a> {
     }
 
     fn parse_accounts(
-        &self,
         to_parse: &mut impl Iterator<Item = Pubkey>,
         idl_accounts: &[IdlAccountItem],
     ) -> Result<Vec<ParsedAccountInput>> {
@@ -203,11 +202,13 @@ impl<'a> IdlReader<'a> {
                             ParsedAccountInput::Account(idl_account.name.clone(), pubkey)
                         }),
 
-                    IdlAccountItem::IdlAccounts(more_idl_accounts) => self
-                        .parse_accounts(to_parse, &more_idl_accounts.accounts)
-                        .map(|accounts| {
-                            ParsedAccountInput::Group(more_idl_accounts.name.clone(), accounts)
-                        }),
+                    IdlAccountItem::IdlAccounts(more_idl_accounts) => {
+                        Self::parse_accounts(to_parse, &more_idl_accounts.accounts).map(
+                            |accounts| {
+                                ParsedAccountInput::Group(more_idl_accounts.name.clone(), accounts)
+                            },
+                        )
+                    }
                 }
             })
             .collect()

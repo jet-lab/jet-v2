@@ -9,8 +9,7 @@ use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::Signer;
 
 use hosted_tests::{
-    context::{test_context, MarginTestContext},
-    margin::MarginPoolSetupInfo,
+    context::MarginTestContext, fn_name, margin::MarginPoolSetupInfo, margin_test_context,
     swap::SwapPoolConfig,
 };
 
@@ -37,7 +36,7 @@ const DEFAULT_POOL_CONFIG: MarginPoolConfig = MarginPoolConfig {
 #[tokio::test(flavor = "multi_thread")]
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn spl_swap_v2() -> Result<(), anyhow::Error> {
-    let result = swap_test_impl(spl_token_swap_v2::id()).await;
+    let result = swap_test_impl(fn_name!(), spl_token_swap_v2::id()).await;
     println!("{:#?}", &result);
 
     result
@@ -47,14 +46,14 @@ async fn spl_swap_v2() -> Result<(), anyhow::Error> {
 #[tokio::test(flavor = "multi_thread")]
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn orca_swap_v1() -> Result<(), anyhow::Error> {
-    swap_test_impl(orca_swap_v1::id()).await
+    swap_test_impl(fn_name!(), orca_swap_v1::id()).await
 }
 
 /// Test token swaps for orca v2
 #[tokio::test(flavor = "multi_thread")]
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn orca_swap_v2() -> Result<(), anyhow::Error> {
-    swap_test_impl(orca_swap_v2::id()).await
+    swap_test_impl(fn_name!(), orca_swap_v2::id()).await
 }
 
 struct TestEnv {
@@ -106,10 +105,10 @@ async fn setup_environment(ctx: &MarginTestContext) -> Result<TestEnv, Error> {
     Ok(TestEnv { usdc, tsol })
 }
 
-async fn swap_test_impl(swap_program_id: Pubkey) -> Result<(), anyhow::Error> {
+async fn swap_test_impl(test_name: &str, swap_program_id: Pubkey) -> Result<(), anyhow::Error> {
     // Get the mocked runtime
-    let ctx = test_context().await;
-    let env = setup_environment(ctx).await?;
+    let ctx = margin_test_context!(test_name);
+    let env = setup_environment(&ctx).await?;
 
     // Create our two user wallets, with some SOL funding to get started
     let wallet_a = create_wallet(&ctx.rpc, 10 * LAMPORTS_PER_SOL).await?;
@@ -126,7 +125,7 @@ async fn swap_test_impl(swap_program_id: Pubkey) -> Result<(), anyhow::Error> {
 
     // Create a swap pool with sufficient liquidity
     let swap_pool = SplSwapPool::configure(
-        &ctx.rpc,
+        &ctx.solana,
         &swap_program_id,
         &env.usdc,
         &env.tsol,

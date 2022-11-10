@@ -1,7 +1,7 @@
 use agnostic_orderbook::state::Side;
 use anchor_lang::prelude::*;
 use anchor_spl::token::{accessor::mint, Mint, Token, TokenAccount};
-use proc_macros::BondTokenManager;
+use jet_program_proc_macros::BondTokenManager;
 
 use crate::{
     bond_token_manager::BondTokenManager,
@@ -140,10 +140,16 @@ pub fn handler(ctx: Context<LendOrder>, params: OrderParams, seed: Vec<u8>) -> R
         callback_info,
         &order_summary,
     )?;
-    emit!(crate::events::LendOrder {
-        bond_market: ctx.accounts.orderbook_mut.bond_manager.key(),
-        lender: ctx.accounts.authority.key(),
+    emit!(crate::events::OrderPlaced {
+        bond_manager: ctx.accounts.orderbook_mut.bond_manager.key(),
+        authority: ctx.accounts.authority.key(),
+        margin_user: None,
         order_summary: order_summary.summary(),
+        order_type: crate::events::OrderType::Lend,
+        limit_price: params.limit_price,
+        auto_stake: params.auto_stake,
+        post_only: params.post_only,
+        post_allowed: params.post_allowed,
     });
 
     Ok(())

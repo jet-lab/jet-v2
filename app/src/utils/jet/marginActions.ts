@@ -1,18 +1,8 @@
 import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 // import axios from 'axios';
 import { TransactionInstruction } from '@solana/web3.js';
-import { NATIVE_MINT } from '@solana/spl-token';
 import { useWallet } from '@solana/wallet-adapter-react';
-import {
-  chunks,
-  MarginAccount,
-  Pool,
-  PoolTokenChange,
-  sleep,
-  SPLSwapPool,
-  TokenAmount,
-  TokenFaucet
-} from '@jet-lab/margin';
+import { chunks, MarginAccount, Pool, PoolTokenChange, SPLSwapPool, TokenAmount, TokenFaucet } from '@jet-lab/margin';
 import { MainConfig } from '@state/config/marginConfig';
 import { Pools, CurrentPool } from '@state/pools/pools';
 import { WalletTokens } from '@state/user/walletTokens';
@@ -48,9 +38,7 @@ export function useMarginActions() {
 
   // Refresh to trigger new data fetching after a timeout
   async function actionRefresh() {
-    await sleep(1000);
-    setActionRefresh(true);
-    setActionRefresh(false);
+    setActionRefresh(Date.now());
   }
 
   // If on devnet, user can airdrop themself tokens

@@ -1,4 +1,4 @@
-use jet_proto_math::fixed_point::Fp32;
+use jet_program_common::Fp32;
 use js_sys::{Array, Uint8Array};
 use wasm_bindgen::prelude::*;
 

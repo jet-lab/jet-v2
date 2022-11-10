@@ -48,6 +48,12 @@ impl AirspaceIxBuilder {
         }
     }
 
+    /// making the field public would allow invalid states because it can
+    /// diverge from the seed.
+    pub fn address(&self) -> Pubkey {
+        self.address
+    }
+
     /// Create the governor identity account
     pub fn create_governor_id(&self) -> Instruction {
         let accounts = jet_airspace::accounts::CreateGovernorId {

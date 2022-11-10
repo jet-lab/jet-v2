@@ -1910,7 +1910,7 @@ dependencies = [
  "jet-margin-sdk",
  "jet-margin-swap",
  "jet-metadata",
- "jet-proto-math 1.1.0 (git+https://github.com/jet-lab/program-libraries?branch=fixed-point-math)",
+ "jet-program-common",
  "jet-simulation",
  "jet-static-program-registry",
  "jet-test-service",
@@ -2162,10 +2162,10 @@ dependencies = [
  "bytemuck",
  "itertools 0.10.5",
  "jet-margin",
- "jet-proto-math 1.1.0 (git+https://github.com/jet-lab/program-libraries?branch=main)",
+ "jet-program-common",
+ "jet-program-proc-macros",
  "num-derive",
  "num-traits",
- "proc-macros",
  "pyth-sdk-solana 0.4.2",
  "serde",
  "serde_json",
@@ -2203,7 +2203,7 @@ dependencies = [
  "heck 0.4.0",
  "indicatif",
  "jet-margin-sdk",
- "jet-proto-math 1.1.0 (git+https://github.com/jet-lab/program-libraries?branch=main)",
+ "jet-program-common",
  "lazy_static",
  "pyth-sdk-solana 0.4.2",
  "serde",
@@ -2234,8 +2234,8 @@ dependencies = [
  "itertools 0.10.5",
  "jet-airspace",
  "jet-metadata",
- "jet-proto-math 1.1.0 (git+https://github.com/jet-lab/program-libraries?branch=main)",
- "jet-proto-proc-macros",
+ "jet-program-common",
+ "jet-program-proc-macros",
  "pyth-sdk-solana 0.4.2",
  "serde",
  "serde_test",
@@ -2252,7 +2252,7 @@ dependencies = [
  "bytemuck",
  "jet-margin",
  "jet-metadata",
- "jet-proto-math 1.1.0 (git+https://github.com/jet-lab/program-libraries?branch=main)",
+ "jet-program-common",
  "pyth-sdk-solana 0.4.2",
  "serde",
  "serde_test",
@@ -2281,7 +2281,7 @@ dependencies = [
  "jet-margin-pool",
  "jet-margin-swap",
  "jet-metadata",
- "jet-proto-math 1.1.0 (git+https://github.com/jet-lab/program-libraries?branch=main)",
+ "jet-program-common",
  "jet-simulation",
  "jet-static-program-registry",
  "jet-test-service",
@@ -2334,9 +2334,8 @@ dependencies = [
 ]
 
 [[package]]
-name = "jet-proto-math"
-version = "1.1.0"
-source = "git+https://github.com/jet-lab/program-libraries?branch=fixed-point-math#9b9a5a72718f3af8322b31e61b182772d28eec11"
+name = "jet-program-common"
+version = "0.1.0"
 dependencies = [
  "anchor-lang",
  "bytemuck",
@@ -2347,34 +2346,18 @@ dependencies = [
 ]
 
 [[package]]
-name = "jet-proto-math"
-version = "1.1.0"
-source = "git+https://github.com/jet-lab/program-libraries?branch=main#7e00d07729d2a079d7d0af5c49b359965df6256f"
-dependencies = [
- "anchor-lang",
- "bytemuck",
- "num-traits",
- "static_assertions",
- "thiserror",
- "uint 0.9.4",
-]
-
-[[package]]
-name = "jet-proto-proc-macros"
-version = "1.0.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7eab4c6fd9509fa9c5e6f329363fe47aa77343a5d0b2f82db5a5a2c1e7e3ef6d"
+name = "jet-program-proc-macros"
+version = "0.1.0"
 dependencies = [
  "proc-macro2 1.0.47",
  "quote 1.0.21",
- "static_assertions",
  "syn 1.0.102",
 ]
 
 [[package]]
 name = "jet-simulation"
 version = "0.2.0"
-source = "git+https://github.com/jet-lab/jet-simulation?branch=master#0ecbf2a2d7d6306e17739de7fb54f341b0b293b0"
+source = "git+https://github.com/jet-lab/jet-simulation?branch=master#bac13fe66e4f871d7d4495f137f82e976fd31c10"
 dependencies = [
  "anchor-lang",
  "anyhow",
@@ -3186,14 +3169,6 @@ dependencies = [
  "syn 1.0.102",
  "version_check",
  "yansi",
-]
-
-[[package]]
-name = "proc-macros"
-version = "0.1.0"
-dependencies = [
- "quote 1.0.21",
- "syn 1.0.102",
 ]
 
 [[package]]
@@ -5677,7 +5652,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "bytemuck",
- "jet-proto-math 1.1.0 (git+https://github.com/jet-lab/program-libraries?branch=fixed-point-math)",
+ "jet-program-common",
  "js-sys",
  "rand_chacha 0.3.1",
  "serde",

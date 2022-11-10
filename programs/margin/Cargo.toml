@@ -31,8 +31,9 @@ anchor-spl = { git = "https://github.com/jet-lab/anchor", branch = "master" }
 
 pyth-sdk-solana = "0.4"
 
-jet-proto-math = { git = "https://github.com/jet-lab/program-libraries", branch = "main" }
-jet-proto-proc-macros = "1"
+jet-program-proc-macros = { path = "../../libraries/rust/program-proc-macros" }
+jet-program-common = { path = "../../libraries/rust/program-common" }
+
 jet-metadata = { path = "../metadata", features = ["no-entrypoint"] }
 jet-airspace = { path = "../airspace", features = ["no-entrypoint"] }
 

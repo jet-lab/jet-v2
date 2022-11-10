@@ -16,7 +16,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 use anchor_lang::{prelude::*, solana_program::clock::UnixTimestamp};
-use jet_proto_math::Number;
+use jet_program_common::Number;
 use pyth_sdk_solana::PriceFeed;
 #[cfg(any(test, feature = "cli"))]
 use serde::ser::{Serialize, SerializeStruct, Serializer};

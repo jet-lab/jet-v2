@@ -31,14 +31,15 @@ num-derive = "0.3.3"
 num-traits = "0.2"
 pyth-sdk-solana = "0.4"
 serde = { version = "1.0", optional = true }
-proc-macros = { path = "../../libraries/rust/proc-macros" }
 
 agnostic-orderbook = { git = "https://github.com/jet-lab/agnostic-orderbook.git", branch = "main", features = ["lib", "utils"] }
 
 anchor-lang = { git = "https://github.com/jet-lab/anchor", branch = "master" }
 anchor-spl =  { git = "https://github.com/jet-lab/anchor", branch = "master" }
 
-jet-proto-math = { git = "https://github.com/jet-lab/program-libraries", branch = "main", features = ["traits"] }
+
+jet-program-proc-macros = { path = "../../libraries/rust/program-proc-macros" }
+jet-program-common = { path = "../../libraries/rust/program-common" }
 
 jet-margin = { path = "../margin", features = ["no-entrypoint"] }
 

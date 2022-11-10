@@ -12,13 +12,13 @@ use anchor_lang::{AccountDeserialize, AnchorSerialize, InstructionData, ToAccoun
 use anchor_spl::token::TokenAccount;
 use anyhow::Result;
 use async_trait::async_trait;
+
 use jet_bonds::{
     control::state::BondManager,
     margin::state::MarginUser,
     orderbook::state::{event_queue_len, orderbook_slab_len, CallbackInfo, OrderParams},
     tickets::state::{ClaimTicket, SplitTicket},
 };
-
 use jet_margin_sdk::{
     bonds::{bonds_pda, event_builder::build_consume_events_info, BondsIxBuilder},
     ix_builder::{
@@ -32,10 +32,8 @@ use jet_margin_sdk::{
     tx_builder::global_initialize_instructions,
 };
 use jet_metadata::{PositionTokenMetadata, TokenKind};
-use jet_proto_math::fixed_point::Fp32;
-use jet_simulation::{
-    create_wallet, generate_keypair, send_and_confirm, solana_rpc_api::SolanaRpcClient,
-};
+use jet_program_common::Fp32;
+use jet_simulation::{create_wallet, send_and_confirm, solana_rpc_api::SolanaRpcClient};
 use solana_sdk::{
     hash::Hash,
     instruction::Instruction,
@@ -53,7 +51,10 @@ use spl_associated_token_account::{
 };
 use spl_token::{instruction::initialize_mint, state::Mint};
 
-use crate::tokens::TokenManager;
+use crate::{
+    runtime::{Keygen, SolanaTestContext},
+    tokens::TokenManager,
+};
 
 pub const LOCALNET_URL: &str = "http://127.0.0.1:8899";
 pub const DEVNET_URL: &str = "https://api.devnet.solana.com/";
@@ -91,6 +92,7 @@ impl<T> Keys<T> {
 
 pub struct TestManager {
     pub client: Arc<dyn SolanaRpcClient>,
+    pub keygen: Arc<dyn Keygen>,
     pub ix_builder: BondsIxBuilder,
     pub kps: Keys<Keypair>,
     pub keys: Keys<Pubkey>,
@@ -109,13 +111,14 @@ impl Clone for TestManager {
                     .collect(),
             ),
             keys: self.keys.clone(),
+            keygen: self.keygen.clone(),
         }
     }
 }
 
 impl TestManager {
-    pub async fn full(client: Arc<dyn SolanaRpcClient>) -> Result<Self> {
-        let mint = generate_keypair();
+    pub async fn full(client: SolanaTestContext) -> Result<Self> {
+        let mint = client.generate_key();
         let oracle = TokenManager::new(client.clone())
             .create_oracle(&mint.pubkey())
             .await?;
@@ -132,11 +135,11 @@ impl TestManager {
             .create_oracle(&bond_ticket_mint)
             .await?;
         TestManager::new(
-            client,
+            client.clone(),
             &mint,
-            &generate_keypair(),
-            &generate_keypair(),
-            &generate_keypair(),
+            &client.generate_key(),
+            &client.generate_key(),
+            &client.generate_key(),
             oracle.price,
             ticket_oracle.price,
         )
@@ -148,7 +151,7 @@ impl TestManager {
     }
 
     pub async fn new(
-        client: Arc<dyn SolanaRpcClient>,
+        client: SolanaTestContext,
         mint: &Keypair,
         eq_kp: &Keypair,
         bids_kp: &Keypair,
@@ -156,6 +159,10 @@ impl TestManager {
         underlying_oracle: Pubkey,
         ticket_oracle: Pubkey,
     ) -> Result<Self> {
+        let SolanaTestContext {
+            rpc: client,
+            keygen,
+        } = client;
         let payer = client.payer();
         let recent_blockhash = client.get_latest_blockhash().await?;
         let rent = client
@@ -175,6 +182,7 @@ impl TestManager {
         .with_payer(&payer.pubkey());
         let mut this = Self {
             client: client.clone(),
+            keygen,
             ix_builder,
             kps: Keys::new(),
             keys: Keys::new(),
@@ -184,40 +192,31 @@ impl TestManager {
         let init_eq = {
             let rent = this
                 .client
-                .get_minimum_balance_for_rent_exemption(event_queue_len(
-                    EVENT_QUEUE_CAPACITY as usize,
-                ))
+                .get_minimum_balance_for_rent_exemption(event_queue_len(EVENT_QUEUE_CAPACITY))
                 .await?;
-            this.ix_builder.initialize_event_queue(
-                &eq_kp.pubkey(),
-                EVENT_QUEUE_CAPACITY as usize,
-                rent,
-            )?
+            this.ix_builder
+                .initialize_event_queue(&eq_kp.pubkey(), EVENT_QUEUE_CAPACITY, rent)?
         };
 
         let init_bids = {
             let rent = this
                 .client
-                .get_minimum_balance_for_rent_exemption(orderbook_slab_len(
-                    ORDERBOOK_CAPACITY as usize,
-                ))
+                .get_minimum_balance_for_rent_exemption(orderbook_slab_len(ORDERBOOK_CAPACITY))
                 .await?;
             this.ix_builder.initialize_orderbook_slab(
                 &bids_kp.pubkey(),
-                ORDERBOOK_CAPACITY as usize,
+                ORDERBOOK_CAPACITY,
                 rent,
             )?
         };
         let init_asks = {
             let rent = this
                 .client
-                .get_minimum_balance_for_rent_exemption(orderbook_slab_len(
-                    ORDERBOOK_CAPACITY as usize,
-                ))
+                .get_minimum_balance_for_rent_exemption(orderbook_slab_len(ORDERBOOK_CAPACITY))
                 .await?;
             this.ix_builder.initialize_orderbook_slab(
                 &asks_kp.pubkey(),
-                ORDERBOOK_CAPACITY as usize,
+                ORDERBOOK_CAPACITY,
                 rent,
             )?
         };
@@ -255,7 +254,7 @@ impl TestManager {
     }
 
     pub async fn with_crank(mut self) -> Result<Self> {
-        let crank = generate_keypair();
+        let crank = self.keygen.generate_key();
 
         self.ix_builder = self.ix_builder.with_crank(&crank.pubkey());
         let auth_crank = self
@@ -372,7 +371,7 @@ impl TestManager {
         let payer = self.client.payer().pubkey();
 
         self.client
-            .send_and_confirm(global_initialize_instructions(payer))
+            .send_and_confirm_condensed(global_initialize_instructions(payer))
             .await?;
         Ok(())
     }

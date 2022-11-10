@@ -25,7 +25,7 @@ const FixedBorrowView = lazy(() => import('@views/FixedBorrowView'));
 export const isDebug =
   window.location.href.includes('?debug-environment=true') && window.location.href.includes('localhost');
 
-export function App(): JSX.Element {
+export const App = (): JSX.Element  => {
   const wallets = useMemo(
     () => [
       new PhantomWalletAdapter(),
@@ -37,7 +37,7 @@ export function App(): JSX.Element {
       ...(isDebug ? [new E2EWalletAdapter()] : [])
     ],
     [isDebug]
-  )
+  );
 
   return (
     <BrowserRouter>
@@ -68,7 +68,9 @@ export function App(): JSX.Element {
           </Routes>
           <Modals />
           <TermsPrivacy />
-          <StateSyncer />
+          <Suspense>
+            <StateSyncer />
+          </Suspense>
         </WalletProvider>
       </RecoilRoot>
     </BrowserRouter>

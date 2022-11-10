@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{burn, Burn, Mint, Token, TokenAccount};
-use jet_proto_math::traits::SafeAdd;
+use jet_program_common::traits::SafeAdd;
 
 use crate::{
     control::state::BondManager,

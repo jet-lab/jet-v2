@@ -22,11 +22,10 @@
     "@solana/web3.js": "^1.63.0"
   },
   "devDependencies": {
-    "copyfiles": "^2.4.1",
     "prettier": "^2.3.2",
     "tslint": "^6.1.3",
     "typescript": "4.6.4",
-    "wasm-pack": "^0.10.1"
+    "wasm-pack": "^0.10.3"
   },
   "files": [
     "dist",

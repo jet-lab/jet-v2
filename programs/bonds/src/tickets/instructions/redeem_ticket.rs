@@ -1,6 +1,6 @@
 use anchor_lang::{prelude::*, AccountsClose};
 use anchor_spl::token::{transfer, Token, TokenAccount, Transfer};
-use jet_proto_math::traits::SafeAdd;
+use jet_program_common::traits::SafeAdd;
 
 use crate::{
     control::state::BondManager,

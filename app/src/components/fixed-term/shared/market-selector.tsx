@@ -1,10 +1,12 @@
-import { useRecoilState, useRecoilValue } from 'recoil'; '../misc/ReorderArrows';
+import { useRecoilState, useRecoilValue } from 'recoil';
+('../misc/ReorderArrows');
 import { AllFixedMarketsAtom, SelectedFixedMarketAtom } from '@state/fixed-market/fixed-term-market-sync';
 import { FixedBorrowViewOrder, FixedLendViewOrder } from '@state/views/fixed-term';
 import { ReorderArrows } from '@components/misc/ReorderArrows';
 import { Select } from 'antd';
 import AngleDown from '@assets/icons/arrow-angle-down.svg';
 import { useCurrencyFormatting } from '@utils/currency';
+import { marketToString } from '@utils/jet/fixed-term-utils';
 
 const { Option } = Select;
 
@@ -26,7 +28,7 @@ export const FixedMarketSelector = ({ type }: FixedMarketSelectorProps) => {
           onChange={value => setSelectedMarket(value - 1)}>
           {markets.map((market, index) => (
             <Option key={market.name} value={index + 1}>
-              {market.name}
+              {marketToString(market.config)}
             </Option>
           ))}
         </Select>

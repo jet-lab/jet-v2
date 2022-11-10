@@ -4,7 +4,7 @@ use jet_margin_sdk::util::asynchronous::MapAsync;
 use std::time::Duration;
 
 use crate::{
-    context::test_context,
+    margin_test_context,
     setup_helper::{create_tokens, create_users},
     test_user::ONE,
 };
@@ -34,7 +34,7 @@ impl Default for UnhealthyAccountsLoadTestScenario {
 pub async fn unhealthy_accounts_load_test(
     scenario: UnhealthyAccountsLoadTestScenario,
 ) -> Result<(), anyhow::Error> {
-    let ctx = test_context().await;
+    let ctx = margin_test_context!();
     let UnhealthyAccountsLoadTestScenario {
         user_count,
         mint_count,
@@ -45,9 +45,9 @@ pub async fn unhealthy_accounts_load_test(
     } = scenario;
     ctx.margin.set_liquidator_metadata(liquidator, true).await?;
     println!("creating tokens");
-    let (mut mints, _, pricer) = create_tokens(ctx, mint_count).await?;
+    let (mut mints, _, pricer) = create_tokens(&ctx, mint_count).await?;
     println!("creating users");
-    let mut users = create_users(ctx, user_count + 1).await?;
+    let mut users = create_users(&ctx, user_count + 1).await?;
     let big_depositor = users.pop().unwrap();
     println!("creating deposits");
     mints

@@ -1,7 +1,7 @@
 use anchor_lang::{prelude::*, solana_program::clock::UnixTimestamp};
 use bytemuck::Zeroable;
 use jet_margin::{AdapterResult, MarginAccount};
-use jet_proto_math::traits::{SafeAdd, TryAddAssign, TrySubAssign};
+use jet_program_common::traits::{SafeAdd, TryAddAssign, TrySubAssign};
 
 use crate::{orderbook::state::OrderTag, BondsError};
 

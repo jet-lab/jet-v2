@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
-import { useResetRecoilState, useRecoilValue, useRecoilState } from 'recoil';
+import { useResetRecoilState, useRecoilValue, useRecoilState, useSetRecoilState } from 'recoil';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { LAMPORTS_PER_SOL } from '@solana/web3.js';
 import { feesBuffer } from '@jet-lab/margin';
 import { Dictionary } from '@state/settings/localization/localization';
 import { Cluster, BlockExplorer } from '@state/settings/settings';
-import { SendingTransaction } from '@state/actions/actions';
+import { ActionRefresh, SendingTransaction } from '@state/actions/actions';
 import { NewAccountModal as NewAccountModalState } from '@state/modals/modals';
 import { AccountNames, Accounts } from '@state/user/accounts';
 import { WalletTokens } from '@state/user/walletTokens';
@@ -36,8 +36,13 @@ export function NewAccountModal(): JSX.Element {
   const [disabled, setDisabled] = useState(true);
   const [inputError, setInputError] = useState<string | undefined>();
   const [sendingTransaction, setSendingTransaction] = useRecoilState(SendingTransaction);
-  const networkState = useRecoilValue(NetworkStateAtom)
+  const networkState = useRecoilValue(NetworkStateAtom);
+  const setActionRefresh = useSetRecoilState(ActionRefresh);
   const { Title, Paragraph, Text } = Typography;
+
+  useEffect(() => {
+    if (newAccountModalOpen) setActionRefresh(Date.now());
+  }, [newAccountModalOpen]);
 
   // Create a new account with a deposit
   async function newAccount() {

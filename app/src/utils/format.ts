@@ -70,3 +70,5 @@ export function fromLocaleString(num: string): string {
 
   return strippedNum;
 }
+
+export const formatWithCommas = <T>(value: T) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
