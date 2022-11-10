@@ -104,7 +104,6 @@ pub fn f64_to_fp32(f: f64) -> u64 {
     shifted.round() as u64
 }
 
-#[wasm_bindgen]
 pub fn fp32_to_f64(fp: u64) -> f64 {
     fp as f64 / FP32_ONE as f64
 }

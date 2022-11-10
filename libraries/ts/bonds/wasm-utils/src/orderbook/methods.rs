@@ -121,6 +121,12 @@ pub fn calculate_implied_price(base: u64, quote: u64) -> u64 {
     price.downcast_u64().unwrap() // FIXME don't panic
 }
 
+#[test]
+fn test_calculate_implied_price() {
+    let result = calculate_implied_price(1000_u64, 1100_u64);
+    assert_eq!(result, 4724464025) // FIXME Check this test
+}
+
 /// This is meant to ensure that the api is using the PricerImpl type alias,
 /// rather than circumventing it to use some other implementation. A lot of the
 /// tests are written against PricerImpl so this ensures the api is well tested.
