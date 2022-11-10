@@ -49,6 +49,53 @@ cargo-test() {
     fi
 }
 
+
+#################
+# Docker
+
+# Starts an interactive bash shell in the docker container where all the
+# functions in this file can be used directly as commands.
+docker-shell() {
+    in-docker bash --rcfile /jet-v2/check
+}
+
+# Runs provided command in a docker container.
+# 
+# starts an idle container called "builder" in the background.
+# runs the specified command in the existing container.
+# reuses container to perist caches across builds.
+#
+#   ./check in-docker echo hello world
+#   ./check in-docker hosted-tests-localnet
+#   ./check in-docker anchor-test --skip-build
+#   ./check in-docker solana-test-validator
+#   ./check in-docker bash
+in-docker() {
+    local container_name=${CONTAINER_NAME:-builder}
+    local docker_flags=${DOCKER_FLAGS:--it}
+    if [ "$(docker ps -aq -f status=exited -f name="^$container_name$")" ]; then
+        docker start "$container_name"
+    elif [ ! "$(docker ps -aq -f name="^$container_name$")" ]; then
+        DOCKER_FLAGS="-d --name '$container_name'" docker-run sleep infinity
+    fi
+    docker exec ${DOCKER_FLAGS:--it} "$container_name" /jet-v2/check $@
+}
+
+# you probably don't want to use this directly
+# executes a command in a brand new docker container.
+# build caches will need to be rebuilt from scratch for every execution.
+docker-run() {
+    local docker_flags="${DOCKER_FLAGS:-}"
+    docker run \
+        -u $(id -u) \
+        -v "$(dirname $(realpath ${BASH_SOURCE[0]})):/jet-v2" \
+        --workdir /jet-v2 \
+        $docker_flags \
+        $DOCKER_IMAGE \
+        /jet-v2/check $@
+}
+
+
 #################
 # helper functions
 
@@ -61,20 +108,9 @@ yarn-build() {
 all() {
     cargo-lint
     cargo-test
-    hosted-tests-localnet
+    hosted-tests-localnet $@
     anchor-test --skip-build
     e2e-tests --skip-build
-}
-
-# runs whatever command follows in a docker container
-in-docker() {
-    docker run \
-        -u $(id -u) \
-        -v "$(dirname $(realpath ${BASH_SOURCE[0]})):/jet-v2" \
-        --workdir /jet-v2 \
-        -it \
-        $DOCKER_IMAGE \
-        /jet-v2/check $@
 }
 
 # assumes "args" variable is set.
