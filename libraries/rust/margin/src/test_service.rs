@@ -90,6 +90,9 @@ pub struct BondMarketConfig {
     /// The minimum order size for the AOB
     pub min_order_size: u64,
 
+    /// The minimum price for the AOB
+    pub minimum_price: u64,
+
     /// Whether or not order matching should be paused for the market
     #[serde(default)]
     pub paused: bool,
@@ -374,6 +377,7 @@ fn create_airspace_token_bond_markets_tx(
                         bond_manager_seed,
                         bm_config.borrow_duration,
                         bm_config.lend_duration,
+                        bm_config.minimum_price,
                     )
                     .unwrap(),
                 bonds_ix

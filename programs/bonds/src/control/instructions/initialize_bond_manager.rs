@@ -19,6 +19,8 @@ pub struct InitializeBondManagerParams {
     pub borrow_duration: i64,
     /// Length of time before a claim is marked as mature, in seconds
     pub lend_duration: i64,
+    /// Minimum allowable price for orders
+    pub minimum_price: u64,
 }
 
 /// Initialize a [BondManager]
@@ -153,6 +155,7 @@ pub fn handler(
             lend_duration: params.lend_duration,
             underlying_oracle: ctx.accounts.underlying_oracle.key(),
             ticket_oracle: ctx.accounts.ticket_oracle.key(),
+            minimum_price: params.minimum_price,
         } ignoring {
             orderbook_market_state,
             event_queue,

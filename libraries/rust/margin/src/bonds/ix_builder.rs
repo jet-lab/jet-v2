@@ -258,6 +258,7 @@ impl BondsIxBuilder {
         seed: [u8; 32],
         borrow_duration: i64,
         lend_duration: i64,
+        minimum_price: u64,
     ) -> Result<Instruction> {
         let data = jet_bonds::instruction::InitializeBondManager {
             params: InitializeBondManagerParams {
@@ -265,6 +266,7 @@ impl BondsIxBuilder {
                 seed,
                 borrow_duration,
                 lend_duration,
+                minimum_price,
             },
         }
         .data();

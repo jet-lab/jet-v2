@@ -51,6 +51,8 @@ pub struct BondManager {
     pub borrow_duration: i64,
     /// Length of time before a claim is marked as mature, in seconds
     pub lend_duration: i64,
+    /// Minimum allowable price for orders
+    pub minimum_price: u64,
     /// Used to generate unique order tags
     pub nonce: u64,
 }

@@ -30,6 +30,7 @@ lazy_static::lazy_static! {
         borrow_duration: 3,
         lend_duration: 5,
         min_order_size: 1_000,
+        minimum_price: 4289087807,
         seed: Pubkey::default().to_bytes().to_vec(),
         token_mint: USDC,
         token_oracle: Pubkey::default(),

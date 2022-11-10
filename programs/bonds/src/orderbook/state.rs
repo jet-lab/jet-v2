@@ -92,6 +92,23 @@ impl<'info> OrderbookMut<'info> {
         adapter: Option<Pubkey>,
         flags: CallbackFlags,
     ) -> Result<(CallbackInfo, SensibleOrderSummary)> {
+        if params.limit_price > jet_program_common::FP32_ONE as u64 {
+            msg!(
+                "Price is above maximum and represents a negative rate.\n Given price: [{}]",
+                params.limit_price
+            );
+            return err!(BondsError::InvalidOrderPrice);
+        }
+        let minimum_price = self.bond_manager.load()?.minimum_price;
+        if params.limit_price < minimum_price {
+            msg!(
+                "Price is below them minimum specified by market parameters.\n Given price: [{}]\n Minimum price: [{}]",
+                params.limit_price,
+                minimum_price
+            );
+            return err!(BondsError::InvalidOrderPrice);
+        }
+
         let mut manager = self.bond_manager.load_mut()?;
         let callback_info = CallbackInfo::new(
             self.bond_manager.key(),

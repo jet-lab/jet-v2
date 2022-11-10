@@ -285,6 +285,17 @@ async fn non_margin_orders_for_proxy<P: Proxy + GenerateProxy>(
             .is_some());
     }
 
+    // cannot make orders that represent a negative interest rate
+    let mut bad_params = OrderParams {
+        limit_price: jet_program_common::FP32_ONE as u64 + 1,
+        ..c_params
+    };
+    assert!(bob.lend_order(bad_params, &[3]).await.is_err());
+
+    // cannot make orders with a price below the minimum as specified by the market
+    bad_params.limit_price = manager.load_manager().await?.minimum_price - 1;
+    assert!(bob.lend_order(bad_params, &[3]).await.is_err());
+
     Ok(())
 }
 

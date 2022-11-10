@@ -68,6 +68,7 @@ pub const EVENT_QUEUE_CAPACITY: usize = 1_000;
 pub const BORROW_DURATION: i64 = 3;
 pub const LEND_DURATION: i64 = 5; // in seconds
 pub const MIN_ORDER_SIZE: u64 = 10;
+pub const MINIMUM_PRICE: u64 = 1_000_000;
 
 #[derive(Debug, Default, Clone)]
 pub struct Keys<T>(HashMap<String, T>);
@@ -235,6 +236,7 @@ impl TestManager {
             BOND_MANAGER_SEED,
             BORROW_DURATION,
             LEND_DURATION,
+            MINIMUM_PRICE,
         )?;
         let init_orderbook = this.ix_builder.initialize_orderbook(
             this.client.payer().pubkey(),
