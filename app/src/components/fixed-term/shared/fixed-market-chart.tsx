@@ -4,6 +4,7 @@ import { ReorderArrows } from '@components/misc/ReorderArrows';
 import { FixedBorrowRowOrder, FixedLendRowOrder } from '@state/views/fixed-term';
 import { ResponsiveLineChart } from '@components/fixed-term/shared/charts/line-chart';
 import {
+  AllFixedMarketsAtom,
   AllFixedMarketsOrderBooksAtom,
   CurrentOrderTab,
   CurrentOrderTabAtom,
@@ -41,6 +42,7 @@ export const FixedPriceChartContainer = ({ type }: FixedChart) => {
   const currentTab = useRecoilValue(CurrentOrderTabAtom);
   const selectedMarketIndex = useRecoilValue(SelectedFixedMarketAtom);
   const market = useRecoilValue(FixedMarketAtom);
+  const allMarkets = useRecoilValue(AllFixedMarketsAtom);
   const openOrders = useRecoilValue(AllFixedMarketsOrderBooksAtom);
   const marginConfig = useRecoilValue(MainConfig);
 
@@ -65,24 +67,24 @@ export const FixedPriceChartContainer = ({ type }: FixedChart) => {
     }
 
     const orderTypeKey = asksKeys.includes(currentTab) ? 'asks' : 'bids';
-
     return target.reduce((all, current) => {
       if (current[orderTypeKey].length === 0) {
         all.push({
           id: current.name,
+          type: orderTypeKey,
           data: []
         });
         return all;
       }
+      const currentMarketConfig = allMarkets.find(market => market.name === current.name)?.config;
       let cumulativeQuote = BigInt(0);
       let cumulativeBase = BigInt(0);
       const data: Array<{ x: number; y: number }> = [];
-
       current[orderTypeKey].map(order => {
         cumulativeQuote += order.quote_size;
         cumulativeBase += order.base_size;
         const price = calculate_implied_price(cumulativeBase, cumulativeQuote);
-        const rate = Number(price_to_rate(price, BigInt(market.config.borrowDuration))) / 100;
+        const rate = Number(price_to_rate(price, BigInt(currentMarketConfig.borrowDuration))) / 100;
         data.push({
           x: Number(cumulativeQuote / BigInt(10 ** decimals)),
           y: rate
@@ -97,6 +99,7 @@ export const FixedPriceChartContainer = ({ type }: FixedChart) => {
       }
       const currentSeries = {
         id: current.name,
+        type: orderTypeKey,
         data
       };
       all.push(currentSeries);

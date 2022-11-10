@@ -76,7 +76,6 @@ pub fn fixed_point_to_decimal(fp: u64) -> u64 {
 /// return: interest rate in basis points
 #[wasm_bindgen]
 pub fn price_to_rate(price: u64, tenor: u64) -> u64 {
-    console_error_panic_hook::set_once();
     PricerImpl::price_fp32_to_bps_yearly_interest(price, tenor)
 }
 

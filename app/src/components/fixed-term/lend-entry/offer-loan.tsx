@@ -13,7 +13,7 @@ import { BlockExplorer, Cluster } from '@state/settings/settings';
 import { useRecoilValue } from 'recoil';
 import { useState } from 'react';
 import { MarginConfig, MarginTokenConfig } from '@jet-lab/margin';
-import { MarketAndconfig } from '@state/fixed-market/fixed-term-market-sync';
+import { AllFixedMarketsAtom, MarketAndconfig } from '@state/fixed-market/fixed-term-market-sync';
 import { formatWithCommas } from '@utils/format';
 
 interface RequestLoanProps {
@@ -33,6 +33,7 @@ export const OfferLoan = ({ token, decimals, marketAndConfig, marginConfig }: Re
   const blockExplorer = useRecoilValue(BlockExplorer);
   const [amount, setAmount] = useState(new BN(0));
   const [basisPoints, setBasisPoints] = useState(new BN(0));
+  const markets = useRecoilValue(AllFixedMarketsAtom);
 
   const createLendOrder = async () => {
     let signature: string;
@@ -47,7 +48,8 @@ export const OfferLoan = ({ token, decimals, marketAndConfig, marginConfig }: Re
         currentPool,
         amount,
         basisPoints,
-        marketConfig: marketAndConfig.config
+        marketConfig: marketAndConfig.config,
+        markets: markets.map(m => m.market)
       });
       notify(
         'Lend Offer Created',

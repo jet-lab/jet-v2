@@ -25,7 +25,7 @@ const tooltipStyles = {
 interface ISeries {
   id: string;
   data: Array<{ x: number; y: number }>;
-  precision: number;
+  type: string;
 }
 
 interface ILineChart {
@@ -67,7 +67,7 @@ export const LineChart = ({
 
   const linesPathsRefs = useRef(series.map(() => createRef<SVGPathElement>()));
 
-  const { xScale, yScale, ordinalColorScale } = useMemo(() => {
+  const { xScale, yScale, ordinalColorScale, maxValueOfY } = useMemo(() => {
     const maxValueOfX = series.reduce((max, series) => {
       const seriesMax = Math.max(...series.data.map(d => d.x));
       if (seriesMax > max) {
@@ -97,7 +97,7 @@ export const LineChart = ({
       domain: series.map(s => s.id),
       range: ['#66d981', '#71f5ef', '#4899f1', '#7d81f6']
     });
-    return { xScale, yScale, ordinalColorScale };
+    return { xScale, yScale, ordinalColorScale, maxValueOfY };
   }, [width, height, series]);
 
   const { hideTooltip, showTooltip, tooltipData, tooltipLeft, tooltipTop } = useTooltip<ITooltipData>();
@@ -110,13 +110,15 @@ export const LineChart = ({
       const yValues: IYValues[] = [];
       paths.map(ref => {
         const path = ref.current;
-        const y = pointAtCoordinateX(path, x - paddingLeft, 5);
-        if (y) {
-          yValues.push({
-            y,
-            valueOfY: yScale.invert(y),
-            lineId: path.getAttribute('id')
-          });
+        if (path) {
+          const y = pointAtCoordinateX(path, x - paddingLeft, 5);
+          if (y) {
+            yValues.push({
+              y,
+              valueOfY: yScale.invert(y),
+              lineId: path.getAttribute('id')
+            });
+          }
         }
       });
 
