@@ -42,6 +42,7 @@ export interface BondManagerInfo {
   reserved: number[]
   borrowDuration: BN
   lendDuration: BN
+  minimumPrice: BN
   nonce: BN
 }
 
@@ -195,7 +196,7 @@ export class BondMarket {
     const params: OrderParams = {
       maxBondTicketQty: new BN(U64_MAX.toString()),
       maxUnderlyingTokenQty: amount,
-      limitPrice: new BN(0.00001),
+      limitPrice: this.info.minimumPrice,
       matchLimit: new BN(U64_MAX.toString()),
       postOnly: false,
       postAllowed: false,

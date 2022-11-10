@@ -2167,6 +2167,13 @@ export type JetBonds = {
             "type": "i64"
           },
           {
+            "name": "minimumPrice",
+            "docs": [
+              "Minimum allowable price for orders"
+            ],
+            "type": "u64"
+          },
+          {
             "name": "nonce",
             "docs": [
               "Used to generate unique order tags"
@@ -5714,6 +5721,13 @@ export const IDL: JetBonds = {
               "Length of time before a claim is marked as mature, in seconds"
             ],
             "type": "i64"
+          },
+          {
+            "name": "minimumPrice",
+            "docs": [
+              "Minimum allowable price for orders"
+            ],
+            "type": "u64"
           },
           {
             "name": "nonce",
