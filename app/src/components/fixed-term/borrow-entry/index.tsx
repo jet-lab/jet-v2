@@ -1,9 +1,9 @@
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { ReorderArrows } from '@components/misc/ReorderArrows';
 import { Typography, Tabs } from 'antd';
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { FixedLendRowOrder } from '@state/views/fixed-term';
-import { FixedMarketAtom } from '@state/fixed-market/fixed-term-market-sync';
+import { CurrentOrderTab, CurrentOrderTabAtom, FixedMarketAtom } from '@state/fixed-market/fixed-term-market-sync';
 import { MainConfig } from '@state/config/marginConfig';
 import { marketToString } from '@utils/jet/fixed-term-utils';
 import { RequestLoan } from './request-loan';
@@ -15,10 +15,10 @@ export const FixedBorrowOrderEntry = () => {
   const [rowOrder, setRowOrder] = useRecoilState(FixedLendRowOrder);
   const marketAndConfig = useRecoilValue(FixedMarketAtom);
   const marginConfig = useRecoilValue(MainConfig);
-  const [orderType, setOrderType] = useState('limit');
   const walletTokens = useRecoilValue(WalletTokens);
   const accounts = useRecoilValue(Accounts);
   const noAccount = useMemo(() => !walletTokens || !accounts.length, [accounts, walletTokens]);
+  const [currentTab, setCurrentTab] = useRecoilState(CurrentOrderTabAtom);
 
   const token = useMemo(() => {
     if (!marginConfig || !marketAndConfig) return null;
@@ -47,22 +47,22 @@ export const FixedBorrowOrderEntry = () => {
       </div>
       <Tabs
         defaultActiveKey="limit"
-        activeKey={orderType}
-        onChange={type => setOrderType(type)}
+        activeKey={currentTab}
+        onChange={(type: CurrentOrderTab) => setCurrentTab(type)}
         items={[
           {
             label: 'request loan',
-            key: 'limit'
+            key: 'request-loan'
           },
           {
             label: 'borrow now',
-            key: 'market'
+            key: 'borrow-now'
           }
         ]}></Tabs>
-      {orderType === 'limit' && (
+      {currentTab === 'request-loan' && (
         <RequestLoan token={token} decimals={decimals} marketAndConfig={marketAndConfig} marginConfig={marginConfig} />
       )}
-      {orderType === 'market' && (
+      {currentTab === 'borrow-now' && (
         <BorrowNow token={token} decimals={decimals} marketAndConfig={marketAndConfig} marginConfig={marginConfig} />
       )}
     </div>

@@ -10,6 +10,8 @@ import { Group } from '@visx/group';
 import { localPoint } from '@visx/event';
 import { pointAtCoordinateX } from './utils';
 import { friendlyMarketName } from '@utils/jet/fixed-term-utils';
+import { useSetRecoilState } from 'recoil';
+import { SelectedFixedMarketAtom } from '@state/fixed-market/fixed-term-market-sync';
 
 const tooltipStyles = {
   ...defaultStyles,
@@ -89,6 +91,8 @@ export const LineChart = ({
   paddingBottom,
   series
 }: ILineChart) => {
+  const setMarket = useSetRecoilState(SelectedFixedMarketAtom)
+
   // constraints
   const xMax = width - paddingLeft - paddingRight;
   const yMax = height - paddingTop - paddingBottom;
@@ -162,6 +166,32 @@ export const LineChart = ({
 
   return (
     <>
+      <LegendOrdinal scale={ordinalColorScale} labelFormat={label => label}>
+        {labels => {
+          return (
+            <div className="chart-legend">
+              {labels.map((label, i) => {
+                const split = label.text.split('_');
+                const marketName = friendlyMarketName(split[0], parseInt(split[1]));
+                return (
+                  <LegendItem
+                    key={`legend-quantile-${i}`}
+                    className="chart-legend-item"
+                    onClick={() => {
+                      setMarket(i)
+                    }}
+                  >
+                    <svg width={12} height={12}>
+                      <circle cx="50%" cy="50%" fill={label.value} r={6} />
+                    </svg>
+                    <LegendLabel align="left">{marketName}</LegendLabel>
+                  </LegendItem>
+                );
+              })}
+            </div>
+          );
+        }}
+      </LegendOrdinal>
       <ScaleSVG width={width} height={height}>
         <Group style={{ cursor: 'crosshair' }} top={paddingTop} left={paddingLeft}>
           {/* This bar is used to target the tooltip across the whole chart */}
@@ -272,34 +302,6 @@ export const LineChart = ({
           {tooltipData.valueOfX.toFixed(2)}
         </Tooltip>
       )}
-      <LegendOrdinal scale={ordinalColorScale} labelFormat={label => label}>
-        {labels => {
-          return (
-            <div className="chart-legend">
-              {labels.map((label, i) => {
-                const split = label.text.split('_');
-                const marketName = friendlyMarketName(split[0], parseInt(split[1]));
-                return (
-                  <LegendItem
-                    key={`legend-quantile-${i}`}
-                    margin="0 5px"
-                    // onClick={() => {
-                    //     if (events) alert(`clicked: ${JSON.stringify(label)}`);
-                    // }}
-                  >
-                    <svg width={12} height={12}>
-                      <circle cx="50%" cy="50%" fill={label.value} r={6} />
-                    </svg>
-                    <LegendLabel align="left" margin="0 0 0 4px">
-                      {marketName}
-                    </LegendLabel>
-                  </LegendItem>
-                );
-              })}
-            </div>
-          );
-        }}
-      </LegendOrdinal>
     </>
   );
 };
