@@ -1,4 +1,5 @@
 #!/bin/bash
+export SOLANA_MAINNET_RPC=${SOLANA_MAINNET_RPC:-'https://solana-api.projectserum.com'}
 
 case $1 in
     -r|--reset)

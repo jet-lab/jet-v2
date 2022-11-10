@@ -11,19 +11,26 @@ pub struct MarginUserInitialized {
 }
 
 #[event]
-pub struct MarginBorrow {
+pub struct OrderPlaced {
     pub bond_manager: Pubkey,
-    pub margin_account: Pubkey,
-    pub borrower_account: Pubkey,
+    /// The authority placing this order, almost always the margin account
+    pub authority: Pubkey,
+    pub margin_user: Option<Pubkey>,
+    pub order_type: OrderType,
     pub order_summary: OrderSummary,
+    pub limit_price: u64,
+    pub auto_stake: bool,
+    pub post_only: bool,
+    pub post_allowed: bool,
 }
 
-#[event]
-pub struct MarginLend {
-    pub bond_market: Pubkey,
-    pub margin_account: Pubkey,
-    pub lender: Pubkey,
-    pub order_summary: OrderSummary,
+#[derive(AnchorDeserialize, AnchorSerialize)]
+pub enum OrderType {
+    MarginBorrow,
+    MarginLend,
+    MarginSellTickets,
+    Lend,
+    SellTickets,
 }
 
 #[event]

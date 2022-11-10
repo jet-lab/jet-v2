@@ -27,6 +27,7 @@ use anchor_spl::associated_token::get_associated_token_address;
 use anyhow::{bail, Error};
 
 use jet_margin::{AccountPosition, MarginAccount, TokenKind};
+use jet_margin_sdk::ix_builder::test_service::if_not_initialized;
 use jet_margin_sdk::ix_builder::{
     derive_airspace, derive_permit, get_control_authority_address, get_metadata_address,
     AirspaceIxBuilder, ControlIxBuilder, MarginConfigIxBuilder, MarginPoolConfiguration,
@@ -67,12 +68,12 @@ pub struct MarginClient {
 }
 
 impl MarginClient {
-    pub fn new(rpc: Arc<dyn SolanaRpcClient>) -> Self {
+    pub fn new(rpc: Arc<dyn SolanaRpcClient>, airspace_seed: &str) -> Self {
         let payer = rpc.payer().pubkey();
 
         Self {
-            tx_admin: AirspaceAdmin::new("default", payer, payer),
-            airspace: AirspaceIxBuilder::new("default", payer, payer),
+            tx_admin: AirspaceAdmin::new(airspace_seed, payer, payer),
+            airspace: AirspaceIxBuilder::new(airspace_seed, payer, payer),
             rpc,
         }
     }
@@ -152,7 +153,7 @@ impl MarginClient {
 
     pub async fn init_globals(&self) -> Result<(), Error> {
         self.rpc
-            .send_and_confirm(global_initialize_instructions(self.rpc.payer().pubkey()))
+            .send_and_confirm_condensed(global_initialize_instructions(self.rpc.payer().pubkey()))
             .await?;
 
         Ok(())
@@ -160,9 +161,13 @@ impl MarginClient {
 
     pub async fn create_airspace(&self, is_restricted: bool) -> Result<(), Error> {
         self.rpc
-            .send_and_confirm(vec![self.airspace.create(is_restricted)].into())
+            .send_and_confirm(vec![self.create_airspace_ix(is_restricted)].into())
             .await?;
         Ok(())
+    }
+
+    pub fn create_airspace_ix(&self, is_restricted: bool) -> Instruction {
+        if_not_initialized(self.airspace.address(), self.airspace.create(is_restricted))
     }
 
     pub async fn create_authority_if_missing(&self) -> Result<(), Error> {

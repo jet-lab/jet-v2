@@ -7,7 +7,7 @@ use jet_program_proc_macros::BondTokenManager;
 use crate::{
     bond_token_manager::BondTokenManager,
     margin::{
-        events::MarginBorrow,
+        events::{OrderPlaced, OrderType},
         state::{return_to_margin, MarginUser, Obligation, ObligationFlags},
     },
     orderbook::state::*,
@@ -113,11 +113,16 @@ pub fn handler(ctx: Context<MarginBorrowOrder>, params: OrderParams, seed: Vec<u
         order_summary.quote_posted()?,
     )?;
 
-    emit!(MarginBorrow {
+    emit!(OrderPlaced {
         bond_manager: bond_manager.key(),
-        margin_account: ctx.accounts.margin_account.key(),
-        borrower_account: ctx.accounts.margin_user.key(),
+        authority: ctx.accounts.margin_account.key(),
+        margin_user: Some(ctx.accounts.margin_user.key()),
         order_summary: order_summary.summary(),
+        limit_price: params.limit_price,
+        auto_stake: params.auto_stake,
+        post_only: params.post_only,
+        post_allowed: params.post_allowed,
+        order_type: OrderType::MarginBorrow,
     });
 
     // this is just used to make sure the position is still registered.
