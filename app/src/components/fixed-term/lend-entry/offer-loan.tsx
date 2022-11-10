@@ -15,6 +15,7 @@ import { useState } from 'react';
 import { MarginConfig, MarginTokenConfig } from '@jet-lab/margin';
 import { AllFixedMarketsAtom, MarketAndconfig } from '@state/fixed-market/fixed-term-market-sync';
 import { formatWithCommas } from '@utils/format';
+import { isDebug } from '../../../App';
 
 interface RequestLoanProps {
   decimals: number;
@@ -35,7 +36,7 @@ export const OfferLoan = ({ token, decimals, marketAndConfig, marginConfig }: Re
   const [basisPoints, setBasisPoints] = useState(new BN(0));
   const markets = useRecoilValue(AllFixedMarketsAtom);
 
-  const createLendOrder = async () => {
+  const createLendOrder = async (amountParam?: BN, basisPointsParam?: BN) => {
     let signature: string;
     try {
       signature = await createFixedLendOrder({
@@ -46,8 +47,8 @@ export const OfferLoan = ({ token, decimals, marketAndConfig, marginConfig }: Re
         walletAddress: wallet.publicKey,
         pools: pools.tokenPools,
         currentPool,
-        amount,
-        basisPoints,
+        amount: amountParam || amount,
+        basisPoints: basisPointsParam || basisPoints,
         marketConfig: marketAndConfig.config,
         markets: markets.map(m => m.market)
       });
@@ -69,6 +70,23 @@ export const OfferLoan = ({ token, decimals, marketAndConfig, marginConfig }: Re
         'error',
         getExplorerUrl(e.signature, cluster, blockExplorer)
       );
+    }
+  };
+
+  const createDebugOrders = async () => {
+    function sleep(ms: number) {
+      return new Promise(resolve => {
+        setTimeout(resolve, ms);
+      });
+    }
+
+    for (let i = 0; i < 10; i++) {
+      const amount = new BN((10 + Math.random() * 10000) * 10 ** decimals);
+      const basisPoints = new BN(10 + Math.random() * 1000);
+      console.log('Amount: ', Number(amount));
+      console.log('Basis Points: ', Number(basisPoints));
+      await createLendOrder(amount, basisPoints);
+      await sleep(500);
     }
   };
 
@@ -151,9 +169,10 @@ export const OfferLoan = ({ token, decimals, marketAndConfig, marginConfig }: Re
       <Button
         className="submit-button"
         disabled={!marketAndConfig?.market || basisPoints.lte(new BN(0)) || amount.lte(new BN(0))}
-        onClick={createLendOrder}>
-        Request {marketToString(marketAndConfig.config)} loan
+        onClick={() => createLendOrder()}>
+        Offer {marketToString(marketAndConfig.config)} loan
       </Button>
+      {isDebug && <Button onClick={createDebugOrders}>Generate 10 random orders</Button>}
     </div>
   );
 };

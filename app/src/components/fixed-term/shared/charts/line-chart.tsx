@@ -226,7 +226,7 @@ export const LineChart = ({
           <AxisBottom
             hideAxisLine={true}
             top={yMax}
-            tickFormat={val => formatting.currencyAbbrev(val.valueOf(), false, null, null)}
+            tickFormat={val => formatting.currencyAbbrev(val.valueOf(), true, undefined, 1)}
             tickStroke="rgba(255,255,255,0.6)"
             scale={xScale}
             tickLabelProps={() => ({
