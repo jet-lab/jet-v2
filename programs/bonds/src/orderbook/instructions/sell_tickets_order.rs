@@ -4,8 +4,8 @@ use anchor_spl::token::{accessor::mint, Mint, Token, TokenAccount};
 use jet_program_proc_macros::BondTokenManager;
 
 use crate::{
-    bond_token_manager::BondTokenManager, orderbook::state::*, serialization::RemainingAccounts,
-    BondsError,
+    bond_token_manager::BondTokenManager, events::OrderType, orderbook::state::*,
+    serialization::RemainingAccounts, BondsError,
 };
 
 #[derive(Accounts, BondTokenManager)]
@@ -44,7 +44,13 @@ pub struct SellTicketsOrder<'info> {
 }
 
 impl<'info> SellTicketsOrder<'info> {
-    pub fn sell_tickets(&self, order_summary: SensibleOrderSummary) -> Result<()> {
+    pub fn sell_tickets(
+        &self,
+        order_summary: SensibleOrderSummary,
+        params: &OrderParams,
+        margin_user: Option<Pubkey>,
+        order_type: OrderType,
+    ) -> Result<()> {
         self.withdraw(
             &self.underlying_token_vault,
             &self.user_token_vault,
@@ -61,10 +67,16 @@ impl<'info> SellTicketsOrder<'info> {
             ),
             order_summary.base_combined(),
         )?;
-        emit!(crate::events::SellTicketsOrder {
-            bond_market: self.orderbook_mut.bond_manager.key(),
-            owner: self.authority.key(),
+        emit!(crate::events::OrderPlaced {
+            bond_manager: self.orderbook_mut.bond_manager.key(),
+            authority: self.authority.key(),
             order_summary: order_summary.summary(),
+            margin_user,
+            order_type,
+            limit_price: params.limit_price,
+            auto_stake: params.auto_stake,
+            post_only: params.post_only,
+            post_allowed: params.post_allowed,
         });
 
         Ok(())
@@ -85,5 +97,6 @@ pub fn handler(ctx: Context<SellTicketsOrder>, params: OrderParams) -> Result<()
         CallbackFlags::empty(),
     )?;
 
-    ctx.accounts.sell_tickets(order_summary)
+    ctx.accounts
+        .sell_tickets(order_summary, &params, None, OrderType::SellTickets)
 }
