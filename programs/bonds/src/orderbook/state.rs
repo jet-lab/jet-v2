@@ -167,7 +167,7 @@ impl<'info> OrderbookMut<'info> {
 
         emit!(OrderCancelled {
             bond_manager: self.bond_manager.key(),
-            user: owner,
+            authority: owner,
             order_id,
         });
 
