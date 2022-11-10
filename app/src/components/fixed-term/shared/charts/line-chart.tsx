@@ -80,7 +80,7 @@ export const LineChart = ({
       if (seriesMax > max) {
         max = seriesMax;
       }
-      return max;
+      return max * 1.05;
     }, 0);
     const xScale = scaleLinear<number>({
       domain: [0, maxValueOfX],
@@ -249,8 +249,8 @@ export const LineChart = ({
           )}
         </Group>
       </ScaleSVG>
-      {tooltipData && (
-        <TooltipWithBounds top={tooltipTop - 12} left={tooltipLeft + 12} style={tooltipStyles}>
+      {tooltipData && tooltipData.yValues.length > 0 && (
+        <TooltipWithBounds top={tooltipTop} left={tooltipLeft} style={tooltipStyles}>
           {tooltipData.yValues.map(s => {
             const split = s.lineId.split('_');
             return (
@@ -291,7 +291,7 @@ export const ResponsiveLineChart = ({ series }: ResponsiveLineChartProps) => {
             width={parent.width}
             paddingTop={64}
             paddingBottom={40}
-            paddingLeft={48}
+            paddingLeft={60}
             paddingRight={24}
             series={series.filter(s => s.data.length > 0)}
           />

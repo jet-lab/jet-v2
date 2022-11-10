@@ -67,6 +67,13 @@ export const FixedPriceChartContainer = ({ type }: FixedChart) => {
     const orderTypeKey = asksKeys.includes(currentTab) ? 'asks' : 'bids';
 
     return target.reduce((all, current) => {
+      if (current[orderTypeKey].length === 0) {
+        all.push({
+          id: current.name,
+          data: []
+        });
+        return all;
+      }
       let cumulativeQuote = BigInt(0);
       let cumulativeBase = BigInt(0);
       const data: Array<{ x: number; y: number }> = [];
@@ -95,7 +102,7 @@ export const FixedPriceChartContainer = ({ type }: FixedChart) => {
       all.push(currentSeries);
       return all;
     }, []);
-  }, [openOrders, currentTab]);
+  }, [openOrders, currentTab, selectedMarketIndex]);
 
   return (
     <div className="fixed-term-graph view-element view-element-hidden flex align-center justify-end column">
