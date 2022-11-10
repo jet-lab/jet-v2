@@ -31,6 +31,7 @@ use std::f64::consts::E;
 use jet_program_common::{
     Number, {Fp32, FP32_ONE},
 };
+use wasm_bindgen::prelude::wasm_bindgen;
 
 const SECONDS_PER_YEAR: u64 = 31_536_000;
 
@@ -103,6 +104,7 @@ pub fn f64_to_fp32(f: f64) -> u64 {
     shifted.round() as u64
 }
 
+#[wasm_bindgen]
 pub fn fp32_to_f64(fp: u64) -> f64 {
     fp as f64 / FP32_ONE as f64
 }

@@ -1,3 +1,5 @@
+use std::ops::Div;
+
 use jet_program_common::Fp32;
 use js_sys::{Array, Uint8Array};
 use wasm_bindgen::prelude::*;
@@ -74,6 +76,7 @@ pub fn fixed_point_to_decimal(fp: u64) -> u64 {
 /// return: interest rate in basis points
 #[wasm_bindgen]
 pub fn price_to_rate(price: u64, tenor: u64) -> u64 {
+    console_error_panic_hook::set_once();
     PricerImpl::price_fp32_to_bps_yearly_interest(price, tenor)
 }
 
@@ -115,8 +118,8 @@ pub fn build_order_amount_deprecated(amount: u64, interest_rate: u64) -> super::
 /// ```
 #[wasm_bindgen]
 pub fn calculate_implied_price(base: u64, quote: u64) -> u64 {
-    let price = Fp32::from(quote) / base;
-    price.as_decimal_u64().unwrap()
+    let price = Fp32::from(quote).div(Fp32::from(base));
+    price.downcast_u64().unwrap() // FIXME don't panic
 }
 
 /// This is meant to ensure that the api is using the PricerImpl type alias,

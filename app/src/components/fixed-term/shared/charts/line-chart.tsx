@@ -12,6 +12,8 @@ import { pointAtCoordinateX } from './utils';
 import { friendlyMarketName } from '@utils/jet/fixed-term-utils';
 import { useSetRecoilState } from 'recoil';
 import { SelectedFixedMarketAtom } from '@state/fixed-market/fixed-term-market-sync';
+import { LoadingOutlined } from '@ant-design/icons';
+import { useCurrencyFormatting } from '@utils/currency';
 
 const tooltipStyles = {
   ...defaultStyles,
@@ -23,43 +25,8 @@ const tooltipStyles = {
 interface ISeries {
   id: string;
   data: Array<{ x: number; y: number }>;
+  precision: number;
 }
-
-const sampleData: ISeries = {
-  id: 'USDC_86400',
-  data: [
-    {
-      x: 100,
-      y: 2
-    },
-    {
-      x: 1500,
-      y: 2.5
-    },
-    {
-      x: 2500,
-      y: 5
-    }
-  ]
-};
-
-const sampleData2: ISeries = {
-  id: 'USDC_604800',
-  data: [
-    {
-      x: 800,
-      y: 1.2
-    },
-    {
-      x: 1500,
-      y: 2.1
-    },
-    {
-      x: 4000,
-      y: 4.3
-    }
-  ]
-};
 
 interface ILineChart {
   width: number;
@@ -91,7 +58,8 @@ export const LineChart = ({
   paddingBottom,
   series
 }: ILineChart) => {
-  const setMarket = useSetRecoilState(SelectedFixedMarketAtom)
+  const setMarket = useSetRecoilState(SelectedFixedMarketAtom);
+  const formatting = useCurrencyFormatting();
 
   // constraints
   const xMax = width - paddingLeft - paddingRight;
@@ -130,7 +98,7 @@ export const LineChart = ({
       range: ['#66d981', '#71f5ef', '#4899f1', '#7d81f6']
     });
     return { xScale, yScale, ordinalColorScale };
-  }, [width, height]);
+  }, [width, height, series]);
 
   const { hideTooltip, showTooltip, tooltipData, tooltipLeft, tooltipTop } = useTooltip<ITooltipData>();
 
@@ -151,6 +119,7 @@ export const LineChart = ({
           });
         }
       });
+
       showTooltip({
         tooltipData: {
           x,
@@ -161,7 +130,7 @@ export const LineChart = ({
         tooltipTop: yValues.reduce((all, val) => all + val.y, 0) / yValues.length
       });
     },
-    [showTooltip, height, width]
+    [showTooltip, height, width, series]
   );
 
   return (
@@ -178,9 +147,8 @@ export const LineChart = ({
                     key={`legend-quantile-${i}`}
                     className="chart-legend-item"
                     onClick={() => {
-                      setMarket(i)
-                    }}
-                  >
+                      setMarket(i);
+                    }}>
                     <svg width={12} height={12}>
                       <circle cx="50%" cy="50%" fill={label.value} r={6} />
                     </svg>
@@ -242,8 +210,10 @@ export const LineChart = ({
           <AxisLeft
             tickStroke="rgba(255,255,255,0.6)"
             hideAxisLine={true}
+            tickFormat={val => `${val.valueOf().toFixed(2)}%`}
             scale={yScale}
             tickLabelProps={() => ({
+              fontSize: 10,
               fill: '#fff',
               opacity: 0.6,
               textAnchor: 'end',
@@ -254,9 +224,11 @@ export const LineChart = ({
           <AxisBottom
             hideAxisLine={true}
             top={yMax}
+            tickFormat={val => formatting.currencyAbbrev(val.valueOf(), false, null, null)}
             tickStroke="rgba(255,255,255,0.6)"
             scale={xScale}
             tickLabelProps={() => ({
+              fontSize: 10,
               fill: '#fff',
               opacity: 0.6,
               textAnchor: 'middle',
@@ -306,20 +278,27 @@ export const LineChart = ({
   );
 };
 
-export const ResponsiveLineChart = ({}) => {
+interface ResponsiveLineChartProps {
+  series: ISeries[];
+}
+export const ResponsiveLineChart = ({ series }: ResponsiveLineChartProps) => {
   return (
     <ParentSizeModern>
-      {parent => (
-        <LineChart
-          height={parent.height}
-          width={parent.width}
-          paddingTop={64}
-          paddingBottom={40}
-          paddingLeft={48}
-          paddingRight={24}
-          series={[sampleData, sampleData2]}
-        />
-      )}
+      {parent =>
+        series.length > 0 ? (
+          <LineChart
+            height={parent.height}
+            width={parent.width}
+            paddingTop={64}
+            paddingBottom={40}
+            paddingLeft={48}
+            paddingRight={24}
+            series={series.filter(s => s.data.length > 0)}
+          />
+        ) : (
+          <LoadingOutlined />
+        )
+      }
     </ParentSizeModern>
   );
 };

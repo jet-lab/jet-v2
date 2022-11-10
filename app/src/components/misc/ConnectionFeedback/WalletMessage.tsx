@@ -13,6 +13,7 @@ export function WalletMessage(): JSX.Element {
   const { connected } = useWallet();
   const walletTokens = useRecoilValue(WalletTokens);
   const walletLoading = connected && !walletTokens;
+
   const setWalletModalOpen = useSetRecoilState(WalletModal);
 
   // Conditional render based on status of wallet connection

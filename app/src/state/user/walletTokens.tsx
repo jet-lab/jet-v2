@@ -32,14 +32,13 @@ export function useWalletTokensSyncer() {
       if (!programs || !walletKey || networkState !== 'connected') {
         return;
       }
-
       const walletTokens = await MarginAccount.loadTokens(programs, walletKey);
       setWalletTokens(walletTokens);
     }
 
     getWalletTokens();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [publicKey, provider.connection, actionRefresh, networkState]);
+  }, [publicKey, provider.connection, actionRefresh, networkState, programs]);
 
   return <></>;
 }

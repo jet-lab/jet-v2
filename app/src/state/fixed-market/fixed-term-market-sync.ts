@@ -56,8 +56,7 @@ export const AllFixedMarketsOrderBooksAtom = selector<ExtendedOrderBook[]>({
         };
       })
     );
-  },
-  dangerouslyAllowMutability: true
+  }
 });
 
 export interface MarketAndconfig {
