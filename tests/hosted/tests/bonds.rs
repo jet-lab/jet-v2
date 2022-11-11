@@ -10,7 +10,6 @@ use hosted_tests::{
     context::MarginTestContext,
     margin_test_context,
     setup_helper::{setup_user, tokens},
-    solana_test_context,
 };
 use jet_bonds::orderbook::state::OrderParams;
 use jet_margin_sdk::{
@@ -28,14 +27,14 @@ use solana_sdk::signer::Signer;
 #[tokio::test(flavor = "multi_thread")]
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn non_margin_orders() -> Result<(), anyhow::Error> {
-    let manager = BondsTestManager::full(solana_test_context!().clone()).await?;
+    let manager = BondsTestManager::full(margin_test_context!().solana.clone()).await?;
     non_margin_orders_for_proxy::<NoProxy>(Arc::new(manager)).await
 }
 
 #[tokio::test(flavor = "multi_thread")]
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn non_margin_orders_through_margin_account() -> Result<()> {
-    let manager = BondsTestManager::full(solana_test_context!().clone()).await?;
+    let manager = BondsTestManager::full(margin_test_context!().solana.clone()).await?;
     non_margin_orders_for_proxy::<MarginIxBuilder>(Arc::new(manager)).await
 }
 
