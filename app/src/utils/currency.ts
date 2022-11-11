@@ -50,7 +50,8 @@ export function useCurrencyFormatting() {
     price?: number,
     decimals?: number,
     precision?: boolean,
-    accounting?: boolean
+    accounting?: boolean,
+    aggressiveness: 'billions' | 'millions' | 'thousands' = 'billions'
   ): string {
     let t = total;
     if (price && fiatValues) {
@@ -62,11 +63,11 @@ export function useCurrencyFormatting() {
     // In all cases, truncate trillions and billions
     if (t > 1000000000000) {
       return currencyFormatter(t / 1000000000000, fiatValues, 1) + 'T';
-    } else if (t > 1000000000) {
+    } else if (t > 1000000000 && aggressiveness === 'billions') {
       return currencyFormatter(t / 1000000000, fiatValues, 1) + 'B';
-    } else if (t > 1000000) {
+    } else if (t > 1000000 && ['millions', 'thousands'].includes(aggressiveness)) {
       return currencyFormatter(t / 1000000, fiatValues, 1) + 'M';
-    } else if (t > 1000) {
+    } else if (t > 1000 && ['thousands'].includes(aggressiveness)) {
       return currencyFormatter(t / 1000, fiatValues, 1) + 'k';
     }
 
