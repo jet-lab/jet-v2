@@ -17,7 +17,7 @@ use super::{ConsumeEvents, EventAccounts, FillAccounts, LoanAccount, OutAccounts
 
 pub fn queue<'c, 'info>(
     ctx: &Context<'_, '_, 'c, 'info, ConsumeEvents<'info>>,
-    seeds: Vec<Vec<u8>>,
+    seeds: Box<Vec<Vec<u8>>>,
 ) -> Result<EventIterator<'c, 'info>> {
     Ok(EventIterator {
         queue: EventQueue::deserialize_market(ctx.accounts.event_queue.to_account_info())?.iter(),
@@ -39,11 +39,14 @@ pub struct EventIterator<'a, 'info> {
 }
 
 impl<'a, 'info> Iterator for EventIterator<'a, 'info> {
-    type Item = Result<(EventAccounts<'info>, OrderbookEvent)>;
+    type Item = Result<Box<(EventAccounts<'info>, OrderbookEvent)>>;
 
-    fn next(&mut self) -> Option<Result<(EventAccounts<'info>, OrderbookEvent)>> {
+    fn next(&mut self) -> Option<Result<Box<(EventAccounts<'info>, OrderbookEvent)>>> {
         let event = self.queue.next()?;
-        Some(self.extract_accounts(&event).map(|accts| (accts, event)))
+        Some(
+            self.extract_accounts(&event)
+                .map(|accts| Box::new((accts, event))),
+        )
     }
 }
 
