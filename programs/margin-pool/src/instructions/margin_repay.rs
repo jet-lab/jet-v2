@@ -100,17 +100,14 @@ pub fn margin_repay_handler(
         return Err(ErrorCode::InterestAccrualBehind.into());
     }
 
-    // Amount the user desires to repay
+    // Amount the user desires to repay, and the amount of deposit notes equivalent to that repayment.
     let repay_amount =
         pool.calculate_full_amount(ctx.accounts.loan_account.amount, change, PoolAction::Repay)?;
-
-    // First record a withdraw of the deposit to use for repaying in tokens
     let withdraw_amount =
         pool.convert_amount(Amount::tokens(repay_amount.tokens), PoolAction::Withdraw)?;
-    pool.withdraw(&withdraw_amount)?;
 
     // Then record a repay using the withdrawn tokens
-    pool.repay(&repay_amount)?;
+    pool.margin_repay(&repay_amount, &withdraw_amount)?;
 
     // Finish by burning the loan and deposit notes
     let pool = &ctx.accounts.margin_pool;
