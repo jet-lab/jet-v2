@@ -132,6 +132,11 @@
 <span id="132">132</span>
 <span id="133">133</span>
 <span id="134">134</span>
+<span id="135">135</span>
+<span id="136">136</span>
+<span id="137">137</span>
+<span id="138">138</span>
+<span id="139">139</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">agnostic_orderbook::state::Side</span>;
 <span class="kw">use</span> <span class="ident">anchor_lang::prelude</span>::<span class="kw-2">*</span>;
 <span class="kw">use</span> <span class="ident">anchor_spl::token::Token</span>;
@@ -141,7 +146,7 @@
 <span class="kw">use</span> <span class="kw">crate</span>::{
     <span class="ident">bond_token_manager::BondTokenManager</span>,
     <span class="ident">margin</span>::{
-        <span class="ident">events::MarginBorrow</span>,
+        <span class="ident">events</span>::{<span class="ident">OrderPlaced</span>, <span class="ident">OrderType</span>},
         <span class="ident">state</span>::{<span class="ident">return_to_margin</span>, <span class="ident">MarginUser</span>, <span class="ident">Obligation</span>, <span class="ident">ObligationFlags</span>},
     },
     <span class="ident">orderbook::state</span>::<span class="kw-2">*</span>,
@@ -247,11 +252,16 @@
         <span class="ident">order_summary</span>.<span class="ident">quote_posted</span>()<span class="question-mark">?</span>,
     )<span class="question-mark">?</span>;
 
-    <span class="macro">emit!</span>(<span class="ident">MarginBorrow</span> {
+    <span class="macro">emit!</span>(<span class="ident">OrderPlaced</span> {
         <span class="ident">bond_manager</span>: <span class="ident">bond_manager</span>.<span class="ident">key</span>(),
-        <span class="ident">margin_account</span>: <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">margin_account</span>.<span class="ident">key</span>(),
-        <span class="ident">borrower_account</span>: <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">margin_user</span>.<span class="ident">key</span>(),
+        <span class="ident">authority</span>: <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">margin_account</span>.<span class="ident">key</span>(),
+        <span class="ident">margin_user</span>: <span class="prelude-val">Some</span>(<span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">margin_user</span>.<span class="ident">key</span>()),
         <span class="ident">order_summary</span>: <span class="ident">order_summary</span>.<span class="ident">summary</span>(),
+        <span class="ident">limit_price</span>: <span class="ident">params</span>.<span class="ident">limit_price</span>,
+        <span class="ident">auto_stake</span>: <span class="ident">params</span>.<span class="ident">auto_stake</span>,
+        <span class="ident">post_only</span>: <span class="ident">params</span>.<span class="ident">post_only</span>,
+        <span class="ident">post_allowed</span>: <span class="ident">params</span>.<span class="ident">post_allowed</span>,
+        <span class="ident">order_type</span>: <span class="ident">OrderType::MarginBorrow</span>,
     });
 
     <span class="comment">// this is just used to make sure the position is still registered.</span>

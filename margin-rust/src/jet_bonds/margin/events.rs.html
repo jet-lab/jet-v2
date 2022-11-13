@@ -41,6 +41,13 @@
 <span id="41">41</span>
 <span id="42">42</span>
 <span id="43">43</span>
+<span id="44">44</span>
+<span id="45">45</span>
+<span id="46">46</span>
+<span id="47">47</span>
+<span id="48">48</span>
+<span id="49">49</span>
+<span id="50">50</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">agnostic_orderbook::state::OrderSummary</span>;
 <span class="kw">use</span> <span class="ident">anchor_lang</span>::{<span class="ident">event</span>, <span class="ident">prelude</span>::<span class="kw-2">*</span>};
 
@@ -54,19 +61,26 @@
 }
 
 <span class="attribute">#[<span class="ident">event</span>]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">MarginBorrow</span> {
+<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">OrderPlaced</span> {
     <span class="kw">pub</span> <span class="ident">bond_manager</span>: <span class="ident">Pubkey</span>,
-    <span class="kw">pub</span> <span class="ident">margin_account</span>: <span class="ident">Pubkey</span>,
-    <span class="kw">pub</span> <span class="ident">borrower_account</span>: <span class="ident">Pubkey</span>,
+    <span class="doccomment">/// The authority placing this order, almost always the margin account</span>
+    <span class="kw">pub</span> <span class="ident">authority</span>: <span class="ident">Pubkey</span>,
+    <span class="kw">pub</span> <span class="ident">margin_user</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Pubkey</span><span class="op">&gt;</span>,
+    <span class="kw">pub</span> <span class="ident">order_type</span>: <span class="ident">OrderType</span>,
     <span class="kw">pub</span> <span class="ident">order_summary</span>: <span class="ident">OrderSummary</span>,
+    <span class="kw">pub</span> <span class="ident">limit_price</span>: <span class="ident">u64</span>,
+    <span class="kw">pub</span> <span class="ident">auto_stake</span>: <span class="ident">bool</span>,
+    <span class="kw">pub</span> <span class="ident">post_only</span>: <span class="ident">bool</span>,
+    <span class="kw">pub</span> <span class="ident">post_allowed</span>: <span class="ident">bool</span>,
 }
 
-<span class="attribute">#[<span class="ident">event</span>]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">MarginLend</span> {
-    <span class="kw">pub</span> <span class="ident">bond_market</span>: <span class="ident">Pubkey</span>,
-    <span class="kw">pub</span> <span class="ident">margin_account</span>: <span class="ident">Pubkey</span>,
-    <span class="kw">pub</span> <span class="ident">lender</span>: <span class="ident">Pubkey</span>,
-    <span class="kw">pub</span> <span class="ident">order_summary</span>: <span class="ident">OrderSummary</span>,
+<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">AnchorDeserialize</span>, <span class="ident">AnchorSerialize</span>)]</span>
+<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">OrderType</span> {
+    <span class="ident">MarginBorrow</span>,
+    <span class="ident">MarginLend</span>,
+    <span class="ident">MarginSellTickets</span>,
+    <span class="ident">Lend</span>,
+    <span class="ident">SellTickets</span>,
 }
 
 <span class="attribute">#[<span class="ident">event</span>]</span>

@@ -87,14 +87,27 @@
 <span id="87">87</span>
 <span id="88">88</span>
 <span id="89">89</span>
+<span id="90">90</span>
+<span id="91">91</span>
+<span id="92">92</span>
+<span id="93">93</span>
+<span id="94">94</span>
+<span id="95">95</span>
+<span id="96">96</span>
+<span id="97">97</span>
+<span id="98">98</span>
+<span id="99">99</span>
+<span id="100">100</span>
+<span id="101">101</span>
+<span id="102">102</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">agnostic_orderbook::state::Side</span>;
 <span class="kw">use</span> <span class="ident">anchor_lang::prelude</span>::<span class="kw-2">*</span>;
 <span class="kw">use</span> <span class="ident">anchor_spl::token</span>::{<span class="ident">accessor::mint</span>, <span class="ident">Mint</span>, <span class="ident">Token</span>, <span class="ident">TokenAccount</span>};
 <span class="kw">use</span> <span class="ident">jet_program_proc_macros::BondTokenManager</span>;
 
 <span class="kw">use</span> <span class="kw">crate</span>::{
-    <span class="ident">bond_token_manager::BondTokenManager</span>, <span class="ident">orderbook::state</span>::<span class="kw-2">*</span>, <span class="ident">serialization::RemainingAccounts</span>,
-    <span class="ident">BondsError</span>,
+    <span class="ident">bond_token_manager::BondTokenManager</span>, <span class="ident">events::OrderType</span>, <span class="ident">orderbook::state</span>::<span class="kw-2">*</span>,
+    <span class="ident">serialization::RemainingAccounts</span>, <span class="ident">BondsError</span>,
 };
 
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Accounts</span>, <span class="ident">BondTokenManager</span>)]</span>
@@ -133,7 +146,13 @@
 }
 
 <span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span> <span class="ident">SellTicketsOrder</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">sell_tickets</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">order_summary</span>: <span class="ident">SensibleOrderSummary</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">sell_tickets</span>(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        <span class="ident">order_summary</span>: <span class="ident">SensibleOrderSummary</span>,
+        <span class="ident">params</span>: <span class="kw-2">&amp;</span><span class="ident">OrderParams</span>,
+        <span class="ident">margin_user</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Pubkey</span><span class="op">&gt;</span>,
+        <span class="ident">order_type</span>: <span class="ident">OrderType</span>,
+    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
         <span class="self">self</span>.<span class="ident">withdraw</span>(
             <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">underlying_token_vault</span>,
             <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">user_token_vault</span>,
@@ -150,10 +169,16 @@
             ),
             <span class="ident">order_summary</span>.<span class="ident">base_combined</span>(),
         )<span class="question-mark">?</span>;
-        <span class="macro">emit!</span>(<span class="ident"><span class="kw">crate</span>::events::SellTicketsOrder</span> {
-            <span class="ident">bond_market</span>: <span class="self">self</span>.<span class="ident">orderbook_mut</span>.<span class="ident">bond_manager</span>.<span class="ident">key</span>(),
-            <span class="ident">owner</span>: <span class="self">self</span>.<span class="ident">authority</span>.<span class="ident">key</span>(),
+        <span class="macro">emit!</span>(<span class="ident"><span class="kw">crate</span>::events::OrderPlaced</span> {
+            <span class="ident">bond_manager</span>: <span class="self">self</span>.<span class="ident">orderbook_mut</span>.<span class="ident">bond_manager</span>.<span class="ident">key</span>(),
+            <span class="ident">authority</span>: <span class="self">self</span>.<span class="ident">authority</span>.<span class="ident">key</span>(),
             <span class="ident">order_summary</span>: <span class="ident">order_summary</span>.<span class="ident">summary</span>(),
+            <span class="ident">margin_user</span>,
+            <span class="ident">order_type</span>,
+            <span class="ident">limit_price</span>: <span class="ident">params</span>.<span class="ident">limit_price</span>,
+            <span class="ident">auto_stake</span>: <span class="ident">params</span>.<span class="ident">auto_stake</span>,
+            <span class="ident">post_only</span>: <span class="ident">params</span>.<span class="ident">post_only</span>,
+            <span class="ident">post_allowed</span>: <span class="ident">params</span>.<span class="ident">post_allowed</span>,
         });
 
         <span class="prelude-val">Ok</span>(())
@@ -174,7 +199,8 @@
         <span class="ident">CallbackFlags::empty</span>(),
     )<span class="question-mark">?</span>;
 
-    <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">sell_tickets</span>(<span class="ident">order_summary</span>)
+    <span class="ident">ctx</span>.<span class="ident">accounts</span>
+        .<span class="ident">sell_tickets</span>(<span class="ident">order_summary</span>, <span class="kw-2">&amp;</span><span class="ident">params</span>, <span class="prelude-val">None</span>, <span class="ident">OrderType::SellTickets</span>)
 }
 </code></pre></div>
 </section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="jet_bonds" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0 (a55dd71d5 2022-09-19)" ></div></body></html>

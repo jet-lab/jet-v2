@@ -13,43 +13,13 @@
 <span id="13">13</span>
 <span id="14">14</span>
 <span id="15">15</span>
-<span id="16">16</span>
-<span id="17">17</span>
-<span id="18">18</span>
-<span id="19">19</span>
-<span id="20">20</span>
-<span id="21">21</span>
-<span id="22">22</span>
-<span id="23">23</span>
-<span id="24">24</span>
-<span id="25">25</span>
-<span id="26">26</span>
-<span id="27">27</span>
-<span id="28">28</span>
-<span id="29">29</span>
-<span id="30">30</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">agnostic_orderbook::state::OrderSummary</span>;
-<span class="kw">use</span> <span class="ident">anchor_lang::prelude</span>::<span class="kw-2">*</span>;
+</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">anchor_lang::prelude</span>::<span class="kw-2">*</span>;
 
 <span class="attribute">#[<span class="ident">event</span>]</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">OrderCancelled</span> {
     <span class="kw">pub</span> <span class="ident">bond_manager</span>: <span class="ident">Pubkey</span>,
-    <span class="kw">pub</span> <span class="ident">user</span>: <span class="ident">Pubkey</span>,
+    <span class="kw">pub</span> <span class="ident">authority</span>: <span class="ident">Pubkey</span>,
     <span class="kw">pub</span> <span class="ident">order_id</span>: <span class="ident">u128</span>,
-}
-
-<span class="attribute">#[<span class="ident">event</span>]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">LendOrder</span> {
-    <span class="kw">pub</span> <span class="ident">bond_market</span>: <span class="ident">Pubkey</span>,
-    <span class="kw">pub</span> <span class="ident">lender</span>: <span class="ident">Pubkey</span>,
-    <span class="kw">pub</span> <span class="ident">order_summary</span>: <span class="ident">OrderSummary</span>,
-}
-
-<span class="attribute">#[<span class="ident">event</span>]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">SellTicketsOrder</span> {
-    <span class="kw">pub</span> <span class="ident">bond_market</span>: <span class="ident">Pubkey</span>,
-    <span class="kw">pub</span> <span class="ident">owner</span>: <span class="ident">Pubkey</span>,
-    <span class="kw">pub</span> <span class="ident">order_summary</span>: <span class="ident">OrderSummary</span>,
 }
 
 <span class="attribute">#[<span class="ident">event</span>]</span>
