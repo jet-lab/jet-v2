@@ -264,7 +264,7 @@ export function DepositWithdrawModal(): JSX.Element {
         </div>
         <Button
           block
-          disabled={disabled || tokenInputAmount.isZero()}
+          disabled={disabled || tokenInputAmount.isZero() || projectedRiskIndicator > 1}
           loading={sendingTransaction}
           onClick={depositWithdraw}>
           {getSubmitText()}
