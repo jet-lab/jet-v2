@@ -22,7 +22,6 @@ use anchor_spl::token::{self, Burn, Token, TokenAccount};
 
 use jet_margin::MarginAccount;
 
-use crate::instructions::withdraw;
 use crate::{events, state::*, ChangeKind, TokenChange};
 use crate::{Amount, ErrorCode};
 
