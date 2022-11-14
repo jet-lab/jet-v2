@@ -25,7 +25,7 @@ const FixedBorrowView = lazy(() => import('@views/FixedBorrowView'));
 export const isDebug =
   window.location.href.includes('?debug-environment=true') && window.location.href.includes('localhost');
 
-export const App = (): JSX.Element  => {
+export const App = (): JSX.Element => {
   const wallets = useMemo(
     () => [
       new PhantomWalletAdapter(),
@@ -75,4 +75,4 @@ export const App = (): JSX.Element  => {
       </RecoilRoot>
     </BrowserRouter>
   );
-}
+};
