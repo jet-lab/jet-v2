@@ -117,7 +117,7 @@ pub fn handler(ctx: Context<MarginBorrowOrder>, params: OrderParams, seed: Vec<u
             maturation_timestamp,
             quote_filled,
             base_filled,
-            flags: ObligationFlags::default()
+            flags: obligation.flags
         });
     }
     let total_debt = order_summary.base_combined();
