@@ -67,6 +67,7 @@ pub const ORDERBOOK_CAPACITY: usize = 1_000;
 pub const EVENT_QUEUE_CAPACITY: usize = 1_000;
 pub const BORROW_DURATION: i64 = 3;
 pub const LEND_DURATION: i64 = 5; // in seconds
+pub const ORIGINATION_FEE: u64 = 10;
 pub const MIN_ORDER_SIZE: u64 = 10;
 
 #[derive(Debug, Default, Clone)]
@@ -235,6 +236,7 @@ impl TestManager {
             BOND_MANAGER_SEED,
             BORROW_DURATION,
             LEND_DURATION,
+            ORIGINATION_FEE,
         )?;
         let init_orderbook = this.ix_builder.initialize_orderbook(
             this.client.payer().pubkey(),

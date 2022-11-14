@@ -37,6 +37,7 @@ lazy_static::lazy_static! {
         event_queue: QUEUE_PATH.clone(),
         bids: BIDS_PATH.clone(),
         asks: ASKS_PATH.clone(),
+        origination_fee: 10,
     };
 
     static ref OPTS: CliOpts = CliOpts {

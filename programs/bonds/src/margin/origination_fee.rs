@@ -1,56 +1,53 @@
-const DECIMALS: u64 = 1_000_000;
-const LARGEST_PRECISE_DISBURSEMENT: u64 = u64::MAX / DECIMALS;
+const FEE_UNIT: u64 = 1_000_000;
 
 /// based on some requested amount, determines the size of a borrow order that
 /// adds an origination fee.
-pub fn borrow_order_quote(requested_quote: u64, origination_fee_rate_dcml: u64) -> u64 {
-    if requested_quote == 0 {
+/// - origination_fee: scaled by FEE_RATIO
+pub fn borrow_order_qty(requested: u64, origination_fee: u64) -> u64 {
+    if requested == 0 {
         0
-    } else if origination_fee_rate_dcml == 0 {
-        requested_quote
-    } else if requested_quote < u64::MAX / origination_fee_rate_dcml {
-        1 + requested_quote + requested_quote * origination_fee_rate_dcml / DECIMALS
+    } else if origination_fee == 0 {
+        requested
     } else {
-        1 + requested_quote + (requested_quote / DECIMALS) * origination_fee_rate_dcml
+        let requested = requested as u128;
+        let quote = 1 + requested + (requested * origination_fee as u128) / FEE_UNIT as u128;
+        if quote >= u64::MAX as u128 {
+            u64::MAX
+        } else {
+            quote as u64
+        }
     }
 }
 
 /// Based on some quote amount that was filled from an order that includes a
 /// fee, returns the size of the loan disbursement after the fee is deducted.
-pub fn disburse(filled_quote: u64, origination_fee_rate_dcml: u64) -> u64 {
+pub fn loan_to_disburse(filled_quote: u64, origination_fee: u64) -> u64 {
     if filled_quote == 0 {
         0
-    } else if origination_fee_rate_dcml == 0 {
+    } else if origination_fee == 0 {
         filled_quote
-    } else if filled_quote < LARGEST_PRECISE_DISBURSEMENT {
-        DECIMALS * filled_quote / (DECIMALS + origination_fee_rate_dcml)
+    } else if filled_quote < u64::MAX / FEE_UNIT {
+        FEE_UNIT * filled_quote / (FEE_UNIT + origination_fee)
     } else {
-        DECIMALS * (filled_quote / (DECIMALS + origination_fee_rate_dcml))
+        // FEE_UNIT * (filled_quote / (FEE_UNIT + origination_fee))
+        (FEE_UNIT as u128 * filled_quote as u128 / (FEE_UNIT as u128 + origination_fee as u128))
+            as u64
     }
     /* Derivation
     ---- assume
-    disburse = requested                 // requirement
-    order = requested + requested * fee  // borrow_order_quote
-    fee = fee_dcml / ONE_IN_dcml
+    disburse = requested                          // requirement
+    order = requested + requested * fee/FEE_UNIT  // borrow_order_qty
 
     ---- solve for disburse
-    order = disburse + disburse * fee
-    order = disburse * (1 + fee)
-    disburse = order / (1 + fee)
-    disburse = order / (1 + fee_dcml/ONE_IN_dcml)
+    order = disburse + disburse * fee/FEE_UNIT
+    order = disburse * (1 + fee/FEE_UNIT)
+    disburse = order / (1 + fee/FEE_UNIT)
+    disburse = order / (1 + fee/FEE_UNIT)
 
     ---- rearrange to minimize integer overflow/underflow
-    disburse = order / ((ONE_IN_dcml + fee_dcml)/ONE_IN_dcml)
-    disburse = ONE_IN_dcml * order / (ONE_IN_dcml + fee_dcml)
+    disburse = order / ((FEE_UNIT + fee)/FEE_UNIT)
+    disburse = FEE_UNIT * order / (FEE_UNIT + fee)
     */
-}
-
-fn smallest_known_order_that_is_too_large(origination_fee_rate_dcml: u64) -> u64 {
-    DECIMALS * (u64::MAX / (DECIMALS + origination_fee_rate_dcml) + 1)
-}
-
-fn largest_known_order_that_will_work(origination_fee_rate_dcml: u64) -> u64 {
-    DECIMALS * (u64::MAX / (DECIMALS + origination_fee_rate_dcml)) - 1
 }
 
 #[cfg(test)]
@@ -58,102 +55,143 @@ mod test {
     use super::*;
 
     /// should be much larger than anyone would ever imagine charging for an origination fee
-    const LARGEST_CONVEIVABLE_RATE: u64 = (0.001 * DECIMALS as f64) as u64;
+    const LARGEST_CONVEIVABLE_RATE: u64 = (0.001 * FEE_UNIT as f64) as u64;
 
-    /// when an order is for more than LARGEST_PRECISE_DISBURSEMENT, we expect
-    /// to lose lamport-level precision. the best we can do at that size is to
-    /// be precise to values of this size.
-    const PRECISION_FOR_LARGE_NUMBERS: u64 = DECIMALS;
+    /// returns the largest known quantity that will *not* result in an origination
+    /// fee that sums with the order size to be greater than u64::MAX. larger
+    /// numbers may overflow. there are likely larger numbers that can be borrowed
+    /// without overflowing, but they are definitely smaller than
+    /// smallest_amount_known_to_be_unborrowable()
+    fn largest_amount_known_to_be_borrowable(origination_fee: u64) -> u64 {
+        if origination_fee == 0 {
+            u64::MAX
+        } else {
+            (FEE_UNIT as u128 * (u64::MAX - 1) as u128
+                / (FEE_UNIT as u128 + origination_fee as u128)) as u64
+        }
+    }
+
+    /// returns a quantity that will definitely result in an origination fee
+    /// that sums with the order size to be greater than u64::MAX. there are
+    /// likely smaller numbers with the same problem, but they are definitely
+    /// larger than largest_amount_known_to_be_borrowable()
+    fn smallest_amount_known_to_be_unborrowable(origination_fee: u64) -> Option<u64> {
+        if origination_fee == 0 {
+            None
+        } else {
+            Some(
+                (FEE_UNIT as u128 * (u64::MAX - 1) as u128
+                    / (FEE_UNIT as u128 + origination_fee as u128)) as u64
+                    + 2,
+            )
+        }
+    }
+
+    /// ensures that the boundaries we're using in other logic define an actual
+    /// boundary. the boundary may be fuzzy, containing some ambiguous values,
+    /// but at least it must be accurate as stated.
+    #[test]
+    fn borrowability_is_well_defined() {
+        for fee in 0..LARGEST_CONVEIVABLE_RATE {
+            let safe = largest_amount_known_to_be_borrowable(fee) as u128;
+            if fee > 0 {
+                if 1 + safe + (fee as u128 * safe) / FEE_UNIT as u128 > u64::MAX as u128 {
+                    panic!("quantity not borrowable {} - {}", safe, fee);
+                }
+                let bad = smallest_amount_known_to_be_unborrowable(fee).unwrap() as u128;
+                if 1 + bad + (fee as u128 * bad) / FEE_UNIT as u128 <= u64::MAX as u128 {
+                    panic!("quantity is borrowable {} - {}", bad, fee);
+                }
+            } else {
+                assert_eq!(u64::MAX as u128, safe);
+                assert_eq!(None, smallest_amount_known_to_be_unborrowable(fee));
+            }
+        }
+    }
 
     #[test]
     fn disburse_0_as_0() {
         for rate in 0..LARGEST_CONVEIVABLE_RATE {
-            assert_eq!(0, borrow_order_quote(0, rate));
-            assert_eq!(0, disburse(0, rate));
+            assert_eq!(0, borrow_order_qty(0, rate));
+            assert_eq!(0, loan_to_disburse(0, rate));
         }
     }
 
     #[test]
     fn disburse_as_requested() {
+        let sample = u64_lower_sample_set();
         for rate in 0..LARGEST_CONVEIVABLE_RATE {
-            for &i in &u64_sample_set() {
+            let max = largest_amount_known_to_be_borrowable(rate);
+            for request in sample.iter().flat_map(|&n| [n, max - n]) {
                 for number_of_fills in 1..10 {
-                    assert_disbursement_matches_request(i, rate, number_of_fills)
+                    assert_disbursement_matches_request(request, rate, number_of_fills)
                 }
             }
         }
     }
 
-    fn u64_sample_set() -> Vec<u64> {
+    /// samples the u64 domain starting at 0 without reaching the top
+    /// powers of two, primes, and polynomial
+    fn u64_lower_sample_set() -> Vec<u64> {
         (0..63)
             .into_iter()
             .flat_map(|x| {
                 let p = 2u64.pow(x);
-                p - 1..p
+                p - 1..p + 1
             })
-            .chain((0..63).into_iter().map(|x| 2u64.pow(x) - 1))
-            .chain((0..40).into_iter().map(|x| 3u64.pow(x)))
-            .chain(
-                (0u64..110)
-                    .into_iter()
-                    .map(|x| 4 * x.pow(9) + 3 * x.pow(4) + 2 * x.pow(2) + 1),
-            )
+            .chain((0u64..41).into_iter().map(|x| x.pow(12)))
             .collect()
     }
 
+    /// not a very realistic scenario but establishes reasonable boundary conditions
     #[test]
-    fn disburse_largest_allowed_order_as_requested() {
-        for rate in 0..LARGEST_CONVEIVABLE_RATE {
-            assert_disbursement_matches_request(largest_known_order_that_will_work(rate), rate, 1);
-        }
-    }
-
-    #[test]
-    fn cannot_request_above_than_largest_allowed_order() {
-        std::panic::set_hook(Box::new(|_| {}));
+    fn orders_that_could_overflow_are_pushed_to_u64_max() {
+        let sample = u64_lower_sample_set();
         for rate in 1..LARGEST_CONVEIVABLE_RATE {
-            for request in [smallest_known_order_that_is_too_large(rate)] {
-                std::panic::catch_unwind(|| {
-                    assert_disbursement_matches_request(request, rate, 1);
-                })
-                .expect_err(&format!(
-                    "{} - {}",
-                    rate,
-                    smallest_known_order_that_is_too_large(rate)
-                ));
+            let bad = smallest_amount_known_to_be_unborrowable(rate).unwrap();
+            let ok = largest_amount_known_to_be_borrowable(rate);
+            assert!(bad > ok);
+            for request in ok..bad {
+                // numbers around the edge might not overflow but they should be very close
+                assert!(u64::MAX - borrow_order_qty(request, rate) <= 2);
             }
+            for request in sample.iter().filter_map(|n| n.checked_add(bad)) {
+                assert_eq!(u64::MAX, borrow_order_qty(request, rate));
+            }
+            assert_eq!(u64::MAX, borrow_order_qty(u64::MAX, rate));
         }
     }
 
+    /// not a very realistic scenario but establishes reasonable boundary conditions
     #[test]
-    fn precision_is_only_sacrificed_when_negligible() {
-        assert!(LARGEST_PRECISE_DISBURSEMENT / PRECISION_FOR_LARGE_NUMBERS > 1_000_000);
+    fn large_disbursements_from_overflowing_orders_must_cover_full_fee_and_a_reasonable_amount_of_the_request(
+    ) {
+        for rate in 1..LARGEST_CONVEIVABLE_RATE {
+            let disburse = loan_to_disburse(u64::MAX, rate);
+            let realized_fee = u64::MAX - disburse;
+            let expected_fee = (disburse / FEE_UNIT) * rate;
+            let a_smaller_order_that_wouldnt_overflow = largest_amount_known_to_be_borrowable(rate);
+            assert!(disburse >= a_smaller_order_that_wouldnt_overflow);
+            assert!(expected_fee <= realized_fee); // fee should be covered
+        }
     }
 
     fn assert_disbursement_matches_request(request: u64, fee: u64, number_of_fills: u64) {
         let mut total_disbursed = 0;
-        let mut quote = borrow_order_quote(request, fee);
+        let mut quote = borrow_order_qty(request, fee);
         for _ in 0..(number_of_fills - 1) {
             let fill = if quote > 1 { quote / 2 } else { quote };
             quote -= fill;
-            let disburse = disburse(fill, fee);
+            let disburse = loan_to_disburse(fill, fee);
             total_disbursed += disburse;
         }
-        total_disbursed += disburse(quote, fee);
+        total_disbursed += loan_to_disburse(quote, fee);
 
-        let max_discrepancy = number_of_fills
-            * if request < LARGEST_PRECISE_DISBURSEMENT / 2
-                && (fee == 0 || request < u64::MAX / fee)
-            {
-                1
-            } else {
-                PRECISION_FOR_LARGE_NUMBERS
-            };
-
-        if total_disbursed > request || request - total_disbursed > max_discrepancy {
-            panic!(
-                    "for fee {} and requested {} in {} fills, was disbursed {}, with a discrepancy of {}, but expected max discrepancy of {}",
-                    fee, request, number_of_fills, total_disbursed, request - total_disbursed, max_discrepancy
+        if total_disbursed > request || request - total_disbursed > number_of_fills {
+            panic!("
+                for fee {fee} and requested {request} with quote {quote} in {number_of_fills} fills, 
+                was disbursed {total_disbursed}, with a discrepancy of {}, but expected max discrepancy of {number_of_fills}",
+                    request - total_disbursed
                 )
         }
     }

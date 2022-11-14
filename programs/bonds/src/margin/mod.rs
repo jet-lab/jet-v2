@@ -1,5 +1,5 @@
 pub mod instructions;
+pub(crate) mod origination_fee;
 pub mod state;
-mod origination_fee;
 
 pub(crate) mod events;

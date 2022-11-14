@@ -10,7 +10,6 @@ use hosted_tests::{
     context::MarginTestContext,
     margin_test_context,
     setup_helper::{setup_user, tokens},
-    solana_test_context,
 };
 use jet_bonds::orderbook::state::OrderParams;
 use jet_margin_sdk::{
@@ -28,14 +27,14 @@ use solana_sdk::signer::Signer;
 #[tokio::test(flavor = "multi_thread")]
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn non_margin_orders() -> Result<(), anyhow::Error> {
-    let manager = BondsTestManager::full(solana_test_context!().clone()).await?;
+    let manager = BondsTestManager::full(margin_test_context!().solana.clone()).await?;
     non_margin_orders_for_proxy::<NoProxy>(Arc::new(manager)).await
 }
 
 #[tokio::test(flavor = "multi_thread")]
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn non_margin_orders_through_margin_account() -> Result<()> {
-    let manager = BondsTestManager::full(solana_test_context!().clone()).await?;
+    let manager = BondsTestManager::full(margin_test_context!().solana.clone()).await?;
     non_margin_orders_for_proxy::<MarginIxBuilder>(Arc::new(manager)).await
 }
 
@@ -358,7 +357,7 @@ async fn margin_borrow() -> Result<()> {
     assert_eq!(STARTING_TOKENS, user.tokens().await?);
     assert_eq!(0, user.tickets().await?);
     assert_eq!(999, user.collateral().await?);
-    assert_eq!(1_200, user.claims().await?);
+    assert_eq!(1_201, user.claims().await?);
 
     let borrower_account = user.load_margin_user().await.unwrap();
     let posted_order = manager.load_orderbook().await?.asks()?[0];
@@ -418,17 +417,17 @@ async fn margin_borrow_then_margin_lend() -> Result<()> {
     assert_eq!(STARTING_TOKENS, borrower.tokens().await?);
     assert_eq!(0, borrower.tickets().await?);
     assert_eq!(999, borrower.collateral().await?);
-    assert_eq!(1_200, borrower.claims().await?);
+    assert_eq!(1_201, borrower.claims().await?);
 
     lender
-        .margin_lend_order(underlying(1_000, 2_000), &[])
+        .margin_lend_order(underlying(1_001, 2_000), &[])
         .await?
         .send_and_confirm_condensed_in_order(&client)
         .await?;
 
-    assert_eq!(STARTING_TOKENS - 1_000, lender.tokens().await?);
+    assert_eq!(STARTING_TOKENS - 1_001, lender.tokens().await?);
     assert_eq!(0, lender.tickets().await?);
-    assert_eq!(1_200, lender.collateral().await?);
+    assert_eq!(1_201, lender.collateral().await?);
     assert_eq!(0, lender.claims().await?);
 
     #[cfg(not(feature = "localnet"))]
@@ -440,11 +439,11 @@ async fn margin_borrow_then_margin_lend() -> Result<()> {
         assert_eq!(STARTING_TOKENS + 1_000, borrower.tokens().await?);
         assert_eq!(0, borrower.tickets().await?);
         assert_eq!(0, borrower.collateral().await?);
-        assert_eq!(1_200, borrower.claims().await?);
+        assert_eq!(1_201, borrower.claims().await?);
 
-        assert_eq!(STARTING_TOKENS - 1_000, lender.tokens().await?);
+        assert_eq!(STARTING_TOKENS - 1_001, lender.tokens().await?);
         assert_eq!(0, lender.tickets().await?);
-        assert_eq!(1_200, lender.collateral().await?);
+        assert_eq!(1_201, lender.collateral().await?);
         assert_eq!(0, lender.claims().await?);
     }
 
@@ -464,14 +463,14 @@ async fn margin_lend_then_margin_borrow() -> Result<()> {
     let lender = create_bonds_margin_user(&ctx, manager.clone(), vec![]).await;
 
     lender
-        .margin_lend_order(underlying(1_000, 2_000), &[])
+        .margin_lend_order(underlying(1_001, 2_000), &[])
         .await?
         .send_and_confirm_condensed_in_order(&client)
         .await?;
 
-    assert_eq!(STARTING_TOKENS - 1_000, lender.tokens().await?);
+    assert_eq!(STARTING_TOKENS - 1_001, lender.tokens().await?);
     assert_eq!(0, lender.tickets().await?);
-    assert_eq!(999, lender.collateral().await?);
+    assert_eq!(1_000, lender.collateral().await?);
     assert_eq!(0, lender.claims().await?);
 
     vec![
@@ -491,7 +490,7 @@ async fn margin_lend_then_margin_borrow() -> Result<()> {
     assert_eq!(STARTING_TOKENS, borrower.tokens().await?); // todo a program change could safely make this STARTING_TOKENS + 1_000
     assert_eq!(0, borrower.tickets().await?);
     assert_eq!(0, borrower.collateral().await?);
-    assert_eq!(1_200, borrower.claims().await?);
+    assert_eq!(1_201, borrower.claims().await?);
 
     #[cfg(not(feature = "localnet"))]
     {
@@ -503,11 +502,11 @@ async fn margin_lend_then_margin_borrow() -> Result<()> {
         assert_eq!(STARTING_TOKENS + 999, borrower.tokens().await?);
         assert_eq!(0, borrower.tickets().await?);
         assert_eq!(0, borrower.collateral().await?);
-        assert_eq!(1_200, borrower.claims().await?);
+        assert_eq!(1_201, borrower.claims().await?);
 
-        assert_eq!(STARTING_TOKENS - 1_000, lender.tokens().await?);
+        assert_eq!(STARTING_TOKENS - 1_001, lender.tokens().await?);
         assert_eq!(0, lender.tickets().await?);
-        assert_eq!(1_200, lender.collateral().await?);
+        assert_eq!(1_201, lender.collateral().await?);
         assert_eq!(0, lender.claims().await?);
     }
 

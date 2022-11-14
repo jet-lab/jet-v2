@@ -21,6 +21,9 @@ pub struct BondMarketParameters {
     pub lend_duration: i64,
 
     #[clap(long)]
+    pub origination_fee: u64,
+
+    #[clap(long)]
     pub min_order_size: u64,
 
     #[clap(long)]
@@ -112,6 +115,7 @@ pub async fn process_create_bond_market<'a>(
             seed,
             params.borrow_duration,
             params.lend_duration,
+            params.origination_fee,
         )?;
         steps.push(format!(
             "initialize-bond-manager for token [{}]",

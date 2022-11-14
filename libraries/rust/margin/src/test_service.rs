@@ -87,6 +87,9 @@ pub struct BondMarketConfig {
     /// The duration for lending
     pub lend_duration: i64,
 
+    /// The origination fee for borrowing in origination_fee::FEE_UNIT
+    pub origination_fee: u64,
+
     /// The minimum order size for the AOB
     pub min_order_size: u64,
 
@@ -374,6 +377,7 @@ fn create_airspace_token_bond_markets_tx(
                         bond_manager_seed,
                         bm_config.borrow_duration,
                         bm_config.lend_duration,
+                        bm_config.origination_fee,
                     )
                     .unwrap(),
                 bonds_ix

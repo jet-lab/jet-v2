@@ -6,7 +6,7 @@ use agnostic_orderbook::{
     },
 };
 use anchor_lang::prelude::*;
-use jet_program_common::traits::{SafeAdd, SafeSub};
+use jet_program_common::traits::{SafeAdd, SafeSub, TryAddAssign};
 use num_traits::FromPrimitive;
 
 use crate::{
@@ -27,7 +27,6 @@ pub fn handler<'info>(
     seeds: Vec<Vec<u8>>,
 ) -> Result<()> {
     let mut num_iters = 0;
-    let manager = ctx.accounts.bond_manager.load()?;
     for event in queue(&ctx, seeds)?.take(num_events as usize) {
         let (accounts, event) = event?;
 
@@ -35,8 +34,6 @@ pub fn handler<'info>(
         match accounts {
             EventAccounts::Fill(accounts) => handle_fill(
                 &ctx,
-                manager.borrow_duration,
-                manager.lend_duration,
                 accounts,
                 &event.unwrap_fill()?,
             ),
@@ -65,11 +62,10 @@ pub fn handler<'info>(
 
 fn handle_fill<'info>(
     ctx: &Context<'_, '_, '_, 'info, ConsumeEvents<'info>>,
-    borrow_duration: i64,
-    lend_duration: i64,
     accounts: Box<FillAccounts<'info>>,
     fill: &FillInfo,
 ) -> Result<()> {
+    let manager = &ctx.accounts.bond_manager;
     let FillAccounts {
         maker,
         maker_adapter,
@@ -111,10 +107,11 @@ fn handle_fill<'info>(
                 map!(margin_user.assets.stake_tickets(base_size)?);
                 let principal = quote_size;
                 let interest = base_size.safe_sub(principal)?;
-                let maturation_timestamp = fill_timestamp.safe_add(lend_duration)?;
+                let maturation_timestamp =
+                    fill_timestamp.safe_add(manager.load()?.lend_duration)?;
                 *loan.unwrap().auto_stake()? = SplitTicket {
                     owner: maker.pubkey(),
-                    bond_manager: ctx.accounts.bond_manager.key(),
+                    bond_manager: manager.key(),
                     order_tag: maker_info.order_tag,
                     maturation_timestamp,
                     struck_timestamp: fill_timestamp,
@@ -134,9 +131,17 @@ fn handle_fill<'info>(
         Side::Ask => {
             if let Some(mut margin_user) = margin_user {
                 margin_user.assets.reduce_order(quote_size);
-                margin_user.assets.entitled_tokens += quote_size;
                 if maker_info.flags.contains(CallbackFlags::NEW_DEBT) {
-                    let maturation_timestamp = fill_timestamp.safe_add(borrow_duration)?;
+                    let mut manager = manager.load_mut()?;
+                    let disburse = manager.loan_to_disburse(quote_size);
+                    manager
+                        .collected_fees
+                        .try_add_assign(quote_size.safe_sub(disburse)?)?;
+                    margin_user
+                        .assets
+                        .entitled_tokens
+                        .try_add_assign(disburse)?;
+                    let maturation_timestamp = fill_timestamp.safe_add(manager.borrow_duration)?;
                     let sequence_number = margin_user
                         .debt
                         .new_obligation_from_fill(base_size, maturation_timestamp)?;
@@ -149,6 +154,11 @@ fn handle_fill<'info>(
                         balance: base_size,
                         flags: ObligationFlags::default(),
                     };
+                } else {
+                    margin_user
+                        .assets
+                        .entitled_tokens
+                        .try_add_assign(quote_size)?;
                 }
             } else {
                 ctx.withdraw(
