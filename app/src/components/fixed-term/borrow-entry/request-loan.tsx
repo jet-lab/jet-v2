@@ -16,6 +16,7 @@ import { MarginConfig, MarginTokenConfig } from '@jet-lab/margin';
 import { AllFixedMarketsAtom, MarketAndconfig } from '@state/fixed-market/fixed-term-market-sync';
 import { formatWithCommas } from '@utils/format';
 import { isDebug } from '../../../App';
+import debounce from 'lodash.debounce';
 
 interface RequestLoanProps {
   decimals: number;
@@ -97,7 +98,7 @@ export const RequestLoan = ({ token, decimals, marketAndConfig, marginConfig }: 
           Loan amount
           <InputNumber
             className="input-amount"
-            onChange={e => setAmount(new BN(e * 10 ** decimals))}
+            onChange={debounce(e => setAmount(new BN(e * 10 ** decimals)), 300)}
             placeholder={'10,000'}
             min={0}
             formatter={formatWithCommas}
@@ -109,9 +110,9 @@ export const RequestLoan = ({ token, decimals, marketAndConfig, marginConfig }: 
           Interest Rate
           <InputNumber
             className="input-rate"
-            onChange={e => {
+            onChange={debounce(e => {
               setBasisPoints(new BN(e * 100));
-            }}
+            }, 300)}
             placeholder={'1.5'}
             type="number"
             step={0.01}

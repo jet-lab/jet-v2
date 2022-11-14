@@ -16,6 +16,7 @@ import { ConnectionFeedback } from '@components/misc/ConnectionFeedback/Connecti
 import { DownloadOutlined, SearchOutlined } from '@ant-design/icons';
 import AngleDown from '@assets/icons/arrow-angle-down.svg';
 import { ActionIcon } from '@components/misc/ActionIcon';
+import debounce from 'lodash.debounce';
 
 // Table to show margin account's transaction history
 export function FullAccountHistory(): JSX.Element {
@@ -255,7 +256,11 @@ export function FullAccountHistory(): JSX.Element {
           )}
         </div>
         <SearchOutlined />
-        <Input type="text" placeholder={getFilterInputPlaceholder()} onChange={e => filterTxHistory(e.target.value)} />
+        <Input
+          type="text"
+          placeholder={getFilterInputPlaceholder()}
+          onChange={debounce(e => filterTxHistory(e.target.value), 300)}
+        />
       </div>
       <ReorderArrows
         component="fullAccountHistory"

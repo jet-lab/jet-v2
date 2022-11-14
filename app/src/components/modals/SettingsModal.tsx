@@ -19,6 +19,7 @@ import {
 import { getPing } from '@utils/ui';
 import { Input, Modal, Radio, Select, Typography } from 'antd';
 import AngleDown from '@assets/icons/arrow-angle-down.svg';
+import debounce from 'lodash.debounce';
 
 // Modal for changing app preferences
 export function SettingsModal(): JSX.Element {
@@ -156,7 +157,7 @@ export function SettingsModal(): JSX.Element {
           className={customNodeInputError ? 'error' : ''}
           value={customNodeInput}
           placeholder={dictionary.settingsModal.rpcNode.customInputPlaceholder}
-          onChange={e => setCustomNodeInput(e.target.value)}
+          onChange={debounce(e => setCustomNodeInput(e.target.value), 300)}
           onPressEnter={() => (checkSettingsChange() ? saveSettings() : null)}
         />
       );
