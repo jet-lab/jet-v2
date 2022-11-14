@@ -3,7 +3,7 @@ use solana_sdk::pubkey::Pubkey;
 use spl_governance::state::proposal::get_proposal_address;
 use spl_governance::state::vote_record::{Vote, VoteChoice};
 use spl_governance::state::{
-    proposal::VoteType, token_owner_record::get_token_owner_record_address,
+    proposal::VoteType,
 };
 
 use crate::client::{Client, Plan};
@@ -115,12 +115,11 @@ pub async fn process_proposal_approve(client: &Client, proposal_address: Pubkey)
     let proposal = crate::governance::get_proposal_state(client, &proposal_address).await?;
     let (governance, realm) =
         crate::governance::get_governance_and_realm(client, &proposal.governance).await?;
-    let voter_token_owner_record = get_token_owner_record_address(
-        &JET_GOVERNANCE_PROGRAM,
+    let voter_token_owner_record = find_user_owner_record(
+        client,
         &governance.realm,
         realm.config.council_mint.as_ref().unwrap(),
-        &client.signer()?,
-    );
+    ).await?;
 
     Ok(client
         .plan()?
