@@ -27,7 +27,10 @@ export const PoolRow = (props: { pool: Pool }) => {
   // Renders pool asset info
   function renderAssetInfo() {
     let render = <Skeleton className="align-left" paragraph={false} active />;
-    if (pool.tokenPrice > 0) {
+    if (pool.tokenPrice >= 0) {
+      if (pool.tokenPrice === 0) {
+        console.log(`Pyth Price Data for ${pool.name} token is not available at this moment.`);
+      }
       render = (
         <div>
           <Text className="table-token-name" strong>
