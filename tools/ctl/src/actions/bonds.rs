@@ -104,7 +104,7 @@ pub async fn process_create_bond_market<'a>(
         );
     } else if !client.account_exists(&params.token_mint).await? {
         println!("the token {} does not exist", params.token_mint);
-        return Ok(Plan::default());
+        return Ok(Plan::new());
     } else {
         let init_manager = bonds.initialize_manager(
             payer,
@@ -124,7 +124,7 @@ pub async fn process_create_bond_market<'a>(
             "the market [{}] is already fully initialized",
             bonds.manager()
         );
-        return Ok(Plan::default());
+        return Ok(Plan::new());
     }
     let init_orderbook = bonds.initialize_orderbook(
         payer,
