@@ -69,7 +69,7 @@ export function useMarginActions() {
         amount = TokenAmount.tokens(1, pool.decimals);
       }
     }
-    const token = config.tokens[pool.symbol];
+    const token = config.tokens[pool.symbol] ? config.tokens[pool.symbol] : config.tokens[pool.name];
     try {
       const txId = await TokenFaucet.airdrop(provider, cluster, amount.lamports, token, wallet.publicKey);
       await actionRefresh();
@@ -139,12 +139,15 @@ export function useMarginActions() {
       console.error('Accounts and/or pools not loaded');
       throw new Error();
     }
+    const token = walletTokens.map[currentPool.symbol]
+      ? walletTokens.map[currentPool.symbol]
+      : walletTokens.map[currentPool.name];
 
     try {
       const txId = await currentPool.deposit({
         marginAccount: currentAccount,
         change: PoolTokenChange.setTo(accountPoolPosition.depositBalance.add(tokenInputAmount)),
-        source: walletTokens.map[currentPool.symbol].address
+        source: token.address
       });
       await actionRefresh();
       return [txId, ActionResponse.Success];
@@ -164,8 +167,10 @@ export function useMarginActions() {
       console.error('Accounts and/or pools not loaded');
       throw new Error();
     }
+    const token = walletTokens.map[currentPool.symbol]
+      ? walletTokens.map[currentPool.symbol]
+      : walletTokens.map[currentPool.name];
 
-    const destination = walletTokens.map[currentPool.symbol];
     const change = tokenInputAmount.eq(accountPoolPosition.maxTradeAmounts.withdraw)
       ? PoolTokenChange.setTo(0)
       : PoolTokenChange.setTo(accountPoolPosition.depositBalance.sub(tokenInputAmount));
@@ -173,7 +178,7 @@ export function useMarginActions() {
       const txId = await currentPool.withdraw({
         marginAccount: currentAccount,
         pools: Object.values(pools.tokenPools),
-        destination: destination.address,
+        destination: token.address,
         change
       });
       await actionRefresh();
@@ -222,11 +227,13 @@ export function useMarginActions() {
 
     const closeLoan = tokenInputAmount.gte(accountPoolPosition.loanBalance);
     const change = closeLoan ? PoolTokenChange.setTo(0) : PoolTokenChange.shiftBy(tokenInputAmount);
-
+    const token = walletTokens.map[currentPool.symbol]
+      ? walletTokens.map[currentPool.symbol]
+      : walletTokens.map[currentPool.name];
     try {
       const txId = await currentPool.marginRepay({
         marginAccount: currentAccount,
-        source: accountRepay ? undefined : walletTokens.map[currentPool.symbol].address,
+        source: accountRepay ? undefined : token.address,
         pools: Object.values(pools.tokenPools),
         change,
         closeLoan
