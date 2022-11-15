@@ -1838,6 +1838,7 @@ dependencies = [
  "jet-proto-proc-macros",
  "serde",
  "serde_test",
+ "solana-program",
  "static_assertions",
 ]
 
@@ -1855,6 +1856,7 @@ dependencies = [
  "pyth-sdk-solana",
  "serde",
  "serde_test",
+ "solana-program",
  "static_assertions",
 ]
 

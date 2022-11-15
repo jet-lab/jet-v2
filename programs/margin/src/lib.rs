@@ -604,6 +604,14 @@ pub mod jet_margin {
     ) -> Result<()> {
         liquidator_invoke_handler(ctx, data)
     }
+
+    /// Allow governing address to transfer any position from one margin account to another
+    ///
+    /// This is provided as a mechanism to allow for manually fixing issues that occur in the
+    /// protocol due to bad user assets.
+    pub fn admin_transfer_position(ctx: Context<AdminTransferPosition>, amount: u64) -> Result<()> {
+        admin_transfer_position_handler(ctx, amount)
+    }
 }
 
 #[error_code]
