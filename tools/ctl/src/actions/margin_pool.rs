@@ -4,9 +4,11 @@ use clap::Parser;
 use comfy_table::{presets::UTF8_FULL, Table};
 use jet_margin_sdk::{
     ix_builder::{
-        get_metadata_address, ControlIxBuilder, MarginPoolConfiguration, MarginPoolIxBuilder,
+        get_metadata_address, loan_token_account, ControlIxBuilder, MarginIxBuilder,
+        MarginPoolConfiguration, MarginPoolIxBuilder,
     },
     jet_control::TokenMetadataParams,
+    jet_margin::MarginAccount,
     jet_margin_pool::{self, MarginPool},
     jet_metadata::{PositionTokenMetadata, TokenMetadata},
 };
@@ -208,6 +210,45 @@ pub async fn process_configure_pool(
     } else {
         Ok(client.plan()?.build())
     }
+}
+
+pub async fn process_transfer_loan(
+    client: &Client,
+    source_account: Pubkey,
+    target_account: Pubkey,
+    token: Pubkey,
+    amount: Option<u64>,
+) -> Result<Plan> {
+    let source = client
+        .read_anchor_account::<MarginAccount>(&source_account)
+        .await?;
+
+    let margin_ix = MarginIxBuilder::new_with_payer(
+        source.owner,
+        u16::from_le_bytes(source.user_seed),
+        resolve_payer(client)?,
+        Some(jet_program_common::ADMINISTRATOR),
+    );
+    let ix = MarginPoolIxBuilder::new(token);
+    let loan_account = loan_token_account(&source_account, &ix.loan_note_mint).0;
+    let amount = match amount {
+        Some(n) => n,
+        None => client.read_token_account(&loan_account).await?.amount,
+    };
+
+    Ok(client
+        .plan()?
+        .instructions(
+            [],
+            [format!(
+                "admin-transfer-loan {source_account} -> {target_account}: {amount} {token}"
+            )],
+            [
+                ix.admin_transfer_loan(&source_account, &target_account, amount),
+                margin_ix.update_position_balance(loan_account),
+            ],
+        )
+        .build())
 }
 
 pub async fn process_show_pool(client: &Client, token: Pubkey) -> Result<Plan> {

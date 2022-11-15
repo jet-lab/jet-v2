@@ -191,6 +191,47 @@ pub async fn process_set_liquidator(
         .build())
 }
 
+pub async fn process_transfer_position(
+    client: &Client,
+    source_account: Pubkey,
+    target_account: Pubkey,
+    token: Pubkey,
+    amount: Option<u64>,
+) -> Result<Plan> {
+    let source = client
+        .read_anchor_account::<MarginAccount>(&source_account)
+        .await?;
+
+    let ix = MarginIxBuilder::new_with_payer(
+        source.owner,
+        u16::from_le_bytes(source.user_seed),
+        resolve_payer(client)?,
+        Some(jet_program_common::ADMINISTRATOR),
+    );
+    let pool_ix = MarginPoolIxBuilder::new(token);
+    let position_token_mint = pool_ix.deposit_note_mint;
+    let amount = match amount {
+        Some(n) => n,
+        None => {
+            client
+                .read_token_account(&ix.get_token_account_address(&position_token_mint).0)
+                .await?
+                .amount
+        }
+    };
+
+    Ok(client
+        .plan()?
+        .instructions(
+            [],
+            [format!(
+                "admin-transfer-position {source_account} -> {target_account}: {amount} {token}"
+            )],
+            [ix.admin_transfer_position_to(&target_account, &position_token_mint, amount)],
+        )
+        .build())
+}
+
 pub async fn process_list_top_accounts(client: &Client, limit: usize) -> Result<Plan> {
     let mut all_user_accounts = get_all_accounts(client).await?;
 

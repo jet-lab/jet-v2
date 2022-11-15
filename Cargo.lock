@@ -2342,6 +2342,7 @@ dependencies = [
  "anchor-lang",
  "bytemuck",
  "num-traits",
+ "solana-program",
  "static_assertions",
  "thiserror",
  "uint 0.9.4",

@@ -168,6 +168,14 @@ impl Client {
         Ok(Pack::unpack(&account_data)?)
     }
 
+    pub async fn read_token_account(&self, address: &Pubkey) -> Result<spl_token::state::Account> {
+        let account_data = self
+            .get_account_data(address)
+            .await
+            .with_context(|| format!("while retrieving token account data for {address}"))?;
+        Ok(Pack::unpack(&account_data)?)
+    }
+
     pub fn plan(&self) -> Result<PlanBuilder> {
         if self.config.signer.is_none() {
             bail!("no wallet/signer configured");

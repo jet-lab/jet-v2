@@ -141,6 +141,24 @@ pub enum MarginCommand {
         token: Pubkey,
     },
 
+    /// Transfer a position owned directly by an account
+    TransferPosition {
+        /// The source margin account to transfer out of
+        #[serde_as(as = "DisplayFromStr")]
+        source: Pubkey,
+
+        /// The target margin account to transfer into
+        #[serde_as(as = "DisplayFromStr")]
+        target: Pubkey,
+
+        /// The target token to be transferred
+        #[serde_as(as = "DisplayFromStr")]
+        token: Pubkey,
+
+        /// The amount to transfer. Default is to transfer the entire position
+        amount: Option<u64>,
+    },
+
     /// List the top margin accounts by asset value
     ListTopAccounts {
         /// The number of accounts to show
@@ -171,6 +189,24 @@ pub enum MarginPoolCommand {
 
     /// Collect the fees for margin pools
     CollectFees,
+
+    /// Transfer a loan between margin accounts
+    TransferLoan {
+        /// The source margin account to transfer out of
+        #[serde_as(as = "DisplayFromStr")]
+        source: Pubkey,
+
+        /// The target margin account to transfer into
+        #[serde_as(as = "DisplayFromStr")]
+        target: Pubkey,
+
+        /// The target token to be transferred
+        #[serde_as(as = "DisplayFromStr")]
+        token: Pubkey,
+
+        /// The amount to transfer. Default is to transfer the entire position
+        amount: Option<u64>,
+    },
 
     /// Show a summary of all margin pools
     List,
@@ -387,6 +423,14 @@ async fn run_margin_command(client: &Client, command: MarginCommand) -> Result<P
         MarginCommand::RefreshPositionMd { token } => {
             actions::margin::process_refresh_metadata(client, token).await
         }
+        MarginCommand::TransferPosition {
+            source,
+            target,
+            token,
+            amount,
+        } => {
+            actions::margin::process_transfer_position(client, source, target, token, amount).await
+        }
         MarginCommand::ListTopAccounts { limit } => {
             actions::margin::process_list_top_accounts(client, limit).await
         }
@@ -406,6 +450,14 @@ async fn run_margin_pool_command(client: &Client, command: MarginPoolCommand) ->
         }
         MarginPoolCommand::CollectFees => {
             actions::margin_pool::process_collect_pool_fees(client).await
+        }
+        MarginPoolCommand::TransferLoan {
+            source,
+            target,
+            token,
+            amount,
+        } => {
+            actions::margin_pool::process_transfer_loan(client, source, target, token, amount).await
         }
         MarginPoolCommand::List => actions::margin_pool::process_list_pools(client).await,
         MarginPoolCommand::Show { token } => {
