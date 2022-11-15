@@ -74,16 +74,16 @@ export function useCurrencyFormatting() {
     if (precision) {
       if (fiatValues) {
         if (accounting) {
-          return currencyFormatter(t, fiatValues, 2, undefined, true);
+          return currencyFormatter(t, fiatValues, decimals, undefined, true);
         }
         // Do not truncate fiat values under million
-        return currencyFormatter(t, fiatValues, 2);
+        return currencyFormatter(t, fiatValues, decimals);
       } else {
         // If not fiat values, show up to the 9th character
         // with dynamic decimal places
         const multiple = Math.pow(10, decimals);
         // TODO: We might want to also abbreviate the values here
-        return format(Math.round(t * multiple) / multiple);
+        return String(Math.round(t * multiple) / multiple);
       }
     }
 
