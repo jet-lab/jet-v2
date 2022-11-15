@@ -9,6 +9,7 @@ use crate::{
     bond_token_manager::BondTokenManager,
     margin::{
         events::{OrderPlaced, OrderType},
+        origination_fee::loan_to_disburse,
         state::{return_to_margin, MarginUser, Obligation, ObligationFlags},
     },
     orderbook::state::*,
@@ -72,10 +73,12 @@ pub fn handler(
     mut params: OrderParams,
     seed: Vec<u8>,
 ) -> Result<()> {
-    let mut manager = ctx.accounts.orderbook_mut.bond_manager.load_mut()?;
-    params.max_bond_ticket_qty = manager.borrow_order_qty(params.max_bond_ticket_qty);
-    params.max_underlying_token_qty = manager.borrow_order_qty(params.max_underlying_token_qty);
-
+    let origination_fee = {
+        let manager = ctx.accounts.orderbook_mut.bond_manager.load()?;
+        params.max_bond_ticket_qty = manager.borrow_order_qty(params.max_bond_ticket_qty);
+        params.max_underlying_token_qty = manager.borrow_order_qty(params.max_underlying_token_qty);
+        manager.origination_fee
+    };
     let (callback_info, order_summary) = ctx.accounts.orderbook_mut.place_order(
         ctx.accounts.margin_account.key(),
         Side::Ask,
@@ -92,6 +95,7 @@ pub fn handler(
     let debt = &mut ctx.accounts.margin_user.debt;
     debt.post_borrow_order(order_summary.base_posted())?;
     if order_summary.base_filled() > 0 {
+        let mut manager = ctx.accounts.orderbook_mut.bond_manager.load_mut()?;
         let maturation_timestamp = manager.borrow_duration + Clock::get()?.unix_timestamp;
         let sequence_number =
             debt.new_obligation_without_posting(order_summary.base_filled(), maturation_timestamp)?;
@@ -122,7 +126,7 @@ pub fn handler(
     ctx.mint(
         &ctx.accounts.collateral_mint,
         &ctx.accounts.collateral,
-        manager.loan_to_disburse(order_summary.quote_posted()?),
+        loan_to_disburse(order_summary.quote_posted()?, origination_fee),
     )?;
 
     emit!(OrderPlaced {

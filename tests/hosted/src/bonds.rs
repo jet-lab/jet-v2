@@ -179,6 +179,7 @@ impl TestManager {
             payer.pubkey(),
             underlying_oracle,
             ticket_oracle,
+            None,
         )
         .with_payer(&payer.pubkey());
         let mut this = Self {
@@ -230,14 +231,19 @@ impl TestManager {
         this.insert_kp("bids", clone(bids_kp));
         this.insert_kp("asks", clone(asks_kp));
 
+        let payer = this.client.payer().pubkey();
+        let init_fee_destination = this
+            .ix_builder
+            .init_default_fee_destination(&payer)
+            .unwrap();
         let init_manager = this.ix_builder.initialize_manager(
-            this.client.payer().pubkey(),
+            payer,
             BOND_MANAGER_TAG,
             BOND_MANAGER_SEED,
             BORROW_DURATION,
             LEND_DURATION,
             ORIGINATION_FEE,
-        )?;
+        );
         let init_orderbook = this.ix_builder.initialize_orderbook(
             this.client.payer().pubkey(),
             eq_kp.pubkey(),
@@ -247,7 +253,14 @@ impl TestManager {
         )?;
 
         this.sign_send_transaction(
-            &[init_eq, init_bids, init_asks, init_manager, init_orderbook],
+            &[
+                init_eq,
+                init_bids,
+                init_asks,
+                init_fee_destination,
+                init_manager,
+                init_orderbook,
+            ],
             None,
         )
         .await?;

@@ -327,6 +327,7 @@ fn create_airspace_token_bond_markets_tx(
             config.authority,
             derive_pyth_price(&mint),
             derive_pyth_price(&ticket_mint),
+            None,
         );
 
         txs.push(TransactionBuilder {
@@ -371,15 +372,16 @@ fn create_airspace_token_bond_markets_tx(
                     &jet_bonds::ID,
                 ),
                 bonds_ix
-                    .initialize_manager(
-                        config.authority,
-                        0,
-                        bond_manager_seed,
-                        bm_config.borrow_duration,
-                        bm_config.lend_duration,
-                        bm_config.origination_fee,
-                    )
+                    .init_default_fee_destination(&config.authority)
                     .unwrap(),
+                bonds_ix.initialize_manager(
+                    config.authority,
+                    0,
+                    bond_manager_seed,
+                    bm_config.borrow_duration,
+                    bm_config.lend_duration,
+                    bm_config.origination_fee,
+                ),
                 bonds_ix
                     .initialize_orderbook(
                         config.authority,
