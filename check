@@ -14,7 +14,7 @@
 # Then you can run any of the subcommands without calling ./check:
 #   anchor-test    # tab completion is available
 
-DOCKER_IMAGE=jetprotocol/builder:test
+DOCKER_IMAGE=jetprotocol/builder:rust-1.65.0-node-18.12.1-solana-1.13.5-anchor-0.25.0-1
 SOLANA_MAINNET_RPC=${SOLANA_MAINNET_RPC:-'https://solana-api.projectserum.com'}
 
 #################
