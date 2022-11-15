@@ -1,6 +1,6 @@
 import { Button, InputNumber, Switch, Tooltip } from 'antd';
 import { formatDuration, intervalToDuration } from 'date-fns';
-import { createFixedLendOrder } from '@jet-lab/jet-bonds-client';
+import { offerLoan } from '@jet-lab/jet-bonds-client';
 import { notify } from '@utils/notify';
 import { getExplorerUrl } from '@utils/ui';
 import BN from 'bn.js';
@@ -40,7 +40,7 @@ export const OfferLoan = ({ token, decimals, marketAndConfig, marginConfig }: Re
   const createLendOrder = async (amountParam?: BN, basisPointsParam?: BN) => {
     let signature: string;
     try {
-      signature = await createFixedLendOrder({
+      signature = await offerLoan({
         market: marketAndConfig.market,
         marginAccount,
         marginConfig,

@@ -123,15 +123,17 @@ export function FullAccountBalance(): JSX.Element {
   function renderDepositBalanceColumn(balance: AccountBalance) {
     let render = <Skeleton className="align-right" paragraph={false} active={loadingAccounts} />;
     if (accounts && balance?.tokenSymbol) {
+      const value = currencyAbbrev(
+        balance.depositBalance.tokens,
+        false,
+        undefined,
+        pools.tokenPools[balance.tokenSymbol]?.precision ?? 2,
+        true
+      );
       render = (
         <Text type={balance.depositBalance.isZero() ? undefined : 'success'}>
-          {currencyAbbrev(
-            balance.depositBalance.tokens,
-            false,
-            undefined,
-            pools.tokenPools[balance.tokenSymbol]?.precision ?? 2,
-            true
-          )}
+          {!balance.depositBalance.isZero() && value === '0' && '~'}
+          {value}
         </Text>
       );
     }
@@ -143,15 +145,17 @@ export function FullAccountBalance(): JSX.Element {
   function renderLoanBalanceColumn(balance: AccountBalance) {
     let render = <Skeleton className="align-right" paragraph={false} active={loadingAccounts} />;
     if (accounts && balance?.tokenSymbol) {
+      const value = currencyAbbrev(
+        balance.depositBalance.tokens,
+        false,
+        undefined,
+        pools.tokenPools[balance.tokenSymbol]?.precision ?? 2,
+        true
+      );
       render = (
         <Text type={balance.loanBalance.isZero() ? undefined : 'warning'}>
-          {currencyAbbrev(
-            balance.loanBalance.tokens,
-            false,
-            undefined,
-            pools.tokenPools[balance.tokenSymbol]?.precision ?? 2,
-            true
-          )}
+          {!balance.depositBalance.isZero() && value === '0' && '~'}
+          {value}
         </Text>
       );
     }

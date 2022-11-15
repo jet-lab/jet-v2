@@ -2,7 +2,7 @@ import { PublicKey, TransactionInstruction } from "@solana/web3.js"
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token"
 import { AssociatedToken, BondMarketConfig, MarginAccount, MarginConfig, Pool, sendAll } from "@jet-lab/margin"
 import { BondMarket } from "./bondMarket"
-import { AnchorProvider, BN } from "@project-serum/anchor"
+import { Address, AnchorProvider, BN } from "@project-serum/anchor"
 
 const createRandomSeed = (byteLength: number) => {
   const max = 127
@@ -14,17 +14,17 @@ const refreshAllMarkets = async (
   markets: BondMarket[],
   ixs: TransactionInstruction[],
   marginAccount: MarginAccount,
-  provider: AnchorProvider
+  marketAddress: PublicKey
 ) => {
   await Promise.all(
     markets.map(async market => {
-      const marketAccount = await market.deriveMarginUserAddress(marginAccount)
-      const info = await provider.connection.getAccountInfo(marketAccount)
-      if (info?.owner) {
+      const marketUserInfo = await market.fetchMarginUser(marginAccount)
+      const marketUser = await market.deriveMarginUserAddress(marginAccount)
+      if (marketUserInfo || market.address.equals(marketAddress)) {
         const refreshIx = await market.program.methods
           .refreshPosition(true)
           .accounts({
-            marginUser: marketAccount,
+            marginUser: marketUser,
             marginAccount: marginAccount.address,
             bondManager: market.addresses.bondManager,
             underlyingOracle: market.addresses.underlyingOracle,
@@ -49,22 +49,20 @@ interface IWithCreateFixedMarketAccount {
   marginAccount: MarginAccount
   walletAddress: PublicKey
   instructions: TransactionInstruction[]
-  marketAccount: PublicKey
 }
 export const withCreateFixedMarketAccounts = async ({
   market,
   provider,
   marginAccount,
   walletAddress,
-  instructions,
-  marketAccount
+  instructions
 }: IWithCreateFixedMarketAccount) => {
   const tokenMint = market.addresses.underlyingTokenMint
   const ticketMint = market.addresses.bondTicketMint
   await AssociatedToken.withCreate(instructions, provider, marginAccount.address, tokenMint)
   await AssociatedToken.withCreate(instructions, provider, marginAccount.address, ticketMint)
-  const info = await provider.connection.getAccountInfo(marketAccount)
-  if (!info) {
+  const marginUserInfo = await market.fetchMarginUser(marginAccount)
+  if (!marginUserInfo) {
     const createAccountIx = await market.registerAccountWithMarket(marginAccount, walletAddress)
     await marginAccount.withAdapterInvoke({
       instructions,
@@ -89,7 +87,7 @@ interface ICreateLendOrder {
   marketConfig: BondMarketConfig
   markets: BondMarket[]
 }
-export const createFixedLendOrder = async ({
+export const offerLoan = async ({
   market,
   provider,
   marginAccount,
@@ -107,7 +105,6 @@ export const createFixedLendOrder = async ({
     throw new Error("There is no market configured on this network")
   }
 
-  const lenderAccount = await market.deriveMarginUserAddress(marginAccount)
   const instructions: TransactionInstruction[][] = []
   // Create relevant accounts if they do not exist
   const accountInstructions: TransactionInstruction[] = []
@@ -116,16 +113,13 @@ export const createFixedLendOrder = async ({
     provider,
     marginAccount,
     walletAddress,
-    instructions: accountInstructions,
-    marketAccount: lenderAccount
+    instructions: accountInstructions
   })
   if (accountInstructions.length > 0) {
     instructions.push(accountInstructions)
   }
 
   const lendInstructions: TransactionInstruction[] = []
-
-  AssociatedToken.withTransfer(lendInstructions, tokenMint, walletAddress, marginAccount.address, amount)
 
   // refresh pool positions
   await currentPool.withMarginRefreshAllPositionPrices({
@@ -134,9 +128,11 @@ export const createFixedLendOrder = async ({
     marginAccount
   })
 
-  await refreshAllMarkets(markets, lendInstructions, marginAccount, provider)
+  await refreshAllMarkets(markets, lendInstructions, marginAccount, market.address)
 
   // create lend instruction
+  AssociatedToken.withTransfer(lendInstructions, tokenMint, walletAddress, marginAccount.address, amount)
+
   const loanOffer = await market.offerLoanIx(
     marginAccount,
     amount,
@@ -168,7 +164,7 @@ interface ICreateBorrowOrder {
   markets: BondMarket[]
 }
 
-export const createFixedBorrowOrder = async ({
+export const requestLoan = async ({
   market,
   marginAccount,
   marginConfig,
@@ -186,8 +182,6 @@ export const createFixedBorrowOrder = async ({
     throw new Error("There is no market configured on this network")
   }
 
-  const borrowerAccount = await market.deriveMarginUserAddress(marginAccount)
-
   const instructions: TransactionInstruction[][] = []
   // Create relevant accounts if they do not exist
   const accountInstructions: TransactionInstruction[] = []
@@ -196,8 +190,7 @@ export const createFixedBorrowOrder = async ({
     provider,
     marginAccount,
     walletAddress,
-    instructions: accountInstructions,
-    marketAccount: borrowerAccount
+    instructions: accountInstructions
   })
   if (accountInstructions.length > 0) {
     instructions.push(accountInstructions)
@@ -211,7 +204,7 @@ export const createFixedBorrowOrder = async ({
     marginAccount
   })
 
-  await refreshAllMarkets(markets, borrowInstructions, marginAccount, provider)
+  await refreshAllMarkets(markets, borrowInstructions, marginAccount, market.address)
 
   // Create borrow instruction
   const borrowOffer = await market.requestBorrowIx(
@@ -313,8 +306,6 @@ export const borrowNow = async ({
     throw new Error("There is no fixed term market configured on this network")
   }
 
-  const borrowerAccount = await market.deriveMarginUserAddress(marginAccount)
-
   const instructions: TransactionInstruction[][] = []
   // Create relevant accounts if they do not exist
   const accountInstructions: TransactionInstruction[] = []
@@ -323,8 +314,7 @@ export const borrowNow = async ({
     provider,
     marginAccount,
     walletAddress,
-    instructions: accountInstructions,
-    marketAccount: borrowerAccount
+    instructions: accountInstructions
   })
   if (accountInstructions.length > 0) {
     instructions.push(accountInstructions)
@@ -338,7 +328,7 @@ export const borrowNow = async ({
     marginAccount
   })
 
-  await refreshAllMarkets(markets, refreshInstructions, marginAccount, provider)
+  await refreshAllMarkets(markets, refreshInstructions, marginAccount, market.address)
   instructions.push(refreshInstructions)
 
   // Create borrow instruction
@@ -382,8 +372,6 @@ export const lendNow = async ({
     throw new Error("There is no market configured on this network")
   }
 
-  const marketAccount = await market.deriveMarginUserAddress(marginAccount)
-
   const instructions: TransactionInstruction[][] = []
   // Create relevant accounts if they do not exist
   const accountInstructions: TransactionInstruction[] = []
@@ -392,15 +380,21 @@ export const lendNow = async ({
     provider,
     marginAccount,
     walletAddress,
-    instructions: accountInstructions,
-    marketAccount
+    instructions: accountInstructions
   })
   if (accountInstructions.length > 0) {
     instructions.push(accountInstructions)
   }
 
-  await refreshAllMarkets(markets, accountInstructions, marginAccount, provider)
-  instructions.push(accountInstructions)
+  const refreshInstructions: TransactionInstruction[] = []
+  await currentPool.withMarginRefreshAllPositionPrices({
+    instructions: refreshInstructions,
+    pools,
+    marginAccount
+  })
+
+  await refreshAllMarkets(markets, refreshInstructions, marginAccount, market.address)
+  instructions.push(refreshInstructions)
 
   // Create borrow instruction
   const lendInstructions: TransactionInstruction[] = []
