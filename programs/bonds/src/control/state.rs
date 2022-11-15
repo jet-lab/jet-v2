@@ -39,6 +39,8 @@ pub struct BondManager {
     pub underlying_oracle: Pubkey,
     /// oracle that defines the value of the bond tickets
     pub ticket_oracle: Pubkey,
+    /// where fees can be withdrawn to
+    pub fee_destination: Pubkey,
     /// The user-defined part of the seed that generated this bond manager's PDA
     pub seed: [u8; 32],
     /// The bump seed value for generating the authority address.

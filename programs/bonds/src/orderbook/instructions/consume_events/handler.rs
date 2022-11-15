@@ -32,11 +32,7 @@ pub fn handler<'info>(
 
         // Delegate event processing to the appropriate handler
         match accounts {
-            EventAccounts::Fill(accounts) => handle_fill(
-                &ctx,
-                accounts,
-                &event.unwrap_fill()?,
-            ),
+            EventAccounts::Fill(accounts) => handle_fill(&ctx, accounts, &event.unwrap_fill()?),
             EventAccounts::Out(accounts) => handle_out(&ctx, *accounts, &event.unwrap_out()?),
         }?;
 
