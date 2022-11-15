@@ -2,8 +2,7 @@ import { useEffect, useState } from 'react';
 import { Cluster, PreferredRpcNode, rpcNodes } from '@state/settings/settings';
 import { Dictionary } from '@state/settings/localization/localization';
 import { useProvider } from '@utils/jet/provider';
-import { MS_PER_MINUTE } from '@utils/time';
-import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
+import { useRecoilState, useRecoilValue} from 'recoil';
 import { Alert } from 'antd';
 import { NetworkStateAtom } from '@state/network/network-state';
 
