@@ -32,8 +32,8 @@ jobs:
 
       - name: ./check anchor-test
         run: |
-          # chmod -R 777 /root
-          chown /home/tools/.config/solana/id.json
+          chown root /home/tools
+          chmod -R 777 /home/tools
           ./check anchor-test
 
 
