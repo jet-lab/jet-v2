@@ -29,7 +29,7 @@ pub fn handler<'info>(
     let mut num_iters = 0;
     let manager = ctx.accounts.bond_manager.load()?;
 
-    for event in queue(&ctx, Box::new(seeds))?.take(num_events as usize) {
+    for event in queue(&ctx, seeds)?.take(num_events as usize) {
         let mut res = event?;
         let (accounts, event) = res.as_mut();
 

@@ -17,7 +17,7 @@ use super::{ConsumeEvents, EventAccounts, FillAccounts, LoanAccount, OutAccounts
 
 pub fn queue<'c, 'info>(
     ctx: &Context<'_, '_, 'c, 'info, ConsumeEvents<'info>>,
-    seeds: Box<Vec<Vec<u8>>>,
+    seeds: Vec<Vec<u8>>,
 ) -> Result<EventIterator<'c, 'info>> {
     Ok(EventIterator {
         queue: EventQueue::deserialize_market(ctx.accounts.event_queue.to_account_info())?.iter(),
