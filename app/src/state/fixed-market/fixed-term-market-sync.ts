@@ -7,6 +7,7 @@ import { MainConfig } from '../config/marginConfig';
 import { PublicKey } from '@solana/web3.js';
 import { useProvider } from '@utils/jet/provider';
 import { NetworkStateAtom } from '@state/network/network-state';
+import { useLocation } from 'react-router-dom';
 
 export const AllFixedMarketsAtom = atom<Array<MarketAndconfig>>({
   key: 'allFixedMarkets',
@@ -30,6 +31,13 @@ export const FixedMarketAtom = selector<MarketAndconfig | null>({
   dangerouslyAllowMutability: true
 });
 
+export type CurrentOrderTab = 'borrow-now' | 'lend-now' | 'offer-loan' | 'request-loan';
+
+export const CurrentOrderTabAtom = atom<CurrentOrderTab>({
+  key: 'current-fixed-term-order-tab',
+  default: null
+});
+
 export interface ExtendedOrderBook extends Orderbook {
   name: string;
 }
@@ -48,8 +56,7 @@ export const AllFixedMarketsOrderBooksAtom = selector<ExtendedOrderBook[]>({
         };
       })
     );
-  },
-  dangerouslyAllowMutability: true
+  }
 });
 
 export interface MarketAndconfig {
@@ -62,6 +69,8 @@ export const useFixedTermSync = (): void => {
   const setMarkets = useSetRecoilState(AllFixedMarketsAtom);
   const config = useRecoilValue(MainConfig);
   const networkState = useRecoilValue(NetworkStateAtom);
+  const setCurrentOrderTab = useSetRecoilState(CurrentOrderTabAtom);
+  const { pathname } = useLocation();
 
   const loadBondMarkets = async (airspace: AirspaceConfig, program: Program<JetBonds>, marginProgramId: PublicKey) => {
     const markets: MarketAndconfig[] = await Promise.all(
@@ -80,5 +89,14 @@ export const useFixedTermSync = (): void => {
       loadBondMarkets(airspace, program, new PublicKey(config.marginProgramId));
     }
   }, [config, networkState]);
+
+  useEffect(() => {
+    if (pathname.includes('/fixed-lend')) {
+      setCurrentOrderTab('offer-loan');
+    } else if (pathname.includes('/fixed-borrow')) {
+      setCurrentOrderTab('request-loan');
+    }
+  }, [pathname]);
+
   return null;
 };

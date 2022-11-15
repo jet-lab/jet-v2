@@ -516,9 +516,6 @@ export class Pool {
    * @returns {number}
    */
   static interpolate = (x: number, x0: number, x1: number, y0: number, y1: number): number => {
-    assert(x >= x0)
-    assert(x <= x1)
-
     return y0 + ((x - x0) * (y1 - y0)) / (x1 - x0)
   }
   /**

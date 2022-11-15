@@ -13,7 +13,7 @@ import { BlockExplorer, Cluster } from '@state/settings/settings';
 import { useRecoilValue } from 'recoil';
 import { useState } from 'react';
 import { MarginConfig, MarginTokenConfig } from '@jet-lab/margin';
-import { MarketAndconfig } from '@state/fixed-market/fixed-term-market-sync';
+import { AllFixedMarketsAtom, MarketAndconfig } from '@state/fixed-market/fixed-term-market-sync';
 
 interface RequestLoanProps {
   decimals: number;
@@ -31,6 +31,7 @@ export const LendNow = ({ token, decimals, marketAndConfig, marginConfig }: Requ
   const wallet = useWallet();
   const blockExplorer = useRecoilValue(BlockExplorer);
   const [amount, setAmount] = useState(new BN(0));
+  const markets = useRecoilValue(AllFixedMarketsAtom);
 
   const marketLendOrder = async () => {
     let signature: string;
@@ -43,7 +44,8 @@ export const LendNow = ({ token, decimals, marketAndConfig, marginConfig }: Requ
         walletAddress: wallet.publicKey,
         pools: pools.tokenPools,
         currentPool,
-        amount
+        amount,
+        markets: markets.map(m => m.market)
       });
       notify(
         'Lend Successful',

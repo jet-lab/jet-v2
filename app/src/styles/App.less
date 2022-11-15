@@ -1217,6 +1217,7 @@ html {
     // Order entry
     .order-entry {
       height: 600px;
+      margin-right: 16px;
 
       &-head {
         height: 50px;
@@ -1403,7 +1404,7 @@ html {
   // Graphs
   .swaps-graph,
   .fixed-term-graph {
-    width: calc(100% - 430px);
+    flex: 1;
     height: 600px;
 
     &-head {
@@ -1495,10 +1496,6 @@ html {
 
       text {
         fill: @secondary-5;
-      }
-
-      line {
-        stroke: rgba(var(--primary-2), @half-opacity);
       }
 
       .apexcharts {
@@ -1676,11 +1673,6 @@ html {
       }
     }
 
-    line {
-      stroke: @primary-3;
-      stroke-width: 1.25px;
-    }
-
     .apexcharts-xaxis-title + line {
       display: none;
     }
@@ -1816,6 +1808,10 @@ html {
         }
       }
     }
+  }
+
+  .swaps-graph line {
+    stroke: rgba(var(--primary-2), @half-opacity);
   }
 
   // Pools View
@@ -2764,4 +2760,32 @@ html {
   flex-direction: column;
   line-height: 32px;
   font-size: 1.2em;
+}
+
+.chart-legend {
+  position: absolute;
+  bottom: 48px;
+  right: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 4px 8px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.2);
+
+  .chart-legend-item {
+    margin: 4px 8px;
+    cursor: pointer;
+    z-index: 10;
+    transition: color 0.3s;
+    text-transform: uppercase;
+
+    svg {
+      margin-right: 8px;
+    }
+
+    &:hover {
+      color: @jet-green;
+    }
+  }
 }
