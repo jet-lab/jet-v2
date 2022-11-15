@@ -74,7 +74,7 @@ export function TokenInput(props: {
 
   // If current action changes, keep input within the maxInput range
   useEffect(() => {
-    if (tokenInputAmount.gt(maxInput)) {
+    if (tokenInputAmount.gte(maxInput)) {
       setTokenInputAmount(maxInput);
       setTokenInputString(maxInput.tokens.toString());
     }

@@ -398,6 +398,6 @@ export class BondMarket {
   async fetchMarginUser(user: MarginAccount): Promise<MarginUserInfo> {
     let data = (await this.provider.connection.getAccountInfo(await this.deriveMarginUserAddress(user)))!.data
 
-    return await this.program.coder.accounts.decode("marginUser", data)
+    return await this.program.coder.accounts.decode("MarginUser", data)
   }
 }

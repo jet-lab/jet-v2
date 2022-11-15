@@ -444,7 +444,7 @@ export type JetBonds = {
         },
         {
           "name": "offset",
-          "type": "u32"
+          "type": "u64" // usize in the program
         }
       ]
     },
@@ -2153,17 +2153,17 @@ export type JetBonds = {
             }
           },
           {
-            "name": "borrow_duration"
+            "name": "borrowDuration",
             "docs": [
               "Length of time before a borrow is marked as due, in seconds"
-            ]
+            ],
             "type": "i64"
           },
           {
-            "name": "lend_duration"
+            "name": "lendDuration",
             "docs": [
               "Length of time before a claim is marked as mature, in seconds"
-            ]
+            ],
             "type": "i64"
           },
           {
@@ -2177,7 +2177,7 @@ export type JetBonds = {
       }
     },
     {
-      "name": "crankAuthorization",
+      "name": "CrankAuthorization",
       "docs": [
         "This authorizes a crank to act on any orderbook within the airspace"
       ],
@@ -2196,7 +2196,7 @@ export type JetBonds = {
       }
     },
     {
-      "name": "marginUser",
+      "name": "MarginUser",
       "docs": [
         "An acocunt used to track margin users of the market"
       ],
@@ -2495,9 +2495,16 @@ export type JetBonds = {
             }
           },
           {
-            "name": "duration",
+            "name": "borrowDuration",
             "docs": [
-              "Units added to the initial stake timestamp to determine claim maturity"
+              "Length of time before a borrow is marked as due, in seconds"
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "lendDuration",
+            "docs": [
+              "Length of time before a claim is marked as mature, in seconds"
             ],
             "type": "i64"
           }
@@ -2724,8 +2731,150 @@ export type JetBonds = {
           }
         ]
       }
+    },
+    {
+      "name": "OrderType",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "MarginBorrow"
+          },
+          {
+            "name": "MarginLend"
+          },
+          {
+            "name": "MarginSellTickets"
+          },
+          {
+            "name": "Lend"
+          },
+          {
+            "name": "SellTickets"
+          }
+        ]
+      }
+    },
+    {
+      "name": "EventAccounts",
+      "docs": [
+        "These are the additional accounts that need to be provided in the ix",
+        "for every event that will be processed.",
+        "For a fill, 2-6 accounts need to be appended to remaining_accounts",
+        "For an out, 1 account needs to be appended to remaining_accounts"
+      ],
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Fill",
+            "fields": [
+              {
+                "defined": "FillAccounts<'info>"
+              }
+            ]
+          },
+          {
+            "name": "Out",
+            "fields": [
+              {
+                "defined": "OutAccounts<'info>"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "LoanAccount",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "AutoStake",
+            "fields": [
+              {
+                "defined": "AnchorAccount<'info,SplitTicket,Mut>"
+              }
+            ]
+          },
+          {
+            "name": "NewDebt",
+            "fields": [
+              {
+                "defined": "AnchorAccount<'info,Obligation,Mut>"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "EventTag",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Fill"
+          },
+          {
+            "name": "Out"
+          }
+        ]
+      }
+    },
+    {
+      "name": "OrderbookEvent",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Fill",
+            "fields": [
+              {
+                "defined": "FillInfo"
+              }
+            ]
+          },
+          {
+            "name": "Out",
+            "fields": [
+              {
+                "defined": "OutInfo"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "TicketKind",
+      "docs": [
+        "Enum used for pattern matching a ticket deserialization"
+      ],
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Claim",
+            "fields": [
+              {
+                "defined": "Account<'info,ClaimTicket>"
+              }
+            ]
+          },
+          {
+            "name": "Split",
+            "fields": [
+              {
+                "defined": "Account<'info,SplitTicket>"
+              }
+            ]
+          }
+        ]
+      }
     }
-  ]
+  ],
   "events": [
     {
       "name": "BondManagerInitialized",
@@ -2761,7 +2910,12 @@ export type JetBonds = {
           "index": false
         },
         {
-          "name": "duration",
+          "name": "borrowDuration",
+          "type": "i64",
+          "index": false
+        },
+        {
+          "name": "lendDuration",
           "type": "i64",
           "index": false
         }
@@ -2873,7 +3027,7 @@ export type JetBonds = {
       ]
     },
     {
-      "name": "MarginBorrow",
+      "name": "OrderPlaced",
       "fields": [
         {
           "name": "bondManager",
@@ -2881,13 +3035,22 @@ export type JetBonds = {
           "index": false
         },
         {
-          "name": "marginAccount",
+          "name": "authority",
           "type": "publicKey",
           "index": false
         },
         {
-          "name": "borrowerAccount",
-          "type": "publicKey",
+          "name": "marginUser",
+          "type": {
+            "option": "publicKey"
+          },
+          "index": false
+        },
+        {
+          "name": "orderType",
+          "type": {
+            "defined": "OrderType"
+          },
           "index": false
         },
         {
@@ -2896,32 +3059,25 @@ export type JetBonds = {
             "array": ["u8", 48]
           },
           "index": false
-        }
-      ]
-    },
-    {
-      "name": "MarginLend",
-      "fields": [
+        },
         {
-          "name": "bondMarket",
-          "type": "publicKey",
+          "name": "limitPrice",
+          "type": "u64",
           "index": false
         },
         {
-          "name": "marginAccount",
-          "type": "publicKey",
+          "name": "autoStake",
+          "type": "bool",
           "index": false
         },
         {
-          "name": "lender",
-          "type": "publicKey",
+          "name": "postOnly",
+          "type": "bool",
           "index": false
         },
         {
-          "name": "orderSummary",
-          "type": {
-            "array": ["u8", 48]
-          },
+          "name": "postAllowed",
+          "type": "bool",
           "index": false
         }
       ]
@@ -2985,57 +3141,13 @@ export type JetBonds = {
           "index": false
         },
         {
-          "name": "user",
+          "name": "authority",
           "type": "publicKey",
           "index": false
         },
         {
           "name": "orderId",
           "type": "u128",
-          "index": false
-        }
-      ]
-    },
-    {
-      "name": "LendOrder",
-      "fields": [
-        {
-          "name": "bondMarket",
-          "type": "publicKey",
-          "index": false
-        },
-        {
-          "name": "lender",
-          "type": "publicKey",
-          "index": false
-        },
-        {
-          "name": "orderSummary",
-          "type": {
-            "array": ["u8", 48]
-          }
-          "index": false
-        }
-      ]
-    },
-    {
-      "name": "SellTicketsOrder",
-      "fields": [
-        {
-          "name": "bondMarket",
-          "type": "publicKey",
-          "index": false
-        },
-        {
-          "name": "owner",
-          "type": "publicKey",
-          "index": false
-        },
-        {
-          "name": "orderSummary",
-          "type": {
-            "array": ["u8", 48]
-          }
           "index": false
         }
       ]
@@ -3881,7 +3993,7 @@ export const IDL: JetBonds = {
         },
         {
           "name": "offset",
-          "type": "u32"
+          "type": "u64"
         }
       ]
     },
@@ -5590,14 +5702,14 @@ export const IDL: JetBonds = {
             }
           },
           {
-            "name": "borrow_duration",
+            "name": "borrowDuration",
             "docs": [
               "Length of time before a borrow is marked as due, in seconds"
             ],
             "type": "i64"
           },
           {
-            "name": "lend_duration",
+            "name": "lendDuration",
             "docs": [
               "Length of time before a claim is marked as mature, in seconds"
             ],
@@ -5614,7 +5726,7 @@ export const IDL: JetBonds = {
       }
     },
     {
-      "name": "crankAuthorization",
+      "name": "CrankAuthorization",
       "docs": [
         "This authorizes a crank to act on any orderbook within the airspace"
       ],
@@ -5633,7 +5745,7 @@ export const IDL: JetBonds = {
       }
     },
     {
-      "name": "marginUser",
+      "name": "MarginUser",
       "docs": [
         "An acocunt used to track margin users of the market"
       ],
@@ -5932,9 +6044,16 @@ export const IDL: JetBonds = {
             }
           },
           {
-            "name": "duration",
+            "name": "borrowDuration",
             "docs": [
-              "Units added to the initial stake timestamp to determine claim maturity"
+              "Length of time before a borrow is marked as due, in seconds"
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "lendDuration",
+            "docs": [
+              "Length of time before a claim is marked as mature, in seconds"
             ],
             "type": "i64"
           }
@@ -6161,6 +6280,148 @@ export const IDL: JetBonds = {
           }
         ]
       }
+    },
+    {
+      "name": "OrderType",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "MarginBorrow"
+          },
+          {
+            "name": "MarginLend"
+          },
+          {
+            "name": "MarginSellTickets"
+          },
+          {
+            "name": "Lend"
+          },
+          {
+            "name": "SellTickets"
+          }
+        ]
+      }
+    },
+    {
+      "name": "EventAccounts",
+      "docs": [
+        "These are the additional accounts that need to be provided in the ix",
+        "for every event that will be processed.",
+        "For a fill, 2-6 accounts need to be appended to remaining_accounts",
+        "For an out, 1 account needs to be appended to remaining_accounts"
+      ],
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Fill",
+            "fields": [
+              {
+                "defined": "FillAccounts<'info>"
+              }
+            ]
+          },
+          {
+            "name": "Out",
+            "fields": [
+              {
+                "defined": "OutAccounts<'info>"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "LoanAccount",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "AutoStake",
+            "fields": [
+              {
+                "defined": "AnchorAccount<'info,SplitTicket,Mut>"
+              }
+            ]
+          },
+          {
+            "name": "NewDebt",
+            "fields": [
+              {
+                "defined": "AnchorAccount<'info,Obligation,Mut>"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "EventTag",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Fill"
+          },
+          {
+            "name": "Out"
+          }
+        ]
+      }
+    },
+    {
+      "name": "OrderbookEvent",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Fill",
+            "fields": [
+              {
+                "defined": "FillInfo"
+              }
+            ]
+          },
+          {
+            "name": "Out",
+            "fields": [
+              {
+                "defined": "OutInfo"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "TicketKind",
+      "docs": [
+        "Enum used for pattern matching a ticket deserialization"
+      ],
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Claim",
+            "fields": [
+              {
+                "defined": "Account<'info,ClaimTicket>"
+              }
+            ]
+          },
+          {
+            "name": "Split",
+            "fields": [
+              {
+                "defined": "Account<'info,SplitTicket>"
+              }
+            ]
+          }
+        ]
+      }
     }
   ],
   "events": [
@@ -6198,7 +6459,12 @@ export const IDL: JetBonds = {
           "index": false
         },
         {
-          "name": "duration",
+          "name": "borrowDuration",
+          "type": "i64",
+          "index": false
+        },
+        {
+          "name": "lendDuration",
           "type": "i64",
           "index": false
         }
@@ -6310,7 +6576,7 @@ export const IDL: JetBonds = {
       ]
     },
     {
-      "name": "MarginBorrow",
+      "name": "OrderPlaced",
       "fields": [
         {
           "name": "bondManager",
@@ -6318,13 +6584,22 @@ export const IDL: JetBonds = {
           "index": false
         },
         {
-          "name": "marginAccount",
+          "name": "authority",
           "type": "publicKey",
           "index": false
         },
         {
-          "name": "borrowerAccount",
-          "type": "publicKey",
+          "name": "marginUser",
+          "type": {
+            "option": "publicKey"
+          },
+          "index": false
+        },
+        {
+          "name": "orderType",
+          "type": {
+            "defined": "OrderType"
+          },
           "index": false
         },
         {
@@ -6333,32 +6608,25 @@ export const IDL: JetBonds = {
             "array": ["u8", 48]
           },
           "index": false
-        }
-      ]
-    },
-    {
-      "name": "MarginLend",
-      "fields": [
+        },
         {
-          "name": "bondMarket",
-          "type": "publicKey",
+          "name": "limitPrice",
+          "type": "u64",
           "index": false
         },
         {
-          "name": "marginAccount",
-          "type": "publicKey",
+          "name": "autoStake",
+          "type": "bool",
           "index": false
         },
         {
-          "name": "lender",
-          "type": "publicKey",
+          "name": "postOnly",
+          "type": "bool",
           "index": false
         },
         {
-          "name": "orderSummary",
-          "type": {
-            "array": ["u8", 48]
-          },
+          "name": "postAllowed",
+          "type": "bool",
           "index": false
         }
       ]
@@ -6422,57 +6690,13 @@ export const IDL: JetBonds = {
           "index": false
         },
         {
-          "name": "user",
+          "name": "authority",
           "type": "publicKey",
           "index": false
         },
         {
           "name": "orderId",
           "type": "u128",
-          "index": false
-        }
-      ]
-    },
-    {
-      "name": "LendOrder",
-      "fields": [
-        {
-          "name": "bondMarket",
-          "type": "publicKey",
-          "index": false
-        },
-        {
-          "name": "lender",
-          "type": "publicKey",
-          "index": false
-        },
-        {
-          "name": "orderSummary",
-          "type": {
-            "array": ["u8", 48]
-          },
-          "index": false
-        }
-      ]
-    },
-    {
-      "name": "SellTicketsOrder",
-      "fields": [
-        {
-          "name": "bondMarket",
-          "type": "publicKey",
-          "index": false
-        },
-        {
-          "name": "owner",
-          "type": "publicKey",
-          "index": false
-        },
-        {
-          "name": "orderSummary",
-          "type": {
-            "array": ["u8", 48]
-          },
           "index": false
         }
       ]

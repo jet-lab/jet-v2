@@ -68,11 +68,16 @@ pub fn handler(ctx: Context<MarginLendOrder>, params: OrderParams, seed: Vec<u8>
         &ctx.accounts.collateral,
         staked + order_summary.quote_posted()?,
     )?;
-    emit!(crate::events::MarginLend {
-        bond_market: ctx.accounts.inner.orderbook_mut.bond_manager.key(),
-        margin_account: ctx.accounts.inner.authority.key(),
-        lender: ctx.accounts.margin_user.key(),
+    emit!(crate::events::OrderPlaced {
+        bond_manager: ctx.accounts.inner.orderbook_mut.bond_manager.key(),
+        authority: ctx.accounts.inner.authority.key(),
+        margin_user: Some(ctx.accounts.margin_user.key()),
         order_summary: order_summary.summary(),
+        auto_stake: params.auto_stake,
+        post_only: params.post_only,
+        post_allowed: params.post_allowed,
+        limit_price: params.limit_price,
+        order_type: crate::events::OrderType::MarginLend,
     });
 
     Ok(())

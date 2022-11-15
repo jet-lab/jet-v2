@@ -13,8 +13,9 @@ import { BlockExplorer, Cluster } from '@state/settings/settings';
 import { useRecoilValue } from 'recoil';
 import { useState } from 'react';
 import { MarginConfig, MarginTokenConfig } from '@jet-lab/margin';
-import { MarketAndconfig } from '@state/fixed-market/fixed-term-market-sync';
+import { AllFixedMarketsAtom, MarketAndconfig } from '@state/fixed-market/fixed-term-market-sync';
 import { formatWithCommas } from '@utils/format';
+import { isDebug } from '../../../App';
 
 interface RequestLoanProps {
   decimals: number;
@@ -33,8 +34,9 @@ export const RequestLoan = ({ token, decimals, marketAndConfig, marginConfig }: 
   const blockExplorer = useRecoilValue(BlockExplorer);
   const [amount, setAmount] = useState(new BN(0));
   const [basisPoints, setBasisPoints] = useState(new BN(0));
+  const markets = useRecoilValue(AllFixedMarketsAtom);
 
-  const createBorrowOrder = async () => {
+  const createBorrowOrder = async (amountParam?: BN, basisPointsParam?: BN) => {
     let signature: string;
     try {
       signature = await createFixedBorrowOrder({
@@ -45,9 +47,10 @@ export const RequestLoan = ({ token, decimals, marketAndConfig, marginConfig }: 
         walletAddress: wallet.publicKey,
         pools: pools.tokenPools,
         currentPool,
-        amount,
-        basisPoints,
-        marketConfig: marketAndConfig.config
+        amount: amountParam || amount,
+        basisPoints: basisPointsParam || basisPoints,
+        marketConfig: marketAndConfig.config,
+        markets: markets.map(m => m.market)
       });
       notify(
         'Borrow Offer Created',
@@ -67,6 +70,23 @@ export const RequestLoan = ({ token, decimals, marketAndConfig, marginConfig }: 
         'error',
         getExplorerUrl(e.signature, cluster, blockExplorer)
       );
+    }
+  };
+
+  const createDebugOrders = async () => {
+    function sleep(ms: number) {
+      return new Promise(resolve => {
+        setTimeout(resolve, ms);
+      });
+    }
+
+    for (let i = 0; i < 10; i++) {
+      const amount = new BN((10 + Math.random() * 10000) * 10 ** decimals);
+      const basisPoints = new BN(10 + Math.random() * 200);
+      console.log('Amount: ', Number(amount));
+      console.log('Basis Points: ', Number(basisPoints));
+      await createBorrowOrder(amount, basisPoints);
+      await sleep(1000);
     }
   };
 
@@ -149,9 +169,10 @@ export const RequestLoan = ({ token, decimals, marketAndConfig, marginConfig }: 
       <Button
         className="submit-button"
         disabled={!marketAndConfig?.market || basisPoints.lte(new BN(0)) || amount.lte(new BN(0))}
-        onClick={createBorrowOrder}>
+        onClick={() => createBorrowOrder()}>
         Request {marketToString(marketAndConfig.config)} loan
       </Button>
+      {isDebug && <Button onClick={createDebugOrders}>Generate 10 random orders</Button>}
     </div>
   );
 };
