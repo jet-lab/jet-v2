@@ -84,32 +84,36 @@ pub async fn convert_plan_to_proposal(
 
     validate_proposal(&proposal)?;
 
-    Ok(plan
-        .into_iter()
-        .map(|entry| {
-            let instructions = get_transaction_instructions(&entry.transaction);
+    Ok(Plan {
+        unordered: false,
+        entries: plan
+            .entries
+            .into_iter()
+            .map(|entry| {
+                let instructions = get_transaction_instructions(&entry.transaction);
 
-            let insert_tx = spl_governance::instruction::insert_transaction(
-                &JET_GOVERNANCE_PROGRAM,
-                &proposal.governance,
-                &proposal_address,
-                &proposal.token_owner_record,
-                &client.signer().unwrap(),
-                &client.signer().unwrap(),
-                proposal_option,
-                tx_next_index,
-                0,
-                instructions,
-            );
+                let insert_tx = spl_governance::instruction::insert_transaction(
+                    &JET_GOVERNANCE_PROGRAM,
+                    &proposal.governance,
+                    &proposal_address,
+                    &proposal.token_owner_record,
+                    &client.signer().unwrap(),
+                    &client.signer().unwrap(),
+                    proposal_option,
+                    tx_next_index,
+                    0,
+                    instructions,
+                );
 
-            tx_next_index += 1;
+                tx_next_index += 1;
 
-            TransactionEntry {
-                transaction: Transaction::new_with_payer(&[insert_tx], None),
-                steps: entry.steps,
-            }
-        })
-        .collect())
+                TransactionEntry {
+                    transaction: Transaction::new_with_payer(&[insert_tx], None),
+                    steps: entry.steps,
+                }
+            })
+            .collect(),
+    })
 }
 
 pub async fn inspect_proposal_instructions(

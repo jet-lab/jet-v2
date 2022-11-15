@@ -92,7 +92,7 @@ pub async fn process_list_pools(client: &Client) -> Result<Plan> {
 
     println!("{output_table}");
 
-    Ok(Plan::default())
+    Ok(Plan::new())
 }
 
 pub async fn process_collect_pool_fees(client: &Client) -> Result<Plan> {
@@ -137,12 +137,12 @@ pub async fn process_create_pool(client: &Client, token: Pubkey) -> Result<Plan>
 
     if client.account_exists(&margin_pool.address).await? {
         println!("the pool already exists for token {token}");
-        return Ok(Plan::default());
+        return Ok(Plan::new());
     }
 
     if !client.account_exists(&token).await? {
         println!("the token {token} does not exist");
-        return Ok(Plan::default());
+        return Ok(Plan::new());
     }
 
     Ok(client
@@ -223,7 +223,7 @@ pub async fn process_show_pool(client: &Client, token: Pubkey) -> Result<Plan> {
 
     println!("{:#?}", &margin_pool_data);
 
-    Ok(Plan::default())
+    Ok(Plan::new())
 }
 
 fn override_pool_config_with_options(

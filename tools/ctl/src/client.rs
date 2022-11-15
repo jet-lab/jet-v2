@@ -176,12 +176,13 @@ impl Client {
         Ok(PlanBuilder {
             entries: Vec::new(),
             client: self,
+            unordered: false,
         })
     }
 
     /// Execute a plan
     pub async fn execute(&self, plan: Plan) -> Result<()> {
-        if plan.is_empty() {
+        if plan.entries.is_empty() {
             return Ok(());
         }
 
@@ -189,14 +190,14 @@ impl Client {
             println!("this is a dry run");
         }
 
-        println!("planning to submit {} transactions:", plan.len());
+        println!("planning to submit {} transactions:", plan.entries.len());
 
         let signer = match &self.config.signer {
             Some(signer) => signer,
             None => bail!("no wallet/signer configured"),
         };
 
-        for (i, entry) in plan.iter().enumerate() {
+        for (i, entry) in plan.entries.iter().enumerate() {
             let tx_size = entry.transaction.message().serialize().len();
             println!("\t transaction #{i} (size {tx_size}):");
 
@@ -222,6 +223,7 @@ impl Client {
 
         #[allow(clippy::needless_collect)]
         let ui_progress_tx = plan
+            .entries
             .iter()
             .map(|_| ui_progress_group.add_line("in queue"))
             .collect::<Vec<_>>();
@@ -230,9 +232,9 @@ impl Client {
             std::thread::spawn(move || ui_progress_group.join().unwrap());
         }
 
-        let tx_count = plan.len();
+        let tx_count = plan.entries.len();
 
-        for (mut entry, ui_progress_bar) in plan.into_iter().zip(ui_progress_tx.into_iter()) {
+        for (mut entry, ui_progress_bar) in plan.entries.into_iter().zip(ui_progress_tx.into_iter()) {
             let recent_blockhash = self.rpc().get_latest_blockhash().await?;
             entry
                 .transaction
@@ -365,10 +367,23 @@ impl Client {
     }
 }
 
-pub type Plan = Vec<TransactionEntry>;
+pub struct Plan {
+    pub entries: Vec<TransactionEntry>,
+    pub unordered: bool,
+}
+
+impl Plan {
+    pub fn new() -> Plan {
+        Self {
+            entries: Vec::new(),
+            unordered: false,
+        }
+    }
+}
 
 pub struct PlanBuilder<'client> {
     entries: Vec<TransactionEntry>,
+    unordered: bool,
     client: &'client Client,
 }
 
@@ -402,8 +417,16 @@ impl<'client> PlanBuilder<'client> {
         self
     }
 
+    pub fn unordered(mut self) -> Self {
+        self.unordered = true;
+        self
+    }
+
     pub fn build(self) -> Plan {
-        self.entries
+        Plan {
+            entries: self.entries,
+            unordered: self.unordered,
+        }
     }
 }
 

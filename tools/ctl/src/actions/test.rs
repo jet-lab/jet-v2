@@ -48,7 +48,7 @@ pub async fn process_generate_app_config(
     let app_json = serde_json::to_string_pretty(&app_config)?;
 
     std::fs::write(output_path, app_json)?;
-    Ok(Plan::default())
+    Ok(Plan::new())
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

@@ -11,10 +11,10 @@ use clap::Parser;
 use comfy_table::{presets::UTF8_FULL, Table};
 use futures::FutureExt;
 use jet_margin_sdk::{
-    ix_builder::{get_metadata_address, ControlIxBuilder},
+    ix_builder::{get_metadata_address, ControlIxBuilder, MarginIxBuilder, MarginPoolIxBuilder},
     jet_margin::{self, syscall::thread_local_mock, MarginAccount, PriceInfo, Valuation},
     jet_margin_pool::{self, MarginPool},
-    jet_metadata,
+    jet_metadata::{self, PositionTokenMetadata},
 };
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
@@ -109,7 +109,7 @@ pub async fn process_register_adapter(client: &Client, adapter: Pubkey) -> Resul
 
     if client.account_exists(&adapter_md_address).await? {
         println!("address {adapter} is already registered");
-        return Ok(Plan::default());
+        return Ok(Plan::new());
     }
 
     Ok(client
@@ -120,6 +120,50 @@ pub async fn process_register_adapter(client: &Client, adapter: Pubkey) -> Resul
             [ix.register_adapter(&adapter)],
         )
         .build())
+}
+
+pub async fn process_refresh_metadata(client: &Client, token: Pubkey) -> Result<Plan> {
+    let margin_accounts = get_all_accounts(client).await?;
+    let mut plan = client.plan()?;
+    let deposit_token = MarginPoolIxBuilder::new(token).deposit_note_mint;
+    let config = client
+        .read_anchor_account::<PositionTokenMetadata>(&get_metadata_address(&deposit_token))
+        .await?;
+
+    let mut position_count = 0;
+    let mut fix_count = 0;
+
+    println!("current config: {config:#?}");
+    println!("found {} margin accounts", margin_accounts.len());
+
+    for (address, mut account) in margin_accounts {
+        let ix = MarginIxBuilder::new_with_payer(
+            account.owner,
+            u16::from_le_bytes(account.user_seed),
+            client.signer()?,
+            None,
+        );
+
+        if let Some(position) = account.get_position(&deposit_token) {
+            position_count += 1;
+
+            if position.kind() != config.token_kind.into()
+                || position.value_modifier != config.value_modifier
+                || position.max_staleness != config.max_staleness
+            {
+                fix_count += 1;
+                plan = plan.instructions(
+                    [],
+                    [format!("refresh-position-md {token} for {address}")],
+                    [ix.refresh_position_metadata(&deposit_token)],
+                );
+            }
+        }
+    }
+
+    println!("accounts to fix: {fix_count} / {position_count}");
+
+    Ok(plan.build())
 }
 
 pub async fn process_set_liquidator(
@@ -134,7 +178,7 @@ pub async fn process_set_liquidator(
     if is_currently_liquidator == is_liquidator {
         let word = if is_liquidator { "already" } else { "not" };
         println!("address {liquidator} is {word} a liquidator");
-        return Ok(Plan::default());
+        return Ok(Plan::new());
     }
 
     Ok(client
@@ -148,25 +192,7 @@ pub async fn process_set_liquidator(
 }
 
 pub async fn process_list_top_accounts(client: &Client, limit: usize) -> Result<Plan> {
-    let all_margin_accounts = client.rpc().get_program_accounts(&jet_margin::ID).await?;
-    let margin_user_account_size = 8 + std::mem::size_of::<MarginAccount>();
-
-    let mut all_user_accounts = all_margin_accounts
-        .into_iter()
-        .filter_map(|(address, account)| {
-            if account.data.len() != margin_user_account_size {
-                return None;
-            }
-
-            match MarginAccount::try_deserialize(&mut &account.data[..]) {
-                Ok(deserialized) => Some((address, deserialized)),
-                Err(_) => {
-                    eprintln!("could not deserialize margin account {address}");
-                    None
-                }
-            }
-        })
-        .collect::<Vec<_>>();
+    let mut all_user_accounts = get_all_accounts(client).await?;
 
     let refresh_account_tasks = all_user_accounts.iter_mut().map(|(address, account)| {
         refresh_account_positions(client, account).map(|result| (*address, result))
@@ -212,7 +238,29 @@ pub async fn process_list_top_accounts(client: &Client, limit: usize) -> Result<
     println!("Top {limit} accounts by required collateral:");
     show_top_accounts_by(limit, &mut accounts, compare_account_required_collateral);
 
-    Ok(Plan::default())
+    Ok(Plan::new())
+}
+
+async fn get_all_accounts(client: &Client) -> Result<Vec<(Pubkey, MarginAccount)>> {
+    let all_margin_accounts = client.rpc().get_program_accounts(&jet_margin::ID).await?;
+    let margin_user_account_size = 8 + std::mem::size_of::<MarginAccount>();
+
+    Ok(all_margin_accounts
+        .into_iter()
+        .filter_map(|(address, account)| {
+            if account.data.len() != margin_user_account_size {
+                return None;
+            }
+
+            match MarginAccount::try_deserialize(&mut &account.data[..]) {
+                Ok(deserialized) => Some((address, deserialized)),
+                Err(_) => {
+                    eprintln!("could not deserialize margin account {address}");
+                    None
+                }
+            }
+        })
+        .collect())
 }
 
 pub async fn process_inspect(client: &Client, addresses: Vec<Pubkey>) -> Result<Plan> {
