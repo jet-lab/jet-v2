@@ -18,7 +18,7 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Token, TokenAccount, Transfer};
 
-use crate::MarginPool;
+use crate::{events::LoanTransferred, MarginPool};
 
 #[derive(Accounts)]
 pub struct AdminTransferLoan<'info> {
@@ -62,6 +62,13 @@ pub fn admin_transfer_loan_handler(ctx: Context<AdminTransferLoan>, amount: u64)
             .with_signer(&[&source_seeds]),
         amount,
     )?;
+
+    emit!(LoanTransferred {
+        margin_pool: ctx.accounts.margin_pool.key(),
+        source_loan_account: ctx.accounts.source_loan_account.key(),
+        target_loan_account: ctx.accounts.target_loan_account.key(),
+        amount
+    });
 
     Ok(())
 }
