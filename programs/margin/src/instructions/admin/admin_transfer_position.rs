@@ -18,7 +18,7 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Token, TokenAccount, Transfer};
 
-use crate::{MarginAccount, SignerSeeds};
+use crate::{events::TransferPosition, MarginAccount, SignerSeeds};
 
 #[derive(Accounts)]
 pub struct AdminTransferPosition<'info> {
@@ -90,6 +90,14 @@ pub fn admin_transfer_position_handler(
         &target_tokens.key(),
         target_tokens.amount,
     )?;
+
+    emit!(TransferPosition {
+        source_margin_account: ctx.accounts.source_account.key(),
+        target_margin_account: ctx.accounts.target_account.key(),
+        source_token_account: ctx.accounts.source_token_account.key(),
+        target_token_account: ctx.accounts.target_token_account.key(),
+        amount
+    });
 
     Ok(())
 }
