@@ -2312,6 +2312,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "jet-markets-crank-service"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap 3.2.22",
+ "jet-ctl-cli",
+ "jet-margin-sdk",
+ "serde",
+ "serde_json",
+ "serde_with",
+ "tokio",
+]
+
+[[package]]
 name = "jet-metadata"
 version = "1.0.0"
 dependencies = [
