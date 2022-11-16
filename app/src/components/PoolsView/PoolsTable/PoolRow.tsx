@@ -30,19 +30,33 @@ export const PoolRow = (props: { pool: Pool }) => {
     if (pool.tokenPrice >= 0) {
       if (pool.tokenPrice === 0) {
         console.log(`Pyth Price Data for ${pool.name} token is not available at this moment.`);
+        render = (
+          <div>
+            <Text className="table-token-name" strong style={{textDecoration: 'line-through', color: 'red'}}>
+              {pool.name}
+            </Text>
+            <Text className="table-token-abbrev" strong>
+              {pool.symbol}
+            </Text>
+            <Text className="price-name" style={{textDecoration: 'line-through', color: 'red'}}>{`${pool.symbol} ≈ ${poolPrice}`}</Text>
+            <Text className="price-abbrev" style={{textDecoration: 'line-through', color: 'red'}}>{`≈ ${poolPrice}`}</Text>
+          </div>
+        );  
       }
-      render = (
-        <div>
-          <Text className="table-token-name" strong>
-            {pool.name}
-          </Text>
-          <Text className="table-token-abbrev" strong>
-            {pool.symbol}
-          </Text>
-          <Text className="price-name">{`${pool.symbol} ≈ ${poolPrice}`}</Text>
-          <Text className="price-abbrev">{`≈ ${poolPrice}`}</Text>
-        </div>
-      );
+      else {
+        render = (
+          <div>
+            <Text className="table-token-name" strong>
+              {pool.name}
+            </Text>
+            <Text className="table-token-abbrev" strong>
+              {pool.symbol}
+            </Text>
+            <Text className="price-name">{`${pool.symbol} ≈ ${poolPrice}`}</Text>
+            <Text className="price-abbrev">{`≈ ${poolPrice}`}</Text>
+          </div>
+        );
+      }
     }
 
     return render;
