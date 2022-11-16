@@ -498,6 +498,9 @@ impl MarginTxBuilder {
 
         instructions.push(self.adapter_invoke_ix(inner_swap_ix));
 
+        instructions.push(self.ix.update_position_balance(source_position));
+        instructions.push(self.ix.update_position_balance(destination_position));
+
         self.create_transaction(&instructions).await
     }
 
