@@ -36,8 +36,7 @@ export const deposit = (symbol: string, amount: number) => {
   cy.contains('button', 'Deposit').should('not.be.disabled').click();
   const input = cy.get('.ant-modal-content input.ant-input').should('not.be.disabled');
   input.click().type(`${amount}`);
-  cy.wait(500);
-  cy.get('.ant-modal-body button.ant-btn').contains('Deposit').click();
+  cy.get('.ant-modal-body button.ant-btn').should('not.be.disabled').contains('Deposit').click();
   cy.contains(`Your deposit of ${formatWithCommas(amount)} ${symbol} was successfully processed.`);
 };
 
@@ -50,7 +49,6 @@ export const borrow = (symbol: string, amount: number, resetMaxState?: boolean) 
   }
   const input = cy.get('.ant-modal-content input.ant-input').should('not.be.disabled');
   input.click().type(`${amount}`);
-  cy.wait(500);
   cy.get('.ant-modal-body button.ant-btn').contains('Borrow').click();
   cy.contains('borrow successful');
 };
@@ -60,7 +58,6 @@ export const withdraw = (symbol: string, amount: number) => {
   cy.get(`.account-snapshot-footer button`).contains('Withdraw').click();
   const input = cy.get('.ant-modal-content input.ant-input').should('not.be.disabled');
   input.click().type(`${amount}`);
-  cy.wait(500);
   cy.get('.ant-modal-body button.ant-btn').contains('Withdraw').click();
   cy.contains('withdraw successful');
 };
@@ -77,7 +74,6 @@ export const repay = (symbol: string, amount: number, fromDeposit: boolean) => {
     .should(fromDeposit ? 'not.have.class' : 'have.class', 'ant-switch-checked');
   const input = cy.get('.ant-modal-content input.ant-input').should('not.be.disabled');
   input.click().type(`${amount}`);
-  cy.wait(500);
   cy.get('.ant-modal-body button.ant-btn').contains('Repay').click();
   cy.contains(`${symbol} was successfully processed.`);
 };
@@ -88,7 +84,6 @@ export const swap = (symbol: string, amount: number) => {
   cy.contains('Swaps').click();
   const input = cy.get('.order-entry input.ant-input:first-of-type').should('not.be.disabled');
   input.click().type(`${amount}`);
-  cy.wait(500);
   cy.get('.order-entry-footer button.ant-btn').contains('Swap').click();
   cy.contains('swap successful');
 };
