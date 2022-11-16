@@ -24,7 +24,6 @@ use std::{
 
 use anchor_lang::AccountDeserialize;
 use anyhow::Result;
-use jet_program_common::Number128;
 use jet_simulation::solana_rpc_api::SolanaRpcClient;
 use solana_sdk::{program_pack::Pack, pubkey::Pubkey};
 use spl_token_swap::state::SwapV1;
@@ -79,7 +78,11 @@ impl SplSwapPool {
                 Err(_) => continue,
             };
 
-            let (mint_a, mint_b) = match (
+            if !swap.is_initialized {
+                continue;
+            }
+
+            let (_mint_a, _mint_b) = match (
                 supported_mints.get(&swap.token_a_mint),
                 supported_mints.get(&swap.token_b_mint),
             ) {
@@ -87,47 +90,25 @@ impl SplSwapPool {
                 _ => continue,
             };
 
-            // Get the token balances of both sides
-            let token_a = match find_token(rpc, &swap.token_a).await {
-                Ok(val) => val,
-                Err(_) => {
-                    continue;
-                }
-            };
-            let token_b = match find_token(rpc, &swap.token_b).await {
-                Ok(val) => val,
-                Err(_) => {
-                    continue;
-                }
-            };
-
-            let mint_a_info = find_mint(rpc, mint_a).await;
-            let mint_b_info = find_mint(rpc, mint_b).await;
-
-            let token_a_balance =
-                Number128::from_decimal(token_a.amount, -(mint_a_info?.decimals as i32));
-            let token_b_balance =
-                Number128::from_decimal(token_b.amount, -(mint_b_info?.decimals as i32));
-
-            let total_token = token_a_balance * token_b_balance;
-
-            if !swap.is_initialized {
+            // Get the pool tokens minted as a proxy of size
+            let Ok(pool_mint) = find_mint(rpc, &swap.pool_mint).await else {
                 continue;
-            }
+            };
+            let total_supply = pool_mint.supply;
 
             // Check if there is a pool, insert if none, replace if smaller
             pool_sizes
                 .entry((swap.token_a_mint, swap.token_b_mint))
                 .and_modify(|(e_pool, e_value)| {
-                    if &total_token > e_value {
+                    if &total_supply > e_value {
                         // Replace with current pool
                         *e_pool = Self::from_swap_v1(swap_address, swap_program, &swap);
-                        *e_value = total_token;
+                        *e_value = total_supply;
                     }
                 })
                 .or_insert((
                     Self::from_swap_v1(swap_address, swap_program, &swap),
-                    total_token,
+                    total_supply,
                 ));
         }
         let swap_pools = pool_sizes
@@ -157,18 +138,6 @@ impl SplSwapPool {
             program: swap_program,
         }
     }
-}
-
-// helper function to find token account
-async fn find_token(
-    rpc: &Arc<dyn SolanaRpcClient>,
-    address: &Pubkey,
-) -> Result<anchor_spl::token::TokenAccount> {
-    let account = rpc.get_account(address).await?.unwrap();
-    let data = &mut &account.data[..];
-    let account = anchor_spl::token::TokenAccount::try_deserialize_unchecked(data)?;
-
-    Ok(account)
 }
 
 // helper function to find mint account
