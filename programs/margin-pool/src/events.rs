@@ -88,6 +88,14 @@ pub struct Collect {
     pub summary: MarginPoolSummary,
 }
 
+#[event]
+pub struct LoanTransferred {
+    pub margin_pool: Pubkey,
+    pub source_loan_account: Pubkey,
+    pub target_loan_account: Pubkey,
+    pub amount: u64,
+}
+
 /// Common fields from MarginPool for event logging.
 #[derive(AnchorDeserialize, AnchorSerialize, Debug)]
 pub struct MarginPoolSummary {

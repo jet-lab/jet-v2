@@ -104,6 +104,15 @@ pub struct LiquidationEnded {
     pub timed_out: bool,
 }
 
+#[event]
+pub struct TransferPosition {
+    pub source_margin_account: Pubkey,
+    pub target_margin_account: Pubkey,
+    pub source_token_account: Pubkey,
+    pub target_token_account: Pubkey,
+    pub amount: u64,
+}
+
 #[derive(AnchorDeserialize, AnchorSerialize)]
 pub struct ValuationSummary {
     pub equity: i128,
