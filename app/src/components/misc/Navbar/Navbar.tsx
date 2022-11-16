@@ -15,8 +15,8 @@ export function Navbar(): JSX.Element {
     <div className={`navbar-container flex-centered column ${drawerOpen ? 'drawer-open' : ''}`}>
       <TpsBanner />
       {/* To display a banner showing borrows as paused, uncomment the proceeding line and edit 'message' in PauseBorrowBanner.tsx */}
-      <PauseBorrowBanner /> 
-      
+      <PauseBorrowBanner />
+
       {/* Desktop Nav */}
       <nav className="desktop flex align-center justify-between">
         <div className="nav-section flex align-center justify-start">
