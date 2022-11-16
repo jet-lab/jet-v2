@@ -1,20 +1,18 @@
 mod client;
 mod consumer;
 
-use std::{fs::read_to_string, time::Duration};
+use std::fs::read_to_string;
 
 use anyhow::Result;
 use clap::Parser;
-use client::{Client, AsyncSigner};
+use client::{AsyncSigner, Client};
 use consumer::Consumer;
 use jet_margin_sdk::ix_builder::{derive_airspace, test_service::derive_token_mint};
 use jetctl::actions::test::{derive_bond_manager_from_duration_seed, TestEnvConfig};
 use solana_cli_config::{Config as SolanaConfig, CONFIG_FILE as SOLANA_CONFIG_FILE};
 use solana_sdk::pubkey::Pubkey;
 
-
 static LOCALNET_URL: &str = "http://127.0.0.1:8899";
-
 
 #[derive(Parser, Debug)]
 pub struct CliOpts {
@@ -39,18 +37,17 @@ async fn run(opts: CliOpts) -> Result<()> {
     );
 
     let targets = read_config(&opts.config_path)?;
-    
+
     let mut consumers = vec![];
     for (_, markets) in targets {
         for market in markets {
-
             let c = client.clone();
-            consumers.push(tokio::spawn(async move {
-                Consumer::spawn(c, market).await
-            }));
+            consumers.push(tokio::spawn(
+                async move { Consumer::spawn(c, market).await },
+            ));
         }
     }
-    
+
     Ok(())
 }
 
