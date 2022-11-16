@@ -274,6 +274,14 @@ export type JetBonds = {
           ]
         },
         {
+          "name": "feeDestination",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "The account where fees are allowed to be withdrawn"
+          ]
+        },
+        {
           "name": "payer",
           "isMut": true,
           "isSigner": true,
@@ -1596,7 +1604,7 @@ export type JetBonds = {
       "accounts": [
         {
           "name": "bondManager",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false,
           "docs": [
             "The `BondManager` account tracks global information related to this particular bond market"
@@ -2103,6 +2111,13 @@ export type JetBonds = {
             "type": "publicKey"
           },
           {
+            "name": "feeDestination",
+            "docs": [
+              "where fees can be withdrawn to"
+            ],
+            "type": "publicKey"
+          },
+          {
             "name": "seed",
             "docs": [
               "The user-defined part of the seed that generated this bond manager's PDA"
@@ -2165,6 +2180,20 @@ export type JetBonds = {
               "Length of time before a claim is marked as mature, in seconds"
             ],
             "type": "i64"
+          },
+          {
+            "name": "originationFee",
+            "docs": [
+              "assessed on borrows. scaled by origination_fee::FEE_UNIT"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "collectedFees",
+            "docs": [
+              "amount of fees currently available to be withdrawn by market owner"
+            ],
+            "type": "u64"
           },
           {
             "name": "nonce",
@@ -2507,6 +2536,13 @@ export type JetBonds = {
               "Length of time before a claim is marked as mature, in seconds"
             ],
             "type": "i64"
+          },
+          {
+            "name": "originationFee",
+            "docs": [
+              "assessed on borrows. scaled by origination_fee::FEE_UNIT"
+            ],
+            "type": "u64"
           }
         ]
       }
@@ -3820,6 +3856,14 @@ export const IDL: JetBonds = {
           "isSigner": false,
           "docs": [
             "The oracle for the bond ticket price"
+          ]
+        },
+        {
+          "name": "feeDestination",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "The account where fees are allowed to be withdrawn"
           ]
         },
         {
@@ -5145,7 +5189,7 @@ export const IDL: JetBonds = {
       "accounts": [
         {
           "name": "bondManager",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false,
           "docs": [
             "The `BondManager` account tracks global information related to this particular bond market"
@@ -5652,6 +5696,13 @@ export const IDL: JetBonds = {
             "type": "publicKey"
           },
           {
+            "name": "feeDestination",
+            "docs": [
+              "where fees can be withdrawn to"
+            ],
+            "type": "publicKey"
+          },
+          {
             "name": "seed",
             "docs": [
               "The user-defined part of the seed that generated this bond manager's PDA"
@@ -5714,6 +5765,20 @@ export const IDL: JetBonds = {
               "Length of time before a claim is marked as mature, in seconds"
             ],
             "type": "i64"
+          },
+          {
+            "name": "originationFee",
+            "docs": [
+              "assessed on borrows. scaled by origination_fee::FEE_UNIT"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "collectedFees",
+            "docs": [
+              "amount of fees currently available to be withdrawn by market owner"
+            ],
+            "type": "u64"
           },
           {
             "name": "nonce",
@@ -6056,6 +6121,13 @@ export const IDL: JetBonds = {
               "Length of time before a claim is marked as mature, in seconds"
             ],
             "type": "i64"
+          },
+          {
+            "name": "originationFee",
+            "docs": [
+              "assessed on borrows. scaled by origination_fee::FEE_UNIT"
+            ],
+            "type": "u64"
           }
         ]
       }
