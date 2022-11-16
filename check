@@ -76,7 +76,7 @@ in-docker() {
     if [ "$(docker ps -aq -f status=exited -f name="^$container_name$")" ]; then
         docker start "$container_name"
     elif [ ! "$(docker ps -aq -f name="^$container_name$")" ]; then
-        DOCKER_FLAGS="-d --name '$container_name'" docker-run sleep infinity
+        DOCKER_FLAGS="-d --name $container_name" docker-run sleep infinity
     fi
     docker exec ${DOCKER_FLAGS:--it} "$container_name" /jet-v2/check $@
 }
