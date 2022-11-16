@@ -32,16 +32,17 @@ export const PoolRow = (props: { pool: Pool }) => {
   // Renders pool asset info
   function renderAssetInfo() {
     let render = <Skeleton className="align-left" paragraph={false} active />;
+    if (pool.tokenPrice >=0) {
       if (pool.tokenPrice === 0) {
-        console.log(`Pyth Price Data for ${pool.name} token is not available at this moment.`);
+        //console.log(`Pyth Price Data for ${pool.name} token is not available at this moment.`);
         render = (
           <div>
             <Info term="pythDataStale">
-              <Text className="table-token-name info-element" strong style={{textDecoration: 'line-through', color: 'red'}}>{pool.name}</Text>
+              <Text className="table-token-name info-element" strong style={{textDecoration: 'line-through', color: '#e36868'}}>{pool.name}</Text>
             </Info>
             <Text className="table-token-abbrev" strong>{pool.symbol}</Text>
-            <Text className="price-name" style={{textDecoration: 'line-through', color: 'red'}}>{`${pool.symbol} ≈ ${poolPrice}`}</Text>
-            <Text className="price-abbrev" style={{textDecoration: 'line-through', color: 'red'}}>{`≈ ${poolPrice}`}</Text>
+            <Text className="price-name" style={{textDecoration: 'line-through', color: '#e36868'}}>{`${pool.symbol} ≈ ${poolPrice}`}</Text>
+            <Text className="price-abbrev" style={{textDecoration: 'line-through', color: '#e36868'}}>{`≈ ${poolPrice}`}</Text>
           </div>
         );  
       }
@@ -59,7 +60,7 @@ export const PoolRow = (props: { pool: Pool }) => {
           </div>
         );
       }
-
+    }
     return render;
   }
 
