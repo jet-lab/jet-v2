@@ -191,6 +191,35 @@ pub async fn process_set_liquidator(
         .build())
 }
 
+pub async fn process_update_balances(
+    client: &Client,
+    margin_account_address: Pubkey,
+) -> Result<Plan> {
+    let account = client
+        .read_anchor_account::<MarginAccount>(&source_account)
+        .await?;
+
+    let ix = MarginIxBuilder::new_with_payer(
+        account.owner,
+        u16::from_le_bytes(account.user_seed),
+        client.signer()?,
+        None,
+    );
+    let mut steps = vec![];
+    let mut instructions = vec![];
+
+    for position in account.positions() {
+        let current_state = client.read_token_account(&position.address).await?;
+
+        if position.balance != current_state.amount {
+            steps.push(format!("update-balance {}", position.address));
+            instructions.push(ix.update_position_balance(position.address));
+        }
+    }
+
+    Ok(client.plan()?.instructions([], steps, instructions).build())
+}
+
 pub async fn process_transfer_position(
     client: &Client,
     source_account: Pubkey,

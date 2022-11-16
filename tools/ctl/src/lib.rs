@@ -144,14 +144,17 @@ pub enum MarginCommand {
     /// Transfer a position owned directly by an account
     TransferPosition {
         /// The source margin account to transfer out of
+        #[clap(long, short = 's')]
         #[serde_as(as = "DisplayFromStr")]
         source: Pubkey,
 
         /// The target margin account to transfer into
+        #[clap(long, short = 't')]
         #[serde_as(as = "DisplayFromStr")]
         target: Pubkey,
 
         /// The target token to be transferred
+        #[clap(long)]
         #[serde_as(as = "DisplayFromStr")]
         token: Pubkey,
 
@@ -193,14 +196,17 @@ pub enum MarginPoolCommand {
     /// Transfer a loan between margin accounts
     TransferLoan {
         /// The source margin account to transfer out of
+        #[clap(long, short = 's')]
         #[serde_as(as = "DisplayFromStr")]
         source: Pubkey,
 
         /// The target margin account to transfer into
+        #[clap(long, short = 't')]
         #[serde_as(as = "DisplayFromStr")]
         target: Pubkey,
 
         /// The target token to be transferred
+        #[clap(long)]
         #[serde_as(as = "DisplayFromStr")]
         token: Pubkey,
 
