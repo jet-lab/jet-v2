@@ -28,6 +28,7 @@ mod register_position;
 mod update_position_balance;
 mod verify_healthy;
 
+mod admin;
 mod configure;
 mod positions;
 
@@ -44,5 +45,6 @@ pub use register_position::*;
 pub use update_position_balance::*;
 pub use verify_healthy::*;
 
+pub use admin::*;
 pub use configure::*;
 pub use positions::*;
