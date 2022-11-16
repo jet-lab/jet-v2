@@ -285,6 +285,7 @@ impl Client {
                 .send_transaction_with_config(
                     transaction,
                     RpcSendTransactionConfig {
+                        skip_preflight: true,
                         preflight_commitment: Some(CommitmentLevel::Processed),
                         ..Default::default()
                     },
