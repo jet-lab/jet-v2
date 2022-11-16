@@ -2240,6 +2240,7 @@ dependencies = [
  "pyth-sdk-solana 0.4.2",
  "serde",
  "serde_test",
+ "solana-program",
  "static_assertions",
 ]
 
@@ -2257,6 +2258,7 @@ dependencies = [
  "pyth-sdk-solana 0.4.2",
  "serde",
  "serde_test",
+ "solana-program",
  "static_assertions",
 ]
 
