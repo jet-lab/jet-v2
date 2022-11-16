@@ -8,8 +8,6 @@ import { Skeleton, Typography } from 'antd';
 import { Info } from 'app/src/components/misc/Info';
 import { Dictionary } from '@state/settings/localization/localization';
 
-
-
 // Component for each row of the PoolsTable
 export const PoolRow = (props: { pool: Pool }) => {
   const { pool } = props;
@@ -32,21 +30,31 @@ export const PoolRow = (props: { pool: Pool }) => {
   // Renders pool asset info
   function renderAssetInfo() {
     let render = <Skeleton className="align-left" paragraph={false} active />;
-    if (pool.tokenPrice >=0) {
+    if (pool.tokenPrice >= 0) {
       if (pool.tokenPrice === 0) {
         //console.log(`Pyth Price Data for ${pool.name} token is not available at this moment.`);
         render = (
           <div>
             <Info term="pythDataStale">
-              <Text className="table-token-name info-element" strong style={{textDecoration: 'line-through', color: '#e36868'}}>{pool.name}</Text>
+              <Text
+                className="table-token-name info-element"
+                strong
+                style={{ textDecoration: 'line-through', color: '#e36868' }}>
+                {pool.name}
+              </Text>
             </Info>
-            <Text className="table-token-abbrev" strong>{pool.symbol}</Text>
-            <Text className="price-name" style={{textDecoration: 'line-through', color: '#e36868'}}>{`${pool.symbol} ≈ ${poolPrice}`}</Text>
-            <Text className="price-abbrev" style={{textDecoration: 'line-through', color: '#e36868'}}>{`≈ ${poolPrice}`}</Text>
+            <Text className="table-token-abbrev" strong>
+              {pool.symbol}
+            </Text>
+            <Text
+              className="price-name"
+              style={{ textDecoration: 'line-through', color: '#e36868' }}>{`${pool.symbol} ≈ ${poolPrice}`}</Text>
+            <Text
+              className="price-abbrev"
+              style={{ textDecoration: 'line-through', color: '#e36868' }}>{`≈ ${poolPrice}`}</Text>
           </div>
-        );  
-      }
-      else {
+        );
+      } else {
         render = (
           <div>
             <Text className="table-token-name" strong>
