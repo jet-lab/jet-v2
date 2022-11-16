@@ -141,6 +141,12 @@ pub enum MarginCommand {
         #[clap(long, default_value_t = 10)]
         limit: usize,
     },
+
+    /// Display a detailed view of each margin account
+    Inspect {
+        /// List of accounts to inspect
+        addresses: Vec<Pubkey>,
+    },
 }
 
 #[serde_as]
@@ -374,6 +380,9 @@ async fn run_margin_command(client: &Client, command: MarginCommand) -> Result<P
         }
         MarginCommand::ListTopAccounts { limit } => {
             actions::margin::process_list_top_accounts(client, limit).await
+        }
+        MarginCommand::Inspect { addresses } => {
+            actions::margin::process_inspect(client, addresses).await
         }
     }
 }

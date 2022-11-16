@@ -29,7 +29,7 @@ use crate::{util, Amount, AmountKind, ChangeKind, ErrorCode, TokenChange};
 /// services lending/borrowing operations.
 #[account]
 #[repr(C, align(8))]
-#[derive(Debug, Default)]
+#[derive(Default)]
 pub struct MarginPool {
     pub version: u8,
 
@@ -81,6 +81,29 @@ pub struct MarginPool {
 
     /// The time the interest was last accrued up to
     pub accrued_until: i64,
+}
+
+impl std::fmt::Debug for MarginPool {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("MarginPool")
+            .field("version", &self.version)
+            .field("pool_bump", &self.pool_bump)
+            .field("vault", &self.vault)
+            .field("fee_destination", &self.fee_destination)
+            .field("deposit_note_mint", &self.deposit_note_mint)
+            .field("loan_note_mint", &self.loan_note_mint)
+            .field("token_mint", &self.token_mint)
+            .field("token_price_oracle", &self.token_price_oracle)
+            .field("address", &self.address)
+            .field("config", &self.config)
+            .field("borrowed_tokens", &self.total_borrowed())
+            .field("uncollected_fees", &self.total_uncollected_fees())
+            .field("deposit_tokens", &self.deposit_tokens)
+            .field("deposit_notes", &self.deposit_notes)
+            .field("loan_notes", &self.loan_notes)
+            .field("accrued_until", &self.accrued_until)
+            .finish()
+    }
 }
 
 #[cfg(any(test, feature = "cli"))]
