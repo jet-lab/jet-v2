@@ -28,10 +28,9 @@ export const PoolRow = (props: { pool: Pool }) => {
 
   // Renders pool asset info
   function renderAssetInfo() {
-    let render = <Skeleton className="align-left" paragraph={false} active />;
     if (pool.tokenPrice >= 0) {
       if (pool.tokenPrice === 0) {
-        render = (
+        return (
           <>
             <Info term="pythDataStale">
               <div className="info-element">
@@ -55,7 +54,7 @@ export const PoolRow = (props: { pool: Pool }) => {
           </>
         );
       } else {
-        render = (
+        return (
           <div>
             <Text className="table-token-name" strong>
               {pool.name}
@@ -69,7 +68,7 @@ export const PoolRow = (props: { pool: Pool }) => {
         );
       }
     }
-    return render;
+    return <Skeleton className="align-left" paragraph={false} active />;
   }
 
   // Renders the utilization rate for the pool
