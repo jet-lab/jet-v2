@@ -80,14 +80,14 @@ pub enum LoanAccount<'info> {
 }
 
 impl<'info> LoanAccount<'info> {
-    pub fn auto_stake(self) -> Result<AnchorAccount<'info, SplitTicket, Mut>> {
+    pub fn auto_stake(&mut self) -> Result<&mut AnchorAccount<'info, SplitTicket, Mut>> {
         match self {
             LoanAccount::AutoStake(split_ticket) => Ok(split_ticket),
             _ => panic!(),
         }
     }
 
-    pub fn new_debt(self) -> Result<AnchorAccount<'info, Obligation, Mut>> {
+    pub fn new_debt(&mut self) -> Result<&mut AnchorAccount<'info, Obligation, Mut>> {
         match self {
             LoanAccount::NewDebt(obligation) => Ok(obligation),
             _ => panic!(),
