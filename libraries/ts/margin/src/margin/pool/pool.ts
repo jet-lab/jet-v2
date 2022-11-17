@@ -280,6 +280,11 @@ export class Pool {
   get tokenPrice(): number {
     return this.info?.tokenPriceOracle.price ?? 0
   }
+
+  get tokenEmaPrice(): number {
+    return this.info?.tokenPriceOracle.emaPrice.value ?? 0
+  }
+  
   private prices: PriceResult
   get depositNotePrice(): PriceInfo {
     return {

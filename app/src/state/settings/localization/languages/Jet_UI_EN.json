@@ -31,6 +31,7 @@
     "riskLevel": "Risk Level",
     "priceImpact": "Price Impact",
     "publicKey": "Public Key",
+    "pythDataStale": "Pyth Data Stale",
     "balance": "Balance",
     "wallet": "Wallet",
     "walletBalance": "Wallet Balance",
@@ -423,7 +424,8 @@
       "title": "Pools Table",
       "noPools": "No Pools",
       "allAssets": "All Assets",
-      "searchExample": "e.g. JET"
+      "searchExample": "e.g. JET",
+      "pythDataStale": "Pyth Data Stale"
     },
     "errors": {
       "noPools": "Error loading Jet pools",
