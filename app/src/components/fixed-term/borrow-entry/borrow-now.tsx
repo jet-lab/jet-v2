@@ -14,6 +14,7 @@ import { useRecoilValue } from 'recoil';
 import { useState } from 'react';
 import { MarginConfig, MarginTokenConfig } from '@jet-lab/margin';
 import { AllFixedMarketsAtom, MarketAndconfig } from '@state/fixed-market/fixed-term-market-sync';
+import debounce from 'lodash.debounce';
 
 interface RequestLoanProps {
   decimals: number;
@@ -71,7 +72,7 @@ export const BorrowNow = ({ token, decimals, marketAndConfig, marginConfig }: Re
           Loan amount
           <InputNumber
             className="input-amount"
-            onChange={e => setAmount(new BN(e * 10 ** decimals))}
+            onChange={debounce(e => setAmount(new BN(e * 10 ** decimals)), 300)}
             placeholder={'10,000'}
             min={0}
             formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}

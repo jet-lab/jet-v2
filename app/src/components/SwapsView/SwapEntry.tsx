@@ -29,6 +29,7 @@ import { Button, Checkbox, Input, Radio, Typography } from 'antd';
 import SwapIcon from '@assets/icons/function-swap.svg';
 import { CurrentSplSwapPool, hasOrcaPool, SwapFees, SwapPoolTokenAmounts } from '@state/swap/splSwap';
 import { useTokenInputDisabledMessage, useTokenInputErrorMessage } from '@utils/actions/tokenInput';
+import debounce from 'lodash.debounce';
 
 // Component for user to enter and submit a swap action
 export function SwapEntry(): JSX.Element {
@@ -451,13 +452,13 @@ export function SwapEntry(): JSX.Element {
                 placeholder="0.75"
                 value={slippageInput}
                 disabled={sendingTransaction}
-                onChange={e => {
+                onChange={debounce(e => {
                   let inputString = e.target.value;
                   if (isNaN(+inputString) || +inputString < 0) {
                     inputString = '0';
                   }
                   setSlippageInput(inputString);
-                }}
+                }, 300)}
                 onPressEnter={sendSwap}
               />
               <Text type="secondary" strong>

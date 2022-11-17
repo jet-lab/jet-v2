@@ -51,7 +51,7 @@ describe('Error Flows', () => {
     };
     cy.get('.SOL-pools-table-row').click();
     cy.contains('button', 'Deposit').should('not.be.disabled').click();
-    cy.contains('100%').click();
+    cy.contains('Max').click();
     cy.contains('.ant-modal-body button', 'Deposit').should('not.be.disabled').click();
     cy.contains('deposit successful');
 
