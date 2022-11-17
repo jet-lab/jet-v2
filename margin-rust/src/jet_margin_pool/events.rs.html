@@ -112,6 +112,14 @@
 <span id="112">112</span>
 <span id="113">113</span>
 <span id="114">114</span>
+<span id="115">115</span>
+<span id="116">116</span>
+<span id="117">117</span>
+<span id="118">118</span>
+<span id="119">119</span>
+<span id="120">120</span>
+<span id="121">121</span>
+<span id="122">122</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="kw">crate</span>::{<span class="ident">MarginPool</span>, <span class="ident">MarginPoolConfig</span>};
 <span class="kw">use</span> <span class="ident">anchor_lang::prelude</span>::<span class="kw-2">*</span>;
 
@@ -201,6 +209,14 @@
     <span class="kw">pub</span> <span class="ident">fee_notes_balance</span>: <span class="ident">u64</span>,
     <span class="kw">pub</span> <span class="ident">fee_tokens_balance</span>: <span class="ident">u64</span>,
     <span class="kw">pub</span> <span class="ident">summary</span>: <span class="ident">MarginPoolSummary</span>,
+}
+
+<span class="attribute">#[<span class="ident">event</span>]</span>
+<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">LoanTransferred</span> {
+    <span class="kw">pub</span> <span class="ident">margin_pool</span>: <span class="ident">Pubkey</span>,
+    <span class="kw">pub</span> <span class="ident">source_loan_account</span>: <span class="ident">Pubkey</span>,
+    <span class="kw">pub</span> <span class="ident">target_loan_account</span>: <span class="ident">Pubkey</span>,
+    <span class="kw">pub</span> <span class="ident">amount</span>: <span class="ident">u64</span>,
 }
 
 <span class="doccomment">/// Common fields from MarginPool for event logging.</span>

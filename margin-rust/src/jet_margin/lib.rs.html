@@ -617,6 +617,14 @@
 <span id="617">617</span>
 <span id="618">618</span>
 <span id="619">619</span>
+<span id="620">620</span>
+<span id="621">621</span>
+<span id="622">622</span>
+<span id="623">623</span>
+<span id="624">624</span>
+<span id="625">625</span>
+<span id="626">626</span>
+<span id="627">627</span>
 </pre><pre class="rust"><code><span class="comment">// SPDX-License-Identifier: AGPL-3.0-or-later</span>
 <span class="comment">//</span>
 <span class="comment">// Copyright (C) 2022 JET PROTOCOL HOLDINGS, LLC.</span>
@@ -1116,6 +1124,14 @@
         <span class="ident">is_liquidator</span>: <span class="ident">bool</span>,
     ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
         <span class="ident">configure_liquidator_handler</span>(<span class="ident">ctx</span>, <span class="ident">is_liquidator</span>)
+    }
+
+    <span class="doccomment">/// Allow governing address to transfer any position from one margin account to another</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// This is provided as a mechanism to allow for manually fixing issues that occur in the</span>
+    <span class="doccomment">/// protocol due to bad user assets.</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">admin_transfer_position</span>(<span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">AdminTransferPosition</span><span class="op">&gt;</span>, <span class="ident">amount</span>: <span class="ident">u64</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
+        <span class="ident">admin_transfer_position_handler</span>(<span class="ident">ctx</span>, <span class="ident">amount</span>)
     }
 }
 

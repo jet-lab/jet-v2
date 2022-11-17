@@ -229,6 +229,11 @@
 <span id="229">229</span>
 <span id="230">230</span>
 <span id="231">231</span>
+<span id="232">232</span>
+<span id="233">233</span>
+<span id="234">234</span>
+<span id="235">235</span>
+<span id="236">236</span>
 </pre><pre class="rust"><code><span class="comment">// SPDX-License-Identifier: AGPL-3.0-or-later</span>
 <span class="comment">//</span>
 <span class="comment">// Copyright (C) 2022 JET PROTOCOL HOLDINGS, LLC.</span>
@@ -333,6 +338,11 @@
     <span class="doccomment">/// Closes a previously opened loan token account</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">close_loan</span>(<span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">CloseLoan</span><span class="op">&gt;</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
         <span class="ident">instructions::close_loan_handler</span>(<span class="ident">ctx</span>)
+    }
+
+    <span class="doccomment">/// Administrative function for moving loans between accounts</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">admin_transfer_loan</span>(<span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">AdminTransferLoan</span><span class="op">&gt;</span>, <span class="ident">amount</span>: <span class="ident">u64</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
+        <span class="ident">instructions::admin_transfer_loan_handler</span>(<span class="ident">ctx</span>, <span class="ident">amount</span>)
     }
 }
 
