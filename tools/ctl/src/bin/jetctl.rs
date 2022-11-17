@@ -9,6 +9,8 @@ pub async fn main() -> anyhow::Result<()> {
         for err in e.chain() {
             println!("{err}");
         }
+
+        println!("{}", e.backtrace());
     }
     Ok(())
 }

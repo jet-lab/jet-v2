@@ -135,6 +135,12 @@ pub enum MarginCommand {
         liquidator: Pubkey,
     },
 
+    /// Update the metadata for existing positions
+    RefreshPositionMd {
+        /// The token that had its config updated
+        token: Pubkey,
+    },
+
     /// List the top margin accounts by asset value
     ListTopAccounts {
         /// The number of accounts to show
@@ -319,7 +325,7 @@ pub async fn run(opts: CliOpts) -> Result<()> {
     if let Some(proposal_id) = opts.target_proposal {
         println!(
             "targeting a proposal {proposal_id}, {} transactions will be added",
-            plan.len()
+            plan.entries.len()
         );
 
         plan = governance::convert_plan_to_proposal(
@@ -377,6 +383,9 @@ async fn run_margin_command(client: &Client, command: MarginCommand) -> Result<P
         }
         MarginCommand::RemoveLiquidator { liquidator } => {
             actions::margin::process_set_liquidator(client, liquidator, false).await
+        }
+        MarginCommand::RefreshPositionMd { token } => {
+            actions::margin::process_refresh_metadata(client, token).await
         }
         MarginCommand::ListTopAccounts { limit } => {
             actions::margin::process_list_top_accounts(client, limit).await

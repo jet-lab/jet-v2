@@ -29,7 +29,9 @@ pub async fn process_init_env(client: &Client, config_path: impl AsRef<Path>) ->
 
     for tx in txs {
         plan = plan.instructions(
-            tx.signers.iter().map(|k| k as &dyn Signer),
+            tx.signers
+                .into_iter()
+                .map(|k| Box::new(k) as Box<dyn Signer>),
             [""],
             tx.instructions,
         );
