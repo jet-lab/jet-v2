@@ -1,7 +1,11 @@
 use std::sync::Arc;
 
+use agnostic_orderbook::state::event_queue::EventQueue;
 use anchor_lang::{InstructionData, ToAccountMetas};
-use jet_bonds::{margin::state::Obligation, seeds, tickets::instructions::StakeBondTicketsParams};
+use jet_bonds::{
+    margin::state::Obligation, orderbook::state::CallbackInfo, seeds,
+    tickets::instructions::StakeBondTicketsParams,
+};
 use jet_simulation::solana_rpc_api::SolanaRpcClient;
 use solana_sdk::{
     instruction::{AccountMeta, Instruction},
@@ -22,7 +26,10 @@ pub use jet_bonds::{
 
 use crate::ix_builder::{get_metadata_address, test_service::if_not_initialized};
 
-use super::error::{client_err, BondsIxError, Result};
+use super::{
+    error::{client_err, BondsIxError, Result},
+    event_builder::build_consume_events_info,
+};
 
 #[derive(Clone, Debug)]
 pub struct BondsIxBuilder {
@@ -225,12 +232,9 @@ impl BondsIxBuilder {
         })
     }
 
-    pub fn consume_events(
-        &self,
-        remaining_accounts: Vec<Pubkey>,
-        num_events: u32,
-        seed_bytes: Vec<Vec<u8>>,
-    ) -> Result<Instruction> {
+    pub fn consume_events(&self, event_queue: EventQueue<CallbackInfo>) -> Result<Instruction> {
+        let (remaining_accounts, num_events, seed_bytes) =
+            build_consume_events_info(event_queue)?.as_params();
         let data = jet_bonds::instruction::ConsumeEvents {
             num_events,
             seed_bytes,
