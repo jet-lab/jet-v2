@@ -312,12 +312,12 @@ export function useMarginActions() {
     );
     try {
       // Refresh positions
-      await currentPool.withMarginRefreshAllPositionPrices({
+      await currentPool.withPrioritisedPositionRefresh({
         instructions: refreshInstructions,
         pools: pools.tokenPools,
         marginAccount: fromAccount
       });
-      await currentPool.withMarginRefreshAllPositionPrices({
+      await currentPool.withPrioritisedPositionRefresh({
         instructions: refreshInstructions,
         pools: pools.tokenPools,
         marginAccount: toAccount
