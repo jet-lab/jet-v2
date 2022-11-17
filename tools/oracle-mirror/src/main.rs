@@ -1,13 +1,14 @@
 use std::{
+    collections::HashSet,
     path::{Path, PathBuf},
     str::FromStr,
+    sync::Arc,
 };
 
 use anchor_lang::{AccountDeserialize, Discriminator};
 use anyhow::{bail, Result};
 use clap::Parser;
 
-use pyth_sdk_solana::state::ProductAccount;
 use solana_clap_utils::input_validators::normalize_to_url_if_moniker;
 use solana_cli_config::{Config as SolanaConfig, CONFIG_FILE as SOLANA_CONFIG_FILE};
 use solana_client::{
@@ -16,9 +17,14 @@ use solana_client::{
     rpc_request::{RpcError, RpcResponseErrorData},
 };
 use solana_sdk::{
-    commitment_config::CommitmentConfig, hash::Hash, pubkey, pubkey::Pubkey, signature::Keypair,
-    signer::Signer, transaction::Transaction,
+    commitment_config::CommitmentConfig, hash::Hash, instruction::Instruction, program_pack::Pack,
+    pubkey, pubkey::Pubkey, signature::Keypair, signer::Signer, system_instruction,
+    sysvar::rent::Rent, transaction::Transaction,
 };
+
+use pyth_sdk_solana::state::ProductAccount;
+
+use jet_simulation::solana_rpc_api::{RpcConnection, SolanaRpcClient};
 
 const PYTH_DEVNET_PROGRAM: Pubkey = pubkey!("gSbePebfvPy7tRqimPoVecS2UsBvYv46ynrzWocc92s");
 const PYTH_MAINNET_PROGRAM: Pubkey = pubkey!("FsJ3A3u2vn5cTVofAjvy6y5kwABJAqYWpe4975bi2epH");
@@ -87,14 +93,20 @@ async fn run(opts: CliOpts) -> Result<()> {
     let source_client =
         RpcClient::new_with_commitment(source_endpoint, CommitmentConfig::processed());
     let target_client =
-        RpcClient::new_with_commitment(target_endpoint, CommitmentConfig::processed());
+        RpcClient::new_with_commitment(target_endpoint.clone(), CommitmentConfig::processed());
+    let target_sdk_client = Arc::new(RpcConnection::new(
+        Keypair::from_bytes(&signer_data)?,
+        RpcClient::new_with_commitment(target_endpoint, CommitmentConfig::processed()),
+    )) as Arc<dyn SolanaRpcClient>;
 
     let oracle_list = discover_oracles(&source_client, &target_client).await?;
+    let pool_list = discover_pools(&target_sdk_client, &oracle_list).await?;
 
     let mut id_file = None;
 
     loop {
         sync_oracles(&source_client, &target_client, &signer, &oracle_list).await?;
+        sync_pool_balances(&target_client, &signer, &pool_list).await?;
 
         if id_file.is_none() {
             id_file = Some(RunningProcessIdFile::new());
@@ -108,6 +120,82 @@ struct OracleInfo {
     source_oracle: Pubkey,
     target_mint: Pubkey,
     price_ratio: f64,
+}
+
+fn get_scratch_address(owner: &Pubkey, token: &Pubkey) -> Pubkey {
+    Pubkey::create_with_seed(owner, &token.to_string()[..31], &spl_token::ID).unwrap()
+}
+
+fn create_scratch_account_ix(owner: &Pubkey, token: &Pubkey) -> Vec<Instruction> {
+    let address = get_scratch_address(owner, token);
+    let rent = Rent::default().minimum_balance(spl_token::state::Account::LEN);
+
+    vec![
+        system_instruction::create_account_with_seed(
+            owner,
+            &address,
+            owner,
+            &token.to_string()[..31],
+            rent,
+            spl_token::state::Account::LEN as u64,
+            &spl_token::ID,
+        ),
+        spl_token::instruction::initialize_account(&spl_token::ID, &address, token, owner).unwrap(),
+    ]
+}
+
+async fn sync_pool_balances(
+    target: &RpcClient,
+    signer: &Keypair,
+    pools: &[(Pubkey, Pubkey)],
+) -> Result<()> {
+    for (token_a, token_b) in pools {
+        let mut instructions = vec![];
+
+        let scratch_a = get_scratch_address(&signer.pubkey(), token_a);
+        let scratch_b = get_scratch_address(&signer.pubkey(), token_b);
+
+        if target.get_balance(&scratch_a).await? == 0 {
+            instructions.extend(create_scratch_account_ix(&signer.pubkey(), token_a));
+        }
+        if target.get_balance(&scratch_b).await? == 0 {
+            instructions.extend(create_scratch_account_ix(&signer.pubkey(), token_b));
+        }
+
+        instructions.push(
+            jet_margin_sdk::ix_builder::test_service::spl_swap_pool_balance(
+                token_a,
+                token_b,
+                &scratch_a,
+                &scratch_b,
+                &signer.pubkey(),
+            ),
+        );
+
+        let balance_tx = Transaction::new_signed_with_payer(
+            &instructions,
+            Some(&signer.pubkey()),
+            &[signer],
+            target.get_latest_blockhash().await?,
+        );
+
+        match target.send_and_confirm_transaction(&balance_tx).await {
+            Ok(_) => (),
+            Err(e) => {
+                eprintln!("{e}");
+
+                if let ClientErrorKind::RpcError(RpcError::RpcResponseError {
+                    data: RpcResponseErrorData::SendTransactionPreflightFailure(failure),
+                    ..
+                }) = e.kind()
+                {
+                    eprintln!("{:#?}", failure.logs);
+                }
+            }
+        }
+    }
+
+    Ok(())
 }
 
 async fn sync_oracles(
@@ -153,6 +241,23 @@ async fn sync_oracles(
     }
 
     Ok(())
+}
+
+async fn discover_pools(
+    target: &Arc<dyn SolanaRpcClient>,
+    oracles: &[OracleInfo],
+) -> Result<Vec<(Pubkey, Pubkey)>> {
+    let supported_mints = HashSet::from_iter(oracles.iter().map(|o| o.target_mint));
+    let result = jet_margin_sdk::spl_swap::SplSwapPool::get_pools(
+        target,
+        &supported_mints,
+        spl_token_swap::ID,
+    )
+    .await?;
+
+    println!("found {} pools", result.len());
+
+    Ok(result.keys().cloned().collect())
 }
 
 async fn discover_oracles(source: &RpcClient, target: &RpcClient) -> Result<Vec<OracleInfo>> {

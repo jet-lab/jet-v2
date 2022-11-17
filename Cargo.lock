@@ -2219,6 +2219,7 @@ dependencies = [
  "solana-sdk",
  "spl-governance",
  "spl-token 3.3.1",
+ "spl-token-swap 2.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "tokio",
  "toml",
 ]
@@ -2326,12 +2327,15 @@ dependencies = [
  "clap 3.2.22",
  "humantime",
  "jet-margin-sdk",
+ "jet-simulation",
  "pyth-sdk-solana 0.6.1",
  "serde_json",
  "solana-clap-utils",
  "solana-cli-config",
  "solana-client",
  "solana-sdk",
+ "spl-token 3.3.1",
+ "spl-token-swap 2.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "tokio",
 ]
 
@@ -2398,6 +2402,7 @@ dependencies = [
  "anchor-lang",
  "anchor-spl",
  "bytemuck",
+ "jet-program-common",
  "pyth-sdk-solana 0.4.2",
  "spl-token-swap 2.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
