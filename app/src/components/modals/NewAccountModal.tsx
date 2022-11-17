@@ -16,6 +16,7 @@ import { ActionResponse } from '@utils/jet/marginActions';
 import { getExplorerUrl } from '@utils/ui';
 import { Input, Modal, Tooltip, Typography } from 'antd';
 import { NetworkStateAtom } from '../../state/network/network-state';
+import debounce from 'lodash.debounce';
 
 // Modal for user to create a new margin account
 export function NewAccountModal(): JSX.Element {
@@ -184,7 +185,7 @@ export function NewAccountModal(): JSX.Element {
               placeholder={dictionary.actions.newAccount.accountNamePlaceholder + '..'}
               value={/* newAccountName */ `${dictionary.common.account} ${latestSeed + 1}`}
               disabled={/* disabled || sendingTransaction */ true}
-              onChange={e => setNewAccountName(e.target.value)}
+              onChange={debounce(e => setNewAccountName(e.target.value), 300)}
               onPressEnter={newAccount}
               style={{ boxShadow: 'unset' }}
             />

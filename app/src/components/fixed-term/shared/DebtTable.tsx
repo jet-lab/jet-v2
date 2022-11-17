@@ -21,6 +21,7 @@ import {
 } from '@ant-design/icons';
 import AngleDown from '@assets/icons/arrow-angle-down.svg';
 import type { ColumnsType } from 'antd/es/table';
+import debounce from 'lodash.debounce';
 
 // Table to show margin account's transaction history
 export function DebtTable(): JSX.Element {
@@ -363,7 +364,11 @@ export function DebtTable(): JSX.Element {
         />
         <SearchOutlined />
         {/* todo - fixme when data is ready*/}
-        <Input type="text" placeholder={getFilterInputPlaceholder()} onChange={e => filterTxHistory(e.target.value)} />
+        <Input
+          type="text"
+          placeholder={getFilterInputPlaceholder()}
+          onChange={debounce(e => filterTxHistory(e.target.value), 300)}
+        />
       </div>
       <ReorderArrows component="debtTable" order={accountsViewOrder} setOrder={setAccountsViewOrder} vertical />
     </div>

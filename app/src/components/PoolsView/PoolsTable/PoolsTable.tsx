@@ -9,6 +9,7 @@ import { Info } from '@components/misc/Info';
 import { Input, Typography } from 'antd';
 import { PoolRow } from './PoolRow';
 import { SearchOutlined } from '@ant-design/icons';
+import debounce from 'lodash.debounce';
 
 // Table to display all Jet lending/borrowing pools
 export function PoolsTable(): JSX.Element {
@@ -34,7 +35,7 @@ export function PoolsTable(): JSX.Element {
           <Input
             type="text"
             placeholder={dictionary.poolsView.poolsTable.searchExample}
-            onChange={e => setFilterText(e.target.value)}
+            onChange={debounce(e => setFilterText(e.target.value), 300)}
           />
         </div>
       </div>

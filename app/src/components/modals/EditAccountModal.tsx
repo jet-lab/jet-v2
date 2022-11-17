@@ -9,6 +9,7 @@ import { Dictionary } from '@state/settings/localization/localization';
 import { CurrentAccountAddress, CurrentAccount, AccountNames } from '@state/user/accounts';
 import { notify } from '@utils/notify';
 import { Input, Modal, Typography } from 'antd';
+import debounce from 'lodash.debounce';
 
 // Modal for editing account information
 export function EditAccountModal(): JSX.Element {
@@ -99,9 +100,9 @@ export function EditAccountModal(): JSX.Element {
           placeholder={accountNames[currentAccountAddress]}
           value={newAccountName}
           disabled={sendingTransaction}
-          onChange={e => {
+          onChange={debounce(e => {
             setNewAccountName(e.target.value);
-          }}
+          }, 300)}
           onPressEnter={changeAccountName}
         />
         <Text type="danger">{inputError ?? ''}</Text>

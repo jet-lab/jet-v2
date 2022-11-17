@@ -18,6 +18,7 @@ import { ReorderArrows } from '@components/misc/ReorderArrows';
 import { Info } from '@components/misc/Info';
 import { ConnectionFeedback } from '@components/misc/ConnectionFeedback/ConnectionFeedback';
 import { DownloadOutlined, SearchOutlined } from '@ant-design/icons';
+import debounce from 'lodash.debounce';
 
 // Table to show margin account's balances for each token
 export function FullAccountBalance(): JSX.Element {
@@ -313,7 +314,7 @@ export function FullAccountBalance(): JSX.Element {
           <Input
             type="text"
             placeholder={dictionary.accountsView.balancesFilterPlaceholder}
-            onChange={e => filterBalanceTable(e.target.value)}
+            onChange={debounce(e => filterBalanceTable(e.target.value), 300)}
           />
         </div>
       </div>
