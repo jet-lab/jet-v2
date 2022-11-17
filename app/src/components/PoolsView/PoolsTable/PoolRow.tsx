@@ -28,45 +28,31 @@ export const PoolRow = (props: { pool: Pool }) => {
 
   // Renders pool asset info
   function renderAssetInfo() {
-    if (pool.tokenPrice >= 0) {
-      if (pool.tokenPrice === 0) {
-        return (
-          <>
-            <Info term="pythDataStale">
-              <div className="info-element">
-                <Text className="table-token-name" strong style={{ textDecoration: 'line-through', color: '#e36868' }}>
-                  {pool.name}
-                </Text>
-                <Text
-                  className="table-token-abbrev"
-                  strong
-                  style={{ textDecoration: 'line-through', color: '#e36868' }}>
-                  {pool.symbol}
-                </Text>
-                <Text
-                  className="price-name"
-                  style={{ textDecoration: 'line-through', color: '#e36868' }}>{`${pool.symbol} ≈ ${emaPrice}`}</Text>
-                <Text
-                  className="price-abbrev"
-                  style={{ textDecoration: 'line-through', color: '#e36868' }}>{`≈ ${emaPrice}`}</Text>
-              </div>
-            </Info>
-          </>
-        );
-      } else {
-        return (
-          <div>
-            <Text className="table-token-name" strong>
-              {pool.name}
-            </Text>
-            <Text className="table-token-abbrev" strong>
-              {pool.symbol}
-            </Text>
-            <Text className="price-name">{`${pool.symbol} ≈ ${poolPrice}`}</Text>
-            <Text className="price-abbrev">{`≈ ${poolPrice}`}</Text>
+    if (pool.tokenPrice > 0) {
+      return (
+        <div>
+          <Text className="table-token-name" strong>
+            {pool.name}
+          </Text>
+          <Text className="table-token-abbrev" strong>
+            {pool.symbol}
+          </Text>
+          <Text className="price-name">{`${pool.symbol} ≈ ${poolPrice}`}</Text>
+          <Text className="price-abbrev">{`≈ ${poolPrice}`}</Text>
+        </div>
+      );
+    }
+    if (pool.tokenPrice === 0) {
+      return (
+        <Info term="pythDataStale">
+          <div className="info-element">
+            <Text className="table-token-name table-token-disabled">{pool.name}</Text>
+            <Text className="table-token-abbrev table-token-disabled">{pool.symbol}</Text>
+            <Text className="price-name table-token-disabled">{`${pool.symbol} ≈ ${emaPrice}`}</Text>
+            <Text className="price-abbrev table-token-disabled">{`≈ ${emaPrice}`}</Text>
           </div>
-        );
-      }
+        </Info>
+      );
     }
     return <Skeleton className="align-left" paragraph={false} active />;
   }
