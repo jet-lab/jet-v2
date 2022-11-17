@@ -234,8 +234,12 @@ impl Client {
 
         let tx_count = plan.entries.len();
 
-        for (mut entry, ui_progress_bar) in plan.entries.into_iter().zip(ui_progress_tx.into_iter()) {
+        for (mut entry, ui_progress_bar) in plan.entries.into_iter().zip(ui_progress_tx.into_iter())
+        {
             let recent_blockhash = self.rpc().get_latest_blockhash().await?;
+            entry
+                .transaction
+                .partial_sign(&entry.signers, recent_blockhash);
             entry
                 .transaction
                 .partial_sign(&[&**signer], recent_blockhash);
@@ -367,18 +371,10 @@ impl Client {
     }
 }
 
+#[derive(Default)]
 pub struct Plan {
     pub entries: Vec<TransactionEntry>,
     pub unordered: bool,
-}
-
-impl Plan {
-    pub fn new() -> Plan {
-        Self {
-            entries: Vec::new(),
-            unordered: false,
-        }
-    }
 }
 
 pub struct PlanBuilder<'client> {
@@ -389,13 +385,12 @@ pub struct PlanBuilder<'client> {
 
 impl<'client> PlanBuilder<'client> {
     /// Add instructions to the plan, as a single transaction
-    pub fn instructions<'a>(
+    pub fn instructions(
         mut self,
-        signers: impl IntoIterator<Item = &'a dyn Signer>,
+        signers: impl IntoIterator<Item = Box<dyn Signer>>,
         steps: impl IntoIterator<Item = impl AsRef<str>>,
         instructions: impl IntoIterator<Item = Instruction>,
     ) -> Self {
-        let signers = signers.into_iter().collect::<Vec<_>>();
         let mut ix_list = match self.client.config.compute_budget {
             None => vec![],
             Some(budget) => {
@@ -406,13 +401,16 @@ impl<'client> PlanBuilder<'client> {
         ix_list.extend(instructions);
         let steps = steps.into_iter().map(|s| s.as_ref().to_owned()).collect();
 
-        let mut transaction = Transaction::new_with_payer(
+        let transaction = Transaction::new_with_payer(
             &ix_list,
             Some(&self.client.config.signer.as_ref().unwrap().pubkey()),
         );
-        transaction.partial_sign(&signers, self.client.recent_blockhash);
 
-        self.entries.push(TransactionEntry { steps, transaction });
+        self.entries.push(TransactionEntry {
+            steps,
+            transaction,
+            signers: signers.into_iter().collect(),
+        });
 
         self
     }
@@ -433,6 +431,7 @@ impl<'client> PlanBuilder<'client> {
 pub struct TransactionEntry {
     pub steps: Vec<String>,
     pub transaction: Transaction,
+    pub signers: Vec<Box<dyn Signer>>,
 }
 
 struct ProgressTracker {

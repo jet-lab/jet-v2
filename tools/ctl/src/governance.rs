@@ -110,6 +110,7 @@ pub async fn convert_plan_to_proposal(
                 TransactionEntry {
                     transaction: Transaction::new_with_payer(&[insert_tx], None),
                     steps: entry.steps,
+                    signers: vec![],
                 }
             })
             .collect(),

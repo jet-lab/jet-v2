@@ -1,10 +1,8 @@
 use anyhow::Result;
 use solana_sdk::pubkey::Pubkey;
 use spl_governance::state::proposal::get_proposal_address;
+use spl_governance::state::proposal::VoteType;
 use spl_governance::state::vote_record::{Vote, VoteChoice};
-use spl_governance::state::{
-    proposal::VoteType,
-};
 
 use crate::client::{Client, Plan};
 use crate::governance::{find_user_owner_record, JET_GOVERNANCE_PROGRAM, JET_STAKING_PROGRAM};
@@ -119,7 +117,8 @@ pub async fn process_proposal_approve(client: &Client, proposal_address: Pubkey)
         client,
         &governance.realm,
         realm.config.council_mint.as_ref().unwrap(),
-    ).await?;
+    )
+    .await?;
 
     Ok(client
         .plan()?
@@ -175,5 +174,5 @@ pub async fn process_proposal_clear_instructions(
 
 pub async fn process_proposal_inspect(client: &Client, proposal_address: Pubkey) -> Result<Plan> {
     crate::governance::inspect_proposal_instructions(client, proposal_address).await?;
-    Ok(Plan::new())
+    Ok(Plan::default())
 }

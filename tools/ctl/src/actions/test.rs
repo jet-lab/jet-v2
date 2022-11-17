@@ -29,7 +29,9 @@ pub async fn process_init_env(client: &Client, config_path: impl AsRef<Path>) ->
 
     for tx in txs {
         plan = plan.instructions(
-            tx.signers.iter().map(|k| k as &dyn Signer),
+            tx.signers
+                .into_iter()
+                .map(|k| Box::new(k) as Box<dyn Signer>),
             [""],
             tx.instructions,
         );
@@ -48,7 +50,7 @@ pub async fn process_generate_app_config(
     let app_json = serde_json::to_string_pretty(&app_config)?;
 
     std::fs::write(output_path, app_json)?;
-    Ok(Plan::new())
+    Ok(Plan::default())
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

@@ -21,10 +21,6 @@ echo "waiting for oracles ..."
 	echo "oracles ready!"
 
 if [[ ${E2E:-false} == false ]]; then
-	set +x
-	whoami
-	id -u
-	ls -al /home/tools/.config/solana/
 	npx ts-mocha -p ./tests/tsconfig.json -t 1000000 --paths 'tests/**/*.test.ts'
 else
 	cp app/public/localnet.config.json app/build/localnet.config.json

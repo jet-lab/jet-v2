@@ -104,7 +104,7 @@ pub async fn process_create_bond_market<'a>(
         );
     } else if !client.account_exists(&params.token_mint).await? {
         println!("the token {} does not exist", params.token_mint);
-        return Ok(Plan::new());
+        return Ok(Plan::default());
     } else {
         let init_manager = bonds.initialize_manager(
             payer,
@@ -124,7 +124,7 @@ pub async fn process_create_bond_market<'a>(
             "the market [{}] is already fully initialized",
             bonds.manager()
         );
-        return Ok(Plan::new());
+        return Ok(Plan::default());
     }
     let init_orderbook = bonds.initialize_orderbook(
         payer,
@@ -139,8 +139,7 @@ pub async fn process_create_bond_market<'a>(
     ));
     instructions.push(init_orderbook);
 
-    let ob_accs = [eq, bids, asks];
-    let signers: Vec<&dyn Signer> = ob_accs.iter().map(|b| (*b).as_ref()).collect();
+    let signers: Vec<Box<dyn Signer>> = vec![eq, bids, asks];
 
     Ok(client
         .plan()?

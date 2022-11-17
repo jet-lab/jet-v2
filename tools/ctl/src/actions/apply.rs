@@ -20,7 +20,7 @@ pub async fn process_apply(client: &Client, config_path: PathBuf) -> Result<Plan
 }
 
 async fn process_apply_directory(client: &Client, directory: PathBuf) -> Result<Plan> {
-    let mut plan = Plan::new();
+    let mut plan = Plan::default();
     let mut dir_contents = tokio::fs::read_dir(directory).await?;
 
     while let Some(entry) = dir_contents.next_entry().await? {
@@ -44,12 +44,12 @@ async fn process_apply_file(client: &Client, config_file: PathBuf) -> Result<Pla
 
     match config {
         ConfigType::Token(token_def) => process_apply_token_def(client, token_def).await,
-        _ => Ok(Plan::new()),
+        _ => Ok(Plan::default()),
     }
 }
 
 async fn process_apply_token_def(client: &Client, token_def: TokenDefinition) -> Result<Plan> {
-    let mut plan = Plan::new();
+    let mut plan = Plan::default();
 
     plan.entries.extend(
         super::margin_pool::process_create_pool(client, token_def.config.mint)

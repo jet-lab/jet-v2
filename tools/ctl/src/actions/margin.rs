@@ -109,7 +109,7 @@ pub async fn process_register_adapter(client: &Client, adapter: Pubkey) -> Resul
 
     if client.account_exists(&adapter_md_address).await? {
         println!("address {adapter} is already registered");
-        return Ok(Plan::new());
+        return Ok(Plan::default());
     }
 
     Ok(client
@@ -178,7 +178,7 @@ pub async fn process_set_liquidator(
     if is_currently_liquidator == is_liquidator {
         let word = if is_liquidator { "already" } else { "not" };
         println!("address {liquidator} is {word} a liquidator");
-        return Ok(Plan::new());
+        return Ok(Plan::default());
     }
 
     Ok(client
@@ -238,7 +238,7 @@ pub async fn process_list_top_accounts(client: &Client, limit: usize) -> Result<
     println!("Top {limit} accounts by required collateral:");
     show_top_accounts_by(limit, &mut accounts, compare_account_required_collateral);
 
-    Ok(Plan::new())
+    Ok(Plan::default())
 }
 
 async fn get_all_accounts(client: &Client) -> Result<Vec<(Pubkey, MarginAccount)>> {
