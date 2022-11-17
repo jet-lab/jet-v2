@@ -30,13 +30,12 @@ export const PoolRow = (props: { pool: Pool }) => {
     let render = <Skeleton className="align-left" paragraph={false} active />;
     if (pool.tokenPrice >= 0) {
       if (pool.tokenPrice === 0) {
-        //console.log(`Pyth Price Data for ${pool.name} token is not available at this moment.`);
         render = (
           <>
             <Info term="pythDataStale">
-              <div>
+              <div className="info-element">
                 <Text
-                  className="table-token-name info-element"
+                  className="table-token-name"
                   strong
                   style={{ textDecoration: 'line-through', color: '#e36868' }}>
                   {pool.name}
