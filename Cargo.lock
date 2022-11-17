@@ -2314,13 +2314,16 @@ dependencies = [
 name = "jet-markets-crank-service"
 version = "0.1.0"
 dependencies = [
+ "agnostic-orderbook",
  "anyhow",
  "clap 3.2.22",
  "jet-ctl-cli",
  "jet-margin-sdk",
  "serde",
  "serde_json",
- "serde_with",
+ "solana-clap-utils",
+ "solana-client",
+ "solana-sdk",
  "tokio",
 ]
 

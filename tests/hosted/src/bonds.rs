@@ -20,7 +20,7 @@ use jet_bonds::{
     tickets::state::{ClaimTicket, SplitTicket},
 };
 use jet_margin_sdk::{
-    bonds::{bonds_pda, event_builder::build_consume_events_info, BondsIxBuilder},
+    bonds::{bonds_pda, BondsIxBuilder},
     ix_builder::{
         get_control_authority_address, get_metadata_address, ControlIxBuilder, MarginIxBuilder,
     },
@@ -308,11 +308,7 @@ impl TestManager {
     pub async fn consume_events(&self) -> Result<Signature> {
         let mut eq = self.load_event_queue().await?;
 
-        let info = build_consume_events_info(eq.inner())?;
-        let (accounts, num_events, seeds) = info.as_params();
-        let consume = self
-            .ix_builder
-            .consume_events(accounts, num_events, seeds)?;
+        let consume = self.ix_builder.consume_events(eq.inner())?;
 
         self.sign_send_transaction(&[consume], None).await
     }
