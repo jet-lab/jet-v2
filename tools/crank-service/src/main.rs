@@ -42,12 +42,9 @@ async fn run(opts: CliOpts) -> Result<()> {
     for (_, markets) in targets {
         for market in markets {
             let c = client.clone();
-            consumers.push(tokio::spawn(
-                async move { Consumer::spawn(c, market).await },
-            ));
+            consumers.push(Consumer::spawn(c, market));
         }
     }
-
     Ok(())
 }
 
