@@ -14,6 +14,6 @@ export const StateSyncer = (): JSX.Element => {
   useFixedTermSync();
 
   return <></>;
-}
+};
 
 export default StateSyncer;
