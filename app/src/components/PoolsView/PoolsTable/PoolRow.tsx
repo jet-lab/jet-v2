@@ -13,6 +13,7 @@ export const PoolRow = (props: { pool: Pool }) => {
   const [currentPoolSymbol, setCurrentPoolSymbol] = useRecoilState(CurrentPoolSymbol);
   const { currencyFormatter, currencyAbbrev } = useCurrencyFormatting();
   const poolPrice = currencyFormatter(pool.tokenPrice, true);
+  const emaPrice = currencyFormatter(pool.tokenEmaPrice, true);
   const { Text } = Typography;
 
   // Align columns
@@ -34,21 +35,21 @@ export const PoolRow = (props: { pool: Pool }) => {
           <>
             <Info term="pythDataStale">
               <div className="info-element">
-                <Text
-                  className="table-token-name"
-                  strong
-                  style={{ textDecoration: 'line-through', color: '#e36868' }}>
+                <Text className="table-token-name" strong style={{ textDecoration: 'line-through', color: '#e36868' }}>
                   {pool.name}
                 </Text>
-                <Text className="table-token-abbrev" strong>
+                <Text
+                  className="table-token-abbrev"
+                  strong
+                  style={{ textDecoration: 'line-through', color: '#e36868' }}>
                   {pool.symbol}
                 </Text>
                 <Text
                   className="price-name"
-                  style={{ textDecoration: 'line-through', color: '#e36868' }}>{`${pool.symbol} ≈ ${poolPrice}`}</Text>
+                  style={{ textDecoration: 'line-through', color: '#e36868' }}>{`${pool.symbol} ≈ ${emaPrice}`}</Text>
                 <Text
                   className="price-abbrev"
-                  style={{ textDecoration: 'line-through', color: '#e36868' }}>{`≈ ${poolPrice}`}</Text>
+                  style={{ textDecoration: 'line-through', color: '#e36868' }}>{`≈ ${emaPrice}`}</Text>
               </div>
             </Info>
           </>
