@@ -27,7 +27,7 @@ pub mod seeds;
 mod adapter;
 mod instructions;
 mod state;
-pub(crate) mod syscall;
+pub mod syscall;
 /// Utilities used only in this crate
 pub(crate) mod util;
 

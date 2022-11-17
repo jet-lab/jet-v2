@@ -17,6 +17,7 @@ default = []
 testing = []
 cli = ["no-entrypoint", "serde"]
 devnet = []
+mock_syscall = []
 
 [dependencies]
 static_assertions = "1.1.0"
