@@ -13,7 +13,7 @@ import { MarginTokenConfig } from "../config"
 import { PoolTokenChange } from "./poolTokenChange"
 import { TokenMetadata } from "../metadata/state"
 import { findDerivedAccount } from "../../utils/pda"
-import { PriceInfo } from "../accountPosition"
+import { AccountPosition, PriceInfo } from "../accountPosition"
 import { chunks, Number128, Number192 } from "../../utils"
 import { PositionTokenMetadata } from "../positionTokenMetadata"
 
@@ -284,7 +284,7 @@ export class Pool {
   get tokenEmaPrice(): number {
     return this.info?.tokenPriceOracle.emaPrice.value ?? 0
   }
-  
+
   private prices: PriceResult
   get depositNotePrice(): PriceInfo {
     return {
@@ -616,7 +616,7 @@ export class Pool {
     marginAccount: MarginAccount
   }): Promise<string> {
     const instructions: TransactionInstruction[] = []
-    await this.withMarginRefreshAllPositionPrices({ instructions, pools, marginAccount })
+    await this.withPrioritisedPositionRefresh({ instructions, pools, marginAccount })
     return await marginAccount.sendAndConfirm(instructions)
   }
 
@@ -659,13 +659,68 @@ export class Pool {
     pools: Record<any, Pool> | Pool[]
     marginAccount: MarginAccount
   }): Promise<void> {
+    let refreshed = 0
     for (const pool of Object.values(pools)) {
       const positionRegistered =
         !!marginAccount.getPositionNullable(pool.addresses.depositNoteMint) ||
         !!marginAccount.getPositionNullable(pool.addresses.loanNoteMint)
       if (positionRegistered) {
+        refreshed += 1
         await pool.withMarginRefreshPositionPrice({ instructions, marginAccount })
       }
+    }
+    console.log(`we refrehsed ${refreshed} positions`)
+  }
+
+  /**
+   * Create instructions to refresh [[MarginAccount]] pool positions in a prioritised manner so that additional
+   * borrows or withdraws can occur.
+   *
+   * @param {({
+   *     instructions: TransactionInstruction[]
+   *     pools: Record<any, Pool> | Pool[]
+   *     marginAccount: MarginAccount
+   *   })} {
+   *     instructions,
+   *     pools,
+   *     marginAccount
+   *   }
+   * @return {Promise<void>}
+   * @memberof Pool
+   */
+  async withPrioritisedPositionRefresh({
+    instructions,
+    pools,
+    marginAccount
+  }: {
+    instructions: TransactionInstruction[]
+    pools: Record<any, Pool> | Pool[]
+    marginAccount: MarginAccount
+  }): Promise<void> {
+    const poolsToRefresh: Pool[] = []
+    const liabilities = marginAccount.valuation.requiredCollateral.toNumber()
+    const requiredCollateral = marginAccount.valuation.liabilities.toNumber()
+    const totalRequired = liabilities + requiredCollateral
+    let effectiveCollateral = 0
+    for (const pool of Object.values(pools)) {
+      const assetCollateralWeight = pool.depositNoteMetadata.valueModifier.toNumber()
+      const depositPosition = marginAccount.getPositionNullable(pool.addresses.depositNoteMint)
+      const borrowPosition = marginAccount.getPositionNullable(pool.addresses.loanNoteMint)
+      if (borrowPosition && !borrowPosition.balance.eqn(0)) {
+        poolsToRefresh.push(pool)
+        break
+      } else if (
+        assetCollateralWeight > 0 &&
+        depositPosition &&
+        !depositPosition.balance.eqn(0) &&
+        effectiveCollateral < totalRequired
+      ) {
+        effectiveCollateral += depositPosition.value
+        poolsToRefresh.push(pool)
+      }
+    }
+    for (const pool of poolsToRefresh) {
+      await pool.withMarginRefreshPositionPrice({ instructions, marginAccount })
     }
   }
 
@@ -827,7 +882,7 @@ export class Pool {
     const registerinstructions: TransactionInstruction[] = []
     const instructions: TransactionInstruction[] = []
 
-    await this.withMarginRefreshAllPositionPrices({
+    await this.withPrioritisedPositionRefresh({
       instructions: refreshInstructions,
       pools: Object.values(pools),
       marginAccount
@@ -950,7 +1005,7 @@ export class Pool {
     })
     assert(depositPosition)
 
-    await this.withMarginRefreshAllPositionPrices({
+    await this.withPrioritisedPositionRefresh({
       instructions: refreshInstructions,
       pools: Object.values(pools),
       marginAccount
@@ -1085,7 +1140,7 @@ export class Pool {
     const refreshInstructions: TransactionInstruction[] = []
     const instructions: TransactionInstruction[] = []
 
-    await this.withMarginRefreshAllPositionPrices({
+    await this.withPrioritisedPositionRefresh({
       instructions: refreshInstructions,
       pools: Object.values(pools),
       marginAccount
@@ -1197,7 +1252,7 @@ export class Pool {
     }
 
     // Refresh prices
-    await this.withMarginRefreshAllPositionPrices({
+    await this.withPrioritisedPositionRefresh({
       instructions: refreshInstructions,
       pools,
       marginAccount
