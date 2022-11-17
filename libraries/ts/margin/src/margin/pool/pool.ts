@@ -713,7 +713,7 @@ export class Pool {
         assetCollateralWeight > 0 &&
         depositPosition &&
         !depositPosition.balance.eqn(0) &&
-        depositPosition.value < totalRequired
+        effectiveCollateral < totalRequired
       ) {
         effectiveCollateral += depositPosition.value
         poolsToRefresh.push(pool)

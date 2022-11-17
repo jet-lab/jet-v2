@@ -122,7 +122,7 @@ export const offerLoan = async ({
   const lendInstructions: TransactionInstruction[] = []
 
   // refresh pool positions
-  await currentPool.withPrioritisedPositionRefresh({
+  await currentPool.withMarginRefreshAllPositionPrices({
     instructions: lendInstructions,
     pools,
     marginAccount
@@ -198,7 +198,7 @@ export const requestLoan = async ({
 
   // refresh pools positions
   const borrowInstructions: TransactionInstruction[] = []
-  await currentPool.withPrioritisedPositionRefresh({
+  await currentPool.withMarginRefreshAllPositionPrices({
     instructions: borrowInstructions,
     pools,
     marginAccount
@@ -245,7 +245,7 @@ export const cancelOrder = async ({
   const borrowerAccount = await market.deriveMarginUserAddress(marginAccount)
 
   // refresh pools positions
-  await currentPool.withPrioritisedPositionRefresh({
+  await currentPool.withMarginRefreshAllPositionPrices({
     instructions,
     pools,
     marginAccount
@@ -322,7 +322,7 @@ export const borrowNow = async ({
 
   // refresh pools positions
   const refreshInstructions: TransactionInstruction[] = []
-  await currentPool.withPrioritisedPositionRefresh({
+  await currentPool.withMarginRefreshAllPositionPrices({
     instructions: refreshInstructions,
     pools,
     marginAccount
@@ -387,7 +387,7 @@ export const lendNow = async ({
   }
 
   const refreshInstructions: TransactionInstruction[] = []
-  await currentPool.withPrioritisedPositionRefresh({
+  await currentPool.withMarginRefreshAllPositionPrices({
     instructions: refreshInstructions,
     pools,
     marginAccount

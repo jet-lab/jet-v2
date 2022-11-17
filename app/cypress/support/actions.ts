@@ -16,9 +16,9 @@ export const loadPageAndCreateAccount = (path?: string) => {
   connectWallet();
   cy.contains('All Assets').click();
   airdrop('SOL', 'SOL');
-  cy.contains('Create an account').should('not.be.disabled').click();
+  cy.contains('Create an account').should('be.visible').should('not.be.disabled').click();
   cy.contains('New Account');
-  cy.contains('Create Account').should('not.be.disabled').click();
+  cy.contains('Create Account').should('be.visible').should('not.be.disabled').click();
   cy.contains('Account created');
   cy.contains('Account 1');
 };
