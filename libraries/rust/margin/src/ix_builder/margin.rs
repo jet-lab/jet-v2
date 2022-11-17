@@ -449,6 +449,30 @@ impl MarginIxBuilder {
         }
     }
 
+    /// Peform an administrative transfer for a position
+    pub fn admin_transfer_position_to(
+        &self,
+        target: &Pubkey,
+        position_token_mint: &Pubkey,
+        amount: u64,
+    ) -> Instruction {
+        let accounts = ix_account::AdminTransferPosition {
+            authority: jet_program_common::ADMINISTRATOR,
+            source_account: self.address,
+            target_account: *target,
+            source_token_account: self.get_token_account_address(position_token_mint).0,
+            target_token_account: owned_position_token_account(target, position_token_mint).0,
+            token_program: spl_token::ID,
+        }
+        .to_account_metas(None);
+
+        Instruction {
+            program_id: jet_margin::ID,
+            data: ix_data::AdminTransferPosition { amount }.data(),
+            accounts,
+        }
+    }
+
     /// Helper function to get token account address for a position mint
     #[inline]
     pub fn get_token_account_address(&self, position_token_mint: &Pubkey) -> (Pubkey, u8) {

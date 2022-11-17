@@ -388,6 +388,29 @@ impl MarginPoolIxBuilder {
             accounts,
         }
     }
+
+    /// Instruction to transfer a loan between margin accounts
+    pub fn admin_transfer_loan(
+        &self,
+        source_margin_account: &Pubkey,
+        target_margin_account: &Pubkey,
+        amount: u64,
+    ) -> Instruction {
+        let accounts = ix_accounts::AdminTransferLoan {
+            authority: jet_program_common::ADMINISTRATOR,
+            margin_pool: self.address,
+            source_loan_account: loan_token_account(source_margin_account, &self.loan_note_mint).0,
+            target_loan_account: loan_token_account(target_margin_account, &self.loan_note_mint).0,
+            token_program: spl_token::ID,
+        }
+        .to_account_metas(None);
+
+        Instruction {
+            program_id: jet_margin_pool::ID,
+            data: ix_data::AdminTransferLoan { amount }.data(),
+            accounts,
+        }
+    }
 }
 
 /// Find a loan token account for a margin account and margin pool's loan note mint
