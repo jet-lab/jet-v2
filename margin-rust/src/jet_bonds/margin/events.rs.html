@@ -48,8 +48,25 @@
 <span id="48">48</span>
 <span id="49">49</span>
 <span id="50">50</span>
+<span id="51">51</span>
+<span id="52">52</span>
+<span id="53">53</span>
+<span id="54">54</span>
+<span id="55">55</span>
+<span id="56">56</span>
+<span id="57">57</span>
+<span id="58">58</span>
+<span id="59">59</span>
+<span id="60">60</span>
+<span id="61">61</span>
+<span id="62">62</span>
+<span id="63">63</span>
+<span id="64">64</span>
+<span id="65">65</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">agnostic_orderbook::state::OrderSummary</span>;
 <span class="kw">use</span> <span class="ident">anchor_lang</span>::{<span class="ident">event</span>, <span class="ident">prelude</span>::<span class="kw-2">*</span>};
+
+<span class="kw">use</span> <span class="ident"><span class="kw">super</span>::state::ObligationFlags</span>;
 
 <span class="attribute">#[<span class="ident">event</span>]</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">MarginUserInitialized</span> {
@@ -81,6 +98,19 @@
     <span class="ident">MarginSellTickets</span>,
     <span class="ident">Lend</span>,
     <span class="ident">SellTickets</span>,
+}
+
+<span class="attribute">#[<span class="ident">event</span>]</span>
+<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">ObligationCreated</span> {
+    <span class="kw">pub</span> <span class="ident">obligation</span>: <span class="ident">Pubkey</span>,
+    <span class="kw">pub</span> <span class="ident">authority</span>: <span class="ident">Pubkey</span>,
+    <span class="kw">pub</span> <span class="ident">order_id</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">u128</span><span class="op">&gt;</span>,
+    <span class="kw">pub</span> <span class="ident">sequence_number</span>: <span class="ident">u64</span>,
+    <span class="kw">pub</span> <span class="ident">bond_manager</span>: <span class="ident">Pubkey</span>,
+    <span class="kw">pub</span> <span class="ident">maturation_timestamp</span>: <span class="ident">i64</span>,
+    <span class="kw">pub</span> <span class="ident">quote_filled</span>: <span class="ident">u64</span>,
+    <span class="kw">pub</span> <span class="ident">base_filled</span>: <span class="ident">u64</span>,
+    <span class="kw">pub</span> <span class="ident">flags</span>: <span class="ident">ObligationFlags</span>,
 }
 
 <span class="attribute">#[<span class="ident">event</span>]</span>

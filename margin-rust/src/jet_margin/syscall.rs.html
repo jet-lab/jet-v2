@@ -79,13 +79,21 @@
 <span id="79">79</span>
 <span id="80">80</span>
 <span id="81">81</span>
+<span id="82">82</span>
+<span id="83">83</span>
+<span id="84">84</span>
+<span id="85">85</span>
+<span id="86">86</span>
+<span id="87">87</span>
+<span id="88">88</span>
+<span id="89">89</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">anchor_lang</span>::{
     <span class="ident">prelude</span>::{<span class="ident">Clock</span>, <span class="ident">SolanaSysvar</span>},
     <span class="ident">solana_program::instruction</span>,
 };
 
 <span class="attribute">#[<span class="ident">inline</span>]</span>
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">test</span>))]</span>
+<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">target_arch</span> <span class="op">=</span> <span class="string">&quot;bpf&quot;</span>, <span class="ident">not</span>(<span class="ident">test</span>), <span class="ident">not</span>(<span class="ident">mock_syscall</span>)))]</span>
 <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">sys</span>() -&gt; <span class="ident">RealSys</span> {
     <span class="ident">RealSys</span>
 }
@@ -110,10 +118,10 @@
     }
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">test</span>)]</span>
+<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">any</span>(<span class="ident">not</span>(<span class="ident">target_arch</span> <span class="op">=</span> <span class="string">&quot;bpf&quot;</span>), <span class="ident">test</span>, <span class="ident">mock_syscall</span>))]</span>
 <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">thread_local_mock::sys</span>;
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">test</span>)]</span>
+<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">any</span>(<span class="ident">not</span>(<span class="ident">target_arch</span> <span class="op">=</span> <span class="string">&quot;bpf&quot;</span>), <span class="ident">test</span>, <span class="ident">mock_syscall</span>))]</span>
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">thread_local_mock</span> {
     <span class="kw">use</span> <span class="ident">anchor_lang::prelude::SolanaSysvar</span>;
 
@@ -132,6 +140,10 @@
         <span class="ident">sys</span>().<span class="ident">borrow_mut</span>().<span class="ident">mock_stack_height</span> <span class="op">=</span> <span class="ident">height</span>;
     }
 
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">mock_clock</span>(<span class="ident">unix_timestamp</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">u64</span><span class="op">&gt;</span>) {
+        <span class="ident">sys</span>().<span class="ident">borrow_mut</span>().<span class="ident">mock_clock</span> <span class="op">=</span> <span class="ident">unix_timestamp</span>;
+    }
+
     <span class="macro">thread_local!</span> {
         <span class="kw">pub</span> <span class="kw">static</span> <span class="ident">SYS</span>: <span class="ident">Rc</span><span class="op">&lt;</span><span class="ident">RefCell</span><span class="op">&lt;</span><span class="ident">TestSys</span><span class="op">&gt;</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">Rc::new</span>(<span class="ident">RefCell::new</span>(<span class="ident">TestSys::default</span>()));
     }
@@ -139,6 +151,7 @@
     <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Default</span>)]</span>
     <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">TestSys</span> {
         <span class="kw">pub</span> <span class="ident">mock_stack_height</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span>,
+        <span class="kw">pub</span> <span class="ident">mock_clock</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">u64</span><span class="op">&gt;</span>,
     }
 
     <span class="kw">impl</span> <span class="ident">Sys</span> <span class="kw">for</span> <span class="ident">Rc</span><span class="op">&lt;</span><span class="ident">RefCell</span><span class="op">&lt;</span><span class="ident">TestSys</span><span class="op">&gt;</span><span class="op">&gt;</span> {
@@ -149,9 +162,12 @@
         }
 
         <span class="kw">fn</span> <span class="ident">unix_timestamp</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">u64</span> {
-            <span class="comment">// Get the clock in case it&#39;s available in a simulation,</span>
-            <span class="comment">// then fall back to the system clock</span>
-            <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Ok</span>(<span class="ident">clock</span>) <span class="op">=</span> <span class="ident">Clock::get</span>() {
+            <span class="comment">// The mocked clock gets top priority if set. Otherwise, actually</span>
+            <span class="comment">// try to get the solana clock, in case it&#39;s available in a</span>
+            <span class="comment">// simulation, then fall back to the system clock.</span>
+            <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">mocked</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">borrow</span>().<span class="ident">mock_clock</span> {
+                <span class="ident">mocked</span>
+            } <span class="kw">else</span> <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Ok</span>(<span class="ident">clock</span>) <span class="op">=</span> <span class="ident">Clock::get</span>() {
                 <span class="ident">clock</span>.<span class="ident">unix_timestamp</span> <span class="kw">as</span> <span class="ident">u64</span>
             } <span class="kw">else</span> {
                 <span class="kw">let</span> <span class="ident">time</span> <span class="op">=</span> <span class="ident">SystemTime::now</span>();

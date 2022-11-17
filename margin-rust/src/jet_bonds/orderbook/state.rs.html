@@ -1103,14 +1103,14 @@
 }
 
 <span class="kw">impl</span> <span class="ident">OrderbookEvent</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">unwrap_fill</span>(<span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">FillInfo</span><span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">unwrap_fill</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="ident">FillInfo</span><span class="op">&gt;</span> {
         <span class="kw">match</span> <span class="self">self</span> {
             <span class="ident">OrderbookEvent::Fill</span>(<span class="ident">fill</span>) =&gt; <span class="prelude-val">Ok</span>(<span class="ident">fill</span>),
             <span class="kw">_</span> =&gt; <span class="macro">err!</span>(<span class="ident">BondsError::InvalidEvent</span>),
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">unwrap_out</span>(<span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">OutInfo</span><span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">unwrap_out</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="ident">OutInfo</span><span class="op">&gt;</span> {
         <span class="kw">match</span> <span class="self">self</span> {
             <span class="ident">OrderbookEvent::Out</span>(<span class="ident">out</span>) =&gt; <span class="prelude-val">Ok</span>(<span class="ident">out</span>),
             <span class="kw">_</span> =&gt; <span class="macro">err!</span>(<span class="ident">BondsError::InvalidEvent</span>),

@@ -928,6 +928,29 @@
 <span id="928">928</span>
 <span id="929">929</span>
 <span id="930">930</span>
+<span id="931">931</span>
+<span id="932">932</span>
+<span id="933">933</span>
+<span id="934">934</span>
+<span id="935">935</span>
+<span id="936">936</span>
+<span id="937">937</span>
+<span id="938">938</span>
+<span id="939">939</span>
+<span id="940">940</span>
+<span id="941">941</span>
+<span id="942">942</span>
+<span id="943">943</span>
+<span id="944">944</span>
+<span id="945">945</span>
+<span id="946">946</span>
+<span id="947">947</span>
+<span id="948">948</span>
+<span id="949">949</span>
+<span id="950">950</span>
+<span id="951">951</span>
+<span id="952">952</span>
+<span id="953">953</span>
 </pre><pre class="rust"><code><span class="comment">// SPDX-License-Identifier: AGPL-3.0-or-later</span>
 <span class="comment">//</span>
 <span class="comment">// Copyright (C) 2022 JET PROTOCOL HOLDINGS, LLC.</span>
@@ -959,7 +982,7 @@
 <span class="doccomment">/// services lending/borrowing operations.</span>
 <span class="attribute">#[<span class="ident">account</span>]</span>
 <span class="attribute">#[<span class="ident">repr</span>(<span class="ident">C</span>, <span class="ident">align</span>(<span class="number">8</span>))]</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Default</span>)]</span>
+<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Default</span>)]</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">MarginPool</span> {
     <span class="kw">pub</span> <span class="ident">version</span>: <span class="ident">u8</span>,
 
@@ -1011,6 +1034,29 @@
 
     <span class="doccomment">/// The time the interest was last accrued up to</span>
     <span class="kw">pub</span> <span class="ident">accrued_until</span>: <span class="ident">i64</span>,
+}
+
+<span class="kw">impl</span> <span class="ident">std::fmt::Debug</span> <span class="kw">for</span> <span class="ident">MarginPool</span> {
+    <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="kw-2">&amp;mut</span> <span class="ident">std::fmt::Formatter</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>) -&gt; <span class="ident">std::fmt::Result</span> {
+        <span class="ident">f</span>.<span class="ident">debug_struct</span>(<span class="string">&quot;MarginPool&quot;</span>)
+            .<span class="ident">field</span>(<span class="string">&quot;version&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">version</span>)
+            .<span class="ident">field</span>(<span class="string">&quot;pool_bump&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">pool_bump</span>)
+            .<span class="ident">field</span>(<span class="string">&quot;vault&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">vault</span>)
+            .<span class="ident">field</span>(<span class="string">&quot;fee_destination&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">fee_destination</span>)
+            .<span class="ident">field</span>(<span class="string">&quot;deposit_note_mint&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">deposit_note_mint</span>)
+            .<span class="ident">field</span>(<span class="string">&quot;loan_note_mint&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">loan_note_mint</span>)
+            .<span class="ident">field</span>(<span class="string">&quot;token_mint&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">token_mint</span>)
+            .<span class="ident">field</span>(<span class="string">&quot;token_price_oracle&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">token_price_oracle</span>)
+            .<span class="ident">field</span>(<span class="string">&quot;address&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">address</span>)
+            .<span class="ident">field</span>(<span class="string">&quot;config&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">config</span>)
+            .<span class="ident">field</span>(<span class="string">&quot;borrowed_tokens&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">total_borrowed</span>())
+            .<span class="ident">field</span>(<span class="string">&quot;uncollected_fees&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">total_uncollected_fees</span>())
+            .<span class="ident">field</span>(<span class="string">&quot;deposit_tokens&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">deposit_tokens</span>)
+            .<span class="ident">field</span>(<span class="string">&quot;deposit_notes&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">deposit_notes</span>)
+            .<span class="ident">field</span>(<span class="string">&quot;loan_notes&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">loan_notes</span>)
+            .<span class="ident">field</span>(<span class="string">&quot;accrued_until&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">accrued_until</span>)
+            .<span class="ident">finish</span>()
+    }
 }
 
 <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">any</span>(<span class="ident">test</span>, <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;cli&quot;</span>))]</span>

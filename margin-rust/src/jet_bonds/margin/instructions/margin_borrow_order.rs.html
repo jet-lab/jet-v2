@@ -137,6 +137,21 @@
 <span id="137">137</span>
 <span id="138">138</span>
 <span id="139">139</span>
+<span id="140">140</span>
+<span id="141">141</span>
+<span id="142">142</span>
+<span id="143">143</span>
+<span id="144">144</span>
+<span id="145">145</span>
+<span id="146">146</span>
+<span id="147">147</span>
+<span id="148">148</span>
+<span id="149">149</span>
+<span id="150">150</span>
+<span id="151">151</span>
+<span id="152">152</span>
+<span id="153">153</span>
+<span id="154">154</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">agnostic_orderbook::state::Side</span>;
 <span class="kw">use</span> <span class="ident">anchor_lang::prelude</span>::<span class="kw-2">*</span>;
 <span class="kw">use</span> <span class="ident">anchor_spl::token::Token</span>;
@@ -145,6 +160,7 @@
 
 <span class="kw">use</span> <span class="kw">crate</span>::{
     <span class="ident">bond_token_manager::BondTokenManager</span>,
+    <span class="ident">events::ObligationCreated</span>,
     <span class="ident">margin</span>::{
         <span class="ident">events</span>::{<span class="ident">OrderPlaced</span>, <span class="ident">OrderType</span>},
         <span class="ident">state</span>::{<span class="ident">return_to_margin</span>, <span class="ident">MarginUser</span>, <span class="ident">Obligation</span>, <span class="ident">ObligationFlags</span>},
@@ -233,16 +249,30 @@
             <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">system_program</span>.<span class="ident">to_account_info</span>(),
             <span class="kw-2">&amp;</span><span class="ident">Obligation::make_seeds</span>(<span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">margin_user</span>.<span class="ident">key</span>().<span class="ident">as_ref</span>(), <span class="ident">seed</span>.<span class="ident">as_slice</span>()),
         )<span class="question-mark">?</span>;
-        <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">margin_user</span>.<span class="ident">assets</span>.<span class="ident">entitled_tokens</span> <span class="op">+</span><span class="op">=</span> <span class="ident">order_summary</span>.<span class="ident">quote_filled</span>()<span class="question-mark">?</span>;
+        <span class="kw">let</span> <span class="ident">quote_filled</span> <span class="op">=</span> <span class="ident">order_summary</span>.<span class="ident">quote_filled</span>()<span class="question-mark">?</span>;
+        <span class="kw">let</span> <span class="ident">base_filled</span> <span class="op">=</span> <span class="ident">order_summary</span>.<span class="ident">base_filled</span>();
+        <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">margin_user</span>.<span class="ident">assets</span>.<span class="ident">entitled_tokens</span> <span class="op">+</span><span class="op">=</span> <span class="ident">quote_filled</span>;
         <span class="kw-2">*</span><span class="ident">obligation</span> <span class="op">=</span> <span class="ident">Obligation</span> {
             <span class="ident">sequence_number</span>,
             <span class="ident">borrower_account</span>: <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">margin_user</span>.<span class="ident">key</span>(),
             <span class="ident">bond_manager</span>: <span class="ident">bond_manager</span>.<span class="ident">key</span>(),
             <span class="ident">order_tag</span>: <span class="ident">callback_info</span>.<span class="ident">order_tag</span>,
             <span class="ident">maturation_timestamp</span>,
-            <span class="ident">balance</span>: <span class="ident">order_summary</span>.<span class="ident">base_filled</span>(),
+            <span class="ident">balance</span>: <span class="ident">base_filled</span>,
             <span class="ident">flags</span>: <span class="ident">ObligationFlags::default</span>(),
         };
+
+        <span class="macro">emit!</span>(<span class="ident">ObligationCreated</span> {
+            <span class="ident">obligation</span>: <span class="ident">obligation</span>.<span class="ident">key</span>(),
+            <span class="ident">authority</span>: <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">margin_account</span>.<span class="ident">key</span>(),
+            <span class="ident">order_id</span>: <span class="ident">order_summary</span>.<span class="ident">summary</span>().<span class="ident">posted_order_id</span>,
+            <span class="ident">sequence_number</span>,
+            <span class="ident">bond_manager</span>: <span class="ident">bond_manager</span>.<span class="ident">key</span>(),
+            <span class="ident">maturation_timestamp</span>,
+            <span class="ident">quote_filled</span>,
+            <span class="ident">base_filled</span>,
+            <span class="ident">flags</span>: <span class="ident">obligation</span>.<span class="ident">flags</span>
+        });
     }
     <span class="kw">let</span> <span class="ident">total_debt</span> <span class="op">=</span> <span class="ident">order_summary</span>.<span class="ident">base_combined</span>();
     <span class="ident">ctx</span>.<span class="ident">mint</span>(<span class="kw-2">&amp;</span><span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">claims_mint</span>, <span class="kw-2">&amp;</span><span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">claims</span>, <span class="ident">total_debt</span>)<span class="question-mark">?</span>;

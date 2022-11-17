@@ -431,6 +431,9 @@
 <span id="431">431</span>
 <span id="432">432</span>
 <span id="433">433</span>
+<span id="434">434</span>
+<span id="435">435</span>
+<span id="436">436</span>
 </pre><pre class="rust"><code><span class="comment">// SPDX-License-Identifier: AGPL-3.0-or-later</span>
 <span class="comment">//</span>
 <span class="comment">// Copyright (C) 2022 JET PROTOCOL HOLDINGS, LLC.</span>
@@ -460,7 +463,10 @@
 <span class="kw">use</span> <span class="ident">std</span>::{<span class="ident">convert::TryFrom</span>, <span class="ident">result::Result</span>};
 
 <span class="kw">use</span> <span class="ident"><span class="kw">super</span>::Approver</span>;
-<span class="kw">use</span> <span class="kw">crate</span>::{<span class="ident">ErrorCode</span>, <span class="ident">PriceChangeInfo</span>, <span class="ident">TokenKind</span>, <span class="ident">MAX_ORACLE_CONFIDENCE</span>, <span class="ident">MAX_ORACLE_STALENESS</span>};
+<span class="kw">use</span> <span class="kw">crate</span>::{
+    <span class="ident">syscall</span>::{<span class="ident">sys</span>, <span class="ident">Sys</span>},
+    <span class="ident">ErrorCode</span>, <span class="ident">PriceChangeInfo</span>, <span class="ident">TokenKind</span>, <span class="ident">MAX_ORACLE_CONFIDENCE</span>, <span class="ident">MAX_ORACLE_STALENESS</span>,
+};
 
 <span class="kw">const</span> <span class="ident">POS_PRICE_VALID</span>: <span class="ident">u8</span> <span class="op">=</span> <span class="number">1</span>;
 
@@ -662,7 +668,7 @@
     <span class="doccomment">/// Update the balance for this position</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">set_balance</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">balance</span>: <span class="ident">u64</span>) {
         <span class="self">self</span>.<span class="ident">balance</span> <span class="op">=</span> <span class="ident">balance</span>;
-        <span class="self">self</span>.<span class="ident">balance_timestamp</span> <span class="op">=</span> <span class="ident"><span class="kw">crate</span>::util::get_timestamp</span>();
+        <span class="self">self</span>.<span class="ident">balance_timestamp</span> <span class="op">=</span> <span class="ident">sys</span>().<span class="ident">unix_timestamp</span>();
         <span class="self">self</span>.<span class="ident">calculate_value</span>();
     }
 

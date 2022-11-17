@@ -206,14 +206,14 @@
 }
 
 <span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span> <span class="ident">LoanAccount</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">auto_stake</span>(<span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">AnchorAccount</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span>, <span class="ident">SplitTicket</span>, <span class="ident">Mut</span><span class="op">&gt;</span><span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">auto_stake</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="kw-2">&amp;mut</span> <span class="ident">AnchorAccount</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span>, <span class="ident">SplitTicket</span>, <span class="ident">Mut</span><span class="op">&gt;</span><span class="op">&gt;</span> {
         <span class="kw">match</span> <span class="self">self</span> {
             <span class="ident">LoanAccount::AutoStake</span>(<span class="ident">split_ticket</span>) =&gt; <span class="prelude-val">Ok</span>(<span class="ident">split_ticket</span>),
             <span class="kw">_</span> =&gt; <span class="macro">panic!</span>(),
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new_debt</span>(<span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">AnchorAccount</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span>, <span class="ident">Obligation</span>, <span class="ident">Mut</span><span class="op">&gt;</span><span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new_debt</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="kw-2">&amp;mut</span> <span class="ident">AnchorAccount</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span>, <span class="ident">Obligation</span>, <span class="ident">Mut</span><span class="op">&gt;</span><span class="op">&gt;</span> {
         <span class="kw">match</span> <span class="self">self</span> {
             <span class="ident">LoanAccount::NewDebt</span>(<span class="ident">obligation</span>) =&gt; <span class="prelude-val">Ok</span>(<span class="ident">obligation</span>),
             <span class="kw">_</span> =&gt; <span class="macro">panic!</span>(),
