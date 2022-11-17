@@ -44,7 +44,7 @@ async fn process_apply_file(client: &Client, config_file: PathBuf) -> Result<Pla
 
     match config {
         ConfigType::Token(token_def) => process_apply_token_def(client, token_def).await,
-        _ => Ok(Plan::new()),
+        _ => Ok(Plan::default()),
     }
 }
 

@@ -174,5 +174,5 @@ pub async fn process_proposal_clear_instructions(
 
 pub async fn process_proposal_inspect(client: &Client, proposal_address: Pubkey) -> Result<Plan> {
     crate::governance::inspect_proposal_instructions(client, proposal_address).await?;
-    Ok(Plan::new())
+    Ok(Plan::default())
 }

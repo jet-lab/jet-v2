@@ -48,7 +48,7 @@ pub async fn process_check_metadata(client: &Client, address: Pubkey) -> Result<
         }
     }
 
-    Ok(Plan::new())
+    Ok(Plan::default())
 }
 
 pub async fn process_create_authority(client: &Client) -> Result<Plan> {
@@ -57,7 +57,7 @@ pub async fn process_create_authority(client: &Client) -> Result<Plan> {
 
     if client.account_exists(&authority_address).await? {
         println!("authority already exists");
-        return Ok(Plan::new());
+        return Ok(Plan::default());
     }
 
     Ok(client
@@ -85,5 +85,5 @@ pub async fn process_generate_app_config(
         .await
         .with_context(|| format!("while trying to write to file {output_path:?}"))?;
 
-    Ok(Plan::new())
+    Ok(Plan::default())
 }
