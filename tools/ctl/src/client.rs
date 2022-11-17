@@ -407,6 +407,11 @@ impl<'client> PlanBuilder<'client> {
         };
 
         ix_list.extend(instructions);
+
+        if ix_list.is_empty() {
+            return self;
+        }
+
         let steps = steps.into_iter().map(|s| s.as_ref().to_owned()).collect();
 
         let transaction = Transaction::new_with_payer(

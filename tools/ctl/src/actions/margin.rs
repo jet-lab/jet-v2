@@ -196,7 +196,7 @@ pub async fn process_update_balances(
     margin_account_address: Pubkey,
 ) -> Result<Plan> {
     let account = client
-        .read_anchor_account::<MarginAccount>(&source_account)
+        .read_anchor_account::<MarginAccount>(&margin_account_address)
         .await?;
 
     let ix = MarginIxBuilder::new_with_payer(
@@ -309,28 +309,6 @@ pub async fn process_list_top_accounts(client: &Client, limit: usize) -> Result<
     show_top_accounts_by(limit, &mut accounts, compare_account_required_collateral);
 
     Ok(Plan::default())
-}
-
-async fn get_all_accounts(client: &Client) -> Result<Vec<(Pubkey, MarginAccount)>> {
-    let all_margin_accounts = client.rpc().get_program_accounts(&jet_margin::ID).await?;
-    let margin_user_account_size = 8 + std::mem::size_of::<MarginAccount>();
-
-    Ok(all_margin_accounts
-        .into_iter()
-        .filter_map(|(address, account)| {
-            if account.data.len() != margin_user_account_size {
-                return None;
-            }
-
-            match MarginAccount::try_deserialize(&mut &account.data[..]) {
-                Ok(deserialized) => Some((address, deserialized)),
-                Err(_) => {
-                    eprintln!("could not deserialize margin account {address}");
-                    None
-                }
-            }
-        })
-        .collect())
 }
 
 async fn get_all_accounts(client: &Client) -> Result<Vec<(Pubkey, MarginAccount)>> {

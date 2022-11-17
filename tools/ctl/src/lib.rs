@@ -141,6 +141,12 @@ pub enum MarginCommand {
         token: Pubkey,
     },
 
+    /// Update all the balances for positions on an account
+    UpdateBalances {
+        /// The account to have its balances updated
+        account: Pubkey,
+    },
+
     /// Transfer a position owned directly by an account
     TransferPosition {
         /// The source margin account to transfer out of
@@ -428,6 +434,9 @@ async fn run_margin_command(client: &Client, command: MarginCommand) -> Result<P
         }
         MarginCommand::RefreshPositionMd { token } => {
             actions::margin::process_refresh_metadata(client, token).await
+        }
+        MarginCommand::UpdateBalances { account } => {
+            actions::margin::process_update_balances(client, account).await
         }
         MarginCommand::TransferPosition {
             source,
