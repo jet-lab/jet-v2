@@ -417,8 +417,10 @@ impl MarginUser {
     }
 
     pub async fn margin_repay(&self, mint: &Pubkey, change: TokenChange) -> Result<(), Error> {
-        self.send_confirm_tx(self.tx.margin_repay(mint, change).await?)
+        self.rpc
+            .send_and_confirm(self.tx.margin_repay(mint, change).await?)
             .await
+            .map(|_| ())
     }
 
     pub async fn repay(
@@ -453,25 +455,27 @@ impl MarginUser {
         } else {
             (&swap_pool.token_b, &swap_pool.token_a)
         };
-        self.send_confirm_tx(
-            self.tx
-                .swap(
-                    source_mint,
-                    destination_mint,
-                    transit_source_account,
-                    transit_destination_account,
-                    &swap_pool.pool,
-                    &swap_pool.pool_mint,
-                    &swap_pool.fee_account,
-                    source_token,
-                    destination_token,
-                    program_id,
-                    change,
-                    minimum_amount_out,
-                )
-                .await?,
-        )
-        .await
+        self.rpc
+            .send_and_confirm(
+                self.tx
+                    .swap(
+                        source_mint,
+                        destination_mint,
+                        transit_source_account,
+                        transit_destination_account,
+                        &swap_pool.pool,
+                        &swap_pool.pool_mint,
+                        &swap_pool.fee_account,
+                        source_token,
+                        destination_token,
+                        program_id,
+                        change,
+                        minimum_amount_out,
+                    )
+                    .await?,
+            )
+            .await
+            .map(|_| ())
     }
 
     pub async fn positions(&self) -> Result<Vec<AccountPosition>, Error> {
@@ -510,8 +514,10 @@ impl MarginUser {
         &self,
         loan_to_token: &HashMap<Pubkey, Pubkey>,
     ) -> Result<(), Error> {
-        self.send_confirm_tx(self.tx.close_empty_positions(loan_to_token).await?)
+        self.rpc
+            .send_and_confirm(self.tx.close_empty_positions(loan_to_token).await?)
             .await
+            .map(|_| ())
     }
 
     /// Close a user's token positions for a specific mint.
