@@ -1,4 +1,4 @@
-import { useRecoilState, useSetRecoilState, useResetRecoilState, useRecoilValue } from 'recoil';
+import { useRecoilState } from 'recoil';
 import { Pool } from '@jet-lab/margin';
 import { CurrentPoolSymbol } from '@state/pools/pools';
 import { formatRate } from '@utils/format';
@@ -6,7 +6,6 @@ import { useCurrencyFormatting } from '@utils/currency';
 import { TokenLogo } from '@components/misc/TokenLogo';
 import { Skeleton, Typography } from 'antd';
 import { Info } from 'app/src/components/misc/Info';
-import { Dictionary } from '@state/settings/localization/localization';
 
 // Component for each row of the PoolsTable
 export const PoolRow = (props: { pool: Pool }) => {
@@ -15,7 +14,6 @@ export const PoolRow = (props: { pool: Pool }) => {
   const { currencyFormatter, currencyAbbrev } = useCurrencyFormatting();
   const poolPrice = currencyFormatter(pool.tokenPrice, true);
   const { Text } = Typography;
-  const dictionary = useRecoilValue(Dictionary);
 
   // Align columns
   const alignRight: React.CSSProperties = { textAlign: 'right' };
@@ -34,25 +32,27 @@ export const PoolRow = (props: { pool: Pool }) => {
       if (pool.tokenPrice === 0) {
         //console.log(`Pyth Price Data for ${pool.name} token is not available at this moment.`);
         render = (
-          <div>
+          <>
             <Info term="pythDataStale">
-              <Text
-                className="table-token-name info-element"
-                strong
-                style={{ textDecoration: 'line-through', color: '#e36868' }}>
-                {pool.name}
-              </Text>
+              <div>
+                <Text
+                  className="table-token-name info-element"
+                  strong
+                  style={{ textDecoration: 'line-through', color: '#e36868' }}>
+                  {pool.name}
+                </Text>
+                <Text className="table-token-abbrev" strong>
+                  {pool.symbol}
+                </Text>
+                <Text
+                  className="price-name"
+                  style={{ textDecoration: 'line-through', color: '#e36868' }}>{`${pool.symbol} ≈ ${poolPrice}`}</Text>
+                <Text
+                  className="price-abbrev"
+                  style={{ textDecoration: 'line-through', color: '#e36868' }}>{`≈ ${poolPrice}`}</Text>
+              </div>
             </Info>
-            <Text className="table-token-abbrev" strong>
-              {pool.symbol}
-            </Text>
-            <Text
-              className="price-name"
-              style={{ textDecoration: 'line-through', color: '#e36868' }}>{`${pool.symbol} ≈ ${poolPrice}`}</Text>
-            <Text
-              className="price-abbrev"
-              style={{ textDecoration: 'line-through', color: '#e36868' }}>{`≈ ${poolPrice}`}</Text>
-          </div>
+          </>
         );
       } else {
         render = (
