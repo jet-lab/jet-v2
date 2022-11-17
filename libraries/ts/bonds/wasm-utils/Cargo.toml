@@ -19,5 +19,11 @@ wasm-bindgen = { version = "0.2.82", features = ["serde-serialize"] }
 
 jet-program-common = { path = "../../../rust/program-common" }
 
+agnostic-orderbook = { git = "https://github.com/jet-lab/agnostic-orderbook.git", branch = "main", features = ["utils"]}
+bonfida-utils = { git = "https://github.com/Bonfida/bonfida-utils.git", branch = "add-rounding-direction" }
+ouroboros = "0.15.5"
+thiserror = "1.0.37"
+console_error_panic_hook = "0.1.7"
+
 [dev-dependencies]
 rand_chacha = "0.3.1"

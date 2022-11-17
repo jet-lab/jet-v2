@@ -2928,8 +2928,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "71643f290d126e18ac2598876d01e1d57aed164afc78fdb6e2a0c6589a1f6662"
 dependencies = [
  "aliasable",
- "ouroboros_macro",
+ "ouroboros_macro 0.14.2",
  "stable_deref_trait",
+]
+
+[[package]]
+name = "ouroboros"
+version = "0.15.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dfbb50b356159620db6ac971c6d5c9ab788c9cc38a6f49619fca2a27acb062ca"
+dependencies = [
+ "aliasable",
+ "ouroboros_macro 0.15.5",
 ]
 
 [[package]]
@@ -2937,6 +2947,19 @@ name = "ouroboros_macro"
 version = "0.14.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ed9a247206016d424fe8497bc611e510887af5c261fbbf977877c4bb55ca4d82"
+dependencies = [
+ "Inflector",
+ "proc-macro-error",
+ "proc-macro2 1.0.47",
+ "quote 1.0.21",
+ "syn 1.0.102",
+]
+
+[[package]]
+name = "ouroboros_macro"
+version = "0.15.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4a0d9d1a6191c4f391f87219d1ea42b23f09ee84d64763cd05ee6ea88d9f384d"
 dependencies = [
  "Inflector",
  "proc-macro-error",
@@ -4509,7 +4532,7 @@ dependencies = [
  "num-derive",
  "num-traits",
  "num_cpus",
- "ouroboros",
+ "ouroboros 0.14.2",
  "rand 0.7.3",
  "rayon",
  "regex",
@@ -5652,12 +5675,17 @@ checksum = "1c38c045535d93ec4f0b4defec448e4291638ee608530863b1e2ba115d4fff7f"
 name = "wasm-utils"
 version = "0.1.0"
 dependencies = [
+ "agnostic-orderbook",
  "anyhow",
+ "bonfida-utils",
  "bytemuck",
+ "console_error_panic_hook",
  "jet-program-common",
  "js-sys",
+ "ouroboros 0.15.5",
  "rand_chacha 0.3.1",
  "serde",
+ "thiserror",
  "wasm-bindgen",
 ]
 
