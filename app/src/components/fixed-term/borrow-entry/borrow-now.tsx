@@ -1,6 +1,6 @@
 import { Button, InputNumber, Switch, Tooltip } from 'antd';
 import { formatDuration, intervalToDuration } from 'date-fns';
-import { borrowNow } from '@jet-lab/jet-bonds-client';
+import { borrowNow, estimate_order_outcome, Order } from '@jet-lab/jet-bonds-client';
 import { notify } from '@utils/notify';
 import { getExplorerUrl } from '@utils/ui';
 import BN from 'bn.js';
@@ -11,9 +11,9 @@ import { useProvider } from '@utils/jet/provider';
 import { CurrentPool, Pools } from '@state/pools/pools';
 import { BlockExplorer, Cluster } from '@state/settings/settings';
 import { useRecoilValue } from 'recoil';
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { MarginConfig, MarginTokenConfig } from '@jet-lab/margin';
-import { AllFixedMarketsAtom, MarketAndconfig } from '@state/fixed-market/fixed-term-market-sync';
+import { AllFixedMarketsAtom, AllFixedMarketsOrderBooksAtom, MarketAndconfig } from '@state/fixed-market/fixed-term-market-sync';
 import debounce from 'lodash.debounce';
 
 interface RequestLoanProps {
@@ -33,6 +33,40 @@ export const BorrowNow = ({ token, decimals, marketAndConfig, marginConfig }: Re
   const blockExplorer = useRecoilValue(BlockExplorer);
   const [amount, setAmount] = useState(new BN(0));
   const markets = useRecoilValue(AllFixedMarketsAtom);
+  const books = useRecoilValue(AllFixedMarketsOrderBooksAtom);
+
+  const estimateOrderOutcome = useCallback((amount: BN) => {
+    const cloned = books[0].bids.map(
+      o => new Order(o.owner, o.order_tag, o.order_id, o.base_size, o.quote_size, o.limit_price)
+    );
+    const bids = cloned.sort((x, y) => Number(y.limit_price) - Number(x.limit_price));
+
+    const bidAmounts = bids.map(bid => Number(bid.base_size));
+    console.log(
+      'Bids Amount: ',
+      bidAmounts,
+      ' Total: ',
+      bidAmounts.reduce((sum, val) => sum + val, 0)
+    );
+
+    const result = estimate_order_outcome(BigInt(amount.toNumber()), marginAccount.address.toBuffer(), 3, null, bids);
+    console.log({
+      vwap: Number(result.vwap),
+      filled_base: Number(result.filled_base),
+      filled_quote: Number(result.filled_quote),
+      matches: Number(result.matches),
+      unfilled_quote: Number(result.unfilled_quote)
+    });
+  }, []);
+
+  useEffect(
+    () => {
+      if (amount.gt(new BN(0))) {
+        estimateOrderOutcome(amount);
+      }
+    },
+    [amount]
+  );
 
   const createBorrowOrder = async () => {
     let signature: string;
