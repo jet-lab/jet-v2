@@ -1,9 +1,12 @@
+use std::sync::Arc;
+
 use anyhow::Result;
 
 use hosted_tests::{
-    context::test_context,
+    context::MarginTestContext,
     margin::MarginUser,
-    setup_helper::{liquidators, setup_token, setup_user, tokens, users},
+    margin_test_context,
+    setup_helper::{setup_token, setup_user},
     test_user::TestLiquidator,
 };
 use jet_margin::ErrorCode;
@@ -22,8 +25,16 @@ struct Scenario1 {
     usdc: Pubkey,
     user_a: MarginUser,
     user_b: MarginUser,
-    liquidator: TestLiquidator<'static>,
+    liquidator: TestLiquidator,
 }
+
+macro_rules! scenario1 {
+    () => {{
+        let ctx = margin_test_context!();
+        scenario1_with_ctx(&ctx).await.map(|scen| (ctx, scen))
+    }};
+}
+use scenario1;
 
 /// User A deposited 5'000'000 USD worth, borrowed 800'000 USD worth
 /// User B deposited 1'000'000 USD worth, borrowed 3'500'000 USD worth
@@ -32,8 +43,7 @@ struct Scenario1 {
 /// Total claims = 3'500'000
 /// C ratio = 127%
 #[allow(clippy::erasing_op)]
-async fn scenario1() -> Result<Scenario1> {
-    let ctx = test_context().await;
+async fn scenario1_with_ctx(ctx: &Arc<MarginTestContext>) -> Result<Scenario1> {
     let usdc = setup_token(ctx, 6, 1_00, 4_00, 1.0).await?;
     let tsol = setup_token(ctx, 9, 95, 4_00, 100.0).await?;
 
@@ -112,7 +122,7 @@ async fn scenario1() -> Result<Scenario1> {
 #[tokio::test(flavor = "multi_thread")]
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn cannot_liquidate_healthy_user() -> Result<()> {
-    let scen = scenario1().await?;
+    let scen = scenario1!()?.1;
 
     // A liquidator tries to liquidate User A, it should not be able to
     let result = scen.liquidator.begin(&scen.user_a, true).await;
@@ -124,7 +134,7 @@ async fn cannot_liquidate_healthy_user() -> Result<()> {
 #[tokio::test(flavor = "multi_thread")]
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn cannot_end_nonexistent_liquidation() -> Result<()> {
-    let scen = scenario1().await?;
+    let scen = scenario1!()?.1;
 
     // A liquidator should not be able to end liquidation of an account that is
     // not being liquidated
@@ -142,7 +152,7 @@ async fn cannot_end_nonexistent_liquidation() -> Result<()> {
 #[tokio::test(flavor = "multi_thread")]
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn cannot_transact_when_being_liquidated() -> Result<()> {
-    let scen = scenario1().await.unwrap();
+    let scen = scenario1!().unwrap().1;
 
     // A liquidator tries to liquidate User B, it should be able to
     scen.liquidator.begin(&scen.user_b, false).await.unwrap();
@@ -160,7 +170,7 @@ async fn cannot_transact_when_being_liquidated() -> Result<()> {
 #[tokio::test(flavor = "multi_thread")]
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn liquidator_can_repay_from_unhealthy_to_healthy_state() -> Result<()> {
-    let scen = scenario1().await.unwrap();
+    let scen = scenario1!().unwrap().1;
 
     let liq = scen.liquidator.begin(&scen.user_b, true).await.unwrap();
     liq.verify_healthy().await.err().unwrap();
@@ -182,7 +192,7 @@ async fn liquidator_can_repay_from_unhealthy_to_healthy_state() -> Result<()> {
 #[tokio::test(flavor = "multi_thread")]
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn liquidator_can_end_liquidation_when_unhealthy() -> Result<()> {
-    let scen = scenario1().await.unwrap();
+    let scen = scenario1!().unwrap().1;
 
     let liq = scen.liquidator.begin(&scen.user_b, true).await.unwrap();
     liq.verify_healthy().await.err().unwrap();
@@ -194,8 +204,7 @@ async fn liquidator_can_end_liquidation_when_unhealthy() -> Result<()> {
 #[tokio::test(flavor = "multi_thread")]
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn no_one_else_can_liquidate_after_liquidate_begin() -> Result<()> {
-    let ctx = test_context().await;
-    let scen = scenario1().await.unwrap();
+    let (ctx, scen) = scenario1!().unwrap();
 
     // A liquidator tries to liquidate User B, it should be able to
     scen.liquidator.begin(&scen.user_b, false).await.unwrap();
@@ -220,7 +229,7 @@ async fn no_one_else_can_liquidate_after_liquidate_begin() -> Result<()> {
 #[tokio::test(flavor = "multi_thread")]
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn liquidation_completes() -> Result<()> {
-    let scen = scenario1().await.unwrap();
+    let scen = scenario1!().unwrap().1;
 
     // A liquidator tries to liquidate User B, it should be able to
     let user_b_liq = scen.liquidator.begin(&scen.user_b, false).await.unwrap();
@@ -246,7 +255,7 @@ async fn liquidation_completes() -> Result<()> {
 #[tokio::test(flavor = "multi_thread")]
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn cannot_withdraw_too_much_during_liquidation() -> Result<()> {
-    let scen = scenario1().await.unwrap();
+    let scen = scenario1!().unwrap().1;
 
     let user_b_liq = scen.liquidator.begin(&scen.user_b, true).await.unwrap();
 
@@ -260,7 +269,7 @@ async fn cannot_withdraw_too_much_during_liquidation() -> Result<()> {
 #[tokio::test(flavor = "multi_thread")]
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn can_withdraw_some_during_liquidation() -> Result<()> {
-    let scen = scenario1().await.unwrap();
+    let scen = scenario1!().unwrap().1;
 
     let user_b_liq = scen.liquidator.begin(&scen.user_b, true).await.unwrap();
     user_b_liq
@@ -275,7 +284,7 @@ async fn can_withdraw_some_during_liquidation() -> Result<()> {
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 #[ignore = "ignored while there is no constraint on borrowing"]
 async fn cannot_borrow_too_much_during_liquidation() -> Result<()> {
-    let scen = scenario1().await.unwrap();
+    let scen = scenario1!().unwrap().1;
 
     let user_b_liq = scen.liquidator.begin(&scen.user_b, false).await.unwrap();
 
@@ -288,7 +297,7 @@ async fn cannot_borrow_too_much_during_liquidation() -> Result<()> {
 #[tokio::test(flavor = "multi_thread")]
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn can_borrow_some_during_liquidation() -> Result<()> {
-    let scen = scenario1().await.unwrap();
+    let scen = scenario1!().unwrap().1;
 
     let user_b_liq = scen.liquidator.begin(&scen.user_b, false).await.unwrap();
     user_b_liq
@@ -303,7 +312,7 @@ async fn can_borrow_some_during_liquidation() -> Result<()> {
 #[tokio::test(flavor = "multi_thread")]
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn owner_cannot_end_liquidation_before_timeout() -> Result<()> {
-    let scen = scenario1().await.unwrap();
+    let scen = scenario1!().unwrap().1;
 
     scen.liquidator.begin(&scen.user_b, false).await.unwrap();
 
@@ -320,12 +329,11 @@ async fn owner_cannot_end_liquidation_before_timeout() -> Result<()> {
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 #[cfg(not(feature = "localnet"))]
 async fn owner_can_end_liquidation_after_timeout() -> Result<()> {
-    let ctx = test_context().await;
-    let scen = scenario1().await.unwrap();
+    let (ctx, scen) = scenario1!().unwrap();
 
     scen.liquidator.begin(&scen.user_b, false).await.unwrap();
 
-    let mut clock = ctx.rpc.get_clock().unwrap();
+    let mut clock = ctx.rpc.get_clock().await.unwrap();
     clock.unix_timestamp += 61;
     ctx.rpc.set_clock(clock);
 
@@ -340,8 +348,7 @@ async fn owner_can_end_liquidation_after_timeout() -> Result<()> {
 #[tokio::test(flavor = "multi_thread")]
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn liquidator_permission_is_removable() -> Result<()> {
-    let ctx = test_context().await;
-    let scen = scenario1().await.unwrap();
+    let (ctx, scen) = scenario1!().unwrap();
 
     ctx.margin
         .set_liquidator_metadata(scen.liquidator.wallet.pubkey(), false)
@@ -359,33 +366,6 @@ async fn liquidator_permission_is_removable() -> Result<()> {
         anchor_lang::error::ErrorCode::AccountDiscriminatorMismatch,
         result,
     );
-
-    Ok(())
-}
-
-#[tokio::test(flavor = "multi_thread")]
-#[cfg_attr(not(feature = "localnet"), serial_test::serial)]
-async fn liquidate_with_swap() -> Result<()> {
-    let ctx = test_context().await;
-    let ([usdc, sol], swaps, pricer) = tokens(ctx).await.unwrap();
-    let [liquidator] = liquidators(ctx).await.unwrap();
-    let [user0, user1] = users(ctx).await.unwrap();
-    user0.deposit(&usdc, 1_000).await.unwrap();
-    user1.deposit(&sol, 1_000).await.unwrap();
-    user1.borrow_to_wallet(&usdc, 800).await.unwrap();
-    pricer.set_price(&sol, 0.9).await.unwrap();
-    liquidator
-        .liquidate(
-            &user1.user,
-            &swaps,
-            &sol,
-            &usdc,
-            TokenChange::shift(800),
-            700,
-        )
-        .await
-        .unwrap();
-    user1.borrow_to_wallet(&usdc, 5).await.unwrap();
 
     Ok(())
 }

@@ -1,23 +1,23 @@
 import { useState } from 'react';
 import { useRecoilState, useSetRecoilState, useResetRecoilState, useRecoilValue } from 'recoil';
 import { PoolAction } from '@jet-lab/margin';
-import { Dictionary } from '../../../state/settings/localization/localization';
-import { SendingTransaction } from '../../../state/actions/actions';
-import { BlockExplorer, Cluster } from '../../../state/settings/settings';
-import { WalletTokens } from '../../../state/user/walletTokens';
-import { CurrentAccount } from '../../../state/user/accounts';
-import { CurrentPool } from '../../../state/pools/pools';
-import { CurrentAction, TokenInputAmount, TokenInputString } from '../../../state/actions/actions';
-import { useTokenInputDisabledMessage } from '../../../utils/actions/tokenInput';
-import { useCurrencyFormatting } from '../../../utils/currency';
-import { formatRiskIndicator, formatRate } from '../../../utils/format';
-import { useMarginActions, ActionResponse } from '../../../utils/jet/marginActions';
-import { getExplorerUrl, getTokenStyleType } from '../../../utils/ui';
-import { notify } from '../../../utils/notify';
-import { useProjectedRisk, useRiskStyle } from '../../../utils/risk';
+import { Dictionary } from '@state/settings/localization/localization';
+import { SendingTransaction } from '@state/actions/actions';
+import { BlockExplorer, Cluster } from '@state/settings/settings';
+import { WalletTokens } from '@state/user/walletTokens';
+import { CurrentAccount } from '@state/user/accounts';
+import { CurrentPool } from '@state/pools/pools';
+import { CurrentAction, TokenInputAmount, TokenInputString } from '@state/actions/actions';
+import { useTokenInputDisabledMessage } from '@utils/actions/tokenInput';
+import { useCurrencyFormatting } from '@utils/currency';
+import { formatRiskIndicator, formatRate } from '@utils/format';
+import { useMarginActions, ActionResponse } from '@utils/jet/marginActions';
+import { getExplorerUrl, getTokenStyleType } from '@utils/ui';
+import { notify } from '@utils/notify';
+import { useProjectedRisk, useRiskStyle } from '@utils/risk';
 import { ArrowRight } from './ArrowRight';
 import { Button, Modal, Switch, Tabs, Typography } from 'antd';
-import { TokenInput } from '../../misc/TokenInput/TokenInput';
+import { TokenInput } from '@components/misc/TokenInput/TokenInput';
 
 // Modal to Borrow / Repay using the current Pool
 export function BorrowRepayModal(): JSX.Element {
@@ -44,7 +44,12 @@ export function BorrowRepayModal(): JSX.Element {
   const disabledMessage = useTokenInputDisabledMessage();
   const disabled = sendingTransaction || disabledMessage.length > 0;
   const { Paragraph, Text } = Typography;
-  const { TabPane } = Tabs;
+  const tabItems = ['borrow', 'repay'].map((action: string) => {
+    return {
+      label: action,
+      key: action
+    };
+  });
 
   function displayRepayFromDepositAsRepay() {
     return !currentAction ? '' : currentAction === 'repayFromDeposit' ? 'repay' : currentAction;
@@ -223,11 +228,9 @@ export function BorrowRepayModal(): JSX.Element {
       <Modal open className="action-modal" maskClosable={false} footer={null} onCancel={handleCancel}>
         <Tabs
           activeKey={currentAction === 'borrow' ? 'borrow' : 'repay'}
-          onChange={(action: string) => setCurrentAction(action as PoolAction)}>
-          {['borrow', 'repay'].map(action => (
-            <TabPane tab={action} key={action}></TabPane>
-          ))}
-        </Tabs>
+          onChange={(action: string) => setCurrentAction(action as PoolAction)}
+          items={tabItems}
+        />
         <div className="wallet-balance flex align-center justify-between">
           <Text className="small-accent-text">
             {dictionary.common[
@@ -279,7 +282,7 @@ export function BorrowRepayModal(): JSX.Element {
         </div>
         <Button
           block
-          disabled={disabled || tokenInputAmount.isZero()}
+          disabled={disabled || tokenInputAmount.isZero() || projectedRiskIndicator > 1}
           loading={sendingTransaction}
           onClick={borrowRepay}>
           {getSubmitText()}

@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
-import { useRecoilValue } from 'recoil';
-import { Cluster, PreferredRpcNode, rpcNodes } from '../../state/settings/settings';
-import { Dictionary } from '../../state/settings/localization/localization';
-import { useProvider } from '../../utils/jet/provider';
-import { MS_PER_MINUTE } from '../../utils/time';
+import { Cluster, PreferredRpcNode, rpcNodes } from '@state/settings/settings';
+import { Dictionary } from '@state/settings/localization/localization';
+import { useProvider } from '@utils/jet/provider';
+import { useRecoilState, useRecoilValue } from 'recoil';
 import { Alert } from 'antd';
+import { NetworkStateAtom } from '@state/network/network-state';
 
 // Banner to show user that the Solana network is running slowly
 export function TpsBanner(): JSX.Element {
@@ -17,6 +17,7 @@ export function TpsBanner(): JSX.Element {
   const [tps, setTps] = useState<number | undefined>(undefined);
   const unusuallySlow = (tps && tps < 1500) || ping > 750;
   const criticallySlow = (tps && tps < 1000) || ping > 1500;
+  const [networkStatus, setNetworkStatus] = useRecoilState(NetworkStateAtom);
 
   // Returns the conditional TPS warning message
   function getTpsMessage() {
@@ -36,6 +37,7 @@ export function TpsBanner(): JSX.Element {
       try {
         // Get performance samples
         const samples = await provider.connection.getRecentPerformanceSamples(15);
+        if (networkStatus) setNetworkStatus('connected');
         // Reduce to the total transactions-per-second
         const totalTps = samples.reduce((acc, val) => {
           return acc + val.numTransactions / val.samplePeriodSecs;
@@ -44,13 +46,14 @@ export function TpsBanner(): JSX.Element {
         const aveTps = Math.round(totalTps / samples.length);
         setTps(aveTps);
       } catch {
+        setNetworkStatus('error');
         return;
       }
     }
 
     getSolanaTps();
     // Check TPS every 30 seconds
-    const tpsInterval = setInterval(getSolanaTps, MS_PER_MINUTE / 2);
+    const tpsInterval = setInterval(getSolanaTps, 60_000);
     return () => clearInterval(tpsInterval);
   }, [provider.connection]);
 

@@ -20,14 +20,17 @@ use bytemuck::{Contiguous, Pod, Zeroable};
 #[cfg(any(test, feature = "cli"))]
 use serde::ser::{Serialize, SerializeStruct, Serializer};
 
-use jet_proto_math::Number128;
-use jet_proto_proc_macros::assert_size;
+use jet_program_common::Number128;
+use jet_program_proc_macros::assert_size;
 
 use anchor_lang::Result as AnchorResult;
 use std::{convert::TryFrom, result::Result};
 
 use super::Approver;
-use crate::{ErrorCode, PriceChangeInfo, TokenKind, MAX_ORACLE_CONFIDENCE, MAX_ORACLE_STALENESS};
+use crate::{
+    syscall::{sys, Sys},
+    ErrorCode, PriceChangeInfo, TokenKind, MAX_ORACLE_CONFIDENCE, MAX_ORACLE_STALENESS,
+};
 
 const POS_PRICE_VALID: u8 = 1;
 
@@ -229,7 +232,7 @@ impl AccountPosition {
     /// Update the balance for this position
     pub fn set_balance(&mut self, balance: u64) {
         self.balance = balance;
-        self.balance_timestamp = crate::util::get_timestamp();
+        self.balance_timestamp = sys().unix_timestamp();
         self.calculate_value();
     }
 

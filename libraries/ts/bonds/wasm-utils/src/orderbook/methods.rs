@@ -1,4 +1,6 @@
-use jet_proto_math::fixed_point::Fp32;
+use std::ops::Div;
+
+use jet_program_common::Fp32;
 use js_sys::{Array, Uint8Array};
 use wasm_bindgen::prelude::*;
 
@@ -115,8 +117,14 @@ pub fn build_order_amount_deprecated(amount: u64, interest_rate: u64) -> super::
 /// ```
 #[wasm_bindgen]
 pub fn calculate_implied_price(base: u64, quote: u64) -> u64 {
-    let price = Fp32::from(quote) / base;
-    price.as_decimal_u64().unwrap()
+    let price = Fp32::from(quote).div(Fp32::from(base));
+    price.downcast_u64().unwrap() // FIXME don't panic
+}
+
+#[test]
+fn test_calculate_implied_price() {
+    let result = calculate_implied_price(1000_u64, 1100_u64);
+    assert_eq!(result, 4724464025) // FIXME Check this test
 }
 
 /// This is meant to ensure that the api is using the PricerImpl type alias,

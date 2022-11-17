@@ -2,20 +2,21 @@ import { useEffect, useRef, useState } from 'react';
 import { CSVDownload } from 'react-csv';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { AccountTransaction } from '@jet-lab/margin';
-import { Dictionary } from '../../state/settings/localization/localization';
-import { BlockExplorer, Cluster, PreferDayMonthYear, PreferredTimeDisplay } from '../../state/settings/settings';
-import { AccountsViewOrder } from '../../state/views/views';
-import { WalletTokens } from '../../state/user/walletTokens';
-import { Accounts, CurrentAccountHistory, AccountNames, AccountHistoryLoaded } from '../../state/user/accounts';
-import { ActionRefresh } from '../../state/actions/actions';
-import { createDummyArray, getExplorerUrl, openLinkInBrowser } from '../../utils/ui';
-import { localDayMonthYear, unixToLocalTime, unixToUtcTime, utcDayMonthYear } from '../../utils/time';
+import { Dictionary } from '@state/settings/localization/localization';
+import { BlockExplorer, Cluster, PreferDayMonthYear, PreferredTimeDisplay } from '@state/settings/settings';
+import { AccountsViewOrder } from '@state/views/views';
+import { WalletTokens } from '@state/user/walletTokens';
+import { Accounts, CurrentAccountHistory, AccountNames, AccountHistoryLoaded } from '@state/user/accounts';
+import { ActionRefresh } from '@state/actions/actions';
+import { createDummyArray, getExplorerUrl, openLinkInBrowser } from '@utils/ui';
+import { localDayMonthYear, unixToLocalTime, unixToUtcTime, utcDayMonthYear } from '@utils/time';
 import { Tabs, Table, Skeleton, Typography, Input, Dropdown, Menu } from 'antd';
-import { ReorderArrows } from '../misc/ReorderArrows';
-import { ConnectionFeedback } from '../misc/ConnectionFeedback/ConnectionFeedback';
+import { ReorderArrows } from '@components/misc/ReorderArrows';
+import { ConnectionFeedback } from '@components/misc/ConnectionFeedback/ConnectionFeedback';
 import { DownloadOutlined, SearchOutlined } from '@ant-design/icons';
-import AngleDown from '../../assets/icons/arrow-angle-down.svg';
-import { ActionIcon } from '../misc/ActionIcon';
+import AngleDown from '@assets/icons/arrow-angle-down.svg';
+import { ActionIcon } from '@components/misc/ActionIcon';
+import debounce from 'lodash.debounce';
 
 // Table to show margin account's transaction history
 export function FullAccountHistory(): JSX.Element {
@@ -40,7 +41,6 @@ export function FullAccountHistory(): JSX.Element {
   const transactionsRef = useRef<any>();
   const loadingAccounts = walletTokens && !filteredTxHistory?.length;
   const { Paragraph, Text } = Typography;
-  const { TabPane } = Tabs;
 
   // Renders the date/time column for table
   function renderDateColumn(transaction: AccountTransaction) {
@@ -195,23 +195,32 @@ export function FullAccountHistory(): JSX.Element {
   return (
     <div className="full-account-history account-table view-element flex-centered">
       <ConnectionFeedback />
-      <Tabs activeKey={currentTable} onChange={table => setCurrentTable(table)}>
-        <TabPane key="transactions" tab={dictionary.accountsView.accountHistory}>
-          <Table
-            ref={transactionsRef}
-            dataSource={accounts && accountHistoryLoaded ? filteredTxHistory : createDummyArray(pageSize, 'signature')}
-            columns={transactionHistoryColumns}
-            pagination={{ pageSize }}
-            className={accounts && filteredTxHistory?.length ? '' : 'no-row-interaction'}
-            rowKey={row => `${row.tokenSymbol}-${Math.random()}`}
-            rowClassName={(transaction, index) => ((index + 1) % 2 === 0 ? 'dark-bg' : '')}
-            onRow={(transaction: AccountTransaction) => ({
-              onClick: () => openLinkInBrowser(getExplorerUrl(transaction.signature, cluster, blockExplorer))
-            })}
-            locale={{ emptyText: dictionary.accountsView.noAccountHistory }}
-          />
-        </TabPane>
-      </Tabs>
+      <Tabs
+        activeKey={currentTable}
+        onChange={table => setCurrentTable(table)}
+        items={[
+          {
+            label: dictionary.accountsView.accountHistory,
+            key: 'transactions',
+            children: (
+              <Table
+                ref={transactionsRef}
+                dataSource={
+                  accounts && accountHistoryLoaded ? filteredTxHistory : createDummyArray(pageSize, 'signature')
+                }
+                columns={transactionHistoryColumns}
+                pagination={{ pageSize }}
+                className={accounts && filteredTxHistory?.length ? '' : 'no-row-interaction'}
+                rowKey={row => `${row.tokenSymbol}-${Math.random()}`}
+                rowClassName={(transaction, index) => ((index + 1) % 2 === 0 ? 'dark-bg' : '')}
+                onRow={(transaction: AccountTransaction) => ({
+                  onClick: () => openLinkInBrowser(getExplorerUrl(transaction.signature, cluster, blockExplorer))
+                })}
+                locale={{ emptyText: dictionary.accountsView.noAccountHistory }}
+              />
+            )
+          }
+        ]}></Tabs>
       <div className="page-size-dropdown flex-centered">
         <Paragraph italic>{dictionary.accountsView.rowsPerPage}:</Paragraph>
         <Dropdown
@@ -247,7 +256,11 @@ export function FullAccountHistory(): JSX.Element {
           )}
         </div>
         <SearchOutlined />
-        <Input type="text" placeholder={getFilterInputPlaceholder()} onChange={e => filterTxHistory(e.target.value)} />
+        <Input
+          type="text"
+          placeholder={getFilterInputPlaceholder()}
+          onChange={debounce(e => filterTxHistory(e.target.value), 300)}
+        />
       </div>
       <ReorderArrows
         component="fullAccountHistory"

@@ -1,6 +1,8 @@
 use agnostic_orderbook::state::OrderSummary;
 use anchor_lang::{event, prelude::*};
 
+use super::state::ObligationFlags;
+
 #[event]
 pub struct MarginUserInitialized {
     pub bond_manager: Pubkey,
@@ -11,11 +13,39 @@ pub struct MarginUserInitialized {
 }
 
 #[event]
-pub struct MarginBorrow {
+pub struct OrderPlaced {
     pub bond_manager: Pubkey,
-    pub margin_account: Pubkey,
-    pub borrower_account: Pubkey,
+    /// The authority placing this order, almost always the margin account
+    pub authority: Pubkey,
+    pub margin_user: Option<Pubkey>,
+    pub order_type: OrderType,
     pub order_summary: OrderSummary,
+    pub limit_price: u64,
+    pub auto_stake: bool,
+    pub post_only: bool,
+    pub post_allowed: bool,
+}
+
+#[derive(AnchorDeserialize, AnchorSerialize)]
+pub enum OrderType {
+    MarginBorrow,
+    MarginLend,
+    MarginSellTickets,
+    Lend,
+    SellTickets,
+}
+
+#[event]
+pub struct ObligationCreated {
+    pub obligation: Pubkey,
+    pub authority: Pubkey,
+    pub order_id: Option<u128>,
+    pub sequence_number: u64,
+    pub bond_manager: Pubkey,
+    pub maturation_timestamp: i64,
+    pub quote_filled: u64,
+    pub base_filled: u64,
+    pub flags: ObligationFlags,
 }
 
 #[event]

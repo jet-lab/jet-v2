@@ -9,7 +9,19 @@
     "allowJs": true,
     "allowSyntheticDefaultImports": true,
     "moduleResolution": "node",
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "incremental": true,
+    "skipLibCheck": true,
+    "baseUrl": "src",
+    "paths": {
+      "@components/*": ["components/*"],
+      "@state/*": ["state/*"],
+      "@styles/*": ["styles/*"],
+      "@utils/*": ["utils/*"],
+      "@assets/*": ["assets/*"],
+      "@views/*": ["views/*"]
+    }
   },
-  "include": ["./src/", "./public"]
+  "include": ["src/**/*", "./public"],
+  "exclude": ["node_modules"]
 }

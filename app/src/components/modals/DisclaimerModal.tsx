@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { useWallet } from '@solana/wallet-adapter-react';
 import reactStringReplace from 'react-string-replace';
-import { Dictionary } from '../../state/settings/localization/localization';
-import { Cluster, DisclaimersAccepted } from '../../state/settings/settings';
+import { Dictionary } from '@state/settings/localization/localization';
+import { Cluster, DisclaimersAccepted } from '@state/settings/settings';
 import { Button, Checkbox, Modal, Typography } from 'antd';
 
 // Disclaimer modal if the current wallet hasn't accepted terms/conditions yet

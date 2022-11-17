@@ -1,12 +1,18 @@
 import { useLocation } from 'react-router-dom';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
-import { Dictionary } from '../../../state/settings/localization/localization';
-import { NavDrawerOpen } from '../../../state/views/views';
-import { SendingTransaction } from '../../../state/actions/actions';
-import { useChangeView } from '../../../utils/ui';
+import { Dictionary } from '@state/settings/localization/localization';
+import { NavDrawerOpen } from '@state/views/views';
+import { SendingTransaction } from '@state/actions/actions';
+import { useChangeView } from '@utils/ui';
 import { Tooltip, Typography } from 'antd';
+import { isDebug } from '../../../App';
 
-type Route = '/' | '/swaps' | '/accounts';
+type Route =
+  | '/'
+  | '/swaps'
+  | '/accounts'
+  | '/fixed-lend?debug-environment=true'
+  | '/fixed-borrow?debug-environment=true';
 interface Link {
   title: string;
   route: Route;
@@ -21,6 +27,11 @@ export function NavLinks(): JSX.Element {
     { title: dictionary.swapsView.title, route: '/swaps', disabled: false },
     { title: dictionary.accountsView.title, route: '/accounts', disabled: false }
   ];
+
+  if (isDebug) {
+    navLinks.push({ title: 'Lend', route: '/fixed-lend?debug-environment=true', disabled: false });
+    navLinks.push({ title: 'Borrow', route: '/fixed-borrow?debug-environment=true', disabled: false });
+  }
 
   const navLinkComponents = navLinks.map(link => {
     let navLink = NavLink(link);

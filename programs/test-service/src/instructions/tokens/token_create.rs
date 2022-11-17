@@ -48,6 +48,12 @@ pub struct TokenCreateParams {
     /// The maximum amount of the token a user can request to mint in a
     /// single instruction.
     pub max_amount: u64,
+
+    /// the symbol of the mainnet product from which the price will be derived
+    pub source_symbol: String,
+
+    /// multiplied by the mainnet price to get the price of this asset
+    pub price_ratio: f64,
 }
 
 #[derive(Accounts)]
@@ -117,6 +123,8 @@ pub fn token_create_handler(ctx: Context<TokenCreate>, params: TokenCreateParams
     info.pyth_product = ctx.accounts.pyth_product.key();
     info.oracle_authority = params.oracle_authority;
     info.max_request_amount = params.max_amount;
+    info.source_symbol = params.source_symbol.clone();
+    info.price_ratio = params.price_ratio;
 
     let mut pyth_product = load_pyth_account::<ProductAccount>(&ctx.accounts.pyth_product)?;
     let mut pyth_price = load_pyth_account::<PriceAccount>(&ctx.accounts.pyth_price)?;

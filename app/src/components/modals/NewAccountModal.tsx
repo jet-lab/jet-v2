@@ -1,20 +1,22 @@
 import { useEffect, useState } from 'react';
-import { useResetRecoilState, useRecoilValue, useRecoilState } from 'recoil';
+import { useResetRecoilState, useRecoilValue, useRecoilState, useSetRecoilState } from 'recoil';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { LAMPORTS_PER_SOL } from '@solana/web3.js';
 import { feesBuffer } from '@jet-lab/margin';
-import { Dictionary } from '../../state/settings/localization/localization';
-import { Cluster, BlockExplorer } from '../../state/settings/settings';
-import { SendingTransaction } from '../../state/actions/actions';
-import { NewAccountModal as NewAccountModalState } from '../../state/modals/modals';
-import { AccountNames, Accounts } from '../../state/user/accounts';
-import { WalletTokens } from '../../state/user/walletTokens';
-import { notify } from '../../utils/notify';
-import { useProvider } from '../../utils/jet/provider';
-import { useMarginActions } from '../../utils/jet/marginActions';
-import { ActionResponse } from '../../utils/jet/marginActions';
-import { getExplorerUrl } from '../../utils/ui';
+import { Dictionary } from '@state/settings/localization/localization';
+import { Cluster, BlockExplorer } from '@state/settings/settings';
+import { ActionRefresh, SendingTransaction } from '@state/actions/actions';
+import { NewAccountModal as NewAccountModalState } from '@state/modals/modals';
+import { AccountNames, Accounts } from '@state/user/accounts';
+import { WalletTokens } from '@state/user/walletTokens';
+import { notify } from '@utils/notify';
+import { useProvider } from '@utils/jet/provider';
+import { useMarginActions } from '@utils/jet/marginActions';
+import { ActionResponse } from '@utils/jet/marginActions';
+import { getExplorerUrl } from '@utils/ui';
 import { Input, Modal, Tooltip, Typography } from 'antd';
+import { NetworkStateAtom } from '../../state/network/network-state';
+import debounce from 'lodash.debounce';
 
 // Modal for user to create a new margin account
 export function NewAccountModal(): JSX.Element {
@@ -35,7 +37,13 @@ export function NewAccountModal(): JSX.Element {
   const [disabled, setDisabled] = useState(true);
   const [inputError, setInputError] = useState<string | undefined>();
   const [sendingTransaction, setSendingTransaction] = useRecoilState(SendingTransaction);
+  const networkState = useRecoilValue(NetworkStateAtom);
+  const setActionRefresh = useSetRecoilState(ActionRefresh);
   const { Title, Paragraph, Text } = Typography;
+
+  useEffect(() => {
+    if (newAccountModalOpen) setActionRefresh(Date.now());
+  }, [newAccountModalOpen]);
 
   // Create a new account with a deposit
   async function newAccount() {
@@ -91,11 +99,10 @@ export function NewAccountModal(): JSX.Element {
 
   // Set rent fee for creating a new account
   useEffect(() => {
+    if (!programs || networkState !== 'connected') {
+      return;
+    }
     async function getNewAccountRentFee() {
-      if (!programs) {
-        return;
-      }
-
       const rentFeeLamports = await programs.connection.getMinimumBalanceForRentExemption(
         programs.margin.account.marginAccount.size
       );
@@ -104,14 +111,20 @@ export function NewAccountModal(): JSX.Element {
     }
     getNewAccountRentFee();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [programs]);
+  }, [programs, networkState]);
 
-  // Check if user has enough SOL to cover rent + fees
+  // Check if user has enough SOL to cover rent + fees.
+  // If user's SOL is less than feeBuffer amount, disable user from creating new account.
   useEffect(() => {
-    if (walletTokens && walletTokens.map.SOL.amount.lamports.gten(feesBuffer)) {
+    try {
+      if (walletTokens && walletTokens.map.SOL.amount.lamports.gte(feesBuffer)) {
+        setDisabled(false);
+      } else {
+        setDisabled(true);
+      }
+    } catch (err) {
       setDisabled(false);
-    } else {
-      setDisabled(true);
+      console.warn(err);
     }
   }, [walletTokens]);
 
@@ -172,7 +185,7 @@ export function NewAccountModal(): JSX.Element {
               placeholder={dictionary.actions.newAccount.accountNamePlaceholder + '..'}
               value={/* newAccountName */ `${dictionary.common.account} ${latestSeed + 1}`}
               disabled={/* disabled || sendingTransaction */ true}
-              onChange={e => setNewAccountName(e.target.value)}
+              onChange={debounce(e => setNewAccountName(e.target.value), 300)}
               onPressEnter={newAccount}
               style={{ boxShadow: 'unset' }}
             />

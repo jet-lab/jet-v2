@@ -1,5 +1,5 @@
 {
-  "include": ["./src/**/*", "./src/**/*.json", "./wasm-utils/pkg"],
+  "include": ["./src/**/*"],
   "exclude": ["**/*.wasm"],
   "compilerOptions": {
     "target": "ES2020",
@@ -21,6 +21,8 @@
     "outDir": "dist/esm",
     "rootDir": "./src",
     "strict": true,
-    "forceConsistentCasingInFileNames": true
+    "forceConsistentCasingInFileNames": true,
+    "incremental": true,
+    "skipLibCheck": true
   }
 }

@@ -1,11 +1,11 @@
 import { useRecoilValue, useSetRecoilState } from 'recoil';
-import { Dictionary } from '../../../state/settings/localization/localization';
-import { Pools } from '../../../state/pools/pools';
-import { Accounts, AccountsLoading } from '../../../state/user/accounts';
+import { Dictionary } from '@state/settings/localization/localization';
+import { Pools } from '@state/pools/pools';
+import { Accounts, AccountsLoading } from '@state/user/accounts';
 import { Button } from 'antd';
 import { LoadingOutlined } from '@ant-design/icons';
-import { NewAccountModal } from '../../../state/modals/modals';
-import AccountLockedIcon from '../../../assets/icons/account-locked.svg';
+import { NewAccountModal } from '@state/modals/modals';
+import AccountLockedIcon from '@assets/icons/account-locked.svg';
 
 // A feedback message overlaying components that can only used from an account
 export function AccountMessage(): JSX.Element {

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
-import { CurrentAccount } from '../../state/user/accounts';
-import { useRiskLevel } from '../../utils/risk';
+import { CurrentAccount } from '@state/user/accounts';
+import { useRiskLevel } from '@utils/risk';
 import { Typography } from 'antd';
 
 // Component to show account's Risk Level shown as a meter

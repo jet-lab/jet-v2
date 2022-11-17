@@ -1,10 +1,11 @@
 import { useRecoilState } from 'recoil';
 import { Pool } from '@jet-lab/margin';
-import { CurrentPoolSymbol } from '../../../state/pools/pools';
-import { formatRate } from '../../../utils/format';
-import { useCurrencyFormatting } from '../../../utils/currency';
-import { TokenLogo } from '../../misc/TokenLogo';
+import { CurrentPoolSymbol } from '@state/pools/pools';
+import { formatRate } from '@utils/format';
+import { useCurrencyFormatting } from '@utils/currency';
+import { TokenLogo } from '@components/misc/TokenLogo';
 import { Skeleton, Typography } from 'antd';
+import { Info } from 'app/src/components/misc/Info';
 
 // Component for each row of the PoolsTable
 export const PoolRow = (props: { pool: Pool }) => {
@@ -12,6 +13,7 @@ export const PoolRow = (props: { pool: Pool }) => {
   const [currentPoolSymbol, setCurrentPoolSymbol] = useRecoilState(CurrentPoolSymbol);
   const { currencyFormatter, currencyAbbrev } = useCurrencyFormatting();
   const poolPrice = currencyFormatter(pool.tokenPrice, true);
+  const emaPrice = currencyFormatter(pool.tokenEmaPrice, true);
   const { Text } = Typography;
 
   // Align columns
@@ -26,9 +28,8 @@ export const PoolRow = (props: { pool: Pool }) => {
 
   // Renders pool asset info
   function renderAssetInfo() {
-    let render = <Skeleton className="align-left" paragraph={false} active />;
     if (pool.tokenPrice > 0) {
-      render = (
+      return (
         <div>
           <Text className="table-token-name" strong>
             {pool.name}
@@ -41,8 +42,19 @@ export const PoolRow = (props: { pool: Pool }) => {
         </div>
       );
     }
-
-    return render;
+    if (pool.tokenPrice === 0) {
+      return (
+        <Info term="pythDataStale">
+          <div className="info-element">
+            <Text className="table-token-name table-token-disabled">{pool.name}</Text>
+            <Text className="table-token-abbrev table-token-disabled">{pool.symbol}</Text>
+            <Text className="price-name table-token-disabled">{`${pool.symbol} ≈ ${emaPrice}`}</Text>
+            <Text className="price-abbrev table-token-disabled">{`≈ ${emaPrice}`}</Text>
+          </div>
+        </Info>
+      );
+    }
+    return <Skeleton className="align-left" paragraph={false} active />;
   }
 
   // Renders the utilization rate for the pool

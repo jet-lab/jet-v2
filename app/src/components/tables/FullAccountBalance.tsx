@@ -2,22 +2,23 @@ import { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { CSVDownload } from 'react-csv';
 import { SetterOrUpdater, useRecoilState, useRecoilValue } from 'recoil';
-import { Dictionary } from '../../state/settings/localization/localization';
-import { FiatCurrency } from '../../state/settings/settings';
-import { AccountsViewOrder, SwapsViewOrder } from '../../state/views/views';
-import { WalletTokens } from '../../state/user/walletTokens';
-import { CurrentPoolSymbol, Pools } from '../../state/pools/pools';
-import { AccountBalance, Accounts, CurrentAccount } from '../../state/user/accounts';
-import { ActionRefresh, CurrentSwapOutput } from '../../state/actions/actions';
-import { useCurrencyFormatting } from '../../utils/currency';
-import { createDummyArray } from '../../utils/ui';
-import { formatRate } from '../../utils/format';
+import { Dictionary } from '@state/settings/localization/localization';
+import { FiatCurrency } from '@state/settings/settings';
+import { AccountsViewOrder, SwapsViewOrder } from '@state/views/views';
+import { WalletTokens } from '@state/user/walletTokens';
+import { CurrentPoolSymbol, Pools } from '@state/pools/pools';
+import { AccountBalance, Accounts, CurrentAccount } from '@state/user/accounts';
+import { ActionRefresh, CurrentSwapOutput } from '@state/actions/actions';
+import { useCurrencyFormatting } from '@utils/currency';
+import { createDummyArray } from '@utils/ui';
+import { formatRate } from '@utils/format';
 import { Table, Skeleton, Typography, Input } from 'antd';
-import { TokenLogo } from '../misc/TokenLogo';
-import { ReorderArrows } from '../misc/ReorderArrows';
-import { Info } from '../misc/Info';
-import { ConnectionFeedback } from '../misc/ConnectionFeedback/ConnectionFeedback';
+import { TokenLogo } from '@components/misc/TokenLogo';
+import { ReorderArrows } from '@components/misc/ReorderArrows';
+import { Info } from '@components/misc/Info';
+import { ConnectionFeedback } from '@components/misc/ConnectionFeedback/ConnectionFeedback';
 import { DownloadOutlined, SearchOutlined } from '@ant-design/icons';
+import debounce from 'lodash.debounce';
 
 // Table to show margin account's balances for each token
 export function FullAccountBalance(): JSX.Element {
@@ -122,15 +123,17 @@ export function FullAccountBalance(): JSX.Element {
   function renderDepositBalanceColumn(balance: AccountBalance) {
     let render = <Skeleton className="align-right" paragraph={false} active={loadingAccounts} />;
     if (accounts && balance?.tokenSymbol) {
+      const value = currencyAbbrev(
+        balance.depositBalance.tokens,
+        false,
+        undefined,
+        pools.tokenPools[balance.tokenSymbol]?.precision ?? 2,
+        true
+      );
       render = (
         <Text type={balance.depositBalance.isZero() ? undefined : 'success'}>
-          {currencyAbbrev(
-            balance.depositBalance.tokens,
-            false,
-            undefined,
-            pools.tokenPools[balance.tokenSymbol]?.precision ?? 2,
-            true
-          )}
+          {!balance.depositBalance.isZero() && value === '0' && '~'}
+          {value}
         </Text>
       );
     }
@@ -142,15 +145,17 @@ export function FullAccountBalance(): JSX.Element {
   function renderLoanBalanceColumn(balance: AccountBalance) {
     let render = <Skeleton className="align-right" paragraph={false} active={loadingAccounts} />;
     if (accounts && balance?.tokenSymbol) {
+      const value = currencyAbbrev(
+        balance.loanBalance.tokens,
+        false,
+        undefined,
+        pools.tokenPools[balance.tokenSymbol]?.precision ?? 2,
+        true
+      );
       render = (
         <Text type={balance.loanBalance.isZero() ? undefined : 'warning'}>
-          {currencyAbbrev(
-            balance.loanBalance.tokens,
-            false,
-            undefined,
-            pools.tokenPools[balance.tokenSymbol]?.precision ?? 2,
-            true
-          )}
+          {!balance.loanBalance.isZero() && value === '0' && '~'}
+          {value}
         </Text>
       );
     }
@@ -309,7 +314,7 @@ export function FullAccountBalance(): JSX.Element {
           <Input
             type="text"
             placeholder={dictionary.accountsView.balancesFilterPlaceholder}
-            onChange={e => filterBalanceTable(e.target.value)}
+            onChange={debounce(e => filterBalanceTable(e.target.value), 300)}
           />
         </div>
       </div>

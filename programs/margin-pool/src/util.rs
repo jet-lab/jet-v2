@@ -16,7 +16,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 use anchor_lang::solana_program::clock::UnixTimestamp;
-use jet_proto_math::Number;
+use jet_program_common::Number;
 
 pub const SECONDS_PER_HOUR: UnixTimestamp = 3600;
 pub const SECONDS_PER_2H: UnixTimestamp = SECONDS_PER_HOUR * 2;
@@ -58,7 +58,7 @@ pub fn compound_interest(rate: Number, seconds: UnixTimestamp) -> Number {
 
     let x = rate * seconds / SECONDS_PER_YEAR;
 
-    jet_proto_math::expm1_approx(x, terms)
+    jet_program_common::expm1_approx(x, terms)
 }
 
 /// Linear interpolation between (x0, y0) and (x1, y1).

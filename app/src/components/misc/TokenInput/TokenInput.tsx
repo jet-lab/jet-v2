@@ -1,26 +1,27 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRecoilState, useRecoilValue, useResetRecoilState } from 'recoil';
-import { feesBuffer, MarginAccount, numberToBn, TokenAmount, PoolAction } from '@jet-lab/margin';
-import { CurrentPool, PoolOption, usePoolFromName } from '../../../state/pools/pools';
+import { feesBuffer, MarginAccount, numberToBn, TokenAmount, PoolAction, Pool } from '@jet-lab/margin';
+import { CurrentPool, PoolOption, usePoolFromName } from '@state/pools/pools';
 import {
   CurrentAction,
   MaxTradeAmounts,
   SendingTransaction,
   TokenInputAmount,
   TokenInputString
-} from '../../../state/actions/actions';
+} from '@state/actions/actions';
 import {
   useTokenInputDisabledMessage,
   useTokenInputWarningMessage,
   useTokenInputErrorMessage
-} from '../../../utils/actions/tokenInput';
-import { DEFAULT_DECIMALS, getTokenAmountFromNumber } from '../../../utils/currency';
+} from '@utils/actions/tokenInput';
+import { DEFAULT_DECIMALS, getTokenAmountFromNumber } from '@utils/currency';
 import { TokenSelect } from './TokenSelect';
 import { TokenSlider } from './TokenSlider';
 import { Input, Typography } from 'antd';
-import { WalletTokens } from '../../../state/user/walletTokens';
-import { CurrentAccount } from '../../../state/user/accounts';
-import { fromLocaleString } from '../../../utils/format';
+import { WalletTokens } from '@state/user/walletTokens';
+import { CurrentAccount } from '@state/user/accounts';
+import { fromLocaleString } from '@utils/format';
+import debounce from 'lodash.debounce';
 
 // Main component for token inputs when the user takes one of the main actions (deposit, borrow, etc)
 export function TokenInput(props: {
@@ -74,42 +75,51 @@ export function TokenInput(props: {
 
   // If current action changes, keep input within the maxInput range
   useEffect(() => {
-    if (tokenInputAmount.gt(maxInput)) {
+    if (tokenInputAmount.gte(maxInput)) {
       setTokenInputAmount(maxInput);
       setTokenInputString(maxInput.tokens.toString());
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tokenAction]);
 
+  const debouncedUpdateTokenAmount = useMemo(
+    () =>
+      debounce(
+        (
+          tokenPool: Pool,
+          tokenInputString: string,
+          tokenInputAmount: TokenAmount,
+          value: TokenAmount,
+          maxInput: TokenAmount
+        ) => {
+          // Create TokenAmount from tokenInputString and update tokenInputAmount
+          if (!tokenPool || tokenInputString === tokenInputAmount.uiTokens || value !== undefined) {
+            return;
+          }
+
+          // Remove unnecessary 0's from beginning / end of input string
+          const inputString = parseFloat(fromLocaleString(tokenInputString)).toString();
+
+          // Keep input within the user's maxInput range
+          const inputTokenAmount = getTokenAmountFromNumber(parseFloat(inputString), tokenPool.decimals);
+          const withinMaxRange = TokenAmount.min(inputTokenAmount, maxInput);
+
+          // Adjust state
+          setTokenInputAmount(withinMaxRange);
+          if (inputTokenAmount.gt(withinMaxRange)) {
+            const { format } = new Intl.NumberFormat(navigator.language);
+            setTokenInputString(format(withinMaxRange.tokens));
+          }
+        },
+        300
+      ),
+    []
+  );
+
   // Keep tokenInputAmount up to date with tokenInputString
   useEffect(() => {
-    // Create TokenAmount from tokenInputString and update tokenInputAmount
-    if (!tokenPool || tokenInputString === tokenInputAmount.uiTokens || props.value !== undefined) {
-      return;
-    }
-
-    // Remove unnecessary 0's from beginning / end of input string
-    const inputString = parseFloat(fromLocaleString(tokenInputString)).toString();
-
-    // Keep input within the user's maxInput range
-    const inputTokenAmount = getTokenAmountFromNumber(parseFloat(inputString), tokenPool.decimals);
-    const withinMaxRange = TokenAmount.min(inputTokenAmount, maxInput);
-
-    // Adjust state
-    setTokenInputAmount(withinMaxRange);
-    if (inputTokenAmount.gt(withinMaxRange)) {
-      const { format } = new Intl.NumberFormat(navigator.language);
-      setTokenInputString(format(withinMaxRange.tokens));
-    }
-  }, [
-    tokenPool,
-    tokenInputString,
-    tokenInputAmount.uiTokens,
-    props.value,
-    maxInput,
-    setTokenInputAmount,
-    setTokenInputString
-  ]);
+    debouncedUpdateTokenAmount(tokenPool, tokenInputString, tokenInputAmount, props.value, maxInput);
+  }, [tokenPool, tokenInputString, tokenInputAmount.uiTokens, props.value, maxInput]);
 
   // Update maxInput on pool position update
   useEffect(() => {
@@ -128,7 +138,7 @@ export function TokenInput(props: {
         maxInput = walletTokens ? walletTokens.map[tokenPool.symbol].amount : zeroInputAmount;
         // If SOL, need to save some for fees
         if (tokenPool.symbol === 'SOL') {
-          maxInput = maxInput.subb(numberToBn(feesBuffer));
+          maxInput = maxInput.subb(feesBuffer);
         }
         // Otherwise reference their margin account
       } else {

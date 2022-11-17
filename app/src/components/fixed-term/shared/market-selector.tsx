@@ -1,14 +1,12 @@
 import { useRecoilState, useRecoilValue } from 'recoil';
-import {
-  AllFixedMarketsAtom,
-  FixedMarketAtom,
-  SelectedFixedMarketAtom
-} from '../../state/fixed/fixed-term-market-sync';
-import { FixedBorrowViewOrder, FixedLendViewOrder } from '../../state/views/fixed-term';
-import { ReorderArrows } from '../misc/ReorderArrows';
+('../misc/ReorderArrows');
+import { AllFixedMarketsAtom, SelectedFixedMarketAtom } from '@state/fixed-market/fixed-term-market-sync';
+import { FixedBorrowViewOrder, FixedLendViewOrder } from '@state/views/fixed-term';
+import { ReorderArrows } from '@components/misc/ReorderArrows';
 import { Select } from 'antd';
-import AngleDown from '../../assets/icons/arrow-angle-down.svg';
-import { useCurrencyFormatting } from '../../utils/currency';
+import AngleDown from '@assets/icons/arrow-angle-down.svg';
+import { useCurrencyFormatting } from '@utils/currency';
+import { marketToString } from '@utils/jet/fixed-term-utils';
 
 const { Option } = Select;
 
@@ -18,7 +16,6 @@ interface FixedMarketSelectorProps {
 export const FixedMarketSelector = ({ type }: FixedMarketSelectorProps) => {
   const [order, setOrder] = useRecoilState(type === 'asks' ? FixedLendViewOrder : FixedBorrowViewOrder);
   const markets = useRecoilValue(AllFixedMarketsAtom);
-  const market = useRecoilValue(FixedMarketAtom);
   const [selectedMarket, setSelectedMarket] = useRecoilState(SelectedFixedMarketAtom);
   const formatting = useCurrencyFormatting();
   return (
@@ -31,35 +28,35 @@ export const FixedMarketSelector = ({ type }: FixedMarketSelectorProps) => {
           onChange={value => setSelectedMarket(value - 1)}>
           {markets.map((market, index) => (
             <Option key={market.name} value={index + 1}>
-              {market.name}
+              {marketToString(market.config)}
             </Option>
           ))}
         </Select>
         <div className="stats">
           <div className="single-stat">
             <div className="header">Total Lent</div>
-            <div>{formatting.currencyAbbrev(market.totalLent)}</div>
+            <div>{formatting.currencyAbbrev(0)}</div>
           </div>
           <div className="single-stat">
             <div className="header">Total Borrow</div>
-            <div>{formatting.currencyAbbrev(market.totalBorrowed)}</div>
+            <div>{formatting.currencyAbbrev(0)}</div>
           </div>
           <div className="single-stat">
             <div className="header">12 hrs change</div>
-            <div>{formatting.currencyAbbrev(market.change12hrs)}%</div>
+            <div>{formatting.currencyAbbrev(0)}%</div>
           </div>
           <div className="single-stat">
             <div className="header">24 hrs change</div>
-            <div>{formatting.currencyAbbrev(market.change24hrs)}%</div>
+            <div>{formatting.currencyAbbrev(0)}%</div>
           </div>
           <div className="single-stat">
             <div className="header">Volume</div>
-            <div>{formatting.currencyAbbrev(market.volume)}</div>
+            <div>{formatting.currencyAbbrev(0)}</div>
           </div>
           <div className="single-stat">
             <div className="header">Daily Range</div>
             <div>
-              {formatting.currencyAbbrev(market.dailyRange[0])}-{formatting.currencyAbbrev(market.dailyRange[1])}
+              {formatting.currencyAbbrev(0)}-{formatting.currencyAbbrev(0)}
             </div>
           </div>
         </div>

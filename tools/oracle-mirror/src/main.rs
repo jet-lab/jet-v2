@@ -1,4 +1,7 @@
-use std::{path::PathBuf, str::FromStr};
+use std::{
+    path::{Path, PathBuf},
+    str::FromStr,
+};
 
 use anchor_lang::{AccountDeserialize, Discriminator};
 use anyhow::{bail, Result};
@@ -88,8 +91,14 @@ async fn run(opts: CliOpts) -> Result<()> {
 
     let oracle_list = discover_oracles(&source_client, &target_client).await?;
 
+    let mut id_file = None;
+
     loop {
         sync_oracles(&source_client, &target_client, &signer, &oracle_list).await?;
+
+        if id_file.is_none() {
+            id_file = Some(RunningProcessIdFile::new());
+        }
 
         tokio::time::sleep(opts.interval.into()).await;
     }
@@ -98,6 +107,7 @@ async fn run(opts: CliOpts) -> Result<()> {
 struct OracleInfo {
     source_oracle: Pubkey,
     target_mint: Pubkey,
+    price_ratio: f64,
 }
 
 async fn sync_oracles(
@@ -113,7 +123,7 @@ async fn sync_oracles(
         let update_target_ix = jet_margin_sdk::ix_builder::test_service::token_update_pyth_price(
             &signer.pubkey(),
             &oracle.target_mint,
-            source_price.agg.price,
+            (source_price.agg.price as f64 * oracle.price_ratio) as i64,
             source_price.agg.conf as i64,
             source_price.expo,
         );
@@ -154,6 +164,7 @@ async fn discover_oracles(source: &RpcClient, target: &RpcClient) -> Result<Vec<
         .await?;
 
     let target_token_infos = target_test_accounts
+        .clone()
         .into_iter()
         .filter_map(|(address, account)| {
             let discriminator = jet_margin_sdk::jet_test_service::state::TokenInfo::discriminator();
@@ -193,12 +204,13 @@ async fn discover_oracles(source: &RpcClient, target: &RpcClient) -> Result<Vec<
         .filter_map(|(_, info)| {
             pyth_products.iter().find_map(|(_, product)| {
                 match (product.get_attr("quote_currency"), product.get_attr("base")) {
-                    (Some(quote), Some(base)) if quote == "USD" && base == info.symbol => {
-                        println!("matched oracle for {base}/{quote}");
+                    (Some(quote), Some(base)) if quote == "USD" && base == info.source_symbol => {
+                        println!("matched oracle for {} with {base}/{quote}", info.name);
 
                         Some(OracleInfo {
                             source_oracle: product.px_acc,
                             target_mint: info.mint,
+                            price_ratio: info.price_ratio,
                         })
                     }
 
@@ -260,5 +272,28 @@ trait PythAttributeGetter {
 impl PythAttributeGetter for ProductAccount {
     fn get_attr(&self, name: &str) -> Option<&str> {
         self.iter().find(|(k, _)| *k == name).map(|(_, v)| v)
+    }
+}
+
+struct RunningProcessIdFile;
+
+impl RunningProcessIdFile {
+    const PATH: &'static str = "tests/oracle-mirror.pid";
+
+    fn new() -> Self {
+        let pid = std::process::id();
+        std::fs::write(Self::PATH, pid.to_string()).unwrap();
+
+        Self
+    }
+}
+
+impl Drop for RunningProcessIdFile {
+    fn drop(&mut self) {
+        let file = Path::new(Self::PATH);
+
+        if file.exists() {
+            std::fs::remove_file(file).unwrap()
+        }
     }
 }

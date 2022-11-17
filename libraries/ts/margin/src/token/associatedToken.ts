@@ -19,7 +19,8 @@ import {
   TokenInvalidOwnerError,
   createInitializeAccountInstruction,
   getMinimumBalanceForRentExemptAccount,
-  TokenInvalidMintError
+  TokenInvalidMintError,
+  createTransferInstruction
 } from "@solana/spl-token"
 import { Connection, PublicKey, TransactionInstruction, SystemProgram, AccountInfo } from "@solana/web3.js"
 import { chunks } from "../utils"
@@ -528,28 +529,52 @@ export class AssociatedToken {
     instructions.push(ix)
   }
 
+  /**
+   * Transfer tokens from one owner to another
+   * @param instructions
+   * @param mint
+   * @param sourceOwner
+   * @param destinationOwner
+   * @param amount
+   */
+  static withTransfer(
+    instructions: TransactionInstruction[],
+    mint: Address,
+    sourceOwner: Address,
+    destinationOwner: Address,
+    amount: BN
+  ) {
+    const authority = translateAddress(sourceOwner)
+    const source = this.derive(mint, sourceOwner)
+    const destination = this.derive(mint, destinationOwner)
+
+    instructions.push(createTransferInstruction(source, destination, authority, amount.toNumber()))
+  }
+
   /** Wraps SOL in an associated token account. The account will only be created if it doesn't exist.
    * @param instructions
    * @param provider
-   * @param {number} feesBuffer How much tokens should remain unwrapped to pay for fees
+   * @param {BN} feesBuffer How much tokens should remain unwrapped to pay for fees
    */
   static async withWrapNative(
     instructions: TransactionInstruction[],
     provider: AnchorProvider,
-    feesBuffer: number
+    feesBuffer: BN
   ): Promise<PublicKey> {
     const owner = translateAddress(provider.wallet.publicKey)
     const ownerInfo = await provider.connection.getAccountInfo(owner)
-    const ownerLamports = Math.max((ownerInfo?.lamports ?? 0) - feesBuffer, 0)
+    const ownerLamports = BN.max(new BN(ownerInfo?.lamports ?? 0).sub(feesBuffer), new BN(0))
 
     //this will add instructions to create ata if ata does not exist, if exist, we will get the ata address
     const associatedToken = await this.withCreate(instructions, provider, owner, NATIVE_MINT)
     //IX to transfer sol to ATA
+
     const transferIx = SystemProgram.transfer({
       fromPubkey: owner,
-      lamports: ownerLamports,
+      lamports: BigInt(ownerLamports.toString()),
       toPubkey: associatedToken
     })
+
     const syncNativeIX = createSyncNativeInstruction(associatedToken)
     instructions.push(transferIx, syncNativeIX)
     return associatedToken
@@ -576,7 +601,7 @@ export class AssociatedToken {
     instructions: TransactionInstruction[],
     provider: AnchorProvider,
     mint: Address,
-    feesBuffer: number
+    feesBuffer: BN
   ): Promise<PublicKey> {
     const mintPubkey = translateAddress(mint)
 
@@ -619,7 +644,7 @@ export class AssociatedToken {
     instructions: TransactionInstruction[],
     provider: AnchorProvider,
     mint: Address,
-    feesBuffer: number
+    feesBuffer: BN
   ): Promise<PublicKey> {
     const owner = provider.wallet.publicKey
     const mintPubkey = translateAddress(mint)
@@ -673,7 +698,7 @@ export class AssociatedToken {
     instructions: TransactionInstruction[]
     provider: AnchorProvider
     mint: Address
-    feesBuffer: number
+    feesBuffer: BN
     source: Address | TokenFormat
   }): Promise<PublicKey> {
     let sourceAddress: PublicKey | undefined

@@ -21,12 +21,13 @@ use bytemuck::{Contiguous, Pod, Zeroable};
 #[cfg(any(test, feature = "cli"))]
 use serde::ser::{Serialize, SerializeStruct, Serializer};
 
-use jet_proto_math::Number128;
+use jet_program_common::Number128;
 
 use anchor_lang::Result as AnchorResult;
 use std::result::Result;
 
 use crate::{
+    syscall::{sys, Sys},
     util::{Invocation, Require},
     ErrorCode, TokenKind, MAX_PRICE_QUOTE_AGE, MAX_USER_POSITIONS,
 };
@@ -382,7 +383,7 @@ impl MarginAccount {
     }
 
     pub fn valuation(&self) -> AnchorResult<Valuation> {
-        let timestamp = crate::util::get_timestamp();
+        let timestamp = sys().unix_timestamp();
 
         let mut past_due = false;
         let mut liabilities = Number128::ZERO;
@@ -1121,7 +1122,7 @@ mod tests {
             // &key,
             &PriceInfo {
                 value: price,
-                timestamp: crate::util::get_timestamp(),
+                timestamp: sys().unix_timestamp(),
                 exponent: 1,
                 is_valid: 1,
                 _reserved: [0; 3],

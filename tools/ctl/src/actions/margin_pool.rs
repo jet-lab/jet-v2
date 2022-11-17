@@ -1,5 +1,5 @@
 use anchor_lang::AccountDeserialize;
-use anyhow::{anyhow, Context, Result};
+use anyhow::{anyhow, bail, Context, Result};
 use clap::Parser;
 use comfy_table::{presets::UTF8_FULL, Table};
 use jet_margin_sdk::{
@@ -191,7 +191,7 @@ pub async fn process_configure_pool(
     }
     println!();
 
-    changed = override_pool_config_with_options(&mut configuration, &options) && changed;
+    changed = override_pool_config_with_options(&mut configuration, &options) || changed;
 
     if changed {
         Ok(client
@@ -208,6 +208,22 @@ pub async fn process_configure_pool(
     } else {
         Ok(client.plan()?.build())
     }
+}
+
+pub async fn process_show_pool(client: &Client, token: Pubkey) -> Result<Plan> {
+    let margin_pool = MarginPoolIxBuilder::new(token);
+
+    if !client.account_exists(&margin_pool.address).await? {
+        bail!("pool for token {} does not exist", token);
+    }
+
+    let margin_pool_data = client
+        .read_anchor_account::<MarginPool>(&margin_pool.address)
+        .await?;
+
+    println!("{:#?}", &margin_pool_data);
+
+    Ok(Plan::default())
 }
 
 fn override_pool_config_with_options(
@@ -406,7 +422,7 @@ async fn collect_pool_summary(
         .unwrap();
 
     let loans = spl_token::amount_to_ui_amount(
-        jet_proto_math::Number::from_bits(pool.borrowed_tokens).as_u64(0),
+        jet_program_common::Number::from_bits(pool.borrowed_tokens).as_u64(0),
         token_mint.decimals,
     );
     let rate = pool.interest_rate().to_string().parse::<f64>()?;

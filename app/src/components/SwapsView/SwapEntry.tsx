@@ -1,34 +1,35 @@
 import { useEffect, useState } from 'react';
 import { useRecoilState, useResetRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 import { TokenAmount } from '@jet-lab/margin';
-import { SwapsRowOrder } from '../../state/views/views';
-import { BlockExplorer, Cluster } from '../../state/settings/settings';
-import { Dictionary } from '../../state/settings/localization/localization';
-import { CurrentAccount } from '../../state/user/accounts';
-import { CurrentPoolSymbol, Pools, CurrentPool, PoolOptions } from '../../state/pools/pools';
+import { SwapsRowOrder } from '@state/views/views';
+import { BlockExplorer, Cluster } from '@state/settings/settings';
+import { Dictionary } from '@state/settings/localization/localization';
+import { CurrentAccount } from '@state/user/accounts';
+import { CurrentPoolSymbol, Pools, CurrentPool, PoolOptions } from '@state/pools/pools';
 import {
   CurrentAction,
   CurrentSwapOutput,
   SendingTransaction,
   TokenInputAmount,
   TokenInputString
-} from '../../state/actions/actions';
-import { useProjectedRisk, useRiskStyle } from '../../utils/risk';
-import { formatRiskIndicator } from '../../utils/format';
-import { notify } from '../../utils/notify';
-import { getExplorerUrl, getTokenStyleType } from '../../utils/ui';
-import { DEFAULT_DECIMALS, useCurrencyFormatting } from '../../utils/currency';
-import { getMinOutputAmount, getOutputTokenAmount, useSwapReviewMessage } from '../../utils/actions/swap';
-import { ActionResponse, useMarginActions } from '../../utils/jet/marginActions';
-import { Info } from '../misc/Info';
-import { TokenInput } from '../misc/TokenInput/TokenInput';
-import { ReorderArrows } from '../misc/ReorderArrows';
-import { ConnectionFeedback } from '../misc/ConnectionFeedback/ConnectionFeedback';
-import { ArrowRight } from '../modals/actions/ArrowRight';
+} from '@state/actions/actions';
+import { useProjectedRisk, useRiskStyle } from '@utils/risk';
+import { formatPriceImpact, formatRiskIndicator } from '@utils/format';
+import { notify } from '@utils/notify';
+import { getExplorerUrl, getTokenStyleType } from '@utils/ui';
+import { DEFAULT_DECIMALS, useCurrencyFormatting } from '@utils/currency';
+import { getMinOutputAmount, getOutputTokenAmount, useSwapReviewMessage } from '@utils/actions/swap';
+import { ActionResponse, useMarginActions } from '@utils/jet/marginActions';
+import { Info } from '@components/misc/Info';
+import { TokenInput } from '@components/misc/TokenInput/TokenInput';
+import { ReorderArrows } from '@components/misc/ReorderArrows';
+import { ConnectionFeedback } from '@components/misc/ConnectionFeedback/ConnectionFeedback';
+import { ArrowRight } from '@components/modals/actions/ArrowRight';
 import { Button, Checkbox, Input, Radio, Typography } from 'antd';
-import SwapIcon from '../../assets/icons/function-swap.svg';
-import { CurrentSplSwapPool, hasOrcaPool, SwapFees, SwapPoolTokenAmounts } from '../../state/swap/splSwap';
-import { useTokenInputDisabledMessage, useTokenInputErrorMessage } from '../../utils/actions/tokenInput';
+import SwapIcon from '@assets/icons/function-swap.svg';
+import { CurrentSplSwapPool, hasOrcaPool, SwapFees, SwapPoolTokenAmounts } from '@state/swap/splSwap';
+import { useTokenInputDisabledMessage, useTokenInputErrorMessage } from '@utils/actions/tokenInput';
+import debounce from 'lodash.debounce';
 
 // Component for user to enter and submit a swap action
 export function SwapEntry(): JSX.Element {
@@ -88,6 +89,33 @@ export function SwapEntry(): JSX.Element {
     slippage,
     0
   );
+  // Exponents
+  const expoSource = swapPoolTokenAmounts ? Math.pow(10, swapPoolTokenAmounts.source.decimals) : 0;
+  const expoDestination = swapPoolTokenAmounts ? Math.pow(10, swapPoolTokenAmounts.destination.decimals) : 0;
+  // Get the swap pool account balances
+  const balanceSourceToken = swapPoolTokenAmounts ? swapPoolTokenAmounts.source.lamports.toNumber() : 0;
+  const balanceDestinationToken = swapPoolTokenAmounts ? swapPoolTokenAmounts.destination.lamports.toNumber() : 0;
+  const poolPrice = !swapPool
+    ? 0.0
+    : swapPool.pool.swapType === 'stable'
+    ? !swapPool.inverted
+      ? currentPool.tokenPrice / outputToken.tokenPrice
+      : outputToken.tokenPrice / currentPool.tokenPrice
+    : !swapPool.inverted
+    ? balanceDestinationToken / expoDestination / (balanceSourceToken / expoSource)
+    : balanceSourceToken / expoSource / (balanceDestinationToken / expoDestination);
+  const swapPrice =
+    !swapPool || !minOutAmount || minOutAmount.isZero() || !tokenInputAmount || tokenInputAmount.isZero()
+      ? 0.0
+      : !swapPool.inverted
+      ? minOutAmount.lamports.toNumber() / expoDestination / (tokenInputAmount.lamports.toNumber() / expoSource)
+      : tokenInputAmount.lamports.toNumber() / expoSource / (minOutAmount.lamports.toNumber() / expoDestination);
+  const priceImpact = !swapPool
+    ? 0.0
+    : !swapPool.inverted
+    ? (poolPrice - swapPrice) / poolPrice
+    : (swapPrice - poolPrice) / poolPrice;
+  const priceImpactStyle = priceImpact <= 0.01 ? 'success' : priceImpact <= 0.03 ? 'warning' : 'danger';
   const [repayLoanWithOutput, setRepayLoanWithOutput] = useState(false);
   // Swap / health feedback
   const riskStyle = useRiskStyle();
@@ -181,6 +209,24 @@ export function SwapEntry(): JSX.Element {
         <div className="flex-centered">
           <ArrowRight />
           <Paragraph type={projectedRiskStyle}>{formatRiskIndicator(projectedRiskIndicator)}</Paragraph>
+        </div>
+      );
+    }
+
+    return render;
+  }
+
+  // Render the user's price impact from the swap
+  function renderPriceImpact() {
+    let render = (
+      <div className="flex-centered">
+        <Paragraph type="success">0</Paragraph>
+      </div>
+    );
+    if (swapOutputTokens) {
+      render = (
+        <div className="flex-centered">
+          <Paragraph type={priceImpactStyle}>{formatPriceImpact(priceImpact)}</Paragraph>
         </div>
       );
     }
@@ -406,13 +452,13 @@ export function SwapEntry(): JSX.Element {
                 placeholder="0.75"
                 value={slippageInput}
                 disabled={sendingTransaction}
-                onChange={e => {
+                onChange={debounce(e => {
                   let inputString = e.target.value;
                   if (isNaN(+inputString) || +inputString < 0) {
                     inputString = '0';
                   }
                   setSlippageInput(inputString);
-                }}
+                }, 300)}
                 onPressEnter={sendSwap}
               />
               <Text type="secondary" strong>
@@ -459,6 +505,10 @@ export function SwapEntry(): JSX.Element {
               {renderAffectedRiskLevel()}
             </div>
           </div>
+          <div className="order-entry-body-section-info-item flex align-center justify-between">
+            <Paragraph type="secondary">{dictionary.common.priceImpact}</Paragraph>
+            {renderPriceImpact()}
+          </div>
         </div>
         {noOrcaPool || errorMessage || swapReviewMessage.length ? (
           <div className="order-entry-body-section flex-centered">
@@ -478,11 +528,20 @@ export function SwapEntry(): JSX.Element {
         ) : (
           <></>
         )}
+        {!tokenInputAmount.isZero() && priceImpact && priceImpact >= 0.05 ? (
+          <div className="order-entry-body-section flex-centered">
+            <Paragraph italic type={'danger'} className={'order-review'}>
+              {dictionary.actions.swap.warningMessages.largePriceImpact}
+            </Paragraph>
+          </div>
+        ) : (
+          <></>
+        )}
       </div>
       <div className="order-entry-footer flex-centered">
         <Button
           block
-          disabled={disabled || tokenInputAmount.isZero()}
+          disabled={disabled || tokenInputAmount.isZero() || priceImpact >= 0.05}
           loading={sendingTransaction}
           onClick={sendSwap}
           style={sendingTransaction ? { zIndex: 1002 } : undefined}>

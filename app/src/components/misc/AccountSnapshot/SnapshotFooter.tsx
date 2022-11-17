@@ -1,11 +1,11 @@
 import { useRecoilState, useSetRecoilState, useRecoilValue, useResetRecoilState } from 'recoil';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { PoolAction } from '@jet-lab/margin';
-import { Dictionary } from '../../../state/settings/localization/localization';
-import { WalletTokens } from '../../../state/user/walletTokens';
-import { WalletModal, NewAccountModal } from '../../../state/modals/modals';
-import { Accounts } from '../../../state/user/accounts';
-import { actionOptions, CurrentAction, TokenInputAmount, TokenInputString } from '../../../state/actions/actions';
+import { Dictionary } from '@state/settings/localization/localization';
+import { WalletTokens } from '@state/user/walletTokens';
+import { WalletModal, NewAccountModal } from '@state/modals/modals';
+import { Accounts } from '@state/user/accounts';
+import { actionOptions, CurrentAction, TokenInputAmount, TokenInputString } from '@state/actions/actions';
 import { Typography, Button } from 'antd';
 import { ActionIcon } from '../ActionIcon';
 

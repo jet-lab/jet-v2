@@ -13,7 +13,7 @@ import { MarginTokenConfig } from "../config"
 import { PoolTokenChange } from "./poolTokenChange"
 import { TokenMetadata } from "../metadata/state"
 import { findDerivedAccount } from "../../utils/pda"
-import { PriceInfo } from "../accountPosition"
+import { AccountPosition, PriceInfo } from "../accountPosition"
 import { chunks, Number128, Number192 } from "../../utils"
 import { PositionTokenMetadata } from "../positionTokenMetadata"
 
@@ -78,7 +78,7 @@ export interface SPLSwapPool {
   amp?: number
 }
 
-export const feesBuffer: number = LAMPORTS_PER_SOL * 0.075
+export const feesBuffer: BN = new BN("75000000")
 
 /**
  * A pool in which a [[MarginAccount]] can register a deposit and/or a borrow position.
@@ -280,6 +280,11 @@ export class Pool {
   get tokenPrice(): number {
     return this.info?.tokenPriceOracle.price ?? 0
   }
+
+  get tokenEmaPrice(): number {
+    return this.info?.tokenPriceOracle.emaPrice.value ?? 0
+  }
+
   private prices: PriceResult
   get depositNotePrice(): PriceInfo {
     return {
@@ -516,9 +521,6 @@ export class Pool {
    * @returns {number}
    */
   static interpolate = (x: number, x0: number, x1: number, y0: number, y1: number): number => {
-    assert(x >= x0)
-    assert(x <= x1)
-
     return y0 + ((x - x0) * (y1 - y0)) / (x1 - x0)
   }
   /**
@@ -614,7 +616,7 @@ export class Pool {
     marginAccount: MarginAccount
   }): Promise<string> {
     const instructions: TransactionInstruction[] = []
-    await this.withMarginRefreshAllPositionPrices({ instructions, pools, marginAccount })
+    await this.withPrioritisedPositionRefresh({ instructions, pools, marginAccount })
     return await marginAccount.sendAndConfirm(instructions)
   }
 
@@ -657,13 +659,68 @@ export class Pool {
     pools: Record<any, Pool> | Pool[]
     marginAccount: MarginAccount
   }): Promise<void> {
+    let refreshed = 0
     for (const pool of Object.values(pools)) {
       const positionRegistered =
         !!marginAccount.getPositionNullable(pool.addresses.depositNoteMint) ||
         !!marginAccount.getPositionNullable(pool.addresses.loanNoteMint)
       if (positionRegistered) {
+        refreshed += 1
         await pool.withMarginRefreshPositionPrice({ instructions, marginAccount })
       }
+    }
+    console.log(`we refrehsed ${refreshed} positions`)
+  }
+
+  /**
+   * Create instructions to refresh [[MarginAccount]] pool positions in a prioritised manner so that additional
+   * borrows or withdraws can occur.
+   *
+   * @param {({
+   *     instructions: TransactionInstruction[]
+   *     pools: Record<any, Pool> | Pool[]
+   *     marginAccount: MarginAccount
+   *   })} {
+   *     instructions,
+   *     pools,
+   *     marginAccount
+   *   }
+   * @return {Promise<void>}
+   * @memberof Pool
+   */
+  async withPrioritisedPositionRefresh({
+    instructions,
+    pools,
+    marginAccount
+  }: {
+    instructions: TransactionInstruction[]
+    pools: Record<any, Pool> | Pool[]
+    marginAccount: MarginAccount
+  }): Promise<void> {
+    const poolsToRefresh: Pool[] = []
+    const liabilities = marginAccount.valuation.requiredCollateral.toNumber()
+    const requiredCollateral = marginAccount.valuation.liabilities.toNumber()
+    const totalRequired = liabilities + requiredCollateral
+    let effectiveCollateral = 0
+    for (const pool of Object.values(pools)) {
+      const assetCollateralWeight = pool.depositNoteMetadata.valueModifier.toNumber()
+      const depositPosition = marginAccount.getPositionNullable(pool.addresses.depositNoteMint)
+      const borrowPosition = marginAccount.getPositionNullable(pool.addresses.loanNoteMint)
+      if (borrowPosition && !borrowPosition.balance.eqn(0)) {
+        poolsToRefresh.push(pool)
+        break
+      } else if (
+        assetCollateralWeight > 0 &&
+        depositPosition &&
+        !depositPosition.balance.eqn(0) &&
+        effectiveCollateral < totalRequired
+      ) {
+        effectiveCollateral += depositPosition.value
+        poolsToRefresh.push(pool)
+      }
+    }
+    for (const pool of poolsToRefresh) {
+      await pool.withMarginRefreshPositionPrice({ instructions, marginAccount })
     }
   }
 
@@ -775,7 +832,6 @@ export class Pool {
     const provider = marginAccount.provider
     const mint = this.tokenMint
     const position = this.findDepositPositionAddress(marginAccount)
-
     const wrappedSource = await AssociatedToken.withBeginTransferFromSource({
       instructions,
       provider,
@@ -826,7 +882,7 @@ export class Pool {
     const registerinstructions: TransactionInstruction[] = []
     const instructions: TransactionInstruction[] = []
 
-    await this.withMarginRefreshAllPositionPrices({
+    await this.withPrioritisedPositionRefresh({
       instructions: refreshInstructions,
       pools: Object.values(pools),
       marginAccount
@@ -901,8 +957,6 @@ export class Pool {
 
     await marginAccount.withAdapterInvoke({
       instructions,
-      adapterProgram: this.programs.config.marginPoolProgramId,
-      adapterMetadata: this.addresses.marginPoolAdapterMetadata,
       adapterInstruction: await this.programs.marginPool.methods
         .marginBorrow(change.changeKind.asParam(), change.value)
         .accounts({
@@ -951,7 +1005,7 @@ export class Pool {
     })
     assert(depositPosition)
 
-    await this.withMarginRefreshAllPositionPrices({
+    await this.withPrioritisedPositionRefresh({
       instructions: refreshInstructions,
       pools: Object.values(pools),
       marginAccount
@@ -997,8 +1051,6 @@ export class Pool {
 
     await marginAccount.withAdapterInvoke({
       instructions,
-      adapterProgram: this.programs.config.marginPoolProgramId,
-      adapterMetadata: this.addresses.marginPoolAdapterMetadata,
       adapterInstruction: await this.programs.marginPool.methods
         .marginRepay(change.changeKind.asParam(), change.value)
         .accounts({
@@ -1027,7 +1079,7 @@ export class Pool {
     depositPosition: Address
     source: TokenAddress
     change: PoolTokenChange
-    feesBuffer: number
+    feesBuffer: BN
     sourceAuthority?: Address
   }): Promise<void> {
     const wrappedSource = await AssociatedToken.withBeginTransferFromSource({
@@ -1088,7 +1140,7 @@ export class Pool {
     const refreshInstructions: TransactionInstruction[] = []
     const instructions: TransactionInstruction[] = []
 
-    await this.withMarginRefreshAllPositionPrices({
+    await this.withPrioritisedPositionRefresh({
       instructions: refreshInstructions,
       pools: Object.values(pools),
       marginAccount
@@ -1128,8 +1180,6 @@ export class Pool {
 
     await marginAccount.withAdapterInvoke({
       instructions,
-      adapterProgram: this.programs.config.marginPoolProgramId,
-      adapterMetadata: this.addresses.marginPoolAdapterMetadata,
       adapterInstruction: await this.programs.marginPool.methods
         .withdraw(change.changeKind.asParam(), change.value)
         .accounts({
@@ -1202,7 +1252,7 @@ export class Pool {
     }
 
     // Refresh prices
-    await this.withMarginRefreshAllPositionPrices({
+    await this.withPrioritisedPositionRefresh({
       instructions: refreshInstructions,
       pools,
       marginAccount
@@ -1326,11 +1376,6 @@ export class Pool {
     // Swap
     await marginAccount.withAdapterInvoke({
       instructions,
-      adapterProgram: this.programs.config.marginSwapProgramId,
-      adapterMetadata: findDerivedAccount(
-        this.programs.config.metadataProgramId,
-        this.programs.config.marginSwapProgramId
-      ),
       adapterInstruction: await this.programs.marginSwap.methods
         .marginSwap(changeKind.changeKind.asParam(), changeKind.value, minAmountOut.lamports)
         .accounts({
@@ -1541,8 +1586,6 @@ export class Pool {
     const loanNoteAccount = this.findLoanPositionAddress(marginAccount)
     await marginAccount.withAdapterInvoke({
       instructions: instructions,
-      adapterProgram: this.programs.config.marginPoolProgramId,
-      adapterMetadata: this.addresses.marginPoolAdapterMetadata,
       adapterInstruction: await this.programs.marginPool.methods
         .registerLoan()
         .accounts({
@@ -1576,8 +1619,6 @@ export class Pool {
     )
     await marginAccount.withAdapterInvoke({
       instructions,
-      adapterProgram: this.programs.config.marginPoolProgramId,
-      adapterMetadata: this.addresses.marginPoolAdapterMetadata,
       adapterInstruction: await this.programs.marginPool.methods
         .closeLoan()
         .accounts({

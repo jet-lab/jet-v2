@@ -27,7 +27,7 @@ pub mod seeds;
 mod adapter;
 mod instructions;
 mod state;
-pub(crate) mod syscall;
+pub mod syscall;
 /// Utilities used only in this crate
 pub(crate) mod util;
 
@@ -759,6 +759,14 @@ pub mod jet_margin {
         is_liquidator: bool,
     ) -> Result<()> {
         configure_liquidator_handler(ctx, is_liquidator)
+    }
+
+    /// Allow governing address to transfer any position from one margin account to another
+    ///
+    /// This is provided as a mechanism to allow for manually fixing issues that occur in the
+    /// protocol due to bad user assets.
+    pub fn admin_transfer_position(ctx: Context<AdminTransferPosition>, amount: u64) -> Result<()> {
+        admin_transfer_position_handler(ctx, amount)
     }
 }
 

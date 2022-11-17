@@ -1,12 +1,12 @@
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { Dictionary } from '../../../state/settings/localization/localization';
-import { NewAccountModal } from '../../../state/modals/modals';
-import { WalletTokens } from '../../../state/user/walletTokens';
-import { AccountNames, CurrentAccountAddress, FavoriteAccounts } from '../../../state/user/accounts';
+import { Dictionary } from '@state/settings/localization/localization';
+import { NewAccountModal } from '@state/modals/modals';
+import { WalletTokens } from '@state/user/walletTokens';
+import { AccountNames, CurrentAccountAddress, FavoriteAccounts } from '@state/user/accounts';
 import { Typography, Button, Dropdown, Menu, Tabs } from 'antd';
 import { StarFilled, StarOutlined } from '@ant-design/icons';
-import AngleDown from '../../../assets/icons/arrow-angle-down.svg';
+import AngleDown from '@assets/icons/arrow-angle-down.svg';
 
 // Head of the Account Snapshot, where user can select/edit/create their margin accounts
 export function SnapshotHead(): JSX.Element {
@@ -21,8 +21,13 @@ export function SnapshotHead(): JSX.Element {
   const [newAccountModalOpen, setNewAccountModalOpen] = useRecoilState(NewAccountModal);
   // const setEditAccountModalOpen = useSetRecoilState(EditAccountModal);
   const { Text } = Typography;
-  const { TabPane } = Tabs;
-
+  const walletFavoriteAccountsItems = walletFavoriteAccounts.map(key => {
+    const name = accountNames[key] ?? '';
+    return {
+      label: name.toUpperCase(),
+      key: key
+    };
+  });
   // Update user's favorite accounts
   function updateFavoriteAccounts(accountPubkey: string, remove?: boolean) {
     if (!publicKey) {
@@ -63,12 +68,9 @@ export function SnapshotHead(): JSX.Element {
           onChange={(key: string) => setCurrentAccountAddress(key)}
           className={
             !currentAccountAddress || !walletFavoriteAccounts.includes(currentAccountAddress) ? 'no-active-tabs' : ''
-          }>
-          {walletFavoriteAccounts.map(key => {
-            const name = accountNames[key] ?? '';
-            return <TabPane key={key} tab={name.toUpperCase()} active={key === currentAccountAddress}></TabPane>;
-          })}
-        </Tabs>
+          }
+          items={walletFavoriteAccountsItems}
+        />
       );
     }
 
@@ -91,28 +93,26 @@ export function SnapshotHead(): JSX.Element {
         <Dropdown
           disabled={!walletTokens || !Object.values(accountNames).length}
           trigger={['click']}
-          overlay={
-            <Menu className="all-accounts-menu">
-              {Object.keys(accountNames).map(key => {
-                const name = accountNames[key];
-                return (
-                  <Menu.Item
-                    key={key}
+          menu={{
+            items: Object.keys(accountNames).map(key => {
+              const name = accountNames[key];
+              return {
+                key,
+                label: (
+                  <div
                     onClick={() => setCurrentAccountAddress(key)}
-                    className={key === currentAccountAddress ? 'active' : ''}>
-                    <div className="all-accounts-menu-name flex align-center justify-start">
-                      {walletFavoriteAccounts.includes(key) ? (
-                        <StarFilled style={{ opacity: 1 }} onClick={() => updateFavoriteAccounts(key, true)} />
-                      ) : (
-                        <StarOutlined onClick={() => updateFavoriteAccounts(key)} />
-                      )}
-                      {name}
-                    </div>
-                  </Menu.Item>
-                );
-              })}
-            </Menu>
-          }>
+                    className="all-accounts-menu-name flex align-center justify-start">
+                    {walletFavoriteAccounts.includes(key) ? (
+                      <StarFilled style={{ opacity: 1 }} onClick={() => updateFavoriteAccounts(key, true)} />
+                    ) : (
+                      <StarOutlined onClick={() => updateFavoriteAccounts(key)} />
+                    )}
+                    <span>{name}</span>
+                  </div>
+                )
+              };
+            })
+          }}>
           <Text type="secondary">
             {dictionary.accountSnapshot.allAccounts.toUpperCase()}
             <AngleDown className="jet-icon" />

@@ -351,6 +351,11 @@ mod jet_margin_pool {
     pub fn close_loan(ctx: Context<CloseLoan>) -> Result<()> {
         instructions::close_loan_handler(ctx)
     }
+
+    /// Administrative function for moving loans between accounts
+    pub fn admin_transfer_loan(ctx: Context<AdminTransferLoan>, amount: u64) -> Result<()> {
+        instructions::admin_transfer_loan_handler(ctx, amount)
+    }
 }
 
 /// Interface for changing the token value of an account through pool instructions

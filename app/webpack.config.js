@@ -2,12 +2,44 @@ const path = require('path');
 const { ProvidePlugin, DefinePlugin } = require('webpack');
 const dotenv = require('dotenv');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
+const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
+const FilterWarningsPlugin = require('webpack-filter-warnings-plugin');
+
+const plugins = [
+  new HtmlWebpackPlugin({
+    template: path.join(__dirname, '/src/index.html')
+  }),
+  new ProvidePlugin({
+    process: 'process/browser'
+  }),
+  new ProvidePlugin({
+    Buffer: ['buffer', 'Buffer']
+  }),
+  new DefinePlugin({
+    'process.env': JSON.stringify(dotenv.config().parsed || {})
+  }),
+  new FilterWarningsPlugin({
+    exclude: /__wbg_systeminstruction_free/
+  })
+];
+
+if (process.env.ANALYZE) {
+  plugins.push(
+    new BundleAnalyzerPlugin({
+      analyzerMode: 'server'
+    })
+  );
+}
+
 module.exports = {
   entry: './src/index.tsx',
   output: {
-    filename: 'bundle.[contenthash].js',
+    filename: 'bundle.[name].[contenthash].js',
     path: path.join(__dirname, '/build'),
     clean: true
+  },
+  optimization: {
+    chunkIds: 'named'
   },
   devtool: 'source-map',
   devServer: {
@@ -84,21 +116,22 @@ module.exports = {
       fs: false,
       assert: false,
       util: false,
-      url: false
+      url: false,
+      stream: require.resolve('stream-browserify'),
+      crypto: require.resolve('crypto-browserify')
+    },
+    alias: {
+      '@components': path.resolve(__dirname, 'src/components'),
+      '@state': path.resolve(__dirname, 'src/state'),
+      '@styles': path.resolve(__dirname, 'src/styles'),
+      '@utils': path.resolve(__dirname, 'src/utils'),
+      '@assets': path.resolve(__dirname, 'src/assets'),
+      '@views': path.resolve(__dirname, 'src/views')
     }
   },
-  plugins: [
-    new HtmlWebpackPlugin({
-      template: path.join(__dirname, '/src/index.html')
-    }),
-    new ProvidePlugin({
-      process: 'process/browser'
-    }),
-    new ProvidePlugin({
-      Buffer: ['buffer', 'Buffer']
-    }),
-    new DefinePlugin({
-      'process.env': JSON.stringify(dotenv.config().parsed || {})
-    })
-  ]
+  experiments: {
+    asyncWebAssembly: true,
+    syncWebAssembly: true
+  },
+  plugins
 };

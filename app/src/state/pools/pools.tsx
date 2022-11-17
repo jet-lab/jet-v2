@@ -3,8 +3,9 @@ import { atom, useRecoilValue, selector, selectorFamily, useSetRecoilState } fro
 import { PoolManager as MarginPoolManager, Pool } from '@jet-lab/margin';
 import { localStorageEffect } from '../effects/localStorageEffect';
 import { ActionRefresh, ACTION_REFRESH_INTERVAL } from '../actions/actions';
-import { MarginConfig } from '../config/marginConfig';
-import { useProvider } from '../../utils/jet/provider';
+import { useProvider } from '@utils/jet/provider';
+import { MainConfig } from '@state/config/marginConfig';
+import { NetworkStateAtom } from '@state/network/network-state';
 
 // Our app's interface for interacting with margin pools
 export interface JetMarginPools {
@@ -54,7 +55,7 @@ export const CurrentPool = selector<Pool | undefined>({
 export const PoolOptions = selector<PoolOption[]>({
   key: 'poolOptions',
   get: ({ get }) => {
-    const config = get(MarginConfig);
+    const config = get(MainConfig);
     if (!config) {
       return [];
     }
@@ -107,6 +108,7 @@ export function usePoolsSyncer() {
   const setPoolManager = useSetRecoilState(PoolManager);
   const setPools = useSetRecoilState(Pools);
   const actionRefresh = useRecoilValue(ActionRefresh);
+  const networkState = useRecoilValue(NetworkStateAtom);
 
   // When we have an anchor provider, instantiate Pool Manager
   useEffect(() => {
@@ -132,7 +134,7 @@ export function usePoolsSyncer() {
     }
 
     let poolsInterval: NodeJS.Timer;
-    if (programs && provider) {
+    if (programs && provider && networkState === 'connected') {
       const poolManager = new MarginPoolManager(programs, provider);
       setPoolManager(poolManager);
 
@@ -142,5 +144,5 @@ export function usePoolsSyncer() {
     }
     return () => clearInterval(poolsInterval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [programs, provider.connection, actionRefresh]);
+  }, [programs, provider.connection, actionRefresh, networkState]);
 }

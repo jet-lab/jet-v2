@@ -3,11 +3,11 @@ import { atom, useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil'
 import { SPLSwapPool, TokenAmount } from '@jet-lab/margin';
 import { Cluster, ClusterOption } from '../settings/settings';
 import { ActionRefresh, ACTION_REFRESH_INTERVAL, CurrentSwapOutput } from '../actions/actions';
-import { useProvider } from '../../utils/jet/provider';
+import { useProvider } from '@utils/jet/provider';
 import orcaPools from '@jet-lab/margin/src/margin/swap/orca-swap-pools.json';
 import orcaPoolsDevnet from '@jet-lab/margin/src/margin/swap/orca-swap-pools-devnet.json';
 import { CurrentPool } from '../pools/pools';
-import { getSwapPoolPrice } from '../../utils/actions/swap';
+import { getSwapPoolPrice } from '@utils/actions/swap';
 
 // Market
 export const SplSwapPools = atom({

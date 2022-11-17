@@ -27,7 +27,8 @@ lazy_static::lazy_static! {
     .unwrap().to_string();
 
     static ref PARAMS: BondMarketParameters = BondMarketParameters {
-        duration: 5,
+        borrow_duration: 3,
+        lend_duration: 5,
         min_order_size: 1_000,
         seed: Pubkey::default().to_bytes().to_vec(),
         token_mint: USDC,
@@ -121,19 +122,21 @@ async fn create_orderbook_accounts(
     let init_bids = ix.initialize_orderbook_slab(&bids.pubkey(), book_capacity, rent)?;
     let init_asks = ix.initialize_orderbook_slab(&asks.pubkey(), book_capacity, rent)?;
 
+    let steps = [
+        format!("initialize-event-queue {}", eq.pubkey()),
+        format!("initialize-bids-slab {}", bids.pubkey()),
+        format!("initialize-asks-slab {}", asks.pubkey()),
+    ];
+
     Ok(client
         .plan()?
         .instructions(
             [
-                &eq as &dyn Signer,
-                &bids as &dyn Signer,
-                &asks as &dyn Signer,
+                Box::new(eq) as Box<dyn Signer>,
+                Box::new(bids),
+                Box::new(asks),
             ],
-            [
-                format!("initialize-event-queue {}", eq.pubkey()),
-                format!("initialize-bids-slab {}", bids.pubkey()),
-                format!("initialize-asks-slab {}", asks.pubkey()),
-            ],
+            steps,
             [init_eq, init_bids, init_asks],
         )
         .build())
@@ -161,6 +164,7 @@ async fn main() -> Result<()> {
         map_seed(PARAMS.seed.clone()),
         payer,
         PARAMS.token_oracle,
+        PARAMS.ticket_oracle,
     )
     .with_payer(&payer);
     let init_ob_accs = create_orderbook_accounts(

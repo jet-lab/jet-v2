@@ -499,7 +499,7 @@ export class MarginAccount {
       walletAmount = this.walletTokens.map[pool.symbol].amount
     }
     if (pool.tokenMint.equals(NATIVE_MINT)) {
-      walletAmount = TokenAmount.max(walletAmount.subb(numberToBn(feesBuffer)), TokenAmount.zero(pool.decimals))
+      walletAmount = TokenAmount.max(walletAmount.subb(feesBuffer), TokenAmount.zero(pool.decimals))
     }
 
     // Max deposit
@@ -510,19 +510,29 @@ export class MarginAccount {
     const tokenPrice = Number128.fromDecimal(priceComponent, priceExponent)
     const lamportPrice = tokenPrice.div(Number128.fromDecimal(new BN(1), pool.decimals))
 
+    // A depositNoveValueModifier can be 0
     const depositNoteValueModifier =
       this.getPositionNullable(pool.addresses.depositNoteMint)?.valueModifier ?? pool.depositNoteMetadata.valueModifier
     const loanNoteValueModifier =
       this.getPositionNullable(pool.addresses.loanNoteMint)?.valueModifier ?? pool.loanNoteMetadata.valueModifier
 
     // Max withdraw
-    let withdraw = this.valuation.availableSetupCollateral
-      .div(depositNoteValueModifier)
-      .div(lamportPrice)
-      .toTokenAmount(pool.decimals)
-    withdraw = TokenAmount.min(withdraw, depositBalance)
-    withdraw = TokenAmount.min(withdraw, pool.vault)
-    withdraw = TokenAmount.max(withdraw, zero)
+    let withdraw = zero
+    if (depositNoteValueModifier.isZero()) {
+      // Set the withdrawable amount to the deposit balance before considering limits
+      withdraw = depositBalance
+      withdraw = TokenAmount.min(withdraw, pool.vault)
+      withdraw = TokenAmount.max(withdraw, zero)
+    } else if (!pool.vault.isZero()) {
+      // Set the withdrawable amount to available collateral before considering limits
+      withdraw = this.valuation.availableSetupCollateral
+        .div(depositNoteValueModifier)
+        .div(lamportPrice)
+        .toTokenAmount(pool.decimals)
+      withdraw = TokenAmount.min(withdraw, depositBalance)
+      withdraw = TokenAmount.min(withdraw, pool.vault)
+      withdraw = TokenAmount.max(withdraw, zero)
+    }
 
     // Max borrow
     let borrow = this.valuation.availableSetupCollateral
@@ -1601,13 +1611,9 @@ export class MarginAccount {
    *
    * @param {{
    *     instructions: TransactionInstruction[]
-   *     adapterProgram: Address
-   *     adapterMetadata: Address
    *     adapterInstruction: TransactionInstruction
    *   }} {
    *     instructions,
-   *     adapterProgram,
-   *     adapterMetadata,
    *     adapterInstruction
    *   }
    * @return {Promise<void>}
@@ -1615,13 +1621,9 @@ export class MarginAccount {
    */
   async withAdapterInvoke({
     instructions,
-    adapterProgram,
-    adapterMetadata,
     adapterInstruction
   }: {
     instructions: TransactionInstruction[]
-    adapterProgram: Address
-    adapterMetadata: Address
     adapterInstruction: TransactionInstruction
   }): Promise<void> {
     const ix = await this.programs.margin.methods
@@ -1629,8 +1631,8 @@ export class MarginAccount {
       .accounts({
         owner: this.owner,
         marginAccount: this.address,
-        adapterProgram,
-        adapterMetadata
+        adapterProgram: adapterInstruction.programId,
+        adapterMetadata: findDerivedAccount(this.programs.metadata.programId, adapterInstruction.programId)
       })
       .remainingAccounts(this.invokeAccounts(adapterInstruction))
       .instruction()

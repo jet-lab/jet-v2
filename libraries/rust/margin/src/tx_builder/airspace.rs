@@ -18,9 +18,11 @@
 use solana_sdk::pubkey::Pubkey;
 
 use crate::{
+    bonds::BondsIxBuilder,
     ix_builder::{
-        derive_airspace, AirspaceIxBuilder, ControlIxBuilder, MarginConfigIxBuilder,
-        MarginPoolConfiguration,
+        derive_airspace, derive_governor_id, get_control_authority_address,
+        test_service::if_not_initialized, AirspaceIxBuilder, ControlIxBuilder,
+        MarginConfigIxBuilder, MarginPoolConfiguration,
     },
     solana::transaction::TransactionBuilder,
 };
@@ -146,14 +148,7 @@ impl AirspaceAdmin {
     ) -> TransactionBuilder {
         let margin_config_ix = MarginConfigIxBuilder::new(self.airspace, self.payer);
 
-        // FIXME: remove control legacy
-        let ctrl_ix = ControlIxBuilder::new(self.payer);
-
-        vec![
-            ctrl_ix.register_adapter(&adapter_program_id),
-            margin_config_ix.configure_adapter(adapter_program_id, is_adapter),
-        ]
-        .into()
+        vec![margin_config_ix.configure_adapter(adapter_program_id, is_adapter)].into()
     }
 
     /// Configure an adapter that can be invoked through a margin account
@@ -173,6 +168,45 @@ impl AirspaceAdmin {
         ]
         .into()
     }
+
+    /// Register a bond market for use with margin accounts
+    pub fn register_bond_market(
+        &self,
+        token_mint: Pubkey,
+        seed: [u8; 32],
+        collateral_weight: u16,
+        max_leverage: u16,
+    ) -> TransactionBuilder {
+        let margin_config_ix = MarginConfigIxBuilder::new(self.airspace, self.payer);
+        let bond_manager = BondsIxBuilder::bond_manager_key(&self.airspace, &token_mint, seed);
+        let claims_mint = BondsIxBuilder::claims_mint(&bond_manager);
+        let collateral_mint = BondsIxBuilder::collateral_mint(&bond_manager);
+
+        let claims_update = TokenConfigUpdate {
+            admin: TokenAdmin::Adapter(jet_bonds::ID),
+            underlying_mint: token_mint,
+            token_kind: TokenKind::Claim,
+            value_modifier: collateral_weight,
+            max_staleness: 0,
+        };
+
+        let collateral_update = TokenConfigUpdate {
+            admin: TokenAdmin::Adapter(jet_bonds::ID),
+            underlying_mint: token_mint,
+            token_kind: TokenKind::AdapterCollateral,
+            value_modifier: max_leverage,
+            max_staleness: 0,
+        };
+
+        let claims_update_ix = margin_config_ix.configure_token(claims_mint, Some(claims_update));
+        let collateral_update_ix =
+            margin_config_ix.configure_token(collateral_mint, Some(collateral_update));
+
+        TransactionBuilder {
+            instructions: vec![claims_update_ix, collateral_update_ix],
+            signers: vec![],
+        }
+    }
 }
 
 /// Configuration for token deposits into margin accounts
@@ -191,9 +225,12 @@ pub struct TokenDepositsConfig {
 /// This primarily sets up the root permissions for the protocol. Must be signed by the default
 /// governing address for the protocol. When built with the `testing` feature, the first signer
 /// to submit these instructions becomes set as the governor address.
-pub fn global_initialize_instructions(payer: Pubkey) -> TransactionBuilder {
+pub fn global_initialize_instructions(payer: Pubkey) -> Vec<TransactionBuilder> {
     let as_ix = AirspaceIxBuilder::new("", payer, payer);
     let ctrl_ix = ControlIxBuilder::new_for_authority(payer, payer);
 
-    vec![ctrl_ix.create_authority(), as_ix.create_governor_id()].into()
+    vec![
+        if_not_initialized(get_control_authority_address(), ctrl_ix.create_authority()).into(),
+        if_not_initialized(derive_governor_id(), as_ix.create_governor_id()).into(),
+    ]
 }

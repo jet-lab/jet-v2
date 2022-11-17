@@ -1,28 +1,18 @@
 import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 // import axios from 'axios';
 import { TransactionInstruction } from '@solana/web3.js';
-import { NATIVE_MINT } from '@solana/spl-token';
 import { useWallet } from '@solana/wallet-adapter-react';
-import {
-  chunks,
-  MarginAccount,
-  Pool,
-  PoolTokenChange,
-  sleep,
-  SPLSwapPool,
-  TokenAmount,
-  TokenFaucet
-} from '@jet-lab/margin';
-import { MarginConfig } from '../../state/config/marginConfig';
-import { Pools, CurrentPool } from '../../state/pools/pools';
-import { WalletTokens } from '../../state/user/walletTokens';
-import { CurrentAccount, CurrentAccountAddress, FavoriteAccounts } from '../../state/user/accounts';
-import { Dictionary } from '../../state/settings/localization/localization';
-import { TokenInputAmount, ActionRefresh } from '../../state/actions/actions';
+import { chunks, MarginAccount, Pool, PoolTokenChange, SPLSwapPool, TokenAmount, TokenFaucet } from '@jet-lab/margin';
+import { MainConfig } from '@state/config/marginConfig';
+import { Pools, CurrentPool } from '@state/pools/pools';
+import { WalletTokens } from '@state/user/walletTokens';
+import { CurrentAccount, CurrentAccountAddress, FavoriteAccounts } from '@state/user/accounts';
+import { Dictionary } from '@state/settings/localization/localization';
+import { TokenInputAmount, ActionRefresh } from '@state/actions/actions';
 import { useProvider } from './provider';
 import { NOTIFICATION_DURATION } from '../notify';
 import { message } from 'antd';
-import { Cluster } from '../../state/settings/settings';
+import { Cluster } from '@state/settings/settings';
 
 export enum ActionResponse {
   Success = 'SUCCESS',
@@ -31,7 +21,7 @@ export enum ActionResponse {
 }
 export function useMarginActions() {
   // const cluster = useRecoilValue(Cluster);
-  const config = useRecoilValue(MarginConfig);
+  const config = useRecoilValue(MainConfig);
   const cluster = useRecoilValue(Cluster);
   const dictionary = useRecoilValue(Dictionary);
   const { programs, provider } = useProvider();
@@ -48,9 +38,7 @@ export function useMarginActions() {
 
   // Refresh to trigger new data fetching after a timeout
   async function actionRefresh() {
-    await sleep(1000);
-    setActionRefresh(true);
-    setActionRefresh(false);
+    setActionRefresh(Date.now());
   }
 
   // If on devnet, user can airdrop themself tokens
@@ -81,7 +69,7 @@ export function useMarginActions() {
         amount = TokenAmount.tokens(1, pool.decimals);
       }
     }
-    const token = config.tokens[pool.symbol];
+    const token = config.tokens[pool.symbol] ? config.tokens[pool.symbol] : config.tokens[pool.name];
     try {
       const txId = await TokenFaucet.airdrop(provider, cluster, amount.lamports, token, wallet.publicKey);
       await actionRefresh();
@@ -151,12 +139,15 @@ export function useMarginActions() {
       console.error('Accounts and/or pools not loaded');
       throw new Error();
     }
+    const token = walletTokens.map[currentPool.symbol]
+      ? walletTokens.map[currentPool.symbol]
+      : walletTokens.map[currentPool.name];
 
     try {
       const txId = await currentPool.deposit({
         marginAccount: currentAccount,
         change: PoolTokenChange.setTo(accountPoolPosition.depositBalance.add(tokenInputAmount)),
-        source: walletTokens.map[currentPool.symbol].address
+        source: token.address
       });
       await actionRefresh();
       return [txId, ActionResponse.Success];
@@ -176,8 +167,10 @@ export function useMarginActions() {
       console.error('Accounts and/or pools not loaded');
       throw new Error();
     }
+    const token = walletTokens.map[currentPool.symbol]
+      ? walletTokens.map[currentPool.symbol]
+      : walletTokens.map[currentPool.name];
 
-    const destination = walletTokens.map[currentPool.symbol];
     const change = tokenInputAmount.eq(accountPoolPosition.maxTradeAmounts.withdraw)
       ? PoolTokenChange.setTo(0)
       : PoolTokenChange.setTo(accountPoolPosition.depositBalance.sub(tokenInputAmount));
@@ -185,7 +178,7 @@ export function useMarginActions() {
       const txId = await currentPool.withdraw({
         marginAccount: currentAccount,
         pools: Object.values(pools.tokenPools),
-        destination: destination.address,
+        destination: token.address,
         change
       });
       await actionRefresh();
@@ -232,15 +225,15 @@ export function useMarginActions() {
       throw new Error();
     }
 
-    const repayType = accountRepay ? 'repayFromDeposit' : 'repay';
-    const closeLoan = tokenInputAmount.eq(accountPoolPosition.maxTradeAmounts[repayType]);
-    const change = closeLoan
-      ? PoolTokenChange.setTo(0)
-      : PoolTokenChange.setTo(accountPoolPosition.loanBalance.sub(tokenInputAmount));
+    const closeLoan = tokenInputAmount.gte(accountPoolPosition.loanBalance);
+    const change = closeLoan ? PoolTokenChange.setTo(0) : PoolTokenChange.shiftBy(tokenInputAmount);
+    const token = walletTokens.map[currentPool.symbol]
+      ? walletTokens.map[currentPool.symbol]
+      : walletTokens.map[currentPool.name];
     try {
       const txId = await currentPool.marginRepay({
         marginAccount: currentAccount,
-        source: accountRepay ? undefined : walletTokens.map[currentPool.symbol].address,
+        source: accountRepay ? undefined : token.address,
         pools: Object.values(pools.tokenPools),
         change,
         closeLoan
@@ -319,12 +312,12 @@ export function useMarginActions() {
     );
     try {
       // Refresh positions
-      await currentPool.withMarginRefreshAllPositionPrices({
+      await currentPool.withPrioritisedPositionRefresh({
         instructions: refreshInstructions,
         pools: pools.tokenPools,
         marginAccount: fromAccount
       });
-      await currentPool.withMarginRefreshAllPositionPrices({
+      await currentPool.withPrioritisedPositionRefresh({
         instructions: refreshInstructions,
         pools: pools.tokenPools,
         marginAccount: toAccount

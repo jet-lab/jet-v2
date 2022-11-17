@@ -20,6 +20,8 @@
     "outDir": "dist/esm",
     "rootDir": "./src",
     "strict": true,
-    "forceConsistentCasingInFileNames": true
+    "forceConsistentCasingInFileNames": true,
+    "incremental": true,
+    "skipLibCheck": true
   }
 }

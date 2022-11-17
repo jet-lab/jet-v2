@@ -28,14 +28,20 @@ use solana_sdk::{
 
 use crate::{
     bonds::BondsIxBuilder,
+    cat,
     ix_builder::{
-        test_service::{self, derive_pyth_price, derive_pyth_product, derive_token_mint},
-        MarginPoolConfiguration,
+        get_metadata_address,
+        test_service::{
+            self, derive_bond_ticket_mint, derive_pyth_price, derive_pyth_product,
+            derive_token_mint, if_not_initialized, spl_swap_pool_create,
+        },
+        ControlIxBuilder, MarginPoolConfiguration,
     },
     solana::transaction::TransactionBuilder,
     tx_builder::{global_initialize_instructions, AirspaceAdmin, TokenDepositsConfig},
 };
 
+static ADAPTERS: &[Pubkey] = &[jet_margin_pool::ID, jet_margin_swap::ID, jet_bonds::ID];
 const ORDERBOOK_CAPACITY: usize = 1_000;
 const EVENT_QUEUE_CAPACITY: usize = 1_000;
 
@@ -75,11 +81,22 @@ pub struct AirspaceTokenConfig {
 /// Configuration for bond markets
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
 pub struct BondMarketConfig {
-    /// The duration for staking
-    pub duration: i64,
+    /// The duration for borrows
+    pub borrow_duration: i64,
+
+    /// The duration for lending
+    pub lend_duration: i64,
 
     /// The minimum order size for the AOB
     pub min_order_size: u64,
+
+    /// Whether or not order matching should be paused for the market
+    #[serde(default)]
+    pub paused: bool,
+
+    /// the price of the bond tickets relative to the underlying
+    /// multiplied by the underlying price to get the ticket price
+    pub ticket_price: String,
 }
 
 /// Configuration for margin pools
@@ -113,12 +130,14 @@ pub struct MarginPoolConfig {
 impl From<MarginPoolConfig> for jet_margin_pool::MarginPoolConfig {
     fn from(config: MarginPoolConfig) -> Self {
         Self {
+            flags: config.flags,
             utilization_rate_1: config.utilization_rate_1,
             utilization_rate_2: config.utilization_rate_2,
             borrow_rate_0: config.borrow_rate_0,
             borrow_rate_1: config.borrow_rate_1,
             borrow_rate_2: config.borrow_rate_2,
             borrow_rate_3: config.borrow_rate_3,
+            management_fee_rate: config.management_fee_rate,
             ..Default::default()
         }
     }
@@ -137,6 +156,14 @@ pub struct AirspaceConfig {
     pub tokens: HashMap<String, AirspaceTokenConfig>,
 }
 
+/// Describe the swap pools to initialize
+#[derive(Serialize, Deserialize, Default, Debug, Clone, Eq, PartialEq)]
+pub struct SwapPoolsConfig {
+    /// The token pairs to initialize SPL swap pools for
+    #[serde(default)]
+    pub spl: Vec<String>,
+}
+
 /// Describe an environment to initialize
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
 pub struct EnvironmentConfig {
@@ -145,6 +172,9 @@ pub struct EnvironmentConfig {
 
     /// The airspaces to create
     pub airspaces: Vec<AirspaceConfig>,
+
+    /// The swap pools to create
+    pub swap_pools: SwapPoolsConfig,
 
     /// The authority for all resources in the environment. Expected to sign all
     /// the intiailizer transactions, and pay for everything.
@@ -158,12 +188,70 @@ pub fn init_environment(
 ) -> anyhow::Result<Vec<TransactionBuilder>> {
     let mut txs = vec![];
 
-    txs.push(global_initialize_instructions(config.authority));
-
+    txs.extend(global_initialize_instructions(config.authority));
+    txs.extend(create_global_adapter_register_tx(config.authority));
     txs.extend(create_token_tx(config));
     txs.extend(create_airspace_tx(config, rent)?);
+    txs.extend(create_swap_pools_tx(config)?);
 
     Ok(txs)
+}
+
+/// Basic environment setup for hosted tests that has only the necessary global
+/// state initialized
+pub fn minimal_environment(authority: Pubkey) -> Vec<TransactionBuilder> {
+    cat![
+        global_initialize_instructions(authority),
+        create_global_adapter_register_tx(authority),
+    ]
+}
+
+fn create_global_adapter_register_tx(authority: Pubkey) -> Vec<TransactionBuilder> {
+    let ctrl_ix = ControlIxBuilder::new(authority);
+    ADAPTERS
+        .iter()
+        .map(|a| if_not_initialized(get_metadata_address(a), ctrl_ix.register_adapter(a)).into())
+        .collect()
+}
+
+fn create_swap_pools_tx(config: &EnvironmentConfig) -> anyhow::Result<Vec<TransactionBuilder>> {
+    let mut txs = vec![];
+
+    for pair_string in &config.swap_pools.spl {
+        let sep_index = pair_string.find('/').ok_or_else(|| {
+            anyhow::anyhow!(
+                "pool must be specified in 'A/B' format: (invalid: {}",
+                pair_string
+            )
+        })?;
+
+        let (name_a, name_b) = pair_string.split_at(sep_index);
+        let name_b = &name_b[1..];
+
+        verify_token_declared(config, name_a)?;
+        verify_token_declared(config, name_b)?;
+
+        let token_a = derive_token_mint(name_a);
+        let token_b = derive_token_mint(name_b);
+
+        txs.push(TransactionBuilder {
+            instructions: vec![spl_swap_pool_create(&config.authority, &token_a, &token_b)],
+            signers: vec![],
+        });
+    }
+
+    Ok(txs)
+}
+
+fn verify_token_declared(config: &EnvironmentConfig, name: &str) -> anyhow::Result<()> {
+    if !config.tokens.iter().any(|t| t.name == *name) {
+        anyhow::bail!(
+            "configuring token {} in airspace, but not a global token",
+            name
+        );
+    }
+
+    Ok(())
 }
 
 fn create_airspace_tx(
@@ -177,27 +265,25 @@ fn create_airspace_tx(
 
         txs.push(as_admin.create_airspace(as_config.is_restricted));
 
-        let adapters = [jet_margin_pool::ID, jet_margin_swap::ID, jet_bonds::ID];
-
         txs.extend(
-            adapters
-                .into_iter()
-                .map(|adapter| as_admin.configure_margin_adapter(adapter, true)),
+            ADAPTERS
+                .iter()
+                .map(|adapter| as_admin.configure_margin_adapter(*adapter, true)),
         );
 
         for (name, tk_config) in &as_config.tokens {
-            if !config.tokens.iter().any(|t| t.name == *name) {
-                anyhow::bail!(
-                    "configuring token {} in airspace, but not a global token",
-                    name
-                );
-            }
+            verify_token_declared(config, name)?;
+            let token = config
+                .tokens
+                .iter()
+                .find(|t| &t.name == name)
+                .expect("cannot find a description for the token that needs a bond market");
 
             txs.extend(create_airspace_token_margin_config_tx(
                 &as_admin, name, tk_config,
             ));
             txs.extend(create_airspace_token_bond_markets_tx(
-                config, rent, &as_admin, name, tk_config,
+                config, rent, &as_admin, token, tk_config,
             ));
         }
     }
@@ -209,7 +295,7 @@ fn create_airspace_token_bond_markets_tx(
     config: &EnvironmentConfig,
     rent: &Rent,
     admin: &AirspaceAdmin,
-    token_name: &str,
+    token: &TokenDescription,
     tk_config: &AirspaceTokenConfig,
 ) -> Vec<TransactionBuilder> {
     let mut txs = vec![];
@@ -223,16 +309,40 @@ fn create_airspace_token_bond_markets_tx(
         let len_orders = orderbook_slab_len(ORDERBOOK_CAPACITY);
 
         let mut bond_manager_seed = [0u8; 32];
-        bond_manager_seed[..8].copy_from_slice(&bm_config.duration.to_le_bytes());
+        bond_manager_seed[..8].copy_from_slice(&bm_config.borrow_duration.to_le_bytes());
 
-        let mint = derive_token_mint(token_name);
+        let mint = derive_token_mint(&token.name);
+        let ticket_mint = derive_bond_ticket_mint(&BondsIxBuilder::bond_manager_key(
+            &admin.airspace,
+            &mint,
+            bond_manager_seed,
+        ));
         let bonds_ix = BondsIxBuilder::new_from_seed(
             &admin.airspace,
             &mint,
             bond_manager_seed,
             config.authority,
             derive_pyth_price(&mint),
+            derive_pyth_price(&ticket_mint),
         );
+
+        txs.push(TransactionBuilder {
+            instructions: vec![test_service::token_register(
+                &config.authority,
+                ticket_mint,
+                &TokenCreateParams {
+                    symbol: format!("{}_{}", token.symbol.clone(), bm_config.borrow_duration),
+                    name: format!("{}_{}", token.name.clone(), bm_config.borrow_duration),
+                    decimals: token.decimals,
+                    authority: config.authority,
+                    oracle_authority: config.authority,
+                    max_amount: u64::MAX,
+                    source_symbol: token.symbol.clone(),
+                    price_ratio: bm_config.ticket_price.parse::<f64>().unwrap(),
+                },
+            )],
+            signers: vec![],
+        });
 
         txs.push(TransactionBuilder {
             instructions: vec![
@@ -262,8 +372,8 @@ fn create_airspace_token_bond_markets_tx(
                         config.authority,
                         0,
                         bond_manager_seed,
-                        bm_config.duration,
-                        Pubkey::default(),
+                        bm_config.borrow_duration,
+                        bm_config.lend_duration,
                     )
                     .unwrap(),
                 bonds_ix
@@ -278,6 +388,20 @@ fn create_airspace_token_bond_markets_tx(
             ],
             signers: vec![key_eq, key_bids, key_asks],
         });
+
+        if bm_config.paused {
+            txs.last_mut()
+                .unwrap()
+                .instructions
+                .push(bonds_ix.pause_order_matching().unwrap());
+        }
+
+        txs.push(admin.register_bond_market(
+            mint,
+            bond_manager_seed,
+            tk_config.collateral_weight,
+            tk_config.max_leverage,
+        ));
     }
 
     txs
@@ -342,6 +466,8 @@ fn create_token_tx(config: &EnvironmentConfig) -> Vec<TransactionBuilder> {
                         authority: config.authority,
                         oracle_authority: config.authority,
                         max_amount: u64::MAX,
+                        source_symbol: desc.symbol.clone(),
+                        price_ratio: 1.0,
                     },
                 ),
             };

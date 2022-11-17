@@ -86,6 +86,8 @@ pub fn token_init_native_handler(
     info.pyth_product = ctx.accounts.pyth_product.key();
     info.oracle_authority = oracle_authority;
     info.max_request_amount = 0;
+    info.source_symbol = "SOL".to_owned();
+    info.price_ratio = 1.0;
 
     let mut pyth_product = load_pyth_account::<ProductAccount>(&ctx.accounts.pyth_product)?;
     let mut pyth_price = load_pyth_account::<PriceAccount>(&ctx.accounts.pyth_price)?;

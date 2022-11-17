@@ -2,6 +2,7 @@ use std::convert::TryInto;
 
 use anchor_lang::prelude::*;
 use anchor_spl::token::Token;
+use jet_program_proc_macros::BondTokenManager;
 
 use crate::{
     control::state::{BondManager, CrankAuthorization},
@@ -12,7 +13,7 @@ use crate::{
     BondsError,
 };
 
-#[derive(Accounts)]
+#[derive(Accounts, BondTokenManager)]
 pub struct ConsumeEvents<'info> {
     /// The `BondManager` account tracks global information related to this particular bond market
     #[account(
@@ -79,14 +80,14 @@ pub enum LoanAccount<'info> {
 }
 
 impl<'info> LoanAccount<'info> {
-    pub fn auto_stake(self) -> Result<AnchorAccount<'info, SplitTicket, Mut>> {
+    pub fn auto_stake(&mut self) -> Result<&mut AnchorAccount<'info, SplitTicket, Mut>> {
         match self {
             LoanAccount::AutoStake(split_ticket) => Ok(split_ticket),
             _ => panic!(),
         }
     }
 
-    pub fn new_debt(self) -> Result<AnchorAccount<'info, Obligation, Mut>> {
+    pub fn new_debt(&mut self) -> Result<&mut AnchorAccount<'info, Obligation, Mut>> {
         match self {
             LoanAccount::NewDebt(obligation) => Ok(obligation),
             _ => panic!(),
@@ -105,17 +106,21 @@ impl<'info> UserAccount<'info> {
         Self(account)
     }
 
+    pub fn pubkey(&self) -> Pubkey {
+        self.0.key()
+    }
+
     /// token account that will receive a deposit of underlying or tickets
-    pub fn as_token_account(self) -> AccountInfo<'info> {
-        self.0
+    pub fn as_token_account(&self) -> AccountInfo<'info> {
+        self.0.clone()
     }
 
     /// arbitrary unchecked account that will be granted ownership of a split ticket
-    pub fn as_owner(self) -> AccountInfo<'info> {
-        self.0
+    pub fn as_owner(&self) -> AccountInfo<'info> {
+        self.0.clone()
     }
 
-    pub fn margin_user(self) -> Result<AnchorAccount<'info, MarginUser, Mut>> {
-        self.0.try_into()
+    pub fn margin_user(&self) -> Result<AnchorAccount<'info, MarginUser, Mut>> {
+        self.0.clone().try_into()
     }
 }

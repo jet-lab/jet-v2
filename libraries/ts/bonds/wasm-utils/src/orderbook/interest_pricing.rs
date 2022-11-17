@@ -28,10 +28,10 @@
 
 use std::f64::consts::E;
 
-use jet_proto_math::{
-    fixed_point::{Fp32, FP32_ONE},
-    number::Number,
+use jet_program_common::{
+    Number, {Fp32, FP32_ONE},
 };
+use wasm_bindgen::prelude::wasm_bindgen;
 
 const SECONDS_PER_YEAR: u64 = 31_536_000;
 

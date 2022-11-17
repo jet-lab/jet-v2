@@ -16,6 +16,9 @@ name = "Bitcoin"
 decimals = 6
 precision = 6
 
+[swap_pools]
+spl = ["Bitcoin/USDC"]
+
 [[airspace]]
 name = "default"
 is_restricted = false
@@ -25,8 +28,18 @@ collateral_weight = 1_00
 max_leverage = 20_00
 
 [[airspace.tokens.USDC.bond_markets]]
-duration = 5
+borrow_duration = 86400
+lend_duration = 88000
 min_order_size = 10
+paused = false
+ticket_price = "0.9"
+
+[[airspace.tokens.USDC.bond_markets]]
+borrow_duration = 604800
+lend_duration = 610000
+min_order_size = 10
+paused = false
+ticket_price = "0.9"
 
 [airspace.tokens.USDC.margin_pool_config]
 flags = 0b0010 # ALLOW_LENDING

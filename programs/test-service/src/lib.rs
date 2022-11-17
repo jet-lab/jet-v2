@@ -43,6 +43,15 @@ pub mod seeds {
 
     #[constant]
     pub const TOKEN_PYTH_PRODUCT: &[u8] = b"token-pyth-product";
+
+    #[constant]
+    pub const SWAP_POOL_STATE: &[u8] = b"swap-pool-state";
+
+    #[constant]
+    pub const SWAP_POOL_MINT: &[u8] = b"swap-pool-mint";
+
+    #[constant]
+    pub const SWAP_POOL_TOKENS: &[u8] = b"swap-pool-tokens";
 }
 
 #[program]
@@ -58,6 +67,12 @@ pub mod jet_test_service {
     /// This will also create pyth oracle accounts for the token.
     pub fn token_create(ctx: Context<TokenCreate>, params: TokenCreateParams) -> Result<()> {
         token_create_handler(ctx, params)
+    }
+
+    /// Same as token_create except it does not create the mint. The mint should
+    /// be created some other way, such as by an adapter.
+    pub fn token_register(ctx: Context<TokenRegister>, params: TokenCreateParams) -> Result<()> {
+        token_register_handler(ctx, params)
     }
 
     /// Initialize the token info and oracles for the native token mint
@@ -85,7 +100,16 @@ pub mod jet_test_service {
     ) -> Result<()> {
         token_update_pyth_price_handler(ctx, price, conf, expo)
     }
-}
 
-#[derive(Accounts)]
-pub struct Initialize {}
+    /// Create a SPL swap pool
+    pub fn spl_swap_pool_create(ctx: Context<SplSwapPoolCreate>) -> Result<()> {
+        spl_swap_pool_create_handler(ctx)
+    }
+
+    /// Invokes arbitrary program iff an account is not yet initialized.
+    /// Typically used to run an instruction that initializes the account,
+    /// ensuring multiple initializations will not collide.
+    pub fn if_not_initialized(ctx: Context<IfNotInitialized>, instruction: Vec<u8>) -> Result<()> {
+        if_not_initialized_handler(ctx, instruction)
+    }
+}

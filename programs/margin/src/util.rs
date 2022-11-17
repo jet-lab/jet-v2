@@ -15,42 +15,13 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-#[cfg(not(target_arch = "bpf"))]
-use std::time::{SystemTime, UNIX_EPOCH};
-
-use anchor_lang::{
-    prelude::{msg, Clock, SolanaSysvar},
-    solana_program::instruction::TRANSACTION_LEVEL_STACK_HEIGHT,
-};
+use anchor_lang::{prelude::msg, solana_program::instruction::TRANSACTION_LEVEL_STACK_HEIGHT};
 use bytemuck::{Pod, Zeroable};
 
 use crate::{
     syscall::{sys, Sys},
     AccountPosition, ErrorCode,
 };
-
-/// Get the current timestamp in seconds since Unix epoch
-///
-/// The function returns a [anchor_lang::prelude::Clock] value in the bpf arch,
-/// and first checks if there is a [Clock] in other archs, returning the system
-/// time if there is no clock (e.g. if not running in a simulator with its clock).
-pub fn get_timestamp() -> u64 {
-    #[cfg(target_arch = "bpf")]
-    {
-        Clock::get().unwrap().unix_timestamp as u64
-    }
-    #[cfg(not(target_arch = "bpf"))]
-    {
-        // Get the clock in case it's available in a simulation,
-        // then fall back to the system clock
-        if let Ok(clock) = Clock::get() {
-            clock.unix_timestamp as u64
-        } else {
-            let time = SystemTime::now();
-            time.duration_since(UNIX_EPOCH).unwrap().as_secs()
-        }
-    }
-}
 
 pub trait Require<T> {
     fn require(self) -> std::result::Result<T, ErrorCode>;
@@ -339,7 +310,7 @@ mod test {
                 mutator(&mut ba, n);
                 assert_eq!(contains, ba.contains(n));
                 for i in 0..8u8 {
-                    if i as u8 != n {
+                    if i != n {
                         // other bits are unchanged
                         assert_eq!(BitSet(byte).contains(i), ba.contains(i));
                     }
@@ -357,9 +328,9 @@ mod test {
         assert_eq!(BitSet(0).min(), None);
         for extremum in 0..8 {
             let top = 2u8.checked_pow(extremum + 1).unwrap_or(u8::MAX);
-            for byte in 2u8.pow(extremum as u32)..top {
-                assert_eq!(extremum as u32, BitSet(byte).max().unwrap());
-                assert_eq!(extremum as u32, BitSet(byte.reverse_bits()).min().unwrap());
+            for byte in 2u8.pow(extremum)..top {
+                assert_eq!(extremum, BitSet(byte).max().unwrap());
+                assert_eq!(extremum, BitSet(byte.reverse_bits()).min().unwrap());
             }
         }
     }

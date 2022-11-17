@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useRecoilValue } from 'recoil';
-import { CurrentPool } from '../../../state/pools/pools';
+import { CurrentPool } from '@state/pools/pools';
+import { Arc } from '@visx/shape';
+import { Group } from '@visx/group';
 
 // Pie Chart component showing a percentage value
 export function PieChart(props: {
@@ -31,15 +33,22 @@ export function PieChart(props: {
   }, [currentPool]);
 
   return (
-    <div className="pie-chart">
-      <svg viewBox="0 0 36 36">
-        <path
-          strokeDasharray={`${percent}, 100`}
-          d="M18 2.0845
-            a 15.9155 15.9155 0 0 1 0 31.831
-            a 15.9155 15.9155 0 0 1 0 -31.831"
-        />
-      </svg>
-    </div>
+    <>
+      <div className="pie-chart">
+        <svg width="100%" height="100%">
+          <Group transform="translate(37.5, 37.5)">
+            <Arc
+              data={percent}
+              startAngle={0}
+              endAngle={percent * 0.063}
+              outerRadius={38}
+              innerRadius={0}
+              padAngle={0}
+              cornerRadius={0}
+              fill={'#e36868'}></Arc>
+          </Group>
+        </svg>
+      </div>
+    </>
   );
 }

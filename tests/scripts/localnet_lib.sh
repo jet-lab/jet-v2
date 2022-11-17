@@ -28,10 +28,9 @@ SPLSWAP_SO=$SPL_V20_FROM_CRATES
 ORCAv1_SO=$ORCA_V1_MAINNET
 ORCAv2_SO=$ORCA_V2_MAINNET
 
-MAINNET_ENDPOINT=https://ssc-dao.genesysgo.net
-
 PROGRAM_FEATURES='testing'
 TEST_FEATURES="${BATCH:-batch_all},localnet"
+VALIDATOR_PID=
 
 anchor-build() {
     anchor build $@ -- --features $PROGRAM_FEATURES
@@ -44,7 +43,8 @@ cargo-build() {
 }
 
 test() {
-    RUST_BACKTRACE=1 with-validator cargo test \
+    RUST_BACKTRACE=1 with-validator cargo nextest run \
+        --retries 2 \
         --features $TEST_FEATURES \
         --package hosted-tests \
         --test $@
@@ -71,59 +71,44 @@ start-validator() {
         --bpf-program $ORCAv1_PID $ORCAv1_SO \
         --bpf-program $ORCAv2_PID $ORCAv2_SO \
         --quiet \
-        $@
+        $@ &
+    VALIDATOR_PID=$!
+    sleep ${VALIDATOR_STARTUP:-5}
+}
+
+start-oracle() {
+    cargo run --bin jet-oracle-mirror -- -s $SOLANA_MAINNET_RPC -tl &
+}
+
+resume-validator() {
+    start-validator
+    start-oracle
+    wait $VALIDATOR_PID
 }
 
 start-new-validator() {
-    start-validator -r &
-
-    spid=$!
-
-    sleep ${VALIDATOR_STARTUP:-5}
-
+    start-validator -r
     cargo run --bin jetctl -- test init-env -ul --no-confirm localnet.toml
     cargo run --bin jetctl -- test generate-app-config -ul --no-confirm localnet.toml -o app/public/localnet.config.json
-
-    cargo run --bin jet-oracle-mirror -- -s $MAINNET_ENDPOINT -tl &
-
-    wait $spid
+    start-oracle
+    wait $VALIDATOR_PID
 }
 
 with-validator() {
-    start-validator -r &
-
-    spid=$!
-    sleep ${VALIDATOR_STARTUP:-5}
-    
+    start-validator -r
     if [[ ${SOLANA_LOGS:-false} == true ]]; then
         solana -ul logs &
     fi
-
-    cargo run --bin jetctl -- test init-env -ul --no-confirm localnet.toml
-    cargo run --bin jetctl -- test generate-app-config -ul --no-confirm localnet.toml -o app/public/localnet.config.json
-
     $@
-    
-    kill $spid
-    sleep 2
 }
 
-cleanup() {
-    pkill -P $$ || true
-    wait || true
+kill_validator() {
+    set +e
+    [ -z $VALIDATOR_PID ] || (
+        kill $VALIDATOR_PID
+        pkill solana-test-validator
+        killall solana-test-validator
+    )
+    return 0
 }
-
-trap_add() {
-    trap_add_cmd=$1; shift || fatal "${FUNCNAME} usage error"
-    for trap_add_name in "$@"; do
-        trap -- "$(
-            extract_trap_cmd() { printf '%s\n' "${3:-}"; }
-            eval "extract_trap_cmd $(trap -p "${trap_add_name}")"
-            printf '%s\n' "${trap_add_cmd}"
-        )" "${trap_add_name}" \
-            || fatal "unable to add to trap ${trap_add_name}"
-    done
-}
-
-declare -f -t trap_add
-trap_add 'cleanup' EXIT
+trap kill_validator EXIT SIGHUP SIGINT SIGTERM

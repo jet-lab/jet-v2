@@ -5,7 +5,9 @@ use anyhow::{bail, Result};
 use jet_margin_sdk::{
     bonds::bonds_pda,
     ix_builder::{derive_airspace, test_service::derive_token_mint},
-    test_service::{init_environment, AirspaceConfig, EnvironmentConfig, TokenDescription},
+    test_service::{
+        init_environment, AirspaceConfig, EnvironmentConfig, SwapPoolsConfig, TokenDescription,
+    },
 };
 use serde::{Deserialize, Serialize};
 use solana_sdk::{pubkey, pubkey::Pubkey, signer::Signer};
@@ -27,7 +29,9 @@ pub async fn process_init_env(client: &Client, config_path: impl AsRef<Path>) ->
 
     for tx in txs {
         plan = plan.instructions(
-            tx.signers.iter().map(|k| k as &dyn Signer),
+            tx.signers
+                .into_iter()
+                .map(|k| Box::new(k) as Box<dyn Signer>),
             [""],
             tx.instructions,
         );
@@ -53,6 +57,9 @@ pub async fn process_generate_app_config(
 struct TestEnvConfig {
     token: Vec<TokenDescription>,
     airspace: Vec<AirspaceConfig>,
+
+    #[serde(default)]
+    swap_pools: SwapPoolsConfig,
 }
 
 fn read_env_config_from_file(
@@ -66,6 +73,7 @@ fn read_env_config_from_file(
         authority,
         tokens: config.token,
         airspaces: config.airspace,
+        swap_pools: config.swap_pools,
     })
 }
 
@@ -131,11 +139,14 @@ async fn generate_bond_markets_app_config_from_env(
         let token_mint = derive_token_mint(name);
 
         for b_market in &config.bond_markets {
-            let bond_manager =
-                derive_bond_manager_from_duration_seed(&airspace, &token_mint, b_market.duration);
+            let bond_manager = derive_bond_manager_from_duration_seed(
+                &airspace,
+                &token_mint,
+                b_market.borrow_duration,
+            );
 
             bond_markets.insert(
-                format!("{name}_{}", b_market.duration),
+                format!("{name}_{}", b_market.borrow_duration),
                 BondMarketInfo {
                     symbol: name.clone(),
                     bond_manager,

@@ -27,10 +27,11 @@ serde = { version = "1.0", optional = true }
 
 anchor-lang = { git = "https://github.com/jet-lab/anchor", branch = "master" }
 anchor-spl = { git = "https://github.com/jet-lab/anchor", branch = "master" }
+solana-program = "1.10"
 
 pyth-sdk-solana = "0.4"
 
-jet-proto-math = { git = "https://github.com/jet-lab/program-libraries", branch = "main" }
+jet-program-common = { path = "../../libraries/rust/program-common" }
 jet-margin = { path = "../margin", features = ["cpi"] }
 jet-metadata = { path = "../metadata", features = ["cpi"] }
 

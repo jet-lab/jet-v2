@@ -15,7 +15,10 @@ const MANAGER_VERSION: u64 = 0;
 #[derive(Debug, Clone, Parser, Serialize, Deserialize)]
 pub struct BondMarketParameters {
     #[clap(long)]
-    pub duration: i64,
+    pub borrow_duration: i64,
+
+    #[clap(long)]
+    pub lend_duration: i64,
 
     #[clap(long)]
     pub min_order_size: u64,
@@ -89,6 +92,7 @@ pub async fn process_create_bond_market<'a>(
         seed,
         payer,
         params.token_oracle,
+        params.ticket_oracle,
     );
 
     let mut steps = vec![];
@@ -106,8 +110,8 @@ pub async fn process_create_bond_market<'a>(
             payer,
             MANAGER_VERSION,
             seed,
-            params.duration,
-            Pubkey::default(),
+            params.borrow_duration,
+            params.lend_duration,
         )?;
         steps.push(format!(
             "initialize-bond-manager for token [{}]",
@@ -135,8 +139,7 @@ pub async fn process_create_bond_market<'a>(
     ));
     instructions.push(init_orderbook);
 
-    let ob_accs = [eq, bids, asks];
-    let signers: Vec<&dyn Signer> = ob_accs.iter().map(|b| (*b).as_ref()).collect();
+    let signers: Vec<Box<dyn Signer>> = vec![eq, bids, asks];
 
     Ok(client
         .plan()?

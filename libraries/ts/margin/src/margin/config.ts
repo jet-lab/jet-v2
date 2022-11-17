@@ -5,6 +5,8 @@ export const MARGIN_CONFIG_URL = "https://storage.googleapis.com/jet-app-config/
 export type MarginCluster = "localnet" | "devnet" | "mainnet-beta" | MarginConfig
 
 export interface MarginConfig {
+  bondsProgramId?: string
+  metadataAccount: string
   controlProgramId: Address
   marginProgramId: Address
   marginPoolProgramId: Address
@@ -30,7 +32,6 @@ export interface BondMarketConfig {
   symbol: string
   bondManager: Address
   version: number
-  duration: number
   airspace: Address
   orderbookMarketState: Address
   eventQueue: Address
@@ -42,6 +43,12 @@ export interface BondMarketConfig {
   claimsMint: Address
   collateralMint: Address
   underlyingOracle: Address
+  ticketOracle: Address
+  seed: Address
+  orderbookPause: boolean
+  ticketsPaused: boolean
+  borrowDuration: number
+  lendDuration: number
 }
 
 export interface MarginTokenConfig {
@@ -77,5 +84,5 @@ export interface MarginMarketConfig {
 
 export async function getLatestConfig(cluster: string): Promise<MarginConfig> {
   let response = await axios.get(MARGIN_CONFIG_URL)
-  return (await response.data)[cluster]
+  return response.data[cluster]
 }

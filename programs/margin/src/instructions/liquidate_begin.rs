@@ -17,7 +17,7 @@
 
 use anchor_lang::prelude::*;
 
-use jet_proto_math::Number128;
+use jet_program_common::Number128;
 
 use crate::{
     events, ErrorCode, Liquidation, LiquidationState, MarginAccount,

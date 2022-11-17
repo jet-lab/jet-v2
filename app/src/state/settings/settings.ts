@@ -1,7 +1,6 @@
 import { atom } from 'recoil';
-import axios from 'axios';
 import { localStorageEffect } from '../effects/localStorageEffect';
-import { getPing } from '../../utils/ui';
+import { getPing } from '@utils/ui';
 
 // Disclaimer accepted
 export const DisclaimersAccepted = atom({
@@ -65,14 +64,23 @@ export const RpcNodes = atom({
       }
       for (const nodeOption in rpcNodes) {
         const node = rpcNodes[nodeOption as NodeOption];
-        getPing(node.devnet).then((ping: number) => (node.devnetPing = ping));
-        getPing(node.mainnetBeta).then((ping: number) => (node.mainnetBetaPing = ping));
+        getPing(node.devnet)
+          .then((ping: number) => (node.devnetPing = ping))
+          .catch(e => {
+            throw new Error(`Error getting ping, ${JSON.stringify(node.devnet)}`);
+          });
+        getPing(node.mainnetBeta)
+          .then((ping: number) => (node.mainnetBetaPing = ping))
+          .catch(e => {
+            throw new Error(`Error getting ping, ${JSON.stringify(node.mainnetBeta)}`);
+          });
       }
       setSelf(rpcNodes);
     }
   ],
   dangerouslyAllowMutability: true
 });
+
 export const PreferredRpcNode = atom({
   key: 'preferredRpcNode',
   default: 'default' as NodeOption,
@@ -161,11 +169,4 @@ export const PreferDayMonthYear = atom({
   key: 'preferDayMonthYear',
   default: true as boolean,
   effects: [localStorageEffect('jetAppPreferDayMonthYear')]
-});
-
-// Light / Dark Theme
-export const LightTheme = atom({
-  key: 'lightTheme',
-  default: false as boolean,
-  effects: [localStorageEffect('jetAppLightTheme')]
 });

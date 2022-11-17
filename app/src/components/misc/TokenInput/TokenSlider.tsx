@@ -1,10 +1,10 @@
 import { TokenAmount } from '@jet-lab/margin';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
-import { Dictionary } from '../../../state/settings/localization/localization';
-import { CurrentPool } from '../../../state/pools/pools';
-import { TokenInputAmount, TokenInputString } from '../../../state/actions/actions';
+import { Dictionary } from '@state/settings/localization/localization';
+import { CurrentPool } from '@state/pools/pools';
+import { TokenInputAmount, TokenInputString } from '@state/actions/actions';
 import { Button, Slider } from 'antd';
-import { getTokenAmountFromNumber } from '../../../utils/currency';
+import { getTokenAmountFromNumber } from '@utils/currency';
 
 // Slider component for the TokenInput
 export function TokenSlider(props: {
@@ -17,6 +17,7 @@ export function TokenSlider(props: {
   const currentPool = useRecoilValue(CurrentPool);
   const tokenInputAmount = useRecoilValue(TokenInputAmount);
   const setTokenInputString = useSetRecoilState(TokenInputString);
+  const formatter = (value: number) => `${value}%`;
 
   // Returns a slider percentage based on current input and max input
   function getSliderValue() {
@@ -60,8 +61,7 @@ export function TokenSlider(props: {
         step={1}
         disabled={props.disabled}
         onChange={(percent: number) => handleChange(percent)}
-        tipFormatter={value => value + '%'}
-        tooltipPlacement="bottom"
+        tooltip={{ formatter, placement: 'bottom' }}
         marks={{
           0: '0%',
           25: '25%',

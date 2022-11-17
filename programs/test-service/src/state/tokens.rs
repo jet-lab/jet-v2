@@ -27,6 +27,8 @@ pub struct TokenInfo {
     pub pyth_price: Pubkey,
     pub pyth_product: Pubkey,
     pub max_request_amount: u64,
+    pub source_symbol: String,
+    pub price_ratio: f64,
 }
 
 impl TokenInfo {
