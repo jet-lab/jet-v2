@@ -13,7 +13,8 @@ describe('Fixed Term', () => {
   });
 
   it('can create one fixed rate lend order', () => {
-    const lendLink = cy.contains('Lend');
+    cy.wait(1000);
+    const lendLink = cy.contains('.nav-link', 'Lend');
     lendLink.click();
     const amountInput = cy.get('.fixed-term .offer-loan .input-amount input');
     const interestInput = cy.get('.fixed-term .offer-loan .input-rate input');
@@ -37,7 +38,8 @@ describe('Fixed Term', () => {
   });
 
   it('can create one fixed rate borrow order', () => {
-    const borrowLink = cy.contains('Borrow');
+    cy.wait(1000);
+    const borrowLink = cy.contains('.nav-link', 'Borrow');
     borrowLink.click();
     const amountInput = cy.get('.fixed-term .request-loan .input-amount input');
     const interestInput = cy.get('.fixed-term .request-loan .input-rate input');
@@ -72,7 +74,8 @@ describe('Fixed Term', () => {
   });
 
   it('issues a lend now order', () => {
-    const lendLink = cy.contains('Lend');
+    cy.wait(1000);
+    const lendLink = cy.contains('.nav-link', 'Lend');
     lendLink.click();
     const lendNow = cy.contains('lend now');
     lendNow.click();
@@ -84,7 +87,8 @@ describe('Fixed Term', () => {
   });
 
   it('issues a borrow now order', () => {
-    const borrowLink = cy.contains('Borrow');
+    cy.wait(1000);
+    const borrowLink = cy.contains('.nav-link', 'Borrow');
     borrowLink.click();
     const borrowNowTab = cy.contains('borrow now');
     borrowNowTab.click();
