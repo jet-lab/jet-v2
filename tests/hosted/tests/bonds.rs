@@ -246,44 +246,39 @@ async fn non_margin_orders_for_proxy<P: Proxy + GenerateProxy>(
     bob.cancel_order(order_id).await?;
     assert!(manager.load_orderbook().await?.bids()?.first().is_none());
 
-    // only works on simulation right now
-    // Access violation in stack frame 5 at address 0x200005ff8 of size 8 by instruction #22627
-    #[cfg(not(feature = "localnet"))]
-    {
-        manager.consume_events().await?;
+    manager.consume_events().await?;
 
-        assert!(manager
-            .load_event_queue()
-            .await?
-            .inner()
-            .iter()
-            .next()
-            .is_none());
+    assert!(manager
+        .load_event_queue()
+        .await?
+        .inner()
+        .iter()
+        .next()
+        .is_none());
 
-        // test order pausing
-        manager.pause_orders().await?;
+    // test order pausing
+    manager.pause_orders().await?;
 
-        alice.sell_tickets_order(a_params).await?;
-        bob.lend_order(b_params, &[2]).await?;
+    alice.sell_tickets_order(a_params).await?;
+    bob.lend_order(b_params, &[2]).await?;
 
-        assert!(manager
-            .load_event_queue()
-            .await?
-            .inner()
-            .iter()
-            .next()
-            .is_none());
+    assert!(manager
+        .load_event_queue()
+        .await?
+        .inner()
+        .iter()
+        .next()
+        .is_none());
 
-        manager.resume_orders().await?;
+    manager.resume_orders().await?;
 
-        assert!(manager
-            .load_event_queue()
-            .await?
-            .inner()
-            .iter()
-            .next()
-            .is_some());
-    }
+    assert!(manager
+        .load_event_queue()
+        .await?
+        .inner()
+        .iter()
+        .next()
+        .is_some());
 
     Ok(())
 }

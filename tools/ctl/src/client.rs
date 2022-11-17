@@ -176,29 +176,28 @@ impl Client {
         Ok(PlanBuilder {
             entries: Vec::new(),
             client: self,
+            unordered: false,
         })
     }
 
     /// Execute a plan
-    pub async fn execute(&self, mut plan: Plan) -> Result<()> {
-        if plan.is_empty() {
+    pub async fn execute(&self, plan: Plan) -> Result<()> {
+        if plan.entries.is_empty() {
             return Ok(());
         }
 
-        println!("planning to submit {} transactions:", plan.len());
+        if self.config.dry_run {
+            println!("this is a dry run");
+        }
+
+        println!("planning to submit {} transactions:", plan.entries.len());
 
         let signer = match &self.config.signer {
             Some(signer) => signer,
             None => bail!("no wallet/signer configured"),
         };
 
-        for entry in &mut plan {
-            entry
-                .transaction
-                .partial_sign(&[&**signer], self.recent_blockhash);
-        }
-
-        for (i, entry) in plan.iter().enumerate() {
+        for (i, entry) in plan.entries.iter().enumerate() {
             let tx_size = entry.transaction.message().serialize().len();
             println!("\t transaction #{i} (size {tx_size}):");
 
@@ -224,6 +223,7 @@ impl Client {
 
         #[allow(clippy::needless_collect)]
         let ui_progress_tx = plan
+            .entries
             .iter()
             .map(|_| ui_progress_group.add_line("in queue"))
             .collect::<Vec<_>>();
@@ -232,7 +232,18 @@ impl Client {
             std::thread::spawn(move || ui_progress_group.join().unwrap());
         }
 
-        for (entry, ui_progress_bar) in plan.iter().zip(ui_progress_tx.into_iter()) {
+        let tx_count = plan.entries.len();
+
+        for (mut entry, ui_progress_bar) in plan.entries.into_iter().zip(ui_progress_tx.into_iter())
+        {
+            let recent_blockhash = self.rpc().get_latest_blockhash().await?;
+            entry
+                .transaction
+                .partial_sign(&entry.signers, recent_blockhash);
+            entry
+                .transaction
+                .partial_sign(&[&**signer], recent_blockhash);
+
             match self.config.dry_run {
                 false => {
                     self.submit_transaction(&entry.transaction, ui_progress_bar)
@@ -245,7 +256,7 @@ impl Client {
             }
         }
 
-        println!("submitted {} transactions", plan.len());
+        println!("submitted {} transactions", tx_count);
         Ok(())
     }
 
@@ -360,22 +371,26 @@ impl Client {
     }
 }
 
-pub type Plan = Vec<TransactionEntry>;
+#[derive(Default)]
+pub struct Plan {
+    pub entries: Vec<TransactionEntry>,
+    pub unordered: bool,
+}
 
 pub struct PlanBuilder<'client> {
     entries: Vec<TransactionEntry>,
+    unordered: bool,
     client: &'client Client,
 }
 
 impl<'client> PlanBuilder<'client> {
     /// Add instructions to the plan, as a single transaction
-    pub fn instructions<'a>(
+    pub fn instructions(
         mut self,
-        signers: impl IntoIterator<Item = &'a dyn Signer>,
+        signers: impl IntoIterator<Item = Box<dyn Signer>>,
         steps: impl IntoIterator<Item = impl AsRef<str>>,
         instructions: impl IntoIterator<Item = Instruction>,
     ) -> Self {
-        let signers = signers.into_iter().collect::<Vec<_>>();
         let mut ix_list = match self.client.config.compute_budget {
             None => vec![],
             Some(budget) => {
@@ -386,25 +401,37 @@ impl<'client> PlanBuilder<'client> {
         ix_list.extend(instructions);
         let steps = steps.into_iter().map(|s| s.as_ref().to_owned()).collect();
 
-        let mut transaction = Transaction::new_with_payer(
+        let transaction = Transaction::new_with_payer(
             &ix_list,
             Some(&self.client.config.signer.as_ref().unwrap().pubkey()),
         );
-        transaction.partial_sign(&signers, self.client.recent_blockhash);
 
-        self.entries.push(TransactionEntry { steps, transaction });
+        self.entries.push(TransactionEntry {
+            steps,
+            transaction,
+            signers: signers.into_iter().collect(),
+        });
 
         self
     }
 
+    pub fn unordered(mut self) -> Self {
+        self.unordered = true;
+        self
+    }
+
     pub fn build(self) -> Plan {
-        self.entries
+        Plan {
+            entries: self.entries,
+            unordered: self.unordered,
+        }
     }
 }
 
 pub struct TransactionEntry {
     pub steps: Vec<String>,
     pub transaction: Transaction,
+    pub signers: Vec<Box<dyn Signer>>,
 }
 
 struct ProgressTracker {

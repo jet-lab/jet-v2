@@ -15,42 +15,13 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-#[cfg(not(target_arch = "bpf"))]
-use std::time::{SystemTime, UNIX_EPOCH};
-
-use anchor_lang::{
-    prelude::{msg, Clock, SolanaSysvar},
-    solana_program::instruction::TRANSACTION_LEVEL_STACK_HEIGHT,
-};
+use anchor_lang::{prelude::msg, solana_program::instruction::TRANSACTION_LEVEL_STACK_HEIGHT};
 use bytemuck::{Pod, Zeroable};
 
 use crate::{
     syscall::{sys, Sys},
     AccountPosition, ErrorCode,
 };
-
-/// Get the current timestamp in seconds since Unix epoch
-///
-/// The function returns a [anchor_lang::prelude::Clock] value in the bpf arch,
-/// and first checks if there is a [Clock] in other archs, returning the system
-/// time if there is no clock (e.g. if not running in a simulator with its clock).
-pub fn get_timestamp() -> u64 {
-    #[cfg(target_arch = "bpf")]
-    {
-        Clock::get().unwrap().unix_timestamp as u64
-    }
-    #[cfg(not(target_arch = "bpf"))]
-    {
-        // Get the clock in case it's available in a simulation,
-        // then fall back to the system clock
-        if let Ok(clock) = Clock::get() {
-            clock.unix_timestamp as u64
-        } else {
-            let time = SystemTime::now();
-            time.duration_since(UNIX_EPOCH).unwrap().as_secs()
-        }
-    }
-}
 
 pub trait Require<T> {
     fn require(self) -> std::result::Result<T, ErrorCode>;

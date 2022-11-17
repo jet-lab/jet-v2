@@ -139,8 +139,7 @@ pub async fn process_create_bond_market<'a>(
     ));
     instructions.push(init_orderbook);
 
-    let ob_accs = [eq, bids, asks];
-    let signers: Vec<&dyn Signer> = ob_accs.iter().map(|b| (*b).as_ref()).collect();
+    let signers: Vec<Box<dyn Signer>> = vec![eq, bids, asks];
 
     Ok(client
         .plan()?

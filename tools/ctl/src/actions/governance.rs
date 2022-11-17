@@ -1,13 +1,11 @@
 use anyhow::Result;
 use solana_sdk::pubkey::Pubkey;
 use spl_governance::state::proposal::get_proposal_address;
+use spl_governance::state::proposal::VoteType;
 use spl_governance::state::vote_record::{Vote, VoteChoice};
-use spl_governance::state::{
-    proposal::VoteType, token_owner_record::get_token_owner_record_address,
-};
 
 use crate::client::{Client, Plan};
-use crate::governance::{JET_GOVERNANCE_PROGRAM, JET_STAKING_PROGRAM};
+use crate::governance::{find_user_owner_record, JET_GOVERNANCE_PROGRAM, JET_STAKING_PROGRAM};
 
 pub async fn process_proposal_create(
     client: &Client,
@@ -20,12 +18,12 @@ pub async fn process_proposal_create(
     let (governance, realm) =
         crate::governance::get_governance_and_realm(client, &governance_address).await?;
 
-    let proposal_owner_record = get_token_owner_record_address(
-        &JET_GOVERNANCE_PROGRAM,
+    let proposal_owner_record = find_user_owner_record(
+        client,
         &governance.realm,
         realm.config.council_mint.as_ref().unwrap(),
-        &client.signer()?,
-    );
+    )
+    .await?;
 
     let proposal_address = get_proposal_address(
         &JET_GOVERNANCE_PROGRAM,
@@ -54,7 +52,7 @@ pub async fn process_proposal_create(
                 realm.config.council_mint.as_ref().unwrap(),
                 VoteType::SingleChoice,
                 vec!["Approve".to_owned()],
-                false,
+                true,
                 governance.proposals_count,
             )],
         )
@@ -115,12 +113,12 @@ pub async fn process_proposal_approve(client: &Client, proposal_address: Pubkey)
     let proposal = crate::governance::get_proposal_state(client, &proposal_address).await?;
     let (governance, realm) =
         crate::governance::get_governance_and_realm(client, &proposal.governance).await?;
-    let voter_token_owner_record = get_token_owner_record_address(
-        &JET_GOVERNANCE_PROGRAM,
+    let voter_token_owner_record = find_user_owner_record(
+        client,
         &governance.realm,
         realm.config.council_mint.as_ref().unwrap(),
-        &client.signer()?,
-    );
+    )
+    .await?;
 
     Ok(client
         .plan()?

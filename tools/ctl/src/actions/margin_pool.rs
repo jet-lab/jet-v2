@@ -191,7 +191,7 @@ pub async fn process_configure_pool(
     }
     println!();
 
-    changed = override_pool_config_with_options(&mut configuration, &options) && changed;
+    changed = override_pool_config_with_options(&mut configuration, &options) || changed;
 
     if changed {
         Ok(client
@@ -221,7 +221,7 @@ pub async fn process_show_pool(client: &Client, token: Pubkey) -> Result<Plan> {
         .read_anchor_account::<MarginPool>(&margin_pool.address)
         .await?;
 
-    println!("{:#?}", &margin_pool_data.config);
+    println!("{:#?}", &margin_pool_data);
 
     Ok(Plan::default())
 }

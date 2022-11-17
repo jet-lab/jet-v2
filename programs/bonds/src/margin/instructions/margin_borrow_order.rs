@@ -6,6 +6,7 @@ use jet_program_proc_macros::BondTokenManager;
 
 use crate::{
     bond_token_manager::BondTokenManager,
+    events::ObligationCreated,
     margin::{
         events::{OrderPlaced, OrderType},
         state::{return_to_margin, MarginUser, Obligation, ObligationFlags},
@@ -94,16 +95,30 @@ pub fn handler(ctx: Context<MarginBorrowOrder>, params: OrderParams, seed: Vec<u
             ctx.accounts.system_program.to_account_info(),
             &Obligation::make_seeds(ctx.accounts.margin_user.key().as_ref(), seed.as_slice()),
         )?;
-        ctx.accounts.margin_user.assets.entitled_tokens += order_summary.quote_filled()?;
+        let quote_filled = order_summary.quote_filled()?;
+        let base_filled = order_summary.base_filled();
+        ctx.accounts.margin_user.assets.entitled_tokens += quote_filled;
         *obligation = Obligation {
             sequence_number,
             borrower_account: ctx.accounts.margin_user.key(),
             bond_manager: bond_manager.key(),
             order_tag: callback_info.order_tag,
             maturation_timestamp,
-            balance: order_summary.base_filled(),
+            balance: base_filled,
             flags: ObligationFlags::default(),
         };
+
+        emit!(ObligationCreated {
+            obligation: obligation.key(),
+            authority: ctx.accounts.margin_account.key(),
+            order_id: order_summary.summary().posted_order_id,
+            sequence_number,
+            bond_manager: bond_manager.key(),
+            maturation_timestamp,
+            quote_filled,
+            base_filled,
+            flags: obligation.flags
+        });
     }
     let total_debt = order_summary.base_combined();
     ctx.mint(&ctx.accounts.claims_mint, &ctx.accounts.claims, total_debt)?;
