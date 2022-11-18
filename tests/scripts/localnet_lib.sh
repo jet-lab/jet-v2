@@ -81,7 +81,7 @@ start-oracle() {
 }
 
 start-crank-service() {
-    cargo run --bin jet-markets-crank-service -- --config-path $PWD/app/public/localnet.config.json
+    cargo run --bin jet-markets-crank-service -- --config-path $PWD/localnet.toml
 }
 
 resume-validator() {

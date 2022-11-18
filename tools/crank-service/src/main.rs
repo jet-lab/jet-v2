@@ -1,18 +1,22 @@
-use std::{fs::OpenOptions, io::Read, sync::Arc};
+use std::{fs::read_to_string, sync::Arc};
 
 use agnostic_orderbook::state::event_queue::EventQueue;
+use anchor_lang::AccountDeserialize;
 use anyhow::Result;
 use clap::Parser;
-use jet_margin_sdk::bonds::BondsIxBuilder;
-use jetctl::app_config::JetAppConfig;
+use jet_margin_sdk::{
+    bonds::{BondManager, BondsIxBuilder},
+    ix_builder::{derive_airspace, test_service::derive_token_mint},
+};
+use jetctl::actions::test::{derive_bond_manager_from_duration_seed, TestEnvConfig};
 use solana_cli_config::{Config as SolanaConfig, CONFIG_FILE as SOLANA_CONFIG_FILE};
 use solana_client::rpc_client::RpcClient;
 use solana_sdk::{
-    instruction::Instruction, message::Message, signature::Signature, signer::Signer,
-    transaction::Transaction,
+    instruction::Instruction, message::Message, pubkey::Pubkey, signature::Signature,
+    signer::Signer, transaction::Transaction,
 };
 
-type Config = JetAppConfig;
+static LOCALNET_URL: &str = "http://127.0.0.1:8899";
 
 #[derive(Clone)]
 pub struct AsyncSigner(pub Arc<dyn Signer>);
@@ -74,27 +78,38 @@ pub struct CliOpts {
     /// The keypair to use for signing transactions
     #[clap(long, short = 'k')]
     pub keypair_path: Option<String>,
+
+    /// The rpc endpoint
+    /// Defaults to localhost
+    #[clap(long, short = 'u')]
+    pub url: Option<String>,
 }
 
 async fn run(opts: CliOpts) -> Result<()> {
-    let cfg = load_config(&opts.config_path)?;
-    let client = Client::new(load_signer(opts.keypair_path)?, cfg.url);
+    let client = Client::new(
+        load_signer(opts.keypair_path)?,
+        opts.url.unwrap_or(LOCALNET_URL.into()),
+    );
 
-    let spaces = cfg.airspaces;
-    for space in spaces {
-        let markets = space
-            .bond_markets
-            .iter()
-            .map(|(s, m)| (s.clone(), m.market_info))
-            .collect::<Vec<_>>();
-        for (market, manager) in markets {
+    let cfg = read_config(&opts.config_path)?;
+    for (asset, markets) in cfg {
+        for market in markets {
             let c = client.clone();
+            let a = asset.clone();
+
             std::thread::spawn(move || loop {
+                let manager = {
+                    let buf = c.conn.get_account_data(&market).unwrap();
+                    BondManager::try_deserialize(&mut buf.as_slice()).unwrap()
+                };
                 let ix_builder = BondsIxBuilder::from(manager)
                     .with_crank(&c.signer.pubkey())
                     .with_payer(&c.signer.pubkey());
                 let res = consume_events(c.clone(), ix_builder);
-                println!("Market: {} Result: {:#?}", market, res);
+                println!(
+                    "Market: {}_{} Result: {:#?}",
+                    a, manager.borrow_duration, res
+                );
             });
         }
     }
@@ -113,13 +128,29 @@ fn consume_events(client: Client, ix_builder: BondsIxBuilder) -> Result<Signatur
     client.sign_send_consume_ix(consume)
 }
 
-fn load_config(path: &str) -> Result<Config> {
-    let mut s = String::new();
-    OpenOptions::new()
-        .read(true)
-        .open(path)?
-        .read_to_string(&mut s)?;
-    serde_json::from_str(&s).map_err(anyhow::Error::from)
+fn read_config(path: &str) -> Result<Vec<(String, Vec<Pubkey>)>> {
+    let cfg = read_to_string(path)?;
+    Ok(toml::from_str::<TestEnvConfig>(&cfg)?
+        .airspace
+        .into_iter()
+        .map(|a| {
+            let markets = a
+                .tokens
+                .into_iter()
+                .flat_map(|(_, c)| {
+                    c.bond_markets.into_iter().map(|m| {
+                        derive_bond_manager_from_duration_seed(
+                            &derive_airspace(&a.name),
+                            &derive_token_mint(&a.name),
+                            m.borrow_duration,
+                        )
+                    })
+                })
+                .collect::<Vec<_>>();
+
+            (a.name, markets)
+        })
+        .collect::<Vec<_>>())
 }
 
 fn load_signer(path: Option<String>) -> Result<AsyncSigner> {
