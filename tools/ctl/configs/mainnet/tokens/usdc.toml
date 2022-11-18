@@ -9,8 +9,12 @@ pyth_price = "Gnt27xtC473ZT2Mw5u8wZ68Z3gULkSTb5DuxJy7eJotD"
 pyth_product = "8GWTTbNiXdmyZREXbjsZBmCRuzdPrW55dnZGDkTRjWvb"
 
 token_kind = 'Collateral'
-collateral_weight = 1_00
-max_leverage = 20_00
+
+collateral_weight = 90
+max_leverage = 7_00
+
+# collateral_weight = 1_00
+# max_leverage = 20_00
 
 [margin_pool]
 flags = 0b0010 # ALLOW_LENDING

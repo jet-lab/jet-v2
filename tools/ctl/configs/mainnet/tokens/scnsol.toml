@@ -1,0 +1,27 @@
+[token]
+symbol = "scnSOL"
+name = "Socean Staked SOL"
+precision = 2
+
+[config]
+mint = "5oVNBeEEQvYi1cX3ir8Dx5n1P7pdxydbGF2X4TxVusJm"
+pyth_price = "25yGzWV5okF7aLivSCE4xnjVUPowQcThhhx5Q2fgFhkm"
+pyth_product = "5AU4q7BBmc3neCFboeeo5RkmcMdqHU2YLriuEDvua9fC"
+
+token_kind = 'Collateral'
+
+collateral_weight = 0
+max_leverage = 1_00
+
+# collateral_weight = 25 # Limited liquidity. Could bring up to
+# max_leverage = 5_00    # par with mSOL as liquidity improves.
+
+[margin_pool]
+flags = 0b0010 # ALLOW_LENDING
+utilization_rate_1 = 85_00
+utilization_rate_2 = 95_00
+borrow_rate_0 = 50
+borrow_rate_1 = 600
+borrow_rate_2 = 4000
+borrow_rate_3 = 16000
+management_fee_rate = 20_00

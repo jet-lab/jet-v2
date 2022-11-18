@@ -1,20 +1,21 @@
 [token]
-symbol = "USDT"
-name = "USDT"
+symbol = "DAI"
+name = "DAI (Wormhole)"
 precision = 2
 
 [config]
-mint = "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB"
-pyth_price = "3vxLXJqLqF3JG5TCbYycbKWRBbCJQLxQmBGCkyqEEefL"
-pyth_product = "Av6XyAMJnyi68FdsKSPYgzfXGjYrrt6jcAMwtvzLCqaM"
+mint = "EjmyN6qEC1Tf1JxiG1ae7UTJhUxSwk1TCWNWqxWV4J6o"
+pyth_price = "CtJ8EkqLmeYyGB8s4jevpeNsvmD4dxVR2krfsDLcvV8Y"
+pyth_product = "8x8E2jtWjh7ux8pp971Ha3UNYJ8LPNrnPEfF7v5FGdA1"
 
 token_kind = 'Collateral'
 
-collateral_weight = 90
+collateral_weight = 25
 max_leverage = 7_00
 
-# collateral_weight = 1_00
+# collateral_weight = 50 # 50% for now due to liquidity constraints
 # max_leverage = 20_00
+
 
 [margin_pool]
 flags = 0b0010 # ALLOW_LENDING

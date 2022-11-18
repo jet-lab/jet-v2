@@ -1,0 +1,27 @@
+[token]
+symbol = "FTT"
+name = "FTX Token (Wormhole)"
+precision = 2
+
+[config]
+mint = "EzfgjvkSwthhgHaceR3LnKXUoRkP6NUhfghdaHAj1tUv"
+pyth_price = "8JPJJkmDScpcNmBRKGZuPuG2GYAveQgP3t5gFuMymwvF"
+pyth_product = "E7ymZgACaSd1fYLf2V7WkAmFkpRiWfAjm49R7bceny9K"
+
+token_kind = 'Collateral'
+
+collateral_weight = 0
+max_leverage = 1_00
+
+# collateral_weight = 0
+# max_leverage = 5_00
+
+[margin_pool]
+flags = 0b0010 # ALLOW_LENDING
+utilization_rate_1 = 85_00
+utilization_rate_2 = 95_00
+borrow_rate_0 = 50
+borrow_rate_1 = 600
+borrow_rate_2 = 4000
+borrow_rate_3 = 16000
+management_fee_rate = 20_00

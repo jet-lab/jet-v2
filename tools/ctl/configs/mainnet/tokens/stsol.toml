@@ -1,12 +1,12 @@
 [token]
-symbol = "mSOL"
-name = "Marinade Staked SOL"
+symbol = "stSOL"
+name = "Lido Staked SOL"
 precision = 2
 
 [config]
-mint = "mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqcJm7So"
-pyth_price = "E4v1BBgoso9s64TQvmyownAVJbhbEPGyzA3qn4n46qj9"
-pyth_product = "BS2iAqT67j8hA9Jji4B8UpL3Nfw9kwPfU5s4qeaf1e7r"
+mint = "7dHbWXmci3dT8UFYWYZweBLXgycu7Y3iL6trKn1Y7ARj"
+pyth_price = "Bt1hEbY62aMriY1SyQqbeZbm8VmSbQVGBFzSzMuVNWzN"
+pyth_product = "9mpaSy5ocwPvoaxWZc4S8MhUUeUKmmFqymBJTfY6CJ6o"
 
 token_kind = 'Collateral'
 
@@ -15,7 +15,6 @@ max_leverage = 2_00
 
 # collateral_weight = 80
 # max_leverage = 10_00
-
 
 [margin_pool]
 flags = 0b0010 # ALLOW_LENDING
