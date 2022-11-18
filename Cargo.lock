@@ -2315,6 +2315,7 @@ name = "jet-markets-crank-service"
 version = "0.1.0"
 dependencies = [
  "agnostic-orderbook",
+ "anchor-lang",
  "anyhow",
  "clap 3.2.22",
  "jet-ctl-cli",
@@ -2326,6 +2327,7 @@ dependencies = [
  "solana-client",
  "solana-sdk",
  "tokio",
+ "toml",
 ]
 
 [[package]]
