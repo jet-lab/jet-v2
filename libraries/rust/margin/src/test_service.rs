@@ -333,8 +333,8 @@ fn create_airspace_token_bond_markets_tx(
             config.authority,
             derive_pyth_price(&mint),
             derive_pyth_price(&ticket_mint),
-            None,
-        );
+        )
+        .with_crank(&config.authority);
 
         txs.push(
             test_service::token_register(
@@ -401,6 +401,7 @@ fn create_airspace_token_bond_markets_tx(
                         bm_config.min_order_size,
                     )
                     .unwrap(),
+                bonds_ix.authorize_crank(config.authority).unwrap(),
             ],
             signers: vec![key_eq, key_bids, key_asks],
         });

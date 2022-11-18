@@ -246,7 +246,7 @@ impl BondsIxBuilder {
             underlying_token_vault: self.underlying_token_vault,
             orderbook_market_state: self.orderbook_market_state,
             event_queue: self.orderbook.as_ref().unwrap().event_queue,
-            crank_authorization: crank_authorization(&self.crank.unwrap()),
+            crank_authorization: self.crank_authorization()?,
             crank: self.crank.unwrap(),
             payer: self.payer.unwrap(),
             system_program: solana_sdk::system_program::ID,
@@ -811,11 +811,14 @@ impl BondsIxBuilder {
         Ok(Instruction::new_with_bytes(jet_bonds::ID, &data, accounts))
     }
 
-    pub fn authorize_crank(&self, payer: Pubkey, crank: Pubkey) -> Result<Instruction> {
+    pub fn authorize_crank(&self, payer: Pubkey) -> Result<Instruction> {
         let data = jet_bonds::instruction::AuthorizeCrank {}.data();
         let accounts = jet_bonds::accounts::AuthorizeCrank {
-            crank,
-            crank_authorization: crank_authorization(&crank),
+            crank: self
+                .crank
+                .ok_or(BondsIxError::MissingPubkey("crank".into()))?,
+            market: self.manager,
+            crank_authorization: self.crank_authorization()?,
             authority: self.authority,
             airspace: self.airspace,
             payer,
@@ -986,6 +989,20 @@ impl BondsIxBuilder {
             borrower_account.as_ref(),
         ])
     }
+    pub fn crank_authorization(&self) -> Result<Pubkey> {
+        Ok(Pubkey::find_program_address(
+            &[
+                jet_bonds::seeds::CRANK_AUTHORIZATION,
+                self.airspace.as_ref(),
+                self.manager.as_ref(),
+                self.crank
+                    .ok_or(BondsIxError::MissingPubkey("crank".to_string()))?
+                    .as_ref(),
+            ],
+            &jet_bonds::ID,
+        )
+        .0)
+    }
 
     pub fn jet_bonds_id() -> Pubkey {
         jet_bonds::ID
@@ -994,12 +1011,4 @@ impl BondsIxBuilder {
 
 pub fn bonds_pda(seeds: &[&[u8]]) -> Pubkey {
     Pubkey::find_program_address(seeds, &jet_bonds::ID).0
-}
-
-pub fn crank_authorization(crank: &Pubkey) -> Pubkey {
-    Pubkey::find_program_address(
-        &[jet_bonds::seeds::CRANK_AUTHORIZATION, crank.as_ref()],
-        &jet_bonds::ID,
-    )
-    .0
 }

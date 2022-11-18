@@ -266,7 +266,7 @@ impl TestManager {
         self.ix_builder = self.ix_builder.with_crank(&crank.pubkey());
         let auth_crank = self
             .ix_builder
-            .authorize_crank(self.client.payer().pubkey(), crank.pubkey())?;
+            .authorize_crank(self.client.payer().pubkey())?;
         self.insert_kp("crank", crank);
 
         self.sign_send_transaction(&[auth_crank], None).await?;
