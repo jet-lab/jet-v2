@@ -741,7 +741,7 @@ export class MarginAccount {
         if (staleReason !== undefined) {
           claimErrorList.push([position.token, staleReason])
         }
-      } else if (kind === PositionKind.Deposit) {
+      } else if (kind === PositionKind.Deposit || kind === PositionKind.AdapterCollateral) {
         if (staleReason === undefined || includeStalePositions) {
           weightedCollateral = weightedCollateral.add(position.collateralValue())
         }

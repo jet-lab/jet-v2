@@ -89,7 +89,7 @@ export class AccountPosition {
   }
 
   collateralValue(): Number128 {
-    assert(this.kind === PositionKind.Deposit)
+    assert(this.kind === PositionKind.Deposit || this.kind === PositionKind.AdapterCollateral)
 
     return this.valueModifier.mul(this.valueRaw)
   }

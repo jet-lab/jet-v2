@@ -1202,6 +1202,37 @@ export class Pool {
     })
   }
 
+  async withWithdrawToMargin({
+    instructions,
+    marginAccount,
+    change
+  }: {
+    instructions: TransactionInstruction[]
+    marginAccount: MarginAccount
+    change: PoolTokenChange
+    tokenMint: PublicKey
+  }): Promise<void> {
+    const source = marginAccount.getPositionNullable(this.addresses.depositNoteMint)?.address
+    assert(source, "No deposit position")
+    const destination = AssociatedToken.derive(this.addresses.tokenMint, marginAccount.address)
+
+    await marginAccount.withAdapterInvoke({
+      instructions,
+      adapterInstruction: await this.programs.marginPool.methods
+        .withdraw(change.changeKind.asParam(), change.value)
+        .accounts({
+          depositor: marginAccount.address,
+          marginPool: this.address,
+          vault: this.addresses.vault,
+          depositNoteMint: this.addresses.depositNoteMint,
+          source,
+          destination,
+          tokenProgram: TOKEN_PROGRAM_ID
+        })
+        .instruction()
+    })
+  }
+
   /**
    * Transaction to swap tokens
    *

@@ -1,6 +1,14 @@
 import { PublicKey, TransactionInstruction } from "@solana/web3.js"
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token"
-import { AssociatedToken, BondMarketConfig, MarginAccount, MarginConfig, Pool, sendAll } from "@jet-lab/margin"
+import {
+  AssociatedToken,
+  BondMarketConfig,
+  MarginAccount,
+  MarginConfig,
+  Pool,
+  PoolTokenChange,
+  sendAll
+} from "@jet-lab/margin"
 import { BondMarket } from "./bondMarket"
 import { Address, AnchorProvider, BN } from "@project-serum/anchor"
 
@@ -118,20 +126,28 @@ export const offerLoan = async ({
   if (accountInstructions.length > 0) {
     instructions.push(accountInstructions)
   }
-
-  const lendInstructions: TransactionInstruction[] = []
+  const refreshInstructions: TransactionInstruction[] = []
 
   // refresh pool positions
   await currentPool.withMarginRefreshAllPositionPrices({
-    instructions: lendInstructions,
+    instructions: refreshInstructions,
     pools,
     marginAccount
   })
 
-  await refreshAllMarkets(markets, lendInstructions, marginAccount, market.address)
+  await refreshAllMarkets(markets, refreshInstructions, marginAccount, market.address)
+  instructions.push(refreshInstructions)
+  const withdrawInstructions: TransactionInstruction[] = []
 
   // create lend instruction
-  AssociatedToken.withTransfer(lendInstructions, tokenMint, walletAddress, marginAccount.address, amount)
+  await currentPool.withWithdrawToMargin({
+    instructions: withdrawInstructions,
+    marginAccount,
+    change: PoolTokenChange.shiftBy(amount)
+  })
+  instructions.push(withdrawInstructions)
+
+  const lendInstructions: TransactionInstruction[] = []
 
   const loanOffer = await market.offerLoanIx(
     marginAccount,
