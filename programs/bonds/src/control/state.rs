@@ -111,6 +111,7 @@ impl Serialize for BondManager {
 pub struct CrankAuthorization {
     pub crank: Pubkey,
     pub airspace: Pubkey,
+    pub market: Pubkey,
 }
 
 #[test]

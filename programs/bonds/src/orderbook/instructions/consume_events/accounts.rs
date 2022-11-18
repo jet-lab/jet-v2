@@ -42,7 +42,8 @@ pub struct ConsumeEvents<'info> {
 
     #[account(
         has_one = crank @ BondsError::WrongCrankAuthority,
-        constraint = crank_authorization.airspace == bond_manager.load()?.airspace @ BondsError::WrongAirspaceAuthorization
+        constraint = crank_authorization.airspace == bond_manager.load()?.airspace @ BondsError::WrongAirspaceAuthorization,
+        constraint = crank_authorization.market == bond_manager.key() @ BondsError::WrongCrankAuthority,
     )]
     pub crank_authorization: Account<'info, CrankAuthorization>,
     pub crank: Signer<'info>,

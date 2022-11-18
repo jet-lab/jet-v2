@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-use crate::control::state::CrankAuthorization;
+use crate::control::state::{BondManager, CrankAuthorization};
 
 #[derive(Accounts)]
 pub struct AuthorizeCrank<'info> {
@@ -12,6 +12,8 @@ pub struct AuthorizeCrank<'info> {
         init,
         seeds = [
             crate::seeds::CRANK_AUTHORIZATION,
+            airspace.key.as_ref(),
+            market.key().as_ref(),
             crank.key.as_ref()
         ],
         bump,
@@ -19,6 +21,9 @@ pub struct AuthorizeCrank<'info> {
         payer = payer
     )]
     pub crank_authorization: Account<'info, CrankAuthorization>,
+
+    /// The market this signer is authorized to send instructions to
+    pub market: AccountLoader<'info, BondManager>,
 
     /// The authority that must sign to make this change
     pub authority: Signer<'info>,
@@ -35,6 +40,10 @@ pub struct AuthorizeCrank<'info> {
 }
 
 pub fn handler(ctx: Context<AuthorizeCrank>) -> Result<()> {
-    ctx.accounts.crank_authorization.crank = ctx.accounts.crank.key();
+    *ctx.accounts.crank_authorization = CrankAuthorization {
+        crank: ctx.accounts.crank.key(),
+        airspace: ctx.accounts.airspace.key(),
+        market: ctx.accounts.market.key(),
+    };
     Ok(())
 }

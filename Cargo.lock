@@ -2322,6 +2322,7 @@ dependencies = [
  "serde",
  "serde_json",
  "solana-clap-utils",
+ "solana-cli-config",
  "solana-client",
  "solana-sdk",
  "tokio",

@@ -5,12 +5,10 @@ use anyhow::Result;
 use clap::Parser;
 use jet_margin_sdk::bonds::BondsIxBuilder;
 use jetctl::app_config::JetAppConfig;
+use solana_cli_config::{Config as SolanaConfig, CONFIG_FILE as SOLANA_CONFIG_FILE};
 use solana_client::rpc_client::RpcClient;
 use solana_sdk::{
-    instruction::Instruction,
-    message::Message,
-    signature::{Keypair, Signature},
-    signer::Signer,
+    instruction::Instruction, message::Message, signature::Signature, signer::Signer,
     transaction::Transaction,
 };
 
@@ -18,6 +16,27 @@ type Config = JetAppConfig;
 
 #[derive(Clone)]
 pub struct AsyncSigner(pub Arc<dyn Signer>);
+
+impl Signer for AsyncSigner {
+    fn is_interactive(&self) -> bool {
+        self.0.is_interactive()
+    }
+    fn pubkey(&self) -> solana_sdk::pubkey::Pubkey {
+        self.0.pubkey()
+    }
+    fn try_pubkey(&self) -> Result<solana_sdk::pubkey::Pubkey, solana_sdk::signer::SignerError> {
+        self.0.try_pubkey()
+    }
+    fn sign_message(&self, message: &[u8]) -> Signature {
+        self.0.sign_message(message)
+    }
+    fn try_sign_message(
+        &self,
+        message: &[u8],
+    ) -> Result<Signature, solana_sdk::signer::SignerError> {
+        self.0.try_sign_message(message)
+    }
+}
 unsafe impl Send for AsyncSigner {}
 unsafe impl Sync for AsyncSigner {}
 
@@ -36,17 +55,10 @@ impl Client {
     }
 
     pub fn sign_send_consume_ix(&self, ix: Instruction) -> Result<Signature> {
-        let msg = Message::new(&[ix], Some(&self.signer.0.pubkey()));
+        let msg = Message::new(&[ix], Some(&self.signer.pubkey()));
         let mut tx = Transaction::new_unsigned(msg);
-        let position = tx
-            .get_signing_keypair_positions(&[self.signer.0.pubkey()])?
-            .into_iter()
-            .flatten()
-            .next()
-            .unwrap();
-        tx.message.recent_blockhash = self.conn.get_latest_blockhash()?;
-        tx.signatures[position] = self.signer.0.try_sign_message(&tx.message_data())?;
 
+        tx.try_partial_sign(&[&self.signer], self.conn.get_latest_blockhash()?)?;
         self.conn
             .send_and_confirm_transaction(&tx)
             .map_err(anyhow::Error::from)
@@ -79,8 +91,8 @@ async fn run(opts: CliOpts) -> Result<()> {
             let c = client.clone();
             std::thread::spawn(move || loop {
                 let ix_builder = BondsIxBuilder::from(manager)
-                    .with_crank(&c.signer.0.pubkey())
-                    .with_payer(&c.signer.0.pubkey());
+                    .with_crank(&c.signer.pubkey())
+                    .with_payer(&c.signer.pubkey());
                 let res = consume_events(c.clone(), ix_builder);
                 println!("Market: {} Result: {:#?}", market, res);
             });
@@ -111,19 +123,17 @@ fn load_config(path: &str) -> Result<Config> {
 }
 
 fn load_signer(path: Option<String>) -> Result<AsyncSigner> {
-    let signer: Arc<dyn Signer> = match path {
-        Some(p) => solana_clap_utils::keypair::signer_from_path(
-            &Default::default(),
-            p.as_ref(),
-            "wallet",
-            &mut None,
-        )
-        .map(Arc::from)
-        .map_err(|_| anyhow::Error::msg("failed to register signer from path"))?,
-        None => Arc::new(Keypair::new()),
-    };
-
-    Ok(AsyncSigner(signer))
+    let solana_config =
+        SolanaConfig::load(SOLANA_CONFIG_FILE.as_ref().unwrap()).unwrap_or_default();
+    solana_clap_utils::keypair::signer_from_path(
+        &Default::default(),
+        path.as_ref().unwrap_or(&solana_config.keypair_path),
+        "wallet",
+        &mut None,
+    )
+    .map(Arc::from)
+    .map(|s| AsyncSigner(s))
+    .map_err(|_| anyhow::Error::msg("failed to register signer from path"))
 }
 
 #[tokio::main]
