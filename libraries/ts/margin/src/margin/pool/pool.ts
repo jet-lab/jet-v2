@@ -1210,7 +1210,6 @@ export class Pool {
     instructions: TransactionInstruction[]
     marginAccount: MarginAccount
     change: PoolTokenChange
-    tokenMint: PublicKey
   }): Promise<void> {
     const source = marginAccount.getPositionNullable(this.addresses.depositNoteMint)?.address
     assert(source, "No deposit position")

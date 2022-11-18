@@ -194,7 +194,7 @@ impl AirspaceAdmin {
             admin: TokenAdmin::Adapter(jet_bonds::ID),
             underlying_mint: token_mint,
             token_kind: TokenKind::AdapterCollateral,
-            value_modifier:  collateral_weight,
+            value_modifier: collateral_weight,
             max_staleness: 0,
         };
 
