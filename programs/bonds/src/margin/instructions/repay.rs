@@ -13,6 +13,7 @@ use crate::{
 #[derive(Accounts)]
 pub struct Repay<'info> {
     /// The account tracking information related to this particular user
+    #[account(mut)]
     pub borrower_account: Account<'info, MarginUser>,
 
     #[account(
