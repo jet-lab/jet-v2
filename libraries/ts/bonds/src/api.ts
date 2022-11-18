@@ -137,8 +137,8 @@ export const offerLoan = async ({
 
   await refreshAllMarkets(markets, refreshInstructions, marginAccount, market.address)
   instructions.push(refreshInstructions)
-  const withdrawInstructions: TransactionInstruction[] = []
 
+  const withdrawInstructions: TransactionInstruction[] = []
   // create lend instruction
   await currentPool.withWithdrawToMargin({
     instructions: withdrawInstructions,
@@ -412,9 +412,17 @@ export const lendNow = async ({
   await refreshAllMarkets(markets, refreshInstructions, marginAccount, market.address)
   instructions.push(refreshInstructions)
 
+  const withdrawInstructions: TransactionInstruction[] = []
+  // create lend instruction
+  await currentPool.withWithdrawToMargin({
+    instructions: withdrawInstructions,
+    marginAccount,
+    change: PoolTokenChange.shiftBy(amount)
+  })
+  instructions.push(withdrawInstructions)
+
   // Create borrow instruction
   const lendInstructions: TransactionInstruction[] = []
-  AssociatedToken.withTransfer(lendInstructions, tokenMint, walletAddress, marginAccount.address, amount)
   const borrowNow = await market.lendNowIx(marginAccount, amount, walletAddress, createRandomSeed(4))
 
   await marginAccount.withAdapterInvoke({
