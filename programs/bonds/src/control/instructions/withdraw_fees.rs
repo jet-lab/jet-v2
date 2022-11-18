@@ -2,11 +2,14 @@ use anchor_lang::prelude::*;
 use anchor_spl::token::Token;
 use jet_program_proc_macros::BondTokenManager;
 
-use crate::{bond_token_manager::BondTokenManager, control::state::BondManager};
+use crate::{bond_token_manager::BondTokenManager, control::state::BondManager, BondsError};
 
 #[derive(Accounts, BondTokenManager)]
 pub struct WithdrawFees<'info> {
-    #[account(mut)]
+    #[account(mut,
+        has_one = fee_destination @ BondsError::WrongFeeDestination,
+        has_one = underlying_token_vault @ BondsError::WrongVault,
+    )]
     pub bond_manager: AccountLoader<'info, BondManager>,
 
     #[account(mut)]

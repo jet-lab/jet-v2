@@ -94,6 +94,8 @@ pub enum BondsError {
     WrongClaimMint,
     #[msg("the wrong account was provided for the collateral token mint")]
     WrongCollateralMint,
+    #[msg("wrong fee destination")]
+    WrongFeeDestination,
     #[msg("wrong oracle address was sent to instruction")]
     WrongOracle,
     #[msg("wrong margin user account address was sent to instruction")]
