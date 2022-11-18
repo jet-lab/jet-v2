@@ -2,7 +2,6 @@ use std::{collections::HashMap, sync::Arc};
 
 use agnostic_orderbook::state::{
     critbit::{LeafNode, Slab},
-    event_queue::EventQueue,
     market_state::MarketState as OrderBookMarketState,
     orderbook::OrderBookState,
     AccountTag, OrderSummary,
@@ -20,7 +19,7 @@ use jet_bonds::{
     tickets::state::{ClaimTicket, SplitTicket},
 };
 use jet_margin_sdk::{
-    bonds::{bonds_pda, BondsIxBuilder},
+    bonds::{bonds_pda, BondsIxBuilder, OwnedEventQueue},
     ix_builder::{
         get_control_authority_address, get_metadata_address, ControlIxBuilder, MarginIxBuilder,
     },
@@ -312,12 +311,20 @@ impl TestManager {
 }
 
 impl TestManager {
-    pub async fn consume_events(&self) -> Result<Signature> {
-        let mut eq = self.load_event_queue().await?;
+    pub async fn consume_events(&self) -> Result<()> {
+        loop {
+            let mut eq = self.load_event_queue().await?;
+            if eq.is_empty()? {
+                break;
+            }
 
-        let consume = self.ix_builder.consume_events(eq.inner())?;
+            let consume = self
+                .ix_builder
+                .consume_events(&eq.consume_events_params()?)?;
 
-        self.sign_send_transaction(&[consume], None).await
+            self.sign_send_transaction(&[consume], None).await?;
+        }
+        Ok(())
     }
     pub async fn pause_ticket_redemption(&self) -> Result<Signature> {
         let pause = self.ix_builder.pause_ticket_redemption()?;
@@ -485,26 +492,10 @@ impl TestManager {
             .inner()?
             .new_order(
                 params.as_new_order_params(side, CallbackInfo::default()),
-                &mut eq.inner(),
+                &mut eq.inner()?,
                 MIN_ORDER_SIZE,
             )
             .map_err(anyhow::Error::new)
-    }
-}
-
-pub struct OwnedEQ(Vec<u8>);
-
-impl OwnedEQ {
-    pub fn new(data: Vec<u8>) -> Self {
-        Self(data)
-    }
-
-    pub fn inner(&mut self) -> EventQueue<CallbackInfo> {
-        EventQueue::from_buffer(
-            &mut self.0,
-            agnostic_orderbook::state::AccountTag::EventQueue,
-        )
-        .unwrap()
     }
 }
 
@@ -537,10 +528,10 @@ impl TestManager {
 
         self.load_anchor(&vault).await
     }
-    pub async fn load_event_queue(&self) -> Result<OwnedEQ> {
+    pub async fn load_event_queue(&self) -> Result<OwnedEventQueue> {
         let data = self.load_account("eq").await?;
 
-        Ok(OwnedEQ::new(data))
+        Ok(OwnedEventQueue::from(data))
     }
     pub async fn load_orderbook_market_state(&self) -> Result<OrderBookMarketState> {
         let key = self.ix_builder.orderbook_state();

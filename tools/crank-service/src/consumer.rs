@@ -1,21 +1,29 @@
-use agnostic_orderbook::state::{event_queue::EventQueue, AccountTag};
 use anchor_lang::AccountDeserialize;
 use anyhow::Result;
-use jet_margin_sdk::{
-    bonds::{BondManager, BondsIxBuilder},
-    jet_bonds::orderbook::state::CallbackInfo,
-};
+use jet_margin_sdk::bonds::{BondManager, BondsIxBuilder, OwnedEventQueue};
 use solana_sdk::{pubkey::Pubkey, signer::Signer};
+use tokio::task::JoinHandle;
 
 use crate::client::Client;
 
 pub struct Consumer {
     client: Client,
     ix: BondsIxBuilder,
+    is_verbose: bool,
 }
 
 impl Consumer {
-    pub async fn spawn(client: Client, market: Pubkey) -> Result<()> {
+    pub fn spawn(
+        client: Client,
+        market: Pubkey,
+        is_verbose: bool,
+    ) -> Result<JoinHandle<Result<()>>> {
+        Ok(tokio::spawn(async move {
+            Self::init(client, market, is_verbose).await?.run().await
+        }))
+    }
+
+    async fn init(client: Client, market: Pubkey, is_verbose: bool) -> Result<Self> {
         let manager = {
             let data = client.conn.get_account_data(&market).await?;
             BondManager::try_deserialize(&mut data.as_slice())?
@@ -24,7 +32,11 @@ impl Consumer {
             .with_crank(&client.signer.pubkey())
             .with_payer(&client.signer.pubkey());
 
-        Self { client, ix }.run().await
+        Ok(Self {
+            client,
+            ix,
+            is_verbose,
+        })
     }
 
     async fn run(self) -> Result<()> {
@@ -34,45 +46,33 @@ impl Consumer {
                 // nothing to consume
                 continue;
             }
-
-            let consume_ix = self.ix.consume_events(queue.inner()?)?;
+            let params = queue.consume_events_params()?;
+            let consume_ix = self.ix.consume_events(&params)?;
 
             // TODO: metrics and error handling
             match self.client.sign_send_ix(consume_ix).await {
-                Ok(_) => continue,
+                Ok(s) => {
+                    if self.is_verbose {
+                        println!(
+                            "Success! Market Key: [{}] Events consumed: [{}] Signature: [{}]",
+                            self.ix.manager(),
+                            params.num_events,
+                            s
+                        )
+                    }
+                }
                 Err(_) => continue,
             }
         }
-        // this is fine for now
-        #[allow(unreachable_code)]
-        Ok(())
     }
 
-    async fn fetch_queue<'a>(&self) -> Result<OwnedQueue> {
+    async fn fetch_queue<'a>(&self) -> Result<OwnedEventQueue> {
         let data = self
             .client
             .conn
             .get_account_data(&self.ix.event_queue())
             .await?;
 
-        Ok(OwnedQueue::from(data))
-    }
-}
-
-struct OwnedQueue(Vec<u8>);
-
-impl OwnedQueue {
-    pub fn inner(&mut self) -> Result<EventQueue<CallbackInfo>> {
-        EventQueue::from_buffer(&mut self.0, AccountTag::EventQueue).map_err(anyhow::Error::from)
-    }
-
-    pub fn is_empty(&mut self) -> Result<bool> {
-        Ok(self.inner()?.iter().next().is_none())
-    }
-}
-
-impl<T: Into<Vec<u8>>> From<T> for OwnedQueue {
-    fn from(data: T) -> Self {
-        Self(data.into())
+        Ok(OwnedEventQueue::from(data))
     }
 }

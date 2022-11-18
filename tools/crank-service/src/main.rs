@@ -5,11 +5,10 @@ use std::fs::read_to_string;
 
 use anyhow::Result;
 use clap::Parser;
-use client::{AsyncSigner, Client};
+use client::Client;
 use consumer::Consumer;
 use jet_margin_sdk::ix_builder::{derive_airspace, test_service::derive_token_mint};
 use jetctl::actions::test::{derive_bond_manager_from_duration_seed, TestEnvConfig};
-use solana_cli_config::{Config as SolanaConfig, CONFIG_FILE as SOLANA_CONFIG_FILE};
 use solana_sdk::pubkey::Pubkey;
 
 static LOCALNET_URL: &str = "http://127.0.0.1:8899";
@@ -28,13 +27,17 @@ pub struct CliOpts {
     /// Defaults to localhost
     #[clap(long, short = 'u')]
     pub url: Option<String>,
+
+    /// Verbosity
+    #[clap(long, short = 'v', default_value_t = 0)]
+    pub verbose: u32,
 }
 
 async fn run(opts: CliOpts) -> Result<()> {
     let client = Client::new(
-        load_signer(opts.keypair_path)?,
+        opts.keypair_path,
         opts.url.unwrap_or_else(|| LOCALNET_URL.into()),
-    );
+    )?;
 
     let targets = read_config(&opts.config_path)?;
 
@@ -42,9 +45,10 @@ async fn run(opts: CliOpts) -> Result<()> {
     for (_, markets) in targets {
         for market in markets {
             let c = client.clone();
-            consumers.push(Consumer::spawn(c, market));
+            consumers.push(Consumer::spawn(c, market, opts.verbose > 0)?);
         }
     }
+
     Ok(())
 }
 
@@ -73,19 +77,6 @@ fn read_config(path: &str) -> Result<Vec<(String, Vec<Pubkey>)>> {
             (a.name, markets)
         })
         .collect::<Vec<_>>())
-}
-
-fn load_signer(path: Option<String>) -> Result<AsyncSigner> {
-    let solana_config =
-        SolanaConfig::load(SOLANA_CONFIG_FILE.as_ref().unwrap()).unwrap_or_default();
-    solana_clap_utils::keypair::signer_from_path(
-        &Default::default(),
-        path.as_ref().unwrap_or(&solana_config.keypair_path),
-        "wallet",
-        &mut None,
-    )
-    .map(AsyncSigner::from)
-    .map_err(|_| anyhow::Error::msg("failed to register signer from path"))
 }
 
 #[tokio::main]

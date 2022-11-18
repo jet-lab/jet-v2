@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use agnostic_orderbook::state::event_queue::EventQueue;
+use agnostic_orderbook::state::{event_queue::EventQueue, AccountTag};
 use anchor_lang::{InstructionData, ToAccountMetas};
 use jet_bonds::{
     margin::state::Obligation, orderbook::state::CallbackInfo, seeds,
@@ -28,7 +28,7 @@ use crate::ix_builder::{get_metadata_address, test_service::if_not_initialized};
 
 use super::{
     error::{client_err, BondsIxError, Result},
-    event_builder::build_consume_events_info,
+    event_builder::{ConsumeEventsInfo, ConsumeEventsParams},
 };
 
 #[derive(Clone, Debug)]
@@ -232,12 +232,10 @@ impl BondsIxBuilder {
         })
     }
 
-    pub fn consume_events(&self, event_queue: EventQueue<CallbackInfo>) -> Result<Instruction> {
-        let (remaining_accounts, num_events, seed_bytes) =
-            build_consume_events_info(event_queue)?.as_params();
+    pub fn consume_events(&self, params: &ConsumeEventsParams) -> Result<Instruction> {
         let data = jet_bonds::instruction::ConsumeEvents {
-            num_events,
-            seed_bytes,
+            num_events: params.num_events,
+            seed_bytes: params.seeds.clone(),
         }
         .data();
         let mut accounts = jet_bonds::accounts::ConsumeEvents {
@@ -254,7 +252,9 @@ impl BondsIxBuilder {
         }
         .to_account_metas(None);
         accounts.extend(
-            remaining_accounts
+            params
+                .account_keys
+                .clone()
                 .into_iter()
                 .map(|k| AccountMeta::new(k, false)),
         );
@@ -1006,6 +1006,31 @@ impl BondsIxBuilder {
 
     pub fn jet_bonds_id() -> Pubkey {
         jet_bonds::ID
+    }
+}
+
+/// Convenience struct for passing around an `EventQueue`
+#[derive(Clone)]
+pub struct OwnedEventQueue(Vec<u8>);
+
+impl OwnedEventQueue {
+    pub fn inner(&mut self) -> Result<EventQueue<CallbackInfo>> {
+        EventQueue::from_buffer(&mut self.0, AccountTag::EventQueue)
+            .map_err(|e| BondsIxError::Deserialization(e.to_string()))
+    }
+
+    pub fn is_empty(&mut self) -> Result<bool> {
+        Ok(self.inner()?.iter().next().is_none())
+    }
+
+    pub fn consume_events_params(&mut self) -> Result<ConsumeEventsParams> {
+        ConsumeEventsInfo::build(self.inner()?).map(|info| info.as_params())
+    }
+}
+
+impl<T: Into<Vec<u8>>> From<T> for OwnedEventQueue {
+    fn from(data: T) -> Self {
+        Self(data.into())
     }
 }
 

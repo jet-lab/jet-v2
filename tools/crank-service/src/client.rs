@@ -1,8 +1,12 @@
 use std::sync::Arc;
 
 use anyhow::Result;
+use solana_cli_config::{Config as SolanaConfig, CONFIG_FILE as SOLANA_CONFIG_FILE};
 use solana_client::nonblocking::rpc_client::RpcClient;
-use solana_sdk::{instruction::Instruction, signature::Signature, message::Message, transaction::Transaction, signer::Signer};
+use solana_sdk::{
+    instruction::Instruction, message::Message, signature::Signature, signer::Signer,
+    transaction::Transaction,
+};
 
 #[derive(Clone)]
 pub struct Client {
@@ -11,11 +15,11 @@ pub struct Client {
 }
 
 impl Client {
-    pub fn new(signer: AsyncSigner, url: String) -> Self {
-        Self {
-            signer,
+    pub fn new(signer_path: Option<String>, url: String) -> Result<Self> {
+        Ok(Self {
+            signer: AsyncSigner::load_from_path(signer_path)?,
             conn: Arc::new(RpcClient::new(url)),
-        }
+        })
     }
 
     /// client only sends one intruction at a time due to synchrony needs
@@ -34,6 +38,24 @@ impl Client {
 
 #[derive(Clone)]
 pub struct AsyncSigner(Arc<dyn Signer>);
+
+impl AsyncSigner {
+    pub fn load_from_path(path: Option<String>) -> Result<Self> {
+        let default_signer = || {
+            SolanaConfig::load(SOLANA_CONFIG_FILE.as_ref().unwrap())
+                .unwrap_or_default()
+                .keypair_path
+        };
+        solana_clap_utils::keypair::signer_from_path(
+            &Default::default(),
+            &path.unwrap_or_else(default_signer),
+            "wallet",
+            &mut None,
+        )
+        .map(Self::from)
+        .map_err(|_| anyhow::Error::msg("failed to register signer from path"))
+    }
+}
 
 impl Signer for AsyncSigner {
     fn is_interactive(&self) -> bool {

@@ -366,7 +366,7 @@ async fn non_margin_orders_for_proxy<P: Proxy + GenerateProxy>(
     assert!(manager
         .load_event_queue()
         .await?
-        .inner()
+        .inner()?
         .iter()
         .next()
         .is_none());
@@ -380,7 +380,7 @@ async fn non_margin_orders_for_proxy<P: Proxy + GenerateProxy>(
     assert!(manager
         .load_event_queue()
         .await?
-        .inner()
+        .inner()?
         .iter()
         .next()
         .is_none());
@@ -390,7 +390,7 @@ async fn non_margin_orders_for_proxy<P: Proxy + GenerateProxy>(
     assert!(manager
         .load_event_queue()
         .await?
-        .inner()
+        .inner()?
         .iter()
         .next()
         .is_some());
