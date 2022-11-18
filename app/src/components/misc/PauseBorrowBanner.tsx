@@ -3,9 +3,9 @@ import { Alert } from 'antd';
 // Banner to show user that borrows are temporarily paused
 export function PauseBorrowBanner(): JSX.Element {
   function getMessage() {
-    let message = 'Due to recent market conditions surrounding several listed assets related to FTX on Jet Protocol, borrows are temporarily paused for user safety.';
+    let message = 'Borrows have been re-enabled, thank you for your patience.';
     return message;
   }
 
-  return <Alert closable className="tps-banner" type={'error'} message={getMessage()} />;
+  return <Alert closable className="tps-banner" type={'success'} message={getMessage()} />;
 }
