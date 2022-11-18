@@ -5,13 +5,14 @@ precision = 2
 
 [config]
 mint = "5oVNBeEEQvYi1cX3ir8Dx5n1P7pdxydbGF2X4TxVusJm"
-pyth_price = "25yGzWV5okF7aLivSCE4xnjVUPowQcThhhx5Q2fgFhkm"
-pyth_product = "5AU4q7BBmc3neCFboeeo5RkmcMdqHU2YLriuEDvua9fC"
+pyth_price = "H6ARHf6YXhGYeQfUzQNGk6rDNnLBQKrenN712K4AQJEG"
+pyth_product = "ALP8SdU9oARYVLgLR7LrqMNCYBnhtnQz1cj6bwgwQmgj"
 
 token_kind = 'Collateral'
 
 collateral_weight = 0
-max_leverage = 1_00
+# 0.85 - require excess collateral (accounting for debt) greater than value of debt itself!
+max_leverage = 85 
 
 # collateral_weight = 25 # Limited liquidity. Could bring up to
 # max_leverage = 5_00    # par with mSOL as liquidity improves.
