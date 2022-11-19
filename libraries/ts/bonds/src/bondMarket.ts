@@ -265,7 +265,7 @@ export class BondMarket {
       matchLimit: new BN(U64_MAX.toString()),
       postOnly: false,
       postAllowed: false,
-      autoStake: true
+      autoStake: false
     }
     return await this.lendIx(user, userTicketVault, userTokenVault, payer, params, seed)
   }
@@ -283,9 +283,7 @@ export class BondMarket {
     if (params.autoStake) {
       ticketSettlement = await this.deriveSplitTicket(user.address, seed)
     }
-
     const collateral = await this.deriveMarginUserCollateral(marketUser)
-
     return await this.program.methods
       .marginLendOrder(params, Buffer.from(seed))
       .accounts({
