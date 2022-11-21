@@ -28,8 +28,7 @@ pub fn handler<'info>(
 ) -> Result<()> {
     let mut num_iters = 0;
     for event in queue(&ctx, seeds)?.take(num_events as usize) {
-        let mut res = event?;
-        let (accounts, event) = res.as_mut();
+        let (accounts, event) = event?;
 
         // Delegate event processing to the appropriate handler
         match accounts {
@@ -59,7 +58,7 @@ pub fn handler<'info>(
 
 fn handle_fill<'info>(
     ctx: &Context<'_, '_, '_, 'info, ConsumeEvents<'info>>,
-    accounts: &mut Box<FillAccounts<'info>>,
+    accounts: Box<FillAccounts<'info>>,
     fill: &FillInfo,
 ) -> Result<()> {
     let manager = &ctx.accounts.bond_manager;
@@ -67,14 +66,14 @@ fn handle_fill<'info>(
         maker,
         maker_adapter,
         taker_adapter,
-        loan,
-    } = &mut **accounts;
+        mut loan,
+    } = *accounts;
     let FillInfo {
         event,
         maker_info,
         taker_info,
     } = fill;
-    if let Some(adapter) = maker_adapter {
+    if let Some(mut adapter) = maker_adapter {
         if let Err(e) = adapter.push_event(*event, Some(maker_info), Some(taker_info)) {
             skip_err!(
                 "Failed to push event to adapter {}. Error: {:?}",
@@ -83,7 +82,7 @@ fn handle_fill<'info>(
             );
         }
     }
-    if let Some(adapter) = taker_adapter {
+    if let Some(mut adapter) = taker_adapter {
         if let Err(e) = adapter.push_event(*event, Some(maker_info), Some(taker_info)) {
             skip_err!(
                 "Failed to push event to adapter {}. Error: {:?}",
@@ -182,16 +181,16 @@ fn handle_fill<'info>(
 
 fn handle_out<'info>(
     ctx: &Context<'_, '_, '_, 'info, ConsumeEvents<'info>>,
-    accounts: &mut Box<OutAccounts<'info>>,
+    accounts: Box<OutAccounts<'info>>,
     out: &OutInfo,
 ) -> Result<()> {
     let OutAccounts {
         user,
         user_adapter_account,
-    } = &mut **accounts;
+    } = *accounts;
     let OutInfo { event, info } = out;
     // push to adapter if flagged
-    if let Some(adapter) = user_adapter_account {
+    if let Some(mut adapter) = user_adapter_account {
         if adapter.push_event(*event, Some(info), None).is_err() {
             // don't stop the event processor for a malfunctioning adapter
             // adapter users are responsible for the maintenance of their adapter
