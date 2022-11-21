@@ -32,8 +32,8 @@ pub fn handler<'info>(
 
         // Delegate event processing to the appropriate handler
         match accounts {
-            EventAccounts::Fill(accounts) => handle_fill(&ctx, accounts, event.unwrap_fill()?),
-            EventAccounts::Out(accounts) => handle_out(&ctx, accounts, event.unwrap_out()?),
+            EventAccounts::Fill(accounts) => handle_fill(&ctx, *accounts, event.unwrap_fill()?),
+            EventAccounts::Out(accounts) => handle_out(&ctx, *accounts, event.unwrap_out()?),
         }?;
 
         num_iters += 1;
@@ -58,7 +58,7 @@ pub fn handler<'info>(
 
 fn handle_fill<'info>(
     ctx: &Context<'_, '_, '_, 'info, ConsumeEvents<'info>>,
-    accounts: Box<FillAccounts<'info>>,
+    accounts: FillAccounts<'info>,
     fill: &FillInfo,
 ) -> Result<()> {
     let manager = &ctx.accounts.bond_manager;
@@ -67,7 +67,7 @@ fn handle_fill<'info>(
         maker_adapter,
         taker_adapter,
         mut loan,
-    } = *accounts;
+    } = accounts;
     let FillInfo {
         event,
         maker_info,
@@ -181,13 +181,13 @@ fn handle_fill<'info>(
 
 fn handle_out<'info>(
     ctx: &Context<'_, '_, '_, 'info, ConsumeEvents<'info>>,
-    accounts: Box<OutAccounts<'info>>,
+    accounts: OutAccounts<'info>,
     out: &OutInfo,
 ) -> Result<()> {
     let OutAccounts {
         user,
         user_adapter_account,
-    } = *accounts;
+    } = accounts;
     let OutInfo { event, info } = out;
     // push to adapter if flagged
     if let Some(mut adapter) = user_adapter_account {

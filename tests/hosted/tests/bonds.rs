@@ -543,9 +543,9 @@ async fn margin_borrow_then_margin_lend() -> Result<()> {
     assert_eq!(1_201, lender.collateral().await?);
     assert_eq!(0, lender.claims().await?);
 
+    manager.consume_events().await?;
     #[cfg(not(feature = "localnet"))]
-    {
-        manager.consume_events().await?;
+    {   
         lender.settle().await?;
         borrower.settle().await?;
 
@@ -605,9 +605,9 @@ async fn margin_lend_then_margin_borrow() -> Result<()> {
     assert_eq!(0, borrower.collateral().await?);
     assert_eq!(1_201, borrower.claims().await?);
 
+    manager.consume_events().await?;
     #[cfg(not(feature = "localnet"))]
     {
-        manager.consume_events().await?;
         lender.settle().await?;
         borrower.settle().await?;
 
