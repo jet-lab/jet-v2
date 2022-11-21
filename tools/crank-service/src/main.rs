@@ -19,7 +19,7 @@ use solana_sdk::{
 static LOCALNET_URL: &str = "http://127.0.0.1:8899";
 
 #[derive(Clone)]
-pub struct AsyncSigner(pub Arc<dyn Signer>);
+pub struct AsyncSigner(Arc<dyn Signer>);
 
 impl Signer for AsyncSigner {
     fn is_interactive(&self) -> bool {
@@ -43,6 +43,12 @@ impl Signer for AsyncSigner {
 }
 unsafe impl Send for AsyncSigner {}
 unsafe impl Sync for AsyncSigner {}
+
+impl<T: Into<Arc<dyn Signer>>> From<T> for AsyncSigner {
+    fn from(s: T) -> Self {
+        Self(s.into())
+    }
+}
 
 #[derive(Clone)]
 pub struct Client {
@@ -88,7 +94,7 @@ pub struct CliOpts {
 async fn run(opts: CliOpts) -> Result<()> {
     let client = Client::new(
         load_signer(opts.keypair_path)?,
-        opts.url.unwrap_or(LOCALNET_URL.into()),
+        opts.url.unwrap_or_else(|| LOCALNET_URL.into()),
     );
 
     let cfg = read_config(&opts.config_path)?;
@@ -163,7 +169,7 @@ fn load_signer(path: Option<String>) -> Result<AsyncSigner> {
         &mut None,
     )
     .map(Arc::from)
-    .map(|s| AsyncSigner(s))
+    .map(AsyncSigner::from)
     .map_err(|_| anyhow::Error::msg("failed to register signer from path"))
 }
 
