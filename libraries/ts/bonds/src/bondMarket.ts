@@ -252,7 +252,7 @@ export class BondMarket {
       postAllowed: true,
       autoStake: true
     }
-    return await this.lendIx(user.address, userTicketVault, userTokenVault, payer, params, seed)
+    return await this.lendIx(user, userTicketVault, userTokenVault, payer, params, seed)
   }
 
   async lendNowIx(user: MarginAccount, amount: BN, payer: Address, seed: Uint8Array): Promise<TransactionInstruction> {
@@ -265,13 +265,13 @@ export class BondMarket {
       matchLimit: new BN(U64_MAX.toString()),
       postOnly: false,
       postAllowed: false,
-      autoStake: true
+      autoStake: false
     }
-    return await this.lendIx(user.address, userTicketVault, userTokenVault, payer, params, seed)
+    return await this.lendIx(user, userTicketVault, userTokenVault, payer, params, seed)
   }
 
   async lendIx(
-    user: Address,
+    user: MarginAccount,
     userTicketVault: Address,
     userTokenVault: Address,
     payer: Address,
@@ -279,21 +279,29 @@ export class BondMarket {
     seed: Uint8Array
   ): Promise<TransactionInstruction> {
     let ticketSettlement = userTicketVault
+    const marketUser = await this.deriveMarginUserAddress(user)
     if (params.autoStake) {
-      ticketSettlement = await this.deriveSplitTicket(user, seed)
+      ticketSettlement = await this.deriveSplitTicket(user.address, seed)
     }
+    const collateral = await this.deriveMarginUserCollateral(marketUser)
     return await this.program.methods
-      .lendOrder(params, Buffer.from(seed))
+      .marginLendOrder(params, Buffer.from(seed))
       .accounts({
         ...this.addresses,
-        orderbookMut: this.orderbookMut(),
-        ticketMint: this.addresses.bondTicketMint,
-        authority: user,
-        ticketSettlement,
-        lenderTokens: userTokenVault,
-        payer,
-        systemProgram: SystemProgram.programId,
-        tokenProgram: TOKEN_PROGRAM_ID
+        marginUser: marketUser,
+        collateralMint: this.addresses.collateralMint,
+        collateral,
+        inner: {
+          ...this.addresses,
+          orderbookMut: this.orderbookMut(),
+          authority: user.address,
+          payer,
+          ticketMint: this.addresses.bondTicketMint,
+          tokenProgram: TOKEN_PROGRAM_ID,
+          systemProgram: SystemProgram.programId,
+          lenderTokens: userTokenVault,
+          ticketSettlement
+        }
       })
       .instruction()
   }
