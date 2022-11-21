@@ -154,4 +154,3 @@ await marginAccount.refresh()
 await marginAccount.withCreateAccount(instructions)
 
 ```
-doc
