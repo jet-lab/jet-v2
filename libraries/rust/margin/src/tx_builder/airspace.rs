@@ -234,3 +234,29 @@ pub fn global_initialize_instructions(payer: Pubkey) -> Vec<TransactionBuilder> 
         if_not_initialized(derive_governor_id(), as_ix.create_governor_id()).into(),
     ]
 }
+
+#[cfg(test)]
+mod tests {
+    use anchor_lang::AnchorDeserialize;
+    use jet_margin::instruction::ConfigureToken;
+
+    use super::*;
+
+    #[test]
+    fn check_value_modifiers() {
+        let collateral_weight = 1_u16;
+        let max_leverage = 2_u16;
+        let foo = Pubkey::default();
+
+        let am = AirspaceAdmin::new("test-airspace", foo, foo);
+        let txb = am.register_bond_market(foo, [0; 32], collateral_weight, max_leverage);
+
+        let mut data = &txb.instructions[0].data[8..];
+        let dec = ConfigureToken::deserialize(&mut data).unwrap();
+        assert_eq!(dec.update.unwrap().value_modifier, max_leverage);
+
+        let mut data = &txb.instructions[1].data[8..];
+        let dec = ConfigureToken::deserialize(&mut data).unwrap();
+        assert_eq!(dec.update.unwrap().value_modifier, collateral_weight);
+    }
+}
