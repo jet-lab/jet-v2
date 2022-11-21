@@ -783,7 +783,7 @@ impl BondsIxBuilder {
         let accounts = jet_bonds::accounts::AuthorizeCrank {
             crank: self
                 .crank
-                .ok_or(BondsIxError::MissingPubkey("crank".into()))?,
+                .ok_or_else(|| BondsIxError::MissingPubkey("crank".into()))?,
             market: self.manager,
             crank_authorization: self.crank_authorization()?,
             authority: self.authority,
@@ -963,7 +963,7 @@ impl BondsIxBuilder {
                 self.airspace.as_ref(),
                 self.manager.as_ref(),
                 self.crank
-                    .ok_or(BondsIxError::MissingPubkey("crank".to_string()))?
+                    .ok_or_else(|| BondsIxError::MissingPubkey("crank".to_string()))?
                     .as_ref(),
             ],
             &jet_bonds::ID,
