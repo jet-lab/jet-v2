@@ -28,8 +28,8 @@ export function useTokenInputDisabledMessage(account?: MarginAccount): string {
   const tokenSymbol = currentPool.symbol;
   let disabledMessage = '';
 
-  // Display message if user doesn't have enough SOL to cover fees
-  if (walletTokens && walletTokens.map.SOL.amount.lamports.lte(feesBuffer)) {
+  // Display message if user doesn't have enough SOL to cover fees when depositing
+  if (currentAction === 'deposit' && walletTokens && walletTokens.map.SOL.amount.lamports.lte(feesBuffer)) {
     return (disabledMessage = dictionary.actions.deposit.disabledMessages.notEnoughSolForFees.replace(
       '{{BUFFER}}',
       (feesBuffer.toNumber() / LAMPORTS_PER_SOL).toString()

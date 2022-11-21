@@ -15,7 +15,7 @@ use jet_bonds::orderbook::state::OrderParams;
 use jet_margin_sdk::{
     ix_builder::MarginIxBuilder,
     margin_integrator::{NoProxy, Proxy},
-    solana::transaction::InverseSendTransactionBuilder,
+    solana::transaction::{InverseSendTransactionBuilder, SendTransactionBuilder},
     tx_builder::bonds::BondsPositionRefresher,
     util::data::Concat,
 };
@@ -36,6 +36,121 @@ async fn non_margin_orders() -> Result<(), anyhow::Error> {
 async fn non_margin_orders_through_margin_account() -> Result<()> {
     let manager = BondsTestManager::full(margin_test_context!().solana.clone()).await?;
     non_margin_orders_for_proxy::<MarginIxBuilder>(Arc::new(manager)).await
+}
+
+#[tokio::test(flavor = "multi_thread")]
+#[serial_test::serial]
+async fn margin_repay() -> Result<()> {
+    let ctx = margin_test_context!();
+    let manager = Arc::new(BondsTestManager::full(ctx.solana.clone()).await.unwrap());
+    let client = manager.client.clone();
+    let ([collateral], _, pricer) = tokens(&ctx).await.unwrap();
+
+    // set up user
+    let user = setup_user(&ctx, vec![(collateral, 0, u64::MAX / 2)])
+        .await
+        .unwrap();
+    let margin = user.user.tx.ix.clone();
+    let wallet = user.user.signer;
+
+    // set up proxy
+    let proxy = RefreshingProxy {
+        proxy: margin.clone(),
+        refreshers: vec![
+            Arc::new(MarginTxBuilder::new(
+                client.clone(),
+                None,
+                wallet.pubkey(),
+                0,
+            )),
+            Arc::new(
+                BondsPositionRefresher::new(
+                    margin.pubkey(),
+                    client.clone(),
+                    &[manager.ix_builder.manager()],
+                )
+                .await
+                .unwrap(),
+            ),
+        ],
+    };
+
+    // set a lend order on the book
+    let lender = BondsUser::<NoProxy>::new_funded(manager.clone()).await?;
+    let lend_params = OrderAmount::params_from_quote_amount_rate(500, 1_500);
+
+    lender.lend_order(lend_params, &[]).await?;
+    let posted_lend = manager.load_orderbook().await?.bids()?[0];
+
+    let user = BondsUser::new_with_proxy_funded(manager.clone(), wallet, proxy.clone())
+        .await
+        .unwrap();
+    user.initialize_margin_user().await.unwrap();
+
+    let borrower_account = user.load_margin_user().await.unwrap();
+    assert_eq!(borrower_account.bond_manager, manager.ix_builder.manager());
+
+    // place a borrow order
+    let borrow_params = OrderAmount::params_from_quote_amount_rate(1_000, 2_000);
+    let mut ixs = vec![
+        pricer.set_oracle_price_tx(&collateral, 1.0).await.unwrap(),
+        pricer
+            .set_oracle_price_tx(&manager.ix_builder.token_mint(), 1.0)
+            .await
+            .unwrap(),
+    ];
+    ixs.extend(user.margin_borrow_order(borrow_params, &[]).await.unwrap());
+    client
+        .send_and_confirm_condensed_in_order(ixs)
+        .await
+        .unwrap();
+
+    let obligation = user.load_obligation(&[]).await?;
+    assert_eq!(
+        obligation.borrower_account,
+        manager.ix_builder.margin_user_account(user.proxy.pubkey())
+    );
+    assert_eq!(obligation.balance, posted_lend.base_quantity);
+
+    let borrower_account = user.load_margin_user().await.unwrap();
+    let posted_order = manager.load_orderbook().await?.asks()?[0];
+    assert_eq!(borrower_account.debt.pending(), posted_order.base_quantity,);
+    assert_eq!(
+        borrower_account.debt.total(),
+        posted_order.base_quantity + obligation.balance
+    );
+
+    // user.settle().await?;
+    // let assets = user.load_margin_user().await?.assets;
+    // assert_eq!(assets.entitled_tickets + assets.entitled_tokens, 0);
+    // TODO: assert balances on claims and user wallet
+
+    let pre_repayment_obligation = user.load_obligation(&[]).await?;
+    let pre_repayment_debt = user.load_margin_user().await?.debt;
+    let repayment = 400;
+    user.repay(&[], &[0], repayment).await?;
+
+    let post_repayment_obligation = user.load_obligation(&[]).await?;
+    let post_repayment_debt = user.load_margin_user().await?.debt;
+    assert_eq!(
+        pre_repayment_obligation.balance - repayment,
+        post_repayment_obligation.balance
+    );
+    assert_eq!(
+        pre_repayment_debt.committed() - repayment,
+        post_repayment_debt.committed()
+    );
+
+    user.repay(&[], &[0], post_repayment_obligation.balance)
+        .await?;
+
+    let repaid_obligation_debt = user.load_margin_user().await?.debt;
+    assert_eq!(
+        repaid_obligation_debt.total(),
+        repaid_obligation_debt.pending()
+    );
+
+    Ok(())
 }
 
 async fn non_margin_orders_for_proxy<P: Proxy + GenerateProxy>(
@@ -345,7 +460,10 @@ async fn margin_borrow() -> Result<()> {
             .set_oracle_price_tx(&manager.ix_builder.token_mint(), 1.0)
             .await?,
     ]
-    .cat(user.margin_borrow_order(underlying(1_000, 2_000)).await?)
+    .cat(
+        user.margin_borrow_order(underlying(1_000, 2_000), &[])
+            .await?,
+    )
     .send_and_confirm_condensed_in_order(&client)
     .await?;
 
@@ -403,7 +521,7 @@ async fn margin_borrow_then_margin_lend() -> Result<()> {
     ]
     .cat(
         borrower
-            .margin_borrow_order(underlying(1_000, 2_000))
+            .margin_borrow_order(underlying(1_000, 2_000), &[])
             .await?,
     )
     .send_and_confirm_condensed_in_order(&client)
@@ -476,7 +594,7 @@ async fn margin_lend_then_margin_borrow() -> Result<()> {
     ]
     .cat(
         borrower
-            .margin_borrow_order(underlying(1_000, 2_000))
+            .margin_borrow_order(underlying(1_000, 2_000), &[])
             .await?,
     )
     .send_and_confirm_condensed_in_order(&client)

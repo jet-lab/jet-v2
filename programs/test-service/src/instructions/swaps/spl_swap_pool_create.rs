@@ -22,8 +22,14 @@ use anchor_lang::{prelude::*, solana_program::program::invoke_signed};
 use anchor_spl::token::{Mint, Token, TokenAccount};
 
 use crate::instructions::TokenRequest;
-use crate::seeds::{SWAP_POOL_MINT, SWAP_POOL_STATE, SWAP_POOL_TOKENS};
-use crate::state::TokenInfo;
+use crate::seeds::{SWAP_POOL_INFO, SWAP_POOL_MINT, SWAP_POOL_STATE, SWAP_POOL_TOKENS};
+use crate::state::{SplSwapInfo, TokenInfo};
+
+#[derive(AnchorDeserialize, AnchorSerialize, Debug, Clone, Eq, PartialEq)]
+pub struct SplSwapPoolCreateParams {
+    pub liquidity_level: u8,
+    pub price_threshold: u16,
+}
 
 #[derive(Accounts)]
 pub struct SplSwapPoolCreate<'info> {
@@ -41,6 +47,18 @@ pub struct SplSwapPoolCreate<'info> {
 
     #[account(constraint = info_b.mint == mint_b.key())]
     info_b: Box<Account<'info, TokenInfo>>,
+
+    #[account(init,
+              seeds = [
+                SWAP_POOL_INFO,
+                mint_a.key().as_ref(),
+                mint_b.key().as_ref()
+              ],
+              bump,
+              space = 8 + std::mem::size_of::<SplSwapInfo>(),
+              payer = payer
+    )]
+    pool_info: Box<Account<'info, SplSwapInfo>>,
 
     #[account(init,
               seeds = [
@@ -107,7 +125,7 @@ pub struct SplSwapPoolCreate<'info> {
               ],
               bump,
               token::mint = pool_mint,
-              token::authority = payer,
+              token::authority = pool_info,
               payer = payer,
     )]
     pool_fees: Box<Account<'info, TokenAccount>>,
@@ -156,9 +174,17 @@ impl<'info> SplSwapPoolCreate<'info> {
     }
 }
 
-pub fn spl_swap_pool_create_handler(ctx: Context<SplSwapPoolCreate>) -> Result<()> {
+pub fn spl_swap_pool_create_handler(
+    ctx: Context<SplSwapPoolCreate>,
+    params: SplSwapPoolCreateParams,
+) -> Result<()> {
     ctx.accounts.request_token_a()?;
     ctx.accounts.request_token_b()?;
+
+    let pool_info = &mut ctx.accounts.pool_info;
+    pool_info.pool_state = ctx.accounts.pool_state.key();
+    pool_info.liquidity_level = params.liquidity_level;
+    pool_info.price_threshold = params.price_threshold;
 
     let bump = *ctx.bumps.get("pool_state").unwrap();
 

@@ -1,6 +1,14 @@
 import { PublicKey, TransactionInstruction } from "@solana/web3.js"
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token"
-import { AssociatedToken, BondMarketConfig, MarginAccount, MarginConfig, Pool, sendAll } from "@jet-lab/margin"
+import {
+  AssociatedToken,
+  BondMarketConfig,
+  MarginAccount,
+  MarginConfig,
+  Pool,
+  PoolTokenChange,
+  sendAll
+} from "@jet-lab/margin"
 import { BondMarket } from "./bondMarket"
 import { Address, AnchorProvider, BN } from "@project-serum/anchor"
 
@@ -118,27 +126,35 @@ export const offerLoan = async ({
   if (accountInstructions.length > 0) {
     instructions.push(accountInstructions)
   }
-
-  const lendInstructions: TransactionInstruction[] = []
+  const refreshInstructions: TransactionInstruction[] = []
 
   // refresh pool positions
   await currentPool.withMarginRefreshAllPositionPrices({
-    instructions: lendInstructions,
+    instructions: refreshInstructions,
     pools,
     marginAccount
   })
 
-  await refreshAllMarkets(markets, lendInstructions, marginAccount, market.address)
+  await refreshAllMarkets(markets, refreshInstructions, marginAccount, market.address)
+  instructions.push(refreshInstructions)
 
+  const withdrawInstructions: TransactionInstruction[] = []
   // create lend instruction
-  AssociatedToken.withTransfer(lendInstructions, tokenMint, walletAddress, marginAccount.address, amount)
+  await currentPool.withWithdrawToMargin({
+    instructions: withdrawInstructions,
+    marginAccount,
+    change: PoolTokenChange.shiftBy(amount)
+  })
+  instructions.push(withdrawInstructions)
+
+  const lendInstructions: TransactionInstruction[] = []
 
   const loanOffer = await market.offerLoanIx(
     marginAccount,
     amount,
     basisPoints,
     walletAddress,
-    createRandomSeed(4),
+    createRandomSeed(8),
     marketConfig.borrowDuration
   )
   await marginAccount.withAdapterInvoke({
@@ -212,7 +228,7 @@ export const requestLoan = async ({
     walletAddress,
     amount,
     basisPoints,
-    createRandomSeed(4),
+    createRandomSeed(8),
     marketConfig.borrowDuration
   )
 
@@ -333,7 +349,7 @@ export const borrowNow = async ({
 
   // Create borrow instruction
   const borrowInstructions: TransactionInstruction[] = []
-  const borrowNow = await market.borrowNowIx(marginAccount, walletAddress, amount, createRandomSeed(4))
+  const borrowNow = await market.borrowNowIx(marginAccount, walletAddress, amount, createRandomSeed(8))
 
   await marginAccount.withAdapterInvoke({
     instructions: borrowInstructions,
@@ -396,14 +412,22 @@ export const lendNow = async ({
   await refreshAllMarkets(markets, refreshInstructions, marginAccount, market.address)
   instructions.push(refreshInstructions)
 
+  const withdrawInstructions: TransactionInstruction[] = []
+  // create lend instruction
+  await currentPool.withWithdrawToMargin({
+    instructions: withdrawInstructions,
+    marginAccount,
+    change: PoolTokenChange.shiftBy(amount)
+  })
+  instructions.push(withdrawInstructions)
+
   // Create borrow instruction
   const lendInstructions: TransactionInstruction[] = []
-  AssociatedToken.withTransfer(lendInstructions, tokenMint, walletAddress, marginAccount.address, amount)
-  const borrowNow = await market.lendNowIx(marginAccount, amount, walletAddress, createRandomSeed(4))
+  const lendNow = await market.lendNowIx(marginAccount, amount, walletAddress, createRandomSeed(8))
 
   await marginAccount.withAdapterInvoke({
     instructions: lendInstructions,
-    adapterInstruction: borrowNow
+    adapterInstruction: lendNow
   })
 
   instructions.push(lendInstructions)

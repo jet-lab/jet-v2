@@ -256,8 +256,8 @@ describe('margin bonds borrowing', async () => {
     await registerNewMarginUser(marginAccount_A, bondMarket, wallet_a.payer, provider_a);
     await registerNewMarginUser(marginAccount_B, bondMarket, wallet_b.payer, provider_b);
 
-    let borrower_a: MarginUserInfo = await bondMarket.fetchMarginUser(marginAccount_A);
-    let borrower_b: MarginUserInfo = await bondMarket.fetchMarginUser(marginAccount_B);
+    let borrower_a = (await bondMarket.fetchMarginUser(marginAccount_A)) as MarginUserInfo;
+    let borrower_b = (await bondMarket.fetchMarginUser(marginAccount_B)) as MarginUserInfo;
 
     assert(borrower_a.bondManager.toBase58() === bondMarket.addresses.bondManager.toBase58());
     assert(borrower_b.marginAccount.toBase58() === marginAccount_B.address.toBase58());
