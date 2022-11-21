@@ -252,18 +252,10 @@ impl TestManager {
             MIN_ORDER_SIZE,
         )?;
 
-        this.sign_send_transaction(
-            &[
-                init_eq,
-                init_bids,
-                init_asks,
-                init_fee_destination,
-                init_manager,
-                init_orderbook,
-            ],
-            None,
-        )
-        .await?;
+        this.sign_send_transaction(&[init_eq, init_bids, init_asks, init_fee_destination], None)
+            .await?;
+        this.sign_send_transaction(&[init_manager, init_orderbook], None)
+            .await?;
 
         Ok(this)
     }
