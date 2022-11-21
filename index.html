@@ -7,25 +7,42 @@
     <meta name="description" content="Doc tree for Jet Protocol" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="stylesheet" href="./style.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" />
   </head>
   <body>
-    <nav id="title">
-      <img className="nav-logo" src="../app/public/img/jet/jet_logo.png" height="100%" alt="Jet Protocol" />
-      JET PROTOCOL DOCS
-    </nav>
-    <ul id="link-tree">
-      <li>
-        <span style="height: 100%" class="typescript_logo"></span>
-        <a href="ts-client/">TypeScript Client SDK</a>
-      </li>
-      <li>
-        <span style="height: 100%" class="rust_logo"></span>
-        <a href="margin-rust/jet_margin">Margin Program [Rust]</a>
-      </li>
-      <li>
-        <span style="height: 100%" class="rust_logo"></span>
-        <a href="margin-rust/jet_bonds/">Fixed Term Program [Rust]</a>
-      </li>
-    </ul>
+    <a class="logo" href="https://app.jetprotocol.io">
+      <img src="./public/jet_logo.png" height="100%" alt="Jet Protocol" />
+    </a>
+    <div class="container">
+      <div class="row" ,>
+        <div class="col s12 m10 offset-m1 l6 offset-l3">
+          <h1 class="tree"> Documentation Directory </h1>
+          <div class="section">
+            <div class="card hoverable">
+              <div class="card-content white-text">
+                <span class="lang">TYPESCRIPT</span><br />
+                <a href="ts-client/"> Client SDK</a>
+              </div>
+            </div>
+          </div>
+          <div class="section">
+            <div class="card hoverable">
+              <div class="card-content white-text">
+                <span class="lang">RUST</span><br />
+                <a href="margin-rust/jet_margin">Margin Program</a>
+              </div>
+            </div>
+          </div>
+          <div class="section">
+            <div class="card hoverable">
+              <div class="card-content white-text">
+                <span class="lang">RUST</span><br />
+                <a href="margin-rust/jet_bonds/">Fixed Term Program</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </body>
 </html>
