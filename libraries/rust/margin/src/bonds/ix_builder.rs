@@ -20,7 +20,7 @@ pub use jet_bonds::{
     ID,
 };
 
-use crate::ix_builder::get_metadata_address;
+use crate::ix_builder::{get_metadata_address, test_service::if_not_initialized};
 
 use super::error::{client_err, BondsIxError, Result};
 
@@ -264,10 +264,9 @@ impl BondsIxBuilder {
     pub fn init_default_fee_destination(&self, payer: &Pubkey) -> Option<Instruction> {
         let ata = get_associated_token_address(&self.authority, &self.underlying_mint);
         if self.fee_destination == ata {
-            Some(create_associated_token_account(
-                payer,
-                &self.authority,
-                &self.underlying_mint,
+            Some(if_not_initialized(
+                ata,
+                create_associated_token_account(payer, &self.authority, &self.underlying_mint),
             ))
         } else {
             None
