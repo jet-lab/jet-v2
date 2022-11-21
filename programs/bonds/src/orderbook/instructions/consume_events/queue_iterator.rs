@@ -48,8 +48,8 @@ impl<'a, 'info> Iterator for EventIterator<'a, 'info> {
 }
 
 pub enum PreparedEvent<'info> {
-    Fill(FillAccounts<'info>, Box<FillInfo>),
-    Out(OutAccounts<'info>, Box<OutInfo>),
+    Fill(Box<FillAccounts<'info>>, Box<FillInfo>),
+    Out(Box<OutAccounts<'info>>, Box<OutInfo>),
 }
 
 impl<'a, 'info> EventIterator<'a, 'info> {
@@ -60,12 +60,12 @@ impl<'a, 'info> EventIterator<'a, 'info> {
                 Box::new(fill),
             ),
             OrderbookEvent::Out(out) => PreparedEvent::Out(
-                OutAccounts {
+                Box::new(OutAccounts {
                     user: self
                         .accounts
                         .next_user_account(out.info.out_account.to_bytes())?,
                     user_adapter_account: self.accounts.next_adapter_if_needed(&out.info)?,
-                },
+                }),
                 Box::new(out),
             ),
         })
@@ -75,7 +75,7 @@ impl<'a, 'info> EventIterator<'a, 'info> {
         &mut self,
         maker_info: &CallbackInfo,
         taker_info: &CallbackInfo,
-    ) -> Result<FillAccounts<'info>> {
+    ) -> Result<Box<FillAccounts<'info>>> {
         let maker = self.accounts.next_account()?;
         let maker_adapter = self.accounts.next_adapter_if_needed(maker_info)?;
         let taker_adapter = self.accounts.next_adapter_if_needed(taker_info)?;
@@ -107,12 +107,12 @@ impl<'a, 'info> EventIterator<'a, 'info> {
         } else {
             None
         };
-        Ok(FillAccounts {
+        Ok(Box::new(FillAccounts {
             maker: UserAccount::new(maker.clone()),
             loan,
             maker_adapter,
             taker_adapter,
-        })
+        }))
     }
 }
 

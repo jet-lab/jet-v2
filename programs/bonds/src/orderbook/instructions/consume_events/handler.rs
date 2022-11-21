@@ -29,8 +29,8 @@ pub fn handler<'info>(
     let mut num_iters = 0;
     for event in queue(&ctx, seeds)?.take(num_events as usize) {
         match event? {
-            PreparedEvent::Fill(accounts, info) => handle_fill(&ctx, accounts, &info),
-            PreparedEvent::Out(accounts, info) => handle_out(&ctx, accounts, &info),
+            PreparedEvent::Fill(accounts, info) => handle_fill(&ctx, *accounts, &info),
+            PreparedEvent::Out(accounts, info) => handle_out(&ctx, *accounts, &info),
         }?;
 
         num_iters += 1;
