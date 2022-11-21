@@ -146,7 +146,7 @@ export function FullAccountBalance(): JSX.Element {
     let render = <Skeleton className="align-right" paragraph={false} active={loadingAccounts} />;
     if (accounts && balance?.tokenSymbol) {
       const value = currencyAbbrev(
-        balance.depositBalance.tokens,
+        balance.loanBalance.tokens,
         false,
         undefined,
         pools.tokenPools[balance.tokenSymbol]?.precision ?? 2,
@@ -154,7 +154,7 @@ export function FullAccountBalance(): JSX.Element {
       );
       render = (
         <Text type={balance.loanBalance.isZero() ? undefined : 'warning'}>
-          {!balance.depositBalance.isZero() && value === '0' && '~'}
+          {!balance.loanBalance.isZero() && value === '0' && '~'}
           {value}
         </Text>
       );

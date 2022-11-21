@@ -20,7 +20,7 @@ pub async fn process_apply(client: &Client, config_path: PathBuf) -> Result<Plan
 }
 
 async fn process_apply_directory(client: &Client, directory: PathBuf) -> Result<Plan> {
-    let mut plan = Plan::new();
+    let mut plan = Plan::default();
     let mut dir_contents = tokio::fs::read_dir(directory).await?;
 
     while let Some(entry) = dir_contents.next_entry().await? {
@@ -28,10 +28,11 @@ async fn process_apply_directory(client: &Client, directory: PathBuf) -> Result<
             continue;
         }
 
-        plan.extend(
+        plan.entries.extend(
             process_apply_file(client, entry.path())
                 .await
-                .with_context(|| format!("while processing file {:?}", entry.path()))?,
+                .with_context(|| format!("while processing file {:?}", entry.path()))?
+                .entries,
         );
     }
 
@@ -48,10 +49,14 @@ async fn process_apply_file(client: &Client, config_file: PathBuf) -> Result<Pla
 }
 
 async fn process_apply_token_def(client: &Client, token_def: TokenDefinition) -> Result<Plan> {
-    let mut plan = Plan::new();
+    let mut plan = Plan::default();
 
-    plan.extend(super::margin_pool::process_create_pool(client, token_def.config.mint).await?);
-    plan.extend(
+    plan.entries.extend(
+        super::margin_pool::process_create_pool(client, token_def.config.mint)
+            .await?
+            .entries,
+    );
+    plan.entries.extend(
         super::margin_pool::process_configure_pool(
             client,
             ConfigurePoolCliOptions {
@@ -59,7 +64,8 @@ async fn process_apply_token_def(client: &Client, token_def: TokenDefinition) ->
                 margin_pool: token_def.margin_pool,
             },
         )
-        .await?,
+        .await?
+        .entries,
     );
 
     Ok(plan)

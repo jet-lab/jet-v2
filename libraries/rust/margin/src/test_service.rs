@@ -235,7 +235,13 @@ fn create_swap_pools_tx(config: &EnvironmentConfig) -> anyhow::Result<Vec<Transa
         let token_b = derive_token_mint(name_b);
 
         txs.push(TransactionBuilder {
-            instructions: vec![spl_swap_pool_create(&config.authority, &token_a, &token_b)],
+            instructions: vec![spl_swap_pool_create(
+                &config.authority,
+                &token_a,
+                &token_b,
+                8,
+                500,
+            )],
             signers: vec![],
         });
     }

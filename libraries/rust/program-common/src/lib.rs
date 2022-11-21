@@ -16,3 +16,7 @@ pub use number_128::*;
 
 #[doc(inline)]
 pub use fp32::*;
+
+use solana_program::{pubkey, pubkey::Pubkey};
+
+pub const ADMINISTRATOR: Pubkey = pubkey!("7R6FjP2HfXAgKQjURC4tCBrUmRQLCgEUeX2berrfU4ox");

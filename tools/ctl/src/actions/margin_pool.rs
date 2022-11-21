@@ -4,7 +4,8 @@ use clap::Parser;
 use comfy_table::{presets::UTF8_FULL, Table};
 use jet_margin_sdk::{
     ix_builder::{
-        get_metadata_address, ControlIxBuilder, MarginPoolConfiguration, MarginPoolIxBuilder,
+        get_metadata_address, loan_token_account, ControlIxBuilder, MarginPoolConfiguration,
+        MarginPoolIxBuilder,
     },
     jet_control::TokenMetadataParams,
     jet_margin_pool::{self, MarginPool},
@@ -191,7 +192,7 @@ pub async fn process_configure_pool(
     }
     println!();
 
-    changed = override_pool_config_with_options(&mut configuration, &options) && changed;
+    changed = override_pool_config_with_options(&mut configuration, &options) || changed;
 
     if changed {
         Ok(client
@@ -210,6 +211,32 @@ pub async fn process_configure_pool(
     }
 }
 
+pub async fn process_transfer_loan(
+    client: &Client,
+    source_account: Pubkey,
+    target_account: Pubkey,
+    token: Pubkey,
+    amount: Option<u64>,
+) -> Result<Plan> {
+    let ix = MarginPoolIxBuilder::new(token);
+    let loan_account = loan_token_account(&source_account, &ix.loan_note_mint).0;
+    let amount = match amount {
+        Some(n) => n,
+        None => client.read_token_account(&loan_account).await?.amount,
+    };
+
+    Ok(client
+        .plan()?
+        .instructions(
+            [],
+            [format!(
+                "admin-transfer-loan {source_account} -> {target_account}: {amount} {token}"
+            )],
+            [ix.admin_transfer_loan(&source_account, &target_account, amount)],
+        )
+        .build())
+}
+
 pub async fn process_show_pool(client: &Client, token: Pubkey) -> Result<Plan> {
     let margin_pool = MarginPoolIxBuilder::new(token);
 
@@ -221,7 +248,7 @@ pub async fn process_show_pool(client: &Client, token: Pubkey) -> Result<Plan> {
         .read_anchor_account::<MarginPool>(&margin_pool.address)
         .await?;
 
-    println!("{:#?}", &margin_pool_data.config);
+    println!("{:#?}", &margin_pool_data);
 
     Ok(Plan::default())
 }

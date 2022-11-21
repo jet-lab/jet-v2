@@ -261,7 +261,7 @@ impl MarginTxBuilder {
     pub async fn close_empty_positions(
         &self,
         loan_to_token: &HashMap<Pubkey, Pubkey>,
-    ) -> Result<Transaction> {
+    ) -> Result<TransactionBuilder> {
         let to_close = self
             .get_account_state()
             .await?
@@ -277,7 +277,7 @@ impl MarginTxBuilder {
             })
             .collect::<Vec<_>>();
 
-        self.create_transaction(&to_close).await
+        self.create_transaction_builder(&to_close)
     }
 
     /// Transaction to deposit tokens into a margin account
@@ -350,7 +350,7 @@ impl MarginTxBuilder {
         &self,
         token_mint: &Pubkey,
         change: TokenChange,
-    ) -> Result<Transaction> {
+    ) -> Result<TransactionBuilder> {
         let mut instructions = vec![];
         let pool = MarginPoolIxBuilder::new(*token_mint);
 
@@ -365,7 +365,7 @@ impl MarginTxBuilder {
             pool.margin_repay(self.ix.address, deposit_position, loan_position, change);
 
         instructions.push(self.adapter_invoke_ix(inner_repay_ix));
-        self.create_transaction(&instructions).await
+        self.create_transaction_builder(&instructions)
     }
 
     /// Transaction to repay a loan of tokens in a margin account from a token account
@@ -444,7 +444,7 @@ impl MarginTxBuilder {
         // for levswap
         change: TokenChange,
         minimum_amount_out: u64,
-    ) -> Result<Transaction> {
+    ) -> Result<TransactionBuilder> {
         let mut instructions = vec![];
         let source_pool = MarginPoolIxBuilder::new(*source_token_mint);
         let destination_pool = MarginPoolIxBuilder::new(*destination_token_mint);
@@ -498,7 +498,10 @@ impl MarginTxBuilder {
 
         instructions.push(self.adapter_invoke_ix(inner_swap_ix));
 
-        self.create_transaction(&instructions).await
+        instructions.push(self.ix.update_position_balance(source_position));
+        instructions.push(self.ix.update_position_balance(destination_position));
+
+        self.create_transaction_builder(&instructions)
     }
 
     /// Transaction to begin liquidating user account.

@@ -4,7 +4,10 @@ use anchor_lang::prelude::Rent;
 use anyhow::{bail, Result};
 use jet_margin_sdk::{
     bonds::bonds_pda,
-    ix_builder::{derive_airspace, test_service::derive_token_mint},
+    ix_builder::{
+        derive_airspace,
+        test_service::{derive_swap_pool, derive_token_mint},
+    },
     test_service::{
         init_environment, AirspaceConfig, EnvironmentConfig, SwapPoolsConfig, TokenDescription,
     },
@@ -13,7 +16,7 @@ use serde::{Deserialize, Serialize};
 use solana_sdk::{pubkey, pubkey::Pubkey, signer::Signer};
 
 use crate::{
-    app_config::{AirspaceInfo, BondMarketInfo, JetAppConfig, TokenInfo},
+    app_config::{AirspaceInfo, BondMarketInfo, JetAppConfig, SwapPoolInfo, TokenInfo},
     client::{Client, NetworkKind, Plan},
 };
 
@@ -29,7 +32,9 @@ pub async fn process_init_env(client: &Client, config_path: impl AsRef<Path>) ->
 
     for tx in txs {
         plan = plan.instructions(
-            tx.signers.iter().map(|k| k as &dyn Signer),
+            tx.signers
+                .into_iter()
+                .map(|k| Box::new(k) as Box<dyn Signer>),
             [""],
             tx.instructions,
         );
@@ -77,6 +82,7 @@ fn read_env_config_from_file(
 
 async fn generate_app_config(client: &Client, env: &EnvironmentConfig) -> Result<JetAppConfig> {
     let tokens = generate_token_app_config_from_env(env);
+    let swap_pools = generate_swap_pool_app_config_from_env(env)?;
     let serum_markets = HashMap::new();
 
     let airspaces = futures::future::join_all(env.airspaces.iter().map(|as_config| async {
@@ -105,8 +111,38 @@ async fn generate_app_config(client: &Client, env: &EnvironmentConfig) -> Result
         url: "http://127.0.0.1:8899".to_owned(),
         tokens,
         airspaces,
+        swap_pools,
         serum_markets,
     })
+}
+
+fn generate_swap_pool_app_config_from_env(env: &EnvironmentConfig) -> Result<Vec<SwapPoolInfo>> {
+    env.swap_pools
+        .spl
+        .iter()
+        .map(|pair_string| {
+            let sep_index = pair_string.find('/').ok_or_else(|| {
+                anyhow::anyhow!(
+                    "pool must be specified in 'A/B' format: (invalid: {}",
+                    pair_string
+                )
+            })?;
+
+            let (name_a, name_b) = pair_string.split_at(sep_index);
+            let name_b = &name_b[1..];
+
+            let token_a = derive_token_mint(name_a);
+            let token_b = derive_token_mint(name_b);
+            let pool = derive_swap_pool(&token_a, &token_b);
+
+            Ok(SwapPoolInfo {
+                swap_program: spl_token_swap::ID,
+                pool_state: pool.state,
+                token_a,
+                token_b,
+            })
+        })
+        .collect()
 }
 
 fn generate_token_app_config_from_env(env: &EnvironmentConfig) -> HashMap<String, TokenInfo> {

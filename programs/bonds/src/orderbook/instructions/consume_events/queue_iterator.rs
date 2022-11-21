@@ -39,11 +39,14 @@ pub struct EventIterator<'a, 'info> {
 }
 
 impl<'a, 'info> Iterator for EventIterator<'a, 'info> {
-    type Item = Result<(EventAccounts<'info>, OrderbookEvent)>;
+    type Item = Result<Box<(EventAccounts<'info>, OrderbookEvent)>>;
 
-    fn next(&mut self) -> Option<Result<(EventAccounts<'info>, OrderbookEvent)>> {
+    fn next(&mut self) -> Option<Result<Box<(EventAccounts<'info>, OrderbookEvent)>>> {
         let event = self.queue.next()?;
-        Some(self.extract_accounts(&event).map(|accts| (accts, event)))
+        Some(
+            self.extract_accounts(&event)
+                .map(|accts| Box::new((accts, event))),
+        )
     }
 }
 

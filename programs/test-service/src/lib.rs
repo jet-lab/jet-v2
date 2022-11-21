@@ -25,7 +25,7 @@ mod util;
 
 use instructions::*;
 
-pub use instructions::TokenCreateParams;
+pub use instructions::{SplSwapPoolCreateParams, TokenCreateParams};
 
 declare_id!("JPTSApMSqCHBww7vDhpaSmzipTV3qPg6vxub4qneKoy");
 
@@ -43,6 +43,9 @@ pub mod seeds {
 
     #[constant]
     pub const TOKEN_PYTH_PRODUCT: &[u8] = b"token-pyth-product";
+
+    #[constant]
+    pub const SWAP_POOL_INFO: &[u8] = b"swap-pool-info";
 
     #[constant]
     pub const SWAP_POOL_STATE: &[u8] = b"swap-pool-state";
@@ -102,8 +105,16 @@ pub mod jet_test_service {
     }
 
     /// Create a SPL swap pool
-    pub fn spl_swap_pool_create(ctx: Context<SplSwapPoolCreate>) -> Result<()> {
-        spl_swap_pool_create_handler(ctx)
+    pub fn spl_swap_pool_create(
+        ctx: Context<SplSwapPoolCreate>,
+        params: SplSwapPoolCreateParams,
+    ) -> Result<()> {
+        spl_swap_pool_create_handler(ctx, params)
+    }
+
+    /// Balance an SPL swap pool based on current oracle prices
+    pub fn spl_swap_pool_balance(ctx: Context<SplSwapPoolBalance>) -> Result<()> {
+        spl_swap_pool_balance_handler(ctx)
     }
 
     /// Invokes arbitrary program iff an account is not yet initialized.
