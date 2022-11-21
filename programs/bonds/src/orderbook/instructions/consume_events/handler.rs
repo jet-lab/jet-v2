@@ -19,7 +19,7 @@ use crate::{
     BondsError,
 };
 
-use super::{queue, ConsumeEvents, EventAccounts, FillAccounts, OutAccounts};
+use super::{queue, ConsumeEvents, FillAccounts, OutAccounts, PreparedEvent};
 
 pub fn handler<'info>(
     ctx: Context<'_, '_, '_, 'info, ConsumeEvents<'info>>,
@@ -28,12 +28,9 @@ pub fn handler<'info>(
 ) -> Result<()> {
     let mut num_iters = 0;
     for event in queue(&ctx, seeds)?.take(num_events as usize) {
-        let (accounts, event) = event?;
-
-        // Delegate event processing to the appropriate handler
-        match accounts {
-            EventAccounts::Fill(accounts) => handle_fill(&ctx, *accounts, event.unwrap_fill()?),
-            EventAccounts::Out(accounts) => handle_out(&ctx, *accounts, event.unwrap_out()?),
+        match event? {
+            PreparedEvent::Fill(accounts, info) => handle_fill(&ctx, accounts, &info),
+            PreparedEvent::Out(accounts, info) => handle_out(&ctx, accounts, &info),
         }?;
 
         num_iters += 1;

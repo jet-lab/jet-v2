@@ -13,7 +13,7 @@ use crate::{
     BondsError,
 };
 
-use super::{ConsumeEvents, EventAccounts, FillAccounts, LoanAccount, OutAccounts, UserAccount};
+use super::{ConsumeEvents, FillAccounts, LoanAccount, OutAccounts, UserAccount};
 
 pub fn queue<'c, 'info>(
     ctx: &Context<'_, '_, 'c, 'info, ConsumeEvents<'info>>,
@@ -39,41 +39,43 @@ pub struct EventIterator<'a, 'info> {
 }
 
 impl<'a, 'info> Iterator for EventIterator<'a, 'info> {
-    type Item = Result<(EventAccounts<'info>, Box<OrderbookEvent>)>;
+    type Item = Result<PreparedEvent<'info>>;
 
-    fn next(&mut self) -> Option<Result<(EventAccounts<'info>, Box<OrderbookEvent>)>> {
+    fn next(&mut self) -> Option<Result<PreparedEvent<'info>>> {
         let event = self.queue.next()?;
-        Some(
-            self.extract_accounts(&event)
-                .map(|accts| (accts, Box::new(event))),
-        )
+        Some(self.join_with_accounts(event))
     }
 }
 
+pub enum PreparedEvent<'info> {
+    Fill(FillAccounts<'info>, Box<FillInfo>),
+    Out(OutAccounts<'info>, Box<OutInfo>),
+}
+
 impl<'a, 'info> EventIterator<'a, 'info> {
-    fn extract_accounts(&mut self, event: &OrderbookEvent) -> Result<EventAccounts<'info>> {
-        match event {
-            OrderbookEvent::Fill(FillInfo {
-                maker_info,
-                taker_info,
-                ..
-            }) => self.extract_fill_accounts(maker_info, taker_info),
-            OrderbookEvent::Out(OutInfo { info, .. }) => {
-                Ok(EventAccounts::Out(Box::new(OutAccounts {
+    fn join_with_accounts(&mut self, event: OrderbookEvent) -> Result<PreparedEvent<'info>> {
+        Ok(match event {
+            OrderbookEvent::Fill(fill) => PreparedEvent::Fill(
+                self.extract_fill_accounts(&fill.maker_info, &fill.taker_info)?,
+                Box::new(fill),
+            ),
+            OrderbookEvent::Out(out) => PreparedEvent::Out(
+                OutAccounts {
                     user: self
                         .accounts
-                        .next_user_account(info.out_account.to_bytes())?,
-                    user_adapter_account: self.accounts.next_adapter_if_needed(info)?,
-                })))
-            }
-        }
+                        .next_user_account(out.info.out_account.to_bytes())?,
+                    user_adapter_account: self.accounts.next_adapter_if_needed(&out.info)?,
+                },
+                Box::new(out),
+            ),
+        })
     }
 
     fn extract_fill_accounts(
         &mut self,
         maker_info: &CallbackInfo,
         taker_info: &CallbackInfo,
-    ) -> Result<EventAccounts<'info>> {
+    ) -> Result<FillAccounts<'info>> {
         let maker = self.accounts.next_account()?;
         let maker_adapter = self.accounts.next_adapter_if_needed(maker_info)?;
         let taker_adapter = self.accounts.next_adapter_if_needed(taker_info)?;
@@ -105,12 +107,12 @@ impl<'a, 'info> EventIterator<'a, 'info> {
         } else {
             None
         };
-        Ok(EventAccounts::Fill(Box::new(FillAccounts {
+        Ok(FillAccounts {
             maker: UserAccount::new(maker.clone()),
             loan,
             maker_adapter,
             taker_adapter,
-        })))
+        })
     }
 }
 

@@ -20,8 +20,6 @@ pub enum BondsError {
     ImmatureBond,
     #[msg("not enough seeds were provided for the accounts that need to be initialized")]
     InsufficientSeeds,
-    #[msg("the wrong event type was unwrapped\nthis condition should be impossible, and does not result from invalid input")]
-    InvalidEvent,
     #[msg("order price is prohibited")]
     InvalidOrderPrice,
     #[msg("failed to invoke account creation")]

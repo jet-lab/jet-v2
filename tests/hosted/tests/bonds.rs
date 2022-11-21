@@ -545,7 +545,7 @@ async fn margin_borrow_then_margin_lend() -> Result<()> {
 
     manager.consume_events().await?;
     #[cfg(not(feature = "localnet"))]
-    {   
+    {
         lender.settle().await?;
         borrower.settle().await?;
 
