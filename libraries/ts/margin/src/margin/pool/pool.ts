@@ -695,24 +695,15 @@ export class Pool {
     marginAccount: MarginAccount
   }): Promise<void> {
     const poolsToRefresh: Pool[] = []
-    const liabilities = marginAccount.valuation.requiredCollateral.toNumber()
-    const requiredCollateral = marginAccount.valuation.liabilities.toNumber()
-    const totalRequired = liabilities + requiredCollateral
-    let effectiveCollateral = 0
     for (const pool of Object.values(pools)) {
       const assetCollateralWeight = pool.depositNoteMetadata.valueModifier.toNumber()
       const depositPosition = marginAccount.getPositionNullable(pool.addresses.depositNoteMint)
       const borrowPosition = marginAccount.getPositionNullable(pool.addresses.loanNoteMint)
-      if (borrowPosition && !borrowPosition.balance.eqn(0)) {
+      if (pool.address === this.address) {
         poolsToRefresh.push(pool)
-        break
-      } else if (
-        assetCollateralWeight > 0 &&
-        depositPosition &&
-        !depositPosition.balance.eqn(0) &&
-        effectiveCollateral < totalRequired
-      ) {
-        effectiveCollateral += depositPosition.value
+      } else if (borrowPosition && !borrowPosition.balance.eqn(0)) {
+        poolsToRefresh.push(pool)
+      } else if (assetCollateralWeight > 0 && depositPosition && !depositPosition.balance.eqn(0)) {
         poolsToRefresh.push(pool)
       }
     }
