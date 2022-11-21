@@ -273,6 +273,13 @@
 <span id="273">273</span>
 <span id="274">274</span>
 <span id="275">275</span>
+<span id="276">276</span>
+<span id="277">277</span>
+<span id="278">278</span>
+<span id="279">279</span>
+<span id="280">280</span>
+<span id="281">281</span>
+<span id="282">282</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">anchor_lang</span>::{<span class="ident">prelude</span>::<span class="kw-2">*</span>, <span class="ident">solana_program::clock::UnixTimestamp</span>};
 <span class="kw">use</span> <span class="ident">bytemuck::Zeroable</span>;
 <span class="kw">use</span> <span class="ident">jet_margin</span>::{<span class="ident">AdapterResult</span>, <span class="ident">MarginAccount</span>};
@@ -298,8 +305,11 @@
     <span class="doccomment">/// which are internal to bonds, such as SplitTicket, ClaimTicket, and open orders.</span>
     <span class="doccomment">/// this does *not* represent underlying tokens or bond ticket tokens, those are registered independently in margin</span>
     <span class="kw">pub</span> <span class="ident">collateral</span>: <span class="ident">Pubkey</span>,
-
+    <span class="doccomment">/// The `settle` instruction is permissionless, therefore the user must specify upon margin account creation</span>
+    <span class="doccomment">/// the address to send owed tokens</span>
     <span class="kw">pub</span> <span class="ident">underlying_settlement</span>: <span class="ident">Pubkey</span>,
+    <span class="doccomment">/// The `settle` instruction is permissionless, therefore the user must specify upon margin account creation</span>
+    <span class="doccomment">/// the address to send owed tickets</span>
     <span class="kw">pub</span> <span class="ident">ticket_settlement</span>: <span class="ident">Pubkey</span>,
     <span class="doccomment">/// The amount of debt that must be collateralized or repaid</span>
     <span class="doccomment">/// This debt is expressed in terms of the underlying token - not bond tickets</span>
@@ -367,10 +377,6 @@
         <span class="prelude-val">Ok</span>(<span class="ident">seqno</span>)
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">cancel_borrow_order</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">amount</span>: <span class="ident">u64</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="self">self</span>.<span class="ident">pending</span>.<span class="ident">try_add_assign</span>(<span class="ident">amount</span>)
-    }
-
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new_obligation_from_fill</span>(
         <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
         <span class="ident">amount</span>: <span class="ident">u64</span>,
@@ -426,6 +432,14 @@
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">is_past_due</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> {
         <span class="self">self</span>.<span class="ident">outstanding_obligations</span>() <span class="op">&gt;</span> <span class="number">0</span>
             <span class="op">&amp;&amp;</span> <span class="self">self</span>.<span class="ident">next_obligation_maturity</span> <span class="op">&lt;</span><span class="op">=</span> <span class="ident">Clock::get</span>().<span class="ident">unwrap</span>().<span class="ident">unix_timestamp</span>
+    }
+
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">pending</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">u64</span> {
+        <span class="self">self</span>.<span class="ident">pending</span>
+    }
+
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">committed</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">u64</span> {
+        <span class="self">self</span>.<span class="ident">committed</span>
     }
 }
 

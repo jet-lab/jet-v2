@@ -98,6 +98,7 @@
 <span id="98">98</span>
 <span id="99">99</span>
 <span id="100">100</span>
+<span id="101">101</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">std::cmp::min</span>;
 
 <span class="kw">use</span> <span class="ident">anchor_lang</span>::{<span class="ident">prelude</span>::<span class="kw-2">*</span>, <span class="ident">AccountsClose</span>};
@@ -113,6 +114,7 @@
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Accounts</span>)]</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Repay</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span> {
     <span class="doccomment">/// The account tracking information related to this particular user</span>
+    <span class="attribute">#[<span class="ident">account</span>(<span class="kw-2">mut</span>)]</span>
     <span class="kw">pub</span> <span class="ident">borrower_account</span>: <span class="ident">Account</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span>, <span class="ident">MarginUser</span><span class="op">&gt;</span>,
 
     <span class="attribute">#[<span class="ident">account</span>(
