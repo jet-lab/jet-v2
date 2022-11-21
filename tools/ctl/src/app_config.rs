@@ -61,6 +61,7 @@ pub struct JetAppConfig {
 
     pub tokens: HashMap<String, TokenInfo>,
     pub airspaces: Vec<AirspaceInfo>,
+    pub swap_pools: Vec<SwapPoolInfo>,
     pub serum_markets: HashMap<String, SerumMarketInfo>,
 }
 
@@ -113,6 +114,23 @@ pub struct SerumMarketInfo {
 #[serde_as]
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub struct SwapPoolInfo {
+    #[serde_as(as = "DisplayFromStr")]
+    pub swap_program: Pubkey,
+
+    #[serde_as(as = "DisplayFromStr")]
+    pub pool_state: Pubkey,
+
+    #[serde_as(as = "DisplayFromStr")]
+    pub token_a: Pubkey,
+
+    #[serde_as(as = "DisplayFromStr")]
+    pub token_b: Pubkey,
+}
+
+#[serde_as]
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct BondMarketInfo {
     pub symbol: String,
 
@@ -134,6 +152,7 @@ impl JetAppConfig {
             dir.join("serum-markets.toml"),
         )
         .await?;
+        let swap_pools = vec![]; // FIXME: handle mainnet?
         let bond_markets =
             Self::generate_bond_market_map(client, dir.join("bond-markets.toml")).await?;
 
@@ -158,6 +177,7 @@ impl JetAppConfig {
             url: rpc.default,
             tokens,
             airspaces,
+            swap_pools,
             serum_markets,
         })
     }

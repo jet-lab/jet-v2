@@ -39,7 +39,7 @@ describe('Error Flows', () => {
     loadPageAndCreateAccount();
   });
 
-  it('All lend and borrow transactions should be disabled, because SOL in wallet is under fees buffer amount', () => {
+  it('All deposits should be disabled, because SOL in wallet is under fees buffer amount', () => {
     const disabledInput = () => {
       cy.get('.ant-modal-content input.ant-input').should('be.disabled');
     };
@@ -51,21 +51,11 @@ describe('Error Flows', () => {
     };
     cy.get('.SOL-pools-table-row').click();
     cy.contains('button', 'Deposit').should('not.be.disabled').click();
-    cy.contains('100%').click();
+    cy.contains('Max').click();
     cy.contains('.ant-modal-body button', 'Deposit').should('not.be.disabled').click();
     cy.contains('deposit successful');
 
-    cy.contains('button', 'Withdraw').click();
-    disabledInput();
-    notEnoughSolMessage();
-    closeModal();
-
-    cy.contains('button', 'Borrow').click();
-    disabledInput();
-    notEnoughSolMessage();
-    closeModal();
-
-    cy.contains('button', 'Repay').click();
+    cy.contains('button', 'Deposit').click();
     disabledInput();
     notEnoughSolMessage();
     closeModal();

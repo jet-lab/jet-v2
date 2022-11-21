@@ -3,7 +3,6 @@ use std::sync::Arc;
 use anchor_lang::{InstructionData, ToAccountMetas};
 use jet_bonds::{margin::state::Obligation, seeds, tickets::instructions::StakeBondTicketsParams};
 use jet_simulation::solana_rpc_api::SolanaRpcClient;
-use rand::rngs::OsRng;
 use solana_sdk::{
     instruction::{AccountMeta, Instruction},
     pubkey::Pubkey,
@@ -22,8 +21,6 @@ pub use jet_bonds::{
 };
 
 use crate::ix_builder::get_metadata_address;
-
-use super::event_builder::make_seed;
 
 use super::error::{client_err, BondsIxError, Result};
 
@@ -383,11 +380,8 @@ impl BondsIxBuilder {
             payer: self.payer.unwrap(),
             borrower_account,
             margin_account: owner,
-            claims: bonds_pda(&[jet_bonds::seeds::CLAIM_NOTES, borrower_account.as_ref()]),
-            collateral: bonds_pda(&[
-                jet_bonds::seeds::COLLATERAL_NOTES,
-                borrower_account.as_ref(),
-            ]),
+            claims: BondsIxBuilder::user_claims(borrower_account),
+            collateral: BondsIxBuilder::user_collateral(borrower_account),
             claims_mint: self.claims,
             collateral_mint: self.collateral,
             underlying_settlement: get_associated_token_address(&owner, &self.underlying_mint),
@@ -640,20 +634,21 @@ impl BondsIxBuilder {
         &self,
         margin_account: Pubkey,
         params: OrderParams,
+        seed: &[u8],
     ) -> Result<Instruction> {
         let margin_user = self.margin_user(margin_account);
-        let seed = make_seed(&mut OsRng::default());
+
         let data = jet_bonds::instruction::MarginBorrowOrder {
             params,
-            seed: seed.clone(),
+            seed: seed.to_vec(),
         }
         .data();
         let accounts = jet_bonds::accounts::MarginBorrowOrder {
             orderbook_mut: self.orderbook_mut()?,
             margin_user: margin_user.address,
-            obligation: bonds_pda(&Obligation::make_seeds(margin_user.address.as_ref(), &seed)),
             margin_account,
             claims: margin_user.claims,
+            obligation: self.obligation_key(&margin_user.address, seed),
             claims_mint: self.claims,
             collateral: margin_user.collateral,
             collateral_mint: self.collateral,
@@ -856,6 +851,59 @@ impl BondsIxBuilder {
 
         Ok(vec![init_eq, init_bids, init_asks])
     }
+
+    pub fn margin_settle(&self, margin_account: Pubkey) -> Instruction {
+        let data = jet_bonds::instruction::Settle {}.data();
+        let margin_user = self.margin_user_account(margin_account);
+        let claims = BondsIxBuilder::user_claims(margin_user);
+        let collateral = BondsIxBuilder::user_collateral(margin_user);
+        let accounts = jet_bonds::accounts::Settle {
+            margin_user,
+            bond_manager: self.manager,
+            token_program: spl_token::ID,
+            claims,
+            claims_mint: self.claims,
+            collateral,
+            collateral_mint: self.collateral,
+            underlying_token_vault: self.underlying_token_vault,
+            bond_ticket_mint: self.bond_ticket_mint,
+            underlying_settlement: get_associated_token_address(
+                &margin_account,
+                &self.underlying_mint,
+            ),
+            ticket_settlement: get_associated_token_address(
+                &margin_account,
+                &self.bond_ticket_mint,
+            ),
+        }
+        .to_account_metas(None);
+
+        Instruction::new_with_bytes(jet_bonds::ID, &data, accounts)
+    }
+
+    pub fn margin_repay(
+        &self,
+        payer: &Pubkey,
+        margin_account: &Pubkey,
+        obligation_seed: &[u8],
+        next_obligation_seed: &[u8],
+        amount: u64,
+    ) -> Instruction {
+        let margin_user = self.margin_user(*margin_account);
+        let data = jet_bonds::instruction::Repay { amount }.data();
+        let accounts = jet_bonds::accounts::Repay {
+            borrower_account: margin_user.address,
+            obligation: self.obligation_key(&margin_user.address, obligation_seed),
+            next_obligation: self.obligation_key(&margin_user.address, next_obligation_seed),
+            source: get_associated_token_address(payer, &self.underlying_mint),
+            payer: *payer,
+            underlying_token_vault: self.underlying_token_vault,
+            token_program: spl_token::ID,
+        }
+        .to_account_metas(None);
+
+        Instruction::new_with_bytes(jet_bonds::ID, &data, accounts)
+    }
 }
 
 /// helpful addresses for a MarginUser account
@@ -908,12 +956,26 @@ impl BondsIxBuilder {
             seed,
         ])
     }
+    pub fn obligation_key(&self, borrower_account: &Pubkey, seed: &[u8]) -> Pubkey {
+        bonds_pda(&Obligation::make_seeds(borrower_account.as_ref(), seed))
+    }
 
     pub fn margin_user_account(&self, owner: Pubkey) -> Pubkey {
         bonds_pda(&[
             jet_bonds::seeds::MARGIN_BORROWER,
             self.manager.as_ref(),
             owner.as_ref(),
+        ])
+    }
+
+    pub fn user_claims(borrower_account: Pubkey) -> Pubkey {
+        bonds_pda(&[jet_bonds::seeds::CLAIM_NOTES, borrower_account.as_ref()])
+    }
+
+    pub fn user_collateral(borrower_account: Pubkey) -> Pubkey {
+        bonds_pda(&[
+            jet_bonds::seeds::COLLATERAL_NOTES,
+            borrower_account.as_ref(),
         ])
     }
 

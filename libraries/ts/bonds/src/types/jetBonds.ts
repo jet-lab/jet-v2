@@ -3119,6 +3119,58 @@ export type JetBonds = {
       ]
     },
     {
+      "name": "ObligationCreated",
+      "fields": [
+        {
+          "name": "obligation",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "borrowerAccount",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "orderId",
+          "type": {
+            "option": "u128"
+          },
+          "index": false
+        },
+        {
+          "name": "sequenceNumber",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "bondManager",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "maturationTimestamp",
+          "type": "i64",
+          "index": false
+        },
+        {
+          "name": "quoteFilled",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "baseFilled",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "flags",
+          "type": "u8",
+          "index": false
+        }
+      ]
+    },
+    {
       "name": "ObligationRepay",
       "fields": [
         {
@@ -6699,6 +6751,58 @@ export const IDL: JetBonds = {
         {
           "name": "postAllowed",
           "type": "bool",
+          "index": false
+        }
+      ]
+    },
+    {
+      "name": "ObligationCreated",
+      "fields": [
+        {
+          "name": "obligation",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "borrowerAccount",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "orderId",
+          "type": {
+            "option": "u128"
+          },
+          "index": false
+        },
+        {
+          "name": "sequenceNumber",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "bondManager",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "maturationTimestamp",
+          "type": "i64",
+          "index": false
+        },
+        {
+          "name": "quoteFilled",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "baseFilled",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "flags",
+          "type": "u8",
           "index": false
         }
       ]

@@ -15,6 +15,10 @@
     "term": "Account Value",
     "definition": "The USD value of your equity in this margin account, assets minus liabilities."
   },
+  "pythDataStale": {
+    "term": "Pyth Data Stale",
+    "definition": "Transacting with this asset is currently unavailable because the Pyth data for this asset is stale."
+  },
   "projectedRiskLevel": {
     "term": "Projected Risk Level",
     "definition": "A real-time representation of what your Risk Level would be if the current trade is submitted."

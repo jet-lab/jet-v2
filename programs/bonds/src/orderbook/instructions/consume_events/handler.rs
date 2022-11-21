@@ -28,12 +28,13 @@ pub fn handler<'info>(
 ) -> Result<()> {
     let mut num_iters = 0;
     for event in queue(&ctx, seeds)?.take(num_events as usize) {
-        let (accounts, event) = event?;
+        let mut res = event?;
+        let (accounts, event) = res.as_mut();
 
         // Delegate event processing to the appropriate handler
         match accounts {
-            EventAccounts::Fill(accounts) => handle_fill(&ctx, accounts, &event.unwrap_fill()?),
-            EventAccounts::Out(accounts) => handle_out(&ctx, *accounts, &event.unwrap_out()?),
+            EventAccounts::Fill(accounts) => handle_fill(&ctx, accounts, event.unwrap_fill()?),
+            EventAccounts::Out(accounts) => handle_out(&ctx, accounts, event.unwrap_out()?),
         }?;
 
         num_iters += 1;
@@ -58,7 +59,7 @@ pub fn handler<'info>(
 
 fn handle_fill<'info>(
     ctx: &Context<'_, '_, '_, 'info, ConsumeEvents<'info>>,
-    accounts: Box<FillAccounts<'info>>,
+    accounts: &mut Box<FillAccounts<'info>>,
     fill: &FillInfo,
 ) -> Result<()> {
     let manager = &ctx.accounts.bond_manager;
@@ -67,13 +68,22 @@ fn handle_fill<'info>(
         maker_adapter,
         taker_adapter,
         loan,
-    } = *accounts;
+    } = &mut **accounts;
     let FillInfo {
         event,
         maker_info,
         taker_info,
     } = fill;
-    for adapter in [taker_adapter, maker_adapter].iter_mut().flatten() {
+    if let Some(adapter) = maker_adapter {
+        if let Err(e) = adapter.push_event(*event, Some(maker_info), Some(taker_info)) {
+            skip_err!(
+                "Failed to push event to adapter {}. Error: {:?}",
+                adapter.key(),
+                e
+            );
+        }
+    }
+    if let Some(adapter) = taker_adapter {
         if let Err(e) = adapter.push_event(*event, Some(maker_info), Some(taker_info)) {
             skip_err!(
                 "Failed to push event to adapter {}. Error: {:?}",
@@ -105,7 +115,7 @@ fn handle_fill<'info>(
                 let interest = base_size.safe_sub(principal)?;
                 let maturation_timestamp =
                     fill_timestamp.safe_add(manager.load()?.lend_duration)?;
-                *loan.unwrap().auto_stake()? = SplitTicket {
+                **loan.as_mut().unwrap().auto_stake()? = SplitTicket {
                     owner: maker.pubkey(),
                     bond_manager: manager.key(),
                     order_tag: maker_info.order_tag,
@@ -141,7 +151,8 @@ fn handle_fill<'info>(
                     let sequence_number = margin_user
                         .debt
                         .new_obligation_from_fill(base_size, maturation_timestamp)?;
-                    *loan.unwrap().new_debt()? = Obligation {
+
+                    **loan.as_mut().unwrap().new_debt()? = Obligation {
                         sequence_number,
                         borrower_account: margin_user.key(),
                         bond_manager: ctx.accounts.bond_manager.key(),
@@ -171,16 +182,16 @@ fn handle_fill<'info>(
 
 fn handle_out<'info>(
     ctx: &Context<'_, '_, '_, 'info, ConsumeEvents<'info>>,
-    accounts: OutAccounts<'info>,
+    accounts: &mut Box<OutAccounts<'info>>,
     out: &OutInfo,
 ) -> Result<()> {
     let OutAccounts {
         user,
         user_adapter_account,
-    } = accounts;
+    } = &mut **accounts;
     let OutInfo { event, info } = out;
     // push to adapter if flagged
-    if let Some(mut adapter) = user_adapter_account {
+    if let Some(adapter) = user_adapter_account {
         if adapter.push_event(*event, Some(info), None).is_err() {
             // don't stop the event processor for a malfunctioning adapter
             // adapter users are responsible for the maintenance of their adapter

@@ -16,6 +16,10 @@ solana-cli-config = "1.10"
 solana-client = "1.10"
 solana-sdk = "1.10"
 
+spl-token-swap = { version = "2.1", features = ["no-entrypoint"] }
+spl-token = "3"
+
 anchor-lang = { git = "https://github.com/jet-lab/anchor", branch = "master" }
 
 jet-margin-sdk = { path = "../../libraries/rust/margin" }
+jet-simulation = { git = "https://github.com/jet-lab/jet-simulation", branch = "master" }

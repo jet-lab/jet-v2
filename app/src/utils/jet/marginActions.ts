@@ -115,9 +115,9 @@ export function useMarginActions() {
       // Update favorite accounts and set UI to new account
       const favoriteAccountsClone = { ...favoriteAccounts };
       const favoriteWalletAccounts = favoriteAccountsClone[wallet.publicKey.toString()] ?? [];
-      const newWalletFavorites: string[] = [...favoriteWalletAccounts];
-      newWalletFavorites.push(newMarginAccount.address.toString());
-      favoriteAccountsClone[wallet.publicKey.toString()] = newWalletFavorites;
+      const newWalletFavorites = new Set([...favoriteWalletAccounts]);
+      newWalletFavorites.add(newMarginAccount.address.toString());
+      favoriteAccountsClone[wallet.publicKey.toString()] = Array.from(newWalletFavorites);
       setFavoriteAccounts(favoriteAccountsClone);
       setCurrentAccountAddress(newMarginAccount.address.toString());
 
@@ -312,12 +312,12 @@ export function useMarginActions() {
     );
     try {
       // Refresh positions
-      await currentPool.withMarginRefreshAllPositionPrices({
+      await currentPool.withPrioritisedPositionRefresh({
         instructions: refreshInstructions,
         pools: pools.tokenPools,
         marginAccount: fromAccount
       });
-      await currentPool.withMarginRefreshAllPositionPrices({
+      await currentPool.withPrioritisedPositionRefresh({
         instructions: refreshInstructions,
         pools: pools.tokenPools,
         marginAccount: toAccount

@@ -4,7 +4,7 @@ use anchor_lang::{
 };
 
 #[inline]
-#[cfg(not(test))]
+#[cfg(all(target_arch = "bpf", not(test), not(mock_syscall)))]
 pub fn sys() -> RealSys {
     RealSys
 }
@@ -29,10 +29,10 @@ pub trait Sys {
     }
 }
 
-#[cfg(test)]
+#[cfg(any(not(target_arch = "bpf"), test, mock_syscall))]
 pub use thread_local_mock::sys;
 
-#[cfg(test)]
+#[cfg(any(not(target_arch = "bpf"), test, mock_syscall))]
 pub mod thread_local_mock {
     use anchor_lang::prelude::SolanaSysvar;
 
@@ -51,6 +51,10 @@ pub mod thread_local_mock {
         sys().borrow_mut().mock_stack_height = height;
     }
 
+    pub fn mock_clock(unix_timestamp: Option<u64>) {
+        sys().borrow_mut().mock_clock = unix_timestamp;
+    }
+
     thread_local! {
         pub static SYS: Rc<RefCell<TestSys>> = Rc::new(RefCell::new(TestSys::default()));
     }
@@ -58,6 +62,7 @@ pub mod thread_local_mock {
     #[derive(Default)]
     pub struct TestSys {
         pub mock_stack_height: Option<usize>,
+        pub mock_clock: Option<u64>,
     }
 
     impl Sys for Rc<RefCell<TestSys>> {
@@ -68,9 +73,12 @@ pub mod thread_local_mock {
         }
 
         fn unix_timestamp(&self) -> u64 {
-            // Get the clock in case it's available in a simulation,
-            // then fall back to the system clock
-            if let Ok(clock) = Clock::get() {
+            // The mocked clock gets top priority if set. Otherwise, actually
+            // try to get the solana clock, in case it's available in a
+            // simulation, then fall back to the system clock.
+            if let Some(mocked) = self.borrow().mock_clock {
+                mocked
+            } else if let Ok(clock) = Clock::get() {
                 clock.unix_timestamp as u64
             } else {
                 let time = SystemTime::now();

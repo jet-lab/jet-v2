@@ -447,14 +447,14 @@ pub enum OrderbookEvent {
 }
 
 impl OrderbookEvent {
-    pub fn unwrap_fill(self) -> Result<FillInfo> {
+    pub fn unwrap_fill(&self) -> Result<&FillInfo> {
         match self {
             OrderbookEvent::Fill(fill) => Ok(fill),
             _ => err!(BondsError::InvalidEvent),
         }
     }
 
-    pub fn unwrap_out(self) -> Result<OutInfo> {
+    pub fn unwrap_out(&self) -> Result<&OutInfo> {
         match self {
             OrderbookEvent::Out(out) => Ok(out),
             _ => err!(BondsError::InvalidEvent),

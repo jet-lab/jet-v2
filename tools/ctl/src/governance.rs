@@ -9,6 +9,7 @@ use solana_client::{
     rpc_request::RpcError,
 };
 use solana_sdk::{
+    account_info::IntoAccountInfo,
     bpf_loader_upgradeable,
     instruction::{AccountMeta, Instruction},
     loader_upgradeable_instruction::UpgradeableLoaderInstruction,
@@ -24,6 +25,7 @@ use spl_governance::state::{
         get_proposal_transaction_address, AccountMetaData, InstructionData, ProposalTransactionV2,
     },
     realm::RealmV2,
+    token_owner_record::{get_token_owner_record_address, get_token_owner_record_data},
 };
 
 use crate::{
@@ -80,32 +82,39 @@ pub async fn convert_plan_to_proposal(
     let proposal = get_proposal_state(client, &proposal_address).await?;
     let mut tx_next_index = proposal.options[proposal_option as usize].transactions_next_index;
 
-    Ok(plan
-        .into_iter()
-        .map(|entry| {
-            let instructions = get_transaction_instructions(&entry.transaction);
+    validate_proposal(&proposal)?;
 
-            let insert_tx = spl_governance::instruction::insert_transaction(
-                &JET_GOVERNANCE_PROGRAM,
-                &proposal.governance,
-                &proposal_address,
-                &proposal.token_owner_record,
-                &client.signer().unwrap(),
-                &client.signer().unwrap(),
-                proposal_option,
-                tx_next_index,
-                0,
-                instructions,
-            );
+    Ok(Plan {
+        unordered: false,
+        entries: plan
+            .entries
+            .into_iter()
+            .map(|entry| {
+                let instructions = get_transaction_instructions(&entry.transaction);
 
-            tx_next_index += 1;
+                let insert_tx = spl_governance::instruction::insert_transaction(
+                    &JET_GOVERNANCE_PROGRAM,
+                    &proposal.governance,
+                    &proposal_address,
+                    &proposal.token_owner_record,
+                    &client.signer().unwrap(),
+                    &client.signer().unwrap(),
+                    proposal_option,
+                    tx_next_index,
+                    0,
+                    instructions,
+                );
 
-            TransactionEntry {
-                transaction: Transaction::new_with_payer(&[insert_tx], None),
-                steps: entry.steps,
-            }
-        })
-        .collect())
+                tx_next_index += 1;
+
+                TransactionEntry {
+                    transaction: Transaction::new_with_payer(&[insert_tx], None),
+                    steps: entry.steps,
+                    signers: vec![],
+                }
+            })
+            .collect(),
+    })
 }
 
 pub async fn inspect_proposal_instructions(
@@ -120,6 +129,8 @@ pub async fn inspect_proposal_instructions(
     for default_program in DEFAULT_IDLS {
         anchor_parser.load_idl(default_program).await?;
     }
+
+    println!("transactions will have authority: {}", proposal.governance);
 
     for (opt_index, option) in proposal.options.iter().enumerate() {
         println!("transactions for option {}:", option.label);
@@ -274,6 +285,43 @@ pub fn resolve_payer(client: &Client) -> Result<Pubkey> {
     })
 }
 
+pub async fn find_user_owner_record(
+    client: &Client,
+    realm: &Pubkey,
+    mint: &Pubkey,
+) -> Result<Pubkey> {
+    let user_voter_record =
+        get_token_owner_record_address(&JET_GOVERNANCE_PROGRAM, realm, mint, &client.signer()?);
+
+    if client.account_exists(&user_voter_record).await? {
+        return Ok(user_voter_record);
+    }
+
+    let all_voter_records = client
+        .rpc()
+        .get_program_accounts(&JET_GOVERNANCE_PROGRAM)
+        .await?;
+
+    println!("records {}", all_voter_records.len());
+
+    for (address, account) in all_voter_records {
+        match get_token_owner_record_data(
+            &JET_GOVERNANCE_PROGRAM,
+            &(address, account).into_account_info(),
+        ) {
+            Ok(record)
+                if record.governance_delegate == Some(client.signer()?)
+                    && record.realm == *realm =>
+            {
+                return Ok(address)
+            }
+            _ => continue,
+        }
+    }
+
+    bail!("no voting power found for the current user")
+}
+
 async fn try_parse_instruction(
     client: &Client,
     anchor_parser: &mut AnchorParser<'_>,
@@ -395,4 +443,12 @@ async fn get_borsh_account<T: AnchorDeserialize>(rpc: &RpcClient, address: &Pubk
             std::any::type_name::<T>()
         )
     })
+}
+
+fn validate_proposal(proposal: &ProposalV2) -> Result<()> {
+    if proposal.governance != JET_ENG_GOVERNANCE {
+        bail!("proposal provided does not target the correct authority");
+    }
+
+    Ok(())
 }

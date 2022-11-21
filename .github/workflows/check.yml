@@ -10,9 +10,9 @@ jobs:
   anchor-test:
     runs-on: ubuntu-latest
     container:
-      image: jetprotocol/builder:root-rust-1.65.0-node-18.12.1-solana-1.13.5-anchor-0.25.0-1
+      image: jetprotocol/builder:rust-1.65.0-node-18.12.1-solana-1.13.5-anchor-0.25.0-1
     env:
-      HOME: /root
+      HOME: /home/tools
       SOLANA_MAINNET_RPC: ${{ secrets.SOLANA_MAINNET_RPC }}
     steps:
       - name: Checkout
@@ -32,16 +32,17 @@ jobs:
 
       - name: ./check anchor-test
         run: |
-          chmod -R 777 /root
+          chown root /home/tools
+          chmod -R 777 /home/tools
           ./check anchor-test
 
 
   hosted-tests-localnet-batch1:
     runs-on: ubuntu-latest
     container:
-      image: jetprotocol/builder:root-rust-1.65.0-node-18.12.1-solana-1.13.5-anchor-0.25.0-1
+      image: jetprotocol/builder:rust-1.65.0-node-18.12.1-solana-1.13.5-anchor-0.25.0-1
     env:
-      HOME: /root
+      HOME: /home/tools
       BATCH: batch1
     steps:
       - name: Checkout
@@ -65,9 +66,9 @@ jobs:
   hosted-tests-localnet-batch2:
     runs-on: ubuntu-latest
     container:
-      image: jetprotocol/builder:root-rust-1.65.0-node-18.12.1-solana-1.13.5-anchor-0.25.0-1
+      image: jetprotocol/builder:rust-1.65.0-node-18.12.1-solana-1.13.5-anchor-0.25.0-1
     env:
-      HOME: /root
+      HOME: /home/tools
       BATCH: batch2
     steps:
       - name: Checkout
@@ -91,9 +92,9 @@ jobs:
   cargo-lint:
     runs-on: ubuntu-latest
     container:
-      image: jetprotocol/builder:root-rust-1.65.0-node-18.12.1-solana-1.13.5-anchor-0.25.0-1
+      image: jetprotocol/builder:rust-1.65.0-node-18.12.1-solana-1.13.5-anchor-0.25.0-1
     env:
-      HOME: /root
+      HOME: /home/tools
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -114,9 +115,9 @@ jobs:
   cargo-test:
     runs-on: ubuntu-latest
     container:
-      image: jetprotocol/builder:root-rust-1.65.0-node-18.12.1-solana-1.13.5-anchor-0.25.0-1
+      image: jetprotocol/builder:rust-1.65.0-node-18.12.1-solana-1.13.5-anchor-0.25.0-1
     env:
-      HOME: /root
+      HOME: /home/tools
       CODECOV: true
     steps:
       - uses: actions/checkout@v3
@@ -142,9 +143,9 @@ jobs:
   e2e:
     runs-on: ubuntu-latest
     container:
-      image: jetprotocol/builder:root-rust-1.65.0-node-18.12.1-solana-1.13.5-anchor-0.25.0-1
+      image: jetprotocol/builder:rust-1.65.0-node-18.12.1-solana-1.13.5-anchor-0.25.0-1
     env:
-      HOME: /root
+      HOME: /home/tools
       SOLANA_MAINNET_RPC: ${{ secrets.SOLANA_MAINNET_RPC }}
       REACT_APP_IP_REGISTRY: ${{ secrets.REACT_APP_IP_REGISTRY }}
       REACT_APP_RPC_DEV_TOKEN: ${{ secrets.REACT_APP_RPC_DEV_TOKEN }}

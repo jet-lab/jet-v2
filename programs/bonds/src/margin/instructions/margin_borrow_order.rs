@@ -7,6 +7,7 @@ use jet_program_proc_macros::BondTokenManager;
 
 use crate::{
     bond_token_manager::BondTokenManager,
+    events::ObligationCreated,
     margin::{
         events::{OrderPlaced, OrderType},
         origination_fee::loan_to_disburse,
@@ -99,27 +100,43 @@ pub fn handler(
         let maturation_timestamp = manager.borrow_duration + Clock::get()?.unix_timestamp;
         let sequence_number =
             debt.new_obligation_without_posting(order_summary.base_filled(), maturation_timestamp)?;
+
+        let maturation_timestamp = manager.borrow_duration + Clock::get()?.unix_timestamp;
+
         let mut obligation = serialization::init::<Obligation>(
             ctx.accounts.obligation.to_account_info(),
             ctx.accounts.payer.to_account_info(),
             ctx.accounts.system_program.to_account_info(),
             &Obligation::make_seeds(ctx.accounts.margin_user.key().as_ref(), seed.as_slice()),
         )?;
-        let filled_quote = order_summary.quote_filled()?;
-        let disburse = manager.loan_to_disburse(filled_quote);
+        let quote_filled = order_summary.quote_filled()?;
+        let disburse = manager.loan_to_disburse(quote_filled);
         manager
             .collected_fees
-            .try_add_assign(filled_quote.safe_sub(disburse)?)?;
+            .try_add_assign(quote_filled.safe_sub(disburse)?)?;
         ctx.accounts.margin_user.assets.entitled_tokens += disburse;
+        let base_filled = order_summary.base_filled();
         *obligation = Obligation {
             sequence_number,
             borrower_account: ctx.accounts.margin_user.key(),
             bond_manager: ctx.accounts.orderbook_mut.bond_manager.key(),
             order_tag: callback_info.order_tag,
             maturation_timestamp,
-            balance: order_summary.base_filled(),
+            balance: base_filled,
             flags: ObligationFlags::default(),
         };
+
+        emit!(ObligationCreated {
+            obligation: obligation.key(),
+            authority: ctx.accounts.margin_account.key(),
+            order_id: order_summary.summary().posted_order_id,
+            sequence_number,
+            bond_manager: ctx.accounts.orderbook_mut.bond_manager.key(),
+            maturation_timestamp,
+            quote_filled,
+            base_filled,
+            flags: obligation.flags
+        });
     }
     let total_debt = order_summary.base_combined();
     ctx.mint(&ctx.accounts.claims_mint, &ctx.accounts.claims, total_debt)?;
