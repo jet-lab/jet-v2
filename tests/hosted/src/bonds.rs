@@ -402,12 +402,14 @@ impl TestManager {
             manager.claims_mint,
             manager.underlying_token_mint,
             TokenKind::Claim,
+            10_00,
         )
         .await?;
         self.register_bonds_position_metadatata_impl(
             manager.collateral_mint,
             manager.bond_ticket_mint,
             TokenKind::AdapterCollateral,
+            1_00,
         )
         .await?;
 
@@ -419,13 +421,14 @@ impl TestManager {
         position_token_mint: Pubkey,
         underlying_token_mint: Pubkey,
         token_kind: TokenKind,
+        value_modifier: u16,
     ) -> Result<()> {
         let pos_data = PositionTokenMetadata {
             position_token_mint,
             underlying_token_mint,
             adapter_program: jet_bonds::ID,
             token_kind,
-            value_modifier: 1_000,
+            value_modifier,
             max_staleness: 1_000,
         };
         let address = get_metadata_address(&position_token_mint);

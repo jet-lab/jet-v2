@@ -481,6 +481,44 @@ async fn margin_borrow() -> Result<()> {
 
 #[tokio::test(flavor = "multi_thread")]
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
+async fn margin_borrow_fails_without_collateral() -> Result<()> {
+    let ctx = margin_test_context!();
+    let manager = Arc::new(BondsTestManager::full(ctx.solana.clone()).await.unwrap());
+    let client = manager.client.clone();
+    let ([collateral], _, pricer) = tokens(&ctx).await.unwrap();
+
+    let user = create_bonds_margin_user(&ctx, manager.clone(), vec![]).await;
+
+    let result = vec![
+        pricer.set_oracle_price_tx(&collateral, 1.0).await.unwrap(),
+        pricer
+            .set_oracle_price_tx(&manager.ix_builder.token_mint(), 1.0)
+            .await?,
+    ]
+    .cat(
+        user.margin_borrow_order(underlying(1_000, 2_000), &[])
+            .await?,
+    )
+    .send_and_confirm_condensed_in_order(&client)
+    .await;
+
+    assert!(result.is_err());
+
+    #[cfg(feature = "localnet")] // sim can't rollback
+    {
+        assert_eq!(STARTING_TOKENS, user.tokens().await?);
+        assert_eq!(0, user.tickets().await?);
+        assert_eq!(0, user.collateral().await?);
+        assert_eq!(0, user.claims().await?);
+        let asks = manager.load_orderbook().await?.asks()?;
+        assert_eq!(borrower_account.debt.total(), 0);
+    }
+
+    Ok(())
+}
+
+#[tokio::test(flavor = "multi_thread")]
+#[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn margin_lend() -> Result<()> {
     let ctx = margin_test_context!();
     let manager = Arc::new(BondsTestManager::full(ctx.solana.clone()).await.unwrap());
