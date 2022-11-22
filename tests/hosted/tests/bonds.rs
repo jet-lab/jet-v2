@@ -511,7 +511,9 @@ async fn margin_borrow_fails_without_collateral() -> Result<()> {
         assert_eq!(0, user.collateral().await?);
         assert_eq!(0, user.claims().await?);
         let asks = manager.load_orderbook().await?.asks()?;
-        assert_eq!(borrower_account.debt.total(), 0);
+        assert_eq!(0, asks.len());
+        let borrower_account = user.load_margin_user().await.unwrap();
+        assert_eq!(0, borrower_account.debt.total());
     }
 
     Ok(())
