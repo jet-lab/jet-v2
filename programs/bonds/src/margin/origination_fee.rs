@@ -187,11 +187,11 @@ mod test {
         }
         total_disbursed += loan_to_disburse(quote, fee);
 
-        if total_disbursed > request || request - total_disbursed > number_of_fills {
+        if total_disbursed > request || request - total_disbursed > number_of_fills - 1 {
             panic!("
-                for fee {fee} and requested {request} with quote {quote} in {number_of_fills} fills, 
-                was disbursed {total_disbursed}, with a discrepancy of {}, but expected max discrepancy of {number_of_fills}",
-                    request - total_disbursed
+                for fee {fee} and effective request {request} with quote {quote} in {number_of_fills} fills, 
+                was disbursed {total_disbursed}, with a discrepancy of {}, but expected max discrepancy of {}",
+                request as f64 - total_disbursed as f64, number_of_fills - 1
                 )
         }
     }
