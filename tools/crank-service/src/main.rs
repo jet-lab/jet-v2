@@ -1,4 +1,4 @@
-use std::{fs::read_to_string, sync::Arc};
+use std::{fs::read_to_string, sync::Arc, time::Duration};
 
 use agnostic_orderbook::state::event_queue::EventQueue;
 use anchor_lang::AccountDeserialize;
@@ -98,10 +98,9 @@ async fn run(opts: CliOpts) -> Result<()> {
     );
 
     let cfg = read_config(&opts.config_path)?;
-    for (asset, markets) in cfg {
+    for (_, markets) in cfg {
         for market in markets {
             let c = client.clone();
-            let a = asset.clone();
 
             std::thread::spawn(move || loop {
                 let manager = {
@@ -111,11 +110,12 @@ async fn run(opts: CliOpts) -> Result<()> {
                 let ix_builder = BondsIxBuilder::from(manager)
                     .with_crank(&c.signer.pubkey())
                     .with_payer(&c.signer.pubkey());
-                let res = consume_events(c.clone(), ix_builder);
-                println!(
-                    "Market: {}_{} Result: {:#?}",
-                    a, manager.borrow_duration, res
-                );
+                let _res = consume_events(c.clone(), ix_builder);
+                // Logging is very noisy, probably disable it.
+                // println!(
+                //     "Market: {}_{} Result: {:#?}",
+                //     a, manager.borrow_duration, res
+                // );
             });
         }
     }
@@ -143,11 +143,13 @@ fn read_config(path: &str) -> Result<Vec<(String, Vec<Pubkey>)>> {
             let markets = a
                 .tokens
                 .into_iter()
-                .flat_map(|(_, c)| {
-                    c.bond_markets.into_iter().map(|m| {
+                .flat_map(|(t, c)| {
+                    let airspace = derive_airspace(&a.name);
+                    let token_mint = derive_token_mint(&t);
+                    c.bond_markets.into_iter().map(move |m| {
                         derive_bond_manager_from_duration_seed(
-                            &derive_airspace(&a.name),
-                            &derive_token_mint(&a.name),
+                            &airspace,
+                            &token_mint,
                             m.borrow_duration,
                         )
                     })
@@ -175,5 +177,9 @@ fn load_signer(path: Option<String>) -> Result<AsyncSigner> {
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    run(CliOpts::parse()).await
+    run(CliOpts::parse()).await?;
+
+    loop {
+        tokio::time::sleep(Duration::from_secs(30)).await;
+    }
 }
