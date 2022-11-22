@@ -220,7 +220,7 @@ pub mod jet_margin {
     /// | --- | --- |
     /// | **Event Name** | **Description** |
     /// | [`events::PositionMetadataRefreshed`] | Marks the refreshing of position metadata. |
-    /// 
+    ///
     pub fn refresh_position_metadata(ctx: Context<RefreshPositionMetadata>) -> Result<()> {
         refresh_position_metadata_handler(ctx)
     }
@@ -248,7 +248,7 @@ pub mod jet_margin {
     /// | --- | --- |
     /// | **Event Name** | **Description** |
     /// | [`events::PositionClosed`] | Marks the closure of the position. |
-    /// 
+    ///
     pub fn close_position(ctx: Context<ClosePosition>) -> Result<()> {
         close_position_handler(ctx)
     }
@@ -273,7 +273,7 @@ pub mod jet_margin {
     /// | --- | --- |
     /// | **Event Name** | **Description** |
     /// | [`events::VerifiedHealthy`] | Marks the verification of the position. |
-    /// 
+    ///
     pub fn verify_healthy(ctx: Context<VerifyHealthy>) -> Result<()> {
         verify_healthy_handler(ctx)
     }
