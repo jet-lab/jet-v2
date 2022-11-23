@@ -10,7 +10,7 @@ import {
   sendAll
 } from "@jet-lab/margin"
 import { BondMarket } from "./bondMarket"
-import { Address, AnchorProvider, BN } from "@project-serum/anchor"
+import { AnchorProvider, BN } from "@project-serum/anchor"
 
 const createRandomSeed = (byteLength: number) => {
   const max = 127
@@ -348,15 +348,24 @@ export const borrowNow = async ({
   instructions.push(refreshInstructions)
 
   // Create borrow instruction
+  const seed = createRandomSeed(8)
+  console.log(seed)
   const borrowInstructions: TransactionInstruction[] = []
-  const borrowNow = await market.borrowNowIx(marginAccount, walletAddress, amount, createRandomSeed(8))
+  const borrowNow = await market.borrowNowIx(marginAccount, walletAddress, amount, seed)
+  const settle = await market.settle(marginAccount, seed)
 
   await marginAccount.withAdapterInvoke({
     instructions: borrowInstructions,
     adapterInstruction: borrowNow
   })
 
+  await marginAccount.withAdapterInvoke({
+    instructions: borrowInstructions,
+    adapterInstruction: settle
+  })
+
   instructions.push(borrowInstructions)
+
   return sendAll(provider, [instructions])
 }
 
@@ -432,4 +441,19 @@ export const lendNow = async ({
 
   instructions.push(lendInstructions)
   return sendAll(provider, [instructions])
+}
+
+interface ISettle {
+  market: BondMarket
+  marginAccount: MarginAccount
+  provider: AnchorProvider
+}
+export const settle = async ({ market, marginAccount, provider }: ISettle) => {
+  const instructions: TransactionInstruction[] = []
+  const settleIx = await market.settle(marginAccount, new Uint8Array([]))
+  await marginAccount.withAdapterInvoke({
+    instructions,
+    adapterInstruction: settleIx
+  })
+  return sendAll(provider, [[settleIx]])
 }

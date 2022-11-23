@@ -721,6 +721,8 @@ export class MarginAccount {
         }
       }
 
+      console.log(PositionKind[position.kind], position.value)
+
       if (kind === PositionKind.NoValue) {
         // Intentional
       } else if (kind === PositionKind.Claim) {

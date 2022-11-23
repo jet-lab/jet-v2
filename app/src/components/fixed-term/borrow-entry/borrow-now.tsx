@@ -1,6 +1,6 @@
 import { Button, InputNumber, Switch, Tooltip } from 'antd';
 import { formatDuration, intervalToDuration } from 'date-fns';
-import { borrowNow } from '@jet-lab/jet-bonds-client';
+import { borrowNow, settle } from '@jet-lab/jet-bonds-client';
 import { notify } from '@utils/notify';
 import { getExplorerUrl } from '@utils/ui';
 import BN from 'bn.js';
@@ -65,6 +65,21 @@ export const BorrowNow = ({ token, decimals, marketAndConfig, marginConfig }: Re
     }
   };
 
+  const submitSettle = async () => {
+    let signature: string;
+    try {
+      signature = await settle({
+        market: marketAndConfig.market,
+        marginAccount,
+        provider
+      });
+      notify('Settled Successfully', ``, 'success', getExplorerUrl(signature, cluster, blockExplorer));
+    } catch (e) {
+      console.log(e);
+      notify('Settle Failed', ``, 'error', getExplorerUrl(e.signature, cluster, blockExplorer));
+    }
+  };
+
   return (
     <div className="fixed-term order-entry-body">
       <div className="borrow-now fixed-order-entry-fields">
@@ -125,6 +140,7 @@ export const BorrowNow = ({ token, decimals, marketAndConfig, marginConfig }: Re
         onClick={createBorrowOrder}>
         Borrow {marketToString(marketAndConfig.config)}
       </Button>
+      <Button onClick={submitSettle}>Settle</Button>
     </div>
   );
 };
