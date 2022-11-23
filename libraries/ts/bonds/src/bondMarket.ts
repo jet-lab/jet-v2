@@ -265,7 +265,7 @@ export class BondMarket {
       matchLimit: new BN(U64_MAX.toString()),
       postOnly: false,
       postAllowed: false,
-      autoStake: false
+      autoStake: true
     }
     return await this.lendIx(user, userTicketVault, userTokenVault, payer, params, seed)
   }
@@ -281,7 +281,7 @@ export class BondMarket {
     let ticketSettlement = userTicketVault
     const marketUser = await this.deriveMarginUserAddress(user)
     if (params.autoStake) {
-      ticketSettlement = await this.deriveSplitTicket(user.address, seed)
+      ticketSettlement = await this.deriveSplitTicket(marketUser, seed)
     }
     const collateral = await this.deriveMarginUserCollateral(marketUser)
     return await this.program.methods
@@ -302,6 +302,34 @@ export class BondMarket {
           lenderTokens: userTokenVault,
           ticketSettlement
         }
+      })
+      .instruction()
+  }
+
+  async settle(user: MarginAccount, seed) {
+    const ticketSettlement = await getAssociatedTokenAddress(this.addresses.bondTicketMint, user.address, true)
+    const marketUser = await this.deriveMarginUserAddress(user)
+    const collateral = await this.deriveMarginUserCollateral(marketUser)
+    const claims = await this.deriveMarginUserClaims(marketUser)
+    const underlyingSettlement = await getAssociatedTokenAddress(this.addresses.underlyingTokenMint, user.address, true)
+
+    Object.entries(this.addresses).map(([key, entry]) => {
+      if (entry.toBase58) {
+        console.log(key, entry.toBase58())
+      } else {
+        console.log("Weird public key", key, entry)
+      }
+    })
+    return this.program.methods
+      .settle()
+      .accounts({
+        ...this.addresses,
+        marginUser: marketUser,
+        collateral,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        claims,
+        underlyingSettlement,
+        ticketSettlement
       })
       .instruction()
   }
