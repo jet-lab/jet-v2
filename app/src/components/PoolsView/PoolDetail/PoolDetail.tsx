@@ -41,6 +41,17 @@ export function PoolDetail(): JSX.Element {
     return render;
   }
 
+  // Renders the required collateral factor for the current pool
+  function renderRequiredCollateralFactor() {
+    let render = <Skeleton paragraph={false} active style={{ width: 100 }} />;
+    if (init) {
+      render = <Text>{currentPool.loanNoteMetadata.valueModifier.toNumber()}</Text>;
+    }
+
+    return render;
+  }
+
+
   // Renders the pool size for the current pool
   function renderPoolSize() {
     let render = <Skeleton className="align-center" paragraph={false} active style={{ margin: '10px 0' }} />;
@@ -115,6 +126,12 @@ export function PoolDetail(): JSX.Element {
               <Text className="info-element small-accent-text">{dictionary.poolsView.collateralWeight}</Text>
             </Info>
             {renderCollateralWeight()}
+          </div>
+          <div className="pool-detail-body-half-section flex align-start justify-center column">
+            <Info term="requiredCollateralFactor">
+              <Text className="info-element small-accent-text">{dictionary.poolsView.requiredCollateralFactor}</Text>
+            </Info>
+            {renderRequiredCollateralFactor()}
           </div>
         </div>
         <div className="pool-detail-body-half flex-align-start justify-center column">

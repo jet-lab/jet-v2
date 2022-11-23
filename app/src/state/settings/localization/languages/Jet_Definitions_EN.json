@@ -39,6 +39,10 @@
     "term": "Collateral Weight",
     "definition": "A multiplier that adjusts the contribution of an asset's USD value to account collateral."
   },
+  "requiredCollateralFactor": {
+    "term": "Required Collateral Factor",
+    "definition": "A constant assigned to each asset that is used to determine the required collateral for a liability of that asset. Analogous to the maximum leverage for a particular asset."
+  },
   "requiredCollateral": {
     "term": "Required Collateral",
     "definition": "The minimum effective collateral required to maintain a healthy account, quoted in USD. Determined by the size and composition of your liabilities."
