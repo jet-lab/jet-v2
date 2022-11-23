@@ -1307,22 +1307,22 @@ export type JetBonds = {
         },
         {
           "name": "underlyingTokenVault",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false
         },
         {
           "name": "bondTicketMint",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false
         },
         {
           "name": "underlyingSettlement",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false
         },
         {
           "name": "ticketSettlement",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false
         }
       ],
@@ -4908,22 +4908,22 @@ export const IDL: JetBonds = {
         },
         {
           "name": "underlyingTokenVault",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false
         },
         {
           "name": "bondTicketMint",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false
         },
         {
           "name": "underlyingSettlement",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false
         },
         {
           "name": "ticketSettlement",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false
         }
       ],
