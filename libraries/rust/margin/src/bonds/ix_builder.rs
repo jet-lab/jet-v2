@@ -632,6 +632,7 @@ impl BondsIxBuilder {
     pub fn margin_borrow_order(
         &self,
         margin_account: Pubkey,
+        underlying_settlement: Option<Pubkey>,
         params: OrderParams,
         seed: &[u8],
     ) -> Result<Instruction> {
@@ -651,6 +652,11 @@ impl BondsIxBuilder {
             claims_mint: self.claims,
             collateral: margin_user.collateral,
             collateral_mint: self.collateral,
+            underlying_token_vault: self.underlying_token_vault,
+            underlying_settlement: underlying_settlement.unwrap_or(get_associated_token_address(
+                &margin_account,
+                &self.underlying_mint,
+            )),
             payer: self.payer.unwrap(),
             token_program: spl_token::ID,
             system_program: solana_sdk::system_program::ID,

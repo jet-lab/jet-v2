@@ -226,6 +226,7 @@ export class BondMarket {
         claims,
         collateral,
         payer,
+        underlyingSettlement: await getAssociatedTokenAddress(this.addresses.underlyingTokenMint, user.address, true),
         systemProgram: SystemProgram.programId,
         tokenProgram: TOKEN_PROGRAM_ID
       })

@@ -25,6 +25,7 @@ pub struct MarginBorrowOrder<'info> {
         mut,
         has_one = margin_account,
         has_one = claims @ BondsError::WrongClaimAccount,
+        has_one = collateral @ BondsError::WrongCollateralAccount,
     )]
     pub margin_user: Box<Account<'info, MarginUser>>,
 
@@ -43,7 +44,7 @@ pub struct MarginBorrowOrder<'info> {
 
     /// Token mint used by the margin program to track the debt that must be collateralized
     /// CHECK: in instruction handler
-    #[account(mut)]
+    #[account(mut, address = orderbook_mut.claims_mint() @ BondsError::WrongClaimMint)]
     pub claims_mint: AccountInfo<'info>,
 
     /// Token account used by the margin program to track the debt that must be collateralized
@@ -51,8 +52,16 @@ pub struct MarginBorrowOrder<'info> {
     pub collateral: AccountInfo<'info>,
 
     /// Token mint used by the margin program to track the debt that must be collateralized
-    #[account(mut)]
+    #[account(mut, address = orderbook_mut.collateral_mint() @ BondsError::WrongCollateralMint)]
     pub collateral_mint: AccountInfo<'info>,
+
+    /// The market token vault
+    #[account(mut, address = orderbook_mut.vault() @ BondsError::WrongVault)]
+    pub underlying_token_vault: AccountInfo<'info>,
+
+    /// The market token vault
+    #[account(mut, address = margin_user.underlying_settlement @ BondsError::WrongUnderlyingSettlementAccount)]
+    pub underlying_settlement: AccountInfo<'info>,
 
     #[bond_manager]
     pub orderbook_mut: OrderbookMut<'info>,
@@ -114,7 +123,6 @@ pub fn handler(
         manager
             .collected_fees
             .try_add_assign(quote_filled.safe_sub(disburse)?)?;
-        ctx.accounts.margin_user.assets.entitled_tokens += disburse;
         let base_filled = order_summary.base_filled();
         *obligation = Obligation {
             sequence_number,
@@ -125,6 +133,12 @@ pub fn handler(
             balance: base_filled,
             flags: ObligationFlags::default(),
         };
+        drop(manager);
+        ctx.withdraw(
+            &ctx.accounts.underlying_token_vault,
+            &ctx.accounts.underlying_settlement,
+            disburse,
+        )?;
 
         emit!(ObligationCreated {
             obligation: obligation.key(),

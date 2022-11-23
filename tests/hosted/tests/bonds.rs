@@ -584,21 +584,18 @@ async fn margin_borrow_then_margin_lend() -> Result<()> {
     assert_eq!(0, lender.claims().await?);
 
     manager.consume_events().await?;
-    #[cfg(not(feature = "localnet"))]
-    {
-        lender.settle().await?;
-        borrower.settle().await?;
+    lender.settle().await?;
+    borrower.settle().await?;
 
-        assert_eq!(STARTING_TOKENS + 1_000, borrower.tokens().await?);
-        assert_eq!(0, borrower.tickets().await?);
-        assert_eq!(0, borrower.collateral().await?);
-        assert_eq!(1_201, borrower.claims().await?);
+    assert_eq!(STARTING_TOKENS + 1_000, borrower.tokens().await?);
+    assert_eq!(0, borrower.tickets().await?);
+    assert_eq!(0, borrower.collateral().await?);
+    assert_eq!(1_201, borrower.claims().await?);
 
-        assert_eq!(STARTING_TOKENS - 1_001, lender.tokens().await?);
-        assert_eq!(0, lender.tickets().await?);
-        assert_eq!(1_201, lender.collateral().await?);
-        assert_eq!(0, lender.claims().await?);
-    }
+    assert_eq!(STARTING_TOKENS - 1_001, lender.tokens().await?);
+    assert_eq!(0, lender.tickets().await?);
+    assert_eq!(1_201, lender.collateral().await?);
+    assert_eq!(0, lender.claims().await?);
 
     Ok(())
 }
@@ -640,28 +637,25 @@ async fn margin_lend_then_margin_borrow() -> Result<()> {
     .send_and_confirm_condensed_in_order(&client)
     .await?;
 
-    assert_eq!(STARTING_TOKENS, borrower.tokens().await?); // todo a program change could safely make this STARTING_TOKENS + 1_000
+    assert_eq!(STARTING_TOKENS + 999, borrower.tokens().await?);
     assert_eq!(0, borrower.tickets().await?);
     assert_eq!(0, borrower.collateral().await?);
     assert_eq!(1_201, borrower.claims().await?);
 
     manager.consume_events().await?;
-    #[cfg(not(feature = "localnet"))]
-    {
-        lender.settle().await?;
-        borrower.settle().await?;
+    lender.settle().await?;
+    borrower.settle().await?;
 
-        // todo improve the rounding situation to make this 1_000
-        assert_eq!(STARTING_TOKENS + 999, borrower.tokens().await?);
-        assert_eq!(0, borrower.tickets().await?);
-        assert_eq!(0, borrower.collateral().await?);
-        assert_eq!(1_201, borrower.claims().await?);
+    // todo improve the rounding situation to make this 1_000
+    assert_eq!(STARTING_TOKENS + 999, borrower.tokens().await?);
+    assert_eq!(0, borrower.tickets().await?);
+    assert_eq!(0, borrower.collateral().await?);
+    assert_eq!(1_201, borrower.claims().await?);
 
-        assert_eq!(STARTING_TOKENS - 1_001, lender.tokens().await?);
-        assert_eq!(0, lender.tickets().await?);
-        assert_eq!(1_201, lender.collateral().await?);
-        assert_eq!(0, lender.claims().await?);
-    }
+    assert_eq!(STARTING_TOKENS - 1_001, lender.tokens().await?);
+    assert_eq!(0, lender.tickets().await?);
+    assert_eq!(1_201, lender.collateral().await?);
+    assert_eq!(0, lender.claims().await?);
 
     Ok(())
 }
