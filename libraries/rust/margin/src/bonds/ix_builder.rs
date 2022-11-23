@@ -653,10 +653,9 @@ impl BondsIxBuilder {
             collateral: margin_user.collateral,
             collateral_mint: self.collateral,
             underlying_token_vault: self.underlying_token_vault,
-            underlying_settlement: underlying_settlement.unwrap_or(get_associated_token_address(
-                &margin_account,
-                &self.underlying_mint,
-            )),
+            underlying_settlement: underlying_settlement.unwrap_or_else(|| {
+                get_associated_token_address(&margin_account, &self.underlying_mint)
+            }),
             payer: self.payer.unwrap(),
             token_program: spl_token::ID,
             system_program: solana_sdk::system_program::ID,
