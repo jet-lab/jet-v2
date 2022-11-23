@@ -81,6 +81,14 @@ impl<'info> OrderbookMut<'info> {
         self.bond_manager.load().unwrap().underlying_token_vault
     }
 
+    pub fn collateral_mint(&self) -> Pubkey {
+        self.bond_manager.load().unwrap().collateral_mint
+    }
+
+    pub fn claims_mint(&self) -> Pubkey {
+        self.bond_manager.load().unwrap().claims_mint
+    }
+
     #[allow(clippy::too_many_arguments)]
     pub fn place_order(
         &self,

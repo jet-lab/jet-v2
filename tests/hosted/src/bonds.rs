@@ -759,7 +759,7 @@ impl<P: Proxy> BondsUser<P> {
         let borrow =
             self.manager
                 .ix_builder
-                .margin_borrow_order(self.proxy.pubkey(), params, seed)?;
+                .margin_borrow_order(self.proxy.pubkey(), None, params, seed)?;
         self.proxy
             .refresh_and_invoke_signed(borrow, clone(&self.owner))
             .await
