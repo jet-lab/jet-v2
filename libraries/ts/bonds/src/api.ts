@@ -325,7 +325,7 @@ export const borrowNow = async ({
   const instructions: TransactionInstruction[][] = []
   // Create relevant accounts if they do not exist
   const accountInstructions: TransactionInstruction[] = []
-  await withCreateFixedMarketAccounts({
+  const { tokenMint } = await withCreateFixedMarketAccounts({
     market,
     provider,
     marginAccount,
@@ -349,10 +349,9 @@ export const borrowNow = async ({
 
   // Create borrow instruction
   const seed = createRandomSeed(8)
-  console.log(seed)
   const borrowInstructions: TransactionInstruction[] = []
   const borrowNow = await market.borrowNowIx(marginAccount, walletAddress, amount, seed)
-  const settle = await market.settle(marginAccount, seed)
+  const settle = await market.settle(marginAccount)
 
   await marginAccount.withAdapterInvoke({
     instructions: borrowInstructions,
@@ -363,6 +362,27 @@ export const borrowNow = async ({
     instructions: borrowInstructions,
     adapterInstruction: settle
   })
+
+  const change = PoolTokenChange.shiftBy(amount)
+  const source = AssociatedToken.derive(tokenMint, marginAccount.address)
+  const position = currentPool.findDepositPositionAddress(marginAccount)
+  const depositIx = await currentPool.programs.marginPool.methods
+    .deposit(change.changeKind.asParam(), change.value)
+    .accounts({
+      marginPool: currentPool.address,
+      vault: currentPool.addresses.vault,
+      depositNoteMint: currentPool.addresses.depositNoteMint,
+      depositor: marginAccount.address,
+      source,
+      destination: position,
+      tokenProgram: TOKEN_PROGRAM_ID
+    })
+    .instruction()
+  await marginAccount.withAdapterInvoke({
+    instructions: borrowInstructions,
+    adapterInstruction: depositIx
+  })
+  await marginAccount.withUpdatePositionBalance({ instructions: borrowInstructions, position })
 
   instructions.push(borrowInstructions)
 
@@ -441,19 +461,4 @@ export const lendNow = async ({
 
   instructions.push(lendInstructions)
   return sendAll(provider, [instructions])
-}
-
-interface ISettle {
-  market: BondMarket
-  marginAccount: MarginAccount
-  provider: AnchorProvider
-}
-export const settle = async ({ market, marginAccount, provider }: ISettle) => {
-  const instructions: TransactionInstruction[] = []
-  const settleIx = await market.settle(marginAccount, new Uint8Array([]))
-  await marginAccount.withAdapterInvoke({
-    instructions,
-    adapterInstruction: settleIx
-  })
-  return sendAll(provider, [[settleIx]])
 }

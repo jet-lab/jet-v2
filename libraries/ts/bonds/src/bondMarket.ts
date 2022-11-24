@@ -306,20 +306,12 @@ export class BondMarket {
       .instruction()
   }
 
-  async settle(user: MarginAccount, seed) {
+  async settle(user: MarginAccount) {
     const ticketSettlement = await getAssociatedTokenAddress(this.addresses.bondTicketMint, user.address, true)
     const marketUser = await this.deriveMarginUserAddress(user)
     const collateral = await this.deriveMarginUserCollateral(marketUser)
     const claims = await this.deriveMarginUserClaims(marketUser)
     const underlyingSettlement = await getAssociatedTokenAddress(this.addresses.underlyingTokenMint, user.address, true)
-
-    Object.entries(this.addresses).map(([key, entry]) => {
-      if (entry.toBase58) {
-        console.log(key, entry.toBase58())
-      } else {
-        console.log("Weird public key", key, entry)
-      }
-    })
     return this.program.methods
       .settle()
       .accounts({
