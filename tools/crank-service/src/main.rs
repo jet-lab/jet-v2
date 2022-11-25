@@ -1,79 +1,20 @@
-use std::{fs::read_to_string, sync::Arc, time::Duration};
+mod client;
+mod consumer;
 
-use agnostic_orderbook::state::event_queue::EventQueue;
-use anchor_lang::AccountDeserialize;
+use std::{fs::read_to_string, time::Duration};
+
 use anyhow::Result;
 use clap::Parser;
-use jet_margin_sdk::{
-    bonds::{BondManager, BondsIxBuilder},
-    ix_builder::{derive_airspace, test_service::derive_token_mint},
-};
+use client::{Client, AsyncSigner};
+use consumer::Consumer;
+use jet_margin_sdk::ix_builder::{derive_airspace, test_service::derive_token_mint};
 use jetctl::actions::test::{derive_bond_manager_from_duration_seed, TestEnvConfig};
 use solana_cli_config::{Config as SolanaConfig, CONFIG_FILE as SOLANA_CONFIG_FILE};
-use solana_client::rpc_client::RpcClient;
-use solana_sdk::{
-    instruction::Instruction, message::Message, pubkey::Pubkey, signature::Signature,
-    signer::Signer, transaction::Transaction,
-};
+use solana_sdk::pubkey::Pubkey;
+
 
 static LOCALNET_URL: &str = "http://127.0.0.1:8899";
 
-#[derive(Clone)]
-pub struct AsyncSigner(Arc<dyn Signer>);
-
-impl Signer for AsyncSigner {
-    fn is_interactive(&self) -> bool {
-        self.0.is_interactive()
-    }
-    fn pubkey(&self) -> solana_sdk::pubkey::Pubkey {
-        self.0.pubkey()
-    }
-    fn try_pubkey(&self) -> Result<solana_sdk::pubkey::Pubkey, solana_sdk::signer::SignerError> {
-        self.0.try_pubkey()
-    }
-    fn sign_message(&self, message: &[u8]) -> Signature {
-        self.0.sign_message(message)
-    }
-    fn try_sign_message(
-        &self,
-        message: &[u8],
-    ) -> Result<Signature, solana_sdk::signer::SignerError> {
-        self.0.try_sign_message(message)
-    }
-}
-unsafe impl Send for AsyncSigner {}
-unsafe impl Sync for AsyncSigner {}
-
-impl<T: Into<Arc<dyn Signer>>> From<T> for AsyncSigner {
-    fn from(s: T) -> Self {
-        Self(s.into())
-    }
-}
-
-#[derive(Clone)]
-pub struct Client {
-    pub signer: AsyncSigner,
-    pub conn: Arc<RpcClient>,
-}
-
-impl Client {
-    pub fn new(signer: AsyncSigner, url: String) -> Self {
-        Self {
-            signer,
-            conn: Arc::new(RpcClient::new(url)),
-        }
-    }
-
-    pub fn sign_send_consume_ix(&self, ix: Instruction) -> Result<Signature> {
-        let msg = Message::new(&[ix], Some(&self.signer.pubkey()));
-        let mut tx = Transaction::new_unsigned(msg);
-
-        tx.try_partial_sign(&[&self.signer], self.conn.get_latest_blockhash()?)?;
-        self.conn
-            .send_and_confirm_transaction(&tx)
-            .map_err(anyhow::Error::from)
-    }
-}
 
 #[derive(Parser, Debug)]
 pub struct CliOpts {
@@ -97,41 +38,20 @@ async fn run(opts: CliOpts) -> Result<()> {
         opts.url.unwrap_or_else(|| LOCALNET_URL.into()),
     );
 
-    let cfg = read_config(&opts.config_path)?;
-    for (_, markets) in cfg {
+    let targets = read_config(&opts.config_path)?;
+    
+    let mut consumers = vec![];
+    for (_, markets) in targets {
         for market in markets {
-            let c = client.clone();
 
-            std::thread::spawn(move || loop {
-                let manager = {
-                    let buf = c.conn.get_account_data(&market).unwrap();
-                    BondManager::try_deserialize(&mut buf.as_slice()).unwrap()
-                };
-                let ix_builder = BondsIxBuilder::from(manager)
-                    .with_crank(&c.signer.pubkey())
-                    .with_payer(&c.signer.pubkey());
-                let _res = consume_events(c.clone(), ix_builder);
-                // Logging is very noisy, probably disable it.
-                // println!(
-                //     "Market: {}_{} Result: {:#?}",
-                //     a, manager.borrow_duration, res
-                // );
-            });
+            let c = client.clone();
+            consumers.push(tokio::spawn(async move {
+                Consumer::spawn(c, market).await
+            }));
         }
     }
+    
     Ok(())
-}
-
-fn consume_events(client: Client, ix_builder: BondsIxBuilder) -> Result<Signature> {
-    // load event queue
-    let mut eq_data = client.conn.get_account_data(&ix_builder.event_queue())?;
-    let eq = EventQueue::from_buffer(
-        &mut eq_data,
-        agnostic_orderbook::state::AccountTag::EventQueue,
-    )?;
-
-    let consume = ix_builder.consume_events(eq)?;
-    client.sign_send_consume_ix(consume)
 }
 
 fn read_config(path: &str) -> Result<Vec<(String, Vec<Pubkey>)>> {
@@ -170,7 +90,6 @@ fn load_signer(path: Option<String>) -> Result<AsyncSigner> {
         "wallet",
         &mut None,
     )
-    .map(Arc::from)
     .map(AsyncSigner::from)
     .map_err(|_| anyhow::Error::msg("failed to register signer from path"))
 }
@@ -179,7 +98,6 @@ fn load_signer(path: Option<String>) -> Result<AsyncSigner> {
 async fn main() -> Result<()> {
     run(CliOpts::parse()).await?;
 
-    loop {
-        tokio::time::sleep(Duration::from_secs(30)).await;
-    }
+    std::future::pending::<()>().await;
+    Ok(())
 }
