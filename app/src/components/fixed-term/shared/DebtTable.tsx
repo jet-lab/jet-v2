@@ -289,6 +289,12 @@ export function DebtTable(): JSX.Element {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [accounts, currentAccountHistory, actionRefresh]);
 
+  const paginationSizes = 
+    [5, 10, 25, 50, 100].map(size => ({
+      key: size,
+      label: <div onClick={() => setPageSize(size)} className={size == pageSize ? 'active' : ''}>{size}</div>}
+  ));
+
   return (
     <div className="debt-detail account-table view-element flex-centered">
       <ConnectionFeedback />
@@ -324,16 +330,7 @@ export function DebtTable(): JSX.Element {
 
       <div className="page-size-dropdown flex-centered">
         <Paragraph italic>{dictionary.accountsView.rowsPerPage}:</Paragraph>
-        <Dropdown
-          overlay={
-            <Menu className="min-width-menu-sm">
-              {[5, 10, 25, 50, 100].map(size => (
-                <Menu.Item key={size} onClick={() => setPageSize(size)} className={size === pageSize ? 'active' : ''}>
-                  {size}
-                </Menu.Item>
-              ))}
-            </Menu>
-          }>
+        <Dropdown menu = {{items: paginationSizes}}>
           <Text type="secondary">
             {pageSize}
             <AngleDown className="jet-icon" />
