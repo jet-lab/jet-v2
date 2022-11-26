@@ -16,10 +16,10 @@ import {
   Connection,
   ParsedTransactionWithMeta,
   PublicKey,
-  TransactionResponse,
   ParsedInstruction,
   ParsedInnerInstruction,
-  PartiallyDecodedInstruction
+  PartiallyDecodedInstruction,
+  VersionedTransactionResponse
 } from "@solana/web3.js"
 
 interface TokenMintsList {
@@ -30,7 +30,7 @@ interface TokenMintsList {
 type Mints = Record<string, TokenMintsList>
 
 type TxAndSig = {
-  details: TransactionResponse
+  details: VersionedTransactionResponse
   sig: ConfirmedSignatureInfo
 }
 
@@ -108,7 +108,7 @@ export class MarginClient {
   }
 
   static async getSingleTransaction(provider: AnchorProvider, sig: ConfirmedSignatureInfo): Promise<TxAndSig | null> {
-    const details = await provider.connection.getTransaction(sig.signature, { commitment: "confirmed" })
+    const details = await provider.connection.getTransaction(sig.signature, { commitment: "confirmed", maxSupportedTransactionVersion: 0 })
     if (details) {
       return {
         details,

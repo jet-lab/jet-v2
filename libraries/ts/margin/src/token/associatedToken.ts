@@ -1,6 +1,6 @@
 import { BN, Address, translateAddress, AnchorProvider, Provider } from "@project-serum/anchor"
-import { TOKEN_PROGRAM_ID } from "@project-serum/serum/lib/token-instructions"
 import {
+  TOKEN_PROGRAM_ID,
   ASSOCIATED_TOKEN_PROGRAM_ID,
   NATIVE_MINT,
   createAssociatedTokenAccountInstruction,
@@ -380,7 +380,8 @@ export class AssociatedToken {
       isFrozen: rawAccount.state === AccountState.Frozen,
       isNative: !!rawAccount.isNativeOption,
       rentExemptReserve: rawAccount.isNativeOption ? rawAccount.isNative : null,
-      closeAuthority: rawAccount.closeAuthorityOption ? rawAccount.closeAuthority : null
+      closeAuthority: rawAccount.closeAuthorityOption ? rawAccount.closeAuthority : null,
+      tlvData: Buffer.alloc(0)
     }
     return new AssociatedToken(publicKey, info, TokenAmount.account(info, decimals))
   }
@@ -404,7 +405,8 @@ export class AssociatedToken {
       supply: rawMint.supply,
       decimals: rawMint.decimals,
       isInitialized: rawMint.isInitialized,
-      freezeAuthority: rawMint.freezeAuthorityOption ? rawMint.freezeAuthority : null
+      freezeAuthority: rawMint.freezeAuthorityOption ? rawMint.freezeAuthority : null,
+      tlvData: Buffer.alloc(0) // TODO
     }
   }
 
