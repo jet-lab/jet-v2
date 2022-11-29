@@ -59,6 +59,7 @@ pub struct BondManager {
     pub origination_fee: u64,
     /// amount of fees currently available to be withdrawn by market owner
     pub collected_fees: u64,
+    pub next_event: u64,
     /// Used to generate unique order tags
     pub nonce: u64,
 }

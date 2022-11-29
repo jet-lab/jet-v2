@@ -180,6 +180,24 @@ pub trait RemainingAccounts<'a, 'info: 'a>: Iterator<Item = &'a AccountInfo<'inf
 }
 impl<'a, 'info: 'a, T: Iterator<Item = &'a AccountInfo<'info>>> RemainingAccounts<'a, 'info> for T {}
 
+// pub struct AnchorAccountIniterator<'c, 'info: 'c, T: AnchorStruct, I: Iterator<Item = &'c AccountInfo<'info>>> {
+//     inner: I,
+//     _account_type: PhantomData<T>,
+// }
+
+// impl<'c, 'info: 'c, T: AnchorStruct, I: Iterator<Item = &'c AccountInfo<'info>>> Iterator for AnchorAccountIniterator<'c, 'info, T, I> {
+//     type Item = AnchorAccount<'info, T, Mut>;
+
+//     fn next(&mut self) -> Option<Self::Item> {
+//         init(
+//             self.inner.next().to_owned(),
+//             payer,
+//             system_program,
+//             seeds,
+//         )
+//     }
+// }
+
 /// initialize a PDA and return the mutable struct
 pub fn init<'info, T: AnchorStruct>(
     new_account: AccountInfo<'info>,
