@@ -8,4 +8,6 @@ pub enum FixedTermWasmError {
     LimitPriceRequired,
     #[error("Resting orders are not appropriately sorted.")]
     RestingOrdersNotSorted,
+    #[error("Numerical overflow")]
+    NumericalOverflow,
 }
