@@ -6,20 +6,20 @@ use agnostic_orderbook::{
     },
 };
 use anchor_lang::prelude::*;
-use jet_program_common::traits::{SafeAdd, SafeSub};
+use jet_program_common::traits::{SafeAdd, SafeSub, TryAddAssign};
 use num_traits::FromPrimitive;
 
 use crate::{
     bond_token_manager::BondTokenManager,
     events::skip_err,
     margin::state::{Obligation, ObligationFlags},
-    orderbook::state::{fp32_mul, CallbackFlags, CallbackInfo, FillInfo, OrderbookEvent, OutInfo},
+    orderbook::state::{fp32_mul, CallbackFlags, CallbackInfo, FillInfo, OutInfo},
     tickets::state::SplitTicket,
     utils::map,
     BondsError,
 };
 
-use super::{queue, ConsumeEvents, EventAccounts, FillAccounts, OutAccounts};
+use super::{queue, ConsumeEvents, FillAccounts, OutAccounts, PreparedEvent};
 
 pub fn handler<'info>(
     ctx: Context<'_, '_, '_, 'info, ConsumeEvents<'info>>,
@@ -27,22 +27,10 @@ pub fn handler<'info>(
     seeds: Vec<Vec<u8>>,
 ) -> Result<()> {
     let mut num_iters = 0;
-    let manager = ctx.accounts.bond_manager.load()?;
-
     for event in queue(&ctx, seeds)?.take(num_events as usize) {
-        let mut res = event?;
-        let (accounts, event) = res.as_mut();
-
-        // Delegate event processing to the appropriate handler
-        match accounts {
-            EventAccounts::Fill(accounts) => handle_fill(
-                &ctx,
-                manager.borrow_duration,
-                manager.lend_duration,
-                accounts,
-                event,
-            ),
-            EventAccounts::Out(accounts) => handle_out(&ctx, accounts, event),
+        match event? {
+            PreparedEvent::Fill(accounts, info) => handle_fill(&ctx, *accounts, &info),
+            PreparedEvent::Out(accounts, info) => handle_out(&ctx, *accounts, &info),
         }?;
 
         num_iters += 1;
@@ -67,23 +55,22 @@ pub fn handler<'info>(
 
 fn handle_fill<'info>(
     ctx: &Context<'_, '_, '_, 'info, ConsumeEvents<'info>>,
-    borrow_duration: i64,
-    lend_duration: i64,
-    accounts: &mut Box<FillAccounts<'info>>,
-    fill: &OrderbookEvent,
+    accounts: FillAccounts<'info>,
+    fill: &FillInfo,
 ) -> Result<()> {
+    let manager = &ctx.accounts.bond_manager;
     let FillAccounts {
         maker,
         maker_adapter,
         taker_adapter,
-        loan,
-    } = &mut **accounts;
+        mut loan,
+    } = accounts;
     let FillInfo {
         event,
         maker_info,
         taker_info,
-    } = fill.unwrap_fill()?;
-    if let Some(adapter) = maker_adapter {
+    } = fill;
+    if let Some(mut adapter) = maker_adapter {
         if let Err(e) = adapter.push_event(*event, Some(maker_info), Some(taker_info)) {
             skip_err!(
                 "Failed to push event to adapter {}. Error: {:?}",
@@ -92,7 +79,7 @@ fn handle_fill<'info>(
             );
         }
     }
-    if let Some(adapter) = taker_adapter {
+    if let Some(mut adapter) = taker_adapter {
         if let Err(e) = adapter.push_event(*event, Some(maker_info), Some(taker_info)) {
             skip_err!(
                 "Failed to push event to adapter {}. Error: {:?}",
@@ -106,8 +93,8 @@ fn handle_fill<'info>(
         quote_size,
         base_size,
         ..
-    } = event;
-    let maker_side = Side::from_u8(*taker_side).unwrap().opposite();
+    } = *event;
+    let maker_side = Side::from_u8(taker_side).unwrap().opposite();
     let fill_timestamp = taker_info.order_submitted_timestamp();
     let mut margin_user = maker_info
         .flags
@@ -117,20 +104,20 @@ fn handle_fill<'info>(
 
     match maker_side {
         Side::Bid => {
-            map!(margin_user.assets.reduce_order(*quote_size));
+            map!(margin_user.assets.reduce_order(quote_size));
             if maker_info.flags.contains(CallbackFlags::AUTO_STAKE) {
-                map!(margin_user.assets.stake_tickets(*base_size)?);
+                map!(margin_user.assets.stake_tickets(base_size)?);
                 let principal = quote_size;
-                let interest = base_size.safe_sub(*principal)?;
-                let maturation_timestamp = fill_timestamp.safe_add(lend_duration)?;
-
+                let interest = base_size.safe_sub(principal)?;
+                let maturation_timestamp =
+                    fill_timestamp.safe_add(manager.load()?.lend_duration)?;
                 **loan.as_mut().unwrap().auto_stake()? = SplitTicket {
                     owner: maker.pubkey(),
-                    bond_manager: ctx.accounts.bond_manager.key(),
+                    bond_manager: manager.key(),
                     order_tag: maker_info.order_tag,
                     maturation_timestamp,
                     struck_timestamp: fill_timestamp,
-                    principal: *principal,
+                    principal,
                     interest,
                 };
             } else if let Some(mut margin_user) = margin_user {
@@ -139,19 +126,27 @@ fn handle_fill<'info>(
                 ctx.mint(
                     &ctx.accounts.bond_ticket_mint,
                     maker.as_token_account(),
-                    *base_size,
+                    base_size,
                 )?;
             }
         }
         Side::Ask => {
             if let Some(mut margin_user) = margin_user {
-                margin_user.assets.reduce_order(*quote_size);
-                margin_user.assets.entitled_tokens += quote_size;
+                margin_user.assets.reduce_order(quote_size);
                 if maker_info.flags.contains(CallbackFlags::NEW_DEBT) {
-                    let maturation_timestamp = fill_timestamp.safe_add(borrow_duration)?;
+                    let mut manager = manager.load_mut()?;
+                    let disburse = manager.loan_to_disburse(quote_size);
+                    manager
+                        .collected_fees
+                        .try_add_assign(quote_size.safe_sub(disburse)?)?;
+                    margin_user
+                        .assets
+                        .entitled_tokens
+                        .try_add_assign(disburse)?;
+                    let maturation_timestamp = fill_timestamp.safe_add(manager.borrow_duration)?;
                     let sequence_number = margin_user
                         .debt
-                        .new_obligation_from_fill(*base_size, maturation_timestamp)?;
+                        .new_obligation_from_fill(base_size, maturation_timestamp)?;
 
                     **loan.as_mut().unwrap().new_debt()? = Obligation {
                         sequence_number,
@@ -159,15 +154,20 @@ fn handle_fill<'info>(
                         bond_manager: ctx.accounts.bond_manager.key(),
                         order_tag: maker_info.order_tag,
                         maturation_timestamp,
-                        balance: *base_size,
+                        balance: base_size,
                         flags: ObligationFlags::default(),
                     };
+                } else {
+                    margin_user
+                        .assets
+                        .entitled_tokens
+                        .try_add_assign(quote_size)?;
                 }
             } else {
                 ctx.withdraw(
                     &ctx.accounts.underlying_token_vault,
                     maker.as_token_account(),
-                    *quote_size,
+                    quote_size,
                 )?;
             }
         }
@@ -178,16 +178,16 @@ fn handle_fill<'info>(
 
 fn handle_out<'info>(
     ctx: &Context<'_, '_, '_, 'info, ConsumeEvents<'info>>,
-    accounts: &mut Box<OutAccounts<'info>>,
-    out: &OrderbookEvent,
+    accounts: OutAccounts<'info>,
+    out: &OutInfo,
 ) -> Result<()> {
     let OutAccounts {
         user,
         user_adapter_account,
-    } = &mut **accounts;
-    let OutInfo { event, info } = out.unwrap_out()?;
+    } = accounts;
+    let OutInfo { event, info } = out;
     // push to adapter if flagged
-    if let Some(adapter) = user_adapter_account {
+    if let Some(mut adapter) = user_adapter_account {
         if adapter.push_event(*event, Some(info), None).is_err() {
             // don't stop the event processor for a malfunctioning adapter
             // adapter users are responsible for the maintenance of their adapter

@@ -2,6 +2,8 @@ use anchor_lang::prelude::*;
 #[cfg(any(feature = "cli", test))]
 use serde::{ser::SerializeStruct, Deserialize, Serialize, Serializer};
 
+use crate::margin::origination_fee;
+
 /// The `BondManager` contains all the information necessary to run the bond market
 ///
 /// Utilized by program instructions to verify given transaction accounts are correct. Contains data
@@ -37,6 +39,8 @@ pub struct BondManager {
     pub underlying_oracle: Pubkey,
     /// oracle that defines the value of the bond tickets
     pub ticket_oracle: Pubkey,
+    /// where fees can be withdrawn to
+    pub fee_destination: Pubkey,
     /// The user-defined part of the seed that generated this bond manager's PDA
     pub seed: [u8; 32],
     /// The bump seed value for generating the authority address.
@@ -51,6 +55,10 @@ pub struct BondManager {
     pub borrow_duration: i64,
     /// Length of time before a claim is marked as mature, in seconds
     pub lend_duration: i64,
+    /// assessed on borrows. scaled by origination_fee::FEE_UNIT
+    pub origination_fee: u64,
+    /// amount of fees currently available to be withdrawn by market owner
+    pub collected_fees: u64,
     /// Used to generate unique order tags
     pub nonce: u64,
 }
@@ -65,6 +73,16 @@ impl BondManager {
             &self.seed,
             &self.bump,
         ]
+    }
+
+    /// how much a borrower should receive from their fill after an origination fee is assessed
+    pub fn loan_to_disburse(&self, filled_quote: u64) -> u64 {
+        origination_fee::loan_to_disburse(filled_quote, self.origination_fee)
+    }
+
+    /// the size a borrow order should have including the requested amount plus the origination fee
+    pub fn borrow_order_qty(&self, requested: u64) -> u64 {
+        origination_fee::borrow_order_qty(requested, self.origination_fee)
     }
 }
 

@@ -87,6 +87,9 @@ pub struct BondMarketConfig {
     /// The duration for lending
     pub lend_duration: i64,
 
+    /// The origination fee for borrowing in origination_fee::FEE_UNIT
+    pub origination_fee: u64,
+
     /// The minimum order size for the AOB
     pub min_order_size: u64,
 
@@ -330,10 +333,11 @@ fn create_airspace_token_bond_markets_tx(
             config.authority,
             derive_pyth_price(&mint),
             derive_pyth_price(&ticket_mint),
+            None,
         );
 
-        txs.push(TransactionBuilder {
-            instructions: vec![test_service::token_register(
+        txs.push(
+            test_service::token_register(
                 &config.authority,
                 ticket_mint,
                 &TokenCreateParams {
@@ -346,9 +350,16 @@ fn create_airspace_token_bond_markets_tx(
                     source_symbol: token.symbol.clone(),
                     price_ratio: bm_config.ticket_price.parse::<f64>().unwrap(),
                 },
-            )],
-            signers: vec![],
-        });
+            )
+            .into(),
+        );
+
+        txs.push(
+            bonds_ix
+                .init_default_fee_destination(&config.authority)
+                .unwrap()
+                .into(),
+        );
 
         txs.push(TransactionBuilder {
             instructions: vec![
@@ -373,15 +384,14 @@ fn create_airspace_token_bond_markets_tx(
                     len_orders as u64,
                     &jet_bonds::ID,
                 ),
-                bonds_ix
-                    .initialize_manager(
-                        config.authority,
-                        0,
-                        bond_manager_seed,
-                        bm_config.borrow_duration,
-                        bm_config.lend_duration,
-                    )
-                    .unwrap(),
+                bonds_ix.initialize_manager(
+                    config.authority,
+                    0,
+                    bond_manager_seed,
+                    bm_config.borrow_duration,
+                    bm_config.lend_duration,
+                    bm_config.origination_fee,
+                ),
                 bonds_ix
                     .initialize_orderbook(
                         config.authority,

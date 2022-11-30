@@ -48,12 +48,16 @@ pub struct Settle<'info> {
     pub collateral_mint: UncheckedAccount<'info>,
 
     /// CHECK: token program checks it
+    #[account(mut)]
     pub underlying_token_vault: AccountInfo<'info>,
     /// CHECK: token program checks it
+    #[account(mut)]
     pub bond_ticket_mint: AccountInfo<'info>,
     /// CHECK: token program checks it
+    #[account(mut)]
     pub underlying_settlement: AccountInfo<'info>,
     /// CHECK: token program checks it
+    #[account(mut)]
     pub ticket_settlement: AccountInfo<'info>,
 }
 

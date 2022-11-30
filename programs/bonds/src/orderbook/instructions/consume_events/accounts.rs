@@ -22,6 +22,7 @@ pub struct ConsumeEvents<'info> {
         has_one = orderbook_market_state @ BondsError::WrongMarketState,
         has_one = event_queue @ BondsError::WrongEventQueue,
     )]
+    #[account(mut)]
     pub bond_manager: AccountLoader<'info, BondManager>,
     /// The market ticket mint
     /// CHECK: has_one

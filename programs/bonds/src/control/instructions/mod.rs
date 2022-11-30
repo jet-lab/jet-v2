@@ -5,6 +5,7 @@ pub mod modify_bond_manager;
 pub mod pause_order_matching;
 pub mod resume_order_matching;
 pub mod revoke_crank;
+pub mod withdraw_fees;
 
 pub use authorize_crank::*;
 pub use initialize_bond_manager::*;
@@ -13,3 +14,4 @@ pub use modify_bond_manager::*;
 pub use pause_order_matching::*;
 pub use resume_order_matching::*;
 pub use revoke_crank::*;
+pub use withdraw_fees::*;

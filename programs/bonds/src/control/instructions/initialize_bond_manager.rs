@@ -19,6 +19,8 @@ pub struct InitializeBondManagerParams {
     pub borrow_duration: i64,
     /// Length of time before a claim is marked as mature, in seconds
     pub lend_duration: i64,
+    /// assessed on borrows. scaled by origination_fee::FEE_UNIT
+    pub origination_fee: u64,
 }
 
 /// Initialize a [BondManager]
@@ -117,6 +119,10 @@ pub struct InitializeBondManager<'info> {
     /// CHECK: determined by caller
     pub ticket_oracle: AccountInfo<'info>,
 
+    /// The account where fees are allowed to be withdrawn
+    #[account(token::mint = underlying_token_mint)]
+    pub fee_destination: Box<Account<'info, TokenAccount>>,
+
     /// The account paying rent for PDA initialization
     #[account(mut)]
     pub payer: Signer<'info>,
@@ -153,12 +159,15 @@ pub fn handler(
             lend_duration: params.lend_duration,
             underlying_oracle: ctx.accounts.underlying_oracle.key(),
             ticket_oracle: ctx.accounts.ticket_oracle.key(),
+            fee_destination: ctx.accounts.fee_destination.key(),
+            origination_fee: params.origination_fee,
         } ignoring {
             orderbook_market_state,
             event_queue,
             asks,
             bids,
             nonce,
+            collected_fees,
             _reserved,
         }
     }

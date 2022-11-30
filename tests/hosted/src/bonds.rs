@@ -67,6 +67,7 @@ pub const ORDERBOOK_CAPACITY: usize = 1_000;
 pub const EVENT_QUEUE_CAPACITY: usize = 1_000;
 pub const BORROW_DURATION: i64 = 3;
 pub const LEND_DURATION: i64 = 5; // in seconds
+pub const ORIGINATION_FEE: u64 = 10;
 pub const MIN_ORDER_SIZE: u64 = 10;
 
 #[derive(Debug, Default, Clone)]
@@ -178,6 +179,7 @@ impl TestManager {
             payer.pubkey(),
             underlying_oracle,
             ticket_oracle,
+            None,
         )
         .with_payer(&payer.pubkey());
         let mut this = Self {
@@ -229,13 +231,19 @@ impl TestManager {
         this.insert_kp("bids", clone(bids_kp));
         this.insert_kp("asks", clone(asks_kp));
 
+        let payer = this.client.payer().pubkey();
+        let init_fee_destination = this
+            .ix_builder
+            .init_default_fee_destination(&payer)
+            .unwrap();
         let init_manager = this.ix_builder.initialize_manager(
-            this.client.payer().pubkey(),
+            payer,
             BOND_MANAGER_TAG,
             BOND_MANAGER_SEED,
             BORROW_DURATION,
             LEND_DURATION,
-        )?;
+            ORIGINATION_FEE,
+        );
         let init_orderbook = this.ix_builder.initialize_orderbook(
             this.client.payer().pubkey(),
             eq_kp.pubkey(),
@@ -244,11 +252,10 @@ impl TestManager {
             MIN_ORDER_SIZE,
         )?;
 
-        this.sign_send_transaction(
-            &[init_eq, init_bids, init_asks, init_manager, init_orderbook],
-            None,
-        )
-        .await?;
+        this.sign_send_transaction(&[init_eq, init_bids, init_asks, init_fee_destination], None)
+            .await?;
+        this.sign_send_transaction(&[init_manager, init_orderbook], None)
+            .await?;
 
         Ok(this)
     }
@@ -395,12 +402,14 @@ impl TestManager {
             manager.claims_mint,
             manager.underlying_token_mint,
             TokenKind::Claim,
+            10_00,
         )
         .await?;
         self.register_bonds_position_metadatata_impl(
             manager.collateral_mint,
             manager.bond_ticket_mint,
             TokenKind::AdapterCollateral,
+            1_00,
         )
         .await?;
 
@@ -412,13 +421,14 @@ impl TestManager {
         position_token_mint: Pubkey,
         underlying_token_mint: Pubkey,
         token_kind: TokenKind,
+        value_modifier: u16,
     ) -> Result<()> {
         let pos_data = PositionTokenMetadata {
             position_token_mint,
             underlying_token_mint,
             adapter_program: jet_bonds::ID,
             token_kind,
-            value_modifier: 1_000,
+            value_modifier,
             max_staleness: 1_000,
         };
         let address = get_metadata_address(&position_token_mint);
@@ -749,7 +759,7 @@ impl<P: Proxy> BondsUser<P> {
         let borrow =
             self.manager
                 .ix_builder
-                .margin_borrow_order(self.proxy.pubkey(), params, seed)?;
+                .margin_borrow_order(self.proxy.pubkey(), None, params, seed)?;
         self.proxy
             .refresh_and_invoke_signed(borrow, clone(&self.owner))
             .await

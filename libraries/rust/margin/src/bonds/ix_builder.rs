@@ -7,7 +7,9 @@ use solana_sdk::{
     instruction::{AccountMeta, Instruction},
     pubkey::Pubkey,
 };
-use spl_associated_token_account::get_associated_token_address;
+use spl_associated_token_account::{
+    get_associated_token_address, instruction::create_associated_token_account,
+};
 
 pub use jet_bonds::{
     control::{
@@ -18,7 +20,7 @@ pub use jet_bonds::{
     ID,
 };
 
-use crate::ix_builder::get_metadata_address;
+use crate::ix_builder::{get_metadata_address, test_service::if_not_initialized};
 
 use super::error::{client_err, BondsIxError, Result};
 
@@ -35,6 +37,7 @@ pub struct BondsIxBuilder {
     orderbook_market_state: Pubkey,
     underlying_oracle: Pubkey,
     ticket_oracle: Pubkey,
+    fee_destination: Pubkey,
     orderbook: Option<OrderBookAddresses>,
     payer: Option<Pubkey>,
     crank: Option<Pubkey>,
@@ -82,6 +85,7 @@ impl From<BondManager> for BondsIxBuilder {
             orderbook_market_state: bond_manager.orderbook_market_state,
             underlying_oracle: bond_manager.underlying_oracle,
             ticket_oracle: bond_manager.ticket_oracle,
+            fee_destination: bond_manager.fee_destination,
             orderbook: Some(OrderBookAddresses {
                 bids: bond_manager.bids,
                 asks: bond_manager.asks,
@@ -101,6 +105,7 @@ impl BondsIxBuilder {
         authority: Pubkey,
         underlying_oracle: Pubkey,
         ticket_oracle: Pubkey,
+        fee_destination: Option<Pubkey>,
     ) -> Self {
         let bond_ticket_mint = bonds_pda(&[jet_bonds::seeds::BOND_TICKET_MINT, manager.as_ref()]);
         let underlying_token_vault =
@@ -121,6 +126,8 @@ impl BondsIxBuilder {
             orderbook_market_state,
             underlying_oracle,
             ticket_oracle,
+            fee_destination: fee_destination
+                .unwrap_or_else(|| get_associated_token_address(&authority, &underlying_mint)),
             orderbook: None,
             payer: None,
             crank: None,
@@ -135,6 +142,7 @@ impl BondsIxBuilder {
         authority: Pubkey,
         underlying_oracle: Pubkey,
         ticket_oracle: Pubkey,
+        fee_destination: Option<Pubkey>,
     ) -> Self {
         Self::new(
             *airspace,
@@ -143,6 +151,7 @@ impl BondsIxBuilder {
             authority,
             underlying_oracle,
             ticket_oracle,
+            fee_destination,
         )
     }
 
@@ -248,6 +257,22 @@ impl BondsIxBuilder {
         Ok(Instruction::new_with_bytes(jet_bonds::ID, &data, accounts))
     }
 
+    /// initializes the associated token account for the underlying mint owned
+    /// by the authority of the market. this only returns an instruction if
+    /// you've opted to use the default fee_destination, which is the ata for
+    /// the authority. otherwise this returns nothing
+    pub fn init_default_fee_destination(&self, payer: &Pubkey) -> Option<Instruction> {
+        let ata = get_associated_token_address(&self.authority, &self.underlying_mint);
+        if self.fee_destination == ata {
+            Some(if_not_initialized(
+                ata,
+                create_associated_token_account(payer, &self.authority, &self.underlying_mint),
+            ))
+        } else {
+            None
+        }
+    }
+
     pub fn initialize_manager(
         &self,
         payer: Pubkey,
@@ -255,13 +280,15 @@ impl BondsIxBuilder {
         seed: [u8; 32],
         borrow_duration: i64,
         lend_duration: i64,
-    ) -> Result<Instruction> {
+        origination_fee: u64,
+    ) -> Instruction {
         let data = jet_bonds::instruction::InitializeBondManager {
             params: InitializeBondManagerParams {
                 version_tag,
                 seed,
                 borrow_duration,
                 lend_duration,
+                origination_fee,
             },
         }
         .data();
@@ -276,13 +303,14 @@ impl BondsIxBuilder {
             airspace: self.airspace,
             underlying_oracle: self.underlying_oracle,
             ticket_oracle: self.ticket_oracle,
+            fee_destination: self.fee_destination,
             payer,
             rent: solana_sdk::sysvar::rent::ID,
             token_program: spl_token::ID,
             system_program: solana_sdk::system_program::ID,
         }
         .to_account_metas(None);
-        Ok(Instruction::new_with_bytes(jet_bonds::ID, &data, accounts))
+        Instruction::new_with_bytes(jet_bonds::ID, &data, accounts)
     }
 
     pub fn initialize_orderbook_slab(
@@ -604,6 +632,7 @@ impl BondsIxBuilder {
     pub fn margin_borrow_order(
         &self,
         margin_account: Pubkey,
+        underlying_settlement: Option<Pubkey>,
         params: OrderParams,
         seed: &[u8],
     ) -> Result<Instruction> {
@@ -623,6 +652,10 @@ impl BondsIxBuilder {
             claims_mint: self.claims,
             collateral: margin_user.collateral,
             collateral_mint: self.collateral,
+            underlying_token_vault: self.underlying_token_vault,
+            underlying_settlement: underlying_settlement.unwrap_or_else(|| {
+                get_associated_token_address(&margin_account, &self.underlying_mint)
+            }),
             payer: self.payer.unwrap(),
             token_program: spl_token::ID,
             system_program: solana_sdk::system_program::ID,
@@ -757,10 +790,10 @@ impl BondsIxBuilder {
     }
 
     pub fn pause_ticket_redemption(&self) -> Result<Instruction> {
-        self.modify_manager([true as u8].into(), 8 + 32 * 13 + 2)
+        self.modify_manager([true as u8].into(), 8 + 32 * 14 + 2)
     }
     pub fn resume_ticket_redemption(&self) -> Result<Instruction> {
-        self.modify_manager([false as u8].into(), 8 + 32 * 13 + 2)
+        self.modify_manager([false as u8].into(), 8 + 32 * 14 + 2)
     }
 
     pub fn modify_manager(&self, data: Vec<u8>, offset: usize) -> Result<Instruction> {

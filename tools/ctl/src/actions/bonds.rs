@@ -21,6 +21,9 @@ pub struct BondMarketParameters {
     pub lend_duration: i64,
 
     #[clap(long)]
+    pub origination_fee: u64,
+
+    #[clap(long)]
     pub min_order_size: u64,
 
     #[clap(long)]
@@ -93,6 +96,7 @@ pub async fn process_create_bond_market<'a>(
         payer,
         params.token_oracle,
         params.ticket_oracle,
+        None,
     );
 
     let mut steps = vec![];
@@ -106,13 +110,17 @@ pub async fn process_create_bond_market<'a>(
         println!("the token {} does not exist", params.token_mint);
         return Ok(Plan::default());
     } else {
+        if let Some(init_ata) = bonds.init_default_fee_destination(&payer) {
+            instructions.push(init_ata);
+        }
         let init_manager = bonds.initialize_manager(
             payer,
             MANAGER_VERSION,
             seed,
             params.borrow_duration,
             params.lend_duration,
-        )?;
+            params.origination_fee,
+        );
         steps.push(format!(
             "initialize-bond-manager for token [{}]",
             params.token_mint
