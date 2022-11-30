@@ -10,5 +10,5 @@ export const friendlyMarketName = (symbol: string, tenor: number): string => {
 };
 
 export const marketToString = (market: FixedMarketConfig): string => {
-  return friendlyMarketName(market.symbol, market.borrowDuration);
+  return friendlyMarketName(market.symbol, market.borrowTenor);
 };

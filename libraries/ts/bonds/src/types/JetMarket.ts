@@ -1841,7 +1841,7 @@ export type JetMarket = {
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The MarketManager account tracks fixed market assets of a particular duration"
+            "The MarketManager account tracks fixed market assets of a particular tenor"
           ]
         },
         {
@@ -2184,14 +2184,14 @@ export type JetMarket = {
             }
           },
           {
-            "name": "borrowDuration",
+            "name": "borrowTenor",
             "docs": [
               "Length of time before a borrow is marked as due, in seconds"
             ],
             "type": "i64"
           },
           {
-            "name": "lendDuration",
+            "name": "lendTenor",
             "docs": [
               "Length of time before a claim is marked as mature, in seconds"
             ],
@@ -2538,7 +2538,7 @@ export type JetMarket = {
             "name": "seed",
             "docs": [
               "This seed allows the creation of many separate ticket managers tracking different",
-              "parameters, such as staking duration"
+              "parameters, such as staking tenor"
             ],
             "type": {
               "array": [
@@ -2548,14 +2548,14 @@ export type JetMarket = {
             }
           },
           {
-            "name": "borrowDuration",
+            "name": "borrowTenor",
             "docs": [
               "Length of time before a borrow is marked as due, in seconds"
             ],
             "type": "i64"
           },
           {
-            "name": "lendDuration",
+            "name": "lendTenor",
             "docs": [
               "Length of time before a claim is marked as mature, in seconds"
             ],
@@ -3000,12 +3000,12 @@ export type JetMarket = {
           "index": false
         },
         {
-          "name": "borrowDuration",
+          "name": "borrowTenor",
           "type": "i64",
           "index": false
         },
         {
-          "name": "lendDuration",
+          "name": "lendTenor",
           "type": "i64",
           "index": false
         }
@@ -5532,7 +5532,7 @@ export const IDL: JetMarket = {
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The MarketManager account tracks fixed market assets of a particular duration"
+            "The MarketManager account tracks fixed market assets of a particular tenor"
           ]
         },
         {
@@ -5875,14 +5875,14 @@ export const IDL: JetMarket = {
             }
           },
           {
-            "name": "borrowDuration",
+            "name": "borrowTenor",
             "docs": [
               "Length of time before a borrow is marked as due, in seconds"
             ],
             "type": "i64"
           },
           {
-            "name": "lendDuration",
+            "name": "lendTenor",
             "docs": [
               "Length of time before a claim is marked as mature, in seconds"
             ],
@@ -6229,7 +6229,7 @@ export const IDL: JetMarket = {
             "name": "seed",
             "docs": [
               "This seed allows the creation of many separate ticket managers tracking different",
-              "parameters, such as staking duration"
+              "parameters, such as staking tenor"
             ],
             "type": {
               "array": [
@@ -6239,14 +6239,14 @@ export const IDL: JetMarket = {
             }
           },
           {
-            "name": "borrowDuration",
+            "name": "borrowTenor",
             "docs": [
               "Length of time before a borrow is marked as due, in seconds"
             ],
             "type": "i64"
           },
           {
-            "name": "lendDuration",
+            "name": "lendTenor",
             "docs": [
               "Length of time before a claim is marked as mature, in seconds"
             ],
@@ -6691,12 +6691,12 @@ export const IDL: JetMarket = {
           "index": false
         },
         {
-          "name": "borrowDuration",
+          "name": "borrowTenor",
           "type": "i64",
           "index": false
         },
         {
-          "name": "lendDuration",
+          "name": "lendTenor",
           "type": "i64",
           "index": false
         }

@@ -40,8 +40,8 @@ export interface MarketManagerInfo {
   orderbookPaused: boolean
   ticketsPaused: boolean
   reserved: number[]
-  borrowDuration: BN
-  lendDuration: BN
+  borrowTenor: BN
+  lendTenor: BN
   nonce: BN
 }
 

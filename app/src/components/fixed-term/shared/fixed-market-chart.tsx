@@ -24,9 +24,9 @@ const getChartTitle = (currentTab: CurrentOrderTab, market: MarketAndconfig) => 
   if (!market?.config?.symbol) return '';
   switch (currentTab) {
     case 'borrow-now':
-      return `${friendlyMarketName(market.config.symbol, market.config.borrowDuration)} loan offers`;
+      return `${friendlyMarketName(market.config.symbol, market.config.borrowTenor)} loan offers`;
     case 'lend-now':
-      return `${friendlyMarketName(market.config.symbol, market.config.borrowDuration)} borrow requests`;
+      return `${friendlyMarketName(market.config.symbol, market.config.borrowTenor)} borrow requests`;
     case 'offer-loan':
       return `${market.config.symbol} loan offers`;
     case 'request-loan':
@@ -84,7 +84,7 @@ export const FixedPriceChartContainer = ({ type }: FixedChart) => {
         cumulativeQuote += order.quote_size;
         cumulativeBase += order.base_size;
         const price = calculate_implied_price(cumulativeBase, cumulativeQuote);
-        const rate = Number(price_to_rate(price, BigInt(currentMarketConfig.borrowDuration))) / 100;
+        const rate = Number(price_to_rate(price, BigInt(currentMarketConfig.borrowTenor))) / 100;
         data.push({
           x: Number(cumulativeQuote / BigInt(10 ** decimals)),
           y: rate

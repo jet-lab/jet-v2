@@ -3,7 +3,7 @@
 
 use anchor_lang::AccountDeserialize;
 use anyhow::Result;
-use jet_margin_sdk::bonds::{FixedMarketIxBuilder, OrderParams};
+use jet_margin_sdk::fixed_market::{FixedMarketIxBuilder, OrderParams};
 use jet_market::control::state::MarketManager;
 use jet_program_common::{Fp32, FP32_ONE};
 use rand::{thread_rng, Rng};
@@ -31,7 +31,7 @@ const DEVNET_USDC_FAUCET: Pubkey = pubkey!("MV2QoKwWmRQnu8HY56Hsmfhb6aC6L6mLirmQ
 const TOKEN_AMOUNT: u64 = 10_000_000_000;
 const TICKET_AMOUNT: u64 = 5_000_000_000;
 
-const BOND_DURATION: u64 = 5;
+const MARKET_TICKET_TENOR: u64 = 5;
 
 lazy_static::lazy_static! {
     static ref PAYER: String = shellexpand::env("$PWD/tests/keypairs/payer.json")
@@ -258,12 +258,12 @@ fn main() -> Result<()> {
         let rate = (0.05 * num).exp();
         let mut principal: u64 = rng.gen();
         principal %= 100_000;
-        let interest = principal as f64 * rate * BOND_DURATION as f64;
+        let interest = principal as f64 * rate * MARKET_TICKET_TENOR as f64;
 
         let borrow = params(
             principal + interest as u64,
             u64::MAX,
-            rate_to_price(rate, BOND_DURATION).unwrap(),
+            rate_to_price(rate, MARKET_TICKET_TENOR).unwrap(),
         );
         // alice.borrow_order(borrow)?;
     }
@@ -277,7 +277,7 @@ fn main() -> Result<()> {
         let lend = params(
             u64::MAX,
             principal,
-            rate_to_price(rate, BOND_DURATION).unwrap(),
+            rate_to_price(rate, MARKET_TICKET_TENOR).unwrap(),
         );
         // bob.lend_order(lend)?;
     }

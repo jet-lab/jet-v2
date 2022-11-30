@@ -9,8 +9,8 @@ use jet_simulation::solana_rpc_api::SolanaRpcClient;
 use solana_sdk::pubkey::Pubkey;
 
 use crate::{
-    bonds::FixedMarketIxBuilder, ix_builder::accounting_invoke, margin_integrator::PositionRefresher,
-    solana::transaction::TransactionBuilder,
+    fixed_market::FixedMarketIxBuilder, ix_builder::accounting_invoke,
+    margin_integrator::PositionRefresher, solana::transaction::TransactionBuilder,
 };
 
 #[async_trait]
@@ -42,7 +42,7 @@ impl PositionRefresher for FixedPositionRefresher {
     }
 }
 
-/// Refreshes margin positions that are managed by the bonds program
+/// Refreshes margin positions that are managed by the Fixed Market program
 pub struct FixedPositionRefresher {
     /// the address to search for positions
     margin_account: Pubkey,

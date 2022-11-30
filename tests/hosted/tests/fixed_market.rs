@@ -3,11 +3,11 @@ use std::sync::Arc;
 use anchor_lang::prelude::Pubkey;
 use anyhow::Result;
 use hosted_tests::{
-    bonds::{
-        FixedUser, GenerateProxy, OrderAmount, TestManager as FixedTestManager, LEND_DURATION,
+    context::MarginTestContext,
+    fixed_market::{
+        FixedUser, GenerateProxy, OrderAmount, TestManager as FixedTestManager, LEND_TENOR,
         STARTING_TOKENS,
     },
-    context::MarginTestContext,
     margin_test_context,
     setup_helper::{setup_user, tokens},
 };
@@ -15,7 +15,7 @@ use jet_margin_sdk::{
     ix_builder::MarginIxBuilder,
     margin_integrator::{NoProxy, Proxy},
     solana::transaction::{InverseSendTransactionBuilder, SendTransactionBuilder},
-    tx_builder::bonds::FixedPositionRefresher,
+    tx_builder::fixed_market::FixedPositionRefresher,
     util::data::Concat,
 };
 use jet_margin_sdk::{margin_integrator::RefreshingProxy, tx_builder::MarginTxBuilder};
@@ -286,7 +286,7 @@ async fn non_margin_orders_for_proxy<P: Proxy + GenerateProxy>(
     let split_ticket_b = bob.load_split_ticket(&[0]).await?;
     assert_eq!(
         split_ticket_b.maturation_timestamp,
-        split_ticket_b.struck_timestamp + LEND_DURATION
+        split_ticket_b.struck_timestamp + LEND_TENOR
     );
 
     assert_eq!(

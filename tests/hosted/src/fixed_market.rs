@@ -14,7 +14,9 @@ use anyhow::Result;
 use async_trait::async_trait;
 
 use jet_margin_sdk::{
-    bonds::{event_builder::build_consume_events_info, fixed_market_pda, FixedMarketIxBuilder},
+    fixed_market::{
+        event_builder::build_consume_events_info, fixed_market_pda, FixedMarketIxBuilder,
+    },
     ix_builder::{
         get_control_authority_address, get_metadata_address, ControlIxBuilder, MarginIxBuilder,
     },
@@ -65,8 +67,8 @@ pub const MARKET_MANAGER_TAG: u64 = u64::from_le_bytes(*b"zachzach");
 pub const FEEDER_FUND_SEED: u64 = u64::from_le_bytes(*b"feedingf");
 pub const ORDERBOOK_CAPACITY: usize = 1_000;
 pub const EVENT_QUEUE_CAPACITY: usize = 1_000;
-pub const BORROW_DURATION: i64 = 3;
-pub const LEND_DURATION: i64 = 5; // in seconds
+pub const BORROW_TENOR: i64 = 3;
+pub const LEND_TENOR: i64 = 5; // in seconds
 pub const ORIGINATION_FEE: u64 = 10;
 pub const MIN_ORDER_SIZE: u64 = 10;
 
@@ -240,8 +242,8 @@ impl TestManager {
             payer,
             MARKET_MANAGER_TAG,
             MARKET_MANAGER_SEED,
-            BORROW_DURATION,
-            LEND_DURATION,
+            BORROW_TENOR,
+            LEND_TENOR,
             ORIGINATION_FEE,
         );
         let init_orderbook = this.ix_builder.initialize_orderbook(

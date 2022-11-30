@@ -1,5 +1,5 @@
 use anyhow::Result;
-use jet_margin_sdk::bonds::{event_queue_len, orderbook_slab_len, FixedMarketIxBuilder};
+use jet_margin_sdk::fixed_market::{event_queue_len, orderbook_slab_len, FixedMarketIxBuilder};
 use jetctl::{
     actions::fixed::MarketParameters,
     client::{Client, ClientConfig, Plan},

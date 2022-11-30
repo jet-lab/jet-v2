@@ -96,7 +96,7 @@ export const BorrowNow = ({ token, decimals, marketAndConfig, marginConfig }: Re
             {`in ${formatDuration(
               intervalToDuration({
                 start: new Date(0),
-                end: new Date(marketAndConfig.config.borrowDuration * 1000)
+                end: new Date(marketAndConfig.config.borrowTenor * 1000)
               })
             )}`}
           </span>

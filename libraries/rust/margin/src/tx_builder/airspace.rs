@@ -18,7 +18,7 @@
 use solana_sdk::pubkey::Pubkey;
 
 use crate::{
-    bonds::FixedMarketIxBuilder,
+    fixed_market::FixedMarketIxBuilder,
     ix_builder::{
         derive_airspace, derive_governor_id, get_control_authority_address,
         test_service::if_not_initialized, AirspaceIxBuilder, ControlIxBuilder,
@@ -178,7 +178,8 @@ impl AirspaceAdmin {
         max_leverage: u16,
     ) -> TransactionBuilder {
         let margin_config_ix = MarginConfigIxBuilder::new(self.airspace, self.payer);
-        let market_manager = FixedMarketIxBuilder::market_manager_key(&self.airspace, &token_mint, seed);
+        let market_manager =
+            FixedMarketIxBuilder::market_manager_key(&self.airspace, &token_mint, seed);
         let claims_mint = FixedMarketIxBuilder::claims_mint(&market_manager);
         let collateral_mint = FixedMarketIxBuilder::collateral_mint(&market_manager);
 

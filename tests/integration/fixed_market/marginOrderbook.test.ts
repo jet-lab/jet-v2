@@ -24,7 +24,7 @@ import CONFIG from '../../../app/public/localnet.config.json';
 import { FixedMarket, JetMarket, JetMarketIdl, MarginUserInfo, rate_to_price } from '@jet-lab/fixed-market';
 import { createAssociatedTokenAccountInstruction, getAssociatedTokenAddress } from '@solana/spl-token';
 
-describe('margin bonds borrowing', async () => {
+describe('margin fixed market ticket borrowing', async () => {
   // SUITE SETUP
   const provider = AnchorProvider.local(undefined, DEFAULT_CONFIRM_OPTS);
   anchor.setProvider(provider);
@@ -300,7 +300,7 @@ describe('margin bonds borrowing', async () => {
       loanOfferParams.rate,
       wallet_b.payer.publicKey,
       Uint8Array.from([0, 0, 0, 0]),
-      CONFIG.airspaces[0].fixedMarkets.USDC_86400.borrowDuration
+      CONFIG.airspaces[0].fixedMarkets.USDC_86400.borrowTenor
     );
     const limitLend = await viaMargin(marginAccount_B, offerLoanB);
     await provider_b.sendAndConfirm(makeTx([limitLend]), [wallet_b.payer]);
@@ -312,7 +312,7 @@ describe('margin bonds borrowing', async () => {
       borrowRequestParams.amount,
       borrowRequestParams.rate,
       Uint8Array.from([0, 0, 0, 0]),
-      CONFIG.airspaces[0].fixedMarkets.USDC_86400.borrowDuration
+      CONFIG.airspaces[0].fixedMarkets.USDC_86400.borrowTenor
     );
     const refresh = await viaMargin(marginAccount_B, await fixedMarket.refreshPosition(marginAccount_B, false));
     const marketLend = await viaMargin(marginAccount_B, requestBorrowB);
@@ -356,7 +356,7 @@ describe('margin bonds borrowing', async () => {
       offeredLoan.limit_price ===
         rate_to_price(
           bnToBigInt(loanOfferParams.rate),
-          BigInt(CONFIG.airspaces[0].fixedMarkets.USDC_86400.borrowDuration)
+          BigInt(CONFIG.airspaces[0].fixedMarkets.USDC_86400.borrowTenor)
         )
     );
 
@@ -378,7 +378,7 @@ describe('margin bonds borrowing', async () => {
       requestedBorrow.limit_price ===
         rate_to_price(
           bnToBigInt(borrowRequestParams.rate),
-          BigInt(CONFIG.airspaces[0].fixedMarkets.USDC_86400.borrowDuration)
+          BigInt(CONFIG.airspaces[0].fixedMarkets.USDC_86400.borrowTenor)
         )
     );
   });

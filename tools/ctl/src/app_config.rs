@@ -4,7 +4,7 @@ use std::{
 };
 
 use anyhow::{bail, Context, Result};
-use jet_margin_sdk::bonds::MarketManager;
+use jet_margin_sdk::fixed_market::MarketManager;
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
 
@@ -154,7 +154,7 @@ impl JetAppConfig {
         .await?;
         let swap_pools = vec![]; // FIXME: handle mainnet?
         let fixed_markets =
-            Self::generate_fixed_market_map(client, dir.join("bond-markets.toml")).await?;
+            Self::generate_fixed_market_map(client, dir.join("fixed-markets.toml")).await?;
 
         let airspaces = vec![AirspaceInfo {
             name: "default".to_owned(),
@@ -262,7 +262,7 @@ impl JetAppConfig {
             return Ok(fixed_markets);
         }
 
-        let market_def = Self::read_bonds_config(path).await?;
+        let market_def = Self::read_fixed_config(path).await?;
 
         for market in market_def.markets {
             let manager: MarketManager = client.read_anchor_account(&market.manager).await?;
@@ -279,7 +279,7 @@ impl JetAppConfig {
         Ok(fixed_markets)
     }
 
-    async fn read_bonds_config(path: PathBuf) -> Result<FixedMarketsDefinition> {
+    async fn read_fixed_config(path: PathBuf) -> Result<FixedMarketsDefinition> {
         match crate::config::read_config_file(&path)
             .await
             .with_context(|| format!("while reading fixed market definition at {:?}", &path))?

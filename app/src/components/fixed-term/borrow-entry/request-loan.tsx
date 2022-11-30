@@ -137,7 +137,7 @@ export const RequestLoan = ({ token, decimals, marketAndConfig, marginConfig }: 
             {`${formatDuration(
               intervalToDuration({
                 start: new Date(0),
-                end: new Date(marketAndConfig.config.borrowDuration * 1000)
+                end: new Date(marketAndConfig.config.borrowTenor * 1000)
               })
             )} from fill`}
           </span>

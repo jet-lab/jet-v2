@@ -1,7 +1,7 @@
 use std::{fs::OpenOptions, io::Write};
 
 use anyhow::Result;
-use hosted_tests::bonds::TestManager;
+use hosted_tests::fixed_market::TestManager;
 use hosted_tests::margin::MarginClient;
 use hosted_tests::solana_test_context;
 use jet_margin_sdk::ix_builder::get_metadata_address;

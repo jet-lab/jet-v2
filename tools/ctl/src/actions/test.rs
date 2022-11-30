@@ -3,7 +3,7 @@ use std::{collections::HashMap, path::Path};
 use anchor_lang::prelude::Rent;
 use anyhow::{bail, Result};
 use jet_margin_sdk::{
-    bonds::fixed_market_pda,
+    fixed_market::fixed_market_pda,
     ix_builder::{
         derive_airspace,
         test_service::{derive_swap_pool, derive_token_mint},

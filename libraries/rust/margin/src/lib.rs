@@ -67,7 +67,7 @@ pub mod tx_builder;
 pub mod util;
 
 /// jet-market sdk
-pub mod bonds;
+pub mod fixed_market;
 
 /// Utilities for test environments
 pub mod test_service;

@@ -47,8 +47,8 @@ export interface FixedMarketConfig {
   seed: Address
   orderbookPause: boolean
   ticketsPaused: boolean
-  borrowDuration: number
-  lendDuration: number
+  borrowTenor: number
+  lendTenor: number
 }
 
 export interface MarginTokenConfig {

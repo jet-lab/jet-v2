@@ -27,8 +27,8 @@ use solana_sdk::{
 };
 
 use crate::{
-    bonds::FixedMarketIxBuilder,
     cat,
+    fixed_market::FixedMarketIxBuilder,
     ix_builder::{
         get_metadata_address,
         test_service::{
@@ -81,10 +81,10 @@ pub struct AirspaceTokenConfig {
 /// Configuration for fixed markets
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
 pub struct FixedMarketConfig {
-    /// The duration for borrows
+    /// The tenor for borrows
     pub borrow_tenor: i64,
 
-    /// The duration for lending
+    /// The tenor for lending
     pub lend_tenor: i64,
 
     /// The origination fee for borrowing in origination_fee::FEE_UNIT
