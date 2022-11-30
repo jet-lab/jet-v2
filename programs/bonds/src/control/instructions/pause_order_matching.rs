@@ -1,21 +1,21 @@
 use anchor_lang::prelude::*;
 
 use crate::{
-    control::{events::ToggleOrderMatching, state::BondManager},
+    control::{events::ToggleOrderMatching, state::MarketManager},
     orderbook::state::CallbackInfo,
-    BondsError,
+    ErrorCode,
 };
 
 #[derive(Accounts)]
 pub struct PauseOrderMatching<'info> {
-    /// The `BondManager` manages asset tokens for a particular bond duration
+    /// The `MarketManager` manages asset tokens for a particular market tenor
     #[account(
-        has_one = orderbook_market_state @ BondsError::WrongMarketState,
-        has_one = airspace @ BondsError::WrongAirspace,
+        has_one = orderbook_market_state @ ErrorCode::WrongMarketState,
+        has_one = airspace @ ErrorCode::WrongAirspace,
     )]
-    pub bond_manager: AccountLoader<'info, BondManager>,
+    pub market_manager: AccountLoader<'info, MarketManager>,
 
-    /// CHECK: has_one on bond manager
+    /// CHECK: has_one on market manager
     #[account(mut)]
     pub orderbook_market_state: AccountInfo<'info>,
 
@@ -23,7 +23,7 @@ pub struct PauseOrderMatching<'info> {
     pub authority: Signer<'info>,
 
     /// The airspace being modified
-    // #[account(has_one = authority @ BondsError::WrongAirspaceAuthorization)] fixme airspace
+    // #[account(has_one = authority @ ErrorCode::WrongAirspaceAuthorization)] fixme airspace
     pub airspace: AccountInfo<'info>,
 }
 
@@ -39,7 +39,7 @@ pub fn handler(ctx: Context<PauseOrderMatching>) -> Result<()> {
     )?;
 
     emit!(ToggleOrderMatching {
-        bond_manager: ctx.accounts.bond_manager.key(),
+        market_manager: ctx.accounts.market_manager.key(),
         is_orderbook_paused: true
     });
 

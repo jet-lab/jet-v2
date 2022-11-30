@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use actions::{bonds::BondMarketParameters, margin_pool::ConfigurePoolCliOptions};
+use actions::{fixed::MarketParameters, margin_pool::ConfigurePoolCliOptions};
 use anchor_lang::prelude::Pubkey;
 use anyhow::Result;
 use clap::{AppSettings, Parser, Subcommand};
@@ -232,10 +232,10 @@ pub enum MarginPoolCommand {
 
 #[serde_as]
 #[derive(Debug, Subcommand, Deserialize)]
-#[serde(tag = "bonds-action")]
-pub enum BondsCommand {
-    /// Create a new bond market
-    CreateMarket(BondMarketParameters),
+#[serde(tag = "fixed-market-action")]
+pub enum FixedCommand {
+    /// Create a new fixed market
+    CreateMarket(MarketParameters),
 }
 
 #[serde_as]
@@ -317,10 +317,10 @@ pub enum Command {
         subcmd: MarginPoolCommand,
     },
 
-    /// Bond market management
-    Bonds {
+    /// Fixed market management
+    Fixed {
         #[clap(subcommand)]
-        subcmd: BondsCommand,
+        subcmd: FixedCommand,
     },
 
     /// Test management
@@ -366,7 +366,7 @@ pub async fn run(opts: CliOpts) -> Result<()> {
         }
         Command::Margin { subcmd } => run_margin_command(&client, subcmd).await?,
         Command::MarginPool { subcmd } => run_margin_pool_command(&client, subcmd).await?,
-        Command::Bonds { subcmd } => run_bonds_command(&client, subcmd).await?,
+        Command::Fixed { subcmd } => run_fixed_command(&client, subcmd).await?,
         Command::Test { subcmd } => run_test_command(&client, subcmd).await?,
     };
 
@@ -481,10 +481,10 @@ async fn run_margin_pool_command(client: &Client, command: MarginPoolCommand) ->
     }
 }
 
-async fn run_bonds_command(client: &Client, command: BondsCommand) -> Result<Plan> {
+async fn run_fixed_command(client: &Client, command: FixedCommand) -> Result<Plan> {
     match command {
-        BondsCommand::CreateMarket(params) => {
-            actions::bonds::process_create_bond_market(client, params).await
+        FixedCommand::CreateMarket(params) => {
+            actions::fixed::process_create_fixed_market(client, params).await
         }
     }
 }

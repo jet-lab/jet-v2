@@ -2,91 +2,91 @@ use anchor_lang::prelude::*;
 use anchor_spl::token::{Mint, Token, TokenAccount};
 
 use crate::{
-    control::{events::BondManagerInitialized, state::BondManager},
+    control::{events::MarketManagerInitialized, state::MarketManager},
     seeds,
     utils::init,
 };
 
-/// Parameters for the initialization of the [BondManager]
+/// Parameters for the initialization of the [MarketManager]
 #[derive(AnchorSerialize, AnchorDeserialize)]
-pub struct InitializeBondManagerParams {
-    /// Tag information for the `BondManager` account
+pub struct InitializeMarketManagerParams {
+    /// Tag information for the `MarketManager` account
     pub version_tag: u64,
     /// This seed allows the creation of many separate ticket managers tracking different
-    /// parameters, such as staking duration
+    /// parameters, such as staking tenor
     pub seed: [u8; 32],
     /// Length of time before a borrow is marked as due, in seconds
-    pub borrow_duration: i64,
+    pub borrow_tenor: i64,
     /// Length of time before a claim is marked as mature, in seconds
-    pub lend_duration: i64,
+    pub lend_tenor: i64,
     /// assessed on borrows. scaled by origination_fee::FEE_UNIT
     pub origination_fee: u64,
 }
 
-/// Initialize a [BondManager]
-/// The `BondManager` acts as a sort of market header. Responsible for coordination and authorization of the accounts
+/// Initialize a [MarketManager]
+/// The `MarketManager` acts as a sort of market header. Responsible for coordination and authorization of the accounts
 /// utilized and interacting with the program
 #[derive(Accounts)]
-#[instruction(params: InitializeBondManagerParams)]
-pub struct InitializeBondManager<'info> {
-    /// The `BondManager` manages asset tokens for a particular bond duration
+#[instruction(params: InitializeMarketManagerParams)]
+pub struct InitializeMarketManager<'info> {
+    /// The `MarketManager` manages asset tokens for a particular tenor
     #[account(
         init,
         seeds = [
-            seeds::BOND_MANAGER,
+            seeds::MARKET_MANAGER,
             airspace.key().as_ref(),
             underlying_token_mint.key().as_ref(),
             &params.seed,
         ],
         bump,
         payer = payer,
-        space = 8 + std::mem::size_of::<BondManager>(),
+        space = 8 + std::mem::size_of::<MarketManager>(),
     )]
-    pub bond_manager: AccountLoader<'info, BondManager>,
+    pub market_manager: AccountLoader<'info, MarketManager>,
 
-    /// The vault for storing the token underlying the bond tickets
+    /// The vault for storing the token underlying the market tickets
     #[account(
         init,
         seeds = [
             seeds::UNDERLYING_TOKEN_VAULT,
-            bond_manager.key().as_ref()
+            market_manager.key().as_ref()
         ],
         bump,
         payer = payer,
         token::mint = underlying_token_mint,
-        token::authority = bond_manager,
+        token::authority = market_manager,
     )]
     pub underlying_token_vault: Box<Account<'info, TokenAccount>>,
 
-    /// The mint for the assets underlying the bond tickets
+    /// The mint for the assets underlying the market tickets
     pub underlying_token_mint: Box<Account<'info, Mint>>,
 
-    /// The minting account for the bond tickets
+    /// The minting account for the market tickets
     #[account(
         init,
         seeds = [
-            seeds::BOND_TICKET_MINT,
-            bond_manager.key().as_ref()
+            seeds::MARKET_TICKET_MINT,
+            market_manager.key().as_ref()
         ],
         bump,
         payer = payer,
         mint::decimals = underlying_token_mint.decimals,
-        mint::authority = bond_manager,
-        mint::freeze_authority = bond_manager,
+        mint::authority = market_manager,
+        mint::freeze_authority = market_manager,
     )]
-    pub bond_ticket_mint: Box<Account<'info, Mint>>,
+    pub market_ticket_mint: Box<Account<'info, Mint>>,
 
     /// Mints tokens to a margin account to represent debt that must be collateralized
     #[account(init,
         seeds = [
             seeds::CLAIM_NOTES,
-            bond_manager.key().as_ref(),
+            market_manager.key().as_ref(),
         ],
         bump,
         payer = payer,
         mint::decimals = underlying_token_mint.decimals,
-        mint::authority = bond_manager,
-        mint::freeze_authority = bond_manager,
+        mint::authority = market_manager,
+        mint::freeze_authority = market_manager,
     )]
     pub claims: Box<Account<'info, Mint>>,
 
@@ -94,13 +94,13 @@ pub struct InitializeBondManager<'info> {
     #[account(init,
         seeds = [
             seeds::COLLATERAL_NOTES,
-            bond_manager.key().as_ref(),
+            market_manager.key().as_ref(),
         ],
         bump,
         payer = payer,
         mint::decimals = underlying_token_mint.decimals,
-        mint::authority = bond_manager,
-        mint::freeze_authority = bond_manager,
+        mint::authority = market_manager,
+        mint::freeze_authority = market_manager,
     )]
     pub collateral: Box<Account<'info, Mint>>,
 
@@ -108,14 +108,14 @@ pub struct InitializeBondManager<'info> {
     pub authority: Signer<'info>,
 
     /// The airspace being modified
-    // #[account(has_one = authority @ BondsError::WrongAirspaceAuthorization)] fixme airspace
+    // #[account(has_one = authority @ ErrorCode::WrongAirspaceAuthorization)] fixme airspace
     pub airspace: AccountInfo<'info>,
 
     /// The oracle for the underlying asset price
     /// CHECK: determined by caller
     pub underlying_oracle: AccountInfo<'info>,
 
-    /// The oracle for the bond ticket price
+    /// The oracle for the market ticket price
     /// CHECK: determined by caller
     pub ticket_oracle: AccountInfo<'info>,
 
@@ -138,25 +138,25 @@ pub struct InitializeBondManager<'info> {
 }
 
 pub fn handler(
-    ctx: Context<InitializeBondManager>,
-    params: InitializeBondManagerParams,
+    ctx: Context<InitializeMarketManager>,
+    params: InitializeMarketManagerParams,
 ) -> Result<()> {
-    let manager = &mut ctx.accounts.bond_manager.load_init()?;
+    let manager = &mut ctx.accounts.market_manager.load_init()?;
     init! {
-        manager = BondManager {
+        manager = MarketManager {
             version_tag: params.version_tag,
             airspace: ctx.accounts.airspace.key(),
             underlying_token_mint: ctx.accounts.underlying_token_mint.key(),
             underlying_token_vault: ctx.accounts.underlying_token_vault.key(),
-            bond_ticket_mint: ctx.accounts.bond_ticket_mint.key(),
+            market_ticket_mint: ctx.accounts.market_ticket_mint.key(),
             claims_mint: ctx.accounts.claims.key(),
             collateral_mint: ctx.accounts.collateral.key(),
             seed: params.seed,
-            bump: [*ctx.bumps.get("bond_manager").unwrap()],
+            bump: [*ctx.bumps.get("market_manager").unwrap()],
             orderbook_paused: false,
             tickets_paused: false,
-            borrow_duration: params.borrow_duration,
-            lend_duration: params.lend_duration,
+            borrow_tenor: params.borrow_tenor,
+            lend_tenor: params.lend_tenor,
             underlying_oracle: ctx.accounts.underlying_oracle.key(),
             ticket_oracle: ctx.accounts.ticket_oracle.key(),
             fee_destination: ctx.accounts.fee_destination.key(),
@@ -171,12 +171,12 @@ pub fn handler(
             _reserved,
         }
     }
-    emit!(BondManagerInitialized {
+    emit!(MarketManagerInitialized {
         version: manager.version_tag,
-        address: ctx.accounts.bond_manager.key(),
+        address: ctx.accounts.market_manager.key(),
         underlying_token_mint: manager.underlying_token_mint,
-        borrow_duration: manager.borrow_duration,
-        lend_duration: manager.lend_duration,
+        borrow_tenor: manager.borrow_tenor,
+        lend_tenor: manager.lend_tenor,
         airspace: manager.airspace,
         underlying_oracle: manager.underlying_oracle,
         ticket_oracle: manager.ticket_oracle,

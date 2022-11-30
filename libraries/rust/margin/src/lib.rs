@@ -66,17 +66,17 @@ pub mod tx_builder;
 /// General purpose logic used by this lib and clients, unrelated to jet or solana
 pub mod util;
 
-/// jet-bonds sdk
+/// jet-market sdk
 pub mod bonds;
 
 /// Utilities for test environments
 pub mod test_service;
 
 pub use jet_airspace;
-pub use jet_bonds;
 pub use jet_control;
 pub use jet_margin;
 pub use jet_margin_pool;
 pub use jet_margin_swap;
+pub use jet_market;
 pub use jet_metadata;
 pub use jet_test_service;

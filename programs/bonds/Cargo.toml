@@ -1,12 +1,12 @@
 [package]
-name = "jet-bonds"
+name = "jet-market"
 version = "0.1.0"
-description = "Jet Bonds Orderbook and Ticket programs"
+description = "Jet Market Orderbook and Ticket programs"
 edition = "2018"
 
 [lib]
 crate-type = ["cdylib", "lib"]
-name = "jet_bonds"
+name = "jet_market"
 doctest = false
 
 [features]

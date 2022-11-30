@@ -2,9 +2,9 @@ use agnostic_orderbook::state::market_state::MarketState;
 use anchor_lang::prelude::*;
 
 use crate::{
-    control::{events::OrderbookInitialized, state::BondManager},
+    control::{events::OrderbookInitialized, state::MarketManager},
     orderbook::state::{CallbackInfo, TICK_SIZE},
-    seeds, BondsError,
+    seeds, ErrorCode,
 };
 
 /// Parameters necessary for orderbook initialization
@@ -17,18 +17,18 @@ pub struct InitializeOrderbookParams {
 /// Initialization of the orderbook for a given asset and tenor
 #[derive(Accounts)]
 pub struct InitializeOrderbook<'info> {
-    /// The `BondManager` account tracks global information related to this particular bond market
+    /// The `MarketManager` account tracks global information related to this particular Jet market
     #[account(
         mut,
-        has_one = airspace @ BondsError::WrongAirspace,
+        has_one = airspace @ ErrorCode::WrongAirspace,
     )]
-    pub bond_manager: AccountLoader<'info, BondManager>,
+    pub market_manager: AccountLoader<'info, MarketManager>,
 
     /// AOB market state
     #[account(init,
               seeds = [
                   seeds::ORDERBOOK_MARKET_STATE,
-                  bond_manager.key().as_ref()
+                  market_manager.key().as_ref()
               ],
               bump,
               space = 8 + MarketState::LEN,
@@ -54,7 +54,7 @@ pub struct InitializeOrderbook<'info> {
     pub authority: Signer<'info>,
 
     /// The airspace being modified
-    // #[account(has_one = authority @ BondsError::WrongAirspaceAuthorization)] fixme airspace
+    // #[account(has_one = authority @ ErrorCode::WrongAirspaceAuthorization)] fixme airspace
     pub airspace: AccountInfo<'info>,
 
     /// The account paying rent for PDA initialization
@@ -70,8 +70,8 @@ pub fn handler(ctx: Context<InitializeOrderbook>, params: InitializeOrderbookPar
         min_base_order_size,
     } = params;
 
-    // assign the bond market header data
-    let mut manager = ctx.accounts.bond_manager.load_mut()?;
+    // assign the Jet market header data
+    let mut manager = ctx.accounts.market_manager.load_mut()?;
     manager.orderbook_market_state = ctx.accounts.orderbook_market_state.key();
     manager.event_queue = ctx.accounts.event_queue.key();
     manager.asks = ctx.accounts.asks.key();
@@ -97,7 +97,7 @@ pub fn handler(ctx: Context<InitializeOrderbook>, params: InitializeOrderbookPar
     )?;
 
     emit!(OrderbookInitialized {
-        bond_manager: ctx.accounts.bond_manager.key(),
+        market_manager: ctx.accounts.market_manager.key(),
         orderbook_market_state: manager.orderbook_market_state,
         event_queue: manager.event_queue,
         bids: manager.bids,

@@ -3,8 +3,8 @@
 
 use anchor_lang::AccountDeserialize;
 use anyhow::Result;
-use jet_bonds::control::state::BondManager;
-use jet_margin_sdk::bonds::{BondsIxBuilder, OrderParams};
+use jet_margin_sdk::bonds::{FixedMarketIxBuilder, OrderParams};
+use jet_market::control::state::MarketManager;
 use jet_program_common::{Fp32, FP32_ONE};
 use rand::{thread_rng, Rng};
 use solana_client::{rpc_client::RpcClient, rpc_config::RpcSendTransactionConfig};
@@ -49,7 +49,7 @@ fn map_keypair_file(path: String) -> Result<Keypair> {
 
 struct Client {
     conn: RpcClient,
-    ix: BondsIxBuilder,
+    ix: FixedMarketIxBuilder,
     signer: Keypair,
 }
 
@@ -62,7 +62,7 @@ impl Client {
         token_oracle: Pubkey,
         ticket_oracle: Pubkey,
     ) -> Result<Self> {
-        let mut ix = BondsIxBuilder::new_from_seed(
+        let mut ix = FixedMarketIxBuilder::new_from_seed(
             &Pubkey::default(),
             &mint,
             seed,
@@ -72,16 +72,16 @@ impl Client {
             None,
         )
         .with_payer(&signer.pubkey());
-        let bond_manager = {
+        let market_manager = {
             let data = conn.get_account_data(&ix.manager())?;
 
-            BondManager::try_deserialize(&mut data.as_slice())?
+            MarketManager::try_deserialize(&mut data.as_slice())?
         };
 
         ix = ix.with_orderbook_accounts(
-            bond_manager.bids,
-            bond_manager.asks,
-            bond_manager.event_queue,
+            market_manager.bids,
+            market_manager.asks,
+            market_manager.event_queue,
         );
 
         Ok(Self { conn, ix, signer })
@@ -242,7 +242,7 @@ fn main() -> Result<()> {
     // bob.init_and_fund(TOKEN_AMOUNT, TICKET_AMOUNT)?;
 
     let params = |tickets, tokens, price| OrderParams {
-        max_bond_ticket_qty: tickets,
+        max_market_ticket_qty: tickets,
         max_underlying_token_qty: tokens,
         limit_price: price,
         match_limit: 100,
@@ -284,15 +284,13 @@ fn main() -> Result<()> {
 
     // read and display the orderbook
     let asks_data = &mut client.conn.get_account_data(&client.ix.asks())?;
-    let asks = agnostic_orderbook::state::critbit::Slab::<jet_bonds::orderbook::state::CallbackInfo>::from_buffer(
-            asks_data,
-            agnostic_orderbook::state::AccountTag::Asks,
-        )?;
+    let asks = agnostic_orderbook::state::critbit::Slab::<
+        jet_market::orderbook::state::CallbackInfo,
+    >::from_buffer(asks_data, agnostic_orderbook::state::AccountTag::Asks)?;
     let bids_data = &mut client.conn.get_account_data(&client.ix.bids())?;
-    let bids = agnostic_orderbook::state::critbit::Slab::<jet_bonds::orderbook::state::CallbackInfo>::from_buffer(
-            bids_data,
-            agnostic_orderbook::state::AccountTag::Bids,
-        )?;
+    let bids = agnostic_orderbook::state::critbit::Slab::<
+        jet_market::orderbook::state::CallbackInfo,
+    >::from_buffer(bids_data, agnostic_orderbook::state::AccountTag::Bids)?;
 
     #[derive(Debug)]
     struct Order {

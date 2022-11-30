@@ -16,7 +16,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 use anchor_lang::{InstructionData, ToAccountMetas};
-use jet_bonds::seeds;
+use jet_market::seeds;
 use solana_sdk::{
     instruction::Instruction,
     pubkey,
@@ -282,10 +282,10 @@ pub fn derive_pyth_price(mint: &Pubkey) -> Pubkey {
 }
 
 /// Get the pyth price account
-pub fn derive_bond_ticket_mint(bond_manager: &Pubkey) -> Pubkey {
+pub fn derive_market_ticket_mint(market_manager: &Pubkey) -> Pubkey {
     Pubkey::find_program_address(
-        &[seeds::BOND_TICKET_MINT, bond_manager.as_ref()],
-        &jet_bonds::ID,
+        &[seeds::MARKET_TICKET_MINT, market_manager.as_ref()],
+        &jet_market::ID,
     )
     .0
 }

@@ -13,14 +13,8 @@ use anchor_spl::token::TokenAccount;
 use anyhow::Result;
 use async_trait::async_trait;
 
-use jet_bonds::{
-    control::state::BondManager,
-    margin::state::{MarginUser, Obligation},
-    orderbook::state::{event_queue_len, orderbook_slab_len, CallbackInfo, OrderParams},
-    tickets::state::{ClaimTicket, SplitTicket},
-};
 use jet_margin_sdk::{
-    bonds::{bonds_pda, event_builder::build_consume_events_info, BondsIxBuilder},
+    bonds::{event_builder::build_consume_events_info, fixed_market_pda, FixedMarketIxBuilder},
     ix_builder::{
         get_control_authority_address, get_metadata_address, ControlIxBuilder, MarginIxBuilder,
     },
@@ -30,6 +24,12 @@ use jet_margin_sdk::{
         transaction::{SendTransactionBuilder, TransactionBuilder},
     },
     tx_builder::global_initialize_instructions,
+};
+use jet_market::{
+    control::state::MarketManager,
+    margin::state::{MarginUser, Obligation},
+    orderbook::state::{event_queue_len, orderbook_slab_len, CallbackInfo, OrderParams},
+    tickets::state::{ClaimTicket, SplitTicket},
 };
 use jet_metadata::{PositionTokenMetadata, TokenKind};
 use jet_program_common::Fp32;
@@ -60,8 +60,8 @@ pub const LOCALNET_URL: &str = "http://127.0.0.1:8899";
 pub const DEVNET_URL: &str = "https://api.devnet.solana.com/";
 
 pub const STARTING_TOKENS: u64 = 1_000_000_000;
-pub const BOND_MANAGER_SEED: [u8; 32] = *b"verygoodlongseedfrombytewemakeit";
-pub const BOND_MANAGER_TAG: u64 = u64::from_le_bytes(*b"zachzach");
+pub const MARKET_MANAGER_SEED: [u8; 32] = *b"verygoodlongseedfrombytewemakeit";
+pub const MARKET_MANAGER_TAG: u64 = u64::from_le_bytes(*b"zachzach");
 pub const FEEDER_FUND_SEED: u64 = u64::from_le_bytes(*b"feedingf");
 pub const ORDERBOOK_CAPACITY: usize = 1_000;
 pub const EVENT_QUEUE_CAPACITY: usize = 1_000;
@@ -94,7 +94,7 @@ impl<T> Keys<T> {
 pub struct TestManager {
     pub client: Arc<dyn SolanaRpcClient>,
     pub keygen: Arc<dyn Keygen>,
-    pub ix_builder: BondsIxBuilder,
+    pub ix_builder: FixedMarketIxBuilder,
     pub kps: Keys<Keypair>,
     pub keys: Keys<Pubkey>,
 }
@@ -123,17 +123,17 @@ impl TestManager {
         let oracle = TokenManager::new(client.clone())
             .create_oracle(&mint.pubkey())
             .await?;
-        let bond_ticket_mint = bonds_pda(&[
-            jet_bonds::seeds::BOND_TICKET_MINT,
-            BondsIxBuilder::bond_manager_key(
+        let market_ticket_mint = fixed_market_pda(&[
+            jet_market::seeds::MARKET_TICKET_MINT,
+            FixedMarketIxBuilder::market_manager_key(
                 &Pubkey::default(), //todo airspace
                 &mint.pubkey(),
-                BOND_MANAGER_SEED,
+                MARKET_MANAGER_SEED,
             )
             .as_ref(),
         ]);
         let ticket_oracle = TokenManager::new(client.clone())
-            .create_oracle(&bond_ticket_mint)
+            .create_oracle(&market_ticket_mint)
             .await?;
         TestManager::new(
             client.clone(),
@@ -172,10 +172,10 @@ impl TestManager {
         let transaction = initialize_test_mint_transaction(mint, payer, 6, rent, recent_blockhash);
         client.send_and_confirm_transaction(&transaction).await?;
 
-        let ix_builder = BondsIxBuilder::new_from_seed(
+        let ix_builder = FixedMarketIxBuilder::new_from_seed(
             &Pubkey::default(),
             &mint.pubkey(),
-            BOND_MANAGER_SEED,
+            MARKET_MANAGER_SEED,
             payer.pubkey(),
             underlying_oracle,
             ticket_oracle,
@@ -238,8 +238,8 @@ impl TestManager {
             .unwrap();
         let init_manager = this.ix_builder.initialize_manager(
             payer,
-            BOND_MANAGER_TAG,
-            BOND_MANAGER_SEED,
+            MARKET_MANAGER_TAG,
+            MARKET_MANAGER_SEED,
             BORROW_DURATION,
             LEND_DURATION,
             ORIGINATION_FEE,
@@ -273,12 +273,12 @@ impl TestManager {
         Ok(self)
     }
 
-    /// set up metadata authorization for margin to invoke bonds
+    /// set up metadata authorization for margin to invoke Jet market
     pub async fn with_margin(self) -> Result<Self> {
         self.create_authority_if_missing().await?;
-        self.register_adapter_if_unregistered(&jet_bonds::ID)
+        self.register_adapter_if_unregistered(&jet_market::ID)
             .await?;
-        self.register_bonds_position_metadatata().await?;
+        self.register_market_tickets_position_metadatata().await?;
 
         Ok(self)
     }
@@ -396,18 +396,18 @@ impl TestManager {
         Ok(())
     }
 
-    pub async fn register_bonds_position_metadatata(&self) -> Result<()> {
+    pub async fn register_market_tickets_position_metadatata(&self) -> Result<()> {
         let manager = self.load_manager().await?;
-        self.register_bonds_position_metadatata_impl(
+        self.register_market_tickets_position_metadatata_impl(
             manager.claims_mint,
             manager.underlying_token_mint,
             TokenKind::Claim,
             10_00,
         )
         .await?;
-        self.register_bonds_position_metadatata_impl(
+        self.register_market_tickets_position_metadatata_impl(
             manager.collateral_mint,
-            manager.bond_ticket_mint,
+            manager.market_ticket_mint,
             TokenKind::AdapterCollateral,
             1_00,
         )
@@ -416,7 +416,7 @@ impl TestManager {
         Ok(())
     }
 
-    pub async fn register_bonds_position_metadatata_impl(
+    pub async fn register_market_tickets_position_metadatata_impl(
         &self,
         position_token_mint: Pubkey,
         underlying_token_mint: Pubkey,
@@ -426,7 +426,7 @@ impl TestManager {
         let pos_data = PositionTokenMetadata {
             position_token_mint,
             underlying_token_mint,
-            adapter_program: jet_bonds::ID,
+            adapter_program: jet_market::ID,
             token_kind,
             value_modifier,
             max_staleness: 1_000,
@@ -533,7 +533,7 @@ impl OwnedBook {
 }
 
 impl TestManager {
-    pub async fn load_manager(&self) -> Result<BondManager> {
+    pub async fn load_manager(&self) -> Result<MarketManager> {
         self.load_anchor(&self.ix_builder.manager()).await
     }
     pub async fn load_manager_token_vault(&self) -> Result<TokenAccount> {
@@ -609,7 +609,7 @@ impl GenerateProxy for MarginIxBuilder {
     }
 }
 
-pub struct BondsUser<P: Proxy> {
+pub struct FixedUser<P: Proxy> {
     pub owner: Keypair,
     pub proxy: P,
     pub token_acc: Pubkey,
@@ -617,7 +617,7 @@ pub struct BondsUser<P: Proxy> {
     client: Arc<dyn SolanaRpcClient>,
 }
 
-impl<P: Proxy> BondsUser<P> {
+impl<P: Proxy> FixedUser<P> {
     pub fn new_with_proxy(manager: Arc<TestManager>, owner: Keypair, proxy: P) -> Result<Self> {
         let token_acc =
             get_associated_token_address(&proxy.pubkey(), &manager.ix_builder.token_mint());
@@ -642,7 +642,7 @@ impl<P: Proxy> BondsUser<P> {
     }
 }
 
-impl<P: Proxy + GenerateProxy> BondsUser<P> {
+impl<P: Proxy + GenerateProxy> FixedUser<P> {
     pub async fn new(manager: Arc<TestManager>) -> Result<Self> {
         let owner = create_wallet(&manager.client, 10 * LAMPORTS_PER_SOL).await?;
         let proxy = P::generate(manager.clone(), &owner).await?;
@@ -656,7 +656,7 @@ impl<P: Proxy + GenerateProxy> BondsUser<P> {
     }
 }
 
-impl<P: Proxy> BondsUser<P> {
+impl<P: Proxy> FixedUser<P> {
     pub async fn fund(&self) -> Result<()> {
         let create_token = create_associated_token_account(
             &self.manager.client.payer().pubkey(),
@@ -824,7 +824,7 @@ impl<P: Proxy> BondsUser<P> {
     }
 }
 
-impl<P: Proxy> BondsUser<P> {
+impl<P: Proxy> FixedUser<P> {
     pub fn claim_ticket_key(&self, seed: &[u8]) -> Pubkey {
         self.manager
             .ix_builder
@@ -958,7 +958,7 @@ impl OrderAmount {
 
     pub fn default_order_params(&self) -> OrderParams {
         OrderParams {
-            max_bond_ticket_qty: self.base,
+            max_market_ticket_qty: self.base,
             max_underlying_token_qty: self.quote,
             limit_price: self.price,
             match_limit: 1_000,

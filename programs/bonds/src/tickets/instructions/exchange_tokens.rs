@@ -1,34 +1,34 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{transfer, Mint, Token, TokenAccount, Transfer};
-use jet_program_proc_macros::BondTokenManager;
+use jet_program_proc_macros::MarketTokenManager;
 
 use crate::{
-    bond_token_manager::BondTokenManager, control::state::BondManager,
-    tickets::events::TokensExchanged, BondsError,
+    control::state::MarketManager, market_token_manager::MarketTokenManager,
+    tickets::events::TokensExchanged, ErrorCode,
 };
 
-#[derive(Accounts, BondTokenManager)]
+#[derive(Accounts, MarketTokenManager)]
 pub struct ExchangeTokens<'info> {
-    /// The BondManager manages asset tokens for a particular bond duration
+    /// The MarketManager manages asset tokens for a particular market tenor
     #[account(
-            has_one = bond_ticket_mint @ BondsError::WrongTicketMint,
-            has_one = underlying_token_vault @ BondsError::WrongVault,
+            has_one = market_ticket_mint @ ErrorCode::WrongTicketMint,
+            has_one = underlying_token_vault @ ErrorCode::WrongVault,
     )]
-    pub bond_manager: AccountLoader<'info, BondManager>,
+    pub market_manager: AccountLoader<'info, MarketManager>,
 
-    /// The vault stores the tokens of the underlying asset managed by the BondManager
+    /// The vault stores the tokens of the underlying asset managed by the MarketManager
     #[account(mut)]
     pub underlying_token_vault: Box<Account<'info, TokenAccount>>,
 
-    /// The minting account for the bond tickets
+    /// The minting account for the market tickets
     #[account(mut)]
-    pub bond_ticket_mint: Account<'info, Mint>,
+    pub market_ticket_mint: Account<'info, Mint>,
 
-    /// The token account to recieve the exchanged bond tickets
+    /// The token account to receive the exchanged market tickets
     #[account(mut)]
-    pub user_bond_ticket_vault: Account<'info, TokenAccount>,
+    pub user_market_ticket_vault: Account<'info, TokenAccount>,
 
-    /// The user controlled token account to exchange for bond tickets
+    /// The user controlled token account to exchange for market tickets
     #[account(mut)]
     pub user_underlying_token_vault: Account<'info, TokenAccount>,
 
@@ -55,13 +55,13 @@ impl<'info> ExchangeTokens<'info> {
 pub fn handler(ctx: Context<ExchangeTokens>, amount: u64) -> Result<()> {
     transfer(ctx.accounts.transfer_context(), amount)?;
     ctx.mint(
-        &ctx.accounts.bond_ticket_mint,
-        &ctx.accounts.user_bond_ticket_vault,
+        &ctx.accounts.market_ticket_mint,
+        &ctx.accounts.user_market_ticket_vault,
         amount,
     )?;
 
     emit!(TokensExchanged {
-        bond_manager: ctx.accounts.bond_manager.key(),
+        market_manager: ctx.accounts.market_manager.key(),
         user: ctx.accounts.user_authority.key(),
         amount,
     });

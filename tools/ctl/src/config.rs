@@ -60,7 +60,7 @@ pub struct SerumMarketsDefinition {
 
 #[serde_as]
 #[derive(Debug, Default, Serialize, Deserialize)]
-pub struct BondMarketDefinition {
+pub struct FixedMarketDefinition {
     pub symbol: String,
     pub tenor: String,
     #[serde_as(as = "DisplayFromStr")]
@@ -68,9 +68,9 @@ pub struct BondMarketDefinition {
 }
 
 #[derive(Debug, Default, Serialize, Deserialize)]
-pub struct BondMarketsDefinition {
-    #[serde(rename = "bond-market")]
-    pub markets: Vec<BondMarketDefinition>,
+pub struct FixedMarketsDefinition {
+    #[serde(rename = "fixed-term-market")]
+    pub markets: Vec<FixedMarketDefinition>,
 }
 
 #[derive(Debug, Default, Serialize, Deserialize)]
@@ -84,7 +84,7 @@ pub enum ConfigType {
     Token(TokenDefinition),
     Dependencies(DependenciesDefinition),
     SerumMarkets(SerumMarketsDefinition),
-    BondMarkets(BondMarketsDefinition),
+    FixedMarkets(FixedMarketsDefinition),
     Rpc(RpcDefinition),
 }
 

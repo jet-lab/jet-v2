@@ -22,10 +22,10 @@ pub fn assert_size(args: TokenStream, input_struct: TokenStream) -> TokenStream 
     mem::handler(args.into(), input_struct.into()).into()
 }
 
-/// Implements BondTokenManager by implementing BondManagerProvider and
+/// Implements MarketTokenManager by implementing MarketManagerProvider and
 /// TokenProgramProvider.
 ///
-/// By default, this expects fields named token_program and bond_manager with
+/// By default, this expects fields named token_program and market_manager with
 /// the appropriate types. If either field is missing, then the data must be
 /// nested. Annotate the nesting field with attribute #[token_manager] if that
 /// field contains a token_manager. If further nested, and the field contains a
@@ -37,30 +37,30 @@ pub fn assert_size(args: TokenStream, input_struct: TokenStream) -> TokenStream 
 /// Examples
 ///
 /// ```ignore
-/// #[derive(BondTokenManager)]
+/// #[derive(MarketTokenManager)]
 /// struct BaseCase<'info> {
-///     bond_manager: AccountLoader<'info, BondManager>,
+///     market_manager: AccountLoader<'info, MarketManager>,
 ///     token_program: Program<'info, Token>,
 /// }
 /// ```
 ///
 /// ```ignore
-/// #[derive(BondTokenManager)]
+/// #[derive(MarketTokenManager)]
 /// struct Top<'info> {
-///     #[bond_manager]
+///     #[market_manager]
 ///     nested: Bottom<'info>,
 ///     token_program: Program<'info, Token>,
 /// }
 ///
 /// struct Bottom<'info> {
-///     bond_manager: AccountLoader<'info, BondManager>,
+///     market_manager: AccountLoader<'info, MarketManager>,
 /// }
 /// ```
 ///
 /// ```ignore
-/// #[derive(BondTokenManager)]
+/// #[derive(MarketTokenManager)]
 /// struct Top<'info> {
-///     #[bond_manager(mid_two)]
+///     #[market_manager(mid_two)]
 ///     #[token_program(mid_two::bottom)]
 ///     mid_one: MiddleOne<'info>,
 /// }
@@ -70,7 +70,7 @@ pub fn assert_size(args: TokenStream, input_struct: TokenStream) -> TokenStream 
 /// }
 ///
 /// struct MiddleTwo<'info> {
-///     bond_manager: AccountLoader<'info, BondManager>,
+///     market_manager: AccountLoader<'info, MarketManager>,
 ///     bottom: Bottom<'info>,
 /// }
 ///
@@ -78,22 +78,22 @@ pub fn assert_size(args: TokenStream, input_struct: TokenStream) -> TokenStream 
 ///     token_program: Program<'info, Token>,
 /// }
 /// ```
-#[proc_macro_derive(BondTokenManager, attributes(bond_manager, token_program))]
-pub fn bond_token_manager_derive(input: TokenStream) -> TokenStream {
+#[proc_macro_derive(MarketTokenManager, attributes(market_manager, token_program))]
+pub fn market_token_manager_derive(input: TokenStream) -> TokenStream {
     let ast = syn::parse(input).unwrap();
-    let mgr = impl_bond_manager_provider(&ast);
+    let mgr = impl_market_manager_provider(&ast);
     let tkn = impl_token_program_provider(&ast);
     quote! { #mgr #tkn }.into()
 }
 
-fn impl_bond_manager_provider(ast: &DeriveInput) -> quote::__private::TokenStream {
+fn impl_market_manager_provider(ast: &DeriveInput) -> quote::__private::TokenStream {
     let name = &ast.ident;
     let lt = &ast.generics.lifetimes().next();
-    let accessor = find_attr_path_as_accessor(ast, "bond_manager").unwrap_or_default();
+    let accessor = find_attr_path_as_accessor(ast, "market_manager").unwrap_or_default();
     quote! {
-        impl<#lt> crate::bond_token_manager::BondManagerProvider<#lt> for #name<#lt> {
-            fn bond_manager(&self) -> anchor_lang::prelude::AccountLoader<#lt, crate::control::state::BondManager> {
-                self #accessor.bond_manager.clone()
+        impl<#lt> crate::market_token_manager::MarketManagerProvider<#lt> for #name<#lt> {
+            fn market_manager(&self) -> anchor_lang::prelude::AccountLoader<#lt, crate::control::state::MarketManager> {
+                self #accessor.market_manager.clone()
             }
         }
     }
@@ -104,7 +104,7 @@ fn impl_token_program_provider(ast: &DeriveInput) -> quote::__private::TokenStre
     let lt = &ast.generics.lifetimes().next();
     let accessor = find_attr_path_as_accessor(ast, "token_program").unwrap_or_default();
     quote! {
-        impl<#lt> crate::bond_token_manager::TokenProgramProvider<#lt> for #name<#lt> {
+        impl<#lt> crate::market_token_manager::TokenProgramProvider<#lt> for #name<#lt> {
             fn token_program(&self) -> anchor_lang::prelude::Program<#lt, anchor_spl::token::Token> {
                 self #accessor.token_program.clone()
             }

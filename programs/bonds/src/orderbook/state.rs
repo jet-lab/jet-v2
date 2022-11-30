@@ -1,5 +1,5 @@
 use crate::{
-    control::state::BondManager, events::OrderCancelled, utils::orderbook_accounts, BondsError,
+    control::state::MarketManager, events::OrderCancelled, utils::orderbook_accounts, ErrorCode,
 };
 use agnostic_orderbook::{
     instruction::cancel_order,
@@ -42,20 +42,20 @@ pub const fn event_queue_len(event_capacity: usize) -> usize {
 /// Set of accounts that are commonly needed together whenever the orderbook is modified
 #[derive(Accounts)]
 pub struct OrderbookMut<'info> {
-    /// The `BondManager` account tracks global information related to this particular bond market
+    /// The `MarketManager` account tracks global information related to this particular fixed market
     #[account(
             mut,
-            has_one = orderbook_market_state @ BondsError::WrongMarketState,
-            has_one = bids @ BondsError::WrongBids,
-            has_one = asks @ BondsError::WrongAsks,
-            has_one = event_queue @ BondsError::WrongEventQueue,
-            constraint = !bond_manager.load()?.orderbook_paused @ BondsError::OrderbookPaused,
+            has_one = orderbook_market_state @ ErrorCode::WrongMarketState,
+            has_one = bids @ ErrorCode::WrongBids,
+            has_one = asks @ ErrorCode::WrongAsks,
+            has_one = event_queue @ ErrorCode::WrongEventQueue,
+            constraint = !market_manager.load()?.orderbook_paused @ ErrorCode::OrderbookPaused,
         )]
-    pub bond_manager: AccountLoader<'info, BondManager>,
+    pub market_manager: AccountLoader<'info, MarketManager>,
 
     // aaob accounts
     /// CHECK: handled by aaob
-    #[account(mut, owner = crate::ID @ BondsError::MarketStateNotProgramOwned)]
+    #[account(mut, owner = crate::ID @ ErrorCode::MarketStateNotProgramOwned)]
     pub orderbook_market_state: AccountInfo<'info>,
     /// CHECK: handled by aaob
     #[account(mut)]
@@ -70,15 +70,15 @@ pub struct OrderbookMut<'info> {
 
 impl<'info> OrderbookMut<'info> {
     pub fn underlying_mint(&self) -> Pubkey {
-        self.bond_manager.load().unwrap().underlying_token_mint
+        self.market_manager.load().unwrap().underlying_token_mint
     }
 
     pub fn ticket_mint(&self) -> Pubkey {
-        self.bond_manager.load().unwrap().bond_ticket_mint
+        self.market_manager.load().unwrap().market_ticket_mint
     }
 
     pub fn vault(&self) -> Pubkey {
-        self.bond_manager.load().unwrap().underlying_token_vault
+        self.market_manager.load().unwrap().underlying_token_vault
     }
 
     pub fn collateral_mint(&self) -> Pubkey {
@@ -100,9 +100,9 @@ impl<'info> OrderbookMut<'info> {
         adapter: Option<Pubkey>,
         flags: CallbackFlags,
     ) -> Result<(CallbackInfo, SensibleOrderSummary)> {
-        let mut manager = self.bond_manager.load_mut()?;
+        let mut manager = self.market_manager.load_mut()?;
         let callback_info = CallbackInfo::new(
-            self.bond_manager.key(),
+            self.market_manager.key(),
             owner,
             fill,
             out,
@@ -122,7 +122,7 @@ impl<'info> OrderbookMut<'info> {
         )?;
         require!(
             order_summary.posted_order_id.is_some() || order_summary.total_base_qty > 0,
-            BondsError::OrderRejected
+            ErrorCode::OrderRejected
         );
 
         Ok((
@@ -155,7 +155,7 @@ impl<'info> OrderbookMut<'info> {
         };
         let handle = slab.find_by_key(order_id).ok_or_else(|| {
             msg!("Given Order ID: [{}]", order_id);
-            error!(BondsError::OrderNotFound)
+            error!(ErrorCode::OrderNotFound)
         })?;
         let info = slab.get_callback_info(handle);
 
@@ -165,7 +165,7 @@ impl<'info> OrderbookMut<'info> {
         // drop the refs so the orderbook can borrow the slab data
         drop(buf);
 
-        require_eq!(info_owner, owner, BondsError::WrongUserAccount);
+        require_eq!(info_owner, owner, ErrorCode::WrongUserAccount);
         let orderbook_params = cancel_order::Params { order_id };
         let order_summary = agnostic_orderbook::instruction::cancel_order::process::<CallbackInfo>(
             &crate::id(),
@@ -174,7 +174,7 @@ impl<'info> OrderbookMut<'info> {
         )?;
 
         emit!(OrderCancelled {
-            bond_manager: self.bond_manager.key(),
+            market_manager: self.market_manager.key(),
             authority: owner,
             order_id,
         });
@@ -192,11 +192,15 @@ pub struct OrderTag([u8; 16]);
 impl OrderTag {
     //todo maybe this means we don't need owner to be stored in the CallbackInfo
     /// To generate an OrderTag, the program takes the sha256 hash of the orderbook user account
-    /// and bond manager pubkeys, a nonce tracked by the orderbook user account, and drops the
+    /// and market manager pubkeys, a nonce tracked by the orderbook user account, and drops the
     /// last 16 bytes to create a 16-byte array
-    pub fn generate(bond_manager_key_bytes: &[u8], user_key_bytes: &[u8], nonce: u64) -> OrderTag {
+    pub fn generate(
+        market_manager_key_bytes: &[u8],
+        user_key_bytes: &[u8],
+        nonce: u64,
+    ) -> OrderTag {
         let nonce_bytes = bytemuck::bytes_of(&nonce);
-        let bytes: &[u8] = &[bond_manager_key_bytes, user_key_bytes, nonce_bytes].concat();
+        let bytes: &[u8] = &[market_manager_key_bytes, user_key_bytes, nonce_bytes].concat();
         let hash: [u8; 32] = hash(bytes).to_bytes();
         let tag_bytes: &[u8; 16] = &hash[..16].try_into().unwrap();
 
@@ -230,7 +234,7 @@ pub struct CallbackInfo {
     /// an out. for margin orders this is the margin user. otherwise this is the
     /// token account to be deposited into.
     pub out_account: Pubkey,
-    /// Pubkey of the account that will recieve the event information
+    /// Pubkey of the account that will receive the event information
     pub adapter_account_key: Pubkey,
     /// The unix timestamp for the slot that the order entered the aaob
     pub order_submitted: [u8; 8],
@@ -243,7 +247,7 @@ impl CallbackInfo {
     pub const LEN: usize = std::mem::size_of::<Self>();
     #[allow(clippy::too_many_arguments)]
     pub fn new(
-        bond_manager_key: Pubkey,
+        market_manager_key: Pubkey,
         owner: Pubkey,
         fill_account: Pubkey,
         out_account: Pubkey,
@@ -252,7 +256,8 @@ impl CallbackInfo {
         flags: CallbackFlags,
         nonce: u64,
     ) -> Self {
-        let order_tag = OrderTag::generate(bond_manager_key.as_ref(), fill_account.as_ref(), nonce);
+        let order_tag =
+            OrderTag::generate(market_manager_key.as_ref(), fill_account.as_ref(), nonce);
         Self {
             owner,
             fill_account,
@@ -306,8 +311,8 @@ bitflags! {
 /// Parameters needed for order placement
 #[derive(AnchorDeserialize, AnchorSerialize, Clone, Copy)]
 pub struct OrderParams {
-    /// The maximum quantity of bond tickets to be traded.
-    pub max_bond_ticket_qty: u64,
+    /// The maximum quantity of market tickets to be traded.
+    pub max_market_ticket_qty: u64,
     /// The maximum quantity of underlying token to be traded.
     pub max_underlying_token_qty: u64,
     /// The limit price of the order. This value is understood as a 32-bit fixed point number.
@@ -338,7 +343,7 @@ impl OrderParams {
         callback_info: CallbackInfo,
     ) -> new_order::Params<CallbackInfo> {
         new_order::Params {
-            max_base_qty: self.max_bond_ticket_qty,
+            max_base_qty: self.max_market_ticket_qty,
             max_quote_qty: self.max_underlying_token_qty,
             limit_price: self.limit_price,
             side,
@@ -371,7 +376,7 @@ impl SensibleOrderSummary {
     // todo defensive rounding - depends on how this function is used
     pub fn quote_posted(&self) -> Result<u64> {
         fp32_mul(self.summary.total_base_qty_posted, self.limit_price)
-            .ok_or_else(|| error!(BondsError::FixedPointDivision))
+            .ok_or_else(|| error!(ErrorCode::FixedPointDivision))
     }
 
     pub fn base_posted(&self) -> u64 {
@@ -405,7 +410,7 @@ impl SensibleOrderSummary {
 pub struct EventAdapterMetadata {
     /// Signing authority over this Adapter
     pub owner: Pubkey,
-    /// The `BondManager` this adapter belongs to
+    /// The `MarketManager` this adapter belongs to
     pub manager: Pubkey,
     /// The `MarginUser` account this adapter is registered for
     pub orderbook_user: Pubkey,
@@ -486,15 +491,12 @@ impl<'a> EventQueue<'a> {
     const ADAPTER_OFFSET: usize = EventAdapterMetadata::LEN + 8;
 
     pub fn deserialize_market(info: AccountInfo<'a>) -> Result<Self> {
-        require!(info.owner == &crate::id(), BondsError::WrongEventQueue);
+        require!(info.owner == &crate::id(), ErrorCode::WrongEventQueue);
         Self::deserialize(info, false)
     }
 
     pub fn deserialize_user_adapter(info: AccountInfo<'a>) -> Result<Self> {
-        require!(
-            info.owner != &crate::id(),
-            BondsError::UserDoesNotOwnAdapter
-        );
+        require!(info.owner != &crate::id(), ErrorCode::UserDoesNotOwnAdapter);
         Self::deserialize(info, true)
     }
 

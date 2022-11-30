@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 
 #[error_code]
-pub enum BondsError {
+pub enum ErrorCode {
     #[msg("overflow occured on checked_add")]
     ArithmeticOverflow,
     #[msg("underflow occured on checked_sub")]
@@ -16,8 +16,8 @@ pub enum BondsError {
     EventQueueFull,
     #[msg("failed to deserialize the SplitTicket or ClaimTicket")]
     FailedToDeserializeTicket,
-    #[msg("bond is not mature and cannot be claimed")]
-    ImmatureBond,
+    #[msg("market ticket is not mature and cannot be claimed")]
+    ImmatureMarketTicket,
     #[msg("not enough seeds were provided for the accounts that need to be initialized")]
     InsufficientSeeds,
     #[msg("order price is prohibited")]
@@ -58,7 +58,7 @@ pub enum BondsError {
     UserDoesNotOwnAccount,
     #[msg("this adapter does not belong to the user")]
     UserDoesNotOwnAdapter,
-    #[msg("this user account is not associated with this bond market")]
+    #[msg("this user account is not associated with this fixed market")]
     UserNotInMarket,
     #[msg("the wrong adapter account was passed to this instruction")]
     WrongAdapter,
@@ -70,8 +70,8 @@ pub enum BondsError {
     WrongAirspaceAuthorization,
     #[msg("bids account does not belong to this market")]
     WrongBids,
-    #[msg("adapter does not belong to given bond manager")]
-    WrongBondManager,
+    #[msg("adapter does not belong to given market manager")]
+    WrongMarketManager,
     #[msg("wrong authority for this crank instruction")]
     WrongCrankAuthority,
     #[msg("event queue account does not belong to this market")]
@@ -102,13 +102,13 @@ pub enum BondsError {
     WrongMarginUserAuthority,
     #[msg("incorrect authority account")]
     WrongProgramAuthority,
-    #[msg("not the ticket mint for this bond market")]
+    #[msg("not the ticket mint for this fixed market")]
     WrongTicketMint,
     #[msg("wrong ticket settlement account")]
     WrongTicketSettlementAccount,
     #[msg("wrong underlying settlement account")]
     WrongUnderlyingSettlementAccount,
-    #[msg("wrong underlying token mint for this bond market")]
+    #[msg("wrong underlying token mint for this fixed market")]
     WrongUnderlyingTokenMint,
     #[msg("wrong user account address was sent to instruction")]
     WrongUserAccount,

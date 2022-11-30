@@ -1903,12 +1903,12 @@ dependencies = [
  "futures-retry",
  "itertools 0.10.5",
  "jet-airspace",
- "jet-bonds",
  "jet-control",
  "jet-margin",
  "jet-margin-pool",
  "jet-margin-sdk",
  "jet-margin-swap",
+ "jet-market",
  "jet-metadata",
  "jet-program-common",
  "jet-simulation",
@@ -2150,36 +2150,13 @@ dependencies = [
 ]
 
 [[package]]
-name = "jet-bonds"
-version = "0.1.0"
-dependencies = [
- "agnostic-orderbook",
- "anchor-lang",
- "anchor-spl",
- "arrayref",
- "bitflags",
- "borsh 0.9.3",
- "bytemuck",
- "itertools 0.10.5",
- "jet-margin",
- "jet-program-common",
- "jet-program-proc-macros",
- "num-derive",
- "num-traits",
- "pyth-sdk-solana 0.4.2",
- "serde",
- "serde_json",
- "static_assertions",
-]
-
-[[package]]
 name = "jet-control"
 version = "1.0.0"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
- "jet-bonds",
  "jet-margin-pool",
+ "jet-market",
  "jet-metadata",
  "solana-program",
 ]
@@ -2279,11 +2256,11 @@ dependencies = [
  "bytemuck",
  "futures",
  "jet-airspace",
- "jet-bonds",
  "jet-control",
  "jet-margin",
  "jet-margin-pool",
  "jet-margin-swap",
+ "jet-market",
  "jet-metadata",
  "jet-program-common",
  "jet-simulation",
@@ -2309,6 +2286,29 @@ dependencies = [
  "jet-margin",
  "jet-margin-pool",
  "jet-static-program-registry",
+]
+
+[[package]]
+name = "jet-market"
+version = "0.1.0"
+dependencies = [
+ "agnostic-orderbook",
+ "anchor-lang",
+ "anchor-spl",
+ "arrayref",
+ "bitflags",
+ "borsh 0.9.3",
+ "bytemuck",
+ "itertools 0.10.5",
+ "jet-margin",
+ "jet-program-common",
+ "jet-program-proc-macros",
+ "num-derive",
+ "num-traits",
+ "pyth-sdk-solana 0.4.2",
+ "serde",
+ "serde_json",
+ "static_assertions",
 ]
 
 [[package]]

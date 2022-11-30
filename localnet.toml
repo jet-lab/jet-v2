@@ -27,17 +27,17 @@ is_restricted = false
 collateral_weight = 1_00
 max_leverage = 20_00
 
-[[airspace.tokens.USDC.bond_markets]]
-borrow_duration = 86400
-lend_duration = 88000
+[[airspace.tokens.USDC.fixed_markets]]
+borrow_tenor = 86400
+lend_tenor = 88000
 min_order_size = 10
 paused = false
 ticket_price = "0.9"
 origination_fee = 10
 
-[[airspace.tokens.USDC.bond_markets]]
-borrow_duration = 604800
-lend_duration = 610000
+[[airspace.tokens.USDC.fixed_markets]]
+borrow_tenor = 604800
+lend_tenor = 610000
 min_order_size = 10
 paused = false
 ticket_price = "0.9"

@@ -3,32 +3,32 @@ use anchor_spl::token::Token;
 use jet_margin::{AdapterPositionFlags, AdapterResult, PositionChange, PriceChangeInfo};
 
 use crate::{
-    control::{events::PositionRefreshed, state::BondManager},
+    control::{events::PositionRefreshed, state::MarketManager},
     margin::state::{return_to_margin, MarginUser},
-    BondsError,
+    ErrorCode,
 };
 
 #[derive(Accounts)]
 pub struct RefreshPosition<'info> {
     /// The account tracking information related to this particular user
     #[account(
-        has_one = bond_manager @ BondsError::UserNotInMarket,
-        has_one = margin_account @ BondsError::WrongClaimAccount,
+        has_one = market_manager @ ErrorCode::UserNotInMarket,
+        has_one = margin_account @ ErrorCode::WrongClaimAccount,
     )]
     pub margin_user: Account<'info, MarginUser>,
 
     /// CHECK: has_one on orderbook user
     pub margin_account: AccountInfo<'info>,
 
-    /// The `BondManager` account tracks global information related to this particular bond market
+    /// The `MarketManager` account tracks global information related to this particular fixed market
     #[account(
-        has_one = underlying_oracle @ BondsError::WrongOracle,
-        has_one = ticket_oracle @ BondsError::WrongOracle,
+        has_one = underlying_oracle @ ErrorCode::WrongOracle,
+        has_one = ticket_oracle @ ErrorCode::WrongOracle,
     )]
-    pub bond_manager: AccountLoader<'info, BondManager>,
+    pub market_manager: AccountLoader<'info, MarketManager>,
 
     /// The pyth price account
-    /// CHECK: has_one on bond manager
+    /// CHECK: has_one on market manager
     pub underlying_oracle: AccountInfo<'info>,
     pub ticket_oracle: AccountInfo<'info>,
 
@@ -37,7 +37,7 @@ pub struct RefreshPosition<'info> {
 }
 
 pub fn handler(ctx: Context<RefreshPosition>, expect_price: bool) -> Result<()> {
-    let market = ctx.accounts.bond_manager.load()?;
+    let market = ctx.accounts.market_manager.load()?;
     let mut claim_changes = vec![PositionChange::Flags(
         AdapterPositionFlags::PAST_DUE,
         ctx.accounts.margin_user.debt.is_past_due(),
@@ -71,7 +71,7 @@ pub fn handler(ctx: Context<RefreshPosition>, expect_price: bool) -> Result<()> 
             position_changes: vec![
                 (market.claims_mint, claim_changes),
                 (market.collateral_mint, collateral_changes),
-                (market.bond_ticket_mint, ticket_changes),
+                (market.market_ticket_mint, ticket_changes),
             ],
         },
     )
@@ -80,10 +80,10 @@ pub fn handler(ctx: Context<RefreshPosition>, expect_price: bool) -> Result<()> 
 fn load_price(oracle_info: &AccountInfo) -> Result<PositionChange> {
     let oracle = pyth_sdk_solana::load_price_feed_from_account_info(oracle_info).map_err(|e| {
         msg!("oracle error in account {}: {:?}", oracle_info.key, e);
-        error!(BondsError::OracleError)
+        error!(ErrorCode::OracleError)
     })?;
-    let price = oracle.get_current_price().ok_or(BondsError::PriceMissing)?;
-    let ema_price = oracle.get_ema_price().ok_or(BondsError::PriceMissing)?;
+    let price = oracle.get_current_price().ok_or(ErrorCode::PriceMissing)?;
+    let ema_price = oracle.get_ema_price().ok_or(ErrorCode::PriceMissing)?;
     Ok(PositionChange::Price(PriceChangeInfo {
         publish_time: oracle.publish_time,
         exponent: oracle.expo,

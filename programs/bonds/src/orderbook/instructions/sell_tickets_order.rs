@@ -1,41 +1,41 @@
 use agnostic_orderbook::state::Side;
 use anchor_lang::prelude::*;
 use anchor_spl::token::{accessor::mint, Mint, Token, TokenAccount};
-use jet_program_proc_macros::BondTokenManager;
+use jet_program_proc_macros::MarketTokenManager;
 
 use crate::{
-    bond_token_manager::BondTokenManager, events::OrderType, orderbook::state::*,
-    serialization::RemainingAccounts, BondsError,
+    events::OrderType, market_token_manager::MarketTokenManager, orderbook::state::*,
+    serialization::RemainingAccounts, ErrorCode,
 };
 
-#[derive(Accounts, BondTokenManager)]
+#[derive(Accounts, MarketTokenManager)]
 pub struct SellTicketsOrder<'info> {
     /// Signing authority over the ticket vault transferring for a borrow order
     pub authority: Signer<'info>,
 
-    /// Account containing the bond tickets being sold
+    /// Account containing the market tickets being sold
     #[account(mut, constraint =
         mint(&user_ticket_vault.to_account_info()).unwrap()
-        == bond_ticket_mint.key() @ BondsError::WrongTicketMint
+        == market_ticket_mint.key() @ ErrorCode::WrongTicketMint
     )]
     pub user_ticket_vault: Account<'info, TokenAccount>,
 
-    /// The account to recieve the matched tokens
+    /// The account to receive the matched tokens
     #[account(mut, constraint =
         mint(&user_token_vault.to_account_info()).unwrap()
-        == orderbook_mut.bond_manager.load().unwrap().underlying_token_mint.key() @ BondsError::WrongUnderlyingTokenMint
+        == orderbook_mut.market_manager.load().unwrap().underlying_token_mint.key() @ ErrorCode::WrongUnderlyingTokenMint
     )]
     pub user_token_vault: Account<'info, TokenAccount>,
 
-    #[bond_manager]
+    #[market_manager]
     pub orderbook_mut: OrderbookMut<'info>,
 
     /// The market ticket mint
-    #[account(mut, address = orderbook_mut.bond_manager.load().unwrap().bond_ticket_mint.key() @ BondsError::WrongTicketMint)]
-    pub bond_ticket_mint: Account<'info, Mint>,
+    #[account(mut, address = orderbook_mut.market_manager.load().unwrap().market_ticket_mint.key() @ ErrorCode::WrongTicketMint)]
+    pub market_ticket_mint: Account<'info, Mint>,
 
     /// The market ticket mint
-    #[account(mut, address = orderbook_mut.bond_manager.load().unwrap().underlying_token_vault.key() @ BondsError::WrongTicketMint)]
+    #[account(mut, address = orderbook_mut.market_manager.load().unwrap().underlying_token_vault.key() @ ErrorCode::WrongTicketMint)]
     pub underlying_token_vault: Account<'info, TokenAccount>,
 
     pub token_program: Program<'info, Token>,
@@ -60,7 +60,7 @@ impl<'info> SellTicketsOrder<'info> {
             CpiContext::new(
                 self.token_program.to_account_info(),
                 anchor_spl::token::Burn {
-                    mint: self.bond_ticket_mint.to_account_info(),
+                    mint: self.market_ticket_mint.to_account_info(),
                     from: self.user_ticket_vault.to_account_info(),
                     authority: self.authority.to_account_info(),
                 },
@@ -68,7 +68,7 @@ impl<'info> SellTicketsOrder<'info> {
             order_summary.base_combined(),
         )?;
         emit!(crate::events::OrderPlaced {
-            bond_manager: self.orderbook_mut.bond_manager.key(),
+            market_manager: self.orderbook_mut.market_manager.key(),
             authority: self.authority.key(),
             order_summary: order_summary.summary(),
             margin_user,

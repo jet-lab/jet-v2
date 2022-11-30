@@ -10,7 +10,7 @@ use arrayref::array_ref;
 
 use crate::{
     orderbook::state::{EventAdapterMetadata, EventQueue},
-    BondsError,
+    ErrorCode,
 };
 
 /// Wrapper for account structs that serializes/deserializes and automatically persists changes
@@ -100,23 +100,25 @@ impl<'info, T: ZeroCopy + Owner> AdapterLoader<'info, T> {
     #[inline(never)]
     fn run_checks(acc_info: &AccountInfo<'info>) -> Result<()> {
         if acc_info.owner != &T::owner() {
-            return Err(Error::from(ErrorCode::AccountOwnedByWrongProgram)
-                .with_pubkeys((*acc_info.owner, T::owner())));
+            return Err(
+                Error::from(anchor_lang::error::ErrorCode::AccountOwnedByWrongProgram)
+                    .with_pubkeys((*acc_info.owner, T::owner())),
+            );
         }
         let data: &[u8] = &acc_info.try_borrow_data()?;
         if data.len() < T::discriminator().len() {
-            return Err(ErrorCode::AccountDiscriminatorNotFound.into());
+            return Err(anchor_lang::error::ErrorCode::AccountDiscriminatorNotFound.into());
         }
         // Discriminator must match.
         let disc_bytes = array_ref![data, 0, 8];
         if disc_bytes != &T::discriminator() {
-            return Err(ErrorCode::AccountDiscriminatorMismatch.into());
+            return Err(anchor_lang::error::ErrorCode::AccountDiscriminatorMismatch.into());
         }
 
         // AccountInfo api allows you to borrow mut even if the account isn't
         // writable, so add this check for a better dev experience.
         if !acc_info.is_writable {
-            return Err(ErrorCode::AccountNotMutable.into());
+            return Err(anchor_lang::error::ErrorCode::AccountNotMutable.into());
         }
 
         Ok(())
@@ -145,7 +147,7 @@ algebraic! {
 /// Directly deserialize accounts from the remaining_accounts iterator
 pub trait RemainingAccounts<'a, 'info: 'a>: Iterator<Item = &'a AccountInfo<'info>> {
     fn next_account(&mut self) -> Result<&'a AccountInfo<'info>> {
-        Ok(self.next().ok_or(BondsError::NoMoreAccounts)?)
+        Ok(self.next().ok_or(ErrorCode::NoMoreAccounts)?)
     }
 
     fn next_anchor<T: AnchorStruct, A: AccessMode>(
@@ -213,7 +215,7 @@ pub fn init<'info, T: AnchorStruct>(
         &[payer, new_account.clone(), system_program],
         &[&signer[..]],
     )
-    .map_err(|_| error!(crate::errors::BondsError::InvokeCreateAccount))?;
+    .map_err(|_| error!(crate::errors::ErrorCode::InvokeCreateAccount))?;
 
     {
         let mut data = new_account.data.borrow_mut();

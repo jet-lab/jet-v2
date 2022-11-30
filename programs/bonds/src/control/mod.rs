@@ -1,6 +1,6 @@
-//! Control module for the `jet-bonds` program.
+//! Control module for the `jet-market` program.
 //!
-//! Handles initialization of program state including the [`BondManager`](struct@crate::control::state::BondManager) and program authority signer
+//! Handles initialization of program state including the [`MarketManager`](struct@crate::control::state::MarketManager) and program authority signer
 
 /// Program instructions for the control module
 pub mod instructions;

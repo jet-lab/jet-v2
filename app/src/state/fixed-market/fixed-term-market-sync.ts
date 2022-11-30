@@ -1,8 +1,8 @@
-import { BondMarket, JetBonds, JetBondsIdl, Orderbook } from '@jet-lab/jet-bonds-client';
+import { FixedMarket, JetMarket, JetMarketIdl, Orderbook } from '@jet-lab/fixed-market';
 import { Program } from '@project-serum/anchor';
 import { useEffect } from 'react';
 import { atom, selector, useRecoilValue, useSetRecoilState } from 'recoil';
-import { AirspaceConfig, BondMarketConfig } from '@jet-lab/margin';
+import { AirspaceConfig, FixedMarketConfig } from '@jet-lab/margin';
 import { MainConfig } from '../config/marginConfig';
 import { PublicKey } from '@solana/web3.js';
 import { useProvider } from '@utils/jet/provider';
@@ -60,8 +60,8 @@ export const AllFixedMarketsOrderBooksAtom = selector<ExtendedOrderBook[]>({
 });
 
 export interface MarketAndconfig {
-  market: BondMarket;
-  config: BondMarketConfig;
+  market: FixedMarket;
+  config: FixedMarketConfig;
   name: string;
 }
 export const useFixedTermSync = (): void => {
@@ -72,10 +72,10 @@ export const useFixedTermSync = (): void => {
   const setCurrentOrderTab = useSetRecoilState(CurrentOrderTabAtom);
   const { pathname } = useLocation();
 
-  const loadBondMarkets = async (airspace: AirspaceConfig, program: Program<JetBonds>, marginProgramId: PublicKey) => {
+  const loadFixedMarkets = async (airspace: AirspaceConfig, program: Program<JetMarket>, marginProgramId: PublicKey) => {
     const markets: MarketAndconfig[] = await Promise.all(
-      Object.entries(airspace.bondMarkets).map(async ([name, marketConfig]) => {
-        const market = await BondMarket.load(program, marketConfig.bondManager, marginProgramId);
+      Object.entries(airspace.fixedMarkets).map(async ([name, marketConfig]) => {
+        const market = await FixedMarket.load(program, marketConfig.marketManager, marginProgramId);
         return { market, config: marketConfig, name };
       })
     );
@@ -83,10 +83,10 @@ export const useFixedTermSync = (): void => {
   };
 
   useEffect(() => {
-    if (networkState === 'connected' && config?.bondsProgramId) {
-      const program = new Program(JetBondsIdl, config.bondsProgramId, provider);
+    if (networkState === 'connected' && config?.fixedMarketProgramId) {
+      const program = new Program(JetMarketIdl, config.fixedMarketProgramId, provider);
       const airspace = config.airspaces.find(airspace => airspace.name === 'default');
-      loadBondMarkets(airspace, program, new PublicKey(config.marginProgramId));
+      loadFixedMarkets(airspace, program, new PublicKey(config.marginProgramId));
     }
   }, [config, networkState]);
 

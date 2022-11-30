@@ -3,29 +3,29 @@ use anchor_lang::prelude::*;
 use anchor_spl::token::Token;
 use jet_margin::{AdapterResult, PositionChange};
 use jet_program_common::traits::{SafeSub, TryAddAssign};
-use jet_program_proc_macros::BondTokenManager;
+use jet_program_proc_macros::MarketTokenManager;
 
 use crate::{
-    bond_token_manager::BondTokenManager,
     events::ObligationCreated,
     margin::{
         events::{OrderPlaced, OrderType},
         origination_fee::loan_to_disburse,
         state::{return_to_margin, MarginUser, Obligation, ObligationFlags},
     },
+    market_token_manager::MarketTokenManager,
     orderbook::state::*,
     serialization::{self, RemainingAccounts},
-    BondsError,
+    ErrorCode,
 };
 
-#[derive(Accounts, BondTokenManager)]
+#[derive(Accounts, MarketTokenManager)]
 pub struct MarginBorrowOrder<'info> {
     /// The account tracking borrower debts
     #[account(
         mut,
         has_one = margin_account,
-        has_one = claims @ BondsError::WrongClaimAccount,
-        has_one = collateral @ BondsError::WrongCollateralAccount,
+        has_one = claims @ ErrorCode::WrongClaimAccount,
+        has_one = collateral @ ErrorCode::WrongCollateralAccount,
     )]
     pub margin_user: Box<Account<'info, MarginUser>>,
 
@@ -56,14 +56,14 @@ pub struct MarginBorrowOrder<'info> {
     pub collateral_mint: AccountInfo<'info>,
 
     /// The market token vault
-    #[account(mut, address = orderbook_mut.vault() @ BondsError::WrongVault)]
+    #[account(mut, address = orderbook_mut.vault() @ ErrorCode::WrongVault)]
     pub underlying_token_vault: AccountInfo<'info>,
 
     /// The market token vault
-    #[account(mut, address = margin_user.underlying_settlement @ BondsError::WrongUnderlyingSettlementAccount)]
+    #[account(mut, address = margin_user.underlying_settlement @ ErrorCode::WrongUnderlyingSettlementAccount)]
     pub underlying_settlement: AccountInfo<'info>,
 
-    #[bond_manager]
+    #[market_manager]
     pub orderbook_mut: OrderbookMut<'info>,
 
     /// payer for `Obligation` initialization
@@ -105,12 +105,13 @@ pub fn handler(
     let debt = &mut ctx.accounts.margin_user.debt;
     debt.post_borrow_order(order_summary.base_posted())?;
     if order_summary.base_filled() > 0 {
-        let mut manager = ctx.accounts.orderbook_mut.bond_manager.load_mut()?;
-        let maturation_timestamp = manager.borrow_duration + Clock::get()?.unix_timestamp;
+        let mut market_manager = ctx.accounts.orderbook_mut.market_manager.load_mut()?;
+        let maturation_timestamp = market_manager.borrow_duration + Clock::get()?.unix_timestamp;
         let sequence_number =
             debt.new_obligation_without_posting(order_summary.base_filled(), maturation_timestamp)?;
 
-        let maturation_timestamp = manager.borrow_duration + Clock::get()?.unix_timestamp;
+        let maturation_timestamp =
+            bond_manager.load()?.borrow_duration + Clock::get()?.unix_timestamp;
 
         let mut obligation = serialization::init::<Obligation>(
             ctx.accounts.obligation.to_account_info(),
@@ -127,7 +128,7 @@ pub fn handler(
         *obligation = Obligation {
             sequence_number,
             borrower_account: ctx.accounts.margin_user.key(),
-            bond_manager: ctx.accounts.orderbook_mut.bond_manager.key(),
+            market_manager: ctx.accounts.orderbook_mut.market_manager.key(),
             order_tag: callback_info.order_tag,
             maturation_timestamp,
             balance: base_filled,
@@ -145,7 +146,7 @@ pub fn handler(
             authority: ctx.accounts.margin_account.key(),
             order_id: order_summary.summary().posted_order_id,
             sequence_number,
-            bond_manager: ctx.accounts.orderbook_mut.bond_manager.key(),
+            market_manager: ctx.accounts.orderbook_mut.market_manager.key(),
             maturation_timestamp,
             quote_filled,
             base_filled,
@@ -161,7 +162,7 @@ pub fn handler(
     )?;
 
     emit!(OrderPlaced {
-        bond_manager: ctx.accounts.orderbook_mut.bond_manager.key(),
+        market_manager: ctx.accounts.orderbook_mut.market_manager.key(),
         authority: ctx.accounts.margin_account.key(),
         margin_user: Some(ctx.accounts.margin_user.key()),
         order_summary: order_summary.summary(),

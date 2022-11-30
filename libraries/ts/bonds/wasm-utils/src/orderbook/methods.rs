@@ -69,9 +69,9 @@ pub fn fixed_point_to_decimal(fp: u64) -> u64 {
     Fp32::upcast_fp32(fp).as_decimal_u64().unwrap()
 }
 
-/// Given a price and bond duration, calculates an interest rate
+/// Given a price and market tenor, calculates an interest rate
 ///
-/// price: underlying per bond ticket: fixed point 32 (left shifted 32 bits to get fractional precision)
+/// price: underlying per market ticket: fixed point 32 (left shifted 32 bits to get fractional precision)
 /// tenor: seconds
 /// return: interest rate in basis points
 #[wasm_bindgen]
@@ -79,11 +79,11 @@ pub fn price_to_rate(price: u64, tenor: u64) -> u64 {
     PricerImpl::price_fp32_to_bps_yearly_interest(price, tenor)
 }
 
-/// Given an interest rate and bond duration, calculates a price
+/// Given an interest rate and market tenor, calculates a price
 ///
 /// interest_rate: basis points
 /// tenor: seconds
-/// return: price: underlying per bond ticket: fixed point 32 (left shifted 32 bits to get fractional precision)
+/// return: price: underlying per market ticket: fixed point 32 (left shifted 32 bits to get fractional precision)
 #[wasm_bindgen]
 pub fn rate_to_price(interest_rate: u64, tenor: u64) -> u64 {
     PricerImpl::yearly_interest_bps_to_fp32_price(interest_rate, tenor)
@@ -104,7 +104,7 @@ pub fn build_order_amount_deprecated(amount: u64, interest_rate: u64) -> super::
     super::types::OrderAmount { base, quote, price }
 }
 
-/// For calculation of an implied limit price given to the bonds orderbook
+/// For calculation of an implied limit price given to the fixed markets orderbook
 ///
 /// Base is principal plus interest
 ///

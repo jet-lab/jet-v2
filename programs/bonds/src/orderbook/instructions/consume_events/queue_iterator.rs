@@ -10,7 +10,7 @@ use crate::{
     },
     serialization::RemainingAccounts,
     tickets::state::SplitTicket,
-    BondsError,
+    ErrorCode,
 };
 
 use super::{ConsumeEvents, FillAccounts, LoanAccount, OutAccounts, UserAccount};
@@ -88,7 +88,7 @@ impl<'a, 'info> EventIterator<'a, 'info> {
                     &[
                         crate::seeds::SPLIT_TICKET,
                         &maker_info.fill_account.to_bytes(),
-                        &self.seeds.next().ok_or(BondsError::InsufficientSeeds)?,
+                        &self.seeds.next().ok_or(ErrorCode::InsufficientSeeds)?,
                     ],
                 )?,
             ))
@@ -100,7 +100,7 @@ impl<'a, 'info> EventIterator<'a, 'info> {
                     &[
                         crate::seeds::OBLIGATION,
                         &maker_info.fill_account.to_bytes(),
-                        &self.seeds.next().ok_or(BondsError::InsufficientSeeds)?,
+                        &self.seeds.next().ok_or(ErrorCode::InsufficientSeeds)?,
                     ],
                 )?,
             ))
@@ -125,7 +125,7 @@ pub trait UserAccounts<'a, 'info: 'a>: RemainingAccounts<'a, 'info> {
                 account.key(),
                 Pubkey::new_from_array(expected)
             );
-            return err!(BondsError::WrongUserAccount);
+            return err!(ErrorCode::WrongUserAccount);
         }
         Ok(UserAccount::new(account.clone()))
     }
@@ -138,7 +138,7 @@ pub trait UserAccounts<'a, 'info: 'a>: RemainingAccounts<'a, 'info> {
             match self.next_adapter() {
                 Ok(adapter) => {
                     // this needs to fail the ix because it means the crank passed the wrong account
-                    require_eq!(key, adapter.key(), BondsError::WrongAdapter);
+                    require_eq!(key, adapter.key(), ErrorCode::WrongAdapter);
                     Ok(Some(adapter))
                 }
                 Err(e) => {

@@ -2,14 +2,14 @@ import { PublicKey, TransactionInstruction } from "@solana/web3.js"
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token"
 import {
   AssociatedToken,
-  BondMarketConfig,
+  FixedMarketConfig,
   MarginAccount,
   MarginConfig,
   Pool,
   PoolTokenChange,
   sendAll
 } from "@jet-lab/margin"
-import { BondMarket } from "./bondMarket"
+import { FixedMarket } from "./fixedMarket"
 import { Address, AnchorProvider, BN } from "@project-serum/anchor"
 
 const createRandomSeed = (byteLength: number) => {
@@ -19,7 +19,7 @@ const createRandomSeed = (byteLength: number) => {
 }
 
 const refreshAllMarkets = async (
-  markets: BondMarket[],
+  markets: FixedMarket[],
   ixs: TransactionInstruction[],
   marginAccount: MarginAccount,
   marketAddress: PublicKey
@@ -34,7 +34,7 @@ const refreshAllMarkets = async (
           .accounts({
             marginUser: marketUser,
             marginAccount: marginAccount.address,
-            bondManager: market.addresses.bondManager,
+            marketManager: market.addresses.marketManager,
             underlyingOracle: market.addresses.underlyingOracle,
             ticketOracle: market.addresses.ticketOracle,
             tokenProgram: TOKEN_PROGRAM_ID
@@ -52,7 +52,7 @@ const refreshAllMarkets = async (
 
 // CREATE MARKET ACCOUNT
 interface IWithCreateFixedMarketAccount {
-  market: BondMarket
+  market: FixedMarket
   provider: AnchorProvider
   marginAccount: MarginAccount
   walletAddress: PublicKey
@@ -66,7 +66,7 @@ export const withCreateFixedMarketAccounts = async ({
   instructions
 }: IWithCreateFixedMarketAccount) => {
   const tokenMint = market.addresses.underlyingTokenMint
-  const ticketMint = market.addresses.bondTicketMint
+  const ticketMint = market.addresses.marketTicketMint
   await AssociatedToken.withCreate(instructions, provider, marginAccount.address, tokenMint)
   await AssociatedToken.withCreate(instructions, provider, marginAccount.address, ticketMint)
   const marginUserInfo = await market.fetchMarginUser(marginAccount)
@@ -82,7 +82,7 @@ export const withCreateFixedMarketAccounts = async ({
 
 // MARKET MAKER ORDERS
 interface ICreateLendOrder {
-  market: BondMarket
+  market: FixedMarket
   provider: AnchorProvider
   marginAccount: MarginAccount
   marginConfig: MarginConfig
@@ -92,8 +92,8 @@ interface ICreateLendOrder {
   pools: Record<string, Pool>
   currentPool: Pool
   marketAccount?: string
-  marketConfig: BondMarketConfig
-  markets: BondMarket[]
+  marketConfig: FixedMarketConfig
+  markets: FixedMarket[]
 }
 export const offerLoan = async ({
   market,
@@ -108,8 +108,8 @@ export const offerLoan = async ({
   marketConfig,
   markets
 }: ICreateLendOrder) => {
-  // Fail if there is no active bonds program id in the config
-  if (!marginConfig.bondsProgramId) {
+  // Fail if there is no active fixed market program id in the config
+  if (!marginConfig.fixedMarketProgramId) {
     throw new Error("There is no market configured on this network")
   }
 
@@ -167,7 +167,7 @@ export const offerLoan = async ({
 }
 
 interface ICreateBorrowOrder {
-  market: BondMarket
+  market: FixedMarket
   marginAccount: MarginAccount
   marginConfig: MarginConfig
   provider: AnchorProvider
@@ -176,8 +176,8 @@ interface ICreateBorrowOrder {
   currentPool: Pool
   amount: BN
   basisPoints: BN
-  marketConfig: BondMarketConfig
-  markets: BondMarket[]
+  marketConfig: FixedMarketConfig
+  markets: FixedMarket[]
 }
 
 export const requestLoan = async ({
@@ -193,8 +193,8 @@ export const requestLoan = async ({
   marketConfig,
   markets
 }: ICreateBorrowOrder): Promise<string> => {
-  // Fail if there is no active bonds program id in the config
-  if (!marginConfig.bondsProgramId) {
+  // Fail if there is no active fixed market program id in the config
+  if (!marginConfig.fixedMarketProgramId) {
     throw new Error("There is no market configured on this network")
   }
 
@@ -242,7 +242,7 @@ export const requestLoan = async ({
 }
 
 interface ICancelOrder {
-  market: BondMarket
+  market: FixedMarket
   marginAccount: MarginAccount
   provider: AnchorProvider
   orderId: Uint8Array
@@ -273,7 +273,7 @@ export const cancelOrder = async ({
     .accounts({
       marginUser: borrowerAccount,
       marginAccount: marginAccount.address,
-      bondManager: market.addresses.bondManager,
+      marketManager: market.addresses.marketManager,
       underlyingOracle: market.addresses.underlyingOracle,
       ticketOracle: market.addresses.ticketOracle,
       tokenProgram: TOKEN_PROGRAM_ID
@@ -295,7 +295,7 @@ export const cancelOrder = async ({
 // MARKET TAKER ORDERS
 
 interface IBorrowNow {
-  market: BondMarket
+  market: FixedMarket
   marginAccount: MarginAccount
   marginConfig: MarginConfig
   provider: AnchorProvider
@@ -303,7 +303,7 @@ interface IBorrowNow {
   pools: Record<string, Pool>
   currentPool: Pool
   amount: BN
-  markets: BondMarket[]
+  markets: FixedMarket[]
 }
 
 export const borrowNow = async ({
@@ -317,9 +317,9 @@ export const borrowNow = async ({
   amount,
   markets
 }: IBorrowNow): Promise<string> => {
-  // Fail if there is no active bonds program id in the config
-  if (!marginConfig.bondsProgramId) {
-    throw new Error("There is no fixed term market configured on this network")
+  // Fail if there is no active fixed market program id in the config
+  if (!marginConfig.fixedMarketProgramId) {
+    throw new Error("There is no fixed market configured on this network")
   }
 
   const instructions: TransactionInstruction[][] = []
@@ -361,7 +361,7 @@ export const borrowNow = async ({
 }
 
 interface ILendNow {
-  market: BondMarket
+  market: FixedMarket
   marginAccount: MarginAccount
   marginConfig: MarginConfig
   provider: AnchorProvider
@@ -369,7 +369,7 @@ interface ILendNow {
   pools: Record<string, Pool>
   currentPool: Pool
   amount: BN
-  markets: BondMarket[]
+  markets: FixedMarket[]
 }
 
 export const lendNow = async ({
@@ -383,8 +383,8 @@ export const lendNow = async ({
   amount,
   markets
 }: ILendNow): Promise<string> => {
-  // Fail if there is no active bonds program id in the config
-  if (!marginConfig.bondsProgramId) {
+  // Fail if there is no active fixed market program id in the config
+  if (!marginConfig.fixedMarketProgramId) {
     throw new Error("There is no market configured on this network")
   }
 

@@ -2,32 +2,32 @@ use std::convert::TryInto;
 
 use anchor_lang::prelude::*;
 use anchor_spl::token::Token;
-use jet_program_proc_macros::BondTokenManager;
+use jet_program_proc_macros::MarketTokenManager;
 
 use crate::{
-    control::state::{BondManager, CrankAuthorization},
+    control::state::{CrankAuthorization, MarketManager},
     margin::state::{MarginUser, Obligation},
     orderbook::state::EventQueue,
     serialization::{AnchorAccount, Mut},
     tickets::state::SplitTicket,
-    BondsError,
+    ErrorCode,
 };
 
-#[derive(Accounts, BondTokenManager)]
+#[derive(Accounts, MarketTokenManager)]
 pub struct ConsumeEvents<'info> {
-    /// The `BondManager` account tracks global information related to this particular bond market
+    /// The `MarketManager` account tracks global information related to this particular fixed market
     #[account(
-        has_one = bond_ticket_mint @ BondsError::WrongTicketMint,
-        has_one = underlying_token_vault @ BondsError::WrongVault,
-        has_one = orderbook_market_state @ BondsError::WrongMarketState,
-        has_one = event_queue @ BondsError::WrongEventQueue,
+        has_one = market_ticket_mint @ ErrorCode::WrongTicketMint,
+        has_one = underlying_token_vault @ ErrorCode::WrongVault,
+        has_one = orderbook_market_state @ ErrorCode::WrongMarketState,
+        has_one = event_queue @ ErrorCode::WrongEventQueue,
     )]
     #[account(mut)]
-    pub bond_manager: AccountLoader<'info, BondManager>,
+    pub market_manager: AccountLoader<'info, MarketManager>,
     /// The market ticket mint
     /// CHECK: has_one
     #[account(mut)]
-    pub bond_ticket_mint: AccountInfo<'info>,
+    pub market_ticket_mint: AccountInfo<'info>,
     /// The market token vault
     /// CHECK: has_one
     #[account(mut)]
@@ -42,8 +42,8 @@ pub struct ConsumeEvents<'info> {
     pub event_queue: AccountInfo<'info>,
 
     #[account(
-        has_one = crank @ BondsError::WrongCrankAuthority,
-        constraint = crank_authorization.airspace == bond_manager.load()?.airspace @ BondsError::WrongAirspaceAuthorization
+        has_one = crank @ ErrorCode::WrongCrankAuthority,
+        constraint = crank_authorization.airspace == market_manager.load()?.airspace @ ErrorCode::WrongAirspaceAuthorization
     )]
     pub crank_authorization: Account<'info, CrankAuthorization>,
     pub crank: Signer<'info>,

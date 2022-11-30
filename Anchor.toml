@@ -13,7 +13,7 @@ skip-lint = true
 
 [programs.devnet]
 jet_test_service = "JPTSApMSqCHBww7vDhpaSmzipTV3qPg6vxub4qneKoy"
-jet_bonds = "JBond79m9K6HqYwngCjiJHb311GTXggo46kGcT2GijUc"
+jet_market = "JBond79m9K6HqYwngCjiJHb311GTXggo46kGcT2GijUc"
 jet_control = "JPCtrLreUqsEbdhtxZ8zpd8wBydKz4nuEjX5u9Eg5H8"
 jet_airspace = "JPASMkxARMmbeahk37H8PAAP1UzPNC4wGhvwLnBsfHi"
 jet_margin = "JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ"
@@ -23,7 +23,7 @@ jet_metadata = "JPMetawzxw7WyH3qHUVScYHWFBGhjwqDnM2R9qVbRLp"
 
 [programs.localnet]
 jet_test_service = "JPTSApMSqCHBww7vDhpaSmzipTV3qPg6vxub4qneKoy"
-jet_bonds = "JBond79m9K6HqYwngCjiJHb311GTXggo46kGcT2GijUc"
+jet_market = "JBond79m9K6HqYwngCjiJHb311GTXggo46kGcT2GijUc"
 jet_control = "JPCtrLreUqsEbdhtxZ8zpd8wBydKz4nuEjX5u9Eg5H8"
 jet_airspace = "JPASMkxARMmbeahk37H8PAAP1UzPNC4wGhvwLnBsfHi"
 jet_margin = "JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ"

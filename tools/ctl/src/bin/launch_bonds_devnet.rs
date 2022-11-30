@@ -1,9 +1,9 @@
 use anyhow::Result;
-use jet_margin_sdk::bonds::{event_queue_len, orderbook_slab_len, BondsIxBuilder};
+use jet_margin_sdk::bonds::{event_queue_len, orderbook_slab_len, FixedMarketIxBuilder};
 use jetctl::{
-    actions::bonds::BondMarketParameters,
+    actions::fixed::MarketParameters,
     client::{Client, ClientConfig, Plan},
-    BondsCommand, CliOpts, Command,
+    CliOpts, Command, FixedCommand,
 };
 use solana_sdk::{
     native_token::LAMPORTS_PER_SOL, pubkey, pubkey::Pubkey, signature::Keypair, signer::Signer,
@@ -26,9 +26,9 @@ lazy_static::lazy_static! {
     static ref ASKS_PATH: String = shellexpand::env("$PWD/tests/keypairs/asks.json")
     .unwrap().to_string();
 
-    static ref PARAMS: BondMarketParameters = BondMarketParameters {
-        borrow_duration: 3,
-        lend_duration: 5,
+    static ref PARAMS: MarketParameters = MarketParameters {
+        borrow_tenor: 3,
+        lend_tenor: 5,
         min_order_size: 1_000,
         seed: Pubkey::default().to_bytes().to_vec(),
         token_mint: USDC,
@@ -48,7 +48,7 @@ lazy_static::lazy_static! {
         no_confirm: false,
         signer_path: Some(PAYER_PATH.clone()),
         rpc_endpoint: Some(ENDPOINT.to_string()),
-        command: Command::Bonds { subcmd: BondsCommand::CreateMarket(PARAMS.clone()) },
+        command: Command::Fixed { subcmd: FixedCommand::CreateMarket(PARAMS.clone()) },
     };
 }
 
@@ -99,8 +99,8 @@ fn map_seed(seed: Vec<u8>) -> [u8; 32] {
 
 async fn create_orderbook_accounts(
     client: &Client,
-    ix: &BondsIxBuilder,
-    params: BondMarketParameters,
+    ix: &FixedMarketIxBuilder,
+    params: MarketParameters,
     queue_capacity: usize,
     book_capacity: usize,
 ) -> Result<Plan> {
@@ -159,7 +159,7 @@ async fn main() -> Result<()> {
     airdrop_payer(&client).await?;
 
     // fund the ob accounts
-    let bonds = BondsIxBuilder::new_from_seed(
+    let fixed_market = FixedMarketIxBuilder::new_from_seed(
         &Pubkey::default(),
         &USDC,
         map_seed(PARAMS.seed.clone()),
@@ -171,7 +171,7 @@ async fn main() -> Result<()> {
     .with_payer(&payer);
     let init_ob_accs = create_orderbook_accounts(
         &client,
-        &bonds,
+        &fixed_market,
         PARAMS.clone(),
         QUEUE_CAPACITY,
         ORDERBOOK_CAPACITY,
@@ -181,13 +181,13 @@ async fn main() -> Result<()> {
 
     // init a usdc market
     let create_market =
-        jetctl::actions::bonds::process_create_bond_market(&client, PARAMS.clone()).await?;
+        jetctl::actions::fixed::process_create_fixed_market(&client, PARAMS.clone()).await?;
     client.execute(create_market).await?;
 
     // no-matching market
     let pause = client
         .plan()?
-        .instructions([], ["pause-market"], [bonds.pause_order_matching()?])
+        .instructions([], ["pause-market"], [fixed_market.pause_order_matching()?])
         .build();
     client.execute(pause).await?;
 

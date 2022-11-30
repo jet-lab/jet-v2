@@ -21,7 +21,7 @@ import {
 
 import CONFIG from '../../../app/public/localnet.config.json';
 
-import { BondMarket, JetBonds, JetBondsIdl, MarginUserInfo, rate_to_price } from '@jet-lab/jet-bonds-client';
+import { FixedMarket, JetMarket, JetMarketIdl, MarginUserInfo, rate_to_price } from '@jet-lab/fixed-market';
 import { createAssociatedTokenAccountInstruction, getAssociatedTokenAddress } from '@solana/spl-token';
 
 describe('margin bonds borrowing', async () => {
@@ -61,8 +61,8 @@ describe('margin bonds borrowing', async () => {
   let user_c_BTC_account: PublicKey;
   let user_c_usdc_account: PublicKey;
 
-  const bondsProgram: anchor.Program<JetBonds> = new anchor.Program(JetBondsIdl, CONFIG.bondsProgramId, provider);
-  let bondMarket: BondMarket;
+  const fixedMarketProgram: anchor.Program<JetMarket> = new anchor.Program(JetMarketIdl, CONFIG.fixedMarketProgramId, provider);
+  let fixedMarket: FixedMarket;
 
   it('setup', async () => {
     // Fund payer
@@ -201,26 +201,26 @@ describe('margin bonds borrowing', async () => {
     await marginAccount_B.refresh();
     await marginAccount_C.refresh();
 
-    // load the bond market
-    bondMarket = await BondMarket.load(
-      bondsProgram,
-      CONFIG.airspaces[0].bondMarkets.USDC_86400.bondManager,
+    // load the fixed market
+    fixedMarket = await FixedMarket.load(
+      fixedMarketProgram,
+      CONFIG.airspaces[0].fixedMarkets.USDC_86400.marketManager,
       CONFIG.marginProgramId
     );
   });
 
   const registerNewMarginUser = async (
     marginAccount: MarginAccount,
-    bondMarket: BondMarket,
+    fixedMarket: FixedMarket,
     payer: Keypair,
     provider: AnchorProvider
   ) => {
     const tokenAcc = await getAssociatedTokenAddress(
-      bondMarket.addresses.underlyingTokenMint,
+      fixedMarket.addresses.underlyingTokenMint,
       marginAccount.address,
       true
     );
-    const ticketAcc = await getAssociatedTokenAddress(bondMarket.addresses.bondTicketMint, marginAccount.address, true);
+    const ticketAcc = await getAssociatedTokenAddress(fixedMarket.addresses.marketTicketMint, marginAccount.address, true);
     await provider.sendAndConfirm(
       new Transaction()
         .add(
@@ -228,7 +228,7 @@ describe('margin bonds borrowing', async () => {
             payer.publicKey,
             tokenAcc,
             marginAccount.address,
-            bondMarket.addresses.underlyingTokenMint
+            fixedMarket.addresses.underlyingTokenMint
           )
         )
         .add(
@@ -236,30 +236,30 @@ describe('margin bonds borrowing', async () => {
             payer.publicKey,
             ticketAcc,
             marginAccount.address,
-            bondMarket.addresses.bondTicketMint
+            fixedMarket.addresses.marketTicketMint
           )
         ),
       [payer]
     );
 
     let ixs: TransactionInstruction[] = [
-      await viaMargin(marginAccount, await bondMarket.registerAccountWithMarket(marginAccount, payer.publicKey)),
-      await viaMargin(marginAccount, await bondMarket.refreshPosition(marginAccount, false))
+      await viaMargin(marginAccount, await fixedMarket.registerAccountWithMarket(marginAccount, payer.publicKey)),
+      await viaMargin(marginAccount, await fixedMarket.refreshPosition(marginAccount, false))
     ];
     await provider.sendAndConfirm(new Transaction().add(...ixs), [payer]);
   };
 
-  it('margin users create bond market accounts', async () => {
-    assert(bondMarket);
+  it('margin users create fixed market accounts', async () => {
+    assert(fixedMarket);
 
     // register token wallets with margin accounts
-    await registerNewMarginUser(marginAccount_A, bondMarket, wallet_a.payer, provider_a);
-    await registerNewMarginUser(marginAccount_B, bondMarket, wallet_b.payer, provider_b);
+    await registerNewMarginUser(marginAccount_A, fixedMarket, wallet_a.payer, provider_a);
+    await registerNewMarginUser(marginAccount_B, fixedMarket, wallet_b.payer, provider_b);
 
-    let borrower_a = (await bondMarket.fetchMarginUser(marginAccount_A)) as MarginUserInfo;
-    let borrower_b = (await bondMarket.fetchMarginUser(marginAccount_B)) as MarginUserInfo;
+    let borrower_a = (await fixedMarket.fetchMarginUser(marginAccount_A)) as MarginUserInfo;
+    let borrower_b = (await fixedMarket.fetchMarginUser(marginAccount_B)) as MarginUserInfo;
 
-    assert(borrower_a.bondManager.toBase58() === bondMarket.addresses.bondManager.toBase58());
+    assert(borrower_a.marketManager.toBase58() === fixedMarket.addresses.marketManager.toBase58());
     assert(borrower_b.marginAccount.toBase58() === marginAccount_B.address.toBase58());
   });
 
@@ -294,27 +294,27 @@ describe('margin bonds borrowing', async () => {
   it('places market maker orders', async () => {
     // LIMIT LEND ORDER
     await airdropMarginWallet(marginAccount_B, USDC, 100_000);
-    const offerLoanB = await bondMarket.offerLoanIx(
+    const offerLoanB = await fixedMarket.offerLoanIx(
       marginAccount_B,
       loanOfferParams.amount,
       loanOfferParams.rate,
       wallet_b.payer.publicKey,
       Uint8Array.from([0, 0, 0, 0]),
-      CONFIG.airspaces[0].bondMarkets.USDC_86400.borrowDuration
+      CONFIG.airspaces[0].fixedMarkets.USDC_86400.borrowDuration
     );
     const limitLend = await viaMargin(marginAccount_B, offerLoanB);
     await provider_b.sendAndConfirm(makeTx([limitLend]), [wallet_b.payer]);
 
     // LIMIT BORROW ORDER
-    const requestBorrowB = await bondMarket.requestBorrowIx(
+    const requestBorrowB = await fixedMarket.requestBorrowIx(
       marginAccount_B,
       wallet_b.payer.publicKey,
       borrowRequestParams.amount,
       borrowRequestParams.rate,
       Uint8Array.from([0, 0, 0, 0]),
-      CONFIG.airspaces[0].bondMarkets.USDC_86400.borrowDuration
+      CONFIG.airspaces[0].fixedMarkets.USDC_86400.borrowDuration
     );
-    const refresh = await viaMargin(marginAccount_B, await bondMarket.refreshPosition(marginAccount_B, false));
+    const refresh = await viaMargin(marginAccount_B, await fixedMarket.refreshPosition(marginAccount_B, false));
     const marketLend = await viaMargin(marginAccount_B, requestBorrowB);
     await provider_b.sendAndConfirm(makeTx([refresh, marketLend]), [wallet_b.payer]);
   });
@@ -323,7 +323,7 @@ describe('margin bonds borrowing', async () => {
   const borrowNowAmount = new BN(100);
   it('places market taker orders', async () => {
     await airdropMarginWallet(marginAccount_A, USDC, 100_000);
-    const lendNowA = await bondMarket.lendNowIx(
+    const lendNowA = await fixedMarket.lendNowIx(
       marginAccount_A,
       lendNowAmount,
       wallet_a.payer.publicKey,
@@ -332,21 +332,21 @@ describe('margin bonds borrowing', async () => {
     const lendNow = await viaMargin(marginAccount_A, lendNowA);
     await provider_a.sendAndConfirm(makeTx([lendNow]), [wallet_a.payer]);
 
-    const borrowNowA = await bondMarket.borrowNowIx(
+    const borrowNowA = await fixedMarket.borrowNowIx(
       marginAccount_A,
       wallet_a.payer.publicKey,
       borrowNowAmount,
       Uint8Array.from([0, 0, 0, 0])
     );
     const borrowNow = await viaMargin(marginAccount_A, borrowNowA);
-    const refreshA = await viaMargin(marginAccount_A, await bondMarket.refreshPosition(marginAccount_A, false));
+    const refreshA = await viaMargin(marginAccount_A, await fixedMarket.refreshPosition(marginAccount_A, false));
     await provider_a.sendAndConfirm(makeTx([refreshA, borrowNow]), [wallet_a.payer]);
   });
 
   let loanId: Uint8Array;
 
   it('loads orderbook and has correct orders', async () => {
-    const orderbook = await bondMarket.fetchOrderbook();
+    const orderbook = await fixedMarket.fetchOrderbook();
     const offeredLoan = orderbook.bids[0];
     const requestedBorrow = orderbook.asks[0];
 
@@ -356,7 +356,7 @@ describe('margin bonds borrowing', async () => {
       offeredLoan.limit_price ===
         rate_to_price(
           bnToBigInt(loanOfferParams.rate),
-          BigInt(CONFIG.airspaces[0].bondMarkets.USDC_86400.borrowDuration)
+          BigInt(CONFIG.airspaces[0].fixedMarkets.USDC_86400.borrowDuration)
         )
     );
 
@@ -378,13 +378,13 @@ describe('margin bonds borrowing', async () => {
       requestedBorrow.limit_price ===
         rate_to_price(
           bnToBigInt(borrowRequestParams.rate),
-          BigInt(CONFIG.airspaces[0].bondMarkets.USDC_86400.borrowDuration)
+          BigInt(CONFIG.airspaces[0].fixedMarkets.USDC_86400.borrowDuration)
         )
     );
   });
 
   it('margin users cancel orders', async () => {
-    const cancelLoan = await bondMarket.cancelOrderIx(marginAccount_B, loanId);
+    const cancelLoan = await fixedMarket.cancelOrderIx(marginAccount_B, loanId);
     const invokeCancelLoan = await viaMargin(marginAccount_B, cancelLoan);
 
     await provider_b.sendAndConfirm(makeTx([invokeCancelLoan]));

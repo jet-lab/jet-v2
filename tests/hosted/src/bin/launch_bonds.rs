@@ -20,7 +20,7 @@ async fn main() -> Result<()> {
     margin.create_airspace_if_missing(false).await?;
     margin.create_authority_if_missing().await?;
     margin
-        .register_adapter_if_unregistered(&jet_bonds::ID)
+        .register_adapter_if_unregistered(&jet_market::ID)
         .await?;
 
     let x = TestManager::new(
@@ -40,13 +40,13 @@ async fn main() -> Result<()> {
     {
         let json = format!(
             "{{ 
-    \"jetBondsPid\": \"{}\",
-    \"bondManager\": \"{}\",
-    \"bondsMetadata\": \"{}\"
+    \"fixedMarketPid\": \"{}\",
+    \"marketManager\": \"{}\",
+    \"fixedMarketMetadata\": \"{}\"
 }}",
-            jet_bonds::ID,
+            jet_market::ID,
             x.ix_builder.manager(),
-            get_metadata_address(&jet_bonds::ID),
+            get_metadata_address(&jet_market::ID),
         );
         let mut io = OpenOptions::new()
             .write(true)
@@ -57,7 +57,7 @@ async fn main() -> Result<()> {
         io.write_all(json.as_bytes()).unwrap();
     }
 
-    println!("deployed bond manager to {:?}", x.ix_builder.manager());
+    println!("deployed market manager to {:?}", x.ix_builder.manager());
 
     Ok(())
 }

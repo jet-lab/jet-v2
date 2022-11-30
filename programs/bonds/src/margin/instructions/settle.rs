@@ -1,32 +1,32 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{Token, TokenAccount};
-use jet_program_proc_macros::BondTokenManager;
+use jet_program_proc_macros::MarketTokenManager;
 
 use crate::{
-    bond_token_manager::BondTokenManager, control::state::BondManager, margin::state::MarginUser,
-    BondsError,
+    control::state::MarketManager, margin::state::MarginUser,
+    market_token_manager::MarketTokenManager, ErrorCode,
 };
 
-#[derive(Accounts, BondTokenManager)]
+#[derive(Accounts, MarketTokenManager)]
 pub struct Settle<'info> {
     /// The account tracking information related to this particular user
     #[account(mut,
-        has_one = bond_manager @ BondsError::UserNotInMarket,
-        has_one = claims @ BondsError::WrongClaimAccount,
-        has_one = collateral @ BondsError::WrongCollateralAccount,
-        has_one = underlying_settlement @ BondsError::WrongUnderlyingSettlementAccount,
-        has_one = ticket_settlement @ BondsError::WrongTicketSettlementAccount,
+        has_one = market_manager @ ErrorCode::UserNotInMarket,
+        has_one = claims @ ErrorCode::WrongClaimAccount,
+        has_one = collateral @ ErrorCode::WrongCollateralAccount,
+        has_one = underlying_settlement @ ErrorCode::WrongUnderlyingSettlementAccount,
+        has_one = ticket_settlement @ ErrorCode::WrongTicketSettlementAccount,
     )]
     pub margin_user: Account<'info, MarginUser>,
 
-    /// The `BondManager` account tracks global information related to this particular bond market
+    /// The `MarketManager` account tracks global information related to this particular fixed market
     #[account(
-        has_one = underlying_token_vault @ BondsError::WrongVault,
-        has_one = bond_ticket_mint @ BondsError::WrongOracle,
-        has_one = claims_mint @ BondsError::WrongClaimMint,
-        has_one = collateral_mint @ BondsError::WrongCollateralMint,
+        has_one = underlying_token_vault @ ErrorCode::WrongVault,
+        has_one = market_ticket_mint @ ErrorCode::WrongOracle,
+        has_one = claims_mint @ ErrorCode::WrongClaimMint,
+        has_one = collateral_mint @ ErrorCode::WrongCollateralMint,
     )]
-    pub bond_manager: AccountLoader<'info, BondManager>,
+    pub market_manager: AccountLoader<'info, MarketManager>,
 
     /// SPL token program
     pub token_program: Program<'info, Token>,
@@ -52,7 +52,7 @@ pub struct Settle<'info> {
     pub underlying_token_vault: AccountInfo<'info>,
     /// CHECK: token program checks it
     #[account(mut)]
-    pub bond_ticket_mint: AccountInfo<'info>,
+    pub market_ticket_mint: AccountInfo<'info>,
     /// CHECK: token program checks it
     #[account(mut)]
     pub underlying_settlement: AccountInfo<'info>,
@@ -68,7 +68,7 @@ pub fn handler(ctx: Context<Settle>) -> Result<()> {
     let debt = ctx.accounts.margin_user.debt.total();
     let ctokens_deserved = assets.collateral()?;
 
-    // Notify margin of the current debt owed to bonds
+    // Notify margin of the current debt owed to Jet markets
     if claim_balance > debt {
         ctx.burn_notes(
             &ctx.accounts.claims_mint,
@@ -85,7 +85,7 @@ pub fn handler(ctx: Context<Settle>) -> Result<()> {
     }
 
     // Notify margin of the amount of collateral that will in the custody of
-    // bonds after this settlement
+    // market tickets after this settlement
     if ctokens_held > ctokens_deserved {
         ctx.burn_notes(
             &ctx.accounts.collateral_mint,
@@ -103,7 +103,7 @@ pub fn handler(ctx: Context<Settle>) -> Result<()> {
 
     // Disburse entitled funds due to fills
     ctx.mint(
-        &ctx.accounts.bond_ticket_mint,
+        &ctx.accounts.market_ticket_mint,
         &ctx.accounts.ticket_settlement,
         assets.entitled_tickets,
     )?;

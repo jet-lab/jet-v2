@@ -7,7 +7,7 @@ use jet_program_common::traits::TrySubAssign;
 use crate::{
     events::{ObligationFulfilled, ObligationRepay},
     margin::state::{MarginUser, Obligation},
-    BondsError,
+    ErrorCode,
 };
 
 #[derive(Accounts)]
@@ -18,10 +18,10 @@ pub struct Repay<'info> {
 
     #[account(
         mut,
-        has_one = borrower_account @ BondsError::UserNotInMarket,
+        has_one = borrower_account @ ErrorCode::UserNotInMarket,
         constraint = obligation.sequence_number
             == borrower_account.debt.next_obligation_to_repay().unwrap()
-            @ BondsError::ObligationHasWrongSequenceNumber
+            @ ErrorCode::ObligationHasWrongSequenceNumber
     )]
     pub obligation: Account<'info, Obligation>,
 
@@ -37,7 +37,7 @@ pub struct Repay<'info> {
     /// The signing authority for the source_account
     pub payer: Signer<'info>,
 
-    /// The token vault holding the underlying token of the bond
+    /// The token vault holding the underlying token of the market ticket
     #[account(mut)]
     pub underlying_token_vault: Account<'info, TokenAccount>,
 
@@ -83,7 +83,7 @@ pub fn handler(ctx: Context<Repay>, amount: u64) -> Result<()> {
         let user_key = user.key();
         let next_obligation = Account::<Obligation>::try_from(&ctx.accounts.next_obligation)
             .and_then(|ob| {
-                require_eq!(ob.borrower_account, user_key, BondsError::UserNotInMarket);
+                require_eq!(ob.borrower_account, user_key, ErrorCode::UserNotInMarket);
                 Ok(ob)
             });
         user.debt

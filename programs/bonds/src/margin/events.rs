@@ -5,7 +5,7 @@ use super::state::ObligationFlags;
 
 #[event]
 pub struct MarginUserInitialized {
-    pub bond_manager: Pubkey,
+    pub market_manager: Pubkey,
     pub borrower_account: Pubkey,
     pub margin_account: Pubkey,
     pub underlying_settlement: Pubkey,
@@ -14,7 +14,7 @@ pub struct MarginUserInitialized {
 
 #[event]
 pub struct OrderPlaced {
-    pub bond_manager: Pubkey,
+    pub market_manager: Pubkey,
     /// The authority placing this order, almost always the margin account
     pub authority: Pubkey,
     pub margin_user: Option<Pubkey>,
@@ -41,7 +41,7 @@ pub struct ObligationCreated {
     pub authority: Pubkey,
     pub order_id: Option<u128>,
     pub sequence_number: u64,
-    pub bond_manager: Pubkey,
+    pub market_manager: Pubkey,
     pub maturation_timestamp: i64,
     pub quote_filled: u64,
     pub base_filled: u64,

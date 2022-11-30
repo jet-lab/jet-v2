@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 
 use crate::{
     orderbook::state::{EventAdapterMetadata, EventQueue},
-    BondsError,
+    ErrorCode,
 };
 
 #[derive(Accounts)]
@@ -10,7 +10,7 @@ pub struct PopAdapterEvents<'info> {
     /// AdapterEventQueue account owned by outside user or program
     #[account(
         mut,
-        constraint = adapter_queue.load()?.owner == owner.key() @ BondsError::DoesNotOwnEventAdapter,
+        constraint = adapter_queue.load()?.owner == owner.key() @ ErrorCode::DoesNotOwnEventAdapter,
     )]
     pub adapter_queue: AccountLoader<'info, EventAdapterMetadata>,
 

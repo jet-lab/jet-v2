@@ -3,14 +3,14 @@ use anchor_spl::token::{accessor::mint, Mint, Token, TokenAccount};
 use jet_margin::{AdapterResult, PositionChange};
 
 use crate::{
-    control::state::BondManager,
+    control::state::MarketManager,
     margin::{
         events::MarginUserInitialized,
         state::{return_to_margin, MarginUser, MARGIN_USER_VERSION},
     },
     seeds,
     utils::init,
-    BondsError,
+    ErrorCode,
 };
 
 #[derive(Accounts)]
@@ -20,7 +20,7 @@ pub struct InitializeMarginUser<'info> {
         init,
         seeds = [
             seeds::MARGIN_BORROWER,
-            bond_manager.key().as_ref(),
+            market_manager.key().as_ref(),
             margin_account.key().as_ref(),
         ],
         bump,
@@ -37,10 +37,10 @@ pub struct InitializeMarginUser<'info> {
 
     /// The Boheader account
     #[account(
-        has_one = claims_mint @ BondsError::WrongClaimMint,
-        has_one = collateral_mint @ BondsError::WrongCollateralMint
+        has_one = claims_mint @ ErrorCode::WrongClaimMint,
+        has_one = collateral_mint @ ErrorCode::WrongCollateralMint
     )]
-    pub bond_manager: AccountLoader<'info, BondManager>,
+    pub market_manager: AccountLoader<'info, MarketManager>,
 
     /// Token account used by the margin program to track the debt
     /// that must be collateralized
@@ -51,7 +51,7 @@ pub struct InitializeMarginUser<'info> {
         ],
         bump,
         token::mint = claims_mint,
-        token::authority = bond_manager,
+        token::authority = market_manager,
         payer = payer)]
     pub claims: Box<Account<'info, TokenAccount>>,
     pub claims_mint: Box<Account<'info, Mint>>,
@@ -64,7 +64,7 @@ pub struct InitializeMarginUser<'info> {
         ],
         bump,
         token::mint = collateral_mint,
-        token::authority = bond_manager,
+        token::authority = market_manager,
         payer = payer)]
     pub collateral: Box<Account<'info, TokenAccount>>,
     pub collateral_mint: Box<Account<'info, Mint>>,
@@ -90,20 +90,20 @@ pub fn handler(ctx: Context<InitializeMarginUser>) -> Result<()> {
 
     require_eq!(
         mint(&ctx.accounts.underlying_settlement.to_account_info())?,
-        ctx.accounts.bond_manager.load()?.underlying_token_mint,
-        BondsError::WrongUnderlyingTokenMint
+        ctx.accounts.market_manager.load()?.underlying_token_mint,
+        ErrorCode::WrongUnderlyingTokenMint
     );
     require_eq!(
         mint(&ctx.accounts.ticket_settlement.to_account_info())?,
-        ctx.accounts.bond_manager.load()?.bond_ticket_mint,
-        BondsError::WrongTicketMint
+        ctx.accounts.market_manager.load()?.market_ticket_mint,
+        ErrorCode::WrongTicketMint
     );
 
     init! {
         user = MarginUser {
             version: MARGIN_USER_VERSION,
             margin_account: ctx.accounts.margin_account.key(),
-            bond_manager: ctx.accounts.bond_manager.key(),
+            market_manager: ctx.accounts.market_manager.key(),
             claims: ctx.accounts.claims.key(),
             collateral: ctx.accounts.collateral.key(),
             underlying_settlement: ctx.accounts.underlying_settlement.key(),
@@ -115,7 +115,7 @@ pub fn handler(ctx: Context<InitializeMarginUser>) -> Result<()> {
     }
 
     emit!(MarginUserInitialized {
-        bond_manager: ctx.accounts.bond_manager.key(),
+        market_manager: ctx.accounts.market_manager.key(),
         borrower_account: ctx.accounts.borrower_account.key(),
         margin_account: ctx.accounts.margin_account.key(),
         underlying_settlement: ctx.accounts.underlying_settlement.key(),

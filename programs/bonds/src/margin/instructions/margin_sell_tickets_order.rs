@@ -1,25 +1,25 @@
 use agnostic_orderbook::state::Side;
 use anchor_lang::prelude::*;
-use jet_program_proc_macros::BondTokenManager;
+use jet_program_proc_macros::MarketTokenManager;
 
 use crate::{
-    bond_token_manager::BondTokenManager,
     events::OrderType,
     margin::state::MarginUser,
+    market_token_manager::MarketTokenManager,
     orderbook::{
         instructions::sell_tickets_order::*,
         state::{CallbackFlags, OrderParams},
     },
     serialization::RemainingAccounts,
-    BondsError,
+    ErrorCode,
 };
 
-#[derive(Accounts, BondTokenManager)]
+#[derive(Accounts, MarketTokenManager)]
 pub struct MarginSellTicketsOrder<'info> {
     /// The account tracking borrower debts
     #[account(mut,
-        constraint = margin_user.margin_account == inner.authority.key() @ BondsError::UnauthorizedCaller,
-        has_one = collateral @ BondsError::WrongCollateralAccount,
+        constraint = margin_user.margin_account == inner.authority.key() @ ErrorCode::UnauthorizedCaller,
+        has_one = collateral @ ErrorCode::WrongCollateralAccount,
     )]
     pub margin_user: Box<Account<'info, MarginUser>>,
 
@@ -31,7 +31,7 @@ pub struct MarginSellTicketsOrder<'info> {
     #[account(mut)]
     pub collateral_mint: AccountInfo<'info>,
 
-    #[bond_manager(orderbook_mut)]
+    #[market_manager(orderbook_mut)]
     #[token_program]
     pub inner: SellTicketsOrder<'info>,
 }

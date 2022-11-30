@@ -1,8 +1,8 @@
-//! # Bond Tickets
+//! # Market Tickets
 //!
-//! The program abstracts the concept of a bond into bond tickets. Bond tickets are fungible spl tokens
-//! that must be staked to claim their underlying value. In order to create bond tickets, a user must either
-//! place a lend order on the orderbook, or exchange the token underlying the bond market (in practice, almost never
+//! The program abstracts the concept of a fixed rate and fixed term into market tickets. Market tickets are fungible spl tokens
+//! that must be staked to claim their underlying value. In order to create market tickets, a user must either
+//! place a lend order on the orderbook, or exchange the token underlying the market market (in practice, almost never
 //! will users do this, as it locks their tokens for at least the tenor of the market).
 //!
 //! ## Ticket kinds
@@ -16,9 +16,9 @@
 //! `true`. This will allow to program to immediately stake your tickets as the match event is processed.
 //!
 
-/// Program instructions for using bond tickets
+/// Program instructions for using market tickets
 pub mod instructions;
-/// Methods and structs for defining bond tickets
+/// Methods and structs for defining market tickets
 pub mod state;
 
 /// Anchor events

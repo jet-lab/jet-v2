@@ -1,25 +1,25 @@
 use agnostic_orderbook::state::Side;
 use anchor_lang::prelude::*;
-use jet_program_proc_macros::BondTokenManager;
+use jet_program_proc_macros::MarketTokenManager;
 
 use crate::{
-    bond_token_manager::BondTokenManager,
     margin::state::MarginUser,
+    market_token_manager::MarketTokenManager,
     orderbook::{
         instructions::lend_order::*,
         state::{CallbackFlags, OrderParams},
     },
     serialization::RemainingAccounts,
-    BondsError,
+    ErrorCode,
 };
 
-#[derive(Accounts, BondTokenManager)]
+#[derive(Accounts, MarketTokenManager)]
 pub struct MarginLendOrder<'info> {
     /// The account tracking borrower debts
     #[account(
         mut,
         constraint = margin_user.margin_account.key() == inner.authority.key(),
-        has_one = collateral @ BondsError::WrongCollateralAccount,
+        has_one = collateral @ ErrorCode::WrongCollateralAccount,
     )]
     pub margin_user: Box<Account<'info, MarginUser>>,
 
@@ -31,7 +31,7 @@ pub struct MarginLendOrder<'info> {
     #[account(mut)]
     pub collateral_mint: AccountInfo<'info>,
 
-    #[bond_manager(orderbook_mut)]
+    #[market_manager(orderbook_mut)]
     #[token_program]
     pub inner: LendOrder<'info>,
     // Optional event adapter account
@@ -69,7 +69,7 @@ pub fn handler(ctx: Context<MarginLendOrder>, params: OrderParams, seed: Vec<u8>
         staked + order_summary.quote_posted()?,
     )?;
     emit!(crate::events::OrderPlaced {
-        bond_manager: ctx.accounts.inner.orderbook_mut.bond_manager.key(),
+        market_manager: ctx.accounts.inner.orderbook_mut.market_manager.key(),
         authority: ctx.accounts.inner.authority.key(),
         margin_user: Some(ctx.accounts.margin_user.key()),
         order_summary: order_summary.summary(),

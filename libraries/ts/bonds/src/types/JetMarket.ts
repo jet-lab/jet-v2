@@ -1,27 +1,27 @@
-export type JetBonds = {
+export type JetMarket = {
   "version": "0.1.0",
-  "name": "jet_bonds",
+  "name": "jet_market",
   "constants": [
     {
-      "name": "BOND_MANAGER",
+      "name": "MARKET_MANAGER",
       "type": {
         "defined": "&[u8]"
       },
-      "value": "b\"bond_manager\""
+      "value": "b\"market_manager\""
     },
     {
-      "name": "BOND_TICKET_ACCOUNT",
+      "name": "MARKET_TICKET_ACCOUNT",
       "type": {
         "defined": "&[u8]"
       },
-      "value": "b\"bond_ticket_account\""
+      "value": "b\"market_ticket_account\""
     },
     {
-      "name": "BOND_TICKET_MINT",
+      "name": "MARKET_TICKET_MINT",
       "type": {
         "defined": "&[u8]"
       },
-      "value": "b\"bond_ticket_mint\""
+      "value": "b\"market_ticket_mint\""
     },
     {
       "name": "CLAIM_TICKET",
@@ -188,17 +188,17 @@ export type JetBonds = {
       "args": []
     },
     {
-      "name": "initializeBondManager",
+      "name": "initializeMarketManager",
       "docs": [
-        "Initializes a BondManager for a bond ticket market"
+        "Initializes a MarketManager for a fixed market"
       ],
       "accounts": [
         {
-          "name": "bondManager",
+          "name": "marketManager",
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The `BondManager` manages asset tokens for a particular bond duration"
+            "The `MarketManager` manages asset tokens for a particular market tenor"
           ]
         },
         {
@@ -206,7 +206,7 @@ export type JetBonds = {
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The vault for storing the token underlying the bond tickets"
+            "The vault for storing the token underlying the market tickets"
           ]
         },
         {
@@ -214,15 +214,15 @@ export type JetBonds = {
           "isMut": false,
           "isSigner": false,
           "docs": [
-            "The mint for the assets underlying the bond tickets"
+            "The mint for the assets underlying the market tickets"
           ]
         },
         {
-          "name": "bondTicketMint",
+          "name": "marketTicketMint",
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The minting account for the bond tickets"
+            "The minting account for the market tickets"
           ]
         },
         {
@@ -270,7 +270,7 @@ export type JetBonds = {
           "isMut": false,
           "isSigner": false,
           "docs": [
-            "The oracle for the bond ticket price"
+            "The oracle for the market ticket price"
           ]
         },
         {
@@ -318,7 +318,7 @@ export type JetBonds = {
         {
           "name": "params",
           "type": {
-            "defined": "InitializeBondManagerParams"
+            "defined": "InitializeMarketManagerParams"
           }
         }
       ]
@@ -330,11 +330,11 @@ export type JetBonds = {
       ],
       "accounts": [
         {
-          "name": "bondManager",
+          "name": "marketManager",
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The `BondManager` account tracks global information related to this particular bond market"
+            "The `MarketManager` account tracks global information related to this particular fixed market"
           ]
         },
         {
@@ -414,18 +414,18 @@ export type JetBonds = {
       ]
     },
     {
-      "name": "modifyBondManager",
+      "name": "modifyMarketManager",
       "docs": [
-        "Modify a `BondManager` account",
+        "Modify a `MarketManager` account",
         "Authority use only"
       ],
       "accounts": [
         {
-          "name": "bondManager",
+          "name": "marketManager",
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The `BondManager` manages asset tokens for a particular bond duration"
+            "The `MarketManager` manages asset tokens for a particular market tenor"
           ]
         },
         {
@@ -463,11 +463,11 @@ export type JetBonds = {
       ],
       "accounts": [
         {
-          "name": "bondManager",
+          "name": "marketManager",
           "isMut": false,
           "isSigner": false,
           "docs": [
-            "The `BondManager` manages asset tokens for a particular bond duration"
+            "The `MarketManager` manages asset tokens for a particular market tenor"
           ]
         },
         {
@@ -504,11 +504,11 @@ export type JetBonds = {
       ],
       "accounts": [
         {
-          "name": "bondManager",
+          "name": "marketManager",
           "isMut": false,
           "isSigner": false,
           "docs": [
-            "The `BondManager` manages asset tokens for a particular bond duration"
+            "The `MarketManager` manages asset tokens for a particular market tenor"
           ]
         },
         {
@@ -573,7 +573,7 @@ export type JetBonds = {
           ]
         },
         {
-          "name": "bondManager",
+          "name": "marketManager",
           "isMut": false,
           "isSigner": false,
           "docs": [
@@ -738,11 +738,11 @@ export type JetBonds = {
           "name": "orderbookMut",
           "accounts": [
             {
-              "name": "bondManager",
+              "name": "marketManager",
               "isMut": true,
               "isSigner": false,
               "docs": [
-                "The `BondManager` account tracks global information related to this particular bond market"
+                "The `MarketManager` account tracks global information related to this particular fixed market"
               ]
             },
             {
@@ -848,7 +848,7 @@ export type JetBonds = {
               "isMut": true,
               "isSigner": false,
               "docs": [
-                "Account containing the bond tickets being sold"
+                "Account containing the market tickets being sold"
               ]
             },
             {
@@ -856,18 +856,18 @@ export type JetBonds = {
               "isMut": true,
               "isSigner": false,
               "docs": [
-                "The account to recieve the matched tokens"
+                "The account to receive the matched tokens"
               ]
             },
             {
               "name": "orderbookMut",
               "accounts": [
                 {
-                  "name": "bondManager",
+                  "name": "marketManager",
                   "isMut": true,
                   "isSigner": false,
                   "docs": [
-                    "The `BondManager` account tracks global information related to this particular bond market"
+                    "The `MarketManager` account tracks global information related to this particular fixed market"
                   ]
                 },
                 {
@@ -893,7 +893,7 @@ export type JetBonds = {
               ]
             },
             {
-              "name": "bondTicketMint",
+              "name": "marketTicketMint",
               "isMut": true,
               "isSigner": false,
               "docs": [
@@ -941,7 +941,7 @@ export type JetBonds = {
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "Token account used by the margin program to track the collateral value of assets custodied by bonds"
+            "Token account used by the margin program to track the collateral value of assets custodied by Jet markets"
           ]
         },
         {
@@ -949,7 +949,7 @@ export type JetBonds = {
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "Token mint used by the margin program to track the collateral value of assets custodied by bonds"
+            "Token mint used by the margin program to track the collateral value of assets custodied by Jet markets"
           ]
         },
         {
@@ -976,15 +976,15 @@ export type JetBonds = {
               "isMut": true,
               "isSigner": false,
               "docs": [
-                "The token account designated to recieve the assets underlying the claim"
+                "The token account designated to receive the assets underlying the claim"
               ]
             },
             {
-              "name": "bondManager",
+              "name": "marketManager",
               "isMut": false,
               "isSigner": false,
               "docs": [
-                "The BondManager responsible for the asset"
+                "The MarketManager responsible for the asset"
               ]
             },
             {
@@ -992,7 +992,7 @@ export type JetBonds = {
               "isMut": true,
               "isSigner": false,
               "docs": [
-                "The vault stores the tokens of the underlying asset managed by the BondManager"
+                "The vault stores the tokens of the underlying asset managed by the MarketManager"
               ]
             },
             {
@@ -1053,11 +1053,11 @@ export type JetBonds = {
               "name": "orderbookMut",
               "accounts": [
                 {
-                  "name": "bondManager",
+                  "name": "marketManager",
                   "isMut": true,
                   "isSigner": false,
                   "docs": [
-                    "The `BondManager` account tracks global information related to this particular bond market"
+                    "The `MarketManager` account tracks global information related to this particular fixed market"
                   ]
                 },
                 {
@@ -1089,7 +1089,7 @@ export type JetBonds = {
               "docs": [
                 "where to settle tickets on match:",
                 "- SplitTicket that will be created if the order is filled as a taker and `auto_stake` is enabled",
-                "- ticket token account to receive bond tickets",
+                "- ticket token account to receive market tickets",
                 "be careful to check this properly. one way is by using lender_tickets_token_account"
               ]
             },
@@ -1168,11 +1168,11 @@ export type JetBonds = {
           "isSigner": false
         },
         {
-          "name": "bondManager",
+          "name": "marketManager",
           "isMut": false,
           "isSigner": false,
           "docs": [
-            "The `BondManager` account tracks global information related to this particular bond market"
+            "The `MarketManager` account tracks global information related to this particular fixed market"
           ]
         },
         {
@@ -1254,7 +1254,7 @@ export type JetBonds = {
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The token vault holding the underlying token of the bond"
+            "The token vault holding the underlying token of the market ticket"
           ]
         },
         {
@@ -1288,11 +1288,11 @@ export type JetBonds = {
           ]
         },
         {
-          "name": "bondManager",
+          "name": "marketManager",
           "isMut": false,
           "isSigner": false,
           "docs": [
-            "The `BondManager` account tracks global information related to this particular bond market"
+            "The `MarketManager` account tracks global information related to this particular fixed market"
           ]
         },
         {
@@ -1335,7 +1335,7 @@ export type JetBonds = {
           "isSigner": false
         },
         {
-          "name": "bondTicketMint",
+          "name": "marketTicketMint",
           "isMut": true,
           "isSigner": false
         },
@@ -1371,7 +1371,7 @@ export type JetBonds = {
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "Account containing the bond tickets being sold"
+            "Account containing the market tickets being sold"
           ]
         },
         {
@@ -1379,18 +1379,18 @@ export type JetBonds = {
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The account to recieve the matched tokens"
+            "The account to receive the matched tokens"
           ]
         },
         {
           "name": "orderbookMut",
           "accounts": [
             {
-              "name": "bondManager",
+              "name": "marketManager",
               "isMut": true,
               "isSigner": false,
               "docs": [
-                "The `BondManager` account tracks global information related to this particular bond market"
+                "The `MarketManager` account tracks global information related to this particular fixed market"
               ]
             },
             {
@@ -1416,7 +1416,7 @@ export type JetBonds = {
           ]
         },
         {
-          "name": "bondTicketMint",
+          "name": "marketTicketMint",
           "isMut": true,
           "isSigner": false,
           "docs": [
@@ -1464,11 +1464,11 @@ export type JetBonds = {
           "name": "orderbookMut",
           "accounts": [
             {
-              "name": "bondManager",
+              "name": "marketManager",
               "isMut": true,
               "isSigner": false,
               "docs": [
-                "The `BondManager` account tracks global information related to this particular bond market"
+                "The `MarketManager` account tracks global information related to this particular fixed market"
               ]
             },
             {
@@ -1519,11 +1519,11 @@ export type JetBonds = {
           "name": "orderbookMut",
           "accounts": [
             {
-              "name": "bondManager",
+              "name": "marketManager",
               "isMut": true,
               "isSigner": false,
               "docs": [
-                "The `BondManager` account tracks global information related to this particular bond market"
+                "The `MarketManager` account tracks global information related to this particular fixed market"
               ]
             },
             {
@@ -1555,7 +1555,7 @@ export type JetBonds = {
           "docs": [
             "where to settle tickets on match:",
             "- SplitTicket that will be created if the order is filled as a taker and `auto_stake` is enabled",
-            "- ticket token account to receive bond tickets",
+            "- ticket token account to receive market tickets",
             "be careful to check this properly. one way is by using lender_tickets_token_account"
           ]
         },
@@ -1619,15 +1619,15 @@ export type JetBonds = {
       ],
       "accounts": [
         {
-          "name": "bondManager",
+          "name": "marketManager",
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The `BondManager` account tracks global information related to this particular bond market"
+            "The `MarketManager` account tracks global information related to this particular fixed market"
           ]
         },
         {
-          "name": "bondTicketMint",
+          "name": "marketTicketMint",
           "isMut": true,
           "isSigner": false,
           "docs": [
@@ -1697,16 +1697,16 @@ export type JetBonds = {
     {
       "name": "exchangeTokens",
       "docs": [
-        "Exchange underlying token for bond tickets",
+        "Exchange underlying token for fixed market tickets",
         "WARNING: tickets must be staked for redeption of underlying"
       ],
       "accounts": [
         {
-          "name": "bondManager",
+          "name": "marketManager",
           "isMut": false,
           "isSigner": false,
           "docs": [
-            "The BondManager manages asset tokens for a particular bond duration"
+            "The MarketManager manages asset tokens for a particular market tenor"
           ]
         },
         {
@@ -1714,23 +1714,23 @@ export type JetBonds = {
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The vault stores the tokens of the underlying asset managed by the BondManager"
+            "The vault stores the tokens of the underlying asset managed by the MarketManager"
           ]
         },
         {
-          "name": "bondTicketMint",
+          "name": "marketTicketMint",
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The minting account for the bond tickets"
+            "The minting account for the market tickets"
           ]
         },
         {
-          "name": "userBondTicketVault",
+          "name": "userMarketTicketVault",
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The token account to recieve the exchanged bond tickets"
+            "The token account to receive the exchanged market tickets"
           ]
         },
         {
@@ -1738,7 +1738,7 @@ export type JetBonds = {
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The user controlled token account to exchange for bond tickets"
+            "The user controlled token account to exchange for market tickets"
           ]
         },
         {
@@ -1792,15 +1792,15 @@ export type JetBonds = {
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The token account designated to recieve the assets underlying the claim"
+            "The token account designated to receive the assets underlying the claim"
           ]
         },
         {
-          "name": "bondManager",
+          "name": "marketManager",
           "isMut": false,
           "isSigner": false,
           "docs": [
-            "The BondManager responsible for the asset"
+            "The MarketManager responsible for the asset"
           ]
         },
         {
@@ -1808,7 +1808,7 @@ export type JetBonds = {
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The vault stores the tokens of the underlying asset managed by the BondManager"
+            "The vault stores the tokens of the underlying asset managed by the MarketManager"
           ]
         },
         {
@@ -1823,9 +1823,9 @@ export type JetBonds = {
       "args": []
     },
     {
-      "name": "stakeBondTickets",
+      "name": "stakeMarketTickets",
       "docs": [
-        "Stakes bond tickets for later redemption"
+        "Stakes market tickets for later redemption"
       ],
       "accounts": [
         {
@@ -1837,11 +1837,11 @@ export type JetBonds = {
           ]
         },
         {
-          "name": "bondManager",
+          "name": "marketManager",
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The BondManager account tracks bonded assets of a particular duration"
+            "The MarketManager account tracks fixed market assets of a particular duration"
           ]
         },
         {
@@ -1849,24 +1849,24 @@ export type JetBonds = {
           "isMut": false,
           "isSigner": true,
           "docs": [
-            "The owner of bond tickets that wishes to stake them for a redeemable ticket"
+            "The owner of market tickets that wishes to stake them for a redeemable ticket"
           ]
         },
         {
-          "name": "bondTicketTokenAccount",
+          "name": "marketTicketTokenAccount",
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The account tracking the ticket_holder's bond tickets"
+            "The account tracking the ticket_holder's market tickets"
           ]
         },
         {
-          "name": "bondTicketMint",
+          "name": "marketTicketMint",
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The mint for the bond tickets for this instruction",
-            "A mint is a specific instance of the token program for both the underlying asset and the bond duration"
+            "The mint for the market tickets for this instruction",
+            "A mint is a specific instance of the token program for both the underlying asset and the market tenor"
           ]
         },
         {
@@ -1898,7 +1898,7 @@ export type JetBonds = {
         {
           "name": "params",
           "type": {
-            "defined": "StakeBondTicketsParams"
+            "defined": "StakeMarketTicketsParams"
           }
         }
       ]
@@ -1948,11 +1948,11 @@ export type JetBonds = {
           ]
         },
         {
-          "name": "bondManager",
+          "name": "marketManager",
           "isMut": false,
           "isSigner": false,
           "docs": [
-            "BondManager for this Adapter"
+            "MarketManager for this Adapter"
           ]
         },
         {
@@ -2023,12 +2023,12 @@ export type JetBonds = {
   ],
   "accounts": [
     {
-      "name": "BondManager",
+      "name": "MarketManager",
       "docs": [
-        "The `BondManager` contains all the information necessary to run the bond market",
+        "The `MarketManager` contains all the information necessary to run the fixed market",
         "",
         "Utilized by program instructions to verify given transaction accounts are correct. Contains data",
-        "about the bond market including the tenor and ticket<->token conversion rate"
+        "about the fixed market including the tenor and ticket<->token conversion rate"
       ],
       "type": {
         "kind": "struct",
@@ -2078,7 +2078,7 @@ export type JetBonds = {
           {
             "name": "underlyingTokenMint",
             "docs": [
-              "The token mint for the underlying asset of the bond tickets"
+              "The token mint for the underlying asset of the market tickets"
             ],
             "type": "publicKey"
           },
@@ -2090,16 +2090,16 @@ export type JetBonds = {
             "type": "publicKey"
           },
           {
-            "name": "bondTicketMint",
+            "name": "marketTicketMint",
             "docs": [
-              "The token mint for the bond tickets"
+              "The token mint for the market tickets"
             ],
             "type": "publicKey"
           },
           {
             "name": "claimsMint",
             "docs": [
-              "Mint owned by bonds to issue claims against a user.",
+              "Mint owned by Jet markets to issue claims against a user.",
               "These claim notes are monitored by margin to ensure claims are repaid."
             ],
             "type": "publicKey"
@@ -2107,7 +2107,7 @@ export type JetBonds = {
           {
             "name": "collateralMint",
             "docs": [
-              "Mint owned by bonds to issue collateral value to a user",
+              "Mint owned by Jet markets to issue collateral value to a user",
               "The collateral notes are monitored by the margin program to track value"
             ],
             "type": "publicKey"
@@ -2122,7 +2122,7 @@ export type JetBonds = {
           {
             "name": "ticketOracle",
             "docs": [
-              "oracle that defines the value of the bond tickets"
+              "oracle that defines the value of the market tickets"
             ],
             "type": "publicKey"
           },
@@ -2136,7 +2136,7 @@ export type JetBonds = {
           {
             "name": "seed",
             "docs": [
-              "The user-defined part of the seed that generated this bond manager's PDA"
+              "The user-defined part of the seed that generated this market manager's PDA"
             ],
             "type": {
               "array": [
@@ -2263,9 +2263,9 @@ export type JetBonds = {
             "type": "publicKey"
           },
           {
-            "name": "bondManager",
+            "name": "marketManager",
             "docs": [
-              "The `BondManager` for the market"
+              "The `MarketManager` for the market"
             ],
             "type": "publicKey"
           },
@@ -2280,8 +2280,8 @@ export type JetBonds = {
             "name": "collateral",
             "docs": [
               "Token account used by the margin program to track the collateral value of positions",
-              "which are internal to bonds, such as SplitTicket, ClaimTicket, and open orders.",
-              "this does *not* represent underlying tokens or bond ticket tokens, those are registered independently in margin"
+              "which are internal to Jet markets, such as SplitTicket, ClaimTicket, and open orders.",
+              "this does *not* represent underlying tokens or market ticket tokens, those are registered independently in margin"
             ],
             "type": "publicKey"
           },
@@ -2305,7 +2305,7 @@ export type JetBonds = {
             "name": "debt",
             "docs": [
               "The amount of debt that must be collateralized or repaid",
-              "This debt is expressed in terms of the underlying token - not bond tickets"
+              "This debt is expressed in terms of the underlying token - not market tickets"
             ],
             "type": {
               "defined": "Debt"
@@ -2314,7 +2314,7 @@ export type JetBonds = {
           {
             "name": "assets",
             "docs": [
-              "Accounting used to track assets in custody of the bond market"
+              "Accounting used to track assets in custody of the fixed market"
             ],
             "type": {
               "defined": "Assets"
@@ -2340,9 +2340,9 @@ export type JetBonds = {
             "type": "publicKey"
           },
           {
-            "name": "bondManager",
+            "name": "marketManager",
             "docs": [
-              "The bond manager where the obligation was created"
+              "The market manager where the obligation was created"
             ],
             "type": "publicKey"
           },
@@ -2394,7 +2394,7 @@ export type JetBonds = {
           {
             "name": "manager",
             "docs": [
-              "The `BondManager` this adapter belongs to"
+              "The `MarketManager` this adapter belongs to"
             ],
             "type": "publicKey"
           },
@@ -2412,7 +2412,7 @@ export type JetBonds = {
       "name": "ClaimTicket",  // do not change
       "docs": [
         "A `ClaimTicket` represents a claim of tickets that have been staked with the program",
-        "This account is generated by the `StakeBondTickets` program instruction"
+        "This account is generated by the `StakeMarketTickets` program instruction"
       ],
       "type": {
         "kind": "struct",
@@ -2425,7 +2425,7 @@ export type JetBonds = {
             "type": "publicKey"
           },
           {
-            "name": "bondManager",
+            "name": "marketManager",
             "docs": [
               "The `TicketManager` this claim ticket was established under",
               "Determines the asset this ticket will be redeemed for"
@@ -2469,7 +2469,7 @@ export type JetBonds = {
             "type": "publicKey"
           },
           {
-            "name": "bondManager",
+            "name": "marketManager",
             "docs": [
               "The `TicketManager` this claim ticket was established under",
               "Determines the asset this ticket will be redeemed for"
@@ -2502,14 +2502,14 @@ export type JetBonds = {
           {
             "name": "principal",
             "docs": [
-              "The total number of principal tokens the bond was struck for"
+              "The total number of principal tokens the market ticket was struck for"
             ],
             "type": "u64"
           },
           {
             "name": "interest",
             "docs": [
-              "The total number of interest tokens struck for this bond",
+              "The total number of interest tokens struck for this market ticket",
               "same underlying asset as the principal token"
             ],
             "type": "u64"
@@ -2520,9 +2520,9 @@ export type JetBonds = {
   ],
   "types": [
     {
-      "name": "InitializeBondManagerParams",
+      "name": "InitializeMarketManagerParams",
       "docs": [
-        "Parameters for the initialization of the [BondManager]"
+        "Parameters for the initialization of the [MarketManager]"
       ],
       "type": {
         "kind": "struct",
@@ -2530,7 +2530,7 @@ export type JetBonds = {
           {
             "name": "versionTag",
             "docs": [
-              "Tag information for the `BondManager` account"
+              "Tag information for the `MarketManager` account"
             ],
             "type": "u64"
           },
@@ -2657,7 +2657,7 @@ export type JetBonds = {
           {
             "name": "ticketsStaked",
             "docs": [
-              "The number of bond tickets locked up in ClaimTicket or SplitTicket"
+              "The number of market tickets locked up in ClaimTicket or SplitTicket"
             ],
             "type": "u64"
           },
@@ -2714,9 +2714,9 @@ export type JetBonds = {
         "kind": "struct",
         "fields": [
           {
-            "name": "maxBondTicketQty",
+            "name": "maxMarketTicketQty",
             "docs": [
-              "The maximum quantity of bond tickets to be traded."
+              "The maximum quantity of market tickets to be traded."
             ],
             "type": "u64"
           },
@@ -2768,9 +2768,9 @@ export type JetBonds = {
       }
     },
     {
-      "name": "StakeBondTicketsParams",
+      "name": "StakeMarketTicketsParams",
       "docs": [
-        "Params needed to stake bond tickets"
+        "Params needed to stake market tickets"
       ],
       "type": {
         "kind": "struct",
@@ -2967,7 +2967,7 @@ export type JetBonds = {
   ],
   "events": [
     {
-      "name": "BondManagerInitialized",
+      "name": "MarketManagerInitialized",
       "fields": [
         {
           "name": "version",
@@ -3015,7 +3015,7 @@ export type JetBonds = {
       "name": "OrderbookInitialized",
       "fields": [
         {
-          "name": "bondManager",
+          "name": "marketManager",
           "type": "publicKey",
           "index": false
         },
@@ -3065,7 +3065,7 @@ export type JetBonds = {
       "name": "ToggleOrderMatching",
       "fields": [
         {
-          "name": "bondManager",
+          "name": "marketManager",
           "type": "publicKey",
           "index": false
         },
@@ -3090,7 +3090,7 @@ export type JetBonds = {
       "name": "MarginUserInitialized",
       "fields": [
         {
-          "name": "bondManager",
+          "name": "marketManager",
           "type": "publicKey",
           "index": false
         },
@@ -3120,7 +3120,7 @@ export type JetBonds = {
       "name": "OrderPlaced",
       "fields": [
         {
-          "name": "bondManager",
+          "name": "marketManager",
           "type": "publicKey",
           "index": false
         },
@@ -3198,7 +3198,7 @@ export type JetBonds = {
           "index": false
         },
         {
-          "name": "bondManager",
+          "name": "marketManager",
           "type": "publicKey",
           "index": false
         },
@@ -3278,7 +3278,7 @@ export type JetBonds = {
       "name": "OrderCancelled",
       "fields": [
         {
-          "name": "bondManager",
+          "name": "marketManager",
           "type": "publicKey",
           "index": false
         },
@@ -3298,7 +3298,7 @@ export type JetBonds = {
       "name": "EventAdapterRegistered",
       "fields": [
         {
-          "name": "bondManager",
+          "name": "marketManager",
           "type": "publicKey",
           "index": false
         },
@@ -3318,7 +3318,7 @@ export type JetBonds = {
       "name": "TokensExchanged",
       "fields": [
         {
-          "name": "bondManager",
+          "name": "marketManager",
           "type": "publicKey",
           "index": false
         },
@@ -3338,7 +3338,7 @@ export type JetBonds = {
       "name": "TicketRedeemed",
       "fields": [
         {
-          "name": "bondManager",
+          "name": "marketManager",
           "type": "publicKey",
           "index": false
         },
@@ -3368,7 +3368,7 @@ export type JetBonds = {
       "name": "TicketsStaked",
       "fields": [
         {
-          "name": "bondManager",
+          "name": "marketManager",
           "type": "publicKey",
           "index": false
         },
@@ -3443,8 +3443,8 @@ export type JetBonds = {
     },
     {
       "code": 6007,
-      "name": "ImmatureBond",
-      "msg": "bond is not mature and cannot be claimed"
+      "name": "ImmatureMarketTicket",
+      "msg": "market ticket is not mature and cannot be claimed"
     },
     {
       "code": 6008,
@@ -3549,7 +3549,7 @@ export type JetBonds = {
     {
       "code": 6028,
       "name": "UserNotInMarket",
-      "msg": "this user account is not associated with this bond market"
+      "msg": "this user account is not associated with this fixed market"
     },
     {
       "code": 6029,
@@ -3577,9 +3577,9 @@ export type JetBonds = {
       "msg": "bids account does not belong to this market"
     },
     {
-      "code": 6034,
-      "name": "WrongBondManager",
-      "msg": "adapter does not belong to given bond manager"
+      "code": 6035,
+      "name": "WrongMarketManager",
+      "msg": "adapter does not belong to given market manager"
     },
     {
       "code": 6035,
@@ -3654,7 +3654,7 @@ export type JetBonds = {
     {
       "code": 6049,
       "name": "WrongTicketMint",
-      "msg": "not the ticket mint for this bond market"
+      "msg": "not the ticket mint for this fixed market"
     },
     {
       "code": 6050,
@@ -3669,7 +3669,7 @@ export type JetBonds = {
     {
       "code": 6052,
       "name": "WrongUnderlyingTokenMint",
-      "msg": "wrong underlying token mint for this bond market"
+      "msg": "wrong underlying token mint for this fixed market"
     },
     {
       "code": 6053,
@@ -3689,30 +3689,30 @@ export type JetBonds = {
   ]
 };
 
-export const IDL: JetBonds = {
+export const IDL: JetMarket = {
   "version": "0.1.0",
-  "name": "jet_bonds",
+  "name": "jet_market",
   "constants": [
     {
-      "name": "BOND_MANAGER",
+      "name": "MARKET_MANAGER",
       "type": {
         "defined": "&[u8]"
       },
-      "value": "b\"bond_manager\""
+      "value": "b\"market_manager\""
     },
     {
-      "name": "BOND_TICKET_ACCOUNT",
+      "name": "MARKET_TICKET_ACCOUNT",
       "type": {
         "defined": "&[u8]"
       },
-      "value": "b\"bond_ticket_account\""
+      "value": "b\"market_ticket_account\""
     },
     {
-      "name": "BOND_TICKET_MINT",
+      "name": "MARKET_TICKET_MINT",
       "type": {
         "defined": "&[u8]"
       },
-      "value": "b\"bond_ticket_mint\""
+      "value": "b\"market_ticket_mint\""
     },
     {
       "name": "CLAIM_TICKET",
@@ -3879,17 +3879,17 @@ export const IDL: JetBonds = {
       "args": []
     },
     {
-      "name": "initializeBondManager",
+      "name": "initializeMarketManager",
       "docs": [
-        "Initializes a BondManager for a bond ticket market"
+        "Initializes a MarketManager for a fixed market"
       ],
       "accounts": [
         {
-          "name": "bondManager",
+          "name": "marketManager",
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The `BondManager` manages asset tokens for a particular bond duration"
+            "The `MarketManager` manages asset tokens for a particular market tenor"
           ]
         },
         {
@@ -3897,7 +3897,7 @@ export const IDL: JetBonds = {
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The vault for storing the token underlying the bond tickets"
+            "The vault for storing the token underlying the market tickets"
           ]
         },
         {
@@ -3905,15 +3905,15 @@ export const IDL: JetBonds = {
           "isMut": false,
           "isSigner": false,
           "docs": [
-            "The mint for the assets underlying the bond tickets"
+            "The mint for the assets underlying the market tickets"
           ]
         },
         {
-          "name": "bondTicketMint",
+          "name": "marketTicketMint",
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The minting account for the bond tickets"
+            "The minting account for the market tickets"
           ]
         },
         {
@@ -3961,7 +3961,7 @@ export const IDL: JetBonds = {
           "isMut": false,
           "isSigner": false,
           "docs": [
-            "The oracle for the bond ticket price"
+            "The oracle for the market ticket price"
           ]
         },
         {
@@ -4009,7 +4009,7 @@ export const IDL: JetBonds = {
         {
           "name": "params",
           "type": {
-            "defined": "InitializeBondManagerParams"
+            "defined": "InitializeMarketManagerParams"
           }
         }
       ]
@@ -4021,11 +4021,11 @@ export const IDL: JetBonds = {
       ],
       "accounts": [
         {
-          "name": "bondManager",
+          "name": "marketManager",
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The `BondManager` account tracks global information related to this particular bond market"
+            "The `MarketManager` account tracks global information related to this particular fixed market"
           ]
         },
         {
@@ -4105,18 +4105,18 @@ export const IDL: JetBonds = {
       ]
     },
     {
-      "name": "modifyBondManager",
+      "name": "modifyMarketManager",
       "docs": [
-        "Modify a `BondManager` account",
+        "Modify a `MarketManager` account",
         "Authority use only"
       ],
       "accounts": [
         {
-          "name": "bondManager",
+          "name": "marketManager",
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The `BondManager` manages asset tokens for a particular bond duration"
+            "The `MarketManager` manages asset tokens for a particular market tenor"
           ]
         },
         {
@@ -4154,11 +4154,11 @@ export const IDL: JetBonds = {
       ],
       "accounts": [
         {
-          "name": "bondManager",
+          "name": "marketManager",
           "isMut": false,
           "isSigner": false,
           "docs": [
-            "The `BondManager` manages asset tokens for a particular bond duration"
+            "The `MarketManager` manages asset tokens for a particular market tenor"
           ]
         },
         {
@@ -4195,11 +4195,11 @@ export const IDL: JetBonds = {
       ],
       "accounts": [
         {
-          "name": "bondManager",
+          "name": "marketManager",
           "isMut": false,
           "isSigner": false,
           "docs": [
-            "The `BondManager` manages asset tokens for a particular bond duration"
+            "The `MarketManager` manages asset tokens for a particular market tenor"
           ]
         },
         {
@@ -4264,7 +4264,7 @@ export const IDL: JetBonds = {
           ]
         },
         {
-          "name": "bondManager",
+          "name": "marketManager",
           "isMut": false,
           "isSigner": false,
           "docs": [
@@ -4429,11 +4429,11 @@ export const IDL: JetBonds = {
           "name": "orderbookMut",
           "accounts": [
             {
-              "name": "bondManager",
+              "name": "marketManager",
               "isMut": true,
               "isSigner": false,
               "docs": [
-                "The `BondManager` account tracks global information related to this particular bond market"
+                "The `MarketManager` account tracks global information related to this particular fixed market"
               ]
             },
             {
@@ -4539,7 +4539,7 @@ export const IDL: JetBonds = {
               "isMut": true,
               "isSigner": false,
               "docs": [
-                "Account containing the bond tickets being sold"
+                "Account containing the market tickets being sold"
               ]
             },
             {
@@ -4547,18 +4547,18 @@ export const IDL: JetBonds = {
               "isMut": true,
               "isSigner": false,
               "docs": [
-                "The account to recieve the matched tokens"
+                "The account to receive the matched tokens"
               ]
             },
             {
               "name": "orderbookMut",
               "accounts": [
                 {
-                  "name": "bondManager",
+                  "name": "marketManager",
                   "isMut": true,
                   "isSigner": false,
                   "docs": [
-                    "The `BondManager` account tracks global information related to this particular bond market"
+                    "The `MarketManager` account tracks global information related to this particular fixed market"
                   ]
                 },
                 {
@@ -4584,7 +4584,7 @@ export const IDL: JetBonds = {
               ]
             },
             {
-              "name": "bondTicketMint",
+              "name": "marketTicketMint",
               "isMut": true,
               "isSigner": false,
               "docs": [
@@ -4632,7 +4632,7 @@ export const IDL: JetBonds = {
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "Token account used by the margin program to track the collateral value of assets custodied by bonds"
+            "Token account used by the margin program to track the collateral value of assets custodied by Jet markets"
           ]
         },
         {
@@ -4640,7 +4640,7 @@ export const IDL: JetBonds = {
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "Token mint used by the margin program to track the collateral value of assets custodied by bonds"
+            "Token mint used by the margin program to track the collateral value of assets custodied by Jet markets"
           ]
         },
         {
@@ -4667,15 +4667,15 @@ export const IDL: JetBonds = {
               "isMut": true,
               "isSigner": false,
               "docs": [
-                "The token account designated to recieve the assets underlying the claim"
+                "The token account designated to receive the assets underlying the claim"
               ]
             },
             {
-              "name": "bondManager",
+              "name": "marketManager",
               "isMut": false,
               "isSigner": false,
               "docs": [
-                "The BondManager responsible for the asset"
+                "The MarketManager responsible for the asset"
               ]
             },
             {
@@ -4683,7 +4683,7 @@ export const IDL: JetBonds = {
               "isMut": true,
               "isSigner": false,
               "docs": [
-                "The vault stores the tokens of the underlying asset managed by the BondManager"
+                "The vault stores the tokens of the underlying asset managed by the MarketManager"
               ]
             },
             {
@@ -4744,11 +4744,11 @@ export const IDL: JetBonds = {
               "name": "orderbookMut",
               "accounts": [
                 {
-                  "name": "bondManager",
+                  "name": "marketManager",
                   "isMut": true,
                   "isSigner": false,
                   "docs": [
-                    "The `BondManager` account tracks global information related to this particular bond market"
+                    "The `MarketManager` account tracks global information related to this particular fixed market"
                   ]
                 },
                 {
@@ -4780,7 +4780,7 @@ export const IDL: JetBonds = {
               "docs": [
                 "where to settle tickets on match:",
                 "- SplitTicket that will be created if the order is filled as a taker and `auto_stake` is enabled",
-                "- ticket token account to receive bond tickets",
+                "- ticket token account to receive market tickets",
                 "be careful to check this properly. one way is by using lender_tickets_token_account"
               ]
             },
@@ -4859,11 +4859,11 @@ export const IDL: JetBonds = {
           "isSigner": false
         },
         {
-          "name": "bondManager",
+          "name": "marketManager",
           "isMut": false,
           "isSigner": false,
           "docs": [
-            "The `BondManager` account tracks global information related to this particular bond market"
+            "The `MarketManager` account tracks global information related to this particular fixed market"
           ]
         },
         {
@@ -4945,7 +4945,7 @@ export const IDL: JetBonds = {
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The token vault holding the underlying token of the bond"
+            "The token vault holding the underlying token of the market ticket"
           ]
         },
         {
@@ -4979,11 +4979,11 @@ export const IDL: JetBonds = {
           ]
         },
         {
-          "name": "bondManager",
+          "name": "marketManager",
           "isMut": false,
           "isSigner": false,
           "docs": [
-            "The `BondManager` account tracks global information related to this particular bond market"
+            "The `MarketManager` account tracks global information related to this particular fixed market"
           ]
         },
         {
@@ -5026,7 +5026,7 @@ export const IDL: JetBonds = {
           "isSigner": false
         },
         {
-          "name": "bondTicketMint",
+          "name": "marketTicketMint",
           "isMut": true,
           "isSigner": false
         },
@@ -5062,7 +5062,7 @@ export const IDL: JetBonds = {
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "Account containing the bond tickets being sold"
+            "Account containing the market tickets being sold"
           ]
         },
         {
@@ -5070,18 +5070,18 @@ export const IDL: JetBonds = {
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The account to recieve the matched tokens"
+            "The account to receive the matched tokens"
           ]
         },
         {
           "name": "orderbookMut",
           "accounts": [
             {
-              "name": "bondManager",
+              "name": "marketManager",
               "isMut": true,
               "isSigner": false,
               "docs": [
-                "The `BondManager` account tracks global information related to this particular bond market"
+                "The `MarketManager` account tracks global information related to this particular fixed market"
               ]
             },
             {
@@ -5107,7 +5107,7 @@ export const IDL: JetBonds = {
           ]
         },
         {
-          "name": "bondTicketMint",
+          "name": "marketTicketMint",
           "isMut": true,
           "isSigner": false,
           "docs": [
@@ -5155,11 +5155,11 @@ export const IDL: JetBonds = {
           "name": "orderbookMut",
           "accounts": [
             {
-              "name": "bondManager",
+              "name": "marketManager",
               "isMut": true,
               "isSigner": false,
               "docs": [
-                "The `BondManager` account tracks global information related to this particular bond market"
+                "The `MarketManager` account tracks global information related to this particular fixed market"
               ]
             },
             {
@@ -5210,11 +5210,11 @@ export const IDL: JetBonds = {
           "name": "orderbookMut",
           "accounts": [
             {
-              "name": "bondManager",
+              "name": "marketManager",
               "isMut": true,
               "isSigner": false,
               "docs": [
-                "The `BondManager` account tracks global information related to this particular bond market"
+                "The `MarketManager` account tracks global information related to this particular fixed market"
               ]
             },
             {
@@ -5246,7 +5246,7 @@ export const IDL: JetBonds = {
           "docs": [
             "where to settle tickets on match:",
             "- SplitTicket that will be created if the order is filled as a taker and `auto_stake` is enabled",
-            "- ticket token account to receive bond tickets",
+            "- ticket token account to receive market tickets",
             "be careful to check this properly. one way is by using lender_tickets_token_account"
           ]
         },
@@ -5310,15 +5310,15 @@ export const IDL: JetBonds = {
       ],
       "accounts": [
         {
-          "name": "bondManager",
+          "name": "marketManager",
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The `BondManager` account tracks global information related to this particular bond market"
+            "The `MarketManager` account tracks global information related to this particular fixed market"
           ]
         },
         {
-          "name": "bondTicketMint",
+          "name": "marketTicketMint",
           "isMut": true,
           "isSigner": false,
           "docs": [
@@ -5388,16 +5388,16 @@ export const IDL: JetBonds = {
     {
       "name": "exchangeTokens",
       "docs": [
-        "Exchange underlying token for bond tickets",
+        "Exchange underlying token for fixed market tickets",
         "WARNING: tickets must be staked for redeption of underlying"
       ],
       "accounts": [
         {
-          "name": "bondManager",
+          "name": "marketManager",
           "isMut": false,
           "isSigner": false,
           "docs": [
-            "The BondManager manages asset tokens for a particular bond duration"
+            "The MarketManager manages asset tokens for a particular market tenor"
           ]
         },
         {
@@ -5405,23 +5405,23 @@ export const IDL: JetBonds = {
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The vault stores the tokens of the underlying asset managed by the BondManager"
+            "The vault stores the tokens of the underlying asset managed by the MarketManager"
           ]
         },
         {
-          "name": "bondTicketMint",
+          "name": "marketTicketMint",
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The minting account for the bond tickets"
+            "The minting account for the market tickets"
           ]
         },
         {
-          "name": "userBondTicketVault",
+          "name": "userMarketTicketVault",
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The token account to recieve the exchanged bond tickets"
+            "The token account to receive the exchanged market tickets"
           ]
         },
         {
@@ -5429,7 +5429,7 @@ export const IDL: JetBonds = {
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The user controlled token account to exchange for bond tickets"
+            "The user controlled token account to exchange for market tickets"
           ]
         },
         {
@@ -5483,15 +5483,15 @@ export const IDL: JetBonds = {
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The token account designated to recieve the assets underlying the claim"
+            "The token account designated to receive the assets underlying the claim"
           ]
         },
         {
-          "name": "bondManager",
+          "name": "marketManager",
           "isMut": false,
           "isSigner": false,
           "docs": [
-            "The BondManager responsible for the asset"
+            "The MarketManager responsible for the asset"
           ]
         },
         {
@@ -5499,7 +5499,7 @@ export const IDL: JetBonds = {
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The vault stores the tokens of the underlying asset managed by the BondManager"
+            "The vault stores the tokens of the underlying asset managed by the MarketManager"
           ]
         },
         {
@@ -5514,9 +5514,9 @@ export const IDL: JetBonds = {
       "args": []
     },
     {
-      "name": "stakeBondTickets",
+      "name": "stakeMarketTickets",
       "docs": [
-        "Stakes bond tickets for later redemption"
+        "Stakes market tickets for later redemption"
       ],
       "accounts": [
         {
@@ -5528,11 +5528,11 @@ export const IDL: JetBonds = {
           ]
         },
         {
-          "name": "bondManager",
+          "name": "marketManager",
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The BondManager account tracks bonded assets of a particular duration"
+            "The MarketManager account tracks fixed market assets of a particular duration"
           ]
         },
         {
@@ -5540,24 +5540,24 @@ export const IDL: JetBonds = {
           "isMut": false,
           "isSigner": true,
           "docs": [
-            "The owner of bond tickets that wishes to stake them for a redeemable ticket"
+            "The owner of market tickets that wishes to stake them for a redeemable ticket"
           ]
         },
         {
-          "name": "bondTicketTokenAccount",
+          "name": "marketTicketTokenAccount",
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The account tracking the ticket_holder's bond tickets"
+            "The account tracking the ticket_holder's market tickets"
           ]
         },
         {
-          "name": "bondTicketMint",
+          "name": "marketTicketMint",
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The mint for the bond tickets for this instruction",
-            "A mint is a specific instance of the token program for both the underlying asset and the bond duration"
+            "The mint for the market tickets for this instruction",
+            "A mint is a specific instance of the token program for both the underlying asset and the market tenor"
           ]
         },
         {
@@ -5589,7 +5589,7 @@ export const IDL: JetBonds = {
         {
           "name": "params",
           "type": {
-            "defined": "StakeBondTicketsParams"
+            "defined": "StakeMarketTicketsParams"
           }
         }
       ]
@@ -5639,11 +5639,11 @@ export const IDL: JetBonds = {
           ]
         },
         {
-          "name": "bondManager",
+          "name": "marketManager",
           "isMut": false,
           "isSigner": false,
           "docs": [
-            "BondManager for this Adapter"
+            "MarketManager for this Adapter"
           ]
         },
         {
@@ -5714,12 +5714,12 @@ export const IDL: JetBonds = {
   ],
   "accounts": [
     {
-      "name": "BondManager", // do not change
+      "name": "MarketManager",
       "docs": [
-        "The `BondManager` contains all the information necessary to run the bond market",
+        "The `MarketManager` contains all the information necessary to run the fixed market",
         "",
         "Utilized by program instructions to verify given transaction accounts are correct. Contains data",
-        "about the bond market including the tenor and ticket<->token conversion rate"
+        "about the fixed market including the tenor and ticket<->token conversion rate"
       ],
       "type": {
         "kind": "struct",
@@ -5769,7 +5769,7 @@ export const IDL: JetBonds = {
           {
             "name": "underlyingTokenMint",
             "docs": [
-              "The token mint for the underlying asset of the bond tickets"
+              "The token mint for the underlying asset of the market tickets"
             ],
             "type": "publicKey"
           },
@@ -5781,16 +5781,16 @@ export const IDL: JetBonds = {
             "type": "publicKey"
           },
           {
-            "name": "bondTicketMint",
+            "name": "marketTicketMint",
             "docs": [
-              "The token mint for the bond tickets"
+              "The token mint for the market tickets"
             ],
             "type": "publicKey"
           },
           {
             "name": "claimsMint",
             "docs": [
-              "Mint owned by bonds to issue claims against a user.",
+              "Mint owned by Jet markets to issue claims against a user.",
               "These claim notes are monitored by margin to ensure claims are repaid."
             ],
             "type": "publicKey"
@@ -5798,7 +5798,7 @@ export const IDL: JetBonds = {
           {
             "name": "collateralMint",
             "docs": [
-              "Mint owned by bonds to issue collateral value to a user",
+              "Mint owned by Jet markets to issue collateral value to a user",
               "The collateral notes are monitored by the margin program to track value"
             ],
             "type": "publicKey"
@@ -5813,7 +5813,7 @@ export const IDL: JetBonds = {
           {
             "name": "ticketOracle",
             "docs": [
-              "oracle that defines the value of the bond tickets"
+              "oracle that defines the value of the market tickets"
             ],
             "type": "publicKey"
           },
@@ -5827,7 +5827,7 @@ export const IDL: JetBonds = {
           {
             "name": "seed",
             "docs": [
-              "The user-defined part of the seed that generated this bond manager's PDA"
+              "The user-defined part of the seed that generated this market manager's PDA"
             ],
             "type": {
               "array": [
@@ -5954,9 +5954,9 @@ export const IDL: JetBonds = {
             "type": "publicKey"
           },
           {
-            "name": "bondManager",
+            "name": "marketManager",
             "docs": [
-              "The `BondManager` for the market"
+              "The `MarketManager` for the market"
             ],
             "type": "publicKey"
           },
@@ -5971,8 +5971,8 @@ export const IDL: JetBonds = {
             "name": "collateral",
             "docs": [
               "Token account used by the margin program to track the collateral value of positions",
-              "which are internal to bonds, such as SplitTicket, ClaimTicket, and open orders.",
-              "this does *not* represent underlying tokens or bond ticket tokens, those are registered independently in margin"
+              "which are internal to Jet markets, such as SplitTicket, ClaimTicket, and open orders.",
+              "this does *not* represent underlying tokens or market ticket tokens, those are registered independently in margin"
             ],
             "type": "publicKey"
           },
@@ -5996,7 +5996,7 @@ export const IDL: JetBonds = {
             "name": "debt",
             "docs": [
               "The amount of debt that must be collateralized or repaid",
-              "This debt is expressed in terms of the underlying token - not bond tickets"
+              "This debt is expressed in terms of the underlying token - not market tickets"
             ],
             "type": {
               "defined": "Debt"
@@ -6005,7 +6005,7 @@ export const IDL: JetBonds = {
           {
             "name": "assets",
             "docs": [
-              "Accounting used to track assets in custody of the bond market"
+              "Accounting used to track assets in custody of the fixed market"
             ],
             "type": {
               "defined": "Assets"
@@ -6031,9 +6031,9 @@ export const IDL: JetBonds = {
             "type": "publicKey"
           },
           {
-            "name": "bondManager",
+            "name": "marketManager",
             "docs": [
-              "The bond manager where the obligation was created"
+              "The market manager where the obligation was created"
             ],
             "type": "publicKey"
           },
@@ -6085,7 +6085,7 @@ export const IDL: JetBonds = {
           {
             "name": "manager",
             "docs": [
-              "The `BondManager` this adapter belongs to"
+              "The `MarketManager` this adapter belongs to"
             ],
             "type": "publicKey"
           },
@@ -6103,7 +6103,7 @@ export const IDL: JetBonds = {
       "name": "ClaimTicket", // do not change
       "docs": [
         "A `ClaimTicket` represents a claim of tickets that have been staked with the program",
-        "This account is generated by the `StakeBondTickets` program instruction"
+        "This account is generated by the `StakeMarketTickets` program instruction"
       ],
       "type": {
         "kind": "struct",
@@ -6116,7 +6116,7 @@ export const IDL: JetBonds = {
             "type": "publicKey"
           },
           {
-            "name": "bondManager",
+            "name": "marketManager",
             "docs": [
               "The `TicketManager` this claim ticket was established under",
               "Determines the asset this ticket will be redeemed for"
@@ -6160,7 +6160,7 @@ export const IDL: JetBonds = {
             "type": "publicKey"
           },
           {
-            "name": "bondManager",
+            "name": "marketManager",
             "docs": [
               "The `TicketManager` this claim ticket was established under",
               "Determines the asset this ticket will be redeemed for"
@@ -6193,14 +6193,14 @@ export const IDL: JetBonds = {
           {
             "name": "principal",
             "docs": [
-              "The total number of principal tokens the bond was struck for"
+              "The total number of principal tokens the market ticket was struck for"
             ],
             "type": "u64"
           },
           {
             "name": "interest",
             "docs": [
-              "The total number of interest tokens struck for this bond",
+              "The total number of interest tokens struck for this market ticket",
               "same underlying asset as the principal token"
             ],
             "type": "u64"
@@ -6211,9 +6211,9 @@ export const IDL: JetBonds = {
   ],
   "types": [
     {
-      "name": "InitializeBondManagerParams",
+      "name": "InitializeMarketManagerParams",
       "docs": [
-        "Parameters for the initialization of the [BondManager]"
+        "Parameters for the initialization of the [MarketManager]"
       ],
       "type": {
         "kind": "struct",
@@ -6221,7 +6221,7 @@ export const IDL: JetBonds = {
           {
             "name": "versionTag",
             "docs": [
-              "Tag information for the `BondManager` account"
+              "Tag information for the `MarketManager` account"
             ],
             "type": "u64"
           },
@@ -6348,7 +6348,7 @@ export const IDL: JetBonds = {
           {
             "name": "ticketsStaked",
             "docs": [
-              "The number of bond tickets locked up in ClaimTicket or SplitTicket"
+              "The number of market tickets locked up in ClaimTicket or SplitTicket"
             ],
             "type": "u64"
           },
@@ -6405,9 +6405,9 @@ export const IDL: JetBonds = {
         "kind": "struct",
         "fields": [
           {
-            "name": "maxBondTicketQty",
+            "name": "maxMarketTicketQty",
             "docs": [
-              "The maximum quantity of bond tickets to be traded."
+              "The maximum quantity of market tickets to be traded."
             ],
             "type": "u64"
           },
@@ -6459,9 +6459,9 @@ export const IDL: JetBonds = {
       }
     },
     {
-      "name": "StakeBondTicketsParams",
+      "name": "StakeMarketTicketsParams",
       "docs": [
-        "Params needed to stake bond tickets"
+        "Params needed to stake market tickets"
       ],
       "type": {
         "kind": "struct",
@@ -6658,7 +6658,7 @@ export const IDL: JetBonds = {
   ],
   "events": [
     {
-      "name": "BondManagerInitialized",
+      "name": "MarketManagerInitialized",
       "fields": [
         {
           "name": "version",
@@ -6706,7 +6706,7 @@ export const IDL: JetBonds = {
       "name": "OrderbookInitialized",
       "fields": [
         {
-          "name": "bondManager",
+          "name": "marketManager",
           "type": "publicKey",
           "index": false
         },
@@ -6756,7 +6756,7 @@ export const IDL: JetBonds = {
       "name": "ToggleOrderMatching",
       "fields": [
         {
-          "name": "bondManager",
+          "name": "marketManager",
           "type": "publicKey",
           "index": false
         },
@@ -6781,7 +6781,7 @@ export const IDL: JetBonds = {
       "name": "MarginUserInitialized",
       "fields": [
         {
-          "name": "bondManager",
+          "name": "marketManager",
           "type": "publicKey",
           "index": false
         },
@@ -6811,7 +6811,7 @@ export const IDL: JetBonds = {
       "name": "OrderPlaced",
       "fields": [
         {
-          "name": "bondManager",
+          "name": "marketManager",
           "type": "publicKey",
           "index": false
         },
@@ -6889,7 +6889,7 @@ export const IDL: JetBonds = {
           "index": false
         },
         {
-          "name": "bondManager",
+          "name": "marketManager",
           "type": "publicKey",
           "index": false
         },
@@ -6969,7 +6969,7 @@ export const IDL: JetBonds = {
       "name": "OrderCancelled",
       "fields": [
         {
-          "name": "bondManager",
+          "name": "marketManager",
           "type": "publicKey",
           "index": false
         },
@@ -6989,7 +6989,7 @@ export const IDL: JetBonds = {
       "name": "EventAdapterRegistered",
       "fields": [
         {
-          "name": "bondManager",
+          "name": "marketManager",
           "type": "publicKey",
           "index": false
         },
@@ -7009,7 +7009,7 @@ export const IDL: JetBonds = {
       "name": "TokensExchanged",
       "fields": [
         {
-          "name": "bondManager",
+          "name": "marketManager",
           "type": "publicKey",
           "index": false
         },
@@ -7029,7 +7029,7 @@ export const IDL: JetBonds = {
       "name": "TicketRedeemed",
       "fields": [
         {
-          "name": "bondManager",
+          "name": "marketManager",
           "type": "publicKey",
           "index": false
         },
@@ -7059,7 +7059,7 @@ export const IDL: JetBonds = {
       "name": "TicketsStaked",
       "fields": [
         {
-          "name": "bondManager",
+          "name": "marketManager",
           "type": "publicKey",
           "index": false
         },
@@ -7134,8 +7134,8 @@ export const IDL: JetBonds = {
     },
     {
       "code": 6007,
-      "name": "ImmatureBond",
-      "msg": "bond is not mature and cannot be claimed"
+      "name": "ImmatureMarketTicket",
+      "msg": "market ticket is not mature and cannot be claimed"
     },
     {
       "code": 6008,
@@ -7240,7 +7240,7 @@ export const IDL: JetBonds = {
     {
       "code": 6028,
       "name": "UserNotInMarket",
-      "msg": "this user account is not associated with this bond market"
+      "msg": "this user account is not associated with this fixed market"
     },
     {
       "code": 6029,
@@ -7268,9 +7268,9 @@ export const IDL: JetBonds = {
       "msg": "bids account does not belong to this market"
     },
     {
-      "code": 6034,
-      "name": "WrongBondManager",
-      "msg": "adapter does not belong to given bond manager"
+      "code": 6035,
+      "name": "WrongMarketManager",
+      "msg": "adapter does not belong to given market manager"
     },
     {
       "code": 6035,
@@ -7345,7 +7345,7 @@ export const IDL: JetBonds = {
     {
       "code": 6049,
       "name": "WrongTicketMint",
-      "msg": "not the ticket mint for this bond market"
+      "msg": "not the ticket mint for this fixed market"
     },
     {
       "code": 6050,
@@ -7360,7 +7360,7 @@ export const IDL: JetBonds = {
     {
       "code": 6052,
       "name": "WrongUnderlyingTokenMint",
-      "msg": "wrong underlying token mint for this bond market"
+      "msg": "wrong underlying token mint for this fixed market"
     },
     {
       "code": 6053,

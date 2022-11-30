@@ -1,20 +1,20 @@
 use anchor_lang::prelude::*;
 
 #[event]
-pub struct BondManagerInitialized {
+pub struct MarketManagerInitialized {
     pub version: u64,
     pub address: Pubkey,
     pub airspace: Pubkey,
     pub underlying_token_mint: Pubkey,
     pub underlying_oracle: Pubkey,
     pub ticket_oracle: Pubkey,
-    pub borrow_duration: i64,
-    pub lend_duration: i64,
+    pub borrow_tenor: i64,
+    pub lend_tenor: i64,
 }
 
 #[event]
 pub struct OrderbookInitialized {
-    pub bond_manager: Pubkey,
+    pub market_manager: Pubkey,
     pub orderbook_market_state: Pubkey,
     pub event_queue: Pubkey,
     pub bids: Pubkey,
@@ -30,6 +30,6 @@ pub struct PositionRefreshed {
 
 #[event]
 pub struct ToggleOrderMatching {
-    pub bond_manager: Pubkey,
+    pub market_manager: Pubkey,
     pub is_orderbook_paused: bool,
 }

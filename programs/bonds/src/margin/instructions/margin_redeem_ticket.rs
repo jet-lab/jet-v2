@@ -1,28 +1,28 @@
 use anchor_lang::prelude::*;
-use jet_program_proc_macros::BondTokenManager;
+use jet_program_proc_macros::MarketTokenManager;
 
 use crate::{
-    bond_token_manager::BondTokenManager, margin::state::MarginUser,
-    tickets::instructions::redeem_ticket::*, BondsError,
+    margin::state::MarginUser, market_token_manager::MarketTokenManager,
+    tickets::instructions::redeem_ticket::*, ErrorCode,
 };
 
-#[derive(Accounts, BondTokenManager)]
+#[derive(Accounts, MarketTokenManager)]
 pub struct MarginRedeemTicket<'info> {
     #[account(mut,
-		constraint = margin_user.margin_account == inner.authority.key() @ BondsError::WrongMarginUserAuthority,
+		constraint = margin_user.margin_account == inner.authority.key() @ ErrorCode::WrongMarginUserAuthority,
         has_one = collateral,
 	)]
     pub margin_user: Account<'info, MarginUser>,
 
-    /// Token account used by the margin program to track the collateral value of assets custodied by bonds
+    /// Token account used by the margin program to track the collateral value of assets custodied by Jet markets
     #[account(mut)]
     pub collateral: AccountInfo<'info>,
 
-    /// Token mint used by the margin program to track the collateral value of assets custodied by bonds
-    #[account(mut, address = inner.bond_manager.load()?.collateral_mint)]
+    /// Token mint used by the margin program to track the collateral value of assets custodied by Jet markets
+    #[account(mut, address = inner.market_manager.load()?.collateral_mint)]
     pub collateral_mint: AccountInfo<'info>,
 
-    #[bond_manager]
+    #[market_manager]
     #[token_program]
     pub inner: RedeemTicket<'info>,
 }

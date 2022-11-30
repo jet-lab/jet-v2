@@ -1,7 +1,7 @@
 {
-  "name": "@jet-lab/jet-bonds-client",
+  "name": "@jet-lab/fixed-market",
   "version": "0.1.0",
-  "description": "Library for interacting with the Jet Bonds on-chain programs",
+  "description": "Library for interacting with the Jet market on-chain programs",
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.js",
   "license": "AGPL-3.0-or-later",

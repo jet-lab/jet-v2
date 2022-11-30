@@ -3,13 +3,13 @@ import { getAssociatedTokenAddress, TOKEN_PROGRAM_ID } from "@solana/spl-token"
 import { PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY, TransactionInstruction } from "@solana/web3.js"
 import { bigIntToBn, bnToBigInt, MarginAccount } from "@jet-lab/margin"
 import { Orderbook } from "./orderbook"
-import { JetBonds } from "./types"
+import { JetMarket } from "./types"
 import { fetchData, findDerivedAccount } from "./utils"
 import { order_id_to_string, rate_to_price } from "./wasm-utils"
 
 export const U64_MAX = 18_446_744_073_709_551_615n
 export interface OrderParams {
-  maxBondTicketQty: BN
+  maxMarketTicketQty: BN
   maxUnderlyingTokenQty: BN
   limitPrice: BN
   matchLimit: BN
@@ -21,7 +21,7 @@ export interface OrderParams {
 /**
  * The raw struct as found on chain
  */
-export interface BondManagerInfo {
+export interface MarketManagerInfo {
   versionTag: BN
   airspace: PublicKey
   orderbookMarketState: PublicKey
@@ -30,7 +30,7 @@ export interface BondManagerInfo {
   bids: PublicKey
   underlyingTokenMint: PublicKey
   underlyingTokenVault: PublicKey
-  bondTicketMint: PublicKey
+  marketTicketMint: PublicKey
   claimsMint: PublicKey
   collateralMint: PublicKey
   underlyingOracle: PublicKey
@@ -49,7 +49,7 @@ export interface BondManagerInfo {
 export interface MarginUserInfo {
   version: BN
   marginAccount: PublicKey
-  bondManager: PublicKey
+  marketManager: PublicKey
   claims: PublicKey
   collateral: PublicKey
   underlyingSettlement: PublicKey
@@ -74,24 +74,24 @@ export interface AssetInfo {
 
 export interface ClaimTicket {
   owner: PublicKey
-  bondManager: PublicKey
+  marketManager: PublicKey
   maturationTimestamp: BN
   redeemable: BN
 }
 
 /**
- * Class for loading and interacting with a BondMarket
+ * Class for loading and interacting with a FixedMarket
  */
-export class BondMarket {
+export class FixedMarket {
   readonly addresses: {
-    bondManager: PublicKey
+    marketManager: PublicKey
     orderbookMarketState: PublicKey
     eventQueue: PublicKey
     asks: PublicKey
     bids: PublicKey
     underlyingTokenMint: PublicKey
     underlyingTokenVault: PublicKey
-    bondTicketMint: PublicKey
+    marketTicketMint: PublicKey
     claimsMint: PublicKey
     claimsMetadata: PublicKey
     collateralMint: PublicKey
@@ -100,29 +100,29 @@ export class BondMarket {
     ticketOracle: PublicKey
     marginAdapterMetadata: PublicKey
   }
-  readonly info: BondManagerInfo
-  readonly program: Program<JetBonds>
+  readonly info: MarketManagerInfo
+  readonly program: Program<JetMarket>
   private constructor(
-    bondManager: PublicKey,
+    marketManager: PublicKey,
     claimsMetadata: PublicKey,
     collateralMetadata: PublicKey,
     marginAdapterMetadata: PublicKey,
-    program: Program<JetBonds>,
-    info: BondManagerInfo
+    program: Program<JetMarket>,
+    info: MarketManagerInfo
   ) {
     this.addresses = {
       ...info,
       claimsMetadata,
       collateralMetadata,
       marginAdapterMetadata,
-      bondManager
+      marketManager
     }
     this.program = program
     this.info = info
   }
 
   get address() {
-    return this.addresses.bondManager
+    return this.addresses.marketManager
   }
 
   get provider() {
@@ -130,20 +130,20 @@ export class BondMarket {
   }
 
   /**
-   * Loads the program state from on chain and returns a `BondMarket` client
+   * Loads the program state from on chain and returns a `FixedMarket` client
    * class for interaction with the market
    *
-   * @param program The anchor `JetBonds` program
-   * @param bondManager The address of the `bondManager` account
+   * @param program The anchor `JetMarket` program
+   * @param marketManager The address of the `marketManager` account
    * @returns
    */
   static async load(
-    program: Program<JetBonds>,
-    bondManager: Address,
+    program: Program<JetMarket>,
+    marketManager: Address,
     jetMarginProgramId: Address
-  ): Promise<BondMarket> {
-    let data = await fetchData(program.provider.connection, bondManager)
-    let info: BondManagerInfo = program.coder.accounts.decode("BondManager", data)
+  ): Promise<FixedMarket> {
+    let data = await fetchData(program.provider.connection, marketManager)
+    let info: MarketManagerInfo = program.coder.accounts.decode("MarketManager", data)
     const claimsMetadata = await findDerivedAccount(
       ["token-config", info.airspace, info.claimsMint],
       new PublicKey(jetMarginProgramId)
@@ -154,8 +154,8 @@ export class BondMarket {
     )
     const marginAdapterMetadata = await findDerivedAccount([program.programId], new PublicKey(jetMarginProgramId))
 
-    return new BondMarket(
-      new PublicKey(bondManager),
+    return new FixedMarket(
+      new PublicKey(marketManager),
       new PublicKey(claimsMetadata),
       new PublicKey(collateralMetadata),
       new PublicKey(marginAdapterMetadata),
@@ -174,7 +174,7 @@ export class BondMarket {
   ): Promise<TransactionInstruction> {
     const limitPrice = new BN(rate_to_price(BigInt(rate.toString()), BigInt(tenor)).toString())
     const params: OrderParams = {
-      maxBondTicketQty: new BN(U64_MAX.toString()),
+      maxMarketTicketQty: new BN(U64_MAX.toString()),
       maxUnderlyingTokenQty: amount,
       limitPrice,
       matchLimit: new BN(U64_MAX.toString()),
@@ -193,7 +193,7 @@ export class BondMarket {
   ): Promise<TransactionInstruction> {
     // TODO: rethink amounts here, current is placeholder
     const params: OrderParams = {
-      maxBondTicketQty: new BN(U64_MAX.toString()),
+      maxMarketTicketQty: new BN(U64_MAX.toString()),
       maxUnderlyingTokenQty: amount,
       limitPrice: new BN(0.00001),
       matchLimit: new BN(U64_MAX.toString()),
@@ -242,10 +242,10 @@ export class BondMarket {
     tenor: number
   ): Promise<TransactionInstruction> {
     const userTokenVault = await getAssociatedTokenAddress(this.addresses.underlyingTokenMint, user.address, true)
-    const userTicketVault = await getAssociatedTokenAddress(this.addresses.bondTicketMint, user.address, true)
+    const userTicketVault = await getAssociatedTokenAddress(this.addresses.marketTicketMint, user.address, true)
     const limitPrice = bigIntToBn(rate_to_price(bnToBigInt(rate), BigInt(tenor)))
     const params: OrderParams = {
-      maxBondTicketQty: new BN(U64_MAX.toString()),
+      maxMarketTicketQty: new BN(U64_MAX.toString()),
       maxUnderlyingTokenQty: new BN(amount),
       limitPrice,
       matchLimit: new BN(U64_MAX.toString()),
@@ -258,9 +258,9 @@ export class BondMarket {
 
   async lendNowIx(user: MarginAccount, amount: BN, payer: Address, seed: Uint8Array): Promise<TransactionInstruction> {
     const userTokenVault = await getAssociatedTokenAddress(this.addresses.underlyingTokenMint, user.address, true)
-    const userTicketVault = await getAssociatedTokenAddress(this.addresses.bondTicketMint, user.address, true)
+    const userTicketVault = await getAssociatedTokenAddress(this.addresses.marketTicketMint, user.address, true)
     const params: OrderParams = {
-      maxBondTicketQty: new BN(U64_MAX.toString()),
+      maxMarketTicketQty: new BN(U64_MAX.toString()),
       maxUnderlyingTokenQty: new BN(amount),
       limitPrice: new BN(2 ** 32),
       matchLimit: new BN(U64_MAX.toString()),
@@ -297,7 +297,7 @@ export class BondMarket {
           orderbookMut: this.orderbookMut(),
           authority: user.address,
           payer,
-          ticketMint: this.addresses.bondTicketMint,
+          ticketMint: this.addresses.marketTicketMint,
           tokenProgram: TOKEN_PROGRAM_ID,
           systemProgram: SystemProgram.programId,
           lenderTokens: userTokenVault,
@@ -321,7 +321,7 @@ export class BondMarket {
 
   orderbookMut() {
     return {
-      bondManager: this.addresses.bondManager,
+      marketManager: this.addresses.marketManager,
       orderbookMarketState: this.addresses.orderbookMarketState,
       eventQueue: this.addresses.eventQueue,
       bids: this.addresses.bids,
@@ -334,7 +334,7 @@ export class BondMarket {
     const claims = await this.deriveMarginUserClaims(borrowerAccount)
     const collateral = await this.deriveMarginUserCollateral(borrowerAccount)
     const underlyingSettlement = await getAssociatedTokenAddress(this.addresses.underlyingTokenMint, user.address, true)
-    const ticketSettlement = await getAssociatedTokenAddress(this.addresses.bondTicketMint, user.address, true)
+    const ticketSettlement = await getAssociatedTokenAddress(this.addresses.marketTicketMint, user.address, true)
     // await user.getOrRegisterPosition(this.addresses.claimsMint)
     return await this.program.methods
       .initializeMarginUser()
@@ -358,7 +358,7 @@ export class BondMarket {
    *
    * @param user the margin account to refresh
    * @param expectPrice in the edge case where we want to refresh an account with a broken oracle, set to false
-   * @returns a `TransactionInstruction` to refresh the bonds related margin positions
+   * @returns a `TransactionInstruction` to refresh the fixed market related margin positions
    */
   async refreshPosition(user: MarginAccount, expectPrice: boolean): Promise<TransactionInstruction> {
     const marginUser = await this.deriveMarginUserAddress(user)

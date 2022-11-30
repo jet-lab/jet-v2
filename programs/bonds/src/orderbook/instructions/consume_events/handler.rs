@@ -10,13 +10,13 @@ use jet_program_common::traits::{SafeAdd, SafeSub, TryAddAssign};
 use num_traits::FromPrimitive;
 
 use crate::{
-    bond_token_manager::BondTokenManager,
     events::skip_err,
     margin::state::{Obligation, ObligationFlags},
+    market_token_manager::MarketTokenManager,
     orderbook::state::{fp32_mul, CallbackFlags, CallbackInfo, FillInfo, OutInfo},
     tickets::state::SplitTicket,
     utils::map,
-    BondsError,
+    ErrorCode,
 };
 
 use super::{queue, ConsumeEvents, FillAccounts, OutAccounts, PreparedEvent};
@@ -36,7 +36,7 @@ pub fn handler<'info>(
         num_iters += 1;
     }
     if num_iters == 0 {
-        return err!(BondsError::NoEvents);
+        return err!(ErrorCode::NoEvents);
     }
 
     agnostic_orderbook::instruction::consume_events::process::<CallbackInfo>(
@@ -58,7 +58,7 @@ fn handle_fill<'info>(
     accounts: FillAccounts<'info>,
     fill: &FillInfo,
 ) -> Result<()> {
-    let manager = &ctx.accounts.bond_manager;
+    let manager = &ctx.accounts.market_manager;
     let FillAccounts {
         maker,
         maker_adapter,
@@ -110,10 +110,10 @@ fn handle_fill<'info>(
                 let principal = quote_size;
                 let interest = base_size.safe_sub(principal)?;
                 let maturation_timestamp =
-                    fill_timestamp.safe_add(manager.load()?.lend_duration)?;
+                    fill_timestamp.safe_add(manager.load()?.lend_tenor)?;
                 **loan.as_mut().unwrap().auto_stake()? = SplitTicket {
                     owner: maker.pubkey(),
-                    bond_manager: manager.key(),
+                    market_manager: manager.key(),
                     order_tag: maker_info.order_tag,
                     maturation_timestamp,
                     struck_timestamp: fill_timestamp,
@@ -124,7 +124,7 @@ fn handle_fill<'info>(
                 margin_user.assets.entitled_tickets += base_size;
             } else {
                 ctx.mint(
-                    &ctx.accounts.bond_ticket_mint,
+                    &ctx.accounts.market_ticket_mint,
                     maker.as_token_account(),
                     base_size,
                 )?;
@@ -143,7 +143,7 @@ fn handle_fill<'info>(
                         .assets
                         .entitled_tokens
                         .try_add_assign(disburse)?;
-                    let maturation_timestamp = fill_timestamp.safe_add(manager.borrow_duration)?;
+                    let maturation_timestamp = fill_timestamp.safe_add(manager.borrow_tenor)?;
                     let sequence_number = margin_user
                         .debt
                         .new_obligation_from_fill(base_size, maturation_timestamp)?;
@@ -151,7 +151,7 @@ fn handle_fill<'info>(
                     **loan.as_mut().unwrap().new_debt()? = Obligation {
                         sequence_number,
                         borrower_account: margin_user.key(),
-                        bond_manager: ctx.accounts.bond_manager.key(),
+                        market_manager: ctx.accounts.market_manager.key(),
                         order_tag: maker_info.order_tag,
                         maturation_timestamp,
                         balance: base_size,
@@ -209,7 +209,7 @@ fn handle_out<'info>(
 
     let price = (order_id >> 64) as u64;
     // todo defensive rounding
-    let quote_size = fp32_mul(*base_size, price).ok_or(BondsError::ArithmeticOverflow)?;
+    let quote_size = fp32_mul(*base_size, price).ok_or(ErrorCode::ArithmeticOverflow)?;
     match Side::from_u8(*side).unwrap() {
         Side::Bid => {
             if let Some(mut margin_user) = margin_user {
@@ -233,7 +233,7 @@ fn handle_out<'info>(
                 }
             } else {
                 ctx.mint(
-                    &ctx.accounts.bond_ticket_mint,
+                    &ctx.accounts.market_ticket_mint,
                     user.as_token_account(),
                     *base_size,
                 )

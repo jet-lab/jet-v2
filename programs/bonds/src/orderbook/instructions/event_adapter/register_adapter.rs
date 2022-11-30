@@ -17,7 +17,7 @@ pub struct RegisterAdapter<'info> {
         init,
         seeds = [
             seeds::EVENT_ADAPTER,
-            bond_manager.key().as_ref(),
+            market_manager.key().as_ref(),
             owner.key().as_ref(),
         ],
         bump,
@@ -26,9 +26,9 @@ pub struct RegisterAdapter<'info> {
     )]
     pub adapter_queue: AccountLoader<'info, EventAdapterMetadata>,
 
-    /// BondManager for this Adapter
+    /// MarketManager for this Adapter
     /// CHECK:
-    pub bond_manager: UncheckedAccount<'info>,
+    pub market_manager: UncheckedAccount<'info>,
 
     /// Signing authority over this queue
     pub owner: Signer<'info>,
@@ -44,10 +44,10 @@ pub struct RegisterAdapter<'info> {
 pub fn handler(ctx: Context<RegisterAdapter>, _params: RegisterAdapterParams) -> Result<()> {
     let mut adapter = ctx.accounts.adapter_queue.load_init()?;
     adapter.owner = ctx.accounts.owner.key();
-    adapter.manager = ctx.accounts.bond_manager.key();
+    adapter.manager = ctx.accounts.market_manager.key();
 
     emit!(EventAdapterRegistered {
-        bond_manager: ctx.accounts.bond_manager.key(),
+        market_manager: ctx.accounts.market_manager.key(),
         owner: ctx.accounts.owner.key(),
         adapter: ctx.accounts.adapter_queue.key(),
     });

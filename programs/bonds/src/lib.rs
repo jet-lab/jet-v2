@@ -1,10 +1,10 @@
-//! An orderbook-based fixed term bond market hosted on the Solana blockchain
+//! An orderbook-based fixed market hosted on the Solana blockchain
 //!
 //! # Interaction
 //!
-//! To interact with the bond market, users will initialize a PDA called an [`MarginUser`](struct@crate::orderbook::state::user::MarginUser).
+//! To interact with the fixed market, users will initialize a PDA called an [`MarginUser`](struct@crate::orderbook::state::user::MarginUser).
 //!
-//! After `MarginUser` intialization, to place an order you must deposit underlying tokens or bond tickets into your account.
+//! After `MarginUser` intialization, to place an order you must deposit underlying tokens or Jet market tickets into your account.
 //! This will allow you to use the [`PlaceOrder`](struct@crate::orderbook::instructions::place_order::PlaceOrder) instruction, which
 //! utilizes the orderbook to match borrowers and lenders.
 //!
@@ -17,8 +17,8 @@
 //! For example, to lend `1_000_000` tokens at 15% interest in a given market, a lender would specify:
 //! ```ignore
 //! OrderParams {
-//!     /// We want as many bond tickets as the book will give us
-//!     max_bond_ticket_qty: u64::MAX,
+//!     /// We want as many Jet market tickets as the book will give us
+//!     max_ticket_qty: u64::MAX,
 //!     /// we are lending 1_000_000 tokens
 //!     max_underlying_token_qty: 1_000_000,
 //!     /// use the crate function to generate a limit price
@@ -36,7 +36,7 @@
 //!
 //! ### Borrowing
 //!
-//! For borrowing, a user has two options. They can buy bond tickets from some market, and deposit them into their
+//! For borrowing, a user has two options. They can buy Jet market tickets from some market, and deposit them into their
 //! `MarginUser` account. Or, they may use the `jet-margin` program to place collateralized borrow orders.
 //!
 //! In the case of a collateralized order, an `Obligation` will be minted to track the debt. A user must repay or face liquidation
@@ -46,7 +46,7 @@
 //! ```ignore
 //! OrderParams {
 //!     /// We want to pay no more than 10%
-//!     max_bond_ticket_qty: 110_000_000,
+//!     max_ticket_qty: 110_000_000,
 //!     /// we only need to borrow 100_000_000 tokens
 //!     max_underlying_token_qty: 100_000_000,
 //!     /// use the crate function to generate a limit price
@@ -65,7 +65,7 @@
 //! # Orderbook matching engine
 //!
 //! To facilitate the pairing of lenders and borrowers, the program utilizes the `agnostic-orderbook` crate to create an
-//! orderbook. This orderbook allows lenders and borrowers to post orders using underlying tokens, held bond tickets, or, by utilizing `jet-margin` accounts,
+//! orderbook. This orderbook allows lenders and borrowers to post orders using underlying tokens, held Jet market tickets, or, by utilizing `jet-margin` accounts,
 //! a collateralized borrow order in lieu of held funds.
 //!
 //! ### EventQueue operation and Adapters
@@ -79,11 +79,10 @@
 //!
 //! Users are responsible for handling the consumption logic for their adapter. To clear events after processing, use the [`PopAdapterEvents`](struct@crate::orderbook::instructions::event_adapter::PopAdapterEvents) instruction.
 //!
-//! # Bond Tickets
+//! # Jet Market Tickets
 //!
-//! The program abstracts the concept of a bond into bond tickets. Bond tickets are fungible spl tokens
-//! that must be staked to claim their underlying value. In order to create bond tickets, a user must either
-//! place a lend order on the orderbook, or exchange the token underlying the bond market (in practice, almost never
+//! Jet market tickets are fungible spl tokens that must be staked to claim their underlying value. In order to create Jet market tickets, a user must either
+//! place a lend order on the orderbook, or exchange the token underlying the fixed market (in practice, almost never
 //! will users do this, as it locks their tokens for at least the tenor of the market).
 //!
 //! ### Ticket kinds and redemption
@@ -96,7 +95,7 @@
 //! the slot it was minted. To create a `SplitTicket`, you must configure your [`OrderParams`](struct@crate::orderbook::state::OrderParams) `auto_stake` flag to
 //! `true`. This will allow to program to immediately stake your tickets as the match event is processed.
 //!
-//! After the bond market tenor has passed, the ticket may be redeemed for the underlying value with the program. Also included are instructions
+//! After the Jet market market tenor has passed, the ticket may be redeemed for the underlying value with the program. Also included are instructions
 //! for transferring ownership of a ticket.
 //!
 //! # Debt and Obligations
@@ -106,18 +105,18 @@
 
 /// Program instructions and structs related to authoritative control of the program state
 pub mod control;
-/// Program instructions, methods and structs related to the use of margin accounts with the bonds program
+/// Program instructions, methods and structs related to the use of margin accounts with the Jet market program
 pub mod margin;
 /// Program instructions and structs related to use of the on chain orderbook
 pub mod orderbook;
-/// Program instructions and structs related to the redeemable bond tickets
+/// Program instructions and structs related to the redeemable Jet market tickets
 pub mod tickets;
 
 mod errors;
 pub mod events;
-pub use errors::BondsError;
+pub use errors::ErrorCode;
 
-mod bond_token_manager;
+mod market_token_manager;
 /// Utilities for safely serializing and deserializing solana accounts
 pub(crate) mod serialization;
 /// local utilities for the crate
@@ -135,7 +134,7 @@ use orderbook::state::OrderParams;
 declare_id!("JBond79m9K6HqYwngCjiJHb311GTXggo46kGcT2GijUc");
 
 #[program]
-pub mod jet_bonds {
+pub mod jet_market {
     use super::*;
 
     //
@@ -153,12 +152,12 @@ pub mod jet_bonds {
         instructions::revoke_crank::handler(ctx)
     }
 
-    /// Initializes a BondManager for a bond ticket market
-    pub fn initialize_bond_manager(
-        ctx: Context<InitializeBondManager>,
-        params: InitializeBondManagerParams,
+    /// Initializes a MarketManager for a fixed market
+    pub fn initialize_market_manager(
+        ctx: Context<InitializeMarketManager>,
+        params: InitializeMarketManagerParams,
     ) -> Result<()> {
-        instructions::initialize_bond_manager::handler(ctx, params)
+        instructions::initialize_market_manager::handler(ctx, params)
     }
 
     /// Initializes a new orderbook
@@ -169,14 +168,14 @@ pub mod jet_bonds {
         instructions::initialize_orderbook::handler(ctx, params)
     }
 
-    /// Modify a `BondManager` account
+    /// Modify a `MarketManager` account
     /// Authority use only
-    pub fn modify_bond_manager(
-        ctx: Context<ModifyBondManager>,
+    pub fn modify_market_manager(
+        ctx: Context<ModifyMarketManager>,
         data: Vec<u8>,
         offset: usize,
     ) -> Result<()> {
-        instructions::modify_bond_manager::handler(ctx, data, offset)
+        instructions::modify_market_manager::handler(ctx, data, offset)
     }
 
     /// Pause matching of orders placed in the orderbook
@@ -293,7 +292,7 @@ pub mod jet_bonds {
     // =============================================
     //
 
-    /// Exchange underlying token for bond tickets
+    /// Exchange underlying token for fixed market tickets
     /// WARNING: tickets must be staked for redeption of underlying
     pub fn exchange_tokens(ctx: Context<ExchangeTokens>, amount: u64) -> Result<()> {
         instructions::exchange_tokens::handler(ctx, amount)
@@ -304,12 +303,12 @@ pub mod jet_bonds {
         instructions::redeem_ticket::handler(ctx)
     }
 
-    /// Stakes bond tickets for later redemption
-    pub fn stake_bond_tickets(
-        ctx: Context<StakeBondTickets>,
-        params: StakeBondTicketsParams,
+    /// Stakes fixed market tickets for later redemption
+    pub fn stake_market_tickets(
+        ctx: Context<StakeMarketTickets>,
+        params: StakeMarketTicketsParams,
     ) -> Result<()> {
-        instructions::stake_bond_tickets::handler(ctx, params)
+        instructions::stake_market_tickets::handler(ctx, params)
     }
 
     /// Transfer staked tickets to a new owner
@@ -350,13 +349,13 @@ pub mod seeds {
     use anchor_lang::prelude::constant;
 
     #[constant]
-    pub const BOND_MANAGER: &[u8] = b"bond_manager";
+    pub const MARKET_MANAGER: &[u8] = b"market_manager";
 
     #[constant]
-    pub const BOND_TICKET_ACCOUNT: &[u8] = b"bond_ticket_account";
+    pub const MARKET_TICKET_ACCOUNT: &[u8] = b"market_ticket_account";
 
     #[constant]
-    pub const BOND_TICKET_MINT: &[u8] = b"bond_ticket_mint";
+    pub const MARKET_TICKET_MINT: &[u8] = b"market_ticket_mint";
 
     #[constant]
     pub const CLAIM_TICKET: &[u8] = b"claim_ticket";

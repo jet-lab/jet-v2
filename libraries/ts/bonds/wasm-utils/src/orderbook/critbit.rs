@@ -19,7 +19,7 @@ pub struct CallbackInfo {
     pub fill_account: [u8; 32],
     /// margin user or token account to be deposited into on out
     pub out_account: [u8; 32],
-    /// Pubkey of the account that will recieve the event information
+    /// Pubkey of the account that will receive the event information
     pub adapter_account_key: [u8; 32],
     /// The unix timestamp for the slot that the order entered the aaob
     pub order_submitted: [u8; 8],

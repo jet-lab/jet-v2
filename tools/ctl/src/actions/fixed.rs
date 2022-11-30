@@ -1,6 +1,6 @@
 use anyhow::Result;
 use clap::Parser;
-use jet_margin_sdk::bonds::BondsIxBuilder;
+use jet_margin_sdk::bonds::FixedMarketIxBuilder;
 use serde::{Deserialize, Serialize};
 use solana_clap_utils::keypair::signer_from_path;
 use solana_sdk::{pubkey::Pubkey, signer::Signer};
@@ -13,12 +13,12 @@ use crate::{
 const MANAGER_VERSION: u64 = 0;
 
 #[derive(Debug, Clone, Parser, Serialize, Deserialize)]
-pub struct BondMarketParameters {
+pub struct MarketParameters {
     #[clap(long)]
-    pub borrow_duration: i64,
+    pub borrow_tenor: i64,
 
     #[clap(long)]
-    pub lend_duration: i64,
+    pub lend_tenor: i64,
 
     #[clap(long)]
     pub origination_fee: u64,
@@ -64,9 +64,9 @@ fn map_seed(seed: Vec<u8>) -> [u8; 32] {
     buf
 }
 
-pub async fn process_create_bond_market<'a>(
+pub async fn process_create_fixed_market<'a>(
     client: &Client,
-    params: BondMarketParameters,
+    params: MarketParameters,
 ) -> Result<Plan> {
     let payer = resolve_payer(client)?;
     let seed = map_seed(params.seed);
@@ -89,7 +89,7 @@ pub async fn process_create_bond_market<'a>(
             anyhow::Error::msg(format!("failed to resolve signer for asks. Error: {e:?}"))
         })?,
     ];
-    let bonds = BondsIxBuilder::new_from_seed(
+    let fixed_market = FixedMarketIxBuilder::new_from_seed(
         &Pubkey::default(),
         &params.token_mint,
         seed,
@@ -101,40 +101,43 @@ pub async fn process_create_bond_market<'a>(
 
     let mut steps = vec![];
     let mut instructions = vec![];
-    if client.account_exists(&bonds.manager()).await? {
+    if client.account_exists(&fixed_market.manager()).await? {
         println!(
             "the manager for market [{}] already exists. Skipping initialization instruction",
-            bonds.manager()
+            fixed_market.manager()
         );
     } else if !client.account_exists(&params.token_mint).await? {
         println!("the token {} does not exist", params.token_mint);
         return Ok(Plan::default());
     } else {
-        if let Some(init_ata) = bonds.init_default_fee_destination(&payer) {
+        if let Some(init_ata) = fixed_market.init_default_fee_destination(&payer) {
             instructions.push(init_ata);
         }
-        let init_manager = bonds.initialize_manager(
+        let init_manager = fixed_market.initialize_manager(
             payer,
             MANAGER_VERSION,
             seed,
-            params.borrow_duration,
-            params.lend_duration,
+            params.borrow_tenor,
+            params.lend_tenor,
             params.origination_fee,
         );
         steps.push(format!(
-            "initialize-bond-manager for token [{}]",
+            "initialize-market-manager for token [{}]",
             params.token_mint
         ));
         instructions.push(init_manager);
     }
-    if client.account_exists(&bonds.orderbook_state()).await? {
+    if client
+        .account_exists(&fixed_market.orderbook_state())
+        .await?
+    {
         println!(
             "the market [{}] is already fully initialized",
-            bonds.manager()
+            fixed_market.manager()
         );
         return Ok(Plan::default());
     }
-    let init_orderbook = bonds.initialize_orderbook(
+    let init_orderbook = fixed_market.initialize_orderbook(
         payer,
         eq.pubkey(),
         bids.pubkey(),
@@ -142,8 +145,8 @@ pub async fn process_create_bond_market<'a>(
         params.min_order_size,
     )?;
     steps.push(format!(
-        "initialize-order-book for bond market {}",
-        bonds.manager()
+        "initialize-order-book for fixed market {}",
+        fixed_market.manager()
     ));
     instructions.push(init_orderbook);
 

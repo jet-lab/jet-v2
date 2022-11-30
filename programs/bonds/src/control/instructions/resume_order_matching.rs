@@ -2,34 +2,34 @@ use agnostic_orderbook::instruction::resume_matching;
 use anchor_lang::prelude::*;
 
 use crate::{
-    control::{events::ToggleOrderMatching, state::BondManager},
+    control::{events::ToggleOrderMatching, state::MarketManager},
     orderbook::state::CallbackInfo,
-    BondsError,
+    ErrorCode,
 };
 
 #[derive(Accounts)]
 pub struct ResumeOrderMatching<'info> {
-    /// The `BondManager` manages asset tokens for a particular bond duration
+    /// The `MarketManager` manages asset tokens for a particular market tenor
     #[account(
-        has_one = airspace @ BondsError::WrongAirspace,
-        has_one = orderbook_market_state @ BondsError::WrongMarketState,
-        has_one = bids @ BondsError::WrongBids,
-        has_one = asks @ BondsError::WrongAsks,
-        has_one = event_queue @ BondsError::WrongEventQueue,
+        has_one = airspace @ ErrorCode::WrongAirspace,
+        has_one = orderbook_market_state @ ErrorCode::WrongMarketState,
+        has_one = bids @ ErrorCode::WrongBids,
+        has_one = asks @ ErrorCode::WrongAsks,
+        has_one = event_queue @ ErrorCode::WrongEventQueue,
     )]
-    pub bond_manager: AccountLoader<'info, BondManager>,
+    pub market_manager: AccountLoader<'info, MarketManager>,
 
     // aaob accounts
-    /// CHECK: handled by has_one on bond_manager
+    /// CHECK: handled by has_one on market_manager
     #[account(mut)]
     pub orderbook_market_state: AccountInfo<'info>,
-    /// CHECK: handled by has_one on bond_manager
+    /// CHECK: handled by has_one on market_manager
     #[account(mut)]
     pub event_queue: AccountInfo<'info>,
-    /// CHECK: handled by has_one on bond_manager
+    /// CHECK: handled by has_one on market_manager
     #[account(mut)]
     pub bids: AccountInfo<'info>,
-    /// CHECK: handled by has_one on bond_manager
+    /// CHECK: handled by has_one on market_manager
     #[account(mut)]
     pub asks: AccountInfo<'info>,
 
@@ -37,7 +37,7 @@ pub struct ResumeOrderMatching<'info> {
     pub authority: Signer<'info>,
 
     /// The airspace being modified
-    // #[account(has_one = authority @ BondsError::WrongAirspaceAuthorization)] fixme airspace
+    // #[account(has_one = authority @ ErrorCode::WrongAirspaceAuthorization)] fixme airspace
     pub airspace: AccountInfo<'info>,
 }
 
@@ -52,7 +52,7 @@ pub fn handler(ctx: Context<ResumeOrderMatching>) -> Result<()> {
     resume_matching::process::<CallbackInfo>(ctx.program_id, accounts, params)?;
 
     emit!(ToggleOrderMatching {
-        bond_manager: ctx.accounts.bond_manager.key(),
+        market_manager: ctx.accounts.market_manager.key(),
         is_orderbook_paused: false
     });
 

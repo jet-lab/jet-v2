@@ -3,7 +3,7 @@ use bytemuck::Zeroable;
 use jet_margin::{AdapterResult, MarginAccount};
 use jet_program_common::traits::{SafeAdd, TryAddAssign, TrySubAssign};
 
-use crate::{orderbook::state::OrderTag, BondsError};
+use crate::{orderbook::state::OrderTag, ErrorCode};
 
 pub const MARGIN_USER_VERSION: u8 = 0;
 
@@ -15,13 +15,13 @@ pub struct MarginUser {
     pub version: u8,
     /// The margin account used for signing actions
     pub margin_account: Pubkey,
-    /// The `BondManager` for the market
-    pub bond_manager: Pubkey,
+    /// The `MarketManager` for the market
+    pub market_manager: Pubkey,
     /// Token account used by the margin program to track the debt
     pub claims: Pubkey,
     /// Token account used by the margin program to track the collateral value of positions
-    /// which are internal to bonds, such as SplitTicket, ClaimTicket, and open orders.
-    /// this does *not* represent underlying tokens or bond ticket tokens, those are registered independently in margin
+    /// which are internal to Jet markets, such as SplitTicket, ClaimTicket, and open orders.
+    /// this does *not* represent underlying tokens or market ticket tokens, those are registered independently in margin
     pub collateral: Pubkey,
     /// The `settle` instruction is permissionless, therefore the user must specify upon margin account creation
     /// the address to send owed tokens
@@ -30,9 +30,9 @@ pub struct MarginUser {
     /// the address to send owed tickets
     pub ticket_settlement: Pubkey,
     /// The amount of debt that must be collateralized or repaid
-    /// This debt is expressed in terms of the underlying token - not bond tickets
+    /// This debt is expressed in terms of the underlying token - not market tickets
     pub debt: Debt,
-    /// Accounting used to track assets in custody of the bond market
+    /// Accounting used to track assets in custody of the fixed market
     pub assets: Assets,
 }
 
@@ -139,7 +139,7 @@ impl Debt {
             require_eq!(
                 next_obligation.sequence_number,
                 self.next_unpaid_obligation_seqno,
-                BondsError::ObligationHasWrongSequenceNumber
+                ErrorCode::ObligationHasWrongSequenceNumber
             );
             self.next_obligation_maturity = next_obligation.maturation_timestamp;
         }
@@ -168,7 +168,7 @@ pub struct Assets {
     /// tickets to transfer into settlement account
     pub entitled_tickets: u64,
 
-    /// The number of bond tickets locked up in ClaimTicket or SplitTicket
+    /// The number of market tickets locked up in ClaimTicket or SplitTicket
     tickets_staked: u64,
 
     /// The amount of quote included in all orders posted by the user for both
@@ -239,8 +239,8 @@ pub struct Obligation {
     /// The user borrower account this obligation is assigned to
     pub borrower_account: Pubkey,
 
-    /// The bond manager where the obligation was created
-    pub bond_manager: Pubkey,
+    /// The market manager where the obligation was created
+    pub market_manager: Pubkey,
 
     /// The `OrderTag` associated with the creation of this `Obligation`
     pub order_tag: OrderTag,

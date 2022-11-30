@@ -1,41 +1,41 @@
 use agnostic_orderbook::state::Side;
 use anchor_lang::prelude::*;
 use anchor_spl::token::{accessor::mint, Mint, Token, TokenAccount};
-use jet_program_proc_macros::BondTokenManager;
+use jet_program_proc_macros::MarketTokenManager;
 
 use crate::{
-    bond_token_manager::BondTokenManager,
+    market_token_manager::MarketTokenManager,
     orderbook::state::*,
     serialization::{self, RemainingAccounts},
     tickets::state::SplitTicket,
-    BondsError,
+    ErrorCode,
 };
 
-#[derive(Accounts, BondTokenManager)]
+#[derive(Accounts, MarketTokenManager)]
 pub struct LendOrder<'info> {
     /// Signing authority over the token vault transferring for a lend order
     pub authority: Signer<'info>,
 
-    #[bond_manager]
+    #[market_manager]
     pub orderbook_mut: OrderbookMut<'info>,
 
     /// where to settle tickets on match:
     /// - SplitTicket that will be created if the order is filled as a taker and `auto_stake` is enabled
-    /// - ticket token account to receive bond tickets
+    /// - ticket token account to receive market tickets
     /// be careful to check this properly. one way is by using lender_tickets_token_account
     #[account(mut)]
     ticket_settlement: AccountInfo<'info>,
 
     /// where to loan tokens from
-    #[account(mut, constraint = mint(&lender_tokens.to_account_info())? == orderbook_mut.underlying_mint() @ BondsError::WrongUnderlyingTokenMint)]
+    #[account(mut, constraint = mint(&lender_tokens.to_account_info())? == orderbook_mut.underlying_mint() @ ErrorCode::WrongUnderlyingTokenMint)]
     pub lender_tokens: Account<'info, TokenAccount>,
 
     /// The market token vault
-    #[account(mut, address = orderbook_mut.vault() @ BondsError::WrongVault)]
+    #[account(mut, address = orderbook_mut.vault() @ ErrorCode::WrongVault)]
     pub underlying_token_vault: Account<'info, TokenAccount>,
 
     /// The market token vault
-    #[account(mut, address = orderbook_mut.ticket_mint() @ BondsError::WrongTicketMint)]
+    #[account(mut, address = orderbook_mut.ticket_mint() @ ErrorCode::WrongTicketMint)]
     pub ticket_mint: Account<'info, Mint>,
 
     #[account(mut)]
@@ -49,7 +49,7 @@ impl<'info> LendOrder<'info> {
         Account::<'info, TokenAccount>::try_from(&self.ticket_settlement)?;
         require!(
             mint(&self.ticket_settlement.to_account_info())? == self.orderbook_mut.ticket_mint(),
-            BondsError::WrongTicketMint
+            ErrorCode::WrongTicketMint
         );
 
         Ok(self.ticket_settlement.key())
@@ -75,11 +75,11 @@ impl<'info> LendOrder<'info> {
                 let timestamp = Clock::get()?.unix_timestamp;
                 *split_ticket = SplitTicket {
                     owner: user,
-                    bond_manager: self.orderbook_mut.bond_manager.key(),
+                    market_manager: self.orderbook_mut.market_manager.key(),
                     order_tag: callback_info.order_tag,
                     struck_timestamp: timestamp,
                     maturation_timestamp: timestamp
-                        + self.orderbook_mut.bond_manager.load()?.lend_duration,
+                        + self.orderbook_mut.market_manager.load()?.lend_tenor,
                     principal: order_summary.quote_filled()?,
                     interest: order_summary.base_filled() - order_summary.quote_filled()?,
                 };
@@ -141,7 +141,7 @@ pub fn handler(ctx: Context<LendOrder>, params: OrderParams, seed: Vec<u8>) -> R
         &order_summary,
     )?;
     emit!(crate::events::OrderPlaced {
-        bond_manager: ctx.accounts.orderbook_mut.bond_manager.key(),
+        market_manager: ctx.accounts.orderbook_mut.market_manager.key(),
         authority: ctx.accounts.authority.key(),
         margin_user: None,
         order_summary: order_summary.summary(),

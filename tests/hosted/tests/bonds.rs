@@ -4,22 +4,22 @@ use anchor_lang::prelude::Pubkey;
 use anyhow::Result;
 use hosted_tests::{
     bonds::{
-        BondsUser, GenerateProxy, OrderAmount, TestManager as BondsTestManager, LEND_DURATION,
+        FixedUser, GenerateProxy, OrderAmount, TestManager as FixedTestManager, LEND_DURATION,
         STARTING_TOKENS,
     },
     context::MarginTestContext,
     margin_test_context,
     setup_helper::{setup_user, tokens},
 };
-use jet_bonds::orderbook::state::OrderParams;
 use jet_margin_sdk::{
     ix_builder::MarginIxBuilder,
     margin_integrator::{NoProxy, Proxy},
     solana::transaction::{InverseSendTransactionBuilder, SendTransactionBuilder},
-    tx_builder::bonds::BondsPositionRefresher,
+    tx_builder::bonds::FixedPositionRefresher,
     util::data::Concat,
 };
 use jet_margin_sdk::{margin_integrator::RefreshingProxy, tx_builder::MarginTxBuilder};
+use jet_market::orderbook::state::OrderParams;
 use jet_program_common::Fp32;
 
 use solana_sdk::signer::Signer;
@@ -27,14 +27,14 @@ use solana_sdk::signer::Signer;
 #[tokio::test(flavor = "multi_thread")]
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn non_margin_orders() -> Result<(), anyhow::Error> {
-    let manager = BondsTestManager::full(margin_test_context!().solana.clone()).await?;
+    let manager = FixedTestManager::full(margin_test_context!().solana.clone()).await?;
     non_margin_orders_for_proxy::<NoProxy>(Arc::new(manager)).await
 }
 
 #[tokio::test(flavor = "multi_thread")]
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn non_margin_orders_through_margin_account() -> Result<()> {
-    let manager = BondsTestManager::full(margin_test_context!().solana.clone()).await?;
+    let manager = FixedTestManager::full(margin_test_context!().solana.clone()).await?;
     non_margin_orders_for_proxy::<MarginIxBuilder>(Arc::new(manager)).await
 }
 
@@ -42,7 +42,7 @@ async fn non_margin_orders_through_margin_account() -> Result<()> {
 #[serial_test::serial]
 async fn margin_repay() -> Result<()> {
     let ctx = margin_test_context!();
-    let manager = Arc::new(BondsTestManager::full(ctx.solana.clone()).await.unwrap());
+    let manager = Arc::new(FixedTestManager::full(ctx.solana.clone()).await.unwrap());
     let client = manager.client.clone();
     let ([collateral], _, pricer) = tokens(&ctx).await.unwrap();
 
@@ -64,7 +64,7 @@ async fn margin_repay() -> Result<()> {
                 0,
             )),
             Arc::new(
-                BondsPositionRefresher::new(
+                FixedPositionRefresher::new(
                     margin.pubkey(),
                     client.clone(),
                     &[manager.ix_builder.manager()],
@@ -76,19 +76,22 @@ async fn margin_repay() -> Result<()> {
     };
 
     // set a lend order on the book
-    let lender = BondsUser::<NoProxy>::new_funded(manager.clone()).await?;
+    let lender = FixedUser::<NoProxy>::new_funded(manager.clone()).await?;
     let lend_params = OrderAmount::params_from_quote_amount_rate(500, 1_500);
 
     lender.lend_order(lend_params, &[]).await?;
     let posted_lend = manager.load_orderbook().await?.bids()?[0];
 
-    let user = BondsUser::new_with_proxy_funded(manager.clone(), wallet, proxy.clone())
+    let user = FixedUser::new_with_proxy_funded(manager.clone(), wallet, proxy.clone())
         .await
         .unwrap();
     user.initialize_margin_user().await.unwrap();
 
     let borrower_account = user.load_margin_user().await.unwrap();
-    assert_eq!(borrower_account.bond_manager, manager.ix_builder.manager());
+    assert_eq!(
+        borrower_account.market_manager,
+        manager.ix_builder.manager()
+    );
 
     // place a borrow order
     let borrow_params = OrderAmount::params_from_quote_amount_rate(1_000, 2_000);
@@ -154,9 +157,9 @@ async fn margin_repay() -> Result<()> {
 }
 
 async fn non_margin_orders_for_proxy<P: Proxy + GenerateProxy>(
-    manager: Arc<BondsTestManager>,
+    manager: Arc<FixedTestManager>,
 ) -> Result<()> {
-    let alice = BondsUser::<P>::new_funded(manager.clone()).await?;
+    let alice = FixedUser::<P>::new_funded(manager.clone()).await?;
 
     const START_TICKETS: u64 = 1_000_000;
     alice.convert_tokens(START_TICKETS).await?;
@@ -176,24 +179,24 @@ async fn non_margin_orders_for_proxy<P: Proxy + GenerateProxy>(
 
     let ticket = alice.load_claim_ticket(&ticket_seed).await?;
     assert_eq!(ticket.redeemable, STAKE_AMOUNT);
-    assert_eq!(ticket.bond_manager, manager.ix_builder.manager());
+    assert_eq!(ticket.market_manager, manager.ix_builder.manager());
     assert_eq!(ticket.owner, alice.proxy.pubkey());
 
     manager.pause_ticket_redemption().await?;
-    let bond_manager = manager.load_manager().await?;
+    let market_manager = manager.load_manager().await?;
 
-    assert!(bond_manager.tickets_paused);
+    assert!(market_manager.tickets_paused);
     assert!(alice.redeem_claim_ticket(&ticket_seed).await.is_err());
 
     manager.resume_ticket_redemption().await?;
 
-    let bond_manager = manager.load_manager().await?;
-    assert!(!bond_manager.tickets_paused);
+    let market_manager = manager.load_manager().await?;
+    assert!(!market_manager.tickets_paused);
 
     // Scenario a: post a borrow order to an empty book
     let a_amount = OrderAmount::from_quote_amount_rate(1_000, 2_000);
     let a_params = OrderParams {
-        max_bond_ticket_qty: a_amount.base,
+        max_market_ticket_qty: a_amount.base,
         max_underlying_token_qty: a_amount.quote,
         limit_price: a_amount.price,
         match_limit: 100,
@@ -245,7 +248,7 @@ async fn non_margin_orders_for_proxy<P: Proxy + GenerateProxy>(
     // Cannot self trade
     let crossing_amount = OrderAmount::from_quote_amount_rate(500, 1_500);
     let crossing_params = OrderParams {
-        max_bond_ticket_qty: crossing_amount.base,
+        max_market_ticket_qty: crossing_amount.base,
         max_underlying_token_qty: crossing_amount.quote,
         limit_price: crossing_amount.price,
         match_limit: 100,
@@ -258,7 +261,7 @@ async fn non_margin_orders_for_proxy<P: Proxy + GenerateProxy>(
     // Scenario b: post a lend order that partially fills the borrow order and does not post remaining
     let b_amount = OrderAmount::from_quote_amount_rate(500, 1_500);
     let b_params = OrderParams {
-        max_bond_ticket_qty: b_amount.base,
+        max_market_ticket_qty: b_amount.base,
         max_underlying_token_qty: b_amount.quote,
         limit_price: b_amount.price,
         match_limit: 100,
@@ -277,7 +280,7 @@ async fn non_margin_orders_for_proxy<P: Proxy + GenerateProxy>(
     assert_eq!(summary_b.total_quote_qty, 500);
 
     // send to validator
-    let bob = BondsUser::<P>::new_funded(manager.clone()).await?;
+    let bob = FixedUser::<P>::new_funded(manager.clone()).await?;
     bob.lend_order(b_params, &[0]).await?;
 
     let split_ticket_b = bob.load_split_ticket(&[0]).await?;
@@ -294,7 +297,7 @@ async fn non_margin_orders_for_proxy<P: Proxy + GenerateProxy>(
     // scenario c: post a lend order that fills the remaining borrow and makes a new post with the remaining
     let c_amount = OrderAmount::from_quote_amount_rate(1_500, 1_500);
     let c_params = OrderParams {
-        max_bond_ticket_qty: c_amount.base,
+        max_market_ticket_qty: c_amount.base,
         max_underlying_token_qty: c_amount.quote,
         limit_price: c_amount.price,
         match_limit: 100,
@@ -313,7 +316,7 @@ async fn non_margin_orders_for_proxy<P: Proxy + GenerateProxy>(
     let trade_price = Fp32::upcast_fp32(existing_order.price());
     let base_trade_qty = existing_order
         .base_quantity
-        .min(c_params.max_bond_ticket_qty)
+        .min(c_params.max_market_ticket_qty)
         .min(
             (Fp32::from(c_params.max_underlying_token_qty) / trade_price)
                 .as_decimal_u64()
@@ -328,7 +331,7 @@ async fn non_margin_orders_for_proxy<P: Proxy + GenerateProxy>(
             / Fp32::upcast_fp32(c_params.limit_price))
         .as_decimal_u64()
         .unwrap_or(u64::MAX),
-        c_params.max_bond_ticket_qty - base_trade_qty,
+        c_params.max_market_ticket_qty - base_trade_qty,
     );
     let quote_qty_to_post = (Fp32::upcast_fp32(c_params.limit_price) * base_qty_to_post)
         .as_decimal_u64_ceil()
@@ -398,11 +401,11 @@ async fn non_margin_orders_for_proxy<P: Proxy + GenerateProxy>(
     Ok(())
 }
 
-async fn create_bonds_margin_user(
+async fn create_fixed_market_margin_user(
     ctx: &Arc<MarginTestContext>,
-    manager: Arc<BondsTestManager>,
+    manager: Arc<FixedTestManager>,
     pool_positions: Vec<(Pubkey, u64, u64)>,
-) -> BondsUser<RefreshingProxy<MarginIxBuilder>> {
+) -> FixedUser<RefreshingProxy<MarginIxBuilder>> {
     let client = manager.client.clone();
 
     // set up user
@@ -421,7 +424,7 @@ async fn create_bonds_margin_user(
                 0,
             )),
             Arc::new(
-                BondsPositionRefresher::new(
+                FixedPositionRefresher::new(
                     margin.pubkey(),
                     client.clone(),
                     &[manager.ix_builder.manager()],
@@ -432,13 +435,16 @@ async fn create_bonds_margin_user(
         ],
     };
 
-    let user = BondsUser::new_with_proxy_funded(manager.clone(), wallet, proxy.clone())
+    let user = FixedUser::new_with_proxy_funded(manager.clone(), wallet, proxy.clone())
         .await
         .unwrap();
     user.initialize_margin_user().await.unwrap();
 
     let borrower_account = user.load_margin_user().await.unwrap();
-    assert_eq!(borrower_account.bond_manager, manager.ix_builder.manager());
+    assert_eq!(
+        borrower_account.market_manager,
+        manager.ix_builder.manager()
+    );
 
     user
 }
@@ -447,12 +453,13 @@ async fn create_bonds_margin_user(
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn margin_borrow() -> Result<()> {
     let ctx = margin_test_context!();
-    let manager = Arc::new(BondsTestManager::full(ctx.solana.clone()).await.unwrap());
+    let manager = Arc::new(FixedTestManager::full(ctx.solana.clone()).await.unwrap());
     let client = manager.client.clone();
     let ([collateral], _, pricer) = tokens(&ctx).await.unwrap();
 
     let user =
-        create_bonds_margin_user(&ctx, manager.clone(), vec![(collateral, 0, u64::MAX / 2)]).await;
+        create_fixed_market_margin_user(&ctx, manager.clone(), vec![(collateral, 0, u64::MAX / 2)])
+            .await;
 
     vec![
         pricer.set_oracle_price_tx(&collateral, 1.0).await.unwrap(),
@@ -523,10 +530,10 @@ async fn margin_borrow_fails_without_collateral() -> Result<()> {
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn margin_lend() -> Result<()> {
     let ctx = margin_test_context!();
-    let manager = Arc::new(BondsTestManager::full(ctx.solana.clone()).await.unwrap());
+    let manager = Arc::new(FixedTestManager::full(ctx.solana.clone()).await.unwrap());
     let client = manager.client.clone();
 
-    let user = create_bonds_margin_user(&ctx, manager.clone(), vec![]).await;
+    let user = create_fixed_market_margin_user(&ctx, manager.clone(), vec![]).await;
 
     user.margin_lend_order(underlying(1_000, 2_000), &[])
         .await?
@@ -545,13 +552,14 @@ async fn margin_lend() -> Result<()> {
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn margin_borrow_then_margin_lend() -> Result<()> {
     let ctx = margin_test_context!();
-    let manager = Arc::new(BondsTestManager::full(ctx.solana.clone()).await.unwrap());
+    let manager = Arc::new(FixedTestManager::full(ctx.solana.clone()).await.unwrap());
     let client = manager.client.clone();
     let ([collateral], _, pricer) = tokens(&ctx).await.unwrap();
 
     let borrower =
-        create_bonds_margin_user(&ctx, manager.clone(), vec![(collateral, 0, u64::MAX / 2)]).await;
-    let lender = create_bonds_margin_user(&ctx, manager.clone(), vec![]).await;
+        create_fixed_market_margin_user(&ctx, manager.clone(), vec![(collateral, 0, u64::MAX / 2)])
+            .await;
+    let lender = create_fixed_market_margin_user(&ctx, manager.clone(), vec![]).await;
 
     vec![
         pricer.set_oracle_price_tx(&collateral, 1.0).await.unwrap(),
@@ -604,13 +612,14 @@ async fn margin_borrow_then_margin_lend() -> Result<()> {
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn margin_lend_then_margin_borrow() -> Result<()> {
     let ctx = margin_test_context!();
-    let manager = Arc::new(BondsTestManager::full(ctx.solana.clone()).await.unwrap());
+    let manager = Arc::new(FixedTestManager::full(ctx.solana.clone()).await.unwrap());
     let client = manager.client.clone();
     let ([collateral], _, pricer) = tokens(&ctx).await.unwrap();
 
     let borrower =
-        create_bonds_margin_user(&ctx, manager.clone(), vec![(collateral, 0, u64::MAX / 2)]).await;
-    let lender = create_bonds_margin_user(&ctx, manager.clone(), vec![]).await;
+        create_fixed_market_margin_user(&ctx, manager.clone(), vec![(collateral, 0, u64::MAX / 2)])
+            .await;
+    let lender = create_fixed_market_margin_user(&ctx, manager.clone(), vec![]).await;
 
     lender
         .margin_lend_order(underlying(1_001, 2_000), &[])
@@ -664,10 +673,10 @@ async fn margin_lend_then_margin_borrow() -> Result<()> {
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn margin_sell_tickets() -> Result<()> {
     let ctx = margin_test_context!();
-    let manager = Arc::new(BondsTestManager::full(ctx.solana.clone()).await.unwrap());
+    let manager = Arc::new(FixedTestManager::full(ctx.solana.clone()).await.unwrap());
     let client = manager.client.clone();
 
-    let user = create_bonds_margin_user(&ctx, manager.clone(), vec![]).await;
+    let user = create_fixed_market_margin_user(&ctx, manager.clone(), vec![]).await;
     user.convert_tokens(10_000).await.unwrap();
 
     user.margin_sell_tickets_order(tickets(1_200, 2_000))
@@ -690,7 +699,7 @@ fn quote_to_base(quote: u64, rate_bps: u64) -> u64 {
 fn underlying(quote: u64, rate_bps: u64) -> OrderParams {
     let borrow_amount = OrderAmount::from_quote_amount_rate(quote, rate_bps);
     OrderParams {
-        max_bond_ticket_qty: borrow_amount.base,
+        max_market_ticket_qty: borrow_amount.base,
         max_underlying_token_qty: borrow_amount.quote,
         limit_price: borrow_amount.price,
         match_limit: 1,
@@ -703,7 +712,7 @@ fn underlying(quote: u64, rate_bps: u64) -> OrderParams {
 fn tickets(base: u64, rate_bps: u64) -> OrderParams {
     let borrow_amount = OrderAmount::from_base_amount_rate(base, rate_bps);
     OrderParams {
-        max_bond_ticket_qty: borrow_amount.base,
+        max_market_ticket_qty: borrow_amount.base,
         max_underlying_token_qty: borrow_amount.quote,
         limit_price: borrow_amount.price,
         match_limit: 1,
