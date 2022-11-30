@@ -1,5 +1,5 @@
 import { useRecoilState, useRecoilValue } from 'recoil';
-import { Dictionary } from '@state/settings/localization/localization';
+import { definitions, Dictionary } from '@state/settings/localization/localization';
 import { PoolsRowOrder } from '@state/views/views';
 import { Pools, CurrentPool } from '@state/pools/pools';
 import { useCurrencyFormatting } from '@utils/currency';
@@ -10,6 +10,7 @@ import { AirdropButton } from './AirdropButton';
 import { ReorderArrows } from '@components/misc/ReorderArrows';
 import { Info } from '@components/misc/Info';
 import { Skeleton, Typography } from 'antd';
+import reactStringReplace from 'react-string-replace';
 
 // Component that shows extra details on the currentPool
 export function PoolDetail(): JSX.Element {
@@ -104,6 +105,22 @@ export function PoolDetail(): JSX.Element {
     return render;
   }
 
+  const linkText = "docs";
+
+  let marginAccountingDocsLink = reactStringReplace(definitions.en.requiredCollateralFactor.definition, '{{MARGIN_ACCOUNTING_DOCS_LINK}}', () => (
+    <a
+      className="link-btn"
+      key="docs"
+      href="https://docs.jetprotocol.io/jet-protocol/protocol/margin-accounts"
+      target="_blank"
+      rel="noopener noreferrer">
+      {linkText}
+    </a>
+  ));
+
+  //let test = reactStringReplace(definitions.en.requiredCollateralFactor.definition,'{{MARGIN_ACCOUNTING_DOCS_LINK}}', () => "hi");
+  console.log(marginAccountingDocsLink);
+
   return (
     <div className="pool-detail view-element flex align-center justify-start column">
       <div className="pool-detail-head flex align-center justify-start">
@@ -130,8 +147,7 @@ export function PoolDetail(): JSX.Element {
           <div className="pool-detail-body-half-section flex align-start justify-center column">
             <Info term="requiredCollateralFactor">
               <Text className="info-element small-accent-text">{dictionary.poolsView.requiredCollateralFactor}</Text>
-            </Info>
-            {renderRequiredCollateralFactor()}
+                {renderRequiredCollateralFactor()}
           </div>
         </div>
         <div className="pool-detail-body-half flex-align-start justify-center column">
