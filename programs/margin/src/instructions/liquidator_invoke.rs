@@ -17,9 +17,7 @@
 
 use anchor_lang::prelude::*;
 
-use jet_metadata::MarginAdapterMetadata;
-
-use crate::adapter::{self, InvokeAdapter};
+use crate::adapter::{self, IxData};
 use crate::{events, ErrorCode, Liquidation, LiquidationState, MarginAccount, Valuation};
 
 #[derive(Accounts)]
@@ -36,37 +34,26 @@ pub struct LiquidatorInvoke<'info> {
               has_one = liquidation,
               has_one = liquidator)]
     pub margin_account: AccountLoader<'info, MarginAccount>,
-
-    /// The program to be invoked
-    /// CHECK:
-    pub adapter_program: AccountInfo<'info>,
-
-    /// The metadata about the proxy program
-    #[account(has_one = adapter_program)]
-    pub adapter_metadata: Account<'info, MarginAdapterMetadata>,
 }
 
 pub fn liquidator_invoke_handler<'info>(
     ctx: Context<'_, '_, '_, 'info, LiquidatorInvoke<'info>>,
-    data: Vec<u8>,
+    instructions: Vec<IxData>,
 ) -> Result<()> {
     let margin_account = &ctx.accounts.margin_account;
     let start_value = margin_account.load()?.valuation()?;
 
     emit!(events::LiquidatorInvokeBegin {
         margin_account: ctx.accounts.margin_account.key(),
-        adapter_program: ctx.accounts.adapter_program.key(),
+        adapter_program: Pubkey::default(), //todo
         liquidator: ctx.accounts.liquidator.key(),
     });
 
-    let events = adapter::invoke(
-        &InvokeAdapter {
-            margin_account: &ctx.accounts.margin_account,
-            adapter_program: &ctx.accounts.adapter_program,
-            accounts: ctx.remaining_accounts,
-            signed: true,
-        },
-        data,
+    let events = adapter::invoke_many(
+        &ctx.accounts.margin_account,
+        ctx.remaining_accounts,
+        instructions,
+        true,
     )?;
 
     for event in events {

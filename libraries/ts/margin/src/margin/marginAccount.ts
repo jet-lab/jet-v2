@@ -447,9 +447,9 @@ export class MarginAccount {
         collateralWeight.isZero() || lamportPrice.isZero()
           ? Number128.ZERO
           : this.valuation.requiredCollateral
-              .sub(this.valuation.effectiveCollateral.mul(warningRiskLevel))
-              .div(collateralWeight.mul(warningRiskLevel))
-              .div(lamportPrice)
+            .sub(this.valuation.effectiveCollateral.mul(warningRiskLevel))
+            .div(collateralWeight.mul(warningRiskLevel))
+            .div(lamportPrice)
       ).toTokenAmount(pool.decimals)
 
       // Buying power
@@ -1626,15 +1626,18 @@ export class MarginAccount {
     instructions: TransactionInstruction[]
     adapterInstruction: TransactionInstruction
   }): Promise<void> {
+    const adapterMetadata = findDerivedAccount(this.programs.metadata.programId, adapterInstruction.programId)
+    const remainingAccounts = this.invokeAccounts(adapterInstruction, adapterInstruction.programId, adapterMetadata)
     const ix = await this.programs.margin.methods
-      .adapterInvoke(adapterInstruction.data)
+      .adapterInvoke([{
+        data: adapterInstruction.data,
+        numAccounts: remainingAccounts.length - 2
+      }])
       .accounts({
         owner: this.owner,
-        marginAccount: this.address,
-        adapterProgram: adapterInstruction.programId,
-        adapterMetadata: findDerivedAccount(this.programs.metadata.programId, adapterInstruction.programId)
+        marginAccount: this.address
       })
-      .remainingAccounts(this.invokeAccounts(adapterInstruction))
+      .remainingAccounts(remainingAccounts)
       .instruction()
     instructions.push(ix)
   }
@@ -1675,14 +1678,14 @@ export class MarginAccount {
     adapterMetadata: Address
     adapterInstruction: TransactionInstruction
   }): Promise<void> {
+    const remainingAccounts = this.invokeAccounts(adapterInstruction, adapterProgram, adapterMetadata)
     const ix = await this.programs.margin.methods
-      .accountingInvoke(adapterInstruction.data)
-      .accounts({
-        marginAccount: this.address,
-        adapterProgram,
-        adapterMetadata
-      })
-      .remainingAccounts(this.invokeAccounts(adapterInstruction))
+      .accountingInvoke([{
+        data: adapterInstruction.data,
+        numAccounts: remainingAccounts.length - 2
+      }])
+      .accounts({ marginAccount: this.address })
+      .remainingAccounts(remainingAccounts)
       .instruction()
     instructions.push(ix)
   }
@@ -1693,8 +1696,23 @@ export class MarginAccount {
    * @return {AccountMeta[]} The instruction keys but the margin account is no longer a signer.
    * @memberof MarginAccount
    */
-  private invokeAccounts(adapterInstruction: TransactionInstruction): AccountMeta[] {
-    const accounts: AccountMeta[] = []
+  private invokeAccounts(
+    adapterInstruction: TransactionInstruction,
+    adapterProgram: Address,
+    adapterMetadata: Address
+  ): AccountMeta[] {
+    const accounts: AccountMeta[] = [
+      {
+        pubkey: translateAddress(adapterProgram),
+        isSigner: false,
+        isWritable: false
+      },
+      {
+        pubkey: translateAddress(adapterMetadata),
+        isSigner: false,
+        isWritable: false
+      }
+    ]
     for (const acc of adapterInstruction.keys) {
       let isSigner = acc.isSigner
       if (acc.pubkey.equals(this.address)) {
