@@ -110,8 +110,6 @@ pub fn handler(
         let sequence_number =
             debt.new_obligation_without_posting(order_summary.base_filled(), maturation_timestamp)?;
 
-        let maturation_timestamp = manager.borrow_duration + Clock::get()?.unix_timestamp;
-
         let mut obligation = serialization::init::<Obligation>(
             ctx.accounts.obligation.to_account_info(),
             ctx.accounts.payer.to_account_info(),
