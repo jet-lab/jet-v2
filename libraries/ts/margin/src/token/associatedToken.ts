@@ -1,4 +1,4 @@
-import { BN, Address, translateAddress, AnchorProvider, Provider } from "@project-serum/anchor"
+import { BN, Address, translateAddress, AnchorProvider } from "@project-serum/anchor"
 import { TOKEN_PROGRAM_ID } from "@project-serum/serum/lib/token-instructions"
 import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
@@ -621,7 +621,6 @@ export class AssociatedToken {
    * @param {tokenAccount} tokenAccountOrNative
    */
   static withUnwrapIfNativeMint(instructions: TransactionInstruction[], owner: Address, mint: Address): void {
-    const ownerPubkey = translateAddress(owner)
     const mintPubkey = translateAddress(mint)
 
     if (mintPubkey.equals(NATIVE_MINT)) {

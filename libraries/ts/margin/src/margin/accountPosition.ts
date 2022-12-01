@@ -1,7 +1,7 @@
 import { PublicKey } from "@solana/web3.js"
 import assert from "assert"
 import BN from "bn.js"
-import { bnToNumber, getTimestamp } from ".."
+import { getTimestamp } from ".."
 import { Number128 } from "../"
 import { AccountPositionInfo, AdapterPositionFlags, PositionKind, PositionKindInfo } from "./state"
 

@@ -10,7 +10,7 @@ import {
   sendAll
 } from "@jet-lab/margin"
 import { BondMarket } from "./bondMarket"
-import { Address, AnchorProvider, BN } from "@project-serum/anchor"
+import { AnchorProvider, BN } from "@project-serum/anchor"
 
 const createRandomSeed = (byteLength: number) => {
   const max = 127
@@ -116,7 +116,7 @@ export const offerLoan = async ({
   const instructions: TransactionInstruction[][] = []
   // Create relevant accounts if they do not exist
   const accountInstructions: TransactionInstruction[] = []
-  const { tokenMint } = await withCreateFixedMarketAccounts({
+  await withCreateFixedMarketAccounts({
     market,
     provider,
     marginAccount,
@@ -391,7 +391,7 @@ export const lendNow = async ({
   const instructions: TransactionInstruction[][] = []
   // Create relevant accounts if they do not exist
   const accountInstructions: TransactionInstruction[] = []
-  const { tokenMint } = await withCreateFixedMarketAccounts({
+  await withCreateFixedMarketAccounts({
     market,
     provider,
     marginAccount,

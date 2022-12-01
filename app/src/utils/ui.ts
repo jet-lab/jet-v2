@@ -17,6 +17,7 @@ export function getExplorerUrl(
     if (cluster === 'localnet') {
       return `?cluster=custom&customUrl=http%3A%2F%2Flocalhost%3A8899`;
     }
+    return;
   }
 
   return baseUrl + txId + getClusterParam();

@@ -86,6 +86,7 @@ export async function sendAll(
                 ...ixs
               )
             }
+            return
           })
           .filter(tx => !!tx) as Transaction[]
       } else {
@@ -94,6 +95,7 @@ export async function sendAll(
           return [new Transaction({ feePayer: provider.wallet.publicKey, blockhash, lastValidBlockHeight }).add(...ixs)]
         }
       }
+      return
     })
     .filter(tx => !!tx) as (Transaction | Transaction[])[]
 
