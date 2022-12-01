@@ -1,9 +1,10 @@
 const path = require('path');
-const { ProvidePlugin, DefinePlugin } = require('webpack');
+const { ProvidePlugin, DefinePlugin, debug } = require('webpack');
 const dotenv = require('dotenv');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
 const FilterWarningsPlugin = require('webpack-filter-warnings-plugin');
+const SwcMinifyWebpackPlugin = require('swc-minify-webpack-plugin');
 
 const plugins = [
   new HtmlWebpackPlugin({
@@ -39,7 +40,9 @@ module.exports = {
     clean: true
   },
   optimization: {
-    chunkIds: 'named'
+    chunkIds: 'named',
+    minimize: true,
+    minimizer: [new SwcMinifyWebpackPlugin()]
   },
   devtool: 'source-map',
   devServer: {
@@ -63,6 +66,7 @@ module.exports = {
       },
       {
         test: /\.less$/i,
+        include: path.resolve(__dirname, 'src/styles'),
         use: [
           {
             loader: 'style-loader'
@@ -84,12 +88,32 @@ module.exports = {
       {
         test: /\.jsx?$/,
         exclude: /node_modules/,
-        loader: 'babel-loader'
+        include: path.resolve(__dirname, 'src'),
+        loader: 'swc-loader'
       },
       {
         test: /\.tsx?$/,
         exclude: /node_modules/,
-        loader: 'ts-loader'
+        include: path.resolve(__dirname, 'src'),
+        loader: 'swc-loader',
+        options: {
+          minify: true,
+          jsc: {
+            parser: {
+              syntax: 'typescript',
+              tsx: true,
+              dynamicImport: true
+            },
+            transform: {
+              react: {
+                runtime: 'automatic'
+              }
+            },
+            target: 'es2020',
+            loose: true,
+            externalHelpers: true
+          }
+        }
       },
       {
         test: /\.svg$/i,
