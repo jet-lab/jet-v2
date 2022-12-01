@@ -333,6 +333,7 @@ fn create_airspace_token_bond_markets_tx(
             config.authority,
             derive_pyth_price(&mint),
             derive_pyth_price(&ticket_mint),
+            None,
         )
         .with_crank(&config.authority);
 
