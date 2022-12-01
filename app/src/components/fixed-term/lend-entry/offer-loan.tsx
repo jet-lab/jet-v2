@@ -10,10 +10,14 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import { useProvider } from '@utils/jet/provider';
 import { CurrentPool, Pools } from '@state/pools/pools';
 import { BlockExplorer, Cluster } from '@state/settings/settings';
-import { useRecoilValue } from 'recoil';
+import { useRecoilRefresher_UNSTABLE, useRecoilValue } from 'recoil';
 import { useState } from 'react';
 import { MarginConfig, MarginTokenConfig } from '@jet-lab/margin';
-import { AllFixedMarketsAtom, MarketAndconfig } from '@state/fixed-market/fixed-term-market-sync';
+import {
+  AllFixedMarketsAtom,
+  AllFixedMarketsOrderBooksAtom,
+  MarketAndconfig
+} from '@state/fixed-market/fixed-term-market-sync';
 import { formatWithCommas } from '@utils/format';
 import { isDebug } from '../../../App';
 import debounce from 'lodash.debounce';
@@ -36,6 +40,7 @@ export const OfferLoan = ({ token, decimals, marketAndConfig, marginConfig }: Re
   const [amount, setAmount] = useState(new BN(0));
   const [basisPoints, setBasisPoints] = useState(new BN(0));
   const markets = useRecoilValue(AllFixedMarketsAtom);
+  const refreshOrderBooks = useRecoilRefresher_UNSTABLE(AllFixedMarketsOrderBooksAtom);
 
   const createLendOrder = async (amountParam?: BN, basisPointsParam?: BN) => {
     let signature: string;
@@ -61,8 +66,8 @@ export const OfferLoan = ({ token, decimals, marketAndConfig, marginConfig }: Re
         'success',
         getExplorerUrl(signature, cluster, blockExplorer)
       );
+      refreshOrderBooks();
     } catch (e) {
-      console.log(e);
       notify(
         'Lend Offer Failed',
         `Your lend offer for ${amount.div(new BN(10 ** decimals))} ${token.name} at ${
@@ -84,8 +89,6 @@ export const OfferLoan = ({ token, decimals, marketAndConfig, marginConfig }: Re
     for (let i = 0; i < 10; i++) {
       const amount = new BN((10 + Math.random() * 10000) * 10 ** decimals);
       const basisPoints = new BN(10 + Math.random() * 1000);
-      console.log('Amount: ', Number(amount));
-      console.log('Basis Points: ', Number(basisPoints));
       await createLendOrder(amount, basisPoints);
       await sleep(500);
     }
