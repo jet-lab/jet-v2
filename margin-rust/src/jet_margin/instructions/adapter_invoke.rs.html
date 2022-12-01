@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `programs/margin/src/instructions/adapter_invoke.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>adapter_invoke.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../jet_margin/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../jet_margin/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../jet_margin/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `programs/margin/src/instructions/adapter_invoke.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>adapter_invoke.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../normalize.css"><link rel="stylesheet" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../ayu.css" disabled><link rel="stylesheet" href="../../../dark.css" disabled><link rel="stylesheet" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../jet_margin/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../jet_margin/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../jet_margin/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -77,84 +77,84 @@
 <span id="77">77</span>
 <span id="78">78</span>
 <span id="79">79</span>
-</pre><pre class="rust"><code><span class="comment">// SPDX-License-Identifier: AGPL-3.0-or-later</span>
-<span class="comment">//</span>
-<span class="comment">// Copyright (C) 2022 JET PROTOCOL HOLDINGS, LLC.</span>
-<span class="comment">//</span>
-<span class="comment">// This program is free software: you can redistribute it and/or modify</span>
-<span class="comment">// it under the terms of the GNU Affero General Public License as published by</span>
-<span class="comment">// the Free Software Foundation, either version 3 of the License, or</span>
-<span class="comment">// (at your option) any later version.</span>
-<span class="comment">//</span>
-<span class="comment">// This program is distributed in the hope that it will be useful,</span>
-<span class="comment">// but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
-<span class="comment">// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
-<span class="comment">// GNU Affero General Public License for more details.</span>
-<span class="comment">//</span>
-<span class="comment">// You should have received a copy of the GNU Affero General Public License</span>
-<span class="comment">// along with this program.  If not, see &lt;https://www.gnu.org/licenses/&gt;.</span>
+</pre><pre class="rust"><code><span class="comment">// SPDX-License-Identifier: AGPL-3.0-or-later
+//
+// Copyright (C) 2022 JET PROTOCOL HOLDINGS, LLC.
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Affero General Public License for more details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program.  If not, see &lt;https://www.gnu.org/licenses/&gt;.
 
-<span class="kw">use</span> <span class="ident">anchor_lang::prelude</span>::<span class="kw-2">*</span>;
+</span><span class="kw">use </span>anchor_lang::prelude::<span class="kw-2">*</span>;
 
-<span class="kw">use</span> <span class="ident">jet_metadata::MarginAdapterMetadata</span>;
+<span class="kw">use </span>jet_metadata::MarginAdapterMetadata;
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::adapter</span>::{<span class="self">self</span>, <span class="ident">InvokeAdapter</span>};
-<span class="kw">use</span> <span class="kw">crate</span>::{<span class="ident">events</span>, <span class="ident">ErrorCode</span>, <span class="ident">MarginAccount</span>};
+<span class="kw">use </span><span class="kw">crate</span>::adapter::{<span class="self">self</span>, InvokeAdapter};
+<span class="kw">use crate</span>::{events, ErrorCode, MarginAccount};
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Accounts</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">AdapterInvoke</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span> {
-    <span class="doccomment">/// The authority that owns the margin account</span>
-    <span class="kw">pub</span> <span class="ident">owner</span>: <span class="ident">Signer</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span>,
+<span class="attribute">#[derive(Accounts)]
+</span><span class="kw">pub struct </span>AdapterInvoke&lt;<span class="lifetime">&#39;info</span>&gt; {
+    <span class="doccomment">/// The authority that owns the margin account
+    </span><span class="kw">pub </span>owner: Signer&lt;<span class="lifetime">&#39;info</span>&gt;,
 
-    <span class="doccomment">/// The margin account to proxy an action for</span>
-    <span class="attribute">#[<span class="ident">account</span>(<span class="kw-2">mut</span>, <span class="ident">has_one</span> <span class="op">=</span> <span class="ident">owner</span>)]</span>
-    <span class="kw">pub</span> <span class="ident">margin_account</span>: <span class="ident">AccountLoader</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span>, <span class="ident">MarginAccount</span><span class="op">&gt;</span>,
+    <span class="doccomment">/// The margin account to proxy an action for
+    </span><span class="attribute">#[account(<span class="kw-2">mut</span>, has_one = owner)]
+    </span><span class="kw">pub </span>margin_account: AccountLoader&lt;<span class="lifetime">&#39;info</span>, MarginAccount&gt;,
 
-    <span class="doccomment">/// The program to be invoked</span>
-    <span class="doccomment">/// CHECK:</span>
-    <span class="kw">pub</span> <span class="ident">adapter_program</span>: <span class="ident">AccountInfo</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span>,
+    <span class="doccomment">/// The program to be invoked
+    /// CHECK:
+    </span><span class="kw">pub </span>adapter_program: AccountInfo&lt;<span class="lifetime">&#39;info</span>&gt;,
 
-    <span class="doccomment">/// The metadata about the proxy program</span>
-    <span class="attribute">#[<span class="ident">account</span>(<span class="ident">has_one</span> <span class="op">=</span> <span class="ident">adapter_program</span>)]</span>
-    <span class="kw">pub</span> <span class="ident">adapter_metadata</span>: <span class="ident">Account</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span>, <span class="ident">MarginAdapterMetadata</span><span class="op">&gt;</span>,
+    <span class="doccomment">/// The metadata about the proxy program
+    </span><span class="attribute">#[account(has_one = adapter_program)]
+    </span><span class="kw">pub </span>adapter_metadata: Account&lt;<span class="lifetime">&#39;info</span>, MarginAdapterMetadata&gt;,
 }
 
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">adapter_invoke_handler</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span>(
-    <span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span>, <span class="lifetime">&#39;_</span>, <span class="lifetime">&#39;_</span>, <span class="lifetime">&#39;info</span>, <span class="ident">AdapterInvoke</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-    <span class="ident">data</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>,
-) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-    <span class="kw">if</span> <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">margin_account</span>.<span class="ident">load</span>()<span class="question-mark">?</span>.<span class="ident">liquidation</span> <span class="op">!</span><span class="op">=</span> <span class="ident">Pubkey::default</span>() {
+<span class="kw">pub fn </span>adapter_invoke_handler&lt;<span class="lifetime">&#39;info</span>&gt;(
+    ctx: Context&lt;<span class="lifetime">&#39;_</span>, <span class="lifetime">&#39;_</span>, <span class="lifetime">&#39;_</span>, <span class="lifetime">&#39;info</span>, AdapterInvoke&lt;<span class="lifetime">&#39;info</span>&gt;&gt;,
+    data: Vec&lt;u8&gt;,
+) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+    <span class="kw">if </span>ctx.accounts.margin_account.load()<span class="question-mark">?</span>.liquidation != Pubkey::default() {
         <span class="macro">msg!</span>(<span class="string">&quot;account is being liquidated&quot;</span>);
-        <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">ErrorCode::Liquidating</span>.<span class="ident">into</span>());
+        <span class="kw">return </span><span class="prelude-val">Err</span>(ErrorCode::Liquidating.into());
     }
 
-    <span class="macro">emit!</span>(<span class="ident">events::AdapterInvokeBegin</span> {
-        <span class="ident">margin_account</span>: <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">margin_account</span>.<span class="ident">key</span>(),
-        <span class="ident">adapter_program</span>: <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">adapter_program</span>.<span class="ident">key</span>(),
+    <span class="macro">emit!</span>(events::AdapterInvokeBegin {
+        margin_account: ctx.accounts.margin_account.key(),
+        adapter_program: ctx.accounts.adapter_program.key(),
     });
 
-    <span class="kw">let</span> <span class="ident">events</span> <span class="op">=</span> <span class="ident">adapter::invoke</span>(
-        <span class="kw-2">&amp;</span><span class="ident">InvokeAdapter</span> {
-            <span class="ident">margin_account</span>: <span class="kw-2">&amp;</span><span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">margin_account</span>,
-            <span class="ident">adapter_program</span>: <span class="kw-2">&amp;</span><span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">adapter_program</span>,
-            <span class="ident">accounts</span>: <span class="ident">ctx</span>.<span class="ident">remaining_accounts</span>,
-            <span class="ident">signed</span>: <span class="bool-val">true</span>,
+    <span class="kw">let </span>events = adapter::invoke(
+        <span class="kw-2">&amp;</span>InvokeAdapter {
+            margin_account: <span class="kw-2">&amp;</span>ctx.accounts.margin_account,
+            adapter_program: <span class="kw-2">&amp;</span>ctx.accounts.adapter_program,
+            accounts: ctx.remaining_accounts,
+            signed: <span class="bool-val">true</span>,
         },
-        <span class="ident">data</span>,
+        data,
     )<span class="question-mark">?</span>;
 
-    <span class="kw">for</span> <span class="ident">event</span> <span class="kw">in</span> <span class="ident">events</span> {
-        <span class="ident">event</span>.<span class="ident">emit</span>();
+    <span class="kw">for </span>event <span class="kw">in </span>events {
+        event.emit();
     }
 
-    <span class="macro">emit!</span>(<span class="ident">events::AdapterInvokeEnd</span> {});
+    <span class="macro">emit!</span>(events::AdapterInvokeEnd {});
 
-    <span class="ident">ctx</span>.<span class="ident">accounts</span>
-        .<span class="ident">margin_account</span>
-        .<span class="ident">load</span>()<span class="question-mark">?</span>
-        .<span class="ident">verify_healthy_positions</span>()<span class="question-mark">?</span>;
+    ctx.accounts
+        .margin_account
+        .load()<span class="question-mark">?
+        </span>.verify_healthy_positions()<span class="question-mark">?</span>;
 
     <span class="prelude-val">Ok</span>(())
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="jet_margin" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0 (a55dd71d5 2022-09-19)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="jet_margin" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

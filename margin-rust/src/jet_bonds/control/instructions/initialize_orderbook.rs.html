@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `programs/bonds/src/control/instructions/initialize_orderbook.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>initialize_orderbook.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../jet_bonds/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../../jet_bonds/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../jet_bonds/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `programs/bonds/src/control/instructions/initialize_orderbook.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>initialize_orderbook.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../../normalize.css"><link rel="stylesheet" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../../ayu.css" disabled><link rel="stylesheet" href="../../../../dark.css" disabled><link rel="stylesheet" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../jet_bonds/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../../jet_bonds/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../jet_bonds/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -108,115 +108,115 @@
 <span id="108">108</span>
 <span id="109">109</span>
 <span id="110">110</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">agnostic_orderbook::state::market_state::MarketState</span>;
-<span class="kw">use</span> <span class="ident">anchor_lang::prelude</span>::<span class="kw-2">*</span>;
+</pre><pre class="rust"><code><span class="kw">use </span>agnostic_orderbook::state::market_state::MarketState;
+<span class="kw">use </span>anchor_lang::prelude::<span class="kw-2">*</span>;
 
-<span class="kw">use</span> <span class="kw">crate</span>::{
-    <span class="ident">control</span>::{<span class="ident">events::OrderbookInitialized</span>, <span class="ident">state::BondManager</span>},
-    <span class="ident">orderbook::state</span>::{<span class="ident">CallbackInfo</span>, <span class="ident">TICK_SIZE</span>},
-    <span class="ident">seeds</span>, <span class="ident">BondsError</span>,
+<span class="kw">use crate</span>::{
+    control::{events::OrderbookInitialized, state::BondManager},
+    orderbook::state::{CallbackInfo, TICK_SIZE},
+    seeds, BondsError,
 };
 
-<span class="doccomment">/// Parameters necessary for orderbook initialization</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">AnchorDeserialize</span>, <span class="ident">AnchorSerialize</span>, <span class="ident">Clone</span>, <span class="ident">Copy</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">InitializeOrderbookParams</span> {
-    <span class="doccomment">/// The minimum order size that can be inserted into the orderbook after matching.</span>
-    <span class="kw">pub</span> <span class="ident">min_base_order_size</span>: <span class="ident">u64</span>,
+<span class="doccomment">/// Parameters necessary for orderbook initialization
+</span><span class="attribute">#[derive(AnchorDeserialize, AnchorSerialize, Clone, Copy)]
+</span><span class="kw">pub struct </span>InitializeOrderbookParams {
+    <span class="doccomment">/// The minimum order size that can be inserted into the orderbook after matching.
+    </span><span class="kw">pub </span>min_base_order_size: u64,
 }
 
-<span class="doccomment">/// Initialization of the orderbook for a given asset and tenor</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Accounts</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">InitializeOrderbook</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span> {
-    <span class="doccomment">/// The `BondManager` account tracks global information related to this particular bond market</span>
-    <span class="attribute">#[<span class="ident">account</span>(
+<span class="doccomment">/// Initialization of the orderbook for a given asset and tenor
+</span><span class="attribute">#[derive(Accounts)]
+</span><span class="kw">pub struct </span>InitializeOrderbook&lt;<span class="lifetime">&#39;info</span>&gt; {
+    <span class="doccomment">/// The `BondManager` account tracks global information related to this particular bond market
+    </span><span class="attribute">#[account(
         <span class="kw-2">mut</span>,
-        <span class="ident">has_one</span> <span class="op">=</span> <span class="ident">airspace</span> @ <span class="ident">BondsError::WrongAirspace</span>,
-    )]</span>
-    <span class="kw">pub</span> <span class="ident">bond_manager</span>: <span class="ident">AccountLoader</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span>, <span class="ident">BondManager</span><span class="op">&gt;</span>,
-
-    <span class="doccomment">/// AOB market state</span>
-    <span class="attribute">#[<span class="ident">account</span>(<span class="ident">init</span>,
-              <span class="ident">seeds</span> <span class="op">=</span> [
-                  <span class="ident">seeds::ORDERBOOK_MARKET_STATE</span>,
-                  <span class="ident">bond_manager</span>.<span class="ident">key</span>().<span class="ident">as_ref</span>()
-              ]</span>,
-              <span class="ident">bump</span>,
-              <span class="ident">space</span> <span class="op">=</span> <span class="number">8</span> <span class="op">+</span> <span class="ident">MarketState::LEN</span>,
-              <span class="ident">payer</span> <span class="op">=</span> <span class="ident">payer</span>,
+        has_one = airspace @ BondsError::WrongAirspace,
     )]
-    <span class="kw">pub</span> <span class="ident">orderbook_market_state</span>: <span class="ident">AccountInfo</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span>,
+    </span><span class="kw">pub </span>bond_manager: AccountLoader&lt;<span class="lifetime">&#39;info</span>, BondManager&gt;,
 
-    <span class="doccomment">/// AOB market event queue</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// Must be initialized</span>
-    <span class="attribute">#[<span class="ident">account</span>(<span class="kw-2">mut</span>)]</span>
-    <span class="kw">pub</span> <span class="ident">event_queue</span>: <span class="ident">AccountInfo</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span>,
+    <span class="doccomment">/// AOB market state
+    </span><span class="attribute">#[account(init,
+              seeds = [
+                  seeds::ORDERBOOK_MARKET_STATE,
+                  bond_manager.key().as_ref()
+              ]</span>,
+              bump,
+              space = <span class="number">8 </span>+ MarketState::LEN,
+              payer = payer,
+    )]
+    <span class="kw">pub </span>orderbook_market_state: AccountInfo&lt;<span class="lifetime">&#39;info</span>&gt;,
 
-    <span class="doccomment">/// AOB market bids</span>
-    <span class="attribute">#[<span class="ident">account</span>(<span class="kw-2">mut</span>)]</span>
-    <span class="kw">pub</span> <span class="ident">bids</span>: <span class="ident">AccountInfo</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span>,
+    <span class="doccomment">/// AOB market event queue
+    ///
+    /// Must be initialized
+    </span><span class="attribute">#[account(<span class="kw-2">mut</span>)]
+    </span><span class="kw">pub </span>event_queue: AccountInfo&lt;<span class="lifetime">&#39;info</span>&gt;,
 
-    <span class="doccomment">/// AOB market asks</span>
-    <span class="attribute">#[<span class="ident">account</span>(<span class="kw-2">mut</span>)]</span>
-    <span class="kw">pub</span> <span class="ident">asks</span>: <span class="ident">AccountInfo</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span>,
+    <span class="doccomment">/// AOB market bids
+    </span><span class="attribute">#[account(<span class="kw-2">mut</span>)]
+    </span><span class="kw">pub </span>bids: AccountInfo&lt;<span class="lifetime">&#39;info</span>&gt;,
 
-    <span class="doccomment">/// The authority that must sign to make this change</span>
-    <span class="kw">pub</span> <span class="ident">authority</span>: <span class="ident">Signer</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span>,
+    <span class="doccomment">/// AOB market asks
+    </span><span class="attribute">#[account(<span class="kw-2">mut</span>)]
+    </span><span class="kw">pub </span>asks: AccountInfo&lt;<span class="lifetime">&#39;info</span>&gt;,
 
-    <span class="doccomment">/// The airspace being modified</span>
-    <span class="comment">// #[account(has_one = authority @ BondsError::WrongAirspaceAuthorization)] fixme airspace</span>
-    <span class="kw">pub</span> <span class="ident">airspace</span>: <span class="ident">AccountInfo</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span>,
+    <span class="doccomment">/// The authority that must sign to make this change
+    </span><span class="kw">pub </span>authority: Signer&lt;<span class="lifetime">&#39;info</span>&gt;,
 
-    <span class="doccomment">/// The account paying rent for PDA initialization</span>
-    <span class="attribute">#[<span class="ident">account</span>(<span class="kw-2">mut</span>)]</span>
-    <span class="kw">pub</span> <span class="ident">payer</span>: <span class="ident">Signer</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span>,
+    <span class="doccomment">/// The airspace being modified
+    </span><span class="comment">// #[account(has_one = authority @ BondsError::WrongAirspaceAuthorization)] fixme airspace
+    </span><span class="kw">pub </span>airspace: AccountInfo&lt;<span class="lifetime">&#39;info</span>&gt;,
 
-    <span class="doccomment">/// Solana system program</span>
-    <span class="kw">pub</span> <span class="ident">system_program</span>: <span class="ident">Program</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span>, <span class="ident">System</span><span class="op">&gt;</span>,
+    <span class="doccomment">/// The account paying rent for PDA initialization
+    </span><span class="attribute">#[account(<span class="kw-2">mut</span>)]
+    </span><span class="kw">pub </span>payer: Signer&lt;<span class="lifetime">&#39;info</span>&gt;,
+
+    <span class="doccomment">/// Solana system program
+    </span><span class="kw">pub </span>system_program: Program&lt;<span class="lifetime">&#39;info</span>, System&gt;,
 }
 
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">handler</span>(<span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">InitializeOrderbook</span><span class="op">&gt;</span>, <span class="ident">params</span>: <span class="ident">InitializeOrderbookParams</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="ident">InitializeOrderbookParams</span> {
-        <span class="ident">min_base_order_size</span>,
-    } <span class="op">=</span> <span class="ident">params</span>;
+<span class="kw">pub fn </span>handler(ctx: Context&lt;InitializeOrderbook&gt;, params: InitializeOrderbookParams) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+    <span class="kw">let </span>InitializeOrderbookParams {
+        min_base_order_size,
+    } = params;
 
-    <span class="comment">// assign the bond market header data</span>
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">manager</span> <span class="op">=</span> <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">bond_manager</span>.<span class="ident">load_mut</span>()<span class="question-mark">?</span>;
-    <span class="ident">manager</span>.<span class="ident">orderbook_market_state</span> <span class="op">=</span> <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">orderbook_market_state</span>.<span class="ident">key</span>();
-    <span class="ident">manager</span>.<span class="ident">event_queue</span> <span class="op">=</span> <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">event_queue</span>.<span class="ident">key</span>();
-    <span class="ident">manager</span>.<span class="ident">asks</span> <span class="op">=</span> <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">asks</span>.<span class="ident">key</span>();
-    <span class="ident">manager</span>.<span class="ident">bids</span> <span class="op">=</span> <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">bids</span>.<span class="ident">key</span>();
+    <span class="comment">// assign the bond market header data
+    </span><span class="kw">let </span><span class="kw-2">mut </span>manager = ctx.accounts.bond_manager.load_mut()<span class="question-mark">?</span>;
+    manager.orderbook_market_state = ctx.accounts.orderbook_market_state.key();
+    manager.event_queue = ctx.accounts.event_queue.key();
+    manager.asks = ctx.accounts.asks.key();
+    manager.bids = ctx.accounts.bids.key();
 
-    <span class="comment">// initialize the asset agnostic orderbook</span>
-    <span class="kw">let</span> <span class="ident">program_id</span> <span class="op">=</span> <span class="ident">ctx</span>.<span class="ident">program_id</span>;
-    <span class="kw">let</span> <span class="ident">orderbook_accounts</span> <span class="op">=</span> <span class="ident">agnostic_orderbook::instruction::create_market::Accounts</span> {
-        <span class="ident">market</span>: <span class="kw-2">&amp;</span><span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">orderbook_market_state</span>.<span class="ident">to_account_info</span>(),
-        <span class="ident">event_queue</span>: <span class="kw-2">&amp;</span><span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">event_queue</span>.<span class="ident">to_account_info</span>(),
-        <span class="ident">bids</span>: <span class="kw-2">&amp;</span><span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">bids</span>.<span class="ident">to_account_info</span>(),
-        <span class="ident">asks</span>: <span class="kw-2">&amp;</span><span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">asks</span>.<span class="ident">to_account_info</span>(),
+    <span class="comment">// initialize the asset agnostic orderbook
+    </span><span class="kw">let </span>program_id = ctx.program_id;
+    <span class="kw">let </span>orderbook_accounts = agnostic_orderbook::instruction::create_market::Accounts {
+        market: <span class="kw-2">&amp;</span>ctx.accounts.orderbook_market_state.to_account_info(),
+        event_queue: <span class="kw-2">&amp;</span>ctx.accounts.event_queue.to_account_info(),
+        bids: <span class="kw-2">&amp;</span>ctx.accounts.bids.to_account_info(),
+        asks: <span class="kw-2">&amp;</span>ctx.accounts.asks.to_account_info(),
     };
-    <span class="kw">let</span> <span class="ident">orderbook_params</span> <span class="op">=</span> <span class="ident">agnostic_orderbook::instruction::create_market::Params</span> {
-        <span class="ident">min_base_order_size</span>,
-        <span class="ident">tick_size</span>: <span class="ident">TICK_SIZE</span>,
+    <span class="kw">let </span>orderbook_params = agnostic_orderbook::instruction::create_market::Params {
+        min_base_order_size,
+        tick_size: TICK_SIZE,
     };
 
-    <span class="ident">agnostic_orderbook::instruction::create_market::process</span>::<span class="op">&lt;</span><span class="ident">CallbackInfo</span><span class="op">&gt;</span>(
-        <span class="ident">program_id</span>,
-        <span class="ident">orderbook_accounts</span>,
-        <span class="ident">orderbook_params</span>,
+    agnostic_orderbook::instruction::create_market::process::&lt;CallbackInfo&gt;(
+        program_id,
+        orderbook_accounts,
+        orderbook_params,
     )<span class="question-mark">?</span>;
 
-    <span class="macro">emit!</span>(<span class="ident">OrderbookInitialized</span> {
-        <span class="ident">bond_manager</span>: <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">bond_manager</span>.<span class="ident">key</span>(),
-        <span class="ident">orderbook_market_state</span>: <span class="ident">manager</span>.<span class="ident">orderbook_market_state</span>,
-        <span class="ident">event_queue</span>: <span class="ident">manager</span>.<span class="ident">event_queue</span>,
-        <span class="ident">bids</span>: <span class="ident">manager</span>.<span class="ident">bids</span>,
-        <span class="ident">asks</span>: <span class="ident">manager</span>.<span class="ident">asks</span>,
-        <span class="ident">min_base_order_size</span>,
-        <span class="ident">tick_size</span>: <span class="ident">TICK_SIZE</span>
+    <span class="macro">emit!</span>(OrderbookInitialized {
+        bond_manager: ctx.accounts.bond_manager.key(),
+        orderbook_market_state: manager.orderbook_market_state,
+        event_queue: manager.event_queue,
+        bids: manager.bids,
+        asks: manager.asks,
+        min_base_order_size,
+        tick_size: TICK_SIZE
     });
 
     <span class="prelude-val">Ok</span>(())
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="jet_bonds" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0 (a55dd71d5 2022-09-19)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="jet_bonds" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

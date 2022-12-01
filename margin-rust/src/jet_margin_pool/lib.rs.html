@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `programs/margin-pool/src/lib.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>lib.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../normalize.css"><link rel="stylesheet" type="text/css" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script><script defer src="../../main.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../jet_margin_pool/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../jet_margin_pool/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../jet_margin_pool/index.html"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `programs/margin-pool/src/lib.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>lib.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../normalize.css"><link rel="stylesheet" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../ayu.css" disabled><link rel="stylesheet" href="../../dark.css" disabled><link rel="stylesheet" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script><script defer src="../../main.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../jet_margin_pool/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../jet_margin_pool/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../jet_margin_pool/index.html"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -234,241 +234,241 @@
 <span id="234">234</span>
 <span id="235">235</span>
 <span id="236">236</span>
-</pre><pre class="rust"><code><span class="comment">// SPDX-License-Identifier: AGPL-3.0-or-later</span>
-<span class="comment">//</span>
-<span class="comment">// Copyright (C) 2022 JET PROTOCOL HOLDINGS, LLC.</span>
-<span class="comment">//</span>
-<span class="comment">// This program is free software: you can redistribute it and/or modify</span>
-<span class="comment">// it under the terms of the GNU Affero General Public License as published by</span>
-<span class="comment">// the Free Software Foundation, either version 3 of the License, or</span>
-<span class="comment">// (at your option) any later version.</span>
-<span class="comment">//</span>
-<span class="comment">// This program is distributed in the hope that it will be useful,</span>
-<span class="comment">// but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
-<span class="comment">// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
-<span class="comment">// GNU Affero General Public License for more details.</span>
-<span class="comment">//</span>
-<span class="comment">// You should have received a copy of the GNU Affero General Public License</span>
-<span class="comment">// along with this program.  If not, see &lt;https://www.gnu.org/licenses/&gt;.</span>
+</pre><pre class="rust"><code><span class="comment">// SPDX-License-Identifier: AGPL-3.0-or-later
+//
+// Copyright (C) 2022 JET PROTOCOL HOLDINGS, LLC.
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Affero General Public License for more details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program.  If not, see &lt;https://www.gnu.org/licenses/&gt;.
 
-<span class="kw">use</span> <span class="ident">anchor_lang::prelude</span>::<span class="kw-2">*</span>;
+</span><span class="kw">use </span>anchor_lang::prelude::<span class="kw-2">*</span>;
 
-<span class="kw">mod</span> <span class="ident">instructions</span>;
-<span class="kw">mod</span> <span class="ident">state</span>;
-<span class="kw">mod</span> <span class="ident">util</span>;
-<span class="kw">use</span> <span class="ident">instructions</span>::<span class="kw-2">*</span>;
+<span class="kw">mod </span>instructions;
+<span class="kw">mod </span>state;
+<span class="kw">mod </span>util;
+<span class="kw">use </span>instructions::<span class="kw-2">*</span>;
 
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">state</span>::{<span class="ident">MarginPool</span>, <span class="ident">MarginPoolConfig</span>, <span class="ident">PoolFlags</span>};
-<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">events</span>;
+<span class="kw">pub use </span>state::{MarginPool, MarginPoolConfig, PoolFlags};
+<span class="kw">pub mod </span>events;
 
 <span class="macro">declare_id!</span>(<span class="string">&quot;JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ&quot;</span>);
 
-<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">authority</span> {
-    <span class="kw">use</span> <span class="kw">super</span>::<span class="kw-2">*</span>;
+<span class="kw">pub mod </span>authority {
+    <span class="kw">use super</span>::<span class="kw-2">*</span>;
 
     <span class="macro">declare_id!</span>(<span class="string">&quot;Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS&quot;</span>);
 }
 
-<span class="attribute">#[<span class="ident">program</span>]</span>
-<span class="kw">mod</span> <span class="ident">jet_margin_pool</span> {
-    <span class="kw">use</span> <span class="kw">super</span>::<span class="kw-2">*</span>;
+<span class="attribute">#[program]
+</span><span class="kw">mod </span>jet_margin_pool {
+    <span class="kw">use super</span>::<span class="kw-2">*</span>;
 
-    <span class="doccomment">/// Create a new pool for borrowing and lending</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">create_pool</span>(<span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">CreatePool</span><span class="op">&gt;</span>, <span class="ident">fee_destination</span>: <span class="ident">Pubkey</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="ident">instructions::create_pool_handler</span>(<span class="ident">ctx</span>, <span class="ident">fee_destination</span>)
+    <span class="doccomment">/// Create a new pool for borrowing and lending
+    </span><span class="kw">pub fn </span>create_pool(ctx: Context&lt;CreatePool&gt;, fee_destination: Pubkey) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        instructions::create_pool_handler(ctx, fee_destination)
     }
 
-    <span class="doccomment">/// Configure an existing pool</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">configure</span>(<span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">Configure</span><span class="op">&gt;</span>, <span class="ident">config</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">MarginPoolConfig</span><span class="op">&gt;</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="ident">instructions::configure_handler</span>(<span class="ident">ctx</span>, <span class="ident">config</span>)
+    <span class="doccomment">/// Configure an existing pool
+    </span><span class="kw">pub fn </span>configure(ctx: Context&lt;Configure&gt;, config: <span class="prelude-ty">Option</span>&lt;MarginPoolConfig&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        instructions::configure_handler(ctx, config)
     }
 
-    <span class="doccomment">/// Accrue interest on the pool, and collect any fees.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">collect</span>(<span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">Collect</span><span class="op">&gt;</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="ident">instructions::collect_handler</span>(<span class="ident">ctx</span>)
+    <span class="doccomment">/// Accrue interest on the pool, and collect any fees.
+    </span><span class="kw">pub fn </span>collect(ctx: Context&lt;Collect&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        instructions::collect_handler(ctx)
     }
 
-    <span class="doccomment">/// Deposit tokens into the pool in exchange for notes</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">deposit</span>(<span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">Deposit</span><span class="op">&gt;</span>, <span class="ident">change_kind</span>: <span class="ident">ChangeKind</span>, <span class="ident">amount</span>: <span class="ident">u64</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="ident">instructions::deposit_handler</span>(<span class="ident">ctx</span>, <span class="ident">change_kind</span>, <span class="ident">amount</span>)
+    <span class="doccomment">/// Deposit tokens into the pool in exchange for notes
+    </span><span class="kw">pub fn </span>deposit(ctx: Context&lt;Deposit&gt;, change_kind: ChangeKind, amount: u64) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        instructions::deposit_handler(ctx, change_kind, amount)
     }
 
-    <span class="doccomment">/// Withdraw tokens from the pool, exchanging in previously received</span>
-    <span class="doccomment">/// deposit notes.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">withdraw</span>(<span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">Withdraw</span><span class="op">&gt;</span>, <span class="ident">change_kind</span>: <span class="ident">ChangeKind</span>, <span class="ident">amount</span>: <span class="ident">u64</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="ident">instructions::withdraw_handler</span>(<span class="ident">ctx</span>, <span class="ident">change_kind</span>, <span class="ident">amount</span>)
+    <span class="doccomment">/// Withdraw tokens from the pool, exchanging in previously received
+    /// deposit notes.
+    </span><span class="kw">pub fn </span>withdraw(ctx: Context&lt;Withdraw&gt;, change_kind: ChangeKind, amount: u64) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        instructions::withdraw_handler(ctx, change_kind, amount)
     }
 
-    <span class="doccomment">/// Borrow tokens using a margin account</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">margin_borrow</span>(
-        <span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">MarginBorrow</span><span class="op">&gt;</span>,
-        <span class="ident">change_kind</span>: <span class="ident">ChangeKind</span>,
-        <span class="ident">amount</span>: <span class="ident">u64</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="ident">instructions::margin_borrow_handler</span>(<span class="ident">ctx</span>, <span class="ident">change_kind</span>, <span class="ident">amount</span>)
+    <span class="doccomment">/// Borrow tokens using a margin account
+    </span><span class="kw">pub fn </span>margin_borrow(
+        ctx: Context&lt;MarginBorrow&gt;,
+        change_kind: ChangeKind,
+        amount: u64,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        instructions::margin_borrow_handler(ctx, change_kind, amount)
     }
 
-    <span class="doccomment">/// Repay a loan with a maximum amount.</span>
-    <span class="doccomment">/// If the loan balance is lower than the amount, the excess is left in the</span>
-    <span class="doccomment">/// deposit account.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">margin_repay</span>(
-        <span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">MarginRepay</span><span class="op">&gt;</span>,
-        <span class="ident">change_kind</span>: <span class="ident">ChangeKind</span>,
-        <span class="ident">amount</span>: <span class="ident">u64</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="ident">instructions::margin_repay_handler</span>(<span class="ident">ctx</span>, <span class="ident">change_kind</span>, <span class="ident">amount</span>)
+    <span class="doccomment">/// Repay a loan with a maximum amount.
+    /// If the loan balance is lower than the amount, the excess is left in the
+    /// deposit account.
+    </span><span class="kw">pub fn </span>margin_repay(
+        ctx: Context&lt;MarginRepay&gt;,
+        change_kind: ChangeKind,
+        amount: u64,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        instructions::margin_repay_handler(ctx, change_kind, amount)
     }
 
-    <span class="doccomment">/// Repay a margin account debt from an outside token account</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">repay</span>(<span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">Repay</span><span class="op">&gt;</span>, <span class="ident">change_kind</span>: <span class="ident">ChangeKind</span>, <span class="ident">amount</span>: <span class="ident">u64</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="ident">instructions::repay_handler</span>(<span class="ident">ctx</span>, <span class="ident">change_kind</span>, <span class="ident">amount</span>)
+    <span class="doccomment">/// Repay a margin account debt from an outside token account
+    </span><span class="kw">pub fn </span>repay(ctx: Context&lt;Repay&gt;, change_kind: ChangeKind, amount: u64) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        instructions::repay_handler(ctx, change_kind, amount)
     }
 
-    <span class="doccomment">/// Update the pool position on a margin account</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">margin_refresh_position</span>(<span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">MarginRefreshPosition</span><span class="op">&gt;</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="ident">instructions::margin_refresh_position_handler</span>(<span class="ident">ctx</span>)
+    <span class="doccomment">/// Update the pool position on a margin account
+    </span><span class="kw">pub fn </span>margin_refresh_position(ctx: Context&lt;MarginRefreshPosition&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        instructions::margin_refresh_position_handler(ctx)
     }
 
-    <span class="doccomment">/// Creates the token account to track the loan notes,</span>
-    <span class="doccomment">/// then requests margin to register the position</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">register_loan</span>(<span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">RegisterLoan</span><span class="op">&gt;</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="ident">instructions::register_loan_handler</span>(<span class="ident">ctx</span>)
+    <span class="doccomment">/// Creates the token account to track the loan notes,
+    /// then requests margin to register the position
+    </span><span class="kw">pub fn </span>register_loan(ctx: Context&lt;RegisterLoan&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        instructions::register_loan_handler(ctx)
     }
 
-    <span class="doccomment">/// Closes a previously opened loan token account</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">close_loan</span>(<span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">CloseLoan</span><span class="op">&gt;</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="ident">instructions::close_loan_handler</span>(<span class="ident">ctx</span>)
+    <span class="doccomment">/// Closes a previously opened loan token account
+    </span><span class="kw">pub fn </span>close_loan(ctx: Context&lt;CloseLoan&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        instructions::close_loan_handler(ctx)
     }
 
-    <span class="doccomment">/// Administrative function for moving loans between accounts</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">admin_transfer_loan</span>(<span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">AdminTransferLoan</span><span class="op">&gt;</span>, <span class="ident">amount</span>: <span class="ident">u64</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="ident">instructions::admin_transfer_loan_handler</span>(<span class="ident">ctx</span>, <span class="ident">amount</span>)
+    <span class="doccomment">/// Administrative function for moving loans between accounts
+    </span><span class="kw">pub fn </span>admin_transfer_loan(ctx: Context&lt;AdminTransferLoan&gt;, amount: u64) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        instructions::admin_transfer_loan_handler(ctx, amount)
     }
 }
 
-<span class="doccomment">/// Interface for changing the token value of an account through pool instructions</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">AnchorSerialize</span>, <span class="ident">AnchorDeserialize</span>, <span class="ident">Debug</span>, <span class="ident">Clone</span>, <span class="ident">Copy</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">TokenChange</span> {
-    <span class="doccomment">/// The kind of change to be applied</span>
-    <span class="kw">pub</span> <span class="ident">kind</span>: <span class="ident">ChangeKind</span>,
-    <span class="doccomment">/// The number of tokens applied in the change</span>
-    <span class="kw">pub</span> <span class="ident">tokens</span>: <span class="ident">u64</span>,
+<span class="doccomment">/// Interface for changing the token value of an account through pool instructions
+</span><span class="attribute">#[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone, Copy)]
+</span><span class="kw">pub struct </span>TokenChange {
+    <span class="doccomment">/// The kind of change to be applied
+    </span><span class="kw">pub </span>kind: ChangeKind,
+    <span class="doccomment">/// The number of tokens applied in the change
+    </span><span class="kw">pub </span>tokens: u64,
 }
 
-<span class="kw">impl</span> <span class="ident">TokenChange</span> {
-    <span class="doccomment">/// Sets a position&#39;s balance to the supplied value, increasing or decreasing</span>
-    <span class="doccomment">/// the balance depending on the instruction type.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// Withdrawing with `set(0)` will withdraw all tokens in an account.</span>
-    <span class="doccomment">/// Borrowing with `set(100_000)` will borrow additional tokens until the</span>
-    <span class="doccomment">/// provided value is reached. If there are already 40_000 tokens borrowed,</span>
-    <span class="doccomment">/// an additional 60_000 will be borrowed.</span>
-    <span class="kw">pub</span> <span class="kw">const</span> <span class="kw">fn</span> <span class="ident">set</span>(<span class="ident">value</span>: <span class="ident">u64</span>) -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span> {
-            <span class="ident">kind</span>: <span class="ident">ChangeKind::SetTo</span>,
-            <span class="ident">tokens</span>: <span class="ident">value</span>,
+<span class="kw">impl </span>TokenChange {
+    <span class="doccomment">/// Sets a position&#39;s balance to the supplied value, increasing or decreasing
+    /// the balance depending on the instruction type.
+    ///
+    /// Withdrawing with `set(0)` will withdraw all tokens in an account.
+    /// Borrowing with `set(100_000)` will borrow additional tokens until the
+    /// provided value is reached. If there are already 40_000 tokens borrowed,
+    /// an additional 60_000 will be borrowed.
+    </span><span class="kw">pub const fn </span>set(value: u64) -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            kind: ChangeKind::SetTo,
+            tokens: value,
         }
     }
-    <span class="doccomment">/// Shifts a position&#39;s balance by the supplied value, increasing or decreasing</span>
-    <span class="doccomment">/// the balance depending on the instruction type.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// Withdrawing with `shift(100_000)` tokens will decerase a balance by the amount.</span>
-    <span class="doccomment">/// Depositing with `shift(100_000)` tokens will increaes a balance by the amount.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// Refer to the various isntructions for the behaviour of when instructions can</span>
-    <span class="doccomment">/// fail.</span>
-    <span class="kw">pub</span> <span class="kw">const</span> <span class="kw">fn</span> <span class="ident">shift</span>(<span class="ident">value</span>: <span class="ident">u64</span>) -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span> {
-            <span class="ident">kind</span>: <span class="ident">ChangeKind::ShiftBy</span>,
-            <span class="ident">tokens</span>: <span class="ident">value</span>,
-        }
-    }
-
-    <span class="doccomment">/// The amount of the token change, expressed as tokens.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// [Amount] can also be notes when interacting with pools, however it is</span>
-    <span class="doccomment">/// always set to tokens for `TokenChange`.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">amount</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Amount</span> {
-        <span class="ident">Amount::tokens</span>(<span class="self">self</span>.<span class="ident">tokens</span>)
-    }
-}
-
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">AnchorSerialize</span>, <span class="ident">AnchorDeserialize</span>, <span class="ident">Debug</span>, <span class="ident">Clone</span>, <span class="ident">Copy</span>)]</span>
-<span class="attribute">#[<span class="ident">repr</span>(<span class="ident">u8</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">ChangeKind</span> {
-    <span class="ident">SetTo</span>,
-    <span class="ident">ShiftBy</span>,
-}
-
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">AnchorSerialize</span>, <span class="ident">AnchorDeserialize</span>, <span class="ident">Debug</span>, <span class="ident">Clone</span>, <span class="ident">Copy</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">AmountKind</span> {
-    <span class="ident">Tokens</span>,
-    <span class="ident">Notes</span>,
-}
-
-<span class="doccomment">/// Represent an amount of some value (like tokens, or notes)</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">AnchorSerialize</span>, <span class="ident">AnchorDeserialize</span>, <span class="ident">Debug</span>, <span class="ident">Clone</span>, <span class="ident">Copy</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Amount</span> {
-    <span class="ident">kind</span>: <span class="ident">AmountKind</span>,
-    <span class="ident">value</span>: <span class="ident">u64</span>,
-}
-
-<span class="kw">impl</span> <span class="ident">Amount</span> {
-    <span class="kw">pub</span> <span class="kw">const</span> <span class="kw">fn</span> <span class="ident">tokens</span>(<span class="ident">value</span>: <span class="ident">u64</span>) -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span> {
-            <span class="ident">kind</span>: <span class="ident">AmountKind::Tokens</span>,
-            <span class="ident">value</span>,
+    <span class="doccomment">/// Shifts a position&#39;s balance by the supplied value, increasing or decreasing
+    /// the balance depending on the instruction type.
+    ///
+    /// Withdrawing with `shift(100_000)` tokens will decerase a balance by the amount.
+    /// Depositing with `shift(100_000)` tokens will increaes a balance by the amount.
+    ///
+    /// Refer to the various isntructions for the behaviour of when instructions can
+    /// fail.
+    </span><span class="kw">pub const fn </span>shift(value: u64) -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            kind: ChangeKind::ShiftBy,
+            tokens: value,
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">const</span> <span class="kw">fn</span> <span class="ident">notes</span>(<span class="ident">value</span>: <span class="ident">u64</span>) -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span> {
-            <span class="ident">kind</span>: <span class="ident">AmountKind::Notes</span>,
-            <span class="ident">value</span>,
-        }
-    }
-
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">value</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">u64</span> {
-        <span class="self">self</span>.<span class="ident">value</span>
+    <span class="doccomment">/// The amount of the token change, expressed as tokens.
+    ///
+    /// [Amount] can also be notes when interacting with pools, however it is
+    /// always set to tokens for `TokenChange`.
+    </span><span class="kw">pub fn </span>amount(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Amount {
+        Amount::tokens(<span class="self">self</span>.tokens)
     }
 }
 
-<span class="attribute">#[<span class="ident">error_code</span>]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">ErrorCode</span> {
-    <span class="doccomment">/// 141100 - The pool is currently disabled</span>
-    <span class="attribute">#[<span class="ident">msg</span>(<span class="string">&quot;The pool is currently disabled&quot;</span>)]</span>
-    <span class="ident">Disabled</span> <span class="op">=</span> <span class="number">135_100</span>,
+<span class="attribute">#[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone, Copy)]
+#[repr(u8)]
+</span><span class="kw">pub enum </span>ChangeKind {
+    SetTo,
+    ShiftBy,
+}
 
-    <span class="doccomment">/// 141101 - Interest accrual is too far behind</span>
-    <span class="attribute">#[<span class="ident">msg</span>(<span class="string">&quot;Interest accrual is too far behind&quot;</span>)]</span>
-    <span class="ident">InterestAccrualBehind</span>,
+<span class="attribute">#[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone, Copy)]
+</span><span class="kw">pub enum </span>AmountKind {
+    Tokens,
+    Notes,
+}
 
-    <span class="doccomment">/// 141102 - The pool currently only allows deposits</span>
-    <span class="attribute">#[<span class="ident">msg</span>(<span class="string">&quot;The pool currently only allows deposits&quot;</span>)]</span>
-    <span class="ident">DepositsOnly</span>,
+<span class="doccomment">/// Represent an amount of some value (like tokens, or notes)
+</span><span class="attribute">#[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone, Copy)]
+</span><span class="kw">pub struct </span>Amount {
+    kind: AmountKind,
+    value: u64,
+}
 
-    <span class="doccomment">/// 141103 - There are not enough tokens in a pool to fulfil transaction</span>
-    <span class="attribute">#[<span class="ident">msg</span>(<span class="string">&quot;The pool does not have sufficient liquidity for the transaction&quot;</span>)]</span>
-    <span class="ident">InsufficientLiquidity</span>,
+<span class="kw">impl </span>Amount {
+    <span class="kw">pub const fn </span>tokens(value: u64) -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            kind: AmountKind::Tokens,
+            value,
+        }
+    }
 
-    <span class="doccomment">/// 141104 - An invalid amount has been supplied</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// This is used when an `Amount` has an invalid value</span>
-    <span class="attribute">#[<span class="ident">msg</span>(<span class="string">&quot;An invalid amount has been supplied&quot;</span>)]</span>
-    <span class="ident">InvalidAmount</span>,
+    <span class="kw">pub const fn </span>notes(value: u64) -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            kind: AmountKind::Notes,
+            value,
+        }
+    }
 
-    <span class="doccomment">/// 141105 - The oracle is not reporting a valid price</span>
-    <span class="ident">InvalidPoolPrice</span>,
+    <span class="kw">pub fn </span>value(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; u64 {
+        <span class="self">self</span>.value
+    }
+}
 
-    <span class="doccomment">/// 141106 - The oracle account is not valid</span>
-    <span class="ident">InvalidPoolOracle</span>,
+<span class="attribute">#[error_code]
+</span><span class="kw">pub enum </span>ErrorCode {
+    <span class="doccomment">/// 141100 - The pool is currently disabled
+    </span><span class="attribute">#[msg(<span class="string">&quot;The pool is currently disabled&quot;</span>)]
+    </span>Disabled = <span class="number">135_100</span>,
 
-    <span class="doccomment">/// 141107 - Tried to set an invalid token value</span>
-    <span class="attribute">#[<span class="ident">msg</span>(<span class="string">&quot;An invalid `SetTo` value was given for a `TokenChange`&quot;</span>)]</span>
-    <span class="ident">InvalidSetTo</span>,
+    <span class="doccomment">/// 141101 - Interest accrual is too far behind
+    </span><span class="attribute">#[msg(<span class="string">&quot;Interest accrual is too far behind&quot;</span>)]
+    </span>InterestAccrualBehind,
 
-    <span class="doccomment">/// 141108 - Attempt repayment of more tokens than total outstanding</span>
-    <span class="ident">RepaymentExceedsTotalOutstanding</span>,
+    <span class="doccomment">/// 141102 - The pool currently only allows deposits
+    </span><span class="attribute">#[msg(<span class="string">&quot;The pool currently only allows deposits&quot;</span>)]
+    </span>DepositsOnly,
+
+    <span class="doccomment">/// 141103 - There are not enough tokens in a pool to fulfil transaction
+    </span><span class="attribute">#[msg(<span class="string">&quot;The pool does not have sufficient liquidity for the transaction&quot;</span>)]
+    </span>InsufficientLiquidity,
+
+    <span class="doccomment">/// 141104 - An invalid amount has been supplied
+    ///
+    /// This is used when an `Amount` has an invalid value
+    </span><span class="attribute">#[msg(<span class="string">&quot;An invalid amount has been supplied&quot;</span>)]
+    </span>InvalidAmount,
+
+    <span class="doccomment">/// 141105 - The oracle is not reporting a valid price
+    </span>InvalidPoolPrice,
+
+    <span class="doccomment">/// 141106 - The oracle account is not valid
+    </span>InvalidPoolOracle,
+
+    <span class="doccomment">/// 141107 - Tried to set an invalid token value
+    </span><span class="attribute">#[msg(<span class="string">&quot;An invalid `SetTo` value was given for a `TokenChange`&quot;</span>)]
+    </span>InvalidSetTo,
+
+    <span class="doccomment">/// 141108 - Attempt repayment of more tokens than total outstanding
+    </span>RepaymentExceedsTotalOutstanding,
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="jet_margin_pool" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0 (a55dd71d5 2022-09-19)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="jet_margin_pool" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

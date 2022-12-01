@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `programs/margin/src/state/config.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>config.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../jet_margin/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../jet_margin/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../jet_margin/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `programs/margin/src/state/config.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>config.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../normalize.css"><link rel="stylesheet" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../ayu.css" disabled><link rel="stylesheet" href="../../../dark.css" disabled><link rel="stylesheet" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../jet_margin/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../jet_margin/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../jet_margin/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -167,174 +167,174 @@
 <span id="167">167</span>
 <span id="168">168</span>
 <span id="169">169</span>
-</pre><pre class="rust"><code><span class="comment">// SPDX-License-Identifier: AGPL-3.0-or-later</span>
-<span class="comment">//</span>
-<span class="comment">// Copyright (C) 2022 JET PROTOCOL HOLDINGS, LLC.</span>
-<span class="comment">//</span>
-<span class="comment">// This program is free software: you can redistribute it and/or modify</span>
-<span class="comment">// it under the terms of the GNU Affero General Public License as published by</span>
-<span class="comment">// the Free Software Foundation, either version 3 of the License, or</span>
-<span class="comment">// (at your option) any later version.</span>
-<span class="comment">//</span>
-<span class="comment">// This program is distributed in the hope that it will be useful,</span>
-<span class="comment">// but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
-<span class="comment">// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
-<span class="comment">// GNU Affero General Public License for more details.</span>
-<span class="comment">//</span>
-<span class="comment">// You should have received a copy of the GNU Affero General Public License</span>
-<span class="comment">// along with this program.  If not, see &lt;https://www.gnu.org/licenses/&gt;.</span>
+</pre><pre class="rust"><code><span class="comment">// SPDX-License-Identifier: AGPL-3.0-or-later
+//
+// Copyright (C) 2022 JET PROTOCOL HOLDINGS, LLC.
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Affero General Public License for more details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program.  If not, see &lt;https://www.gnu.org/licenses/&gt;.
 
-<span class="kw">use</span> <span class="ident">anchor_lang::prelude</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident">bytemuck::Contiguous</span>;
+</span><span class="kw">use </span>anchor_lang::prelude::<span class="kw-2">*</span>;
+<span class="kw">use </span>bytemuck::Contiguous;
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::ErrorCode</span>;
+<span class="kw">use </span><span class="kw">crate</span>::ErrorCode;
 
-<span class="doccomment">/// Description of the token&#39;s usage</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">AnchorSerialize</span>, <span class="ident">AnchorDeserialize</span>, <span class="ident">Contiguous</span>, <span class="ident">Eq</span>, <span class="ident">PartialEq</span>, <span class="ident">Clone</span>, <span class="ident">Copy</span>, <span class="ident">Debug</span>)]</span>
-<span class="attribute">#[<span class="ident">repr</span>(<span class="ident">u32</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">TokenKind</span> {
-    <span class="doccomment">/// The token can be used as collateral</span>
-    <span class="ident">Collateral</span> <span class="op">=</span> <span class="number">1</span>,
+<span class="doccomment">/// Description of the token&#39;s usage
+</span><span class="attribute">#[derive(AnchorSerialize, AnchorDeserialize, Contiguous, Eq, PartialEq, Clone, Copy, Debug)]
+#[repr(u32)]
+</span><span class="kw">pub enum </span>TokenKind {
+    <span class="doccomment">/// The token can be used as collateral
+    </span>Collateral = <span class="number">1</span>,
 
-    <span class="doccomment">/// The token represents a debt that needs to be repaid</span>
-    <span class="ident">Claim</span>,
+    <span class="doccomment">/// The token represents a debt that needs to be repaid
+    </span>Claim,
 
-    <span class="doccomment">/// The token balance is managed by a trusted adapter to represent the amount of collateral</span>
-    <span class="doccomment">/// custodied by that adapter. The token account is owned by the adapter. Collateral</span>
-    <span class="doccomment">/// is accessed through instructions to the adapter.</span>
-    <span class="ident">AdapterCollateral</span>,
+    <span class="doccomment">/// The token balance is managed by a trusted adapter to represent the amount of collateral
+    /// custodied by that adapter. The token account is owned by the adapter. Collateral
+    /// is accessed through instructions to the adapter.
+    </span>AdapterCollateral,
 }
 
-<span class="kw">impl</span> <span class="ident">Default</span> <span class="kw">for</span> <span class="ident">TokenKind</span> {
-    <span class="kw">fn</span> <span class="ident">default</span>() -&gt; <span class="ident">TokenKind</span> {
-        <span class="ident"><span class="self">Self</span>::Collateral</span>
+<span class="kw">impl </span>Default <span class="kw">for </span>TokenKind {
+    <span class="kw">fn </span>default() -&gt; TokenKind {
+        <span class="self">Self</span>::Collateral
     }
 }
 
-<span class="kw">impl</span> <span class="ident">From</span><span class="op">&lt;</span><span class="ident">jet_metadata::TokenKind</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">TokenKind</span> {
-    <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">kind</span>: <span class="ident">jet_metadata::TokenKind</span>) -&gt; <span class="self">Self</span> {
-        <span class="kw">match</span> <span class="ident">kind</span> {
-            <span class="ident">jet_metadata::TokenKind::NonCollateral</span> =&gt; <span class="ident"><span class="self">Self</span>::Collateral</span>,
-            <span class="ident">jet_metadata::TokenKind::Collateral</span> =&gt; <span class="ident"><span class="self">Self</span>::Collateral</span>,
-            <span class="ident">jet_metadata::TokenKind::Claim</span> =&gt; <span class="ident"><span class="self">Self</span>::Claim</span>,
-            <span class="ident">jet_metadata::TokenKind::AdapterCollateral</span> =&gt; <span class="ident"><span class="self">Self</span>::AdapterCollateral</span>,
+<span class="kw">impl </span>From&lt;jet_metadata::TokenKind&gt; <span class="kw">for </span>TokenKind {
+    <span class="kw">fn </span>from(kind: jet_metadata::TokenKind) -&gt; <span class="self">Self </span>{
+        <span class="kw">match </span>kind {
+            jet_metadata::TokenKind::NonCollateral =&gt; <span class="self">Self</span>::Collateral,
+            jet_metadata::TokenKind::Collateral =&gt; <span class="self">Self</span>::Collateral,
+            jet_metadata::TokenKind::Claim =&gt; <span class="self">Self</span>::Claim,
+            jet_metadata::TokenKind::AdapterCollateral =&gt; <span class="self">Self</span>::AdapterCollateral,
         }
     }
 }
 
-<span class="doccomment">/// The configuration account specifying parameters for a token when used</span>
-<span class="doccomment">/// in a position within a margin account.</span>
-<span class="attribute">#[<span class="ident">account</span>]</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Eq</span>, <span class="ident">PartialEq</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">TokenConfig</span> {
-    <span class="doccomment">/// The mint for the token</span>
-    <span class="kw">pub</span> <span class="ident">mint</span>: <span class="ident">Pubkey</span>,
+<span class="doccomment">/// The configuration account specifying parameters for a token when used
+/// in a position within a margin account.
+</span><span class="attribute">#[account]
+#[derive(Debug, Eq, PartialEq)]
+</span><span class="kw">pub struct </span>TokenConfig {
+    <span class="doccomment">/// The mint for the token
+    </span><span class="kw">pub </span>mint: Pubkey,
 
-    <span class="doccomment">/// The mint for the underlying token represented, if any</span>
-    <span class="kw">pub</span> <span class="ident">underlying_mint</span>: <span class="ident">Pubkey</span>,
+    <span class="doccomment">/// The mint for the underlying token represented, if any
+    </span><span class="kw">pub </span>underlying_mint: Pubkey,
 
-    <span class="doccomment">/// The space this config is valid within</span>
-    <span class="kw">pub</span> <span class="ident">airspace</span>: <span class="ident">Pubkey</span>,
+    <span class="doccomment">/// The space this config is valid within
+    </span><span class="kw">pub </span>airspace: Pubkey,
 
-    <span class="doccomment">/// The administrator of this token, which has the authority to provide information</span>
-    <span class="doccomment">/// about (e.g. prices) and otherwise modify position states for these tokens.</span>
-    <span class="kw">pub</span> <span class="ident">admin</span>: <span class="ident">TokenAdmin</span>,
+    <span class="doccomment">/// The administrator of this token, which has the authority to provide information
+    /// about (e.g. prices) and otherwise modify position states for these tokens.
+    </span><span class="kw">pub </span>admin: TokenAdmin,
 
-    <span class="doccomment">/// Description of this token</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// This determines the way the margin program values a token as a position in a</span>
-    <span class="doccomment">/// margin account.</span>
-    <span class="kw">pub</span> <span class="ident">token_kind</span>: <span class="ident">TokenKind</span>,
+    <span class="doccomment">/// Description of this token
+    ///
+    /// This determines the way the margin program values a token as a position in a
+    /// margin account.
+    </span><span class="kw">pub </span>token_kind: TokenKind,
 
-    <span class="doccomment">/// A modifier to adjust the token value, based on the kind of token</span>
-    <span class="kw">pub</span> <span class="ident">value_modifier</span>: <span class="ident">u16</span>,
+    <span class="doccomment">/// A modifier to adjust the token value, based on the kind of token
+    </span><span class="kw">pub </span>value_modifier: u16,
 
-    <span class="doccomment">/// The maximum staleness (seconds) that&#39;s acceptable for balances of this token</span>
-    <span class="kw">pub</span> <span class="ident">max_staleness</span>: <span class="ident">u64</span>,
+    <span class="doccomment">/// The maximum staleness (seconds) that&#39;s acceptable for balances of this token
+    </span><span class="kw">pub </span>max_staleness: u64,
 }
 
-<span class="kw">impl</span> <span class="ident">TokenConfig</span> {
-    <span class="kw">pub</span> <span class="kw">const</span> <span class="ident">SPACE</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="number">8</span> <span class="op">+</span> <span class="number">2</span> <span class="op">+</span> <span class="ident">std::mem::size_of</span>::<span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span>();
+<span class="kw">impl </span>TokenConfig {
+    <span class="kw">pub const </span>SPACE: usize = <span class="number">8 </span>+ <span class="number">2 </span>+ std::mem::size_of::&lt;<span class="self">Self</span>&gt;();
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">validate</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">underlying_mint</span> <span class="op">==</span> <span class="ident">Pubkey::default</span>() {
+    <span class="kw">pub fn </span>validate(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        <span class="kw">if </span><span class="self">self</span>.underlying_mint == Pubkey::default() {
             <span class="macro">msg!</span>(<span class="string">&quot;the underlying mint must be set&quot;</span>);
-            <span class="kw">return</span> <span class="macro">err!</span>(<span class="ident">ErrorCode::InvalidConfig</span>);
+            <span class="kw">return </span><span class="macro">err!</span>(ErrorCode::InvalidConfig);
         }
 
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">adapter_program</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Pubkey</span><span class="op">&gt;</span> {
-        <span class="kw">match</span> <span class="self">self</span>.<span class="ident">admin</span> {
-            <span class="ident">TokenAdmin::Adapter</span>(<span class="ident">address</span>) =&gt; <span class="prelude-val">Some</span>(<span class="ident">address</span>),
-            <span class="kw">_</span> =&gt; <span class="prelude-val">None</span>,
+    <span class="kw">pub fn </span>adapter_program(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;Pubkey&gt; {
+        <span class="kw">match </span><span class="self">self</span>.admin {
+            TokenAdmin::Adapter(address) =&gt; <span class="prelude-val">Some</span>(address),
+            <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">oracle</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">TokenOracle</span><span class="op">&gt;</span> {
-        <span class="kw">match</span> <span class="self">self</span>.<span class="ident">admin</span> {
-            <span class="ident">TokenAdmin::Margin</span> { <span class="ident">oracle</span> } =&gt; <span class="prelude-val">Some</span>(<span class="ident">oracle</span>),
-            <span class="kw">_</span> =&gt; <span class="prelude-val">None</span>,
+    <span class="kw">pub fn </span>oracle(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;TokenOracle&gt; {
+        <span class="kw">match </span><span class="self">self</span>.admin {
+            TokenAdmin::Margin { oracle } =&gt; <span class="prelude-val">Some</span>(oracle),
+            <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
         }
     }
 }
 
-<span class="doccomment">/// Information about where to find the oracle data for a token</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">AnchorSerialize</span>, <span class="ident">AnchorDeserialize</span>, <span class="ident">Debug</span>, <span class="ident">Eq</span>, <span class="ident">PartialEq</span>, <span class="ident">Clone</span>, <span class="ident">Copy</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">TokenOracle</span> {
-    <span class="ident">Pyth</span> {
-        <span class="doccomment">/// The pyth address containing price information for a token.</span>
-        <span class="ident">price</span>: <span class="ident">Pubkey</span>,
+<span class="doccomment">/// Information about where to find the oracle data for a token
+</span><span class="attribute">#[derive(AnchorSerialize, AnchorDeserialize, Debug, Eq, PartialEq, Clone, Copy)]
+</span><span class="kw">pub enum </span>TokenOracle {
+    Pyth {
+        <span class="doccomment">/// The pyth address containing price information for a token.
+        </span>price: Pubkey,
 
-        <span class="doccomment">/// The pyth address with product information for a token</span>
-        <span class="ident">product</span>: <span class="ident">Pubkey</span>,
+        <span class="doccomment">/// The pyth address with product information for a token
+        </span>product: Pubkey,
     },
 }
 
-<span class="doccomment">/// Description of which program administers a token</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">AnchorSerialize</span>, <span class="ident">AnchorDeserialize</span>, <span class="ident">Debug</span>, <span class="ident">Eq</span>, <span class="ident">PartialEq</span>, <span class="ident">Clone</span>, <span class="ident">Copy</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">TokenAdmin</span> {
-    <span class="doccomment">/// This margin program administers the token directly</span>
-    <span class="ident">Margin</span> {
-        <span class="doccomment">/// An oracle that can be used to collect price information for a token</span>
-        <span class="ident">oracle</span>: <span class="ident">TokenOracle</span>,
+<span class="doccomment">/// Description of which program administers a token
+</span><span class="attribute">#[derive(AnchorSerialize, AnchorDeserialize, Debug, Eq, PartialEq, Clone, Copy)]
+</span><span class="kw">pub enum </span>TokenAdmin {
+    <span class="doccomment">/// This margin program administers the token directly
+    </span>Margin {
+        <span class="doccomment">/// An oracle that can be used to collect price information for a token
+        </span>oracle: TokenOracle,
     },
 
-    <span class="doccomment">/// The token is administered by the given adapter program</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// The adapter is responsible for providing price information for the token.</span>
-    <span class="ident">Adapter</span>(<span class="ident">Pubkey</span>),
+    <span class="doccomment">/// The token is administered by the given adapter program
+    ///
+    /// The adapter is responsible for providing price information for the token.
+    </span>Adapter(Pubkey),
 }
 
-<span class="doccomment">/// Configuration for allowed liquidators</span>
-<span class="attribute">#[<span class="ident">account</span>]</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Default</span>, <span class="ident">Debug</span>, <span class="ident">Eq</span>, <span class="ident">PartialEq</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">LiquidatorConfig</span> {
-    <span class="doccomment">/// The airspace this liquidator is being configured to act within</span>
-    <span class="kw">pub</span> <span class="ident">airspace</span>: <span class="ident">Pubkey</span>,
+<span class="doccomment">/// Configuration for allowed liquidators
+</span><span class="attribute">#[account]
+#[derive(Default, Debug, Eq, PartialEq)]
+</span><span class="kw">pub struct </span>LiquidatorConfig {
+    <span class="doccomment">/// The airspace this liquidator is being configured to act within
+    </span><span class="kw">pub </span>airspace: Pubkey,
 
-    <span class="doccomment">/// The address of the liquidator allowed to act</span>
-    <span class="kw">pub</span> <span class="ident">liquidator</span>: <span class="ident">Pubkey</span>,
+    <span class="doccomment">/// The address of the liquidator allowed to act
+    </span><span class="kw">pub </span>liquidator: Pubkey,
 }
 
-<span class="kw">impl</span> <span class="ident">LiquidatorConfig</span> {
-    <span class="kw">pub</span> <span class="kw">const</span> <span class="ident">SPACE</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="number">8</span> <span class="op">+</span> <span class="ident">std::mem::size_of</span>::<span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span>();
+<span class="kw">impl </span>LiquidatorConfig {
+    <span class="kw">pub const </span>SPACE: usize = <span class="number">8 </span>+ std::mem::size_of::&lt;<span class="self">Self</span>&gt;();
 }
 
-<span class="doccomment">/// Configuration for allowed adapters</span>
-<span class="attribute">#[<span class="ident">account</span>]</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Default</span>, <span class="ident">Debug</span>, <span class="ident">Eq</span>, <span class="ident">PartialEq</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">AdapterConfig</span> {
-    <span class="doccomment">/// The airspace this adapter can be used in</span>
-    <span class="kw">pub</span> <span class="ident">airspace</span>: <span class="ident">Pubkey</span>,
+<span class="doccomment">/// Configuration for allowed adapters
+</span><span class="attribute">#[account]
+#[derive(Default, Debug, Eq, PartialEq)]
+</span><span class="kw">pub struct </span>AdapterConfig {
+    <span class="doccomment">/// The airspace this adapter can be used in
+    </span><span class="kw">pub </span>airspace: Pubkey,
 
-    <span class="doccomment">/// The program address allowed to be called as an adapter</span>
-    <span class="kw">pub</span> <span class="ident">adapter_program</span>: <span class="ident">Pubkey</span>,
+    <span class="doccomment">/// The program address allowed to be called as an adapter
+    </span><span class="kw">pub </span>adapter_program: Pubkey,
 }
 
-<span class="kw">impl</span> <span class="ident">AdapterConfig</span> {
-    <span class="kw">pub</span> <span class="kw">const</span> <span class="ident">SPACE</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="number">8</span> <span class="op">+</span> <span class="ident">std::mem::size_of</span>::<span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span>();
+<span class="kw">impl </span>AdapterConfig {
+    <span class="kw">pub const </span>SPACE: usize = <span class="number">8 </span>+ std::mem::size_of::&lt;<span class="self">Self</span>&gt;();
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="jet_margin" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0 (a55dd71d5 2022-09-19)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="jet_margin" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `programs/margin/src/instructions/admin/admin_transfer_position.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>admin_transfer_position.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../jet_margin/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../../jet_margin/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../jet_margin/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `programs/margin/src/instructions/admin/admin_transfer_position.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>admin_transfer_position.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../../normalize.css"><link rel="stylesheet" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../../ayu.css" disabled><link rel="stylesheet" href="../../../../dark.css" disabled><link rel="stylesheet" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../jet_margin/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../../jet_margin/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../jet_margin/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -101,108 +101,108 @@
 <span id="101">101</span>
 <span id="102">102</span>
 <span id="103">103</span>
-</pre><pre class="rust"><code><span class="comment">// SPDX-License-Identifier: AGPL-3.0-or-later</span>
-<span class="comment">//</span>
-<span class="comment">// Copyright (C) 2022 JET PROTOCOL HOLDINGS, LLC.</span>
-<span class="comment">//</span>
-<span class="comment">// This program is free software: you can redistribute it and/or modify</span>
-<span class="comment">// it under the terms of the GNU Affero General Public License as published by</span>
-<span class="comment">// the Free Software Foundation, either version 3 of the License, or</span>
-<span class="comment">// (at your option) any later version.</span>
-<span class="comment">//</span>
-<span class="comment">// This program is distributed in the hope that it will be useful,</span>
-<span class="comment">// but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
-<span class="comment">// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
-<span class="comment">// GNU Affero General Public License for more details.</span>
-<span class="comment">//</span>
-<span class="comment">// You should have received a copy of the GNU Affero General Public License</span>
-<span class="comment">// along with this program.  If not, see &lt;https://www.gnu.org/licenses/&gt;.</span>
+</pre><pre class="rust"><code><span class="comment">// SPDX-License-Identifier: AGPL-3.0-or-later
+//
+// Copyright (C) 2022 JET PROTOCOL HOLDINGS, LLC.
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Affero General Public License for more details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program.  If not, see &lt;https://www.gnu.org/licenses/&gt;.
 
-<span class="kw">use</span> <span class="ident">anchor_lang::prelude</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident">anchor_spl::token</span>::{<span class="self">self</span>, <span class="ident">Token</span>, <span class="ident">TokenAccount</span>, <span class="ident">Transfer</span>};
+</span><span class="kw">use </span>anchor_lang::prelude::<span class="kw-2">*</span>;
+<span class="kw">use </span>anchor_spl::token::{<span class="self">self</span>, Token, TokenAccount, Transfer};
 
-<span class="kw">use</span> <span class="kw">crate</span>::{<span class="ident">events::TransferPosition</span>, <span class="ident">MarginAccount</span>, <span class="ident">SignerSeeds</span>};
+<span class="kw">use crate</span>::{events::TransferPosition, MarginAccount, SignerSeeds};
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Accounts</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">AdminTransferPosition</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span> {
-    <span class="doccomment">/// The administrative authority</span>
-    <span class="attribute">#[<span class="ident">account</span>(<span class="ident">address</span> <span class="op">=</span> <span class="ident"><span class="kw">super</span>::ADMINISTRATOR</span>)]</span>
-    <span class="kw">pub</span> <span class="ident">authority</span>: <span class="ident">Signer</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span>,
+<span class="attribute">#[derive(Accounts)]
+</span><span class="kw">pub struct </span>AdminTransferPosition&lt;<span class="lifetime">&#39;info</span>&gt; {
+    <span class="doccomment">/// The administrative authority
+    </span><span class="attribute">#[account(address = <span class="kw">super</span>::ADMINISTRATOR)]
+    </span><span class="kw">pub </span>authority: Signer&lt;<span class="lifetime">&#39;info</span>&gt;,
 
-    <span class="doccomment">/// The target margin account to move a position into</span>
-    <span class="attribute">#[<span class="ident">account</span>(<span class="kw-2">mut</span>)]</span>
-    <span class="kw">pub</span> <span class="ident">target_account</span>: <span class="ident">AccountLoader</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span>, <span class="ident">MarginAccount</span><span class="op">&gt;</span>,
+    <span class="doccomment">/// The target margin account to move a position into
+    </span><span class="attribute">#[account(<span class="kw-2">mut</span>)]
+    </span><span class="kw">pub </span>target_account: AccountLoader&lt;<span class="lifetime">&#39;info</span>, MarginAccount&gt;,
 
-    <span class="doccomment">/// The source account to move a position out of</span>
-    <span class="attribute">#[<span class="ident">account</span>(<span class="kw-2">mut</span>)]</span>
-    <span class="kw">pub</span> <span class="ident">source_account</span>: <span class="ident">AccountLoader</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span>, <span class="ident">MarginAccount</span><span class="op">&gt;</span>,
+    <span class="doccomment">/// The source account to move a position out of
+    </span><span class="attribute">#[account(<span class="kw-2">mut</span>)]
+    </span><span class="kw">pub </span>source_account: AccountLoader&lt;<span class="lifetime">&#39;info</span>, MarginAccount&gt;,
 
-    <span class="doccomment">/// The token account to be moved from</span>
-    <span class="attribute">#[<span class="ident">account</span>(<span class="kw-2">mut</span>)]</span>
-    <span class="kw">pub</span> <span class="ident">source_token_account</span>: <span class="ident">Account</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span>, <span class="ident">TokenAccount</span><span class="op">&gt;</span>,
+    <span class="doccomment">/// The token account to be moved from
+    </span><span class="attribute">#[account(<span class="kw-2">mut</span>)]
+    </span><span class="kw">pub </span>source_token_account: Account&lt;<span class="lifetime">&#39;info</span>, TokenAccount&gt;,
 
-    <span class="doccomment">/// The token account to be moved into</span>
-    <span class="attribute">#[<span class="ident">account</span>(<span class="kw-2">mut</span>)]</span>
-    <span class="kw">pub</span> <span class="ident">target_token_account</span>: <span class="ident">Account</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span>, <span class="ident">TokenAccount</span><span class="op">&gt;</span>,
+    <span class="doccomment">/// The token account to be moved into
+    </span><span class="attribute">#[account(<span class="kw-2">mut</span>)]
+    </span><span class="kw">pub </span>target_token_account: Account&lt;<span class="lifetime">&#39;info</span>, TokenAccount&gt;,
 
-    <span class="kw">pub</span> <span class="ident">token_program</span>: <span class="ident">Program</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span>, <span class="ident">Token</span><span class="op">&gt;</span>,
+    <span class="kw">pub </span>token_program: Program&lt;<span class="lifetime">&#39;info</span>, Token&gt;,
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span> <span class="ident">AdminTransferPosition</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span> {
-    <span class="kw">fn</span> <span class="ident">transfer_context</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">CpiContext</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span>, <span class="lifetime">&#39;_</span>, <span class="lifetime">&#39;_</span>, <span class="lifetime">&#39;info</span>, <span class="ident">Transfer</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-        <span class="ident">CpiContext::new</span>(
-            <span class="self">self</span>.<span class="ident">token_program</span>.<span class="ident">to_account_info</span>(),
-            <span class="ident">Transfer</span> {
-                <span class="ident">from</span>: <span class="self">self</span>.<span class="ident">source_token_account</span>.<span class="ident">to_account_info</span>(),
-                <span class="ident">to</span>: <span class="self">self</span>.<span class="ident">target_token_account</span>.<span class="ident">to_account_info</span>(),
-                <span class="ident">authority</span>: <span class="self">self</span>.<span class="ident">source_account</span>.<span class="ident">to_account_info</span>(),
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;info</span>&gt; AdminTransferPosition&lt;<span class="lifetime">&#39;info</span>&gt; {
+    <span class="kw">fn </span>transfer_context(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; CpiContext&lt;<span class="lifetime">&#39;_</span>, <span class="lifetime">&#39;_</span>, <span class="lifetime">&#39;_</span>, <span class="lifetime">&#39;info</span>, Transfer&lt;<span class="lifetime">&#39;info</span>&gt;&gt; {
+        CpiContext::new(
+            <span class="self">self</span>.token_program.to_account_info(),
+            Transfer {
+                from: <span class="self">self</span>.source_token_account.to_account_info(),
+                to: <span class="self">self</span>.target_token_account.to_account_info(),
+                authority: <span class="self">self</span>.source_account.to_account_info(),
             },
         )
     }
 }
 
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">admin_transfer_position_handler</span>(
-    <span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">AdminTransferPosition</span><span class="op">&gt;</span>,
-    <span class="ident">amount</span>: <span class="ident">u64</span>,
-) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="ident">source_seeds</span> <span class="op">=</span> <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">source_account</span>.<span class="ident">load</span>()<span class="question-mark">?</span>.<span class="ident">signer_seeds_owned</span>();
+<span class="kw">pub fn </span>admin_transfer_position_handler(
+    ctx: Context&lt;AdminTransferPosition&gt;,
+    amount: u64,
+) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+    <span class="kw">let </span>source_seeds = ctx.accounts.source_account.load()<span class="question-mark">?</span>.signer_seeds_owned();
 
-    <span class="ident">token::transfer</span>(
-        <span class="ident">ctx</span>.<span class="ident">accounts</span>
-            .<span class="ident">transfer_context</span>()
-            .<span class="ident">with_signer</span>(<span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span><span class="ident">source_seeds</span>.<span class="ident">signer_seeds</span>()]),
-        <span class="ident">amount</span>,
+    token::transfer(
+        ctx.accounts
+            .transfer_context()
+            .with_signer(<span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>source_seeds.signer_seeds()]),
+        amount,
     )<span class="question-mark">?</span>;
 
-    <span class="kw">let</span> <span class="ident">source_tokens</span> <span class="op">=</span> <span class="kw-2">&amp;mut</span> <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">source_token_account</span>;
-    <span class="kw">let</span> <span class="ident">target_tokens</span> <span class="op">=</span> <span class="kw-2">&amp;mut</span> <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">target_token_account</span>;
+    <span class="kw">let </span>source_tokens = <span class="kw-2">&amp;mut </span>ctx.accounts.source_token_account;
+    <span class="kw">let </span>target_tokens = <span class="kw-2">&amp;mut </span>ctx.accounts.target_token_account;
 
-    <span class="ident">source_tokens</span>.<span class="ident">reload</span>()<span class="question-mark">?</span>;
-    <span class="ident">target_tokens</span>.<span class="ident">reload</span>()<span class="question-mark">?</span>;
+    source_tokens.reload()<span class="question-mark">?</span>;
+    target_tokens.reload()<span class="question-mark">?</span>;
 
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">source</span> <span class="op">=</span> <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">source_account</span>.<span class="ident">load_mut</span>()<span class="question-mark">?</span>;
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">target</span> <span class="op">=</span> <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">target_account</span>.<span class="ident">load_mut</span>()<span class="question-mark">?</span>;
+    <span class="kw">let </span><span class="kw-2">mut </span>source = ctx.accounts.source_account.load_mut()<span class="question-mark">?</span>;
+    <span class="kw">let </span><span class="kw-2">mut </span>target = ctx.accounts.target_account.load_mut()<span class="question-mark">?</span>;
 
-    <span class="ident">source</span>.<span class="ident">set_position_balance</span>(
-        <span class="kw-2">&amp;</span><span class="ident">source_tokens</span>.<span class="ident">mint</span>,
-        <span class="kw-2">&amp;</span><span class="ident">source_tokens</span>.<span class="ident">key</span>(),
-        <span class="ident">source_tokens</span>.<span class="ident">amount</span>,
+    source.set_position_balance(
+        <span class="kw-2">&amp;</span>source_tokens.mint,
+        <span class="kw-2">&amp;</span>source_tokens.key(),
+        source_tokens.amount,
     )<span class="question-mark">?</span>;
-    <span class="ident">target</span>.<span class="ident">set_position_balance</span>(
-        <span class="kw-2">&amp;</span><span class="ident">target_tokens</span>.<span class="ident">mint</span>,
-        <span class="kw-2">&amp;</span><span class="ident">target_tokens</span>.<span class="ident">key</span>(),
-        <span class="ident">target_tokens</span>.<span class="ident">amount</span>,
+    target.set_position_balance(
+        <span class="kw-2">&amp;</span>target_tokens.mint,
+        <span class="kw-2">&amp;</span>target_tokens.key(),
+        target_tokens.amount,
     )<span class="question-mark">?</span>;
 
-    <span class="macro">emit!</span>(<span class="ident">TransferPosition</span> {
-        <span class="ident">source_margin_account</span>: <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">source_account</span>.<span class="ident">key</span>(),
-        <span class="ident">target_margin_account</span>: <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">target_account</span>.<span class="ident">key</span>(),
-        <span class="ident">source_token_account</span>: <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">source_token_account</span>.<span class="ident">key</span>(),
-        <span class="ident">target_token_account</span>: <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">target_token_account</span>.<span class="ident">key</span>(),
-        <span class="ident">amount</span>
+    <span class="macro">emit!</span>(TransferPosition {
+        source_margin_account: ctx.accounts.source_account.key(),
+        target_margin_account: ctx.accounts.target_account.key(),
+        source_token_account: ctx.accounts.source_token_account.key(),
+        target_token_account: ctx.accounts.target_token_account.key(),
+        amount
     });
 
     <span class="prelude-val">Ok</span>(())
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="jet_margin" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0 (a55dd71d5 2022-09-19)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="jet_margin" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

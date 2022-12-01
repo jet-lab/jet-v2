@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `programs/bonds/src/margin/instructions/repay.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>repay.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../jet_bonds/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../../jet_bonds/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../jet_bonds/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `programs/bonds/src/margin/instructions/repay.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>repay.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../../normalize.css"><link rel="stylesheet" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../../ayu.css" disabled><link rel="stylesheet" href="../../../../dark.css" disabled><link rel="stylesheet" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../jet_bonds/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../../jet_bonds/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../jet_bonds/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -99,106 +99,106 @@
 <span id="99">99</span>
 <span id="100">100</span>
 <span id="101">101</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">std::cmp::min</span>;
+</pre><pre class="rust"><code><span class="kw">use </span>std::cmp::min;
 
-<span class="kw">use</span> <span class="ident">anchor_lang</span>::{<span class="ident">prelude</span>::<span class="kw-2">*</span>, <span class="ident">AccountsClose</span>};
-<span class="kw">use</span> <span class="ident">anchor_spl::token</span>::{<span class="ident">transfer</span>, <span class="ident">Token</span>, <span class="ident">TokenAccount</span>, <span class="ident">Transfer</span>};
-<span class="kw">use</span> <span class="ident">jet_program_common::traits::TrySubAssign</span>;
+<span class="kw">use </span>anchor_lang::{prelude::<span class="kw-2">*</span>, AccountsClose};
+<span class="kw">use </span>anchor_spl::token::{transfer, Token, TokenAccount, Transfer};
+<span class="kw">use </span>jet_program_common::traits::TrySubAssign;
 
-<span class="kw">use</span> <span class="kw">crate</span>::{
-    <span class="ident">events</span>::{<span class="ident">ObligationFulfilled</span>, <span class="ident">ObligationRepay</span>},
-    <span class="ident">margin::state</span>::{<span class="ident">MarginUser</span>, <span class="ident">Obligation</span>},
-    <span class="ident">BondsError</span>,
+<span class="kw">use crate</span>::{
+    events::{ObligationFulfilled, ObligationRepay},
+    margin::state::{MarginUser, Obligation},
+    BondsError,
 };
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Accounts</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Repay</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span> {
-    <span class="doccomment">/// The account tracking information related to this particular user</span>
-    <span class="attribute">#[<span class="ident">account</span>(<span class="kw-2">mut</span>)]</span>
-    <span class="kw">pub</span> <span class="ident">borrower_account</span>: <span class="ident">Account</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span>, <span class="ident">MarginUser</span><span class="op">&gt;</span>,
+<span class="attribute">#[derive(Accounts)]
+</span><span class="kw">pub struct </span>Repay&lt;<span class="lifetime">&#39;info</span>&gt; {
+    <span class="doccomment">/// The account tracking information related to this particular user
+    </span><span class="attribute">#[account(<span class="kw-2">mut</span>)]
+    </span><span class="kw">pub </span>borrower_account: Account&lt;<span class="lifetime">&#39;info</span>, MarginUser&gt;,
 
-    <span class="attribute">#[<span class="ident">account</span>(
+    <span class="attribute">#[account(
         <span class="kw-2">mut</span>,
-        <span class="ident">has_one</span> <span class="op">=</span> <span class="ident">borrower_account</span> @ <span class="ident">BondsError::UserNotInMarket</span>,
-        <span class="ident">constraint</span> <span class="op">=</span> <span class="ident">obligation</span>.<span class="ident">sequence_number</span>
-            <span class="op">==</span> <span class="ident">borrower_account</span>.<span class="ident">debt</span>.<span class="ident">next_obligation_to_repay</span>().<span class="ident">unwrap</span>()
-            @ <span class="ident">BondsError::ObligationHasWrongSequenceNumber</span>
-    )]</span>
-    <span class="kw">pub</span> <span class="ident">obligation</span>: <span class="ident">Account</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span>, <span class="ident">Obligation</span><span class="op">&gt;</span>,
+        has_one = borrower_account @ BondsError::UserNotInMarket,
+        constraint = obligation.sequence_number
+            == borrower_account.debt.next_obligation_to_repay().unwrap()
+            @ BondsError::ObligationHasWrongSequenceNumber
+    )]
+    </span><span class="kw">pub </span>obligation: Account&lt;<span class="lifetime">&#39;info</span>, Obligation&gt;,
 
-    <span class="doccomment">/// No payment will be made towards next_obligation: it is needed purely for bookkeeping.</span>
-    <span class="doccomment">/// if the user has additional obligations, this must be the one with the following sequence number.</span>
-    <span class="doccomment">/// otherwise, put whatever address you want in here</span>
-    <span class="kw">pub</span> <span class="ident">next_obligation</span>: <span class="ident">AccountInfo</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span>,
+    <span class="doccomment">/// No payment will be made towards next_obligation: it is needed purely for bookkeeping.
+    /// if the user has additional obligations, this must be the one with the following sequence number.
+    /// otherwise, put whatever address you want in here
+    </span><span class="kw">pub </span>next_obligation: AccountInfo&lt;<span class="lifetime">&#39;info</span>&gt;,
 
-    <span class="doccomment">/// The token account to deposit tokens from</span>
-    <span class="attribute">#[<span class="ident">account</span>(<span class="kw-2">mut</span>)]</span>
-    <span class="kw">pub</span> <span class="ident">source</span>: <span class="ident">Account</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span>, <span class="ident">TokenAccount</span><span class="op">&gt;</span>,
+    <span class="doccomment">/// The token account to deposit tokens from
+    </span><span class="attribute">#[account(<span class="kw-2">mut</span>)]
+    </span><span class="kw">pub </span>source: Account&lt;<span class="lifetime">&#39;info</span>, TokenAccount&gt;,
 
-    <span class="doccomment">/// The signing authority for the source_account</span>
-    <span class="kw">pub</span> <span class="ident">payer</span>: <span class="ident">Signer</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span>,
+    <span class="doccomment">/// The signing authority for the source_account
+    </span><span class="kw">pub </span>payer: Signer&lt;<span class="lifetime">&#39;info</span>&gt;,
 
-    <span class="doccomment">/// The token vault holding the underlying token of the bond</span>
-    <span class="attribute">#[<span class="ident">account</span>(<span class="kw-2">mut</span>)]</span>
-    <span class="kw">pub</span> <span class="ident">underlying_token_vault</span>: <span class="ident">Account</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span>, <span class="ident">TokenAccount</span><span class="op">&gt;</span>,
+    <span class="doccomment">/// The token vault holding the underlying token of the bond
+    </span><span class="attribute">#[account(<span class="kw-2">mut</span>)]
+    </span><span class="kw">pub </span>underlying_token_vault: Account&lt;<span class="lifetime">&#39;info</span>, TokenAccount&gt;,
 
-    <span class="doccomment">/// SPL token program</span>
-    <span class="kw">pub</span> <span class="ident">token_program</span>: <span class="ident">Program</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span>, <span class="ident">Token</span><span class="op">&gt;</span>,
+    <span class="doccomment">/// SPL token program
+    </span><span class="kw">pub </span>token_program: Program&lt;<span class="lifetime">&#39;info</span>, Token&gt;,
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span> <span class="ident">Repay</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">transfer_context</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">CpiContext</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span>, <span class="lifetime">&#39;_</span>, <span class="lifetime">&#39;_</span>, <span class="lifetime">&#39;info</span>, <span class="ident">Transfer</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-        <span class="ident">CpiContext::new</span>(
-            <span class="self">self</span>.<span class="ident">token_program</span>.<span class="ident">to_account_info</span>(),
-            <span class="ident">Transfer</span> {
-                <span class="ident">from</span>: <span class="self">self</span>.<span class="ident">source</span>.<span class="ident">to_account_info</span>(),
-                <span class="ident">to</span>: <span class="self">self</span>.<span class="ident">underlying_token_vault</span>.<span class="ident">to_account_info</span>(),
-                <span class="ident">authority</span>: <span class="self">self</span>.<span class="ident">payer</span>.<span class="ident">to_account_info</span>(),
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;info</span>&gt; Repay&lt;<span class="lifetime">&#39;info</span>&gt; {
+    <span class="kw">pub fn </span>transfer_context(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; CpiContext&lt;<span class="lifetime">&#39;_</span>, <span class="lifetime">&#39;_</span>, <span class="lifetime">&#39;_</span>, <span class="lifetime">&#39;info</span>, Transfer&lt;<span class="lifetime">&#39;info</span>&gt;&gt; {
+        CpiContext::new(
+            <span class="self">self</span>.token_program.to_account_info(),
+            Transfer {
+                from: <span class="self">self</span>.source.to_account_info(),
+                to: <span class="self">self</span>.underlying_token_vault.to_account_info(),
+                authority: <span class="self">self</span>.payer.to_account_info(),
             },
         )
     }
 }
 
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">handler</span>(<span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">Repay</span><span class="op">&gt;</span>, <span class="ident">amount</span>: <span class="ident">u64</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="ident">amount</span> <span class="op">=</span> <span class="ident">min</span>(<span class="ident">amount</span>, <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">obligation</span>.<span class="ident">balance</span>);
-    <span class="ident">transfer</span>(<span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">transfer_context</span>(), <span class="ident">amount</span>)<span class="question-mark">?</span>;
+<span class="kw">pub fn </span>handler(ctx: Context&lt;Repay&gt;, amount: u64) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+    <span class="kw">let </span>amount = min(amount, ctx.accounts.obligation.balance);
+    transfer(ctx.accounts.transfer_context(), amount)<span class="question-mark">?</span>;
 
-    <span class="kw">let</span> <span class="ident">obligation</span> <span class="op">=</span> <span class="kw-2">&amp;mut</span> <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">obligation</span>;
-    <span class="kw">let</span> <span class="ident">user</span> <span class="op">=</span> <span class="kw-2">&amp;mut</span> <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">borrower_account</span>;
+    <span class="kw">let </span>obligation = <span class="kw-2">&amp;mut </span>ctx.accounts.obligation;
+    <span class="kw">let </span>user = <span class="kw-2">&amp;mut </span>ctx.accounts.borrower_account;
 
-    <span class="ident">obligation</span>.<span class="ident">balance</span>.<span class="ident">try_sub_assign</span>(<span class="ident">amount</span>)<span class="question-mark">?</span>;
+    obligation.balance.try_sub_assign(amount)<span class="question-mark">?</span>;
 
-    <span class="kw">if</span> <span class="ident">obligation</span>.<span class="ident">balance</span> <span class="op">&gt;</span> <span class="number">0</span> {
-        <span class="ident">user</span>.<span class="ident">debt</span>
-            .<span class="ident">partially_repay_obligation</span>(<span class="ident">obligation</span>.<span class="ident">sequence_number</span>, <span class="ident">amount</span>)<span class="question-mark">?</span>;
-    } <span class="kw">else</span> {
-        <span class="macro">emit!</span>(<span class="ident">ObligationFulfilled</span> {
-            <span class="ident">obligation</span>: <span class="ident">obligation</span>.<span class="ident">key</span>(),
-            <span class="ident">orderbook_user</span>: <span class="ident">user</span>.<span class="ident">key</span>(),
-            <span class="ident">borrower</span>: <span class="ident">obligation</span>.<span class="ident">borrower_account</span>,
-            <span class="ident">timestamp</span>: <span class="ident">Clock::get</span>()<span class="question-mark">?</span>.<span class="ident">unix_timestamp</span>,
+    <span class="kw">if </span>obligation.balance &gt; <span class="number">0 </span>{
+        user.debt
+            .partially_repay_obligation(obligation.sequence_number, amount)<span class="question-mark">?</span>;
+    } <span class="kw">else </span>{
+        <span class="macro">emit!</span>(ObligationFulfilled {
+            obligation: obligation.key(),
+            orderbook_user: user.key(),
+            borrower: obligation.borrower_account,
+            timestamp: Clock::get()<span class="question-mark">?</span>.unix_timestamp,
         });
 
-        <span class="ident">obligation</span>.<span class="ident">close</span>(<span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">payer</span>.<span class="ident">to_account_info</span>())<span class="question-mark">?</span>;
+        obligation.close(ctx.accounts.payer.to_account_info())<span class="question-mark">?</span>;
 
-        <span class="kw">let</span> <span class="ident">user_key</span> <span class="op">=</span> <span class="ident">user</span>.<span class="ident">key</span>();
-        <span class="kw">let</span> <span class="ident">next_obligation</span> <span class="op">=</span> <span class="ident">Account</span>::<span class="op">&lt;</span><span class="ident">Obligation</span><span class="op">&gt;</span><span class="ident">::try_from</span>(<span class="kw-2">&amp;</span><span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">next_obligation</span>)
-            .<span class="ident">and_then</span>(<span class="op">|</span><span class="ident">ob</span><span class="op">|</span> {
-                <span class="macro">require_eq!</span>(<span class="ident">ob</span>.<span class="ident">borrower_account</span>, <span class="ident">user_key</span>, <span class="ident">BondsError::UserNotInMarket</span>);
-                <span class="prelude-val">Ok</span>(<span class="ident">ob</span>)
+        <span class="kw">let </span>user_key = user.key();
+        <span class="kw">let </span>next_obligation = Account::&lt;Obligation&gt;::try_from(<span class="kw-2">&amp;</span>ctx.accounts.next_obligation)
+            .and_then(|ob| {
+                <span class="macro">require_eq!</span>(ob.borrower_account, user_key, BondsError::UserNotInMarket);
+                <span class="prelude-val">Ok</span>(ob)
             });
-        <span class="ident">user</span>.<span class="ident">debt</span>
-            .<span class="ident">fully_repay_obligation</span>(<span class="ident">obligation</span>.<span class="ident">sequence_number</span>, <span class="ident">amount</span>, <span class="ident">next_obligation</span>)<span class="question-mark">?</span>;
+        user.debt
+            .fully_repay_obligation(obligation.sequence_number, amount, next_obligation)<span class="question-mark">?</span>;
     }
 
-    <span class="macro">emit!</span>(<span class="ident">ObligationRepay</span> {
-        <span class="ident">orderbook_user</span>: <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">borrower_account</span>.<span class="ident">key</span>(),
-        <span class="ident">obligation</span>: <span class="ident">obligation</span>.<span class="ident">key</span>(),
-        <span class="ident">repayment_amount</span>: <span class="ident">amount</span>,
-        <span class="ident">final_balance</span>: <span class="ident">obligation</span>.<span class="ident">balance</span>,
+    <span class="macro">emit!</span>(ObligationRepay {
+        orderbook_user: ctx.accounts.borrower_account.key(),
+        obligation: obligation.key(),
+        repayment_amount: amount,
+        final_balance: obligation.balance,
     });
 
     <span class="prelude-val">Ok</span>(())
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="jet_bonds" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0 (a55dd71d5 2022-09-19)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="jet_bonds" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

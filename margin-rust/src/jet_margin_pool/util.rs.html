@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `programs/margin-pool/src/util.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>util.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../normalize.css"><link rel="stylesheet" type="text/css" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script><script defer src="../../main.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../jet_margin_pool/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../jet_margin_pool/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../jet_margin_pool/index.html"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `programs/margin-pool/src/util.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>util.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../normalize.css"><link rel="stylesheet" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../ayu.css" disabled><link rel="stylesheet" href="../../dark.css" disabled><link rel="stylesheet" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script><script defer src="../../main.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../jet_margin_pool/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../jet_margin_pool/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../jet_margin_pool/index.html"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -68,75 +68,75 @@
 <span id="68">68</span>
 <span id="69">69</span>
 <span id="70">70</span>
-</pre><pre class="rust"><code><span class="comment">// SPDX-License-Identifier: AGPL-3.0-or-later</span>
-<span class="comment">//</span>
-<span class="comment">// Copyright (C) 2022 JET PROTOCOL HOLDINGS, LLC.</span>
-<span class="comment">//</span>
-<span class="comment">// This program is free software: you can redistribute it and/or modify</span>
-<span class="comment">// it under the terms of the GNU Affero General Public License as published by</span>
-<span class="comment">// the Free Software Foundation, either version 3 of the License, or</span>
-<span class="comment">// (at your option) any later version.</span>
-<span class="comment">//</span>
-<span class="comment">// This program is distributed in the hope that it will be useful,</span>
-<span class="comment">// but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
-<span class="comment">// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
-<span class="comment">// GNU Affero General Public License for more details.</span>
-<span class="comment">//</span>
-<span class="comment">// You should have received a copy of the GNU Affero General Public License</span>
-<span class="comment">// along with this program.  If not, see &lt;https://www.gnu.org/licenses/&gt;.</span>
+</pre><pre class="rust"><code><span class="comment">// SPDX-License-Identifier: AGPL-3.0-or-later
+//
+// Copyright (C) 2022 JET PROTOCOL HOLDINGS, LLC.
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Affero General Public License for more details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program.  If not, see &lt;https://www.gnu.org/licenses/&gt;.
 
-<span class="kw">use</span> <span class="ident">anchor_lang::solana_program::clock::UnixTimestamp</span>;
-<span class="kw">use</span> <span class="ident">jet_program_common::Number</span>;
+</span><span class="kw">use </span>anchor_lang::solana_program::clock::UnixTimestamp;
+<span class="kw">use </span>jet_program_common::Number;
 
-<span class="kw">pub</span> <span class="kw">const</span> <span class="ident">SECONDS_PER_HOUR</span>: <span class="ident">UnixTimestamp</span> <span class="op">=</span> <span class="number">3600</span>;
-<span class="kw">pub</span> <span class="kw">const</span> <span class="ident">SECONDS_PER_2H</span>: <span class="ident">UnixTimestamp</span> <span class="op">=</span> <span class="ident">SECONDS_PER_HOUR</span> <span class="op">*</span> <span class="number">2</span>;
-<span class="kw">pub</span> <span class="kw">const</span> <span class="ident">SECONDS_PER_12H</span>: <span class="ident">UnixTimestamp</span> <span class="op">=</span> <span class="ident">SECONDS_PER_HOUR</span> <span class="op">*</span> <span class="number">12</span>;
-<span class="kw">pub</span> <span class="kw">const</span> <span class="ident">SECONDS_PER_DAY</span>: <span class="ident">UnixTimestamp</span> <span class="op">=</span> <span class="ident">SECONDS_PER_HOUR</span> <span class="op">*</span> <span class="number">24</span>;
-<span class="kw">pub</span> <span class="kw">const</span> <span class="ident">SECONDS_PER_WEEK</span>: <span class="ident">UnixTimestamp</span> <span class="op">=</span> <span class="ident">SECONDS_PER_DAY</span> <span class="op">*</span> <span class="number">7</span>;
-<span class="kw">pub</span> <span class="kw">const</span> <span class="ident">SECONDS_PER_YEAR</span>: <span class="ident">UnixTimestamp</span> <span class="op">=</span> <span class="number">31_536_000</span>;
-<span class="kw">pub</span> <span class="kw">const</span> <span class="ident">MAX_ACCRUAL_SECONDS</span>: <span class="ident">UnixTimestamp</span> <span class="op">=</span> <span class="ident">SECONDS_PER_WEEK</span>;
+<span class="kw">pub const </span>SECONDS_PER_HOUR: UnixTimestamp = <span class="number">3600</span>;
+<span class="kw">pub const </span>SECONDS_PER_2H: UnixTimestamp = SECONDS_PER_HOUR * <span class="number">2</span>;
+<span class="kw">pub const </span>SECONDS_PER_12H: UnixTimestamp = SECONDS_PER_HOUR * <span class="number">12</span>;
+<span class="kw">pub const </span>SECONDS_PER_DAY: UnixTimestamp = SECONDS_PER_HOUR * <span class="number">24</span>;
+<span class="kw">pub const </span>SECONDS_PER_WEEK: UnixTimestamp = SECONDS_PER_DAY * <span class="number">7</span>;
+<span class="kw">pub const </span>SECONDS_PER_YEAR: UnixTimestamp = <span class="number">31_536_000</span>;
+<span class="kw">pub const </span>MAX_ACCRUAL_SECONDS: UnixTimestamp = SECONDS_PER_WEEK;
 
-<span class="macro">static_assertions::const_assert_eq!</span>(<span class="ident">SECONDS_PER_HOUR</span>, <span class="number">60</span> <span class="op">*</span> <span class="number">60</span>);
-<span class="macro">static_assertions::const_assert_eq!</span>(<span class="ident">SECONDS_PER_2H</span>, <span class="number">60</span> <span class="op">*</span> <span class="number">60</span> <span class="op">*</span> <span class="number">2</span>);
-<span class="macro">static_assertions::const_assert_eq!</span>(<span class="ident">SECONDS_PER_12H</span>, <span class="number">60</span> <span class="op">*</span> <span class="number">60</span> <span class="op">*</span> <span class="number">12</span>);
-<span class="macro">static_assertions::const_assert_eq!</span>(<span class="ident">SECONDS_PER_DAY</span>, <span class="number">60</span> <span class="op">*</span> <span class="number">60</span> <span class="op">*</span> <span class="number">24</span>);
-<span class="macro">static_assertions::const_assert_eq!</span>(<span class="ident">SECONDS_PER_WEEK</span>, <span class="number">60</span> <span class="op">*</span> <span class="number">60</span> <span class="op">*</span> <span class="number">24</span> <span class="op">*</span> <span class="number">7</span>);
-<span class="macro">static_assertions::const_assert_eq!</span>(<span class="ident">SECONDS_PER_YEAR</span>, <span class="number">60</span> <span class="op">*</span> <span class="number">60</span> <span class="op">*</span> <span class="number">24</span> <span class="op">*</span> <span class="number">365</span>);
+<span class="macro">static_assertions::const_assert_eq!</span>(SECONDS_PER_HOUR, <span class="number">60 </span>* <span class="number">60</span>);
+<span class="macro">static_assertions::const_assert_eq!</span>(SECONDS_PER_2H, <span class="number">60 </span>* <span class="number">60 </span>* <span class="number">2</span>);
+<span class="macro">static_assertions::const_assert_eq!</span>(SECONDS_PER_12H, <span class="number">60 </span>* <span class="number">60 </span>* <span class="number">12</span>);
+<span class="macro">static_assertions::const_assert_eq!</span>(SECONDS_PER_DAY, <span class="number">60 </span>* <span class="number">60 </span>* <span class="number">24</span>);
+<span class="macro">static_assertions::const_assert_eq!</span>(SECONDS_PER_WEEK, <span class="number">60 </span>* <span class="number">60 </span>* <span class="number">24 </span>* <span class="number">7</span>);
+<span class="macro">static_assertions::const_assert_eq!</span>(SECONDS_PER_YEAR, <span class="number">60 </span>* <span class="number">60 </span>* <span class="number">24 </span>* <span class="number">365</span>);
 
-<span class="doccomment">/// Computes the effective applicable interest rate assuming continuous</span>
-<span class="doccomment">/// compounding for the given number of slots.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// Uses an approximation calibrated for accuracy to twenty decimals places,</span>
-<span class="doccomment">/// though the current configuration of Number does not support that.</span>
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">compound_interest</span>(<span class="ident">rate</span>: <span class="ident">Number</span>, <span class="ident">seconds</span>: <span class="ident">UnixTimestamp</span>) -&gt; <span class="ident">Number</span> {
-    <span class="comment">// The two panics below are implementation details, chosen to facilitate convenient</span>
-    <span class="comment">// implementation of compounding. They can be relaxed with a bit of additional work.</span>
-    <span class="comment">// The &quot;seconds&quot; guards are chosen to guarantee accuracy under the assumption that</span>
-    <span class="comment">// the rate is not more than one.</span>
+<span class="doccomment">/// Computes the effective applicable interest rate assuming continuous
+/// compounding for the given number of slots.
+///
+/// Uses an approximation calibrated for accuracy to twenty decimals places,
+/// though the current configuration of Number does not support that.
+</span><span class="kw">pub fn </span>compound_interest(rate: Number, seconds: UnixTimestamp) -&gt; Number {
+    <span class="comment">// The two panics below are implementation details, chosen to facilitate convenient
+    // implementation of compounding. They can be relaxed with a bit of additional work.
+    // The &quot;seconds&quot; guards are chosen to guarantee accuracy under the assumption that
+    // the rate is not more than one.
 
-    <span class="kw">if</span> <span class="ident">rate</span> <span class="op">&gt;</span> <span class="ident">Number::ONE</span> <span class="op">*</span> <span class="number">2</span> {
+    </span><span class="kw">if </span>rate &gt; Number::ONE * <span class="number">2 </span>{
         <span class="macro">panic!</span>(<span class="string">&quot;Not implemented; interest rate too large for compound_interest()&quot;</span>);
     }
 
-    <span class="kw">let</span> <span class="ident">terms</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">seconds</span> {
-        <span class="kw">_</span> <span class="kw">if</span> <span class="ident">seconds</span> <span class="op">&lt;</span><span class="op">=</span> <span class="ident">SECONDS_PER_2H</span> =&gt; <span class="number">5</span>,
-        <span class="kw">_</span> <span class="kw">if</span> <span class="ident">seconds</span> <span class="op">&lt;</span><span class="op">=</span> <span class="ident">SECONDS_PER_12H</span> =&gt; <span class="number">6</span>,
-        <span class="kw">_</span> <span class="kw">if</span> <span class="ident">seconds</span> <span class="op">&lt;</span><span class="op">=</span> <span class="ident">SECONDS_PER_DAY</span> =&gt; <span class="number">7</span>,
-        <span class="kw">_</span> <span class="kw">if</span> <span class="ident">seconds</span> <span class="op">&lt;</span><span class="op">=</span> <span class="ident">SECONDS_PER_WEEK</span> =&gt; <span class="number">10</span>,
-        <span class="kw">_</span> =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Not implemented; too many seconds in compound_interest()&quot;</span>),
+    <span class="kw">let </span>terms = <span class="kw">match </span>seconds {
+        <span class="kw">_ if </span>seconds &lt;= SECONDS_PER_2H =&gt; <span class="number">5</span>,
+        <span class="kw">_ if </span>seconds &lt;= SECONDS_PER_12H =&gt; <span class="number">6</span>,
+        <span class="kw">_ if </span>seconds &lt;= SECONDS_PER_DAY =&gt; <span class="number">7</span>,
+        <span class="kw">_ if </span>seconds &lt;= SECONDS_PER_WEEK =&gt; <span class="number">10</span>,
+        <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;Not implemented; too many seconds in compound_interest()&quot;</span>),
     };
 
-    <span class="kw">let</span> <span class="ident">x</span> <span class="op">=</span> <span class="ident">rate</span> <span class="op">*</span> <span class="ident">seconds</span> <span class="op">/</span> <span class="ident">SECONDS_PER_YEAR</span>;
+    <span class="kw">let </span>x = rate * seconds / SECONDS_PER_YEAR;
 
-    <span class="ident">jet_program_common::expm1_approx</span>(<span class="ident">x</span>, <span class="ident">terms</span>)
+    jet_program_common::expm1_approx(x, terms)
 }
 
-<span class="doccomment">/// Linear interpolation between (x0, y0) and (x1, y1).</span>
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">interpolate</span>(<span class="ident">x</span>: <span class="ident">Number</span>, <span class="ident">x0</span>: <span class="ident">Number</span>, <span class="ident">x1</span>: <span class="ident">Number</span>, <span class="ident">y0</span>: <span class="ident">Number</span>, <span class="ident">y1</span>: <span class="ident">Number</span>) -&gt; <span class="ident">Number</span> {
-    <span class="macro">assert!</span>(<span class="ident">x</span> <span class="op">&gt;</span><span class="op">=</span> <span class="ident">x0</span>);
-    <span class="macro">assert!</span>(<span class="ident">x</span> <span class="op">&lt;</span><span class="op">=</span> <span class="ident">x1</span>);
+<span class="doccomment">/// Linear interpolation between (x0, y0) and (x1, y1).
+</span><span class="kw">pub fn </span>interpolate(x: Number, x0: Number, x1: Number, y0: Number, y1: Number) -&gt; Number {
+    <span class="macro">assert!</span>(x &gt;= x0);
+    <span class="macro">assert!</span>(x &lt;= x1);
 
-    <span class="ident">y0</span> <span class="op">+</span> ((<span class="ident">x</span> <span class="op">-</span> <span class="ident">x0</span>) <span class="op">*</span> (<span class="ident">y1</span> <span class="op">-</span> <span class="ident">y0</span>)) <span class="op">/</span> (<span class="ident">x1</span> <span class="op">-</span> <span class="ident">x0</span>)
+    y0 + ((x - x0) * (y1 - y0)) / (x1 - x0)
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="jet_margin_pool" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0 (a55dd71d5 2022-09-19)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="jet_margin_pool" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

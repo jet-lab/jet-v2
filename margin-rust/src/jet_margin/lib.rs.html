@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `programs/margin/src/lib.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>lib.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../normalize.css"><link rel="stylesheet" type="text/css" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script><script defer src="../../main.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../jet_margin/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../jet_margin/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../jet_margin/index.html"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `programs/margin/src/lib.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>lib.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../normalize.css"><link rel="stylesheet" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../ayu.css" disabled><link rel="stylesheet" href="../../dark.css" disabled><link rel="stylesheet" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script><script defer src="../../main.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../jet_margin/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../jet_margin/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../jet_margin/index.html"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -625,632 +625,632 @@
 <span id="625">625</span>
 <span id="626">626</span>
 <span id="627">627</span>
-</pre><pre class="rust"><code><span class="comment">// SPDX-License-Identifier: AGPL-3.0-or-later</span>
-<span class="comment">//</span>
-<span class="comment">// Copyright (C) 2022 JET PROTOCOL HOLDINGS, LLC.</span>
-<span class="comment">//</span>
-<span class="comment">// This program is free software: you can redistribute it and/or modify</span>
-<span class="comment">// it under the terms of the GNU Affero General Public License as published by</span>
-<span class="comment">// the Free Software Foundation, either version 3 of the License, or</span>
-<span class="comment">// (at your option) any later version.</span>
-<span class="comment">//</span>
-<span class="comment">// This program is distributed in the hope that it will be useful,</span>
-<span class="comment">// but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
-<span class="comment">// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
-<span class="comment">// GNU Affero General Public License for more details.</span>
-<span class="comment">//</span>
-<span class="comment">// You should have received a copy of the GNU Affero General Public License</span>
-<span class="comment">// along with this program.  If not, see &lt;https://www.gnu.org/licenses/&gt;.</span>
-<span class="attribute">#![<span class="ident">allow</span>(<span class="ident">clippy::inconsistent_digit_grouping</span>)]</span>
+</pre><pre class="rust"><code><span class="comment">// SPDX-License-Identifier: AGPL-3.0-or-later
+//
+// Copyright (C) 2022 JET PROTOCOL HOLDINGS, LLC.
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Affero General Public License for more details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program.  If not, see &lt;https://www.gnu.org/licenses/&gt;.
+</span><span class="attribute">#![allow(clippy::inconsistent_digit_grouping)]
 
-<span class="kw">use</span> <span class="ident">anchor_lang::prelude</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident">anchor_lang::solana_program::clock::UnixTimestamp</span>;
+</span><span class="kw">use </span>anchor_lang::prelude::<span class="kw-2">*</span>;
+<span class="kw">use </span>anchor_lang::solana_program::clock::UnixTimestamp;
 
 <span class="macro">declare_id!</span>(<span class="string">&quot;JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ&quot;</span>);
 
-<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">events</span>;
-<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">seeds</span>;
+<span class="kw">pub mod </span>events;
+<span class="kw">pub mod </span>seeds;
 
-<span class="kw">mod</span> <span class="ident">adapter</span>;
-<span class="kw">mod</span> <span class="ident">instructions</span>;
-<span class="kw">mod</span> <span class="ident">state</span>;
-<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">syscall</span>;
-<span class="doccomment">/// Utilities used only in this crate</span>
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod</span> <span class="ident">util</span>;
+<span class="kw">mod </span>adapter;
+<span class="kw">mod </span>instructions;
+<span class="kw">mod </span>state;
+<span class="kw">pub mod </span>syscall;
+<span class="doccomment">/// Utilities used only in this crate
+</span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>util;
 
-<span class="kw">use</span> <span class="ident">instructions</span>::<span class="kw-2">*</span>;
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">state</span>::<span class="kw-2">*</span>;
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">util::Invocation</span>;
+<span class="kw">use </span>instructions::<span class="kw-2">*</span>;
+<span class="kw">pub use </span>state::<span class="kw-2">*</span>;
+<span class="kw">pub use </span>util::Invocation;
 
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">adapter</span>::{<span class="ident">AdapterResult</span>, <span class="ident">PositionChange</span>, <span class="ident">PriceChangeInfo</span>};
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">instructions::TokenConfigUpdate</span>;
+<span class="kw">pub use </span>adapter::{AdapterResult, PositionChange, PriceChangeInfo};
+<span class="kw">pub use </span>instructions::TokenConfigUpdate;
 
-<span class="doccomment">/// The maximum confidence deviation allowed for an oracle price.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// The confidence is measured as the percent of the confidence interval</span>
-<span class="doccomment">/// value provided by the oracle as compared to the weighted average value</span>
-<span class="doccomment">/// of the price.</span>
-<span class="attribute">#[<span class="ident">constant</span>]</span>
-<span class="kw">pub</span> <span class="kw">const</span> <span class="ident">MAX_ORACLE_CONFIDENCE</span>: <span class="ident">u16</span> <span class="op">=</span> <span class="number">5_00</span>;
+<span class="doccomment">/// The maximum confidence deviation allowed for an oracle price.
+///
+/// The confidence is measured as the percent of the confidence interval
+/// value provided by the oracle as compared to the weighted average value
+/// of the price.
+</span><span class="attribute">#[constant]
+</span><span class="kw">pub const </span>MAX_ORACLE_CONFIDENCE: u16 = <span class="number">5_00</span>;
 
-<span class="doccomment">/// The maximum number of seconds since the last price was by an oracle, before</span>
-<span class="doccomment">/// rejecting the price as too stale.</span>
-<span class="attribute">#[<span class="ident">constant</span>]</span>
-<span class="kw">pub</span> <span class="kw">const</span> <span class="ident">MAX_ORACLE_STALENESS</span>: <span class="ident">i64</span> <span class="op">=</span> <span class="number">30</span>;
+<span class="doccomment">/// The maximum number of seconds since the last price was by an oracle, before
+/// rejecting the price as too stale.
+</span><span class="attribute">#[constant]
+</span><span class="kw">pub const </span>MAX_ORACLE_STALENESS: i64 = <span class="number">30</span>;
 
-<span class="doccomment">/// The maximum age to allow for a quoted price for a position (seconds)</span>
-<span class="attribute">#[<span class="ident">constant</span>]</span>
-<span class="kw">pub</span> <span class="kw">const</span> <span class="ident">MAX_PRICE_QUOTE_AGE</span>: <span class="ident">u64</span> <span class="op">=</span> <span class="number">30</span>;
+<span class="doccomment">/// The maximum age to allow for a quoted price for a position (seconds)
+</span><span class="attribute">#[constant]
+</span><span class="kw">pub const </span>MAX_PRICE_QUOTE_AGE: u64 = <span class="number">30</span>;
 
-<span class="doccomment">/// The maximum amount of equity that can be deducted from an account during liquidation</span>
-<span class="doccomment">/// as a fraction of the total dollar value that is expected to need to be liquidated</span>
-<span class="kw">pub</span> <span class="kw">const</span> <span class="ident">LIQUIDATION_MAX_EQUITY_LOSS_BPS</span>: <span class="ident">u16</span> <span class="op">=</span> <span class="number">10_00</span>;
+<span class="doccomment">/// The maximum amount of equity that can be deducted from an account during liquidation
+/// as a fraction of the total dollar value that is expected to need to be liquidated
+</span><span class="kw">pub const </span>LIQUIDATION_MAX_EQUITY_LOSS_BPS: u16 = <span class="number">10_00</span>;
 
-<span class="doccomment">/// The maximum c-ratio that an account can end a liquidation with.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// Note: This is not a traditional c-ratio, because it&#39;s based on the ratio of</span>
-<span class="doccomment">///       the effective_collateral / required_collateral.</span>
-<span class="kw">pub</span> <span class="kw">const</span> <span class="ident">LIQUIDATION_MAX_COLLATERAL_RATIO</span>: <span class="ident">u16</span> <span class="op">=</span> <span class="number">125_00</span>;
+<span class="doccomment">/// The maximum c-ratio that an account can end a liquidation with.
+///
+/// Note: This is not a traditional c-ratio, because it&#39;s based on the ratio of
+///       the effective_collateral / required_collateral.
+</span><span class="kw">pub const </span>LIQUIDATION_MAX_COLLATERAL_RATIO: u16 = <span class="number">125_00</span>;
 
-<span class="doccomment">/// The threshold at which accounts can have all their debts closed. Accounts with</span>
-<span class="doccomment">/// total exposure below this value can have their exposure reduced to zero.</span>
-<span class="kw">pub</span> <span class="kw">const</span> <span class="ident">LIQUIDATION_CLOSE_THRESHOLD_USD</span>: <span class="ident">u64</span> <span class="op">=</span> <span class="number">100</span>;
+<span class="doccomment">/// The threshold at which accounts can have all their debts closed. Accounts with
+/// total exposure below this value can have their exposure reduced to zero.
+</span><span class="kw">pub const </span>LIQUIDATION_CLOSE_THRESHOLD_USD: u64 = <span class="number">100</span>;
 
-<span class="doccomment">/// The maximum duration in seconds of a liquidation before another user may cancel it</span>
-<span class="attribute">#[<span class="ident">constant</span>]</span>
-<span class="kw">pub</span> <span class="kw">const</span> <span class="ident">LIQUIDATION_TIMEOUT</span>: <span class="ident">UnixTimestamp</span> <span class="op">=</span> <span class="number">60</span>;
+<span class="doccomment">/// The maximum duration in seconds of a liquidation before another user may cancel it
+</span><span class="attribute">#[constant]
+</span><span class="kw">pub const </span>LIQUIDATION_TIMEOUT: UnixTimestamp = <span class="number">60</span>;
 
-<span class="doccomment">/// The maximum number of positions that a user can register.</span>
-<span class="doccomment">/// This may be exceeded by a liquidator.</span>
-<span class="kw">pub</span> <span class="kw">const</span> <span class="ident">MAX_USER_POSITIONS</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="number">24</span>;
+<span class="doccomment">/// The maximum number of positions that a user can register.
+/// This may be exceeded by a liquidator.
+</span><span class="kw">pub const </span>MAX_USER_POSITIONS: usize = <span class="number">24</span>;
 
-<span class="doccomment">/// This crate documents the instructions used in the `margin` program of the</span>
-<span class="doccomment">/// [jet-v2 repo](https://github.com/jet-lab/jet-v2/).</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// Handler functions are described for each instruction well as struct parameters</span>
-<span class="doccomment">/// (and their types and descriptions are listed) and any handler function</span>
-<span class="doccomment">/// parameters aside from parameters that exist in every instruction handler function.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// Accounts associated with events emitted for the purposes of data logging are also included.</span>
+<span class="doccomment">/// This crate documents the instructions used in the `margin` program of the
+/// [jet-v2 repo](https://github.com/jet-lab/jet-v2/).
+///
+/// Handler functions are described for each instruction well as struct parameters
+/// (and their types and descriptions are listed) and any handler function
+/// parameters aside from parameters that exist in every instruction handler function.
+///
+/// Accounts associated with events emitted for the purposes of data logging are also included.
 
-<span class="attribute">#[<span class="ident">program</span>]</span>
-<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">jet_margin</span> {
-    <span class="kw">use</span> <span class="kw">super</span>::<span class="kw-2">*</span>;
+</span><span class="attribute">#[program]
+</span><span class="kw">pub mod </span>jet_margin {
+    <span class="kw">use super</span>::<span class="kw-2">*</span>;
 
-    <span class="doccomment">/// Create a new margin account for a user</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// # Parameters</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// * `seed` - An abritrary integer used to derive the new account address. This allows</span>
-    <span class="doccomment">///            a user to own multiple margin accounts, by creating new accounts with different</span>
-    <span class="doccomment">///            seed values.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// # [Accounts](jet_margin::accounts::CreateAccount)</span>
-    <span class="doccomment">///     </span>
-    <span class="doccomment">/// |     |     |     |</span>
-    <span class="doccomment">/// | --- | --- | --- |</span>
-    <span class="doccomment">/// | **Name** | **Type** | **Description** |</span>
-    <span class="doccomment">/// | `owner` | `signer` | The owner of the new margin account. |</span>
-    <span class="doccomment">/// | `payer` | `signer` | The pubkey paying rent for the new margin account opening. |</span>
-    <span class="doccomment">/// | `margin_account` | `writable` | The margin account to initialize for the owner. |</span>
-    <span class="doccomment">/// | `system_program` | `read_only` | The [system native program](https://docs.solana.com/developing/runtime-facilities/programs#system-program). |</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// # Events</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// |     |     |</span>
-    <span class="doccomment">/// | --- | --- |</span>
-    <span class="doccomment">/// | **Event Name** | **Description** |</span>
-    <span class="doccomment">/// | [`events::AccountCreated`] | The created account. |</span>
+    <span class="doccomment">/// Create a new margin account for a user
+    ///
+    /// # Parameters
+    ///
+    /// * `seed` - An abritrary integer used to derive the new account address. This allows
+    ///            a user to own multiple margin accounts, by creating new accounts with different
+    ///            seed values.
+    ///
+    /// # [Accounts](jet_margin::accounts::CreateAccount)
+    ///     
+    /// |     |     |     |
+    /// | --- | --- | --- |
+    /// | **Name** | **Type** | **Description** |
+    /// | `owner` | `signer` | The owner of the new margin account. |
+    /// | `payer` | `signer` | The pubkey paying rent for the new margin account opening. |
+    /// | `margin_account` | `writable` | The margin account to initialize for the owner. |
+    /// | `system_program` | `read_only` | The [system native program](https://docs.solana.com/developing/runtime-facilities/programs#system-program). |
+    ///
+    /// # Events
+    ///
+    /// |     |     |
+    /// | --- | --- |
+    /// | **Event Name** | **Description** |
+    /// | [`events::AccountCreated`] | The created account. |
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">create_account</span>(<span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">CreateAccount</span><span class="op">&gt;</span>, <span class="ident">seed</span>: <span class="ident">u16</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="ident">create_account_handler</span>(<span class="ident">ctx</span>, <span class="ident">seed</span>)
+    </span><span class="kw">pub fn </span>create_account(ctx: Context&lt;CreateAccount&gt;, seed: u16) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        create_account_handler(ctx, seed)
     }
 
-    <span class="doccomment">/// Close a user&#39;s margin account</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// The margin account must have zero positions remaining to be closed.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// # [Accounts](jet_margin::accounts::CloseAccount)</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// |     |     |     |</span>
-    <span class="doccomment">/// | --- | --- | --- |</span>
-    <span class="doccomment">/// | **Name** | **Type** | **Description** |</span>
-    <span class="doccomment">/// | `owner` | `signer` | The owner of the account being closed. |</span>
-    <span class="doccomment">/// | `receiver` | `writable` | The account to get any returned rent. |</span>
-    <span class="doccomment">/// | `margin_account` | `writable` | The account being closed. |</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// # Events</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// |     |     |</span>
-    <span class="doccomment">/// | --- | --- |</span>
-    <span class="doccomment">/// | **Event Name** | **Description** |</span>
-    <span class="doccomment">/// | [`events::AccountClosed`] | The closed account. |</span>
+    <span class="doccomment">/// Close a user&#39;s margin account
+    ///
+    /// The margin account must have zero positions remaining to be closed.
+    ///
+    /// # [Accounts](jet_margin::accounts::CloseAccount)
+    ///
+    /// |     |     |     |
+    /// | --- | --- | --- |
+    /// | **Name** | **Type** | **Description** |
+    /// | `owner` | `signer` | The owner of the account being closed. |
+    /// | `receiver` | `writable` | The account to get any returned rent. |
+    /// | `margin_account` | `writable` | The account being closed. |
+    ///
+    /// # Events
+    ///
+    /// |     |     |
+    /// | --- | --- |
+    /// | **Event Name** | **Description** |
+    /// | [`events::AccountClosed`] | The closed account. |
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">close_account</span>(<span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">CloseAccount</span><span class="op">&gt;</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="ident">close_account_handler</span>(<span class="ident">ctx</span>)
+    </span><span class="kw">pub fn </span>close_account(ctx: Context&lt;CloseAccount&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        close_account_handler(ctx)
     }
 
-    <span class="doccomment">/// Register a position for deposits of tokens returned by adapter programs (e.g. margin-pool).</span>
-    <span class="doccomment">///     </span>
-    <span class="doccomment">/// This will create a token account to hold the adapter provided tokens which represent</span>
-    <span class="doccomment">/// a user&#39;s deposit with that adapter.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// This instruction may fail if the account has reached it&#39;s maximum number of positions.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// # [Accounts](jet_margin::accounts::RegisterPosition)</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// |     |     |     |</span>
-    <span class="doccomment">/// | --- | --- | --- |</span>
-    <span class="doccomment">/// | **Name** | **Type** | **Description** |</span>
-    <span class="doccomment">/// | `authority` | `signer` | The authority that can change the margin account. |</span>
-    <span class="doccomment">/// | `payer` | `signer` | The address paying for rent. |</span>
-    <span class="doccomment">/// | `margin_account` | `writable` |  The margin account to register position type with. |</span>
-    <span class="doccomment">/// | `position_token_mint` | `read_only` | The mint for the position token being registered. |</span>
-    <span class="doccomment">/// | `metadata` | `read_only` | The metadata account that references the correct oracle for the token. |</span>
-    <span class="doccomment">/// | `token_account` | `writable` | The token account to store hold the position assets in the custody of the margin account. |</span>
-    <span class="doccomment">/// | `token_program` | `read_only` | The [spl token program](https://spl.solana.com/token). |</span>
-    <span class="doccomment">/// | `rent` | `read_only` | The [rent sysvar](https://docs.solana.com/developing/runtime-facilities/sysvars#rent). The rent to open the account. |</span>
-    <span class="doccomment">/// | `system_program` | `read_only` | The [system native program](https://docs.solana.com/developing/runtime-facilities/programs#system-program). |</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// # Events</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// |     |     |</span>
-    <span class="doccomment">/// | --- | --- |</span>
-    <span class="doccomment">/// | **Event Name** | **Description** |</span>
-    <span class="doccomment">/// | [`events::PositionRegistered`] | The position registered. |</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">register_position</span>(<span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">RegisterPosition</span><span class="op">&gt;</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="ident">register_position_handler</span>(<span class="ident">ctx</span>)
+    <span class="doccomment">/// Register a position for deposits of tokens returned by adapter programs (e.g. margin-pool).
+    ///     
+    /// This will create a token account to hold the adapter provided tokens which represent
+    /// a user&#39;s deposit with that adapter.
+    ///
+    /// This instruction may fail if the account has reached it&#39;s maximum number of positions.
+    ///
+    /// # [Accounts](jet_margin::accounts::RegisterPosition)
+    ///
+    /// |     |     |     |
+    /// | --- | --- | --- |
+    /// | **Name** | **Type** | **Description** |
+    /// | `authority` | `signer` | The authority that can change the margin account. |
+    /// | `payer` | `signer` | The address paying for rent. |
+    /// | `margin_account` | `writable` |  The margin account to register position type with. |
+    /// | `position_token_mint` | `read_only` | The mint for the position token being registered. |
+    /// | `metadata` | `read_only` | The metadata account that references the correct oracle for the token. |
+    /// | `token_account` | `writable` | The token account to store hold the position assets in the custody of the margin account. |
+    /// | `token_program` | `read_only` | The [spl token program](https://spl.solana.com/token). |
+    /// | `rent` | `read_only` | The [rent sysvar](https://docs.solana.com/developing/runtime-facilities/sysvars#rent). The rent to open the account. |
+    /// | `system_program` | `read_only` | The [system native program](https://docs.solana.com/developing/runtime-facilities/programs#system-program). |
+    ///
+    /// # Events
+    ///
+    /// |     |     |
+    /// | --- | --- |
+    /// | **Event Name** | **Description** |
+    /// | [`events::PositionRegistered`] | The position registered. |
+    </span><span class="kw">pub fn </span>register_position(ctx: Context&lt;RegisterPosition&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        register_position_handler(ctx)
     }
 
-    <span class="doccomment">/// Update the balance of a position stored in the margin account to match the actual</span>
-    <span class="doccomment">/// stored by the SPL token account.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// When a user deposits tokens directly (without invoking this program), there&#39;s no</span>
-    <span class="doccomment">/// update within the user&#39;s margin account to account for the new token balance. This</span>
-    <span class="doccomment">/// instruction allows udating the margin account state to reflect the current available</span>
-    <span class="doccomment">/// balance of collateral.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// # [Accounts](jet_margin::accounts::UpdatePositionBalance)</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// |     |     |     |</span>
-    <span class="doccomment">/// | --- | --- | --- |</span>
-    <span class="doccomment">/// | **Name** | **Type** | **Description** |</span>
-    <span class="doccomment">/// | `margin_account` | `writable` | The margin account to update. |</span>
-    <span class="doccomment">/// | `token_account` | `read_only` | The token account to update the balance for. |</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// # Events</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// |     |     |</span>
-    <span class="doccomment">/// | --- | --- |</span>
-    <span class="doccomment">/// | **Event Name** | **Description** |</span>
-    <span class="doccomment">/// | [`events::PositionBalanceUpdated`] | The updated position. |</span>
-    <span class="doccomment">///</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">update_position_balance</span>(<span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">UpdatePositionBalance</span><span class="op">&gt;</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="ident">update_position_balance_handler</span>(<span class="ident">ctx</span>)
+    <span class="doccomment">/// Update the balance of a position stored in the margin account to match the actual
+    /// stored by the SPL token account.
+    ///
+    /// When a user deposits tokens directly (without invoking this program), there&#39;s no
+    /// update within the user&#39;s margin account to account for the new token balance. This
+    /// instruction allows udating the margin account state to reflect the current available
+    /// balance of collateral.
+    ///
+    /// # [Accounts](jet_margin::accounts::UpdatePositionBalance)
+    ///
+    /// |     |     |     |
+    /// | --- | --- | --- |
+    /// | **Name** | **Type** | **Description** |
+    /// | `margin_account` | `writable` | The margin account to update. |
+    /// | `token_account` | `read_only` | The token account to update the balance for. |
+    ///
+    /// # Events
+    ///
+    /// |     |     |
+    /// | --- | --- |
+    /// | **Event Name** | **Description** |
+    /// | [`events::PositionBalanceUpdated`] | The updated position. |
+    ///
+    </span><span class="kw">pub fn </span>update_position_balance(ctx: Context&lt;UpdatePositionBalance&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        update_position_balance_handler(ctx)
     }
 
-    <span class="doccomment">/// Update the metadata for a position stored in the margin account,</span>
-    <span class="doccomment">/// in the case where the metadata has changed after the position was</span>
-    <span class="doccomment">/// created.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// # [Accounts](jet_margin::accounts::RefreshPositionMetadata)</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// |     |     |     |</span>
-    <span class="doccomment">/// | --- | --- | --- |</span>
-    <span class="doccomment">/// | **Name** | **Type** | **Description** |</span>
-    <span class="doccomment">/// | `margin_account` | `writable` | The margin account with the position to be refreshed. |</span>
-    <span class="doccomment">/// | `metadata` | `read_only` | The metadata account for the token, which has been updated. |</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// # Events</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// |     |     |</span>
-    <span class="doccomment">/// | --- | --- |</span>
-    <span class="doccomment">/// | **Event Name** | **Description** |</span>
-    <span class="doccomment">/// | [`events::PositionMetadataRefreshed`] | The position of which metadata was refreshed. |</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">refresh_position_metadata</span>(<span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">RefreshPositionMetadata</span><span class="op">&gt;</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="ident">refresh_position_metadata_handler</span>(<span class="ident">ctx</span>)
+    <span class="doccomment">/// Update the metadata for a position stored in the margin account,
+    /// in the case where the metadata has changed after the position was
+    /// created.
+    ///
+    /// # [Accounts](jet_margin::accounts::RefreshPositionMetadata)
+    ///
+    /// |     |     |     |
+    /// | --- | --- | --- |
+    /// | **Name** | **Type** | **Description** |
+    /// | `margin_account` | `writable` | The margin account with the position to be refreshed. |
+    /// | `metadata` | `read_only` | The metadata account for the token, which has been updated. |
+    ///
+    /// # Events
+    ///
+    /// |     |     |
+    /// | --- | --- |
+    /// | **Event Name** | **Description** |
+    /// | [`events::PositionMetadataRefreshed`] | The position of which metadata was refreshed. |
+    </span><span class="kw">pub fn </span>refresh_position_metadata(ctx: Context&lt;RefreshPositionMetadata&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        refresh_position_metadata_handler(ctx)
     }
 
-    <span class="doccomment">/// Close out a position, removing it from the account.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// Since there is a finite number of positions a single account can maintain it may be</span>
-    <span class="doccomment">/// necessary for a user to close out old positions to take new ones.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// # [Accounts](jet_margin::accounts::ClosePosition)</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// |     |     |     |</span>
-    <span class="doccomment">/// | --- | --- | --- |</span>
-    <span class="doccomment">/// | **Name** | **Type** | **Description** |</span>
-    <span class="doccomment">/// | `authority` | `signer` | The authority that can change the margin account. |</span>
-    <span class="doccomment">/// | `receiver` | `writable` | The receiver for the rent released. |</span>
-    <span class="doccomment">/// | `margin_account` | `writable` | The margin account with the position to close. |</span>
-    <span class="doccomment">/// | `position_token_mint` | `read_only` | The mint for the position token being deregistered. |</span>
-    <span class="doccomment">/// | `token_account` | `writable` | The token account for the position being closed. |</span>
-    <span class="doccomment">/// | `token_program` | `read_only` | The [spl token program](https://spl.solana.com/token). |</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// # Events</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// |     |     |</span>
-    <span class="doccomment">/// | --- | --- |</span>
-    <span class="doccomment">/// | **Event Name** | **Description** |</span>
-    <span class="doccomment">/// | [`events::PositionClosed`] | The closed position. |</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">close_position</span>(<span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">ClosePosition</span><span class="op">&gt;</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="ident">close_position_handler</span>(<span class="ident">ctx</span>)
+    <span class="doccomment">/// Close out a position, removing it from the account.
+    ///
+    /// Since there is a finite number of positions a single account can maintain it may be
+    /// necessary for a user to close out old positions to take new ones.
+    ///
+    /// # [Accounts](jet_margin::accounts::ClosePosition)
+    ///
+    /// |     |     |     |
+    /// | --- | --- | --- |
+    /// | **Name** | **Type** | **Description** |
+    /// | `authority` | `signer` | The authority that can change the margin account. |
+    /// | `receiver` | `writable` | The receiver for the rent released. |
+    /// | `margin_account` | `writable` | The margin account with the position to close. |
+    /// | `position_token_mint` | `read_only` | The mint for the position token being deregistered. |
+    /// | `token_account` | `writable` | The token account for the position being closed. |
+    /// | `token_program` | `read_only` | The [spl token program](https://spl.solana.com/token). |
+    ///
+    /// # Events
+    ///
+    /// |     |     |
+    /// | --- | --- |
+    /// | **Event Name** | **Description** |
+    /// | [`events::PositionClosed`] | The closed position. |
+    </span><span class="kw">pub fn </span>close_position(ctx: Context&lt;ClosePosition&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        close_position_handler(ctx)
     }
 
-    <span class="doccomment">/// Verify that the account is healthy, by validating the collateralization</span>
-    <span class="doccomment">/// ration is above the minimum.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// There&#39;s no real reason to call this instruction, outside of wanting to simulate</span>
-    <span class="doccomment">/// the health check for a margin account.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// # [Accounts](jet_margin::accounts::VerifyHealthy)</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// |     |     |     |</span>
-    <span class="doccomment">/// | --- | --- | --- |</span>
-    <span class="doccomment">/// | **Name** | **Type** | **Description** |</span>
-    <span class="doccomment">/// | `margin_account` | `read_only` | The account to verify the health of. |</span>
-    <span class="doccomment">///</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">verify_healthy</span>(<span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">VerifyHealthy</span><span class="op">&gt;</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="ident">verify_healthy_handler</span>(<span class="ident">ctx</span>)
+    <span class="doccomment">/// Verify that the account is healthy, by validating the collateralization
+    /// ration is above the minimum.
+    ///
+    /// There&#39;s no real reason to call this instruction, outside of wanting to simulate
+    /// the health check for a margin account.
+    ///
+    ///
+    /// # [Accounts](jet_margin::accounts::VerifyHealthy)
+    ///
+    /// |     |     |     |
+    /// | --- | --- | --- |
+    /// | **Name** | **Type** | **Description** |
+    /// | `margin_account` | `read_only` | The account to verify the health of. |
+    ///
+    </span><span class="kw">pub fn </span>verify_healthy(ctx: Context&lt;VerifyHealthy&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        verify_healthy_handler(ctx)
     }
 
-    <span class="doccomment">/// Perform an action by invoking other programs, allowing them to alter</span>
-    <span class="doccomment">/// the balances of the token accounts belonging to this margin account.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// This provides the margin account as a signer to any invoked instruction, and therefore</span>
-    <span class="doccomment">/// grants the adapter authority over any tokens held by the margin account.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// This validates the invoked program by expecting an `adapter_metadata` account,</span>
-    <span class="doccomment">/// which must exist for the instruction to be considered valid. The configuration</span>
-    <span class="doccomment">/// for allowing adapter programs is controlled by protocol governance.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// All extra accounts passed in are used as the input accounts when invoking</span>
-    <span class="doccomment">/// the provided adapter porgram.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// # Parameters</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// * `data` - The instruction data to pass to the adapter program</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// # [Accounts](jet_margin::accounts::AdapterInvoke)</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// |     |     |     |</span>
-    <span class="doccomment">/// | --- | --- | --- |</span>
-    <span class="doccomment">/// | **Name** | **Type** | **Description** |</span>
-    <span class="doccomment">/// | `owner` | `signer` | The authority that owns the margin account. |</span>
-    <span class="doccomment">/// | `margin_account` | `writable` | The margin account to proxy an action for. |</span>
-    <span class="doccomment">/// | `adapter_program` | `read_only` | The program to be invoked. |</span>
-    <span class="doccomment">/// | `adapter_metadata` | `read_only` | The metadata about the proxy program. |</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// # Events</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// |     |     |</span>
-    <span class="doccomment">/// | --- | --- |</span>
-    <span class="doccomment">/// | **Event Name** | **Description** |</span>
-    <span class="doccomment">/// | [`events::AdapterInvokeBegin`] | Marks the start of the adapter invocation (includes the margin account pubkey and the adapter program pubkey). |</span>
-    <span class="doccomment">/// | [`events::PositionEvent`] _(Note that each single event represents a different adapter position)_ | The [PositionEvent](events::PositionEvent) describing the change in position. |</span>
-    <span class="doccomment">/// | [`events::AdapterInvokeEnd`] | Marks the ending of the adapter invocation (includes no data except for the event itself being emitted). |</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">adapter_invoke</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span>(
-        <span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span>, <span class="lifetime">&#39;_</span>, <span class="lifetime">&#39;_</span>, <span class="lifetime">&#39;info</span>, <span class="ident">AdapterInvoke</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-        <span class="ident">data</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="ident">adapter_invoke_handler</span>(<span class="ident">ctx</span>, <span class="ident">data</span>)
+    <span class="doccomment">/// Perform an action by invoking other programs, allowing them to alter
+    /// the balances of the token accounts belonging to this margin account.
+    ///
+    /// This provides the margin account as a signer to any invoked instruction, and therefore
+    /// grants the adapter authority over any tokens held by the margin account.
+    ///
+    /// This validates the invoked program by expecting an `adapter_metadata` account,
+    /// which must exist for the instruction to be considered valid. The configuration
+    /// for allowing adapter programs is controlled by protocol governance.
+    ///
+    /// All extra accounts passed in are used as the input accounts when invoking
+    /// the provided adapter porgram.
+    ///
+    /// # Parameters
+    ///
+    /// * `data` - The instruction data to pass to the adapter program
+    ///
+    /// # [Accounts](jet_margin::accounts::AdapterInvoke)
+    ///
+    /// |     |     |     |
+    /// | --- | --- | --- |
+    /// | **Name** | **Type** | **Description** |
+    /// | `owner` | `signer` | The authority that owns the margin account. |
+    /// | `margin_account` | `writable` | The margin account to proxy an action for. |
+    /// | `adapter_program` | `read_only` | The program to be invoked. |
+    /// | `adapter_metadata` | `read_only` | The metadata about the proxy program. |
+    ///
+    /// # Events
+    ///
+    /// |     |     |
+    /// | --- | --- |
+    /// | **Event Name** | **Description** |
+    /// | [`events::AdapterInvokeBegin`] | Marks the start of the adapter invocation (includes the margin account pubkey and the adapter program pubkey). |
+    /// | [`events::PositionEvent`] _(Note that each single event represents a different adapter position)_ | The [PositionEvent](events::PositionEvent) describing the change in position. |
+    /// | [`events::AdapterInvokeEnd`] | Marks the ending of the adapter invocation (includes no data except for the event itself being emitted). |
+    </span><span class="kw">pub fn </span>adapter_invoke&lt;<span class="lifetime">&#39;info</span>&gt;(
+        ctx: Context&lt;<span class="lifetime">&#39;_</span>, <span class="lifetime">&#39;_</span>, <span class="lifetime">&#39;_</span>, <span class="lifetime">&#39;info</span>, AdapterInvoke&lt;<span class="lifetime">&#39;info</span>&gt;&gt;,
+        data: Vec&lt;u8&gt;,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        adapter_invoke_handler(ctx, data)
     }
 
-    <span class="doccomment">/// Perform an action by invoking other programs, allowing them only to</span>
-    <span class="doccomment">/// refresh the state of the margin account to be consistent with the actual</span>
-    <span class="doccomment">/// underlying prices or positions, but not permitting new position changes.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// This is a permissionless way of updating the value of positions on a margin</span>
-    <span class="doccomment">/// account which require some adapter to provide the update. Unlike `adapter_invoke`,</span>
-    <span class="doccomment">/// this instruction will not provider the margin account as a signer to invoked programs,</span>
-    <span class="doccomment">/// and they thefore do not have authority to modify any token balances held by the account.</span>
-    <span class="doccomment">///     </span>
-    <span class="doccomment">/// All extra accounts passed in are used as the input accounts when invoking</span>
-    <span class="doccomment">/// the provided adapter porgram.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// # Parameters</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// * `data` - The instruction data to pass to the adapter program</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// # [Accounts](jet_margin::accounts::AccountingInvoke)</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// |     |     |     |</span>
-    <span class="doccomment">/// | --- | --- | --- |</span>
-    <span class="doccomment">/// | **Name** | **Type** |  **Description** |</span>
-    <span class="doccomment">/// | `margin_account` | `writable` | The margin account to proxy an action for. |</span>
-    <span class="doccomment">/// | `adapter_program` | `read_only` | The program to be invoked. |</span>
-    <span class="doccomment">/// | `adapter_metadata` | `read_only` | The metadata about the proxy program. |</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// # Events</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// |     |     |</span>
-    <span class="doccomment">/// | --- | --- |</span>
-    <span class="doccomment">/// | **Name** | **Description** |</span>
-    <span class="doccomment">/// | [`events::AccountingInvokeBegin`] | Signify that the accounting invocation process has begun. |</span>
-    <span class="doccomment">/// | [`events::PositionEvent`] _(Note that each single event represents an different adapter position)_ | The [PositionEvent](events::PositionEvent) describing the change in position. |</span>
-    <span class="doccomment">/// | [`events::AccountingInvokeEnd`] | Signify that the accounting invocation process has ended. |</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">accounting_invoke</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span>(
-        <span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span>, <span class="lifetime">&#39;_</span>, <span class="lifetime">&#39;_</span>, <span class="lifetime">&#39;info</span>, <span class="ident">AccountingInvoke</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-        <span class="ident">data</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="ident">accounting_invoke_handler</span>(<span class="ident">ctx</span>, <span class="ident">data</span>)
+    <span class="doccomment">/// Perform an action by invoking other programs, allowing them only to
+    /// refresh the state of the margin account to be consistent with the actual
+    /// underlying prices or positions, but not permitting new position changes.
+    ///
+    /// This is a permissionless way of updating the value of positions on a margin
+    /// account which require some adapter to provide the update. Unlike `adapter_invoke`,
+    /// this instruction will not provider the margin account as a signer to invoked programs,
+    /// and they thefore do not have authority to modify any token balances held by the account.
+    ///     
+    /// All extra accounts passed in are used as the input accounts when invoking
+    /// the provided adapter porgram.
+    ///
+    /// # Parameters
+    ///
+    /// * `data` - The instruction data to pass to the adapter program
+    ///
+    /// # [Accounts](jet_margin::accounts::AccountingInvoke)
+    ///
+    /// |     |     |     |
+    /// | --- | --- | --- |
+    /// | **Name** | **Type** |  **Description** |
+    /// | `margin_account` | `writable` | The margin account to proxy an action for. |
+    /// | `adapter_program` | `read_only` | The program to be invoked. |
+    /// | `adapter_metadata` | `read_only` | The metadata about the proxy program. |
+    ///
+    /// # Events
+    ///
+    /// |     |     |
+    /// | --- | --- |
+    /// | **Name** | **Description** |
+    /// | [`events::AccountingInvokeBegin`] | Signify that the accounting invocation process has begun. |
+    /// | [`events::PositionEvent`] _(Note that each single event represents an different adapter position)_ | The [PositionEvent](events::PositionEvent) describing the change in position. |
+    /// | [`events::AccountingInvokeEnd`] | Signify that the accounting invocation process has ended. |
+    </span><span class="kw">pub fn </span>accounting_invoke&lt;<span class="lifetime">&#39;info</span>&gt;(
+        ctx: Context&lt;<span class="lifetime">&#39;_</span>, <span class="lifetime">&#39;_</span>, <span class="lifetime">&#39;_</span>, <span class="lifetime">&#39;info</span>, AccountingInvoke&lt;<span class="lifetime">&#39;info</span>&gt;&gt;,
+        data: Vec&lt;u8&gt;,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        accounting_invoke_handler(ctx, data)
     }
 
-    <span class="doccomment">/// Begin liquidating an account</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// The account will enter a state preventing the owner from taking any action,</span>
-    <span class="doccomment">/// until the liquidator process is complete.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// Requires the `liquidator_metadata` account, which restricts the signer to</span>
-    <span class="doccomment">/// those approved by protocol governance.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// # [Accounts](jet_margin::accounts::LiquidateBegin)</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// |     |     |     |</span>
-    <span class="doccomment">/// | --- | --- | --- |</span>
-    <span class="doccomment">/// | **Name** | **Type** | **Description** |</span>
-    <span class="doccomment">/// | `margin_account` | `writable` | The account in need of liquidation. |</span>
-    <span class="doccomment">/// | `payer` | `signer` | The address paying rent. |</span>
-    <span class="doccomment">/// | `liquidator` | `signer` | The liquidator account performing the liquidation. |</span>
-    <span class="doccomment">/// | `liquidator_metadata` | `read_only` | The metadata describing the liquidator. |</span>
-    <span class="doccomment">/// | `liquidation` | `writable` | The account to persist the state of liquidation. |</span>
-    <span class="doccomment">/// | `system_program` | `read_only` | The [system native program](https://docs.solana.com/developing/runtime-facilities/programs#system-program). |</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// # Events</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// |     |     |</span>
-    <span class="doccomment">/// | --- | --- |</span>
-    <span class="doccomment">/// | **Event Name** | **Description** |</span>
-    <span class="doccomment">/// | [`events::LiquidationBegun`] | The event marking the beginning of liquidation. |</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">liquidate_begin</span>(<span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">LiquidateBegin</span><span class="op">&gt;</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="ident">liquidate_begin_handler</span>(<span class="ident">ctx</span>)
+    <span class="doccomment">/// Begin liquidating an account
+    ///
+    /// The account will enter a state preventing the owner from taking any action,
+    /// until the liquidator process is complete.
+    ///
+    /// Requires the `liquidator_metadata` account, which restricts the signer to
+    /// those approved by protocol governance.
+    ///
+    /// # [Accounts](jet_margin::accounts::LiquidateBegin)
+    ///
+    /// |     |     |     |
+    /// | --- | --- | --- |
+    /// | **Name** | **Type** | **Description** |
+    /// | `margin_account` | `writable` | The account in need of liquidation. |
+    /// | `payer` | `signer` | The address paying rent. |
+    /// | `liquidator` | `signer` | The liquidator account performing the liquidation. |
+    /// | `liquidator_metadata` | `read_only` | The metadata describing the liquidator. |
+    /// | `liquidation` | `writable` | The account to persist the state of liquidation. |
+    /// | `system_program` | `read_only` | The [system native program](https://docs.solana.com/developing/runtime-facilities/programs#system-program). |
+    ///
+    /// # Events
+    ///
+    /// |     |     |
+    /// | --- | --- |
+    /// | **Event Name** | **Description** |
+    /// | [`events::LiquidationBegun`] | The event marking the beginning of liquidation. |
+    </span><span class="kw">pub fn </span>liquidate_begin(ctx: Context&lt;LiquidateBegin&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        liquidate_begin_handler(ctx)
     }
 
-    <span class="doccomment">/// End the liquidation state for an account</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// Normally must be signed by the liquidator that started the liquidation state. Can be</span>
-    <span class="doccomment">/// signed by anyone after the [timeout period](jet_margin::LIQUIDATION_TIMEOUT) has elapsed.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// # [Accounts](jet_margin::accounts::LiquidateEnd)</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// |     |     |     |</span>
-    <span class="doccomment">/// | --- | --- | --- |</span>
-    <span class="doccomment">/// | **Name** | **Type** | **Description** |</span>
-    <span class="doccomment">/// | `authority` | `signer` | The pubkey calling the instruction to end liquidation. |</span>
-    <span class="doccomment">/// | `margin_account` | `writable` | The account in need of liquidation. |</span>
-    <span class="doccomment">/// | `liquidation` | `writable` | The account to persist the state of liquidation. |</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// # Events</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// |     |     |</span>
-    <span class="doccomment">/// | --- | --- |</span>
-    <span class="doccomment">/// | **Event Name** | **Description** |</span>
-    <span class="doccomment">/// | [`events::LiquidationEnded`] | The event marking the end of liquidation. |</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">liquidate_end</span>(<span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">LiquidateEnd</span><span class="op">&gt;</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="ident">liquidate_end_handler</span>(<span class="ident">ctx</span>)
+    <span class="doccomment">/// End the liquidation state for an account
+    ///
+    /// Normally must be signed by the liquidator that started the liquidation state. Can be
+    /// signed by anyone after the [timeout period](jet_margin::LIQUIDATION_TIMEOUT) has elapsed.
+    ///
+    /// # [Accounts](jet_margin::accounts::LiquidateEnd)
+    ///
+    /// |     |     |     |
+    /// | --- | --- | --- |
+    /// | **Name** | **Type** | **Description** |
+    /// | `authority` | `signer` | The pubkey calling the instruction to end liquidation. |
+    /// | `margin_account` | `writable` | The account in need of liquidation. |
+    /// | `liquidation` | `writable` | The account to persist the state of liquidation. |
+    ///
+    /// # Events
+    ///
+    /// |     |     |
+    /// | --- | --- |
+    /// | **Event Name** | **Description** |
+    /// | [`events::LiquidationEnded`] | The event marking the end of liquidation. |
+    </span><span class="kw">pub fn </span>liquidate_end(ctx: Context&lt;LiquidateEnd&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        liquidate_end_handler(ctx)
     }
 
-    <span class="doccomment">/// Perform an action by invoking another program, for the purposes of</span>
-    <span class="doccomment">/// liquidating a margin account.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// Requires the account already be in the liquidation state, and the signer must</span>
-    <span class="doccomment">/// be the same liquidator that started the liquidation state.      </span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// # [Accounts](jet_margin::accounts::LiquidatorInvoke)</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// |     |     |     |</span>
-    <span class="doccomment">/// | --- | --- | --- |</span>
-    <span class="doccomment">/// | **Name** | **Type** | **Description** |</span>
-    <span class="doccomment">/// | `liquidator` | `signer` | The liquidator processing the margin account. |</span>
-    <span class="doccomment">/// | `liquidation` | `writable` | The account to persist the state of liquidation. |</span>
-    <span class="doccomment">/// | `margin_account` | `writable` | The margin account to proxy an action for. |</span>
-    <span class="doccomment">/// | `adapter_program` | `read_only` | The program to be invoked. |</span>
-    <span class="doccomment">/// | `adapter_metadata` | `read_only` | The metadata about the proxy program. |</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// # Events</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// |     |     |</span>
-    <span class="doccomment">/// | --- | --- |</span>
-    <span class="doccomment">/// | **Event Name** | **Description** |</span>
-    <span class="doccomment">/// | [`events::LiquidatorInvokeBegin`] | Marks the beginning of this liquidation event. |</span>
-    <span class="doccomment">/// | [`events::PositionEvent`] _(Note that each single event represents an different adapter position)_ | The [PositionEvent](events::PositionEvent) describing the change in position. |</span>
-    <span class="doccomment">/// | [`events::LiquidatorInvokeEnd`] | Marks the ending of this liquidator event. |</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">liquidator_invoke</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span>(
-        <span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span>, <span class="lifetime">&#39;_</span>, <span class="lifetime">&#39;_</span>, <span class="lifetime">&#39;info</span>, <span class="ident">LiquidatorInvoke</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-        <span class="ident">data</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="ident">liquidator_invoke_handler</span>(<span class="ident">ctx</span>, <span class="ident">data</span>)
+    <span class="doccomment">/// Perform an action by invoking another program, for the purposes of
+    /// liquidating a margin account.
+    ///
+    /// Requires the account already be in the liquidation state, and the signer must
+    /// be the same liquidator that started the liquidation state.      
+    ///
+    /// # [Accounts](jet_margin::accounts::LiquidatorInvoke)
+    ///
+    /// |     |     |     |
+    /// | --- | --- | --- |
+    /// | **Name** | **Type** | **Description** |
+    /// | `liquidator` | `signer` | The liquidator processing the margin account. |
+    /// | `liquidation` | `writable` | The account to persist the state of liquidation. |
+    /// | `margin_account` | `writable` | The margin account to proxy an action for. |
+    /// | `adapter_program` | `read_only` | The program to be invoked. |
+    /// | `adapter_metadata` | `read_only` | The metadata about the proxy program. |
+    ///
+    /// # Events
+    ///
+    /// |     |     |
+    /// | --- | --- |
+    /// | **Event Name** | **Description** |
+    /// | [`events::LiquidatorInvokeBegin`] | Marks the beginning of this liquidation event. |
+    /// | [`events::PositionEvent`] _(Note that each single event represents an different adapter position)_ | The [PositionEvent](events::PositionEvent) describing the change in position. |
+    /// | [`events::LiquidatorInvokeEnd`] | Marks the ending of this liquidator event. |
+    </span><span class="kw">pub fn </span>liquidator_invoke&lt;<span class="lifetime">&#39;info</span>&gt;(
+        ctx: Context&lt;<span class="lifetime">&#39;_</span>, <span class="lifetime">&#39;_</span>, <span class="lifetime">&#39;_</span>, <span class="lifetime">&#39;info</span>, LiquidatorInvoke&lt;<span class="lifetime">&#39;info</span>&gt;&gt;,
+        data: Vec&lt;u8&gt;,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        liquidator_invoke_handler(ctx, data)
     }
 
-    <span class="doccomment">/// Update the config for a token position stored in the margin account,</span>
-    <span class="doccomment">/// in the case where the token config has changed after the position was</span>
-    <span class="doccomment">/// created.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">refresh_position_config</span>(<span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">RefreshPositionConfig</span><span class="op">&gt;</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="ident">refresh_position_config_handler</span>(<span class="ident">ctx</span>)
+    <span class="doccomment">/// Update the config for a token position stored in the margin account,
+    /// in the case where the token config has changed after the position was
+    /// created.
+    </span><span class="kw">pub fn </span>refresh_position_config(ctx: Context&lt;RefreshPositionConfig&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        refresh_position_config_handler(ctx)
     }
 
-    <span class="doccomment">/// Refresh the price/balance for a deposit position</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">refresh_deposit_position</span>(<span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">RefreshDepositPosition</span><span class="op">&gt;</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="ident">refresh_deposit_position_handler</span>(<span class="ident">ctx</span>)
+    <span class="doccomment">/// Refresh the price/balance for a deposit position
+    </span><span class="kw">pub fn </span>refresh_deposit_position(ctx: Context&lt;RefreshDepositPosition&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        refresh_deposit_position_handler(ctx)
     }
 
-    <span class="doccomment">/// Create a new account for holding SPL token deposits directly by a margin account.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">create_deposit_position</span>(<span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">CreateDepositPosition</span><span class="op">&gt;</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="ident">create_deposit_position_handler</span>(<span class="ident">ctx</span>)
+    <span class="doccomment">/// Create a new account for holding SPL token deposits directly by a margin account.
+    </span><span class="kw">pub fn </span>create_deposit_position(ctx: Context&lt;CreateDepositPosition&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        create_deposit_position_handler(ctx)
     }
 
-    <span class="doccomment">/// Transfer tokens into or out of a token account being used for deposits.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">transfer_deposit</span>(<span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">TransferDeposit</span><span class="op">&gt;</span>, <span class="ident">amount</span>: <span class="ident">u64</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="ident">transfer_deposit_handler</span>(<span class="ident">ctx</span>, <span class="ident">amount</span>)
+    <span class="doccomment">/// Transfer tokens into or out of a token account being used for deposits.
+    </span><span class="kw">pub fn </span>transfer_deposit(ctx: Context&lt;TransferDeposit&gt;, amount: u64) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        transfer_deposit_handler(ctx, amount)
     }
 
-    <span class="doccomment">/// Set the configuration for a token, which allows it to be used as a position in a margin</span>
-    <span class="doccomment">/// account.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// The configuration for a token only applies for the associated airspace, and changing any</span>
-    <span class="doccomment">/// configuration requires the airspace authority to sign.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// The account storing the configuration will be funded if not already. If a `None` is provided as</span>
-    <span class="doccomment">/// the updated configuration, then the account will be defunded.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">configure_token</span>(
-        <span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">ConfigureToken</span><span class="op">&gt;</span>,
-        <span class="ident">update</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">TokenConfigUpdate</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="ident">configure_token_handler</span>(<span class="ident">ctx</span>, <span class="ident">update</span>)
+    <span class="doccomment">/// Set the configuration for a token, which allows it to be used as a position in a margin
+    /// account.
+    ///
+    /// The configuration for a token only applies for the associated airspace, and changing any
+    /// configuration requires the airspace authority to sign.
+    ///
+    /// The account storing the configuration will be funded if not already. If a `None` is provided as
+    /// the updated configuration, then the account will be defunded.
+    </span><span class="kw">pub fn </span>configure_token(
+        ctx: Context&lt;ConfigureToken&gt;,
+        update: <span class="prelude-ty">Option</span>&lt;TokenConfigUpdate&gt;,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        configure_token_handler(ctx, update)
     }
 
-    <span class="doccomment">/// Set the configuration for an adapter.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// The configuration for a token only applies for the associated airspace, and changing any</span>
-    <span class="doccomment">/// configuration requires the airspace authority to sign.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// The account storing the configuration will be funded if not already. If a `None` is provided as</span>
-    <span class="doccomment">/// the updated configuration, then the account will be defunded.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">configure_adapter</span>(<span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">ConfigureAdapter</span><span class="op">&gt;</span>, <span class="ident">is_adapter</span>: <span class="ident">bool</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="ident">configure_adapter_handler</span>(<span class="ident">ctx</span>, <span class="ident">is_adapter</span>)
+    <span class="doccomment">/// Set the configuration for an adapter.
+    ///
+    /// The configuration for a token only applies for the associated airspace, and changing any
+    /// configuration requires the airspace authority to sign.
+    ///
+    /// The account storing the configuration will be funded if not already. If a `None` is provided as
+    /// the updated configuration, then the account will be defunded.
+    </span><span class="kw">pub fn </span>configure_adapter(ctx: Context&lt;ConfigureAdapter&gt;, is_adapter: bool) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        configure_adapter_handler(ctx, is_adapter)
     }
 
-    <span class="doccomment">/// Set the configuration for a liquidator.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// The configuration for a token only applies for the associated airspace, and changing any</span>
-    <span class="doccomment">/// configuration requires the airspace authority to sign.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// The account storing the configuration will be funded if not already. If a `None` is provided as</span>
-    <span class="doccomment">/// the updated configuration, then the account will be defunded.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">configure_liquidator</span>(
-        <span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">ConfigureLiquidator</span><span class="op">&gt;</span>,
-        <span class="ident">is_liquidator</span>: <span class="ident">bool</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="ident">configure_liquidator_handler</span>(<span class="ident">ctx</span>, <span class="ident">is_liquidator</span>)
+    <span class="doccomment">/// Set the configuration for a liquidator.
+    ///
+    /// The configuration for a token only applies for the associated airspace, and changing any
+    /// configuration requires the airspace authority to sign.
+    ///
+    /// The account storing the configuration will be funded if not already. If a `None` is provided as
+    /// the updated configuration, then the account will be defunded.
+    </span><span class="kw">pub fn </span>configure_liquidator(
+        ctx: Context&lt;ConfigureLiquidator&gt;,
+        is_liquidator: bool,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        configure_liquidator_handler(ctx, is_liquidator)
     }
 
-    <span class="doccomment">/// Allow governing address to transfer any position from one margin account to another</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// This is provided as a mechanism to allow for manually fixing issues that occur in the</span>
-    <span class="doccomment">/// protocol due to bad user assets.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">admin_transfer_position</span>(<span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">AdminTransferPosition</span><span class="op">&gt;</span>, <span class="ident">amount</span>: <span class="ident">u64</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="ident">admin_transfer_position_handler</span>(<span class="ident">ctx</span>, <span class="ident">amount</span>)
+    <span class="doccomment">/// Allow governing address to transfer any position from one margin account to another
+    ///
+    /// This is provided as a mechanism to allow for manually fixing issues that occur in the
+    /// protocol due to bad user assets.
+    </span><span class="kw">pub fn </span>admin_transfer_position(ctx: Context&lt;AdminTransferPosition&gt;, amount: u64) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        admin_transfer_position_handler(ctx, amount)
     }
 }
 
-<span class="attribute">#[<span class="ident">error_code</span>]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">ErrorCode</span> {
-    <span class="doccomment">/// 141000 - An adapter did not return anything</span>
-    <span class="ident">NoAdapterResult</span> <span class="op">=</span> <span class="number">135_000</span>,
+<span class="attribute">#[error_code]
+</span><span class="kw">pub enum </span>ErrorCode {
+    <span class="doccomment">/// 141000 - An adapter did not return anything
+    </span>NoAdapterResult = <span class="number">135_000</span>,
 
-    <span class="doccomment">/// 141001</span>
-    <span class="attribute">#[<span class="ident">msg</span>(<span class="string">&quot;The program that set the result was not the adapter&quot;</span>)]</span>
-    <span class="ident">WrongProgramAdapterResult</span> <span class="op">=</span> <span class="number">135_001</span>,
+    <span class="doccomment">/// 141001
+    </span><span class="attribute">#[msg(<span class="string">&quot;The program that set the result was not the adapter&quot;</span>)]
+    </span>WrongProgramAdapterResult = <span class="number">135_001</span>,
 
-    <span class="doccomment">/// 141002</span>
-    <span class="attribute">#[<span class="ident">msg</span>(<span class="string">&quot;this invocation is not authorized by the necessary accounts&quot;</span>)]</span>
-    <span class="ident">UnauthorizedInvocation</span>,
+    <span class="doccomment">/// 141002
+    </span><span class="attribute">#[msg(<span class="string">&quot;this invocation is not authorized by the necessary accounts&quot;</span>)]
+    </span>UnauthorizedInvocation,
 
-    <span class="doccomment">/// 141003</span>
-    <span class="attribute">#[<span class="ident">msg</span>(<span class="string">&quot;the current instruction was not directly invoked by the margin program&quot;</span>)]</span>
-    <span class="ident">IndirectInvocation</span>,
+    <span class="doccomment">/// 141003
+    </span><span class="attribute">#[msg(<span class="string">&quot;the current instruction was not directly invoked by the margin program&quot;</span>)]
+    </span>IndirectInvocation,
 
-    <span class="doccomment">/// 141010 - Account cannot record any additional positions</span>
-    <span class="attribute">#[<span class="ident">msg</span>(<span class="string">&quot;account cannot record any additional positions&quot;</span>)]</span>
-    <span class="ident">MaxPositions</span> <span class="op">=</span> <span class="number">135_010</span>,
+    <span class="doccomment">/// 141010 - Account cannot record any additional positions
+    </span><span class="attribute">#[msg(<span class="string">&quot;account cannot record any additional positions&quot;</span>)]
+    </span>MaxPositions = <span class="number">135_010</span>,
 
-    <span class="doccomment">/// 141011 - Account has no record of the position</span>
-    <span class="attribute">#[<span class="ident">msg</span>(<span class="string">&quot;account has no record of the position&quot;</span>)]</span>
-    <span class="ident">UnknownPosition</span>,
+    <span class="doccomment">/// 141011 - Account has no record of the position
+    </span><span class="attribute">#[msg(<span class="string">&quot;account has no record of the position&quot;</span>)]
+    </span>UnknownPosition,
 
-    <span class="doccomment">/// 141012 - Attempting to close a position that has a balance</span>
-    <span class="attribute">#[<span class="ident">msg</span>(<span class="string">&quot;attempting to close a position that has a balance&quot;</span>)]</span>
-    <span class="ident">CloseNonZeroPosition</span>,
+    <span class="doccomment">/// 141012 - Attempting to close a position that has a balance
+    </span><span class="attribute">#[msg(<span class="string">&quot;attempting to close a position that has a balance&quot;</span>)]
+    </span>CloseNonZeroPosition,
 
-    <span class="doccomment">/// 141013 - Attempting to re-register a position</span>
-    <span class="attribute">#[<span class="ident">msg</span>(<span class="string">&quot;attempting to register an existing position&quot;</span>)]</span>
-    <span class="ident">PositionAlreadyRegistered</span>,
+    <span class="doccomment">/// 141013 - Attempting to re-register a position
+    </span><span class="attribute">#[msg(<span class="string">&quot;attempting to register an existing position&quot;</span>)]
+    </span>PositionAlreadyRegistered,
 
-    <span class="doccomment">/// 141014 - Attempting to close a margin account that isn&#39;t empty</span>
-    <span class="attribute">#[<span class="ident">msg</span>(<span class="string">&quot;attempting to close non-empty margin account&quot;</span>)]</span>
-    <span class="ident">AccountNotEmpty</span>,
+    <span class="doccomment">/// 141014 - Attempting to close a margin account that isn&#39;t empty
+    </span><span class="attribute">#[msg(<span class="string">&quot;attempting to close non-empty margin account&quot;</span>)]
+    </span>AccountNotEmpty,
 
-    <span class="doccomment">/// 141015 - Attempting to use a position not registered by the account</span>
-    <span class="attribute">#[<span class="ident">msg</span>(<span class="string">&quot;attempting to use unregistered position&quot;</span>)]</span>
-    <span class="ident">PositionNotRegistered</span>,
+    <span class="doccomment">/// 141015 - Attempting to use a position not registered by the account
+    </span><span class="attribute">#[msg(<span class="string">&quot;attempting to use unregistered position&quot;</span>)]
+    </span>PositionNotRegistered,
 
-    <span class="doccomment">/// 141016 - Attempting to close a position that is required by the adapter</span>
-    <span class="attribute">#[<span class="ident">msg</span>(<span class="string">&quot;attempting to close a position that is required by the adapter&quot;</span>)]</span>
-    <span class="ident">CloseRequiredPosition</span>,
+    <span class="doccomment">/// 141016 - Attempting to close a position that is required by the adapter
+    </span><span class="attribute">#[msg(<span class="string">&quot;attempting to close a position that is required by the adapter&quot;</span>)]
+    </span>CloseRequiredPosition,
 
-    <span class="doccomment">/// 141017</span>
-    <span class="attribute">#[<span class="ident">msg</span>(<span class="string">&quot;registered position owner inconsistent with PositionTokenMetadata owner or token_kind&quot;</span>)]</span>
-    <span class="ident">InvalidPositionOwner</span>,
+    <span class="doccomment">/// 141017
+    </span><span class="attribute">#[msg(<span class="string">&quot;registered position owner inconsistent with PositionTokenMetadata owner or token_kind&quot;</span>)]
+    </span>InvalidPositionOwner,
 
-    <span class="doccomment">/// 141018</span>
-    <span class="attribute">#[<span class="ident">msg</span>(<span class="string">&quot;dependencies are not satisfied to auto-register a required but unregistered position&quot;</span>)]</span>
-    <span class="ident">PositionNotRegisterable</span>,
+    <span class="doccomment">/// 141018
+    </span><span class="attribute">#[msg(<span class="string">&quot;dependencies are not satisfied to auto-register a required but unregistered position&quot;</span>)]
+    </span>PositionNotRegisterable,
 
-    <span class="doccomment">/// 141020 - The adapter providing a position change is not authorized for this asset</span>
-    <span class="attribute">#[<span class="ident">msg</span>(<span class="string">&quot;wrong adapter to modify the position&quot;</span>)]</span>
-    <span class="ident">InvalidPositionAdapter</span> <span class="op">=</span> <span class="number">135_020</span>,
+    <span class="doccomment">/// 141020 - The adapter providing a position change is not authorized for this asset
+    </span><span class="attribute">#[msg(<span class="string">&quot;wrong adapter to modify the position&quot;</span>)]
+    </span>InvalidPositionAdapter = <span class="number">135_020</span>,
 
-    <span class="doccomment">/// 141021 - A position price is not up-to-date</span>
-    <span class="attribute">#[<span class="ident">msg</span>(<span class="string">&quot;a position price is outdated&quot;</span>)]</span>
-    <span class="ident">OutdatedPrice</span>,
+    <span class="doccomment">/// 141021 - A position price is not up-to-date
+    </span><span class="attribute">#[msg(<span class="string">&quot;a position price is outdated&quot;</span>)]
+    </span>OutdatedPrice,
 
-    <span class="doccomment">/// 141022 - An asset has an invalid price.</span>
-    <span class="attribute">#[<span class="ident">msg</span>(<span class="string">&quot;an asset price is currently invalid&quot;</span>)]</span>
-    <span class="ident">InvalidPrice</span>,
+    <span class="doccomment">/// 141022 - An asset has an invalid price.
+    </span><span class="attribute">#[msg(<span class="string">&quot;an asset price is currently invalid&quot;</span>)]
+    </span>InvalidPrice,
 
-    <span class="doccomment">/// 141023 - A position balance is not up-to-date</span>
-    <span class="attribute">#[<span class="ident">msg</span>(<span class="string">&quot;a position balance is outdated&quot;</span>)]</span>
-    <span class="ident">OutdatedBalance</span>,
+    <span class="doccomment">/// 141023 - A position balance is not up-to-date
+    </span><span class="attribute">#[msg(<span class="string">&quot;a position balance is outdated&quot;</span>)]
+    </span>OutdatedBalance,
 
-    <span class="doccomment">/// 141030 - The account is not healthy</span>
-    <span class="attribute">#[<span class="ident">msg</span>(<span class="string">&quot;the account is not healthy&quot;</span>)]</span>
-    <span class="ident">Unhealthy</span> <span class="op">=</span> <span class="number">135_030</span>,
+    <span class="doccomment">/// 141030 - The account is not healthy
+    </span><span class="attribute">#[msg(<span class="string">&quot;the account is not healthy&quot;</span>)]
+    </span>Unhealthy = <span class="number">135_030</span>,
 
-    <span class="doccomment">/// 141031 - The account is already healthy</span>
-    <span class="attribute">#[<span class="ident">msg</span>(<span class="string">&quot;the account is already healthy&quot;</span>)]</span>
-    <span class="ident">Healthy</span>,
+    <span class="doccomment">/// 141031 - The account is already healthy
+    </span><span class="attribute">#[msg(<span class="string">&quot;the account is already healthy&quot;</span>)]
+    </span>Healthy,
 
-    <span class="doccomment">/// 141032 - The account is being liquidated</span>
-    <span class="attribute">#[<span class="ident">msg</span>(<span class="string">&quot;the account is being liquidated&quot;</span>)]</span>
-    <span class="ident">Liquidating</span>,
+    <span class="doccomment">/// 141032 - The account is being liquidated
+    </span><span class="attribute">#[msg(<span class="string">&quot;the account is being liquidated&quot;</span>)]
+    </span>Liquidating,
 
-    <span class="doccomment">/// 141033 - The account is not being liquidated</span>
-    <span class="attribute">#[<span class="ident">msg</span>(<span class="string">&quot;the account is not being liquidated&quot;</span>)]</span>
-    <span class="ident">NotLiquidating</span>,
+    <span class="doccomment">/// 141033 - The account is not being liquidated
+    </span><span class="attribute">#[msg(<span class="string">&quot;the account is not being liquidated&quot;</span>)]
+    </span>NotLiquidating,
 
-    <span class="doccomment">/// 141034 - The account has stale positions</span>
-    <span class="ident">StalePositions</span>,
+    <span class="doccomment">/// 141034 - The account has stale positions
+    </span>StalePositions,
 
-    <span class="doccomment">/// 141040 - No permission to perform a liquidation action</span>
-    <span class="attribute">#[<span class="ident">msg</span>(<span class="string">&quot;the liquidator does not have permission to do this&quot;</span>)]</span>
-    <span class="ident">UnauthorizedLiquidator</span> <span class="op">=</span> <span class="number">135_040</span>,
+    <span class="doccomment">/// 141040 - No permission to perform a liquidation action
+    </span><span class="attribute">#[msg(<span class="string">&quot;the liquidator does not have permission to do this&quot;</span>)]
+    </span>UnauthorizedLiquidator = <span class="number">135_040</span>,
 
-    <span class="doccomment">/// 141041 - The liquidation attempted to extract too much value</span>
-    <span class="attribute">#[<span class="ident">msg</span>(<span class="string">&quot;attempted to extract too much value during liquidation&quot;</span>)]</span>
-    <span class="ident">LiquidationLostValue</span>,
+    <span class="doccomment">/// 141041 - The liquidation attempted to extract too much value
+    </span><span class="attribute">#[msg(<span class="string">&quot;attempted to extract too much value during liquidation&quot;</span>)]
+    </span>LiquidationLostValue,
 
-    <span class="doccomment">/// 141050 - The airspace does not match</span>
-    <span class="attribute">#[<span class="ident">msg</span>(<span class="string">&quot;attempting to mix entities from different airspaces&quot;</span>)]</span>
-    <span class="ident">WrongAirspace</span> <span class="op">=</span> <span class="number">135_050</span>,
+    <span class="doccomment">/// 141050 - The airspace does not match
+    </span><span class="attribute">#[msg(<span class="string">&quot;attempting to mix entities from different airspaces&quot;</span>)]
+    </span>WrongAirspace = <span class="number">135_050</span>,
 
-    <span class="doccomment">/// 141051 - Attempting to use or set configuration that is not valid</span>
-    <span class="attribute">#[<span class="ident">msg</span>(<span class="string">&quot;attempting to use or set invalid configuration&quot;</span>)]</span>
-    <span class="ident">InvalidConfig</span> <span class="op">=</span> <span class="number">135_051</span>,
+    <span class="doccomment">/// 141051 - Attempting to use or set configuration that is not valid
+    </span><span class="attribute">#[msg(<span class="string">&quot;attempting to use or set invalid configuration&quot;</span>)]
+    </span>InvalidConfig = <span class="number">135_051</span>,
 
-    <span class="doccomment">/// 141051 - Attempting to use or set an oracle that is not valid</span>
-    <span class="attribute">#[<span class="ident">msg</span>(<span class="string">&quot;attempting to use or set invalid configuration&quot;</span>)]</span>
-    <span class="ident">InvalidOracle</span> <span class="op">=</span> <span class="number">135_052</span>,
+    <span class="doccomment">/// 141051 - Attempting to use or set an oracle that is not valid
+    </span><span class="attribute">#[msg(<span class="string">&quot;attempting to use or set invalid configuration&quot;</span>)]
+    </span>InvalidOracle = <span class="number">135_052</span>,
 }
 
-<span class="doccomment">/// Writes the result of position changes from an adapter invocation.</span>
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">write_adapter_result</span>(<span class="ident">margin_account</span>: <span class="kw-2">&amp;</span><span class="ident">MarginAccount</span>, <span class="ident">result</span>: <span class="kw-2">&amp;</span><span class="ident">AdapterResult</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">adapter_result_data</span> <span class="op">=</span> <span class="macro">vec!</span>[];
-    <span class="ident">result</span>.<span class="ident">serialize</span>(<span class="kw-2">&amp;mut</span> <span class="ident">adapter_result_data</span>)<span class="question-mark">?</span>;
-    <span class="ident">margin_account</span>.<span class="ident">invocation</span>.<span class="ident">verify_directly_invoked</span>()<span class="question-mark">?</span>;
-    <span class="ident">anchor_lang::solana_program::program::set_return_data</span>(<span class="kw-2">&amp;</span><span class="ident">adapter_result_data</span>);
+<span class="doccomment">/// Writes the result of position changes from an adapter invocation.
+</span><span class="kw">pub fn </span>write_adapter_result(margin_account: <span class="kw-2">&amp;</span>MarginAccount, result: <span class="kw-2">&amp;</span>AdapterResult) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+    <span class="kw">let </span><span class="kw-2">mut </span>adapter_result_data = <span class="macro">vec!</span>[];
+    result.serialize(<span class="kw-2">&amp;mut </span>adapter_result_data)<span class="question-mark">?</span>;
+    margin_account.invocation.verify_directly_invoked()<span class="question-mark">?</span>;
+    anchor_lang::solana_program::program::set_return_data(<span class="kw-2">&amp;</span>adapter_result_data);
     <span class="prelude-val">Ok</span>(())
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="jet_margin" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0 (a55dd71d5 2022-09-19)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="jet_margin" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

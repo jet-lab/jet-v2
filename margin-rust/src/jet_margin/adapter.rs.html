@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `programs/margin/src/adapter.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>adapter.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../normalize.css"><link rel="stylesheet" type="text/css" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script><script defer src="../../main.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../jet_margin/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../jet_margin/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../jet_margin/index.html"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `programs/margin/src/adapter.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>adapter.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../normalize.css"><link rel="stylesheet" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../ayu.css" disabled><link rel="stylesheet" href="../../dark.css" disabled><link rel="stylesheet" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script><script defer src="../../main.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../jet_margin/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../jet_margin/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../jet_margin/index.html"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -464,471 +464,471 @@
 <span id="464">464</span>
 <span id="465">465</span>
 <span id="466">466</span>
-</pre><pre class="rust"><code><span class="comment">// SPDX-License-Identifier: AGPL-3.0-or-later</span>
-<span class="comment">//</span>
-<span class="comment">// Copyright (C) 2022 JET PROTOCOL HOLDINGS, LLC.</span>
-<span class="comment">//</span>
-<span class="comment">// This program is free software: you can redistribute it and/or modify</span>
-<span class="comment">// it under the terms of the GNU Affero General Public License as published by</span>
-<span class="comment">// the Free Software Foundation, either version 3 of the License, or</span>
-<span class="comment">// (at your option) any later version.</span>
-<span class="comment">//</span>
-<span class="comment">// This program is distributed in the hope that it will be useful,</span>
-<span class="comment">// but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
-<span class="comment">// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
-<span class="comment">// GNU Affero General Public License for more details.</span>
-<span class="comment">//</span>
-<span class="comment">// You should have received a copy of the GNU Affero General Public License</span>
-<span class="comment">// along with this program.  If not, see &lt;https://www.gnu.org/licenses/&gt;.</span>
+</pre><pre class="rust"><code><span class="comment">// SPDX-License-Identifier: AGPL-3.0-or-later
+//
+// Copyright (C) 2022 JET PROTOCOL HOLDINGS, LLC.
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Affero General Public License for more details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program.  If not, see &lt;https://www.gnu.org/licenses/&gt;.
 
-<span class="kw">use</span> <span class="ident">std</span>::{<span class="ident">collections::BTreeMap</span>, <span class="ident">convert::TryInto</span>};
+</span><span class="kw">use </span>std::{collections::BTreeMap, convert::TryInto};
 
-<span class="kw">use</span> <span class="kw">crate</span>::{
-    <span class="ident">events</span>::{<span class="ident">PositionClosed</span>, <span class="ident">PositionEvent</span>, <span class="ident">PositionRegistered</span>, <span class="ident">PositionTouched</span>},
-    <span class="ident">util</span>::{<span class="ident">log_on_error</span>, <span class="ident">Require</span>},
-    <span class="ident">AccountPositionKey</span>, <span class="ident">AdapterPositionFlags</span>, <span class="ident">Approver</span>, <span class="ident">ErrorCode</span>, <span class="ident">MarginAccount</span>, <span class="ident">SignerSeeds</span>,
-    <span class="ident">TokenConfig</span>,
+<span class="kw">use crate</span>::{
+    events::{PositionClosed, PositionEvent, PositionRegistered, PositionTouched},
+    util::{log_on_error, Require},
+    AccountPositionKey, AdapterPositionFlags, Approver, ErrorCode, MarginAccount, SignerSeeds,
+    TokenConfig,
 };
-<span class="kw">use</span> <span class="ident">anchor_lang</span>::{
-    <span class="ident">prelude</span>::<span class="kw-2">*</span>,
-    <span class="ident">solana_program</span>::{<span class="ident">instruction::Instruction</span>, <span class="ident">program</span>},
+<span class="kw">use </span>anchor_lang::{
+    prelude::<span class="kw-2">*</span>,
+    solana_program::{instruction::Instruction, program},
 };
-<span class="kw">use</span> <span class="ident">anchor_spl::token</span>::{<span class="ident">Mint</span>, <span class="ident">TokenAccount</span>};
-<span class="kw">use</span> <span class="ident">jet_metadata::PositionTokenMetadata</span>;
+<span class="kw">use </span>anchor_spl::token::{Mint, TokenAccount};
+<span class="kw">use </span>jet_metadata::PositionTokenMetadata;
 
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">InvokeAdapter</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="lifetime">&#39;info</span><span class="op">&gt;</span> {
-    <span class="doccomment">/// The margin account to proxy an action for</span>
-    <span class="kw">pub</span> <span class="ident">margin_account</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">AccountLoader</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span>, <span class="ident">MarginAccount</span><span class="op">&gt;</span>,
+<span class="kw">pub struct </span>InvokeAdapter&lt;<span class="lifetime">&#39;a</span>, <span class="lifetime">&#39;info</span>&gt; {
+    <span class="doccomment">/// The margin account to proxy an action for
+    </span><span class="kw">pub </span>margin_account: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>AccountLoader&lt;<span class="lifetime">&#39;info</span>, MarginAccount&gt;,
 
-    <span class="doccomment">/// The program to be invoked</span>
-    <span class="kw">pub</span> <span class="ident">adapter_program</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">AccountInfo</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span>,
+    <span class="doccomment">/// The program to be invoked
+    </span><span class="kw">pub </span>adapter_program: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>AccountInfo&lt;<span class="lifetime">&#39;info</span>&gt;,
 
-    <span class="doccomment">/// The accounts to be passed through to the adapter</span>
-    <span class="kw">pub</span> <span class="ident">accounts</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">AccountInfo</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span>],
+    <span class="doccomment">/// The accounts to be passed through to the adapter
+    </span><span class="kw">pub </span>accounts: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[AccountInfo&lt;<span class="lifetime">&#39;info</span>&gt;],
 
-    <span class="doccomment">/// The transaction was signed by the authority of the margin account.</span>
-    <span class="doccomment">/// Thus, the invocation should be signed by the margin account.</span>
-    <span class="kw">pub</span> <span class="ident">signed</span>: <span class="ident">bool</span>,
+    <span class="doccomment">/// The transaction was signed by the authority of the margin account.
+    /// Thus, the invocation should be signed by the margin account.
+    </span><span class="kw">pub </span>signed: bool,
 }
 
-<span class="kw">impl</span> <span class="ident">InvokeAdapter</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span>, <span class="lifetime">&#39;_</span><span class="op">&gt;</span> {
-    <span class="doccomment">/// those who approve of the requests within the adapter result</span>
-    <span class="kw">fn</span> <span class="ident">adapter_result_approvals</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Approver</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">ret</span> <span class="op">=</span> <span class="ident">Vec::new</span>();
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">signed</span> {
-            <span class="ident">ret</span>.<span class="ident">push</span>(<span class="ident">Approver::MarginAccountAuthority</span>);
+<span class="kw">impl </span>InvokeAdapter&lt;<span class="lifetime">&#39;_</span>, <span class="lifetime">&#39;_</span>&gt; {
+    <span class="doccomment">/// those who approve of the requests within the adapter result
+    </span><span class="kw">fn </span>adapter_result_approvals(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Vec&lt;Approver&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>ret = Vec::new();
+        <span class="kw">if </span><span class="self">self</span>.signed {
+            ret.push(Approver::MarginAccountAuthority);
         }
-        <span class="ident">ret</span>.<span class="ident">push</span>(<span class="ident">Approver::Adapter</span>(<span class="self">self</span>.<span class="ident">adapter_program</span>.<span class="ident">key</span>()));
+        ret.push(Approver::Adapter(<span class="self">self</span>.adapter_program.key()));
 
-        <span class="ident">ret</span>
+        ret
     }
 }
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">AnchorSerialize</span>, <span class="ident">AnchorDeserialize</span>, <span class="ident">Clone</span>, <span class="ident">Default</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">AdapterResult</span> {
-    <span class="doccomment">/// keyed by token mint, same as position</span>
-    <span class="kw">pub</span> <span class="ident">position_changes</span>: <span class="ident">Vec</span><span class="op">&lt;</span>(<span class="ident">Pubkey</span>, <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">PositionChange</span><span class="op">&gt;</span>)<span class="op">&gt;</span>,
+<span class="attribute">#[derive(AnchorSerialize, AnchorDeserialize, Clone, Default)]
+</span><span class="kw">pub struct </span>AdapterResult {
+    <span class="doccomment">/// keyed by token mint, same as position
+    </span><span class="kw">pub </span>position_changes: Vec&lt;(Pubkey, Vec&lt;PositionChange&gt;)&gt;,
 }
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">AnchorSerialize</span>, <span class="ident">AnchorDeserialize</span>, <span class="ident">Clone</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">PositionChange</span> {
-    <span class="doccomment">/// The price/value of the position has already changed,</span>
-    <span class="doccomment">/// so the margin account must update its price</span>
-    <span class="ident">Price</span>(<span class="ident">PriceChangeInfo</span>),
+<span class="attribute">#[derive(AnchorSerialize, AnchorDeserialize, Clone)]
+</span><span class="kw">pub enum </span>PositionChange {
+    <span class="doccomment">/// The price/value of the position has already changed,
+    /// so the margin account must update its price
+    </span>Price(PriceChangeInfo),
 
-    <span class="doccomment">/// Flags that are true here will be set to the bool in the position</span>
-    <span class="doccomment">/// Flags that are false here will be unchanged in the position</span>
-    <span class="ident">Flags</span>(<span class="ident">AdapterPositionFlags</span>, <span class="ident">bool</span>),
+    <span class="doccomment">/// Flags that are true here will be set to the bool in the position
+    /// Flags that are false here will be unchanged in the position
+    </span>Flags(AdapterPositionFlags, bool),
 
-    <span class="doccomment">/// Register a new position, or assert that a position is registered</span>
-    <span class="doccomment">/// if the position cannot be registered, instruction fails</span>
-    <span class="doccomment">/// if the position is already registered, instruction succeeds without taking action</span>
-    <span class="ident">Register</span>(<span class="ident">Pubkey</span>),
+    <span class="doccomment">/// Register a new position, or assert that a position is registered
+    /// if the position cannot be registered, instruction fails
+    /// if the position is already registered, instruction succeeds without taking action
+    </span>Register(Pubkey),
 
-    <span class="doccomment">/// Close a position, or assert that a position is closed</span>
-    <span class="doccomment">/// if the position cannot be closed, instruction fails</span>
-    <span class="doccomment">/// if the position does not exist, instruction succeeds without taking action</span>
-    <span class="ident">Close</span>(<span class="ident">Pubkey</span>),
+    <span class="doccomment">/// Close a position, or assert that a position is closed
+    /// if the position cannot be closed, instruction fails
+    /// if the position does not exist, instruction succeeds without taking action
+    </span>Close(Pubkey),
 }
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">AnchorSerialize</span>, <span class="ident">AnchorDeserialize</span>, <span class="ident">Clone</span>, <span class="ident">Copy</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">PriceChangeInfo</span> {
-    <span class="doccomment">/// The current price of the asset</span>
-    <span class="kw">pub</span> <span class="ident">value</span>: <span class="ident">i64</span>,
+<span class="attribute">#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy)]
+</span><span class="kw">pub struct </span>PriceChangeInfo {
+    <span class="doccomment">/// The current price of the asset
+    </span><span class="kw">pub </span>value: i64,
 
-    <span class="doccomment">/// The current confidence value for the asset price</span>
-    <span class="kw">pub</span> <span class="ident">confidence</span>: <span class="ident">u64</span>,
+    <span class="doccomment">/// The current confidence value for the asset price
+    </span><span class="kw">pub </span>confidence: u64,
 
-    <span class="doccomment">/// The recent average price</span>
-    <span class="kw">pub</span> <span class="ident">twap</span>: <span class="ident">i64</span>,
+    <span class="doccomment">/// The recent average price
+    </span><span class="kw">pub </span>twap: i64,
 
-    <span class="doccomment">/// The time that the price was published at</span>
-    <span class="kw">pub</span> <span class="ident">publish_time</span>: <span class="ident">i64</span>,
+    <span class="doccomment">/// The time that the price was published at
+    </span><span class="kw">pub </span>publish_time: i64,
 
-    <span class="doccomment">/// The exponent for the price values</span>
-    <span class="kw">pub</span> <span class="ident">exponent</span>: <span class="ident">i32</span>,
+    <span class="doccomment">/// The exponent for the price values
+    </span><span class="kw">pub </span>exponent: i32,
 }
 
-<span class="doccomment">/// Invoke a margin adapter with the requested data</span>
-<span class="doccomment">/// * `signed` - sign with the margin account</span>
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">invoke</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span>(<span class="ident">ctx</span>: <span class="kw-2">&amp;</span><span class="ident">InvokeAdapter</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span>, <span class="lifetime">&#39;info</span><span class="op">&gt;</span>, <span class="ident">data</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">PositionEvent</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="ident">signer</span> <span class="op">=</span> <span class="ident">ctx</span>.<span class="ident">margin_account</span>.<span class="ident">load</span>()<span class="question-mark">?</span>.<span class="ident">signer_seeds_owned</span>();
+<span class="doccomment">/// Invoke a margin adapter with the requested data
+/// * `signed` - sign with the margin account
+</span><span class="kw">pub fn </span>invoke&lt;<span class="lifetime">&#39;info</span>&gt;(ctx: <span class="kw-2">&amp;</span>InvokeAdapter&lt;<span class="lifetime">&#39;_</span>, <span class="lifetime">&#39;info</span>&gt;, data: Vec&lt;u8&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;PositionEvent&gt;&gt; {
+    <span class="kw">let </span>signer = ctx.margin_account.load()<span class="question-mark">?</span>.signer_seeds_owned();
 
-    <span class="kw">let</span> <span class="ident">accounts</span> <span class="op">=</span> <span class="ident">ctx</span>
-        .<span class="ident">accounts</span>
-        .<span class="ident">iter</span>()
-        .<span class="ident">map</span>(<span class="op">|</span><span class="ident">info</span><span class="op">|</span> <span class="ident">AccountMeta</span> {
-            <span class="ident">pubkey</span>: <span class="ident">info</span>.<span class="ident">key</span>(),
-            <span class="ident">is_signer</span>: <span class="kw">if</span> <span class="ident">info</span>.<span class="ident">key</span>() <span class="op">==</span> <span class="ident">ctx</span>.<span class="ident">margin_account</span>.<span class="ident">key</span>() {
-                <span class="ident">ctx</span>.<span class="ident">signed</span>
-            } <span class="kw">else</span> {
-                <span class="ident">info</span>.<span class="ident">is_signer</span>
+    <span class="kw">let </span>accounts = ctx
+        .accounts
+        .iter()
+        .map(|info| AccountMeta {
+            pubkey: info.key(),
+            is_signer: <span class="kw">if </span>info.key() == ctx.margin_account.key() {
+                ctx.signed
+            } <span class="kw">else </span>{
+                info.is_signer
             },
-            <span class="ident">is_writable</span>: <span class="ident">info</span>.<span class="ident">is_writable</span>,
+            is_writable: info.is_writable,
         })
-        .<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">AccountMeta</span><span class="op">&gt;</span><span class="op">&gt;</span>();
+        .collect::&lt;Vec&lt;AccountMeta&gt;&gt;();
 
-    <span class="kw">let</span> <span class="ident">instruction</span> <span class="op">=</span> <span class="ident">Instruction</span> {
-        <span class="ident">program_id</span>: <span class="ident">ctx</span>.<span class="ident">adapter_program</span>.<span class="ident">key</span>(),
-        <span class="ident">accounts</span>,
-        <span class="ident">data</span>,
+    <span class="kw">let </span>instruction = Instruction {
+        program_id: ctx.adapter_program.key(),
+        accounts,
+        data,
     };
 
-    <span class="ident">ctx</span>.<span class="ident">margin_account</span>.<span class="ident">load_mut</span>()<span class="question-mark">?</span>.<span class="ident">invocation</span>.<span class="ident">start</span>();
-    <span class="kw">if</span> <span class="ident">ctx</span>.<span class="ident">signed</span> {
-        <span class="ident">program::invoke_signed</span>(<span class="kw-2">&amp;</span><span class="ident">instruction</span>, <span class="ident">ctx</span>.<span class="ident">accounts</span>, <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span><span class="ident">signer</span>.<span class="ident">signer_seeds</span>()])<span class="question-mark">?</span>;
-    } <span class="kw">else</span> {
-        <span class="ident">program::invoke</span>(<span class="kw-2">&amp;</span><span class="ident">instruction</span>, <span class="ident">ctx</span>.<span class="ident">accounts</span>)<span class="question-mark">?</span>;
+    ctx.margin_account.load_mut()<span class="question-mark">?</span>.invocation.start();
+    <span class="kw">if </span>ctx.signed {
+        program::invoke_signed(<span class="kw-2">&amp;</span>instruction, ctx.accounts, <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>signer.signer_seeds()])<span class="question-mark">?</span>;
+    } <span class="kw">else </span>{
+        program::invoke(<span class="kw-2">&amp;</span>instruction, ctx.accounts)<span class="question-mark">?</span>;
     }
-    <span class="ident">ctx</span>.<span class="ident">margin_account</span>.<span class="ident">load_mut</span>()<span class="question-mark">?</span>.<span class="ident">invocation</span>.<span class="ident">end</span>();
+    ctx.margin_account.load_mut()<span class="question-mark">?</span>.invocation.end();
 
-    <span class="ident">handle_adapter_result</span>(<span class="ident">ctx</span>)
+    handle_adapter_result(ctx)
 }
 
-<span class="kw">fn</span> <span class="ident">handle_adapter_result</span>(<span class="ident">ctx</span>: <span class="kw-2">&amp;</span><span class="ident">InvokeAdapter</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">PositionEvent</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">events</span> <span class="op">=</span> <span class="ident">update_balances</span>(<span class="ident">ctx</span>)<span class="question-mark">?</span>;
+<span class="kw">fn </span>handle_adapter_result(ctx: <span class="kw-2">&amp;</span>InvokeAdapter) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;PositionEvent&gt;&gt; {
+    <span class="kw">let </span><span class="kw-2">mut </span>events = update_balances(ctx)<span class="question-mark">?</span>;
 
-    <span class="kw">match</span> <span class="ident">program::get_return_data</span>() {
-        <span class="prelude-val">None</span> =&gt; (),
-        <span class="prelude-val">Some</span>((<span class="ident">program_id</span>, <span class="kw">_</span>)) <span class="kw">if</span> <span class="ident">program_id</span> <span class="op">!</span><span class="op">=</span> <span class="ident">ctx</span>.<span class="ident">adapter_program</span>.<span class="ident">key</span>() =&gt; (),
-        <span class="prelude-val">Some</span>((<span class="kw">_</span>, <span class="ident">data</span>)) =&gt; {
-            <span class="kw">let</span> <span class="ident">result</span> <span class="op">=</span> <span class="ident">AdapterResult::deserialize</span>(<span class="kw-2">&amp;mut</span> <span class="kw-2">&amp;</span><span class="ident">data</span>[..])<span class="question-mark">?</span>;
-            <span class="kw">for</span> (<span class="ident">mint</span>, <span class="ident">changes</span>) <span class="kw">in</span> <span class="ident">result</span>.<span class="ident">position_changes</span> {
-                <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">event</span>) <span class="op">=</span> <span class="ident">apply_changes</span>(<span class="ident">ctx</span>, <span class="ident">mint</span>, <span class="ident">changes</span>)<span class="question-mark">?</span> {
-                    <span class="ident">events</span>.<span class="ident">insert</span>(<span class="ident">mint</span>, <span class="ident">event</span>);
+    <span class="kw">match </span>program::get_return_data() {
+        <span class="prelude-val">None </span>=&gt; (),
+        <span class="prelude-val">Some</span>((program_id, <span class="kw">_</span>)) <span class="kw">if </span>program_id != ctx.adapter_program.key() =&gt; (),
+        <span class="prelude-val">Some</span>((<span class="kw">_</span>, data)) =&gt; {
+            <span class="kw">let </span>result = AdapterResult::deserialize(<span class="kw-2">&amp;mut &amp;</span>data[..])<span class="question-mark">?</span>;
+            <span class="kw">for </span>(mint, changes) <span class="kw">in </span>result.position_changes {
+                <span class="kw">if let </span><span class="prelude-val">Some</span>(event) = apply_changes(ctx, mint, changes)<span class="question-mark">? </span>{
+                    events.insert(mint, event);
                 }
             }
         }
     };
 
-    <span class="comment">// clear return data after reading it</span>
-    <span class="ident">program::set_return_data</span>(<span class="kw-2">&amp;</span>[]);
+    <span class="comment">// clear return data after reading it
+    </span>program::set_return_data(<span class="kw-2">&amp;</span>[]);
 
-    <span class="prelude-val">Ok</span>(<span class="ident">events</span>.<span class="ident">into_values</span>().<span class="ident">collect</span>())
+    <span class="prelude-val">Ok</span>(events.into_values().collect())
 }
 
-<span class="kw">fn</span> <span class="ident">update_balances</span>(<span class="ident">ctx</span>: <span class="kw-2">&amp;</span><span class="ident">InvokeAdapter</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">BTreeMap</span><span class="op">&lt;</span><span class="ident">Pubkey</span>, <span class="ident">PositionEvent</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">touched_positions</span>: <span class="ident">BTreeMap</span><span class="op">&lt;</span><span class="ident">Pubkey</span>, <span class="ident">PositionEvent</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">BTreeMap::new</span>();
+<span class="kw">fn </span>update_balances(ctx: <span class="kw-2">&amp;</span>InvokeAdapter) -&gt; <span class="prelude-ty">Result</span>&lt;BTreeMap&lt;Pubkey, PositionEvent&gt;&gt; {
+    <span class="kw">let </span><span class="kw-2">mut </span>touched_positions: BTreeMap&lt;Pubkey, PositionEvent&gt; = BTreeMap::new();
 
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">margin_account</span> <span class="op">=</span> <span class="ident">ctx</span>.<span class="ident">margin_account</span>.<span class="ident">load_mut</span>()<span class="question-mark">?</span>;
-    <span class="kw">for</span> <span class="ident">account_info</span> <span class="kw">in</span> <span class="ident">ctx</span>.<span class="ident">accounts</span> {
-        <span class="kw">if</span> <span class="ident">account_info</span>.<span class="ident">owner</span> <span class="op">==</span> <span class="kw-2">&amp;</span><span class="ident">TokenAccount::owner</span>() {
-            <span class="kw">let</span> <span class="ident">data</span> <span class="op">=</span> <span class="kw-2">&amp;mut</span> <span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="kw-2">*</span><span class="ident">account_info</span>.<span class="ident">try_borrow_data</span>()<span class="question-mark">?</span>;
-            <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Ok</span>(<span class="ident">account</span>) <span class="op">=</span> <span class="ident">TokenAccount::try_deserialize</span>(<span class="ident">data</span>) {
-                <span class="kw">match</span> <span class="ident">margin_account</span>.<span class="ident">set_position_balance</span>(
-                    <span class="kw-2">&amp;</span><span class="ident">account</span>.<span class="ident">mint</span>,
-                    <span class="ident">account_info</span>.<span class="ident">key</span>,
-                    <span class="ident">account</span>.<span class="ident">amount</span>,
+    <span class="kw">let </span><span class="kw-2">mut </span>margin_account = ctx.margin_account.load_mut()<span class="question-mark">?</span>;
+    <span class="kw">for </span>account_info <span class="kw">in </span>ctx.accounts {
+        <span class="kw">if </span>account_info.owner == <span class="kw-2">&amp;</span>TokenAccount::owner() {
+            <span class="kw">let </span>data = <span class="kw-2">&amp;mut &amp;**</span>account_info.try_borrow_data()<span class="question-mark">?</span>;
+            <span class="kw">if let </span><span class="prelude-val">Ok</span>(account) = TokenAccount::try_deserialize(data) {
+                <span class="kw">match </span>margin_account.set_position_balance(
+                    <span class="kw-2">&amp;</span>account.mint,
+                    account_info.key,
+                    account.amount,
                 ) {
-                    <span class="prelude-val">Ok</span>(<span class="ident">position</span>) =&gt; {
-                        <span class="ident">touched_positions</span>.<span class="ident">insert</span>(<span class="ident">account</span>.<span class="ident">mint</span>, <span class="ident">PositionTouched</span> { <span class="ident">position</span> }.<span class="ident">into</span>());
+                    <span class="prelude-val">Ok</span>(position) =&gt; {
+                        touched_positions.insert(account.mint, PositionTouched { position }.into());
                     }
-                    <span class="prelude-val">Err</span>(<span class="ident">ErrorCode::PositionNotRegistered</span>) =&gt; (),
-                    <span class="prelude-val">Err</span>(<span class="ident">err</span>) =&gt; <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">err</span>.<span class="ident">into</span>()),
+                    <span class="prelude-val">Err</span>(ErrorCode::PositionNotRegistered) =&gt; (),
+                    <span class="prelude-val">Err</span>(err) =&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(err.into()),
                 }
             }
         }
     }
 
-    <span class="prelude-val">Ok</span>(<span class="ident">touched_positions</span>)
+    <span class="prelude-val">Ok</span>(touched_positions)
 }
 
-<span class="kw">fn</span> <span class="ident">apply_changes</span>(
-    <span class="ident">ctx</span>: <span class="kw-2">&amp;</span><span class="ident">InvokeAdapter</span>,
-    <span class="ident">mint</span>: <span class="ident">Pubkey</span>,
-    <span class="ident">changes</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">PositionChange</span><span class="op">&gt;</span>,
-) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">PositionEvent</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">margin_account</span> <span class="op">=</span> <span class="ident">ctx</span>.<span class="ident">margin_account</span>.<span class="ident">load_mut</span>()<span class="question-mark">?</span>;
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">key</span> <span class="op">=</span> <span class="ident">margin_account</span>.<span class="ident">get_position_key</span>(<span class="kw-2">&amp;</span><span class="ident">mint</span>);
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">position</span> <span class="op">=</span> <span class="ident">key</span>.<span class="ident">and_then</span>(<span class="op">|</span><span class="ident">k</span><span class="op">|</span> <span class="ident">margin_account</span>.<span class="ident">get_position_by_key_mut</span>(<span class="kw-2">&amp;</span><span class="ident">k</span>));
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">net_registration</span> <span class="op">=</span> <span class="number">0isize</span>;
-    <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="kw-2">ref</span> <span class="ident">p</span>) <span class="op">=</span> <span class="ident">position</span> {
-        <span class="kw">if</span> <span class="ident">p</span>.<span class="ident">adapter</span> <span class="op">!</span><span class="op">=</span> <span class="ident">ctx</span>.<span class="ident">adapter_program</span>.<span class="ident">key</span>() {
-            <span class="kw">return</span> <span class="macro">err!</span>(<span class="ident">ErrorCode::InvalidPositionAdapter</span>);
+<span class="kw">fn </span>apply_changes(
+    ctx: <span class="kw-2">&amp;</span>InvokeAdapter,
+    mint: Pubkey,
+    changes: Vec&lt;PositionChange&gt;,
+) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;PositionEvent&gt;&gt; {
+    <span class="kw">let </span><span class="kw-2">mut </span>margin_account = ctx.margin_account.load_mut()<span class="question-mark">?</span>;
+    <span class="kw">let </span><span class="kw-2">mut </span>key = margin_account.get_position_key(<span class="kw-2">&amp;</span>mint);
+    <span class="kw">let </span><span class="kw-2">mut </span>position = key.and_then(|k| margin_account.get_position_by_key_mut(<span class="kw-2">&amp;</span>k));
+    <span class="kw">let </span><span class="kw-2">mut </span>net_registration = <span class="number">0isize</span>;
+    <span class="kw">if let </span><span class="prelude-val">Some</span>(<span class="kw-2">ref </span>p) = position {
+        <span class="kw">if </span>p.adapter != ctx.adapter_program.key() {
+            <span class="kw">return </span><span class="macro">err!</span>(ErrorCode::InvalidPositionAdapter);
         }
     }
-    <span class="kw">for</span> <span class="ident">change</span> <span class="kw">in</span> <span class="ident">changes</span> {
-        <span class="ident">position</span> <span class="op">=</span> <span class="ident">key</span>.<span class="ident">and_then</span>(<span class="op">|</span><span class="ident">k</span><span class="op">|</span> <span class="ident">margin_account</span>.<span class="ident">get_position_by_key_mut</span>(<span class="kw-2">&amp;</span><span class="ident">k</span>));
-        <span class="kw">match</span> <span class="ident">change</span> {
-            <span class="ident">PositionChange::Price</span>(<span class="ident">px</span>) =&gt; {
-                <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">pos</span>) <span class="op">=</span> <span class="ident">position</span> {
-                    <span class="ident">pos</span>.<span class="ident">set_price</span>(<span class="kw-2">&amp;</span><span class="ident">px</span>.<span class="ident">try_into</span>()<span class="question-mark">?</span>)<span class="question-mark">?</span>;
+    <span class="kw">for </span>change <span class="kw">in </span>changes {
+        position = key.and_then(|k| margin_account.get_position_by_key_mut(<span class="kw-2">&amp;</span>k));
+        <span class="kw">match </span>change {
+            PositionChange::Price(px) =&gt; {
+                <span class="kw">if let </span><span class="prelude-val">Some</span>(pos) = position {
+                    pos.set_price(<span class="kw-2">&amp;</span>px.try_into()<span class="question-mark">?</span>)<span class="question-mark">?</span>;
                 }
             }
-            <span class="ident">PositionChange::Flags</span>(<span class="ident">flags</span>, <span class="bool-val">true</span>) =&gt; <span class="ident">position</span>.<span class="ident">require_mut</span>()<span class="question-mark">?</span>.<span class="ident">flags</span> <span class="op">|</span><span class="op">=</span> <span class="ident">flags</span>,
-            <span class="ident">PositionChange::Flags</span>(<span class="ident">flags</span>, <span class="bool-val">false</span>) =&gt; <span class="ident">position</span>.<span class="ident">require_mut</span>()<span class="question-mark">?</span>.<span class="ident">flags</span> <span class="op">&amp;=</span> <span class="op">!</span><span class="ident">flags</span>,
-            <span class="ident">PositionChange::Register</span>(<span class="ident">token_account</span>) =&gt; <span class="kw">match</span> <span class="ident">position</span> {
-                <span class="prelude-val">Some</span>(<span class="ident">pos</span>) =&gt; {
-                    <span class="kw">if</span> <span class="ident">pos</span>.<span class="ident">address</span> <span class="op">!</span><span class="op">=</span> <span class="ident">token_account</span> {
+            PositionChange::Flags(flags, <span class="bool-val">true</span>) =&gt; position.require_mut()<span class="question-mark">?</span>.flags |= flags,
+            PositionChange::Flags(flags, <span class="bool-val">false</span>) =&gt; position.require_mut()<span class="question-mark">?</span>.flags &amp;= !flags,
+            PositionChange::Register(token_account) =&gt; <span class="kw">match </span>position {
+                <span class="prelude-val">Some</span>(pos) =&gt; {
+                    <span class="kw">if </span>pos.address != token_account {
                         <span class="macro">msg!</span>(<span class="string">&quot;position already registered for this mint with a different token account&quot;</span>);
-                        <span class="kw">return</span> <span class="macro">err!</span>(<span class="ident">ErrorCode::PositionNotRegisterable</span>);
+                        <span class="kw">return </span><span class="macro">err!</span>(ErrorCode::PositionNotRegisterable);
                     }
                 }
-                <span class="prelude-val">None</span> =&gt; {
-                    <span class="ident">key</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="ident">register_position</span>(
-                        <span class="kw-2">&amp;mut</span> <span class="ident">margin_account</span>,
-                        <span class="ident">ctx</span>.<span class="ident">accounts</span>,
-                        <span class="ident">ctx</span>.<span class="ident">adapter_result_approvals</span>().<span class="ident">as_slice</span>(),
-                        <span class="ident">mint</span>,
-                        <span class="ident">token_account</span>,
+                <span class="prelude-val">None </span>=&gt; {
+                    key = <span class="prelude-val">Some</span>(register_position(
+                        <span class="kw-2">&amp;mut </span>margin_account,
+                        ctx.accounts,
+                        ctx.adapter_result_approvals().as_slice(),
+                        mint,
+                        token_account,
                     )<span class="question-mark">?</span>);
-                    <span class="ident">net_registration</span> <span class="op">+</span><span class="op">=</span> <span class="number">1</span>;
+                    net_registration += <span class="number">1</span>;
                 }
             },
-            <span class="ident">PositionChange::Close</span>(<span class="ident">token_account</span>) =&gt; {
-                <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">pos</span>) <span class="op">=</span> <span class="ident">position</span> {
-                    <span class="kw">if</span> <span class="ident">pos</span>.<span class="ident">address</span> <span class="op">!</span><span class="op">=</span> <span class="ident">token_account</span> {
+            PositionChange::Close(token_account) =&gt; {
+                <span class="kw">if let </span><span class="prelude-val">Some</span>(pos) = position {
+                    <span class="kw">if </span>pos.address != token_account {
                         <span class="macro">msg!</span>(<span class="string">&quot;position registered for this mint with a different token account&quot;</span>);
-                        <span class="kw">return</span> <span class="macro">err!</span>(<span class="ident">ErrorCode::PositionNotRegisterable</span>);
+                        <span class="kw">return </span><span class="macro">err!</span>(ErrorCode::PositionNotRegisterable);
                     }
-                    <span class="ident">margin_account</span>.<span class="ident">unregister_position</span>(
-                        <span class="kw-2">&amp;</span><span class="ident">mint</span>,
-                        <span class="kw-2">&amp;</span><span class="ident">token_account</span>,
-                        <span class="ident">ctx</span>.<span class="ident">adapter_result_approvals</span>().<span class="ident">as_slice</span>(),
+                    margin_account.unregister_position(
+                        <span class="kw-2">&amp;</span>mint,
+                        <span class="kw-2">&amp;</span>token_account,
+                        ctx.adapter_result_approvals().as_slice(),
                     )<span class="question-mark">?</span>;
-                    <span class="ident">key</span> <span class="op">=</span> <span class="prelude-val">None</span>;
-                    <span class="ident">net_registration</span> <span class="op">-</span><span class="op">=</span> <span class="number">1</span>;
+                    key = <span class="prelude-val">None</span>;
+                    net_registration -= <span class="number">1</span>;
                 }
             }
         }
     }
-    <span class="prelude-val">Ok</span>(<span class="kw">match</span> <span class="ident">net_registration</span> {
-        <span class="number">0</span> =&gt; <span class="ident">key</span>
-            .<span class="ident">and_then</span>(<span class="op">|</span><span class="ident">k</span><span class="op">|</span> <span class="ident">margin_account</span>.<span class="ident">get_position_by_key</span>(<span class="kw-2">&amp;</span><span class="ident">k</span>))
-            .<span class="ident">map</span>(<span class="op">|</span><span class="ident">p</span><span class="op">|</span> <span class="ident">PositionTouched</span> { <span class="ident">position</span>: <span class="kw-2">*</span><span class="ident">p</span> }.<span class="ident">into</span>()),
-        <span class="ident">n</span> <span class="kw">if</span> <span class="ident">n</span> <span class="op">&gt;</span> <span class="number">0</span> =&gt; <span class="prelude-val">Some</span>(
-            <span class="ident">PositionRegistered</span> {
-                <span class="ident">margin_account</span>: <span class="ident">ctx</span>.<span class="ident">margin_account</span>.<span class="ident">key</span>(),
-                <span class="ident">position</span>: <span class="kw-2">*</span><span class="ident">key</span>
-                    .<span class="ident">and_then</span>(<span class="op">|</span><span class="ident">k</span><span class="op">|</span> <span class="ident">margin_account</span>.<span class="ident">get_position_by_key</span>(<span class="kw-2">&amp;</span><span class="ident">k</span>))
-                    .<span class="ident">require</span>()<span class="question-mark">?</span>,
-                <span class="ident">authority</span>: <span class="ident">ctx</span>.<span class="ident">adapter_program</span>.<span class="ident">key</span>(),
+    <span class="prelude-val">Ok</span>(<span class="kw">match </span>net_registration {
+        <span class="number">0 </span>=&gt; key
+            .and_then(|k| margin_account.get_position_by_key(<span class="kw-2">&amp;</span>k))
+            .map(|p| PositionTouched { position: <span class="kw-2">*</span>p }.into()),
+        n <span class="kw">if </span>n &gt; <span class="number">0 </span>=&gt; <span class="prelude-val">Some</span>(
+            PositionRegistered {
+                margin_account: ctx.margin_account.key(),
+                position: <span class="kw-2">*</span>key
+                    .and_then(|k| margin_account.get_position_by_key(<span class="kw-2">&amp;</span>k))
+                    .require()<span class="question-mark">?</span>,
+                authority: ctx.adapter_program.key(),
             }
-            .<span class="ident">into</span>(),
+            .into(),
         ),
-        <span class="kw">_</span> =&gt; <span class="prelude-val">Some</span>(
-            <span class="ident">PositionClosed</span> {
-                <span class="ident">margin_account</span>: <span class="ident">ctx</span>.<span class="ident">margin_account</span>.<span class="ident">key</span>(),
-                <span class="ident">authority</span>: <span class="ident">ctx</span>.<span class="ident">adapter_program</span>.<span class="ident">key</span>(),
-                <span class="ident">token</span>: <span class="ident">mint</span>,
+        <span class="kw">_ </span>=&gt; <span class="prelude-val">Some</span>(
+            PositionClosed {
+                margin_account: ctx.margin_account.key(),
+                authority: ctx.adapter_program.key(),
+                token: mint,
             }
-            .<span class="ident">into</span>(),
+            .into(),
         ),
     })
 }
 
-<span class="kw">fn</span> <span class="ident">register_position</span>(
-    <span class="ident">margin_account</span>: <span class="kw-2">&amp;mut</span> <span class="ident">MarginAccount</span>,
-    <span class="ident">remaining_accounts</span>: <span class="kw-2">&amp;</span>[<span class="ident">AccountInfo</span>],
-    <span class="ident">approvals</span>: <span class="kw-2">&amp;</span>[<span class="ident">Approver</span>],
-    <span class="ident">mint_address</span>: <span class="ident">Pubkey</span>,
-    <span class="ident">token_account_address</span>: <span class="ident">Pubkey</span>,
-) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">AccountPositionKey</span><span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">token_config</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Account</span><span class="op">&lt;</span><span class="ident">TokenConfig</span><span class="op">&gt;</span><span class="op">&gt;</span> <span class="op">=</span> <span class="prelude-val">None</span>;
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">metadata</span>: <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Account</span><span class="op">&lt;</span><span class="ident">PositionTokenMetadata</span><span class="op">&gt;</span><span class="op">&gt;</span> <span class="op">=</span>
-        <span class="macro">err!</span>(<span class="ident">ErrorCode::PositionNotRegisterable</span>);
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">token_account</span>: <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Account</span><span class="op">&lt;</span><span class="ident">TokenAccount</span><span class="op">&gt;</span><span class="op">&gt;</span> <span class="op">=</span> <span class="macro">err!</span>(<span class="ident">ErrorCode::PositionNotRegisterable</span>);
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">mint</span>: <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Account</span><span class="op">&lt;</span><span class="ident">Mint</span><span class="op">&gt;</span><span class="op">&gt;</span> <span class="op">=</span> <span class="macro">err!</span>(<span class="ident">ErrorCode::PositionNotRegisterable</span>);
-    <span class="kw">for</span> <span class="ident">info</span> <span class="kw">in</span> <span class="ident">remaining_accounts</span> {
-        <span class="kw">if</span> <span class="ident">info</span>.<span class="ident">key</span> <span class="op">==</span> <span class="kw-2">&amp;</span><span class="ident">token_account_address</span> {
-            <span class="ident">token_account</span> <span class="op">=</span> <span class="prelude-val">Ok</span>(<span class="ident">Account</span>::<span class="op">&lt;</span><span class="ident">TokenAccount</span><span class="op">&gt;</span><span class="ident">::try_from</span>(<span class="ident">info</span>)<span class="question-mark">?</span>);
-        } <span class="kw">else</span> <span class="kw">if</span> <span class="ident">info</span>.<span class="ident">key</span> <span class="op">==</span> <span class="kw-2">&amp;</span><span class="ident">mint_address</span> {
-            <span class="ident">mint</span> <span class="op">=</span> <span class="prelude-val">Ok</span>(<span class="ident">Account</span>::<span class="op">&lt;</span><span class="ident">Mint</span><span class="op">&gt;</span><span class="ident">::try_from</span>(<span class="ident">info</span>)<span class="question-mark">?</span>);
-        } <span class="kw">else</span> <span class="kw">if</span> <span class="ident">info</span>.<span class="ident">owner</span> <span class="op">==</span> <span class="kw-2">&amp;</span><span class="ident">PositionTokenMetadata::owner</span>() {
-            <span class="comment">// TODO: remove backwards compat</span>
-            <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Ok</span>(<span class="ident">ptm</span>) <span class="op">=</span> <span class="ident">Account</span>::<span class="op">&lt;</span><span class="ident">PositionTokenMetadata</span><span class="op">&gt;</span><span class="ident">::try_from</span>(<span class="ident">info</span>) {
-                <span class="kw">if</span> <span class="ident">ptm</span>.<span class="ident">position_token_mint</span> <span class="op">==</span> <span class="ident">mint_address</span> {
-                    <span class="ident">metadata</span> <span class="op">=</span> <span class="prelude-val">Ok</span>(<span class="ident">ptm</span>);
+<span class="kw">fn </span>register_position(
+    margin_account: <span class="kw-2">&amp;mut </span>MarginAccount,
+    remaining_accounts: <span class="kw-2">&amp;</span>[AccountInfo],
+    approvals: <span class="kw-2">&amp;</span>[Approver],
+    mint_address: Pubkey,
+    token_account_address: Pubkey,
+) -&gt; <span class="prelude-ty">Result</span>&lt;AccountPositionKey&gt; {
+    <span class="kw">let </span><span class="kw-2">mut </span>token_config: <span class="prelude-ty">Option</span>&lt;Account&lt;TokenConfig&gt;&gt; = <span class="prelude-val">None</span>;
+    <span class="kw">let </span><span class="kw-2">mut </span>metadata: <span class="prelude-ty">Result</span>&lt;Account&lt;PositionTokenMetadata&gt;&gt; =
+        <span class="macro">err!</span>(ErrorCode::PositionNotRegisterable);
+    <span class="kw">let </span><span class="kw-2">mut </span>token_account: <span class="prelude-ty">Result</span>&lt;Account&lt;TokenAccount&gt;&gt; = <span class="macro">err!</span>(ErrorCode::PositionNotRegisterable);
+    <span class="kw">let </span><span class="kw-2">mut </span>mint: <span class="prelude-ty">Result</span>&lt;Account&lt;Mint&gt;&gt; = <span class="macro">err!</span>(ErrorCode::PositionNotRegisterable);
+    <span class="kw">for </span>info <span class="kw">in </span>remaining_accounts {
+        <span class="kw">if </span>info.key == <span class="kw-2">&amp;</span>token_account_address {
+            token_account = <span class="prelude-val">Ok</span>(Account::&lt;TokenAccount&gt;::try_from(info)<span class="question-mark">?</span>);
+        } <span class="kw">else if </span>info.key == <span class="kw-2">&amp;</span>mint_address {
+            mint = <span class="prelude-val">Ok</span>(Account::&lt;Mint&gt;::try_from(info)<span class="question-mark">?</span>);
+        } <span class="kw">else if </span>info.owner == <span class="kw-2">&amp;</span>PositionTokenMetadata::owner() {
+            <span class="comment">// TODO: remove backwards compat
+            </span><span class="kw">if let </span><span class="prelude-val">Ok</span>(ptm) = Account::&lt;PositionTokenMetadata&gt;::try_from(info) {
+                <span class="kw">if </span>ptm.position_token_mint == mint_address {
+                    metadata = <span class="prelude-val">Ok</span>(ptm);
                 }
             }
-        } <span class="kw">else</span> <span class="kw">if</span> <span class="ident">info</span>.<span class="ident">owner</span> <span class="op">==</span> <span class="kw-2">&amp;</span><span class="ident">TokenConfig::owner</span>() {
-            <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Ok</span>(<span class="ident">config</span>) <span class="op">=</span> <span class="ident">Account</span>::<span class="op">&lt;</span><span class="ident">TokenConfig</span><span class="op">&gt;</span><span class="ident">::try_from</span>(<span class="ident">info</span>) {
-                <span class="kw">if</span> <span class="ident">config</span>.<span class="ident">mint</span> <span class="op">==</span> <span class="ident">mint_address</span> {
-                    <span class="ident">token_config</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="ident">config</span>);
+        } <span class="kw">else if </span>info.owner == <span class="kw-2">&amp;</span>TokenConfig::owner() {
+            <span class="kw">if let </span><span class="prelude-val">Ok</span>(config) = Account::&lt;TokenConfig&gt;::try_from(info) {
+                <span class="kw">if </span>config.mint == mint_address {
+                    token_config = <span class="prelude-val">Some</span>(config);
                 }
             }
         }
     }
 
-    <span class="kw">let</span> <span class="ident">token_account</span> <span class="op">=</span> <span class="macro">log_on_error!</span>(
-        <span class="ident">token_account</span>,
+    <span class="kw">let </span>token_account = <span class="macro">log_on_error!</span>(
+        token_account,
         <span class="string">&quot;position token account {:?} not found&quot;</span>,
-        <span class="ident">token_account_address</span>
+        token_account_address
     )<span class="question-mark">?</span>;
-    <span class="kw">let</span> <span class="ident">mint</span> <span class="op">=</span> <span class="macro">log_on_error!</span>(<span class="ident">mint</span>, <span class="string">&quot;position token mint {:?} not found&quot;</span>, <span class="ident">mint_address</span>)<span class="question-mark">?</span>;
+    <span class="kw">let </span>mint = <span class="macro">log_on_error!</span>(mint, <span class="string">&quot;position token mint {:?} not found&quot;</span>, mint_address)<span class="question-mark">?</span>;
 
-    <span class="kw">if</span> <span class="ident">mint</span>.<span class="ident">key</span>() <span class="op">!</span><span class="op">=</span> <span class="ident">token_account</span>.<span class="ident">mint</span> {
+    <span class="kw">if </span>mint.key() != token_account.mint {
         <span class="macro">msg!</span>(<span class="string">&quot;token account has the wrong mint&quot;</span>);
-        <span class="kw">return</span> <span class="macro">err!</span>(<span class="ident">ErrorCode::PositionNotRegisterable</span>);
+        <span class="kw">return </span><span class="macro">err!</span>(ErrorCode::PositionNotRegisterable);
     }
 
-    <span class="kw">let</span> <span class="ident">key</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">token_config</span> {
-        <span class="prelude-val">Some</span>(<span class="ident">config</span>) =&gt; <span class="ident">margin_account</span>.<span class="ident">register_position</span>(
-            <span class="ident">mint</span>.<span class="ident">key</span>(),
-            <span class="ident">mint</span>.<span class="ident">decimals</span>,
-            <span class="ident">token_account</span>.<span class="ident">key</span>(),
-            <span class="ident">config</span>.<span class="ident">adapter_program</span>().<span class="ident">unwrap_or_default</span>(),
-            <span class="ident">config</span>.<span class="ident">token_kind</span>,
-            <span class="ident">config</span>.<span class="ident">value_modifier</span>,
-            <span class="ident">config</span>.<span class="ident">max_staleness</span>,
-            <span class="ident">approvals</span>,
+    <span class="kw">let </span>key = <span class="kw">match </span>token_config {
+        <span class="prelude-val">Some</span>(config) =&gt; margin_account.register_position(
+            mint.key(),
+            mint.decimals,
+            token_account.key(),
+            config.adapter_program().unwrap_or_default(),
+            config.token_kind,
+            config.value_modifier,
+            config.max_staleness,
+            approvals,
         )<span class="question-mark">?</span>,
-        <span class="comment">// TODO: remove backwards compat</span>
-        <span class="prelude-val">None</span> =&gt; {
-            <span class="kw">let</span> <span class="ident">metadata</span> <span class="op">=</span> <span class="macro">log_on_error!</span>(
-                <span class="ident">metadata</span>,
+        <span class="comment">// TODO: remove backwards compat
+        </span><span class="prelude-val">None </span>=&gt; {
+            <span class="kw">let </span>metadata = <span class="macro">log_on_error!</span>(
+                metadata,
                 <span class="string">&quot;position token metadata not found for mint {:?}&quot;</span>,
-                <span class="ident">mint_address</span>
+                mint_address
             )<span class="question-mark">?</span>;
-            <span class="ident">margin_account</span>.<span class="ident">register_position</span>(
-                <span class="ident">mint</span>.<span class="ident">key</span>(),
-                <span class="ident">mint</span>.<span class="ident">decimals</span>,
-                <span class="ident">token_account</span>.<span class="ident">key</span>(),
-                <span class="ident">metadata</span>.<span class="ident">adapter_program</span>,
-                <span class="ident">metadata</span>.<span class="ident">token_kind</span>.<span class="ident">into</span>(),
-                <span class="ident">metadata</span>.<span class="ident">value_modifier</span>,
-                <span class="ident">metadata</span>.<span class="ident">max_staleness</span>,
-                <span class="ident">approvals</span>,
-            )<span class="question-mark">?</span>
-        }
+            margin_account.register_position(
+                mint.key(),
+                mint.decimals,
+                token_account.key(),
+                metadata.adapter_program,
+                metadata.token_kind.into(),
+                metadata.value_modifier,
+                metadata.max_staleness,
+                approvals,
+            )<span class="question-mark">?
+        </span>}
     };
 
-    <span class="ident">margin_account</span>.<span class="ident">set_position_balance</span>(
-        <span class="kw-2">&amp;</span><span class="ident">mint_address</span>,
-        <span class="kw-2">&amp;</span><span class="ident">token_account_address</span>,
-        <span class="ident">token_account</span>.<span class="ident">amount</span>,
+    margin_account.set_position_balance(
+        <span class="kw-2">&amp;</span>mint_address,
+        <span class="kw-2">&amp;</span>token_account_address,
+        token_account.amount,
     )<span class="question-mark">?</span>;
 
-    <span class="prelude-val">Ok</span>(<span class="ident">key</span>)
+    <span class="prelude-val">Ok</span>(key)
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">test</span>)]</span>
-<span class="kw">mod</span> <span class="ident">test</span> {
-    <span class="kw">use</span> <span class="ident">std</span>::{<span class="ident">collections::HashMap</span>, <span class="ident">mem::size_of</span>};
+<span class="attribute">#[cfg(test)]
+</span><span class="kw">mod </span>test {
+    <span class="kw">use </span>std::{collections::HashMap, mem::size_of};
 
-    <span class="kw">use</span> <span class="ident">anchor_lang::Discriminator</span>;
+    <span class="kw">use </span>anchor_lang::Discriminator;
 
-    <span class="kw">use</span> <span class="kw">super</span>::<span class="kw-2">*</span>;
+    <span class="kw">use super</span>::<span class="kw-2">*</span>;
 
-    <span class="kw">impl</span> <span class="ident">std::fmt::Debug</span> <span class="kw">for</span> <span class="ident">PositionEvent</span> {
-        <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="kw-2">&amp;mut</span> <span class="ident">std::fmt::Formatter</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>) -&gt; <span class="ident">std::fmt::Result</span> {
-            <span class="ident">f</span>.<span class="ident">debug_struct</span>(<span class="string">&quot;PositionEvent&quot;</span>).<span class="ident">finish</span>()
+    <span class="kw">impl </span>std::fmt::Debug <span class="kw">for </span>PositionEvent {
+        <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>std::fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; std::fmt::Result {
+            f.debug_struct(<span class="string">&quot;PositionEvent&quot;</span>).finish()
         }
     }
 
-    <span class="kw">fn</span> <span class="ident">all_change_types</span>() -&gt; <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">PositionChange</span><span class="op">&gt;</span> {
+    <span class="kw">fn </span>all_change_types() -&gt; Vec&lt;PositionChange&gt; {
         <span class="macro">vec!</span>[
-            <span class="ident">PositionChange::Price</span>(<span class="ident">PriceChangeInfo</span> {
-                <span class="ident">value</span>: <span class="number">0</span>,
-                <span class="ident">confidence</span>: <span class="number">0</span>,
-                <span class="ident">twap</span>: <span class="number">0</span>,
-                <span class="ident">publish_time</span>: <span class="number">0</span>,
-                <span class="ident">exponent</span>: <span class="number">0</span>,
+            PositionChange::Price(PriceChangeInfo {
+                value: <span class="number">0</span>,
+                confidence: <span class="number">0</span>,
+                twap: <span class="number">0</span>,
+                publish_time: <span class="number">0</span>,
+                exponent: <span class="number">0</span>,
             }),
-            <span class="ident">PositionChange::Flags</span>(<span class="ident">AdapterPositionFlags::empty</span>(), <span class="bool-val">true</span>),
-            <span class="ident">PositionChange::Register</span>(<span class="ident">Pubkey::default</span>()),
-            <span class="ident">PositionChange::Close</span>(<span class="ident">Pubkey::default</span>()),
+            PositionChange::Flags(AdapterPositionFlags::empty(), <span class="bool-val">true</span>),
+            PositionChange::Register(Pubkey::default()),
+            PositionChange::Close(Pubkey::default()),
         ]
     }
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">position_change_types_are_required_when_appropriate</span>() {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">data</span> <span class="op">=</span> [<span class="number">0u8</span>; <span class="number">100</span>];
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">lamports</span> <span class="op">=</span> <span class="number">0u64</span>;
-        <span class="kw">let</span> <span class="ident">default</span> <span class="op">=</span> <span class="ident">Pubkey::default</span>();
-        <span class="kw">let</span> <span class="ident">margin</span> <span class="op">=</span> <span class="ident">MarginAccount::owner</span>();
-        <span class="kw">let</span> <span class="ident">adapter</span> <span class="op">=</span> <span class="ident">AccountInfo::new</span>(
-            <span class="kw-2">&amp;</span><span class="ident">default</span>,
+    <span class="attribute">#[test]
+    </span><span class="kw">fn </span>position_change_types_are_required_when_appropriate() {
+        <span class="kw">let </span><span class="kw-2">mut </span>data = [<span class="number">0u8</span>; <span class="number">100</span>];
+        <span class="kw">let </span><span class="kw-2">mut </span>lamports = <span class="number">0u64</span>;
+        <span class="kw">let </span>default = Pubkey::default();
+        <span class="kw">let </span>margin = MarginAccount::owner();
+        <span class="kw">let </span>adapter = AccountInfo::new(
+            <span class="kw-2">&amp;</span>default,
             <span class="bool-val">false</span>,
             <span class="bool-val">false</span>,
-            <span class="kw-2">&amp;mut</span> <span class="ident">lamports</span>,
-            <span class="kw-2">&amp;mut</span> <span class="ident">data</span>,
-            <span class="kw-2">&amp;</span><span class="ident">default</span>,
+            <span class="kw-2">&amp;mut </span>lamports,
+            <span class="kw-2">&amp;mut </span>data,
+            <span class="kw-2">&amp;</span>default,
             <span class="bool-val">false</span>,
             <span class="number">0</span>,
         );
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">data</span> <span class="op">=</span> [<span class="number">0u8</span>; <span class="number">8</span> <span class="op">+</span> <span class="ident">size_of</span>::<span class="op">&lt;</span><span class="ident">MarginAccount</span><span class="op">&gt;</span>()];
-        <span class="ident">data</span>[..<span class="number">8</span>].<span class="ident">copy_from_slice</span>(<span class="kw-2">&amp;</span><span class="ident">MarginAccount::discriminator</span>());
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">lamports</span> <span class="op">=</span> <span class="number">0u64</span>;
-        <span class="kw">let</span> <span class="ident">margin_account</span> <span class="op">=</span> <span class="ident">AccountInfo::new</span>(
-            <span class="kw-2">&amp;</span><span class="ident">default</span>,
+        <span class="kw">let </span><span class="kw-2">mut </span>data = [<span class="number">0u8</span>; <span class="number">8 </span>+ size_of::&lt;MarginAccount&gt;()];
+        data[..<span class="number">8</span>].copy_from_slice(<span class="kw-2">&amp;</span>MarginAccount::discriminator());
+        <span class="kw">let </span><span class="kw-2">mut </span>lamports = <span class="number">0u64</span>;
+        <span class="kw">let </span>margin_account = AccountInfo::new(
+            <span class="kw-2">&amp;</span>default,
             <span class="bool-val">false</span>,
             <span class="bool-val">true</span>,
-            <span class="kw-2">&amp;mut</span> <span class="ident">lamports</span>,
-            <span class="kw-2">&amp;mut</span> <span class="ident">data</span>,
-            <span class="kw-2">&amp;</span><span class="ident">margin</span>,
+            <span class="kw-2">&amp;mut </span>lamports,
+            <span class="kw-2">&amp;mut </span>data,
+            <span class="kw-2">&amp;</span>margin,
             <span class="bool-val">false</span>,
             <span class="number">0</span>,
         );
-        <span class="kw">let</span> <span class="ident">ctx</span> <span class="op">=</span> <span class="ident">InvokeAdapter</span> {
-            <span class="ident">margin_account</span>: <span class="kw-2">&amp;</span><span class="ident">AccountLoader::try_from</span>(<span class="kw-2">&amp;</span><span class="ident">margin_account</span>).<span class="ident">unwrap</span>(),
-            <span class="ident">adapter_program</span>: <span class="kw-2">&amp;</span><span class="ident">adapter</span>,
-            <span class="ident">accounts</span>: <span class="kw-2">&amp;</span>[],
-            <span class="ident">signed</span>: <span class="bool-val">true</span>,
+        <span class="kw">let </span>ctx = InvokeAdapter {
+            margin_account: <span class="kw-2">&amp;</span>AccountLoader::try_from(<span class="kw-2">&amp;</span>margin_account).unwrap(),
+            adapter_program: <span class="kw-2">&amp;</span>adapter,
+            accounts: <span class="kw-2">&amp;</span>[],
+            signed: <span class="bool-val">true</span>,
         };
 
-        <span class="kw">for</span> <span class="ident">change</span> <span class="kw">in</span> <span class="ident">all_change_types</span>() {
-            <span class="kw">let</span> <span class="ident">required</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">change</span> {
-                <span class="ident">PositionChange::Price</span>(<span class="kw">_</span>) =&gt; <span class="bool-val">false</span>,
-                <span class="ident">PositionChange::Flags</span>(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; <span class="bool-val">true</span>,
-                <span class="ident">PositionChange::Register</span>(<span class="kw">_</span>) =&gt; <span class="bool-val">true</span>,
-                <span class="ident">PositionChange::Close</span>(<span class="kw">_</span>) =&gt; <span class="bool-val">false</span>,
+        <span class="kw">for </span>change <span class="kw">in </span>all_change_types() {
+            <span class="kw">let </span>required = <span class="kw">match </span>change {
+                PositionChange::Price(<span class="kw">_</span>) =&gt; <span class="bool-val">false</span>,
+                PositionChange::Flags(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; <span class="bool-val">true</span>,
+                PositionChange::Register(<span class="kw">_</span>) =&gt; <span class="bool-val">true</span>,
+                PositionChange::Close(<span class="kw">_</span>) =&gt; <span class="bool-val">false</span>,
             };
-            <span class="kw">if</span> <span class="ident">required</span> {
-                <span class="ident">apply_changes</span>(<span class="kw-2">&amp;</span><span class="ident">ctx</span>, <span class="ident">Pubkey::default</span>(), <span class="macro">vec!</span>[<span class="ident">change</span>]).<span class="ident">unwrap_err</span>();
-            } <span class="kw">else</span> {
-                <span class="ident">apply_changes</span>(<span class="kw-2">&amp;</span><span class="ident">ctx</span>, <span class="ident">Pubkey::default</span>(), <span class="macro">vec!</span>[<span class="ident">change</span>]).<span class="ident">unwrap</span>();
+            <span class="kw">if </span>required {
+                apply_changes(<span class="kw-2">&amp;</span>ctx, Pubkey::default(), <span class="macro">vec!</span>[change]).unwrap_err();
+            } <span class="kw">else </span>{
+                apply_changes(<span class="kw-2">&amp;</span>ctx, Pubkey::default(), <span class="macro">vec!</span>[change]).unwrap();
             }
         }
     }
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">ensure_that_tests_check_all_change_types</span>() {
-        <span class="macro">assert_contains_all_variants!</span> {
-            <span class="ident">all_change_types</span>() =&gt;
-                <span class="ident">PositionChange::Price</span>(<span class="ident">_x</span>)
-                <span class="ident">PositionChange::Flags</span>(<span class="ident">_x</span>, <span class="ident">_y</span>)
-                <span class="ident">PositionChange::Register</span>(<span class="ident">_x</span>)
-                <span class="ident">PositionChange::Close</span>(<span class="ident">_x</span>)
+    <span class="attribute">#[test]
+    </span><span class="kw">fn </span>ensure_that_tests_check_all_change_types() {
+        <span class="macro">assert_contains_all_variants! </span>{
+            all_change_types() =&gt;
+                PositionChange::Price(_x)
+                PositionChange::Flags(_x, _y)
+                PositionChange::Register(_x)
+                PositionChange::Close(_x)
         }
     }
 
-    <span class="macro">macro_rules!</span> <span class="ident">assert_contains_all_variants</span> {
-        (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">iterable</span>:<span class="ident">expr</span> =&gt; $(<span class="macro-nonterminal">$</span><span class="kw">type</span>:<span class="macro-nonterminal">ident</span>::<span class="macro-nonterminal">$</span><span class="macro-nonterminal">var</span>:<span class="ident">ident</span> $(($(<span class="macro-nonterminal">$</span><span class="kw">_</span>:<span class="macro-nonterminal">ident</span>),<span class="kw-2">*</span>))<span class="question-mark">?</span> )<span class="op">+</span> ) =&gt; {
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">index</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="ident">str</span>, <span class="ident">usize</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">HashMap::new</span>();
-            $(<span class="ident">index</span>.<span class="ident">insert</span>(<span class="macro">stringify!</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">var</span>), <span class="number">1</span>);)<span class="op">+</span>
-            <span class="kw">for</span> <span class="ident">item</span> <span class="kw">in</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">iterable</span> {
-                <span class="kw">match</span> <span class="ident">item</span> {
-                    $(<span class="macro-nonterminal">$</span><span class="kw">type</span>::<span class="macro-nonterminal">$</span><span class="macro-nonterminal">var</span> $(($(<span class="macro-nonterminal">$</span><span class="kw">_</span>),<span class="kw-2">*</span>))<span class="question-mark">?</span> =&gt; <span class="macro-nonterminal">index</span>.<span class="ident">insert</span>(<span class="macro">stringify!</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">var</span>), <span class="number">0</span>)),<span class="op">+</span>
+    <span class="macro">macro_rules! </span>assert_contains_all_variants {
+        (<span class="macro-nonterminal">$iterable</span>:expr =&gt; $(<span class="macro-nonterminal">$</span><span class="kw">type</span>:<span class="macro-nonterminal">ident</span>::<span class="macro-nonterminal">$var</span>:ident $(($(<span class="macro-nonterminal">$</span><span class="kw">_</span>:<span class="macro-nonterminal">ident</span>),<span class="kw-2">*</span>))<span class="question-mark">? </span>)+ ) =&gt; {
+            <span class="kw">let </span><span class="kw-2">mut </span>index: HashMap&lt;<span class="kw-2">&amp;</span>str, usize&gt; = HashMap::new();
+            $(index.insert(<span class="macro">stringify!</span>(<span class="macro-nonterminal">$var</span>), <span class="number">1</span>);)+
+            <span class="kw">for </span>item <span class="kw">in </span><span class="macro-nonterminal">$iterable </span>{
+                <span class="kw">match </span>item {
+                    $(<span class="macro-nonterminal">$</span><span class="kw">type</span>::<span class="macro-nonterminal">$var </span>$(($(<span class="macro-nonterminal">$</span><span class="kw">_</span>),<span class="kw-2">*</span>))<span class="question-mark">? </span>=&gt; <span class="macro-nonterminal">index</span>.insert(<span class="macro">stringify!</span>(<span class="macro-nonterminal">$var</span>), <span class="number">0</span>)),+
                 };
             }
-            <span class="kw">let</span> <span class="ident">sum</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="ident">index</span>.<span class="ident">values</span>().<span class="ident">sum</span>();
-            <span class="kw">if</span> <span class="ident">sum</span> <span class="op">&gt;</span> <span class="number">0</span> {
+            <span class="kw">let </span>sum: usize = index.values().sum();
+            <span class="kw">if </span>sum &gt; <span class="number">0 </span>{
                 <span class="macro">assert!</span>(<span class="bool-val">false</span>);
             }
         };
     }
-    <span class="kw">use</span> <span class="ident">assert_contains_all_variants</span>;
+    <span class="kw">use </span>assert_contains_all_variants;
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="jet_margin" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0 (a55dd71d5 2022-09-19)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="jet_margin" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

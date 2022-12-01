@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `programs/bonds/src/lib.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>lib.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../normalize.css"><link rel="stylesheet" type="text/css" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script><script defer src="../../main.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../jet_bonds/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../jet_bonds/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../jet_bonds/index.html"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `programs/bonds/src/lib.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>lib.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../normalize.css"><link rel="stylesheet" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../ayu.css" disabled><link rel="stylesheet" href="../../dark.css" disabled><link rel="stylesheet" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script><script defer src="../../main.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../jet_bonds/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../jet_bonds/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../jet_bonds/index.html"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -388,395 +388,395 @@
 <span id="388">388</span>
 <span id="389">389</span>
 <span id="390">390</span>
-</pre><pre class="rust"><code><span class="doccomment">//! An orderbook-based fixed term bond market hosted on the Solana blockchain</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! # Interaction</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! To interact with the bond market, users will initialize a PDA called an [`MarginUser`](struct@crate::orderbook::state::user::MarginUser).</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! After `MarginUser` intialization, to place an order you must deposit underlying tokens or bond tickets into your account.</span>
-<span class="doccomment">//! This will allow you to use the [`PlaceOrder`](struct@crate::orderbook::instructions::place_order::PlaceOrder) instruction, which</span>
-<span class="doccomment">//! utilizes the orderbook to match borrowers and lenders.</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! ### Lending</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! To lend tokens, a user will deposit the underlying token into their `MarginUser` account. Then, they may post</span>
-<span class="doccomment">//! orders on the book using the [`PlaceOrder`](struct@crate::orderbook::instructions::place_order::PlaceOrder) with a given set of</span>
-<span class="doccomment">//! [`OrderParams`](struct@crate::orderbook::state::OrderParams).</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! For example, to lend `1_000_000` tokens at 15% interest in a given market, a lender would specify:</span>
-<span class="doccomment">//! ```ignore</span>
-<span class="doccomment">//! OrderParams {</span>
-<span class="doccomment">//!     /// We want as many bond tickets as the book will give us</span>
-<span class="doccomment">//!     max_bond_ticket_qty: u64::MAX,</span>
-<span class="doccomment">//!     /// we are lending 1_000_000 tokens</span>
-<span class="doccomment">//!     max_underlying_token_qty: 1_000_000,</span>
-<span class="doccomment">//!     /// use the crate function to generate a limit price</span>
-<span class="doccomment">//!     limit_price: limit_price_from_f32((1.0 / 1.15)),</span>
-<span class="doccomment">//!     /// limit the number of matches to 100</span>
-<span class="doccomment">//!     match_limit: 100,</span>
-<span class="doccomment">//!     /// Do not fail transaction if order crosses the spread</span>
-<span class="doccomment">//!     post_only: false,</span>
-<span class="doccomment">//!     /// If order does not get filled immediately, post remainder to the book</span>
-<span class="doccomment">//!     post_allowed: true,</span>
-<span class="doccomment">//!     /// stake generated tickets automatically, creating `SplitTicket`s</span>
-<span class="doccomment">//!     auto_stake: true,</span>
-<span class="doccomment">//! }</span>
-<span class="doccomment">//!```</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! ### Borrowing</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! For borrowing, a user has two options. They can buy bond tickets from some market, and deposit them into their</span>
-<span class="doccomment">//! `MarginUser` account. Or, they may use the `jet-margin` program to place collateralized borrow orders.</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! In the case of a collateralized order, an `Obligation` will be minted to track the debt. A user must repay or face liquidation</span>
-<span class="doccomment">//! by the `jet-margin` program.</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! Example borrow order, where a borrower wants no more than 10% interest to borrow 100_000_000 tokens</span>
-<span class="doccomment">//! ```ignore</span>
-<span class="doccomment">//! OrderParams {</span>
-<span class="doccomment">//!     /// We want to pay no more than 10%</span>
-<span class="doccomment">//!     max_bond_ticket_qty: 110_000_000,</span>
-<span class="doccomment">//!     /// we only need to borrow 100_000_000 tokens</span>
-<span class="doccomment">//!     max_underlying_token_qty: 100_000_000,</span>
-<span class="doccomment">//!     /// use the crate function to generate a limit price</span>
-<span class="doccomment">//!     limit_price: limit_price_from_f32((1.0 / 1.10)),</span>
-<span class="doccomment">//!     /// limit the number of matches to 100</span>
-<span class="doccomment">//!     match_limit: 100,</span>
-<span class="doccomment">//!     /// Do not fail transaction if order crosses the spread</span>
-<span class="doccomment">//!     post_only: false,</span>
-<span class="doccomment">//!     /// If order does not get filled immediately, post remainder to the book</span>
-<span class="doccomment">//!     post_allowed: true,</span>
-<span class="doccomment">//!     /// borrowers do not stake tickets</span>
-<span class="doccomment">//!     auto_stake: false,</span>
-<span class="doccomment">//! }</span>
-<span class="doccomment">//! ```</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! # Orderbook matching engine</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! To facilitate the pairing of lenders and borrowers, the program utilizes the `agnostic-orderbook` crate to create an</span>
-<span class="doccomment">//! orderbook. This orderbook allows lenders and borrowers to post orders using underlying tokens, held bond tickets, or, by utilizing `jet-margin` accounts,</span>
-<span class="doccomment">//! a collateralized borrow order in lieu of held funds.</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! ### EventQueue operation and Adapters</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! The orderbook works by matching posted orders and pushing events to an `EventQueue` to be consumed by a crank operating offchain by</span>
-<span class="doccomment">//! sending transactions to Solana.</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! Some users may want to subscribe to events generated by the orderbook matching. To do this, a user must register with</span>
-<span class="doccomment">//! the program an `Adapter` through their `MarginUser` account using the [`RegisterAdapter`](struct@crate::orderbook::instructions::event_adapter::RegisterAdapter) instruction. This instruction</span>
-<span class="doccomment">//! creates an `AdapterEventQueue` PDA to which all processed orders containing the `MarginUser` account will be pushed.</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! Users are responsible for handling the consumption logic for their adapter. To clear events after processing, use the [`PopAdapterEvents`](struct@crate::orderbook::instructions::event_adapter::PopAdapterEvents) instruction.</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! # Bond Tickets</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! The program abstracts the concept of a bond into bond tickets. Bond tickets are fungible spl tokens</span>
-<span class="doccomment">//! that must be staked to claim their underlying value. In order to create bond tickets, a user must either</span>
-<span class="doccomment">//! place a lend order on the orderbook, or exchange the token underlying the bond market (in practice, almost never</span>
-<span class="doccomment">//! will users do this, as it locks their tokens for at least the tenor of the market).</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! ### Ticket kinds and redemption</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! The program allots for two types of ticket redemption. The [`ClaimTicket`](struct@crate::tickets::state::ClaimTicket) is given when</span>
-<span class="doccomment">//! a user stakes directly with the program. As there is no information about the creation of the tickets, a `ClaimTicket` does not</span>
-<span class="doccomment">//! have accounting for principal or interest, and only contains a redemptive value.</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! Conversely, a [`SplitTicket`](struct@crate::tickets::state::SplitTicket) contains split principal and interest values. As well as</span>
-<span class="doccomment">//! the slot it was minted. To create a `SplitTicket`, you must configure your [`OrderParams`](struct@crate::orderbook::state::OrderParams) `auto_stake` flag to</span>
-<span class="doccomment">//! `true`. This will allow to program to immediately stake your tickets as the match event is processed.</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! After the bond market tenor has passed, the ticket may be redeemed for the underlying value with the program. Also included are instructions</span>
-<span class="doccomment">//! for transferring ownership of a ticket.</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! # Debt and Obligations</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! When using a `jet-margin` account to post a collateralized borrow order, an [`Obligation`](struct@crate::orderbook::state::debt::Obligation) is created to track</span>
-<span class="doccomment">//! amounts owed to the program. `Obligation`s are either repaid manually by the user, or handled by an off-chain liquidator.</span>
+</pre><pre class="rust"><code><span class="doccomment">//! An orderbook-based fixed term bond market hosted on the Solana blockchain
+//!
+//! # Interaction
+//!
+//! To interact with the bond market, users will initialize a PDA called an [`MarginUser`](struct@crate::orderbook::state::user::MarginUser).
+//!
+//! After `MarginUser` intialization, to place an order you must deposit underlying tokens or bond tickets into your account.
+//! This will allow you to use the [`PlaceOrder`](struct@crate::orderbook::instructions::place_order::PlaceOrder) instruction, which
+//! utilizes the orderbook to match borrowers and lenders.
+//!
+//! ### Lending
+//!
+//! To lend tokens, a user will deposit the underlying token into their `MarginUser` account. Then, they may post
+//! orders on the book using the [`PlaceOrder`](struct@crate::orderbook::instructions::place_order::PlaceOrder) with a given set of
+//! [`OrderParams`](struct@crate::orderbook::state::OrderParams).
+//!
+//! For example, to lend `1_000_000` tokens at 15% interest in a given market, a lender would specify:
+//! ```ignore
+//! OrderParams {
+//!     /// We want as many bond tickets as the book will give us
+//!     max_bond_ticket_qty: u64::MAX,
+//!     /// we are lending 1_000_000 tokens
+//!     max_underlying_token_qty: 1_000_000,
+//!     /// use the crate function to generate a limit price
+//!     limit_price: limit_price_from_f32((1.0 / 1.15)),
+//!     /// limit the number of matches to 100
+//!     match_limit: 100,
+//!     /// Do not fail transaction if order crosses the spread
+//!     post_only: false,
+//!     /// If order does not get filled immediately, post remainder to the book
+//!     post_allowed: true,
+//!     /// stake generated tickets automatically, creating `SplitTicket`s
+//!     auto_stake: true,
+//! }
+//!```
+//!
+//! ### Borrowing
+//!
+//! For borrowing, a user has two options. They can buy bond tickets from some market, and deposit them into their
+//! `MarginUser` account. Or, they may use the `jet-margin` program to place collateralized borrow orders.
+//!
+//! In the case of a collateralized order, an `Obligation` will be minted to track the debt. A user must repay or face liquidation
+//! by the `jet-margin` program.
+//!
+//! Example borrow order, where a borrower wants no more than 10% interest to borrow 100_000_000 tokens
+//! ```ignore
+//! OrderParams {
+//!     /// We want to pay no more than 10%
+//!     max_bond_ticket_qty: 110_000_000,
+//!     /// we only need to borrow 100_000_000 tokens
+//!     max_underlying_token_qty: 100_000_000,
+//!     /// use the crate function to generate a limit price
+//!     limit_price: limit_price_from_f32((1.0 / 1.10)),
+//!     /// limit the number of matches to 100
+//!     match_limit: 100,
+//!     /// Do not fail transaction if order crosses the spread
+//!     post_only: false,
+//!     /// If order does not get filled immediately, post remainder to the book
+//!     post_allowed: true,
+//!     /// borrowers do not stake tickets
+//!     auto_stake: false,
+//! }
+//! ```
+//!
+//! # Orderbook matching engine
+//!
+//! To facilitate the pairing of lenders and borrowers, the program utilizes the `agnostic-orderbook` crate to create an
+//! orderbook. This orderbook allows lenders and borrowers to post orders using underlying tokens, held bond tickets, or, by utilizing `jet-margin` accounts,
+//! a collateralized borrow order in lieu of held funds.
+//!
+//! ### EventQueue operation and Adapters
+//!
+//! The orderbook works by matching posted orders and pushing events to an `EventQueue` to be consumed by a crank operating offchain by
+//! sending transactions to Solana.
+//!
+//! Some users may want to subscribe to events generated by the orderbook matching. To do this, a user must register with
+//! the program an `Adapter` through their `MarginUser` account using the [`RegisterAdapter`](struct@crate::orderbook::instructions::event_adapter::RegisterAdapter) instruction. This instruction
+//! creates an `AdapterEventQueue` PDA to which all processed orders containing the `MarginUser` account will be pushed.
+//!
+//! Users are responsible for handling the consumption logic for their adapter. To clear events after processing, use the [`PopAdapterEvents`](struct@crate::orderbook::instructions::event_adapter::PopAdapterEvents) instruction.
+//!
+//! # Bond Tickets
+//!
+//! The program abstracts the concept of a bond into bond tickets. Bond tickets are fungible spl tokens
+//! that must be staked to claim their underlying value. In order to create bond tickets, a user must either
+//! place a lend order on the orderbook, or exchange the token underlying the bond market (in practice, almost never
+//! will users do this, as it locks their tokens for at least the tenor of the market).
+//!
+//! ### Ticket kinds and redemption
+//!
+//! The program allots for two types of ticket redemption. The [`ClaimTicket`](struct@crate::tickets::state::ClaimTicket) is given when
+//! a user stakes directly with the program. As there is no information about the creation of the tickets, a `ClaimTicket` does not
+//! have accounting for principal or interest, and only contains a redemptive value.
+//!
+//! Conversely, a [`SplitTicket`](struct@crate::tickets::state::SplitTicket) contains split principal and interest values. As well as
+//! the slot it was minted. To create a `SplitTicket`, you must configure your [`OrderParams`](struct@crate::orderbook::state::OrderParams) `auto_stake` flag to
+//! `true`. This will allow to program to immediately stake your tickets as the match event is processed.
+//!
+//! After the bond market tenor has passed, the ticket may be redeemed for the underlying value with the program. Also included are instructions
+//! for transferring ownership of a ticket.
+//!
+//! # Debt and Obligations
+//!
+//! When using a `jet-margin` account to post a collateralized borrow order, an [`Obligation`](struct@crate::orderbook::state::debt::Obligation) is created to track
+//! amounts owed to the program. `Obligation`s are either repaid manually by the user, or handled by an off-chain liquidator.
 
-<span class="doccomment">/// Program instructions and structs related to authoritative control of the program state</span>
-<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">control</span>;
-<span class="doccomment">/// Program instructions, methods and structs related to the use of margin accounts with the bonds program</span>
-<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">margin</span>;
-<span class="doccomment">/// Program instructions and structs related to use of the on chain orderbook</span>
-<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">orderbook</span>;
-<span class="doccomment">/// Program instructions and structs related to the redeemable bond tickets</span>
-<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">tickets</span>;
+/// Program instructions and structs related to authoritative control of the program state
+</span><span class="kw">pub mod </span>control;
+<span class="doccomment">/// Program instructions, methods and structs related to the use of margin accounts with the bonds program
+</span><span class="kw">pub mod </span>margin;
+<span class="doccomment">/// Program instructions and structs related to use of the on chain orderbook
+</span><span class="kw">pub mod </span>orderbook;
+<span class="doccomment">/// Program instructions and structs related to the redeemable bond tickets
+</span><span class="kw">pub mod </span>tickets;
 
-<span class="kw">mod</span> <span class="ident">errors</span>;
-<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">events</span>;
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">errors::BondsError</span>;
+<span class="kw">mod </span>errors;
+<span class="kw">pub mod </span>events;
+<span class="kw">pub use </span>errors::BondsError;
 
-<span class="kw">mod</span> <span class="ident">bond_token_manager</span>;
-<span class="doccomment">/// Utilities for safely serializing and deserializing solana accounts</span>
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod</span> <span class="ident">serialization</span>;
-<span class="doccomment">/// local utilities for the crate</span>
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod</span> <span class="ident">utils</span>;
+<span class="kw">mod </span>bond_token_manager;
+<span class="doccomment">/// Utilities for safely serializing and deserializing solana accounts
+</span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>serialization;
+<span class="doccomment">/// local utilities for the crate
+</span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>utils;
 
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod</span> <span class="ident">instructions</span>;
-<span class="kw">use</span> <span class="ident">instructions</span>::<span class="kw-2">*</span>;
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>instructions;
+<span class="kw">use </span>instructions::<span class="kw-2">*</span>;
 
-<span class="attribute">#[<span class="ident">macro_use</span>]</span>
-<span class="kw">extern</span> <span class="kw">crate</span> <span class="ident">bitflags</span>;
+<span class="attribute">#[macro_use]
+</span><span class="kw">extern crate </span>bitflags;
 
-<span class="kw">use</span> <span class="ident">anchor_lang::prelude</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident">orderbook::state::OrderParams</span>;
+<span class="kw">use </span>anchor_lang::prelude::<span class="kw-2">*</span>;
+<span class="kw">use </span>orderbook::state::OrderParams;
 
 <span class="macro">declare_id!</span>(<span class="string">&quot;JBond79m9K6HqYwngCjiJHb311GTXggo46kGcT2GijUc&quot;</span>);
 
-<span class="attribute">#[<span class="ident">program</span>]</span>
-<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">jet_bonds</span> {
-    <span class="kw">use</span> <span class="kw">super</span>::<span class="kw-2">*</span>;
+<span class="attribute">#[program]
+</span><span class="kw">pub mod </span>jet_bonds {
+    <span class="kw">use super</span>::<span class="kw-2">*</span>;
 
-    <span class="comment">//</span>
-    <span class="comment">// Control Instructions</span>
-    <span class="comment">// =============================================</span>
-    <span class="comment">//</span>
+    <span class="comment">//
+    // Control Instructions
+    // =============================================
+    //
 
-    <span class="doccomment">/// authorize an address to run orderbook consume_event instructions</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">authorize_crank</span>(<span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">AuthorizeCrank</span><span class="op">&gt;</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="ident">instructions::authorize_crank::handler</span>(<span class="ident">ctx</span>)
+    </span><span class="doccomment">/// authorize an address to run orderbook consume_event instructions
+    </span><span class="kw">pub fn </span>authorize_crank(ctx: Context&lt;AuthorizeCrank&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        instructions::authorize_crank::handler(ctx)
     }
 
-    <span class="doccomment">/// unauthorize an address to run orderbook consume_event instructions</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">revoke_crank</span>(<span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">RevokeCrank</span><span class="op">&gt;</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="ident">instructions::revoke_crank::handler</span>(<span class="ident">ctx</span>)
+    <span class="doccomment">/// unauthorize an address to run orderbook consume_event instructions
+    </span><span class="kw">pub fn </span>revoke_crank(ctx: Context&lt;RevokeCrank&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        instructions::revoke_crank::handler(ctx)
     }
 
-    <span class="doccomment">/// Initializes a BondManager for a bond ticket market</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">initialize_bond_manager</span>(
-        <span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">InitializeBondManager</span><span class="op">&gt;</span>,
-        <span class="ident">params</span>: <span class="ident">InitializeBondManagerParams</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="ident">instructions::initialize_bond_manager::handler</span>(<span class="ident">ctx</span>, <span class="ident">params</span>)
+    <span class="doccomment">/// Initializes a BondManager for a bond ticket market
+    </span><span class="kw">pub fn </span>initialize_bond_manager(
+        ctx: Context&lt;InitializeBondManager&gt;,
+        params: InitializeBondManagerParams,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        instructions::initialize_bond_manager::handler(ctx, params)
     }
 
-    <span class="doccomment">/// Initializes a new orderbook</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">initialize_orderbook</span>(
-        <span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">InitializeOrderbook</span><span class="op">&gt;</span>,
-        <span class="ident">params</span>: <span class="ident">InitializeOrderbookParams</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="ident">instructions::initialize_orderbook::handler</span>(<span class="ident">ctx</span>, <span class="ident">params</span>)
+    <span class="doccomment">/// Initializes a new orderbook
+    </span><span class="kw">pub fn </span>initialize_orderbook(
+        ctx: Context&lt;InitializeOrderbook&gt;,
+        params: InitializeOrderbookParams,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        instructions::initialize_orderbook::handler(ctx, params)
     }
 
-    <span class="doccomment">/// Modify a `BondManager` account</span>
-    <span class="doccomment">/// Authority use only</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">modify_bond_manager</span>(
-        <span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">ModifyBondManager</span><span class="op">&gt;</span>,
-        <span class="ident">data</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>,
-        <span class="ident">offset</span>: <span class="ident">usize</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="ident">instructions::modify_bond_manager::handler</span>(<span class="ident">ctx</span>, <span class="ident">data</span>, <span class="ident">offset</span>)
+    <span class="doccomment">/// Modify a `BondManager` account
+    /// Authority use only
+    </span><span class="kw">pub fn </span>modify_bond_manager(
+        ctx: Context&lt;ModifyBondManager&gt;,
+        data: Vec&lt;u8&gt;,
+        offset: usize,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        instructions::modify_bond_manager::handler(ctx, data, offset)
     }
 
-    <span class="doccomment">/// Pause matching of orders placed in the orderbook</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">pause_order_matching</span>(<span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">PauseOrderMatching</span><span class="op">&gt;</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="ident">instructions::pause_order_matching::handler</span>(<span class="ident">ctx</span>)
+    <span class="doccomment">/// Pause matching of orders placed in the orderbook
+    </span><span class="kw">pub fn </span>pause_order_matching(ctx: Context&lt;PauseOrderMatching&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        instructions::pause_order_matching::handler(ctx)
     }
 
-    <span class="doccomment">/// Resume matching of orders placed in the orderbook</span>
-    <span class="doccomment">/// NOTE: This instruction may have to be run several times to clear the</span>
-    <span class="doccomment">/// existing matches. Check the `orderbook_market_state.pause_matching` variable</span>
-    <span class="doccomment">/// to determine success</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">resume_order_matching</span>(<span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">ResumeOrderMatching</span><span class="op">&gt;</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="ident">instructions::resume_order_matching::handler</span>(<span class="ident">ctx</span>)
+    <span class="doccomment">/// Resume matching of orders placed in the orderbook
+    /// NOTE: This instruction may have to be run several times to clear the
+    /// existing matches. Check the `orderbook_market_state.pause_matching` variable
+    /// to determine success
+    </span><span class="kw">pub fn </span>resume_order_matching(ctx: Context&lt;ResumeOrderMatching&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        instructions::resume_order_matching::handler(ctx)
     }
-    <span class="comment">//</span>
-    <span class="comment">// =============================================</span>
-    <span class="comment">//</span>
+    <span class="comment">//
+    // =============================================
+    //
 
-    <span class="comment">//</span>
-    <span class="comment">// Margin Instructions</span>
-    <span class="comment">// =============================================</span>
-    <span class="comment">//</span>
+    //
+    // Margin Instructions
+    // =============================================
+    //
 
-    <span class="doccomment">/// Create a new borrower account</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">initialize_margin_user</span>(<span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">InitializeMarginUser</span><span class="op">&gt;</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="ident">instructions::initialize_margin_user::handler</span>(<span class="ident">ctx</span>)
-    }
-
-    <span class="doccomment">/// Place a borrow order by leveraging margin account value</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">margin_borrow_order</span>(
-        <span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">MarginBorrowOrder</span><span class="op">&gt;</span>,
-        <span class="ident">params</span>: <span class="ident">OrderParams</span>,
-        <span class="ident">seed</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="ident">instructions::margin_borrow_order::handler</span>(<span class="ident">ctx</span>, <span class="ident">params</span>, <span class="ident">seed</span>)
+    </span><span class="doccomment">/// Create a new borrower account
+    </span><span class="kw">pub fn </span>initialize_margin_user(ctx: Context&lt;InitializeMarginUser&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        instructions::initialize_margin_user::handler(ctx)
     }
 
-    <span class="doccomment">/// Sell tickets that are already owned</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">margin_sell_tickets_order</span>(
-        <span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">MarginSellTicketsOrder</span><span class="op">&gt;</span>,
-        <span class="ident">params</span>: <span class="ident">OrderParams</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="ident">instructions::margin_sell_tickets_order::handler</span>(<span class="ident">ctx</span>, <span class="ident">params</span>)
+    <span class="doccomment">/// Place a borrow order by leveraging margin account value
+    </span><span class="kw">pub fn </span>margin_borrow_order(
+        ctx: Context&lt;MarginBorrowOrder&gt;,
+        params: OrderParams,
+        seed: Vec&lt;u8&gt;,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        instructions::margin_borrow_order::handler(ctx, params, seed)
     }
 
-    <span class="doccomment">/// Redeem a staked ticket</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">margin_redeem_ticket</span>(<span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">MarginRedeemTicket</span><span class="op">&gt;</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="ident">instructions::margin_redeem_ticket::handler</span>(<span class="ident">ctx</span>)
+    <span class="doccomment">/// Sell tickets that are already owned
+    </span><span class="kw">pub fn </span>margin_sell_tickets_order(
+        ctx: Context&lt;MarginSellTicketsOrder&gt;,
+        params: OrderParams,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        instructions::margin_sell_tickets_order::handler(ctx, params)
     }
 
-    <span class="doccomment">/// Place a `Lend` order to the book by depositing tokens</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">margin_lend_order</span>(
-        <span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">MarginLendOrder</span><span class="op">&gt;</span>,
-        <span class="ident">params</span>: <span class="ident">OrderParams</span>,
-        <span class="ident">seed</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="ident">instructions::margin_lend_order::handler</span>(<span class="ident">ctx</span>, <span class="ident">params</span>, <span class="ident">seed</span>)
+    <span class="doccomment">/// Redeem a staked ticket
+    </span><span class="kw">pub fn </span>margin_redeem_ticket(ctx: Context&lt;MarginRedeemTicket&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        instructions::margin_redeem_ticket::handler(ctx)
     }
 
-    <span class="doccomment">/// Refresh the associated margin account `claims` for a given `MarginUser` account</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">refresh_position</span>(<span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">RefreshPosition</span><span class="op">&gt;</span>, <span class="ident">expect_price</span>: <span class="ident">bool</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="ident">instructions::refresh_position::handler</span>(<span class="ident">ctx</span>, <span class="ident">expect_price</span>)
+    <span class="doccomment">/// Place a `Lend` order to the book by depositing tokens
+    </span><span class="kw">pub fn </span>margin_lend_order(
+        ctx: Context&lt;MarginLendOrder&gt;,
+        params: OrderParams,
+        seed: Vec&lt;u8&gt;,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        instructions::margin_lend_order::handler(ctx, params, seed)
     }
 
-    <span class="doccomment">/// Repay debt on an Obligation</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">repay</span>(<span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">Repay</span><span class="op">&gt;</span>, <span class="ident">amount</span>: <span class="ident">u64</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="ident">instructions::repay::handler</span>(<span class="ident">ctx</span>, <span class="ident">amount</span>)
+    <span class="doccomment">/// Refresh the associated margin account `claims` for a given `MarginUser` account
+    </span><span class="kw">pub fn </span>refresh_position(ctx: Context&lt;RefreshPosition&gt;, expect_price: bool) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        instructions::refresh_position::handler(ctx, expect_price)
     }
 
-    <span class="doccomment">/// Settle payments to a margin account</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">settle</span>(<span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">Settle</span><span class="op">&gt;</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="ident">instructions::settle::handler</span>(<span class="ident">ctx</span>)
+    <span class="doccomment">/// Repay debt on an Obligation
+    </span><span class="kw">pub fn </span>repay(ctx: Context&lt;Repay&gt;, amount: u64) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        instructions::repay::handler(ctx, amount)
     }
 
-    <span class="comment">//</span>
-    <span class="comment">// =============================================</span>
-    <span class="comment">//</span>
-
-    <span class="comment">//</span>
-    <span class="comment">// Orderbook Instructions</span>
-    <span class="comment">// =============================================</span>
-    <span class="comment">//</span>
-
-    <span class="doccomment">/// Place an order to the book to sell tickets, which will burn them</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">sell_tickets_order</span>(<span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">SellTicketsOrder</span><span class="op">&gt;</span>, <span class="ident">params</span>: <span class="ident">OrderParams</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="ident">instructions::sell_tickets_order::handler</span>(<span class="ident">ctx</span>, <span class="ident">params</span>)
+    <span class="doccomment">/// Settle payments to a margin account
+    </span><span class="kw">pub fn </span>settle(ctx: Context&lt;Settle&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        instructions::settle::handler(ctx)
     }
 
-    <span class="doccomment">/// Cancels an order on the book</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">cancel_order</span>(<span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">CancelOrder</span><span class="op">&gt;</span>, <span class="ident">order_id</span>: <span class="ident">u128</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="ident">instructions::cancel_order::handler</span>(<span class="ident">ctx</span>, <span class="ident">order_id</span>)
+    <span class="comment">//
+    // =============================================
+    //
+
+    //
+    // Orderbook Instructions
+    // =============================================
+    //
+
+    </span><span class="doccomment">/// Place an order to the book to sell tickets, which will burn them
+    </span><span class="kw">pub fn </span>sell_tickets_order(ctx: Context&lt;SellTicketsOrder&gt;, params: OrderParams) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        instructions::sell_tickets_order::handler(ctx, params)
     }
 
-    <span class="doccomment">/// Place a `Lend` order to the book by depositing tokens</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">lend_order</span>(<span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">LendOrder</span><span class="op">&gt;</span>, <span class="ident">params</span>: <span class="ident">OrderParams</span>, <span class="ident">seed</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="ident">instructions::lend_order::handler</span>(<span class="ident">ctx</span>, <span class="ident">params</span>, <span class="ident">seed</span>)
+    <span class="doccomment">/// Cancels an order on the book
+    </span><span class="kw">pub fn </span>cancel_order(ctx: Context&lt;CancelOrder&gt;, order_id: u128) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        instructions::cancel_order::handler(ctx, order_id)
     }
 
-    <span class="doccomment">/// Crank specific instruction, processes the event queue</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">consume_events</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="lifetime">&#39;b</span>, <span class="lifetime">&#39;info</span><span class="op">&gt;</span>(
-        <span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="lifetime">&#39;b</span>, <span class="lifetime">&#39;b</span>, <span class="lifetime">&#39;info</span>, <span class="ident">ConsumeEvents</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-        <span class="ident">num_events</span>: <span class="ident">u32</span>,
-        <span class="ident">seed_bytes</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="ident">instructions::consume_events::handler</span>(<span class="ident">ctx</span>, <span class="ident">num_events</span>, <span class="ident">seed_bytes</span>)
+    <span class="doccomment">/// Place a `Lend` order to the book by depositing tokens
+    </span><span class="kw">pub fn </span>lend_order(ctx: Context&lt;LendOrder&gt;, params: OrderParams, seed: Vec&lt;u8&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        instructions::lend_order::handler(ctx, params, seed)
     }
 
-    <span class="comment">//</span>
-    <span class="comment">// =============================================</span>
-    <span class="comment">//</span>
-
-    <span class="comment">//</span>
-    <span class="comment">// Ticket Instructions</span>
-    <span class="comment">// =============================================</span>
-    <span class="comment">//</span>
-
-    <span class="doccomment">/// Exchange underlying token for bond tickets</span>
-    <span class="doccomment">/// WARNING: tickets must be staked for redeption of underlying</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">exchange_tokens</span>(<span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">ExchangeTokens</span><span class="op">&gt;</span>, <span class="ident">amount</span>: <span class="ident">u64</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="ident">instructions::exchange_tokens::handler</span>(<span class="ident">ctx</span>, <span class="ident">amount</span>)
+    <span class="doccomment">/// Crank specific instruction, processes the event queue
+    </span><span class="kw">pub fn </span>consume_events&lt;<span class="lifetime">&#39;a</span>, <span class="lifetime">&#39;b</span>, <span class="lifetime">&#39;info</span>&gt;(
+        ctx: Context&lt;<span class="lifetime">&#39;a</span>, <span class="lifetime">&#39;b</span>, <span class="lifetime">&#39;b</span>, <span class="lifetime">&#39;info</span>, ConsumeEvents&lt;<span class="lifetime">&#39;info</span>&gt;&gt;,
+        num_events: u32,
+        seed_bytes: Vec&lt;Vec&lt;u8&gt;&gt;,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        instructions::consume_events::handler(ctx, num_events, seed_bytes)
     }
 
-    <span class="doccomment">/// Redeems staked tickets for their underlying value</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">redeem_ticket</span>(<span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">RedeemTicket</span><span class="op">&gt;</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="ident">instructions::redeem_ticket::handler</span>(<span class="ident">ctx</span>)
+    <span class="comment">//
+    // =============================================
+    //
+
+    //
+    // Ticket Instructions
+    // =============================================
+    //
+
+    </span><span class="doccomment">/// Exchange underlying token for bond tickets
+    /// WARNING: tickets must be staked for redeption of underlying
+    </span><span class="kw">pub fn </span>exchange_tokens(ctx: Context&lt;ExchangeTokens&gt;, amount: u64) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        instructions::exchange_tokens::handler(ctx, amount)
     }
 
-    <span class="doccomment">/// Stakes bond tickets for later redemption</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">stake_bond_tickets</span>(
-        <span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">StakeBondTickets</span><span class="op">&gt;</span>,
-        <span class="ident">params</span>: <span class="ident">StakeBondTicketsParams</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="ident">instructions::stake_bond_tickets::handler</span>(<span class="ident">ctx</span>, <span class="ident">params</span>)
+    <span class="doccomment">/// Redeems staked tickets for their underlying value
+    </span><span class="kw">pub fn </span>redeem_ticket(ctx: Context&lt;RedeemTicket&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        instructions::redeem_ticket::handler(ctx)
     }
 
-    <span class="doccomment">/// Transfer staked tickets to a new owner</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">tranfer_ticket_ownership</span>(
-        <span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">TransferTicketOwnership</span><span class="op">&gt;</span>,
-        <span class="ident">new_owner</span>: <span class="ident">Pubkey</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="ident">instructions::transfer_ticket_ownership::handler</span>(<span class="ident">ctx</span>, <span class="ident">new_owner</span>)
-    }
-    <span class="comment">//</span>
-    <span class="comment">// =============================================</span>
-    <span class="comment">//</span>
-
-    <span class="comment">//</span>
-    <span class="comment">// Event Adapter Instructions</span>
-    <span class="comment">// =============================================</span>
-    <span class="comment">//</span>
-
-    <span class="doccomment">/// Register a new EventAdapter for syncing to the orderbook events</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">register_adapter</span>(
-        <span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">RegisterAdapter</span><span class="op">&gt;</span>,
-        <span class="ident">params</span>: <span class="ident">RegisterAdapterParams</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="ident">instructions::register_adapter::handler</span>(<span class="ident">ctx</span>, <span class="ident">params</span>)
+    <span class="doccomment">/// Stakes bond tickets for later redemption
+    </span><span class="kw">pub fn </span>stake_bond_tickets(
+        ctx: Context&lt;StakeBondTickets&gt;,
+        params: StakeBondTicketsParams,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        instructions::stake_bond_tickets::handler(ctx, params)
     }
 
-    <span class="doccomment">/// Pop the given number of events off the adapter queue</span>
-    <span class="doccomment">/// Event logic is left to the outside program</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">pop_adapter_events</span>(<span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">PopAdapterEvents</span><span class="op">&gt;</span>, <span class="ident">num_events</span>: <span class="ident">u32</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="ident">instructions::pop_adapter_events::handler</span>(<span class="ident">ctx</span>, <span class="ident">num_events</span>)
+    <span class="doccomment">/// Transfer staked tickets to a new owner
+    </span><span class="kw">pub fn </span>tranfer_ticket_ownership(
+        ctx: Context&lt;TransferTicketOwnership&gt;,
+        new_owner: Pubkey,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        instructions::transfer_ticket_ownership::handler(ctx, new_owner)
     }
-    <span class="comment">//</span>
-    <span class="comment">// =============================================</span>
-    <span class="comment">//</span>
-}
+    <span class="comment">//
+    // =============================================
+    //
 
-<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">seeds</span> {
-    <span class="kw">use</span> <span class="ident">anchor_lang::prelude::constant</span>;
+    //
+    // Event Adapter Instructions
+    // =============================================
+    //
 
-    <span class="attribute">#[<span class="ident">constant</span>]</span>
-    <span class="kw">pub</span> <span class="kw">const</span> <span class="ident">BOND_MANAGER</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>] <span class="op">=</span> <span class="string">b&quot;bond_manager&quot;</span>;
+    </span><span class="doccomment">/// Register a new EventAdapter for syncing to the orderbook events
+    </span><span class="kw">pub fn </span>register_adapter(
+        ctx: Context&lt;RegisterAdapter&gt;,
+        params: RegisterAdapterParams,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        instructions::register_adapter::handler(ctx, params)
+    }
 
-    <span class="attribute">#[<span class="ident">constant</span>]</span>
-    <span class="kw">pub</span> <span class="kw">const</span> <span class="ident">BOND_TICKET_ACCOUNT</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>] <span class="op">=</span> <span class="string">b&quot;bond_ticket_account&quot;</span>;
+    <span class="doccomment">/// Pop the given number of events off the adapter queue
+    /// Event logic is left to the outside program
+    </span><span class="kw">pub fn </span>pop_adapter_events(ctx: Context&lt;PopAdapterEvents&gt;, num_events: u32) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        instructions::pop_adapter_events::handler(ctx, num_events)
+    }
+    <span class="comment">//
+    // =============================================
+    //
+</span>}
 
-    <span class="attribute">#[<span class="ident">constant</span>]</span>
-    <span class="kw">pub</span> <span class="kw">const</span> <span class="ident">BOND_TICKET_MINT</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>] <span class="op">=</span> <span class="string">b&quot;bond_ticket_mint&quot;</span>;
+<span class="kw">pub mod </span>seeds {
+    <span class="kw">use </span>anchor_lang::prelude::constant;
 
-    <span class="attribute">#[<span class="ident">constant</span>]</span>
-    <span class="kw">pub</span> <span class="kw">const</span> <span class="ident">CLAIM_TICKET</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>] <span class="op">=</span> <span class="string">b&quot;claim_ticket&quot;</span>;
+    <span class="attribute">#[constant]
+    </span><span class="kw">pub const </span>BOND_MANAGER: <span class="kw-2">&amp;</span>[u8] = <span class="string">b&quot;bond_manager&quot;</span>;
 
-    <span class="attribute">#[<span class="ident">constant</span>]</span>
-    <span class="kw">pub</span> <span class="kw">const</span> <span class="ident">CRANK_AUTHORIZATION</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>] <span class="op">=</span> <span class="string">b&quot;crank_authorization&quot;</span>;
+    <span class="attribute">#[constant]
+    </span><span class="kw">pub const </span>BOND_TICKET_ACCOUNT: <span class="kw-2">&amp;</span>[u8] = <span class="string">b&quot;bond_ticket_account&quot;</span>;
 
-    <span class="attribute">#[<span class="ident">constant</span>]</span>
-    <span class="kw">pub</span> <span class="kw">const</span> <span class="ident">CLAIM_NOTES</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>] <span class="op">=</span> <span class="string">b&quot;claim_notes&quot;</span>;
+    <span class="attribute">#[constant]
+    </span><span class="kw">pub const </span>BOND_TICKET_MINT: <span class="kw-2">&amp;</span>[u8] = <span class="string">b&quot;bond_ticket_mint&quot;</span>;
 
-    <span class="attribute">#[<span class="ident">constant</span>]</span>
-    <span class="kw">pub</span> <span class="kw">const</span> <span class="ident">COLLATERAL_NOTES</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>] <span class="op">=</span> <span class="string">b&quot;collateral_notes&quot;</span>;
+    <span class="attribute">#[constant]
+    </span><span class="kw">pub const </span>CLAIM_TICKET: <span class="kw-2">&amp;</span>[u8] = <span class="string">b&quot;claim_ticket&quot;</span>;
 
-    <span class="attribute">#[<span class="ident">constant</span>]</span>
-    <span class="kw">pub</span> <span class="kw">const</span> <span class="ident">SPLIT_TICKET</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>] <span class="op">=</span> <span class="string">b&quot;split_ticket&quot;</span>;
+    <span class="attribute">#[constant]
+    </span><span class="kw">pub const </span>CRANK_AUTHORIZATION: <span class="kw-2">&amp;</span>[u8] = <span class="string">b&quot;crank_authorization&quot;</span>;
 
-    <span class="attribute">#[<span class="ident">constant</span>]</span>
-    <span class="kw">pub</span> <span class="kw">const</span> <span class="ident">EVENT_ADAPTER</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>] <span class="op">=</span> <span class="string">b&quot;event_adapter&quot;</span>;
+    <span class="attribute">#[constant]
+    </span><span class="kw">pub const </span>CLAIM_NOTES: <span class="kw-2">&amp;</span>[u8] = <span class="string">b&quot;claim_notes&quot;</span>;
 
-    <span class="attribute">#[<span class="ident">constant</span>]</span>
-    <span class="kw">pub</span> <span class="kw">const</span> <span class="ident">OBLIGATION</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>] <span class="op">=</span> <span class="string">b&quot;obligation&quot;</span>;
+    <span class="attribute">#[constant]
+    </span><span class="kw">pub const </span>COLLATERAL_NOTES: <span class="kw-2">&amp;</span>[u8] = <span class="string">b&quot;collateral_notes&quot;</span>;
 
-    <span class="attribute">#[<span class="ident">constant</span>]</span>
-    <span class="kw">pub</span> <span class="kw">const</span> <span class="ident">ORDERBOOK_MARKET_STATE</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>] <span class="op">=</span> <span class="string">b&quot;orderbook_market_state&quot;</span>;
+    <span class="attribute">#[constant]
+    </span><span class="kw">pub const </span>SPLIT_TICKET: <span class="kw-2">&amp;</span>[u8] = <span class="string">b&quot;split_ticket&quot;</span>;
 
-    <span class="attribute">#[<span class="ident">constant</span>]</span>
-    <span class="kw">pub</span> <span class="kw">const</span> <span class="ident">MARGIN_BORROWER</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>] <span class="op">=</span> <span class="string">b&quot;margin_borrower&quot;</span>;
+    <span class="attribute">#[constant]
+    </span><span class="kw">pub const </span>EVENT_ADAPTER: <span class="kw-2">&amp;</span>[u8] = <span class="string">b&quot;event_adapter&quot;</span>;
 
-    <span class="attribute">#[<span class="ident">constant</span>]</span>
-    <span class="kw">pub</span> <span class="kw">const</span> <span class="ident">UNDERLYING_TOKEN_VAULT</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>] <span class="op">=</span> <span class="string">b&quot;underlying_token_vault&quot;</span>;
+    <span class="attribute">#[constant]
+    </span><span class="kw">pub const </span>OBLIGATION: <span class="kw-2">&amp;</span>[u8] = <span class="string">b&quot;obligation&quot;</span>;
+
+    <span class="attribute">#[constant]
+    </span><span class="kw">pub const </span>ORDERBOOK_MARKET_STATE: <span class="kw-2">&amp;</span>[u8] = <span class="string">b&quot;orderbook_market_state&quot;</span>;
+
+    <span class="attribute">#[constant]
+    </span><span class="kw">pub const </span>MARGIN_BORROWER: <span class="kw-2">&amp;</span>[u8] = <span class="string">b&quot;margin_borrower&quot;</span>;
+
+    <span class="attribute">#[constant]
+    </span><span class="kw">pub const </span>UNDERLYING_TOKEN_VAULT: <span class="kw-2">&amp;</span>[u8] = <span class="string">b&quot;underlying_token_vault&quot;</span>;
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="jet_bonds" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0 (a55dd71d5 2022-09-19)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="jet_bonds" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `programs/margin/src/state/account.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>account.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../jet_margin/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../jet_margin/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../jet_margin/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `programs/margin/src/state/account.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>account.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../normalize.css"><link rel="stylesheet" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../ayu.css" disabled><link rel="stylesheet" href="../../../dark.css" disabled><link rel="stylesheet" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../jet_margin/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../jet_margin/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../jet_margin/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -1250,632 +1250,632 @@
 <span id="1250">1250</span>
 <span id="1251">1251</span>
 <span id="1252">1252</span>
-</pre><pre class="rust"><code><span class="comment">// SPDX-License-Identifier: AGPL-3.0-or-later</span>
-<span class="comment">//</span>
-<span class="comment">// Copyright (C) 2022 JET PROTOCOL HOLDINGS, LLC.</span>
-<span class="comment">//</span>
-<span class="comment">// This program is free software: you can redistribute it and/or modify</span>
-<span class="comment">// it under the terms of the GNU Affero General Public License as published by</span>
-<span class="comment">// the Free Software Foundation, either version 3 of the License, or</span>
-<span class="comment">// (at your option) any later version.</span>
-<span class="comment">//</span>
-<span class="comment">// This program is distributed in the hope that it will be useful,</span>
-<span class="comment">// but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
-<span class="comment">// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
-<span class="comment">// GNU Affero General Public License for more details.</span>
-<span class="comment">//</span>
-<span class="comment">// You should have received a copy of the GNU Affero General Public License</span>
-<span class="comment">// along with this program.  If not, see &lt;https://www.gnu.org/licenses/&gt;.</span>
+</pre><pre class="rust"><code><span class="comment">// SPDX-License-Identifier: AGPL-3.0-or-later
+//
+// Copyright (C) 2022 JET PROTOCOL HOLDINGS, LLC.
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Affero General Public License for more details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program.  If not, see &lt;https://www.gnu.org/licenses/&gt;.
 
-<span class="kw">use</span> <span class="ident">anchor_lang</span>::{<span class="ident">prelude</span>::<span class="kw-2">*</span>, <span class="ident">system_program</span>, <span class="ident">Discriminator</span>};
-<span class="kw">use</span> <span class="ident">bytemuck</span>::{<span class="ident">Contiguous</span>, <span class="ident">Pod</span>, <span class="ident">Zeroable</span>};
+</span><span class="kw">use </span>anchor_lang::{prelude::<span class="kw-2">*</span>, system_program, Discriminator};
+<span class="kw">use </span>bytemuck::{Contiguous, Pod, Zeroable};
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">any</span>(<span class="ident">test</span>, <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;cli&quot;</span>))]</span>
-<span class="kw">use</span> <span class="ident">serde::ser</span>::{<span class="ident">Serialize</span>, <span class="ident">SerializeStruct</span>, <span class="ident">Serializer</span>};
+<span class="attribute">#[cfg(any(test, feature = <span class="string">&quot;cli&quot;</span>))]
+</span><span class="kw">use </span>serde::ser::{Serialize, SerializeStruct, Serializer};
 
-<span class="kw">use</span> <span class="ident">jet_program_common::Number128</span>;
+<span class="kw">use </span>jet_program_common::Number128;
 
-<span class="kw">use</span> <span class="ident">anchor_lang::Result</span> <span class="kw">as</span> <span class="ident">AnchorResult</span>;
-<span class="kw">use</span> <span class="ident">std::result::Result</span>;
+<span class="kw">use </span>anchor_lang::Result <span class="kw">as </span>AnchorResult;
+<span class="kw">use </span>std::result::Result;
 
-<span class="kw">use</span> <span class="kw">crate</span>::{
-    <span class="ident">syscall</span>::{<span class="ident">sys</span>, <span class="ident">Sys</span>},
-    <span class="ident">util</span>::{<span class="ident">Invocation</span>, <span class="ident">Require</span>},
-    <span class="ident">ErrorCode</span>, <span class="ident">TokenKind</span>, <span class="ident">MAX_PRICE_QUOTE_AGE</span>, <span class="ident">MAX_USER_POSITIONS</span>,
+<span class="kw">use crate</span>::{
+    syscall::{sys, Sys},
+    util::{Invocation, Require},
+    ErrorCode, TokenKind, MAX_PRICE_QUOTE_AGE, MAX_USER_POSITIONS,
 };
 
-<span class="kw">mod</span> <span class="ident">positions</span>;
+<span class="kw">mod </span>positions;
 
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">positions</span>::<span class="kw-2">*</span>;
+<span class="kw">pub use </span>positions::<span class="kw-2">*</span>;
 
-<span class="doccomment">/// The current version for the margin account state</span>
-<span class="kw">pub</span> <span class="kw">const</span> <span class="ident">MARGIN_ACCOUNT_VERSION</span>: <span class="ident">u8</span> <span class="op">=</span> <span class="number">1</span>;
+<span class="doccomment">/// The current version for the margin account state
+</span><span class="kw">pub const </span>MARGIN_ACCOUNT_VERSION: u8 = <span class="number">1</span>;
 
-<span class="attribute">#[<span class="ident">account</span>(<span class="ident">zero_copy</span>)]</span>
-<span class="attribute">#[<span class="ident">repr</span>(<span class="ident">C</span>)]</span>
-<span class="comment">// bytemuck requires a higher alignment than 1 for unit tests to run.</span>
-<span class="attribute">#[<span class="ident">cfg_attr</span>(<span class="ident">not</span>(<span class="ident">target_arch</span> <span class="op">=</span> <span class="string">&quot;bpf&quot;</span>), <span class="ident">repr</span>(<span class="ident">align</span>(<span class="number">8</span>)))]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">MarginAccount</span> {
-    <span class="kw">pub</span> <span class="ident">version</span>: <span class="ident">u8</span>,
-    <span class="kw">pub</span> <span class="ident">bump_seed</span>: [<span class="ident">u8</span>; <span class="number">1</span>],
-    <span class="kw">pub</span> <span class="ident">user_seed</span>: [<span class="ident">u8</span>; <span class="number">2</span>],
+<span class="attribute">#[account(zero_copy)]
+#[repr(C)]
+</span><span class="comment">// bytemuck requires a higher alignment than 1 for unit tests to run.
+</span><span class="attribute">#[cfg_attr(not(target_arch = <span class="string">&quot;bpf&quot;</span>), repr(align(<span class="number">8</span>)))]
+</span><span class="kw">pub struct </span>MarginAccount {
+    <span class="kw">pub </span>version: u8,
+    <span class="kw">pub </span>bump_seed: [u8; <span class="number">1</span>],
+    <span class="kw">pub </span>user_seed: [u8; <span class="number">2</span>],
 
-    <span class="doccomment">/// Data an adapter can use to check what the margin program thinks about the current invocation</span>
-    <span class="doccomment">/// Must normally be zeroed, except during an invocation.</span>
-    <span class="kw">pub</span> <span class="ident">invocation</span>: <span class="ident">Invocation</span>,
+    <span class="doccomment">/// Data an adapter can use to check what the margin program thinks about the current invocation
+    /// Must normally be zeroed, except during an invocation.
+    </span><span class="kw">pub </span>invocation: Invocation,
 
-    <span class="kw">pub</span> <span class="ident">reserved0</span>: [<span class="ident">u8</span>; <span class="number">3</span>],
+    <span class="kw">pub </span>reserved0: [u8; <span class="number">3</span>],
 
-    <span class="doccomment">/// The owner of this account, which generally has to sign for any changes to it</span>
-    <span class="kw">pub</span> <span class="ident">owner</span>: <span class="ident">Pubkey</span>,
+    <span class="doccomment">/// The owner of this account, which generally has to sign for any changes to it
+    </span><span class="kw">pub </span>owner: Pubkey,
 
-    <span class="doccomment">/// The state of an active liquidation for this account</span>
-    <span class="kw">pub</span> <span class="ident">liquidation</span>: <span class="ident">Pubkey</span>,
+    <span class="doccomment">/// The state of an active liquidation for this account
+    </span><span class="kw">pub </span>liquidation: Pubkey,
 
-    <span class="doccomment">/// The active liquidator for this account</span>
-    <span class="kw">pub</span> <span class="ident">liquidator</span>: <span class="ident">Pubkey</span>,
+    <span class="doccomment">/// The active liquidator for this account
+    </span><span class="kw">pub </span>liquidator: Pubkey,
 
-    <span class="doccomment">/// The storage for tracking account balances</span>
-    <span class="kw">pub</span> <span class="ident">positions</span>: [<span class="ident">u8</span>; <span class="number">7432</span>],
+    <span class="doccomment">/// The storage for tracking account balances
+    </span><span class="kw">pub </span>positions: [u8; <span class="number">7432</span>],
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">any</span>(<span class="ident">test</span>, <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;cli&quot;</span>))]</span>
-<span class="kw">impl</span> <span class="ident">Serialize</span> <span class="kw">for</span> <span class="ident">MarginAccount</span> {
-    <span class="kw">fn</span> <span class="ident">serialize</span><span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">serializer</span>: <span class="ident">S</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">S::Ok</span>, <span class="ident">S::Error</span><span class="op">&gt;</span>
-    <span class="kw">where</span>
-        <span class="ident">S</span>: <span class="ident">Serializer</span>,
+<span class="attribute">#[cfg(any(test, feature = <span class="string">&quot;cli&quot;</span>))]
+</span><span class="kw">impl </span>Serialize <span class="kw">for </span>MarginAccount {
+    <span class="kw">fn </span>serialize&lt;S&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, serializer: S) -&gt; <span class="prelude-ty">Result</span>&lt;S::Ok, S::Error&gt;
+    <span class="kw">where
+        </span>S: Serializer,
     {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">s</span> <span class="op">=</span> <span class="ident">serializer</span>.<span class="ident">serialize_struct</span>(<span class="string">&quot;MarginAccount&quot;</span>, <span class="number">5</span>)<span class="question-mark">?</span>;
-        <span class="ident">s</span>.<span class="ident">serialize_field</span>(<span class="string">&quot;version&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">version</span>)<span class="question-mark">?</span>;
-        <span class="ident">s</span>.<span class="ident">serialize_field</span>(<span class="string">&quot;owner&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">owner</span>.<span class="ident">to_string</span>())<span class="question-mark">?</span>;
-        <span class="ident">s</span>.<span class="ident">serialize_field</span>(<span class="string">&quot;liquidation&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">liquidation</span>.<span class="ident">to_string</span>())<span class="question-mark">?</span>;
-        <span class="ident">s</span>.<span class="ident">serialize_field</span>(<span class="string">&quot;liquidator&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">liquidator</span>.<span class="ident">to_string</span>())<span class="question-mark">?</span>;
-        <span class="ident">s</span>.<span class="ident">serialize_field</span>(<span class="string">&quot;positions&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">positions</span>().<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>())<span class="question-mark">?</span>;
-        <span class="ident">s</span>.<span class="ident">end</span>()
+        <span class="kw">let </span><span class="kw-2">mut </span>s = serializer.serialize_struct(<span class="string">&quot;MarginAccount&quot;</span>, <span class="number">5</span>)<span class="question-mark">?</span>;
+        s.serialize_field(<span class="string">&quot;version&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.version)<span class="question-mark">?</span>;
+        s.serialize_field(<span class="string">&quot;owner&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.owner.to_string())<span class="question-mark">?</span>;
+        s.serialize_field(<span class="string">&quot;liquidation&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.liquidation.to_string())<span class="question-mark">?</span>;
+        s.serialize_field(<span class="string">&quot;liquidator&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.liquidator.to_string())<span class="question-mark">?</span>;
+        s.serialize_field(<span class="string">&quot;positions&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.positions().collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;())<span class="question-mark">?</span>;
+        s.end()
     }
 }
 
-<span class="kw">impl</span> <span class="ident">std::fmt::Debug</span> <span class="kw">for</span> <span class="ident">MarginAccount</span> {
-    <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="kw-2">&amp;mut</span> <span class="ident">std::fmt::Formatter</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">std::fmt::Error</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">acc</span> <span class="op">=</span> <span class="ident">f</span>.<span class="ident">debug_struct</span>(<span class="string">&quot;MarginAccount&quot;</span>);
-        <span class="ident">acc</span>.<span class="ident">field</span>(<span class="string">&quot;version&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">version</span>)
-            .<span class="ident">field</span>(<span class="string">&quot;bump_seed&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">bump_seed</span>)
-            .<span class="ident">field</span>(<span class="string">&quot;user_seed&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">user_seed</span>)
-            .<span class="ident">field</span>(<span class="string">&quot;reserved0&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">reserved0</span>)
-            .<span class="ident">field</span>(<span class="string">&quot;invocation&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">invocation</span>)
-            .<span class="ident">field</span>(<span class="string">&quot;owner&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">owner</span>)
-            .<span class="ident">field</span>(<span class="string">&quot;liquidation&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">liquidation</span>)
-            .<span class="ident">field</span>(<span class="string">&quot;liquidator&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">liquidator</span>);
+<span class="kw">impl </span>std::fmt::Debug <span class="kw">for </span>MarginAccount {
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>std::fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;(), std::fmt::Error&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>acc = f.debug_struct(<span class="string">&quot;MarginAccount&quot;</span>);
+        acc.field(<span class="string">&quot;version&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.version)
+            .field(<span class="string">&quot;bump_seed&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.bump_seed)
+            .field(<span class="string">&quot;user_seed&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.user_seed)
+            .field(<span class="string">&quot;reserved0&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.reserved0)
+            .field(<span class="string">&quot;invocation&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.invocation)
+            .field(<span class="string">&quot;owner&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.owner)
+            .field(<span class="string">&quot;liquidation&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.liquidation)
+            .field(<span class="string">&quot;liquidator&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.liquidator);
 
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">positions</span>().<span class="ident">next</span>().<span class="ident">is_some</span>() {
-            <span class="ident">acc</span>.<span class="ident">field</span>(<span class="string">&quot;positions&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">positions</span>().<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>());
-        } <span class="kw">else</span> {
-            <span class="ident">acc</span>.<span class="ident">field</span>(<span class="string">&quot;positions&quot;</span>, <span class="kw-2">&amp;</span><span class="ident">Vec</span>::<span class="op">&lt;</span><span class="ident">AccountPosition</span><span class="op">&gt;</span><span class="ident">::new</span>());
+        <span class="kw">if </span><span class="self">self</span>.positions().next().is_some() {
+            acc.field(<span class="string">&quot;positions&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.positions().collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;());
+        } <span class="kw">else </span>{
+            acc.field(<span class="string">&quot;positions&quot;</span>, <span class="kw-2">&amp;</span>Vec::&lt;AccountPosition&gt;::new());
         }
 
-        <span class="ident">acc</span>.<span class="ident">finish</span>()
+        acc.finish()
     }
 }
 
-<span class="doccomment">/// Execute all the mandatory anchor account verifications that are used during deserialization</span>
-<span class="doccomment">/// - performance: don&#39;t have to deserialize (even zero_copy copies)</span>
-<span class="doccomment">/// - compatibility: straightforward validation for programs using different anchor versions and non-anchor programs</span>
-<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">AnchorVerify</span>: <span class="ident">Discriminator</span> <span class="op">+</span> <span class="ident">Owner</span> {
-    <span class="kw">fn</span> <span class="ident">anchor_verify</span>(<span class="ident">info</span>: <span class="kw-2">&amp;</span><span class="ident">AccountInfo</span>) -&gt; <span class="ident">AnchorResult</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="kw">if</span> <span class="ident">info</span>.<span class="ident">owner</span> <span class="op">==</span> <span class="kw-2">&amp;</span><span class="ident">system_program::ID</span> <span class="op">&amp;&amp;</span> <span class="ident">info</span>.<span class="ident">lamports</span>() <span class="op">==</span> <span class="number">0</span> {
-            <span class="kw">return</span> <span class="macro">err!</span>(<span class="ident">anchor_lang::error::ErrorCode::AccountNotInitialized</span>);
+<span class="doccomment">/// Execute all the mandatory anchor account verifications that are used during deserialization
+/// - performance: don&#39;t have to deserialize (even zero_copy copies)
+/// - compatibility: straightforward validation for programs using different anchor versions and non-anchor programs
+</span><span class="kw">pub trait </span>AnchorVerify: Discriminator + Owner {
+    <span class="kw">fn </span>anchor_verify(info: <span class="kw-2">&amp;</span>AccountInfo) -&gt; AnchorResult&lt;()&gt; {
+        <span class="kw">if </span>info.owner == <span class="kw-2">&amp;</span>system_program::ID &amp;&amp; info.lamports() == <span class="number">0 </span>{
+            <span class="kw">return </span><span class="macro">err!</span>(anchor_lang::error::ErrorCode::AccountNotInitialized);
         }
-        <span class="kw">if</span> <span class="ident">info</span>.<span class="ident">owner</span> <span class="op">!</span><span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident"><span class="self">Self</span>::owner</span>() {
-            <span class="kw">return</span> <span class="prelude-val">Err</span>(
-                <span class="ident">Error::from</span>(<span class="ident">anchor_lang::error::ErrorCode::AccountOwnedByWrongProgram</span>)
-                    .<span class="ident">with_pubkeys</span>((<span class="kw-2">*</span><span class="ident">info</span>.<span class="ident">owner</span>, <span class="ident">MarginAccount::owner</span>())),
+        <span class="kw">if </span>info.owner != <span class="kw-2">&amp;</span><span class="self">Self</span>::owner() {
+            <span class="kw">return </span><span class="prelude-val">Err</span>(
+                Error::from(anchor_lang::error::ErrorCode::AccountOwnedByWrongProgram)
+                    .with_pubkeys((<span class="kw-2">*</span>info.owner, MarginAccount::owner())),
             );
         }
-        <span class="kw">let</span> <span class="ident">data</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>] <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">info</span>.<span class="ident">try_borrow_data</span>()<span class="question-mark">?</span>;
-        <span class="kw">if</span> <span class="ident">data</span>.<span class="ident">len</span>() <span class="op">&lt;</span> <span class="ident"><span class="self">Self</span>::discriminator</span>().<span class="ident">len</span>() {
-            <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">anchor_lang::error::ErrorCode::AccountDiscriminatorNotFound</span>.<span class="ident">into</span>());
+        <span class="kw">let </span>data: <span class="kw-2">&amp;</span>[u8] = <span class="kw-2">&amp;</span>info.try_borrow_data()<span class="question-mark">?</span>;
+        <span class="kw">if </span>data.len() &lt; <span class="self">Self</span>::discriminator().len() {
+            <span class="kw">return </span><span class="prelude-val">Err</span>(anchor_lang::error::ErrorCode::AccountDiscriminatorNotFound.into());
         }
-        <span class="kw">let</span> <span class="ident">given_disc</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">data</span>[..<span class="number">8</span>];
-        <span class="kw">if</span> <span class="ident"><span class="self">Self</span>::discriminator</span>() <span class="op">!</span><span class="op">=</span> <span class="ident">given_disc</span> {
-            <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">anchor_lang::error::ErrorCode::AccountDiscriminatorMismatch</span>.<span class="ident">into</span>());
+        <span class="kw">let </span>given_disc = <span class="kw-2">&amp;</span>data[..<span class="number">8</span>];
+        <span class="kw">if </span><span class="self">Self</span>::discriminator() != given_disc {
+            <span class="kw">return </span><span class="prelude-val">Err</span>(anchor_lang::error::ErrorCode::AccountDiscriminatorMismatch.into());
         }
         <span class="prelude-val">Ok</span>(())
     }
 }
 
-<span class="kw">impl</span> <span class="ident">AnchorVerify</span> <span class="kw">for</span> <span class="ident">MarginAccount</span> {}
+<span class="kw">impl </span>AnchorVerify <span class="kw">for </span>MarginAccount {}
 
-<span class="kw">impl</span> <span class="ident">MarginAccount</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">start_liquidation</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">liquidation</span>: <span class="ident">Pubkey</span>, <span class="ident">liquidator</span>: <span class="ident">Pubkey</span>) {
-        <span class="self">self</span>.<span class="ident">liquidation</span> <span class="op">=</span> <span class="ident">liquidation</span>;
-        <span class="self">self</span>.<span class="ident">liquidator</span> <span class="op">=</span> <span class="ident">liquidator</span>;
+<span class="kw">impl </span>MarginAccount {
+    <span class="kw">pub fn </span>start_liquidation(<span class="kw-2">&amp;mut </span><span class="self">self</span>, liquidation: Pubkey, liquidator: Pubkey) {
+        <span class="self">self</span>.liquidation = liquidation;
+        <span class="self">self</span>.liquidator = liquidator;
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">end_liquidation</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) {
-        <span class="self">self</span>.<span class="ident">liquidation</span> <span class="op">=</span> <span class="ident">Pubkey::default</span>();
-        <span class="self">self</span>.<span class="ident">liquidator</span> <span class="op">=</span> <span class="ident">Pubkey::default</span>();
+    <span class="kw">pub fn </span>end_liquidation(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+        <span class="self">self</span>.liquidation = Pubkey::default();
+        <span class="self">self</span>.liquidator = Pubkey::default();
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">verify_not_liquidating</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">AnchorResult</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">is_liquidating</span>() {
+    <span class="kw">pub fn </span>verify_not_liquidating(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; AnchorResult&lt;()&gt; {
+        <span class="kw">if </span><span class="self">self</span>.is_liquidating() {
             <span class="macro">msg!</span>(<span class="string">&quot;account is being liquidated&quot;</span>);
-            <span class="prelude-val">Err</span>(<span class="ident">ErrorCode::Liquidating</span>.<span class="ident">into</span>())
-        } <span class="kw">else</span> {
+            <span class="prelude-val">Err</span>(ErrorCode::Liquidating.into())
+        } <span class="kw">else </span>{
             <span class="prelude-val">Ok</span>(())
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">is_liquidating</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-        <span class="self">self</span>.<span class="ident">liquidation</span> <span class="op">!</span><span class="op">=</span> <span class="ident">Pubkey::default</span>()
+    <span class="kw">pub fn </span>is_liquidating(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="self">self</span>.liquidation != Pubkey::default()
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">initialize</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">owner</span>: <span class="ident">Pubkey</span>, <span class="ident">seed</span>: <span class="ident">u16</span>, <span class="ident">bump_seed</span>: <span class="ident">u8</span>) {
-        <span class="self">self</span>.<span class="ident">version</span> <span class="op">=</span> <span class="ident">MARGIN_ACCOUNT_VERSION</span>;
-        <span class="self">self</span>.<span class="ident">owner</span> <span class="op">=</span> <span class="ident">owner</span>;
-        <span class="self">self</span>.<span class="ident">bump_seed</span> <span class="op">=</span> [<span class="ident">bump_seed</span>];
-        <span class="self">self</span>.<span class="ident">user_seed</span> <span class="op">=</span> <span class="ident">seed</span>.<span class="ident">to_le_bytes</span>();
-        <span class="self">self</span>.<span class="ident">liquidator</span> <span class="op">=</span> <span class="ident">Pubkey::default</span>();
+    <span class="kw">pub fn </span>initialize(<span class="kw-2">&amp;mut </span><span class="self">self</span>, owner: Pubkey, seed: u16, bump_seed: u8) {
+        <span class="self">self</span>.version = MARGIN_ACCOUNT_VERSION;
+        <span class="self">self</span>.owner = owner;
+        <span class="self">self</span>.bump_seed = [bump_seed];
+        <span class="self">self</span>.user_seed = seed.to_le_bytes();
+        <span class="self">self</span>.liquidator = Pubkey::default();
     }
 
-    <span class="doccomment">/// Get the list of positions on this account</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">positions</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw">impl</span> <span class="ident">Iterator</span><span class="op">&lt;</span><span class="ident">Item</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">AccountPosition</span><span class="op">&gt;</span> {
-        <span class="self">self</span>.<span class="ident">position_list</span>()
-            .<span class="ident">positions</span>
-            .<span class="ident">iter</span>()
-            .<span class="ident">filter</span>(<span class="op">|</span><span class="ident">p</span><span class="op">|</span> <span class="ident">p</span>.<span class="ident">address</span> <span class="op">!</span><span class="op">=</span> <span class="ident">Pubkey::default</span>())
+    <span class="doccomment">/// Get the list of positions on this account
+    </span><span class="kw">pub fn </span>positions(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw">impl </span>Iterator&lt;Item = <span class="kw-2">&amp;</span>AccountPosition&gt; {
+        <span class="self">self</span>.position_list()
+            .positions
+            .iter()
+            .filter(|p| p.address != Pubkey::default())
     }
 
-    <span class="doccomment">/// Register the space for a new position into this account</span>
-    <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">clippy::too_many_arguments</span>)]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">register_position</span>(
-        <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
-        <span class="ident">token</span>: <span class="ident">Pubkey</span>,
-        <span class="ident">decimals</span>: <span class="ident">u8</span>,
-        <span class="ident">address</span>: <span class="ident">Pubkey</span>,
-        <span class="ident">adapter</span>: <span class="ident">Pubkey</span>,
-        <span class="ident">kind</span>: <span class="ident">TokenKind</span>,
-        <span class="ident">value_modifier</span>: <span class="ident">u16</span>,
-        <span class="ident">max_staleness</span>: <span class="ident">u64</span>,
-        <span class="ident">approvals</span>: <span class="kw-2">&amp;</span>[<span class="ident">Approver</span>],
-    ) -&gt; <span class="ident">AnchorResult</span><span class="op">&lt;</span><span class="ident">AccountPositionKey</span><span class="op">&gt;</span> {
-        <span class="kw">if</span> <span class="op">!</span><span class="self">self</span>.<span class="ident">is_liquidating</span>() <span class="op">&amp;&amp;</span> <span class="self">self</span>.<span class="ident">position_list</span>().<span class="ident">length</span> <span class="op">&gt;</span><span class="op">=</span> <span class="ident">MAX_USER_POSITIONS</span> {
-            <span class="kw">return</span> <span class="macro">err!</span>(<span class="ident">ErrorCode::MaxPositions</span>);
+    <span class="doccomment">/// Register the space for a new position into this account
+    </span><span class="attribute">#[allow(clippy::too_many_arguments)]
+    </span><span class="kw">pub fn </span>register_position(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        token: Pubkey,
+        decimals: u8,
+        address: Pubkey,
+        adapter: Pubkey,
+        kind: TokenKind,
+        value_modifier: u16,
+        max_staleness: u64,
+        approvals: <span class="kw-2">&amp;</span>[Approver],
+    ) -&gt; AnchorResult&lt;AccountPositionKey&gt; {
+        <span class="kw">if </span>!<span class="self">self</span>.is_liquidating() &amp;&amp; <span class="self">self</span>.position_list().length &gt;= MAX_USER_POSITIONS {
+            <span class="kw">return </span><span class="macro">err!</span>(ErrorCode::MaxPositions);
         }
 
-        <span class="kw">let</span> (<span class="ident">key</span>, <span class="ident">free_position</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">position_list_mut</span>().<span class="ident">add</span>(<span class="ident">token</span>)<span class="question-mark">?</span>;
+        <span class="kw">let </span>(key, free_position) = <span class="self">self</span>.position_list_mut().add(token)<span class="question-mark">?</span>;
 
-        <span class="ident">free_position</span>.<span class="ident">exponent</span> <span class="op">=</span> <span class="op">-</span>(<span class="ident">decimals</span> <span class="kw">as</span> <span class="ident">i16</span>);
-        <span class="ident">free_position</span>.<span class="ident">address</span> <span class="op">=</span> <span class="ident">address</span>;
-        <span class="ident">free_position</span>.<span class="ident">adapter</span> <span class="op">=</span> <span class="ident">adapter</span>;
-        <span class="ident">free_position</span>.<span class="ident">kind</span> <span class="op">=</span> <span class="ident">kind</span>.<span class="ident">into_integer</span>();
-        <span class="ident">free_position</span>.<span class="ident">balance</span> <span class="op">=</span> <span class="number">0</span>;
-        <span class="ident">free_position</span>.<span class="ident">value_modifier</span> <span class="op">=</span> <span class="ident">value_modifier</span>;
-        <span class="ident">free_position</span>.<span class="ident">max_staleness</span> <span class="op">=</span> <span class="ident">max_staleness</span>;
+        free_position.exponent = -(decimals <span class="kw">as </span>i16);
+        free_position.address = address;
+        free_position.adapter = adapter;
+        free_position.kind = kind.into_integer();
+        free_position.balance = <span class="number">0</span>;
+        free_position.value_modifier = value_modifier;
+        free_position.max_staleness = max_staleness;
 
-        <span class="kw">if</span> <span class="op">!</span><span class="ident">free_position</span>.<span class="ident">may_be_registered_or_closed</span>(<span class="ident">approvals</span>) {
+        <span class="kw">if </span>!free_position.may_be_registered_or_closed(approvals) {
             <span class="macro">msg!</span>(
                 <span class="string">&quot;{:?} is not authorized to register {:?}&quot;</span>,
-                <span class="ident">approvals</span>,
-                <span class="ident">free_position</span>
+                approvals,
+                free_position
             );
-            <span class="kw">return</span> <span class="macro">err!</span>(<span class="ident">ErrorCode::InvalidPositionOwner</span>);
+            <span class="kw">return </span><span class="macro">err!</span>(ErrorCode::InvalidPositionOwner);
         }
 
-        <span class="prelude-val">Ok</span>(<span class="ident">key</span>)
+        <span class="prelude-val">Ok</span>(key)
     }
 
-    <span class="doccomment">/// Free the space from a previously registered position no longer needed</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">unregister_position</span>(
-        <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
-        <span class="ident">mint</span>: <span class="kw-2">&amp;</span><span class="ident">Pubkey</span>,
-        <span class="ident">account</span>: <span class="kw-2">&amp;</span><span class="ident">Pubkey</span>,
-        <span class="ident">approvals</span>: <span class="kw-2">&amp;</span>[<span class="ident">Approver</span>],
-    ) -&gt; <span class="ident">AnchorResult</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">removed</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">position_list_mut</span>().<span class="ident">remove</span>(<span class="ident">mint</span>, <span class="ident">account</span>)<span class="question-mark">?</span>;
+    <span class="doccomment">/// Free the space from a previously registered position no longer needed
+    </span><span class="kw">pub fn </span>unregister_position(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        mint: <span class="kw-2">&amp;</span>Pubkey,
+        account: <span class="kw-2">&amp;</span>Pubkey,
+        approvals: <span class="kw-2">&amp;</span>[Approver],
+    ) -&gt; AnchorResult&lt;()&gt; {
+        <span class="kw">let </span>removed = <span class="self">self</span>.position_list_mut().remove(mint, account)<span class="question-mark">?</span>;
 
-        <span class="kw">if</span> <span class="op">!</span><span class="ident">removed</span>.<span class="ident">may_be_registered_or_closed</span>(<span class="ident">approvals</span>) {
-            <span class="macro">msg!</span>(<span class="string">&quot;{:?} is not authorized to close {:?}&quot;</span>, <span class="ident">approvals</span>, <span class="ident">removed</span>);
-            <span class="kw">return</span> <span class="macro">err!</span>(<span class="ident">ErrorCode::InvalidPositionOwner</span>);
+        <span class="kw">if </span>!removed.may_be_registered_or_closed(approvals) {
+            <span class="macro">msg!</span>(<span class="string">&quot;{:?} is not authorized to close {:?}&quot;</span>, approvals, removed);
+            <span class="kw">return </span><span class="macro">err!</span>(ErrorCode::InvalidPositionOwner);
         }
-        <span class="kw">if</span> <span class="ident">removed</span>.<span class="ident">balance</span> <span class="op">!</span><span class="op">=</span> <span class="number">0</span> {
-            <span class="kw">return</span> <span class="macro">err!</span>(<span class="ident">ErrorCode::CloseNonZeroPosition</span>);
+        <span class="kw">if </span>removed.balance != <span class="number">0 </span>{
+            <span class="kw">return </span><span class="macro">err!</span>(ErrorCode::CloseNonZeroPosition);
         }
-        <span class="kw">if</span> <span class="ident">removed</span>.<span class="ident">flags</span>.<span class="ident">contains</span>(<span class="ident">AdapterPositionFlags::REQUIRED</span>) {
-            <span class="kw">return</span> <span class="macro">err!</span>(<span class="ident">ErrorCode::CloseRequiredPosition</span>);
+        <span class="kw">if </span>removed.flags.contains(AdapterPositionFlags::REQUIRED) {
+            <span class="kw">return </span><span class="macro">err!</span>(ErrorCode::CloseRequiredPosition);
         }
 
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">refresh_position_metadata</span>(
-        <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
-        <span class="ident">mint</span>: <span class="kw-2">&amp;</span><span class="ident">Pubkey</span>,
-        <span class="ident">kind</span>: <span class="ident">TokenKind</span>,
-        <span class="ident">value_modifier</span>: <span class="ident">u16</span>,
-        <span class="ident">max_staleness</span>: <span class="ident">u64</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">AccountPosition</span>, <span class="ident">ErrorCode</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">position</span> <span class="op">=</span> <span class="kw">match</span> <span class="self">self</span>.<span class="ident">position_list_mut</span>().<span class="ident">get_mut</span>(<span class="ident">mint</span>) {
-            <span class="prelude-val">None</span> =&gt; <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">ErrorCode::PositionNotRegistered</span>),
-            <span class="prelude-val">Some</span>(<span class="ident">p</span>) =&gt; <span class="ident">p</span>,
+    <span class="kw">pub fn </span>refresh_position_metadata(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        mint: <span class="kw-2">&amp;</span>Pubkey,
+        kind: TokenKind,
+        value_modifier: u16,
+        max_staleness: u64,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;AccountPosition, ErrorCode&gt; {
+        <span class="kw">let </span>position = <span class="kw">match </span><span class="self">self</span>.position_list_mut().get_mut(mint) {
+            <span class="prelude-val">None </span>=&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(ErrorCode::PositionNotRegistered),
+            <span class="prelude-val">Some</span>(p) =&gt; p,
         };
 
-        <span class="ident">position</span>.<span class="ident">kind</span> <span class="op">=</span> <span class="ident">kind</span>.<span class="ident">into_integer</span>();
-        <span class="ident">position</span>.<span class="ident">value_modifier</span> <span class="op">=</span> <span class="ident">value_modifier</span>;
-        <span class="ident">position</span>.<span class="ident">max_staleness</span> <span class="op">=</span> <span class="ident">max_staleness</span>;
+        position.kind = kind.into_integer();
+        position.value_modifier = value_modifier;
+        position.max_staleness = max_staleness;
 
-        <span class="prelude-val">Ok</span>(<span class="kw-2">*</span><span class="ident">position</span>)
+        <span class="prelude-val">Ok</span>(<span class="kw-2">*</span>position)
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_position_key</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">mint</span>: <span class="kw-2">&amp;</span><span class="ident">Pubkey</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">AccountPositionKey</span><span class="op">&gt;</span> {
-        <span class="self">self</span>.<span class="ident">position_list</span>().<span class="ident">get_key</span>(<span class="ident">mint</span>).<span class="ident">copied</span>()
+    <span class="kw">pub fn </span>get_position_key(<span class="kw-2">&amp;</span><span class="self">self</span>, mint: <span class="kw-2">&amp;</span>Pubkey) -&gt; <span class="prelude-ty">Option</span>&lt;AccountPositionKey&gt; {
+        <span class="self">self</span>.position_list().get_key(mint).copied()
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_position</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">mint</span>: <span class="kw-2">&amp;</span><span class="ident">Pubkey</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="ident">AccountPosition</span><span class="op">&gt;</span> {
-        <span class="self">self</span>.<span class="ident">position_list</span>().<span class="ident">get</span>(<span class="ident">mint</span>)
+    <span class="kw">pub fn </span>get_position(<span class="kw-2">&amp;mut </span><span class="self">self</span>, mint: <span class="kw-2">&amp;</span>Pubkey) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>AccountPosition&gt; {
+        <span class="self">self</span>.position_list().get(mint)
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_position_mut</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">mint</span>: <span class="kw-2">&amp;</span><span class="ident">Pubkey</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;mut</span> <span class="ident">AccountPosition</span><span class="op">&gt;</span> {
-        <span class="self">self</span>.<span class="ident">position_list_mut</span>().<span class="ident">get_mut</span>(<span class="ident">mint</span>)
+    <span class="kw">pub fn </span>get_position_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>, mint: <span class="kw-2">&amp;</span>Pubkey) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;mut </span>AccountPosition&gt; {
+        <span class="self">self</span>.position_list_mut().get_mut(mint)
     }
 
-    <span class="doccomment">/// faster than searching by mint only if you have the correct key</span>
-    <span class="doccomment">/// slightly slower if you have the wrong key</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_position_by_key</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">key</span>: <span class="kw-2">&amp;</span><span class="ident">AccountPositionKey</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="ident">AccountPosition</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">list</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">position_list</span>();
-        <span class="kw">let</span> <span class="ident">position</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">list</span>.<span class="ident">positions</span>[<span class="ident">key</span>.<span class="ident">index</span>];
+    <span class="doccomment">/// faster than searching by mint only if you have the correct key
+    /// slightly slower if you have the wrong key
+    </span><span class="kw">pub fn </span>get_position_by_key(<span class="kw-2">&amp;</span><span class="self">self</span>, key: <span class="kw-2">&amp;</span>AccountPositionKey) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>AccountPosition&gt; {
+        <span class="kw">let </span>list = <span class="self">self</span>.position_list();
+        <span class="kw">let </span>position = <span class="kw-2">&amp;</span>list.positions[key.index];
 
-        <span class="kw">if</span> <span class="ident">position</span>.<span class="ident">token</span> <span class="op">==</span> <span class="ident">key</span>.<span class="ident">mint</span> {
-            <span class="prelude-val">Some</span>(<span class="ident">position</span>)
-        } <span class="kw">else</span> {
-            <span class="ident">list</span>.<span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="ident">key</span>.<span class="ident">mint</span>)
+        <span class="kw">if </span>position.token == key.mint {
+            <span class="prelude-val">Some</span>(position)
+        } <span class="kw">else </span>{
+            list.get(<span class="kw-2">&amp;</span>key.mint)
         }
     }
 
-    <span class="doccomment">/// faster than searching by mint only if you have the correct key</span>
-    <span class="doccomment">/// slightly slower if you have the wrong key</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_position_by_key_mut</span>(
-        <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
-        <span class="ident">key</span>: <span class="kw-2">&amp;</span><span class="ident">AccountPositionKey</span>,
-    ) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;mut</span> <span class="ident">AccountPosition</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">list</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">position_list_mut</span>();
-        <span class="kw">let</span> <span class="ident">position</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">list</span>.<span class="ident">positions</span>[<span class="ident">key</span>.<span class="ident">index</span>];
+    <span class="doccomment">/// faster than searching by mint only if you have the correct key
+    /// slightly slower if you have the wrong key
+    </span><span class="kw">pub fn </span>get_position_by_key_mut(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        key: <span class="kw-2">&amp;</span>AccountPositionKey,
+    ) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;mut </span>AccountPosition&gt; {
+        <span class="kw">let </span>list = <span class="self">self</span>.position_list_mut();
+        <span class="kw">let </span>position = <span class="kw-2">&amp;</span>list.positions[key.index];
 
-        <span class="kw">if</span> <span class="ident">position</span>.<span class="ident">token</span> <span class="op">==</span> <span class="ident">key</span>.<span class="ident">mint</span> {
-            <span class="prelude-val">Some</span>(<span class="kw-2">&amp;mut</span> <span class="ident">list</span>.<span class="ident">positions</span>[<span class="ident">key</span>.<span class="ident">index</span>])
-        } <span class="kw">else</span> {
-            <span class="ident">list</span>.<span class="ident">get_mut</span>(<span class="kw-2">&amp;</span><span class="ident">key</span>.<span class="ident">mint</span>)
+        <span class="kw">if </span>position.token == key.mint {
+            <span class="prelude-val">Some</span>(<span class="kw-2">&amp;mut </span>list.positions[key.index])
+        } <span class="kw">else </span>{
+            list.get_mut(<span class="kw-2">&amp;</span>key.mint)
         }
     }
 
-    <span class="doccomment">/// Change the balance for a position</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">set_position_balance</span>(
-        <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
-        <span class="ident">mint</span>: <span class="kw-2">&amp;</span><span class="ident">Pubkey</span>,
-        <span class="ident">account</span>: <span class="kw-2">&amp;</span><span class="ident">Pubkey</span>,
-        <span class="ident">balance</span>: <span class="ident">u64</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">AccountPosition</span>, <span class="ident">ErrorCode</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">position</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">position_list_mut</span>().<span class="ident">get_mut</span>(<span class="ident">mint</span>).<span class="ident">require</span>()<span class="question-mark">?</span>;
+    <span class="doccomment">/// Change the balance for a position
+    </span><span class="kw">pub fn </span>set_position_balance(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        mint: <span class="kw-2">&amp;</span>Pubkey,
+        account: <span class="kw-2">&amp;</span>Pubkey,
+        balance: u64,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;AccountPosition, ErrorCode&gt; {
+        <span class="kw">let </span>position = <span class="self">self</span>.position_list_mut().get_mut(mint).require()<span class="question-mark">?</span>;
 
-        <span class="kw">if</span> <span class="ident">position</span>.<span class="ident">address</span> <span class="op">!</span><span class="op">=</span> <span class="kw-2">*</span><span class="ident">account</span> {
-            <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">ErrorCode::PositionNotRegistered</span>);
+        <span class="kw">if </span>position.address != <span class="kw-2">*</span>account {
+            <span class="kw">return </span><span class="prelude-val">Err</span>(ErrorCode::PositionNotRegistered);
         }
 
-        <span class="ident">position</span>.<span class="ident">set_balance</span>(<span class="ident">balance</span>);
+        position.set_balance(balance);
 
-        <span class="prelude-val">Ok</span>(<span class="kw-2">*</span><span class="ident">position</span>)
+        <span class="prelude-val">Ok</span>(<span class="kw-2">*</span>position)
     }
 
-    <span class="doccomment">/// Change the current price value of a position</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">set_position_price</span>(
-        <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
-        <span class="ident">mint</span>: <span class="kw-2">&amp;</span><span class="ident">Pubkey</span>,
-        <span class="ident">price</span>: <span class="kw-2">&amp;</span><span class="ident">PriceInfo</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">ErrorCode</span><span class="op">&gt;</span> {
-        <span class="self">self</span>.<span class="ident">position_list_mut</span>()
-            .<span class="ident">get_mut</span>(<span class="ident">mint</span>)
-            .<span class="ident">require</span>()<span class="question-mark">?</span>
-            .<span class="ident">set_price</span>(<span class="ident">price</span>)
+    <span class="doccomment">/// Change the current price value of a position
+    </span><span class="kw">pub fn </span>set_position_price(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        mint: <span class="kw-2">&amp;</span>Pubkey,
+        price: <span class="kw-2">&amp;</span>PriceInfo,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;(), ErrorCode&gt; {
+        <span class="self">self</span>.position_list_mut()
+            .get_mut(mint)
+            .require()<span class="question-mark">?
+            </span>.set_price(price)
     }
 
-    <span class="doccomment">/// Check that the overall health of the account is acceptable, by comparing the</span>
-    <span class="doccomment">/// total value of the claims versus the available collateral. If the collateralization</span>
-    <span class="doccomment">/// ratio is above the minimum, then the account is considered healthy.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">verify_healthy_positions</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">AnchorResult</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">info</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">valuation</span>()<span class="question-mark">?</span>;
+    <span class="doccomment">/// Check that the overall health of the account is acceptable, by comparing the
+    /// total value of the claims versus the available collateral. If the collateralization
+    /// ratio is above the minimum, then the account is considered healthy.
+    </span><span class="kw">pub fn </span>verify_healthy_positions(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; AnchorResult&lt;()&gt; {
+        <span class="kw">let </span>info = <span class="self">self</span>.valuation()<span class="question-mark">?</span>;
 
-        <span class="kw">if</span> <span class="ident">info</span>.<span class="ident">required_collateral</span> <span class="op">&gt;</span> <span class="ident">info</span>.<span class="ident">effective_collateral</span> <span class="op">|</span><span class="op">|</span> <span class="ident">info</span>.<span class="ident">past_due</span> {
-            <span class="kw">let</span> <span class="ident">due_status</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">info</span>.<span class="ident">past_due</span> {
-                <span class="bool-val">true</span> =&gt; <span class="string">&quot;overdue&quot;</span>,
-                <span class="bool-val">false</span> =&gt; <span class="string">&quot;not overdue&quot;</span>,
+        <span class="kw">if </span>info.required_collateral &gt; info.effective_collateral || info.past_due {
+            <span class="kw">let </span>due_status = <span class="kw">match </span>info.past_due {
+                <span class="bool-val">true </span>=&gt; <span class="string">&quot;overdue&quot;</span>,
+                <span class="bool-val">false </span>=&gt; <span class="string">&quot;not overdue&quot;</span>,
             };
 
             <span class="macro">msg!</span>(
                 <span class="string">&quot;account is unhealthy: K_e = {}, K_r = {} ({})&quot;</span>,
-                <span class="ident">info</span>.<span class="ident">effective_collateral</span>,
-                <span class="ident">info</span>.<span class="ident">required_collateral</span>,
-                <span class="ident">due_status</span>
+                info.effective_collateral,
+                info.required_collateral,
+                due_status
             );
-            <span class="kw">return</span> <span class="macro">err!</span>(<span class="ident">ErrorCode::Unhealthy</span>);
+            <span class="kw">return </span><span class="macro">err!</span>(ErrorCode::Unhealthy);
         }
 
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="doccomment">/// Check that the overall health of the account is *not* acceptable.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">verify_unhealthy_positions</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">AnchorResult</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">info</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">valuation</span>()<span class="question-mark">?</span>;
+    <span class="doccomment">/// Check that the overall health of the account is *not* acceptable.
+    </span><span class="kw">pub fn </span>verify_unhealthy_positions(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; AnchorResult&lt;()&gt; {
+        <span class="kw">let </span>info = <span class="self">self</span>.valuation()<span class="question-mark">?</span>;
 
-        <span class="kw">if</span> <span class="op">!</span><span class="ident">info</span>.<span class="ident">stale_collateral_list</span>.<span class="ident">is_empty</span>() {
-            <span class="kw">for</span> (<span class="ident">position_token</span>, <span class="ident">error</span>) <span class="kw">in</span> <span class="ident">info</span>.<span class="ident">stale_collateral_list</span> {
-                <span class="macro">msg!</span>(<span class="string">&quot;stale position {}: {}&quot;</span>, <span class="ident">position_token</span>, <span class="ident">error</span>)
+        <span class="kw">if </span>!info.stale_collateral_list.is_empty() {
+            <span class="kw">for </span>(position_token, error) <span class="kw">in </span>info.stale_collateral_list {
+                <span class="macro">msg!</span>(<span class="string">&quot;stale position {}: {}&quot;</span>, position_token, error)
             }
-            <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="macro">error!</span>(<span class="ident">ErrorCode::StalePositions</span>));
+            <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">error!</span>(ErrorCode::StalePositions));
         }
 
-        <span class="kw">match</span> <span class="ident">info</span>.<span class="ident">required_collateral</span> <span class="op">&gt;</span> <span class="ident">info</span>.<span class="ident">effective_collateral</span> {
-            <span class="bool-val">true</span> =&gt; <span class="prelude-val">Ok</span>(()),
-            <span class="bool-val">false</span> <span class="kw">if</span> <span class="ident">info</span>.<span class="ident">past_due</span> =&gt; <span class="prelude-val">Ok</span>(()),
-            <span class="bool-val">false</span> =&gt; <span class="macro">err!</span>(<span class="ident">ErrorCode::Healthy</span>),
+        <span class="kw">match </span>info.required_collateral &gt; info.effective_collateral {
+            <span class="bool-val">true </span>=&gt; <span class="prelude-val">Ok</span>(()),
+            <span class="bool-val">false </span><span class="kw">if </span>info.past_due =&gt; <span class="prelude-val">Ok</span>(()),
+            <span class="bool-val">false </span>=&gt; <span class="macro">err!</span>(ErrorCode::Healthy),
         }
     }
 
-    <span class="doccomment">/// Check if the given address is the current authority for this margin account</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">verify_authority</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">authority</span>: <span class="ident">Pubkey</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">ErrorCode</span><span class="op">&gt;</span> {
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">is_liquidating</span>() {
-            <span class="kw">if</span> <span class="ident">authority</span> <span class="op">==</span> <span class="self">self</span>.<span class="ident">owner</span> {
-                <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">ErrorCode::Liquidating</span>);
-            } <span class="kw">else</span> <span class="kw">if</span> <span class="ident">authority</span> <span class="op">!</span><span class="op">=</span> <span class="self">self</span>.<span class="ident">liquidator</span> {
-                <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">ErrorCode::UnauthorizedLiquidator</span>);
+    <span class="doccomment">/// Check if the given address is the current authority for this margin account
+    </span><span class="kw">pub fn </span>verify_authority(<span class="kw-2">&amp;</span><span class="self">self</span>, authority: Pubkey) -&gt; <span class="prelude-ty">Result</span>&lt;(), ErrorCode&gt; {
+        <span class="kw">if </span><span class="self">self</span>.is_liquidating() {
+            <span class="kw">if </span>authority == <span class="self">self</span>.owner {
+                <span class="kw">return </span><span class="prelude-val">Err</span>(ErrorCode::Liquidating);
+            } <span class="kw">else if </span>authority != <span class="self">self</span>.liquidator {
+                <span class="kw">return </span><span class="prelude-val">Err</span>(ErrorCode::UnauthorizedLiquidator);
             }
-        } <span class="kw">else</span> <span class="kw">if</span> <span class="ident">authority</span> <span class="op">!</span><span class="op">=</span> <span class="self">self</span>.<span class="ident">owner</span> {
-            <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">ErrorCode::UnauthorizedInvocation</span>);
+        } <span class="kw">else if </span>authority != <span class="self">self</span>.owner {
+            <span class="kw">return </span><span class="prelude-val">Err</span>(ErrorCode::UnauthorizedInvocation);
         }
 
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">valuation</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">AnchorResult</span><span class="op">&lt;</span><span class="ident">Valuation</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">timestamp</span> <span class="op">=</span> <span class="ident">sys</span>().<span class="ident">unix_timestamp</span>();
+    <span class="kw">pub fn </span>valuation(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; AnchorResult&lt;Valuation&gt; {
+        <span class="kw">let </span>timestamp = sys().unix_timestamp();
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">past_due</span> <span class="op">=</span> <span class="bool-val">false</span>;
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">liabilities</span> <span class="op">=</span> <span class="ident">Number128::ZERO</span>;
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">required_collateral</span> <span class="op">=</span> <span class="ident">Number128::ZERO</span>;
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">weighted_collateral</span> <span class="op">=</span> <span class="ident">Number128::ZERO</span>;
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">stale_collateral_list</span> <span class="op">=</span> <span class="macro">vec!</span>[];
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">equity</span> <span class="op">=</span> <span class="ident">Number128::ZERO</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>past_due = <span class="bool-val">false</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>liabilities = Number128::ZERO;
+        <span class="kw">let </span><span class="kw-2">mut </span>required_collateral = Number128::ZERO;
+        <span class="kw">let </span><span class="kw-2">mut </span>weighted_collateral = Number128::ZERO;
+        <span class="kw">let </span><span class="kw-2">mut </span>stale_collateral_list = <span class="macro">vec!</span>[];
+        <span class="kw">let </span><span class="kw-2">mut </span>equity = Number128::ZERO;
 
-        <span class="kw">for</span> <span class="ident">position</span> <span class="kw">in</span> <span class="self">self</span>.<span class="ident">positions</span>() {
-            <span class="kw">if</span> <span class="ident">position</span>.<span class="ident">balance</span> <span class="op">==</span> <span class="number">0</span> {
+        <span class="kw">for </span>position <span class="kw">in </span><span class="self">self</span>.positions() {
+            <span class="kw">if </span>position.balance == <span class="number">0 </span>{
                 <span class="kw">continue</span>;
             }
-            <span class="kw">let</span> <span class="ident">kind</span> <span class="op">=</span> <span class="ident">position</span>.<span class="ident">kind</span>();
-            <span class="kw">let</span> <span class="ident">stale_reason</span> <span class="op">=</span> {
-                <span class="kw">let</span> <span class="ident">balance_age</span> <span class="op">=</span> <span class="ident">timestamp</span> <span class="op">-</span> <span class="ident">position</span>.<span class="ident">balance_timestamp</span>;
-                <span class="kw">let</span> <span class="ident">price_quote_age</span> <span class="op">=</span> <span class="ident">timestamp</span> <span class="op">-</span> <span class="ident">position</span>.<span class="ident">price</span>.<span class="ident">timestamp</span>;
+            <span class="kw">let </span>kind = position.kind();
+            <span class="kw">let </span>stale_reason = {
+                <span class="kw">let </span>balance_age = timestamp - position.balance_timestamp;
+                <span class="kw">let </span>price_quote_age = timestamp - position.price.timestamp;
 
-                <span class="kw">if</span> <span class="op">!</span><span class="ident">position</span>.<span class="ident">price</span>.<span class="ident">is_valid</span>() {
-                    <span class="comment">// collateral with bad prices</span>
-                    <span class="prelude-val">Some</span>(<span class="ident">ErrorCode::InvalidPrice</span>)
-                } <span class="kw">else</span> <span class="kw">if</span> <span class="ident">position</span>.<span class="ident">max_staleness</span> <span class="op">&gt;</span> <span class="number">0</span> <span class="op">&amp;&amp;</span> <span class="ident">balance_age</span> <span class="op">&gt;</span> <span class="ident">position</span>.<span class="ident">max_staleness</span> {
-                    <span class="comment">// outdated balance</span>
-                    <span class="prelude-val">Some</span>(<span class="ident">ErrorCode::OutdatedBalance</span>)
-                } <span class="kw">else</span> <span class="kw">if</span> <span class="ident">price_quote_age</span> <span class="op">&gt;</span> <span class="ident">MAX_PRICE_QUOTE_AGE</span> {
-                    <span class="comment">// outdated price</span>
-                    <span class="prelude-val">Some</span>(<span class="ident">ErrorCode::OutdatedPrice</span>)
-                } <span class="kw">else</span> {
-                    <span class="prelude-val">None</span>
-                }
+                <span class="kw">if </span>!position.price.is_valid() {
+                    <span class="comment">// collateral with bad prices
+                    </span><span class="prelude-val">Some</span>(ErrorCode::InvalidPrice)
+                } <span class="kw">else if </span>position.max_staleness &gt; <span class="number">0 </span>&amp;&amp; balance_age &gt; position.max_staleness {
+                    <span class="comment">// outdated balance
+                    </span><span class="prelude-val">Some</span>(ErrorCode::OutdatedBalance)
+                } <span class="kw">else if </span>price_quote_age &gt; MAX_PRICE_QUOTE_AGE {
+                    <span class="comment">// outdated price
+                    </span><span class="prelude-val">Some</span>(ErrorCode::OutdatedPrice)
+                } <span class="kw">else </span>{
+                    <span class="prelude-val">None
+                </span>}
             };
 
-            <span class="kw">match</span> (<span class="ident">kind</span>, <span class="ident">stale_reason</span>) {
-                (<span class="ident">TokenKind::Claim</span>, <span class="prelude-val">None</span>) =&gt; {
-                    <span class="kw">if</span> <span class="ident">position</span>.<span class="ident">balance</span> <span class="op">&gt;</span> <span class="number">0</span>
-                        <span class="op">&amp;&amp;</span> <span class="ident">position</span>.<span class="ident">flags</span>.<span class="ident">contains</span>(<span class="ident">AdapterPositionFlags::PAST_DUE</span>)
+            <span class="kw">match </span>(kind, stale_reason) {
+                (TokenKind::Claim, <span class="prelude-val">None</span>) =&gt; {
+                    <span class="kw">if </span>position.balance &gt; <span class="number">0
+                        </span>&amp;&amp; position.flags.contains(AdapterPositionFlags::PAST_DUE)
                     {
-                        <span class="ident">past_due</span> <span class="op">=</span> <span class="bool-val">true</span>;
+                        past_due = <span class="bool-val">true</span>;
                     }
 
-                    <span class="ident">equity</span> <span class="op">-</span><span class="op">=</span> <span class="ident">position</span>.<span class="ident">value</span>();
-                    <span class="ident">liabilities</span> <span class="op">+</span><span class="op">=</span> <span class="ident">position</span>.<span class="ident">value</span>();
-                    <span class="ident">required_collateral</span> <span class="op">+</span><span class="op">=</span> <span class="ident">position</span>.<span class="ident">required_collateral_value</span>();
+                    equity -= position.value();
+                    liabilities += position.value();
+                    required_collateral += position.required_collateral_value();
                 }
-                (<span class="ident">TokenKind::Claim</span>, <span class="prelude-val">Some</span>(<span class="ident">error</span>)) =&gt; {
-                    <span class="macro">msg!</span>(<span class="string">&quot;claim position is stale: {:?}&quot;</span>, <span class="ident">position</span>);
-                    <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="macro">error!</span>(<span class="ident">error</span>));
+                (TokenKind::Claim, <span class="prelude-val">Some</span>(error)) =&gt; {
+                    <span class="macro">msg!</span>(<span class="string">&quot;claim position is stale: {:?}&quot;</span>, position);
+                    <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">error!</span>(error));
                 }
 
-                (<span class="ident">TokenKind::AdapterCollateral</span> <span class="op">|</span> <span class="ident">TokenKind::Collateral</span>, <span class="prelude-val">None</span>) =&gt; {
-                    <span class="ident">equity</span> <span class="op">+</span><span class="op">=</span> <span class="ident">position</span>.<span class="ident">value</span>();
-                    <span class="ident">weighted_collateral</span> <span class="op">+</span><span class="op">=</span> <span class="ident">position</span>.<span class="ident">collateral_value</span>();
+                (TokenKind::AdapterCollateral | TokenKind::Collateral, <span class="prelude-val">None</span>) =&gt; {
+                    equity += position.value();
+                    weighted_collateral += position.collateral_value();
                 }
-                (<span class="ident">TokenKind::AdapterCollateral</span> <span class="op">|</span> <span class="ident">TokenKind::Collateral</span>, <span class="prelude-val">Some</span>(<span class="ident">e</span>)) =&gt; {
-                    <span class="ident">stale_collateral_list</span>.<span class="ident">push</span>((<span class="ident">position</span>.<span class="ident">token</span>, <span class="ident">e</span>));
+                (TokenKind::AdapterCollateral | TokenKind::Collateral, <span class="prelude-val">Some</span>(e)) =&gt; {
+                    stale_collateral_list.push((position.token, e));
                 }
             }
         }
 
-        <span class="prelude-val">Ok</span>(<span class="ident">Valuation</span> {
-            <span class="ident">equity</span>,
-            <span class="ident">liabilities</span>,
-            <span class="ident">past_due</span>,
-            <span class="ident">required_collateral</span>,
-            <span class="ident">weighted_collateral</span>,
-            <span class="ident">effective_collateral</span>: <span class="ident">weighted_collateral</span> <span class="op">-</span> <span class="ident">liabilities</span>,
-            <span class="ident">stale_collateral_list</span>,
+        <span class="prelude-val">Ok</span>(Valuation {
+            equity,
+            liabilities,
+            past_due,
+            required_collateral,
+            weighted_collateral,
+            effective_collateral: weighted_collateral - liabilities,
+            stale_collateral_list,
         })
     }
 
-    <span class="kw">fn</span> <span class="ident">position_list</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">AccountPositionList</span> {
-        <span class="ident">bytemuck::from_bytes</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">positions</span>)
+    <span class="kw">fn </span>position_list(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>AccountPositionList {
+        bytemuck::from_bytes(<span class="kw-2">&amp;</span><span class="self">self</span>.positions)
     }
 
-    <span class="kw">fn</span> <span class="ident">position_list_mut</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut</span> <span class="ident">AccountPositionList</span> {
-        <span class="ident">bytemuck::from_bytes_mut</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">positions</span>)
+    <span class="kw">fn </span>position_list_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span>AccountPositionList {
+        bytemuck::from_bytes_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>.positions)
     }
 }
 
-<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">SignerSeeds</span><span class="op">&lt;</span><span class="kw">const</span> <span class="ident">SIZE</span>: <span class="ident">usize</span><span class="op">&gt;</span> {
-    <span class="kw">fn</span> <span class="ident">signer_seeds</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; [<span class="kw-2">&amp;</span>[<span class="ident">u8</span>]; <span class="ident">SIZE</span>];
-    <span class="kw">fn</span> <span class="ident">signer_seeds_owned</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">SignerSeeds</span><span class="op">&lt;</span><span class="ident">SIZE</span><span class="op">&gt;</span><span class="op">&gt;</span>;
+<span class="kw">pub trait </span>SignerSeeds&lt;<span class="kw">const </span>SIZE: usize&gt; {
+    <span class="kw">fn </span>signer_seeds(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; [<span class="kw-2">&amp;</span>[u8]; SIZE];
+    <span class="kw">fn </span>signer_seeds_owned(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Box&lt;<span class="kw">dyn </span>SignerSeeds&lt;SIZE&gt;&gt;;
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="kw">const</span> <span class="ident">A</span>: <span class="ident">usize</span>, <span class="kw">const</span> <span class="ident">B</span>: <span class="ident">usize</span>, <span class="kw">const</span> <span class="ident">C</span>: <span class="ident">usize</span><span class="op">&gt;</span> <span class="ident">SignerSeeds</span><span class="op">&lt;</span><span class="number">3</span><span class="op">&gt;</span>
-    <span class="kw">for</span> ([<span class="ident">u8</span>; <span class="ident">A</span>], [<span class="ident">u8</span>; <span class="ident">B</span>], [<span class="ident">u8</span>; <span class="ident">C</span>])
+<span class="kw">impl</span>&lt;<span class="kw">const </span>A: usize, <span class="kw">const </span>B: usize, <span class="kw">const </span>C: usize&gt; SignerSeeds&lt;<span class="number">3</span>&gt;
+    <span class="kw">for </span>([u8; A], [u8; B], [u8; C])
 {
-    <span class="kw">fn</span> <span class="ident">signer_seeds</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; [<span class="kw-2">&amp;</span>[<span class="ident">u8</span>]; <span class="number">3</span>] {
-        <span class="kw">let</span> (<span class="ident">s0</span>, <span class="ident">s1</span>, <span class="ident">s2</span>) <span class="op">=</span> <span class="self">self</span>;
-        [<span class="ident">s0</span>, <span class="ident">s1</span>, <span class="ident">s2</span>]
+    <span class="kw">fn </span>signer_seeds(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; [<span class="kw-2">&amp;</span>[u8]; <span class="number">3</span>] {
+        <span class="kw">let </span>(s0, s1, s2) = <span class="self">self</span>;
+        [s0, s1, s2]
     }
 
-    <span class="kw">fn</span> <span class="ident">signer_seeds_owned</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">SignerSeeds</span><span class="op">&lt;</span><span class="number">3</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-        <span class="ident">Box::new</span>(<span class="kw-2">*</span><span class="self">self</span>)
+    <span class="kw">fn </span>signer_seeds_owned(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Box&lt;<span class="kw">dyn </span>SignerSeeds&lt;<span class="number">3</span>&gt;&gt; {
+        Box::new(<span class="kw-2">*</span><span class="self">self</span>)
     }
 }
 
-<span class="kw">impl</span> <span class="ident">SignerSeeds</span><span class="op">&lt;</span><span class="number">3</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">MarginAccount</span> {
-    <span class="kw">fn</span> <span class="ident">signer_seeds</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; [<span class="kw-2">&amp;</span>[<span class="ident">u8</span>]; <span class="number">3</span>] {
+<span class="kw">impl </span>SignerSeeds&lt;<span class="number">3</span>&gt; <span class="kw">for </span>MarginAccount {
+    <span class="kw">fn </span>signer_seeds(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; [<span class="kw-2">&amp;</span>[u8]; <span class="number">3</span>] {
         [
-            <span class="self">self</span>.<span class="ident">owner</span>.<span class="ident">as_ref</span>(),
-            <span class="self">self</span>.<span class="ident">user_seed</span>.<span class="ident">as_ref</span>(),
-            <span class="self">self</span>.<span class="ident">bump_seed</span>.<span class="ident">as_ref</span>(),
+            <span class="self">self</span>.owner.as_ref(),
+            <span class="self">self</span>.user_seed.as_ref(),
+            <span class="self">self</span>.bump_seed.as_ref(),
         ]
     }
 
-    <span class="kw">fn</span> <span class="ident">signer_seeds_owned</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">SignerSeeds</span><span class="op">&lt;</span><span class="number">3</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-        <span class="ident">Box::new</span>((<span class="self">self</span>.<span class="ident">owner</span>.<span class="ident">to_bytes</span>(), <span class="self">self</span>.<span class="ident">user_seed</span>, <span class="self">self</span>.<span class="ident">bump_seed</span>))
+    <span class="kw">fn </span>signer_seeds_owned(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Box&lt;<span class="kw">dyn </span>SignerSeeds&lt;<span class="number">3</span>&gt;&gt; {
+        Box::new((<span class="self">self</span>.owner.to_bytes(), <span class="self">self</span>.user_seed, <span class="self">self</span>.bump_seed))
     }
 }
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">PartialEq</span>, <span class="ident">Eq</span>, <span class="ident">Debug</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">Approver</span> {
-    <span class="doccomment">/// Do not include this unless the transaction was signed by the margin account authority</span>
-    <span class="ident">MarginAccountAuthority</span>,
+<span class="attribute">#[derive(PartialEq, Eq, Debug)]
+</span><span class="kw">pub enum </span>Approver {
+    <span class="doccomment">/// Do not include this unless the transaction was signed by the margin account authority
+    </span>MarginAccountAuthority,
 
-    <span class="doccomment">/// Do not include this unless the request came from an adapter&#39;s return data</span>
-    <span class="ident">Adapter</span>(<span class="ident">Pubkey</span>),
+    <span class="doccomment">/// Do not include this unless the request came from an adapter&#39;s return data
+    </span>Adapter(Pubkey),
 }
 
-<span class="doccomment">/// State of an in-progress liquidation</span>
-<span class="attribute">#[<span class="ident">account</span>(<span class="ident">zero_copy</span>)]</span>
-<span class="attribute">#[<span class="ident">repr</span>(<span class="ident">C</span>, <span class="ident">align</span>(<span class="number">8</span>))]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">LiquidationState</span> {
-    <span class="doccomment">/// The state object</span>
-    <span class="kw">pub</span> <span class="ident">state</span>: <span class="ident">Liquidation</span>,
+<span class="doccomment">/// State of an in-progress liquidation
+</span><span class="attribute">#[account(zero_copy)]
+#[repr(C, align(<span class="number">8</span>))]
+</span><span class="kw">pub struct </span>LiquidationState {
+    <span class="doccomment">/// The state object
+    </span><span class="kw">pub </span>state: Liquidation,
 }
 
-<span class="attribute">#[<span class="ident">repr</span>(<span class="ident">C</span>)]</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Zeroable</span>, <span class="ident">Pod</span>, <span class="ident">AnchorDeserialize</span>, <span class="ident">AnchorSerialize</span>, <span class="ident">Debug</span>, <span class="ident">Default</span>, <span class="ident">Clone</span>, <span class="ident">Copy</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Liquidation</span> {
-    <span class="doccomment">/// time that liquidate_begin initialized this liquidation</span>
-    <span class="kw">pub</span> <span class="ident">start_time</span>: <span class="ident">i64</span>,
+<span class="attribute">#[repr(C)]
+#[derive(Zeroable, Pod, AnchorDeserialize, AnchorSerialize, Debug, Default, Clone, Copy)]
+</span><span class="kw">pub struct </span>Liquidation {
+    <span class="doccomment">/// time that liquidate_begin initialized this liquidation
+    </span><span class="kw">pub </span>start_time: i64,
 
-    <span class="doccomment">/// cumulative change in equity caused by invocations during the liquidation so far</span>
-    <span class="doccomment">/// negative if equity is lost</span>
-    <span class="kw">pub</span> <span class="ident">equity_change</span>: <span class="ident">i128</span>,
+    <span class="doccomment">/// cumulative change in equity caused by invocations during the liquidation so far
+    /// negative if equity is lost
+    </span><span class="kw">pub </span>equity_change: i128,
 
-    <span class="doccomment">/// lowest amount of equity change that is allowed during invoke steps</span>
-    <span class="doccomment">/// typically negative or zero</span>
-    <span class="doccomment">/// if equity_change goes lower than this number, liquidate_invoke should fail</span>
-    <span class="kw">pub</span> <span class="ident">min_equity_change</span>: <span class="ident">i128</span>,
+    <span class="doccomment">/// lowest amount of equity change that is allowed during invoke steps
+    /// typically negative or zero
+    /// if equity_change goes lower than this number, liquidate_invoke should fail
+    </span><span class="kw">pub </span>min_equity_change: i128,
 }
 
-<span class="kw">impl</span> <span class="ident">Liquidation</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">start_time</span>: <span class="ident">i64</span>, <span class="ident">min_equity_change</span>: <span class="ident">Number128</span>) -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span> {
-            <span class="ident">start_time</span>,
-            <span class="ident">equity_change</span>: <span class="number">0</span>,
-            <span class="ident">min_equity_change</span>: <span class="ident">min_equity_change</span>.<span class="ident">to_i128</span>(),
+<span class="kw">impl </span>Liquidation {
+    <span class="kw">pub fn </span>new(start_time: i64, min_equity_change: Number128) -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            start_time,
+            equity_change: <span class="number">0</span>,
+            min_equity_change: min_equity_change.to_i128(),
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">start_time</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">i64</span> {
-        <span class="self">self</span>.<span class="ident">start_time</span>
+    <span class="kw">pub fn </span>start_time(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; i64 {
+        <span class="self">self</span>.start_time
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">equity_change_mut</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut</span> <span class="ident">Number128</span> {
-        <span class="ident">bytemuck::cast_mut</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">equity_change</span>)
+    <span class="kw">pub fn </span>equity_change_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span>Number128 {
+        bytemuck::cast_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>.equity_change)
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">equity_change</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">Number128</span> {
-        <span class="ident">bytemuck::cast_ref</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">equity_change</span>)
+    <span class="kw">pub fn </span>equity_change(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>Number128 {
+        bytemuck::cast_ref(<span class="kw-2">&amp;</span><span class="self">self</span>.equity_change)
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">min_equity_change</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Number128</span> {
-        <span class="ident">Number128::from_i128</span>(<span class="self">self</span>.<span class="ident">min_equity_change</span>)
-    }
-}
-
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Valuation</span> {
-    <span class="doccomment">/// The net asset value for all positions registered in this account, ignoring collateral weights and max leverage</span>
-    <span class="kw">pub</span> <span class="ident">equity</span>: <span class="ident">Number128</span>,
-
-    <span class="doccomment">/// The total liability value for all claims, ignoring max leverage.</span>
-    <span class="kw">pub</span> <span class="ident">liabilities</span>: <span class="ident">Number128</span>,
-
-    <span class="doccomment">/// The amount of collateral that is required to cover price risk exposure from claim positions</span>
-    <span class="kw">pub</span> <span class="ident">required_collateral</span>: <span class="ident">Number128</span>,
-
-    <span class="doccomment">/// The total dollar value counted towards collateral from all deposits</span>
-    <span class="kw">pub</span> <span class="ident">weighted_collateral</span>: <span class="ident">Number128</span>,
-
-    <span class="doccomment">/// weighted_collateral minus debt. the remaining portion of collateral allocated for required_collateral after deposits and borrows offset</span>
-    <span class="kw">pub</span> <span class="ident">effective_collateral</span>: <span class="ident">Number128</span>,
-
-    <span class="doccomment">/// Errors that resulted in collateral positions from being excluded from collateral and equity totals</span>
-    <span class="ident">stale_collateral_list</span>: <span class="ident">Vec</span><span class="op">&lt;</span>(<span class="ident">Pubkey</span>, <span class="ident">ErrorCode</span>)<span class="op">&gt;</span>,
-
-    <span class="doccomment">/// at least one position is past due and must be repaid immediately</span>
-    <span class="ident">past_due</span>: <span class="ident">bool</span>,
-}
-
-<span class="kw">impl</span> <span class="ident">Valuation</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">available_collateral</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Number128</span> {
-        <span class="self">self</span>.<span class="ident">effective_collateral</span> <span class="op">-</span> <span class="self">self</span>.<span class="ident">required_collateral</span>
-    }
-
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">past_due</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-        <span class="self">self</span>.<span class="ident">past_due</span>
+    <span class="kw">pub fn </span>min_equity_change(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Number128 {
+        Number128::from_i128(<span class="self">self</span>.min_equity_change)
     }
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">test</span>)]</span>
-<span class="kw">mod</span> <span class="ident">tests</span> {
-    <span class="kw">use</span> <span class="kw">crate</span>::{
-        <span class="ident">syscall</span>::{<span class="ident">sys</span>, <span class="ident">thread_local_mock::mock_stack_height</span>, <span class="ident">Sys</span>},
-        <span class="ident">util::Invocation</span>,
+<span class="attribute">#[derive(Debug, Clone)]
+</span><span class="kw">pub struct </span>Valuation {
+    <span class="doccomment">/// The net asset value for all positions registered in this account, ignoring collateral weights and max leverage
+    </span><span class="kw">pub </span>equity: Number128,
+
+    <span class="doccomment">/// The total liability value for all claims, ignoring max leverage.
+    </span><span class="kw">pub </span>liabilities: Number128,
+
+    <span class="doccomment">/// The amount of collateral that is required to cover price risk exposure from claim positions
+    </span><span class="kw">pub </span>required_collateral: Number128,
+
+    <span class="doccomment">/// The total dollar value counted towards collateral from all deposits
+    </span><span class="kw">pub </span>weighted_collateral: Number128,
+
+    <span class="doccomment">/// weighted_collateral minus debt. the remaining portion of collateral allocated for required_collateral after deposits and borrows offset
+    </span><span class="kw">pub </span>effective_collateral: Number128,
+
+    <span class="doccomment">/// Errors that resulted in collateral positions from being excluded from collateral and equity totals
+    </span>stale_collateral_list: Vec&lt;(Pubkey, ErrorCode)&gt;,
+
+    <span class="doccomment">/// at least one position is past due and must be repaid immediately
+    </span>past_due: bool,
+}
+
+<span class="kw">impl </span>Valuation {
+    <span class="kw">pub fn </span>available_collateral(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Number128 {
+        <span class="self">self</span>.effective_collateral - <span class="self">self</span>.required_collateral
+    }
+
+    <span class="kw">pub fn </span>past_due(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="self">self</span>.past_due
+    }
+}
+
+<span class="attribute">#[cfg(test)]
+</span><span class="kw">mod </span>tests {
+    <span class="kw">use crate</span>::{
+        syscall::{sys, thread_local_mock::mock_stack_height, Sys},
+        util::Invocation,
     };
 
-    <span class="kw">use</span> <span class="kw">super</span>::<span class="kw-2">*</span>;
-    <span class="kw">use</span> <span class="ident">itertools::Itertools</span>;
-    <span class="kw">use</span> <span class="ident">serde_test</span>::{<span class="ident">assert_ser_tokens</span>, <span class="ident">Token</span>};
+    <span class="kw">use super</span>::<span class="kw-2">*</span>;
+    <span class="kw">use </span>itertools::Itertools;
+    <span class="kw">use </span>serde_test::{assert_ser_tokens, Token};
 
-    <span class="kw">fn</span> <span class="ident">create_position_input</span>(<span class="ident">margin_address</span>: <span class="kw-2">&amp;</span><span class="ident">Pubkey</span>) -&gt; (<span class="ident">Pubkey</span>, <span class="ident">Pubkey</span>) {
-        <span class="kw">let</span> <span class="ident">token</span> <span class="op">=</span> <span class="ident">Pubkey::new_unique</span>();
-        <span class="kw">let</span> (<span class="ident">address</span>, <span class="kw">_</span>) <span class="op">=</span>
-            <span class="ident">Pubkey::find_program_address</span>(<span class="kw-2">&amp;</span>[<span class="ident">margin_address</span>.<span class="ident">as_ref</span>(), <span class="ident">token</span>.<span class="ident">as_ref</span>()], <span class="kw-2">&amp;</span><span class="ident"><span class="kw">crate</span>::id</span>());
-        (<span class="ident">token</span>, <span class="ident">address</span>)
+    <span class="kw">fn </span>create_position_input(margin_address: <span class="kw-2">&amp;</span>Pubkey) -&gt; (Pubkey, Pubkey) {
+        <span class="kw">let </span>token = Pubkey::new_unique();
+        <span class="kw">let </span>(address, <span class="kw">_</span>) =
+            Pubkey::find_program_address(<span class="kw-2">&amp;</span>[margin_address.as_ref(), token.as_ref()], <span class="kw-2">&amp;</span><span class="kw">crate</span>::id());
+        (token, address)
     }
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">margin_account_debug</span>() {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">invocation</span> <span class="op">=</span> <span class="ident">Invocation::default</span>();
-        <span class="kw">for</span> <span class="ident">i</span> <span class="kw">in</span> [<span class="number">0</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="number">4</span>, <span class="number">7</span>] {
-            <span class="ident">mock_stack_height</span>(<span class="prelude-val">Some</span>(<span class="ident">i</span>));
-            <span class="ident">invocation</span>.<span class="ident">start</span>();
+    <span class="attribute">#[test]
+    </span><span class="kw">fn </span>margin_account_debug() {
+        <span class="kw">let </span><span class="kw-2">mut </span>invocation = Invocation::default();
+        <span class="kw">for </span>i <span class="kw">in </span>[<span class="number">0</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="number">4</span>, <span class="number">7</span>] {
+            mock_stack_height(<span class="prelude-val">Some</span>(i));
+            invocation.start();
         }
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">acc</span> <span class="op">=</span> <span class="ident">MarginAccount</span> {
-            <span class="ident">version</span>: <span class="number">1</span>,
-            <span class="ident">bump_seed</span>: [<span class="number">0</span>],
-            <span class="ident">user_seed</span>: [<span class="number">0</span>; <span class="number">2</span>],
-            <span class="ident">reserved0</span>: [<span class="number">0</span>; <span class="number">3</span>],
-            <span class="ident">owner</span>: <span class="ident">Pubkey::default</span>(),
-            <span class="ident">liquidation</span>: <span class="ident">Pubkey::default</span>(),
-            <span class="ident">liquidator</span>: <span class="ident">Pubkey::default</span>(),
-            <span class="ident">invocation</span>,
-            <span class="ident">positions</span>: [<span class="number">0</span>; <span class="number">7432</span>],
+        <span class="kw">let </span><span class="kw-2">mut </span>acc = MarginAccount {
+            version: <span class="number">1</span>,
+            bump_seed: [<span class="number">0</span>],
+            user_seed: [<span class="number">0</span>; <span class="number">2</span>],
+            reserved0: [<span class="number">0</span>; <span class="number">3</span>],
+            owner: Pubkey::default(),
+            liquidation: Pubkey::default(),
+            liquidator: Pubkey::default(),
+            invocation,
+            positions: [<span class="number">0</span>; <span class="number">7432</span>],
         };
-        <span class="kw">let</span> <span class="ident">output</span> <span class="op">=</span> <span class="string">&quot;MarginAccount {
+        <span class="kw">let </span>output = <span class="string">&quot;MarginAccount {
             version: 1,
             bump_seed: [0],
             user_seed: [0, 0],
@@ -1887,26 +1887,26 @@
             liquidation: 11111111111111111111111111111111,
             liquidator: 11111111111111111111111111111111,
             positions: []
-        }&quot;</span>
-        .<span class="ident">split_whitespace</span>()
-        .<span class="ident">join</span>(<span class="string">&quot; &quot;</span>);
-        <span class="macro">assert_eq!</span>(<span class="kw-2">&amp;</span><span class="ident">output</span>, <span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;{acc:?}&quot;</span>));
+        }&quot;
+        </span>.split_whitespace()
+        .join(<span class="string">&quot; &quot;</span>);
+        <span class="macro">assert_eq!</span>(<span class="kw-2">&amp;</span>output, <span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;{acc:?}&quot;</span>));
 
-        <span class="comment">// use a non-default pubkey</span>
-        <span class="kw">let</span> <span class="ident">key</span> <span class="op">=</span> <span class="ident"><span class="kw">crate</span>::id</span>();
-        <span class="kw">let</span> <span class="ident">approvals</span> <span class="op">=</span> <span class="kw-2">&amp;</span>[<span class="ident">Approver::MarginAccountAuthority</span>];
-        <span class="ident">acc</span>.<span class="ident">register_position</span>(
-            <span class="ident">key</span>,
+        <span class="comment">// use a non-default pubkey
+        </span><span class="kw">let </span>key = <span class="kw">crate</span>::id();
+        <span class="kw">let </span>approvals = <span class="kw-2">&amp;</span>[Approver::MarginAccountAuthority];
+        acc.register_position(
+            key,
             <span class="number">2</span>,
-            <span class="ident">key</span>,
-            <span class="ident">key</span>,
-            <span class="ident">TokenKind::Collateral</span>,
+            key,
+            key,
+            TokenKind::Collateral,
             <span class="number">5000</span>,
             <span class="number">1000</span>,
-            <span class="ident">approvals</span>,
+            approvals,
         )
-        .<span class="ident">unwrap</span>();
-        <span class="kw">let</span> <span class="ident">position</span> <span class="op">=</span> <span class="string">&quot;AccountPosition {
+        .unwrap();
+        <span class="kw">let </span>position = <span class="string">&quot;AccountPosition {
             token: JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ,
             address: JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ,
             adapter: JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ,
@@ -1924,583 +1924,583 @@
             exponent: -2,
             value_modifier: 5000,
             max_staleness: 1000
-        }&quot;</span>
-        .<span class="ident">split_whitespace</span>()
-        .<span class="ident">join</span>(<span class="string">&quot; &quot;</span>);
-        <span class="kw">let</span> <span class="ident">output</span> <span class="op">=</span> <span class="ident">output</span>.<span class="ident">replace</span>(<span class="string">&quot;positions: []&quot;</span>, <span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;positions: [{}]&quot;</span>, <span class="ident">position</span>));
-        <span class="macro">assert_eq!</span>(<span class="kw-2">&amp;</span><span class="ident">output</span>, <span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;{:?}&quot;</span>, <span class="ident">acc</span>));
+        }&quot;
+        </span>.split_whitespace()
+        .join(<span class="string">&quot; &quot;</span>);
+        <span class="kw">let </span>output = output.replace(<span class="string">&quot;positions: []&quot;</span>, <span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;positions: [{}]&quot;</span>, position));
+        <span class="macro">assert_eq!</span>(<span class="kw-2">&amp;</span>output, <span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;{:?}&quot;</span>, acc));
     }
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">margin_account_serialize</span>() {
-        <span class="kw">let</span> <span class="ident">account</span> <span class="op">=</span> <span class="ident">MarginAccount</span> {
-            <span class="ident">version</span>: <span class="number">1</span>,
-            <span class="ident">bump_seed</span>: [<span class="number">0</span>],
-            <span class="ident">user_seed</span>: [<span class="number">0</span>; <span class="number">2</span>],
-            <span class="ident">reserved0</span>: [<span class="number">0</span>; <span class="number">3</span>],
-            <span class="ident">owner</span>: <span class="ident">Pubkey::default</span>(),
-            <span class="ident">liquidation</span>: <span class="ident">Pubkey::default</span>(),
-            <span class="ident">liquidator</span>: <span class="ident">Pubkey::default</span>(),
-            <span class="ident">invocation</span>: <span class="ident">Invocation::default</span>(),
-            <span class="ident">positions</span>: [<span class="number">0</span>; <span class="number">7432</span>],
+    <span class="attribute">#[test]
+    </span><span class="kw">fn </span>margin_account_serialize() {
+        <span class="kw">let </span>account = MarginAccount {
+            version: <span class="number">1</span>,
+            bump_seed: [<span class="number">0</span>],
+            user_seed: [<span class="number">0</span>; <span class="number">2</span>],
+            reserved0: [<span class="number">0</span>; <span class="number">3</span>],
+            owner: Pubkey::default(),
+            liquidation: Pubkey::default(),
+            liquidator: Pubkey::default(),
+            invocation: Invocation::default(),
+            positions: [<span class="number">0</span>; <span class="number">7432</span>],
         };
 
-        <span class="ident">assert_ser_tokens</span>(
-            <span class="kw-2">&amp;</span><span class="ident">account</span>,
+        assert_ser_tokens(
+            <span class="kw-2">&amp;</span>account,
             <span class="kw-2">&amp;</span>[
-                <span class="ident">Token::Struct</span> {
-                    <span class="ident">name</span>: <span class="string">&quot;MarginAccount&quot;</span>,
-                    <span class="ident">len</span>: <span class="number">5</span>,
+                Token::Struct {
+                    name: <span class="string">&quot;MarginAccount&quot;</span>,
+                    len: <span class="number">5</span>,
                 },
-                <span class="ident">Token::Str</span>(<span class="string">&quot;version&quot;</span>),
-                <span class="ident">Token::U8</span>(<span class="number">1</span>),
-                <span class="ident">Token::Str</span>(<span class="string">&quot;owner&quot;</span>),
-                <span class="ident">Token::Str</span>(<span class="string">&quot;11111111111111111111111111111111&quot;</span>),
-                <span class="ident">Token::Str</span>(<span class="string">&quot;liquidation&quot;</span>),
-                <span class="ident">Token::Str</span>(<span class="string">&quot;11111111111111111111111111111111&quot;</span>),
-                <span class="ident">Token::Str</span>(<span class="string">&quot;liquidator&quot;</span>),
-                <span class="ident">Token::Str</span>(<span class="string">&quot;11111111111111111111111111111111&quot;</span>),
-                <span class="ident">Token::Str</span>(<span class="string">&quot;positions&quot;</span>),
-                <span class="ident">Token::Seq</span> { <span class="ident">len</span>: <span class="prelude-val">Some</span>(<span class="number">0</span>) },
-                <span class="ident">Token::SeqEnd</span>,
-                <span class="ident">Token::StructEnd</span>,
+                Token::Str(<span class="string">&quot;version&quot;</span>),
+                Token::U8(<span class="number">1</span>),
+                Token::Str(<span class="string">&quot;owner&quot;</span>),
+                Token::Str(<span class="string">&quot;11111111111111111111111111111111&quot;</span>),
+                Token::Str(<span class="string">&quot;liquidation&quot;</span>),
+                Token::Str(<span class="string">&quot;11111111111111111111111111111111&quot;</span>),
+                Token::Str(<span class="string">&quot;liquidator&quot;</span>),
+                Token::Str(<span class="string">&quot;11111111111111111111111111111111&quot;</span>),
+                Token::Str(<span class="string">&quot;positions&quot;</span>),
+                Token::Seq { len: <span class="prelude-val">Some</span>(<span class="number">0</span>) },
+                Token::SeqEnd,
+                Token::StructEnd,
             ],
         );
     }
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">account_position_serialize</span>() {
-        <span class="kw">let</span> <span class="ident">position</span> <span class="op">=</span> <span class="ident">AccountPosition::default</span>();
+    <span class="attribute">#[test]
+    </span><span class="kw">fn </span>account_position_serialize() {
+        <span class="kw">let </span>position = AccountPosition::default();
 
-        <span class="ident">assert_ser_tokens</span>(
-            <span class="kw-2">&amp;</span><span class="ident">position</span>,
+        assert_ser_tokens(
+            <span class="kw-2">&amp;</span>position,
             <span class="kw-2">&amp;</span>[
-                <span class="ident">Token::Struct</span> {
-                    <span class="ident">name</span>: <span class="string">&quot;AccountPosition&quot;</span>,
-                    <span class="ident">len</span>: <span class="number">11</span>,
+                Token::Struct {
+                    name: <span class="string">&quot;AccountPosition&quot;</span>,
+                    len: <span class="number">11</span>,
                 },
-                <span class="ident">Token::Str</span>(<span class="string">&quot;address&quot;</span>),
-                <span class="ident">Token::Str</span>(<span class="string">&quot;11111111111111111111111111111111&quot;</span>),
-                <span class="ident">Token::Str</span>(<span class="string">&quot;token&quot;</span>),
-                <span class="ident">Token::Str</span>(<span class="string">&quot;11111111111111111111111111111111&quot;</span>),
-                <span class="ident">Token::Str</span>(<span class="string">&quot;adapter&quot;</span>),
-                <span class="ident">Token::Str</span>(<span class="string">&quot;11111111111111111111111111111111&quot;</span>),
-                <span class="ident">Token::Str</span>(<span class="string">&quot;value&quot;</span>),
-                <span class="ident">Token::Str</span>(<span class="string">&quot;0.0&quot;</span>),
-                <span class="ident">Token::Str</span>(<span class="string">&quot;balance&quot;</span>),
-                <span class="ident">Token::U64</span>(<span class="number">0</span>),
-                <span class="ident">Token::Str</span>(<span class="string">&quot;balanceTimestamp&quot;</span>),
-                <span class="ident">Token::U64</span>(<span class="number">0</span>),
-                <span class="ident">Token::Str</span>(<span class="string">&quot;price&quot;</span>),
-                <span class="ident">Token::Struct</span> {
-                    <span class="ident">name</span>: <span class="string">&quot;PriceInfo&quot;</span>,
-                    <span class="ident">len</span>: <span class="number">4</span>,
+                Token::Str(<span class="string">&quot;address&quot;</span>),
+                Token::Str(<span class="string">&quot;11111111111111111111111111111111&quot;</span>),
+                Token::Str(<span class="string">&quot;token&quot;</span>),
+                Token::Str(<span class="string">&quot;11111111111111111111111111111111&quot;</span>),
+                Token::Str(<span class="string">&quot;adapter&quot;</span>),
+                Token::Str(<span class="string">&quot;11111111111111111111111111111111&quot;</span>),
+                Token::Str(<span class="string">&quot;value&quot;</span>),
+                Token::Str(<span class="string">&quot;0.0&quot;</span>),
+                Token::Str(<span class="string">&quot;balance&quot;</span>),
+                Token::U64(<span class="number">0</span>),
+                Token::Str(<span class="string">&quot;balanceTimestamp&quot;</span>),
+                Token::U64(<span class="number">0</span>),
+                Token::Str(<span class="string">&quot;price&quot;</span>),
+                Token::Struct {
+                    name: <span class="string">&quot;PriceInfo&quot;</span>,
+                    len: <span class="number">4</span>,
                 },
-                <span class="ident">Token::Str</span>(<span class="string">&quot;value&quot;</span>),
-                <span class="ident">Token::I64</span>(<span class="number">0</span>),
-                <span class="ident">Token::Str</span>(<span class="string">&quot;timestamp&quot;</span>),
-                <span class="ident">Token::U64</span>(<span class="number">0</span>),
-                <span class="ident">Token::Str</span>(<span class="string">&quot;exponent&quot;</span>),
-                <span class="ident">Token::I32</span>(<span class="number">0</span>),
-                <span class="ident">Token::Str</span>(<span class="string">&quot;isValid&quot;</span>),
-                <span class="ident">Token::U8</span>(<span class="number">0</span>),
-                <span class="ident">Token::StructEnd</span>,
-                <span class="ident">Token::Str</span>(<span class="string">&quot;kind&quot;</span>),
-                <span class="ident">Token::Str</span>(<span class="string">&quot;Collateral&quot;</span>),
-                <span class="ident">Token::Str</span>(<span class="string">&quot;exponent&quot;</span>),
-                <span class="ident">Token::I16</span>(<span class="number">0</span>),
-                <span class="ident">Token::Str</span>(<span class="string">&quot;valueModifier&quot;</span>),
-                <span class="ident">Token::U16</span>(<span class="number">0</span>),
-                <span class="ident">Token::Str</span>(<span class="string">&quot;maxStaleness&quot;</span>),
-                <span class="ident">Token::U64</span>(<span class="number">0</span>),
-                <span class="ident">Token::StructEnd</span>,
+                Token::Str(<span class="string">&quot;value&quot;</span>),
+                Token::I64(<span class="number">0</span>),
+                Token::Str(<span class="string">&quot;timestamp&quot;</span>),
+                Token::U64(<span class="number">0</span>),
+                Token::Str(<span class="string">&quot;exponent&quot;</span>),
+                Token::I32(<span class="number">0</span>),
+                Token::Str(<span class="string">&quot;isValid&quot;</span>),
+                Token::U8(<span class="number">0</span>),
+                Token::StructEnd,
+                Token::Str(<span class="string">&quot;kind&quot;</span>),
+                Token::Str(<span class="string">&quot;Collateral&quot;</span>),
+                Token::Str(<span class="string">&quot;exponent&quot;</span>),
+                Token::I16(<span class="number">0</span>),
+                Token::Str(<span class="string">&quot;valueModifier&quot;</span>),
+                Token::U16(<span class="number">0</span>),
+                Token::Str(<span class="string">&quot;maxStaleness&quot;</span>),
+                Token::U64(<span class="number">0</span>),
+                Token::StructEnd,
             ],
         )
     }
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">valuation_fails_on_stale_claim_with_balance</span>() {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">margin_account</span> <span class="op">=</span> <span class="ident">MarginAccount</span> {
-            <span class="ident">version</span>: <span class="number">1</span>,
-            <span class="ident">bump_seed</span>: [<span class="number">0</span>],
-            <span class="ident">user_seed</span>: [<span class="number">0</span>; <span class="number">2</span>],
-            <span class="ident">reserved0</span>: [<span class="number">0</span>; <span class="number">3</span>],
-            <span class="ident">owner</span>: <span class="ident">Pubkey::new_unique</span>(),
-            <span class="ident">liquidation</span>: <span class="ident">Pubkey::default</span>(),
-            <span class="ident">liquidator</span>: <span class="ident">Pubkey::default</span>(),
-            <span class="ident">invocation</span>: <span class="ident">Invocation::default</span>(),
-            <span class="ident">positions</span>: [<span class="number">0</span>; <span class="number">7432</span>],
+    <span class="attribute">#[test]
+    </span><span class="kw">fn </span>valuation_fails_on_stale_claim_with_balance() {
+        <span class="kw">let </span><span class="kw-2">mut </span>margin_account = MarginAccount {
+            version: <span class="number">1</span>,
+            bump_seed: [<span class="number">0</span>],
+            user_seed: [<span class="number">0</span>; <span class="number">2</span>],
+            reserved0: [<span class="number">0</span>; <span class="number">3</span>],
+            owner: Pubkey::new_unique(),
+            liquidation: Pubkey::default(),
+            liquidator: Pubkey::default(),
+            invocation: Invocation::default(),
+            positions: [<span class="number">0</span>; <span class="number">7432</span>],
         };
-        <span class="kw">let</span> <span class="ident">pos</span> <span class="op">=</span> <span class="ident">register_position</span>(<span class="kw-2">&amp;mut</span> <span class="ident">margin_account</span>, <span class="number">0</span>, <span class="ident">TokenKind::Claim</span>);
-        <span class="ident">margin_account</span>.<span class="ident">set_position_balance</span>(<span class="kw-2">&amp;</span><span class="ident">pos</span>, <span class="kw-2">&amp;</span><span class="ident">pos</span>, <span class="number">1</span>).<span class="ident">unwrap</span>();
+        <span class="kw">let </span>pos = register_position(<span class="kw-2">&amp;mut </span>margin_account, <span class="number">0</span>, TokenKind::Claim);
+        margin_account.set_position_balance(<span class="kw-2">&amp;</span>pos, <span class="kw-2">&amp;</span>pos, <span class="number">1</span>).unwrap();
 
-        <span class="macro">assert!</span>(<span class="ident">margin_account</span>.<span class="ident">valuation</span>().<span class="ident">is_err</span>());
+        <span class="macro">assert!</span>(margin_account.valuation().is_err());
     }
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">valuation_succeeds_ignoring_stale_adapter_collateral_with_balance</span>() {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">margin_account</span> <span class="op">=</span> <span class="ident">MarginAccount</span> {
-            <span class="ident">version</span>: <span class="number">1</span>,
-            <span class="ident">bump_seed</span>: [<span class="number">0</span>],
-            <span class="ident">user_seed</span>: [<span class="number">0</span>; <span class="number">2</span>],
-            <span class="ident">reserved0</span>: [<span class="number">0</span>; <span class="number">3</span>],
-            <span class="ident">owner</span>: <span class="ident">Pubkey::new_unique</span>(),
-            <span class="ident">liquidation</span>: <span class="ident">Pubkey::default</span>(),
-            <span class="ident">liquidator</span>: <span class="ident">Pubkey::default</span>(),
-            <span class="ident">invocation</span>: <span class="ident">Invocation::default</span>(),
-            <span class="ident">positions</span>: [<span class="number">0</span>; <span class="number">7432</span>],
+    <span class="attribute">#[test]
+    </span><span class="kw">fn </span>valuation_succeeds_ignoring_stale_adapter_collateral_with_balance() {
+        <span class="kw">let </span><span class="kw-2">mut </span>margin_account = MarginAccount {
+            version: <span class="number">1</span>,
+            bump_seed: [<span class="number">0</span>],
+            user_seed: [<span class="number">0</span>; <span class="number">2</span>],
+            reserved0: [<span class="number">0</span>; <span class="number">3</span>],
+            owner: Pubkey::new_unique(),
+            liquidation: Pubkey::default(),
+            liquidator: Pubkey::default(),
+            invocation: Invocation::default(),
+            positions: [<span class="number">0</span>; <span class="number">7432</span>],
         };
 
-        <span class="kw">let</span> <span class="ident">pos</span> <span class="op">=</span> <span class="ident">register_position</span>(<span class="kw-2">&amp;mut</span> <span class="ident">margin_account</span>, <span class="number">0</span>, <span class="ident">TokenKind::AdapterCollateral</span>);
+        <span class="kw">let </span>pos = register_position(<span class="kw-2">&amp;mut </span>margin_account, <span class="number">0</span>, TokenKind::AdapterCollateral);
 
-        <span class="ident">margin_account</span>.<span class="ident">set_position_balance</span>(<span class="kw-2">&amp;</span><span class="ident">pos</span>, <span class="kw-2">&amp;</span><span class="ident">pos</span>, <span class="number">1</span>).<span class="ident">unwrap</span>();
-        <span class="kw">let</span> <span class="ident">valuation</span> <span class="op">=</span> <span class="ident">margin_account</span>.<span class="ident">valuation</span>().<span class="ident">unwrap</span>();
-        <span class="macro">assert_eq!</span>(<span class="ident">valuation</span>.<span class="ident">effective_collateral</span>, <span class="ident">Number128::ZERO</span>);
-        <span class="macro">assert_eq!</span>(<span class="ident">valuation</span>.<span class="ident">equity</span>, <span class="ident">Number128::ZERO</span>);
+        margin_account.set_position_balance(<span class="kw-2">&amp;</span>pos, <span class="kw-2">&amp;</span>pos, <span class="number">1</span>).unwrap();
+        <span class="kw">let </span>valuation = margin_account.valuation().unwrap();
+        <span class="macro">assert_eq!</span>(valuation.effective_collateral, Number128::ZERO);
+        <span class="macro">assert_eq!</span>(valuation.equity, Number128::ZERO);
 
-        <span class="ident">margin_account</span>
-            .<span class="ident">set_position_price</span>(
-                <span class="kw-2">&amp;</span><span class="ident">pos</span>,
-                <span class="kw-2">&amp;</span><span class="ident">PriceInfo</span> {
-                    <span class="ident">value</span>: <span class="number">1</span>,
-                    <span class="ident">timestamp</span>: <span class="ident">sys</span>().<span class="ident">unix_timestamp</span>(),
-                    <span class="ident">exponent</span>: <span class="number">2</span>,
-                    <span class="ident">is_valid</span>: <span class="number">1</span>,
-                    <span class="ident">_reserved</span>: <span class="ident">Default::default</span>(),
+        margin_account
+            .set_position_price(
+                <span class="kw-2">&amp;</span>pos,
+                <span class="kw-2">&amp;</span>PriceInfo {
+                    value: <span class="number">1</span>,
+                    timestamp: sys().unix_timestamp(),
+                    exponent: <span class="number">2</span>,
+                    is_valid: <span class="number">1</span>,
+                    _reserved: Default::default(),
                 },
             )
-            .<span class="ident">unwrap</span>();
-        <span class="kw">let</span> <span class="ident">valuation</span> <span class="op">=</span> <span class="ident">margin_account</span>.<span class="ident">valuation</span>().<span class="ident">unwrap</span>();
-        <span class="macro">assert_eq!</span>(<span class="ident">valuation</span>.<span class="ident">effective_collateral</span>, <span class="ident">Number128::ONE</span> <span class="op">*</span> <span class="number">100</span>);
-        <span class="macro">assert_eq!</span>(<span class="ident">valuation</span>.<span class="ident">equity</span>, <span class="ident">Number128::ONE</span>);
+            .unwrap();
+        <span class="kw">let </span>valuation = margin_account.valuation().unwrap();
+        <span class="macro">assert_eq!</span>(valuation.effective_collateral, Number128::ONE * <span class="number">100</span>);
+        <span class="macro">assert_eq!</span>(valuation.equity, Number128::ONE);
     }
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">test_mutate_positions</span>() {
-        <span class="kw">let</span> <span class="ident">margin_address</span> <span class="op">=</span> <span class="ident">Pubkey::new_unique</span>();
-        <span class="kw">let</span> <span class="ident">adapter</span> <span class="op">=</span> <span class="ident">Pubkey::new_unique</span>();
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">margin_account</span> <span class="op">=</span> <span class="ident">MarginAccount</span> {
-            <span class="ident">version</span>: <span class="number">1</span>,
-            <span class="ident">bump_seed</span>: [<span class="number">0</span>],
-            <span class="ident">user_seed</span>: [<span class="number">0</span>; <span class="number">2</span>],
-            <span class="ident">reserved0</span>: [<span class="number">0</span>; <span class="number">3</span>],
-            <span class="ident">owner</span>: <span class="ident">Pubkey::new_unique</span>(),
-            <span class="ident">liquidation</span>: <span class="ident">Pubkey::default</span>(),
-            <span class="ident">liquidator</span>: <span class="ident">Pubkey::default</span>(),
-            <span class="ident">invocation</span>: <span class="ident">Invocation::default</span>(),
-            <span class="ident">positions</span>: [<span class="number">0</span>; <span class="number">7432</span>],
+    <span class="attribute">#[test]
+    </span><span class="kw">fn </span>test_mutate_positions() {
+        <span class="kw">let </span>margin_address = Pubkey::new_unique();
+        <span class="kw">let </span>adapter = Pubkey::new_unique();
+        <span class="kw">let </span><span class="kw-2">mut </span>margin_account = MarginAccount {
+            version: <span class="number">1</span>,
+            bump_seed: [<span class="number">0</span>],
+            user_seed: [<span class="number">0</span>; <span class="number">2</span>],
+            reserved0: [<span class="number">0</span>; <span class="number">3</span>],
+            owner: Pubkey::new_unique(),
+            liquidation: Pubkey::default(),
+            liquidator: Pubkey::default(),
+            invocation: Invocation::default(),
+            positions: [<span class="number">0</span>; <span class="number">7432</span>],
         };
-        <span class="kw">let</span> <span class="ident">user_approval</span> <span class="op">=</span> <span class="kw-2">&amp;</span>[<span class="ident">Approver::MarginAccountAuthority</span>];
-        <span class="kw">let</span> <span class="ident">adapter_approval</span> <span class="op">=</span> <span class="kw-2">&amp;</span>[<span class="ident">Approver::MarginAccountAuthority</span>, <span class="ident">Approver::Adapter</span>(<span class="ident">adapter</span>)];
+        <span class="kw">let </span>user_approval = <span class="kw-2">&amp;</span>[Approver::MarginAccountAuthority];
+        <span class="kw">let </span>adapter_approval = <span class="kw-2">&amp;</span>[Approver::MarginAccountAuthority, Approver::Adapter(adapter)];
 
-        <span class="comment">// // Register a few positions, randomise the order</span>
-        <span class="kw">let</span> (<span class="ident">token_e</span>, <span class="ident">address_e</span>) <span class="op">=</span> <span class="ident">create_position_input</span>(<span class="kw-2">&amp;</span><span class="ident">margin_address</span>);
-        <span class="kw">let</span> (<span class="ident">token_a</span>, <span class="ident">address_a</span>) <span class="op">=</span> <span class="ident">create_position_input</span>(<span class="kw-2">&amp;</span><span class="ident">margin_address</span>);
-        <span class="kw">let</span> (<span class="ident">token_d</span>, <span class="ident">address_d</span>) <span class="op">=</span> <span class="ident">create_position_input</span>(<span class="kw-2">&amp;</span><span class="ident">margin_address</span>);
-        <span class="kw">let</span> (<span class="ident">token_c</span>, <span class="ident">address_c</span>) <span class="op">=</span> <span class="ident">create_position_input</span>(<span class="kw-2">&amp;</span><span class="ident">margin_address</span>);
-        <span class="kw">let</span> (<span class="ident">token_b</span>, <span class="ident">address_b</span>) <span class="op">=</span> <span class="ident">create_position_input</span>(<span class="kw-2">&amp;</span><span class="ident">margin_address</span>);
+        <span class="comment">// // Register a few positions, randomise the order
+        </span><span class="kw">let </span>(token_e, address_e) = create_position_input(<span class="kw-2">&amp;</span>margin_address);
+        <span class="kw">let </span>(token_a, address_a) = create_position_input(<span class="kw-2">&amp;</span>margin_address);
+        <span class="kw">let </span>(token_d, address_d) = create_position_input(<span class="kw-2">&amp;</span>margin_address);
+        <span class="kw">let </span>(token_c, address_c) = create_position_input(<span class="kw-2">&amp;</span>margin_address);
+        <span class="kw">let </span>(token_b, address_b) = create_position_input(<span class="kw-2">&amp;</span>margin_address);
 
-        <span class="ident">margin_account</span>
-            .<span class="ident">register_position</span>(
-                <span class="ident">token_a</span>,
+        margin_account
+            .register_position(
+                token_a,
                 <span class="number">6</span>,
-                <span class="ident">address_a</span>,
-                <span class="ident">adapter</span>,
-                <span class="ident">TokenKind::Collateral</span>,
+                address_a,
+                adapter,
+                TokenKind::Collateral,
                 <span class="number">0</span>,
                 <span class="number">0</span>,
-                <span class="ident">user_approval</span>,
+                user_approval,
             )
-            .<span class="ident">unwrap</span>();
+            .unwrap();
 
-        <span class="ident">margin_account</span>
-            .<span class="ident">register_position</span>(
-                <span class="ident">token_b</span>,
+        margin_account
+            .register_position(
+                token_b,
                 <span class="number">6</span>,
-                <span class="ident">address_b</span>,
-                <span class="ident">adapter</span>,
-                <span class="ident">TokenKind::Claim</span>,
+                address_b,
+                adapter,
+                TokenKind::Claim,
                 <span class="number">0</span>,
                 <span class="number">0</span>,
-                <span class="ident">adapter_approval</span>,
+                adapter_approval,
             )
-            .<span class="ident">unwrap</span>();
+            .unwrap();
 
-        <span class="ident">margin_account</span>
-            .<span class="ident">register_position</span>(
-                <span class="ident">token_c</span>,
+        margin_account
+            .register_position(
+                token_c,
                 <span class="number">6</span>,
-                <span class="ident">address_c</span>,
-                <span class="ident">adapter</span>,
-                <span class="ident">TokenKind::Collateral</span>,
+                address_c,
+                adapter,
+                TokenKind::Collateral,
                 <span class="number">0</span>,
                 <span class="number">0</span>,
-                <span class="ident">user_approval</span>,
+                user_approval,
             )
-            .<span class="ident">unwrap</span>();
+            .unwrap();
 
-        <span class="comment">// Set and unset a position&#39;s balance</span>
-        <span class="ident">margin_account</span>
-            .<span class="ident">set_position_balance</span>(<span class="kw-2">&amp;</span><span class="ident">token_a</span>, <span class="kw-2">&amp;</span><span class="ident">address_a</span>, <span class="number">100</span>)
-            .<span class="ident">unwrap</span>();
-        <span class="ident">margin_account</span>
-            .<span class="ident">set_position_balance</span>(<span class="kw-2">&amp;</span><span class="ident">token_a</span>, <span class="kw-2">&amp;</span><span class="ident">address_a</span>, <span class="number">0</span>)
-            .<span class="ident">unwrap</span>();
+        <span class="comment">// Set and unset a position&#39;s balance
+        </span>margin_account
+            .set_position_balance(<span class="kw-2">&amp;</span>token_a, <span class="kw-2">&amp;</span>address_a, <span class="number">100</span>)
+            .unwrap();
+        margin_account
+            .set_position_balance(<span class="kw-2">&amp;</span>token_a, <span class="kw-2">&amp;</span>address_a, <span class="number">0</span>)
+            .unwrap();
 
-        <span class="comment">// Unregister positions</span>
-        <span class="ident">margin_account</span>
-            .<span class="ident">unregister_position</span>(<span class="kw-2">&amp;</span><span class="ident">token_a</span>, <span class="kw-2">&amp;</span><span class="ident">address_a</span>, <span class="ident">user_approval</span>)
-            .<span class="ident">unwrap</span>();
-        <span class="macro">assert_eq!</span>(<span class="ident">margin_account</span>.<span class="ident">positions</span>().<span class="ident">count</span>(), <span class="number">2</span>);
-        <span class="ident">margin_account</span>
-            .<span class="ident">unregister_position</span>(<span class="kw-2">&amp;</span><span class="ident">token_b</span>, <span class="kw-2">&amp;</span><span class="ident">address_b</span>, <span class="ident">adapter_approval</span>)
-            .<span class="ident">unwrap</span>();
-        <span class="macro">assert_eq!</span>(<span class="ident">margin_account</span>.<span class="ident">positions</span>().<span class="ident">count</span>(), <span class="number">1</span>);
+        <span class="comment">// Unregister positions
+        </span>margin_account
+            .unregister_position(<span class="kw-2">&amp;</span>token_a, <span class="kw-2">&amp;</span>address_a, user_approval)
+            .unwrap();
+        <span class="macro">assert_eq!</span>(margin_account.positions().count(), <span class="number">2</span>);
+        margin_account
+            .unregister_position(<span class="kw-2">&amp;</span>token_b, <span class="kw-2">&amp;</span>address_b, adapter_approval)
+            .unwrap();
+        <span class="macro">assert_eq!</span>(margin_account.positions().count(), <span class="number">1</span>);
 
-        <span class="ident">margin_account</span>
-            .<span class="ident">register_position</span>(
-                <span class="ident">token_e</span>,
+        margin_account
+            .register_position(
+                token_e,
                 <span class="number">9</span>,
-                <span class="ident">address_e</span>,
-                <span class="ident">adapter</span>,
-                <span class="ident">TokenKind::Collateral</span>,
+                address_e,
+                adapter,
+                TokenKind::Collateral,
                 <span class="number">0</span>,
                 <span class="number">100</span>,
-                <span class="ident">user_approval</span>,
+                user_approval,
             )
-            .<span class="ident">unwrap</span>();
-        <span class="macro">assert_eq!</span>(<span class="ident">margin_account</span>.<span class="ident">positions</span>().<span class="ident">count</span>(), <span class="number">2</span>);
+            .unwrap();
+        <span class="macro">assert_eq!</span>(margin_account.positions().count(), <span class="number">2</span>);
 
-        <span class="ident">margin_account</span>
-            .<span class="ident">register_position</span>(
-                <span class="ident">token_d</span>,
+        margin_account
+            .register_position(
+                token_d,
                 <span class="number">9</span>,
-                <span class="ident">address_d</span>,
-                <span class="ident">adapter</span>,
-                <span class="ident">TokenKind::Collateral</span>,
+                address_d,
+                adapter,
+                TokenKind::Collateral,
                 <span class="number">0</span>,
                 <span class="number">100</span>,
-                <span class="ident">user_approval</span>,
+                user_approval,
             )
-            .<span class="ident">unwrap</span>();
-        <span class="macro">assert_eq!</span>(<span class="ident">margin_account</span>.<span class="ident">positions</span>().<span class="ident">count</span>(), <span class="number">3</span>);
+            .unwrap();
+        <span class="macro">assert_eq!</span>(margin_account.positions().count(), <span class="number">3</span>);
 
-        <span class="comment">// It should not be possible to unregister mismatched token &amp; position</span>
-        <span class="macro">assert!</span>(<span class="ident">margin_account</span>
-            .<span class="ident">unregister_position</span>(<span class="kw-2">&amp;</span><span class="ident">token_c</span>, <span class="kw-2">&amp;</span><span class="ident">address_b</span>, <span class="ident">user_approval</span>)
-            .<span class="ident">is_err</span>());
+        <span class="comment">// It should not be possible to unregister mismatched token &amp; position
+        </span><span class="macro">assert!</span>(margin_account
+            .unregister_position(<span class="kw-2">&amp;</span>token_c, <span class="kw-2">&amp;</span>address_b, user_approval)
+            .is_err());
 
-        <span class="ident">margin_account</span>
-            .<span class="ident">unregister_position</span>(<span class="kw-2">&amp;</span><span class="ident">token_c</span>, <span class="kw-2">&amp;</span><span class="ident">address_c</span>, <span class="ident">user_approval</span>)
-            .<span class="ident">unwrap</span>();
-        <span class="ident">margin_account</span>
-            .<span class="ident">unregister_position</span>(<span class="kw-2">&amp;</span><span class="ident">token_e</span>, <span class="kw-2">&amp;</span><span class="ident">address_e</span>, <span class="ident">user_approval</span>)
-            .<span class="ident">unwrap</span>();
-        <span class="ident">margin_account</span>
-            .<span class="ident">unregister_position</span>(<span class="kw-2">&amp;</span><span class="ident">token_d</span>, <span class="kw-2">&amp;</span><span class="ident">address_d</span>, <span class="ident">user_approval</span>)
-            .<span class="ident">unwrap</span>();
+        margin_account
+            .unregister_position(<span class="kw-2">&amp;</span>token_c, <span class="kw-2">&amp;</span>address_c, user_approval)
+            .unwrap();
+        margin_account
+            .unregister_position(<span class="kw-2">&amp;</span>token_e, <span class="kw-2">&amp;</span>address_e, user_approval)
+            .unwrap();
+        margin_account
+            .unregister_position(<span class="kw-2">&amp;</span>token_d, <span class="kw-2">&amp;</span>address_d, user_approval)
+            .unwrap();
 
-        <span class="comment">// There should be no positions left</span>
-        <span class="macro">assert_eq!</span>(<span class="ident">margin_account</span>.<span class="ident">positions</span>().<span class="ident">count</span>(), <span class="number">0</span>);
-        <span class="macro">assert_eq!</span>(<span class="ident">margin_account</span>.<span class="ident">positions</span>, [<span class="number">0</span>; <span class="number">7432</span>]);
+        <span class="comment">// There should be no positions left
+        </span><span class="macro">assert_eq!</span>(margin_account.positions().count(), <span class="number">0</span>);
+        <span class="macro">assert_eq!</span>(margin_account.positions, [<span class="number">0</span>; <span class="number">7432</span>]);
     }
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">registering_adapter_collateral_requires_adapter_and_owner_approval</span>() {
-        <span class="kw">let</span> <span class="ident">margin_address</span> <span class="op">=</span> <span class="ident">Pubkey::new_unique</span>();
-        <span class="kw">let</span> <span class="ident">adapter</span> <span class="op">=</span> <span class="ident">Pubkey::new_unique</span>();
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">margin_account</span> <span class="op">=</span> <span class="ident">MarginAccount</span> {
-            <span class="ident">version</span>: <span class="number">1</span>,
-            <span class="ident">bump_seed</span>: [<span class="number">0</span>],
-            <span class="ident">user_seed</span>: [<span class="number">0</span>; <span class="number">2</span>],
-            <span class="ident">reserved0</span>: [<span class="number">0</span>; <span class="number">3</span>],
-            <span class="ident">owner</span>: <span class="ident">Pubkey::new_unique</span>(),
-            <span class="ident">liquidation</span>: <span class="ident">Pubkey::default</span>(),
-            <span class="ident">liquidator</span>: <span class="ident">Pubkey::default</span>(),
-            <span class="ident">invocation</span>: <span class="ident">Invocation::default</span>(),
-            <span class="ident">positions</span>: [<span class="number">0</span>; <span class="number">7432</span>],
+    <span class="attribute">#[test]
+    </span><span class="kw">fn </span>registering_adapter_collateral_requires_adapter_and_owner_approval() {
+        <span class="kw">let </span>margin_address = Pubkey::new_unique();
+        <span class="kw">let </span>adapter = Pubkey::new_unique();
+        <span class="kw">let </span><span class="kw-2">mut </span>margin_account = MarginAccount {
+            version: <span class="number">1</span>,
+            bump_seed: [<span class="number">0</span>],
+            user_seed: [<span class="number">0</span>; <span class="number">2</span>],
+            reserved0: [<span class="number">0</span>; <span class="number">3</span>],
+            owner: Pubkey::new_unique(),
+            liquidation: Pubkey::default(),
+            liquidator: Pubkey::default(),
+            invocation: Invocation::default(),
+            positions: [<span class="number">0</span>; <span class="number">7432</span>],
         };
-        <span class="kw">let</span> (<span class="ident">token_a</span>, <span class="ident">address_a</span>) <span class="op">=</span> <span class="ident">create_position_input</span>(<span class="kw-2">&amp;</span><span class="ident">margin_address</span>);
-        <span class="kw">let</span> (<span class="ident">token_b</span>, <span class="ident">address_b</span>) <span class="op">=</span> <span class="ident">create_position_input</span>(<span class="kw-2">&amp;</span><span class="ident">margin_address</span>);
-        <span class="kw">let</span> (<span class="ident">token_c</span>, <span class="ident">address_c</span>) <span class="op">=</span> <span class="ident">create_position_input</span>(<span class="kw-2">&amp;</span><span class="ident">margin_address</span>);
-        <span class="kw">let</span> (<span class="ident">token_d</span>, <span class="ident">address_d</span>) <span class="op">=</span> <span class="ident">create_position_input</span>(<span class="kw-2">&amp;</span><span class="ident">margin_address</span>);
+        <span class="kw">let </span>(token_a, address_a) = create_position_input(<span class="kw-2">&amp;</span>margin_address);
+        <span class="kw">let </span>(token_b, address_b) = create_position_input(<span class="kw-2">&amp;</span>margin_address);
+        <span class="kw">let </span>(token_c, address_c) = create_position_input(<span class="kw-2">&amp;</span>margin_address);
+        <span class="kw">let </span>(token_d, address_d) = create_position_input(<span class="kw-2">&amp;</span>margin_address);
 
-        <span class="ident">margin_account</span>
-            .<span class="ident">register_position</span>(
-                <span class="ident">token_a</span>,
+        margin_account
+            .register_position(
+                token_a,
                 <span class="number">6</span>,
-                <span class="ident">address_a</span>,
-                <span class="ident">adapter</span>,
-                <span class="ident">TokenKind::AdapterCollateral</span>,
+                address_a,
+                adapter,
+                TokenKind::AdapterCollateral,
                 <span class="number">0</span>,
                 <span class="number">0</span>,
                 <span class="kw-2">&amp;</span>[],
             )
-            .<span class="ident">unwrap_err</span>();
-        <span class="ident">margin_account</span>
-            .<span class="ident">register_position</span>(
-                <span class="ident">token_b</span>,
+            .unwrap_err();
+        margin_account
+            .register_position(
+                token_b,
                 <span class="number">6</span>,
-                <span class="ident">address_b</span>,
-                <span class="ident">adapter</span>,
-                <span class="ident">TokenKind::AdapterCollateral</span>,
+                address_b,
+                adapter,
+                TokenKind::AdapterCollateral,
                 <span class="number">0</span>,
                 <span class="number">0</span>,
-                <span class="kw-2">&amp;</span>[<span class="ident">Approver::MarginAccountAuthority</span>],
+                <span class="kw-2">&amp;</span>[Approver::MarginAccountAuthority],
             )
-            .<span class="ident">unwrap_err</span>();
-        <span class="ident">margin_account</span>
-            .<span class="ident">register_position</span>(
-                <span class="ident">token_c</span>,
+            .unwrap_err();
+        margin_account
+            .register_position(
+                token_c,
                 <span class="number">6</span>,
-                <span class="ident">address_c</span>,
-                <span class="ident">adapter</span>,
-                <span class="ident">TokenKind::AdapterCollateral</span>,
+                address_c,
+                adapter,
+                TokenKind::AdapterCollateral,
                 <span class="number">0</span>,
                 <span class="number">0</span>,
-                <span class="kw-2">&amp;</span>[<span class="ident">Approver::Adapter</span>(<span class="ident">adapter</span>)],
+                <span class="kw-2">&amp;</span>[Approver::Adapter(adapter)],
             )
-            .<span class="ident">unwrap_err</span>();
-        <span class="ident">margin_account</span>
-            .<span class="ident">register_position</span>(
-                <span class="ident">token_d</span>,
+            .unwrap_err();
+        margin_account
+            .register_position(
+                token_d,
                 <span class="number">6</span>,
-                <span class="ident">address_d</span>,
-                <span class="ident">adapter</span>,
-                <span class="ident">TokenKind::AdapterCollateral</span>,
+                address_d,
+                adapter,
+                TokenKind::AdapterCollateral,
                 <span class="number">0</span>,
                 <span class="number">0</span>,
-                <span class="kw-2">&amp;</span>[<span class="ident">Approver::MarginAccountAuthority</span>, <span class="ident">Approver::Adapter</span>(<span class="ident">adapter</span>)],
+                <span class="kw-2">&amp;</span>[Approver::MarginAccountAuthority, Approver::Adapter(adapter)],
             )
-            .<span class="ident">unwrap</span>();
+            .unwrap();
     }
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">adapter_collateral</span>() {
-        <span class="kw">let</span> <span class="ident">margin_address</span> <span class="op">=</span> <span class="ident">Pubkey::new_unique</span>();
-        <span class="kw">let</span> <span class="ident">adapter</span> <span class="op">=</span> <span class="ident">Pubkey::new_unique</span>();
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">margin_account</span> <span class="op">=</span> <span class="ident">MarginAccount</span> {
-            <span class="ident">version</span>: <span class="number">1</span>,
-            <span class="ident">bump_seed</span>: [<span class="number">0</span>],
-            <span class="ident">user_seed</span>: [<span class="number">0</span>; <span class="number">2</span>],
-            <span class="ident">reserved0</span>: [<span class="number">0</span>; <span class="number">3</span>],
-            <span class="ident">owner</span>: <span class="ident">Pubkey::new_unique</span>(),
-            <span class="ident">liquidation</span>: <span class="ident">Pubkey::default</span>(),
-            <span class="ident">liquidator</span>: <span class="ident">Pubkey::default</span>(),
-            <span class="ident">invocation</span>: <span class="ident">Invocation::default</span>(),
-            <span class="ident">positions</span>: [<span class="number">0</span>; <span class="number">7432</span>],
+    <span class="attribute">#[test]
+    </span><span class="kw">fn </span>adapter_collateral() {
+        <span class="kw">let </span>margin_address = Pubkey::new_unique();
+        <span class="kw">let </span>adapter = Pubkey::new_unique();
+        <span class="kw">let </span><span class="kw-2">mut </span>margin_account = MarginAccount {
+            version: <span class="number">1</span>,
+            bump_seed: [<span class="number">0</span>],
+            user_seed: [<span class="number">0</span>; <span class="number">2</span>],
+            reserved0: [<span class="number">0</span>; <span class="number">3</span>],
+            owner: Pubkey::new_unique(),
+            liquidation: Pubkey::default(),
+            liquidator: Pubkey::default(),
+            invocation: Invocation::default(),
+            positions: [<span class="number">0</span>; <span class="number">7432</span>],
         };
-        <span class="kw">let</span> (<span class="ident">token</span>, <span class="ident">address</span>) <span class="op">=</span> <span class="ident">create_position_input</span>(<span class="kw-2">&amp;</span><span class="ident">margin_address</span>);
+        <span class="kw">let </span>(token, address) = create_position_input(<span class="kw-2">&amp;</span>margin_address);
 
-        <span class="ident">margin_account</span>
-            .<span class="ident">register_position</span>(
-                <span class="ident">token</span>,
+        margin_account
+            .register_position(
+                token,
                 <span class="number">6</span>,
-                <span class="ident">address</span>,
-                <span class="ident">adapter</span>,
-                <span class="ident">TokenKind::AdapterCollateral</span>,
+                address,
+                adapter,
+                TokenKind::AdapterCollateral,
                 <span class="number">0</span>,
                 <span class="number">0</span>,
-                <span class="kw-2">&amp;</span>[<span class="ident">Approver::MarginAccountAuthority</span>, <span class="ident">Approver::Adapter</span>(<span class="ident">adapter</span>)],
+                <span class="kw-2">&amp;</span>[Approver::MarginAccountAuthority, Approver::Adapter(adapter)],
             )
-            .<span class="ident">unwrap</span>();
+            .unwrap();
     }
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">margin_account_past_due</span>() {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">acc</span> <span class="op">=</span> <span class="ident">MarginAccount</span> {
-            <span class="ident">version</span>: <span class="number">1</span>,
-            <span class="ident">bump_seed</span>: [<span class="number">0</span>],
-            <span class="ident">user_seed</span>: [<span class="number">0</span>; <span class="number">2</span>],
-            <span class="ident">reserved0</span>: [<span class="number">0</span>; <span class="number">3</span>],
-            <span class="ident">owner</span>: <span class="ident">Pubkey::default</span>(),
-            <span class="ident">liquidation</span>: <span class="ident">Pubkey::default</span>(),
-            <span class="ident">liquidator</span>: <span class="ident">Pubkey::default</span>(),
-            <span class="ident">invocation</span>: <span class="ident">Invocation::default</span>(),
-            <span class="ident">positions</span>: [<span class="number">0</span>; <span class="number">7432</span>],
+    <span class="attribute">#[test]
+    </span><span class="kw">fn </span>margin_account_past_due() {
+        <span class="kw">let </span><span class="kw-2">mut </span>acc = MarginAccount {
+            version: <span class="number">1</span>,
+            bump_seed: [<span class="number">0</span>],
+            user_seed: [<span class="number">0</span>; <span class="number">2</span>],
+            reserved0: [<span class="number">0</span>; <span class="number">3</span>],
+            owner: Pubkey::default(),
+            liquidation: Pubkey::default(),
+            liquidator: Pubkey::default(),
+            invocation: Invocation::default(),
+            positions: [<span class="number">0</span>; <span class="number">7432</span>],
         };
-        <span class="kw">let</span> <span class="ident">collateral</span> <span class="op">=</span> <span class="ident">register_position</span>(<span class="kw-2">&amp;mut</span> <span class="ident">acc</span>, <span class="number">0</span>, <span class="ident">TokenKind::Collateral</span>);
-        <span class="kw">let</span> <span class="ident">claim</span> <span class="op">=</span> <span class="ident">register_position</span>(<span class="kw-2">&amp;mut</span> <span class="ident">acc</span>, <span class="number">1</span>, <span class="ident">TokenKind::Claim</span>);
-        <span class="ident">set_price</span>(<span class="kw-2">&amp;mut</span> <span class="ident">acc</span>, <span class="ident">collateral</span>, <span class="number">100</span>);
-        <span class="ident">set_price</span>(<span class="kw-2">&amp;mut</span> <span class="ident">acc</span>, <span class="ident">claim</span>, <span class="number">100</span>);
-        <span class="ident">acc</span>.<span class="ident">set_position_balance</span>(<span class="kw-2">&amp;</span><span class="ident">claim</span>, <span class="kw-2">&amp;</span><span class="ident">claim</span>, <span class="number">1</span>).<span class="ident">unwrap</span>();
-        <span class="ident">assert_unhealthy</span>(<span class="kw-2">&amp;</span><span class="ident">acc</span>);
-        <span class="comment">// show that this collateral is sufficient to cover the debt</span>
-        <span class="ident">acc</span>.<span class="ident">set_position_balance</span>(<span class="kw-2">&amp;</span><span class="ident">collateral</span>, <span class="kw-2">&amp;</span><span class="ident">collateral</span>, <span class="number">100</span>)
-            .<span class="ident">unwrap</span>();
-        <span class="ident">assert_healthy</span>(<span class="kw-2">&amp;</span><span class="ident">acc</span>);
-        <span class="comment">// but when past due, the account is unhealthy</span>
-        <span class="ident">acc</span>.<span class="ident">get_position_mut</span>(<span class="kw-2">&amp;</span><span class="ident">claim</span>).<span class="ident">require</span>().<span class="ident">unwrap</span>().<span class="ident">flags</span> <span class="op">|</span><span class="op">=</span> <span class="ident">AdapterPositionFlags::PAST_DUE</span>;
-        <span class="ident">assert_unhealthy</span>(<span class="kw-2">&amp;</span><span class="ident">acc</span>);
+        <span class="kw">let </span>collateral = register_position(<span class="kw-2">&amp;mut </span>acc, <span class="number">0</span>, TokenKind::Collateral);
+        <span class="kw">let </span>claim = register_position(<span class="kw-2">&amp;mut </span>acc, <span class="number">1</span>, TokenKind::Claim);
+        set_price(<span class="kw-2">&amp;mut </span>acc, collateral, <span class="number">100</span>);
+        set_price(<span class="kw-2">&amp;mut </span>acc, claim, <span class="number">100</span>);
+        acc.set_position_balance(<span class="kw-2">&amp;</span>claim, <span class="kw-2">&amp;</span>claim, <span class="number">1</span>).unwrap();
+        assert_unhealthy(<span class="kw-2">&amp;</span>acc);
+        <span class="comment">// show that this collateral is sufficient to cover the debt
+        </span>acc.set_position_balance(<span class="kw-2">&amp;</span>collateral, <span class="kw-2">&amp;</span>collateral, <span class="number">100</span>)
+            .unwrap();
+        assert_healthy(<span class="kw-2">&amp;</span>acc);
+        <span class="comment">// but when past due, the account is unhealthy
+        </span>acc.get_position_mut(<span class="kw-2">&amp;</span>claim).require().unwrap().flags |= AdapterPositionFlags::PAST_DUE;
+        assert_unhealthy(<span class="kw-2">&amp;</span>acc);
     }
 
-    <span class="kw">fn</span> <span class="ident">register_position</span>(<span class="ident">acc</span>: <span class="kw-2">&amp;mut</span> <span class="ident">MarginAccount</span>, <span class="ident">index</span>: <span class="ident">u8</span>, <span class="ident">kind</span>: <span class="ident">TokenKind</span>) -&gt; <span class="ident">Pubkey</span> {
-        <span class="ident">try_register_position</span>(<span class="ident">acc</span>, <span class="ident">index</span>, <span class="ident">kind</span>).<span class="ident">unwrap</span>()
+    <span class="kw">fn </span>register_position(acc: <span class="kw-2">&amp;mut </span>MarginAccount, index: u8, kind: TokenKind) -&gt; Pubkey {
+        try_register_position(acc, index, kind).unwrap()
     }
 
-    <span class="kw">fn</span> <span class="ident">try_register_position</span>(
-        <span class="ident">acc</span>: <span class="kw-2">&amp;mut</span> <span class="ident">MarginAccount</span>,
-        <span class="ident">index</span>: <span class="ident">u8</span>,
-        <span class="ident">kind</span>: <span class="ident">TokenKind</span>,
-    ) -&gt; <span class="ident">AnchorResult</span><span class="op">&lt;</span><span class="ident">Pubkey</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">key</span> <span class="op">=</span> <span class="ident">Pubkey::find_program_address</span>(<span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>[<span class="ident">index</span>]], <span class="kw-2">&amp;</span><span class="ident"><span class="kw">crate</span>::id</span>()).<span class="number">0</span>;
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">approvals</span> <span class="op">=</span> <span class="macro">vec!</span>[<span class="ident">Approver::MarginAccountAuthority</span>];
+    <span class="kw">fn </span>try_register_position(
+        acc: <span class="kw-2">&amp;mut </span>MarginAccount,
+        index: u8,
+        kind: TokenKind,
+    ) -&gt; AnchorResult&lt;Pubkey&gt; {
+        <span class="kw">let </span>key = Pubkey::find_program_address(<span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>[index]], <span class="kw-2">&amp;</span><span class="kw">crate</span>::id()).<span class="number">0</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>approvals = <span class="macro">vec!</span>[Approver::MarginAccountAuthority];
 
-        <span class="kw">match</span> <span class="ident">kind</span> {
-            <span class="ident">TokenKind::Claim</span> <span class="op">|</span> <span class="ident">TokenKind::AdapterCollateral</span> =&gt; {
-                <span class="ident">approvals</span>.<span class="ident">push</span>(<span class="ident">Approver::Adapter</span>(<span class="ident">key</span>))
+        <span class="kw">match </span>kind {
+            TokenKind::Claim | TokenKind::AdapterCollateral =&gt; {
+                approvals.push(Approver::Adapter(key))
             }
-            <span class="kw">_</span> =&gt; (),
+            <span class="kw">_ </span>=&gt; (),
         }
 
-        <span class="ident">acc</span>.<span class="ident">register_position</span>(<span class="ident">key</span>, <span class="number">2</span>, <span class="ident">key</span>, <span class="ident">key</span>, <span class="ident">kind</span>, <span class="number">10000</span>, <span class="number">0</span>, <span class="kw-2">&amp;</span><span class="ident">approvals</span>)<span class="question-mark">?</span>;
+        acc.register_position(key, <span class="number">2</span>, key, key, kind, <span class="number">10000</span>, <span class="number">0</span>, <span class="kw-2">&amp;</span>approvals)<span class="question-mark">?</span>;
 
-        <span class="prelude-val">Ok</span>(<span class="ident">key</span>)
+        <span class="prelude-val">Ok</span>(key)
     }
 
-    <span class="kw">fn</span> <span class="ident">assert_unhealthy</span>(<span class="ident">acc</span>: <span class="kw-2">&amp;</span><span class="ident">MarginAccount</span>) {
-        <span class="ident">acc</span>.<span class="ident">verify_healthy_positions</span>().<span class="ident">unwrap_err</span>();
-        <span class="ident">acc</span>.<span class="ident">verify_unhealthy_positions</span>().<span class="ident">unwrap</span>();
+    <span class="kw">fn </span>assert_unhealthy(acc: <span class="kw-2">&amp;</span>MarginAccount) {
+        acc.verify_healthy_positions().unwrap_err();
+        acc.verify_unhealthy_positions().unwrap();
     }
 
-    <span class="kw">fn</span> <span class="ident">assert_healthy</span>(<span class="ident">acc</span>: <span class="kw-2">&amp;</span><span class="ident">MarginAccount</span>) {
-        <span class="ident">acc</span>.<span class="ident">verify_healthy_positions</span>().<span class="ident">unwrap</span>();
-        <span class="ident">acc</span>.<span class="ident">verify_unhealthy_positions</span>().<span class="ident">unwrap_err</span>();
+    <span class="kw">fn </span>assert_healthy(acc: <span class="kw-2">&amp;</span>MarginAccount) {
+        acc.verify_healthy_positions().unwrap();
+        acc.verify_unhealthy_positions().unwrap_err();
     }
 
-    <span class="kw">fn</span> <span class="ident">set_price</span>(<span class="ident">acc</span>: <span class="kw-2">&amp;mut</span> <span class="ident">MarginAccount</span>, <span class="ident">key</span>: <span class="ident">Pubkey</span>, <span class="ident">price</span>: <span class="ident">i64</span>) {
-        <span class="ident">acc</span>.<span class="ident">set_position_price</span>(
-            <span class="kw-2">&amp;</span><span class="ident">key</span>,
-            <span class="comment">// &amp;key,</span>
-            <span class="kw-2">&amp;</span><span class="ident">PriceInfo</span> {
-                <span class="ident">value</span>: <span class="ident">price</span>,
-                <span class="ident">timestamp</span>: <span class="ident">sys</span>().<span class="ident">unix_timestamp</span>(),
-                <span class="ident">exponent</span>: <span class="number">1</span>,
-                <span class="ident">is_valid</span>: <span class="number">1</span>,
-                <span class="ident">_reserved</span>: [<span class="number">0</span>; <span class="number">3</span>],
+    <span class="kw">fn </span>set_price(acc: <span class="kw-2">&amp;mut </span>MarginAccount, key: Pubkey, price: i64) {
+        acc.set_position_price(
+            <span class="kw-2">&amp;</span>key,
+            <span class="comment">// &amp;key,
+            </span><span class="kw-2">&amp;</span>PriceInfo {
+                value: price,
+                timestamp: sys().unix_timestamp(),
+                exponent: <span class="number">1</span>,
+                is_valid: <span class="number">1</span>,
+                _reserved: [<span class="number">0</span>; <span class="number">3</span>],
             },
         )
-        .<span class="ident">unwrap</span>()
+        .unwrap()
     }
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">proper_account_passes_anchor_verify</span>() {
-        <span class="ident">MarginAccount::anchor_verify</span>(<span class="kw-2">&amp;</span><span class="ident">AccountInfo::new</span>(
-            <span class="kw-2">&amp;</span><span class="ident">Pubkey::default</span>(),
+    <span class="attribute">#[test]
+    </span><span class="kw">fn </span>proper_account_passes_anchor_verify() {
+        MarginAccount::anchor_verify(<span class="kw-2">&amp;</span>AccountInfo::new(
+            <span class="kw-2">&amp;</span>Pubkey::default(),
             <span class="bool-val">true</span>,
             <span class="bool-val">true</span>,
-            <span class="kw-2">&amp;mut</span> <span class="number">0</span>,
-            <span class="kw-2">&amp;mut</span> <span class="ident">MarginAccount::discriminator</span>(),
-            <span class="kw-2">&amp;</span><span class="ident"><span class="kw">crate</span>::id</span>(),
+            <span class="kw-2">&amp;mut </span><span class="number">0</span>,
+            <span class="kw-2">&amp;mut </span>MarginAccount::discriminator(),
+            <span class="kw-2">&amp;</span><span class="kw">crate</span>::id(),
             <span class="bool-val">true</span>,
             <span class="number">0</span>,
         ))
-        .<span class="ident">unwrap</span>();
+        .unwrap();
     }
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">wrong_owner_fails_anchor_verify</span>() {
-        <span class="ident">MarginAccount::anchor_verify</span>(<span class="kw-2">&amp;</span><span class="ident">AccountInfo::new</span>(
-            <span class="kw-2">&amp;</span><span class="ident">Pubkey::default</span>(),
+    <span class="attribute">#[test]
+    </span><span class="kw">fn </span>wrong_owner_fails_anchor_verify() {
+        MarginAccount::anchor_verify(<span class="kw-2">&amp;</span>AccountInfo::new(
+            <span class="kw-2">&amp;</span>Pubkey::default(),
             <span class="bool-val">true</span>,
             <span class="bool-val">true</span>,
-            <span class="kw-2">&amp;mut</span> <span class="number">0</span>,
-            <span class="kw-2">&amp;mut</span> <span class="ident">MarginAccount::discriminator</span>(),
-            <span class="kw-2">&amp;</span><span class="ident">Pubkey::default</span>(),
+            <span class="kw-2">&amp;mut </span><span class="number">0</span>,
+            <span class="kw-2">&amp;mut </span>MarginAccount::discriminator(),
+            <span class="kw-2">&amp;</span>Pubkey::default(),
             <span class="bool-val">true</span>,
             <span class="number">0</span>,
         ))
-        .<span class="ident">unwrap_err</span>();
+        .unwrap_err();
     }
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">wrong_discriminator_fails_anchor_verify</span>() {
-        <span class="ident">MarginAccount::anchor_verify</span>(<span class="kw-2">&amp;</span><span class="ident">AccountInfo::new</span>(
-            <span class="kw-2">&amp;</span><span class="ident">Pubkey::default</span>(),
+    <span class="attribute">#[test]
+    </span><span class="kw">fn </span>wrong_discriminator_fails_anchor_verify() {
+        MarginAccount::anchor_verify(<span class="kw-2">&amp;</span>AccountInfo::new(
+            <span class="kw-2">&amp;</span>Pubkey::default(),
             <span class="bool-val">true</span>,
             <span class="bool-val">true</span>,
-            <span class="kw-2">&amp;mut</span> <span class="number">0</span>,
-            <span class="kw-2">&amp;mut</span> [<span class="number">0</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>, <span class="number">5</span>, <span class="number">6</span>, <span class="number">7</span>],
-            <span class="kw-2">&amp;</span><span class="ident"><span class="kw">crate</span>::id</span>(),
+            <span class="kw-2">&amp;mut </span><span class="number">0</span>,
+            <span class="kw-2">&amp;mut </span>[<span class="number">0</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>, <span class="number">5</span>, <span class="number">6</span>, <span class="number">7</span>],
+            <span class="kw-2">&amp;</span><span class="kw">crate</span>::id(),
             <span class="bool-val">true</span>,
             <span class="number">0</span>,
         ))
-        .<span class="ident">unwrap_err</span>();
+        .unwrap_err();
     }
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">no_data_fails_anchor_verify</span>() {
-        <span class="ident">MarginAccount::anchor_verify</span>(<span class="kw-2">&amp;</span><span class="ident">AccountInfo::new</span>(
-            <span class="kw-2">&amp;</span><span class="ident">Pubkey::default</span>(),
+    <span class="attribute">#[test]
+    </span><span class="kw">fn </span>no_data_fails_anchor_verify() {
+        MarginAccount::anchor_verify(<span class="kw-2">&amp;</span>AccountInfo::new(
+            <span class="kw-2">&amp;</span>Pubkey::default(),
             <span class="bool-val">true</span>,
             <span class="bool-val">true</span>,
-            <span class="kw-2">&amp;mut</span> <span class="number">0</span>,
-            <span class="kw-2">&amp;mut</span> [],
-            <span class="kw-2">&amp;</span><span class="ident"><span class="kw">crate</span>::id</span>(),
+            <span class="kw-2">&amp;mut </span><span class="number">0</span>,
+            <span class="kw-2">&amp;mut </span>[],
+            <span class="kw-2">&amp;</span><span class="kw">crate</span>::id(),
             <span class="bool-val">true</span>,
             <span class="number">0</span>,
         ))
-        .<span class="ident">unwrap_err</span>();
+        .unwrap_err();
     }
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">margin_account_no_more_than_24_positions</span>() {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">account</span> <span class="op">=</span> <span class="ident">blank_account</span>();
-        <span class="kw">for</span> <span class="ident">i</span> <span class="kw">in</span> <span class="number">0</span>..<span class="number">24</span> {
-            <span class="ident">try_register_position</span>(<span class="kw-2">&amp;mut</span> <span class="ident">account</span>, <span class="ident">i</span>, <span class="ident">TokenKind::Collateral</span>).<span class="ident">unwrap</span>();
+    <span class="attribute">#[test]
+    </span><span class="kw">fn </span>margin_account_no_more_than_24_positions() {
+        <span class="kw">let </span><span class="kw-2">mut </span>account = blank_account();
+        <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..<span class="number">24 </span>{
+            try_register_position(<span class="kw-2">&amp;mut </span>account, i, TokenKind::Collateral).unwrap();
         }
-        <span class="ident">try_register_position</span>(<span class="kw-2">&amp;mut</span> <span class="ident">account</span>, <span class="number">24</span>, <span class="ident">TokenKind::Collateral</span>).<span class="ident">unwrap_err</span>();
+        try_register_position(<span class="kw-2">&amp;mut </span>account, <span class="number">24</span>, TokenKind::Collateral).unwrap_err();
     }
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">margin_account_32_positions_with_liquidator</span>() {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">account</span> <span class="op">=</span> <span class="ident">blank_account</span>();
-        <span class="ident">account</span>.<span class="ident">liquidation</span> <span class="op">=</span> <span class="ident">pda</span>(<span class="number">234</span>);
-        <span class="kw">for</span> <span class="ident">i</span> <span class="kw">in</span> <span class="number">0</span>..<span class="number">30</span> {
-            <span class="ident">try_register_position</span>(<span class="kw-2">&amp;mut</span> <span class="ident">account</span>, <span class="ident">i</span>, <span class="ident">TokenKind::Collateral</span>).<span class="ident">unwrap</span>();
+    <span class="attribute">#[test]
+    </span><span class="kw">fn </span>margin_account_32_positions_with_liquidator() {
+        <span class="kw">let </span><span class="kw-2">mut </span>account = blank_account();
+        account.liquidation = pda(<span class="number">234</span>);
+        <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..<span class="number">30 </span>{
+            try_register_position(<span class="kw-2">&amp;mut </span>account, i, TokenKind::Collateral).unwrap();
         }
     }
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">margin_account_authority</span>() {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">account</span> <span class="op">=</span> <span class="ident">blank_account</span>();
-        <span class="ident">account</span>.<span class="ident">owner</span> <span class="op">=</span> <span class="ident">pda</span>(<span class="number">0</span>);
-        <span class="ident">account</span>.<span class="ident">liquidator</span> <span class="op">=</span> <span class="ident">pda</span>(<span class="number">1</span>);
-        <span class="ident">account</span>.<span class="ident">verify_authority</span>(<span class="ident">pda</span>(<span class="number">0</span>)).<span class="ident">unwrap</span>();
-        <span class="ident">account</span>.<span class="ident">verify_authority</span>(<span class="ident">pda</span>(<span class="number">1</span>)).<span class="ident">unwrap_err</span>();
-        <span class="ident">account</span>.<span class="ident">verify_authority</span>(<span class="ident">pda</span>(<span class="number">2</span>)).<span class="ident">unwrap_err</span>();
-        <span class="ident">account</span>.<span class="ident">verify_authority</span>(<span class="ident">Pubkey::default</span>()).<span class="ident">unwrap_err</span>();
+    <span class="attribute">#[test]
+    </span><span class="kw">fn </span>margin_account_authority() {
+        <span class="kw">let </span><span class="kw-2">mut </span>account = blank_account();
+        account.owner = pda(<span class="number">0</span>);
+        account.liquidator = pda(<span class="number">1</span>);
+        account.verify_authority(pda(<span class="number">0</span>)).unwrap();
+        account.verify_authority(pda(<span class="number">1</span>)).unwrap_err();
+        account.verify_authority(pda(<span class="number">2</span>)).unwrap_err();
+        account.verify_authority(Pubkey::default()).unwrap_err();
     }
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">margin_account_authority_during_liquidation</span>() {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">account</span> <span class="op">=</span> <span class="ident">blank_account</span>();
-        <span class="ident">account</span>.<span class="ident">owner</span> <span class="op">=</span> <span class="ident">pda</span>(<span class="number">0</span>);
-        <span class="ident">account</span>.<span class="ident">liquidator</span> <span class="op">=</span> <span class="ident">pda</span>(<span class="number">1</span>);
-        <span class="ident">account</span>.<span class="ident">liquidation</span> <span class="op">=</span> <span class="ident">pda</span>(<span class="number">2</span>);
-        <span class="ident">account</span>.<span class="ident">verify_authority</span>(<span class="ident">pda</span>(<span class="number">0</span>)).<span class="ident">unwrap_err</span>();
-        <span class="ident">account</span>.<span class="ident">verify_authority</span>(<span class="ident">pda</span>(<span class="number">1</span>)).<span class="ident">unwrap</span>();
-        <span class="ident">account</span>.<span class="ident">verify_authority</span>(<span class="ident">pda</span>(<span class="number">2</span>)).<span class="ident">unwrap_err</span>();
-        <span class="ident">account</span>.<span class="ident">verify_authority</span>(<span class="ident">Pubkey::default</span>()).<span class="ident">unwrap_err</span>();
+    <span class="attribute">#[test]
+    </span><span class="kw">fn </span>margin_account_authority_during_liquidation() {
+        <span class="kw">let </span><span class="kw-2">mut </span>account = blank_account();
+        account.owner = pda(<span class="number">0</span>);
+        account.liquidator = pda(<span class="number">1</span>);
+        account.liquidation = pda(<span class="number">2</span>);
+        account.verify_authority(pda(<span class="number">0</span>)).unwrap_err();
+        account.verify_authority(pda(<span class="number">1</span>)).unwrap();
+        account.verify_authority(pda(<span class="number">2</span>)).unwrap_err();
+        account.verify_authority(Pubkey::default()).unwrap_err();
     }
 
-    <span class="kw">fn</span> <span class="ident">pda</span>(<span class="ident">index</span>: <span class="ident">u8</span>) -&gt; <span class="ident">Pubkey</span> {
-        <span class="ident">Pubkey::find_program_address</span>(<span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>[<span class="ident">index</span>]], <span class="kw-2">&amp;</span><span class="ident"><span class="kw">crate</span>::id</span>()).<span class="number">0</span>
-    }
+    <span class="kw">fn </span>pda(index: u8) -&gt; Pubkey {
+        Pubkey::find_program_address(<span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>[index]], <span class="kw-2">&amp;</span><span class="kw">crate</span>::id()).<span class="number">0
+    </span>}
 
-    <span class="kw">fn</span> <span class="ident">blank_account</span>() -&gt; <span class="ident">MarginAccount</span> {
-        <span class="ident">MarginAccount</span> {
-            <span class="ident">version</span>: <span class="number">1</span>,
-            <span class="ident">bump_seed</span>: [<span class="number">0</span>],
-            <span class="ident">user_seed</span>: [<span class="number">0</span>; <span class="number">2</span>],
-            <span class="ident">reserved0</span>: [<span class="number">0</span>; <span class="number">3</span>],
-            <span class="ident">owner</span>: <span class="ident">Pubkey::default</span>(),
-            <span class="ident">liquidation</span>: <span class="ident">Pubkey::default</span>(),
-            <span class="ident">liquidator</span>: <span class="ident">Pubkey::default</span>(),
-            <span class="ident">invocation</span>: <span class="ident">Invocation::default</span>(),
-            <span class="ident">positions</span>: [<span class="number">0</span>; <span class="number">7432</span>],
+    <span class="kw">fn </span>blank_account() -&gt; MarginAccount {
+        MarginAccount {
+            version: <span class="number">1</span>,
+            bump_seed: [<span class="number">0</span>],
+            user_seed: [<span class="number">0</span>; <span class="number">2</span>],
+            reserved0: [<span class="number">0</span>; <span class="number">3</span>],
+            owner: Pubkey::default(),
+            liquidation: Pubkey::default(),
+            liquidator: Pubkey::default(),
+            invocation: Invocation::default(),
+            positions: [<span class="number">0</span>; <span class="number">7432</span>],
         }
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="jet_margin" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0 (a55dd71d5 2022-09-19)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="jet_margin" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

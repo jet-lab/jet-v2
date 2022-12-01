@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `programs/bonds/src/margin/instructions/margin_borrow_order.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>margin_borrow_order.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../jet_bonds/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../../jet_bonds/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../jet_bonds/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `programs/bonds/src/margin/instructions/margin_borrow_order.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>margin_borrow_order.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../../normalize.css"><link rel="stylesheet" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../../ayu.css" disabled><link rel="stylesheet" href="../../../../dark.css" disabled><link rel="stylesheet" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../jet_bonds/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../../jet_bonds/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../jet_bonds/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -156,163 +156,219 @@
 <span id="156">156</span>
 <span id="157">157</span>
 <span id="158">158</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">agnostic_orderbook::state::Side</span>;
-<span class="kw">use</span> <span class="ident">anchor_lang::prelude</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident">anchor_spl::token::Token</span>;
-<span class="kw">use</span> <span class="ident">jet_margin</span>::{<span class="ident">AdapterResult</span>, <span class="ident">PositionChange</span>};
-<span class="kw">use</span> <span class="ident">jet_program_proc_macros::BondTokenManager</span>;
+<span id="159">159</span>
+<span id="160">160</span>
+<span id="161">161</span>
+<span id="162">162</span>
+<span id="163">163</span>
+<span id="164">164</span>
+<span id="165">165</span>
+<span id="166">166</span>
+<span id="167">167</span>
+<span id="168">168</span>
+<span id="169">169</span>
+<span id="170">170</span>
+<span id="171">171</span>
+<span id="172">172</span>
+<span id="173">173</span>
+<span id="174">174</span>
+<span id="175">175</span>
+<span id="176">176</span>
+<span id="177">177</span>
+<span id="178">178</span>
+<span id="179">179</span>
+<span id="180">180</span>
+<span id="181">181</span>
+<span id="182">182</span>
+<span id="183">183</span>
+<span id="184">184</span>
+<span id="185">185</span>
+<span id="186">186</span>
+</pre><pre class="rust"><code><span class="kw">use </span>agnostic_orderbook::state::Side;
+<span class="kw">use </span>anchor_lang::prelude::<span class="kw-2">*</span>;
+<span class="kw">use </span>anchor_spl::token::Token;
+<span class="kw">use </span>jet_margin::{AdapterResult, PositionChange};
+<span class="kw">use </span>jet_program_common::traits::{SafeSub, TryAddAssign};
+<span class="kw">use </span>jet_program_proc_macros::BondTokenManager;
 
-<span class="kw">use</span> <span class="kw">crate</span>::{
-    <span class="ident">bond_token_manager::BondTokenManager</span>,
-    <span class="ident">events::ObligationCreated</span>,
-    <span class="ident">margin</span>::{
-        <span class="ident">events</span>::{<span class="ident">OrderPlaced</span>, <span class="ident">OrderType</span>},
-        <span class="ident">state</span>::{<span class="ident">return_to_margin</span>, <span class="ident">MarginUser</span>, <span class="ident">Obligation</span>, <span class="ident">ObligationFlags</span>},
+<span class="kw">use crate</span>::{
+    bond_token_manager::BondTokenManager,
+    events::ObligationCreated,
+    margin::{
+        events::{OrderPlaced, OrderType},
+        origination_fee::loan_to_disburse,
+        state::{return_to_margin, MarginUser, Obligation, ObligationFlags},
     },
-    <span class="ident">orderbook::state</span>::<span class="kw-2">*</span>,
-    <span class="ident">serialization</span>::{<span class="self">self</span>, <span class="ident">RemainingAccounts</span>},
-    <span class="ident">BondsError</span>,
+    orderbook::state::<span class="kw-2">*</span>,
+    serialization::{<span class="self">self</span>, RemainingAccounts},
+    BondsError,
 };
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Accounts</span>, <span class="ident">BondTokenManager</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">MarginBorrowOrder</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span> {
-    <span class="doccomment">/// The account tracking borrower debts</span>
-    <span class="attribute">#[<span class="ident">account</span>(
+<span class="attribute">#[derive(Accounts, BondTokenManager)]
+</span><span class="kw">pub struct </span>MarginBorrowOrder&lt;<span class="lifetime">&#39;info</span>&gt; {
+    <span class="doccomment">/// The account tracking borrower debts
+    </span><span class="attribute">#[account(
         <span class="kw-2">mut</span>,
-        <span class="ident">has_one</span> <span class="op">=</span> <span class="ident">margin_account</span>,
-        <span class="ident">has_one</span> <span class="op">=</span> <span class="ident">claims</span> @ <span class="ident">BondsError::WrongClaimAccount</span>,
-    )]</span>
-    <span class="kw">pub</span> <span class="ident">margin_user</span>: <span class="ident">Box</span><span class="op">&lt;</span><span class="ident">Account</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span>, <span class="ident">MarginUser</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+        has_one = margin_account,
+        has_one = claims @ BondsError::WrongClaimAccount,
+        has_one = collateral @ BondsError::WrongCollateralAccount,
+    )]
+    </span><span class="kw">pub </span>margin_user: Box&lt;Account&lt;<span class="lifetime">&#39;info</span>, MarginUser&gt;&gt;,
 
-    <span class="doccomment">/// Obligation account minted upon match</span>
-    <span class="doccomment">/// CHECK: in instruction logic</span>
-    <span class="attribute">#[<span class="ident">account</span>(<span class="kw-2">mut</span>)]</span>
-    <span class="kw">pub</span> <span class="ident">obligation</span>: <span class="ident">AccountInfo</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span>,
+    <span class="doccomment">/// Obligation account minted upon match
+    /// CHECK: in instruction logic
+    </span><span class="attribute">#[account(<span class="kw-2">mut</span>)]
+    </span><span class="kw">pub </span>obligation: AccountInfo&lt;<span class="lifetime">&#39;info</span>&gt;,
 
-    <span class="doccomment">/// The margin account for this borrow order</span>
-    <span class="kw">pub</span> <span class="ident">margin_account</span>: <span class="ident">Signer</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span>,
+    <span class="doccomment">/// The margin account for this borrow order
+    </span><span class="kw">pub </span>margin_account: Signer&lt;<span class="lifetime">&#39;info</span>&gt;,
 
-    <span class="doccomment">/// Token account used by the margin program to track the debt that must be collateralized</span>
-    <span class="doccomment">/// CHECK: borrower_account</span>
-    <span class="attribute">#[<span class="ident">account</span>(<span class="kw-2">mut</span>)]</span>
-    <span class="kw">pub</span> <span class="ident">claims</span>: <span class="ident">AccountInfo</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span>,
+    <span class="doccomment">/// Token account used by the margin program to track the debt that must be collateralized
+    /// CHECK: borrower_account
+    </span><span class="attribute">#[account(<span class="kw-2">mut</span>)]
+    </span><span class="kw">pub </span>claims: AccountInfo&lt;<span class="lifetime">&#39;info</span>&gt;,
 
-    <span class="doccomment">/// Token mint used by the margin program to track the debt that must be collateralized</span>
-    <span class="doccomment">/// CHECK: in instruction handler</span>
-    <span class="attribute">#[<span class="ident">account</span>(<span class="kw-2">mut</span>)]</span>
-    <span class="kw">pub</span> <span class="ident">claims_mint</span>: <span class="ident">AccountInfo</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span>,
+    <span class="doccomment">/// Token mint used by the margin program to track the debt that must be collateralized
+    /// CHECK: in instruction handler
+    </span><span class="attribute">#[account(<span class="kw-2">mut</span>, address = orderbook_mut.claims_mint() @ BondsError::WrongClaimMint)]
+    </span><span class="kw">pub </span>claims_mint: AccountInfo&lt;<span class="lifetime">&#39;info</span>&gt;,
 
-    <span class="doccomment">/// Token account used by the margin program to track the debt that must be collateralized</span>
-    <span class="attribute">#[<span class="ident">account</span>(<span class="kw-2">mut</span>)]</span>
-    <span class="kw">pub</span> <span class="ident">collateral</span>: <span class="ident">AccountInfo</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span>,
+    <span class="doccomment">/// Token account used by the margin program to track the debt that must be collateralized
+    </span><span class="attribute">#[account(<span class="kw-2">mut</span>)]
+    </span><span class="kw">pub </span>collateral: AccountInfo&lt;<span class="lifetime">&#39;info</span>&gt;,
 
-    <span class="doccomment">/// Token mint used by the margin program to track the debt that must be collateralized</span>
-    <span class="attribute">#[<span class="ident">account</span>(<span class="kw-2">mut</span>)]</span>
-    <span class="kw">pub</span> <span class="ident">collateral_mint</span>: <span class="ident">AccountInfo</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span>,
+    <span class="doccomment">/// Token mint used by the margin program to track the debt that must be collateralized
+    </span><span class="attribute">#[account(<span class="kw-2">mut</span>, address = orderbook_mut.collateral_mint() @ BondsError::WrongCollateralMint)]
+    </span><span class="kw">pub </span>collateral_mint: AccountInfo&lt;<span class="lifetime">&#39;info</span>&gt;,
 
-    <span class="attribute">#[<span class="ident">bond_manager</span>]</span>
-    <span class="kw">pub</span> <span class="ident">orderbook_mut</span>: <span class="ident">OrderbookMut</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span>,
+    <span class="doccomment">/// The market token vault
+    </span><span class="attribute">#[account(<span class="kw-2">mut</span>, address = orderbook_mut.vault() @ BondsError::WrongVault)]
+    </span><span class="kw">pub </span>underlying_token_vault: AccountInfo&lt;<span class="lifetime">&#39;info</span>&gt;,
 
-    <span class="doccomment">/// payer for `Obligation` initialization</span>
-    <span class="attribute">#[<span class="ident">account</span>(<span class="kw-2">mut</span>)]</span>
-    <span class="kw">pub</span> <span class="ident">payer</span>: <span class="ident">Signer</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span>,
+    <span class="doccomment">/// The market token vault
+    </span><span class="attribute">#[account(<span class="kw-2">mut</span>, address = margin_user.underlying_settlement @ BondsError::WrongUnderlyingSettlementAccount)]
+    </span><span class="kw">pub </span>underlying_settlement: AccountInfo&lt;<span class="lifetime">&#39;info</span>&gt;,
 
-    <span class="doccomment">/// Solana system program</span>
-    <span class="kw">pub</span> <span class="ident">system_program</span>: <span class="ident">Program</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span>, <span class="ident">System</span><span class="op">&gt;</span>,
+    <span class="attribute">#[bond_manager]
+    </span><span class="kw">pub </span>orderbook_mut: OrderbookMut&lt;<span class="lifetime">&#39;info</span>&gt;,
 
-    <span class="kw">pub</span> <span class="ident">token_program</span>: <span class="ident">Program</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span>, <span class="ident">Token</span><span class="op">&gt;</span>,
-    <span class="comment">// Optional event adapter account</span>
-    <span class="comment">// pub event_adapter: AccountInfo&lt;&#39;info&gt;,</span>
-}
+    <span class="doccomment">/// payer for `Obligation` initialization
+    </span><span class="attribute">#[account(<span class="kw-2">mut</span>)]
+    </span><span class="kw">pub </span>payer: Signer&lt;<span class="lifetime">&#39;info</span>&gt;,
 
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">handler</span>(<span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">MarginBorrowOrder</span><span class="op">&gt;</span>, <span class="ident">params</span>: <span class="ident">OrderParams</span>, <span class="ident">seed</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-    <span class="kw">let</span> (<span class="ident">callback_info</span>, <span class="ident">order_summary</span>) <span class="op">=</span> <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">orderbook_mut</span>.<span class="ident">place_order</span>(
-        <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">margin_account</span>.<span class="ident">key</span>(),
-        <span class="ident">Side::Ask</span>,
-        <span class="ident">params</span>,
-        <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">margin_user</span>.<span class="ident">key</span>(),
-        <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">margin_user</span>.<span class="ident">key</span>(),
-        <span class="ident">ctx</span>.<span class="ident">remaining_accounts</span>
-            .<span class="ident">iter</span>()
-            .<span class="ident">maybe_next_adapter</span>()<span class="question-mark">?</span>
-            .<span class="ident">map</span>(<span class="op">|</span><span class="ident">a</span><span class="op">|</span> <span class="ident">a</span>.<span class="ident">key</span>()),
-        <span class="ident">CallbackFlags::NEW_DEBT</span> <span class="op">|</span> <span class="ident">CallbackFlags::MARGIN</span>,
+    <span class="doccomment">/// Solana system program
+    </span><span class="kw">pub </span>system_program: Program&lt;<span class="lifetime">&#39;info</span>, System&gt;,
+
+    <span class="kw">pub </span>token_program: Program&lt;<span class="lifetime">&#39;info</span>, Token&gt;,
+    <span class="comment">// Optional event adapter account
+    // pub event_adapter: AccountInfo&lt;&#39;info&gt;,
+</span>}
+
+<span class="kw">pub fn </span>handler(
+    ctx: Context&lt;MarginBorrowOrder&gt;,
+    <span class="kw-2">mut </span>params: OrderParams,
+    seed: Vec&lt;u8&gt;,
+) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+    <span class="kw">let </span>origination_fee = {
+        <span class="kw">let </span>manager = ctx.accounts.orderbook_mut.bond_manager.load()<span class="question-mark">?</span>;
+        params.max_bond_ticket_qty = manager.borrow_order_qty(params.max_bond_ticket_qty);
+        params.max_underlying_token_qty = manager.borrow_order_qty(params.max_underlying_token_qty);
+        manager.origination_fee
+    };
+    <span class="kw">let </span>(callback_info, order_summary) = ctx.accounts.orderbook_mut.place_order(
+        ctx.accounts.margin_account.key(),
+        Side::Ask,
+        params,
+        ctx.accounts.margin_user.key(),
+        ctx.accounts.margin_user.key(),
+        ctx.remaining_accounts
+            .iter()
+            .maybe_next_adapter()<span class="question-mark">?
+            </span>.map(|a| a.key()),
+        CallbackFlags::NEW_DEBT | CallbackFlags::MARGIN,
     )<span class="question-mark">?</span>;
-    <span class="kw">let</span> <span class="ident">bond_manager</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">orderbook_mut</span>.<span class="ident">bond_manager</span>;
 
-    <span class="kw">let</span> <span class="ident">debt</span> <span class="op">=</span> <span class="kw-2">&amp;mut</span> <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">margin_user</span>.<span class="ident">debt</span>;
-    <span class="ident">debt</span>.<span class="ident">post_borrow_order</span>(<span class="ident">order_summary</span>.<span class="ident">base_posted</span>())<span class="question-mark">?</span>;
-    <span class="kw">if</span> <span class="ident">order_summary</span>.<span class="ident">base_filled</span>() <span class="op">&gt;</span> <span class="number">0</span> {
-        <span class="kw">let</span> <span class="ident">maturation_timestamp</span> <span class="op">=</span>
-            <span class="ident">bond_manager</span>.<span class="ident">load</span>()<span class="question-mark">?</span>.<span class="ident">borrow_duration</span> <span class="op">+</span> <span class="ident">Clock::get</span>()<span class="question-mark">?</span>.<span class="ident">unix_timestamp</span>;
-        <span class="kw">let</span> <span class="ident">sequence_number</span> <span class="op">=</span>
-            <span class="ident">debt</span>.<span class="ident">new_obligation_without_posting</span>(<span class="ident">order_summary</span>.<span class="ident">base_filled</span>(), <span class="ident">maturation_timestamp</span>)<span class="question-mark">?</span>;
+    <span class="kw">let </span>debt = <span class="kw-2">&amp;mut </span>ctx.accounts.margin_user.debt;
+    debt.post_borrow_order(order_summary.base_posted())<span class="question-mark">?</span>;
+    <span class="kw">if </span>order_summary.base_filled() &gt; <span class="number">0 </span>{
+        <span class="kw">let </span><span class="kw-2">mut </span>manager = ctx.accounts.orderbook_mut.bond_manager.load_mut()<span class="question-mark">?</span>;
+        <span class="kw">let </span>maturation_timestamp = manager.borrow_duration + Clock::get()<span class="question-mark">?</span>.unix_timestamp;
+        <span class="kw">let </span>sequence_number =
+            debt.new_obligation_without_posting(order_summary.base_filled(), maturation_timestamp)<span class="question-mark">?</span>;
 
-        <span class="kw">let</span> <span class="ident">maturation_timestamp</span> <span class="op">=</span>
-            <span class="ident">bond_manager</span>.<span class="ident">load</span>()<span class="question-mark">?</span>.<span class="ident">borrow_duration</span> <span class="op">+</span> <span class="ident">Clock::get</span>()<span class="question-mark">?</span>.<span class="ident">unix_timestamp</span>;
+        <span class="kw">let </span>maturation_timestamp = manager.borrow_duration + Clock::get()<span class="question-mark">?</span>.unix_timestamp;
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">obligation</span> <span class="op">=</span> <span class="ident">serialization::init</span>::<span class="op">&lt;</span><span class="ident">Obligation</span><span class="op">&gt;</span>(
-            <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">obligation</span>.<span class="ident">to_account_info</span>(),
-            <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">payer</span>.<span class="ident">to_account_info</span>(),
-            <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">system_program</span>.<span class="ident">to_account_info</span>(),
-            <span class="kw-2">&amp;</span><span class="ident">Obligation::make_seeds</span>(<span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">margin_user</span>.<span class="ident">key</span>().<span class="ident">as_ref</span>(), <span class="ident">seed</span>.<span class="ident">as_slice</span>()),
+        <span class="kw">let </span><span class="kw-2">mut </span>obligation = serialization::init::&lt;Obligation&gt;(
+            ctx.accounts.obligation.to_account_info(),
+            ctx.accounts.payer.to_account_info(),
+            ctx.accounts.system_program.to_account_info(),
+            <span class="kw-2">&amp;</span>Obligation::make_seeds(ctx.accounts.margin_user.key().as_ref(), seed.as_slice()),
         )<span class="question-mark">?</span>;
-        <span class="kw">let</span> <span class="ident">quote_filled</span> <span class="op">=</span> <span class="ident">order_summary</span>.<span class="ident">quote_filled</span>()<span class="question-mark">?</span>;
-        <span class="kw">let</span> <span class="ident">base_filled</span> <span class="op">=</span> <span class="ident">order_summary</span>.<span class="ident">base_filled</span>();
-        <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">margin_user</span>.<span class="ident">assets</span>.<span class="ident">entitled_tokens</span> <span class="op">+</span><span class="op">=</span> <span class="ident">quote_filled</span>;
-        <span class="kw-2">*</span><span class="ident">obligation</span> <span class="op">=</span> <span class="ident">Obligation</span> {
-            <span class="ident">sequence_number</span>,
-            <span class="ident">borrower_account</span>: <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">margin_user</span>.<span class="ident">key</span>(),
-            <span class="ident">bond_manager</span>: <span class="ident">bond_manager</span>.<span class="ident">key</span>(),
-            <span class="ident">order_tag</span>: <span class="ident">callback_info</span>.<span class="ident">order_tag</span>,
-            <span class="ident">maturation_timestamp</span>,
-            <span class="ident">balance</span>: <span class="ident">base_filled</span>,
-            <span class="ident">flags</span>: <span class="ident">ObligationFlags::default</span>(),
+        <span class="kw">let </span>quote_filled = order_summary.quote_filled()<span class="question-mark">?</span>;
+        <span class="kw">let </span>disburse = manager.loan_to_disburse(quote_filled);
+        manager
+            .collected_fees
+            .try_add_assign(quote_filled.safe_sub(disburse)<span class="question-mark">?</span>)<span class="question-mark">?</span>;
+        <span class="kw">let </span>base_filled = order_summary.base_filled();
+        <span class="kw-2">*</span>obligation = Obligation {
+            sequence_number,
+            borrower_account: ctx.accounts.margin_user.key(),
+            bond_manager: ctx.accounts.orderbook_mut.bond_manager.key(),
+            order_tag: callback_info.order_tag,
+            maturation_timestamp,
+            balance: base_filled,
+            flags: ObligationFlags::default(),
         };
+        drop(manager);
+        ctx.withdraw(
+            <span class="kw-2">&amp;</span>ctx.accounts.underlying_token_vault,
+            <span class="kw-2">&amp;</span>ctx.accounts.underlying_settlement,
+            disburse,
+        )<span class="question-mark">?</span>;
 
-        <span class="macro">emit!</span>(<span class="ident">ObligationCreated</span> {
-            <span class="ident">obligation</span>: <span class="ident">obligation</span>.<span class="ident">key</span>(),
-            <span class="ident">authority</span>: <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">margin_account</span>.<span class="ident">key</span>(),
-            <span class="ident">order_id</span>: <span class="ident">order_summary</span>.<span class="ident">summary</span>().<span class="ident">posted_order_id</span>,
-            <span class="ident">sequence_number</span>,
-            <span class="ident">bond_manager</span>: <span class="ident">bond_manager</span>.<span class="ident">key</span>(),
-            <span class="ident">maturation_timestamp</span>,
-            <span class="ident">quote_filled</span>,
-            <span class="ident">base_filled</span>,
-            <span class="ident">flags</span>: <span class="ident">obligation</span>.<span class="ident">flags</span>
+        <span class="macro">emit!</span>(ObligationCreated {
+            obligation: obligation.key(),
+            authority: ctx.accounts.margin_account.key(),
+            order_id: order_summary.summary().posted_order_id,
+            sequence_number,
+            bond_manager: ctx.accounts.orderbook_mut.bond_manager.key(),
+            maturation_timestamp,
+            quote_filled,
+            base_filled,
+            flags: obligation.flags
         });
     }
-    <span class="kw">let</span> <span class="ident">total_debt</span> <span class="op">=</span> <span class="ident">order_summary</span>.<span class="ident">base_combined</span>();
-    <span class="ident">ctx</span>.<span class="ident">mint</span>(<span class="kw-2">&amp;</span><span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">claims_mint</span>, <span class="kw-2">&amp;</span><span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">claims</span>, <span class="ident">total_debt</span>)<span class="question-mark">?</span>;
-    <span class="ident">ctx</span>.<span class="ident">mint</span>(
-        <span class="kw-2">&amp;</span><span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">collateral_mint</span>,
-        <span class="kw-2">&amp;</span><span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">collateral</span>,
-        <span class="ident">order_summary</span>.<span class="ident">quote_posted</span>()<span class="question-mark">?</span>,
+    <span class="kw">let </span>total_debt = order_summary.base_combined();
+    ctx.mint(<span class="kw-2">&amp;</span>ctx.accounts.claims_mint, <span class="kw-2">&amp;</span>ctx.accounts.claims, total_debt)<span class="question-mark">?</span>;
+    ctx.mint(
+        <span class="kw-2">&amp;</span>ctx.accounts.collateral_mint,
+        <span class="kw-2">&amp;</span>ctx.accounts.collateral,
+        loan_to_disburse(order_summary.quote_posted()<span class="question-mark">?</span>, origination_fee),
     )<span class="question-mark">?</span>;
 
-    <span class="macro">emit!</span>(<span class="ident">OrderPlaced</span> {
-        <span class="ident">bond_manager</span>: <span class="ident">bond_manager</span>.<span class="ident">key</span>(),
-        <span class="ident">authority</span>: <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">margin_account</span>.<span class="ident">key</span>(),
-        <span class="ident">margin_user</span>: <span class="prelude-val">Some</span>(<span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">margin_user</span>.<span class="ident">key</span>()),
-        <span class="ident">order_summary</span>: <span class="ident">order_summary</span>.<span class="ident">summary</span>(),
-        <span class="ident">limit_price</span>: <span class="ident">params</span>.<span class="ident">limit_price</span>,
-        <span class="ident">auto_stake</span>: <span class="ident">params</span>.<span class="ident">auto_stake</span>,
-        <span class="ident">post_only</span>: <span class="ident">params</span>.<span class="ident">post_only</span>,
-        <span class="ident">post_allowed</span>: <span class="ident">params</span>.<span class="ident">post_allowed</span>,
-        <span class="ident">order_type</span>: <span class="ident">OrderType::MarginBorrow</span>,
+    <span class="macro">emit!</span>(OrderPlaced {
+        bond_manager: ctx.accounts.orderbook_mut.bond_manager.key(),
+        authority: ctx.accounts.margin_account.key(),
+        margin_user: <span class="prelude-val">Some</span>(ctx.accounts.margin_user.key()),
+        order_summary: order_summary.summary(),
+        limit_price: params.limit_price,
+        auto_stake: params.auto_stake,
+        post_only: params.post_only,
+        post_allowed: params.post_allowed,
+        order_type: OrderType::MarginBorrow,
     });
 
-    <span class="comment">// this is just used to make sure the position is still registered.</span>
-    <span class="comment">// it&#39;s actually registered by initialize_margin_user</span>
-    <span class="ident">return_to_margin</span>(
-        <span class="kw-2">&amp;</span><span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">margin_account</span>.<span class="ident">to_account_info</span>(),
-        <span class="kw-2">&amp;</span><span class="ident">AdapterResult</span> {
-            <span class="ident">position_changes</span>: <span class="macro">vec!</span>[(
-                <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">claims_mint</span>.<span class="ident">key</span>(),
-                <span class="macro">vec!</span>[<span class="ident">PositionChange::Register</span>(<span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">claims</span>.<span class="ident">key</span>())],
+    <span class="comment">// this is just used to make sure the position is still registered.
+    // it&#39;s actually registered by initialize_margin_user
+    </span>return_to_margin(
+        <span class="kw-2">&amp;</span>ctx.accounts.margin_account.to_account_info(),
+        <span class="kw-2">&amp;</span>AdapterResult {
+            position_changes: <span class="macro">vec!</span>[(
+                ctx.accounts.claims_mint.key(),
+                <span class="macro">vec!</span>[PositionChange::Register(ctx.accounts.claims.key())],
             )],
         },
     )
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="jet_bonds" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0 (a55dd71d5 2022-09-19)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="jet_bonds" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

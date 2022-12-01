@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `programs/bonds/src/tickets/state.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>state.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../jet_bonds/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../jet_bonds/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../jet_bonds/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `programs/bonds/src/tickets/state.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>state.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../normalize.css"><link rel="stylesheet" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../ayu.css" disabled><link rel="stylesheet" href="../../../dark.css" disabled><link rel="stylesheet" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../jet_bonds/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../jet_bonds/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../jet_bonds/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -97,97 +97,97 @@
 <span id="97">97</span>
 <span id="98">98</span>
 <span id="99">99</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">anchor_lang::prelude</span>::<span class="kw-2">*</span>;
+</pre><pre class="rust"><code><span class="kw">use </span>anchor_lang::prelude::<span class="kw-2">*</span>;
 
-<span class="kw">use</span> <span class="kw">crate</span>::{<span class="ident">orderbook::state::OrderTag</span>, <span class="ident">BondsError</span>};
+<span class="kw">use crate</span>::{orderbook::state::OrderTag, BondsError};
 
-<span class="doccomment">/// A `ClaimTicket` represents a claim of tickets that have been staked with the program</span>
-<span class="doccomment">/// This account is generated by the `StakeBondTickets` program instruction</span>
-<span class="attribute">#[<span class="ident">account</span>]</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">ClaimTicket</span> {
-    <span class="doccomment">/// The account registered as owner of this claim</span>
-    <span class="kw">pub</span> <span class="ident">owner</span>: <span class="ident">Pubkey</span>,
-    <span class="doccomment">/// The `TicketManager` this claim ticket was established under</span>
-    <span class="doccomment">/// Determines the asset this ticket will be redeemed for</span>
-    <span class="kw">pub</span> <span class="ident">bond_manager</span>: <span class="ident">Pubkey</span>,
-    <span class="doccomment">/// The slot after which this claim can be redeemed for the underlying value</span>
-    <span class="kw">pub</span> <span class="ident">maturation_timestamp</span>: <span class="ident">i64</span>,
-    <span class="doccomment">/// The number of tokens this claim  is redeemable for</span>
-    <span class="kw">pub</span> <span class="ident">redeemable</span>: <span class="ident">u64</span>,
+<span class="doccomment">/// A `ClaimTicket` represents a claim of tickets that have been staked with the program
+/// This account is generated by the `StakeBondTickets` program instruction
+</span><span class="attribute">#[account]
+#[derive(Debug)]
+</span><span class="kw">pub struct </span>ClaimTicket {
+    <span class="doccomment">/// The account registered as owner of this claim
+    </span><span class="kw">pub </span>owner: Pubkey,
+    <span class="doccomment">/// The `TicketManager` this claim ticket was established under
+    /// Determines the asset this ticket will be redeemed for
+    </span><span class="kw">pub </span>bond_manager: Pubkey,
+    <span class="doccomment">/// The slot after which this claim can be redeemed for the underlying value
+    </span><span class="kw">pub </span>maturation_timestamp: i64,
+    <span class="doccomment">/// The number of tokens this claim  is redeemable for
+    </span><span class="kw">pub </span>redeemable: u64,
 }
 
-<span class="doccomment">/// A split ticket represents a claim of underlying tokens as the result of a lending action.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// The split ticket is generated when a user places a matched order with the `auto_stake` flag set to true.</span>
-<span class="doccomment">/// By taking the difference between the matched base and quote quantities, the split ticket assigns principal and</span>
-<span class="doccomment">/// interest values.</span>
-<span class="attribute">#[<span class="ident">account</span>]</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">SplitTicket</span> {
-    <span class="doccomment">/// The account registered as owner of this claim</span>
-    <span class="kw">pub</span> <span class="ident">owner</span>: <span class="ident">Pubkey</span>,
-    <span class="doccomment">/// The `TicketManager` this claim ticket was established under</span>
-    <span class="doccomment">/// Determines the asset this ticket will be redeemed for</span>
-    <span class="kw">pub</span> <span class="ident">bond_manager</span>: <span class="ident">Pubkey</span>,
-    <span class="doccomment">/// The `OrderTag` associated with the creation of this struct</span>
-    <span class="kw">pub</span> <span class="ident">order_tag</span>: <span class="ident">OrderTag</span>,
-    <span class="doccomment">/// The time slot during which the ticket was struck</span>
-    <span class="kw">pub</span> <span class="ident">struck_timestamp</span>: <span class="ident">i64</span>,
-    <span class="doccomment">/// The slot after which this claim can be redeemed for the underlying value</span>
-    <span class="kw">pub</span> <span class="ident">maturation_timestamp</span>: <span class="ident">i64</span>,
-    <span class="doccomment">/// The total number of principal tokens the bond was struck for</span>
-    <span class="kw">pub</span> <span class="ident">principal</span>: <span class="ident">u64</span>,
-    <span class="doccomment">/// The total number of interest tokens struck for this bond</span>
-    <span class="doccomment">/// same underlying asset as the principal token</span>
-    <span class="kw">pub</span> <span class="ident">interest</span>: <span class="ident">u64</span>,
+<span class="doccomment">/// A split ticket represents a claim of underlying tokens as the result of a lending action.
+///
+/// The split ticket is generated when a user places a matched order with the `auto_stake` flag set to true.
+/// By taking the difference between the matched base and quote quantities, the split ticket assigns principal and
+/// interest values.
+</span><span class="attribute">#[account]
+#[derive(Debug)]
+</span><span class="kw">pub struct </span>SplitTicket {
+    <span class="doccomment">/// The account registered as owner of this claim
+    </span><span class="kw">pub </span>owner: Pubkey,
+    <span class="doccomment">/// The `TicketManager` this claim ticket was established under
+    /// Determines the asset this ticket will be redeemed for
+    </span><span class="kw">pub </span>bond_manager: Pubkey,
+    <span class="doccomment">/// The `OrderTag` associated with the creation of this struct
+    </span><span class="kw">pub </span>order_tag: OrderTag,
+    <span class="doccomment">/// The time slot during which the ticket was struck
+    </span><span class="kw">pub </span>struck_timestamp: i64,
+    <span class="doccomment">/// The slot after which this claim can be redeemed for the underlying value
+    </span><span class="kw">pub </span>maturation_timestamp: i64,
+    <span class="doccomment">/// The total number of principal tokens the bond was struck for
+    </span><span class="kw">pub </span>principal: u64,
+    <span class="doccomment">/// The total number of interest tokens struck for this bond
+    /// same underlying asset as the principal token
+    </span><span class="kw">pub </span>interest: u64,
 }
 
-<span class="kw">impl</span> <span class="ident">SplitTicket</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">make_seeds</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>(<span class="ident">user</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">u8</span>], <span class="ident">bytes</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">u8</span>]) -&gt; [<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">u8</span>]; <span class="number">3</span>] {
-        [<span class="ident"><span class="kw">crate</span>::seeds::SPLIT_TICKET</span>, <span class="ident">user</span>, <span class="ident">bytes</span>]
+<span class="kw">impl </span>SplitTicket {
+    <span class="kw">pub fn </span>make_seeds&lt;<span class="lifetime">&#39;a</span>&gt;(user: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[u8], bytes: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[u8]) -&gt; [<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[u8]; <span class="number">3</span>] {
+        [<span class="kw">crate</span>::seeds::SPLIT_TICKET, user, bytes]
     }
 }
 
-<span class="doccomment">/// Enum used for pattern matching a ticket deserialization</span>
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">enum</span> <span class="ident">TicketKind</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span> {
-    <span class="ident">Claim</span>(<span class="ident">Account</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span>, <span class="ident">ClaimTicket</span><span class="op">&gt;</span>),
-    <span class="ident">Split</span>(<span class="ident">Account</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span>, <span class="ident">SplitTicket</span><span class="op">&gt;</span>),
+<span class="doccomment">/// Enum used for pattern matching a ticket deserialization
+</span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">enum </span>TicketKind&lt;<span class="lifetime">&#39;info</span>&gt; {
+    Claim(Account&lt;<span class="lifetime">&#39;info</span>, ClaimTicket&gt;),
+    Split(Account&lt;<span class="lifetime">&#39;info</span>, SplitTicket&gt;),
 }
 
-<span class="doccomment">/// Deserializes an ambiguous `AccountInfo` into the correct `TicketKind`</span>
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">deserialize_ticket</span>(<span class="ident">info</span>: <span class="ident">AccountInfo</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">TicketKind</span><span class="op">&gt;</span> {
-    <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Ok</span>(<span class="ident">ticket</span>) <span class="op">=</span> <span class="ident">Account</span>::<span class="op">&lt;</span><span class="ident">ClaimTicket</span><span class="op">&gt;</span><span class="ident">::try_from</span>(<span class="kw-2">&amp;</span><span class="ident">info</span>) {
-        <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="ident">TicketKind::Claim</span>(<span class="ident">ticket</span>));
-    } <span class="kw">else</span> <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Ok</span>(<span class="ident">ticket</span>) <span class="op">=</span> <span class="ident">Account</span>::<span class="op">&lt;</span><span class="ident">SplitTicket</span><span class="op">&gt;</span><span class="ident">::try_from</span>(<span class="kw-2">&amp;</span><span class="ident">info</span>) {
-        <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="ident">TicketKind::Split</span>(<span class="ident">ticket</span>));
+<span class="doccomment">/// Deserializes an ambiguous `AccountInfo` into the correct `TicketKind`
+</span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>deserialize_ticket(info: AccountInfo) -&gt; <span class="prelude-ty">Result</span>&lt;TicketKind&gt; {
+    <span class="kw">if let </span><span class="prelude-val">Ok</span>(ticket) = Account::&lt;ClaimTicket&gt;::try_from(<span class="kw-2">&amp;</span>info) {
+        <span class="kw">return </span><span class="prelude-val">Ok</span>(TicketKind::Claim(ticket));
+    } <span class="kw">else if let </span><span class="prelude-val">Ok</span>(ticket) = Account::&lt;SplitTicket&gt;::try_from(<span class="kw-2">&amp;</span>info) {
+        <span class="kw">return </span><span class="prelude-val">Ok</span>(TicketKind::Split(ticket));
     }
 
-    <span class="macro">err!</span>(<span class="ident">BondsError::FailedToDeserializeTicket</span>)
+    <span class="macro">err!</span>(BondsError::FailedToDeserializeTicket)
 }
 
-<span class="macro">make_verification!</span>(<span class="ident">ClaimTicket</span>);
-<span class="macro">make_verification!</span>(<span class="ident">SplitTicket</span>);
+<span class="macro">make_verification!</span>(ClaimTicket);
+<span class="macro">make_verification!</span>(SplitTicket);
 
-<span class="macro">macro_rules!</span> <span class="ident">make_verification</span> {
-    (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">ticket</span>:<span class="ident">ty</span>) =&gt; {
-        <span class="kw">impl</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">ticket</span> {
-            <span class="doccomment">/// Verify ticket ownership, takes owner and manager pubkeys</span>
-            <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">verify_owner_manager</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">owner</span>: <span class="kw-2">&amp;</span><span class="ident">Pubkey</span>, <span class="ident">manager</span>: <span class="kw-2">&amp;</span><span class="ident">Pubkey</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-                <span class="kw">if</span> <span class="self">self</span>.<span class="ident">owner</span> <span class="op">!</span><span class="op">=</span> <span class="kw-2">*</span><span class="ident">owner</span> {
-                    <span class="kw">return</span> <span class="macro">err!</span>(<span class="ident">BondsError::DoesNotOwnTicket</span>);
+<span class="macro">macro_rules! </span>make_verification {
+    (<span class="macro-nonterminal">$ticket</span>:ty) =&gt; {
+        <span class="kw">impl </span><span class="macro-nonterminal">$ticket </span>{
+            <span class="doccomment">/// Verify ticket ownership, takes owner and manager pubkeys
+            </span><span class="kw">pub fn </span>verify_owner_manager(<span class="kw-2">&amp;</span><span class="self">self</span>, owner: <span class="kw-2">&amp;</span>Pubkey, manager: <span class="kw-2">&amp;</span>Pubkey) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+                <span class="kw">if </span><span class="self">self</span>.owner != <span class="kw-2">*</span>owner {
+                    <span class="kw">return </span><span class="macro">err!</span>(BondsError::DoesNotOwnTicket);
                 }
-                <span class="kw">if</span> <span class="self">self</span>.<span class="ident">bond_manager</span> <span class="op">!</span><span class="op">=</span> <span class="kw-2">*</span><span class="ident">manager</span> {
-                    <span class="kw">return</span> <span class="macro">err!</span>(<span class="ident">BondsError::TicketNotFromManager</span>);
+                <span class="kw">if </span><span class="self">self</span>.bond_manager != <span class="kw-2">*</span>manager {
+                    <span class="kw">return </span><span class="macro">err!</span>(BondsError::TicketNotFromManager);
                 }
 
                 <span class="prelude-val">Ok</span>(())
             }
 
-            <span class="doccomment">/// Verify ticket ownership, takes owner pubkey</span>
-            <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">verify_owner</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">owner</span>: <span class="kw-2">&amp;</span><span class="ident">Pubkey</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-                <span class="kw">if</span> <span class="self">self</span>.<span class="ident">owner</span> <span class="op">!</span><span class="op">=</span> <span class="kw-2">*</span><span class="ident">owner</span> {
-                    <span class="kw">return</span> <span class="macro">err!</span>(<span class="ident">BondsError::DoesNotOwnTicket</span>);
+            <span class="doccomment">/// Verify ticket ownership, takes owner pubkey
+            </span><span class="kw">pub fn </span>verify_owner(<span class="kw-2">&amp;</span><span class="self">self</span>, owner: <span class="kw-2">&amp;</span>Pubkey) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+                <span class="kw">if </span><span class="self">self</span>.owner != <span class="kw-2">*</span>owner {
+                    <span class="kw">return </span><span class="macro">err!</span>(BondsError::DoesNotOwnTicket);
                 }
 
                 <span class="prelude-val">Ok</span>(())
@@ -195,6 +195,6 @@
         }
     };
 }
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">use</span> <span class="ident">make_verification</span>;
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">use </span>make_verification;
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="jet_bonds" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0 (a55dd71d5 2022-09-19)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="jet_bonds" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

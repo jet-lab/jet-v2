@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `programs/bonds/src/control/instructions/initialize_bond_manager.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>initialize_bond_manager.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../jet_bonds/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../../jet_bonds/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../jet_bonds/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `programs/bonds/src/control/instructions/initialize_bond_manager.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>initialize_bond_manager.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../../normalize.css"><link rel="stylesheet" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../../ayu.css" disabled><link rel="stylesheet" href="../../../../dark.css" disabled><link rel="stylesheet" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../jet_bonds/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../../jet_bonds/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../jet_bonds/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -175,182 +175,200 @@
 <span id="175">175</span>
 <span id="176">176</span>
 <span id="177">177</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">anchor_lang::prelude</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident">anchor_spl::token</span>::{<span class="ident">Mint</span>, <span class="ident">Token</span>, <span class="ident">TokenAccount</span>};
+<span id="178">178</span>
+<span id="179">179</span>
+<span id="180">180</span>
+<span id="181">181</span>
+<span id="182">182</span>
+<span id="183">183</span>
+<span id="184">184</span>
+<span id="185">185</span>
+<span id="186">186</span>
+</pre><pre class="rust"><code><span class="kw">use </span>anchor_lang::prelude::<span class="kw-2">*</span>;
+<span class="kw">use </span>anchor_spl::token::{Mint, Token, TokenAccount};
 
-<span class="kw">use</span> <span class="kw">crate</span>::{
-    <span class="ident">control</span>::{<span class="ident">events::BondManagerInitialized</span>, <span class="ident">state::BondManager</span>},
-    <span class="ident">seeds</span>,
-    <span class="ident">utils::init</span>,
+<span class="kw">use crate</span>::{
+    control::{events::BondManagerInitialized, state::BondManager},
+    seeds,
+    utils::init,
 };
 
-<span class="doccomment">/// Parameters for the initialization of the [BondManager]</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">AnchorSerialize</span>, <span class="ident">AnchorDeserialize</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">InitializeBondManagerParams</span> {
-    <span class="doccomment">/// Tag information for the `BondManager` account</span>
-    <span class="kw">pub</span> <span class="ident">version_tag</span>: <span class="ident">u64</span>,
-    <span class="doccomment">/// This seed allows the creation of many separate ticket managers tracking different</span>
-    <span class="doccomment">/// parameters, such as staking duration</span>
-    <span class="kw">pub</span> <span class="ident">seed</span>: [<span class="ident">u8</span>; <span class="number">32</span>],
-    <span class="doccomment">/// Length of time before a borrow is marked as due, in seconds</span>
-    <span class="kw">pub</span> <span class="ident">borrow_duration</span>: <span class="ident">i64</span>,
-    <span class="doccomment">/// Length of time before a claim is marked as mature, in seconds</span>
-    <span class="kw">pub</span> <span class="ident">lend_duration</span>: <span class="ident">i64</span>,
+<span class="doccomment">/// Parameters for the initialization of the [BondManager]
+</span><span class="attribute">#[derive(AnchorSerialize, AnchorDeserialize)]
+</span><span class="kw">pub struct </span>InitializeBondManagerParams {
+    <span class="doccomment">/// Tag information for the `BondManager` account
+    </span><span class="kw">pub </span>version_tag: u64,
+    <span class="doccomment">/// This seed allows the creation of many separate ticket managers tracking different
+    /// parameters, such as staking duration
+    </span><span class="kw">pub </span>seed: [u8; <span class="number">32</span>],
+    <span class="doccomment">/// Length of time before a borrow is marked as due, in seconds
+    </span><span class="kw">pub </span>borrow_duration: i64,
+    <span class="doccomment">/// Length of time before a claim is marked as mature, in seconds
+    </span><span class="kw">pub </span>lend_duration: i64,
+    <span class="doccomment">/// assessed on borrows. scaled by origination_fee::FEE_UNIT
+    </span><span class="kw">pub </span>origination_fee: u64,
 }
 
-<span class="doccomment">/// Initialize a [BondManager]</span>
-<span class="doccomment">/// The `BondManager` acts as a sort of market header. Responsible for coordination and authorization of the accounts</span>
-<span class="doccomment">/// utilized and interacting with the program</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Accounts</span>)]</span>
-<span class="attribute">#[<span class="ident">instruction</span>(<span class="ident">params</span>: <span class="ident">InitializeBondManagerParams</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">InitializeBondManager</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span> {
-    <span class="doccomment">/// The `BondManager` manages asset tokens for a particular bond duration</span>
-    <span class="attribute">#[<span class="ident">account</span>(
-        <span class="ident">init</span>,
-        <span class="ident">seeds</span> <span class="op">=</span> [
-            <span class="ident">seeds::BOND_MANAGER</span>,
-            <span class="ident">airspace</span>.<span class="ident">key</span>().<span class="ident">as_ref</span>(),
-            <span class="ident">underlying_token_mint</span>.<span class="ident">key</span>().<span class="ident">as_ref</span>(),
-            <span class="kw-2">&amp;</span><span class="ident">params</span>.<span class="ident">seed</span>,
+<span class="doccomment">/// Initialize a [BondManager]
+/// The `BondManager` acts as a sort of market header. Responsible for coordination and authorization of the accounts
+/// utilized and interacting with the program
+</span><span class="attribute">#[derive(Accounts)]
+#[instruction(params: InitializeBondManagerParams)]
+</span><span class="kw">pub struct </span>InitializeBondManager&lt;<span class="lifetime">&#39;info</span>&gt; {
+    <span class="doccomment">/// The `BondManager` manages asset tokens for a particular bond duration
+    </span><span class="attribute">#[account(
+        init,
+        seeds = [
+            seeds::BOND_MANAGER,
+            airspace.key().as_ref(),
+            underlying_token_mint.key().as_ref(),
+            <span class="kw-2">&amp;</span>params.seed,
         ]</span>,
-        <span class="ident">bump</span>,
-        <span class="ident">payer</span> <span class="op">=</span> <span class="ident">payer</span>,
-        <span class="ident">space</span> <span class="op">=</span> <span class="number">8</span> <span class="op">+</span> <span class="ident">std::mem::size_of</span>::<span class="op">&lt;</span><span class="ident">BondManager</span><span class="op">&gt;</span>(),
+        bump,
+        payer = payer,
+        space = <span class="number">8 </span>+ std::mem::size_of::&lt;BondManager&gt;(),
     )]
-    <span class="kw">pub</span> <span class="ident">bond_manager</span>: <span class="ident">AccountLoader</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span>, <span class="ident">BondManager</span><span class="op">&gt;</span>,
+    <span class="kw">pub </span>bond_manager: AccountLoader&lt;<span class="lifetime">&#39;info</span>, BondManager&gt;,
 
-    <span class="doccomment">/// The vault for storing the token underlying the bond tickets</span>
-    <span class="attribute">#[<span class="ident">account</span>(
-        <span class="ident">init</span>,
-        <span class="ident">seeds</span> <span class="op">=</span> [
-            <span class="ident">seeds::UNDERLYING_TOKEN_VAULT</span>,
-            <span class="ident">bond_manager</span>.<span class="ident">key</span>().<span class="ident">as_ref</span>()
+    <span class="doccomment">/// The vault for storing the token underlying the bond tickets
+    </span><span class="attribute">#[account(
+        init,
+        seeds = [
+            seeds::UNDERLYING_TOKEN_VAULT,
+            bond_manager.key().as_ref()
         ]</span>,
-        <span class="ident">bump</span>,
-        <span class="ident">payer</span> <span class="op">=</span> <span class="ident">payer</span>,
-        <span class="ident">token::mint</span> <span class="op">=</span> <span class="ident">underlying_token_mint</span>,
-        <span class="ident">token::authority</span> <span class="op">=</span> <span class="ident">bond_manager</span>,
+        bump,
+        payer = payer,
+        token::mint = underlying_token_mint,
+        token::authority = bond_manager,
     )]
-    <span class="kw">pub</span> <span class="ident">underlying_token_vault</span>: <span class="ident">Box</span><span class="op">&lt;</span><span class="ident">Account</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span>, <span class="ident">TokenAccount</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+    <span class="kw">pub </span>underlying_token_vault: Box&lt;Account&lt;<span class="lifetime">&#39;info</span>, TokenAccount&gt;&gt;,
 
-    <span class="doccomment">/// The mint for the assets underlying the bond tickets</span>
-    <span class="kw">pub</span> <span class="ident">underlying_token_mint</span>: <span class="ident">Box</span><span class="op">&lt;</span><span class="ident">Account</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span>, <span class="ident">Mint</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+    <span class="doccomment">/// The mint for the assets underlying the bond tickets
+    </span><span class="kw">pub </span>underlying_token_mint: Box&lt;Account&lt;<span class="lifetime">&#39;info</span>, Mint&gt;&gt;,
 
-    <span class="doccomment">/// The minting account for the bond tickets</span>
-    <span class="attribute">#[<span class="ident">account</span>(
-        <span class="ident">init</span>,
-        <span class="ident">seeds</span> <span class="op">=</span> [
-            <span class="ident">seeds::BOND_TICKET_MINT</span>,
-            <span class="ident">bond_manager</span>.<span class="ident">key</span>().<span class="ident">as_ref</span>()
+    <span class="doccomment">/// The minting account for the bond tickets
+    </span><span class="attribute">#[account(
+        init,
+        seeds = [
+            seeds::BOND_TICKET_MINT,
+            bond_manager.key().as_ref()
         ]</span>,
-        <span class="ident">bump</span>,
-        <span class="ident">payer</span> <span class="op">=</span> <span class="ident">payer</span>,
-        <span class="ident">mint::decimals</span> <span class="op">=</span> <span class="ident">underlying_token_mint</span>.<span class="ident">decimals</span>,
-        <span class="ident">mint::authority</span> <span class="op">=</span> <span class="ident">bond_manager</span>,
-        <span class="ident">mint::freeze_authority</span> <span class="op">=</span> <span class="ident">bond_manager</span>,
+        bump,
+        payer = payer,
+        mint::decimals = underlying_token_mint.decimals,
+        mint::authority = bond_manager,
+        mint::freeze_authority = bond_manager,
     )]
-    <span class="kw">pub</span> <span class="ident">bond_ticket_mint</span>: <span class="ident">Box</span><span class="op">&lt;</span><span class="ident">Account</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span>, <span class="ident">Mint</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+    <span class="kw">pub </span>bond_ticket_mint: Box&lt;Account&lt;<span class="lifetime">&#39;info</span>, Mint&gt;&gt;,
 
-    <span class="doccomment">/// Mints tokens to a margin account to represent debt that must be collateralized</span>
-    <span class="attribute">#[<span class="ident">account</span>(<span class="ident">init</span>,
-        <span class="ident">seeds</span> <span class="op">=</span> [
-            <span class="ident">seeds::CLAIM_NOTES</span>,
-            <span class="ident">bond_manager</span>.<span class="ident">key</span>().<span class="ident">as_ref</span>(),
+    <span class="doccomment">/// Mints tokens to a margin account to represent debt that must be collateralized
+    </span><span class="attribute">#[account(init,
+        seeds = [
+            seeds::CLAIM_NOTES,
+            bond_manager.key().as_ref(),
         ]</span>,
-        <span class="ident">bump</span>,
-        <span class="ident">payer</span> <span class="op">=</span> <span class="ident">payer</span>,
-        <span class="ident">mint::decimals</span> <span class="op">=</span> <span class="ident">underlying_token_mint</span>.<span class="ident">decimals</span>,
-        <span class="ident">mint::authority</span> <span class="op">=</span> <span class="ident">bond_manager</span>,
-        <span class="ident">mint::freeze_authority</span> <span class="op">=</span> <span class="ident">bond_manager</span>,
+        bump,
+        payer = payer,
+        mint::decimals = underlying_token_mint.decimals,
+        mint::authority = bond_manager,
+        mint::freeze_authority = bond_manager,
     )]
-    <span class="kw">pub</span> <span class="ident">claims</span>: <span class="ident">Box</span><span class="op">&lt;</span><span class="ident">Account</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span>, <span class="ident">Mint</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+    <span class="kw">pub </span>claims: Box&lt;Account&lt;<span class="lifetime">&#39;info</span>, Mint&gt;&gt;,
 
-    <span class="doccomment">/// Mints tokens to a margin account to represent debt that must be collateralized</span>
-    <span class="attribute">#[<span class="ident">account</span>(<span class="ident">init</span>,
-        <span class="ident">seeds</span> <span class="op">=</span> [
-            <span class="ident">seeds::COLLATERAL_NOTES</span>,
-            <span class="ident">bond_manager</span>.<span class="ident">key</span>().<span class="ident">as_ref</span>(),
+    <span class="doccomment">/// Mints tokens to a margin account to represent debt that must be collateralized
+    </span><span class="attribute">#[account(init,
+        seeds = [
+            seeds::COLLATERAL_NOTES,
+            bond_manager.key().as_ref(),
         ]</span>,
-        <span class="ident">bump</span>,
-        <span class="ident">payer</span> <span class="op">=</span> <span class="ident">payer</span>,
-        <span class="ident">mint::decimals</span> <span class="op">=</span> <span class="ident">underlying_token_mint</span>.<span class="ident">decimals</span>,
-        <span class="ident">mint::authority</span> <span class="op">=</span> <span class="ident">bond_manager</span>,
-        <span class="ident">mint::freeze_authority</span> <span class="op">=</span> <span class="ident">bond_manager</span>,
+        bump,
+        payer = payer,
+        mint::decimals = underlying_token_mint.decimals,
+        mint::authority = bond_manager,
+        mint::freeze_authority = bond_manager,
     )]
-    <span class="kw">pub</span> <span class="ident">collateral</span>: <span class="ident">Box</span><span class="op">&lt;</span><span class="ident">Account</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span>, <span class="ident">Mint</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+    <span class="kw">pub </span>collateral: Box&lt;Account&lt;<span class="lifetime">&#39;info</span>, Mint&gt;&gt;,
 
-    <span class="doccomment">/// The authority that must sign to make this change</span>
-    <span class="kw">pub</span> <span class="ident">authority</span>: <span class="ident">Signer</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span>,
+    <span class="doccomment">/// The authority that must sign to make this change
+    </span><span class="kw">pub </span>authority: Signer&lt;<span class="lifetime">&#39;info</span>&gt;,
 
-    <span class="doccomment">/// The airspace being modified</span>
-    <span class="comment">// #[account(has_one = authority @ BondsError::WrongAirspaceAuthorization)] fixme airspace</span>
-    <span class="kw">pub</span> <span class="ident">airspace</span>: <span class="ident">AccountInfo</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span>,
+    <span class="doccomment">/// The airspace being modified
+    </span><span class="comment">// #[account(has_one = authority @ BondsError::WrongAirspaceAuthorization)] fixme airspace
+    </span><span class="kw">pub </span>airspace: AccountInfo&lt;<span class="lifetime">&#39;info</span>&gt;,
 
-    <span class="doccomment">/// The oracle for the underlying asset price</span>
-    <span class="doccomment">/// CHECK: determined by caller</span>
-    <span class="kw">pub</span> <span class="ident">underlying_oracle</span>: <span class="ident">AccountInfo</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span>,
+    <span class="doccomment">/// The oracle for the underlying asset price
+    /// CHECK: determined by caller
+    </span><span class="kw">pub </span>underlying_oracle: AccountInfo&lt;<span class="lifetime">&#39;info</span>&gt;,
 
-    <span class="doccomment">/// The oracle for the bond ticket price</span>
-    <span class="doccomment">/// CHECK: determined by caller</span>
-    <span class="kw">pub</span> <span class="ident">ticket_oracle</span>: <span class="ident">AccountInfo</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span>,
+    <span class="doccomment">/// The oracle for the bond ticket price
+    /// CHECK: determined by caller
+    </span><span class="kw">pub </span>ticket_oracle: AccountInfo&lt;<span class="lifetime">&#39;info</span>&gt;,
 
-    <span class="doccomment">/// The account paying rent for PDA initialization</span>
-    <span class="attribute">#[<span class="ident">account</span>(<span class="kw-2">mut</span>)]</span>
-    <span class="kw">pub</span> <span class="ident">payer</span>: <span class="ident">Signer</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span>,
+    <span class="doccomment">/// The account where fees are allowed to be withdrawn
+    </span><span class="attribute">#[account(token::mint = underlying_token_mint)]
+    </span><span class="kw">pub </span>fee_destination: Box&lt;Account&lt;<span class="lifetime">&#39;info</span>, TokenAccount&gt;&gt;,
 
-    <span class="doccomment">/// Rent sysvar</span>
-    <span class="kw">pub</span> <span class="ident">rent</span>: <span class="ident">Sysvar</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span>, <span class="ident">Rent</span><span class="op">&gt;</span>,
+    <span class="doccomment">/// The account paying rent for PDA initialization
+    </span><span class="attribute">#[account(<span class="kw-2">mut</span>)]
+    </span><span class="kw">pub </span>payer: Signer&lt;<span class="lifetime">&#39;info</span>&gt;,
 
-    <span class="doccomment">/// SPL token program</span>
-    <span class="kw">pub</span> <span class="ident">token_program</span>: <span class="ident">Program</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span>, <span class="ident">Token</span><span class="op">&gt;</span>,
+    <span class="doccomment">/// Rent sysvar
+    </span><span class="kw">pub </span>rent: Sysvar&lt;<span class="lifetime">&#39;info</span>, Rent&gt;,
 
-    <span class="doccomment">/// Solana system program</span>
-    <span class="kw">pub</span> <span class="ident">system_program</span>: <span class="ident">Program</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span>, <span class="ident">System</span><span class="op">&gt;</span>,
+    <span class="doccomment">/// SPL token program
+    </span><span class="kw">pub </span>token_program: Program&lt;<span class="lifetime">&#39;info</span>, Token&gt;,
+
+    <span class="doccomment">/// Solana system program
+    </span><span class="kw">pub </span>system_program: Program&lt;<span class="lifetime">&#39;info</span>, System&gt;,
 }
 
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">handler</span>(
-    <span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">InitializeBondManager</span><span class="op">&gt;</span>,
-    <span class="ident">params</span>: <span class="ident">InitializeBondManagerParams</span>,
-) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="ident">manager</span> <span class="op">=</span> <span class="kw-2">&amp;mut</span> <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">bond_manager</span>.<span class="ident">load_init</span>()<span class="question-mark">?</span>;
-    <span class="macro">init!</span> {
-        <span class="ident">manager</span> <span class="op">=</span> <span class="ident">BondManager</span> {
-            <span class="ident">version_tag</span>: <span class="ident">params</span>.<span class="ident">version_tag</span>,
-            <span class="ident">airspace</span>: <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">airspace</span>.<span class="ident">key</span>(),
-            <span class="ident">underlying_token_mint</span>: <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">underlying_token_mint</span>.<span class="ident">key</span>(),
-            <span class="ident">underlying_token_vault</span>: <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">underlying_token_vault</span>.<span class="ident">key</span>(),
-            <span class="ident">bond_ticket_mint</span>: <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">bond_ticket_mint</span>.<span class="ident">key</span>(),
-            <span class="ident">claims_mint</span>: <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">claims</span>.<span class="ident">key</span>(),
-            <span class="ident">collateral_mint</span>: <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">collateral</span>.<span class="ident">key</span>(),
-            <span class="ident">seed</span>: <span class="ident">params</span>.<span class="ident">seed</span>,
-            <span class="ident">bump</span>: [<span class="kw-2">*</span><span class="ident">ctx</span>.<span class="ident">bumps</span>.<span class="ident">get</span>(<span class="string">&quot;bond_manager&quot;</span>).<span class="ident">unwrap</span>()],
-            <span class="ident">orderbook_paused</span>: <span class="bool-val">false</span>,
-            <span class="ident">tickets_paused</span>: <span class="bool-val">false</span>,
-            <span class="ident">borrow_duration</span>: <span class="ident">params</span>.<span class="ident">borrow_duration</span>,
-            <span class="ident">lend_duration</span>: <span class="ident">params</span>.<span class="ident">lend_duration</span>,
-            <span class="ident">underlying_oracle</span>: <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">underlying_oracle</span>.<span class="ident">key</span>(),
-            <span class="ident">ticket_oracle</span>: <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">ticket_oracle</span>.<span class="ident">key</span>(),
-        } <span class="ident">ignoring</span> {
-            <span class="ident">orderbook_market_state</span>,
-            <span class="ident">event_queue</span>,
-            <span class="ident">asks</span>,
-            <span class="ident">bids</span>,
-            <span class="ident">nonce</span>,
-            <span class="ident">_reserved</span>,
+<span class="kw">pub fn </span>handler(
+    ctx: Context&lt;InitializeBondManager&gt;,
+    params: InitializeBondManagerParams,
+) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+    <span class="kw">let </span>manager = <span class="kw-2">&amp;mut </span>ctx.accounts.bond_manager.load_init()<span class="question-mark">?</span>;
+    <span class="macro">init! </span>{
+        manager = BondManager {
+            version_tag: params.version_tag,
+            airspace: ctx.accounts.airspace.key(),
+            underlying_token_mint: ctx.accounts.underlying_token_mint.key(),
+            underlying_token_vault: ctx.accounts.underlying_token_vault.key(),
+            bond_ticket_mint: ctx.accounts.bond_ticket_mint.key(),
+            claims_mint: ctx.accounts.claims.key(),
+            collateral_mint: ctx.accounts.collateral.key(),
+            seed: params.seed,
+            bump: [<span class="kw-2">*</span>ctx.bumps.get(<span class="string">&quot;bond_manager&quot;</span>).unwrap()],
+            orderbook_paused: <span class="bool-val">false</span>,
+            tickets_paused: <span class="bool-val">false</span>,
+            borrow_duration: params.borrow_duration,
+            lend_duration: params.lend_duration,
+            underlying_oracle: ctx.accounts.underlying_oracle.key(),
+            ticket_oracle: ctx.accounts.ticket_oracle.key(),
+            fee_destination: ctx.accounts.fee_destination.key(),
+            origination_fee: params.origination_fee,
+        } ignoring {
+            orderbook_market_state,
+            event_queue,
+            asks,
+            bids,
+            nonce,
+            collected_fees,
+            _reserved,
         }
     }
-    <span class="macro">emit!</span>(<span class="ident">BondManagerInitialized</span> {
-        <span class="ident">version</span>: <span class="ident">manager</span>.<span class="ident">version_tag</span>,
-        <span class="ident">address</span>: <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">bond_manager</span>.<span class="ident">key</span>(),
-        <span class="ident">underlying_token_mint</span>: <span class="ident">manager</span>.<span class="ident">underlying_token_mint</span>,
-        <span class="ident">borrow_duration</span>: <span class="ident">manager</span>.<span class="ident">borrow_duration</span>,
-        <span class="ident">lend_duration</span>: <span class="ident">manager</span>.<span class="ident">lend_duration</span>,
-        <span class="ident">airspace</span>: <span class="ident">manager</span>.<span class="ident">airspace</span>,
-        <span class="ident">underlying_oracle</span>: <span class="ident">manager</span>.<span class="ident">underlying_oracle</span>,
-        <span class="ident">ticket_oracle</span>: <span class="ident">manager</span>.<span class="ident">ticket_oracle</span>,
+    <span class="macro">emit!</span>(BondManagerInitialized {
+        version: manager.version_tag,
+        address: ctx.accounts.bond_manager.key(),
+        underlying_token_mint: manager.underlying_token_mint,
+        borrow_duration: manager.borrow_duration,
+        lend_duration: manager.lend_duration,
+        airspace: manager.airspace,
+        underlying_oracle: manager.underlying_oracle,
+        ticket_oracle: manager.ticket_oracle,
     });
 
     <span class="prelude-val">Ok</span>(())
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="jet_bonds" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0 (a55dd71d5 2022-09-19)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="jet_bonds" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

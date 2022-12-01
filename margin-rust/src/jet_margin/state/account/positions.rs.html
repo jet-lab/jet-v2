@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `programs/margin/src/state/account/positions.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>positions.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../jet_margin/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../../jet_margin/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../jet_margin/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `programs/margin/src/state/account/positions.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>positions.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../../normalize.css"><link rel="stylesheet" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../../ayu.css" disabled><link rel="stylesheet" href="../../../../dark.css" disabled><link rel="stylesheet" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../jet_margin/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../../jet_margin/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../jet_margin/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -434,441 +434,441 @@
 <span id="434">434</span>
 <span id="435">435</span>
 <span id="436">436</span>
-</pre><pre class="rust"><code><span class="comment">// SPDX-License-Identifier: AGPL-3.0-or-later</span>
-<span class="comment">//</span>
-<span class="comment">// Copyright (C) 2022 JET PROTOCOL HOLDINGS, LLC.</span>
-<span class="comment">//</span>
-<span class="comment">// This program is free software: you can redistribute it and/or modify</span>
-<span class="comment">// it under the terms of the GNU Affero General Public License as published by</span>
-<span class="comment">// the Free Software Foundation, either version 3 of the License, or</span>
-<span class="comment">// (at your option) any later version.</span>
-<span class="comment">//</span>
-<span class="comment">// This program is distributed in the hope that it will be useful,</span>
-<span class="comment">// but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
-<span class="comment">// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
-<span class="comment">// GNU Affero General Public License for more details.</span>
-<span class="comment">//</span>
-<span class="comment">// You should have received a copy of the GNU Affero General Public License</span>
-<span class="comment">// along with this program.  If not, see &lt;https://www.gnu.org/licenses/&gt;.</span>
+</pre><pre class="rust"><code><span class="comment">// SPDX-License-Identifier: AGPL-3.0-or-later
+//
+// Copyright (C) 2022 JET PROTOCOL HOLDINGS, LLC.
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Affero General Public License for more details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program.  If not, see &lt;https://www.gnu.org/licenses/&gt;.
 
-<span class="kw">use</span> <span class="ident">anchor_lang::prelude</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident">bytemuck</span>::{<span class="ident">Contiguous</span>, <span class="ident">Pod</span>, <span class="ident">Zeroable</span>};
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">any</span>(<span class="ident">test</span>, <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;cli&quot;</span>))]</span>
-<span class="kw">use</span> <span class="ident">serde::ser</span>::{<span class="ident">Serialize</span>, <span class="ident">SerializeStruct</span>, <span class="ident">Serializer</span>};
+</span><span class="kw">use </span>anchor_lang::prelude::<span class="kw-2">*</span>;
+<span class="kw">use </span>bytemuck::{Contiguous, Pod, Zeroable};
+<span class="attribute">#[cfg(any(test, feature = <span class="string">&quot;cli&quot;</span>))]
+</span><span class="kw">use </span>serde::ser::{Serialize, SerializeStruct, Serializer};
 
-<span class="kw">use</span> <span class="ident">jet_program_common::Number128</span>;
-<span class="kw">use</span> <span class="ident">jet_program_proc_macros::assert_size</span>;
+<span class="kw">use </span>jet_program_common::Number128;
+<span class="kw">use </span>jet_program_proc_macros::assert_size;
 
-<span class="kw">use</span> <span class="ident">anchor_lang::Result</span> <span class="kw">as</span> <span class="ident">AnchorResult</span>;
-<span class="kw">use</span> <span class="ident">std</span>::{<span class="ident">convert::TryFrom</span>, <span class="ident">result::Result</span>};
+<span class="kw">use </span>anchor_lang::Result <span class="kw">as </span>AnchorResult;
+<span class="kw">use </span>std::{convert::TryFrom, result::Result};
 
-<span class="kw">use</span> <span class="ident"><span class="kw">super</span>::Approver</span>;
-<span class="kw">use</span> <span class="kw">crate</span>::{
-    <span class="ident">syscall</span>::{<span class="ident">sys</span>, <span class="ident">Sys</span>},
-    <span class="ident">ErrorCode</span>, <span class="ident">PriceChangeInfo</span>, <span class="ident">TokenKind</span>, <span class="ident">MAX_ORACLE_CONFIDENCE</span>, <span class="ident">MAX_ORACLE_STALENESS</span>,
+<span class="kw">use </span><span class="kw">super</span>::Approver;
+<span class="kw">use crate</span>::{
+    syscall::{sys, Sys},
+    ErrorCode, PriceChangeInfo, TokenKind, MAX_ORACLE_CONFIDENCE, MAX_ORACLE_STALENESS,
 };
 
-<span class="kw">const</span> <span class="ident">POS_PRICE_VALID</span>: <span class="ident">u8</span> <span class="op">=</span> <span class="number">1</span>;
+<span class="kw">const </span>POS_PRICE_VALID: u8 = <span class="number">1</span>;
 
-<span class="attribute">#[<span class="ident">assert_size</span>(<span class="number">24</span>)]</span>
-<span class="attribute">#[<span class="ident">derive</span>(
-    <span class="ident">Pod</span>, <span class="ident">Zeroable</span>, <span class="ident">AnchorSerialize</span>, <span class="ident">AnchorDeserialize</span>, <span class="ident">Debug</span>, <span class="ident">Default</span>, <span class="ident">Clone</span>, <span class="ident">Copy</span>, <span class="ident">Eq</span>, <span class="ident">PartialEq</span>,
-)]</span>
-<span class="attribute">#[<span class="ident">cfg_attr</span>(
-    <span class="ident">any</span>(<span class="ident">test</span>, <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;cli&quot;</span>),
-    <span class="ident">derive</span>(<span class="ident">serde::Serialize</span>),
-    <span class="ident">serde</span>(<span class="ident">rename_all</span> <span class="op">=</span> <span class="string">&quot;camelCase&quot;</span>)
-)]</span>
-<span class="attribute">#[<span class="ident">repr</span>(<span class="ident">C</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">PriceInfo</span> {
-    <span class="doccomment">/// The current price</span>
-    <span class="kw">pub</span> <span class="ident">value</span>: <span class="ident">i64</span>,
+<span class="attribute">#[assert_size(<span class="number">24</span>)]
+#[derive(
+    Pod, Zeroable, AnchorSerialize, AnchorDeserialize, Debug, Default, Clone, Copy, Eq, PartialEq,
+)]
+#[cfg_attr(
+    any(test, feature = <span class="string">&quot;cli&quot;</span>),
+    derive(serde::Serialize),
+    serde(rename_all = <span class="string">&quot;camelCase&quot;</span>)
+)]
+#[repr(C)]
+</span><span class="kw">pub struct </span>PriceInfo {
+    <span class="doccomment">/// The current price
+    </span><span class="kw">pub </span>value: i64,
 
-    <span class="doccomment">/// The timestamp the price was valid at</span>
-    <span class="kw">pub</span> <span class="ident">timestamp</span>: <span class="ident">u64</span>,
+    <span class="doccomment">/// The timestamp the price was valid at
+    </span><span class="kw">pub </span>timestamp: u64,
 
-    <span class="doccomment">/// The exponent for the price value</span>
-    <span class="kw">pub</span> <span class="ident">exponent</span>: <span class="ident">i32</span>,
+    <span class="doccomment">/// The exponent for the price value
+    </span><span class="kw">pub </span>exponent: i32,
 
-    <span class="doccomment">/// Flag indicating if the price is valid for the position</span>
-    <span class="kw">pub</span> <span class="ident">is_valid</span>: <span class="ident">u8</span>,
+    <span class="doccomment">/// Flag indicating if the price is valid for the position
+    </span><span class="kw">pub </span>is_valid: u8,
 
-    <span class="attribute">#[<span class="ident">cfg_attr</span>(<span class="ident">any</span>(<span class="ident">test</span>, <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;cli&quot;</span>), <span class="ident">serde</span>(<span class="ident">skip_serializing</span>))]</span>
-    <span class="kw">pub</span> <span class="ident">_reserved</span>: [<span class="ident">u8</span>; <span class="number">3</span>],
+    <span class="attribute">#[cfg_attr(any(test, feature = <span class="string">&quot;cli&quot;</span>), serde(skip_serializing))]
+    </span><span class="kw">pub </span>_reserved: [u8; <span class="number">3</span>],
 }
 
-<span class="kw">impl</span> <span class="ident">PriceInfo</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new_valid</span>(<span class="ident">exponent</span>: <span class="ident">i32</span>, <span class="ident">value</span>: <span class="ident">i64</span>, <span class="ident">timestamp</span>: <span class="ident">u64</span>) -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span> {
-            <span class="ident">value</span>,
-            <span class="ident">exponent</span>,
-            <span class="ident">timestamp</span>,
-            <span class="ident">is_valid</span>: <span class="ident">POS_PRICE_VALID</span>,
-            <span class="ident">_reserved</span>: [<span class="number">0u8</span>; <span class="number">3</span>],
+<span class="kw">impl </span>PriceInfo {
+    <span class="kw">pub fn </span>new_valid(exponent: i32, value: i64, timestamp: u64) -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            value,
+            exponent,
+            timestamp,
+            is_valid: POS_PRICE_VALID,
+            _reserved: [<span class="number">0u8</span>; <span class="number">3</span>],
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new_invalid</span>() -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span> {
-            <span class="ident">value</span>: <span class="number">0</span>,
-            <span class="ident">exponent</span>: <span class="number">0</span>,
-            <span class="ident">timestamp</span>: <span class="number">0</span>,
-            <span class="ident">is_valid</span>: <span class="number">0</span>,
-            <span class="ident">_reserved</span>: [<span class="number">0u8</span>; <span class="number">3</span>],
+    <span class="kw">pub fn </span>new_invalid() -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            value: <span class="number">0</span>,
+            exponent: <span class="number">0</span>,
+            timestamp: <span class="number">0</span>,
+            is_valid: <span class="number">0</span>,
+            _reserved: [<span class="number">0u8</span>; <span class="number">3</span>],
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">is_valid</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-        <span class="self">self</span>.<span class="ident">is_valid</span> <span class="op">==</span> <span class="ident">POS_PRICE_VALID</span>
+    <span class="kw">pub fn </span>is_valid(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="self">self</span>.is_valid == POS_PRICE_VALID
     }
 }
 
-<span class="kw">impl</span> <span class="ident">TryFrom</span><span class="op">&lt;</span><span class="ident">PriceChangeInfo</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">PriceInfo</span> {
-    <span class="kw">type</span> <span class="ident">Error</span> <span class="op">=</span> <span class="ident">anchor_lang::error::Error</span>;
+<span class="kw">impl </span>TryFrom&lt;PriceChangeInfo&gt; <span class="kw">for </span>PriceInfo {
+    <span class="kw">type </span>Error = anchor_lang::error::Error;
 
-    <span class="kw">fn</span> <span class="ident">try_from</span>(<span class="ident">value</span>: <span class="ident">PriceChangeInfo</span>) -&gt; <span class="ident">AnchorResult</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">clock</span> <span class="op">=</span> <span class="ident">Clock::get</span>()<span class="question-mark">?</span>;
-        <span class="kw">let</span> <span class="ident">max_confidence</span> <span class="op">=</span> <span class="ident">Number128::from_bps</span>(<span class="ident">MAX_ORACLE_CONFIDENCE</span>);
+    <span class="kw">fn </span>try_from(value: PriceChangeInfo) -&gt; AnchorResult&lt;<span class="self">Self</span>&gt; {
+        <span class="kw">let </span>clock = Clock::get()<span class="question-mark">?</span>;
+        <span class="kw">let </span>max_confidence = Number128::from_bps(MAX_ORACLE_CONFIDENCE);
 
-        <span class="kw">let</span> <span class="ident">twap</span> <span class="op">=</span> <span class="ident">Number128::from_decimal</span>(<span class="ident">value</span>.<span class="ident">twap</span>, <span class="ident">value</span>.<span class="ident">exponent</span>);
-        <span class="kw">let</span> <span class="ident">confidence</span> <span class="op">=</span> <span class="ident">Number128::from_decimal</span>(<span class="ident">value</span>.<span class="ident">confidence</span>, <span class="ident">value</span>.<span class="ident">exponent</span>);
+        <span class="kw">let </span>twap = Number128::from_decimal(value.twap, value.exponent);
+        <span class="kw">let </span>confidence = Number128::from_decimal(value.confidence, value.exponent);
 
-        <span class="kw">if</span> <span class="ident">twap</span> <span class="op">==</span> <span class="ident">Number128::ZERO</span> {
+        <span class="kw">if </span>twap == Number128::ZERO {
             <span class="macro">msg!</span>(<span class="string">&quot;avg price cannot be zero&quot;</span>);
-            <span class="kw">return</span> <span class="macro">err!</span>(<span class="ident">ErrorCode::InvalidPrice</span>);
+            <span class="kw">return </span><span class="macro">err!</span>(ErrorCode::InvalidPrice);
         }
 
-        <span class="kw">let</span> <span class="ident">price</span> <span class="op">=</span> <span class="kw">match</span> (<span class="ident">confidence</span>, <span class="ident">value</span>.<span class="ident">publish_time</span>) {
-            (<span class="ident">c</span>, <span class="kw">_</span>) <span class="kw">if</span> (<span class="ident">c</span> <span class="op">/</span> <span class="ident">twap</span>) <span class="op">&gt;</span> <span class="ident">max_confidence</span> =&gt; {
+        <span class="kw">let </span>price = <span class="kw">match </span>(confidence, value.publish_time) {
+            (c, <span class="kw">_</span>) <span class="kw">if </span>(c / twap) &gt; max_confidence =&gt; {
                 <span class="macro">msg!</span>(<span class="string">&quot;price confidence exceeding max&quot;</span>);
-                <span class="ident">PriceInfo::new_invalid</span>()
+                PriceInfo::new_invalid()
             }
-            (<span class="kw">_</span>, <span class="ident">publish_time</span>) <span class="kw">if</span> (<span class="ident">clock</span>.<span class="ident">unix_timestamp</span> <span class="op">-</span> <span class="ident">publish_time</span>) <span class="op">&gt;</span> <span class="ident">MAX_ORACLE_STALENESS</span> =&gt; {
+            (<span class="kw">_</span>, publish_time) <span class="kw">if </span>(clock.unix_timestamp - publish_time) &gt; MAX_ORACLE_STALENESS =&gt; {
                 <span class="macro">msg!</span>(
                     <span class="string">&quot;price timestamp is too old/stale. published: {}, now: {}&quot;</span>,
-                    <span class="ident">publish_time</span>,
-                    <span class="ident">clock</span>.<span class="ident">unix_timestamp</span>
+                    publish_time,
+                    clock.unix_timestamp
                 );
-                <span class="ident">PriceInfo::new_invalid</span>()
+                PriceInfo::new_invalid()
             }
-            <span class="kw">_</span> =&gt; <span class="ident">PriceInfo::new_valid</span>(<span class="ident">value</span>.<span class="ident">exponent</span>, <span class="ident">value</span>.<span class="ident">value</span>, <span class="ident">clock</span>.<span class="ident">unix_timestamp</span> <span class="kw">as</span> <span class="ident">u64</span>),
+            <span class="kw">_ </span>=&gt; PriceInfo::new_valid(value.exponent, value.value, clock.unix_timestamp <span class="kw">as </span>u64),
         };
 
-        <span class="prelude-val">Ok</span>(<span class="ident">price</span>)
+        <span class="prelude-val">Ok</span>(price)
     }
 }
 
-<span class="attribute">#[<span class="ident">assert_size</span>(<span class="number">192</span>)]</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Pod</span>, <span class="ident">Zeroable</span>, <span class="ident">AnchorSerialize</span>, <span class="ident">AnchorDeserialize</span>, <span class="ident">Default</span>, <span class="ident">Clone</span>, <span class="ident">Copy</span>)]</span>
-<span class="attribute">#[<span class="ident">repr</span>(<span class="ident">C</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">AccountPosition</span> {
-    <span class="doccomment">/// The address of the token/mint of the asset</span>
-    <span class="kw">pub</span> <span class="ident">token</span>: <span class="ident">Pubkey</span>,
+<span class="attribute">#[assert_size(<span class="number">192</span>)]
+#[derive(Pod, Zeroable, AnchorSerialize, AnchorDeserialize, Default, Clone, Copy)]
+#[repr(C)]
+</span><span class="kw">pub struct </span>AccountPosition {
+    <span class="doccomment">/// The address of the token/mint of the asset
+    </span><span class="kw">pub </span>token: Pubkey,
 
-    <span class="doccomment">/// The address of the account holding the tokens.</span>
-    <span class="kw">pub</span> <span class="ident">address</span>: <span class="ident">Pubkey</span>,
+    <span class="doccomment">/// The address of the account holding the tokens.
+    </span><span class="kw">pub </span>address: Pubkey,
 
-    <span class="doccomment">/// The address of the adapter managing the asset</span>
-    <span class="kw">pub</span> <span class="ident">adapter</span>: <span class="ident">Pubkey</span>,
+    <span class="doccomment">/// The address of the adapter managing the asset
+    </span><span class="kw">pub </span>adapter: Pubkey,
 
-    <span class="doccomment">/// The current value of this position, stored as a `Number128` with fixed precision.</span>
-    <span class="kw">pub</span> <span class="ident">value</span>: [<span class="ident">u8</span>; <span class="number">16</span>],
+    <span class="doccomment">/// The current value of this position, stored as a `Number128` with fixed precision.
+    </span><span class="kw">pub </span>value: [u8; <span class="number">16</span>],
 
-    <span class="doccomment">/// The amount of tokens in the account</span>
-    <span class="kw">pub</span> <span class="ident">balance</span>: <span class="ident">u64</span>,
+    <span class="doccomment">/// The amount of tokens in the account
+    </span><span class="kw">pub </span>balance: u64,
 
-    <span class="doccomment">/// The timestamp of the last balance update</span>
-    <span class="kw">pub</span> <span class="ident">balance_timestamp</span>: <span class="ident">u64</span>,
+    <span class="doccomment">/// The timestamp of the last balance update
+    </span><span class="kw">pub </span>balance_timestamp: u64,
 
-    <span class="doccomment">/// The current price/value of each token</span>
-    <span class="kw">pub</span> <span class="ident">price</span>: <span class="ident">PriceInfo</span>,
+    <span class="doccomment">/// The current price/value of each token
+    </span><span class="kw">pub </span>price: PriceInfo,
 
-    <span class="doccomment">/// The kind of balance this position contains</span>
-    <span class="kw">pub</span> <span class="ident">kind</span>: <span class="ident">u32</span>,
+    <span class="doccomment">/// The kind of balance this position contains
+    </span><span class="kw">pub </span>kind: u32,
 
-    <span class="doccomment">/// The exponent for the token value</span>
-    <span class="kw">pub</span> <span class="ident">exponent</span>: <span class="ident">i16</span>,
+    <span class="doccomment">/// The exponent for the token value
+    </span><span class="kw">pub </span>exponent: i16,
 
-    <span class="doccomment">/// A weight on the value of this asset when counting collateral</span>
-    <span class="kw">pub</span> <span class="ident">value_modifier</span>: <span class="ident">u16</span>,
+    <span class="doccomment">/// A weight on the value of this asset when counting collateral
+    </span><span class="kw">pub </span>value_modifier: u16,
 
-    <span class="doccomment">/// The max staleness for the account balance (seconds)</span>
-    <span class="kw">pub</span> <span class="ident">max_staleness</span>: <span class="ident">u64</span>,
+    <span class="doccomment">/// The max staleness for the account balance (seconds)
+    </span><span class="kw">pub </span>max_staleness: u64,
 
-    <span class="doccomment">/// Flags that are set by the adapter</span>
-    <span class="kw">pub</span> <span class="ident">flags</span>: <span class="ident">AdapterPositionFlags</span>,
+    <span class="doccomment">/// Flags that are set by the adapter
+    </span><span class="kw">pub </span>flags: AdapterPositionFlags,
 
-    <span class="doccomment">/// Unused</span>
-    <span class="kw">pub</span> <span class="ident">_reserved</span>: [<span class="ident">u8</span>; <span class="number">23</span>],
+    <span class="doccomment">/// Unused
+    </span><span class="kw">pub </span>_reserved: [u8; <span class="number">23</span>],
 }
 
-<span class="macro">bitflags::bitflags!</span> {
-    <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Zeroable</span>, <span class="ident">AnchorSerialize</span>, <span class="ident">AnchorDeserialize</span>, <span class="ident">Default</span>)]</span>
-    <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">AdapterPositionFlags</span>: <span class="ident">u8</span> {
-        <span class="doccomment">/// The position may never be removed by the user, even if the balance remains at zero,</span>
-        <span class="doccomment">/// until the adapter explicitly unsets this flag.</span>
-        <span class="kw">const</span> <span class="ident">REQUIRED</span> <span class="op">=</span> <span class="number">1</span> <span class="op">&lt;</span><span class="op">&lt;</span> <span class="number">0</span>;
+<span class="macro">bitflags::bitflags! </span>{
+    <span class="attribute">#[derive(Zeroable, AnchorSerialize, AnchorDeserialize, Default)]
+    </span><span class="kw">pub struct </span>AdapterPositionFlags: u8 {
+        <span class="doccomment">/// The position may never be removed by the user, even if the balance remains at zero,
+        /// until the adapter explicitly unsets this flag.
+        </span><span class="kw">const </span>REQUIRED = <span class="number">1 </span>&lt;&lt; <span class="number">0</span>;
 
-        <span class="doccomment">/// Only applies to claims.</span>
-        <span class="doccomment">/// For any other position, this can be set, but it will be ignored.</span>
-        <span class="doccomment">/// The claim must be repaid immediately.</span>
-        <span class="doccomment">/// The account will be considered unhealty if there is any balance on this position.</span>
-        <span class="kw">const</span> <span class="ident">PAST_DUE</span> <span class="op">=</span> <span class="number">1</span> <span class="op">&lt;</span><span class="op">&lt;</span> <span class="number">1</span>;
-    }
-}
-
-<span class="kw">mod</span> <span class="ident">_idl</span> {
-    <span class="kw">use</span> <span class="kw">super</span>::<span class="kw-2">*</span>;
-
-    <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Zeroable</span>, <span class="ident">AnchorSerialize</span>, <span class="ident">AnchorDeserialize</span>, <span class="ident">Default</span>)]</span>
-    <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">AdapterPositionFlags</span> {
-        <span class="kw">pub</span> <span class="ident">flags</span>: <span class="ident">u8</span>,
+        <span class="doccomment">/// Only applies to claims.
+        /// For any other position, this can be set, but it will be ignored.
+        /// The claim must be repaid immediately.
+        /// The account will be considered unhealty if there is any balance on this position.
+        </span><span class="kw">const </span>PAST_DUE = <span class="number">1 </span>&lt;&lt; <span class="number">1</span>;
     }
 }
 
-<span class="comment">// `AdapterPositionFlags` fits requriements for `Pod`, but bitflags macro makes auto-deriving it problematic</span>
-<span class="kw">unsafe</span> <span class="kw">impl</span> <span class="ident">Pod</span> <span class="kw">for</span> <span class="ident">AdapterPositionFlags</span> {}
+<span class="kw">mod </span>_idl {
+    <span class="kw">use super</span>::<span class="kw-2">*</span>;
 
-<span class="kw">impl</span> <span class="ident">AccountPosition</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">kind</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">TokenKind</span> {
-        <span class="ident">TokenKind::from_integer</span>(<span class="self">self</span>.<span class="ident">kind</span>).<span class="ident">unwrap_or_default</span>()
+    <span class="attribute">#[derive(Zeroable, AnchorSerialize, AnchorDeserialize, Default)]
+    </span><span class="kw">pub struct </span>AdapterPositionFlags {
+        <span class="kw">pub </span>flags: u8,
+    }
+}
+
+<span class="comment">// `AdapterPositionFlags` fits requriements for `Pod`, but bitflags macro makes auto-deriving it problematic
+</span><span class="kw">unsafe impl </span>Pod <span class="kw">for </span>AdapterPositionFlags {}
+
+<span class="kw">impl </span>AccountPosition {
+    <span class="kw">pub fn </span>kind(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; TokenKind {
+        TokenKind::from_integer(<span class="self">self</span>.kind).unwrap_or_default()
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">calculate_value</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) {
-        <span class="self">self</span>.<span class="ident">value</span> <span class="op">=</span> (<span class="ident">Number128::from_decimal</span>(<span class="self">self</span>.<span class="ident">balance</span>, <span class="self">self</span>.<span class="ident">exponent</span>)
-            <span class="op">*</span> <span class="ident">Number128::from_decimal</span>(<span class="self">self</span>.<span class="ident">price</span>.<span class="ident">value</span>, <span class="self">self</span>.<span class="ident">price</span>.<span class="ident">exponent</span>))
-        .<span class="ident">into_bits</span>();
+    <span class="kw">pub fn </span>calculate_value(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+        <span class="self">self</span>.value = (Number128::from_decimal(<span class="self">self</span>.balance, <span class="self">self</span>.exponent)
+            * Number128::from_decimal(<span class="self">self</span>.price.value, <span class="self">self</span>.price.exponent))
+        .into_bits();
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">value</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Number128</span> {
-        <span class="ident">Number128::from_bits</span>(<span class="self">self</span>.<span class="ident">value</span>)
+    <span class="kw">pub fn </span>value(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Number128 {
+        Number128::from_bits(<span class="self">self</span>.value)
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">collateral_value</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Number128</span> {
+    <span class="kw">pub fn </span>collateral_value(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Number128 {
         <span class="macro">assert!</span>(
-            <span class="self">self</span>.<span class="ident">kind</span>() <span class="op">==</span> <span class="ident">TokenKind::Collateral</span> <span class="op">|</span><span class="op">|</span> <span class="self">self</span>.<span class="ident">kind</span>() <span class="op">==</span> <span class="ident">TokenKind::AdapterCollateral</span>
+            <span class="self">self</span>.kind() == TokenKind::Collateral || <span class="self">self</span>.kind() == TokenKind::AdapterCollateral
         );
 
-        <span class="ident">Number128::from_decimal</span>(<span class="self">self</span>.<span class="ident">value_modifier</span>, <span class="op">-</span><span class="number">2</span>) <span class="op">*</span> <span class="self">self</span>.<span class="ident">value</span>()
+        Number128::from_decimal(<span class="self">self</span>.value_modifier, -<span class="number">2</span>) * <span class="self">self</span>.value()
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">required_collateral_value</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Number128</span> {
-        <span class="macro">assert_eq!</span>(<span class="self">self</span>.<span class="ident">kind</span>(), <span class="ident">TokenKind::Claim</span>);
+    <span class="kw">pub fn </span>required_collateral_value(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Number128 {
+        <span class="macro">assert_eq!</span>(<span class="self">self</span>.kind(), TokenKind::Claim);
 
-        <span class="kw">let</span> <span class="ident">modifier</span> <span class="op">=</span> <span class="ident">Number128::from_decimal</span>(<span class="self">self</span>.<span class="ident">value_modifier</span>, <span class="op">-</span><span class="number">2</span>);
+        <span class="kw">let </span>modifier = Number128::from_decimal(<span class="self">self</span>.value_modifier, -<span class="number">2</span>);
 
-        <span class="kw">if</span> <span class="ident">modifier</span> <span class="op">==</span> <span class="ident">Number128::ZERO</span> {
-            <span class="macro">msg!</span>(<span class="string">&quot;no leverage configured for claim {}&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">token</span>);
-            <span class="ident">Number128::MAX</span>
-        } <span class="kw">else</span> {
-            <span class="self">self</span>.<span class="ident">value</span>() <span class="op">/</span> <span class="ident">modifier</span>
+        <span class="kw">if </span>modifier == Number128::ZERO {
+            <span class="macro">msg!</span>(<span class="string">&quot;no leverage configured for claim {}&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.token);
+            Number128::MAX
+        } <span class="kw">else </span>{
+            <span class="self">self</span>.value() / modifier
         }
     }
 
-    <span class="doccomment">/// Update the balance for this position</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">set_balance</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">balance</span>: <span class="ident">u64</span>) {
-        <span class="self">self</span>.<span class="ident">balance</span> <span class="op">=</span> <span class="ident">balance</span>;
-        <span class="self">self</span>.<span class="ident">balance_timestamp</span> <span class="op">=</span> <span class="ident">sys</span>().<span class="ident">unix_timestamp</span>();
-        <span class="self">self</span>.<span class="ident">calculate_value</span>();
+    <span class="doccomment">/// Update the balance for this position
+    </span><span class="kw">pub fn </span>set_balance(<span class="kw-2">&amp;mut </span><span class="self">self</span>, balance: u64) {
+        <span class="self">self</span>.balance = balance;
+        <span class="self">self</span>.balance_timestamp = sys().unix_timestamp();
+        <span class="self">self</span>.calculate_value();
     }
 
-    <span class="doccomment">/// Update the price for this position</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">set_price</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">price</span>: <span class="kw-2">&amp;</span><span class="ident">PriceInfo</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">ErrorCode</span><span class="op">&gt;</span> {
-        <span class="self">self</span>.<span class="ident">price</span> <span class="op">=</span> <span class="kw-2">*</span><span class="ident">price</span>;
-        <span class="self">self</span>.<span class="ident">calculate_value</span>();
+    <span class="doccomment">/// Update the price for this position
+    </span><span class="kw">pub fn </span>set_price(<span class="kw-2">&amp;mut </span><span class="self">self</span>, price: <span class="kw-2">&amp;</span>PriceInfo) -&gt; <span class="prelude-ty">Result</span>&lt;(), ErrorCode&gt; {
+        <span class="self">self</span>.price = <span class="kw-2">*</span>price;
+        <span class="self">self</span>.calculate_value();
 
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">may_be_registered_or_closed</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">approvals</span>: <span class="kw-2">&amp;</span>[<span class="ident">Approver</span>]) -&gt; <span class="ident">bool</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">authority_approved</span> <span class="op">=</span> <span class="bool-val">false</span>;
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">adapter_approved</span> <span class="op">=</span> <span class="bool-val">false</span>;
+    <span class="kw">pub fn </span>may_be_registered_or_closed(<span class="kw-2">&amp;</span><span class="self">self</span>, approvals: <span class="kw-2">&amp;</span>[Approver]) -&gt; bool {
+        <span class="kw">let </span><span class="kw-2">mut </span>authority_approved = <span class="bool-val">false</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>adapter_approved = <span class="bool-val">false</span>;
 
-        <span class="kw">for</span> <span class="ident">approval</span> <span class="kw">in</span> <span class="ident">approvals</span> {
-            <span class="kw">match</span> <span class="ident">approval</span> {
-                <span class="ident">Approver::MarginAccountAuthority</span> =&gt; <span class="ident">authority_approved</span> <span class="op">=</span> <span class="bool-val">true</span>,
-                <span class="ident">Approver::Adapter</span>(<span class="ident">approving_adapter</span>) =&gt; {
-                    <span class="ident">adapter_approved</span> <span class="op">=</span> <span class="kw-2">*</span><span class="ident">approving_adapter</span> <span class="op">==</span> <span class="self">self</span>.<span class="ident">adapter</span>
+        <span class="kw">for </span>approval <span class="kw">in </span>approvals {
+            <span class="kw">match </span>approval {
+                Approver::MarginAccountAuthority =&gt; authority_approved = <span class="bool-val">true</span>,
+                Approver::Adapter(approving_adapter) =&gt; {
+                    adapter_approved = <span class="kw-2">*</span>approving_adapter == <span class="self">self</span>.adapter
                 }
             }
         }
 
-        <span class="kw">match</span> <span class="self">self</span>.<span class="ident">kind</span>() {
-            <span class="ident">TokenKind::Collateral</span> =&gt; <span class="ident">authority_approved</span> <span class="op">&amp;&amp;</span> <span class="op">!</span><span class="ident">adapter_approved</span>,
-            <span class="ident">TokenKind::Claim</span> <span class="op">|</span> <span class="ident">TokenKind::AdapterCollateral</span> =&gt; {
-                <span class="ident">authority_approved</span> <span class="op">&amp;&amp;</span> <span class="ident">adapter_approved</span>
+        <span class="kw">match </span><span class="self">self</span>.kind() {
+            TokenKind::Collateral =&gt; authority_approved &amp;&amp; !adapter_approved,
+            TokenKind::Claim | TokenKind::AdapterCollateral =&gt; {
+                authority_approved &amp;&amp; adapter_approved
             }
         }
     }
 }
 
-<span class="kw">impl</span> <span class="ident">std::fmt::Debug</span> <span class="kw">for</span> <span class="ident">AccountPosition</span> {
-    <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="kw-2">&amp;mut</span> <span class="ident">std::fmt::Formatter</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">std::fmt::Error</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">acc</span> <span class="op">=</span> <span class="ident">f</span>.<span class="ident">debug_struct</span>(<span class="string">&quot;AccountPosition&quot;</span>);
-        <span class="ident">acc</span>.<span class="ident">field</span>(<span class="string">&quot;token&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">token</span>)
-            .<span class="ident">field</span>(<span class="string">&quot;address&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">address</span>)
-            .<span class="ident">field</span>(<span class="string">&quot;adapter&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">adapter</span>)
-            .<span class="ident">field</span>(<span class="string">&quot;value&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">value</span>().<span class="ident">to_string</span>())
-            .<span class="ident">field</span>(<span class="string">&quot;balance&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">balance</span>)
-            .<span class="ident">field</span>(<span class="string">&quot;balance_timestamp&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">balance_timestamp</span>)
-            .<span class="ident">field</span>(<span class="string">&quot;price&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">price</span>)
-            .<span class="ident">field</span>(<span class="string">&quot;kind&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">kind</span>())
-            .<span class="ident">field</span>(<span class="string">&quot;exponent&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">exponent</span>)
-            .<span class="ident">field</span>(<span class="string">&quot;value_modifier&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">value_modifier</span>)
-            .<span class="ident">field</span>(<span class="string">&quot;max_staleness&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">max_staleness</span>);
+<span class="kw">impl </span>std::fmt::Debug <span class="kw">for </span>AccountPosition {
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>std::fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;(), std::fmt::Error&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>acc = f.debug_struct(<span class="string">&quot;AccountPosition&quot;</span>);
+        acc.field(<span class="string">&quot;token&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.token)
+            .field(<span class="string">&quot;address&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.address)
+            .field(<span class="string">&quot;adapter&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.adapter)
+            .field(<span class="string">&quot;value&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.value().to_string())
+            .field(<span class="string">&quot;balance&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.balance)
+            .field(<span class="string">&quot;balance_timestamp&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.balance_timestamp)
+            .field(<span class="string">&quot;price&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.price)
+            .field(<span class="string">&quot;kind&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.kind())
+            .field(<span class="string">&quot;exponent&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.exponent)
+            .field(<span class="string">&quot;value_modifier&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.value_modifier)
+            .field(<span class="string">&quot;max_staleness&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.max_staleness);
 
-        <span class="ident">acc</span>.<span class="ident">finish</span>()
+        acc.finish()
     }
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">any</span>(<span class="ident">test</span>, <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;cli&quot;</span>))]</span>
-<span class="kw">impl</span> <span class="ident">Serialize</span> <span class="kw">for</span> <span class="ident">TokenKind</span> {
-    <span class="kw">fn</span> <span class="ident">serialize</span><span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">serializer</span>: <span class="ident">S</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">S::Ok</span>, <span class="ident">S::Error</span><span class="op">&gt;</span>
-    <span class="kw">where</span>
-        <span class="ident">S</span>: <span class="ident">Serializer</span>,
+<span class="attribute">#[cfg(any(test, feature = <span class="string">&quot;cli&quot;</span>))]
+</span><span class="kw">impl </span>Serialize <span class="kw">for </span>TokenKind {
+    <span class="kw">fn </span>serialize&lt;S&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, serializer: S) -&gt; <span class="prelude-ty">Result</span>&lt;S::Ok, S::Error&gt;
+    <span class="kw">where
+        </span>S: Serializer,
     {
-        <span class="ident">serializer</span>.<span class="ident">serialize_str</span>(<span class="kw">match</span> <span class="kw-2">*</span><span class="self">self</span> {
-            <span class="ident">TokenKind::Claim</span> =&gt; <span class="string">&quot;Claim&quot;</span>,
-            <span class="ident">TokenKind::Collateral</span> =&gt; <span class="string">&quot;Collateral&quot;</span>,
-            <span class="ident">TokenKind::AdapterCollateral</span> =&gt; <span class="string">&quot;AdapterCollateral&quot;</span>,
+        serializer.serialize_str(<span class="kw">match </span><span class="kw-2">*</span><span class="self">self </span>{
+            TokenKind::Claim =&gt; <span class="string">&quot;Claim&quot;</span>,
+            TokenKind::Collateral =&gt; <span class="string">&quot;Collateral&quot;</span>,
+            TokenKind::AdapterCollateral =&gt; <span class="string">&quot;AdapterCollateral&quot;</span>,
         })
     }
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">any</span>(<span class="ident">test</span>, <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;cli&quot;</span>))]</span>
-<span class="kw">impl</span> <span class="ident">Serialize</span> <span class="kw">for</span> <span class="ident">AccountPosition</span> {
-    <span class="kw">fn</span> <span class="ident">serialize</span><span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">serializer</span>: <span class="ident">S</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">S::Ok</span>, <span class="ident">S::Error</span><span class="op">&gt;</span>
-    <span class="kw">where</span>
-        <span class="ident">S</span>: <span class="ident">Serializer</span>,
+<span class="attribute">#[cfg(any(test, feature = <span class="string">&quot;cli&quot;</span>))]
+</span><span class="kw">impl </span>Serialize <span class="kw">for </span>AccountPosition {
+    <span class="kw">fn </span>serialize&lt;S&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, serializer: S) -&gt; <span class="prelude-ty">Result</span>&lt;S::Ok, S::Error&gt;
+    <span class="kw">where
+        </span>S: Serializer,
     {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">s</span> <span class="op">=</span> <span class="ident">serializer</span>.<span class="ident">serialize_struct</span>(<span class="string">&quot;AccountPosition&quot;</span>, <span class="number">11</span>)<span class="question-mark">?</span>;
-        <span class="ident">s</span>.<span class="ident">serialize_field</span>(<span class="string">&quot;address&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">address</span>.<span class="ident">to_string</span>())<span class="question-mark">?</span>;
-        <span class="ident">s</span>.<span class="ident">serialize_field</span>(<span class="string">&quot;token&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">token</span>.<span class="ident">to_string</span>())<span class="question-mark">?</span>;
-        <span class="ident">s</span>.<span class="ident">serialize_field</span>(<span class="string">&quot;adapter&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">adapter</span>.<span class="ident">to_string</span>())<span class="question-mark">?</span>;
-        <span class="ident">s</span>.<span class="ident">serialize_field</span>(<span class="string">&quot;value&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">value</span>().<span class="ident">to_string</span>())<span class="question-mark">?</span>;
-        <span class="ident">s</span>.<span class="ident">serialize_field</span>(<span class="string">&quot;balance&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">balance</span>)<span class="question-mark">?</span>;
-        <span class="ident">s</span>.<span class="ident">serialize_field</span>(<span class="string">&quot;balanceTimestamp&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">balance_timestamp</span>)<span class="question-mark">?</span>;
-        <span class="ident">s</span>.<span class="ident">serialize_field</span>(<span class="string">&quot;price&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">price</span>)<span class="question-mark">?</span>;
-        <span class="ident">s</span>.<span class="ident">serialize_field</span>(<span class="string">&quot;kind&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">kind</span>())<span class="question-mark">?</span>;
-        <span class="ident">s</span>.<span class="ident">serialize_field</span>(<span class="string">&quot;exponent&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">exponent</span>)<span class="question-mark">?</span>;
-        <span class="ident">s</span>.<span class="ident">serialize_field</span>(<span class="string">&quot;valueModifier&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">value_modifier</span>)<span class="question-mark">?</span>;
-        <span class="ident">s</span>.<span class="ident">serialize_field</span>(<span class="string">&quot;maxStaleness&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">max_staleness</span>)<span class="question-mark">?</span>;
-        <span class="ident">s</span>.<span class="ident">end</span>()
+        <span class="kw">let </span><span class="kw-2">mut </span>s = serializer.serialize_struct(<span class="string">&quot;AccountPosition&quot;</span>, <span class="number">11</span>)<span class="question-mark">?</span>;
+        s.serialize_field(<span class="string">&quot;address&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.address.to_string())<span class="question-mark">?</span>;
+        s.serialize_field(<span class="string">&quot;token&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.token.to_string())<span class="question-mark">?</span>;
+        s.serialize_field(<span class="string">&quot;adapter&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.adapter.to_string())<span class="question-mark">?</span>;
+        s.serialize_field(<span class="string">&quot;value&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.value().to_string())<span class="question-mark">?</span>;
+        s.serialize_field(<span class="string">&quot;balance&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.balance)<span class="question-mark">?</span>;
+        s.serialize_field(<span class="string">&quot;balanceTimestamp&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.balance_timestamp)<span class="question-mark">?</span>;
+        s.serialize_field(<span class="string">&quot;price&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.price)<span class="question-mark">?</span>;
+        s.serialize_field(<span class="string">&quot;kind&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.kind())<span class="question-mark">?</span>;
+        s.serialize_field(<span class="string">&quot;exponent&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.exponent)<span class="question-mark">?</span>;
+        s.serialize_field(<span class="string">&quot;valueModifier&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.value_modifier)<span class="question-mark">?</span>;
+        s.serialize_field(<span class="string">&quot;maxStaleness&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.max_staleness)<span class="question-mark">?</span>;
+        s.end()
     }
 }
 
-<span class="attribute">#[<span class="ident">assert_size</span>(<span class="number">40</span>)]</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">AnchorSerialize</span>, <span class="ident">AnchorDeserialize</span>, <span class="ident">Default</span>, <span class="ident">Pod</span>, <span class="ident">Zeroable</span>, <span class="ident">Debug</span>, <span class="ident">Clone</span>, <span class="ident">Copy</span>)]</span>
-<span class="attribute">#[<span class="ident">repr</span>(<span class="ident">C</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">AccountPositionKey</span> {
-    <span class="doccomment">/// The address of the mint for the position token</span>
-    <span class="kw">pub</span> <span class="ident">mint</span>: <span class="ident">Pubkey</span>,
+<span class="attribute">#[assert_size(<span class="number">40</span>)]
+#[derive(AnchorSerialize, AnchorDeserialize, Default, Pod, Zeroable, Debug, Clone, Copy)]
+#[repr(C)]
+</span><span class="kw">pub struct </span>AccountPositionKey {
+    <span class="doccomment">/// The address of the mint for the position token
+    </span><span class="kw">pub </span>mint: Pubkey,
 
-    <span class="doccomment">/// The array index where the data for this position is located</span>
-    <span class="kw">pub</span> <span class="ident">index</span>: <span class="ident">usize</span>,
+    <span class="doccomment">/// The array index where the data for this position is located
+    </span><span class="kw">pub </span>index: usize,
 }
 
-<span class="attribute">#[<span class="ident">assert_size</span>(<span class="number">7432</span>)]</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">AnchorSerialize</span>, <span class="ident">AnchorDeserialize</span>, <span class="ident">Default</span>, <span class="ident">Pod</span>, <span class="ident">Zeroable</span>, <span class="ident">Debug</span>, <span class="ident">Clone</span>, <span class="ident">Copy</span>)]</span>
-<span class="attribute">#[<span class="ident">repr</span>(<span class="ident">C</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">AccountPositionList</span> {
-    <span class="kw">pub</span> <span class="ident">length</span>: <span class="ident">usize</span>,
-    <span class="kw">pub</span> <span class="ident">map</span>: [<span class="ident">AccountPositionKey</span>; <span class="number">32</span>],
-    <span class="kw">pub</span> <span class="ident">positions</span>: [<span class="ident">AccountPosition</span>; <span class="number">32</span>],
+<span class="attribute">#[assert_size(<span class="number">7432</span>)]
+#[derive(AnchorSerialize, AnchorDeserialize, Default, Pod, Zeroable, Debug, Clone, Copy)]
+#[repr(C)]
+</span><span class="kw">pub struct </span>AccountPositionList {
+    <span class="kw">pub </span>length: usize,
+    <span class="kw">pub </span>map: [AccountPositionKey; <span class="number">32</span>],
+    <span class="kw">pub </span>positions: [AccountPosition; <span class="number">32</span>],
 }
 
-<span class="kw">impl</span> <span class="ident">AccountPositionList</span> {
-    <span class="doccomment">/// Add a position to the position list.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// Finds an empty slot in `map` and `positions`, and adds an empty position</span>
-    <span class="doccomment">/// to the slot.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">add</span>(
-        <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
-        <span class="ident">mint</span>: <span class="ident">Pubkey</span>,
-    ) -&gt; <span class="ident">AnchorResult</span><span class="op">&lt;</span>(<span class="ident">AccountPositionKey</span>, <span class="kw-2">&amp;mut</span> <span class="ident">AccountPosition</span>)<span class="op">&gt;</span> {
-        <span class="comment">// verify there&#39;s no existing position</span>
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">map</span>.<span class="ident">iter</span>().<span class="ident">any</span>(<span class="op">|</span><span class="ident">p</span><span class="op">|</span> <span class="ident">p</span>.<span class="ident">mint</span> <span class="op">==</span> <span class="ident">mint</span>) {
-            <span class="kw">return</span> <span class="macro">err!</span>(<span class="ident">ErrorCode::PositionAlreadyRegistered</span>);
+<span class="kw">impl </span>AccountPositionList {
+    <span class="doccomment">/// Add a position to the position list.
+    ///
+    /// Finds an empty slot in `map` and `positions`, and adds an empty position
+    /// to the slot.
+    </span><span class="kw">pub fn </span>add(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        mint: Pubkey,
+    ) -&gt; AnchorResult&lt;(AccountPositionKey, <span class="kw-2">&amp;mut </span>AccountPosition)&gt; {
+        <span class="comment">// verify there&#39;s no existing position
+        </span><span class="kw">if </span><span class="self">self</span>.map.iter().any(|p| p.mint == mint) {
+            <span class="kw">return </span><span class="macro">err!</span>(ErrorCode::PositionAlreadyRegistered);
         }
 
-        <span class="comment">// find the first free space to store the position info</span>
-        <span class="kw">let</span> (<span class="ident">index</span>, <span class="ident">free_position</span>) <span class="op">=</span> <span class="self">self</span>
-            .<span class="ident">positions</span>
-            .<span class="ident">iter_mut</span>()
-            .<span class="ident">enumerate</span>()
-            .<span class="ident">find</span>(<span class="op">|</span>(<span class="kw">_</span>, <span class="ident">p</span>)<span class="op">|</span> <span class="ident">p</span>.<span class="ident">token</span> <span class="op">==</span> <span class="ident">Pubkey::default</span>())
-            .<span class="ident">ok_or_else</span>(<span class="op">|</span><span class="op">|</span> <span class="macro">error!</span>(<span class="ident">ErrorCode::MaxPositions</span>))<span class="question-mark">?</span>;
+        <span class="comment">// find the first free space to store the position info
+        </span><span class="kw">let </span>(index, free_position) = <span class="self">self
+            </span>.positions
+            .iter_mut()
+            .enumerate()
+            .find(|(<span class="kw">_</span>, p)| p.token == Pubkey::default())
+            .ok_or_else(|| <span class="macro">error!</span>(ErrorCode::MaxPositions))<span class="question-mark">?</span>;
 
-        <span class="comment">// add the new entry to the sorted map</span>
-        <span class="kw">let</span> <span class="ident">key</span> <span class="op">=</span> <span class="ident">AccountPositionKey</span> { <span class="ident">mint</span>, <span class="ident">index</span> };
-        <span class="self">self</span>.<span class="ident">map</span>[<span class="self">self</span>.<span class="ident">length</span>] <span class="op">=</span> <span class="ident">key</span>;
+        <span class="comment">// add the new entry to the sorted map
+        </span><span class="kw">let </span>key = AccountPositionKey { mint, index };
+        <span class="self">self</span>.map[<span class="self">self</span>.length] = key;
 
-        <span class="self">self</span>.<span class="ident">length</span> <span class="op">+</span><span class="op">=</span> <span class="number">1</span>;
-        <span class="self">self</span>.<span class="ident">map</span>[..<span class="self">self</span>.<span class="ident">length</span>].<span class="ident">sort_by_key</span>(<span class="op">|</span><span class="ident">p</span><span class="op">|</span> <span class="ident">p</span>.<span class="ident">mint</span>);
+        <span class="self">self</span>.length += <span class="number">1</span>;
+        <span class="self">self</span>.map[..<span class="self">self</span>.length].sort_by_key(|p| p.mint);
 
-        <span class="comment">// mark position as not free</span>
-        <span class="ident">free_position</span>.<span class="ident">token</span> <span class="op">=</span> <span class="ident">mint</span>;
+        <span class="comment">// mark position as not free
+        </span>free_position.token = mint;
 
-        <span class="comment">// return the allocated position to be initialized further</span>
-        <span class="prelude-val">Ok</span>((<span class="ident">key</span>, <span class="ident">free_position</span>))
+        <span class="comment">// return the allocated position to be initialized further
+        </span><span class="prelude-val">Ok</span>((key, free_position))
     }
 
-    <span class="doccomment">/// Remove a position from the margin account.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// # Error</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// - If an account with the `mint` does not exist.</span>
-    <span class="doccomment">/// - If the position&#39;s address is not the same as the `account`</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">remove</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">mint</span>: <span class="kw-2">&amp;</span><span class="ident">Pubkey</span>, <span class="ident">account</span>: <span class="kw-2">&amp;</span><span class="ident">Pubkey</span>) -&gt; <span class="ident">AnchorResult</span><span class="op">&lt;</span><span class="ident">AccountPosition</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">map_index</span> <span class="op">=</span> <span class="self">self</span>
-            .<span class="ident">get_map_index</span>(<span class="ident">mint</span>)
-            .<span class="ident">ok_or</span>(<span class="ident">ErrorCode::PositionNotRegistered</span>)<span class="question-mark">?</span>;
-        <span class="comment">// Get the map whose position to remove</span>
-        <span class="kw">let</span> <span class="ident">map</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">map</span>[<span class="ident">map_index</span>];
-        <span class="comment">// Take a copy of the position to be removed</span>
-        <span class="kw">let</span> <span class="ident">position</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">positions</span>[<span class="ident">map</span>.<span class="ident">index</span>];
-        <span class="comment">// Check that the position is correct</span>
-        <span class="kw">if</span> <span class="kw-2">&amp;</span><span class="ident">position</span>.<span class="ident">address</span> <span class="op">!</span><span class="op">=</span> <span class="ident">account</span> {
-            <span class="kw">return</span> <span class="macro">err!</span>(<span class="ident">ErrorCode::PositionNotRegistered</span>);
+    <span class="doccomment">/// Remove a position from the margin account.
+    ///
+    /// # Error
+    ///
+    /// - If an account with the `mint` does not exist.
+    /// - If the position&#39;s address is not the same as the `account`
+    </span><span class="kw">pub fn </span>remove(<span class="kw-2">&amp;mut </span><span class="self">self</span>, mint: <span class="kw-2">&amp;</span>Pubkey, account: <span class="kw-2">&amp;</span>Pubkey) -&gt; AnchorResult&lt;AccountPosition&gt; {
+        <span class="kw">let </span>map_index = <span class="self">self
+            </span>.get_map_index(mint)
+            .ok_or(ErrorCode::PositionNotRegistered)<span class="question-mark">?</span>;
+        <span class="comment">// Get the map whose position to remove
+        </span><span class="kw">let </span>map = <span class="self">self</span>.map[map_index];
+        <span class="comment">// Take a copy of the position to be removed
+        </span><span class="kw">let </span>position = <span class="self">self</span>.positions[map.index];
+        <span class="comment">// Check that the position is correct
+        </span><span class="kw">if </span><span class="kw-2">&amp;</span>position.address != account {
+            <span class="kw">return </span><span class="macro">err!</span>(ErrorCode::PositionNotRegistered);
         }
 
-        <span class="comment">// Remove the position</span>
-        <span class="self">self</span>.<span class="ident">positions</span>[<span class="ident">map</span>.<span class="ident">index</span>] <span class="op">=</span> <span class="ident">Zeroable::zeroed</span>();
+        <span class="comment">// Remove the position
+        </span><span class="self">self</span>.positions[map.index] = Zeroable::zeroed();
 
-        <span class="comment">// Move the map elements up by 1 to replace map position being removed</span>
-        <span class="self">self</span>.<span class="ident">map</span>.<span class="ident">copy_within</span>(<span class="ident">map_index</span> <span class="op">+</span> <span class="number">1</span>..<span class="self">self</span>.<span class="ident">length</span>, <span class="ident">map_index</span>);
+        <span class="comment">// Move the map elements up by 1 to replace map position being removed
+        </span><span class="self">self</span>.map.copy_within(map_index + <span class="number">1</span>..<span class="self">self</span>.length, map_index);
 
-        <span class="self">self</span>.<span class="ident">length</span> <span class="op">-</span><span class="op">=</span> <span class="number">1</span>;
-        <span class="comment">// Clear the map at the last slot of the array, as it is shifted up</span>
-        <span class="self">self</span>.<span class="ident">map</span>[<span class="self">self</span>.<span class="ident">length</span>].<span class="ident">mint</span> <span class="op">=</span> <span class="ident">Pubkey::default</span>();
-        <span class="self">self</span>.<span class="ident">map</span>[<span class="self">self</span>.<span class="ident">length</span>].<span class="ident">index</span> <span class="op">=</span> <span class="number">0</span>;
+        <span class="self">self</span>.length -= <span class="number">1</span>;
+        <span class="comment">// Clear the map at the last slot of the array, as it is shifted up
+        </span><span class="self">self</span>.map[<span class="self">self</span>.length].mint = Pubkey::default();
+        <span class="self">self</span>.map[<span class="self">self</span>.length].index = <span class="number">0</span>;
 
-        <span class="prelude-val">Ok</span>(<span class="ident">position</span>)
+        <span class="prelude-val">Ok</span>(position)
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">mint</span>: <span class="kw-2">&amp;</span><span class="ident">Pubkey</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="ident">AccountPosition</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">key</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">get_key</span>(<span class="ident">mint</span>)<span class="question-mark">?</span>;
-        <span class="kw">let</span> <span class="ident">position</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">positions</span>[<span class="ident">key</span>.<span class="ident">index</span>];
+    <span class="kw">pub fn </span>get(<span class="kw-2">&amp;</span><span class="self">self</span>, mint: <span class="kw-2">&amp;</span>Pubkey) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>AccountPosition&gt; {
+        <span class="kw">let </span>key = <span class="self">self</span>.get_key(mint)<span class="question-mark">?</span>;
+        <span class="kw">let </span>position = <span class="kw-2">&amp;</span><span class="self">self</span>.positions[key.index];
 
-        <span class="prelude-val">Some</span>(<span class="ident">position</span>)
+        <span class="prelude-val">Some</span>(position)
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_mut</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">mint</span>: <span class="kw-2">&amp;</span><span class="ident">Pubkey</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;mut</span> <span class="ident">AccountPosition</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">key</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">get_key</span>(<span class="ident">mint</span>)<span class="question-mark">?</span>;
-        <span class="kw">let</span> <span class="ident">position</span> <span class="op">=</span> <span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">positions</span>[<span class="ident">key</span>.<span class="ident">index</span>];
+    <span class="kw">pub fn </span>get_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>, mint: <span class="kw-2">&amp;</span>Pubkey) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;mut </span>AccountPosition&gt; {
+        <span class="kw">let </span>key = <span class="self">self</span>.get_key(mint)<span class="question-mark">?</span>;
+        <span class="kw">let </span>position = <span class="kw-2">&amp;mut </span><span class="self">self</span>.positions[key.index];
 
-        <span class="prelude-val">Some</span>(<span class="ident">position</span>)
+        <span class="prelude-val">Some</span>(position)
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_key</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">mint</span>: <span class="kw-2">&amp;</span><span class="ident">Pubkey</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="ident">AccountPositionKey</span><span class="op">&gt;</span> {
-        <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">map</span>[<span class="self">self</span>.<span class="ident">get_map_index</span>(<span class="ident">mint</span>)<span class="question-mark">?</span>])
+    <span class="kw">pub fn </span>get_key(<span class="kw-2">&amp;</span><span class="self">self</span>, mint: <span class="kw-2">&amp;</span>Pubkey) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>AccountPositionKey&gt; {
+        <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.map[<span class="self">self</span>.get_map_index(mint)<span class="question-mark">?</span>])
     }
 
-    <span class="kw">fn</span> <span class="ident">get_map_index</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">mint</span>: <span class="kw-2">&amp;</span><span class="ident">Pubkey</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span> {
-        <span class="self">self</span>.<span class="ident">map</span>[..<span class="self">self</span>.<span class="ident">length</span>]
-            .<span class="ident">binary_search_by_key</span>(<span class="ident">mint</span>, <span class="op">|</span><span class="ident">p</span><span class="op">|</span> <span class="ident">p</span>.<span class="ident">mint</span>)
-            .<span class="ident">ok</span>()
+    <span class="kw">fn </span>get_map_index(<span class="kw-2">&amp;</span><span class="self">self</span>, mint: <span class="kw-2">&amp;</span>Pubkey) -&gt; <span class="prelude-ty">Option</span>&lt;usize&gt; {
+        <span class="self">self</span>.map[..<span class="self">self</span>.length]
+            .binary_search_by_key(mint, |p| p.mint)
+            .ok()
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="jet_margin" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0 (a55dd71d5 2022-09-19)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="jet_margin" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `programs/bonds/src/orderbook/instructions/consume_events/accounts.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>accounts.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../../storage.js"></script><script defer src="../../../../../source-script.js"></script><script defer src="../../../../../source-files.js"></script><script defer src="../../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../../jet_bonds/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../../../jet_bonds/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../../jet_bonds/index.html"><img class="rust-logo" src="../../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `programs/bonds/src/orderbook/instructions/consume_events/accounts.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>accounts.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../../../normalize.css"><link rel="stylesheet" href="../../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../../../ayu.css" disabled><link rel="stylesheet" href="../../../../../dark.css" disabled><link rel="stylesheet" href="../../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../../storage.js"></script><script defer src="../../../../../source-script.js"></script><script defer src="../../../../../source-files.js"></script><script defer src="../../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../../jet_bonds/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../../../jet_bonds/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../../jet_bonds/index.html"><img class="rust-logo" src="../../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -124,131 +124,133 @@
 <span id="124">124</span>
 <span id="125">125</span>
 <span id="126">126</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">std::convert::TryInto</span>;
+<span id="127">127</span>
+</pre><pre class="rust"><code><span class="kw">use </span>std::convert::TryInto;
 
-<span class="kw">use</span> <span class="ident">anchor_lang::prelude</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident">anchor_spl::token::Token</span>;
-<span class="kw">use</span> <span class="ident">jet_program_proc_macros::BondTokenManager</span>;
+<span class="kw">use </span>anchor_lang::prelude::<span class="kw-2">*</span>;
+<span class="kw">use </span>anchor_spl::token::Token;
+<span class="kw">use </span>jet_program_proc_macros::BondTokenManager;
 
-<span class="kw">use</span> <span class="kw">crate</span>::{
-    <span class="ident">control::state</span>::{<span class="ident">BondManager</span>, <span class="ident">CrankAuthorization</span>},
-    <span class="ident">margin::state</span>::{<span class="ident">MarginUser</span>, <span class="ident">Obligation</span>},
-    <span class="ident">orderbook::state::EventQueue</span>,
-    <span class="ident">serialization</span>::{<span class="ident">AnchorAccount</span>, <span class="ident">Mut</span>},
-    <span class="ident">tickets::state::SplitTicket</span>,
-    <span class="ident">BondsError</span>,
+<span class="kw">use crate</span>::{
+    control::state::{BondManager, CrankAuthorization},
+    margin::state::{MarginUser, Obligation},
+    orderbook::state::EventQueue,
+    serialization::{AnchorAccount, Mut},
+    tickets::state::SplitTicket,
+    BondsError,
 };
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Accounts</span>, <span class="ident">BondTokenManager</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">ConsumeEvents</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span> {
-    <span class="doccomment">/// The `BondManager` account tracks global information related to this particular bond market</span>
-    <span class="attribute">#[<span class="ident">account</span>(
-        <span class="ident">has_one</span> <span class="op">=</span> <span class="ident">bond_ticket_mint</span> @ <span class="ident">BondsError::WrongTicketMint</span>,
-        <span class="ident">has_one</span> <span class="op">=</span> <span class="ident">underlying_token_vault</span> @ <span class="ident">BondsError::WrongVault</span>,
-        <span class="ident">has_one</span> <span class="op">=</span> <span class="ident">orderbook_market_state</span> @ <span class="ident">BondsError::WrongMarketState</span>,
-        <span class="ident">has_one</span> <span class="op">=</span> <span class="ident">event_queue</span> @ <span class="ident">BondsError::WrongEventQueue</span>,
-    )]</span>
-    <span class="kw">pub</span> <span class="ident">bond_manager</span>: <span class="ident">AccountLoader</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span>, <span class="ident">BondManager</span><span class="op">&gt;</span>,
-    <span class="doccomment">/// The market ticket mint</span>
-    <span class="doccomment">/// CHECK: has_one</span>
-    <span class="attribute">#[<span class="ident">account</span>(<span class="kw-2">mut</span>)]</span>
-    <span class="kw">pub</span> <span class="ident">bond_ticket_mint</span>: <span class="ident">AccountInfo</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span>,
-    <span class="doccomment">/// The market token vault</span>
-    <span class="doccomment">/// CHECK: has_one</span>
-    <span class="attribute">#[<span class="ident">account</span>(<span class="kw-2">mut</span>)]</span>
-    <span class="kw">pub</span> <span class="ident">underlying_token_vault</span>: <span class="ident">AccountInfo</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span>,
+<span class="attribute">#[derive(Accounts, BondTokenManager)]
+</span><span class="kw">pub struct </span>ConsumeEvents&lt;<span class="lifetime">&#39;info</span>&gt; {
+    <span class="doccomment">/// The `BondManager` account tracks global information related to this particular bond market
+    </span><span class="attribute">#[account(
+        has_one = bond_ticket_mint @ BondsError::WrongTicketMint,
+        has_one = underlying_token_vault @ BondsError::WrongVault,
+        has_one = orderbook_market_state @ BondsError::WrongMarketState,
+        has_one = event_queue @ BondsError::WrongEventQueue,
+    )]
+    #[account(<span class="kw-2">mut</span>)]
+    </span><span class="kw">pub </span>bond_manager: AccountLoader&lt;<span class="lifetime">&#39;info</span>, BondManager&gt;,
+    <span class="doccomment">/// The market ticket mint
+    /// CHECK: has_one
+    </span><span class="attribute">#[account(<span class="kw-2">mut</span>)]
+    </span><span class="kw">pub </span>bond_ticket_mint: AccountInfo&lt;<span class="lifetime">&#39;info</span>&gt;,
+    <span class="doccomment">/// The market token vault
+    /// CHECK: has_one
+    </span><span class="attribute">#[account(<span class="kw-2">mut</span>)]
+    </span><span class="kw">pub </span>underlying_token_vault: AccountInfo&lt;<span class="lifetime">&#39;info</span>&gt;,
 
-    <span class="comment">// aaob accounts</span>
-    <span class="doccomment">/// CHECK: handled by aaob</span>
-    <span class="attribute">#[<span class="ident">account</span>(<span class="kw-2">mut</span>)]</span>
-    <span class="kw">pub</span> <span class="ident">orderbook_market_state</span>: <span class="ident">AccountInfo</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span>,
-    <span class="doccomment">/// CHECK: handled by aaob</span>
-    <span class="attribute">#[<span class="ident">account</span>(<span class="kw-2">mut</span>)]</span>
-    <span class="kw">pub</span> <span class="ident">event_queue</span>: <span class="ident">AccountInfo</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span>,
+    <span class="comment">// aaob accounts
+    </span><span class="doccomment">/// CHECK: handled by aaob
+    </span><span class="attribute">#[account(<span class="kw-2">mut</span>)]
+    </span><span class="kw">pub </span>orderbook_market_state: AccountInfo&lt;<span class="lifetime">&#39;info</span>&gt;,
+    <span class="doccomment">/// CHECK: handled by aaob
+    </span><span class="attribute">#[account(<span class="kw-2">mut</span>)]
+    </span><span class="kw">pub </span>event_queue: AccountInfo&lt;<span class="lifetime">&#39;info</span>&gt;,
 
-    <span class="attribute">#[<span class="ident">account</span>(
-        <span class="ident">has_one</span> <span class="op">=</span> <span class="ident">crank</span> @ <span class="ident">BondsError::WrongCrankAuthority</span>,
-        <span class="ident">constraint</span> <span class="op">=</span> <span class="ident">crank_authorization</span>.<span class="ident">airspace</span> <span class="op">==</span> <span class="ident">bond_manager</span>.<span class="ident">load</span>()<span class="question-mark">?</span>.<span class="ident">airspace</span> @ <span class="ident">BondsError::WrongAirspaceAuthorization</span>
-    )]</span>
-    <span class="kw">pub</span> <span class="ident">crank_authorization</span>: <span class="ident">Account</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span>, <span class="ident">CrankAuthorization</span><span class="op">&gt;</span>,
-    <span class="kw">pub</span> <span class="ident">crank</span>: <span class="ident">Signer</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span>,
+    <span class="attribute">#[account(
+        has_one = crank @ BondsError::WrongCrankAuthority,
+        constraint = crank_authorization.airspace == bond_manager.load()<span class="question-mark">?</span>.airspace @ BondsError::WrongAirspaceAuthorization
+    )]
+    </span><span class="kw">pub </span>crank_authorization: Account&lt;<span class="lifetime">&#39;info</span>, CrankAuthorization&gt;,
+    <span class="kw">pub </span>crank: Signer&lt;<span class="lifetime">&#39;info</span>&gt;,
 
-    <span class="doccomment">/// The account paying rent for PDA initialization</span>
-    <span class="attribute">#[<span class="ident">account</span>(<span class="kw-2">mut</span>)]</span>
-    <span class="kw">pub</span> <span class="ident">payer</span>: <span class="ident">Signer</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span>,
-    <span class="kw">pub</span> <span class="ident">system_program</span>: <span class="ident">Program</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span>, <span class="ident">System</span><span class="op">&gt;</span>,
-    <span class="kw">pub</span> <span class="ident">token_program</span>: <span class="ident">Program</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span>, <span class="ident">Token</span><span class="op">&gt;</span>,
-    <span class="comment">// remaining_accounts: [EventAccounts],</span>
+    <span class="doccomment">/// The account paying rent for PDA initialization
+    </span><span class="attribute">#[account(<span class="kw-2">mut</span>)]
+    </span><span class="kw">pub </span>payer: Signer&lt;<span class="lifetime">&#39;info</span>&gt;,
+    <span class="kw">pub </span>system_program: Program&lt;<span class="lifetime">&#39;info</span>, System&gt;,
+    <span class="kw">pub </span>token_program: Program&lt;<span class="lifetime">&#39;info</span>, Token&gt;,
+    <span class="comment">// remaining_accounts: [EventAccounts],
+</span>}
+
+<span class="doccomment">/// These are the additional accounts that need to be provided in the ix
+/// for every event that will be processed.
+/// For a fill, 2-6 accounts need to be appended to remaining_accounts
+/// For an out, 1 account needs to be appended to remaining_accounts
+</span><span class="kw">pub enum </span>EventAccounts&lt;<span class="lifetime">&#39;info</span>&gt; {
+    Fill(Box&lt;FillAccounts&lt;<span class="lifetime">&#39;info</span>&gt;&gt;),
+    Out(Box&lt;OutAccounts&lt;<span class="lifetime">&#39;info</span>&gt;&gt;),
 }
 
-<span class="doccomment">/// These are the additional accounts that need to be provided in the ix</span>
-<span class="doccomment">/// for every event that will be processed.</span>
-<span class="doccomment">/// For a fill, 2-6 accounts need to be appended to remaining_accounts</span>
-<span class="doccomment">/// For an out, 1 account needs to be appended to remaining_accounts</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">EventAccounts</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span> {
-    <span class="ident">Fill</span>(<span class="ident">Box</span><span class="op">&lt;</span><span class="ident">FillAccounts</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span><span class="op">&gt;</span>),
-    <span class="ident">Out</span>(<span class="ident">Box</span><span class="op">&lt;</span><span class="ident">OutAccounts</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span><span class="op">&gt;</span>),
+<span class="kw">pub struct </span>FillAccounts&lt;<span class="lifetime">&#39;info</span>&gt; {
+    <span class="kw">pub </span>maker: UserAccount&lt;<span class="lifetime">&#39;info</span>&gt;,
+    <span class="doccomment">/// include if AUTO_STAKE or NEW_DEBT in callback
+    </span><span class="kw">pub </span>loan: <span class="prelude-ty">Option</span>&lt;LoanAccount&lt;<span class="lifetime">&#39;info</span>&gt;&gt;,
+    <span class="kw">pub </span>maker_adapter: <span class="prelude-ty">Option</span>&lt;EventQueue&lt;<span class="lifetime">&#39;info</span>&gt;&gt;,
+    <span class="kw">pub </span>taker_adapter: <span class="prelude-ty">Option</span>&lt;EventQueue&lt;<span class="lifetime">&#39;info</span>&gt;&gt;,
 }
 
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">FillAccounts</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span> {
-    <span class="kw">pub</span> <span class="ident">maker</span>: <span class="ident">UserAccount</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span>,
-    <span class="doccomment">/// include if AUTO_STAKE or NEW_DEBT in callback</span>
-    <span class="kw">pub</span> <span class="ident">loan</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">LoanAccount</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-    <span class="kw">pub</span> <span class="ident">maker_adapter</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">EventQueue</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-    <span class="kw">pub</span> <span class="ident">taker_adapter</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">EventQueue</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-}
+<span class="kw">pub enum </span>LoanAccount&lt;<span class="lifetime">&#39;info</span>&gt; {
+    <span class="doccomment">/// Use if AUTO_STAKE is set in the maker&#39;s callback
+    </span>AutoStake(AnchorAccount&lt;<span class="lifetime">&#39;info</span>, SplitTicket, Mut&gt;), <span class="comment">// (ticket, user/owner)
+    </span><span class="doccomment">/// Use if NEW_DEBT is set in the maker&#39;s callback
+    </span>NewDebt(AnchorAccount&lt;<span class="lifetime">&#39;info</span>, Obligation, Mut&gt;), <span class="comment">// (obligation, user)
+</span>}
 
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">LoanAccount</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span> {
-    <span class="doccomment">/// Use if AUTO_STAKE is set in the maker&#39;s callback</span>
-    <span class="ident">AutoStake</span>(<span class="ident">AnchorAccount</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span>, <span class="ident">SplitTicket</span>, <span class="ident">Mut</span><span class="op">&gt;</span>), <span class="comment">// (ticket, user/owner)</span>
-    <span class="doccomment">/// Use if NEW_DEBT is set in the maker&#39;s callback</span>
-    <span class="ident">NewDebt</span>(<span class="ident">AnchorAccount</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span>, <span class="ident">Obligation</span>, <span class="ident">Mut</span><span class="op">&gt;</span>), <span class="comment">// (obligation, user)</span>
-}
-
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span> <span class="ident">LoanAccount</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">auto_stake</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="kw-2">&amp;mut</span> <span class="ident">AnchorAccount</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span>, <span class="ident">SplitTicket</span>, <span class="ident">Mut</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">LoanAccount::AutoStake</span>(<span class="ident">split_ticket</span>) =&gt; <span class="prelude-val">Ok</span>(<span class="ident">split_ticket</span>),
-            <span class="kw">_</span> =&gt; <span class="macro">panic!</span>(),
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;info</span>&gt; LoanAccount&lt;<span class="lifetime">&#39;info</span>&gt; {
+    <span class="kw">pub fn </span>auto_stake(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw-2">&amp;mut </span>AnchorAccount&lt;<span class="lifetime">&#39;info</span>, SplitTicket, Mut&gt;&gt; {
+        <span class="kw">match </span><span class="self">self </span>{
+            LoanAccount::AutoStake(split_ticket) =&gt; <span class="prelude-val">Ok</span>(split_ticket),
+            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(),
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new_debt</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="kw-2">&amp;mut</span> <span class="ident">AnchorAccount</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span>, <span class="ident">Obligation</span>, <span class="ident">Mut</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">LoanAccount::NewDebt</span>(<span class="ident">obligation</span>) =&gt; <span class="prelude-val">Ok</span>(<span class="ident">obligation</span>),
-            <span class="kw">_</span> =&gt; <span class="macro">panic!</span>(),
+    <span class="kw">pub fn </span>new_debt(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw-2">&amp;mut </span>AnchorAccount&lt;<span class="lifetime">&#39;info</span>, Obligation, Mut&gt;&gt; {
+        <span class="kw">match </span><span class="self">self </span>{
+            LoanAccount::NewDebt(obligation) =&gt; <span class="prelude-val">Ok</span>(obligation),
+            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(),
         }
     }
 }
 
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">OutAccounts</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span> {
-    <span class="kw">pub</span> <span class="ident">user</span>: <span class="ident">UserAccount</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span>,
-    <span class="kw">pub</span> <span class="ident">user_adapter_account</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">EventQueue</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+<span class="kw">pub struct </span>OutAccounts&lt;<span class="lifetime">&#39;info</span>&gt; {
+    <span class="kw">pub </span>user: UserAccount&lt;<span class="lifetime">&#39;info</span>&gt;,
+    <span class="kw">pub </span>user_adapter_account: <span class="prelude-ty">Option</span>&lt;EventQueue&lt;<span class="lifetime">&#39;info</span>&gt;&gt;,
 }
 
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">UserAccount</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span>(<span class="ident">AccountInfo</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span>);
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span> <span class="ident">UserAccount</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">account</span>: <span class="ident">AccountInfo</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span>) -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span>(<span class="ident">account</span>)
+<span class="kw">pub struct </span>UserAccount&lt;<span class="lifetime">&#39;info</span>&gt;(AccountInfo&lt;<span class="lifetime">&#39;info</span>&gt;);
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;info</span>&gt; UserAccount&lt;<span class="lifetime">&#39;info</span>&gt; {
+    <span class="kw">pub fn </span>new(account: AccountInfo&lt;<span class="lifetime">&#39;info</span>&gt;) -&gt; <span class="self">Self </span>{
+        <span class="self">Self</span>(account)
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">pubkey</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Pubkey</span> {
-        <span class="self">self</span>.<span class="number">0</span>.<span class="ident">key</span>()
+    <span class="kw">pub fn </span>pubkey(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Pubkey {
+        <span class="self">self</span>.<span class="number">0</span>.key()
     }
 
-    <span class="doccomment">/// token account that will receive a deposit of underlying or tickets</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">as_token_account</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">AccountInfo</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span> {
-        <span class="self">self</span>.<span class="number">0</span>.<span class="ident">clone</span>()
+    <span class="doccomment">/// token account that will receive a deposit of underlying or tickets
+    </span><span class="kw">pub fn </span>as_token_account(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; AccountInfo&lt;<span class="lifetime">&#39;info</span>&gt; {
+        <span class="self">self</span>.<span class="number">0</span>.clone()
     }
 
-    <span class="doccomment">/// arbitrary unchecked account that will be granted ownership of a split ticket</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">as_owner</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">AccountInfo</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span> {
-        <span class="self">self</span>.<span class="number">0</span>.<span class="ident">clone</span>()
+    <span class="doccomment">/// arbitrary unchecked account that will be granted ownership of a split ticket
+    </span><span class="kw">pub fn </span>as_owner(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; AccountInfo&lt;<span class="lifetime">&#39;info</span>&gt; {
+        <span class="self">self</span>.<span class="number">0</span>.clone()
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">margin_user</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">AnchorAccount</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span>, <span class="ident">MarginUser</span>, <span class="ident">Mut</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-        <span class="self">self</span>.<span class="number">0</span>.<span class="ident">clone</span>().<span class="ident">try_into</span>()
+    <span class="kw">pub fn </span>margin_user(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;AnchorAccount&lt;<span class="lifetime">&#39;info</span>, MarginUser, Mut&gt;&gt; {
+        <span class="self">self</span>.<span class="number">0</span>.clone().try_into()
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../../" data-current-crate="jet_bonds" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0 (a55dd71d5 2022-09-19)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../../" data-current-crate="jet_bonds" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

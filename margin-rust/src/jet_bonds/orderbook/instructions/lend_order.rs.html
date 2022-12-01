@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `programs/bonds/src/orderbook/instructions/lend_order.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>lend_order.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../jet_bonds/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../../jet_bonds/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../jet_bonds/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `programs/bonds/src/orderbook/instructions/lend_order.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>lend_order.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../../normalize.css"><link rel="stylesheet" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../../ayu.css" disabled><link rel="stylesheet" href="../../../../dark.css" disabled><link rel="stylesheet" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../jet_bonds/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../../jet_bonds/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../jet_bonds/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -154,161 +154,161 @@
 <span id="154">154</span>
 <span id="155">155</span>
 <span id="156">156</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">agnostic_orderbook::state::Side</span>;
-<span class="kw">use</span> <span class="ident">anchor_lang::prelude</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident">anchor_spl::token</span>::{<span class="ident">accessor::mint</span>, <span class="ident">Mint</span>, <span class="ident">Token</span>, <span class="ident">TokenAccount</span>};
-<span class="kw">use</span> <span class="ident">jet_program_proc_macros::BondTokenManager</span>;
+</pre><pre class="rust"><code><span class="kw">use </span>agnostic_orderbook::state::Side;
+<span class="kw">use </span>anchor_lang::prelude::<span class="kw-2">*</span>;
+<span class="kw">use </span>anchor_spl::token::{accessor::mint, Mint, Token, TokenAccount};
+<span class="kw">use </span>jet_program_proc_macros::BondTokenManager;
 
-<span class="kw">use</span> <span class="kw">crate</span>::{
-    <span class="ident">bond_token_manager::BondTokenManager</span>,
-    <span class="ident">orderbook::state</span>::<span class="kw-2">*</span>,
-    <span class="ident">serialization</span>::{<span class="self">self</span>, <span class="ident">RemainingAccounts</span>},
-    <span class="ident">tickets::state::SplitTicket</span>,
-    <span class="ident">BondsError</span>,
+<span class="kw">use crate</span>::{
+    bond_token_manager::BondTokenManager,
+    orderbook::state::<span class="kw-2">*</span>,
+    serialization::{<span class="self">self</span>, RemainingAccounts},
+    tickets::state::SplitTicket,
+    BondsError,
 };
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Accounts</span>, <span class="ident">BondTokenManager</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">LendOrder</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span> {
-    <span class="doccomment">/// Signing authority over the token vault transferring for a lend order</span>
-    <span class="kw">pub</span> <span class="ident">authority</span>: <span class="ident">Signer</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span>,
+<span class="attribute">#[derive(Accounts, BondTokenManager)]
+</span><span class="kw">pub struct </span>LendOrder&lt;<span class="lifetime">&#39;info</span>&gt; {
+    <span class="doccomment">/// Signing authority over the token vault transferring for a lend order
+    </span><span class="kw">pub </span>authority: Signer&lt;<span class="lifetime">&#39;info</span>&gt;,
 
-    <span class="attribute">#[<span class="ident">bond_manager</span>]</span>
-    <span class="kw">pub</span> <span class="ident">orderbook_mut</span>: <span class="ident">OrderbookMut</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span>,
+    <span class="attribute">#[bond_manager]
+    </span><span class="kw">pub </span>orderbook_mut: OrderbookMut&lt;<span class="lifetime">&#39;info</span>&gt;,
 
-    <span class="doccomment">/// where to settle tickets on match:</span>
-    <span class="doccomment">/// - SplitTicket that will be created if the order is filled as a taker and `auto_stake` is enabled</span>
-    <span class="doccomment">/// - ticket token account to receive bond tickets</span>
-    <span class="doccomment">/// be careful to check this properly. one way is by using lender_tickets_token_account</span>
-    <span class="attribute">#[<span class="ident">account</span>(<span class="kw-2">mut</span>)]</span>
-    <span class="ident">ticket_settlement</span>: <span class="ident">AccountInfo</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span>,
+    <span class="doccomment">/// where to settle tickets on match:
+    /// - SplitTicket that will be created if the order is filled as a taker and `auto_stake` is enabled
+    /// - ticket token account to receive bond tickets
+    /// be careful to check this properly. one way is by using lender_tickets_token_account
+    </span><span class="attribute">#[account(<span class="kw-2">mut</span>)]
+    </span>ticket_settlement: AccountInfo&lt;<span class="lifetime">&#39;info</span>&gt;,
 
-    <span class="doccomment">/// where to loan tokens from</span>
-    <span class="attribute">#[<span class="ident">account</span>(<span class="kw-2">mut</span>, <span class="ident">constraint</span> <span class="op">=</span> <span class="ident">mint</span>(<span class="kw-2">&amp;</span><span class="ident">lender_tokens</span>.<span class="ident">to_account_info</span>())<span class="question-mark">?</span> <span class="op">==</span> <span class="ident">orderbook_mut</span>.<span class="ident">underlying_mint</span>() @ <span class="ident">BondsError::WrongUnderlyingTokenMint</span>)]</span>
-    <span class="kw">pub</span> <span class="ident">lender_tokens</span>: <span class="ident">Account</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span>, <span class="ident">TokenAccount</span><span class="op">&gt;</span>,
+    <span class="doccomment">/// where to loan tokens from
+    </span><span class="attribute">#[account(<span class="kw-2">mut</span>, constraint = mint(<span class="kw-2">&amp;</span>lender_tokens.to_account_info())<span class="question-mark">? </span>== orderbook_mut.underlying_mint() @ BondsError::WrongUnderlyingTokenMint)]
+    </span><span class="kw">pub </span>lender_tokens: Account&lt;<span class="lifetime">&#39;info</span>, TokenAccount&gt;,
 
-    <span class="doccomment">/// The market token vault</span>
-    <span class="attribute">#[<span class="ident">account</span>(<span class="kw-2">mut</span>, <span class="ident">address</span> <span class="op">=</span> <span class="ident">orderbook_mut</span>.<span class="ident">vault</span>() @ <span class="ident">BondsError::WrongVault</span>)]</span>
-    <span class="kw">pub</span> <span class="ident">underlying_token_vault</span>: <span class="ident">Account</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span>, <span class="ident">TokenAccount</span><span class="op">&gt;</span>,
+    <span class="doccomment">/// The market token vault
+    </span><span class="attribute">#[account(<span class="kw-2">mut</span>, address = orderbook_mut.vault() @ BondsError::WrongVault)]
+    </span><span class="kw">pub </span>underlying_token_vault: Account&lt;<span class="lifetime">&#39;info</span>, TokenAccount&gt;,
 
-    <span class="doccomment">/// The market token vault</span>
-    <span class="attribute">#[<span class="ident">account</span>(<span class="kw-2">mut</span>, <span class="ident">address</span> <span class="op">=</span> <span class="ident">orderbook_mut</span>.<span class="ident">ticket_mint</span>() @ <span class="ident">BondsError::WrongTicketMint</span>)]</span>
-    <span class="kw">pub</span> <span class="ident">ticket_mint</span>: <span class="ident">Account</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span>, <span class="ident">Mint</span><span class="op">&gt;</span>,
+    <span class="doccomment">/// The market token vault
+    </span><span class="attribute">#[account(<span class="kw-2">mut</span>, address = orderbook_mut.ticket_mint() @ BondsError::WrongTicketMint)]
+    </span><span class="kw">pub </span>ticket_mint: Account&lt;<span class="lifetime">&#39;info</span>, Mint&gt;,
 
-    <span class="attribute">#[<span class="ident">account</span>(<span class="kw-2">mut</span>)]</span>
-    <span class="kw">pub</span> <span class="ident">payer</span>: <span class="ident">Signer</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span>,
-    <span class="kw">pub</span> <span class="ident">system_program</span>: <span class="ident">Program</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span>, <span class="ident">System</span><span class="op">&gt;</span>,
-    <span class="kw">pub</span> <span class="ident">token_program</span>: <span class="ident">Program</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span>, <span class="ident">Token</span><span class="op">&gt;</span>,
+    <span class="attribute">#[account(<span class="kw-2">mut</span>)]
+    </span><span class="kw">pub </span>payer: Signer&lt;<span class="lifetime">&#39;info</span>&gt;,
+    <span class="kw">pub </span>system_program: Program&lt;<span class="lifetime">&#39;info</span>, System&gt;,
+    <span class="kw">pub </span>token_program: Program&lt;<span class="lifetime">&#39;info</span>, Token&gt;,
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span> <span class="ident">LendOrder</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">lender_tickets_token_account</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Pubkey</span><span class="op">&gt;</span> {
-        <span class="ident">Account</span>::<span class="op">&lt;</span><span class="lifetime">&#39;info</span>, <span class="ident">TokenAccount</span><span class="op">&gt;</span><span class="ident">::try_from</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">ticket_settlement</span>)<span class="question-mark">?</span>;
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;info</span>&gt; LendOrder&lt;<span class="lifetime">&#39;info</span>&gt; {
+    <span class="kw">pub fn </span>lender_tickets_token_account(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;Pubkey&gt; {
+        Account::&lt;<span class="lifetime">&#39;info</span>, TokenAccount&gt;::try_from(<span class="kw-2">&amp;</span><span class="self">self</span>.ticket_settlement)<span class="question-mark">?</span>;
         <span class="macro">require!</span>(
-            <span class="ident">mint</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">ticket_settlement</span>.<span class="ident">to_account_info</span>())<span class="question-mark">?</span> <span class="op">==</span> <span class="self">self</span>.<span class="ident">orderbook_mut</span>.<span class="ident">ticket_mint</span>(),
-            <span class="ident">BondsError::WrongTicketMint</span>
+            mint(<span class="kw-2">&amp;</span><span class="self">self</span>.ticket_settlement.to_account_info())<span class="question-mark">? </span>== <span class="self">self</span>.orderbook_mut.ticket_mint(),
+            BondsError::WrongTicketMint
         );
 
-        <span class="prelude-val">Ok</span>(<span class="self">self</span>.<span class="ident">ticket_settlement</span>.<span class="ident">key</span>())
+        <span class="prelude-val">Ok</span>(<span class="self">self</span>.ticket_settlement.key())
     }
 
-    <span class="doccomment">/// returns the amount of tickets staked</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">lend</span>(
+    <span class="doccomment">/// returns the amount of tickets staked
+    </span><span class="kw">pub fn </span>lend(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        <span class="ident">user</span>: <span class="ident">Pubkey</span>,
-        <span class="ident">seed</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>],
-        <span class="ident">callback_info</span>: <span class="ident">CallbackInfo</span>,
-        <span class="ident">order_summary</span>: <span class="kw-2">&amp;</span><span class="ident">SensibleOrderSummary</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">u64</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">staked</span> <span class="op">=</span> <span class="kw">if</span> <span class="ident">order_summary</span>.<span class="ident">base_filled</span>() <span class="op">&gt;</span> <span class="number">0</span> {
-            <span class="kw">if</span> <span class="ident">callback_info</span>.<span class="ident">flags</span>.<span class="ident">contains</span>(<span class="ident">CallbackFlags::AUTO_STAKE</span>) {
-                <span class="comment">// auto_stake: issue split tickets to the user for immediate fill</span>
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">split_ticket</span> <span class="op">=</span> <span class="ident">serialization::init</span>::<span class="op">&lt;</span><span class="ident">SplitTicket</span><span class="op">&gt;</span>(
-                    <span class="self">self</span>.<span class="ident">ticket_settlement</span>.<span class="ident">to_account_info</span>(),
-                    <span class="self">self</span>.<span class="ident">payer</span>.<span class="ident">to_account_info</span>(),
-                    <span class="self">self</span>.<span class="ident">system_program</span>.<span class="ident">to_account_info</span>(),
-                    <span class="kw-2">&amp;</span><span class="ident">SplitTicket::make_seeds</span>(<span class="ident">user</span>.<span class="ident">as_ref</span>(), <span class="ident">seed</span>),
+        user: Pubkey,
+        seed: <span class="kw-2">&amp;</span>[u8],
+        callback_info: CallbackInfo,
+        order_summary: <span class="kw-2">&amp;</span>SensibleOrderSummary,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;u64&gt; {
+        <span class="kw">let </span>staked = <span class="kw">if </span>order_summary.base_filled() &gt; <span class="number">0 </span>{
+            <span class="kw">if </span>callback_info.flags.contains(CallbackFlags::AUTO_STAKE) {
+                <span class="comment">// auto_stake: issue split tickets to the user for immediate fill
+                </span><span class="kw">let </span><span class="kw-2">mut </span>split_ticket = serialization::init::&lt;SplitTicket&gt;(
+                    <span class="self">self</span>.ticket_settlement.to_account_info(),
+                    <span class="self">self</span>.payer.to_account_info(),
+                    <span class="self">self</span>.system_program.to_account_info(),
+                    <span class="kw-2">&amp;</span>SplitTicket::make_seeds(user.as_ref(), seed),
                 )<span class="question-mark">?</span>;
-                <span class="kw">let</span> <span class="ident">timestamp</span> <span class="op">=</span> <span class="ident">Clock::get</span>()<span class="question-mark">?</span>.<span class="ident">unix_timestamp</span>;
-                <span class="kw-2">*</span><span class="ident">split_ticket</span> <span class="op">=</span> <span class="ident">SplitTicket</span> {
-                    <span class="ident">owner</span>: <span class="ident">user</span>,
-                    <span class="ident">bond_manager</span>: <span class="self">self</span>.<span class="ident">orderbook_mut</span>.<span class="ident">bond_manager</span>.<span class="ident">key</span>(),
-                    <span class="ident">order_tag</span>: <span class="ident">callback_info</span>.<span class="ident">order_tag</span>,
-                    <span class="ident">struck_timestamp</span>: <span class="ident">timestamp</span>,
-                    <span class="ident">maturation_timestamp</span>: <span class="ident">timestamp</span>
-                        <span class="op">+</span> <span class="self">self</span>.<span class="ident">orderbook_mut</span>.<span class="ident">bond_manager</span>.<span class="ident">load</span>()<span class="question-mark">?</span>.<span class="ident">lend_duration</span>,
-                    <span class="ident">principal</span>: <span class="ident">order_summary</span>.<span class="ident">quote_filled</span>()<span class="question-mark">?</span>,
-                    <span class="ident">interest</span>: <span class="ident">order_summary</span>.<span class="ident">base_filled</span>() <span class="op">-</span> <span class="ident">order_summary</span>.<span class="ident">quote_filled</span>()<span class="question-mark">?</span>,
+                <span class="kw">let </span>timestamp = Clock::get()<span class="question-mark">?</span>.unix_timestamp;
+                <span class="kw-2">*</span>split_ticket = SplitTicket {
+                    owner: user,
+                    bond_manager: <span class="self">self</span>.orderbook_mut.bond_manager.key(),
+                    order_tag: callback_info.order_tag,
+                    struck_timestamp: timestamp,
+                    maturation_timestamp: timestamp
+                        + <span class="self">self</span>.orderbook_mut.bond_manager.load()<span class="question-mark">?</span>.lend_duration,
+                    principal: order_summary.quote_filled()<span class="question-mark">?</span>,
+                    interest: order_summary.base_filled() - order_summary.quote_filled()<span class="question-mark">?</span>,
                 };
-                <span class="ident">order_summary</span>.<span class="ident">base_filled</span>()
-            } <span class="kw">else</span> {
-                <span class="comment">// no auto_stake: issue free tickets to the user for immediate fill</span>
-                <span class="self">self</span>.<span class="ident">mint</span>(
-                    <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">ticket_mint</span>,
-                    <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">ticket_settlement</span>,
-                    <span class="ident">order_summary</span>.<span class="ident">base_filled</span>(),
+                order_summary.base_filled()
+            } <span class="kw">else </span>{
+                <span class="comment">// no auto_stake: issue free tickets to the user for immediate fill
+                </span><span class="self">self</span>.mint(
+                    <span class="kw-2">&amp;</span><span class="self">self</span>.ticket_mint,
+                    <span class="kw-2">&amp;</span><span class="self">self</span>.ticket_settlement,
+                    order_summary.base_filled(),
                 )<span class="question-mark">?</span>;
-                <span class="number">0</span>
-            }
-        } <span class="kw">else</span> {
-            <span class="number">0</span>
-        };
-        <span class="comment">// take all underlying that has been lent plus what may be lent later</span>
-        <span class="ident">anchor_spl::token::transfer</span>(
-            <span class="ident">anchor_lang::prelude::CpiContext::new</span>(
-                <span class="self">self</span>.<span class="ident">token_program</span>.<span class="ident">to_account_info</span>(),
-                <span class="ident">anchor_spl::token::Transfer</span> {
-                    <span class="ident">from</span>: <span class="self">self</span>.<span class="ident">lender_tokens</span>.<span class="ident">to_account_info</span>(),
-                    <span class="ident">to</span>: <span class="self">self</span>.<span class="ident">underlying_token_vault</span>.<span class="ident">to_account_info</span>(),
-                    <span class="ident">authority</span>: <span class="self">self</span>.<span class="ident">authority</span>.<span class="ident">to_account_info</span>(),
+                <span class="number">0
+            </span>}
+        } <span class="kw">else </span>{
+            <span class="number">0
+        </span>};
+        <span class="comment">// take all underlying that has been lent plus what may be lent later
+        </span>anchor_spl::token::transfer(
+            anchor_lang::prelude::CpiContext::new(
+                <span class="self">self</span>.token_program.to_account_info(),
+                anchor_spl::token::Transfer {
+                    from: <span class="self">self</span>.lender_tokens.to_account_info(),
+                    to: <span class="self">self</span>.underlying_token_vault.to_account_info(),
+                    authority: <span class="self">self</span>.authority.to_account_info(),
                 },
             ),
-            <span class="ident">order_summary</span>.<span class="ident">quote_combined</span>()<span class="question-mark">?</span>,
+            order_summary.quote_combined()<span class="question-mark">?</span>,
         )<span class="question-mark">?</span>;
 
-        <span class="prelude-val">Ok</span>(<span class="ident">staked</span>)
+        <span class="prelude-val">Ok</span>(staked)
     }
 }
 
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">handler</span>(<span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">LendOrder</span><span class="op">&gt;</span>, <span class="ident">params</span>: <span class="ident">OrderParams</span>, <span class="ident">seed</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-    <span class="kw">let</span> (<span class="ident">callback_info</span>, <span class="ident">order_summary</span>) <span class="op">=</span> <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">orderbook_mut</span>.<span class="ident">place_order</span>(
-        <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">authority</span>.<span class="ident">key</span>(),
-        <span class="ident">Side::Bid</span>,
-        <span class="ident">params</span>,
-        <span class="kw">if</span> <span class="ident">params</span>.<span class="ident">auto_stake</span> {
-            <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">authority</span>.<span class="ident">key</span>()
-        } <span class="kw">else</span> {
-            <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">lender_tickets_token_account</span>()<span class="question-mark">?</span>
-        },
-        <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">lender_tokens</span>.<span class="ident">key</span>(),
-        <span class="ident">ctx</span>.<span class="ident">remaining_accounts</span>
-            .<span class="ident">iter</span>()
-            .<span class="ident">maybe_next_adapter</span>()<span class="question-mark">?</span>
-            .<span class="ident">map</span>(<span class="op">|</span><span class="ident">a</span><span class="op">|</span> <span class="ident">a</span>.<span class="ident">key</span>()),
-        <span class="kw">if</span> <span class="ident">params</span>.<span class="ident">auto_stake</span> {
-            <span class="ident">CallbackFlags::AUTO_STAKE</span>
-        } <span class="kw">else</span> {
-            <span class="ident">CallbackFlags::empty</span>()
+<span class="kw">pub fn </span>handler(ctx: Context&lt;LendOrder&gt;, params: OrderParams, seed: Vec&lt;u8&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+    <span class="kw">let </span>(callback_info, order_summary) = ctx.accounts.orderbook_mut.place_order(
+        ctx.accounts.authority.key(),
+        Side::Bid,
+        params,
+        <span class="kw">if </span>params.auto_stake {
+            ctx.accounts.authority.key()
+        } <span class="kw">else </span>{
+            ctx.accounts.lender_tickets_token_account()<span class="question-mark">?
+        </span>},
+        ctx.accounts.lender_tokens.key(),
+        ctx.remaining_accounts
+            .iter()
+            .maybe_next_adapter()<span class="question-mark">?
+            </span>.map(|a| a.key()),
+        <span class="kw">if </span>params.auto_stake {
+            CallbackFlags::AUTO_STAKE
+        } <span class="kw">else </span>{
+            CallbackFlags::empty()
         },
     )<span class="question-mark">?</span>;
-    <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">lend</span>(
-        <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">authority</span>.<span class="ident">key</span>(),
-        <span class="kw-2">&amp;</span><span class="ident">seed</span>,
-        <span class="ident">callback_info</span>,
-        <span class="kw-2">&amp;</span><span class="ident">order_summary</span>,
+    ctx.accounts.lend(
+        ctx.accounts.authority.key(),
+        <span class="kw-2">&amp;</span>seed,
+        callback_info,
+        <span class="kw-2">&amp;</span>order_summary,
     )<span class="question-mark">?</span>;
-    <span class="macro">emit!</span>(<span class="ident"><span class="kw">crate</span>::events::OrderPlaced</span> {
-        <span class="ident">bond_manager</span>: <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">orderbook_mut</span>.<span class="ident">bond_manager</span>.<span class="ident">key</span>(),
-        <span class="ident">authority</span>: <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">authority</span>.<span class="ident">key</span>(),
-        <span class="ident">margin_user</span>: <span class="prelude-val">None</span>,
-        <span class="ident">order_summary</span>: <span class="ident">order_summary</span>.<span class="ident">summary</span>(),
-        <span class="ident">order_type</span>: <span class="ident"><span class="kw">crate</span>::events::OrderType::Lend</span>,
-        <span class="ident">limit_price</span>: <span class="ident">params</span>.<span class="ident">limit_price</span>,
-        <span class="ident">auto_stake</span>: <span class="ident">params</span>.<span class="ident">auto_stake</span>,
-        <span class="ident">post_only</span>: <span class="ident">params</span>.<span class="ident">post_only</span>,
-        <span class="ident">post_allowed</span>: <span class="ident">params</span>.<span class="ident">post_allowed</span>,
+    <span class="macro">emit!</span>(<span class="kw">crate</span>::events::OrderPlaced {
+        bond_manager: ctx.accounts.orderbook_mut.bond_manager.key(),
+        authority: ctx.accounts.authority.key(),
+        margin_user: <span class="prelude-val">None</span>,
+        order_summary: order_summary.summary(),
+        order_type: <span class="kw">crate</span>::events::OrderType::Lend,
+        limit_price: params.limit_price,
+        auto_stake: params.auto_stake,
+        post_only: params.post_only,
+        post_allowed: params.post_allowed,
     });
 
     <span class="prelude-val">Ok</span>(())
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="jet_bonds" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0 (a55dd71d5 2022-09-19)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="jet_bonds" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `programs/bonds/src/utils.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>utils.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../normalize.css"><link rel="stylesheet" type="text/css" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script><script defer src="../../main.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../jet_bonds/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../jet_bonds/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../jet_bonds/index.html"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `programs/bonds/src/utils.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>utils.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../normalize.css"><link rel="stylesheet" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../ayu.css" disabled><link rel="stylesheet" href="../../dark.css" disabled><link rel="stylesheet" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script><script defer src="../../main.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../jet_bonds/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../jet_bonds/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../jet_bonds/index.html"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -44,51 +44,51 @@
 <span id="44">44</span>
 <span id="45">45</span>
 <span id="46">46</span>
-</pre><pre class="rust"><code><span class="doccomment">/// Initialize a struct that has already been instantiated with invalid data.</span>
-<span class="doccomment">/// Ensure safety by providing a compile-time guarantee that your code handles every field.</span>
-<span class="doccomment">/// Ensure performance by not:</span>
-<span class="doccomment">/// - instantiating an entire brand new struct.</span>
-<span class="doccomment">/// - wasting time with fields that don&#39;t need to be changed.</span>
-<span class="macro">macro_rules!</span> <span class="ident">init</span> {
-    (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">zeroed_item</span>:<span class="ident">ident</span> <span class="op">=</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">Struct</span>:<span class="ident">ident</span> {
-        $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">field</span>:<span class="ident">ident</span>: <span class="macro-nonterminal">$</span><span class="macro-nonterminal">value</span>:<span class="ident">expr</span>),<span class="kw-2">*</span>$(,)<span class="question-mark">?</span>
-    } $(<span class="ident">ignoring</span> {
-        $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">ignored_field</span>:<span class="ident">ident</span>),<span class="kw-2">*</span>$(,)<span class="question-mark">?</span>
-    })<span class="question-mark">?</span>) =&gt; {
-        $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">zeroed_item</span>.<span class="macro-nonterminal">$</span><span class="macro-nonterminal">field</span> <span class="op">=</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">value</span>;)<span class="op">*</span>
-        <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">unreachable_code</span>)]</span>
-        <span class="kw">if</span> <span class="bool-val">false</span> {
-            <span class="comment">// this will never run, but it enables the compiler</span>
-            <span class="comment">// to check that every field has been mentioned.</span>
-            <span class="kw">let</span> <span class="kw">_</span> <span class="op">=</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">Struct</span> {
-                $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">field</span>: <span class="macro-nonterminal">$</span><span class="macro-nonterminal">value</span>,)<span class="op">*</span>
-                $($(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">ignored_field</span>: <span class="macro">panic!</span>(<span class="string">&quot;fix the bug in `init`&quot;</span>),)<span class="kw-2">*</span>)<span class="question-mark">?</span>
-            };
+</pre><pre class="rust"><code><span class="doccomment">/// Initialize a struct that has already been instantiated with invalid data.
+/// Ensure safety by providing a compile-time guarantee that your code handles every field.
+/// Ensure performance by not:
+/// - instantiating an entire brand new struct.
+/// - wasting time with fields that don&#39;t need to be changed.
+</span><span class="macro">macro_rules! </span>init {
+    (<span class="macro-nonterminal">$zeroed_item</span>:ident = <span class="macro-nonterminal">$Struct</span>:ident {
+        $(<span class="macro-nonterminal">$field</span>:ident: <span class="macro-nonterminal">$value</span>:expr),<span class="kw-2">*</span>$(,)<span class="question-mark">?
+    </span>} $(ignoring {
+        $(<span class="macro-nonterminal">$ignored_field</span>:ident),<span class="kw-2">*</span>$(,)<span class="question-mark">?
+    </span>})<span class="question-mark">?</span>) =&gt; {
+        $(<span class="macro-nonterminal">$zeroed_item</span>.<span class="macro-nonterminal">$field </span>= <span class="macro-nonterminal">$value</span>;)*
+        <span class="attribute">#[allow(unreachable_code)]
+        </span><span class="kw">if </span><span class="bool-val">false </span>{
+            <span class="comment">// this will never run, but it enables the compiler
+            // to check that every field has been mentioned.
+            </span><span class="kw">let _ </span>= <span class="macro-nonterminal">$Struct </span>{
+                $(<span class="macro-nonterminal">$field</span>: <span class="macro-nonterminal">$value</span>,)*
+                $($(<span class="macro-nonterminal">$ignored_field</span>: <span class="macro">panic!</span>(<span class="string">&quot;fix the bug in `init`&quot;</span>),)<span class="kw-2">*</span>)<span class="question-mark">?
+            </span>};
         }
     };
 }
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">use</span> <span class="ident">init</span>;
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">use </span>init;
 
-<span class="doccomment">/// builds accounts for an instruction on the agnostic orderbook</span>
-<span class="macro">macro_rules!</span> <span class="ident">orderbook_accounts</span> {
-    (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">accounts</span>:<span class="ident">expr</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">ix</span>:<span class="ident">ident</span>) =&gt; {
-        <span class="ident">agnostic_orderbook::instruction</span>::<span class="macro-nonterminal">$</span><span class="macro-nonterminal">ix::Accounts</span> {
-            <span class="ident">market</span>: <span class="kw-2">&amp;</span><span class="macro-nonterminal">$</span><span class="macro-nonterminal">accounts</span>.<span class="ident">orderbook_market_state</span>.<span class="ident">to_account_info</span>(),
-            <span class="ident">event_queue</span>: <span class="kw-2">&amp;</span><span class="macro-nonterminal">$</span><span class="macro-nonterminal">accounts</span>.<span class="ident">event_queue</span>.<span class="ident">to_account_info</span>(),
-            <span class="ident">bids</span>: <span class="kw-2">&amp;</span><span class="macro-nonterminal">$</span><span class="macro-nonterminal">accounts</span>.<span class="ident">bids</span>.<span class="ident">to_account_info</span>(),
-            <span class="ident">asks</span>: <span class="kw-2">&amp;</span><span class="macro-nonterminal">$</span><span class="macro-nonterminal">accounts</span>.<span class="ident">asks</span>.<span class="ident">to_account_info</span>(),
+<span class="doccomment">/// builds accounts for an instruction on the agnostic orderbook
+</span><span class="macro">macro_rules! </span>orderbook_accounts {
+    (<span class="macro-nonterminal">$accounts</span>:expr, <span class="macro-nonterminal">$ix</span>:ident) =&gt; {
+        agnostic_orderbook::instruction::<span class="macro-nonterminal">$ix::Accounts </span>{
+            market: <span class="kw-2">&amp;</span><span class="macro-nonterminal">$accounts</span>.orderbook_market_state.to_account_info(),
+            event_queue: <span class="kw-2">&amp;</span><span class="macro-nonterminal">$accounts</span>.event_queue.to_account_info(),
+            bids: <span class="kw-2">&amp;</span><span class="macro-nonterminal">$accounts</span>.bids.to_account_info(),
+            asks: <span class="kw-2">&amp;</span><span class="macro-nonterminal">$accounts</span>.asks.to_account_info(),
         }
     };
 }
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">use</span> <span class="ident">orderbook_accounts</span>;
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">use </span>orderbook_accounts;
 
-<span class="macro">macro_rules!</span> <span class="ident">map</span> {
-    (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">option</span>:<span class="ident">ident</span>.$(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">tt</span>:<span class="ident">tt</span>)<span class="kw-2">*</span>) =&gt; {
-        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">x</span>) <span class="op">=</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">option</span>.<span class="ident">as_mut</span>() {
-            <span class="ident">x</span>.$(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">tt</span>)<span class="op">*</span>
+<span class="macro">macro_rules! </span>map {
+    (<span class="macro-nonterminal">$option</span>:ident.$(<span class="macro-nonterminal">$tt</span>:tt)<span class="kw-2">*</span>) =&gt; {
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(x) = <span class="macro-nonterminal">$option</span>.as_mut() {
+            x.$(<span class="macro-nonterminal">$tt</span>)*
         }
     };
 }
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">use</span> <span class="ident">map</span>;
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">use </span>map;
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="jet_bonds" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0 (a55dd71d5 2022-09-19)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="jet_bonds" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

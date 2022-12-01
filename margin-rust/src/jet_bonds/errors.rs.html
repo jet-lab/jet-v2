@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `programs/bonds/src/errors.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>errors.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../normalize.css"><link rel="stylesheet" type="text/css" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script><script defer src="../../main.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../jet_bonds/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../jet_bonds/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../jet_bonds/index.html"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `programs/bonds/src/errors.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>errors.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../normalize.css"><link rel="stylesheet" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../ayu.css" disabled><link rel="stylesheet" href="../../dark.css" disabled><link rel="stylesheet" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script><script defer src="../../main.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../jet_bonds/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../jet_bonds/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../jet_bonds/index.html"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -117,124 +117,124 @@
 <span id="117">117</span>
 <span id="118">118</span>
 <span id="119">119</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">anchor_lang::prelude</span>::<span class="kw-2">*</span>;
+</pre><pre class="rust"><code><span class="kw">use </span>anchor_lang::prelude::<span class="kw-2">*</span>;
 
-<span class="attribute">#[<span class="ident">error_code</span>]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">BondsError</span> {
-    <span class="attribute">#[<span class="ident">msg</span>(<span class="string">&quot;overflow occured on checked_add&quot;</span>)]</span>
-    <span class="ident">ArithmeticOverflow</span>,
-    <span class="attribute">#[<span class="ident">msg</span>(<span class="string">&quot;underflow occured on checked_sub&quot;</span>)]</span>
-    <span class="ident">ArithmeticUnderflow</span>,
-    <span class="attribute">#[<span class="ident">msg</span>(<span class="string">&quot;bad fixed-point division&quot;</span>)]</span>
-    <span class="ident">FixedPointDivision</span>,
-    <span class="attribute">#[<span class="ident">msg</span>(<span class="string">&quot;owner does not own the ticket&quot;</span>)]</span>
-    <span class="ident">DoesNotOwnTicket</span>,
-    <span class="attribute">#[<span class="ident">msg</span>(<span class="string">&quot;signer does not own the event adapter&quot;</span>)]</span>
-    <span class="ident">DoesNotOwnEventAdapter</span>,
-    <span class="attribute">#[<span class="ident">msg</span>(<span class="string">&quot;queue does not have room for another event&quot;</span>)]</span>
-    <span class="ident">EventQueueFull</span>,
-    <span class="attribute">#[<span class="ident">msg</span>(<span class="string">&quot;failed to deserialize the SplitTicket or ClaimTicket&quot;</span>)]</span>
-    <span class="ident">FailedToDeserializeTicket</span>,
-    <span class="attribute">#[<span class="ident">msg</span>(<span class="string">&quot;bond is not mature and cannot be claimed&quot;</span>)]</span>
-    <span class="ident">ImmatureBond</span>,
-    <span class="attribute">#[<span class="ident">msg</span>(<span class="string">&quot;not enough seeds were provided for the accounts that need to be initialized&quot;</span>)]</span>
-    <span class="ident">InsufficientSeeds</span>,
-    <span class="attribute">#[<span class="ident">msg</span>(<span class="string">&quot;the wrong event type was unwrapped\nthis condition should be impossible, and does not result from invalid input&quot;</span>)]</span>
-    <span class="ident">InvalidEvent</span>,
-    <span class="attribute">#[<span class="ident">msg</span>(<span class="string">&quot;order price is prohibited&quot;</span>)]</span>
-    <span class="ident">InvalidOrderPrice</span>,
-    <span class="attribute">#[<span class="ident">msg</span>(<span class="string">&quot;failed to invoke account creation&quot;</span>)]</span>
-    <span class="ident">InvokeCreateAccount</span>,
-    <span class="attribute">#[<span class="ident">msg</span>(<span class="string">&quot;failed to properly serialize or deserialize a data structure&quot;</span>)]</span>
-    <span class="ident">IoError</span>,
-    <span class="attribute">#[<span class="ident">msg</span>(<span class="string">&quot;this market state account is not owned by the current program&quot;</span>)]</span>
-    <span class="ident">MarketStateNotProgramOwned</span>,
-    <span class="attribute">#[<span class="ident">msg</span>(<span class="string">&quot;tried to access a missing adapter account&quot;</span>)]</span>
-    <span class="ident">MissingEventAdapter</span>,
-    <span class="attribute">#[<span class="ident">msg</span>(<span class="string">&quot;tried to access a missing split ticket account&quot;</span>)]</span>
-    <span class="ident">MissingSplitTicket</span>,
-    <span class="attribute">#[<span class="ident">msg</span>(<span class="string">&quot;consume_events instruction failed to consume a single event&quot;</span>)]</span>
-    <span class="ident">NoEvents</span>,
-    <span class="attribute">#[<span class="ident">msg</span>(<span class="string">&quot;expected additional remaining accounts, but there were none&quot;</span>)]</span>
-    <span class="ident">NoMoreAccounts</span>,
-    <span class="attribute">#[<span class="ident">msg</span>(<span class="string">&quot;expected an obligation with a different sequence number&quot;</span>)]</span>
-    <span class="ident">ObligationHasWrongSequenceNumber</span>,
-    <span class="attribute">#[<span class="ident">msg</span>(<span class="string">&quot;there was a problem loading the price oracle&quot;</span>)]</span>
-    <span class="ident">OracleError</span>,
-    <span class="attribute">#[<span class="ident">msg</span>(<span class="string">&quot;id was not found in the user&#39;s open orders&quot;</span>)]</span>
-    <span class="ident">OrderNotFound</span>,
-    <span class="attribute">#[<span class="ident">msg</span>(<span class="string">&quot;Orderbook is not taking orders&quot;</span>)]</span>
-    <span class="ident">OrderbookPaused</span>,
-    <span class="attribute">#[<span class="ident">msg</span>(<span class="string">&quot;aaob did not match or post the order. either posting is disabled or the order was too small&quot;</span>)]</span>
-    <span class="ident">OrderRejected</span>,
-    <span class="attribute">#[<span class="ident">msg</span>(<span class="string">&quot;price could not be accessed from oracle&quot;</span>)]</span>
-    <span class="ident">PriceMissing</span>,
-    <span class="attribute">#[<span class="ident">msg</span>(<span class="string">&quot;claim ticket is not from this manager&quot;</span>)]</span>
-    <span class="ident">TicketNotFromManager</span>,
-    <span class="attribute">#[<span class="ident">msg</span>(<span class="string">&quot;tickets are paused&quot;</span>)]</span>
-    <span class="ident">TicketsPaused</span>,
-    <span class="attribute">#[<span class="ident">msg</span>(<span class="string">&quot;this signer is not authorized to place a permissioned order&quot;</span>)]</span>
-    <span class="ident">UnauthorizedCaller</span>,
-    <span class="attribute">#[<span class="ident">msg</span>(<span class="string">&quot;this user does not own the user account&quot;</span>)]</span>
-    <span class="ident">UserDoesNotOwnAccount</span>,
-    <span class="attribute">#[<span class="ident">msg</span>(<span class="string">&quot;this adapter does not belong to the user&quot;</span>)]</span>
-    <span class="ident">UserDoesNotOwnAdapter</span>,
-    <span class="attribute">#[<span class="ident">msg</span>(<span class="string">&quot;this user account is not associated with this bond market&quot;</span>)]</span>
-    <span class="ident">UserNotInMarket</span>,
-    <span class="attribute">#[<span class="ident">msg</span>(<span class="string">&quot;the wrong adapter account was passed to this instruction&quot;</span>)]</span>
-    <span class="ident">WrongAdapter</span>,
-    <span class="attribute">#[<span class="ident">msg</span>(<span class="string">&quot;asks account does not belong to this market&quot;</span>)]</span>
-    <span class="ident">WrongAsks</span>,
-    <span class="attribute">#[<span class="ident">msg</span>(<span class="string">&quot;the market is configured for a different airspace&quot;</span>)]</span>
-    <span class="ident">WrongAirspace</span>,
-    <span class="attribute">#[<span class="ident">msg</span>(<span class="string">&quot;the signer is not authorized to perform this action in the current airspace&quot;</span>)]</span>
-    <span class="ident">WrongAirspaceAuthorization</span>,
-    <span class="attribute">#[<span class="ident">msg</span>(<span class="string">&quot;bids account does not belong to this market&quot;</span>)]</span>
-    <span class="ident">WrongBids</span>,
-    <span class="attribute">#[<span class="ident">msg</span>(<span class="string">&quot;adapter does not belong to given bond manager&quot;</span>)]</span>
-    <span class="ident">WrongBondManager</span>,
-    <span class="attribute">#[<span class="ident">msg</span>(<span class="string">&quot;wrong authority for this crank instruction&quot;</span>)]</span>
-    <span class="ident">WrongCrankAuthority</span>,
-    <span class="attribute">#[<span class="ident">msg</span>(<span class="string">&quot;event queue account does not belong to this market&quot;</span>)]</span>
-    <span class="ident">WrongEventQueue</span>,
-    <span class="attribute">#[<span class="ident">msg</span>(<span class="string">&quot;this market state is not associated with this market&quot;</span>)]</span>
-    <span class="ident">WrongMarketState</span>,
-    <span class="attribute">#[<span class="ident">msg</span>(<span class="string">&quot;wrong TicketManager account provided&quot;</span>)]</span>
-    <span class="ident">WrongTicketManager</span>,
-    <span class="attribute">#[<span class="ident">msg</span>(<span class="string">&quot;this market owner does not own this market&quot;</span>)]</span>
-    <span class="ident">DoesNotOwnMarket</span>,
-    <span class="attribute">#[<span class="ident">msg</span>(<span class="string">&quot;the wrong account was provided for the token account that represents a user&#39;s claims&quot;</span>)]</span>
-    <span class="ident">WrongClaimAccount</span>,
-    <span class="attribute">#[<span class="ident">msg</span>(
-        <span class="string">&quot;the wrong account was provided for the token account that represents a user&#39;s collateral&quot;</span>
-    )]</span>
-    <span class="ident">WrongCollateralAccount</span>,
-    <span class="attribute">#[<span class="ident">msg</span>(<span class="string">&quot;the wrong account was provided for the claims token mint&quot;</span>)]</span>
-    <span class="ident">WrongClaimMint</span>,
-    <span class="attribute">#[<span class="ident">msg</span>(<span class="string">&quot;the wrong account was provided for the collateral token mint&quot;</span>)]</span>
-    <span class="ident">WrongCollateralMint</span>,
-    <span class="attribute">#[<span class="ident">msg</span>(<span class="string">&quot;wrong oracle address was sent to instruction&quot;</span>)]</span>
-    <span class="ident">WrongOracle</span>,
-    <span class="attribute">#[<span class="ident">msg</span>(<span class="string">&quot;wrong margin user account address was sent to instruction&quot;</span>)]</span>
-    <span class="ident">WrongMarginUser</span>,
-    <span class="attribute">#[<span class="ident">msg</span>(<span class="string">&quot;wrong authority for the margin user account address was sent to instruction&quot;</span>)]</span>
-    <span class="ident">WrongMarginUserAuthority</span>,
-    <span class="attribute">#[<span class="ident">msg</span>(<span class="string">&quot;incorrect authority account&quot;</span>)]</span>
-    <span class="ident">WrongProgramAuthority</span>,
-    <span class="attribute">#[<span class="ident">msg</span>(<span class="string">&quot;not the ticket mint for this bond market&quot;</span>)]</span>
-    <span class="ident">WrongTicketMint</span>,
-    <span class="attribute">#[<span class="ident">msg</span>(<span class="string">&quot;wrong ticket settlement account&quot;</span>)]</span>
-    <span class="ident">WrongTicketSettlementAccount</span>,
-    <span class="attribute">#[<span class="ident">msg</span>(<span class="string">&quot;wrong underlying settlement account&quot;</span>)]</span>
-    <span class="ident">WrongUnderlyingSettlementAccount</span>,
-    <span class="attribute">#[<span class="ident">msg</span>(<span class="string">&quot;wrong underlying token mint for this bond market&quot;</span>)]</span>
-    <span class="ident">WrongUnderlyingTokenMint</span>,
-    <span class="attribute">#[<span class="ident">msg</span>(<span class="string">&quot;wrong user account address was sent to instruction&quot;</span>)]</span>
-    <span class="ident">WrongUserAccount</span>,
-    <span class="attribute">#[<span class="ident">msg</span>(<span class="string">&quot;wrong vault address was sent to instruction&quot;</span>)]</span>
-    <span class="ident">WrongVault</span>,
-    <span class="attribute">#[<span class="ident">msg</span>(<span class="string">&quot;attempted to divide with zero&quot;</span>)]</span>
-    <span class="ident">ZeroDivision</span>,
+<span class="attribute">#[error_code]
+</span><span class="kw">pub enum </span>BondsError {
+    <span class="attribute">#[msg(<span class="string">&quot;overflow occured on checked_add&quot;</span>)]
+    </span>ArithmeticOverflow,
+    <span class="attribute">#[msg(<span class="string">&quot;underflow occured on checked_sub&quot;</span>)]
+    </span>ArithmeticUnderflow,
+    <span class="attribute">#[msg(<span class="string">&quot;bad fixed-point division&quot;</span>)]
+    </span>FixedPointDivision,
+    <span class="attribute">#[msg(<span class="string">&quot;owner does not own the ticket&quot;</span>)]
+    </span>DoesNotOwnTicket,
+    <span class="attribute">#[msg(<span class="string">&quot;signer does not own the event adapter&quot;</span>)]
+    </span>DoesNotOwnEventAdapter,
+    <span class="attribute">#[msg(<span class="string">&quot;queue does not have room for another event&quot;</span>)]
+    </span>EventQueueFull,
+    <span class="attribute">#[msg(<span class="string">&quot;failed to deserialize the SplitTicket or ClaimTicket&quot;</span>)]
+    </span>FailedToDeserializeTicket,
+    <span class="attribute">#[msg(<span class="string">&quot;bond is not mature and cannot be claimed&quot;</span>)]
+    </span>ImmatureBond,
+    <span class="attribute">#[msg(<span class="string">&quot;not enough seeds were provided for the accounts that need to be initialized&quot;</span>)]
+    </span>InsufficientSeeds,
+    <span class="attribute">#[msg(<span class="string">&quot;order price is prohibited&quot;</span>)]
+    </span>InvalidOrderPrice,
+    <span class="attribute">#[msg(<span class="string">&quot;failed to invoke account creation&quot;</span>)]
+    </span>InvokeCreateAccount,
+    <span class="attribute">#[msg(<span class="string">&quot;failed to properly serialize or deserialize a data structure&quot;</span>)]
+    </span>IoError,
+    <span class="attribute">#[msg(<span class="string">&quot;this market state account is not owned by the current program&quot;</span>)]
+    </span>MarketStateNotProgramOwned,
+    <span class="attribute">#[msg(<span class="string">&quot;tried to access a missing adapter account&quot;</span>)]
+    </span>MissingEventAdapter,
+    <span class="attribute">#[msg(<span class="string">&quot;tried to access a missing split ticket account&quot;</span>)]
+    </span>MissingSplitTicket,
+    <span class="attribute">#[msg(<span class="string">&quot;consume_events instruction failed to consume a single event&quot;</span>)]
+    </span>NoEvents,
+    <span class="attribute">#[msg(<span class="string">&quot;expected additional remaining accounts, but there were none&quot;</span>)]
+    </span>NoMoreAccounts,
+    <span class="attribute">#[msg(<span class="string">&quot;expected an obligation with a different sequence number&quot;</span>)]
+    </span>ObligationHasWrongSequenceNumber,
+    <span class="attribute">#[msg(<span class="string">&quot;there was a problem loading the price oracle&quot;</span>)]
+    </span>OracleError,
+    <span class="attribute">#[msg(<span class="string">&quot;id was not found in the user&#39;s open orders&quot;</span>)]
+    </span>OrderNotFound,
+    <span class="attribute">#[msg(<span class="string">&quot;Orderbook is not taking orders&quot;</span>)]
+    </span>OrderbookPaused,
+    <span class="attribute">#[msg(<span class="string">&quot;aaob did not match or post the order. either posting is disabled or the order was too small&quot;</span>)]
+    </span>OrderRejected,
+    <span class="attribute">#[msg(<span class="string">&quot;price could not be accessed from oracle&quot;</span>)]
+    </span>PriceMissing,
+    <span class="attribute">#[msg(<span class="string">&quot;claim ticket is not from this manager&quot;</span>)]
+    </span>TicketNotFromManager,
+    <span class="attribute">#[msg(<span class="string">&quot;tickets are paused&quot;</span>)]
+    </span>TicketsPaused,
+    <span class="attribute">#[msg(<span class="string">&quot;this signer is not authorized to place a permissioned order&quot;</span>)]
+    </span>UnauthorizedCaller,
+    <span class="attribute">#[msg(<span class="string">&quot;this user does not own the user account&quot;</span>)]
+    </span>UserDoesNotOwnAccount,
+    <span class="attribute">#[msg(<span class="string">&quot;this adapter does not belong to the user&quot;</span>)]
+    </span>UserDoesNotOwnAdapter,
+    <span class="attribute">#[msg(<span class="string">&quot;this user account is not associated with this bond market&quot;</span>)]
+    </span>UserNotInMarket,
+    <span class="attribute">#[msg(<span class="string">&quot;the wrong adapter account was passed to this instruction&quot;</span>)]
+    </span>WrongAdapter,
+    <span class="attribute">#[msg(<span class="string">&quot;asks account does not belong to this market&quot;</span>)]
+    </span>WrongAsks,
+    <span class="attribute">#[msg(<span class="string">&quot;the market is configured for a different airspace&quot;</span>)]
+    </span>WrongAirspace,
+    <span class="attribute">#[msg(<span class="string">&quot;the signer is not authorized to perform this action in the current airspace&quot;</span>)]
+    </span>WrongAirspaceAuthorization,
+    <span class="attribute">#[msg(<span class="string">&quot;bids account does not belong to this market&quot;</span>)]
+    </span>WrongBids,
+    <span class="attribute">#[msg(<span class="string">&quot;adapter does not belong to given bond manager&quot;</span>)]
+    </span>WrongBondManager,
+    <span class="attribute">#[msg(<span class="string">&quot;wrong authority for this crank instruction&quot;</span>)]
+    </span>WrongCrankAuthority,
+    <span class="attribute">#[msg(<span class="string">&quot;event queue account does not belong to this market&quot;</span>)]
+    </span>WrongEventQueue,
+    <span class="attribute">#[msg(<span class="string">&quot;this market state is not associated with this market&quot;</span>)]
+    </span>WrongMarketState,
+    <span class="attribute">#[msg(<span class="string">&quot;wrong TicketManager account provided&quot;</span>)]
+    </span>WrongTicketManager,
+    <span class="attribute">#[msg(<span class="string">&quot;this market owner does not own this market&quot;</span>)]
+    </span>DoesNotOwnMarket,
+    <span class="attribute">#[msg(<span class="string">&quot;the wrong account was provided for the token account that represents a user&#39;s claims&quot;</span>)]
+    </span>WrongClaimAccount,
+    <span class="attribute">#[msg(
+        <span class="string">&quot;the wrong account was provided for the token account that represents a user&#39;s collateral&quot;
+    </span>)]
+    </span>WrongCollateralAccount,
+    <span class="attribute">#[msg(<span class="string">&quot;the wrong account was provided for the claims token mint&quot;</span>)]
+    </span>WrongClaimMint,
+    <span class="attribute">#[msg(<span class="string">&quot;the wrong account was provided for the collateral token mint&quot;</span>)]
+    </span>WrongCollateralMint,
+    <span class="attribute">#[msg(<span class="string">&quot;wrong fee destination&quot;</span>)]
+    </span>WrongFeeDestination,
+    <span class="attribute">#[msg(<span class="string">&quot;wrong oracle address was sent to instruction&quot;</span>)]
+    </span>WrongOracle,
+    <span class="attribute">#[msg(<span class="string">&quot;wrong margin user account address was sent to instruction&quot;</span>)]
+    </span>WrongMarginUser,
+    <span class="attribute">#[msg(<span class="string">&quot;wrong authority for the margin user account address was sent to instruction&quot;</span>)]
+    </span>WrongMarginUserAuthority,
+    <span class="attribute">#[msg(<span class="string">&quot;incorrect authority account&quot;</span>)]
+    </span>WrongProgramAuthority,
+    <span class="attribute">#[msg(<span class="string">&quot;not the ticket mint for this bond market&quot;</span>)]
+    </span>WrongTicketMint,
+    <span class="attribute">#[msg(<span class="string">&quot;wrong ticket settlement account&quot;</span>)]
+    </span>WrongTicketSettlementAccount,
+    <span class="attribute">#[msg(<span class="string">&quot;wrong underlying settlement account&quot;</span>)]
+    </span>WrongUnderlyingSettlementAccount,
+    <span class="attribute">#[msg(<span class="string">&quot;wrong underlying token mint for this bond market&quot;</span>)]
+    </span>WrongUnderlyingTokenMint,
+    <span class="attribute">#[msg(<span class="string">&quot;wrong user account address was sent to instruction&quot;</span>)]
+    </span>WrongUserAccount,
+    <span class="attribute">#[msg(<span class="string">&quot;wrong vault address was sent to instruction&quot;</span>)]
+    </span>WrongVault,
+    <span class="attribute">#[msg(<span class="string">&quot;attempted to divide with zero&quot;</span>)]
+    </span>ZeroDivision,
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="jet_bonds" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0 (a55dd71d5 2022-09-19)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="jet_bonds" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

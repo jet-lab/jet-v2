@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `programs/margin-pool/src/events.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>events.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../normalize.css"><link rel="stylesheet" type="text/css" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script><script defer src="../../main.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../jet_margin_pool/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../jet_margin_pool/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../jet_margin_pool/index.html"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `programs/margin-pool/src/events.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>events.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../normalize.css"><link rel="stylesheet" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../ayu.css" disabled><link rel="stylesheet" href="../../dark.css" disabled><link rel="stylesheet" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script><script defer src="../../main.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../jet_margin_pool/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../jet_margin_pool/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../jet_margin_pool/index.html"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -120,127 +120,127 @@
 <span id="120">120</span>
 <span id="121">121</span>
 <span id="122">122</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="kw">crate</span>::{<span class="ident">MarginPool</span>, <span class="ident">MarginPoolConfig</span>};
-<span class="kw">use</span> <span class="ident">anchor_lang::prelude</span>::<span class="kw-2">*</span>;
+</pre><pre class="rust"><code><span class="kw">use crate</span>::{MarginPool, MarginPoolConfig};
+<span class="kw">use </span>anchor_lang::prelude::<span class="kw-2">*</span>;
 
-<span class="attribute">#[<span class="ident">event</span>]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">PoolCreated</span> {
-    <span class="kw">pub</span> <span class="ident">margin_pool</span>: <span class="ident">Pubkey</span>,
-    <span class="kw">pub</span> <span class="ident">vault</span>: <span class="ident">Pubkey</span>,
-    <span class="kw">pub</span> <span class="ident">fee_destination</span>: <span class="ident">Pubkey</span>,
-    <span class="kw">pub</span> <span class="ident">deposit_note_mint</span>: <span class="ident">Pubkey</span>,
-    <span class="kw">pub</span> <span class="ident">loan_note_mint</span>: <span class="ident">Pubkey</span>,
-    <span class="kw">pub</span> <span class="ident">token_mint</span>: <span class="ident">Pubkey</span>,
-    <span class="kw">pub</span> <span class="ident">authority</span>: <span class="ident">Pubkey</span>,
-    <span class="kw">pub</span> <span class="ident">payer</span>: <span class="ident">Pubkey</span>,
-    <span class="kw">pub</span> <span class="ident">summary</span>: <span class="ident">MarginPoolSummary</span>,
-    <span class="kw">pub</span> <span class="ident">version</span>: <span class="ident">u8</span>,
-}
-
-<span class="attribute">#[<span class="ident">event</span>]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">PoolConfigured</span> {
-    <span class="kw">pub</span> <span class="ident">margin_pool</span>: <span class="ident">Pubkey</span>,
-    <span class="kw">pub</span> <span class="ident">pyth_product</span>: <span class="ident">Pubkey</span>,
-    <span class="kw">pub</span> <span class="ident">pyth_price</span>: <span class="ident">Pubkey</span>,
-    <span class="kw">pub</span> <span class="ident">config</span>: <span class="ident">MarginPoolConfig</span>,
+<span class="attribute">#[event]
+</span><span class="kw">pub struct </span>PoolCreated {
+    <span class="kw">pub </span>margin_pool: Pubkey,
+    <span class="kw">pub </span>vault: Pubkey,
+    <span class="kw">pub </span>fee_destination: Pubkey,
+    <span class="kw">pub </span>deposit_note_mint: Pubkey,
+    <span class="kw">pub </span>loan_note_mint: Pubkey,
+    <span class="kw">pub </span>token_mint: Pubkey,
+    <span class="kw">pub </span>authority: Pubkey,
+    <span class="kw">pub </span>payer: Pubkey,
+    <span class="kw">pub </span>summary: MarginPoolSummary,
+    <span class="kw">pub </span>version: u8,
 }
 
-<span class="attribute">#[<span class="ident">event</span>]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Deposit</span> {
-    <span class="kw">pub</span> <span class="ident">margin_pool</span>: <span class="ident">Pubkey</span>,
-    <span class="kw">pub</span> <span class="ident">user</span>: <span class="ident">Pubkey</span>,
-    <span class="kw">pub</span> <span class="ident">source</span>: <span class="ident">Pubkey</span>,
-    <span class="kw">pub</span> <span class="ident">destination</span>: <span class="ident">Pubkey</span>,
-    <span class="kw">pub</span> <span class="ident">deposit_tokens</span>: <span class="ident">u64</span>,
-    <span class="kw">pub</span> <span class="ident">deposit_notes</span>: <span class="ident">u64</span>,
-    <span class="kw">pub</span> <span class="ident">summary</span>: <span class="ident">MarginPoolSummary</span>,
+<span class="attribute">#[event]
+</span><span class="kw">pub struct </span>PoolConfigured {
+    <span class="kw">pub </span>margin_pool: Pubkey,
+    <span class="kw">pub </span>pyth_product: Pubkey,
+    <span class="kw">pub </span>pyth_price: Pubkey,
+    <span class="kw">pub </span>config: MarginPoolConfig,
 }
 
-<span class="attribute">#[<span class="ident">event</span>]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Withdraw</span> {
-    <span class="kw">pub</span> <span class="ident">margin_pool</span>: <span class="ident">Pubkey</span>,
-    <span class="kw">pub</span> <span class="ident">user</span>: <span class="ident">Pubkey</span>,
-    <span class="kw">pub</span> <span class="ident">source</span>: <span class="ident">Pubkey</span>,
-    <span class="kw">pub</span> <span class="ident">destination</span>: <span class="ident">Pubkey</span>,
-    <span class="kw">pub</span> <span class="ident">withdraw_tokens</span>: <span class="ident">u64</span>,
-    <span class="kw">pub</span> <span class="ident">withdraw_notes</span>: <span class="ident">u64</span>,
-    <span class="kw">pub</span> <span class="ident">summary</span>: <span class="ident">MarginPoolSummary</span>,
+<span class="attribute">#[event]
+</span><span class="kw">pub struct </span>Deposit {
+    <span class="kw">pub </span>margin_pool: Pubkey,
+    <span class="kw">pub </span>user: Pubkey,
+    <span class="kw">pub </span>source: Pubkey,
+    <span class="kw">pub </span>destination: Pubkey,
+    <span class="kw">pub </span>deposit_tokens: u64,
+    <span class="kw">pub </span>deposit_notes: u64,
+    <span class="kw">pub </span>summary: MarginPoolSummary,
 }
 
-<span class="attribute">#[<span class="ident">event</span>]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">MarginBorrow</span> {
-    <span class="kw">pub</span> <span class="ident">margin_pool</span>: <span class="ident">Pubkey</span>,
-    <span class="kw">pub</span> <span class="ident">user</span>: <span class="ident">Pubkey</span>,
-    <span class="kw">pub</span> <span class="ident">loan_account</span>: <span class="ident">Pubkey</span>,
-    <span class="kw">pub</span> <span class="ident">deposit_account</span>: <span class="ident">Pubkey</span>,
-    <span class="kw">pub</span> <span class="ident">tokens</span>: <span class="ident">u64</span>,
-    <span class="kw">pub</span> <span class="ident">loan_notes</span>: <span class="ident">u64</span>,
-    <span class="kw">pub</span> <span class="ident">deposit_notes</span>: <span class="ident">u64</span>,
-    <span class="kw">pub</span> <span class="ident">summary</span>: <span class="ident">MarginPoolSummary</span>,
-}
-<span class="attribute">#[<span class="ident">event</span>]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">MarginRepay</span> {
-    <span class="kw">pub</span> <span class="ident">margin_pool</span>: <span class="ident">Pubkey</span>,
-    <span class="kw">pub</span> <span class="ident">user</span>: <span class="ident">Pubkey</span>,
-    <span class="kw">pub</span> <span class="ident">loan_account</span>: <span class="ident">Pubkey</span>,
-    <span class="kw">pub</span> <span class="ident">deposit_account</span>: <span class="ident">Pubkey</span>,
-    <span class="kw">pub</span> <span class="ident">repaid_tokens</span>: <span class="ident">u64</span>,
-    <span class="kw">pub</span> <span class="ident">repaid_loan_notes</span>: <span class="ident">u64</span>,
-    <span class="kw">pub</span> <span class="ident">repaid_deposit_notes</span>: <span class="ident">u64</span>,
-    <span class="kw">pub</span> <span class="ident">summary</span>: <span class="ident">MarginPoolSummary</span>,
-}
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
-<span class="attribute">#[<span class="ident">event</span>]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Repay</span> {
-    <span class="kw">pub</span> <span class="ident">margin_pool</span>: <span class="ident">Pubkey</span>,
-    <span class="kw">pub</span> <span class="ident">user</span>: <span class="ident">Pubkey</span>,
-    <span class="kw">pub</span> <span class="ident">loan_account</span>: <span class="ident">Pubkey</span>,
-    <span class="kw">pub</span> <span class="ident">repayment_token_account</span>: <span class="ident">Pubkey</span>,
-    <span class="kw">pub</span> <span class="ident">repaid_tokens</span>: <span class="ident">u64</span>,
-    <span class="kw">pub</span> <span class="ident">repaid_loan_notes</span>: <span class="ident">u64</span>,
-    <span class="kw">pub</span> <span class="ident">summary</span>: <span class="ident">MarginPoolSummary</span>,
+<span class="attribute">#[event]
+</span><span class="kw">pub struct </span>Withdraw {
+    <span class="kw">pub </span>margin_pool: Pubkey,
+    <span class="kw">pub </span>user: Pubkey,
+    <span class="kw">pub </span>source: Pubkey,
+    <span class="kw">pub </span>destination: Pubkey,
+    <span class="kw">pub </span>withdraw_tokens: u64,
+    <span class="kw">pub </span>withdraw_notes: u64,
+    <span class="kw">pub </span>summary: MarginPoolSummary,
 }
 
-<span class="attribute">#[<span class="ident">event</span>]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Collect</span> {
-    <span class="kw">pub</span> <span class="ident">margin_pool</span>: <span class="ident">Pubkey</span>,
-    <span class="kw">pub</span> <span class="ident">fee_notes_minted</span>: <span class="ident">u64</span>,
-    <span class="kw">pub</span> <span class="ident">fee_tokens_claimed</span>: <span class="ident">u64</span>,
-    <span class="kw">pub</span> <span class="ident">fee_notes_balance</span>: <span class="ident">u64</span>,
-    <span class="kw">pub</span> <span class="ident">fee_tokens_balance</span>: <span class="ident">u64</span>,
-    <span class="kw">pub</span> <span class="ident">summary</span>: <span class="ident">MarginPoolSummary</span>,
+<span class="attribute">#[event]
+</span><span class="kw">pub struct </span>MarginBorrow {
+    <span class="kw">pub </span>margin_pool: Pubkey,
+    <span class="kw">pub </span>user: Pubkey,
+    <span class="kw">pub </span>loan_account: Pubkey,
+    <span class="kw">pub </span>deposit_account: Pubkey,
+    <span class="kw">pub </span>tokens: u64,
+    <span class="kw">pub </span>loan_notes: u64,
+    <span class="kw">pub </span>deposit_notes: u64,
+    <span class="kw">pub </span>summary: MarginPoolSummary,
+}
+<span class="attribute">#[event]
+</span><span class="kw">pub struct </span>MarginRepay {
+    <span class="kw">pub </span>margin_pool: Pubkey,
+    <span class="kw">pub </span>user: Pubkey,
+    <span class="kw">pub </span>loan_account: Pubkey,
+    <span class="kw">pub </span>deposit_account: Pubkey,
+    <span class="kw">pub </span>repaid_tokens: u64,
+    <span class="kw">pub </span>repaid_loan_notes: u64,
+    <span class="kw">pub </span>repaid_deposit_notes: u64,
+    <span class="kw">pub </span>summary: MarginPoolSummary,
+}
+<span class="attribute">#[derive(Debug)]
+#[event]
+</span><span class="kw">pub struct </span>Repay {
+    <span class="kw">pub </span>margin_pool: Pubkey,
+    <span class="kw">pub </span>user: Pubkey,
+    <span class="kw">pub </span>loan_account: Pubkey,
+    <span class="kw">pub </span>repayment_token_account: Pubkey,
+    <span class="kw">pub </span>repaid_tokens: u64,
+    <span class="kw">pub </span>repaid_loan_notes: u64,
+    <span class="kw">pub </span>summary: MarginPoolSummary,
 }
 
-<span class="attribute">#[<span class="ident">event</span>]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">LoanTransferred</span> {
-    <span class="kw">pub</span> <span class="ident">margin_pool</span>: <span class="ident">Pubkey</span>,
-    <span class="kw">pub</span> <span class="ident">source_loan_account</span>: <span class="ident">Pubkey</span>,
-    <span class="kw">pub</span> <span class="ident">target_loan_account</span>: <span class="ident">Pubkey</span>,
-    <span class="kw">pub</span> <span class="ident">amount</span>: <span class="ident">u64</span>,
+<span class="attribute">#[event]
+</span><span class="kw">pub struct </span>Collect {
+    <span class="kw">pub </span>margin_pool: Pubkey,
+    <span class="kw">pub </span>fee_notes_minted: u64,
+    <span class="kw">pub </span>fee_tokens_claimed: u64,
+    <span class="kw">pub </span>fee_notes_balance: u64,
+    <span class="kw">pub </span>fee_tokens_balance: u64,
+    <span class="kw">pub </span>summary: MarginPoolSummary,
 }
 
-<span class="doccomment">/// Common fields from MarginPool for event logging.</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">AnchorDeserialize</span>, <span class="ident">AnchorSerialize</span>, <span class="ident">Debug</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">MarginPoolSummary</span> {
-    <span class="kw">pub</span> <span class="ident">borrowed_tokens</span>: <span class="ident">u64</span>,
-    <span class="kw">pub</span> <span class="ident">uncollected_fees</span>: <span class="ident">u64</span>,
-    <span class="kw">pub</span> <span class="ident">deposit_tokens</span>: <span class="ident">u64</span>,
-    <span class="kw">pub</span> <span class="ident">deposit_notes</span>: <span class="ident">u64</span>,
-    <span class="kw">pub</span> <span class="ident">loan_notes</span>: <span class="ident">u64</span>,
-    <span class="kw">pub</span> <span class="ident">accrued_until</span>: <span class="ident">i64</span>,
+<span class="attribute">#[event]
+</span><span class="kw">pub struct </span>LoanTransferred {
+    <span class="kw">pub </span>margin_pool: Pubkey,
+    <span class="kw">pub </span>source_loan_account: Pubkey,
+    <span class="kw">pub </span>target_loan_account: Pubkey,
+    <span class="kw">pub </span>amount: u64,
 }
 
-<span class="kw">impl</span> <span class="ident">From</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="ident">MarginPool</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">MarginPoolSummary</span> {
-    <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">pool</span>: <span class="kw-2">&amp;</span><span class="ident">MarginPool</span>) -&gt; <span class="self">Self</span> {
-        <span class="ident">MarginPoolSummary</span> {
-            <span class="ident">borrowed_tokens</span>: <span class="ident">pool</span>.<span class="ident">total_borrowed</span>().<span class="ident">as_u64_ceil</span>(<span class="number">0</span>),
-            <span class="ident">uncollected_fees</span>: <span class="ident">pool</span>.<span class="ident">total_uncollected_fees</span>().<span class="ident">as_u64</span>(<span class="number">0</span>),
-            <span class="ident">deposit_tokens</span>: <span class="ident">pool</span>.<span class="ident">deposit_tokens</span>,
-            <span class="ident">deposit_notes</span>: <span class="ident">pool</span>.<span class="ident">deposit_notes</span>,
-            <span class="ident">loan_notes</span>: <span class="ident">pool</span>.<span class="ident">loan_notes</span>,
-            <span class="ident">accrued_until</span>: <span class="ident">pool</span>.<span class="ident">accrued_until</span>,
+<span class="doccomment">/// Common fields from MarginPool for event logging.
+</span><span class="attribute">#[derive(AnchorDeserialize, AnchorSerialize, Debug)]
+</span><span class="kw">pub struct </span>MarginPoolSummary {
+    <span class="kw">pub </span>borrowed_tokens: u64,
+    <span class="kw">pub </span>uncollected_fees: u64,
+    <span class="kw">pub </span>deposit_tokens: u64,
+    <span class="kw">pub </span>deposit_notes: u64,
+    <span class="kw">pub </span>loan_notes: u64,
+    <span class="kw">pub </span>accrued_until: i64,
+}
+
+<span class="kw">impl </span>From&lt;<span class="kw-2">&amp;</span>MarginPool&gt; <span class="kw">for </span>MarginPoolSummary {
+    <span class="kw">fn </span>from(pool: <span class="kw-2">&amp;</span>MarginPool) -&gt; <span class="self">Self </span>{
+        MarginPoolSummary {
+            borrowed_tokens: pool.total_borrowed().as_u64_ceil(<span class="number">0</span>),
+            uncollected_fees: pool.total_uncollected_fees().as_u64(<span class="number">0</span>),
+            deposit_tokens: pool.deposit_tokens,
+            deposit_notes: pool.deposit_notes,
+            loan_notes: pool.loan_notes,
+            accrued_until: pool.accrued_until,
         }
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="jet_margin_pool" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0 (a55dd71d5 2022-09-19)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="jet_margin_pool" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `programs/margin-pool/src/instructions/margin_refresh_position.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>margin_refresh_position.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../jet_margin_pool/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../jet_margin_pool/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../jet_margin_pool/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `programs/margin-pool/src/instructions/margin_refresh_position.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>margin_refresh_position.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../normalize.css"><link rel="stylesheet" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../ayu.css" disabled><link rel="stylesheet" href="../../../dark.css" disabled><link rel="stylesheet" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../jet_margin_pool/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../jet_margin_pool/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../jet_margin_pool/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -83,83 +83,83 @@
 <span id="83">83</span>
 <span id="84">84</span>
 <span id="85">85</span>
-</pre><pre class="rust"><code><span class="comment">// SPDX-License-Identifier: AGPL-3.0-or-later</span>
-<span class="comment">//</span>
-<span class="comment">// Copyright (C) 2022 JET PROTOCOL HOLDINGS, LLC.</span>
-<span class="comment">//</span>
-<span class="comment">// This program is free software: you can redistribute it and/or modify</span>
-<span class="comment">// it under the terms of the GNU Affero General Public License as published by</span>
-<span class="comment">// the Free Software Foundation, either version 3 of the License, or</span>
-<span class="comment">// (at your option) any later version.</span>
-<span class="comment">//</span>
-<span class="comment">// This program is distributed in the hope that it will be useful,</span>
-<span class="comment">// but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
-<span class="comment">// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
-<span class="comment">// GNU Affero General Public License for more details.</span>
-<span class="comment">//</span>
-<span class="comment">// You should have received a copy of the GNU Affero General Public License</span>
-<span class="comment">// along with this program.  If not, see &lt;https://www.gnu.org/licenses/&gt;.</span>
+</pre><pre class="rust"><code><span class="comment">// SPDX-License-Identifier: AGPL-3.0-or-later
+//
+// Copyright (C) 2022 JET PROTOCOL HOLDINGS, LLC.
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Affero General Public License for more details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program.  If not, see &lt;https://www.gnu.org/licenses/&gt;.
 
-<span class="kw">use</span> <span class="ident">anchor_lang::prelude</span>::<span class="kw-2">*</span>;
+</span><span class="kw">use </span>anchor_lang::prelude::<span class="kw-2">*</span>;
 
-<span class="kw">use</span> <span class="ident">jet_margin</span>::{<span class="ident">AdapterResult</span>, <span class="ident">MarginAccount</span>, <span class="ident">PositionChange</span>, <span class="ident">PriceChangeInfo</span>};
+<span class="kw">use </span>jet_margin::{AdapterResult, MarginAccount, PositionChange, PriceChangeInfo};
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::state</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::ErrorCode</span>;
+<span class="kw">use </span><span class="kw">crate</span>::state::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::ErrorCode;
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Accounts</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">MarginRefreshPosition</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span> {
-    <span class="doccomment">/// The margin account being executed on</span>
-    <span class="kw">pub</span> <span class="ident">margin_account</span>: <span class="ident">AccountLoader</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span>, <span class="ident">MarginAccount</span><span class="op">&gt;</span>,
+<span class="attribute">#[derive(Accounts)]
+</span><span class="kw">pub struct </span>MarginRefreshPosition&lt;<span class="lifetime">&#39;info</span>&gt; {
+    <span class="doccomment">/// The margin account being executed on
+    </span><span class="kw">pub </span>margin_account: AccountLoader&lt;<span class="lifetime">&#39;info</span>, MarginAccount&gt;,
 
-    <span class="doccomment">/// The pool to be refreshed</span>
-    <span class="attribute">#[<span class="ident">account</span>(<span class="ident">has_one</span> <span class="op">=</span> <span class="ident">token_price_oracle</span>)]</span>
-    <span class="kw">pub</span> <span class="ident">margin_pool</span>: <span class="ident">Account</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span>, <span class="ident">MarginPool</span><span class="op">&gt;</span>,
+    <span class="doccomment">/// The pool to be refreshed
+    </span><span class="attribute">#[account(has_one = token_price_oracle)]
+    </span><span class="kw">pub </span>margin_pool: Account&lt;<span class="lifetime">&#39;info</span>, MarginPool&gt;,
 
-    <span class="doccomment">/// The pyth price account for the pool&#39;s token</span>
-    <span class="doccomment">/// CHECK:</span>
-    <span class="kw">pub</span> <span class="ident">token_price_oracle</span>: <span class="ident">AccountInfo</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span>,
+    <span class="doccomment">/// The pyth price account for the pool&#39;s token
+    /// CHECK:
+    </span><span class="kw">pub </span>token_price_oracle: AccountInfo&lt;<span class="lifetime">&#39;info</span>&gt;,
 }
 
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">margin_refresh_position_handler</span>(<span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">MarginRefreshPosition</span><span class="op">&gt;</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="ident">pool</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">margin_pool</span>;
+<span class="kw">pub fn </span>margin_refresh_position_handler(ctx: Context&lt;MarginRefreshPosition&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+    <span class="kw">let </span>pool = <span class="kw-2">&amp;</span>ctx.accounts.margin_pool;
 
-    <span class="comment">// read from the pyth oracle</span>
-    <span class="kw">let</span> <span class="ident">token_oracle</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">pyth_sdk_solana::load_price_feed_from_account_info</span>(
-        <span class="kw-2">&amp;</span><span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">token_price_oracle</span>,
+    <span class="comment">// read from the pyth oracle
+    </span><span class="kw">let </span>token_oracle = <span class="kw">match </span>pyth_sdk_solana::load_price_feed_from_account_info(
+        <span class="kw-2">&amp;</span>ctx.accounts.token_price_oracle,
     ) {
-        <span class="prelude-val">Ok</span>(<span class="ident">pf</span>) =&gt; <span class="ident">pf</span>,
-        <span class="prelude-val">Err</span>(<span class="ident">e</span>) =&gt; {
-            <span class="macro">msg!</span>(<span class="string">&quot;the oracle account is not valid: {:?}&quot;</span>, <span class="ident">e</span>);
-            <span class="kw">return</span> <span class="macro">err!</span>(<span class="ident">ErrorCode::InvalidPoolOracle</span>);
+        <span class="prelude-val">Ok</span>(pf) =&gt; pf,
+        <span class="prelude-val">Err</span>(e) =&gt; {
+            <span class="macro">msg!</span>(<span class="string">&quot;the oracle account is not valid: {:?}&quot;</span>, e);
+            <span class="kw">return </span><span class="macro">err!</span>(ErrorCode::InvalidPoolOracle);
         }
     };
 
-    <span class="kw">let</span> <span class="ident">prices</span> <span class="op">=</span> <span class="ident">pool</span>.<span class="ident">calculate_prices</span>(<span class="kw-2">&amp;</span><span class="ident">token_oracle</span>)<span class="question-mark">?</span>;
+    <span class="kw">let </span>prices = pool.calculate_prices(<span class="kw-2">&amp;</span>token_oracle)<span class="question-mark">?</span>;
 
-    <span class="comment">// Tell the margin program what the current prices are</span>
-    <span class="ident">jet_margin::write_adapter_result</span>(
-        <span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">margin_account</span>.<span class="ident">load</span>()<span class="question-mark">?</span>,
-        <span class="kw-2">&amp;</span><span class="ident">AdapterResult</span> {
-            <span class="ident">position_changes</span>: <span class="macro">vec!</span>[
+    <span class="comment">// Tell the margin program what the current prices are
+    </span>jet_margin::write_adapter_result(
+        <span class="kw-2">&amp;*</span>ctx.accounts.margin_account.load()<span class="question-mark">?</span>,
+        <span class="kw-2">&amp;</span>AdapterResult {
+            position_changes: <span class="macro">vec!</span>[
                 (
-                    <span class="ident">pool</span>.<span class="ident">deposit_note_mint</span>,
-                    <span class="macro">vec!</span>[<span class="ident">PositionChange::Price</span>(<span class="ident">PriceChangeInfo</span> {
-                        <span class="ident">publish_time</span>: <span class="ident">token_oracle</span>.<span class="ident">publish_time</span>,
-                        <span class="ident">exponent</span>: <span class="ident">token_oracle</span>.<span class="ident">expo</span>,
-                        <span class="ident">value</span>: <span class="ident">prices</span>.<span class="ident">deposit_note_price</span>,
-                        <span class="ident">confidence</span>: <span class="ident">prices</span>.<span class="ident">deposit_note_conf</span>,
-                        <span class="ident">twap</span>: <span class="ident">prices</span>.<span class="ident">deposit_note_twap</span>,
+                    pool.deposit_note_mint,
+                    <span class="macro">vec!</span>[PositionChange::Price(PriceChangeInfo {
+                        publish_time: token_oracle.publish_time,
+                        exponent: token_oracle.expo,
+                        value: prices.deposit_note_price,
+                        confidence: prices.deposit_note_conf,
+                        twap: prices.deposit_note_twap,
                     })],
                 ),
                 (
-                    <span class="ident">pool</span>.<span class="ident">loan_note_mint</span>,
-                    <span class="macro">vec!</span>[<span class="ident">PositionChange::Price</span>(<span class="ident">PriceChangeInfo</span> {
-                        <span class="ident">publish_time</span>: <span class="ident">token_oracle</span>.<span class="ident">publish_time</span>,
-                        <span class="ident">exponent</span>: <span class="ident">token_oracle</span>.<span class="ident">expo</span>,
-                        <span class="ident">value</span>: <span class="ident">prices</span>.<span class="ident">loan_note_price</span>,
-                        <span class="ident">confidence</span>: <span class="ident">prices</span>.<span class="ident">loan_note_conf</span>,
-                        <span class="ident">twap</span>: <span class="ident">prices</span>.<span class="ident">loan_note_twap</span>,
+                    pool.loan_note_mint,
+                    <span class="macro">vec!</span>[PositionChange::Price(PriceChangeInfo {
+                        publish_time: token_oracle.publish_time,
+                        exponent: token_oracle.expo,
+                        value: prices.loan_note_price,
+                        confidence: prices.loan_note_conf,
+                        twap: prices.loan_note_twap,
                     })],
                 ),
             ],
@@ -169,4 +169,4 @@
     <span class="prelude-val">Ok</span>(())
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="jet_margin_pool" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0 (a55dd71d5 2022-09-19)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="jet_margin_pool" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

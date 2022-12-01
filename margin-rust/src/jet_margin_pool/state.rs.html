@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `programs/margin-pool/src/state.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>state.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../normalize.css"><link rel="stylesheet" type="text/css" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script><script defer src="../../main.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../jet_margin_pool/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../jet_margin_pool/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../jet_margin_pool/index.html"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `programs/margin-pool/src/state.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>state.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../normalize.css"><link rel="stylesheet" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../ayu.css" disabled><link rel="stylesheet" href="../../dark.css" disabled><link rel="stylesheet" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script><script defer src="../../main.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../jet_margin_pool/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../jet_margin_pool/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../jet_margin_pool/index.html"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -951,958 +951,958 @@
 <span id="951">951</span>
 <span id="952">952</span>
 <span id="953">953</span>
-</pre><pre class="rust"><code><span class="comment">// SPDX-License-Identifier: AGPL-3.0-or-later</span>
-<span class="comment">//</span>
-<span class="comment">// Copyright (C) 2022 JET PROTOCOL HOLDINGS, LLC.</span>
-<span class="comment">//</span>
-<span class="comment">// This program is free software: you can redistribute it and/or modify</span>
-<span class="comment">// it under the terms of the GNU Affero General Public License as published by</span>
-<span class="comment">// the Free Software Foundation, either version 3 of the License, or</span>
-<span class="comment">// (at your option) any later version.</span>
-<span class="comment">//</span>
-<span class="comment">// This program is distributed in the hope that it will be useful,</span>
-<span class="comment">// but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
-<span class="comment">// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
-<span class="comment">// GNU Affero General Public License for more details.</span>
-<span class="comment">//</span>
-<span class="comment">// You should have received a copy of the GNU Affero General Public License</span>
-<span class="comment">// along with this program.  If not, see &lt;https://www.gnu.org/licenses/&gt;.</span>
+</pre><pre class="rust"><code><span class="comment">// SPDX-License-Identifier: AGPL-3.0-or-later
+//
+// Copyright (C) 2022 JET PROTOCOL HOLDINGS, LLC.
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Affero General Public License for more details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program.  If not, see &lt;https://www.gnu.org/licenses/&gt;.
 
-<span class="kw">use</span> <span class="ident">anchor_lang</span>::{<span class="ident">prelude</span>::<span class="kw-2">*</span>, <span class="ident">solana_program::clock::UnixTimestamp</span>};
-<span class="kw">use</span> <span class="ident">jet_program_common::Number</span>;
-<span class="kw">use</span> <span class="ident">pyth_sdk_solana::PriceFeed</span>;
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">any</span>(<span class="ident">test</span>, <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;cli&quot;</span>))]</span>
-<span class="kw">use</span> <span class="ident">serde::ser</span>::{<span class="ident">Serialize</span>, <span class="ident">SerializeStruct</span>, <span class="ident">Serializer</span>};
-<span class="kw">use</span> <span class="ident">std::cmp::Ordering</span>;
-<span class="kw">use</span> <span class="ident">std::convert::TryFrom</span>;
+</span><span class="kw">use </span>anchor_lang::{prelude::<span class="kw-2">*</span>, solana_program::clock::UnixTimestamp};
+<span class="kw">use </span>jet_program_common::Number;
+<span class="kw">use </span>pyth_sdk_solana::PriceFeed;
+<span class="attribute">#[cfg(any(test, feature = <span class="string">&quot;cli&quot;</span>))]
+</span><span class="kw">use </span>serde::ser::{Serialize, SerializeStruct, Serializer};
+<span class="kw">use </span>std::cmp::Ordering;
+<span class="kw">use </span>std::convert::TryFrom;
 
-<span class="kw">use</span> <span class="kw">crate</span>::{<span class="ident">util</span>, <span class="ident">Amount</span>, <span class="ident">AmountKind</span>, <span class="ident">ChangeKind</span>, <span class="ident">ErrorCode</span>, <span class="ident">TokenChange</span>};
+<span class="kw">use crate</span>::{util, Amount, AmountKind, ChangeKind, ErrorCode, TokenChange};
 
-<span class="doccomment">/// Account containing information about a margin pool, which</span>
-<span class="doccomment">/// services lending/borrowing operations.</span>
-<span class="attribute">#[<span class="ident">account</span>]</span>
-<span class="attribute">#[<span class="ident">repr</span>(<span class="ident">C</span>, <span class="ident">align</span>(<span class="number">8</span>))]</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Default</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">MarginPool</span> {
-    <span class="kw">pub</span> <span class="ident">version</span>: <span class="ident">u8</span>,
+<span class="doccomment">/// Account containing information about a margin pool, which
+/// services lending/borrowing operations.
+</span><span class="attribute">#[account]
+#[repr(C, align(<span class="number">8</span>))]
+#[derive(Default)]
+</span><span class="kw">pub struct </span>MarginPool {
+    <span class="kw">pub </span>version: u8,
 
-    <span class="doccomment">/// The bump seed used to create the pool address</span>
-    <span class="kw">pub</span> <span class="ident">pool_bump</span>: [<span class="ident">u8</span>; <span class="number">1</span>],
+    <span class="doccomment">/// The bump seed used to create the pool address
+    </span><span class="kw">pub </span>pool_bump: [u8; <span class="number">1</span>],
 
-    <span class="doccomment">/// The address of the vault account, which has custody of the</span>
-    <span class="doccomment">/// pool&#39;s tokens</span>
-    <span class="kw">pub</span> <span class="ident">vault</span>: <span class="ident">Pubkey</span>,
+    <span class="doccomment">/// The address of the vault account, which has custody of the
+    /// pool&#39;s tokens
+    </span><span class="kw">pub </span>vault: Pubkey,
 
-    <span class="doccomment">/// The address of the account to deposit collected fees, represented as</span>
-    <span class="doccomment">/// deposit notes</span>
-    <span class="kw">pub</span> <span class="ident">fee_destination</span>: <span class="ident">Pubkey</span>,
+    <span class="doccomment">/// The address of the account to deposit collected fees, represented as
+    /// deposit notes
+    </span><span class="kw">pub </span>fee_destination: Pubkey,
 
-    <span class="doccomment">/// The address of the mint for deposit notes</span>
-    <span class="kw">pub</span> <span class="ident">deposit_note_mint</span>: <span class="ident">Pubkey</span>,
+    <span class="doccomment">/// The address of the mint for deposit notes
+    </span><span class="kw">pub </span>deposit_note_mint: Pubkey,
 
-    <span class="doccomment">/// The address of the mint for the loan notes</span>
-    <span class="kw">pub</span> <span class="ident">loan_note_mint</span>: <span class="ident">Pubkey</span>,
+    <span class="doccomment">/// The address of the mint for the loan notes
+    </span><span class="kw">pub </span>loan_note_mint: Pubkey,
 
-    <span class="doccomment">/// The token the pool allows lending and borrowing on</span>
-    <span class="kw">pub</span> <span class="ident">token_mint</span>: <span class="ident">Pubkey</span>,
+    <span class="doccomment">/// The token the pool allows lending and borrowing on
+    </span><span class="kw">pub </span>token_mint: Pubkey,
 
-    <span class="doccomment">/// The address of the pyth oracle with price information for the token</span>
-    <span class="kw">pub</span> <span class="ident">token_price_oracle</span>: <span class="ident">Pubkey</span>,
+    <span class="doccomment">/// The address of the pyth oracle with price information for the token
+    </span><span class="kw">pub </span>token_price_oracle: Pubkey,
 
-    <span class="doccomment">/// The address of this pool</span>
-    <span class="kw">pub</span> <span class="ident">address</span>: <span class="ident">Pubkey</span>,
+    <span class="doccomment">/// The address of this pool
+    </span><span class="kw">pub </span>address: Pubkey,
 
-    <span class="doccomment">/// The configuration of the pool</span>
-    <span class="kw">pub</span> <span class="ident">config</span>: <span class="ident">MarginPoolConfig</span>,
+    <span class="doccomment">/// The configuration of the pool
+    </span><span class="kw">pub </span>config: MarginPoolConfig,
 
-    <span class="doccomment">/// The total amount of tokens borrowed, that need to be repaid to</span>
-    <span class="doccomment">/// the pool.</span>
-    <span class="kw">pub</span> <span class="ident">borrowed_tokens</span>: [<span class="ident">u8</span>; <span class="number">24</span>],
+    <span class="doccomment">/// The total amount of tokens borrowed, that need to be repaid to
+    /// the pool.
+    </span><span class="kw">pub </span>borrowed_tokens: [u8; <span class="number">24</span>],
 
-    <span class="doccomment">/// The total amount of tokens in the pool that&#39;s reserved for collection</span>
-    <span class="doccomment">/// as fees.</span>
-    <span class="kw">pub</span> <span class="ident">uncollected_fees</span>: [<span class="ident">u8</span>; <span class="number">24</span>],
+    <span class="doccomment">/// The total amount of tokens in the pool that&#39;s reserved for collection
+    /// as fees.
+    </span><span class="kw">pub </span>uncollected_fees: [u8; <span class="number">24</span>],
 
-    <span class="doccomment">/// The total amount of tokens available in the pool&#39;s vault</span>
-    <span class="kw">pub</span> <span class="ident">deposit_tokens</span>: <span class="ident">u64</span>,
+    <span class="doccomment">/// The total amount of tokens available in the pool&#39;s vault
+    </span><span class="kw">pub </span>deposit_tokens: u64,
 
-    <span class="doccomment">/// The total amount of notes issued to depositors of tokens.</span>
-    <span class="kw">pub</span> <span class="ident">deposit_notes</span>: <span class="ident">u64</span>,
+    <span class="doccomment">/// The total amount of notes issued to depositors of tokens.
+    </span><span class="kw">pub </span>deposit_notes: u64,
 
-    <span class="doccomment">/// The total amount of notes issued to borrowers of tokens</span>
-    <span class="kw">pub</span> <span class="ident">loan_notes</span>: <span class="ident">u64</span>,
+    <span class="doccomment">/// The total amount of notes issued to borrowers of tokens
+    </span><span class="kw">pub </span>loan_notes: u64,
 
-    <span class="doccomment">/// The time the interest was last accrued up to</span>
-    <span class="kw">pub</span> <span class="ident">accrued_until</span>: <span class="ident">i64</span>,
+    <span class="doccomment">/// The time the interest was last accrued up to
+    </span><span class="kw">pub </span>accrued_until: i64,
 }
 
-<span class="kw">impl</span> <span class="ident">std::fmt::Debug</span> <span class="kw">for</span> <span class="ident">MarginPool</span> {
-    <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="kw-2">&amp;mut</span> <span class="ident">std::fmt::Formatter</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>) -&gt; <span class="ident">std::fmt::Result</span> {
-        <span class="ident">f</span>.<span class="ident">debug_struct</span>(<span class="string">&quot;MarginPool&quot;</span>)
-            .<span class="ident">field</span>(<span class="string">&quot;version&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">version</span>)
-            .<span class="ident">field</span>(<span class="string">&quot;pool_bump&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">pool_bump</span>)
-            .<span class="ident">field</span>(<span class="string">&quot;vault&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">vault</span>)
-            .<span class="ident">field</span>(<span class="string">&quot;fee_destination&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">fee_destination</span>)
-            .<span class="ident">field</span>(<span class="string">&quot;deposit_note_mint&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">deposit_note_mint</span>)
-            .<span class="ident">field</span>(<span class="string">&quot;loan_note_mint&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">loan_note_mint</span>)
-            .<span class="ident">field</span>(<span class="string">&quot;token_mint&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">token_mint</span>)
-            .<span class="ident">field</span>(<span class="string">&quot;token_price_oracle&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">token_price_oracle</span>)
-            .<span class="ident">field</span>(<span class="string">&quot;address&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">address</span>)
-            .<span class="ident">field</span>(<span class="string">&quot;config&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">config</span>)
-            .<span class="ident">field</span>(<span class="string">&quot;borrowed_tokens&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">total_borrowed</span>())
-            .<span class="ident">field</span>(<span class="string">&quot;uncollected_fees&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">total_uncollected_fees</span>())
-            .<span class="ident">field</span>(<span class="string">&quot;deposit_tokens&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">deposit_tokens</span>)
-            .<span class="ident">field</span>(<span class="string">&quot;deposit_notes&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">deposit_notes</span>)
-            .<span class="ident">field</span>(<span class="string">&quot;loan_notes&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">loan_notes</span>)
-            .<span class="ident">field</span>(<span class="string">&quot;accrued_until&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">accrued_until</span>)
-            .<span class="ident">finish</span>()
+<span class="kw">impl </span>std::fmt::Debug <span class="kw">for </span>MarginPool {
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>std::fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; std::fmt::Result {
+        f.debug_struct(<span class="string">&quot;MarginPool&quot;</span>)
+            .field(<span class="string">&quot;version&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.version)
+            .field(<span class="string">&quot;pool_bump&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.pool_bump)
+            .field(<span class="string">&quot;vault&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.vault)
+            .field(<span class="string">&quot;fee_destination&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.fee_destination)
+            .field(<span class="string">&quot;deposit_note_mint&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.deposit_note_mint)
+            .field(<span class="string">&quot;loan_note_mint&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.loan_note_mint)
+            .field(<span class="string">&quot;token_mint&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.token_mint)
+            .field(<span class="string">&quot;token_price_oracle&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.token_price_oracle)
+            .field(<span class="string">&quot;address&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.address)
+            .field(<span class="string">&quot;config&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.config)
+            .field(<span class="string">&quot;borrowed_tokens&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.total_borrowed())
+            .field(<span class="string">&quot;uncollected_fees&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.total_uncollected_fees())
+            .field(<span class="string">&quot;deposit_tokens&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.deposit_tokens)
+            .field(<span class="string">&quot;deposit_notes&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.deposit_notes)
+            .field(<span class="string">&quot;loan_notes&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.loan_notes)
+            .field(<span class="string">&quot;accrued_until&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.accrued_until)
+            .finish()
     }
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">any</span>(<span class="ident">test</span>, <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;cli&quot;</span>))]</span>
-<span class="kw">impl</span> <span class="ident">Serialize</span> <span class="kw">for</span> <span class="ident">MarginPool</span> {
-    <span class="kw">fn</span> <span class="ident">serialize</span><span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">serializer</span>: <span class="ident">S</span>) -&gt; <span class="ident">std::result::Result</span><span class="op">&lt;</span><span class="ident">S::Ok</span>, <span class="ident">S::Error</span><span class="op">&gt;</span>
-    <span class="kw">where</span>
-        <span class="ident">S</span>: <span class="ident">Serializer</span>,
+<span class="attribute">#[cfg(any(test, feature = <span class="string">&quot;cli&quot;</span>))]
+</span><span class="kw">impl </span>Serialize <span class="kw">for </span>MarginPool {
+    <span class="kw">fn </span>serialize&lt;S&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, serializer: S) -&gt; std::result::Result&lt;S::Ok, S::Error&gt;
+    <span class="kw">where
+        </span>S: Serializer,
     {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">s</span> <span class="op">=</span> <span class="ident">serializer</span>.<span class="ident">serialize_struct</span>(<span class="string">&quot;MarginPool&quot;</span>, <span class="number">13</span>)<span class="question-mark">?</span>;
-        <span class="ident">s</span>.<span class="ident">serialize_field</span>(<span class="string">&quot;version&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">version</span>)<span class="question-mark">?</span>;
-        <span class="ident">s</span>.<span class="ident">serialize_field</span>(<span class="string">&quot;vault&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">vault</span>.<span class="ident">to_string</span>())<span class="question-mark">?</span>;
-        <span class="ident">s</span>.<span class="ident">serialize_field</span>(<span class="string">&quot;feeDestination&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">fee_destination</span>.<span class="ident">to_string</span>())<span class="question-mark">?</span>;
-        <span class="ident">s</span>.<span class="ident">serialize_field</span>(<span class="string">&quot;depositNoteMint&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">deposit_note_mint</span>.<span class="ident">to_string</span>())<span class="question-mark">?</span>;
-        <span class="ident">s</span>.<span class="ident">serialize_field</span>(<span class="string">&quot;loanNoteMint&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">loan_note_mint</span>.<span class="ident">to_string</span>())<span class="question-mark">?</span>;
-        <span class="ident">s</span>.<span class="ident">serialize_field</span>(<span class="string">&quot;tokenMint&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">token_mint</span>.<span class="ident">to_string</span>())<span class="question-mark">?</span>;
-        <span class="ident">s</span>.<span class="ident">serialize_field</span>(<span class="string">&quot;tokenPriceOracle&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">token_price_oracle</span>.<span class="ident">to_string</span>())<span class="question-mark">?</span>;
-        <span class="ident">s</span>.<span class="ident">serialize_field</span>(<span class="string">&quot;borrowedTokens&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">total_borrowed</span>().<span class="ident">to_string</span>())<span class="question-mark">?</span>;
-        <span class="ident">s</span>.<span class="ident">serialize_field</span>(
+        <span class="kw">let </span><span class="kw-2">mut </span>s = serializer.serialize_struct(<span class="string">&quot;MarginPool&quot;</span>, <span class="number">13</span>)<span class="question-mark">?</span>;
+        s.serialize_field(<span class="string">&quot;version&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.version)<span class="question-mark">?</span>;
+        s.serialize_field(<span class="string">&quot;vault&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.vault.to_string())<span class="question-mark">?</span>;
+        s.serialize_field(<span class="string">&quot;feeDestination&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.fee_destination.to_string())<span class="question-mark">?</span>;
+        s.serialize_field(<span class="string">&quot;depositNoteMint&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.deposit_note_mint.to_string())<span class="question-mark">?</span>;
+        s.serialize_field(<span class="string">&quot;loanNoteMint&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.loan_note_mint.to_string())<span class="question-mark">?</span>;
+        s.serialize_field(<span class="string">&quot;tokenMint&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.token_mint.to_string())<span class="question-mark">?</span>;
+        s.serialize_field(<span class="string">&quot;tokenPriceOracle&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.token_price_oracle.to_string())<span class="question-mark">?</span>;
+        s.serialize_field(<span class="string">&quot;borrowedTokens&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.total_borrowed().to_string())<span class="question-mark">?</span>;
+        s.serialize_field(
             <span class="string">&quot;uncollectedFees&quot;</span>,
-            <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">total_uncollected_fees</span>().<span class="ident">to_string</span>(),
+            <span class="kw-2">&amp;</span><span class="self">self</span>.total_uncollected_fees().to_string(),
         )<span class="question-mark">?</span>;
-        <span class="ident">s</span>.<span class="ident">serialize_field</span>(<span class="string">&quot;depositTokens&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">deposit_tokens</span>)<span class="question-mark">?</span>;
-        <span class="ident">s</span>.<span class="ident">serialize_field</span>(<span class="string">&quot;depositNotes&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">deposit_notes</span>)<span class="question-mark">?</span>;
-        <span class="ident">s</span>.<span class="ident">serialize_field</span>(<span class="string">&quot;loanNotes&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">loan_notes</span>)<span class="question-mark">?</span>;
-        <span class="ident">s</span>.<span class="ident">serialize_field</span>(<span class="string">&quot;accruedUntil&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">accrued_until</span>)<span class="question-mark">?</span>;
-        <span class="ident">s</span>.<span class="ident">end</span>()
+        s.serialize_field(<span class="string">&quot;depositTokens&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.deposit_tokens)<span class="question-mark">?</span>;
+        s.serialize_field(<span class="string">&quot;depositNotes&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.deposit_notes)<span class="question-mark">?</span>;
+        s.serialize_field(<span class="string">&quot;loanNotes&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.loan_notes)<span class="question-mark">?</span>;
+        s.serialize_field(<span class="string">&quot;accruedUntil&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.accrued_until)<span class="question-mark">?</span>;
+        s.end()
     }
 }
 
-<span class="kw">impl</span> <span class="ident">MarginPool</span> {
-    <span class="doccomment">/// Get the seeds needed to sign for the vault</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">signer_seeds</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>[<span class="kw-2">&amp;</span>[<span class="ident">u8</span>]; <span class="number">2</span>]<span class="op">&gt;</span> {
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">flags</span>().<span class="ident">contains</span>(<span class="ident">PoolFlags::DISABLED</span>) {
+<span class="kw">impl </span>MarginPool {
+    <span class="doccomment">/// Get the seeds needed to sign for the vault
+    </span><span class="kw">pub fn </span>signer_seeds(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;[<span class="kw-2">&amp;</span>[u8]; <span class="number">2</span>]&gt; {
+        <span class="kw">if </span><span class="self">self</span>.flags().contains(PoolFlags::DISABLED) {
             <span class="macro">msg!</span>(<span class="string">&quot;the pool is currently disabled&quot;</span>);
-            <span class="kw">return</span> <span class="macro">err!</span>(<span class="ident">ErrorCode::Disabled</span>);
+            <span class="kw">return </span><span class="macro">err!</span>(ErrorCode::Disabled);
         }
 
-        <span class="prelude-val">Ok</span>([<span class="self">self</span>.<span class="ident">token_mint</span>.<span class="ident">as_ref</span>(), <span class="self">self</span>.<span class="ident">pool_bump</span>.<span class="ident">as_ref</span>()])
+        <span class="prelude-val">Ok</span>([<span class="self">self</span>.token_mint.as_ref(), <span class="self">self</span>.pool_bump.as_ref()])
     }
 
-    <span class="doccomment">/// Record a deposit into the pool</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">deposit</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">amount</span>: <span class="kw-2">&amp;</span><span class="ident">FullAmount</span>) {
-        <span class="self">self</span>.<span class="ident">deposit_tokens</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">deposit_tokens</span>.<span class="ident">checked_add</span>(<span class="ident">amount</span>.<span class="ident">tokens</span>).<span class="ident">unwrap</span>();
-        <span class="self">self</span>.<span class="ident">deposit_notes</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">deposit_notes</span>.<span class="ident">checked_add</span>(<span class="ident">amount</span>.<span class="ident">notes</span>).<span class="ident">unwrap</span>();
+    <span class="doccomment">/// Record a deposit into the pool
+    </span><span class="kw">pub fn </span>deposit(<span class="kw-2">&amp;mut </span><span class="self">self</span>, amount: <span class="kw-2">&amp;</span>FullAmount) {
+        <span class="self">self</span>.deposit_tokens = <span class="self">self</span>.deposit_tokens.checked_add(amount.tokens).unwrap();
+        <span class="self">self</span>.deposit_notes = <span class="self">self</span>.deposit_notes.checked_add(amount.notes).unwrap();
     }
 
-    <span class="doccomment">/// Record a withdrawal from the pool</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">withdraw</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">amount</span>: <span class="kw-2">&amp;</span><span class="ident">FullAmount</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="self">self</span>.<span class="ident">deposit_tokens</span> <span class="op">=</span> <span class="self">self</span>
-            .<span class="ident">deposit_tokens</span>
-            .<span class="ident">checked_sub</span>(<span class="ident">amount</span>.<span class="ident">tokens</span>)
-            .<span class="ident">ok_or</span>(<span class="ident">ErrorCode::InsufficientLiquidity</span>)<span class="question-mark">?</span>;
-        <span class="self">self</span>.<span class="ident">deposit_notes</span> <span class="op">=</span> <span class="self">self</span>
-            .<span class="ident">deposit_notes</span>
-            .<span class="ident">checked_sub</span>(<span class="ident">amount</span>.<span class="ident">notes</span>)
-            .<span class="ident">ok_or</span>(<span class="ident">ErrorCode::InsufficientLiquidity</span>)<span class="question-mark">?</span>;
+    <span class="doccomment">/// Record a withdrawal from the pool
+    </span><span class="kw">pub fn </span>withdraw(<span class="kw-2">&amp;mut </span><span class="self">self</span>, amount: <span class="kw-2">&amp;</span>FullAmount) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        <span class="self">self</span>.deposit_tokens = <span class="self">self
+            </span>.deposit_tokens
+            .checked_sub(amount.tokens)
+            .ok_or(ErrorCode::InsufficientLiquidity)<span class="question-mark">?</span>;
+        <span class="self">self</span>.deposit_notes = <span class="self">self
+            </span>.deposit_notes
+            .checked_sub(amount.notes)
+            .ok_or(ErrorCode::InsufficientLiquidity)<span class="question-mark">?</span>;
 
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="doccomment">/// Record a loan from the pool</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">borrow</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">amount</span>: <span class="kw-2">&amp;</span><span class="ident">FullAmount</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="kw">if</span> <span class="op">!</span><span class="self">self</span>.<span class="ident">flags</span>().<span class="ident">contains</span>(<span class="ident">PoolFlags::ALLOW_LENDING</span>) {
+    <span class="doccomment">/// Record a loan from the pool
+    </span><span class="kw">pub fn </span>borrow(<span class="kw-2">&amp;mut </span><span class="self">self</span>, amount: <span class="kw-2">&amp;</span>FullAmount) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        <span class="kw">if </span>!<span class="self">self</span>.flags().contains(PoolFlags::ALLOW_LENDING) {
             <span class="macro">msg!</span>(<span class="string">&quot;this pool only allows deposits&quot;</span>);
-            <span class="kw">return</span> <span class="macro">err!</span>(<span class="ident">ErrorCode::DepositsOnly</span>);
+            <span class="kw">return </span><span class="macro">err!</span>(ErrorCode::DepositsOnly);
         }
 
-        <span class="self">self</span>.<span class="ident">deposit_tokens</span> <span class="op">=</span> <span class="self">self</span>
-            .<span class="ident">deposit_tokens</span>
-            .<span class="ident">checked_sub</span>(<span class="ident">amount</span>.<span class="ident">tokens</span>)
-            .<span class="ident">ok_or</span>(<span class="ident">ErrorCode::InsufficientLiquidity</span>)<span class="question-mark">?</span>;
-        <span class="self">self</span>.<span class="ident">loan_notes</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">loan_notes</span>.<span class="ident">checked_add</span>(<span class="ident">amount</span>.<span class="ident">notes</span>).<span class="ident">unwrap</span>();
+        <span class="self">self</span>.deposit_tokens = <span class="self">self
+            </span>.deposit_tokens
+            .checked_sub(amount.tokens)
+            .ok_or(ErrorCode::InsufficientLiquidity)<span class="question-mark">?</span>;
+        <span class="self">self</span>.loan_notes = <span class="self">self</span>.loan_notes.checked_add(amount.notes).unwrap();
 
-        <span class="kw-2">*</span><span class="self">self</span>.<span class="ident">total_borrowed_mut</span>() <span class="op">+</span><span class="op">=</span> <span class="ident">Number::from</span>(<span class="ident">amount</span>.<span class="ident">tokens</span>);
+        <span class="kw-2">*</span><span class="self">self</span>.total_borrowed_mut() += Number::from(amount.tokens);
 
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="doccomment">/// Record a repayment of a loan</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">repay</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">amount</span>: <span class="kw-2">&amp;</span><span class="ident">FullAmount</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="self">self</span>.<span class="ident">deposit_tokens</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">deposit_tokens</span>.<span class="ident">checked_add</span>(<span class="ident">amount</span>.<span class="ident">tokens</span>).<span class="ident">unwrap</span>();
-        <span class="self">self</span>.<span class="ident">loan_notes</span> <span class="op">=</span> <span class="self">self</span>
-            .<span class="ident">loan_notes</span>
-            .<span class="ident">checked_sub</span>(<span class="ident">amount</span>.<span class="ident">notes</span>)
-            .<span class="ident">ok_or</span>(<span class="ident">ErrorCode::InsufficientLiquidity</span>)<span class="question-mark">?</span>;
+    <span class="doccomment">/// Record a repayment of a loan
+    </span><span class="kw">pub fn </span>repay(<span class="kw-2">&amp;mut </span><span class="self">self</span>, amount: <span class="kw-2">&amp;</span>FullAmount) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        <span class="self">self</span>.deposit_tokens = <span class="self">self</span>.deposit_tokens.checked_add(amount.tokens).unwrap();
+        <span class="self">self</span>.loan_notes = <span class="self">self
+            </span>.loan_notes
+            .checked_sub(amount.notes)
+            .ok_or(ErrorCode::InsufficientLiquidity)<span class="question-mark">?</span>;
 
-        <span class="comment">// Due to defensive rounding, and probably only when the final outstanding loan in a pool</span>
-        <span class="comment">// is being repaid, it is possible that the integer number of tokens being repaid exceeds</span>
-        <span class="comment">// the precise number of total borrowed tokens. To cover this case, we guard against any</span>
-        <span class="comment">// difference beyond the rounding effect, and use a saturating sub to update the total borrowed.</span>
+        <span class="comment">// Due to defensive rounding, and probably only when the final outstanding loan in a pool
+        // is being repaid, it is possible that the integer number of tokens being repaid exceeds
+        // the precise number of total borrowed tokens. To cover this case, we guard against any
+        // difference beyond the rounding effect, and use a saturating sub to update the total borrowed.
 
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">total_borrowed</span>().<span class="ident">as_u64_ceil</span>(<span class="number">0</span>) <span class="op">&lt;</span> <span class="ident">amount</span>.<span class="ident">tokens</span> {
-            <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">ErrorCode::RepaymentExceedsTotalOutstanding</span>.<span class="ident">into</span>());
+        </span><span class="kw">if </span><span class="self">self</span>.total_borrowed().as_u64_ceil(<span class="number">0</span>) &lt; amount.tokens {
+            <span class="kw">return </span><span class="prelude-val">Err</span>(ErrorCode::RepaymentExceedsTotalOutstanding.into());
         }
 
-        <span class="kw-2">*</span><span class="self">self</span>.<span class="ident">total_borrowed_mut</span>() <span class="op">=</span> <span class="self">self</span>
-            .<span class="ident">total_borrowed</span>()
-            .<span class="ident">saturating_sub</span>(<span class="ident">Number::from</span>(<span class="ident">amount</span>.<span class="ident">tokens</span>));
+        <span class="kw-2">*</span><span class="self">self</span>.total_borrowed_mut() = <span class="self">self
+            </span>.total_borrowed()
+            .saturating_sub(Number::from(amount.tokens));
 
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="doccomment">/// Record repayment of a loan with deposit notes.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// This is a kind of settlement operation where no tokens are involved explicitly. We&#39;re</span>
-    <span class="doccomment">/// cancelling deposit notes against loan notes.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">margin_repay</span>(
-        <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
-        <span class="ident">repay_amount</span>: <span class="kw-2">&amp;</span><span class="ident">FullAmount</span>,
-        <span class="ident">withdraw_amount</span>: <span class="kw-2">&amp;</span><span class="ident">FullAmount</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="comment">// &quot;Withdraw&quot;</span>
-        <span class="self">self</span>.<span class="ident">deposit_notes</span> <span class="op">=</span> <span class="self">self</span>
-            .<span class="ident">deposit_notes</span>
-            .<span class="ident">checked_sub</span>(<span class="ident">withdraw_amount</span>.<span class="ident">notes</span>)
-            .<span class="ident">ok_or</span>(<span class="ident">ErrorCode::InsufficientLiquidity</span>)<span class="question-mark">?</span>;
+    <span class="doccomment">/// Record repayment of a loan with deposit notes.
+    ///
+    /// This is a kind of settlement operation where no tokens are involved explicitly. We&#39;re
+    /// cancelling deposit notes against loan notes.
+    </span><span class="kw">pub fn </span>margin_repay(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        repay_amount: <span class="kw-2">&amp;</span>FullAmount,
+        withdraw_amount: <span class="kw-2">&amp;</span>FullAmount,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        <span class="comment">// &quot;Withdraw&quot;
+        </span><span class="self">self</span>.deposit_notes = <span class="self">self
+            </span>.deposit_notes
+            .checked_sub(withdraw_amount.notes)
+            .ok_or(ErrorCode::InsufficientLiquidity)<span class="question-mark">?</span>;
 
-        <span class="comment">// &quot;Repay&quot;</span>
-        <span class="self">self</span>.<span class="ident">loan_notes</span> <span class="op">=</span> <span class="self">self</span>
-            .<span class="ident">loan_notes</span>
-            .<span class="ident">checked_sub</span>(<span class="ident">repay_amount</span>.<span class="ident">notes</span>)
-            .<span class="ident">ok_or</span>(<span class="ident">ErrorCode::InsufficientLiquidity</span>)<span class="question-mark">?</span>;
+        <span class="comment">// &quot;Repay&quot;
+        </span><span class="self">self</span>.loan_notes = <span class="self">self
+            </span>.loan_notes
+            .checked_sub(repay_amount.notes)
+            .ok_or(ErrorCode::InsufficientLiquidity)<span class="question-mark">?</span>;
 
-        <span class="comment">// Due to defensive rounding, and probably only when the final outstanding loan in a pool</span>
-        <span class="comment">// is being repaid, it is possible that the integer number of tokens being repaid exceeds</span>
-        <span class="comment">// the precise number of total borrowed tokens. To cover this case, we guard against any</span>
-        <span class="comment">// difference beyond the rounding effect, and use a saturating sub to update the total borrowed.</span>
+        <span class="comment">// Due to defensive rounding, and probably only when the final outstanding loan in a pool
+        // is being repaid, it is possible that the integer number of tokens being repaid exceeds
+        // the precise number of total borrowed tokens. To cover this case, we guard against any
+        // difference beyond the rounding effect, and use a saturating sub to update the total borrowed.
 
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">total_borrowed</span>().<span class="ident">as_u64_ceil</span>(<span class="number">0</span>) <span class="op">&lt;</span> <span class="ident">repay_amount</span>.<span class="ident">tokens</span> {
-            <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">ErrorCode::RepaymentExceedsTotalOutstanding</span>.<span class="ident">into</span>());
+        </span><span class="kw">if </span><span class="self">self</span>.total_borrowed().as_u64_ceil(<span class="number">0</span>) &lt; repay_amount.tokens {
+            <span class="kw">return </span><span class="prelude-val">Err</span>(ErrorCode::RepaymentExceedsTotalOutstanding.into());
         }
 
-        <span class="kw-2">*</span><span class="self">self</span>.<span class="ident">total_borrowed_mut</span>() <span class="op">=</span> <span class="self">self</span>
-            .<span class="ident">total_borrowed</span>()
-            .<span class="ident">saturating_sub</span>(<span class="ident">Number::from</span>(<span class="ident">repay_amount</span>.<span class="ident">tokens</span>));
+        <span class="kw-2">*</span><span class="self">self</span>.total_borrowed_mut() = <span class="self">self
+            </span>.total_borrowed()
+            .saturating_sub(Number::from(repay_amount.tokens));
 
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="doccomment">/// Accrue interest charges on outstanding borrows</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// Returns true if the interest was fully accumulated, false if it was</span>
-    <span class="doccomment">/// only partially accumulated (due to significant time drift).</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">accrue_interest</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">time</span>: <span class="ident">UnixTimestamp</span>) -&gt; <span class="ident">bool</span> {
-        <span class="kw">let</span> <span class="ident">time_behind</span> <span class="op">=</span> <span class="ident">time</span> <span class="op">-</span> <span class="self">self</span>.<span class="ident">accrued_until</span>;
-        <span class="kw">let</span> <span class="ident">time_to_accrue</span> <span class="op">=</span> <span class="ident">std::cmp::min</span>(<span class="ident">time_behind</span>, <span class="ident">util::MAX_ACCRUAL_SECONDS</span>);
+    <span class="doccomment">/// Accrue interest charges on outstanding borrows
+    ///
+    /// Returns true if the interest was fully accumulated, false if it was
+    /// only partially accumulated (due to significant time drift).
+    </span><span class="kw">pub fn </span>accrue_interest(<span class="kw-2">&amp;mut </span><span class="self">self</span>, time: UnixTimestamp) -&gt; bool {
+        <span class="kw">let </span>time_behind = time - <span class="self">self</span>.accrued_until;
+        <span class="kw">let </span>time_to_accrue = std::cmp::min(time_behind, util::MAX_ACCRUAL_SECONDS);
 
-        <span class="kw">match</span> <span class="ident">time_to_accrue</span>.<span class="ident">cmp</span>(<span class="kw-2">&amp;</span><span class="number">0</span>) {
-            <span class="ident">Ordering::Less</span> =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Interest may not be accrued over a negative time period.&quot;</span>),
-            <span class="ident">Ordering::Equal</span> =&gt; <span class="bool-val">true</span>,
-            <span class="ident">Ordering::Greater</span> =&gt; {
-                <span class="kw">let</span> <span class="ident">interest_rate</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">interest_rate</span>();
-                <span class="kw">let</span> <span class="ident">compound_rate</span> <span class="op">=</span> <span class="ident">util::compound_interest</span>(<span class="ident">interest_rate</span>, <span class="ident">time_to_accrue</span>);
+        <span class="kw">match </span>time_to_accrue.cmp(<span class="kw-2">&amp;</span><span class="number">0</span>) {
+            Ordering::Less =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Interest may not be accrued over a negative time period.&quot;</span>),
+            Ordering::Equal =&gt; <span class="bool-val">true</span>,
+            Ordering::Greater =&gt; {
+                <span class="kw">let </span>interest_rate = <span class="self">self</span>.interest_rate();
+                <span class="kw">let </span>compound_rate = util::compound_interest(interest_rate, time_to_accrue);
 
-                <span class="kw">let</span> <span class="ident">interest_fee_rate</span> <span class="op">=</span> <span class="ident">Number::from_bps</span>(<span class="self">self</span>.<span class="ident">config</span>.<span class="ident">management_fee_rate</span>);
-                <span class="kw">let</span> <span class="ident">new_interest_accrued</span> <span class="op">=</span> <span class="kw-2">*</span><span class="self">self</span>.<span class="ident">total_borrowed</span>() <span class="op">*</span> <span class="ident">compound_rate</span>;
-                <span class="kw">let</span> <span class="ident">fee_to_collect</span> <span class="op">=</span> <span class="ident">new_interest_accrued</span> <span class="op">*</span> <span class="ident">interest_fee_rate</span>;
+                <span class="kw">let </span>interest_fee_rate = Number::from_bps(<span class="self">self</span>.config.management_fee_rate);
+                <span class="kw">let </span>new_interest_accrued = <span class="kw-2">*</span><span class="self">self</span>.total_borrowed() * compound_rate;
+                <span class="kw">let </span>fee_to_collect = new_interest_accrued * interest_fee_rate;
 
-                <span class="kw-2">*</span><span class="self">self</span>.<span class="ident">total_borrowed_mut</span>() <span class="op">+</span><span class="op">=</span> <span class="ident">new_interest_accrued</span>;
-                <span class="kw-2">*</span><span class="self">self</span>.<span class="ident">total_uncollected_fees_mut</span>() <span class="op">+</span><span class="op">=</span> <span class="ident">fee_to_collect</span>;
+                <span class="kw-2">*</span><span class="self">self</span>.total_borrowed_mut() += new_interest_accrued;
+                <span class="kw-2">*</span><span class="self">self</span>.total_uncollected_fees_mut() += fee_to_collect;
 
-                <span class="self">self</span>.<span class="ident">accrued_until</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">accrued_until</span>.<span class="ident">checked_add</span>(<span class="ident">time_to_accrue</span>).<span class="ident">unwrap</span>();
+                <span class="self">self</span>.accrued_until = <span class="self">self</span>.accrued_until.checked_add(time_to_accrue).unwrap();
 
-                <span class="ident">time_behind</span> <span class="op">==</span> <span class="ident">time_to_accrue</span>
+                time_behind == time_to_accrue
             }
         }
     }
 
-    <span class="doccomment">/// Gets the current interest rate for loans from this pool</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">interest_rate</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Number</span> {
-        <span class="kw">let</span> <span class="ident">borrow_1</span> <span class="op">=</span> <span class="ident">Number::from_bps</span>(<span class="self">self</span>.<span class="ident">config</span>.<span class="ident">borrow_rate_1</span>);
+    <span class="doccomment">/// Gets the current interest rate for loans from this pool
+    </span><span class="kw">pub fn </span>interest_rate(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Number {
+        <span class="kw">let </span>borrow_1 = Number::from_bps(<span class="self">self</span>.config.borrow_rate_1);
 
-        <span class="comment">// Catch the edge case of empty pool</span>
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">deposit_notes</span> <span class="op">==</span> <span class="number">0</span> {
-            <span class="kw">return</span> <span class="ident">borrow_1</span>;
+        <span class="comment">// Catch the edge case of empty pool
+        </span><span class="kw">if </span><span class="self">self</span>.deposit_notes == <span class="number">0 </span>{
+            <span class="kw">return </span>borrow_1;
         }
 
-        <span class="kw">let</span> <span class="ident">util_rate</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">utilization_rate</span>();
+        <span class="kw">let </span>util_rate = <span class="self">self</span>.utilization_rate();
 
-        <span class="kw">let</span> <span class="ident">util_1</span> <span class="op">=</span> <span class="ident">Number::from_bps</span>(<span class="self">self</span>.<span class="ident">config</span>.<span class="ident">utilization_rate_1</span>);
+        <span class="kw">let </span>util_1 = Number::from_bps(<span class="self">self</span>.config.utilization_rate_1);
 
-        <span class="kw">if</span> <span class="ident">util_rate</span> <span class="op">&lt;</span><span class="op">=</span> <span class="ident">util_1</span> {
-            <span class="comment">// First regime</span>
-            <span class="kw">let</span> <span class="ident">borrow_0</span> <span class="op">=</span> <span class="ident">Number::from_bps</span>(<span class="self">self</span>.<span class="ident">config</span>.<span class="ident">borrow_rate_0</span>);
+        <span class="kw">if </span>util_rate &lt;= util_1 {
+            <span class="comment">// First regime
+            </span><span class="kw">let </span>borrow_0 = Number::from_bps(<span class="self">self</span>.config.borrow_rate_0);
 
-            <span class="kw">return</span> <span class="ident">util::interpolate</span>(<span class="ident">util_rate</span>, <span class="ident">Number::ZERO</span>, <span class="ident">util_1</span>, <span class="ident">borrow_0</span>, <span class="ident">borrow_1</span>);
+            <span class="kw">return </span>util::interpolate(util_rate, Number::ZERO, util_1, borrow_0, borrow_1);
         }
 
-        <span class="kw">let</span> <span class="ident">util_2</span> <span class="op">=</span> <span class="ident">Number::from_bps</span>(<span class="self">self</span>.<span class="ident">config</span>.<span class="ident">utilization_rate_2</span>);
-        <span class="kw">let</span> <span class="ident">borrow_2</span> <span class="op">=</span> <span class="ident">Number::from_bps</span>(<span class="self">self</span>.<span class="ident">config</span>.<span class="ident">borrow_rate_2</span>);
+        <span class="kw">let </span>util_2 = Number::from_bps(<span class="self">self</span>.config.utilization_rate_2);
+        <span class="kw">let </span>borrow_2 = Number::from_bps(<span class="self">self</span>.config.borrow_rate_2);
 
-        <span class="kw">if</span> <span class="ident">util_rate</span> <span class="op">&lt;</span><span class="op">=</span> <span class="ident">util_2</span> {
-            <span class="comment">// Second regime</span>
-            <span class="kw">let</span> <span class="ident">borrow_1</span> <span class="op">=</span> <span class="ident">Number::from_bps</span>(<span class="self">self</span>.<span class="ident">config</span>.<span class="ident">borrow_rate_1</span>);
+        <span class="kw">if </span>util_rate &lt;= util_2 {
+            <span class="comment">// Second regime
+            </span><span class="kw">let </span>borrow_1 = Number::from_bps(<span class="self">self</span>.config.borrow_rate_1);
 
-            <span class="kw">return</span> <span class="ident">util::interpolate</span>(<span class="ident">util_rate</span>, <span class="ident">util_1</span>, <span class="ident">util_2</span>, <span class="ident">borrow_1</span>, <span class="ident">borrow_2</span>);
+            <span class="kw">return </span>util::interpolate(util_rate, util_1, util_2, borrow_1, borrow_2);
         }
 
-        <span class="kw">let</span> <span class="ident">borrow_3</span> <span class="op">=</span> <span class="ident">Number::from_bps</span>(<span class="self">self</span>.<span class="ident">config</span>.<span class="ident">borrow_rate_3</span>);
+        <span class="kw">let </span>borrow_3 = Number::from_bps(<span class="self">self</span>.config.borrow_rate_3);
 
-        <span class="kw">if</span> <span class="ident">util_rate</span> <span class="op">&lt;</span> <span class="ident">Number::ONE</span> {
-            <span class="comment">// Third regime</span>
-            <span class="kw">return</span> <span class="ident">util::interpolate</span>(<span class="ident">util_rate</span>, <span class="ident">util_2</span>, <span class="ident">Number::ONE</span>, <span class="ident">borrow_2</span>, <span class="ident">borrow_3</span>);
+        <span class="kw">if </span>util_rate &lt; Number::ONE {
+            <span class="comment">// Third regime
+            </span><span class="kw">return </span>util::interpolate(util_rate, util_2, Number::ONE, borrow_2, borrow_3);
         }
 
-        <span class="comment">// Maximum interest</span>
-        <span class="ident">borrow_3</span>
+        <span class="comment">// Maximum interest
+        </span>borrow_3
     }
 
-    <span class="doccomment">/// Gets the current utilization rate of the pool</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">utilization_rate</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Number</span> {
-        <span class="kw-2">*</span><span class="self">self</span>.<span class="ident">total_borrowed</span>() <span class="op">/</span> <span class="self">self</span>.<span class="ident">total_value</span>()
+    <span class="doccomment">/// Gets the current utilization rate of the pool
+    </span><span class="kw">pub fn </span>utilization_rate(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Number {
+        <span class="kw-2">*</span><span class="self">self</span>.total_borrowed() / <span class="self">self</span>.total_value()
     }
 
-    <span class="doccomment">/// Collect any fees accumulated from interest</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// Returns the number of notes to mint to represent the collected fees</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">collect_accrued_fees</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="ident">u64</span> {
-        <span class="kw">let</span> <span class="ident">uncollected</span> <span class="op">=</span> <span class="kw-2">*</span><span class="self">self</span>.<span class="ident">total_uncollected_fees</span>();
+    <span class="doccomment">/// Collect any fees accumulated from interest
+    ///
+    /// Returns the number of notes to mint to represent the collected fees
+    </span><span class="kw">pub fn </span>collect_accrued_fees(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; u64 {
+        <span class="kw">let </span>uncollected = <span class="kw-2">*</span><span class="self">self</span>.total_uncollected_fees();
 
-        <span class="kw">let</span> <span class="ident">fee_notes</span> <span class="op">=</span> (<span class="ident">uncollected</span> <span class="op">/</span> <span class="self">self</span>.<span class="ident">deposit_note_exchange_rate</span>()).<span class="ident">as_u64</span>(<span class="number">0</span>);
+        <span class="kw">let </span>fee_notes = (uncollected / <span class="self">self</span>.deposit_note_exchange_rate()).as_u64(<span class="number">0</span>);
 
-        <span class="comment">// Collect fees, preserving the remainder token amount.</span>
+        <span class="comment">// Collect fees, preserving the remainder token amount.
 
-        <span class="kw">if</span> <span class="ident">fee_notes</span> <span class="op">&gt;</span> <span class="number">0</span> {
-            <span class="kw">let</span> <span class="ident">collected_tokens</span> <span class="op">=</span>
-                <span class="ident">Number::from_decimal</span>(<span class="ident">fee_notes</span>, <span class="number">0</span>) <span class="op">*</span> <span class="self">self</span>.<span class="ident">deposit_note_exchange_rate</span>();
-            <span class="kw">let</span> <span class="ident">remainder</span> <span class="op">=</span> <span class="ident">uncollected</span> <span class="op">-</span> <span class="ident">collected_tokens</span>;
+        </span><span class="kw">if </span>fee_notes &gt; <span class="number">0 </span>{
+            <span class="kw">let </span>collected_tokens =
+                Number::from_decimal(fee_notes, <span class="number">0</span>) * <span class="self">self</span>.deposit_note_exchange_rate();
+            <span class="kw">let </span>remainder = uncollected - collected_tokens;
 
-            <span class="kw-2">*</span><span class="self">self</span>.<span class="ident">total_uncollected_fees_mut</span>() <span class="op">=</span> <span class="ident">remainder</span>;
-            <span class="self">self</span>.<span class="ident">deposit_notes</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">deposit_notes</span>.<span class="ident">checked_add</span>(<span class="ident">fee_notes</span>).<span class="ident">unwrap</span>();
+            <span class="kw-2">*</span><span class="self">self</span>.total_uncollected_fees_mut() = remainder;
+            <span class="self">self</span>.deposit_notes = <span class="self">self</span>.deposit_notes.checked_add(fee_notes).unwrap();
         }
 
-        <span class="ident">fee_notes</span>
+        fee_notes
     }
 
-    <span class="doccomment">/// Calculate the prices for the deposit and loan notes, based on</span>
-    <span class="doccomment">/// the price of the underlying token.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">calculate_prices</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">pyth_price</span>: <span class="kw-2">&amp;</span><span class="ident">PriceFeed</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">PriceResult</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">price_obj</span> <span class="op">=</span> <span class="ident">pyth_price</span>
-            .<span class="ident">get_current_price</span>()
-            .<span class="ident">ok_or</span>(<span class="ident">ErrorCode::InvalidPoolPrice</span>)<span class="question-mark">?</span>;
-        <span class="kw">let</span> <span class="ident">ema_obj</span> <span class="op">=</span> <span class="ident">pyth_price</span>
-            .<span class="ident">get_ema_price</span>()
-            .<span class="ident">ok_or</span>(<span class="ident">ErrorCode::InvalidPoolPrice</span>)<span class="question-mark">?</span>;
+    <span class="doccomment">/// Calculate the prices for the deposit and loan notes, based on
+    /// the price of the underlying token.
+    </span><span class="kw">pub fn </span>calculate_prices(<span class="kw-2">&amp;</span><span class="self">self</span>, pyth_price: <span class="kw-2">&amp;</span>PriceFeed) -&gt; <span class="prelude-ty">Result</span>&lt;PriceResult&gt; {
+        <span class="kw">let </span>price_obj = pyth_price
+            .get_current_price()
+            .ok_or(ErrorCode::InvalidPoolPrice)<span class="question-mark">?</span>;
+        <span class="kw">let </span>ema_obj = pyth_price
+            .get_ema_price()
+            .ok_or(ErrorCode::InvalidPoolPrice)<span class="question-mark">?</span>;
 
-        <span class="kw">let</span> <span class="ident">price_value</span> <span class="op">=</span> <span class="ident">Number::from_decimal</span>(<span class="ident">price_obj</span>.<span class="ident">price</span>, <span class="ident">price_obj</span>.<span class="ident">expo</span>);
-        <span class="kw">let</span> <span class="ident">conf_value</span> <span class="op">=</span> <span class="ident">Number::from_decimal</span>(<span class="ident">price_obj</span>.<span class="ident">conf</span>, <span class="ident">price_obj</span>.<span class="ident">expo</span>);
-        <span class="kw">let</span> <span class="ident">twap_value</span> <span class="op">=</span> <span class="ident">Number::from_decimal</span>(<span class="ident">ema_obj</span>.<span class="ident">price</span>, <span class="ident">ema_obj</span>.<span class="ident">expo</span>);
+        <span class="kw">let </span>price_value = Number::from_decimal(price_obj.price, price_obj.expo);
+        <span class="kw">let </span>conf_value = Number::from_decimal(price_obj.conf, price_obj.expo);
+        <span class="kw">let </span>twap_value = Number::from_decimal(ema_obj.price, ema_obj.expo);
 
-        <span class="kw">let</span> <span class="ident">deposit_note_exchange_rate</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">deposit_note_exchange_rate</span>();
-        <span class="kw">let</span> <span class="ident">loan_note_exchange_rate</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">loan_note_exchange_rate</span>();
+        <span class="kw">let </span>deposit_note_exchange_rate = <span class="self">self</span>.deposit_note_exchange_rate();
+        <span class="kw">let </span>loan_note_exchange_rate = <span class="self">self</span>.loan_note_exchange_rate();
 
-        <span class="kw">let</span> <span class="ident">deposit_note_price</span> <span class="op">=</span> <span class="ident">i64::try_from</span>(
-            (<span class="ident">price_value</span> <span class="op">*</span> <span class="ident">deposit_note_exchange_rate</span>).<span class="ident">as_u64_rounded</span>(<span class="ident">pyth_price</span>.<span class="ident">expo</span>),
+        <span class="kw">let </span>deposit_note_price = i64::try_from(
+            (price_value * deposit_note_exchange_rate).as_u64_rounded(pyth_price.expo),
         )
-        .<span class="ident">unwrap</span>();
-        <span class="kw">let</span> <span class="ident">deposit_note_conf</span> <span class="op">=</span>
-            (<span class="ident">conf_value</span> <span class="op">*</span> <span class="ident">deposit_note_exchange_rate</span>).<span class="ident">as_u64_rounded</span>(<span class="ident">pyth_price</span>.<span class="ident">expo</span>);
-        <span class="kw">let</span> <span class="ident">deposit_note_twap</span> <span class="op">=</span> <span class="ident">i64::try_from</span>(
-            (<span class="ident">twap_value</span> <span class="op">*</span> <span class="ident">deposit_note_exchange_rate</span>).<span class="ident">as_u64_rounded</span>(<span class="ident">pyth_price</span>.<span class="ident">expo</span>),
+        .unwrap();
+        <span class="kw">let </span>deposit_note_conf =
+            (conf_value * deposit_note_exchange_rate).as_u64_rounded(pyth_price.expo);
+        <span class="kw">let </span>deposit_note_twap = i64::try_from(
+            (twap_value * deposit_note_exchange_rate).as_u64_rounded(pyth_price.expo),
         )
-        .<span class="ident">unwrap</span>();
-        <span class="kw">let</span> <span class="ident">loan_note_price</span> <span class="op">=</span>
-            <span class="ident">i64::try_from</span>((<span class="ident">price_value</span> <span class="op">*</span> <span class="ident">loan_note_exchange_rate</span>).<span class="ident">as_u64_rounded</span>(<span class="ident">pyth_price</span>.<span class="ident">expo</span>))
-                .<span class="ident">unwrap</span>();
-        <span class="kw">let</span> <span class="ident">loan_note_conf</span> <span class="op">=</span> (<span class="ident">conf_value</span> <span class="op">*</span> <span class="ident">loan_note_exchange_rate</span>).<span class="ident">as_u64_rounded</span>(<span class="ident">pyth_price</span>.<span class="ident">expo</span>);
-        <span class="kw">let</span> <span class="ident">loan_note_twap</span> <span class="op">=</span>
-            <span class="ident">i64::try_from</span>((<span class="ident">twap_value</span> <span class="op">*</span> <span class="ident">loan_note_exchange_rate</span>).<span class="ident">as_u64_rounded</span>(<span class="ident">pyth_price</span>.<span class="ident">expo</span>))
-                .<span class="ident">unwrap</span>();
+        .unwrap();
+        <span class="kw">let </span>loan_note_price =
+            i64::try_from((price_value * loan_note_exchange_rate).as_u64_rounded(pyth_price.expo))
+                .unwrap();
+        <span class="kw">let </span>loan_note_conf = (conf_value * loan_note_exchange_rate).as_u64_rounded(pyth_price.expo);
+        <span class="kw">let </span>loan_note_twap =
+            i64::try_from((twap_value * loan_note_exchange_rate).as_u64_rounded(pyth_price.expo))
+                .unwrap();
 
-        <span class="prelude-val">Ok</span>(<span class="ident">PriceResult</span> {
-            <span class="ident">deposit_note_price</span>,
-            <span class="ident">deposit_note_conf</span>,
-            <span class="ident">deposit_note_twap</span>,
-            <span class="ident">loan_note_price</span>,
-            <span class="ident">loan_note_conf</span>,
-            <span class="ident">loan_note_twap</span>,
+        <span class="prelude-val">Ok</span>(PriceResult {
+            deposit_note_price,
+            deposit_note_conf,
+            deposit_note_twap,
+            loan_note_price,
+            loan_note_conf,
+            loan_note_twap,
         })
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">calculate_full_amount</span>(
+    <span class="kw">pub fn </span>calculate_full_amount(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        <span class="ident">current_notes</span>: <span class="ident">u64</span>,
-        <span class="ident">change</span>: <span class="ident">TokenChange</span>,
-        <span class="ident">action</span>: <span class="ident">PoolAction</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">FullAmount</span><span class="op">&gt;</span> {
-        <span class="kw">match</span> <span class="ident">change</span>.<span class="ident">kind</span> {
-            <span class="ident">ChangeKind::ShiftBy</span> =&gt; <span class="self">self</span>.<span class="ident">convert_amount</span>(<span class="ident">Amount::tokens</span>(<span class="ident">change</span>.<span class="ident">tokens</span>), <span class="ident">action</span>),
-            <span class="ident">ChangeKind::SetTo</span> =&gt; {
-                <span class="self">self</span>.<span class="ident">calculate_set_amount</span>(<span class="ident">current_notes</span>, <span class="ident">Amount::tokens</span>(<span class="ident">change</span>.<span class="ident">tokens</span>), <span class="ident">action</span>)
+        current_notes: u64,
+        change: TokenChange,
+        action: PoolAction,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;FullAmount&gt; {
+        <span class="kw">match </span>change.kind {
+            ChangeKind::ShiftBy =&gt; <span class="self">self</span>.convert_amount(Amount::tokens(change.tokens), action),
+            ChangeKind::SetTo =&gt; {
+                <span class="self">self</span>.calculate_set_amount(current_notes, Amount::tokens(change.tokens), action)
             }
         }
     }
 
-    <span class="kw">fn</span> <span class="ident">calculate_set_amount</span>(
+    <span class="kw">fn </span>calculate_set_amount(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        <span class="ident">current_notes_amount</span>: <span class="ident">u64</span>,
-        <span class="ident">target_amount</span>: <span class="ident">Amount</span>,
-        <span class="ident">pool_action</span>: <span class="ident">PoolAction</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">FullAmount</span><span class="op">&gt;</span> {
-        <span class="kw">match</span> <span class="ident">pool_action</span> {
-            <span class="ident">PoolAction::Borrow</span> <span class="op">|</span> <span class="ident">PoolAction::Deposit</span> =&gt; {
-                <span class="kw">let</span> <span class="ident">target</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">convert_amount</span>(<span class="ident">target_amount</span>, <span class="ident">pool_action</span>)<span class="question-mark">?</span>.<span class="ident">notes</span>;
-                <span class="kw">let</span> <span class="ident">delta</span> <span class="op">=</span> <span class="ident">target</span>
-                    .<span class="ident">checked_sub</span>(<span class="ident">current_notes_amount</span>)
-                    .<span class="ident">ok_or</span>(<span class="ident">ErrorCode::InvalidSetTo</span>)<span class="question-mark">?</span>;
-                <span class="self">self</span>.<span class="ident">convert_amount</span>(<span class="ident">Amount::notes</span>(<span class="ident">delta</span>), <span class="ident">pool_action</span>)
+        current_notes_amount: u64,
+        target_amount: Amount,
+        pool_action: PoolAction,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;FullAmount&gt; {
+        <span class="kw">match </span>pool_action {
+            PoolAction::Borrow | PoolAction::Deposit =&gt; {
+                <span class="kw">let </span>target = <span class="self">self</span>.convert_amount(target_amount, pool_action)<span class="question-mark">?</span>.notes;
+                <span class="kw">let </span>delta = target
+                    .checked_sub(current_notes_amount)
+                    .ok_or(ErrorCode::InvalidSetTo)<span class="question-mark">?</span>;
+                <span class="self">self</span>.convert_amount(Amount::notes(delta), pool_action)
             }
-            <span class="ident">PoolAction::Withdraw</span> <span class="op">|</span> <span class="ident">PoolAction::Repay</span> =&gt; {
-                <span class="kw">let</span> <span class="ident">target</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">convert_amount</span>(<span class="ident">target_amount</span>, <span class="ident">pool_action</span>)<span class="question-mark">?</span>.<span class="ident">notes</span>;
-                <span class="kw">let</span> <span class="ident">delta</span> <span class="op">=</span> <span class="ident">current_notes_amount</span>
-                    .<span class="ident">checked_sub</span>(<span class="ident">target</span>)
-                    .<span class="ident">ok_or</span>(<span class="ident">ErrorCode::InvalidSetTo</span>)<span class="question-mark">?</span>;
+            PoolAction::Withdraw | PoolAction::Repay =&gt; {
+                <span class="kw">let </span>target = <span class="self">self</span>.convert_amount(target_amount, pool_action)<span class="question-mark">?</span>.notes;
+                <span class="kw">let </span>delta = current_notes_amount
+                    .checked_sub(target)
+                    .ok_or(ErrorCode::InvalidSetTo)<span class="question-mark">?</span>;
 
-                <span class="self">self</span>.<span class="ident">convert_amount</span>(<span class="ident">Amount::notes</span>(<span class="ident">delta</span>), <span class="ident">pool_action</span>)
+                <span class="self">self</span>.convert_amount(Amount::notes(delta), pool_action)
             }
         }
     }
 
-    <span class="doccomment">/// Convert the `Amount` to a `FullAmount` conisting of the appropriate proprtion of notes and tokens</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">convert_amount</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">amount</span>: <span class="ident">Amount</span>, <span class="ident">action</span>: <span class="ident">PoolAction</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">FullAmount</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> (<span class="ident">exchange_rate</span>, <span class="ident">rounding</span>) <span class="op">=</span> <span class="kw">match</span> <span class="ident">action</span> {
-            <span class="ident">PoolAction::Deposit</span> <span class="op">|</span> <span class="ident">PoolAction::Withdraw</span> =&gt; (
-                <span class="self">self</span>.<span class="ident">deposit_note_exchange_rate</span>(),
-                <span class="ident">RoundingDirection::direction</span>(<span class="ident">action</span>, <span class="ident">amount</span>.<span class="ident">kind</span>),
+    <span class="doccomment">/// Convert the `Amount` to a `FullAmount` conisting of the appropriate proprtion of notes and tokens
+    </span><span class="kw">pub fn </span>convert_amount(<span class="kw-2">&amp;</span><span class="self">self</span>, amount: Amount, action: PoolAction) -&gt; <span class="prelude-ty">Result</span>&lt;FullAmount&gt; {
+        <span class="kw">let </span>(exchange_rate, rounding) = <span class="kw">match </span>action {
+            PoolAction::Deposit | PoolAction::Withdraw =&gt; (
+                <span class="self">self</span>.deposit_note_exchange_rate(),
+                RoundingDirection::direction(action, amount.kind),
             ),
-            <span class="ident">PoolAction::Repay</span> <span class="op">|</span> <span class="ident">PoolAction::Borrow</span> =&gt; (
-                <span class="self">self</span>.<span class="ident">loan_note_exchange_rate</span>(),
-                <span class="ident">RoundingDirection::direction</span>(<span class="ident">action</span>, <span class="ident">amount</span>.<span class="ident">kind</span>),
+            PoolAction::Repay | PoolAction::Borrow =&gt; (
+                <span class="self">self</span>.loan_note_exchange_rate(),
+                RoundingDirection::direction(action, amount.kind),
             ),
         };
 
-        <span class="kw">let</span> <span class="ident">amount</span> <span class="op">=</span> <span class="ident"><span class="self">Self</span>::convert_with_rounding_and_rate</span>(<span class="ident">amount</span>, <span class="ident">rounding</span>, <span class="ident">exchange_rate</span>);
+        <span class="kw">let </span>amount = <span class="self">Self</span>::convert_with_rounding_and_rate(amount, rounding, exchange_rate);
 
-        <span class="comment">// As FullAmount represents the conversion of tokens to/from notes for</span>
-        <span class="comment">// the purpose of:</span>
-        <span class="comment">// - adding/subtracting tokens to/from a pool&#39;s vault</span>
-        <span class="comment">// - minting/burning notes from a pool&#39;s deposit/loan mint.</span>
-        <span class="comment">// There should be no scenario where a conversion between notes and tokens</span>
-        <span class="comment">// leads to either value being 0 while the other is not.</span>
-        <span class="comment">//</span>
-        <span class="comment">// Scenarios where this can happen could be security risks, such as:</span>
-        <span class="comment">// - A user withdraws 1 token but burns 0 notes, they are draining the pool.</span>
-        <span class="comment">// - A user deposits 1 token but mints 0 notes, they are losing funds for no value.</span>
-        <span class="comment">// - A user deposits 0 tokens but mints 1 notes, they are getting free deposits.</span>
-        <span class="comment">// - A user withdraws 0 tokens but burns 1 token, they are writing off debt.</span>
-        <span class="comment">//</span>
-        <span class="comment">// Thus we finally check that both values are positive.</span>
-        <span class="kw">if</span> (<span class="ident">amount</span>.<span class="ident">notes</span> <span class="op">==</span> <span class="number">0</span> <span class="op">&amp;&amp;</span> <span class="ident">amount</span>.<span class="ident">tokens</span> <span class="op">&gt;</span> <span class="number">0</span>) <span class="op">|</span><span class="op">|</span> (<span class="ident">amount</span>.<span class="ident">tokens</span> <span class="op">==</span> <span class="number">0</span> <span class="op">&amp;&amp;</span> <span class="ident">amount</span>.<span class="ident">notes</span> <span class="op">&gt;</span> <span class="number">0</span>) {
-            <span class="kw">return</span> <span class="macro">err!</span>(<span class="ident"><span class="kw">crate</span>::ErrorCode::InvalidAmount</span>);
+        <span class="comment">// As FullAmount represents the conversion of tokens to/from notes for
+        // the purpose of:
+        // - adding/subtracting tokens to/from a pool&#39;s vault
+        // - minting/burning notes from a pool&#39;s deposit/loan mint.
+        // There should be no scenario where a conversion between notes and tokens
+        // leads to either value being 0 while the other is not.
+        //
+        // Scenarios where this can happen could be security risks, such as:
+        // - A user withdraws 1 token but burns 0 notes, they are draining the pool.
+        // - A user deposits 1 token but mints 0 notes, they are losing funds for no value.
+        // - A user deposits 0 tokens but mints 1 notes, they are getting free deposits.
+        // - A user withdraws 0 tokens but burns 1 token, they are writing off debt.
+        //
+        // Thus we finally check that both values are positive.
+        </span><span class="kw">if </span>(amount.notes == <span class="number">0 </span>&amp;&amp; amount.tokens &gt; <span class="number">0</span>) || (amount.tokens == <span class="number">0 </span>&amp;&amp; amount.notes &gt; <span class="number">0</span>) {
+            <span class="kw">return </span><span class="macro">err!</span>(<span class="kw">crate</span>::ErrorCode::InvalidAmount);
         }
 
-        <span class="prelude-val">Ok</span>(<span class="ident">amount</span>)
+        <span class="prelude-val">Ok</span>(amount)
     }
 
-    <span class="doccomment">/// Isolated to ensure rounding implementation</span>
-    <span class="kw">fn</span> <span class="ident">convert_with_rounding_and_rate</span>(
-        <span class="ident">amount</span>: <span class="ident">Amount</span>,
-        <span class="ident">rounding</span>: <span class="ident">RoundingDirection</span>,
-        <span class="ident">exchange_rate</span>: <span class="ident">Number</span>,
-    ) -&gt; <span class="ident">FullAmount</span> {
-        <span class="kw">match</span> <span class="ident">amount</span>.<span class="ident">kind</span> {
-            <span class="ident">AmountKind::Tokens</span> =&gt; <span class="ident">FullAmount</span> {
-                <span class="ident">tokens</span>: <span class="ident">amount</span>.<span class="ident">value</span>,
-                <span class="ident">notes</span>: <span class="kw">match</span> <span class="ident">rounding</span> {
-                    <span class="ident">RoundingDirection::Down</span> =&gt; {
-                        (<span class="ident">Number::from</span>(<span class="ident">amount</span>.<span class="ident">value</span>) <span class="op">/</span> <span class="ident">exchange_rate</span>).<span class="ident">as_u64</span>(<span class="number">0</span>)
+    <span class="doccomment">/// Isolated to ensure rounding implementation
+    </span><span class="kw">fn </span>convert_with_rounding_and_rate(
+        amount: Amount,
+        rounding: RoundingDirection,
+        exchange_rate: Number,
+    ) -&gt; FullAmount {
+        <span class="kw">match </span>amount.kind {
+            AmountKind::Tokens =&gt; FullAmount {
+                tokens: amount.value,
+                notes: <span class="kw">match </span>rounding {
+                    RoundingDirection::Down =&gt; {
+                        (Number::from(amount.value) / exchange_rate).as_u64(<span class="number">0</span>)
                     }
-                    <span class="ident">RoundingDirection::Up</span> =&gt; {
-                        (<span class="ident">Number::from</span>(<span class="ident">amount</span>.<span class="ident">value</span>) <span class="op">/</span> <span class="ident">exchange_rate</span>).<span class="ident">as_u64_ceil</span>(<span class="number">0</span>)
+                    RoundingDirection::Up =&gt; {
+                        (Number::from(amount.value) / exchange_rate).as_u64_ceil(<span class="number">0</span>)
                     }
                 },
             },
 
-            <span class="ident">AmountKind::Notes</span> =&gt; <span class="ident">FullAmount</span> {
-                <span class="ident">notes</span>: <span class="ident">amount</span>.<span class="ident">value</span>,
-                <span class="ident">tokens</span>: <span class="kw">match</span> <span class="ident">rounding</span> {
-                    <span class="ident">RoundingDirection::Down</span> =&gt; {
-                        (<span class="ident">Number::from</span>(<span class="ident">amount</span>.<span class="ident">value</span>) <span class="op">*</span> <span class="ident">exchange_rate</span>).<span class="ident">as_u64</span>(<span class="number">0</span>)
+            AmountKind::Notes =&gt; FullAmount {
+                notes: amount.value,
+                tokens: <span class="kw">match </span>rounding {
+                    RoundingDirection::Down =&gt; {
+                        (Number::from(amount.value) * exchange_rate).as_u64(<span class="number">0</span>)
                     }
-                    <span class="ident">RoundingDirection::Up</span> =&gt; {
-                        (<span class="ident">Number::from</span>(<span class="ident">amount</span>.<span class="ident">value</span>) <span class="op">*</span> <span class="ident">exchange_rate</span>).<span class="ident">as_u64_ceil</span>(<span class="number">0</span>)
+                    RoundingDirection::Up =&gt; {
+                        (Number::from(amount.value) * exchange_rate).as_u64_ceil(<span class="number">0</span>)
                     }
                 },
             },
         }
     }
 
-    <span class="doccomment">/// Get the exchange rate for deposit note -&gt; token</span>
-    <span class="kw">fn</span> <span class="ident">deposit_note_exchange_rate</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Number</span> {
-        <span class="kw">let</span> <span class="ident">deposit_notes</span> <span class="op">=</span> <span class="ident">std::cmp::max</span>(<span class="number">1</span>, <span class="self">self</span>.<span class="ident">deposit_notes</span>);
-        <span class="kw">let</span> <span class="ident">total_value</span> <span class="op">=</span> <span class="ident">std::cmp::max</span>(<span class="ident">Number::ONE</span>, <span class="self">self</span>.<span class="ident">total_value</span>());
-        (<span class="ident">total_value</span> <span class="op">-</span> <span class="kw-2">*</span><span class="self">self</span>.<span class="ident">total_uncollected_fees</span>()) <span class="op">/</span> <span class="ident">Number::from</span>(<span class="ident">deposit_notes</span>)
+    <span class="doccomment">/// Get the exchange rate for deposit note -&gt; token
+    </span><span class="kw">fn </span>deposit_note_exchange_rate(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Number {
+        <span class="kw">let </span>deposit_notes = std::cmp::max(<span class="number">1</span>, <span class="self">self</span>.deposit_notes);
+        <span class="kw">let </span>total_value = std::cmp::max(Number::ONE, <span class="self">self</span>.total_value());
+        (total_value - <span class="kw-2">*</span><span class="self">self</span>.total_uncollected_fees()) / Number::from(deposit_notes)
     }
 
-    <span class="doccomment">/// Get the exchange rate for loan note -&gt; token</span>
-    <span class="kw">fn</span> <span class="ident">loan_note_exchange_rate</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Number</span> {
-        <span class="kw">let</span> <span class="ident">loan_notes</span> <span class="op">=</span> <span class="ident">std::cmp::max</span>(<span class="number">1</span>, <span class="self">self</span>.<span class="ident">loan_notes</span>);
-        <span class="kw">let</span> <span class="ident">total_borrowed</span> <span class="op">=</span> <span class="ident">std::cmp::max</span>(<span class="ident">Number::ONE</span>, <span class="kw-2">*</span><span class="self">self</span>.<span class="ident">total_borrowed</span>());
-        <span class="ident">total_borrowed</span> <span class="op">/</span> <span class="ident">Number::from</span>(<span class="ident">loan_notes</span>)
+    <span class="doccomment">/// Get the exchange rate for loan note -&gt; token
+    </span><span class="kw">fn </span>loan_note_exchange_rate(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Number {
+        <span class="kw">let </span>loan_notes = std::cmp::max(<span class="number">1</span>, <span class="self">self</span>.loan_notes);
+        <span class="kw">let </span>total_borrowed = std::cmp::max(Number::ONE, <span class="kw-2">*</span><span class="self">self</span>.total_borrowed());
+        total_borrowed / Number::from(loan_notes)
     }
 
-    <span class="doccomment">/// Gets the total value of assets owned by/owed to the pool.</span>
-    <span class="kw">fn</span> <span class="ident">total_value</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Number</span> {
-        <span class="kw-2">*</span><span class="self">self</span>.<span class="ident">total_borrowed</span>() <span class="op">+</span> <span class="ident">Number::from</span>(<span class="self">self</span>.<span class="ident">deposit_tokens</span>)
+    <span class="doccomment">/// Gets the total value of assets owned by/owed to the pool.
+    </span><span class="kw">fn </span>total_value(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Number {
+        <span class="kw-2">*</span><span class="self">self</span>.total_borrowed() + Number::from(<span class="self">self</span>.deposit_tokens)
     }
 
-    <span class="kw">fn</span> <span class="ident">total_uncollected_fees_mut</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut</span> <span class="ident">Number</span> {
-        <span class="ident">bytemuck::from_bytes_mut</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">uncollected_fees</span>)
+    <span class="kw">fn </span>total_uncollected_fees_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span>Number {
+        bytemuck::from_bytes_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>.uncollected_fees)
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">total_uncollected_fees</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">Number</span> {
-        <span class="ident">bytemuck::from_bytes</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">uncollected_fees</span>)
+    <span class="kw">pub fn </span>total_uncollected_fees(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>Number {
+        bytemuck::from_bytes(<span class="kw-2">&amp;</span><span class="self">self</span>.uncollected_fees)
     }
 
-    <span class="kw">fn</span> <span class="ident">total_borrowed_mut</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut</span> <span class="ident">Number</span> {
-        <span class="ident">bytemuck::from_bytes_mut</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">borrowed_tokens</span>)
+    <span class="kw">fn </span>total_borrowed_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span>Number {
+        bytemuck::from_bytes_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>.borrowed_tokens)
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">total_borrowed</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">Number</span> {
-        <span class="ident">bytemuck::from_bytes</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">borrowed_tokens</span>)
+    <span class="kw">pub fn </span>total_borrowed(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>Number {
+        bytemuck::from_bytes(<span class="kw-2">&amp;</span><span class="self">self</span>.borrowed_tokens)
     }
 
-    <span class="kw">fn</span> <span class="ident">flags</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">PoolFlags</span> {
-        <span class="ident">PoolFlags::from_bits_truncate</span>(<span class="self">self</span>.<span class="ident">config</span>.<span class="ident">flags</span>)
+    <span class="kw">fn </span>flags(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; PoolFlags {
+        PoolFlags::from_bits_truncate(<span class="self">self</span>.config.flags)
     }
 }
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">FullAmount</span> {
-    <span class="kw">pub</span> <span class="ident">tokens</span>: <span class="ident">u64</span>,
-    <span class="kw">pub</span> <span class="ident">notes</span>: <span class="ident">u64</span>,
+<span class="attribute">#[derive(Debug)]
+</span><span class="kw">pub struct </span>FullAmount {
+    <span class="kw">pub </span>tokens: u64,
+    <span class="kw">pub </span>notes: u64,
 }
 
-<span class="doccomment">/// Represents the primary pool actions, used in determining the</span>
-<span class="doccomment">/// rounding direction between tokens and notes.</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Clone</span>, <span class="ident">Copy</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">PoolAction</span> {
-    <span class="ident">Borrow</span>,
-    <span class="ident">Deposit</span>,
-    <span class="ident">Repay</span>,
-    <span class="ident">Withdraw</span>,
+<span class="doccomment">/// Represents the primary pool actions, used in determining the
+/// rounding direction between tokens and notes.
+</span><span class="attribute">#[derive(Clone, Copy)]
+</span><span class="kw">pub enum </span>PoolAction {
+    Borrow,
+    Deposit,
+    Repay,
+    Withdraw,
 }
 
-<span class="doccomment">/// Represents the direction in which we should round when converting</span>
-<span class="doccomment">/// between tokens and notes.</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Clone</span>, <span class="ident">Copy</span>, <span class="ident">Debug</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">RoundingDirection</span> {
-    <span class="ident">Down</span>,
-    <span class="ident">Up</span>,
+<span class="doccomment">/// Represents the direction in which we should round when converting
+/// between tokens and notes.
+</span><span class="attribute">#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+</span><span class="kw">pub enum </span>RoundingDirection {
+    Down,
+    Up,
 }
 
-<span class="kw">impl</span> <span class="ident">RoundingDirection</span> {
-    <span class="doccomment">/// The exchange rate increases over time due to interest.</span>
-    <span class="doccomment">/// The rate is notes:tokens, such that 1.2 means that 1 note = 1.2 tokens.</span>
-    <span class="doccomment">/// This is because a user deposits 1 token and gets 1 note back (assuming 1:1 rate),</span>
-    <span class="doccomment">/// they then earn interest due passage of time, and become entitled to</span>
-    <span class="doccomment">/// 1.2 tokens, where 0.2 is the interest. Thus 1 note becomes 1.2 tokens.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// In an exchange where a user supplies notes, we multiply by the exchange rate</span>
-    <span class="doccomment">/// to get tokens.</span>
-    <span class="doccomment">/// In an exchange where a user supplies tokens, we divide by the exchange rate</span>
-    <span class="doccomment">/// to get notes.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// `amount` can either be tokens or notes. The amount type (1), side of the position</span>
-    <span class="doccomment">/// in the pool (2), and the instruction type (3), impact the rounding direction.</span>
-    <span class="doccomment">/// We always want a rounding position that is favourable to the pool.</span>
-    <span class="doccomment">/// The combination of the 3 factors is shown in the table below.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// | Instruction | Note Action     | Direction      | Rounding |</span>
-    <span class="doccomment">/// | :---        |     :----:      |     :----:     |     ---: |</span>
-    <span class="doccomment">/// | Deposit     | Mint Collateral | Tokens &gt; Notes | Down     |</span>
-    <span class="doccomment">/// | Deposit     | Mint Collateral | Notes &gt; Tokens | Up       |</span>
-    <span class="doccomment">/// | Withdraw    | Burn Collateral | Tokens &gt; Notes | Up       |</span>
-    <span class="doccomment">/// | Withdraw    | Burn Collateral | Notes &gt; Tokens | Down     |</span>
-    <span class="doccomment">/// | Borrow      | Mint Claim      | Tokens &gt; Notes | Up       |</span>
-    <span class="doccomment">/// | Borrow      | Mint Claim      | Notes &gt; Tokens | Down     |</span>
-    <span class="doccomment">/// | Repay       | Burn Claim      | Tokens &gt; Notes | Down     |</span>
-    <span class="doccomment">/// | Repay       | Burn Claim      | Notes &gt; Tokens | Up       |</span>
-    <span class="kw">pub</span> <span class="kw">const</span> <span class="kw">fn</span> <span class="ident">direction</span>(<span class="ident">pool_action</span>: <span class="ident">PoolAction</span>, <span class="ident">amount_kind</span>: <span class="ident">AmountKind</span>) -&gt; <span class="self">Self</span> {
-        <span class="kw">use</span> <span class="ident">RoundingDirection</span>::<span class="kw-2">*</span>;
-        <span class="kw">match</span> (<span class="ident">pool_action</span>, <span class="ident">amount_kind</span>) {
-            (<span class="ident">PoolAction::Borrow</span>, <span class="ident">AmountKind::Tokens</span>)
-            <span class="op">|</span> (<span class="ident">PoolAction::Deposit</span>, <span class="ident">AmountKind::Notes</span>)
-            <span class="op">|</span> (<span class="ident">PoolAction::Repay</span>, <span class="ident">AmountKind::Notes</span>)
-            <span class="op">|</span> (<span class="ident">PoolAction::Withdraw</span>, <span class="ident">AmountKind::Tokens</span>) =&gt; <span class="ident">Up</span>,
-            (<span class="ident">PoolAction::Borrow</span>, <span class="ident">AmountKind::Notes</span>)
-            <span class="op">|</span> (<span class="ident">PoolAction::Deposit</span>, <span class="ident">AmountKind::Tokens</span>)
-            <span class="op">|</span> (<span class="ident">PoolAction::Repay</span>, <span class="ident">AmountKind::Tokens</span>)
-            <span class="op">|</span> (<span class="ident">PoolAction::Withdraw</span>, <span class="ident">AmountKind::Notes</span>) =&gt; <span class="ident">Down</span>,
+<span class="kw">impl </span>RoundingDirection {
+    <span class="doccomment">/// The exchange rate increases over time due to interest.
+    /// The rate is notes:tokens, such that 1.2 means that 1 note = 1.2 tokens.
+    /// This is because a user deposits 1 token and gets 1 note back (assuming 1:1 rate),
+    /// they then earn interest due passage of time, and become entitled to
+    /// 1.2 tokens, where 0.2 is the interest. Thus 1 note becomes 1.2 tokens.
+    ///
+    /// In an exchange where a user supplies notes, we multiply by the exchange rate
+    /// to get tokens.
+    /// In an exchange where a user supplies tokens, we divide by the exchange rate
+    /// to get notes.
+    ///
+    /// `amount` can either be tokens or notes. The amount type (1), side of the position
+    /// in the pool (2), and the instruction type (3), impact the rounding direction.
+    /// We always want a rounding position that is favourable to the pool.
+    /// The combination of the 3 factors is shown in the table below.
+    ///
+    /// | Instruction | Note Action     | Direction      | Rounding |
+    /// | :---        |     :----:      |     :----:     |     ---: |
+    /// | Deposit     | Mint Collateral | Tokens &gt; Notes | Down     |
+    /// | Deposit     | Mint Collateral | Notes &gt; Tokens | Up       |
+    /// | Withdraw    | Burn Collateral | Tokens &gt; Notes | Up       |
+    /// | Withdraw    | Burn Collateral | Notes &gt; Tokens | Down     |
+    /// | Borrow      | Mint Claim      | Tokens &gt; Notes | Up       |
+    /// | Borrow      | Mint Claim      | Notes &gt; Tokens | Down     |
+    /// | Repay       | Burn Claim      | Tokens &gt; Notes | Down     |
+    /// | Repay       | Burn Claim      | Notes &gt; Tokens | Up       |
+    </span><span class="kw">pub const fn </span>direction(pool_action: PoolAction, amount_kind: AmountKind) -&gt; <span class="self">Self </span>{
+        <span class="kw">use </span>RoundingDirection::<span class="kw-2">*</span>;
+        <span class="kw">match </span>(pool_action, amount_kind) {
+            (PoolAction::Borrow, AmountKind::Tokens)
+            | (PoolAction::Deposit, AmountKind::Notes)
+            | (PoolAction::Repay, AmountKind::Notes)
+            | (PoolAction::Withdraw, AmountKind::Tokens) =&gt; Up,
+            (PoolAction::Borrow, AmountKind::Notes)
+            | (PoolAction::Deposit, AmountKind::Tokens)
+            | (PoolAction::Repay, AmountKind::Tokens)
+            | (PoolAction::Withdraw, AmountKind::Notes) =&gt; Down,
         }
     }
 }
 
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">PriceResult</span> {
-    <span class="kw">pub</span> <span class="ident">deposit_note_price</span>: <span class="ident">i64</span>,
-    <span class="kw">pub</span> <span class="ident">deposit_note_conf</span>: <span class="ident">u64</span>,
-    <span class="kw">pub</span> <span class="ident">deposit_note_twap</span>: <span class="ident">i64</span>,
-    <span class="kw">pub</span> <span class="ident">loan_note_price</span>: <span class="ident">i64</span>,
-    <span class="kw">pub</span> <span class="ident">loan_note_conf</span>: <span class="ident">u64</span>,
-    <span class="kw">pub</span> <span class="ident">loan_note_twap</span>: <span class="ident">i64</span>,
+<span class="kw">pub struct </span>PriceResult {
+    <span class="kw">pub </span>deposit_note_price: i64,
+    <span class="kw">pub </span>deposit_note_conf: u64,
+    <span class="kw">pub </span>deposit_note_twap: i64,
+    <span class="kw">pub </span>loan_note_price: i64,
+    <span class="kw">pub </span>loan_note_conf: u64,
+    <span class="kw">pub </span>loan_note_twap: i64,
 }
 
-<span class="doccomment">/// Configuration for a margin pool</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Default</span>, <span class="ident">AnchorDeserialize</span>, <span class="ident">AnchorSerialize</span>, <span class="ident">Clone</span>, <span class="ident">Copy</span>, <span class="ident">Eq</span>, <span class="ident">PartialEq</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">MarginPoolConfig</span> {
-    <span class="doccomment">/// Space for binary settings</span>
-    <span class="kw">pub</span> <span class="ident">flags</span>: <span class="ident">u64</span>,
+<span class="doccomment">/// Configuration for a margin pool
+</span><span class="attribute">#[derive(Debug, Default, AnchorDeserialize, AnchorSerialize, Clone, Copy, Eq, PartialEq)]
+</span><span class="kw">pub struct </span>MarginPoolConfig {
+    <span class="doccomment">/// Space for binary settings
+    </span><span class="kw">pub </span>flags: u64,
 
-    <span class="doccomment">/// The utilization rate at which first regime transitions to second</span>
-    <span class="kw">pub</span> <span class="ident">utilization_rate_1</span>: <span class="ident">u16</span>,
+    <span class="doccomment">/// The utilization rate at which first regime transitions to second
+    </span><span class="kw">pub </span>utilization_rate_1: u16,
 
-    <span class="doccomment">/// The utilization rate at which second regime transitions to third</span>
-    <span class="kw">pub</span> <span class="ident">utilization_rate_2</span>: <span class="ident">u16</span>,
+    <span class="doccomment">/// The utilization rate at which second regime transitions to third
+    </span><span class="kw">pub </span>utilization_rate_2: u16,
 
-    <span class="doccomment">/// The lowest borrow rate</span>
-    <span class="kw">pub</span> <span class="ident">borrow_rate_0</span>: <span class="ident">u16</span>,
+    <span class="doccomment">/// The lowest borrow rate
+    </span><span class="kw">pub </span>borrow_rate_0: u16,
 
-    <span class="doccomment">/// The borrow rate at the transition point from first to second regime</span>
-    <span class="kw">pub</span> <span class="ident">borrow_rate_1</span>: <span class="ident">u16</span>,
+    <span class="doccomment">/// The borrow rate at the transition point from first to second regime
+    </span><span class="kw">pub </span>borrow_rate_1: u16,
 
-    <span class="doccomment">/// The borrow rate at the transition point from second to third regime</span>
-    <span class="kw">pub</span> <span class="ident">borrow_rate_2</span>: <span class="ident">u16</span>,
+    <span class="doccomment">/// The borrow rate at the transition point from second to third regime
+    </span><span class="kw">pub </span>borrow_rate_2: u16,
 
-    <span class="doccomment">/// The highest possible borrow rate.</span>
-    <span class="kw">pub</span> <span class="ident">borrow_rate_3</span>: <span class="ident">u16</span>,
+    <span class="doccomment">/// The highest possible borrow rate.
+    </span><span class="kw">pub </span>borrow_rate_3: u16,
 
-    <span class="doccomment">/// The fee rate applied to interest payments collected</span>
-    <span class="kw">pub</span> <span class="ident">management_fee_rate</span>: <span class="ident">u16</span>,
+    <span class="doccomment">/// The fee rate applied to interest payments collected
+    </span><span class="kw">pub </span>management_fee_rate: u16,
 
-    <span class="doccomment">/// Unused</span>
-    <span class="kw">pub</span> <span class="ident">reserved</span>: <span class="ident">u64</span>,
+    <span class="doccomment">/// Unused
+    </span><span class="kw">pub </span>reserved: u64,
 }
 
-<span class="macro">bitflags::bitflags!</span> {
-    <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">PoolFlags</span>: <span class="ident">u64</span> {
-        <span class="doccomment">/// The pool is not allowed to sign for anything, preventing</span>
-        <span class="doccomment">/// the movement of funds.</span>
-        <span class="kw">const</span> <span class="ident">DISABLED</span> <span class="op">=</span> <span class="number">1</span> <span class="op">&lt;</span><span class="op">&lt;</span> <span class="number">0</span>;
+<span class="macro">bitflags::bitflags! </span>{
+    <span class="kw">pub struct </span>PoolFlags: u64 {
+        <span class="doccomment">/// The pool is not allowed to sign for anything, preventing
+        /// the movement of funds.
+        </span><span class="kw">const </span>DISABLED = <span class="number">1 </span>&lt;&lt; <span class="number">0</span>;
 
-        <span class="doccomment">/// The pool is allowed to lend out deposits for borrowing</span>
-        <span class="kw">const</span> <span class="ident">ALLOW_LENDING</span> <span class="op">=</span> <span class="number">1</span> <span class="op">&lt;</span><span class="op">&lt;</span> <span class="number">1</span>;
+        <span class="doccomment">/// The pool is allowed to lend out deposits for borrowing
+        </span><span class="kw">const </span>ALLOW_LENDING = <span class="number">1 </span>&lt;&lt; <span class="number">1</span>;
     }
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">test</span>)]</span>
-<span class="kw">mod</span> <span class="ident">tests</span> {
-    <span class="kw">use</span> <span class="kw">super</span>::<span class="kw-2">*</span>;
-    <span class="kw">use</span> <span class="ident">serde_test</span>::{<span class="ident">assert_ser_tokens</span>, <span class="ident">Token</span>};
+<span class="attribute">#[cfg(test)]
+</span><span class="kw">mod </span>tests {
+    <span class="kw">use super</span>::<span class="kw-2">*</span>;
+    <span class="kw">use </span>serde_test::{assert_ser_tokens, Token};
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">test_deposit_note_rounding</span>() -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">margin_pool</span> <span class="op">=</span> <span class="ident">MarginPool::default</span>();
+    <span class="attribute">#[test]
+    </span><span class="kw">fn </span>test_deposit_note_rounding() -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>margin_pool = MarginPool::default();
 
-        <span class="ident">margin_pool</span>.<span class="ident">deposit</span>(<span class="kw-2">&amp;</span><span class="ident">FullAmount</span> {
-            <span class="ident">tokens</span>: <span class="number">1_000_000</span>,
-            <span class="ident">notes</span>: <span class="number">900_000</span>,
+        margin_pool.deposit(<span class="kw-2">&amp;</span>FullAmount {
+            tokens: <span class="number">1_000_000</span>,
+            notes: <span class="number">900_000</span>,
         });
 
-        <span class="comment">// Deposit note exchange rate is 1.111111_.</span>
-        <span class="comment">// If a user withdraws 9 notes, they should get 9 or 10 tokens back</span>
-        <span class="comment">// depending on the rounding.</span>
+        <span class="comment">// Deposit note exchange rate is 1.111111_.
+        // If a user withdraws 9 notes, they should get 9 or 10 tokens back
+        // depending on the rounding.
+
+        </span><span class="macro">assert_eq!</span>(
+            margin_pool.deposit_note_exchange_rate().as_u64(-<span class="number">9</span>),
+            <span class="number">1111111111
+        </span>);
+
+        <span class="kw">let </span>pool_convert = |amount, rounding| {
+            <span class="kw">let </span>exchange_rate = margin_pool.deposit_note_exchange_rate();
+            MarginPool::convert_with_rounding_and_rate(amount, rounding, exchange_rate)
+        };
+
+        <span class="kw">let </span>deposit_amount = pool_convert(Amount::notes(<span class="number">12</span>), RoundingDirection::Down);
+
+        <span class="macro">assert_eq!</span>(deposit_amount.notes, <span class="number">12</span>);
+        <span class="macro">assert_eq!</span>(deposit_amount.tokens, <span class="number">13</span>); <span class="comment">// ref [0]
+
+        </span><span class="kw">let </span>deposit_amount = pool_convert(Amount::notes(<span class="number">18</span>), RoundingDirection::Down);
+
+        <span class="macro">assert_eq!</span>(deposit_amount.notes, <span class="number">18</span>);
+        <span class="macro">assert_eq!</span>(deposit_amount.tokens, <span class="number">19</span>);
+
+        <span class="kw">let </span>deposit_amount = pool_convert(Amount::notes(<span class="number">12</span>), RoundingDirection::Up);
+
+        <span class="macro">assert_eq!</span>(deposit_amount.notes, <span class="number">12</span>);
+        <span class="macro">assert_eq!</span>(deposit_amount.tokens, <span class="number">14</span>); <span class="comment">// ref [1]
+
+        // A user requesting 1 note should never get 0 tokens back,
+        // or 1 token should never get 0 notes back
+
+        </span><span class="kw">let </span>deposit_amount = pool_convert(Amount::notes(<span class="number">1</span>), RoundingDirection::Down);
+
+        <span class="comment">// When depositing, 1:1 would be advantageous to the user
+        </span><span class="macro">assert_eq!</span>(deposit_amount.notes, <span class="number">1</span>);
+        <span class="macro">assert_eq!</span>(deposit_amount.tokens, <span class="number">1</span>);
+
+        <span class="kw">let </span>deposit_amount = pool_convert(Amount::notes(<span class="number">1</span>), RoundingDirection::Up);
+
+        <span class="comment">// Depositing 2 tokens for 1 note is disadvantageous to the user
+        // and protects the protocol&#39;s average exchange rate
+        </span><span class="macro">assert_eq!</span>(deposit_amount.notes, <span class="number">1</span>);
+        <span class="macro">assert_eq!</span>(deposit_amount.tokens, <span class="number">2</span>);
+
+        <span class="comment">// Check the default rounding for depositing notes, as it is disadvantageous
+        // to the user per the previous observation.
+        </span><span class="kw">let </span>direction = RoundingDirection::direction(PoolAction::Deposit, AmountKind::Notes);
+        <span class="macro">assert_eq!</span>(RoundingDirection::Up, direction);
+
+        <span class="comment">// A repay is the same as a deposit (inflow)
+        </span><span class="kw">let </span>direction = RoundingDirection::direction(PoolAction::Repay, AmountKind::Notes);
+        <span class="macro">assert_eq!</span>(RoundingDirection::Up, direction);
+
+        <span class="prelude-val">Ok</span>(())
+    }
+
+    <span class="doccomment">/// Conversion between tokens and notes would allow a user to
+    /// provide tokens for notes, or to specify the number of tokens
+    /// to receive on withdrawal.
+    ///
+    /// As the exchange rate between notes and tokens is expected to
+    /// increase over time, there is a risk that a user could extract
+    /// 1 token while burning 0 notes due to rounding.
+    </span><span class="attribute">#[test]
+    </span><span class="kw">fn </span>test_deposit_token_rounding() -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>margin_pool = MarginPool::default();
+
+        margin_pool.deposit(<span class="kw-2">&amp;</span>FullAmount {
+            tokens: <span class="number">1_000_000</span>,
+            notes: <span class="number">900_000</span>,
+        });
 
         <span class="macro">assert_eq!</span>(
-            <span class="ident">margin_pool</span>.<span class="ident">deposit_note_exchange_rate</span>().<span class="ident">as_u64</span>(<span class="op">-</span><span class="number">9</span>),
-            <span class="number">1111111111</span>
-        );
+            margin_pool.deposit_note_exchange_rate().as_u64(-<span class="number">9</span>),
+            <span class="number">1111111111
+        </span>);
 
-        <span class="kw">let</span> <span class="ident">pool_convert</span> <span class="op">=</span> <span class="op">|</span><span class="ident">amount</span>, <span class="ident">rounding</span><span class="op">|</span> {
-            <span class="kw">let</span> <span class="ident">exchange_rate</span> <span class="op">=</span> <span class="ident">margin_pool</span>.<span class="ident">deposit_note_exchange_rate</span>();
-            <span class="ident">MarginPool::convert_with_rounding_and_rate</span>(<span class="ident">amount</span>, <span class="ident">rounding</span>, <span class="ident">exchange_rate</span>)
+        <span class="kw">let </span>pool_convert = |amount, rounding| {
+            <span class="kw">let </span>exchange_rate = margin_pool.deposit_note_exchange_rate();
+            MarginPool::convert_with_rounding_and_rate(amount, rounding, exchange_rate)
         };
 
-        <span class="kw">let</span> <span class="ident">deposit_amount</span> <span class="op">=</span> <span class="ident">pool_convert</span>(<span class="ident">Amount::notes</span>(<span class="number">12</span>), <span class="ident">RoundingDirection::Down</span>);
+        <span class="comment">// depositing tokens should round down
+        </span><span class="kw">let </span>deposit_result = margin_pool.convert_amount(Amount::tokens(<span class="number">1</span>), PoolAction::Deposit);
 
-        <span class="macro">assert_eq!</span>(<span class="ident">deposit_amount</span>.<span class="ident">notes</span>, <span class="number">12</span>);
-        <span class="macro">assert_eq!</span>(<span class="ident">deposit_amount</span>.<span class="ident">tokens</span>, <span class="number">13</span>); <span class="comment">// ref [0]</span>
+        <span class="comment">// Rounding down would return 0 notes
+        </span><span class="macro">assert!</span>(deposit_result.is_err());
 
-        <span class="kw">let</span> <span class="ident">deposit_amount</span> <span class="op">=</span> <span class="ident">pool_convert</span>(<span class="ident">Amount::notes</span>(<span class="number">18</span>), <span class="ident">RoundingDirection::Down</span>);
+        <span class="kw">let </span>deposit_amount = pool_convert(Amount::tokens(<span class="number">1</span>), RoundingDirection::Up);
 
-        <span class="macro">assert_eq!</span>(<span class="ident">deposit_amount</span>.<span class="ident">notes</span>, <span class="number">18</span>);
-        <span class="macro">assert_eq!</span>(<span class="ident">deposit_amount</span>.<span class="ident">tokens</span>, <span class="number">19</span>);
+        <span class="comment">// Depositing 1 token for 1 note is disadvantageous to the user as they
+        // get a lower rate than the 1.111_.
+        // This is however because they are requesting the smallest unit, so
+        // this test hides the true intention of the rounding.
+        </span><span class="macro">assert_eq!</span>(deposit_amount.notes, <span class="number">1</span>);
+        <span class="macro">assert_eq!</span>(deposit_amount.tokens, <span class="number">1</span>);
 
-        <span class="kw">let</span> <span class="ident">deposit_amount</span> <span class="op">=</span> <span class="ident">pool_convert</span>(<span class="ident">Amount::notes</span>(<span class="number">12</span>), <span class="ident">RoundingDirection::Up</span>);
+        <span class="comment">// It is better observed with a bigger number.
+        // The expectation when a user deposits is that they should get less notes
+        // than the exchange rate if we have to round. This is because fewer notes
+        // entitle the user to fewer tokens on withdrawal from the pool.
 
-        <span class="macro">assert_eq!</span>(<span class="ident">deposit_amount</span>.<span class="ident">notes</span>, <span class="number">12</span>);
-        <span class="macro">assert_eq!</span>(<span class="ident">deposit_amount</span>.<span class="ident">tokens</span>, <span class="number">14</span>); <span class="comment">// ref [1]</span>
+        // We start by rounding up a bigger number. See [0]
+        </span><span class="kw">let </span>deposit_amount = pool_convert(Amount::tokens(<span class="number">9</span>), RoundingDirection::Up);
 
-        <span class="comment">// A user requesting 1 note should never get 0 tokens back,</span>
-        <span class="comment">// or 1 token should never get 0 notes back</span>
+        <span class="macro">assert_eq!</span>(deposit_amount.notes, <span class="number">9</span>);
+        <span class="macro">assert_eq!</span>(deposit_amount.tokens, <span class="number">9</span>);
 
-        <span class="kw">let</span> <span class="ident">deposit_amount</span> <span class="op">=</span> <span class="ident">pool_convert</span>(<span class="ident">Amount::notes</span>(<span class="number">1</span>), <span class="ident">RoundingDirection::Down</span>);
+        <span class="comment">// [1] shows the behaviour when rounding 12 notes up, we get 13 tokens.
+        </span><span class="kw">let </span>deposit_amount = pool_convert(Amount::tokens(<span class="number">13</span>), RoundingDirection::Up);
 
-        <span class="comment">// When depositing, 1:1 would be advantageous to the user</span>
-        <span class="macro">assert_eq!</span>(<span class="ident">deposit_amount</span>.<span class="ident">notes</span>, <span class="number">1</span>);
-        <span class="macro">assert_eq!</span>(<span class="ident">deposit_amount</span>.<span class="ident">tokens</span>, <span class="number">1</span>);
+        <span class="macro">assert_eq!</span>(deposit_amount.tokens, <span class="number">13</span>);
+        <span class="comment">// [1] returned 12 notes, and we get 12 notes back.
+        </span><span class="macro">assert_eq!</span>(deposit_amount.notes, <span class="number">12</span>);
 
-        <span class="kw">let</span> <span class="ident">deposit_amount</span> <span class="op">=</span> <span class="ident">pool_convert</span>(<span class="ident">Amount::notes</span>(<span class="number">1</span>), <span class="ident">RoundingDirection::Up</span>);
+        <span class="comment">// If we round down instead of up, we preserve value.
+        </span><span class="kw">let </span>deposit_amount = pool_convert(Amount::tokens(<span class="number">14</span>), RoundingDirection::Down);
 
-        <span class="comment">// Depositing 2 tokens for 1 note is disadvantageous to the user</span>
-        <span class="comment">// and protects the protocol&#39;s average exchange rate</span>
-        <span class="macro">assert_eq!</span>(<span class="ident">deposit_amount</span>.<span class="ident">notes</span>, <span class="number">1</span>);
-        <span class="macro">assert_eq!</span>(<span class="ident">deposit_amount</span>.<span class="ident">tokens</span>, <span class="number">2</span>);
+        <span class="macro">assert_eq!</span>(deposit_amount.tokens, <span class="number">14</span>);
+        <span class="macro">assert_eq!</span>(deposit_amount.notes, <span class="number">12</span>);
 
-        <span class="comment">// Check the default rounding for depositing notes, as it is disadvantageous</span>
-        <span class="comment">// to the user per the previous observation.</span>
-        <span class="kw">let</span> <span class="ident">direction</span> <span class="op">=</span> <span class="ident">RoundingDirection::direction</span>(<span class="ident">PoolAction::Deposit</span>, <span class="ident">AmountKind::Notes</span>);
-        <span class="macro">assert_eq!</span>(<span class="ident">RoundingDirection::Up</span>, <span class="ident">direction</span>);
+        <span class="comment">// From the above scenarios, we achieve a roundtrip when we change the
+        // rounding direction depending on the conversion direction.
+        // When depositing notes, we rounded up. When depositing tokens, rounding
+        // down leaves the user in a comparable scenario.
 
-        <span class="comment">// A repay is the same as a deposit (inflow)</span>
-        <span class="kw">let</span> <span class="ident">direction</span> <span class="op">=</span> <span class="ident">RoundingDirection::direction</span>(<span class="ident">PoolAction::Repay</span>, <span class="ident">AmountKind::Notes</span>);
-        <span class="macro">assert_eq!</span>(<span class="ident">RoundingDirection::Up</span>, <span class="ident">direction</span>);
+        // Thus when depositing tokens, we should round down.
+        </span><span class="kw">let </span>direction = RoundingDirection::direction(PoolAction::Deposit, AmountKind::Tokens);
+        <span class="macro">assert_eq!</span>(RoundingDirection::Down, direction);
+
+        <span class="comment">// Repay should behave like deposit
+        </span><span class="kw">let </span>direction = RoundingDirection::direction(PoolAction::Repay, AmountKind::Tokens);
+        <span class="macro">assert_eq!</span>(RoundingDirection::Down, direction);
 
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="doccomment">/// Conversion between tokens and notes would allow a user to</span>
-    <span class="doccomment">/// provide tokens for notes, or to specify the number of tokens</span>
-    <span class="doccomment">/// to receive on withdrawal.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// As the exchange rate between notes and tokens is expected to</span>
-    <span class="doccomment">/// increase over time, there is a risk that a user could extract</span>
-    <span class="doccomment">/// 1 token while burning 0 notes due to rounding.</span>
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">test_deposit_token_rounding</span>() -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">margin_pool</span> <span class="op">=</span> <span class="ident">MarginPool::default</span>();
+    <span class="attribute">#[test]
+    </span><span class="kw">fn </span>test_loan_note_rounding() -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>margin_pool = MarginPool::default();
+        margin_pool.config.flags = PoolFlags::ALLOW_LENDING.bits();
 
-        <span class="ident">margin_pool</span>.<span class="ident">deposit</span>(<span class="kw-2">&amp;</span><span class="ident">FullAmount</span> {
-            <span class="ident">tokens</span>: <span class="number">1_000_000</span>,
-            <span class="ident">notes</span>: <span class="number">900_000</span>,
+        <span class="comment">// Deposit funds so there is liquidity
+        </span>margin_pool.deposit(<span class="kw-2">&amp;</span>FullAmount {
+            tokens: <span class="number">1_000_000</span>,
+            notes: <span class="number">1_000_000</span>,
         });
 
-        <span class="macro">assert_eq!</span>(
-            <span class="ident">margin_pool</span>.<span class="ident">deposit_note_exchange_rate</span>().<span class="ident">as_u64</span>(<span class="op">-</span><span class="number">9</span>),
-            <span class="number">1111111111</span>
-        );
-
-        <span class="kw">let</span> <span class="ident">pool_convert</span> <span class="op">=</span> <span class="op">|</span><span class="ident">amount</span>, <span class="ident">rounding</span><span class="op">|</span> {
-            <span class="kw">let</span> <span class="ident">exchange_rate</span> <span class="op">=</span> <span class="ident">margin_pool</span>.<span class="ident">deposit_note_exchange_rate</span>();
-            <span class="ident">MarginPool::convert_with_rounding_and_rate</span>(<span class="ident">amount</span>, <span class="ident">rounding</span>, <span class="ident">exchange_rate</span>)
-        };
-
-        <span class="comment">// depositing tokens should round down</span>
-        <span class="kw">let</span> <span class="ident">deposit_result</span> <span class="op">=</span> <span class="ident">margin_pool</span>.<span class="ident">convert_amount</span>(<span class="ident">Amount::tokens</span>(<span class="number">1</span>), <span class="ident">PoolAction::Deposit</span>);
-
-        <span class="comment">// Rounding down would return 0 notes</span>
-        <span class="macro">assert!</span>(<span class="ident">deposit_result</span>.<span class="ident">is_err</span>());
-
-        <span class="kw">let</span> <span class="ident">deposit_amount</span> <span class="op">=</span> <span class="ident">pool_convert</span>(<span class="ident">Amount::tokens</span>(<span class="number">1</span>), <span class="ident">RoundingDirection::Up</span>);
-
-        <span class="comment">// Depositing 1 token for 1 note is disadvantageous to the user as they</span>
-        <span class="comment">// get a lower rate than the 1.111_.</span>
-        <span class="comment">// This is however because they are requesting the smallest unit, so</span>
-        <span class="comment">// this test hides the true intention of the rounding.</span>
-        <span class="macro">assert_eq!</span>(<span class="ident">deposit_amount</span>.<span class="ident">notes</span>, <span class="number">1</span>);
-        <span class="macro">assert_eq!</span>(<span class="ident">deposit_amount</span>.<span class="ident">tokens</span>, <span class="number">1</span>);
-
-        <span class="comment">// It is better observed with a bigger number.</span>
-        <span class="comment">// The expectation when a user deposits is that they should get less notes</span>
-        <span class="comment">// than the exchange rate if we have to round. This is because fewer notes</span>
-        <span class="comment">// entitle the user to fewer tokens on withdrawal from the pool.</span>
-
-        <span class="comment">// We start by rounding up a bigger number. See [0]</span>
-        <span class="kw">let</span> <span class="ident">deposit_amount</span> <span class="op">=</span> <span class="ident">pool_convert</span>(<span class="ident">Amount::tokens</span>(<span class="number">9</span>), <span class="ident">RoundingDirection::Up</span>);
-
-        <span class="macro">assert_eq!</span>(<span class="ident">deposit_amount</span>.<span class="ident">notes</span>, <span class="number">9</span>);
-        <span class="macro">assert_eq!</span>(<span class="ident">deposit_amount</span>.<span class="ident">tokens</span>, <span class="number">9</span>);
-
-        <span class="comment">// [1] shows the behaviour when rounding 12 notes up, we get 13 tokens.</span>
-        <span class="kw">let</span> <span class="ident">deposit_amount</span> <span class="op">=</span> <span class="ident">pool_convert</span>(<span class="ident">Amount::tokens</span>(<span class="number">13</span>), <span class="ident">RoundingDirection::Up</span>);
-
-        <span class="macro">assert_eq!</span>(<span class="ident">deposit_amount</span>.<span class="ident">tokens</span>, <span class="number">13</span>);
-        <span class="comment">// [1] returned 12 notes, and we get 12 notes back.</span>
-        <span class="macro">assert_eq!</span>(<span class="ident">deposit_amount</span>.<span class="ident">notes</span>, <span class="number">12</span>);
-
-        <span class="comment">// If we round down instead of up, we preserve value.</span>
-        <span class="kw">let</span> <span class="ident">deposit_amount</span> <span class="op">=</span> <span class="ident">pool_convert</span>(<span class="ident">Amount::tokens</span>(<span class="number">14</span>), <span class="ident">RoundingDirection::Down</span>);
-
-        <span class="macro">assert_eq!</span>(<span class="ident">deposit_amount</span>.<span class="ident">tokens</span>, <span class="number">14</span>);
-        <span class="macro">assert_eq!</span>(<span class="ident">deposit_amount</span>.<span class="ident">notes</span>, <span class="number">12</span>);
-
-        <span class="comment">// From the above scenarios, we achieve a roundtrip when we change the</span>
-        <span class="comment">// rounding direction depending on the conversion direction.</span>
-        <span class="comment">// When depositing notes, we rounded up. When depositing tokens, rounding</span>
-        <span class="comment">// down leaves the user in a comparable scenario.</span>
-
-        <span class="comment">// Thus when depositing tokens, we should round down.</span>
-        <span class="kw">let</span> <span class="ident">direction</span> <span class="op">=</span> <span class="ident">RoundingDirection::direction</span>(<span class="ident">PoolAction::Deposit</span>, <span class="ident">AmountKind::Tokens</span>);
-        <span class="macro">assert_eq!</span>(<span class="ident">RoundingDirection::Down</span>, <span class="ident">direction</span>);
-
-        <span class="comment">// Repay should behave like deposit</span>
-        <span class="kw">let</span> <span class="ident">direction</span> <span class="op">=</span> <span class="ident">RoundingDirection::direction</span>(<span class="ident">PoolAction::Repay</span>, <span class="ident">AmountKind::Tokens</span>);
-        <span class="macro">assert_eq!</span>(<span class="ident">RoundingDirection::Down</span>, <span class="ident">direction</span>);
-
-        <span class="prelude-val">Ok</span>(())
-    }
-
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">test_loan_note_rounding</span>() -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">margin_pool</span> <span class="op">=</span> <span class="ident">MarginPool::default</span>();
-        <span class="ident">margin_pool</span>.<span class="ident">config</span>.<span class="ident">flags</span> <span class="op">=</span> <span class="ident">PoolFlags::ALLOW_LENDING</span>.<span class="ident">bits</span>();
-
-        <span class="comment">// Deposit funds so there is liquidity</span>
-        <span class="ident">margin_pool</span>.<span class="ident">deposit</span>(<span class="kw-2">&amp;</span><span class="ident">FullAmount</span> {
-            <span class="ident">tokens</span>: <span class="number">1_000_000</span>,
-            <span class="ident">notes</span>: <span class="number">1_000_000</span>,
-        });
-
-        <span class="ident">margin_pool</span>.<span class="ident">borrow</span>(<span class="kw-2">&amp;</span><span class="ident">FullAmount</span> {
-            <span class="ident">tokens</span>: <span class="number">1_000_000</span>,
-            <span class="ident">notes</span>: <span class="number">900_000</span>,
+        margin_pool.borrow(<span class="kw-2">&amp;</span>FullAmount {
+            tokens: <span class="number">1_000_000</span>,
+            notes: <span class="number">900_000</span>,
         })<span class="question-mark">?</span>;
 
-        <span class="macro">assert_eq!</span>(<span class="ident">margin_pool</span>.<span class="ident">loan_note_exchange_rate</span>().<span class="ident">as_u64</span>(<span class="op">-</span><span class="number">9</span>), <span class="number">1111111111</span>);
+        <span class="macro">assert_eq!</span>(margin_pool.loan_note_exchange_rate().as_u64(-<span class="number">9</span>), <span class="number">1111111111</span>);
 
-        <span class="kw">let</span> <span class="ident">pool_convert</span> <span class="op">=</span> <span class="op">|</span><span class="ident">amount</span>, <span class="ident">rounding</span><span class="op">|</span> {
-            <span class="kw">let</span> <span class="ident">exchange_rate</span> <span class="op">=</span> <span class="ident">margin_pool</span>.<span class="ident">loan_note_exchange_rate</span>();
-            <span class="ident">MarginPool::convert_with_rounding_and_rate</span>(<span class="ident">amount</span>, <span class="ident">rounding</span>, <span class="ident">exchange_rate</span>)
+        <span class="kw">let </span>pool_convert = |amount, rounding| {
+            <span class="kw">let </span>exchange_rate = margin_pool.loan_note_exchange_rate();
+            MarginPool::convert_with_rounding_and_rate(amount, rounding, exchange_rate)
         };
 
-        <span class="kw">let</span> <span class="ident">loan_amount</span> <span class="op">=</span> <span class="ident">pool_convert</span>(<span class="ident">Amount::notes</span>(<span class="number">1</span>), <span class="ident">RoundingDirection::Down</span>);
+        <span class="kw">let </span>loan_amount = pool_convert(Amount::notes(<span class="number">1</span>), RoundingDirection::Down);
 
-        <span class="macro">assert_eq!</span>(<span class="ident">loan_amount</span>.<span class="ident">notes</span>, <span class="number">1</span>);
-        <span class="macro">assert_eq!</span>(<span class="ident">loan_amount</span>.<span class="ident">tokens</span>, <span class="number">1</span>);
+        <span class="macro">assert_eq!</span>(loan_amount.notes, <span class="number">1</span>);
+        <span class="macro">assert_eq!</span>(loan_amount.tokens, <span class="number">1</span>);
 
-        <span class="kw">let</span> <span class="ident">loan_amount</span> <span class="op">=</span> <span class="ident">pool_convert</span>(<span class="ident">Amount::notes</span>(<span class="number">1</span>), <span class="ident">RoundingDirection::Up</span>);
+        <span class="kw">let </span>loan_amount = pool_convert(Amount::notes(<span class="number">1</span>), RoundingDirection::Up);
 
-        <span class="comment">// When withdrawing, rounding up benefits the user at the cost of the</span>
-        <span class="comment">// protocol. The user gets to borrow at a lower rate (0.5 vs 1.111_).</span>
-        <span class="macro">assert_eq!</span>(<span class="ident">loan_amount</span>.<span class="ident">notes</span>, <span class="number">1</span>);
-        <span class="macro">assert_eq!</span>(<span class="ident">loan_amount</span>.<span class="ident">tokens</span>, <span class="number">2</span>);
+        <span class="comment">// When withdrawing, rounding up benefits the user at the cost of the
+        // protocol. The user gets to borrow at a lower rate (0.5 vs 1.111_).
+        </span><span class="macro">assert_eq!</span>(loan_amount.notes, <span class="number">1</span>);
+        <span class="macro">assert_eq!</span>(loan_amount.tokens, <span class="number">2</span>);
 
-        <span class="comment">// Check that borrow rounding is down, so the user does not borrow at</span>
-        <span class="comment">// a lower rate.</span>
-        <span class="kw">let</span> <span class="ident">direction</span> <span class="op">=</span> <span class="ident">RoundingDirection::direction</span>(<span class="ident">PoolAction::Withdraw</span>, <span class="ident">AmountKind::Notes</span>);
-        <span class="macro">assert_eq!</span>(<span class="ident">RoundingDirection::Down</span>, <span class="ident">direction</span>);
+        <span class="comment">// Check that borrow rounding is down, so the user does not borrow at
+        // a lower rate.
+        </span><span class="kw">let </span>direction = RoundingDirection::direction(PoolAction::Withdraw, AmountKind::Notes);
+        <span class="macro">assert_eq!</span>(RoundingDirection::Down, direction);
 
-        <span class="comment">// A borrow is the same as withdraw (outflow)</span>
-        <span class="kw">let</span> <span class="ident">direction</span> <span class="op">=</span> <span class="ident">RoundingDirection::direction</span>(<span class="ident">PoolAction::Borrow</span>, <span class="ident">AmountKind::Notes</span>);
-        <span class="macro">assert_eq!</span>(<span class="ident">RoundingDirection::Down</span>, <span class="ident">direction</span>);
+        <span class="comment">// A borrow is the same as withdraw (outflow)
+        </span><span class="kw">let </span>direction = RoundingDirection::direction(PoolAction::Borrow, AmountKind::Notes);
+        <span class="macro">assert_eq!</span>(RoundingDirection::Down, direction);
 
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">test_loan_token_rounding</span>() -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">margin_pool</span> <span class="op">=</span> <span class="ident">MarginPool::default</span>();
-        <span class="ident">margin_pool</span>.<span class="ident">config</span>.<span class="ident">flags</span> <span class="op">=</span> <span class="ident">PoolFlags::ALLOW_LENDING</span>.<span class="ident">bits</span>();
+    <span class="attribute">#[test]
+    </span><span class="kw">fn </span>test_loan_token_rounding() -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>margin_pool = MarginPool::default();
+        margin_pool.config.flags = PoolFlags::ALLOW_LENDING.bits();
 
-        <span class="ident">margin_pool</span>.<span class="ident">deposit</span>(<span class="kw-2">&amp;</span><span class="ident">FullAmount</span> {
-            <span class="ident">tokens</span>: <span class="number">1_000_000</span>,
-            <span class="ident">notes</span>: <span class="number">1_000_000</span>,
+        margin_pool.deposit(<span class="kw-2">&amp;</span>FullAmount {
+            tokens: <span class="number">1_000_000</span>,
+            notes: <span class="number">1_000_000</span>,
         });
 
-        <span class="ident">margin_pool</span>.<span class="ident">borrow</span>(<span class="kw-2">&amp;</span><span class="ident">FullAmount</span> {
-            <span class="ident">tokens</span>: <span class="number">1_000_000</span>,
-            <span class="ident">notes</span>: <span class="number">900_000</span>,
+        margin_pool.borrow(<span class="kw-2">&amp;</span>FullAmount {
+            tokens: <span class="number">1_000_000</span>,
+            notes: <span class="number">900_000</span>,
         })<span class="question-mark">?</span>;
 
-        <span class="macro">assert_eq!</span>(<span class="ident">margin_pool</span>.<span class="ident">loan_note_exchange_rate</span>().<span class="ident">as_u64</span>(<span class="op">-</span><span class="number">9</span>), <span class="number">1111111111</span>);
+        <span class="macro">assert_eq!</span>(margin_pool.loan_note_exchange_rate().as_u64(-<span class="number">9</span>), <span class="number">1111111111</span>);
 
-        <span class="kw">let</span> <span class="ident">pool_convert</span> <span class="op">=</span> <span class="op">|</span><span class="ident">amount</span>, <span class="ident">rounding</span><span class="op">|</span> {
-            <span class="kw">let</span> <span class="ident">exchange_rate</span> <span class="op">=</span> <span class="ident">margin_pool</span>.<span class="ident">loan_note_exchange_rate</span>();
-            <span class="ident">MarginPool::convert_with_rounding_and_rate</span>(<span class="ident">amount</span>, <span class="ident">rounding</span>, <span class="ident">exchange_rate</span>)
+        <span class="kw">let </span>pool_convert = |amount, rounding| {
+            <span class="kw">let </span>exchange_rate = margin_pool.loan_note_exchange_rate();
+            MarginPool::convert_with_rounding_and_rate(amount, rounding, exchange_rate)
         };
 
-        <span class="comment">// repaying tokens rounds down</span>
-        <span class="kw">let</span> <span class="ident">loan_result</span> <span class="op">=</span> <span class="ident">margin_pool</span>.<span class="ident">convert_amount</span>(<span class="ident">Amount::tokens</span>(<span class="number">1</span>), <span class="ident">PoolAction::Repay</span>);
+        <span class="comment">// repaying tokens rounds down
+        </span><span class="kw">let </span>loan_result = margin_pool.convert_amount(Amount::tokens(<span class="number">1</span>), PoolAction::Repay);
 
-        <span class="comment">// Rounding down to 0 is not allowed</span>
-        <span class="macro">assert!</span>(<span class="ident">loan_result</span>.<span class="ident">is_err</span>());
+        <span class="comment">// Rounding down to 0 is not allowed
+        </span><span class="macro">assert!</span>(loan_result.is_err());
 
-        <span class="kw">let</span> <span class="ident">loan_amount</span> <span class="op">=</span> <span class="ident">pool_convert</span>(<span class="ident">Amount::tokens</span>(<span class="number">1</span>), <span class="ident">RoundingDirection::Up</span>);
+        <span class="kw">let </span>loan_amount = pool_convert(Amount::tokens(<span class="number">1</span>), RoundingDirection::Up);
 
-        <span class="comment">// When withdrawing tokens, the user should get 111 tokens for 100 notes (or less)</span>
-        <span class="comment">// at the current exchange rate. A 1:1 is disadvantageous to the user</span>
-        <span class="comment">// as the user can borrow 111 times, and get 111 tokens for 111 notes,</span>
-        <span class="comment">// which if they borrowed at once, they could have received more tokens.</span>
-        <span class="macro">assert_eq!</span>(<span class="ident">loan_amount</span>.<span class="ident">notes</span>, <span class="number">1</span>);
-        <span class="macro">assert_eq!</span>(<span class="ident">loan_amount</span>.<span class="ident">tokens</span>, <span class="number">1</span>);
+        <span class="comment">// When withdrawing tokens, the user should get 111 tokens for 100 notes (or less)
+        // at the current exchange rate. A 1:1 is disadvantageous to the user
+        // as the user can borrow 111 times, and get 111 tokens for 111 notes,
+        // which if they borrowed at once, they could have received more tokens.
+        </span><span class="macro">assert_eq!</span>(loan_amount.notes, <span class="number">1</span>);
+        <span class="macro">assert_eq!</span>(loan_amount.tokens, <span class="number">1</span>);
 
-        <span class="kw">let</span> <span class="ident">loan_amount</span> <span class="op">=</span> <span class="ident">pool_convert</span>(<span class="ident">Amount::tokens</span>(<span class="number">111</span>), <span class="ident">RoundingDirection::Up</span>);
+        <span class="kw">let </span>loan_amount = pool_convert(Amount::tokens(<span class="number">111</span>), RoundingDirection::Up);
 
-        <span class="macro">assert_eq!</span>(<span class="ident">loan_amount</span>.<span class="ident">tokens</span>, <span class="number">111</span>);
-        <span class="comment">// Even at a larger quantity, rounding up is still disadvantageous as</span>
-        <span class="comment">// the user borrows at a lower rate than the prevailing exchange rate.</span>
-        <span class="macro">assert_eq!</span>(<span class="ident">loan_amount</span>.<span class="ident">notes</span>, <span class="number">100</span>);
+        <span class="macro">assert_eq!</span>(loan_amount.tokens, <span class="number">111</span>);
+        <span class="comment">// Even at a larger quantity, rounding up is still disadvantageous as
+        // the user borrows at a lower rate than the prevailing exchange rate.
+        </span><span class="macro">assert_eq!</span>(loan_amount.notes, <span class="number">100</span>);
 
-        <span class="comment">// In this instance, there is a difference in rationale between borrowing</span>
-        <span class="comment">// and withdrawing.</span>
-        <span class="comment">// When borrowing, we mint loan notes, and would want to mint more notes</span>
-        <span class="comment">// for the same tokens if rounding is involved.</span>
-        <span class="kw">let</span> <span class="ident">direction</span> <span class="op">=</span> <span class="ident">RoundingDirection::direction</span>(<span class="ident">PoolAction::Borrow</span>, <span class="ident">AmountKind::Tokens</span>);
-        <span class="macro">assert_eq!</span>(<span class="ident">RoundingDirection::Up</span>, <span class="ident">direction</span>);
+        <span class="comment">// In this instance, there is a difference in rationale between borrowing
+        // and withdrawing.
+        // When borrowing, we mint loan notes, and would want to mint more notes
+        // for the same tokens if rounding is involved.
+        </span><span class="kw">let </span>direction = RoundingDirection::direction(PoolAction::Borrow, AmountKind::Tokens);
+        <span class="macro">assert_eq!</span>(RoundingDirection::Up, direction);
 
-        <span class="comment">// When withdrawing from a deposit pool, we want to give the user</span>
-        <span class="comment">// less tokens for more notes.</span>
-        <span class="comment">// Thus the rounding in a withdrawal from tokens should be up,</span>
-        <span class="comment">// as 1 token would mean more notes.</span>
-        <span class="kw">let</span> <span class="ident">direction</span> <span class="op">=</span> <span class="ident">RoundingDirection::direction</span>(<span class="ident">PoolAction::Withdraw</span>, <span class="ident">AmountKind::Tokens</span>);
-        <span class="macro">assert_eq!</span>(<span class="ident">RoundingDirection::Up</span>, <span class="ident">direction</span>);
+        <span class="comment">// When withdrawing from a deposit pool, we want to give the user
+        // less tokens for more notes.
+        // Thus the rounding in a withdrawal from tokens should be up,
+        // as 1 token would mean more notes.
+        </span><span class="kw">let </span>direction = RoundingDirection::direction(PoolAction::Withdraw, AmountKind::Tokens);
+        <span class="macro">assert_eq!</span>(RoundingDirection::Up, direction);
 
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">margin_pool_serialization</span>() {
-        <span class="kw">let</span> <span class="ident">pool</span> <span class="op">=</span> <span class="ident">MarginPool::default</span>();
-        <span class="ident">assert_ser_tokens</span>(
-            <span class="kw-2">&amp;</span><span class="ident">pool</span>,
+    <span class="attribute">#[test]
+    </span><span class="kw">fn </span>margin_pool_serialization() {
+        <span class="kw">let </span>pool = MarginPool::default();
+        assert_ser_tokens(
+            <span class="kw-2">&amp;</span>pool,
             <span class="kw-2">&amp;</span>[
-                <span class="ident">Token::Struct</span> {
-                    <span class="ident">name</span>: <span class="string">&quot;MarginPool&quot;</span>,
-                    <span class="ident">len</span>: <span class="number">13</span>,
+                Token::Struct {
+                    name: <span class="string">&quot;MarginPool&quot;</span>,
+                    len: <span class="number">13</span>,
                 },
-                <span class="ident">Token::Str</span>(<span class="string">&quot;version&quot;</span>),
-                <span class="ident">Token::U8</span>(<span class="number">0</span>),
-                <span class="ident">Token::Str</span>(<span class="string">&quot;vault&quot;</span>),
-                <span class="ident">Token::Str</span>(<span class="string">&quot;11111111111111111111111111111111&quot;</span>),
-                <span class="ident">Token::Str</span>(<span class="string">&quot;feeDestination&quot;</span>),
-                <span class="ident">Token::Str</span>(<span class="string">&quot;11111111111111111111111111111111&quot;</span>),
-                <span class="ident">Token::Str</span>(<span class="string">&quot;depositNoteMint&quot;</span>),
-                <span class="ident">Token::Str</span>(<span class="string">&quot;11111111111111111111111111111111&quot;</span>),
-                <span class="ident">Token::Str</span>(<span class="string">&quot;loanNoteMint&quot;</span>),
-                <span class="ident">Token::Str</span>(<span class="string">&quot;11111111111111111111111111111111&quot;</span>),
-                <span class="ident">Token::Str</span>(<span class="string">&quot;tokenMint&quot;</span>),
-                <span class="ident">Token::Str</span>(<span class="string">&quot;11111111111111111111111111111111&quot;</span>),
-                <span class="ident">Token::Str</span>(<span class="string">&quot;tokenPriceOracle&quot;</span>),
-                <span class="ident">Token::Str</span>(<span class="string">&quot;11111111111111111111111111111111&quot;</span>),
-                <span class="ident">Token::Str</span>(<span class="string">&quot;borrowedTokens&quot;</span>),
-                <span class="ident">Token::Str</span>(<span class="string">&quot;0.0&quot;</span>),
-                <span class="ident">Token::Str</span>(<span class="string">&quot;uncollectedFees&quot;</span>),
-                <span class="ident">Token::Str</span>(<span class="string">&quot;0.0&quot;</span>),
-                <span class="ident">Token::Str</span>(<span class="string">&quot;depositTokens&quot;</span>),
-                <span class="ident">Token::U64</span>(<span class="number">0</span>),
-                <span class="ident">Token::Str</span>(<span class="string">&quot;depositNotes&quot;</span>),
-                <span class="ident">Token::U64</span>(<span class="number">0</span>),
-                <span class="ident">Token::Str</span>(<span class="string">&quot;loanNotes&quot;</span>),
-                <span class="ident">Token::U64</span>(<span class="number">0</span>),
-                <span class="ident">Token::Str</span>(<span class="string">&quot;accruedUntil&quot;</span>),
-                <span class="ident">Token::I64</span>(<span class="number">0</span>),
-                <span class="ident">Token::StructEnd</span>,
+                Token::Str(<span class="string">&quot;version&quot;</span>),
+                Token::U8(<span class="number">0</span>),
+                Token::Str(<span class="string">&quot;vault&quot;</span>),
+                Token::Str(<span class="string">&quot;11111111111111111111111111111111&quot;</span>),
+                Token::Str(<span class="string">&quot;feeDestination&quot;</span>),
+                Token::Str(<span class="string">&quot;11111111111111111111111111111111&quot;</span>),
+                Token::Str(<span class="string">&quot;depositNoteMint&quot;</span>),
+                Token::Str(<span class="string">&quot;11111111111111111111111111111111&quot;</span>),
+                Token::Str(<span class="string">&quot;loanNoteMint&quot;</span>),
+                Token::Str(<span class="string">&quot;11111111111111111111111111111111&quot;</span>),
+                Token::Str(<span class="string">&quot;tokenMint&quot;</span>),
+                Token::Str(<span class="string">&quot;11111111111111111111111111111111&quot;</span>),
+                Token::Str(<span class="string">&quot;tokenPriceOracle&quot;</span>),
+                Token::Str(<span class="string">&quot;11111111111111111111111111111111&quot;</span>),
+                Token::Str(<span class="string">&quot;borrowedTokens&quot;</span>),
+                Token::Str(<span class="string">&quot;0.0&quot;</span>),
+                Token::Str(<span class="string">&quot;uncollectedFees&quot;</span>),
+                Token::Str(<span class="string">&quot;0.0&quot;</span>),
+                Token::Str(<span class="string">&quot;depositTokens&quot;</span>),
+                Token::U64(<span class="number">0</span>),
+                Token::Str(<span class="string">&quot;depositNotes&quot;</span>),
+                Token::U64(<span class="number">0</span>),
+                Token::Str(<span class="string">&quot;loanNotes&quot;</span>),
+                Token::U64(<span class="number">0</span>),
+                Token::Str(<span class="string">&quot;accruedUntil&quot;</span>),
+                Token::I64(<span class="number">0</span>),
+                Token::StructEnd,
             ],
         );
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="jet_margin_pool" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0 (a55dd71d5 2022-09-19)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="jet_margin_pool" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

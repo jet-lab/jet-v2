@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `programs/bonds/src/orderbook/instructions/consume_events/handler.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>handler.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../../storage.js"></script><script defer src="../../../../../source-script.js"></script><script defer src="../../../../../source-files.js"></script><script defer src="../../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../../jet_bonds/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../../../jet_bonds/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../../jet_bonds/index.html"><img class="rust-logo" src="../../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `programs/bonds/src/orderbook/instructions/consume_events/handler.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>handler.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../../../normalize.css"><link rel="stylesheet" href="../../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../../../ayu.css" disabled><link rel="stylesheet" href="../../../../../dark.css" disabled><link rel="stylesheet" href="../../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../../storage.js"></script><script defer src="../../../../../source-script.js"></script><script defer src="../../../../../source-files.js"></script><script defer src="../../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../../jet_bonds/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../../../jet_bonds/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../../jet_bonds/index.html"><img class="rust-logo" src="../../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -241,176 +241,176 @@
 <span id="241">241</span>
 <span id="242">242</span>
 <span id="243">243</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">agnostic_orderbook</span>::{
-    <span class="ident">instruction::consume_events</span>,
-    <span class="ident">state</span>::{
-        <span class="ident">event_queue</span>::{<span class="ident">FillEvent</span>, <span class="ident">OutEvent</span>},
-        <span class="ident">Side</span>,
+</pre><pre class="rust"><code><span class="kw">use </span>agnostic_orderbook::{
+    instruction::consume_events,
+    state::{
+        event_queue::{FillEvent, OutEvent},
+        Side,
     },
 };
-<span class="kw">use</span> <span class="ident">anchor_lang::prelude</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident">jet_program_common::traits</span>::{<span class="ident">SafeAdd</span>, <span class="ident">SafeSub</span>};
-<span class="kw">use</span> <span class="ident">num_traits::FromPrimitive</span>;
+<span class="kw">use </span>anchor_lang::prelude::<span class="kw-2">*</span>;
+<span class="kw">use </span>jet_program_common::traits::{SafeAdd, SafeSub, TryAddAssign};
+<span class="kw">use </span>num_traits::FromPrimitive;
 
-<span class="kw">use</span> <span class="kw">crate</span>::{
-    <span class="ident">bond_token_manager::BondTokenManager</span>,
-    <span class="ident">events::skip_err</span>,
-    <span class="ident">margin::state</span>::{<span class="ident">Obligation</span>, <span class="ident">ObligationFlags</span>},
-    <span class="ident">orderbook::state</span>::{<span class="ident">fp32_mul</span>, <span class="ident">CallbackFlags</span>, <span class="ident">CallbackInfo</span>, <span class="ident">FillInfo</span>, <span class="ident">OrderbookEvent</span>, <span class="ident">OutInfo</span>},
-    <span class="ident">tickets::state::SplitTicket</span>,
-    <span class="ident">utils::map</span>,
-    <span class="ident">BondsError</span>,
+<span class="kw">use crate</span>::{
+    bond_token_manager::BondTokenManager,
+    events::skip_err,
+    margin::state::{Obligation, ObligationFlags},
+    orderbook::state::{fp32_mul, CallbackFlags, CallbackInfo, FillInfo, OutInfo},
+    tickets::state::SplitTicket,
+    utils::map,
+    BondsError,
 };
 
-<span class="kw">use</span> <span class="kw">super</span>::{<span class="ident">queue</span>, <span class="ident">ConsumeEvents</span>, <span class="ident">EventAccounts</span>, <span class="ident">FillAccounts</span>, <span class="ident">OutAccounts</span>};
+<span class="kw">use super</span>::{queue, ConsumeEvents, FillAccounts, OutAccounts, PreparedEvent};
 
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">handler</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span>(
-    <span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span>, <span class="lifetime">&#39;_</span>, <span class="lifetime">&#39;_</span>, <span class="lifetime">&#39;info</span>, <span class="ident">ConsumeEvents</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-    <span class="ident">num_events</span>: <span class="ident">u32</span>,
-    <span class="ident">seeds</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">num_iters</span> <span class="op">=</span> <span class="number">0</span>;
-    <span class="kw">let</span> <span class="ident">manager</span> <span class="op">=</span> <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">bond_manager</span>.<span class="ident">load</span>()<span class="question-mark">?</span>;
-
-    <span class="kw">for</span> <span class="ident">event</span> <span class="kw">in</span> <span class="ident">queue</span>(<span class="kw-2">&amp;</span><span class="ident">ctx</span>, <span class="ident">seeds</span>)<span class="question-mark">?</span>.<span class="ident">take</span>(<span class="ident">num_events</span> <span class="kw">as</span> <span class="ident">usize</span>) {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">res</span> <span class="op">=</span> <span class="ident">event</span><span class="question-mark">?</span>;
-        <span class="kw">let</span> (<span class="ident">accounts</span>, <span class="ident">event</span>) <span class="op">=</span> <span class="ident">res</span>.<span class="ident">as_mut</span>();
-
-        <span class="comment">// Delegate event processing to the appropriate handler</span>
-        <span class="kw">match</span> <span class="ident">accounts</span> {
-            <span class="ident">EventAccounts::Fill</span>(<span class="ident">accounts</span>) =&gt; <span class="ident">handle_fill</span>(
-                <span class="kw-2">&amp;</span><span class="ident">ctx</span>,
-                <span class="ident">manager</span>.<span class="ident">borrow_duration</span>,
-                <span class="ident">manager</span>.<span class="ident">lend_duration</span>,
-                <span class="ident">accounts</span>,
-                <span class="ident">event</span>,
-            ),
-            <span class="ident">EventAccounts::Out</span>(<span class="ident">accounts</span>) =&gt; <span class="ident">handle_out</span>(<span class="kw-2">&amp;</span><span class="ident">ctx</span>, <span class="ident">accounts</span>, <span class="ident">event</span>),
+<span class="kw">pub fn </span>handler&lt;<span class="lifetime">&#39;info</span>&gt;(
+    ctx: Context&lt;<span class="lifetime">&#39;_</span>, <span class="lifetime">&#39;_</span>, <span class="lifetime">&#39;_</span>, <span class="lifetime">&#39;info</span>, ConsumeEvents&lt;<span class="lifetime">&#39;info</span>&gt;&gt;,
+    num_events: u32,
+    seeds: Vec&lt;Vec&lt;u8&gt;&gt;,
+) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+    <span class="kw">let </span><span class="kw-2">mut </span>num_iters = <span class="number">0</span>;
+    <span class="kw">for </span>event <span class="kw">in </span>queue(<span class="kw-2">&amp;</span>ctx, seeds)<span class="question-mark">?</span>.take(num_events <span class="kw">as </span>usize) {
+        <span class="kw">match </span>event<span class="question-mark">? </span>{
+            PreparedEvent::Fill(accounts, info) =&gt; handle_fill(<span class="kw-2">&amp;</span>ctx, <span class="kw-2">*</span>accounts, <span class="kw-2">&amp;</span>info),
+            PreparedEvent::Out(accounts, info) =&gt; handle_out(<span class="kw-2">&amp;</span>ctx, <span class="kw-2">*</span>accounts, <span class="kw-2">&amp;</span>info),
         }<span class="question-mark">?</span>;
 
-        <span class="ident">num_iters</span> <span class="op">+</span><span class="op">=</span> <span class="number">1</span>;
+        num_iters += <span class="number">1</span>;
     }
-    <span class="kw">if</span> <span class="ident">num_iters</span> <span class="op">==</span> <span class="number">0</span> {
-        <span class="kw">return</span> <span class="macro">err!</span>(<span class="ident">BondsError::NoEvents</span>);
+    <span class="kw">if </span>num_iters == <span class="number">0 </span>{
+        <span class="kw">return </span><span class="macro">err!</span>(BondsError::NoEvents);
     }
 
-    <span class="ident">agnostic_orderbook::instruction::consume_events::process</span>::<span class="op">&lt;</span><span class="ident">CallbackInfo</span><span class="op">&gt;</span>(
-        <span class="ident">ctx</span>.<span class="ident">program_id</span>,
-        <span class="ident">consume_events::Accounts</span> {
-            <span class="ident">market</span>: <span class="kw-2">&amp;</span><span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">orderbook_market_state</span>.<span class="ident">to_account_info</span>(),
-            <span class="ident">event_queue</span>: <span class="kw-2">&amp;</span><span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">event_queue</span>.<span class="ident">to_account_info</span>(),
+    agnostic_orderbook::instruction::consume_events::process::&lt;CallbackInfo&gt;(
+        ctx.program_id,
+        consume_events::Accounts {
+            market: <span class="kw-2">&amp;</span>ctx.accounts.orderbook_market_state.to_account_info(),
+            event_queue: <span class="kw-2">&amp;</span>ctx.accounts.event_queue.to_account_info(),
         },
-        <span class="ident">consume_events::Params</span> {
-            <span class="ident">number_of_entries_to_consume</span>: <span class="ident">num_iters</span>,
+        consume_events::Params {
+            number_of_entries_to_consume: num_iters,
         },
     )<span class="question-mark">?</span>;
 
     <span class="prelude-val">Ok</span>(())
 }
 
-<span class="kw">fn</span> <span class="ident">handle_fill</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span>(
-    <span class="ident">ctx</span>: <span class="kw-2">&amp;</span><span class="ident">Context</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span>, <span class="lifetime">&#39;_</span>, <span class="lifetime">&#39;_</span>, <span class="lifetime">&#39;info</span>, <span class="ident">ConsumeEvents</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-    <span class="ident">borrow_duration</span>: <span class="ident">i64</span>,
-    <span class="ident">lend_duration</span>: <span class="ident">i64</span>,
-    <span class="ident">accounts</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Box</span><span class="op">&lt;</span><span class="ident">FillAccounts</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-    <span class="ident">fill</span>: <span class="kw-2">&amp;</span><span class="ident">OrderbookEvent</span>,
-) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="ident">FillAccounts</span> {
-        <span class="ident">maker</span>,
-        <span class="ident">maker_adapter</span>,
-        <span class="ident">taker_adapter</span>,
-        <span class="ident">loan</span>,
-    } <span class="op">=</span> <span class="kw-2">&amp;mut</span> <span class="kw-2">*</span><span class="kw-2">*</span><span class="ident">accounts</span>;
-    <span class="kw">let</span> <span class="ident">FillInfo</span> {
-        <span class="ident">event</span>,
-        <span class="ident">maker_info</span>,
-        <span class="ident">taker_info</span>,
-    } <span class="op">=</span> <span class="ident">fill</span>.<span class="ident">unwrap_fill</span>()<span class="question-mark">?</span>;
-    <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">adapter</span>) <span class="op">=</span> <span class="ident">maker_adapter</span> {
-        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Err</span>(<span class="ident">e</span>) <span class="op">=</span> <span class="ident">adapter</span>.<span class="ident">push_event</span>(<span class="kw-2">*</span><span class="ident">event</span>, <span class="prelude-val">Some</span>(<span class="ident">maker_info</span>), <span class="prelude-val">Some</span>(<span class="ident">taker_info</span>)) {
+<span class="kw">fn </span>handle_fill&lt;<span class="lifetime">&#39;info</span>&gt;(
+    ctx: <span class="kw-2">&amp;</span>Context&lt;<span class="lifetime">&#39;_</span>, <span class="lifetime">&#39;_</span>, <span class="lifetime">&#39;_</span>, <span class="lifetime">&#39;info</span>, ConsumeEvents&lt;<span class="lifetime">&#39;info</span>&gt;&gt;,
+    accounts: FillAccounts&lt;<span class="lifetime">&#39;info</span>&gt;,
+    fill: <span class="kw-2">&amp;</span>FillInfo,
+) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+    <span class="kw">let </span>manager = <span class="kw-2">&amp;</span>ctx.accounts.bond_manager;
+    <span class="kw">let </span>FillAccounts {
+        maker,
+        maker_adapter,
+        taker_adapter,
+        <span class="kw-2">mut </span>loan,
+    } = accounts;
+    <span class="kw">let </span>FillInfo {
+        event,
+        maker_info,
+        taker_info,
+    } = fill;
+    <span class="kw">if let </span><span class="prelude-val">Some</span>(<span class="kw-2">mut </span>adapter) = maker_adapter {
+        <span class="kw">if let </span><span class="prelude-val">Err</span>(e) = adapter.push_event(<span class="kw-2">*</span>event, <span class="prelude-val">Some</span>(maker_info), <span class="prelude-val">Some</span>(taker_info)) {
             <span class="macro">skip_err!</span>(
                 <span class="string">&quot;Failed to push event to adapter {}. Error: {:?}&quot;</span>,
-                <span class="ident">adapter</span>.<span class="ident">key</span>(),
-                <span class="ident">e</span>
+                adapter.key(),
+                e
             );
         }
     }
-    <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">adapter</span>) <span class="op">=</span> <span class="ident">taker_adapter</span> {
-        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Err</span>(<span class="ident">e</span>) <span class="op">=</span> <span class="ident">adapter</span>.<span class="ident">push_event</span>(<span class="kw-2">*</span><span class="ident">event</span>, <span class="prelude-val">Some</span>(<span class="ident">maker_info</span>), <span class="prelude-val">Some</span>(<span class="ident">taker_info</span>)) {
+    <span class="kw">if let </span><span class="prelude-val">Some</span>(<span class="kw-2">mut </span>adapter) = taker_adapter {
+        <span class="kw">if let </span><span class="prelude-val">Err</span>(e) = adapter.push_event(<span class="kw-2">*</span>event, <span class="prelude-val">Some</span>(maker_info), <span class="prelude-val">Some</span>(taker_info)) {
             <span class="macro">skip_err!</span>(
                 <span class="string">&quot;Failed to push event to adapter {}. Error: {:?}&quot;</span>,
-                <span class="ident">adapter</span>.<span class="ident">key</span>(),
-                <span class="ident">e</span>
+                adapter.key(),
+                e
             );
         }
     }
-    <span class="kw">let</span> <span class="ident">FillEvent</span> {
-        <span class="ident">taker_side</span>,
-        <span class="ident">quote_size</span>,
-        <span class="ident">base_size</span>,
+    <span class="kw">let </span>FillEvent {
+        taker_side,
+        quote_size,
+        base_size,
         ..
-    } <span class="op">=</span> <span class="ident">event</span>;
-    <span class="kw">let</span> <span class="ident">maker_side</span> <span class="op">=</span> <span class="ident">Side::from_u8</span>(<span class="kw-2">*</span><span class="ident">taker_side</span>).<span class="ident">unwrap</span>().<span class="ident">opposite</span>();
-    <span class="kw">let</span> <span class="ident">fill_timestamp</span> <span class="op">=</span> <span class="ident">taker_info</span>.<span class="ident">order_submitted_timestamp</span>();
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">margin_user</span> <span class="op">=</span> <span class="ident">maker_info</span>
-        .<span class="ident">flags</span>
-        .<span class="ident">contains</span>(<span class="ident">CallbackFlags::MARGIN</span>)
-        .<span class="ident">then</span>(<span class="op">|</span><span class="op">|</span> <span class="ident">maker</span>.<span class="ident">margin_user</span>())
-        .<span class="ident">transpose</span>()<span class="question-mark">?</span>;
+    } = <span class="kw-2">*</span>event;
+    <span class="kw">let </span>maker_side = Side::from_u8(taker_side).unwrap().opposite();
+    <span class="kw">let </span>fill_timestamp = taker_info.order_submitted_timestamp();
+    <span class="kw">let </span><span class="kw-2">mut </span>margin_user = maker_info
+        .flags
+        .contains(CallbackFlags::MARGIN)
+        .then(|| maker.margin_user())
+        .transpose()<span class="question-mark">?</span>;
 
-    <span class="kw">match</span> <span class="ident">maker_side</span> {
-        <span class="ident">Side::Bid</span> =&gt; {
-            <span class="macro">map!</span>(<span class="ident">margin_user</span>.<span class="ident">assets</span>.<span class="ident">reduce_order</span>(<span class="kw-2">*</span><span class="ident">quote_size</span>));
-            <span class="kw">if</span> <span class="ident">maker_info</span>.<span class="ident">flags</span>.<span class="ident">contains</span>(<span class="ident">CallbackFlags::AUTO_STAKE</span>) {
-                <span class="macro">map!</span>(<span class="ident">margin_user</span>.<span class="ident">assets</span>.<span class="ident">stake_tickets</span>(<span class="kw-2">*</span><span class="ident">base_size</span>)<span class="question-mark">?</span>);
-                <span class="kw">let</span> <span class="ident">principal</span> <span class="op">=</span> <span class="ident">quote_size</span>;
-                <span class="kw">let</span> <span class="ident">interest</span> <span class="op">=</span> <span class="ident">base_size</span>.<span class="ident">safe_sub</span>(<span class="kw-2">*</span><span class="ident">principal</span>)<span class="question-mark">?</span>;
-                <span class="kw">let</span> <span class="ident">maturation_timestamp</span> <span class="op">=</span> <span class="ident">fill_timestamp</span>.<span class="ident">safe_add</span>(<span class="ident">lend_duration</span>)<span class="question-mark">?</span>;
-
-                <span class="kw-2">*</span><span class="kw-2">*</span><span class="ident">loan</span>.<span class="ident">as_mut</span>().<span class="ident">unwrap</span>().<span class="ident">auto_stake</span>()<span class="question-mark">?</span> <span class="op">=</span> <span class="ident">SplitTicket</span> {
-                    <span class="ident">owner</span>: <span class="ident">maker</span>.<span class="ident">pubkey</span>(),
-                    <span class="ident">bond_manager</span>: <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">bond_manager</span>.<span class="ident">key</span>(),
-                    <span class="ident">order_tag</span>: <span class="ident">maker_info</span>.<span class="ident">order_tag</span>,
-                    <span class="ident">maturation_timestamp</span>,
-                    <span class="ident">struck_timestamp</span>: <span class="ident">fill_timestamp</span>,
-                    <span class="ident">principal</span>: <span class="kw-2">*</span><span class="ident">principal</span>,
-                    <span class="ident">interest</span>,
+    <span class="kw">match </span>maker_side {
+        Side::Bid =&gt; {
+            <span class="macro">map!</span>(margin_user.assets.reduce_order(quote_size));
+            <span class="kw">if </span>maker_info.flags.contains(CallbackFlags::AUTO_STAKE) {
+                <span class="macro">map!</span>(margin_user.assets.stake_tickets(base_size)<span class="question-mark">?</span>);
+                <span class="kw">let </span>principal = quote_size;
+                <span class="kw">let </span>interest = base_size.safe_sub(principal)<span class="question-mark">?</span>;
+                <span class="kw">let </span>maturation_timestamp =
+                    fill_timestamp.safe_add(manager.load()<span class="question-mark">?</span>.lend_duration)<span class="question-mark">?</span>;
+                <span class="kw-2">**</span>loan.as_mut().unwrap().auto_stake()<span class="question-mark">? </span>= SplitTicket {
+                    owner: maker.pubkey(),
+                    bond_manager: manager.key(),
+                    order_tag: maker_info.order_tag,
+                    maturation_timestamp,
+                    struck_timestamp: fill_timestamp,
+                    principal,
+                    interest,
                 };
-            } <span class="kw">else</span> <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="kw-2">mut</span> <span class="ident">margin_user</span>) <span class="op">=</span> <span class="ident">margin_user</span> {
-                <span class="ident">margin_user</span>.<span class="ident">assets</span>.<span class="ident">entitled_tickets</span> <span class="op">+</span><span class="op">=</span> <span class="ident">base_size</span>;
-            } <span class="kw">else</span> {
-                <span class="ident">ctx</span>.<span class="ident">mint</span>(
-                    <span class="kw-2">&amp;</span><span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">bond_ticket_mint</span>,
-                    <span class="ident">maker</span>.<span class="ident">as_token_account</span>(),
-                    <span class="kw-2">*</span><span class="ident">base_size</span>,
+            } <span class="kw">else if let </span><span class="prelude-val">Some</span>(<span class="kw-2">mut </span>margin_user) = margin_user {
+                margin_user.assets.entitled_tickets += base_size;
+            } <span class="kw">else </span>{
+                ctx.mint(
+                    <span class="kw-2">&amp;</span>ctx.accounts.bond_ticket_mint,
+                    maker.as_token_account(),
+                    base_size,
                 )<span class="question-mark">?</span>;
             }
         }
-        <span class="ident">Side::Ask</span> =&gt; {
-            <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="kw-2">mut</span> <span class="ident">margin_user</span>) <span class="op">=</span> <span class="ident">margin_user</span> {
-                <span class="ident">margin_user</span>.<span class="ident">assets</span>.<span class="ident">reduce_order</span>(<span class="kw-2">*</span><span class="ident">quote_size</span>);
-                <span class="ident">margin_user</span>.<span class="ident">assets</span>.<span class="ident">entitled_tokens</span> <span class="op">+</span><span class="op">=</span> <span class="ident">quote_size</span>;
-                <span class="kw">if</span> <span class="ident">maker_info</span>.<span class="ident">flags</span>.<span class="ident">contains</span>(<span class="ident">CallbackFlags::NEW_DEBT</span>) {
-                    <span class="kw">let</span> <span class="ident">maturation_timestamp</span> <span class="op">=</span> <span class="ident">fill_timestamp</span>.<span class="ident">safe_add</span>(<span class="ident">borrow_duration</span>)<span class="question-mark">?</span>;
-                    <span class="kw">let</span> <span class="ident">sequence_number</span> <span class="op">=</span> <span class="ident">margin_user</span>
-                        .<span class="ident">debt</span>
-                        .<span class="ident">new_obligation_from_fill</span>(<span class="kw-2">*</span><span class="ident">base_size</span>, <span class="ident">maturation_timestamp</span>)<span class="question-mark">?</span>;
+        Side::Ask =&gt; {
+            <span class="kw">if let </span><span class="prelude-val">Some</span>(<span class="kw-2">mut </span>margin_user) = margin_user {
+                margin_user.assets.reduce_order(quote_size);
+                <span class="kw">if </span>maker_info.flags.contains(CallbackFlags::NEW_DEBT) {
+                    <span class="kw">let </span><span class="kw-2">mut </span>manager = manager.load_mut()<span class="question-mark">?</span>;
+                    <span class="kw">let </span>disburse = manager.loan_to_disburse(quote_size);
+                    manager
+                        .collected_fees
+                        .try_add_assign(quote_size.safe_sub(disburse)<span class="question-mark">?</span>)<span class="question-mark">?</span>;
+                    margin_user
+                        .assets
+                        .entitled_tokens
+                        .try_add_assign(disburse)<span class="question-mark">?</span>;
+                    <span class="kw">let </span>maturation_timestamp = fill_timestamp.safe_add(manager.borrow_duration)<span class="question-mark">?</span>;
+                    <span class="kw">let </span>sequence_number = margin_user
+                        .debt
+                        .new_obligation_from_fill(base_size, maturation_timestamp)<span class="question-mark">?</span>;
 
-                    <span class="kw-2">*</span><span class="kw-2">*</span><span class="ident">loan</span>.<span class="ident">as_mut</span>().<span class="ident">unwrap</span>().<span class="ident">new_debt</span>()<span class="question-mark">?</span> <span class="op">=</span> <span class="ident">Obligation</span> {
-                        <span class="ident">sequence_number</span>,
-                        <span class="ident">borrower_account</span>: <span class="ident">margin_user</span>.<span class="ident">key</span>(),
-                        <span class="ident">bond_manager</span>: <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">bond_manager</span>.<span class="ident">key</span>(),
-                        <span class="ident">order_tag</span>: <span class="ident">maker_info</span>.<span class="ident">order_tag</span>,
-                        <span class="ident">maturation_timestamp</span>,
-                        <span class="ident">balance</span>: <span class="kw-2">*</span><span class="ident">base_size</span>,
-                        <span class="ident">flags</span>: <span class="ident">ObligationFlags::default</span>(),
+                    <span class="kw-2">**</span>loan.as_mut().unwrap().new_debt()<span class="question-mark">? </span>= Obligation {
+                        sequence_number,
+                        borrower_account: margin_user.key(),
+                        bond_manager: ctx.accounts.bond_manager.key(),
+                        order_tag: maker_info.order_tag,
+                        maturation_timestamp,
+                        balance: base_size,
+                        flags: ObligationFlags::default(),
                     };
+                } <span class="kw">else </span>{
+                    margin_user
+                        .assets
+                        .entitled_tokens
+                        .try_add_assign(quote_size)<span class="question-mark">?</span>;
                 }
-            } <span class="kw">else</span> {
-                <span class="ident">ctx</span>.<span class="ident">withdraw</span>(
-                    <span class="kw-2">&amp;</span><span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">underlying_token_vault</span>,
-                    <span class="ident">maker</span>.<span class="ident">as_token_account</span>(),
-                    <span class="kw-2">*</span><span class="ident">quote_size</span>,
+            } <span class="kw">else </span>{
+                ctx.withdraw(
+                    <span class="kw-2">&amp;</span>ctx.accounts.underlying_token_vault,
+                    maker.as_token_account(),
+                    quote_size,
                 )<span class="question-mark">?</span>;
             }
         }
@@ -419,70 +419,70 @@
     <span class="prelude-val">Ok</span>(())
 }
 
-<span class="kw">fn</span> <span class="ident">handle_out</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span>(
-    <span class="ident">ctx</span>: <span class="kw-2">&amp;</span><span class="ident">Context</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span>, <span class="lifetime">&#39;_</span>, <span class="lifetime">&#39;_</span>, <span class="lifetime">&#39;info</span>, <span class="ident">ConsumeEvents</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-    <span class="ident">accounts</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Box</span><span class="op">&lt;</span><span class="ident">OutAccounts</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-    <span class="ident">out</span>: <span class="kw-2">&amp;</span><span class="ident">OrderbookEvent</span>,
-) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="ident">OutAccounts</span> {
-        <span class="ident">user</span>,
-        <span class="ident">user_adapter_account</span>,
-    } <span class="op">=</span> <span class="kw-2">&amp;mut</span> <span class="kw-2">*</span><span class="kw-2">*</span><span class="ident">accounts</span>;
-    <span class="kw">let</span> <span class="ident">OutInfo</span> { <span class="ident">event</span>, <span class="ident">info</span> } <span class="op">=</span> <span class="ident">out</span>.<span class="ident">unwrap_out</span>()<span class="question-mark">?</span>;
-    <span class="comment">// push to adapter if flagged</span>
-    <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">adapter</span>) <span class="op">=</span> <span class="ident">user_adapter_account</span> {
-        <span class="kw">if</span> <span class="ident">adapter</span>.<span class="ident">push_event</span>(<span class="kw-2">*</span><span class="ident">event</span>, <span class="prelude-val">Some</span>(<span class="ident">info</span>), <span class="prelude-val">None</span>).<span class="ident">is_err</span>() {
-            <span class="comment">// don&#39;t stop the event processor for a malfunctioning adapter</span>
-            <span class="comment">// adapter users are responsible for the maintenance of their adapter</span>
-            <span class="macro">msg!</span>(<span class="string">&quot;user adapter failed to push event&quot;</span>);
+<span class="kw">fn </span>handle_out&lt;<span class="lifetime">&#39;info</span>&gt;(
+    ctx: <span class="kw-2">&amp;</span>Context&lt;<span class="lifetime">&#39;_</span>, <span class="lifetime">&#39;_</span>, <span class="lifetime">&#39;_</span>, <span class="lifetime">&#39;info</span>, ConsumeEvents&lt;<span class="lifetime">&#39;info</span>&gt;&gt;,
+    accounts: OutAccounts&lt;<span class="lifetime">&#39;info</span>&gt;,
+    out: <span class="kw-2">&amp;</span>OutInfo,
+) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+    <span class="kw">let </span>OutAccounts {
+        user,
+        user_adapter_account,
+    } = accounts;
+    <span class="kw">let </span>OutInfo { event, info } = out;
+    <span class="comment">// push to adapter if flagged
+    </span><span class="kw">if let </span><span class="prelude-val">Some</span>(<span class="kw-2">mut </span>adapter) = user_adapter_account {
+        <span class="kw">if </span>adapter.push_event(<span class="kw-2">*</span>event, <span class="prelude-val">Some</span>(info), <span class="prelude-val">None</span>).is_err() {
+            <span class="comment">// don&#39;t stop the event processor for a malfunctioning adapter
+            // adapter users are responsible for the maintenance of their adapter
+            </span><span class="macro">msg!</span>(<span class="string">&quot;user adapter failed to push event&quot;</span>);
         }
     }
-    <span class="kw">let</span> <span class="ident">OutEvent</span> {
-        <span class="ident">side</span>,
-        <span class="ident">order_id</span>,
-        <span class="ident">base_size</span>,
+    <span class="kw">let </span>OutEvent {
+        side,
+        order_id,
+        base_size,
         ..
-    } <span class="op">=</span> <span class="ident">event</span>;
+    } = event;
 
-    <span class="kw">let</span> <span class="ident">margin_user</span> <span class="op">=</span> <span class="ident">info</span>
-        .<span class="ident">flags</span>
-        .<span class="ident">contains</span>(<span class="ident">CallbackFlags::MARGIN</span>)
-        .<span class="ident">then</span>(<span class="op">|</span><span class="op">|</span> <span class="ident">user</span>.<span class="ident">margin_user</span>())
-        .<span class="ident">transpose</span>()<span class="question-mark">?</span>;
+    <span class="kw">let </span>margin_user = info
+        .flags
+        .contains(CallbackFlags::MARGIN)
+        .then(|| user.margin_user())
+        .transpose()<span class="question-mark">?</span>;
 
-    <span class="kw">let</span> <span class="ident">price</span> <span class="op">=</span> (<span class="ident">order_id</span> <span class="op">&gt;</span><span class="op">&gt;</span> <span class="number">64</span>) <span class="kw">as</span> <span class="ident">u64</span>;
-    <span class="comment">// todo defensive rounding</span>
-    <span class="kw">let</span> <span class="ident">quote_size</span> <span class="op">=</span> <span class="ident">fp32_mul</span>(<span class="kw-2">*</span><span class="ident">base_size</span>, <span class="ident">price</span>).<span class="ident">ok_or</span>(<span class="ident">BondsError::ArithmeticOverflow</span>)<span class="question-mark">?</span>;
-    <span class="kw">match</span> <span class="ident">Side::from_u8</span>(<span class="kw-2">*</span><span class="ident">side</span>).<span class="ident">unwrap</span>() {
-        <span class="ident">Side::Bid</span> =&gt; {
-            <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="kw-2">mut</span> <span class="ident">margin_user</span>) <span class="op">=</span> <span class="ident">margin_user</span> {
-                <span class="ident">margin_user</span>.<span class="ident">assets</span>.<span class="ident">entitled_tokens</span> <span class="op">+</span><span class="op">=</span> <span class="ident">quote_size</span>;
+    <span class="kw">let </span>price = (order_id &gt;&gt; <span class="number">64</span>) <span class="kw">as </span>u64;
+    <span class="comment">// todo defensive rounding
+    </span><span class="kw">let </span>quote_size = fp32_mul(<span class="kw-2">*</span>base_size, price).ok_or(BondsError::ArithmeticOverflow)<span class="question-mark">?</span>;
+    <span class="kw">match </span>Side::from_u8(<span class="kw-2">*</span>side).unwrap() {
+        Side::Bid =&gt; {
+            <span class="kw">if let </span><span class="prelude-val">Some</span>(<span class="kw-2">mut </span>margin_user) = margin_user {
+                margin_user.assets.entitled_tokens += quote_size;
                 <span class="prelude-val">Ok</span>(())
-            } <span class="kw">else</span> {
-                <span class="ident">ctx</span>.<span class="ident">withdraw</span>(
-                    <span class="kw-2">&amp;</span><span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">underlying_token_vault</span>,
-                    <span class="ident">user</span>.<span class="ident">as_token_account</span>(),
-                    <span class="ident">quote_size</span>,
+            } <span class="kw">else </span>{
+                ctx.withdraw(
+                    <span class="kw-2">&amp;</span>ctx.accounts.underlying_token_vault,
+                    user.as_token_account(),
+                    quote_size,
                 )
             }
         }
-        <span class="ident">Side::Ask</span> =&gt; {
-            <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="kw-2">mut</span> <span class="ident">margin_user</span>) <span class="op">=</span> <span class="ident">margin_user</span> {
-                <span class="kw">if</span> <span class="ident">info</span>.<span class="ident">flags</span>.<span class="ident">contains</span>(<span class="ident">CallbackFlags::NEW_DEBT</span>) {
-                    <span class="ident">margin_user</span>.<span class="ident">debt</span>.<span class="ident">process_out</span>(<span class="kw-2">*</span><span class="ident">base_size</span>)
-                } <span class="kw">else</span> {
-                    <span class="ident">margin_user</span>.<span class="ident">assets</span>.<span class="ident">entitled_tickets</span> <span class="op">+</span><span class="op">=</span> <span class="ident">base_size</span>;
+        Side::Ask =&gt; {
+            <span class="kw">if let </span><span class="prelude-val">Some</span>(<span class="kw-2">mut </span>margin_user) = margin_user {
+                <span class="kw">if </span>info.flags.contains(CallbackFlags::NEW_DEBT) {
+                    margin_user.debt.process_out(<span class="kw-2">*</span>base_size)
+                } <span class="kw">else </span>{
+                    margin_user.assets.entitled_tickets += base_size;
                     <span class="prelude-val">Ok</span>(())
                 }
-            } <span class="kw">else</span> {
-                <span class="ident">ctx</span>.<span class="ident">mint</span>(
-                    <span class="kw-2">&amp;</span><span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">bond_ticket_mint</span>,
-                    <span class="ident">user</span>.<span class="ident">as_token_account</span>(),
-                    <span class="kw-2">*</span><span class="ident">base_size</span>,
+            } <span class="kw">else </span>{
+                ctx.mint(
+                    <span class="kw-2">&amp;</span>ctx.accounts.bond_ticket_mint,
+                    user.as_token_account(),
+                    <span class="kw-2">*</span>base_size,
                 )
             }
         }
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../../" data-current-crate="jet_bonds" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0 (a55dd71d5 2022-09-19)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../../" data-current-crate="jet_bonds" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

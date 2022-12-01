@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `programs/margin-pool/src/instructions/repay.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>repay.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../jet_margin_pool/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../jet_margin_pool/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../jet_margin_pool/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `programs/margin-pool/src/instructions/repay.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>repay.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../normalize.css"><link rel="stylesheet" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../ayu.css" disabled><link rel="stylesheet" href="../../../dark.css" disabled><link rel="stylesheet" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../jet_margin_pool/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../jet_margin_pool/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../jet_margin_pool/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -126,133 +126,133 @@
 <span id="126">126</span>
 <span id="127">127</span>
 <span id="128">128</span>
-</pre><pre class="rust"><code><span class="comment">// SPDX-License-Identifier: AGPL-3.0-or-later</span>
-<span class="comment">//</span>
-<span class="comment">// Copyright (C) 2022 JET PROTOCOL HOLDINGS, LLC.</span>
-<span class="comment">//</span>
-<span class="comment">// This program is free software: you can redistribute it and/or modify</span>
-<span class="comment">// it under the terms of the GNU Affero General Public License as published by</span>
-<span class="comment">// the Free Software Foundation, either version 3 of the License, or</span>
-<span class="comment">// (at your option) any later version.</span>
-<span class="comment">//</span>
-<span class="comment">// This program is distributed in the hope that it will be useful,</span>
-<span class="comment">// but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
-<span class="comment">// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
-<span class="comment">// GNU Affero General Public License for more details.</span>
-<span class="comment">//</span>
-<span class="comment">// You should have received a copy of the GNU Affero General Public License</span>
-<span class="comment">// along with this program.  If not, see &lt;https://www.gnu.org/licenses/&gt;.</span>
+</pre><pre class="rust"><code><span class="comment">// SPDX-License-Identifier: AGPL-3.0-or-later
+//
+// Copyright (C) 2022 JET PROTOCOL HOLDINGS, LLC.
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Affero General Public License for more details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program.  If not, see &lt;https://www.gnu.org/licenses/&gt;.
 
-<span class="kw">use</span> <span class="ident">anchor_lang::prelude</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident">anchor_spl::token</span>::{<span class="self">self</span>, <span class="ident">Burn</span>, <span class="ident">Token</span>, <span class="ident">TokenAccount</span>, <span class="ident">Transfer</span>};
+</span><span class="kw">use </span>anchor_lang::prelude::<span class="kw-2">*</span>;
+<span class="kw">use </span>anchor_spl::token::{<span class="self">self</span>, Burn, Token, TokenAccount, Transfer};
 
-<span class="kw">use</span> <span class="kw">crate</span>::{<span class="ident">events</span>, <span class="ident">state::PoolAction</span>, <span class="ident">ChangeKind</span>, <span class="ident">ErrorCode</span>, <span class="ident">MarginPool</span>, <span class="ident">TokenChange</span>};
+<span class="kw">use crate</span>::{events, state::PoolAction, ChangeKind, ErrorCode, MarginPool, TokenChange};
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Accounts</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Repay</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span> {
-    <span class="doccomment">/// The pool with the outstanding loan</span>
-    <span class="attribute">#[<span class="ident">account</span>(
+<span class="attribute">#[derive(Accounts)]
+</span><span class="kw">pub struct </span>Repay&lt;<span class="lifetime">&#39;info</span>&gt; {
+    <span class="doccomment">/// The pool with the outstanding loan
+    </span><span class="attribute">#[account(
         <span class="kw-2">mut</span>,
-        <span class="ident">has_one</span> <span class="op">=</span> <span class="ident">loan_note_mint</span>,
-        <span class="ident">has_one</span> <span class="op">=</span> <span class="ident">vault</span>
-    )]</span>
-    <span class="kw">pub</span> <span class="ident">margin_pool</span>: <span class="ident">Box</span><span class="op">&lt;</span><span class="ident">Account</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span>, <span class="ident">MarginPool</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+        has_one = loan_note_mint,
+        has_one = vault
+    )]
+    </span><span class="kw">pub </span>margin_pool: Box&lt;Account&lt;<span class="lifetime">&#39;info</span>, MarginPool&gt;&gt;,
 
-    <span class="doccomment">/// The mint for the notes representing loans from the pool</span>
-    <span class="doccomment">/// CHECK:</span>
-    <span class="attribute">#[<span class="ident">account</span>(<span class="kw-2">mut</span>)]</span>
-    <span class="kw">pub</span> <span class="ident">loan_note_mint</span>: <span class="ident">AccountInfo</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span>,
+    <span class="doccomment">/// The mint for the notes representing loans from the pool
+    /// CHECK:
+    </span><span class="attribute">#[account(<span class="kw-2">mut</span>)]
+    </span><span class="kw">pub </span>loan_note_mint: AccountInfo&lt;<span class="lifetime">&#39;info</span>&gt;,
 
-    <span class="doccomment">/// The vault responsible for storing the pool&#39;s tokens</span>
-    <span class="attribute">#[<span class="ident">account</span>(<span class="kw-2">mut</span>)]</span>
-    <span class="kw">pub</span> <span class="ident">vault</span>: <span class="ident">Account</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span>, <span class="ident">TokenAccount</span><span class="op">&gt;</span>,
+    <span class="doccomment">/// The vault responsible for storing the pool&#39;s tokens
+    </span><span class="attribute">#[account(<span class="kw-2">mut</span>)]
+    </span><span class="kw">pub </span>vault: Account&lt;<span class="lifetime">&#39;info</span>, TokenAccount&gt;,
 
-    <span class="doccomment">/// The account with the loan notes</span>
-    <span class="attribute">#[<span class="ident">account</span>(<span class="kw-2">mut</span>)]</span>
-    <span class="kw">pub</span> <span class="ident">loan_account</span>: <span class="ident">Account</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span>, <span class="ident">TokenAccount</span><span class="op">&gt;</span>,
+    <span class="doccomment">/// The account with the loan notes
+    </span><span class="attribute">#[account(<span class="kw-2">mut</span>)]
+    </span><span class="kw">pub </span>loan_account: Account&lt;<span class="lifetime">&#39;info</span>, TokenAccount&gt;,
 
-    <span class="doccomment">/// The token account repaying the debt</span>
-    <span class="attribute">#[<span class="ident">account</span>(<span class="kw-2">mut</span>)]</span>
-    <span class="kw">pub</span> <span class="ident">repayment_token_account</span>: <span class="ident">Account</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span>, <span class="ident">TokenAccount</span><span class="op">&gt;</span>,
+    <span class="doccomment">/// The token account repaying the debt
+    </span><span class="attribute">#[account(<span class="kw-2">mut</span>)]
+    </span><span class="kw">pub </span>repayment_token_account: Account&lt;<span class="lifetime">&#39;info</span>, TokenAccount&gt;,
 
-    <span class="doccomment">/// Signing authority for the repaying token account</span>
-    <span class="kw">pub</span> <span class="ident">repayment_account_authority</span>: <span class="ident">Signer</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span>,
+    <span class="doccomment">/// Signing authority for the repaying token account
+    </span><span class="kw">pub </span>repayment_account_authority: Signer&lt;<span class="lifetime">&#39;info</span>&gt;,
 
-    <span class="kw">pub</span> <span class="ident">token_program</span>: <span class="ident">Program</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span>, <span class="ident">Token</span><span class="op">&gt;</span>,
+    <span class="kw">pub </span>token_program: Program&lt;<span class="lifetime">&#39;info</span>, Token&gt;,
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span> <span class="ident">Repay</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span> {
-    <span class="kw">fn</span> <span class="ident">burn_loan_context</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">CpiContext</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span>, <span class="lifetime">&#39;_</span>, <span class="lifetime">&#39;_</span>, <span class="lifetime">&#39;info</span>, <span class="ident">Burn</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-        <span class="ident">CpiContext::new</span>(
-            <span class="self">self</span>.<span class="ident">token_program</span>.<span class="ident">to_account_info</span>(),
-            <span class="ident">Burn</span> {
-                <span class="ident">mint</span>: <span class="self">self</span>.<span class="ident">loan_note_mint</span>.<span class="ident">to_account_info</span>(),
-                <span class="ident">from</span>: <span class="self">self</span>.<span class="ident">loan_account</span>.<span class="ident">to_account_info</span>(),
-                <span class="ident">authority</span>: <span class="self">self</span>.<span class="ident">margin_pool</span>.<span class="ident">to_account_info</span>(),
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;info</span>&gt; Repay&lt;<span class="lifetime">&#39;info</span>&gt; {
+    <span class="kw">fn </span>burn_loan_context(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; CpiContext&lt;<span class="lifetime">&#39;_</span>, <span class="lifetime">&#39;_</span>, <span class="lifetime">&#39;_</span>, <span class="lifetime">&#39;info</span>, Burn&lt;<span class="lifetime">&#39;info</span>&gt;&gt; {
+        CpiContext::new(
+            <span class="self">self</span>.token_program.to_account_info(),
+            Burn {
+                mint: <span class="self">self</span>.loan_note_mint.to_account_info(),
+                from: <span class="self">self</span>.loan_account.to_account_info(),
+                authority: <span class="self">self</span>.margin_pool.to_account_info(),
             },
         )
     }
 
-    <span class="kw">fn</span> <span class="ident">transfer_repayment_context</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">CpiContext</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span>, <span class="lifetime">&#39;_</span>, <span class="lifetime">&#39;_</span>, <span class="lifetime">&#39;info</span>, <span class="ident">Transfer</span><span class="op">&lt;</span><span class="lifetime">&#39;info</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-        <span class="ident">CpiContext::new</span>(
-            <span class="self">self</span>.<span class="ident">token_program</span>.<span class="ident">to_account_info</span>(),
-            <span class="ident">Transfer</span> {
-                <span class="ident">from</span>: <span class="self">self</span>.<span class="ident">repayment_token_account</span>.<span class="ident">to_account_info</span>(),
-                <span class="ident">to</span>: <span class="self">self</span>.<span class="ident">vault</span>.<span class="ident">to_account_info</span>(),
-                <span class="ident">authority</span>: <span class="self">self</span>.<span class="ident">repayment_account_authority</span>.<span class="ident">to_account_info</span>(),
+    <span class="kw">fn </span>transfer_repayment_context(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; CpiContext&lt;<span class="lifetime">&#39;_</span>, <span class="lifetime">&#39;_</span>, <span class="lifetime">&#39;_</span>, <span class="lifetime">&#39;info</span>, Transfer&lt;<span class="lifetime">&#39;info</span>&gt;&gt; {
+        CpiContext::new(
+            <span class="self">self</span>.token_program.to_account_info(),
+            Transfer {
+                from: <span class="self">self</span>.repayment_token_account.to_account_info(),
+                to: <span class="self">self</span>.vault.to_account_info(),
+                authority: <span class="self">self</span>.repayment_account_authority.to_account_info(),
             },
         )
     }
 }
 
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">repay_handler</span>(<span class="ident">ctx</span>: <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">Repay</span><span class="op">&gt;</span>, <span class="ident">change_kind</span>: <span class="ident">ChangeKind</span>, <span class="ident">amount</span>: <span class="ident">u64</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="ident">change</span> <span class="op">=</span> <span class="ident">TokenChange</span> {
-        <span class="ident">kind</span>: <span class="ident">change_kind</span>,
-        <span class="ident">tokens</span>: <span class="ident">amount</span>,
+<span class="kw">pub fn </span>repay_handler(ctx: Context&lt;Repay&gt;, change_kind: ChangeKind, amount: u64) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+    <span class="kw">let </span>change = TokenChange {
+        kind: change_kind,
+        tokens: amount,
     };
-    <span class="kw">let</span> <span class="ident">pool</span> <span class="op">=</span> <span class="kw-2">&amp;mut</span> <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">margin_pool</span>;
-    <span class="kw">let</span> <span class="ident">clock</span> <span class="op">=</span> <span class="ident">Clock::get</span>()<span class="question-mark">?</span>;
+    <span class="kw">let </span>pool = <span class="kw-2">&amp;mut </span>ctx.accounts.margin_pool;
+    <span class="kw">let </span>clock = Clock::get()<span class="question-mark">?</span>;
 
-    <span class="comment">// Make sure interest accrual is up-to-date</span>
-    <span class="kw">if</span> <span class="op">!</span><span class="ident">pool</span>.<span class="ident">accrue_interest</span>(<span class="ident">clock</span>.<span class="ident">unix_timestamp</span>) {
+    <span class="comment">// Make sure interest accrual is up-to-date
+    </span><span class="kw">if </span>!pool.accrue_interest(clock.unix_timestamp) {
         <span class="macro">msg!</span>(<span class="string">&quot;interest accrual is too far behind&quot;</span>);
-        <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">ErrorCode::InterestAccrualBehind</span>.<span class="ident">into</span>());
+        <span class="kw">return </span><span class="prelude-val">Err</span>(ErrorCode::InterestAccrualBehind.into());
     }
 
-    <span class="comment">// Amount the user desires to repay</span>
-    <span class="kw">let</span> <span class="ident">repay_amount</span> <span class="op">=</span>
-        <span class="ident">pool</span>.<span class="ident">calculate_full_amount</span>(<span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">loan_account</span>.<span class="ident">amount</span>, <span class="ident">change</span>, <span class="ident">PoolAction::Repay</span>)<span class="question-mark">?</span>;
+    <span class="comment">// Amount the user desires to repay
+    </span><span class="kw">let </span>repay_amount =
+        pool.calculate_full_amount(ctx.accounts.loan_account.amount, change, PoolAction::Repay)<span class="question-mark">?</span>;
 
     <span class="macro">msg!</span>(
         <span class="string">&quot;Repaying [{} tokens, {} notes] into loan pool&quot;</span>,
-        <span class="ident">repay_amount</span>.<span class="ident">tokens</span>,
-        <span class="ident">repay_amount</span>.<span class="ident">notes</span>
+        repay_amount.tokens,
+        repay_amount.notes
     );
-    <span class="ident">pool</span>.<span class="ident">repay</span>(<span class="kw-2">&amp;</span><span class="ident">repay_amount</span>)<span class="question-mark">?</span>;
+    pool.repay(<span class="kw-2">&amp;</span>repay_amount)<span class="question-mark">?</span>;
 
-    <span class="comment">// Finish by transfering the requisite tokens and burning the loan notes</span>
-    <span class="kw">let</span> <span class="ident">pool</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">margin_pool</span>;
-    <span class="kw">let</span> <span class="ident">signer</span> <span class="op">=</span> [<span class="kw-2">&amp;</span><span class="ident">pool</span>.<span class="ident">signer_seeds</span>()<span class="question-mark">?</span>[..]];
+    <span class="comment">// Finish by transfering the requisite tokens and burning the loan notes
+    </span><span class="kw">let </span>pool = <span class="kw-2">&amp;</span>ctx.accounts.margin_pool;
+    <span class="kw">let </span>signer = [<span class="kw-2">&amp;</span>pool.signer_seeds()<span class="question-mark">?</span>[..]];
 
-    <span class="ident">token::transfer</span>(
-        <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">transfer_repayment_context</span>(),
-        <span class="ident">repay_amount</span>.<span class="ident">tokens</span>,
+    token::transfer(
+        ctx.accounts.transfer_repayment_context(),
+        repay_amount.tokens,
     )<span class="question-mark">?</span>;
-    <span class="ident">token::burn</span>(
-        <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">burn_loan_context</span>().<span class="ident">with_signer</span>(<span class="kw-2">&amp;</span><span class="ident">signer</span>),
-        <span class="ident">repay_amount</span>.<span class="ident">notes</span>,
+    token::burn(
+        ctx.accounts.burn_loan_context().with_signer(<span class="kw-2">&amp;</span>signer),
+        repay_amount.notes,
     )<span class="question-mark">?</span>;
 
-    <span class="macro">emit!</span>(<span class="ident">events::Repay</span> {
-        <span class="ident">margin_pool</span>: <span class="ident">pool</span>.<span class="ident">key</span>(),
-        <span class="ident">user</span>: <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">repayment_account_authority</span>.<span class="ident">key</span>(),
-        <span class="ident">loan_account</span>: <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">loan_account</span>.<span class="ident">key</span>(),
-        <span class="ident">repayment_token_account</span>: <span class="ident">ctx</span>.<span class="ident">accounts</span>.<span class="ident">repayment_token_account</span>.<span class="ident">key</span>(),
-        <span class="ident">repaid_tokens</span>: <span class="ident">repay_amount</span>.<span class="ident">tokens</span>,
-        <span class="ident">repaid_loan_notes</span>: <span class="ident">repay_amount</span>.<span class="ident">notes</span>,
-        <span class="ident">summary</span>: (<span class="kw-2">&amp;</span><span class="ident">pool</span>.<span class="ident">clone</span>().<span class="ident">into_inner</span>()).<span class="ident">into</span>(),
+    <span class="macro">emit!</span>(events::Repay {
+        margin_pool: pool.key(),
+        user: ctx.accounts.repayment_account_authority.key(),
+        loan_account: ctx.accounts.loan_account.key(),
+        repayment_token_account: ctx.accounts.repayment_token_account.key(),
+        repaid_tokens: repay_amount.tokens,
+        repaid_loan_notes: repay_amount.notes,
+        summary: (<span class="kw-2">&amp;</span>pool.clone().into_inner()).into(),
     });
     <span class="prelude-val">Ok</span>(())
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="jet_margin_pool" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0 (a55dd71d5 2022-09-19)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="jet_margin_pool" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>
