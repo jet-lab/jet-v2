@@ -162,15 +162,15 @@ async fn sync_pool_balances(
             instructions.extend(create_scratch_account_ix(&signer.pubkey(), token_b));
         }
 
-        instructions.push(
-            jet_margin_sdk::ix_builder::test_service::spl_swap_pool_balance(
-                token_a,
-                token_b,
-                &scratch_a,
-                &scratch_b,
-                &signer.pubkey(),
-            ),
-        );
+        // instructions.push(
+        //     jet_margin_sdk::ix_builder::test_service::spl_swap_pool_balance(
+        //         token_a,
+        //         token_b,
+        //         &scratch_a,
+        //         &scratch_b,
+        //         &signer.pubkey(),
+        //     ),
+        // );
 
         let balance_tx = Transaction::new_signed_with_payer(
             &instructions,

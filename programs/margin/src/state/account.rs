@@ -409,6 +409,7 @@ impl MarginAccount {
                     Some(ErrorCode::OutdatedBalance)
                 } else if price_quote_age > MAX_PRICE_QUOTE_AGE {
                     // outdated price
+                    msg!("Timestamp is {:?} - Position Balance Timestamp is {:?} - Position Price Timestamp: {:?}", timestamp, position.balance_timestamp, position.price.timestamp);
                     Some(ErrorCode::OutdatedPrice)
                 } else {
                     None
