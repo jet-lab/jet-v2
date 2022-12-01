@@ -82,11 +82,11 @@ impl<'info> OrderbookMut<'info> {
     }
 
     pub fn collateral_mint(&self) -> Pubkey {
-        self.bond_manager.load().unwrap().collateral_mint
+        self.market_manager.load().unwrap().collateral_mint
     }
 
     pub fn claims_mint(&self) -> Pubkey {
-        self.bond_manager.load().unwrap().claims_mint
+        self.market_manager.load().unwrap().claims_mint
     }
 
     #[allow(clippy::too_many_arguments)]

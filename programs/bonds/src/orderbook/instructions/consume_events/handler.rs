@@ -109,8 +109,7 @@ fn handle_fill<'info>(
                 map!(margin_user.assets.stake_tickets(base_size)?);
                 let principal = quote_size;
                 let interest = base_size.safe_sub(principal)?;
-                let maturation_timestamp =
-                    fill_timestamp.safe_add(manager.load()?.lend_tenor)?;
+                let maturation_timestamp = fill_timestamp.safe_add(manager.load()?.lend_tenor)?;
                 **loan.as_mut().unwrap().auto_stake()? = SplitTicket {
                     owner: maker.pubkey(),
                     market_manager: manager.key(),

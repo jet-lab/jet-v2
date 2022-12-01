@@ -355,7 +355,7 @@ fn create_airspace_token_fixed_markets_tx(
         );
 
         txs.push(
-            bonds_ix
+            fixed_ix
                 .init_default_fee_destination(&config.authority)
                 .unwrap()
                 .into(),

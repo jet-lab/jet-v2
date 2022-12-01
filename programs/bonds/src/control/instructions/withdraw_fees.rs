@@ -1,16 +1,16 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::Token;
-use jet_program_proc_macros::BondTokenManager;
+use jet_program_proc_macros::MarketTokenManager;
 
-use crate::{bond_token_manager::BondTokenManager, control::state::BondManager, BondsError};
+use crate::{control::state::MarketManager, market_token_manager::MarketTokenManager, ErrorCode};
 
-#[derive(Accounts, BondTokenManager)]
+#[derive(Accounts, MarketTokenManager)]
 pub struct WithdrawFees<'info> {
     #[account(mut,
-        has_one = fee_destination @ BondsError::WrongFeeDestination,
-        has_one = underlying_token_vault @ BondsError::WrongVault,
+        has_one = fee_destination @ ErrorCode::WrongFeeDestination,
+        has_one = underlying_token_vault @ ErrorCode::WrongVault,
     )]
-    pub bond_manager: AccountLoader<'info, BondManager>,
+    pub market_manager: AccountLoader<'info, MarketManager>,
 
     #[account(mut)]
     pub fee_destination: AccountInfo<'info>,
@@ -22,7 +22,7 @@ pub struct WithdrawFees<'info> {
 }
 
 pub fn handler(ctx: Context<WithdrawFees>) -> Result<()> {
-    let mut manager = ctx.accounts.bond_manager.load_mut()?;
+    let mut manager = ctx.accounts.market_manager.load_mut()?;
     ctx.accounts.withdraw(
         &ctx.accounts.underlying_token_vault,
         &ctx.accounts.fee_destination,

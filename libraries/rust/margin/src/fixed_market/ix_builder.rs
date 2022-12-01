@@ -313,7 +313,7 @@ impl FixedMarketIxBuilder {
             system_program: solana_sdk::system_program::ID,
         }
         .to_account_metas(None);
-        Ok(Instruction::new_with_bytes(jet_market::ID, &data, accounts))
+        Instruction::new_with_bytes(jet_market::ID, &data, accounts)
     }
 
     pub fn initialize_orderbook_slab(

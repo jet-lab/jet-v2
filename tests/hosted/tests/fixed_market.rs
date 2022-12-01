@@ -490,11 +490,11 @@ async fn margin_borrow() -> Result<()> {
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn margin_borrow_fails_without_collateral() -> Result<()> {
     let ctx = margin_test_context!();
-    let manager = Arc::new(BondsTestManager::full(ctx.solana.clone()).await.unwrap());
+    let manager = Arc::new(FixedTestManager::full(ctx.solana.clone()).await.unwrap());
     let client = manager.client.clone();
     let ([collateral], _, pricer) = tokens(&ctx).await.unwrap();
 
-    let user = create_bonds_margin_user(&ctx, manager.clone(), vec![]).await;
+    let user = create_fixed_market_margin_user(&ctx, manager.clone(), vec![]).await;
 
     let result = vec![
         pricer.set_oracle_price_tx(&collateral, 1.0).await.unwrap(),

@@ -44,7 +44,7 @@ pub struct MarginBorrowOrder<'info> {
 
     /// Token mint used by the margin program to track the debt that must be collateralized
     /// CHECK: in instruction handler
-    #[account(mut, address = orderbook_mut.claims_mint() @ BondsError::WrongClaimMint)]
+    #[account(mut, address = orderbook_mut.claims_mint() @ ErrorCode::WrongClaimMint)]
     pub claims_mint: AccountInfo<'info>,
 
     /// Token account used by the margin program to track the debt that must be collateralized
@@ -52,7 +52,7 @@ pub struct MarginBorrowOrder<'info> {
     pub collateral: AccountInfo<'info>,
 
     /// Token mint used by the margin program to track the debt that must be collateralized
-    #[account(mut, address = orderbook_mut.collateral_mint() @ BondsError::WrongCollateralMint)]
+    #[account(mut, address = orderbook_mut.collateral_mint() @ ErrorCode::WrongCollateralMint)]
     pub collateral_mint: AccountInfo<'info>,
 
     /// The market token vault
@@ -84,8 +84,8 @@ pub fn handler(
     seed: Vec<u8>,
 ) -> Result<()> {
     let origination_fee = {
-        let manager = ctx.accounts.orderbook_mut.bond_manager.load()?;
-        params.max_bond_ticket_qty = manager.borrow_order_qty(params.max_bond_ticket_qty);
+        let manager = ctx.accounts.orderbook_mut.market_manager.load()?;
+        params.max_market_ticket_qty = manager.borrow_order_qty(params.max_market_ticket_qty);
         params.max_underlying_token_qty = manager.borrow_order_qty(params.max_underlying_token_qty);
         manager.origination_fee
     };
@@ -105,13 +105,12 @@ pub fn handler(
     let debt = &mut ctx.accounts.margin_user.debt;
     debt.post_borrow_order(order_summary.base_posted())?;
     if order_summary.base_filled() > 0 {
-        let mut market_manager = ctx.accounts.orderbook_mut.market_manager.load_mut()?;
-        let maturation_timestamp = market_manager.borrow_duration + Clock::get()?.unix_timestamp;
+        let mut manager = ctx.accounts.orderbook_mut.market_manager.load_mut()?;
+        let maturation_timestamp = manager.borrow_tenor + Clock::get()?.unix_timestamp;
         let sequence_number =
             debt.new_obligation_without_posting(order_summary.base_filled(), maturation_timestamp)?;
 
-        let maturation_timestamp =
-            bond_manager.load()?.borrow_duration + Clock::get()?.unix_timestamp;
+        let maturation_timestamp = manager.borrow_tenor + Clock::get()?.unix_timestamp;
 
         let mut obligation = serialization::init::<Obligation>(
             ctx.accounts.obligation.to_account_info(),
