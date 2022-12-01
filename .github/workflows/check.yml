@@ -125,7 +125,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Get anchor-test cache
+      - name: Get anchor cache
         uses: actions/cache@v3
         with:
           key: ${{ runner.os }}-e2e-${{ hashFiles('**/Cargo.lock') }}

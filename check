@@ -62,7 +62,6 @@ docker-shell() {
 #
 #   ./check in-docker echo hello world
 #   ./check in-docker hosted-tests-localnet
-#   ./check in-docker anchor-test --skip-build
 #   ./check in-docker solana-test-validator
 #   ./check in-docker bash
 in-docker() {
@@ -104,7 +103,6 @@ all() {
     cargo-lint
     cargo-test
     hosted-tests-localnet $@
-    anchor-test --skip-build
     e2e-tests --skip-build
 }
 
