@@ -105,22 +105,6 @@ export function PoolDetail(): JSX.Element {
     return render;
   }
 
-  const linkText = "docs";
-
-  let marginAccountingDocsLink = reactStringReplace(definitions.en.requiredCollateralFactor.definition, '{{MARGIN_ACCOUNTING_DOCS_LINK}}', () => (
-    <a
-      className="link-btn"
-      key="docs"
-      href="https://docs.jetprotocol.io/jet-protocol/protocol/margin-accounts"
-      target="_blank"
-      rel="noopener noreferrer">
-      {linkText}
-    </a>
-  ));
-
-  //let test = reactStringReplace(definitions.en.requiredCollateralFactor.definition,'{{MARGIN_ACCOUNTING_DOCS_LINK}}', () => "hi");
-  console.log(marginAccountingDocsLink);
-
   return (
     <div className="pool-detail view-element flex align-center justify-start column">
       <div className="pool-detail-head flex align-center justify-start">
@@ -147,7 +131,8 @@ export function PoolDetail(): JSX.Element {
           <div className="pool-detail-body-half-section flex align-start justify-center column">
             <Info term="requiredCollateralFactor">
               <Text className="info-element small-accent-text">{dictionary.poolsView.requiredCollateralFactor}</Text>
-                {renderRequiredCollateralFactor()}
+            </Info>
+            {renderRequiredCollateralFactor()}
           </div>
         </div>
         <div className="pool-detail-body-half flex-align-start justify-center column">

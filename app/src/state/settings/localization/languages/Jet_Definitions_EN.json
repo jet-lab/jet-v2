@@ -41,7 +41,7 @@
   },
   "requiredCollateralFactor": {
     "term": "Required Collateral Factor",
-    "definition": "A constant assigned to each asset that is used to determine the required collateral for a liability of that asset. Analogous to the maximum leverage for a particular asset. Read more information in the {{MARGIN_ACCOUNTING_DOCS_LINK}}."
+    "definition": "A constant assigned to each asset that is used to determine the required collateral for a liability of that asset. Analogous to the maximum leverage for a particular asset. For further information, see the 'Margin accounts' page in the Gitbook documentation."
   },
   "requiredCollateral": {
     "term": "Required Collateral",
