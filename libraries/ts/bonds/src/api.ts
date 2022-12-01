@@ -41,7 +41,7 @@ const refreshAllMarkets = async (
           })
           .instruction()
 
-        await marginAccount.withAdapterInvoke({
+        await marginAccount.withAccountingInvoke({
           instructions: ixs,
           adapterInstruction: refreshIx
         })
@@ -56,28 +56,44 @@ interface IWithCreateFixedMarketAccount {
   provider: AnchorProvider
   marginAccount: MarginAccount
   walletAddress: PublicKey
-  instructions: TransactionInstruction[]
+  markets: BondMarket[]
+  refreshPools: boolean
+  pools: Record<string, Pool>
+  currentPool: Pool
 }
 export const withCreateFixedMarketAccounts = async ({
   market,
   provider,
   marginAccount,
   walletAddress,
-  instructions
+  markets,
+  refreshPools,
+  pools,
+  currentPool
 }: IWithCreateFixedMarketAccount) => {
   const tokenMint = market.addresses.underlyingTokenMint
   const ticketMint = market.addresses.bondTicketMint
-  await AssociatedToken.withCreate(instructions, provider, marginAccount.address, tokenMint)
-  await AssociatedToken.withCreate(instructions, provider, marginAccount.address, ticketMint)
+  const marketIXS: TransactionInstruction[] = []
+  await AssociatedToken.withCreate(marketIXS, provider, marginAccount.address, tokenMint)
+  await AssociatedToken.withCreate(marketIXS, provider, marginAccount.address, ticketMint)
   const marginUserInfo = await market.fetchMarginUser(marginAccount)
   if (!marginUserInfo) {
     const createAccountIx = await market.registerAccountWithMarket(marginAccount, walletAddress)
     await marginAccount.withAdapterInvoke({
-      instructions,
+      instructions: marketIXS,
       adapterInstruction: createAccountIx
     })
   }
-  return { tokenMint, ticketMint }
+  await refreshAllMarkets(markets, marketIXS, marginAccount, market.address)
+
+  if (refreshPools) {
+    await currentPool.withPrioritisedPositionRefresh({
+      instructions: marketIXS,
+      pools,
+      marginAccount
+    })
+  }
+  return { tokenMint, ticketMint, marketIXS }
 }
 
 // MARKET MAKER ORDERS
@@ -115,39 +131,32 @@ export const offerLoan = async ({
 
   const instructions: TransactionInstruction[][] = []
   // Create relevant accounts if they do not exist
-  const accountInstructions: TransactionInstruction[] = []
-  await withCreateFixedMarketAccounts({
+  const { marketIXS } = await withCreateFixedMarketAccounts({
     market,
     provider,
     marginAccount,
     walletAddress,
-    instructions: accountInstructions
+    markets,
+    pools,
+    currentPool,
+    refreshPools: true
   })
-  if (accountInstructions.length > 0) {
-    instructions.push(accountInstructions)
-  }
-  const refreshInstructions: TransactionInstruction[] = []
+  instructions.push(marketIXS)
+  const orderIXS: TransactionInstruction[] = []
 
   // refresh pool positions
-  await currentPool.withMarginRefreshAllPositionPrices({
-    instructions: refreshInstructions,
+  await currentPool.withPrioritisedPositionRefresh({
+    instructions: orderIXS,
     pools,
     marginAccount
   })
 
-  await refreshAllMarkets(markets, refreshInstructions, marginAccount, market.address)
-  instructions.push(refreshInstructions)
-
-  const withdrawInstructions: TransactionInstruction[] = []
   // create lend instruction
   await currentPool.withWithdrawToMargin({
-    instructions: withdrawInstructions,
+    instructions: orderIXS,
     marginAccount,
     change: PoolTokenChange.shiftBy(amount)
   })
-  instructions.push(withdrawInstructions)
-
-  const lendInstructions: TransactionInstruction[] = []
 
   const loanOffer = await market.offerLoanIx(
     marginAccount,
@@ -158,11 +167,10 @@ export const offerLoan = async ({
     marketConfig.borrowDuration
   )
   await marginAccount.withAdapterInvoke({
-    instructions: lendInstructions,
+    instructions: orderIXS,
     adapterInstruction: loanOffer
   })
-
-  instructions.push(lendInstructions)
+  instructions.push(orderIXS)
   return sendAll(provider, [instructions])
 }
 
@@ -200,27 +208,25 @@ export const requestLoan = async ({
 
   const instructions: TransactionInstruction[][] = []
   // Create relevant accounts if they do not exist
-  const accountInstructions: TransactionInstruction[] = []
-  await withCreateFixedMarketAccounts({
+  const { marketIXS } = await withCreateFixedMarketAccounts({
     market,
     provider,
     marginAccount,
     walletAddress,
-    instructions: accountInstructions
+    markets,
+    pools,
+    currentPool,
+    refreshPools: true
   })
-  if (accountInstructions.length > 0) {
-    instructions.push(accountInstructions)
-  }
+  instructions.push(marketIXS)
 
+  const orderIXS: TransactionInstruction[] = []
   // refresh pools positions
-  const borrowInstructions: TransactionInstruction[] = []
-  await currentPool.withMarginRefreshAllPositionPrices({
-    instructions: borrowInstructions,
+  await currentPool.withPrioritisedPositionRefresh({
+    instructions: orderIXS,
     pools,
     marginAccount
   })
-
-  await refreshAllMarkets(markets, borrowInstructions, marginAccount, market.address)
 
   // Create borrow instruction
   const borrowOffer = await market.requestBorrowIx(
@@ -233,11 +239,10 @@ export const requestLoan = async ({
   )
 
   await marginAccount.withAdapterInvoke({
-    instructions: borrowInstructions,
+    instructions: orderIXS,
     adapterInstruction: borrowOffer
   })
-
-  instructions.push(borrowInstructions)
+  instructions.push(orderIXS)
   return sendAll(provider, [instructions])
 }
 
@@ -261,7 +266,7 @@ export const cancelOrder = async ({
   const borrowerAccount = await market.deriveMarginUserAddress(marginAccount)
 
   // refresh pools positions
-  await currentPool.withMarginRefreshAllPositionPrices({
+  await currentPool.withPrioritisedPositionRefresh({
     instructions,
     pools,
     marginAccount
@@ -324,39 +329,54 @@ export const borrowNow = async ({
 
   const instructions: TransactionInstruction[][] = []
   // Create relevant accounts if they do not exist
-  const accountInstructions: TransactionInstruction[] = []
-  await withCreateFixedMarketAccounts({
+  const { marketIXS, tokenMint } = await withCreateFixedMarketAccounts({
     market,
     provider,
     marginAccount,
     walletAddress,
-    instructions: accountInstructions
+    markets,
+    pools,
+    currentPool,
+    refreshPools: true
   })
-  if (accountInstructions.length > 0) {
-    instructions.push(accountInstructions)
-  }
-
+  instructions.push(marketIXS)
   // refresh pools positions
-  const refreshInstructions: TransactionInstruction[] = []
-  await currentPool.withMarginRefreshAllPositionPrices({
-    instructions: refreshInstructions,
+  const orderIXS: TransactionInstruction[] = []
+  await currentPool.withPrioritisedPositionRefresh({
+    instructions: orderIXS,
     pools,
     marginAccount
   })
 
-  await refreshAllMarkets(markets, refreshInstructions, marginAccount, market.address)
-  instructions.push(refreshInstructions)
-
   // Create borrow instruction
-  const borrowInstructions: TransactionInstruction[] = []
-  const borrowNow = await market.borrowNowIx(marginAccount, walletAddress, amount, createRandomSeed(8))
+  const seed = createRandomSeed(8)
+  const borrowNow = await market.borrowNowIx(marginAccount, walletAddress, amount, seed)
 
   await marginAccount.withAdapterInvoke({
-    instructions: borrowInstructions,
+    instructions: orderIXS,
     adapterInstruction: borrowNow
   })
 
-  instructions.push(borrowInstructions)
+  const change = PoolTokenChange.shiftBy(amount.sub(new BN(1)))
+  const source = AssociatedToken.derive(tokenMint, marginAccount.address)
+  const position = currentPool.findDepositPositionAddress(marginAccount)
+  const depositIx = await currentPool.programs.marginPool.methods
+    .deposit(change.changeKind.asParam(), change.value)
+    .accounts({
+      marginPool: currentPool.address,
+      vault: currentPool.addresses.vault,
+      depositNoteMint: currentPool.addresses.depositNoteMint,
+      depositor: marginAccount.address,
+      source,
+      destination: position,
+      tokenProgram: TOKEN_PROGRAM_ID
+    })
+    .instruction()
+  await marginAccount.withAdapterInvoke({
+    instructions: orderIXS,
+    adapterInstruction: depositIx
+  })
+  instructions.push(orderIXS)
   return sendAll(provider, [instructions])
 }
 
@@ -390,46 +410,62 @@ export const lendNow = async ({
 
   const instructions: TransactionInstruction[][] = []
   // Create relevant accounts if they do not exist
-  const accountInstructions: TransactionInstruction[] = []
-  await withCreateFixedMarketAccounts({
+  const { marketIXS } = await withCreateFixedMarketAccounts({
     market,
     provider,
     marginAccount,
     walletAddress,
-    instructions: accountInstructions
-  })
-  if (accountInstructions.length > 0) {
-    instructions.push(accountInstructions)
-  }
-
-  const refreshInstructions: TransactionInstruction[] = []
-  await currentPool.withMarginRefreshAllPositionPrices({
-    instructions: refreshInstructions,
+    markets,
     pools,
-    marginAccount
+    currentPool,
+    refreshPools: true
   })
+  instructions.push(marketIXS)
 
-  await refreshAllMarkets(markets, refreshInstructions, marginAccount, market.address)
-  instructions.push(refreshInstructions)
+  const orderIXS: TransactionInstruction[] = []
 
-  const withdrawInstructions: TransactionInstruction[] = []
   // create lend instruction
   await currentPool.withWithdrawToMargin({
-    instructions: withdrawInstructions,
+    instructions: orderIXS,
     marginAccount,
     change: PoolTokenChange.shiftBy(amount)
   })
-  instructions.push(withdrawInstructions)
 
   // Create borrow instruction
-  const lendInstructions: TransactionInstruction[] = []
   const lendNow = await market.lendNowIx(marginAccount, amount, walletAddress, createRandomSeed(8))
 
   await marginAccount.withAdapterInvoke({
-    instructions: lendInstructions,
+    instructions: orderIXS,
     adapterInstruction: lendNow
   })
 
-  instructions.push(lendInstructions)
+  instructions.push(orderIXS)
+  const updateIXS: TransactionInstruction[] = []
+  await marginAccount.withUpdateAllPositionBalances({ instructions: updateIXS })
+  instructions.push(updateIXS)
+
+  return sendAll(provider, [instructions])
+}
+
+interface ISettle {
+  markets: BondMarket[]
+  marginAccount: MarginAccount
+  provider: AnchorProvider
+}
+
+export const settle = async ({ markets, marginAccount, provider }: ISettle) => {
+  const instructions: TransactionInstruction[] = []
+  await Promise.all(
+    markets.map(async market => {
+      const user = await market.fetchMarginUser(marginAccount)
+      if (user && (user.assets.entitledTickets.gtn(0) || user.assets.entitledTokens.gtn(0))) {
+        const settleIX = await market.settle(marginAccount)
+        marginAccount.withAdapterInvoke({
+          instructions,
+          adapterInstruction: settleIX
+        })
+      }
+    })
+  )
   return sendAll(provider, [instructions])
 }

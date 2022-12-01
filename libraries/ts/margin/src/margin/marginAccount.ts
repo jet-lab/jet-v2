@@ -1666,21 +1666,19 @@ export class MarginAccount {
    */
   async withAccountingInvoke({
     instructions,
-    adapterProgram,
-    adapterMetadata,
     adapterInstruction
   }: {
     instructions: TransactionInstruction[]
-    adapterProgram: Address
-    adapterMetadata: Address
+    adapterProgram?: Address
+    adapterMetadata?: Address
     adapterInstruction: TransactionInstruction
   }): Promise<void> {
     const ix = await this.programs.margin.methods
       .accountingInvoke(adapterInstruction.data)
       .accounts({
         marginAccount: this.address,
-        adapterProgram,
-        adapterMetadata
+        adapterProgram: adapterInstruction.programId,
+        adapterMetadata: findDerivedAccount(this.programs.metadata.programId, adapterInstruction.programId)
       })
       .remainingAccounts(this.invokeAccounts(adapterInstruction))
       .instruction()

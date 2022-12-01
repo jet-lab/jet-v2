@@ -10,10 +10,14 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import { useProvider } from '@utils/jet/provider';
 import { CurrentPool, Pools } from '@state/pools/pools';
 import { BlockExplorer, Cluster } from '@state/settings/settings';
-import { useRecoilValue } from 'recoil';
+import { useRecoilRefresher_UNSTABLE, useRecoilValue } from 'recoil';
 import { useState } from 'react';
 import { MarginConfig, MarginTokenConfig } from '@jet-lab/margin';
-import { AllFixedMarketsAtom, MarketAndconfig } from '@state/fixed-market/fixed-term-market-sync';
+import {
+  AllFixedMarketsAtom,
+  AllFixedMarketsOrderBooksAtom,
+  MarketAndconfig
+} from '@state/fixed-market/fixed-term-market-sync';
 import debounce from 'lodash.debounce';
 
 interface RequestLoanProps {
@@ -33,6 +37,7 @@ export const LendNow = ({ token, decimals, marketAndConfig, marginConfig }: Requ
   const blockExplorer = useRecoilValue(BlockExplorer);
   const [amount, setAmount] = useState(new BN(0));
   const markets = useRecoilValue(AllFixedMarketsAtom);
+  const refreshOrderBooks = useRecoilRefresher_UNSTABLE(AllFixedMarketsOrderBooksAtom);
 
   const marketLendOrder = async () => {
     let signature: string;
@@ -54,8 +59,8 @@ export const LendNow = ({ token, decimals, marketAndConfig, marginConfig }: Requ
         'success',
         getExplorerUrl(signature, cluster, blockExplorer)
       );
+      refreshOrderBooks();
     } catch (e) {
-      console.log(e);
       notify(
         'Lend Order Failed',
         `Your lend order for ${amount.div(new BN(10 ** decimals))} ${token.name} failed`,
