@@ -3,8 +3,7 @@
   "workspaces": [
     "app",
     "libraries/ts/bonds",
-    "libraries/ts/margin",
-    "tests"
+    "libraries/ts/margin"
   ],
   "license": "AGPL-3.0-or-later",
   "scripts": {
@@ -21,11 +20,9 @@
     "fmt": "prettier --check .",
     "fmt:fix": "prettier --write .",
     "lint": "eslint . --ext ts",
-    "prepare": "husky install",
     "precommit": "npm run build && npm run fmt:fix && npm run lint && git add .",
     "start": "yarn --cwd app start",
     "test": "./check",
-    "test:devnet": "npx ts-mocha -p ./tsconfig.json -t 1000000 tests/declarative/*.sim.ts",
     "test:nobuild": "anchor test --skip-lint --skip-build -- --features testing",
     "test:gui": "yarn --cwd app e2e:gui",
     "test:ci": "yarn --cwd app e2e:ci"
