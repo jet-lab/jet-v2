@@ -1,16 +1,9 @@
 import { useEffect, useMemo } from 'react';
 import { atom, selector, useRecoilState, useRecoilValue, useResetRecoilState, useSetRecoilState } from 'recoil';
 // import axios from 'axios';
-import { Connection, PublicKey } from '@solana/web3.js';
+import { PublicKey } from '@solana/web3.js';
 import { useWallet } from '@solana/wallet-adapter-react';
-import {
-  MarginAccount,
-  MarginClient,
-  AccountTransaction,
-  TokenAmount,
-  PositionKind,
-  AssociatedToken
-} from '@jet-lab/margin';
+import { MarginAccount, MarginClient, AccountTransaction, TokenAmount } from '@jet-lab/margin';
 import { localStorageEffect } from '../effects/localStorageEffect';
 import { Cluster } from '../settings/settings';
 import { Dictionary } from '../settings/localization/localization';
@@ -19,7 +12,6 @@ import { walletParam, WalletTokens } from './walletTokens';
 import { Pools } from '../pools/pools';
 import { useProvider } from '@utils/jet/provider';
 import { MainConfig } from '@state/config/marginConfig';
-import { TOKEN_PROGRAM_ID } from '@solana/spl-token';
 
 // Interfaces for account order and tx history
 export interface AccountHistory {

@@ -106,12 +106,9 @@ export async function sendAll(
     return slice
   })
 
-  console.log("Before signing")
   // signedTxs has been flattened. unflatten it
   const signedTxs = await provider.wallet.signAllTransactions(txs.flat(1))
   const signedUnflattened = slices.map(slice => signedTxs.slice(...slice))
-
-  console.log("Before signing")
 
   let lastTxn = ""
   try {
@@ -120,13 +117,11 @@ export async function sendAll(
       const txnArray: string[] = []
       for (const tx of transactions) {
         const rawTx = tx.serialize()
-        console.log("Before Sending", rawTx.byteLength)
         const sent = await sendAndConfirmRawTransaction(provider.connection, rawTx, opts).catch(err => {
           let customErr = new ConfirmError(err.message)
           customErr.signature = bs58.encode(tx.signature!)
           throw customErr
         })
-        console.log("After sending")
         txnArray.push(sent)
       }
       // Return the txid of the final transaction in the array
