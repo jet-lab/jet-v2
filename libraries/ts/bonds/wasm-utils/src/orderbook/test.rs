@@ -1,4 +1,4 @@
-use jet_bonds_lib::utils::OrderAmount;
+use jet_market_lib::utils::OrderAmount;
 use js_sys::{Array, Uint8Array};
 use wasm_bindgen::prelude::*;
 
