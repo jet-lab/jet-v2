@@ -17,9 +17,9 @@ use solana_client::{
     rpc_request::{RpcError, RpcResponseErrorData},
 };
 use solana_sdk::{
-    commitment_config::CommitmentConfig, hash::Hash, instruction::Instruction, program_pack::Pack,
-    pubkey, pubkey::Pubkey, signature::Keypair, signer::Signer, system_instruction,
-    sysvar::rent::Rent, transaction::Transaction,
+    account::ReadableAccount, commitment_config::CommitmentConfig, hash::Hash,
+    instruction::Instruction, program_pack::Pack, pubkey, pubkey::Pubkey, signature::Keypair,
+    signer::Signer, system_instruction, sysvar::rent::Rent, transaction::Transaction,
 };
 
 use pyth_sdk_solana::state::ProductAccount;
@@ -204,38 +204,50 @@ async fn sync_oracles(
     signer: &Keypair,
     oracles: &[OracleInfo],
 ) -> Result<()> {
-    for oracle in oracles {
-        let source_account = source.get_account_data(&oracle.source_oracle).await?;
-        let source_price = pyth_sdk_solana::state::load_price_account(&source_account)?;
+    let oracle_addresses = oracles.iter().map(|o| o.source_oracle).collect::<Vec<_>>();
+    let source_accounts = source.get_multiple_accounts(&oracle_addresses).await?;
 
-        let update_target_ix = jet_margin_sdk::ix_builder::test_service::token_update_pyth_price(
-            &signer.pubkey(),
-            &oracle.target_mint,
-            (source_price.agg.price as f64 * oracle.price_ratio) as i64,
-            source_price.agg.conf as i64,
-            source_price.expo,
-        );
+    let instructions = oracles
+        .iter()
+        .zip(source_accounts)
+        .filter_map(|(oracle, account)| {
+            account.as_ref()?;
+            let account = account.unwrap();
+            let source_price = pyth_sdk_solana::state::load_price_account(account.data()).ok()?;
 
-        let recent_blockhash = target.get_latest_blockhash().await?;
-        let update_price_tx = Transaction::new_signed_with_payer(
-            &[update_target_ix],
-            Some(&signer.pubkey()),
-            &[signer],
-            recent_blockhash,
-        );
+            let update_target_ix =
+                jet_margin_sdk::ix_builder::test_service::token_update_pyth_price(
+                    &signer.pubkey(),
+                    &oracle.target_mint,
+                    (source_price.agg.price as f64 * oracle.price_ratio) as i64,
+                    source_price.agg.conf as i64,
+                    source_price.expo,
+                );
 
-        match target.send_and_confirm_transaction(&update_price_tx).await {
-            Ok(_) => (),
-            Err(e) => {
-                eprintln!("{e}");
+            Some(update_target_ix)
+        })
+        .collect::<Vec<_>>();
 
-                if let ClientErrorKind::RpcError(RpcError::RpcResponseError {
-                    data: RpcResponseErrorData::SendTransactionPreflightFailure(failure),
-                    ..
-                }) = e.kind()
-                {
-                    eprintln!("{:#?}", failure.logs);
-                }
+    let recent_blockhash = target.get_latest_blockhash().await?;
+    let update_price_tx = Transaction::new_signed_with_payer(
+        // TODO: use a transaction builder in case transaction size is large
+        &instructions,
+        Some(&signer.pubkey()),
+        &[signer],
+        recent_blockhash,
+    );
+
+    match target.send_and_confirm_transaction(&update_price_tx).await {
+        Ok(_) => (),
+        Err(e) => {
+            eprintln!("{e}");
+
+            if let ClientErrorKind::RpcError(RpcError::RpcResponseError {
+                data: RpcResponseErrorData::SendTransactionPreflightFailure(failure),
+                ..
+            }) = e.kind()
+            {
+                eprintln!("{:#?}", failure.logs);
             }
         }
     }

@@ -45,7 +45,7 @@ cargo-test() {
     if [[ ${CODECOV:-false} == true ]]; then
         cargo llvm-cov --workspace --lcov --output-path lcov.info --ignore-filename-regex programs/mock-pyth/src/lib.rs
     else 
-        cargo test
+        cargo nextest run
     fi
 }
 

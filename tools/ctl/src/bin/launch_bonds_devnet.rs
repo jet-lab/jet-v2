@@ -37,6 +37,7 @@ lazy_static::lazy_static! {
         event_queue: QUEUE_PATH.clone(),
         bids: BIDS_PATH.clone(),
         asks: ASKS_PATH.clone(),
+        origination_fee: 10,
     };
 
     static ref OPTS: CliOpts = CliOpts {
@@ -165,6 +166,7 @@ async fn main() -> Result<()> {
         payer,
         PARAMS.token_oracle,
         PARAMS.ticket_oracle,
+        None,
     )
     .with_payer(&payer);
     let init_ob_accs = create_orderbook_accounts(

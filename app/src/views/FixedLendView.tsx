@@ -9,7 +9,8 @@ import { FixedLendRowOrder, FixedLendViewOrder } from '@state/views/fixed-term';
 import { FixedMarketSelector } from '@components/fixed-term/shared/market-selector';
 import { NetworkStateAtom } from '@state/network/network-state';
 import { WaitingForNetworkView } from './WaitingForNetwork';
-import { DebtTable } from '@components/fixed-term/shared/DebtTable';
+import { DebtTable } from '@components/fixed-term/shared/debt-table';
+import { Settle } from '@components/fixed-term/shared/settle';
 
 const rowComponents: Record<string, React.FC<any>> = {
   fixedLendEntry: FixedLendOrderEntry,
@@ -39,11 +40,13 @@ const viewComponents: Record<string, React.FC<any>> = {
   fixedRow: FixedRow,
   debtTable: DebtTable,
   fullAccountBalance: FullAccountBalance,
-  marketSelector: FixedMarketSelector
+  marketSelector: FixedMarketSelector,
+  settleComponent: Settle
 };
 
 const viewComponentsProps: Record<string, object> = {
   accountSnapshot: { key: 'accountSnapshot' },
+  settleComponent: { key: 'settleComponent' },
   fixedRow: { key: 'fixedRow' },
   debtTable: { key: 'debtTable' },
   fullAccountBalance: { key: 'fullAccountBalance' },
