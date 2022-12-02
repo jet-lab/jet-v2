@@ -1,5 +1,5 @@
 import { useRecoilState, useRecoilValue } from 'recoil';
-import { Dictionary } from '@state/settings/localization/localization';
+import { definitions, Dictionary } from '@state/settings/localization/localization';
 import { PoolsRowOrder } from '@state/views/views';
 import { Pools, CurrentPool } from '@state/pools/pools';
 import { useCurrencyFormatting } from '@utils/currency';
@@ -10,6 +10,7 @@ import { AirdropButton } from './AirdropButton';
 import { ReorderArrows } from '@components/misc/ReorderArrows';
 import { Info } from '@components/misc/Info';
 import { Skeleton, Typography } from 'antd';
+import reactStringReplace from 'react-string-replace';
 
 // Component that shows extra details on the currentPool
 export function PoolDetail(): JSX.Element {
@@ -40,6 +41,17 @@ export function PoolDetail(): JSX.Element {
 
     return render;
   }
+
+  // Renders the required collateral factor for the current pool
+  function renderRequiredCollateralFactor() {
+    let render = <Skeleton paragraph={false} active style={{ width: 100 }} />;
+    if (init) {
+      render = <Text>{currentPool.loanNoteMetadata.valueModifier.toNumber()}</Text>;
+    }
+
+    return render;
+  }
+
 
   // Renders the pool size for the current pool
   function renderPoolSize() {
@@ -115,6 +127,12 @@ export function PoolDetail(): JSX.Element {
               <Text className="info-element small-accent-text">{dictionary.poolsView.collateralWeight}</Text>
             </Info>
             {renderCollateralWeight()}
+          </div>
+          <div className="pool-detail-body-half-section flex align-start justify-center column">
+            <Info term="requiredCollateralFactor">
+              <Text className="info-element small-accent-text">{dictionary.poolsView.requiredCollateralFactor}</Text>
+            </Info>
+            {renderRequiredCollateralFactor()}
           </div>
         </div>
         <div className="pool-detail-body-half flex-align-start justify-center column">
