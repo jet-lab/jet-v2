@@ -21,6 +21,7 @@ import {
   ParsedInnerInstruction,
   PartiallyDecodedInstruction
 } from "@solana/web3.js"
+import axios from "axios"
 
 interface TokenMintsList {
   tokenMint: PublicKey
@@ -170,6 +171,7 @@ export class MarginClient {
           return true
         }
       }
+      return false
     }
 
     const setupAccountTx = (token, amount, parsedTx, amountIn?, tokenIn?) => {
@@ -396,15 +398,11 @@ export class MarginClient {
     return tx as AccountTransaction
   }
 
-  static async getBlackBoxHistory(
-    pubKey: PublicKey,
-    cluster: MarginCluster,
-    pageSize = 100
-  ): Promise<AccountTransaction[]> {
+  static async getBlackBoxHistory(pubKey: PublicKey, cluster: MarginCluster): Promise<AccountTransaction[]> {
     const flightLogURL = `https://blackbox.jetprotocol.io/margin/accounts/activity/${pubKey}`
 
-    const response = await fetch(flightLogURL)
-    const jetTransactions: FlightLog[] = await response.json()
+    const response = await axios.get(flightLogURL)
+    const jetTransactions: FlightLog[] = await response.data
     const config = await MarginClient.getConfig(cluster)
 
     // let page = 0
@@ -422,7 +420,7 @@ export class MarginClient {
     // }
 
     const parsedTransactions = await Promise.all(
-      jetTransactions.map(async (t, idx) => await MarginClient.getBlackboxTx(config, t))
+      jetTransactions.map(async (t, _) => await MarginClient.getBlackboxTx(config, t))
     )
     const filteredParsedTransactions = parsedTransactions.filter(tx => !!tx) as AccountTransaction[]
     return filteredParsedTransactions.sort((a, b) => a.slot - b.slot)

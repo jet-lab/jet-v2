@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useResetRecoilState, useRecoilValue, useRecoilState, useSetRecoilState } from 'recoil';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { LAMPORTS_PER_SOL } from '@solana/web3.js';
-import { feesBuffer } from '@jet-lab/margin';
+import { feesBuffer, MarginPrograms } from '@jet-lab/margin';
 import { Dictionary } from '@state/settings/localization/localization';
 import { Cluster, BlockExplorer } from '@state/settings/settings';
 import { ActionRefresh, SendingTransaction } from '@state/actions/actions';
@@ -69,7 +69,7 @@ export function NewAccountModal(): JSX.Element {
 
     setSendingTransaction(true);
     // Create the new account
-    const [txId, resp] = await createAccount(accountName);
+    const [txId, resp] = await createAccount();
     if (resp === ActionResponse.Success) {
       notify(
         dictionary.notifications.newAccount.successTitle,
@@ -102,14 +102,14 @@ export function NewAccountModal(): JSX.Element {
     if (!programs || networkState !== 'connected') {
       return;
     }
-    async function getNewAccountRentFee() {
+    async function getNewAccountRentFee(programs: MarginPrograms) {
       const rentFeeLamports = await programs.connection.getMinimumBalanceForRentExemption(
         programs.margin.account.marginAccount.size
       );
       const rentFee = rentFeeLamports / LAMPORTS_PER_SOL;
       setNewAccountRentFee(rentFee);
     }
-    getNewAccountRentFee();
+    getNewAccountRentFee(programs);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [programs, networkState]);
 

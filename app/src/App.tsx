@@ -10,13 +10,16 @@ import {
   SolletWalletAdapter,
   BraveWalletAdapter
 } from '@solana/wallet-adapter-wallets';
-import { AccountsView, PoolsView, SwapsView } from './views';
 import { lazy, Suspense, useMemo } from 'react';
 import './styles/App.less';
 import { Navbar } from '@components/misc/Navbar/Navbar';
 import { Modals } from '@components/modals/Modals';
 import { TermsPrivacy } from '@components/misc/TermsPrivacy';
 import '@styles/App.less';
+
+const AccountsView = lazy(() => import('@views/AccountsView'));
+const PoolsView = lazy(() => import('@views/PoolsView'));
+const SwapsView = lazy(() => import('@views/SwapsView'));
 
 const StateSyncer = lazy(() => import('@state/StateSyncer'));
 const FixedLendView = lazy(() => import('@views/FixedLendView'));
@@ -45,9 +48,30 @@ export const App = (): JSX.Element => {
         <WalletProvider wallets={wallets} autoConnect localStorageKey="jetAppWallet">
           <Navbar />
           <Routes>
-            <Route path="/" element={<PoolsView />} />
-            <Route path="/swaps" element={<SwapsView />} />
-            <Route path="/accounts" element={<AccountsView />} />
+            <Route
+              path="/"
+              element={
+                <Suspense>
+                  <PoolsView />
+                </Suspense>
+              }
+            />
+            <Route
+              path="/swaps"
+              element={
+                <Suspense>
+                  <SwapsView />
+                </Suspense>
+              }
+            />
+            <Route
+              path="/accounts"
+              element={
+                <Suspense>
+                  <AccountsView />
+                </Suspense>
+              }
+            />
 
             <Route
               path="/fixed-borrow"

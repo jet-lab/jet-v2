@@ -10,7 +10,7 @@ import { NetworkStateAtom } from '@state/network/network-state';
 import { WaitingForNetworkView } from './WaitingForNetwork';
 
 // App view for margin swapping
-export function SwapsView(): JSX.Element {
+function SwapsView(): JSX.Element {
   const dictionary = useRecoilValue(Dictionary);
   const rowOrder = useRecoilValue(SwapsRowOrder);
   const networkState = useRecoilValue(NetworkStateAtom);
@@ -55,3 +55,5 @@ export function SwapsView(): JSX.Element {
   if (networkState !== 'connected') return <WaitingForNetworkView networkState={networkState} />;
   return accountView();
 }
+
+export default SwapsView;

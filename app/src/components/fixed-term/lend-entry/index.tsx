@@ -1,7 +1,7 @@
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { ReorderArrows } from '@components/misc/ReorderArrows';
 import { Tabs, Typography } from 'antd';
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { MainConfig } from '@state/config/marginConfig';
 import { FixedLendRowOrder } from '@state/views/fixed-term';
 import { CurrentOrderTab, CurrentOrderTabAtom, FixedMarketAtom } from '@state/fixed-market/fixed-term-market-sync';
@@ -34,7 +34,7 @@ export const FixedLendOrderEntry = () => {
   }, [token]);
 
   const { Paragraph } = Typography;
-  if (!decimals || noAccount) return null;
+  if (!decimals || noAccount || !marketAndConfig || !token || !marginConfig) return null;
 
   return (
     <div className="order-entry fixed-lend-entry view-element view-element-hidden flex column">
@@ -47,7 +47,7 @@ export const FixedLendOrderEntry = () => {
       <Tabs
         defaultActiveKey="limit"
         activeKey={currentTab}
-        onChange={(type: CurrentOrderTab) => setCurrentTab(type)}
+        onChange={(type: string) => setCurrentTab(type as CurrentOrderTab)}
         items={[
           {
             label: 'offer loan',

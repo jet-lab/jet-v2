@@ -30,7 +30,6 @@ import {
   bnToNumber,
   getTimestamp,
   Number192,
-  numberToBn,
   sendAll,
   sendAndConfirm,
   TokenAmount
@@ -652,6 +651,7 @@ export class MarginAccount {
         return position
       }
     }
+    return
   }
 
   setPositionBalance(mint: PublicKey, account: PublicKey, balance: BN) {

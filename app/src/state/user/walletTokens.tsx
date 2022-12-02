@@ -3,7 +3,7 @@ import { atom, useRecoilValue, useSetRecoilState } from 'recoil';
 import { PublicKey } from '@solana/web3.js';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { MarginAccount, MarginWalletTokens } from '@jet-lab/margin';
-import { ActionRefresh, ACTION_REFRESH_INTERVAL } from '../actions/actions';
+import { ActionRefresh } from '../actions/actions';
 import { useProvider } from '@utils/jet/provider';
 import { NetworkStateAtom } from '@state/network/network-state';
 

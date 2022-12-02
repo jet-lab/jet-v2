@@ -9,7 +9,7 @@ import { NetworkStateAtom } from '@state/network/network-state';
 import { WaitingForNetworkView } from './WaitingForNetwork';
 
 // App view for managing / checking margin accounts
-export function AccountsView(): JSX.Element {
+function AccountsView(): JSX.Element {
   const dictionary = useRecoilValue(Dictionary);
   const networkState = useRecoilValue(NetworkStateAtom);
   const viewOrder = useRecoilValue(AccountsViewOrder);
@@ -38,3 +38,5 @@ export function AccountsView(): JSX.Element {
 
   return accountView();
 }
+
+export default AccountsView;

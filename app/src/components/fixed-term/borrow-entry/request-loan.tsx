@@ -42,9 +42,18 @@ export const RequestLoan = ({ token, decimals, marketAndConfig, marginConfig }: 
   const markets = useRecoilValue(AllFixedMarketsAtom);
   const refreshOrderBooks = useRecoilRefresher_UNSTABLE(AllFixedMarketsOrderBooksAtom);
 
+  const disabled =
+    !marginAccount ||
+    !wallet.publicKey ||
+    !currentPool ||
+    !pools ||
+    basisPoints.lte(new BN(0)) ||
+    amount.lte(new BN(0));
+
   const createBorrowOrder = async (amountParam?: BN, basisPointsParam?: BN) => {
     let signature: string;
     try {
+      if (disabled || !wallet.publicKey) return;
       signature = await requestLoan({
         market: marketAndConfig.market,
         marginAccount,
@@ -67,7 +76,7 @@ export const RequestLoan = ({ token, decimals, marketAndConfig, marginConfig }: 
         getExplorerUrl(signature, cluster, blockExplorer)
       );
       refreshOrderBooks();
-    } catch (e) {
+    } catch (e: any) {
       notify(
         'Borrow Offer Failed',
         `Your borrow offer for ${amount.div(new BN(10 ** decimals))} ${token.name} at ${
@@ -170,10 +179,7 @@ export const RequestLoan = ({ token, decimals, marketAndConfig, marginConfig }: 
           <span>Off</span>
         </div>
       </div>
-      <Button
-        className="submit-button"
-        disabled={!marketAndConfig?.market || basisPoints.lte(new BN(0)) || amount.lte(new BN(0))}
-        onClick={() => createBorrowOrder()}>
+      <Button className="submit-button" disabled={disabled} onClick={() => createBorrowOrder()}>
         Request {marketToString(marketAndConfig.config)} loan
       </Button>
       {isDebug && <Button onClick={createDebugOrders}>Generate 10 random orders</Button>}
