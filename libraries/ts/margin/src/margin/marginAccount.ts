@@ -1721,7 +1721,11 @@ export class MarginAccount {
     return await sendAndConfirm(this.provider, instructions, signers)
   }
 
-  async sendAndConfirmV0(instructions: TransactionInstruction[], lookupTables: PublicKey[], signers?: Signer[]): Promise<string> {
+  async sendAndConfirmV0(
+    instructions: TransactionInstruction[],
+    lookupTables: PublicKey[],
+    signers?: Signer[]
+  ): Promise<string> {
     return await sendAndConfirmV0(this.provider, instructions, lookupTables, signers)
   }
 

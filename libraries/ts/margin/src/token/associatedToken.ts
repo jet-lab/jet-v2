@@ -406,7 +406,7 @@ export class AssociatedToken {
       decimals: rawMint.decimals,
       isInitialized: rawMint.isInitialized,
       freezeAuthority: rawMint.freezeAuthorityOption ? rawMint.freezeAuthority : null,
-      tlvData: Buffer.alloc(0) // TODO
+      tlvData: Buffer.alloc(0)
     }
   }
 

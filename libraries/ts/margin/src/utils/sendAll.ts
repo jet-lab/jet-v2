@@ -75,7 +75,7 @@ export async function sendAndConfirm(
  * @param signers      The signers of the transaction.
  * @param opts         Transaction confirmation options.
  */
- export async function sendAndConfirmV0(
+export async function sendAndConfirmV0(
   provider: AnchorProvider,
   instructions: TransactionInstruction[],
   lookupTables: PublicKey[],
@@ -86,28 +86,30 @@ export async function sendAndConfirm(
     opts = provider.opts
   }
 
-  const tablesResponse = await Promise.all(lookupTables.map(address => provider.connection.getAddressLookupTable(address).then(res => res.value)));
-  const tables: AddressLookupTableAccount[] = [];
+  const tablesResponse = await Promise.all(
+    lookupTables.map(address => provider.connection.getAddressLookupTable(address).then(res => res.value))
+  )
+  const tables: AddressLookupTableAccount[] = []
   for (const table of tablesResponse) {
     if (table) {
-      tables.push(table);
+      tables.push(table)
     }
   }
 
-  const { blockhash, lastValidBlockHeight } = await provider.connection.getLatestBlockhash(opts.preflightCommitment)
+  const { blockhash } = await provider.connection.getLatestBlockhash(opts.preflightCommitment)
   const message = new TransactionMessage({
     payerKey: provider.wallet.publicKey,
     recentBlockhash: blockhash,
     instructions
-  }).compileToV0Message(tables);
+  }).compileToV0Message(tables)
 
-  const transaction = new VersionedTransaction(message);
+  const transaction = new VersionedTransaction(message)
 
   if (signers?.length) {
     transaction.sign(signers)
   }
   // This works, but ideally we shouldn't have to cast the v0tx
-  const signedTransaction = await provider.wallet.signTransaction(transaction as any);
+  const signedTransaction = await provider.wallet.signTransaction(transaction as any)
   const rawTx = signedTransaction.serialize()
 
   try {
