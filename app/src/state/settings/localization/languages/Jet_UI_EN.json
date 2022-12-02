@@ -408,6 +408,7 @@
     "loanToValue": "Loan to Value",
     "utilizationRate": "Utilization Rate",
     "collateralWeight": "Collateral Weight",
+    "requiredCollateralFactor": "Required Collateral Factor",
     "poolDetail": {
       "title": "Pool Detail",
       "poolSize": "Pool Size",
