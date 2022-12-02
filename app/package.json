@@ -2,6 +2,10 @@
   "private": true,
   "name": "app",
   "version": "0.1.0",
+  "sideEffects": [
+    "*.less",
+    "*.css"
+  ],
   "scripts": {
     "build": "webpack --mode production && cp -r public/* build/",
     "clean": "rm -rf ./build",

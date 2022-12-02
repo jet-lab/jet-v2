@@ -1,5 +1,5 @@
 const path = require('path');
-const { ProvidePlugin, DefinePlugin, debug } = require('webpack');
+const { ProvidePlugin, DefinePlugin } = require('webpack');
 const dotenv = require('dotenv');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
