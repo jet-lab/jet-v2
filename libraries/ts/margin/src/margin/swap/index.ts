@@ -15,8 +15,6 @@ import {
 import * as Layout from "../../utils"
 import { u64 } from "../../utils"
 
-export * from "./marginSwap"
-
 export const TokenSwapLayout = BufferLayout.struct<any>([
   BufferLayout.u8("version"),
   BufferLayout.u8("isInitialized"),

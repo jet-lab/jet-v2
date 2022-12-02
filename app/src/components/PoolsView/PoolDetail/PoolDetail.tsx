@@ -1,5 +1,5 @@
 import { useRecoilState, useRecoilValue } from 'recoil';
-import { definitions, Dictionary } from '@state/settings/localization/localization';
+import { Dictionary } from '@state/settings/localization/localization';
 import { PoolsRowOrder } from '@state/views/views';
 import { Pools, CurrentPool } from '@state/pools/pools';
 import { useCurrencyFormatting } from '@utils/currency';
@@ -10,7 +10,6 @@ import { AirdropButton } from './AirdropButton';
 import { ReorderArrows } from '@components/misc/ReorderArrows';
 import { Info } from '@components/misc/Info';
 import { Skeleton, Typography } from 'antd';
-import reactStringReplace from 'react-string-replace';
 
 // Component that shows extra details on the currentPool
 export function PoolDetail(): JSX.Element {
@@ -51,7 +50,6 @@ export function PoolDetail(): JSX.Element {
 
     return render;
   }
-
 
   // Renders the pool size for the current pool
   function renderPoolSize() {
