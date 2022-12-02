@@ -137,6 +137,9 @@ jobs:
             !target/idl
             !target/deploy
 
+      - name: Install wasm-pack
+        run: cargo install wasm-pack
+
       - name: E2E
         run: |
           chmod -R 777 /root
