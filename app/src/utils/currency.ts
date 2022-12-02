@@ -46,9 +46,9 @@ export function useCurrencyFormatting() {
   // Abbreviate large currency amounts
   function currencyAbbrev(
     total: number,
+    decimals: number,
     fiatValues?: boolean,
     price?: number,
-    decimals: number = 6,
     precision?: boolean,
     accounting?: boolean,
     aggressiveness: 'billions' | 'millions' | 'thousands' = 'billions'

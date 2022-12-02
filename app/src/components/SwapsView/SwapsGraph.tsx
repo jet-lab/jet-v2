@@ -145,9 +145,15 @@ export function SwapsGraph(): JSX.Element {
             swapFees,
             swapPool?.pool.amp ?? 1
           );
-          const swapInString = currencyAbbrev((xAmount * expoSource) / expoSource);
-          const swapOutString = currencyAbbrev(((outputAmount?.tokens ?? 0.0) * expoDestination) / expoDestination);
-          const priceString = currencyAbbrev((series[seriesIndex][dataPointIndex] * 10000) / 10000);
+          const swapInString = currencyAbbrev((xAmount * expoSource) / expoSource, currentPool?.precision ?? 2);
+          const swapOutString = currencyAbbrev(
+            ((outputAmount?.tokens ?? 0.0) * expoDestination) / expoDestination,
+            currentPool?.precision ?? 2
+          );
+          const priceString = currencyAbbrev(
+            (series[seriesIndex][dataPointIndex] * 10000) / 10000,
+            currentPool?.precision ?? 2
+          );
           return (
             '<div class="swaps-graph-tooltip">' +
             `<div class="flex align-center justify-between"><p>${dictionary.common.sell}</p> <p>${swapInString} ${
@@ -211,7 +217,7 @@ export function SwapsGraph(): JSX.Element {
         labels: {
           padding: 0,
           formatter: (value: number) => {
-            return currencyAbbrev(value, false, currentPool?.precision ?? 2);
+            return currencyAbbrev(value, currentPool?.precision ?? 2, false);
           }
         },
         tooltip: {
@@ -234,7 +240,7 @@ export function SwapsGraph(): JSX.Element {
         labels: {
           padding: 20,
           formatter: (value: number) => {
-            return currencyAbbrev(value, false, outputToken?.precision ?? 2);
+            return currencyAbbrev(value, outputToken?.precision ?? 2, false);
           }
         },
         axisTicks: {

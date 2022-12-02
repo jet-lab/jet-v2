@@ -228,7 +228,7 @@ export const LineChart = ({
             hideAxisLine={true}
             top={yMax}
             tickFormat={val =>
-              formatting.currencyAbbrev(val.valueOf(), true, undefined, 1, undefined, undefined, 'thousands')
+              formatting.currencyAbbrev(val.valueOf(), 0, true, undefined, undefined, undefined, 'thousands')
             }
             tickStroke="rgba(255,255,255,0.6)"
             scale={xScale}

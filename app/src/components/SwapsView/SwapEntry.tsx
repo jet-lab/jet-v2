@@ -191,7 +191,7 @@ export function SwapEntry(): JSX.Element {
         <div className="flex-centered">
           <ArrowRight />
           <Paragraph type={getTokenStyleType(affectedBalance)}>
-            {currencyAbbrev(affectedBalance, false, undefined, precision)}
+            {currencyAbbrev(affectedBalance, precision, false, undefined)}
           </Paragraph>
         </div>
       );
@@ -483,7 +483,7 @@ export function SwapEntry(): JSX.Element {
             <Paragraph type="secondary">{`${currentPool?.symbol ?? '—'} ${dictionary.common.balance}`}</Paragraph>
             <div className="flex-centered">
               <Paragraph type={getTokenStyleType(overallInputBalance)}>
-                {currencyAbbrev(overallInputBalance, false, undefined, poolPrecision)}
+                {currencyAbbrev(overallInputBalance, poolPrecision, false, undefined)}
               </Paragraph>
               {renderAffectedBalance('input')}
             </div>
@@ -492,7 +492,7 @@ export function SwapEntry(): JSX.Element {
             <Paragraph type="secondary">{`${outputToken?.symbol ?? '—'} ${dictionary.common.balance}`}</Paragraph>
             <div className="flex-centered">
               <Paragraph type={getTokenStyleType(overallOutputBalance)}>
-                {currencyAbbrev(overallOutputBalance, false, undefined, outputPrecision)}
+                {currencyAbbrev(overallOutputBalance, outputPrecision, false, undefined)}
               </Paragraph>
               {renderAffectedBalance('output')}
             </div>

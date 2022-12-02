@@ -124,9 +124,9 @@ export function FullAccountBalance(): JSX.Element {
     if (accounts && balance?.tokenSymbol && pools) {
       const value = currencyAbbrev(
         balance.depositBalance.tokens,
+        pools.tokenPools[balance.tokenSymbol]?.precision ?? 2,
         false,
         undefined,
-        pools.tokenPools[balance.tokenSymbol]?.precision ?? 2,
         true
       );
       render = (
@@ -146,9 +146,10 @@ export function FullAccountBalance(): JSX.Element {
     if (accounts && balance?.tokenSymbol && pools) {
       const value = currencyAbbrev(
         balance.loanBalance.tokens,
+        pools.tokenPools[balance.tokenSymbol]?.precision ?? 2,
         false,
         undefined,
-        pools.tokenPools[balance.tokenSymbol]?.precision ?? 2,
+
         true
       );
       render = (
@@ -259,8 +260,8 @@ export function FullAccountBalance(): JSX.Element {
           const netBalance = poolPosition.depositBalance.sub(poolPosition.loanBalance);
           const fiatValue = currencyAbbrev(
             poolPosition.depositValue - poolPosition.loanValue,
+            2,
             true,
-            undefined,
             undefined,
             true,
             true
