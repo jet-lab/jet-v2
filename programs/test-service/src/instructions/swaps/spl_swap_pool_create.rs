@@ -27,6 +27,7 @@ use crate::state::{SplSwapInfo, TokenInfo};
 
 #[derive(AnchorDeserialize, AnchorSerialize, Debug, Clone, Eq, PartialEq)]
 pub struct SplSwapPoolCreateParams {
+    pub nonce: u8,
     pub liquidity_level: u8,
     pub price_threshold: u16,
 }
@@ -198,7 +199,7 @@ pub fn spl_swap_pool_create_handler(
         &ctx.accounts.pool_mint.key(),
         &ctx.accounts.pool_fees.key(),
         &ctx.accounts.pool_fees.key(),
-        bump,
+        params.nonce,
         spl_token_swap::curve::fees::Fees {
             // The fee parameters are taken from one of spl-token-swap tests
             trade_fee_numerator: 1,
