@@ -86,8 +86,7 @@ export function SwapEntry(): JSX.Element {
     swapPoolTokenAmounts?.destination,
     swapPool?.pool.swapType,
     swapFees,
-    slippage,
-    0
+    slippage
   );
   // Exponents
   const expoSource = swapPoolTokenAmounts ? Math.pow(10, swapPoolTokenAmounts.source.decimals) : 0;
@@ -95,15 +94,16 @@ export function SwapEntry(): JSX.Element {
   // Get the swap pool account balances
   const balanceSourceToken = swapPoolTokenAmounts ? swapPoolTokenAmounts.source.lamports.toNumber() : 0;
   const balanceDestinationToken = swapPoolTokenAmounts ? swapPoolTokenAmounts.destination.lamports.toNumber() : 0;
-  const poolPrice = !swapPool
-    ? 0.0
-    : swapPool.pool.swapType === 'stable'
-    ? !swapPool.inverted
-      ? currentPool.tokenPrice / outputToken.tokenPrice
-      : outputToken.tokenPrice / currentPool.tokenPrice
-    : !swapPool.inverted
-    ? balanceDestinationToken / expoDestination / (balanceSourceToken / expoSource)
-    : balanceSourceToken / expoSource / (balanceDestinationToken / expoDestination);
+  const poolPrice =
+    !swapPool || !currentPool || !outputToken
+      ? 0.0
+      : swapPool.pool.swapType === 'stable'
+      ? !swapPool.inverted
+        ? currentPool.tokenPrice / outputToken.tokenPrice
+        : outputToken.tokenPrice / currentPool.tokenPrice
+      : !swapPool.inverted
+      ? balanceDestinationToken / expoDestination / (balanceSourceToken / expoSource)
+      : balanceSourceToken / expoSource / (balanceDestinationToken / expoDestination);
   const swapPrice =
     !swapPool || !minOutAmount || minOutAmount.isZero() || !tokenInputAmount || tokenInputAmount.isZero()
       ? 0.0
@@ -136,8 +136,7 @@ export function SwapEntry(): JSX.Element {
     swapPoolTokenAmounts?.source,
     swapPoolTokenAmounts?.destination,
     swapPool?.pool.swapType,
-    swapFees,
-    swapPool?.pool.amp ?? 1
+    swapFees
   );
   const errorMessage = useTokenInputErrorMessage(undefined, projectedRiskIndicator);
   const [sendingTransaction, setSendingTransaction] = useRecoilState(SendingTransaction);

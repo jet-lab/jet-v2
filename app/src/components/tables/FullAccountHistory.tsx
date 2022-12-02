@@ -10,7 +10,7 @@ import { Accounts, CurrentAccountHistory, AccountNames, AccountHistoryLoaded } f
 import { ActionRefresh } from '@state/actions/actions';
 import { createDummyArray, getExplorerUrl, openLinkInBrowser } from '@utils/ui';
 import { localDayMonthYear, unixToLocalTime, unixToUtcTime, utcDayMonthYear } from '@utils/time';
-import { Tabs, Table, Skeleton, Typography, Input, Dropdown, Menu } from 'antd';
+import { Tabs, Table, Skeleton, Typography, Input, Dropdown } from 'antd';
 import { ReorderArrows } from '@components/misc/ReorderArrows';
 import { ConnectionFeedback } from '@components/misc/ConnectionFeedback/ConnectionFeedback';
 import { DownloadOutlined, SearchOutlined } from '@ant-design/icons';
@@ -121,25 +121,25 @@ export function FullAccountHistory(): JSX.Element {
       key: 'time',
       align: 'left' as any,
       width: 200,
-      render: (value: any, transaction: AccountTransaction) => renderDateColumn(transaction)
+      render: (_: string, transaction: AccountTransaction) => renderDateColumn(transaction)
     },
     {
       title: dictionary.accountsView.activity,
       key: 'action',
       align: 'center' as any,
-      render: (value: any, transaction: AccountTransaction) => renderActivityColumn(transaction)
+      render: (_: string, transaction: AccountTransaction) => renderActivityColumn(transaction)
     },
     {
       title: dictionary.common.token,
       key: 'token',
       align: 'center' as any,
-      render: (value: any, transaction: AccountTransaction) => renderTokenColumn(transaction)
+      render: (_: string, transaction: AccountTransaction) => renderTokenColumn(transaction)
     },
     {
       title: dictionary.common.amount,
       key: 'amount',
       align: 'right' as any,
-      render: (value: any, transaction: AccountTransaction) => renderAmountColumn(transaction)
+      render: (_: string, transaction: AccountTransaction) => renderAmountColumn(transaction)
     }
   ];
 
@@ -221,7 +221,7 @@ export function FullAccountHistory(): JSX.Element {
                 pagination={{ pageSize }}
                 className={accounts && filteredTxHistory?.length ? '' : 'no-row-interaction'}
                 rowKey={row => `${row.tokenSymbol}-${Math.random()}`}
-                rowClassName={(transaction, index) => ((index + 1) % 2 === 0 ? 'dark-bg' : '')}
+                rowClassName={(_transaction, index) => ((index + 1) % 2 === 0 ? 'dark-bg' : '')}
                 onRow={(transaction: AccountTransaction) => ({
                   onClick: () => openLinkInBrowser(getExplorerUrl(transaction.signature, cluster, blockExplorer))
                 })}

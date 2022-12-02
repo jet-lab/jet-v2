@@ -81,7 +81,7 @@ export function useMarginActions() {
   }
 
   // Create Account
-  async function createAccount(accountName?: string): Promise<[string | undefined, ActionResponse]> {
+  async function createAccount(): Promise<[string | undefined, ActionResponse]> {
     if (!programs || !pools || !currentPool || !walletTokens || !wallet.publicKey) {
       console.error('Pools not loaded');
       throw new Error();

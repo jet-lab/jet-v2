@@ -66,12 +66,12 @@ export const RpcNodes = atom({
         const node = rpcNodes[nodeOption as NodeOption];
         getPing(node.devnet)
           .then((ping: number) => (node.devnetPing = ping))
-          .catch(e => {
+          .catch(() => {
             throw new Error(`Error getting ping, ${JSON.stringify(node.devnet)}`);
           });
         getPing(node.mainnetBeta)
           .then((ping: number) => (node.mainnetBetaPing = ping))
-          .catch(e => {
+          .catch(() => {
             throw new Error(`Error getting ping, ${JSON.stringify(node.mainnetBeta)}`);
           });
       }

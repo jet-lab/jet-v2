@@ -99,6 +99,7 @@ export function usePoolFromName(poolName: string | undefined): Pool | undefined 
     if (pools && poolName) {
       return pools.tokenPools[poolName];
     }
+    return undefined;
   }, [poolName, pools]);
 }
 

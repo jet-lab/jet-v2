@@ -120,7 +120,7 @@ export function SwapsGraph(): JSX.Element {
           enabled: false
         },
         events: {
-          click: function (event: any, chartContext?: any, config?: any) {
+          click: function (_event: Event, _ctx?: any, config?: any) {
             try {
               const tokenAmount = new TokenAmount(
                 new BN(config.config.series[config.seriesIndex].data[config.dataPointIndex][0] * expoSource),

@@ -54,6 +54,7 @@ export const Settle = () => {
   }, [markets.length, marginAccount]);
 
   const settleNow = async () => {
+    if (!marginAccount) return;
     let tx: string;
     try {
       tx = await settle({ markets: markets.map(m => m.market), marginAccount, provider });
@@ -69,7 +70,7 @@ export const Settle = () => {
         'Settle Failed',
         `There was an issue settling your funds, please try again.`,
         'success',
-        getExplorerUrl(tx, cluster, blockExplorer)
+        getExplorerUrl('failed_before_tx_was_sent', cluster, blockExplorer)
       );
     }
   };

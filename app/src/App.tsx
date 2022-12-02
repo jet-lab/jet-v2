@@ -48,9 +48,30 @@ export const App = (): JSX.Element => {
         <WalletProvider wallets={wallets} autoConnect localStorageKey="jetAppWallet">
           <Navbar />
           <Routes>
-            <Route path="/" element={<PoolsView />} />
-            <Route path="/swaps" element={<SwapsView />} />
-            <Route path="/accounts" element={<AccountsView />} />
+            <Route
+              path="/"
+              element={
+                <Suspense>
+                  <PoolsView />
+                </Suspense>
+              }
+            />
+            <Route
+              path="/swaps"
+              element={
+                <Suspense>
+                  <SwapsView />
+                </Suspense>
+              }
+            />
+            <Route
+              path="/accounts"
+              element={
+                <Suspense>
+                  <AccountsView />
+                </Suspense>
+              }
+            />
 
             <Route
               path="/fixed-borrow"

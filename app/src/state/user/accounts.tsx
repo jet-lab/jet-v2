@@ -159,24 +159,6 @@ export function useAccountsSyncer() {
       setAccountsLoading(false);
     }
 
-    // TODO: add account names back in
-    // Fetch account names for owner address
-    // async function getAccountNames(owner: PublicKey): Promise<Record<string, string>> {
-    //   let accountNames = {};
-    //   try {
-    //     const resp = await axios.get(
-    //       ``
-    //     );
-    //     if (resp.status !== 404) {
-    //       accountNames = resp.data;
-    //     }
-    //   } catch (err) {
-    //     // Ignore this error
-    //   }
-
-    //   return accountNames;
-    // }
-
     // Fetch accounts on an interval
     getAccounts();
     const accountsInterval = setInterval(getAccounts, ACTION_REFRESH_INTERVAL);
@@ -187,8 +169,8 @@ export function useAccountsSyncer() {
   // Update current account history
   useEffect(() => {
     async function getAccountHistory() {
-      if (!pools || !currentAccount) {
-        return;
+      if (!pools || !currentAccount || !marginConfig) {
+        return { transactions: [] };
       }
 
       const mints: any = {};
