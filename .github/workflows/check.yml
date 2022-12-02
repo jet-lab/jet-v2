@@ -10,7 +10,7 @@ jobs:
   hosted-tests-localnet-batch1:
     runs-on: ubuntu-latest
     container:
-      image: jetprotocol/builder:rust-1.65.0-node-18.12.1-solana-1.13.5-anchor-0.25.0-1
+      image: jetprotocol/builder:rust-1.65.0-node-18.12.1-solana-1.13.6-anchor-0.25.0-1
     env:
       HOME: /home/tools
       BATCH: batch1
@@ -36,7 +36,7 @@ jobs:
   hosted-tests-localnet-batch2:
     runs-on: ubuntu-latest
     container:
-      image: jetprotocol/builder:rust-1.65.0-node-18.12.1-solana-1.13.5-anchor-0.25.0-1
+      image: jetprotocol/builder:rust-1.65.0-node-18.12.1-solana-1.13.6-anchor-0.25.0-1
     env:
       HOME: /home/tools
       BATCH: batch2
@@ -62,7 +62,7 @@ jobs:
   cargo-lint:
     runs-on: ubuntu-latest
     container:
-      image: jetprotocol/builder:rust-1.65.0-node-18.12.1-solana-1.13.5-anchor-0.25.0-1
+      image: jetprotocol/builder:rust-1.65.0-node-18.12.1-solana-1.13.6-anchor-0.25.0-1
     env:
       HOME: /home/tools
     steps:
@@ -85,7 +85,7 @@ jobs:
   cargo-test:
     runs-on: ubuntu-latest
     container:
-      image: jetprotocol/builder:rust-1.65.0-node-18.12.1-solana-1.13.5-anchor-0.25.0-1
+      image: jetprotocol/builder:rust-1.65.0-node-18.12.1-solana-1.13.6-anchor-0.25.0-1
     env:
       HOME: /home/tools
       CODECOV: true
@@ -113,7 +113,7 @@ jobs:
   e2e:
     runs-on: ubuntu-latest
     container:
-      image: jetprotocol/builder:rust-1.65.0-node-18.12.1-solana-1.13.5-anchor-0.25.0-1
+      image: jetprotocol/builder:rust-1.65.0-node-18.12.1-solana-1.13.6-anchor-0.25.0-1
     env:
       HOME: /home/tools
       SOLANA_MAINNET_RPC: ${{ secrets.SOLANA_MAINNET_RPC }}
@@ -136,9 +136,6 @@ jobs:
             target/
             !target/idl
             !target/deploy
-
-      - name: Install wasm-pack
-        run: cargo install wasm-pack
 
       - name: E2E
         run: |
