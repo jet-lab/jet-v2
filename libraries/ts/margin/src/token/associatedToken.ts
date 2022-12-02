@@ -1,5 +1,4 @@
 import { BN, Address, translateAddress, AnchorProvider } from "@project-serum/anchor"
-import { TOKEN_PROGRAM_ID } from "@project-serum/serum/lib/token-instructions"
 import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
   NATIVE_MINT,
@@ -20,7 +19,8 @@ import {
   createInitializeAccountInstruction,
   getMinimumBalanceForRentExemptAccount,
   TokenInvalidMintError,
-  createTransferInstruction
+  createTransferInstruction,
+  TOKEN_PROGRAM_ID
 } from "@solana/spl-token"
 import { Connection, PublicKey, TransactionInstruction, SystemProgram, AccountInfo } from "@solana/web3.js"
 import { chunks } from "../utils"
