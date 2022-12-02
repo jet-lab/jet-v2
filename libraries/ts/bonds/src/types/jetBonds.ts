@@ -274,6 +274,14 @@ export type JetBonds = {
           ]
         },
         {
+          "name": "feeDestination",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "The account where fees are allowed to be withdrawn"
+          ]
+        },
+        {
           "name": "payer",
           "isMut": true,
           "isSigner": true,
@@ -444,7 +452,7 @@ export type JetBonds = {
         },
         {
           "name": "offset",
-          "type": "u64" // usize in the program
+          "type": "u64" // should be "u64"
         }
       ]
     },
@@ -708,6 +716,22 @@ export type JetBonds = {
           "isSigner": false,
           "docs": [
             "Token mint used by the margin program to track the debt that must be collateralized"
+          ]
+        },
+        {
+          "name": "underlyingTokenVault",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The market token vault"
+          ]
+        },
+        {
+          "name": "underlyingSettlement",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The market token vault"
           ]
         },
         {
@@ -1188,7 +1212,7 @@ export type JetBonds = {
       "accounts": [
         {
           "name": "borrowerAccount",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false,
           "docs": [
             "The account tracking information related to this particular user"
@@ -1307,22 +1331,22 @@ export type JetBonds = {
         },
         {
           "name": "underlyingTokenVault",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false
         },
         {
           "name": "bondTicketMint",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false
         },
         {
           "name": "underlyingSettlement",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false
         },
         {
           "name": "ticketSettlement",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false
         }
       ],
@@ -1596,7 +1620,7 @@ export type JetBonds = {
       "accounts": [
         {
           "name": "bondManager",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false,
           "docs": [
             "The `BondManager` account tracks global information related to this particular bond market"
@@ -1999,7 +2023,7 @@ export type JetBonds = {
   ],
   "accounts": [
     {
-      "name": "BondManager",
+      "name": "BondManager", // should be capitalized
       "docs": [
         "The `BondManager` contains all the information necessary to run the bond market",
         "",
@@ -2103,6 +2127,13 @@ export type JetBonds = {
             "type": "publicKey"
           },
           {
+            "name": "feeDestination",
+            "docs": [
+              "where fees can be withdrawn to"
+            ],
+            "type": "publicKey"
+          },
+          {
             "name": "seed",
             "docs": [
               "The user-defined part of the seed that generated this bond manager's PDA"
@@ -2167,6 +2198,20 @@ export type JetBonds = {
             "type": "i64"
           },
           {
+            "name": "originationFee",
+            "docs": [
+              "assessed on borrows. scaled by origination_fee::FEE_UNIT"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "collectedFees",
+            "docs": [
+              "amount of fees currently available to be withdrawn by market owner"
+            ],
+            "type": "u64"
+          },
+          {
             "name": "nonce",
             "docs": [
               "Used to generate unique order tags"
@@ -2177,7 +2222,7 @@ export type JetBonds = {
       }
     },
     {
-      "name": "CrankAuthorization",
+      "name": "CrankAuthorization", // should be capitalized
       "docs": [
         "This authorizes a crank to act on any orderbook within the airspace"
       ],
@@ -2196,7 +2241,7 @@ export type JetBonds = {
       }
     },
     {
-      "name": "MarginUser",
+      "name": "MarginUser", // should be capitalized
       "docs": [
         "An acocunt used to track margin users of the market"
       ],
@@ -2242,10 +2287,18 @@ export type JetBonds = {
           },
           {
             "name": "underlyingSettlement",
+            "docs": [
+              "The `settle` instruction is permissionless, therefore the user must specify upon margin account creation",
+              "the address to send owed tokens"
+            ],
             "type": "publicKey"
           },
           {
             "name": "ticketSettlement",
+            "docs": [
+              "The `settle` instruction is permissionless, therefore the user must specify upon margin account creation",
+              "the address to send owed tickets"
+            ],
             "type": "publicKey"
           },
           {
@@ -2271,13 +2324,13 @@ export type JetBonds = {
       }
     },
     {
-      "name": "Obligation",
+      "name": "Obligation", // should be capitalized
       "type": {
         "kind": "struct",
         "fields": [
           {
             "name": "sequenceNumber",
-            "type": "u64"
+            "type": "u64" // should be "u64"
           },
           {
             "name": "borrowerAccount",
@@ -2299,7 +2352,7 @@ export type JetBonds = {
               "The `OrderTag` associated with the creation of this `Obligation`"
             ],
             "type": {
-              "array": ["u8", 16]
+              "array": ["u8", 16] // should be ["u8", 16] 
             }
           },
           {
@@ -2307,7 +2360,7 @@ export type JetBonds = {
             "docs": [
               "The time that the obligation must be repaid"
             ],
-            "type": "u64"
+            "type": "u64" // should be "u64"
           },
           {
             "name": "balance",
@@ -2321,13 +2374,13 @@ export type JetBonds = {
             "docs": [
               "Any boolean flags for this data type compressed to a single byte"
             ],
-            "type": "u8"
+            "type": "u8" // should be "u8"
           }
         ]
       }
     },
     {
-      "name": "EventAdapterMetadata",
+      "name": "EventAdapterMetadata", // should be capitalized
       "type": {
         "kind": "struct",
         "fields": [
@@ -2356,7 +2409,7 @@ export type JetBonds = {
       }
     },
     {
-      "name": "ClaimTicket",
+      "name": "ClaimTicket",  // should be capitalized
       "docs": [
         "A `ClaimTicket` represents a claim of tickets that have been staked with the program",
         "This account is generated by the `StakeBondTickets` program instruction"
@@ -2397,7 +2450,7 @@ export type JetBonds = {
       }
     },
     {
-      "name": "SplitTicket",
+      "name": "SplitTicket", // should be capitalized
       "docs": [
         "A split ticket represents a claim of underlying tokens as the result of a lending action.",
         "",
@@ -2429,7 +2482,7 @@ export type JetBonds = {
               "The `OrderTag` associated with the creation of this struct"
             ],
             "type": {
-              "array": ["u8", 16]
+              "array": ["u8", 16] // should be ["u8", 16]
             }
           },
           {
@@ -2507,6 +2560,13 @@ export type JetBonds = {
               "Length of time before a claim is marked as mature, in seconds"
             ],
             "type": "i64"
+          },
+          {
+            "name": "originationFee",
+            "docs": [
+              "assessed on borrows. scaled by origination_fee::FEE_UNIT"
+            ],
+            "type": "u64"
           }
         ]
       }
@@ -2553,7 +2613,7 @@ export type JetBonds = {
             "docs": [
               "The maturation timestamp of the next obligation that is unpaid"
             ],
-            "type": "u64"
+            "type": "u64" // should be "u64"
           },
           {
             "name": "pending",
@@ -2810,6 +2870,36 @@ export type JetBonds = {
       }
     },
     {
+      "name": "PreparedEvent",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Fill",
+            "fields": [
+              {
+                "defined": "FillAccounts<'info>"
+              },
+              {
+                "defined": "FillInfo"
+              }
+            ]
+          },
+          {
+            "name": "Out",
+            "fields": [
+              {
+                "defined": "OutAccounts<'info>"
+              },
+              {
+                "defined": "OutInfo"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
       "name": "EventTag",
       "type": {
         "kind": "enum",
@@ -3056,7 +3146,7 @@ export type JetBonds = {
         {
           "name": "orderSummary",
           "type": {
-            "array": ["u8", 48]
+            "array": ["u8", 48] // should be ["u8", 48]
           },
           "index": false
         },
@@ -3091,7 +3181,7 @@ export type JetBonds = {
           "index": false
         },
         {
-          "name": "borrowerAccount",
+          "name": "authority",
           "type": "publicKey",
           "index": false
         },
@@ -3129,7 +3219,7 @@ export type JetBonds = {
         },
         {
           "name": "flags",
-          "type": "u8",
+          "type": "u8", // should be "u8"
           "index": false
         }
       ]
@@ -3363,183 +3453,183 @@ export type JetBonds = {
     },
     {
       "code": 6009,
-      "name": "InvalidEvent",
-      "msg": "the wrong event type was unwrapped\\nthis condition should be impossible, and does not result from invalid input"
-    },
-    {
-      "code": 6010,
       "name": "InvalidOrderPrice",
       "msg": "order price is prohibited"
     },
     {
-      "code": 6011,
+      "code": 6010,
       "name": "InvokeCreateAccount",
       "msg": "failed to invoke account creation"
     },
     {
-      "code": 6012,
+      "code": 6011,
       "name": "IoError",
       "msg": "failed to properly serialize or deserialize a data structure"
     },
     {
-      "code": 6013,
+      "code": 6012,
       "name": "MarketStateNotProgramOwned",
       "msg": "this market state account is not owned by the current program"
     },
     {
-      "code": 6014,
+      "code": 6013,
       "name": "MissingEventAdapter",
       "msg": "tried to access a missing adapter account"
     },
     {
-      "code": 6015,
+      "code": 6014,
       "name": "MissingSplitTicket",
       "msg": "tried to access a missing split ticket account"
     },
     {
-      "code": 6016,
+      "code": 6015,
       "name": "NoEvents",
       "msg": "consume_events instruction failed to consume a single event"
     },
     {
-      "code": 6017,
+      "code": 6016,
       "name": "NoMoreAccounts",
       "msg": "expected additional remaining accounts, but there were none"
     },
     {
-      "code": 6018,
+      "code": 6017,
       "name": "ObligationHasWrongSequenceNumber",
       "msg": "expected an obligation with a different sequence number"
     },
     {
-      "code": 6019,
+      "code": 6018,
       "name": "OracleError",
       "msg": "there was a problem loading the price oracle"
     },
     {
-      "code": 6020,
+      "code": 6019,
       "name": "OrderNotFound",
       "msg": "id was not found in the user's open orders"
     },
     {
-      "code": 6021,
+      "code": 6020,
       "name": "OrderbookPaused",
       "msg": "Orderbook is not taking orders"
     },
     {
-      "code": 6022,
+      "code": 6021,
       "name": "OrderRejected",
       "msg": "aaob did not match or post the order. either posting is disabled or the order was too small"
     },
     {
-      "code": 6023,
+      "code": 6022,
       "name": "PriceMissing",
       "msg": "price could not be accessed from oracle"
     },
     {
-      "code": 6024,
+      "code": 6023,
       "name": "TicketNotFromManager",
       "msg": "claim ticket is not from this manager"
     },
     {
-      "code": 6025,
+      "code": 6024,
       "name": "TicketsPaused",
       "msg": "tickets are paused"
     },
     {
-      "code": 6026,
+      "code": 6025,
       "name": "UnauthorizedCaller",
       "msg": "this signer is not authorized to place a permissioned order"
     },
     {
-      "code": 6027,
+      "code": 6026,
       "name": "UserDoesNotOwnAccount",
       "msg": "this user does not own the user account"
     },
     {
-      "code": 6028,
+      "code": 6027,
       "name": "UserDoesNotOwnAdapter",
       "msg": "this adapter does not belong to the user"
     },
     {
-      "code": 6029,
+      "code": 6028,
       "name": "UserNotInMarket",
       "msg": "this user account is not associated with this bond market"
     },
     {
-      "code": 6030,
+      "code": 6029,
       "name": "WrongAdapter",
       "msg": "the wrong adapter account was passed to this instruction"
     },
     {
-      "code": 6031,
+      "code": 6030,
       "name": "WrongAsks",
       "msg": "asks account does not belong to this market"
     },
     {
-      "code": 6032,
+      "code": 6031,
       "name": "WrongAirspace",
       "msg": "the market is configured for a different airspace"
     },
     {
-      "code": 6033,
+      "code": 6032,
       "name": "WrongAirspaceAuthorization",
       "msg": "the signer is not authorized to perform this action in the current airspace"
     },
     {
-      "code": 6034,
+      "code": 6033,
       "name": "WrongBids",
       "msg": "bids account does not belong to this market"
     },
     {
-      "code": 6035,
+      "code": 6034,
       "name": "WrongBondManager",
       "msg": "adapter does not belong to given bond manager"
     },
     {
-      "code": 6036,
+      "code": 6035,
       "name": "WrongCrankAuthority",
       "msg": "wrong authority for this crank instruction"
     },
     {
-      "code": 6037,
+      "code": 6036,
       "name": "WrongEventQueue",
       "msg": "event queue account does not belong to this market"
     },
     {
-      "code": 6038,
+      "code": 6037,
       "name": "WrongMarketState",
       "msg": "this market state is not associated with this market"
     },
     {
-      "code": 6039,
+      "code": 6038,
       "name": "WrongTicketManager",
       "msg": "wrong TicketManager account provided"
     },
     {
-      "code": 6040,
+      "code": 6039,
       "name": "DoesNotOwnMarket",
       "msg": "this market owner does not own this market"
     },
     {
-      "code": 6041,
+      "code": 6040,
       "name": "WrongClaimAccount",
       "msg": "the wrong account was provided for the token account that represents a user's claims"
     },
     {
-      "code": 6042,
+      "code": 6041,
       "name": "WrongCollateralAccount",
       "msg": "the wrong account was provided for the token account that represents a user's collateral"
     },
     {
-      "code": 6043,
+      "code": 6042,
       "name": "WrongClaimMint",
       "msg": "the wrong account was provided for the claims token mint"
     },
     {
-      "code": 6044,
+      "code": 6043,
       "name": "WrongCollateralMint",
       "msg": "the wrong account was provided for the collateral token mint"
+    },
+    {
+      "code": 6044,
+      "name": "WrongFeeDestination",
+      "msg": "wrong fee destination"
     },
     {
       "code": 6045,
@@ -3875,6 +3965,14 @@ export const IDL: JetBonds = {
           ]
         },
         {
+          "name": "feeDestination",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "The account where fees are allowed to be withdrawn"
+          ]
+        },
+        {
           "name": "payer",
           "isMut": true,
           "isSigner": true,
@@ -4045,7 +4143,7 @@ export const IDL: JetBonds = {
         },
         {
           "name": "offset",
-          "type": "u64"
+          "type": "u64" // should be "u64"
         }
       ]
     },
@@ -4309,6 +4407,22 @@ export const IDL: JetBonds = {
           "isSigner": false,
           "docs": [
             "Token mint used by the margin program to track the debt that must be collateralized"
+          ]
+        },
+        {
+          "name": "underlyingTokenVault",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The market token vault"
+          ]
+        },
+        {
+          "name": "underlyingSettlement",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The market token vault"
           ]
         },
         {
@@ -4789,7 +4903,7 @@ export const IDL: JetBonds = {
       "accounts": [
         {
           "name": "borrowerAccount",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false,
           "docs": [
             "The account tracking information related to this particular user"
@@ -4908,22 +5022,22 @@ export const IDL: JetBonds = {
         },
         {
           "name": "underlyingTokenVault",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false
         },
         {
           "name": "bondTicketMint",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false
         },
         {
           "name": "underlyingSettlement",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false
         },
         {
           "name": "ticketSettlement",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false
         }
       ],
@@ -5197,7 +5311,7 @@ export const IDL: JetBonds = {
       "accounts": [
         {
           "name": "bondManager",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false,
           "docs": [
             "The `BondManager` account tracks global information related to this particular bond market"
@@ -5600,7 +5714,7 @@ export const IDL: JetBonds = {
   ],
   "accounts": [
     {
-      "name": "BondManager",
+      "name": "BondManager", // should be capitalized
       "docs": [
         "The `BondManager` contains all the information necessary to run the bond market",
         "",
@@ -5704,6 +5818,13 @@ export const IDL: JetBonds = {
             "type": "publicKey"
           },
           {
+            "name": "feeDestination",
+            "docs": [
+              "where fees can be withdrawn to"
+            ],
+            "type": "publicKey"
+          },
+          {
             "name": "seed",
             "docs": [
               "The user-defined part of the seed that generated this bond manager's PDA"
@@ -5768,6 +5889,20 @@ export const IDL: JetBonds = {
             "type": "i64"
           },
           {
+            "name": "originationFee",
+            "docs": [
+              "assessed on borrows. scaled by origination_fee::FEE_UNIT"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "collectedFees",
+            "docs": [
+              "amount of fees currently available to be withdrawn by market owner"
+            ],
+            "type": "u64"
+          },
+          {
             "name": "nonce",
             "docs": [
               "Used to generate unique order tags"
@@ -5778,7 +5913,7 @@ export const IDL: JetBonds = {
       }
     },
     {
-      "name": "CrankAuthorization",
+      "name": "CrankAuthorization", // should be capitalized
       "docs": [
         "This authorizes a crank to act on any orderbook within the airspace"
       ],
@@ -5797,7 +5932,7 @@ export const IDL: JetBonds = {
       }
     },
     {
-      "name": "MarginUser",
+      "name": "MarginUser", // should be capitalized
       "docs": [
         "An acocunt used to track margin users of the market"
       ],
@@ -5843,10 +5978,18 @@ export const IDL: JetBonds = {
           },
           {
             "name": "underlyingSettlement",
+            "docs": [
+              "The `settle` instruction is permissionless, therefore the user must specify upon margin account creation",
+              "the address to send owed tokens"
+            ],
             "type": "publicKey"
           },
           {
             "name": "ticketSettlement",
+            "docs": [
+              "The `settle` instruction is permissionless, therefore the user must specify upon margin account creation",
+              "the address to send owed tickets"
+            ],
             "type": "publicKey"
           },
           {
@@ -5872,13 +6015,13 @@ export const IDL: JetBonds = {
       }
     },
     {
-      "name": "Obligation",
+      "name": "Obligation", // should be capitalized
       "type": {
         "kind": "struct",
         "fields": [
           {
             "name": "sequenceNumber",
-            "type": "u64"
+            "type": "u64" // should be "u64"
           },
           {
             "name": "borrowerAccount",
@@ -5900,7 +6043,7 @@ export const IDL: JetBonds = {
               "The `OrderTag` associated with the creation of this `Obligation`"
             ],
             "type": {
-              "array": ["u8", 16]
+              "array": ["u8", 16] // should be ["u8", 16]
             }
           },
           {
@@ -5908,7 +6051,7 @@ export const IDL: JetBonds = {
             "docs": [
               "The time that the obligation must be repaid"
             ],
-            "type": "u64"
+            "type": "u64" // should be "u64"
           },
           {
             "name": "balance",
@@ -5922,13 +6065,13 @@ export const IDL: JetBonds = {
             "docs": [
               "Any boolean flags for this data type compressed to a single byte"
             ],
-            "type": "u8"
+            "type": "u8" // should be "u8"
           }
         ]
       }
     },
     {
-      "name": "EventAdapterMetadata",
+      "name": "EventAdapterMetadata", // should be capitalized
       "type": {
         "kind": "struct",
         "fields": [
@@ -5957,7 +6100,7 @@ export const IDL: JetBonds = {
       }
     },
     {
-      "name": "ClaimTicket",
+      "name": "ClaimTicket", // should be capitalized
       "docs": [
         "A `ClaimTicket` represents a claim of tickets that have been staked with the program",
         "This account is generated by the `StakeBondTickets` program instruction"
@@ -5998,7 +6141,7 @@ export const IDL: JetBonds = {
       }
     },
     {
-      "name": "SplitTicket",
+      "name": "SplitTicket", // should be capitalized
       "docs": [
         "A split ticket represents a claim of underlying tokens as the result of a lending action.",
         "",
@@ -6030,7 +6173,7 @@ export const IDL: JetBonds = {
               "The `OrderTag` associated with the creation of this struct"
             ],
             "type": {
-              "array": ["u8", 16]
+              "array": ["u8", 16] // should be ["u8", 16]
             }
           },
           {
@@ -6108,6 +6251,13 @@ export const IDL: JetBonds = {
               "Length of time before a claim is marked as mature, in seconds"
             ],
             "type": "i64"
+          },
+          {
+            "name": "originationFee",
+            "docs": [
+              "assessed on borrows. scaled by origination_fee::FEE_UNIT"
+            ],
+            "type": "u64"
           }
         ]
       }
@@ -6154,7 +6304,7 @@ export const IDL: JetBonds = {
             "docs": [
               "The maturation timestamp of the next obligation that is unpaid"
             ],
-            "type": "u64"
+            "type": "u64" // should be "u64"
           },
           {
             "name": "pending",
@@ -6411,6 +6561,36 @@ export const IDL: JetBonds = {
       }
     },
     {
+      "name": "PreparedEvent",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Fill",
+            "fields": [
+              {
+                "defined": "FillAccounts<'info>"
+              },
+              {
+                "defined": "FillInfo"
+              }
+            ]
+          },
+          {
+            "name": "Out",
+            "fields": [
+              {
+                "defined": "OutAccounts<'info>"
+              },
+              {
+                "defined": "OutInfo"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
       "name": "EventTag",
       "type": {
         "kind": "enum",
@@ -6657,7 +6837,7 @@ export const IDL: JetBonds = {
         {
           "name": "orderSummary",
           "type": {
-            "array": ["u8", 48]
+            "array": ["u8", 48] // should be ["u8", 48] 
           },
           "index": false
         },
@@ -6692,7 +6872,7 @@ export const IDL: JetBonds = {
           "index": false
         },
         {
-          "name": "borrowerAccount",
+          "name": "authority",
           "type": "publicKey",
           "index": false
         },
@@ -6730,7 +6910,7 @@ export const IDL: JetBonds = {
         },
         {
           "name": "flags",
-          "type": "u8",
+          "type": "u8", // should be "u8"
           "index": false
         }
       ]
@@ -6964,183 +7144,183 @@ export const IDL: JetBonds = {
     },
     {
       "code": 6009,
-      "name": "InvalidEvent",
-      "msg": "the wrong event type was unwrapped\\nthis condition should be impossible, and does not result from invalid input"
-    },
-    {
-      "code": 6010,
       "name": "InvalidOrderPrice",
       "msg": "order price is prohibited"
     },
     {
-      "code": 6011,
+      "code": 6010,
       "name": "InvokeCreateAccount",
       "msg": "failed to invoke account creation"
     },
     {
-      "code": 6012,
+      "code": 6011,
       "name": "IoError",
       "msg": "failed to properly serialize or deserialize a data structure"
     },
     {
-      "code": 6013,
+      "code": 6012,
       "name": "MarketStateNotProgramOwned",
       "msg": "this market state account is not owned by the current program"
     },
     {
-      "code": 6014,
+      "code": 6013,
       "name": "MissingEventAdapter",
       "msg": "tried to access a missing adapter account"
     },
     {
-      "code": 6015,
+      "code": 6014,
       "name": "MissingSplitTicket",
       "msg": "tried to access a missing split ticket account"
     },
     {
-      "code": 6016,
+      "code": 6015,
       "name": "NoEvents",
       "msg": "consume_events instruction failed to consume a single event"
     },
     {
-      "code": 6017,
+      "code": 6016,
       "name": "NoMoreAccounts",
       "msg": "expected additional remaining accounts, but there were none"
     },
     {
-      "code": 6018,
+      "code": 6017,
       "name": "ObligationHasWrongSequenceNumber",
       "msg": "expected an obligation with a different sequence number"
     },
     {
-      "code": 6019,
+      "code": 6018,
       "name": "OracleError",
       "msg": "there was a problem loading the price oracle"
     },
     {
-      "code": 6020,
+      "code": 6019,
       "name": "OrderNotFound",
       "msg": "id was not found in the user's open orders"
     },
     {
-      "code": 6021,
+      "code": 6020,
       "name": "OrderbookPaused",
       "msg": "Orderbook is not taking orders"
     },
     {
-      "code": 6022,
+      "code": 6021,
       "name": "OrderRejected",
       "msg": "aaob did not match or post the order. either posting is disabled or the order was too small"
     },
     {
-      "code": 6023,
+      "code": 6022,
       "name": "PriceMissing",
       "msg": "price could not be accessed from oracle"
     },
     {
-      "code": 6024,
+      "code": 6023,
       "name": "TicketNotFromManager",
       "msg": "claim ticket is not from this manager"
     },
     {
-      "code": 6025,
+      "code": 6024,
       "name": "TicketsPaused",
       "msg": "tickets are paused"
     },
     {
-      "code": 6026,
+      "code": 6025,
       "name": "UnauthorizedCaller",
       "msg": "this signer is not authorized to place a permissioned order"
     },
     {
-      "code": 6027,
+      "code": 6026,
       "name": "UserDoesNotOwnAccount",
       "msg": "this user does not own the user account"
     },
     {
-      "code": 6028,
+      "code": 6027,
       "name": "UserDoesNotOwnAdapter",
       "msg": "this adapter does not belong to the user"
     },
     {
-      "code": 6029,
+      "code": 6028,
       "name": "UserNotInMarket",
       "msg": "this user account is not associated with this bond market"
     },
     {
-      "code": 6030,
+      "code": 6029,
       "name": "WrongAdapter",
       "msg": "the wrong adapter account was passed to this instruction"
     },
     {
-      "code": 6031,
+      "code": 6030,
       "name": "WrongAsks",
       "msg": "asks account does not belong to this market"
     },
     {
-      "code": 6032,
+      "code": 6031,
       "name": "WrongAirspace",
       "msg": "the market is configured for a different airspace"
     },
     {
-      "code": 6033,
+      "code": 6032,
       "name": "WrongAirspaceAuthorization",
       "msg": "the signer is not authorized to perform this action in the current airspace"
     },
     {
-      "code": 6034,
+      "code": 6033,
       "name": "WrongBids",
       "msg": "bids account does not belong to this market"
     },
     {
-      "code": 6035,
+      "code": 6034,
       "name": "WrongBondManager",
       "msg": "adapter does not belong to given bond manager"
     },
     {
-      "code": 6036,
+      "code": 6035,
       "name": "WrongCrankAuthority",
       "msg": "wrong authority for this crank instruction"
     },
     {
-      "code": 6037,
+      "code": 6036,
       "name": "WrongEventQueue",
       "msg": "event queue account does not belong to this market"
     },
     {
-      "code": 6038,
+      "code": 6037,
       "name": "WrongMarketState",
       "msg": "this market state is not associated with this market"
     },
     {
-      "code": 6039,
+      "code": 6038,
       "name": "WrongTicketManager",
       "msg": "wrong TicketManager account provided"
     },
     {
-      "code": 6040,
+      "code": 6039,
       "name": "DoesNotOwnMarket",
       "msg": "this market owner does not own this market"
     },
     {
-      "code": 6041,
+      "code": 6040,
       "name": "WrongClaimAccount",
       "msg": "the wrong account was provided for the token account that represents a user's claims"
     },
     {
-      "code": 6042,
+      "code": 6041,
       "name": "WrongCollateralAccount",
       "msg": "the wrong account was provided for the token account that represents a user's collateral"
     },
     {
-      "code": 6043,
+      "code": 6042,
       "name": "WrongClaimMint",
       "msg": "the wrong account was provided for the claims token mint"
     },
     {
-      "code": 6044,
+      "code": 6043,
       "name": "WrongCollateralMint",
       "msg": "the wrong account was provided for the collateral token mint"
+    },
+    {
+      "code": 6044,
+      "name": "WrongFeeDestination",
+      "msg": "wrong fee destination"
     },
     {
       "code": 6045,

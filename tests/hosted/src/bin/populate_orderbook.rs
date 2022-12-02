@@ -69,6 +69,7 @@ impl Client {
             signer.pubkey(),
             token_oracle,
             ticket_oracle,
+            None,
         )
         .with_payer(&signer.pubkey());
         let bond_manager = {
