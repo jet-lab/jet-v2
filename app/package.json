@@ -13,7 +13,7 @@
     "e2e": "ELECTRON_ENABLE_LOGGING=1 cypress run --headless",
     "e2e:ci": "start-server-and-test start http://localhost:3000 e2e",
     "e2e:gui": "yarn cypress open",
-    "start": "serve -s build",
+    "start": "serve -s build --no-request-logging",
     "analyze": "ANALYZE=true webpack --profile --progress --mode production"
   },
   "dependencies": {

@@ -126,11 +126,11 @@ export class Pool {
    * The long-form token name
    *
    * @readonly
-   * @type {(string | undefined)}
+   * @type {(string)}
    * @memberof Pool
    */
-  get name(): string | undefined {
-    return this.tokenConfig?.name
+  get name(): string {
+    return this.tokenConfig.name
   }
   /**
    * The token symbol, such as "BTC" or "SOL"
