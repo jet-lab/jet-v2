@@ -17,5 +17,5 @@ default = []
 testing = []
 
 [dependencies]
-solana-program = "1.10"
-anchor-lang = { git = "https://github.com/jet-lab/anchor", branch = "master", features = ["init-if-needed"]}
+solana-program = "1.11"
+anchor-lang = { git = "https://github.com/jet-lab/anchor", branch = "temp-version-bump-1-11", features = ["init-if-needed"]}

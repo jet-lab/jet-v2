@@ -1,6 +1,8 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::Token;
-use jet_margin::{AdapterPositionFlags, AdapterResult, PositionChange, PriceChangeInfo};
+use jet_margin::{
+    AdapterPositionFlags, AdapterResult, PositionChange, PriceChangeInfo, MAX_ORACLE_STALENESS,
+};
 
 use crate::{
     control::{events::PositionRefreshed, state::Market},
@@ -82,15 +84,19 @@ fn load_price(oracle_info: &AccountInfo) -> Result<PositionChange> {
         msg!("oracle error in account {}: {:?}", oracle_info.key, e);
         error!(FixedTermErrorCode::OracleError)
     })?;
+    // Required post pyth-sdk 0.6.1.
+    // See https://github.com/pyth-network/pyth-sdk-rs/commit/4f4f8c79efcee6402a94dd81a0aa1750a1a12297
+    let clock = Clock::get()?;
+    let max_staleness = MAX_ORACLE_STALENESS as u64;
     let price = oracle
-        .get_current_price()
+        .get_price_no_older_than(clock.unix_timestamp, max_staleness)
         .ok_or(FixedTermErrorCode::PriceMissing)?;
     let ema_price = oracle
-        .get_ema_price()
+        .get_ema_price_no_older_than(clock.unix_timestamp, max_staleness)
         .ok_or(FixedTermErrorCode::PriceMissing)?;
     Ok(PositionChange::Price(PriceChangeInfo {
-        publish_time: oracle.publish_time,
-        exponent: oracle.expo,
+        publish_time: price.publish_time,
+        exponent: price.expo,
         value: price.price,
         confidence: price.conf,
         twap: ema_price.price,

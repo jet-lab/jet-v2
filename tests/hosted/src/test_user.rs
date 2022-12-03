@@ -14,7 +14,7 @@ use jet_static_program_registry::orca_swap_v2;
 
 use crate::context::MarginTestContext;
 use crate::margin::MarginUser;
-use crate::swap::SwapRegistry;
+use crate::spl_swap::SwapRegistry;
 use crate::tokens::TokenManager;
 
 pub const ONE: u64 = 1_000_000_000;
@@ -138,7 +138,7 @@ impl TestUser {
             .create_account(dst, self.user.address())
             .await?;
         self.user
-            .swap(
+            .spl_swap(
                 &orca_swap_v2::id(),
                 src,
                 dst,

@@ -1,3 +1,5 @@
+#![allow(clippy::result_large_err)]
+
 mod fp32;
 mod functions;
 mod number;

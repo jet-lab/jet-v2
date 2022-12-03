@@ -15,6 +15,7 @@ MGNSWAP_PID=JPMAa5dnWLFRvUsumawFcGhnwikqZziLLfqn9SLNXPN
 SPLSWAP_PID=SwaPpA9LAaLfeLi3a68M4DjnLqgtticKg6CnyNwgAC8
 ORCAv1_PID=DjVE6JNiYqPL2QXyCUUh8rNjHrbz9hXHNYt99MQ59qw1
 ORCAv2_PID=9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP
+SBR_PID=SSwpkEEcbUqx4vtoEByFjSkhKdCT862DNVb52nZg1UZ
 
 CTRL_SO=target/deploy/jet_control.so
 MRGN_SO=target/deploy/jet_margin.so
@@ -27,6 +28,7 @@ MGNSWAP_SO=target/deploy/jet_margin_swap.so
 SPLSWAP_SO=$SPL_V20_FROM_CRATES
 ORCAv1_SO=$ORCA_V1_MAINNET
 ORCAv2_SO=$ORCA_V2_MAINNET
+SBRSWAP_SO=deps/saber_stable_swap.so
 
 PROGRAM_FEATURES='testing'
 TEST_FEATURES="${BATCH:-batch_all},localnet"
@@ -57,6 +59,15 @@ run() {
         --bin $@
 }
 
+init-idl() {
+    anchor idl init -f ./target/idl/jet_metadata.json $META_PID --provider.cluster localnet
+    anchor idl init -f ./target/idl/jet_control.json $CTRL_PID --provider.cluster localnet
+    # anchor idl init -f ./target/idl/jet_margin.json $MRGN_PID --provider.cluster localnet
+    anchor idl init -f ./target/idl/jet_margin_pool.json $POOL_PID --provider.cluster localnet
+    anchor idl init -f ./target/idl/jet_margin_swap.json $MGNSWAP_PID --provider.cluster localnet
+    # anchor idl init -f ./target/idl/jet_bonds.json $BOND_PID --provider.cluster localnet
+}
+
 start-validator() {
     solana-test-validator \
         --bpf-program $JTS_PID $JTS_SO \
@@ -70,6 +81,7 @@ start-validator() {
         --bpf-program $SPLSWAP_PID $SPLSWAP_SO \
         --bpf-program $ORCAv1_PID $ORCAv1_SO \
         --bpf-program $ORCAv2_PID $ORCAv2_SO \
+        --bpf-program $SBR_PID $SBRSWAP_SO \
         --quiet \
         $@ &
     VALIDATOR_PID=$!
@@ -97,7 +109,9 @@ start-new-validator() {
     cargo run --bin jetctl -- test generate-app-config -ul --no-confirm localnet.toml -o app/public/localnet.config.json
     start-crank-service
     start-oracle
+    init-idl
     wait $VALIDATOR_PID
+
 }
 
 with-validator() {

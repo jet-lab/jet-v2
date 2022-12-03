@@ -22,11 +22,16 @@ use std::{
     sync::Arc,
 };
 
-use anchor_lang::AccountDeserialize;
-use anyhow::Result;
+use anchor_lang::ToAccountMetas;
+use anyhow::{bail, Result};
+use jet_margin_swap::{accounts as ix_accounts, SwapRouteIdentifier};
 use jet_simulation::solana_rpc_api::SolanaRpcClient;
-use solana_sdk::{program_pack::Pack, pubkey::Pubkey};
+use solana_sdk::{instruction::AccountMeta, program_pack::Pack, pubkey::Pubkey};
 use spl_token_swap::state::SwapV1;
+
+use crate::ix_builder::SwapAccounts;
+
+use super::find_mint;
 
 /// Addresses of an [`spl_token_swap`] compatible swap pool, required when using
 /// [`jet_margin_swap`].
@@ -140,14 +145,43 @@ impl SplSwapPool {
     }
 }
 
-// helper function to find mint account
-async fn find_mint(
-    rpc: &Arc<dyn SolanaRpcClient>,
-    address: &Pubkey,
-) -> Result<anchor_spl::token::Mint> {
-    let account = rpc.get_account(address).await?.unwrap();
-    let data = &mut &account.data[..];
-    let account = anchor_spl::token::Mint::try_deserialize_unchecked(data)?;
+impl SwapAccounts for SplSwapPool {
+    fn to_account_meta(&self, src_token: &Pubkey) -> Result<Vec<AccountMeta>> {
+        let (vault_from, vault_into) = if src_token == &self.mint_a {
+            (self.token_b, self.token_a)
+        } else if src_token == &self.mint_b {
+            (self.token_a, self.token_b)
+        } else {
+            bail!("Invalid source token")
+        };
+        let (swap_authority, _) =
+            Pubkey::find_program_address(&[self.pool.as_ref()], &self.program);
+        let accounts = ix_accounts::SwapInfo {
+            swap_pool: self.pool,
+            authority: swap_authority,
+            vault_into,
+            vault_from,
+            token_mint: self.pool_mint,
+            fee_account: self.fee_account,
+            swap_program: self.program,
+        }
+        .to_account_metas(None);
 
-    Ok(account)
+        Ok(accounts)
+    }
+
+    fn dst_token(&self, src_token: &Pubkey) -> Result<Pubkey> {
+        let dst_token = if src_token == &self.mint_a {
+            self.mint_b
+        } else if src_token == &self.mint_b {
+            self.mint_a
+        } else {
+            bail!("Invalid source token")
+        };
+        Ok(dst_token)
+    }
+
+    fn route_type(&self) -> SwapRouteIdentifier {
+        SwapRouteIdentifier::Spl
+    }
 }

@@ -25,26 +25,27 @@ rand = "0.7"
 rand_distr = "0.3.0"
 lazy_static = "1.4.0"
 shellexpand = "2.1.0"
-solana-clap-utils = "1.10"
+solana-clap-utils = "1.11"
 serde_json = "1"
-
 
 tokio = { version = "1", features = ["macros", "time"] }
 serial_test = "0.6.0"
 
-solana-sdk = "1.10"
-solana-client = "1.10"
-solana-cli-config = "1.10"
+solana-sdk = "1.11"
+solana-client = "1.11"
+solana-cli-config = "1.11"
 
 agnostic-orderbook = { git = "https://github.com/jet-lab/agnostic-orderbook.git", branch = "main", features = ["lib", "utils"] }
 
-anchor-lang = { git = "https://github.com/jet-lab/anchor", branch = "master" }
-anchor-spl = { git = "https://github.com/jet-lab/anchor", branch = "master" }
+anchor-lang = { git = "https://github.com/jet-lab/anchor", branch = "temp-version-bump-1-11" }
+anchor-spl = { git = "https://github.com/jet-lab/anchor", branch = "temp-version-bump-1-11" }
 
 jet-static-program-registry = { path = "../../libraries/rust/static-program-registry" }
 spl-token = "3.1.0"
 spl-associated-token-account = "1.0"
-pyth-sdk-solana = "0.4"
+saber-client = { package = "stable-swap-client", git = "https://github.com/jet-lab/stable-swap", branch = "jet" }
+saber-program = { package = "stable-swap", git = "https://github.com/jet-lab/stable-swap", branch = "jet" }
+pyth-sdk-solana = "0.6"
 
 jet-fixed-term = { path = "../../programs/fixed-term", features = ["no-entrypoint", "testing"] }
 jet-control = { path = "../../programs/control", features = ["no-entrypoint", "testing"] }
@@ -60,6 +61,6 @@ jet-program-common = { path = "../../libraries/rust/program-common" }
 
 mock-adapter = { path = "../mock-adapter", features = ["no-entrypoint"] }
 
-jet-simulation = { git = "https://github.com/jet-lab/jet-simulation", branch = "master" }
+jet-simulation = { git = "https://github.com/jet-lab/jet-simulation", branch = "flexible-versions" }
 
 itertools = "0.10.3"

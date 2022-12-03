@@ -260,7 +260,7 @@ async fn discover_pools(
     oracles: &[OracleInfo],
 ) -> Result<Vec<(Pubkey, Pubkey)>> {
     let supported_mints = HashSet::from_iter(oracles.iter().map(|o| o.target_mint));
-    let result = jet_margin_sdk::spl_swap::SplSwapPool::get_pools(
+    let result = jet_margin_sdk::swap::spl_swap::SplSwapPool::get_pools(
         target,
         &supported_mints,
         spl_token_swap::ID,
