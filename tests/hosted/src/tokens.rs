@@ -209,9 +209,7 @@ impl TokenManager {
             magic: pyth_sdk_solana::state::MAGIC,
             size: std::mem::size_of::<pyth_sdk_solana::Price>() as u32,
             atype: pyth_sdk_solana::state::AccountType::Product as u32,
-            px_acc: pyth_sdk_solana::state::AccKey {
-                val: price_address.to_bytes(),
-            },
+            px_acc: price_address,
             attr: [0u8; pyth_sdk_solana::state::PROD_ATTR_SIZE],
         };
 
@@ -416,6 +414,19 @@ impl TokenManager {
         Ok(state.amount)
     }
 
+    /// Get the mint by its pubkey
+    pub async fn get_mint(&self, account: &Pubkey) -> Result<spl_token::state::Mint, Error> {
+        let account_data = self.ctx.rpc.get_account(account).await?;
+
+        if account_data.is_none() {
+            bail!("account {} does not exist", account);
+        }
+
+        let state = spl_token::state::Mint::unpack(&account_data.unwrap().data)?;
+
+        Ok(state)
+    }
+
     async fn set_pod_metadata<T: bytemuck::Pod>(
         &self,
         address: &Pubkey,
@@ -492,7 +503,7 @@ fn default_price() -> pyth_sdk_solana::state::PriceAccount {
         atype: pyth_sdk_solana::state::AccountType::Price as u32,
         size: std::mem::size_of::<pyth_sdk_solana::state::PriceAccount>() as u32,
         expo: -8,
-        next: pyth_sdk_solana::state::AccKey { val: [0u8; 32] },
+        next: Pubkey::default(),
         ptype: pyth_sdk_solana::state::PriceType::Price,
         ..pyth_sdk_solana::state::PriceAccount::zeroed()
     }

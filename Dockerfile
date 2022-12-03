@@ -36,6 +36,7 @@ CMD solana-test-validator --reset \
       --bpf-program FT9EZnpdo3tPfUCGn8SBkvN9DMpSStAg3YvAqvYrtSvL /root/programs/pyth.so \
       --bpf-program 9xQeWvG816bUx9EPjHmaT23yvVM2ZWbrrpZb9PusVFin /root/programs/serum_dex_v3.so \
       --bpf-program 4bXpkKSV8swHSnwqtzuboGPaPDeEgAn4Vt8GfarV5rZt /root/programs/spl_token_faucet.so \
+      --bpf-program SSwpkEEcbUqx4vtoEByFjSkhKdCT862DNVb52nZg1UZ /root/programs/saber_stable_swap.so \
       --bpf-program 9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP /root/programs/mainnet_9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP_2022-06-20.so \
       --bpf-program DjVE6JNiYqPL2QXyCUUh8rNjHrbz9hXHNYt99MQ59qw1 /root/programs/mainnet_DjVE6JNiYqPL2QXyCUUh8rNjHrbz9hXHNYt99MQ59qw1_2022-06-20.so \
       --bpf-program SwaPpA9LAaLfeLi3a68M4DjnLqgtticKg6CnyNwgAC8  /root/programs/crates.io-spl_token_swap==2.0.0.so

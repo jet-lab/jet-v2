@@ -7,3 +7,10 @@ members = [
     "packages/wasm-src",
     "tools/*"
 ]
+
+[patch.crates-io]
+# This is to force saber and other libs to use our anchor version
+anchor-lang = { git = "https://github.com/jet-lab/anchor", branch = "temp-version-bump-1-11" }
+anchor-spl = { git = "https://github.com/jet-lab/anchor", branch = "temp-version-bump-1-11" }
+# Required until a release post 0.6.1
+pyth-sdk-solana = { git = "https://github.com/pyth-network/pyth-sdk-rs", branch = "main" }

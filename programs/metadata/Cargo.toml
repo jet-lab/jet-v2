@@ -18,5 +18,5 @@ testing = []
 devnet = []
 
 [dependencies]
-anchor-lang = { git = "https://github.com/jet-lab/anchor", branch = "master" }
-solana-program = "1.10"
+anchor-lang = { git = "https://github.com/jet-lab/anchor", branch = "temp-version-bump-1-11" }
+solana-program = "1.11"

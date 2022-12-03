@@ -15,6 +15,9 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+// Allow this until fixed upstream
+#![allow(clippy::result_large_err)]
+
 use anchor_lang::prelude::*;
 use bytemuck::{cast_slice_mut, from_bytes_mut, try_cast_slice_mut, Pod, Zeroable};
 use std::cell::RefMut;

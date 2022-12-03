@@ -28,7 +28,7 @@ use solana_sdk::instruction::Instruction;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::Keypair;
 use solana_sdk::signer::Signer;
-use solana_sdk::transaction::Transaction;
+use solana_sdk::transaction::{Transaction, VersionedTransaction};
 
 use anchor_lang::{AccountDeserialize, Id};
 
@@ -37,6 +37,7 @@ use jet_margin_pool::TokenChange;
 use jet_simulation::solana_rpc_api::SolanaRpcClient;
 
 use crate::cat;
+use crate::lookup_tables::LookupTable;
 use crate::margin_integrator::PositionRefresher;
 use crate::util::data::Join;
 use crate::{
@@ -422,6 +423,90 @@ impl MarginTxBuilder {
         self.create_transaction(&instructions).await
     }
 
+    /// Transaction to swap tokens in a chain of up to 3 legs.
+    ///
+    /// The function accepts the instruction route builder which is expected to be finalized.
+    pub async fn route_swap_with_lookup(
+        &self,
+        builder: &MarginSwapRouteIxBuilder,
+        account_lookup_tables: &[Pubkey],
+        signer: &Keypair,
+    ) -> Result<VersionedTransaction> {
+        // TODO: DRY with the below
+
+        // We can't get the instruction if not finalized, get it to check.
+        let inner_swap_ix = builder.get_instruction()?;
+
+        let mut instructions = vec![];
+        for deposit_note_mint in builder.get_pool_note_mints() {
+            self.get_or_create_position(&mut instructions, deposit_note_mint)
+                .await?;
+        }
+        for token_mint in builder.get_spl_token_mints() {
+            // Check if an ATA exists before creating it
+            let ata = get_associated_token_address(self.address(), token_mint);
+            if self.rpc.get_account(&ata).await?.is_none() {
+                let ix = spl_associated_token_account::instruction::create_associated_token_account(
+                    &self.signer(),
+                    self.address(),
+                    token_mint,
+                    &spl_token::id(),
+                );
+                instructions.push(ix);
+            }
+        }
+
+        // TODO: necessary to refresh prices here? Or can we do it separately?
+
+        instructions.push(self.adapter_invoke_ix(inner_swap_ix));
+
+        // TODO: can we use > 1 table?
+        let tx = LookupTable::use_lookup_table(
+            &self.rpc,
+            account_lookup_tables[0],
+            &instructions,
+            &[signer],
+        )
+        .await?;
+        Ok(tx)
+    }
+
+    /// Transaction to swap tokens in a chain of up to 3 legs.
+    ///
+    /// The function accepts the instruction route builder which is expected to be finalized.
+    pub async fn route_swap(
+        &self,
+        builder: &MarginSwapRouteIxBuilder,
+    ) -> Result<TransactionBuilder> {
+        // We can't get the instruction if not finalized, get it to check.
+        let inner_swap_ix = builder.get_instruction()?;
+
+        let mut instructions = vec![];
+        for deposit_note_mint in builder.get_pool_note_mints() {
+            self.get_or_create_position(&mut instructions, deposit_note_mint)
+                .await?;
+        }
+        for token_mint in builder.get_spl_token_mints() {
+            // Check if an ATA exists before creating it
+            let ata = get_associated_token_address(self.address(), token_mint);
+            if self.rpc.get_account(&ata).await?.is_none() {
+                let ix = spl_associated_token_account::instruction::create_associated_token_account(
+                    &self.signer(),
+                    self.address(),
+                    token_mint,
+                    &spl_token::id(),
+                );
+                instructions.push(ix);
+            }
+        }
+
+        // TODO: necessary to refresh prices here? Or can we do it separately?
+
+        instructions.push(self.adapter_invoke_ix(inner_swap_ix));
+
+        self.create_transaction_builder(&instructions)
+    }
+
     /// Transaction to swap one token for another
     ///
     /// # Notes
@@ -429,7 +514,7 @@ impl MarginTxBuilder {
     /// - `transit_source_account` and `transit_destination_account` should be
     ///   created in a separate transaction to avoid packet size limits.
     #[allow(clippy::too_many_arguments)]
-    pub async fn swap(
+    pub async fn spl_swap(
         &self,
         source_token_mint: &Pubkey,
         destination_token_mint: &Pubkey,
@@ -478,10 +563,91 @@ impl MarginTxBuilder {
             swap_authority,
             *pool_mint,
             *fee_account,
+            *swap_program,
         );
 
         // added TokenChange here for LevSwap fix
-        let inner_swap_ix = swap_pool.swap(
+        let inner_swap_ix = swap_pool.spl_swap(
+            *self.address(),
+            *transit_source_account,
+            *transit_destination_account,
+            source_position,
+            destination_position,
+            *source_token_account,
+            *destination_token_account,
+            *swap_program,
+            &source_pool,
+            &destination_pool,
+            change,
+            minimum_amount_out,
+        );
+
+        instructions.push(self.adapter_invoke_ix(inner_swap_ix));
+
+        self.create_transaction_builder(&instructions)
+    }
+
+    /// Transaction to swap one token for another
+    ///
+    /// # Notes
+    ///
+    /// - `transit_source_account` and `transit_destination_account` should be
+    ///   created in a separate transaction to avoid packet size limits.
+    #[allow(clippy::too_many_arguments)]
+    pub async fn saber_swap(
+        &self,
+        source_token_mint: &Pubkey,
+        destination_token_mint: &Pubkey,
+        transit_source_account: &Pubkey,
+        transit_destination_account: &Pubkey,
+        swap_pool: &Pubkey,
+        pool_mint: &Pubkey,
+        fee_account: &Pubkey,
+        source_token_account: &Pubkey,
+        destination_token_account: &Pubkey,
+        swap_program: &Pubkey,
+        // for levswap
+        change: TokenChange,
+        minimum_amount_out: u64,
+    ) -> Result<TransactionBuilder> {
+        let mut instructions = vec![];
+        let source_pool = MarginPoolIxBuilder::new(*source_token_mint);
+        let destination_pool = MarginPoolIxBuilder::new(*destination_token_mint);
+
+        let source_position = self
+            .get_or_create_position(&mut instructions, &source_pool.deposit_note_mint)
+            .await?;
+        let destination_position = self
+            .get_or_create_position(&mut instructions, &destination_pool.deposit_note_mint)
+            .await?;
+
+        let destination_metadata = self.get_token_metadata(destination_token_mint).await?;
+
+        // Only refreshing the destination due to transaction size.
+        // The most common scenario would be that a new margin position is created
+        // for the destination of the swap. If its position price is not set before
+        // the swap, a liquidator would be accused of extracting too much value
+        // as the destination becomes immediately stale after creation.
+        instructions.push(
+            self.ix.accounting_invoke(
+                destination_pool
+                    .margin_refresh_position(*self.address(), destination_metadata.pyth_price),
+            ),
+        );
+
+        let (swap_authority, _) = Pubkey::find_program_address(&[swap_pool.as_ref()], swap_program);
+        let swap_pool = MarginSwapIxBuilder::new(
+            *source_token_mint,
+            *destination_token_mint,
+            *swap_pool,
+            swap_authority,
+            *pool_mint,
+            *fee_account,
+            *swap_program,
+        );
+
+        // added TokenChange here for LevSwap fix
+        let inner_swap_ix = swap_pool.saber_swap(
             *self.address(),
             *transit_source_account,
             *transit_destination_account,
@@ -613,6 +779,7 @@ impl MarginTxBuilder {
                 &self.signer(),
                 self.address(),
                 token_mint,
+                &spl_token::id(),
             ),
             self.ix.create_deposit_position(*token_mint),
         ])
@@ -644,6 +811,7 @@ impl MarginTxBuilder {
                     &self.signer(),
                     self.address(),
                     &token_mint,
+                    &spl_token::id(),
                 ),
             );
             instructions.push(self.ix.create_deposit_position(token_mint));
