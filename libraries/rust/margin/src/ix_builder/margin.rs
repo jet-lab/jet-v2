@@ -16,9 +16,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 use anchor_spl::associated_token::{self, get_associated_token_address};
-use jet_margin::seeds::{
-    ADAPTER_CONFIG_SEED, PERMIT_SEED, TOKEN_CONFIG_SEED,
-};
+use jet_margin::seeds::{ADAPTER_CONFIG_SEED, PERMIT_SEED, TOKEN_CONFIG_SEED};
 use solana_sdk::instruction::Instruction;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::system_program::ID as SYSTEM_PROGAM_ID;
@@ -573,7 +571,7 @@ impl MarginConfigIxBuilder {
             airspace: self.airspace,
             payer: self.payer,
             owner,
-            permit: self.derive_permit(&owner),
+            permit: self.derive_margin_permit(&owner),
             system_program: system_program::ID,
         }
     }
@@ -589,14 +587,14 @@ impl MarginConfigIxBuilder {
     }
 
     /// Derive address for the config account for a given liquidator
-    #[deprecated(note = "use derive_permit")]
+    #[deprecated(note = "use derive_margin_permit")]
     pub fn derive_liquidator_config(&self, liquidator: &Pubkey) -> Pubkey {
-        derive_permit(&self.airspace, liquidator)
+        derive_margin_permit(&self.airspace, liquidator)
     }
 
     /// Derive address for a user's permit account in an airspace
-    pub fn derive_permit(&self, liquidator: &Pubkey) -> Pubkey {
-        derive_permit(&self.airspace, liquidator)
+    pub fn derive_margin_permit(&self, liquidator: &Pubkey) -> Pubkey {
+        derive_margin_permit(&self.airspace, liquidator)
     }
 }
 
@@ -635,13 +633,13 @@ pub fn derive_adapter_config(airspace: &Pubkey, adapter_program_id: &Pubkey) -> 
 }
 
 /// Derive address for the config account for a given liquidator
-#[deprecated(note = "use derive_permit")]
+#[deprecated(note = "use derive_margin_permit")]
 pub fn derive_liquidator_config(airspace: &Pubkey, liquidator: &Pubkey) -> Pubkey {
-    derive_permit(airspace, liquidator)
+    derive_margin_permit(airspace, liquidator)
 }
 
 /// Derive address for a user's permit account in an airspace
-pub fn derive_permit(airspace: &Pubkey, owner: &Pubkey) -> Pubkey {
+pub fn derive_margin_permit(airspace: &Pubkey, owner: &Pubkey) -> Pubkey {
     Pubkey::find_program_address(
         &[PERMIT_SEED, airspace.as_ref(), owner.as_ref()],
         &jet_margin::ID,
