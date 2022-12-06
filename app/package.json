@@ -79,6 +79,7 @@
     "mini-css-extract-plugin": "^2.7.1",
     "prop-types": "^15.8.1",
     "source-map-loader": "^4.0.0",
+    "start-server-and-test": "^1.15.0",
     "style-loader": "^3.3.1",
     "swc-loader": "^0.2.3",
     "swc-minify-webpack-plugin": "^1.0.1",
