@@ -402,9 +402,14 @@ fn create_airspace_token_bond_markets_tx(
                         bm_config.min_order_size,
                     )
                     .unwrap(),
-                bonds_ix.authorize_crank(config.authority).unwrap(),
             ],
             signers: vec![key_eq, key_bids, key_asks],
+        });
+
+        // Submit separately as it is large and causes tx to fail
+        txs.push(TransactionBuilder {
+            instructions: vec![bonds_ix.authorize_crank(config.authority).unwrap()],
+            signers: vec![],
         });
 
         if bm_config.paused {
