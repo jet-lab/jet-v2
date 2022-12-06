@@ -5,7 +5,7 @@ import { bigIntToBn, bnToBigInt, MarginAccount } from "@jet-lab/margin"
 import { Orderbook } from "./orderbook"
 import { JetBonds } from "./types"
 import { fetchData, findDerivedAccount } from "./utils"
-import { order_id_to_string, rate_to_price } from "./wasm-utils"
+import { order_id_to_string, rate_to_price } from "@jet-lab/wasm"
 
 export const U64_MAX = 18_446_744_073_709_551_615n
 export interface OrderParams {

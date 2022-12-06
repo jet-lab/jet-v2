@@ -16,7 +16,7 @@
     "build": "tsc",
     "clean": "rm -rf ./dist",
     "docs": "typedoc --excludePrivate --includeVersion ./src/index.ts",
-    "fmt": "prettier src/ tests/ types/ --check",
+    "fmt": "prettier src/ --check",
     "fmt:fix": "prettier src/ tests/ types/ --write",
     "prepublishOnly": "yarn build",
     "watch": "tsc --watch --preserveWatchOutput --pretty --incremental"

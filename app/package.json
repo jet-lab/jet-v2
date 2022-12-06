@@ -19,7 +19,9 @@
   "dependencies": {
     "@ant-design/icons": "^4.7.0",
     "@jet-lab/e2e-react-adapter": "^0.1.3",
+    "@jet-lab/jet-bonds-client": "*",
     "@jet-lab/margin": "*",
+    "@jet-lab/wasm": "*",
     "@orca-so/stablecurve": "^1.0.6",
     "@solana/wallet-adapter-react": "^0.15.23",
     "@solana/wallet-adapter-wallets": "^0.19.5",

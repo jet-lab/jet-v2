@@ -7,16 +7,15 @@
   "type": "module",
   "license": "AGPL-3.0-or-later",
   "scripts": {
-    "build": "yarn build:wasm && yarn tsc",
-    "build:js": "tsc",
-    "build:wasm": "wasm-pack build --target bundler --release ./wasm-utils --out-dir ../src/wasm-utils && mkdir -p ./dist/wasm-utils && cp -r ./src/wasm-utils/wasm_utils_bg.wasm ./dist/wasm-utils/wasm_utils_bg.wasm",
-    "clean": "rm -rf ./dist & rm -rf ./src/wasm-utils",
+    "build": "tsc",
+    "clean": "rm -rf ./dist",
     "lint": "tslint -c tslint.json src/**/*.ts",
     "prepublishOnly": "yarn build",
     "watch": "tsc --watch"
   },
   "dependencies": {
     "@jet-lab/margin": "*",
+    "@jet-lab/wasm": "*",
     "@project-serum/anchor": "0.24.2",
     "@solana/spl-token": "^0.2.0",
     "@solana/web3.js": "^1.63.0"

@@ -1,0 +1,6 @@
+{
+  "name": "@jet-lab/wasm-src",
+  "scripts": {
+    "build": "wasm-pack build --target bundler --release . --out-dir ../wasm && cp destination.package.json ../wasm/package.json"
+  }
+}

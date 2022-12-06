@@ -1,5 +1,5 @@
 import { BondMarket } from "./bondMarket"
-import { get_orders_from_slab as getOrdersFromSlab, Order } from "./wasm-utils"
+import { get_orders_from_slab as getOrdersFromSlab, Order } from "@jet-lab/wasm"
 
 export class Orderbook {
   readonly bids: Order[]

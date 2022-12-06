@@ -1,4 +1,5 @@
 {
+  "extends": "../../../tsconfig.base.json",
   "include": ["./src/**/*", "./src/**/*.json"],
   "compilerOptions": {
     "target": "ES2020",
@@ -24,7 +25,6 @@
     "forceConsistentCasingInFileNames": true,
     "incremental": true,
     "skipLibCheck": true,
-
     "allowJs": true,
     "isolatedModules": true,
     "noFallthroughCasesInSwitch": true,
