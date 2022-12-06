@@ -7,7 +7,7 @@
   "license": "AGPL-3.0-or-later",
   "scripts": {
     "build": "nx run-many --target=build",
-    "build:cloudflare": "curl https://sh.rustup.rs -sSf | sh -s -- -y && . \"$HOME/.cargo/env\" && cargo install wasm-pack && env > app/.env && yarn build:all",
+    "build:cloudflare": "curl https://sh.rustup.rs -sSf | sh -s -- -y && . \"$HOME/.cargo/env\" && cargo install wasm-pack && env > app/.env && yarn build",
     "clean:all": "rm -rf ./target & rm -rf ./test-ledger & yarn --cwd app clean & yarn --cwd libraries/ts/margin clean & yarn --cwd libraries/ts/bonds clean & find . -name 'node_modules' -type d -prune -exec rm -rf '{}' +",
     "clean:ts": "yarn --cwd app clean & yarn --cwd libraries/ts/margin clean & yarn --cwd libraries/ts/bonds clean & find . -name 'node_modules' -type d -prune -exec rm -rf '{}' +",
     "dev": "yarn --cwd libraries/ts/margin watch & yarn --cwd libraries/ts/bonds watch & yarn --cwd app dev",
