@@ -500,11 +500,15 @@ pub mod jet_margin {
     ///
     /// The account storing the configuration will be funded if not already. If a `None` is provided as
     /// the updated configuration, then the account will be defunded.
-    pub fn configure_liquidator(
-        ctx: Context<ConfigureLiquidator>,
-        is_liquidator: bool,
-    ) -> Result<()> {
+    pub fn configure_liquidator(ctx: Context<ConfigurePermit>, is_liquidator: bool) -> Result<()> {
         configure_liquidator_handler(ctx, is_liquidator)
+    }
+
+    pub fn configure_position_metadata_refresher(
+        ctx: Context<ConfigurePermit>,
+        may_refresh: bool,
+    ) -> Result<()> {
+        configure_position_metadata_refresher_handler(ctx, may_refresh)
     }
 
     /// Allow governing address to transfer any position from one margin account to another

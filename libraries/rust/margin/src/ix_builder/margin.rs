@@ -16,7 +16,9 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 use anchor_spl::associated_token::{self, get_associated_token_address};
-use jet_margin::seeds::{ADAPTER_CONFIG_SEED, LIQUIDATOR_CONFIG_SEED, TOKEN_CONFIG_SEED};
+use jet_margin::seeds::{
+    ADAPTER_CONFIG_SEED, PERMIT_SEED, TOKEN_CONFIG_SEED,
+};
 use solana_sdk::instruction::Instruction;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::system_program::ID as SYSTEM_PROGAM_ID;
@@ -557,19 +559,22 @@ impl MarginConfigIxBuilder {
 
     /// Set the configuration for a liquidator
     pub fn configure_liquidator(&self, liquidator: Pubkey, is_liquidator: bool) -> Instruction {
-        let accounts = ix_account::ConfigureLiquidator {
-            authority: self.authority,
-            airspace: self.airspace,
-            payer: self.payer,
-            liquidator,
-            liquidator_config: self.derive_liquidator_config(&liquidator),
-            system_program: system_program::ID,
-        };
-
         Instruction {
             program_id: jet_margin::ID,
             data: ix_data::ConfigureLiquidator { is_liquidator }.data(),
-            accounts: accounts.to_account_metas(None),
+            accounts: self.configure_permit(liquidator).to_account_metas(None),
+        }
+    }
+
+    /// Set the configuration for a liquidator
+    pub fn configure_permit(&self, owner: Pubkey) -> ix_account::ConfigurePermit {
+        ix_account::ConfigurePermit {
+            authority: self.authority,
+            airspace: self.airspace,
+            payer: self.payer,
+            owner,
+            permit: self.derive_permit(&owner),
+            system_program: system_program::ID,
         }
     }
 
@@ -584,8 +589,14 @@ impl MarginConfigIxBuilder {
     }
 
     /// Derive address for the config account for a given liquidator
+    #[deprecated(note = "use derive_permit")]
     pub fn derive_liquidator_config(&self, liquidator: &Pubkey) -> Pubkey {
-        derive_liquidator_config(&self.airspace, liquidator)
+        derive_permit(&self.airspace, liquidator)
+    }
+
+    /// Derive address for a user's permit account in an airspace
+    pub fn derive_permit(&self, liquidator: &Pubkey) -> Pubkey {
+        derive_permit(&self.airspace, liquidator)
     }
 }
 
@@ -624,13 +635,15 @@ pub fn derive_adapter_config(airspace: &Pubkey, adapter_program_id: &Pubkey) -> 
 }
 
 /// Derive address for the config account for a given liquidator
+#[deprecated(note = "use derive_permit")]
 pub fn derive_liquidator_config(airspace: &Pubkey, liquidator: &Pubkey) -> Pubkey {
+    derive_permit(airspace, liquidator)
+}
+
+/// Derive address for a user's permit account in an airspace
+pub fn derive_permit(airspace: &Pubkey, owner: &Pubkey) -> Pubkey {
     Pubkey::find_program_address(
-        &[
-            LIQUIDATOR_CONFIG_SEED,
-            airspace.as_ref(),
-            liquidator.as_ref(),
-        ],
+        &[PERMIT_SEED, airspace.as_ref(), owner.as_ref()],
         &jet_margin::ID,
     )
     .0

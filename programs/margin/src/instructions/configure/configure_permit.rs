@@ -19,10 +19,10 @@ use anchor_lang::{prelude::*, AccountsClose};
 
 use jet_airspace::state::Airspace;
 
-use crate::{seeds::ADAPTER_CONFIG_SEED, AdapterConfig, StorageSpace};
+use crate::{seeds::PERMIT_SEED, Permissions, Permit, StorageSpace};
 
 #[derive(Accounts)]
-pub struct ConfigureAdapter<'info> {
+pub struct ConfigurePermit<'info> {
     /// The authority allowed to make changes to configuration
     pub authority: Signer<'info>,
 
@@ -34,34 +34,54 @@ pub struct ConfigureAdapter<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
 
-    /// The adapter being configured
-    pub adapter_program: AccountInfo<'info>,
+    /// The owner being configured
+    pub owner: AccountInfo<'info>,
 
     /// The config account to be modified
     #[account(init_if_needed,
               seeds = [
-                ADAPTER_CONFIG_SEED,
+                PERMIT_SEED,
                 airspace.key().as_ref(),
-                adapter_program.key().as_ref()
+                owner.key().as_ref()
               ],
               bump,
               payer = payer,
-              space = AdapterConfig::SPACE,
+              space = Permit::SPACE,
     )]
-    pub adapter_config: Account<'info, AdapterConfig>,
+    pub permit: Account<'info, Permit>,
 
     pub system_program: Program<'info, System>,
 }
 
-pub fn configure_adapter_handler(ctx: Context<ConfigureAdapter>, is_adapter: bool) -> Result<()> {
-    let config = &mut ctx.accounts.adapter_config;
+pub fn configure_liquidator_handler(
+    ctx: Context<ConfigurePermit>,
+    is_liquidator: bool,
+) -> Result<()> {
+    configure_permit(ctx, is_liquidator, Permissions::LIQUIDATE)
+}
 
-    if !is_adapter {
-        return config.close(ctx.accounts.payer.to_account_info());
-    };
+pub fn configure_position_metadata_refresher_handler(
+    ctx: Context<ConfigurePermit>,
+    may_refresh: bool,
+) -> Result<()> {
+    configure_permit(ctx, may_refresh, Permissions::REFRESH_POSITION_METADATA)
+}
 
-    config.adapter_program = ctx.accounts.adapter_program.key();
-    config.airspace = ctx.accounts.airspace.key();
+fn configure_permit(ctx: Context<ConfigurePermit>, test: bool, flag: Permissions) -> Result<()> {
+    let permit = &mut ctx.accounts.permit;
+
+    permit.owner = ctx.accounts.owner.key();
+    permit.airspace = ctx.accounts.airspace.key();
+
+    if test {
+        permit.permissions |= flag;
+    } else {
+        permit.permissions.remove(flag);
+    }
+
+    if permit.permissions.is_empty() {
+        return permit.close(ctx.accounts.payer.to_account_info());
+    }
 
     Ok(())
 }

@@ -24,4 +24,8 @@ pub const TOKEN_CONFIG_SEED: &[u8] = b"token-config";
 pub const ADAPTER_CONFIG_SEED: &[u8] = b"adapter-config";
 
 #[constant]
+#[deprecated(note = "liquidator config is now in account at the pda derived from PERMIT_SEED")]
 pub const LIQUIDATOR_CONFIG_SEED: &[u8] = b"liquidator-config";
+
+#[constant]
+pub const PERMIT_SEED: &[u8] = b"permit";
