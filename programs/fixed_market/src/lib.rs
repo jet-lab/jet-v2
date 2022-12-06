@@ -1,8 +1,8 @@
-//! An orderbook-based fixed market hosted on the Solana blockchain
+//! An orderbook-based fixed term market hosted on the Solana blockchain
 //!
 //! # Interaction
 //!
-//! To interact with the fixed market, users will initialize a PDA called an [`MarginUser`](struct@crate::orderbook::state::user::MarginUser).
+//! To interact with the fixed term market, users will initialize a PDA called an [`MarginUser`](struct@crate::orderbook::state::user::MarginUser).
 //!
 //! After `MarginUser` intialization, to place an order you must deposit underlying tokens or Jet market tickets into your account.
 //! This will allow you to use the [`PlaceOrder`](struct@crate::orderbook::instructions::place_order::PlaceOrder) instruction, which
@@ -82,7 +82,7 @@
 //! # Jet Market Tickets
 //!
 //! Jet market tickets are fungible spl tokens that must be staked to claim their underlying value. In order to create Jet market tickets, a user must either
-//! place a lend order on the orderbook, or exchange the token underlying the fixed market (in practice, almost never
+//! place a lend order on the orderbook, or exchange the token underlying the fixed term market (in practice, almost never
 //! will users do this, as it locks their tokens for at least the tenor of the market).
 //!
 //! ### Ticket kinds and redemption
@@ -288,7 +288,7 @@ pub mod jet_market {
     // =============================================
     //
 
-    /// Exchange underlying token for fixed market tickets
+    /// Exchange underlying token for fixed term market tickets
     /// WARNING: tickets must be staked for redeption of underlying
     pub fn exchange_tokens(ctx: Context<ExchangeTokens>, amount: u64) -> Result<()> {
         instructions::exchange_tokens::handler(ctx, amount)
@@ -299,7 +299,7 @@ pub mod jet_market {
         instructions::redeem_ticket::handler(ctx)
     }
 
-    /// Stakes fixed market tickets for later redemption
+    /// Stakes tickets for later redemption
     pub fn stake_market_tickets(
         ctx: Context<StakeMarketTickets>,
         params: StakeMarketTicketsParams,

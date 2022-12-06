@@ -20,7 +20,7 @@ pub struct RefreshPosition<'info> {
     /// CHECK: has_one on orderbook user
     pub margin_account: AccountInfo<'info>,
 
-    /// The `Market` account tracks global information related to this particular fixed market
+    /// The `Market` account tracks global information related to this particular fixed term market
     #[account(
         has_one = underlying_oracle @ ErrorCode::WrongOracle,
         has_one = ticket_oracle @ ErrorCode::WrongOracle,

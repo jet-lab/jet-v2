@@ -11,7 +11,7 @@ import { localPoint } from '@visx/event';
 import { pointAtCoordinateX } from './utils';
 import { friendlyMarketName } from '@utils/jet/fixed-term-utils';
 import { useSetRecoilState } from 'recoil';
-import { SelectedFixedMarketAtom } from '@state/fixed-market/fixed-term-market-sync';
+import { SelectedFixedTermMarketAtom } from '@state/fixed-market/fixed-term-market-sync';
 import { LoadingOutlined } from '@ant-design/icons';
 import { useCurrencyFormatting } from '@utils/currency';
 
@@ -58,7 +58,7 @@ export const LineChart = ({
   paddingBottom,
   series
 }: ILineChart) => {
-  const setMarket = useSetRecoilState(SelectedFixedMarketAtom);
+  const setMarket = useSetRecoilState(SelectedFixedTermMarketAtom);
   const formatting = useCurrencyFormatting();
 
   // constraints

@@ -1,7 +1,7 @@
 use thiserror::Error;
 
 #[derive(Debug, Error)]
-pub enum FixedMarketIxError {
+pub enum FixedTermMarketIxError {
     #[error("Missing pubkey: ({0})")]
     MissingPubkey(String),
 
@@ -12,10 +12,10 @@ pub enum FixedMarketIxError {
     Client { msg: String },
 }
 
-pub type Result<T> = std::result::Result<T, FixedMarketIxError>;
+pub type Result<T> = std::result::Result<T, FixedTermMarketIxError>;
 
-pub(crate) fn client_err(err: impl ToString) -> FixedMarketIxError {
-    FixedMarketIxError::Client {
+pub(crate) fn client_err(err: impl ToString) -> FixedTermMarketIxError {
+    FixedTermMarketIxError::Client {
         msg: err.to_string(),
     }
 }

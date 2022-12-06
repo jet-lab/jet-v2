@@ -15,7 +15,7 @@ use async_trait::async_trait;
 
 use jet_margin_sdk::{
     fixed_market::{
-        event_builder::build_consume_events_info, fixed_market_pda, FixedMarketIxBuilder,
+        event_builder::build_consume_events_info, fixed_term_market_pda, FixedTermMarketIxBuilder,
     },
     ix_builder::{
         get_control_authority_address, get_metadata_address, ControlIxBuilder, MarginIxBuilder,
@@ -96,7 +96,7 @@ impl<T> Keys<T> {
 pub struct TestManager {
     pub client: Arc<dyn SolanaRpcClient>,
     pub keygen: Arc<dyn Keygen>,
-    pub ix_builder: FixedMarketIxBuilder,
+    pub ix_builder: FixedTermMarketIxBuilder,
     pub kps: Keys<Keypair>,
     pub keys: Keys<Pubkey>,
 }
@@ -125,9 +125,9 @@ impl TestManager {
         let oracle = TokenManager::new(client.clone())
             .create_oracle(&mint.pubkey())
             .await?;
-        let market_ticket_mint = fixed_market_pda(&[
+        let market_ticket_mint = fixed_term_market_pda(&[
             jet_market::seeds::MARKET_TICKET_MINT,
-            FixedMarketIxBuilder::market_key(
+            FixedTermMarketIxBuilder::market_key(
                 &Pubkey::default(), //todo airspace
                 &mint.pubkey(),
                 MARKET_SEED,
@@ -174,7 +174,7 @@ impl TestManager {
         let transaction = initialize_test_mint_transaction(mint, payer, 6, rent, recent_blockhash);
         client.send_and_confirm_transaction(&transaction).await?;
 
-        let ix_builder = FixedMarketIxBuilder::new_from_seed(
+        let ix_builder = FixedTermMarketIxBuilder::new_from_seed(
             &Pubkey::default(),
             &mint.pubkey(),
             MARKET_SEED,

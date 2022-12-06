@@ -32,7 +32,7 @@ pub struct MarginUser {
     /// The amount of debt that must be collateralized or repaid
     /// This debt is expressed in terms of the underlying token - not market tickets
     pub debt: Debt,
-    /// Accounting used to track assets in custody of the fixed market
+    /// Accounting used to track assets in custody of the fixed term market
     pub assets: Assets,
 }
 

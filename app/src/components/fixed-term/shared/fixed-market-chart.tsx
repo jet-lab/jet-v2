@@ -4,13 +4,13 @@ import { ReorderArrows } from '@components/misc/ReorderArrows';
 import { FixedBorrowRowOrder, FixedLendRowOrder } from '@state/views/fixed-term';
 import { ResponsiveLineChart } from '@components/fixed-term/shared/charts/line-chart';
 import {
-  AllFixedMarketsAtom,
-  AllFixedMarketsOrderBooksAtom,
+  AllFixedTermMarketsAtom,
+  AllFixedTermMarketsOrderBooksAtom,
   CurrentOrderTab,
   CurrentOrderTabAtom,
-  FixedMarketAtom,
+  FixedTermMarketAtom,
   MarketAndconfig,
-  SelectedFixedMarketAtom
+  SelectedFixedTermMarketAtom
 } from '@state/fixed-market/fixed-term-market-sync';
 import { friendlyMarketName } from '@utils/jet/fixed-term-utils';
 import { useMemo } from 'react';
@@ -40,10 +40,10 @@ const immediateKeys = ['lend-now', 'borrow-now'];
 export const FixedPriceChartContainer = ({ type }: FixedChart) => {
   const [rowOrder, setRowOrder] = useRecoilState(type === 'asks' ? FixedLendRowOrder : FixedBorrowRowOrder);
   const currentTab = useRecoilValue(CurrentOrderTabAtom);
-  const selectedMarketIndex = useRecoilValue(SelectedFixedMarketAtom);
-  const market = useRecoilValue(FixedMarketAtom);
-  const allMarkets = useRecoilValue(AllFixedMarketsAtom);
-  const openOrders = useRecoilValue(AllFixedMarketsOrderBooksAtom);
+  const selectedMarketIndex = useRecoilValue(SelectedFixedTermMarketAtom);
+  const market = useRecoilValue(FixedTermMarketAtom);
+  const allMarkets = useRecoilValue(AllFixedTermMarketsAtom);
+  const openOrders = useRecoilValue(AllFixedTermMarketsOrderBooksAtom);
   const marginConfig = useRecoilValue(MainConfig);
 
   const token = useMemo(() => {

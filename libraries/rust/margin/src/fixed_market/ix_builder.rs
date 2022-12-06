@@ -24,10 +24,10 @@ pub use jet_market::{
 
 use crate::ix_builder::{get_metadata_address, test_service::if_not_initialized};
 
-use super::error::{client_err, FixedMarketIxError, Result};
+use super::error::{client_err, FixedTermMarketIxError, Result};
 
 #[derive(Clone, Debug)]
-pub struct FixedMarketIxBuilder {
+pub struct FixedTermMarketIxBuilder {
     airspace: Pubkey,
     authority: Pubkey,
     market: Pubkey,
@@ -58,22 +58,22 @@ trait UnwrapKey {
 
 impl UnwrapKey for Option<Pubkey> {
     fn unwrap_key(&self, msg: &str) -> Result<Pubkey> {
-        self.ok_or(FixedMarketIxError::MissingPubkey(msg.into()))
+        self.ok_or(FixedTermMarketIxError::MissingPubkey(msg.into()))
     }
 }
 
 impl UnwrapKey for Option<&Pubkey> {
     fn unwrap_key(&self, msg: &str) -> Result<Pubkey> {
-        Ok(*self.ok_or(FixedMarketIxError::MissingPubkey(msg.into()))?)
+        Ok(*self.ok_or(FixedTermMarketIxError::MissingPubkey(msg.into()))?)
     }
 }
 
-impl From<Market> for FixedMarketIxBuilder {
+impl From<Market> for FixedTermMarketIxBuilder {
     fn from(market: Market) -> Self {
-        FixedMarketIxBuilder {
+        FixedTermMarketIxBuilder {
             airspace: market.airspace,
             authority: Pubkey::default(), //todo
-            market: fixed_market_pda(&[
+            market: fixed_term_market_pda(&[
                 seeds::MARKET,
                 market.airspace.as_ref(),
                 market.underlying_token_mint.as_ref(),
@@ -99,7 +99,7 @@ impl From<Market> for FixedMarketIxBuilder {
     }
 }
 
-impl FixedMarketIxBuilder {
+impl FixedTermMarketIxBuilder {
     pub fn new(
         airspace: Pubkey,
         underlying_mint: Pubkey,
@@ -110,13 +110,14 @@ impl FixedMarketIxBuilder {
         fee_destination: Option<Pubkey>,
     ) -> Self {
         let market_ticket_mint =
-            fixed_market_pda(&[jet_market::seeds::MARKET_TICKET_MINT, market.as_ref()]);
+            fixed_term_market_pda(&[jet_market::seeds::MARKET_TICKET_MINT, market.as_ref()]);
         let underlying_token_vault =
-            fixed_market_pda(&[jet_market::seeds::UNDERLYING_TOKEN_VAULT, market.as_ref()]);
+            fixed_term_market_pda(&[jet_market::seeds::UNDERLYING_TOKEN_VAULT, market.as_ref()]);
         let orderbook_market_state =
-            fixed_market_pda(&[jet_market::seeds::ORDERBOOK_MARKET_STATE, market.as_ref()]);
-        let claims = fixed_market_pda(&[jet_market::seeds::CLAIM_NOTES, market.as_ref()]);
-        let collateral = fixed_market_pda(&[jet_market::seeds::COLLATERAL_NOTES, market.as_ref()]);
+            fixed_term_market_pda(&[jet_market::seeds::ORDERBOOK_MARKET_STATE, market.as_ref()]);
+        let claims = fixed_term_market_pda(&[jet_market::seeds::CLAIM_NOTES, market.as_ref()]);
+        let collateral =
+            fixed_term_market_pda(&[jet_market::seeds::COLLATERAL_NOTES, market.as_ref()]);
         Self {
             airspace,
             authority,
@@ -184,7 +185,7 @@ impl FixedMarketIxBuilder {
     }
 }
 
-impl FixedMarketIxBuilder {
+impl FixedTermMarketIxBuilder {
     pub fn token_mint(&self) -> Pubkey {
         self.underlying_mint
     }
@@ -217,7 +218,7 @@ impl FixedMarketIxBuilder {
     }
 }
 
-impl FixedMarketIxBuilder {
+impl FixedTermMarketIxBuilder {
     pub fn orderbook_mut(&self) -> Result<jet_market::accounts::OrderbookMut> {
         Ok(jet_market::accounts::OrderbookMut {
             market: self.market,
@@ -382,8 +383,8 @@ impl FixedMarketIxBuilder {
             payer: self.payer.unwrap(),
             borrower_account,
             margin_account: owner,
-            claims: FixedMarketIxBuilder::user_claims(borrower_account),
-            collateral: FixedMarketIxBuilder::user_collateral(borrower_account),
+            claims: FixedTermMarketIxBuilder::user_claims(borrower_account),
+            collateral: FixedTermMarketIxBuilder::user_collateral(borrower_account),
             claims_mint: self.claims,
             collateral_mint: self.collateral,
             underlying_settlement: get_associated_token_address(&owner, &self.underlying_mint),
@@ -559,7 +560,7 @@ impl FixedMarketIxBuilder {
             program_id: jet_market::ID,
             accounts: jet_market::accounts::RefreshPosition {
                 market: self.market,
-                margin_user: fixed_market_pda(&[
+                margin_user: fixed_term_market_pda(&[
                     seeds::MARGIN_BORROWER,
                     self.market.as_ref(),
                     margin_account.as_ref(),
@@ -862,8 +863,8 @@ impl FixedMarketIxBuilder {
     pub fn margin_settle(&self, margin_account: Pubkey) -> Instruction {
         let data = jet_market::instruction::Settle {}.data();
         let margin_user = self.margin_user_account(margin_account);
-        let claims = FixedMarketIxBuilder::user_claims(margin_user);
-        let collateral = FixedMarketIxBuilder::user_collateral(margin_user);
+        let claims = FixedTermMarketIxBuilder::user_claims(margin_user);
+        let collateral = FixedTermMarketIxBuilder::user_collateral(margin_user);
         let accounts = jet_market::accounts::Settle {
             margin_user,
             market: self.market,
@@ -920,22 +921,25 @@ pub struct MarginUser {
     pub collateral: Pubkey,
 }
 
-impl FixedMarketIxBuilder {
+impl FixedTermMarketIxBuilder {
     pub fn margin_user(&self, margin_account: Pubkey) -> MarginUser {
-        let address = fixed_market_pda(&[
+        let address = fixed_term_market_pda(&[
             jet_market::seeds::MARGIN_BORROWER,
             self.market.as_ref(),
             margin_account.as_ref(),
         ]);
         MarginUser {
             address,
-            collateral: fixed_market_pda(&[jet_market::seeds::COLLATERAL_NOTES, address.as_ref()]),
-            claims: fixed_market_pda(&[jet_market::seeds::CLAIM_NOTES, address.as_ref()]),
+            collateral: fixed_term_market_pda(&[
+                jet_market::seeds::COLLATERAL_NOTES,
+                address.as_ref(),
+            ]),
+            claims: fixed_term_market_pda(&[jet_market::seeds::CLAIM_NOTES, address.as_ref()]),
         }
     }
 
     pub fn market_key(airspace: &Pubkey, mint: &Pubkey, seed: [u8; 32]) -> Pubkey {
-        fixed_market_pda(&[
+        fixed_term_market_pda(&[
             jet_market::seeds::MARKET,
             airspace.as_ref(),
             mint.as_ref(),
@@ -944,19 +948,19 @@ impl FixedMarketIxBuilder {
     }
 
     pub fn split_ticket_key(&self, user: &Pubkey, seed: &[u8]) -> Pubkey {
-        fixed_market_pda(&[jet_market::seeds::SPLIT_TICKET, user.as_ref(), seed])
+        fixed_term_market_pda(&[jet_market::seeds::SPLIT_TICKET, user.as_ref(), seed])
     }
 
     pub fn claims_mint(market_key: &Pubkey) -> Pubkey {
-        fixed_market_pda(&[jet_market::seeds::CLAIM_NOTES, market_key.as_ref()])
+        fixed_term_market_pda(&[jet_market::seeds::CLAIM_NOTES, market_key.as_ref()])
     }
 
     pub fn collateral_mint(market_key: &Pubkey) -> Pubkey {
-        fixed_market_pda(&[jet_market::seeds::COLLATERAL_NOTES, market_key.as_ref()])
+        fixed_term_market_pda(&[jet_market::seeds::COLLATERAL_NOTES, market_key.as_ref()])
     }
 
     pub fn claim_ticket_key(&self, ticket_holder: &Pubkey, seed: &[u8]) -> Pubkey {
-        fixed_market_pda(&[
+        fixed_term_market_pda(&[
             jet_market::seeds::CLAIM_TICKET,
             self.market.as_ref(),
             ticket_holder.as_ref(),
@@ -964,11 +968,11 @@ impl FixedMarketIxBuilder {
         ])
     }
     pub fn obligation_key(&self, borrower_account: &Pubkey, seed: &[u8]) -> Pubkey {
-        fixed_market_pda(&Obligation::make_seeds(borrower_account.as_ref(), seed))
+        fixed_term_market_pda(&Obligation::make_seeds(borrower_account.as_ref(), seed))
     }
 
     pub fn margin_user_account(&self, owner: Pubkey) -> Pubkey {
-        fixed_market_pda(&[
+        fixed_term_market_pda(&[
             jet_market::seeds::MARGIN_BORROWER,
             self.market.as_ref(),
             owner.as_ref(),
@@ -976,11 +980,11 @@ impl FixedMarketIxBuilder {
     }
 
     pub fn user_claims(borrower_account: Pubkey) -> Pubkey {
-        fixed_market_pda(&[jet_market::seeds::CLAIM_NOTES, borrower_account.as_ref()])
+        fixed_term_market_pda(&[jet_market::seeds::CLAIM_NOTES, borrower_account.as_ref()])
     }
 
     pub fn user_collateral(borrower_account: Pubkey) -> Pubkey {
-        fixed_market_pda(&[
+        fixed_term_market_pda(&[
             jet_market::seeds::COLLATERAL_NOTES,
             borrower_account.as_ref(),
         ])
@@ -991,7 +995,7 @@ impl FixedMarketIxBuilder {
     }
 }
 
-pub fn fixed_market_pda(seeds: &[&[u8]]) -> Pubkey {
+pub fn fixed_term_market_pda(seeds: &[&[u8]]) -> Pubkey {
     Pubkey::find_program_address(seeds, &jet_market::ID).0
 }
 

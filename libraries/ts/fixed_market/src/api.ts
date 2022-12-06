@@ -2,14 +2,14 @@ import { PublicKey, TransactionInstruction } from "@solana/web3.js"
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token"
 import {
   AssociatedToken,
-  FixedMarketConfig,
+  FixedTermMarketConfig,
   MarginAccount,
   MarginConfig,
   Pool,
   PoolTokenChange,
   sendAll
 } from "@jet-lab/margin"
-import { FixedMarket } from "./fixedMarket"
+import { FixedTermMarket } from "./fixedMarket"
 import { AnchorProvider, BN } from "@project-serum/anchor"
 
 const createRandomSeed = (byteLength: number) => {
@@ -19,7 +19,7 @@ const createRandomSeed = (byteLength: number) => {
 }
 
 const refreshAllMarkets = async (
-  markets: FixedMarket[],
+  markets: FixedTermMarket[],
   ixs: TransactionInstruction[],
   marginAccount: MarginAccount,
   marketAddress: PublicKey
@@ -51,17 +51,17 @@ const refreshAllMarkets = async (
 }
 
 // CREATE MARKET ACCOUNT
-interface IWithCreateFixedMarketAccount {
-  market: FixedMarket
+interface IWithCreateFixedTermMarketAccount {
+  market: FixedTermMarket
   provider: AnchorProvider
   marginAccount: MarginAccount
   walletAddress: PublicKey
-  markets: FixedMarket[]
+  markets: FixedTermMarket[]
   refreshPools: boolean
   pools: Record<string, Pool>
   currentPool: Pool
 }
-export const withCreateFixedMarketAccounts = async ({
+export const withCreateFixedTermMarketAccounts = async ({
   market,
   provider,
   marginAccount,
@@ -70,7 +70,7 @@ export const withCreateFixedMarketAccounts = async ({
   refreshPools,
   pools,
   currentPool
-}: IWithCreateFixedMarketAccount) => {
+}: IWithCreateFixedTermMarketAccount) => {
   const tokenMint = market.addresses.underlyingTokenMint
   const ticketMint = market.addresses.marketTicketMint
   const marketIXS: TransactionInstruction[] = []
@@ -98,7 +98,7 @@ export const withCreateFixedMarketAccounts = async ({
 
 // MARKET MAKER ORDERS
 interface ICreateLendOrder {
-  market: FixedMarket
+  market: FixedTermMarket
   provider: AnchorProvider
   marginAccount: MarginAccount
   marginConfig: MarginConfig
@@ -108,8 +108,8 @@ interface ICreateLendOrder {
   pools: Record<string, Pool>
   currentPool: Pool
   marketAccount?: string
-  marketConfig: FixedMarketConfig
-  markets: FixedMarket[]
+  marketConfig: FixedTermMarketConfig
+  markets: FixedTermMarket[]
 }
 export const offerLoan = async ({
   market,
@@ -124,14 +124,14 @@ export const offerLoan = async ({
   marketConfig,
   markets
 }: ICreateLendOrder) => {
-  // Fail if there is no active fixed market program id in the config
-  if (!marginConfig.fixedMarketProgramId) {
+  // Fail if there is no active fixed term market program id in the config
+  if (!marginConfig.fixedTermMarketProgramId) {
     throw new Error("There is no market configured on this network")
   }
 
   const instructions: TransactionInstruction[][] = []
   // Create relevant accounts if they do not exist
-  const { marketIXS } = await withCreateFixedMarketAccounts({
+  const { marketIXS } = await withCreateFixedTermMarketAccounts({
     market,
     provider,
     marginAccount,
@@ -175,7 +175,7 @@ export const offerLoan = async ({
 }
 
 interface ICreateBorrowOrder {
-  market: FixedMarket
+  market: FixedTermMarket
   marginAccount: MarginAccount
   marginConfig: MarginConfig
   provider: AnchorProvider
@@ -184,8 +184,8 @@ interface ICreateBorrowOrder {
   currentPool: Pool
   amount: BN
   basisPoints: BN
-  marketConfig: FixedMarketConfig
-  markets: FixedMarket[]
+  marketConfig: FixedTermMarketConfig
+  markets: FixedTermMarket[]
 }
 
 export const requestLoan = async ({
@@ -201,14 +201,14 @@ export const requestLoan = async ({
   marketConfig,
   markets
 }: ICreateBorrowOrder): Promise<string> => {
-  // Fail if there is no active fixed market program id in the config
-  if (!marginConfig.fixedMarketProgramId) {
+  // Fail if there is no active fixed term market program id in the config
+  if (!marginConfig.fixedTermMarketProgramId) {
     throw new Error("There is no market configured on this network")
   }
 
   const instructions: TransactionInstruction[][] = []
   // Create relevant accounts if they do not exist
-  const { marketIXS } = await withCreateFixedMarketAccounts({
+  const { marketIXS } = await withCreateFixedTermMarketAccounts({
     market,
     provider,
     marginAccount,
@@ -247,7 +247,7 @@ export const requestLoan = async ({
 }
 
 interface ICancelOrder {
-  market: FixedMarket
+  market: FixedTermMarket
   marginAccount: MarginAccount
   provider: AnchorProvider
   orderId: Uint8Array
@@ -300,7 +300,7 @@ export const cancelOrder = async ({
 // MARKET TAKER ORDERS
 
 interface IBorrowNow {
-  market: FixedMarket
+  market: FixedTermMarket
   marginAccount: MarginAccount
   marginConfig: MarginConfig
   provider: AnchorProvider
@@ -308,7 +308,7 @@ interface IBorrowNow {
   pools: Record<string, Pool>
   currentPool: Pool
   amount: BN
-  markets: FixedMarket[]
+  markets: FixedTermMarket[]
 }
 
 export const borrowNow = async ({
@@ -322,14 +322,14 @@ export const borrowNow = async ({
   amount,
   markets
 }: IBorrowNow): Promise<string> => {
-  // Fail if there is no active fixed market program id in the config
-  if (!marginConfig.fixedMarketProgramId) {
-    throw new Error("There is no fixed market configured on this network")
+  // Fail if there is no active fixed term market program id in the config
+  if (!marginConfig.fixedTermMarketProgramId) {
+    throw new Error("There is no fixed term market configured on this network")
   }
 
   const instructions: TransactionInstruction[][] = []
   // Create relevant accounts if they do not exist
-  const { marketIXS, tokenMint } = await withCreateFixedMarketAccounts({
+  const { marketIXS, tokenMint } = await withCreateFixedTermMarketAccounts({
     market,
     provider,
     marginAccount,
@@ -381,7 +381,7 @@ export const borrowNow = async ({
 }
 
 interface ILendNow {
-  market: FixedMarket
+  market: FixedTermMarket
   marginAccount: MarginAccount
   marginConfig: MarginConfig
   provider: AnchorProvider
@@ -389,7 +389,7 @@ interface ILendNow {
   pools: Record<string, Pool>
   currentPool: Pool
   amount: BN
-  markets: FixedMarket[]
+  markets: FixedTermMarket[]
 }
 
 export const lendNow = async ({
@@ -403,14 +403,14 @@ export const lendNow = async ({
   amount,
   markets
 }: ILendNow): Promise<string> => {
-  // Fail if there is no active fixed market program id in the config
-  if (!marginConfig.fixedMarketProgramId) {
+  // Fail if there is no active fixed term market program id in the config
+  if (!marginConfig.fixedTermMarketProgramId) {
     throw new Error("There is no market configured on this network")
   }
 
   const instructions: TransactionInstruction[][] = []
   // Create relevant accounts if they do not exist
-  const { marketIXS } = await withCreateFixedMarketAccounts({
+  const { marketIXS } = await withCreateFixedTermMarketAccounts({
     market,
     provider,
     marginAccount,
@@ -448,7 +448,7 @@ export const lendNow = async ({
 }
 
 interface ISettle {
-  markets: FixedMarket[]
+  markets: FixedTermMarket[]
   marginAccount: MarginAccount
   provider: AnchorProvider
 }

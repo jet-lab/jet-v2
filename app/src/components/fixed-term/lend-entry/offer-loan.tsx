@@ -14,8 +14,8 @@ import { useRecoilRefresher_UNSTABLE, useRecoilValue } from 'recoil';
 import { useState } from 'react';
 import { MarginConfig, MarginTokenConfig } from '@jet-lab/margin';
 import {
-  AllFixedMarketsAtom,
-  AllFixedMarketsOrderBooksAtom,
+  AllFixedTermMarketsAtom,
+  AllFixedTermMarketsOrderBooksAtom,
   MarketAndconfig
 } from '@state/fixed-market/fixed-term-market-sync';
 import { formatWithCommas } from '@utils/format';
@@ -39,8 +39,8 @@ export const OfferLoan = ({ token, decimals, marketAndConfig, marginConfig }: Re
   const blockExplorer = useRecoilValue(BlockExplorer);
   const [amount, setAmount] = useState(new BN(0));
   const [basisPoints, setBasisPoints] = useState(new BN(0));
-  const markets = useRecoilValue(AllFixedMarketsAtom);
-  const refreshOrderBooks = useRecoilRefresher_UNSTABLE(AllFixedMarketsOrderBooksAtom);
+  const markets = useRecoilValue(AllFixedTermMarketsAtom);
+  const refreshOrderBooks = useRecoilRefresher_UNSTABLE(AllFixedTermMarketsOrderBooksAtom);
 
   const createLendOrder = async (amountParam?: BN, basisPointsParam?: BN) => {
     let signature: string;

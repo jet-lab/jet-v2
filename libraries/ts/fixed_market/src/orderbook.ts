@@ -1,4 +1,4 @@
-import { FixedMarket } from "./fixedMarket"
+import { FixedTermMarket } from "./fixedMarket"
 import { get_orders_from_slab as getOrdersFromSlab, Order } from "./wasm-utils"
 
 export class Orderbook {
@@ -10,9 +10,9 @@ export class Orderbook {
     this.asks = asks
   }
 
-  static async load(fixedMarket: FixedMarket): Promise<Orderbook> {
-    const asksBuf = (await fixedMarket.provider.connection.getAccountInfo(fixedMarket.info.asks))!.data
-    const bidsBuf = (await fixedMarket.provider.connection.getAccountInfo(fixedMarket.info.bids))!.data
+  static async load(fixedTermMarket: FixedTermMarket): Promise<Orderbook> {
+    const asksBuf = (await fixedTermMarket.provider.connection.getAccountInfo(fixedTermMarket.info.asks))!.data
+    const bidsBuf = (await fixedTermMarket.provider.connection.getAccountInfo(fixedTermMarket.info.bids))!.data
 
     const asks = getOrdersFromSlab(new Uint8Array(asksBuf))
     const bids = getOrdersFromSlab(new Uint8Array(bidsBuf))

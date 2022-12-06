@@ -1,31 +1,31 @@
-import { FixedMarket, JetMarket, JetMarketIdl, Orderbook } from '@jet-lab/fixed-market';
+import { FixedTermMarket, JetMarket, JetMarketIdl, Orderbook } from '@jet-lab/fixed-market';
 import { Program } from '@project-serum/anchor';
 import { useEffect } from 'react';
 import { atom, selector, useRecoilValue, useSetRecoilState } from 'recoil';
-import { AirspaceConfig, FixedMarketConfig } from '@jet-lab/margin';
+import { AirspaceConfig, FixedTermMarketConfig } from '@jet-lab/margin';
 import { MainConfig } from '../config/marginConfig';
 import { PublicKey } from '@solana/web3.js';
 import { useProvider } from '@utils/jet/provider';
 import { NetworkStateAtom } from '@state/network/network-state';
 import { useLocation } from 'react-router-dom';
 
-export const AllFixedMarketsAtom = atom<Array<MarketAndconfig>>({
-  key: 'allFixedMarkets',
+export const AllFixedTermMarketsAtom = atom<Array<MarketAndconfig>>({
+  key: 'allFixedTermMarkets',
   default: [],
   dangerouslyAllowMutability: true
 });
 
-export const SelectedFixedMarketAtom = atom<number>({
-  key: 'selectedFixedMarketIndex',
+export const SelectedFixedTermMarketAtom = atom<number>({
+  key: 'selectedFixedTermMarketIndex',
   default: 0,
   dangerouslyAllowMutability: true
 });
 
-export const FixedMarketAtom = selector<MarketAndconfig | null>({
-  key: 'fixedMarketAtom',
+export const FixedTermMarketAtom = selector<MarketAndconfig | null>({
+  key: 'fixedTermMarketAtom',
   get: ({ get }) => {
-    const list = get(AllFixedMarketsAtom);
-    const selected = get(SelectedFixedMarketAtom);
+    const list = get(AllFixedTermMarketsAtom);
+    const selected = get(SelectedFixedTermMarketAtom);
     return list[selected];
   },
   dangerouslyAllowMutability: true
@@ -42,10 +42,10 @@ export interface ExtendedOrderBook extends Orderbook {
   name: string;
 }
 
-export const AllFixedMarketsOrderBooksAtom = selector<ExtendedOrderBook[]>({
-  key: 'allFixedMarketOrderBooks',
+export const AllFixedTermMarketsOrderBooksAtom = selector<ExtendedOrderBook[]>({
+  key: 'allFixedTermMarketOrderBooks',
   get: async ({ get }) => {
-    const list = get(AllFixedMarketsAtom);
+    const list = get(AllFixedTermMarketsAtom);
     return await Promise.all(
       list.map(async market => {
         const raw = await market.market.fetchOrderbook();
@@ -60,26 +60,26 @@ export const AllFixedMarketsOrderBooksAtom = selector<ExtendedOrderBook[]>({
 });
 
 export interface MarketAndconfig {
-  market: FixedMarket;
-  config: FixedMarketConfig;
+  market: FixedTermMarket;
+  config: FixedTermMarketConfig;
   name: string;
 }
 export const useFixedTermSync = (): void => {
   const { provider } = useProvider();
-  const setMarkets = useSetRecoilState(AllFixedMarketsAtom);
+  const setMarkets = useSetRecoilState(AllFixedTermMarketsAtom);
   const config = useRecoilValue(MainConfig);
   const networkState = useRecoilValue(NetworkStateAtom);
   const setCurrentOrderTab = useSetRecoilState(CurrentOrderTabAtom);
   const { pathname } = useLocation();
 
-  const loadFixedMarkets = async (
+  const loadFixedTermMarkets = async (
     airspace: AirspaceConfig,
     program: Program<JetMarket>,
     marginProgramId: PublicKey
   ) => {
     const markets: MarketAndconfig[] = await Promise.all(
-      Object.entries(airspace.fixedMarkets).map(async ([name, marketConfig]) => {
-        const market = await FixedMarket.load(program, marketConfig.market, marginProgramId);
+      Object.entries(airspace.fixedTermMarkets).map(async ([name, marketConfig]) => {
+        const market = await FixedTermMarket.load(program, marketConfig.market, marginProgramId);
         return { market, config: marketConfig, name };
       })
     );
@@ -87,10 +87,10 @@ export const useFixedTermSync = (): void => {
   };
 
   useEffect(() => {
-    if (networkState === 'connected' && config?.fixedMarketProgramId) {
-      const program = new Program(JetMarketIdl, config.fixedMarketProgramId, provider);
+    if (networkState === 'connected' && config?.fixedTermMarketProgramId) {
+      const program = new Program(JetMarketIdl, config.fixedTermMarketProgramId, provider);
       const airspace = config.airspaces.find(airspace => airspace.name === 'default');
-      loadFixedMarkets(airspace, program, new PublicKey(config.marginProgramId));
+      loadFixedTermMarkets(airspace, program, new PublicKey(config.marginProgramId));
     }
   }, [config, networkState]);
 

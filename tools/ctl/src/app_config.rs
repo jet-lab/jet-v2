@@ -13,7 +13,7 @@ use solana_sdk::pubkey::Pubkey;
 use crate::{
     client::Client,
     config::{
-        ConfigType, DependenciesDefinition, FixedMarketsDefinition, RpcDefinition,
+        ConfigType, DependenciesDefinition, FixedTermMarketsDefinition, RpcDefinition,
         SerumMarketsDefinition, TokenDefinition,
     },
     serum::SerumMarketAccount,
@@ -27,7 +27,7 @@ pub struct JetAppConfig {
     pub airspace_program_id: Pubkey,
 
     #[serde_as(as = "DisplayFromStr")]
-    pub fixed_market_program_id: Pubkey,
+    pub fixed_term_market_program_id: Pubkey,
 
     #[serde_as(as = "DisplayFromStr")]
     pub control_program_id: Pubkey,
@@ -71,7 +71,7 @@ pub struct JetAppConfig {
 pub struct AirspaceInfo {
     pub name: String,
     pub tokens: Vec<String>,
-    pub fixed_markets: HashMap<String, FixedMarketInfo>,
+    pub fixed_term_markets: HashMap<String, FixedTermMarketInfo>,
 }
 
 #[serde_as]
@@ -131,7 +131,7 @@ pub struct SwapPoolInfo {
 #[serde_as]
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct FixedMarketInfo {
+pub struct FixedTermMarketInfo {
     pub symbol: String,
 
     #[serde_as(as = "DisplayFromStr")]
@@ -153,18 +153,18 @@ impl JetAppConfig {
         )
         .await?;
         let swap_pools = vec![]; // FIXME: handle mainnet?
-        let fixed_markets =
-            Self::generate_fixed_market_map(client, dir.join("fixed-markets.toml")).await?;
+        let fixed_term_markets =
+            Self::generate_fixed_term_market_map(client, dir.join("fixed-markets.toml")).await?;
 
         let airspaces = vec![AirspaceInfo {
             name: "default".to_owned(),
             tokens: tokens.keys().cloned().collect(),
-            fixed_markets,
+            fixed_term_markets,
         }];
 
         Ok(Self {
             airspace_program_id: jet_margin_sdk::jet_airspace::ID,
-            fixed_market_program_id: jet_margin_sdk::jet_market::ID,
+            fixed_term_market_program_id: jet_margin_sdk::jet_market::ID,
             control_program_id: jet_margin_sdk::jet_control::ID,
             margin_program_id: jet_margin_sdk::jet_margin::ID,
             margin_pool_program_id: jet_margin_sdk::jet_margin_pool::ID,
@@ -252,39 +252,41 @@ impl JetAppConfig {
         Ok(markets)
     }
 
-    async fn generate_fixed_market_map(
+    async fn generate_fixed_term_market_map(
         client: &Client,
         path: PathBuf,
-    ) -> Result<HashMap<String, FixedMarketInfo>> {
-        let mut fixed_markets = HashMap::new();
+    ) -> Result<HashMap<String, FixedTermMarketInfo>> {
+        let mut fixed_term_markets = HashMap::new();
 
         if !path.exists() {
-            return Ok(fixed_markets);
+            return Ok(fixed_term_markets);
         }
 
         let market_def = Self::read_fixed_config(path).await?;
 
-        for fixed_market in market_def.markets {
-            let market: Market = client.read_anchor_account(&fixed_market.market).await?;
-            fixed_markets.insert(
-                format!("{}_{}", fixed_market.symbol, fixed_market.tenor),
-                FixedMarketInfo {
-                    symbol: fixed_market.symbol.clone(),
-                    market: fixed_market.market,
+        for fixed_term_market in market_def.markets {
+            let market: Market = client
+                .read_anchor_account(&fixed_term_market.market)
+                .await?;
+            fixed_term_markets.insert(
+                format!("{}_{}", fixed_term_market.symbol, fixed_term_market.tenor),
+                FixedTermMarketInfo {
+                    symbol: fixed_term_market.symbol.clone(),
+                    market: fixed_term_market.market,
                     market_info: market,
                 },
             );
         }
 
-        Ok(fixed_markets)
+        Ok(fixed_term_markets)
     }
 
-    async fn read_fixed_config(path: PathBuf) -> Result<FixedMarketsDefinition> {
+    async fn read_fixed_config(path: PathBuf) -> Result<FixedTermMarketsDefinition> {
         match crate::config::read_config_file(&path)
             .await
-            .with_context(|| format!("while reading fixed market definition at {:?}", &path))?
+            .with_context(|| format!("while reading fixed term market definition at {:?}", &path))?
         {
-            ConfigType::FixedMarkets(market_def) => Ok(market_def),
+            ConfigType::FixedTermMarkets(market_def) => Ok(market_def),
             _ => bail!("config {path:?} is not in the right format"),
         }
     }

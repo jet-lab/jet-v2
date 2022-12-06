@@ -14,8 +14,8 @@ import { useRecoilRefresher_UNSTABLE, useRecoilValue } from 'recoil';
 import { useState } from 'react';
 import { MarginConfig, MarginTokenConfig } from '@jet-lab/margin';
 import {
-  AllFixedMarketsAtom,
-  AllFixedMarketsOrderBooksAtom,
+  AllFixedTermMarketsAtom,
+  AllFixedTermMarketsOrderBooksAtom,
   MarketAndconfig
 } from '@state/fixed-market/fixed-term-market-sync';
 import debounce from 'lodash.debounce';
@@ -36,8 +36,8 @@ export const LendNow = ({ token, decimals, marketAndConfig, marginConfig }: Requ
   const wallet = useWallet();
   const blockExplorer = useRecoilValue(BlockExplorer);
   const [amount, setAmount] = useState(new BN(0));
-  const markets = useRecoilValue(AllFixedMarketsAtom);
-  const refreshOrderBooks = useRecoilRefresher_UNSTABLE(AllFixedMarketsOrderBooksAtom);
+  const markets = useRecoilValue(AllFixedTermMarketsAtom);
+  const refreshOrderBooks = useRecoilRefresher_UNSTABLE(AllFixedTermMarketsOrderBooksAtom);
 
   const marketLendOrder = async () => {
     let signature: string;

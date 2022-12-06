@@ -7,7 +7,7 @@ use crate::margin::origination_fee;
 /// The `Market` contains all the information necessary to run the fixed term market
 ///
 /// Utilized by program instructions to verify given transaction accounts are correct. Contains data
-/// about the fixed market including the tenor and ticket<->token conversion rate
+/// about the fixed term market including the tenor and ticket<->token conversion rate
 #[cfg_attr(any(feature = "cli", test), derive(Deserialize))]
 #[account(zero_copy)]
 pub struct Market {

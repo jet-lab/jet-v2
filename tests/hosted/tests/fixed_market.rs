@@ -15,7 +15,7 @@ use jet_margin_sdk::{
     ix_builder::MarginIxBuilder,
     margin_integrator::{NoProxy, Proxy},
     solana::transaction::{InverseSendTransactionBuilder, SendTransactionBuilder},
-    tx_builder::fixed_market::FixedPositionRefresher,
+    tx_builder::fixed_market::FixedTermPositionRefresher,
     util::data::Concat,
 };
 use jet_margin_sdk::{margin_integrator::RefreshingProxy, tx_builder::MarginTxBuilder};
@@ -64,7 +64,7 @@ async fn margin_repay() -> Result<()> {
                 0,
             )),
             Arc::new(
-                FixedPositionRefresher::new(
+                FixedTermPositionRefresher::new(
                     margin.pubkey(),
                     client.clone(),
                     &[manager.ix_builder.market()],
@@ -398,7 +398,7 @@ async fn non_margin_orders_for_proxy<P: Proxy + GenerateProxy>(
     Ok(())
 }
 
-async fn create_fixed_market_margin_user(
+async fn create_fixed_term_market_margin_user(
     ctx: &Arc<MarginTestContext>,
     manager: Arc<FixedTestManager>,
     pool_positions: Vec<(Pubkey, u64, u64)>,
@@ -421,7 +421,7 @@ async fn create_fixed_market_margin_user(
                 0,
             )),
             Arc::new(
-                FixedPositionRefresher::new(
+                FixedTermPositionRefresher::new(
                     margin.pubkey(),
                     client.clone(),
                     &[manager.ix_builder.market()],
@@ -451,9 +451,12 @@ async fn margin_borrow() -> Result<()> {
     let client = manager.client.clone();
     let ([collateral], _, pricer) = tokens(&ctx).await.unwrap();
 
-    let user =
-        create_fixed_market_margin_user(&ctx, manager.clone(), vec![(collateral, 0, u64::MAX / 2)])
-            .await;
+    let user = create_fixed_term_market_margin_user(
+        &ctx,
+        manager.clone(),
+        vec![(collateral, 0, u64::MAX / 2)],
+    )
+    .await;
 
     vec![
         pricer.set_oracle_price_tx(&collateral, 1.0).await.unwrap(),
@@ -488,7 +491,7 @@ async fn margin_borrow_fails_without_collateral() -> Result<()> {
     let client = manager.client.clone();
     let ([collateral], _, pricer) = tokens(&ctx).await.unwrap();
 
-    let user = create_fixed_market_margin_user(&ctx, manager.clone(), vec![]).await;
+    let user = create_fixed_term_market_margin_user(&ctx, manager.clone(), vec![]).await;
 
     let result = vec![
         pricer.set_oracle_price_tx(&collateral, 1.0).await.unwrap(),
@@ -527,7 +530,7 @@ async fn margin_lend() -> Result<()> {
     let manager = Arc::new(FixedTestManager::full(ctx.solana.clone()).await.unwrap());
     let client = manager.client.clone();
 
-    let user = create_fixed_market_margin_user(&ctx, manager.clone(), vec![]).await;
+    let user = create_fixed_term_market_margin_user(&ctx, manager.clone(), vec![]).await;
 
     user.margin_lend_order(underlying(1_000, 2_000), &[])
         .await?
@@ -550,10 +553,13 @@ async fn margin_borrow_then_margin_lend() -> Result<()> {
     let client = manager.client.clone();
     let ([collateral], _, pricer) = tokens(&ctx).await.unwrap();
 
-    let borrower =
-        create_fixed_market_margin_user(&ctx, manager.clone(), vec![(collateral, 0, u64::MAX / 2)])
-            .await;
-    let lender = create_fixed_market_margin_user(&ctx, manager.clone(), vec![]).await;
+    let borrower = create_fixed_term_market_margin_user(
+        &ctx,
+        manager.clone(),
+        vec![(collateral, 0, u64::MAX / 2)],
+    )
+    .await;
+    let lender = create_fixed_term_market_margin_user(&ctx, manager.clone(), vec![]).await;
 
     vec![
         pricer.set_oracle_price_tx(&collateral, 1.0).await.unwrap(),
@@ -610,10 +616,13 @@ async fn margin_lend_then_margin_borrow() -> Result<()> {
     let client = manager.client.clone();
     let ([collateral], _, pricer) = tokens(&ctx).await.unwrap();
 
-    let borrower =
-        create_fixed_market_margin_user(&ctx, manager.clone(), vec![(collateral, 0, u64::MAX / 2)])
-            .await;
-    let lender = create_fixed_market_margin_user(&ctx, manager.clone(), vec![]).await;
+    let borrower = create_fixed_term_market_margin_user(
+        &ctx,
+        manager.clone(),
+        vec![(collateral, 0, u64::MAX / 2)],
+    )
+    .await;
+    let lender = create_fixed_term_market_margin_user(&ctx, manager.clone(), vec![]).await;
 
     lender
         .margin_lend_order(underlying(1_001, 2_000), &[])
@@ -670,7 +679,7 @@ async fn margin_sell_tickets() -> Result<()> {
     let manager = Arc::new(FixedTestManager::full(ctx.solana.clone()).await.unwrap());
     let client = manager.client.clone();
 
-    let user = create_fixed_market_margin_user(&ctx, manager.clone(), vec![]).await;
+    let user = create_fixed_term_market_margin_user(&ctx, manager.clone(), vec![]).await;
     user.convert_tokens(10_000).await.unwrap();
 
     user.margin_sell_tickets_order(tickets(1_200, 2_000))

@@ -39,7 +39,7 @@ pub struct StakeMarketTickets<'info> {
     )]
     pub claim_ticket: Account<'info, ClaimTicket>,
 
-    /// The Market account tracks fixed market assets of a particular tenor
+    /// The Market account tracks fixed term market assets of a particular tenor
     #[account(
         mut,
         has_one = market_ticket_mint @ ErrorCode::WrongTicketMint,

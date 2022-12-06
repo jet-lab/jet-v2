@@ -16,7 +16,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 mod airspace;
-/// fixed market-margin integration code
+/// fixed term market-margin integration code
 pub mod fixed_market;
 mod user;
 

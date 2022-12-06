@@ -1,4 +1,4 @@
-import { FixedMarketConfig } from '@jet-lab/margin';
+import { FixedTermMarketConfig } from '@jet-lab/margin';
 import { formatDuration, intervalToDuration } from 'date-fns';
 
 export const friendlyMarketName = (symbol: string, tenor: number): string => {
@@ -9,6 +9,6 @@ export const friendlyMarketName = (symbol: string, tenor: number): string => {
   return `${duration} ${symbol}`;
 };
 
-export const marketToString = (market: FixedMarketConfig): string => {
+export const marketToString = (market: FixedTermMarketConfig): string => {
   return friendlyMarketName(market.symbol, market.borrowTenor);
 };

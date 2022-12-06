@@ -21,10 +21,10 @@ import {
 
 import CONFIG from '../../../app/public/localnet.config.json';
 
-import { FixedMarket, JetMarket, JetMarketIdl, MarginUserInfo, rate_to_price } from '@jet-lab/fixed-market';
+import { FixedTermMarket, JetMarket, JetMarketIdl, MarginUserInfo, rate_to_price } from '@jet-lab/fixed-market';
 import { createAssociatedTokenAccountInstruction, getAssociatedTokenAddress } from '@solana/spl-token';
 
-describe('margin fixed market ticket borrowing', async () => {
+describe('margin fixed term market ticket borrowing', async () => {
   // SUITE SETUP
   const provider = AnchorProvider.local(undefined, DEFAULT_CONFIRM_OPTS);
   anchor.setProvider(provider);
@@ -61,12 +61,12 @@ describe('margin fixed market ticket borrowing', async () => {
   let user_c_BTC_account: PublicKey;
   let user_c_usdc_account: PublicKey;
 
-  const fixedMarketProgram: anchor.Program<JetMarket> = new anchor.Program(
+  const fixedTermMarketProgram: anchor.Program<JetMarket> = new anchor.Program(
     JetMarketIdl,
-    CONFIG.fixedMarketProgramId,
+    CONFIG.fixedTermMarketProgramId,
     provider
   );
-  let fixedMarket: FixedMarket;
+  let fixedTermMarket: FixedTermMarket;
 
   it('setup', async () => {
     // Fund payer
@@ -205,27 +205,27 @@ describe('margin fixed market ticket borrowing', async () => {
     await marginAccount_B.refresh();
     await marginAccount_C.refresh();
 
-    // load the fixed market
-    fixedMarket = await FixedMarket.load(
-      fixedMarketProgram,
-      CONFIG.airspaces[0].fixedMarkets.USDC_86400.market,
+    // load the fixed term market
+    fixedTermMarket = await FixedTermMarket.load(
+      fixedTermMarketProgram,
+      CONFIG.airspaces[0].fixedTermMarkets.USDC_86400.market,
       CONFIG.marginProgramId
     );
   });
 
   const registerNewMarginUser = async (
     marginAccount: MarginAccount,
-    fixedMarket: FixedMarket,
+    fixedTermMarket: FixedTermMarket,
     payer: Keypair,
     provider: AnchorProvider
   ) => {
     const tokenAcc = await getAssociatedTokenAddress(
-      fixedMarket.addresses.underlyingTokenMint,
+      fixedTermMarket.addresses.underlyingTokenMint,
       marginAccount.address,
       true
     );
     const ticketAcc = await getAssociatedTokenAddress(
-      fixedMarket.addresses.marketTicketMint,
+      fixedTermMarket.addresses.marketTicketMint,
       marginAccount.address,
       true
     );
@@ -236,7 +236,7 @@ describe('margin fixed market ticket borrowing', async () => {
             payer.publicKey,
             tokenAcc,
             marginAccount.address,
-            fixedMarket.addresses.underlyingTokenMint
+            fixedTermMarket.addresses.underlyingTokenMint
           )
         )
         .add(
@@ -244,30 +244,30 @@ describe('margin fixed market ticket borrowing', async () => {
             payer.publicKey,
             ticketAcc,
             marginAccount.address,
-            fixedMarket.addresses.marketTicketMint
+            fixedTermMarket.addresses.marketTicketMint
           )
         ),
       [payer]
     );
 
     let ixs: TransactionInstruction[] = [
-      await viaMargin(marginAccount, await fixedMarket.registerAccountWithMarket(marginAccount, payer.publicKey)),
-      await viaMargin(marginAccount, await fixedMarket.refreshPosition(marginAccount, false))
+      await viaMargin(marginAccount, await fixedTermMarket.registerAccountWithMarket(marginAccount, payer.publicKey)),
+      await viaMargin(marginAccount, await fixedTermMarket.refreshPosition(marginAccount, false))
     ];
     await provider.sendAndConfirm(new Transaction().add(...ixs), [payer]);
   };
 
-  it('margin users create fixed market accounts', async () => {
-    assert(fixedMarket);
+  it('margin users create fixed term market accounts', async () => {
+    assert(fixedTermMarket);
 
     // register token wallets with margin accounts
-    await registerNewMarginUser(marginAccount_A, fixedMarket, wallet_a.payer, provider_a);
-    await registerNewMarginUser(marginAccount_B, fixedMarket, wallet_b.payer, provider_b);
+    await registerNewMarginUser(marginAccount_A, fixedTermMarket, wallet_a.payer, provider_a);
+    await registerNewMarginUser(marginAccount_B, fixedTermMarket, wallet_b.payer, provider_b);
 
-    let borrower_a = (await fixedMarket.fetchMarginUser(marginAccount_A)) as MarginUserInfo;
-    let borrower_b = (await fixedMarket.fetchMarginUser(marginAccount_B)) as MarginUserInfo;
+    let borrower_a = (await fixedTermMarket.fetchMarginUser(marginAccount_A)) as MarginUserInfo;
+    let borrower_b = (await fixedTermMarket.fetchMarginUser(marginAccount_B)) as MarginUserInfo;
 
-    assert(borrower_a.market.toBase58() === fixedMarket.addresses.market.toBase58());
+    assert(borrower_a.market.toBase58() === fixedTermMarket.addresses.market.toBase58());
     assert(borrower_b.marginAccount.toBase58() === marginAccount_B.address.toBase58());
   });
 
@@ -302,27 +302,27 @@ describe('margin fixed market ticket borrowing', async () => {
   it('places market maker orders', async () => {
     // LIMIT LEND ORDER
     await airdropMarginWallet(marginAccount_B, USDC, 100_000);
-    const offerLoanB = await fixedMarket.offerLoanIx(
+    const offerLoanB = await fixedTermMarket.offerLoanIx(
       marginAccount_B,
       loanOfferParams.amount,
       loanOfferParams.rate,
       wallet_b.payer.publicKey,
       Uint8Array.from([0, 0, 0, 0]),
-      CONFIG.airspaces[0].fixedMarkets.USDC_86400.borrowTenor
+      CONFIG.airspaces[0].fixedTermMarkets.USDC_86400.borrowTenor
     );
     const limitLend = await viaMargin(marginAccount_B, offerLoanB);
     await provider_b.sendAndConfirm(makeTx([limitLend]), [wallet_b.payer]);
 
     // LIMIT BORROW ORDER
-    const requestBorrowB = await fixedMarket.requestBorrowIx(
+    const requestBorrowB = await fixedTermMarket.requestBorrowIx(
       marginAccount_B,
       wallet_b.payer.publicKey,
       borrowRequestParams.amount,
       borrowRequestParams.rate,
       Uint8Array.from([0, 0, 0, 0]),
-      CONFIG.airspaces[0].fixedMarkets.USDC_86400.borrowTenor
+      CONFIG.airspaces[0].fixedTermMarkets.USDC_86400.borrowTenor
     );
-    const refresh = await viaMargin(marginAccount_B, await fixedMarket.refreshPosition(marginAccount_B, false));
+    const refresh = await viaMargin(marginAccount_B, await fixedTermMarket.refreshPosition(marginAccount_B, false));
     const marketLend = await viaMargin(marginAccount_B, requestBorrowB);
     await provider_b.sendAndConfirm(makeTx([refresh, marketLend]), [wallet_b.payer]);
   });
@@ -331,7 +331,7 @@ describe('margin fixed market ticket borrowing', async () => {
   const borrowNowAmount = new BN(100);
   it('places market taker orders', async () => {
     await airdropMarginWallet(marginAccount_A, USDC, 100_000);
-    const lendNowA = await fixedMarket.lendNowIx(
+    const lendNowA = await fixedTermMarket.lendNowIx(
       marginAccount_A,
       lendNowAmount,
       wallet_a.payer.publicKey,
@@ -340,21 +340,21 @@ describe('margin fixed market ticket borrowing', async () => {
     const lendNow = await viaMargin(marginAccount_A, lendNowA);
     await provider_a.sendAndConfirm(makeTx([lendNow]), [wallet_a.payer]);
 
-    const borrowNowA = await fixedMarket.borrowNowIx(
+    const borrowNowA = await fixedTermMarket.borrowNowIx(
       marginAccount_A,
       wallet_a.payer.publicKey,
       borrowNowAmount,
       Uint8Array.from([0, 0, 0, 0])
     );
     const borrowNow = await viaMargin(marginAccount_A, borrowNowA);
-    const refreshA = await viaMargin(marginAccount_A, await fixedMarket.refreshPosition(marginAccount_A, false));
+    const refreshA = await viaMargin(marginAccount_A, await fixedTermMarket.refreshPosition(marginAccount_A, false));
     await provider_a.sendAndConfirm(makeTx([refreshA, borrowNow]), [wallet_a.payer]);
   });
 
   let loanId: Uint8Array;
 
   it('loads orderbook and has correct orders', async () => {
-    const orderbook = await fixedMarket.fetchOrderbook();
+    const orderbook = await fixedTermMarket.fetchOrderbook();
     const offeredLoan = orderbook.bids[0];
     const requestedBorrow = orderbook.asks[0];
 
@@ -362,7 +362,7 @@ describe('margin fixed market ticket borrowing', async () => {
 
     assert(
       offeredLoan.limit_price ===
-        rate_to_price(bnToBigInt(loanOfferParams.rate), BigInt(CONFIG.airspaces[0].fixedMarkets.USDC_86400.borrowTenor))
+        rate_to_price(bnToBigInt(loanOfferParams.rate), BigInt(CONFIG.airspaces[0].fixedTermMarkets.USDC_86400.borrowTenor))
     );
 
     const expectedBorrowOrderSizeRounded = Math.round(Number(offeredLoan.quote_size) / 10) * 10;
@@ -383,13 +383,13 @@ describe('margin fixed market ticket borrowing', async () => {
       requestedBorrow.limit_price ===
         rate_to_price(
           bnToBigInt(borrowRequestParams.rate),
-          BigInt(CONFIG.airspaces[0].fixedMarkets.USDC_86400.borrowTenor)
+          BigInt(CONFIG.airspaces[0].fixedTermMarkets.USDC_86400.borrowTenor)
         )
     );
   });
 
   it('margin users cancel orders', async () => {
-    const cancelLoan = await fixedMarket.cancelOrderIx(marginAccount_B, loanId);
+    const cancelLoan = await fixedTermMarket.cancelOrderIx(marginAccount_B, loanId);
     const invokeCancelLoan = await viaMargin(marginAccount_B, cancelLoan);
 
     await provider_b.sendAndConfirm(makeTx([invokeCancelLoan]));

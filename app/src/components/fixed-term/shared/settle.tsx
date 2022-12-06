@@ -1,6 +1,6 @@
-import { BondMarket, settle } from '@jet-lab/jet-bonds-client';
+import { FixedTermMarket, settle } from '@jet-lab/fixed-market';
 import { MarginAccount } from '@jet-lab/margin';
-import { AllFixedMarketsAtom, MarketAndconfig } from '@state/fixed-market/fixed-term-market-sync';
+import { AllFixedTermMarketsAtom, MarketAndconfig } from '@state/fixed-market/fixed-term-market-sync';
 import { BlockExplorer, Cluster } from '@state/settings/settings';
 import { CurrentAccount } from '@state/user/accounts';
 import { useProvider } from '@utils/jet/provider';
@@ -16,7 +16,7 @@ interface Owed {
 }
 const defaultAssets: Owed = { tickets: 0, tokens: 0 };
 
-const fetchAssets = async (market: BondMarket, marginAccount: MarginAccount): Promise<Owed> => {
+const fetchAssets = async (market: FixedTermMarket, marginAccount: MarginAccount): Promise<Owed> => {
   const user = await market.fetchMarginUser(marginAccount);
   const assets = { ...defaultAssets };
   if (user?.assets) {
@@ -40,7 +40,7 @@ const fetchTotalOwed = async (markets: MarketAndconfig[], marginAccount: MarginA
 };
 
 export const Settle = () => {
-  const markets = useRecoilValue(AllFixedMarketsAtom);
+  const markets = useRecoilValue(AllFixedTermMarketsAtom);
   const marginAccount = useRecoilValue(CurrentAccount);
   const [pendingAssets, setPendingAssets] = useState({ ...defaultAssets });
   const blockExplorer = useRecoilValue(BlockExplorer);

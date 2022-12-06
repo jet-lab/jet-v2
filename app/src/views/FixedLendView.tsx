@@ -6,7 +6,7 @@ import { FullAccountBalance } from '@components/tables/FullAccountBalance';
 import { Dictionary } from '@state/settings/localization/localization';
 import { FixedLendOrderEntry } from '@components/fixed-term/lend-entry';
 import { FixedLendRowOrder, FixedLendViewOrder } from '@state/views/fixed-term';
-import { FixedMarketSelector } from '@components/fixed-term/shared/market-selector';
+import { FixedTermMarketSelector } from '@components/fixed-term/shared/market-selector';
 import { NetworkStateAtom } from '@state/network/network-state';
 import { WaitingForNetworkView } from './WaitingForNetwork';
 import { DebtTable } from '@components/fixed-term/shared/debt-table';
@@ -40,7 +40,7 @@ const viewComponents: Record<string, React.FC<any>> = {
   fixedRow: FixedRow,
   debtTable: DebtTable,
   fullAccountBalance: FullAccountBalance,
-  marketSelector: FixedMarketSelector,
+  marketSelector: FixedTermMarketSelector,
   settleComponent: Settle
 };
 

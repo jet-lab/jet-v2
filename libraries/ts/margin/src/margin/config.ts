@@ -5,7 +5,7 @@ export const MARGIN_CONFIG_URL = "https://storage.googleapis.com/jet-app-config/
 export type MarginCluster = "localnet" | "devnet" | "mainnet-beta" | MarginConfig
 
 export interface MarginConfig {
-  fixedMarketProgramId?: string
+  fixedTermMarketProgramId?: string
   metadataAccount: string
   controlProgramId: Address
   marginProgramId: Address
@@ -25,10 +25,10 @@ export interface MarginConfig {
 export interface AirspaceConfig {
   name: string
   tokens: string[]
-  fixedMarkets: Record<string, FixedMarketConfig>
+  fixedTermMarkets: Record<string, FixedTermMarketConfig>
 }
 
-export interface FixedMarketConfig {
+export interface FixedTermMarketConfig {
   symbol: string
   market: Address
   version: number

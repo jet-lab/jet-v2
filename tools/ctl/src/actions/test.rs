@@ -3,7 +3,7 @@ use std::{collections::HashMap, path::Path};
 use anchor_lang::prelude::Rent;
 use anyhow::{bail, Result};
 use jet_margin_sdk::{
-    fixed_market::fixed_market_pda,
+    fixed_market::fixed_term_market_pda,
     ix_builder::{
         derive_airspace,
         test_service::{derive_swap_pool, derive_token_mint},
@@ -16,7 +16,7 @@ use serde::{Deserialize, Serialize};
 use solana_sdk::{pubkey, pubkey::Pubkey, signer::Signer};
 
 use crate::{
-    app_config::{AirspaceInfo, FixedMarketInfo, JetAppConfig, SwapPoolInfo, TokenInfo},
+    app_config::{AirspaceInfo, FixedTermMarketInfo, JetAppConfig, SwapPoolInfo, TokenInfo},
     client::{Client, NetworkKind, Plan},
 };
 
@@ -89,7 +89,7 @@ async fn generate_app_config(client: &Client, env: &EnvironmentConfig) -> Result
         AirspaceInfo {
             name: as_config.name.clone(),
             tokens: as_config.tokens.keys().cloned().collect(),
-            fixed_markets: generate_fixed_markets_app_config_from_env(client, as_config)
+            fixed_term_markets: generate_fixed_term_markets_app_config_from_env(client, as_config)
                 .await
                 .unwrap(),
         }
@@ -98,7 +98,7 @@ async fn generate_app_config(client: &Client, env: &EnvironmentConfig) -> Result
 
     Ok(JetAppConfig {
         airspace_program_id: jet_margin_sdk::jet_airspace::ID,
-        fixed_market_program_id: jet_margin_sdk::jet_market::ID,
+        fixed_term_market_program_id: jet_margin_sdk::jet_market::ID,
         control_program_id: jet_margin_sdk::jet_control::ID,
         margin_program_id: jet_margin_sdk::jet_margin::ID,
         margin_pool_program_id: jet_margin_sdk::jet_margin_pool::ID,
@@ -162,23 +162,26 @@ fn generate_token_app_config_from_env(env: &EnvironmentConfig) -> HashMap<String
     }))
 }
 
-async fn generate_fixed_markets_app_config_from_env(
+async fn generate_fixed_term_markets_app_config_from_env(
     client: &Client,
     as_config: &AirspaceConfig,
-) -> Result<HashMap<String, FixedMarketInfo>> {
-    let mut fixed_markets = HashMap::new();
+) -> Result<HashMap<String, FixedTermMarketInfo>> {
+    let mut fixed_term_markets = HashMap::new();
     let airspace = derive_airspace(&as_config.name);
 
     for (name, config) in &as_config.tokens {
         let token_mint = derive_token_mint(name);
 
-        for fixed_market in &config.fixed_markets {
-            let market =
-                derive_market_from_tenor_seed(&airspace, &token_mint, fixed_market.borrow_tenor);
+        for fixed_term_market in &config.fixed_term_markets {
+            let market = derive_market_from_tenor_seed(
+                &airspace,
+                &token_mint,
+                fixed_term_market.borrow_tenor,
+            );
 
-            fixed_markets.insert(
-                format!("{name}_{}", fixed_market.borrow_tenor),
-                FixedMarketInfo {
+            fixed_term_markets.insert(
+                format!("{name}_{}", fixed_term_market.borrow_tenor),
+                FixedTermMarketInfo {
                     symbol: name.clone(),
                     market,
                     market_info: client.read_anchor_account(&market).await?,
@@ -187,11 +190,11 @@ async fn generate_fixed_markets_app_config_from_env(
         }
     }
 
-    Ok(fixed_markets)
+    Ok(fixed_term_markets)
 }
 
 fn derive_market(airspace: &Pubkey, token_mint: &Pubkey, seed: [u8; 32]) -> Pubkey {
-    fixed_market_pda(&[
+    fixed_term_market_pda(&[
         jet_margin_sdk::jet_market::seeds::MARKET,
         airspace.as_ref(),
         token_mint.as_ref(),

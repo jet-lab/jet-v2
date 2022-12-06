@@ -1,6 +1,6 @@
 import { useRecoilState, useRecoilValue } from 'recoil';
 ('../misc/ReorderArrows');
-import { AllFixedMarketsAtom, SelectedFixedMarketAtom } from '@state/fixed-market/fixed-term-market-sync';
+import { AllFixedTermMarketsAtom, SelectedFixedTermMarketAtom } from '@state/fixed-market/fixed-term-market-sync';
 import { FixedBorrowViewOrder, FixedLendViewOrder } from '@state/views/fixed-term';
 import { ReorderArrows } from '@components/misc/ReorderArrows';
 import { Select } from 'antd';
@@ -10,13 +10,13 @@ import { marketToString } from '@utils/jet/fixed-term-utils';
 
 const { Option } = Select;
 
-interface FixedMarketSelectorProps {
+interface FixedTermMarketSelectorProps {
   type: 'asks' | 'bids';
 }
-export const FixedMarketSelector = ({ type }: FixedMarketSelectorProps) => {
+export const FixedTermMarketSelector = ({ type }: FixedTermMarketSelectorProps) => {
   const [order, setOrder] = useRecoilState(type === 'asks' ? FixedLendViewOrder : FixedBorrowViewOrder);
-  const markets = useRecoilValue(AllFixedMarketsAtom);
-  const [selectedMarket, setSelectedMarket] = useRecoilState(SelectedFixedMarketAtom);
+  const markets = useRecoilValue(AllFixedTermMarketsAtom);
+  const [selectedMarket, setSelectedMarket] = useRecoilState(SelectedFixedTermMarketAtom);
   const formatting = useCurrencyFormatting();
   return (
     <div className="fixed-term-selector-view view-element">

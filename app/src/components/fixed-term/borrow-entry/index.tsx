@@ -3,7 +3,7 @@ import { ReorderArrows } from '@components/misc/ReorderArrows';
 import { Typography, Tabs } from 'antd';
 import { useMemo } from 'react';
 import { FixedLendRowOrder } from '@state/views/fixed-term';
-import { CurrentOrderTab, CurrentOrderTabAtom, FixedMarketAtom } from '@state/fixed-market/fixed-term-market-sync';
+import { CurrentOrderTab, CurrentOrderTabAtom, FixedTermMarketAtom } from '@state/fixed-market/fixed-term-market-sync';
 import { MainConfig } from '@state/config/marginConfig';
 import { marketToString } from '@utils/jet/fixed-term-utils';
 import { RequestLoan } from './request-loan';
@@ -13,7 +13,7 @@ import { Accounts } from '@state/user/accounts';
 
 export const FixedBorrowOrderEntry = () => {
   const [rowOrder, setRowOrder] = useRecoilState(FixedLendRowOrder);
-  const marketAndConfig = useRecoilValue(FixedMarketAtom);
+  const marketAndConfig = useRecoilValue(FixedTermMarketAtom);
   const marginConfig = useRecoilValue(MainConfig);
   const walletTokens = useRecoilValue(WalletTokens);
   const accounts = useRecoilValue(Accounts);

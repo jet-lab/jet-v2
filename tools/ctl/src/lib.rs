@@ -234,7 +234,7 @@ pub enum MarginPoolCommand {
 #[derive(Debug, Subcommand, Deserialize)]
 #[serde(tag = "fixed-market-action")]
 pub enum FixedCommand {
-    /// Create a new fixed market
+    /// Create a new fixed term market
     CreateMarket(MarketParameters),
 }
 
@@ -317,7 +317,7 @@ pub enum Command {
         subcmd: MarginPoolCommand,
     },
 
-    /// Fixed market management
+    /// Fixed term market management
     Fixed {
         #[clap(subcommand)]
         subcmd: FixedCommand,
@@ -484,7 +484,7 @@ async fn run_margin_pool_command(client: &Client, command: MarginPoolCommand) ->
 async fn run_fixed_command(client: &Client, command: FixedCommand) -> Result<Plan> {
     match command {
         FixedCommand::CreateMarket(params) => {
-            actions::fixed::process_create_fixed_market(client, params).await
+            actions::fixed::process_create_fixed_term_market(client, params).await
         }
     }
 }

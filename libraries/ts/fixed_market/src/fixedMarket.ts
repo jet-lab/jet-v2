@@ -80,9 +80,9 @@ export interface ClaimTicket {
 }
 
 /**
- * Class for loading and interacting with a FixedMarket
+ * Class for loading and interacting with a FixedTermMarket
  */
-export class FixedMarket {
+export class FixedTermMarket {
   readonly addresses: {
     market: PublicKey
     orderbookMarketState: PublicKey
@@ -130,14 +130,14 @@ export class FixedMarket {
   }
 
   /**
-   * Loads the program state from on chain and returns a `FixedMarket` client
+   * Loads the program state from on chain and returns a `FixedTermMarket` client
    * class for interaction with the market
    *
    * @param program The anchor `JetMarket` program
    * @param market The address of the `market` account
    * @returns
    */
-  static async load(program: Program<JetMarket>, market: Address, jetMarginProgramId: Address): Promise<FixedMarket> {
+  static async load(program: Program<JetMarket>, market: Address, jetMarginProgramId: Address): Promise<FixedTermMarket> {
     let data = await fetchData(program.provider.connection, market)
     let info: MarketInfo = program.coder.accounts.decode("Market", data)
     const claimsMetadata = await findDerivedAccount(
@@ -150,7 +150,7 @@ export class FixedMarket {
     )
     const marginAdapterMetadata = await findDerivedAccount([program.programId], new PublicKey(jetMarginProgramId))
 
-    return new FixedMarket(
+    return new FixedTermMarket(
       new PublicKey(market),
       new PublicKey(claimsMetadata),
       new PublicKey(collateralMetadata),
@@ -373,7 +373,7 @@ export class FixedMarket {
    *
    * @param user the margin account to refresh
    * @param expectPrice in the edge case where we want to refresh an account with a broken oracle, set to false
-   * @returns a `TransactionInstruction` to refresh the fixed market related margin positions
+   * @returns a `TransactionInstruction` to refresh the fixed term market related margin positions
    */
   async refreshPosition(user: MarginAccount, expectPrice: boolean): Promise<TransactionInstruction> {
     const marginUser = await this.deriveMarginUserAddress(user)

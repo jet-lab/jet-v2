@@ -742,7 +742,7 @@ export type JetMarket = {
               "isMut": true,
               "isSigner": false,
               "docs": [
-                "The `Market` account tracks global information related to this particular fixed market"
+                "The `Market` account tracks global information related to this particular fixed term market"
               ]
             },
             {
@@ -867,7 +867,7 @@ export type JetMarket = {
                   "isMut": true,
                   "isSigner": false,
                   "docs": [
-                    "The `Market` account tracks global information related to this particular fixed market"
+                    "The `Market` account tracks global information related to this particular fixed term market"
                   ]
                 },
                 {
@@ -1057,7 +1057,7 @@ export type JetMarket = {
                   "isMut": true,
                   "isSigner": false,
                   "docs": [
-                    "The `Market` account tracks global information related to this particular fixed market"
+                    "The `Market` account tracks global information related to this particular fixed term market"
                   ]
                 },
                 {
@@ -1172,7 +1172,7 @@ export type JetMarket = {
           "isMut": false,
           "isSigner": false,
           "docs": [
-            "The `Market` account tracks global information related to this particular fixed market"
+            "The `Market` account tracks global information related to this particular fixed term market"
           ]
         },
         {
@@ -1292,7 +1292,7 @@ export type JetMarket = {
           "isMut": false,
           "isSigner": false,
           "docs": [
-            "The `Market` account tracks global information related to this particular fixed market"
+            "The `Market` account tracks global information related to this particular fixed term market"
           ]
         },
         {
@@ -1390,7 +1390,7 @@ export type JetMarket = {
               "isMut": true,
               "isSigner": false,
               "docs": [
-                "The `Market` account tracks global information related to this particular fixed market"
+                "The `Market` account tracks global information related to this particular fixed term market"
               ]
             },
             {
@@ -1468,7 +1468,7 @@ export type JetMarket = {
               "isMut": true,
               "isSigner": false,
               "docs": [
-                "The `Market` account tracks global information related to this particular fixed market"
+                "The `Market` account tracks global information related to this particular fixed term market"
               ]
             },
             {
@@ -1523,7 +1523,7 @@ export type JetMarket = {
               "isMut": true,
               "isSigner": false,
               "docs": [
-                "The `Market` account tracks global information related to this particular fixed market"
+                "The `Market` account tracks global information related to this particular fixed term market"
               ]
             },
             {
@@ -1697,7 +1697,7 @@ export type JetMarket = {
     {
       "name": "exchangeTokens",
       "docs": [
-        "Exchange underlying token for fixed market tickets",
+        "Exchange underlying token for fixed term market tickets",
         "WARNING: tickets must be staked for redeption of underlying"
       ],
       "accounts": [
@@ -1825,7 +1825,7 @@ export type JetMarket = {
     {
       "name": "stakeMarketTickets",
       "docs": [
-        "Stakes fixed market tickets for later redemption"
+        "Stakes fixed term market tickets for later redemption"
       ],
       "accounts": [
         {
@@ -1841,7 +1841,7 @@ export type JetMarket = {
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The Market account tracks fixed market assets of a particular tenor"
+            "The Market account tracks fixed term market assets of a particular tenor"
           ]
         },
         {
@@ -2028,7 +2028,7 @@ export type JetMarket = {
         "The `Market` contains all the information necessary to run the fixed term market",
         "",
         "Utilized by program instructions to verify given transaction accounts are correct. Contains data",
-        "about the fixed market including the tenor and ticket<->token conversion rate"
+        "about the fixed term market including the tenor and ticket<->token conversion rate"
       ],
       "type": {
         "kind": "struct",
@@ -2314,7 +2314,7 @@ export type JetMarket = {
           {
             "name": "assets",
             "docs": [
-              "Accounting used to track assets in custody of the fixed market"
+              "Accounting used to track assets in custody of the fixed term market"
             ],
             "type": {
               "defined": "Assets"
@@ -3549,7 +3549,7 @@ export type JetMarket = {
     {
       "code": 6028,
       "name": "UserNotInMarket",
-      "msg": "this user account is not associated with this fixed market"
+      "msg": "this user account is not associated with this fixed term market"
     },
     {
       "code": 6029,
@@ -3654,7 +3654,7 @@ export type JetMarket = {
     {
       "code": 6049,
       "name": "WrongTicketMint",
-      "msg": "not the ticket mint for this fixed market"
+      "msg": "not the ticket mint for this fixed term market"
     },
     {
       "code": 6050,
@@ -3669,7 +3669,7 @@ export type JetMarket = {
     {
       "code": 6052,
       "name": "WrongUnderlyingTokenMint",
-      "msg": "wrong underlying token mint for this fixed market"
+      "msg": "wrong underlying token mint for this fixed term market"
     },
     {
       "code": 6053,
@@ -4433,7 +4433,7 @@ export const IDL: JetMarket = {
               "isMut": true,
               "isSigner": false,
               "docs": [
-                "The `Market` account tracks global information related to this particular fixed market"
+                "The `Market` account tracks global information related to this particular fixed term market"
               ]
             },
             {
@@ -4558,7 +4558,7 @@ export const IDL: JetMarket = {
                   "isMut": true,
                   "isSigner": false,
                   "docs": [
-                    "The `Market` account tracks global information related to this particular fixed market"
+                    "The `Market` account tracks global information related to this particular fixed term market"
                   ]
                 },
                 {
@@ -4748,7 +4748,7 @@ export const IDL: JetMarket = {
                   "isMut": true,
                   "isSigner": false,
                   "docs": [
-                    "The `Market` account tracks global information related to this particular fixed market"
+                    "The `Market` account tracks global information related to this particular fixed term market"
                   ]
                 },
                 {
@@ -4863,7 +4863,7 @@ export const IDL: JetMarket = {
           "isMut": false,
           "isSigner": false,
           "docs": [
-            "The `Market` account tracks global information related to this particular fixed market"
+            "The `Market` account tracks global information related to this particular fixed term market"
           ]
         },
         {
@@ -4983,7 +4983,7 @@ export const IDL: JetMarket = {
           "isMut": false,
           "isSigner": false,
           "docs": [
-            "The `Market` account tracks global information related to this particular fixed market"
+            "The `Market` account tracks global information related to this particular fixed term market"
           ]
         },
         {
@@ -5081,7 +5081,7 @@ export const IDL: JetMarket = {
               "isMut": true,
               "isSigner": false,
               "docs": [
-                "The `Market` account tracks global information related to this particular fixed market"
+                "The `Market` account tracks global information related to this particular fixed term market"
               ]
             },
             {
@@ -5159,7 +5159,7 @@ export const IDL: JetMarket = {
               "isMut": true,
               "isSigner": false,
               "docs": [
-                "The `Market` account tracks global information related to this particular fixed market"
+                "The `Market` account tracks global information related to this particular fixed term market"
               ]
             },
             {
@@ -5214,7 +5214,7 @@ export const IDL: JetMarket = {
               "isMut": true,
               "isSigner": false,
               "docs": [
-                "The `Market` account tracks global information related to this particular fixed market"
+                "The `Market` account tracks global information related to this particular fixed term market"
               ]
             },
             {
@@ -5388,7 +5388,7 @@ export const IDL: JetMarket = {
     {
       "name": "exchangeTokens",
       "docs": [
-        "Exchange underlying token for fixed market tickets",
+        "Exchange underlying token for fixed term market tickets",
         "WARNING: tickets must be staked for redeption of underlying"
       ],
       "accounts": [
@@ -5516,7 +5516,7 @@ export const IDL: JetMarket = {
     {
       "name": "stakeMarketTickets",
       "docs": [
-        "Stakes fixed market tickets for later redemption"
+        "Stakes fixed term market tickets for later redemption"
       ],
       "accounts": [
         {
@@ -5532,7 +5532,7 @@ export const IDL: JetMarket = {
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The Market account tracks fixed market assets of a particular tenor"
+            "The Market account tracks fixed term market assets of a particular tenor"
           ]
         },
         {
@@ -5719,7 +5719,7 @@ export const IDL: JetMarket = {
         "The `Market` contains all the information necessary to run the fixed term market",
         "",
         "Utilized by program instructions to verify given transaction accounts are correct. Contains data",
-        "about the fixed market including the tenor and ticket<->token conversion rate"
+        "about the fixed term market including the tenor and ticket<->token conversion rate"
       ],
       "type": {
         "kind": "struct",
@@ -6005,7 +6005,7 @@ export const IDL: JetMarket = {
           {
             "name": "assets",
             "docs": [
-              "Accounting used to track assets in custody of the fixed market"
+              "Accounting used to track assets in custody of the fixed term market"
             ],
             "type": {
               "defined": "Assets"
@@ -7240,7 +7240,7 @@ export const IDL: JetMarket = {
     {
       "code": 6028,
       "name": "UserNotInMarket",
-      "msg": "this user account is not associated with this fixed market"
+      "msg": "this user account is not associated with this fixed term market"
     },
     {
       "code": 6029,
@@ -7345,7 +7345,7 @@ export const IDL: JetMarket = {
     {
       "code": 6049,
       "name": "WrongTicketMint",
-      "msg": "not the ticket mint for this fixed market"
+      "msg": "not the ticket mint for this fixed term market"
     },
     {
       "code": 6050,
@@ -7360,7 +7360,7 @@ export const IDL: JetMarket = {
     {
       "code": 6052,
       "name": "WrongUnderlyingTokenMint",
-      "msg": "wrong underlying token mint for this fixed market"
+      "msg": "wrong underlying token mint for this fixed term market"
     },
     {
       "code": 6053,

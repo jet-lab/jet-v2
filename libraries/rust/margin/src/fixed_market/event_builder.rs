@@ -8,7 +8,7 @@ use solana_sdk::pubkey::Pubkey;
 
 use super::error::Result;
 
-use super::ix_builder::fixed_market_pda;
+use super::ix_builder::fixed_term_market_pda;
 
 /// Maximum byte size of the `ConsumeEventsInfo`, determined by solana transaction size
 /// TODO: this is placeholder
@@ -154,14 +154,14 @@ pub fn build_consume_events_info(
                     .contains(CallbackFlags::AUTO_STAKE)
                 {
                     let seed = make_seed(rng);
-                    let key = fixed_market_pda(&SplitTicket::make_seeds(
+                    let key = fixed_term_market_pda(&SplitTicket::make_seeds(
                         &maker_callback_info.fill_account.to_bytes(),
                         &seed,
                     ));
                     Some(LoanAccountKey { key, seed })
                 } else if maker_callback_info.flags.contains(CallbackFlags::NEW_DEBT) {
                     let seed = make_seed(rng);
-                    let key = fixed_market_pda(&Obligation::make_seeds(
+                    let key = fixed_term_market_pda(&Obligation::make_seeds(
                         &maker_callback_info.fill_account.to_bytes(),
                         &seed,
                     ));

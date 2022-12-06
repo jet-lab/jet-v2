@@ -1,6 +1,6 @@
 use anyhow::Result;
 use clap::Parser;
-use jet_margin_sdk::fixed_market::FixedMarketIxBuilder;
+use jet_margin_sdk::fixed_market::FixedTermMarketIxBuilder;
 use serde::{Deserialize, Serialize};
 use solana_clap_utils::keypair::signer_from_path;
 use solana_sdk::{pubkey::Pubkey, signer::Signer};
@@ -64,7 +64,7 @@ fn map_seed(seed: Vec<u8>) -> [u8; 32] {
     buf
 }
 
-pub async fn process_create_fixed_market<'a>(
+pub async fn process_create_fixed_term_market<'a>(
     client: &Client,
     params: MarketParameters,
 ) -> Result<Plan> {
@@ -89,7 +89,7 @@ pub async fn process_create_fixed_market<'a>(
             anyhow::Error::msg(format!("failed to resolve signer for asks. Error: {e:?}"))
         })?,
     ];
-    let fixed_market = FixedMarketIxBuilder::new_from_seed(
+    let fixed_term_market = FixedTermMarketIxBuilder::new_from_seed(
         &Pubkey::default(),
         &params.token_mint,
         seed,
@@ -101,19 +101,19 @@ pub async fn process_create_fixed_market<'a>(
 
     let mut steps = vec![];
     let mut instructions = vec![];
-    if client.account_exists(&fixed_market.market()).await? {
+    if client.account_exists(&fixed_term_market.market()).await? {
         println!(
             "the fixed term market [{}] already exists. Skipping initialization instruction",
-            fixed_market.market()
+            fixed_term_market.market()
         );
     } else if !client.account_exists(&params.token_mint).await? {
         println!("the token {} does not exist", params.token_mint);
         return Ok(Plan::default());
     } else {
-        if let Some(init_ata) = fixed_market.init_default_fee_destination(&payer) {
+        if let Some(init_ata) = fixed_term_market.init_default_fee_destination(&payer) {
             instructions.push(init_ata);
         }
-        let init_market = fixed_market.initialize_market(
+        let init_market = fixed_term_market.initialize_market(
             payer,
             MANAGER_VERSION,
             seed,
@@ -128,16 +128,16 @@ pub async fn process_create_fixed_market<'a>(
         instructions.push(init_market);
     }
     if client
-        .account_exists(&fixed_market.orderbook_state())
+        .account_exists(&fixed_term_market.orderbook_state())
         .await?
     {
         println!(
             "the market [{}] is already fully initialized",
-            fixed_market.market()
+            fixed_term_market.market()
         );
         return Ok(Plan::default());
     }
-    let init_orderbook = fixed_market.initialize_orderbook(
+    let init_orderbook = fixed_term_market.initialize_orderbook(
         payer,
         eq.pubkey(),
         bids.pubkey(),
@@ -145,8 +145,8 @@ pub async fn process_create_fixed_market<'a>(
         params.min_order_size,
     )?;
     steps.push(format!(
-        "initialize-order-book for fixed market {}",
-        fixed_market.market()
+        "initialize-order-book for fixed term market {}",
+        fixed_term_market.market()
     ));
     instructions.push(init_orderbook);
 

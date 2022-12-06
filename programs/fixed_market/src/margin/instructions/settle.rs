@@ -19,7 +19,7 @@ pub struct Settle<'info> {
     )]
     pub margin_user: Account<'info, MarginUser>,
 
-    /// The `Market` account tracks global information related to this particular fixed market
+    /// The `Market` account tracks global information related to this particular fixed term market
     #[account(
         has_one = underlying_token_vault @ ErrorCode::WrongVault,
         has_one = market_ticket_mint @ ErrorCode::WrongOracle,

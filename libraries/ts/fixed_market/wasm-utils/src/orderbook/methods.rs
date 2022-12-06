@@ -104,7 +104,7 @@ pub fn build_order_amount_deprecated(amount: u64, interest_rate: u64) -> super::
     super::types::OrderAmount { base, quote, price }
 }
 
-/// For calculation of an implied limit price given to the fixed markets orderbook
+/// For calculation of an implied limit price given to the fixed term markets orderbook
 ///
 /// Base is principal plus interest
 ///

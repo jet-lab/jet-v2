@@ -58,7 +58,7 @@ pub enum ErrorCode {
     UserDoesNotOwnAccount,
     #[msg("this adapter does not belong to the user")]
     UserDoesNotOwnAdapter,
-    #[msg("this user account is not associated with this fixed market")]
+    #[msg("this user account is not associated with this fixed term market")]
     UserNotInMarket,
     #[msg("the wrong adapter account was passed to this instruction")]
     WrongAdapter,
@@ -102,13 +102,13 @@ pub enum ErrorCode {
     WrongMarginUserAuthority,
     #[msg("incorrect authority account")]
     WrongProgramAuthority,
-    #[msg("not the ticket mint for this fixed market")]
+    #[msg("not the ticket mint for this fixed term market")]
     WrongTicketMint,
     #[msg("wrong ticket settlement account")]
     WrongTicketSettlementAccount,
     #[msg("wrong underlying settlement account")]
     WrongUnderlyingSettlementAccount,
-    #[msg("wrong underlying token mint for this fixed market")]
+    #[msg("wrong underlying token mint for this fixed term market")]
     WrongUnderlyingTokenMint,
     #[msg("wrong user account address was sent to instruction")]
     WrongUserAccount,

@@ -1,6 +1,6 @@
 import { airdrop, deposit, loadPageAndCreateAccount } from '../support/actions';
 
-describe('Fixed Market', () => {
+describe('Fixed Term Market', () => {
   it('creates a market maker account', () => {
     loadPageAndCreateAccount();
   });

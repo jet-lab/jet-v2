@@ -40,9 +40,9 @@ async fn main() -> Result<()> {
     {
         let json = format!(
             "{{ 
-    \"fixedMarketPid\": \"{}\",
+    \"fixedTermMarketPid\": \"{}\",
     \"market\": \"{}\",
-    \"fixedMarketMetadata\": \"{}\"
+    \"fixedTermMarketMetadata\": \"{}\"
 }}",
             jet_market::ID,
             x.ix_builder.market(),

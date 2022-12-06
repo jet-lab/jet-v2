@@ -1,5 +1,5 @@
 use anyhow::Result;
-use jet_margin_sdk::fixed_market::{event_queue_len, orderbook_slab_len, FixedMarketIxBuilder};
+use jet_margin_sdk::fixed_market::{event_queue_len, orderbook_slab_len, FixedTermMarketIxBuilder};
 use jetctl::{
     actions::fixed::MarketParameters,
     client::{Client, ClientConfig, Plan},
@@ -99,7 +99,7 @@ fn map_seed(seed: Vec<u8>) -> [u8; 32] {
 
 async fn create_orderbook_accounts(
     client: &Client,
-    ix: &FixedMarketIxBuilder,
+    ix: &FixedTermMarketIxBuilder,
     params: MarketParameters,
     queue_capacity: usize,
     book_capacity: usize,
@@ -159,7 +159,7 @@ async fn main() -> Result<()> {
     airdrop_payer(&client).await?;
 
     // fund the ob accounts
-    let fixed_market = FixedMarketIxBuilder::new_from_seed(
+    let fixed_term_market = FixedTermMarketIxBuilder::new_from_seed(
         &Pubkey::default(),
         &USDC,
         map_seed(PARAMS.seed.clone()),
@@ -171,7 +171,7 @@ async fn main() -> Result<()> {
     .with_payer(&payer);
     let init_ob_accs = create_orderbook_accounts(
         &client,
-        &fixed_market,
+        &fixed_term_market,
         PARAMS.clone(),
         QUEUE_CAPACITY,
         ORDERBOOK_CAPACITY,
@@ -181,13 +181,17 @@ async fn main() -> Result<()> {
 
     // init a usdc market
     let create_market =
-        jetctl::actions::fixed::process_create_fixed_market(&client, PARAMS.clone()).await?;
+        jetctl::actions::fixed::process_create_fixed_term_market(&client, PARAMS.clone()).await?;
     client.execute(create_market).await?;
 
     // no-matching market
     let pause = client
         .plan()?
-        .instructions([], ["pause-market"], [fixed_market.pause_order_matching()?])
+        .instructions(
+            [],
+            ["pause-market"],
+            [fixed_term_market.pause_order_matching()?],
+        )
         .build();
     client.execute(pause).await?;
 

@@ -28,7 +28,7 @@ use solana_sdk::{
 
 use crate::{
     cat,
-    fixed_market::FixedMarketIxBuilder,
+    fixed_market::FixedTermMarketIxBuilder,
     ix_builder::{
         get_metadata_address,
         test_service::{
@@ -73,14 +73,14 @@ pub struct AirspaceTokenConfig {
     /// Margin pool config
     pub margin_pool_config: Option<MarginPoolConfig>,
 
-    /// Fixed markets (list of stake tenors)
+    /// Fixed term markets (list of stake tenors)
     #[serde(default)]
-    pub fixed_markets: Vec<FixedMarketConfig>,
+    pub fixed_term_markets: Vec<FixedTermMarketConfig>,
 }
 
-/// Configuration for fixed markets
+/// Configuration for fixed term markets
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
-pub struct FixedMarketConfig {
+pub struct FixedTermMarketConfig {
     /// The tenor for borrows
     pub borrow_tenor: i64,
 
@@ -282,16 +282,15 @@ fn create_airspace_tx(
 
         for (name, tk_config) in &as_config.tokens {
             verify_token_declared(config, name)?;
-            let token = config
-                .tokens
-                .iter()
-                .find(|t| &t.name == name)
-                .expect("cannot find a description for the token that needs a fixed market");
+            let token =
+                config.tokens.iter().find(|t| &t.name == name).expect(
+                    "cannot find a description for the token that needs a fixed term market",
+                );
 
             txs.extend(create_airspace_token_margin_config_tx(
                 &as_admin, name, tk_config,
             ));
-            txs.extend(create_airspace_token_fixed_markets_tx(
+            txs.extend(create_airspace_token_fixed_term_markets_tx(
                 config, rent, &as_admin, token, tk_config,
             ));
         }
@@ -300,7 +299,7 @@ fn create_airspace_tx(
     Ok(txs)
 }
 
-fn create_airspace_token_fixed_markets_tx(
+fn create_airspace_token_fixed_term_markets_tx(
     config: &EnvironmentConfig,
     rent: &Rent,
     admin: &AirspaceAdmin,
@@ -309,7 +308,7 @@ fn create_airspace_token_fixed_markets_tx(
 ) -> Vec<TransactionBuilder> {
     let mut txs = vec![];
 
-    for bm_config in &tk_config.fixed_markets {
+    for bm_config in &tk_config.fixed_term_markets {
         let key_eq = Keypair::new();
         let key_bids = Keypair::new();
         let key_asks = Keypair::new();
@@ -321,12 +320,12 @@ fn create_airspace_token_fixed_markets_tx(
         market_seed[..8].copy_from_slice(&bm_config.borrow_tenor.to_le_bytes());
 
         let mint = derive_token_mint(&token.name);
-        let ticket_mint = derive_market_ticket_mint(&FixedMarketIxBuilder::market_key(
+        let ticket_mint = derive_market_ticket_mint(&FixedTermMarketIxBuilder::market_key(
             &admin.airspace,
             &mint,
             market_seed,
         ));
-        let fixed_ix = FixedMarketIxBuilder::new_from_seed(
+        let fixed_ix = FixedTermMarketIxBuilder::new_from_seed(
             &admin.airspace,
             &mint,
             market_seed,
@@ -412,7 +411,7 @@ fn create_airspace_token_fixed_markets_tx(
                 .push(fixed_ix.pause_order_matching().unwrap());
         }
 
-        txs.push(admin.register_fixed_market(
+        txs.push(admin.register_fixed_term_market(
             mint,
             market_seed,
             tk_config.collateral_weight,

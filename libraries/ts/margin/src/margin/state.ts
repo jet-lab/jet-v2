@@ -52,7 +52,7 @@ export enum PositionKind {
   Deposit,
   /** The position contains a balance of tokens that are owed as a part of some debt. */
   Claim,
-  /** Different type of collateral currently used for fixed markets */
+  /** Different type of collateral currently used for fixed term markets */
   AdapterCollateral
 }
 

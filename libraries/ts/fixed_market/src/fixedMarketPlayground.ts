@@ -5,13 +5,13 @@
 // let walletKey = ""
 // let marginAccountKey = ""
 // let marketKey = ""
-// let program = FixedMarketProgram
+// let program = FixedTermMarketProgram
 // let marginAccount = MarginAccount.load(marginAccountKey)
 
-// let fixedMarket= FixedMarket.load(program, marketKey)
-// let orderbook = fixedMarket.fetchOrderbook()
+// let fixedTermMarket= FixedTermMarket.load(program, marketKey)
+// let orderbook = fixedTermMarket.fetchOrderbook()
 
-// let fixedUser = FixedUser.loadWithMarginAccount(/fixedMarket/, marginAccount)
+// let fixedTermUser = FixedTermUser.loadWithMarginAccount(/fixedTermMarket/, marginAccount)
 
 // let autoroll_rate = "19.99"
 
@@ -46,7 +46,7 @@
 //     "IOC",
 // }
 
-// fixedMarket.borrowNow(marginAccount.address, 192.00, 10.00)
+// fixedTermMarket.borrowNow(marginAccount.address, 192.00, 10.00)
 
 // //Abstraction atop the orderbook, there's functionality to borrow and lend
 
