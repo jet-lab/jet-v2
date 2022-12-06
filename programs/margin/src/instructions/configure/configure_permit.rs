@@ -53,21 +53,11 @@ pub struct ConfigurePermit<'info> {
     pub system_program: Program<'info, System>,
 }
 
-pub fn configure_liquidator_handler(
+pub fn configure_permit(
     ctx: Context<ConfigurePermit>,
-    is_liquidator: bool,
+    test: bool,
+    flag: Permissions,
 ) -> Result<()> {
-    configure_permit(ctx, is_liquidator, Permissions::LIQUIDATE)
-}
-
-pub fn configure_position_metadata_refresher_handler(
-    ctx: Context<ConfigurePermit>,
-    may_refresh: bool,
-) -> Result<()> {
-    configure_permit(ctx, may_refresh, Permissions::REFRESH_POSITION_METADATA)
-}
-
-fn configure_permit(ctx: Context<ConfigurePermit>, test: bool, flag: Permissions) -> Result<()> {
     let permit = &mut ctx.accounts.permit;
 
     permit.owner = ctx.accounts.owner.key();
