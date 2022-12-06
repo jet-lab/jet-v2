@@ -1,4 +1,4 @@
-//! Control module for the `jet-market` program.
+//! Control module for the `jet-fixed-term-market` program.
 //!
 //! Handles initialization of program state including the [`Market`](struct@crate::control::state::Market) and program authority signer
 

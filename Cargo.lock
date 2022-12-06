@@ -2299,7 +2299,7 @@ dependencies = [
  "bitflags",
  "borsh 0.9.3",
  "bytemuck",
- "itertools 0.10.5",
+ "itertools 0.9.0",
  "jet-margin",
  "jet-program-common",
  "jet-program-proc-macros",

@@ -66,7 +66,7 @@ pub mod tx_builder;
 /// General purpose logic used by this lib and clients, unrelated to jet or solana
 pub mod util;
 
-/// jet-market sdk
+/// jet-fixed-term-market sdk
 pub mod fixed_market;
 
 /// Utilities for test environments
