@@ -4,13 +4,13 @@ use serde::{ser::SerializeStruct, Deserialize, Serialize, Serializer};
 
 use crate::margin::origination_fee;
 
-/// The `MarketManager` contains all the information necessary to run the fixed market
+/// The `Market` contains all the information necessary to run the fixed term market
 ///
 /// Utilized by program instructions to verify given transaction accounts are correct. Contains data
 /// about the fixed market including the tenor and ticket<->token conversion rate
 #[cfg_attr(any(feature = "cli", test), derive(Deserialize))]
 #[account(zero_copy)]
-pub struct MarketManager {
+pub struct Market {
     /// Versioning and tag information
     pub version_tag: u64,
     /// The airspace the market is a part of
@@ -41,7 +41,7 @@ pub struct MarketManager {
     pub ticket_oracle: Pubkey,
     /// where fees can be withdrawn to
     pub fee_destination: Pubkey,
-    /// The user-defined part of the seed that generated this market manager's PDA
+    /// The user-defined part of the seed that generated this market's PDA
     pub seed: [u8; 32],
     /// The bump seed value for generating the authority address.
     pub(crate) bump: [u8; 1],
@@ -63,11 +63,11 @@ pub struct MarketManager {
     pub nonce: u64,
 }
 
-impl MarketManager {
-    /// for signing CPIs with the market manager account
+impl Market {
+    /// for signing CPIs with the market account
     pub fn authority_seeds(&self) -> [&[u8]; 5] {
         [
-            crate::seeds::MARKET_MANAGER,
+            crate::seeds::MARKET,
             self.airspace.as_ref(),
             self.underlying_token_mint.as_ref(),
             &self.seed,
@@ -87,12 +87,12 @@ impl MarketManager {
 }
 
 #[cfg(any(feature = "cli", test))]
-impl Serialize for MarketManager {
+impl Serialize for Market {
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
-        let mut s = serializer.serialize_struct("MarketManager", 14)?;
+        let mut s = serializer.serialize_struct("Market", 14)?;
         s.serialize_field("version", &self.version_tag)?;
         s.serialize_field("airspace", &self.airspace.to_string())?;
         s.serialize_field(
@@ -132,9 +132,8 @@ pub struct CrankAuthorization {
 }
 
 #[test]
-fn serialize_market_manager() {
-    let json =
-        serde_json::to_string_pretty(&<MarketManager as bytemuck::Zeroable>::zeroed()).unwrap();
+fn serialize_market() {
+    let json = serde_json::to_string_pretty(&<Market as bytemuck::Zeroable>::zeroed()).unwrap();
     let expected = "{
       \"version\": 0,
       \"airspace\": \"11111111111111111111111111111111\",

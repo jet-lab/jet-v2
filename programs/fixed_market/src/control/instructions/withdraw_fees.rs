@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 use anchor_spl::token::Token;
 use jet_program_proc_macros::MarketTokenManager;
 
-use crate::{control::state::MarketManager, market_token_manager::MarketTokenManager, ErrorCode};
+use crate::{control::state::Market, market_token_manager::MarketTokenManager, ErrorCode};
 
 #[derive(Accounts, MarketTokenManager)]
 pub struct WithdrawFees<'info> {
@@ -10,7 +10,7 @@ pub struct WithdrawFees<'info> {
         has_one = fee_destination @ ErrorCode::WrongFeeDestination,
         has_one = underlying_token_vault @ ErrorCode::WrongVault,
     )]
-    pub market_manager: AccountLoader<'info, MarketManager>,
+    pub market: AccountLoader<'info, Market>,
 
     #[account(mut)]
     pub fee_destination: AccountInfo<'info>,
@@ -22,7 +22,7 @@ pub struct WithdrawFees<'info> {
 }
 
 pub fn handler(ctx: Context<WithdrawFees>) -> Result<()> {
-    let mut manager = ctx.accounts.market_manager.load_mut()?;
+    let mut manager = ctx.accounts.market.load_mut()?;
     ctx.accounts.withdraw(
         &ctx.accounts.underlying_token_vault,
         &ctx.accounts.fee_destination,

@@ -63,7 +63,7 @@ pub struct MarginBorrowOrder<'info> {
     #[account(mut, address = margin_user.underlying_settlement @ ErrorCode::WrongUnderlyingSettlementAccount)]
     pub underlying_settlement: AccountInfo<'info>,
 
-    #[market_manager]
+    #[market]
     pub orderbook_mut: OrderbookMut<'info>,
 
     /// payer for `Obligation` initialization
@@ -84,7 +84,7 @@ pub fn handler(
     seed: Vec<u8>,
 ) -> Result<()> {
     let origination_fee = {
-        let manager = ctx.accounts.orderbook_mut.market_manager.load()?;
+        let manager = ctx.accounts.orderbook_mut.market.load()?;
         params.max_market_ticket_qty = manager.borrow_order_qty(params.max_market_ticket_qty);
         params.max_underlying_token_qty = manager.borrow_order_qty(params.max_underlying_token_qty);
         manager.origination_fee
@@ -105,7 +105,7 @@ pub fn handler(
     let debt = &mut ctx.accounts.margin_user.debt;
     debt.post_borrow_order(order_summary.base_posted())?;
     if order_summary.base_filled() > 0 {
-        let mut manager = ctx.accounts.orderbook_mut.market_manager.load_mut()?;
+        let mut manager = ctx.accounts.orderbook_mut.market.load_mut()?;
         let maturation_timestamp = manager.borrow_tenor + Clock::get()?.unix_timestamp;
         let sequence_number =
             debt.new_obligation_without_posting(order_summary.base_filled(), maturation_timestamp)?;
@@ -125,7 +125,7 @@ pub fn handler(
         *obligation = Obligation {
             sequence_number,
             borrower_account: ctx.accounts.margin_user.key(),
-            market_manager: ctx.accounts.orderbook_mut.market_manager.key(),
+            market: ctx.accounts.orderbook_mut.market.key(),
             order_tag: callback_info.order_tag,
             maturation_timestamp,
             balance: base_filled,
@@ -143,7 +143,7 @@ pub fn handler(
             authority: ctx.accounts.margin_account.key(),
             order_id: order_summary.summary().posted_order_id,
             sequence_number,
-            market_manager: ctx.accounts.orderbook_mut.market_manager.key(),
+            market: ctx.accounts.orderbook_mut.market.key(),
             maturation_timestamp,
             quote_filled,
             base_filled,
@@ -159,7 +159,7 @@ pub fn handler(
     )?;
 
     emit!(OrderPlaced {
-        market_manager: ctx.accounts.orderbook_mut.market_manager.key(),
+        market: ctx.accounts.orderbook_mut.market.key(),
         authority: ctx.accounts.margin_account.key(),
         margin_user: Some(ctx.accounts.margin_user.key()),
         order_summary: order_summary.summary(),

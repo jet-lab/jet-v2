@@ -61,7 +61,11 @@ describe('margin fixed market ticket borrowing', async () => {
   let user_c_BTC_account: PublicKey;
   let user_c_usdc_account: PublicKey;
 
-  const fixedMarketProgram: anchor.Program<JetMarket> = new anchor.Program(JetMarketIdl, CONFIG.fixedMarketProgramId, provider);
+  const fixedMarketProgram: anchor.Program<JetMarket> = new anchor.Program(
+    JetMarketIdl,
+    CONFIG.fixedMarketProgramId,
+    provider
+  );
   let fixedMarket: FixedMarket;
 
   it('setup', async () => {
@@ -204,7 +208,7 @@ describe('margin fixed market ticket borrowing', async () => {
     // load the fixed market
     fixedMarket = await FixedMarket.load(
       fixedMarketProgram,
-      CONFIG.airspaces[0].fixedMarkets.USDC_86400.marketManager,
+      CONFIG.airspaces[0].fixedMarkets.USDC_86400.market,
       CONFIG.marginProgramId
     );
   });
@@ -220,7 +224,11 @@ describe('margin fixed market ticket borrowing', async () => {
       marginAccount.address,
       true
     );
-    const ticketAcc = await getAssociatedTokenAddress(fixedMarket.addresses.marketTicketMint, marginAccount.address, true);
+    const ticketAcc = await getAssociatedTokenAddress(
+      fixedMarket.addresses.marketTicketMint,
+      marginAccount.address,
+      true
+    );
     await provider.sendAndConfirm(
       new Transaction()
         .add(
@@ -259,7 +267,7 @@ describe('margin fixed market ticket borrowing', async () => {
     let borrower_a = (await fixedMarket.fetchMarginUser(marginAccount_A)) as MarginUserInfo;
     let borrower_b = (await fixedMarket.fetchMarginUser(marginAccount_B)) as MarginUserInfo;
 
-    assert(borrower_a.marketManager.toBase58() === fixedMarket.addresses.marketManager.toBase58());
+    assert(borrower_a.market.toBase58() === fixedMarket.addresses.market.toBase58());
     assert(borrower_b.marginAccount.toBase58() === marginAccount_B.address.toBase58());
   });
 
@@ -354,10 +362,7 @@ describe('margin fixed market ticket borrowing', async () => {
 
     assert(
       offeredLoan.limit_price ===
-        rate_to_price(
-          bnToBigInt(loanOfferParams.rate),
-          BigInt(CONFIG.airspaces[0].fixedMarkets.USDC_86400.borrowTenor)
-        )
+        rate_to_price(bnToBigInt(loanOfferParams.rate), BigInt(CONFIG.airspaces[0].fixedMarkets.USDC_86400.borrowTenor))
     );
 
     const expectedBorrowOrderSizeRounded = Math.round(Number(offeredLoan.quote_size) / 10) * 10;

@@ -3,11 +3,11 @@ export type JetMarket = {
   "name": "jet_market",
   "constants": [
     {
-      "name": "MARKET_MANAGER",
+      "name": "MARKET",
       "type": {
         "defined": "&[u8]"
       },
-      "value": "b\"market_manager\""
+      "value": "b\"market\""
     },
     {
       "name": "MARKET_TICKET_ACCOUNT",
@@ -188,17 +188,17 @@ export type JetMarket = {
       "args": []
     },
     {
-      "name": "initializeMarketManager",
+      "name": "initializeMarket",
       "docs": [
-        "Initializes a MarketManager for a fixed market"
+        "Initializes a Market for a fixed term market"
       ],
       "accounts": [
         {
-          "name": "marketManager",
+          "name": "market",
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The `MarketManager` manages asset tokens for a particular market tenor"
+            "The `Market` manages asset tokens for a particular tenor"
           ]
         },
         {
@@ -318,7 +318,7 @@ export type JetMarket = {
         {
           "name": "params",
           "type": {
-            "defined": "InitializeMarketManagerParams"
+            "defined": "InitializeMarketParams"
           }
         }
       ]
@@ -330,11 +330,11 @@ export type JetMarket = {
       ],
       "accounts": [
         {
-          "name": "marketManager",
+          "name": "market",
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The `MarketManager` account tracks global information related to this particular fixed market"
+            "The `Market` account tracks global information related to this particular Jet market"
           ]
         },
         {
@@ -414,18 +414,18 @@ export type JetMarket = {
       ]
     },
     {
-      "name": "modifyMarketManager",
+      "name": "modifyMarket",
       "docs": [
-        "Modify a `MarketManager` account",
+        "Modify a `Market` account",
         "Authority use only"
       ],
       "accounts": [
         {
-          "name": "marketManager",
+          "name": "market",
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The `MarketManager` manages asset tokens for a particular market tenor"
+            "The `Market` manages asset tokens for a particular tenor"
           ]
         },
         {
@@ -463,11 +463,11 @@ export type JetMarket = {
       ],
       "accounts": [
         {
-          "name": "marketManager",
+          "name": "market",
           "isMut": false,
           "isSigner": false,
           "docs": [
-            "The `MarketManager` manages asset tokens for a particular market tenor"
+            "The `Market` manages asset tokens for a particular tenor"
           ]
         },
         {
@@ -504,11 +504,11 @@ export type JetMarket = {
       ],
       "accounts": [
         {
-          "name": "marketManager",
+          "name": "market",
           "isMut": false,
           "isSigner": false,
           "docs": [
-            "The `MarketManager` manages asset tokens for a particular market tenor"
+            "The `Market` manages asset tokens for a particular tenor"
           ]
         },
         {
@@ -573,7 +573,7 @@ export type JetMarket = {
           ]
         },
         {
-          "name": "marketManager",
+          "name": "market",
           "isMut": false,
           "isSigner": false,
           "docs": [
@@ -738,11 +738,11 @@ export type JetMarket = {
           "name": "orderbookMut",
           "accounts": [
             {
-              "name": "marketManager",
+              "name": "market",
               "isMut": true,
               "isSigner": false,
               "docs": [
-                "The `MarketManager` account tracks global information related to this particular fixed market"
+                "The `Market` account tracks global information related to this particular fixed market"
               ]
             },
             {
@@ -863,11 +863,11 @@ export type JetMarket = {
               "name": "orderbookMut",
               "accounts": [
                 {
-                  "name": "marketManager",
+                  "name": "market",
                   "isMut": true,
                   "isSigner": false,
                   "docs": [
-                    "The `MarketManager` account tracks global information related to this particular fixed market"
+                    "The `Market` account tracks global information related to this particular fixed market"
                   ]
                 },
                 {
@@ -980,11 +980,11 @@ export type JetMarket = {
               ]
             },
             {
-              "name": "marketManager",
+              "name": "market",
               "isMut": false,
               "isSigner": false,
               "docs": [
-                "The MarketManager responsible for the asset"
+                "The Market responsible for the asset"
               ]
             },
             {
@@ -992,7 +992,7 @@ export type JetMarket = {
               "isMut": true,
               "isSigner": false,
               "docs": [
-                "The vault stores the tokens of the underlying asset managed by the MarketManager"
+                "The vault stores the tokens of the underlying asset managed by the Market"
               ]
             },
             {
@@ -1053,11 +1053,11 @@ export type JetMarket = {
               "name": "orderbookMut",
               "accounts": [
                 {
-                  "name": "marketManager",
+                  "name": "market",
                   "isMut": true,
                   "isSigner": false,
                   "docs": [
-                    "The `MarketManager` account tracks global information related to this particular fixed market"
+                    "The `Market` account tracks global information related to this particular fixed market"
                   ]
                 },
                 {
@@ -1168,11 +1168,11 @@ export type JetMarket = {
           "isSigner": false
         },
         {
-          "name": "marketManager",
+          "name": "market",
           "isMut": false,
           "isSigner": false,
           "docs": [
-            "The `MarketManager` account tracks global information related to this particular fixed market"
+            "The `Market` account tracks global information related to this particular fixed market"
           ]
         },
         {
@@ -1288,11 +1288,11 @@ export type JetMarket = {
           ]
         },
         {
-          "name": "marketManager",
+          "name": "market",
           "isMut": false,
           "isSigner": false,
           "docs": [
-            "The `MarketManager` account tracks global information related to this particular fixed market"
+            "The `Market` account tracks global information related to this particular fixed market"
           ]
         },
         {
@@ -1386,11 +1386,11 @@ export type JetMarket = {
           "name": "orderbookMut",
           "accounts": [
             {
-              "name": "marketManager",
+              "name": "market",
               "isMut": true,
               "isSigner": false,
               "docs": [
-                "The `MarketManager` account tracks global information related to this particular fixed market"
+                "The `Market` account tracks global information related to this particular fixed market"
               ]
             },
             {
@@ -1464,11 +1464,11 @@ export type JetMarket = {
           "name": "orderbookMut",
           "accounts": [
             {
-              "name": "marketManager",
+              "name": "market",
               "isMut": true,
               "isSigner": false,
               "docs": [
-                "The `MarketManager` account tracks global information related to this particular fixed market"
+                "The `Market` account tracks global information related to this particular fixed market"
               ]
             },
             {
@@ -1519,11 +1519,11 @@ export type JetMarket = {
           "name": "orderbookMut",
           "accounts": [
             {
-              "name": "marketManager",
+              "name": "market",
               "isMut": true,
               "isSigner": false,
               "docs": [
-                "The `MarketManager` account tracks global information related to this particular fixed market"
+                "The `Market` account tracks global information related to this particular fixed market"
               ]
             },
             {
@@ -1619,11 +1619,11 @@ export type JetMarket = {
       ],
       "accounts": [
         {
-          "name": "marketManager",
+          "name": "market",
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The `MarketManager` account tracks global information related to this particular fixed market"
+            "The `Market` account tracks global information related to this particular fixed term market"
           ]
         },
         {
@@ -1702,11 +1702,11 @@ export type JetMarket = {
       ],
       "accounts": [
         {
-          "name": "marketManager",
+          "name": "market",
           "isMut": false,
           "isSigner": false,
           "docs": [
-            "The MarketManager manages asset tokens for a particular market tenor"
+            "The Market manages asset tokens for a particular tenor"
           ]
         },
         {
@@ -1714,7 +1714,7 @@ export type JetMarket = {
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The vault stores the tokens of the underlying asset managed by the MarketManager"
+            "The vault stores the tokens of the underlying asset managed by the Market"
           ]
         },
         {
@@ -1796,11 +1796,11 @@ export type JetMarket = {
           ]
         },
         {
-          "name": "marketManager",
+          "name": "market",
           "isMut": false,
           "isSigner": false,
           "docs": [
-            "The MarketManager responsible for the asset"
+            "The Market responsible for the asset"
           ]
         },
         {
@@ -1808,7 +1808,7 @@ export type JetMarket = {
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The vault stores the tokens of the underlying asset managed by the MarketManager"
+            "The vault stores the tokens of the underlying asset managed by the Market"
           ]
         },
         {
@@ -1825,7 +1825,7 @@ export type JetMarket = {
     {
       "name": "stakeMarketTickets",
       "docs": [
-        "Stakes market tickets for later redemption"
+        "Stakes fixed market tickets for later redemption"
       ],
       "accounts": [
         {
@@ -1837,11 +1837,11 @@ export type JetMarket = {
           ]
         },
         {
-          "name": "marketManager",
+          "name": "market",
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The MarketManager account tracks fixed market assets of a particular tenor"
+            "The Market account tracks fixed market assets of a particular tenor"
           ]
         },
         {
@@ -1948,11 +1948,11 @@ export type JetMarket = {
           ]
         },
         {
-          "name": "marketManager",
+          "name": "market",
           "isMut": false,
           "isSigner": false,
           "docs": [
-            "MarketManager for this Adapter"
+            "Market for this Adapter"
           ]
         },
         {
@@ -2023,9 +2023,9 @@ export type JetMarket = {
   ],
   "accounts": [
     {
-      "name": "MarketManager", // should be capitalized
+      "name": "Market", // should be capitalized
       "docs": [
-        "The `MarketManager` contains all the information necessary to run the fixed market",
+        "The `Market` contains all the information necessary to run the fixed term market",
         "",
         "Utilized by program instructions to verify given transaction accounts are correct. Contains data",
         "about the fixed market including the tenor and ticket<->token conversion rate"
@@ -2136,7 +2136,7 @@ export type JetMarket = {
           {
             "name": "seed",
             "docs": [
-              "The user-defined part of the seed that generated this market manager's PDA"
+              "The user-defined part of the seed that generated this market's PDA"
             ],
             "type": {
               "array": [
@@ -2263,9 +2263,9 @@ export type JetMarket = {
             "type": "publicKey"
           },
           {
-            "name": "marketManager",
+            "name": "market",
             "docs": [
-              "The `MarketManager` for the market"
+              "The `Market` for the market"
             ],
             "type": "publicKey"
           },
@@ -2340,9 +2340,9 @@ export type JetMarket = {
             "type": "publicKey"
           },
           {
-            "name": "marketManager",
+            "name": "market",
             "docs": [
-              "The market manager where the obligation was created"
+              "The market where the obligation was created"
             ],
             "type": "publicKey"
           },
@@ -2392,9 +2392,9 @@ export type JetMarket = {
             "type": "publicKey"
           },
           {
-            "name": "manager",
+            "name": "market",
             "docs": [
-              "The `MarketManager` this adapter belongs to"
+              "The `Market` this adapter belongs to"
             ],
             "type": "publicKey"
           },
@@ -2425,7 +2425,7 @@ export type JetMarket = {
             "type": "publicKey"
           },
           {
-            "name": "marketManager",
+            "name": "market",
             "docs": [
               "The `TicketManager` this claim ticket was established under",
               "Determines the asset this ticket will be redeemed for"
@@ -2469,7 +2469,7 @@ export type JetMarket = {
             "type": "publicKey"
           },
           {
-            "name": "marketManager",
+            "name": "market",
             "docs": [
               "The `TicketManager` this claim ticket was established under",
               "Determines the asset this ticket will be redeemed for"
@@ -2520,9 +2520,9 @@ export type JetMarket = {
   ],
   "types": [
     {
-      "name": "InitializeMarketManagerParams",
+      "name": "InitializeMarketParams",
       "docs": [
-        "Parameters for the initialization of the [MarketManager]"
+        "Parameters for the initialization of the [Market]"
       ],
       "type": {
         "kind": "struct",
@@ -2530,7 +2530,7 @@ export type JetMarket = {
           {
             "name": "versionTag",
             "docs": [
-              "Tag information for the `MarketManager` account"
+              "Tag information for the `Market` account"
             ],
             "type": "u64"
           },
@@ -2967,7 +2967,7 @@ export type JetMarket = {
   ],
   "events": [
     {
-      "name": "MarketManagerInitialized",
+      "name": "MarketInitialized",
       "fields": [
         {
           "name": "version",
@@ -3015,7 +3015,7 @@ export type JetMarket = {
       "name": "OrderbookInitialized",
       "fields": [
         {
-          "name": "marketManager",
+          "name": "market",
           "type": "publicKey",
           "index": false
         },
@@ -3065,7 +3065,7 @@ export type JetMarket = {
       "name": "ToggleOrderMatching",
       "fields": [
         {
-          "name": "marketManager",
+          "name": "market",
           "type": "publicKey",
           "index": false
         },
@@ -3090,7 +3090,7 @@ export type JetMarket = {
       "name": "MarginUserInitialized",
       "fields": [
         {
-          "name": "marketManager",
+          "name": "market",
           "type": "publicKey",
           "index": false
         },
@@ -3120,7 +3120,7 @@ export type JetMarket = {
       "name": "OrderPlaced",
       "fields": [
         {
-          "name": "marketManager",
+          "name": "market",
           "type": "publicKey",
           "index": false
         },
@@ -3198,7 +3198,7 @@ export type JetMarket = {
           "index": false
         },
         {
-          "name": "marketManager",
+          "name": "market",
           "type": "publicKey",
           "index": false
         },
@@ -3278,7 +3278,7 @@ export type JetMarket = {
       "name": "OrderCancelled",
       "fields": [
         {
-          "name": "marketManager",
+          "name": "market",
           "type": "publicKey",
           "index": false
         },
@@ -3298,7 +3298,7 @@ export type JetMarket = {
       "name": "EventAdapterRegistered",
       "fields": [
         {
-          "name": "marketManager",
+          "name": "market",
           "type": "publicKey",
           "index": false
         },
@@ -3318,7 +3318,7 @@ export type JetMarket = {
       "name": "TokensExchanged",
       "fields": [
         {
-          "name": "marketManager",
+          "name": "market",
           "type": "publicKey",
           "index": false
         },
@@ -3338,7 +3338,7 @@ export type JetMarket = {
       "name": "TicketRedeemed",
       "fields": [
         {
-          "name": "marketManager",
+          "name": "market",
           "type": "publicKey",
           "index": false
         },
@@ -3368,7 +3368,7 @@ export type JetMarket = {
       "name": "TicketsStaked",
       "fields": [
         {
-          "name": "marketManager",
+          "name": "market",
           "type": "publicKey",
           "index": false
         },
@@ -3577,9 +3577,9 @@ export type JetMarket = {
       "msg": "bids account does not belong to this market"
     },
     {
-      "code": 6035,
-      "name": "WrongMarketManager",
-      "msg": "adapter does not belong to given market manager"
+      "code": 6034,
+      "name": "WrongMarket",
+      "msg": "adapter does not belong to given market"
     },
     {
       "code": 6035,
@@ -3694,11 +3694,11 @@ export const IDL: JetMarket = {
   "name": "jet_market",
   "constants": [
     {
-      "name": "MARKET_MANAGER",
+      "name": "MARKET",
       "type": {
         "defined": "&[u8]"
       },
-      "value": "b\"market_manager\""
+      "value": "b\"market\""
     },
     {
       "name": "MARKET_TICKET_ACCOUNT",
@@ -3879,17 +3879,17 @@ export const IDL: JetMarket = {
       "args": []
     },
     {
-      "name": "initializeMarketManager",
+      "name": "initializeMarket",
       "docs": [
-        "Initializes a MarketManager for a fixed market"
+        "Initializes a Market for a fixed term market"
       ],
       "accounts": [
         {
-          "name": "marketManager",
+          "name": "market",
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The `MarketManager` manages asset tokens for a particular market tenor"
+            "The `Market` manages asset tokens for a particular tenor"
           ]
         },
         {
@@ -4009,7 +4009,7 @@ export const IDL: JetMarket = {
         {
           "name": "params",
           "type": {
-            "defined": "InitializeMarketManagerParams"
+            "defined": "InitializeMarketParams"
           }
         }
       ]
@@ -4021,11 +4021,11 @@ export const IDL: JetMarket = {
       ],
       "accounts": [
         {
-          "name": "marketManager",
+          "name": "market",
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The `MarketManager` account tracks global information related to this particular fixed market"
+            "The `Market` account tracks global information related to this particular Jet market"
           ]
         },
         {
@@ -4105,18 +4105,18 @@ export const IDL: JetMarket = {
       ]
     },
     {
-      "name": "modifyMarketManager",
+      "name": "modifyMarket",
       "docs": [
-        "Modify a `MarketManager` account",
+        "Modify a `Market` account",
         "Authority use only"
       ],
       "accounts": [
         {
-          "name": "marketManager",
+          "name": "market",
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The `MarketManager` manages asset tokens for a particular market tenor"
+            "The `Market` manages asset tokens for a particular tenor"
           ]
         },
         {
@@ -4154,11 +4154,11 @@ export const IDL: JetMarket = {
       ],
       "accounts": [
         {
-          "name": "marketManager",
+          "name": "market",
           "isMut": false,
           "isSigner": false,
           "docs": [
-            "The `MarketManager` manages asset tokens for a particular market tenor"
+            "The `Market` manages asset tokens for a particular tenor"
           ]
         },
         {
@@ -4195,11 +4195,11 @@ export const IDL: JetMarket = {
       ],
       "accounts": [
         {
-          "name": "marketManager",
+          "name": "market",
           "isMut": false,
           "isSigner": false,
           "docs": [
-            "The `MarketManager` manages asset tokens for a particular market tenor"
+            "The `Market` manages asset tokens for a particular tenor"
           ]
         },
         {
@@ -4264,7 +4264,7 @@ export const IDL: JetMarket = {
           ]
         },
         {
-          "name": "marketManager",
+          "name": "market",
           "isMut": false,
           "isSigner": false,
           "docs": [
@@ -4429,11 +4429,11 @@ export const IDL: JetMarket = {
           "name": "orderbookMut",
           "accounts": [
             {
-              "name": "marketManager",
+              "name": "market",
               "isMut": true,
               "isSigner": false,
               "docs": [
-                "The `MarketManager` account tracks global information related to this particular fixed market"
+                "The `Market` account tracks global information related to this particular fixed market"
               ]
             },
             {
@@ -4554,11 +4554,11 @@ export const IDL: JetMarket = {
               "name": "orderbookMut",
               "accounts": [
                 {
-                  "name": "marketManager",
+                  "name": "market",
                   "isMut": true,
                   "isSigner": false,
                   "docs": [
-                    "The `MarketManager` account tracks global information related to this particular fixed market"
+                    "The `Market` account tracks global information related to this particular fixed market"
                   ]
                 },
                 {
@@ -4671,11 +4671,11 @@ export const IDL: JetMarket = {
               ]
             },
             {
-              "name": "marketManager",
+              "name": "market",
               "isMut": false,
               "isSigner": false,
               "docs": [
-                "The MarketManager responsible for the asset"
+                "The Market responsible for the asset"
               ]
             },
             {
@@ -4683,7 +4683,7 @@ export const IDL: JetMarket = {
               "isMut": true,
               "isSigner": false,
               "docs": [
-                "The vault stores the tokens of the underlying asset managed by the MarketManager"
+                "The vault stores the tokens of the underlying asset managed by the Market"
               ]
             },
             {
@@ -4744,11 +4744,11 @@ export const IDL: JetMarket = {
               "name": "orderbookMut",
               "accounts": [
                 {
-                  "name": "marketManager",
+                  "name": "market",
                   "isMut": true,
                   "isSigner": false,
                   "docs": [
-                    "The `MarketManager` account tracks global information related to this particular fixed market"
+                    "The `Market` account tracks global information related to this particular fixed market"
                   ]
                 },
                 {
@@ -4859,11 +4859,11 @@ export const IDL: JetMarket = {
           "isSigner": false
         },
         {
-          "name": "marketManager",
+          "name": "market",
           "isMut": false,
           "isSigner": false,
           "docs": [
-            "The `MarketManager` account tracks global information related to this particular fixed market"
+            "The `Market` account tracks global information related to this particular fixed market"
           ]
         },
         {
@@ -4979,11 +4979,11 @@ export const IDL: JetMarket = {
           ]
         },
         {
-          "name": "marketManager",
+          "name": "market",
           "isMut": false,
           "isSigner": false,
           "docs": [
-            "The `MarketManager` account tracks global information related to this particular fixed market"
+            "The `Market` account tracks global information related to this particular fixed market"
           ]
         },
         {
@@ -5077,11 +5077,11 @@ export const IDL: JetMarket = {
           "name": "orderbookMut",
           "accounts": [
             {
-              "name": "marketManager",
+              "name": "market",
               "isMut": true,
               "isSigner": false,
               "docs": [
-                "The `MarketManager` account tracks global information related to this particular fixed market"
+                "The `Market` account tracks global information related to this particular fixed market"
               ]
             },
             {
@@ -5155,11 +5155,11 @@ export const IDL: JetMarket = {
           "name": "orderbookMut",
           "accounts": [
             {
-              "name": "marketManager",
+              "name": "market",
               "isMut": true,
               "isSigner": false,
               "docs": [
-                "The `MarketManager` account tracks global information related to this particular fixed market"
+                "The `Market` account tracks global information related to this particular fixed market"
               ]
             },
             {
@@ -5210,11 +5210,11 @@ export const IDL: JetMarket = {
           "name": "orderbookMut",
           "accounts": [
             {
-              "name": "marketManager",
+              "name": "market",
               "isMut": true,
               "isSigner": false,
               "docs": [
-                "The `MarketManager` account tracks global information related to this particular fixed market"
+                "The `Market` account tracks global information related to this particular fixed market"
               ]
             },
             {
@@ -5310,11 +5310,11 @@ export const IDL: JetMarket = {
       ],
       "accounts": [
         {
-          "name": "marketManager",
+          "name": "market",
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The `MarketManager` account tracks global information related to this particular fixed market"
+            "The `Market` account tracks global information related to this particular fixed term market"
           ]
         },
         {
@@ -5393,11 +5393,11 @@ export const IDL: JetMarket = {
       ],
       "accounts": [
         {
-          "name": "marketManager",
+          "name": "market",
           "isMut": false,
           "isSigner": false,
           "docs": [
-            "The MarketManager manages asset tokens for a particular market tenor"
+            "The Market manages asset tokens for a particular tenor"
           ]
         },
         {
@@ -5405,7 +5405,7 @@ export const IDL: JetMarket = {
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The vault stores the tokens of the underlying asset managed by the MarketManager"
+            "The vault stores the tokens of the underlying asset managed by the Market"
           ]
         },
         {
@@ -5487,11 +5487,11 @@ export const IDL: JetMarket = {
           ]
         },
         {
-          "name": "marketManager",
+          "name": "market",
           "isMut": false,
           "isSigner": false,
           "docs": [
-            "The MarketManager responsible for the asset"
+            "The Market responsible for the asset"
           ]
         },
         {
@@ -5499,7 +5499,7 @@ export const IDL: JetMarket = {
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The vault stores the tokens of the underlying asset managed by the MarketManager"
+            "The vault stores the tokens of the underlying asset managed by the Market"
           ]
         },
         {
@@ -5516,7 +5516,7 @@ export const IDL: JetMarket = {
     {
       "name": "stakeMarketTickets",
       "docs": [
-        "Stakes market tickets for later redemption"
+        "Stakes fixed market tickets for later redemption"
       ],
       "accounts": [
         {
@@ -5528,11 +5528,11 @@ export const IDL: JetMarket = {
           ]
         },
         {
-          "name": "marketManager",
+          "name": "market",
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The MarketManager account tracks fixed market assets of a particular tenor"
+            "The Market account tracks fixed market assets of a particular tenor"
           ]
         },
         {
@@ -5639,11 +5639,11 @@ export const IDL: JetMarket = {
           ]
         },
         {
-          "name": "marketManager",
+          "name": "market",
           "isMut": false,
           "isSigner": false,
           "docs": [
-            "MarketManager for this Adapter"
+            "Market for this Adapter"
           ]
         },
         {
@@ -5714,9 +5714,9 @@ export const IDL: JetMarket = {
   ],
   "accounts": [
     {
-      "name": "MarketManager", // should be capitalized
+      "name": "Market", // should be capitalized
       "docs": [
-        "The `MarketManager` contains all the information necessary to run the fixed market",
+        "The `Market` contains all the information necessary to run the fixed term market",
         "",
         "Utilized by program instructions to verify given transaction accounts are correct. Contains data",
         "about the fixed market including the tenor and ticket<->token conversion rate"
@@ -5827,7 +5827,7 @@ export const IDL: JetMarket = {
           {
             "name": "seed",
             "docs": [
-              "The user-defined part of the seed that generated this market manager's PDA"
+              "The user-defined part of the seed that generated this market's PDA"
             ],
             "type": {
               "array": [
@@ -5954,9 +5954,9 @@ export const IDL: JetMarket = {
             "type": "publicKey"
           },
           {
-            "name": "marketManager",
+            "name": "market",
             "docs": [
-              "The `MarketManager` for the market"
+              "The `Market` for the market"
             ],
             "type": "publicKey"
           },
@@ -6031,9 +6031,9 @@ export const IDL: JetMarket = {
             "type": "publicKey"
           },
           {
-            "name": "marketManager",
+            "name": "market",
             "docs": [
-              "The market manager where the obligation was created"
+              "The market where the obligation was created"
             ],
             "type": "publicKey"
           },
@@ -6083,9 +6083,9 @@ export const IDL: JetMarket = {
             "type": "publicKey"
           },
           {
-            "name": "manager",
+            "name": "market",
             "docs": [
-              "The `MarketManager` this adapter belongs to"
+              "The `Market` this adapter belongs to"
             ],
             "type": "publicKey"
           },
@@ -6116,7 +6116,7 @@ export const IDL: JetMarket = {
             "type": "publicKey"
           },
           {
-            "name": "marketManager",
+            "name": "market",
             "docs": [
               "The `TicketManager` this claim ticket was established under",
               "Determines the asset this ticket will be redeemed for"
@@ -6160,7 +6160,7 @@ export const IDL: JetMarket = {
             "type": "publicKey"
           },
           {
-            "name": "marketManager",
+            "name": "market",
             "docs": [
               "The `TicketManager` this claim ticket was established under",
               "Determines the asset this ticket will be redeemed for"
@@ -6211,9 +6211,9 @@ export const IDL: JetMarket = {
   ],
   "types": [
     {
-      "name": "InitializeMarketManagerParams",
+      "name": "InitializeMarketParams",
       "docs": [
-        "Parameters for the initialization of the [MarketManager]"
+        "Parameters for the initialization of the [Market]"
       ],
       "type": {
         "kind": "struct",
@@ -6221,7 +6221,7 @@ export const IDL: JetMarket = {
           {
             "name": "versionTag",
             "docs": [
-              "Tag information for the `MarketManager` account"
+              "Tag information for the `Market` account"
             ],
             "type": "u64"
           },
@@ -6658,7 +6658,7 @@ export const IDL: JetMarket = {
   ],
   "events": [
     {
-      "name": "MarketManagerInitialized",
+      "name": "MarketInitialized",
       "fields": [
         {
           "name": "version",
@@ -6706,7 +6706,7 @@ export const IDL: JetMarket = {
       "name": "OrderbookInitialized",
       "fields": [
         {
-          "name": "marketManager",
+          "name": "market",
           "type": "publicKey",
           "index": false
         },
@@ -6756,7 +6756,7 @@ export const IDL: JetMarket = {
       "name": "ToggleOrderMatching",
       "fields": [
         {
-          "name": "marketManager",
+          "name": "market",
           "type": "publicKey",
           "index": false
         },
@@ -6781,7 +6781,7 @@ export const IDL: JetMarket = {
       "name": "MarginUserInitialized",
       "fields": [
         {
-          "name": "marketManager",
+          "name": "market",
           "type": "publicKey",
           "index": false
         },
@@ -6811,7 +6811,7 @@ export const IDL: JetMarket = {
       "name": "OrderPlaced",
       "fields": [
         {
-          "name": "marketManager",
+          "name": "market",
           "type": "publicKey",
           "index": false
         },
@@ -6889,7 +6889,7 @@ export const IDL: JetMarket = {
           "index": false
         },
         {
-          "name": "marketManager",
+          "name": "market",
           "type": "publicKey",
           "index": false
         },
@@ -6969,7 +6969,7 @@ export const IDL: JetMarket = {
       "name": "OrderCancelled",
       "fields": [
         {
-          "name": "marketManager",
+          "name": "market",
           "type": "publicKey",
           "index": false
         },
@@ -6989,7 +6989,7 @@ export const IDL: JetMarket = {
       "name": "EventAdapterRegistered",
       "fields": [
         {
-          "name": "marketManager",
+          "name": "market",
           "type": "publicKey",
           "index": false
         },
@@ -7009,7 +7009,7 @@ export const IDL: JetMarket = {
       "name": "TokensExchanged",
       "fields": [
         {
-          "name": "marketManager",
+          "name": "market",
           "type": "publicKey",
           "index": false
         },
@@ -7029,7 +7029,7 @@ export const IDL: JetMarket = {
       "name": "TicketRedeemed",
       "fields": [
         {
-          "name": "marketManager",
+          "name": "market",
           "type": "publicKey",
           "index": false
         },
@@ -7059,7 +7059,7 @@ export const IDL: JetMarket = {
       "name": "TicketsStaked",
       "fields": [
         {
-          "name": "marketManager",
+          "name": "market",
           "type": "publicKey",
           "index": false
         },
@@ -7268,9 +7268,9 @@ export const IDL: JetMarket = {
       "msg": "bids account does not belong to this market"
     },
     {
-      "code": 6035,
-      "name": "WrongMarketManager",
-      "msg": "adapter does not belong to given market manager"
+      "code": 6034,
+      "name": "WrongMarket",
+      "msg": "adapter does not belong to given market"
     },
     {
       "code": 6035,

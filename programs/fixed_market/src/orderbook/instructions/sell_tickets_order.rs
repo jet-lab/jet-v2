@@ -23,19 +23,19 @@ pub struct SellTicketsOrder<'info> {
     /// The account to receive the matched tokens
     #[account(mut, constraint =
         mint(&user_token_vault.to_account_info()).unwrap()
-        == orderbook_mut.market_manager.load().unwrap().underlying_token_mint.key() @ ErrorCode::WrongUnderlyingTokenMint
+        == orderbook_mut.market.load().unwrap().underlying_token_mint.key() @ ErrorCode::WrongUnderlyingTokenMint
     )]
     pub user_token_vault: Account<'info, TokenAccount>,
 
-    #[market_manager]
+    #[market]
     pub orderbook_mut: OrderbookMut<'info>,
 
     /// The market ticket mint
-    #[account(mut, address = orderbook_mut.market_manager.load().unwrap().market_ticket_mint.key() @ ErrorCode::WrongTicketMint)]
+    #[account(mut, address = orderbook_mut.market.load().unwrap().market_ticket_mint.key() @ ErrorCode::WrongTicketMint)]
     pub market_ticket_mint: Account<'info, Mint>,
 
     /// The market ticket mint
-    #[account(mut, address = orderbook_mut.market_manager.load().unwrap().underlying_token_vault.key() @ ErrorCode::WrongTicketMint)]
+    #[account(mut, address = orderbook_mut.market.load().unwrap().underlying_token_vault.key() @ ErrorCode::WrongTicketMint)]
     pub underlying_token_vault: Account<'info, TokenAccount>,
 
     pub token_program: Program<'info, Token>,
@@ -68,7 +68,7 @@ impl<'info> SellTicketsOrder<'info> {
             order_summary.base_combined(),
         )?;
         emit!(crate::events::OrderPlaced {
-            market_manager: self.orderbook_mut.market_manager.key(),
+            market: self.orderbook_mut.market.key(),
             authority: self.authority.key(),
             order_summary: order_summary.summary(),
             margin_user,

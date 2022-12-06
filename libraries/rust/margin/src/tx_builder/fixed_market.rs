@@ -4,7 +4,7 @@ use anchor_lang::AccountDeserialize;
 use anyhow::{bail, Result};
 use async_trait::async_trait;
 use jet_margin::MarginAccount;
-use jet_market::control::state::MarketManager;
+use jet_market::control::state::Market;
 use jet_simulation::solana_rpc_api::SolanaRpcClient;
 use solana_sdk::pubkey::Pubkey;
 
@@ -75,7 +75,7 @@ impl FixedPositionRefresher {
     pub async fn add_fixed_market(&mut self, manager: Pubkey) -> Result<()> {
         self.fixed_markets.insert(
             manager,
-            get_anchor_account::<MarketManager>(self.rpc.clone(), &manager)
+            get_anchor_account::<Market>(self.rpc.clone(), &manager)
                 .await?
                 .into(),
         );

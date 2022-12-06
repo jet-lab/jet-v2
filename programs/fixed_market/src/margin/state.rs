@@ -15,8 +15,8 @@ pub struct MarginUser {
     pub version: u8,
     /// The margin account used for signing actions
     pub margin_account: Pubkey,
-    /// The `MarketManager` for the market
-    pub market_manager: Pubkey,
+    /// The `Market` for the market
+    pub market: Pubkey,
     /// Token account used by the margin program to track the debt
     pub claims: Pubkey,
     /// Token account used by the margin program to track the collateral value of positions
@@ -239,8 +239,8 @@ pub struct Obligation {
     /// The user borrower account this obligation is assigned to
     pub borrower_account: Pubkey,
 
-    /// The market manager where the obligation was created
-    pub market_manager: Pubkey,
+    /// The market where the obligation was created
+    pub market: Pubkey,
 
     /// The `OrderTag` associated with the creation of this `Obligation`
     pub order_tag: OrderTag,

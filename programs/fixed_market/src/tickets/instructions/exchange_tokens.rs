@@ -3,20 +3,20 @@ use anchor_spl::token::{transfer, Mint, Token, TokenAccount, Transfer};
 use jet_program_proc_macros::MarketTokenManager;
 
 use crate::{
-    control::state::MarketManager, market_token_manager::MarketTokenManager,
+    control::state::Market, market_token_manager::MarketTokenManager,
     tickets::events::TokensExchanged, ErrorCode,
 };
 
 #[derive(Accounts, MarketTokenManager)]
 pub struct ExchangeTokens<'info> {
-    /// The MarketManager manages asset tokens for a particular market tenor
+    /// The Market manages asset tokens for a particular tenor
     #[account(
             has_one = market_ticket_mint @ ErrorCode::WrongTicketMint,
             has_one = underlying_token_vault @ ErrorCode::WrongVault,
     )]
-    pub market_manager: AccountLoader<'info, MarketManager>,
+    pub market: AccountLoader<'info, Market>,
 
-    /// The vault stores the tokens of the underlying asset managed by the MarketManager
+    /// The vault stores the tokens of the underlying asset managed by the Market
     #[account(mut)]
     pub underlying_token_vault: Box<Account<'info, TokenAccount>>,
 
@@ -61,7 +61,7 @@ pub fn handler(ctx: Context<ExchangeTokens>, amount: u64) -> Result<()> {
     )?;
 
     emit!(TokensExchanged {
-        market_manager: ctx.accounts.market_manager.key(),
+        market: ctx.accounts.market.key(),
         user: ctx.accounts.user_authority.key(),
         amount,
     });

@@ -1,23 +1,21 @@
-use crate::control::state::MarketManager;
+use crate::control::state::Market;
 use anchor_lang::{
     prelude::{AccountLoader, Context, CpiContext, Program, Result},
     ToAccountInfo,
 };
 use anchor_spl::token::{burn, mint_to, transfer, Burn, MintTo, Token, Transfer};
 
-pub trait MarketManagerProvider<'info> {
-    fn market_manager(&self) -> AccountLoader<'info, MarketManager>;
+pub trait MarketProvider<'info> {
+    fn market(&self) -> AccountLoader<'info, Market>;
 }
 
 pub trait TokenProgramProvider<'info> {
     fn token_program(&self) -> Program<'info, Token>;
 }
 
-/// Deal with tokens owned by the market manager
-pub trait MarketTokenManager<'info>:
-    MarketManagerProvider<'info> + TokenProgramProvider<'info>
-{
-    /// Mints tokens from a mint owned by the market manager
+/// Deal with tokens owned by the market
+pub trait MarketTokenManager<'info>: MarketProvider<'info> + TokenProgramProvider<'info> {
+    /// Mints tokens from a mint owned by the market
     fn mint(
         &self,
         mint: impl ToAccountInfo<'info>,
@@ -30,15 +28,15 @@ pub trait MarketTokenManager<'info>:
                 MintTo {
                     mint: mint.to_account_info(),
                     to: to.to_account_info(),
-                    authority: self.market_manager().to_account_info(),
+                    authority: self.market().to_account_info(),
                 },
             )
-            .with_signer(&[&self.market_manager().load()?.authority_seeds()]),
+            .with_signer(&[&self.market().load()?.authority_seeds()]),
             amount,
         )
     }
 
-    /// Transfers tokens out of a vault owned by the market manager
+    /// Transfers tokens out of a vault owned by the market
     fn withdraw(
         &self,
         from: impl ToAccountInfo<'info>,
@@ -51,15 +49,15 @@ pub trait MarketTokenManager<'info>:
                 Transfer {
                     from: from.to_account_info(),
                     to: to.to_account_info(),
-                    authority: self.market_manager().to_account_info(),
+                    authority: self.market().to_account_info(),
                 },
             )
-            .with_signer(&[&self.market_manager().load()?.authority_seeds()]),
+            .with_signer(&[&self.market().load()?.authority_seeds()]),
             amount,
         )
     }
 
-    /// Burns tokens from a token account owned by the market manager
+    /// Burns tokens from a token account owned by the market
     fn burn_notes(
         &self,
         mint: impl ToAccountInfo<'info>,
@@ -72,26 +70,26 @@ pub trait MarketTokenManager<'info>:
                 Burn {
                     mint: mint.to_account_info(),
                     from: from.to_account_info(),
-                    authority: self.market_manager().to_account_info(),
+                    authority: self.market().to_account_info(),
                 },
             )
-            .with_signer(&[&self.market_manager().load()?.authority_seeds()]),
+            .with_signer(&[&self.market().load()?.authority_seeds()]),
             amount,
         )
     }
 }
 
 impl<'info, T> MarketTokenManager<'info> for T where
-    T: MarketManagerProvider<'info> + TokenProgramProvider<'info>
+    T: MarketProvider<'info> + TokenProgramProvider<'info>
 {
 }
 
-impl<'info, T> MarketManagerProvider<'info> for Context<'_, '_, '_, '_, T>
+impl<'info, T> MarketProvider<'info> for Context<'_, '_, '_, '_, T>
 where
-    T: MarketManagerProvider<'info>,
+    T: MarketProvider<'info>,
 {
-    fn market_manager(&self) -> AccountLoader<'info, MarketManager> {
-        self.accounts.market_manager()
+    fn market(&self) -> AccountLoader<'info, Market> {
+        self.accounts.market()
     }
 }
 

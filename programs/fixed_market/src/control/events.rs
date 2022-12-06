@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 
 #[event]
-pub struct MarketManagerInitialized {
+pub struct MarketInitialized {
     pub version: u64,
     pub address: Pubkey,
     pub airspace: Pubkey,
@@ -14,7 +14,7 @@ pub struct MarketManagerInitialized {
 
 #[event]
 pub struct OrderbookInitialized {
-    pub market_manager: Pubkey,
+    pub market: Pubkey,
     pub orderbook_market_state: Pubkey,
     pub event_queue: Pubkey,
     pub bids: Pubkey,
@@ -30,6 +30,6 @@ pub struct PositionRefreshed {
 
 #[event]
 pub struct ToggleOrderMatching {
-    pub market_manager: Pubkey,
+    pub market: Pubkey,
     pub is_orderbook_paused: bool,
 }

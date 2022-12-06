@@ -1,6 +1,4 @@
-use crate::{
-    control::state::MarketManager, events::OrderCancelled, utils::orderbook_accounts, ErrorCode,
-};
+use crate::{control::state::Market, events::OrderCancelled, utils::orderbook_accounts, ErrorCode};
 use agnostic_orderbook::{
     instruction::cancel_order,
     state::{critbit::Slab, get_side_from_order_id, Side},
@@ -42,16 +40,16 @@ pub const fn event_queue_len(event_capacity: usize) -> usize {
 /// Set of accounts that are commonly needed together whenever the orderbook is modified
 #[derive(Accounts)]
 pub struct OrderbookMut<'info> {
-    /// The `MarketManager` account tracks global information related to this particular fixed market
+    /// The `Market` account tracks global information related to this particular fixed market
     #[account(
             mut,
             has_one = orderbook_market_state @ ErrorCode::WrongMarketState,
             has_one = bids @ ErrorCode::WrongBids,
             has_one = asks @ ErrorCode::WrongAsks,
             has_one = event_queue @ ErrorCode::WrongEventQueue,
-            constraint = !market_manager.load()?.orderbook_paused @ ErrorCode::OrderbookPaused,
+            constraint = !market.load()?.orderbook_paused @ ErrorCode::OrderbookPaused,
         )]
-    pub market_manager: AccountLoader<'info, MarketManager>,
+    pub market: AccountLoader<'info, Market>,
 
     // aaob accounts
     /// CHECK: handled by aaob
@@ -70,23 +68,23 @@ pub struct OrderbookMut<'info> {
 
 impl<'info> OrderbookMut<'info> {
     pub fn underlying_mint(&self) -> Pubkey {
-        self.market_manager.load().unwrap().underlying_token_mint
+        self.market.load().unwrap().underlying_token_mint
     }
 
     pub fn ticket_mint(&self) -> Pubkey {
-        self.market_manager.load().unwrap().market_ticket_mint
+        self.market.load().unwrap().market_ticket_mint
     }
 
     pub fn vault(&self) -> Pubkey {
-        self.market_manager.load().unwrap().underlying_token_vault
+        self.market.load().unwrap().underlying_token_vault
     }
 
     pub fn collateral_mint(&self) -> Pubkey {
-        self.market_manager.load().unwrap().collateral_mint
+        self.market.load().unwrap().collateral_mint
     }
 
     pub fn claims_mint(&self) -> Pubkey {
-        self.market_manager.load().unwrap().claims_mint
+        self.market.load().unwrap().claims_mint
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -100,9 +98,9 @@ impl<'info> OrderbookMut<'info> {
         adapter: Option<Pubkey>,
         flags: CallbackFlags,
     ) -> Result<(CallbackInfo, SensibleOrderSummary)> {
-        let mut manager = self.market_manager.load_mut()?;
+        let mut manager = self.market.load_mut()?;
         let callback_info = CallbackInfo::new(
-            self.market_manager.key(),
+            self.market.key(),
             owner,
             fill,
             out,
@@ -174,7 +172,7 @@ impl<'info> OrderbookMut<'info> {
         )?;
 
         emit!(OrderCancelled {
-            market_manager: self.market_manager.key(),
+            market: self.market.key(),
             authority: owner,
             order_id,
         });
@@ -192,15 +190,11 @@ pub struct OrderTag([u8; 16]);
 impl OrderTag {
     //todo maybe this means we don't need owner to be stored in the CallbackInfo
     /// To generate an OrderTag, the program takes the sha256 hash of the orderbook user account
-    /// and market manager pubkeys, a nonce tracked by the orderbook user account, and drops the
+    /// and market pubkeys, a nonce tracked by the orderbook user account, and drops the
     /// last 16 bytes to create a 16-byte array
-    pub fn generate(
-        market_manager_key_bytes: &[u8],
-        user_key_bytes: &[u8],
-        nonce: u64,
-    ) -> OrderTag {
+    pub fn generate(market_key_bytes: &[u8], user_key_bytes: &[u8], nonce: u64) -> OrderTag {
         let nonce_bytes = bytemuck::bytes_of(&nonce);
-        let bytes: &[u8] = &[market_manager_key_bytes, user_key_bytes, nonce_bytes].concat();
+        let bytes: &[u8] = &[market_key_bytes, user_key_bytes, nonce_bytes].concat();
         let hash: [u8; 32] = hash(bytes).to_bytes();
         let tag_bytes: &[u8; 16] = &hash[..16].try_into().unwrap();
 
@@ -247,7 +241,7 @@ impl CallbackInfo {
     pub const LEN: usize = std::mem::size_of::<Self>();
     #[allow(clippy::too_many_arguments)]
     pub fn new(
-        market_manager_key: Pubkey,
+        market_key: Pubkey,
         owner: Pubkey,
         fill_account: Pubkey,
         out_account: Pubkey,
@@ -256,8 +250,7 @@ impl CallbackInfo {
         flags: CallbackFlags,
         nonce: u64,
     ) -> Self {
-        let order_tag =
-            OrderTag::generate(market_manager_key.as_ref(), fill_account.as_ref(), nonce);
+        let order_tag = OrderTag::generate(market_key.as_ref(), fill_account.as_ref(), nonce);
         Self {
             owner,
             fill_account,
@@ -410,8 +403,8 @@ impl SensibleOrderSummary {
 pub struct EventAdapterMetadata {
     /// Signing authority over this Adapter
     pub owner: Pubkey,
-    /// The `MarketManager` this adapter belongs to
-    pub manager: Pubkey,
+    /// The `Market` this adapter belongs to
+    pub market: Pubkey,
     /// The `MarginUser` account this adapter is registered for
     pub orderbook_user: Pubkey,
 }

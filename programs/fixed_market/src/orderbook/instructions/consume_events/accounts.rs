@@ -5,7 +5,7 @@ use anchor_spl::token::Token;
 use jet_program_proc_macros::MarketTokenManager;
 
 use crate::{
-    control::state::{CrankAuthorization, MarketManager},
+    control::state::{CrankAuthorization, Market},
     margin::state::{MarginUser, Obligation},
     orderbook::state::EventQueue,
     serialization::{AnchorAccount, Mut},
@@ -15,7 +15,7 @@ use crate::{
 
 #[derive(Accounts, MarketTokenManager)]
 pub struct ConsumeEvents<'info> {
-    /// The `MarketManager` account tracks global information related to this particular fixed market
+    /// The `Market` account tracks global information related to this particular fixed term market
     #[account(
         has_one = market_ticket_mint @ ErrorCode::WrongTicketMint,
         has_one = underlying_token_vault @ ErrorCode::WrongVault,
@@ -23,7 +23,7 @@ pub struct ConsumeEvents<'info> {
         has_one = event_queue @ ErrorCode::WrongEventQueue,
     )]
     #[account(mut)]
-    pub market_manager: AccountLoader<'info, MarketManager>,
+    pub market: AccountLoader<'info, Market>,
     /// The market ticket mint
     /// CHECK: has_one
     #[account(mut)]
@@ -43,7 +43,7 @@ pub struct ConsumeEvents<'info> {
 
     #[account(
         has_one = crank @ ErrorCode::WrongCrankAuthority,
-        constraint = crank_authorization.airspace == market_manager.load()?.airspace @ ErrorCode::WrongAirspaceAuthorization
+        constraint = crank_authorization.airspace == market.load()?.airspace @ ErrorCode::WrongAirspaceAuthorization
     )]
     pub crank_authorization: Account<'info, CrankAuthorization>,
     pub crank: Signer<'info>,

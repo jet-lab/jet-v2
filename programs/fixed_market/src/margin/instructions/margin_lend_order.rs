@@ -31,7 +31,7 @@ pub struct MarginLendOrder<'info> {
     #[account(mut)]
     pub collateral_mint: AccountInfo<'info>,
 
-    #[market_manager(orderbook_mut)]
+    #[market(orderbook_mut)]
     #[token_program]
     pub inner: LendOrder<'info>,
     // Optional event adapter account
@@ -69,7 +69,7 @@ pub fn handler(ctx: Context<MarginLendOrder>, params: OrderParams, seed: Vec<u8>
         staked + order_summary.quote_posted()?,
     )?;
     emit!(crate::events::OrderPlaced {
-        market_manager: ctx.accounts.inner.orderbook_mut.market_manager.key(),
+        market: ctx.accounts.inner.orderbook_mut.market.key(),
         authority: ctx.accounts.inner.authority.key(),
         margin_user: Some(ctx.accounts.margin_user.key()),
         order_summary: order_summary.summary(),

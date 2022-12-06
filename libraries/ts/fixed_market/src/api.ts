@@ -34,7 +34,7 @@ const refreshAllMarkets = async (
           .accounts({
             marginUser: marketUser,
             marginAccount: marginAccount.address,
-            marketManager: market.addresses.marketManager,
+            market: market.addresses.market,
             underlyingOracle: market.addresses.underlyingOracle,
             ticketOracle: market.addresses.ticketOracle,
             tokenProgram: TOKEN_PROGRAM_ID
@@ -278,7 +278,7 @@ export const cancelOrder = async ({
     .accounts({
       marginUser: borrowerAccount,
       marginAccount: marginAccount.address,
-      marketManager: market.addresses.marketManager,
+      market: market.addresses.market,
       underlyingOracle: market.addresses.underlyingOracle,
       ticketOracle: market.addresses.ticketOracle,
       tokenProgram: TOKEN_PROGRAM_ID

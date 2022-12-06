@@ -101,10 +101,10 @@ pub async fn process_create_fixed_market<'a>(
 
     let mut steps = vec![];
     let mut instructions = vec![];
-    if client.account_exists(&fixed_market.manager()).await? {
+    if client.account_exists(&fixed_market.market()).await? {
         println!(
-            "the manager for market [{}] already exists. Skipping initialization instruction",
-            fixed_market.manager()
+            "the fixed term market [{}] already exists. Skipping initialization instruction",
+            fixed_market.market()
         );
     } else if !client.account_exists(&params.token_mint).await? {
         println!("the token {} does not exist", params.token_mint);
@@ -113,7 +113,7 @@ pub async fn process_create_fixed_market<'a>(
         if let Some(init_ata) = fixed_market.init_default_fee_destination(&payer) {
             instructions.push(init_ata);
         }
-        let init_manager = fixed_market.initialize_manager(
+        let init_market = fixed_market.initialize_market(
             payer,
             MANAGER_VERSION,
             seed,
@@ -122,10 +122,10 @@ pub async fn process_create_fixed_market<'a>(
             params.origination_fee,
         );
         steps.push(format!(
-            "initialize-market-manager for token [{}]",
+            "initialize-market for token [{}]",
             params.token_mint
         ));
-        instructions.push(init_manager);
+        instructions.push(init_market);
     }
     if client
         .account_exists(&fixed_market.orderbook_state())
@@ -133,7 +133,7 @@ pub async fn process_create_fixed_market<'a>(
     {
         println!(
             "the market [{}] is already fully initialized",
-            fixed_market.manager()
+            fixed_market.market()
         );
         return Ok(Plan::default());
     }
@@ -146,7 +146,7 @@ pub async fn process_create_fixed_market<'a>(
     )?;
     steps.push(format!(
         "initialize-order-book for fixed market {}",
-        fixed_market.manager()
+        fixed_market.market()
     ));
     instructions.push(init_orderbook);
 

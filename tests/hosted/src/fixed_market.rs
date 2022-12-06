@@ -28,7 +28,7 @@ use jet_margin_sdk::{
     tx_builder::global_initialize_instructions,
 };
 use jet_market::{
-    control::state::MarketManager,
+    control::state::Market,
     margin::state::{MarginUser, Obligation},
     orderbook::state::{event_queue_len, orderbook_slab_len, CallbackInfo, OrderParams},
     tickets::state::{ClaimTicket, SplitTicket},
@@ -62,8 +62,8 @@ pub const LOCALNET_URL: &str = "http://127.0.0.1:8899";
 pub const DEVNET_URL: &str = "https://api.devnet.solana.com/";
 
 pub const STARTING_TOKENS: u64 = 1_000_000_000;
-pub const MARKET_MANAGER_SEED: [u8; 32] = *b"verygoodlongseedfrombytewemakeit";
-pub const MARKET_MANAGER_TAG: u64 = u64::from_le_bytes(*b"zachzach");
+pub const MARKET_SEED: [u8; 32] = *b"verygoodlongseedfrombytewemakeit";
+pub const MARKET_TAG: u64 = u64::from_le_bytes(*b"zachzach");
 pub const FEEDER_FUND_SEED: u64 = u64::from_le_bytes(*b"feedingf");
 pub const ORDERBOOK_CAPACITY: usize = 1_000;
 pub const EVENT_QUEUE_CAPACITY: usize = 1_000;
@@ -127,10 +127,10 @@ impl TestManager {
             .await?;
         let market_ticket_mint = fixed_market_pda(&[
             jet_market::seeds::MARKET_TICKET_MINT,
-            FixedMarketIxBuilder::market_manager_key(
+            FixedMarketIxBuilder::market_key(
                 &Pubkey::default(), //todo airspace
                 &mint.pubkey(),
-                MARKET_MANAGER_SEED,
+                MARKET_SEED,
             )
             .as_ref(),
         ]);
@@ -177,7 +177,7 @@ impl TestManager {
         let ix_builder = FixedMarketIxBuilder::new_from_seed(
             &Pubkey::default(),
             &mint.pubkey(),
-            MARKET_MANAGER_SEED,
+            MARKET_SEED,
             payer.pubkey(),
             underlying_oracle,
             ticket_oracle,
@@ -238,10 +238,10 @@ impl TestManager {
             .ix_builder
             .init_default_fee_destination(&payer)
             .unwrap();
-        let init_manager = this.ix_builder.initialize_manager(
+        let init_manager = this.ix_builder.initialize_market(
             payer,
-            MARKET_MANAGER_TAG,
-            MARKET_MANAGER_SEED,
+            MARKET_TAG,
+            MARKET_SEED,
             BORROW_TENOR,
             LEND_TENOR,
             ORIGINATION_FEE,
@@ -399,17 +399,17 @@ impl TestManager {
     }
 
     pub async fn register_market_tickets_position_metadatata(&self) -> Result<()> {
-        let manager = self.load_manager().await?;
+        let market = self.load_market().await?;
         self.register_market_tickets_position_metadatata_impl(
-            manager.claims_mint,
-            manager.underlying_token_mint,
+            market.claims_mint,
+            market.underlying_token_mint,
             TokenKind::Claim,
             10_00,
         )
         .await?;
         self.register_market_tickets_position_metadatata_impl(
-            manager.collateral_mint,
-            manager.market_ticket_mint,
+            market.collateral_mint,
+            market.market_ticket_mint,
             TokenKind::AdapterCollateral,
             1_00,
         )
@@ -535,8 +535,8 @@ impl OwnedBook {
 }
 
 impl TestManager {
-    pub async fn load_manager(&self) -> Result<MarketManager> {
-        self.load_anchor(&self.ix_builder.manager()).await
+    pub async fn load_market(&self) -> Result<Market> {
+        self.load_anchor(&self.ix_builder.market()).await
     }
     pub async fn load_manager_token_vault(&self) -> Result<TokenAccount> {
         let vault = self.ix_builder.vault();

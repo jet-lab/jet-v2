@@ -64,7 +64,7 @@ pub struct FixedMarketDefinition {
     pub symbol: String,
     pub tenor: String,
     #[serde_as(as = "DisplayFromStr")]
-    pub manager: Pubkey,
+    pub market: Pubkey,
 }
 
 #[derive(Debug, Default, Serialize, Deserialize)]

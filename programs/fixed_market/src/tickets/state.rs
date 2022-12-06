@@ -11,7 +11,7 @@ pub struct ClaimTicket {
     pub owner: Pubkey,
     /// The `TicketManager` this claim ticket was established under
     /// Determines the asset this ticket will be redeemed for
-    pub market_manager: Pubkey,
+    pub market: Pubkey,
     /// The slot after which this claim can be redeemed for the underlying value
     pub maturation_timestamp: i64,
     /// The number of tokens this claim  is redeemable for
@@ -30,7 +30,7 @@ pub struct SplitTicket {
     pub owner: Pubkey,
     /// The `TicketManager` this claim ticket was established under
     /// Determines the asset this ticket will be redeemed for
-    pub market_manager: Pubkey,
+    pub market: Pubkey,
     /// The `OrderTag` associated with the creation of this struct
     pub order_tag: OrderTag,
     /// The time slot during which the ticket was struck
@@ -74,11 +74,11 @@ macro_rules! make_verification {
     ($ticket:ty) => {
         impl $ticket {
             /// Verify ticket ownership, takes owner and manager pubkeys
-            pub fn verify_owner_manager(&self, owner: &Pubkey, manager: &Pubkey) -> Result<()> {
+            pub fn verify_owner_manager(&self, owner: &Pubkey, market: &Pubkey) -> Result<()> {
                 if self.owner != *owner {
                     return err!(ErrorCode::DoesNotOwnTicket);
                 }
-                if self.market_manager != *manager {
+                if self.market != *market {
                     return err!(ErrorCode::TicketNotFromManager);
                 }
 

@@ -2,14 +2,14 @@ use agnostic_orderbook::instruction::resume_matching;
 use anchor_lang::prelude::*;
 
 use crate::{
-    control::{events::ToggleOrderMatching, state::MarketManager},
+    control::{events::ToggleOrderMatching, state::Market},
     orderbook::state::CallbackInfo,
     ErrorCode,
 };
 
 #[derive(Accounts)]
 pub struct ResumeOrderMatching<'info> {
-    /// The `MarketManager` manages asset tokens for a particular market tenor
+    /// The `Market` manages asset tokens for a particular tenor
     #[account(
         has_one = airspace @ ErrorCode::WrongAirspace,
         has_one = orderbook_market_state @ ErrorCode::WrongMarketState,
@@ -17,19 +17,19 @@ pub struct ResumeOrderMatching<'info> {
         has_one = asks @ ErrorCode::WrongAsks,
         has_one = event_queue @ ErrorCode::WrongEventQueue,
     )]
-    pub market_manager: AccountLoader<'info, MarketManager>,
+    pub market: AccountLoader<'info, Market>,
 
     // aaob accounts
-    /// CHECK: handled by has_one on market_manager
+    /// CHECK: handled by has_one on market
     #[account(mut)]
     pub orderbook_market_state: AccountInfo<'info>,
-    /// CHECK: handled by has_one on market_manager
+    /// CHECK: handled by has_one on market
     #[account(mut)]
     pub event_queue: AccountInfo<'info>,
-    /// CHECK: handled by has_one on market_manager
+    /// CHECK: handled by has_one on market
     #[account(mut)]
     pub bids: AccountInfo<'info>,
-    /// CHECK: handled by has_one on market_manager
+    /// CHECK: handled by has_one on market
     #[account(mut)]
     pub asks: AccountInfo<'info>,
 
@@ -52,7 +52,7 @@ pub fn handler(ctx: Context<ResumeOrderMatching>) -> Result<()> {
     resume_matching::process::<CallbackInfo>(ctx.program_id, accounts, params)?;
 
     emit!(ToggleOrderMatching {
-        market_manager: ctx.accounts.market_manager.key(),
+        market: ctx.accounts.market.key(),
         is_orderbook_paused: false
     });
 

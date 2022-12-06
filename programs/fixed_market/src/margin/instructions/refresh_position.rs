@@ -3,7 +3,7 @@ use anchor_spl::token::Token;
 use jet_margin::{AdapterPositionFlags, AdapterResult, PositionChange, PriceChangeInfo};
 
 use crate::{
-    control::{events::PositionRefreshed, state::MarketManager},
+    control::{events::PositionRefreshed, state::Market},
     margin::state::{return_to_margin, MarginUser},
     ErrorCode,
 };
@@ -12,7 +12,7 @@ use crate::{
 pub struct RefreshPosition<'info> {
     /// The account tracking information related to this particular user
     #[account(
-        has_one = market_manager @ ErrorCode::UserNotInMarket,
+        has_one = market @ ErrorCode::UserNotInMarket,
         has_one = margin_account @ ErrorCode::WrongClaimAccount,
     )]
     pub margin_user: Account<'info, MarginUser>,
@@ -20,15 +20,15 @@ pub struct RefreshPosition<'info> {
     /// CHECK: has_one on orderbook user
     pub margin_account: AccountInfo<'info>,
 
-    /// The `MarketManager` account tracks global information related to this particular fixed market
+    /// The `Market` account tracks global information related to this particular fixed market
     #[account(
         has_one = underlying_oracle @ ErrorCode::WrongOracle,
         has_one = ticket_oracle @ ErrorCode::WrongOracle,
     )]
-    pub market_manager: AccountLoader<'info, MarketManager>,
+    pub market: AccountLoader<'info, Market>,
 
     /// The pyth price account
-    /// CHECK: has_one on market manager
+    /// CHECK: has_one on market
     pub underlying_oracle: AccountInfo<'info>,
     pub ticket_oracle: AccountInfo<'info>,
 
@@ -37,7 +37,7 @@ pub struct RefreshPosition<'info> {
 }
 
 pub fn handler(ctx: Context<RefreshPosition>, expect_price: bool) -> Result<()> {
-    let market = ctx.accounts.market_manager.load()?;
+    let market = ctx.accounts.market.load()?;
     let mut claim_changes = vec![PositionChange::Flags(
         AdapterPositionFlags::PAST_DUE,
         ctx.accounts.margin_user.debt.is_past_due(),

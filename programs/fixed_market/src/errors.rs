@@ -70,8 +70,8 @@ pub enum ErrorCode {
     WrongAirspaceAuthorization,
     #[msg("bids account does not belong to this market")]
     WrongBids,
-    #[msg("adapter does not belong to given market manager")]
-    WrongMarketManager,
+    #[msg("adapter does not belong to given market")]
+    WrongMarket,
     #[msg("wrong authority for this crank instruction")]
     WrongCrankAuthority,
     #[msg("event queue account does not belong to this market")]

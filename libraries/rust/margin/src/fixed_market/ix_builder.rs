@@ -15,8 +15,8 @@ use spl_associated_token_account::{
 
 pub use jet_market::{
     control::{
-        instructions::{InitializeMarketManagerParams, InitializeOrderbookParams},
-        state::MarketManager,
+        instructions::{InitializeMarketParams, InitializeOrderbookParams},
+        state::Market,
     },
     orderbook::state::{event_queue_len, orderbook_slab_len, OrderParams},
     ID,
@@ -30,7 +30,7 @@ use super::error::{client_err, FixedMarketIxError, Result};
 pub struct FixedMarketIxBuilder {
     airspace: Pubkey,
     authority: Pubkey,
-    manager: Pubkey,
+    market: Pubkey,
     underlying_mint: Pubkey,
     market_ticket_mint: Pubkey,
     underlying_token_vault: Pubkey,
@@ -68,30 +68,30 @@ impl UnwrapKey for Option<&Pubkey> {
     }
 }
 
-impl From<MarketManager> for FixedMarketIxBuilder {
-    fn from(market_manager: MarketManager) -> Self {
+impl From<Market> for FixedMarketIxBuilder {
+    fn from(market: Market) -> Self {
         FixedMarketIxBuilder {
-            airspace: market_manager.airspace,
+            airspace: market.airspace,
             authority: Pubkey::default(), //todo
-            manager: fixed_market_pda(&[
-                seeds::MARKET_MANAGER,
-                market_manager.airspace.as_ref(),
-                market_manager.underlying_token_mint.as_ref(),
-                &market_manager.seed,
+            market: fixed_market_pda(&[
+                seeds::MARKET,
+                market.airspace.as_ref(),
+                market.underlying_token_mint.as_ref(),
+                &market.seed,
             ]),
-            underlying_mint: market_manager.underlying_token_mint,
-            market_ticket_mint: market_manager.market_ticket_mint,
-            underlying_token_vault: market_manager.underlying_token_vault,
-            claims: market_manager.claims_mint,
-            collateral: market_manager.collateral_mint,
-            orderbook_market_state: market_manager.orderbook_market_state,
-            underlying_oracle: market_manager.underlying_oracle,
-            ticket_oracle: market_manager.ticket_oracle,
-            fee_destination: market_manager.fee_destination,
+            underlying_mint: market.underlying_token_mint,
+            market_ticket_mint: market.market_ticket_mint,
+            underlying_token_vault: market.underlying_token_vault,
+            claims: market.claims_mint,
+            collateral: market.collateral_mint,
+            orderbook_market_state: market.orderbook_market_state,
+            underlying_oracle: market.underlying_oracle,
+            ticket_oracle: market.ticket_oracle,
+            fee_destination: market.fee_destination,
             orderbook: Some(OrderBookAddresses {
-                bids: market_manager.bids,
-                asks: market_manager.asks,
-                event_queue: market_manager.event_queue,
+                bids: market.bids,
+                asks: market.asks,
+                event_queue: market.event_queue,
             }),
             payer: None,
             crank: None,
@@ -103,24 +103,24 @@ impl FixedMarketIxBuilder {
     pub fn new(
         airspace: Pubkey,
         underlying_mint: Pubkey,
-        manager: Pubkey,
+        market: Pubkey,
         authority: Pubkey,
         underlying_oracle: Pubkey,
         ticket_oracle: Pubkey,
         fee_destination: Option<Pubkey>,
     ) -> Self {
         let market_ticket_mint =
-            fixed_market_pda(&[jet_market::seeds::MARKET_TICKET_MINT, manager.as_ref()]);
+            fixed_market_pda(&[jet_market::seeds::MARKET_TICKET_MINT, market.as_ref()]);
         let underlying_token_vault =
-            fixed_market_pda(&[jet_market::seeds::UNDERLYING_TOKEN_VAULT, manager.as_ref()]);
+            fixed_market_pda(&[jet_market::seeds::UNDERLYING_TOKEN_VAULT, market.as_ref()]);
         let orderbook_market_state =
-            fixed_market_pda(&[jet_market::seeds::ORDERBOOK_MARKET_STATE, manager.as_ref()]);
-        let claims = fixed_market_pda(&[jet_market::seeds::CLAIM_NOTES, manager.as_ref()]);
-        let collateral = fixed_market_pda(&[jet_market::seeds::COLLATERAL_NOTES, manager.as_ref()]);
+            fixed_market_pda(&[jet_market::seeds::ORDERBOOK_MARKET_STATE, market.as_ref()]);
+        let claims = fixed_market_pda(&[jet_market::seeds::CLAIM_NOTES, market.as_ref()]);
+        let collateral = fixed_market_pda(&[jet_market::seeds::COLLATERAL_NOTES, market.as_ref()]);
         Self {
             airspace,
             authority,
-            manager,
+            market,
             underlying_mint,
             market_ticket_mint,
             underlying_token_vault,
@@ -137,7 +137,7 @@ impl FixedMarketIxBuilder {
         }
     }
 
-    /// derives the market manager key from a mint and seed
+    /// derives the market key from a mint and seed
     pub fn new_from_seed(
         airspace: &Pubkey,
         mint: &Pubkey,
@@ -150,7 +150,7 @@ impl FixedMarketIxBuilder {
         Self::new(
             *airspace,
             *mint,
-            Self::market_manager_key(airspace, mint, seed),
+            Self::market_key(airspace, mint, seed),
             authority,
             underlying_oracle,
             ticket_oracle,
@@ -191,8 +191,8 @@ impl FixedMarketIxBuilder {
     pub fn ticket_mint(&self) -> Pubkey {
         self.market_ticket_mint
     }
-    pub fn manager(&self) -> Pubkey {
-        self.manager
+    pub fn market(&self) -> Pubkey {
+        self.market
     }
     pub fn vault(&self) -> Pubkey {
         self.underlying_token_vault
@@ -220,7 +220,7 @@ impl FixedMarketIxBuilder {
 impl FixedMarketIxBuilder {
     pub fn orderbook_mut(&self) -> Result<jet_market::accounts::OrderbookMut> {
         Ok(jet_market::accounts::OrderbookMut {
-            market_manager: self.manager,
+            market: self.market,
             orderbook_market_state: self.orderbook_market_state,
             event_queue: self.orderbook.as_ref().unwrap().event_queue,
             bids: self.orderbook.as_ref().unwrap().bids,
@@ -240,7 +240,7 @@ impl FixedMarketIxBuilder {
         }
         .data();
         let mut accounts = jet_market::accounts::ConsumeEvents {
-            market_manager: self.manager,
+            market: self.market,
             market_ticket_mint: self.market_ticket_mint,
             underlying_token_vault: self.underlying_token_vault,
             orderbook_market_state: self.orderbook_market_state,
@@ -276,7 +276,7 @@ impl FixedMarketIxBuilder {
         }
     }
 
-    pub fn initialize_manager(
+    pub fn initialize_market(
         &self,
         payer: Pubkey,
         version_tag: u64,
@@ -285,8 +285,8 @@ impl FixedMarketIxBuilder {
         lend_tenor: i64,
         origination_fee: u64,
     ) -> Instruction {
-        let data = jet_market::instruction::InitializeMarketManager {
-            params: InitializeMarketManagerParams {
+        let data = jet_market::instruction::InitializeMarket {
+            params: InitializeMarketParams {
                 version_tag,
                 seed,
                 borrow_tenor,
@@ -295,8 +295,8 @@ impl FixedMarketIxBuilder {
             },
         }
         .data();
-        let accounts = jet_market::accounts::InitializeMarketManager {
-            market_manager: self.manager,
+        let accounts = jet_market::accounts::InitializeMarket {
+            market: self.market,
             underlying_token_mint: self.underlying_mint,
             underlying_token_vault: self.underlying_token_vault,
             market_ticket_mint: self.market_ticket_mint,
@@ -361,7 +361,7 @@ impl FixedMarketIxBuilder {
         }
         .data();
         let accounts = jet_market::accounts::InitializeOrderbook {
-            market_manager: self.manager,
+            market: self.market,
             orderbook_market_state: self.orderbook_market_state,
             event_queue,
             bids,
@@ -378,7 +378,7 @@ impl FixedMarketIxBuilder {
     pub fn initialize_margin_user(&self, owner: Pubkey) -> Result<Instruction> {
         let borrower_account = self.margin_user_account(owner);
         let accounts = jet_market::accounts::InitializeMarginUser {
-            market_manager: self.manager,
+            market: self.market,
             payer: self.payer.unwrap(),
             borrower_account,
             margin_account: owner,
@@ -422,7 +422,7 @@ impl FixedMarketIxBuilder {
 
         let data = jet_market::instruction::ExchangeTokens { amount }.data();
         let accounts = jet_market::accounts::ExchangeTokens {
-            market_manager: self.manager,
+            market: self.market,
             underlying_token_vault: self.underlying_token_vault,
             market_ticket_mint: self.market_ticket_mint,
             user_market_ticket_vault,
@@ -456,7 +456,7 @@ impl FixedMarketIxBuilder {
         .data();
         let accounts = jet_market::accounts::StakeMarketTickets {
             claim_ticket,
-            market_manager: self.manager,
+            market: self.market,
             ticket_holder,
             market_ticket_token_account,
             market_ticket_mint: self.market_ticket_mint,
@@ -489,7 +489,7 @@ impl FixedMarketIxBuilder {
     ) -> Result<Instruction> {
         let user = self.margin_user(margin_account);
         let accounts = jet_market::accounts::Settle {
-            market_manager: self.manager,
+            market: self.market,
             market_ticket_mint: self.market_ticket_mint,
             token_program: spl_token::ID,
             margin_user: user.address,
@@ -544,7 +544,7 @@ impl FixedMarketIxBuilder {
             ticket,
             authority,
             claimant_token_account,
-            market_manager: self.manager,
+            market: self.market,
             underlying_token_vault: self.underlying_token_vault,
             token_program: spl_token::ID,
         }
@@ -558,10 +558,10 @@ impl FixedMarketIxBuilder {
         Ok(Instruction {
             program_id: jet_market::ID,
             accounts: jet_market::accounts::RefreshPosition {
-                market_manager: self.manager,
+                market: self.market,
                 margin_user: fixed_market_pda(&[
                     seeds::MARGIN_BORROWER,
-                    self.manager.as_ref(),
+                    self.market.as_ref(),
                     margin_account.as_ref(),
                 ]),
                 margin_account,
@@ -766,7 +766,7 @@ impl FixedMarketIxBuilder {
     pub fn pause_order_matching(&self) -> Result<Instruction> {
         let data = jet_market::instruction::PauseOrderMatching {}.data();
         let accounts = jet_market::accounts::PauseOrderMatching {
-            market_manager: self.manager,
+            market: self.market,
             orderbook_market_state: self.orderbook_market_state,
             authority: self.authority,
             airspace: self.airspace,
@@ -779,7 +779,7 @@ impl FixedMarketIxBuilder {
     pub fn resume_order_matching(&self) -> Result<Instruction> {
         let data = jet_market::instruction::ResumeOrderMatching {}.data();
         let accounts = jet_market::accounts::ResumeOrderMatching {
-            market_manager: self.manager,
+            market: self.market,
             orderbook_market_state: self.orderbook_market_state,
             event_queue: self.orderbook.as_ref().unwrap().event_queue,
             bids: self.orderbook.as_ref().unwrap().bids,
@@ -793,16 +793,16 @@ impl FixedMarketIxBuilder {
     }
 
     pub fn pause_ticket_redemption(&self) -> Result<Instruction> {
-        self.modify_manager([true as u8].into(), 8 + 32 * 14 + 2)
+        self.modify_market([true as u8].into(), 8 + 32 * 14 + 2)
     }
     pub fn resume_ticket_redemption(&self) -> Result<Instruction> {
-        self.modify_manager([false as u8].into(), 8 + 32 * 14 + 2)
+        self.modify_market([false as u8].into(), 8 + 32 * 14 + 2)
     }
 
-    pub fn modify_manager(&self, data: Vec<u8>, offset: usize) -> Result<Instruction> {
-        let data = jet_market::instruction::ModifyMarketManager { data, offset }.data();
-        let accounts = jet_market::accounts::ModifyMarketManager {
-            market_manager: self.manager,
+    pub fn modify_market(&self, data: Vec<u8>, offset: usize) -> Result<Instruction> {
+        let data = jet_market::instruction::ModifyMarket { data, offset }.data();
+        let accounts = jet_market::accounts::ModifyMarket {
+            market: self.market,
             authority: self.authority,
             airspace: self.airspace,
         }
@@ -866,7 +866,7 @@ impl FixedMarketIxBuilder {
         let collateral = FixedMarketIxBuilder::user_collateral(margin_user);
         let accounts = jet_market::accounts::Settle {
             margin_user,
-            market_manager: self.manager,
+            market: self.market,
             token_program: spl_token::ID,
             claims,
             claims_mint: self.claims,
@@ -924,7 +924,7 @@ impl FixedMarketIxBuilder {
     pub fn margin_user(&self, margin_account: Pubkey) -> MarginUser {
         let address = fixed_market_pda(&[
             jet_market::seeds::MARGIN_BORROWER,
-            self.manager.as_ref(),
+            self.market.as_ref(),
             margin_account.as_ref(),
         ]);
         MarginUser {
@@ -934,9 +934,9 @@ impl FixedMarketIxBuilder {
         }
     }
 
-    pub fn market_manager_key(airspace: &Pubkey, mint: &Pubkey, seed: [u8; 32]) -> Pubkey {
+    pub fn market_key(airspace: &Pubkey, mint: &Pubkey, seed: [u8; 32]) -> Pubkey {
         fixed_market_pda(&[
-            jet_market::seeds::MARKET_MANAGER,
+            jet_market::seeds::MARKET,
             airspace.as_ref(),
             mint.as_ref(),
             &seed,
@@ -947,18 +947,18 @@ impl FixedMarketIxBuilder {
         fixed_market_pda(&[jet_market::seeds::SPLIT_TICKET, user.as_ref(), seed])
     }
 
-    pub fn claims_mint(manager_key: &Pubkey) -> Pubkey {
-        fixed_market_pda(&[jet_market::seeds::CLAIM_NOTES, manager_key.as_ref()])
+    pub fn claims_mint(market_key: &Pubkey) -> Pubkey {
+        fixed_market_pda(&[jet_market::seeds::CLAIM_NOTES, market_key.as_ref()])
     }
 
-    pub fn collateral_mint(manager_key: &Pubkey) -> Pubkey {
-        fixed_market_pda(&[jet_market::seeds::COLLATERAL_NOTES, manager_key.as_ref()])
+    pub fn collateral_mint(market_key: &Pubkey) -> Pubkey {
+        fixed_market_pda(&[jet_market::seeds::COLLATERAL_NOTES, market_key.as_ref()])
     }
 
     pub fn claim_ticket_key(&self, ticket_holder: &Pubkey, seed: &[u8]) -> Pubkey {
         fixed_market_pda(&[
             jet_market::seeds::CLAIM_TICKET,
-            self.manager.as_ref(),
+            self.market.as_ref(),
             ticket_holder.as_ref(),
             seed,
         ])
@@ -970,7 +970,7 @@ impl FixedMarketIxBuilder {
     pub fn margin_user_account(&self, owner: Pubkey) -> Pubkey {
         fixed_market_pda(&[
             jet_market::seeds::MARGIN_BORROWER,
-            self.manager.as_ref(),
+            self.market.as_ref(),
             owner.as_ref(),
         ])
     }

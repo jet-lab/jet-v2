@@ -72,10 +72,14 @@ export const useFixedTermSync = (): void => {
   const setCurrentOrderTab = useSetRecoilState(CurrentOrderTabAtom);
   const { pathname } = useLocation();
 
-  const loadFixedMarkets = async (airspace: AirspaceConfig, program: Program<JetMarket>, marginProgramId: PublicKey) => {
+  const loadFixedMarkets = async (
+    airspace: AirspaceConfig,
+    program: Program<JetMarket>,
+    marginProgramId: PublicKey
+  ) => {
     const markets: MarketAndconfig[] = await Promise.all(
       Object.entries(airspace.fixedMarkets).map(async ([name, marketConfig]) => {
-        const market = await FixedMarket.load(program, marketConfig.marketManager, marginProgramId);
+        const market = await FixedMarket.load(program, marketConfig.market, marginProgramId);
         return { market, config: marketConfig, name };
       })
     );

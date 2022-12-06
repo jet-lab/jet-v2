@@ -2,7 +2,7 @@ use agnostic_orderbook::state::market_state::MarketState;
 use anchor_lang::prelude::*;
 
 use crate::{
-    control::{events::OrderbookInitialized, state::MarketManager},
+    control::{events::OrderbookInitialized, state::Market},
     orderbook::state::{CallbackInfo, TICK_SIZE},
     seeds, ErrorCode,
 };
@@ -17,18 +17,18 @@ pub struct InitializeOrderbookParams {
 /// Initialization of the orderbook for a given asset and tenor
 #[derive(Accounts)]
 pub struct InitializeOrderbook<'info> {
-    /// The `MarketManager` account tracks global information related to this particular Jet market
+    /// The `Market` account tracks global information related to this particular Jet market
     #[account(
         mut,
         has_one = airspace @ ErrorCode::WrongAirspace,
     )]
-    pub market_manager: AccountLoader<'info, MarketManager>,
+    pub market: AccountLoader<'info, Market>,
 
     /// AOB market state
     #[account(init,
               seeds = [
                   seeds::ORDERBOOK_MARKET_STATE,
-                  market_manager.key().as_ref()
+                  market.key().as_ref()
               ],
               bump,
               space = 8 + MarketState::LEN,
@@ -71,7 +71,7 @@ pub fn handler(ctx: Context<InitializeOrderbook>, params: InitializeOrderbookPar
     } = params;
 
     // assign the Jet market header data
-    let mut manager = ctx.accounts.market_manager.load_mut()?;
+    let mut manager = ctx.accounts.market.load_mut()?;
     manager.orderbook_market_state = ctx.accounts.orderbook_market_state.key();
     manager.event_queue = ctx.accounts.event_queue.key();
     manager.asks = ctx.accounts.asks.key();
@@ -97,7 +97,7 @@ pub fn handler(ctx: Context<InitializeOrderbook>, params: InitializeOrderbookPar
     )?;
 
     emit!(OrderbookInitialized {
-        market_manager: ctx.accounts.market_manager.key(),
+        market: ctx.accounts.market.key(),
         orderbook_market_state: manager.orderbook_market_state,
         event_queue: manager.event_queue,
         bids: manager.bids,

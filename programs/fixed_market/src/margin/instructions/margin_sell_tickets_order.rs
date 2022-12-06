@@ -31,7 +31,7 @@ pub struct MarginSellTicketsOrder<'info> {
     #[account(mut)]
     pub collateral_mint: AccountInfo<'info>,
 
-    #[market_manager(orderbook_mut)]
+    #[market(orderbook_mut)]
     #[token_program]
     pub inner: SellTicketsOrder<'info>,
 }

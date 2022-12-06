@@ -30,7 +30,7 @@ export interface AirspaceConfig {
 
 export interface FixedMarketConfig {
   symbol: string
-  marketManager: Address
+  market: Address
   version: number
   airspace: Address
   orderbookMarketState: Address

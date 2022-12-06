@@ -67,7 +67,7 @@ async fn margin_repay() -> Result<()> {
                 FixedPositionRefresher::new(
                     margin.pubkey(),
                     client.clone(),
-                    &[manager.ix_builder.manager()],
+                    &[manager.ix_builder.market()],
                 )
                 .await
                 .unwrap(),
@@ -88,10 +88,7 @@ async fn margin_repay() -> Result<()> {
     user.initialize_margin_user().await.unwrap();
 
     let borrower_account = user.load_margin_user().await.unwrap();
-    assert_eq!(
-        borrower_account.market_manager,
-        manager.ix_builder.manager()
-    );
+    assert_eq!(borrower_account.market, manager.ix_builder.market());
 
     // place a borrow order
     let borrow_params = OrderAmount::params_from_quote_amount_rate(1_000, 2_000);
@@ -179,19 +176,19 @@ async fn non_margin_orders_for_proxy<P: Proxy + GenerateProxy>(
 
     let ticket = alice.load_claim_ticket(&ticket_seed).await?;
     assert_eq!(ticket.redeemable, STAKE_AMOUNT);
-    assert_eq!(ticket.market_manager, manager.ix_builder.manager());
+    assert_eq!(ticket.market, manager.ix_builder.market());
     assert_eq!(ticket.owner, alice.proxy.pubkey());
 
     manager.pause_ticket_redemption().await?;
-    let market_manager = manager.load_manager().await?;
+    let market = manager.load_market().await?;
 
-    assert!(market_manager.tickets_paused);
+    assert!(market.tickets_paused);
     assert!(alice.redeem_claim_ticket(&ticket_seed).await.is_err());
 
     manager.resume_ticket_redemption().await?;
 
-    let market_manager = manager.load_manager().await?;
-    assert!(!market_manager.tickets_paused);
+    let market = manager.load_market().await?;
+    assert!(!market.tickets_paused);
 
     // Scenario a: post a borrow order to an empty book
     let a_amount = OrderAmount::from_quote_amount_rate(1_000, 2_000);
@@ -427,7 +424,7 @@ async fn create_fixed_market_margin_user(
                 FixedPositionRefresher::new(
                     margin.pubkey(),
                     client.clone(),
-                    &[manager.ix_builder.manager()],
+                    &[manager.ix_builder.market()],
                 )
                 .await
                 .unwrap(),
@@ -441,10 +438,7 @@ async fn create_fixed_market_margin_user(
     user.initialize_margin_user().await.unwrap();
 
     let borrower_account = user.load_margin_user().await.unwrap();
-    assert_eq!(
-        borrower_account.market_manager,
-        manager.ix_builder.manager()
-    );
+    assert_eq!(borrower_account.market, manager.ix_builder.market());
 
     user
 }

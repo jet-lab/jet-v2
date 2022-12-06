@@ -2,13 +2,13 @@ use std::io::Write;
 
 use anchor_lang::prelude::*;
 
-use crate::{control::state::MarketManager, ErrorCode};
+use crate::{control::state::Market, ErrorCode};
 
 #[derive(Accounts)]
-pub struct ModifyMarketManager<'info> {
-    /// The `MarketManager` manages asset tokens for a particular market tenor
+pub struct ModifyMarket<'info> {
+    /// The `Market` manages asset tokens for a particular tenor
     #[account(mut, has_one = airspace @ ErrorCode::WrongAirspace)]
-    pub market_manager: AccountLoader<'info, MarketManager>,
+    pub market: AccountLoader<'info, Market>,
 
     /// The authority that must sign to make this change
     pub authority: Signer<'info>,
@@ -18,8 +18,8 @@ pub struct ModifyMarketManager<'info> {
     pub airspace: AccountInfo<'info>,
 }
 
-pub fn handler(ctx: Context<ModifyMarketManager>, data: Vec<u8>, offset: usize) -> Result<()> {
-    let info = ctx.accounts.market_manager.to_account_info();
+pub fn handler(ctx: Context<ModifyMarket>, data: Vec<u8>, offset: usize) -> Result<()> {
+    let info = ctx.accounts.market.to_account_info();
     let buffer = &mut info.data.borrow_mut();
 
     (&mut buffer[(offset + 8)..])

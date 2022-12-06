@@ -172,16 +172,16 @@ async fn generate_fixed_markets_app_config_from_env(
     for (name, config) in &as_config.tokens {
         let token_mint = derive_token_mint(name);
 
-        for market in &config.fixed_markets {
-            let market_manager =
-                derive_market_manager_from_tenor_seed(&airspace, &token_mint, market.borrow_tenor);
+        for fixed_market in &config.fixed_markets {
+            let market =
+                derive_market_from_tenor_seed(&airspace, &token_mint, fixed_market.borrow_tenor);
 
             fixed_markets.insert(
-                format!("{name}_{}", market.borrow_tenor),
+                format!("{name}_{}", fixed_market.borrow_tenor),
                 FixedMarketInfo {
                     symbol: name.clone(),
-                    market_manager,
-                    market_info: client.read_anchor_account(&market_manager).await?,
+                    market,
+                    market_info: client.read_anchor_account(&market).await?,
                 },
             );
         }
@@ -190,22 +190,18 @@ async fn generate_fixed_markets_app_config_from_env(
     Ok(fixed_markets)
 }
 
-fn derive_market_manager(airspace: &Pubkey, token_mint: &Pubkey, seed: [u8; 32]) -> Pubkey {
+fn derive_market(airspace: &Pubkey, token_mint: &Pubkey, seed: [u8; 32]) -> Pubkey {
     fixed_market_pda(&[
-        jet_margin_sdk::jet_market::seeds::MARKET_MANAGER,
+        jet_margin_sdk::jet_market::seeds::MARKET,
         airspace.as_ref(),
         token_mint.as_ref(),
         &seed,
     ])
 }
 
-fn derive_market_manager_from_tenor_seed(
-    airspace: &Pubkey,
-    token_mint: &Pubkey,
-    tenor: i64,
-) -> Pubkey {
+fn derive_market_from_tenor_seed(airspace: &Pubkey, token_mint: &Pubkey, tenor: i64) -> Pubkey {
     let mut seed = [0u8; 32];
     seed[..8].copy_from_slice(&tenor.to_le_bytes());
 
-    derive_market_manager(airspace, token_mint, seed)
+    derive_market(airspace, token_mint, seed)
 }

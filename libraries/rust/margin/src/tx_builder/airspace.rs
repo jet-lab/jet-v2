@@ -178,10 +178,9 @@ impl AirspaceAdmin {
         max_leverage: u16,
     ) -> TransactionBuilder {
         let margin_config_ix = MarginConfigIxBuilder::new(self.airspace, self.payer);
-        let market_manager =
-            FixedMarketIxBuilder::market_manager_key(&self.airspace, &token_mint, seed);
-        let claims_mint = FixedMarketIxBuilder::claims_mint(&market_manager);
-        let collateral_mint = FixedMarketIxBuilder::collateral_mint(&market_manager);
+        let market = FixedMarketIxBuilder::market_key(&self.airspace, &token_mint, seed);
+        let claims_mint = FixedMarketIxBuilder::claims_mint(&market);
+        let collateral_mint = FixedMarketIxBuilder::collateral_mint(&market);
 
         let claims_update = TokenConfigUpdate {
             admin: TokenAdmin::Adapter(jet_market::ID),

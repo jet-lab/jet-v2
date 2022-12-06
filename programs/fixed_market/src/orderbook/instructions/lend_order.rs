@@ -16,7 +16,7 @@ pub struct LendOrder<'info> {
     /// Signing authority over the token vault transferring for a lend order
     pub authority: Signer<'info>,
 
-    #[market_manager]
+    #[market]
     pub orderbook_mut: OrderbookMut<'info>,
 
     /// where to settle tickets on match:
@@ -75,11 +75,10 @@ impl<'info> LendOrder<'info> {
                 let timestamp = Clock::get()?.unix_timestamp;
                 *split_ticket = SplitTicket {
                     owner: user,
-                    market_manager: self.orderbook_mut.market_manager.key(),
+                    market: self.orderbook_mut.market.key(),
                     order_tag: callback_info.order_tag,
                     struck_timestamp: timestamp,
-                    maturation_timestamp: timestamp
-                        + self.orderbook_mut.market_manager.load()?.lend_tenor,
+                    maturation_timestamp: timestamp + self.orderbook_mut.market.load()?.lend_tenor,
                     principal: order_summary.quote_filled()?,
                     interest: order_summary.base_filled() - order_summary.quote_filled()?,
                 };
@@ -141,7 +140,7 @@ pub fn handler(ctx: Context<LendOrder>, params: OrderParams, seed: Vec<u8>) -> R
         &order_summary,
     )?;
     emit!(crate::events::OrderPlaced {
-        market_manager: ctx.accounts.orderbook_mut.market_manager.key(),
+        market: ctx.accounts.orderbook_mut.market.key(),
         authority: ctx.accounts.authority.key(),
         margin_user: None,
         order_summary: order_summary.summary(),

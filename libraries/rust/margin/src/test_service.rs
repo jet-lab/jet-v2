@@ -317,19 +317,19 @@ fn create_airspace_token_fixed_markets_tx(
         let len_eq = event_queue_len(EVENT_QUEUE_CAPACITY);
         let len_orders = orderbook_slab_len(ORDERBOOK_CAPACITY);
 
-        let mut market_manager_seed = [0u8; 32];
-        market_manager_seed[..8].copy_from_slice(&bm_config.borrow_tenor.to_le_bytes());
+        let mut market_seed = [0u8; 32];
+        market_seed[..8].copy_from_slice(&bm_config.borrow_tenor.to_le_bytes());
 
         let mint = derive_token_mint(&token.name);
-        let ticket_mint = derive_market_ticket_mint(&FixedMarketIxBuilder::market_manager_key(
+        let ticket_mint = derive_market_ticket_mint(&FixedMarketIxBuilder::market_key(
             &admin.airspace,
             &mint,
-            market_manager_seed,
+            market_seed,
         ));
         let fixed_ix = FixedMarketIxBuilder::new_from_seed(
             &admin.airspace,
             &mint,
-            market_manager_seed,
+            market_seed,
             config.authority,
             derive_pyth_price(&mint),
             derive_pyth_price(&ticket_mint),
@@ -384,10 +384,10 @@ fn create_airspace_token_fixed_markets_tx(
                     len_orders as u64,
                     &jet_market::ID,
                 ),
-                fixed_ix.initialize_manager(
+                fixed_ix.initialize_market(
                     config.authority,
                     0,
-                    market_manager_seed,
+                    market_seed,
                     bm_config.borrow_tenor,
                     bm_config.lend_tenor,
                     bm_config.origination_fee,
@@ -414,7 +414,7 @@ fn create_airspace_token_fixed_markets_tx(
 
         txs.push(admin.register_fixed_market(
             mint,
-            market_manager_seed,
+            market_seed,
             tk_config.collateral_weight,
             tk_config.max_leverage,
         ));

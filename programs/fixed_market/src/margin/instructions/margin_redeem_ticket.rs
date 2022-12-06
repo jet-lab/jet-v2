@@ -19,10 +19,10 @@ pub struct MarginRedeemTicket<'info> {
     pub collateral: AccountInfo<'info>,
 
     /// Token mint used by the margin program to track the collateral value of assets custodied by Jet markets
-    #[account(mut, address = inner.market_manager.load()?.collateral_mint)]
+    #[account(mut, address = inner.market.load()?.collateral_mint)]
     pub collateral_mint: AccountInfo<'info>,
 
-    #[market_manager]
+    #[market]
     #[token_program]
     pub inner: RedeemTicket<'info>,
 }

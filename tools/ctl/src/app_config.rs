@@ -4,7 +4,7 @@ use std::{
 };
 
 use anyhow::{bail, Context, Result};
-use jet_margin_sdk::fixed_market::MarketManager;
+use jet_margin_sdk::fixed_market::Market;
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
 
@@ -135,10 +135,10 @@ pub struct FixedMarketInfo {
     pub symbol: String,
 
     #[serde_as(as = "DisplayFromStr")]
-    pub market_manager: Pubkey,
+    pub market: Pubkey,
 
     #[serde(flatten)]
-    pub market_info: MarketManager,
+    pub market_info: Market,
 }
 
 impl JetAppConfig {
@@ -264,14 +264,14 @@ impl JetAppConfig {
 
         let market_def = Self::read_fixed_config(path).await?;
 
-        for market in market_def.markets {
-            let manager: MarketManager = client.read_anchor_account(&market.manager).await?;
+        for fixed_market in market_def.markets {
+            let market: Market = client.read_anchor_account(&fixed_market.market).await?;
             fixed_markets.insert(
-                format!("{}_{}", market.symbol, market.tenor),
+                format!("{}_{}", fixed_market.symbol, fixed_market.tenor),
                 FixedMarketInfo {
-                    symbol: market.symbol.clone(),
-                    market_manager: market.manager,
-                    market_info: manager,
+                    symbol: fixed_market.symbol.clone(),
+                    market: fixed_market.market,
+                    market_info: market,
                 },
             );
         }

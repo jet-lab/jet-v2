@@ -152,12 +152,12 @@ pub mod jet_market {
         instructions::revoke_crank::handler(ctx)
     }
 
-    /// Initializes a MarketManager for a fixed market
-    pub fn initialize_market_manager(
-        ctx: Context<InitializeMarketManager>,
-        params: InitializeMarketManagerParams,
+    /// Initializes a Market for a fixed term market
+    pub fn initialize_market(
+        ctx: Context<InitializeMarket>,
+        params: InitializeMarketParams,
     ) -> Result<()> {
-        instructions::initialize_market_manager::handler(ctx, params)
+        instructions::initialize_market::handler(ctx, params)
     }
 
     /// Initializes a new orderbook
@@ -168,14 +168,10 @@ pub mod jet_market {
         instructions::initialize_orderbook::handler(ctx, params)
     }
 
-    /// Modify a `MarketManager` account
+    /// Modify a `Market` account
     /// Authority use only
-    pub fn modify_market_manager(
-        ctx: Context<ModifyMarketManager>,
-        data: Vec<u8>,
-        offset: usize,
-    ) -> Result<()> {
-        instructions::modify_market_manager::handler(ctx, data, offset)
+    pub fn modify_market(ctx: Context<ModifyMarket>, data: Vec<u8>, offset: usize) -> Result<()> {
+        instructions::modify_market::handler(ctx, data, offset)
     }
 
     /// Pause matching of orders placed in the orderbook
@@ -349,7 +345,7 @@ pub mod seeds {
     use anchor_lang::prelude::constant;
 
     #[constant]
-    pub const MARKET_MANAGER: &[u8] = b"market_manager";
+    pub const MARKET: &[u8] = b"market";
 
     #[constant]
     pub const MARKET_TICKET_ACCOUNT: &[u8] = b"market_ticket_account";

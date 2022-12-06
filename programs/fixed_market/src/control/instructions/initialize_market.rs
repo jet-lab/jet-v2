@@ -2,15 +2,15 @@ use anchor_lang::prelude::*;
 use anchor_spl::token::{Mint, Token, TokenAccount};
 
 use crate::{
-    control::{events::MarketManagerInitialized, state::MarketManager},
+    control::{events::MarketInitialized, state::Market},
     seeds,
     utils::init,
 };
 
-/// Parameters for the initialization of the [MarketManager]
+/// Parameters for the initialization of the [Market]
 #[derive(AnchorSerialize, AnchorDeserialize)]
-pub struct InitializeMarketManagerParams {
-    /// Tag information for the `MarketManager` account
+pub struct InitializeMarketParams {
+    /// Tag information for the `Market` account
     pub version_tag: u64,
     /// This seed allows the creation of many separate ticket managers tracking different
     /// parameters, such as staking tenor
@@ -23,38 +23,38 @@ pub struct InitializeMarketManagerParams {
     pub origination_fee: u64,
 }
 
-/// Initialize a [MarketManager]
-/// The `MarketManager` acts as a sort of market header. Responsible for coordination and authorization of the accounts
+/// Initialize a [Market]
+/// The `Market` acts as a sort of market header. Responsible for coordination and authorization of the accounts
 /// utilized and interacting with the program
 #[derive(Accounts)]
-#[instruction(params: InitializeMarketManagerParams)]
-pub struct InitializeMarketManager<'info> {
-    /// The `MarketManager` manages asset tokens for a particular tenor
+#[instruction(params: InitializeMarketParams)]
+pub struct InitializeMarket<'info> {
+    /// The `Market` manages asset tokens for a particular tenor
     #[account(
         init,
         seeds = [
-            seeds::MARKET_MANAGER,
+            seeds::MARKET,
             airspace.key().as_ref(),
             underlying_token_mint.key().as_ref(),
             &params.seed,
         ],
         bump,
         payer = payer,
-        space = 8 + std::mem::size_of::<MarketManager>(),
+        space = 8 + std::mem::size_of::<Market>(),
     )]
-    pub market_manager: AccountLoader<'info, MarketManager>,
+    pub market: AccountLoader<'info, Market>,
 
     /// The vault for storing the token underlying the market tickets
     #[account(
         init,
         seeds = [
             seeds::UNDERLYING_TOKEN_VAULT,
-            market_manager.key().as_ref()
+            market.key().as_ref()
         ],
         bump,
         payer = payer,
         token::mint = underlying_token_mint,
-        token::authority = market_manager,
+        token::authority = market,
     )]
     pub underlying_token_vault: Box<Account<'info, TokenAccount>>,
 
@@ -66,13 +66,13 @@ pub struct InitializeMarketManager<'info> {
         init,
         seeds = [
             seeds::MARKET_TICKET_MINT,
-            market_manager.key().as_ref()
+            market.key().as_ref()
         ],
         bump,
         payer = payer,
         mint::decimals = underlying_token_mint.decimals,
-        mint::authority = market_manager,
-        mint::freeze_authority = market_manager,
+        mint::authority = market,
+        mint::freeze_authority = market,
     )]
     pub market_ticket_mint: Box<Account<'info, Mint>>,
 
@@ -80,13 +80,13 @@ pub struct InitializeMarketManager<'info> {
     #[account(init,
         seeds = [
             seeds::CLAIM_NOTES,
-            market_manager.key().as_ref(),
+            market.key().as_ref(),
         ],
         bump,
         payer = payer,
         mint::decimals = underlying_token_mint.decimals,
-        mint::authority = market_manager,
-        mint::freeze_authority = market_manager,
+        mint::authority = market,
+        mint::freeze_authority = market,
     )]
     pub claims: Box<Account<'info, Mint>>,
 
@@ -94,13 +94,13 @@ pub struct InitializeMarketManager<'info> {
     #[account(init,
         seeds = [
             seeds::COLLATERAL_NOTES,
-            market_manager.key().as_ref(),
+            market.key().as_ref(),
         ],
         bump,
         payer = payer,
         mint::decimals = underlying_token_mint.decimals,
-        mint::authority = market_manager,
-        mint::freeze_authority = market_manager,
+        mint::authority = market,
+        mint::freeze_authority = market,
     )]
     pub collateral: Box<Account<'info, Mint>>,
 
@@ -137,13 +137,10 @@ pub struct InitializeMarketManager<'info> {
     pub system_program: Program<'info, System>,
 }
 
-pub fn handler(
-    ctx: Context<InitializeMarketManager>,
-    params: InitializeMarketManagerParams,
-) -> Result<()> {
-    let manager = &mut ctx.accounts.market_manager.load_init()?;
+pub fn handler(ctx: Context<InitializeMarket>, params: InitializeMarketParams) -> Result<()> {
+    let market = &mut ctx.accounts.market.load_init()?;
     init! {
-        manager = MarketManager {
+        market = Market {
             version_tag: params.version_tag,
             airspace: ctx.accounts.airspace.key(),
             underlying_token_mint: ctx.accounts.underlying_token_mint.key(),
@@ -152,7 +149,7 @@ pub fn handler(
             claims_mint: ctx.accounts.claims.key(),
             collateral_mint: ctx.accounts.collateral.key(),
             seed: params.seed,
-            bump: [*ctx.bumps.get("market_manager").unwrap()],
+            bump: [*ctx.bumps.get("market").unwrap()],
             orderbook_paused: false,
             tickets_paused: false,
             borrow_tenor: params.borrow_tenor,
@@ -171,15 +168,15 @@ pub fn handler(
             _reserved,
         }
     }
-    emit!(MarketManagerInitialized {
-        version: manager.version_tag,
-        address: ctx.accounts.market_manager.key(),
-        underlying_token_mint: manager.underlying_token_mint,
-        borrow_tenor: manager.borrow_tenor,
-        lend_tenor: manager.lend_tenor,
-        airspace: manager.airspace,
-        underlying_oracle: manager.underlying_oracle,
-        ticket_oracle: manager.ticket_oracle,
+    emit!(MarketInitialized {
+        version: market.version_tag,
+        address: ctx.accounts.market.key(),
+        underlying_token_mint: market.underlying_token_mint,
+        borrow_tenor: market.borrow_tenor,
+        lend_tenor: market.lend_tenor,
+        airspace: market.airspace,
+        underlying_oracle: market.underlying_oracle,
+        ticket_oracle: market.ticket_oracle,
     });
 
     Ok(())

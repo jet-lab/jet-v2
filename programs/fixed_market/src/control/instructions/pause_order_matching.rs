@@ -1,21 +1,21 @@
 use anchor_lang::prelude::*;
 
 use crate::{
-    control::{events::ToggleOrderMatching, state::MarketManager},
+    control::{events::ToggleOrderMatching, state::Market},
     orderbook::state::CallbackInfo,
     ErrorCode,
 };
 
 #[derive(Accounts)]
 pub struct PauseOrderMatching<'info> {
-    /// The `MarketManager` manages asset tokens for a particular market tenor
+    /// The `Market` manages asset tokens for a particular tenor
     #[account(
         has_one = orderbook_market_state @ ErrorCode::WrongMarketState,
         has_one = airspace @ ErrorCode::WrongAirspace,
     )]
-    pub market_manager: AccountLoader<'info, MarketManager>,
+    pub market: AccountLoader<'info, Market>,
 
-    /// CHECK: has_one on market manager
+    /// CHECK: has_one on market
     #[account(mut)]
     pub orderbook_market_state: AccountInfo<'info>,
 
@@ -39,7 +39,7 @@ pub fn handler(ctx: Context<PauseOrderMatching>) -> Result<()> {
     )?;
 
     emit!(ToggleOrderMatching {
-        market_manager: ctx.accounts.market_manager.key(),
+        market: ctx.accounts.market.key(),
         is_orderbook_paused: true
     });
 

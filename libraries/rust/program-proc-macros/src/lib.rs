@@ -22,10 +22,10 @@ pub fn assert_size(args: TokenStream, input_struct: TokenStream) -> TokenStream 
     mem::handler(args.into(), input_struct.into()).into()
 }
 
-/// Implements MarketTokenManager by implementing MarketManagerProvider and
+/// Implements MarketTokenManager by implementing MarketProvider and
 /// TokenProgramProvider.
 ///
-/// By default, this expects fields named token_program and market_manager with
+/// By default, this expects fields named token_program and market with
 /// the appropriate types. If either field is missing, then the data must be
 /// nested. Annotate the nesting field with attribute #[token_manager] if that
 /// field contains a token_manager. If further nested, and the field contains a
@@ -39,7 +39,7 @@ pub fn assert_size(args: TokenStream, input_struct: TokenStream) -> TokenStream 
 /// ```ignore
 /// #[derive(MarketTokenManager)]
 /// struct BaseCase<'info> {
-///     market_manager: AccountLoader<'info, MarketManager>,
+///     market: AccountLoader<'info, Market>,
 ///     token_program: Program<'info, Token>,
 /// }
 /// ```
@@ -47,20 +47,20 @@ pub fn assert_size(args: TokenStream, input_struct: TokenStream) -> TokenStream 
 /// ```ignore
 /// #[derive(MarketTokenManager)]
 /// struct Top<'info> {
-///     #[market_manager]
+///     #[market]
 ///     nested: Bottom<'info>,
 ///     token_program: Program<'info, Token>,
 /// }
 ///
 /// struct Bottom<'info> {
-///     market_manager: AccountLoader<'info, MarketManager>,
+///     market: AccountLoader<'info, Market>,
 /// }
 /// ```
 ///
 /// ```ignore
 /// #[derive(MarketTokenManager)]
 /// struct Top<'info> {
-///     #[market_manager(mid_two)]
+///     #[market(mid_two)]
 ///     #[token_program(mid_two::bottom)]
 ///     mid_one: MiddleOne<'info>,
 /// }
@@ -70,7 +70,7 @@ pub fn assert_size(args: TokenStream, input_struct: TokenStream) -> TokenStream 
 /// }
 ///
 /// struct MiddleTwo<'info> {
-///     market_manager: AccountLoader<'info, MarketManager>,
+///     market: AccountLoader<'info, Market>,
 ///     bottom: Bottom<'info>,
 /// }
 ///
@@ -78,22 +78,22 @@ pub fn assert_size(args: TokenStream, input_struct: TokenStream) -> TokenStream 
 ///     token_program: Program<'info, Token>,
 /// }
 /// ```
-#[proc_macro_derive(MarketTokenManager, attributes(market_manager, token_program))]
+#[proc_macro_derive(MarketTokenManager, attributes(market, token_program))]
 pub fn market_token_manager_derive(input: TokenStream) -> TokenStream {
     let ast = syn::parse(input).unwrap();
-    let mgr = impl_market_manager_provider(&ast);
+    let mgr = impl_market_provider(&ast);
     let tkn = impl_token_program_provider(&ast);
     quote! { #mgr #tkn }.into()
 }
 
-fn impl_market_manager_provider(ast: &DeriveInput) -> quote::__private::TokenStream {
+fn impl_market_provider(ast: &DeriveInput) -> quote::__private::TokenStream {
     let name = &ast.ident;
     let lt = &ast.generics.lifetimes().next();
-    let accessor = find_attr_path_as_accessor(ast, "market_manager").unwrap_or_default();
+    let accessor = find_attr_path_as_accessor(ast, "market").unwrap_or_default();
     quote! {
-        impl<#lt> crate::market_token_manager::MarketManagerProvider<#lt> for #name<#lt> {
-            fn market_manager(&self) -> anchor_lang::prelude::AccountLoader<#lt, crate::control::state::MarketManager> {
-                self #accessor.market_manager.clone()
+        impl<#lt> crate::market_token_manager::MarketProvider<#lt> for #name<#lt> {
+            fn market(&self) -> anchor_lang::prelude::AccountLoader<#lt, crate::control::state::Market> {
+                self #accessor.market.clone()
             }
         }
     }

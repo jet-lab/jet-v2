@@ -3,7 +3,7 @@ use anchor_spl::token::{transfer, Token, TokenAccount, Transfer};
 use jet_program_common::traits::SafeAdd;
 
 use crate::{
-    control::state::MarketManager,
+    control::state::Market,
     tickets::{
         events::TicketRedeemed,
         state::{deserialize_ticket, TicketKind},
@@ -26,14 +26,14 @@ pub struct RedeemTicket<'info> {
     #[account(mut)]
     pub claimant_token_account: Account<'info, TokenAccount>,
 
-    /// The MarketManager responsible for the asset
+    /// The Market responsible for the asset
     #[account(
         has_one = underlying_token_vault @ ErrorCode::WrongVault,
-        constraint = !market_manager.load()?.tickets_paused @ ErrorCode::TicketsPaused,
+        constraint = !market.load()?.tickets_paused @ ErrorCode::TicketsPaused,
     )]
-    pub market_manager: AccountLoader<'info, MarketManager>,
+    pub market: AccountLoader<'info, Market>,
 
-    /// The vault stores the tokens of the underlying asset managed by the MarketManager
+    /// The vault stores the tokens of the underlying asset managed by the Market
     #[account(mut)]
     pub underlying_token_vault: Account<'info, TokenAccount>,
 
@@ -48,13 +48,13 @@ impl<'info> RedeemTicket<'info> {
 
         match deserialize_ticket(self.ticket.to_account_info())? {
             TicketKind::Claim(ticket) => {
-                ticket.verify_owner_manager(&ticket_holder, &self.market_manager.key())?;
+                ticket.verify_owner_manager(&ticket_holder, &self.market.key())?;
                 redeemable = ticket.redeemable;
                 maturation_timestamp = ticket.maturation_timestamp;
                 ticket.close(self.authority.to_account_info())?;
             }
             TicketKind::Split(ticket) => {
-                ticket.verify_owner_manager(&ticket_holder, &self.market_manager.key())?;
+                ticket.verify_owner_manager(&ticket_holder, &self.market.key())?;
                 redeemable = ticket.principal.safe_add(ticket.interest)?;
                 maturation_timestamp = ticket.maturation_timestamp;
                 ticket.close(self.authority.to_account_info())?;
@@ -78,14 +78,14 @@ impl<'info> RedeemTicket<'info> {
                 Transfer {
                     to: self.claimant_token_account.to_account_info(),
                     from: self.underlying_token_vault.to_account_info(),
-                    authority: self.market_manager.to_account_info(),
+                    authority: self.market.to_account_info(),
                 },
             )
-            .with_signer(&[&self.market_manager.load()?.authority_seeds()]),
+            .with_signer(&[&self.market.load()?.authority_seeds()]),
             redeemable,
         )?;
         emit!(TicketRedeemed {
-            market_manager: self.market_manager.key(),
+            market: self.market.key(),
             ticket_holder,
             redeemed_value: redeemable,
             maturation_timestamp,

@@ -41,11 +41,11 @@ async fn main() -> Result<()> {
         let json = format!(
             "{{ 
     \"fixedMarketPid\": \"{}\",
-    \"marketManager\": \"{}\",
+    \"market\": \"{}\",
     \"fixedMarketMetadata\": \"{}\"
 }}",
             jet_market::ID,
-            x.ix_builder.manager(),
+            x.ix_builder.market(),
             get_metadata_address(&jet_market::ID),
         );
         let mut io = OpenOptions::new()
@@ -57,7 +57,7 @@ async fn main() -> Result<()> {
         io.write_all(json.as_bytes()).unwrap();
     }
 
-    println!("deployed market manager to {:?}", x.ix_builder.manager());
+    println!("deployed market to {:?}", x.ix_builder.market());
 
     Ok(())
 }

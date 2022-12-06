@@ -4,7 +4,7 @@
 use anchor_lang::AccountDeserialize;
 use anyhow::Result;
 use jet_margin_sdk::fixed_market::{FixedMarketIxBuilder, OrderParams};
-use jet_market::control::state::MarketManager;
+use jet_market::control::state::Market;
 use jet_program_common::{Fp32, FP32_ONE};
 use rand::{thread_rng, Rng};
 use solana_client::{rpc_client::RpcClient, rpc_config::RpcSendTransactionConfig};
@@ -72,17 +72,13 @@ impl Client {
             None,
         )
         .with_payer(&signer.pubkey());
-        let market_manager = {
-            let data = conn.get_account_data(&ix.manager())?;
+        let market = {
+            let data = conn.get_account_data(&ix.market())?;
 
-            MarketManager::try_deserialize(&mut data.as_slice())?
+            Market::try_deserialize(&mut data.as_slice())?
         };
 
-        ix = ix.with_orderbook_accounts(
-            market_manager.bids,
-            market_manager.asks,
-            market_manager.event_queue,
-        );
+        ix = ix.with_orderbook_accounts(market.bids, market.asks, market.event_queue);
 
         Ok(Self { conn, ix, signer })
     }

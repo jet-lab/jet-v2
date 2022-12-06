@@ -3,15 +3,15 @@ use anchor_spl::token::{Token, TokenAccount};
 use jet_program_proc_macros::MarketTokenManager;
 
 use crate::{
-    control::state::MarketManager, margin::state::MarginUser,
-    market_token_manager::MarketTokenManager, ErrorCode,
+    control::state::Market, margin::state::MarginUser, market_token_manager::MarketTokenManager,
+    ErrorCode,
 };
 
 #[derive(Accounts, MarketTokenManager)]
 pub struct Settle<'info> {
     /// The account tracking information related to this particular user
     #[account(mut,
-        has_one = market_manager @ ErrorCode::UserNotInMarket,
+        has_one = market @ ErrorCode::UserNotInMarket,
         has_one = claims @ ErrorCode::WrongClaimAccount,
         has_one = collateral @ ErrorCode::WrongCollateralAccount,
         has_one = underlying_settlement @ ErrorCode::WrongUnderlyingSettlementAccount,
@@ -19,14 +19,14 @@ pub struct Settle<'info> {
     )]
     pub margin_user: Account<'info, MarginUser>,
 
-    /// The `MarketManager` account tracks global information related to this particular fixed market
+    /// The `Market` account tracks global information related to this particular fixed market
     #[account(
         has_one = underlying_token_vault @ ErrorCode::WrongVault,
         has_one = market_ticket_mint @ ErrorCode::WrongOracle,
         has_one = claims_mint @ ErrorCode::WrongClaimMint,
         has_one = collateral_mint @ ErrorCode::WrongCollateralMint,
     )]
-    pub market_manager: AccountLoader<'info, MarketManager>,
+    pub market: AccountLoader<'info, Market>,
 
     /// SPL token program
     pub token_program: Program<'info, Token>,

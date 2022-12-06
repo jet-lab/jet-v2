@@ -21,7 +21,7 @@ export interface OrderParams {
 /**
  * The raw struct as found on chain
  */
-export interface MarketManagerInfo {
+export interface MarketInfo {
   versionTag: BN
   airspace: PublicKey
   orderbookMarketState: PublicKey
@@ -49,7 +49,7 @@ export interface MarketManagerInfo {
 export interface MarginUserInfo {
   version: BN
   marginAccount: PublicKey
-  marketManager: PublicKey
+  market: PublicKey
   claims: PublicKey
   collateral: PublicKey
   underlyingSettlement: PublicKey
@@ -74,7 +74,7 @@ export interface AssetInfo {
 
 export interface ClaimTicket {
   owner: PublicKey
-  marketManager: PublicKey
+  market: PublicKey
   maturationTimestamp: BN
   redeemable: BN
 }
@@ -84,7 +84,7 @@ export interface ClaimTicket {
  */
 export class FixedMarket {
   readonly addresses: {
-    marketManager: PublicKey
+    market: PublicKey
     orderbookMarketState: PublicKey
     eventQueue: PublicKey
     asks: PublicKey
@@ -100,29 +100,29 @@ export class FixedMarket {
     ticketOracle: PublicKey
     marginAdapterMetadata: PublicKey
   }
-  readonly info: MarketManagerInfo
+  readonly info: MarketInfo
   readonly program: Program<JetMarket>
   private constructor(
-    marketManager: PublicKey,
+    market: PublicKey,
     claimsMetadata: PublicKey,
     collateralMetadata: PublicKey,
     marginAdapterMetadata: PublicKey,
     program: Program<JetMarket>,
-    info: MarketManagerInfo
+    info: MarketInfo
   ) {
     this.addresses = {
       ...info,
       claimsMetadata,
       collateralMetadata,
       marginAdapterMetadata,
-      marketManager
+      market
     }
     this.program = program
     this.info = info
   }
 
   get address() {
-    return this.addresses.marketManager
+    return this.addresses.market
   }
 
   get provider() {
@@ -134,16 +134,12 @@ export class FixedMarket {
    * class for interaction with the market
    *
    * @param program The anchor `JetMarket` program
-   * @param marketManager The address of the `marketManager` account
+   * @param market The address of the `market` account
    * @returns
    */
-  static async load(
-    program: Program<JetMarket>,
-    marketManager: Address,
-    jetMarginProgramId: Address
-  ): Promise<FixedMarket> {
-    let data = await fetchData(program.provider.connection, marketManager)
-    let info: MarketManagerInfo = program.coder.accounts.decode("MarketManager", data)
+  static async load(program: Program<JetMarket>, market: Address, jetMarginProgramId: Address): Promise<FixedMarket> {
+    let data = await fetchData(program.provider.connection, market)
+    let info: MarketInfo = program.coder.accounts.decode("Market", data)
     const claimsMetadata = await findDerivedAccount(
       ["token-config", info.airspace, info.claimsMint],
       new PublicKey(jetMarginProgramId)
@@ -155,7 +151,7 @@ export class FixedMarket {
     const marginAdapterMetadata = await findDerivedAccount([program.programId], new PublicKey(jetMarginProgramId))
 
     return new FixedMarket(
-      new PublicKey(marketManager),
+      new PublicKey(market),
       new PublicKey(claimsMetadata),
       new PublicKey(collateralMetadata),
       new PublicKey(marginAdapterMetadata),
@@ -308,7 +304,7 @@ export class FixedMarket {
   }
 
   async settle(user: MarginAccount) {
-    const ticketSettlement = await getAssociatedTokenAddress(this.addresses.bondTicketMint, user.address, true)
+    const ticketSettlement = await getAssociatedTokenAddress(this.addresses.marketTicketMint, user.address, true)
     const marketUser = await this.deriveMarginUserAddress(user)
     const collateral = await this.deriveMarginUserCollateral(marketUser)
     const claims = await this.deriveMarginUserClaims(marketUser)
@@ -341,7 +337,7 @@ export class FixedMarket {
 
   orderbookMut() {
     return {
-      marketManager: this.addresses.marketManager,
+      market: this.addresses.market,
       orderbookMarketState: this.addresses.orderbookMarketState,
       eventQueue: this.addresses.eventQueue,
       bids: this.addresses.bids,

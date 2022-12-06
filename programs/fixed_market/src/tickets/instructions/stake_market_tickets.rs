@@ -3,7 +3,7 @@ use anchor_spl::token::{burn, Burn, Mint, Token, TokenAccount};
 use jet_program_common::traits::SafeAdd;
 
 use crate::{
-    control::state::MarketManager,
+    control::state::Market,
     seeds,
     tickets::{events::TicketsStaked, state::ClaimTicket},
     ErrorCode,
@@ -29,7 +29,7 @@ pub struct StakeMarketTickets<'info> {
         init,
         seeds = [
             seeds::CLAIM_TICKET,
-            market_manager.key().as_ref(),
+            market.key().as_ref(),
             ticket_holder.key.as_ref(),
             params.ticket_seed.as_slice(),
         ],
@@ -39,12 +39,12 @@ pub struct StakeMarketTickets<'info> {
     )]
     pub claim_ticket: Account<'info, ClaimTicket>,
 
-    /// The MarketManager account tracks fixed market assets of a particular duration
+    /// The Market account tracks fixed market assets of a particular tenor
     #[account(
         mut,
         has_one = market_ticket_mint @ ErrorCode::WrongTicketMint,
     )]
-    pub market_manager: AccountLoader<'info, MarketManager>,
+    pub market: AccountLoader<'info, Market>,
 
     /// The owner of market tickets that wishes to stake them for a redeemable ticket
     pub ticket_holder: Signer<'info>,
@@ -88,15 +88,15 @@ pub fn handler(ctx: Context<StakeMarketTickets>, params: StakeMarketTicketsParam
     // Mint a claimable ticket for their burned tokens
     *ctx.accounts.claim_ticket = ClaimTicket {
         owner: ctx.accounts.ticket_holder.key(),
-        market_manager: ctx.accounts.market_manager.key(),
+        market: ctx.accounts.market.key(),
         maturation_timestamp: Clock::get()?
             .unix_timestamp
-            .safe_add(ctx.accounts.market_manager.load()?.lend_tenor)?,
+            .safe_add(ctx.accounts.market.load()?.lend_tenor)?,
         redeemable: amount,
     };
 
     emit!(TicketsStaked {
-        market_manager: ctx.accounts.market_manager.key(),
+        market: ctx.accounts.market.key(),
         ticket_holder: ctx.accounts.ticket_holder.key(),
         amount: params.amount,
     });

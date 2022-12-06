@@ -58,7 +58,7 @@ fn handle_fill<'info>(
     accounts: FillAccounts<'info>,
     fill: &FillInfo,
 ) -> Result<()> {
-    let manager = &ctx.accounts.market_manager;
+    let manager = &ctx.accounts.market;
     let FillAccounts {
         maker,
         maker_adapter,
@@ -112,7 +112,7 @@ fn handle_fill<'info>(
                 let maturation_timestamp = fill_timestamp.safe_add(manager.load()?.lend_tenor)?;
                 **loan.as_mut().unwrap().auto_stake()? = SplitTicket {
                     owner: maker.pubkey(),
-                    market_manager: manager.key(),
+                    market: manager.key(),
                     order_tag: maker_info.order_tag,
                     maturation_timestamp,
                     struck_timestamp: fill_timestamp,
@@ -150,7 +150,7 @@ fn handle_fill<'info>(
                     **loan.as_mut().unwrap().new_debt()? = Obligation {
                         sequence_number,
                         borrower_account: margin_user.key(),
-                        market_manager: ctx.accounts.market_manager.key(),
+                        market: ctx.accounts.market.key(),
                         order_tag: maker_info.order_tag,
                         maturation_timestamp,
                         balance: base_size,
