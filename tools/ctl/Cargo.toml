@@ -34,7 +34,7 @@ comfy-table = "6"
 anchor-syn = { git = "https://github.com/jet-lab/anchor", branch = "temp-version-bump-1-11", features = ["idl"] }
 anchor-lang = { git = "https://github.com/jet-lab/anchor", branch = "temp-version-bump-1-11" }
 spl-governance = { git = "https://github.com/jet-lab/solana-program-library", branch = "temp-fix-spl-deps", features = ["no-entrypoint"] }
-pyth-sdk-solana = "0.6"
+pyth-sdk-solana = "0.7"
 
 solana-account-decoder = "1.11"
 solana-clap-utils = "1.11"
