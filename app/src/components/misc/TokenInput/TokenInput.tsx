@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRecoilState, useRecoilValue, useResetRecoilState } from 'recoil';
-import { feesBuffer, MarginAccount, numberToBn, TokenAmount, PoolAction, Pool } from '@jet-lab/margin';
+import { feesBuffer, MarginAccount, TokenAmount, PoolAction, Pool } from '@jet-lab/margin';
 import { CurrentPool, PoolOption, usePoolFromName } from '@state/pools/pools';
 import {
   CurrentAction,
@@ -89,8 +89,8 @@ export function TokenInput(props: {
           tokenPool: Pool,
           tokenInputString: string,
           tokenInputAmount: TokenAmount,
-          value: TokenAmount,
-          maxInput: TokenAmount
+          maxInput: TokenAmount,
+          value?: TokenAmount
         ) => {
           // Create TokenAmount from tokenInputString and update tokenInputAmount
           if (!tokenPool || tokenInputString === tokenInputAmount.uiTokens || value !== undefined) {
@@ -118,7 +118,9 @@ export function TokenInput(props: {
 
   // Keep tokenInputAmount up to date with tokenInputString
   useEffect(() => {
-    debouncedUpdateTokenAmount(tokenPool, tokenInputString, tokenInputAmount, props.value, maxInput);
+    if (tokenPool) {
+      debouncedUpdateTokenAmount(tokenPool, tokenInputString, tokenInputAmount, maxInput, props.value);
+    }
   }, [tokenPool, tokenInputString, tokenInputAmount.uiTokens, props.value, maxInput]);
 
   // Update maxInput on pool position update

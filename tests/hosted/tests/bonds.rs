@@ -153,6 +153,30 @@ async fn margin_repay() -> Result<()> {
     Ok(())
 }
 
+#[tokio::test(flavor = "multi_thread")]
+#[serial_test::serial]
+async fn can_consume_lots_of_events() -> Result<()> {
+    let manager = Arc::new(BondsTestManager::full(margin_test_context!().solana.clone()).await?);
+
+    // make and fund users
+    let alice = BondsUser::<NoProxy>::new_funded(manager.clone()).await?;
+    let bob = BondsUser::<NoProxy>::new_funded(manager.clone()).await?;
+    alice.convert_tokens(1_000_000).await?;
+
+    let borrow_params = OrderAmount::params_from_quote_amount_rate(1_000, 1_000);
+    let lend_params = OrderAmount::params_from_quote_amount_rate(1_000, 900);
+
+    for i in 0..100 {
+        alice.sell_tickets_order(borrow_params).await?;
+        bob.lend_order(lend_params, &[i]).await?;
+    }
+
+    manager.consume_events().await?;
+    assert!(manager.load_event_queue().await?.is_empty()?);
+
+    Ok(())
+}
+
 async fn non_margin_orders_for_proxy<P: Proxy + GenerateProxy>(
     manager: Arc<BondsTestManager>,
 ) -> Result<()> {
@@ -366,7 +390,7 @@ async fn non_margin_orders_for_proxy<P: Proxy + GenerateProxy>(
     assert!(manager
         .load_event_queue()
         .await?
-        .inner()
+        .inner()?
         .iter()
         .next()
         .is_none());
@@ -380,7 +404,7 @@ async fn non_margin_orders_for_proxy<P: Proxy + GenerateProxy>(
     assert!(manager
         .load_event_queue()
         .await?
-        .inner()
+        .inner()?
         .iter()
         .next()
         .is_none());
@@ -390,7 +414,7 @@ async fn non_margin_orders_for_proxy<P: Proxy + GenerateProxy>(
     assert!(manager
         .load_event_queue()
         .await?
-        .inner()
+        .inner()?
         .iter()
         .next()
         .is_some());

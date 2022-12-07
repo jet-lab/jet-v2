@@ -35,28 +35,28 @@ export const FixedMarketSelector = ({ type }: FixedMarketSelectorProps) => {
         <div className="stats">
           <div className="single-stat">
             <div className="header">Total Lent</div>
-            <div>{formatting.currencyAbbrev(0)}</div>
+            <div>{formatting.currencyAbbrev(0, 2)}</div>
           </div>
           <div className="single-stat">
             <div className="header">Total Borrow</div>
-            <div>{formatting.currencyAbbrev(0)}</div>
+            <div>{formatting.currencyAbbrev(0, 2)}</div>
           </div>
           <div className="single-stat">
             <div className="header">12 hrs change</div>
-            <div>{formatting.currencyAbbrev(0)}%</div>
+            <div>{formatting.currencyAbbrev(0, 2)}%</div>
           </div>
           <div className="single-stat">
             <div className="header">24 hrs change</div>
-            <div>{formatting.currencyAbbrev(0)}%</div>
+            <div>{formatting.currencyAbbrev(0, 2)}%</div>
           </div>
           <div className="single-stat">
             <div className="header">Volume</div>
-            <div>{formatting.currencyAbbrev(0)}</div>
+            <div>{formatting.currencyAbbrev(0, 2)}</div>
           </div>
           <div className="single-stat">
             <div className="header">Daily Range</div>
             <div>
-              {formatting.currencyAbbrev(0)}-{formatting.currencyAbbrev(0)}
+              {formatting.currencyAbbrev(0, 2)}-{formatting.currencyAbbrev(0, 2)}
             </div>
           </div>
         </div>

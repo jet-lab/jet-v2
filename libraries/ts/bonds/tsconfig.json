@@ -1,8 +1,10 @@
 {
-  "include": ["./src/**/*"],
+  "include": ["./src/**/*", "./src/**/*.json"],
   "exclude": ["**/*.wasm"],
   "compilerOptions": {
     "target": "ES2020",
+    "module": "ESNext",
+    "lib": ["ESNext"],
     "sourceMap": true,
     "declaration": true,
     "declarationMap": true,
@@ -17,12 +19,17 @@
     "baseUrl": ".",
     "typeRoots": ["node_modules/@types"],
     "moduleResolution": "node",
-    "module": "ES2020",
-    "outDir": "dist/esm",
+    "outDir": "dist",
     "rootDir": "./src",
+    "allowJs": true,
     "strict": true,
     "forceConsistentCasingInFileNames": true,
     "incremental": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "isolatedModules": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitReturns": true,
+    "noUnusedParameters": true,
+    "noUnusedLocals": true
   }
 }

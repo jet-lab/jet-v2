@@ -119,11 +119,11 @@ export function SnapshotBody(): JSX.Element {
         {renderAccountBalance()}
         <div className="assets-liabilities flex-centered">
           <Text type="success">
-            {dictionary.common.assets} : {currencyAbbrev(getAccountAssets(), true, undefined, 1)}
+            {dictionary.common.assets} : {currencyAbbrev(getAccountAssets(), 1, true, undefined)}
           </Text>
           <div className="assets-liabilities-divider"></div>
           <Text type="danger">
-            {dictionary.accountSnapshot.liabilities} : {currencyAbbrev(getAccountLiabilities(), true, undefined, 1)}
+            {dictionary.accountSnapshot.liabilities} : {currencyAbbrev(getAccountLiabilities(), 1, true, undefined)}
           </Text>
         </div>
       </div>
@@ -134,11 +134,11 @@ export function SnapshotBody(): JSX.Element {
         {renderAvailableCollateral()}
         <div className="assets-liabilities flex-centered">
           <Text type="secondary">
-            {dictionary.common.effective} : {currencyAbbrev(getCollateral('effective'), true, undefined, 1)}
+            {dictionary.common.effective} : {currencyAbbrev(getCollateral('effective'), 1, true, undefined)}
           </Text>
           <div className="assets-liabilities-divider"></div>
           <Text type="secondary">
-            {dictionary.common.required} : {currencyAbbrev(getCollateral('required'), true, undefined, 1)}
+            {dictionary.common.required} : {currencyAbbrev(getCollateral('required'), 1, true, undefined)}
           </Text>
         </div>
       </div>

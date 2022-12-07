@@ -16,11 +16,12 @@ import {
   Connection,
   ParsedTransactionWithMeta,
   PublicKey,
-  TransactionResponse,
   ParsedInstruction,
   ParsedInnerInstruction,
-  PartiallyDecodedInstruction
+  PartiallyDecodedInstruction,
+  VersionedTransactionResponse
 } from "@solana/web3.js"
+import axios from "axios"
 
 interface TokenMintsList {
   tokenMint: PublicKey
@@ -30,7 +31,7 @@ interface TokenMintsList {
 type Mints = Record<string, TokenMintsList>
 
 type TxAndSig = {
-  details: TransactionResponse
+  details: VersionedTransactionResponse
   sig: ConfirmedSignatureInfo
 }
 
@@ -108,7 +109,10 @@ export class MarginClient {
   }
 
   static async getSingleTransaction(provider: AnchorProvider, sig: ConfirmedSignatureInfo): Promise<TxAndSig | null> {
-    const details = await provider.connection.getTransaction(sig.signature, { commitment: "confirmed" })
+    const details = await provider.connection.getTransaction(sig.signature, {
+      commitment: "confirmed",
+      maxSupportedTransactionVersion: 0
+    })
     if (details) {
       return {
         details,
@@ -170,6 +174,7 @@ export class MarginClient {
           return true
         }
       }
+      return false
     }
 
     const setupAccountTx = (token, amount, parsedTx, amountIn?, tokenIn?) => {
@@ -318,7 +323,10 @@ export class MarginClient {
       const paginatedSignatures = signatures.slice(page * pageSize, (page + 1) * pageSize)
       const transactions = await provider.connection.getParsedTransactions(
         paginatedSignatures.map(s => s.signature),
-        "confirmed"
+        {
+          commitment: "confirmed",
+          maxSupportedTransactionVersion: 0
+        }
       )
       const filteredTxs = MarginClient.filterTransactions(transactions, config)
       jetTransactions.push(...filteredTxs)
@@ -396,15 +404,11 @@ export class MarginClient {
     return tx as AccountTransaction
   }
 
-  static async getBlackBoxHistory(
-    pubKey: PublicKey,
-    cluster: MarginCluster,
-    pageSize = 100
-  ): Promise<AccountTransaction[]> {
+  static async getBlackBoxHistory(pubKey: PublicKey, cluster: MarginCluster): Promise<AccountTransaction[]> {
     const flightLogURL = `https://blackbox.jetprotocol.io/margin/accounts/activity/${pubKey}`
 
-    const response = await fetch(flightLogURL)
-    const jetTransactions: FlightLog[] = await response.json()
+    const response = await axios.get(flightLogURL)
+    const jetTransactions: FlightLog[] = await response.data
     const config = await MarginClient.getConfig(cluster)
 
     // let page = 0
@@ -413,7 +417,10 @@ export class MarginClient {
     //   const paginatedSignatures = signatures.slice(page * pageSize, (page + 1) * pageSize)
     //   const transactions = await provider.connection.getParsedTransactions(
     //     paginatedSignatures.map(s => s.signature),
-    //     "confirmed"
+    //     {
+    //       commitment: "confirmed",
+    //       maxSupportedTransactionVersion: 0
+    //     }
     //   )
     //   const filteredTxs = MarginClient.filterTransactions(transactions, config)
     //   jetTransactions.push(...filteredTxs)
@@ -422,7 +429,7 @@ export class MarginClient {
     // }
 
     const parsedTransactions = await Promise.all(
-      jetTransactions.map(async (t, idx) => await MarginClient.getBlackboxTx(config, t))
+      jetTransactions.map(async (t, _) => await MarginClient.getBlackboxTx(config, t))
     )
     const filteredParsedTransactions = parsedTransactions.filter(tx => !!tx) as AccountTransaction[]
     return filteredParsedTransactions.sort((a, b) => a.slot - b.slot)

@@ -5,6 +5,7 @@ import { CurrentPool } from '@state/pools/pools';
 import { TokenInputAmount, TokenInputString } from '@state/actions/actions';
 import { Button, Slider } from 'antd';
 import { getTokenAmountFromNumber } from '@utils/currency';
+import { ReactNode } from 'react';
 
 // Slider component for the TokenInput
 export function TokenSlider(props: {
@@ -17,7 +18,7 @@ export function TokenSlider(props: {
   const currentPool = useRecoilValue(CurrentPool);
   const tokenInputAmount = useRecoilValue(TokenInputAmount);
   const setTokenInputString = useSetRecoilState(TokenInputString);
-  const formatter = (value: number) => `${value}%`;
+  const formatter = (value?: number): ReactNode => `${value}%`;
 
   // Returns a slider percentage based on current input and max input
   function getSliderValue() {

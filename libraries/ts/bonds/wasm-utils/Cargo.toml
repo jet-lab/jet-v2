@@ -3,6 +3,10 @@ name = "wasm-utils"
 version = "0.1.0"
 edition = "2021"
 
+# wasm-pack currently fails to install the correct binaryen version, so we disable wasm-opt for the time being
+[package.metadata.wasm-pack.profile.release] 
+wasm-opt = false
+
 [lib]
 crate-type = ["cdylib", "rlib"]
 doctest = false

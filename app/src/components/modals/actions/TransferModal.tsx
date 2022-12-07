@@ -123,7 +123,7 @@ export function TransferModal(): JSX.Element {
     const poolPosition = side === 'from' ? fromAccountPoolPosition : toAccountPoolPosition;
     if (poolPosition && !tokenInputAmount.isZero()) {
       const balanceText = fromAccountPoolPosition
-        ? currencyAbbrev(poolPosition.depositBalance.tokens - tokenInputAmount.tokens, false, undefined, precision)
+        ? currencyAbbrev(poolPosition.depositBalance.tokens - tokenInputAmount.tokens, precision, false, undefined)
         : '—';
       render = (
         <div className="flex-centered">
@@ -223,7 +223,7 @@ export function TransferModal(): JSX.Element {
               <Paragraph className="from-account-text">{dictionary.common.balance}</Paragraph>
               <Paragraph className="from-account-text">
                 {fromAccountPoolPosition
-                  ? currencyAbbrev(fromAccountPoolPosition.depositBalance.tokens, false, undefined, precision)
+                  ? currencyAbbrev(fromAccountPoolPosition.depositBalance.tokens, precision, false, undefined)
                   : '—'}
                 {renderAffectedBalance('from')}
                 {' ' + currentPool?.symbol}
@@ -249,7 +249,7 @@ export function TransferModal(): JSX.Element {
             <div className="action-info-item flex align-center justify-between">
               <Paragraph className="to-account-text">{dictionary.common.balance}</Paragraph>
               <Paragraph className="to-account-text">
-                {toAccountPoolPosition ? currencyAbbrev(toAccountPoolPosition.depositBalance.tokens) : '—'}
+                {toAccountPoolPosition ? currencyAbbrev(toAccountPoolPosition.depositBalance.tokens, precision) : '—'}
                 {renderAffectedBalance('to')}
                 {' ' + currentPool?.symbol}
               </Paragraph>

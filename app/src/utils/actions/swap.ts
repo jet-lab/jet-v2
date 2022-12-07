@@ -56,9 +56,8 @@ export function getOutputTokenAmount(
       new BN(amp)
     );
     return new TokenAmount(outputAmount, destinationTokenAmount.decimals);
-  } else {
-    return;
   }
+  return undefined;
 }
 
 // Calculate minimum output based on input and slippage
@@ -68,8 +67,7 @@ export function getMinOutputAmount(
   destinationTokenAmount: TokenAmount | undefined,
   poolType: 'constantProduct' | 'stable' | undefined,
   fees: number,
-  slippage: number,
-  amp: number = 100
+  slippage: number
 ) {
   const outputAmount =
     getOutputTokenAmount(swapAmount, sourceTokenAmount, destinationTokenAmount, poolType, fees) ??
@@ -85,8 +83,7 @@ export function useSwapReviewMessage(
   sourceTokenAmount: TokenAmount | undefined,
   destinationTokenAmount: TokenAmount | undefined,
   poolType: 'constantProduct' | 'stable' | undefined,
-  fees: number,
-  amp: number = 100
+  fees: number
 ): string {
   const dictionary = useRecoilValue(Dictionary);
   const tokenInputAmount = useRecoilValue(TokenInputAmount);

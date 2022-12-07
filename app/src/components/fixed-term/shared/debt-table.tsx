@@ -8,7 +8,7 @@ import { AccountsViewOrder } from '@state/views/views';
 import { Accounts, CurrentAccountHistory } from '@state/user/accounts';
 import { ActionRefresh } from '@state/actions/actions';
 import { localDayMonthYear, unixToLocalTime, unixToUtcTime, utcDayMonthYear } from '@utils/time';
-import { Tabs, Table, Typography, Input, Dropdown, Menu } from 'antd';
+import { Tabs, Table, Typography, Input, Dropdown } from 'antd';
 import { ReorderArrows } from '@components/misc/ReorderArrows';
 import { ConnectionFeedback } from '@components/misc/ConnectionFeedback/ConnectionFeedback';
 import {
@@ -167,16 +167,6 @@ export function DebtTable(): JSX.Element {
     }
   ];
 
-  interface FillDataType {
-    key: string;
-    id: string;
-    startTime: string;
-    matureTime: string;
-    fillSize: string;
-    quoteValue: string;
-    status: string;
-  }
-
   const fillOrderColumns = [
     {
       title: dictionary.fixedView.debtTable.fillOrder.id,
@@ -314,7 +304,7 @@ export function DebtTable(): JSX.Element {
                 columns={postOrderColumns}
                 dataSource={postDataDummy}
                 expandable={{
-                  expandedRowRender: row => <Table columns={fillOrderColumns} dataSource={fillDataDummy} />,
+                  expandedRowRender: () => <Table columns={fillOrderColumns} dataSource={fillDataDummy} />,
                   expandIcon: ({ expanded, onExpand, record }) =>
                     expanded ? (
                       <DownOutlined onClick={e => onExpand(record, e)} />

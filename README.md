@@ -72,7 +72,7 @@ Run it in a docker container that already contains all the solana and anchor dep
 
 Run a single job from the workflow:
 ```bash
-./check [in-docker] [job-name (e.g. anchor-test)]
+./check [in-docker] [job-name (e.g. e2e-test)]
 ```
 
 # App

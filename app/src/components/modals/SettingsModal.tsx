@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRecoilState, useRecoilValue, useResetRecoilState } from 'recoil';
 import { Dictionary, uiDictionary, PreferredLanguage } from '@state/settings/localization/localization';
 import { SettingsModal as SettingsModalState } from '@state/modals/modals';

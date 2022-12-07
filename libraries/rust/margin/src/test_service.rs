@@ -334,7 +334,8 @@ fn create_airspace_token_bond_markets_tx(
             derive_pyth_price(&mint),
             derive_pyth_price(&ticket_mint),
             None,
-        );
+        )
+        .with_crank(&config.authority);
 
         txs.push(
             test_service::token_register(
@@ -403,6 +404,12 @@ fn create_airspace_token_bond_markets_tx(
                     .unwrap(),
             ],
             signers: vec![key_eq, key_bids, key_asks],
+        });
+
+        // Submit separately as it is large and causes tx to fail
+        txs.push(TransactionBuilder {
+            instructions: vec![bonds_ix.authorize_crank(config.authority).unwrap()],
+            signers: vec![],
         });
 
         if bm_config.paused {

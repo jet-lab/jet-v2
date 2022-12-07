@@ -35,7 +35,7 @@ export const FixedBorrowOrderEntry = () => {
 
   const { Paragraph } = Typography;
 
-  if (!decimals || noAccount) return null;
+  if (!decimals || noAccount || !marketAndConfig || !token || !marginConfig) return null;
 
   return (
     <div className="order-entry fixed-lend-entry view-element view-element-hidden flex column">
@@ -48,7 +48,7 @@ export const FixedBorrowOrderEntry = () => {
       <Tabs
         defaultActiveKey="limit"
         activeKey={currentTab}
-        onChange={(type: CurrentOrderTab) => setCurrentTab(type)}
+        onChange={(type: string) => setCurrentTab(type as CurrentOrderTab)}
         items={[
           {
             label: 'request loan',

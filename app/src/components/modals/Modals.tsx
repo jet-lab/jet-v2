@@ -1,6 +1,5 @@
 import { useEffect } from 'react';
 import { useRecoilValue } from 'recoil';
-import { CurrentAccount } from '@state/user/accounts';
 import { Geobanned } from '@state/settings/localization/localization';
 import {
   WalletModal as WalletModalState,
@@ -21,7 +20,6 @@ import { NotificationsModal } from './NotificationsModal';
 
 // Wrapper component to include all app modals
 export function Modals(): JSX.Element {
-  const currentAccount = useRecoilValue(CurrentAccount);
   const geobanned = useRecoilValue(Geobanned);
   const WalletModalOpen = useRecoilValue(WalletModalState);
   const currentAction = useRecoilValue(CurrentAction);

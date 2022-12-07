@@ -31,11 +31,11 @@ export const FixedMarketAtom = selector<MarketAndconfig | null>({
   dangerouslyAllowMutability: true
 });
 
-export type CurrentOrderTab = 'borrow-now' | 'lend-now' | 'offer-loan' | 'request-loan';
+export type CurrentOrderTab = 'borrow-now' | 'lend-now' | 'offer-loan' | 'request-loan' | 'not_set';
 
 export const CurrentOrderTabAtom = atom<CurrentOrderTab>({
   key: 'current-fixed-term-order-tab',
-  default: null
+  default: 'not_set'
 });
 
 export interface ExtendedOrderBook extends Orderbook {
@@ -86,7 +86,9 @@ export const useFixedTermSync = (): void => {
     if (networkState === 'connected' && config?.bondsProgramId) {
       const program = new Program(JetBondsIdl, config.bondsProgramId, provider);
       const airspace = config.airspaces.find(airspace => airspace.name === 'default');
-      loadBondMarkets(airspace, program, new PublicKey(config.marginProgramId));
+      if (airspace) {
+        loadBondMarkets(airspace, program, new PublicKey(config.marginProgramId));
+      }
     }
   }, [config, networkState]);
 
@@ -98,5 +100,5 @@ export const useFixedTermSync = (): void => {
     }
   }, [pathname]);
 
-  return null;
+  return;
 };

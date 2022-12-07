@@ -12,7 +12,7 @@
 # This script can also be sourced:
 #   . check
 # Then you can run any of the subcommands without calling ./check:
-#   anchor-test    # tab completion is available
+#   e2e-tests    # tab completion is available
 
 DOCKER_IMAGE=jetprotocol/builder:rust-1.65.0-node-18.12.1-solana-1.13.5-anchor-0.25.0-1
 SOLANA_MAINNET_RPC=${SOLANA_MAINNET_RPC:-'https://solana-api.projectserum.com'}
@@ -20,15 +20,10 @@ SOLANA_MAINNET_RPC=${SOLANA_MAINNET_RPC:-'https://solana-api.projectserum.com'}
 #################
 # Workflow Jobs
 
-anchor-test() { local args=$@
-    extract-arg --skip-yarn || yarn-build
-	anchor test $args -- --features testing
-}
-
 e2e-tests() { local args=$@
     extract-arg --skip-yarn || (yarn-build && yarn build:app)
     rm -f app/public/localnet.config.json
-    E2E=true anchor test $args -- --features testing
+    anchor test $args -- --features testing
 }
 
 hosted-tests-localnet() { local args=$@
@@ -67,7 +62,6 @@ docker-shell() {
 #
 #   ./check in-docker echo hello world
 #   ./check in-docker hosted-tests-localnet
-#   ./check in-docker anchor-test --skip-build
 #   ./check in-docker solana-test-validator
 #   ./check in-docker bash
 in-docker() {
@@ -109,7 +103,6 @@ all() {
     cargo-lint
     cargo-test
     hosted-tests-localnet $@
-    anchor-test --skip-build
     e2e-tests --skip-build
 }
 

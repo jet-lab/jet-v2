@@ -14,7 +14,7 @@ export function useCurrencyFormatting() {
 
   // Format USD or crypto with default or desired decimals
   const currencyFormatter = useCallback(
-    (value: number, fiatValues?: boolean, decimals?: number, ceil?: boolean, accounting?: boolean): string => {
+    (value: number, fiatValues?: boolean, decimals?: number, accounting?: boolean): string => {
       const roundedValue = Math.round(value * 10 ** (decimals ?? 2)) / 10 ** (decimals ?? 2);
       const convertedValue = fiatCurrency !== 'USD' ? roundedValue * conversionRates[fiatCurrency] : roundedValue;
 
@@ -46,9 +46,9 @@ export function useCurrencyFormatting() {
   // Abbreviate large currency amounts
   function currencyAbbrev(
     total: number,
+    decimals: number,
     fiatValues?: boolean,
     price?: number,
-    decimals?: number,
     precision?: boolean,
     accounting?: boolean,
     aggressiveness: 'billions' | 'millions' | 'thousands' = 'billions'
@@ -57,8 +57,6 @@ export function useCurrencyFormatting() {
     if (price && fiatValues) {
       t = total * price;
     }
-
-    const { format } = Intl.NumberFormat(navigator.language);
 
     // In all cases, truncate trillions and billions
     if (t > 1000000000000) {
@@ -74,7 +72,7 @@ export function useCurrencyFormatting() {
     if (precision) {
       if (fiatValues) {
         if (accounting) {
-          return currencyFormatter(t, fiatValues, decimals, undefined, true);
+          return currencyFormatter(t, fiatValues, decimals, true);
         }
         // Do not truncate fiat values under million
         return currencyFormatter(t, fiatValues, decimals);
