@@ -17,7 +17,7 @@ export const pointAtCoordinateX = (path: SVGPathElement, x: number, tolerance: n
     if (bisection_iterations_max < ++bisection_iterations) break;
   }
   if (point.x > x + tolerance || point.x < x - tolerance) {
-    return;
+    return undefined;
   } else {
     return point.y;
   }

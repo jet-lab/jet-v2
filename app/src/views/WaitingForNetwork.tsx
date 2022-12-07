@@ -1,7 +1,7 @@
 import { LoadingOutlined } from '@ant-design/icons';
 import { useRecoilValue } from 'recoil';
 import { NetworkState } from '../state/network/network-state';
-import { Cluster, PreferredRpcNode, RpcNodes } from '../state/settings/settings';
+import { Cluster } from '../state/settings/settings';
 
 interface WaitingForNetwork {
   networkState: NetworkState;

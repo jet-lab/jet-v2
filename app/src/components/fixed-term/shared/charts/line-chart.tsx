@@ -22,7 +22,7 @@ const tooltipStyles = {
   color: 'white'
 };
 
-interface ISeries {
+export interface ISeries {
   id: string;
   data: Array<{ x: number; y: number }>;
   type: string;
@@ -67,7 +67,7 @@ export const LineChart = ({
 
   const linesPathsRefs = useRef(series.map(() => createRef<SVGPathElement>()));
 
-  const { xScale, yScale, ordinalColorScale, maxValueOfY } = useMemo(() => {
+  const { xScale, yScale, ordinalColorScale } = useMemo(() => {
     const maxValueOfX = series.reduce((max, series) => {
       const seriesMax = Math.max(...series.data.map(d => d.x));
       if (seriesMax > max) {
@@ -116,7 +116,7 @@ export const LineChart = ({
             yValues.push({
               y,
               valueOfY: yScale.invert(y),
-              lineId: path.getAttribute('id')
+              lineId: path.getAttribute('id') || ''
             });
           }
         }
@@ -165,7 +165,7 @@ export const LineChart = ({
       <ScaleSVG width={width} height={height}>
         <Group style={{ cursor: 'crosshair' }} top={paddingTop} left={paddingLeft}>
           {/* This bar is used to target the tooltip across the whole chart */}
-          {tooltipData && (
+          {tooltipData && tooltipLeft && (
             <Line
               from={{ x: tooltipLeft - paddingLeft, y: 0 }}
               to={{ x: tooltipLeft - paddingLeft, y: yMax }}
@@ -175,26 +175,27 @@ export const LineChart = ({
               strokeDasharray="5,2"
             />
           )}
-          {tooltipData?.yValues.map(line => (
-            <g key={`${line.lineId}-marker`}>
-              <circle
-                fill={ordinalColorScale(line.lineId)}
-                r={4}
-                stroke="#fff"
-                strokeWidth={1}
-                cx={tooltipData.x - paddingLeft}
-                cy={line.y}
-              />
-              <Line
-                from={{ x: 0, y: line.y }}
-                to={{ x: tooltipLeft - paddingLeft, y: line.y }}
-                stroke={ordinalColorScale(line.lineId)}
-                strokeWidth={1}
-                opacity={0.4}
-                strokeDasharray="5,2"
-              />
-            </g>
-          ))}
+          {tooltipLeft &&
+            tooltipData?.yValues.map(line => (
+              <g key={`${line.lineId}-marker`}>
+                <circle
+                  fill={ordinalColorScale(line.lineId)}
+                  r={4}
+                  stroke="#fff"
+                  strokeWidth={1}
+                  cx={tooltipData.x - paddingLeft}
+                  cy={line.y}
+                />
+                <Line
+                  from={{ x: 0, y: line.y }}
+                  to={{ x: tooltipLeft - paddingLeft, y: line.y }}
+                  stroke={ordinalColorScale(line.lineId)}
+                  strokeWidth={1}
+                  opacity={0.4}
+                  strokeDasharray="5,2"
+                />
+              </g>
+            ))}
           {series.map((s, index) => (
             <LinePath
               id={s.id}
@@ -226,7 +227,9 @@ export const LineChart = ({
           <AxisBottom
             hideAxisLine={true}
             top={yMax}
-            tickFormat={val => formatting.currencyAbbrev(val.valueOf(), true, undefined, 1, null, null, 'thousands')}
+            tickFormat={val =>
+              formatting.currencyAbbrev(val.valueOf(), 0, true, undefined, undefined, undefined, 'thousands')
+            }
             tickStroke="rgba(255,255,255,0.6)"
             scale={xScale}
             tickLabelProps={() => ({

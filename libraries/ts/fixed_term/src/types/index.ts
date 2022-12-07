@@ -1,1 +1,1 @@
-export { JetMarket, IDL as JetMarketIdl } from "./JetMarket"
+export { type JetMarket, IDL as JetMarketIdl } from "./JetMarket"

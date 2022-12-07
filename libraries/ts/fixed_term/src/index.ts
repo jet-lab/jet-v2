@@ -1,5 +1,5 @@
 export * from "./fixedTerm"
-export * from "./utils"
+export * from "./utils.js"
 export * from "./orderbook"
 export * from "./types"
 export * from "./wasm-utils"

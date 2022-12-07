@@ -20,9 +20,5 @@ echo "waiting for oracles ..."
 	done
 	echo "oracles ready!"
 
-if [[ ${E2E:-false} == false ]]; then
-	npx ts-mocha -p ./tests/tsconfig.json -t 1000000 --paths 'tests/**/*.test.ts'
-else
-	cp app/public/localnet.config.json app/build/localnet.config.json
-	yarn --cwd app e2e:ci
-fi
+cp app/public/localnet.config.json app/build/localnet.config.json
+yarn --cwd app e2e:ci

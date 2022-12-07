@@ -41,11 +41,21 @@ export function PoolDetail(): JSX.Element {
     return render;
   }
 
+  // Renders the required collateral factor for the current pool
+  function renderRequiredCollateralFactor() {
+    let render = <Skeleton paragraph={false} active style={{ width: 100 }} />;
+    if (init) {
+      render = <Text>{currentPool.loanNoteMetadata.valueModifier.toNumber()}</Text>;
+    }
+
+    return render;
+  }
+
   // Renders the pool size for the current pool
   function renderPoolSize() {
     let render = <Skeleton className="align-center" paragraph={false} active style={{ margin: '10px 0' }} />;
     if (init) {
-      const totalValueAbbrev = currencyAbbrev(currentPool.totalValue.tokens, false, undefined, currentPool.precision);
+      const totalValueAbbrev = currencyAbbrev(currentPool.totalValue.tokens, currentPool.precision, false, undefined);
       render = <Title className="green-text">{`${totalValueAbbrev}`}</Title>;
     }
 
@@ -56,7 +66,7 @@ export function PoolDetail(): JSX.Element {
   function renderAvailableLiquidity() {
     let render = <Skeleton paragraph={false} active style={{ marginTop: 5 }} />;
     if (init) {
-      const vaultAbbrev = currencyAbbrev(currentPool.vault.tokens, false, undefined, currentPool.precision);
+      const vaultAbbrev = currencyAbbrev(currentPool.vault.tokens, currentPool.precision, false, undefined);
       render = (
         <div className="pie-chart-section-info-item">
           <Text type="success">{vaultAbbrev}</Text>
@@ -71,7 +81,7 @@ export function PoolDetail(): JSX.Element {
   function renderTotalBorrowed() {
     let render = <Skeleton paragraph={false} active style={{ marginTop: 5 }} />;
     if (init) {
-      const borrowedAbbrev = currencyAbbrev(currentPool.borrowedTokens.tokens, false, undefined, currentPool.precision);
+      const borrowedAbbrev = currencyAbbrev(currentPool.borrowedTokens.tokens, currentPool.precision, false, undefined);
       render = (
         <div className="pie-chart-section-info-item">
           <Text type="danger">{borrowedAbbrev}</Text>
@@ -115,6 +125,12 @@ export function PoolDetail(): JSX.Element {
               <Text className="info-element small-accent-text">{dictionary.poolsView.collateralWeight}</Text>
             </Info>
             {renderCollateralWeight()}
+          </div>
+          <div className="pool-detail-body-half-section flex align-start justify-center column">
+            <Info term="requiredCollateralFactor">
+              <Text className="info-element small-accent-text">{dictionary.poolsView.requiredCollateralFactor}</Text>
+            </Info>
+            {renderRequiredCollateralFactor()}
           </div>
         </div>
         <div className="pool-detail-body-half flex-align-start justify-center column">

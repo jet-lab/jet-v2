@@ -39,9 +39,12 @@ export const LendNow = ({ token, decimals, marketAndConfig, marginConfig }: Requ
   const markets = useRecoilValue(AllFixedTermMarketsAtom);
   const refreshOrderBooks = useRecoilRefresher_UNSTABLE(AllFixedTermMarketsOrderBooksAtom);
 
+  const disabled = !marginAccount || !wallet.publicKey || !currentPool || !pools || amount.lte(new BN(0));
+
   const marketLendOrder = async () => {
     let signature: string;
     try {
+      if (disabled || !wallet.publicKey) return;
       signature = await lendNow({
         market: marketAndConfig.market,
         marginAccount,
@@ -60,7 +63,7 @@ export const LendNow = ({ token, decimals, marketAndConfig, marginConfig }: Requ
         getExplorerUrl(signature, cluster, blockExplorer)
       );
       refreshOrderBooks();
-    } catch (e) {
+    } catch (e: any) {
       notify(
         'Lend Order Failed',
         `Your lend order for ${amount.div(new BN(10 ** decimals))} ${token.name} failed`,
@@ -124,10 +127,7 @@ export const LendNow = ({ token, decimals, marketAndConfig, marginConfig }: Requ
           <span>Off</span>
         </div>
       </div>
-      <Button
-        className="submit-button"
-        disabled={!marketAndConfig?.market || amount.lte(new BN(0))}
-        onClick={marketLendOrder}>
+      <Button className="submit-button" disabled={disabled} onClick={marketLendOrder}>
         Lend {marketToString(marketAndConfig.config)}
       </Button>
     </div>

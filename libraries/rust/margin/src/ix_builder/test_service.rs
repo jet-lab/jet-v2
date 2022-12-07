@@ -193,6 +193,7 @@ pub fn spl_swap_pool_create(
             params: SplSwapPoolCreateParams {
                 liquidity_level,
                 price_threshold,
+                nonce: addrs.nonce,
             },
         }
         .data(),
@@ -302,7 +303,7 @@ pub fn derive_swap_pool(token_a: &Pubkey, token_b: &Pubkey) -> SwapPoolAddress {
         &jet_test_service::ID,
     )
     .0;
-    let authority = Pubkey::find_program_address(&[state.as_ref()], &spl_token_swap::ID).0;
+    let (authority, nonce) = Pubkey::find_program_address(&[state.as_ref()], &spl_token_swap::ID);
     let token_a_account = Pubkey::find_program_address(
         &[SWAP_POOL_TOKENS, state.as_ref(), token_a.as_ref()],
         &jet_test_service::ID,
@@ -329,6 +330,7 @@ pub fn derive_swap_pool(token_a: &Pubkey, token_b: &Pubkey) -> SwapPoolAddress {
         token_b_account,
         mint,
         fees,
+        nonce,
     }
 }
 
@@ -354,4 +356,7 @@ pub struct SwapPoolAddress {
 
     /// The account to collect fees
     pub fees: Pubkey,
+
+    /// The pool nonce
+    pub nonce: u8,
 }

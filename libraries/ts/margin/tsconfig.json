@@ -1,7 +1,9 @@
 {
   "include": ["./src/**/*", "./src/**/*.json"],
   "compilerOptions": {
-    "target": "es2020",
+    "target": "ES2020",
+    "module": "ESNext",
+    "lib": ["ES2022"],
     "sourceMap": true,
     "declaration": true,
     "declarationMap": true,
@@ -13,15 +15,21 @@
     "esModuleInterop": true,
     "resolveJsonModule": true,
     "composite": true,
-    "baseUrl": ".",
+    "baseUrl": "src",
     "typeRoots": ["node_modules/@types"],
     "moduleResolution": "node",
-    "module": "ES2020",
-    "outDir": "dist/esm",
+    "outDir": "./dist",
     "rootDir": "./src",
     "strict": true,
     "forceConsistentCasingInFileNames": true,
     "incremental": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+
+    "allowJs": true,
+    "isolatedModules": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitReturns": true,
+    "noUnusedParameters": true,
+    "noUnusedLocals": true
   }
 }

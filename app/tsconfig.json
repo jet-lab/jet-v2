@@ -13,6 +13,11 @@
     "incremental": true,
     "skipLibCheck": true,
     "baseUrl": "src",
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitReturns": true,
+    "noUnusedParameters": true,
+    "noUnusedLocals": true,
+    "strict": true,
     "paths": {
       "@components/*": ["components/*"],
       "@state/*": ["state/*"],

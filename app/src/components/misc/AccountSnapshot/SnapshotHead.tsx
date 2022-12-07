@@ -4,7 +4,7 @@ import { Dictionary } from '@state/settings/localization/localization';
 import { NewAccountModal } from '@state/modals/modals';
 import { WalletTokens } from '@state/user/walletTokens';
 import { AccountNames, CurrentAccountAddress, FavoriteAccounts } from '@state/user/accounts';
-import { Typography, Button, Dropdown, Menu, Tabs } from 'antd';
+import { Typography, Button, Dropdown, Tabs } from 'antd';
 import { StarFilled, StarOutlined } from '@ant-design/icons';
 import AngleDown from '@assets/icons/arrow-angle-down.svg';
 

@@ -1,14 +1,8 @@
-import {
-  createAssociatedTokenAccountInstruction,
-  createMintToInstruction,
-  getAssociatedTokenAddress,
-  NATIVE_MINT,
-  TOKEN_PROGRAM_ID
-} from "@solana/spl-token"
-import { Connection, LAMPORTS_PER_SOL, PublicKey, Transaction, TransactionInstruction } from "@solana/web3.js"
+import { createAssociatedTokenAccountInstruction, NATIVE_MINT, TOKEN_PROGRAM_ID } from "@solana/spl-token"
+import { Connection, PublicKey, Transaction, TransactionInstruction } from "@solana/web3.js"
 import { AssociatedToken } from "./associatedToken"
 import { Address, BN, AnchorProvider, translateAddress, Program } from "@project-serum/anchor"
-import { MarginPrograms, MarginTokenConfig } from "../margin"
+import { MarginTokenConfig } from "../margin"
 import { IDL as JetTestServiceIdl } from "../types/jetTestService"
 
 const TEST_SERVICE_ID = new PublicKey("JPTSApMSqCHBww7vDhpaSmzipTV3qPg6vxub4qneKoy")

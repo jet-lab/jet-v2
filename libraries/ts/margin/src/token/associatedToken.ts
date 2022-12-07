@@ -1,5 +1,4 @@
-import { BN, Address, translateAddress, AnchorProvider, Provider } from "@project-serum/anchor"
-import { TOKEN_PROGRAM_ID } from "@project-serum/serum/lib/token-instructions"
+import { BN, Address, translateAddress, AnchorProvider } from "@project-serum/anchor"
 import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
   NATIVE_MINT,
@@ -20,7 +19,8 @@ import {
   createInitializeAccountInstruction,
   getMinimumBalanceForRentExemptAccount,
   TokenInvalidMintError,
-  createTransferInstruction
+  createTransferInstruction,
+  TOKEN_PROGRAM_ID
 } from "@solana/spl-token"
 import { Connection, PublicKey, TransactionInstruction, SystemProgram, AccountInfo } from "@solana/web3.js"
 import { chunks } from "../utils"
@@ -621,7 +621,6 @@ export class AssociatedToken {
    * @param {tokenAccount} tokenAccountOrNative
    */
   static withUnwrapIfNativeMint(instructions: TransactionInstruction[], owner: Address, mint: Address): void {
-    const ownerPubkey = translateAddress(owner)
     const mintPubkey = translateAddress(mint)
 
     if (mintPubkey.equals(NATIVE_MINT)) {

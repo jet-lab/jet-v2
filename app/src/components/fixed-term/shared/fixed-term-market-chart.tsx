@@ -2,7 +2,7 @@ import Title from 'antd/lib/typography/Title';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { ReorderArrows } from '@components/misc/ReorderArrows';
 import { FixedBorrowRowOrder, FixedLendRowOrder } from '@state/views/fixed-term';
-import { ResponsiveLineChart } from '@components/fixed-term/shared/charts/line-chart';
+import { ISeries, ResponsiveLineChart } from '@components/fixed-term/shared/charts/line-chart';
 import {
   AllFixedTermMarketsAtom,
   AllFixedTermMarketsOrderBooksAtom,
@@ -20,7 +20,7 @@ interface FixedChart {
   type: 'bids' | 'asks';
 }
 
-const getChartTitle = (currentTab: CurrentOrderTab, market: MarketAndconfig) => {
+const getChartTitle = (currentTab: CurrentOrderTab, market: MarketAndconfig | null) => {
   if (!market?.config?.symbol) return '';
   switch (currentTab) {
     case 'borrow-now':
@@ -32,6 +32,7 @@ const getChartTitle = (currentTab: CurrentOrderTab, market: MarketAndconfig) => 
     case 'request-loan':
       return `${market.config.symbol} borrow requests`;
   }
+  return '';
 };
 
 const asksKeys = ['lend-now', 'request-loan'];
@@ -54,8 +55,7 @@ export const FixedPriceChartContainer = ({ type }: FixedChart) => {
   }, [marginConfig, market?.config]);
 
   const decimals = useMemo(() => {
-    if (!token) return null;
-    if (!marginConfig || !market?.config) return 6;
+    if (!token || !marginConfig || !market?.config || !token.decimals) return 6;
     return token.decimals;
   }, [token]);
 
@@ -77,6 +77,7 @@ export const FixedPriceChartContainer = ({ type }: FixedChart) => {
         return all;
       }
       const currentMarketConfig = allMarkets.find(market => market.name === current.name)?.config;
+      if (!currentMarketConfig) return all;
       let cumulativeQuote = BigInt(0);
       let cumulativeBase = BigInt(0);
       const data: Array<{ x: number; y: number }> = [];
@@ -104,7 +105,7 @@ export const FixedPriceChartContainer = ({ type }: FixedChart) => {
       };
       all.push(currentSeries);
       return all;
-    }, []);
+    }, [] as ISeries[]);
   }, [openOrders, currentTab, selectedMarketIndex]);
 
   return (

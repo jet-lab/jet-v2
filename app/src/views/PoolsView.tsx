@@ -10,7 +10,7 @@ import { NetworkStateAtom } from '@state/network/network-state';
 import { WaitingForNetworkView } from './WaitingForNetwork';
 
 // App view for using / viewing Jet pools
-export function PoolsView(): JSX.Element {
+function PoolsView(): JSX.Element {
   const dictionary = useRecoilValue(Dictionary);
   const networkState = useRecoilValue(NetworkStateAtom);
   const rowOrder = useRecoilValue(PoolsRowOrder);
@@ -56,3 +56,5 @@ export function PoolsView(): JSX.Element {
 
   return PoolsView();
 }
+
+export default PoolsView;

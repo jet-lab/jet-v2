@@ -11,13 +11,19 @@ decimals = 6
 precision = 2
 
 [[token]]
+symbol = "USDT"
+name = "USDT"
+decimals = 6
+precision = 2
+
+[[token]]
 symbol = "BTC"
 name = "Bitcoin"
 decimals = 6
 precision = 6
 
 [swap_pools]
-spl = ["Bitcoin/USDC"]
+spl = ["Bitcoin/USDC", "Bitcoin/USDT"]
 
 [[airspace]]
 name = "default"
@@ -26,6 +32,20 @@ is_restricted = false
 [airspace.tokens.USDC]
 collateral_weight = 1_00
 max_leverage = 20_00
+
+[airspace.tokens.USDT]
+collateral_weight = 1_00
+max_leverage = 20_00
+
+[airspace.tokens.USDT.margin_pool_config]
+flags = 0b0010 # ALLOW_LENDING
+utilization_rate_1 = 85_00
+utilization_rate_2 = 95_00
+borrow_rate_0 = 50
+borrow_rate_1 = 600
+borrow_rate_2 = 4000
+borrow_rate_3 = 16000
+management_fee_rate = 20_00
 
 [[airspace.tokens.USDC.fixed_term_markets]]
 borrow_tenor = 86400
