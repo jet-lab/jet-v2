@@ -34,6 +34,7 @@ use jet_metadata::{PositionTokenMetadata, TokenKind};
 use jet_program_common::Fp32;
 use jet_simulation::{create_wallet, send_and_confirm, solana_rpc_api::SolanaRpcClient};
 use solana_sdk::{
+    compute_budget::ComputeBudgetInstruction,
     hash::Hash,
     instruction::Instruction,
     message::Message,
@@ -322,7 +323,11 @@ impl TestManager {
                 .ix_builder
                 .consume_events(&eq.consume_events_params()?)?;
 
-            self.sign_send_transaction(&[consume], None).await?;
+            // Increase the compute budget when consuming events
+            let compute_budget_instruction =
+                ComputeBudgetInstruction::set_compute_unit_limit(800_000);
+            self.sign_send_transaction(&[compute_budget_instruction, consume], None)
+                .await?;
         }
         Ok(())
     }
