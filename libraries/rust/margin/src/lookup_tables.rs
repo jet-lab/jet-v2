@@ -19,13 +19,14 @@
 
 #![cfg_attr(not(feature = "localnet"), allow(unused))]
 
-use std::{any::Any, sync::Arc, time::Duration};
+use std::{any::Any, collections::HashSet, sync::Arc, time::Duration};
 
 use anchor_client::solana_client::rpc_config::RpcSendTransactionConfig;
 use anyhow::{bail, Context, Result};
 use jet_simulation::solana_rpc_api::{RpcConnection, SolanaRpcClient};
-use solana_address_lookup_table_program::state::AddressLookupTable;
+use solana_address_lookup_table_program::state::{AddressLookupTable, LookupTableMeta};
 use solana_sdk::{
+    account::ReadableAccount,
     address_lookup_table_account::AddressLookupTableAccount,
     commitment_config::CommitmentConfig,
     instruction::Instruction,
@@ -43,15 +44,32 @@ use solana_transaction_status::UiTransactionEncoding;
 pub struct LookupTable;
 
 impl LookupTable {
-    /// TODO
+    /// Get the contents of a lookup table
+    pub async fn get_lookup_table<'a>(
+        rpc: &Arc<dyn SolanaRpcClient>,
+        address: &Pubkey,
+    ) -> Result<Option<AddressLookupTableAccount>> {
+        let account = rpc.get_account(address).await?;
+        let table = account
+            .map(|acc| match AddressLookupTable::deserialize(acc.data()) {
+                Ok(table) => Ok(AddressLookupTableAccount {
+                    key: *address,
+                    addresses: table.addresses.to_vec(),
+                }),
+                Err(e) => {
+                    bail!("Error deserializing lookup table {:?}", e)
+                }
+            })
+            .transpose()?;
+        Ok(table)
+    }
+    /// Create a new lookup table and return its address
     pub async fn create_lookup_table(
         rpc: &Arc<dyn SolanaRpcClient>,
-        // TODO: think more about how we want to handle authority, as they need to sign
-        // authority: Option<Pubkey>,
+        authority: Option<Pubkey>,
     ) -> Result<Pubkey> {
         let recent_slot = rpc.get_slot(Some(CommitmentConfig::finalized())).await?;
-        // let authority = authority.unwrap_or_else(|| rpc.payer().pubkey());
-        let authority = rpc.payer().pubkey();
+        let authority = authority.unwrap_or_else(|| rpc.payer().pubkey());
         let (create_ix, table_address) =
             solana_address_lookup_table_program::instruction::create_lookup_table(
                 authority,
@@ -66,20 +84,36 @@ impl LookupTable {
         Ok(table_address)
     }
 
-    /// TODO add authority
+    /// Extend a lookup table by adding more accounts.
+    /// First checks if an account already exists, and excludes it if it does,
+    /// as lookup tables can have duplicate accounts and waste space.
     pub async fn extend_lookup_table(
         rpc: &Arc<dyn SolanaRpcClient>,
         table_address: Pubkey,
+        authority: Option<Pubkey>,
         accounts: &[Pubkey],
     ) -> Result<()> {
         if accounts.is_empty() {
             bail!("Cannot extend lookup table if there are no accounts to add")
         }
+        // Get the lookup table
+        let table = Self::get_lookup_table(rpc, &table_address)
+            .await?
+            .context("Table not found")?;
+        let existing_accounts = table.addresses.iter().cloned().collect::<HashSet<_>>();
+        let accounts_to_add = accounts
+            .iter()
+            .filter(|a| !existing_accounts.contains(a))
+            .cloned()
+            .collect::<Vec<_>>();
+        if accounts_to_add.is_empty() {
+            bail!("All the accounts being added already exist, preventing adding duplicates")
+        }
         // Keep track of the last signature
-        let authority = rpc.payer().pubkey();
+        let authority = authority.unwrap_or_else(|| rpc.payer().pubkey());
         let payer = rpc.payer().pubkey();
         let mut signature = Signature::default();
-        for pubkeys in accounts.chunks(20) {
+        for pubkeys in accounts_to_add.chunks(20) {
             let ix = solana_address_lookup_table_program::instruction::extend_lookup_table(
                 table_address,
                 authority,
@@ -95,30 +129,22 @@ impl LookupTable {
         // Trying to use the lookup table immediately doesn't work
         tokio::time::sleep(Duration::from_secs(10)).await;
 
-        // // Check that the last signature is confirmed
-        // rpc.confirm_transactions(&[signature]).await?;
-
         Ok(())
     }
 
-    /// Use a lookup table
-    ///
-    /// TODO assumes the payer is not different, change if we find that it's so
-    pub async fn use_lookup_table(
+    /// Use a lookup table to create a [VersionedTransaction]
+    pub async fn use_lookup_tables(
         rpc: &Arc<dyn SolanaRpcClient>,
-        table_address: Pubkey,
+        table_addresses: &[Pubkey],
         instructions: &[Instruction],
         keypairs: &[&Keypair],
     ) -> Result<VersionedTransaction> {
-        let table = rpc
-            .get_account(&table_address)
-            .await?
-            .with_context(|| format!("Address {table_address} could not be found"))?;
-        let table = AddressLookupTable::deserialize(&table.data)?;
-        let lookup_table_account = AddressLookupTableAccount {
-            key: table_address,
-            addresses: table.addresses.to_vec(),
-        };
+        let mut tables = vec![];
+        for address in table_addresses {
+            if let Ok(Some(table)) = Self::get_lookup_table(rpc, address).await {
+                tables.push(table)
+            }
+        }
 
         let mut signers = vec![rpc.payer()];
         signers.extend_from_slice(keypairs);
@@ -128,7 +154,7 @@ impl LookupTable {
             solana_sdk::message::VersionedMessage::V0(v0::Message::try_compile(
                 &rpc.payer().pubkey(),
                 instructions,
-                &[lookup_table_account],
+                &tables,
                 blockhash,
             )?),
             &signers,
@@ -150,13 +176,15 @@ impl LookupTable {
         let connection = (rpc as &dyn Any)
             .downcast_ref::<RpcConnection>()
             .context("rpc is not an RpcConnection")?;
-        // TODO: inherit the config of the client
-        let config = RpcSendTransactionConfig {
-            skip_preflight: true,
-            preflight_commitment: None,
-            encoding: Some(UiTransactionEncoding::Base64),
-            ..Default::default()
-        };
+        let config = connection
+            .tx_config()
+            .cloned()
+            .unwrap_or_else(|| RpcSendTransactionConfig {
+                skip_preflight: true,
+                preflight_commitment: None,
+                encoding: Some(UiTransactionEncoding::Base64),
+                ..Default::default()
+            });
         let signature = connection
             .client()
             .send::<String>(
