@@ -1,6 +1,5 @@
 import { useRecoilState } from 'recoil';
 import { TpsBanner } from '../TpsBanner';
-// import { PauseBorrowBanner } from '../PauseBorrowBanner';
 import { WalletButton } from '../WalletButton';
 import { NavLogo } from './NavLogo';
 import { NavLinks } from './NavLinks';
