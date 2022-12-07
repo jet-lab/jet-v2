@@ -352,8 +352,6 @@ fn exec_swap<'info>(
         }
     }
 
-    msg!("Opening {}, closing {}", dst_ata_opening, dst_ata_closing);
-
     Ok((
         dst_ata_closing.checked_sub(dst_ata_opening).unwrap(),
         dst_transit,
@@ -372,43 +370,20 @@ fn exec_swap_split<'info>(
 ) -> Result<(u64, u64, AccountInfo<'info>)> {
     let dst_ata_opening: u64;
     let dst_ata_closing: u64;
-    // let mut bumps = BTreeMap::new();
-    // let mut reallocs = BTreeSet::new();
-    // let mut accounts = remaining_accounts.as_slice();
+    let mut bumps = BTreeMap::new();
+    let mut reallocs = BTreeSet::new();
     let dst_ata = match route_ident {
         SwapRouteIdentifier::Empty => return Err(error!(crate::ErrorCode::InvalidSwapRoute)),
         SwapRouteIdentifier::Spl => {
-            // let swap_accounts = SplSwapInfo::try_accounts(
-            //     // Will be validated by the spl swap registry
-            //     &Pubkey::default(),
-            //     &mut accounts,
-            //     &[],
-            //     &mut bumps,
-            //     &mut reallocs,
-            // )?;
-            let swap_accounts = SplSwapInfo {
-                swap_pool: next_account_info(remaining_accounts)
-                    .unwrap()
-                    .to_account_info(),
-                authority: next_account_info(remaining_accounts)
-                    .unwrap()
-                    .to_account_info(),
-                vault_into: next_account_info(remaining_accounts)
-                    .unwrap()
-                    .to_account_info(),
-                vault_from: next_account_info(remaining_accounts)
-                    .unwrap()
-                    .to_account_info(),
-                token_mint: next_account_info(remaining_accounts)
-                    .unwrap()
-                    .to_account_info(),
-                fee_account: next_account_info(remaining_accounts)
-                    .unwrap()
-                    .to_account_info(),
-                swap_program: next_account_info(remaining_accounts)
-                    .unwrap()
-                    .to_account_info(),
-            };
+            let accounts = remaining_accounts.take(7).cloned().collect::<Vec<_>>();
+            let swap_accounts = SplSwapInfo::try_accounts(
+                // Will be validated by the spl swap registry
+                &Pubkey::default(),
+                &mut &accounts[..],
+                &[],
+                &mut bumps,
+                &mut reallocs,
+            )?;
             // We don't need to check the destination balance on this leg
             let dst_ata = next_account_info(remaining_accounts).unwrap();
             dst_ata_opening = token::accessor::amount(dst_ata)?;
@@ -427,21 +402,14 @@ fn exec_swap_split<'info>(
         }
         SwapRouteIdentifier::Whirlpool => todo!(),
         SwapRouteIdentifier::SaberStable => {
-            // let swap_accounts = SaberSwapInfo::try_accounts(
-            //     &saber_stable_swap::id(),
-            //     &mut accounts,
-            //     &[],
-            //     &mut bumps,
-            //     &mut reallocs,
-            // )?;
-            let swap_accounts = SaberSwapInfo {
-                swap_pool: remaining_accounts.next().unwrap().to_account_info(),
-                authority: remaining_accounts.next().unwrap().to_account_info(),
-                vault_into: remaining_accounts.next().unwrap().to_account_info(),
-                vault_from: remaining_accounts.next().unwrap().to_account_info(),
-                admin_fee_destination: remaining_accounts.next().unwrap().to_account_info(),
-                swap_program: Program::try_from(remaining_accounts.next().unwrap())?,
-            };
+            let accounts = remaining_accounts.take(6).cloned().collect::<Vec<_>>();
+            let swap_accounts = SaberSwapInfo::try_accounts(
+                &saber_stable_swap::id(),
+                &mut &accounts[..],
+                &[],
+                &mut bumps,
+                &mut reallocs,
+            )?;
             // We don't need to check the destination balance on this leg
             let dst_ata = next_account_info(remaining_accounts).unwrap();
             dst_ata_opening = token::accessor::amount(dst_ata)?;
