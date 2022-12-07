@@ -11,7 +11,7 @@ use jet_margin_sdk::{
     tokens::TokenPrice,
     tx_builder::TokenDepositsConfig,
 };
-use jet_static_program_registry::{orca_swap_v1, orca_swap_v2, spl_token_swap_v2};
+use jet_static_program_registry::spl_token_swap_v2;
 use solana_sdk::native_token::LAMPORTS_PER_SOL;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::Signer;
@@ -23,7 +23,7 @@ use hosted_tests::{
 
 use jet_margin::TokenKind;
 use jet_margin_pool::{MarginPoolConfig, PoolFlags, TokenChange};
-use jet_simulation::{assert_custom_program_error, create_wallet};
+use jet_simulation::create_wallet;
 
 const ONE_USDC: u64 = 1_000_000;
 const ONE_USDT: u64 = 1_000_000;
@@ -90,7 +90,7 @@ async fn setup_environment(ctx: &MarginTestContext) -> Result<TestEnv, Error> {
             collateral_weight: 90,
             max_leverage: 3_00,
             config: DEFAULT_POOL_CONFIG,
-            oracle: tsol_oracle,
+            oracle: msol_oracle,
         },
     ];
 
@@ -277,8 +277,9 @@ async fn route_swap() -> Result<(), anyhow::Error> {
     user_b.refresh_all_pool_positions().await?;
 
     // Add a lookup table for the swap route
-    let table = LookupTable::create_lookup_table(&ctx.rpc).await.unwrap();
-    println!("Using lookup table {table}");
+    let table = LookupTable::create_lookup_table(&ctx.rpc, None)
+        .await
+        .unwrap();
 
     // Add accounts to the lookup table
     let usdc_pool = MarginPoolIxBuilder::new(env.usdc);
@@ -329,7 +330,7 @@ async fn route_swap() -> Result<(), anyhow::Error> {
         swap_pool_sbr_msol_tsol.program,
     ];
 
-    LookupTable::extend_lookup_table(&ctx.rpc, table, accounts)
+    LookupTable::extend_lookup_table(&ctx.rpc, table, None, accounts)
         .await
         .unwrap();
 
