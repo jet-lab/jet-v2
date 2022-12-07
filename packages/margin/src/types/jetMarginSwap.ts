@@ -163,155 +163,40 @@ export type JetMarginSwap = {
       ],
       "accounts": [
         {
-          "name": "marginAccount",
-          "isMut": false,
-          "isSigner": true,
-          "docs": [
-            "The margin account being executed on"
-          ]
-        },
-        {
-          "name": "sourceAccount",
-          "isMut": true,
-          "isSigner": false,
-          "docs": [
-            "The account with the source deposit to be exchanged from"
-          ]
-        },
-        {
-          "name": "destinationAccount",
-          "isMut": true,
-          "isSigner": false,
-          "docs": [
-            "The destination account to send the deposit that is exchanged into"
-          ]
-        },
-        {
-          "name": "transitSourceAccount",
-          "isMut": true,
-          "isSigner": false,
-          "docs": [
-            "Temporary account for moving tokens"
-          ]
-        },
-        {
-          "name": "transitDestinationAccount",
-          "isMut": true,
-          "isSigner": false,
-          "docs": [
-            "Temporary account for moving tokens"
-          ]
-        },
-        {
-          "name": "swapInfo",
-          "accounts": [
-            {
-              "name": "swapPool",
-              "isMut": false,
-              "isSigner": false
-            },
-            {
-              "name": "authority",
-              "isMut": false,
-              "isSigner": false
-            },
-            {
-              "name": "vaultInto",
-              "isMut": true,
-              "isSigner": false
-            },
-            {
-              "name": "vaultFrom",
-              "isMut": true,
-              "isSigner": false
-            },
-            {
-              "name": "tokenMint",
-              "isMut": true,
-              "isSigner": false
-            },
-            {
-              "name": "adminFeeDestination",
-              "isMut": true,
-              "isSigner": false
-            },
-            {
-              "name": "swapProgram",
-              "isMut": false,
-              "isSigner": false,
-              "docs": [
-                "The address of the swap program"
-              ]
-            }
-          ]
-        },
-        {
-          "name": "sourceMarginPool",
-          "accounts": [
-            {
-              "name": "marginPool",
-              "isMut": true,
-              "isSigner": false
-            },
-            {
-              "name": "vault",
-              "isMut": true,
-              "isSigner": false
-            },
-            {
-              "name": "depositNoteMint",
-              "isMut": true,
-              "isSigner": false
-            }
-          ]
-        },
-        {
-          "name": "destinationMarginPool",
-          "accounts": [
-            {
-              "name": "marginPool",
-              "isMut": true,
-              "isSigner": false
-            },
-            {
-              "name": "vault",
-              "isMut": true,
-              "isSigner": false
-            },
-            {
-              "name": "depositNoteMint",
-              "isMut": true,
-              "isSigner": false
-            }
-          ]
-        },
-        {
-          "name": "marginPoolProgram",
+          "name": "swapPool",
           "isMut": false,
           "isSigner": false
         },
         {
-          "name": "tokenProgram",
+          "name": "authority",
           "isMut": false,
           "isSigner": false
+        },
+        {
+          "name": "vaultInto",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "vaultFrom",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "adminFeeDestination",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "swapProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "The address of the swap program"
+          ]
         }
       ],
-      "args": [
-        {
-          "name": "withdrawalChangeKind",
-          "type": {
-            "defined": "ChangeKind"
-          }
-        },
-        {
-          "name": "withdrawalAmount",
-          "type": "u64"
-        },
-        {
-          "name": "minimumAmountOut",
-          "type": "u64"
-        }
-      ]
+      "args": []
     },
     {
       "name": "routeSwap",
@@ -340,7 +225,8 @@ export type JetMarginSwap = {
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The destination account to send the deposit that is exchanged into"
+            "The destination account to send the deposit that is exchanged into",
+            "The swap is also atomic, and no excess funds would be taken/left in the account."
           ]
         },
         {
@@ -348,7 +234,8 @@ export type JetMarginSwap = {
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "Temporary account for moving tokens"
+            "Temporary account for moving tokens",
+            "The swap is also atomic, and no excess funds would be taken/left in the account."
           ]
         },
         {
@@ -356,7 +243,8 @@ export type JetMarginSwap = {
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "Temporary account for moving tokens"
+            "Temporary account for moving tokens",
+            "The swap is also atomic, and no excess funds would be taken/left in the account."
           ]
         },
         {
@@ -523,6 +411,11 @@ export type JetMarginSwap = {
       "code": 6003,
       "name": "SlippageExceeded",
       "msg": "The swap exceeds the maximum slippage tolerance"
+    },
+    {
+      "code": 6004,
+      "name": "DisallowedDirectInstruction",
+      "msg": "The instruction should not be called directly, use route_swap"
     }
   ]
 }
@@ -692,155 +585,40 @@ export const IDL: JetMarginSwap = {
       ],
       "accounts": [
         {
-          "name": "marginAccount",
-          "isMut": false,
-          "isSigner": true,
-          "docs": [
-            "The margin account being executed on"
-          ]
-        },
-        {
-          "name": "sourceAccount",
-          "isMut": true,
-          "isSigner": false,
-          "docs": [
-            "The account with the source deposit to be exchanged from"
-          ]
-        },
-        {
-          "name": "destinationAccount",
-          "isMut": true,
-          "isSigner": false,
-          "docs": [
-            "The destination account to send the deposit that is exchanged into"
-          ]
-        },
-        {
-          "name": "transitSourceAccount",
-          "isMut": true,
-          "isSigner": false,
-          "docs": [
-            "Temporary account for moving tokens"
-          ]
-        },
-        {
-          "name": "transitDestinationAccount",
-          "isMut": true,
-          "isSigner": false,
-          "docs": [
-            "Temporary account for moving tokens"
-          ]
-        },
-        {
-          "name": "swapInfo",
-          "accounts": [
-            {
-              "name": "swapPool",
-              "isMut": false,
-              "isSigner": false
-            },
-            {
-              "name": "authority",
-              "isMut": false,
-              "isSigner": false
-            },
-            {
-              "name": "vaultInto",
-              "isMut": true,
-              "isSigner": false
-            },
-            {
-              "name": "vaultFrom",
-              "isMut": true,
-              "isSigner": false
-            },
-            {
-              "name": "tokenMint",
-              "isMut": true,
-              "isSigner": false
-            },
-            {
-              "name": "adminFeeDestination",
-              "isMut": true,
-              "isSigner": false
-            },
-            {
-              "name": "swapProgram",
-              "isMut": false,
-              "isSigner": false,
-              "docs": [
-                "The address of the swap program"
-              ]
-            }
-          ]
-        },
-        {
-          "name": "sourceMarginPool",
-          "accounts": [
-            {
-              "name": "marginPool",
-              "isMut": true,
-              "isSigner": false
-            },
-            {
-              "name": "vault",
-              "isMut": true,
-              "isSigner": false
-            },
-            {
-              "name": "depositNoteMint",
-              "isMut": true,
-              "isSigner": false
-            }
-          ]
-        },
-        {
-          "name": "destinationMarginPool",
-          "accounts": [
-            {
-              "name": "marginPool",
-              "isMut": true,
-              "isSigner": false
-            },
-            {
-              "name": "vault",
-              "isMut": true,
-              "isSigner": false
-            },
-            {
-              "name": "depositNoteMint",
-              "isMut": true,
-              "isSigner": false
-            }
-          ]
-        },
-        {
-          "name": "marginPoolProgram",
+          "name": "swapPool",
           "isMut": false,
           "isSigner": false
         },
         {
-          "name": "tokenProgram",
+          "name": "authority",
           "isMut": false,
           "isSigner": false
+        },
+        {
+          "name": "vaultInto",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "vaultFrom",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "adminFeeDestination",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "swapProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "The address of the swap program"
+          ]
         }
       ],
-      "args": [
-        {
-          "name": "withdrawalChangeKind",
-          "type": {
-            "defined": "ChangeKind"
-          }
-        },
-        {
-          "name": "withdrawalAmount",
-          "type": "u64"
-        },
-        {
-          "name": "minimumAmountOut",
-          "type": "u64"
-        }
-      ]
+      "args": []
     },
     {
       "name": "routeSwap",
@@ -869,7 +647,8 @@ export const IDL: JetMarginSwap = {
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The destination account to send the deposit that is exchanged into"
+            "The destination account to send the deposit that is exchanged into",
+            "The swap is also atomic, and no excess funds would be taken/left in the account."
           ]
         },
         {
@@ -877,7 +656,8 @@ export const IDL: JetMarginSwap = {
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "Temporary account for moving tokens"
+            "Temporary account for moving tokens",
+            "The swap is also atomic, and no excess funds would be taken/left in the account."
           ]
         },
         {
@@ -885,7 +665,8 @@ export const IDL: JetMarginSwap = {
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "Temporary account for moving tokens"
+            "Temporary account for moving tokens",
+            "The swap is also atomic, and no excess funds would be taken/left in the account."
           ]
         },
         {
@@ -1052,6 +833,11 @@ export const IDL: JetMarginSwap = {
       "code": 6003,
       "name": "SlippageExceeded",
       "msg": "The swap exceeds the maximum slippage tolerance"
+    },
+    {
+      "code": 6004,
+      "name": "DisallowedDirectInstruction",
+      "msg": "The instruction should not be called directly, use route_swap"
     }
   ]
 }
