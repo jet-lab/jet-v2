@@ -14,7 +14,6 @@ feature_groups! {
         mod rounding;
         mod sanity;
         mod spl_swap;
-        mod saber_swap;
         mod route_swap;
     }
 }
