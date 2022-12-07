@@ -624,9 +624,17 @@ pub enum ErrorCode {
     #[msg("attempting to use or set invalid configuration")]
     InvalidConfig = 135_051,
 
-    /// 141051 - Attempting to use or set an oracle that is not valid
+    /// 141052 - Attempting to use or set an oracle that is not valid
     #[msg("attempting to use or set invalid configuration")]
     InvalidOracle = 135_052,
+
+    /// 141060
+    #[msg("the permit does not authorize this action")]
+    InsufficientPermissions = 135_060,
+
+    /// 141061
+    #[msg("the permit is not owned by the current user")]
+    PermitNotOwned = 135_061,
 }
 
 /// Writes the result of position changes from an adapter invocation.

@@ -139,17 +139,6 @@ pub enum TokenAdmin {
     Adapter(Pubkey),
 }
 
-/// Configuration for allowed liquidators
-#[account]
-#[derive(Default, Debug, Eq, PartialEq)]
-pub struct LiquidatorConfig {
-    /// The airspace this liquidator is being configured to act within
-    pub airspace: Pubkey,
-
-    /// The address of the liquidator allowed to act
-    pub liquidator: Pubkey,
-}
-
 /// Configuration enabling a signer to execute permissioned actions
 #[account]
 #[derive(Default, Debug, Eq, PartialEq)]
@@ -162,6 +151,22 @@ pub struct Permit {
 
     /// Actions which may be performed with the signature of the owner.
     pub permissions: Permissions,
+}
+
+impl Permit {
+    pub fn validate(&self, airspace: Pubkey, owner: Pubkey, permissions: Permissions) -> Result<()> {
+        if airspace != self.airspace {
+            return err!(ErrorCode::WrongAirspace)
+        }
+        if owner != self.owner {
+            return err!(ErrorCode::PermitNotOwned)
+        }
+        if !self.permissions.contains(permissions) {
+            return err!(ErrorCode::InsufficientPermissions)
+        }
+        
+        Ok(())
+    }
 }
 
 bitflags! {
