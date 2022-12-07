@@ -219,13 +219,19 @@ impl MarginIxBuilder {
     /// # Params
     ///
     /// `position_token_mint` - The mint for the position to be refreshed
-    pub fn refresh_position_metadata(&self, position_token_mint: &Pubkey) -> Instruction {
+    pub fn refresh_position_metadata(
+        &self,
+        position_token_mint: &Pubkey,
+        refresher: Pubkey,
+    ) -> Instruction {
         let (metadata, _) =
             Pubkey::find_program_address(&[position_token_mint.as_ref()], &jet_metadata::ID);
 
         let accounts = ix_account::RefreshPositionMetadata {
             metadata,
             margin_account: self.address,
+            permit: derive_margin_permit(&self.airspace, &refresher),
+            refresher,
         };
 
         Instruction {
@@ -240,13 +246,19 @@ impl MarginIxBuilder {
     /// # Params
     ///
     /// `position_token_mint` - The mint for the position to be refreshed
-    pub fn refresh_position_config(&self, position_token_mint: &Pubkey) -> Instruction {
+    pub fn refresh_position_config(
+        &self,
+        position_token_mint: &Pubkey,
+        refresher: Pubkey,
+    ) -> Instruction {
         let config = MarginConfigIxBuilder::new(self.airspace, self.payer)
             .derive_token_config(position_token_mint);
 
         let accounts = ix_account::RefreshPositionConfig {
             config,
             margin_account: self.address,
+            permit: derive_margin_permit(&self.airspace, &refresher),
+            refresher,
         };
 
         Instruction {

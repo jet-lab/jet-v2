@@ -582,7 +582,9 @@ impl MarginTxBuilder {
         &self,
         position_token_mint: &Pubkey,
     ) -> Result<Transaction> {
-        self.create_transaction(&[self.ix.refresh_position_metadata(position_token_mint)])
+        self.create_transaction(&[self
+            .ix
+            .refresh_position_metadata(position_token_mint, self.signer())])
             .await
     }
 
@@ -597,8 +599,10 @@ impl MarginTxBuilder {
                     == get_associated_token_address(self.address(), &position.token);
 
                 match is_deposit_account {
-                    false => self.ix.refresh_position_metadata(&position.token),
-                    true => self.ix.refresh_position_config(&position.token),
+                    false => self
+                        .ix
+                        .refresh_position_metadata(&position.token, self.signer()),
+                    true => self.ix.refresh_position_config(&position.token, self.signer()),
                 }
             })
             .collect::<Vec<_>>();
@@ -681,7 +685,7 @@ impl MarginTxBuilder {
         futures::future::join_all(
             instructions
                 .chunks(chunk_size)
-                .map(|c| self.create_unsigned_transaction(c)),
+                .map(|c| self.create_transaction(c)),
         )
         .await
         .into_iter()

@@ -154,17 +154,22 @@ pub struct Permit {
 }
 
 impl Permit {
-    pub fn validate(&self, airspace: Pubkey, owner: Pubkey, permissions: Permissions) -> Result<()> {
+    pub fn validate(
+        &self,
+        airspace: Pubkey,
+        owner: Pubkey,
+        permissions: Permissions,
+    ) -> Result<()> {
         if airspace != self.airspace {
-            return err!(ErrorCode::WrongAirspace)
+            return err!(ErrorCode::WrongAirspace);
         }
         if owner != self.owner {
-            return err!(ErrorCode::PermitNotOwned)
+            return err!(ErrorCode::PermitNotOwned);
         }
         if !self.permissions.contains(permissions) {
-            return err!(ErrorCode::InsufficientPermissions)
+            return err!(ErrorCode::InsufficientPermissions);
         }
-        
+
         Ok(())
     }
 }

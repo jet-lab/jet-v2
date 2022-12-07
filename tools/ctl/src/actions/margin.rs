@@ -155,7 +155,7 @@ pub async fn process_refresh_metadata(client: &Client, token: Pubkey) -> Result<
                 plan = plan.instructions(
                     [],
                     [format!("refresh-position-md {token} for {address}")],
-                    [ix.refresh_position_metadata(&deposit_token)],
+                    [ix.refresh_position_metadata(&deposit_token, account.owner)],
                 );
             }
         }
