@@ -12,7 +12,7 @@ use super::ix_builder::bonds_pda;
 
 /// Maximum byte size of the `ConsumeEventsInfo`, determined by solana transaction size
 /// TODO: this is placeholder
-const MAX_BYTES: usize = 1280;
+const MAX_BYTES: usize = 736;
 
 /// Number of bytes in a loan account seed
 const SEED_BYTES: usize = 8;
@@ -43,10 +43,71 @@ pub struct OutAccountsKeys {
     pub user_adapter_account: Option<Pubkey>,
 }
 
+pub struct ConsumeEventsParams {
+    pub account_keys: Vec<Pubkey>,
+    pub seeds: Vec<Vec<u8>>,
+    pub num_events: u32,
+}
+
 #[derive(Default)]
 pub struct ConsumeEventsInfo(Vec<EventAccountKeys>);
 
 impl ConsumeEventsInfo {
+    pub fn build(event_queue: EventQueue<'_, CallbackInfo>) -> Result<Self> {
+        let mut info = ConsumeEventsInfo::default();
+        let rng = &mut rand::rngs::OsRng::default();
+
+        for event in event_queue.iter() {
+            if info.count_bytes() > MAX_BYTES {
+                break;
+            }
+            let keys = match event {
+                EventRef::Fill(FillEventRef {
+                    maker_callback_info,
+                    taker_callback_info,
+                    ..
+                }) => {
+                    let loan = if maker_callback_info
+                        .flags
+                        .contains(CallbackFlags::AUTO_STAKE)
+                    {
+                        let seed = make_seed(rng);
+                        let key = bonds_pda(&SplitTicket::make_seeds(
+                            &maker_callback_info.fill_account.to_bytes(),
+                            &seed,
+                        ));
+                        Some(LoanAccountKey { key, seed })
+                    } else if maker_callback_info.flags.contains(CallbackFlags::NEW_DEBT) {
+                        let seed = make_seed(rng);
+                        let key = bonds_pda(&Obligation::make_seeds(
+                            &maker_callback_info.fill_account.to_bytes(),
+                            &seed,
+                        ));
+                        Some(LoanAccountKey { key, seed })
+                    } else {
+                        None
+                    };
+
+                    EventAccountKeys::Fill(FillAccountsKeys {
+                        maker: maker_callback_info.fill_account,
+                        loan,
+                        maker_adapter: maker_callback_info.adapter(),
+                        taker_adapter: taker_callback_info.adapter(),
+                    })
+                }
+                EventRef::Out(OutEventRef { callback_info, .. }) => {
+                    EventAccountKeys::Out(OutAccountsKeys {
+                        user: callback_info.out_account,
+                        user_adapter_account: callback_info.adapter(),
+                    })
+                }
+            };
+            info.push(keys)
+        }
+
+        Ok(info)
+    }
+
     pub fn push(&mut self, keys: EventAccountKeys) {
         self.0.push(keys);
     }
@@ -87,7 +148,7 @@ impl ConsumeEventsInfo {
             .sum()
     }
 
-    pub fn as_params(&self) -> (Vec<Pubkey>, u32, Vec<Vec<u8>>) {
+    pub fn as_params(&self) -> ConsumeEventsParams {
         let mut keys = Vec::new();
         let mut seeds = Vec::new();
 
@@ -122,8 +183,12 @@ impl ConsumeEventsInfo {
                 }
             }
         }
-        let len = keys.len() as u32;
-        (keys, len, seeds)
+
+        ConsumeEventsParams {
+            account_keys: keys,
+            seeds,
+            num_events: self.0.len() as u32,
+        }
     }
 }
 
@@ -131,61 +196,4 @@ pub fn make_seed(rng: &mut impl rand::RngCore) -> Vec<u8> {
     let bytes = &mut [0u8; SEED_BYTES];
     rng.fill_bytes(bytes);
     bytes.to_vec()
-}
-
-pub fn build_consume_events_info(
-    event_queue: EventQueue<'_, CallbackInfo>,
-) -> Result<ConsumeEventsInfo> {
-    let mut info = ConsumeEventsInfo::default();
-    let rng = &mut rand::rngs::OsRng::default();
-
-    for event in event_queue.iter() {
-        if info.count_bytes() > MAX_BYTES {
-            break;
-        }
-        let keys = match event {
-            EventRef::Fill(FillEventRef {
-                maker_callback_info,
-                taker_callback_info,
-                ..
-            }) => {
-                let loan = if maker_callback_info
-                    .flags
-                    .contains(CallbackFlags::AUTO_STAKE)
-                {
-                    let seed = make_seed(rng);
-                    let key = bonds_pda(&SplitTicket::make_seeds(
-                        &maker_callback_info.fill_account.to_bytes(),
-                        &seed,
-                    ));
-                    Some(LoanAccountKey { key, seed })
-                } else if maker_callback_info.flags.contains(CallbackFlags::NEW_DEBT) {
-                    let seed = make_seed(rng);
-                    let key = bonds_pda(&Obligation::make_seeds(
-                        &maker_callback_info.fill_account.to_bytes(),
-                        &seed,
-                    ));
-                    Some(LoanAccountKey { key, seed })
-                } else {
-                    None
-                };
-
-                EventAccountKeys::Fill(FillAccountsKeys {
-                    maker: maker_callback_info.fill_account,
-                    loan,
-                    maker_adapter: maker_callback_info.adapter(),
-                    taker_adapter: taker_callback_info.adapter(),
-                })
-            }
-            EventRef::Out(OutEventRef { callback_info, .. }) => {
-                EventAccountKeys::Out(OutAccountsKeys {
-                    user: callback_info.out_account,
-                    user_adapter_account: callback_info.adapter(),
-                })
-            }
-        };
-        info.push(keys)
-    }
-
-    Ok(info)
 }

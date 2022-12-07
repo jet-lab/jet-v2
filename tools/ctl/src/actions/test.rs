@@ -57,12 +57,12 @@ pub async fn process_generate_app_config(
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-struct TestEnvConfig {
-    token: Vec<TokenDescription>,
-    airspace: Vec<AirspaceConfig>,
+pub struct TestEnvConfig {
+    pub token: Vec<TokenDescription>,
+    pub airspace: Vec<AirspaceConfig>,
 
     #[serde(default)]
-    swap_pools: SwapPoolsConfig,
+    pub swap_pools: SwapPoolsConfig,
 }
 
 fn read_env_config_from_file(
@@ -202,7 +202,7 @@ fn derive_bond_manager(airspace: &Pubkey, token_mint: &Pubkey, seed: [u8; 32]) -
     ])
 }
 
-fn derive_bond_manager_from_duration_seed(
+pub fn derive_bond_manager_from_duration_seed(
     airspace: &Pubkey,
     token_mint: &Pubkey,
     duration: i64,

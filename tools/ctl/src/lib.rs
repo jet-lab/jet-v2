@@ -9,11 +9,11 @@ use serde::Deserialize;
 use serde_with::{serde_as, DisplayFromStr};
 
 pub mod actions;
+pub mod app_config;
 pub mod client;
 pub mod config;
 
 mod anchor_ix_parser;
-mod app_config;
 mod governance;
 mod serum;
 
