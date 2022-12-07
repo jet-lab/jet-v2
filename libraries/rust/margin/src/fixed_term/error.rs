@@ -10,6 +10,9 @@ pub enum FixedTermMarketIxError {
 
     #[error("Client error: ({msg})")]
     Client { msg: String },
+
+    #[error("Failed to deserialize event queue. Error: ({0})")]
+    Deserialization(String),
 }
 
 pub type Result<T> = std::result::Result<T, FixedTermMarketIxError>;

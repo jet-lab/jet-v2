@@ -16,10 +16,10 @@ import {
   Connection,
   ParsedTransactionWithMeta,
   PublicKey,
-  TransactionResponse,
   ParsedInstruction,
   ParsedInnerInstruction,
-  PartiallyDecodedInstruction
+  PartiallyDecodedInstruction,
+  VersionedTransactionResponse
 } from "@solana/web3.js"
 import axios from "axios"
 
@@ -31,7 +31,7 @@ interface TokenMintsList {
 type Mints = Record<string, TokenMintsList>
 
 type TxAndSig = {
-  details: TransactionResponse
+  details: VersionedTransactionResponse
   sig: ConfirmedSignatureInfo
 }
 
@@ -109,7 +109,10 @@ export class MarginClient {
   }
 
   static async getSingleTransaction(provider: AnchorProvider, sig: ConfirmedSignatureInfo): Promise<TxAndSig | null> {
-    const details = await provider.connection.getTransaction(sig.signature, { commitment: "confirmed" })
+    const details = await provider.connection.getTransaction(sig.signature, {
+      commitment: "confirmed",
+      maxSupportedTransactionVersion: 0
+    })
     if (details) {
       return {
         details,
@@ -320,7 +323,10 @@ export class MarginClient {
       const paginatedSignatures = signatures.slice(page * pageSize, (page + 1) * pageSize)
       const transactions = await provider.connection.getParsedTransactions(
         paginatedSignatures.map(s => s.signature),
-        "confirmed"
+        {
+          commitment: "confirmed",
+          maxSupportedTransactionVersion: 0
+        }
       )
       const filteredTxs = MarginClient.filterTransactions(transactions, config)
       jetTransactions.push(...filteredTxs)
@@ -411,7 +417,10 @@ export class MarginClient {
     //   const paginatedSignatures = signatures.slice(page * pageSize, (page + 1) * pageSize)
     //   const transactions = await provider.connection.getParsedTransactions(
     //     paginatedSignatures.map(s => s.signature),
-    //     "confirmed"
+    //     {
+    //       commitment: "confirmed",
+    //       maxSupportedTransactionVersion: 0
+    //     }
     //   )
     //   const filteredTxs = MarginClient.filterTransactions(transactions, config)
     //   jetTransactions.push(...filteredTxs)

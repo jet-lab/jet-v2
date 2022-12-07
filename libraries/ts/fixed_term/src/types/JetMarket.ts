@@ -118,6 +118,14 @@ export type JetMarket = {
           ]
         },
         {
+          "name": "market",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "The market this signer is authorized to send instructions to"
+          ]
+        },
+        {
           "name": "authority",
           "isMut": false,
           "isSigner": true,
@@ -2235,6 +2243,10 @@ export type JetMarket = {
           },
           {
             "name": "airspace",
+            "type": "publicKey"
+          },
+          {
+            "name": "market",
             "type": "publicKey"
           }
         ]
@@ -3811,6 +3823,14 @@ export const IDL: JetMarket = {
           ]
         },
         {
+          "name": "market",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "The market this signer is authorized to send instructions to"
+          ]
+        },
+        {
           "name": "authority",
           "isMut": false,
           "isSigner": true,
@@ -5928,6 +5948,10 @@ export const IDL: JetMarket = {
           },
           {
             "name": "airspace",
+            "type": "publicKey"
+          },
+          {
+            "name": "market",
             "type": "publicKey"
           }
         ]

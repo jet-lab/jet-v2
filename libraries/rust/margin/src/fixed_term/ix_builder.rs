@@ -1,7 +1,11 @@
 use std::sync::Arc;
 
+use agnostic_orderbook::state::{event_queue::EventQueue, AccountTag};
 use anchor_lang::{InstructionData, ToAccountMetas};
-use jet_market::{margin::state::TermLoan, seeds, tickets::instructions::StakeTicketsParams};
+use jet_market::{
+    margin::state::TermLoan, orderbook::state::CallbackInfo, seeds,
+    tickets::instructions::StakeTicketsParams,
+};
 use jet_simulation::solana_rpc_api::SolanaRpcClient;
 use solana_sdk::{
     instruction::{AccountMeta, Instruction},
@@ -22,7 +26,10 @@ pub use jet_market::{
 
 use crate::ix_builder::{get_metadata_address, test_service::if_not_initialized};
 
-use super::error::{client_err, FixedTermMarketIxError, Result};
+use super::{
+    error::{client_err, FixedTermMarketIxError, Result},
+    event_builder::{ConsumeEventsInfo, ConsumeEventsParams},
+};
 
 #[derive(Clone, Debug)]
 pub struct FixedTermMarketIxBuilder {
@@ -226,15 +233,10 @@ impl FixedTermMarketIxBuilder {
         })
     }
 
-    pub fn consume_events(
-        &self,
-        remaining_accounts: Vec<Pubkey>,
-        num_events: u32,
-        seed_bytes: Vec<Vec<u8>>,
-    ) -> Result<Instruction> {
+    pub fn consume_events(&self, params: &ConsumeEventsParams) -> Result<Instruction> {
         let data = jet_market::instruction::ConsumeEvents {
-            num_events,
-            seed_bytes,
+            num_events: params.num_events,
+            seed_bytes: params.seeds.clone(),
         }
         .data();
         let mut accounts = jet_market::accounts::ConsumeEvents {
@@ -243,7 +245,7 @@ impl FixedTermMarketIxBuilder {
             underlying_token_vault: self.underlying_token_vault,
             orderbook_market_state: self.orderbook_market_state,
             event_queue: self.orderbook.as_ref().unwrap().event_queue,
-            crank_authorization: crank_authorization(&self.crank.unwrap()),
+            crank_authorization: self.crank_authorization()?,
             crank: self.crank.unwrap(),
             payer: self.payer.unwrap(),
             system_program: solana_sdk::system_program::ID,
@@ -251,7 +253,9 @@ impl FixedTermMarketIxBuilder {
         }
         .to_account_metas(None);
         accounts.extend(
-            remaining_accounts
+            params
+                .account_keys
+                .clone()
                 .into_iter()
                 .map(|k| AccountMeta::new(k, false)),
         );
@@ -808,11 +812,14 @@ impl FixedTermMarketIxBuilder {
         Ok(Instruction::new_with_bytes(jet_market::ID, &data, accounts))
     }
 
-    pub fn authorize_crank(&self, payer: Pubkey, crank: Pubkey) -> Result<Instruction> {
+    pub fn authorize_crank(&self, payer: Pubkey) -> Result<Instruction> {
         let data = jet_market::instruction::AuthorizeCrank {}.data();
         let accounts = jet_market::accounts::AuthorizeCrank {
-            crank,
-            crank_authorization: crank_authorization(&crank),
+            crank: self
+                .crank
+                .ok_or_else(|| FixedTermMarketIxError::MissingPubkey("crank".into()))?,
+            market: self.market,
+            crank_authorization: self.crank_authorization()?,
             authority: self.authority,
             airspace: self.airspace,
             payer,
@@ -983,20 +990,51 @@ impl FixedTermMarketIxBuilder {
             borrower_account.as_ref(),
         ])
     }
+    pub fn crank_authorization(&self) -> Result<Pubkey> {
+        Ok(Pubkey::find_program_address(
+            &[
+                jet_market::seeds::CRANK_AUTHORIZATION,
+                self.airspace.as_ref(),
+                self.market.as_ref(),
+                self.crank
+                    .ok_or_else(|| FixedTermMarketIxError::MissingPubkey("crank".to_string()))?
+                    .as_ref(),
+            ],
+            &jet_market::ID,
+        )
+        .0)
+    }
 
     pub fn jet_market_id() -> Pubkey {
         jet_market::ID
     }
 }
 
-pub fn fixed_term_market_pda(seeds: &[&[u8]]) -> Pubkey {
-    Pubkey::find_program_address(seeds, &jet_market::ID).0
+/// Convenience struct for passing around an `EventQueue`
+#[derive(Clone)]
+pub struct OwnedEventQueue(Vec<u8>);
+
+impl OwnedEventQueue {
+    pub fn inner(&mut self) -> Result<EventQueue<CallbackInfo>> {
+        EventQueue::from_buffer(&mut self.0, AccountTag::EventQueue)
+            .map_err(|e| FixedTermMarketIxError::Deserialization(e.to_string()))
+    }
+
+    pub fn is_empty(&mut self) -> Result<bool> {
+        Ok(self.inner()?.iter().next().is_none())
+    }
+
+    pub fn consume_events_params(&mut self) -> Result<ConsumeEventsParams> {
+        ConsumeEventsInfo::build(self.inner()?).map(|info| info.as_params())
+    }
 }
 
-pub fn crank_authorization(crank: &Pubkey) -> Pubkey {
-    Pubkey::find_program_address(
-        &[jet_market::seeds::CRANK_AUTHORIZATION, crank.as_ref()],
-        &jet_market::ID,
-    )
-    .0
+impl<T: Into<Vec<u8>>> From<T> for OwnedEventQueue {
+    fn from(data: T) -> Self {
+        Self(data.into())
+    }
+}
+
+pub fn fixed_term_market_pda(seeds: &[&[u8]]) -> Pubkey {
+    Pubkey::find_program_address(seeds, &jet_market::ID).0
 }

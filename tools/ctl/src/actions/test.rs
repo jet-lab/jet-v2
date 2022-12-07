@@ -57,12 +57,12 @@ pub async fn process_generate_app_config(
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-struct TestEnvConfig {
-    token: Vec<TokenDescription>,
-    airspace: Vec<AirspaceConfig>,
+pub struct TestEnvConfig {
+    pub token: Vec<TokenDescription>,
+    pub airspace: Vec<AirspaceConfig>,
 
     #[serde(default)]
-    swap_pools: SwapPoolsConfig,
+    pub swap_pools: SwapPoolsConfig,
 }
 
 fn read_env_config_from_file(
@@ -202,7 +202,7 @@ fn derive_market(airspace: &Pubkey, token_mint: &Pubkey, seed: [u8; 32]) -> Pubk
     ])
 }
 
-fn derive_market_from_tenor_seed(airspace: &Pubkey, token_mint: &Pubkey, tenor: i64) -> Pubkey {
+pub fn derive_market_from_tenor_seed(airspace: &Pubkey, token_mint: &Pubkey, tenor: i64) -> Pubkey {
     let mut seed = [0u8; 32];
     seed[..8].copy_from_slice(&tenor.to_le_bytes());
 
