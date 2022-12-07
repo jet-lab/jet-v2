@@ -1,6 +1,6 @@
 import { useRecoilState } from 'recoil';
 import { TpsBanner } from '../TpsBanner';
-import { PauseBorrowBanner } from '../PauseBorrowBanner';
+// import { PauseBorrowBanner } from '../PauseBorrowBanner';
 import { WalletButton } from '../WalletButton';
 import { NavLogo } from './NavLogo';
 import { NavLinks } from './NavLinks';
@@ -14,8 +14,8 @@ export function Navbar(): JSX.Element {
   return (
     <div className={`navbar-container flex-centered column ${drawerOpen ? 'drawer-open' : ''}`}>
       <TpsBanner />
-      {/* To display a banner showing borrows as paused, uncomment the proceeding line and edit 'message' in PauseBorrowBanner.tsx */}
-      <PauseBorrowBanner />
+      {/* To display a banner showing borrows as paused, uncomment the <PauseBorrowBanner> tags and edit 'message' in PauseBorrowBanner.tsx */}
+      {/* <PauseBorrowBanner /> */}
 
       {/* Desktop Nav */}
       <nav className="desktop flex align-center justify-between">
