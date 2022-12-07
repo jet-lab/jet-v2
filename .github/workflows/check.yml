@@ -17,6 +17,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+
+      - name: Cache Rust compilation
+        uses: metalbear-co/sscache-action@v1
       
       - name: Get hosted-tests-localnet cache
         uses: actions/cache@v3
@@ -43,6 +46,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+
+      - name: Cache Rust compilation
+        uses: metalbear-co/sscache-action@v1
       
       - name: Get hosted-tests-localnet cache
         uses: actions/cache@v3
@@ -69,6 +75,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
+      - name: Cache Rust compilation
+        uses: metalbear-co/sscache-action@v1
+
       - name: Get cargo-lint cache
         uses: actions/cache@v3
         with:
@@ -91,6 +100,9 @@ jobs:
       CODECOV: true
     steps:
       - uses: actions/checkout@v3
+
+      - name: Cache Rust compilation
+        uses: metalbear-co/sscache-action@v1
 
       - name: Get cargo-test cache
         uses: actions/cache@v3
@@ -123,7 +135,10 @@ jobs:
       REACT_APP_LOGROCKET_PROJECT: ''
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
+
+      - name: Cache Rust compilation
+        uses: metalbear-co/sscache-action@v1
 
       - name: Get anchor cache
         uses: actions/cache@v3
