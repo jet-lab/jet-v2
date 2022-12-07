@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use actions::{fixed::MarketParameters, margin_pool::ConfigurePoolCliOptions};
+use actions::{fixed_term::MarketParameters, margin_pool::ConfigurePoolCliOptions};
 use anchor_lang::prelude::Pubkey;
 use anyhow::Result;
 use clap::{AppSettings, Parser, Subcommand};
@@ -232,8 +232,8 @@ pub enum MarginPoolCommand {
 
 #[serde_as]
 #[derive(Debug, Subcommand, Deserialize)]
-#[serde(tag = "fixed-market-action")]
-pub enum FixedCommand {
+#[serde(tag = "fixed-term-market-action")]
+pub enum FixedTermCommand {
     /// Create a new fixed term market
     CreateMarket(MarketParameters),
 }
@@ -320,7 +320,7 @@ pub enum Command {
     /// Fixed term market management
     Fixed {
         #[clap(subcommand)]
-        subcmd: FixedCommand,
+        subcmd: FixedTermCommand,
     },
 
     /// Test management
@@ -481,10 +481,10 @@ async fn run_margin_pool_command(client: &Client, command: MarginPoolCommand) ->
     }
 }
 
-async fn run_fixed_command(client: &Client, command: FixedCommand) -> Result<Plan> {
+async fn run_fixed_command(client: &Client, command: FixedTermCommand) -> Result<Plan> {
     match command {
-        FixedCommand::CreateMarket(params) => {
-            actions::fixed::process_create_fixed_term_market(client, params).await
+        FixedTermCommand::CreateMarket(params) => {
+            actions::fixed_term::process_create_fixed_term_market(client, params).await
         }
     }
 }

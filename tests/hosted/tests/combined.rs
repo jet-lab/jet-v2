@@ -7,7 +7,7 @@ feature_groups! {
         mod liquidate_with_swap;
     }
     "batch2" {
-        mod fixed_market;
+        mod fixed_term;
         mod load;
         mod pool_overpayment;
         mod rounding;

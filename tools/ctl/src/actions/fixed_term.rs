@@ -1,6 +1,6 @@
 use anyhow::Result;
 use clap::Parser;
-use jet_margin_sdk::fixed_market::FixedTermMarketIxBuilder;
+use jet_margin_sdk::fixed_term::FixedTermMarketIxBuilder;
 use serde::{Deserialize, Serialize};
 use solana_clap_utils::keypair::signer_from_path;
 use solana_sdk::{pubkey::Pubkey, signer::Signer};

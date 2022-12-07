@@ -9,7 +9,7 @@ use jet_simulation::solana_rpc_api::SolanaRpcClient;
 use solana_sdk::pubkey::Pubkey;
 
 use crate::{
-    fixed_market::FixedTermMarketIxBuilder, ix_builder::accounting_invoke,
+    fixed_term::FixedTermMarketIxBuilder, ix_builder::accounting_invoke,
     margin_integrator::PositionRefresher, solana::transaction::TransactionBuilder,
 };
 

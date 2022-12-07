@@ -1,9 +1,9 @@
 use anyhow::Result;
-use jet_margin_sdk::fixed_market::{event_queue_len, orderbook_slab_len, FixedTermMarketIxBuilder};
+use jet_margin_sdk::fixed_term::{event_queue_len, orderbook_slab_len, FixedTermMarketIxBuilder};
 use jetctl::{
-    actions::fixed::MarketParameters,
+    actions::fixed_term::MarketParameters,
     client::{Client, ClientConfig, Plan},
-    CliOpts, Command, FixedCommand,
+    CliOpts, Command, FixedTermCommand,
 };
 use solana_sdk::{
     native_token::LAMPORTS_PER_SOL, pubkey, pubkey::Pubkey, signature::Keypair, signer::Signer,
@@ -48,7 +48,7 @@ lazy_static::lazy_static! {
         no_confirm: false,
         signer_path: Some(PAYER_PATH.clone()),
         rpc_endpoint: Some(ENDPOINT.to_string()),
-        command: Command::Fixed { subcmd: FixedCommand::CreateMarket(PARAMS.clone()) },
+        command: Command::Fixed { subcmd: FixedTermCommand::CreateMarket(PARAMS.clone()) },
     };
 }
 
@@ -181,7 +181,8 @@ async fn main() -> Result<()> {
 
     // init a usdc market
     let create_market =
-        jetctl::actions::fixed::process_create_fixed_term_market(&client, PARAMS.clone()).await?;
+        jetctl::actions::fixed_term::process_create_fixed_term_market(&client, PARAMS.clone())
+            .await?;
     client.execute(create_market).await?;
 
     // no-matching market

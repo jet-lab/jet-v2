@@ -1,4 +1,4 @@
-import { FixedTermMarket } from "./fixedMarket"
+import { FixedTermMarket } from "./fixedTerm"
 import { get_orders_from_slab as getOrdersFromSlab, Order } from "./wasm-utils"
 
 export class Orderbook {

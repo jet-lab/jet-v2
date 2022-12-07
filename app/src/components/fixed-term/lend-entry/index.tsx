@@ -4,7 +4,7 @@ import { Tabs, Typography } from 'antd';
 import { useMemo, useState } from 'react';
 import { MainConfig } from '@state/config/marginConfig';
 import { FixedLendRowOrder } from '@state/views/fixed-term';
-import { CurrentOrderTab, CurrentOrderTabAtom, FixedTermMarketAtom } from '@state/fixed-market/fixed-term-market-sync';
+import { CurrentOrderTab, CurrentOrderTabAtom, FixedTermMarketAtom } from '@state/fixed-term/fixed-term-market-sync';
 import { marketToString } from '@utils/jet/fixed-term-utils';
 import { OfferLoan } from './offer-loan';
 import { LendNow } from './lend-now';

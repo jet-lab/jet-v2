@@ -1,6 +1,6 @@
-import { FixedTermMarket, settle } from '@jet-lab/fixed-market';
+import { FixedTermMarket, settle } from '@jet-lab/fixed-term';
 import { MarginAccount } from '@jet-lab/margin';
-import { AllFixedTermMarketsAtom, MarketAndconfig } from '@state/fixed-market/fixed-term-market-sync';
+import { AllFixedTermMarketsAtom, MarketAndconfig } from '@state/fixed-term/fixed-term-market-sync';
 import { BlockExplorer, Cluster } from '@state/settings/settings';
 import { CurrentAccount } from '@state/user/accounts';
 import { useProvider } from '@utils/jet/provider';

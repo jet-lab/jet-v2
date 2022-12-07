@@ -1,6 +1,6 @@
 import { useRecoilState, useRecoilValue } from 'recoil';
 ('../misc/ReorderArrows');
-import { AllFixedTermMarketsAtom, SelectedFixedTermMarketAtom } from '@state/fixed-market/fixed-term-market-sync';
+import { AllFixedTermMarketsAtom, SelectedFixedTermMarketAtom } from '@state/fixed-term/fixed-term-market-sync';
 import { FixedBorrowViewOrder, FixedLendViewOrder } from '@state/views/fixed-term';
 import { ReorderArrows } from '@components/misc/ReorderArrows';
 import { Select } from 'antd';

@@ -17,7 +17,7 @@
 
 mod airspace;
 /// fixed term market-margin integration code
-pub mod fixed_market;
+pub mod fixed_term;
 mod user;
 
 pub use airspace::*;

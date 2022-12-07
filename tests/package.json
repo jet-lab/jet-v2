@@ -2,7 +2,7 @@
   "name": "jet-tests",
   "version": "0.1.0",
   "dependencies": {
-    "@jet-lab/fixed-market": "*",
+    "@jet-lab/fixed-term": "*",
     "@jet-lab/margin": "*",
     "@project-serum/anchor": "0.24.2",
     "@project-serum/serum": "^0.13.65",

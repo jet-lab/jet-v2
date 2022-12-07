@@ -3,7 +3,7 @@
 
 use anchor_lang::AccountDeserialize;
 use anyhow::Result;
-use jet_margin_sdk::fixed_market::{FixedTermMarketIxBuilder, OrderParams};
+use jet_margin_sdk::fixed_term::{FixedTermMarketIxBuilder, OrderParams};
 use jet_market::control::state::Market;
 use jet_program_common::{Fp32, FP32_ONE};
 use rand::{thread_rng, Rng};

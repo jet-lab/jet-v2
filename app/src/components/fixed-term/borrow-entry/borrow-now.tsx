@@ -1,6 +1,6 @@
 import { Button, InputNumber, Switch, Tooltip } from 'antd';
 import { formatDuration, intervalToDuration } from 'date-fns';
-import { borrowNow } from '@jet-lab/fixed-market';
+import { borrowNow } from '@jet-lab/fixed-term';
 import { notify } from '@utils/notify';
 import { getExplorerUrl } from '@utils/ui';
 import BN from 'bn.js';
@@ -17,7 +17,7 @@ import {
   AllFixedTermMarketsAtom,
   AllFixedTermMarketsOrderBooksAtom,
   MarketAndconfig
-} from '@state/fixed-market/fixed-term-market-sync';
+} from '@state/fixed-term/fixed-term-market-sync';
 import debounce from 'lodash.debounce';
 
 interface RequestLoanProps {

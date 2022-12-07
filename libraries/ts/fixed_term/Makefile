@@ -19,4 +19,4 @@ build-js-only:
 
 watch:
 	tsc -p tsconfig-cjs.json --watch && tsc --watch &\
-	cargo watch --why --watch-when-idle -w 'libraries/ts/fixed_market/wasm-utils' -s 'make -C libraries/ts/fixed_market build';
+	cargo watch --why --watch-when-idle -w 'libraries/ts/fixed_term/wasm-utils' -s 'make -C libraries/ts/fixed_term build';

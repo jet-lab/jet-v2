@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { useRecoilValue } from 'recoil';
 import { AccountSnapshot } from '@components/misc/AccountSnapshot/AccountSnapshot';
-import { FixedPriceChartContainer } from '@components/fixed-term/shared/fixed-market-chart';
+import { FixedPriceChartContainer } from '@components/fixed-term/shared/fixed-term-market-chart';
 import { FullAccountBalance } from '@components/tables/FullAccountBalance';
 import { Dictionary } from '@state/settings/localization/localization';
 import { FixedLendOrderEntry } from '@components/fixed-term/lend-entry';

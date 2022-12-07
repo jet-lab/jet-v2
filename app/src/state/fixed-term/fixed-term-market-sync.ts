@@ -1,4 +1,4 @@
-import { FixedTermMarket, JetMarket, JetMarketIdl, Orderbook } from '@jet-lab/fixed-market';
+import { FixedTermMarket, JetMarket, JetMarketIdl, Orderbook } from '@jet-lab/fixed-term';
 import { Program } from '@project-serum/anchor';
 import { useEffect } from 'react';
 import { atom, selector, useRecoilValue, useSetRecoilState } from 'recoil';

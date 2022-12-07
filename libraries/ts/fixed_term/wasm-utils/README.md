@@ -13,7 +13,7 @@ to the `package.json`
 From the package root, run:
 
 ```
-wasm-pack build --target bundler libraries/ts/fixed_market/wasm-utils
+wasm-pack build --target bundler libraries/ts/fixed_term/wasm-utils
 ```
 
 And finally,

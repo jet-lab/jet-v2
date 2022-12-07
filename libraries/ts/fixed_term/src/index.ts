@@ -1,4 +1,4 @@
-export * from "./fixedMarket"
+export * from "./fixedTerm"
 export * from "./utils"
 export * from "./orderbook"
 export * from "./types"

@@ -28,7 +28,7 @@ use solana_sdk::{
 
 use crate::{
     cat,
-    fixed_market::FixedTermMarketIxBuilder,
+    fixed_term::FixedTermMarketIxBuilder,
     ix_builder::{
         get_metadata_address,
         test_service::{

@@ -18,7 +18,7 @@
 use solana_sdk::pubkey::Pubkey;
 
 use crate::{
-    fixed_market::FixedTermMarketIxBuilder,
+    fixed_term::FixedTermMarketIxBuilder,
     ix_builder::{
         derive_airspace, derive_governor_id, get_control_authority_address,
         test_service::if_not_initialized, AirspaceIxBuilder, ControlIxBuilder,

@@ -21,7 +21,7 @@ import {
 
 import CONFIG from '../../../app/public/localnet.config.json';
 
-import { FixedTermMarket, JetMarket, JetMarketIdl, MarginUserInfo, rate_to_price } from '@jet-lab/fixed-market';
+import { FixedTermMarket, JetMarket, JetMarketIdl, MarginUserInfo, rate_to_price } from '@jet-lab/fixed-term';
 import { createAssociatedTokenAccountInstruction, getAssociatedTokenAddress } from '@solana/spl-token';
 
 describe('margin fixed term market ticket borrowing', async () => {

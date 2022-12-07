@@ -14,7 +14,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 
 use jet_margin_sdk::{
-    fixed_market::{
+    fixed_term::{
         event_builder::build_consume_events_info, fixed_term_market_pda, FixedTermMarketIxBuilder,
     },
     ix_builder::{

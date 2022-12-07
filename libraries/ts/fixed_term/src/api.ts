@@ -9,7 +9,7 @@ import {
   PoolTokenChange,
   sendAll
 } from "@jet-lab/margin"
-import { FixedTermMarket } from "./fixedMarket"
+import { FixedTermMarket } from "./fixedTerm"
 import { AnchorProvider, BN } from "@project-serum/anchor"
 
 const createRandomSeed = (byteLength: number) => {

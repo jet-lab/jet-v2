@@ -1,14 +1,14 @@
 use std::{fs::OpenOptions, io::Write};
 
 use anyhow::Result;
-use hosted_tests::fixed_market::TestManager;
+use hosted_tests::fixed_term::TestManager;
 use hosted_tests::margin::MarginClient;
 use hosted_tests::solana_test_context;
 use jet_margin_sdk::ix_builder::get_metadata_address;
 use solana_sdk::signer::Signer;
 
 lazy_static::lazy_static! {
-    static ref CONFIG_PATH: String = shellexpand::env("$PWD/tests/integration/fixed_market/config.json").unwrap().to_string();
+    static ref CONFIG_PATH: String = shellexpand::env("$PWD/tests/integration/fixed_term/config.json").unwrap().to_string();
 }
 
 #[tokio::main(flavor = "multi_thread")]

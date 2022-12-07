@@ -4,7 +4,7 @@ use std::{
 };
 
 use anyhow::{bail, Context, Result};
-use jet_margin_sdk::fixed_market::Market;
+use jet_margin_sdk::fixed_term::Market;
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
 
@@ -154,7 +154,8 @@ impl JetAppConfig {
         .await?;
         let swap_pools = vec![]; // FIXME: handle mainnet?
         let fixed_term_markets =
-            Self::generate_fixed_term_market_map(client, dir.join("fixed-markets.toml")).await?;
+            Self::generate_fixed_term_market_map(client, dir.join("fixed-term-markets.toml"))
+                .await?;
 
         let airspaces = vec![AirspaceInfo {
             name: "default".to_owned(),

@@ -3,7 +3,7 @@ import { ReorderArrows } from '@components/misc/ReorderArrows';
 import { Typography, Tabs } from 'antd';
 import { useMemo } from 'react';
 import { FixedLendRowOrder } from '@state/views/fixed-term';
-import { CurrentOrderTab, CurrentOrderTabAtom, FixedTermMarketAtom } from '@state/fixed-market/fixed-term-market-sync';
+import { CurrentOrderTab, CurrentOrderTabAtom, FixedTermMarketAtom } from '@state/fixed-term/fixed-term-market-sync';
 import { MainConfig } from '@state/config/marginConfig';
 import { marketToString } from '@utils/jet/fixed-term-utils';
 import { RequestLoan } from './request-loan';

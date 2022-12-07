@@ -11,10 +11,10 @@ import {
   FixedTermMarketAtom,
   MarketAndconfig,
   SelectedFixedTermMarketAtom
-} from '@state/fixed-market/fixed-term-market-sync';
+} from '@state/fixed-term/fixed-term-market-sync';
 import { friendlyMarketName } from '@utils/jet/fixed-term-utils';
 import { useMemo } from 'react';
-import { calculate_implied_price, price_to_rate } from '@jet-lab/fixed-market';
+import { calculate_implied_price, price_to_rate } from '@jet-lab/fixed-term';
 import { MainConfig } from '@state/config/marginConfig';
 interface FixedChart {
   type: 'bids' | 'asks';

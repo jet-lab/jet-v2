@@ -67,7 +67,7 @@ pub mod tx_builder;
 pub mod util;
 
 /// jet-fixed-term-market sdk
-pub mod fixed_market;
+pub mod fixed_term;
 
 /// Utilities for test environments
 pub mod test_service;

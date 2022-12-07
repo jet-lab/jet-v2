@@ -1,5 +1,5 @@
 pub mod apply;
-pub mod fixed;
+pub mod fixed_term;
 pub mod global;
 pub mod governance;
 pub mod margin;

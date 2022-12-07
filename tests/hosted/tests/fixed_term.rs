@@ -4,7 +4,7 @@ use anchor_lang::prelude::Pubkey;
 use anyhow::Result;
 use hosted_tests::{
     context::MarginTestContext,
-    fixed_market::{
+    fixed_term::{
         FixedUser, GenerateProxy, OrderAmount, TestManager as FixedTestManager, LEND_TENOR,
         STARTING_TOKENS,
     },
@@ -15,7 +15,7 @@ use jet_margin_sdk::{
     ix_builder::MarginIxBuilder,
     margin_integrator::{NoProxy, Proxy},
     solana::transaction::{InverseSendTransactionBuilder, SendTransactionBuilder},
-    tx_builder::fixed_market::FixedTermPositionRefresher,
+    tx_builder::fixed_term::FixedTermPositionRefresher,
     util::data::Concat,
 };
 use jet_margin_sdk::{margin_integrator::RefreshingProxy, tx_builder::MarginTxBuilder};
