@@ -93,17 +93,15 @@ impl<'a, 'info> EventIterator<'a, 'info> {
                 )?,
             ))
         } else if maker_info.flags.contains(CallbackFlags::NEW_DEBT) {
-            Some(LoanAccount::NewDebt(
-                self.accounts.init_next::<TermLoan>(
-                    self.payer.to_account_info(),
-                    self.system_program.to_account_info(),
-                    &[
-                        crate::seeds::TERM_LOAN,
-                        &maker_info.fill_account.to_bytes(),
-                        &self.seeds.next().ok_or(ErrorCode::InsufficientSeeds)?,
-                    ],
-                )?,
-            ))
+            Some(LoanAccount::NewDebt(self.accounts.init_next::<TermLoan>(
+                self.payer.to_account_info(),
+                self.system_program.to_account_info(),
+                &[
+                    crate::seeds::TERM_LOAN,
+                    &maker_info.fill_account.to_bytes(),
+                    &self.seeds.next().ok_or(ErrorCode::InsufficientSeeds)?,
+                ],
+            )?))
         } else {
             None
         };

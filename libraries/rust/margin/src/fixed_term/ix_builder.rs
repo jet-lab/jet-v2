@@ -1,9 +1,7 @@
 use std::sync::Arc;
 
 use anchor_lang::{InstructionData, ToAccountMetas};
-use jet_market::{
-    margin::state::TermLoan, seeds, tickets::instructions::StakeMarketTicketsParams,
-};
+use jet_market::{margin::state::TermLoan, seeds, tickets::instructions::StakeMarketTicketsParams};
 use jet_simulation::solana_rpc_api::SolanaRpcClient;
 use solana_sdk::{
     instruction::{AccountMeta, Instruction},

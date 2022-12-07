@@ -207,7 +207,7 @@ export class FixedTermMarket {
     seed: Uint8Array
   ): Promise<TransactionInstruction> {
     const marginUser = await this.deriveMarginUserAddress(user)
-    const term_loan = await this.deriveTermLoanAddress(marginUser, seed)
+    const termLoan = await this.deriveTermLoanAddress(marginUser, seed)
     const claims = await this.deriveMarginUserClaims(marginUser)
     const collateral = await this.deriveMarginUserCollateral(marginUser)
 
@@ -218,7 +218,7 @@ export class FixedTermMarket {
         orderbookMut: this.orderbookMut(),
         marginUser,
         marginAccount: user.address,
-        term_loan,
+        termLoan,
         claims,
         collateral,
         payer,

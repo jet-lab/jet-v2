@@ -81,8 +81,8 @@ pub fn handler(ctx: Context<Repay>, amount: u64) -> Result<()> {
         term_loan.close(ctx.accounts.payer.to_account_info())?;
 
         let user_key = user.key();
-        let next_term_loan = Account::<TermLoan>::try_from(&ctx.accounts.next_term_loan)
-            .and_then(|ob| {
+        let next_term_loan =
+            Account::<TermLoan>::try_from(&ctx.accounts.next_term_loan).and_then(|ob| {
                 require_eq!(ob.borrower_account, user_key, ErrorCode::UserNotInMarket);
                 Ok(ob)
             });
