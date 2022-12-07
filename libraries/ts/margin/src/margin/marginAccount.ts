@@ -32,6 +32,7 @@ import {
   Number192,
   sendAll,
   sendAndConfirm,
+  sendAndConfirmV0,
   TokenAmount
 } from ".."
 import { Number128 } from "../utils/number128"
@@ -1718,6 +1719,14 @@ export class MarginAccount {
    */
   async sendAndConfirm(instructions: TransactionInstruction[], signers?: Signer[]): Promise<string> {
     return await sendAndConfirm(this.provider, instructions, signers)
+  }
+
+  async sendAndConfirmV0(
+    instructions: TransactionInstruction[],
+    lookupTables: PublicKey[],
+    signers?: Signer[]
+  ): Promise<string> {
+    return await sendAndConfirmV0(this.provider, instructions, lookupTables, signers)
   }
 
   /**
