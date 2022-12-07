@@ -61,4 +61,5 @@ pub fn handler(ctx: Context<MarginSellTicketsOrder>, params: OrderParams) -> Res
         Some(ctx.accounts.margin_user.key()),
         OrderType::MarginSellTickets,
     )
+    // TODO: do we need to update margin_user assets?
 }

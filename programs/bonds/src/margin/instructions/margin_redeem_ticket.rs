@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 use jet_program_proc_macros::BondTokenManager;
 
 use crate::{
-    bond_token_manager::BondTokenManager, margin::state::MarginUser,
+    bond_token_manager::BondTokenManager, events::AssetsUpdated, margin::state::MarginUser,
     tickets::instructions::redeem_ticket::*, BondsError,
 };
 
@@ -41,6 +41,11 @@ pub fn handler(ctx: Context<MarginRedeemTicket>) -> Result<()> {
         &ctx.accounts.collateral,
         redeemed,
     )?;
+
+    emit!(AssetsUpdated::from((
+        &ctx.accounts.margin_user.assets,
+        ctx.accounts.margin_user.key()
+    )));
 
     Ok(())
 }

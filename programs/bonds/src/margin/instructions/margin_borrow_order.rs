@@ -7,7 +7,7 @@ use jet_program_proc_macros::BondTokenManager;
 
 use crate::{
     bond_token_manager::BondTokenManager,
-    events::ObligationCreated,
+    events::{DebtUpdated, ObligationCreated},
     margin::{
         events::{OrderPlaced, OrderType},
         origination_fee::loan_to_disburse,
@@ -169,6 +169,10 @@ pub fn handler(
         post_allowed: params.post_allowed,
         order_type: OrderType::MarginBorrow,
     });
+    emit!(DebtUpdated::from((
+        &ctx.accounts.margin_user.debt,
+        ctx.accounts.margin_user.key()
+    )));
 
     // this is just used to make sure the position is still registered.
     // it's actually registered by initialize_margin_user

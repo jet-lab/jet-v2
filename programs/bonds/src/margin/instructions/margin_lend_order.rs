@@ -4,6 +4,7 @@ use jet_program_proc_macros::BondTokenManager;
 
 use crate::{
     bond_token_manager::BondTokenManager,
+    events::AssetsUpdated,
     margin::state::MarginUser,
     orderbook::{
         instructions::lend_order::*,
@@ -79,6 +80,10 @@ pub fn handler(ctx: Context<MarginLendOrder>, params: OrderParams, seed: Vec<u8>
         limit_price: params.limit_price,
         order_type: crate::events::OrderType::MarginLend,
     });
+    emit!(AssetsUpdated::from((
+        &ctx.accounts.margin_user.assets,
+        ctx.accounts.margin_user.key()
+    )));
 
     Ok(())
 }

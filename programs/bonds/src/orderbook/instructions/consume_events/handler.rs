@@ -11,7 +11,7 @@ use num_traits::FromPrimitive;
 
 use crate::{
     bond_token_manager::BondTokenManager,
-    events::{skip_err, ObligationCreated, OrderFilled, OrderRemoved},
+    events::{skip_err, AssetsUpdated, DebtUpdated, ObligationCreated, OrderFilled, OrderRemoved},
     margin::state::{Obligation, ObligationFlags},
     orderbook::state::{fp32_mul, CallbackFlags, CallbackInfo, FillInfo, OutInfo},
     tickets::state::SplitTicket,
@@ -122,8 +122,18 @@ fn handle_fill<'info>(
                     principal,
                     interest,
                 };
+                if let Some(margin_user) = margin_user {
+                    emit!(AssetsUpdated::from((
+                        &margin_user.assets,
+                        margin_user.key()
+                    )))
+                }
             } else if let Some(mut margin_user) = margin_user {
                 margin_user.assets.entitled_tickets += base_size;
+                emit!(AssetsUpdated::from((
+                    &margin_user.assets,
+                    margin_user.key()
+                )));
             } else {
                 ctx.mint(
                     &ctx.accounts.bond_ticket_mint,
@@ -132,26 +142,27 @@ fn handle_fill<'info>(
                 )?;
             }
 
-            // TODO: Add order fill event on Ask side where obligation is not created,
-            // because we can get fill info on obligation.
             emit!(OrderFilled {
                 bond_manager: ctx.accounts.bond_manager.key(),
-                authority: maker.pubkey(),
+                authority: maker_info.owner,
                 order_id: maker_order_id,
                 base_filled: base_size,
                 quote_filled: quote_size,
                 counterparty: None,
                 fill_timestamp,
-                order_type: crate::events::OrderType::Lend, // TODO: be more specific
+                // Not enough info to be more specific, side matters most
+                order_type: crate::events::OrderType::Lend,
                 sequence_number: 0,
                 maturation_timestamp
             });
         }
         Side::Ask => {
+            let mut emit_order_filled = true;
+            let mut manager = manager.load_mut()?;
+            let maturation_timestamp = fill_timestamp.safe_add(manager.borrow_duration)?;
             if let Some(mut margin_user) = margin_user {
                 margin_user.assets.reduce_order(quote_size);
                 if maker_info.flags.contains(CallbackFlags::NEW_DEBT) {
-                    let mut manager = manager.load_mut()?;
                     let disburse = manager.loan_to_disburse(quote_size);
                     manager
                         .collected_fees
@@ -160,7 +171,6 @@ fn handle_fill<'info>(
                         .assets
                         .entitled_tokens
                         .try_add_assign(disburse)?;
-                    let maturation_timestamp = fill_timestamp.safe_add(manager.borrow_duration)?;
                     let sequence_number = margin_user
                         .debt
                         .new_obligation_from_fill(base_size, maturation_timestamp)?;
@@ -180,6 +190,9 @@ fn handle_fill<'info>(
                     let flags = obligation.flags;
                     **new_debt = obligation;
 
+                    // ObligationCreated includes OrderFill info, thus no OrderFill needed
+                    // where OligationCreated is emitted.
+                    emit_order_filled = false;
                     emit!(ObligationCreated {
                         obligation: obligation_key,
                         authority: maker_info.owner,
@@ -191,11 +204,20 @@ fn handle_fill<'info>(
                         base_filled: base_size,
                         flags,
                     });
+                    emit!(AssetsUpdated::from((
+                        &margin_user.assets,
+                        margin_user.key()
+                    )));
+                    emit!(DebtUpdated::from((&margin_user.debt, margin_user.key())));
                 } else {
                     margin_user
                         .assets
                         .entitled_tokens
                         .try_add_assign(quote_size)?;
+                    emit!(AssetsUpdated::from((
+                        &margin_user.assets,
+                        margin_user.key()
+                    )));
                 }
             } else {
                 ctx.withdraw(
@@ -203,6 +225,21 @@ fn handle_fill<'info>(
                     maker.as_token_account(),
                     quote_size,
                 )?;
+            }
+
+            if emit_order_filled {
+                emit!(OrderFilled {
+                    bond_manager: ctx.accounts.bond_manager.key(),
+                    authority: maker_info.owner,
+                    order_id: maker_order_id,
+                    base_filled: base_size,
+                    quote_filled: quote_size,
+                    counterparty: None,
+                    fill_timestamp,
+                    order_type: crate::events::OrderType::MarginBorrow,
+                    sequence_number: 0,
+                    maturation_timestamp
+                });
             }
         }
     }
@@ -248,6 +285,10 @@ fn handle_out<'info>(
         Side::Bid => {
             if let Some(mut margin_user) = margin_user {
                 margin_user.assets.entitled_tokens += quote_size;
+                emit!(AssetsUpdated::from((
+                    &margin_user.assets,
+                    margin_user.key()
+                )));
             } else {
                 ctx.withdraw(
                     &ctx.accounts.underlying_token_vault,
@@ -259,9 +300,14 @@ fn handle_out<'info>(
         Side::Ask => {
             if let Some(mut margin_user) = margin_user {
                 if info.flags.contains(CallbackFlags::NEW_DEBT) {
-                    margin_user.debt.process_out(*base_size)?
+                    margin_user.debt.process_out(*base_size)?;
+                    emit!(DebtUpdated::from((&margin_user.debt, margin_user.key())));
                 } else {
                     margin_user.assets.entitled_tickets += base_size;
+                    emit!(AssetsUpdated::from((
+                        &margin_user.assets,
+                        margin_user.key()
+                    )));
                 }
             } else {
                 ctx.mint(
@@ -275,11 +321,10 @@ fn handle_out<'info>(
 
     emit!(OrderRemoved {
         bond_manager: ctx.accounts.bond_manager.key(),
-        authority: user.pubkey(), // TODO: is this correct?
+        authority: info.owner,
         order_id: *order_id,
         base_removed: *base_size,
         quote_removed: quote_size,
-        // remove_timestamp: todo!()
     });
 
     Ok(())
