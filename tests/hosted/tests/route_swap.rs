@@ -333,6 +333,7 @@ async fn route_swap() -> Result<(), anyhow::Error> {
         .await
         .unwrap();
 
+    // Wait a bit before starting to use lookup table
     tokio::time::sleep(Duration::from_secs(10)).await;
 
     // Create a swap route and execute it
@@ -344,7 +345,9 @@ async fn route_swap() -> Result<(), anyhow::Error> {
         106 * ONE_USDC * 92 / 100,
     );
 
-    swap_builder.add_swap_route(&swap_pool_sbr_msol_tsol, &env.msol, 0)?;
+    // Split the route 60/40 to emulate a split even if going to the same venue
+    swap_builder.add_swap_route(&swap_pool_sbr_msol_tsol, &env.msol, 60)?;
+    swap_builder.add_swap_route(&swap_pool_sbr_msol_tsol, &env.msol, 40)?;
 
     swap_builder.add_swap_route(&swap_pool_spl_usdc_tsol, &env.tsol, 0)?;
 
