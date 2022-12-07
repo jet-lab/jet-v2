@@ -32,8 +32,8 @@ use crate::{
     ix_builder::{
         get_metadata_address,
         test_service::{
-            self, derive_market_ticket_mint, derive_pyth_price, derive_pyth_product,
-            derive_token_mint, if_not_initialized, spl_swap_pool_create,
+            self, derive_pyth_price, derive_pyth_product, derive_ticket_mint, derive_token_mint,
+            if_not_initialized, spl_swap_pool_create,
         },
         ControlIxBuilder, MarginPoolConfiguration,
     },
@@ -320,7 +320,7 @@ fn create_airspace_token_fixed_term_markets_tx(
         market_seed[..8].copy_from_slice(&bm_config.borrow_tenor.to_le_bytes());
 
         let mint = derive_token_mint(&token.name);
-        let ticket_mint = derive_market_ticket_mint(&FixedTermMarketIxBuilder::market_key(
+        let ticket_mint = derive_ticket_mint(&FixedTermMarketIxBuilder::market_key(
             &admin.airspace,
             &mint,
             market_seed,

@@ -123,7 +123,7 @@ fn handle_fill<'info>(
                 margin_user.assets.entitled_tickets += base_size;
             } else {
                 ctx.mint(
-                    &ctx.accounts.market_ticket_mint,
+                    &ctx.accounts.ticket_mint,
                     maker.as_token_account(),
                     base_size,
                 )?;
@@ -232,7 +232,7 @@ fn handle_out<'info>(
                 }
             } else {
                 ctx.mint(
-                    &ctx.accounts.market_ticket_mint,
+                    &ctx.accounts.ticket_mint,
                     user.as_token_account(),
                     *base_size,
                 )

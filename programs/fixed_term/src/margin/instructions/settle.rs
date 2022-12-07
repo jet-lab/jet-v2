@@ -22,7 +22,7 @@ pub struct Settle<'info> {
     /// The `Market` account tracks global information related to this particular fixed term market
     #[account(
         has_one = underlying_token_vault @ ErrorCode::WrongVault,
-        has_one = market_ticket_mint @ ErrorCode::WrongOracle,
+        has_one = ticket_mint @ ErrorCode::WrongOracle,
         has_one = claims_mint @ ErrorCode::WrongClaimMint,
         has_one = collateral_mint @ ErrorCode::WrongCollateralMint,
     )]
@@ -52,7 +52,7 @@ pub struct Settle<'info> {
     pub underlying_token_vault: AccountInfo<'info>,
     /// CHECK: token program checks it
     #[account(mut)]
-    pub market_ticket_mint: AccountInfo<'info>,
+    pub ticket_mint: AccountInfo<'info>,
     /// CHECK: token program checks it
     #[account(mut)]
     pub underlying_settlement: AccountInfo<'info>,
@@ -103,7 +103,7 @@ pub fn handler(ctx: Context<Settle>) -> Result<()> {
 
     // Disburse entitled funds due to fills
     ctx.mint(
-        &ctx.accounts.market_ticket_mint,
+        &ctx.accounts.ticket_mint,
         &ctx.accounts.ticket_settlement,
         assets.entitled_tickets,
     )?;

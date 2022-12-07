@@ -71,7 +71,7 @@ pub fn handler(ctx: Context<RefreshPosition>, expect_price: bool) -> Result<()> 
             position_changes: vec![
                 (market.claims_mint, claim_changes),
                 (market.collateral_mint, collateral_changes),
-                (market.market_ticket_mint, ticket_changes),
+                (market.ticket_mint, ticket_changes),
             ],
         },
     )

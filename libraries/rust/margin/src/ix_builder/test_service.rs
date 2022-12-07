@@ -283,12 +283,8 @@ pub fn derive_pyth_price(mint: &Pubkey) -> Pubkey {
 }
 
 /// Get the pyth price account
-pub fn derive_market_ticket_mint(market: &Pubkey) -> Pubkey {
-    Pubkey::find_program_address(
-        &[seeds::MARKET_TICKET_MINT, market.as_ref()],
-        &jet_market::ID,
-    )
-    .0
+pub fn derive_ticket_mint(market: &Pubkey) -> Pubkey {
+    Pubkey::find_program_address(&[seeds::TICKET_MINT, market.as_ref()], &jet_market::ID).0
 }
 
 /// Get the addresses for a swap pool

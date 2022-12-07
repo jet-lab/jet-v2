@@ -125,8 +125,8 @@ impl TestManager {
         let oracle = TokenManager::new(client.clone())
             .create_oracle(&mint.pubkey())
             .await?;
-        let market_ticket_mint = fixed_term_market_pda(&[
-            jet_market::seeds::MARKET_TICKET_MINT,
+        let ticket_mint = fixed_term_market_pda(&[
+            jet_market::seeds::TICKET_MINT,
             FixedTermMarketIxBuilder::market_key(
                 &Pubkey::default(), //todo airspace
                 &mint.pubkey(),
@@ -135,7 +135,7 @@ impl TestManager {
             .as_ref(),
         ]);
         let ticket_oracle = TokenManager::new(client.clone())
-            .create_oracle(&market_ticket_mint)
+            .create_oracle(&ticket_mint)
             .await?;
         TestManager::new(
             client.clone(),
@@ -280,7 +280,7 @@ impl TestManager {
         self.create_authority_if_missing().await?;
         self.register_adapter_if_unregistered(&jet_market::ID)
             .await?;
-        self.register_market_tickets_position_metadatata().await?;
+        self.register_tickets_position_metadatata().await?;
 
         Ok(self)
     }
@@ -398,18 +398,18 @@ impl TestManager {
         Ok(())
     }
 
-    pub async fn register_market_tickets_position_metadatata(&self) -> Result<()> {
+    pub async fn register_tickets_position_metadatata(&self) -> Result<()> {
         let market = self.load_market().await?;
-        self.register_market_tickets_position_metadatata_impl(
+        self.register_tickets_position_metadatata_impl(
             market.claims_mint,
             market.underlying_token_mint,
             TokenKind::Claim,
             10_00,
         )
         .await?;
-        self.register_market_tickets_position_metadatata_impl(
+        self.register_tickets_position_metadatata_impl(
             market.collateral_mint,
-            market.market_ticket_mint,
+            market.ticket_mint,
             TokenKind::AdapterCollateral,
             1_00,
         )
@@ -418,7 +418,7 @@ impl TestManager {
         Ok(())
     }
 
-    pub async fn register_market_tickets_position_metadatata_impl(
+    pub async fn register_tickets_position_metadatata_impl(
         &self,
         position_token_mint: Pubkey,
         underlying_token_mint: Pubkey,
@@ -960,7 +960,7 @@ impl OrderAmount {
 
     pub fn default_order_params(&self) -> OrderParams {
         OrderParams {
-            max_market_ticket_qty: self.base,
+            max_ticket_qty: self.base,
             max_underlying_token_qty: self.quote,
             limit_price: self.price,
             match_limit: 1_000,

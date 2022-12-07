@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use anchor_lang::{InstructionData, ToAccountMetas};
-use jet_market::{margin::state::TermLoan, seeds, tickets::instructions::StakeMarketTicketsParams};
+use jet_market::{margin::state::TermLoan, seeds, tickets::instructions::StakeTicketsParams};
 use jet_simulation::solana_rpc_api::SolanaRpcClient;
 use solana_sdk::{
     instruction::{AccountMeta, Instruction},
@@ -30,7 +30,7 @@ pub struct FixedTermMarketIxBuilder {
     authority: Pubkey,
     market: Pubkey,
     underlying_mint: Pubkey,
-    market_ticket_mint: Pubkey,
+    ticket_mint: Pubkey,
     underlying_token_vault: Pubkey,
     claims: Pubkey,
     collateral: Pubkey,
@@ -78,7 +78,7 @@ impl From<Market> for FixedTermMarketIxBuilder {
                 &market.seed,
             ]),
             underlying_mint: market.underlying_token_mint,
-            market_ticket_mint: market.market_ticket_mint,
+            ticket_mint: market.ticket_mint,
             underlying_token_vault: market.underlying_token_vault,
             claims: market.claims_mint,
             collateral: market.collateral_mint,
@@ -107,8 +107,7 @@ impl FixedTermMarketIxBuilder {
         ticket_oracle: Pubkey,
         fee_destination: Option<Pubkey>,
     ) -> Self {
-        let market_ticket_mint =
-            fixed_term_market_pda(&[jet_market::seeds::MARKET_TICKET_MINT, market.as_ref()]);
+        let ticket_mint = fixed_term_market_pda(&[jet_market::seeds::TICKET_MINT, market.as_ref()]);
         let underlying_token_vault =
             fixed_term_market_pda(&[jet_market::seeds::UNDERLYING_TOKEN_VAULT, market.as_ref()]);
         let orderbook_market_state =
@@ -121,7 +120,7 @@ impl FixedTermMarketIxBuilder {
             authority,
             market,
             underlying_mint,
-            market_ticket_mint,
+            ticket_mint,
             underlying_token_vault,
             claims,
             collateral,
@@ -188,7 +187,7 @@ impl FixedTermMarketIxBuilder {
         self.underlying_mint
     }
     pub fn ticket_mint(&self) -> Pubkey {
-        self.market_ticket_mint
+        self.ticket_mint
     }
     pub fn market(&self) -> Pubkey {
         self.market
@@ -240,7 +239,7 @@ impl FixedTermMarketIxBuilder {
         .data();
         let mut accounts = jet_market::accounts::ConsumeEvents {
             market: self.market,
-            market_ticket_mint: self.market_ticket_mint,
+            ticket_mint: self.ticket_mint,
             underlying_token_vault: self.underlying_token_vault,
             orderbook_market_state: self.orderbook_market_state,
             event_queue: self.orderbook.as_ref().unwrap().event_queue,
@@ -298,7 +297,7 @@ impl FixedTermMarketIxBuilder {
             market: self.market,
             underlying_token_mint: self.underlying_mint,
             underlying_token_vault: self.underlying_token_vault,
-            market_ticket_mint: self.market_ticket_mint,
+            ticket_mint: self.ticket_mint,
             claims: self.claims,
             collateral: self.collateral,
             authority: self.authority,
@@ -386,7 +385,7 @@ impl FixedTermMarketIxBuilder {
             claims_mint: self.claims,
             collateral_mint: self.collateral,
             underlying_settlement: get_associated_token_address(&owner, &self.underlying_mint),
-            ticket_settlement: get_associated_token_address(&owner, &self.market_ticket_mint),
+            ticket_settlement: get_associated_token_address(&owner, &self.ticket_mint),
             rent: solana_sdk::sysvar::rent::ID,
             token_program: spl_token::ID,
             system_program: solana_sdk::system_program::ID,
@@ -410,9 +409,9 @@ impl FixedTermMarketIxBuilder {
         ticket_vault: Option<Pubkey>,
         amount: u64,
     ) -> Result<Instruction> {
-        let user_market_ticket_vault = match ticket_vault {
+        let user_ticket_vault = match ticket_vault {
             Some(vault) => vault,
-            None => get_associated_token_address(&owner, &self.market_ticket_mint),
+            None => get_associated_token_address(&owner, &self.ticket_mint),
         };
         let user_underlying_token_vault = match token_vault {
             Some(vault) => vault,
@@ -423,8 +422,8 @@ impl FixedTermMarketIxBuilder {
         let accounts = jet_market::accounts::ExchangeTokens {
             market: self.market,
             underlying_token_vault: self.underlying_token_vault,
-            market_ticket_mint: self.market_ticket_mint,
-            user_market_ticket_vault,
+            ticket_mint: self.ticket_mint,
+            user_ticket_vault,
             user_underlying_token_vault,
             user_authority: owner,
             token_program: spl_token::ID,
@@ -442,23 +441,23 @@ impl FixedTermMarketIxBuilder {
     ) -> Result<Instruction> {
         let claim_ticket = self.claim_ticket_key(&ticket_holder, seed);
 
-        let market_ticket_token_account = match ticket_vault {
+        let ticket_token_account = match ticket_vault {
             Some(vault) => vault,
-            None => get_associated_token_address(&ticket_holder, &self.market_ticket_mint),
+            None => get_associated_token_address(&ticket_holder, &self.ticket_mint),
         };
-        let data = jet_market::instruction::StakeMarketTickets {
-            params: StakeMarketTicketsParams {
+        let data = jet_market::instruction::StakeTickets {
+            params: StakeTicketsParams {
                 amount,
                 ticket_seed: seed.to_vec(),
             },
         }
         .data();
-        let accounts = jet_market::accounts::StakeMarketTickets {
+        let accounts = jet_market::accounts::StakeTickets {
             claim_ticket,
             market: self.market,
             ticket_holder,
-            market_ticket_token_account,
-            market_ticket_mint: self.market_ticket_mint,
+            ticket_token_account,
+            ticket_mint: self.ticket_mint,
             payer: self.payer.unwrap(),
             token_program: spl_token::ID,
             system_program: solana_sdk::system_program::ID,
@@ -489,7 +488,7 @@ impl FixedTermMarketIxBuilder {
         let user = self.margin_user(margin_account);
         let accounts = jet_market::accounts::Settle {
             market: self.market,
-            market_ticket_mint: self.market_ticket_mint,
+            ticket_mint: self.ticket_mint,
             token_program: spl_token::ID,
             margin_user: user.address,
             claims: user.claims,
@@ -501,7 +500,7 @@ impl FixedTermMarketIxBuilder {
                 get_associated_token_address(&margin_account, &self.underlying_mint)
             }),
             ticket_settlement: ticket_settlement.unwrap_or_else(|| {
-                get_associated_token_address(&margin_account, &self.market_ticket_mint)
+                get_associated_token_address(&margin_account, &self.ticket_mint)
             }),
         };
         Ok(Instruction::new_with_bytes(
@@ -614,7 +613,7 @@ impl FixedTermMarketIxBuilder {
     ) -> Result<jet_market::accounts::SellTicketsOrder> {
         let user_ticket_vault = match ticket_vault {
             Some(vault) => vault,
-            None => get_associated_token_address(&authority, &self.market_ticket_mint),
+            None => get_associated_token_address(&authority, &self.ticket_mint),
         };
         let user_token_vault = match token_vault {
             Some(vault) => vault,
@@ -624,7 +623,7 @@ impl FixedTermMarketIxBuilder {
             authority,
             user_ticket_vault,
             user_token_vault,
-            market_ticket_mint: self.market_ticket_mint,
+            ticket_mint: self.ticket_mint,
             underlying_token_vault: self.underlying_token_vault,
             orderbook_mut: self.orderbook_mut()?,
             token_program: spl_token::ID,
@@ -727,7 +726,7 @@ impl FixedTermMarketIxBuilder {
     ) -> Result<jet_market::accounts::LendOrder> {
         let lender_tickets = match lender_tickets {
             Some(vault) => vault,
-            None => get_associated_token_address(&authority, &self.market_ticket_mint),
+            None => get_associated_token_address(&authority, &self.ticket_mint),
         };
         let lender_tokens = match lender_tokens {
             Some(vault) => vault,
@@ -743,7 +742,7 @@ impl FixedTermMarketIxBuilder {
             },
             lender_tokens,
             underlying_token_vault: self.underlying_token_vault,
-            ticket_mint: self.market_ticket_mint,
+            ticket_mint: self.ticket_mint,
             payer: self.payer.unwrap(),
             orderbook_mut: self.orderbook_mut()?,
             token_program: spl_token::ID,
@@ -872,15 +871,12 @@ impl FixedTermMarketIxBuilder {
             collateral,
             collateral_mint: self.collateral,
             underlying_token_vault: self.underlying_token_vault,
-            market_ticket_mint: self.market_ticket_mint,
+            ticket_mint: self.ticket_mint,
             underlying_settlement: get_associated_token_address(
                 &margin_account,
                 &self.underlying_mint,
             ),
-            ticket_settlement: get_associated_token_address(
-                &margin_account,
-                &self.market_ticket_mint,
-            ),
+            ticket_settlement: get_associated_token_address(&margin_account, &self.ticket_mint),
         }
         .to_account_metas(None);
 

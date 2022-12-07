@@ -68,7 +68,7 @@ impl<'info> RedeemTicket<'info> {
                 maturation_timestamp,
                 current_time
             );
-            return err!(ErrorCode::ImmatureMarketTicket);
+            return err!(ErrorCode::ImmatureTicket);
         }
 
         // transfer from the vault to the ticket_holder

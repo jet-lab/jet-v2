@@ -9,7 +9,7 @@ import { order_id_to_string, rate_to_price } from "./wasm-utils/wasm_utils"
 
 export const U64_MAX = 18_446_744_073_709_551_615n
 export interface OrderParams {
-  maxMarketTicketQty: BN
+  maxTicketQty: BN
   maxUnderlyingTokenQty: BN
   limitPrice: BN
   matchLimit: BN
@@ -30,7 +30,7 @@ export interface MarketInfo {
   bids: PublicKey
   underlyingTokenMint: PublicKey
   underlyingTokenVault: PublicKey
-  marketTicketMint: PublicKey
+  ticketMint: PublicKey
   claimsMint: PublicKey
   collateralMint: PublicKey
   underlyingOracle: PublicKey
@@ -91,7 +91,7 @@ export class FixedTermMarket {
     bids: PublicKey
     underlyingTokenMint: PublicKey
     underlyingTokenVault: PublicKey
-    marketTicketMint: PublicKey
+    ticketMint: PublicKey
     claimsMint: PublicKey
     claimsMetadata: PublicKey
     collateralMint: PublicKey
@@ -170,7 +170,7 @@ export class FixedTermMarket {
   ): Promise<TransactionInstruction> {
     const limitPrice = new BN(rate_to_price(BigInt(rate.toString()), BigInt(tenor)).toString())
     const params: OrderParams = {
-      maxMarketTicketQty: new BN(U64_MAX.toString()),
+      maxTicketQty: new BN(U64_MAX.toString()),
       maxUnderlyingTokenQty: amount,
       limitPrice,
       matchLimit: new BN(U64_MAX.toString()),
@@ -189,7 +189,7 @@ export class FixedTermMarket {
   ): Promise<TransactionInstruction> {
     // TODO: rethink amounts here, current is placeholder
     const params: OrderParams = {
-      maxMarketTicketQty: new BN(U64_MAX.toString()),
+      maxTicketQty: new BN(U64_MAX.toString()),
       maxUnderlyingTokenQty: amount,
       limitPrice: new BN(0.00001),
       matchLimit: new BN(U64_MAX.toString()),
@@ -238,10 +238,10 @@ export class FixedTermMarket {
     tenor: number
   ): Promise<TransactionInstruction> {
     const userTokenVault = await getAssociatedTokenAddress(this.addresses.underlyingTokenMint, user.address, true)
-    const userTicketVault = await getAssociatedTokenAddress(this.addresses.marketTicketMint, user.address, true)
+    const userTicketVault = await getAssociatedTokenAddress(this.addresses.ticketMint, user.address, true)
     const limitPrice = bigIntToBn(rate_to_price(bnToBigInt(rate), BigInt(tenor)))
     const params: OrderParams = {
-      maxMarketTicketQty: new BN(U64_MAX.toString()),
+      maxTicketQty: new BN(U64_MAX.toString()),
       maxUnderlyingTokenQty: new BN(amount),
       limitPrice,
       matchLimit: new BN(U64_MAX.toString()),
@@ -254,9 +254,9 @@ export class FixedTermMarket {
 
   async lendNowIx(user: MarginAccount, amount: BN, payer: Address, seed: Uint8Array): Promise<TransactionInstruction> {
     const userTokenVault = await getAssociatedTokenAddress(this.addresses.underlyingTokenMint, user.address, true)
-    const userTicketVault = await getAssociatedTokenAddress(this.addresses.marketTicketMint, user.address, true)
+    const userTicketVault = await getAssociatedTokenAddress(this.addresses.ticketMint, user.address, true)
     const params: OrderParams = {
-      maxMarketTicketQty: new BN(U64_MAX.toString()),
+      maxTicketQty: new BN(U64_MAX.toString()),
       maxUnderlyingTokenQty: new BN(amount),
       limitPrice: new BN(2 ** 32),
       matchLimit: new BN(U64_MAX.toString()),
@@ -293,7 +293,7 @@ export class FixedTermMarket {
           orderbookMut: this.orderbookMut(),
           authority: user.address,
           payer,
-          ticketMint: this.addresses.marketTicketMint,
+          ticketMint: this.addresses.ticketMint,
           tokenProgram: TOKEN_PROGRAM_ID,
           systemProgram: SystemProgram.programId,
           lenderTokens: userTokenVault,
@@ -304,7 +304,7 @@ export class FixedTermMarket {
   }
 
   async settle(user: MarginAccount) {
-    const ticketSettlement = await getAssociatedTokenAddress(this.addresses.marketTicketMint, user.address, true)
+    const ticketSettlement = await getAssociatedTokenAddress(this.addresses.ticketMint, user.address, true)
     const marketUser = await this.deriveMarginUserAddress(user)
     const collateral = await this.deriveMarginUserCollateral(marketUser)
     const claims = await this.deriveMarginUserClaims(marketUser)
@@ -350,7 +350,7 @@ export class FixedTermMarket {
     const claims = await this.deriveMarginUserClaims(borrowerAccount)
     const collateral = await this.deriveMarginUserCollateral(borrowerAccount)
     const underlyingSettlement = await getAssociatedTokenAddress(this.addresses.underlyingTokenMint, user.address, true)
-    const ticketSettlement = await getAssociatedTokenAddress(this.addresses.marketTicketMint, user.address, true)
+    const ticketSettlement = await getAssociatedTokenAddress(this.addresses.ticketMint, user.address, true)
     return await this.program.methods
       .initializeMarginUser()
       .accounts({

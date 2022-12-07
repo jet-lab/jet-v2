@@ -72,7 +72,7 @@ export const withCreateFixedTermMarketAccounts = async ({
   currentPool
 }: IWithCreateFixedTermMarketAccount) => {
   const tokenMint = market.addresses.underlyingTokenMint
-  const ticketMint = market.addresses.marketTicketMint
+  const ticketMint = market.addresses.ticketMint
   const marketIXS: TransactionInstruction[] = []
   await AssociatedToken.withCreate(marketIXS, provider, marginAccount.address, tokenMint)
   await AssociatedToken.withCreate(marketIXS, provider, marginAccount.address, ticketMint)

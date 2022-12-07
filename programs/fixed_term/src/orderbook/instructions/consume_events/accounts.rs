@@ -17,7 +17,7 @@ use crate::{
 pub struct ConsumeEvents<'info> {
     /// The `Market` account tracks global information related to this particular fixed term market
     #[account(
-        has_one = market_ticket_mint @ ErrorCode::WrongTicketMint,
+        has_one = ticket_mint @ ErrorCode::WrongTicketMint,
         has_one = underlying_token_vault @ ErrorCode::WrongVault,
         has_one = orderbook_market_state @ ErrorCode::WrongMarketState,
         has_one = event_queue @ ErrorCode::WrongEventQueue,
@@ -27,7 +27,7 @@ pub struct ConsumeEvents<'info> {
     /// The ticket mint
     /// CHECK: has_one
     #[account(mut)]
-    pub market_ticket_mint: AccountInfo<'info>,
+    pub ticket_mint: AccountInfo<'info>,
     /// The market token vault
     /// CHECK: has_one
     #[account(mut)]

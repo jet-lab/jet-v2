@@ -72,7 +72,7 @@ impl<'info> OrderbookMut<'info> {
     }
 
     pub fn ticket_mint(&self) -> Pubkey {
-        self.market.load().unwrap().market_ticket_mint
+        self.market.load().unwrap().ticket_mint
     }
 
     pub fn vault(&self) -> Pubkey {
@@ -305,7 +305,7 @@ bitflags! {
 #[derive(AnchorDeserialize, AnchorSerialize, Clone, Copy)]
 pub struct OrderParams {
     /// The maximum quantity of tickets to be traded.
-    pub max_market_ticket_qty: u64,
+    pub max_ticket_qty: u64,
     /// The maximum quantity of underlying token to be traded.
     pub max_underlying_token_qty: u64,
     /// The limit price of the order. This value is understood as a 32-bit fixed point number.
@@ -336,7 +336,7 @@ impl OrderParams {
         callback_info: CallbackInfo,
     ) -> new_order::Params<CallbackInfo> {
         new_order::Params {
-            max_base_qty: self.max_market_ticket_qty,
+            max_base_qty: self.max_ticket_qty,
             max_quote_qty: self.max_underlying_token_qty,
             limit_price: self.limit_price,
             side,

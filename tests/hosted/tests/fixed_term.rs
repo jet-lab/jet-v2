@@ -193,7 +193,7 @@ async fn non_margin_orders_for_proxy<P: Proxy + GenerateProxy>(
     // Scenario a: post a borrow order to an empty book
     let a_amount = OrderAmount::from_quote_amount_rate(1_000, 2_000);
     let a_params = OrderParams {
-        max_market_ticket_qty: a_amount.base,
+        max_ticket_qty: a_amount.base,
         max_underlying_token_qty: a_amount.quote,
         limit_price: a_amount.price,
         match_limit: 100,
@@ -245,7 +245,7 @@ async fn non_margin_orders_for_proxy<P: Proxy + GenerateProxy>(
     // Cannot self trade
     let crossing_amount = OrderAmount::from_quote_amount_rate(500, 1_500);
     let crossing_params = OrderParams {
-        max_market_ticket_qty: crossing_amount.base,
+        max_ticket_qty: crossing_amount.base,
         max_underlying_token_qty: crossing_amount.quote,
         limit_price: crossing_amount.price,
         match_limit: 100,
@@ -258,7 +258,7 @@ async fn non_margin_orders_for_proxy<P: Proxy + GenerateProxy>(
     // Scenario b: post a lend order that partially fills the borrow order and does not post remaining
     let b_amount = OrderAmount::from_quote_amount_rate(500, 1_500);
     let b_params = OrderParams {
-        max_market_ticket_qty: b_amount.base,
+        max_ticket_qty: b_amount.base,
         max_underlying_token_qty: b_amount.quote,
         limit_price: b_amount.price,
         match_limit: 100,
@@ -294,7 +294,7 @@ async fn non_margin_orders_for_proxy<P: Proxy + GenerateProxy>(
     // scenario c: post a lend order that fills the remaining borrow and makes a new post with the remaining
     let c_amount = OrderAmount::from_quote_amount_rate(1_500, 1_500);
     let c_params = OrderParams {
-        max_market_ticket_qty: c_amount.base,
+        max_ticket_qty: c_amount.base,
         max_underlying_token_qty: c_amount.quote,
         limit_price: c_amount.price,
         match_limit: 100,
@@ -313,7 +313,7 @@ async fn non_margin_orders_for_proxy<P: Proxy + GenerateProxy>(
     let trade_price = Fp32::upcast_fp32(existing_order.price());
     let base_trade_qty = existing_order
         .base_quantity
-        .min(c_params.max_market_ticket_qty)
+        .min(c_params.max_ticket_qty)
         .min(
             (Fp32::from(c_params.max_underlying_token_qty) / trade_price)
                 .as_decimal_u64()
@@ -328,7 +328,7 @@ async fn non_margin_orders_for_proxy<P: Proxy + GenerateProxy>(
             / Fp32::upcast_fp32(c_params.limit_price))
         .as_decimal_u64()
         .unwrap_or(u64::MAX),
-        c_params.max_market_ticket_qty - base_trade_qty,
+        c_params.max_ticket_qty - base_trade_qty,
     );
     let quote_qty_to_post = (Fp32::upcast_fp32(c_params.limit_price) * base_qty_to_post)
         .as_decimal_u64_ceil()
@@ -702,7 +702,7 @@ fn quote_to_base(quote: u64, rate_bps: u64) -> u64 {
 fn underlying(quote: u64, rate_bps: u64) -> OrderParams {
     let borrow_amount = OrderAmount::from_quote_amount_rate(quote, rate_bps);
     OrderParams {
-        max_market_ticket_qty: borrow_amount.base,
+        max_ticket_qty: borrow_amount.base,
         max_underlying_token_qty: borrow_amount.quote,
         limit_price: borrow_amount.price,
         match_limit: 1,
@@ -715,7 +715,7 @@ fn underlying(quote: u64, rate_bps: u64) -> OrderParams {
 fn tickets(base: u64, rate_bps: u64) -> OrderParams {
     let borrow_amount = OrderAmount::from_base_amount_rate(base, rate_bps);
     OrderParams {
-        max_market_ticket_qty: borrow_amount.base,
+        max_ticket_qty: borrow_amount.base,
         max_underlying_token_qty: borrow_amount.quote,
         limit_price: borrow_amount.price,
         match_limit: 1,

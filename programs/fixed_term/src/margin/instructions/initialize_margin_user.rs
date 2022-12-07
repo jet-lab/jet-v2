@@ -95,7 +95,7 @@ pub fn handler(ctx: Context<InitializeMarginUser>) -> Result<()> {
     );
     require_eq!(
         mint(&ctx.accounts.ticket_settlement.to_account_info())?,
-        ctx.accounts.market.load()?.market_ticket_mint,
+        ctx.accounts.market.load()?.ticket_mint,
         ErrorCode::WrongTicketMint
     );
 

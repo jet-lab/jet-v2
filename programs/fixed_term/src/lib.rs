@@ -300,11 +300,8 @@ pub mod jet_market {
     }
 
     /// Stakes tickets for later redemption
-    pub fn stake_market_tickets(
-        ctx: Context<StakeMarketTickets>,
-        params: StakeMarketTicketsParams,
-    ) -> Result<()> {
-        instructions::stake_market_tickets::handler(ctx, params)
+    pub fn stake_tickets(ctx: Context<StakeTickets>, params: StakeTicketsParams) -> Result<()> {
+        instructions::stake_tickets::handler(ctx, params)
     }
 
     /// Transfer staked tickets to a new owner
@@ -348,10 +345,10 @@ pub mod seeds {
     pub const MARKET: &[u8] = b"market";
 
     #[constant]
-    pub const MARKET_TICKET_ACCOUNT: &[u8] = b"market_ticket_account";
+    pub const TICKET_ACCOUNT: &[u8] = b"ticket_account";
 
     #[constant]
-    pub const MARKET_TICKET_MINT: &[u8] = b"market_ticket_mint";
+    pub const TICKET_MINT: &[u8] = b"ticket_mint";
 
     #[constant]
     pub const CLAIM_TICKET: &[u8] = b"claim_ticket";

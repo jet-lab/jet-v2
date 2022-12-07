@@ -31,7 +31,7 @@ const DEVNET_USDC_FAUCET: Pubkey = pubkey!("MV2QoKwWmRQnu8HY56Hsmfhb6aC6L6mLirmQ
 const TOKEN_AMOUNT: u64 = 10_000_000_000;
 const TICKET_AMOUNT: u64 = 5_000_000_000;
 
-const MARKET_TICKET_TENOR: u64 = 5;
+const TICKET_TENOR: u64 = 5;
 
 lazy_static::lazy_static! {
     static ref PAYER: String = shellexpand::env("$PWD/tests/keypairs/payer.json")
@@ -238,7 +238,7 @@ fn main() -> Result<()> {
     // bob.init_and_fund(TOKEN_AMOUNT, TICKET_AMOUNT)?;
 
     let params = |tickets, tokens, price| OrderParams {
-        max_market_ticket_qty: tickets,
+        max_ticket_qty: tickets,
         max_underlying_token_qty: tokens,
         limit_price: price,
         match_limit: 100,
@@ -254,12 +254,12 @@ fn main() -> Result<()> {
         let rate = (0.05 * num).exp();
         let mut principal: u64 = rng.gen();
         principal %= 100_000;
-        let interest = principal as f64 * rate * MARKET_TICKET_TENOR as f64;
+        let interest = principal as f64 * rate * TICKET_TENOR as f64;
 
         let borrow = params(
             principal + interest as u64,
             u64::MAX,
-            rate_to_price(rate, MARKET_TICKET_TENOR).unwrap(),
+            rate_to_price(rate, TICKET_TENOR).unwrap(),
         );
         // alice.borrow_order(borrow)?;
     }
@@ -273,7 +273,7 @@ fn main() -> Result<()> {
         let lend = params(
             u64::MAX,
             principal,
-            rate_to_price(rate, MARKET_TICKET_TENOR).unwrap(),
+            rate_to_price(rate, TICKET_TENOR).unwrap(),
         );
         // bob.lend_order(lend)?;
     }

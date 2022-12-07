@@ -11,7 +11,7 @@ use crate::{
 
 /// Params needed to stake tickets
 #[derive(AnchorSerialize, AnchorDeserialize)]
-pub struct StakeMarketTicketsParams {
+pub struct StakeTicketsParams {
     /// number of tickets to stake
     pub amount: u64,
     /// uniqueness seed to allow a user to have many `ClaimTicket`s
@@ -22,8 +22,8 @@ pub struct StakeMarketTicketsParams {
 ///
 /// Creates a [ClaimTicket] that is redeemable after the market tenor has passed
 #[derive(Accounts)]
-#[instruction(params: StakeMarketTicketsParams)]
-pub struct StakeMarketTickets<'info> {
+#[instruction(params: StakeTicketsParams)]
+pub struct StakeTickets<'info> {
     /// A struct used to track maturation and total claimable funds
     #[account(
         init,
@@ -42,7 +42,7 @@ pub struct StakeMarketTickets<'info> {
     /// The Market account tracks fixed term market assets of a particular tenor
     #[account(
         mut,
-        has_one = market_ticket_mint @ ErrorCode::WrongTicketMint,
+        has_one = ticket_mint @ ErrorCode::WrongTicketMint,
     )]
     pub market: AccountLoader<'info, Market>,
 
@@ -51,12 +51,12 @@ pub struct StakeMarketTickets<'info> {
 
     /// The account tracking the ticket_holder's tickets
     #[account(mut)]
-    pub market_ticket_token_account: Box<Account<'info, TokenAccount>>,
+    pub ticket_token_account: Box<Account<'info, TokenAccount>>,
 
     /// The mint for the tickets for this instruction
     /// A mint is a specific instance of the token program for both the underlying asset and the market tenor
     #[account(mut)]
-    pub market_ticket_mint: Box<Account<'info, Mint>>,
+    pub ticket_mint: Box<Account<'info, Mint>>,
 
     /// The payer for account initialization
     #[account(mut)]
@@ -69,16 +69,16 @@ pub struct StakeMarketTickets<'info> {
     pub system_program: Program<'info, System>,
 }
 
-pub fn handler(ctx: Context<StakeMarketTickets>, params: StakeMarketTicketsParams) -> Result<()> {
-    let StakeMarketTicketsParams { amount, .. } = params;
+pub fn handler(ctx: Context<StakeTickets>, params: StakeTicketsParams) -> Result<()> {
+    let StakeTicketsParams { amount, .. } = params;
 
-    // Burn lenders' market tokens
+    // Burn lenders' ticket tokens
     burn(
         CpiContext::new(
             ctx.accounts.token_program.to_account_info(),
             Burn {
-                mint: ctx.accounts.market_ticket_mint.to_account_info(),
-                from: ctx.accounts.market_ticket_token_account.to_account_info(),
+                mint: ctx.accounts.ticket_mint.to_account_info(),
+                from: ctx.accounts.ticket_token_account.to_account_info(),
                 authority: ctx.accounts.ticket_holder.to_account_info(),
             },
         ),

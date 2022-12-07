@@ -28,7 +28,7 @@ pub struct Market {
     /// Token account storing the underlying asset accounted for by this ticket program
     pub underlying_token_vault: Pubkey,
     /// The token mint for the tickets
-    pub market_ticket_mint: Pubkey,
+    pub ticket_mint: Pubkey,
     /// Mint owned by Jet markets to issue claims against a user.
     /// These claim notes are monitored by margin to ensure claims are repaid.
     pub claims_mint: Pubkey,
@@ -110,7 +110,7 @@ impl Serialize for Market {
             "underlyingTokenVault",
             &self.underlying_token_vault.to_string(),
         )?;
-        s.serialize_field("marketTicketMint", &self.market_ticket_mint.to_string())?;
+        s.serialize_field("ticketMint", &self.ticket_mint.to_string())?;
         s.serialize_field("claimsMint", &self.claims_mint.to_string())?;
         s.serialize_field("collateralMint", &self.collateral_mint.to_string())?;
         s.serialize_field("underlyingOracle", &self.underlying_oracle.to_string())?;
@@ -143,7 +143,7 @@ fn serialize_market() {
       \"bids\": \"11111111111111111111111111111111\",
       \"underlyingTokenMint\": \"11111111111111111111111111111111\",
       \"underlyingTokenVault\": \"11111111111111111111111111111111\",
-      \"marketTicketMint\": \"11111111111111111111111111111111\",
+      \"ticketMint\": \"11111111111111111111111111111111\",
       \"claimsMint\": \"11111111111111111111111111111111\",
       \"collateralMint\": \"11111111111111111111111111111111\",
       \"underlyingOracle\": \"11111111111111111111111111111111\",

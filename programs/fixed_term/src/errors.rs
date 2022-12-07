@@ -17,7 +17,7 @@ pub enum ErrorCode {
     #[msg("failed to deserialize the SplitTicket or ClaimTicket")]
     FailedToDeserializeTicket,
     #[msg("ticket is not mature and cannot be claimed")]
-    ImmatureMarketTicket,
+    ImmatureTicket,
     #[msg("not enough seeds were provided for the accounts that need to be initialized")]
     InsufficientSeeds,
     #[msg("order price is prohibited")]

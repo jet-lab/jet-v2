@@ -39,7 +39,7 @@ export interface FixedTermMarketConfig {
   bids: Address
   underlyingTokenMint: Address
   underlyingTokenVault: Address
-  marketTicketMint: Address
+  ticketMint: Address
   claimsMint: Address
   collateralMint: Address
   underlyingOracle: Address

@@ -65,7 +65,7 @@ pub struct InitializeMarket<'info> {
     #[account(
         init,
         seeds = [
-            seeds::MARKET_TICKET_MINT,
+            seeds::TICKET_MINT,
             market.key().as_ref()
         ],
         bump,
@@ -74,7 +74,7 @@ pub struct InitializeMarket<'info> {
         mint::authority = market,
         mint::freeze_authority = market,
     )]
-    pub market_ticket_mint: Box<Account<'info, Mint>>,
+    pub ticket_mint: Box<Account<'info, Mint>>,
 
     /// Mints tokens to a margin account to represent debt that must be collateralized
     #[account(init,
@@ -145,7 +145,7 @@ pub fn handler(ctx: Context<InitializeMarket>, params: InitializeMarketParams) -
             airspace: ctx.accounts.airspace.key(),
             underlying_token_mint: ctx.accounts.underlying_token_mint.key(),
             underlying_token_vault: ctx.accounts.underlying_token_vault.key(),
-            market_ticket_mint: ctx.accounts.market_ticket_mint.key(),
+            ticket_mint: ctx.accounts.ticket_mint.key(),
             claims_mint: ctx.accounts.claims.key(),
             collateral_mint: ctx.accounts.collateral.key(),
             seed: params.seed,

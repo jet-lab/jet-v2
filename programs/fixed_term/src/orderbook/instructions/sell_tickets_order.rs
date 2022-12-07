@@ -16,7 +16,7 @@ pub struct SellTicketsOrder<'info> {
     /// Account containing the tickets being sold
     #[account(mut, constraint =
         mint(&user_ticket_vault.to_account_info()).unwrap()
-        == market_ticket_mint.key() @ ErrorCode::WrongTicketMint
+        == ticket_mint.key() @ ErrorCode::WrongTicketMint
     )]
     pub user_ticket_vault: Account<'info, TokenAccount>,
 
@@ -31,8 +31,8 @@ pub struct SellTicketsOrder<'info> {
     pub orderbook_mut: OrderbookMut<'info>,
 
     /// The ticket mint
-    #[account(mut, address = orderbook_mut.market.load().unwrap().market_ticket_mint.key() @ ErrorCode::WrongTicketMint)]
-    pub market_ticket_mint: Account<'info, Mint>,
+    #[account(mut, address = orderbook_mut.market.load().unwrap().ticket_mint.key() @ ErrorCode::WrongTicketMint)]
+    pub ticket_mint: Account<'info, Mint>,
 
     /// The token vault holding the underlying token of the ticket
     #[account(mut, address = orderbook_mut.market.load().unwrap().underlying_token_vault.key() @ ErrorCode::WrongTicketMint)]
@@ -60,7 +60,7 @@ impl<'info> SellTicketsOrder<'info> {
             CpiContext::new(
                 self.token_program.to_account_info(),
                 anchor_spl::token::Burn {
-                    mint: self.market_ticket_mint.to_account_info(),
+                    mint: self.ticket_mint.to_account_info(),
                     from: self.user_ticket_vault.to_account_info(),
                     authority: self.authority.to_account_info(),
                 },

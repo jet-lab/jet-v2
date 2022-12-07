@@ -11,7 +11,7 @@ use crate::{
 pub struct ExchangeTokens<'info> {
     /// The Market manages asset tokens for a particular tenor
     #[account(
-            has_one = market_ticket_mint @ ErrorCode::WrongTicketMint,
+            has_one = ticket_mint @ ErrorCode::WrongTicketMint,
             has_one = underlying_token_vault @ ErrorCode::WrongVault,
     )]
     pub market: AccountLoader<'info, Market>,
@@ -22,11 +22,11 @@ pub struct ExchangeTokens<'info> {
 
     /// The minting account for the tickets
     #[account(mut)]
-    pub market_ticket_mint: Account<'info, Mint>,
+    pub ticket_mint: Account<'info, Mint>,
 
     /// The token account to receive the exchanged tickets
     #[account(mut)]
-    pub user_market_ticket_vault: Account<'info, TokenAccount>,
+    pub user_ticket_vault: Account<'info, TokenAccount>,
 
     /// The user controlled token account to exchange for tickets
     #[account(mut)]
@@ -55,8 +55,8 @@ impl<'info> ExchangeTokens<'info> {
 pub fn handler(ctx: Context<ExchangeTokens>, amount: u64) -> Result<()> {
     transfer(ctx.accounts.transfer_context(), amount)?;
     ctx.mint(
-        &ctx.accounts.market_ticket_mint,
-        &ctx.accounts.user_market_ticket_vault,
+        &ctx.accounts.ticket_mint,
+        &ctx.accounts.user_ticket_vault,
         amount,
     )?;
 

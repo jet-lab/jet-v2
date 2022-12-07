@@ -85,7 +85,7 @@ pub fn handler(
 ) -> Result<()> {
     let origination_fee = {
         let manager = ctx.accounts.orderbook_mut.market.load()?;
-        params.max_market_ticket_qty = manager.borrow_order_qty(params.max_market_ticket_qty);
+        params.max_ticket_qty = manager.borrow_order_qty(params.max_ticket_qty);
         params.max_underlying_token_qty = manager.borrow_order_qty(params.max_underlying_token_qty);
         manager.origination_fee
     };
