@@ -325,7 +325,7 @@ fn create_airspace_token_fixed_term_markets_tx(
             &mint,
             market_seed,
         ));
-        let fixed_ix = FixedTermIxBuilder::new_from_seed(
+        let fixed_term_ix = FixedTermIxBuilder::new_from_seed(
             &admin.airspace,
             &mint,
             market_seed,
@@ -355,7 +355,7 @@ fn create_airspace_token_fixed_term_markets_tx(
         );
 
         txs.push(
-            fixed_ix
+            fixed_term_ix
                 .init_default_fee_destination(&config.authority)
                 .unwrap()
                 .into(),
@@ -384,7 +384,7 @@ fn create_airspace_token_fixed_term_markets_tx(
                     len_orders as u64,
                     &jet_market::ID,
                 ),
-                fixed_ix.initialize_market(
+                fixed_term_ix.initialize_market(
                     config.authority,
                     0,
                     market_seed,
@@ -392,7 +392,7 @@ fn create_airspace_token_fixed_term_markets_tx(
                     bm_config.lend_tenor,
                     bm_config.origination_fee,
                 ),
-                fixed_ix
+                fixed_term_ix
                     .initialize_orderbook(
                         config.authority,
                         key_eq.pubkey(),
@@ -407,7 +407,7 @@ fn create_airspace_token_fixed_term_markets_tx(
 
         // Submit separately as it is large and causes tx to fail
         txs.push(TransactionBuilder {
-            instructions: vec![fixed_ix.authorize_crank(config.authority).unwrap()],
+            instructions: vec![fixed_term_ix.authorize_crank(config.authority).unwrap()],
             signers: vec![],
         });
 
@@ -415,7 +415,7 @@ fn create_airspace_token_fixed_term_markets_tx(
             txs.last_mut()
                 .unwrap()
                 .instructions
-                .push(fixed_ix.pause_order_matching().unwrap());
+                .push(fixed_term_ix.pause_order_matching().unwrap());
         }
 
         txs.push(admin.register_fixed_term_market(
