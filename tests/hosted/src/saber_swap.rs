@@ -27,7 +27,6 @@ use anyhow::Error;
 use anyhow::Result;
 use async_trait::async_trait;
 use itertools::Itertools;
-use jet_margin_sdk::solana::transaction::{SendTransactionBuilder, TransactionBuilder};
 use jet_margin_sdk::swap::saber_swap::SaberSwapPool;
 use jet_margin_sdk::util::asynchronous::MapAsync;
 use jet_simulation::{generate_keypair, solana_rpc_api::SolanaRpcClient};
@@ -82,24 +81,6 @@ pub trait SaberSwapPoolConfig: Sized {
 
     async fn balances(&self, rpc: &Arc<dyn SolanaRpcClient>)
         -> Result<HashMap<Pubkey, u64>, Error>;
-
-    async fn swap<S: Signer + Sync + Send>(
-        &self,
-        rpc: &Arc<dyn SolanaRpcClient>,
-        source: &Pubkey,
-        dest: &Pubkey,
-        amount_in: u64,
-        signer: &S,
-    ) -> Result<(), Error>;
-
-    async fn swap_tx<S: Signer + Sync + Send>(
-        &self,
-        rpc: &Arc<dyn SolanaRpcClient>,
-        source: &Pubkey,
-        dest: &Pubkey,
-        amount_in: u64,
-        signer: &S,
-    ) -> Result<TransactionBuilder, Error>;
 }
 
 #[async_trait]
@@ -221,50 +202,6 @@ impl SaberSwapPoolConfig for SaberSwapPool {
         );
 
         Ok(mint_to_balance)
-    }
-
-    #[allow(unused)]
-    async fn swap_tx<S: Signer + Sync + Send>(
-        &self,
-        rpc: &Arc<dyn SolanaRpcClient>,
-        source: &Pubkey,
-        dest: &Pubkey,
-        amount_in: u64,
-        signer: &S,
-    ) -> Result<TransactionBuilder, Error> {
-        todo!();
-        // if amount_in == 0 {
-        //     return Ok(TransactionBuilder::default());
-        // }
-        // let source_data = rpc.get_account(source).await?.unwrap().data;
-        // let dest_data = rpc.get_account(dest).await?.unwrap().data;
-        // let (swap_source, swap_dest) =
-        //     if mint(&source_data) == self.mint_a && mint(&dest_data) == self.mint_b {
-        //         (self.token_a, self.token_b)
-        //     } else if mint(&source_data) == self.mint_b && mint(&dest_data) == self.mint_a {
-        //         (self.token_b, self.token_a)
-        //     } else {
-        //         panic!("wrong pool");
-        //     };
-
-        // Ok(TransactionBuilder {
-        //     instructions: vec![swap_ix],
-        //     signers: vec![],
-        // })
-    }
-
-    async fn swap<S: Signer + Sync + Send>(
-        &self,
-        rpc: &Arc<dyn SolanaRpcClient>,
-        source: &Pubkey,
-        dest: &Pubkey,
-        amount_in: u64,
-        signer: &S,
-    ) -> Result<(), Error> {
-        let tx = self.swap_tx(rpc, source, dest, amount_in, signer).await?;
-        rpc.send_and_confirm(tx).await?;
-
-        Ok(())
     }
 }
 

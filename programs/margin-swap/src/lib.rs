@@ -58,18 +58,8 @@ mod jet_margin_swap {
     }
 
     /// Swap using Saber for stable pools
-    pub fn saber_stable_swap(
-        ctx: Context<SaberStableSwap>,
-        withdrawal_change_kind: ChangeKind,
-        withdrawal_amount: u64,
-        minimum_amount_out: u64,
-    ) -> Result<()> {
-        saber_stable_swap_handler(
-            ctx,
-            withdrawal_change_kind,
-            withdrawal_amount,
-            minimum_amount_out,
-        )
+    pub fn saber_stable_swap(ctx: Context<SaberSwapInfo>) -> Result<()> {
+        saber_stable_swap_handler(ctx)
     }
 
     /// Route a swap to one or more venues
@@ -118,6 +108,9 @@ pub enum ErrorCode {
 
     #[msg("The swap exceeds the maximum slippage tolerance")]
     SlippageExceeded,
+
+    #[msg("The instruction should not be called directly, use route_swap")]
+    DisallowedDirectInstruction,
 }
 
 #[repr(u8)]

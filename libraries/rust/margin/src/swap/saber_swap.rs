@@ -35,7 +35,7 @@ use crate::ix_builder::SwapAccounts;
 
 use super::{find_mint, find_token};
 
-/// TODO
+/// Accounts used for a Saber swap pool
 #[derive(Debug, Clone, Copy)]
 pub struct SaberSwapPool {
     /// The address of the swap pool

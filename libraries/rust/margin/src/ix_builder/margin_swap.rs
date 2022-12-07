@@ -142,69 +142,6 @@ impl MarginSwapIxBuilder {
             accounts,
         }
     }
-
-    /// Swap from one token to another.
-    ///
-    /// The source token determines the direction of the swap.
-    #[allow(clippy::too_many_arguments)]
-    pub fn saber_swap(
-        &self,
-        margin_account: Pubkey,
-        transit_src_account: Pubkey,
-        transit_dst_account: Pubkey,
-        source_margin_position: Pubkey,
-        destination_margin_position: Pubkey,
-        // swap pool token_a
-        source_token_account: Pubkey,
-        // swap pool token_b
-        destination_token_account: Pubkey,
-        swap_program: Pubkey,
-        source_pool: &MarginPoolIxBuilder,
-        destination_pool: &MarginPoolIxBuilder,
-        change: TokenChange,
-        minimum_amount_out: u64,
-    ) -> Instruction {
-        let accounts = ix_accounts::SaberStableSwap {
-            margin_account,
-            source_account: source_margin_position,
-            destination_account: destination_margin_position,
-            transit_source_account: transit_src_account,
-            transit_destination_account: transit_dst_account,
-            swap_info: ix_accounts::SaberSwapInfo {
-                swap_pool: self.swap_pool,
-                authority: self.swap_pool_authority,
-                vault_into: source_token_account,
-                vault_from: destination_token_account,
-                admin_fee_destination: self.fee_account,
-                swap_program,
-            },
-            source_margin_pool: ix_accounts::MarginPoolInfo {
-                margin_pool: source_pool.address,
-                vault: source_pool.vault,
-                deposit_note_mint: source_pool.deposit_note_mint,
-            },
-            destination_margin_pool: ix_accounts::MarginPoolInfo {
-                margin_pool: destination_pool.address,
-                vault: destination_pool.vault,
-                deposit_note_mint: destination_pool.deposit_note_mint,
-            },
-            margin_pool_program: jet_margin_pool::id(),
-            token_program: Token::id(),
-        }
-        .to_account_metas(None);
-
-        let TokenChange { kind, tokens } = change;
-        Instruction {
-            program_id: jet_margin_swap::id(),
-            data: ix_data::SaberStableSwap {
-                withdrawal_change_kind: kind,
-                withdrawal_amount: tokens,
-                minimum_amount_out,
-            }
-            .data(),
-            accounts,
-        }
-    }
 }
 
 /// Trait to get required information from a swap pool for the [MarginSwapRouteIxBuilder]
