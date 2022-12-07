@@ -16,7 +16,7 @@ pub enum ErrorCode {
     EventQueueFull,
     #[msg("failed to deserialize the SplitTicket or ClaimTicket")]
     FailedToDeserializeTicket,
-    #[msg("market ticket is not mature and cannot be claimed")]
+    #[msg("ticket is not mature and cannot be claimed")]
     ImmatureMarketTicket,
     #[msg("not enough seeds were provided for the accounts that need to be initialized")]
     InsufficientSeeds,

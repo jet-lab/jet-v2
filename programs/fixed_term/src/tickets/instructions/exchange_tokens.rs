@@ -20,15 +20,15 @@ pub struct ExchangeTokens<'info> {
     #[account(mut)]
     pub underlying_token_vault: Box<Account<'info, TokenAccount>>,
 
-    /// The minting account for the market tickets
+    /// The minting account for the tickets
     #[account(mut)]
     pub market_ticket_mint: Account<'info, Mint>,
 
-    /// The token account to receive the exchanged market tickets
+    /// The token account to receive the exchanged tickets
     #[account(mut)]
     pub user_market_ticket_vault: Account<'info, TokenAccount>,
 
-    /// The user controlled token account to exchange for market tickets
+    /// The user controlled token account to exchange for tickets
     #[account(mut)]
     pub user_underlying_token_vault: Account<'info, TokenAccount>,
 

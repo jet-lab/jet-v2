@@ -21,7 +21,7 @@ pub struct MarginUser {
     pub claims: Pubkey,
     /// Token account used by the margin program to track the collateral value of positions
     /// which are internal to Jet markets, such as SplitTicket, ClaimTicket, and open orders.
-    /// this does *not* represent underlying tokens or market ticket tokens, those are registered independently in margin
+    /// this does *not* represent underlying tokens or ticket tokens, those are registered independently in margin
     pub collateral: Pubkey,
     /// The `settle` instruction is permissionless, therefore the user must specify upon margin account creation
     /// the address to send owed tokens
@@ -30,7 +30,7 @@ pub struct MarginUser {
     /// the address to send owed tickets
     pub ticket_settlement: Pubkey,
     /// The amount of debt that must be collateralized or repaid
-    /// This debt is expressed in terms of the underlying token - not market tickets
+    /// This debt is expressed in terms of the underlying token - not tickets
     pub debt: Debt,
     /// Accounting used to track assets in custody of the fixed term market
     pub assets: Assets,
@@ -168,7 +168,7 @@ pub struct Assets {
     /// tickets to transfer into settlement account
     pub entitled_tickets: u64,
 
-    /// The number of market tickets locked up in ClaimTicket or SplitTicket
+    /// The number of tickets locked up in ClaimTicket or SplitTicket
     tickets_staked: u64,
 
     /// The amount of quote included in all orders posted by the user for both

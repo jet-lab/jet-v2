@@ -44,7 +44,7 @@ pub struct InitializeMarket<'info> {
     )]
     pub market: AccountLoader<'info, Market>,
 
-    /// The vault for storing the token underlying the market tickets
+    /// The vault for storing the token underlying the tickets
     #[account(
         init,
         seeds = [
@@ -58,10 +58,10 @@ pub struct InitializeMarket<'info> {
     )]
     pub underlying_token_vault: Box<Account<'info, TokenAccount>>,
 
-    /// The mint for the assets underlying the market tickets
+    /// The mint for the assets underlying the tickets
     pub underlying_token_mint: Box<Account<'info, Mint>>,
 
-    /// The minting account for the market tickets
+    /// The minting account for the tickets
     #[account(
         init,
         seeds = [
@@ -115,7 +115,7 @@ pub struct InitializeMarket<'info> {
     /// CHECK: determined by caller
     pub underlying_oracle: AccountInfo<'info>,
 
-    /// The oracle for the market ticket price
+    /// The oracle for the ticket price
     /// CHECK: determined by caller
     pub ticket_oracle: AccountInfo<'info>,
 

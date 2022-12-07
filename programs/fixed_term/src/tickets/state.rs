@@ -37,9 +37,9 @@ pub struct SplitTicket {
     pub struck_timestamp: i64,
     /// The slot after which this claim can be redeemed for the underlying value
     pub maturation_timestamp: i64,
-    /// The total number of principal tokens the market ticket was struck for
+    /// The total number of principal tokens the ticket was struck for
     pub principal: u64,
-    /// The total number of interest tokens struck for this market ticket
+    /// The total number of interest tokens struck for this ticket
     /// same underlying asset as the principal token
     pub interest: u64,
 }

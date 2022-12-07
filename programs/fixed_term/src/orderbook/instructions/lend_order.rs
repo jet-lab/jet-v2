@@ -21,7 +21,7 @@ pub struct LendOrder<'info> {
 
     /// where to settle tickets on match:
     /// - SplitTicket that will be created if the order is filled as a taker and `auto_stake` is enabled
-    /// - ticket token account to receive market tickets
+    /// - ticket token account to receive tickets
     /// be careful to check this properly. one way is by using lender_tickets_token_account
     #[account(mut)]
     ticket_settlement: AccountInfo<'info>,

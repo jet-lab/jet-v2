@@ -304,7 +304,7 @@ bitflags! {
 /// Parameters needed for order placement
 #[derive(AnchorDeserialize, AnchorSerialize, Clone, Copy)]
 pub struct OrderParams {
-    /// The maximum quantity of market tickets to be traded.
+    /// The maximum quantity of tickets to be traded.
     pub max_market_ticket_qty: u64,
     /// The maximum quantity of underlying token to be traded.
     pub max_underlying_token_qty: u64,

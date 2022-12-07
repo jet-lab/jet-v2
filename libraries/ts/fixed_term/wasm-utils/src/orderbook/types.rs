@@ -14,7 +14,7 @@ pub struct Order {
     /// a u128, used for cancel order instructions
     #[wasm_bindgen(getter_with_clone)]
     pub order_id: Uint8Array,
-    /// Total market ticket worth of the order
+    /// Total ticket worth of the order
     pub base_size: u64,
     /// Total underlying token worth of the order
     pub quote_size: u64,

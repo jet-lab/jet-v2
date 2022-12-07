@@ -23,11 +23,11 @@ pub struct Market {
     pub asks: Pubkey,
     /// The orderbook bids byteslab
     pub bids: Pubkey,
-    /// The token mint for the underlying asset of the market tickets
+    /// The token mint for the underlying asset of the tickets
     pub underlying_token_mint: Pubkey,
     /// Token account storing the underlying asset accounted for by this ticket program
     pub underlying_token_vault: Pubkey,
-    /// The token mint for the market tickets
+    /// The token mint for the tickets
     pub market_ticket_mint: Pubkey,
     /// Mint owned by Jet markets to issue claims against a user.
     /// These claim notes are monitored by margin to ensure claims are repaid.
@@ -37,7 +37,7 @@ pub struct Market {
     pub collateral_mint: Pubkey,
     /// oracle that defines the value of the underlying asset
     pub underlying_oracle: Pubkey,
-    /// oracle that defines the value of the market tickets
+    /// oracle that defines the value of the tickets
     pub ticket_oracle: Pubkey,
     /// where fees can be withdrawn to
     pub fee_destination: Pubkey,

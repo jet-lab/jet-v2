@@ -4,7 +4,7 @@
 //!
 //! To interact with the fixed term market, users will initialize a PDA called an [`MarginUser`](struct@crate::orderbook::state::user::MarginUser).
 //!
-//! After `MarginUser` intialization, to place an order you must deposit underlying tokens or Jet market tickets into your account.
+//! After `MarginUser` intialization, to place an order you must deposit underlying tokens or Jet fixed term market tickets into your account.
 //! This will allow you to use the [`PlaceOrder`](struct@crate::orderbook::instructions::place_order::PlaceOrder) instruction, which
 //! utilizes the orderbook to match borrowers and lenders.
 //!
@@ -17,7 +17,7 @@
 //! For example, to lend `1_000_000` tokens at 15% interest in a given market, a lender would specify:
 //! ```ignore
 //! OrderParams {
-//!     /// We want as many Jet market tickets as the book will give us
+//!     /// We want as many tickets as the book will give us
 //!     max_ticket_qty: u64::MAX,
 //!     /// we are lending 1_000_000 tokens
 //!     max_underlying_token_qty: 1_000_000,
@@ -36,7 +36,7 @@
 //!
 //! ### Borrowing
 //!
-//! For borrowing, a user has two options. They can buy Jet market tickets from some market, and deposit them into their
+//! For borrowing, a user has two options. They can buy Jet fixed term market tickets from some market, and deposit them into their
 //! `MarginUser` account. Or, they may use the `jet-margin` program to place collateralized borrow orders.
 //!
 //! In the case of a collateralized order, an `Obligation` will be minted to track the debt. A user must repay or face liquidation
@@ -65,7 +65,7 @@
 //! # Orderbook matching engine
 //!
 //! To facilitate the pairing of lenders and borrowers, the program utilizes the `agnostic-orderbook` crate to create an
-//! orderbook. This orderbook allows lenders and borrowers to post orders using underlying tokens, held Jet market tickets, or, by utilizing `jet-margin` accounts,
+//! orderbook. This orderbook allows lenders and borrowers to post orders using underlying tokens, held Jet fixed term market tickets, or, by utilizing `jet-margin` accounts,
 //! a collateralized borrow order in lieu of held funds.
 //!
 //! ### EventQueue operation and Adapters
@@ -79,9 +79,9 @@
 //!
 //! Users are responsible for handling the consumption logic for their adapter. To clear events after processing, use the [`PopAdapterEvents`](struct@crate::orderbook::instructions::event_adapter::PopAdapterEvents) instruction.
 //!
-//! # Jet Market Tickets
+//! # Jet Fixed Term Market Tickets
 //!
-//! Jet market tickets are fungible spl tokens that must be staked to claim their underlying value. In order to create Jet market tickets, a user must either
+//! Jet fixed term market tickets are fungible spl tokens that must be staked to claim their underlying value. In order to create tickets, a user must either
 //! place a lend order on the orderbook, or exchange the token underlying the fixed term market (in practice, almost never
 //! will users do this, as it locks their tokens for at least the tenor of the market).
 //!
@@ -109,7 +109,7 @@ pub mod control;
 pub mod margin;
 /// Program instructions and structs related to use of the on chain orderbook
 pub mod orderbook;
-/// Program instructions and structs related to the redeemable Jet market tickets
+/// Program instructions and structs related to the redeemable tickets
 pub mod tickets;
 
 mod errors;
@@ -288,7 +288,7 @@ pub mod jet_market {
     // =============================================
     //
 
-    /// Exchange underlying token for fixed term market tickets
+    /// Exchange underlying token for fixed term tickets
     /// WARNING: tickets must be staked for redeption of underlying
     pub fn exchange_tokens(ctx: Context<ExchangeTokens>, amount: u64) -> Result<()> {
         instructions::exchange_tokens::handler(ctx, amount)

@@ -1,8 +1,8 @@
-//! # Market Tickets
+//! # Tickets
 //!
-//! The program abstracts the concept of a fixed rate and fixed term into market tickets. Market tickets are fungible spl tokens
-//! that must be staked to claim their underlying value. In order to create market tickets, a user must either
-//! place a lend order on the orderbook, or exchange the token underlying the market market (in practice, almost never
+//! The program abstracts the concept of a fixed rate and fixed term into tickets. Tickets are fungible spl tokens
+//! that must be staked to claim their underlying value. In order to create tickets, a user must either
+//! place a lend order on the orderbook, or exchange the token underlying the fixed term market (in practice, almost never
 //! will users do this, as it locks their tokens for at least the tenor of the market).
 //!
 //! ## Ticket kinds
@@ -16,9 +16,9 @@
 //! `true`. This will allow to program to immediately stake your tickets as the match event is processed.
 //!
 
-/// Program instructions for using market tickets
+/// Program instructions for using tickets
 pub mod instructions;
-/// Methods and structs for defining market tickets
+/// Methods and structs for defining tickets
 pub mod state;
 
 /// Anchor events

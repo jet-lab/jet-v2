@@ -85,7 +85,7 @@ pub fn handler(ctx: Context<Settle>) -> Result<()> {
     }
 
     // Notify margin of the amount of collateral that will in the custody of
-    // market tickets after this settlement
+    // tickets after this settlement
     if ctokens_held > ctokens_deserved {
         ctx.burn_notes(
             &ctx.accounts.collateral_mint,

@@ -9,7 +9,7 @@ use crate::{
     ErrorCode,
 };
 
-/// Params needed to stake market tickets
+/// Params needed to stake tickets
 #[derive(AnchorSerialize, AnchorDeserialize)]
 pub struct StakeMarketTicketsParams {
     /// number of tickets to stake
@@ -18,7 +18,7 @@ pub struct StakeMarketTicketsParams {
     pub ticket_seed: Vec<u8>,
 }
 
-/// An instruction to stake held market tickets
+/// An instruction to stake held tickets
 ///
 /// Creates a [ClaimTicket] that is redeemable after the market tenor has passed
 #[derive(Accounts)]
@@ -46,14 +46,14 @@ pub struct StakeMarketTickets<'info> {
     )]
     pub market: AccountLoader<'info, Market>,
 
-    /// The owner of market tickets that wishes to stake them for a redeemable ticket
+    /// The owner of tickets that wishes to stake them for a redeemable ticket
     pub ticket_holder: Signer<'info>,
 
-    /// The account tracking the ticket_holder's market tickets
+    /// The account tracking the ticket_holder's tickets
     #[account(mut)]
     pub market_ticket_token_account: Box<Account<'info, TokenAccount>>,
 
-    /// The mint for the market tickets for this instruction
+    /// The mint for the tickets for this instruction
     /// A mint is a specific instance of the token program for both the underlying asset and the market tenor
     #[account(mut)]
     pub market_ticket_mint: Box<Account<'info, Mint>>,

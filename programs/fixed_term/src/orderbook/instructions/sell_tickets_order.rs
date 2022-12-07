@@ -13,7 +13,7 @@ pub struct SellTicketsOrder<'info> {
     /// Signing authority over the ticket vault transferring for a borrow order
     pub authority: Signer<'info>,
 
-    /// Account containing the market tickets being sold
+    /// Account containing the tickets being sold
     #[account(mut, constraint =
         mint(&user_ticket_vault.to_account_info()).unwrap()
         == market_ticket_mint.key() @ ErrorCode::WrongTicketMint
@@ -30,11 +30,11 @@ pub struct SellTicketsOrder<'info> {
     #[market]
     pub orderbook_mut: OrderbookMut<'info>,
 
-    /// The market ticket mint
+    /// The ticket mint
     #[account(mut, address = orderbook_mut.market.load().unwrap().market_ticket_mint.key() @ ErrorCode::WrongTicketMint)]
     pub market_ticket_mint: Account<'info, Mint>,
 
-    /// The market ticket mint
+    /// The token vault holding the underlying token of the ticket
     #[account(mut, address = orderbook_mut.market.load().unwrap().underlying_token_vault.key() @ ErrorCode::WrongTicketMint)]
     pub underlying_token_vault: Account<'info, TokenAccount>,
 

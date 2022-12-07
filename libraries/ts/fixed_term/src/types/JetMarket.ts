@@ -206,7 +206,7 @@ export type JetMarket = {
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The vault for storing the token underlying the market tickets"
+            "The vault for storing the token underlying the tickets"
           ]
         },
         {
@@ -214,7 +214,7 @@ export type JetMarket = {
           "isMut": false,
           "isSigner": false,
           "docs": [
-            "The mint for the assets underlying the market tickets"
+            "The mint for the assets underlying the tickets"
           ]
         },
         {
@@ -222,7 +222,7 @@ export type JetMarket = {
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The minting account for the market tickets"
+            "The minting account for the tickets"
           ]
         },
         {
@@ -270,7 +270,7 @@ export type JetMarket = {
           "isMut": false,
           "isSigner": false,
           "docs": [
-            "The oracle for the market ticket price"
+            "The oracle for the ticket price"
           ]
         },
         {
@@ -848,7 +848,7 @@ export type JetMarket = {
               "isMut": true,
               "isSigner": false,
               "docs": [
-                "Account containing the market tickets being sold"
+                "Account containing the tickets being sold"
               ]
             },
             {
@@ -897,7 +897,7 @@ export type JetMarket = {
               "isMut": true,
               "isSigner": false,
               "docs": [
-                "The market ticket mint"
+                "The ticket mint"
               ]
             },
             {
@@ -905,7 +905,7 @@ export type JetMarket = {
               "isMut": true,
               "isSigner": false,
               "docs": [
-                "The market ticket mint"
+                "The token vault holding the underlying token of the ticket"
               ]
             },
             {
@@ -1089,7 +1089,7 @@ export type JetMarket = {
               "docs": [
                 "where to settle tickets on match:",
                 "- SplitTicket that will be created if the order is filled as a taker and `auto_stake` is enabled",
-                "- ticket token account to receive market tickets",
+                "- ticket token account to receive tickets",
                 "be careful to check this properly. one way is by using lender_tickets_token_account"
               ]
             },
@@ -1254,7 +1254,7 @@ export type JetMarket = {
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The token vault holding the underlying token of the market ticket"
+            "The token vault holding the underlying token of the ticket"
           ]
         },
         {
@@ -1371,7 +1371,7 @@ export type JetMarket = {
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "Account containing the market tickets being sold"
+            "Account containing the tickets being sold"
           ]
         },
         {
@@ -1420,7 +1420,7 @@ export type JetMarket = {
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The market ticket mint"
+            "The ticket mint"
           ]
         },
         {
@@ -1428,7 +1428,7 @@ export type JetMarket = {
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The market ticket mint"
+            "The token vault holding the underlying token of the ticket"
           ]
         },
         {
@@ -1555,7 +1555,7 @@ export type JetMarket = {
           "docs": [
             "where to settle tickets on match:",
             "- SplitTicket that will be created if the order is filled as a taker and `auto_stake` is enabled",
-            "- ticket token account to receive market tickets",
+            "- ticket token account to receive tickets",
             "be careful to check this properly. one way is by using lender_tickets_token_account"
           ]
         },
@@ -1631,7 +1631,7 @@ export type JetMarket = {
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The market ticket mint"
+            "The ticket mint"
           ]
         },
         {
@@ -1697,7 +1697,7 @@ export type JetMarket = {
     {
       "name": "exchangeTokens",
       "docs": [
-        "Exchange underlying token for fixed term market tickets",
+        "Exchange underlying token for fixed term tickets",
         "WARNING: tickets must be staked for redeption of underlying"
       ],
       "accounts": [
@@ -1722,7 +1722,7 @@ export type JetMarket = {
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The minting account for the market tickets"
+            "The minting account for the tickets"
           ]
         },
         {
@@ -1730,7 +1730,7 @@ export type JetMarket = {
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The token account to receive the exchanged market tickets"
+            "The token account to receive the exchanged tickets"
           ]
         },
         {
@@ -1738,7 +1738,7 @@ export type JetMarket = {
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The user controlled token account to exchange for market tickets"
+            "The user controlled token account to exchange for tickets"
           ]
         },
         {
@@ -1825,7 +1825,7 @@ export type JetMarket = {
     {
       "name": "stakeMarketTickets",
       "docs": [
-        "Stakes fixed term market tickets for later redemption"
+        "Stakes tickets for later redemption"
       ],
       "accounts": [
         {
@@ -1849,7 +1849,7 @@ export type JetMarket = {
           "isMut": false,
           "isSigner": true,
           "docs": [
-            "The owner of market tickets that wishes to stake them for a redeemable ticket"
+            "The owner of tickets that wishes to stake them for a redeemable ticket"
           ]
         },
         {
@@ -1857,7 +1857,7 @@ export type JetMarket = {
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The account tracking the ticket_holder's market tickets"
+            "The account tracking the ticket_holder's tickets"
           ]
         },
         {
@@ -1865,7 +1865,7 @@ export type JetMarket = {
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The mint for the market tickets for this instruction",
+            "The mint for the tickets for this instruction",
             "A mint is a specific instance of the token program for both the underlying asset and the market tenor"
           ]
         },
@@ -2078,7 +2078,7 @@ export type JetMarket = {
           {
             "name": "underlyingTokenMint",
             "docs": [
-              "The token mint for the underlying asset of the market tickets"
+              "The token mint for the underlying asset of the tickets"
             ],
             "type": "publicKey"
           },
@@ -2092,7 +2092,7 @@ export type JetMarket = {
           {
             "name": "marketTicketMint",
             "docs": [
-              "The token mint for the market tickets"
+              "The token mint for the tickets"
             ],
             "type": "publicKey"
           },
@@ -2122,7 +2122,7 @@ export type JetMarket = {
           {
             "name": "ticketOracle",
             "docs": [
-              "oracle that defines the value of the market tickets"
+              "oracle that defines the value of the tickets"
             ],
             "type": "publicKey"
           },
@@ -2281,7 +2281,7 @@ export type JetMarket = {
             "docs": [
               "Token account used by the margin program to track the collateral value of positions",
               "which are internal to Jet markets, such as SplitTicket, ClaimTicket, and open orders.",
-              "this does *not* represent underlying tokens or market ticket tokens, those are registered independently in margin"
+              "this does *not* represent underlying tokens or ticket tokens, those are registered independently in margin"
             ],
             "type": "publicKey"
           },
@@ -2305,7 +2305,7 @@ export type JetMarket = {
             "name": "debt",
             "docs": [
               "The amount of debt that must be collateralized or repaid",
-              "This debt is expressed in terms of the underlying token - not market tickets"
+              "This debt is expressed in terms of the underlying token - not tickets"
             ],
             "type": {
               "defined": "Debt"
@@ -2502,14 +2502,14 @@ export type JetMarket = {
           {
             "name": "principal",
             "docs": [
-              "The total number of principal tokens the market ticket was struck for"
+              "The total number of principal tokens the ticket was struck for"
             ],
             "type": "u64"
           },
           {
             "name": "interest",
             "docs": [
-              "The total number of interest tokens struck for this market ticket",
+              "The total number of interest tokens struck for this ticket",
               "same underlying asset as the principal token"
             ],
             "type": "u64"
@@ -2657,7 +2657,7 @@ export type JetMarket = {
           {
             "name": "ticketsStaked",
             "docs": [
-              "The number of market tickets locked up in ClaimTicket or SplitTicket"
+              "The number of tickets locked up in ClaimTicket or SplitTicket"
             ],
             "type": "u64"
           },
@@ -2716,7 +2716,7 @@ export type JetMarket = {
           {
             "name": "maxMarketTicketQty",
             "docs": [
-              "The maximum quantity of market tickets to be traded."
+              "The maximum quantity of tickets to be traded."
             ],
             "type": "u64"
           },
@@ -2770,7 +2770,7 @@ export type JetMarket = {
     {
       "name": "StakeMarketTicketsParams",
       "docs": [
-        "Params needed to stake market tickets"
+        "Params needed to stake tickets"
       ],
       "type": {
         "kind": "struct",
@@ -3444,7 +3444,7 @@ export type JetMarket = {
     {
       "code": 6007,
       "name": "ImmatureMarketTicket",
-      "msg": "market ticket is not mature and cannot be claimed"
+      "msg": "ticket is not mature and cannot be claimed"
     },
     {
       "code": 6008,
@@ -3897,7 +3897,7 @@ export const IDL: JetMarket = {
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The vault for storing the token underlying the market tickets"
+            "The vault for storing the token underlying the tickets"
           ]
         },
         {
@@ -3905,7 +3905,7 @@ export const IDL: JetMarket = {
           "isMut": false,
           "isSigner": false,
           "docs": [
-            "The mint for the assets underlying the market tickets"
+            "The mint for the assets underlying the tickets"
           ]
         },
         {
@@ -3913,7 +3913,7 @@ export const IDL: JetMarket = {
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The minting account for the market tickets"
+            "The minting account for the tickets"
           ]
         },
         {
@@ -3961,7 +3961,7 @@ export const IDL: JetMarket = {
           "isMut": false,
           "isSigner": false,
           "docs": [
-            "The oracle for the market ticket price"
+            "The oracle for the ticket price"
           ]
         },
         {
@@ -4539,7 +4539,7 @@ export const IDL: JetMarket = {
               "isMut": true,
               "isSigner": false,
               "docs": [
-                "Account containing the market tickets being sold"
+                "Account containing the tickets being sold"
               ]
             },
             {
@@ -4588,7 +4588,7 @@ export const IDL: JetMarket = {
               "isMut": true,
               "isSigner": false,
               "docs": [
-                "The market ticket mint"
+                "The ticket mint"
               ]
             },
             {
@@ -4596,7 +4596,7 @@ export const IDL: JetMarket = {
               "isMut": true,
               "isSigner": false,
               "docs": [
-                "The market ticket mint"
+                "The token vault holding the underlying token of the ticket"
               ]
             },
             {
@@ -4780,7 +4780,7 @@ export const IDL: JetMarket = {
               "docs": [
                 "where to settle tickets on match:",
                 "- SplitTicket that will be created if the order is filled as a taker and `auto_stake` is enabled",
-                "- ticket token account to receive market tickets",
+                "- ticket token account to receive tickets",
                 "be careful to check this properly. one way is by using lender_tickets_token_account"
               ]
             },
@@ -4945,7 +4945,7 @@ export const IDL: JetMarket = {
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The token vault holding the underlying token of the market ticket"
+            "The token vault holding the underlying token of the ticket"
           ]
         },
         {
@@ -5062,7 +5062,7 @@ export const IDL: JetMarket = {
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "Account containing the market tickets being sold"
+            "Account containing the tickets being sold"
           ]
         },
         {
@@ -5111,7 +5111,7 @@ export const IDL: JetMarket = {
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The market ticket mint"
+            "The ticket mint"
           ]
         },
         {
@@ -5119,7 +5119,7 @@ export const IDL: JetMarket = {
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The market ticket mint"
+            "The token vault holding the underlying token of the ticket"
           ]
         },
         {
@@ -5246,7 +5246,7 @@ export const IDL: JetMarket = {
           "docs": [
             "where to settle tickets on match:",
             "- SplitTicket that will be created if the order is filled as a taker and `auto_stake` is enabled",
-            "- ticket token account to receive market tickets",
+            "- ticket token account to receive tickets",
             "be careful to check this properly. one way is by using lender_tickets_token_account"
           ]
         },
@@ -5322,7 +5322,7 @@ export const IDL: JetMarket = {
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The market ticket mint"
+            "The ticket mint"
           ]
         },
         {
@@ -5388,7 +5388,7 @@ export const IDL: JetMarket = {
     {
       "name": "exchangeTokens",
       "docs": [
-        "Exchange underlying token for fixed term market tickets",
+        "Exchange underlying token for fixed term tickets",
         "WARNING: tickets must be staked for redeption of underlying"
       ],
       "accounts": [
@@ -5413,7 +5413,7 @@ export const IDL: JetMarket = {
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The minting account for the market tickets"
+            "The minting account for the tickets"
           ]
         },
         {
@@ -5421,7 +5421,7 @@ export const IDL: JetMarket = {
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The token account to receive the exchanged market tickets"
+            "The token account to receive the exchanged tickets"
           ]
         },
         {
@@ -5429,7 +5429,7 @@ export const IDL: JetMarket = {
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The user controlled token account to exchange for market tickets"
+            "The user controlled token account to exchange for tickets"
           ]
         },
         {
@@ -5516,7 +5516,7 @@ export const IDL: JetMarket = {
     {
       "name": "stakeMarketTickets",
       "docs": [
-        "Stakes fixed term market tickets for later redemption"
+        "Stakes tickets for later redemption"
       ],
       "accounts": [
         {
@@ -5540,7 +5540,7 @@ export const IDL: JetMarket = {
           "isMut": false,
           "isSigner": true,
           "docs": [
-            "The owner of market tickets that wishes to stake them for a redeemable ticket"
+            "The owner of tickets that wishes to stake them for a redeemable ticket"
           ]
         },
         {
@@ -5548,7 +5548,7 @@ export const IDL: JetMarket = {
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The account tracking the ticket_holder's market tickets"
+            "The account tracking the ticket_holder's tickets"
           ]
         },
         {
@@ -5556,7 +5556,7 @@ export const IDL: JetMarket = {
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The mint for the market tickets for this instruction",
+            "The mint for the tickets for this instruction",
             "A mint is a specific instance of the token program for both the underlying asset and the market tenor"
           ]
         },
@@ -5769,7 +5769,7 @@ export const IDL: JetMarket = {
           {
             "name": "underlyingTokenMint",
             "docs": [
-              "The token mint for the underlying asset of the market tickets"
+              "The token mint for the underlying asset of the tickets"
             ],
             "type": "publicKey"
           },
@@ -5783,7 +5783,7 @@ export const IDL: JetMarket = {
           {
             "name": "marketTicketMint",
             "docs": [
-              "The token mint for the market tickets"
+              "The token mint for the tickets"
             ],
             "type": "publicKey"
           },
@@ -5813,7 +5813,7 @@ export const IDL: JetMarket = {
           {
             "name": "ticketOracle",
             "docs": [
-              "oracle that defines the value of the market tickets"
+              "oracle that defines the value of the tickets"
             ],
             "type": "publicKey"
           },
@@ -5972,7 +5972,7 @@ export const IDL: JetMarket = {
             "docs": [
               "Token account used by the margin program to track the collateral value of positions",
               "which are internal to Jet markets, such as SplitTicket, ClaimTicket, and open orders.",
-              "this does *not* represent underlying tokens or market ticket tokens, those are registered independently in margin"
+              "this does *not* represent underlying tokens or ticket tokens, those are registered independently in margin"
             ],
             "type": "publicKey"
           },
@@ -5996,7 +5996,7 @@ export const IDL: JetMarket = {
             "name": "debt",
             "docs": [
               "The amount of debt that must be collateralized or repaid",
-              "This debt is expressed in terms of the underlying token - not market tickets"
+              "This debt is expressed in terms of the underlying token - not tickets"
             ],
             "type": {
               "defined": "Debt"
@@ -6193,14 +6193,14 @@ export const IDL: JetMarket = {
           {
             "name": "principal",
             "docs": [
-              "The total number of principal tokens the market ticket was struck for"
+              "The total number of principal tokens the ticket was struck for"
             ],
             "type": "u64"
           },
           {
             "name": "interest",
             "docs": [
-              "The total number of interest tokens struck for this market ticket",
+              "The total number of interest tokens struck for this ticket",
               "same underlying asset as the principal token"
             ],
             "type": "u64"
@@ -6348,7 +6348,7 @@ export const IDL: JetMarket = {
           {
             "name": "ticketsStaked",
             "docs": [
-              "The number of market tickets locked up in ClaimTicket or SplitTicket"
+              "The number of tickets locked up in ClaimTicket or SplitTicket"
             ],
             "type": "u64"
           },
@@ -6407,7 +6407,7 @@ export const IDL: JetMarket = {
           {
             "name": "maxMarketTicketQty",
             "docs": [
-              "The maximum quantity of market tickets to be traded."
+              "The maximum quantity of tickets to be traded."
             ],
             "type": "u64"
           },
@@ -6461,7 +6461,7 @@ export const IDL: JetMarket = {
     {
       "name": "StakeMarketTicketsParams",
       "docs": [
-        "Params needed to stake market tickets"
+        "Params needed to stake tickets"
       ],
       "type": {
         "kind": "struct",
@@ -7135,7 +7135,7 @@ export const IDL: JetMarket = {
     {
       "code": 6007,
       "name": "ImmatureMarketTicket",
-      "msg": "market ticket is not mature and cannot be claimed"
+      "msg": "ticket is not mature and cannot be claimed"
     },
     {
       "code": 6008,

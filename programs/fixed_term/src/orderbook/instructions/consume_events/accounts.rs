@@ -24,7 +24,7 @@ pub struct ConsumeEvents<'info> {
     )]
     #[account(mut)]
     pub market: AccountLoader<'info, Market>,
-    /// The market ticket mint
+    /// The ticket mint
     /// CHECK: has_one
     #[account(mut)]
     pub market_ticket_mint: AccountInfo<'info>,

@@ -97,7 +97,7 @@ pub struct FixedTermMarketConfig {
     #[serde(default)]
     pub paused: bool,
 
-    /// the price of the market tickets relative to the underlying
+    /// the price of the tickets relative to the underlying
     /// multiplied by the underlying price to get the ticket price
     pub ticket_price: String,
 }

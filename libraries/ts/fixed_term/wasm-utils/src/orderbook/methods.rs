@@ -71,7 +71,7 @@ pub fn fixed_point_to_decimal(fp: u64) -> u64 {
 
 /// Given a price and market tenor, calculates an interest rate
 ///
-/// price: underlying per market ticket: fixed point 32 (left shifted 32 bits to get fractional precision)
+/// price: underlying per ticket: fixed point 32 (left shifted 32 bits to get fractional precision)
 /// tenor: seconds
 /// return: interest rate in basis points
 #[wasm_bindgen]
@@ -83,7 +83,7 @@ pub fn price_to_rate(price: u64, tenor: u64) -> u64 {
 ///
 /// interest_rate: basis points
 /// tenor: seconds
-/// return: price: underlying per market ticket: fixed point 32 (left shifted 32 bits to get fractional precision)
+/// return: price: underlying per ticket: fixed point 32 (left shifted 32 bits to get fractional precision)
 #[wasm_bindgen]
 pub fn rate_to_price(interest_rate: u64, tenor: u64) -> u64 {
     PricerImpl::yearly_interest_bps_to_fp32_price(interest_rate, tenor)

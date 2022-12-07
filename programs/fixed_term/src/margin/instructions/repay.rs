@@ -37,7 +37,7 @@ pub struct Repay<'info> {
     /// The signing authority for the source_account
     pub payer: Signer<'info>,
 
-    /// The token vault holding the underlying token of the market ticket
+    /// The token vault holding the underlying token of the ticket
     #[account(mut)]
     pub underlying_token_vault: Account<'info, TokenAccount>,
 
