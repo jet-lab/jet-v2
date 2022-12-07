@@ -1,6 +1,6 @@
 use anchor_lang::AccountDeserialize;
 use anyhow::Result;
-use jet_margin_sdk::fixed_term::{FixedTermMarketIxBuilder, Market, OwnedEventQueue};
+use jet_margin_sdk::fixed_term::{FixedTermIxBuilder, Market, OwnedEventQueue};
 use solana_sdk::{pubkey::Pubkey, signer::Signer};
 use tokio::task::JoinHandle;
 
@@ -8,7 +8,7 @@ use crate::client::Client;
 
 pub struct Consumer {
     client: Client,
-    ix: FixedTermMarketIxBuilder,
+    ix: FixedTermIxBuilder,
     is_verbose: bool,
 }
 
@@ -28,7 +28,7 @@ impl Consumer {
             let data = client.conn.get_account_data(&market).await?;
             Market::try_deserialize(&mut data.as_slice())?
         };
-        let ix = FixedTermMarketIxBuilder::from(manager)
+        let ix = FixedTermIxBuilder::from(manager)
             .with_crank(&client.signer.pubkey())
             .with_payer(&client.signer.pubkey());
 

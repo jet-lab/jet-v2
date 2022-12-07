@@ -9,7 +9,7 @@ use jet_simulation::solana_rpc_api::SolanaRpcClient;
 use solana_sdk::pubkey::Pubkey;
 
 use crate::{
-    fixed_term::FixedTermMarketIxBuilder, ix_builder::accounting_invoke,
+    fixed_term::FixedTermIxBuilder, ix_builder::accounting_invoke,
     margin_integrator::PositionRefresher, solana::transaction::TransactionBuilder,
 };
 
@@ -47,7 +47,7 @@ pub struct FixedTermPositionRefresher {
     /// the address to search for positions
     margin_account: Pubkey,
     /// known fixed term markets that may or may not have positions
-    fixed_term_markets: HashMap<Pubkey, FixedTermMarketIxBuilder>,
+    fixed_term_markets: HashMap<Pubkey, FixedTermIxBuilder>,
     /// client to execute search for margin account
     rpc: Arc<dyn SolanaRpcClient>,
 }

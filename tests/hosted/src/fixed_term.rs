@@ -13,7 +13,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 
 use jet_margin_sdk::{
-    fixed_term::{fixed_term_market_pda, FixedTermMarketIxBuilder, OwnedEventQueue},
+    fixed_term::{fixed_term_market_pda, FixedTermIxBuilder, OwnedEventQueue},
     ix_builder::{
         get_control_authority_address, get_metadata_address, ControlIxBuilder, MarginIxBuilder,
     },
@@ -94,7 +94,7 @@ impl<T> Keys<T> {
 pub struct TestManager {
     pub client: Arc<dyn SolanaRpcClient>,
     pub keygen: Arc<dyn Keygen>,
-    pub ix_builder: FixedTermMarketIxBuilder,
+    pub ix_builder: FixedTermIxBuilder,
     pub kps: Keys<Keypair>,
     pub keys: Keys<Pubkey>,
 }
@@ -125,7 +125,7 @@ impl TestManager {
             .await?;
         let ticket_mint = fixed_term_market_pda(&[
             jet_market::seeds::TICKET_MINT,
-            FixedTermMarketIxBuilder::market_key(
+            FixedTermIxBuilder::market_key(
                 &Pubkey::default(), //todo airspace
                 &mint.pubkey(),
                 MARKET_SEED,
@@ -172,7 +172,7 @@ impl TestManager {
         let transaction = initialize_test_mint_transaction(mint, payer, 6, rent, recent_blockhash);
         client.send_and_confirm_transaction(&transaction).await?;
 
-        let ix_builder = FixedTermMarketIxBuilder::new_from_seed(
+        let ix_builder = FixedTermIxBuilder::new_from_seed(
             &Pubkey::default(),
             &mint.pubkey(),
             MARKET_SEED,
@@ -601,7 +601,7 @@ impl GenerateProxy for MarginIxBuilder {
     }
 }
 
-pub struct FixedUser<P: Proxy> {
+pub struct FixedTermUser<P: Proxy> {
     pub owner: Keypair,
     pub proxy: P,
     pub token_acc: Pubkey,
@@ -609,7 +609,7 @@ pub struct FixedUser<P: Proxy> {
     client: Arc<dyn SolanaRpcClient>,
 }
 
-impl<P: Proxy> FixedUser<P> {
+impl<P: Proxy> FixedTermUser<P> {
     pub fn new_with_proxy(manager: Arc<TestManager>, owner: Keypair, proxy: P) -> Result<Self> {
         let token_acc =
             get_associated_token_address(&proxy.pubkey(), &manager.ix_builder.token_mint());
@@ -634,7 +634,7 @@ impl<P: Proxy> FixedUser<P> {
     }
 }
 
-impl<P: Proxy + GenerateProxy> FixedUser<P> {
+impl<P: Proxy + GenerateProxy> FixedTermUser<P> {
     pub async fn new(manager: Arc<TestManager>) -> Result<Self> {
         let owner = create_wallet(&manager.client, 10 * LAMPORTS_PER_SOL).await?;
         let proxy = P::generate(manager.clone(), &owner).await?;
@@ -648,7 +648,7 @@ impl<P: Proxy + GenerateProxy> FixedUser<P> {
     }
 }
 
-impl<P: Proxy> FixedUser<P> {
+impl<P: Proxy> FixedTermUser<P> {
     pub async fn fund(&self) -> Result<()> {
         let create_token = create_associated_token_account(
             &self.manager.client.payer().pubkey(),
@@ -816,7 +816,7 @@ impl<P: Proxy> FixedUser<P> {
     }
 }
 
-impl<P: Proxy> FixedUser<P> {
+impl<P: Proxy> FixedTermUser<P> {
     pub fn claim_ticket_key(&self, seed: &[u8]) -> Pubkey {
         self.manager
             .ix_builder

@@ -3,7 +3,7 @@
 
 use anchor_lang::AccountDeserialize;
 use anyhow::Result;
-use jet_margin_sdk::fixed_term::{FixedTermMarketIxBuilder, OrderParams};
+use jet_margin_sdk::fixed_term::{FixedTermIxBuilder, OrderParams};
 use jet_market::control::state::Market;
 use jet_program_common::{Fp32, FP32_ONE};
 use rand::{thread_rng, Rng};
@@ -49,7 +49,7 @@ fn map_keypair_file(path: String) -> Result<Keypair> {
 
 struct Client {
     conn: RpcClient,
-    ix: FixedTermMarketIxBuilder,
+    ix: FixedTermIxBuilder,
     signer: Keypair,
 }
 
@@ -62,7 +62,7 @@ impl Client {
         token_oracle: Pubkey,
         ticket_oracle: Pubkey,
     ) -> Result<Self> {
-        let mut ix = FixedTermMarketIxBuilder::new_from_seed(
+        let mut ix = FixedTermIxBuilder::new_from_seed(
             &Pubkey::default(),
             &mint,
             seed,

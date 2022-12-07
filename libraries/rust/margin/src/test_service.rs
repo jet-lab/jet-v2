@@ -28,7 +28,7 @@ use solana_sdk::{
 
 use crate::{
     cat,
-    fixed_term::FixedTermMarketIxBuilder,
+    fixed_term::FixedTermIxBuilder,
     ix_builder::{
         get_metadata_address,
         test_service::{
@@ -320,12 +320,12 @@ fn create_airspace_token_fixed_term_markets_tx(
         market_seed[..8].copy_from_slice(&bm_config.borrow_tenor.to_le_bytes());
 
         let mint = derive_token_mint(&token.name);
-        let ticket_mint = derive_ticket_mint(&FixedTermMarketIxBuilder::market_key(
+        let ticket_mint = derive_ticket_mint(&FixedTermIxBuilder::market_key(
             &admin.airspace,
             &mint,
             market_seed,
         ));
-        let fixed_ix = FixedTermMarketIxBuilder::new_from_seed(
+        let fixed_ix = FixedTermIxBuilder::new_from_seed(
             &admin.airspace,
             &mint,
             market_seed,

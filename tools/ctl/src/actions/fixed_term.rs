@@ -1,6 +1,6 @@
 use anyhow::Result;
 use clap::Parser;
-use jet_margin_sdk::fixed_term::FixedTermMarketIxBuilder;
+use jet_margin_sdk::fixed_term::FixedTermIxBuilder;
 use serde::{Deserialize, Serialize};
 use solana_clap_utils::keypair::signer_from_path;
 use solana_sdk::{pubkey::Pubkey, signer::Signer};
@@ -89,7 +89,7 @@ pub async fn process_create_fixed_term_market<'a>(
             anyhow::Error::msg(format!("failed to resolve signer for asks. Error: {e:?}"))
         })?,
     ];
-    let fixed_term_market = FixedTermMarketIxBuilder::new_from_seed(
+    let fixed_term_market = FixedTermIxBuilder::new_from_seed(
         &Pubkey::default(),
         &params.token_mint,
         seed,

@@ -1,5 +1,5 @@
 use anyhow::Result;
-use jet_margin_sdk::fixed_term::{event_queue_len, orderbook_slab_len, FixedTermMarketIxBuilder};
+use jet_margin_sdk::fixed_term::{event_queue_len, orderbook_slab_len, FixedTermIxBuilder};
 use jetctl::{
     actions::fixed_term::MarketParameters,
     client::{Client, ClientConfig, Plan},
@@ -99,7 +99,7 @@ fn map_seed(seed: Vec<u8>) -> [u8; 32] {
 
 async fn create_orderbook_accounts(
     client: &Client,
-    ix: &FixedTermMarketIxBuilder,
+    ix: &FixedTermIxBuilder,
     params: MarketParameters,
     queue_capacity: usize,
     book_capacity: usize,
@@ -159,7 +159,7 @@ async fn main() -> Result<()> {
     airdrop_payer(&client).await?;
 
     // fund the ob accounts
-    let fixed_term_market = FixedTermMarketIxBuilder::new_from_seed(
+    let fixed_term_market = FixedTermIxBuilder::new_from_seed(
         &Pubkey::default(),
         &USDC,
         map_seed(PARAMS.seed.clone()),

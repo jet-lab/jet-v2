@@ -32,7 +32,7 @@ use super::{
 };
 
 #[derive(Clone, Debug)]
-pub struct FixedTermMarketIxBuilder {
+pub struct FixedTermIxBuilder {
     airspace: Pubkey,
     authority: Pubkey,
     market: Pubkey,
@@ -73,9 +73,9 @@ impl UnwrapKey for Option<&Pubkey> {
     }
 }
 
-impl From<Market> for FixedTermMarketIxBuilder {
+impl From<Market> for FixedTermIxBuilder {
     fn from(market: Market) -> Self {
-        FixedTermMarketIxBuilder {
+        FixedTermIxBuilder {
             airspace: market.airspace,
             authority: Pubkey::default(), //todo
             market: fixed_term_market_pda(&[
@@ -104,7 +104,7 @@ impl From<Market> for FixedTermMarketIxBuilder {
     }
 }
 
-impl FixedTermMarketIxBuilder {
+impl FixedTermIxBuilder {
     pub fn new(
         airspace: Pubkey,
         underlying_mint: Pubkey,
@@ -189,7 +189,7 @@ impl FixedTermMarketIxBuilder {
     }
 }
 
-impl FixedTermMarketIxBuilder {
+impl FixedTermIxBuilder {
     pub fn token_mint(&self) -> Pubkey {
         self.underlying_mint
     }
@@ -222,7 +222,7 @@ impl FixedTermMarketIxBuilder {
     }
 }
 
-impl FixedTermMarketIxBuilder {
+impl FixedTermIxBuilder {
     pub fn orderbook_mut(&self) -> Result<jet_market::accounts::OrderbookMut> {
         Ok(jet_market::accounts::OrderbookMut {
             market: self.market,
@@ -384,8 +384,8 @@ impl FixedTermMarketIxBuilder {
             payer: self.payer.unwrap(),
             borrower_account,
             margin_account: owner,
-            claims: FixedTermMarketIxBuilder::user_claims(borrower_account),
-            collateral: FixedTermMarketIxBuilder::user_collateral(borrower_account),
+            claims: FixedTermIxBuilder::user_claims(borrower_account),
+            collateral: FixedTermIxBuilder::user_collateral(borrower_account),
             claims_mint: self.claims,
             collateral_mint: self.collateral,
             underlying_settlement: get_associated_token_address(&owner, &self.underlying_mint),
@@ -867,8 +867,8 @@ impl FixedTermMarketIxBuilder {
     pub fn margin_settle(&self, margin_account: Pubkey) -> Instruction {
         let data = jet_market::instruction::Settle {}.data();
         let margin_user = self.margin_user_account(margin_account);
-        let claims = FixedTermMarketIxBuilder::user_claims(margin_user);
-        let collateral = FixedTermMarketIxBuilder::user_collateral(margin_user);
+        let claims = FixedTermIxBuilder::user_claims(margin_user);
+        let collateral = FixedTermIxBuilder::user_collateral(margin_user);
         let accounts = jet_market::accounts::Settle {
             margin_user,
             market: self.market,
@@ -922,7 +922,7 @@ pub struct MarginUser {
     pub collateral: Pubkey,
 }
 
-impl FixedTermMarketIxBuilder {
+impl FixedTermIxBuilder {
     pub fn margin_user(&self, margin_account: Pubkey) -> MarginUser {
         let address = fixed_term_market_pda(&[
             jet_market::seeds::MARGIN_BORROWER,
