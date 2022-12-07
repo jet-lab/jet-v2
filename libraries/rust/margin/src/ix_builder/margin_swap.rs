@@ -154,10 +154,8 @@ pub trait SwapAccounts {
     fn route_type(&self) -> SwapRouteIdentifier;
 }
 
-/// TODO Document
-///
-/// TODO Do we want to refresh positions here, or separately?
-/// It could make sense to expect a refresh to be separate, let's see what fits in.
+/// A margin route instruction builder that adds, validates routes, and builds
+/// the swap instruction.
 pub struct MarginSwapRouteIxBuilder {
     /// The margin account creating the swap
     margin_account: Pubkey,
@@ -401,11 +399,9 @@ impl MarginSwapRouteIxBuilder {
                 bail!("Source and destination tokens must be the same in a split-route swap")
             }
             if !self.expects_multi_route && b != src_token {
-                // TODO: can word this error better
                 bail!("The source token must be the same as the expected destination")
             }
         }
-        // TODO: any other validations?
 
         Ok(())
     }
