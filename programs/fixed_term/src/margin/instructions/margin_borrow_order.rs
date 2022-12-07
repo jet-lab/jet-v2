@@ -6,11 +6,11 @@ use jet_program_common::traits::{SafeSub, TryAddAssign};
 use jet_program_proc_macros::MarketTokenManager;
 
 use crate::{
-    events::ObligationCreated,
+    events::TermLoanCreated,
     margin::{
         events::{OrderPlaced, OrderType},
         origination_fee::loan_to_disburse,
-        state::{return_to_margin, MarginUser, Obligation, ObligationFlags},
+        state::{return_to_margin, MarginUser, TermLoan, TermLoanFlags},
     },
     market_token_manager::MarketTokenManager,
     orderbook::state::*,
@@ -29,10 +29,10 @@ pub struct MarginBorrowOrder<'info> {
     )]
     pub margin_user: Box<Account<'info, MarginUser>>,
 
-    /// Obligation account minted upon match
+    /// TermLoan account minted upon match
     /// CHECK: in instruction logic
     #[account(mut)]
-    pub obligation: AccountInfo<'info>,
+    pub term_loan: AccountInfo<'info>,
 
     /// The margin account for this borrow order
     pub margin_account: Signer<'info>,
@@ -66,7 +66,7 @@ pub struct MarginBorrowOrder<'info> {
     #[market]
     pub orderbook_mut: OrderbookMut<'info>,
 
-    /// payer for `Obligation` initialization
+    /// payer for `TermLoan` initialization
     #[account(mut)]
     pub payer: Signer<'info>,
 
@@ -108,13 +108,13 @@ pub fn handler(
         let mut manager = ctx.accounts.orderbook_mut.market.load_mut()?;
         let maturation_timestamp = manager.borrow_tenor + Clock::get()?.unix_timestamp;
         let sequence_number =
-            debt.new_obligation_without_posting(order_summary.base_filled(), maturation_timestamp)?;
+            debt.new_term_loan_without_posting(order_summary.base_filled(), maturation_timestamp)?;
 
-        let mut obligation = serialization::init::<Obligation>(
-            ctx.accounts.obligation.to_account_info(),
+        let mut term_loan = serialization::init::<TermLoan>(
+            ctx.accounts.term_loan.to_account_info(),
             ctx.accounts.payer.to_account_info(),
             ctx.accounts.system_program.to_account_info(),
-            &Obligation::make_seeds(ctx.accounts.margin_user.key().as_ref(), seed.as_slice()),
+            &TermLoan::make_seeds(ctx.accounts.margin_user.key().as_ref(), seed.as_slice()),
         )?;
         let quote_filled = order_summary.quote_filled()?;
         let disburse = manager.loan_to_disburse(quote_filled);
@@ -122,14 +122,14 @@ pub fn handler(
             .collected_fees
             .try_add_assign(quote_filled.safe_sub(disburse)?)?;
         let base_filled = order_summary.base_filled();
-        *obligation = Obligation {
+        *term_loan = TermLoan {
             sequence_number,
             borrower_account: ctx.accounts.margin_user.key(),
             market: ctx.accounts.orderbook_mut.market.key(),
             order_tag: callback_info.order_tag,
             maturation_timestamp,
             balance: base_filled,
-            flags: ObligationFlags::default(),
+            flags: TermLoanFlags::default(),
         };
         drop(manager);
         ctx.withdraw(
@@ -138,8 +138,8 @@ pub fn handler(
             disburse,
         )?;
 
-        emit!(ObligationCreated {
-            obligation: obligation.key(),
+        emit!(TermLoanCreated {
+            term_loan: term_loan.key(),
             authority: ctx.accounts.margin_account.key(),
             order_id: order_summary.summary().posted_order_id,
             sequence_number,
@@ -147,7 +147,7 @@ pub fn handler(
             maturation_timestamp,
             quote_filled,
             base_filled,
-            flags: obligation.flags
+            flags: term_loan.flags
         });
     }
     let total_debt = order_summary.base_combined();

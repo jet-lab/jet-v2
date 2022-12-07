@@ -11,7 +11,7 @@ use num_traits::FromPrimitive;
 
 use crate::{
     events::skip_err,
-    margin::state::{Obligation, ObligationFlags},
+    margin::state::{TermLoan, TermLoanFlags},
     market_token_manager::MarketTokenManager,
     orderbook::state::{fp32_mul, CallbackFlags, CallbackInfo, FillInfo, OutInfo},
     tickets::state::SplitTicket,
@@ -145,16 +145,16 @@ fn handle_fill<'info>(
                     let maturation_timestamp = fill_timestamp.safe_add(manager.borrow_tenor)?;
                     let sequence_number = margin_user
                         .debt
-                        .new_obligation_from_fill(base_size, maturation_timestamp)?;
+                        .new_term_loan_from_fill(base_size, maturation_timestamp)?;
 
-                    **loan.as_mut().unwrap().new_debt()? = Obligation {
+                    **loan.as_mut().unwrap().new_debt()? = TermLoan {
                         sequence_number,
                         borrower_account: margin_user.key(),
                         market: ctx.accounts.market.key(),
                         order_tag: maker_info.order_tag,
                         maturation_timestamp,
                         balance: base_size,
-                        flags: ObligationFlags::default(),
+                        flags: TermLoanFlags::default(),
                     };
                 } else {
                     margin_user

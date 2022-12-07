@@ -59,9 +59,9 @@ export interface MarginUserInfo {
 }
 
 export interface DebtInfo {
-  nextNewObligationSeqNo: BN
-  nextUnpaidObligationSeqNo: BN
-  nextObligationMaturity: BN
+  nextNewTermLoanSeqNo: BN
+  nextUnpaidTermLoanSeqNo: BN
+  nextTermLoanMaturity: BN
   pending: BN
   committed: BN
 }
@@ -207,7 +207,7 @@ export class FixedTermMarket {
     seed: Uint8Array
   ): Promise<TransactionInstruction> {
     const marginUser = await this.deriveMarginUserAddress(user)
-    const obligation = await this.deriveObligationAddress(marginUser, seed)
+    const term_loan = await this.deriveTermLoanAddress(marginUser, seed)
     const claims = await this.deriveMarginUserClaims(marginUser)
     const collateral = await this.deriveMarginUserCollateral(marginUser)
 
@@ -218,7 +218,7 @@ export class FixedTermMarket {
         orderbookMut: this.orderbookMut(),
         marginUser,
         marginAccount: user.address,
-        obligation,
+        term_loan,
         claims,
         collateral,
         payer,
@@ -400,8 +400,8 @@ export class FixedTermMarket {
     return await findDerivedAccount(["collateral_notes", borrowerAccount], this.program.programId)
   }
 
-  async deriveObligationAddress(borrowerAccount: Address, seed: Uint8Array): Promise<PublicKey> {
-    return await findDerivedAccount(["obligation", borrowerAccount, seed], this.program.programId)
+  async deriveTermLoanAddress(borrowerAccount: Address, seed: Uint8Array): Promise<PublicKey> {
+    return await findDerivedAccount(["term_loan", borrowerAccount, seed], this.program.programId)
   }
 
   async deriveClaimTicketKey(ticketHolder: Address, seed: Uint8Array): Promise<PublicKey> {

@@ -39,7 +39,7 @@
 //! For borrowing, a user has two options. They can buy Jet fixed term market tickets from some market, and deposit them into their
 //! `MarginUser` account. Or, they may use the `jet-margin` program to place collateralized borrow orders.
 //!
-//! In the case of a collateralized order, an `Obligation` will be minted to track the debt. A user must repay or face liquidation
+//! In the case of a collateralized order, an `TermLoan` will be minted to track the debt. A user must repay or face liquidation
 //! by the `jet-margin` program.
 //!
 //! Example borrow order, where a borrower wants no more than 10% interest to borrow 100_000_000 tokens
@@ -98,10 +98,10 @@
 //! After the Jet market market tenor has passed, the ticket may be redeemed for the underlying value with the program. Also included are instructions
 //! for transferring ownership of a ticket.
 //!
-//! # Debt and Obligations
+//! # Debt and Term Loans
 //!
-//! When using a `jet-margin` account to post a collateralized borrow order, an [`Obligation`](struct@crate::orderbook::state::debt::Obligation) is created to track
-//! amounts owed to the program. `Obligation`s are either repaid manually by the user, or handled by an off-chain liquidator.
+//! When using a `jet-margin` account to post a collateralized borrow order, an [`TermLoan`](struct@crate::orderbook::state::debt::TermLoan) is created to track
+//! amounts owed to the program. `TermLoan`s are either repaid manually by the user, or handled by an off-chain liquidator.
 
 /// Program instructions and structs related to authoritative control of the program state
 pub mod control;
@@ -236,7 +236,7 @@ pub mod jet_market {
         instructions::refresh_position::handler(ctx, expect_price)
     }
 
-    /// Repay debt on an Obligation
+    /// Repay debt on an TermLoan
     pub fn repay(ctx: Context<Repay>, amount: u64) -> Result<()> {
         instructions::repay::handler(ctx, amount)
     }
@@ -372,7 +372,7 @@ pub mod seeds {
     pub const EVENT_ADAPTER: &[u8] = b"event_adapter";
 
     #[constant]
-    pub const OBLIGATION: &[u8] = b"obligation";
+    pub const TERM_LOAN: &[u8] = b"term_loan";
 
     #[constant]
     pub const ORDERBOOK_MARKET_STATE: &[u8] = b"orderbook_market_state";

@@ -6,7 +6,7 @@ use jet_program_proc_macros::MarketTokenManager;
 
 use crate::{
     control::state::{CrankAuthorization, Market},
-    margin::state::{MarginUser, Obligation},
+    margin::state::{MarginUser, TermLoan},
     orderbook::state::EventQueue,
     serialization::{AnchorAccount, Mut},
     tickets::state::SplitTicket,
@@ -77,7 +77,7 @@ pub enum LoanAccount<'info> {
     /// Use if AUTO_STAKE is set in the maker's callback
     AutoStake(AnchorAccount<'info, SplitTicket, Mut>), // (ticket, user/owner)
     /// Use if NEW_DEBT is set in the maker's callback
-    NewDebt(AnchorAccount<'info, Obligation, Mut>), // (obligation, user)
+    NewDebt(AnchorAccount<'info, TermLoan, Mut>), // (term loan, user)
 }
 
 impl<'info> LoanAccount<'info> {
@@ -88,9 +88,9 @@ impl<'info> LoanAccount<'info> {
         }
     }
 
-    pub fn new_debt(&mut self) -> Result<&mut AnchorAccount<'info, Obligation, Mut>> {
+    pub fn new_debt(&mut self) -> Result<&mut AnchorAccount<'info, TermLoan, Mut>> {
         match self {
-            LoanAccount::NewDebt(obligation) => Ok(obligation),
+            LoanAccount::NewDebt(term_loan) => Ok(term_loan),
             _ => panic!(),
         }
     }

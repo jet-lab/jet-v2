@@ -36,8 +36,8 @@ pub enum ErrorCode {
     NoEvents,
     #[msg("expected additional remaining accounts, but there were none")]
     NoMoreAccounts,
-    #[msg("expected an obligation with a different sequence number")]
-    ObligationHasWrongSequenceNumber,
+    #[msg("expected a term loan with a different sequence number")]
+    TermLoanHasWrongSequenceNumber,
     #[msg("there was a problem loading the price oracle")]
     OracleError,
     #[msg("id was not found in the user's open orders")]

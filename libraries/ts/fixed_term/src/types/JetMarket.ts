@@ -66,11 +66,11 @@ export type JetMarket = {
       "value": "b\"event_adapter\""
     },
     {
-      "name": "OBLIGATION",
+      "name": "TERM_LOAN",
       "type": {
         "defined": "&[u8]"
       },
-      "value": "b\"obligation\""
+      "value": "b\"term_loan\""
     },
     {
       "name": "ORDERBOOK_MARKET_STATE",
@@ -671,11 +671,11 @@ export type JetMarket = {
           ]
         },
         {
-          "name": "obligation",
+          "name": "termLoan",
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "Obligation account minted upon match"
+            "TermLoan account minted upon match"
           ]
         },
         {
@@ -772,7 +772,7 @@ export type JetMarket = {
           "isMut": true,
           "isSigner": true,
           "docs": [
-            "payer for `Obligation` initialization"
+            "payer for `TermLoan` initialization"
           ]
         },
         {
@@ -1207,7 +1207,7 @@ export type JetMarket = {
     {
       "name": "repay",
       "docs": [
-        "Repay debt on an Obligation"
+        "Repay debt on an TermLoan"
       ],
       "accounts": [
         {
@@ -1219,17 +1219,17 @@ export type JetMarket = {
           ]
         },
         {
-          "name": "obligation",
+          "name": "termLoan",
           "isMut": true,
           "isSigner": false
         },
         {
-          "name": "nextObligation",
+          "name": "nextTermLoan",
           "isMut": false,
           "isSigner": false,
           "docs": [
-            "No payment will be made towards next_obligation: it is needed purely for bookkeeping.",
-            "if the user has additional obligations, this must be the one with the following sequence number.",
+            "No payment will be made towards next_term_loan: it is needed purely for bookkeeping.",
+            "if the user has additional term_loan, this must be the one with the following sequence number.",
             "otherwise, put whatever address you want in here"
           ]
         },
@@ -2324,7 +2324,7 @@ export type JetMarket = {
       }
     },
     {
-      "name": "Obligation", // should be capitalized
+      "name": "TermLoan", // should be capitalized
       "type": {
         "kind": "struct",
         "fields": [
@@ -2335,21 +2335,21 @@ export type JetMarket = {
           {
             "name": "borrowerAccount",
             "docs": [
-              "The user borrower account this obligation is assigned to"
+              "The user borrower account this term loan is assigned to"
             ],
             "type": "publicKey"
           },
           {
             "name": "market",
             "docs": [
-              "The market where the obligation was created"
+              "The market where the term loan was created"
             ],
             "type": "publicKey"
           },
           {
             "name": "orderTag",
             "docs": [
-              "The `OrderTag` associated with the creation of this `Obligation`"
+              "The `OrderTag` associated with the creation of this `TermLoan`"
             ],
             "type": {
               "array": ["u8", 16] // should be ["u8", 16] 
@@ -2358,7 +2358,7 @@ export type JetMarket = {
           {
             "name": "maturationTimestamp",
             "docs": [
-              "The time that the obligation must be repaid"
+              "The time that the term loan must be repaid"
             ],
             "type": "u64" // should be "u64"
           },
@@ -2482,7 +2482,7 @@ export type JetMarket = {
               "The `OrderTag` associated with the creation of this struct"
             ],
             "type": {
-              "array": ["u8", 16] // should be ["u8", 16]
+              "defined": "OrderTag"
             }
           },
           {
@@ -2595,23 +2595,23 @@ export type JetMarket = {
         "kind": "struct",
         "fields": [
           {
-            "name": "nextNewObligationSeqno",
+            "name": "nextNewTermLoanSeqno",
             "docs": [
-              "The sequence number for the next obligation to be created"
+              "The sequence number for the next term loan to be created"
             ],
             "type": "u64"
           },
           {
-            "name": "nextUnpaidObligationSeqno",
+            "name": "nextUnpaidTermLoanSeqno",
             "docs": [
-              "The sequence number of the next obligation to be paid"
+              "The sequence number of the next term loan to be paid"
             ],
             "type": "u64"
           },
           {
-            "name": "nextObligationMaturity",
+            "name": "nextTermLoanMaturity",
             "docs": [
-              "The maturation timestamp of the next obligation that is unpaid"
+              "The maturation timestamp of the next term loan that is unpaid"
             ],
             "type": "u64" // should be "u64"
           },
@@ -2862,7 +2862,7 @@ export type JetMarket = {
             "name": "NewDebt",
             "fields": [
               {
-                "defined": "AnchorAccount<'info,Obligation,Mut>"
+                "defined": "AnchorAccount<'info,TermLoan,Mut>"
               }
             ]
           }
@@ -3173,10 +3173,10 @@ export type JetMarket = {
       ]
     },
     {
-      "name": "ObligationCreated",
+      "name": "TermLoanCreated",
       "fields": [
         {
-          "name": "obligation",
+          "name": "termLoan",
           "type": "publicKey",
           "index": false
         },
@@ -3225,7 +3225,7 @@ export type JetMarket = {
       ]
     },
     {
-      "name": "ObligationRepay",
+      "name": "TermLoanRepay",
       "fields": [
         {
           "name": "orderbookUser",
@@ -3233,7 +3233,7 @@ export type JetMarket = {
           "index": false
         },
         {
-          "name": "obligation",
+          "name": "termLoan",
           "type": "publicKey",
           "index": false
         },
@@ -3250,10 +3250,10 @@ export type JetMarket = {
       ]
     },
     {
-      "name": "ObligationFulfilled",
+      "name": "TermLoanFulfilled",
       "fields": [
         {
-          "name": "obligation",
+          "name": "termLoan",
           "type": "publicKey",
           "index": false
         },
@@ -3493,8 +3493,8 @@ export type JetMarket = {
     },
     {
       "code": 6017,
-      "name": "ObligationHasWrongSequenceNumber",
-      "msg": "expected an obligation with a different sequence number"
+      "name": "TermLoanHasWrongSequenceNumber",
+      "msg": "expected a term loan with a different sequence number"
     },
     {
       "code": 6018,
@@ -3757,11 +3757,11 @@ export const IDL: JetMarket = {
       "value": "b\"event_adapter\""
     },
     {
-      "name": "OBLIGATION",
+      "name": "TERM_LOAN",
       "type": {
         "defined": "&[u8]"
       },
-      "value": "b\"obligation\""
+      "value": "b\"term_loan\""
     },
     {
       "name": "ORDERBOOK_MARKET_STATE",
@@ -4362,11 +4362,11 @@ export const IDL: JetMarket = {
           ]
         },
         {
-          "name": "obligation",
+          "name": "termLoan",
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "Obligation account minted upon match"
+            "TermLoan account minted upon match"
           ]
         },
         {
@@ -4463,7 +4463,7 @@ export const IDL: JetMarket = {
           "isMut": true,
           "isSigner": true,
           "docs": [
-            "payer for `Obligation` initialization"
+            "payer for `TermLoan` initialization"
           ]
         },
         {
@@ -4898,7 +4898,7 @@ export const IDL: JetMarket = {
     {
       "name": "repay",
       "docs": [
-        "Repay debt on an Obligation"
+        "Repay debt on an TermLoan"
       ],
       "accounts": [
         {
@@ -4910,17 +4910,17 @@ export const IDL: JetMarket = {
           ]
         },
         {
-          "name": "obligation",
+          "name": "termLoan",
           "isMut": true,
           "isSigner": false
         },
         {
-          "name": "nextObligation",
+          "name": "nextTermLoan",
           "isMut": false,
           "isSigner": false,
           "docs": [
-            "No payment will be made towards next_obligation: it is needed purely for bookkeeping.",
-            "if the user has additional obligations, this must be the one with the following sequence number.",
+            "No payment will be made towards next_term_loan: it is needed purely for bookkeeping.",
+            "if the user has additional term_loan, this must be the one with the following sequence number.",
             "otherwise, put whatever address you want in here"
           ]
         },
@@ -6015,7 +6015,7 @@ export const IDL: JetMarket = {
       }
     },
     {
-      "name": "Obligation", // should be capitalized
+      "name": "TermLoan", // should be capitalized
       "type": {
         "kind": "struct",
         "fields": [
@@ -6026,21 +6026,21 @@ export const IDL: JetMarket = {
           {
             "name": "borrowerAccount",
             "docs": [
-              "The user borrower account this obligation is assigned to"
+              "The user borrower account this term loan is assigned to"
             ],
             "type": "publicKey"
           },
           {
             "name": "market",
             "docs": [
-              "The market where the obligation was created"
+              "The market where the term loan was created"
             ],
             "type": "publicKey"
           },
           {
             "name": "orderTag",
             "docs": [
-              "The `OrderTag` associated with the creation of this `Obligation`"
+              "The `OrderTag` associated with the creation of this `TermLoan`"
             ],
             "type": {
               "array": ["u8", 16] // should be ["u8", 16]
@@ -6049,7 +6049,7 @@ export const IDL: JetMarket = {
           {
             "name": "maturationTimestamp",
             "docs": [
-              "The time that the obligation must be repaid"
+              "The time that the term loan must be repaid"
             ],
             "type": "u64" // should be "u64"
           },
@@ -6173,7 +6173,7 @@ export const IDL: JetMarket = {
               "The `OrderTag` associated with the creation of this struct"
             ],
             "type": {
-              "array": ["u8", 16] // should be ["u8", 16]
+              "defined": "OrderTag"
             }
           },
           {
@@ -6286,23 +6286,23 @@ export const IDL: JetMarket = {
         "kind": "struct",
         "fields": [
           {
-            "name": "nextNewObligationSeqno",
+            "name": "nextNewTermLoanSeqno",
             "docs": [
-              "The sequence number for the next obligation to be created"
+              "The sequence number for the next term loan to be created"
             ],
             "type": "u64"
           },
           {
-            "name": "nextUnpaidObligationSeqno",
+            "name": "nextUnpaidTermLoanSeqno",
             "docs": [
-              "The sequence number of the next obligation to be paid"
+              "The sequence number of the next term loan to be paid"
             ],
             "type": "u64"
           },
           {
-            "name": "nextObligationMaturity",
+            "name": "nextTermLoanMaturity",
             "docs": [
-              "The maturation timestamp of the next obligation that is unpaid"
+              "The maturation timestamp of the next term loan that is unpaid"
             ],
             "type": "u64" // should be "u64"
           },
@@ -6553,7 +6553,7 @@ export const IDL: JetMarket = {
             "name": "NewDebt",
             "fields": [
               {
-                "defined": "AnchorAccount<'info,Obligation,Mut>"
+                "defined": "AnchorAccount<'info,TermLoan,Mut>"
               }
             ]
           }
@@ -6864,10 +6864,10 @@ export const IDL: JetMarket = {
       ]
     },
     {
-      "name": "ObligationCreated",
+      "name": "TermLoanCreated",
       "fields": [
         {
-          "name": "obligation",
+          "name": "termLoan",
           "type": "publicKey",
           "index": false
         },
@@ -6916,7 +6916,7 @@ export const IDL: JetMarket = {
       ]
     },
     {
-      "name": "ObligationRepay",
+      "name": "TermLoanRepay",
       "fields": [
         {
           "name": "orderbookUser",
@@ -6924,7 +6924,7 @@ export const IDL: JetMarket = {
           "index": false
         },
         {
-          "name": "obligation",
+          "name": "termLoan",
           "type": "publicKey",
           "index": false
         },
@@ -6941,10 +6941,10 @@ export const IDL: JetMarket = {
       ]
     },
     {
-      "name": "ObligationFulfilled",
+      "name": "TermLoanFulfilled",
       "fields": [
         {
-          "name": "obligation",
+          "name": "termLoan",
           "type": "publicKey",
           "index": false
         },
@@ -7184,8 +7184,8 @@ export const IDL: JetMarket = {
     },
     {
       "code": 6017,
-      "name": "ObligationHasWrongSequenceNumber",
-      "msg": "expected an obligation with a different sequence number"
+      "name": "TermLoanHasWrongSequenceNumber",
+      "msg": "expected a term loan with a different sequence number"
     },
     {
       "code": 6018,

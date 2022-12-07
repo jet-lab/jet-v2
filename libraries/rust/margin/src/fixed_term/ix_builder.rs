@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use anchor_lang::{InstructionData, ToAccountMetas};
 use jet_market::{
-    margin::state::Obligation, seeds, tickets::instructions::StakeMarketTicketsParams,
+    margin::state::TermLoan, seeds, tickets::instructions::StakeMarketTicketsParams,
 };
 use jet_simulation::solana_rpc_api::SolanaRpcClient;
 use solana_sdk::{
@@ -652,7 +652,7 @@ impl FixedTermMarketIxBuilder {
             margin_user: margin_user.address,
             margin_account,
             claims: margin_user.claims,
-            obligation: self.obligation_key(&margin_user.address, seed),
+            term_loan: self.term_loan_key(&margin_user.address, seed),
             claims_mint: self.claims,
             collateral: margin_user.collateral,
             collateral_mint: self.collateral,
@@ -893,16 +893,16 @@ impl FixedTermMarketIxBuilder {
         &self,
         payer: &Pubkey,
         margin_account: &Pubkey,
-        obligation_seed: &[u8],
-        next_obligation_seed: &[u8],
+        term_loan_seed: &[u8],
+        next_term_loan_seed: &[u8],
         amount: u64,
     ) -> Instruction {
         let margin_user = self.margin_user(*margin_account);
         let data = jet_market::instruction::Repay { amount }.data();
         let accounts = jet_market::accounts::Repay {
             borrower_account: margin_user.address,
-            obligation: self.obligation_key(&margin_user.address, obligation_seed),
-            next_obligation: self.obligation_key(&margin_user.address, next_obligation_seed),
+            term_loan: self.term_loan_key(&margin_user.address, term_loan_seed),
+            next_term_loan: self.term_loan_key(&margin_user.address, next_term_loan_seed),
             source: get_associated_token_address(payer, &self.underlying_mint),
             payer: *payer,
             underlying_token_vault: self.underlying_token_vault,
@@ -967,8 +967,8 @@ impl FixedTermMarketIxBuilder {
             seed,
         ])
     }
-    pub fn obligation_key(&self, borrower_account: &Pubkey, seed: &[u8]) -> Pubkey {
-        fixed_term_market_pda(&Obligation::make_seeds(borrower_account.as_ref(), seed))
+    pub fn term_loan_key(&self, borrower_account: &Pubkey, seed: &[u8]) -> Pubkey {
+        fixed_term_market_pda(&TermLoan::make_seeds(borrower_account.as_ref(), seed))
     }
 
     pub fn margin_user_account(&self, owner: Pubkey) -> Pubkey {

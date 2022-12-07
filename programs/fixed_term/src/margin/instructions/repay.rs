@@ -5,8 +5,8 @@ use anchor_spl::token::{transfer, Token, TokenAccount, Transfer};
 use jet_program_common::traits::TrySubAssign;
 
 use crate::{
-    events::{ObligationFulfilled, ObligationRepay},
-    margin::state::{MarginUser, Obligation},
+    events::{TermLoanFulfilled, TermLoanRepay},
+    margin::state::{MarginUser, TermLoan},
     ErrorCode,
 };
 
@@ -19,16 +19,16 @@ pub struct Repay<'info> {
     #[account(
         mut,
         has_one = borrower_account @ ErrorCode::UserNotInMarket,
-        constraint = obligation.sequence_number
-            == borrower_account.debt.next_obligation_to_repay().unwrap()
-            @ ErrorCode::ObligationHasWrongSequenceNumber
+        constraint = term_loan.sequence_number
+            == borrower_account.debt.next_term_loan_to_repay().unwrap()
+            @ ErrorCode::TermLoanHasWrongSequenceNumber
     )]
-    pub obligation: Account<'info, Obligation>,
+    pub term_loan: Account<'info, TermLoan>,
 
-    /// No payment will be made towards next_obligation: it is needed purely for bookkeeping.
-    /// if the user has additional obligations, this must be the one with the following sequence number.
+    /// No payment will be made towards next_term_loan: it is needed purely for bookkeeping.
+    /// if the user has additional term_loan, this must be the one with the following sequence number.
     /// otherwise, put whatever address you want in here
-    pub next_obligation: AccountInfo<'info>,
+    pub next_term_loan: AccountInfo<'info>,
 
     /// The token account to deposit tokens from
     #[account(mut)]
@@ -59,42 +59,42 @@ impl<'info> Repay<'info> {
 }
 
 pub fn handler(ctx: Context<Repay>, amount: u64) -> Result<()> {
-    let amount = min(amount, ctx.accounts.obligation.balance);
+    let amount = min(amount, ctx.accounts.term_loan.balance);
     transfer(ctx.accounts.transfer_context(), amount)?;
 
-    let obligation = &mut ctx.accounts.obligation;
+    let term_loan = &mut ctx.accounts.term_loan;
     let user = &mut ctx.accounts.borrower_account;
 
-    obligation.balance.try_sub_assign(amount)?;
+    term_loan.balance.try_sub_assign(amount)?;
 
-    if obligation.balance > 0 {
+    if term_loan.balance > 0 {
         user.debt
-            .partially_repay_obligation(obligation.sequence_number, amount)?;
+            .partially_repay_term_loan(term_loan.sequence_number, amount)?;
     } else {
-        emit!(ObligationFulfilled {
-            obligation: obligation.key(),
+        emit!(TermLoanFulfilled {
+            term_loan: term_loan.key(),
             orderbook_user: user.key(),
-            borrower: obligation.borrower_account,
+            borrower: term_loan.borrower_account,
             timestamp: Clock::get()?.unix_timestamp,
         });
 
-        obligation.close(ctx.accounts.payer.to_account_info())?;
+        term_loan.close(ctx.accounts.payer.to_account_info())?;
 
         let user_key = user.key();
-        let next_obligation = Account::<Obligation>::try_from(&ctx.accounts.next_obligation)
+        let next_term_loan = Account::<TermLoan>::try_from(&ctx.accounts.next_term_loan)
             .and_then(|ob| {
                 require_eq!(ob.borrower_account, user_key, ErrorCode::UserNotInMarket);
                 Ok(ob)
             });
         user.debt
-            .fully_repay_obligation(obligation.sequence_number, amount, next_obligation)?;
+            .fully_repay_term_loan(term_loan.sequence_number, amount, next_term_loan)?;
     }
 
-    emit!(ObligationRepay {
+    emit!(TermLoanRepay {
         orderbook_user: ctx.accounts.borrower_account.key(),
-        obligation: obligation.key(),
+        term_loan: term_loan.key(),
         repayment_amount: amount,
-        final_balance: obligation.balance,
+        final_balance: term_loan.balance,
     });
 
     Ok(())

@@ -1,6 +1,6 @@
 use agnostic_orderbook::state::event_queue::{EventQueue, EventRef, FillEventRef, OutEventRef};
 use jet_market::{
-    margin::state::Obligation,
+    margin::state::TermLoan,
     orderbook::state::{CallbackFlags, CallbackInfo},
     tickets::state::SplitTicket,
 };
@@ -161,7 +161,7 @@ pub fn build_consume_events_info(
                     Some(LoanAccountKey { key, seed })
                 } else if maker_callback_info.flags.contains(CallbackFlags::NEW_DEBT) {
                     let seed = make_seed(rng);
-                    let key = fixed_term_market_pda(&Obligation::make_seeds(
+                    let key = fixed_term_market_pda(&TermLoan::make_seeds(
                         &maker_callback_info.fill_account.to_bytes(),
                         &seed,
                     ));

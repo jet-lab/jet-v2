@@ -29,7 +29,7 @@ use jet_margin_sdk::{
 };
 use jet_market::{
     control::state::Market,
-    margin::state::{MarginUser, Obligation},
+    margin::state::{MarginUser, TermLoan},
     orderbook::state::{event_queue_len, orderbook_slab_len, CallbackInfo, OrderParams},
     tickets::state::{ClaimTicket, SplitTicket},
 };
@@ -808,15 +808,15 @@ impl<P: Proxy> FixedUser<P> {
 
     pub async fn repay(
         &self,
-        obligation_seed: &[u8],
-        next_obligation_seed: &[u8],
+        term_loan_seed: &[u8],
+        next_term_loan_seed: &[u8],
         amount: u64,
     ) -> Result<Signature> {
         let repay = self.manager.ix_builder.margin_repay(
             &self.proxy.pubkey(),
             &self.proxy.pubkey(),
-            obligation_seed,
-            next_obligation_seed,
+            term_loan_seed,
+            next_term_loan_seed,
             amount,
         );
 
@@ -838,14 +838,14 @@ impl<P: Proxy> FixedUser<P> {
             .ix_builder
             .split_ticket_key(&self.proxy.pubkey(), seed)
     }
-    pub fn obligation_key(&self, seed: &[u8]) -> Pubkey {
+    pub fn term_loan_key(&self, seed: &[u8]) -> Pubkey {
         let borrower_account = self
             .manager
             .ix_builder
             .margin_user_account(self.proxy.pubkey());
         self.manager
             .ix_builder
-            .obligation_key(&borrower_account, seed)
+            .term_loan_key(&borrower_account, seed)
     }
     pub async fn load_claim_ticket(&self, seed: &[u8]) -> Result<ClaimTicket> {
         let key = self.claim_ticket_key(seed);
@@ -858,8 +858,8 @@ impl<P: Proxy> FixedUser<P> {
 
         self.manager.load_anchor(&key).await
     }
-    pub async fn load_obligation(&self, seed: &[u8]) -> Result<Obligation> {
-        let key = self.obligation_key(seed);
+    pub async fn load_term_loan(&self, seed: &[u8]) -> Result<TermLoan> {
+        let key = self.term_loan_key(seed);
 
         self.manager.load_anchor(&key).await
     }

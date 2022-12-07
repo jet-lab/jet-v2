@@ -1,7 +1,7 @@
 use agnostic_orderbook::state::OrderSummary;
 use anchor_lang::{event, prelude::*};
 
-use super::state::ObligationFlags;
+use super::state::TermLoanFlags;
 
 #[event]
 pub struct MarginUserInitialized {
@@ -36,8 +36,8 @@ pub enum OrderType {
 }
 
 #[event]
-pub struct ObligationCreated {
-    pub obligation: Pubkey,
+pub struct TermLoanCreated {
+    pub term_loan: Pubkey,
     pub authority: Pubkey,
     pub order_id: Option<u128>,
     pub sequence_number: u64,
@@ -45,20 +45,20 @@ pub struct ObligationCreated {
     pub maturation_timestamp: i64,
     pub quote_filled: u64,
     pub base_filled: u64,
-    pub flags: ObligationFlags,
+    pub flags: TermLoanFlags,
 }
 
 #[event]
-pub struct ObligationRepay {
+pub struct TermLoanRepay {
     pub orderbook_user: Pubkey,
-    pub obligation: Pubkey,
+    pub term_loan: Pubkey,
     pub repayment_amount: u64,
     pub final_balance: u64,
 }
 
 #[event]
-pub struct ObligationFulfilled {
-    pub obligation: Pubkey,
+pub struct TermLoanFulfilled {
+    pub term_loan: Pubkey,
     pub orderbook_user: Pubkey,
     pub borrower: Pubkey,
     pub timestamp: i64,

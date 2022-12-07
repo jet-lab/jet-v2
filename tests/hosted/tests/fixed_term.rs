@@ -105,19 +105,19 @@ async fn margin_repay() -> Result<()> {
         .await
         .unwrap();
 
-    let obligation = user.load_obligation(&[]).await?;
+    let term_loan = user.load_term_loan(&[]).await?;
     assert_eq!(
-        obligation.borrower_account,
+        term_loan.borrower_account,
         manager.ix_builder.margin_user_account(user.proxy.pubkey())
     );
-    assert_eq!(obligation.balance, posted_lend.base_quantity);
+    assert_eq!(term_loan.balance, posted_lend.base_quantity);
 
     let borrower_account = user.load_margin_user().await.unwrap();
     let posted_order = manager.load_orderbook().await?.asks()?[0];
     assert_eq!(borrower_account.debt.pending(), posted_order.base_quantity,);
     assert_eq!(
         borrower_account.debt.total(),
-        posted_order.base_quantity + obligation.balance
+        posted_order.base_quantity + term_loan.balance
     );
 
     // user.settle().await?;
@@ -125,29 +125,29 @@ async fn margin_repay() -> Result<()> {
     // assert_eq!(assets.entitled_tickets + assets.entitled_tokens, 0);
     // TODO: assert balances on claims and user wallet
 
-    let pre_repayment_obligation = user.load_obligation(&[]).await?;
+    let pre_repayment_term_loan = user.load_term_loan(&[]).await?;
     let pre_repayment_debt = user.load_margin_user().await?.debt;
     let repayment = 400;
     user.repay(&[], &[0], repayment).await?;
 
-    let post_repayment_obligation = user.load_obligation(&[]).await?;
+    let post_repayment_term_loan = user.load_term_loan(&[]).await?;
     let post_repayment_debt = user.load_margin_user().await?.debt;
     assert_eq!(
-        pre_repayment_obligation.balance - repayment,
-        post_repayment_obligation.balance
+        pre_repayment_term_loan.balance - repayment,
+        post_repayment_term_loan.balance
     );
     assert_eq!(
         pre_repayment_debt.committed() - repayment,
         post_repayment_debt.committed()
     );
 
-    user.repay(&[], &[0], post_repayment_obligation.balance)
+    user.repay(&[], &[0], post_repayment_term_loan.balance)
         .await?;
 
-    let repaid_obligation_debt = user.load_margin_user().await?.debt;
+    let repaid_term_loan_debt = user.load_margin_user().await?.debt;
     assert_eq!(
-        repaid_obligation_debt.total(),
-        repaid_obligation_debt.pending()
+        repaid_term_loan_debt.total(),
+        repaid_term_loan_debt.pending()
     );
 
     Ok(())

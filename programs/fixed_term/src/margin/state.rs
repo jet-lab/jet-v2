@@ -38,14 +38,14 @@ pub struct MarginUser {
 
 #[derive(Zeroable, Debug, Clone, AnchorSerialize, AnchorDeserialize)]
 pub struct Debt {
-    /// The sequence number for the next obligation to be created
-    next_new_obligation_seqno: u64,
+    /// The sequence number for the next term loan to be created
+    next_new_term_loan_seqno: u64,
 
-    /// The sequence number of the next obligation to be paid
-    next_unpaid_obligation_seqno: u64,
+    /// The sequence number of the next term loan to be paid
+    next_unpaid_term_loan_seqno: u64,
 
-    /// The maturation timestamp of the next obligation that is unpaid
-    next_obligation_maturity: UnixTimestamp,
+    /// The maturation timestamp of the next term loan that is unpaid
+    next_term_loan_maturity: UnixTimestamp,
 
     /// Amount that must be collateralized because there is an open order for it.
     /// Does not accrue interest because the loan has not been received yet.
@@ -57,63 +57,63 @@ pub struct Debt {
     committed: u64,
 }
 
-pub type ObligationSequenceNumber = u64;
+pub type TermLoanSequenceNumber = u64;
 
 impl Debt {
     pub fn total(&self) -> u64 {
         self.pending.checked_add(self.committed).unwrap()
     }
 
-    pub fn next_obligation_to_repay(&self) -> Option<ObligationSequenceNumber> {
-        if self.next_new_obligation_seqno > self.next_unpaid_obligation_seqno {
-            Some(self.next_unpaid_obligation_seqno)
+    pub fn next_term_loan_to_repay(&self) -> Option<TermLoanSequenceNumber> {
+        if self.next_new_term_loan_seqno > self.next_unpaid_term_loan_seqno {
+            Some(self.next_unpaid_term_loan_seqno)
         } else {
             None
         }
     }
 
-    fn outstanding_obligations(&self) -> u64 {
-        self.next_new_obligation_seqno - self.next_unpaid_obligation_seqno
+    fn outstanding_term_loans(&self) -> u64 {
+        self.next_new_term_loan_seqno - self.next_unpaid_term_loan_seqno
     }
 
     pub fn post_borrow_order(&mut self, posted_amount: u64) -> Result<()> {
         self.pending.try_add_assign(posted_amount)
     }
 
-    pub fn new_obligation_without_posting(
+    pub fn new_term_loan_without_posting(
         &mut self,
         amount_filled_as_taker: u64,
         maturation_timestamp: UnixTimestamp,
-    ) -> Result<ObligationSequenceNumber> {
+    ) -> Result<TermLoanSequenceNumber> {
         self.committed.try_add_assign(amount_filled_as_taker)?;
-        if self.next_new_obligation_seqno == self.next_unpaid_obligation_seqno {
-            self.next_obligation_maturity = maturation_timestamp;
+        if self.next_new_term_loan_seqno == self.next_unpaid_term_loan_seqno {
+            self.next_term_loan_maturity = maturation_timestamp;
         }
-        let seqno = self.next_new_obligation_seqno;
-        self.next_new_obligation_seqno.try_add_assign(1)?;
+        let seqno = self.next_new_term_loan_seqno;
+        self.next_new_term_loan_seqno.try_add_assign(1)?;
 
         Ok(seqno)
     }
 
-    pub fn new_obligation_from_fill(
+    pub fn new_term_loan_from_fill(
         &mut self,
         amount: u64,
         maturation_timestamp: UnixTimestamp,
-    ) -> Result<ObligationSequenceNumber> {
+    ) -> Result<TermLoanSequenceNumber> {
         self.pending.try_sub_assign(amount)?;
-        self.new_obligation_without_posting(amount, maturation_timestamp)
+        self.new_term_loan_without_posting(amount, maturation_timestamp)
     }
 
     pub fn process_out(&mut self, amount: u64) -> Result<()> {
         self.pending.try_sub_assign(amount)
     }
 
-    pub fn partially_repay_obligation(
+    pub fn partially_repay_term_loan(
         &mut self,
-        sequence_number: ObligationSequenceNumber,
+        sequence_number: TermLoanSequenceNumber,
         amount_repaid: u64,
     ) -> Result<()> {
-        if sequence_number != self.next_unpaid_obligation_seqno {
+        if sequence_number != self.next_unpaid_term_loan_seqno {
             todo!()
         }
         self.committed.try_sub_assign(amount_repaid)?;
@@ -121,35 +121,35 @@ impl Debt {
         Ok(())
     }
 
-    // The obligation is fully repaid by this repayment, and the obligation account is being closed
-    pub fn fully_repay_obligation(
+    // The term loan is fully repaid by this repayment, and the term loan account is being closed
+    pub fn fully_repay_term_loan(
         &mut self,
-        sequence_number: ObligationSequenceNumber,
+        sequence_number: TermLoanSequenceNumber,
         amount_repaid: u64,
-        next_obligation: Result<Account<Obligation>>,
+        next_term_loan: Result<Account<TermLoan>>,
     ) -> Result<()> {
-        if sequence_number != self.next_unpaid_obligation_seqno {
+        if sequence_number != self.next_unpaid_term_loan_seqno {
             todo!()
         }
         self.committed.try_sub_assign(amount_repaid)?;
-        self.next_unpaid_obligation_seqno.try_add_assign(1)?;
+        self.next_unpaid_term_loan_seqno.try_add_assign(1)?;
 
-        if self.next_unpaid_obligation_seqno < self.next_new_obligation_seqno {
-            let next_obligation = next_obligation?;
+        if self.next_unpaid_term_loan_seqno < self.next_new_term_loan_seqno {
+            let next_term_loan = next_term_loan?;
             require_eq!(
-                next_obligation.sequence_number,
-                self.next_unpaid_obligation_seqno,
-                ErrorCode::ObligationHasWrongSequenceNumber
+                next_term_loan.sequence_number,
+                self.next_unpaid_term_loan_seqno,
+                ErrorCode::TermLoanHasWrongSequenceNumber
             );
-            self.next_obligation_maturity = next_obligation.maturation_timestamp;
+            self.next_term_loan_maturity = next_term_loan.maturation_timestamp;
         }
 
         Ok(())
     }
 
     pub fn is_past_due(&self) -> bool {
-        self.outstanding_obligations() > 0
-            && self.next_obligation_maturity <= Clock::get().unwrap().unix_timestamp
+        self.outstanding_term_loans() > 0
+            && self.next_term_loan_maturity <= Clock::get().unwrap().unix_timestamp
     }
 
     pub fn pending(&self) -> u64 {
@@ -233,38 +233,38 @@ impl Assets {
 
 #[account]
 #[derive(Debug)]
-pub struct Obligation {
-    pub sequence_number: ObligationSequenceNumber,
+pub struct TermLoan {
+    pub sequence_number: TermLoanSequenceNumber,
 
-    /// The user borrower account this obligation is assigned to
+    /// The user borrower account this term loan is assigned to
     pub borrower_account: Pubkey,
 
-    /// The market where the obligation was created
+    /// The market where the term loan was created
     pub market: Pubkey,
 
-    /// The `OrderTag` associated with the creation of this `Obligation`
+    /// The `OrderTag` associated with the creation of this `TermLoan`
     pub order_tag: OrderTag,
 
-    /// The time that the obligation must be repaid
+    /// The time that the term loan must be repaid
     pub maturation_timestamp: UnixTimestamp,
 
     /// The remaining amount due by the end of the loan term
     pub balance: u64,
 
     /// Any boolean flags for this data type compressed to a single byte
-    pub flags: ObligationFlags,
+    pub flags: TermLoanFlags,
 }
 
-impl Obligation {
+impl TermLoan {
     pub fn make_seeds<'a>(user: &'a [u8], bytes: &'a [u8]) -> [&'a [u8]; 3] {
-        [crate::seeds::OBLIGATION, user, bytes]
+        [crate::seeds::TERM_LOAN, user, bytes]
     }
 }
 
 bitflags! {
     #[derive(Default, AnchorSerialize, AnchorDeserialize)]
-    pub struct ObligationFlags: u8 {
-        /// This obligation has already been marked as due.
+    pub struct TermLoanFlags: u8 {
+        /// This term loan has already been marked as due.
         const MARKED_DUE = 0b00000001;
     }
 }

@@ -4,7 +4,7 @@ use anchor_lang::prelude::*;
 
 use crate::{
     events::skip_err,
-    margin::state::Obligation,
+    margin::state::TermLoan,
     orderbook::state::{
         CallbackFlags, CallbackInfo, EventQueue, FillInfo, OrderbookEvent, OutInfo, QueueIterator,
     },
@@ -94,11 +94,11 @@ impl<'a, 'info> EventIterator<'a, 'info> {
             ))
         } else if maker_info.flags.contains(CallbackFlags::NEW_DEBT) {
             Some(LoanAccount::NewDebt(
-                self.accounts.init_next::<Obligation>(
+                self.accounts.init_next::<TermLoan>(
                     self.payer.to_account_info(),
                     self.system_program.to_account_info(),
                     &[
-                        crate::seeds::OBLIGATION,
+                        crate::seeds::TERM_LOAN,
                         &maker_info.fill_account.to_bytes(),
                         &self.seeds.next().ok_or(ErrorCode::InsufficientSeeds)?,
                     ],
