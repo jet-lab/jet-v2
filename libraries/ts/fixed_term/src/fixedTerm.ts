@@ -137,7 +137,11 @@ export class FixedTermMarket {
    * @param market The address of the `market` account
    * @returns
    */
-  static async load(program: Program<JetMarket>, market: Address, jetMarginProgramId: Address): Promise<FixedTermMarket> {
+  static async load(
+    program: Program<JetMarket>,
+    market: Address,
+    jetMarginProgramId: Address
+  ): Promise<FixedTermMarket> {
     let data = await fetchData(program.provider.connection, market)
     let info: MarketInfo = program.coder.accounts.decode("Market", data)
     const claimsMetadata = await findDerivedAccount(
