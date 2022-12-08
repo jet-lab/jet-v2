@@ -158,11 +158,12 @@ fn handle_fill<'info>(
         }
         Side::Ask => {
             let mut emit_order_filled = true;
-            let mut manager = manager.load_mut()?;
-            let maturation_timestamp = fill_timestamp.safe_add(manager.borrow_duration)?;
+            let borrow_duration = manager.load()?.borrow_duration;
+            let maturation_timestamp = fill_timestamp.safe_add(borrow_duration)?;
             if let Some(mut margin_user) = margin_user {
                 margin_user.assets.reduce_order(quote_size);
                 if maker_info.flags.contains(CallbackFlags::NEW_DEBT) {
+                    let mut manager = manager.load_mut()?;
                     let disburse = manager.loan_to_disburse(quote_size);
                     manager
                         .collected_fees
