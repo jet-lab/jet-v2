@@ -76,11 +76,11 @@ pub const MAX_USER_POSITIONS: usize = 24;
 
 /// This crate documents the instructions used in the `margin` program of the
 /// [jet-v2 repo](https://github.com/jet-lab/jet-v2/).
-/// 
+///
 /// Handler functions are described for each instruction well as struct parameters
 /// (and their types and descriptions are listed) and any handler function
 /// parameters aside from parameters that exist in every instruction handler function.
-/// 
+///
 /// Accounts associated with events emitted for the purposes of data logging are also included.
 
 #[program]
