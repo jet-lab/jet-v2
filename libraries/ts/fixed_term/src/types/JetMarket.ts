@@ -2253,7 +2253,7 @@ export type JetMarket = {
       }
     },
     {
-      "name": "marginUser",
+      "name": "MarginUser", // should be capitalized
       "docs": [
         "An acocunt used to track margin users of the market"
       ],
@@ -2392,7 +2392,7 @@ export type JetMarket = {
       }
     },
     {
-      "name": "eventAdapterMetadata",
+      "name": "EventAdapterMetadata", // should be capitalized
       "type": {
         "kind": "struct",
         "fields": [
@@ -2462,7 +2462,7 @@ export type JetMarket = {
       }
     },
     {
-      "name": "splitTicket",
+      "name": "SplitTicket", // should be capitalized
       "docs": [
         "A split ticket represents a claim of underlying tokens as the result of a lending action.",
         "",
@@ -2494,7 +2494,7 @@ export type JetMarket = {
               "The `OrderTag` associated with the creation of this struct"
             ],
             "type": {
-              "defined": "OrderTag"
+              "array": ["u8", 16] // should be ["u8", 16]
             }
           },
           {
@@ -3232,7 +3232,7 @@ export type JetMarket = {
         {
           "name": "flags",
           "type": {
-            "defined": "TermLoanFlags"
+            "type": "u8", // should be "u8"
           },
           "index": false
         }
@@ -5958,7 +5958,7 @@ export const IDL: JetMarket = {
       }
     },
     {
-      "name": "marginUser",
+      "name": "MarginUser", // should be capitalized
       "docs": [
         "An acocunt used to track margin users of the market"
       ],
@@ -6097,7 +6097,7 @@ export const IDL: JetMarket = {
       }
     },
     {
-      "name": "eventAdapterMetadata",
+      "name": "EventAdapterMetadata", // should be capitalized
       "type": {
         "kind": "struct",
         "fields": [
@@ -6167,7 +6167,7 @@ export const IDL: JetMarket = {
       }
     },
     {
-      "name": "splitTicket",
+      "name": "SplitTicket", // should be capitalized
       "docs": [
         "A split ticket represents a claim of underlying tokens as the result of a lending action.",
         "",
@@ -6199,7 +6199,7 @@ export const IDL: JetMarket = {
               "The `OrderTag` associated with the creation of this struct"
             ],
             "type": {
-              "defined": "OrderTag"
+              "array": ["u8", 16] // should be ["u8", 16]
             }
           },
           {
@@ -6937,7 +6937,7 @@ export const IDL: JetMarket = {
         {
           "name": "flags",
           "type": {
-            "defined": "TermLoanFlags"
+            "type": "u8", // should be "u8"
           },
           "index": false
         }
