@@ -122,7 +122,7 @@ mod jet_margin_pool {
     }
 
     /// Deposit tokens into the pool in exchange for notes
-    /// 
+    ///
     /// * `change` - Contains `change_kind` and `amount`, which specify the pool operation type (in this case a deposit) and amount of tokens.
     ///
     /// # [Accounts](jet_margin::accounts::Deposit)
@@ -156,7 +156,7 @@ mod jet_margin_pool {
     /// * `change` - Contains `change_kind` and `amount`, which specify the pool operation type (in this case a withdraw) and amount of tokens.
     ///
     /// * [`clock`](solana_program::clock::Clock) - The network time represented as the current slot.       
-    /// TODO: (pick up frm here when figure out doc generation for jet-margin-pool) -- double check that the link works right for Clock in docs
+    /// TODO: ABOVE -- double check that the link works right for Clock in docs
     ///
     /// # [Accounts](jet_margin::accounts::Withdraw)
     ///     

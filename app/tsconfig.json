@@ -1,24 +1,32 @@
 {
   "compilerOptions": {
-    "target": "ES6",
-    "lib": ["dom", "dom.iterable", "esnext"],
-    "allowJs": true,
-    "skipLibCheck": true,
-    "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
-    "strict": true,
-    "forceConsistentCasingInFileNames": true,
+    "outDir": "./dist/",
+    "noImplicitAny": true,
     "module": "esnext",
-    "moduleResolution": "node",
-    "downlevelIteration": false,
-    "resolveJsonModule": true,
-    "noEmit": true,
+    "target": "es2020",
+    "lib": ["dom", "dom.iterable", "es2021"],
     "jsx": "react-jsx",
-    "isolatedModules": true,
-    "noFallthroughCasesInSwitch": true,
+    "allowJs": true,
+    "allowSyntheticDefaultImports": true,
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
     "incremental": true,
-    "sourceMap": true
+    "skipLibCheck": true,
+    "baseUrl": "src",
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitReturns": true,
+    "noUnusedParameters": true,
+    "noUnusedLocals": true,
+    "strict": true,
+    "paths": {
+      "@components/*": ["components/*"],
+      "@state/*": ["state/*"],
+      "@styles/*": ["styles/*"],
+      "@utils/*": ["utils/*"],
+      "@assets/*": ["assets/*"],
+      "@views/*": ["views/*"]
+    }
   },
-  "include": ["src"],
-  "exclude": ["**/*.wasm"]
+  "include": ["src/**/*", "./public"],
+  "exclude": ["node_modules"]
 }

@@ -1,11 +1,11 @@
 import { useRecoilValue, useSetRecoilState } from 'recoil';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { Dictionary } from '../../../state/settings/localization/localization';
-import { WalletTokens } from '../../../state/user/walletTokens';
-import { WalletModal } from '../../../state/modals/modals';
+import { Dictionary } from '@state/settings/localization/localization';
+import { WalletTokens } from '@state/user/walletTokens';
+import { WalletModal } from '@state/modals/modals';
 import { Button } from 'antd';
 import { LoadingOutlined } from '@ant-design/icons';
-import { ReactComponent as WalletLockedIcon } from '../../../styles/icons/wallet-locked.svg';
+import WalletLockedIcon from '@assets/icons/wallet-locked.svg';
 
 // A feedback message overlaying components that can only used with a connected wallet
 export function WalletMessage(): JSX.Element {
@@ -13,6 +13,7 @@ export function WalletMessage(): JSX.Element {
   const { connected } = useWallet();
   const walletTokens = useRecoilValue(WalletTokens);
   const walletLoading = connected && !walletTokens;
+
   const setWalletModalOpen = useSetRecoilState(WalletModal);
 
   // Conditional render based on status of wallet connection

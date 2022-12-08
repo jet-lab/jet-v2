@@ -1,8 +1,8 @@
 import { useRecoilState } from 'recoil';
-import { SettingsModal } from '../../../state/modals/modals';
+import { SettingsModal } from '@state/modals/modals';
 import { WalletButton } from '../WalletButton';
 import { SettingFilled } from '@ant-design/icons';
-// import { ReactComponent as NotificationsBell } from '../../../styles/icons/notifications-bell.svg';
+// import { ReactComponent as NotificationsBell } from '@assets/icons/notifications-bell.svg';
 
 // Modal buttons for Navbar (settings, notifications and optionally the wallet button)
 export function NavButtons(props: { showWalletButton?: boolean }): JSX.Element {

@@ -1,6 +1,6 @@
 import { useRecoilValue, useResetRecoilState } from 'recoil';
-import { Dictionary } from '../../state/settings/localization/localization';
-import { NotificationsModal as NotificationModalState } from '../../state/modals/modals';
+import { Dictionary } from '@state/settings/localization/localization';
+import { NotificationsModal as NotificationModalState } from '@state/modals/modals';
 import { Modal, Typography } from 'antd';
 
 // Modal for Dialect notifications (TODO: add Dialect here)
@@ -13,7 +13,7 @@ export function NotificationsModal() {
   if (notificationsModalOpen) {
     return (
       <Modal
-        visible
+        open
         className="header-modal notifications-modal"
         maskClosable={false}
         onCancel={resetNotificationsModalOpen}>

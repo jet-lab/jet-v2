@@ -1,0 +1,103 @@
+[[token]]
+symbol = "SOL"
+name = "SOL"
+decimals = 9
+precision = 2
+
+[[token]]
+symbol = "USDC"
+name = "USDC"
+decimals = 6
+precision = 2
+
+[[token]]
+symbol = "USDT"
+name = "USDT"
+decimals = 6
+precision = 2
+
+[[token]]
+symbol = "BTC"
+name = "Bitcoin"
+decimals = 6
+precision = 6
+
+[swap_pools]
+spl = ["Bitcoin/USDC", "Bitcoin/USDT"]
+
+[[airspace]]
+name = "default"
+is_restricted = false
+
+[airspace.tokens.USDC]
+collateral_weight = 1_00
+max_leverage = 20_00
+
+[airspace.tokens.USDT]
+collateral_weight = 1_00
+max_leverage = 20_00
+
+[airspace.tokens.USDT.margin_pool_config]
+flags = 0b0010 # ALLOW_LENDING
+utilization_rate_1 = 85_00
+utilization_rate_2 = 95_00
+borrow_rate_0 = 50
+borrow_rate_1 = 600
+borrow_rate_2 = 4000
+borrow_rate_3 = 16000
+management_fee_rate = 20_00
+
+[[airspace.tokens.USDC.bond_markets]]
+borrow_duration = 86400
+lend_duration = 88000
+min_order_size = 10
+paused = false
+ticket_price = "0.9"
+origination_fee = 10
+
+[[airspace.tokens.USDC.bond_markets]]
+borrow_duration = 604800
+lend_duration = 610000
+min_order_size = 10
+paused = false
+ticket_price = "0.9"
+origination_fee = 10
+
+[airspace.tokens.USDC.margin_pool_config]
+flags = 0b0010 # ALLOW_LENDING
+utilization_rate_1 = 85_00
+utilization_rate_2 = 95_00
+borrow_rate_0 = 50
+borrow_rate_1 = 600
+borrow_rate_2 = 4000
+borrow_rate_3 = 16000
+management_fee_rate = 20_00
+
+[airspace.tokens.SOL]
+collateral_weight = 90
+max_leverage = 20_00
+
+[airspace.tokens.SOL.margin_pool_config]
+flags = 0b0010 # ALLOW_LENDING
+utilization_rate_1 = 85_00
+utilization_rate_2 = 95_00
+borrow_rate_0 = 50
+borrow_rate_1 = 600
+borrow_rate_2 = 4000
+borrow_rate_3 = 16000
+management_fee_rate = 20_00
+
+
+[airspace.tokens.Bitcoin]
+collateral_weight = 75
+max_leverage = 20_00
+
+[airspace.tokens.Bitcoin.margin_pool_config]
+flags = 0b0010 # ALLOW_LENDING
+utilization_rate_1 = 85_00
+utilization_rate_2 = 95_00
+borrow_rate_0 = 50
+borrow_rate_1 = 600
+borrow_rate_2 = 4000
+borrow_rate_3 = 16000
+management_fee_rate = 20_00

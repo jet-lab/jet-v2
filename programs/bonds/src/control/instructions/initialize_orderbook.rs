@@ -1,8 +1,5 @@
 use agnostic_orderbook::state::market_state::MarketState;
-use anchor_lang::{
-    prelude::*,
-    solana_program::{program::invoke_signed, system_instruction::create_account},
-};
+use anchor_lang::prelude::*;
 
 use crate::{
     control::{events::OrderbookInitialized, state::BondManager},
@@ -27,18 +24,29 @@ pub struct InitializeOrderbook<'info> {
     )]
     pub bond_manager: AccountLoader<'info, BondManager>,
 
-    /// Accounts for `agnostic-orderbook`
-    /// Should be uninitialized, used for invoking create_account and sent to the agnostic orderbook program
-    /// CHECK: handled by aaob
-    #[account(mut)]
+    /// AOB market state
+    #[account(init,
+              seeds = [
+                  seeds::ORDERBOOK_MARKET_STATE,
+                  bond_manager.key().as_ref()
+              ],
+              bump,
+              space = 8 + MarketState::LEN,
+              payer = payer,
+    )]
     pub orderbook_market_state: AccountInfo<'info>,
-    /// CHECK: handled by aaob
+
+    /// AOB market event queue
+    ///
+    /// Must be initialized
     #[account(mut)]
     pub event_queue: AccountInfo<'info>,
-    /// CHECK: handled by aaob
+
+    /// AOB market bids
     #[account(mut)]
     pub bids: AccountInfo<'info>,
-    /// CHECK: handled by aaob
+
+    /// AOB market asks
     #[account(mut)]
     pub asks: AccountInfo<'info>,
 
@@ -57,40 +65,6 @@ pub struct InitializeOrderbook<'info> {
     pub system_program: Program<'info, System>,
 }
 
-impl<'info> InitializeOrderbook<'info> {
-    fn invoke_create_market_state_account(&self, program_id: &Pubkey) -> Result<()> {
-        let signers_seeds: &[&[&[u8]]] = &[&[
-            seeds::ORDERBOOK_MARKET_STATE,
-            self.bond_manager.to_account_info().key.as_ref(),
-            &[Pubkey::find_program_address(
-                &[
-                    seeds::ORDERBOOK_MARKET_STATE,
-                    self.bond_manager.to_account_info().key.as_ref(),
-                ],
-                program_id,
-            )
-            .1][..],
-        ]];
-        let lamports = Rent::get()?.minimum_balance(MarketState::LEN + 8);
-        invoke_signed(
-            &create_account(
-                self.payer.key,
-                self.orderbook_market_state.key,
-                lamports,
-                8 + MarketState::LEN as u64,
-                program_id,
-            ),
-            &[
-                self.payer.to_account_info(),
-                self.orderbook_market_state.to_account_info(),
-                self.system_program.to_account_info(),
-            ],
-            signers_seeds,
-        )
-        .map_err(|_| error!(BondsError::InvokeCreateAccount))
-    }
-}
-
 pub fn handler(ctx: Context<InitializeOrderbook>, params: InitializeOrderbookParams) -> Result<()> {
     let InitializeOrderbookParams {
         min_base_order_size,
@@ -102,10 +76,6 @@ pub fn handler(ctx: Context<InitializeOrderbook>, params: InitializeOrderbookPar
     manager.event_queue = ctx.accounts.event_queue.key();
     manager.asks = ctx.accounts.asks.key();
     manager.bids = ctx.accounts.bids.key();
-
-    // invoke the creation of the agnostic orderbook accounts
-    ctx.accounts
-        .invoke_create_market_state_account(ctx.program_id)?;
 
     // initialize the asset agnostic orderbook
     let program_id = ctx.program_id;
@@ -132,6 +102,8 @@ pub fn handler(ctx: Context<InitializeOrderbook>, params: InitializeOrderbookPar
         event_queue: manager.event_queue,
         bids: manager.bids,
         asks: manager.asks,
+        min_base_order_size,
+        tick_size: TICK_SIZE
     });
 
     Ok(())

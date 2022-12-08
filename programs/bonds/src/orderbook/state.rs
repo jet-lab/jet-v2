@@ -69,6 +69,26 @@ pub struct OrderbookMut<'info> {
 }
 
 impl<'info> OrderbookMut<'info> {
+    pub fn underlying_mint(&self) -> Pubkey {
+        self.bond_manager.load().unwrap().underlying_token_mint
+    }
+
+    pub fn ticket_mint(&self) -> Pubkey {
+        self.bond_manager.load().unwrap().bond_ticket_mint
+    }
+
+    pub fn vault(&self) -> Pubkey {
+        self.bond_manager.load().unwrap().underlying_token_vault
+    }
+
+    pub fn collateral_mint(&self) -> Pubkey {
+        self.bond_manager.load().unwrap().collateral_mint
+    }
+
+    pub fn claims_mint(&self) -> Pubkey {
+        self.bond_manager.load().unwrap().claims_mint
+    }
+
     #[allow(clippy::too_many_arguments)]
     pub fn place_order(
         &self,
@@ -78,17 +98,8 @@ impl<'info> OrderbookMut<'info> {
         fill: Pubkey,
         out: Pubkey,
         adapter: Option<Pubkey>,
-        extra_flags: CallbackFlags,
-    ) -> Result<(CallbackInfo, OrderSummary)> {
-        let OrderParams {
-            max_bond_ticket_qty,
-            max_underlying_token_qty,
-            limit_price,
-            match_limit,
-            post_only,
-            post_allowed,
-            auto_stake: _,
-        } = params;
+        flags: CallbackFlags,
+    ) -> Result<(CallbackInfo, SensibleOrderSummary)> {
         let mut manager = self.bond_manager.load_mut()?;
         let callback_info = CallbackInfo::new(
             self.bond_manager.key(),
@@ -97,22 +108,13 @@ impl<'info> OrderbookMut<'info> {
             out,
             adapter.unwrap_or_default(),
             Clock::get()?.unix_timestamp,
-            params.callback_flags() | extra_flags,
+            flags,
             manager.nonce,
         );
         manager.nonce += 1;
 
-        let order_params = new_order::Params {
-            max_base_qty: max_bond_ticket_qty,
-            max_quote_qty: max_underlying_token_qty,
-            limit_price,
-            match_limit,
-            side,
-            callback_info,
-            post_only,
-            post_allowed,
-            self_trade_behavior: SelfTradeBehavior::AbortTransaction,
-        };
+        let order_params = params.as_new_order_params(side, callback_info);
+        let limit_price = order_params.limit_price;
         let order_summary = new_order::process(
             &crate::id(),
             orderbook_accounts!(self, new_order),
@@ -123,7 +125,13 @@ impl<'info> OrderbookMut<'info> {
             BondsError::OrderRejected
         );
 
-        Ok((callback_info, order_summary))
+        Ok((
+            callback_info,
+            SensibleOrderSummary {
+                summary: order_summary,
+                limit_price,
+            },
+        ))
     }
 
     /// cancels an order within the aaob
@@ -135,7 +143,7 @@ impl<'info> OrderbookMut<'info> {
     ) -> Result<(Side, CallbackFlags, OrderSummary)> {
         let side = get_side_from_order_id(order_id);
         let mut buf;
-        let mut slab: Slab<CallbackInfo> = match side {
+        let slab: Slab<CallbackInfo> = match side {
             Side::Bid => {
                 buf = self.bids.data.borrow_mut();
                 Slab::from_buffer(&mut buf, agnostic_orderbook::state::AccountTag::Bids)?
@@ -145,12 +153,19 @@ impl<'info> OrderbookMut<'info> {
                 Slab::from_buffer(&mut buf, agnostic_orderbook::state::AccountTag::Asks)?
             }
         };
-        let callback_info = slab.remove_by_key(order_id).unwrap().1;
-        require_eq!(
-            Pubkey::new_from_array(callback_info.owner),
-            owner,
-            BondsError::WrongMarginUser
-        );
+        let handle = slab.find_by_key(order_id).ok_or_else(|| {
+            msg!("Given Order ID: [{}]", order_id);
+            error!(BondsError::OrderNotFound)
+        })?;
+        let info = slab.get_callback_info(handle);
+
+        let info_owner = info.owner;
+        let flags = info.flags;
+
+        // drop the refs so the orderbook can borrow the slab data
+        drop(buf);
+
+        require_eq!(info_owner, owner, BondsError::WrongUserAccount);
         let orderbook_params = cancel_order::Params { order_id };
         let order_summary = agnostic_orderbook::instruction::cancel_order::process::<CallbackInfo>(
             &crate::id(),
@@ -160,15 +175,17 @@ impl<'info> OrderbookMut<'info> {
 
         emit!(OrderCancelled {
             bond_manager: self.bond_manager.key(),
-            user: owner,
+            authority: owner,
             order_id,
         });
 
-        Ok((side, callback_info.flags, order_summary))
+        Ok((side, flags, order_summary))
     }
 }
 
-#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, Debug, PartialEq, Eq, Zeroable, Pod)]
+#[derive(
+    AnchorSerialize, AnchorDeserialize, Clone, Copy, Debug, Default, PartialEq, Eq, Zeroable, Pod,
+)]
 #[repr(transparent)]
 pub struct OrderTag([u8; 16]);
 
@@ -193,20 +210,28 @@ impl OrderTag {
 
 /// The CallbackInfo is information about an order that is stored in the Event Queue
 /// used to manage order metadata
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Zeroable, Pod)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Zeroable, Pod)]
 #[repr(C)]
 pub struct CallbackInfo {
     /// The order tag is generated by the program when submitting orders to the book
     /// Used to seed and track PDAs such as `Obligation`
     pub order_tag: OrderTag,
-    /// authority permitted to modify the order
-    pub owner: [u8; 32],
-    /// margin user, split ticket owner, or token account to be deposited into on fill
-    pub fill_account: [u8; 32],
+    /// authority who signed to place the order and is permitted to cancel the
+    /// order. for margin orders, this is the owner of the MarginUser, which is
+    /// the margin account PDA from the margin program.
+    pub owner: Pubkey,
+    /// the account that will be assigned ownership of any output resulting from
+    /// a fill. for margin orders this is the margin user. for auto-stake, this
+    /// account will be set as the split ticket owner. otherwise this is the
+    /// token account to be deposited into.
+    pub fill_account: Pubkey,
     /// margin user or token account to be deposited into on out
-    pub out_account: [u8; 32],
+    /// the account that will be assigned ownership of any output resulting from
+    /// an out. for margin orders this is the margin user. otherwise this is the
+    /// token account to be deposited into.
+    pub out_account: Pubkey,
     /// Pubkey of the account that will recieve the event information
-    pub adapter_account_key: [u8; 32],
+    pub adapter_account_key: Pubkey,
     /// The unix timestamp for the slot that the order entered the aaob
     pub order_submitted: [u8; 8],
     /// configuration used by callback execution
@@ -229,11 +254,11 @@ impl CallbackInfo {
     ) -> Self {
         let order_tag = OrderTag::generate(bond_manager_key.as_ref(), fill_account.as_ref(), nonce);
         Self {
-            owner: owner.to_bytes(),
-            fill_account: fill_account.to_bytes(),
-            out_account: out_account.to_bytes(),
+            owner,
+            fill_account,
+            out_account,
             order_tag,
-            adapter_account_key: adapter.to_bytes(),
+            adapter_account_key: adapter,
             order_submitted: order_submitted.to_le_bytes(),
             flags,
             _reserved: [0u8; 14],
@@ -241,7 +266,7 @@ impl CallbackInfo {
     }
 
     pub fn adapter(&self) -> Option<Pubkey> {
-        let adapter = Pubkey::new_from_array(self.adapter_account_key);
+        let adapter = self.adapter_account_key;
         if adapter == Pubkey::default() {
             None
         } else {
@@ -255,16 +280,16 @@ impl CallbackInfo {
 }
 
 impl agnostic_orderbook::state::orderbook::CallbackInfo for CallbackInfo {
-    type CallbackId = [u8; 16];
+    type CallbackId = Pubkey;
 
     fn as_callback_id(&self) -> &Self::CallbackId {
-        self.order_tag.bytes()
+        &self.owner
     }
 }
 
 bitflags! {
     /// Binary flags for the `CallbackInfo`
-    #[derive(Zeroable, Pod)]
+    #[derive(Zeroable, Pod, Default)]
     #[repr(C)]
     pub struct CallbackFlags: u8 {
         /// any tickets purchased in this order should be automatically staked
@@ -273,8 +298,8 @@ bitflags! {
         /// interest needs to start being accrued because this is new debt
         const NEW_DEBT   = 1 << 1;
 
-        /// order placed by a MarginUser. margin user == owner == fill_account == out_account
-        const MARGIN   = 1 << 2;
+        /// order placed by a MarginUser. margin user == fill_account == out_account
+        const MARGIN     = 1 << 2;
     }
 }
 
@@ -299,26 +324,80 @@ pub struct OrderParams {
     pub auto_stake: bool,
 }
 
-impl OrderParams {
-    /// Returns any callback flags that are implied by these parameters
-    /// These params do not comprehensively define all flags: there may be other reasons to set flags for an order
-    pub fn callback_flags(&self) -> CallbackFlags {
-        let mut flags = CallbackFlags::empty();
-        flags.set(CallbackFlags::AUTO_STAKE, self.auto_stake);
-        flags
-    }
-}
-
+// todo remove?
 /// Trait to retrieve the posted quote values from an `OrderSummary`
 pub trait WithQuoteQty {
     fn posted_quote(&self, price: u64) -> Result<u64>;
 }
 
-impl WithQuoteQty for OrderSummary {
-    fn posted_quote(&self, price: u64) -> Result<u64> {
-        // todo defensive rounding - depends on how this function is used
-        fp32_mul(self.total_base_qty_posted, price)
+impl OrderParams {
+    /// Transforms the locally defined struct into the expected struct for the agnostic orderbook
+    pub fn as_new_order_params(
+        &self,
+        side: agnostic_orderbook::state::Side,
+        callback_info: CallbackInfo,
+    ) -> new_order::Params<CallbackInfo> {
+        new_order::Params {
+            max_base_qty: self.max_bond_ticket_qty,
+            max_quote_qty: self.max_underlying_token_qty,
+            limit_price: self.limit_price,
+            side,
+            match_limit: self.match_limit,
+            callback_info,
+            post_only: self.post_only,
+            post_allowed: self.post_allowed,
+            self_trade_behavior: SelfTradeBehavior::AbortTransaction,
+        }
+    }
+}
+
+pub struct SensibleOrderSummary {
+    limit_price: u64,
+    summary: OrderSummary,
+}
+
+// fixme i think most of these are wrong. there may be issues with the aaob
+// implementation which is a huge mess of spaghetti code
+impl SensibleOrderSummary {
+    pub fn summary(&self) -> OrderSummary {
+        OrderSummary {
+            posted_order_id: self.summary.posted_order_id,
+            total_base_qty: self.summary.total_base_qty,
+            total_quote_qty: self.summary.total_quote_qty,
+            total_base_qty_posted: self.summary.total_base_qty_posted,
+        }
+    }
+
+    // todo defensive rounding - depends on how this function is used
+    pub fn quote_posted(&self) -> Result<u64> {
+        fp32_mul(self.summary.total_base_qty_posted, self.limit_price)
             .ok_or_else(|| error!(BondsError::FixedPointDivision))
+    }
+
+    pub fn base_posted(&self) -> u64 {
+        self.summary.total_base_qty_posted
+    }
+
+    pub fn quote_filled(&self) -> Result<u64> {
+        Ok(self.summary.total_quote_qty - self.quote_posted()?)
+    }
+
+    pub fn base_filled(&self) -> u64 {
+        self.summary.total_base_qty - self.summary.total_base_qty_posted
+    }
+
+    /// the total of all quote posted and filled
+    /// NOT the same as the "max quote"
+    pub fn quote_combined(&self) -> Result<u64> {
+        // Ok(self.quote_posted()? + self.quote_filled())
+        Ok(self.summary.total_quote_qty)
+    }
+
+    /// the total of all base posted and filled
+    /// NOT the same as the "max base"
+    pub fn base_combined(&self) -> u64 {
+        // self.base_posted() + self.base_filled()
+        self.summary.total_base_qty
     }
 }
 
@@ -375,22 +454,6 @@ pub enum OrderbookEvent {
     Out(OutInfo),
 }
 
-impl OrderbookEvent {
-    pub fn unwrap_fill(self) -> Result<FillInfo> {
-        match self {
-            OrderbookEvent::Fill(fill) => Ok(fill),
-            _ => err!(BondsError::InvalidEvent),
-        }
-    }
-
-    pub fn unwrap_out(self) -> Result<OutInfo> {
-        match self {
-            OrderbookEvent::Out(out) => Ok(out),
-            _ => err!(BondsError::InvalidEvent),
-        }
-    }
-}
-
 pub struct FillInfo {
     pub event: FillEvent,
     pub maker_info: CallbackInfo,
@@ -423,18 +486,19 @@ impl<'a> EventQueue<'a> {
     const ADAPTER_OFFSET: usize = EventAdapterMetadata::LEN + 8;
 
     pub fn deserialize_market(info: AccountInfo<'a>) -> Result<Self> {
+        require!(info.owner == &crate::id(), BondsError::WrongEventQueue);
         Self::deserialize(info, false)
     }
 
     pub fn deserialize_user_adapter(info: AccountInfo<'a>) -> Result<Self> {
-        Self::deserialize(info, true)
-    }
-
-    fn deserialize(info: AccountInfo<'a>, is_adapter: bool) -> Result<Self> {
         require!(
             info.owner != &crate::id(),
             BondsError::UserDoesNotOwnAdapter
         );
+        Self::deserialize(info, true)
+    }
+
+    fn deserialize(info: AccountInfo<'a>, is_adapter: bool) -> Result<Self> {
         let adapter_offset = if is_adapter { Self::ADAPTER_OFFSET } else { 0 };
         let buf = &info.data.borrow();
         let capacity = (buf.len() - 8 - EventQueueHeader::LEN - adapter_offset)

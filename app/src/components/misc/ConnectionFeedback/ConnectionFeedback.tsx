@@ -1,6 +1,6 @@
 import { useRecoilValue } from 'recoil';
-import { WalletTokens } from '../../../state/user/walletTokens';
-import { Accounts } from '../../../state/user/accounts';
+import { WalletTokens } from '@state/user/walletTokens';
+import { Accounts } from '@state/user/accounts';
 import { WalletMessage } from './WalletMessage';
 import { AccountMessage } from './AccountMessage';
 

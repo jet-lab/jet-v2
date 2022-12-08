@@ -19,15 +19,16 @@ use std::{collections::BTreeMap, convert::TryInto};
 
 use crate::{
     events::{PositionClosed, PositionEvent, PositionRegistered, PositionTouched},
-    util::{ErrorMessage, Require},
+    util::{log_on_error, Require},
     AccountPositionKey, AdapterPositionFlags, Approver, ErrorCode, MarginAccount, SignerSeeds,
+    TokenConfig,
 };
 use anchor_lang::{
     prelude::*,
     solana_program::{instruction::Instruction, program},
 };
 use anchor_spl::token::{Mint, TokenAccount};
-use jet_metadata::{PositionTokenMetadata, TokenKind};
+use jet_metadata::PositionTokenMetadata;
 
 pub struct InvokeAdapter<'a, 'info> {
     /// The margin account to proxy an action for
@@ -228,8 +229,8 @@ fn apply_changes(
                     net_registration += 1;
                 }
             },
-            PositionChange::Close(token_account) => match position {
-                Some(pos) => {
+            PositionChange::Close(token_account) => {
+                if let Some(pos) = position {
                     if pos.address != token_account {
                         msg!("position registered for this mint with a different token account");
                         return err!(ErrorCode::PositionNotRegisterable);
@@ -242,8 +243,7 @@ fn apply_changes(
                     key = None;
                     net_registration -= 1;
                 }
-                None => (),
-            },
+            }
         }
     }
     Ok(match net_registration {
@@ -262,6 +262,7 @@ fn apply_changes(
         ),
         _ => Some(
             PositionClosed {
+                margin_account: ctx.margin_account.key(),
                 authority: ctx.adapter_program.key(),
                 token: mint,
             }
@@ -277,6 +278,7 @@ fn register_position(
     mint_address: Pubkey,
     token_account_address: Pubkey,
 ) -> Result<AccountPositionKey> {
+    let mut token_config: Option<Account<TokenConfig>> = None;
     let mut metadata: Result<Account<PositionTokenMetadata>> =
         err!(ErrorCode::PositionNotRegisterable);
     let mut token_account: Result<Account<TokenAccount>> = err!(ErrorCode::PositionNotRegisterable);
@@ -287,38 +289,63 @@ fn register_position(
         } else if info.key == &mint_address {
             mint = Ok(Account::<Mint>::try_from(info)?);
         } else if info.owner == &PositionTokenMetadata::owner() {
+            // TODO: remove backwards compat
             if let Ok(ptm) = Account::<PositionTokenMetadata>::try_from(info) {
                 if ptm.position_token_mint == mint_address {
                     metadata = Ok(ptm);
                 }
             }
+        } else if info.owner == &TokenConfig::owner() {
+            if let Ok(config) = Account::<TokenConfig>::try_from(info) {
+                if config.mint == mint_address {
+                    token_config = Some(config);
+                }
+            }
         }
     }
-    let metadata = metadata.log_on_error("position token metadata not found for mint")?;
-    let token_account = token_account.log_on_error("position token mint not found")?;
-    let mint = mint.log_on_error("position token account not found")?;
+
+    let token_account = log_on_error!(
+        token_account,
+        "position token account {:?} not found",
+        token_account_address
+    )?;
+    let mint = log_on_error!(mint, "position token mint {:?} not found", mint_address)?;
 
     if mint.key() != token_account.mint {
         msg!("token account has the wrong mint");
         return err!(ErrorCode::PositionNotRegisterable);
     }
-    if metadata.token_kind != TokenKind::AdapterCollateral
-        && metadata.token_kind != TokenKind::Claim
-    {
-        msg!("adapters may only register claims and adapter collaterals. deposits are registered by margin");
-        return err!(ErrorCode::PositionNotRegisterable);
-    }
 
-    let key = margin_account.register_position(
-        mint.key(),
-        mint.decimals,
-        token_account.key(),
-        metadata.adapter_program,
-        metadata.token_kind.into(),
-        metadata.value_modifier,
-        metadata.max_staleness,
-        approvals,
-    )?;
+    let key = match token_config {
+        Some(config) => margin_account.register_position(
+            mint.key(),
+            mint.decimals,
+            token_account.key(),
+            config.adapter_program().unwrap_or_default(),
+            config.token_kind,
+            config.value_modifier,
+            config.max_staleness,
+            approvals,
+        )?,
+        // TODO: remove backwards compat
+        None => {
+            let metadata = log_on_error!(
+                metadata,
+                "position token metadata not found for mint {:?}",
+                mint_address
+            )?;
+            margin_account.register_position(
+                mint.key(),
+                mint.decimals,
+                token_account.key(),
+                metadata.adapter_program,
+                metadata.token_kind.into(),
+                metadata.value_modifier,
+                metadata.max_staleness,
+                approvals,
+            )?
+        }
+    };
 
     margin_account.set_position_balance(
         &mint_address,

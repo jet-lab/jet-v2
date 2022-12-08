@@ -6,13 +6,10 @@ use solana_sdk::native_token::LAMPORTS_PER_SOL;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::Signer;
 
-use hosted_tests::{
-    context::{test_context, MarginTestContext},
-    margin::MarginPoolSetupInfo,
-};
+use hosted_tests::{context::MarginTestContext, margin::MarginPoolSetupInfo, margin_test_context};
 
+use jet_margin::TokenKind;
 use jet_margin_pool::{MarginPoolConfig, PoolFlags, TokenChange};
-use jet_metadata::TokenKind;
 use jet_simulation::{assert_custom_program_error, create_wallet};
 
 const ONE_USDC: u64 = 1_000_000;
@@ -70,33 +67,42 @@ async fn setup_environment(ctx: &MarginTestContext) -> Result<TestEnv, Error> {
 #[tokio::test(flavor = "multi_thread")]
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn rounding_poc() -> Result<()> {
-    let ctx = test_context().await;
-    let env = setup_environment(ctx).await?;
+    let ctx = margin_test_context!();
+    let env = setup_environment(&ctx).await.unwrap();
 
-    let wallet_a = create_wallet(&ctx.rpc, 10 * LAMPORTS_PER_SOL).await?;
-    let wallet_b = create_wallet(&ctx.rpc, 10 * LAMPORTS_PER_SOL).await?;
-    let wallet_c = create_wallet(&ctx.rpc, 10 * LAMPORTS_PER_SOL).await?;
+    let wallet_a = create_wallet(&ctx.rpc, 10 * LAMPORTS_PER_SOL)
+        .await
+        .unwrap();
+    let wallet_b = create_wallet(&ctx.rpc, 10 * LAMPORTS_PER_SOL)
+        .await
+        .unwrap();
+    let wallet_c = create_wallet(&ctx.rpc, 10 * LAMPORTS_PER_SOL)
+        .await
+        .unwrap();
 
-    let user_a = ctx.margin.user(&wallet_a, 0)?;
-    let user_b = ctx.margin.user(&wallet_b, 0)?;
-    let user_c = ctx.margin.user(&wallet_c, 0)?;
+    let user_a = ctx.margin.user(&wallet_a, 0).unwrap();
+    let user_b = ctx.margin.user(&wallet_b, 0).unwrap();
+    let user_c = ctx.margin.user(&wallet_c, 0).unwrap();
 
-    user_a.create_account().await?;
-    user_b.create_account().await?;
-    user_c.create_account().await?;
+    user_a.create_account().await.unwrap();
+    user_b.create_account().await.unwrap();
+    user_c.create_account().await.unwrap();
 
     let user_a_usdc_account = ctx
         .tokens
         .create_account_funded(&env.usdc, &wallet_a.pubkey(), 10_000_000 * ONE_USDC)
-        .await?;
+        .await
+        .unwrap();
     let user_b_tsol_account = ctx
         .tokens
         .create_account_funded(&env.tsol, &wallet_b.pubkey(), 10_000 * ONE_TSOL)
-        .await?;
+        .await
+        .unwrap();
     let user_c_usdc_account = ctx
         .tokens
         .create_account_funded(&env.usdc, &wallet_c.pubkey(), 0)
-        .await?;
+        .await
+        .unwrap();
 
     // Set the prices for each token
     ctx.tokens
@@ -110,7 +116,8 @@ async fn rounding_poc() -> Result<()> {
                 twap: 100_000_000,
             },
         )
-        .await?;
+        .await
+        .unwrap();
     ctx.tokens
         .set_price(
             // Set price to 100 USD +- 1
@@ -122,7 +129,8 @@ async fn rounding_poc() -> Result<()> {
                 twap: 10_000_000_000,
             },
         )
-        .await?;
+        .await
+        .unwrap();
 
     user_a
         .deposit(
@@ -130,23 +138,26 @@ async fn rounding_poc() -> Result<()> {
             &user_a_usdc_account,
             TokenChange::shift(5_000_000 * ONE_USDC),
         )
-        .await?;
+        .await
+        .unwrap();
     user_b
         .deposit(
             &env.tsol,
             &user_b_tsol_account,
             TokenChange::shift(10_000 * ONE_TSOL),
         )
-        .await?;
+        .await
+        .unwrap();
 
-    user_a.refresh_all_pool_positions().await?;
-    user_b.refresh_all_pool_positions().await?;
+    user_a.refresh_all_pool_positions().await.unwrap();
+    user_b.refresh_all_pool_positions().await.unwrap();
 
     user_b
         .borrow(&env.usdc, TokenChange::shift(50000000000))
-        .await?;
+        .await
+        .unwrap();
 
-    let mut clk: Clock = match ctx.rpc.get_clock() {
+    let mut clk: Clock = match ctx.rpc.get_clock().await {
         Some(c) => c,
         None => panic!("bad"),
     };
@@ -155,8 +166,8 @@ async fn rounding_poc() -> Result<()> {
     clk.unix_timestamp = 1;
     ctx.rpc.set_clock(clk);
 
-    user_a.refresh_all_pool_positions().await?;
-    user_b.refresh_all_pool_positions().await?;
+    user_a.refresh_all_pool_positions().await.unwrap();
+    user_b.refresh_all_pool_positions().await.unwrap();
 
     // If the rounding is performed correctly, the user should try to burn 1 note,
     // and this should fail as they have no notes to burn.

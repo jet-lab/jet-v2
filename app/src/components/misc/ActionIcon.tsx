@@ -1,12 +1,12 @@
 import { useRecoilValue } from 'recoil';
-import { CurrentAction } from '../../state/actions/actions';
+import { CurrentAction } from '@state/actions/actions';
 import { PoolAction } from '@jet-lab/margin';
-import { ReactComponent as DepositIcon } from '../../styles/icons/function-deposit.svg';
-import { ReactComponent as WithdrawIcon } from '../../styles/icons/function-withdraw.svg';
-import { ReactComponent as BorrowIcon } from '../../styles/icons/function-borrow.svg';
-import { ReactComponent as RepayIcon } from '../../styles/icons/function-repay.svg';
-import { ReactComponent as SwapIcon } from '../../styles/icons/function-swap.svg';
-import { ReactComponent as TransferIcon } from '../../styles/icons/function-transfer.svg';
+import DepositIcon from '@assets/icons/function-deposit.svg';
+import WithdrawIcon from '@assets/icons/function-withdraw.svg';
+import BorrowIcon from '@assets/icons/function-borrow.svg';
+import RepayIcon from '@assets/icons/function-repay.svg';
+import SwapIcon from '@assets/icons/function-swap.svg';
+import TransferIcon from '@assets/icons/function-transfer.svg';
 
 // Return the correlated icon for a user action
 export function ActionIcon(props: {

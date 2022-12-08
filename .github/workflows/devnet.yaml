@@ -100,7 +100,7 @@ jobs:
         run: |
           yarn install
           cargo fmt -- --check
-          cargo clippy -- -D warnings
+          cargo clippy --all-targets -- -Dwarnings
           anchor build --skip-lint -- --features testing devnet
 
       - name: Deploy Metadata
@@ -127,6 +127,11 @@ jobs:
         run: |
           solana program deploy -u d --program-id JPMAa5dnWLFRvUsumawFcGhnwikqZziLLfqn9SLNXPN target/deploy/jet_margin_swap.so
           anchor idl upgrade -f ./target/idl/jet_margin_swap.json JPMAa5dnWLFRvUsumawFcGhnwikqZziLLfqn9SLNXPN --provider.cluster devnet
+
+      - name: Deploy Bonds
+        run: |
+          solana program deploy -u d --program-id JBond79m9K6HqYwngCjiJHb311GTXggo46kGcT2GijUc target/deploy/jet_bonds.so
+          anchor idl upgrade -f ./target/idl/jet_bonds.json JBond79m9K6HqYwngCjiJHb311GTXggo46kGcT2GijUc --provider.cluster devnet
 
       - name: Build Programs for Testing
         run: |

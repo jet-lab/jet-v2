@@ -1,23 +1,26 @@
 import { useEffect } from 'react';
 import { useRecoilValue } from 'recoil';
-import { AccountSnapshot } from '../components/misc/AccountSnapshot/AccountSnapshot';
-import { SwapEntry } from '../components/SwapsView/SwapEntry';
-import { SwapsGraph } from '../components/SwapsView/SwapsGraph';
-import { FullAccountBalance } from '../components/tables/FullAccountBalance';
-import { Dictionary } from '../state/settings/localization/localization';
-import { SwapsViewOrder, SwapsRowOrder } from '../state/views/views';
+import { AccountSnapshot } from '@components/misc/AccountSnapshot/AccountSnapshot';
+import { SwapEntry } from '@components/SwapsView/SwapEntry';
+import { SwapsGraph } from '@components/SwapsView/SwapsGraph';
+import { FullAccountBalance } from '@components/tables/FullAccountBalance';
+import { Dictionary } from '@state/settings/localization/localization';
+import { SwapsViewOrder, SwapsRowOrder } from '@state/views/views';
+import { NetworkStateAtom } from '@state/network/network-state';
+import { WaitingForNetworkView } from './WaitingForNetwork';
 
 // App view for margin swapping
-export function SwapsView(): JSX.Element {
+function SwapsView(): JSX.Element {
   const dictionary = useRecoilValue(Dictionary);
+  const rowOrder = useRecoilValue(SwapsRowOrder);
+  const networkState = useRecoilValue(NetworkStateAtom);
 
   // Localize page title
   useEffect(() => {
     document.title = `${dictionary.swapsView.title} | Jet Protocol`;
   }, [dictionary.swapsView.title]);
-
   // Row of Swap Entry and Swaps Graph
-  const rowOrder = useRecoilValue(SwapsRowOrder);
+
   const rowComponents: Record<string, JSX.Element> = {
     swapEntry: <SwapEntry key="swapEntry" />,
     swapsGraph: <SwapsGraph key="swapsGraph" />
@@ -49,5 +52,8 @@ export function SwapsView(): JSX.Element {
     return <div className="swaps-view view">{swapsViewComponents}</div>;
   };
 
+  if (networkState !== 'connected') return <WaitingForNetworkView networkState={networkState} />;
   return accountView();
 }
+
+export default SwapsView;

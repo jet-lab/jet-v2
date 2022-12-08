@@ -1,11 +1,12 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{accessor::mint, Mint, Token, TokenAccount};
+use jet_margin::{AdapterResult, PositionChange};
 
 use crate::{
     control::state::BondManager,
     margin::{
         events::MarginUserInitialized,
-        state::{MarginUser, MARGIN_USER_VERSION},
+        state::{return_to_margin, MarginUser, MARGIN_USER_VERSION},
     },
     seeds,
     utils::init,
@@ -37,7 +38,7 @@ pub struct InitializeMarginUser<'info> {
     /// The Boheader account
     #[account(
         has_one = claims_mint @ BondsError::WrongClaimMint,
-        has_one = collateral_mint @ BondsError::WrongDepositsMint
+        has_one = collateral_mint @ BondsError::WrongCollateralMint
     )]
     pub bond_manager: AccountLoader<'info, BondManager>,
 
@@ -58,7 +59,7 @@ pub struct InitializeMarginUser<'info> {
     /// Token account used by the margin program to track owned assets
     #[account(init,
         seeds = [
-            seeds::DEPOSIT_NOTES,
+            seeds::COLLATERAL_NOTES,
             borrower_account.key().as_ref(),
         ],
         bump,
@@ -76,6 +77,12 @@ pub struct InitializeMarginUser<'info> {
     pub rent: Sysvar<'info, Rent>,
     pub system_program: Program<'info, System>,
     pub token_program: Program<'info, Token>,
+
+    /// Token metadata account needed by the margin program to register the claim position
+    pub claims_metadata: AccountInfo<'info>,
+
+    /// Token metadata account needed by the margin program to register the collateral position
+    pub collateral_metadata: AccountInfo<'info>,
 }
 
 pub fn handler(ctx: Context<InitializeMarginUser>) -> Result<()> {
@@ -111,7 +118,23 @@ pub fn handler(ctx: Context<InitializeMarginUser>) -> Result<()> {
         bond_manager: ctx.accounts.bond_manager.key(),
         borrower_account: ctx.accounts.borrower_account.key(),
         margin_account: ctx.accounts.margin_account.key(),
+        underlying_settlement: ctx.accounts.underlying_settlement.key(),
+        ticket_settlement: ctx.accounts.ticket_settlement.key(),
     });
 
-    Ok(())
+    return_to_margin(
+        &ctx.accounts.margin_account.to_account_info(),
+        &AdapterResult {
+            position_changes: vec![
+                (
+                    ctx.accounts.claims_mint.key(),
+                    vec![PositionChange::Register(ctx.accounts.claims.key())],
+                ),
+                (
+                    ctx.accounts.collateral_mint.key(),
+                    vec![PositionChange::Register(ctx.accounts.collateral.key())],
+                ),
+            ],
+        },
+    )
 }

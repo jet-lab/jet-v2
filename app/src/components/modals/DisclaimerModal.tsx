@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { useWallet } from '@solana/wallet-adapter-react';
 import reactStringReplace from 'react-string-replace';
-import { Dictionary } from '../../state/settings/localization/localization';
-import { Cluster, DisclaimersAccepted } from '../../state/settings/settings';
+import { Dictionary } from '@state/settings/localization/localization';
+import { Cluster, DisclaimersAccepted } from '@state/settings/settings';
 import { Button, Checkbox, Modal, Typography } from 'antd';
 
 // Disclaimer modal if the current wallet hasn't accepted terms/conditions yet
@@ -41,7 +41,7 @@ export function DisclaimerModal(): JSX.Element {
   // If wallet hasn't accepted disclaimer, show modal
   if (disclaimerNotAccepted) {
     return (
-      <Modal visible className="disclaimer-modal" maskClosable={false} footer={null} closable={false}>
+      <Modal open className="disclaimer-modal" maskClosable={false} footer={null} closable={false}>
         <div className="modal-content flex-centered column">
           <img src="img/jet/jet_logo.png" width="100px" height="auto" alt="Jet Protocol" />
           <div className="disclaimer-modal-bullets flex align-start justify-center column">

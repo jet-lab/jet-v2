@@ -27,6 +27,8 @@ mod register_loan;
 mod repay;
 mod withdraw;
 
+mod admin;
+
 pub use close_loan::*;
 pub use collect::*;
 pub use configure::*;
@@ -38,3 +40,5 @@ pub use margin_repay::*;
 pub use register_loan::*;
 pub use repay::*;
 pub use withdraw::*;
+
+pub use admin::*;

@@ -16,10 +16,9 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 use anchor_lang::prelude::*;
-use anchor_lang::AccountsClose;
 
 use crate::events;
-use crate::{ErrorCode, Liquidation, MarginAccount, LIQUIDATION_TIMEOUT};
+use crate::{ErrorCode, LiquidationState, MarginAccount, LIQUIDATION_TIMEOUT};
 
 #[derive(Accounts)]
 pub struct LiquidateEnd<'info> {
@@ -33,13 +32,13 @@ pub struct LiquidateEnd<'info> {
     pub margin_account: AccountLoader<'info, MarginAccount>,
 
     /// Account to persist the state of the liquidation
-    #[account(mut)]
-    pub liquidation: AccountLoader<'info, Liquidation>,
+    #[account(mut, close = authority)]
+    pub liquidation: AccountLoader<'info, LiquidationState>,
 }
 
 pub fn liquidate_end_handler(ctx: Context<LiquidateEnd>) -> Result<()> {
     let mut account = ctx.accounts.margin_account.load_mut()?;
-    let start_time = ctx.accounts.liquidation.load()?.start_time();
+    let start_time = ctx.accounts.liquidation.load()?.state.start_time();
 
     let timed_out = Clock::get()?.unix_timestamp - start_time >= LIQUIDATION_TIMEOUT;
 
@@ -52,10 +51,6 @@ pub fn liquidate_end_handler(ctx: Context<LiquidateEnd>) -> Result<()> {
     }
 
     account.end_liquidation();
-
-    ctx.accounts
-        .liquidation
-        .close(ctx.accounts.authority.to_account_info())?;
 
     emit!(events::LiquidationEnded {
         margin_account: ctx.accounts.margin_account.key(),

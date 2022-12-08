@@ -1,8 +1,8 @@
 import { useRecoilValue, useRecoilState } from 'recoil';
-import { CurrentPoolSymbol, PoolOption, PoolOptions } from '../../../state/pools/pools';
+import { CurrentPoolSymbol, PoolOption, PoolOptions } from '@state/pools/pools';
 import { TokenLogo } from '../TokenLogo';
 import { Select, Typography } from 'antd';
-import { ReactComponent as AngleDown } from '../../../styles/icons/arrow-angle-down.svg';
+import AngleDown from '@assets/icons/arrow-angle-down.svg';
 
 // Select component for the Token Input (to change which token user is interacting with)
 export function TokenSelect(props: {
@@ -22,7 +22,7 @@ export function TokenSelect(props: {
 
   return (
     <Select
-      dropdownClassName="token-input-dropdown dropdown-space-between"
+      popupClassName="token-input-dropdown dropdown-space-between"
       dropdownStyle={props.dropdownStyle}
       value={props.poolSymbol ? props.poolSymbol : currentPoolSymbol}
       onChange={tokenSymbol => {

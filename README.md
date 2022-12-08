@@ -24,7 +24,9 @@
 
 # Install
 
-Make sure you update Solana to the latest version.
+## Solana 
+
+Make sure you update Solana to a newer version.
 
 ```bash
 sh -c "$(curl -sSfL https://release.solana.com/v1.11.10/install)"
@@ -35,10 +37,20 @@ Install anchor. Please see the [Anchor Documentation](https://project-serum.gith
 ```bash
 cargo install --git https://github.com/project-serum/anchor avm --locked --force
 
-avm install latest
-avm use latest
-anchor --version # anchor-cli 0.25.0
+avm install 0.24.2
+avm use 0.24.2
+anchor --version # anchor-cli 0.24.2
 ```
+
+## Wasm Pack
+
+Install the wasm-pack tool
+
+```bash
+cargo install wasm-pack
+```
+
+## Yarn
 
 Install the project's node_modules
 
@@ -60,26 +72,32 @@ Run it in a docker container that already contains all the solana and anchor dep
 
 Run a single job from the workflow:
 ```bash
-./check [in-docker] [job-name (e.g. anchor-test)]
+./check [in-docker] [job-name (e.g. e2e-test)]
 ```
 
 # App
 
+Ensure you have a `/app/.env` file with the required variables:
+```
+REACT_APP_RPC_TOKEN = <YOUR_RPC_TOKEN>
+REACT_APP_RPC_DEV_TOKEN = <YOUR_DEV_RPC_TOKEN>
+REACT_APP_IP_REGISTRY = <YOUR_IP_REGISTRY_TOKEN>
+REACT_APP_LOGROCKET_PROJECT = ""
+```
+
 Run
 
 ```bash
-cd app
-yarn start
+yarn
+yarn dev
 ```
 
 to run the app.
 
-You may have to run the app in legacy mode if you get the following error
-`error:0308010C:digital envelope routines::unsupported`
-
+If `watch` or `wasm-pack` are missing (they should be installed automatically after running `yarn`) Install Cargo dependencies
 ```bash
-cd app
-yarn start:legacy
+cargo install cargo-watch
+curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 ```
 
 # Documentations

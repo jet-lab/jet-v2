@@ -1,11 +1,13 @@
 ignore/**
-**/lib
-**/dist
+lib
+dist
 test-ledger
+tests/oracle-mirror.pid
 
 .anchor
 .DS_Store
 .terraform*
+*.tgz
 target
 **/*.rs.bk
 node_modules
@@ -13,5 +15,10 @@ lcov.info
 .husky
 .vscode
 yarn-error.log
+tsconfig.tsbuildinfo
 
+app/build
+localnet.config.json
+
+.env
 # documentations

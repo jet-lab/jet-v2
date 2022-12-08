@@ -26,6 +26,7 @@ rand_distr = "0.3.0"
 lazy_static = "1.4.0"
 shellexpand = "2.1.0"
 solana-clap-utils = "1.10"
+serde_json = "1"
 
 
 tokio = { version = "1", features = ["macros", "time"] }
@@ -33,6 +34,7 @@ serial_test = "0.6.0"
 
 solana-sdk = "1.10"
 solana-client = "1.10"
+solana-cli-config = "1.10"
 
 agnostic-orderbook = { git = "https://github.com/jet-lab/agnostic-orderbook.git", branch = "main", features = ["lib", "utils"] }
 
@@ -50,12 +52,14 @@ jet-margin = { path = "../../programs/margin", features = ["no-entrypoint"] }
 jet-margin-pool = { path = "../../programs/margin-pool", features = ["no-entrypoint", "testing"] }
 jet-margin-swap = { path = "../../programs/margin-swap", features = ["no-entrypoint"] }
 jet-metadata = { path = "../../programs/metadata", features = ["no-entrypoint", "testing"] }
+jet-airspace = { path = "../../programs/airspace", features = ["no-entrypoint", "testing"] }
+jet-test-service = { path = "../../programs/test-service", features = ["no-entrypoint"] }
 
 jet-margin-sdk = { path = "../../libraries/rust/margin", features = ["testing"] }
+jet-program-common = { path = "../../libraries/rust/program-common" }
 
 mock-adapter = { path = "../mock-adapter", features = ["no-entrypoint"] }
 
 jet-simulation = { git = "https://github.com/jet-lab/jet-simulation", branch = "master" }
-jet-proto-math = { git = "https://github.com/jet-lab/program-libraries", branch = "fixed-point-math", features = ["full"] }
 
 itertools = "0.10.3"

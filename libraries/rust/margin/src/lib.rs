@@ -53,6 +53,8 @@
 
 /// Instruction builders for programs and adapters supported by the SDK
 pub mod ix_builder;
+/// generic code to integrate adapters with margin
+pub mod margin_integrator;
 /// things that should be provided by the solana sdk, but are not
 pub mod solana;
 /// Utilities for swap adapters
@@ -67,8 +69,14 @@ pub mod util;
 /// jet-bonds sdk
 pub mod bonds;
 
+/// Utilities for test environments
+pub mod test_service;
+
+pub use jet_airspace;
+pub use jet_bonds;
 pub use jet_control;
 pub use jet_margin;
 pub use jet_margin_pool;
 pub use jet_margin_swap;
 pub use jet_metadata;
+pub use jet_test_service;

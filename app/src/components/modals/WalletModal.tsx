@@ -2,19 +2,17 @@ import { useEffect } from 'react';
 import { useRecoilValue, useResetRecoilState } from 'recoil';
 import { useWallet } from '@solana/wallet-adapter-react';
 import LogRocket from 'logrocket';
-import { Dictionary } from '../../state/settings/localization/localization';
-import { LightTheme } from '../../state/settings/settings';
-import { WalletModal as WalletModalState } from '../../state/modals/modals';
-import { formatPubkey } from '../../utils/format';
-import { notify } from '../../utils/notify';
+import { Dictionary } from '@state/settings/localization/localization';
+import { WalletModal as WalletModalState } from '@state/modals/modals';
+import { formatPubkey } from '@utils/format';
+import { notify } from '@utils/notify';
 import { Modal, Divider, Typography } from 'antd';
-import { ReactComponent as ArrowIcon } from '../../styles/icons/arrow-icon.svg';
+import ArrowIcon from '@assets/icons/arrow-icon.svg';
 
 // Modal to connect user's Solana wallet to app
 export function WalletModal(): JSX.Element {
   const { wallets, wallet, select, publicKey } = useWallet();
   const dictionary = useRecoilValue(Dictionary);
-  const lightTheme = useRecoilValue(LightTheme);
   const WalletModalOpen = useRecoilValue(WalletModalState);
   const resetWalletModal = useResetRecoilState(WalletModalState);
   const { Text } = Typography;
@@ -30,7 +28,6 @@ export function WalletModal(): JSX.Element {
           .replaceAll('{{PUBLIC_KEY}}', formatPubkey(publicKey?.toString() ?? '')),
         'success'
       );
-
       // Initiate logRocket
       const logRocketProject = process.env.REACT_APP_LOGROCKET_PROJECT;
       if (logRocketProject) {
@@ -56,7 +53,7 @@ export function WalletModal(): JSX.Element {
     let path = `img/wallets/${walletName.toLowerCase()}`;
     // If Math Wallet, specify white or black logo (depending on theme)
     if (walletName === 'MathWallet') {
-      path += lightTheme ? '_black' : '_white';
+      path += '_white';
     }
 
     return path + '.png';
@@ -65,7 +62,7 @@ export function WalletModal(): JSX.Element {
   // If wallet modal is open and we're not already connected
   if (WalletModalOpen && !publicKey) {
     return (
-      <Modal visible className="wallet-modal" maskClosable={false} footer={null} onCancel={resetWalletModal}>
+      <Modal open className="wallet-modal" maskClosable={false} footer={null} onCancel={resetWalletModal}>
         <div className="flex-centered column">
           <img src="img/jet/jet_logo.png" width="120px" height="auto" alt="Jet Protocol" />
           <Text>{dictionary.settingsModal.wallet.worldOfDefi}</Text>

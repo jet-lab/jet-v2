@@ -2,7 +2,7 @@ import { useCallback } from 'react';
 import { useRecoilValue } from 'recoil';
 import { BN } from '@project-serum/anchor';
 import { TokenAmount } from '@jet-lab/margin';
-import { FiatCurrency, USDConversionRates } from '../state/settings/settings';
+import { FiatCurrency, USDConversionRates } from '@state/settings/settings';
 
 // Default decimal precision for tokens
 export const DEFAULT_DECIMALS = 4;
@@ -14,22 +14,22 @@ export function useCurrencyFormatting() {
 
   // Format USD or crypto with default or desired decimals
   const currencyFormatter = useCallback(
-    (value: number, fiatValues?: boolean, decimals?: number, ciel?: boolean): string => {
-      const roundedDownValue = ciel
-        ? Math.ceil(value * 10 ** (decimals ?? 2)) / 10 ** (decimals ?? 2)
-        : Math.floor(value * 10 ** (decimals ?? 2)) / 10 ** (decimals ?? 2);
-      const convertedValue =
-        fiatCurrency !== 'USD' ? roundedDownValue * conversionRates[fiatCurrency] : roundedDownValue;
+    (value: number, fiatValues?: boolean, decimals?: number, accounting?: boolean): string => {
+      const roundedValue = Math.round(value * 10 ** (decimals ?? 2)) / 10 ** (decimals ?? 2);
+      const convertedValue = fiatCurrency !== 'USD' ? roundedValue * conversionRates[fiatCurrency] : roundedValue;
 
       const currencyFormat = new Intl.NumberFormat(navigator.language, {
         style: fiatValues ? 'currency' : undefined,
         currency: fiatValues ? fiatCurrency : undefined,
-        maximumFractionDigits: decimals && !fiatValues ? decimals : 2
+        currencyDisplay: fiatValues ? 'narrowSymbol' : undefined,
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals ?? 2,
+        currencySign: accounting && fiatValues ? 'accounting' : undefined
       });
 
-      // Set and strip trailing 0's / unnecessary decimal if not fiat
       let uiCurrency = currencyFormat.format(convertedValue);
-      if (!fiatValues) {
+      if (!fiatValues && !accounting) {
+        // Set and strip trailing 0's / unnecessary decimals
         while (
           uiCurrency.indexOf('.') !== -1 &&
           (uiCurrency[uiCurrency.length - 1] === '0' || uiCurrency[uiCurrency.length - 1] === '.')
@@ -44,20 +44,51 @@ export function useCurrencyFormatting() {
   );
 
   // Abbreviate large currency amounts
-  function currencyAbbrev(total: number, fiatValues?: boolean, price?: number, decimals?: number): string {
+  function currencyAbbrev(
+    total: number,
+    decimals: number,
+    fiatValues?: boolean,
+    price?: number,
+    precision?: boolean,
+    accounting?: boolean,
+    aggressiveness: 'billions' | 'millions' | 'thousands' = 'billions'
+  ): string {
     let t = total;
     if (price && fiatValues) {
       t = total * price;
     }
 
+    // In all cases, truncate trillions and billions
     if (t > 1000000000000) {
       return currencyFormatter(t / 1000000000000, fiatValues, 1) + 'T';
-    } else if (t > 1000000000) {
+    } else if (t > 1000000000 && aggressiveness === 'billions') {
       return currencyFormatter(t / 1000000000, fiatValues, 1) + 'B';
-    } else if (t > 1000000) {
+    } else if (t > 1000000 && ['millions', 'thousands'].includes(aggressiveness)) {
       return currencyFormatter(t / 1000000, fiatValues, 1) + 'M';
-    } else if (t > 1000) {
-      return currencyFormatter(t / 1000, fiatValues, 1) + 'K';
+    } else if (t > 1000 && ['thousands'].includes(aggressiveness)) {
+      return currencyFormatter(t / 1000, fiatValues, 1) + 'k';
+    }
+
+    if (precision) {
+      if (fiatValues) {
+        if (accounting) {
+          return currencyFormatter(t, fiatValues, decimals, true);
+        }
+        // Do not truncate fiat values under million
+        return currencyFormatter(t, fiatValues, decimals);
+      } else {
+        // If not fiat values, show up to the 9th character
+        // with dynamic decimal places
+        const multiple = Math.pow(10, decimals);
+        // TODO: We might want to also abbreviate the values here
+        return String(Math.round(t * multiple) / multiple);
+      }
+    }
+
+    if (t > 1000000) {
+      return currencyFormatter(t / 1000000, fiatValues, 1) + 'M';
+      // } else if (t > 1000) {
+      //   return currencyFormatter(t / 1000, fiatValues, 1) + 'K';
     } else {
       return currencyFormatter(t, fiatValues, fiatValues ? 2 : decimals);
     }

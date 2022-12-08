@@ -1,23 +1,24 @@
 import { useRecoilState, useSetRecoilState, useResetRecoilState, useRecoilValue } from 'recoil';
 import { PoolAction } from '@jet-lab/margin';
-import { Dictionary } from '../../../state/settings/localization/localization';
-import { SendingTransaction } from '../../../state/actions/actions';
-import { BlockExplorer, Cluster } from '../../../state/settings/settings';
-import { WalletTokens } from '../../../state/user/walletTokens';
-import { CurrentAccount } from '../../../state/user/accounts';
-import { CurrentPool } from '../../../state/pools/pools';
-import { CurrentAction, TokenInputAmount, TokenInputString } from '../../../state/actions/actions';
-import { useTokenInputDisabledMessage } from '../../../utils/actions/tokenInput';
-import { useCurrencyFormatting } from '../../../utils/currency';
-import { formatRiskIndicator, formatRate } from '../../../utils/format';
-import { getExplorerUrl, getTokenStyleType } from '../../../utils/ui';
-import { notify } from '../../../utils/notify';
-import { useProjectedRisk, useRiskStyle } from '../../../utils/risk';
-import { ActionResponse } from '../../../utils/jet/marginActions';
-import { useMarginActions } from '../../../utils/jet/marginActions';
+import { Dictionary } from '@state/settings/localization/localization';
+import { ActionRefresh, SendingTransaction } from '@state/actions/actions';
+import { BlockExplorer, Cluster } from '@state/settings/settings';
+import { WalletTokens } from '@state/user/walletTokens';
+import { CurrentAccount } from '@state/user/accounts';
+import { CurrentPool } from '@state/pools/pools';
+import { CurrentAction, TokenInputAmount, TokenInputString } from '@state/actions/actions';
+import { useTokenInputDisabledMessage } from '@utils/actions/tokenInput';
+import { useCurrencyFormatting } from '@utils/currency';
+import { formatRiskIndicator, formatRate } from '@utils/format';
+import { getExplorerUrl, getTokenStyleType } from '@utils/ui';
+import { notify } from '@utils/notify';
+import { useProjectedRisk, useRiskStyle } from '@utils/risk';
+import { ActionResponse } from '@utils/jet/marginActions';
+import { useMarginActions } from '@utils/jet/marginActions';
 import { ArrowRight } from './ArrowRight';
-import { TokenInput } from '../../misc/TokenInput/TokenInput';
+import { TokenInput } from '@components/misc/TokenInput/TokenInput';
 import { Button, Modal, Tabs, Typography } from 'antd';
+import { useEffect } from 'react';
 
 // Modal to Deposit / Withdraw using the current Pool
 export function DepositWithdrawModal(): JSX.Element {
@@ -36,6 +37,7 @@ export function DepositWithdrawModal(): JSX.Element {
   const setTokenInputString = useSetRecoilState(TokenInputString);
   const resetTokenInputString = useResetRecoilState(TokenInputString);
   const resetTokenInputAmount = useResetRecoilState(TokenInputAmount);
+  const setActionRefresh = useSetRecoilState(ActionRefresh);
   const riskStyle = useRiskStyle();
   const projectedRiskIndicator = useProjectedRisk();
   const projectedRiskStyle = useRiskStyle(projectedRiskIndicator);
@@ -43,7 +45,16 @@ export function DepositWithdrawModal(): JSX.Element {
   const disabledMessage = useTokenInputDisabledMessage();
   const disabled = sendingTransaction || disabledMessage.length > 0;
   const { Paragraph, Text } = Typography;
-  const { TabPane } = Tabs;
+  const tabItems = ['deposit', 'withdraw'].map((action: string) => {
+    return {
+      label: action,
+      key: action
+    };
+  });
+
+  useEffect(() => {
+    if (currentAction === 'deposit' || currentAction === 'withdraw') setActionRefresh(Date.now());
+  }, [currentAction]);
 
   // Deposit / Withdraw
   async function depositWithdraw() {
@@ -90,12 +101,9 @@ export function DepositWithdrawModal(): JSX.Element {
       depositBalance = accountPoolPosition.depositBalance.tokens;
     }
 
-    let decimals = 2;
-    if (currentPool) {
-      decimals = currentPool.decimals;
-    }
+    const decimals = currentPool?.precision ?? 2;
 
-    const abbreviatedDepositBalance = currencyAbbrev(balance ?? depositBalance, false, undefined, decimals);
+    const abbreviatedDepositBalance = currencyAbbrev(balance ?? depositBalance, decimals, false, undefined);
     return abbreviatedDepositBalance;
   }
 
@@ -218,14 +226,12 @@ export function DepositWithdrawModal(): JSX.Element {
 
   if (currentAccount && (currentAction === 'deposit' || currentAction === 'withdraw')) {
     return (
-      <Modal visible className="action-modal" maskClosable={false} footer={null} onCancel={handleCancel}>
+      <Modal open className="action-modal" maskClosable={false} footer={null} onCancel={handleCancel}>
         <Tabs
           activeKey={currentAction ?? 'deposit'}
-          onChange={(action: string) => setCurrentAction(action as PoolAction)}>
-          {['deposit', 'withdraw'].map(action => (
-            <TabPane tab={action} key={action}></TabPane>
-          ))}
-        </Tabs>
+          onChange={(action: string) => setCurrentAction(action as PoolAction)}
+          items={tabItems}
+        />
         <div className="wallet-balance flex align-center justify-between">
           <Text className="small-accent-text">
             {dictionary.common[currentAction === 'deposit' ? 'walletBalance' : 'accountBalance'].toUpperCase()}
@@ -248,7 +254,7 @@ export function DepositWithdrawModal(): JSX.Element {
               {renderAffectedDepositRate()}
             </Paragraph>
           </div>
-          <div className="action-info-item flex align-center justify-between">
+          <div className="action-info-item flex align-center justify-between" data-testid="predicted-risk">
             <Paragraph type="secondary">{dictionary.common.riskLevel}</Paragraph>
             <div className="flex-centered">
               <Paragraph type={riskStyle}>{formatRiskIndicator(currentAccount.riskIndicator)}</Paragraph>
@@ -258,7 +264,7 @@ export function DepositWithdrawModal(): JSX.Element {
         </div>
         <Button
           block
-          disabled={disabled || tokenInputAmount.isZero()}
+          disabled={disabled || tokenInputAmount.isZero() || projectedRiskIndicator > 1}
           loading={sendingTransaction}
           onClick={depositWithdraw}>
           {getSubmitText()}

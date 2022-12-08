@@ -17,9 +17,12 @@
 
 use anchor_lang::prelude::*;
 
-use jet_proto_math::Number128;
+use jet_program_common::Number128;
 
-use crate::{events, ErrorCode, Liquidation, MarginAccount, LIQUIDATION_MAX_EQUITY_LOSS_BPS};
+use crate::{
+    events, ErrorCode, Liquidation, LiquidationState, MarginAccount,
+    LIQUIDATION_MAX_EQUITY_LOSS_BPS,
+};
 use jet_metadata::LiquidatorMetadata;
 
 #[derive(Accounts)]
@@ -49,9 +52,9 @@ pub struct LiquidateBegin<'info> {
         ],
         bump,
         payer = payer,
-        space = 8 + std::mem::size_of::<Liquidation>(),
+        space = 8 + std::mem::size_of::<LiquidationState>(),
     )]
-    pub liquidation: AccountLoader<'info, Liquidation>,
+    pub liquidation: AccountLoader<'info, LiquidationState>,
 
     system_program: Program<'info, System>,
 }
@@ -88,14 +91,16 @@ pub fn liquidate_begin_handler(ctx: Context<LiquidateBegin>) -> Result<()> {
     let min_equity_change = (valuation.effective_collateral - valuation.required_collateral)
         * Number128::from_bps(LIQUIDATION_MAX_EQUITY_LOSS_BPS);
 
-    let liquidation_data = Liquidation::new(Clock::get()?.unix_timestamp, min_equity_change);
-    *ctx.accounts.liquidation.load_init()? = liquidation_data;
+    let liquidation_state = LiquidationState {
+        state: Liquidation::new(Clock::get()?.unix_timestamp, min_equity_change),
+    };
+    *ctx.accounts.liquidation.load_init()? = liquidation_state;
 
     emit!(events::LiquidationBegun {
         margin_account: ctx.accounts.margin_account.key(),
         liquidator: ctx.accounts.liquidator.key(),
         liquidation: ctx.accounts.liquidation.key(),
-        liquidation_data,
+        liquidation_data: liquidation_state.state,
         valuation_summary: valuation.into(),
     });
 

@@ -1,11 +1,16 @@
 import React, { useEffect } from 'react';
 import { useRecoilValue } from 'recoil';
-import { AccountSnapshot } from '../components/misc/AccountSnapshot/AccountSnapshot';
-import { FixedPriceChartContainer } from '../components/FixedView/FixedPriceChart';
-import { FullAccountBalance } from '../components/tables/FullAccountBalance';
-import { Dictionary } from '../state/settings/localization/localization';
-import { FixedBorrowOrderEntry } from '../components/FixedView/FixedBorrowOrderEntry';
-import { FixedBorrowRowOrder, FixedBorrowViewOrder } from '../state/views/fixed-term';
+import { AccountSnapshot } from '@components/misc/AccountSnapshot/AccountSnapshot';
+import { FixedPriceChartContainer } from '@components/fixed-term/shared/fixed-market-chart';
+import { FullAccountBalance } from '@components/tables/FullAccountBalance';
+import { Dictionary } from '@state/settings/localization/localization';
+import { FixedBorrowOrderEntry } from '@components/fixed-term/borrow-entry';
+import { FixedBorrowRowOrder, FixedBorrowViewOrder } from '@state/views/fixed-term';
+import { FixedMarketSelector } from '@components/fixed-term/shared/market-selector';
+import { NetworkStateAtom } from '@state/network/network-state';
+import { WaitingForNetworkView } from './WaitingForNetwork';
+import { DebtTable } from '@components/fixed-term/shared/debt-table';
+import { Settle } from '@components/fixed-term/shared/settle';
 
 const rowComponents: Record<string, React.FC<any>> = {
   fixedBorrowEntry: FixedBorrowOrderEntry,
@@ -14,7 +19,7 @@ const rowComponents: Record<string, React.FC<any>> = {
 
 const rowComponentsProps: Record<string, object> = {
   fixedBorrowEntry: { key: 'fixedBorrowEntry' },
-  fixedBorrowChart: { key: 'fixedBorrowChart', type: 'bids' }
+  fixedBorrowChart: { key: 'fixedBorrowChart', type: 'asks' }
 };
 
 const FixedRow = (): JSX.Element => {
@@ -32,14 +37,20 @@ const FixedRow = (): JSX.Element => {
 
 const viewComponents: Record<string, React.FC<any>> = {
   accountSnapshot: AccountSnapshot,
+  settleComponent: Settle,
   fixedRow: FixedRow,
-  fullAccountBalance: FullAccountBalance
+  debtTable: DebtTable,
+  fullAccountBalance: FullAccountBalance,
+  marketSelector: FixedMarketSelector
 };
 
 const viewComponentsProps: Record<string, object> = {
   accountSnapshot: { key: 'accountSnapshot' },
+  settleComponent: { key: 'settleComponent' },
   fixedRow: { key: 'fixedRow' },
-  fullAccountBalance: { key: 'fullAccountBalance' }
+  debtTable: { key: 'debtTable' },
+  fullAccountBalance: { key: 'fullAccountBalance' },
+  marketSelector: { key: 'marketSelector', type: 'asks' }
 };
 
 const MainView = (): JSX.Element => {
@@ -57,9 +68,13 @@ const MainView = (): JSX.Element => {
 
 export function FixedBorrowView(): JSX.Element {
   const dictionary = useRecoilValue(Dictionary);
+
+  const networkState = useRecoilValue(NetworkStateAtom);
   useEffect(() => {
     document.title = `${dictionary.fixedView.borrow.title} | Jet Protocol`;
   }, [dictionary.fixedView.borrow.title]);
+
+  if (networkState !== 'connected') return <WaitingForNetworkView networkState={networkState} />;
   return <MainView />;
 }
 

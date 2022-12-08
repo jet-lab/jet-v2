@@ -7,40 +7,12 @@ on:
   pull_request:
 
 jobs:
-  anchor-test:
-    runs-on: ubuntu-latest
-    container:
-      image: jetprotocol/builder:solana-1.10.35-anchor-0.25.0-3
-    env:
-      HOME: /root
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-
-      - name: Get anchor-test cache
-        uses: actions/cache@v3
-        with:
-          key: anchor-test
-          path: |
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-            !target/idl
-            !target/deploy
-
-      - name: ./check anchor-test
-        run: |
-          chmod -R 777 /root
-          ./check anchor-test
-
-
   hosted-tests-localnet-batch1:
     runs-on: ubuntu-latest
     container:
-      image: jetprotocol/builder:solana-1.10.35-anchor-0.25.0-3
+      image: jetprotocol/builder:rust-1.65.0-node-18.12.1-solana-1.13.6-anchor-0.25.0-1
     env:
-      HOME: /root
+      HOME: /home/tools
       BATCH: batch1
     steps:
       - name: Checkout
@@ -49,7 +21,7 @@ jobs:
       - name: Get hosted-tests-localnet cache
         uses: actions/cache@v3
         with:
-          key: hosted-tests-localnet
+          key: ${{ runner.os }}-hosted-tests-localnet-${{ hashFiles('**/Cargo.lock') }}
           path: |
             ~/.cargo/registry/index/
             ~/.cargo/registry/cache/
@@ -64,9 +36,9 @@ jobs:
   hosted-tests-localnet-batch2:
     runs-on: ubuntu-latest
     container:
-      image: jetprotocol/builder:solana-1.10.35-anchor-0.25.0-3
+      image: jetprotocol/builder:rust-1.65.0-node-18.12.1-solana-1.13.6-anchor-0.25.0-1
     env:
-      HOME: /root
+      HOME: /home/tools
       BATCH: batch2
     steps:
       - name: Checkout
@@ -75,7 +47,7 @@ jobs:
       - name: Get hosted-tests-localnet cache
         uses: actions/cache@v3
         with:
-          key: hosted-tests-localnet
+          key: ${{ runner.os }}-hosted-tests-localnet-${{ hashFiles('**/Cargo.lock') }}
           path: |
             ~/.cargo/registry/index/
             ~/.cargo/registry/cache/
@@ -90,9 +62,9 @@ jobs:
   cargo-lint:
     runs-on: ubuntu-latest
     container:
-      image: jetprotocol/builder:solana-1.10.35-anchor-0.25.0-3
+      image: jetprotocol/builder:rust-1.65.0-node-18.12.1-solana-1.13.6-anchor-0.25.0-1
     env:
-      HOME: /root
+      HOME: /home/tools
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -100,12 +72,12 @@ jobs:
       - name: Get cargo-lint cache
         uses: actions/cache@v3
         with:
-          key: cargo-lint
+          key: ${{ runner.os }}-cargo-lint-${{ hashFiles('**/Cargo.lock') }}
           path: |
             ~/.cargo/registry/index/
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
-            target/debug
+            target/
 
       - run: ./check cargo-lint
 
@@ -113,9 +85,9 @@ jobs:
   cargo-test:
     runs-on: ubuntu-latest
     container:
-      image: jetprotocol/builder:solana-1.10.35-anchor-0.25.0-3
+      image: jetprotocol/builder:rust-1.65.0-node-18.12.1-solana-1.13.6-anchor-0.25.0-1
     env:
-      HOME: /root
+      HOME: /home/tools
       CODECOV: true
     steps:
       - uses: actions/checkout@v3
@@ -123,7 +95,7 @@ jobs:
       - name: Get cargo-test cache
         uses: actions/cache@v3
         with:
-          key: cargo-test
+          key: ${{ runner.os }}-cargo-test-${{ hashFiles('**/Cargo.lock') }}
           path: |
             ~/.cargo/registry/index/
             ~/.cargo/registry/cache/
@@ -137,3 +109,35 @@ jobs:
         with:
           files: lcov.info
           fail_ci_if_error: true
+
+  e2e:
+    runs-on: ubuntu-latest
+    container:
+      image: jetprotocol/builder:rust-1.65.0-node-18.12.1-solana-1.13.6-anchor-0.25.0-1
+    env:
+      HOME: /home/tools
+      SOLANA_MAINNET_RPC: ${{ secrets.SOLANA_MAINNET_RPC }}
+      REACT_APP_IP_REGISTRY: ${{ secrets.REACT_APP_IP_REGISTRY }}
+      REACT_APP_RPC_DEV_TOKEN: ${{ secrets.REACT_APP_RPC_DEV_TOKEN }}
+      REACT_APP_RPC_TOKEN: ${{ secrets.REACT_APP_RPC_TOKEN }}
+      REACT_APP_LOGROCKET_PROJECT: ''
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Get anchor cache
+        uses: actions/cache@v3
+        with:
+          key: ${{ runner.os }}-e2e-${{ hashFiles('**/Cargo.lock') }}
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+            !target/idl
+            !target/deploy
+
+      - name: E2E
+        run: |
+          chmod -R 777 /root
+          ./check e2e-tests

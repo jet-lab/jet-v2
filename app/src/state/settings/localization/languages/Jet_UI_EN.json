@@ -29,7 +29,9 @@
     "availableCollateral": "Available Collateral",
     "risk": "Risk",
     "riskLevel": "Risk Level",
+    "priceImpact": "Price Impact",
     "publicKey": "Public Key",
+    "pythDataStale": "Pyth Data Stale",
     "balance": "Balance",
     "wallet": "Wallet",
     "walletBalance": "Wallet Balance",
@@ -59,7 +61,7 @@
       "pastTense": "Deposited",
       "disabledMessages": {
         "noBalanceForDeposit": "You have no {{ASSET}} in your wallet to deposit.",
-        "notEnoughSolForFees": "You don't have enough SOL in your wallet to cover transaction fees."
+        "notEnoughSolForFees": "Please make sure you have a buffer of at least {{BUFFER}} SOL in your wallet to cover potential transaction fees."
       },
       "warningMessages": {},
       "errorMessages": {
@@ -133,7 +135,8 @@
         "noBalanceForSwap": "You have no {{ASSET}} in your {{WALLET_OR_ACCOUNT}} to swap."
       },
       "warningMessages": {
-        "maxSlippageExceeded": "This swap would have exceeded your max slippage. Please try again."
+        "maxSlippageExceeded": "This swap would have exceeded your max slippage. Please try again.",
+        "largePriceImpact": "This swap will move the pool price significantly. Please choose a lower amount."
       },
       "errorMessages": {
         "noPools": "There are no swap pools found for this pair. Please try another output token."
@@ -214,7 +217,7 @@
         "description": "Your {{WALLET_NAME}} wallet {{PUBLIC_KEY}} has been connected."
       },
       "disconnect": {
-        "message": "Wallet Disonnected",
+        "message": "Wallet Disconnected",
         "description": "Your {{WALLET_NAME}} wallet {{PUBLIC_KEY}} has been disconnected."
       }
     },
@@ -405,6 +408,7 @@
     "loanToValue": "Loan to Value",
     "utilizationRate": "Utilization Rate",
     "collateralWeight": "Collateral Weight",
+    "requiredCollateralFactor": "Required Collateral Factor",
     "poolDetail": {
       "title": "Pool Detail",
       "poolSize": "Pool Size",
@@ -421,7 +425,8 @@
       "title": "Pools Table",
       "noPools": "No Pools",
       "allAssets": "All Assets",
-      "searchExample": "e.g. JET"
+      "searchExample": "e.g. JET",
+      "pythDataStale": "Pyth Data Stale"
     },
     "errors": {
       "noPools": "Error loading Jet pools",
@@ -436,12 +441,33 @@
   },
   "fixedView": {
     "lend": {
-      "title": "Lend",
+      "title": "Lend Fixed-Term",
       "chartTitle": "Asks"
     },
     "borrow": {
-      "title": "Borrow",
+      "title": "Borrow Fixed-Term",
       "chartTitle": "Bids"
+    },
+    "debtTable": {
+      "title": "Debt Detail",
+      "postOrder": {
+        "id": "Order ID",
+        "placedTime": "Order Placed",
+        "orderSize": "Order Size",
+        "filledSize": "Filled Size",
+        "tenor": "Tenor",
+        "rate": "Rate",
+        "autoRoll": "Auto-Roll",
+        "cancel": "Cancel"
+      },
+      "fillOrder": {
+        "id": "Fill ID",
+        "startTime": "Start Time",
+        "matureTime": "Mature Time",
+        "fillSize": "Fill Size",
+        "quoteValue": "Quote Value",
+        "status": "Status"
+      }
     }
   },
   "accountsView": {

@@ -19,6 +19,9 @@ cli = ["no-entrypoint", "serde"]
 mock-margin = []
 testing = ["jet-margin/testing"]
 
+[profile.release]
+overflow-checks = true
+
 [dependencies]
 arrayref = "0.3.6"
 bitflags = "1.0.3"
@@ -34,6 +37,14 @@ agnostic-orderbook = { git = "https://github.com/jet-lab/agnostic-orderbook.git"
 anchor-lang = { git = "https://github.com/jet-lab/anchor", branch = "master" }
 anchor-spl =  { git = "https://github.com/jet-lab/anchor", branch = "master" }
 
-jet-proto-math = { git = "https://github.com/jet-lab/program-libraries", branch = "main", features = ["traits"] }
+
+jet-program-proc-macros = { path = "../../libraries/rust/program-proc-macros" }
+jet-program-common = { path = "../../libraries/rust/program-common" }
 
 jet-margin = { path = "../margin", features = ["no-entrypoint"] }
+
+[dev-dependencies]
+serde = "1.0"
+serde_json = "1.0"
+itertools = "*"
+static_assertions = "1.1.0"

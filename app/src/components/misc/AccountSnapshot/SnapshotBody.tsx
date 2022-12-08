@@ -1,18 +1,22 @@
-import { useRecoilValue } from 'recoil';
-import { Dictionary } from '../../../state/settings/localization/localization';
-import { WalletTokens } from '../../../state/user/walletTokens';
-import { Accounts, CurrentAccount } from '../../../state/user/accounts';
-import { useCurrencyFormatting } from '../../../utils/currency';
-import { formatRiskIndicator } from '../../../utils/format';
-import { useRiskStyle } from '../../../utils/risk';
+import { useRecoilValue, useSetRecoilState } from 'recoil';
+import { Dictionary } from '@state/settings/localization/localization';
+import { WalletTokens } from '@state/user/walletTokens';
+import { Accounts, CurrentAccount } from '@state/user/accounts';
+import { useCurrencyFormatting } from '@utils/currency';
+import { formatRiskIndicator } from '@utils/format';
+import { useRiskStyle } from '@utils/risk';
 import { Typography, Skeleton } from 'antd';
 import { ConnectionFeedback } from '../ConnectionFeedback/ConnectionFeedback';
 import { Info } from '../Info';
 import { RiskMeter } from '../RiskMeter';
+import axios from 'axios';
+import { USDConversionRates } from '@state/settings/settings';
+import { useEffect } from 'react';
 
 // Body of the Account Snapshot, where users can see data for the currently selected margin account
 export function SnapshotBody(): JSX.Element {
   const dictionary = useRecoilValue(Dictionary);
+  const setUsdConversion = useSetRecoilState(USDConversionRates);
   const { currencyFormatter, currencyAbbrev } = useCurrencyFormatting();
   const walletTokens = useRecoilValue(WalletTokens);
   const accounts = useRecoilValue(Accounts);
@@ -20,6 +24,18 @@ export function SnapshotBody(): JSX.Element {
   const currentAccount = useRecoilValue(CurrentAccount);
   const riskStyle = useRiskStyle();
   const { Title, Text } = Typography;
+
+  useEffect(() => {
+    axios
+      .get('https://api.jetprotocol.io/v1/rates')
+      .then(resp => {
+        const conversions = resp.data;
+        if (conversions) {
+          setUsdConversion(conversions.rates);
+        }
+      })
+      .catch(err => err);
+  }, []);
 
   // Renders the account balance
   function renderAccountBalance() {
@@ -31,7 +47,7 @@ export function SnapshotBody(): JSX.Element {
       accountBalance = depositedValue - borrowedValue;
     }
 
-    let render = <Title>{currencyFormatter(accountBalance, true)}</Title>;
+    let render = <Title>{currencyFormatter(accountBalance, true, 0)}</Title>;
     if (initialAccountsLoad) {
       render = <Skeleton className="align-center" paragraph={false} active />;
     }
@@ -44,7 +60,7 @@ export function SnapshotBody(): JSX.Element {
     const availableCollateral = currentAccount
       ? currentAccount.valuation.effectiveCollateral.sub(currentAccount.valuation.requiredCollateral).toNumber()
       : 0;
-    let render = <Title>{currencyFormatter(availableCollateral, true)}</Title>;
+    let render = <Title>{currencyFormatter(availableCollateral, true, 0)}</Title>;
     if (initialAccountsLoad) {
       render = <Skeleton className="align-center" paragraph={false} active />;
     }
@@ -103,11 +119,11 @@ export function SnapshotBody(): JSX.Element {
         {renderAccountBalance()}
         <div className="assets-liabilities flex-centered">
           <Text type="success">
-            {dictionary.common.assets} : {currencyAbbrev(getAccountAssets(), true)}
+            {dictionary.common.assets} : {currencyAbbrev(getAccountAssets(), 1, true, undefined)}
           </Text>
           <div className="assets-liabilities-divider"></div>
           <Text type="danger">
-            {dictionary.accountSnapshot.liabilities} : {currencyAbbrev(getAccountLiabilities(), true)}
+            {dictionary.accountSnapshot.liabilities} : {currencyAbbrev(getAccountLiabilities(), 1, true, undefined)}
           </Text>
         </div>
       </div>
@@ -118,11 +134,11 @@ export function SnapshotBody(): JSX.Element {
         {renderAvailableCollateral()}
         <div className="assets-liabilities flex-centered">
           <Text type="secondary">
-            {dictionary.common.effective} : {currencyAbbrev(getCollateral('effective'), true)}
+            {dictionary.common.effective} : {currencyAbbrev(getCollateral('effective'), 1, true, undefined)}
           </Text>
           <div className="assets-liabilities-divider"></div>
           <Text type="secondary">
-            {dictionary.common.required} : {currencyAbbrev(getCollateral('required'), true)}
+            {dictionary.common.required} : {currencyAbbrev(getCollateral('required'), 1, true, undefined)}
           </Text>
         </div>
       </div>

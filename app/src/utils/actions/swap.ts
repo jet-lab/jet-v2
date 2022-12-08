@@ -4,8 +4,8 @@ import { PublicKey } from '@solana/web3.js';
 import { computeOutputAmount } from '@orca-so/stablecurve';
 import { BN } from 'bn.js';
 import { MarginAccount, Pool, SPLSwapPool, TokenAmount } from '@jet-lab/margin';
-import { Dictionary } from '../../state/settings/localization/localization';
-import { TokenInputAmount } from '../../state/actions/actions';
+import { Dictionary } from '@state/settings/localization/localization';
+import { TokenInputAmount } from '@state/actions/actions';
 import { DEFAULT_DECIMALS, getTokenAmountFromNumber } from '../currency';
 
 // Calculate the token output for a constant product swap
@@ -21,7 +21,6 @@ function constantProductSwap(sourceAmount: number, swapSourceAmount: number, swa
 }
 
 // Calculate token output based on current prices
-// TODO: add a variable for pool type (stable vs constantProduct)
 export function getOutputTokenAmount(
   swapAmount: TokenAmount | undefined,
   sourceTokenAmount: TokenAmount | undefined,
@@ -57,9 +56,8 @@ export function getOutputTokenAmount(
       new BN(amp)
     );
     return new TokenAmount(outputAmount, destinationTokenAmount.decimals);
-  } else {
-    return;
   }
+  return undefined;
 }
 
 // Calculate minimum output based on input and slippage
@@ -69,8 +67,7 @@ export function getMinOutputAmount(
   destinationTokenAmount: TokenAmount | undefined,
   poolType: 'constantProduct' | 'stable' | undefined,
   fees: number,
-  slippage: number,
-  amp: number = 100
+  slippage: number
 ) {
   const outputAmount =
     getOutputTokenAmount(swapAmount, sourceTokenAmount, destinationTokenAmount, poolType, fees) ??
@@ -86,8 +83,7 @@ export function useSwapReviewMessage(
   sourceTokenAmount: TokenAmount | undefined,
   destinationTokenAmount: TokenAmount | undefined,
   poolType: 'constantProduct' | 'stable' | undefined,
-  fees: number,
-  amp: number = 100
+  fees: number
 ): string {
   const dictionary = useRecoilValue(Dictionary);
   const tokenInputAmount = useRecoilValue(TokenInputAmount);

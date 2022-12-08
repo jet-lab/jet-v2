@@ -15,8 +15,12 @@ pub struct InitializeBondManagerParams {
     /// This seed allows the creation of many separate ticket managers tracking different
     /// parameters, such as staking duration
     pub seed: [u8; 32],
-    /// Units added to the initial stake timestamp to determine claim maturity
-    pub duration: i64,
+    /// Length of time before a borrow is marked as due, in seconds
+    pub borrow_duration: i64,
+    /// Length of time before a claim is marked as mature, in seconds
+    pub lend_duration: i64,
+    /// assessed on borrows. scaled by origination_fee::FEE_UNIT
+    pub origination_fee: u64,
 }
 
 /// Initialize a [BondManager]
@@ -30,6 +34,7 @@ pub struct InitializeBondManager<'info> {
         init,
         seeds = [
             seeds::BOND_MANAGER,
+            airspace.key().as_ref(),
             underlying_token_mint.key().as_ref(),
             &params.seed,
         ],
@@ -88,7 +93,7 @@ pub struct InitializeBondManager<'info> {
     /// Mints tokens to a margin account to represent debt that must be collateralized
     #[account(init,
         seeds = [
-            seeds::DEPOSIT_NOTES,
+            seeds::COLLATERAL_NOTES,
             bond_manager.key().as_ref(),
         ],
         bump,
@@ -113,6 +118,10 @@ pub struct InitializeBondManager<'info> {
     /// The oracle for the bond ticket price
     /// CHECK: determined by caller
     pub ticket_oracle: AccountInfo<'info>,
+
+    /// The account where fees are allowed to be withdrawn
+    #[account(token::mint = underlying_token_mint)]
+    pub fee_destination: Box<Account<'info, TokenAccount>>,
 
     /// The account paying rent for PDA initialization
     #[account(mut)]
@@ -146,23 +155,31 @@ pub fn handler(
             bump: [*ctx.bumps.get("bond_manager").unwrap()],
             orderbook_paused: false,
             tickets_paused: false,
-            duration: params.duration,
+            borrow_duration: params.borrow_duration,
+            lend_duration: params.lend_duration,
             underlying_oracle: ctx.accounts.underlying_oracle.key(),
             ticket_oracle: ctx.accounts.ticket_oracle.key(),
+            fee_destination: ctx.accounts.fee_destination.key(),
+            origination_fee: params.origination_fee,
         } ignoring {
             orderbook_market_state,
             event_queue,
             asks,
             bids,
             nonce,
+            collected_fees,
             _reserved,
         }
     }
     emit!(BondManagerInitialized {
         version: manager.version_tag,
         address: ctx.accounts.bond_manager.key(),
-        underlying_token: manager.underlying_token_mint,
-        duration: manager.duration,
+        underlying_token_mint: manager.underlying_token_mint,
+        borrow_duration: manager.borrow_duration,
+        lend_duration: manager.lend_duration,
+        airspace: manager.airspace,
+        underlying_oracle: manager.underlying_oracle,
+        ticket_oracle: manager.ticket_oracle,
     });
 
     Ok(())

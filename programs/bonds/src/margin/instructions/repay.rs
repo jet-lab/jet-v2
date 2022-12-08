@@ -2,7 +2,7 @@ use std::cmp::min;
 
 use anchor_lang::{prelude::*, AccountsClose};
 use anchor_spl::token::{transfer, Token, TokenAccount, Transfer};
-use jet_proto_math::traits::TrySubAssign;
+use jet_program_common::traits::TrySubAssign;
 
 use crate::{
     events::{ObligationFulfilled, ObligationRepay},
@@ -13,6 +13,7 @@ use crate::{
 #[derive(Accounts)]
 pub struct Repay<'info> {
     /// The account tracking information related to this particular user
+    #[account(mut)]
     pub borrower_account: Account<'info, MarginUser>,
 
     #[account(
@@ -71,6 +72,8 @@ pub fn handler(ctx: Context<Repay>, amount: u64) -> Result<()> {
             .partially_repay_obligation(obligation.sequence_number, amount)?;
     } else {
         emit!(ObligationFulfilled {
+            obligation: obligation.key(),
+            orderbook_user: user.key(),
             borrower: obligation.borrower_account,
             timestamp: Clock::get()?.unix_timestamp,
         });

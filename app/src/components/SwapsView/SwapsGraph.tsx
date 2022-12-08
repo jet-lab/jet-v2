@@ -2,16 +2,17 @@ import { useEffect, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { TokenAmount } from '@jet-lab/margin';
 import { BN } from '@project-serum/anchor';
-import { Dictionary } from '../../state/settings/localization/localization';
-import { SwapsRowOrder } from '../../state/views/views';
-import { CurrentAccount } from '../../state/user/accounts';
-import { CurrentSwapOutput, TokenInputAmount, TokenInputString } from '../../state/actions/actions';
-import { CurrentSplSwapPool, SwapFees, SwapPoolTokenAmounts } from '../../state/swap/splSwap';
-import { CurrentPool } from '../../state/pools/pools';
-import { generateSwapPrices, getOutputTokenAmount } from '../../utils/actions/swap';
-import { useCurrencyFormatting } from '../../utils/currency';
-import { ReorderArrows } from '../misc/ReorderArrows';
-import { ConnectionFeedback } from '../misc/ConnectionFeedback/ConnectionFeedback';
+import { Dictionary } from '@state/settings/localization/localization';
+import { SwapsRowOrder } from '@state/views/views';
+import { CurrentAccount } from '@state/user/accounts';
+import { CurrentSwapOutput, TokenInputAmount, TokenInputString } from '@state/actions/actions';
+import { CurrentSplSwapPool, SwapFees, SwapPoolTokenAmounts } from '@state/swap/splSwap';
+import { CurrentPool } from '@state/pools/pools';
+import { generateSwapPrices, getOutputTokenAmount } from '@utils/actions/swap';
+import { useCurrencyFormatting } from '@utils/currency';
+import { fromLocaleString } from '@utils/format';
+import { ReorderArrows } from '@components/misc/ReorderArrows';
+import { ConnectionFeedback } from '@components/misc/ConnectionFeedback/ConnectionFeedback';
 import ApexCharts from 'apexcharts';
 import { Typography } from 'antd';
 import { LoadingOutlined } from '@ant-design/icons';
@@ -119,7 +120,7 @@ export function SwapsGraph(): JSX.Element {
           enabled: false
         },
         events: {
-          click: function (event: any, chartContext?: any, config?: any) {
+          click: function (_event: Event, _ctx?: any, config?: any) {
             try {
               const tokenAmount = new TokenAmount(
                 new BN(config.config.series[config.seriesIndex].data[config.dataPointIndex][0] * expoSource),
@@ -144,9 +145,15 @@ export function SwapsGraph(): JSX.Element {
             swapFees,
             swapPool?.pool.amp ?? 1
           );
-          const swapInString = currencyAbbrev((xAmount * expoSource) / expoSource);
-          const swapOutString = currencyAbbrev(((outputAmount?.tokens ?? 0.0) * expoDestination) / expoDestination);
-          const priceString = currencyAbbrev((series[seriesIndex][dataPointIndex] * 10000) / 10000);
+          const swapInString = currencyAbbrev((xAmount * expoSource) / expoSource, currentPool?.precision ?? 2);
+          const swapOutString = currencyAbbrev(
+            ((outputAmount?.tokens ?? 0.0) * expoDestination) / expoDestination,
+            currentPool?.precision ?? 2
+          );
+          const priceString = currencyAbbrev(
+            (series[seriesIndex][dataPointIndex] * 10000) / 10000,
+            currentPool?.precision ?? 2
+          );
           return (
             '<div class="swaps-graph-tooltip">' +
             `<div class="flex align-center justify-between"><p>${dictionary.common.sell}</p> <p>${swapInString} ${
@@ -210,7 +217,7 @@ export function SwapsGraph(): JSX.Element {
         labels: {
           padding: 0,
           formatter: (value: number) => {
-            return currencyAbbrev(value, false, 2);
+            return currencyAbbrev(value, currentPool?.precision ?? 2, false);
           }
         },
         tooltip: {
@@ -233,7 +240,7 @@ export function SwapsGraph(): JSX.Element {
         labels: {
           padding: 20,
           formatter: (value: number) => {
-            return currencyAbbrev(value, false, 2);
+            return currencyAbbrev(value, outputToken?.precision ?? 2, false);
           }
         },
         axisTicks: {
@@ -311,7 +318,7 @@ export function SwapsGraph(): JSX.Element {
       currentChart?.addPointAnnotation(
         {
           id: 'your-swap',
-          x: parseFloat(tokenInputString),
+          x: parseFloat(fromLocaleString(tokenInputString)),
           y: swapPrice,
           marker: {
             size: 3

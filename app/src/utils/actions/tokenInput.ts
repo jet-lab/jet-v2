@@ -1,12 +1,13 @@
 import { useRecoilValue } from 'recoil';
 import { feesBuffer, MarginAccount } from '@jet-lab/margin';
-import { Dictionary } from '../../state/settings/localization/localization';
-import { WalletTokens } from '../../state/user/walletTokens';
-import { AccountNames, CurrentAccount } from '../../state/user/accounts';
-import { Pools, CurrentPool } from '../../state/pools/pools';
-import { CurrentAction, TokenInputAmount } from '../../state/actions/actions';
-import { NewAccountModal } from '../../state/modals/modals';
+import { Dictionary } from '@state/settings/localization/localization';
+import { WalletTokens } from '@state/user/walletTokens';
+import { AccountNames, CurrentAccount } from '@state/user/accounts';
+import { Pools, CurrentPool } from '@state/pools/pools';
+import { CurrentAction, TokenInputAmount } from '@state/actions/actions';
+import { NewAccountModal } from '@state/modals/modals';
 import { formatRiskIndicator } from '../format';
+import { LAMPORTS_PER_SOL } from '@solana/web3.js';
 
 // Check if user input should be disabled and return the relevant message
 export function useTokenInputDisabledMessage(account?: MarginAccount): string {
@@ -26,6 +27,15 @@ export function useTokenInputDisabledMessage(account?: MarginAccount): string {
 
   const tokenSymbol = currentPool.symbol;
   let disabledMessage = '';
+
+  // Display message if user doesn't have enough SOL to cover fees when depositing
+  if (currentAction === 'deposit' && walletTokens && walletTokens.map.SOL.amount.lamports.lte(feesBuffer)) {
+    return (disabledMessage = dictionary.actions.deposit.disabledMessages.notEnoughSolForFees.replace(
+      '{{BUFFER}}',
+      (feesBuffer.toNumber() / LAMPORTS_PER_SOL).toString()
+    ));
+  }
+
   if (currentAction === 'deposit') {
     // No wallet balance to deposit
     if (walletTokens && !walletTokens.map[tokenSymbol].amount.tokens) {
@@ -33,9 +43,6 @@ export function useTokenInputDisabledMessage(account?: MarginAccount): string {
         '{{ASSET}}',
         tokenSymbol
       );
-      // User doesn't have enough SOL to cover fees
-    } else if (walletTokens && walletTokens.map.SOL.amount.lamports.toNumber() <= feesBuffer) {
-      disabledMessage = dictionary.actions.deposit.disabledMessages.notEnoughSolForFees;
     }
   } else if (currentAction === 'withdraw') {
     // No collateral to withdraw

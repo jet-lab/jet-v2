@@ -21,8 +21,7 @@ futures = "0.3"
 thiserror = "1"
 tokio = { version = "1", features = ["rt"] }
 rand = { version = "0.8.5" }
-
-jet-proto-math = { git = "https://github.com/jet-lab/program-libraries", branch = "main" }
+serde = { version = "1", features = ["derive"] }
 
 agnostic-orderbook = { git = "https://github.com/jet-lab/agnostic-orderbook.git", branch = "main", features = ["lib", "utils"] }
 
@@ -34,7 +33,10 @@ anchor-spl = { git = "https://github.com/jet-lab/anchor", branch = "master" }
 anchor-client = { git = "https://github.com/jet-lab/anchor", branch = "master" }
 
 jet-simulation = { git = "https://github.com/jet-lab/jet-simulation", branch = "master" }
-jet-bonds = { path = "../../../programs/bonds", features = ["no-entrypoint"] }
+jet-program-common = { path = "../program-common" }
+jet-test-service = { path = "../../../programs/test-service", features = ["no-entrypoint"] }
+jet-bonds = { path = "../../../programs/bonds", features = ["no-entrypoint", "cli"] }
+jet-airspace = { path = "../../../programs/airspace", features = ["no-entrypoint"] }
 jet-control = { path = "../../../programs/control", features = ["no-entrypoint"] }
 jet-margin = { path = "../../../programs/margin", features = ["no-entrypoint"] }
 jet-metadata = { path = "../../../programs/metadata", features = ["no-entrypoint"] }
@@ -43,8 +45,8 @@ jet-margin-swap = { path = "../../../programs/margin-swap", features = ["no-entr
 
 # Token swaps
 spl-token = "3"
-spl-associated-token-account = { version = "1.0" }
 spl-token-swap = "2"
+spl-associated-token-account = "1"
 
 [dev-dependencies]
 jet-static-program-registry = { path = "../static-program-registry" }

@@ -16,6 +16,7 @@ use solana_sdk::signature::Keypair;
 
 use tokio::try_join;
 
+use crate::runtime::SolanaTestContext;
 use crate::swap::{SwapPoolConfig, SwapRegistry};
 use crate::tokens::TokenManager;
 
@@ -42,25 +43,25 @@ impl Clone for TokenPricer {
 }
 
 impl TokenPricer {
-    pub fn new_without_swaps(rpc: &Arc<dyn SolanaRpcClient>) -> Self {
+    pub fn new_without_swaps(ctx: &SolanaTestContext) -> Self {
         Self {
-            rpc: rpc.clone(),
-            tokens: TokenManager::new(rpc.clone()),
-            payer: clone(rpc.payer()),
+            rpc: ctx.rpc.clone(),
+            tokens: TokenManager::new(ctx.clone()),
+            payer: clone(ctx.rpc.payer()),
             vaults: HashMap::new(),
             swap_registry: SwapRegistry::new(),
         }
     }
 
     pub fn new(
-        rpc: &Arc<dyn SolanaRpcClient>,
+        ctx: &SolanaTestContext,
         vaults: HashMap<Pubkey, Pubkey>,
         swap_registry: &SwapRegistry,
     ) -> Self {
         Self {
-            rpc: rpc.clone(),
-            tokens: TokenManager::new(rpc.clone()),
-            payer: clone(rpc.payer()),
+            rpc: ctx.rpc.clone(),
+            tokens: TokenManager::new(ctx.clone()),
+            payer: clone(ctx.rpc.payer()),
             vaults,
             swap_registry: swap_registry.clone(),
         }
@@ -106,7 +107,7 @@ impl TokenPricer {
     /// Sets price in oracle and swap for only a single asset
     pub async fn set_price(&self, mint: &Pubkey, price: f64) -> Result<()> {
         let mut txs = self.set_price_in_swap_pools_tx(mint, price).await?;
-        let oracle_tx = self.set_oracle_price_tx(mint, price)?;
+        let oracle_tx = self.set_oracle_price_tx(mint, price).await?;
         txs.push(oracle_tx);
         self.rpc.send_and_confirm_condensed(txs).await?;
 
@@ -157,7 +158,7 @@ impl TokenPricer {
         } else {
             mint_prices
         } {
-            txs.push(self.set_oracle_price_tx(&mint, price)?)
+            txs.push(self.set_oracle_price_tx(&mint, price).await?)
         }
 
         self.rpc.send_and_confirm_condensed(txs).await?;
@@ -251,17 +252,23 @@ impl TokenPricer {
         Ok(txs)
     }
 
-    pub fn set_oracle_price_tx(&self, mint: &Pubkey, price: f64) -> Result<TransactionBuilder> {
+    pub async fn set_oracle_price_tx(
+        &self,
+        mint: &Pubkey,
+        price: f64,
+    ) -> Result<TransactionBuilder> {
         let price = (price * 100_000_000.0) as i64;
-        self.tokens.set_price_tx(
-            mint,
-            &TokenPrice {
-                exponent: -8,
-                price,
-                confidence: 0,
-                twap: price as u64,
-            },
-        )
+        self.tokens
+            .set_price_tx(
+                mint,
+                &TokenPrice {
+                    exponent: -8,
+                    price,
+                    confidence: 0,
+                    twap: price as u64,
+                },
+            )
+            .await
     }
 
     pub async fn get_oracle_price(&self, mint: &Pubkey) -> Result<f64> {

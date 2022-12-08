@@ -2,13 +2,14 @@ import { useState } from 'react';
 import { useRecoilState, useResetRecoilState, useRecoilValue } from 'recoil';
 import axios from 'axios';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { SendingTransaction } from '../../state/actions/actions';
-import { EditAccountModal as EditAccountModalOpen } from '../../state/modals/modals';
-import { Cluster } from '../../state/settings/settings';
-import { Dictionary } from '../../state/settings/localization/localization';
-import { CurrentAccountAddress, CurrentAccount, AccountNames } from '../../state/user/accounts';
-import { notify } from '../../utils/notify';
+import { SendingTransaction } from '@state/actions/actions';
+import { EditAccountModal as EditAccountModalOpen } from '@state/modals/modals';
+import { Cluster } from '@state/settings/settings';
+import { Dictionary } from '@state/settings/localization/localization';
+import { CurrentAccountAddress, CurrentAccount, AccountNames } from '@state/user/accounts';
+import { notify } from '@utils/notify';
 import { Input, Modal, Typography } from 'antd';
+import debounce from 'lodash.debounce';
 
 // Modal for editing account information
 export function EditAccountModal(): JSX.Element {
@@ -79,7 +80,7 @@ export function EditAccountModal(): JSX.Element {
       <Modal
         className="header-modal edit-account-modal"
         maskClosable={false}
-        visible={editAccountModalOpen}
+        open={editAccountModalOpen}
         onCancel={resetEditAccountModal}
         onOk={changeAccountName}
         okText={dictionary.settingsModal.save}
@@ -99,9 +100,9 @@ export function EditAccountModal(): JSX.Element {
           placeholder={accountNames[currentAccountAddress]}
           value={newAccountName}
           disabled={sendingTransaction}
-          onChange={e => {
+          onChange={debounce(e => {
             setNewAccountName(e.target.value);
-          }}
+          }, 300)}
           onPressEnter={changeAccountName}
         />
         <Text type="danger">{inputError ?? ''}</Text>

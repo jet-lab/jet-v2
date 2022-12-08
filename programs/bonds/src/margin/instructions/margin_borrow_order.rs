@@ -2,26 +2,32 @@ use agnostic_orderbook::state::Side;
 use anchor_lang::prelude::*;
 use anchor_spl::token::Token;
 use jet_margin::{AdapterResult, PositionChange};
+use jet_program_common::traits::{SafeSub, TryAddAssign};
+use jet_program_proc_macros::BondTokenManager;
 
 use crate::{
+    bond_token_manager::BondTokenManager,
+    events::ObligationCreated,
     margin::{
-        events::MarginBorrow,
+        events::{OrderPlaced, OrderType},
+        origination_fee::loan_to_disburse,
         state::{return_to_margin, MarginUser, Obligation, ObligationFlags},
     },
     orderbook::state::*,
     serialization::{self, RemainingAccounts},
-    utils::mint_to,
     BondsError,
 };
 
-#[derive(Accounts)]
+#[derive(Accounts, BondTokenManager)]
 pub struct MarginBorrowOrder<'info> {
     /// The account tracking borrower debts
     #[account(
         mut,
         has_one = margin_account,
+        has_one = claims @ BondsError::WrongClaimAccount,
+        has_one = collateral @ BondsError::WrongCollateralAccount,
     )]
-    pub borrower_account: Box<Account<'info, MarginUser>>,
+    pub margin_user: Box<Account<'info, MarginUser>>,
 
     /// Obligation account minted upon match
     /// CHECK: in instruction logic
@@ -32,20 +38,32 @@ pub struct MarginBorrowOrder<'info> {
     pub margin_account: Signer<'info>,
 
     /// Token account used by the margin program to track the debt that must be collateralized
-    /// CHECK: constraint
-    #[account(
-        mut,
-        constraint =
-            borrower_account.claims == claims.key()
-            @ BondsError::WrongClaimAccount
-    )]
-    pub claims: UncheckedAccount<'info>,
+    /// CHECK: borrower_account
+    #[account(mut)]
+    pub claims: AccountInfo<'info>,
 
     /// Token mint used by the margin program to track the debt that must be collateralized
     /// CHECK: in instruction handler
-    #[account(mut)]
-    pub claims_mint: UncheckedAccount<'info>,
+    #[account(mut, address = orderbook_mut.claims_mint() @ BondsError::WrongClaimMint)]
+    pub claims_mint: AccountInfo<'info>,
 
+    /// Token account used by the margin program to track the debt that must be collateralized
+    #[account(mut)]
+    pub collateral: AccountInfo<'info>,
+
+    /// Token mint used by the margin program to track the debt that must be collateralized
+    #[account(mut, address = orderbook_mut.collateral_mint() @ BondsError::WrongCollateralMint)]
+    pub collateral_mint: AccountInfo<'info>,
+
+    /// The market token vault
+    #[account(mut, address = orderbook_mut.vault() @ BondsError::WrongVault)]
+    pub underlying_token_vault: AccountInfo<'info>,
+
+    /// The market token vault
+    #[account(mut, address = margin_user.underlying_settlement @ BondsError::WrongUnderlyingSettlementAccount)]
+    pub underlying_settlement: AccountInfo<'info>,
+
+    #[bond_manager]
     pub orderbook_mut: OrderbookMut<'info>,
 
     /// payer for `Obligation` initialization
@@ -60,56 +78,100 @@ pub struct MarginBorrowOrder<'info> {
     // pub event_adapter: AccountInfo<'info>,
 }
 
-pub fn handler(ctx: Context<MarginBorrowOrder>, params: OrderParams, seed: u64) -> Result<()> {
+pub fn handler(
+    ctx: Context<MarginBorrowOrder>,
+    mut params: OrderParams,
+    seed: Vec<u8>,
+) -> Result<()> {
+    let origination_fee = {
+        let manager = ctx.accounts.orderbook_mut.bond_manager.load()?;
+        params.max_bond_ticket_qty = manager.borrow_order_qty(params.max_bond_ticket_qty);
+        params.max_underlying_token_qty = manager.borrow_order_qty(params.max_underlying_token_qty);
+        manager.origination_fee
+    };
     let (callback_info, order_summary) = ctx.accounts.orderbook_mut.place_order(
-        ctx.accounts.borrower_account.key(),
+        ctx.accounts.margin_account.key(),
         Side::Ask,
         params,
-        ctx.accounts.borrower_account.key(),
-        ctx.accounts.borrower_account.key(),
+        ctx.accounts.margin_user.key(),
+        ctx.accounts.margin_user.key(),
         ctx.remaining_accounts
             .iter()
             .maybe_next_adapter()?
             .map(|a| a.key()),
         CallbackFlags::NEW_DEBT | CallbackFlags::MARGIN,
     )?;
-    let bond_manager = &ctx.accounts.orderbook_mut.bond_manager;
 
-    let debt = &mut ctx.accounts.borrower_account.debt;
-    debt.post_borrow_order(order_summary.total_base_qty_posted)?;
-    if order_summary.total_base_qty > 0 {
-        let maturation_timestamp = bond_manager.load()?.duration + Clock::get()?.unix_timestamp;
-        let sequence_number = debt
-            .new_obligation_without_posting(order_summary.total_base_qty, maturation_timestamp)?;
+    let debt = &mut ctx.accounts.margin_user.debt;
+    debt.post_borrow_order(order_summary.base_posted())?;
+    if order_summary.base_filled() > 0 {
+        let mut manager = ctx.accounts.orderbook_mut.bond_manager.load_mut()?;
+        let maturation_timestamp = manager.borrow_duration + Clock::get()?.unix_timestamp;
+        let sequence_number =
+            debt.new_obligation_without_posting(order_summary.base_filled(), maturation_timestamp)?;
+
         let mut obligation = serialization::init::<Obligation>(
             ctx.accounts.obligation.to_account_info(),
             ctx.accounts.payer.to_account_info(),
             ctx.accounts.system_program.to_account_info(),
-            &Obligation::make_seeds(
-                ctx.accounts.borrower_account.key().as_ref(),
-                &seed.to_le_bytes(),
-            ),
+            &Obligation::make_seeds(ctx.accounts.margin_user.key().as_ref(), seed.as_slice()),
         )?;
+        let quote_filled = order_summary.quote_filled()?;
+        let disburse = manager.loan_to_disburse(quote_filled);
+        manager
+            .collected_fees
+            .try_add_assign(quote_filled.safe_sub(disburse)?)?;
+        let base_filled = order_summary.base_filled();
         *obligation = Obligation {
             sequence_number,
-            borrower_account: ctx.accounts.borrower_account.key(),
-            bond_manager: bond_manager.key(),
+            borrower_account: ctx.accounts.margin_user.key(),
+            bond_manager: ctx.accounts.orderbook_mut.bond_manager.key(),
             order_tag: callback_info.order_tag,
             maturation_timestamp,
-            balance: order_summary.total_base_qty,
+            balance: base_filled,
             flags: ObligationFlags::default(),
         };
-    }
-    let total_debt = order_summary.total_base_qty_posted + order_summary.total_base_qty;
-    mint_to!(ctx, claims_mint, claims, total_debt, orderbook_mut)?;
+        drop(manager);
+        ctx.withdraw(
+            &ctx.accounts.underlying_token_vault,
+            &ctx.accounts.underlying_settlement,
+            disburse,
+        )?;
 
-    emit!(MarginBorrow {
-        bond_manager: bond_manager.key(),
-        margin_account: ctx.accounts.margin_account.key(),
-        borrower_account: ctx.accounts.borrower_account.key(),
-        order_summary,
+        emit!(ObligationCreated {
+            obligation: obligation.key(),
+            authority: ctx.accounts.margin_account.key(),
+            order_id: order_summary.summary().posted_order_id,
+            sequence_number,
+            bond_manager: ctx.accounts.orderbook_mut.bond_manager.key(),
+            maturation_timestamp,
+            quote_filled,
+            base_filled,
+            flags: obligation.flags
+        });
+    }
+    let total_debt = order_summary.base_combined();
+    ctx.mint(&ctx.accounts.claims_mint, &ctx.accounts.claims, total_debt)?;
+    ctx.mint(
+        &ctx.accounts.collateral_mint,
+        &ctx.accounts.collateral,
+        loan_to_disburse(order_summary.quote_posted()?, origination_fee),
+    )?;
+
+    emit!(OrderPlaced {
+        bond_manager: ctx.accounts.orderbook_mut.bond_manager.key(),
+        authority: ctx.accounts.margin_account.key(),
+        margin_user: Some(ctx.accounts.margin_user.key()),
+        order_summary: order_summary.summary(),
+        limit_price: params.limit_price,
+        auto_stake: params.auto_stake,
+        post_only: params.post_only,
+        post_allowed: params.post_allowed,
+        order_type: OrderType::MarginBorrow,
     });
 
+    // this is just used to make sure the position is still registered.
+    // it's actually registered by initialize_margin_user
     return_to_margin(
         &ctx.accounts.margin_account.to_account_info(),
         &AdapterResult {

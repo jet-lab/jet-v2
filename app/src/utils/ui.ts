@@ -1,6 +1,6 @@
 import { Connection } from '@solana/web3.js';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { blockExplorers } from '../state/settings/settings';
+import { blockExplorers } from '@state/settings/settings';
 
 // Timeout for app page / theme transitions (in ms)
 export const APP_TRANSITION_TIMEOUT = 500;
@@ -8,12 +8,19 @@ export const APP_TRANSITION_TIMEOUT = 500;
 // Return explorer URL for a tx based on preferred block explorer
 export function getExplorerUrl(
   txId: string,
-  cluster: 'mainnet-beta' | 'devnet',
+  cluster: 'mainnet-beta' | 'devnet' | 'localnet',
   explorer: 'solanaExplorer' | 'solscan' | 'solanaBeach'
 ) {
   const baseUrl = blockExplorers[explorer].url;
-  const clusterParam = cluster === 'devnet' ? '?cluster=devnet' : '';
-  return baseUrl + txId + clusterParam;
+
+  function getClusterParam() {
+    if (cluster === 'localnet') {
+      return `?cluster=custom&customUrl=http%3A%2F%2Flocalhost%3A8899`;
+    }
+    return '';
+  }
+
+  return baseUrl + txId + getClusterParam();
 }
 
 // Opens a link in a new tab
@@ -103,51 +110,4 @@ export function createDummyArray(size: number, idString: string) {
     dummyArray.push(element);
   }
   return dummyArray;
-}
-
-// Light / dark with transition maintenance
-export function toggleLightTheme(lightTheme: boolean) {
-  const allElements = document.querySelectorAll<HTMLElement>('body *');
-  const affectedElements: any = [];
-  allElements.forEach(element => {
-    const transitionProperty = window.getComputedStyle(element).transitionProperty;
-    if (
-      transitionProperty.includes('color') ||
-      transitionProperty.includes('background-color') ||
-      transitionProperty.includes('fill') ||
-      transitionProperty.includes('box-shadow')
-    ) {
-      const transition = element.style.transition;
-      element.style.transition = 'unset';
-      affectedElements.push({ element, transition });
-    }
-  });
-  [
-    'primary',
-    'primary-2',
-    'primary-3',
-    'primary-4',
-    'secondary',
-    'secondary-2',
-    'secondary-3',
-    'secondary-4',
-    'secondary-5',
-    'light-shadow',
-    'dark-shadow',
-    'drop-shadow',
-    'header-background',
-    'jet-green',
-    'jet-green-2',
-    'jet-green-3',
-    'jet-blue',
-    'jet-blue-2',
-    'success',
-    'warning',
-    'danger'
-  ].forEach(color => {
-    document.documentElement.style.setProperty(`--${color}`, `var(--${lightTheme ? 'lt' : 'dt'}-${color})`);
-  });
-  setTimeout(() => {
-    affectedElements.forEach((el: any) => (el.element.style.transition = el.transition));
-  }, APP_TRANSITION_TIMEOUT);
 }

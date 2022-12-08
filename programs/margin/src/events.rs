@@ -37,6 +37,7 @@ pub struct PositionRegistered {
 
 #[event]
 pub struct PositionClosed {
+    pub margin_account: Pubkey,
     pub authority: Pubkey,
     pub token: Pubkey,
 }
@@ -102,6 +103,15 @@ pub struct LiquidationEnded {
     pub margin_account: Pubkey,
     pub authority: Pubkey,
     pub timed_out: bool,
+}
+
+#[event]
+pub struct TransferPosition {
+    pub source_margin_account: Pubkey,
+    pub target_margin_account: Pubkey,
+    pub source_token_account: Pubkey,
+    pub target_token_account: Pubkey,
+    pub amount: u64,
 }
 
 #[derive(AnchorDeserialize, AnchorSerialize)]

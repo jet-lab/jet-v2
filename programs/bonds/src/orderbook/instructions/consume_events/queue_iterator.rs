@@ -1,8 +1,6 @@
 use std::slice::Iter;
 
-use agnostic_orderbook::state::Side;
 use anchor_lang::prelude::*;
-use num_traits::FromPrimitive;
 
 use crate::{
     events::skip_err,
@@ -15,23 +13,19 @@ use crate::{
     BondsError,
 };
 
-use super::{ConsumeEvents, EventAccounts, FillAccounts, LoanAccount, OutAccounts, UserAccount};
+use super::{ConsumeEvents, FillAccounts, LoanAccount, OutAccounts, UserAccount};
 
-pub trait Queue<'c, 'info> {
-    fn queue(&self, seeds: Vec<Vec<u8>>) -> Result<EventIterator<'c, 'info>>;
-}
-
-impl<'c, 'info> Queue<'c, 'info> for Context<'_, '_, 'c, 'info, ConsumeEvents<'info>> {
-    fn queue(&self, seeds: Vec<Vec<u8>>) -> Result<EventIterator<'c, 'info>> {
-        let queue = EventQueue::deserialize_market(self.accounts.event_queue.to_account_info())?;
-        Ok(EventIterator {
-            queue: queue.iter(),
-            accounts: self.remaining_accounts.iter(),
-            system_program: self.accounts.system_program.to_account_info(),
-            payer: self.accounts.payer.to_account_info(),
-            seeds: seeds.into_iter(),
-        })
-    }
+pub fn queue<'c, 'info>(
+    ctx: &Context<'_, '_, 'c, 'info, ConsumeEvents<'info>>,
+    seeds: Vec<Vec<u8>>,
+) -> Result<EventIterator<'c, 'info>> {
+    Ok(EventIterator {
+        queue: EventQueue::deserialize_market(ctx.accounts.event_queue.to_account_info())?.iter(),
+        accounts: ctx.remaining_accounts.iter(),
+        system_program: ctx.accounts.system_program.to_account_info(),
+        payer: ctx.accounts.payer.to_account_info(),
+        seeds: seeds.into_iter(),
+    })
 }
 
 pub struct EventIterator<'a, 'info> {
@@ -45,36 +39,43 @@ pub struct EventIterator<'a, 'info> {
 }
 
 impl<'a, 'info> Iterator for EventIterator<'a, 'info> {
-    type Item = Result<(EventAccounts<'info>, OrderbookEvent)>;
+    type Item = Result<PreparedEvent<'info>>;
 
-    fn next(&mut self) -> Option<Result<(EventAccounts<'info>, OrderbookEvent)>> {
+    fn next(&mut self) -> Option<Result<PreparedEvent<'info>>> {
         let event = self.queue.next()?;
-        Some(self.extract_accounts(&event).map(|accts| (accts, event)))
+        Some(self.join_with_accounts(event))
     }
 }
 
+pub enum PreparedEvent<'info> {
+    Fill(Box<FillAccounts<'info>>, Box<FillInfo>),
+    Out(Box<OutAccounts<'info>>, Box<OutInfo>),
+}
+
 impl<'a, 'info> EventIterator<'a, 'info> {
-    fn extract_accounts(&mut self, event: &OrderbookEvent) -> Result<EventAccounts<'info>> {
-        match event {
-            OrderbookEvent::Fill(FillInfo {
-                maker_info,
-                taker_info,
-                ..
-            }) => self.extract_fill_accounts(maker_info, taker_info),
-            OrderbookEvent::Out(OutInfo { info, .. }) => {
-                Ok(EventAccounts::Out(Box::new(OutAccounts {
-                    user: self.accounts.next_user_account(info.out_account)?,
-                    user_adapter_account: self.accounts.next_adapter_if_needed(info)?,
-                })))
-            }
-        }
+    fn join_with_accounts(&mut self, event: OrderbookEvent) -> Result<PreparedEvent<'info>> {
+        Ok(match event {
+            OrderbookEvent::Fill(fill) => PreparedEvent::Fill(
+                self.extract_fill_accounts(&fill.maker_info, &fill.taker_info)?,
+                Box::new(fill),
+            ),
+            OrderbookEvent::Out(out) => PreparedEvent::Out(
+                Box::new(OutAccounts {
+                    user: self
+                        .accounts
+                        .next_user_account(out.info.out_account.to_bytes())?,
+                    user_adapter_account: self.accounts.next_adapter_if_needed(&out.info)?,
+                }),
+                Box::new(out),
+            ),
+        })
     }
 
     fn extract_fill_accounts(
         &mut self,
         maker_info: &CallbackInfo,
         taker_info: &CallbackInfo,
-    ) -> Result<EventAccounts<'info>> {
+    ) -> Result<Box<FillAccounts<'info>>> {
         let maker = self.accounts.next_account()?;
         let maker_adapter = self.accounts.next_adapter_if_needed(maker_info)?;
         let taker_adapter = self.accounts.next_adapter_if_needed(taker_info)?;
@@ -86,7 +87,7 @@ impl<'a, 'info> EventIterator<'a, 'info> {
                     self.system_program.to_account_info(),
                     &[
                         crate::seeds::SPLIT_TICKET,
-                        &maker_info.fill_account,
+                        &maker_info.fill_account.to_bytes(),
                         &self.seeds.next().ok_or(BondsError::InsufficientSeeds)?,
                     ],
                 )?,
@@ -98,7 +99,7 @@ impl<'a, 'info> EventIterator<'a, 'info> {
                     self.system_program.to_account_info(),
                     &[
                         crate::seeds::OBLIGATION,
-                        &maker_info.fill_account,
+                        &maker_info.fill_account.to_bytes(),
                         &self.seeds.next().ok_or(BondsError::InsufficientSeeds)?,
                     ],
                 )?,
@@ -106,19 +107,12 @@ impl<'a, 'info> EventIterator<'a, 'info> {
         } else {
             None
         };
-        Ok(EventAccounts::Fill(Box::new(FillAccounts {
+        Ok(Box::new(FillAccounts {
             maker: UserAccount::new(maker.clone()),
             loan,
             maker_adapter,
             taker_adapter,
-        })))
-    }
-}
-
-pub fn lender_borrower<T>(taker_side: u8, maker: T, taker: T) -> (T, T) {
-    match Side::from_u8(taker_side).unwrap() {
-        Side::Bid => (taker, maker),
-        Side::Ask => (maker, taker),
+        }))
     }
 }
 

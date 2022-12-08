@@ -2,20 +2,19 @@ use std::collections::HashSet;
 
 use anyhow::Error;
 
-use jet_margin_sdk::{spl_swap::SplSwapPool, tokens::TokenPrice};
+use jet_margin_sdk::{spl_swap::SplSwapPool, tokens::TokenPrice, tx_builder::TokenDepositsConfig};
 use jet_static_program_registry::{orca_swap_v1, orca_swap_v2, spl_token_swap_v2};
 use solana_sdk::native_token::LAMPORTS_PER_SOL;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::Signer;
 
 use hosted_tests::{
-    context::{test_context, MarginTestContext},
-    margin::MarginPoolSetupInfo,
+    context::MarginTestContext, fn_name, margin::MarginPoolSetupInfo, margin_test_context,
     swap::SwapPoolConfig,
 };
 
+use jet_margin::TokenKind;
 use jet_margin_pool::{MarginPoolConfig, PoolFlags, TokenChange};
-use jet_metadata::TokenKind;
 use jet_simulation::{assert_custom_program_error, create_wallet};
 
 const ONE_USDC: u64 = 1_000_000;
@@ -37,21 +36,24 @@ const DEFAULT_POOL_CONFIG: MarginPoolConfig = MarginPoolConfig {
 #[tokio::test(flavor = "multi_thread")]
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn spl_swap_v2() -> Result<(), anyhow::Error> {
-    swap_test_impl(spl_token_swap_v2::id()).await
+    let result = swap_test_impl(fn_name!(), spl_token_swap_v2::id()).await;
+    println!("{:#?}", &result);
+
+    result
 }
 
 /// Test token swaps for orca v1
 #[tokio::test(flavor = "multi_thread")]
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn orca_swap_v1() -> Result<(), anyhow::Error> {
-    swap_test_impl(orca_swap_v1::id()).await
+    swap_test_impl(fn_name!(), orca_swap_v1::id()).await
 }
 
 /// Test token swaps for orca v2
 #[tokio::test(flavor = "multi_thread")]
 #[cfg_attr(not(feature = "localnet"), serial_test::serial)]
 async fn orca_swap_v2() -> Result<(), anyhow::Error> {
-    swap_test_impl(orca_swap_v2::id()).await
+    swap_test_impl(fn_name!(), orca_swap_v2::id()).await
 }
 
 struct TestEnv {
@@ -85,16 +87,28 @@ async fn setup_environment(ctx: &MarginTestContext) -> Result<TestEnv, Error> {
     ];
 
     for pool_info in pools {
+        ctx.margin
+            .configure_token_deposits(
+                &pool_info.token,
+                Some(&TokenDepositsConfig {
+                    oracle: jet_margin::TokenOracle::Pyth {
+                        price: pool_info.oracle.price,
+                        product: pool_info.oracle.product,
+                    },
+                    collateral_weight: pool_info.collateral_weight,
+                }),
+            )
+            .await?;
         ctx.margin.create_pool(&pool_info).await?;
     }
 
     Ok(TestEnv { usdc, tsol })
 }
 
-async fn swap_test_impl(swap_program_id: Pubkey) -> Result<(), anyhow::Error> {
+async fn swap_test_impl(test_name: &str, swap_program_id: Pubkey) -> Result<(), anyhow::Error> {
     // Get the mocked runtime
-    let ctx = test_context().await;
-    let env = setup_environment(ctx).await?;
+    let ctx = margin_test_context!(test_name);
+    let env = setup_environment(&ctx).await?;
 
     // Create our two user wallets, with some SOL funding to get started
     let wallet_a = create_wallet(&ctx.rpc, 10 * LAMPORTS_PER_SOL).await?;
@@ -111,7 +125,7 @@ async fn swap_test_impl(swap_program_id: Pubkey) -> Result<(), anyhow::Error> {
 
     // Create a swap pool with sufficient liquidity
     let swap_pool = SplSwapPool::configure(
-        &ctx.rpc,
+        &ctx.solana,
         &swap_program_id,
         &env.usdc,
         &env.tsol,
@@ -134,22 +148,8 @@ async fn swap_test_impl(swap_program_id: Pubkey) -> Result<(), anyhow::Error> {
         assert_eq!(swap_pool.pool, pool.pool);
     }
 
-    let usdc_transit_source = ctx
-        .tokens
-        .create_account(&env.usdc, user_a.address())
-        .await?;
-    let tsol_transit_target = ctx
-        .tokens
-        .create_account(&env.tsol, user_a.address())
-        .await?;
-    let usdc_transit_target = ctx
-        .tokens
-        .create_account(&env.usdc, user_a.address())
-        .await?;
-    let tsol_transit_source = ctx
-        .tokens
-        .create_account(&env.tsol, user_a.address())
-        .await?;
+    let user_a_usdc_transit = user_a.create_deposit_position(&env.usdc).await?;
+    let user_a_tsol_transit = user_a.create_deposit_position(&env.tsol).await?;
 
     // Create some tokens for each user to deposit
     let user_a_usdc_account = ctx
@@ -231,8 +231,8 @@ async fn swap_test_impl(swap_program_id: Pubkey) -> Result<(), anyhow::Error> {
             &swap_program_id,
             &env.usdc,
             &env.tsol,
-            &usdc_transit_source,
-            &tsol_transit_target,
+            &user_a_usdc_transit,
+            &user_a_tsol_transit,
             &swap_pool,
             TokenChange::shift(100 * ONE_USDC),
             // we want a minimum of 0.9 SOL for 100 USDC
@@ -258,8 +258,8 @@ async fn swap_test_impl(swap_program_id: Pubkey) -> Result<(), anyhow::Error> {
             &swap_program_id,
             &env.usdc,
             &env.tsol,
-            &usdc_transit_source,
-            &tsol_transit_target,
+            &user_a_usdc_transit,
+            &user_a_tsol_transit,
             &swap_pool,
             TokenChange::set(2_000 * ONE_USDC),
             // Value doesn't matter
@@ -274,8 +274,8 @@ async fn swap_test_impl(swap_program_id: Pubkey) -> Result<(), anyhow::Error> {
             &swap_program_id,
             &env.usdc,
             &env.tsol,
-            &usdc_transit_source,
-            &tsol_transit_target,
+            &user_a_usdc_transit,
+            &user_a_tsol_transit,
             &swap_pool,
             TokenChange::set(900 * ONE_USDC),
             // Value doesn't matter
@@ -290,8 +290,8 @@ async fn swap_test_impl(swap_program_id: Pubkey) -> Result<(), anyhow::Error> {
             &swap_program_id,
             &env.usdc,
             &env.tsol,
-            &usdc_transit_source,
-            &tsol_transit_target,
+            &user_a_usdc_transit,
+            &user_a_tsol_transit,
             &swap_pool,
             TokenChange::set(799 * ONE_USDC),
             // we want a minimum of 0.9 SOL for 101 USDC (1000 - 100 - 799)
@@ -313,8 +313,8 @@ async fn swap_test_impl(swap_program_id: Pubkey) -> Result<(), anyhow::Error> {
             &swap_program_id,
             &env.tsol,
             &env.usdc,
-            &tsol_transit_source,
-            &usdc_transit_target,
+            &user_a_tsol_transit,
+            &user_a_usdc_transit,
             &swap_pool,
             TokenChange::set(0),
             90 * 10 * ONE_USDC,

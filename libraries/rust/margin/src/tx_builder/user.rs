@@ -15,9 +15,11 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::sync::Arc;
 
+use anchor_spl::associated_token::get_associated_token_address;
+use async_trait::async_trait;
 use jet_margin_pool::program::JetMarginPool;
 use jet_metadata::{PositionTokenMetadata, TokenMetadata};
 
@@ -30,10 +32,13 @@ use solana_sdk::transaction::Transaction;
 
 use anchor_lang::{AccountDeserialize, Id};
 
-use jet_margin::{MarginAccount, PositionKind};
+use jet_margin::{MarginAccount, TokenConfig, TokenKind, TokenOracle};
 use jet_margin_pool::TokenChange;
 use jet_simulation::solana_rpc_api::SolanaRpcClient;
 
+use crate::cat;
+use crate::margin_integrator::PositionRefresher;
+use crate::util::data::Join;
 use crate::{
     ix_builder::*,
     solana::{
@@ -50,7 +55,10 @@ use crate::{
 /// the correct `adapter_invoke_ix`.
 pub struct MarginTxBuilder {
     rpc: Arc<dyn SolanaRpcClient>,
-    ix: MarginIxBuilder,
+    /// builds the instructions for margin without any rpc interaction or
+    /// knowledge of other programs
+    pub ix: MarginIxBuilder,
+    config_ix: MarginConfigIxBuilder,
     signer: Option<Keypair>,
     is_liquidator: bool,
 }
@@ -60,12 +68,23 @@ impl Clone for MarginTxBuilder {
         Self {
             rpc: self.rpc.clone(),
             ix: self.ix.clone(),
+            config_ix: self.config_ix.clone(),
             signer: self
                 .signer
                 .as_ref()
                 .map(|kp| Keypair::from_bytes(&kp.to_bytes()).unwrap()),
             is_liquidator: self.is_liquidator,
         }
+    }
+}
+
+#[async_trait]
+impl PositionRefresher for MarginTxBuilder {
+    async fn refresh_positions(&self) -> Result<Vec<TransactionBuilder>> {
+        Ok(cat![
+            self.refresh_all_pool_positions().await?,
+            self.refresh_deposit_positions().await?,
+        ])
     }
 }
 
@@ -78,11 +97,32 @@ impl MarginTxBuilder {
         owner: Pubkey,
         seed: u16,
     ) -> MarginTxBuilder {
-        let ix = MarginIxBuilder::new_with_payer(owner, seed, rpc.payer().pubkey(), None);
+        Self::new_with_airspace(rpc, signer, owner, seed, Pubkey::default())
+    }
+
+    /// Create a [MarginTxBuilder] for an ordinary user. Liquidators should use
+    /// `Self::new_liquidator`.
+    pub fn new_with_airspace(
+        rpc: Arc<dyn SolanaRpcClient>,
+        signer: Option<Keypair>,
+        owner: Pubkey,
+        seed: u16,
+        airspace: Pubkey,
+    ) -> MarginTxBuilder {
+        let ix = MarginIxBuilder::new_with_payer_and_airspace(
+            owner,
+            seed,
+            rpc.payer().pubkey(),
+            airspace,
+            None,
+        );
+
+        let config_ix = MarginConfigIxBuilder::new(airspace, rpc.payer().pubkey());
 
         Self {
             rpc,
             ix,
+            config_ix,
             signer,
             is_liquidator: false,
         }
@@ -104,9 +144,12 @@ impl MarginTxBuilder {
         let ix =
             MarginIxBuilder::new_with_payer(owner, seed, rpc.payer().pubkey(), Some(liquidator));
 
+        let config_ix = MarginConfigIxBuilder::new(Pubkey::default(), rpc.payer().pubkey());
+
         Self {
             rpc,
             ix,
+            config_ix,
             signer,
             is_liquidator: true,
         }
@@ -161,6 +204,11 @@ impl MarginTxBuilder {
         self.ix.seed
     }
 
+    /// The address of the associated airspace
+    pub fn airspace(&self) -> &Pubkey {
+        &self.ix.airspace
+    }
+
     /// Transaction to create a new margin account for the user
     pub async fn create_account(&self) -> Result<Transaction> {
         self.create_transaction(&[self.ix.create_account()]).await
@@ -192,18 +240,18 @@ impl MarginTxBuilder {
     pub async fn close_pool_position(
         &self,
         token_mint: &Pubkey,
-        kind: PositionKind,
+        kind: TokenKind,
     ) -> Result<Transaction> {
         let pool = MarginPoolIxBuilder::new(*token_mint);
         let ix = match kind {
-            PositionKind::NoValue | PositionKind::Deposit => self.ix.close_position(
+            TokenKind::Collateral => self.ix.close_position(
                 pool.deposit_note_mint,
                 self.ix.get_token_account_address(&pool.deposit_note_mint).0,
             ),
-            PositionKind::Claim => {
+            TokenKind::Claim => {
                 self.adapter_invoke_ix(pool.close_loan(*self.address(), self.ix.payer))
             }
-            PositionKind::AdapterCollateral => panic!("pools do not issue AdapterCollateral"),
+            TokenKind::AdapterCollateral => panic!("pools do not issue AdapterCollateral"),
         };
 
         self.create_transaction(&[ix]).await
@@ -213,14 +261,14 @@ impl MarginTxBuilder {
     pub async fn close_empty_positions(
         &self,
         loan_to_token: &HashMap<Pubkey, Pubkey>,
-    ) -> Result<Transaction> {
+    ) -> Result<TransactionBuilder> {
         let to_close = self
             .get_account_state()
             .await?
             .positions()
             .filter(|p| p.balance == 0)
             .map(|p| {
-                if p.adapter == JetMarginPool::id() && p.kind() == PositionKind::Claim {
+                if p.adapter == JetMarginPool::id() && p.kind() == TokenKind::Claim {
                     let pool = MarginPoolIxBuilder::new(*loan_to_token.get(&p.token).unwrap());
                     self.adapter_invoke_ix(pool.close_loan(*self.address(), self.ix.payer))
                 } else {
@@ -229,7 +277,7 @@ impl MarginTxBuilder {
             })
             .collect::<Vec<_>>();
 
-        self.create_transaction(&to_close).await
+        self.create_transaction_builder(&to_close)
     }
 
     /// Transaction to deposit tokens into a margin account
@@ -265,7 +313,11 @@ impl MarginTxBuilder {
     ///
     /// `token_mint` - The address of the mint for the tokens to borrow
     /// `amount` - The amount of tokens to borrow
-    pub async fn borrow(&self, token_mint: &Pubkey, change: TokenChange) -> Result<Transaction> {
+    pub async fn borrow(
+        &self,
+        token_mint: &Pubkey,
+        change: TokenChange,
+    ) -> Result<TransactionBuilder> {
         let mut instructions = vec![];
         let pool = MarginPoolIxBuilder::new(*token_mint);
         let token_metadata = self.get_token_metadata(token_mint).await?;
@@ -285,7 +337,7 @@ impl MarginTxBuilder {
             pool.margin_borrow(self.ix.address, deposit_position, loan_position, change);
 
         instructions.push(self.adapter_invoke_ix(inner_borrow_ix));
-        self.create_transaction(&instructions).await
+        self.create_transaction_builder(&instructions)
     }
 
     /// Transaction to repay a loan of tokens in a margin account from the account's deposits
@@ -298,7 +350,7 @@ impl MarginTxBuilder {
         &self,
         token_mint: &Pubkey,
         change: TokenChange,
-    ) -> Result<Transaction> {
+    ) -> Result<TransactionBuilder> {
         let mut instructions = vec![];
         let pool = MarginPoolIxBuilder::new(*token_mint);
 
@@ -313,7 +365,7 @@ impl MarginTxBuilder {
             pool.margin_repay(self.ix.address, deposit_position, loan_position, change);
 
         instructions.push(self.adapter_invoke_ix(inner_repay_ix));
-        self.create_transaction(&instructions).await
+        self.create_transaction_builder(&instructions)
     }
 
     /// Transaction to repay a loan of tokens in a margin account from a token account
@@ -392,7 +444,7 @@ impl MarginTxBuilder {
         // for levswap
         change: TokenChange,
         minimum_amount_out: u64,
-    ) -> Result<Transaction> {
+    ) -> Result<TransactionBuilder> {
         let mut instructions = vec![];
         let source_pool = MarginPoolIxBuilder::new(*source_token_mint);
         let destination_pool = MarginPoolIxBuilder::new(*destination_token_mint);
@@ -446,7 +498,10 @@ impl MarginTxBuilder {
 
         instructions.push(self.adapter_invoke_ix(inner_swap_ix));
 
-        self.create_transaction(&instructions).await
+        instructions.push(self.ix.update_position_balance(source_position));
+        instructions.push(self.ix.update_position_balance(destination_position));
+
+        self.create_transaction_builder(&instructions)
     }
 
     /// Transaction to begin liquidating user account.
@@ -465,18 +520,24 @@ impl MarginTxBuilder {
         assert!(self.is_liquidator);
 
         // Get the margin account and refresh positions
-        let mut instructions = vec![];
-        if refresh_positions {
-            self.create_pool_instructions(&mut instructions).await?;
-        }
+        let mut txs = if refresh_positions {
+            cat![
+                self.refresh_all_pool_positions().await?,
+                self.refresh_deposit_positions().await?,
+            ]
+            .ijoin()
+        } else {
+            TransactionBuilder::default()
+        };
 
         // Add liquidation instruction
-        instructions.push(
+        txs.instructions.push(
             self.ix
                 .liquidate_begin(self.signer.as_ref().unwrap().pubkey()),
         );
+        txs.signers.push(clone(self.signer.as_ref().unwrap()));
 
-        self.create_transaction_builder(&instructions)
+        Ok(txs)
     }
 
     /// Transaction to end liquidating user account
@@ -507,12 +568,13 @@ impl MarginTxBuilder {
         self.create_transaction(&[ix]).await
     }
 
-    /// Refresh all of a user's positions based in the margin pool
-    pub async fn refresh_all_pool_positions(&self) -> Result<Vec<Transaction>> {
-        let mut instructions = vec![];
-        self.create_pool_instructions(&mut instructions).await?;
-
-        self.get_chunk_transactions(12, instructions).await
+    /// Append instructions to refresh pool positions to instructions
+    pub async fn refresh_all_pool_positions(&self) -> Result<Vec<TransactionBuilder>> {
+        Ok(self
+            .refresh_all_pool_positions_underlying_to_tx()
+            .await?
+            .into_values()
+            .collect())
     }
 
     /// Refresh the metadata for a position
@@ -530,10 +592,69 @@ impl MarginTxBuilder {
             .get_account_state()
             .await?
             .positions()
-            .map(|position| self.ix.refresh_position_metadata(&position.token))
+            .map(|position| {
+                let is_deposit_account = position.address
+                    == get_associated_token_address(self.address(), &position.token);
+
+                match is_deposit_account {
+                    false => self.ix.refresh_position_metadata(&position.token),
+                    true => self.ix.refresh_position_config(&position.token),
+                }
+            })
             .collect::<Vec<_>>();
 
         self.get_chunk_transactions(12, instructions).await
+    }
+
+    /// Create a new token account that accepts deposits, registered as a position
+    pub async fn create_deposit_position(&self, token_mint: &Pubkey) -> Result<Transaction> {
+        self.create_transaction(&[
+            spl_associated_token_account::instruction::create_associated_token_account(
+                &self.signer(),
+                self.address(),
+                token_mint,
+            ),
+            self.ix.create_deposit_position(*token_mint),
+        ])
+        .await
+    }
+
+    /// Close a previously created deposit account
+    pub async fn close_deposit_position(&self, token_mint: &Pubkey) -> Result<Transaction> {
+        let token_account = get_associated_token_address(self.address(), token_mint);
+        let instruction = self.ix.close_position(*token_mint, token_account);
+        self.create_transaction(&[instruction]).await
+    }
+
+    /// Transfer tokens into or out of a deposit account associated with the margin account
+    pub async fn transfer_deposit(
+        &self,
+        token_mint: Pubkey,
+        source_owner: Pubkey,
+        source: Pubkey,
+        destination: Pubkey,
+        amount: u64,
+    ) -> Result<Transaction> {
+        let state = self.get_account_state().await?;
+        let mut instructions = vec![];
+
+        if !state.positions().any(|p| p.token == token_mint) {
+            instructions.push(
+                spl_associated_token_account::instruction::create_associated_token_account(
+                    &self.signer(),
+                    self.address(),
+                    &token_mint,
+                ),
+            );
+            instructions.push(self.ix.create_deposit_position(token_mint));
+        }
+
+        instructions.push(
+            self.ix
+                .transfer_deposit(source_owner, source, destination, amount),
+        );
+
+        self.create_transaction(&instructions).await
     }
 
     /// Get the latest [MarginAccount] state
@@ -568,13 +689,18 @@ impl MarginTxBuilder {
     }
 
     /// Append instructions to refresh pool positions to instructions
-    async fn create_pool_instructions(&self, instructions: &mut Vec<Instruction>) -> Result<()> {
+    pub async fn refresh_all_pool_positions_underlying_to_tx(
+        &self,
+    ) -> Result<HashMap<Pubkey, TransactionBuilder>> {
         let state = self.get_account_state().await?;
-        let mut seen_pools = HashSet::new();
+        let mut txns = HashMap::new();
 
         for position in state.positions() {
+            if position.adapter != jet_margin_pool::ID {
+                continue;
+            }
             let p_metadata = self.get_position_metadata(&position.token).await?;
-            if seen_pools.contains(&p_metadata.underlying_token_mint) {
+            if txns.contains_key(&p_metadata.underlying_token_mint) {
                 continue;
             }
             let t_metadata = self
@@ -585,11 +711,35 @@ impl MarginTxBuilder {
                 ix_builder.margin_refresh_position(self.ix.address, t_metadata.pyth_price),
             );
 
-            instructions.push(ix);
-            seen_pools.insert(p_metadata.underlying_token_mint);
+            txns.insert(p_metadata.underlying_token_mint, ix.into());
         }
 
-        Ok(())
+        Ok(txns)
+    }
+
+    /// Append instructions to refresh deposit positions
+    pub async fn refresh_deposit_positions(&self) -> Result<Vec<TransactionBuilder>> {
+        let state = self.get_account_state().await?;
+        let mut instructions = vec![];
+        for position in state.positions() {
+            let (cfg_addr, p_config) = match self.get_position_config(&position.token).await? {
+                None => continue,
+                Some(r) => r,
+            };
+
+            if position.token != p_config.underlying_mint {
+                continue;
+            }
+
+            let token_oracle = match p_config.oracle().unwrap() {
+                TokenOracle::Pyth { price, .. } => price,
+            };
+
+            let refresh = self.ix.refresh_deposit_position(&cfg_addr, &token_oracle);
+            instructions.push(refresh.into());
+        }
+
+        Ok(instructions)
     }
 
     async fn get_token_metadata(&self, token_mint: &Pubkey) -> Result<TokenMetadata> {
@@ -621,6 +771,22 @@ impl MarginTxBuilder {
             Some(account) => Ok(PositionTokenMetadata::try_deserialize(
                 &mut &account.data[..],
             )?),
+        }
+    }
+
+    async fn get_position_config(
+        &self,
+        token_mint: &Pubkey,
+    ) -> Result<Option<(Pubkey, TokenConfig)>> {
+        let cfg_address = self.config_ix.derive_token_config(token_mint);
+        let account_data = self.rpc.get_account(&cfg_address).await?;
+
+        match account_data {
+            None => Ok(None),
+            Some(account) => Ok(Some((
+                cfg_address,
+                TokenConfig::try_deserialize(&mut &account.data[..])?,
+            ))),
         }
     }
 

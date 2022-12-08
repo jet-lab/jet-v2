@@ -5,7 +5,7 @@ use anchor_lang::AccountDeserialize;
 use anyhow::Result;
 use jet_bonds::control::state::BondManager;
 use jet_margin_sdk::bonds::{BondsIxBuilder, OrderParams};
-use jet_proto_math::fixed_point::{Fp32, FP32_ONE};
+use jet_program_common::{Fp32, FP32_ONE};
 use rand::{thread_rng, Rng};
 use solana_client::{rpc_client::RpcClient, rpc_config::RpcSendTransactionConfig};
 use solana_sdk::{
@@ -54,9 +54,24 @@ struct Client {
 }
 
 impl Client {
-    pub fn new(conn: RpcClient, signer: Keypair, mint: Pubkey, seed: [u8; 32]) -> Result<Self> {
-        let mut ix = BondsIxBuilder::new_from_seed(&mint, seed, signer.pubkey())
-            .with_payer(&signer.pubkey());
+    pub fn new(
+        conn: RpcClient,
+        signer: Keypair,
+        mint: Pubkey,
+        seed: [u8; 32],
+        token_oracle: Pubkey,
+        ticket_oracle: Pubkey,
+    ) -> Result<Self> {
+        let mut ix = BondsIxBuilder::new_from_seed(
+            &Pubkey::default(),
+            &mint,
+            seed,
+            signer.pubkey(),
+            token_oracle,
+            ticket_oracle,
+            None,
+        )
+        .with_payer(&signer.pubkey());
         let bond_manager = {
             let data = conn.get_account_data(&ix.manager())?;
 
@@ -64,13 +79,14 @@ impl Client {
         };
 
         ix = ix.with_orderbook_accounts(
-            Some(bond_manager.bids),
-            Some(bond_manager.asks),
-            Some(bond_manager.event_queue),
+            bond_manager.bids,
+            bond_manager.asks,
+            bond_manager.event_queue,
         );
 
         Ok(Self { conn, ix, signer })
     }
+
     pub fn sign_send_transaction(
         &self,
         instructions: &[Instruction],
@@ -141,10 +157,10 @@ impl<'a> User<'a> {
             &DEVNET_USDC,
             token_amount,
         );
-        let fund_ticket =
-            self.client
-                .ix
-                .convert_tokens(Some(&self.key()), None, None, None, ticket_amount)?;
+        let fund_ticket = self
+            .client
+            .ix
+            .convert_tokens(self.key(), None, None, ticket_amount)?;
 
         self.send_instructions(&[init_token, init_ticket, fund_token, fund_ticket])?;
         println!("funding success!");
@@ -155,7 +171,7 @@ impl<'a> User<'a> {
         let lend = self
             .client
             .ix
-            .lend_order(&self.key(), None, None, params, vec![])?;
+            .lend_order(self.key(), None, None, params, &[])?;
 
         self.send_instructions(&[lend])
     }
@@ -163,7 +179,7 @@ impl<'a> User<'a> {
         let borrow = self
             .client
             .ix
-            .sell_tickets_order(&self.key(), None, None, params)?;
+            .sell_tickets_order(self.key(), None, None, params)?;
 
         self.send_instructions(&[borrow])
     }
@@ -210,7 +226,14 @@ fn main() -> Result<()> {
     let alice_kp = map_keypair_file(ALICE.clone())?;
     let bob_kp = map_keypair_file(BOB.clone())?;
 
-    let client = Client::new(conn, wallet, DEVNET_USDC, Pubkey::default().to_bytes())?;
+    let client = Client::new(
+        conn,
+        wallet,
+        DEVNET_USDC,
+        Pubkey::default().to_bytes(),
+        Pubkey::default(),
+        Pubkey::default(),
+    )?;
 
     let alice = User::new(&client, alice_kp)?;
     let bob = User::new(&client, bob_kp)?;
@@ -260,12 +283,12 @@ fn main() -> Result<()> {
     }
 
     // read and display the orderbook
-    let asks_data = &mut client.conn.get_account_data(&client.ix.asks()?)?;
+    let asks_data = &mut client.conn.get_account_data(&client.ix.asks())?;
     let asks = agnostic_orderbook::state::critbit::Slab::<jet_bonds::orderbook::state::CallbackInfo>::from_buffer(
             asks_data,
             agnostic_orderbook::state::AccountTag::Asks,
         )?;
-    let bids_data = &mut client.conn.get_account_data(&client.ix.bids()?)?;
+    let bids_data = &mut client.conn.get_account_data(&client.ix.bids())?;
     let bids = agnostic_orderbook::state::critbit::Slab::<jet_bonds::orderbook::state::CallbackInfo>::from_buffer(
             bids_data,
             agnostic_orderbook::state::AccountTag::Bids,
@@ -283,7 +306,7 @@ fn main() -> Result<()> {
         .map(|n| Order {
             base: n.base_quantity,
             quote: Fp32::upcast_fp32(n.price())
-                .u64_mul(n.base_quantity)
+                .decimal_u64_mul(n.base_quantity)
                 .unwrap(),
             price_fp32: n.price(),
             price_f64: ui_price(n.price())
@@ -294,7 +317,7 @@ fn main() -> Result<()> {
         .map(|n| Order {
             base: n.base_quantity,
             quote: Fp32::upcast_fp32(n.price())
-                .u64_mul(n.base_quantity)
+                .decimal_u64_mul(n.base_quantity)
                 .unwrap(),
             price_fp32: n.price(),
             price_f64: ui_price(n.price())

@@ -2,22 +2,23 @@ import { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { CSVDownload } from 'react-csv';
 import { SetterOrUpdater, useRecoilState, useRecoilValue } from 'recoil';
-import { Dictionary } from '../../state/settings/localization/localization';
-import { FiatCurrency } from '../../state/settings/settings';
-import { AccountsViewOrder, SwapsViewOrder } from '../../state/views/views';
-import { WalletTokens } from '../../state/user/walletTokens';
-import { CurrentPoolSymbol, Pools } from '../../state/pools/pools';
-import { AccountBalance, Accounts, CurrentAccount } from '../../state/user/accounts';
-import { ActionRefresh, CurrentSwapOutput } from '../../state/actions/actions';
-import { useCurrencyFormatting } from '../../utils/currency';
-import { createDummyArray } from '../../utils/ui';
-import { formatRate } from '../../utils/format';
+import { Dictionary } from '@state/settings/localization/localization';
+import { FiatCurrency } from '@state/settings/settings';
+import { AccountsViewOrder, SwapsViewOrder } from '@state/views/views';
+import { WalletTokens } from '@state/user/walletTokens';
+import { CurrentPoolSymbol, Pools } from '@state/pools/pools';
+import { AccountBalance, Accounts, CurrentAccount } from '@state/user/accounts';
+import { ActionRefresh, CurrentSwapOutput } from '@state/actions/actions';
+import { useCurrencyFormatting } from '@utils/currency';
+import { createDummyArray } from '@utils/ui';
+import { formatRate } from '@utils/format';
 import { Table, Skeleton, Typography, Input } from 'antd';
-import { TokenLogo } from '../misc/TokenLogo';
-import { ReorderArrows } from '../misc/ReorderArrows';
-import { Info } from '../misc/Info';
-import { ConnectionFeedback } from '../misc/ConnectionFeedback/ConnectionFeedback';
+import { TokenLogo } from '@components/misc/TokenLogo';
+import { ReorderArrows } from '@components/misc/ReorderArrows';
+import { Info } from '@components/misc/Info';
+import { ConnectionFeedback } from '@components/misc/ConnectionFeedback/ConnectionFeedback';
 import { DownloadOutlined, SearchOutlined } from '@ant-design/icons';
+import debounce from 'lodash.debounce';
 
 // Table to show margin account's balances for each token
 export function FullAccountBalance(): JSX.Element {
@@ -61,10 +62,11 @@ export function FullAccountBalance(): JSX.Element {
   }
 
   // Tell if token is a swap token, and highlight in table
-  function isSwapToken(symbol: string) {
+  function isSwapToken(symbol: string): boolean {
     if (pathname === '/swaps' && (currentPoolSymbol === symbol || currentSwapOutput?.symbol === symbol)) {
       return true;
     }
+    return false;
   }
 
   // Renders the tokens price info
@@ -76,14 +78,17 @@ export function FullAccountBalance(): JSX.Element {
           <Text className="price-name">{`${balance.tokenSymbol} ≈ ${currencyFormatter(
             pools.tokenPools[balance.tokenSymbol]?.tokenPrice ?? 0,
             true,
-            balance.tokenSymbol === 'USDC' ? 0 : undefined,
-            balance.tokenSymbol === 'USDC'
+            // Round currencies to 2 decimal units
+            2,
+            true
           )}`}</Text>
+          {/* price-abbrev is shown on smaller displays */}
           <Text className="price-abbrev">{`≈ ${currencyFormatter(
             pools.tokenPools[balance.tokenSymbol]?.tokenPrice ?? 0,
             true,
-            balance.tokenSymbol === 'USDC' ? 0 : undefined,
-            balance.tokenSymbol === 'USDC'
+            // Round currencies to 2 decimal units
+            2,
+            true
           )}`}</Text>
         </div>
       );
@@ -116,10 +121,18 @@ export function FullAccountBalance(): JSX.Element {
   // Renders the deposit balance column for table
   function renderDepositBalanceColumn(balance: AccountBalance) {
     let render = <Skeleton className="align-right" paragraph={false} active={loadingAccounts} />;
-    if (accounts && balance?.tokenSymbol) {
+    if (accounts && balance?.tokenSymbol && pools) {
+      const value = currencyAbbrev(
+        balance.depositBalance.tokens,
+        pools.tokenPools[balance.tokenSymbol]?.precision ?? 2,
+        false,
+        undefined,
+        true
+      );
       render = (
         <Text type={balance.depositBalance.isZero() ? undefined : 'success'}>
-          {currencyAbbrev(balance.depositBalance.tokens, false, undefined, balance.depositBalance.decimals / 2)}
+          {!balance.depositBalance.isZero() && value === '0' && '~'}
+          {value}
         </Text>
       );
     }
@@ -130,10 +143,19 @@ export function FullAccountBalance(): JSX.Element {
   // Renders the loan balance column for table
   function renderLoanBalanceColumn(balance: AccountBalance) {
     let render = <Skeleton className="align-right" paragraph={false} active={loadingAccounts} />;
-    if (accounts && balance?.tokenSymbol) {
+    if (accounts && balance?.tokenSymbol && pools) {
+      const value = currencyAbbrev(
+        balance.loanBalance.tokens,
+        pools.tokenPools[balance.tokenSymbol]?.precision ?? 2,
+        false,
+        undefined,
+
+        true
+      );
       render = (
         <Text type={balance.loanBalance.isZero() ? undefined : 'warning'}>
-          {currencyAbbrev(balance.loanBalance.tokens, false, undefined, balance.loanBalance.decimals / 2)}
+          {!balance.loanBalance.isZero() && value === '0' && '~'}
+          {value}
         </Text>
       );
     }
@@ -157,7 +179,7 @@ export function FullAccountBalance(): JSX.Element {
     if (accounts && balance?.tokenSymbol) {
       render = (
         <Text type={side === 'borrow' ? 'danger' : 'success'}>
-          {formatRate(balance[side === 'borrow' ? 'borrowRate' : 'depositRate'])}
+          {formatRate(balance[side === 'borrow' ? 'borrowRate' : 'depositRate'], 2)}
         </Text>
       );
     }
@@ -172,25 +194,25 @@ export function FullAccountBalance(): JSX.Element {
       key: 'tokenSymbol',
       align: 'left' as any,
       width: 175,
-      render: (value: any, balance: AccountBalance) => renderTokenColumn(balance)
+      render: (_: string, balance: AccountBalance) => renderTokenColumn(balance)
     },
     {
       title: dictionary.accountsView.deposits,
       key: 'deposits',
       align: 'right' as any,
-      render: (value: any, balance: AccountBalance) => renderDepositBalanceColumn(balance)
+      render: (_: string, balance: AccountBalance) => renderDepositBalanceColumn(balance)
     },
     {
       title: dictionary.accountsView.borrows,
       key: 'borrows',
       align: 'right' as any,
-      render: (value: any, balance: AccountBalance) => renderLoanBalanceColumn(balance)
+      render: (_: string, balance: AccountBalance) => renderLoanBalanceColumn(balance)
     },
     {
       title: dictionary.accountsView.fiatValue.replace('{{FIAT_CURRENCY}}', fiatCurrency),
       key: 'fiatValue',
       align: 'right' as any,
-      render: (value: any, balance: AccountBalance) => renderFiatValue(balance)
+      render: (_: string, balance: AccountBalance) => renderFiatValue(balance)
     },
     {
       title: (
@@ -200,7 +222,7 @@ export function FullAccountBalance(): JSX.Element {
       ),
       key: 'depositRate',
       align: 'right' as any,
-      render: (value: any, balance: AccountBalance) => renderPoolRate(balance, 'deposit')
+      render: (_: string, balance: AccountBalance) => renderPoolRate(balance, 'deposit')
     },
     {
       title: (
@@ -210,7 +232,7 @@ export function FullAccountBalance(): JSX.Element {
       ),
       key: 'borrowRate',
       align: 'right' as any,
-      render: (value: any, balance: AccountBalance) => renderPoolRate(balance, 'borrow')
+      render: (_: string, balance: AccountBalance) => renderPoolRate(balance, 'borrow')
     }
   ];
 
@@ -236,7 +258,14 @@ export function FullAccountBalance(): JSX.Element {
         const poolPosition = currentAccount.poolPositions[token.symbol];
         if (poolPosition) {
           const netBalance = poolPosition.depositBalance.sub(poolPosition.loanBalance);
-          const fiatValue = currencyAbbrev(poolPosition.depositValue - poolPosition.loanValue, true);
+          const fiatValue = currencyAbbrev(
+            poolPosition.depositValue - poolPosition.loanValue,
+            2,
+            true,
+            undefined,
+            true,
+            true
+          );
           const percent =
             (poolPosition.depositBalance.tokens + poolPosition.loanBalance.tokens) /
             (currentAccount.summary.depositedValue + currentAccount.summary.borrowedValue);
@@ -285,7 +314,7 @@ export function FullAccountBalance(): JSX.Element {
           <Input
             type="text"
             placeholder={dictionary.accountsView.balancesFilterPlaceholder}
-            onChange={e => filterBalanceTable(e.target.value)}
+            onChange={debounce(e => filterBalanceTable(e.target.value), 300)}
           />
         </div>
       </div>

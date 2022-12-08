@@ -1,16 +1,14 @@
 const cypressConfig = {
   e2e: {
-    setupNodeEvents(on, config) {
-      // implement node event listeners here
-    },
     screenshotOnRunFailure: false,
     video: false,
-    viewportWidth: 1440,
-    viewportHeight: 960,
+    viewportWidth: 1280,
+    viewportHeight: 720,
     env: {
       hideXHR: true
     },
-    baseUrl: 'http://localhost:3000'
+    baseUrl: 'http://localhost:3000?debug-environment=true',
+    defaultCommandTimeout: 60000
   }
 };
 

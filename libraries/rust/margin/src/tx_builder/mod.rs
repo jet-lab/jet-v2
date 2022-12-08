@@ -15,6 +15,10 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+mod airspace;
+/// bonds-margin integration code
+pub mod bonds;
 mod user;
 
+pub use airspace::*;
 pub use user::*;

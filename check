@@ -1,5 +1,6 @@
 #!/bin/bash
 # CI validation script.
+# 
 # Run a single job from the CI workflow:
 #   ./check <job-name>
 #           (wrap the job name in quotes if it has spaces)
@@ -7,60 +8,127 @@
 #   ./check all
 # Run jobs in the container used for CI:
 #   ./check in-docker '<job-name or all>'
+#
+# This script can also be sourced:
+#   . check
+# Then you can run any of the subcommands without calling ./check:
+#   e2e-tests    # tab completion is available
 
-set -euxo pipefail
+DOCKER_IMAGE=jetprotocol/builder:rust-1.65.0-node-18.12.1-solana-1.13.5-anchor-0.25.0-1
+SOLANA_MAINNET_RPC=${SOLANA_MAINNET_RPC:-'https://solana-api.projectserum.com'}
 
-DOCKER_IMAGE=jetprotocol/builder:solana-1.10.35-anchor-0.25.0-3
+#################
+# Workflow Jobs
 
-anchor-test() {
-    yarn install --frozen-lockfile
-    yarn --cwd libraries/ts build
-    yarn --cwd libraries/ts/bonds build:wasm
-    yarn --cwd libraries/ts/bonds copy:wasm
-    yarn --cwd libraries/ts/bonds build
-	anchor test $@ -- --features testing
+e2e-tests() { local args=$@
+    extract-arg --skip-yarn || (yarn-build && yarn build:app)
+    rm -f app/public/localnet.config.json
+    anchor test $args -- --features testing
 }
 
-hosted-tests-localnet() {
-    tests/scripts/on_localnet.sh anchor-build
-    SOLANA_LOGS=true tests/scripts/on_localnet.sh test combined
+hosted-tests-localnet() { local args=$@
+    extract-arg --skip-build || tests/scripts/on_localnet.sh anchor-build
+    SOLANA_LOGS=${SOLANA_LOGS:-true} tests/scripts/on_localnet.sh test combined $args
 }
 
 cargo-lint() {
     cargo fmt --all --check
-    cargo clippy --all-targets -- -Dwarnings
-    cargo test --doc
+    cargo clippy --all-targets -- -Dwarnings -A clippy::result_large_err
 }
 
 cargo-test() {
     if [[ ${CODECOV:-false} == true ]]; then
         cargo llvm-cov --workspace --lcov --output-path lcov.info --ignore-filename-regex programs/mock-pyth/src/lib.rs
     else 
-        cargo test
+        cargo nextest run
     fi
 }
 
 
-all() {
-    cargo-lint
-    cargo-test
-    hosted-tests-localnet
-    anchor-test
+#################
+# Docker
+
+# Starts an interactive bash shell in the docker container where all the
+# functions in this file can be used directly as commands.
+docker-shell() {
+    in-docker bash --rcfile /jet-v2/check
 }
 
+# Runs provided command in a docker container.
+# 
+# starts an idle container called "builder" in the background.
+# runs the specified command in the existing container.
+# reuses container to perist caches across builds.
+#
+#   ./check in-docker echo hello world
+#   ./check in-docker hosted-tests-localnet
+#   ./check in-docker solana-test-validator
+#   ./check in-docker bash
 in-docker() {
+    local container_name=${CONTAINER_NAME:-builder}
+    local docker_flags=${DOCKER_FLAGS:--it}
+    if [ "$(docker ps -aq -f status=exited -f name="^$container_name$")" ]; then
+        docker start "$container_name"
+    elif [ ! "$(docker ps -aq -f name="^$container_name$")" ]; then
+        DOCKER_FLAGS="-d --name $container_name" docker-run sleep infinity
+    fi
+    docker exec ${DOCKER_FLAGS:--it} "$container_name" /jet-v2/check $@
+}
+
+# you probably don't want to use this directly
+# executes a command in a brand new docker container.
+# build caches will need to be rebuilt from scratch for every execution.
+docker-run() {
+    local docker_flags="${DOCKER_FLAGS:-}"
     docker run \
+        -u $(id -u) \
         -v "$(dirname $(realpath ${BASH_SOURCE[0]})):/jet-v2" \
         --workdir /jet-v2 \
+        $docker_flags \
         $DOCKER_IMAGE \
         /jet-v2/check $@
 }
 
-if [[ "$@" == '' ]]; then
-    all
-else
-    $@
-fi
 
-set +x
-echo -e '\n\n ✔ all good'
+#################
+# helper functions
+
+yarn-build() {
+    yarn install --frozen-lockfile
+    yarn build:libs
+}
+
+# runs every workflow job. default if no args are given
+all() {
+    cargo-lint
+    cargo-test
+    hosted-tests-localnet $@
+    e2e-tests --skip-build
+}
+
+# assumes "args" variable is set.
+# returns whether args contains the passed in string as an independent argument
+# removes the string from args
+extract-arg() {
+    [[ "$args" == "$1" ]] && args='' || \
+    [[ "$args" == "$1 "* ]] && args="$(sed "s/$1 //g" <<< "$args")" || \
+    [[ "$args" == *" $1" ]] && args="$(sed "s/ $1//g" <<< "$args")" || \
+    [[ "$args" == *" $1 "* ]] && args="$(sed "s/ $1//g" <<< "$args")" || \
+        return 1
+}
+
+#################
+# run
+
+if (return 0 2>/dev/null); then
+    echo sourced
+else
+    set -euxo pipefail
+    if [[ "$@" == '' ]]; then
+        all
+    else
+        $@
+    fi
+    set +x
+    echo -e '\n\n ✔ all good'
+fi

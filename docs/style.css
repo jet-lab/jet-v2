@@ -1,58 +1,48 @@
-@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@600&display=swap");
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@600&display=swap');
 
 body {
-  margin: 0;
-  background-color: #464646;
+  padding: 2em;
+  background-color: #333333;
+  font-family: 'Lato', Helvetica, Arial, sans-serif;
+  color: #d2d2d2;
 }
 
-a {
-  color: #3d9e83;
-  text-decoration: none;
-  padding-left: 2em;
-}
-a:visited {
-  text-decoration: none;
-  color: #f4f4f4;
-}
-a:hover {
-  text-decoration: none;
-  color: #278db6;
-}
-a:focus {
-  text-decoration: none;
-  color: #8ebbb1;
+p {
+  color: #dbe1ea !important;
+  font-size: 1.5em;
 }
 
-#title {
-  font-family: "Lato", Helvetica, Arial, sans-serif;
+.logo {
+  height: 4em;
   font-size: 2em;
-  background: #333333;
-  color: #86ceb8;
   display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  height: 2em;
-  padding: 0.5em 1em;
+  justify-content: center;
+  align-items: center;
 }
 
-#link-tree {
-  top: calc(50% - 100px);
-  left: calc(50% - 300px);
-  font-size: 1.8em;
-  font-family: "Lato", Helvetica, Arial, sans-serif;
+.tree {
+  font-size: 1.5em;
+  border-bottom-style: solid;
+  border-bottom-color: #d2d2d2;
+  padding: 2em 0 1em 0;
 }
 
-li {
-  height: 1.5em;
-  list-style-type: none;
-  padding: 0.25em 0 0 5em;
-  margin: 0.5em 0;
+.card {
+  background-color: #292929 !important;
+  font-family: 'Lato';
+  font-style: normal;
+  font-weight: 400;
+  padding: 0 2em;
 }
 
-.typescript_logo {
-  content: url('https://upload.wikimedia.org/wikipedia/commons/4/4c/Typescript_logo_2020.svg');
+.card.hoverable:hover {
+  background-color: #212121 !important;
 }
 
-.rust_logo {
-  content: url('https://www.rust-lang.org/logos/rust-logo-128x128-blk.png')
+.lang {
+  color: #86ceb8;
+  font-weight: 400;
+  font-size: 1.2em;
+  /* line-height: 1.5em; */
+  text-transform: uppercase;
 }

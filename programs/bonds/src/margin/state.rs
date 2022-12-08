@@ -1,7 +1,7 @@
 use anchor_lang::{prelude::*, solana_program::clock::UnixTimestamp};
 use bytemuck::Zeroable;
 use jet_margin::{AdapterResult, MarginAccount};
-use jet_proto_math::traits::{TryAddAssign, TrySubAssign};
+use jet_program_common::traits::{SafeAdd, TryAddAssign, TrySubAssign};
 
 use crate::{orderbook::state::OrderTag, BondsError};
 
@@ -23,34 +23,17 @@ pub struct MarginUser {
     /// which are internal to bonds, such as SplitTicket, ClaimTicket, and open orders.
     /// this does *not* represent underlying tokens or bond ticket tokens, those are registered independently in margin
     pub collateral: Pubkey,
-
+    /// The `settle` instruction is permissionless, therefore the user must specify upon margin account creation
+    /// the address to send owed tokens
     pub underlying_settlement: Pubkey,
+    /// The `settle` instruction is permissionless, therefore the user must specify upon margin account creation
+    /// the address to send owed tickets
     pub ticket_settlement: Pubkey,
     /// The amount of debt that must be collateralized or repaid
     /// This debt is expressed in terms of the underlying token - not bond tickets
     pub debt: Debt,
     /// Accounting used to track assets in custody of the bond market
     pub assets: Assets,
-}
-
-#[cfg(feature = "cli")]
-impl Serialize for MarginUser {
-    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        let mut s = serializer.serialize_struct("MarginUser", 9)?;
-        s.serialize_field("user", &self.user.to_string())?;
-        s.serialize_field("bondManager", &self.bond_manager.to_string())?;
-        s.serialize_field("eventAdapter", &self.event_adapter.to_string())?;
-        s.serialize_field("claims", &self.claims.to_string())?;
-        s.serialize_field("bondTicketsStored", &self.bond_tickets_stored)?;
-        s.serialize_field("underlyingTokenStored", &self.underlying_token_stored)?;
-        s.serialize_field("outstandingObligations", &self.outstanding_obligations)?;
-        s.serialize_field("debt", &self.debt.total())?;
-        s.serialize_field("nonce", &self.nonce)?;
-        s.end()
-    }
 }
 
 #[derive(Zeroable, Debug, Clone, AnchorSerialize, AnchorDeserialize)]
@@ -112,10 +95,6 @@ impl Debt {
         Ok(seqno)
     }
 
-    pub fn cancel_borrow_order(&mut self, amount: u64) -> Result<()> {
-        self.pending.try_add_assign(amount)
-    }
-
     pub fn new_obligation_from_fill(
         &mut self,
         amount: u64,
@@ -172,19 +151,84 @@ impl Debt {
         self.outstanding_obligations() > 0
             && self.next_obligation_maturity <= Clock::get().unwrap().unix_timestamp
     }
+
+    pub fn pending(&self) -> u64 {
+        self.pending
+    }
+
+    pub fn committed(&self) -> u64 {
+        self.committed
+    }
 }
 
-#[derive(Zeroable, Debug, Clone, AnchorSerialize, AnchorDeserialize)]
+#[derive(Zeroable, Debug, Clone, AnchorSerialize, AnchorDeserialize, PartialEq, Eq)]
 pub struct Assets {
-    /// tokens to transfer into settlement account with next position refresh
+    /// tokens to transfer into settlement account
     pub entitled_tokens: u64,
-    /// tickets to transfer into settlement account with next position refresh
+    /// tickets to transfer into settlement account
     pub entitled_tickets: u64,
+
+    /// The number of bond tickets locked up in ClaimTicket or SplitTicket
+    tickets_staked: u64,
+
+    /// The amount of quote included in all orders posted by the user for both
+    /// bids and asks. Since the orderbook tracks base, not quote, this is only
+    /// an approximation. This value must always be less than or equal to the
+    /// actual posted quote.
+    posted_quote: u64,
+
     /// reserved data that may be used to determine the size of a user's collateral
     /// pessimistically prepared to persist aggregated values for:
     /// base and quote quantities, separately for bid/ask, on open orders and unsettled fills
     /// 2^3 = 8 u64's
     _reserved0: [u8; 64],
+}
+
+impl Assets {
+    /// either a bid or ask was placed
+    /// quote: the amount of quote that was posted
+    /// IMPORTANT: always input the quote (underlying), not the base
+    /// always shorts by one lamport to be defensive
+    /// todo maybe this is too defensive
+    pub fn post_order(&mut self, quote: u64) -> Result<()> {
+        if quote > 1 {
+            return self.posted_quote.try_add_assign(quote - 1);
+        }
+        Ok(())
+    }
+
+    /// An order was filled or cancelled
+    /// quote: the amount of quote that was removed from the order
+    /// IMPORTANT: always input the quote (underlying), not the base
+    /// always subtracts an extra lamport to be defensive
+    /// todo maybe this is too defensive
+    pub fn reduce_order(&mut self, quote: u64) {
+        if quote + 1 >= self.posted_quote {
+            self.posted_quote = 0;
+        } else {
+            self.posted_quote -= quote + 1;
+        }
+    }
+
+    /// make sure the order has already been accounted for before calling this method
+    pub fn stake_tickets(&mut self, tickets: u64) -> Result<()> {
+        self.tickets_staked.try_add_assign(tickets)
+    }
+
+    pub fn redeem_staked_tickets(&mut self, tickets: u64) {
+        if tickets >= self.tickets_staked {
+            self.tickets_staked = 0;
+        } else {
+            self.tickets_staked -= tickets;
+        }
+    }
+
+    /// represents the amount of collateral in staked tickets and open orders.
+    /// does not reflect the entitled tickets/tokens because they are expected
+    /// to be disbursed whenever this value is used.
+    pub fn collateral(&self) -> Result<u64> {
+        self.tickets_staked.safe_add(self.posted_quote)
+    }
 }
 
 #[account]
@@ -214,26 +258,6 @@ pub struct Obligation {
 impl Obligation {
     pub fn make_seeds<'a>(user: &'a [u8], bytes: &'a [u8]) -> [&'a [u8]; 3] {
         [crate::seeds::OBLIGATION, user, bytes]
-    }
-}
-
-#[cfg(feature = "cli")]
-impl Serialize for Obligation {
-    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        let mut s = serializer.serialize_struct("Obligation", 6)?;
-        s.serialize_field(
-            "MarginUserAccount",
-            &self.orderbook_user_account.to_string(),
-        )?;
-        s.serialize_field("bondManager", &self.bond_manager.to_string())?;
-        s.serialize_field("orderTag", &self.order_tag.0)?;
-        s.serialize_field("maturationTimestamp", &self.maturation_timestamp)?;
-        s.serialize_field("balance", &self.balance)?;
-        s.serialize_field("flags", &self.flags.bits())?;
-        s.end()
     }
 }
 

@@ -10,7 +10,8 @@ import { Dictionary } from '../settings/localization/localization';
 import { ActionRefresh, ACTION_REFRESH_INTERVAL } from '../actions/actions';
 import { walletParam, WalletTokens } from './walletTokens';
 import { Pools } from '../pools/pools';
-import { useProvider } from '../../utils/jet/provider';
+import { useProvider } from '@utils/jet/provider';
+import { MainConfig } from '@state/config/marginConfig';
 
 // Interfaces for account order and tx history
 export interface AccountHistory {
@@ -87,6 +88,7 @@ export const AccountHistoryLoaded = atom({
 // A syncer to be called so that we can have dependent atom state
 export function useAccountsSyncer() {
   const cluster = useRecoilValue(Cluster);
+  const marginConfig = useRecoilValue(MainConfig);
   const dictionary = useRecoilValue(Dictionary);
   const { programs, provider } = useProvider();
   const { publicKey } = useWallet();
@@ -157,24 +159,6 @@ export function useAccountsSyncer() {
       setAccountsLoading(false);
     }
 
-    // TODO: add account names back in
-    // Fetch account names for owner address
-    // async function getAccountNames(owner: PublicKey): Promise<Record<string, string>> {
-    //   let accountNames = {};
-    //   try {
-    //     const resp = await axios.get(
-    //       ``
-    //     );
-    //     if (resp.status !== 404) {
-    //       accountNames = resp.data;
-    //     }
-    //   } catch (err) {
-    //     // Ignore this error
-    //   }
-
-    //   return accountNames;
-    // }
-
     // Fetch accounts on an interval
     getAccounts();
     const accountsInterval = setInterval(getAccounts, ACTION_REFRESH_INTERVAL);
@@ -185,8 +169,8 @@ export function useAccountsSyncer() {
   // Update current account history
   useEffect(() => {
     async function getAccountHistory() {
-      if (!pools || !currentAccount) {
-        return;
+      if (!pools || !currentAccount || !marginConfig) {
+        return { transactions: [] };
       }
 
       const mints: any = {};
@@ -199,12 +183,15 @@ export function useAccountsSyncer() {
       }
 
       // Account trasactions
-      const transactions = await MarginClient.getTransactionHistory(
-        currentAccount.provider,
-        currentAccount.address,
-        mints,
-        cluster
-      );
+      const transactions =
+        cluster !== 'mainnet-beta'
+          ? await MarginClient.getTransactionHistory(
+              currentAccount.provider,
+              currentAccount.address,
+              mints,
+              marginConfig
+            )
+          : await MarginClient.getBlackBoxHistory(currentAccount.address, cluster);
 
       setAccountHistoryLoaded(true);
       return {

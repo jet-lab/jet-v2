@@ -4,8 +4,6 @@ members = [
     "tests/hosted",
     "tests/mock-adapter",
     "libraries/rust/*",
-    "libraries/ts/bonds/wasm-utils"
+    "libraries/ts/bonds/wasm-utils",
+    "tools/*"
 ]
-
-[patch.crates-io]
-jet-proto-math = { git = "https://github.com/jet-lab/program-libraries", branch = "main" }

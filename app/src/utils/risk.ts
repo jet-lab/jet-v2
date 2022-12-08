@@ -1,8 +1,8 @@
 import { useRecoilValue } from 'recoil';
 import { MarginAccount, Pool, TokenAmount, PoolAction } from '@jet-lab/margin';
-import { CurrentPool } from '../state/pools/pools';
-import { CurrentAccount } from '../state/user/accounts';
-import { CurrentAction, MaxTradeAmounts, TokenInputAmount } from '../state/actions/actions';
+import { CurrentPool } from '@state/pools/pools';
+import { CurrentAccount } from '@state/user/accounts';
+import { CurrentAction, MaxTradeAmounts, TokenInputAmount } from '@state/actions/actions';
 
 // Project user's risk from an action
 export function useProjectedRisk(
@@ -12,7 +12,8 @@ export function useProjectedRisk(
   inputAmount?: TokenAmount,
   // If user is swapping
   minAmountOut?: TokenAmount,
-  outputToken?: Pool
+  outputToken?: Pool,
+  swapRepayWithProceeds?: boolean
 ) {
   const currentPool = useRecoilValue(CurrentPool);
   const pool = marginPool ?? currentPool;
@@ -28,11 +29,19 @@ export function useProjectedRisk(
   const canProjectAfterAction =
     pool && account && action && action !== 'transfer' && amount && !amount.isZero() && max && !amount.gt(max);
   const defaultActionProjection = account?.riskIndicator ?? 0;
+  if (max && amount.gt(max)) {
+    return Infinity;
+  }
   const projectedRiskIndicator = canProjectAfterAction
-    ? pool.projectAfterAction(account, amount.tokens, action, minAmountOut && minAmountOut.tokens, outputToken)
-        .riskIndicator
+    ? pool.projectAfterAction(
+        account,
+        amount.tokens,
+        action,
+        minAmountOut && minAmountOut.tokens,
+        outputToken,
+        swapRepayWithProceeds
+      ).riskIndicator
     : defaultActionProjection;
-
   return projectedRiskIndicator;
 }
 

@@ -16,7 +16,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 use anchor_lang::{prelude::*, solana_program::clock::UnixTimestamp};
-use jet_proto_math::Number;
+use jet_program_common::Number;
 use pyth_sdk_solana::PriceFeed;
 #[cfg(any(test, feature = "cli"))]
 use serde::ser::{Serialize, SerializeStruct, Serializer};
@@ -29,7 +29,7 @@ use crate::{util, Amount, AmountKind, ChangeKind, ErrorCode, TokenChange};
 /// services lending/borrowing operations.
 #[account]
 #[repr(C, align(8))]
-#[derive(Debug, Default)]
+#[derive(Default)]
 pub struct MarginPool {
     pub version: u8,
 
@@ -81,6 +81,29 @@ pub struct MarginPool {
 
     /// The time the interest was last accrued up to
     pub accrued_until: i64,
+}
+
+impl std::fmt::Debug for MarginPool {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("MarginPool")
+            .field("version", &self.version)
+            .field("pool_bump", &self.pool_bump)
+            .field("vault", &self.vault)
+            .field("fee_destination", &self.fee_destination)
+            .field("deposit_note_mint", &self.deposit_note_mint)
+            .field("loan_note_mint", &self.loan_note_mint)
+            .field("token_mint", &self.token_mint)
+            .field("token_price_oracle", &self.token_price_oracle)
+            .field("address", &self.address)
+            .field("config", &self.config)
+            .field("borrowed_tokens", &self.total_borrowed())
+            .field("uncollected_fees", &self.total_uncollected_fees())
+            .field("deposit_tokens", &self.deposit_tokens)
+            .field("deposit_notes", &self.deposit_notes)
+            .field("loan_notes", &self.loan_notes)
+            .field("accrued_until", &self.accrued_until)
+            .finish()
+    }
 }
 
 #[cfg(any(test, feature = "cli"))]
@@ -179,6 +202,43 @@ impl MarginPool {
         *self.total_borrowed_mut() = self
             .total_borrowed()
             .saturating_sub(Number::from(amount.tokens));
+
+        Ok(())
+    }
+
+    /// Record repayment of a loan with deposit notes.
+    ///
+    /// This is a kind of settlement operation where no tokens are involved explicitly. We're
+    /// cancelling deposit notes against loan notes.
+    pub fn margin_repay(
+        &mut self,
+        repay_amount: &FullAmount,
+        withdraw_amount: &FullAmount,
+    ) -> Result<()> {
+        // "Withdraw"
+        self.deposit_notes = self
+            .deposit_notes
+            .checked_sub(withdraw_amount.notes)
+            .ok_or(ErrorCode::InsufficientLiquidity)?;
+
+        // "Repay"
+        self.loan_notes = self
+            .loan_notes
+            .checked_sub(repay_amount.notes)
+            .ok_or(ErrorCode::InsufficientLiquidity)?;
+
+        // Due to defensive rounding, and probably only when the final outstanding loan in a pool
+        // is being repaid, it is possible that the integer number of tokens being repaid exceeds
+        // the precise number of total borrowed tokens. To cover this case, we guard against any
+        // difference beyond the rounding effect, and use a saturating sub to update the total borrowed.
+
+        if self.total_borrowed().as_u64_ceil(0) < repay_amount.tokens {
+            return Err(ErrorCode::RepaymentExceedsTotalOutstanding.into());
+        }
+
+        *self.total_borrowed_mut() = self
+            .total_borrowed()
+            .saturating_sub(Number::from(repay_amount.tokens));
 
         Ok(())
     }
@@ -549,7 +609,7 @@ pub struct PriceResult {
 }
 
 /// Configuration for a margin pool
-#[derive(Debug, Default, AnchorDeserialize, AnchorSerialize, Clone, Eq, PartialEq)]
+#[derive(Debug, Default, AnchorDeserialize, AnchorSerialize, Clone, Copy, Eq, PartialEq)]
 pub struct MarginPoolConfig {
     /// Space for binary settings
     pub flags: u64,

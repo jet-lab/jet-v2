@@ -1,14 +1,14 @@
 import { useRecoilState, useRecoilValue } from 'recoil';
-import { Dictionary } from '../../../state/settings/localization/localization';
-import { PoolsRowOrder } from '../../../state/views/views';
-import { Pools, CurrentPool } from '../../../state/pools/pools';
-import { useCurrencyFormatting } from '../../../utils/currency';
-import { formatRate } from '../../../utils/format';
+import { Dictionary } from '@state/settings/localization/localization';
+import { PoolsRowOrder } from '@state/views/views';
+import { Pools, CurrentPool } from '@state/pools/pools';
+import { useCurrencyFormatting } from '@utils/currency';
+import { formatRate } from '@utils/format';
 import { PieChart } from './PieChart';
-import { TokenLogo } from '../../misc/TokenLogo';
+import { TokenLogo } from '@components/misc/TokenLogo';
 import { AirdropButton } from './AirdropButton';
-import { ReorderArrows } from '../../misc/ReorderArrows';
-import { Info } from '../../misc/Info';
+import { ReorderArrows } from '@components/misc/ReorderArrows';
+import { Info } from '@components/misc/Info';
 import { Skeleton, Typography } from 'antd';
 
 // Component that shows extra details on the currentPool
@@ -41,12 +41,22 @@ export function PoolDetail(): JSX.Element {
     return render;
   }
 
+  // Renders the required collateral factor for the current pool
+  function renderRequiredCollateralFactor() {
+    let render = <Skeleton paragraph={false} active style={{ width: 100 }} />;
+    if (init) {
+      render = <Text>{currentPool.loanNoteMetadata.valueModifier.toNumber()}</Text>;
+    }
+
+    return render;
+  }
+
   // Renders the pool size for the current pool
   function renderPoolSize() {
     let render = <Skeleton className="align-center" paragraph={false} active style={{ margin: '10px 0' }} />;
     if (init) {
-      const totalValueAbbrev = currencyAbbrev(currentPool.totalValue.tokens, false, undefined, 2);
-      render = <Title className="green-text">{`${totalValueAbbrev} ${currentPool.symbol}`}</Title>;
+      const totalValueAbbrev = currencyAbbrev(currentPool.totalValue.tokens, currentPool.precision, false, undefined);
+      render = <Title className="green-text">{`${totalValueAbbrev}`}</Title>;
     }
 
     return render;
@@ -56,11 +66,10 @@ export function PoolDetail(): JSX.Element {
   function renderAvailableLiquidity() {
     let render = <Skeleton paragraph={false} active style={{ marginTop: 5 }} />;
     if (init) {
-      const vaultAbbrev = currencyAbbrev(currentPool.vault.tokens, false, undefined, currentPool.decimals);
+      const vaultAbbrev = currencyAbbrev(currentPool.vault.tokens, currentPool.precision, false, undefined);
       render = (
         <div className="pie-chart-section-info-item">
           <Text type="success">{vaultAbbrev}</Text>
-          <Text>{currentPool.symbol}</Text>
         </div>
       );
     }
@@ -72,11 +81,10 @@ export function PoolDetail(): JSX.Element {
   function renderTotalBorrowed() {
     let render = <Skeleton paragraph={false} active style={{ marginTop: 5 }} />;
     if (init) {
-      const borrowedAbbrev = currencyAbbrev(currentPool.borrowedTokens.tokens, false, undefined, currentPool.decimals);
+      const borrowedAbbrev = currencyAbbrev(currentPool.borrowedTokens.tokens, currentPool.precision, false, undefined);
       render = (
         <div className="pie-chart-section-info-item">
           <Text type="danger">{borrowedAbbrev}</Text>
-          <Text>{currentPool.symbol}</Text>
         </div>
       );
     }
@@ -117,6 +125,12 @@ export function PoolDetail(): JSX.Element {
               <Text className="info-element small-accent-text">{dictionary.poolsView.collateralWeight}</Text>
             </Info>
             {renderCollateralWeight()}
+          </div>
+          <div className="pool-detail-body-half-section flex align-start justify-center column">
+            <Info term="requiredCollateralFactor">
+              <Text className="info-element small-accent-text">{dictionary.poolsView.requiredCollateralFactor}</Text>
+            </Info>
+            {renderRequiredCollateralFactor()}
           </div>
         </div>
         <div className="pool-detail-body-half flex-align-start justify-center column">

@@ -15,6 +15,10 @@
     "term": "Account Value",
     "definition": "The USD value of your equity in this margin account, assets minus liabilities."
   },
+  "pythDataStale": {
+    "term": "Pyth Data Stale",
+    "definition": "Transacting with this asset is currently unavailable because the Pyth data for this asset is stale."
+  },
   "projectedRiskLevel": {
     "term": "Projected Risk Level",
     "definition": "A real-time representation of what your Risk Level would be if the current trade is submitted."
@@ -34,6 +38,10 @@
   "collateralWeight": {
     "term": "Collateral Weight",
     "definition": "A multiplier that adjusts the contribution of an asset's USD value to account collateral."
+  },
+  "requiredCollateralFactor": {
+    "term": "Required Collateral Factor",
+    "definition": "A constant assigned to each asset that is used to determine the required collateral for a liability of that asset. Analogous to the maximum leverage for a particular asset. For further information, see the 'Margin accounts' page in the Gitbook documentation."
   },
   "requiredCollateral": {
     "term": "Required Collateral",

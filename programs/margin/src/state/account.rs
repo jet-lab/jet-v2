@@ -16,19 +16,20 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 use anchor_lang::{prelude::*, system_program, Discriminator};
-use bytemuck::Contiguous;
+use bytemuck::{Contiguous, Pod, Zeroable};
 
 #[cfg(any(test, feature = "cli"))]
 use serde::ser::{Serialize, SerializeStruct, Serializer};
 
-use jet_proto_math::Number128;
+use jet_program_common::Number128;
 
 use anchor_lang::Result as AnchorResult;
 use std::result::Result;
 
 use crate::{
+    syscall::{sys, Sys},
     util::{Invocation, Require},
-    ErrorCode, MAX_PRICE_QUOTE_AGE, MAX_USER_POSITIONS,
+    ErrorCode, TokenKind, MAX_PRICE_QUOTE_AGE, MAX_USER_POSITIONS,
 };
 
 mod positions;
@@ -180,7 +181,7 @@ impl MarginAccount {
         decimals: u8,
         address: Pubkey,
         adapter: Pubkey,
-        kind: PositionKind,
+        kind: TokenKind,
         value_modifier: u16,
         max_staleness: u64,
         approvals: &[Approver],
@@ -188,6 +189,7 @@ impl MarginAccount {
         if !self.is_liquidating() && self.position_list().length >= MAX_USER_POSITIONS {
             return err!(ErrorCode::MaxPositions);
         }
+
         let (key, free_position) = self.position_list_mut().add(token)?;
 
         free_position.exponent = -(decimals as i16);
@@ -236,7 +238,7 @@ impl MarginAccount {
     pub fn refresh_position_metadata(
         &mut self,
         mint: &Pubkey,
-        kind: PositionKind,
+        kind: TokenKind,
         value_modifier: u16,
         max_staleness: u64,
     ) -> Result<AccountPosition, ErrorCode> {
@@ -254,6 +256,10 @@ impl MarginAccount {
 
     pub fn get_position_key(&self, mint: &Pubkey) -> Option<AccountPositionKey> {
         self.position_list().get_key(mint).copied()
+    }
+
+    pub fn get_position(&mut self, mint: &Pubkey) -> Option<&AccountPosition> {
+        self.position_list().get(mint)
     }
 
     pub fn get_position_mut(&mut self, mint: &Pubkey) -> Option<&mut AccountPosition> {
@@ -377,7 +383,7 @@ impl MarginAccount {
     }
 
     pub fn valuation(&self) -> AnchorResult<Valuation> {
-        let timestamp = crate::util::get_timestamp();
+        let timestamp = sys().unix_timestamp();
 
         let mut past_due = false;
         let mut liabilities = Number128::ZERO;
@@ -410,8 +416,7 @@ impl MarginAccount {
             };
 
             match (kind, stale_reason) {
-                (PositionKind::NoValue, _) => (),
-                (PositionKind::Claim, None) => {
+                (TokenKind::Claim, None) => {
                     if position.balance > 0
                         && position.flags.contains(AdapterPositionFlags::PAST_DUE)
                     {
@@ -422,16 +427,16 @@ impl MarginAccount {
                     liabilities += position.value();
                     required_collateral += position.required_collateral_value();
                 }
-                (PositionKind::Claim, Some(error)) => {
+                (TokenKind::Claim, Some(error)) => {
                     msg!("claim position is stale: {:?}", position);
                     return Err(error!(error));
                 }
 
-                (PositionKind::AdapterCollateral | PositionKind::Deposit, None) => {
+                (TokenKind::AdapterCollateral | TokenKind::Collateral, None) => {
                     equity += position.value();
                     weighted_collateral += position.collateral_value();
                 }
-                (PositionKind::AdapterCollateral | PositionKind::Deposit, Some(e)) => {
+                (TokenKind::AdapterCollateral | TokenKind::Collateral, Some(e)) => {
                     stale_collateral_list.push((position.token, e));
                 }
             }
@@ -501,19 +506,25 @@ pub enum Approver {
 /// State of an in-progress liquidation
 #[account(zero_copy)]
 #[repr(C, align(8))]
-#[derive(AnchorDeserialize, AnchorSerialize, Debug, Default)]
+pub struct LiquidationState {
+    /// The state object
+    pub state: Liquidation,
+}
+
+#[repr(C)]
+#[derive(Zeroable, Pod, AnchorDeserialize, AnchorSerialize, Debug, Default, Clone, Copy)]
 pub struct Liquidation {
     /// time that liquidate_begin initialized this liquidation
-    start_time: i64,
+    pub start_time: i64,
 
     /// cumulative change in equity caused by invocations during the liquidation so far
     /// negative if equity is lost
-    equity_change: i128,
+    pub equity_change: i128,
 
     /// lowest amount of equity change that is allowed during invoke steps
     /// typically negative or zero
     /// if equity_change goes lower than this number, liquidate_invoke should fail
-    min_equity_change: i128,
+    pub min_equity_change: i128,
 }
 
 impl Liquidation {
@@ -585,7 +596,6 @@ mod tests {
 
     use super::*;
     use itertools::Itertools;
-    use jet_metadata::TokenKind;
     use serde_test::{assert_ser_tokens, Token};
 
     fn create_position_input(margin_address: &Pubkey) -> (Pubkey, Pubkey) {
@@ -632,13 +642,13 @@ mod tests {
 
         // use a non-default pubkey
         let key = crate::id();
-        let approvals = &[Approver::MarginAccountAuthority, Approver::Adapter(key)];
+        let approvals = &[Approver::MarginAccountAuthority];
         acc.register_position(
             key,
             2,
             key,
             key,
-            PositionKind::NoValue,
+            TokenKind::Collateral,
             5000,
             1000,
             approvals,
@@ -658,7 +668,7 @@ mod tests {
                 is_valid: 0,
                 _reserved: [0, 0, 0]
             },
-            kind: NoValue,
+            kind: Collateral,
             exponent: -2,
             value_modifier: 5000,
             max_staleness: 1000
@@ -744,7 +754,7 @@ mod tests {
                 Token::U8(0),
                 Token::StructEnd,
                 Token::Str("kind"),
-                Token::Str("NoValue"),
+                Token::Str("Collateral"),
                 Token::Str("exponent"),
                 Token::I16(0),
                 Token::Str("valueModifier"),
@@ -828,7 +838,8 @@ mod tests {
             invocation: Invocation::default(),
             positions: [0; 7432],
         };
-        let approvals = &[Approver::MarginAccountAuthority, Approver::Adapter(adapter)];
+        let user_approval = &[Approver::MarginAccountAuthority];
+        let adapter_approval = &[Approver::MarginAccountAuthority, Approver::Adapter(adapter)];
 
         // // Register a few positions, randomise the order
         let (token_e, address_e) = create_position_input(&margin_address);
@@ -843,10 +854,10 @@ mod tests {
                 6,
                 address_a,
                 adapter,
-                PositionKind::Deposit,
+                TokenKind::Collateral,
                 0,
                 0,
-                approvals,
+                user_approval,
             )
             .unwrap();
 
@@ -856,10 +867,10 @@ mod tests {
                 6,
                 address_b,
                 adapter,
-                PositionKind::Claim,
+                TokenKind::Claim,
                 0,
                 0,
-                approvals,
+                adapter_approval,
             )
             .unwrap();
 
@@ -869,10 +880,10 @@ mod tests {
                 6,
                 address_c,
                 adapter,
-                PositionKind::Deposit,
+                TokenKind::Collateral,
                 0,
                 0,
-                approvals,
+                user_approval,
             )
             .unwrap();
 
@@ -886,11 +897,11 @@ mod tests {
 
         // Unregister positions
         margin_account
-            .unregister_position(&token_a, &address_a, approvals)
+            .unregister_position(&token_a, &address_a, user_approval)
             .unwrap();
         assert_eq!(margin_account.positions().count(), 2);
         margin_account
-            .unregister_position(&token_b, &address_b, approvals)
+            .unregister_position(&token_b, &address_b, adapter_approval)
             .unwrap();
         assert_eq!(margin_account.positions().count(), 1);
 
@@ -900,10 +911,10 @@ mod tests {
                 9,
                 address_e,
                 adapter,
-                PositionKind::NoValue,
+                TokenKind::Collateral,
                 0,
                 100,
-                approvals,
+                user_approval,
             )
             .unwrap();
         assert_eq!(margin_account.positions().count(), 2);
@@ -914,27 +925,27 @@ mod tests {
                 9,
                 address_d,
                 adapter,
-                PositionKind::NoValue,
+                TokenKind::Collateral,
                 0,
                 100,
-                approvals,
+                user_approval,
             )
             .unwrap();
         assert_eq!(margin_account.positions().count(), 3);
 
         // It should not be possible to unregister mismatched token & position
         assert!(margin_account
-            .unregister_position(&token_c, &address_b, approvals)
+            .unregister_position(&token_c, &address_b, user_approval)
             .is_err());
 
         margin_account
-            .unregister_position(&token_c, &address_c, approvals)
+            .unregister_position(&token_c, &address_c, user_approval)
             .unwrap();
         margin_account
-            .unregister_position(&token_e, &address_e, approvals)
+            .unregister_position(&token_e, &address_e, user_approval)
             .unwrap();
         margin_account
-            .unregister_position(&token_d, &address_d, approvals)
+            .unregister_position(&token_d, &address_d, user_approval)
             .unwrap();
 
         // There should be no positions left
@@ -968,7 +979,7 @@ mod tests {
                 6,
                 address_a,
                 adapter,
-                PositionKind::AdapterCollateral,
+                TokenKind::AdapterCollateral,
                 0,
                 0,
                 &[],
@@ -980,7 +991,7 @@ mod tests {
                 6,
                 address_b,
                 adapter,
-                PositionKind::AdapterCollateral,
+                TokenKind::AdapterCollateral,
                 0,
                 0,
                 &[Approver::MarginAccountAuthority],
@@ -992,7 +1003,7 @@ mod tests {
                 6,
                 address_c,
                 adapter,
-                PositionKind::AdapterCollateral,
+                TokenKind::AdapterCollateral,
                 0,
                 0,
                 &[Approver::Adapter(adapter)],
@@ -1004,7 +1015,7 @@ mod tests {
                 6,
                 address_d,
                 adapter,
-                PositionKind::AdapterCollateral,
+                TokenKind::AdapterCollateral,
                 0,
                 0,
                 &[Approver::MarginAccountAuthority, Approver::Adapter(adapter)],
@@ -1035,7 +1046,7 @@ mod tests {
                 6,
                 address,
                 adapter,
-                PositionKind::AdapterCollateral,
+                TokenKind::AdapterCollateral,
                 0,
                 0,
                 &[Approver::MarginAccountAuthority, Approver::Adapter(adapter)],
@@ -1081,16 +1092,16 @@ mod tests {
         kind: TokenKind,
     ) -> AnchorResult<Pubkey> {
         let key = Pubkey::find_program_address(&[&[index]], &crate::id()).0;
-        acc.register_position(
-            key,
-            2,
-            key,
-            key,
-            kind.into(),
-            10000,
-            0,
-            &[Approver::MarginAccountAuthority, Approver::Adapter(key)],
-        )?;
+        let mut approvals = vec![Approver::MarginAccountAuthority];
+
+        match kind {
+            TokenKind::Claim | TokenKind::AdapterCollateral => {
+                approvals.push(Approver::Adapter(key))
+            }
+            _ => (),
+        }
+
+        acc.register_position(key, 2, key, key, kind, 10000, 0, &approvals)?;
 
         Ok(key)
     }
@@ -1111,7 +1122,7 @@ mod tests {
             // &key,
             &PriceInfo {
                 value: price,
-                timestamp: crate::util::get_timestamp(),
+                timestamp: sys().unix_timestamp(),
                 exponent: 1,
                 is_valid: 1,
                 _reserved: [0; 3],
