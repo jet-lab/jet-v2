@@ -8,7 +8,7 @@ fi
 
 cargo run --bin jetctl -- test init-env -ul --no-confirm localnet.toml
 cargo run --bin jetctl -- test generate-app-config -ul --no-confirm localnet.toml -o app/public/localnet.config.json
-cargo run --bin jet-oracle-mirror -- -s ${SOLANA_MAINNET_RPC:-'https://solana-api.projectserum.com'} -tl &
+cargo run --bin jet-oracle-mirror -- -s ${SOLANA_MAINNET_RPC:='https://solana-api.projectserum.com'} -tl &
 
 echo "waiting for oracles ..."
 
