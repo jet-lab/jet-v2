@@ -124,7 +124,7 @@ mod jet_margin_pool {
     pub fn configure(ctx: Context<Configure>, config: Option<MarginPoolConfig>) -> Result<()> {
         instructions::configure_handler(ctx, config)
     }
-
+    //test
     /// Deposit tokens into the pool in exchange for notes
     ///
     /// TODO: check my def for change_kind, expand on it w more detail...
