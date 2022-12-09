@@ -4,6 +4,6 @@ members = [
     "tests/hosted",
     "tests/mock-adapter",
     "libraries/rust/*",
-    "libraries/ts/fixed_term/wasm-utils",
+    "packages/wasm-src",
     "tools/*"
 ]

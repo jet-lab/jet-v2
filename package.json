@@ -1,30 +1,28 @@
 {
-  "private": "true",
+  "private": true,
   "workspaces": [
-    "app",
-    "libraries/ts/fixed_term",
-    "libraries/ts/margin"
+    "apps/*",
+    "packages/*"
   ],
   "license": "AGPL-3.0-or-later",
   "scripts": {
-    "build:all": "yarn build:libs && yarn build:app",
-    "build:libs": "yarn --cwd libraries/ts/margin build && yarn --cwd libraries/ts/fixed_term build",
-    "build:libs-cjs": "yarn --cwd libraries/ts/margin build && yarn --cwd libraries/ts/fixed_term build:cjs",
-    "build:app": "yarn --cwd app build",
-    "build:cloudflare": "curl https://sh.rustup.rs -sSf | sh -s -- -y && . \"$HOME/.cargo/env\" && cargo install wasm-pack && env > app/.env && yarn build:all",
-    "clean:all": "rm -rf ./target & rm -rf ./test-ledger & yarn --cwd app clean & yarn --cwd libraries/ts/margin clean & yarn --cwd libraries/ts/fixed_term clean & find . -name 'node_modules' -type d -prune -exec rm -rf '{}' +",
-    "clean:ts": "yarn --cwd app clean & yarn --cwd libraries/ts/margin clean & yarn --cwd libraries/ts/fixed_term clean & find . -name 'node_modules' -type d -prune -exec rm -rf '{}' +",
-    "compile": "npx tsc",
-    "dev": "yarn --cwd libraries/ts/margin watch & yarn --cwd libraries/ts/fixed_term watch & yarn --cwd app dev",
+    "build": "FORCE_COLOR=1 turbo run build",
+    "build:cloudflare": "curl https://sh.rustup.rs -sSf | sh -s -- -y && . \"$HOME/.cargo/env\" && cargo install wasm-pack && env > app/.env && yarn build",
+    "clean:all": "rm -rf ./target & rm -rf ./test-ledger & yarn --cwd apps/react-app clean & yarn --cwd packages/margin clean & yarn --cwd packages/fixed_term clean & find . -name 'node_modules' -type d -prune -exec rm -rf '{}' +",
+    "clean:ts": "yarn --cwd apps/react-app clean & yarn --cwd packages/margin clean & yarn --cwd packages/fixed_term clean & find . -name 'node_modules' -type d -prune -exec rm -rf '{}' +",
+    "dev": "yarn --cwd apps/react-app dev",
     "docs:rust": "cargo doc -p jet-margin -p jet-margin-pool -p jet-margin-swap -p jet-market --no-deps && cp -r ./target/doc/* ./docs/margin-rust",
-    "fmt": "prettier --check .",
+    "fmt": "turbo run fmt",
     "fmt:fix": "prettier --write .",
     "lint": "eslint . --ext ts",
     "precommit": "npm run build && npm run fmt:fix && npm run lint && git add .",
-    "start": "yarn --cwd app start",
+    "start": "yarn --cwd apps/react-app start",
     "test": "./check",
     "test:nobuild": "anchor test --skip-lint --skip-build -- --features testing",
-    "test:gui": "yarn --cwd app e2e:gui",
-    "test:ci": "yarn --cwd app e2e:ci"
+    "test:gui": "yarn --cwd apps/react-app e2e:gui",
+    "test:ci": "yarn --cwd apps/react-app e2e:ci"
+  },
+  "devDependencies": {
+    "turbo": "^1.6.3"
   }
 }
