@@ -15,7 +15,7 @@
     "@jet-lab/fixed-term#build": {
       "inputs": ["packages/fixed_term/src/*"],
       "outputs": ["packages/fixed_term/dist/*"],
-      "dependsOn": ["^build"]
+      "dependsOn": ["^build", "wasm-src#build"]
     },
     "@jet-lab/margin#build": {
       "inputs": ["packages/margin/src/*"],
