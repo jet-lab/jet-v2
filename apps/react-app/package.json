@@ -8,7 +8,7 @@
   ],
   "scripts": {
     "build": "webpack --mode production && cp -r build ../../app/",
-    "clean": "rm -rf ./build",
+    "clean": "rm -rf ./build & rm -rf .turbo",
     "dev": "webpack serve --mode development",
     "e2e": "ELECTRON_ENABLE_LOGGING=1 cypress run --headless",
     "e2e:ci": "start-server-and-test start http://localhost:3000 e2e",

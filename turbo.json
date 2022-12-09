@@ -3,11 +3,15 @@
   "pipeline": {
     "build": {
       "dependsOn": ["^build", "fmt"],
-      "outputs": ["apps/**/build", "packages/**/dist"]
+      "outputs": ["apps/**/build", "packages/**/dist"],
+      "outputMode": "hash-only"
     },
     "fmt": {},
     "dev": {
       "cache": false
+    },
+    "@jet-lab/fixed-term#build": {
+      "dependsOn": ["@jet-lab/margin#build", "wasm-src#build"]
     }
   }
 }
