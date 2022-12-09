@@ -14,7 +14,7 @@ import {
 } from '@state/fixed-term/fixed-term-market-sync';
 import { friendlyMarketName } from '@utils/jet/fixed-term-utils';
 import { useMemo } from 'react';
-import { calculate_implied_price, price_to_rate } from '@jet-lab/fixed-term';
+import { calculate_implied_price, price_to_rate } from '@jet-lab/wasm';
 import { MainConfig } from '@state/config/marginConfig';
 interface FixedChart {
   type: 'bids' | 'asks';
