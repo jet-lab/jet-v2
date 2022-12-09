@@ -20,7 +20,7 @@ CTRL_SO=target/deploy/jet_control.so
 MRGN_SO=target/deploy/jet_margin.so
 POOL_SO=target/deploy/jet_margin_pool.so
 META_SO=target/deploy/jet_metadata.so
-MRKT_SO=target/deploy/jet_market.so
+MRKT_SO=target/deploy/jet_fixed_term.so
 ASM_SO=target/deploy/jet_airspace.so
 JTS_SO=target/deploy/jet_test_service.so
 MGNSWAP_SO=target/deploy/jet_margin_swap.so
@@ -81,7 +81,7 @@ start-oracle() {
 }
 
 start-crank-service() {
-    cargo run --bin jet-markets-crank-service -- --config-path $PWD/localnet.toml --verbose ${CRANK_VERBOSITY:=0} &
+    cargo run --bin jet-fixed-terms-crank-service -- --config-path $PWD/localnet.toml --verbose ${CRANK_VERBOSITY:=0} &
 }
 
 resume-validator() {

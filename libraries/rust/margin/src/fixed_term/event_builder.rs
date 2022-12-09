@@ -1,5 +1,5 @@
 use agnostic_orderbook::state::event_queue::{EventQueue, EventRef, FillEventRef, OutEventRef};
-use jet_market::{
+use jet_fixed_term::{
     margin::state::TermLoan,
     orderbook::state::{CallbackFlags, CallbackInfo},
     tickets::state::SplitTicket,

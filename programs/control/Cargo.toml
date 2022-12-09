@@ -17,7 +17,7 @@ cpi = ["no-entrypoint"]
 default = []
 testing = [
     "jet-metadata/testing",
-    "jet-market/testing",
+    "jet-fixed-term/testing",
     "jet-margin-pool/testing"
 ]
 devnet = []
@@ -28,5 +28,5 @@ anchor-lang = { git = "https://github.com/jet-lab/anchor", branch = "master" }
 anchor-spl = { git = "https://github.com/jet-lab/anchor", branch = "master" }
 
 jet-metadata = { path = "../metadata", features = ["cpi"] }
-jet-market = { path = "../fixed_term", features = ["cpi"] }
+jet-fixed-term = { path = "../fixed-term", features = ["cpi"] }
 jet-margin-pool = { path = "../margin-pool", features = ["cpi"] }

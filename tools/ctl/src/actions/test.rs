@@ -98,7 +98,7 @@ async fn generate_app_config(client: &Client, env: &EnvironmentConfig) -> Result
 
     Ok(JetAppConfig {
         airspace_program_id: jet_margin_sdk::jet_airspace::ID,
-        fixed_term_market_program_id: jet_margin_sdk::jet_market::ID,
+        fixed_term_market_program_id: jet_margin_sdk::jet_fixed_term::ID,
         control_program_id: jet_margin_sdk::jet_control::ID,
         margin_program_id: jet_margin_sdk::jet_margin::ID,
         margin_pool_program_id: jet_margin_sdk::jet_margin_pool::ID,
@@ -195,7 +195,7 @@ async fn generate_fixed_term_markets_app_config_from_env(
 
 fn derive_market(airspace: &Pubkey, token_mint: &Pubkey, seed: [u8; 32]) -> Pubkey {
     fixed_term_market_pda(&[
-        jet_margin_sdk::jet_market::seeds::MARKET,
+        jet_margin_sdk::jet_fixed_term::seeds::MARKET,
         airspace.as_ref(),
         token_mint.as_ref(),
         &seed,

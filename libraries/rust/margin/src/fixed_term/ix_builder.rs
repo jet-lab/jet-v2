@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use agnostic_orderbook::state::{event_queue::EventQueue, AccountTag};
 use anchor_lang::{InstructionData, ToAccountMetas};
-use jet_market::{
+use jet_fixed_term::{
     margin::state::TermLoan, orderbook::state::CallbackInfo, seeds,
     tickets::instructions::StakeTicketsParams,
 };
@@ -15,7 +15,7 @@ use spl_associated_token_account::{
     get_associated_token_address, instruction::create_associated_token_account,
 };
 
-pub use jet_market::{
+pub use jet_fixed_term::{
     control::{
         instructions::{InitializeMarketParams, InitializeOrderbookParams},
         state::Market,
@@ -114,14 +114,19 @@ impl FixedTermIxBuilder {
         ticket_oracle: Pubkey,
         fee_destination: Option<Pubkey>,
     ) -> Self {
-        let ticket_mint = fixed_term_market_pda(&[jet_market::seeds::TICKET_MINT, market.as_ref()]);
-        let underlying_token_vault =
-            fixed_term_market_pda(&[jet_market::seeds::UNDERLYING_TOKEN_VAULT, market.as_ref()]);
-        let orderbook_market_state =
-            fixed_term_market_pda(&[jet_market::seeds::ORDERBOOK_MARKET_STATE, market.as_ref()]);
-        let claims = fixed_term_market_pda(&[jet_market::seeds::CLAIM_NOTES, market.as_ref()]);
+        let ticket_mint =
+            fixed_term_market_pda(&[jet_fixed_term::seeds::TICKET_MINT, market.as_ref()]);
+        let underlying_token_vault = fixed_term_market_pda(&[
+            jet_fixed_term::seeds::UNDERLYING_TOKEN_VAULT,
+            market.as_ref(),
+        ]);
+        let orderbook_market_state = fixed_term_market_pda(&[
+            jet_fixed_term::seeds::ORDERBOOK_MARKET_STATE,
+            market.as_ref(),
+        ]);
+        let claims = fixed_term_market_pda(&[jet_fixed_term::seeds::CLAIM_NOTES, market.as_ref()]);
         let collateral =
-            fixed_term_market_pda(&[jet_market::seeds::COLLATERAL_NOTES, market.as_ref()]);
+            fixed_term_market_pda(&[jet_fixed_term::seeds::COLLATERAL_NOTES, market.as_ref()]);
         Self {
             airspace,
             authority,
@@ -223,8 +228,8 @@ impl FixedTermIxBuilder {
 }
 
 impl FixedTermIxBuilder {
-    pub fn orderbook_mut(&self) -> Result<jet_market::accounts::OrderbookMut> {
-        Ok(jet_market::accounts::OrderbookMut {
+    pub fn orderbook_mut(&self) -> Result<jet_fixed_term::accounts::OrderbookMut> {
+        Ok(jet_fixed_term::accounts::OrderbookMut {
             market: self.market,
             orderbook_market_state: self.orderbook_market_state,
             event_queue: self.orderbook.as_ref().unwrap().event_queue,
@@ -234,12 +239,12 @@ impl FixedTermIxBuilder {
     }
 
     pub fn consume_events(&self, params: &ConsumeEventsParams) -> Result<Instruction> {
-        let data = jet_market::instruction::ConsumeEvents {
+        let data = jet_fixed_term::instruction::ConsumeEvents {
             num_events: params.num_events,
             seed_bytes: params.seeds.clone(),
         }
         .data();
-        let mut accounts = jet_market::accounts::ConsumeEvents {
+        let mut accounts = jet_fixed_term::accounts::ConsumeEvents {
             market: self.market,
             ticket_mint: self.ticket_mint,
             underlying_token_vault: self.underlying_token_vault,
@@ -259,7 +264,11 @@ impl FixedTermIxBuilder {
                 .into_iter()
                 .map(|k| AccountMeta::new(k, false)),
         );
-        Ok(Instruction::new_with_bytes(jet_market::ID, &data, accounts))
+        Ok(Instruction::new_with_bytes(
+            jet_fixed_term::ID,
+            &data,
+            accounts,
+        ))
     }
 
     /// initializes the associated token account for the underlying mint owned
@@ -287,7 +296,7 @@ impl FixedTermIxBuilder {
         lend_tenor: i64,
         origination_fee: u64,
     ) -> Instruction {
-        let data = jet_market::instruction::InitializeMarket {
+        let data = jet_fixed_term::instruction::InitializeMarket {
             params: InitializeMarketParams {
                 version_tag,
                 seed,
@@ -297,7 +306,7 @@ impl FixedTermIxBuilder {
             },
         }
         .data();
-        let accounts = jet_market::accounts::InitializeMarket {
+        let accounts = jet_fixed_term::accounts::InitializeMarket {
             market: self.market,
             underlying_token_mint: self.underlying_mint,
             underlying_token_vault: self.underlying_token_vault,
@@ -315,7 +324,7 @@ impl FixedTermIxBuilder {
             system_program: solana_sdk::system_program::ID,
         }
         .to_account_metas(None);
-        Instruction::new_with_bytes(jet_market::ID, &data, accounts)
+        Instruction::new_with_bytes(jet_fixed_term::ID, &data, accounts)
     }
 
     pub fn initialize_orderbook_slab(
@@ -329,7 +338,7 @@ impl FixedTermIxBuilder {
             slab,
             rent,
             orderbook_slab_len(capacity) as u64,
-            &jet_market::ID,
+            &jet_fixed_term::ID,
         ))
     }
 
@@ -344,7 +353,7 @@ impl FixedTermIxBuilder {
             queue,
             rent,
             event_queue_len(capacity) as u64,
-            &jet_market::ID,
+            &jet_fixed_term::ID,
         ))
     }
 
@@ -356,13 +365,13 @@ impl FixedTermIxBuilder {
         asks: Pubkey,
         min_base_order_size: u64,
     ) -> Result<Instruction> {
-        let data = jet_market::instruction::InitializeOrderbook {
+        let data = jet_fixed_term::instruction::InitializeOrderbook {
             params: InitializeOrderbookParams {
                 min_base_order_size,
             },
         }
         .data();
-        let accounts = jet_market::accounts::InitializeOrderbook {
+        let accounts = jet_fixed_term::accounts::InitializeOrderbook {
             market: self.market,
             orderbook_market_state: self.orderbook_market_state,
             event_queue,
@@ -374,12 +383,16 @@ impl FixedTermIxBuilder {
             system_program: solana_sdk::system_program::ID,
         }
         .to_account_metas(None);
-        Ok(Instruction::new_with_bytes(jet_market::ID, &data, accounts))
+        Ok(Instruction::new_with_bytes(
+            jet_fixed_term::ID,
+            &data,
+            accounts,
+        ))
     }
 
     pub fn initialize_margin_user(&self, owner: Pubkey) -> Result<Instruction> {
         let borrower_account = self.margin_user_account(owner);
-        let accounts = jet_market::accounts::InitializeMarginUser {
+        let accounts = jet_fixed_term::accounts::InitializeMarginUser {
             market: self.market,
             payer: self.payer.unwrap(),
             borrower_account,
@@ -398,8 +411,8 @@ impl FixedTermIxBuilder {
         }
         .to_account_metas(None);
         Ok(Instruction::new_with_bytes(
-            jet_market::ID,
-            &jet_market::instruction::InitializeMarginUser {}.data(),
+            jet_fixed_term::ID,
+            &jet_fixed_term::instruction::InitializeMarginUser {}.data(),
             accounts,
         ))
     }
@@ -422,8 +435,8 @@ impl FixedTermIxBuilder {
             None => get_associated_token_address(&owner, &self.underlying_mint),
         };
 
-        let data = jet_market::instruction::ExchangeTokens { amount }.data();
-        let accounts = jet_market::accounts::ExchangeTokens {
+        let data = jet_fixed_term::instruction::ExchangeTokens { amount }.data();
+        let accounts = jet_fixed_term::accounts::ExchangeTokens {
             market: self.market,
             underlying_token_vault: self.underlying_token_vault,
             ticket_mint: self.ticket_mint,
@@ -433,7 +446,11 @@ impl FixedTermIxBuilder {
             token_program: spl_token::ID,
         }
         .to_account_metas(None);
-        Ok(Instruction::new_with_bytes(jet_market::ID, &data, accounts))
+        Ok(Instruction::new_with_bytes(
+            jet_fixed_term::ID,
+            &data,
+            accounts,
+        ))
     }
 
     pub fn stake_tickets(
@@ -449,14 +466,14 @@ impl FixedTermIxBuilder {
             Some(vault) => vault,
             None => get_associated_token_address(&ticket_holder, &self.ticket_mint),
         };
-        let data = jet_market::instruction::StakeTickets {
+        let data = jet_fixed_term::instruction::StakeTickets {
             params: StakeTicketsParams {
                 amount,
                 ticket_seed: seed.to_vec(),
             },
         }
         .data();
-        let accounts = jet_market::accounts::StakeTickets {
+        let accounts = jet_fixed_term::accounts::StakeTickets {
             claim_ticket,
             market: self.market,
             ticket_holder,
@@ -467,7 +484,11 @@ impl FixedTermIxBuilder {
             system_program: solana_sdk::system_program::ID,
         }
         .to_account_metas(None);
-        Ok(Instruction::new_with_bytes(jet_market::ID, &data, accounts))
+        Ok(Instruction::new_with_bytes(
+            jet_fixed_term::ID,
+            &data,
+            accounts,
+        ))
     }
 
     pub fn redeem_ticket(
@@ -476,11 +497,15 @@ impl FixedTermIxBuilder {
         ticket: Pubkey,
         token_vault: Option<Pubkey>,
     ) -> Result<Instruction> {
-        let data = jet_market::instruction::RedeemTicket {}.data();
+        let data = jet_fixed_term::instruction::RedeemTicket {}.data();
         let accounts = self
             .redeem_ticket_accounts(ticket_holder, ticket, token_vault)
             .to_account_metas(None);
-        Ok(Instruction::new_with_bytes(jet_market::ID, &data, accounts))
+        Ok(Instruction::new_with_bytes(
+            jet_fixed_term::ID,
+            &data,
+            accounts,
+        ))
     }
 
     pub fn settle(
@@ -490,7 +515,7 @@ impl FixedTermIxBuilder {
         ticket_settlement: Option<Pubkey>,
     ) -> Result<Instruction> {
         let user = self.margin_user(margin_account);
-        let accounts = jet_market::accounts::Settle {
+        let accounts = jet_fixed_term::accounts::Settle {
             market: self.market,
             ticket_mint: self.ticket_mint,
             token_program: spl_token::ID,
@@ -508,8 +533,8 @@ impl FixedTermIxBuilder {
             }),
         };
         Ok(Instruction::new_with_bytes(
-            jet_market::ID,
-            &jet_market::instruction::Settle {}.data(),
+            jet_fixed_term::ID,
+            &jet_fixed_term::instruction::Settle {}.data(),
             accounts.to_account_metas(None),
         ))
     }
@@ -521,15 +546,19 @@ impl FixedTermIxBuilder {
         token_vault: Option<Pubkey>,
     ) -> Result<Instruction> {
         let margin_user = self.margin_user(margin_account);
-        let data = jet_market::instruction::MarginRedeemTicket {}.data();
-        let accounts = jet_market::accounts::MarginRedeemTicket {
+        let data = jet_fixed_term::instruction::MarginRedeemTicket {}.data();
+        let accounts = jet_fixed_term::accounts::MarginRedeemTicket {
             margin_user: margin_user.address,
             collateral: margin_user.collateral,
             collateral_mint: self.collateral,
             inner: self.redeem_ticket_accounts(margin_account, ticket, token_vault),
         }
         .to_account_metas(None);
-        Ok(Instruction::new_with_bytes(jet_market::ID, &data, accounts))
+        Ok(Instruction::new_with_bytes(
+            jet_fixed_term::ID,
+            &data,
+            accounts,
+        ))
     }
 
     pub fn redeem_ticket_accounts(
@@ -537,12 +566,12 @@ impl FixedTermIxBuilder {
         authority: Pubkey,
         ticket: Pubkey,
         token_vault: Option<Pubkey>,
-    ) -> jet_market::accounts::RedeemTicket {
+    ) -> jet_fixed_term::accounts::RedeemTicket {
         let claimant_token_account = match token_vault {
             Some(vault) => vault,
             None => get_associated_token_address(&authority, &self.underlying_mint),
         };
-        jet_market::accounts::RedeemTicket {
+        jet_fixed_term::accounts::RedeemTicket {
             ticket,
             authority,
             claimant_token_account,
@@ -558,8 +587,8 @@ impl FixedTermIxBuilder {
         expect_price: bool,
     ) -> Result<Instruction> {
         Ok(Instruction {
-            program_id: jet_market::ID,
-            accounts: jet_market::accounts::RefreshPosition {
+            program_id: jet_fixed_term::ID,
+            accounts: jet_fixed_term::accounts::RefreshPosition {
                 market: self.market,
                 margin_user: fixed_term_market_pda(&[
                     seeds::MARGIN_BORROWER,
@@ -572,7 +601,7 @@ impl FixedTermIxBuilder {
                 token_program: spl_token::ID,
             }
             .to_account_metas(None),
-            data: jet_market::instruction::RefreshPosition { expect_price }.data(),
+            data: jet_fixed_term::instruction::RefreshPosition { expect_price }.data(),
         })
     }
 
@@ -583,11 +612,15 @@ impl FixedTermIxBuilder {
         token_vault: Option<Pubkey>,
         params: OrderParams,
     ) -> Result<Instruction> {
-        let data = jet_market::instruction::SellTicketsOrder { params }.data();
+        let data = jet_fixed_term::instruction::SellTicketsOrder { params }.data();
         let accounts = self
             .sell_tickets_order_accounts(user, ticket_vault, token_vault)?
             .to_account_metas(None);
-        Ok(Instruction::new_with_bytes(jet_market::ID, &data, accounts))
+        Ok(Instruction::new_with_bytes(
+            jet_fixed_term::ID,
+            &data,
+            accounts,
+        ))
     }
 
     pub fn margin_sell_tickets_order(
@@ -598,15 +631,19 @@ impl FixedTermIxBuilder {
         params: OrderParams,
     ) -> Result<Instruction> {
         let margin_user = self.margin_user(margin_account);
-        let data = jet_market::instruction::MarginSellTicketsOrder { params }.data();
-        let accounts = jet_market::accounts::MarginSellTicketsOrder {
+        let data = jet_fixed_term::instruction::MarginSellTicketsOrder { params }.data();
+        let accounts = jet_fixed_term::accounts::MarginSellTicketsOrder {
             margin_user: margin_user.address,
             collateral: margin_user.collateral,
             collateral_mint: self.collateral,
             inner: self.sell_tickets_order_accounts(margin_account, ticket_vault, token_vault)?,
         }
         .to_account_metas(None);
-        Ok(Instruction::new_with_bytes(jet_market::ID, &data, accounts))
+        Ok(Instruction::new_with_bytes(
+            jet_fixed_term::ID,
+            &data,
+            accounts,
+        ))
     }
 
     fn sell_tickets_order_accounts(
@@ -614,7 +651,7 @@ impl FixedTermIxBuilder {
         authority: Pubkey,
         ticket_vault: Option<Pubkey>,
         token_vault: Option<Pubkey>,
-    ) -> Result<jet_market::accounts::SellTicketsOrder> {
+    ) -> Result<jet_fixed_term::accounts::SellTicketsOrder> {
         let user_ticket_vault = match ticket_vault {
             Some(vault) => vault,
             None => get_associated_token_address(&authority, &self.ticket_mint),
@@ -623,7 +660,7 @@ impl FixedTermIxBuilder {
             Some(vault) => vault,
             None => get_associated_token_address(&authority, &self.underlying_mint),
         };
-        Ok(jet_market::accounts::SellTicketsOrder {
+        Ok(jet_fixed_term::accounts::SellTicketsOrder {
             authority,
             user_ticket_vault,
             user_token_vault,
@@ -643,12 +680,12 @@ impl FixedTermIxBuilder {
     ) -> Result<Instruction> {
         let margin_user = self.margin_user(margin_account);
 
-        let data = jet_market::instruction::MarginBorrowOrder {
+        let data = jet_fixed_term::instruction::MarginBorrowOrder {
             params,
             seed: seed.to_vec(),
         }
         .data();
-        let accounts = jet_market::accounts::MarginBorrowOrder {
+        let accounts = jet_fixed_term::accounts::MarginBorrowOrder {
             orderbook_mut: self.orderbook_mut()?,
             margin_user: margin_user.address,
             margin_account,
@@ -667,7 +704,11 @@ impl FixedTermIxBuilder {
         }
         .to_account_metas(None);
 
-        Ok(Instruction::new_with_bytes(jet_market::ID, &data, accounts))
+        Ok(Instruction::new_with_bytes(
+            jet_fixed_term::ID,
+            &data,
+            accounts,
+        ))
     }
 
     pub fn lend_order(
@@ -678,7 +719,7 @@ impl FixedTermIxBuilder {
         params: OrderParams,
         seed: &[u8],
     ) -> Result<Instruction> {
-        let data = jet_market::instruction::LendOrder {
+        let data = jet_fixed_term::instruction::LendOrder {
             params,
             seed: seed.to_vec(),
         }
@@ -686,7 +727,11 @@ impl FixedTermIxBuilder {
         let accounts = self
             .lend_order_accounts(user, user, lender_tickets, lender_tokens, params, seed)?
             .to_account_metas(None);
-        Ok(Instruction::new_with_bytes(jet_market::ID, &data, accounts))
+        Ok(Instruction::new_with_bytes(
+            jet_fixed_term::ID,
+            &data,
+            accounts,
+        ))
     }
 
     pub fn margin_lend_order(
@@ -697,12 +742,12 @@ impl FixedTermIxBuilder {
         seed: &[u8],
     ) -> Result<Instruction> {
         let margin_user = self.margin_user(margin_account);
-        let data = jet_market::instruction::MarginLendOrder {
+        let data = jet_fixed_term::instruction::MarginLendOrder {
             params,
             seed: seed.to_vec(),
         }
         .data();
-        let accounts = jet_market::accounts::MarginLendOrder {
+        let accounts = jet_fixed_term::accounts::MarginLendOrder {
             margin_user: margin_user.address,
             collateral: margin_user.collateral,
             collateral_mint: self.collateral,
@@ -716,7 +761,11 @@ impl FixedTermIxBuilder {
             )?,
         }
         .to_account_metas(None);
-        Ok(Instruction::new_with_bytes(jet_market::ID, &data, accounts))
+        Ok(Instruction::new_with_bytes(
+            jet_fixed_term::ID,
+            &data,
+            accounts,
+        ))
     }
 
     fn lend_order_accounts(
@@ -727,7 +776,7 @@ impl FixedTermIxBuilder {
         lender_tokens: Option<Pubkey>,
         params: OrderParams,
         seed: &[u8],
-    ) -> Result<jet_market::accounts::LendOrder> {
+    ) -> Result<jet_fixed_term::accounts::LendOrder> {
         let lender_tickets = match lender_tickets {
             Some(vault) => vault,
             None => get_associated_token_address(&authority, &self.ticket_mint),
@@ -737,7 +786,7 @@ impl FixedTermIxBuilder {
             None => get_associated_token_address(&authority, &self.underlying_mint),
         };
         let split_ticket = self.split_ticket_key(&user, seed);
-        Ok(jet_market::accounts::LendOrder {
+        Ok(jet_fixed_term::accounts::LendOrder {
             authority,
             ticket_settlement: if params.auto_stake {
                 split_ticket
@@ -755,19 +804,23 @@ impl FixedTermIxBuilder {
     }
 
     pub fn cancel_order(&self, owner: Pubkey, order_id: u128) -> Result<Instruction> {
-        let data = jet_market::instruction::CancelOrder { order_id }.data();
-        let accounts = jet_market::accounts::CancelOrder {
+        let data = jet_fixed_term::instruction::CancelOrder { order_id }.data();
+        let accounts = jet_fixed_term::accounts::CancelOrder {
             owner,
             orderbook_mut: self.orderbook_mut()?,
         }
         .to_account_metas(None);
 
-        Ok(Instruction::new_with_bytes(jet_market::ID, &data, accounts))
+        Ok(Instruction::new_with_bytes(
+            jet_fixed_term::ID,
+            &data,
+            accounts,
+        ))
     }
 
     pub fn pause_order_matching(&self) -> Result<Instruction> {
-        let data = jet_market::instruction::PauseOrderMatching {}.data();
-        let accounts = jet_market::accounts::PauseOrderMatching {
+        let data = jet_fixed_term::instruction::PauseOrderMatching {}.data();
+        let accounts = jet_fixed_term::accounts::PauseOrderMatching {
             market: self.market,
             orderbook_market_state: self.orderbook_market_state,
             authority: self.authority,
@@ -775,12 +828,16 @@ impl FixedTermIxBuilder {
         }
         .to_account_metas(None);
 
-        Ok(Instruction::new_with_bytes(jet_market::ID, &data, accounts))
+        Ok(Instruction::new_with_bytes(
+            jet_fixed_term::ID,
+            &data,
+            accounts,
+        ))
     }
 
     pub fn resume_order_matching(&self) -> Result<Instruction> {
-        let data = jet_market::instruction::ResumeOrderMatching {}.data();
-        let accounts = jet_market::accounts::ResumeOrderMatching {
+        let data = jet_fixed_term::instruction::ResumeOrderMatching {}.data();
+        let accounts = jet_fixed_term::accounts::ResumeOrderMatching {
             market: self.market,
             orderbook_market_state: self.orderbook_market_state,
             event_queue: self.orderbook.as_ref().unwrap().event_queue,
@@ -791,7 +848,11 @@ impl FixedTermIxBuilder {
         }
         .to_account_metas(None);
 
-        Ok(Instruction::new_with_bytes(jet_market::ID, &data, accounts))
+        Ok(Instruction::new_with_bytes(
+            jet_fixed_term::ID,
+            &data,
+            accounts,
+        ))
     }
 
     pub fn pause_ticket_redemption(&self) -> Result<Instruction> {
@@ -802,19 +863,23 @@ impl FixedTermIxBuilder {
     }
 
     pub fn modify_market(&self, data: Vec<u8>, offset: usize) -> Result<Instruction> {
-        let data = jet_market::instruction::ModifyMarket { data, offset }.data();
-        let accounts = jet_market::accounts::ModifyMarket {
+        let data = jet_fixed_term::instruction::ModifyMarket { data, offset }.data();
+        let accounts = jet_fixed_term::accounts::ModifyMarket {
             market: self.market,
             authority: self.authority,
             airspace: self.airspace,
         }
         .to_account_metas(None);
-        Ok(Instruction::new_with_bytes(jet_market::ID, &data, accounts))
+        Ok(Instruction::new_with_bytes(
+            jet_fixed_term::ID,
+            &data,
+            accounts,
+        ))
     }
 
     pub fn authorize_crank(&self, payer: Pubkey) -> Result<Instruction> {
-        let data = jet_market::instruction::AuthorizeCrank {}.data();
-        let accounts = jet_market::accounts::AuthorizeCrank {
+        let data = jet_fixed_term::instruction::AuthorizeCrank {}.data();
+        let accounts = jet_fixed_term::accounts::AuthorizeCrank {
             crank: self
                 .crank
                 .ok_or_else(|| FixedTermMarketIxError::MissingPubkey("crank".into()))?,
@@ -826,7 +891,11 @@ impl FixedTermIxBuilder {
             system_program: solana_sdk::system_program::ID,
         }
         .to_account_metas(None);
-        Ok(Instruction::new_with_bytes(jet_market::ID, &data, accounts))
+        Ok(Instruction::new_with_bytes(
+            jet_fixed_term::ID,
+            &data,
+            accounts,
+        ))
     }
 
     pub async fn create_orderbook_accounts(
@@ -865,11 +934,11 @@ impl FixedTermIxBuilder {
     }
 
     pub fn margin_settle(&self, margin_account: Pubkey) -> Instruction {
-        let data = jet_market::instruction::Settle {}.data();
+        let data = jet_fixed_term::instruction::Settle {}.data();
         let margin_user = self.margin_user_account(margin_account);
         let claims = FixedTermIxBuilder::user_claims(margin_user);
         let collateral = FixedTermIxBuilder::user_collateral(margin_user);
-        let accounts = jet_market::accounts::Settle {
+        let accounts = jet_fixed_term::accounts::Settle {
             margin_user,
             market: self.market,
             token_program: spl_token::ID,
@@ -887,7 +956,7 @@ impl FixedTermIxBuilder {
         }
         .to_account_metas(None);
 
-        Instruction::new_with_bytes(jet_market::ID, &data, accounts)
+        Instruction::new_with_bytes(jet_fixed_term::ID, &data, accounts)
     }
 
     pub fn margin_repay(
@@ -899,8 +968,8 @@ impl FixedTermIxBuilder {
         amount: u64,
     ) -> Instruction {
         let margin_user = self.margin_user(*margin_account);
-        let data = jet_market::instruction::Repay { amount }.data();
-        let accounts = jet_market::accounts::Repay {
+        let data = jet_fixed_term::instruction::Repay { amount }.data();
+        let accounts = jet_fixed_term::accounts::Repay {
             borrower_account: margin_user.address,
             term_loan: self.term_loan_key(&margin_user.address, term_loan_seed),
             next_term_loan: self.term_loan_key(&margin_user.address, next_term_loan_seed),
@@ -911,7 +980,7 @@ impl FixedTermIxBuilder {
         }
         .to_account_metas(None);
 
-        Instruction::new_with_bytes(jet_market::ID, &data, accounts)
+        Instruction::new_with_bytes(jet_fixed_term::ID, &data, accounts)
     }
 }
 
@@ -925,23 +994,23 @@ pub struct MarginUser {
 impl FixedTermIxBuilder {
     pub fn margin_user(&self, margin_account: Pubkey) -> MarginUser {
         let address = fixed_term_market_pda(&[
-            jet_market::seeds::MARGIN_BORROWER,
+            jet_fixed_term::seeds::MARGIN_BORROWER,
             self.market.as_ref(),
             margin_account.as_ref(),
         ]);
         MarginUser {
             address,
             collateral: fixed_term_market_pda(&[
-                jet_market::seeds::COLLATERAL_NOTES,
+                jet_fixed_term::seeds::COLLATERAL_NOTES,
                 address.as_ref(),
             ]),
-            claims: fixed_term_market_pda(&[jet_market::seeds::CLAIM_NOTES, address.as_ref()]),
+            claims: fixed_term_market_pda(&[jet_fixed_term::seeds::CLAIM_NOTES, address.as_ref()]),
         }
     }
 
     pub fn market_key(airspace: &Pubkey, mint: &Pubkey, seed: [u8; 32]) -> Pubkey {
         fixed_term_market_pda(&[
-            jet_market::seeds::MARKET,
+            jet_fixed_term::seeds::MARKET,
             airspace.as_ref(),
             mint.as_ref(),
             &seed,
@@ -949,20 +1018,20 @@ impl FixedTermIxBuilder {
     }
 
     pub fn split_ticket_key(&self, user: &Pubkey, seed: &[u8]) -> Pubkey {
-        fixed_term_market_pda(&[jet_market::seeds::SPLIT_TICKET, user.as_ref(), seed])
+        fixed_term_market_pda(&[jet_fixed_term::seeds::SPLIT_TICKET, user.as_ref(), seed])
     }
 
     pub fn claims_mint(market_key: &Pubkey) -> Pubkey {
-        fixed_term_market_pda(&[jet_market::seeds::CLAIM_NOTES, market_key.as_ref()])
+        fixed_term_market_pda(&[jet_fixed_term::seeds::CLAIM_NOTES, market_key.as_ref()])
     }
 
     pub fn collateral_mint(market_key: &Pubkey) -> Pubkey {
-        fixed_term_market_pda(&[jet_market::seeds::COLLATERAL_NOTES, market_key.as_ref()])
+        fixed_term_market_pda(&[jet_fixed_term::seeds::COLLATERAL_NOTES, market_key.as_ref()])
     }
 
     pub fn claim_ticket_key(&self, ticket_holder: &Pubkey, seed: &[u8]) -> Pubkey {
         fixed_term_market_pda(&[
-            jet_market::seeds::CLAIM_TICKET,
+            jet_fixed_term::seeds::CLAIM_TICKET,
             self.market.as_ref(),
             ticket_holder.as_ref(),
             seed,
@@ -974,39 +1043,42 @@ impl FixedTermIxBuilder {
 
     pub fn margin_user_account(&self, owner: Pubkey) -> Pubkey {
         fixed_term_market_pda(&[
-            jet_market::seeds::MARGIN_BORROWER,
+            jet_fixed_term::seeds::MARGIN_BORROWER,
             self.market.as_ref(),
             owner.as_ref(),
         ])
     }
 
     pub fn user_claims(borrower_account: Pubkey) -> Pubkey {
-        fixed_term_market_pda(&[jet_market::seeds::CLAIM_NOTES, borrower_account.as_ref()])
+        fixed_term_market_pda(&[
+            jet_fixed_term::seeds::CLAIM_NOTES,
+            borrower_account.as_ref(),
+        ])
     }
 
     pub fn user_collateral(borrower_account: Pubkey) -> Pubkey {
         fixed_term_market_pda(&[
-            jet_market::seeds::COLLATERAL_NOTES,
+            jet_fixed_term::seeds::COLLATERAL_NOTES,
             borrower_account.as_ref(),
         ])
     }
     pub fn crank_authorization(&self) -> Result<Pubkey> {
         Ok(Pubkey::find_program_address(
             &[
-                jet_market::seeds::CRANK_AUTHORIZATION,
+                jet_fixed_term::seeds::CRANK_AUTHORIZATION,
                 self.airspace.as_ref(),
                 self.market.as_ref(),
                 self.crank
                     .ok_or_else(|| FixedTermMarketIxError::MissingPubkey("crank".to_string()))?
                     .as_ref(),
             ],
-            &jet_market::ID,
+            &jet_fixed_term::ID,
         )
         .0)
     }
 
-    pub fn jet_market_id() -> Pubkey {
-        jet_market::ID
+    pub fn jet_fixed_term_id() -> Pubkey {
+        jet_fixed_term::ID
     }
 }
 
@@ -1036,5 +1108,5 @@ impl<T: Into<Vec<u8>>> From<T> for OwnedEventQueue {
 }
 
 pub fn fixed_term_market_pda(seeds: &[&[u8]]) -> Pubkey {
-    Pubkey::find_program_address(seeds, &jet_market::ID).0
+    Pubkey::find_program_address(seeds, &jet_fixed_term::ID).0
 }

@@ -20,7 +20,7 @@ async fn main() -> Result<()> {
     margin.create_airspace_if_missing(false).await?;
     margin.create_authority_if_missing().await?;
     margin
-        .register_adapter_if_unregistered(&jet_market::ID)
+        .register_adapter_if_unregistered(&jet_fixed_term::ID)
         .await?;
 
     let x = TestManager::new(
@@ -44,9 +44,9 @@ async fn main() -> Result<()> {
     \"market\": \"{}\",
     \"fixedTermMarketMetadata\": \"{}\"
 }}",
-            jet_market::ID,
+            jet_fixed_term::ID,
             x.ix_builder.market(),
-            get_metadata_address(&jet_market::ID),
+            get_metadata_address(&jet_fixed_term::ID),
         );
         let mut io = OpenOptions::new()
             .write(true)

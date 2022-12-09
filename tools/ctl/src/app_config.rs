@@ -165,7 +165,7 @@ impl JetAppConfig {
 
         Ok(Self {
             airspace_program_id: jet_margin_sdk::jet_airspace::ID,
-            fixed_term_market_program_id: jet_margin_sdk::jet_market::ID,
+            fixed_term_market_program_id: jet_margin_sdk::jet_fixed_term::ID,
             control_program_id: jet_margin_sdk::jet_control::ID,
             margin_program_id: jet_margin_sdk::jet_margin::ID,
             margin_pool_program_id: jet_margin_sdk::jet_margin_pool::ID,

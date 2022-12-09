@@ -1,6 +1,6 @@
 export type JetMarket = {
   "version": "0.1.0",
-  "name": "jet_market",
+  "name": "jet_fixed_term",
   "constants": [
     {
       "name": "MARKET",
@@ -3703,7 +3703,7 @@ export type JetMarket = {
 
 export const IDL: JetMarket = {
   "version": "0.1.0",
-  "name": "jet_market",
+  "name": "jet_fixed_term",
   "constants": [
     {
       "name": "MARKET",
