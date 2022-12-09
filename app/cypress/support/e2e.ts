@@ -36,7 +36,6 @@ Cypress.on('uncaught:exception', (err, runnable) => {
   return false;
 });
 
-Cypress.on('fail', (error, runnable) => {
-  debugger;
-  throw error; // throw error to have test still fail
+Cypress.on('test:after:run', test => {
+  if (test.state !== 'passed' && test.retries > 0) Cypress.runner.stop();
 });

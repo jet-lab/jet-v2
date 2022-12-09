@@ -3230,11 +3230,9 @@ export type JetMarket = {
           index: false
         },
         {
-          name: "flags",
-          type: {
-            type: "u8", // should be "u8"
-          },
-          index: false
+          "name": "flags",
+          "type": "u8", // should be "u8"
+          "index": false
         }
       ]
     },
@@ -6935,11 +6933,9 @@ export const IDL: JetMarket = {
           index: false
         },
         {
-          name: "flags",
-          type: {
-            type: "u8", // should be "u8"
-          },
-          index: false
+          "name": "flags",
+          "type": "u8", // should be "u8"
+          "index": false
         }
       ]
     },
