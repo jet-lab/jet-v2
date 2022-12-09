@@ -4,14 +4,33 @@
     "build": {
       "dependsOn": ["^build", "fmt"],
       "outputs": ["apps/**/build", "packages/**/dist"],
-      "outputMode": "hash-only"
+      "outputMode": "new-only"
     },
-    "fmt": {},
+    "fmt": {
+      "outputMode": "new-only"
+    },
     "dev": {
       "cache": false
     },
     "@jet-lab/fixed-term#build": {
-      "dependsOn": ["@jet-lab/margin#build", "wasm-src#build"]
+      "inputs": ["packages/fixed_term/src/*"],
+      "outputs": ["packages/fixed_term/dist/*"],
+      "dependsOn": ["^build"]
+    },
+    "@jet-lab/margin#build": {
+      "inputs": ["packages/margin/src/*"],
+      "outputs": ["packages/margin/dist/*"],
+      "dependsOn": ["^build"]
+    },
+    "app": {
+      "inputs": ["apps/react-app/src/*"],
+      "outputs": ["apps/react-app/build/*"],
+      "dependsOn": ["^build", "fmt"]
+    },
+    "wasm-src": {
+      "inputs": ["packages/wasm-src/*"],
+      "outputs": ["packages/wasm/*"],
+      "dependsOn": ["^build"]
     }
   }
 }
