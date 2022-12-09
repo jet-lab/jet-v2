@@ -16,7 +16,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 use anchor_lang::{InstructionData, ToAccountMetas};
-use jet_bonds::seeds;
+use jet_fixed_term::seeds;
 use solana_sdk::{
     instruction::Instruction,
     pubkey,
@@ -283,12 +283,8 @@ pub fn derive_pyth_price(mint: &Pubkey) -> Pubkey {
 }
 
 /// Get the pyth price account
-pub fn derive_bond_ticket_mint(bond_manager: &Pubkey) -> Pubkey {
-    Pubkey::find_program_address(
-        &[seeds::BOND_TICKET_MINT, bond_manager.as_ref()],
-        &jet_bonds::ID,
-    )
-    .0
+pub fn derive_ticket_mint(market: &Pubkey) -> Pubkey {
+    Pubkey::find_program_address(&[seeds::TICKET_MINT, market.as_ref()], &jet_fixed_term::ID).0
 }
 
 /// Get the addresses for a swap pool

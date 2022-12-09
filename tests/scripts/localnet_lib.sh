@@ -8,7 +8,7 @@ CTRL_PID=JPCtrLreUqsEbdhtxZ8zpd8wBydKz4nuEjX5u9Eg5H8
 MRGN_PID=JPMRGNgRk3w2pzBM1RLNBnpGxQYsFQ3yXKpuk4tTXVZ
 POOL_PID=JPPooLEqRo3NCSx82EdE2VZY5vUaSsgskpZPBHNGVLZ
 META_PID=JPMetawzxw7WyH3qHUVScYHWFBGhjwqDnM2R9qVbRLp
-BOND_PID=JBond79m9K6HqYwngCjiJHb311GTXggo46kGcT2GijUc
+MRKT_PID=JBond79m9K6HqYwngCjiJHb311GTXggo46kGcT2GijUc
 ASM_PID=JPASMkxARMmbeahk37H8PAAP1UzPNC4wGhvwLnBsfHi
 JTS_PID=JPTSApMSqCHBww7vDhpaSmzipTV3qPg6vxub4qneKoy
 MGNSWAP_PID=JPMAa5dnWLFRvUsumawFcGhnwikqZziLLfqn9SLNXPN
@@ -20,7 +20,7 @@ CTRL_SO=target/deploy/jet_control.so
 MRGN_SO=target/deploy/jet_margin.so
 POOL_SO=target/deploy/jet_margin_pool.so
 META_SO=target/deploy/jet_metadata.so
-BOND_SO=target/deploy/jet_bonds.so
+MRKT_SO=target/deploy/jet_fixed_term.so
 ASM_SO=target/deploy/jet_airspace.so
 JTS_SO=target/deploy/jet_test_service.so
 MGNSWAP_SO=target/deploy/jet_margin_swap.so
@@ -64,7 +64,7 @@ start-validator() {
         --bpf-program $MRGN_PID $MRGN_SO \
         --bpf-program $POOL_PID $POOL_SO \
         --bpf-program $META_PID $META_SO \
-        --bpf-program $BOND_PID $BOND_SO \
+        --bpf-program $MRKT_PID $MRKT_SO \
         --bpf-program $ASM_PID $ASM_SO \
         --bpf-program $MGNSWAP_PID $MGNSWAP_SO \
         --bpf-program $SPLSWAP_PID $SPLSWAP_SO \
@@ -81,7 +81,7 @@ start-oracle() {
 }
 
 start-crank-service() {
-    cargo run --bin jet-markets-crank-service -- --config-path $PWD/localnet.toml --verbose ${CRANK_VERBOSITY:0} &
+    cargo run --bin jet-fixed-terms-crank-service -- --config-path $PWD/localnet.toml --verbose ${CRANK_VERBOSITY:=0} &
 }
 
 resume-validator() {

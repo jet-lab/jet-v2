@@ -17,8 +17,8 @@
 
 use std::collections::HashMap;
 
-use jet_bonds::orderbook::state::{event_queue_len, orderbook_slab_len};
 use jet_control::TokenMetadataParams;
+use jet_fixed_term::orderbook::state::{event_queue_len, orderbook_slab_len};
 use jet_margin::TokenOracle;
 use jet_test_service::TokenCreateParams;
 use serde::{Deserialize, Serialize};
@@ -27,13 +27,13 @@ use solana_sdk::{
 };
 
 use crate::{
-    bonds::BondsIxBuilder,
     cat,
+    fixed_term::FixedTermIxBuilder,
     ix_builder::{
         get_metadata_address,
         test_service::{
-            self, derive_bond_ticket_mint, derive_pyth_price, derive_pyth_product,
-            derive_token_mint, if_not_initialized, spl_swap_pool_create,
+            self, derive_pyth_price, derive_pyth_product, derive_ticket_mint, derive_token_mint,
+            if_not_initialized, spl_swap_pool_create,
         },
         ControlIxBuilder, MarginPoolConfiguration,
     },
@@ -41,7 +41,7 @@ use crate::{
     tx_builder::{global_initialize_instructions, AirspaceAdmin, TokenDepositsConfig},
 };
 
-static ADAPTERS: &[Pubkey] = &[jet_margin_pool::ID, jet_margin_swap::ID, jet_bonds::ID];
+static ADAPTERS: &[Pubkey] = &[jet_margin_pool::ID, jet_margin_swap::ID, jet_fixed_term::ID];
 const ORDERBOOK_CAPACITY: usize = 1_000;
 const EVENT_QUEUE_CAPACITY: usize = 1_000;
 
@@ -73,19 +73,19 @@ pub struct AirspaceTokenConfig {
     /// Margin pool config
     pub margin_pool_config: Option<MarginPoolConfig>,
 
-    /// Bond markets (list of stake durations)
+    /// Fixed term markets (list of stake tenors)
     #[serde(default)]
-    pub bond_markets: Vec<BondMarketConfig>,
+    pub fixed_term_markets: Vec<FixedTermMarketConfig>,
 }
 
-/// Configuration for bond markets
+/// Configuration for fixed term markets
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
-pub struct BondMarketConfig {
-    /// The duration for borrows
-    pub borrow_duration: i64,
+pub struct FixedTermMarketConfig {
+    /// The tenor for borrows
+    pub borrow_tenor: i64,
 
-    /// The duration for lending
-    pub lend_duration: i64,
+    /// The tenor for lending
+    pub lend_tenor: i64,
 
     /// The origination fee for borrowing in origination_fee::FEE_UNIT
     pub origination_fee: u64,
@@ -97,7 +97,7 @@ pub struct BondMarketConfig {
     #[serde(default)]
     pub paused: bool,
 
-    /// the price of the bond tickets relative to the underlying
+    /// the price of the tickets relative to the underlying
     /// multiplied by the underlying price to get the ticket price
     pub ticket_price: String,
 }
@@ -282,16 +282,15 @@ fn create_airspace_tx(
 
         for (name, tk_config) in &as_config.tokens {
             verify_token_declared(config, name)?;
-            let token = config
-                .tokens
-                .iter()
-                .find(|t| &t.name == name)
-                .expect("cannot find a description for the token that needs a bond market");
+            let token =
+                config.tokens.iter().find(|t| &t.name == name).expect(
+                    "cannot find a description for the token that needs a fixed term market",
+                );
 
             txs.extend(create_airspace_token_margin_config_tx(
                 &as_admin, name, tk_config,
             ));
-            txs.extend(create_airspace_token_bond_markets_tx(
+            txs.extend(create_airspace_token_fixed_term_markets_tx(
                 config, rent, &as_admin, token, tk_config,
             ));
         }
@@ -300,7 +299,7 @@ fn create_airspace_tx(
     Ok(txs)
 }
 
-fn create_airspace_token_bond_markets_tx(
+fn create_airspace_token_fixed_term_markets_tx(
     config: &EnvironmentConfig,
     rent: &Rent,
     admin: &AirspaceAdmin,
@@ -309,7 +308,7 @@ fn create_airspace_token_bond_markets_tx(
 ) -> Vec<TransactionBuilder> {
     let mut txs = vec![];
 
-    for bm_config in &tk_config.bond_markets {
+    for bm_config in &tk_config.fixed_term_markets {
         let key_eq = Keypair::new();
         let key_bids = Keypair::new();
         let key_asks = Keypair::new();
@@ -317,19 +316,19 @@ fn create_airspace_token_bond_markets_tx(
         let len_eq = event_queue_len(EVENT_QUEUE_CAPACITY);
         let len_orders = orderbook_slab_len(ORDERBOOK_CAPACITY);
 
-        let mut bond_manager_seed = [0u8; 32];
-        bond_manager_seed[..8].copy_from_slice(&bm_config.borrow_duration.to_le_bytes());
+        let mut market_seed = [0u8; 32];
+        market_seed[..8].copy_from_slice(&bm_config.borrow_tenor.to_le_bytes());
 
         let mint = derive_token_mint(&token.name);
-        let ticket_mint = derive_bond_ticket_mint(&BondsIxBuilder::bond_manager_key(
+        let ticket_mint = derive_ticket_mint(&FixedTermIxBuilder::market_key(
             &admin.airspace,
             &mint,
-            bond_manager_seed,
+            market_seed,
         ));
-        let bonds_ix = BondsIxBuilder::new_from_seed(
+        let fixed_term_ix = FixedTermIxBuilder::new_from_seed(
             &admin.airspace,
             &mint,
-            bond_manager_seed,
+            market_seed,
             config.authority,
             derive_pyth_price(&mint),
             derive_pyth_price(&ticket_mint),
@@ -342,8 +341,8 @@ fn create_airspace_token_bond_markets_tx(
                 &config.authority,
                 ticket_mint,
                 &TokenCreateParams {
-                    symbol: format!("{}_{}", token.symbol.clone(), bm_config.borrow_duration),
-                    name: format!("{}_{}", token.name.clone(), bm_config.borrow_duration),
+                    symbol: format!("{}_{}", token.symbol.clone(), bm_config.borrow_tenor),
+                    name: format!("{}_{}", token.name.clone(), bm_config.borrow_tenor),
                     decimals: token.decimals,
                     authority: config.authority,
                     oracle_authority: config.authority,
@@ -356,7 +355,7 @@ fn create_airspace_token_bond_markets_tx(
         );
 
         txs.push(
-            bonds_ix
+            fixed_term_ix
                 .init_default_fee_destination(&config.authority)
                 .unwrap()
                 .into(),
@@ -369,31 +368,31 @@ fn create_airspace_token_bond_markets_tx(
                     &key_eq.pubkey(),
                     rent.minimum_balance(len_eq),
                     len_eq as u64,
-                    &jet_bonds::ID,
+                    &jet_fixed_term::ID,
                 ),
                 system_instruction::create_account(
                     &config.authority,
                     &key_bids.pubkey(),
                     rent.minimum_balance(len_orders),
                     len_orders as u64,
-                    &jet_bonds::ID,
+                    &jet_fixed_term::ID,
                 ),
                 system_instruction::create_account(
                     &config.authority,
                     &key_asks.pubkey(),
                     rent.minimum_balance(len_orders),
                     len_orders as u64,
-                    &jet_bonds::ID,
+                    &jet_fixed_term::ID,
                 ),
-                bonds_ix.initialize_manager(
+                fixed_term_ix.initialize_market(
                     config.authority,
                     0,
-                    bond_manager_seed,
-                    bm_config.borrow_duration,
-                    bm_config.lend_duration,
+                    market_seed,
+                    bm_config.borrow_tenor,
+                    bm_config.lend_tenor,
                     bm_config.origination_fee,
                 ),
-                bonds_ix
+                fixed_term_ix
                     .initialize_orderbook(
                         config.authority,
                         key_eq.pubkey(),
@@ -408,7 +407,7 @@ fn create_airspace_token_bond_markets_tx(
 
         // Submit separately as it is large and causes tx to fail
         txs.push(TransactionBuilder {
-            instructions: vec![bonds_ix.authorize_crank(config.authority).unwrap()],
+            instructions: vec![fixed_term_ix.authorize_crank(config.authority).unwrap()],
             signers: vec![],
         });
 
@@ -416,12 +415,12 @@ fn create_airspace_token_bond_markets_tx(
             txs.last_mut()
                 .unwrap()
                 .instructions
-                .push(bonds_ix.pause_order_matching().unwrap());
+                .push(fixed_term_ix.pause_order_matching().unwrap());
         }
 
-        txs.push(admin.register_bond_market(
+        txs.push(admin.register_fixed_term_market(
             mint,
-            bond_manager_seed,
+            market_seed,
             tk_config.collateral_weight,
             tk_config.max_leverage,
         ));

@@ -1,6 +1,6 @@
 import { Button, InputNumber, Switch, Tooltip } from 'antd';
 import { formatDuration, intervalToDuration } from 'date-fns';
-import { offerLoan } from '@jet-lab/jet-bonds-client';
+import { offerLoan } from '@jet-lab/fixed-term';
 import { notify } from '@utils/notify';
 import { getExplorerUrl } from '@utils/ui';
 import BN from 'bn.js';
@@ -14,10 +14,10 @@ import { useRecoilRefresher_UNSTABLE, useRecoilValue } from 'recoil';
 import { useState } from 'react';
 import { MarginConfig, MarginTokenConfig } from '@jet-lab/margin';
 import {
-  AllFixedMarketsAtom,
-  AllFixedMarketsOrderBooksAtom,
+  AllFixedTermMarketsAtom,
+  AllFixedTermMarketsOrderBooksAtom,
   MarketAndconfig
-} from '@state/fixed-market/fixed-term-market-sync';
+} from '@state/fixed-term/fixed-term-market-sync';
 import { formatWithCommas } from '@utils/format';
 import { isDebug } from '../../../App';
 import debounce from 'lodash.debounce';
@@ -39,8 +39,8 @@ export const OfferLoan = ({ token, decimals, marketAndConfig, marginConfig }: Re
   const blockExplorer = useRecoilValue(BlockExplorer);
   const [amount, setAmount] = useState(new BN(0));
   const [basisPoints, setBasisPoints] = useState(new BN(0));
-  const markets = useRecoilValue(AllFixedMarketsAtom);
-  const refreshOrderBooks = useRecoilRefresher_UNSTABLE(AllFixedMarketsOrderBooksAtom);
+  const markets = useRecoilValue(AllFixedTermMarketsAtom);
+  const refreshOrderBooks = useRecoilRefresher_UNSTABLE(AllFixedTermMarketsOrderBooksAtom);
 
   const disabled =
     !marginAccount ||
@@ -149,7 +149,7 @@ export const OfferLoan = ({ token, decimals, marketAndConfig, marginConfig }: Re
             {`${formatDuration(
               intervalToDuration({
                 start: new Date(0),
-                end: new Date(marketAndConfig.config.borrowDuration * 1000)
+                end: new Date(marketAndConfig.config.borrowTenor * 1000)
               })
             )} from fill`}
           </span>
