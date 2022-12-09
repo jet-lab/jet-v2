@@ -602,7 +602,9 @@ impl MarginTxBuilder {
                     false => self
                         .ix
                         .refresh_position_metadata(&position.token, self.signer()),
-                    true => self.ix.refresh_position_config(&position.token, self.signer()),
+                    true => self
+                        .ix
+                        .refresh_position_config(&position.token, self.signer()),
                 }
             })
             .collect::<Vec<_>>();
