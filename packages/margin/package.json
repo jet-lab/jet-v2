@@ -9,8 +9,15 @@
     "protocol",
     "blockchain"
   ],
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "development": "./src/index.ts",
+      "default": {
+        "import": "./dist/index.js",
+        "types": "./dist/index.d.ts"
+      }
+    }
+  },
   "license": "AGPL-3.0-or-later",
   "scripts": {
     "build": "tsc",

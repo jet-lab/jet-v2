@@ -90,7 +90,7 @@ module.exports = (_env, arg) => {
         {
           test: /\.tsx?$/,
           exclude: /node_modules/,
-          include: path.resolve(__dirname, 'src'),
+          include: [path.resolve(__dirname, 'src'), path.resolve(__dirname, '../../packages')],
           loader: 'swc-loader',
           options: {
             minify: true,

@@ -163,7 +163,7 @@ export const offerLoan = async ({
     amount,
     basisPoints,
     walletAddress,
-    createRandomSeed(8),
+    createRandomSeed(4),
     marketConfig.borrowTenor
   )
   await marginAccount.withAdapterInvoke({
@@ -234,7 +234,7 @@ export const requestLoan = async ({
     walletAddress,
     amount,
     basisPoints,
-    createRandomSeed(8),
+    createRandomSeed(4),
     marketConfig.borrowTenor
   )
 
@@ -349,7 +349,7 @@ export const borrowNow = async ({
   })
 
   // Create borrow instruction
-  const seed = createRandomSeed(8)
+  const seed = createRandomSeed(4)
   const borrowNow = await market.borrowNowIx(marginAccount, walletAddress, amount, seed)
 
   await marginAccount.withAdapterInvoke({
@@ -432,7 +432,7 @@ export const lendNow = async ({
   })
 
   // Create borrow instruction
-  const lendNow = await market.lendNowIx(marginAccount, amount, walletAddress, createRandomSeed(8))
+  const lendNow = await market.lendNowIx(marginAccount, amount, walletAddress, createRandomSeed(4))
 
   await marginAccount.withAdapterInvoke({
     instructions: orderIXS,

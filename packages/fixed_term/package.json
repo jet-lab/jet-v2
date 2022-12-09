@@ -2,9 +2,16 @@
   "name": "@jet-lab/fixed-term",
   "version": "0.1.0",
   "description": "Library for interacting with the Jet fixed term market on-chain programs",
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
   "type": "module",
+  "exports": {
+    ".": {
+      "development": "./src/index.ts",
+      "default": {
+        "import": "./dist/index.js",
+        "types": "./dist/index.d.ts"
+      }
+    }
+  },
   "license": "AGPL-3.0-or-later",
   "scripts": {
     "build": "tsc",
