@@ -14,7 +14,7 @@ export const actionOptions: PoolAction[] = [
 ];
 
 export const CurrentAction = atom({
-  key: 'currentAction1',
+  key: 'currentAction',
   default: undefined as PoolAction | undefined
 });
 
