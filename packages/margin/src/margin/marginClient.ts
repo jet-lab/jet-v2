@@ -85,7 +85,6 @@ export interface FlightLog {
 
 export class MarginClient {
   static getPrograms(provider: AnchorProvider, config: MarginConfig): MarginPrograms {
-    console.log(provider, config)
     const programs: MarginPrograms = {
       config,
       connection: provider.connection,
