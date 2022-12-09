@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":[["handler",""]],"struct":[["StakeTickets","An instruction to stake held tickets"],["StakeTicketsParams","Params needed to stake tickets"]]};

@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":[["handler",""]],"struct":[["StakeBondTickets","An instruction to stake held bond tickets"],["StakeBondTicketsParams","Params needed to stake bond tickets"]]};

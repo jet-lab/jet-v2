@@ -625,6 +625,14 @@
 <span id="625">625</span>
 <span id="626">626</span>
 <span id="627">627</span>
+<span id="628">628</span>
+<span id="629">629</span>
+<span id="630">630</span>
+<span id="631">631</span>
+<span id="632">632</span>
+<span id="633">633</span>
+<span id="634">634</span>
+<span id="635">635</span>
 </pre><pre class="rust"><code><span class="comment">// SPDX-License-Identifier: AGPL-3.0-or-later
 //
 // Copyright (C) 2022 JET PROTOCOL HOLDINGS, LLC.
@@ -740,7 +748,7 @@
     /// |     |     |
     /// | --- | --- |
     /// | **Event Name** | **Description** |
-    /// | [`events::AccountCreated`] | The created account. |
+    /// | [`events::AccountCreated`] | Marks the creation of the account. |
 
     </span><span class="kw">pub fn </span>create_account(ctx: Context&lt;CreateAccount&gt;, seed: u16) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         create_account_handler(ctx, seed)
@@ -764,7 +772,7 @@
     /// |     |     |
     /// | --- | --- |
     /// | **Event Name** | **Description** |
-    /// | [`events::AccountClosed`] | The closed account. |
+    /// | [`events::AccountClosed`] | Marks the closure of the account. |
 
     </span><span class="kw">pub fn </span>close_account(ctx: Context&lt;CloseAccount&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         close_account_handler(ctx)
@@ -797,7 +805,7 @@
     /// |     |     |
     /// | --- | --- |
     /// | **Event Name** | **Description** |
-    /// | [`events::PositionRegistered`] | The position registered. |
+    /// | [`events::PositionRegistered`] | Marks the registration of the position. |
     </span><span class="kw">pub fn </span>register_position(ctx: Context&lt;RegisterPosition&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         register_position_handler(ctx)
     }
@@ -823,7 +831,7 @@
     /// |     |     |
     /// | --- | --- |
     /// | **Event Name** | **Description** |
-    /// | [`events::PositionBalanceUpdated`] | The updated position. |
+    /// | [`events::PositionBalanceUpdated`] | Marks the updating of the position balance. |
     ///
     </span><span class="kw">pub fn </span>update_position_balance(ctx: Context&lt;UpdatePositionBalance&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         update_position_balance_handler(ctx)
@@ -846,7 +854,8 @@
     /// |     |     |
     /// | --- | --- |
     /// | **Event Name** | **Description** |
-    /// | [`events::PositionMetadataRefreshed`] | The position of which metadata was refreshed. |
+    /// | [`events::PositionMetadataRefreshed`] | Marks the refreshing of position metadata. |
+    ///
     </span><span class="kw">pub fn </span>refresh_position_metadata(ctx: Context&lt;RefreshPositionMetadata&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         refresh_position_metadata_handler(ctx)
     }
@@ -873,7 +882,8 @@
     /// |     |     |
     /// | --- | --- |
     /// | **Event Name** | **Description** |
-    /// | [`events::PositionClosed`] | The closed position. |
+    /// | [`events::PositionClosed`] | Marks the closure of the position. |
+    ///
     </span><span class="kw">pub fn </span>close_position(ctx: Context&lt;ClosePosition&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         close_position_handler(ctx)
     }
@@ -891,6 +901,13 @@
     /// | --- | --- | --- |
     /// | **Name** | **Type** | **Description** |
     /// | `margin_account` | `read_only` | The account to verify the health of. |
+    ///
+    /// # Events
+    ///
+    /// |     |     |
+    /// | --- | --- |
+    /// | **Event Name** | **Description** |
+    /// | [`events::VerifiedHealthy`] | Marks the verification of the position. |
     ///
     </span><span class="kw">pub fn </span>verify_healthy(ctx: Context&lt;VerifyHealthy&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         verify_healthy_handler(ctx)
@@ -929,7 +946,7 @@
     /// | --- | --- |
     /// | **Event Name** | **Description** |
     /// | [`events::AdapterInvokeBegin`] | Marks the start of the adapter invocation (includes the margin account pubkey and the adapter program pubkey). |
-    /// | [`events::PositionEvent`] _(Note that each single event represents a different adapter position)_ | The [PositionEvent](events::PositionEvent) describing the change in position. |
+    /// | [`events::PositionEvent`] _(Note that each single event represents a different adapter position)_ | The [PositionEvent](events::PositionEvent) marks the change in position. |
     /// | [`events::AdapterInvokeEnd`] | Marks the ending of the adapter invocation (includes no data except for the event itself being emitted). |
     </span><span class="kw">pub fn </span>adapter_invoke&lt;<span class="lifetime">&#39;info</span>&gt;(
         ctx: Context&lt;<span class="lifetime">&#39;_</span>, <span class="lifetime">&#39;_</span>, <span class="lifetime">&#39;_</span>, <span class="lifetime">&#39;info</span>, AdapterInvoke&lt;<span class="lifetime">&#39;info</span>&gt;&gt;,
@@ -969,7 +986,7 @@
     /// | --- | --- |
     /// | **Name** | **Description** |
     /// | [`events::AccountingInvokeBegin`] | Signify that the accounting invocation process has begun. |
-    /// | [`events::PositionEvent`] _(Note that each single event represents an different adapter position)_ | The [PositionEvent](events::PositionEvent) describing the change in position. |
+    /// | [`events::PositionEvent`] _(Note that each single event represents an different adapter position)_ | The [PositionEvent](events::PositionEvent) marks the change in position. |
     /// | [`events::AccountingInvokeEnd`] | Signify that the accounting invocation process has ended. |
     </span><span class="kw">pub fn </span>accounting_invoke&lt;<span class="lifetime">&#39;info</span>&gt;(
         ctx: Context&lt;<span class="lifetime">&#39;_</span>, <span class="lifetime">&#39;_</span>, <span class="lifetime">&#39;_</span>, <span class="lifetime">&#39;info</span>, AccountingInvoke&lt;<span class="lifetime">&#39;info</span>&gt;&gt;,
@@ -1003,7 +1020,7 @@
     /// |     |     |
     /// | --- | --- |
     /// | **Event Name** | **Description** |
-    /// | [`events::LiquidationBegun`] | The event marking the beginning of liquidation. |
+    /// | [`events::LiquidationBegun`] | Marks the beginning of the liquidation. |
     </span><span class="kw">pub fn </span>liquidate_begin(ctx: Context&lt;LiquidateBegin&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         liquidate_begin_handler(ctx)
     }
@@ -1027,7 +1044,7 @@
     /// |     |     |
     /// | --- | --- |
     /// | **Event Name** | **Description** |
-    /// | [`events::LiquidationEnded`] | The event marking the end of liquidation. |
+    /// | [`events::LiquidationEnded`] | Marks the ending of the liquidation. |
     </span><span class="kw">pub fn </span>liquidate_end(ctx: Context&lt;LiquidateEnd&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         liquidate_end_handler(ctx)
     }
@@ -1039,7 +1056,6 @@
     /// be the same liquidator that started the liquidation state.      
     ///
     /// # [Accounts](jet_margin::accounts::LiquidatorInvoke)
-    ///
     /// |     |     |     |
     /// | --- | --- | --- |
     /// | **Name** | **Type** | **Description** |

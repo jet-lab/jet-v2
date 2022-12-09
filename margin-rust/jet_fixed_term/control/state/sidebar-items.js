@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":[["CrankAuthorization","This authorizes a crank to act on any orderbook within the airspace"],["Market","The `Market` contains all the information necessary to run the fixed term market"]]};

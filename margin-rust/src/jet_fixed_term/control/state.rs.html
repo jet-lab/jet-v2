@@ -1,0 +1,326 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `programs/fixed-term/src/control/state.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>state.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../normalize.css"><link rel="stylesheet" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../ayu.css" disabled><link rel="stylesheet" href="../../../dark.css" disabled><link rel="stylesheet" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../jet_fixed_term/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../jet_fixed_term/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../jet_fixed_term/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<span id="2">2</span>
+<span id="3">3</span>
+<span id="4">4</span>
+<span id="5">5</span>
+<span id="6">6</span>
+<span id="7">7</span>
+<span id="8">8</span>
+<span id="9">9</span>
+<span id="10">10</span>
+<span id="11">11</span>
+<span id="12">12</span>
+<span id="13">13</span>
+<span id="14">14</span>
+<span id="15">15</span>
+<span id="16">16</span>
+<span id="17">17</span>
+<span id="18">18</span>
+<span id="19">19</span>
+<span id="20">20</span>
+<span id="21">21</span>
+<span id="22">22</span>
+<span id="23">23</span>
+<span id="24">24</span>
+<span id="25">25</span>
+<span id="26">26</span>
+<span id="27">27</span>
+<span id="28">28</span>
+<span id="29">29</span>
+<span id="30">30</span>
+<span id="31">31</span>
+<span id="32">32</span>
+<span id="33">33</span>
+<span id="34">34</span>
+<span id="35">35</span>
+<span id="36">36</span>
+<span id="37">37</span>
+<span id="38">38</span>
+<span id="39">39</span>
+<span id="40">40</span>
+<span id="41">41</span>
+<span id="42">42</span>
+<span id="43">43</span>
+<span id="44">44</span>
+<span id="45">45</span>
+<span id="46">46</span>
+<span id="47">47</span>
+<span id="48">48</span>
+<span id="49">49</span>
+<span id="50">50</span>
+<span id="51">51</span>
+<span id="52">52</span>
+<span id="53">53</span>
+<span id="54">54</span>
+<span id="55">55</span>
+<span id="56">56</span>
+<span id="57">57</span>
+<span id="58">58</span>
+<span id="59">59</span>
+<span id="60">60</span>
+<span id="61">61</span>
+<span id="62">62</span>
+<span id="63">63</span>
+<span id="64">64</span>
+<span id="65">65</span>
+<span id="66">66</span>
+<span id="67">67</span>
+<span id="68">68</span>
+<span id="69">69</span>
+<span id="70">70</span>
+<span id="71">71</span>
+<span id="72">72</span>
+<span id="73">73</span>
+<span id="74">74</span>
+<span id="75">75</span>
+<span id="76">76</span>
+<span id="77">77</span>
+<span id="78">78</span>
+<span id="79">79</span>
+<span id="80">80</span>
+<span id="81">81</span>
+<span id="82">82</span>
+<span id="83">83</span>
+<span id="84">84</span>
+<span id="85">85</span>
+<span id="86">86</span>
+<span id="87">87</span>
+<span id="88">88</span>
+<span id="89">89</span>
+<span id="90">90</span>
+<span id="91">91</span>
+<span id="92">92</span>
+<span id="93">93</span>
+<span id="94">94</span>
+<span id="95">95</span>
+<span id="96">96</span>
+<span id="97">97</span>
+<span id="98">98</span>
+<span id="99">99</span>
+<span id="100">100</span>
+<span id="101">101</span>
+<span id="102">102</span>
+<span id="103">103</span>
+<span id="104">104</span>
+<span id="105">105</span>
+<span id="106">106</span>
+<span id="107">107</span>
+<span id="108">108</span>
+<span id="109">109</span>
+<span id="110">110</span>
+<span id="111">111</span>
+<span id="112">112</span>
+<span id="113">113</span>
+<span id="114">114</span>
+<span id="115">115</span>
+<span id="116">116</span>
+<span id="117">117</span>
+<span id="118">118</span>
+<span id="119">119</span>
+<span id="120">120</span>
+<span id="121">121</span>
+<span id="122">122</span>
+<span id="123">123</span>
+<span id="124">124</span>
+<span id="125">125</span>
+<span id="126">126</span>
+<span id="127">127</span>
+<span id="128">128</span>
+<span id="129">129</span>
+<span id="130">130</span>
+<span id="131">131</span>
+<span id="132">132</span>
+<span id="133">133</span>
+<span id="134">134</span>
+<span id="135">135</span>
+<span id="136">136</span>
+<span id="137">137</span>
+<span id="138">138</span>
+<span id="139">139</span>
+<span id="140">140</span>
+<span id="141">141</span>
+<span id="142">142</span>
+<span id="143">143</span>
+<span id="144">144</span>
+<span id="145">145</span>
+<span id="146">146</span>
+<span id="147">147</span>
+<span id="148">148</span>
+<span id="149">149</span>
+<span id="150">150</span>
+<span id="151">151</span>
+<span id="152">152</span>
+<span id="153">153</span>
+<span id="154">154</span>
+<span id="155">155</span>
+<span id="156">156</span>
+<span id="157">157</span>
+<span id="158">158</span>
+<span id="159">159</span>
+<span id="160">160</span>
+<span id="161">161</span>
+<span id="162">162</span>
+</pre><pre class="rust"><code><span class="kw">use </span>anchor_lang::prelude::<span class="kw-2">*</span>;
+<span class="attribute">#[cfg(any(feature = <span class="string">&quot;cli&quot;</span>, test))]
+</span><span class="kw">use </span>serde::{ser::SerializeStruct, Deserialize, Serialize, Serializer};
+
+<span class="kw">use </span><span class="kw">crate</span>::margin::origination_fee;
+
+<span class="doccomment">/// The `Market` contains all the information necessary to run the fixed term market
+///
+/// Utilized by program instructions to verify given transaction accounts are correct. Contains data
+/// about the fixed term market including the tenor and ticket&lt;-&gt;token conversion rate
+</span><span class="attribute">#[cfg_attr(any(feature = <span class="string">&quot;cli&quot;</span>, test), derive(Deserialize))]
+#[account(zero_copy)]
+</span><span class="kw">pub struct </span>Market {
+    <span class="doccomment">/// Versioning and tag information
+    </span><span class="kw">pub </span>version_tag: u64,
+    <span class="doccomment">/// The airspace the market is a part of
+    </span><span class="kw">pub </span>airspace: Pubkey,
+    <span class="doccomment">/// The market state of the agnostic orderbook
+    </span><span class="kw">pub </span>orderbook_market_state: Pubkey,
+    <span class="doccomment">/// The orderbook event queue
+    </span><span class="kw">pub </span>event_queue: Pubkey,
+    <span class="doccomment">/// The orderbook asks byteslab
+    </span><span class="kw">pub </span>asks: Pubkey,
+    <span class="doccomment">/// The orderbook bids byteslab
+    </span><span class="kw">pub </span>bids: Pubkey,
+    <span class="doccomment">/// The token mint for the underlying asset of the tickets
+    </span><span class="kw">pub </span>underlying_token_mint: Pubkey,
+    <span class="doccomment">/// Token account storing the underlying asset accounted for by this ticket program
+    </span><span class="kw">pub </span>underlying_token_vault: Pubkey,
+    <span class="doccomment">/// The token mint for the tickets
+    </span><span class="kw">pub </span>ticket_mint: Pubkey,
+    <span class="doccomment">/// Mint owned by fixed-term market to issue claims against a user.
+    /// These claim notes are monitored by margin to ensure claims are repaid.
+    </span><span class="kw">pub </span>claims_mint: Pubkey,
+    <span class="doccomment">/// Mint owned by fixed-term market to issue collateral value to a user
+    /// The collateral notes are monitored by the margin program to track value
+    </span><span class="kw">pub </span>collateral_mint: Pubkey,
+    <span class="doccomment">/// oracle that defines the value of the underlying asset
+    </span><span class="kw">pub </span>underlying_oracle: Pubkey,
+    <span class="doccomment">/// oracle that defines the value of the tickets
+    </span><span class="kw">pub </span>ticket_oracle: Pubkey,
+    <span class="doccomment">/// where fees can be withdrawn to
+    </span><span class="kw">pub </span>fee_destination: Pubkey,
+    <span class="doccomment">/// The user-defined part of the seed that generated this market&#39;s PDA
+    </span><span class="kw">pub </span>seed: [u8; <span class="number">32</span>],
+    <span class="doccomment">/// The bump seed value for generating the authority address.
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) bump: [u8; <span class="number">1</span>],
+    <span class="doccomment">/// Is the market taking orders
+    </span><span class="kw">pub </span>orderbook_paused: bool,
+    <span class="doccomment">/// Can tickets be redeemed
+    </span><span class="kw">pub </span>tickets_paused: bool,
+    <span class="doccomment">/// reserved for future use
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) _reserved: [u8; <span class="number">28</span>],
+    <span class="doccomment">/// Length of time before a borrow is marked as due, in seconds
+    </span><span class="kw">pub </span>borrow_tenor: i64,
+    <span class="doccomment">/// Length of time before a claim is marked as mature, in seconds
+    </span><span class="kw">pub </span>lend_tenor: i64,
+    <span class="doccomment">/// assessed on borrows. scaled by origination_fee::FEE_UNIT
+    </span><span class="kw">pub </span>origination_fee: u64,
+    <span class="doccomment">/// amount of fees currently available to be withdrawn by market owner
+    </span><span class="kw">pub </span>collected_fees: u64,
+    <span class="doccomment">/// Used to generate unique order tags
+    </span><span class="kw">pub </span>nonce: u64,
+}
+
+<span class="kw">impl </span>Market {
+    <span class="doccomment">/// for signing CPIs with the market account
+    </span><span class="kw">pub fn </span>authority_seeds(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; [<span class="kw-2">&amp;</span>[u8]; <span class="number">5</span>] {
+        [
+            <span class="kw">crate</span>::seeds::MARKET,
+            <span class="self">self</span>.airspace.as_ref(),
+            <span class="self">self</span>.underlying_token_mint.as_ref(),
+            <span class="kw-2">&amp;</span><span class="self">self</span>.seed,
+            <span class="kw-2">&amp;</span><span class="self">self</span>.bump,
+        ]
+    }
+
+    <span class="doccomment">/// how much a borrower should receive from their fill after an origination fee is assessed
+    </span><span class="kw">pub fn </span>loan_to_disburse(<span class="kw-2">&amp;</span><span class="self">self</span>, filled_quote: u64) -&gt; u64 {
+        origination_fee::loan_to_disburse(filled_quote, <span class="self">self</span>.origination_fee)
+    }
+
+    <span class="doccomment">/// the size a borrow order should have including the requested amount plus the origination fee
+    </span><span class="kw">pub fn </span>borrow_order_qty(<span class="kw-2">&amp;</span><span class="self">self</span>, requested: u64) -&gt; u64 {
+        origination_fee::borrow_order_qty(requested, <span class="self">self</span>.origination_fee)
+    }
+}
+
+<span class="attribute">#[cfg(any(feature = <span class="string">&quot;cli&quot;</span>, test))]
+</span><span class="kw">impl </span>Serialize <span class="kw">for </span>Market {
+    <span class="kw">fn </span>serialize&lt;S&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, serializer: S) -&gt; std::result::Result&lt;S::Ok, S::Error&gt;
+    <span class="kw">where
+        </span>S: Serializer,
+    {
+        <span class="kw">let </span><span class="kw-2">mut </span>s = serializer.serialize_struct(<span class="string">&quot;Market&quot;</span>, <span class="number">14</span>)<span class="question-mark">?</span>;
+        s.serialize_field(<span class="string">&quot;version&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.version_tag)<span class="question-mark">?</span>;
+        s.serialize_field(<span class="string">&quot;airspace&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.airspace.to_string())<span class="question-mark">?</span>;
+        s.serialize_field(
+            <span class="string">&quot;orderbookMarketState&quot;</span>,
+            <span class="kw-2">&amp;</span><span class="self">self</span>.orderbook_market_state.to_string(),
+        )<span class="question-mark">?</span>;
+        s.serialize_field(<span class="string">&quot;eventQueue&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.event_queue.to_string())<span class="question-mark">?</span>;
+        s.serialize_field(<span class="string">&quot;asks&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.asks.to_string())<span class="question-mark">?</span>;
+        s.serialize_field(<span class="string">&quot;bids&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.bids.to_string())<span class="question-mark">?</span>;
+        s.serialize_field(
+            <span class="string">&quot;underlyingTokenMint&quot;</span>,
+            <span class="kw-2">&amp;</span><span class="self">self</span>.underlying_token_mint.to_string(),
+        )<span class="question-mark">?</span>;
+        s.serialize_field(
+            <span class="string">&quot;underlyingTokenVault&quot;</span>,
+            <span class="kw-2">&amp;</span><span class="self">self</span>.underlying_token_vault.to_string(),
+        )<span class="question-mark">?</span>;
+        s.serialize_field(<span class="string">&quot;ticketMint&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.ticket_mint.to_string())<span class="question-mark">?</span>;
+        s.serialize_field(<span class="string">&quot;claimsMint&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.claims_mint.to_string())<span class="question-mark">?</span>;
+        s.serialize_field(<span class="string">&quot;collateralMint&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.collateral_mint.to_string())<span class="question-mark">?</span>;
+        s.serialize_field(<span class="string">&quot;underlyingOracle&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.underlying_oracle.to_string())<span class="question-mark">?</span>;
+        s.serialize_field(<span class="string">&quot;ticketOracle&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.ticket_oracle.to_string())<span class="question-mark">?</span>;
+        s.serialize_field(<span class="string">&quot;seed&quot;</span>, <span class="kw-2">&amp;</span>Pubkey::new_from_array(<span class="self">self</span>.seed).to_string())<span class="question-mark">?</span>;
+        s.serialize_field(<span class="string">&quot;orderbookPaused&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.orderbook_paused)<span class="question-mark">?</span>;
+        s.serialize_field(<span class="string">&quot;ticketsPaused&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.tickets_paused)<span class="question-mark">?</span>;
+        s.serialize_field(<span class="string">&quot;borrowTenor&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.borrow_tenor)<span class="question-mark">?</span>;
+        s.serialize_field(<span class="string">&quot;lendTenor&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.lend_tenor)<span class="question-mark">?</span>;
+        s.end()
+    }
+}
+
+<span class="doccomment">/// This authorizes a crank to act on any orderbook within the airspace
+</span><span class="attribute">#[account]
+</span><span class="kw">pub struct </span>CrankAuthorization {
+    <span class="kw">pub </span>crank: Pubkey,
+    <span class="kw">pub </span>airspace: Pubkey,
+    <span class="kw">pub </span>market: Pubkey,
+}
+
+<span class="attribute">#[test]
+</span><span class="kw">fn </span>serialize_market() {
+    <span class="kw">let </span>json = serde_json::to_string_pretty(<span class="kw-2">&amp;</span>&lt;Market <span class="kw">as </span>bytemuck::Zeroable&gt;::zeroed()).unwrap();
+    <span class="kw">let </span>expected = <span class="string">&quot;{
+      \&quot;version\&quot;: 0,
+      \&quot;airspace\&quot;: \&quot;11111111111111111111111111111111\&quot;,
+      \&quot;orderbookMarketState\&quot;: \&quot;11111111111111111111111111111111\&quot;,
+      \&quot;eventQueue\&quot;: \&quot;11111111111111111111111111111111\&quot;,
+      \&quot;asks\&quot;: \&quot;11111111111111111111111111111111\&quot;,
+      \&quot;bids\&quot;: \&quot;11111111111111111111111111111111\&quot;,
+      \&quot;underlyingTokenMint\&quot;: \&quot;11111111111111111111111111111111\&quot;,
+      \&quot;underlyingTokenVault\&quot;: \&quot;11111111111111111111111111111111\&quot;,
+      \&quot;ticketMint\&quot;: \&quot;11111111111111111111111111111111\&quot;,
+      \&quot;claimsMint\&quot;: \&quot;11111111111111111111111111111111\&quot;,
+      \&quot;collateralMint\&quot;: \&quot;11111111111111111111111111111111\&quot;,
+      \&quot;underlyingOracle\&quot;: \&quot;11111111111111111111111111111111\&quot;,
+      \&quot;ticketOracle\&quot;: \&quot;11111111111111111111111111111111\&quot;,
+      \&quot;seed\&quot;: \&quot;11111111111111111111111111111111\&quot;,
+      \&quot;orderbookPaused\&quot;: false,
+      \&quot;ticketsPaused\&quot;: false,
+      \&quot;borrowTenor\&quot;: 0,
+      \&quot;lendTenor\&quot;: 0
+    }&quot;</span>;
+    <span class="macro">assert_eq!</span>(
+        itertools::Itertools::join(<span class="kw-2">&amp;mut </span>expected.split_whitespace(), <span class="string">&quot; &quot;</span>),
+        itertools::Itertools::join(<span class="kw-2">&amp;mut </span>json.split_whitespace(), <span class="string">&quot; &quot;</span>)
+    )
+}
+</code></pre></div>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="jet_fixed_term" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>
